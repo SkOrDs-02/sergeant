@@ -7,6 +7,7 @@ import { messages } from "@shared/i18n/uk";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
+import { Money } from "@shared/components/ui/Money";
 import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
 import { getKyivDateParts, parseKyivDate } from "@shared/lib/time/kyivTime";
 import { readFinykStatsContext } from "@finyk/utils";
@@ -243,9 +244,6 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
     };
   }, [period, offset, bump, mirrorTick]);
 
-  const formattedCurrent = cur.total.toLocaleString("uk-UA");
-  const formattedPrev = prev.total.toLocaleString("uk-UA");
-
   return (
     <div
       className={cn(
@@ -277,9 +275,10 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
         </SectionHeading>
         {collapsed && (
           <span className="flex items-baseline gap-2 shrink-0">
-            <span className="text-style-body font-bold text-text">
-              {formattedCurrent} ₴
-            </span>
+            <Money
+              amount={cur.total}
+              className="text-style-body font-bold text-text"
+            />
             <Delta cur={cur.total} prev={prev.total} higherIsBetter={false} />
           </span>
         )}
@@ -304,13 +303,14 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
       {!collapsed && (
         <>
           <div className="flex items-baseline gap-2">
-            <span className="text-style-headline text-text">
-              {formattedCurrent} ₴
-            </span>
+            <Money
+              amount={cur.total}
+              className="text-style-headline text-text"
+            />
             <Delta cur={cur.total} prev={prev.total} higherIsBetter={false} />
           </div>
           <p className="text-style-caption text-muted">
-            {messages.hub.reportPrevious} {formattedPrev} ₴
+            {messages.hub.reportPrevious} <Money amount={prev.total} />
           </p>
           <BarChart
             key={`${period}-${offset}`}
