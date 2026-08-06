@@ -54,7 +54,7 @@ export function GeneratorCard({
       <div className="text-style-label text-text">
         Рецепти ({activePantry?.name || "Комора"})
       </div>
-      <div className="text-xs text-subtle mt-0.5">
+      <div className="text-style-caption text-muted mt-0.5">
         Рекомендації на базі продуктів з комори. Можна вказати час, порції та
         &quot;не хочу&quot;.
         {(recipeCacheEntry?.recipes?.length ?? 0) > 0 && (
@@ -67,7 +67,7 @@ export function GeneratorCard({
       <div className="mt-3 grid gap-3">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <div className="text-xs text-subtle mb-1">Ціль</div>
+            <div className="text-style-caption text-muted mb-1">Ціль</div>
             <select
               aria-label="Ціль"
               value={prefs.goal}
@@ -84,7 +84,7 @@ export function GeneratorCard({
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <div className="text-xs text-subtle mb-1">Порції</div>
+              <div className="text-style-caption text-muted mb-1">Порції</div>
               <Input
                 value={String(prefs.servings)}
                 onChange={(e) => {
@@ -99,7 +99,7 @@ export function GeneratorCard({
               />
             </div>
             <div>
-              <div className="text-xs text-subtle mb-1">Хвилин</div>
+              <div className="text-style-caption text-muted mb-1">Хвилин</div>
               <Input
                 value={String(prefs.timeMinutes)}
                 onChange={(e) => {
@@ -117,7 +117,7 @@ export function GeneratorCard({
         </div>
 
         <div>
-          <div className="text-xs text-subtle mb-1">
+          <div className="text-style-caption text-muted mb-1">
             Не використовувати / алергени
           </div>
           <Input
@@ -132,7 +132,9 @@ export function GeneratorCard({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <label className="block">
-            <span className="block text-xs text-subtle mb-1">Прийом їжі</span>
+            <span className="block text-style-caption text-muted mb-1">
+              Прийом їжі
+            </span>
             <select
               aria-label="Прийом їжі"
               value={prefs.recipeMealType}
@@ -154,7 +156,7 @@ export function GeneratorCard({
             </select>
           </label>
           <label className="block">
-            <span className="block text-xs text-subtle mb-1">
+            <span className="block text-style-caption text-muted mb-1">
               Як враховувати комору
             </span>
             <select
@@ -201,14 +203,14 @@ export function GeneratorCard({
                     <div className="text-style-label text-text wrap-break-word">
                       {r.title || `Рецепт ${idx + 1}`}
                     </div>
-                    <div className="text-xs text-subtle mt-1">
+                    <div className="text-style-caption text-muted mt-1">
                       {r.timeMinutes ? `${r.timeMinutes} хв` : "—"} ·{" "}
                       {r.servings ? `${r.servings} порц.` : "—"}
                     </div>
                   </div>
                   {r.macros?.kcal != null && (
-                    <div className="shrink-0 rounded-xl border border-line bg-bg px-3 py-2 text-xs text-subtle">
-                      <div className="text-style-caption text-subtle">
+                    <div className="shrink-0 rounded-xl border border-line bg-bg px-3 py-2 text-style-caption text-muted">
+                      <div className="text-style-caption text-muted">
                         ≈ ккал
                       </div>
                       <div className="text-style-label text-text">
@@ -242,14 +244,18 @@ export function GeneratorCard({
 
                 {Array.isArray(r.ingredients) && r.ingredients.length > 0 && (
                   <div className="mt-3 text-sm text-text wrap-break-word">
-                    <div className="text-xs text-subtle mb-1">Інгредієнти</div>
+                    <div className="text-style-caption text-muted mb-1">
+                      Інгредієнти
+                    </div>
                     {r.ingredients.join(", ")}
                   </div>
                 )}
 
                 {Array.isArray(r.steps) && r.steps.length > 0 && (
                   <div className="mt-3 text-sm text-text">
-                    <div className="text-xs text-subtle mb-1">Кроки</div>
+                    <div className="text-style-caption text-muted mb-1">
+                      Кроки
+                    </div>
                     <ol className="list-decimal pl-5 space-y-1">
                       {r.steps.slice(0, 10).map((s, i) => (
                         <li key={i}>{s}</li>
@@ -260,7 +266,9 @@ export function GeneratorCard({
 
                 {Array.isArray(r.tips) && r.tips.length > 0 && (
                   <div className="mt-3 text-sm text-text">
-                    <div className="text-xs text-subtle mb-1">Поради</div>
+                    <div className="text-style-caption text-muted mb-1">
+                      Поради
+                    </div>
                     <ul className="list-disc pl-5 space-y-1">
                       {r.tips.slice(0, 6).map((t, i) => (
                         <li key={i}>{t}</li>
@@ -274,15 +282,15 @@ export function GeneratorCard({
         )}
 
         {recipesTried && !busy && recipes.length === 0 && !err && (
-          <div className="rounded-2xl border border-line bg-panel p-4 text-sm text-subtle">
+          <div className="rounded-2xl border border-line bg-panel p-4 text-sm text-muted">
             Рецептів не повернулося. Спробуй натиснути &quot;Розібрати&quot; або
             додати 2–3 базові продукти (яйця/крупа/овочі).
             {recipesRaw && (
               <details className="mt-3">
-                <summary className="cursor-pointer text-xs text-muted hover:text-text">
+                <summary className="cursor-pointer text-style-caption text-muted hover:text-text">
                   Показати діагностику (raw відповідь AI)
                 </summary>
-                <pre className="mt-2 whitespace-pre-wrap text-xs leading-snug text-subtle bg-bg border border-line rounded-xl p-3 max-h-64 overflow-auto">
+                <pre className="mt-2 whitespace-pre-wrap text-style-caption leading-snug text-muted bg-bg border border-line rounded-xl p-3 max-h-64 overflow-auto">
                   {recipesRaw}
                 </pre>
               </details>

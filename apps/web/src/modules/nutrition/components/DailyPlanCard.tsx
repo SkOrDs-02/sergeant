@@ -97,7 +97,7 @@ export function DailyPlanCard({
   return (
     <Card className="p-4">
       <div className="text-style-label text-text">Денний план</div>
-      <div className="text-xs text-muted mt-0.5">
+      <div className="text-style-caption text-muted mt-0.5">
         AI генерує персоналізований план прийомів їжі з урахуванням твоїх цілей
         та продуктів з комори.
       </div>
@@ -113,7 +113,7 @@ export function DailyPlanCard({
         )}
         <div>
           <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
-            <div className="text-xs text-muted">Цілі на день</div>
+            <div className="text-style-caption text-muted">Цілі на день</div>
             <DailyPlanGoalSelectors
               prefs={prefs}
               setPrefs={setPrefs}
@@ -152,10 +152,18 @@ export function DailyPlanCard({
               ] as const
             ).map(({ key, label, unit, color }) => (
               <div key={key}>
+                {/* AI-DANGER: `text-xs` тут НЕ міняти на `text-style-caption`.
+                    Розмір у них однаковий (12px), але роль явно ставить
+                    `font-weight: 400`, і поруч із `font-semibold` це два
+                    правила ваги на одному вузлі — який виграє, залежить від
+                    порядку утиліт у зібраному CSS, а не від розмітки. Мітка
+                    поля має лишатись напівжирною. Стоїть над інпутом, а не
+                    під ним, і це теж навмисно: правило «підпис під числом»
+                    для полів вводу не діє. */}
                 <div
                   className={cn(
                     "text-xs mb-1 font-semibold",
-                    color ?? "text-subtle",
+                    color ?? "text-muted",
                   )}
                 >
                   {label}
@@ -219,28 +227,28 @@ export function DailyPlanCard({
           {hasTargets && (
             <div className="mt-2 flex flex-wrap gap-1 items-center">
               {prefs.dailyTargetKcal != null && (
-                <span className="text-xs bg-nutrition/10 text-nutrition-strong dark:text-nutrition border border-nutrition/20 rounded-xl px-2 py-0.5">
+                <span className="text-style-caption bg-nutrition/10 text-nutrition-strong dark:text-nutrition border border-nutrition/20 rounded-xl px-2 py-0.5">
                   {prefs.dailyTargetKcal} ккал
                 </span>
               )}
               {prefs.dailyTargetProtein_g != null && (
-                <span className="text-xs bg-bg border border-line rounded-xl px-2 py-0.5 text-muted">
+                <span className="text-style-caption bg-bg border border-line rounded-xl px-2 py-0.5 text-muted">
                   Б: {prefs.dailyTargetProtein_g}г
                 </span>
               )}
               {prefs.dailyTargetFat_g != null && (
-                <span className="text-xs bg-bg border border-line rounded-xl px-2 py-0.5 text-muted">
+                <span className="text-style-caption bg-bg border border-line rounded-xl px-2 py-0.5 text-muted">
                   Ж: {prefs.dailyTargetFat_g}г
                 </span>
               )}
               {prefs.dailyTargetCarbs_g != null && (
-                <span className="text-xs bg-bg border border-line rounded-xl px-2 py-0.5 text-muted">
+                <span className="text-style-caption bg-bg border border-line rounded-xl px-2 py-0.5 text-muted">
                   В: {prefs.dailyTargetCarbs_g}г
                 </span>
               )}
               <button
                 type="button"
-                className="text-xs text-muted hover:text-danger transition-colors px-1 ml-auto"
+                className="text-style-caption text-muted hover:text-danger transition-colors px-1 ml-auto"
                 onClick={() =>
                   setPrefs((p) => ({
                     ...p,
@@ -285,7 +293,7 @@ export function DailyPlanCard({
         </div>
 
         {pantryItems?.length === 0 && (
-          <div className="text-xs text-muted text-center -mt-2">
+          <div className="text-style-caption text-muted text-center -mt-2">
             Додай продукти в комору — AI врахує їх у плані
           </div>
         )}
@@ -296,16 +304,23 @@ export function DailyPlanCard({
             {weekPlanDays.map((d: WeekPlanDay, i: number) => (
               <div
                 key={i}
+                /* AI-DANGER: `text-sm` — це кегль КОНТЕЙНЕРА, від якого
+                   успадковують діти. `text-style-label` замість нього підняв
+                   би вагу до 500 на всьому блоці, включно з нотатками, які
+                   мають лишатись звичайними. Заміняти можна тільки разом із
+                   перебором дітей. */
                 className="text-sm border-b border-line/40 pb-2 last:border-0"
               >
                 <div className="font-semibold text-nutrition-strong dark:text-nutrition">
                   {d.label}
                 </div>
                 {d.note && (
-                  <div className="text-xs text-muted mt-0.5">{d.note}</div>
+                  <div className="text-style-caption text-muted mt-0.5">
+                    {d.note}
+                  </div>
                 )}
                 {Array.isArray(d.meals) && d.meals.length > 0 && (
-                  <ul className="list-disc pl-4 mt-1 text-xs text-text space-y-0.5">
+                  <ul className="list-disc pl-4 mt-1 text-style-caption text-text space-y-0.5">
                     {d.meals.map((line: string, j: number) => (
                       <li key={j}>{line}</li>
                     ))}
@@ -318,10 +333,10 @@ export function DailyPlanCard({
 
         {weekPlanRaw && (!weekPlan?.days || weekPlan.days.length === 0) && (
           <details className="rounded-2xl border border-line bg-bg p-3">
-            <summary className="cursor-pointer text-xs text-muted">
+            <summary className="cursor-pointer text-style-caption text-muted">
               Діагностика плану (raw)
             </summary>
-            <pre className="mt-2 whitespace-pre-wrap text-xs text-muted max-h-48 overflow-auto">
+            <pre className="mt-2 whitespace-pre-wrap text-style-caption text-muted max-h-48 overflow-auto">
               {weekPlanRaw}
             </pre>
           </details>
@@ -334,7 +349,7 @@ export function DailyPlanCard({
                 Ваш план на сьогодні
               </div>
               {dayPlan?.totalKcal != null && (
-                <span className="text-xs text-muted">
+                <span className="text-style-caption text-muted">
                   ~{Math.round(dayPlan.totalKcal)} ккал разом
                 </span>
               )}
@@ -342,7 +357,7 @@ export function DailyPlanCard({
 
             {dayPlan?.totalKcal != null && prefs.dailyTargetKcal != null && (
               <div className="rounded-xl bg-panel border border-line px-3 py-2">
-                <div className="flex justify-between text-xs text-muted mb-1">
+                <div className="flex justify-between text-style-caption text-muted mb-1">
                   <span>Прогрес до цілі</span>
                   <span>
                     {Math.round(dayPlan.totalKcal)} / {prefs.dailyTargetKcal}{" "}
@@ -383,7 +398,7 @@ export function DailyPlanCard({
             </div>
 
             {dayPlan?.note && (
-              <div className="rounded-xl bg-panel/60 border border-line px-3 py-2 text-xs text-muted">
+              <div className="rounded-xl bg-panel/60 border border-line px-3 py-2 text-style-caption text-muted">
                 {dayPlan.note}
               </div>
             )}

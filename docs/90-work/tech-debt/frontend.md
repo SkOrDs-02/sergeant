@@ -368,7 +368,8 @@ UPDATE` у `kv_store`; cross-tab `onChange` через `BroadcastChannel("kv-sto
    тільки іншими іменами. Робити поекранно, у порядку частоти відкриття.
 
    **Зроблено:** Фінік → Огляд, Фізрук → Дашборд (`Dashboard`, `HeroCard`,
-   `StatusStrip`, `RecentWorkoutsSection`).
+   `StatusStrip`, `RecentWorkoutsSection`), Їжа → Меню (`DailyPlanCard`,
+   `RecipesCard.Generator`, `RecipesCard.SavedSection`).
 
    **Пастка, на яку я наступив і яку треба знати наступному** — `text-xs` і
    `text-style-caption` дають однакові 12px, але роль **явно задає
@@ -381,10 +382,17 @@ UPDATE` у `kv_store`; cross-tab `onChange` через `BroadcastChannel("kv-sto
    активнішим — тобто правка «за правилами» дає ефект, протилежний до
    наміру. Перевіряти кожен сайт очима, не sed-ом.
 
-   **Найбільші лишки** (сирі `text-xs`): `modules/nutrition` — 110,
-   `modules/fizruk` — решта від 123, `modules/routine` — 33. У nutrition
-   найгустіший файл — `DailyPlanCard.tsx` (16), і саме там пастка з вагою
-   зустрічається в чистому вигляді (`text-xs … font-semibold`).
+   **Найбільші лишки** (сирі `text-xs`): `modules/nutrition` — решта від 110
+   після проходу по Меню, `modules/fizruk` — решта від 123, `modules/routine`
+   — 33.
+
+   **Два сайти в `DailyPlanCard.tsx` лишені навмисно** і позначені
+   `AI-DANGER` просто в коді, щоб їх не «полагодили» наосліп: мітка поля
+   вводу (`text-xs … font-semibold` — заміна на роль дала б два правила ваги
+   на одному вузлі) і кегль контейнера тижневого плану (`text-sm` — роль
+   підняла б вагу всім дітям, включно з нотатками, які мають лишатись
+   звичайними). Обидва — не недогляд, а межа того, що можна зробити без
+   перебору дітей.
 
 **Закрито окремо:** трекінг `text-style-display` −0.03em → −0.012em
 (калібрування під кирилицю) — рішення власника 2026-08-05 на матеріалі
