@@ -184,7 +184,9 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
             </div>
           )}
           {muscleLabels.length === 0 && (
-            <p className="text-xs text-subtle mt-1">Профіль вправи</p>
+            <p className="text-style-caption text-subtle mt-1">
+              Профіль вправи
+            </p>
           )}
         </div>
 
@@ -200,7 +202,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
               <p className="text-style-label text-warning-strong dark:text-warning">
                 Новий особистий рекорд!
               </p>
-              <p className="text-xs text-warning-strong/80 dark:text-warning/70">
+              <p className="text-style-caption text-warning-strong/80 dark:text-warning/70">
                 Найкращий результат за всю історію
               </p>
             </div>
@@ -214,7 +216,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
             <p className="text-style-label text-text">
               {`${messages.fizruk.oneRmAging.regressionTitle} · ${best.deltaVsPeakPct}%`}
             </p>
-            <p className="text-xs text-subtle">
+            <p className="text-style-caption text-subtle">
               {messages.fizruk.oneRmAging.regressionNote}
             </p>
           </div>
@@ -228,7 +230,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
             <div className="text-style-headline text-text mt-1 tabular-nums">
               {best.best1rm ? `${fmt(best.best1rm, 0)} кг` : "—"}
             </div>
-            <div className="text-xs text-subtle mt-1">
+            <div className="text-style-caption text-subtle mt-1">
               {best.bestSet
                 ? `${best.bestSet.weightKg ?? 0} × ${best.bestSet.reps ?? 0} повт.`
                 : "Немає силових сетів"}
@@ -255,7 +257,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
             <div className="text-style-headline text-text mt-1 tabular-nums">
               {suggestedNext ? `${fmt(suggestedNext.weightKg, 1)} кг` : "—"}
             </div>
-            <div className="text-xs text-subtle mt-1">
+            <div className="text-style-caption text-subtle mt-1">
               {suggestedNext
                 ? `× ${suggestedNext.reps} повт.`
                 : "Заповни сети, щоб зʼявилась рекомендація"}
@@ -382,7 +384,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
                   className="border border-line rounded-2xl p-3 bg-bg"
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <div className="text-xs text-subtle">
+                    <div className="text-style-caption text-subtle">
                       {workout?.startedAt
                         ? new Date(workout.startedAt).toLocaleDateString(
                             "uk-UA",
