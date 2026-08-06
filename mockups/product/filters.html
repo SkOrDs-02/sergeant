@@ -345,13 +345,19 @@
         margin-bottom: 10px;
         display: block;
       }
+      /* В'юпорт — фіксована висота 340px ≈ те, що видно над згином
+         на екрані 390×844 після хедера. Так видно не лише вигляд
+         фільтра, а й скільки він лишає списку. */
       .viewport {
         width: 100%;
         max-width: 372px;
+        height: 340px;
+        display: flex;
+        flex-direction: column;
         background: var(--panel);
         border: 1px solid var(--line);
         border-radius: 10px;
-        padding: 12px;
+        padding: 12px 0;
         position: relative;
         overflow: hidden;
       }
@@ -359,10 +365,45 @@
         font-size: 13px;
         font-weight: 700;
         margin-bottom: 8px;
+        padding: 0 12px;
         color: var(--text);
+        flex: none;
+      }
+      .vp-body {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        padding: 0 12px;
+        scrollbar-width: thin;
+      }
+      /* Фіктивний список під фільтром — щоб було видно, скільки
+         екрана фільтр з'їдає і що саме ховає шторка. */
+      .faux {
+        margin-top: 12px;
+        border-top: 1px solid var(--line);
+      }
+      .frow {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 9px 0;
+        border-bottom: 1px solid var(--line);
+        font-size: 12.5px;
+        color: var(--muted);
+      }
+      .frow .fm {
+        color: var(--text);
+        font-weight: 600;
+      }
+      .frow .fa {
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+      .meta {
+        max-width: 372px;
+        margin-top: 10px;
       }
       .result {
-        margin-top: 10px;
         padding-top: 8px;
         border-top: 1px solid var(--line);
         font-size: 12px;
@@ -574,7 +615,10 @@
         align-items: center;
         justify-content: space-between;
         gap: 10px;
-        width: 100%;
+        /* `<button>` має shrink-to-fit ширину навіть із display:flex,
+           тому ширина рахується явно, а не через width:auto. */
+        width: calc(100% + 24px);
+        margin: 0 -12px;
         min-height: 48px;
         padding: 10px 12px;
         background: var(--panel-hi);
@@ -681,6 +725,7 @@
       /* ── D. КОРІНЕЦЬ (власний матеріал: край і зріз) ────────────── */
       .stub {
         display: flex;
+        margin: 0 -12px;
         background: var(--panel-hi);
         border-top: 2px solid var(--finyk);
         padding-bottom: 9px;
@@ -714,6 +759,9 @@
       }
       .sseg:first-child {
         border-left: 0;
+      }
+      .sseg.wide {
+        flex: 1.5 1 0;
       }
       .sseg[aria-pressed="true"] {
         background: var(--paper);
@@ -1176,7 +1224,7 @@
         </div>
         <div class="facts">
           <div class="fact">
-            <h4>Що робить зі «списком опцій</h4>
+            <h4>Що робить зі «списком опцій»</h4>
             <p>
               Розділяє дві роботи, які pill-рядок робить одночасно й погано:
               <em>показати стан</em> і <em>змінити стан</em>. Рядок завжди каже,
@@ -1238,7 +1286,7 @@
             <p>
               Визнає, що це не один список, а два різні питання. Мала замкнена
               вісь (3–4 значення, ніколи не росте) лишається завжди на екрані;
-              велика відкрита вісь (категорії, тегі — росте з життям
+              велика відкрита вісь (категорії, теги — росте з життям
               користувача) отримує пошук, бо на 20+ значеннях шукають, а не
               переглядають. Єдиний кандидат, який масштабується без стелі.
             </p>
@@ -1447,10 +1495,59 @@
           return e;
         }
 
-        /* ── Спільне: рядок результату під кожним демо ───────────── */
+        /* ── Каркас в'юпорта: title → body → (мета під рамкою) ───── */
+        function title(host, txt) {
+          host.appendChild(el("div", "vp-title", txt));
+        }
+        /** Прокручуване тіло екрана — сюди йде і контрол, і список. */
+        function body(host) {
+          if (!host.__body) {
+            host.__body = el("div", "vp-body");
+            host.appendChild(host.__body);
+          }
+          return host.__body;
+        }
+        /** Анотації живуть ПІД рамкою: вони не частина екрана. */
+        function meta(host) {
+          if (!host.__meta) {
+            host.__meta = el("div", "meta");
+            host.parentNode.appendChild(host.__meta);
+          }
+          return host.__meta;
+        }
+
+        var FAUX_TX = [
+          ["Сільпо", "Продукти", "−284 ₴"],
+          ["Uklon", "Транспорт", "−96 ₴"],
+          ["Netflix", "Підписки", "−219 ₴"],
+          ["Аптека «Подорожник»", "Здоров’я", "−148 ₴"],
+          ["Кава на Прорізній", "Кафе", "−65 ₴"],
+          ["Rozetka", "Покупки", "−1 340 ₴"],
+        ];
+        var FAUX_ROUTINE = [
+          ["Пити воду", "8 з 8", "08:00"],
+          ["Зарядка", "зроблено", "08:30"],
+          ["Читати 20 хв", "заплановано", "21:00"],
+          ["Медитація", "пауза до пн", "22:00"],
+        ];
+        /** Фіктивний список під фільтром — показує ціну місця. */
+        function faux(host, isRoutine) {
+          var box = el("div", "faux");
+          (isRoutine ? FAUX_ROUTINE : FAUX_TX).forEach(function (r) {
+            var row = el("div", "frow");
+            var left = el("span");
+            left.appendChild(el("span", "fm", r[0]));
+            left.appendChild(document.createTextNode(" · " + r[1]));
+            row.appendChild(left);
+            row.appendChild(el("span", "fa", r[2]));
+            box.appendChild(row);
+          });
+          body(host).appendChild(box);
+        }
+
         function makeResult(host) {
           var r = el("div", "result");
-          host.appendChild(r);
+          meta(host).appendChild(r);
           return r;
         }
         function setResult(node, opt, isRoutine) {
@@ -1472,13 +1569,7 @@
         function renderNow(host, set, style) {
           var opts = optsFor(set);
           var isRoutine = style === "routine";
-          host.appendChild(
-            el(
-              "div",
-              "vp-title",
-              isRoutine ? "Огляд · Рутина" : "Транзакції · серпень",
-            ),
-          );
+          title(host, isRoutine ? "Огляд · Рутина" : "Транзакції · серпень");
 
           var scroller = el("div", "nowscroll");
           var row = el("div", "nowrow" + (isRoutine ? " routine" : ""));
@@ -1501,12 +1592,13 @@
           });
 
           scroller.appendChild(row);
-          host.appendChild(scroller);
+          body(host).appendChild(scroller);
+          faux(host, isRoutine);
           result = makeResult(host);
           setResult(result, opts[0], isRoutine);
 
           var off = el("p", "offnote");
-          host.appendChild(off);
+          meta(host).appendChild(off);
 
           function recount() {
             var vis = 0,
@@ -1538,7 +1630,7 @@
         /* ══ A. ПІДКРЕСЛЕННЯ ═════════════════════════════════════ */
         function renderA(host, set) {
           var opts = optsFor(set);
-          host.appendChild(el("div", "vp-title", "Транзакції · серпень"));
+          title(host, "Транзакції · серпень");
           var row = el("div", "uline");
           var result;
           opts.forEach(function (o, i) {
@@ -1554,12 +1646,12 @@
             });
             row.appendChild(b);
           });
-          host.appendChild(row);
+          body(host).appendChild(row);
+          faux(host);
           result = makeResult(host);
           setResult(result, opts[0]);
           var m = el("p", "measure");
-          m.textContent = "Нічого не сховано: рядків — " + "?";
-          host.appendChild(m);
+          meta(host).appendChild(m);
           host.__lines = function () {
             var tops = {};
             row.querySelectorAll(".uopt").forEach(function (c) {
@@ -1589,16 +1681,14 @@
             return Math.max(a, o.amount || 0);
           }, 1);
 
-          host.appendChild(
-            el(
-              "div",
-              "vp-title",
-              isBig ? "Куди пішли гроші · серпень" : "Транзакції · серпень",
-            ),
+          title(
+            host,
+            isBig ? "Куди пішли гроші · серпень" : "Транзакції · серпень",
           );
 
           var box = el("div", "distro");
-          host.appendChild(box);
+          body(host).appendChild(box);
+          faux(host);
           var result = makeResult(host);
           var state = list[0].id;
 
@@ -1616,12 +1706,16 @@
                 "dv",
                 o.amount != null ? fmt(o.amount) : ops(o.count),
               );
-              var bar = el("span", "dbar");
-              bar.style.width =
-                Math.max(4, Math.round(((o.amount || 0) / max) * 100)) + "%";
               b.appendChild(l);
               b.appendChild(v);
-              b.appendChild(bar);
+              // Смужка тільки там, де є величина: у «Всі» її немає,
+              // і намальована 4%-смужка брехала б про малу частку.
+              if (o.amount != null) {
+                var bar = el("span", "dbar");
+                bar.style.width =
+                  Math.max(4, Math.round((o.amount / max) * 100)) + "%";
+                b.appendChild(bar);
+              }
               b.addEventListener("click", function () {
                 state = o.id;
                 draw();
@@ -1653,7 +1747,7 @@
         /* ══ C. СТАН + ШТОРКА ════════════════════════════════════ */
         function renderC(host, set) {
           var opts = optsFor(set);
-          host.appendChild(el("div", "vp-title", "Транзакції · серпень"));
+          title(host, "Транзакції · серпень");
 
           var bar = el("button", "statebar");
           bar.type = "button";
@@ -1666,7 +1760,8 @@
           txt.appendChild(sub);
           bar.appendChild(txt);
           bar.appendChild(el("span", "sb-caret", "▾"));
-          host.appendChild(bar);
+          body(host).appendChild(bar);
+          faux(host);
 
           var result = makeResult(host);
           var state = opts[0].id;
@@ -1732,7 +1827,7 @@
           var isBig = set === "12";
           var base = BASE.slice(0, 3);
           var cats = catOpts();
-          host.appendChild(el("div", "vp-title", "Транзакції · серпень"));
+          title(host, "Транзакції · серпень");
 
           var strip = el("div", "stub");
           var result;
@@ -1761,7 +1856,7 @@
 
           var catSeg = null;
           if (isBig) {
-            catSeg = el("button", "sseg", "Категорії ▾");
+            catSeg = el("button", "sseg wide", "Категорії ▾");
             catSeg.type = "button";
             catSeg.setAttribute("data-hit", "");
             catSeg.setAttribute("aria-pressed", "false");
@@ -1772,7 +1867,7 @@
             strip.appendChild(catSeg);
           }
 
-          host.appendChild(strip);
+          body(host).appendChild(strip);
 
           var input = el("input", "dsearch");
           input.type = "text";
@@ -1781,7 +1876,8 @@
           var dlist = el("div", "dlist");
           panel.appendChild(input);
           panel.appendChild(dlist);
-          if (isBig) host.appendChild(panel);
+          if (isBig) body(host).appendChild(panel);
+          faux(host);
 
           result = makeResult(host);
 
@@ -1859,14 +1955,15 @@
           var on = document.body.classList.toggle("tt");
           ttBtn.setAttribute("aria-pressed", String(on));
           document.querySelectorAll(".viewport").forEach(function (v) {
-            var m = v.querySelector(".measure.tt-out");
+            var box = meta(v);
+            var m = box.querySelector(".measure.tt-out");
             if (!on) {
               if (m) m.remove();
               return;
             }
             if (!m) {
               m = el("p", "measure tt-out");
-              v.appendChild(m);
+              box.appendChild(m);
             }
             var hs = [];
             v.querySelectorAll("[data-hit]").forEach(function (h) {
