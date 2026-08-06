@@ -266,7 +266,7 @@ export function NutritionDashboard({
   return (
     <div className="grid gap-3">
       {/* ── Hero card ── */}
-      <Card prominence="hero" module="nutrition" radius="xl" padding="none">
+      <Card prominence="hero" module="nutrition" edge="rule" padding="none">
         <div className="p-4">
           <div className="flex items-center justify-between mb-3">
             <div>

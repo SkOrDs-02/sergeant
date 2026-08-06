@@ -81,7 +81,7 @@ export function RoutineCalendarHero({
       as="section"
       prominence="hero"
       module="routine"
-      radius="xl"
+      edge="rule"
       aria-label={rangeLabel}
       className="routine-hero relative"
     >
