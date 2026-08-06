@@ -199,7 +199,9 @@ export function PantryManagerSheet({
           <SectionHeading as="div" size="xs" variant="nutrition">
             {formTitle}
           </SectionHeading>
-          <p className="text-xs text-subtle leading-relaxed mt-1">{formHint}</p>
+          <p className="text-style-caption text-subtle leading-relaxed mt-1">
+            {formHint}
+          </p>
           <div className="mt-3">
             <Input
               ref={inputRef}
@@ -234,7 +236,7 @@ export function PantryManagerSheet({
               }
             />
             {pantryForm.err ? (
-              <div className="text-xs text-danger-strong dark:text-danger mt-2">
+              <div className="text-style-caption text-danger-strong dark:text-danger mt-2">
                 {pantryForm.err}
               </div>
             ) : null}
@@ -282,7 +284,7 @@ export function PantryManagerSheet({
             onClick={() => setMoreOpen((v) => !v)}
             className={cn(
               "w-full flex items-center justify-between gap-2",
-              "text-xs text-subtle hover:text-text transition-colors",
+              "text-style-caption text-subtle hover:text-text transition-colors",
               "py-2 border-t border-line/60",
             )}
             aria-expanded={moreOpen}
@@ -299,7 +301,7 @@ export function PantryManagerSheet({
               <SectionHeading as="div" size="xs" variant="nutrition">
                 Небезпечна зона
               </SectionHeading>
-              <p className="text-xs text-subtle leading-relaxed mt-1">
+              <p className="text-style-caption text-subtle leading-relaxed mt-1">
                 Видалить активну комору «{activeName}» разом з усіма продуктами
                 в ньому. Дію не можна відмінити.
               </p>

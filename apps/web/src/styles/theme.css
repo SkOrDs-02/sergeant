@@ -132,6 +132,19 @@
     --shadow-float: var(--shadow-e3);
     --shadow-soft: var(--shadow-e4);
 
+    /* Підйом для МАСКОВАНОГО краю (`.edge-lift*`). Це не дубль
+       `--shadow-eN`, а інша операція: `drop-shadow()` слідує за альфою,
+       тож перфорований низ відкидає рвану тінь замість прямокутної.
+       Внутрішнього підсвічування тут немає навмисно — `drop-shadow()`
+       малює лише зовні, і верхню межу цього матеріалу тримає 2px
+       друкарська лінійка, а не блік. Радіуси теж не потрібні: край
+       скасовує скруглення. Значення — ті самі відстані й альфи, що в
+       e1/e2, мінус inset-шар. */
+    --drop-e1: drop-shadow(0 1px 2px rgba(28, 25, 23, 0.04))
+      drop-shadow(0 2px 6px rgba(28, 25, 23, 0.06));
+    --drop-e2: drop-shadow(0 1px 3px rgba(28, 25, 23, 0.06))
+      drop-shadow(0 6px 16px rgba(28, 25, 23, 0.1));
+
     /* Module glow drop-shadows for bottom nav icons (active state). */
     --shadow-finyk-nav: 0 0 8px rgba(15, 118, 110, 0.3); /* teal-700 (2026-07: was emerald-500) */
     --shadow-fizruk-nav: 0 0 8px rgba(14, 116, 144, 0.3);
@@ -569,6 +582,13 @@
     --shadow-e5:
       0 10px 28px rgba(0, 0, 0, 0.5), 0 36px 72px rgba(0, 0, 0, 0.7),
       inset 0 1px 0 rgba(255, 255, 255, 0.07);
+
+    /* Підйом для маскованого краю — темна пара. Ті самі відстані, що в
+       темних e1/e2, без inset-шару (див. коментар у світлій темі). */
+    --drop-e1: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3))
+      drop-shadow(0 2px 6px rgba(0, 0, 0, 0.35));
+    --drop-e2: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35))
+      drop-shadow(0 8px 20px rgba(0, 0, 0, 0.45));
 
     /* Prominent divider — ink `line-strong` ≈ white/12% (spec § 1). Reads a
        step above `--c-line` for major section splits; the AAA divider for

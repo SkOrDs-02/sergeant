@@ -274,7 +274,8 @@ describe("Card", () => {
           Талон
         </Card>,
       );
-      const cls = container.firstElementChild!.className;
+      // Масковий край живе під обгорткою-підйомом — див. `MASKED_EDGES`.
+      const cls = container.querySelector(".edge-stub")!.className;
       expect(cls).toContain("edge-stub");
       expect(cls).not.toContain("rounded-3xl");
       expect(cls).not.toContain("rounded-2xl");
@@ -296,7 +297,30 @@ describe("Card", () => {
       ["stub", "edge-stub"],
     ] as const)("edge=%s maps to .%s", (edge, expected) => {
       const { container } = render(<Card edge={edge}>Документ</Card>);
-      expect(container.firstElementChild!.className).toContain(expected);
+      expect(container.querySelector(`.${expected}`)).not.toBeNull();
+    });
+
+    /**
+     * AI-DANGER: маска зрізає тінь на СВОЄМУ вузлі — і `box-shadow`, і
+     * `filter: drop-shadow()` однаково (заміряно, див. `MASKED_EDGES` у
+     * `Card.tsx`). Тому масковий край мусить отримати обгортку-підйом
+     * автоматично, а `rule` — ні: у нього маски немає.
+     */
+    it.each(["stub", "perf"] as const)(
+      "edge=%s отримує обгортку-підйом на рівень вище",
+      (edge) => {
+        const { container } = render(<Card edge={edge}>Документ</Card>);
+        const lift = container.firstElementChild!;
+        expect(lift.className).toContain("edge-lift");
+        expect(lift.className).not.toContain(`edge-${edge}`);
+        expect(lift.querySelector(`.edge-${edge}`)).not.toBeNull();
+      },
+    );
+
+    it("друкарська лінійка обгортки не отримує — маски в неї немає", () => {
+      const { container } = render(<Card edge="rule">Документ</Card>);
+      expect(container.firstElementChild!.className).toContain("edge-rule");
+      expect(container.querySelector(".edge-lift")).toBeNull();
     });
   });
 });

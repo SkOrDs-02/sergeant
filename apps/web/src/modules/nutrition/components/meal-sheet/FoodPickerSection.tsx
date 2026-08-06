@@ -136,7 +136,9 @@ export function FoodPickerSection({
             showCharCount={false}
             aria-label="Пошук продукту"
           />
-          {foodErr && <div className="text-xs text-muted">{foodErr}</div>}
+          {foodErr && (
+            <div className="text-style-caption text-muted">{foodErr}</div>
+          )}
           {(foodHits.length > 0 || offHits.length > 0) && (
             <div className="max-h-56 overflow-y-auto rounded-2xl border border-line bg-bg shadow-sm">
               <ul className="divide-y divide-line/20">
@@ -196,7 +198,7 @@ export function FoodPickerSection({
                   />
                 )}
               </div>
-              <div className="text-xs text-subtle mt-0.5">
+              <div className="text-style-caption text-subtle mt-0.5">
                 {Math.round(pickedFood.per100?.kcal || 0)} ккал · Б{" "}
                 {Math.round(pickedFood.per100?.protein_g || 0)}г · Ж{" "}
                 {Math.round(pickedFood.per100?.fat_g || 0)}г · В{" "}
@@ -211,7 +213,7 @@ export function FoodPickerSection({
                 setPickedGrams("100");
                 setFoodQuery("");
               }}
-              className="shrink-0 w-11 h-11 flex items-center justify-center rounded-full bg-line/50 text-muted hover:text-text hover:bg-line transition-colors text-sm"
+              className="shrink-0 w-11 h-11 flex items-center justify-center rounded-full bg-line/50 text-muted hover:text-text hover:bg-line transition-colors"
               aria-label="Скинути продукт"
             >
               <Icon name="close" size={16} aria-hidden />
@@ -220,7 +222,7 @@ export function FoodPickerSection({
 
           {/* Порція з кроками */}
           <div className="px-4 pb-3 flex flex-wrap items-center gap-2">
-            <div className="text-xs text-subtle font-semibold shrink-0">
+            <div className="text-style-caption text-subtle font-semibold shrink-0">
               Порція
             </div>
             {coarsePointer ? (
@@ -269,6 +271,12 @@ export function FoodPickerSection({
                     aria-label="Грами"
                     className="input-focus-nutrition w-[76px] text-center bg-panel border border-line rounded-xl px-2 py-2 text-style-label text-text [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                   />
+                  {/* AI-NOTE: «г» лишається сирим `text-xs`, і це не
+                      недогляд проходу типографіки. Це одиниця, приліплена
+                      до числа, а не текст: її кегль має відноситись до
+                      кегля числа в полі, а не до текстової ролі. Рівно так
+                      само влаштований символ валюти в `Money` — 0.72em від
+                      суми, а не окрема роль. */}
                   <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-subtle pointer-events-none">
                     г
                   </span>

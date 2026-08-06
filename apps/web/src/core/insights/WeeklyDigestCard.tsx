@@ -473,187 +473,206 @@ export function WeeklyDigestCard({
   const isPast = selectedWeekKey !== currentWeekKey;
 
   return (
-    <div
-      className={cn(
-        "rounded-2xl border bg-panel shadow-card overflow-hidden",
-        "border-line dark:border-line",
-        "transition-[box-shadow,filter,opacity,transform] duration-200 hover:shadow-float",
-      )}
-    >
-      <div className="px-4 py-3.5 flex items-center gap-3 bg-linear-to-r from-transparent via-brand-50/30 to-teal-50/20 dark:from-transparent dark:via-brand-900/10 dark:to-teal-900/5">
-        <div
-          className={cn(
-            "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
-            "bg-linear-to-br from-brand-100 to-teal-100",
-            "dark:from-brand-900/40 dark:to-teal-900/30",
-            "shadow-sm",
-          )}
-        >
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="text-brand-strong dark:text-brand"
-          >
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-            <polyline points="14 2 14 8 20 8" />
-            <line x1="16" y1="13" x2="8" y2="13" />
-            <line x1="16" y1="17" x2="8" y2="17" />
-            <polyline points="10 9 9 9 8 9" />
-          </svg>
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="text-style-title font-bold text-text truncate">
-              Звіт тижня
-            </span>
-            {hasUnreadDigest && (
-              <Badge variant="accent" size="xs">
-                {messages.sergeant.weeklyDigestUnread}
-              </Badge>
+    /*
+      Тижневий дайджест — власний матеріал (анти-слоп П3, рішення власника
+      2026-08-06). Це самодостатній аркуш поза стосом: він приходить раз
+      на тиждень, його читають від початку до кінця й закривають. Тому
+      `edge-stub` — лінійка зверху, відрив знизу, — а не картка з
+      бібліотеки.
+
+      AI-DANGER: обгортка тут НЕ зайвий вузол. `edge-stub` вирізає
+      перфорацію маскою, а маска зрізає будь-яку тінь на СВОЄМУ вузлі —
+      і `box-shadow`, і `filter: drop-shadow()` однаково (заміряно; див.
+      `.edge-lift` у `tailwind-preset.js`). Підйом працює лише на рівень
+      вище, і саме тоді тінь виходить рваною по зубцях. Прибереш
+      обгортку — поверхня мовчки втратить глибину.
+
+      `overflow-hidden` пішов свідомо: він стояв лише щоб градієнт шапки
+      не виліз за скруглення, а скруглення тут більше немає. Маска ж
+      ріже низ сама.
+    */
+    <div className="edge-lift-interactive">
+      <div
+        className={cn(
+          "edge-stub border bg-panel",
+          "border-line dark:border-line",
+        )}
+      >
+        <div className="px-4 py-3.5 flex items-center gap-3 bg-linear-to-r from-transparent via-brand-50/30 to-teal-50/20 dark:from-transparent dark:via-brand-900/10 dark:to-teal-900/5">
+          <div
+            className={cn(
+              "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
+              "bg-linear-to-br from-brand-100 to-teal-100",
+              "dark:from-brand-900/40 dark:to-teal-900/30",
+              "shadow-sm",
             )}
-            {/* Градація впевненості (Хвиля 4, hub-coach § G2): summary/
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="text-brand-strong dark:text-brand"
+            >
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="16" y1="13" x2="8" y2="13" />
+              <line x1="16" y1="17" x2="8" y2="17" />
+              <polyline points="10 9 9 9 8 9" />
+            </svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-style-title font-bold text-text truncate">
+                Звіт тижня
+              </span>
+              {hasUnreadDigest && (
+                <Badge variant="accent" size="xs">
+                  {messages.sergeant.weeklyDigestUnread}
+                </Badge>
+              )}
+              {/* Градація впевненості (Хвиля 4, hub-coach § G2): summary/
                 comment/recommendations — суцільний вільний текст моделі,
                 тож рівень «припущення» проставляється детерміновано на
                 рівні картки (не потребує розбору речень). */}
-            {!loading && hasDigestBody(digest) && (
-              <Badge variant="neutral" size="xs">
-                {messages.sergeant.insightAssumptionBadge}
-              </Badge>
+              {!loading && hasDigestBody(digest) && (
+                <Badge variant="neutral" size="xs">
+                  {messages.sergeant.insightAssumptionBadge}
+                </Badge>
+              )}
+            </div>
+            <div className="text-style-caption text-muted mt-0.5">
+              {loading ? messages.sergeant.weeklyDigestPreparing : weekRange}
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            {digest?.generatedAt && (
+              <span className="text-style-caption text-subtle">
+                {new Date(digest.generatedAt).toLocaleDateString("uk-UA", {
+                  day: "numeric",
+                  month: "short",
+                })}
+              </span>
+            )}
+            {history.length > 1 && (
+              <button
+                type="button"
+                onClick={() => setShowHistory((v) => !v)}
+                title="Попередні тижні"
+                className={cn(
+                  "w-7 h-7 flex items-center justify-center rounded-xl transition-colors",
+                  showHistory
+                    ? "bg-primary/15 text-primary"
+                    : "text-muted hover:text-text hover:bg-panelHi",
+                )}
+              >
+                <svg
+                  width="13"
+                  height="13"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                  <line x1="16" y1="2" x2="16" y2="6" />
+                  <line x1="8" y1="2" x2="8" y2="6" />
+                  <line x1="3" y1="10" x2="21" y2="10" />
+                </svg>
+              </button>
+            )}
+            {onCollapse && (
+              <Tooltip content="Згорнути" placement="top-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    trackAdviceReaction(adviceId, "collapse");
+                    onCollapse();
+                  }}
+                  aria-label="Згорнути звіт тижня"
+                  className="w-7 h-7 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors"
+                >
+                  <Icon name="chevron-up" size={15} strokeWidth={2.5} />
+                </button>
+              </Tooltip>
             )}
           </div>
-          <div className="text-style-caption text-muted mt-0.5">
-            {loading ? messages.sergeant.weeklyDigestPreparing : weekRange}
-          </div>
         </div>
-        <div className="flex items-center gap-1.5 shrink-0">
-          {digest?.generatedAt && (
-            <span className="text-style-caption text-subtle">
-              {new Date(digest.generatedAt).toLocaleDateString("uk-UA", {
-                day: "numeric",
-                month: "short",
-              })}
-            </span>
-          )}
-          {history.length > 1 && (
+
+        {showHistory && history.length > 1 && (
+          <div className="border-t border-line px-4 py-2">
+            <div className="flex flex-wrap gap-1">
+              {history.map((h) => (
+                <button
+                  key={h.weekKey}
+                  type="button"
+                  onClick={() => {
+                    setSelectedWeekKey(h.weekKey);
+                    setShowHistory(false);
+                  }}
+                  className={cn(
+                    "px-2.5 py-1 rounded-xl text-style-label font-semibold transition-colors",
+                    selectedWeekKey === h.weekKey
+                      ? "bg-primary/15 text-primary"
+                      : "bg-panelHi text-muted hover:text-text",
+                  )}
+                >
+                  {h.weekRange}
+                  {h.weekKey === currentWeekKey && (
+                    <span className="ml-1 text-style-caption opacity-70">
+                      поточний
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {isPast && (
+          <div className="px-4 pb-1">
             <button
               type="button"
-              onClick={() => setShowHistory((v) => !v)}
-              title="Попередні тижні"
-              className={cn(
-                "w-7 h-7 flex items-center justify-center rounded-xl transition-colors",
-                showHistory
-                  ? "bg-primary/15 text-primary"
-                  : "text-muted hover:text-text hover:bg-panelHi",
-              )}
+              onClick={() => setSelectedWeekKey(currentWeekKey)}
+              className="text-style-label text-primary hover:underline"
             >
-              <svg
-                width="13"
-                height="13"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden
-              >
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                <line x1="16" y1="2" x2="16" y2="6" />
-                <line x1="8" y1="2" x2="8" y2="6" />
-                <line x1="3" y1="10" x2="21" y2="10" />
-              </svg>
+              ← Поточний тиждень
             </button>
-          )}
-          {onCollapse && (
-            <Tooltip content="Згорнути" placement="top-center">
-              <button
-                type="button"
-                onClick={() => {
-                  trackAdviceReaction(adviceId, "collapse");
-                  onCollapse();
-                }}
-                aria-label="Згорнути звіт тижня"
-                className="w-7 h-7 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors"
-              >
-                <Icon name="chevron-up" size={15} strokeWidth={2.5} />
-              </button>
-            </Tooltip>
-          )}
-        </div>
-      </div>
-
-      {showHistory && history.length > 1 && (
-        <div className="border-t border-line px-4 py-2">
-          <div className="flex flex-wrap gap-1">
-            {history.map((h) => (
-              <button
-                key={h.weekKey}
-                type="button"
-                onClick={() => {
-                  setSelectedWeekKey(h.weekKey);
-                  setShowHistory(false);
-                }}
-                className={cn(
-                  "px-2.5 py-1 rounded-xl text-style-label font-semibold transition-colors",
-                  selectedWeekKey === h.weekKey
-                    ? "bg-primary/15 text-primary"
-                    : "bg-panelHi text-muted hover:text-text",
-                )}
-              >
-                {h.weekRange}
-                {h.weekKey === currentWeekKey && (
-                  <span className="ml-1 text-style-caption opacity-70">
-                    поточний
-                  </span>
-                )}
-              </button>
-            ))}
           </div>
-        </div>
-      )}
+        )}
 
-      {isPast && (
-        <div className="px-4 pb-1">
-          <button
-            type="button"
-            onClick={() => setSelectedWeekKey(currentWeekKey)}
-            className="text-style-label text-primary hover:underline"
-          >
-            ← Поточний тиждень
-          </button>
-        </div>
-      )}
-
-      <DigestContent
-        digest={digest}
-        loading={loading}
-        error={error}
-        insufficientData={insufficientData}
-        isCurrentWeek={isCurrentWeek}
-        onGenerate={handleGenerate}
-        onUpdate={handleGenerate}
-        onPlayStories={() => setStoriesOpen(true)}
-        adviceId={adviceId}
-        surface={surface}
-        sectionOpen={sectionOpen}
-        nutritionCoverage={nutritionCoverage}
-        onOpened={markDigestSeen}
-      />
-
-      {storiesOpen && digest && (
-        <WeeklyDigestStories
+        <DigestContent
           digest={digest}
-          weekKey={selectedWeekKey}
-          weekRange={weekRange}
-          onClose={() => setStoriesOpen(false)}
+          loading={loading}
+          error={error}
+          insufficientData={insufficientData}
+          isCurrentWeek={isCurrentWeek}
+          onGenerate={handleGenerate}
+          onUpdate={handleGenerate}
+          onPlayStories={() => setStoriesOpen(true)}
+          adviceId={adviceId}
+          surface={surface}
+          sectionOpen={sectionOpen}
+          nutritionCoverage={nutritionCoverage}
+          onOpened={markDigestSeen}
         />
-      )}
+
+        {storiesOpen && digest && (
+          <WeeklyDigestStories
+            digest={digest}
+            weekKey={selectedWeekKey}
+            weekRange={weekRange}
+            onClose={() => setStoriesOpen(false)}
+          />
+        )}
+      </div>
     </div>
   );
 }

@@ -123,6 +123,26 @@ const edges: Record<CardEdge, string> = {
   perf: "edge-perf",
 };
 
+/**
+ * Краї, що вирізають перфорацію МАСКОЮ.
+ *
+ * AI-DANGER: маска зрізає будь-яку тінь на своєму вузлі — і `box-shadow`,
+ * і `filter: drop-shadow()` однаково. Заміряно в headless Chromium
+ * 2026-08-06 (яскравість під нижнім краєм, 0 = чорне, 255 = біле):
+ * фільтр і маска на одному вузлі дають 255/255, тобто рівно те саме, що
+ * контрольний `box-shadow`; і лише фільтр на БАТЬКУ дає 125 під зубцем
+ * проти 225 під проміжком — тобто рвану тінь по зубцях.
+ *
+ * Тому `Card` сам загортає масковий край у `.edge-lift`. Це не зручність:
+ * помилка тут мовчазна — поверхня не ламається, вона просто втрачає
+ * глибину, і побачити це можна лише поруч зі звичайною карткою. Автоматика
+ * знімає питання з викликача назавжди.
+ *
+ * `rule` у цей набір НЕ входить: у нього маски немає — тільки квадратний
+ * верх і 2px лінійка, — тож обгортка йому не потрібна.
+ */
+const MASKED_EDGES: ReadonlySet<CardEdge> = new Set(["stub", "perf"]);
+
 const radii: Record<CardRadius, string> = {
   md: "rounded-xl", // 12px — CONTROL tier
   lg: "rounded-2xl", // 16px — CARD tier
@@ -359,7 +379,7 @@ export const Card = forwardRef<HTMLElement, CardProps>(function Card(
 ) {
   const resolved = resolveVariant(variant, module, prominence);
   const effectiveRadius = radius ?? defaultRadius(variant, resolved.prominence);
-  return (
+  const surface = (
     <Component
       ref={ref}
       className={cn(
@@ -375,6 +395,24 @@ export const Card = forwardRef<HTMLElement, CardProps>(function Card(
     >
       {children}
     </Component>
+  );
+
+  if (!edge || !MASKED_EDGES.has(edge)) return surface;
+
+  // Обгортка несе ЛИШЕ підйом — жодних відступів, фону чи рамки, тож у
+  // потоці вона прозора для розкладки. Інтерактивний варіант тільки там,
+  // де поверхня справді реагує на курсор: зайвий `transition` на
+  // нерухомій картці — це анімація, якої ніхто не просив.
+  return (
+    <div
+      className={
+        resolved.prominence === "interactive"
+          ? "edge-lift-interactive"
+          : "edge-lift"
+      }
+    >
+      {surface}
+    </div>
   );
 });
 
