@@ -23,7 +23,7 @@ function InlineAnalysisStatus({ text }: { text: string }) {
     <div
       role="status"
       aria-live="polite"
-      className="mt-2 flex items-center gap-2 text-style-caption text-subtle"
+      className="mt-2 flex items-center gap-2 text-style-caption text-muted"
     >
       <Spinner size="xs" />
       <span>{text}</span>
@@ -56,7 +56,7 @@ function PhotoPrivacyNotice() {
   return (
     <div className="mb-3 rounded-2xl border border-line bg-panelHi p-3">
       <div className="text-style-label text-text">Куди їде фото</div>
-      <p className="mt-1 text-xs text-subtle leading-relaxed">
+      <p className="mt-1 text-style-caption text-muted leading-relaxed">
         Щоб визначити КБЖВ, фото відправляється на розпізнавання до Anthropic —
         це зовнішній сервіс. На відміну від тексту, фото ми не можемо частково
         приховати: їде весь кадр. Перевір, що в нього не потрапило зайве.
@@ -129,7 +129,7 @@ export function PhotoAnalyzeCard({
       <div className="flex items-center justify-between gap-3 mb-4">
         <div className="min-w-0">
           <div className="text-style-label text-text">Аналіз фото страви</div>
-          <div className="text-xs text-subtle mt-0.5">
+          <div className="text-style-caption text-muted mt-0.5">
             ШІ визначить КБЖВ і запропонує уточнення
           </div>
         </div>
@@ -201,7 +201,9 @@ export function PhotoAnalyzeCard({
               <polyline points="21 15 16 10 5 21" />
             </svg>
             <span className="text-style-label">Натисни щоб обрати фото</span>
-            <span className="text-xs">jpg / png / heic · до 4 МБ</span>
+            <span className="text-style-caption">
+              jpg / png / heic · до 4 МБ
+            </span>
           </div>
         )}
       </label>
@@ -225,7 +227,7 @@ export function PhotoAnalyzeCard({
                 {photoResult.dishName || "Страва"}
               </div>
               {photoResult.confidence != null && (
-                <div className="text-xs text-subtle mt-0.5">
+                <div className="text-style-caption text-muted mt-0.5">
                   Впевненість: {Math.round(photoResult.confidence * 100)}%
                 </div>
               )}
@@ -261,6 +263,13 @@ export function PhotoAnalyzeCard({
                 >
                   {m.label}
                 </SectionHeading>
+                {/* AI-DANGER: `text-sm` тут лишається навмисно. Роль
+                    `text-style-label` явно задає `font-weight: 500`, а
+                    поруч стоїть `font-extrabold` — два правила ваги на
+                    одному вузлі, і хто виграє, залежить від порядку в
+                    CSS. Це те саме місце, де прохід типографіки вже
+                    двічі ламав вагу тихо. Значення метрики має лишатись
+                    найважчим у своєму блоці. */}
                 <div className="text-sm font-extrabold text-text leading-none truncate">
                   {m.value}
                 </div>
@@ -284,7 +293,7 @@ export function PhotoAnalyzeCard({
 
           {Array.isArray(photoResult.ingredients) &&
             photoResult.ingredients.length > 0 && (
-              <div className="text-xs text-subtle">
+              <div className="text-style-caption text-muted">
                 <span className="font-semibold text-text">Інгредієнти: </span>
                 {photoResult.ingredients
                   .map((x: PhotoIngredient) => x.name)
@@ -302,7 +311,7 @@ export function PhotoAnalyzeCard({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <div className="text-xs text-subtle mb-1">
+                    <div className="text-style-caption text-muted mb-1">
                       Порція (г), якщо знаєш
                     </div>
                     <Input
@@ -317,7 +326,9 @@ export function PhotoAnalyzeCard({
 
                 {photoResult.questions.slice(0, 6).map((q: string) => (
                   <div key={q}>
-                    <div className="text-xs text-subtle mb-1">{q}</div>
+                    <div className="text-style-caption text-muted mb-1">
+                      {q}
+                    </div>
                     <Input
                       value={answers[q] || ""}
                       onChange={(e) =>

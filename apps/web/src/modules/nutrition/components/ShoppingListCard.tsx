@@ -81,14 +81,16 @@ export function ShoppingListCard({
   return (
     <Card className="p-4">
       <div className="text-style-label text-text">Список покупок</div>
-      <div className="text-xs text-subtle mt-0.5">
+      <div className="text-style-caption text-muted mt-0.5">
         AI складає список з рецептів або тижневого плану, автоматично виключаючи
         продукти з комори.
       </div>
 
       <div className="mt-4 space-y-3">
         <div>
-          <div className="text-xs text-subtle mb-2">Джерело для списку</div>
+          <div className="text-style-caption text-muted mb-2">
+            Джерело для списку
+          </div>
           <div className="flex gap-2">
             <button
               type="button"
@@ -129,7 +131,7 @@ export function ShoppingListCard({
           </div>
 
           {!canGenerate && (
-            <div className="mt-2 text-xs text-subtle text-center">
+            <div className="mt-2 text-style-caption text-muted text-center">
               {source === "recipes"
                 ? "Спершу згенеруй рецепти у Меню → Рецепти"
                 : "Спершу згенеруй тижневий план у Меню → Тижневий план"}
@@ -213,7 +215,7 @@ export function ShoppingListCard({
                       <span className="text-style-caption text-text">
                         {cat.name}
                       </span>
-                      <span className="text-xs text-muted ml-auto">
+                      <span className="text-style-caption text-muted ml-auto">
                         {
                           cat.items.filter((i: ShoppingItem) => i.checked)
                             .length
@@ -270,12 +272,12 @@ export function ShoppingListCard({
                             {item.name}
                           </span>
                           {item.quantity && (
-                            <span className="ml-1.5 text-xs text-subtle">
+                            <span className="ml-1.5 text-style-caption text-muted">
                               {item.quantity}
                             </span>
                           )}
                           {item.note && (
-                            <div className="text-xs text-muted mt-0.5">
+                            <div className="text-style-caption text-muted mt-0.5">
                               {item.note}
                             </div>
                           )}
@@ -290,7 +292,7 @@ export function ShoppingListCard({
         )}
 
         {!hasItems && !shoppingBusy && (
-          <div className="rounded-2xl border border-line bg-panel p-4 text-sm text-subtle text-center">
+          <div className="rounded-2xl border border-line bg-panel p-4 text-sm text-muted text-center">
             Список покупок порожній. Вибери джерело і натисни кнопку генерації.
           </div>
         )}
@@ -298,7 +300,7 @@ export function ShoppingListCard({
         <button
           type="button"
           onClick={() => openHubModule("finyk", "/analytics")}
-          className="w-full text-xs text-muted hover:text-text transition-colors pt-1 flex items-center justify-center gap-1.5"
+          className="w-full text-style-caption text-muted hover:text-text transition-colors pt-1 flex items-center justify-center gap-1.5"
         >
           <Icon name="wallet" size="sm" aria-hidden />
           <span>Скільки витратив на їжу цього місяця?</span>

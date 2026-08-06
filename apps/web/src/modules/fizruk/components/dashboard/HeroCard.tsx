@@ -126,7 +126,7 @@ function HeroShell({
       as="section"
       prominence="hero"
       module="fizruk"
-      radius="xl"
+      edge="rule"
       padding="none"
       className="relative overflow-hidden"
       aria-label={ariaLabel}
