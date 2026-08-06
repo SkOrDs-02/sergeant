@@ -1,7 +1,6 @@
 import { Icon } from "@shared/components/ui/Icon";
 import { Money } from "@shared/components/ui/Money";
 import { cn } from "@shared/lib/ui/cn";
-import { AnimatedNumber } from "@shared/components/ui/AnimatedNumber";
 import { AssetsLiabilitiesBar } from "./AssetsBars";
 import type { useAssetsState } from "./useAssetsState";
 
@@ -40,25 +39,25 @@ export function AssetsNetworthCard({
           )}
         >
           {showBalance ? (
-            <>
-              <AnimatedNumber
-                value={networth}
-                odometer
-                className="items-center"
-                locale="uk-UA"
-                formatOptions={{ maximumFractionDigits: 0 }}
-              />
-              <span
-                className={cn(
-                  "text-style-headline leading-none",
-                  isNegative
-                    ? "text-danger-strong/60 dark:text-danger/60"
-                    : "text-finyk/60",
-                )}
-              >
-                ₴
-              </span>
-            </>
+            /*
+              AI-CONTEXT: до 2026-08-06 тут стояла САМОРОБНА обробка тирів —
+              одометр для цілого плюс окремий `span` із власним кеглем і
+              власним приглушеним кольором для ₴. Тобто дубль того, що
+              робить `Money`, на найпомітнішому числі застосунку: свої
+              пропорції, свій тон, без вузького нерозривного перед символом.
+
+              Одометр пішов не заради спрощення, а за рішенням власника по
+              П5 (варіант C): рух читає СТРУКТУРУ числа — у тирного числа
+              каскад, у без-тирного відлік. Капітал має тири, отже каскад.
+              Лічильник тут був найсильнішим аргументом «виглядає однаково
+              в будь-якому дашборді».
+
+              Заразом зник `role="img"` з `aria-label`: він існував лише
+              тому, що барабани одометра доводилось ховати від скрінрідера
+              (цифри, що крутяться, читались би як шум). Каскад — звичайний
+              текст, і його читають як текст.
+            */
+            <Money amount={networth} animate tone="inherit" />
           ) : (
             "\u2022\u2022\u2022\u2022\u2022\u2022"
           )}

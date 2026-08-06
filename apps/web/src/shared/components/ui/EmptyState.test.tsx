@@ -246,11 +246,22 @@ describe("EmptyState — власна поверхня «край і зріз» 
    * чим є поверхня; кнопка на ній — це дія. Квадратна кнопка тут
    * зобов'язала б поміняти всі кнопки продукту.
    */
-  it("матеріал не йде всередину — коробка іконки лишається скругленою", () => {
-    const { container } = render(
-      <EmptyState title="Порожньо" surface="document" icon={<span>₴</span>} />,
+  it("матеріал не йде всередину — аркуш квадратний, деталі круглі", () => {
+    const { container, getByRole } = render(
+      <EmptyState
+        title="Порожньо"
+        surface="document"
+        icon={<span>₴</span>}
+        primaryAction={<Button variant="primary">Дія</Button>}
+      />,
     );
-    const iconBox = container.querySelector(".rounded-2xl");
-    expect(iconBox).not.toBeNull();
+    // Сам аркуш — без скруглення: це і є край.
+    const sheet = container.querySelector(".edge-stub")!;
+    expect(sheet.className).not.toMatch(/(^|\s)rounded-/);
+    // А те, що на ньому лежить, скруглення зберігає.
+    expect(container.querySelector(".rounded-2xl")).not.toBeNull();
+    expect(getByRole("button", { name: "Дія" }).className).toMatch(
+      /(^|\s)rounded-/,
+    );
   });
 });

@@ -25,6 +25,33 @@ describe("Label", () => {
     expect(label.className).not.toContain("text-style-label");
   });
 
+  /**
+   * `FormField` пробрасывает проп своїм шляхом (`capsLabel` → `caps`),
+   * і цей шлях окремий від прямого `<Label>`. Знахідка ревʼю: тести
+   * покривали лише другий.
+   */
+  it("FormField пробрасує capsLabel у мітку", () => {
+    render(
+      <FormField label="Валюта" capsLabel>
+        <input />
+      </FormField>,
+    );
+    const label = screen.getByText("Валюта");
+    expect(label.className).toContain("uppercase");
+    expect(label.className).not.toContain("text-style-label");
+  });
+
+  it("без capsLabel мітка FormField — звичайного регістру", () => {
+    render(
+      <FormField label="Назва активу">
+        <input />
+      </FormField>,
+    );
+    const label = screen.getByText("Назва активу");
+    expect(label.className).toContain("normal-case");
+    expect(label.className).not.toContain("uppercase");
+  });
+
   it("optional appends the · необов'язково suffix", () => {
     render(<Label optional>Нотатка</Label>);
     expect(screen.getByText(/необов/)).toBeInTheDocument();

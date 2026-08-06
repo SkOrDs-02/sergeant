@@ -86,6 +86,8 @@ export function CollapsibleSection({
     () => safeReadLS<boolean>(storageKey, defaultOpen) ?? defaultOpen,
   );
   const sectionRef = useRef<HTMLElement>(null);
+  // Вузол сітки — з нього приходить `transitionend`.
+  const gridRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     onOpenChange?.(open);
@@ -96,13 +98,40 @@ export function CollapsibleSection({
       const next = !prev;
       safeWriteLS(storageKey, next);
       if (next) {
-        // After CSS transition (200ms) scroll so expanded content is visible.
-        setTimeout(() => {
+        /*
+          Скрол після того, як рядок сітки доїхав.
+
+          AI-DANGER: чекати фіксованим таймером НЕ можна — CSS-перехід
+          іде на `duration-base`, тобто на токені, і будь-яка його
+          зміна розсинхронила б пару. Доти тут стояло 210 ms проти
+          коментаря «200ms» проти фактичних 220 ms токена: три різні
+          числа про одну подію. `transitionend` знає точно.
+
+          Запасний таймер лишається на випадок, коли події не буде
+          зовсім: перехід не запускається, якщо секція вже потрібної
+          висоти або рух вимкнено системно.
+        */
+        const grid = gridRef.current;
+        const scroll = () =>
           sectionRef.current?.scrollIntoView({
             behavior: motionScrollBehavior(),
             block: "nearest",
           });
-        }, 210);
+        if (!grid) {
+          scroll();
+          return next;
+        }
+        let done = false;
+        const once = () => {
+          if (done) return;
+          done = true;
+          grid.removeEventListener("transitionend", once);
+          scroll();
+        };
+        grid.addEventListener("transitionend", once, { once: true });
+        // Стеля — помітно більша за `slowest` (680 ms), щоб таймер не
+        // випереджав подію на повільному пристрої.
+        setTimeout(once, 800);
       }
       return next;
     });
@@ -172,6 +201,7 @@ export function CollapsibleSection({
 
       {/* CSS grid row transition for smooth collapse */}
       <div
+        ref={gridRef}
         className={cn(
           "grid transition-[grid-template-rows] duration-base ease-standard",
           open ? "grid-rows-[1fr]" : "grid-rows-[0fr]",

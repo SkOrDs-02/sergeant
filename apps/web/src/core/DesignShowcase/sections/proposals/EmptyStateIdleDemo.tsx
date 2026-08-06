@@ -38,7 +38,7 @@ export function EmptyStateIdleDemo() {
               0%, 100% { transform: translateY(0); }
               50% { transform: translateY(-6px); }
             }
-            .es-float { animation: esFloat 3.2s ease-standard infinite; }
+            .es-float { animation: esFloat 3.2s var(--motion-ease-standard) infinite; }
             @media (prefers-reduced-motion: reduce) {
               .es-float { animation: none; }
             }

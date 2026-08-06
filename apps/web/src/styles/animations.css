@@ -1023,6 +1023,13 @@
    сходинками. Гасимо їх тут: із вимкненим рухом тири мають зʼявитись
    разом, а не по черзі. */
 @media (prefers-reduced-motion: reduce) {
+  /* Глобальне правило нижче підміняє keyframes лише класам `animate-*`,
+     а `.money-tier` під цей селектор не підпадає — зсув на 2px лишався б.
+     Тут гасимо і рух, і сходинки: із вимкненою анімацією тири мають
+     просто зʼявитись разом. */
+  .money-tier {
+    animation-name: rm-opacity-fade !important;
+  }
   .money-tier-2,
   .money-tier-3 {
     animation-delay: 0ms !important;

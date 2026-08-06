@@ -251,7 +251,9 @@ function SwipeToActionImpl({
         style={{
           transform: `translateX(${committed ? (offset < 0 ? -MAX_SWIPE * 2 : MAX_SWIPE * 2) : offset}px)`,
           transition:
-            isDragging && !committed ? "none" : "transform 0.2s ease-standard",
+            isDragging && !committed
+              ? "none"
+              : "transform var(--motion-duration-base) var(--motion-ease-standard)",
           willChange: "transform",
         }}
         onTouchStart={onTouchStart}
