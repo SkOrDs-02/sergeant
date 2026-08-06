@@ -82,7 +82,7 @@ export function WorkoutsHome({
           <div className="text-style-label text-text">
             Немає активного тренування
           </div>
-          <div className="text-xs text-subtle mt-1">
+          <div className="text-style-caption text-subtle mt-1">
             Почни порожнє тренування або обери готовий шаблон.
           </div>
           <div
@@ -138,7 +138,7 @@ export function WorkoutsHome({
             ))}
           </ul>
         ) : (
-          <div className="rounded-2xl border border-dashed border-line p-4 text-xs text-subtle text-center">
+          <div className="rounded-2xl border border-dashed border-line p-4 text-style-caption text-subtle text-center">
             Після першого завершеного тренування тут з&apos;являться останні
             сесії.
           </div>
@@ -157,7 +157,7 @@ export function WorkoutsHome({
               <Icon name="book-open" size={22} className="text-muted" />
               <div className="flex-1 min-w-0">
                 <div className="text-style-label text-text">Каталог вправ</div>
-                <div className="text-xs text-subtle mt-0.5">
+                <div className="text-style-caption text-subtle mt-0.5">
                   Пошук · групи м&apos;язів · своя вправа
                 </div>
               </div>
@@ -176,7 +176,7 @@ export function WorkoutsHome({
                 <Icon name="calendar" size={22} className="text-muted" />
                 <div className="flex-1 min-w-0">
                   <div className="text-style-label text-text">Планування</div>
-                  <div className="text-xs text-subtle mt-0.5">
+                  <div className="text-style-caption text-subtle mt-0.5">
                     Відкрити календар тренувань у Routine
                   </div>
                 </div>
@@ -226,7 +226,9 @@ export function RecentWorkoutSummary({ workout }: RecentWorkoutSummaryProps) {
           </span>
         ) : null}
       </div>
-      <div className="text-xs text-subtle mt-0.5 truncate">{subtitle}</div>
+      <div className="text-style-caption text-subtle mt-0.5 truncate">
+        {subtitle}
+      </div>
     </div>
   );
 }

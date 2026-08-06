@@ -75,7 +75,7 @@ export function RecoveryFocusCard({
           </span>
           <div className="min-w-0 flex-1">
             <h2 className="text-style-title text-text">Відновлення й фокус</h2>
-            <p className="text-xs text-subtle mt-1 leading-snug">
+            <p className="text-style-caption text-muted mt-1 leading-snug">
               Колір на силуеті — готовність груп; чіпи — пріоритет після
               відпочинку.
             </p>
@@ -84,6 +84,8 @@ export function RecoveryFocusCard({
         <Button
           variant="fizruk-soft"
           size="sm"
+          // AI-DANGER: розмір контрола на `Button`, не текст — див.
+          // той самий випадок у WorkoutCatalogSection.
           className="h-9 min-h-[40px] px-3 text-xs shrink-0"
           onClick={() => onOpenAtlas?.()}
           aria-label="Відкрити атлас мʼязів"
@@ -124,7 +126,7 @@ export function RecoveryFocusCard({
                 className="shrink-0 text-warning-strong dark:text-warning"
                 aria-hidden
               />
-              <p className="text-xs text-warning-strong dark:text-warning leading-snug">
+              <p className="text-style-caption text-warning-strong dark:text-warning leading-snug">
                 {rec.wellbeingMult >= 1.3
                   ? "Поганий сон або дуже низька енергія — відновлення значно сповільнене."
                   : "Недостатній сон або низька енергія — відновлення сповільнене."}{" "}
@@ -157,13 +159,13 @@ export function RecoveryFocusCard({
                 </span>
               ))}
               {focus.length === 0 && (
-                <span className="text-xs text-subtle">
+                <span className="text-style-caption text-muted">
                   Додай завершені тренування — зʼявиться пріоритет груп.
                 </span>
               )}
             </div>
             {avoid.length > 0 && (
-              <p className="text-xs text-muted mt-3 leading-relaxed">
+              <p className="text-style-caption text-muted mt-3 leading-relaxed">
                 <span className="font-semibold text-warning-strong dark:text-warning">
                   Почекати:
                 </span>{" "}

@@ -130,7 +130,7 @@ export function WorkoutItemCard({
       className={`border rounded-2xl p-3 bg-bg transition-colors ${groupSelectMode && isSelected ? "border-success bg-success/5" : "border-line"}`}
     >
       {last && (
-        <div className="text-xs text-subtle/70 mb-1">
+        <div className="text-style-caption text-subtle/70 mb-1">
           Минулого разу{" "}
           {last._startedAt
             ? `(${new Date(last._startedAt).toLocaleDateString("uk-UA", { month: "short", day: "numeric" })})`
@@ -186,7 +186,7 @@ export function WorkoutItemCard({
               <SupersetBadge type={group.type ?? "superset"} />
             )}
           </div>
-          <div className="text-xs text-subtle mt-0.5">
+          <div className="text-style-caption text-subtle mt-0.5">
             М{"'"}язи:{" "}
             <span className="font-semibold text-muted">
               {(it.musclesPrimary || [])
@@ -203,7 +203,7 @@ export function WorkoutItemCard({
             const redL = cf.red.map((x) => x.label).join(", ");
             const yelL = cf.yellow.map((x) => x.label).join(", ");
             return (
-              <div className="text-xs mt-1.5 rounded-xl border border-warning/40 bg-warning/10 px-2 py-1.5 text-warning-strong dark:text-warning leading-snug">
+              <div className="text-style-caption mt-1.5 rounded-xl border border-warning/40 bg-warning/10 px-2 py-1.5 text-warning-strong dark:text-warning leading-snug">
                 {cf.red.length ? (
                   <>
                     Ще не відновились:{" "}
@@ -223,7 +223,7 @@ export function WorkoutItemCard({
         {!isReadOnly && (
           <button
             type="button"
-            className="text-xs text-danger/80 hover:text-danger"
+            className="text-style-caption text-danger/80 hover:text-danger"
             onClick={() => removeItem(activeWorkout.id, it.id)}
             aria-label="Видалити вправу з тренування"
           >
@@ -345,6 +345,11 @@ export function WorkoutItemCard({
               />
               <button
                 type="button"
+                // AI-DANGER: `text-xs` тут — розмір КОНТРОЛА, а не роль
+                // тексту. Кнопка стоїть у ряд із полями вводу тієї самої
+                // висоти (`h-10`), тож її розмір належить формі керування,
+                // і роль `text-style-caption` (12px/400) описувала б не те.
+                // Не міняти на роль механічно — спершу перевір ряд.
                 className="h-10 min-h-[44px] rounded-xl border border-line text-xs text-subtle hover:text-danger hover:border-danger/40 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-subtle disabled:hover:border-line"
                 disabled={isReadOnly}
                 onClick={() => {
@@ -480,6 +485,10 @@ export function WorkoutItemCard({
               })
             }
           />
+          {/* AI-DANGER: `text-xs` — розмір КОНТРОЛА. Блок навмисно
+              повторює форму поля вводу поруч (`h-10`, та сама рамка й
+              радіус): це підказка формату, вирівняна з полем, а не
+              підпис під ним. Роль тексту зламала б цю рівність. */}
           <div className="h-10 rounded-xl border border-line bg-bg px-3 text-xs text-subtle flex items-center">
             Напр: планка, ізометрія
           </div>

@@ -120,7 +120,7 @@ function WorkoutRow({
           })}
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-xs text-subtle">
+          <span className="text-style-caption text-subtle">
             {(w.items || []).length} {pluralExercises((w.items || []).length)}
           </span>
           {isEnded ? (
@@ -139,7 +139,7 @@ function WorkoutRow({
         </div>
       </div>
       {w.note && (
-        <div className="text-xs text-subtle mt-1 italic line-clamp-2">
+        <div className="text-style-caption text-subtle mt-1 italic line-clamp-2">
           {w.note}
         </div>
       )}
@@ -216,7 +216,7 @@ export function WorkoutJournalSection({
                 ? "Активне тренування не знайдено"
                 : "Немає активного тренування"}
             </div>
-            <div className="text-xs text-subtle mt-1">
+            <div className="text-style-caption text-subtle mt-1">
               {activeOnly
                 ? "Воно вже завершене, видалене або ще не завантажилось. Повернись до списку тренувань."
                 : "Створи «+ Нове» або відкрий «Шаблони». Вправи з каталогу нижче додаються тапом по назві після цього."}
@@ -428,12 +428,16 @@ export function WorkoutJournalSection({
                     onClick={() => setRetroOpen(false)}
                     aria-label="Закрити"
                     title="Закрити"
+                    // AI-DANGER: `text-xs` — розмір гліфа в контролі, не
+                    // роль тексту. Це `Button` 8×8 із символом «×»
+                    // всередині; число задає, наскільки великий хрестик,
+                    // а не наскільки дрібний підпис.
                     className="h-8 w-8 rounded-xl text-xs text-subtle hover:text-text"
                   >
                     ×
                   </Button>
                 </div>
-                <p className="text-xs text-subtle leading-relaxed">
+                <p className="text-style-caption text-subtle leading-relaxed">
                   Вкажи, коли було тренування, потім додай вправи та заповни
                   кг/повтори.
                 </p>

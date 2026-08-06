@@ -61,6 +61,8 @@ vi.mock("../lib/insightsEngine", () => ({
 }));
 
 import { act } from "@testing-library/react";
+import { setActiveModules } from "@sergeant/shared";
+import { webKVStore } from "@shared/lib/storage/storage";
 import { generateInsights } from "../lib/insightsEngine";
 import { generatePDFReport } from "@shared/lib/ui/export";
 
@@ -96,6 +98,45 @@ describe("HubReports — render smoke (F23)", () => {
     expect(
       screen.getByTestId("hub-reports-nutrition-card"),
     ).toBeInTheDocument();
+  });
+
+  describe("картки лише активних модулів", () => {
+    it("не рендерить картку вимкненого модуля", () => {
+      setActiveModules(webKVStore, ["finyk", "routine"]);
+      render(<HubReports />);
+
+      expect(
+        screen.getByTestId("hub-reports-expenses-card"),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByTestId("hub-reports-routine-card"),
+      ).toBeInTheDocument();
+      expect(screen.queryByTestId("hub-reports-fitness-card")).toBeNull();
+      expect(screen.queryByTestId("hub-reports-nutrition-card")).toBeNull();
+    });
+
+    // Головний інваріант гейта, і саме він ламається найтихіше: порожній
+    // вибір означає «ми не знаємо» (акаунт до візарда, новий пристрій), а
+    // не «вона обрала нічого». Якби тут стояв `getVibePicks`, така людина
+    // отримала б порожню сторінку звітів замість усіх чотирьох карток —
+    // та сама помилка, яку `activeModules.ts` уже описує для хабу.
+    it("показує всі чотири, коли вибору ще немає", () => {
+      setActiveModules(webKVStore, []);
+      render(<HubReports />);
+
+      expect(
+        screen.getByTestId("hub-reports-fitness-card"),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByTestId("hub-reports-expenses-card"),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByTestId("hub-reports-routine-card"),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByTestId("hub-reports-nutrition-card"),
+      ).toBeInTheDocument();
+    });
   });
 
   it("renders the WeeklyDigestCard stub in week mode", () => {

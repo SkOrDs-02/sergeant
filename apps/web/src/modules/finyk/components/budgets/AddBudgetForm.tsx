@@ -329,7 +329,7 @@ function AddBudgetFormComponent({
             />
             {limitCategoryError && (
               <p
-                className="mt-1 text-xs text-danger-strong dark:text-danger bg-danger-soft rounded-xl px-3 py-2"
+                className="mt-1 text-style-caption text-danger-strong dark:text-danger bg-danger-soft rounded-xl px-3 py-2"
                 role="alert"
               >
                 {limitCategoryError}
@@ -348,13 +348,13 @@ function AddBudgetFormComponent({
             />
             {limitAmountError && (
               <p
-                className="mt-1 text-xs text-danger-strong dark:text-danger bg-danger-soft rounded-xl px-3 py-2"
+                className="mt-1 text-style-caption text-danger-strong dark:text-danger bg-danger-soft rounded-xl px-3 py-2"
                 role="alert"
               >
                 {limitAmountError}
               </p>
             )}
-            <p className="mt-1 text-xs text-subtle">
+            <p className="mt-1 text-style-caption text-subtle">
               {limitPeriod === "week"
                 ? "Новий період починається щопонеділка за київським часом."
                 : limitPeriod === "one_time"
@@ -429,7 +429,7 @@ function AddBudgetFormComponent({
             />
             {goalNameError && (
               <p
-                className="mt-1 text-xs text-danger-strong dark:text-danger bg-danger-soft rounded-xl px-3 py-2"
+                className="mt-1 text-style-caption text-danger-strong dark:text-danger bg-danger-soft rounded-xl px-3 py-2"
                 role="alert"
               >
                 {goalNameError}
@@ -448,7 +448,7 @@ function AddBudgetFormComponent({
             />
             {goalAmountError && (
               <p
-                className="mt-1 text-xs text-danger-strong dark:text-danger bg-danger-soft rounded-xl px-3 py-2"
+                className="mt-1 text-style-caption text-danger-strong dark:text-danger bg-danger-soft rounded-xl px-3 py-2"
                 role="alert"
               >
                 {goalAmountError}

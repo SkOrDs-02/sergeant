@@ -64,7 +64,7 @@ export function PrBoard({
           {messages.fizruk.prBoard.heading} · {prs.length}
         </SectionHeading>
         {filtered.length !== prs.length && (
-          <div className="text-xs text-subtle">
+          <div className="text-style-caption text-muted">
             {filtered.length} {messages.fizruk.prBoard.shownSuffix}
           </div>
         )}
@@ -135,7 +135,7 @@ export function PrBoard({
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 min-w-0">
                     {podiumRank && (
-                      <span className="shrink-0 inline-flex items-center gap-1 text-xs text-warning-strong dark:text-warning">
+                      <span className="shrink-0 inline-flex items-center gap-1 text-style-caption text-warning-strong dark:text-warning">
                         <Icon name="award" size={14} aria-hidden />
                         {podiumRank}
                       </span>
@@ -149,11 +149,11 @@ export function PrBoard({
                   </div>
                 </div>
                 <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-xs text-subtle tabular-nums">
+                  <span className="text-style-caption text-muted tabular-nums">
                     {p.weightKg ?? 0} {messages.fizruk.kgUnit} × {p.reps ?? 0}
                   </span>
                   {p.at && (
-                    <span className="text-xs text-muted">
+                    <span className="text-style-caption text-muted">
                       ·{" "}
                       {new Date(p.at).toLocaleDateString("uk-UA", {
                         month: "short",
@@ -168,12 +168,12 @@ export function PrBoard({
                     попереджувального кольору, це факт, а не осуд.
                   */}
                   {p.isStale && (
-                    <span className="text-xs text-muted">
+                    <span className="text-style-caption text-muted">
                       · {messages.fizruk.prBoard.staleBadge}
                     </span>
                   )}
                   {p.isRegression && (
-                    <span className="text-xs text-subtle tabular-nums">
+                    <span className="text-style-caption text-muted tabular-nums">
                       · {messages.fizruk.prBoard.belowPeakPrefix}{" "}
                       {p.deltaVsPeakPct}%
                     </span>
