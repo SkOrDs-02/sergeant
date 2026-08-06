@@ -307,7 +307,7 @@ describe("Card", () => {
      * автоматично, а `rule` — ні: у нього маски немає.
      */
     it.each(["stub", "perf"] as const)(
-      "edge=%s отримує обгортку-підйом на рівень вище",
+      "edge=%s несе підйом зовні, а маску всередині",
       (edge) => {
         const { container } = render(<Card edge={edge}>Документ</Card>);
         const lift = container.firstElementChild!;
@@ -316,6 +316,45 @@ describe("Card", () => {
         expect(lift.querySelector(`.edge-${edge}`)).not.toBeNull();
       },
     );
+
+    /**
+     * Регресія на знахідку ревʼю: спершу обгортка була доданим `div`, і
+     * `Card as="li"` усередині `ul` давав `<ul><div><li>` — невалідну
+     * розмітку списку. Заразом ламались селектори прямих нащадків і
+     * поведінка елемента у flex/grid, бо в розкладці батька опинявся
+     * чужий вузол. Семантичний корінь мусить лишатись зовнішнім.
+     */
+    it("зберігає запитаний елемент коренем навіть під маскою", () => {
+      const { container } = render(
+        <ul>
+          <Card as="li" edge="stub">
+            Пункт
+          </Card>
+        </ul>,
+      );
+      const list = container.firstElementChild!;
+      const item = list.firstElementChild!;
+      expect(item.tagName).toBe("LI");
+      expect(item.className).toContain("edge-lift");
+      expect(item.querySelector(".edge-stub")).not.toBeNull();
+      // Жодного чужого вузла між списком і його пунктом.
+      expect(list.children).toHaveLength(1);
+    });
+
+    it("класи викликача лишаються з поверхнею, а не з обгорткою", () => {
+      const { container } = render(
+        <Card edge="stub" className="bg-panelHi">
+          Талон
+        </Card>,
+      );
+      const lift = container.firstElementChild!;
+      // Фон на обгортці був би прямокутником ПОЗА маскою — видимим
+      // клаптем під зубцями.
+      expect(lift.className).not.toContain("bg-panelHi");
+      expect(container.querySelector(".edge-stub")!.className).toContain(
+        "bg-panelHi",
+      );
+    });
 
     it("друкарська лінійка обгортки не отримує — маски в неї немає", () => {
       const { container } = render(<Card edge="rule">Документ</Card>);

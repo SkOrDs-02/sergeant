@@ -30,15 +30,35 @@ const SRC = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const MASKED = ["edge-stub", "edge-perf"];
 const LIFT = ["edge-lift", "edge-lift-interactive"];
 
-/**
- * Витягнути вміст кожного рядкового літерала з `className`-подібних місць.
- * Груба, але достатня евристика: нас цікавить лише сусідство двох токенів
- * у ОДНОМУ рядковому літералі, а він і є одним вузлом.
- */
+/** Вміст кожного рядкового літерала у файлі. */
 function stringLiterals(source: string): string[] {
   return [...source.matchAll(/"([^"\n]*)"|'([^'\n]*)'|`([^`]*)`/g)].map(
     (m) => m[1] ?? m[2] ?? m[3] ?? "",
   );
+}
+
+/**
+ * Класи, які опиняться на ОДНОМУ вузлі: вміст кожного `cn(...)`-виклику
+ * (усі його рядкові аргументи разом) плюс кожен окремий літерал.
+ *
+ * Знахідка ревʼю: перша версія дивилась лише на окремі літерали, тож
+ * `cn("edge-stub", "edge-lift")` проходила повз — а це рівно та помилка,
+ * яку тест і має ловити. Аргументи `cn` склеюються в один рядок класів,
+ * отже і перевіряти їх треба разом.
+ *
+ * Межа чесності: це не розбір JSX. Обчислені класи (змінна, тернарник
+ * зі змінними) сюди не потраплять, і повний AST-аналіз із перевіркою
+ * ПРЕДКА тут навмисно не робиться — після того, як `Card` став ставити
+ * обгортку сам, ручний випадок лишився рідкісним, а вартовий ловить
+ * саме його текстову форму. Основний захист — у `Card`, не тут.
+ */
+function classGroups(source: string): string[] {
+  const groups = stringLiterals(source);
+  for (const call of source.matchAll(/\bcn\(([\s\S]*?)\)/g)) {
+    const args = call[1] ?? "";
+    groups.push(stringLiterals(args).join(" "));
+  }
+  return groups;
 }
 
 /**
@@ -70,7 +90,7 @@ describe("край і зріз — маска й підйом не живуть 
     for (const file of files) {
       const src = readFileSync(file, "utf8");
       if (!LIFT.some((c) => src.includes(c))) continue;
-      for (const literal of stringLiterals(src)) {
+      for (const literal of classGroups(src)) {
         const tokens = literal.split(/\s+/);
         const hasMask = MASKED.some((c) => tokens.includes(c));
         const hasLift = LIFT.some((c) => tokens.includes(c));
@@ -90,7 +110,7 @@ describe("край і зріз — маска й підйом не живуть 
     for (const file of files) {
       const src = readFileSync(file, "utf8");
       const usesMask = MASKED.some((c) =>
-        stringLiterals(src).some((l) => l.split(/\s+/).includes(c)),
+        classGroups(src).some((l) => l.split(/\s+/).includes(c)),
       );
       if (!usesMask) continue;
       const hasLift = LIFT.some((c) => src.includes(c));

@@ -379,40 +379,55 @@ export const Card = forwardRef<HTMLElement, CardProps>(function Card(
 ) {
   const resolved = resolveVariant(variant, module, prominence);
   const effectiveRadius = radius ?? defaultRadius(variant, resolved.prominence);
-  const surface = (
-    <Component
-      ref={ref}
-      className={cn(
-        surfaceClass(resolved),
-        // Край скасовує радіус, а не додається до нього: це дві назви
-        // однієї межі. Порядок важливий — `edge-*` мусить іти після
-        // `surfaceClass`, бо обнуляє його рамку й тінь.
-        edge ? edges[edge] : radii[effectiveRadius],
-        paddings[padding],
-        className,
-      )}
-      {...props}
-    >
-      {children}
-    </Component>
+  // Край скасовує радіус, а не додається до нього: це дві назви однієї
+  // межі. Порядок важливий — `edge-*` мусить іти після `surfaceClass`,
+  // бо обнуляє його рамку й тінь.
+  const surfaceClasses = cn(
+    surfaceClass(resolved),
+    edge ? edges[edge] : radii[effectiveRadius],
+    paddings[padding],
+    className,
   );
 
-  if (!edge || !MASKED_EDGES.has(edge)) return surface;
+  if (!edge || !MASKED_EDGES.has(edge)) {
+    return (
+      <Component ref={ref} className={surfaceClasses} {...props}>
+        {children}
+      </Component>
+    );
+  }
 
-  // Обгортка несе ЛИШЕ підйом — жодних відступів, фону чи рамки, тож у
-  // потоці вона прозора для розкладки. Інтерактивний варіант тільки там,
-  // де поверхня справді реагує на курсор: зайвий `transition` на
-  // нерухомій картці — це анімація, якої ніхто не просив.
+  /*
+    Масковий край: підйом іде на ЗОВНІШНІЙ вузол, маска — на внутрішній.
+
+    AI-DANGER: зовнішній вузол — це `Component`, тобто те, що просив
+    викликач, а НЕ доданий `div`. Спершу я зробив навпаки, і `Card
+    as="li"` усередині `ul` давав `<ul><div><li>` — невалідну розмітку
+    списку; заразом ламались селектори прямих нащадків і поведінка
+    елемента у flex/grid, бо в розкладці батька опинявся чужий вузол.
+    Тепер семантичний корінь лишається зовні, а всередину йде рівно
+    поверхня.
+
+    Обгортка несе ЛИШЕ фільтр — ні фону, ні рамки, ні відступів. Фон на
+    ній був би прямокутником ПОЗА маскою, тобто видимим клаптем під
+    зубцями.
+
+    `className` викликача лишається з поверхнею, а не з обгорткою: у
+    маскованого краю візуальні класи мусять потрапити під маску,
+    інакше вони малюють поза нею.
+  */
   return (
-    <div
+    <Component
+      ref={ref}
       className={
         resolved.prominence === "interactive"
           ? "edge-lift-interactive"
           : "edge-lift"
       }
+      {...props}
     >
-      {surface}
-    </div>
+      <div className={surfaceClasses}>{children}</div>
+    </Component>
   );
 });
 
