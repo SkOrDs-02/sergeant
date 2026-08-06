@@ -12,6 +12,7 @@ import {
   callCostUsd,
   isBudgetVisible,
   measureChatPrefix,
+  measureSynthesisPrefix,
   minCacheable,
   priceFor,
   TOOL_COUNT,
@@ -87,7 +88,8 @@ export function chatMessageCost(
   const synthModel = CHAT_MODELS[gateway][tier];
 
   const p1 = measureChatPrefix(firstModel, band);
-  const p2 = measureChatPrefix(synthModel, band);
+  // Тур синтезу з 2026-08-06 несе лише згадані в реплеї визначення.
+  const p2 = measureSynthesisPrefix(synthModel, band);
   const cached = gateway === "anthropic";
 
   const firstTurn = callCostUsd({
@@ -525,6 +527,8 @@ export const FACTS = {
   toolCount: TOOL_COUNT,
   anthropicPrefix: measureChatPrefix("claude-sonnet-4-6"),
   gatewayPrefix: measureChatPrefix("deepseek/deepseek-v4-flash"),
+  /** Префікс синтез-туру під шлюзом після #669 — для порівняння з першим. */
+  gatewaySynthesisPrefix: measureSynthesisPrefix("z-ai/glm-5.2"),
   breakevenAnthropic: breakevenMau("anthropic"),
   breakevenGateway: breakevenMau("openrouter"),
 };

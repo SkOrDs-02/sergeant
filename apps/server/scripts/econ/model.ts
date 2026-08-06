@@ -21,7 +21,10 @@ import {
   ANTHROPIC_PRICING_USD_PER_MTOK,
   type AnthropicModelPricing,
 } from "../../src/lib/aiPricing.js";
-import { buildToolsPayload } from "../../src/modules/chat/promptCache.js";
+import {
+  buildSynthesisToolsPayload,
+  buildToolsPayload,
+} from "../../src/modules/chat/promptCache.js";
 import { SYSTEM_PREFIX, TOOLS } from "../../src/modules/chat/tools.js";
 
 // ── Токенізація ──────────────────────────────────────────────────────
@@ -90,6 +93,32 @@ export function measureChatPrefix(
   band: TokenBand = "mid",
 ): ChatPrefix {
   const payload = buildToolsPayload(model) as Array<Record<string, unknown>>;
+  const inContext = payload.filter((t) => t["defer_loading"] !== true);
+  const text = JSON.stringify(inContext) + SYSTEM_PREFIX;
+  return {
+    inContextTools: inContext.length,
+    chars: text.length,
+    tokens: tokensOf(text, band),
+    toolSearch: inContext.length < payload.length,
+  };
+}
+
+/**
+ * Префікс ТУРУ СИНТЕЗУ. Окремо від `measureChatPrefix`, бо з 2026-08-06 прод
+ * шле туди лише визначення, згадані в реплеї (`buildSynthesisToolsPayload`) —
+ * `tool_use` із цього туру однаково відкидається обома транспортами.
+ *
+ * Одне ім'я інструмента — типовий випадок: більшість повідомлень спричиняють
+ * рівно один tool-виклик. Беремо `find_transaction` як представника гарячого
+ * набору; на Anthropic аргумент ігнорується (там tool search і спільний кеш).
+ */
+export function measureSynthesisPrefix(
+  model: string,
+  band: TokenBand = "mid",
+): ChatPrefix {
+  const payload = buildSynthesisToolsPayload(model, [
+    "find_transaction",
+  ]) as Array<Record<string, unknown>>;
   const inContext = payload.filter((t) => t["defer_loading"] !== true);
   const text = JSON.stringify(inContext) + SYSTEM_PREFIX;
   return {

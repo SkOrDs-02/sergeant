@@ -282,9 +282,9 @@ export const PERSONAS: readonly Persona[] = [
     chatMessages: 36,
     toolUseRate: 0.5,
     sessionMessages: 3,
-    perMonth: { classify: 20, "day-hint": 4 },
-    tier: "premium",
-    note: "12 активних днів × 3 повідомлення; синтез — premium-модель (інверсія)",
+    perMonth: { classify: 20, "day-hint": 4, "coach-insight": 12 },
+    tier: "standard",
+    note: "12 активних днів × 3 повідомлення; чат — standard (#668), коуч — premium (#671)",
   },
   {
     key: "trial",
