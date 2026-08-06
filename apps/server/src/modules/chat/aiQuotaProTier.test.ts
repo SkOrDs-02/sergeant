@@ -58,6 +58,7 @@ const ENV = [
   "OPENROUTER_API_KEY",
   "OPENROUTER_COACH_MODEL",
   "ANTHROPIC_BUDGET_HARD_DEGRADE_ALL",
+  "AI_FREE_ON_PREMIUM",
 ];
 const saved: Record<string, string | undefined> = {};
 
@@ -76,6 +77,7 @@ beforeEach(() => {
   delete process.env["OPENROUTER_API_KEY"];
   delete process.env["OPENROUTER_COACH_MODEL"];
   delete process.env["ANTHROPIC_BUDGET_HARD_DEGRADE_ALL"];
+  delete process.env["AI_FREE_ON_PREMIUM"];
   isHardExceeded.mockReturnValue(false);
   getSessionUser.mockResolvedValue({ id: "u1" });
   getUserPlan.mockResolvedValue({ plan: "pro" });
@@ -134,10 +136,14 @@ describe("resolveProTier — bypass paths return premium without touching DB", (
     expect(pool.query).not.toHaveBeenCalled();
   });
 
-  it("anonymous (no session) → premium", async () => {
+  it("anonymous (no session) → standard, не premium", async () => {
     getSessionUser.mockResolvedValue(null);
-    const r = await resolveProTier(makeReq(), makeRes(), "chat");
-    expect(r.tier).toBe("premium");
+    const res = makeRes();
+    const r = await resolveProTier(makeReq(), res, "chat");
+    expect(r.tier).toBe("standard");
+    expect(r.model).toBe("claude-haiku-4-5-20251001");
+    expect(res.headers["X-AI-Tier"]).toBe("standard");
+    // Квота анона рахується `assertAiQuota`, не цим каскадом.
     expect(pool.query).not.toHaveBeenCalled();
   });
 
@@ -148,11 +154,50 @@ describe("resolveProTier — bypass paths return premium without touching DB", (
     expect(getUserPlan).not.toHaveBeenCalled();
   });
 
-  it("free plan → premium (count-capped elsewhere, model not degraded)", async () => {
+  it("free plan → standard (кількість капає assertAiQuota, модель — не premium)", async () => {
+    getUserPlan.mockResolvedValue({ plan: "free" });
+    const res = makeRes();
+    const r = await resolveProTier(makeReq(), res, "chat");
+    expect(r.tier).toBe("standard");
+    expect(r.model).toBe("claude-haiku-4-5-20251001");
+    expect(res.headers["X-AI-Tier"]).toBe("standard");
+    expect(pool.query).not.toHaveBeenCalled();
+  });
+
+  // Інверсія, заради якої зроблено зміну: Pro на 21-му повідомленні доби вже
+  // на standard. Якби Free лишався premium, неплатник мав би кращу модель за
+  // платника. Тест фіксує рівно це співвідношення, а не конкретний id моделі.
+  it("Free не отримує кращої моделі за Pro, що вичерпав premium-відро", async () => {
+    getUserPlan.mockResolvedValueOnce({ plan: "free" });
+    const freeTier = await resolveProTier(makeReq(), makeRes(), "chat");
+
+    getUserPlan.mockResolvedValue({ plan: "pro" });
+    pool.query.mockResolvedValueOnce(full()).mockResolvedValueOnce(ok());
+    const drainedPro = await resolveProTier(makeReq(), makeRes(), "chat");
+
+    expect(drainedPro.tier).toBe("standard");
+    expect(freeTier.model).toBe(drainedPro.model);
+  });
+
+  it("AI_FREE_ON_PREMIUM=true повертає стару поведінку (kill-switch)", async () => {
+    process.env["AI_FREE_ON_PREMIUM"] = "true";
     getUserPlan.mockResolvedValue({ plan: "free" });
     const r = await resolveProTier(makeReq(), makeRes(), "chat");
     expect(r.tier).toBe("premium");
-    expect(pool.query).not.toHaveBeenCalled();
+    expect(r.model).toBe("claude-sonnet-4-6");
+  });
+
+  it("kill-switch діє і на анона", async () => {
+    process.env["AI_FREE_ON_PREMIUM"] = "1";
+    getSessionUser.mockResolvedValue(null);
+    const r = await resolveProTier(makeReq(), makeRes(), "chat");
+    expect(r.tier).toBe("premium");
+  });
+
+  it("fail-open (plan lookup впав) лишається premium, не standard", async () => {
+    getUserPlan.mockRejectedValue(new Error("db down"));
+    const r = await resolveProTier(makeReq(), makeRes(), "chat");
+    expect(r.tier).toBe("premium");
   });
 });
 

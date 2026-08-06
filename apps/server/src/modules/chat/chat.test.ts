@@ -261,7 +261,41 @@ describe("chat handler — tool_use parsing", () => {
     );
 
     const payload = anthropicMessages!.mock.calls[0]![1] as { model: string };
-    expect(payload.model).toBe("claude-sonnet-4-6");
+    // Тут немає сесії → анон, а анон із 2026-08-06 іде standard-тиром
+    // (`resolveProTier`), а не premium. Тобто тур синтезу лишається
+    // тир-залежним — просто дефолт для неоплаченого трафіку інший.
+    expect(payload.model).toBe("claude-haiku-4-5-20251001");
+  });
+
+  it("kill-switch AI_FREE_ON_PREMIUM повертає синтез анона на CHAT_MODEL_SYNTHESIS", async () => {
+    process.env["AI_FREE_ON_PREMIUM"] = "true";
+    try {
+      anthropicMessages.mockResolvedValueOnce({
+        response: { ok: true, status: 200 },
+        data: { content: [{ type: "text", text: "Готово." }] },
+      });
+
+      await handler(
+        makeReq({
+          messages: [{ role: "user", content: "Видали m_xyz" }],
+          tool_calls_raw: [
+            {
+              type: "tool_use",
+              id: "toolu_2",
+              name: "delete_transaction",
+              input: { tx_id: "m_xyz" },
+            },
+          ],
+          tool_results: [{ tool_use_id: "toolu_2", content: "видалено" }],
+        }),
+        makeRes(),
+      );
+
+      const payload = anthropicMessages!.mock.calls[0]![1] as { model: string };
+      expect(payload.model).toBe("claude-sonnet-4-6");
+    } finally {
+      delete process.env["AI_FREE_ON_PREMIUM"];
+    }
   });
 
   it("інкрементить chat_tool_invocations_total{outcome=proposed} на першому кроці", async () => {
