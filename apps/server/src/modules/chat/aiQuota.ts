@@ -18,7 +18,20 @@ import { aiQuotaCircuitBreaker } from "./aiQuotaCircuitBreaker.js";
 import { getUserPlan } from "../billing/getUserPlan.js";
 import { effectiveLimits as planLimits } from "../billing/effectiveLimits.js";
 import { isAnthropicBudgetHardExceeded } from "../../obs/anthropicBudgetGuard.js";
-import { defaultChatModel } from "../../env/chatModels.js";
+import {
+  freeOnPremiumEnabled,
+  hardBreachDegradeAllEnabled,
+  setTierHeader,
+  tieredProEnabled,
+  tierModel,
+  type ProEndpoint,
+  type ProTier,
+  type ProTierResult,
+} from "./aiQuotaTierModels.js";
+
+// Реекспорт: caller-и (chat.ts, coach.ts, тести) історично беруть ці типи
+// з `aiQuota.js`. Тримаємо контракт, щоб винесення лишилось внутрішнім.
+export type { ProEndpoint, ProTier, ProTierResult };
 
 type SessionUser = { id: string } | null;
 
@@ -98,93 +111,12 @@ const DEFAULT_TOOL_COST = 3;
 // ── Pro tiered model degradation ────────────────────────────────────
 // Окремі відра рахують дорогі (premium) та дешеві (standard) AI-виклики
 // Pro-юзера за добу. Каскад: premium вичерпано → standard → floor (∞,
-// майже-безкоштовна модель). Pro НІКОЛИ не блокується (немає 429). Усе
-// читається з `process.env` (як решта модуля), щоб тести фліпали runtime.
+// майже-безкоштовна модель). Pro НІКОЛИ не блокується (немає 429).
+// Самі model-id і прапорці тирингу живуть у `aiQuotaTierModels.ts`.
 const PREMIUM_BUCKET = "premium";
 const STANDARD_BUCKET = "standard";
 const DEFAULT_PREMIUM_LIMIT = 20;
 const DEFAULT_STANDARD_LIMIT = 80;
-
-/** Рівень моделі для Pro у поточну добу. */
-export type ProTier = "premium" | "standard" | "floor";
-/** Поверхня, що споживає tier (різні дефолтні моделі). */
-export type ProEndpoint = "chat" | "coach";
-
-export interface ProTierResult {
-  tier: ProTier;
-  /** Готовий model-id для caller-а (Anthropic id для chat, OpenRouter для coach). */
-  model: string;
-  /** Залишок premium/standard-запитів; `null` коли tiering не застосовано. */
-  remaining: number | null;
-  limit: number | null;
-}
-
-function tieredProEnabled(): boolean {
-  const v = process.env["AI_TIERED_PRO_ENABLED"];
-  // Unset/empty → default ON, mirroring the zod `boolFromEnv(true)` default
-  // declared in `env.ts` (AI_TIERED_PRO_ENABLED). Explicit "false"/"0" opts
-  // out; any other explicit value falls back to the same default-true.
-  if (v === undefined || v === "") return true;
-  const lower = v.toLowerCase();
-  return lower !== "0" && lower !== "false";
-}
-
-/**
- * Opt-in catastrophic-cost circuit-breaker. Коли увімкнено І денний глобальний
- * Anthropic-spend перевищив hard-поріг — `resolveProTier` деградує всіх
- * не-founder юзерів на floor-модель (див. `ANTHROPIC_BUDGET_HARD_DEGRADE_ALL`
- * у env.ts). Default off. Читаємо `process.env` (а не cached `env`-обʼєкт) для
- * консистентності з `tieredProEnabled()` і простоти тестування.
- */
-function hardBreachDegradeAllEnabled(): boolean {
-  const v = process.env["ANTHROPIC_BUDGET_HARD_DEGRADE_ALL"]?.toLowerCase();
-  return v === "1" || v === "true";
-}
-
-function envStr(name: string, fallback: string): string {
-  const v = process.env[name];
-  return v === undefined || v === "" ? fallback : v;
-}
-
-/**
- * Дефолтні моделі по (tier × endpoint). Premium reuse-ить наявні env.
- *
- * Chat-дефолти беруться з `defaultChatModel()` — того самого джерела, що й
- * zod-дефолти в `env/env.ts`. WHY не хардкод: під `CHAT_VIA_OPENROUTER=true`
- * чат ходить у шлюз і потребує OpenRouter-id (`z-ai/glm-5.2`,
- * `deepseek/deepseek-v4-flash`), під `false` — Claude-id, бо
- * прямий Anthropic на перші відповість 404. Розійдуться два списки —
- * тиринг почне мовчки слати модель не в той шлюз.
- */
-const PRO_TIER_MODEL: Record<ProTier, Record<ProEndpoint, () => string>> = {
-  premium: {
-    chat: () => envStr("CHAT_MODEL_SYNTHESIS", defaultChatModel("synthesis")),
-    coach: () => envStr("OPENROUTER_COACH_MODEL", "openai/gpt-5.1"),
-  },
-  standard: {
-    chat: () =>
-      envStr("AI_PRO_STANDARD_CHAT_MODEL", defaultChatModel("standard")),
-    coach: () =>
-      envStr("AI_PRO_STANDARD_COACH_MODEL", "google/gemini-2.5-flash-lite"),
-  },
-  floor: {
-    chat: () => envStr("AI_PRO_FLOOR_CHAT_MODEL", defaultChatModel("floor")),
-    coach: () =>
-      envStr("AI_PRO_FLOOR_COACH_MODEL", "google/gemini-2.5-flash-lite"),
-  },
-};
-
-function tierModel(tier: ProTier, endpoint: ProEndpoint): string {
-  return PRO_TIER_MODEL[tier][endpoint]();
-}
-
-function setTierHeader(res: Response, tier: ProTier): void {
-  try {
-    res.setHeader("X-AI-Tier", tier);
-  } catch {
-    /* ignore */
-  }
-}
 
 /**
  * `true` when the AI-quota subsystem is disabled wholesale (CI/test only).
@@ -641,9 +573,16 @@ export async function consumeToolQuota(
  * підставляє `model` у свій AI-виклик (chat → Anthropic stream, coach → factory).
  *
  * Каскад (лише для Pro-плану): premium-bucket (дорога модель) → standard-bucket
- * (дешевша) → floor (∞, майже-безкоштовна). Free/Anon/founder/disabled/flag-off
- * та будь-який fail-open шлях → `premium`-модель (поточна поведінка; Free вже
- * обмежений КІЛЬКІСТЮ через `assertAiQuota`, модель не деградує) — окрім
+ * (дешевша) → floor (∞, майже-безкоштовна).
+ *
+ * **Free та анон ідуть `standard`-моделлю** (`unpaid()`). До 2026-08-06 вони
+ * отримували `premium`, і це була інверсія: Pro після 20 викликів доби падає на
+ * standard, тобто неплатник мав кращу модель, ніж платник на 21-му
+ * повідомленні. Кількість Free так само капає `assertAiQuota` — змінилась лише
+ * модель. Kill-switch назад: `AI_FREE_ON_PREMIUM=true`.
+ *
+ * `founder`/`disabled`/`flag-off` та будь-який fail-open шлях → `premium`
+ * (краще зрідка переплатити, ніж заблокувати оплаченого юзера) — окрім
  * hard-breach деградації, яка накриває всіх, крім founder-а.
  *
  * Refund: інкрементиться рівно одне відро на запит (premium АБО standard), тож
@@ -668,6 +607,23 @@ export async function resolveProTier(
       model: tierModel("premium", endpoint),
       remaining,
       limit,
+    };
+  };
+
+  /**
+   * Неоплачений трафік (Free + анон). Не `premium()`: Free не деградує ніколи, а
+   * Pro після 20 викликів доби падає на standard — тобто неплатник мав кращу
+   * модель за платника. `remaining/limit` = `null`, бо Free капає КІЛЬКІСТЮ
+   * через `assertAiQuota`, і чужі лічильники в `X-AI-*` були б брехнею.
+   */
+  const unpaid = (): ProTierResult => {
+    if (freeOnPremiumEnabled()) return premium();
+    setTierHeader(res, "standard");
+    return {
+      tier: "standard",
+      model: tierModel("standard", endpoint),
+      remaining: null,
+      limit: null,
     };
   };
 
@@ -697,8 +653,8 @@ export async function resolveProTier(
     };
   }
 
-  // Anon (no session) — gated by count via assertAiQuota, not model-tiered.
-  if (!sessionUser) return premium();
+  // Anon (no session) — gated by count via assertAiQuota; модель — standard.
+  if (!sessionUser) return unpaid();
 
   let plan: "free" | "pro" = "free";
   try {
@@ -711,8 +667,8 @@ export async function resolveProTier(
     });
     return premium(); // monetization-safe: a transient blip gives Sonnet, never blocks
   }
-  // Only Pro is model-tiered. Free is count-capped by assertAiQuota.
-  if (plan !== "pro") return premium();
+  // Free: кількість капає `assertAiQuota`, модель — standard (див. `unpaid`).
+  if (plan !== "pro") return unpaid();
 
   // Fail-open: never block a paying user on infra trouble.
   if (!process.env["DATABASE_URL"]) return premium();

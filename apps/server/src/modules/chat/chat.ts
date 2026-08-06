@@ -364,9 +364,10 @@ export default async function handler(
     // Sonnet turn, so it carries the tier. `resolveProTier` returns the
     // Anthropic model for this Pro user's daily tier (premium Sonnet →
     // standard Haiku 4.5 → floor Haiku 3 — all Anthropic, so streaming +
-    // tool-use + prompt-cache keep working). Free/Anon/founder/flag-off get
-    // the premium model = `CHAT_MODEL_SYNTHESIS` (unchanged behaviour). The
-    // first-turn Haiku router below is intentionally left untiered.
+    // tool-use + prompt-cache keep working). Free та анон ідуть standard-ним
+    // тиром (2026-08-06: раніше — premium; це була інверсія проти Pro, який
+    // після 20 викликів доби падає на standard). founder/flag-off і fail-open
+    // шляхи лишаються на premium. The first-turn router below is untiered.
     const proTier = await resolveProTier(req, res, "chat");
     const payload = {
       model: proTier.model,

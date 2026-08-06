@@ -191,6 +191,15 @@ const envSchema = z.object({
 
   AI_TIERED_PRO_ENABLED: boolFromEnv(true),
 
+  /**
+   * Повернути Free/анона на premium-модель синтезу (стан до 2026-08-06).
+   *
+   * Default `false`: неоплачений трафік іде standard-тиром. Читає його
+   * `aiQuota.ts::freeOnPremiumEnabled()` напряму з `process.env` (як решта
+   * прапорців того модуля); тут — щоб змінна була видима в єдиному реєстрі env.
+   */
+  AI_FREE_ON_PREMIUM: boolFromEnv(false),
+
   AI_PRO_PREMIUM_DAILY_LIMIT: coerceInt.nonnegative().default(20),
 
   AI_PRO_STANDARD_DAILY_LIMIT: coerceInt.nonnegative().default(80),
