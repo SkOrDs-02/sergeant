@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { getSubscriptionAmountMeta } from "@sergeant/finyk-domain/domain/subscriptionUtils";
+import { detectRecurring } from "@sergeant/finyk-domain/lib/recurringDetect";
 import { SubCard } from "../components/SubCard";
 import { MonthOutflowComb } from "../components/MonthOutflowComb";
 import type { CombEntry } from "../lib/monthOutflowComb";
@@ -29,6 +30,15 @@ export function AssetsSubscriptionsSection({ state }: { state: State }) {
     subsMonthly,
   } = state;
   const toast = useToast();
+
+  // Дні регулярних надходжень. Той самий рушій, що ловить підписки, але
+  // з іншого боку потоку (`flow: "income"` — етап 2 гребеня). Окремий
+  // `useMemo`, бо залежить лише від транзакцій: перелік підписок на
+  // зарплату не впливає.
+  const incomeDays = useMemo(() => {
+    const candidates = detectRecurring([...transactions], { flow: "income" });
+    return [...new Set(candidates.map((c) => c.billingDay))];
+  }, [transactions]);
 
   // AI-CONTEXT: суми для гребеня беруться тим самим
   // `getSubscriptionAmountMeta`, що й у `SubCard`. Це не зручність, а
@@ -63,6 +73,7 @@ export function AssetsSubscriptionsSection({ state }: { state: State }) {
         entries={combEntries}
         daysInMonth={daysInMonth}
         today={todayDom}
+        incomeDays={incomeDays}
         showBalance={showBalance}
         className="mb-2"
       />

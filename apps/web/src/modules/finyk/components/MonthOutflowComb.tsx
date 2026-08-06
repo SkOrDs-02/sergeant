@@ -10,10 +10,14 @@
  * змінити день чи видалити — це все ще рядок. Інакше ми поміняли б одну
  * втрату інформації на іншу.
  *
- * Етап 1 із двох — лише відтік. Зарплатної риски тут немає і бути не
- * може: `recurringDetect.ts` робить `continue` на кожній транзакції з
- * `amount >= 0`, тобто рушій за побудовою шукає лише регулярні витрати.
- * Детекція регулярного доходу — окрема зміна в домені (етап 2).
+ * Показує обидва боки: висота стовпчика — сума списань дня, зелена
+ * мітка біля основи — день регулярного надходження. Дохід НЕ ділить
+ * шкалу з відтоком; чому саме — в AI-DANGER біля пропа `incomeDays`.
+ *
+ * Дохід став можливим у етапі 2: `recurringDetect` навчився шукати
+ * додатні повтори через опцію `flow: "income"`. До того фільтр
+ * `tx.amount >= 0` стояв просто в циклі групування, тож рушій відкидав
+ * надходження за побудовою.
  */
 import { memo, useMemo, type CSSProperties } from "react";
 import { pluralDays } from "@sergeant/shared";
@@ -34,6 +38,19 @@ export interface MonthOutflowCombProps {
   daysInMonth: number;
   /** Сьогоднішній день місяця (1-based) або `null`, якщо місяць не поточний. */
   today?: number | null;
+  /**
+   * Дні, коли приходять регулярні надходження (зарплата, оренда).
+   *
+   * AI-DANGER: дохід позначається МІТКОЮ біля основи, а не стовпчиком у
+   * спільній шкалі — і це не стилістика. Зарплата зазвичай на порядок
+   * більша за будь-яке окреме списання, тож у спільній шкалі вона стала
+   * б стелею, а весь відтік — смужкою в кілька пікселів біля нуля.
+   * Гребінь тоді перестав би показувати те, заради чого існує. Питання,
+   * на яке він відповідає, — «коли гроші приходять ВІДНОСНО того, коли
+   * йдуть», а це питання про дні, не про висоту. Точну суму доходу видно
+   * на Огляді. Не «покращуй» це, зробивши мітку пропорційною.
+   */
+  incomeDays?: readonly number[];
   /**
    * Коли баланс схований, гребеня немає зовсім. Висота стовпчика кодує
    * суму, тож показати «форму без чисел» не вийде — вона й є число.
@@ -72,6 +89,7 @@ const MonthOutflowCombImpl = function MonthOutflowComb({
   entries,
   daysInMonth,
   today = null,
+  incomeDays = [],
   showBalance = true,
   className,
 }: MonthOutflowCombProps) {
@@ -86,6 +104,7 @@ const MonthOutflowCombImpl = function MonthOutflowComb({
   if (!showBalance || comb.counted < MIN_ENTRIES || comb.max <= 0) return null;
 
   const { days, max, gap } = comb;
+  const incoming = new Set(incomeDays);
 
   return (
     <section
@@ -118,6 +137,7 @@ const MonthOutflowCombImpl = function MonthOutflowComb({
           const pct =
             d.total > 0 ? Math.max(MIN_BAR_PCT, (d.total / max) * 100) : 0;
           const isToday = today != null && d.day === today;
+          const isIncome = incoming.has(d.day);
           return (
             <div
               key={d.day}
@@ -132,6 +152,9 @@ const MonthOutflowCombImpl = function MonthOutflowComb({
                   className="rounded-t-[2px] bg-finyk min-h-[2px]"
                   style={{ height: `${pct}%` }}
                 />
+              )}
+              {isIncome && (
+                <div className="mt-px h-[3px] rounded-full bg-success-strong dark:bg-success" />
               )}
             </div>
           );
@@ -166,6 +189,11 @@ const MonthOutflowCombImpl = function MonthOutflowComb({
       <p className="sr-only">
         {peakDayLabel(days, max)}.
         {gap ? ` ${fillVars(copy.gapSpoken, gapVars(gap))}` : ""}
+        {incomeDays.length > 0
+          ? ` ${fillVars(copy.incomeSpoken, {
+              days: [...incomeDays].sort((a, b) => a - b).join(", "),
+            })}`
+          : ""}
       </p>
     </section>
   );

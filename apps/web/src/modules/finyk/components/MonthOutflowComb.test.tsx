@@ -116,6 +116,50 @@ describe("MonthOutflowComb", () => {
     ).toBeInTheDocument();
   });
 
+  it("marks income days without giving them a bar", () => {
+    const { container } = render(
+      <MonthOutflowComb
+        entries={enough}
+        daysInMonth={31}
+        incomeDays={[2, 17]}
+      />,
+    );
+    const grid = container.querySelector<HTMLElement>("[style*='--comb-days']");
+    const cols = Array.from(grid?.children ?? []);
+    // 2-ге і 17-те — мітки доходу, хоч списань там немає.
+    expect(cols[1]?.querySelector(".bg-success-strong")).not.toBeNull();
+    expect(cols[16]?.querySelector(".bg-success-strong")).not.toBeNull();
+    // 3-тє має стовпчик списання, але мітки доходу — ні.
+    expect(cols[2]?.querySelector(".bg-success-strong")).toBeNull();
+  });
+
+  // AI-CONTEXT: тест на те, що дохід НЕ ділить шкалу з відтоком.
+  // Зарплата на порядок більша за будь-яке списання; якби мітка стала
+  // пропорційним стовпчиком, вона б стала стелею, а весь відтік —
+  // смужкою біля нуля. Мітка має фіксовану висоту й не залежить від сум.
+  it("keeps the income marker out of the height scale", () => {
+    const { container } = render(
+      <MonthOutflowComb entries={enough} daysInMonth={31} incomeDays={[2]} />,
+    );
+    const marker = container.querySelector<HTMLElement>(".bg-success-strong");
+    expect(marker).not.toBeNull();
+    expect(marker?.style.height).toBe("");
+  });
+
+  it("announces income days to assistive tech", () => {
+    render(
+      <MonthOutflowComb
+        entries={enough}
+        daysInMonth={31}
+        incomeDays={[17, 2]}
+      />,
+    );
+    // Відсортовано за зростанням, незалежно від порядку на вході.
+    expect(
+      screen.getByText(/Регулярні надходження — 2, 17 числа/),
+    ).toBeInTheDocument();
+  });
+
   // Сітка навмисно `aria-hidden`: 31 фокусований стовпчик зробив би
   // обхід із клавіатури довшим за читання списку.
   it("keeps the bar grid out of the accessibility tree", () => {

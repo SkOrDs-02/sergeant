@@ -20,6 +20,87 @@ function tx(
 }
 
 describe("finyk/recurringDetect", () => {
+  // AI-CONTEXT: до 2026-08-06 рушій умів лише витрати — фільтр
+  // `tx.amount >= 0` стояв просто в циклі групування, тож дохід
+  // відкидався за побудовою. Ці тести тримають обидва боки і, головне,
+  // дефолт: жоден наявний виклик не мав змінити поведінки.
+  describe("flow", () => {
+    const salary = (id: string, time: number, amount = 4_500_00) =>
+      tx({ id, time, amount, description: "ТОВ РОБОТА зарплата", mcc: 0 });
+
+    const NOW = 1_760_000_000;
+
+    it("ignores income by default", () => {
+      const out = detectRecurring(
+        [
+          salary("s1", NOW - 62 * DAY),
+          salary("s2", NOW - 31 * DAY),
+          salary("s3", NOW - 1 * DAY),
+        ],
+        { nowSec: NOW },
+      );
+      expect(out).toHaveLength(0);
+    });
+
+    it("finds a monthly salary with flow: income", () => {
+      const out = detectRecurring(
+        [
+          salary("s1", NOW - 62 * DAY),
+          salary("s2", NOW - 31 * DAY),
+          salary("s3", NOW - 1 * DAY),
+        ],
+        { nowSec: NOW, flow: "income" },
+      );
+      expect(out).toHaveLength(1);
+      expect(out[0]?.cadence).toBe("monthly");
+      // Сума додатна, як і для витрат: рушій завжди рахує на Math.abs.
+      expect(out[0]?.avgAmount).toBe(4500);
+      expect(out[0]?.occurrences).toBe(3);
+    });
+
+    it("ignores expenses when asked for income", () => {
+      const out = detectRecurring(
+        [
+          tx({ id: "n1", time: NOW - 62 * DAY }),
+          tx({ id: "n2", time: NOW - 31 * DAY }),
+          tx({ id: "n3", time: NOW - 1 * DAY }),
+        ],
+        { nowSec: NOW, flow: "income" },
+      );
+      expect(out).toHaveLength(0);
+    });
+
+    it("separates the two sides of a mixed history", () => {
+      const mixed = [
+        salary("s1", NOW - 62 * DAY),
+        salary("s2", NOW - 31 * DAY),
+        salary("s3", NOW - 1 * DAY),
+        tx({ id: "n1", time: NOW - 60 * DAY }),
+        tx({ id: "n2", time: NOW - 30 * DAY }),
+        tx({ id: "n3", time: NOW - 2 * DAY }),
+      ];
+      const expenses = detectRecurring(mixed, { nowSec: NOW });
+      const income = detectRecurring(mixed, { nowSec: NOW, flow: "income" });
+      expect(expenses.map((c) => c.displayName)).toEqual(["Netflix"]);
+      expect(income).toHaveLength(1);
+      expect(income[0]?.displayName).toMatch(/робота/i);
+    });
+
+    // Нуль не належить жодному боку — інакше службова транзакція на 0
+    // потрапляла б і у витрати, і в дохід.
+    it("counts a zero amount as neither side", () => {
+      const zeros = [
+        tx({ id: "z1", time: NOW - 62 * DAY, amount: 0, description: "Тест" }),
+        tx({ id: "z2", time: NOW - 31 * DAY, amount: 0, description: "Тест" }),
+        tx({ id: "z3", time: NOW - 1 * DAY, amount: 0, description: "Тест" }),
+      ];
+      expect(detectRecurring(zeros, { nowSec: NOW })).toHaveLength(0);
+      expect(
+        detectRecurring(zeros, { nowSec: NOW, flow: "income" }),
+      ).toHaveLength(0);
+    });
+  });
+
   describe("normalizeMerchantKey", () => {
     it("lowercases, strips digits/punctuation, keeps up to 3 tokens", () => {
       expect(normalizeMerchantKey("Netflix.com *1234")).toBe("netflix com");
