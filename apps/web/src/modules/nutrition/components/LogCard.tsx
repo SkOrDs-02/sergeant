@@ -17,6 +17,7 @@ import {
 } from "@sergeant/nutrition-domain";
 import { isMealTypeId, mealTypeFromLabel } from "../lib/mealTypes";
 import { VirtualMealList } from "./VirtualMealList";
+import { DayStrip } from "./DayStrip";
 import { LogCardSearch } from "./LogCardSearch";
 import { LogCardWeeklyTable } from "./LogCardWeeklyTable";
 import { LogCardAnalytics } from "./LogCardAnalytics";
@@ -143,6 +144,20 @@ export function LogCard({
         <LogCardWeeklyTable log={log} selectedDate={selectedDate} />
 
         <LogCardAnalytics log={log} selectedDate={selectedDate} />
+
+        {/*
+          Смуга стоїть НАД журналом, а не замість нього (анти-слоп П1,
+          рішення власника 2026-08-06 на `signature-views.html`). Той самий
+          вибір, що гребінь над списком підписок: у смузі нема чого
+          натиснути — редагувати, видалити, змінити час можна лише в рядку.
+          Замінити список смугою означало б поміняти одну втрату
+          інформації на іншу.
+
+          Компонент сам вирішує, чи показуватись: нижче двох прийомів
+          повертає `null`. Порога тут навмисно немає — інакше правило
+          мовчання жило б у двох місцях.
+        */}
+        <DayStrip meals={meals} />
 
         {meals.length === 0 ? (
           <EmptyState
