@@ -81,6 +81,27 @@ describe("ExpensesCard", () => {
     expect(screen.getByText(/Минулий/i)).toBeInTheDocument();
   });
 
+  /**
+   * Сума набрана `Money`, а не рядком `toLocaleString() + " ₴"`. Перевіряємо
+   * саме тири: символ валюти має бути ОКРЕМИМ вузлом (П4), інакше цифра й
+   * символ знову зростаються в один рядок, як було до анти-слоп-проходу.
+   * `getAllByText(/₴/)` цього не ловить — він проходив і на сирому рядку.
+   */
+  it("renders the amount through Money, with the symbol as its own tier", () => {
+    localStorage.setItem("finyk_tx_cache", JSON.stringify(txCacheToday()));
+    const { container } = render(<ExpensesCard period="week" offset={0} />);
+
+    // −50 000 копійок у фікстурі → 500 ₴.
+    const money = screen.getAllByText(
+      (_, el) =>
+        el?.tagName === "SPAN" &&
+        el.className.includes("tabular-nums") &&
+        (el.textContent ?? "").replace(/[\s\u00a0\u202f]/g, " ") === "500 ₴",
+    )[0];
+    expect(money).toBeDefined();
+    expect(container.querySelector(".text-\\[0\\.72em\\]")).not.toBeNull();
+  });
+
   it("renders the no-data placeholder when the tx cache is empty", () => {
     render(<ExpensesCard period="week" offset={0} />);
     fireEvent.click(screen.getByRole("button", { name: /Фінік/i }));
