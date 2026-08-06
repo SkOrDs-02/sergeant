@@ -24,12 +24,15 @@ import { logger } from "@shared/lib";
 import { buildIdentifyTraits } from "../observability/identifyTraits";
 import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
 import { clearDemoFlag } from "../onboarding/onboardingGate";
+import { billingKeys } from "@shared/lib/api/queryKeys";
+import { reconcileChatOwnerOnAuthChange } from "../hub/hubChatSessions";
 import { flushPendingSyncOpsBeforeLogout } from "../syncEngine/flushBeforeLogout";
 import { messages } from "../../shared/i18n/uk";
 import {
   safeReadStringSS,
   safeWriteSS,
   safeRemoveSS,
+  safeRemoveLS,
 } from "@shared/lib/storage/storage";
 
 // WF-60 OAuth signup attribution — `signIn.social` full-page-redirects to the
@@ -226,7 +229,16 @@ interface AuthContextValue {
   login: (email: string, password: string) => Promise<boolean>;
   loginWithGoogle: () => Promise<boolean>;
   loginWithApple: () => Promise<boolean>;
-  register: (email: string, password: string, name: string) => Promise<boolean>;
+  /**
+   * `true` — акаунт створено; `"exists"` — email вже зареєстровано
+   * (форма перемикається на login синхронно, без читання `authError`,
+   * який на момент повернення ще stale); `false` — інша помилка.
+   */
+  register: (
+    email: string,
+    password: string,
+    name: string,
+  ) => Promise<boolean | "exists">;
   /**
    * Вихід із акаунта з повним локальним teardown (включно зі стиранням
    * локальної SQLite).
@@ -286,11 +298,41 @@ export function AuthProvider({ children }: AuthProviderProps) {
       ? "authenticated"
       : "unauthenticated";
 
+  // F12 privacy: історія HubChat лежить у плоских LS-ключах — при зміні
+  // identity на цьому пристрої (logout, інший акаунт, протухла сесія)
+  // її треба стерти, інакше наступний юзер читає чужі розмови. Ефект на
+  // resolved identity ловить і UI-logout, і cookie-switch після reload.
+  // Той самий сигнал чистить і quick-stats хаб-карток — вони теж плоскі
+  // й показували числа попереднього акаунта поряд із новим ім'ям
+  // (браузерна верифікація 2026-08-06/07); модуль перезапише їх при
+  // першому власному рендері.
+  useEffect(() => {
+    if (status === "loading") return;
+    const identityChanged = reconcileChatOwnerOnAuthChange(user?.id ?? null);
+    if (identityChanged) {
+      for (const key of [
+        "finyk_quick_stats",
+        "fizruk_quick_stats",
+        "routine_quick_stats",
+        "nutrition_quick_stats",
+      ]) {
+        safeRemoveLS(key);
+      }
+    }
+  }, [status, user?.id]);
+
   const [authError, setAuthError] = useState<string | null>(null);
 
   const invalidateMe = useCallback(
     () =>
-      queryClient.invalidateQueries({ queryKey: apiQueryKeys.me.current() }),
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: apiQueryKeys.me.current() }),
+        // Tier is user-scoped: without this a `billing/status` snapshot
+        // cached just before the session change (or its 401 collapsed to
+        // "free" — usePlan has retry:false + staleTime 60s) survives the
+        // login and shows a paying/trialing user the Free plan.
+        queryClient.invalidateQueries({ queryKey: billingKeys.status }),
+      ]),
     [queryClient],
   );
 
@@ -394,7 +436,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const result = await signUp.email({ email, password, name });
         if (result?.error) {
           setAuthError(translateAuthError(result.error, "Помилка реєстрації"));
-          return false;
+          const code = (result.error as { code?: string }).code;
+          return code === "USER_ALREADY_EXISTS" ||
+            code === "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL"
+            ? "exists"
+            : false;
         }
         // WF-60 growth funnel рахує цю подію як перехід
         // visit → signup. Fire-and-forget — `trackEvent` ловить власні

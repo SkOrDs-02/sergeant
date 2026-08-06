@@ -24,6 +24,19 @@ export async function maybeRunOnboarding(): Promise<void> {
   if (url.searchParams.get("demo") === "reset") {
     runDemoCleanupOnce();
   } else if (hasDemoParam) {
+    // F15 (браузерна верифікація 2026-08-06): `?demo=1` поверх активної
+    // сесії давав змішаний стан — демо-банер і часткові демо-дані поряд
+    // зі справжнім акаунтом. Сід — лише для гостя; для залогіненого
+    // прибираємо параметр і виходимо. Запит один і лише на цьому
+    // рідкісному шляху — швидкий не-демо cold-start його не бачить.
+    const session = await fetch("/api/auth/get-session")
+      .then((r) => (r.ok ? r.json() : null))
+      .catch(() => null);
+    if (session?.user) {
+      url.searchParams.delete("demo");
+      window.history.replaceState(null, "", url.toString());
+      return;
+    }
     runDemoSeedFromUrl();
   } else if (inDemo) {
     // Drift reset: already in demo mode, no explicit handshake in the

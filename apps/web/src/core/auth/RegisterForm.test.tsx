@@ -105,8 +105,10 @@ describe("RegisterForm", () => {
 
   it("calls onAlreadyRegistered when email is already registered", async () => {
     const onAlreadyRegistered = vi.fn();
-    registerMock.mockResolvedValue(false);
-    authErrorState = "Цей email вже зареєстровано";
+    // Контракт F4: `register` повертає "exists" синхронно — auto-switch
+    // більше не читає `authError` (stale на першому фейлі), тому
+    // передумови зі стейтом тут навмисно немає.
+    registerMock.mockResolvedValue("exists");
 
     render(<RegisterForm onAlreadyRegistered={onAlreadyRegistered} />);
 

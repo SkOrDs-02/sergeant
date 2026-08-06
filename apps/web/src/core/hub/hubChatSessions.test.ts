@@ -2,6 +2,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import {
   ACTIVE_SESSION_KEY,
+  CHAT_OWNER_KEY,
   SESSIONS_STORAGE_KEY,
   createSession,
   deleteSession,
@@ -10,6 +11,7 @@ import {
   findSession,
   loadActiveSessionId,
   loadSessions,
+  reconcileChatOwnerOnAuthChange,
   saveActiveSessionId,
   saveSessions,
   upsertSession,
@@ -51,6 +53,40 @@ describe("hubChatSessions", () => {
     });
 
     it("returns empty array when there is nothing to migrate", () => {
+      expect(loadSessions()).toEqual([]);
+    });
+  });
+
+  describe("reconcileChatOwnerOnAuthChange (F12 privacy)", () => {
+    it("first stamp keeps existing sessions (anonymous → first sign-in)", () => {
+      saveSessions([createSession([makeUserMsg("Анонімний чернетковий чат")])]);
+      expect(reconcileChatOwnerOnAuthChange("user-A")).toBe(false);
+      expect(loadSessions()).toHaveLength(1);
+      expect(localStorage.getItem(CHAT_OWNER_KEY)).toContain("user-A");
+    });
+
+    it("wipes sessions when a different account signs in on the device", () => {
+      reconcileChatOwnerOnAuthChange("user-A");
+      saveSessions([createSession([makeUserMsg("Скільки я витратив?")])]);
+      saveActiveSessionId("some-id");
+
+      expect(reconcileChatOwnerOnAuthChange("user-B")).toBe(true);
+
+      expect(loadSessions()).toEqual([]);
+      expect(loadActiveSessionId()).toBeNull();
+      expect(localStorage.getItem("hub_chat_history")).toBeNull();
+      expect(localStorage.getItem(CHAT_OWNER_KEY)).toContain("user-B");
+    });
+
+    it("wipes sessions on logout (user → anonymous) and is idempotent", () => {
+      reconcileChatOwnerOnAuthChange("user-A");
+      saveSessions([createSession([makeUserMsg("Приватне питання")])]);
+
+      expect(reconcileChatOwnerOnAuthChange(null)).toBe(true);
+      expect(loadSessions()).toEqual([]);
+
+      // Repeat with the same identity — no wipe reported, still empty.
+      expect(reconcileChatOwnerOnAuthChange(null)).toBe(false);
       expect(loadSessions()).toEqual([]);
     });
   });

@@ -370,6 +370,14 @@ export default defineConfig(({ mode }) => {
       port: 3000,
       strictPort: true,
       allowedHosts: true,
+      // Паритет із `preview.headers` (браузерна верифікація 2026-08-06):
+      // без COOP/COEP dev-сервер щодня працює на kvvfs-fallback замість
+      // OPFS — інша персистентність, ніж прод/preview, і клас «фантомних»
+      // dev-багів навколо SQLite-стану.
+      headers: {
+        "Cross-Origin-Opener-Policy": "same-origin",
+        "Cross-Origin-Embedder-Policy": "require-corp",
+      },
       proxy: {
         "/api": {
           target: apiProxyTarget,

@@ -10,6 +10,13 @@ import { normalizeStoredMessages, type ChatMessage } from "../lib/hubChatUtils";
 export const SESSIONS_STORAGE_KEY = "hub_chat_sessions_v1";
 export const ACTIVE_SESSION_KEY = "hub_chat_active_session_v1";
 const LEGACY_KEY = "hub_chat_history";
+/**
+ * Privacy F12 (браузерна верифікація 2026-08-06): чат-ключі плоскі —
+ * без цього стампа історія розмов попереднього акаунта (фінанси,
+ * здоров'я) читалась наступним залогіненим юзером на тому ж пристрої.
+ */
+export const CHAT_OWNER_KEY = "hub_chat_owner_v1";
+const ANON_OWNER = "__anon__";
 const SESSION_LIMIT = 20;
 const MESSAGES_PER_SESSION = 60;
 
@@ -136,6 +143,37 @@ export function saveSessions(sessions: HubChatSession[]): void {
   }
 }
 
+/**
+ * Wipe chat history when the device identity changes (F12 privacy).
+ *
+ * Called from `AuthProvider` whenever the resolved auth identity settles
+ * (`userId` — Better Auth id, `null` — signed-out/anonymous). Semantics:
+ *
+ *  - first ever call (no stored owner) → stamp only, keep sessions: an
+ *    anonymous visitor who signs up keeps their draft conversation (same
+ *    continuity contract as the anonymous-data migration);
+ *  - stored owner differs from the new identity → wipe sessions + active
+ *    id + the legacy mirror, then stamp. Covers logout (user → anon) and
+ *    a different account signing in on the shared device.
+ *
+ * @returns `true` when a previous different owner's chat state was wiped
+ *   — the caller uses this as the "identity actually changed on this
+ *   device" signal to clear other non-user-scoped residue (quick-stats).
+ */
+export function reconcileChatOwnerOnAuthChange(userId: string | null): boolean {
+  const nextOwner = userId ?? ANON_OWNER;
+  const prevOwner = safeReadStringLS(CHAT_OWNER_KEY);
+  if (prevOwner === nextOwner) return false;
+  const wiped = prevOwner !== null;
+  if (wiped) {
+    safeRemoveLS(SESSIONS_STORAGE_KEY);
+    safeRemoveLS(ACTIVE_SESSION_KEY);
+    safeRemoveLS(LEGACY_KEY);
+  }
+  safeWriteLS(CHAT_OWNER_KEY, nextOwner);
+  return wiped;
+}
+
 export function loadActiveSessionId(): string | null {
   return safeReadStringLS(ACTIVE_SESSION_KEY);
 }
@@ -184,8 +222,9 @@ export function ensureActiveSession(
 ): { sessions: HubChatSession[]; activeId: string } {
   const found = findSession(sessions, activeId);
   if (found) return { sessions, activeId: found.id };
-  if (sessions.length > 0) {
-    return { sessions, activeId: sessions[0]!.id };
+  const first = sessions[0];
+  if (first) {
+    return { sessions, activeId: first.id };
   }
   const fresh = createSession();
   return { sessions: [fresh], activeId: fresh.id };
