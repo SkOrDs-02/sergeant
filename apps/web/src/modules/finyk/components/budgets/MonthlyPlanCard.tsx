@@ -127,15 +127,12 @@ function MonthlyPlanCardComponent({
           {hasPlan && !open && (
             <span
               className={cn(
-                // AI-DANGER: `text-xs` тут лишається навмисно. Роль
-                // `text-style-caption` явно задає `font-weight: 400`, а
-                // гілка `isOver` вмикає `font-semibold` — два правила ваги
-                // на ОДНОМУ вузлі, обидва в шарі utilities
-                // (`addUtilities` у `tailwind-preset.js`), тож переможець
-                // залежить від порядку в зібраному CSS. Перевитрата має
-                // лишатись важчою за норму: це єдине число, яке видно на
-                // згорнутій картці.
-                "text-xs tabular-nums",
+                // Роль + `font-semibold` на одному вузлі — це безпечно:
+                // вага виграє в каскаді (замір і межі застосовності — у
+                // `tailwind-preset.js`, блок «Роль + font-* на ОДНОМУ
+                // вузлі»). Перевитрата лишається важчою за норму, як і
+                // задумано: це єдине число, видне на згорнутій картці.
+                "text-style-caption tabular-nums",
                 isOver
                   ? "text-danger-strong dark:text-danger font-semibold"
                   : "text-muted",

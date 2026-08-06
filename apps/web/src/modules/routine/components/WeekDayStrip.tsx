@@ -65,7 +65,12 @@ export function WeekDayStrip({
                 aria-pressed={isSel}
                 onClick={() => onSelectDay(k)}
                 className={cn(
-                  "focus-ring flex min-h-[44px] min-w-[44px] flex-1 shrink-0 flex-col items-center justify-center rounded-xl border py-1 text-style-caption font-semibold sm:text-xs",
+                  // Розміру шрифта на кнопці НЕМАЄ навмисно: обидва вкладені
+                  // span-и задають свій (`text-style-caption` і `text-sm`),
+                  // тож роль на батьку не діяла ні на що — крім того, що
+                  // вступала в конфлікт ваги з `font-semibold` тут-таки.
+                  // `sm:text-xs` було мертвим кодом: 12px == 12px.
+                  "focus-ring flex min-h-[44px] min-w-[44px] flex-1 shrink-0 flex-col items-center justify-center rounded-xl border py-1 font-semibold",
                   isSel
                     ? "border-routine-ring dark:border-routine-border-dark/40 bg-routine-surface2 dark:bg-routine-surface-dark/15 text-text shadow-sm ring-1 ring-routine-line/50 dark:ring-routine-border-dark/30"
                     : "border-transparent bg-panelHi/50 text-muted hover:bg-panelHi hover:text-text",
