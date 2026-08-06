@@ -146,7 +146,21 @@ describe("MonthlyPlanCard", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /Фінплан на місяць/ }));
     expect(screen.getByText("План")).toBeInTheDocument();
-    expect(screen.getByText(/500 ₴\/день · 12 дн\./)).toBeInTheDocument();
+    // `Money` розкладає суму на тири (знак / гривні / копійки / символ),
+    // тож текст розбитий між вузлами і рядковий матчер його не бачить.
+    // Звіряємо `textContent` контейнера — так само, як `TxRow.coverage`.
+    //
+    // AI-DANGER: пробіли тут НЕ звичайні. `\u00a0` — розрядний роздільник
+    // від `toLocaleString("uk-UA")`, `\u202f` — вузький нерозривний перед
+    // символом валюти (константа `NARROW_NBSP` у `Money`). Написати тут
+    // звичайний пробіл — і тест не знайде нічого, хоча на екрані все
+    // правильно. Escape-послідовності лишені навмисно видимими.
+    expect(
+      screen.getByText(
+        (_, el) => el?.textContent === "500\u202f\u20b4/день · 12 дн.",
+        { selector: "span" },
+      ),
+    ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Редагувати" }));
 
@@ -195,7 +209,14 @@ describe("MonthlyPlanCard", () => {
     });
 
     expect(screen.getByText(/Орієнтовний фінплан/)).toBeInTheDocument();
-    expect(screen.getAllByText(/−1 500 ₴/).length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText(
+        // Ті самі нерозривні пробіли, що й вище: U+2212 як мінус,
+        // U+00A0 у розрядах, U+202F перед ₴.
+        (_, el) => el?.textContent === "\u22121\u00a0500\u202f\u20b4",
+        { selector: "span" },
+      ).length,
+    ).toBeGreaterThan(0);
     expect(
       screen.getByRole("button", { name: "Згорнути" }),
     ).toBeInTheDocument();
