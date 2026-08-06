@@ -60,15 +60,11 @@ export const Optional: Story = {
   ),
 };
 
-/** Normal-case label — без uppercase-eyebrow стилю (для довгих лейблів). */
-export const NormalCaseLabel: Story = {
+/** Капс-брова — рідкісний випадок: службова позначка, а не питання. */
+export const CapsLabel: Story = {
   render: (args) => (
-    <FormField
-      {...args}
-      label="Як ти хочеш назвати цю транзакцію?"
-      normalCaseLabel
-    >
-      <Input placeholder="Назва" />
+    <FormField {...args} label="Валюта" capsLabel>
+      <Input placeholder="UAH" />
     </FormField>
   ),
 };

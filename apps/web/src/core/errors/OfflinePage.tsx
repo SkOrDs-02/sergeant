@@ -39,6 +39,7 @@ export function OfflinePage() {
         size="lg"
         variant="warning"
         eyebrow="Офлайн"
+        surface="document"
         illustration={<OfflineIllustration size={200} />}
         title="Немає зʼєднання"
         description={

@@ -339,6 +339,7 @@ export function HubReports() {
         <div className="bg-panel border border-line rounded-2xl">
           <EmptyState
             size="sm"
+            surface="document"
             illustration={<EmptyListIllustration size={112} />}
             title="Ще збираємо твої дані"
             description="Додай записи в модулях — і тут з'являться інсайти за твій період."

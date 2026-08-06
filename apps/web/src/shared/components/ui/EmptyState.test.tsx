@@ -217,3 +217,40 @@ describe("ModuleEmptyState — dismiss button a11y", () => {
     ).toBeInTheDocument();
   });
 });
+
+describe("EmptyState — власна поверхня «край і зріз» (П3)", () => {
+  it("за замовчуванням лишається голою колонкою", () => {
+    const { container } = render(<EmptyState title="Порожньо" />);
+    expect(container.querySelector(".edge-stub")).toBeNull();
+    expect(container.querySelector(".edge-lift")).toBeNull();
+  });
+
+  /**
+   * AI-DANGER: маска `edge-stub` зрізає тінь на своєму вузлі — і
+   * `box-shadow`, і `filter: drop-shadow()` однаково (заміряно в headless
+   * Chromium). Підйом мусить бути на батьківському вузлі, інакше поверхня
+   * МОВЧКИ втрачає глибину: нічого не падає, просто тіні немає.
+   */
+  it("документ несе підйом зовні, а маску всередині", () => {
+    const { container } = render(
+      <EmptyState title="Порожньо" surface="document" />,
+    );
+    const lift = container.firstElementChild!;
+    expect(lift.className).toContain("edge-lift");
+    expect(lift.className).not.toContain("edge-stub");
+    expect(lift.querySelector(".edge-stub")).not.toBeNull();
+  });
+
+  /**
+   * Рішення власника 2026-08-06: матеріал НЕ йде всередину. Край описує,
+   * чим є поверхня; кнопка на ній — це дія. Квадратна кнопка тут
+   * зобов'язала б поміняти всі кнопки продукту.
+   */
+  it("матеріал не йде всередину — коробка іконки лишається скругленою", () => {
+    const { container } = render(
+      <EmptyState title="Порожньо" surface="document" icon={<span>₴</span>} />,
+    );
+    const iconBox = container.querySelector(".rounded-2xl");
+    expect(iconBox).not.toBeNull();
+  });
+});

@@ -6,17 +6,23 @@ import { FormField, Label } from "./FormField";
 afterEach(cleanup);
 
 describe("Label", () => {
-  it("renders the uppercase eyebrow by default", () => {
+  /**
+   * Дефолт перевернуто 2026-08-06 (рішення власника): підпис поля — це
+   * питання до людини, а не службовий напис на приладі. Капс лишився
+   * опцією `caps` для рідкісних випадків.
+   */
+  it("renders normal-case by default", () => {
     render(<Label>Сума</Label>);
     const label = screen.getByText("Сума");
-    expect(label.className).toContain("uppercase");
-  });
-
-  it("normalCase switches to the label style", () => {
-    render(<Label normalCase>Назва</Label>);
-    const label = screen.getByText("Назва");
     expect(label.className).toContain("text-style-label");
     expect(label.className).not.toContain("uppercase");
+  });
+
+  it("caps switches to the uppercase eyebrow", () => {
+    render(<Label caps>Назва</Label>);
+    const label = screen.getByText("Назва");
+    expect(label.className).toContain("uppercase");
+    expect(label.className).not.toContain("text-style-label");
   });
 
   it("optional appends the · необов'язково suffix", () => {

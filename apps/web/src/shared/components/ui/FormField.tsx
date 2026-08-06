@@ -28,26 +28,32 @@ import { cn } from "../../lib/ui/cn";
 
 export interface LabelProps extends LabelHTMLAttributes<HTMLLabelElement> {
   /**
-   * Disable the uppercase eyebrow look.
+   * Намалювати мітку ВЕЛИКИМИ ЛІТЕРАМИ — «бровою», як службовий напис.
    *
-   * AI-DANGER: капс тут НЕ прибрано разом із рештою (правило 4 типографіки
-   * тексту, 2026-08-06) — і це усвідомлена пауза, а не недогляд. Мітка
-   * поля — інший елемент, ніж кікер: вона прив'язана `htmlFor`/`id` до
-   * інпута, стоїть у формі, і той самий вибір уже задокументовано в
-   * `modules/fizruk/pages/Measurements.tsx`. Головне ж — знявши капс тут,
-   * доведеться відповісти, що взагалі означає цей проп: він стане
-   * перемикачем між двома майже однаковими станами. Тобто це не заміна
-   * класів, а рішення про API. Заведено окремим пунктом у
-   * `docs/90-work/tech-debt/frontend.md`.
+   * За замовчуванням вимкнено (рішення власника 2026-08-06 на
+   * `mockups/product/pending-decisions.html`). Раніше було навпаки, і
+   * проп звався `normalCase` — тобто дефолтом був капс, а викликач мусив
+   * від нього відмовлятись.
+   *
+   * AI-CONTEXT: перевертання дефолту вирішило й питання, через яке ця
+   * правка стояла на паузі — що взагалі означає цей проп. Поки капс був
+   * дефолтом, `normalCase` був перемикачем між двома майже однаковими
+   * станами й не називав жодного наміру. `caps` називає: «це не питання
+   * до людини, а позначка на приладі». Такий намір рідкісний, тому й
+   * опція, а не дефолт.
+   *
+   * Замір, що вирішив: підписів у продукті було 36, і 7 із них уже
+   * примусово вимикали капс. Коли пʼята частина коду бореться з
+   * налаштуванням, воно не дефолт.
    */
-  normalCase?: boolean;
+  caps?: boolean;
   /** Show a `· необов'язково` suffix for optional fields. */
   optional?: boolean;
 }
 
 export function Label({
   className,
-  normalCase = false,
+  caps = false,
   optional = false,
   children,
   ...props
@@ -55,9 +61,9 @@ export function Label({
   return (
     <label
       className={cn(
-        normalCase
-          ? "text-style-label block text-text mb-1"
-          : "block text-style-caption text-muted uppercase tracking-wide font-semibold mb-1",
+        caps
+          ? "block text-style-caption text-muted uppercase tracking-wide font-semibold mb-1"
+          : "text-style-label block text-text mb-1",
         className,
       )}
       {...props}
@@ -83,8 +89,8 @@ export interface FormFieldProps {
   error?: ReactNode;
   /** Mark label as optional. */
   optional?: boolean;
-  /** Use `normal-case` label styling instead of the uppercase eyebrow. */
-  normalCaseLabel?: boolean;
+  /** Намалювати мітку капсом-бровою. За замовчуванням — звичайний регістр. */
+  capsLabel?: boolean;
   className?: string;
   children: ReactNode;
 }
@@ -95,7 +101,7 @@ export function FormField({
   helperText,
   error,
   optional = false,
-  normalCaseLabel = false,
+  capsLabel = false,
   className,
   children,
 }: FormFieldProps) {
@@ -131,7 +137,7 @@ export function FormField({
         <Label
           htmlFor={controlId}
           optional={optional}
-          normalCase={normalCaseLabel}
+          caps={capsLabel}
           className="mb-0"
         >
           {label}
