@@ -54,21 +54,17 @@ interface ComparisonRowProps {
   kind?: "expense" | "income";
 }
 
-export interface AnalyticsMonoAdapter {
-  realTx?: Transaction[];
-  loadingTx?: boolean;
-  fetchMonth: (year: number, month0Based: number) => Promise<Transaction[]>;
-}
-
-export interface AnalyticsStorageAdapter {
-  excludedTxIds: Set<string> | Iterable<string>;
-  txSplits: TxSplitsMap;
-  manualExpenses?: ManualExpense[];
-}
-
-interface AnalyticsProps {
-  mono: AnalyticsMonoAdapter;
-  storage: AnalyticsStorageAdapter;
+export interface AnalyticsProps {
+  mono: {
+    realTx?: Transaction[];
+    loadingTx?: boolean;
+    fetchMonth: (year: number, month0Based: number) => Promise<Transaction[]>;
+  };
+  storage: {
+    excludedTxIds: Set<string> | Iterable<string>;
+    txSplits: TxSplitsMap;
+    manualExpenses?: ManualExpense[];
+  };
 }
 
 // Презентаційний контейнер-секція. memo, бо приймає лише `title/className/children`

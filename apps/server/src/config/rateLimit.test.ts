@@ -1,77 +1,40 @@
 import { describe, expect, it } from "vitest";
 import {
-  RATE_LIMIT_POLICIES,
-  getRateLimitPolicy,
-  policyOptions,
+  AUTH_ACCOUNT_RATE_LIMIT,
+  AUTH_SENSITIVE_RATE_LIMIT,
 } from "./rateLimit.js";
 
 /**
- * Юніт-тести реєстру policy. Перевіряємо тільки інваріанти реєстру
- * (типи, стабільність ключів, override-семантика). Bucket-логіка
- * лежить у `apps/server/src/http/rateLimit.test.ts`.
+ * Юніт-тести auth rate-limit option-об'єктів. Bucket-логіка лежить у
+ * `apps/server/src/http/rateLimit.test.ts`.
  */
 
-describe("RATE_LIMIT_POLICIES — registry invariants", () => {
-  it("кожна policy має description (не пуста рядок)", () => {
-    for (const [name, policy] of Object.entries(RATE_LIMIT_POLICIES)) {
-      expect(policy.description, `policy ${name} description`).toBeTruthy();
-      expect(policy.description.trim().length).toBeGreaterThan(10);
-    }
+describe("AUTH_SENSITIVE_RATE_LIMIT", () => {
+  it("вшиває стабільний key-лейбл для rate_limit_hits_total", () => {
+    expect(AUTH_SENSITIVE_RATE_LIMIT.key).toBe("api:auth:sensitive");
   });
 
-  it("кожна policy має валідні limit/windowMs", () => {
-    for (const [name, policy] of Object.entries(RATE_LIMIT_POLICIES)) {
-      expect(policy.limit, `policy ${name} limit`).toBeGreaterThan(0);
-      expect(policy.windowMs, `policy ${name} windowMs`).toBeGreaterThan(0);
-      expect(Number.isInteger(policy.limit)).toBe(true);
-      expect(Number.isInteger(policy.windowMs)).toBe(true);
-    }
+  it("має валідні limit/windowMs — PR-48 round-2 (OWASP ASVS V11.1.3)", () => {
+    expect(AUTH_SENSITIVE_RATE_LIMIT.limit).toBe(5);
+    expect(AUTH_SENSITIVE_RATE_LIMIT.windowMs).toBe(60_000);
   });
 
-  it("auth-related policy явно стоїть у fail-closed (security-sensitive)", () => {
-    // Якщо хтось випадково перемикне `auth:sensitive` на open-mode,
-    // тест ловить це до merge-у. Ціль — гарантія, що credential-flow
-    // не амплифікується N×limit при degraded limiter.
-    const p = RATE_LIMIT_POLICIES["api:auth:sensitive"];
-    expect(p.failMode).toBe("closed");
+  it("стоїть у fail-closed (security-sensitive credential flow)", () => {
+    expect(AUTH_SENSITIVE_RATE_LIMIT.failMode).toBe("closed");
   });
 });
 
-describe("getRateLimitPolicy", () => {
-  it("повертає policy за валідним іменем", () => {
-    const p = getRateLimitPolicy("api:auth:sensitive");
-    // PR-48 round-2: default tightened 20/60s → 5/60s (OWASP ASVS V11.1.3),
-    // env-tunable через `AUTH_RATE_LIMIT_MAX` + `AUTH_RATE_LIMIT_WINDOW_SEC`.
-    expect(p.limit).toBe(5);
-    expect(p.windowMs).toBe(60_000);
-  });
-});
-
-describe("policyOptions", () => {
-  it("вшиває name у `key` лейбл — детермінована метрика", () => {
-    const opts = policyOptions("api:auth:sensitive");
-    expect(opts.key).toBe("api:auth:sensitive");
+describe("AUTH_ACCOUNT_RATE_LIMIT", () => {
+  it("вшиває стабільний key-лейбл для rate_limit_hits_total", () => {
+    expect(AUTH_ACCOUNT_RATE_LIMIT.key).toBe("api:auth:account");
   });
 
-  it("успадковує limit/windowMs/failMode з реєстру", () => {
-    const opts = policyOptions("api:auth:sensitive");
-    expect(opts.limit).toBe(5);
-    expect(opts.windowMs).toBe(60_000);
-    expect(opts.failMode).toBe("closed");
+  it("має валідні limit/windowMs — softer than the IP bucket (10/15min)", () => {
+    expect(AUTH_ACCOUNT_RATE_LIMIT.limit).toBe(10);
+    expect(AUTH_ACCOUNT_RATE_LIMIT.windowMs).toBe(900_000);
   });
 
-  it("override стирає тільки точно вказані поля", () => {
-    const opts = policyOptions("api:auth:sensitive", { failMode: "open" });
-    expect(opts.failMode).toBe("open");
-    // limit/windowMs мають лишитися від реєстру.
-    expect(opts.limit).toBe(5);
-    expect(opts.windowMs).toBe(60_000);
-  });
-
-  it("override з cost-функцією додається до результату", () => {
-    const cost = (): number => 5;
-    const opts = policyOptions("api:auth:sensitive", { cost });
-    expect(opts.cost).toBe(cost);
-    expect(opts.failMode).toBe("closed");
+  it("стоїть у fail-closed", () => {
+    expect(AUTH_ACCOUNT_RATE_LIMIT.failMode).toBe("closed");
   });
 });

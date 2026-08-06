@@ -35,8 +35,7 @@ import {
   runtimeKillSwitchActivationsTotal,
 } from "../../obs/metrics.js";
 
-export type KillSwitchName =
-  "mono_ai_memory_ingest" | "rag_retrieval" | "rag_eval_weekly";
+export type KillSwitchName = "mono_ai_memory_ingest";
 
 interface KillSwitchState {
   active: boolean;

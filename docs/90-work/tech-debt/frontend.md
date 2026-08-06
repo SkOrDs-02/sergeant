@@ -47,8 +47,9 @@
 > 9. **Сира типографіка ratchet.** 389 text-xs + 108 text-sm проти 1316
 >    text-style-* — правило «торкнувся файлу — мігруй», старт із 3
 >    nutrition-файлів (41 сайт).
-> 10. **Дрібне.** `no-legacy-telegram-parse-mode` — dead-weight правило
->     плагіна; storybook.md VRT-згадки ADR-0034 (пост-0082 stale); native
+> 10. **Дрібне.** ~~`no-legacy-telegram-parse-mode` — dead-weight правило
+>     плагіна~~ (видалено 2026-08-06 разом із `sri-on-third-party-script`,
+>     обидва enabled ніде); storybook.md VRT-згадки ADR-0034 (пост-0082 stale); native
 >     `title=` ×24 на interactive елементах (інертні на touch); finyk
 >     `--c-finyk-accent`-старт hero тепер на tier-800 — звірити з
 >     «start stop matches accent» коментарем при наступному ретюні.
@@ -306,7 +307,7 @@ UPDATE` у `kv_store`; cross-tab `onChange` через `BroadcastChannel("kv-sto
 
 **Як ловити нові випадки в CI:**
 
-- Bundle-size gate `scripts/check-bundle-size.mjs` тримає main chunk ≤820 KB — не ловить mount cost. Треба додати окремий PostHog event `hub_tab_switch_perf` як RUM-metric (заплановано у Sprint 0).
+- Bundle-size gates (`size-limit` + `check-eager-bundle.mjs`; легасі-скрипт `check-bundle-size.mjs` видалено 2026-08-06 — 0 каллерів) тримають розмір, але не ловлять mount cost. Треба додати окремий PostHog event `hub_tab_switch_perf` як RUM-metric (заплановано у Sprint 0).
 - Lighthouse CI на `/?tab=settings` route — `Total Blocking Time` поріг ≤300 ms (наразі ~7000 ms estimate).
 
 **Guardrail:**

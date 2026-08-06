@@ -1,152 +1,57 @@
 /**
- * Centralized rate-limit policies.
+ * Rate-limit option objects for the two auth-sensitive buckets, consumed
+ * directly by `apps/server/src/http/authMiddleware.ts`.
  *
- * Initiative: docs/initiatives/archive/_0008-platform-hardening.md § Phase 2.
+ * These used to live behind a named-policy registry (interface + accessor
+ * functions) sized for a broader rollout across routes
+ * (docs/initiatives/archive/_0008-platform-hardening.md § Phase 2) that
+ * never went beyond these two policies — so the indirection collapsed to
+ * plain exported consts.
  *
- * Why a registry:
- *   До цього кожен роут передавав літерали `{ key, limit, windowMs }` у
- *   `rateLimitExpress(...)` inline (див. `apps/server/src/routes/*.ts`).
- *   Це працювало, але:
- *     - конфіг розпорошений по 20+ файлах — порівняти ліміти між роутами
- *       без `grep` неможливо;
- *     - однакові «security-sensitive» ліміти доводиться руками синхронізувати
- *       (auth-flow, webhook-flow);
- *     - тестам важко перевіряти «чи всі чутливі endpoint-и обмежені» без
- *       снапшоту усіх викликів.
- *   Реєстр це виправляє: всі policy визначені тут, а роути беруть їх через
- *   `policy("…")`.
- *
- * Migration plan:
- *   - Phase 2a (цей PR): реєстр + RFC `RateLimit-*` headers + перенесення
- *     `auth:sensitive` policy. Решта роутів і далі працюють через literals
- *     — поведінка біт-у-біт ідентична.
- *   - Phase 2b (наступний PR): мігрувати окремі роути (chat, AI memory,
- *     barcode, web-vitals) на `policy()` без зміни лімітів.
- *   - Phase 2c: enforce ESLint rule that forbids inline literals in
- *     `rateLimitExpress({ key, limit, windowMs })` поза `config/rateLimit.ts`.
- *
- * Як читати таблицю нижче:
- *   - `name` — стабільний логічний ідентифікатор (попадає у `key` лейбл
- *     метрики `rate_limit_hits_total`).
- *   - `limit / windowMs` — токен-bucket межа (тих самих семантики, що й у
- *     `rateLimitExpress`).
- *   - `failMode` — `"open"` (default) або `"closed"`. Для credential-flow
- *     поставлений `"closed"`, щоб уникнути N×limit-амплификації при
- *     Redis+Postgres-degraded mode.
- *   - `description` — однорядковий коментар, чому саме такі цифри.
+ * **Чому `key` з `api:` префіксом:** він потрапляє у `key` лейбл метрики
+ * `rate_limit_hits_total` і використовується у:
+ *   - `docs/observability/dashboards/auth.json` (Grafana panel),
+ *   - `docs/observability/prometheus/alert_rules.yml` (brute-force alert),
+ *   - `docs/observability/runbook.md` (incident-response).
+ * Перейменування `key` зламає ці alerts/dashboards.
  */
 
 import { env } from "../env.js";
 import type { RateLimitOptions } from "../http/rateLimit.js";
 
 /**
- * Policy — те саме що `RateLimitOptions`, але без `cost`-функції (її можна
- * навісити інлайн при споживанні, бо `cost(req)` залежить від payload-у).
- * `description` — обов'язкове, щоб реєстр сам собою документував рішення.
+ * Better-Auth sensitive POST: sign-in / sign-up / forget-password /
+ * reset-password. Default 5 спроб / 60s / IP, fail-closed — узгоджено з
+ * OWASP ASVS V11.1.3 для credential flow. Конкретні числа беруться з env
+ * (`AUTH_RATE_LIMIT_MAX` / `AUTH_RATE_LIMIT_WINDOW_SEC`), щоб ops міг
+ * дополнити ліміт без redeploy-у. Аудит: PR-48 round-2,
+ * `docs/security/better-auth-audit-2026-05.md`.
  */
-export interface RateLimitPolicy extends Omit<
-  RateLimitOptions,
-  "cost" | "key"
-> {
-  description: string;
-}
+export const AUTH_SENSITIVE_RATE_LIMIT: RateLimitOptions = {
+  key: "api:auth:sensitive",
+  limit: env.AUTH_RATE_LIMIT_MAX,
+  windowMs: env.AUTH_RATE_LIMIT_WINDOW_SEC * 1000,
+  failMode: "closed",
+};
 
 /**
- * Вузький білий список іменних policy. Додавати нові — через окремий PR
- * з review-justification у `description`. `satisfies` фіксує форму запису
- * і ловить друкарські помилки на типчекеру; самі `limit`/`windowMs` можуть
- * бути не літерали (тягнуться з env), тож без `as const`.
- */
-export const RATE_LIMIT_POLICIES = {
-  /**
-   * Better-Auth sensitive POST: sign-in / sign-up / forget-password /
-   * reset-password. Default 5 спроб / 60s / IP, fail-closed — узгоджено з
-   * OWASP ASVS V11.1.3 для credential flow. Конкретні числа беруться з env
-   * (`AUTH_RATE_LIMIT_MAX` / `AUTH_RATE_LIMIT_WINDOW_SEC`), щоб ops міг
-   * дополнити ліміт без redeploy-у. Аудит: PR-48 round-2,
-   * `docs/security/better-auth-audit-2026-05.md`.
-   *
-   * **Чому ім'я з `api:` префіксом:** воно потрапляє у `key` лейбл метрики
-   * `rate_limit_hits_total` і використовується у:
-   *   - `docs/observability/dashboards/auth.json` (Grafana panel),
-   *   - `docs/observability/prometheus/alert_rules.yml` (brute-force alert),
-   *   - `docs/observability/runbook.md` (incident-response).
-   * Будь-яке перейменування зламає alerts/dashboards — реєстр свідомо
-   * успадковує існуючий `api:auth:sensitive` як SoT.
-   */
-  "api:auth:sensitive": {
-    limit: env.AUTH_RATE_LIMIT_MAX,
-    windowMs: env.AUTH_RATE_LIMIT_WINDOW_SEC * 1000,
-    failMode: "closed",
-    description:
-      "Better-Auth POST /sign-in|/sign-up|/forget-password|/reset-password — fail-closed щоб N×limit-амплификація при degraded limiter не прискорювала credential-stuffing. Default 5/60s з `AUTH_RATE_LIMIT_MAX` + `AUTH_RATE_LIMIT_WINDOW_SEC` (PR-48 round-2, `docs/security/better-auth-audit-2026-05.md`).",
-  },
-
-  /**
-   * Per-account credential bucket (F2 у
-   * `docs/90-work/planning/specs/beta-security-readiness.md`).
-   *
-   * `api:auth:sensitive` вище обмежує **джерело** запиту, а до автентифікації
-   * джерело — це IP. Ботнет зі 100 IP обходить його лінійно: кожен бакет
-   * лишається зеленим, а конкретний акаунт отримує 100× спроб. Ця policy
-   * ключується на **цільовому акаунті** (SHA-256 email-а), тож стеля стає
-   * властивістю жертви, а не мережі атакера — єдине, що не купується
-   * орендою проксі.
-   *
-   * Обидві policy працюють разом: спершу IP-бакет, потім account-бакет.
-   * Ліміт свідомо м'якший (10/15хв проти 5/60с), бо він б'є по акаунту, а не
-   * по атакеру: він не має спрацьовувати, коли людина чотири рази помилилась
-   * у власному паролі. Вікно, а не постійний lockout — постійний дозволив би
-   * замкнути будь-який чужий акаунт кількома невдалими спробами.
-   */
-  "api:auth:account": {
-    limit: env.AUTH_ACCOUNT_RATE_LIMIT_MAX,
-    windowMs: env.AUTH_ACCOUNT_RATE_LIMIT_WINDOW_SEC * 1000,
-    failMode: "closed",
-    description:
-      "Per-account (email-keyed) бакет для sign-in / forget-password / reset-password. Обмежує розподілену атаку на один акаунт, яку per-IP `api:auth:sensitive` не бачить. Default 10/15хв з `AUTH_ACCOUNT_RATE_LIMIT_MAX` + `AUTH_ACCOUNT_RATE_LIMIT_WINDOW_SEC`.",
-  },
-} satisfies Record<string, RateLimitPolicy>;
-
-/**
- * Усі імена policy. Споживачі типізують свої параметри через
- * `RateLimitPolicyName`, тож друкарська помилка в `policy("auth:sensitiv")`
- * ловиться на компіляції.
- */
-export type RateLimitPolicyName = keyof typeof RATE_LIMIT_POLICIES;
-
-/**
- * Повертає конкретну policy за ім'ям. Кидає при невідомому імені — це
- * гарантує, що `policy()` ніколи не повертає `undefined`, а отже код
- * нижче не може випадково отримати necessary-undefined limit.
- */
-export function getRateLimitPolicy(name: RateLimitPolicyName): RateLimitPolicy {
-  const policy = RATE_LIMIT_POLICIES[name];
-  if (!policy) {
-    throw new Error(`Unknown rate-limit policy: ${name}`);
-  }
-  return policy;
-}
-
-/**
- * Конвертує named policy у параметри, готові до передачі у
- * `rateLimitExpress`. `key` дорівнює імені policy — це гарантує, що метрика
- * `rate_limit_hits_total{key="auth:sensitive"}` має детермінований лейбл,
- * не залежний від місця використання.
+ * Per-account credential bucket (F2 у
+ * `docs/90-work/planning/specs/beta-security-readiness.md`).
  *
- * `overrides` дозволяє точково перевизначити поле (наприклад, env-driven
- * `failMode` у `authSensitiveRateLimit`). Решту полів policy фіксує реєстр.
+ * `AUTH_SENSITIVE_RATE_LIMIT` вище обмежує **джерело** запиту (IP до
+ * автентифікації). Ботнет зі 100 IP обходить його лінійно: кожен бакет
+ * лишається зеленим, а конкретний акаунт отримує 100× спроб. Ця policy
+ * ключується на **цільовому акаунті** (SHA-256 email-а), тож стеля стає
+ * властивістю жертви, а не мережі атакера.
+ *
+ * Обидві policy працюють разом: спершу IP-бакет, потім account-бакет.
+ * Ліміт свідомо м'якший (10/15хв проти 5/60с), бо він б'є по акаунту, а не
+ * по атакеру: він не має спрацьовувати, коли людина чотири рази помилилась
+ * у власному паролі.
  */
-export function policyOptions(
-  name: RateLimitPolicyName,
-  overrides?: Partial<Omit<RateLimitOptions, "key">>,
-): RateLimitOptions {
-  const base = getRateLimitPolicy(name);
-  return {
-    key: name,
-    limit: base.limit,
-    windowMs: base.windowMs,
-    ...(base.failMode ? { failMode: base.failMode } : {}),
-    ...(overrides ?? {}),
-  };
-}
+export const AUTH_ACCOUNT_RATE_LIMIT: RateLimitOptions = {
+  key: "api:auth:account",
+  limit: env.AUTH_ACCOUNT_RATE_LIMIT_MAX,
+  windowMs: env.AUTH_ACCOUNT_RATE_LIMIT_WINDOW_SEC * 1000,
+  failMode: "closed",
+};

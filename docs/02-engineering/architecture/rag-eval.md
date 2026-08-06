@@ -25,7 +25,9 @@ embeddings + pgvector). Складається з трьох частин:
 
 Крон PR-22 (`.github/workflows/rag-quality-gate.yml`) прибрано рішенням
 [ADR-0082](../../04-governance/adr/0082-private-storage-repo-posture.md) §4 — він ганявся
-в mock-режимі. CLI запускається вручну (`pnpm eval:rag:weekly`); автоматичного issue
+в mock-режимі. Weekly-обгортку (`scripts/rag-eval-weekly.mjs` + n8n cron WF-29) прибрано
+2026-08-06 слідом: після ADR-0082 її тригер бив у видалений workflow (тихий 404 щопонеділка).
+CLI запускається вручну (`pnpm eval:rag`); автоматичного issue
 чи Sentry-alert-у при degradation немає. Day-60 decision-point: якщо
 recall@4 < 0.4 → kill module (set `AI_MEMORY_ENABLED=false` у Coolify app `sergeant-api` і redeploy).
 
@@ -308,19 +310,12 @@ runtimeKillSwitch.ts`):
   process-restart** — це навмисно (operator може investigation-ити
   fresh, env-flag залишається authoritative source-of-truth).
 
-**Wrapper script** (`scripts/rag-eval-weekly.mjs`, exposed via
-`pnpm eval:rag:weekly`):
-
-- Spawn-ить child-process `eval-rag-recall.mjs` з тим самим CLI-set-ом
-  (forward `--mode=`, `--baseline=` etc).
-- Парсить v2.0 JSON summary, POST-ить на
-  `${API_BASE_URL}/api/internal/eval/rag-weekly` з retry-loop
-  (exponential backoff 200/400/800ms, 2 retries за замовч.).
-- Exit codes: 0=pass, 1=warn, 2=kill, 3=hard-error. Mirror-ить eval
-  CLI поведінку — n8n / GH Action може gate-ити job-status за exit
-  code-ом.
-- `--skip-post` — local-debug-режим (не пошту); `--internal-api-key=`,
-  `--post-timeout-ms=`, `--post-retries=` — overrides.
+**Wrapper script** — retired 2026-08-06. `scripts/rag-eval-weekly.mjs` (alias
+`pnpm eval:rag:weekly`) POST-ив summary на `/api/internal/eval/rag-weekly`;
+після ADR-0082 його cron-тригер лишився без workflow, тож обгортку і n8n
+WF-29 видалено. Схема вище — історичний контур; сам endpoint
+`/api/internal/eval/rag-weekly` наразі без автоматичного каллера
+(кандидат на прибирання окремим PR).
 
 **Status decoder**:
 
@@ -348,7 +343,3 @@ runtimeKillSwitch.ts`):
   endpoint
 - [`apps/server/src/lib/featureFlags/runtimeKillSwitch.ts`](../../../apps/server/src/lib/featureFlags/runtimeKillSwitch.ts) —
   kill-switch registry
-- [`scripts/rag-eval-weekly.mjs`](../../../scripts/rag-eval-weekly.mjs) —
-  weekly wrapper script
-- [`ops/n8n-workflows/29-rag-eval-weekly-cron.json`](../../../ops/n8n-workflows/29-rag-eval-weekly-cron.json) —
-  n8n WF-28 cron

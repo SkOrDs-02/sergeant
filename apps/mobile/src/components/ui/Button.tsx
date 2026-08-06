@@ -46,15 +46,11 @@ export type ButtonVariant =
   | "danger"
   | "destructive"
   | "warning"
-  | "success"
   | "finyk"
   | "fizruk"
   | "routine"
   | "nutrition"
-  | "finyk-soft"
-  | "fizruk-soft"
-  | "routine-soft"
-  | "nutrition-soft";
+  | "fizruk-soft";
 
 export type ButtonSize = "xs" | "sm" | "md" | "lg" | "xl";
 
@@ -69,7 +65,6 @@ const variantContainer: Record<ButtonVariant, string> = {
   danger: "bg-danger/10 border border-danger/30",
   destructive: "bg-danger",
   warning: "bg-warning-strong",
-  success: "bg-brand-50 border border-brand-200/50",
 
   // Module-specific (dark mode uses slightly muted tones for better contrast)
   finyk: "bg-finyk-strong dark:bg-brand-500",
@@ -78,14 +73,8 @@ const variantContainer: Record<ButtonVariant, string> = {
   nutrition: "bg-nutrition-strong dark:bg-lime-500",
 
   // Soft module variants with dark mode support
-  "finyk-soft":
-    "bg-brand-50 border border-brand-200/50 dark:bg-brand-900/30 dark:border-brand-700",
   "fizruk-soft":
     "bg-teal-50 border border-teal-200/50 dark:bg-teal-900/30 dark:border-teal-700",
-  "routine-soft":
-    "bg-coral-50 border border-coral-300/50 dark:bg-coral-900/30 dark:border-coral-700",
-  "nutrition-soft":
-    "bg-lime-50 border border-lime-200/50 dark:bg-lime-900/30 dark:border-lime-700",
 };
 
 // Variant → label (text) NativeWind classes.
@@ -96,17 +85,13 @@ const variantLabel: Record<ButtonVariant, string> = {
   danger: "text-danger",
   destructive: "text-white",
   warning: "text-white",
-  success: "text-brand-700",
 
   finyk: "text-white",
   fizruk: "text-white",
   routine: "text-white",
   nutrition: "text-white",
 
-  "finyk-soft": "text-brand-700 dark:text-brand-300",
   "fizruk-soft": "text-teal-700 dark:text-teal-300",
-  "routine-soft": "text-coral-700 dark:text-coral-300",
-  "nutrition-soft": "text-lime-800 dark:text-lime-300",
 };
 
 // Size presets — all sizes meet 44px minimum touch target (WCAG 2.5.5)
@@ -145,15 +130,11 @@ const indicatorColor: Record<ButtonVariant, string> = {
   danger: "#ef4444",
   destructive: "#ffffff",
   warning: "#ffffff",
-  success: "#047857",
   finyk: "#ffffff",
   fizruk: "#ffffff",
   routine: "#ffffff",
   nutrition: "#ffffff",
-  "finyk-soft": "#115e59", // teal-800 (2026-07: was emerald-700 #047857)
   "fizruk-soft": "#0f766e",
-  "routine-soft": "#c23a3a",
-  "nutrition-soft": "#466212",
 };
 
 export interface ButtonProps extends Omit<

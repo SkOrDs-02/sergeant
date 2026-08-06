@@ -1,6 +1,6 @@
 # Contributing to Sergeant
 
-> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
+> **Last touched:** 2026-08-06 by @Skords-01. **Next review:** 2026-11-04.
 > **Status:** Active
 
 `CONTRIBUTING.md` - канонічний manual для людей. Repo policy і hard rules описані в [AGENTS.md](./AGENTS.md), а repeatable execution recipes - у [docs/00-start/playbooks/README.md](./docs/00-start/playbooks/README.md).
@@ -123,7 +123,7 @@ pnpm dedupe --check   # P2-1: lockfile-drift guard (див. нижче)
 Далі додатково за surface:
 
 - `web`: `pnpm test`, локальний smoke через browser, за потреби `pnpm --filter @sergeant/web test`
-- `server/api`: `pnpm test`, `pnpm api:check-openapi`, `pnpm api:check-openapi-types`. **Detox більше НЕ тригериться на server-зміни**: з web-focus фази 2026-07 `detox-{ios,android}.yml` реагують лише на `apps/mobile/**` і `apps/mobile-shell/**`. Автоматичний захист від response-shape drift — `api:check-openapi-types`; mobile-регресію по серверній зміні ганяй вручну через `workflow_dispatch`. Якщо shape змінився — перегенеруй `packages/api-client/**` типи у тому самому PR.
+- `server/api`: `pnpm test`, `pnpm api:check-openapi`. **Detox більше НЕ тригериться на server-зміни**: з web-focus фази 2026-07 `detox-{ios,android}.yml` реагують лише на `apps/mobile/**` і `apps/mobile-shell/**`. Автоматичний захист від response-shape drift — contract-тести Hard Rule #3 + `api:check-openapi`; mobile-регресію по серверній зміні ганяй вручну через `workflow_dispatch`. Якщо shape змінився — онови hand-written типи `packages/api-client/src/endpoints/*` у тому самому PR.
 - `migrations`: `pnpm db:migrate`, `pnpm lint:migrations`
 - `mobile`: `pnpm --filter @sergeant/mobile test`
 - `governance/docs`: `pnpm docs:check-links`, `pnpm docs:check-playbook-schema`, `pnpm docs:check-playbook-index`, `pnpm lint:governance-sync --strict`
