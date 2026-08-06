@@ -105,6 +105,44 @@ describe("DataResultCard (talk-to-your-data PR4)", () => {
     expect(card).toHaveTextContent("Помилка: немає звичок");
   });
 
+  /**
+   * Регресія зі скріна користувача 2026-08-06: рядок «Дні без жодного
+   * виконання: 6 серп, 5 серп, …» вилазив за межі картки й за край
+   * екрана.
+   *
+   * Причина — `shrink-0` на `<dd>`. Він доречний для «0/7 (0%)», але
+   * `parseMultiline` кладе у значення ВЕСЬ хвіст після першої двокрапки, а це
+   * буває список. Нестисливий елемент зберігає повну внутрішню ширину.
+   *
+   * jsdom не рахує layout, тож переповнення як таке тут не побачити —
+   * перевіряємо саме той клас, чия відсутність його спричиняла.
+   */
+  it("довге значення метрики стає стисливим і переноситься", () => {
+    render(
+      <DataResultCard
+        toolName="query_habits"
+        result={[
+          'Статистика "Зарядка" за 7 днів:',
+          "Виконано: 0/7 (0%)",
+          "Дні без жодного виконання: 6 серп, 5 серп, 4 серп, 3 серп, 2 серп",
+        ].join("\n")}
+        title="Статистика звичок"
+      />,
+    );
+
+    const card = screen.getByTestId("chat-data-card-query_habits");
+    const values = within(card).getAllByRole("definition");
+
+    const short = values.find((el) => el.textContent === "0/7 (0%)");
+    expect(short?.className).toContain("shrink-0");
+
+    const long = values.find((el) => el.textContent?.includes("6 серп"));
+    expect(long).toBeDefined();
+    expect(long?.className).not.toContain("shrink-0");
+    expect(long?.className).toContain("min-w-0");
+    expect(long?.className).toContain("wrap-break-word");
+  });
+
   it("має доступний aria-label з title + headline", () => {
     render(
       <DataResultCard

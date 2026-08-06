@@ -195,6 +195,25 @@ function parseResult(toolName: string, result: string): ParsedResult {
   return parseSingleLineWithList(toolName, result);
 }
 
+/**
+ * Чи можна тримати значення нестисливим (`shrink-0`) праворуч від мітки.
+ *
+ * AI-DANGER: `shrink-0` тут не косметика. Значення в цих рядках здебільшого
+ * короткі («0/7 (0%)», «2340 грн»), і `shrink-0` не дає довгій мітці їх
+ * зіжмакати. Але `parseMultiline` кладе у значення ВЕСЬ хвіст після першої
+ * двокрапки — а це буває список: «Дні без жодного виконання: 2026-08-06,
+ * 2026-08-05, …». Нестисливий елемент із таким вмістом зберігає повну
+ * внутрішню ширину й вилазить за межі картки, аж за край екрана.
+ *
+ * Поріг у символах, а не вимір ширини: у flex-рядку картка вужча за 300 px,
+ * і все, що довше за коротку мітку, все одно мусить переноситись.
+ */
+const COMPACT_VALUE_MAX_CHARS = 24;
+
+function isCompactValue(value: string): boolean {
+  return value.length <= COMPACT_VALUE_MAX_CHARS;
+}
+
 function BreakdownBars({ rows }: { rows: BreakdownRow[] }) {
   const max = Math.max(1, ...rows.map((r) => r.amount));
   return (
@@ -206,7 +225,14 @@ function BreakdownBars({ rows }: { rows: BreakdownRow[] }) {
             <div className="flex items-baseline justify-between gap-2 text-style-caption">
               <span className="min-w-0 truncate text-subtle">{row.label}</span>
               {row.display && (
-                <span className="shrink-0 font-medium text-text tabular-nums">
+                <span
+                  className={cn(
+                    "min-w-0 font-medium text-text",
+                    isCompactValue(row.display)
+                      ? "shrink-0 tabular-nums"
+                      : "text-right wrap-break-word",
+                  )}
+                >
                   {row.display}
                 </span>
               )}
@@ -279,7 +305,14 @@ function DataResultCardImpl({
                 >
                   <dt className="min-w-0 truncate text-subtle">{m.label}</dt>
                   {m.value && (
-                    <dd className="shrink-0 font-medium text-text tabular-nums">
+                    <dd
+                      className={cn(
+                        "min-w-0 font-medium text-text",
+                        isCompactValue(m.value)
+                          ? "shrink-0 tabular-nums"
+                          : "text-right wrap-break-word",
+                      )}
+                    >
                       {m.value}
                     </dd>
                   )}
