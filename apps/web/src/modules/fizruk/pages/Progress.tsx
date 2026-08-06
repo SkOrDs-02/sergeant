@@ -217,6 +217,13 @@ export function Progress({ onNavigate }: ProgressProps) {
           muscleGroup: group,
           muscleGroupLabel: group ? musclesUk?.[group] || null : null,
           isStale: aging.isStale,
+          // `aging` рахувався тут і раніше — з нього брали лише
+          // `isStale`, а `reference1rm` викидали в тому ж виразі. Шкала
+          // повернення (П1) потребує саме його: це число людина кладе
+          // на штангу.
+          reference1rm: aging.reference1rm,
+          reductionPct: aging.reductionPct,
+          daysSinceLastSession: aging.daysSinceLastSession,
           deltaVsPeakPct:
             lastBest > 0 && v.best1rm > 0
               ? Math.round(((lastBest - v.best1rm) / v.best1rm) * 100)

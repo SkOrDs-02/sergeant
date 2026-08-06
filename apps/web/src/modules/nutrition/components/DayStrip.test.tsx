@@ -72,6 +72,64 @@ describe("DayStrip", () => {
     expect(screen.getByText(/оцінка з фото — 40%/)).toBeInTheDocument();
   });
 
+  /**
+   * Регресія на знахідку ревʼю: `Math.round` від 0.4% дає 0, і смуга
+   * стверджувала б «усе з бази або зважене» про день, у якому здогадка
+   * є. Це рівно та неправда, проти якої весь вид і будувався.
+   */
+  it("крихітна частка не перетворюється на «все зважене»", () => {
+    render(
+      <DayStrip
+        meals={[
+          meal({
+            id: "crumb",
+            time: "09:00",
+            macroSource: "photoAI",
+            macros: { kcal: 4, protein_g: null, fat_g: null, carbs_g: null },
+          }),
+          meal({
+            id: "rest",
+            time: "14:00",
+            macros: { kcal: 2000, protein_g: null, fat_g: null, carbs_g: null },
+          }),
+        ]}
+      />,
+    );
+    expect(screen.getByText(/оцінка з фото — 1%/)).toBeInTheDocument();
+    expect(screen.queryByText(/усе з бази або зважене/)).toBeNull();
+  });
+
+  /**
+   * Регресія: вгадана страва без часу не має стовпчика, але з дня не
+   * зникає. Доти смуга казала 0%, а дашборд про той самий день — 82%.
+   */
+  it("рахує частку по денних сумах, а не по стовпчиках", () => {
+    render(
+      <DayStrip
+        meals={[
+          meal({
+            id: "a",
+            time: "08:00",
+            macros: { kcal: 100, protein_g: null, fat_g: null, carbs_g: null },
+          }),
+          meal({
+            id: "b",
+            time: "13:00",
+            macros: { kcal: 100, protein_g: null, fat_g: null, carbs_g: null },
+          }),
+          meal({
+            id: "no-time-guess",
+            time: "",
+            macroSource: "photoAI",
+            macros: { kcal: 900, protein_g: null, fat_g: null, carbs_g: null },
+          }),
+        ]}
+      />,
+    );
+    expect(screen.getByText(/оцінка з фото — 82%/)).toBeInTheDocument();
+    expect(screen.getByText(/без часу: 1/)).toBeInTheDocument();
+  });
+
   it("каже прямо, коли фото-оцінок немає зовсім", () => {
     render(
       <DayStrip

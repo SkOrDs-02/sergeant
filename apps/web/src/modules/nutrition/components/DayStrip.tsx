@@ -50,10 +50,25 @@ export function DayStrip({ meals, className }: DayStripProps) {
   // розподілу, ні перекосу — тобто нічого з того, заради чого вид існує.
   if (!strip || strip.peakKcal <= 0) return null;
 
-  const { hours, peakKcal, unplacedCount } = strip;
-  const totalKcal = hours.reduce((sum, h) => sum + h.kcal, 0);
-  const estimatedKcal = hours.reduce((sum, h) => sum + h.estimatedKcal, 0);
-  const estimatedPct = Math.round((estimatedKcal / totalKcal) * 100);
+  const { hours, peakKcal, unplacedCount, dayKcal, dayEstimatedKcal } = strip;
+
+  /*
+    AI-DANGER: частка рахується по ДЕННИХ сумах, а не по стовпчиках.
+    Стовпчики знають лише розміщені страви; денні суми знають усі,
+    включно з тими, що не мають часу. Рахувати по стовпчиках здається
+    природним — і саме так помилка й була допущена первісно: страва без
+    часу на 900 ккал давала 0% у смузі й 82% на дашборді про той самий
+    день.
+
+    Округлення теж не наївне: `Math.round` від 0.4% дає 0, і смуга
+    сказала б «усе з бази або зважене» — пряма неправда про день, у
+    якому здогадка є. Тому гілку веде `dayEstimatedKcal > 0`, а не
+    відсоток, і мінімум — 1%.
+  */
+  const estimatedPct =
+    dayEstimatedKcal > 0 && dayKcal > 0
+      ? Math.max(1, Math.round((dayEstimatedKcal / dayKcal) * 100))
+      : 0;
 
   return (
     <section
@@ -129,7 +144,7 @@ export function DayStrip({ meals, className }: DayStripProps) {
             копії в дашборді; сама ж частка — це факт про день, і
             ховати день, угаданий на 49%, означає видавати здогадку за
             вимір. */}
-        {estimatedPct > 0
+        {dayEstimatedKcal > 0
           ? `${copy.estimatedPrefix} ${estimatedPct}%`
           : copy.allMeasured}
         {unplacedCount > 0 ? ` · ${copy.unplacedPrefix} ${unplacedCount}` : ""}

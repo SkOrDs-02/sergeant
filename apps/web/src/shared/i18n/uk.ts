@@ -568,6 +568,24 @@ export const messages = {
       staleBadge: "давно не робив",
       belowPeakPrefix: "зараз",
     },
+    /**
+     * Шкала повернення — signature-view Фізрука (анти-слоп П1).
+     *
+     * AI-CONTEXT: тон констатувальний, без докору — канон `fizruk.md` §6
+     * вимагає саме цього. Тому в середині шкали стоїть факт про паузу
+     * («34 дні без роботи»), а не оцінка людини, і слово «спад»
+     * з'являється лише коли він справді дійшов до підлоги.
+     */
+    returnScale: {
+      referenceLabel: "орієнтир",
+      kgUnit: "кг",
+      peakPrefix: "пік",
+      fresh: "свіже",
+      daysAgo: "дн. тому",
+      daysWithoutWork: "дн. без роботи",
+      atFloor: "нижче не опускаємо",
+      noHistory: "історії ще немає",
+    },
     // Shared Fizruk unit suffixes (composed at call-site as `${n} ${unit}`).
     hoursUnit: "год",
     secondsUnit: "с",
