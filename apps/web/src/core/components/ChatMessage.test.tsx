@@ -7,8 +7,10 @@
  */
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { ChatMessage, TypingIndicator } from "./ChatMessage";
 import type { ChatMessage as ChatMessageData } from "../lib/hubChatUtils";
+import type { ChatActionCardModule } from "../lib/hubChatActionCards";
 
 vi.mock("../lib/hubChatSpeech", () => ({
   speak: vi.fn(),
@@ -48,13 +50,21 @@ function makeMessage(
   } as ChatMessageData;
 }
 
+/**
+ * `ModuleLink` під карткою — це `<Link>`, тож без роутер-контексту падає
+ * весь файл, а не лише картковi кейси.
+ */
+function renderInRouter(ui: React.ReactElement) {
+  return render(<MemoryRouter>{ui}</MemoryRouter>);
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
 });
 
 describe("ChatMessage — user messages", () => {
   it("renders user text directly (not via AssistantMessageBody)", () => {
-    render(
+    renderInRouter(
       <ChatMessage message={makeMessage({ role: "user", text: "Привіт" })} />,
     );
     expect(screen.getByText("Привіт")).toBeInTheDocument();
@@ -62,7 +72,7 @@ describe("ChatMessage — user messages", () => {
   });
 
   it("does not render the speak button for user messages", () => {
-    render(
+    renderInRouter(
       <ChatMessage
         message={makeMessage({ role: "user", text: "Long enough text here" })}
       />,
@@ -75,7 +85,7 @@ describe("ChatMessage — user messages", () => {
 
 describe("ChatMessage — assistant messages", () => {
   it("renders assistant text via AssistantMessageBody", () => {
-    render(
+    renderInRouter(
       <ChatMessage
         message={makeMessage({ role: "assistant", text: "Відповідь" })}
       />,
@@ -85,7 +95,7 @@ describe("ChatMessage — assistant messages", () => {
   });
 
   it("renders speak button for assistant messages with text > 3 chars", () => {
-    render(
+    renderInRouter(
       <ChatMessage
         message={makeMessage({ role: "assistant", text: "Long answer text" })}
       />,
@@ -96,7 +106,7 @@ describe("ChatMessage — assistant messages", () => {
   });
 
   it("does NOT render speak button when text is too short (≤3 chars)", () => {
-    render(
+    renderInRouter(
       <ChatMessage message={makeMessage({ role: "assistant", text: "Hi" })} />,
     );
     expect(
@@ -106,7 +116,7 @@ describe("ChatMessage — assistant messages", () => {
 
   it("clicking speak button calls speak() and onSpeak callback", () => {
     const onSpeak = vi.fn();
-    render(
+    renderInRouter(
       <ChatMessage
         message={makeMessage({ role: "assistant", text: "Long answer text" })}
         onSpeak={onSpeak}
@@ -129,7 +139,7 @@ describe("ChatMessage — assistant messages", () => {
       icon: "check",
       module: "routine" as const,
     };
-    render(
+    renderInRouter(
       <ChatMessage
         message={makeMessage({
           role: "assistant",
@@ -155,7 +165,7 @@ describe("ChatMessage — assistant messages", () => {
       icon: "check",
       module: "finyk" as const,
     };
-    render(
+    renderInRouter(
       <ChatMessage
         message={makeMessage({
           role: "assistant",
@@ -181,7 +191,7 @@ describe("ChatMessage — assistant messages", () => {
       icon: "alert",
       module: "routine" as const,
     };
-    render(
+    renderInRouter(
       <ChatMessage
         message={makeMessage({
           role: "assistant",
@@ -196,9 +206,81 @@ describe("ChatMessage — assistant messages", () => {
   });
 });
 
+/**
+ * Регресія: `card.module` на вебі не читав ніхто, тож усі картки вели в
+ * нікуди й виглядали однаково незалежно від теми запиту. Мобільний клієнт
+ * будував deep link із того самого поля.
+ */
+describe("ChatMessage — посилання на модуль під карткою", () => {
+  function cardFor(module: ChatActionCardModule) {
+    return {
+      id: `card-${module}`,
+      toolName: "log_meal",
+      title: "Записано",
+      summary: "Вівсянка 300 ккал",
+      status: "completed" as const,
+      risky: false,
+      data: undefined,
+      icon: "check",
+      module,
+    };
+  }
+
+  it.each<[ChatActionCardModule, string, string]>([
+    ["finyk", "/finyk", "Фінік"],
+    ["fizruk", "/fizruk", "Фізрук"],
+    ["routine", "/routine", "Рутина"],
+    ["nutrition", "/nutrition", "Харчування"],
+  ])("%s веде на %s", (module, href, label) => {
+    renderInRouter(
+      <ChatMessage
+        message={makeMessage({
+          role: "assistant",
+          text: "Готово",
+          cards: [cardFor(module)],
+        })}
+      />,
+    );
+
+    const link = screen.getByTestId(`chat-card-link-${module}`);
+    expect(link).toHaveAttribute("href", href);
+    expect(link).toHaveTextContent(label);
+  });
+
+  it("кросмодульна картка посилання не отримує — чат уже в хабі", () => {
+    renderInRouter(
+      <ChatMessage
+        message={makeMessage({
+          role: "assistant",
+          text: "Готово",
+          cards: [cardFor("hub")],
+        })}
+      />,
+    );
+
+    expect(screen.queryByTestId("chat-card-link-hub")).not.toBeInTheDocument();
+  });
+
+  it("data-картка теж отримує посилання", () => {
+    renderInRouter(
+      <ChatMessage
+        message={makeMessage({
+          role: "assistant",
+          text: "Ось дані",
+          cards: [
+            { ...cardFor("finyk"), toolName: "aggregate_spending", data: true },
+          ],
+        })}
+      />,
+    );
+
+    expect(screen.getByTestId("chat-card-link-finyk")).toBeInTheDocument();
+  });
+});
+
 describe("TypingIndicator", () => {
   it("renders with correct aria-label", () => {
-    render(<TypingIndicator />);
+    renderInRouter(<TypingIndicator />);
     expect(
       screen.getByRole("status", { name: "Асистент набирає відповідь" }),
     ).toBeInTheDocument();

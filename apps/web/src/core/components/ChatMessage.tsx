@@ -3,12 +3,16 @@
  * Status: Active
  */
 import { memo, useState } from "react";
+import { Link } from "react-router-dom";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { AssistantMessageBody } from "@shared/components/AssistantMessageBody";
 import { speak } from "../lib/hubChatSpeech";
 import type { ChatMessage as ChatMessageData } from "../lib/hubChatUtils";
-import type { ChatActionCard } from "../lib/hubChatActionCards";
+import type {
+  ChatActionCard,
+  ChatActionCardModule,
+} from "../lib/hubChatActionCards";
 import { DataResultCard } from "../hub/chat/components/DataResultCard";
 
 interface ChatMessageProps {
@@ -17,40 +21,87 @@ interface ChatMessageProps {
 }
 
 /**
- * RiskyBadge — small inline chip shown on destructive action cards.
+ * Куди веде картка + як підписано її модуль.
+ *
+ * WHY. До цього `card.module` на вебі не читав ніхто: картка була суто
+ * інформаційною, і всі успішні виклики виглядали однаково — рамка кодує
+ * статус (виконано / помилка / деструктивна дія), а не тему. Мобільний
+ * клієнт із того самого поля вже будував deep link
+ * (`hubChatActionCards.ts` → `deepLinkForCard`), тож асиметрія була
+ * недоглядом, а не рішенням.
+ *
+ * `hub` тут навмисно відсутній: кросмодульні tool-и ведуть у хаб, а чат
+ * уже в хабі — посилання «сюди ж» лише додає шуму.
+ *
+ * Класи чіпа статичні (а не `bg-${module}-soft`), бо Tailwind збирає
+ * класи текстовим скануванням і динамічне ім'я до білда не потрапляє.
+ * Ті самі пари вживає `MODULE_COLORS` у hub-пошуку.
  */
-function RiskyBadge() {
+const MODULE_LINK: Partial<
+  Record<ChatActionCardModule, { to: string; label: string; chip: string }>
+> = {
+  finyk: {
+    to: "/finyk",
+    label: "Фінік",
+    chip: "bg-finyk-soft text-finyk-soft-fg",
+  },
+  fizruk: {
+    to: "/fizruk",
+    label: "Фізрук",
+    chip: "bg-fizruk-soft text-fizruk-soft-fg",
+  },
+  routine: {
+    to: "/routine",
+    label: "Рутина",
+    chip: "bg-routine-soft text-routine-soft-fg",
+  },
+  nutrition: {
+    to: "/nutrition",
+    label: "Харчування",
+    chip: "bg-nutrition-soft text-nutrition-soft-fg",
+  },
+};
+
+/**
+ * Посилання «відкрити модуль» під карткою.
+ *
+ * Окремим елементом, а не кліком по всій картці: `ActionCard` уже містить
+ * кнопку «Показати все», і вкладена інтерактивність зламала б і клавіатуру,
+ * і скрін-рідер.
+ */
+function ModuleLink({ module }: { module: ChatActionCardModule }) {
+  const target = MODULE_LINK[module];
+  if (!target) return null;
   return (
-    <span className="shrink-0 inline-flex items-center gap-0.5 text-style-caption font-semibold text-warning-strong dark:text-warning rounded-full bg-warning/15 px-1.5 py-0.5">
-      <svg
-        width="10"
-        height="10"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden
-      >
-        <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-        <line x1="12" y1="9" x2="12" y2="13" />
-        <line x1="12" y1="17" x2="12.01" y2="17" />
-      </svg>
-      Критична дія
-    </span>
+    <Link
+      to={target.to}
+      data-testid={`chat-card-link-${module}`}
+      className={cn(
+        "mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5",
+        "text-style-caption font-medium transition-opacity hover:opacity-80",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40",
+        target.chip,
+      )}
+    >
+      {target.label}
+      <Icon name="chevron-right" size={12} />
+    </Link>
   );
 }
 
 /**
  * ActionCard — summarises a completed tool call.
  * Long summaries are clamped to 2 lines and expand on demand.
- * Risky (destructive) cards get a warning border + RiskyBadge.
+ *
+ * AI-NOTE: гілки для `risky` тут немає навмисно. `ChatMessage` віддає
+ * risky-картку у `ConfirmCard`, щойно статус `completed`, а risky+failed
+ * потрапляє під failed-стиль — тобто «risky, але ще не виконано» станом
+ * не існує. Попередня версія малювала для нього окремий бейдж і рамку
+ * `warning/40`, які не могли відрендеритись жодного разу.
  */
 function ActionCard({ card }: { card: ChatActionCard }) {
   const [expanded, setExpanded] = useState(false);
   const failed = card.status === "failed";
-  const isRisky = !failed && card.risky;
 
   return (
     <div
@@ -61,15 +112,13 @@ function ActionCard({ card }: { card: ChatActionCard }) {
         "mt-2 flex items-start gap-2 rounded-xl border px-3 py-2",
         failed
           ? "bg-warning/10 border-warning/30"
-          : isRisky
-            ? "bg-warning/5 border-warning/40"
-            : "bg-brand-500/5 border-brand-500/30",
+          : "bg-brand-500/5 border-brand-500/30",
       )}
     >
       <span
         className={cn(
           "shrink-0 mt-0.5",
-          failed ? "text-warning" : isRisky ? "text-warning" : "text-brand-500",
+          failed ? "text-warning" : "text-brand-500",
         )}
         aria-hidden
       >
@@ -79,7 +128,6 @@ function ActionCard({ card }: { card: ChatActionCard }) {
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5 flex-wrap text-style-label font-semibold text-text">
           <span className="truncate">{card.title}</span>
-          {isRisky && <RiskyBadge />}
         </div>
 
         {card.summary && (
@@ -203,21 +251,23 @@ function ChatMessageImpl({ message, onSpeak }: ChatMessageProps) {
         {isAssistant &&
           cards &&
           cards.length > 0 &&
-          cards.map((c) =>
-            c.data ? (
-              <DataResultCard
-                key={c.id}
-                toolName={c.toolName}
-                result={c.summary}
-                failed={c.status === "failed"}
-                title={c.title}
-              />
-            ) : c.risky && c.status === "completed" ? (
-              <ConfirmCard key={c.id} card={c} />
-            ) : (
-              <ActionCard key={c.id} card={c} />
-            ),
-          )}
+          cards.map((c) => (
+            <div key={c.id}>
+              {c.data ? (
+                <DataResultCard
+                  toolName={c.toolName}
+                  result={c.summary}
+                  failed={c.status === "failed"}
+                  title={c.title}
+                />
+              ) : c.risky && c.status === "completed" ? (
+                <ConfirmCard card={c} />
+              ) : (
+                <ActionCard card={c} />
+              )}
+              <ModuleLink module={c.module} />
+            </div>
+          ))}
         {isAssistant && text && text.length > 3 && (
           <button
             type="button"
