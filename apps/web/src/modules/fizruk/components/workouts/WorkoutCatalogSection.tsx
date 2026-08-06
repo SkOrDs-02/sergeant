@@ -139,6 +139,7 @@ export function WorkoutCatalogSection({
       <Card radius="lg" padding="none" className="overflow-hidden">
         {grouped.length === 0 ? (
           <EmptyState
+            surface="document"
             illustration={<FizrukEmptyIllustration size={96} />}
             title="Поки немає вправ"
             description="Додай першу через кнопку «+ Додати»."

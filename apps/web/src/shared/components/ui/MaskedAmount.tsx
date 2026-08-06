@@ -117,7 +117,7 @@ function MaskedValue({
     return (
       <span
         className={cn(
-          "tabular-nums motion-safe:transition motion-safe:duration-200",
+          "tabular-nums motion-safe:transition motion-safe:duration-base",
           blurred && "select-none",
           className,
         )}
@@ -148,7 +148,7 @@ function MaskedValue({
       className={cn(
         "tabular-nums cursor-pointer border-0 bg-transparent p-0 font-inherit text-inherit",
         "rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
-        "motion-safe:transition motion-safe:duration-200",
+        "motion-safe:transition motion-safe:duration-base",
         blurred && "select-none",
         className,
       )}

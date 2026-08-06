@@ -76,7 +76,7 @@ export function MacroRingDemo() {
                       stroke={`rgb(var(${m.token}))`}
                       strokeDasharray={c}
                       strokeDashoffset={c * (1 - m.pct)}
-                      className="transition-[stroke-dashoffset] duration-700"
+                      className="transition-[stroke-dashoffset] duration-slowest"
                     />
                   </g>
                 );

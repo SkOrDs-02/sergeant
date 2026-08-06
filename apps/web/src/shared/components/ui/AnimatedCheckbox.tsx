@@ -151,7 +151,7 @@ export const AnimatedCheckbox = memo(function AnimatedCheckbox({
 
   const visualClass = cn(
     "relative inline-flex items-center justify-center rounded-xl",
-    "border-2 transition-all duration-200",
+    "border-2 transition-all duration-base",
     sizes.box,
     checked ? cn(styles.fill, "border-transparent") : "border-line bg-panel",
     isAnimating && "motion-safe:animate-check-bounce",
@@ -252,7 +252,7 @@ export const HabitCheckbox = memo(function HabitCheckbox({
       <div className="flex-1 min-w-0">
         <span
           className={cn(
-            "text-style-label text-text transition-all duration-300",
+            "text-style-label text-text transition-all duration-slow",
             checked && "line-through text-muted",
           )}
         >

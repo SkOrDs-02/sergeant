@@ -86,7 +86,7 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
         <main
           id="main"
           tabIndex={-1}
-          className="w-full max-w-sm my-auto motion-safe:animate-in motion-safe:fade-in motion-safe:duration-500"
+          className="w-full max-w-sm my-auto motion-safe:animate-in motion-safe:fade-in motion-safe:duration-slower"
         >
           <div className="text-center mb-6">
             <BrandLogo as="h1" size="md" className="justify-center" />
@@ -96,7 +96,7 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
             prominence="hero"
             radius="xl"
             padding="lg"
-            className="space-y-5 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-300"
+            className="space-y-5 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-slow"
           >
             <div className="text-center">
               <h2 className="text-style-headline text-text text-balance">

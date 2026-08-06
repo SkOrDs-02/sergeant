@@ -222,7 +222,7 @@ export function ProgressRing({
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={dashOffset}
-          className="motion-safe:transition-all motion-safe:duration-300"
+          className="motion-safe:transition-all motion-safe:duration-slow"
         />
       </svg>
       {displayLabel != null && (

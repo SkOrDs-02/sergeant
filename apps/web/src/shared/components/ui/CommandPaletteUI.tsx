@@ -358,7 +358,7 @@ function CommandGroup({
               onClick={() => onActivate(cmd)}
               className={cn(
                 "flex w-full items-center gap-3 px-2.5 py-2 text-left rounded-xl",
-                "transition-colors duration-150",
+                "transition-colors duration-fast",
                 "outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
                 "focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
                 activeId === cmd.id && !cmd.disabled && "bg-panelHi",

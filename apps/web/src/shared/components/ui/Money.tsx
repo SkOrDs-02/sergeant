@@ -42,7 +42,6 @@ import {
 } from "@sergeant/shared";
 import { cn } from "@shared/lib/ui/cn";
 import { signedDeltaClass } from "@shared/lib/ui/amountTone";
-import { CounterReveal } from "./CounterReveal";
 
 /**
  * Тон приглушених тирів.
@@ -74,16 +73,22 @@ export interface MoneyProps extends FormatMoneyOptions {
   kopecks?: boolean;
   tone?: MoneyTone;
   /**
-   * Анімувати ЦІЛУ частину через `CounterReveal` (вхідний tween від нуля).
+   * Оживити суму при появі — КАСКАДОМ ТИРІВ (анти-слоп П5, рішення
+   * власника 2026-08-06 на `mockups/product/motion.html`, варіант C).
    *
-   * AI-CONTEXT: анімується лише ціле, і це не спрощення. Копійки та символ
-   * під час відліку крутились би як окремі шумові елементи — рівно та
-   * «жива» дрібнота, яка робить число неспокійним. Проміжні значення
-   * форматуються тим самим `splitMoneyParts`, тож розряди не «стрибають»
-   * між кадрами.
+   * Число зʼявляється відразу, тири вступають за вагою: гривні → копійки
+   * → символ, крок 60 ms.
    *
-   * Hard Rule #17 — `CounterReveal` займає слот ambient-motion на екрані.
-   * Дві анімовані суми на одній поверхні — це вже дві анімації.
+   * AI-CONTEXT: до 2026-08-06 тут крутився лічильник (`CounterReveal`).
+   * Замінено не через смак: каскад ЧИТАЄ ієрархію, яку вже збудував П4,
+   * тобто типографіка й рух кажуть одне й те саме. Лічильник же виглядає
+   * однаково в будь-якому дашборді — це рух без підпису.
+   *
+   * `CounterReveal` лишається для БЕЗ-тирних чисел (hero-лічильники
+   * Рутини, ккал): у них нема чому каскадувати, і там відлік доречний.
+   * Це не дві мови руху, а одне правило — рух читає структуру числа.
+   *
+   * Hard Rule #17 — анімована сума займає слот ambient-motion на екрані.
    */
   animate?: boolean;
   className?: string;
@@ -107,25 +112,23 @@ export function Money({
   };
   const parts = splitMoneyParts(amount, fractionOpts);
   const muted = MUTED_CLASS[tone];
+  // Знак іде разом із гривнями: він частина того, що читають першим —
+  // величини. Окремим щаблем каскаду він був би дрібнотою, яка вступає
+  // «сама по собі».
+  const tier1 = animate ? "money-tier" : undefined;
+  const tier2 = animate ? "money-tier money-tier-2" : undefined;
+  const tier3 = animate ? "money-tier money-tier-3" : undefined;
 
   return (
     <span className={cn("tabular-nums whitespace-nowrap", className)}>
       {parts.sign !== "" && (
-        <span className={cn("text-[0.78em] font-normal", muted)}>
+        <span className={cn("text-[0.78em] font-normal", muted, tier1)}>
           {parts.sign}
         </span>
       )}
-      {animate ? (
-        <CounterReveal
-          value={Math.abs(Number.isFinite(amount) ? amount : 0)}
-          entranceFrom={0}
-          format={(v) => splitMoneyParts(v, fractionOpts).integer}
-        />
-      ) : (
-        parts.integer
-      )}
+      {animate ? <span className={tier1}>{parts.integer}</span> : parts.integer}
       {parts.fraction !== "" && (
-        <span className={cn("text-[0.64em] font-normal", muted)}>
+        <span className={cn("text-[0.64em] font-normal", muted, tier2)}>
           {parts.decimalSeparator}
           {parts.fraction}
         </span>
@@ -140,7 +143,7 @@ export function Money({
           раз на пару чисел («сплачено 1 000 з 5 000 ₴»): перше число
           символу не має, але тири й `tabular-nums` йому потрібні. */}
       {parts.symbol !== "" && (
-        <span className={cn("text-[0.72em] font-normal", muted)}>
+        <span className={cn("text-[0.72em] font-normal", muted, tier3)}>
           {NARROW_NBSP}
           {parts.symbol}
         </span>

@@ -77,7 +77,7 @@ export function DemoModeBadge() {
         "bg-brand-strong text-white dark:bg-brand-100 dark:text-brand-900",
         "text-style-label font-semibold shadow-e3",
         "hover:bg-brand-900 hover:shadow-e4 dark:hover:bg-brand-200",
-        "active:scale-[0.98] motion-safe:transition-all motion-safe:duration-200",
+        "active:scale-[0.98] motion-safe:transition-all motion-safe:duration-base",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
         "motion-safe:animate-fade-in",
       )}

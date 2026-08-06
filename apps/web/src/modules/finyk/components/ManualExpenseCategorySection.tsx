@@ -65,7 +65,7 @@ export function ManualExpenseCategorySection({
           motion-safe wrappers — reduced-motion users see a static
           badge without the fade-in. */}
       {aiAppliedCategory && categorySlug === aiAppliedCategory ? (
-        <div className="motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200 mb-2">
+        <div className="motion-safe:animate-in motion-safe:fade-in motion-safe:duration-base mb-2">
           <Badge
             variant="finyk"
             tone="soft"

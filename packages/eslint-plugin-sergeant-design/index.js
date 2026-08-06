@@ -2943,6 +2943,52 @@ const requireToastErrorAction = {
   },
 };
 
+// ─────────────────────────────────────────────────────────────────────────
+// `no-raw-motion-value` — сирі тривалості й криві в className.
+//
+// Токени руху існують у `theme.css` і прокинуті в Tailwind
+// (`duration-fast|base|slow|slower|slowest`, `ease-standard|…`). До
+// 2026-08-06 компонентний код їх НЕ знав: 141 сирий літерал у пʼяти
+// значеннях проти двох через токен, причому шкали навіть не збігались —
+// `duration-200` ≠ `--motion-duration-base` (220 ms).
+//
+// Без цього правила прохід розпадеться: `duration-200` лишається
+// валідним класом Tailwind, тож наступний автор напише його не зі зла, а
+// тому, що воно працює.
+const RAW_MOTION_VALUE_MESSAGE =
+  "Сира тривалість чи крива в className. Візьми токен: duration-{instant|fast|base|slow|slower|slowest} або ease-{standard|emphasized|accelerate|decelerate|overshoot}. Шкала — apps/web/src/styles/theme.css, обґрунтування — анти-слоп §4/П5.";
+
+const RAW_MOTION_RE = new RegExp(
+  "(?:^|[\\s\"'`])(?:[a-z-]+:)*(?:duration-(?:\\d+|\\[[^\\]]+\\])|ease-(?:in-out|in|out|linear)(?![-a-z]))",
+);
+
+const rawMotionValue = {
+  meta: {
+    type: "problem",
+    docs: {
+      description:
+        "Forbid raw Tailwind duration/easing literals in className — use the motion tokens forwarded from theme.css.",
+    },
+    schema: [],
+    messages: { rawMotion: RAW_MOTION_VALUE_MESSAGE },
+  },
+  create(context) {
+    const check = (node, value) => {
+      if (typeof value !== "string") return;
+      if (!RAW_MOTION_RE.test(value)) return;
+      context.report({ node, messageId: "rawMotion" });
+    };
+    return {
+      Literal(node) {
+        check(node, node.value);
+      },
+      TemplateElement(node) {
+        check(node, node.value && (node.value.cooked ?? node.value.raw));
+      },
+    };
+  },
+};
+
 const plugin = {
   rules: {
     "no-raw-tracked-storage": noRawTrackedStorage,
@@ -2967,6 +3013,7 @@ const plugin = {
     "no-raw-storage-key": noRawStorageKey,
     "no-adhoc-metric-aggregation": noAdhocMetricAggregation,
     "require-toast-error-action": requireToastErrorAction,
+    "no-raw-motion-value": rawMotionValue,
   },
 };
 
@@ -3000,6 +3047,7 @@ export {
   RAW_STORAGE_HELPER_NAMES,
   NO_RAW_STORAGE_KEY_MESSAGE,
   REQUIRE_TOAST_ERROR_ACTION_MESSAGE,
+  RAW_MOTION_VALUE_MESSAGE,
 };
 
 export default plugin;

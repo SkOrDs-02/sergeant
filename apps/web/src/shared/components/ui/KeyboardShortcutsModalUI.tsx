@@ -125,7 +125,7 @@ export function KeyboardShortcutsModal({
       {/* Backdrop */}
       <button
         type="button"
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200 cursor-default"
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in duration-base cursor-default"
         onClick={onClose}
         aria-label="Закрити модальне вікно"
         tabIndex={-1}
@@ -137,7 +137,7 @@ export function KeyboardShortcutsModal({
         className={cn(
           "relative w-full max-w-lg max-h-[80vh] overflow-y-auto",
           "bg-panel border border-line rounded-2xl shadow-float",
-          "animate-in fade-in zoom-in-95 duration-200",
+          "animate-in fade-in zoom-in-95 duration-base",
         )}
       >
         {/* Header */}

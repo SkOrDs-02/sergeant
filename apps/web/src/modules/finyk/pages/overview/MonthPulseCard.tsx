@@ -130,7 +130,7 @@ const MonthPulseCardImpl = function MonthPulseCard({
           <div className="h-1.5 bg-bg rounded-full overflow-hidden">
             <div
               className={cn(
-                "h-full rounded-full transition-[width,background-color] duration-700",
+                "h-full rounded-full transition-[width,background-color] duration-slowest",
                 planBarClass,
               )}
               style={{ width: `${planPct}%` }}

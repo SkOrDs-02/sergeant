@@ -267,7 +267,7 @@ export const BentoCard = memo(function BentoCard({
               // Soft entry animation so the lifted card visibly *animates*
               // its reason chip in, instead of the previous instant-pop
               // that made the adaptive reorder feel like layout jitter.
-              "motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-1 motion-safe:duration-300",
+              "motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-1 motion-safe:duration-slow",
             )}
             title={adaptiveReason}
           >
@@ -322,7 +322,7 @@ export const BentoCard = memo(function BentoCard({
                   className={cn(
                     "mt-1 inline-flex items-center gap-0.5 self-start",
                     "rounded-full px-1.5 py-0.5 text-xs font-bold tabular-nums leading-none",
-                    "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300",
+                    "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-slow",
                     config.trendDelta > 0
                       ? "bg-success/10 text-success-strong dark:text-success"
                       : "bg-danger/10 text-danger-strong dark:text-danger",
@@ -378,7 +378,7 @@ export const BentoCard = memo(function BentoCard({
           >
             <div
               className={cn(
-                "h-full rounded-full transition-[width] duration-700 ease-out",
+                "h-full rounded-full transition-[width] duration-slowest ease-standard",
                 config.accentClass,
               )}
               style={{ width: `${Math.min(preview.progress ?? 0, 100)}%` }}
@@ -458,7 +458,7 @@ function BentoCardPeek({
           "rounded-2xl border border-line bg-panel shadow-float",
           "p-2 flex flex-col gap-0.5",
           "motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95",
-          "motion-safe:slide-in-from-bottom-2 motion-safe:duration-150",
+          "motion-safe:slide-in-from-bottom-2 motion-safe:duration-fast",
         )}
       >
         {/* Drag handle pill for visual affordance */}
@@ -522,7 +522,7 @@ function GhostSparkline({ d, colorClass }: { d: string; colorClass: string }) {
       className={cn(
         "block mt-2 opacity-20",
         colorClass,
-        "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-500",
+        "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-slower",
       )}
     >
       <svg viewBox="0 0 48 28" className="w-full max-w-[80px] h-auto">
@@ -555,7 +555,7 @@ function GhostRing({ pct, colorClass }: { pct: number; colorClass: string }) {
       className={cn(
         "block mt-2 opacity-20",
         colorClass,
-        "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-500",
+        "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-slower",
       )}
     >
       <svg viewBox="0 0 28 28" className="w-7 h-7">

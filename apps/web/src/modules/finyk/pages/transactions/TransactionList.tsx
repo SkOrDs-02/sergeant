@@ -319,6 +319,7 @@ export function TransactionList({
     activeTx.length === 0 && hasTransactionsOutsideMonth ? (
       <div className="rounded-2xl border border-dashed border-line bg-panelHi/40">
         <EmptyState
+          surface="document"
           illustration={<FinykEmptyIllustration size={80} />}
           title="Цей місяць ще порожній"
           description={
@@ -344,6 +345,7 @@ export function TransactionList({
     ) : (
       <div className="rounded-2xl border border-dashed border-line bg-panelHi/40">
         <EmptyState
+          surface="document"
           illustration={<FinykEmptyIllustration size={80} />}
           title="Немає транзакцій"
           description="Зміни місяць, фільтр або переключи «приховані», якщо вони є."

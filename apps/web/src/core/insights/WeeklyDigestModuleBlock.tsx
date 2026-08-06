@@ -104,7 +104,7 @@ function ChevronIcon({ expanded }: { expanded: boolean }) {
       size={15}
       strokeWidth={2.5}
       className={cn(
-        "transition-transform duration-200 shrink-0 text-muted",
+        "transition-transform duration-base shrink-0 text-muted",
         expanded && "rotate-90",
       )}
     />
@@ -165,7 +165,7 @@ export function ModuleBlock({ moduleKey, data, badge }: ModuleBlockProps) {
 
       <div
         className={cn(
-          "grid transition-[grid-template-rows] duration-200 ease-in-out",
+          "grid transition-[grid-template-rows] duration-base ease-standard",
           open ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
         )}
       >

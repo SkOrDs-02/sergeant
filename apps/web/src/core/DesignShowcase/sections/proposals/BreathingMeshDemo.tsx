@@ -46,7 +46,7 @@ export function BreathingMeshDemo() {
                 background: mesh,
                 animation: reduced
                   ? undefined
-                  : "r2-breathe 14s ease-in-out infinite",
+                  : "r2-breathe 14s ease-standard infinite",
               }}
             />
             <div className="relative flex h-full flex-col justify-end p-4">

@@ -153,7 +153,7 @@ export function ProgressCircle({
               : circumference
           }
           strokeDashoffset={indeterminate ? 0 : dashOffset}
-          className="motion-safe:transition-all motion-safe:duration-300"
+          className="motion-safe:transition-all motion-safe:duration-slow"
         />
       </svg>
       {visibleLabel != null && (

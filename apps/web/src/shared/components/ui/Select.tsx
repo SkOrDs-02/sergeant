@@ -62,7 +62,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           aria-invalid={error ? true : undefined}
           className={cn(
             "w-full appearance-none text-text",
-            "outline-none transition-colors duration-200",
+            "outline-none transition-colors duration-base",
             "disabled:opacity-50 disabled:cursor-not-allowed",
             sizes[size],
             variants[variant],

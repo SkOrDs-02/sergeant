@@ -94,7 +94,7 @@ export function StickySummaryDemo() {
               <div
                 className={cn(
                   "absolute top-0 inset-x-0 z-10 px-4 py-2.5 flex items-center justify-between",
-                  "bg-panelHi/95 backdrop-blur border-b border-line transition-all duration-300",
+                  "bg-panelHi/95 backdrop-blur border-b border-line transition-all duration-slow",
                   showBar
                     ? "translate-y-0 opacity-100"
                     : "-translate-y-full opacity-0",

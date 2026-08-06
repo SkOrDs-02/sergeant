@@ -76,7 +76,7 @@ export function ModuleRow({
       onClick={onToggle}
       aria-pressed={active}
       className={cn(
-        "relative w-full text-left rounded-2xl border transition-all duration-200",
+        "relative w-full text-left rounded-2xl border transition-all duration-base",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
         expanded ? "p-3.5" : "p-3",
         active

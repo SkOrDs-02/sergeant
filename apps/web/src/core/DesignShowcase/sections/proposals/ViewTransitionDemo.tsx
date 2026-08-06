@@ -37,7 +37,7 @@ export function ViewTransitionDemo() {
             <div
               className={cn(
                 "absolute inset-0",
-                !reduced && "transition-all duration-500 ease-out",
+                !reduced && "transition-all duration-slower ease-standard",
               )}
               style={{
                 transform:
@@ -50,7 +50,7 @@ export function ViewTransitionDemo() {
             <div
               className={cn(
                 "absolute inset-0",
-                !reduced && "transition-all duration-500 ease-out",
+                !reduced && "transition-all duration-slower ease-standard",
               )}
               style={{
                 transform:

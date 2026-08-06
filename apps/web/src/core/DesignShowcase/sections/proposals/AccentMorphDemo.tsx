@@ -102,7 +102,7 @@ function AccentCard({
       className={cn(
         "w-40 rounded-2xl border-2 bg-panel p-4 flex flex-col items-center gap-2",
         morph &&
-          "transition-[border-color,background-color,color] duration-500",
+          "transition-[border-color,background-color,color] duration-slower",
       )}
       style={{
         borderColor: color,
@@ -112,7 +112,7 @@ function AccentCard({
       <span
         className={cn(
           "h-10 w-10 rounded-xl flex items-center justify-center",
-          morph && "transition-colors duration-500",
+          morph && "transition-colors duration-slower",
         )}
         style={{
           backgroundColor: `color-mix(in srgb, ${color} 18%, transparent)`,
@@ -124,7 +124,7 @@ function AccentCard({
       <span
         className={cn(
           "text-style-label",
-          morph && "transition-colors duration-500",
+          morph && "transition-colors duration-slower",
         )}
         style={{ color }}
       >

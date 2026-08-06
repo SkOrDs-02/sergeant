@@ -48,7 +48,7 @@ export function IconMorphDemo() {
           >
             <span
               className={cn(
-                "absolute inset-0 flex items-center justify-center transition-all duration-300",
+                "absolute inset-0 flex items-center justify-center transition-all duration-slow",
                 afterDone
                   ? "opacity-0 scale-50 rotate-90"
                   : "opacity-100 scale-100 rotate-0",
@@ -58,7 +58,7 @@ export function IconMorphDemo() {
             </span>
             <span
               className={cn(
-                "absolute inset-0 flex items-center justify-center transition-all duration-300",
+                "absolute inset-0 flex items-center justify-center transition-all duration-slow",
                 afterDone
                   ? "opacity-100 scale-100 rotate-0"
                   : "opacity-0 scale-50 -rotate-90",

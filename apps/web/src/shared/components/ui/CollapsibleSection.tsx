@@ -173,7 +173,7 @@ export function CollapsibleSection({
       {/* CSS grid row transition for smooth collapse */}
       <div
         className={cn(
-          "grid transition-[grid-template-rows] duration-200 ease-out",
+          "grid transition-[grid-template-rows] duration-base ease-standard",
           open ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
         )}
       >

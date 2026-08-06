@@ -116,7 +116,7 @@ export const ConfirmDialog = memo(function ConfirmDialog({
         className={cn(
           "relative z-10 w-full max-w-sm mx-4 mb-4 sm:mb-0 overscroll-contain touch-pan-y",
           "bg-panel rounded-3xl shadow-float border border-line p-6",
-          "motion-safe:animate-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-200",
+          "motion-safe:animate-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-base",
         )}
       >
         <h2

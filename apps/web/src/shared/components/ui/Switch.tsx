@@ -184,7 +184,7 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(function Switch(
           aria-hidden="true"
           className={cn(
             "inline-flex items-center rounded-full",
-            "transition-colors duration-200",
+            "transition-colors duration-base",
             "outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-bg",
             ringColor,
             trackSize[size],
@@ -199,7 +199,7 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(function Switch(
             // `bg-panel` (#1b1613) зливався з вимкненим треком (#1f2a25) і
             // стан не читався навіть по позиції.
             "pointer-events-none absolute left-[3px] rounded-full bg-panel dark:bg-text shadow-card",
-            "transition-transform duration-200",
+            "transition-transform duration-base",
             thumbSize[size],
             thumbCheckedTranslate[size],
           )}

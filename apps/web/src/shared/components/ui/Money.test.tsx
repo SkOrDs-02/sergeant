@@ -155,21 +155,19 @@ describe("Delta — зміна як типографіка, а не бейдж",
   });
 });
 
-describe("Money — анімоване ціле", () => {
-  it("анімується лише ціла частина; копійки й символ стоять на місці", async () => {
+describe("Money — сума під час появи", () => {
+  /**
+   * Переписано 2026-08-06 разом із переходом на каскад тирів (П5,
+   * варіант C). Доти тут крутився лічильник, і тест чекав, доки ціле
+   * «доїде» до значення. Тепер число повне з першого кадру — інакше
+   * зелений тест стверджував би про поведінку, якої вже немає.
+   */
+  it("число повне з першого кадру — анімуються тири, не значення", () => {
     const { container } = render(<Money amount={1250.5} kopecks animate />);
     const root = container.firstElementChild as HTMLElement;
-
-    // Копійки й символ незмінні з першого кадру — вони поза tween-ом.
+    expect(flat(root)).toBe("1 250,50 ₴");
     expect(flat(kopecks(root))).toBe(",50");
     expect(flat(symbol(root))).toBe(" ₴");
-
-    // А ціле доїжджає до кінцевого значення.
-    // Явний таймаут: tween 800 ms надто близько до дефолтних 1000 ms
-    // `waitFor`, і на завантаженому CI така пара дає флейк.
-    await waitFor(() => expect(flat(root)).toBe("1 250,50 ₴"), {
-      timeout: 2000,
-    });
   });
 
   it("порожній symbol не лишає привида пробілу", () => {
@@ -198,5 +196,44 @@ describe("Money — анімоване ціле", () => {
         ),
       { timeout: 2000 },
     );
+  });
+});
+
+describe("Money — каскад тирів (анти-слоп П5, варіант C)", () => {
+  it("без `animate` жодних анімаційних класів немає", () => {
+    const { container } = render(<Money amount={1250.5} kopecks />);
+    expect(container.querySelector(".money-tier")).toBeNull();
+  });
+
+  /**
+   * Рішення власника 2026-08-06: число зʼявляється відразу, тири
+   * вступають за вагою — гривні → копійки → символ. Рух ЧИТАЄ ієрархію,
+   * яку збудував П4; лічильник, що тут стояв доти, виглядав однаково в
+   * будь-якому дашборді.
+   */
+  it("тири вступають трьома щаблями за вагою", () => {
+    const { container } = render(
+      <Money amount={-1250.5} kopecks signed animate />,
+    );
+    const tiers = [...container.querySelectorAll(".money-tier")];
+    // знак, гривні, копійки, символ — чотири вузли у трьох щаблях
+    expect(tiers).toHaveLength(4);
+    const second = container.querySelector(".money-tier-2");
+    const third = container.querySelector(".money-tier-3");
+    expect(second?.textContent).toContain("50");
+    expect(third?.textContent).toContain("₴");
+  });
+
+  /**
+   * Знак іде разом із гривнями, а не окремим щаблем: він частина того,
+   * що читають першим — величини. Окремо він був би дрібнотою, яка
+   * вступає сама по собі.
+   */
+  it("знак вступає разом із гривнями, не окремо", () => {
+    const { container } = render(<Money amount={-340} signed animate />);
+    const sign = container.querySelector(".text-\\[0\\.78em\\]");
+    expect(sign?.className).toContain("money-tier");
+    expect(sign?.className).not.toContain("money-tier-2");
+    expect(sign?.className).not.toContain("money-tier-3");
   });
 });

@@ -187,7 +187,7 @@ export function ModuleChecklist({
   return (
     <div
       className={cn(
-        "rounded-2xl border overflow-hidden transition-all duration-300",
+        "rounded-2xl border overflow-hidden transition-all duration-slow",
         styles.bg,
         styles.border,
         className,
@@ -240,7 +240,7 @@ export function ModuleChecklist({
                 cy="16"
                 r="12"
                 fill="none"
-                className={cn("transition-all duration-500", styles.accent)}
+                className={cn("transition-all duration-slower", styles.accent)}
                 strokeWidth="3"
                 strokeLinecap="round"
                 strokeDasharray={`${progress * 0.754} 100`}
@@ -263,7 +263,7 @@ export function ModuleChecklist({
             name="chevron-down"
             size={16}
             className={cn(
-              "text-muted transition-transform duration-200",
+              "text-muted transition-transform duration-base",
               isCollapsed && "-rotate-90",
             )}
           />
@@ -289,7 +289,7 @@ export function ModuleChecklist({
                 }}
                 className={cn(
                   "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left",
-                  "transition-all duration-200",
+                  "transition-all duration-base",
                   done
                     ? "bg-transparent cursor-default"
                     : "bg-panel/60 hover:bg-panel border border-line/50 hover:border-line cursor-pointer",
@@ -306,7 +306,7 @@ export function ModuleChecklist({
                 />
                 <span
                   className={cn(
-                    "flex-1 text-style-label transition-all duration-200",
+                    "flex-1 text-style-label transition-all duration-base",
                     done ? "text-muted line-through" : "text-text",
                   )}
                 >

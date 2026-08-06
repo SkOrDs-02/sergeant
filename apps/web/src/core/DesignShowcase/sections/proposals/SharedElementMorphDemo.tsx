@@ -64,7 +64,7 @@ export function SharedElementMorphDemo() {
             <span
               className={cn(
                 "absolute flex items-center justify-center rounded-lg",
-                !reduced && "transition-all duration-500 ease-out",
+                !reduced && "transition-all duration-slower ease-standard",
               )}
               style={{
                 backgroundColor: `color-mix(in srgb, ${color} 18%, transparent)`,

@@ -492,7 +492,7 @@ export function ManualExpenseSheet({
             disabled={isSubmitting}
             onClick={() => handleKindChange("expense")}
             className={cn(
-              "touch-target rounded-md text-style-body font-medium transition-colors duration-150",
+              "touch-target rounded-md text-style-body font-medium transition-colors duration-fast",
               !isIncome
                 ? "bg-finyk-strong text-white shadow-sm"
                 : "text-muted hover:text-text",
@@ -507,7 +507,7 @@ export function ManualExpenseSheet({
             disabled={isSubmitting}
             onClick={() => handleKindChange("income")}
             className={cn(
-              "touch-target rounded-md text-style-body font-medium transition-colors duration-150",
+              "touch-target rounded-md text-style-body font-medium transition-colors duration-fast",
               isIncome
                 ? "bg-finyk-strong text-white shadow-sm"
                 : "text-muted hover:text-text",

@@ -158,7 +158,7 @@ export function GoalFirstScreen({
                 onClick={() => handlePick(outcome)}
                 aria-disabled={busy}
                 className={cn(
-                  "w-full text-left rounded-2xl border p-4 transition-all duration-200",
+                  "w-full text-left rounded-2xl border p-4 transition-all duration-base",
                   "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
                   busy
                     ? "border-line bg-panel opacity-60"

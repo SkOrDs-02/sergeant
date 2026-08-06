@@ -578,7 +578,7 @@ function SyncPill({ syncTone }: SyncPillProps): React.ReactElement {
         syncTone.needsAttention ? "flex" : "hidden sm:flex",
         "items-center gap-1.5 select-none shrink-0",
         "text-style-caption px-1.5 sm:px-2 py-0.5 rounded-full border",
-        "transition-colors duration-200",
+        "transition-colors duration-base",
         syncTone.pill,
       )}
       role="status"

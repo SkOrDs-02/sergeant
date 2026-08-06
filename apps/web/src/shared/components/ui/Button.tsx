@@ -365,7 +365,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         className={cn(
           // Base styles
           "inline-flex items-center justify-center touch-manipulation",
-          "motion-safe:transition-all motion-safe:duration-200 motion-safe:ease-smooth",
+          "motion-safe:transition-all motion-safe:duration-base motion-safe:ease-smooth",
           "motion-reduce:transition-none motion-reduce:active:scale-100!",
           "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
           "disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none",
@@ -467,7 +467,7 @@ function ProgressSpinner({
         strokeDasharray={circumference}
         strokeDashoffset={strokeDashoffset}
         transform="rotate(-90 9 9)"
-        className="transition-[stroke-dashoffset] duration-200 ease-out"
+        className="transition-[stroke-dashoffset] duration-base ease-standard"
       />
     </svg>
   );

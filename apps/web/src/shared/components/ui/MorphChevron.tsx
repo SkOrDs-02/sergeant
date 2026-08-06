@@ -53,7 +53,7 @@ export function MorphChevron({
       strokeLinejoin="round"
       aria-hidden
       className={cn(
-        "shrink-0 origin-center motion-safe:transition-transform motion-safe:duration-200 motion-safe:ease-out",
+        "shrink-0 origin-center motion-safe:transition-transform motion-safe:duration-base motion-safe:ease-standard",
         open ? "rotate-90" : "rotate-0",
         className,
       )}

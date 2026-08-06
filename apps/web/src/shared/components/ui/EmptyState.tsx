@@ -115,6 +115,30 @@ export interface EmptyStateProps {
    * landmark content (the heading already covers the announcement).
    */
   ariaLive?: "polite" | "off" | undefined;
+  /**
+   * Власна поверхня порожнього стану.
+   *
+   * `none` (за замовчуванням) — компонент лишається голою колонкою, а
+   * поверхню дає той, хто його загортає. Так було завжди.
+   *
+   * `document` — «край і зріз» (анти-слоп П3, рішення власника
+   * 2026-08-06 на `mockups/product/pending-decisions.html`): відривний
+   * талон із лінійкою зверху й перфорацією знизу, без скруглення.
+   *
+   * AI-DANGER: матеріал НЕ йде всередину — коробка іконки й кнопка
+   * лишаються скругленими. Це рішення, а не недогляд: край описує, ЧИМ Є
+   * поверхня, а кнопка на ній — це дія. Круглий елемент на квадратному
+   * аркуші читається як бланк зі штампом. Зробивши квадратним і його, ми
+   * зобов'язалися б поміняти всі кнопки продукту, бо одна квадратна
+   * серед круглих виглядає помилкою — а це вже не поверхня, а новий
+   * принцип.
+   *
+   * AI-DANGER: `document` НЕ ставлять і на `compact`-станах усередині
+   * картки. Талон у талоні перетворює матеріал на візерунок — рівно те,
+   * від чого П3 і відводить (та сама причина, що розділяє `edge-rule` і
+   * `edge-perf` у списку транзакцій).
+   */
+  surface?: "none" | "document" | undefined;
 }
 
 interface TonePalette {
@@ -257,13 +281,15 @@ export function EmptyState({
   examplePreview,
   module,
   ariaLive = "polite",
+  surface = "none",
 }: EmptyStateProps) {
   const resolvedSize = resolveSize(size, compact);
   const tokens = SIZE_TOKENS[resolvedSize];
   const tone = resolveTone(module, variant);
   const isSm = resolvedSize === "sm";
   const primary = primaryAction ?? action;
-  return (
+  const asDocument = surface === "document";
+  const body = (
     // `role="status"` + `aria-live="polite"` keep the empty-state silent
     // until it appears dynamically (e.g. after a filter clears the list).
     // SR then announces `title` + `description` together via `aria-atomic`.
@@ -274,8 +300,9 @@ export function EmptyState({
       className={cn(
         "flex flex-col items-center justify-center text-center",
         tokens.outer,
+        asDocument && "edge-stub border border-line bg-panel",
         !disableAnimation &&
-          "motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95 motion-safe:duration-300",
+          "motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95 motion-safe:duration-slow",
         className,
       )}
     >
@@ -285,7 +312,7 @@ export function EmptyState({
           className={cn(
             "flex items-center justify-center",
             !disableAnimation &&
-              "motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-90 motion-safe:duration-300 motion-safe:delay-75",
+              "motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-90 motion-safe:duration-slow motion-safe:delay-75",
           )}
         >
           {illustration}
@@ -299,7 +326,7 @@ export function EmptyState({
               tone.container,
               tokens.iconBox,
               !disableAnimation &&
-                "motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-90 motion-safe:duration-300 motion-safe:delay-75",
+                "motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-90 motion-safe:duration-slow motion-safe:delay-75",
             )}
           >
             {icon}
@@ -337,7 +364,7 @@ export function EmptyState({
             "w-full mt-2 p-3 rounded-xl bg-panel/50 border border-dashed border-line/60",
             tokens.descriptionMax,
             !disableAnimation &&
-              "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300 motion-safe:delay-100",
+              "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-slow motion-safe:delay-100",
           )}
         >
           <p className="text-style-caption text-muted mb-2 font-medium">
@@ -352,7 +379,7 @@ export function EmptyState({
             "flex flex-wrap items-center justify-center",
             tokens.actionGap,
             !disableAnimation &&
-              "motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-300 motion-safe:delay-150",
+              "motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-slow motion-safe:delay-150",
           )}
         >
           {primary}
@@ -364,7 +391,7 @@ export function EmptyState({
           className={cn(
             "mt-1",
             !disableAnimation &&
-              "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300 motion-safe:delay-200",
+              "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-slow motion-safe:delay-200",
           )}
         >
           {tertiaryLink}
@@ -378,7 +405,7 @@ export function EmptyState({
             // лише 3.33:1 на panel-фоні (axe color-contrast, a11y-гейт).
             "flex items-center gap-1.5 text-style-caption text-muted mt-2",
             !disableAnimation &&
-              "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300 motion-safe:delay-200",
+              "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-slow motion-safe:delay-200",
           )}
         >
           <Icon
@@ -392,6 +419,17 @@ export function EmptyState({
       )}
     </div>
   );
+
+  if (!asDocument) return body;
+
+  /*
+    AI-DANGER: підйом іде на БАТЬКІВСЬКОМУ вузлі, бо `edge-stub` вирізає
+    перфорацію маскою, а маска зрізає будь-яку тінь на своєму вузлі — і
+    `box-shadow`, і `filter: drop-shadow()` однаково. Заміряно в headless
+    Chromium; протокол — біля `.edge-lift` у `tailwind-preset.js`.
+    Прибереш обгортку — поверхня мовчки втратить глибину.
+  */
+  return <div className="edge-lift">{body}</div>;
 }
 
 /**

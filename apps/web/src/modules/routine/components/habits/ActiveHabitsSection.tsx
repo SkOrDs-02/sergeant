@@ -82,6 +82,7 @@ export function ActiveHabitsSection({
       </p>
       {!hasActive && (
         <EmptyState
+          surface="document"
           illustration={<RoutineEmptyIllustration size={96} />}
           title="Поки порожньо"
           // Форми «вище» на цьому екрані немає — вище лише поле пошуку по

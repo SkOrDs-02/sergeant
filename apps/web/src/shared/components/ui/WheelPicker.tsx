@@ -233,7 +233,7 @@ export function WheelPicker({
               aria-hidden="true"
               className={cn(
                 "snap-center flex items-center justify-center gap-1 tabular-nums",
-                !reduced && "transition-all duration-150",
+                !reduced && "transition-all duration-fast",
                 isSelected ? "text-text text-style-title" : "text-muted",
               )}
               style={{

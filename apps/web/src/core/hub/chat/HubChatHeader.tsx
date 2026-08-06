@@ -89,7 +89,7 @@ export function HubChatHeader({
                 name="chevron-down"
                 size={14}
                 className={cn(
-                  "text-muted shrink-0 transition-transform duration-150",
+                  "text-muted shrink-0 transition-transform duration-fast",
                   detailsOpen && "rotate-180",
                 )}
               />
