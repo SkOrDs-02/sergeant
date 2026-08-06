@@ -1,4 +1,5 @@
 import { Icon } from "@shared/components/ui/Icon";
+import { Money } from "@shared/components/ui/Money";
 import { cn } from "@shared/lib/ui/cn";
 import { AnimatedNumber } from "@shared/components/ui/AnimatedNumber";
 import { AssetsLiabilitiesBar } from "./AssetsBars";
@@ -65,21 +66,25 @@ export function AssetsNetworthCard({
         {showBalance ? (
           <div className="flex flex-wrap gap-x-4 gap-y-2 mt-4 pt-4 border-t border-finyk/20 text-sm">
             <div>
-              <div className="text-xs text-subtle mb-0.5">Активи</div>
+              <div className="text-style-caption text-subtle mb-0.5">
+                Активи
+              </div>
               <div className="font-semibold tabular-nums text-text">
-                {`+${totalAssets.toLocaleString("uk-UA", { maximumFractionDigits: 0 })} ₴`}
+                <Money amount={totalAssets} signed tone="inherit" />
               </div>
             </div>
             <div className="w-px bg-finyk/20 hidden sm:block self-stretch min-h-10" />
             <div>
-              <div className="text-xs text-subtle mb-0.5">Пасиви</div>
+              <div className="text-style-caption text-subtle mb-0.5">
+                Пасиви
+              </div>
               <div className="font-semibold tabular-nums text-text">
-                {`\u2212${totalDebt.toLocaleString("uk-UA", { maximumFractionDigits: 0 })} ₴`}
+                <Money amount={-totalDebt} tone="inherit" />
               </div>
             </div>
           </div>
         ) : (
-          <p className="text-xs text-muted mt-3">Суми приховано</p>
+          <p className="text-style-caption text-muted mt-3">Суми приховано</p>
         )}
         {showBalance && totalAssets + totalDebt > 0 && (
           <AssetsLiabilitiesBar assets={totalAssets} liabilities={totalDebt} />

@@ -143,8 +143,16 @@ describe("AssetsNetworthCard", () => {
       />,
     );
 
-    const currency = screen.getByText("₴", { selector: "span" });
+    // Скопійовано на hero навмисно: відколи рядок «Активи / Пасиви» під
+    // ним малюється через `Money`, символів ₴ на картці кілька. Hero має
+    // ВЛАСНУ, саморобну обробку тирів — окремий span із `leading-none`
+    // поруч із `AnimatedNumber`. Це дубль того, що робить `Money`, і
+    // борг на окремий прохід: перевести hero на `Money` означає
+    // узгодити маскування, роль `img` і одометр, а це не косметика.
     const amount = screen.getByRole("img", { name: /-38[\s\u00a0]?839/ });
+    const currency = amount.nextElementSibling as HTMLElement;
+    expect(currency).not.toBeNull();
+    expect(currency.textContent).toBe("₴");
     expect(currency.parentElement).toHaveClass("flex", "items-center");
     expect(currency).toHaveClass("leading-none");
     expect(amount).toHaveClass("items-center");
