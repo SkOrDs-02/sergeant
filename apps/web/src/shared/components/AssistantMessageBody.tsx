@@ -21,7 +21,10 @@ import { memo, useMemo, type ReactNode } from "react";
 const PROSE_CLASS_NAME =
   "text-sm leading-relaxed [&_strong]:font-semibold [&_em]:italic " +
   "[&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 " +
-  "[&_p]:my-1 [&_li]:my-0.5 [&_a]:text-primary [&_a]:underline " +
+  // my-2, а не my-1: абзац — єдиний візуальний розділювач між темами у
+  // відповіді (VOICE_RULE вимагає «кожну тему з нового абзацу»), і 4 px
+  // читаються як перенос рядка, а не як межа теми.
+  "[&_p]:my-2 [&_li]:my-0.5 [&_a]:text-primary [&_a]:underline " +
   "[&_h3]:text-base [&_h3]:font-bold [&_h3]:mt-2 [&_h3]:mb-1 " +
   "[&_h4]:text-sm [&_h4]:font-semibold [&_h4]:mt-3 [&_h4]:mb-1 " +
   "[&_h4]:text-text " +
