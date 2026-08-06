@@ -9,6 +9,19 @@ import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { ToastProvider } from "@shared/hooks/useToast";
 import type { ReactNode } from "react";
 
+/**
+ * `Money` розкладає суму на кілька DOM-вузлів (знак, гривні, копійки,
+ * символ), тож рядковий матчер її не знаходить — порівнюємо `textContent`
+ * вузла-обгортки. Нерозривні пробіли — escape-послідовностями: `\u00a0`
+ * у розрядах від `toLocaleString("uk-UA")`, `\u202f` перед символом; у
+ * коді обидва невидимі, тому в джерелі стоять escape-и, а не самі знаки.
+ */
+function moneyText(re: RegExp): boolean {
+  return Array.from(document.querySelectorAll("span")).some((el) =>
+    re.test(el.textContent ?? ""),
+  );
+}
+
 // AssetsForm imports useFeatureGate (→ react-query) — stub to avoid provider
 // wrapping in every test.
 vi.mock("./AssetsForm", () => ({
@@ -323,7 +336,7 @@ describe("AssetsAssetsSection", () => {
     // The card shows "Monobank" as the bank label for each linked account
     expect(screen.getByText("Monobank")).toBeInTheDocument();
     // Balance is shown (1000 UAH); the thousands-separator may be locale-specific
-    expect(screen.getByText(/1[\s\S]*000,00[\s\S]*₴/)).toBeInTheDocument();
+    expect(moneyText(/^1\u00a0000,00\u202f₴$/)).toBe(true);
   });
 
   it("marks excluded accounts and formats non-UAH card balances", () => {
@@ -353,11 +366,11 @@ describe("AssetsAssetsSection", () => {
 
     render(wrap(<AssetsAssetsSection state={state} />));
 
-    expect(screen.getByText(/42,50 \$/)).toBeInTheDocument();
-    expect(screen.getByText(/99,00 €/)).toBeInTheDocument();
+    expect(moneyText(/^42,50\u202f\$$/)).toBe(true);
+    expect(moneyText(/^99,00\u202f€$/)).toBe(true);
     // Excluded cards stay on screen (otherwise the toggle is unreachable) —
     // they are just labelled as not counted.
-    expect(screen.getByText(/1[\s\S]*000,00[\s\S]*₴/)).toBeInTheDocument();
+    expect(moneyText(/^1\u00a0000,00\u202f₴$/)).toBe(true);
     expect(screen.getByText("Не враховується")).toBeInTheDocument();
   });
 

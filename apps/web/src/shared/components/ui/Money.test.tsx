@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 
 import { Money, Delta } from "./Money";
+import { signedDeltaClass } from "@shared/lib/ui/amountTone";
 
 afterEach(cleanup);
 
@@ -100,8 +101,21 @@ describe("Delta — зміна як типографіка, а не бейдж",
     const { container: spend } = render(
       <Delta value={340} polarity="negative" />,
     );
-    expect(grow.firstElementChild).toHaveClass("text-success");
+    expect(grow.firstElementChild).toHaveClass("text-success-strong");
     expect(spend.firstElementChild).toHaveClass("text-danger");
+  });
+
+  /**
+   * Регресія: `Delta` фарбувала «добре» голим `text-success`, тоді як
+   * решта репо давала світлому режиму `-strong`-компаньйон. Одна роль,
+   * два визначення й різний контраст на тому самому папері. Тепер колір
+   * приходить із `signedDeltaClass`, тож розійтися вони більше не можуть.
+   */
+  it("бере ту саму пару кольорів, що й решта підписаних дельт", () => {
+    const { container } = render(<Delta value={340} polarity="positive" />);
+    expect(container.firstElementChild).toHaveClass(
+      ...signedDeltaClass(1).split(" "),
+    );
   });
 
   it("нуль нейтральний за будь-якої полярності — це не зміна", () => {

@@ -5,6 +5,7 @@ import { Switch } from "@shared/components/ui/Switch";
 import { Badge } from "@shared/components/ui/Badge";
 import { CollapsibleSection } from "@shared/components/ui/CollapsibleSection";
 import { cn } from "@shared/lib/ui/cn";
+import { Money } from "@shared/components/ui/Money";
 import { getAccountVisual } from "../lib/accountVisual";
 import { getMonoOwnFunds } from "@sergeant/finyk-domain/lib/accounts";
 import { messages } from "@shared/i18n/uk";
@@ -116,11 +117,18 @@ export function AssetsMonoCards({
             </div>
             <div className="text-right shrink-0">
               <div className="text-style-label tabular-nums text-text">
-                {showBalance
-                  ? `${(displayBalance / 100).toLocaleString("uk-UA", {
-                      minimumFractionDigits: 2,
-                    })} ${currencySymbol(a.currencyCode)}`
-                  : "••••"}
+                {showBalance ? (
+                  // `kopecks` увімкнено навмисно: це залишок на рахунку
+                  // банку, де копійка — частина факту, а не шум. На
+                  // зведених сумах (капітал, підсумки) вона вимкнена.
+                  <Money
+                    amount={displayBalance / 100}
+                    kopecks
+                    symbol={currencySymbol(a.currencyCode)}
+                  />
+                ) : (
+                  "••••"
+                )}
               </div>
             </div>
           </button>

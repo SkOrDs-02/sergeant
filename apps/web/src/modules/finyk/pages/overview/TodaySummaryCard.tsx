@@ -1,6 +1,7 @@
-import { memo } from "react";
+import { memo, type ReactNode } from "react";
 import { Card } from "@shared/components/ui/Card";
 import { cn } from "@shared/lib/ui/cn";
+import { Money } from "@shared/components/ui/Money";
 import { messages } from "@shared/i18n/uk";
 
 interface TodaySummaryCardProps {
@@ -11,10 +12,6 @@ interface TodaySummaryCardProps {
   onOpen: () => void;
 }
 
-function formatUah(value: number): string {
-  return `${Math.round(value).toLocaleString("uk-UA")} ₴`;
-}
-
 function TodaySummaryCardImpl({
   spent,
   income,
@@ -23,7 +20,11 @@ function TodaySummaryCardImpl({
   onOpen,
 }: TodaySummaryCardProps) {
   const variance = dailyPlan === null ? null : dailyPlan - spent;
-  const amount = (value: number) => (showBalance ? formatUah(value) : "••••");
+  // Округлення до гривні лишається тут, а не в `Money`: на цій картці
+  // копійки дня — шум, і так було до П4. `Money` без `kopecks` показав би
+  // те саме, але округлити ЯВНО дешевше, ніж потім гадати, де зникла копійка.
+  const amount = (value: number): ReactNode =>
+    showBalance ? <Money amount={Math.round(value)} /> : "••••";
 
   return (
     <button
@@ -53,16 +54,18 @@ function TodaySummaryCardImpl({
         </div>
 
         <div className="grid grid-cols-3 gap-2">
-          {[
-            [messages.finyk.todaySummary.expense, amount(spent)],
-            [messages.finyk.todaySummary.income, amount(income)],
+          {(
             [
-              messages.finyk.todaySummary.dailyPlan,
-              dailyPlan === null
-                ? messages.finyk.todaySummary.planMissing
-                : amount(dailyPlan),
-            ],
-          ].map(([label, value]) => (
+              [messages.finyk.todaySummary.expense, amount(spent)],
+              [messages.finyk.todaySummary.income, amount(income)],
+              [
+                messages.finyk.todaySummary.dailyPlan,
+                dailyPlan === null
+                  ? messages.finyk.todaySummary.planMissing
+                  : amount(dailyPlan),
+              ],
+            ] as const
+          ).map(([label, value]) => (
             <div key={label} className="min-w-0">
               <p className="text-xs text-muted truncate">{label}</p>
               <p
@@ -86,11 +89,20 @@ function TodaySummaryCardImpl({
                 : "text-danger-strong dark:text-danger",
             )}
           >
-            {showBalance
-              ? variance >= 0
-                ? `${formatUah(variance)} до темпу`
-                : `${formatUah(Math.abs(variance))} понад темп`
-              : messages.finyk.todaySummary.paceHidden}
+            {showBalance ? (
+              <>
+                {/* Сума в реченні лишається сумою: тири й `tabular-nums`
+                    їй потрібні так само, як у таблиці. Тон `inherit` —
+                    бо абзац уже забарвлений, і сірий символ біля
+                    зеленого числа читався б як чужий елемент. */}
+                <Money amount={Math.abs(Math.round(variance))} tone="inherit" />{" "}
+                {variance >= 0
+                  ? messages.finyk.todaySummary.paceAhead
+                  : messages.finyk.todaySummary.paceOver}
+              </>
+            ) : (
+              messages.finyk.todaySummary.paceHidden
+            )}
           </p>
         )}
       </Card>

@@ -7,6 +7,7 @@ import type { Transaction } from "@sergeant/finyk-domain/domain/types";
 import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
+import { Money } from "@shared/components/ui/Money";
 import { detectRecurring } from "@sergeant/finyk-domain/lib/recurringDetect";
 
 type Cadence = "weekly" | "biweekly" | "monthly" | "quarterly" | "yearly";
@@ -58,10 +59,25 @@ interface RecurringSuggestionsProps {
   onDismiss?: (key: string) => void;
 }
 
-function fmtAmount(amount: number, currency: string | undefined) {
-  const symbol = currency === "USD" ? "$" : "₴";
-  const value = Math.round(amount * 100) / 100;
-  return `${value.toLocaleString("uk-UA", { maximumFractionDigits: 2 })} ${symbol}`;
+/**
+ * Сума кандидата в підписки. Копійки тут увімкнені: це СЕРЕДНЄ по
+ * кількох списаннях, і рівна гривня в ньому — рідкість; округливши,
+ * ми показали б точніше число, ніж насправді знаємо.
+ */
+function AmountValue({
+  amount,
+  currency,
+}: {
+  amount: number;
+  currency: string | undefined;
+}) {
+  return (
+    <Money
+      amount={Math.round(amount * 100) / 100}
+      kopecks
+      symbol={currency === "USD" ? "$" : "₴"}
+    />
+  );
 }
 
 /**
@@ -147,7 +163,10 @@ export function RecurringSuggestions({
                     </div>
                   </div>
                   <div className="text-xs text-muted mt-1 space-x-2">
-                    <span>~{fmtAmount(c.avgAmount, c.currency)}</span>
+                    <span>
+                      ~
+                      <AmountValue amount={c.avgAmount} currency={c.currency} />
+                    </span>
                     <span>·</span>
                     <span>{CADENCE_LABEL[c.cadence] || c.cadence}</span>
                     <span>·</span>

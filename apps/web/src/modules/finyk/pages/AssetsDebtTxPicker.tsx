@@ -5,6 +5,7 @@
 import { useState, type ReactNode } from "react";
 import { TxRow, type TxRowTx } from "../components/TxRow";
 import { Card } from "@shared/components/ui/Card";
+import { Money } from "@shared/components/ui/Money";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { Button } from "@shared/components/ui/Button";
 import { cn } from "@shared/lib/ui/cn";
@@ -220,12 +221,17 @@ export function AssetsDebtTxPicker({
                   : "text-success-strong dark:text-success",
               )}
             >
-              {isDebt ? "−" : "+"}
-              {remaining.toLocaleString("uk-UA")} {copy.remainingSuffix}
+              <Money
+                amount={isDebt ? -remaining : remaining}
+                signed
+                tone="inherit"
+              />{" "}
+              {copy.remainingSuffix}
             </div>
             <div className="text-xs text-subtle mt-1">
-              {copy.paidPrefix} {paid.toLocaleString("uk-UA")} {copy.paidJoiner}{" "}
-              {total?.toLocaleString("uk-UA")} ₴
+              {/* Символ один раз на пару: «сплачено X з Y ₴». */}
+              {copy.paidPrefix} <Money amount={paid} symbol="" />{" "}
+              {copy.paidJoiner} <Money amount={total ?? 0} />
             </div>
           </Card>
           {controls}

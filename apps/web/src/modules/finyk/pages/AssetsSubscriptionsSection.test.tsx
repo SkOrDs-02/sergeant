@@ -149,7 +149,11 @@ describe("AssetsSubscriptionsSection", () => {
     expect(
       screen.getByText("Витрати на підписки за місяць"),
     ).toBeInTheDocument();
-    expect(screen.getByText("1 250 ₴")).toBeInTheDocument();
+    expect(
+      Array.from(document.querySelectorAll("span")).some((el) =>
+        /^1\u00a0250\u202f₴$/.test(el.textContent ?? ""),
+      ),
+    ).toBe(true);
   });
 
   it("uses the theme-aware finyk foreground on the monthly total plaque", () => {

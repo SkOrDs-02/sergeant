@@ -1,6 +1,7 @@
 import { memo, useState } from "react";
 import { chartHex } from "@sergeant/design-tokens/tokens";
 import { cn } from "@shared/lib/ui/cn";
+import { Money } from "@shared/components/ui/Money";
 
 // Convert a polar angle (0° = 12 o'clock, clockwise) to cartesian coordinates.
 function polarToXY(cx: number, cy: number, r: number, angleDeg: number) {
@@ -191,6 +192,11 @@ function CategoryPieChartComponent({
           >
             Всього
           </text>
+          {/* AI-NOTE: сума в центрі бублика лишається сирим рядком навмисно
+              — це `<text>` усередині SVG, а `Money` рендерить `<span>`,
+              який у SVG не існує. Тири тут довелось би перекладати на
+              `<tspan>` з власними `font-size`; поки центр — єдине таке
+              місце, воно того не варте. Легенда праворуч уже на `Money`. */}
           <text
             x={cx}
             y={cy + 12}
@@ -228,9 +234,10 @@ function CategoryPieChartComponent({
                   </span>
                 );
               })()}
-              <span className="text-text tabular-nums text-style-caption shrink-0">
-                {arc.spent.toLocaleString("uk-UA")} ₴
-              </span>
+              <Money
+                amount={arc.spent}
+                className="text-text text-style-caption shrink-0"
+              />
             </div>
           ))}
         </div>

@@ -21,9 +21,26 @@ function mkFlow(overrides: Partial<FlowItem> = {}): FlowItem {
 }
 
 describe("FlowRow (branches)", () => {
+  /**
+   * `Money` розкладає суму на вузли, тож матчер — по `textContent`.
+   * Пробіли явними escape-послідовностями: `\u00a0` у розрядах,
+   * `\u202f` перед символом. Мінус — U+2212, і це не косметика: продюсер
+   * (`useOverviewData`) віддає дефіс, а рядок у стовпчику мусить бути
+   * однакової ширини з рештою.
+   */
   it("renders formatted amount when showAmount is true", () => {
-    render(<FlowRow flow={mkFlow({ amount: 1500 })} showAmount />);
-    expect(screen.getByText(/−1 500 ₴/)).toBeInTheDocument();
+    const { container } = render(
+      <FlowRow flow={mkFlow({ amount: 1500 })} showAmount />,
+    );
+    expect(container.textContent).toMatch(/−1\u00a0500\u202f₴/);
+  });
+
+  it("нормалізує дефіс продюсера в справжній мінус", () => {
+    const { container } = render(
+      <FlowRow flow={mkFlow({ amount: 1500, sign: "-" })} showAmount />,
+    );
+    expect(container.textContent).toMatch(/−1\u00a0500/);
+    expect(container.textContent).not.toMatch(/-1/);
   });
 
   it("masks amount as bullets when showAmount is false", () => {
@@ -33,8 +50,8 @@ describe("FlowRow (branches)", () => {
   });
 
   it("shows sign with question mark when amount is null", () => {
-    render(<FlowRow flow={mkFlow({ amount: null })} />);
-    expect(screen.getByText(/−\? ₴/)).toBeInTheDocument();
+    const { container } = render(<FlowRow flow={mkFlow({ amount: null })} />);
+    expect(container.textContent).toMatch(/−\?\u202f₴/);
   });
 
   it("applies success tone when flow.color matches THEME_HEX.success", () => {

@@ -1,5 +1,6 @@
 import { Icon } from "@shared/components/ui/Icon";
 import { CollapsibleSection } from "@shared/components/ui/CollapsibleSection";
+import { Money } from "@shared/components/ui/Money";
 import { messages } from "@shared/i18n/uk";
 import type { JarLike } from "./useAssetsState";
 
@@ -72,11 +73,17 @@ export function AssetsMonoJars({
             </div>
             <div className="text-right shrink-0">
               <div className="text-style-label tabular-nums text-text">
-                {showBalance
-                  ? `${(balance / 100).toLocaleString("uk-UA", {
-                      minimumFractionDigits: 2,
-                    })} ${currencySymbol(j.currencyCode)}`
-                  : "••••"}
+                {showBalance ? (
+                  // Копійки увімкнено з тієї ж причини, що й на картках:
+                  // це залишок на рахунку банку, а не зведена сума.
+                  <Money
+                    amount={balance / 100}
+                    kopecks
+                    symbol={currencySymbol(j.currencyCode)}
+                  />
+                ) : (
+                  "••••"
+                )}
               </div>
             </div>
           </div>
