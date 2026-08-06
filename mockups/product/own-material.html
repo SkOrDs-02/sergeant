@@ -166,6 +166,13 @@
         border-radius: 10px;
         padding: 8px 16px;
       }
+      .screen .caption {
+        font-size: 12px;
+        color: var(--ink-subtle);
+        text-align: center;
+        padding: 0 12px 12px;
+        max-width: none;
+      }
       .slot {
         width: 92px;
         height: 92px;
@@ -326,6 +333,8 @@
                 fill="none"
                 stroke="currentColor"
                 stroke-width="1.5"
+                aria-hidden="true"
+                focusable="false"
               >
                 <rect x="2" y="5" width="20" height="14" rx="2" />
                 <path d="M2 10h20" />
@@ -337,6 +346,7 @@
             </p>
             <span class="cta">Підключити Monobank</span>
           </div>
+          <p class="caption">Зараз · іконка з набору</p>
         </div>
 
         <!-- A: ПАПІР -->
@@ -353,6 +363,7 @@
             </p>
             <span class="cta">Підключити Monobank</span>
           </div>
+          <p class="caption">A · папір і друк</p>
         </div>
 
         <!-- B: ІЛЮСТРАЦІЯ -->
@@ -360,7 +371,12 @@
           <div class="body">
             <div class="slot">
               <!-- «Рукотворна» лінія: навмисно нерівна, з розривами. -->
-              <svg viewBox="0 0 92 92" fill="none">
+              <svg
+                viewBox="0 0 92 92"
+                fill="none"
+                aria-hidden="true"
+                focusable="false"
+              >
                 <path
                   d="M14 63c6-13 12-19 19-18 8 1 7 15 15 15 7 0 11-9 14-19 2-7 4-11 7-12"
                   stroke="#115e59"
@@ -391,25 +407,8 @@
             </p>
             <span class="cta">Підключити Monobank</span>
           </div>
+          <p class="caption">B · власна рука</p>
         </div>
-      </div>
-
-      <div class="three" style="margin-top: 10px">
-        <p
-          style="font-size: 12px; color: var(--ink-subtle); text-align: center"
-        >
-          Зараз · іконка з набору
-        </p>
-        <p
-          style="font-size: 12px; color: var(--ink-subtle); text-align: center"
-        >
-          A · папір і друк
-        </p>
-        <p
-          style="font-size: 12px; color: var(--ink-subtle); text-align: center"
-        >
-          B · власна рука
-        </p>
       </div>
 
       <h2>Що це означає на практиці</h2>
