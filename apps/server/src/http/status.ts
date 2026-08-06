@@ -39,12 +39,9 @@ import { logger } from "../obs/logger.js";
  *                    `>= N8N_DEGRADED_THRESHOLD` ⇒ degraded; otherwise
  *                    operational. Last incident comes from `max(created_at)`
  *                    within the last 7 days.
- *   - `console-bot`→ recency of `openclaw_invocations.invoked_at`.
- *                    Latest within `BOT_OPERATIONAL_WINDOW_MS` ⇒
- *                    operational; otherwise `degraded` ("idle / no
- *                    recent activity"). We intentionally do not say
- *                    "down" — silence here does not prove the process
- *                    is dead, only that nobody has DM'd it.
+ * `console-bot` (OpenClaw) прибрано з компонентів: OpenClaw виведено з
+ * експлуатації (ADR-0075), і мертвий `openclaw_invocations` тримав
+ * сторінку у вічній «Частковій деградації».
  *
  * Compound `status`: if any component is `down` → `down`; else if any
  * is `degraded` → `degraded`; else `operational`.
@@ -53,7 +50,7 @@ import { logger } from "../obs/logger.js";
 export type ComponentStatus = "operational" | "degraded" | "down";
 
 export interface StatusComponent {
-  id: "server" | "database" | "n8n" | "console-bot";
+  id: "server" | "database" | "n8n";
   label: string;
   status: ComponentStatus;
 }
@@ -80,8 +77,6 @@ export interface StatusResponse {
 export const N8N_DEGRADED_THRESHOLD = 3;
 export const N8N_RECENT_WINDOW_MS = 5 * 60 * 1000;
 export const N8N_INCIDENT_LOOKBACK_MS = 7 * 24 * 60 * 60 * 1000;
-export const BOT_OPERATIONAL_WINDOW_MS = 24 * 60 * 60 * 1000;
-export const BOT_INCIDENT_LOOKBACK_MS = 7 * 24 * 60 * 60 * 1000;
 
 interface DbPool {
   query<T extends Record<string, unknown> = Record<string, unknown>>(
@@ -123,14 +118,8 @@ export async function buildStatusResponse(
   const n8nLookbackIso = new Date(
     now.getTime() - N8N_INCIDENT_LOOKBACK_MS,
   ).toISOString();
-  const botOperationalSinceIso = new Date(
-    now.getTime() - BOT_OPERATIONAL_WINDOW_MS,
-  ).toISOString();
-  const botLookbackIso = new Date(
-    now.getTime() - BOT_INCIDENT_LOOKBACK_MS,
-  ).toISOString();
 
-  const [dbProbe, n8nRecent, n8nLastIncident, botActivity] = await Promise.all([
+  const [dbProbe, n8nRecent, n8nLastIncident] = await Promise.all([
     safeQuery(pool, "SELECT 1 AS ok", []),
     safeQuery<{ count: string }>(
       pool,
@@ -141,11 +130,6 @@ export async function buildStatusResponse(
       pool,
       "SELECT created_at FROM n8n_failure_events WHERE created_at >= $1 ORDER BY created_at DESC LIMIT 1",
       [n8nLookbackIso],
-    ),
-    safeQuery<{ invoked_at: string | Date }>(
-      pool,
-      "SELECT invoked_at FROM openclaw_invocations WHERE invoked_at >= $1 ORDER BY invoked_at DESC LIMIT 1",
-      [botLookbackIso],
     ),
   ]);
 
@@ -165,25 +149,13 @@ export async function buildStatusResponse(
     n8nStatus = "operational";
   }
 
-  let botStatus: ComponentStatus = "degraded";
-  if (botActivity.ok && botActivity.rows.length > 0) {
-    const latestRaw = botActivity.rows[0]?.invoked_at;
-    if (
-      latestRaw !== undefined &&
-      latestRaw !== null &&
-      isWithinWindow(latestRaw, botOperationalSinceIso)
-    ) {
-      botStatus = "operational";
-    }
-  } else if (!botActivity.ok && !dbProbe.ok) {
-    botStatus = "degraded";
-  }
-
+  // OpenClaw виведено з експлуатації (ADR-0075) — компонент «OpenClaw
+  // bot» тримав сторінку у вічній «Частковій деградації», бо
+  // `openclaw_invocations` більше ніхто не пише. Прибрано зі списку.
   const components: StatusComponent[] = [
     { id: "server", label: "API server", status: "operational" },
     { id: "database", label: "Database", status: databaseStatus },
     { id: "n8n", label: "n8n workflows", status: n8nStatus },
-    { id: "console-bot", label: "OpenClaw bot", status: botStatus },
   ];
 
   const overall = computeOverallStatus(components);
@@ -226,11 +198,6 @@ async function safeQuery<T extends Record<string, unknown>>(
   }
 }
 
-function isWithinWindow(value: string | Date, sinceIso: string): boolean {
-  const valueIso = value instanceof Date ? value.toISOString() : value;
-  return valueIso >= sinceIso;
-}
-
 function pickLastIncident(input: {
   n8nLatest: string | Date | null;
 }): StatusLastIncident | null {
@@ -267,7 +234,6 @@ export function createStatusHandler(pool: Pool): RequestHandler {
           { id: "server", label: "API server", status: "operational" },
           { id: "database", label: "Database", status: "down" },
           { id: "n8n", label: "n8n workflows", status: "operational" },
-          { id: "console-bot", label: "OpenClaw bot", status: "degraded" },
         ],
         lastIncident: null,
       };
