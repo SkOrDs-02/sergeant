@@ -5,17 +5,24 @@ import { cn } from "../../lib/ui/cn";
  * Sergeant Design System — SectionHeading
  *
  * Consolidates the 80+ "eyebrow"-style section titles scattered across
- * modules. Current de-facto drift:
+ * modules. The drift this primitive absorbed (all four hand-rolled the
+ * same uppercase combo):
  *   - text-style-caption font-bold text-subtle uppercase tracking-widest  (53 matches)
  *   - text-xs  font-bold text-subtle uppercase tracking-widest  (majority of Fizruk)
  *   - text-xs  text-muted uppercase tracking-wide font-semibold (Finyk)
  *   - text-2xs text-nutrition/70 font-bold uppercase tracking-wide (nutrition macros)
  *
- * Sizes drive **font scale + weight + casing + tracking** only. Colour
+ * Sizes drive **font scale + weight + kicker chrome** only. Colour
  * is picked via `variant` (see `docs/design/COMPONENT_API.md`) so the same size
  * can render in `subtle` (default eyebrow on cards), `muted`, or a
  * module-branded tint (finyk / fizruk / routine / nutrition). Semantics
  * default to <h3>.
+ *
+ * **Кікер — це смужка й колір, а не капс** (правило 4 типографіки тексту,
+ * `docs/05-design/design/anti-slop-strategy.md`; рішення власника
+ * 2026-08-06 на `mockups/product/kickers.html`). Розміри `2xs`/`xs`/`sm`
+ * більше не роблять `uppercase` і не розріджують трекінг — деталі й
+ * причина в AI-CONTEXT біля `sizeTokens` нижче.
  */
 
 export type SectionHeadingSize = "2xs" | "xs" | "sm" | "md" | "lg" | "xl";
@@ -51,10 +58,30 @@ export type SectionHeadingWeight =
 // `caption` (12px floor, HR#16); md — `label`; lg — `title` (секційний
 // заголовок); xl — `headline` (проміжний H2: крок ієрархії title 22 →
 // headline 26 і є тим розривом, яким користуємось, cycle-6 acceptance §3).
+// AI-CONTEXT: кікер = смужка + колір, а НЕ капс (правило 4 типографіки
+// тексту; рішення власника 2026-08-06 на `mockups/product/kickers.html`).
+//
+// Смужка — `before:`-псевдоелемент, а не вузол: так вона не потрапляє в
+// accessible name і не змінює `children`. `bg-current` бере колір варіанта,
+// тож смужка не може розійтися з текстом — вона і є текст, тільки геометрія.
+// `before:shrink-0` обов'язковий: у flex-контейнері 2px-елемент інакше
+// стискається до нуля, коли рядок довгий.
+const KICKER_BAR =
+  "flex items-center gap-2 " +
+  "before:content-[''] before:w-0.5 before:h-3 before:shrink-0 " +
+  "before:rounded-full before:bg-current";
+
+// AI-DANGER: `2xs` / `xs` / `sm` тепер РЕНДЕРЯТЬ ОДНАКОВО. До зняття капсу
+// вони відрізнялися лише трекінгом (`wide` / `wider` / `widest`), який
+// існував саме заради капсу. Три імені для одного результату — стан, що
+// гниє: наступний викликач обере `sm`, вважаючи його більшим. Зведення в
+// одне ім'я — окрема правка на 136 call-site-ів, заведена в
+// `docs/90-work/tech-debt/frontend.md`. Не «полагодь» це, додавши їм
+// штучну різницю в розмірі: 12px — підлога шкали, нижче не можна.
 const sizeTokens: Record<SectionHeadingSize, string> = {
-  "2xs": "text-style-caption uppercase tracking-wide",
-  xs: "text-style-caption uppercase tracking-wider",
-  sm: "text-style-caption uppercase tracking-widest",
+  "2xs": `text-style-caption ${KICKER_BAR}`,
+  xs: `text-style-caption ${KICKER_BAR}`,
+  sm: `text-style-caption ${KICKER_BAR}`,
   md: "text-style-label",
   lg: "text-style-title leading-tight",
   xl: "text-style-headline leading-tight",
@@ -68,10 +95,14 @@ const weightTokens: Record<SectionHeadingWeight, string> = {
   extrabold: "font-extrabold",
 };
 
+// Кікери — `semibold`, не `bold`. Разом із капсом пішла й причина для
+// сімсотої ваги: капс сам по собі світліший на око (немає виносних, які
+// «чіпляють» погляд), тож вагу піднімали, щоб рядок не зникав. У змішаному
+// регістрі 700 на 12px уже читається як другий заголовок поруч із першим.
 const defaultWeightForSize: Record<SectionHeadingSize, SectionHeadingWeight> = {
-  "2xs": "bold",
-  xs: "bold",
-  sm: "bold",
+  "2xs": "semibold",
+  xs: "semibold",
+  sm: "semibold",
   md: "semibold",
   lg: "extrabold",
   xl: "extrabold",

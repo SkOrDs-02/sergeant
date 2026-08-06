@@ -255,9 +255,7 @@ export function FirstEntryCelebrationModal({
         {/* Tips for next steps */}
         <div className="w-full p-3 rounded-xl bg-panelHi/50 border border-line/50 text-left space-y-2">
           {/* eslint-disable-next-line sergeant-design/no-cyrillic-jsx-literal -- intentional overlay typography + pre-existing copy (i18n extraction tracked separately) */}
-          <p className="text-style-caption text-subtle uppercase tracking-wide font-medium">
-            Що далі
-          </p>
+          <p className="text-style-caption text-subtle font-medium">Що далі</p>
           <div className="flex items-start gap-2.5">
             <div className="w-6 h-6 rounded-xl bg-brand-500/10 flex items-center justify-center shrink-0 mt-0.5">
               <Icon name="sparkles" size={12} className="text-brand-500" />

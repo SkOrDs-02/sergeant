@@ -91,7 +91,7 @@ export function MealRow({ meal, onRemove, onEdit }: MealRowProps) {
               variant={isAiSourced ? "nutrition" : "neutral"}
               tone="soft"
               size="xs"
-              className="shrink-0 inline-flex items-center gap-1 rounded-full uppercase tracking-wider"
+              className="shrink-0 inline-flex items-center gap-1 rounded-full"
               title="Походження КБЖВ"
             >
               {isAiSourced && <Icon name="sparkles" size={10} aria-hidden />}

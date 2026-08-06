@@ -30,6 +30,7 @@ import { logger } from "@shared/lib";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import { useBodyScrollLock } from "@shared/hooks/useBodyScrollLock";
 import { Icon } from "./Icon";
+import { SectionHeading } from "./SectionHeading";
 import {
   CommandPaletteContext,
   type PaletteCommand,
@@ -333,9 +334,16 @@ function CommandGroup({
 }: CommandGroupProps) {
   return (
     <div role="group" aria-label={group.label} className="mb-1.5">
-      <div className="px-4 pt-1 pb-1 text-style-caption uppercase tracking-wide font-semibold text-subtle">
+      {/* Груповий заголовок палітри — той самий кікер, що й у секціях,
+          тож набирає його примітив, а не ручний набір класів. */}
+      <SectionHeading
+        as="div"
+        size="2xs"
+        variant="subtle"
+        className="px-4 py-1"
+      >
         {group.label}
-      </div>
+      </SectionHeading>
       <ul role="presentation" className="px-1.5 space-y-0.5">
         {group.commands.map((cmd) => (
           <li key={cmd.id} role="presentation">
