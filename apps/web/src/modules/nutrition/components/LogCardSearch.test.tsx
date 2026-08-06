@@ -5,6 +5,7 @@
  * Unit tests for the journal search sub-card.
  */
 import { act, fireEvent, render, screen } from "@testing-library/react";
+import { flatMatch } from "@shared/testing/numberText";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../lib/nutritionStorage", () => ({
@@ -80,7 +81,7 @@ describe("LogCardSearch", () => {
       vi.advanceTimersByTime(150);
     });
     expect(screen.getByText("Борщ")).toBeInTheDocument();
-    expect(screen.getByText("250 ккал")).toBeInTheDocument();
+    expect(screen.getByText(flatMatch("250 ккал"))).toBeInTheDocument();
     // Clicking the meal label navigates and clears the query.
     fireEvent.click(screen.getByText("Борщ"));
     expect(setSelectedDate).toHaveBeenCalledWith("2026-06-20");

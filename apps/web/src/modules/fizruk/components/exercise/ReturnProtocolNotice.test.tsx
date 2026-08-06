@@ -6,6 +6,7 @@
  * орієнтир і причину, а поза ним картки немає взагалі.
  */
 import { afterEach, describe, expect, it } from "vitest";
+import { flatMatch } from "@shared/testing/numberText";
 import { cleanup, render, screen } from "@testing-library/react";
 import { computeOneRmAging } from "@sergeant/fizruk-domain/domain";
 import { ReturnProtocolNotice } from "./ReturnProtocolNotice";
@@ -38,7 +39,7 @@ describe("ReturnProtocolNotice", () => {
     render(<ReturnProtocolNotice aging={aging} />);
     expect(screen.getByText(/Рекорд застарів/)).toBeTruthy();
     // 4 тижні понад поріг × 2.5% = −10% → 90 кг, і на екрані саме воно.
-    expect(screen.getByText(/орієнтир: 90 кг/)).toBeTruthy();
+    expect(screen.getByText(flatMatch(/орієнтир: 90 кг/))).toBeTruthy();
     expect(screen.getByText(/−10%/)).toBeTruthy();
   });
 
@@ -51,6 +52,6 @@ describe("ReturnProtocolNotice", () => {
     });
     render(<ReturnProtocolNotice aging={aging} />);
     expect(screen.getByText(/Повернення після позначки/)).toBeTruthy();
-    expect(screen.getByText(/орієнтир: 90 кг/)).toBeTruthy();
+    expect(screen.getByText(flatMatch(/орієнтир: 90 кг/))).toBeTruthy();
   });
 });

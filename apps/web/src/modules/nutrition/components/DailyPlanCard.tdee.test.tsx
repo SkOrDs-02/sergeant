@@ -9,6 +9,7 @@
 //   - lists three goals with the computed kcal/macros when complete,
 //   - calls `setPrefs` with the matching numbers when one is picked.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { flatMatch } from "@shared/testing/numberText";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { STORAGE_KEYS } from "@sergeant/shared";
@@ -117,9 +118,10 @@ describe("DailyPlanCard «Підказати з пресету»", () => {
         },
         goal,
       );
-      const items = screen.getAllByText(
-        new RegExp(`${targets.kcal} ккал`, "u"),
-      );
+      // Число на екрані згруповане за розрядами (`2 450`, не `2450`) —
+      // будуємо очікування тим самим форматом, а не сирим числом.
+      const grouped = targets.kcal.toLocaleString("uk-UA").replace(/\s/g, " ");
+      const items = screen.getAllByText(flatMatch(`${grouped} ккал`));
       expect(items.length).toBeGreaterThanOrEqual(1);
     }
   });

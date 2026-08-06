@@ -7,6 +7,7 @@
  * nutrition nudge.
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
+import { flatMatch } from "@shared/testing/numberText";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import {
   WorkoutFinishSheets,
@@ -225,7 +226,7 @@ describe("WorkoutFinishSheets — summary step expanded", () => {
     expect(screen.getByText("Вправ")).toBeInTheDocument();
     expect(screen.getByText("Обʼєм")).toBeInTheDocument();
     expect(screen.getByText("5")).toBeInTheDocument();
-    expect(screen.getByText("1000 кг")).toBeInTheDocument();
+    expect(screen.getByText(flatMatch("1 000 кг"))).toBeInTheDocument();
   });
 
   it("clicking 'Закрити' calls setFinishFlash(null)", () => {

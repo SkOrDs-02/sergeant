@@ -102,7 +102,12 @@ function formatWeightDelta(delta: number): {
   const abs = Math.abs(delta);
   const rounded = Math.round(abs * 10) / 10;
   return {
-    value: `${sign}${rounded} кг`,
+    // AI-CONTEXT: `${rounded}` давав КРАПКУ («−2.5 кг») посеред
+    // інтерфейсу, де всюди кома. Компонент `Measure` сюди не стає —
+    // це значення йде і в чип, і всередину `ariaLabel`-рядка, тобто
+    // межа рядкового API (той самий виняток, що в таблиці `Money`).
+    // Але локаль виправити можна й не змінюючи типу.
+    value: `${sign}${rounded.toLocaleString("uk-UA")} кг`,
     tone: delta < 0 ? "success" : "danger",
   };
 }

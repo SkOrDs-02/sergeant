@@ -5,6 +5,7 @@
  * Unit tests for the journal analytics/trends sub-card.
  */
 import { fireEvent, render, screen } from "@testing-library/react";
+import { flatMatch } from "@shared/testing/numberText";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../lib/nutritionStats", () => ({
@@ -74,9 +75,9 @@ describe("LogCardAnalytics", () => {
 
     expect(screen.getByText("2000")).toBeInTheDocument(); // avg kcal
     expect(screen.getByText("Курка")).toBeInTheDocument();
-    expect(screen.getByText("4× · 500 ккал")).toBeInTheDocument();
+    expect(screen.getByText(flatMatch("4× · 500 ккал"))).toBeInTheDocument();
     // meal-type split row for lunch
-    expect(screen.getByText("3× · 1200 ккал")).toBeInTheDocument();
+    expect(screen.getByText(flatMatch("3× · 1 200 ккал"))).toBeInTheDocument();
     // sparkline renders one bar per kcal row (with a title attribute)
     expect(screen.getByTitle("1800 ккал")).toBeInTheDocument();
     expect(screen.getByTitle("2200 ккал")).toBeInTheDocument();

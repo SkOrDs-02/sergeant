@@ -4,6 +4,7 @@
  */
 import { useMemo, useEffect, useRef } from "react";
 import { InsightCard } from "@shared/components/ui/InsightCard";
+import { Measure } from "@shared/components/ui/Measure";
 import { useProteinLowInsight } from "../hooks/useProteinLowInsight";
 import { useStreakSevenDaysInsight } from "../hooks/useStreakSevenDaysInsight";
 import {
@@ -325,7 +326,8 @@ export function NutritionDashboard({
                         {kcalConsumed}
                       </span>
                       <span className="text-style-caption text-hero-ink">
-                        / {kcalGoal} ккал
+                        /{" "}
+                        <Measure value={kcalGoal} unit="ккал" tone="inherit" />
                       </span>
                     </span>
                   }

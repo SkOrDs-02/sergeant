@@ -42,25 +42,27 @@ import {
 } from "@sergeant/shared";
 import { cn } from "@shared/lib/ui/cn";
 import { signedDeltaClass } from "@shared/lib/ui/amountTone";
+import {
+  NUMBER_TONE_CLASS,
+  TIER_FRACTION,
+  TIER_SIGN,
+  TIER_UNIT,
+  type NumberTone,
+} from "./numberTiers";
 
 /**
  * Тон приглушених тирів.
  *
- * AI-CONTEXT: тонів рівно два, і це навмисно. `muted` — для чисел
- * звичайного кольору тексту. `inherit` — для будь-якого ЗАБАРВЛЕНОГО числа
- * (успіх, небезпека, hero-ink на градієнті): тири беруть той самий колір і
- * гасяться прозорістю. До цього кожна поверхня вигадувала свій приглушений
- * колір символу (`text-brand-700 dark:text-success/70` в одному місці,
- * `text-muted` в сусідньому), і та сама роль виглядала по-різному.
- * `currentColor` знімає це питання назавжди: тир не може розійтися з числом,
- * бо він і є число, тільки тихіше.
+ * AI-CONTEXT: тонів рівно два, і це навмисно — детально в `numberTiers.ts`,
+ * звідки шкалу бере й `Measure`. До спільного файлу кожна поверхня
+ * вигадувала свій приглушений колір символу (`text-brand-700
+ * dark:text-success/70` в одному місці, `text-muted` в сусідньому), і та
+ * сама роль виглядала по-різному.
+ *
+ * Псевдонім, а не власний тип: назва `MoneyTone` лишається в публічному
+ * API компонента, але визначення одне на всі носії числа.
  */
-export type MoneyTone = "muted" | "inherit";
-
-const MUTED_CLASS: Record<MoneyTone, string> = {
-  muted: "text-muted",
-  inherit: "opacity-65",
-};
+export type MoneyTone = NumberTone;
 
 export interface MoneyProps extends FormatMoneyOptions {
   /** Сума в гривнях (не в копійках). */
@@ -111,7 +113,7 @@ export function Money({
     minFractionDigits: opts.minFractionDigits ?? (kopecks ? 2 : 0),
   };
   const parts = splitMoneyParts(amount, fractionOpts);
-  const muted = MUTED_CLASS[tone];
+  const muted = NUMBER_TONE_CLASS[tone];
   // Знак іде разом із гривнями: він частина того, що читають першим —
   // величини. Окремим щаблем каскаду він був би дрібнотою, яка вступає
   // «сама по собі».
@@ -122,13 +124,11 @@ export function Money({
   return (
     <span className={cn("tabular-nums whitespace-nowrap", className)}>
       {parts.sign !== "" && (
-        <span className={cn("text-[0.78em] font-normal", muted, tier1)}>
-          {parts.sign}
-        </span>
+        <span className={cn(TIER_SIGN, muted, tier1)}>{parts.sign}</span>
       )}
       {animate ? <span className={tier1}>{parts.integer}</span> : parts.integer}
       {parts.fraction !== "" && (
-        <span className={cn("text-[0.64em] font-normal", muted, tier2)}>
+        <span className={cn(TIER_FRACTION, muted, tier2)}>
           {parts.decimalSeparator}
           {parts.fraction}
         </span>
@@ -143,7 +143,7 @@ export function Money({
           раз на пару чисел («сплачено 1 000 з 5 000 ₴»): перше число
           символу не має, але тири й `tabular-nums` йому потрібні. */}
       {parts.symbol !== "" && (
-        <span className={cn("text-[0.72em] font-normal", muted, tier3)}>
+        <span className={cn(TIER_UNIT, muted, tier3)}>
           {NARROW_NBSP}
           {parts.symbol}
         </span>

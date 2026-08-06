@@ -3,6 +3,7 @@
  * Status: Active
  */
 import { Icon } from "@shared/components/ui/Icon";
+import { Measure } from "@shared/components/ui/Measure";
 interface FoodHitRowProduct {
   name?: string | null;
   brand?: string | null;
@@ -45,15 +46,18 @@ export function FoodHitRow({ p, externalSource, onPick }: FoodHitRowProps) {
               />
             )}
           </div>
-          <div className="text-style-caption text-nutrition-strong dark:text-nutrition shrink-0">
-            {Math.round(p.per100?.kcal || 0)} ккал
-          </div>
+          <Measure
+            value={Math.round(p.per100?.kcal || 0)}
+            unit="ккал"
+            tone="inherit"
+            className="text-style-caption text-nutrition-strong dark:text-nutrition shrink-0"
+          />
         </div>
-        <div className="text-xs text-subtle mt-0.5">
-          Б {Math.round(p.per100?.protein_g || 0)}г · Ж{" "}
-          {Math.round(p.per100?.fat_g || 0)}г · В{" "}
-          {Math.round(p.per100?.carbs_g || 0)}г{" "}
-          <span className="opacity-60">на 100г</span>
+        <div className="text-style-caption text-subtle mt-0.5">
+          Б <Measure value={Math.round(p.per100?.protein_g || 0)} unit="г" /> ·
+          Ж <Measure value={Math.round(p.per100?.fat_g || 0)} unit="г" /> · В{" "}
+          <Measure value={Math.round(p.per100?.carbs_g || 0)} unit="г" />{" "}
+          <span className="opacity-60">на 100 г</span>
         </div>
       </button>
     </li>

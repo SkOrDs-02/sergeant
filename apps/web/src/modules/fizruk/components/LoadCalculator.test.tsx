@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from "vitest";
+import { flatMatch } from "@shared/testing/numberText";
 import { cleanup, render, screen } from "@testing-library/react";
 import { LoadCalculator } from "./LoadCalculator";
 
@@ -9,7 +10,7 @@ describe("LoadCalculator", () => {
   it("renders the three training zones and the 1RM header", () => {
     render(<LoadCalculator oneRM={100} />);
     expect(screen.getByText("Калькулятор навантаження")).toBeInTheDocument();
-    expect(screen.getByText(/1RM = 100 кг/)).toBeInTheDocument();
+    expect(screen.getByText(flatMatch(/1RM = 100 кг/))).toBeInTheDocument();
     expect(screen.getByText("Сила")).toBeInTheDocument();
     expect(screen.getByText("Гіпертрофія")).toBeInTheDocument();
     expect(screen.getByText("Витривалість")).toBeInTheDocument();
@@ -30,8 +31,8 @@ describe("LoadCalculator", () => {
 
   it("labels the header as a reduced reference instead of 1RM when reduced", () => {
     render(<LoadCalculator oneRM={90} reduced />);
-    expect(screen.getByText(/орієнтир = 90 кг/)).toBeInTheDocument();
-    expect(screen.queryByText(/1RM =/)).not.toBeInTheDocument();
+    expect(screen.getByText(flatMatch(/орієнтир = 90 кг/))).toBeInTheDocument();
+    expect(screen.queryByText(flatMatch(/1RM =/))).not.toBeInTheDocument();
     // The zones still render — `reduced` only changes the caption, the
     // calculator keeps working off the (already-reduced) `oneRM` it got.
     expect(screen.getByText("Сила")).toBeInTheDocument();

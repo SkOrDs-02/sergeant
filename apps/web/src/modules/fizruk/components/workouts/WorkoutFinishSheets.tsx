@@ -1,4 +1,5 @@
 import { useRef, useState, type Dispatch, type SetStateAction } from "react";
+import { Measure } from "@shared/components/ui/Measure";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
@@ -335,9 +336,14 @@ export function WorkoutFinishSheets({
                 <WorkoutStatTile
                   label="Обʼєм"
                   value={
-                    finishFlash.tonnageKg > 0
-                      ? `${Math.round(finishFlash.tonnageKg)} кг`
-                      : "—"
+                    finishFlash.tonnageKg > 0 ? (
+                      <Measure
+                        value={Math.round(finishFlash.tonnageKg)}
+                        unit="кг"
+                      />
+                    ) : (
+                      "—"
+                    )
                   }
                 />
               </div>

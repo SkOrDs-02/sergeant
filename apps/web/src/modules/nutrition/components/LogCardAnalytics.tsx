@@ -5,6 +5,7 @@
 /* eslint-disable sergeant-design/no-cyrillic-jsx-literal -- pre-existing i18n tech debt; strings moved from LogCard.tsx during T3 decomposition */
 import { useMemo, useState } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
+import { Measure } from "@shared/components/ui/Measure";
 import { cn } from "@shared/lib/ui/cn";
 import {
   avgFromSummary,
@@ -136,7 +137,8 @@ export function LogCardAnalytics({ log, selectedDate }: LogCardAnalyticsProps) {
                     {x.name}
                   </span>
                   <span className="text-style-caption text-muted shrink-0">
-                    {x.count}× · {Math.round(x.kcal)} ккал
+                    <Measure value={x.count} unit="" />× ·{" "}
+                    <Measure value={Math.round(x.kcal)} unit="ккал" />
                   </span>
                 </li>
               ))}
@@ -172,7 +174,8 @@ export function LogCardAnalytics({ log, selectedDate }: LogCardAnalyticsProps) {
                       {MEAL_META[t]?.emoji} {MEAL_META[t]?.label || t}
                     </span>
                     <span className="text-style-caption text-muted shrink-0">
-                      {s.count}× · {Math.round(s.kcal)} ккал
+                      <Measure value={s.count} unit="" />× ·{" "}
+                      <Measure value={Math.round(s.kcal)} unit="ккал" />
                     </span>
                   </li>
                 );

@@ -5,6 +5,7 @@
 import type { Dispatch, SetStateAction } from "react";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
+import { Measure } from "@shared/components/ui/Measure";
 import { cn } from "@shared/lib/ui/cn";
 import { FirstRunHintBanner } from "../../../core/onboarding/FirstRunHintBanner";
 import type { NutritionPrefs, PantryItem } from "@sergeant/nutrition-domain";
@@ -228,22 +229,26 @@ export function DailyPlanCard({
             <div className="mt-2 flex flex-wrap gap-1 items-center">
               {prefs.dailyTargetKcal != null && (
                 <span className="text-style-caption bg-nutrition/10 text-nutrition-strong dark:text-nutrition border border-nutrition/20 rounded-xl px-2 py-0.5">
-                  {prefs.dailyTargetKcal} ккал
+                  <Measure
+                    value={prefs.dailyTargetKcal}
+                    unit="ккал"
+                    tone="inherit"
+                  />
                 </span>
               )}
               {prefs.dailyTargetProtein_g != null && (
                 <span className="text-style-caption bg-bg border border-line rounded-xl px-2 py-0.5 text-muted">
-                  Б: {prefs.dailyTargetProtein_g}г
+                  Б: <Measure value={prefs.dailyTargetProtein_g} unit="г" />
                 </span>
               )}
               {prefs.dailyTargetFat_g != null && (
                 <span className="text-style-caption bg-bg border border-line rounded-xl px-2 py-0.5 text-muted">
-                  Ж: {prefs.dailyTargetFat_g}г
+                  Ж: <Measure value={prefs.dailyTargetFat_g} unit="г" />
                 </span>
               )}
               {prefs.dailyTargetCarbs_g != null && (
                 <span className="text-style-caption bg-bg border border-line rounded-xl px-2 py-0.5 text-muted">
-                  В: {prefs.dailyTargetCarbs_g}г
+                  В: <Measure value={prefs.dailyTargetCarbs_g} unit="г" />
                 </span>
               )}
               <button
@@ -350,7 +355,8 @@ export function DailyPlanCard({
               </div>
               {dayPlan?.totalKcal != null && (
                 <span className="text-style-caption text-muted">
-                  ~{Math.round(dayPlan.totalKcal)} ккал разом
+                  ~<Measure value={Math.round(dayPlan.totalKcal)} unit="ккал" />{" "}
+                  разом
                 </span>
               )}
             </div>
@@ -359,9 +365,14 @@ export function DailyPlanCard({
               <div className="rounded-xl bg-panel border border-line px-3 py-2">
                 <div className="flex justify-between text-style-caption text-muted mb-1">
                   <span>Прогрес до цілі</span>
+                  {/* Одиниця стоїть один раз на пару чисел — перше йде з
+                      порожнім `unit`, але з тими самими `tabular-nums`,
+                      інакше чисельник і знаменник читаються різними
+                      системами. Той самий прийом, що в `Money` для
+                      «сплачено 1 000 з 5 000 ₴». */}
                   <span>
-                    {Math.round(dayPlan.totalKcal)} / {prefs.dailyTargetKcal}{" "}
-                    ккал
+                    <Measure value={Math.round(dayPlan.totalKcal)} unit="" /> /{" "}
+                    <Measure value={prefs.dailyTargetKcal} unit="ккал" />
                   </span>
                 </div>
                 <div className="h-1.5 rounded-full bg-line overflow-hidden">

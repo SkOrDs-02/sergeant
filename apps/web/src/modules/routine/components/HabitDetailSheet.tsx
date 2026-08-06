@@ -3,6 +3,7 @@
  * Status: Active
  */
 import { useMemo, useState } from "react";
+import { Measure } from "@shared/components/ui/Measure";
 import type { Dispatch, SetStateAction } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
@@ -442,19 +443,25 @@ export function HabitDetailSheet({
             <div className={C.statCard}>
               <div className="flex items-baseline justify-center gap-1.5">
                 {pct7 !== null && (
-                  <span className="text-style-label text-text tabular-nums">
-                    {pct7}%
-                  </span>
+                  <Measure
+                    value={pct7}
+                    unit="%"
+                    className="text-style-label text-text"
+                  />
                 )}
                 {pct30 !== null && (
-                  <span className="text-style-caption text-muted tabular-nums">
-                    {pct30}%
-                  </span>
+                  <Measure
+                    value={pct30}
+                    unit="%"
+                    className="text-style-caption text-muted"
+                  />
                 )}
                 {pct90 !== null && (
-                  <span className="text-style-caption text-subtle tabular-nums">
-                    {pct90}%
-                  </span>
+                  <Measure
+                    value={pct90}
+                    unit="%"
+                    className="text-style-caption text-subtle"
+                  />
                 )}
                 {pct7 === null && pct30 === null && pct90 === null && (
                   <span className="text-sm text-muted">—</span>
