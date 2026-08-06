@@ -1,6 +1,6 @@
 # Agents in apps/server
 
-> **Last touched:** 2026-07-20 by @Skords-01. **Next review:** 2026-10-18.
+> **Last touched:** 2026-08-06 by @Skords-01. **Next review:** 2026-11-04.
 > **Status:** Active
 
 > **Single source of truth → root [`AGENTS.md`](../../AGENTS.md).** Цей файл — sub-tree quick reference для агентів, що працюють у `apps/server/`. Не дублюй repo policy: hard rules і CI matrix живуть у корені.
@@ -39,7 +39,7 @@ pnpm api:check-openapi                                # freshness gate (CI-block
 
 ## Health & deploy
 
-`/health` p95 < 100 ms (formalized: [`SLO.md § 2.1`](../../docs/03-operations/observability/SLO.md#21-health-endpoint-p95); alert-правило `BackendHealthP95High` визначене в `prometheus/alert_rules.yml` і, за [`SLO.md § Wired сьогодні`](../../docs/03-operations/observability/SLO.md), залите в Grafana Cloud Mimir та evaluating — SLO.md є єдиним джерелом істини щодо wiring. Живу доставку алертів підтверджуй у Grafana UI: `grafana-alloy`-скрейпер має історію cost-паузи). Health-probe віддає сам Node через Coolify proxy; pre-deploy міграції — Coolify `pre_deployment_command = node dist-server/migrate.js` (дзеркало колишнього `railway.toml` → `[deploy].preDeployCommand`). Pre-deploy виконує міграції (requires `MIGRATE_DATABASE_URL` = public DB URL). Деталі — [ADR-0074](../../docs/04-governance/adr/0074-hosting-hetzner-coolify.md). Anthropic `/api/chat` p95 first token < 1.5 s. AI memory endpoints require `VOYAGE_API_KEY` when `AI_MEMORY_ENABLED=true`.
+`/health` p95 < 100 ms (formalized: [`SLO.md § 2.1`](../../docs/03-operations/observability/SLO.md#21-health-endpoint-p95); alert-правило `BackendHealthP95High` визначене в `prometheus/alert_rules.yml` і, за [`SLO.md § Wired сьогодні`](../../docs/03-operations/observability/SLO.md), залите в Grafana Cloud Mimir та evaluating — SLO.md є єдиним джерелом істини щодо wiring. Живу доставку алертів підтверджуй у Grafana UI: `grafana-alloy`-скрейпер має історію cost-паузи). Health-probe віддає сам Node через Coolify proxy; pre-deploy міграції — Coolify `pre_deployment_command = node dist-server/migrate.js` (дзеркало колишнього `railway.toml` → `[deploy].preDeployCommand`). **Coolify-івський health check (`health_check_enabled`) вмикай лише на образі, який містить `/bin/wget`** — перевірка виконується всередині контейнера, а distroless-runtime без нього завалює КОЖЕН деплой і відкочує навіть справний (інцидент 2026-08-06; фікс — `COPY … /bin/wget` у [`Dockerfile.api`](../../Dockerfile.api)). Pre-deploy виконує міграції (requires `MIGRATE_DATABASE_URL`). **На Coolify це те саме значення, що й `DATABASE_URL`** — внутрішнє імʼя контейнера бази, публічного порту в неї немає. Окрема змінна лишилась із часів Railway, де pre-deploy виконувався поза внутрішньою мережею й потребував публічного URL; тут `pre_deployment_command` крутиться на тій самій мережі. Наслідок для діагностики: **з робочої машини ця база недосяжна** — SQL проганяй у терміналі ресурсу Postgres у Coolify. Деталі — [ADR-0074](../../docs/04-governance/adr/0074-hosting-hetzner-coolify.md). Anthropic `/api/chat` p95 first token < 1.5 s. AI memory endpoints require `VOYAGE_API_KEY` when `AI_MEMORY_ENABLED=true`.
 
 ## Deeper docs
 
