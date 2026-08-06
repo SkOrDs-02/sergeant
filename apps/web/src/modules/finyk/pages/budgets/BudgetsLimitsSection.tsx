@@ -82,6 +82,7 @@ export function BudgetsLimitsSection({
             as="span"
             size="sm"
             className="mb-0! normal-case tracking-normal"
+            variant="finyk"
           >
             Ліміти · {monthStart.toLocaleDateString("uk-UA", { month: "long" })}
             {limitBudgets.length > 0 && (

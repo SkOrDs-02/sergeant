@@ -66,7 +66,7 @@ export function CategoriesSection({
 
   return (
     <Card as="section" radius="lg" padding="md" className="space-y-3">
-      <SectionHeading as="h2" size="sm">
+      <SectionHeading as="h2" size="sm" variant="routine">
         {editingCatId ? "Редагувати категорію" : "Категорії"}
       </SectionHeading>
       <div className="flex flex-wrap items-stretch gap-2">

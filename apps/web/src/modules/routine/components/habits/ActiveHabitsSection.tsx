@@ -62,7 +62,7 @@ export function ActiveHabitsSection({
 
   return (
     <Card as="section" radius="lg" padding="md" className="space-y-2">
-      <SectionHeading as="h2" size="sm">
+      <SectionHeading as="h2" size="sm" variant="routine">
         Активні звички
       </SectionHeading>
       <p className="text-style-caption text-subtle leading-snug">

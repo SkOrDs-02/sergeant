@@ -49,7 +49,12 @@ export function RoutineFilterChips({
       role="group"
       aria-label={COPY.groupLabel}
     >
-      <SectionHeading as="span" size="xs" className="shrink-0 sm:w-auto">
+      <SectionHeading
+        as="span"
+        size="xs"
+        className="shrink-0 sm:w-auto"
+        variant="routine"
+      >
         {COPY.heading}
       </SectionHeading>
       <button

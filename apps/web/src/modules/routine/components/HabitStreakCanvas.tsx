@@ -246,7 +246,7 @@ export function HabitStreakCanvas({
 
   return (
     <Card radius="lg" className={className}>
-      <SectionHeading as="h3" size="sm" className="mb-1">
+      <SectionHeading as="h3" size="sm" className="mb-1" variant="routine">
         {T.heading}
       </SectionHeading>
       <p className="text-style-caption text-subtle mb-3">

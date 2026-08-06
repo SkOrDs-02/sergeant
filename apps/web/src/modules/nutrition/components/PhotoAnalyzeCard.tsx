@@ -296,7 +296,7 @@ export function PhotoAnalyzeCard({
           {Array.isArray(photoResult.questions) &&
             photoResult.questions.length > 0 && (
               <div className="rounded-2xl border border-line bg-panelHi p-3 grid gap-3">
-                <SectionHeading as="div" size="sm">
+                <SectionHeading as="div" size="sm" variant="nutrition">
                   Уточнення порції
                 </SectionHeading>
 

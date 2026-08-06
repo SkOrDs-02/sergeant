@@ -69,7 +69,7 @@ export function HabitPauseSection({
 
   return (
     <section className="mb-5" aria-label={t.heading}>
-      <SectionHeading as="h3" size="sm" className="mb-2">
+      <SectionHeading as="h3" size="sm" className="mb-2" variant="routine">
         {t.heading}
       </SectionHeading>
 

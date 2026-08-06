@@ -91,6 +91,7 @@ export function BudgetsGoalsSection({
             as="span"
             size="sm"
             className="mb-0! normal-case tracking-normal"
+            variant="finyk"
           >
             Цілі накопичення
             {goalBudgets.length > 0 && (

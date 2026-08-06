@@ -54,7 +54,7 @@ export function LoadCalculator({
   return (
     <Card radius="lg">
       <div className="flex items-baseline justify-between gap-2 mb-3">
-        <SectionHeading as="div" size="sm">
+        <SectionHeading as="div" size="sm" variant="fizruk">
           Калькулятор навантаження
         </SectionHeading>
         <div className="text-style-caption text-subtle">

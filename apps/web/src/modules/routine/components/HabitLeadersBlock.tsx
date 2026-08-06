@@ -53,7 +53,7 @@ export function HabitLeadersBlock({
 
   return (
     <Card radius="lg">
-      <SectionHeading as="p" size="sm" className="mb-3">
+      <SectionHeading as="p" size="sm" className="mb-3" variant="routine">
         Лідери та аутсайдери (30 днів)
       </SectionHeading>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">

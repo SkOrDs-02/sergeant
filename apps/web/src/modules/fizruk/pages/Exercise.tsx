@@ -275,7 +275,12 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
 
         {hasStrength && (
           <Card radius="lg">
-            <SectionHeading as="div" size="sm" className="mb-3">
+            <SectionHeading
+              as="div"
+              size="sm"
+              className="mb-3"
+              variant="fizruk"
+            >
               Прогресія 1RM (за тижнями)
             </SectionHeading>
             <ExerciseProgressChart
@@ -289,7 +294,12 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
 
         {hasStrength && (
           <Card radius="lg">
-            <SectionHeading as="div" size="sm" className="mb-3">
+            <SectionHeading
+              as="div"
+              size="sm"
+              className="mb-3"
+              variant="fizruk"
+            >
               Обʼєм тренування (кг × повтори, за тижнями)
             </SectionHeading>
             <ExerciseProgressChart
@@ -303,7 +313,12 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
 
         {hasCardio && (
           <Card radius="lg">
-            <SectionHeading as="div" size="sm" className="mb-3">
+            <SectionHeading
+              as="div"
+              size="sm"
+              className="mb-3"
+              variant="fizruk"
+            >
               Темп (хв/км) — кардіо
             </SectionHeading>
             <ExerciseProgressChart
@@ -320,7 +335,12 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
 
         {hasCardio && (
           <Card radius="lg">
-            <SectionHeading as="div" size="sm" className="mb-3">
+            <SectionHeading
+              as="div"
+              size="sm"
+              className="mb-3"
+              variant="fizruk"
+            >
               Дистанція (км) — кардіо
             </SectionHeading>
             <ExerciseProgressChart
@@ -345,7 +365,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
         )}
 
         <Card radius="lg" padding="lg">
-          <SectionHeading as="div" size="sm" className="mb-3">
+          <SectionHeading as="div" size="sm" className="mb-3" variant="fizruk">
             Історія сетів
           </SectionHeading>
           {history.length === 0 ? (

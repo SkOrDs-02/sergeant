@@ -31,7 +31,7 @@ export function ArchivedHabitsSection({
       padding="md"
       className="space-y-2 opacity-95"
     >
-      <SectionHeading as="h2" size="sm">
+      <SectionHeading as="h2" size="sm" variant="routine">
         Архів
       </SectionHeading>
       <p className="text-style-caption text-subtle">

@@ -411,7 +411,7 @@ export function HabitDetailSheet({
         </section>
 
         <section className="mb-5" aria-label="Статистика">
-          <SectionHeading as="h3" size="sm" className="mb-2">
+          <SectionHeading as="h3" size="sm" className="mb-2" variant="routine">
             Статистика
           </SectionHeading>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -477,7 +477,7 @@ export function HabitDetailSheet({
 
         <section className="mb-5" aria-label="Календар виконань">
           <div className="flex items-center justify-between mb-2">
-            <SectionHeading as="h3" size="sm">
+            <SectionHeading as="h3" size="sm" variant="routine">
               Календар
             </SectionHeading>
             <div className="flex items-center gap-2">
@@ -559,7 +559,12 @@ export function HabitDetailSheet({
 
         {notes.length > 0 && (
           <section className="mb-2" aria-label="Нотатки">
-            <SectionHeading as="h3" size="sm" className="mb-2">
+            <SectionHeading
+              as="h3"
+              size="sm"
+              className="mb-2"
+              variant="routine"
+            >
               Останні нотатки
             </SectionHeading>
             <ul className="space-y-1.5">
