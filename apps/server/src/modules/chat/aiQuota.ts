@@ -615,9 +615,18 @@ export async function resolveProTier(
    * Pro після 20 викликів доби падає на standard — тобто неплатник мав кращу
    * модель за платника. `remaining/limit` = `null`, бо Free капає КІЛЬКІСТЮ
    * через `assertAiQuota`, і чужі лічильники в `X-AI-*` були б брехнею.
+   *
+   * **Лише `chat`.** Коуч лишається на premium, і це не непослідовність, а
+   * рахунок: у чаті деградація premium→standard це `glm-5.2`→`deepseek-v4-flash`
+   * і −$0.014 на повідомлення, а в коуча — `gpt-5.1`→`gemini-2.5-flash-lite`,
+   * тобто НАЙБІЛЬШИЙ розрив у якості за НАЙМЕНШУ економію (~$0.0035 на виклик,
+   * ≈$0.05 на Free-юзера в місяць). Коуч до того ж не має plan-gate
+   * (`routes/coach.ts` — лише session+ключ+квота), тож це поверхня, яку Free
+   * бачить на дашборді щодня.
    */
   const unpaid = (): ProTierResult => {
     if (freeOnPremiumEnabled()) return premium();
+    if (endpoint === "coach") return premium();
     setTierHeader(res, "standard");
     return {
       tier: "standard",

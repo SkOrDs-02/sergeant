@@ -199,6 +199,33 @@ describe("resolveProTier — bypass paths return premium without touching DB", (
     const r = await resolveProTier(makeReq(), makeRes(), "chat");
     expect(r.tier).toBe("premium");
   });
+
+  // Деградація неоплаченого трафіку стосується ЛИШЕ чату. У коуча розрив
+  // premium→standard це gpt-5.1 → gemini-lite: найбільша втрата якості за
+  // найменшу економію (~$0.0035 на виклик), а сам ендпоінт не має plan-gate,
+  // тож Free бачить його на дашборді щодня.
+  it("free на коучі лишається premium (gpt-5.1), на відміну від чату", async () => {
+    getUserPlan.mockResolvedValue({ plan: "free" });
+    const res = makeRes();
+    const r = await resolveProTier(makeReq(), res, "coach");
+    expect(r.tier).toBe("premium");
+    expect(r.model).toBe("openai/gpt-5.1");
+    expect(res.headers["X-AI-Tier"]).toBe("premium");
+  });
+
+  it("анон на коучі теж лишається premium", async () => {
+    getSessionUser.mockResolvedValue(null);
+    const r = await resolveProTier(makeReq(), makeRes(), "coach");
+    expect(r.tier).toBe("premium");
+    expect(r.model).toBe("openai/gpt-5.1");
+  });
+
+  it("Pro-каскад на коучі не зачеплено: вичерпаний premium → standard", async () => {
+    pool.query.mockResolvedValueOnce(full()).mockResolvedValueOnce(ok());
+    const r = await resolveProTier(makeReq(), makeRes(), "coach");
+    expect(r.tier).toBe("standard");
+    expect(r.model).toBe("google/gemini-2.5-flash-lite");
+  });
 });
 
 describe("resolveProTier — Pro cascade premium → standard → floor", () => {
