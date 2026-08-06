@@ -505,7 +505,7 @@ export function Dashboard({
                           <div className="text-style-label text-text truncate">
                             {tpl.name}
                           </div>
-                          <div className="text-xs text-subtle mt-0.5">
+                          <div className="text-style-caption text-muted mt-0.5">
                             {picks.length > 0
                               ? `${picks.length} ${pluralExercises(
                                   picks.length,
@@ -571,7 +571,7 @@ export function Dashboard({
           </div>
         }
       >
-        <p className="text-sm text-subtle leading-relaxed">
+        <p className="text-style-body text-muted leading-relaxed">
           У цьому шаблоні є вправи на мʼязи, які ще відновлюються. Продовжити
           старт тренування?
         </p>
@@ -610,7 +610,7 @@ export function Dashboard({
           </div>
         }
       >
-        <p className="text-style-body text-subtle leading-relaxed">
+        <p className="text-style-body text-muted leading-relaxed">
           Нове тренування не створиться, доки ти не вибереш, що зробити з
           поточним.
         </p>

@@ -93,7 +93,7 @@ export function RecentWorkoutsSection({
           <p className="text-style-label text-text">
             Ще жодного завершеного тренування
           </p>
-          <p className="text-xs text-muted mt-1">
+          <p className="text-style-caption text-muted mt-1">
             Почни сесію — результати з&apos;являться тут автоматично.
           </p>
         </div>

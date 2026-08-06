@@ -36,14 +36,50 @@ describe("MonthPulseCard", () => {
     )[0]!;
   }
 
-  it("renders Місяць label, date, spent + income pair", () => {
+  it("renders date heading, spent + income pair", () => {
     render(<MonthPulseCard {...baseProps} />);
-    expect(screen.getByText("Місяць")).toBeInTheDocument();
     expect(screen.getByText("2 травня")).toBeInTheDocument();
     expect(screen.getByText("Витрати")).toBeInTheDocument();
     expect(screen.getByText("Дохід")).toBeInTheDocument();
     // Сума набрана `Money`: розряди й символ — окремі вузли (П4).
     expect(money("4 261 ₴")).toBeInTheDocument();
+  });
+
+  /**
+   * Службове слово «Місяць» прибрано: дата поруч уже каже те саме, а зайвий
+   * тир робив шапку двошаровою там, де потрібен один рядок.
+   */
+  it("does not repeat the word Місяць next to the date", () => {
+    render(<MonthPulseCard {...baseProps} />);
+    expect(screen.queryByText("Місяць")).not.toBeInTheDocument();
+  });
+
+  /**
+   * Підпис іде ПІД числом, а не над ним — число має зустрічати око першим.
+   * Перевіряємо порядок у DOM, а не сам факт наявності обох вузлів: до цієї
+   * зміни обидва теж були на місці, просто в іншому порядку.
+   */
+  it("puts the caption after its number, not before", () => {
+    render(<MonthPulseCard {...baseProps} income={12000} />);
+    for (const [amount, caption] of [
+      ["4 261 ₴", "Витрати"],
+      ["+12 000 ₴", "Дохід"],
+    ] as const) {
+      const position = money(amount).compareDocumentPosition(
+        screen.getByText(caption),
+      );
+      expect(position & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    }
+  });
+
+  /**
+   * Один приглушений сірий на картку. До цього підписи були `text-subtle`, а
+   * нотатки нижче — `text-muted`: два відтінки для однієї ролі читаються не
+   * як два рівні, а як неохайність.
+   */
+  it("uses a single muted grey across the card", () => {
+    const { container } = render(<MonthPulseCard {...baseProps} />);
+    expect(container.querySelector(".text-subtle")).toBeNull();
   });
 
   it("does not duplicate the day-budget — no Фінпульс block", () => {

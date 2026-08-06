@@ -41,6 +41,28 @@ function makeMuscle(
 }
 
 describe("StatusStrip", () => {
+  /**
+   * Підпис чипа йде ПІСЛЯ значення — чип читають заради числа, а не заради
+   * слова. Перевіряємо порядок у DOM, а не наявність: до цієї зміни обидва
+   * вузли теж були, просто в зворотному порядку.
+   */
+  it("puts each chip caption after its value, not before", () => {
+    render(
+      <StatusStrip
+        kpis={makeKpis()}
+        recovery={{ avoid: [] }}
+        onOpenBody={() => {}}
+        onOpenProgress={() => {}}
+        onOpenWorkouts={() => {}}
+      />,
+    );
+    const value = screen.getByText("ОК");
+    const caption = screen.getByText("Готовність");
+    expect(
+      value.compareDocumentPosition(caption) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
   it("renders Готовність as ОК when no muscles are flagged for avoidance", () => {
     render(
       <StatusStrip

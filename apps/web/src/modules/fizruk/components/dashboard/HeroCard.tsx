@@ -299,7 +299,7 @@ function ActiveState({
       >
         {formatElapsed(elapsedSec)}
       </p>
-      <p className="mt-2 text-sm text-hero-ink/75">{meta}</p>
+      <p className="mt-2 text-style-caption text-hero-ink">{meta}</p>
       <div className="mt-6">
         <button
           type="button"
@@ -352,7 +352,7 @@ function TodayState({
       <h2 className="text-hero font-black text-hero-ink mt-1 leading-tight truncate">
         {state.label}
       </h2>
-      <p className="mt-2 text-sm text-hero-ink/75 truncate">
+      <p className="mt-2 text-style-caption text-hero-ink truncate">
         {metaParts.join(" · ")}
       </p>
       <div className="mt-6">
@@ -411,7 +411,7 @@ function UpcomingState({
       <h2 className="text-hero font-black text-hero-ink mt-1 leading-tight truncate">
         {state.label}
       </h2>
-      <p className="mt-2 text-sm text-hero-ink/75 truncate">
+      <p className="mt-2 text-style-caption text-hero-ink truncate">
         {metaParts.join(" · ")}
       </p>
       <div className="mt-6">
@@ -451,7 +451,7 @@ function EmptyState({
       <h2 className="text-hero font-black text-hero-ink mt-1 leading-tight text-balance">
         Обери шаблон або заплануй день
       </h2>
-      <p className="mt-2 text-sm text-hero-ink/75">
+      <p className="mt-2 text-style-caption text-hero-ink">
         {state.hasTemplates
           ? "Нічого не заплановано — запусти готовий шаблон або відкрий програми."
           : "У тебе ще немає шаблонів. Створи свій перший або обери програму."}

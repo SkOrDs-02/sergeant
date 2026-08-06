@@ -1084,11 +1084,23 @@ const preset = {
         // D8-sweep (цикл 5): `display` і `display-hero` були двома
         // «найбільшими числами екрана». Роль лишилась одна й узяла
         // значення частотнішого втілення (display-hero, 11 вживань проти 2).
+        // AI-CONTEXT: трекінг −0.012em, а не −0.03em, і це калібрування під
+        // кирилицю, а не послаблення прийому. Від'ємний трекінг на великому
+        // кеглі правильний, але −0.03em підбиралось під латиницю. Кирилиця
+        // має помітно більше вертикальних штрихів на слово (ш, щ, и, ц, п),
+        // тож те саме стиснення закриває просвіти між ними сильніше й дає
+        // «частокіл» — слово читається по штриху, а не за силуетом.
+        //
+        // Рішення власника 2026-08-05 на матеріалі
+        // `mockups/product/display-tracking.html`. Зміна глобальна, але не
+        // широка за наслідками: з 19 місць із цією роллю лише 4 містять
+        // слова (IntroSlide, ResetPasswordPage, VerifyEmailPage,
+        // LegalDocumentView) — решта числа, де різниця майже невидима.
         ".text-style-display": {
           fontSize: "clamp(2.5rem, 2rem + 2.5vw, 4rem)",
           lineHeight: "1",
           fontWeight: "800",
-          letterSpacing: "-0.03em",
+          letterSpacing: "-0.012em",
         },
         // v2 hero display — Manrope-800 weight, tight leading.
         // Slot: Finyk balance reveal, Expensa amount hero (Phase 6.2),
