@@ -241,7 +241,7 @@ export function DailyPlanGoalSelectors({
                 })}
               </>
             ) : (
-              <div className="px-3 py-2 text-xs text-subtle border-b border-line">
+              <div className="px-3 py-2 text-style-caption text-subtle border-b border-line">
                 <div className="text-text">{TDEE_COPY.triggerHint}</div>
                 <Link
                   to={PROFILE_PATH}

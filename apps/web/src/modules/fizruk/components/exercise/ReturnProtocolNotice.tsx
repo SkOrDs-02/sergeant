@@ -34,7 +34,7 @@ export function ReturnProtocolNotice({ aging }: ReturnProtocolNoticeProps) {
         <p className="text-style-label text-info-strong dark:text-info">
           {injury ? t.injuryTitle : t.staleTitle}
         </p>
-        <p className="text-xs text-info-strong/80 dark:text-info/70">
+        <p className="text-style-caption text-info-strong/80 dark:text-info/70">
           {injury ? t.injuryNote : t.staleNote}
         </p>
         <p className="text-style-caption text-subtle mt-1 tabular-nums">

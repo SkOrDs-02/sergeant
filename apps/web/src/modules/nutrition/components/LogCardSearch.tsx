@@ -56,7 +56,9 @@ export function LogCardSearch({
       {searchQuery.trim() && (
         <ul className="max-h-48 overflow-y-auto text-sm space-y-1">
           {searchHits.length === 0 && (
-            <li className="text-muted text-xs">Нічого не знайдено</li>
+            <li className="text-muted text-style-caption">
+              Нічого не знайдено
+            </li>
           )}
           {searchHits.map(({ date, meal }) => {
             const mac = meal.macros || {

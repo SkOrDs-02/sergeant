@@ -149,13 +149,18 @@ export function Body({ onOpenAtlas }: BodyProps) {
             <h1 className="text-style-title text-text">
               {messages.fizruk.body.title}
             </h1>
-            <p className="text-xs text-subtle mt-0.5">
+            <p className="text-style-caption text-subtle mt-0.5">
               {messages.fizruk.body.subtitle}
             </p>
           </div>
           <div className="flex items-center gap-3">
             <div className="text-center">
-              <div className="text-xs text-subtle">
+              {/* AI-CONTEXT: роль `caption`, а не `label`. Та сама роль,
+                  що дає `SectionHeading size="xs"` у `Stat` і `MacroChip`
+                  для мітки НАД числом — але без смужки-кікера: у тісній
+                  смузі з трьох центрованих колонок вона читалась би як
+                  зайва графіка. Розмір не змінюється (12px → 12px). */}
+              <div className="text-style-caption text-subtle">
                 {messages.fizruk.body.weight}
               </div>
               <div className="text-base font-extrabold text-text tabular-nums">
@@ -171,7 +176,7 @@ export function Body({ onOpenAtlas }: BodyProps) {
               </div>
             </div>
             <div className="text-center">
-              <div className="text-xs text-subtle">
+              <div className="text-style-caption text-subtle">
                 {messages.fizruk.body.sleep}
               </div>
               <div className="text-base font-extrabold text-text tabular-nums">
@@ -275,7 +280,7 @@ export function Body({ onOpenAtlas }: BodyProps) {
             <p className="text-style-label text-text">
               {messages.fizruk.body.trendsCollecting}
             </p>
-            <p className="text-xs text-subtle mt-1">
+            <p className="text-style-caption text-subtle mt-1">
               {messages.fizruk.body.trendsCollectingDescription}
             </p>
           </Card>

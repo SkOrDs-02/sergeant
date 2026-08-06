@@ -272,7 +272,7 @@ export function NutritionDashboard({
           <div className="flex items-center justify-between mb-3">
             <div>
               <div className="text-style-label text-hero-ink">Сьогодні</div>
-              <div className="text-xs text-hero-ink">
+              <div className="text-style-caption text-hero-ink">
                 {summary.mealCount}{" "}
                 {pluralUa(summary.mealCount, {
                   one: "прийом",
@@ -448,7 +448,7 @@ export function NutritionDashboard({
           {dayHintText ? (
             <p className="text-sm text-text leading-snug">{dayHintText}</p>
           ) : (
-            <p className="text-xs text-subtle">
+            <p className="text-style-caption text-subtle">
               Аналіз харчування за сьогодні від AI
             </p>
           )}
