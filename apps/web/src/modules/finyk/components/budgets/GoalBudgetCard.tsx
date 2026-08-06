@@ -202,7 +202,7 @@ function GoalBudgetCardComponent({
                 <Icon name="target" size={16} aria-hidden /> {budget.name}
               </span>
               <div className="flex items-center gap-2">
-                <span className="text-xs text-muted">
+                <span className="text-style-caption text-muted">
                   {formatMoney(saved)} / {formatMoney(budget.targetAmount)}
                 </span>
                 <button
@@ -222,9 +222,11 @@ function GoalBudgetCardComponent({
               />
             </div>
             {monthlyLabel && (
-              <div className="text-xs text-subtle mt-1.5">{monthlyLabel}</div>
+              <div className="text-style-caption text-subtle mt-1.5">
+                {monthlyLabel}
+              </div>
             )}
-            <div className="text-xs text-subtle mt-0.5">
+            <div className="text-style-caption text-subtle mt-0.5">
               {pct}% ·{" "}
               {daysLeft !== null
                 ? daysLeft > 0
@@ -233,7 +235,7 @@ function GoalBudgetCardComponent({
                 : "Без дедлайну"}
             </div>
             {hasBreakdown && (
-              <div className="text-xs text-subtle mt-0.5">
+              <div className="text-style-caption text-subtle mt-0.5">
                 з банки{linkedJarLabel ? ` «${linkedJarLabel}»` : ""}{" "}
                 {formatMoney(fromJar)} · вручну {formatMoney(fromContributions)}
               </div>
@@ -251,7 +253,7 @@ function GoalBudgetCardComponent({
                   type="button"
                   onClick={() => setHistoryOpen((v) => !v)}
                   aria-expanded={historyOpen}
-                  className="text-xs text-subtle hover:text-text flex items-center gap-1 transition-colors"
+                  className="text-style-caption text-subtle hover:text-text flex items-center gap-1 transition-colors"
                 >
                   Історія ({contributions.length})
                   <Icon
@@ -316,7 +318,7 @@ function GoalBudgetCardComponent({
                 {[...contributions].reverse().map((c) => (
                   <li
                     key={c.id}
-                    className="flex items-center justify-between gap-2 text-xs text-subtle"
+                    className="flex items-center justify-between gap-2 text-style-caption text-subtle"
                   >
                     <span>
                       {c.date}

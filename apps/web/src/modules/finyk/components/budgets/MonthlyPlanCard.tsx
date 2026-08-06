@@ -127,6 +127,14 @@ function MonthlyPlanCardComponent({
           {hasPlan && !open && (
             <span
               className={cn(
+                // AI-DANGER: `text-xs` тут лишається навмисно. Роль
+                // `text-style-caption` явно задає `font-weight: 400`, а
+                // гілка `isOver` вмикає `font-semibold` — два правила ваги
+                // на ОДНОМУ вузлі, обидва в шарі utilities
+                // (`addUtilities` у `tailwind-preset.js`), тож переможець
+                // залежить від порядку в зібраному CSS. Перевитрата має
+                // лишатись важчою за норму: це єдине число, яке видно на
+                // згорнутій картці.
                 "text-xs tabular-nums",
                 isOver
                   ? "text-danger-strong dark:text-danger font-semibold"
@@ -141,7 +149,7 @@ function MonthlyPlanCardComponent({
             </span>
           )}
           {!hasPlan && !open && (
-            <span className="text-xs text-subtle">Не заданий</span>
+            <span className="text-style-caption text-subtle">Не заданий</span>
           )}
           <Icon
             name="chevron-down"
@@ -167,7 +175,7 @@ function MonthlyPlanCardComponent({
               </div>
               <div className="text-style-caption text-subtle text-right">Δ</div>
 
-              <div className="text-xs text-muted">Дохід</div>
+              <div className="text-style-caption text-muted">Дохід</div>
               <div className="text-right text-muted">
                 {planIncome > 0 ? fmt(planIncome) : "—"}
               </div>
@@ -187,7 +195,7 @@ function MonthlyPlanCardComponent({
                 {planIncome > 0 ? fmtSigned(incomeDelta) : "—"}
               </div>
 
-              <div className="text-xs text-muted">Витрати</div>
+              <div className="text-style-caption text-muted">Витрати</div>
               <div className="text-right text-muted">
                 {planExpense > 0 ? fmt(planExpense) : "—"}
               </div>
@@ -214,7 +222,7 @@ function MonthlyPlanCardComponent({
                 {planExpense > 0 ? fmtSigned(expenseDelta) : "—"}
               </div>
 
-              <div className="text-xs text-muted">Накопич.</div>
+              <div className="text-style-caption text-muted">Накопич.</div>
               <div className="text-right text-muted">
                 {planSavings > 0 ? fmt(planSavings) : "—"}
               </div>
@@ -253,7 +261,7 @@ function MonthlyPlanCardComponent({
 
           {hasPlan && planExpense > 0 && (
             <div className="space-y-1">
-              <div className="flex justify-between text-xs text-subtle">
+              <div className="flex justify-between text-style-caption text-subtle">
                 <span>{pctExpense}% витрачено</span>
                 {safePerDay > 0 && daysLeft > 0 && !isOver && (
                   <span className="tabular-nums">
@@ -287,7 +295,7 @@ function MonthlyPlanCardComponent({
               type="button"
               onClick={() => setEditing((v) => !v)}
               aria-expanded={editing}
-              className="text-xs text-muted hover:text-text inline-flex items-center gap-1 px-2 py-1 rounded-xl hover:bg-panelHi transition-colors"
+              className="text-style-caption text-muted hover:text-text inline-flex items-center gap-1 px-2 py-1 rounded-xl hover:bg-panelHi transition-colors"
             >
               <Icon name="edit" size={12} />
               {editing ? "Згорнути" : hasPlan ? "Редагувати" : "Задати план"}
