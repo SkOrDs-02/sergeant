@@ -103,6 +103,19 @@ const EMPTY_CACHE: SqliteFinykCache = {
 
 let cache: SqliteFinykCache = { ...EMPTY_CACHE };
 
+// DCRUD-007b: `cache` is published last-writer-wins, but refreshes run
+// concurrently — the boot refresh (slow: migrations + 14 SELECTs) is NOT
+// serialized with the writer-queue's post-apply refresh. A refresh that
+// STARTED before a local mutation but FINISHED after the writer's own
+// refresh used to clobber the newer snapshot; the overlay swap then fed
+// the stale state through the diff-writer, escalating into a spurious
+// blob-delete of the just-created row (server tombstone → data loss).
+// Generation guard: a refresh may publish only while no later-started
+// refresh has published first. SQLite writes are serialized, so a
+// later-started refresh always reads an equal-or-newer DB state.
+let refreshSeq = 0;
+let publishedSeq = 0;
+
 /** Returns the current cached finyk state (sync, zero-cost). */
 export function getCachedFinykSqliteState(): SqliteFinykCache {
   return cache;
@@ -216,6 +229,7 @@ export async function refreshFinykSqliteState(
   client: SqliteMigrationClient,
   userId: string,
 ): Promise<SqliteFinykCache> {
+  const seq = ++refreshSeq;
   const [
     hiddenAccountRows,
     hiddenTransactionRows,
@@ -393,6 +407,8 @@ export async function refreshFinykSqliteState(
     ? safeStringArray(prefsRow.dismissed_recurring_json)
     : null;
 
+  if (seq <= publishedSeq) return cache;
+  publishedSeq = seq;
   cache = {
     hiddenAccounts: hiddenAccountRows.map((r) => r.account_id),
     hiddenTransactions: hiddenTransactionRows.map((r) => r.transaction_id),
@@ -430,6 +446,8 @@ function safeStringArray(raw: string | null | undefined): string[] {
 /** Reset cache — used by tests and when the flag is toggled off. */
 export function clearFinykSqliteCache(): void {
   cache = { ...EMPTY_CACHE };
+  refreshSeq = 0;
+  publishedSeq = 0;
 }
 
 /**

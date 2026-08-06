@@ -45,6 +45,11 @@ const EMPTY_CACHE: SqliteMonoMirrorCache = {
 
 let cache: SqliteMonoMirrorCache = EMPTY_CACHE;
 
+// DCRUD-007b (mirror of ./sqliteReader.ts): a refresh that started
+// earlier but finished later must not clobber a newer snapshot.
+let refreshSeq = 0;
+let publishedSeq = 0;
+
 /**
  * Last-non-empty snapshot of transactions. Preserved across refreshes so
  * that a transitional empty refresh (e.g. page load before the first
@@ -115,6 +120,8 @@ export function getVisibleFinykMonoMirrorStateWithLastGood(): SqliteMonoMirrorCa
 export function clearFinykMonoMirrorCache(): void {
   cache = EMPTY_CACHE;
   lastGoodTransactions = [];
+  refreshSeq = 0;
+  publishedSeq = 0;
 }
 
 /** Test-only: seed the in-memory mirror without SQLite I/O. */
@@ -164,7 +171,9 @@ export async function refreshFinykMonoMirrorState(
   client: SqliteMigrationClient,
   userId: string,
 ): Promise<SqliteMonoMirrorCache> {
+  const seq = ++refreshSeq;
   if (!userId) {
+    publishedSeq = seq;
     cache = EMPTY_CACHE;
     return cache;
   }
@@ -198,6 +207,8 @@ export async function refreshFinykMonoMirrorState(
     lastGoodTransactions = transactions;
   }
 
+  if (seq <= publishedSeq) return cache;
+  publishedSeq = seq;
   cache = {
     transactions,
     accounts,
