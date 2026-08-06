@@ -41,6 +41,7 @@ import {
   type FormatMoneyOptions,
 } from "@sergeant/shared";
 import { cn } from "@shared/lib/ui/cn";
+import { signedDeltaClass } from "@shared/lib/ui/amountTone";
 import { CounterReveal } from "./CounterReveal";
 
 /**
@@ -183,11 +184,18 @@ export function Delta({
 }: DeltaProps) {
   const grew = value > 0;
   const colored = polarity !== "neutral" && value !== 0;
+  /*
+    AI-CONTEXT: колір бере `signedDeltaClass`, а не власну пару класів.
+    Дельта тут фарбується за СЕНСОМ (добре/погано), а хелпер приймає
+    знак — тому сенс перекладається у ±1. Виглядає кружним шляхом, але
+    саме воно й потрібне: інакше в репо два визначення однієї ролі, і
+    вони вже були розійшлися — хелпер дає світлому режиму `-strong`
+    (WCAG-AA компаньйон), а тутешня пара давала голий `text-success`,
+    тобто нижчий контраст на тому самому папері.
+  */
   const toneClass = !colored
     ? "text-muted"
-    : (polarity === "positive") === grew
-      ? "text-success"
-      : "text-danger";
+    : signedDeltaClass((polarity === "positive") === grew ? 1 : -1);
 
   return (
     <Money

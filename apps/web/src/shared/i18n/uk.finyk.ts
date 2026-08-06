@@ -53,6 +53,10 @@ export const finykPageMessages = {
     dailyPlan: "Денний план",
     planMissing: "Не задано",
     paceHidden: "Темп приховано",
+    // Хвости фрази «<сума> до темпу» / «<сума> понад темп»: сума тепер
+    // окремий вузол (`Money`), тож текст навколо неї живе тут.
+    paceAhead: "до темпу",
+    paceOver: "понад темп",
   },
   todayFilter: {
     label: "Лише сьогодні",

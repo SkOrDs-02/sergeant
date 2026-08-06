@@ -16,8 +16,7 @@ import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Skeleton } from "@shared/components/ui/Skeleton";
 import { EmptyState } from "@shared/components/ui/EmptyState";
-import { cn } from "@shared/lib/ui/cn";
-import { signedDeltaClass } from "@shared/lib";
+import { Money, Delta } from "@shared/components/ui/Money";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import { filterToKyivMonth } from "../lib/monthWindow";
 import { useAnalytics } from "../hooks/useAnalytics";
@@ -154,31 +153,22 @@ const ComparisonRow = memo(function ComparisonRow({
 }: ComparisonRowProps) {
   const diff = current - prev;
   const pct = prev > 0 ? Math.round((diff / prev) * 100) : null;
-  const up = diff > 0;
-  const upIsGood = kind === "income";
-  const good = diff === 0 ? null : up === upIsGood;
 
   return (
     <div className="flex items-center justify-between text-sm">
       <span className="text-muted">{label}</span>
-      <div className="flex items-center gap-2 tabular-nums">
-        <span className="text-text font-medium">
-          {current.toLocaleString("uk-UA")} ₴
-        </span>
+      <div className="flex items-center gap-2">
+        <Money amount={current} className="text-text font-medium" />
         {prev > 0 && pct !== null && (
-          <span
-            className={cn(
-              "text-xs",
-              good === null
-                ? "text-muted"
-                : good
-                  ? "text-success-strong dark:text-success"
-                  : "text-danger-strong dark:text-danger",
-            )}
-          >
-            {up ? "+" : ""}
-            {pct}%
-          </span>
+          /* Полярність задає `kind`, а не знак: зростання доходу — добре,
+             зростання витрат — ні. Рівно те розділення, заради якого
+             `Delta` бере `polarity` окремим пропом. */
+          <Delta
+            value={pct}
+            symbol="%"
+            polarity={kind === "income" ? "positive" : "negative"}
+            className="text-style-caption font-normal"
+          />
         )}
       </div>
     </div>
@@ -406,29 +396,32 @@ export function Analytics({ mono, storage }: AnalyticsProps) {
                 <div className="text-style-caption text-subtle mb-1">
                   Витрати
                 </div>
-                <div className="text-style-label tabular-nums text-danger-strong dark:text-danger">
-                  {summary.spent.toLocaleString("uk-UA")} ₴
-                </div>
+                <Money
+                  amount={summary.spent}
+                  tone="inherit"
+                  className="block text-style-label text-danger-strong dark:text-danger"
+                />
               </div>
               <div className="text-center">
                 <div className="text-style-caption text-subtle mb-1">Дохід</div>
-                <div className="text-style-label tabular-nums text-success-strong dark:text-success">
-                  {summary.income.toLocaleString("uk-UA")} ₴
-                </div>
+                <Money
+                  amount={summary.income}
+                  tone="inherit"
+                  className="block text-style-label text-success-strong dark:text-success"
+                />
               </div>
               <div className="text-center">
                 <div className="text-style-caption text-subtle mb-1">
                   Баланс
                 </div>
-                <div
-                  className={cn(
-                    "text-style-label tabular-nums",
-                    signedDeltaClass(summary.balance),
-                  )}
-                >
-                  {summary.balance >= 0 ? "+" : ""}
-                  {summary.balance.toLocaleString("uk-UA")} ₴
-                </div>
+                {/* Баланс — підписана дельта, тож `Delta`, а не `Money`:
+                    вона й знак ставить сама, і колір бере з того самого
+                    `signedDeltaClass`, який тут стояв вручну. */}
+                <Delta
+                  value={summary.balance}
+                  polarity="positive"
+                  className="block text-style-label"
+                />
               </div>
             </div>
           )}

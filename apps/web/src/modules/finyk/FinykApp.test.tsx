@@ -315,7 +315,16 @@ describe("FinykApp — regression: malformed /api/v1/mono/accounts payload (deep
     // Empty state visible: the malformed accounts payload degrades to `[]`,
     // so net-worth totals render the real zero state instead of throwing
     // (both the net-worth card and the "Активи" section bar summary show it).
-    expect(screen.getAllByText("+0 ₴").length).toBeGreaterThan(0);
+    //
+    // Нуль рендериться БЕЗ плюса, і це навмисно: `splitMoneyParts` ставить
+    // знак лише при `> 0`, бо нуль — не прибуток. Доти тут стояло
+    // `+0 ₴` від ручного `balance >= 0 ? "+" : ""` — того самого саморобу,
+    // який `Money` й замінює. Матчер — по `textContent`, бо сума розкладена
+    // на тири; пробіл перед ₴ — \u202f, звичайний не знайде нічого.
+    const zeros = Array.from(document.querySelectorAll("span")).filter((el) =>
+      /^0\u202f₴$/.test(el.textContent ?? ""),
+    );
+    expect(zeros.length).toBeGreaterThan(0);
   });
 });
 

@@ -3,6 +3,20 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { TodaySummaryCard } from "./TodaySummaryCard";
 
+/**
+ * `Money` розкладає суму на кілька DOM-вузлів (тири), тож рядковий
+ * матчер її не знаходить. Порівнюємо по `textContent` вузла-обгортки.
+ * Пробіли — явними escape-послідовностями: `\u00a0` у розрядах від
+ * `toLocaleString("uk-UA")`, `\u202f` перед ₴ від самої `Money`.
+ * Звичайний пробіл тут не знаходить нічого, а в коді обидва символи
+ * невидимі — тому в джерелі стоять escape-и, а не самі знаки.
+ */
+function hasText(re: RegExp): boolean {
+  return Array.from(document.querySelectorAll("p, span")).some((el) =>
+    re.test(el.textContent ?? ""),
+  );
+}
+
 describe("TodaySummaryCard", () => {
   it("shows today's facts, daily plan, and remaining pace", () => {
     render(
@@ -16,10 +30,10 @@ describe("TodaySummaryCard", () => {
     );
 
     expect(screen.getByText("Сьогодні")).toBeInTheDocument();
-    expect(screen.getByText("320 ₴")).toBeInTheDocument();
-    expect(screen.getByText("500 ₴")).toBeInTheDocument();
-    expect(screen.getByText("400 ₴")).toBeInTheDocument();
-    expect(screen.getByText(/80 ₴ до темпу/)).toBeInTheDocument();
+    expect(hasText(/^320\u202f₴$/)).toBe(true);
+    expect(hasText(/^500\u202f₴$/)).toBe(true);
+    expect(hasText(/^400\u202f₴$/)).toBe(true);
+    expect(hasText(/80\u202f₴ до темпу/)).toBe(true);
   });
 
   it("shows overspend and does not invent a plan when none exists", () => {
@@ -32,7 +46,7 @@ describe("TodaySummaryCard", () => {
         onOpen={vi.fn()}
       />,
     );
-    expect(screen.getByText(/50 ₴ понад темп/)).toBeInTheDocument();
+    expect(hasText(/50\u202f₴ понад темп/)).toBe(true);
 
     rerender(
       <TodaySummaryCard

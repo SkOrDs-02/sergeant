@@ -4,6 +4,7 @@
  */
 import { memo } from "react";
 import { cn } from "@shared/lib/ui/cn";
+import { Money } from "@shared/components/ui/Money";
 import { pluralTimes } from "@sergeant/shared";
 
 interface MerchantStat {
@@ -41,9 +42,10 @@ function MerchantListComponent({
                 <span className="text-sm text-text truncate pr-2">
                   {m.name}
                 </span>
-                <span className="text-style-label tabular-nums text-text shrink-0">
-                  {m.total.toLocaleString("uk-UA")} ₴
-                </span>
+                <Money
+                  amount={m.total}
+                  className="text-style-label text-text shrink-0"
+                />
               </div>
               <div className="flex items-center gap-2">
                 <div className="flex-1 h-1.5 bg-bg rounded-full overflow-hidden">
