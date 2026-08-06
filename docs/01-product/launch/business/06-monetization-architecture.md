@@ -1,9 +1,9 @@
 # 06. Архітектура монетизації (технічний скелетон v2)
 
-> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
+> **Last touched:** 2026-08-06 by @Skords-01. **Next review:** 2026-11-04.
 > **Status:** Active (architecture reference; delivery status lives in revenue PR plan)
 >
-> **Update 2026-06-27:** цінові параметри і trial-механіка зафіксовані в [ADR-0068](../../../04-governance/adr/0068-pricing-v4-uah-reverse-trial.md) (Supersedes ADR-0051). Активна модель: **₴199/міс / ₴1490/рік**, **reverse trial 7 днів** (автоматичний Pro → downgrade), Free AI 15 msg/day, Free cloud-sync 2 пристрої. Якщо нижче зустрічаєте `$7/міс`, `$49/рік`, `₴99/міс` або «trial без картки» (opt-in) — це **Superseded by ADR-0068**, historical context only.
+> **Update 2026-06-27:** цінові параметри і trial-механіка зафіксовані в [ADR-0068](../../../04-governance/adr/0068-pricing-v4-uah-reverse-trial.md) (Supersedes ADR-0051). Активна модель: **₴199/міс / ₴1490/рік**, **reverse trial 7 днів** (автоматичний Pro → downgrade), Free AI **5 msg/day** ([ADR-0085](../../../04-governance/adr/0085-free-ai-quota-five-per-day.md) — уточнює рядок «15» з ADR-0068; анонім — 1/день), Free cloud-sync 2 пристрої. Якщо нижче зустрічаєте `$7/міс`, `$49/рік`, `₴99/міс` або «trial без картки» (opt-in) — це **Superseded by ADR-0068**, historical context only.
 >
 > **Update 2026-08-05 (рішення founder-а, pre-beta аудит 2026-08-04):**
 >
@@ -104,7 +104,7 @@ export const SubscriptionSchema = z.object({
 
 export const PLAN_GATES = {
   free: {
-    aiChatPerDay: 15, // ADR-0068 — matches effectiveLimits.ts
+    aiChatPerDay: 5, // ADR-0085 — matches effectiveLimits.ts
     aiBriefing: false,
     aiDaySummary: false,
     aiPhotoPerDay: 3,

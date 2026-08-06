@@ -51,7 +51,7 @@
 > **Snapshot 2026-07-10 (code truth):**
 >
 > - **Billing:** scaffold shipped — `usePlan()`, `PaywallModal`, `TrialBanner`, `PricingPage`, server `/api/billing/checkout|status|portal|stripe-webhook`. Open: live Stripe prod env, legal publish, remaining placement polish.
-> - **Pricing/trial:** ADR-0068 — ₴199/міс, ₴1490/рік, reverse trial 7 днів, Free AI 15 msg/day, cloud-sync 2 devices.
+> - **Pricing/trial:** ADR-0068 — ₴199/міс, ₴1490/рік, reverse trial 7 днів, cloud-sync 2 devices; Free AI **5 msg/day** (ADR-0085, анонім — 1).
 > - **Landing:** in-app `LandingPage` на `/` + waitlist shipped; standalone `sergeant.com.ua` — TBD.
 > - **FTUX sprints:** S1–S3 core items merged; S6 cleanup mostly done. Real-world activation conversion still **TBD** (needs 14+ day cohort).
 > - **Paywall placement:** sketch у [`paywall-ux-placement.md`](./paywall-ux-placement.md) — historical 14d opt-in trial; implementation follows ADR-0068 reverse trial.
