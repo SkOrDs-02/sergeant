@@ -10,6 +10,18 @@
  * історію подій неможливо.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+// Картка тягне `usePlan` (гейт бейджа деградації) → `useQuery`. Мокаємо хук,
+// а не піднімаємо QueryClientProvider: цей файл про телеметрію показу, і
+// провайдер додав би сюди неспоріднений асинхронний стан.
+vi.mock("../billing/usePlan", () => ({
+  usePlan: () => ({
+    plan: "pro",
+    isPro: true,
+    isLoading: false,
+    subscription: null,
+  }),
+}));
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 
 const trackEventMock = vi.fn();

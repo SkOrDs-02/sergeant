@@ -2,6 +2,19 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 
+// Бейдж деградації тепер гейтиться планом, тож картка тягне `usePlan`, а той —
+// `useQuery`. Мокаємо хук, а не піднімаємо QueryClientProvider: тести тут про
+// рендер картки, і зайвий провайдер сховав би саме те, що перевіряємо.
+const planMock = { isPro: true };
+vi.mock("../billing/usePlan", () => ({
+  usePlan: () => ({
+    plan: planMock.isPro ? "pro" : "free",
+    isPro: planMock.isPro,
+    isLoading: false,
+    subscription: null,
+  }),
+}));
+
 import { AssistantAdviceCard } from "./AssistantAdviceCard";
 import { publishAiTier, __resetAiTierForTests } from "@shared/api/aiTierBus";
 import { onHubBus, __resetHubBusForTests } from "@shared/lib/modules/hubBus";
@@ -10,6 +23,7 @@ describe("AssistantAdviceCard — loading vs loaded", () => {
   afterEach(() => {
     cleanup();
     window.localStorage.clear();
+    planMock.isPro = true;
   });
 
   it("renders a skeleton stand-in (no plain-text fallback) while loading without a cached insight", () => {
@@ -142,6 +156,9 @@ describe("AssistantAdviceCard — Pro tier badge", () => {
     cleanup();
     window.localStorage.clear();
     __resetAiTierForTests();
+    // Кейс про неплатника ставить `isPro=false`; без скидання він протікав би
+    // у наступні тести цього ж блоку і ховав би бейдж там, де він має бути.
+    planMock.isPro = true;
   });
 
   it("shows no badge for the default premium tier (or before any tier is known)", () => {
@@ -171,6 +188,23 @@ describe("AssistantAdviceCard — Pro tier badge", () => {
       />,
     );
     expect(screen.getByText("Стандартна модель")).toBeInTheDocument();
+  });
+
+  // Бейдж означає «твоя premium-квота вичерпана» — подію, якої у Free не
+  // існує. Відколи Free ходить standard-моделлю чату, без цього гейта він
+  // горів би в неплатника постійно й не вказував ні на що.
+  it("не показує бейдж деградації неплатнику, хоч тир і standard", () => {
+    planMock.isPro = false;
+    publishAiTier("standard");
+    render(
+      <AssistantAdviceCard
+        insight="Порада"
+        loading={false}
+        error={null}
+        onRefresh={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText(/стандартна модель/i)).toBeNull();
   });
 
   it("shows the floor-tier label once degraded to the cheapest model", () => {

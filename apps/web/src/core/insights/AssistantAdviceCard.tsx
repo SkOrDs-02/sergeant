@@ -6,6 +6,7 @@ import { SkeletonText } from "@shared/components/ui/Skeleton";
 import { Badge } from "@shared/components/ui/Badge";
 import { messages } from "@shared/i18n/uk";
 import { useAiTier } from "@shared/api/useAiTier";
+import { usePlan } from "../billing/usePlan";
 import { emitHubBus } from "@shared/lib/modules/hubBus";
 import {
   safeReadStringLS,
@@ -20,6 +21,12 @@ import {
 // Pro tiered model degradation (premium → standard → floor). `premium` is
 // the expected default and stays invisible — only degraded tiers get a
 // badge, so most Pro users never see this.
+//
+// AI-CONTEXT (2026-08-06): бейдж має сенс ЛИШЕ для платника — він означає
+// «твоя premium-квота на сьогодні вичерпана», тобто називає подію, яку людина
+// пережила. Відколи Free перевели на standard-модель чату, у неплатника він
+// горів би постійно й не вказував ні на що: premium він не мав і втратити не
+// міг. Тому нижче бейдж гейтиться `isPro`, а не самим тиром.
 const DEGRADED_TIER_LABEL: Record<"standard" | "floor", string> = {
   standard: "Стандартна модель",
   floor: "Економний режим",
@@ -71,8 +78,9 @@ export function AssistantAdviceCard({
 }: AssistantAdviceCardProps) {
   const [collapsed, setCollapsed] = useState(readCollapsed);
   const aiTier = useAiTier();
+  const { isPro } = usePlan();
   const degradedLabel =
-    aiTier === "standard" || aiTier === "floor"
+    isPro && (aiTier === "standard" || aiTier === "floor")
       ? DEGRADED_TIER_LABEL[aiTier]
       : null;
 

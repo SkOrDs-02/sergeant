@@ -510,9 +510,10 @@ export async function coachInsight(req: Request, res: Response): Promise<void> {
 
   // Pro tiered degradation: resolveProTier picks the OpenRouter model for this
   // Pro user's daily tier (premium gpt-5.1 → standard gemini-lite → floor free).
-  // For Free/Anon/founder/flag-off it returns the premium model = current
-  // behaviour (env.OPENROUTER_COACH_MODEL via the premium-tier default), so the
-  // factory wiring below is unchanged in the common case.
+  // Free/anon тут лишаються на premium — на відміну від чату, який 2026-08-06
+  // перевели на standard. Причина в співвідношенні: у чаті це −$0.014 на
+  // повідомлення, а тут розрив gpt-5.1 → gemini-lite найбільший за якістю і
+  // дає лише ~$0.0035 на виклик. Обґрунтування — в `aiQuota.ts::unpaid`.
   const tier = await resolveProTier(req, res, "coach");
 
   // Routed through the LLMProvider factory so coach can be re-targeted off
