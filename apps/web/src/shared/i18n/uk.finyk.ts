@@ -155,5 +155,6 @@ export const finykPageMessages = {
     peakDayNamed: "Найбільше списань {day}-го числа ({names})",
     gapSpoken:
       "Найдовший проміжок без списань — {n} {unit}, з {from}-го по {to}-е.",
+    incomeSpoken: "Регулярні надходження — {days} числа.",
   },
 } as const;

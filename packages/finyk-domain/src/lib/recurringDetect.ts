@@ -1,13 +1,18 @@
 /**
- * Автодетекція регулярних витрат (підписок) із історії транзакцій.
+ * Автодетекція регулярних платежів із історії транзакцій.
  *
- * Групує expense-транзакції за нормалізованим merchant-ключем, шукає
- * регулярні інтервали (тижневі / двотижневі / місячні / квартальні /
- * річні) зі стабільною сумою та повертає кандидатів, які користувач може
- * одним кліком перетворити на підписку.
+ * Групує транзакції за нормалізованим merchant-ключем, шукає регулярні
+ * інтервали (тижневі / двотижневі / місячні / квартальні / річні) зі
+ * стабільною сумою та повертає кандидатів.
  *
- * Чистий модуль без залежностей від localStorage/DOM — інтегрується через
- * `RecurringSuggestions.jsx`.
+ * Працює в обидва боки — див. `DetectOptions.flow`:
+ *   - `expense` (default) — підписки, комуналка; кандидати йдуть у
+ *     `RecurringSuggestions`, де їх можна одним кліком зробити підпискою;
+ *   - `income` — зарплата, оренда, стипендія; використовується гребенем
+ *     місяця (`MonthOutflowComb`), щоб показати, коли гроші приходять,
+ *     а не лише коли йдуть.
+ *
+ * Чистий модуль без залежностей від localStorage/DOM.
  */
 
 const DAY_SECONDS = 86_400;
@@ -103,7 +108,25 @@ export interface DetectOptions {
    * Default: 45 днів (поріг трошки більший за місяць).
    */
   maxAgeDays?: number;
+  /**
+   * Який бік грошового потоку шукати.
+   *
+   * AI-CONTEXT: до 2026-08-06 рушій умів лише `expense` — і не за
+   * задумом, а тому що фільтр `tx.amount >= 0` стояв прямо в циклі
+   * групування. Уся решта механіки (каденція, стабільність суми,
+   * впевненість, `billingDay`) уже працювала на `Math.abs`, тобто до
+   * знака байдужа. Тому це опція, а не друга копія рушія.
+   *
+   * Default `expense` — щоб жоден наявний виклик не змінив поведінки.
+   */
+  flow?: RecurringFlow;
 }
+
+/**
+ * `expense` — регулярні витрати (підписки, комуналка).
+ * `income` — регулярні надходження (зарплата, оренда, стипендія).
+ */
+export type RecurringFlow = "expense" | "income";
 
 // ---------- helpers ----------
 
@@ -214,6 +237,7 @@ export function detectRecurring(
     excludedTxIds = [],
     nowSec = Math.floor(Date.now() / 1000),
     maxAgeDays = 45,
+    flow = "expense",
   } = options;
 
   if (!transactions || !transactions.length) return [];
@@ -224,7 +248,9 @@ export function detectRecurring(
   // Групування за нормалізованим merchant-ключем.
   const groups = new Map<string, RecurringTx[]>();
   for (const tx of transactions) {
-    if (!tx || typeof tx.amount !== "number" || tx.amount >= 0) continue;
+    if (!tx || typeof tx.amount !== "number") continue;
+    // Нуль не належить жодному боку: він не витрата й не надходження.
+    if (flow === "expense" ? tx.amount >= 0 : tx.amount <= 0) continue;
     if (!tx.id || excluded.has(tx.id)) continue;
     const key = normalizeMerchantKey(tx.description);
     if (!key) continue;
