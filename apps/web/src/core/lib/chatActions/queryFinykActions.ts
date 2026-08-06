@@ -1,4 +1,13 @@
 import { getWeekKey } from "@sergeant/shared";
+import { formatDayRangeUk } from "@shared/lib/time/dayKeyLabel";
+
+/**
+ * Підпис періоду для фінансових зведень. `todayKey` не передаємо навмисно:
+ * фінансові вибірки майже завжди про минуле, і «сьогодні» посеред звіту за
+ * місяць читається гірше за дату.
+ */
+const finykRange = (from: string, to: string): string =>
+  formatDayRangeUk(from, to);
 import {
   buildFinykExcludedTxIds,
   getTxStatAmount,
@@ -375,7 +384,7 @@ export function aggregateSpending(
 
   const dirWord = direction === "income" ? "доходів" : "витрат";
   if (rows.length === 0) {
-    return `Немає ${dirWord} за період ${from} — ${to}.`;
+    return `Немає ${dirWord} за період ${finykRange(from, to)}.`;
   }
 
   const groups = new Map<string, { sum: number; count: number }>();
@@ -404,7 +413,7 @@ export function aggregateSpending(
 
   const dirTitle = direction === "income" ? "Дохід" : "Витрати";
   const more = groups.size > sorted.length ? ` з ${groups.size} груп` : "";
-  return `${dirTitle} за ${from} — ${to}: ${roundGrn(total)} грн усього (${rows.length} транзакц.). Розбивка за ${groupLabel[groupBy]}${more}: ${sorted.join("; ")}`;
+  return `${dirTitle} за ${finykRange(from, to)}: ${roundGrn(total)} грн усього (${rows.length} транзакц.). Розбивка за ${groupLabel[groupBy]}${more}: ${sorted.join("; ")}`;
 }
 
 export function comparePeriods(action: ComparePeriodsAction): ChatActionResult {

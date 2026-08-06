@@ -1,4 +1,15 @@
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
+import { formatDayRangeUk } from "@shared/lib/time/dayKeyLabel";
+
+/**
+ * Людський підпис періоду для текстів, які бачить користувач.
+ *
+ * Локальна обгортка, щоб `todayKey` не дублювався в кожному рядку: без нього
+ * «сьогодні» не вживається, і запит за поточний день читався б як
+ * «за 6 серп — 6 серп».
+ */
+const range = (from: string, to: string): string =>
+  formatDayRangeUk(from, to, { todayKey: getKyivDayKey() });
 import { loadNutritionLog } from "@nutrition/lib/nutritionStorage";
 import type {
   ChatAction,
@@ -152,7 +163,7 @@ export function queryNutrition(action: QueryNutritionAction): ChatActionResult {
 
   if (matched.length === 0) {
     const flt = query ? ` (${query})` : "";
-    return `Прийомів їжі${flt} за ${from} — ${to} не знайдено.`;
+    return `Прийомів їжі${flt} за ${range(from, to)} не знайдено.`;
   }
 
   const totals = matched.reduce(
@@ -177,7 +188,7 @@ export function queryNutrition(action: QueryNutritionAction): ChatActionResult {
       ? ` (показано ${shown.length} з ${matched.length})`
       : "";
 
-  return `Прийомів за ${from} — ${to}: ${matched.length}, разом ${round(totals.kcal)} ккал (Б ${round(totals.protein)}г · Ж ${round(totals.fat)}г · В ${round(totals.carbs)}г)${more}: ${list}`;
+  return `Прийомів за ${range(from, to)}: ${matched.length}, разом ${round(totals.kcal)} ккал (Б ${round(totals.protein)}г · Ж ${round(totals.fat)}г · В ${round(totals.carbs)}г)${more}: ${list}`;
 }
 
 export function nutritionAverages(
@@ -212,7 +223,7 @@ export function nutritionAverages(
     .sort((a, b) => (a.day < b.day ? -1 : a.day > b.day ? 1 : 0));
 
   if (days.length === 0) {
-    return `Немає записів їжі за ${from} — ${to}.`;
+    return `Немає записів їжі за ${range(from, to)}.`;
   }
 
   const n = days.length;
@@ -235,7 +246,7 @@ export function nutritionAverages(
   };
 
   const lines = [
-    `Середнє харчування за ${from} — ${to} (${n} ${n === 1 ? "день" : "днів"} із записами):`,
+    `Середнє харчування за ${range(from, to)} (${n} ${n === 1 ? "день" : "днів"} із записами):`,
     `Калорії: ${round(avg.kcal)} ккал/день`,
     `Макроси/день: Б ${round(avg.protein)}г · Ж ${round(avg.fat)}г · В ${round(avg.carbs)}г`,
   ];

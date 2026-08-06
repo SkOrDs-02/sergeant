@@ -5,6 +5,7 @@ import {
   getKyivMondayIndex,
   parseKyivDate,
 } from "@shared/lib/time/kyivTime";
+import { formatDayKeyUk } from "@shared/lib/time/dayKeyLabel";
 import { ls } from "../hubChatUtils";
 import { readFizrukWorkouts } from "./fizrukActions/shared";
 import { getVisibleFinykMonoMirrorState } from "../../../modules/finyk/lib/monoMirrorReader";
@@ -215,7 +216,11 @@ export function queryHabits(action: QueryHabitsAction): ChatActionResult {
     );
   }
   if (missedDays.length > 0) {
-    lines.push(`Дні без жодного виконання: ${missedDays.join(", ")}`);
+    const today = getKyivDayKey();
+    const labels = missedDays.map((d) =>
+      formatDayKeyUk(d, { todayKey: today }),
+    );
+    lines.push(`Дні без жодного виконання: ${labels.join(", ")}`);
   }
   return lines.join("\n");
 }
