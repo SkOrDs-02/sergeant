@@ -21,10 +21,7 @@ import {
 } from "@testing-library/react";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
 import { Analytics } from "./Analytics";
-import type {
-  AnalyticsMonoAdapter,
-  AnalyticsStorageAdapter,
-} from "./Analytics";
+import type { AnalyticsProps } from "./Analytics";
 
 // Mock the lazy chart so Suspense resolves immediately and we don't pull recharts.
 vi.mock("../components/charts/lazy", () => ({
@@ -47,8 +44,8 @@ function mkTx(id: string, amount: number, time: number): Transaction {
 }
 
 function buildMono(
-  overrides: Partial<AnalyticsMonoAdapter> = {},
-): AnalyticsMonoAdapter {
+  overrides: Partial<AnalyticsProps["mono"]> = {},
+): AnalyticsProps["mono"] {
   return {
     realTx: [],
     loadingTx: false,
@@ -58,8 +55,8 @@ function buildMono(
 }
 
 function buildStorage(
-  overrides: Partial<AnalyticsStorageAdapter> = {},
-): AnalyticsStorageAdapter {
+  overrides: Partial<AnalyticsProps["storage"]> = {},
+): AnalyticsProps["storage"] {
   return {
     excludedTxIds: new Set<string>(),
     txSplits: {},
@@ -225,7 +222,7 @@ describe("Analytics page", () => {
           mono={buildMono()}
           storage={buildStorage({
             manualExpenses: manualExpenses as unknown as NonNullable<
-              AnalyticsStorageAdapter["manualExpenses"]
+              AnalyticsProps["storage"]["manualExpenses"]
             >,
           })}
         />,

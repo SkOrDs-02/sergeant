@@ -4,10 +4,6 @@
  * tokens and review guidance instead of custom AST rules.
  */
 
-// parse5 powers the `sri-on-third-party-script` rule (HTML `<script src>`
-// SRI guard). Root devDependency; the plugin is private + internal-only.
-import { parse as parseHtml } from "parse5";
-
 // ─── no-raw-tracked-storage ─────────────────────────────────────────────
 //
 // Background
@@ -37,61 +33,15 @@ import { parse as parseHtml } from "parse5";
 // the rule (or vice versa).
 
 const TRACKED_STORAGE_KEY_NAMES = new Set([
-  // finyk — removed from SYNC_MODULES in PR #039 (storage-roadmap
-  // Stage 4). The nineteen `finyk_*` LS/MMKV keys are no longer
-  // cloud-synced through `module_data.finyk`; the per-table
-  // `finyk_*` SQLite mirror plus the op-log carry budgets / subs /
-  // assets / debts / receivables / hidden / monthly_plan / tx_cats /
-  // tx_splits / mono_debt_linked / networth_history / custom_cats /
-  // manual_expenses / tx_filters / show_balance plus the Mono cache
-  // mirror (tx_cache, info_cache, tx_cache_last_good) instead. The
-  // dedicated `no-restricted-syntax` guard in `eslint.config.js`
-  // prevents new direct reads of `STORAGE_KEYS.FINYK_<key>`.
-  // FINYK_TOKEN was already not tracked: the Monobank PAT is
-  // server-only (`mono_connection.token_ciphertext`) and writing it
-  // client-side is banned by the dedicated `no-finyk-token-in-storage`
-  // rule.
-  // fizruk — removed from SYNC_MODULES in PR #030 (storage-roadmap
-  // Stage 4). The eleven `fizruk_*_v1` LS/MMKV keys are no longer
-  // cloud-synced through `module_data.fizruk`; the per-table
-  // `fizruk_*` SQLite mirror plus the op-log carry workouts /
-  // measurements / templates / wellbeing / daily-log instead. The
-  // dedicated `no-restricted-syntax` guard in `eslint.config.js`
-  // prevents new direct reads of `STORAGE_KEYS.FIZRUK_<key>`.
-  // routine — removed from SYNC_MODULES in PR #026 (storage-roadmap
-  // Stage 4). Completions now live in SQLite; the LS blob is no longer
-  // cloud-synced. The dedicated ESLint guard in eslint.config.js
-  // prevents new direct reads of STORAGE_KEYS.ROUTINE.
-  // nutrition — removed from SYNC_MODULES in PR #034 (storage-roadmap
-  // Stage 4). The five `nutrition_*_v1` LS/MMKV keys are no longer
-  // cloud-synced through `module_data.nutrition`; the per-table
-  // `nutrition_*` SQLite mirror plus the op-log carry meals /
-  // pantries / prefs / saved-recipes instead. The dedicated
-  // `no-restricted-syntax` guard in `eslint.config.js` prevents new
-  // direct reads of `STORAGE_KEYS.NUTRITION_<key>`.
-  // profile (web-only payload — `USER_PROFILE` does not exist in MMKV,
-  // but listing it here keeps the cross-platform registry symmetric so
-  // mobile sync no longer null-overwrites the server blob).
-  // `HUB_BIOMETRICS` (added alongside `USER_PROFILE` in PR #2245 — the
-  // hub-level biometric parameters store, height/birth-date/sex/
-  // activity-level/current-weight, used by the nutrition Mifflin-St
-  // Jeor TDEE calculator). Synced via `SYNC_MODULES.profile` (LWW),
-  // same path as the user-profile blob.
+  // Only the `profile` sync module is still LS/MMKV-tracked: finyk /
+  // fizruk / routine / nutrition left SYNC_MODULES during storage-roadmap
+  // Stage 4 (SQLite mirror + op-log; `no-restricted-syntax` guards in
+  // `eslint.config.js` block new direct STORAGE_KEYS reads for them).
   "USER_PROFILE",
   "HUB_BIOMETRICS",
 ]);
 
 const TRACKED_STORAGE_KEY_VALUES = new Set([
-  // finyk — see TRACKED_STORAGE_KEY_NAMES comment above (retired in
-  // PR #039). "finyk_token" was already not tracked: server-only PAT,
-  // see `no-finyk-token-in-storage` rule.
-  // fizruk — see TRACKED_STORAGE_KEY_NAMES comment above (retired in
-  // PR #030).
-  // routine — see TRACKED_STORAGE_KEY_NAMES comment above (retired in
-  // PR #026).
-  // nutrition — see TRACKED_STORAGE_KEY_NAMES comment above (retired
-  // in PR #034).
-  // profile (see USER_PROFILE / HUB_BIOMETRICS comments above).
   "hub_user_profile_v1",
   "hub_biometrics_v1",
 ]);
@@ -1619,65 +1569,6 @@ const noHashRouterInModules = {
   },
 };
 
-// ─── no-legacy-telegram-parse-mode (M16) ─────────────────────────────
-//
-// Bans `parse_mode: "Markdown"` (the legacy Telegram parser) in favour
-// of `MarkdownV2` or `HTML`. The legacy parser silently truncates on
-// unbalanced markers and ignores zero-width Unicode sequences; V2
-// fails loudly. See `docs/security/hardening/M16-telegram-markdown-v2.md`.
-//
-// Selector matches **only** object-property `parse_mode: "Markdown"`,
-// so regex literals / string literals in tests (e.g. the
-// parse-mode-guard regression test that contains the literal string
-// inside a regex) are unaffected.
-
-const NO_LEGACY_TELEGRAM_PARSE_MODE_MESSAGE =
-  'Use parse_mode: "MarkdownV2" (or "HTML"); legacy "Markdown" silently truncates on unbalanced markers. See docs/security/hardening/M16-telegram-markdown-v2.md.';
-
-const noLegacyTelegramParseMode = {
-  meta: {
-    type: "problem",
-    docs: {
-      description:
-        'Disallow legacy Telegram parse_mode: "Markdown" — use MarkdownV2 or HTML.',
-    },
-    schema: [],
-    messages: { legacyParseMode: NO_LEGACY_TELEGRAM_PARSE_MODE_MESSAGE },
-  },
-  create(context) {
-    function isParseModeKey(node) {
-      // Identifier key: { parse_mode: ... }
-      if (node.key.type === "Identifier" && node.key.name === "parse_mode") {
-        return true;
-      }
-      // Literal-string key: { "parse_mode": ... }
-      if (
-        node.key.type === "Literal" &&
-        typeof node.key.value === "string" &&
-        node.key.value === "parse_mode"
-      ) {
-        return true;
-      }
-      return false;
-    }
-    function isMarkdownLiteral(node) {
-      return (
-        node.type === "Literal" &&
-        typeof node.value === "string" &&
-        node.value === "Markdown"
-      );
-    }
-    return {
-      Property(node) {
-        if (node.computed) return;
-        if (!isParseModeKey(node)) return;
-        if (!isMarkdownLiteral(node.value)) return;
-        context.report({ node: node.value, messageId: "legacyParseMode" });
-      },
-    };
-  },
-};
-
 // ─── no-inline-body-size-limit ──────────────────────────────────────────
 //
 // Stack-pulse PR-07 (Body-size declarative policy). Усі route-specific
@@ -2297,177 +2188,6 @@ const preferParseBodyOverValidateBody = {
   },
 };
 
-// ─── sri-on-third-party-script ───────────────────────────────────────────
-//
-// S3 (audit `docs/audits/2026-05-13-security-observability-roast.md`,
-// PR-plan `docs/planning/pr-plan-security-obs-2026-05.md`). Require SRI
-// (`integrity="sha(256|384|512)-…"`) plus `crossorigin="anonymous"` on every
-// cross-origin `<script src="https://…">` (or schema-relative `//cdn…`) in
-// the app HTML shells (`apps/**/index.html`).
-//
-// Why: the production CSP allowlist in `apps/web/vercel.json`
-// (`script-src`) admits `https://*.posthog.com`, `https://*.sentry-cdn.com`,
-// `https://js.sentry-cdn.com`. Today none of these load statically from
-// `index.html` (PostHog / Sentry ship via the npm bundle), so the rule is
-// clean on `main`. But a future PR adding
-// `<script src="https://cdn.example.com/x.js">` without `integrity=` would
-// silently open a one-step supply-chain XSS that bypasses our CSP pipeline.
-// This rule is the fail-closed tripwire — see
-// `docs/security/hardening/sri-on-third-party-scripts.md` (incl. how to
-// generate the SHA-384 hash + bump it on CDN-version updates).
-//
-// Local / relative sources (`src="/src/main.tsx"`, `src="./x.js"`) and
-// inline `<script>` (no `src`) are controlled by our own Vite build + CSP
-// `'self'`, so they are intentionally NOT flagged.
-//
-// The rule operates on the raw HTML source text (parse5), so it is parser-
-// agnostic: it works on `.html` files wired through an HTML processor and is
-// unit-tested by feeding HTML straight through the exported helpers.
-
-// `<algo>-<base64>` where `algo ∈ {sha256, sha384, sha512}`. Base64 alphabet
-// (RFC 4648 § 4) + URL-safe variants (`-`, `_`); trailing `=` padding allowed.
-const SRI_HASH_RE = /^(sha256|sha384|sha512)-[A-Za-z0-9+/=_-]+$/;
-
-// W3C SRI § 3.5 recommends SHA-384 as the baseline for new code.
-const SRI_PREFERRED_ALGO = "sha384";
-
-const SRI_MESSAGES = {
-  missingIntegrity:
-    'Third-party `<script src="{{src}}">` is missing an `integrity` attribute. Add `integrity="sha384-<base64>"` (W3C SRI baseline) — see docs/security/hardening/sri-on-third-party-scripts.md.',
-  malformedIntegrity:
-    'Third-party `<script src="{{src}}">` has a malformed `integrity="{{integrity}}"`. Expected `sha384-<base64>` (or sha256/sha512), space-separated for multi-hash.',
-  missingCrossorigin:
-    'Third-party `<script src="{{src}}">` is missing `crossorigin="anonymous"`. Without CORS the browser silently skips the SRI integrity check, nullifying the guard.',
-};
-
-/**
- * Is this `src` a cross-origin source that requires SRI?
- *   - `https://…` / `http://…`  → yes (cross-origin / CDN)
- *   - `//cdn.example.com/…`     → yes (schema-relative, same risk)
- *   - `/x.js`, `./x.js`, `data:`, `blob:`, inline → no (controlled by us)
- */
-function isCrossOriginScriptSrc(url) {
-  if (typeof url !== "string" || url.length === 0) return false;
-  if (url.startsWith("//")) return true;
-  if (/^https?:\/\//i.test(url)) return true;
-  return false;
-}
-
-/** parse5 attribute array → `name → value` Map (first wins on duplicates). */
-function sriAttrsToMap(attrs) {
-  const map = new Map();
-  for (const a of attrs ?? []) {
-    if (typeof a?.name === "string" && !map.has(a.name)) {
-      map.set(a.name, typeof a.value === "string" ? a.value : "");
-    }
-  }
-  return map;
-}
-
-/**
- * Validate one `<script>`'s attribute map. Returns an array of
- * `{ messageId, data }` (empty when the tag is compliant / out-of-scope).
- * Pure — no I/O, exported for unit tests.
- */
-function validateSriScriptAttrs(attrs) {
-  const violations = [];
-  const src = attrs.get("src");
-  if (typeof src !== "string" || src.length === 0) return violations;
-  if (!isCrossOriginScriptSrc(src)) return violations;
-
-  const integrity = attrs.get("integrity");
-  if (typeof integrity !== "string" || integrity.length === 0) {
-    violations.push({ messageId: "missingIntegrity", data: { src } });
-  } else {
-    // W3C SRI § 3.5 multi-hash: space-separated; each must parse.
-    const tokens = integrity.split(/\s+/).filter(Boolean);
-    if (tokens.length === 0 || !tokens.every((t) => SRI_HASH_RE.test(t))) {
-      violations.push({
-        messageId: "malformedIntegrity",
-        data: { src, integrity },
-      });
-    }
-  }
-
-  const crossorigin = attrs.get("crossorigin");
-  if (crossorigin !== "anonymous" && crossorigin !== "use-credentials") {
-    violations.push({ messageId: "missingCrossorigin", data: { src } });
-  }
-
-  return violations;
-}
-
-/** Recursively collect every `<script>` element from a parse5 tree. */
-function collectSriScriptElements(node, out = []) {
-  if (!node || typeof node !== "object") return out;
-  if (node.nodeName === "script" && Array.isArray(node.attrs)) {
-    out.push({
-      attrs: sriAttrsToMap(node.attrs),
-      location: node.sourceCodeLocation ?? null,
-    });
-  }
-  if (Array.isArray(node.childNodes)) {
-    for (const child of node.childNodes) collectSriScriptElements(child, out);
-  }
-  return out;
-}
-
-/**
- * Parse raw HTML and return `{ messageId, data, loc }` violations for every
- * non-compliant cross-origin `<script src>`. Exported for unit tests.
- */
-function lintHtmlForSri(html) {
-  const document = parseHtml(html, { sourceCodeLocationInfo: true });
-  const scripts = collectSriScriptElements(document);
-  const out = [];
-  for (const { attrs, location } of scripts) {
-    for (const v of validateSriScriptAttrs(attrs)) {
-      out.push({
-        ...v,
-        loc: location
-          ? {
-              line: location.startLine,
-              column: location.startCol,
-            }
-          : null,
-      });
-    }
-  }
-  return out;
-}
-
-const sriOnThirdPartyScript = {
-  meta: {
-    type: "problem",
-    docs: {
-      description:
-        'Require `integrity` (sha256/384/512) + `crossorigin="anonymous"` on cross-origin `<script src="https://…">` in app HTML shells, so a CDN compromise cannot inject one-step XSS past the CSP. See docs/security/hardening/sri-on-third-party-scripts.md.',
-    },
-    schema: [],
-    messages: SRI_MESSAGES,
-  },
-  create(context) {
-    const sourceCode = context.sourceCode ?? context.getSourceCode();
-    return {
-      Program(node) {
-        const html =
-          typeof sourceCode.text === "string"
-            ? sourceCode.text
-            : sourceCode.getText();
-        if (typeof html !== "string" || html.length === 0) return;
-        for (const v of lintHtmlForSri(html)) {
-          context.report({
-            node,
-            loc: v.loc ? { start: v.loc, end: v.loc } : node.loc,
-            messageId: v.messageId,
-            data: v.data,
-          });
-        }
-      },
-    };
-  },
-};
-
 // ─── no-raw-storage-key ──────────────────────────────────────────────────────
 //
 // Theme 5 (consolidated audit 2026-05-13): raw localStorage key string literals
@@ -3044,11 +2764,9 @@ const plugin = {
     "no-flat-shared-lib": noFlatSharedLib,
     "forbid-shell-only-feature": forbidShellOnlyFeature,
     "no-hash-router-in-modules": noHashRouterInModules,
-    "no-legacy-telegram-parse-mode": noLegacyTelegramParseMode,
     "prefer-kyiv-time": preferKyivTime,
     "no-inline-body-size-limit": noInlineBodySizeLimit,
     "prefer-parse-body-over-validate-body": preferParseBodyOverValidateBody,
-    "sri-on-third-party-script": sriOnThirdPartyScript,
     "no-raw-storage-key": noRawStorageKey,
     "no-adhoc-metric-aggregation": noAdhocMetricAggregation,
     "require-toast-error-action": requireToastErrorAction,
@@ -3072,16 +2790,9 @@ export {
   NO_FLAT_SHARED_LIB_MESSAGE,
   NO_FLAT_SHARED_LIB_ALLOWED_TOP,
   NO_HASH_ROUTER_MESSAGE,
-  NO_LEGACY_TELEGRAM_PARSE_MODE_MESSAGE,
   PREFER_KYIV_TIME_MESSAGE,
   PREFER_PARSE_BODY_MESSAGE,
   PREFER_PARSE_QUERY_MESSAGE,
-  SRI_MESSAGES,
-  SRI_HASH_RE,
-  SRI_PREFERRED_ALGO,
-  isCrossOriginScriptSrc,
-  validateSriScriptAttrs,
-  lintHtmlForSri,
   RAW_STORAGE_KEY_LITERALS,
   RAW_STORAGE_HELPER_NAMES,
   NO_RAW_STORAGE_KEY_MESSAGE,

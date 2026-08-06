@@ -438,11 +438,11 @@ export const monoMccBufferDepth = new client.Gauge({
   registers: [register],
 });
 
-// ───────────────── RAG eval weekly (post-PR-20 automation) ────
-// Telemetry для weekly RAG-quality cron (`scripts/rag-eval-weekly.mjs`
-// + `POST /api/internal/eval/rag-weekly`). Сетяться один раз за
-// тиждень (Mon 06:00 Kyiv), затихають між run-ами — Prom-серверу
-// це безболісно бо staleness обчислюється по
+// ───────────────── RAG eval (manual-only з 2026-08-06) ────
+// Telemetry для `POST /api/internal/eval/rag-weekly`. Weekly-cron і
+// обгортку `rag-eval-weekly.mjs` прибрано (ADR-0082 зняв workflow-
+// тригер), тож gauges сетяться лише за ручного POST і затихають між
+// run-ами — Prom-серверу це безболісно бо staleness обчислюється по
 // `rag_eval_last_run_timestamp_seconds`.
 export const ragEvalRecallAt4 = new client.Gauge({
   name: "rag_eval_recall_at_4",
@@ -492,7 +492,7 @@ export const ragEvalRecordsTotal = new client.Counter({
 export const runtimeKillSwitchActive = new client.Gauge({
   name: "runtime_kill_switch_active",
   help: "1 if runtime kill-switch is currently active, 0 otherwise",
-  labelNames: ["switch"], // mono_ai_memory_ingest|rag_retrieval|rag_eval_weekly
+  labelNames: ["switch"], // KillSwitchName ("mono_ai_memory_ingest")
   registers: [register],
 });
 

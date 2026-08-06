@@ -43,17 +43,6 @@ vi.mock("../obs/metrics.js", () => ({
   externalHttpRequestsTotal: anthropicMocks.externalHttpRequestsTotal,
 }));
 
-vi.mock("../obs/spans.js", () => ({
-  aiSpan: async (
-    _name: string,
-    fn: () => Promise<unknown>,
-    _attrs: Record<string, unknown>,
-  ) => {
-    const result = await fn();
-    return Array.isArray(result) && result.length === 2 ? result[0] : result;
-  },
-}));
-
 vi.mock("./anthropicUsageStore.js", () => ({
   recordAnthropicUsageToDb: anthropicMocks.recordUsageToDb,
 }));

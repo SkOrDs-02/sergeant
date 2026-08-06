@@ -1,6 +1,6 @@
 # Mobile-білди — команди для локальної розробки
 
-> **Last touched:** 2026-06-26 by @dimastahov16012003. **Next review:** 2026-09-24.
+> **Last touched:** 2026-08-06 by @claude. **Next review:** 2026-11-04.
 > **Status:** Active. Capacitor shell is the primary mobile product per [ADR-0052](../../04-governance/adr/0052-mobile-strategy-capacitor-primary.md); the old ADR-0010 sunset schedule below is historical reference only.
 
 > Короткий operator-oriented довідник по Capacitor-shell-у (`@sergeant/mobile-shell`). Дизайн-обґрунтування, список плагінів і історію shell-а — див. [`apps/mobile-shell/README.md`](../../../apps/mobile-shell/README.md). Для Expo / React Native застосунку (`@sergeant/mobile`) — див. [`apps/mobile/README.md`](../../../apps/mobile/README.md) і [`overview.md`](./overview.md).
@@ -24,10 +24,10 @@
 **Shell-tax check** (хто платить підтримку):
 
 ```sh
-node scripts/report-shell-tax.mjs --since 90 days ago
+git log --since="90 days ago" --oneline -- apps/mobile-shell | wc -l
 ```
 
-Скрипт друкує кількість шелл-touch-ed коммітів і файлів за останні 90 днів. Раз на спринт мейнтейнер постить summary у `#mobile-channel`. Cron-сетап — у роадмапі ініціативи 0002 (Фаза 3, PR `ci-shell-tax-report`).
+Команда рахує шелл-touch-ed комміти за останні 90 днів (скрипт `report-shell-tax.mjs` і його cron прибрано — ADR-0082 §4 зняв `shell-tax-report.yml`, обгортку видалено 2026-08-06). Раз на спринт мейнтейнер постить summary у `#mobile-channel`.
 
 Capacitor-shell обгортає існуючий Vite-бандл `@sergeant/web` як нативний Android/iOS-застосунок. Web-бандл лягає в `apps/server/dist` — shell читає його звідти через `webDir: "../server/dist"` у [`apps/mobile-shell/capacitor.config.ts`](../../../apps/mobile-shell/capacitor.config.ts).
 

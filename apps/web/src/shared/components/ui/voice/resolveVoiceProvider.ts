@@ -1,13 +1,9 @@
 export type VoiceProvider = "auto" | "groq" | "webspeech";
 
+// `VITE_VOICE_PROVIDER` env override was never wired in any environment
+// (.env.example, vercel.json, vite.config) — always "auto". Return type
+// stays the full union so `VoiceMicButton`'s groq/webspeech auto-detect
+// comparisons against `"groq"`/`"webspeech"` keep typechecking.
 export function resolveConfiguredProvider(): VoiceProvider {
-  const raw =
-    typeof import.meta !== "undefined" &&
-    import.meta.env?.["VITE_VOICE_PROVIDER"]
-      ? String(import.meta.env["VITE_VOICE_PROVIDER"])
-          .trim()
-          .toLowerCase()
-      : "";
-  if (raw === "groq" || raw === "webspeech" || raw === "auto") return raw;
   return "auto";
 }

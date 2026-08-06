@@ -42,18 +42,18 @@ expect(typeof acct.balance).toBe("number"); // NOT "string" — proves Hard Rule
 1. Read server-agent's report — exact shape + which shared Zod schema.
 2. Update/add the type in `endpoints/<domain>.ts` (re-export shared where possible).
 3. Write/update the `.contract.test.ts` asserting the shape AND `typeof` of every numeric/nullable field.
-4. If the server wire shape changed: `pnpm api:generate-openapi-types` then `pnpm api:check-openapi-types` (freshness/drift gates).
+4. If the server wire shape changed: `pnpm api:generate-openapi` then `pnpm api:check-openapi` (spec freshness gate; client types are hand-written in `endpoints/*`).
 5. `pnpm --filter @sergeant/api-client typecheck` + `test`.
 
 ## Failure modes to avoid
 
 - **Bigint-as-string leak slips through:** contract test only checks presence, not `typeof` → a `"123"` balance ships. Always assert `typeof === "number"`.
-- **Test doesn't match real server schema:** hand-written Pact mock returns a shape the server never emits → green locally, breaks in prod. Regenerate types from OpenAPI; run `pnpm api:check-openapi-types`.
+- **Test doesn't match real server schema:** hand-written Pact mock returns a shape the server never emits → green locally, breaks in prod. Cross-check against the server serializer + `docs/02-engineering/api/openapi.json` (`pnpm api:check-openapi`).
 - **Orphaned type on delete:** removing a server endpoint but leaving its type → imports break in N places. Grep the repo for the endpoint + type name before deleting.
 
 ## Report to web-agent & mobile-agent
 
 - Updated types (file paths + import names, e.g. `import { MonoAccountDto } from "@sergeant/api-client"`).
 - Contract-test status (pass/fail + path).
-- Typecheck + `api:check-openapi-types` status (✅ or exact errors).
+- Typecheck + `api:check-openapi` status (✅ or exact errors).
 - Any breaking change or new nullable field the UI must handle.

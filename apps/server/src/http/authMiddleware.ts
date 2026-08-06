@@ -1,7 +1,10 @@
 import type { NextFunction, Request, Response } from "express";
 import { createHash } from "crypto";
 import { rateLimitExpress } from "./rateLimit.js";
-import { policyOptions } from "../config/rateLimit.js";
+import {
+  AUTH_ACCOUNT_RATE_LIMIT,
+  AUTH_SENSITIVE_RATE_LIMIT,
+} from "../config/rateLimit.js";
 import { env } from "../env.js";
 import { logger } from "../obs/logger.js";
 import { authAttemptsTotal } from "../obs/metrics.js";
@@ -34,14 +37,14 @@ export function authSensitiveRateLimit(
     next();
     return;
   }
-  rateLimitExpress(
-    policyOptions("api:auth:sensitive", {
-      // Env var — runtime kill-switch (set `RATE_LIMIT_FAIL_CLOSED_AUTH=false`
-      // щоб revert у open-mode без redeploy-у). Реєстр тримає `failMode:
-      // "closed"` як safe default; override-ить тільки якщо явно вимкнено.
-      failMode: env.RATE_LIMIT_FAIL_CLOSED_AUTH ? "closed" : "open",
-    }),
-  )(req, res, next);
+  rateLimitExpress({
+    ...AUTH_SENSITIVE_RATE_LIMIT,
+    // Env var — runtime kill-switch (set `RATE_LIMIT_FAIL_CLOSED_AUTH=false`
+    // щоб revert у open-mode без redeploy-у). `AUTH_SENSITIVE_RATE_LIMIT`
+    // тримає `failMode: "closed"` як safe default; override-ить тільки
+    // якщо явно вимкнено.
+    failMode: env.RATE_LIMIT_FAIL_CLOSED_AUTH ? "closed" : "open",
+  })(req, res, next);
 }
 
 /**
@@ -87,16 +90,15 @@ export function authAccountRateLimit(
     return;
   }
 
-  rateLimitExpress(
-    policyOptions("api:auth:account", {
-      failMode: env.RATE_LIMIT_FAIL_CLOSED_AUTH ? "closed" : "open",
-      // Повний SHA-256, не 12-символьний лог-фінгерпринт: той призначений
-      // для кореляції в логах, де колізія лише зашумить тріаж, а тут вона
-      // склеїла б ліміти двох різних акаунтів.
-      subject: () =>
-        `a:${createHash("sha256").update(email.toLowerCase()).digest("hex")}`,
-    }),
-  )(req, res, next);
+  rateLimitExpress({
+    ...AUTH_ACCOUNT_RATE_LIMIT,
+    failMode: env.RATE_LIMIT_FAIL_CLOSED_AUTH ? "closed" : "open",
+    // Повний SHA-256, не 12-символьний лог-фінгерпринт: той призначений
+    // для кореляції в логах, де колізія лише зашумить тріаж, а тут вона
+    // склеїла б ліміти двох різних акаунтів.
+    subject: () =>
+      `a:${createHash("sha256").update(email.toLowerCase()).digest("hex")}`,
+  })(req, res, next);
 }
 
 /**

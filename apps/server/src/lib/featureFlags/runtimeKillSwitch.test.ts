@@ -14,8 +14,6 @@ describe("runtimeKillSwitch", () => {
 
   it("defaults all switches to inactive", () => {
     expect(isKillSwitchActive("mono_ai_memory_ingest")).toBe(false);
-    expect(isKillSwitchActive("rag_retrieval")).toBe(false);
-    expect(isKillSwitchActive("rag_eval_weekly")).toBe(false);
     expect(listActiveKillSwitches()).toEqual([]);
   });
 
@@ -31,13 +29,6 @@ describe("runtimeKillSwitch", () => {
     expect(active[0]?.reason).toBe("test: rag-eval kill");
     expect(active[0]?.context).toEqual({ recall: 0.3, mode: "live" });
     expect(active[0]?.activatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
-  });
-
-  it("isolates switches by name", () => {
-    activateKillSwitch("mono_ai_memory_ingest", { reason: "a" });
-    expect(isKillSwitchActive("mono_ai_memory_ingest")).toBe(true);
-    expect(isKillSwitchActive("rag_retrieval")).toBe(false);
-    expect(isKillSwitchActive("rag_eval_weekly")).toBe(false);
   });
 
   it("reactivates overwrites reason + context", () => {
@@ -78,24 +69,10 @@ describe("runtimeKillSwitch", () => {
     expect(listActiveKillSwitches()).toHaveLength(1);
   });
 
-  it("supports multiple switches simultaneously", () => {
-    activateKillSwitch("mono_ai_memory_ingest", { reason: "a" });
-    activateKillSwitch("rag_retrieval", { reason: "b" });
-    expect(isKillSwitchActive("mono_ai_memory_ingest")).toBe(true);
-    expect(isKillSwitchActive("rag_retrieval")).toBe(true);
-    expect(listActiveKillSwitches()).toHaveLength(2);
-
-    deactivateKillSwitch("mono_ai_memory_ingest");
-    expect(listActiveKillSwitches()).toHaveLength(1);
-    expect(listActiveKillSwitches()[0]?.name).toBe("rag_retrieval");
-  });
-
   it("__resetKillSwitchesForTest clears all state", () => {
     activateKillSwitch("mono_ai_memory_ingest", { reason: "a" });
-    activateKillSwitch("rag_retrieval", { reason: "b" });
     __resetKillSwitchesForTest();
     expect(listActiveKillSwitches()).toEqual([]);
     expect(isKillSwitchActive("mono_ai_memory_ingest")).toBe(false);
-    expect(isKillSwitchActive("rag_retrieval")).toBe(false);
   });
 });

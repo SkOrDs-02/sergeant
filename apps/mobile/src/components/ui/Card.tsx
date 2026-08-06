@@ -50,16 +50,12 @@ export type CardVariant =
   | "default"
   | "interactive"
   | "flat"
-  | "elevated"
   | "ghost"
   | "finyk"
   | "fizruk"
   | "routine"
   | "nutrition"
-  | "finyk-soft"
-  | "fizruk-soft"
-  | "routine-soft"
-  | "nutrition-soft";
+  | "fizruk-soft";
 
 export type CardPadding = "none" | "sm" | "md" | "lg" | "xl";
 
@@ -78,7 +74,6 @@ const variantContainer: Record<CardVariant, string> = {
   default: "bg-panel border border-line shadow-sm",
   interactive: "bg-panel border border-line shadow-sm",
   flat: "bg-panel border border-line",
-  elevated: "bg-panel border border-line shadow-md",
   ghost: "bg-transparent border border-transparent",
 
   // Module hero cards — branded surface with full dark-mode support.
@@ -92,14 +87,8 @@ const variantContainer: Record<CardVariant, string> = {
     "rounded-3xl border border-lime-200/50 bg-nutrition-soft dark:bg-nutrition-surface-dark/10 dark:border-nutrition-border-dark/20",
 
   // Soft module cards — less prominent tinted surface with dark mode.
-  "finyk-soft":
-    "rounded-2xl border border-brand-100 bg-brand-50/50 dark:bg-finyk-surface-dark/8 dark:border-finyk-border-dark/15",
   "fizruk-soft":
     "rounded-2xl border border-teal-100 bg-teal-50/50 dark:bg-fizruk-surface-dark/8 dark:border-fizruk-border-dark/15",
-  "routine-soft":
-    "rounded-2xl border border-coral-100 bg-coral-50/50 dark:bg-routine-surface-dark/8 dark:border-routine-border-dark/15",
-  "nutrition-soft":
-    "rounded-2xl border border-lime-100 bg-lime-50/50 dark:bg-nutrition-surface-dark/8 dark:border-nutrition-border-dark/15",
 };
 
 const paddings: Record<CardPadding, string> = {
@@ -114,7 +103,6 @@ const CORE_VARIANTS: ReadonlySet<CardVariant> = new Set<CardVariant>([
   "default",
   "interactive",
   "flat",
-  "elevated",
   "ghost",
 ]);
 

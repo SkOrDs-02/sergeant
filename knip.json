@@ -10,8 +10,8 @@
   "ignore": [".telemetry/**"],
   "workspaces": {
     ".": {
-      // Expanded from scripts/*.mjs to cover subdirectory scripts (ci/, claude-hooks/,
-      // codemods/, docs/, flaky-tests/) and .ts files (flaky-tests/vitest.config.ts).
+      // Expanded from scripts/*.mjs to cover subdirectory scripts (ci/,
+      // claude-hooks/, codemods/, docs/) and .ts files.
       "entry": ["scripts/**/*.{mjs,ts}"],
       "project": ["scripts/**"],
       "ignoreDependencies": [
@@ -20,13 +20,12 @@
         "eslint-plugin-react",
         "eslint-plugin-react-hooks",
         "typescript-eslint",
-        "openapi-typescript",
         "tsc-files",
         // globals — imported in eslint.baseline.js (detected via eslint knip plugin); not in entry
         "globals",
         // @commitlint/types — used in commitlint.config.js (detected via commitlint plugin)
         "@commitlint/types",
-        // vitest — used in scripts/ci/*.mjs, scripts/flaky-tests/aggregate.test.ts,
+        // vitest — used in scripts/ci/*.mjs,
         //          tools/tsconfig-guard/__tests__/check.test.mjs (no package.json → root workspace)
         "vitest",
         // semver — used in scripts/check-pnpm-overrides.mjs

@@ -43,28 +43,9 @@ export {
   type ConfirmDialogVariant,
 } from "./ConfirmDialog";
 
-export {
-  FormField,
-  FormSection,
-  FormActions,
-  type FormFieldProps,
-  type FormSectionProps,
-  type FormActionsProps,
-} from "./FormField";
-
-export {
-  ProgressBar,
-  ProgressCircle,
-  ProgressSteps,
-  type ProgressBarProps,
-  type ProgressCircleProps,
-  type ProgressStepsProps,
-} from "./ProgressIndicator";
 export { Input, type InputProps } from "./Input";
-export { ListItem, type ListItemProps } from "./ListItem";
 export { SectionHeading, type SectionHeadingProps } from "./SectionHeading";
 export { Sheet, type SheetProps } from "./Sheet";
-export { Stat, type StatProps } from "./Stat";
 export { SwipeToAction, type SwipeToActionProps } from "./SwipeToAction";
 export {
   Tabs,
@@ -94,13 +75,6 @@ export {
 } from "./PageSkeleton";
 
 export {
-  LoadingOverlay,
-  InlineLoader,
-  FullPageLoader,
-  type LoadingOverlayProps,
-} from "./LoadingOverlay";
-
-export {
   ToastProvider,
   ToastContainer,
   useToast,
@@ -128,66 +102,9 @@ export {
 } from "./AnimatedCounter";
 
 export {
-  ProgressRing,
-  ProgressRingGroup,
-  type ProgressRingProps,
-  type ProgressRingVariant,
-  type ProgressRingSize,
-  type ProgressRingGroupItem,
-} from "./ProgressRing";
-
-export {
   Tooltip,
   TooltipTrigger,
   TooltipLabel,
   type TooltipProps,
   type TooltipTriggerProps,
 } from "./Tooltip";
-
-// Phase 3 UX Components
-export {
-  StreakFlame,
-  StreakBadge,
-  type StreakFlameProps,
-  type StreakFlameSize,
-} from "./StreakFlame";
-
-export {
-  AnimatedCheckbox,
-  HabitCheckbox,
-  type AnimatedCheckboxProps,
-  type CheckboxVariant,
-  type CheckboxSize,
-} from "./AnimatedCheckbox";
-
-export {
-  CoachTip,
-  CoachTipSpotlight,
-  SmartCoachTip,
-  useCoachTips,
-  type CoachTipProps,
-  type CoachTipSpotlightProps,
-  type CoachTipVariant,
-  type CoachTipPosition,
-} from "./CoachTip";
-
-export {
-  FloatingActionButton,
-  HubFAB,
-  moduleActions,
-  type FloatingActionButtonProps,
-  type FABAction,
-  type FABVariant,
-  type FABSize,
-} from "./FloatingActionButton";
-
-export {
-  KeyboardAccessory,
-  AMOUNT_CHIPS_UAH,
-  PORTION_CHIPS_GRAM,
-  WEIGHT_CHIPS_KG,
-  REP_CHIPS,
-  WATER_CHIPS_ML,
-  type KeyboardAccessoryProps,
-  type QuickFillChip,
-} from "./KeyboardAccessory";

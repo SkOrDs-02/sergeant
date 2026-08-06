@@ -215,10 +215,18 @@
       "agentsTestedWith": [],
       "passRateBaseline": null
     },
+    "3.2.3": {
+      "releasedAt": "2026-08-06",
+      "changes": [
+        "bump from 3.2.2 -> 3.2.3: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
     "3.3.0": {
       "releasedAt": "2026-08-06",
       "changes": [
-        "bump from 3.2.2 -> 3.3.0: eslint-plugin-sergeant-design modified"
+        "bump from 3.2.3 -> 3.3.0: eslint-plugin-sergeant-design modified"
       ],
       "agentsTestedWith": [],
       "passRateBaseline": null

@@ -494,8 +494,6 @@ const envSchema = z.object({
 
   MONO_AI_MEMORY_INGEST_ENABLED: boolFromEnv(true),
 
-  MONO_AI_MEMORY_DIGEST_ENABLED: boolFromEnv(false),
-
   N8N_WEBHOOK_BASE_URL: stringWithDefault(""),
 
   SERGEANT_ALERT_BOT_TOKEN: stringWithDefault(""),

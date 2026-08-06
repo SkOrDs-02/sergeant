@@ -23,11 +23,19 @@
 #      бувшого fragile `find … -delete` cleanup тепер відсутні by-design,
 #      бо binary просто немає у образі.
 #
-# Healthcheck: Distroless не має shell-у, тож HEALTHCHECK CMD не може
-# виконати `wget`/`curl`. Railway моніторить через external HTTP-probe
-# на `/health` (`healthcheckPath` у `railway.toml` → `[deploy]`), тому
-# Dockerfile HEALTHCHECK опущено — Railway автоматично рестартить
-# unhealthy container незалежно.
+# Healthcheck: Coolify для образних деплоїв перевіряє здоровʼя ВСЕРЕДИНІ
+# контейнера, викликаючи `curl` або `wget`. Distroless не має ні того, ні
+# іншого, і доставити їх пакетним менеджером неможливо — його теж немає.
+# Тому нижче в runtime-стейдж запікається busybox і як `/bin/sh`, і як
+# `/bin/wget` (див. коментар над тими двома `COPY`).
+#
+# Dockerfile-івський `HEALTHCHECK` при цьому лишається опущеним свідомо:
+# Coolify задає перевірку своїми полями (`health_check_*` у API / UI) і
+# власний `HEALTHCHECK` з образу лише конфліктував би з ними.
+#
+# Історична примітка: раніше тут стояло «Railway моніторить через
+# external HTTP-probe». Railway виведено з експлуатації (ADR-0074), а
+# Coolify влаштований інакше — перевірка внутрішня, не зовнішня.
 #
 # Railway Pre-Deploy винятки: Railway виконує `preDeployCommand`
 # (`node dist-server/migrate.js`, задано у `railway.toml` → `[deploy]`)
@@ -172,6 +180,19 @@ WORKDIR /app
 # Власник `root:root`, права `0755` — runtime user `nonroot` (uid
 # 65532) виконує його через PATH-lookup, write-доступ йому не потрібен.
 COPY --from=busybox:stable-musl /bin/busybox /bin/sh
+
+# Той самий бінарник удруге, під імʼям `wget`. BusyBox диспетчеризує за
+# `argv[0]`, тож копія з такою назвою поводиться як wget — а `wget` є
+# серед його аплетів. Дублювання ~800 KB свідоме: альтернатива —
+# симлінк, а він потребує `RUN ln`, тобто shell на етапі збірки, якого
+# у distroless немає.
+#
+# Потрібен рівно для одного: health check Coolify для образних деплоїв
+# виконується ВСЕРЕДИНІ контейнера як `curl` або `wget`. Без цього рядка
+# перевірка завжди падає з `/bin/sh: wget: not found`, новий контейнер
+# ніколи не стає healthy, і Coolify відкочує КОЖЕН деплой — включно з
+# цілком справним. Саме так і сталося 2026-08-06.
+COPY --from=busybox:stable-musl /bin/busybox /bin/wget
 
 # Railway виконує `preDeployCommand` через `/bin/sh -c "<cmd>"`. Default
 # PATH у distroless — `/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin`,

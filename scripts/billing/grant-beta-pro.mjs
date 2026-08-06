@@ -17,6 +17,7 @@
  *   --list             показує зареєстрованих і їхній поточний план; нічого не змінює
  *   --emails a,b       кому видати/відкликати (через кому)
  *   --emails-file p    те саме, але зі файлу (по одному на рядок, `#` — коментар)
+ *   --since YYYY-MM-DD усі, хто зареєструвався з цієї дати (київська північ)
  *   --days N           тривалість доступу, дефолт 14
  *   --revoke           відкликати замість видати
  *   --dry-run          виконати всі записи в транзакції й ВІДКОТИТИ
@@ -27,6 +28,12 @@
  * пошта, і зв'язати одне з одним нічим — людина реєструється будь-якою
  * адресою. Тому порядок такий: тестер реєструється → ти дивишся `--list` →
  * зіставляєш із людиною з вейтліста → видаєш доступ.
+ *
+ * `--since` знімає це зіставлення взагалі: посилання на бету є лише в
+ * запрошених, тож «усі, хто зареєструвався з дати розсилки» — це рівно вони.
+ * Дешевше за збір пошт у групі, і без чужих персональних даних у спільному
+ * чаті. Ціна — випадковий перехожий, який роздобув URL, теж отримає Pro;
+ * на дві тижні закритої хвилі це прийнятно.
  */
 import { readFileSync } from "node:fs";
 import pg from "pg";
@@ -42,6 +49,7 @@ const DRY_RUN = has("--dry-run");
 const REVOKE = has("--revoke");
 const LIST = has("--list");
 const DAYS = Number(valueOf("--days") ?? 14);
+const SINCE = valueOf("--since");
 
 const DATABASE_URL = process.env.DATABASE_URL;
 
@@ -112,6 +120,32 @@ async function listUsers(client) {
   }
 }
 
+/**
+ * Пошти всіх, хто зареєструвався з указаної дати включно.
+ *
+ * Межа доби — київська, а не UTC (доменний інваріант).
+ *
+ * Каст саме у `timestamp`, а не в `date`, і це не стилістика. `date` у цьому
+ * контексті неявно приводиться до `timestamptz` (UTC-північ), і `AT TIME ZONE`
+ * тоді працює у ЗВОРОТНИЙ бік — перекладає UTC у київський настінний час.
+ * Межа виходила на 3 години пізніше, і той, хто зареєструвався о 00:01 за
+ * Києвом, у вибірку не потрапляв. `timestamp` (наївна північ) змушує оператор
+ * трактувати її як київську й повернути правильний timestamptz.
+ *
+ * Повертає пошти, а не id, свідомо: далі вони йдуть тим самим шляхом, що й
+ * `--emails`, тож уся логіка видачі лишається однією.
+ */
+async function emailsRegisteredSince(client, since) {
+  const { rows } = await client.query(
+    `SELECT lower(email) AS email
+       FROM "user"
+      WHERE "createdAt" >= ($1::timestamp AT TIME ZONE 'Europe/Kyiv')
+      ORDER BY "createdAt"`,
+    [since],
+  );
+  return rows.map((r) => r.email);
+}
+
 async function resolveUserIds(client, emails) {
   const { rows } = await client.query(
     `SELECT id, email FROM "user" WHERE lower(email) = ANY($1::text[])`,
@@ -175,6 +209,15 @@ async function main() {
     console.error("--days має бути додатним числом");
     process.exit(1);
   }
+  // Формат звіряємо тут, а не покладаємось на приведення в Postgres: він
+  // мовчки з'їсть і `09.08.2026`, розібравши його не так, як ти очікуєш.
+  if (SINCE !== undefined && !/^\d{4}-\d{2}-\d{2}$/.test(SINCE)) {
+    console.error(
+      `--since має бути у форматі YYYY-MM-DD — отримано «${SINCE}».\n` +
+        "Наприклад: --since 2026-08-09",
+    );
+    process.exit(1);
+  }
 
   const pool = new pg.Pool({ connectionString: DATABASE_URL });
   const client = await pool.connect();
@@ -186,15 +229,35 @@ async function main() {
     }
 
     const emails = parseEmails();
-    if (emails.length === 0) {
+
+    if (SINCE) {
+      const fromWindow = await emailsRegisteredSince(client, SINCE);
+      if (fromWindow.length === 0) {
+        // Порожня вибірка — найчастіше майбутня дата або помилка в місяці.
+        // Мовчазне «нічого не зроблено» тут гірше за явну відмову.
+        console.error(
+          `За --since ${SINCE} не зареєструвався ніхто.\n` +
+            "Перевір дату: вона в майбутньому? місяць і день не переплутані?\n" +
+            "Хто вже є в базі — покаже --list.",
+        );
+        process.exit(1);
+      }
+      console.log(
+        `--since ${SINCE}: знайдено ${fromWindow.length} акаунт(ів) у вікні.`,
+      );
+      emails.push(...fromWindow);
+    }
+
+    const targets = [...new Set(emails)];
+    if (targets.length === 0) {
       console.error(
-        "Не задано жодного email. Використай --emails або --emails-file,\n" +
-          "або подивись, хто вже зареєструвався: --list",
+        "Не задано жодного email. Використай --emails, --emails-file або\n" +
+          "--since YYYY-MM-DD, або подивись, хто вже зареєструвався: --list",
       );
       process.exit(1);
     }
 
-    const { found, missing } = await resolveUserIds(client, emails);
+    const { found, missing } = await resolveUserIds(client, targets);
     if (missing.length > 0) {
       // Не падаємо: одна незареєстрована адреса не повинна блокувати решту.
       console.warn(
