@@ -173,8 +173,55 @@ describe("buildDayStrip", () => {
     const totalKcal = (strip?.hours ?? []).reduce((s, h) => s + h.kcal, 0);
 
     expect(estimatedKcal / totalKcal).toBeCloseTo(summary.estimatedKcalShare);
+    // Денні суми — окреме джерело для відсотка на екрані.
+    expect((strip?.dayEstimatedKcal ?? 0) / (strip?.dayKcal ?? 1)).toBeCloseTo(
+      summary.estimatedKcalShare,
+    );
     // 900 з 1100 — день, угаданий на 82%, попри те що вгадана лише одна
     // страва з трьох. Саме тому частка зважена по калоріях.
     expect(summary.estimatedKcalShare).toBeCloseTo(900 / 1100);
+  });
+
+  /**
+   * Регресія на знахідку ревʼю: страва БЕЗ ЧАСУ на 900 ккал не має
+   * стовпчика, тож частка, порахована по стовпчиках, давала 0% — тоді як
+   * дашборд про той самий день казав 82%. Два екрани, один день, різні
+   * числа. Денні суми мусять знати про неї.
+   */
+  it("вгадана страва без часу входить у денну частку, хоч і не має стовпчика", () => {
+    const meals = [
+      meal({
+        id: "a",
+        time: "08:00",
+        macros: { kcal: 100, protein_g: null, fat_g: null, carbs_g: null },
+      }),
+      meal({
+        id: "b",
+        time: "13:00",
+        macros: { kcal: 100, protein_g: null, fat_g: null, carbs_g: null },
+      }),
+      meal({
+        id: "no-time-guess",
+        time: "",
+        macroSource: "photoAI",
+        macros: { kcal: 900, protein_g: null, fat_g: null, carbs_g: null },
+      }),
+    ];
+    const strip = buildDayStrip(meals);
+    const summary = getDaySummary({ "2026-08-06": { meals } }, "2026-08-06");
+
+    // Стовпчики про неї не знають — і це правильно, класти нікуди.
+    const barEstimated = (strip?.hours ?? []).reduce(
+      (s, h) => s + h.estimatedKcal,
+      0,
+    );
+    expect(barEstimated).toBe(0);
+
+    // А денні суми знають, і збігаються з дашбордом.
+    expect(strip?.dayKcal).toBe(1100);
+    expect(strip?.dayEstimatedKcal).toBe(900);
+    expect((strip?.dayEstimatedKcal ?? 0) / (strip?.dayKcal ?? 1)).toBeCloseTo(
+      summary.estimatedKcalShare,
+    );
   });
 });

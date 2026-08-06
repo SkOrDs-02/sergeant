@@ -61,6 +61,20 @@ export interface DayStrip {
    * день: людина бачить чотири стовпчики, а в сумі шість страв.
    */
   unplacedCount: number;
+  /**
+   * Калорії дня — УСІ, разом із записами без часу.
+   *
+   * AI-DANGER: денні суми навмисно рахуються по всіх стравах, а стовпчики
+   * — лише по розміщених. Два різні знаменники тут не помилка, а вимога:
+   * частка здогадок мусить збігатися з `getDaySummary().estimatedKcalShare`
+   * на дашборді, інакше два екрани покажуть різні відсотки про той самий
+   * день. Рахувати частку по стовпчиках здається природним — і саме так
+   * ця помилка й з'явилась первісно: страва без часу на 900 ккал давала
+   * 0% у смузі й 82% на дашборді.
+   */
+  dayKcal: number;
+  /** Скільки з `dayKcal` вгадав ШІ з фото. Теж по ВСІХ стравах. */
+  dayEstimatedKcal: number;
 }
 
 /** `"HH:MM"` → година й хвилина, або `null` для невалідного рядка. */
@@ -90,12 +104,19 @@ export function buildDayStrip(meals: readonly Meal[]): DayStrip | null {
   );
   let unplacedCount = 0;
   let placedMeals = 0;
+  let dayKcal = 0;
+  let dayEstimatedKcal = 0;
 
   for (const meal of meals) {
     const kcal = macrosToTotals(meal.macros).kcal;
     // Запис без калорій не має висоти й на смузі не існує. Це НЕ те саме,
     // що запис без часу: там є що показати, але нема куди покласти.
     if (kcal <= 0) continue;
+    const estimated = isEstimatedMeal(meal);
+    // Денні суми набираються ДО перевірки часу — див. `AI-DANGER` біля
+    // `dayKcal`. Запис без часу не має стовпчика, але з дня не зникає.
+    dayKcal += kcal;
+    if (estimated) dayEstimatedKcal += kcal;
     const hour = parseHour(meal.time);
     if (hour === null) {
       unplacedCount += 1;
@@ -104,7 +125,7 @@ export function buildDayStrip(meals: readonly Meal[]): DayStrip | null {
     const slot = hours[hour];
     if (!slot) continue;
     slot.kcal += kcal;
-    if (isEstimatedMeal(meal)) slot.estimatedKcal += kcal;
+    if (estimated) slot.estimatedKcal += kcal;
     placedMeals += 1;
   }
 
@@ -121,5 +142,12 @@ export function buildDayStrip(meals: readonly Meal[]): DayStrip | null {
   const peakKcal = hours.reduce((max, h) => (h.kcal > max ? h.kcal : max), 0);
   const filledHours = hours.reduce((n, h) => (h.kcal > 0 ? n + 1 : n), 0);
 
-  return { hours, peakKcal, filledHours, unplacedCount };
+  return {
+    hours,
+    peakKcal,
+    filledHours,
+    unplacedCount,
+    dayKcal,
+    dayEstimatedKcal,
+  };
 }

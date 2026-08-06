@@ -8,6 +8,7 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { messages } from "@shared/i18n/uk";
 import { Icon } from "@shared/components/ui/Icon";
+import { ReturnScale } from "./ReturnScale";
 
 export interface PrEntry {
   id: string;
@@ -27,6 +28,18 @@ export interface PrEntry {
   isRegression?: boolean;
   /** Відхилення поточного рівня від піка у відсотках (≤ 0 — просів). */
   deltaVsPeakPct?: number;
+  /**
+   * Орієнтир на сьогодні — знижений пік (`oneRmAging.reference1rm`).
+   *
+   * AI-DANGER: саме це число людина кладе на штангу, і саме воно тепер
+   * стоїть у рядку головним. Пік лишається, але як підпис на краю шкали.
+   * Помінявши їх місцями, знімемо захист, заради якого старіння 1RM
+   * існує (канон `fizruk.md` §6).
+   */
+  reference1rm?: number;
+  /** На скільки % орієнтир нижчий за пік. 0 — свіжа вправа. */
+  reductionPct?: number;
+  daysSinceLastSession?: number | null;
 }
 
 interface PrBoardProps {
@@ -145,7 +158,8 @@ export function PrBoard({
                     </div>
                   </div>
                   <div className="shrink-0 text-style-label text-text tabular-nums">
-                    {p.best1rm.toFixed(0)} {messages.fizruk.kgUnit}
+                    {(p.reference1rm ?? p.best1rm).toFixed(0)}{" "}
+                    {messages.fizruk.kgUnit}
                   </div>
                 </div>
                 <div className="flex items-center gap-2 mt-0.5">
@@ -184,6 +198,22 @@ export function PrBoard({
                     </span>
                   )}
                 </div>
+                {/*
+                  Шкала показується для ВСІХ вправ, не лише застарілих
+                  (рішення власника 2026-08-06). Повна шкала — теж
+                  інформація («ти на піку»), а список, що стрибає між
+                  рядками зі шкалою і без, читається гірше за кілька
+                  повних смуг поспіль.
+                */}
+                {p.reductionPct != null && (
+                  <ReturnScale
+                    peak1rm={p.best1rm}
+                    reference1rm={p.reference1rm ?? p.best1rm}
+                    reductionPct={p.reductionPct}
+                    daysSinceLastSession={p.daysSinceLastSession ?? null}
+                    isStale={p.isStale === true}
+                  />
+                )}
               </button>
             );
           })}

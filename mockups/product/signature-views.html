@@ -1,3 +1,4 @@
+<!doctype html>
 <html lang="uk">
   <head>
     <meta charset="UTF-8" />
@@ -46,6 +47,14 @@
       Self-contained навмисно. Кольори модулів дзеркалять
       packages/design-tokens/tokens.js (рядки 186-189).
     -->
+    <!--
+      Спільні токени — вимога mockups/README.md §«Як додати новий мокап».
+      Локальна палітра нижче лишає ЛИШЕ те, чого в токенах немає (кремові
+      паперові поверхні цієї серії мокапів), а кольори модулів беруться
+      з `--fizruk` / `--nutrition-dark` — інакше мокап розійшовся б із
+      продуктом мовчки й рішення ухвалювалось би за застарілим кольором.
+    -->
+    <link rel="stylesheet" href="../_shared/tokens.css" />
     <style>
       *,
       *::before,
@@ -62,10 +71,11 @@
         --ink-muted: #78716c;
         --ink-subtle: #6b645e;
         --ink-faint: #a8a29e;
-        --fizruk: #0e7490;
-        --fizruk-deep: #155e75;
-        --nutrition: #4d7c0f;
-        --nutrition-lite: #92cc17;
+        /* З tokens.css: --fizruk, --fizruk-dark, --nutrition,
+           --nutrition-dark. Локально лише псевдоніми під назви, ужиті
+           в цьому файлі. */
+        --fizruk-deep: var(--fizruk-dark);
+        --nutrition-lite: var(--nutrition);
         --warning: #b45309;
         --danger: #b91c1c;
         --success: #15803d;
@@ -119,7 +129,7 @@
         color: var(--fizruk-deep);
       }
       h2.nu {
-        color: var(--nutrition);
+        color: var(--nutrition-dark);
       }
       h3 {
         font-size: 13px;
@@ -301,7 +311,7 @@
         font-variant-numeric: tabular-nums;
       }
       .meal-row .kc {
-        color: var(--nutrition);
+        color: var(--nutrition-dark);
         font-weight: 700;
         font-variant-numeric: tabular-nums;
       }
@@ -524,11 +534,14 @@
           <div class="scale-row">
             <div class="scale-head">
               <span class="scale-name">Станова</span>
-              <span class="scale-num">112 <small>кг</small></span>
+              <span class="scale-num">113 <small>кг</small></span>
             </div>
             <div class="track">
-              <div class="fill" style="width: 4%"></div>
-              <div class="ref" style="left: 4%" data-label="сьогодні"></div>
+              <!-- Підлога спаду = 75% піка: 150 × 0.75 = 112.5, у продукті
+                   округлюється до 113. Отже орієнтир стоїть РІВНО на
+                   підлозі, тобто на 0%, а не трохи вище. -->
+              <div class="fill" style="width: 0"></div>
+              <div class="ref" style="left: 0" data-label="сьогодні"></div>
               <div class="peak"></div>
             </div>
             <div class="scale-foot">
