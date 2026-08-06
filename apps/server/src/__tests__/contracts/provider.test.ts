@@ -15,11 +15,14 @@
 // either side was refactored without updating the other), this test
 // fails before the PR can merge.
 //
-// **Coverage:** the pact file has 41 consumer interactions across 29
+// **Coverage:** the pact file has 44 consumer interactions across 29
 // unique routes, including the chat-usage extension, the
-// billing/privat/finyk consumer expansion (2026-08-04), and the
+// billing/privat/finyk consumer expansion (2026-08-04), the
 // preferences/profile consumer expansion (2026-08-04, pre-beta
-// schema-debt audit: `healthDataConsent` + write-through `/api/me/profile`).
+// schema-debt audit: `healthDataConsent` + write-through `/api/me/profile`),
+// and the `activeModules` three-state expansion (2026-08-05, browser-audit
+// finding B2 / migration 116 — three extra `/api/v1/me/preferences`
+// interactions: `null` / `[]` / ordered array).
 // Of those, 11 routes are fully-verified here via supertest replay against
 // `createApp()`:
 //
@@ -238,10 +241,10 @@ afterAll(() => {
 const pact = loadPact();
 
 describe("Pact provider replay — consumer=sergeant-api-client, provider=sergeant-server", () => {
-  it("pact file has 41 expected consumer interactions across 29 routes", () => {
+  it("pact file has 44 expected consumer interactions across 29 routes", () => {
     expect(pact.consumer.name).toBe("sergeant-api-client");
     expect(pact.provider.name).toBe("sergeant-server");
-    expect(pact.interactions).toHaveLength(41);
+    expect(pact.interactions).toHaveLength(44);
     const expectedRoutes = new Set([
       // PR-42 baseline (5)
       "GET /api/v1/me",
@@ -278,6 +281,10 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
       "GET /api/v1/me/preferences",
       "GET /api/v1/me/profile",
       "PUT /api/v1/me/profile",
+      // activeModules (міграція 116, знахідка B2 браузерного аудиту
+      // 2026-08-05) додала 3 інтеракції на вже наявний
+      // `GET /api/v1/me/preferences` — маршрут той самий, тож набір
+      // маршрутів не змінився, змінилась лише їх кількість (41 → 44).
     ]);
     const actualRoutes = new Set(
       pact.interactions.map((i) => `${i.request.method} ${i.request.path}`),
@@ -340,6 +347,7 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
       pushNotifications: boolean;
       sergeantNudges: boolean;
       healthDataConsent: boolean;
+      activeModules: string[] | null;
       updatedAt: string | null;
     };
 
@@ -352,6 +360,11 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
           push_notifications: expected.pushNotifications,
           sergeant_nudges: expected.sergeantNudges,
           health_data_consent: expected.healthDataConsent,
+          // Nullable-колонка без DEFAULT (міграція 116): персона pact-а
+          // ще не робила вибору модулів, тож `pg` віддає `null`, а
+          // серіалізатор — `activeModules: null` («сервер не знає
+          // вибору»), НЕ `[]` («вибір є і він порожній»).
+          active_modules: expected.activeModules,
           updated_at: expected.updatedAt,
         },
       ],
@@ -365,6 +378,9 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
     expect(res.status).toBe(interaction.response.status);
     expect(res.body).toEqual(expected);
     expect(typeof res.body.healthDataConsent).toBe("boolean");
+    // Ключ мусить бути присутній навіть коли вибору немає — на цьому
+    // тримається три-станова семантика на клієнті.
+    expect(res.body).toHaveProperty("activeModules", null);
   });
 
   // ── GET /api/v1/me/profile ─────────────────────────────────────────────────
