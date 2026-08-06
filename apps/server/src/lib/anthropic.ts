@@ -8,7 +8,6 @@ import {
   externalHttpRequestsTotal,
 } from "../obs/metrics.js";
 import { env } from "../env.js";
-import { aiSpan, type AiSpanResultMeta } from "../obs/spans.js";
 import { estimateAnthropicCostUsd } from "./aiPricing.js";
 import { recordAnthropicUsageToDb } from "./anthropicUsageStore.js";
 import { elapsedMs, sleep } from "./timing.js";
@@ -297,20 +296,10 @@ export async function anthropicMessages(
   opts: AnthropicCallOptions = {},
 ): Promise<AnthropicMessagesResult> {
   const model = (payload?.["model"] as string) || "unknown";
-  const endpoint = opts.endpoint ?? "unknown";
   // WHY передаємо `opts` цілим, а не перезбираємо по полях: попередня версія
   // перелічувала поля вручну, і кожне нове мовчки губилось по дорозі в inner
   // (без помилки типів — просто не діяло). Дефолти лишаються в inner.
-  return aiSpan(
-    `anthropic.messages ${endpoint}`,
-    () => anthropicMessagesInner(apiKey, payload, opts, model),
-    {
-      provider: "anthropic",
-      model,
-      endpoint,
-      ...(opts.promptVersion ? { promptVersion: opts.promptVersion } : {}),
-    },
-  );
+  return anthropicMessagesInner(apiKey, payload, opts, model);
 }
 
 async function anthropicMessagesInner(
@@ -325,7 +314,7 @@ async function anthropicMessagesInner(
     allowOpenRouter,
   }: AnthropicCallOptions,
   model: string,
-): Promise<[AnthropicMessagesResult, AiSpanResultMeta]> {
+): Promise<AnthropicMessagesResult> {
   const transport = pickTransport(apiKey, allowOpenRouter);
   const maxAttempts = 3;
   // T2 audit finding #9 — jitterless `[0, 250, 750]` ms cascade ignored
@@ -380,7 +369,6 @@ async function anthropicMessagesInner(
       if (shouldRetryStatus(response.status) && attempt < maxAttempts) continue;
 
       const ms = Number(process.hrtime.bigint() - overallStart) / 1e6;
-      const meta = buildSpanMeta(data, response.ok, response.status);
       if (response.ok) {
         recordOutcome("ok", { model, endpoint, ms });
         recordUsage(model, endpoint, data, promptVersion, userId);
@@ -391,7 +379,7 @@ async function anthropicMessagesInner(
           ms,
         });
       }
-      return [{ response, data }, meta];
+      return { response, data };
     } catch (e: unknown) {
       // На явний timeout (AbortError) краще не "допалювати" запити.
       if (isAbortError(e) || attempt >= maxAttempts) {
@@ -410,34 +398,7 @@ async function anthropicMessagesInner(
   }
 
   // На випадок якщо цикл завершився без return (теоретично не має статись).
-  return [{ response: lastResponse, data: lastData }, { outcome: "unknown" }];
-}
-
-function buildSpanMeta(
-  data: AnthropicResponseData,
-  ok: boolean,
-  status: number,
-): AiSpanResultMeta {
-  const usage = data?.usage;
-  const meta: AiSpanResultMeta = {};
-  if (usage) {
-    if (Number.isFinite(usage.input_tokens)) {
-      meta.tokensIn =
-        (usage.input_tokens ?? 0) +
-        (usage.cache_read_input_tokens ?? 0) +
-        (usage.cache_creation_input_tokens ?? 0);
-    }
-    if (Number.isFinite(usage.output_tokens)) {
-      meta.tokensOut = usage.output_tokens ?? 0;
-    }
-    if (Number.isFinite(usage.cache_read_input_tokens)) {
-      meta.promptCacheHit = (usage.cache_read_input_tokens ?? 0) > 0;
-    }
-  }
-  if (!ok) {
-    meta.outcome = status === 429 ? "rate_limited" : `http_${status}`;
-  }
-  return meta;
+  return { response: lastResponse, data: lastData };
 }
 
 /**
@@ -456,17 +417,7 @@ export async function anthropicMessagesStream(
   opts: AnthropicCallOptions = {},
 ): Promise<AnthropicStreamResult> {
   const model = (payload?.["model"] as string) || "unknown";
-  const endpoint = opts.endpoint ?? "unknown";
-  return aiSpan(
-    `anthropic.messages.stream ${endpoint}`,
-    () => anthropicMessagesStreamInner(apiKey, payload, opts, model),
-    {
-      provider: "anthropic",
-      model,
-      endpoint,
-      ...(opts.promptVersion ? { promptVersion: opts.promptVersion } : {}),
-    },
-  );
+  return anthropicMessagesStreamInner(apiKey, payload, opts, model);
 }
 
 async function anthropicMessagesStreamInner(

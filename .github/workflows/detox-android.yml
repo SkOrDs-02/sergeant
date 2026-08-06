@@ -35,9 +35,9 @@ name: Detox (Android)
 #      the web-focus phase below and is no longer in `paths`. The M2 failure
 #      mode it covered (server-only PR renames a response field,
 #      `packages/api-client/` lags, bug surfaces in production) is now caught
-#      only by `pnpm api:check-openapi-types` (root `lint` script). Behavioural
-#      drift the codegen cannot see — route ordering, header changes — needs a
-#      manual `workflow_dispatch` run.
+#      only by the Hard Rule #3 contract tests + `pnpm api:check-openapi`
+#      (root `lint` script). Behavioural drift those cannot see — route
+#      ordering, header changes — needs a manual `workflow_dispatch` run.
 #   See `docs/90-work/initiatives/archive/stack-pulse-2026-05/pr-18-detox-server-shape-trigger.md`.
 #
 # Web-focus phase (2026-07): `push` вимкнено — Detox не гониться на кожен

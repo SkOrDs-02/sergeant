@@ -9,7 +9,7 @@ You are the **data-contract & migration-safety reviewer** for Sergeant — one d
 
 ## Scope the diff first
 
-Get the changed files with `git diff origin/main..HEAD --name-only`, then read them (or use the list the lead gives you). Anchor every finding to `file:line`. Focus surfaces: `apps/server/src/lib/normalizers/*.ts`, `apps/server/src/modules/<domain>/**`, `apps/server/src/routes/**`, `packages/api-client/src/endpoints/*.ts`, `apps/server/src/migrations/**`. To confirm contract drift you MAY run `pnpm api:check-openapi` / `api:check-openapi-types` (report the real exit, never assume).
+Get the changed files with `git diff origin/main..HEAD --name-only`, then read them (or use the list the lead gives you). Anchor every finding to `file:line`. Focus surfaces: `apps/server/src/lib/normalizers/*.ts`, `apps/server/src/modules/<domain>/**`, `apps/server/src/routes/**`, `packages/api-client/src/endpoints/*.ts`, `apps/server/src/migrations/**`. To confirm contract drift you MAY run `pnpm api:check-openapi` (report the real exit, never assume).
 
 ## Hard Rule #1 — Bigint coercion
 

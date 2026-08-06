@@ -35,9 +35,13 @@ const RETRY_DELAYS_MS: readonly number[] = [200, 1000, 3000];
 // ─────────────────────────── Metrics ───────────────────────────────
 /**
  * Інкрементуємо `push_sends_total{outcome}` для узгодження з існуючими
- * дашбордами web-push-у. try/catch — metrics ніколи не мають ламати send.
+ * дашбордами/алертами web-push-у. try/catch — metrics ніколи не мають
+ * ламати send. Спільна для fan-out-у нижче і для `modules/push/push.ts`
+ * (`/api/push/send` handler) — уніфікована
+ * `external_http_requests_total{upstream="push"}` вже інкрементиться
+ * всередині `sendWebPush`, тут лише дублюємо domain-лейбл.
  */
-function recordDomainOutcome(outcome: string): void {
+export function recordDomainOutcome(outcome: string): void {
   try {
     pushSendsTotal.inc({ outcome });
   } catch {

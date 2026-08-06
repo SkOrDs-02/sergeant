@@ -4,8 +4,7 @@ import pool from "../../db.js";
 import { env } from "../../env/env.js";
 import { sendWebPush } from "../../lib/webpushSend.js";
 import { logger } from "../../obs/logger.js";
-import { pushSendsTotal } from "../../obs/metrics.js";
-import { sendToUser } from "../../push/send.js";
+import { recordDomainOutcome, sendToUser } from "../../push/send.js";
 import { parseBody } from "../../http/validate.js";
 import { getIp, getPerTargetRateLimit } from "../../http/rateLimit.js";
 import {
@@ -19,20 +18,6 @@ import {
 import { logPushSend } from "./audit.js";
 
 type WithSessionUser = Request & { user?: { id: string } };
-
-/**
- * Historical domain-metric `push_sends_total` — зберігаємо для сумісності
- * з існуючими дашбордами/алертами. Уніфікована `external_http_requests_total
- * {upstream="push"}` вже інкрементиться всередині `sendWebPush` через
- * `recordExternalHttp`, тож тут лише дублюємо domain-лейбл.
- */
-function recordDomainOutcome(outcome: string): void {
-  try {
-    pushSendsTotal.inc({ outcome });
-  } catch {
-    /* ignore */
-  }
-}
 
 // VAPID config read once at module-load via the zod-validated `env`
 // singleton (P2-1 з 2026-05-13-backend-performance-roast). Раніше це були

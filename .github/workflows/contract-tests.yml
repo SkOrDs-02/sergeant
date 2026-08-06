@@ -50,7 +50,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Check generated OpenAPI artifacts
-        run: pnpm api:check-openapi && pnpm api:check-openapi-types
+        run: pnpm api:check-openapi
 
       # apps/server imports built subpath exports (e.g. `@sergeant/db-schema/pg`
       # from the waitlist route) that resolve to dist/ — build workspace deps

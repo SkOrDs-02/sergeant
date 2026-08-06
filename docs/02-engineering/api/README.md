@@ -1,6 +1,6 @@
 # Sergeant API — OpenAPI-специфікація
 
-> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-02.
+> **Last touched:** 2026-08-06 by @Skords-01. **Next review:** 2026-11-04.
 > **Status:** Active
 
 [`openapi.json`](./openapi.json) — згенерований OpenAPI 3.1 specification. Single source of truth — zod-схеми у [`packages/shared/src/schemas/api.ts`](../../../packages/shared/src/schemas/api.ts) + route-каталог у [`packages/shared/src/openapi/routes.ts`](../../../packages/shared/src/openapi/routes.ts). Типізований TS-клієнт — [`packages/api-client/src/generated/openapi.d.ts`](../../../packages/api-client/src/generated/openapi.d.ts) (автогенерований через [`openapi-typescript`](https://github.com/openapi-ts/openapi-typescript)).
@@ -66,42 +66,24 @@ npx @redocly/cli preview-docs docs/02-engineering/api/openapi.json
 
 Після того як ці три рядки додадуть у `routes.ts`, лічильники в абзаці вище треба пересипати.
 
-## Phase 3 — типізований клієнт
+## Phase 3 — типізований клієнт (retired 2026-08-06)
 
-`pnpm api:generate-openapi-types` запускає [`openapi-typescript`](https://github.com/openapi-ts/openapi-typescript) над спекою і пише типи у `packages/api-client/src/generated/openapi.d.ts`. Файл коммітиться разом зі spec'ом; CI-гейт `pnpm api:check-openapi-types` (зчіплено у root `pnpm lint`) падає, якщо файл відстає від генератора.
-
-Типи доступні через `@sergeant/api-client`:
-
-```ts
-import type {
-  OpenApiPaths,
-  OpenApiComponents,
-  OpenApiOperations,
-} from "@sergeant/api-client";
-
-type MeResponse = OpenApiComponents["schemas"]["MeResponse"];
-type ChatBody =
-  OpenApiPaths["/api/chat"]["post"]["requestBody"]["content"]["application/json"];
-```
-
-Hand-written types у `packages/api-client/src/endpoints/*` залишаються public surface — generated layer додатковий і incrementally consumed (планований migration plan — у [ADR-0025](../../04-governance/adr/0025-openapi-generation.md)).
+Generated-типи (`packages/api-client/src/generated/openapi.d.ts` + `pnpm api:generate-openapi-types` / `pnpm api:check-openapi-types`) прибрано: за час існування шар не набув жодного споживача — `OpenApiPaths`/`OpenApiComponents`/`OpenApiOperations` ніде не імпортувались. Hand-written types у `packages/api-client/src/endpoints/*` — єдина public surface контракту (Hard Rule #3 triplet). Якщо колись з'явиться реальна потреба у spec-derived типах, генерацію легко повернути з [ADR-0025](../../04-governance/adr/0025-openapi-generation.md).
 
 ## Що НЕ покрито (Phase 4+, окремі PR-и)
 
 - Точні response-схеми на endpoint-ах, де handler повертає довільний JSON.
 - Swagger UI на `/api/docs` у `apps/server`.
-- Перенесення `packages/api-client/src/endpoints/*` повністю на `OpenApiOperations`-derived типи (наразі — incremental).
 
 Деталі — [ADR-0025](../../04-governance/adr/0025-openapi-generation.md), розділ "Migration plan".
 
 ## Як додати новий endpoint
 
-> Quad-edit-rule: zod ↔ routes ↔ openapi.json ↔ openapi.d.ts. Усі чотири зміни — у тому ж PR, інакше падає одна з freshness-перевірок (`pnpm api:check-openapi`, `pnpm api:check-openapi-types`).
+> Triple-edit-rule: zod ↔ routes ↔ openapi.json. Усі три зміни — у тому ж PR, інакше падає freshness-перевірка (`pnpm api:check-openapi`).
 
 1. Додаєш zod-схему у `packages/shared/src/schemas/api.ts` (для request body / query).
 2. Реєструєш `id` через `.meta({ id: "MyName" })` у [`packages/shared/src/openapi/registry.ts`](../../../packages/shared/src/openapi/registry.ts).
 3. Додаєш path-запис у [`packages/shared/src/openapi/routes.ts`](../../../packages/shared/src/openapi/routes.ts) (path → method → schema → responses).
 4. Запускаєш `pnpm api:generate-openapi` і комітиш `docs/02-engineering/api/openapi.json` у тому ж PR.
-5. Запускаєш `pnpm api:generate-openapi-types` і комітиш `packages/api-client/src/generated/openapi.d.ts` у тому ж PR.
 
-CI ловить пропущені кроки 4 і 5 автоматично — root `pnpm lint` запускає `pnpm api:check-openapi` і `pnpm api:check-openapi-types`.
+CI ловить пропущений крок 4 автоматично — root `pnpm lint` запускає `pnpm api:check-openapi`.
