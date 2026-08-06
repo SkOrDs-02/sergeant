@@ -131,12 +131,12 @@ export function RecurringSuggestions({
                 ({candidates.length})
               </span>
             </div>
-            <div className="text-xs text-muted mt-0.5">
+            <div className="text-style-caption text-muted mt-0.5">
               Повторювані витрати — можна додати як підписки
             </div>
           </div>
         </div>
-        <span className="text-xs text-muted shrink-0 ml-2">
+        <span className="text-style-caption text-muted shrink-0 ml-2">
           {open ? "Згорнути ↑" : "Розкласти ↓"}
         </span>
       </button>
@@ -162,7 +162,7 @@ export function RecurringSuggestions({
                       {c.displayName}
                     </div>
                   </div>
-                  <div className="text-xs text-muted mt-1 space-x-2">
+                  <div className="text-style-caption text-muted mt-1 space-x-2">
                     <span>
                       ~
                       <AmountValue amount={c.avgAmount} currency={c.currency} />

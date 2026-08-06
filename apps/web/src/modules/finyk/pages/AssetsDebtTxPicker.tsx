@@ -207,10 +207,10 @@ export function AssetsDebtTxPicker({
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad">
           <Card variant="flat" radius="md" className="mb-4">
-            <div className="text-xs text-subtle">
+            <div className="text-style-caption text-subtle">
               {item.emoji} {item.name}
             </div>
-            <p className="text-xs text-subtle mt-2 leading-relaxed">
+            <p className="text-style-caption text-subtle mt-2 leading-relaxed">
               {copy.intro}
             </p>
             <div
@@ -228,7 +228,7 @@ export function AssetsDebtTxPicker({
               />{" "}
               {copy.remainingSuffix}
             </div>
-            <div className="text-xs text-subtle mt-1">
+            <div className="text-style-caption text-subtle mt-1">
               {/* Символ один раз на пару: «сплачено X з Y ₴». */}
               {copy.paidPrefix} <Money amount={paid} symbol="" />{" "}
               {copy.paidJoiner} <Money amount={total ?? 0} />

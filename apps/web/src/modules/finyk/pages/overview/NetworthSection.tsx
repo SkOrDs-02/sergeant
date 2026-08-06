@@ -30,7 +30,7 @@ const NetworthSectionImpl = function NetworthSection({
           <span className="text-style-caption text-subtle">
             Динаміка капіталу
           </span>
-          <span className="text-xs text-muted">
+          <span className="text-style-caption text-muted">
             {networthHistory.length} міс.
           </span>
         </div>

@@ -48,10 +48,10 @@ export function RecoveryHonestyNotes({
             aria-hidden
           />
           <div className="min-w-0">
-            <p className="text-xs text-text leading-snug">
+            <p className="text-style-caption text-text leading-snug">
               {t.staleReplicaTitle}
             </p>
-            <p className="text-xs text-subtle leading-snug">
+            <p className="text-style-caption text-subtle leading-snug">
               {neverSynced
                 ? t.neverSyncedNote
                 : freshness.stale
@@ -69,10 +69,10 @@ export function RecoveryHonestyNotes({
 
       {wellbeing.stale && (
         <div className="mb-3 px-3 py-2 rounded-xl bg-panel border border-line">
-          <p className="text-xs text-text leading-snug">
+          <p className="text-style-caption text-text leading-snug">
             {t.staleWellbeingTitle}
           </p>
-          <p className="text-xs text-subtle leading-snug">
+          <p className="text-style-caption text-subtle leading-snug">
             {t.staleWellbeingNote}
           </p>
         </div>

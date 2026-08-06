@@ -32,7 +32,7 @@ const FirstInsightBannerImpl = function FirstInsightBanner({
         <div className="text-style-label text-text">
           Ось куди йдуть твої гроші
         </div>
-        <div className="text-xs text-muted mt-0.5">
+        <div className="text-style-caption text-muted mt-0.5">
           Хочеш поставити бюджет — і бачити, коли починаєш виходити за рамки?
         </div>
         <div className="flex gap-2 mt-3">

@@ -82,7 +82,7 @@ export function FinykManualExpenseConflictBanner({
           <h3 className="text-style-label text-text">
             {conflicts.length} {noun} синхронізації
           </h3>
-          <p className="text-xs text-muted mt-1 leading-snug">
+          <p className="text-style-caption text-muted mt-1 leading-snug">
             На іншому пристрої цю витрату вже змінено. Хмарна версія актуальніша
             — потягни вниз, щоб оновити, або відхили попередження, якщо не
             критично.

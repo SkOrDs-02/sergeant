@@ -44,7 +44,7 @@ function TodaySummaryCardImpl({
             <p className="text-style-label text-text">
               {messages.finyk.todaySummary.title}
             </p>
-            <p className="text-xs text-muted">
+            <p className="text-style-caption text-muted">
               {messages.finyk.todaySummary.dayScope}
             </p>
           </div>
@@ -67,7 +67,7 @@ function TodaySummaryCardImpl({
             ] as const
           ).map(([label, value]) => (
             <div key={label} className="min-w-0">
-              <p className="text-xs text-muted truncate">{label}</p>
+              <p className="text-style-caption text-muted truncate">{label}</p>
               <p
                 className={cn(
                   "text-style-label text-text tabular-nums truncate",

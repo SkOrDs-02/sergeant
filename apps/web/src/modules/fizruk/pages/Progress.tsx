@@ -299,14 +299,14 @@ export function Progress({ onNavigate }: ProgressProps) {
             <h1 className="text-style-title text-text">
               {messages.fizruk.progress.title}
             </h1>
-            <p className="text-xs text-subtle mt-0.5">
+            <p className="text-style-caption text-subtle mt-0.5">
               {quickStats.latestWorkoutAt !== "—"
                 ? `Останнє: ${quickStats.latestWorkoutAt} · ${quickStats.prsCount} PR`
                 : "Аналітика тренувань"}
             </p>
           </div>
           <div className="text-center">
-            <div className="text-xs text-subtle">PR</div>
+            <div className="text-style-caption text-subtle">PR</div>
             <div className="text-base font-extrabold text-text tabular-nums">
               {quickStats.prsCount}
             </div>
@@ -382,7 +382,7 @@ export function Progress({ onNavigate }: ProgressProps) {
                 <div className="text-style-label text-text">
                   {messages.fizruk.progress.pushups}
                 </div>
-                <div className="text-xs text-subtle">
+                <div className="text-style-caption text-subtle">
                   {messages.fizruk.progress.pushupsSource}
                 </div>
               </div>
@@ -539,7 +539,7 @@ export function Progress({ onNavigate }: ProgressProps) {
                 <div key={m.id} className="space-y-1">
                   <div className="flex items-center justify-between gap-2">
                     <div className="text-sm text-text truncate">{m.label}</div>
-                    <div className="text-xs text-subtle tabular-nums">
+                    <div className="text-style-caption text-subtle tabular-nums">
                       {m.value.toFixed(1)}
                     </div>
                   </div>

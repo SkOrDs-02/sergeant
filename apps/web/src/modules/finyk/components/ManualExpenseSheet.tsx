@@ -571,7 +571,7 @@ export function ManualExpenseSheet({
               }
             />
             <details className="mt-2">
-              <summary className="text-xs text-muted hover:text-text cursor-pointer list-none underline decoration-dotted underline-offset-2">
+              <summary className="text-style-caption text-muted hover:text-text cursor-pointer list-none underline decoration-dotted underline-offset-2">
                 Інша дата
               </summary>
               <Input
@@ -597,7 +597,7 @@ export function ManualExpenseSheet({
           <button
             type="button"
             onClick={() => setShowDateField(true)}
-            className="text-xs text-muted hover:text-text underline decoration-dotted underline-offset-2 transition-colors"
+            className="text-style-caption text-muted hover:text-text underline decoration-dotted underline-offset-2 transition-colors"
           >
             Не сьогодні? Змінити дату
           </button>

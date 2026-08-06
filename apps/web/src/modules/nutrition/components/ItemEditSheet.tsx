@@ -89,7 +89,7 @@ export function ItemEditSheet({
       </div>
 
       {itemEdit.err ? (
-        <div className="text-xs text-danger-strong dark:text-danger mt-2">
+        <div className="text-style-caption text-danger-strong dark:text-danger mt-2">
           {itemEdit.err}
         </div>
       ) : null}

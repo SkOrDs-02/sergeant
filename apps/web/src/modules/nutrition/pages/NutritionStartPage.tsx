@@ -119,7 +119,7 @@ export function NutritionStartPage({
               <div className="text-style-label text-text">
                 Аналіз фото страви
               </div>
-              <div className="text-xs text-subtle mt-0.5">
+              <div className="text-style-caption text-subtle mt-0.5">
                 ШІ визначить КБЖВ за фото
               </div>
             </div>

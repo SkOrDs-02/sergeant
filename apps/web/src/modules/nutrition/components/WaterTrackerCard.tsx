@@ -90,7 +90,7 @@ export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
           />
           <div className="min-w-0">
             <div className="text-style-label text-text leading-none">Вода</div>
-            <div className="text-xs text-subtle mt-0.5">
+            <div className="text-style-caption text-subtle mt-0.5">
               {fmt(todayMl)}
               {goalMl > 0 && ` / ${fmt(goalMl)}`}
               {done && (

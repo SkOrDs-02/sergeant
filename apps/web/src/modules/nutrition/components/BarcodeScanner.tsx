@@ -146,11 +146,11 @@ function WebBarcodeScanner({ onDetected, onClose }: BarcodeScannerProps) {
             </div>
           </div>
           {status ? (
-            <p className="text-xs text-danger-strong dark:text-danger">
+            <p className="text-style-caption text-danger-strong dark:text-danger">
               {status}
             </p>
           ) : (
-            <p className="text-xs text-subtle text-center">
+            <p className="text-style-caption text-subtle text-center">
               Наведи камеру на штрих-код. Якщо не зчитує — введи код вручну.
             </p>
           )}

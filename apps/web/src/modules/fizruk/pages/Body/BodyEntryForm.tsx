@@ -259,7 +259,7 @@ export function BodyEntryForm({ onSubmitEntry }: BodyEntryFormProps) {
             {weightError && (
               <p
                 id="body-weight-error"
-                className="mt-1 text-xs text-danger-strong"
+                className="mt-1 text-style-caption text-danger-strong"
                 role="alert"
               >
                 {weightError}
@@ -287,7 +287,7 @@ export function BodyEntryForm({ onSubmitEntry }: BodyEntryFormProps) {
             {sleepError && (
               <p
                 id="body-sleep-error"
-                className="mt-1 text-xs text-danger-strong"
+                className="mt-1 text-style-caption text-danger-strong"
                 role="alert"
               >
                 {sleepError}
@@ -382,7 +382,7 @@ export function BodyEntryForm({ onSubmitEntry }: BodyEntryFormProps) {
           {noteError && (
             <p
               id="body-note-error"
-              className="mt-1 text-xs text-danger-strong"
+              className="mt-1 text-style-caption text-danger-strong"
               role="alert"
             >
               {noteError}
@@ -412,7 +412,10 @@ export function BodyEntryForm({ onSubmitEntry }: BodyEntryFormProps) {
           {submitSuccess ? "Записано" : "Записати"}
         </button>
         {isEntryEmpty && !submitSuccess && (
-          <p id="body-entry-empty" className="text-xs text-subtle -mt-2">
+          <p
+            id="body-entry-empty"
+            className="text-style-caption text-subtle -mt-2"
+          >
             {messages.fizruk.body.entryEmpty}
           </p>
         )}

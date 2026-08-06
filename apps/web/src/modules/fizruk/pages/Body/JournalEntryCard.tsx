@@ -62,7 +62,7 @@ export function JournalEntryCard({
             className={cn(
               // `text-xs` тут — розмір ГЛІФА ▾, а не роль тексту, тож
               // семантична шкала до нього не застосовна.
-              "inline-block w-3 text-muted transition-transform shrink-0 text-xs",
+              "inline-block w-3 text-muted transition-transform shrink-0 text-style-caption",
               open ? "rotate-180" : "rotate-0",
             )}
           >

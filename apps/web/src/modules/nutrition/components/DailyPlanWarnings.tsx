@@ -151,7 +151,7 @@ export function MissingMacrosHint({
       aria-live="polite"
       className={cn(
         "mt-3 rounded-xl border border-warn/40 bg-warn/10 px-3 py-2.5",
-        "text-xs space-y-2",
+        "text-style-caption space-y-2",
       )}
       data-testid="missing-macros-hint"
     >
@@ -203,7 +203,7 @@ export function GoalRangeWarning({ prefs }: { prefs: NutritionPrefs }) {
       aria-live="polite"
       className={cn(
         "mt-3 rounded-xl border border-warn/40 bg-warn/10 px-3 py-2.5",
-        "text-xs space-y-1",
+        "text-style-caption space-y-1",
       )}
       data-testid="goal-range-warning"
     >

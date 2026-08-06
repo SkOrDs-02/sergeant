@@ -83,7 +83,9 @@ export function BarcodeSection({
         </Button>
       </div>
       {barcodeStatus && !barcodeNotice && (
-        <div className="text-xs text-subtle mt-1">{barcodeStatus}</div>
+        <div className="text-style-caption text-subtle mt-1">
+          {barcodeStatus}
+        </div>
       )}
       {barcodeNotice && onDismissBarcodeNotice && (
         <BarcodeLookupNotice

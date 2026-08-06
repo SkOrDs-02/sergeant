@@ -122,7 +122,7 @@ function DebtCardComponent({
           style={{ width: `${pct}%` }}
         />
       </div>
-      <div className="text-xs text-subtle mt-2">
+      <div className="text-style-caption text-subtle mt-2">
         {isReceivable ? "Отримано" : "Сплачено"}{" "}
         {showBalance ? (
           <>
@@ -135,7 +135,7 @@ function DebtCardComponent({
       {dueText && (
         <div
           className={cn(
-            "text-xs mt-1",
+            "text-style-caption mt-1",
             isOverdue ? "text-danger-strong dark:text-danger" : "text-muted",
           )}
         >

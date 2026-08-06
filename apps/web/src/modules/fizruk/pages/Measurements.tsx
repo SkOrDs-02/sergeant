@@ -155,7 +155,7 @@ export function Measurements() {
                 rows={measurementGuideRows}
               />
             </div>
-            <p className="text-xs text-subtle leading-relaxed">
+            <p className="text-style-caption text-subtle leading-relaxed">
               {messages.fizruk.measurements.guideDisclaimer}
             </p>
             <div className="flex flex-wrap gap-3 text-style-caption">
@@ -357,7 +357,7 @@ export function Measurements() {
                   </span>
                 </SectionHeading>
               </div>
-              <div className="text-xs text-subtle">
+              <div className="text-style-caption text-subtle">
                 {Object.keys(deltas).length ? "Δ від попереднього" : ""}
               </div>
             </div>
@@ -426,7 +426,7 @@ export function Measurements() {
                   {messages.actions.delete}
                 </button>
               </div>
-              <div className="text-xs text-subtle mt-1">
+              <div className="text-style-caption text-subtle mt-1">
                 {MEASURE_FIELDS.filter((f) => e[f.id] != null)
                   .slice(0, 4)
                   .map(

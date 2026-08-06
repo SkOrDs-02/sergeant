@@ -34,7 +34,7 @@ export function NutritionPantrySelector({
         <div className="text-base font-extrabold text-text leading-tight truncate">
           {pantry.activePantry?.name || "Комора"}
         </div>
-        <div className="text-xs text-subtle mt-0.5">
+        <div className="text-style-caption text-subtle mt-0.5">
           {pantry.pantryItems.length > 0
             ? `${pantry.pantryItems.length} продуктів збережено`
             : "Комора порожня"}

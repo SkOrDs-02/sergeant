@@ -101,7 +101,7 @@ export function MacrosEditor({
                 err: "",
               }))
             }
-            className="text-xs text-nutrition-strong dark:text-nutrition font-semibold hover:underline"
+            className="text-style-caption text-nutrition-strong dark:text-nutrition font-semibold hover:underline"
           >
             ← З результату фото
           </button>
@@ -139,7 +139,7 @@ export function MacrosEditor({
       </div>
       {pickedFood && Number(pickedGrams) > 0 && !pendingUnlink && (
         <div className="mt-2 rounded-xl border border-line bg-panelHi p-3">
-          <p className="text-xs text-subtle leading-relaxed">
+          <p className="text-style-caption text-subtle leading-relaxed">
             Значення розраховані з картки продукту на 100 г і автоматично
             масштабуються під вагу. Якщо зробити їх незалежними, поточні КБЖВ
             збережуться лише для цього запису й більше не змінюватимуться разом

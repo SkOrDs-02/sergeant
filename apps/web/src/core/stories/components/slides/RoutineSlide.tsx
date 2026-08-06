@@ -13,7 +13,7 @@ export function RoutineSlide({ slide }: { slide: RoutineSlideData }) {
 
   return (
     <StoryShell slide={slide}>
-      <p className="text-xs uppercase tracking-[0.3em] text-white/70 font-bold mb-2">
+      <p className="text-style-caption uppercase tracking-[0.3em] text-white/70 font-bold mb-2">
         Звички · Рутина
       </p>
 
@@ -50,7 +50,7 @@ export function RoutineSlide({ slide }: { slide: RoutineSlideData }) {
           </div>
         </div>
         <div>
-          <div className="text-xs uppercase tracking-wider text-white/75 font-bold">
+          <div className="text-style-caption uppercase tracking-wider text-white/75 font-bold">
             Активних звичок
           </div>
           <div className="text-style-headline leading-tight tabular-nums">
@@ -61,7 +61,7 @@ export function RoutineSlide({ slide }: { slide: RoutineSlideData }) {
 
       {top.length > 0 && (
         <div className="mb-4 space-y-2">
-          <p className="text-xs uppercase tracking-wider text-white/75 font-bold">
+          <p className="text-style-caption uppercase tracking-wider text-white/75 font-bold">
             Топ-звички
           </p>
           {top.map((h) => (

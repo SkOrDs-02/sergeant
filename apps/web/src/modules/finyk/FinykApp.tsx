@@ -621,7 +621,7 @@ function AuthErrorBanner({
         />
         <div className="flex-1 min-w-0">
           <p className="text-style-label text-text">Токен потребує оновлення</p>
-          <p className="text-xs text-muted mt-0.5">{authError}</p>
+          <p className="text-style-caption text-muted mt-0.5">{authError}</p>
           {onBackToHub && (
             <button
               type="button"

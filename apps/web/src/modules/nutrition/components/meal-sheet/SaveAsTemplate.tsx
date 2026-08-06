@@ -31,7 +31,7 @@ export function SaveAsTemplate({
     <div className="mt-3">
       <button
         type="button"
-        className="text-xs text-nutrition-strong dark:text-nutrition font-semibold hover:underline"
+        className="text-style-caption text-nutrition-strong dark:text-nutrition font-semibold hover:underline"
         onClick={() => {
           const name = form.name.trim();
           if (!name) {

@@ -84,7 +84,10 @@ export function KpiRowCompact({
         >
           {idx > 0 && (
             /* icon-size, not type */
-            <span aria-hidden="true" className={cn("text-xs", sepClass)}>
+            <span
+              aria-hidden="true"
+              className={cn("text-style-caption", sepClass)}
+            >
               ·
             </span>
           )}

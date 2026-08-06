@@ -51,7 +51,7 @@ export function Atlas() {
             <h1 className="text-hero font-black text-hero-ink mt-2 leading-tight">
               Стан відновлення
             </h1>
-            <p className="text-xs text-hero-ink/75 mt-2">
+            <p className="text-style-caption text-hero-ink/75 mt-2">
               Карта втоми, давності тренувань і обʼєму по групах мʼязів.
             </p>
           </div>

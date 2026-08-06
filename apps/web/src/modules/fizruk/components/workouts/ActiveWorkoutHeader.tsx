@@ -34,7 +34,7 @@ export function ActiveWorkoutHeader({
             ? "Завершене тренування"
             : "Активне тренування"}
         </div>
-        <div className="text-xs text-subtle mt-0.5">
+        <div className="text-style-caption text-subtle mt-0.5">
           {new Date(activeWorkout.startedAt).toLocaleString("uk-UA", {
             month: "short",
             day: "numeric",
@@ -69,7 +69,7 @@ export function ActiveWorkoutHeader({
             Згорнути
           </Button>
         ) : (
-          <span className="text-xs text-subtle">Завершено</span>
+          <span className="text-style-caption text-subtle">Завершено</span>
         )}
         <Button
           variant="danger"

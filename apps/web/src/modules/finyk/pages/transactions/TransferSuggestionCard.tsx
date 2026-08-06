@@ -92,13 +92,13 @@ export function TransferSuggestionCard({
               ? messages.finyk.transferSuggestion.creditRepaymentTitle
               : messages.finyk.transferSuggestion.title}
           </p>
-          <p className="text-xs text-muted mt-0.5 truncate">
+          <p className="text-style-caption text-muted mt-0.5 truncate">
             {accountLabel(fromId, accounts)} → {accountLabel(toId, accounts)}
           </p>
-          <p className="text-xs text-subtle mt-1 truncate">
+          <p className="text-style-caption text-subtle mt-1 truncate">
             −{sideLabel(suggestion.outgoing)}
           </p>
-          <p className="text-xs text-subtle truncate">
+          <p className="text-style-caption text-subtle truncate">
             +{sideLabel(suggestion.incoming)}
           </p>
         </div>
@@ -106,7 +106,7 @@ export function TransferSuggestionCard({
           {showBalance ? <Money amount={amountUah} tone="inherit" /> : "••••"}
         </span>
       </div>
-      <p className="text-xs text-muted leading-snug">
+      <p className="text-style-caption text-muted leading-snug">
         {isCreditCardRepayment
           ? messages.finyk.transferSuggestion.creditRepaymentHint
           : messages.finyk.transferSuggestion.hint}

@@ -174,7 +174,7 @@ export function SectionBar({
         <div className="min-w-0">
           <div className="text-style-label text-text truncate">{title}</div>
           {summary && (
-            <div className="text-xs text-muted mt-0.5 truncate tabular-nums">
+            <div className="text-style-caption text-muted mt-0.5 truncate tabular-nums">
               {summary}
             </div>
           )}
