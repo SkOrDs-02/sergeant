@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Icon, type IconName } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 
@@ -130,7 +131,12 @@ export type SectionBarProps = {
   title: string;
   iconName: IconName;
   iconTone?: "success" | "danger" | "muted" | "finyk";
-  summary?: string | null;
+  /**
+   * Підсумок секції. `ReactNode`, а не рядок: сюди йде `Money`, а він —
+   * вузли, не текст (анти-слоп П4). Маскований стан («••••») лишається
+   * звичайним рядком і проходить тим самим пропом.
+   */
+  summary?: ReactNode;
   open: boolean;
   onToggle: () => void;
 };

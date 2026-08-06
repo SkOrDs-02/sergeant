@@ -1,3 +1,4 @@
+import { Money } from "@shared/components/ui/Money";
 import { RecurringSuggestions } from "../components/RecurringSuggestions";
 import { FinykStatsStrip } from "../components/FinykStatsStrip";
 import { QuickActionButton, SectionBar } from "./AssetsBars";
@@ -112,11 +113,11 @@ export function AssetsTable({ state }: { state: State }) {
         iconName="trending-up"
         iconTone="success"
         summary={
-          showBalance
-            ? `+${totalAssets.toLocaleString("uk-UA", {
-                maximumFractionDigits: 0,
-              })} ₴`
-            : "\u2022\u2022\u2022\u2022"
+          showBalance ? (
+            <Money amount={totalAssets} signed />
+          ) : (
+            "\u2022\u2022\u2022\u2022"
+          )
         }
         open={open.assets}
         onToggle={() => setOpen((v) => ({ ...v, assets: !v.assets }))}
@@ -129,11 +130,11 @@ export function AssetsTable({ state }: { state: State }) {
         iconName="trending-down"
         iconTone="danger"
         summary={
-          showBalance
-            ? `\u2212${totalDebt.toLocaleString("uk-UA", {
-                maximumFractionDigits: 0,
-              })} ₴`
-            : "\u2022\u2022\u2022\u2022"
+          showBalance ? (
+            <Money amount={-totalDebt} />
+          ) : (
+            "\u2022\u2022\u2022\u2022"
+          )
         }
         open={open.liabilities}
         onToggle={() => setOpen((v) => ({ ...v, liabilities: !v.liabilities }))}
