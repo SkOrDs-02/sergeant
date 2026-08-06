@@ -200,13 +200,30 @@ export function getDayMacros(log: NutritionLogLike, date: string): Macros {
   );
 }
 
+/**
+ * Чи калорії страви — здогадка ШІ, а не вимір.
+ *
+ * AI-CONTEXT: винесено окремо 2026-08-06, коли смузі дня (П1) знадобилось
+ * те саме поняття. Доти визначення жило інлайном у `getDaySummary`, і
+ * другий споживач неминуче завів би свою копію — а розійшлись би вони
+ * тихо: обидва показували б відсотки, просто різні. Одне визначення на
+ * продукт.
+ *
+ * `recipeAI` НЕ рахується здогадкою навмисно: рецепт має заявлені грами
+ * інгредієнтів, тобто число виведене з складу страви, а не вгадане з
+ * пікселів. Здогадка тут — саме `photoAI`.
+ */
+export function isEstimatedMeal(meal: Meal | null | undefined): boolean {
+  return meal?.macroSource === "photoAI";
+}
+
 export function getDaySummary(log: NutritionLogLike, date: string): DaySummary {
   const day = log?.[date];
   const meals = (Array.isArray(day?.meals) ? day.meals : []) as Meal[];
   const totals = getDayMacros(log, date);
   const hasAnyMacros = meals.some((m) => macrosHasAnyValue(m?.macros));
   const estimatedKcal = meals.reduce((sum, m) => {
-    if (m?.macroSource !== "photoAI") return sum;
+    if (!isEstimatedMeal(m)) return sum;
     return sum + macrosToTotals(m?.macros).kcal;
   }, 0);
   const estimatedKcalShare = totals.kcal > 0 ? estimatedKcal / totals.kcal : 0;
