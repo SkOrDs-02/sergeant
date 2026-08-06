@@ -1,4 +1,9 @@
+import { useMemo } from "react";
+import { getSubscriptionAmountMeta } from "@sergeant/finyk-domain/domain/subscriptionUtils";
 import { SubCard } from "../components/SubCard";
+import { MonthOutflowComb } from "../components/MonthOutflowComb";
+import type { CombEntry } from "../lib/monthOutflowComb";
+import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import { Icon } from "@shared/components/ui/Icon";
 import { Button } from "@shared/components/ui/Button";
 import { openHubModule } from "@shared/lib/modules/hubNav";
@@ -25,8 +30,42 @@ export function AssetsSubscriptionsSection({ state }: { state: State }) {
   } = state;
   const toast = useToast();
 
+  // AI-CONTEXT: суми для гребеня беруться тим самим
+  // `getSubscriptionAmountMeta`, що й у `SubCard`. Це не зручність, а
+  // інваріант: якби гребінь рахував суму інакше, він показував би інший
+  // місяць, ніж список під ним, і розбіжність помітили б не одразу.
+  //
+  // Межі місяця — за КИЇВСЬКИМ годинником, не за пристроєм. ADR-0078
+  // ділить добу навпіл: пристрій володіє ОСОБИСТИМ днем (відмітка
+  // звички, лог їжі, денний запис), а фінансові періоди лишаються за
+  // Europe/Kyiv. Місяць підписок — фінансовий період, тож 1-ше число
+  // тут те саме, з якого рахуються звіти, а не те, яке показує телефон
+  // у роумінгу.
+  const { combEntries, daysInMonth, todayDom } = useMemo(() => {
+    const kyiv = getKyivDateParts();
+    const entries: CombEntry[] = subscriptions.map((sub) => ({
+      id: String(sub.id),
+      name: String(sub.name ?? ""),
+      billingDay: Number(sub.billingDay) || 0,
+      amount: getSubscriptionAmountMeta(sub, [...transactions]).amount,
+    }));
+    return {
+      combEntries: entries,
+      // День 0 наступного місяця = останній день поточного.
+      daysInMonth: new Date(Date.UTC(kyiv.year, kyiv.month, 0)).getUTCDate(),
+      todayDom: kyiv.day,
+    };
+  }, [subscriptions, transactions]);
+
   return (
     <div className="mb-3 space-y-0">
+      <MonthOutflowComb
+        entries={combEntries}
+        daysInMonth={daysInMonth}
+        today={todayDom}
+        showBalance={showBalance}
+        className="mb-2"
+      />
       <div className="mb-2 rounded-xl border border-finyk-soft-border bg-finyk-soft px-4 py-3 flex items-center justify-between gap-3">
         <span className="text-style-caption text-finyk-soft-fg">
           Витрати на підписки за місяць
