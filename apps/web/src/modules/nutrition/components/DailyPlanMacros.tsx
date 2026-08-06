@@ -3,6 +3,7 @@
  * Status: Active
  */
 import { chartHex } from "@sergeant/design-tokens/tokens";
+import { Measure } from "@shared/components/ui/Measure";
 import type { NutritionPrefs } from "@sergeant/nutrition-domain";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { cn } from "@shared/lib/ui/cn";
@@ -59,21 +60,26 @@ export function MacroRatioBar({ prefs }: { prefs: NutritionPrefs }) {
             className="w-2 h-2 rounded-sm"
             style={{ backgroundColor: chartHex.protein }}
           />{" "}
-          Б {pctP}% · {prot}г · {Math.round(protKcal)} ккал
+          Б <Measure value={pctP} unit="%" /> ·{" "}
+          <Measure value={prot} unit="г" /> ·{" "}
+          <Measure value={Math.round(protKcal)} unit="ккал" />
         </span>
         <span className="flex items-center gap-1 text-style-caption text-subtle">
           <span
             className="w-2 h-2 rounded-sm"
             style={{ backgroundColor: chartHex.fat }}
           />{" "}
-          Ж {pctF}% · {fat}г · {Math.round(fatKcal)} ккал
+          Ж <Measure value={pctF} unit="%" /> · <Measure value={fat} unit="г" />{" "}
+          · <Measure value={Math.round(fatKcal)} unit="ккал" />
         </span>
         <span className="flex items-center gap-1 text-style-caption text-subtle">
           <span
             className="w-2 h-2 rounded-sm"
             style={{ backgroundColor: chartHex.carbs }}
           />{" "}
-          В {pctC}% · {carb}г · {Math.round(carbKcal)} ккал
+          В <Measure value={pctC} unit="%" /> ·{" "}
+          <Measure value={carb} unit="г" /> ·{" "}
+          <Measure value={Math.round(carbKcal)} unit="ккал" />
         </span>
       </div>
     </div>

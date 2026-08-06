@@ -8,6 +8,7 @@ import {
 import { useDailyLog } from "../hooks/useDailyLog";
 import { useMeasurements } from "../hooks/useMeasurements";
 import { Card } from "@shared/components/ui/Card";
+import { Measure } from "@shared/components/ui/Measure";
 import { MiniLineChart } from "../components/MiniLineChart";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
@@ -158,7 +159,15 @@ export function Body({ onOpenAtlas }: BodyProps) {
                 {messages.fizruk.body.weight}
               </div>
               <div className="text-base font-extrabold text-text tabular-nums">
-                {stats.latestWeight != null ? `${stats.latestWeight} кг` : "—"}
+                {stats.latestWeight != null ? (
+                  <Measure
+                    value={stats.latestWeight}
+                    unit={messages.fizruk.body.kgUnit}
+                    fractionDigits={1}
+                  />
+                ) : (
+                  "—"
+                )}
               </div>
             </div>
             <div className="text-center">
@@ -166,9 +175,18 @@ export function Body({ onOpenAtlas }: BodyProps) {
                 {messages.fizruk.body.sleep}
               </div>
               <div className="text-base font-extrabold text-text tabular-nums">
-                {stats.avgSleep != null
-                  ? `${stats.avgSleep.toFixed(1)} год`
-                  : "—"}
+                {/* `toFixed(1)` давав КРАПКУ («7.5 год») посеред
+                    інтерфейсу, де всюди кома. `Measure` бере роздільник
+                    із локалі — та сама дрібниця, з якої складається П4. */}
+                {stats.avgSleep != null ? (
+                  <Measure
+                    value={stats.avgSleep}
+                    unit={messages.fizruk.body.hoursUnit}
+                    fractionDigits={1}
+                  />
+                ) : (
+                  "—"
+                )}
               </div>
             </div>
           </div>

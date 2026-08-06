@@ -1,6 +1,6 @@
 # eslint-plugin-sergeant-design
 
-> **Last touched:** 2026-08-06 by @Skords-01. **Next review:** 2026-11-04.
+> **Last touched:** 2026-08-06 by @claude. **Next review:** 2026-11-04.
 > **Status:** Active
 
 Локальний ESLint-плагін для runtime-, security-, storage-, API- та domain-інваріантів Sergeant. Попри історичну назву, він більше не кодує в AST суб’єктивні візуальні рішення: колір, радіус, типографіка, motion і композиція перевіряються design tokens, Storybook та review згідно з [ADR-0081](../../docs/04-governance/adr/0081-repository-simplification.md).

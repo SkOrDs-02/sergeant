@@ -18,7 +18,12 @@ export function MacroChip({ label, value, unit = "г", color }: MacroChipProps) 
       <SectionHeading as="span" size="xs" className="text-inherit opacity-70">
         {label}
       </SectionHeading>
-      <span className="text-base font-extrabold leading-tight">
+      {/* AI-CONTEXT: плашка стоїть під формою й перераховується на кожне
+          натискання клавіші. Без `tabular-nums` цифри різної ширини
+          «дихають» просто від набору — П4 вимагає табличні всюди, де
+          число ЗМІНЮЄТЬСЯ. Одиниця тут окремим рядком під числом, тож це
+          вже розкладка тирів — `Measure` (інлайнова форма) не потрібен. */}
+      <span className="text-base font-extrabold leading-tight tabular-nums">
         {value != null ? Math.round(value) : "—"}
       </span>
       <span className="text-style-caption opacity-60">{unit}</span>

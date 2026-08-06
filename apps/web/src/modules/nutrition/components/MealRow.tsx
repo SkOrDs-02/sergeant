@@ -7,6 +7,7 @@ import { cn } from "@shared/lib/ui/cn";
 import { Badge } from "@shared/components/ui/Badge";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
+import { Measure } from "@shared/components/ui/Measure";
 import { type Meal } from "@sergeant/nutrition-domain";
 import { getMealThumbnailBlob } from "../lib/mealPhotoStorage";
 
@@ -103,23 +104,26 @@ export function MealRow({ meal, onRemove, onEdit }: MealRowProps) {
         </div>
         <div className="flex gap-2 mt-0.5 flex-wrap">
           {mac.kcal != null && (
-            <span className="text-style-caption text-nutrition-strong dark:text-nutrition font-bold">
-              {Math.round(mac.kcal)} ккал
-            </span>
+            <Measure
+              value={Math.round(mac.kcal)}
+              unit="ккал"
+              tone="inherit"
+              className="text-style-caption text-nutrition-strong dark:text-nutrition font-bold"
+            />
           )}
           {mac.protein_g != null && (
             <span className="text-style-caption text-subtle">
-              Б {Math.round(mac.protein_g)}г
+              Б <Measure value={Math.round(mac.protein_g)} unit="г" />
             </span>
           )}
           {mac.fat_g != null && (
             <span className="text-style-caption text-subtle">
-              Ж {Math.round(mac.fat_g)}г
+              Ж <Measure value={Math.round(mac.fat_g)} unit="г" />
             </span>
           )}
           {mac.carbs_g != null && (
             <span className="text-style-caption text-subtle">
-              В {Math.round(mac.carbs_g)}г
+              В <Measure value={Math.round(mac.carbs_g)} unit="г" />
             </span>
           )}
         </div>

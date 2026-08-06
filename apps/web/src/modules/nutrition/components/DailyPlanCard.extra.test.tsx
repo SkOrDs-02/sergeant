@@ -15,6 +15,7 @@
  *   • Empty pantry hint
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
+import { flatMatch } from "@shared/testing/numberText";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import type { NutritionPrefs } from "@sergeant/nutrition-domain";
 
@@ -303,8 +304,8 @@ describe("DailyPlanCard — targets row and Скинути", () => {
         {...defaultHandlers}
       />,
     );
-    expect(screen.getByText("2000 ккал")).toBeInTheDocument();
-    expect(screen.getByText(/Б: 150г/)).toBeInTheDocument();
+    expect(screen.getByText(flatMatch("2 000 ккал"))).toBeInTheDocument();
+    expect(screen.getByText(flatMatch(/Б: 150 г/))).toBeInTheDocument();
   });
 
   it("'Скинути' button clears all target fields", () => {
@@ -422,7 +423,7 @@ describe("DailyPlanCard — dayPlan meals section", () => {
         dayPlan={dayPlanWithMeals}
       />,
     );
-    expect(screen.getByText(/~800 ккал разом/)).toBeInTheDocument();
+    expect(screen.getByText(flatMatch(/~800 ккал разом/))).toBeInTheDocument();
   });
 
   it("renders progress bar when both totalKcal and dailyTargetKcal are set", () => {
@@ -434,7 +435,9 @@ describe("DailyPlanCard — dayPlan meals section", () => {
       />,
     );
     expect(screen.getByText("Прогрес до цілі")).toBeInTheDocument();
-    expect(screen.getByText(/800 \/ 2000 ккал/)).toBeInTheDocument();
+    expect(
+      screen.getByText(flatMatch(/800 \/ 2 000 ккал/)),
+    ).toBeInTheDocument();
   });
 
   it("renders the dayPlan note when present", () => {

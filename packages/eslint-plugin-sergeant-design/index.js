@@ -2682,6 +2682,38 @@ const RAW_MOTION_RE = new RegExp(
   "(?:^|[\\s\"'`])(?:[a-z-]+:)*(?:duration-(?:\\d+|\\[[^\\]]+\\])|ease-(?:in-out|in|out|linear)(?![-a-z]))",
 );
 
+// Друга половина правила: ім'я ТОКЕНА, що потрапило в CSS-літерал.
+//
+// AI-DANGER: `ease-standard` — клас Tailwind, а НЕ функція плавності.
+// Опинившись у рядку `transition: transform 0.2s ease-standard`, воно
+// робить усю декларацію невалідною, і браузер її мовчки відкидає: перехід
+// стає миттєвим, анімація не запускається взагалі. Нічого не падає.
+//
+// Саме так і сталося 2026-08-06: прохід П5 замінював `ease-out` на
+// `ease-standard` регуляркою, і чотири інлайнові стилі (BreathingMeshDemo,
+// EmptyStateIdleDemo, PullToRefreshIndicator, SwipeToAction) отримали
+// клас туди, де потрібна змінна. У CSS-літералі правильна форма —
+// `var(--motion-ease-standard)` і `var(--motion-duration-base)`.
+// Токен, що НЕ є частиною `var(--motion-…)`.
+const MOTION_TOKEN_NAME_RE =
+  /(?<!--motion-)\b(?:ease-(?:standard|emphasized|accelerate|decelerate|overshoot)|duration-(?:instant|fast|base|slow|slower|slowest))\b/;
+
+// Ознаки, що рядок — це CSS, а не список класів:
+//   1. літерал часу (`0.2s`, `320ms`) — у className його не буває;
+//   2. декларація `animation:` / `transition:` з двокрапкою (клас
+//      `transition-[…]` двокрапки не має, тож сюди не потрапляє).
+const CSS_TIME_RE = /\b\d+(?:\.\d+)?m?s\b/;
+const CSS_DECLARATION_RE =
+  /\b(?:animation|transition)(?:-(?:duration|timing-function))?\s*:/;
+
+function isCssLiteralWithTokenName(value) {
+  if (!MOTION_TOKEN_NAME_RE.test(value)) return false;
+  return CSS_TIME_RE.test(value) || CSS_DECLARATION_RE.test(value);
+}
+
+const CSS_LITERAL_TOKEN_MESSAGE =
+  "Ім'я Tailwind-класу в CSS-літералі: `ease-standard` / `duration-base` тут НЕ працюють — браузер відкине всю декларацію мовчки. Візьми змінну: var(--motion-ease-standard), var(--motion-duration-base).";
+
 const rawMotionValue = {
   meta: {
     type: "problem",
@@ -2690,11 +2722,18 @@ const rawMotionValue = {
         "Forbid raw Tailwind duration/easing literals in className — use the motion tokens forwarded from theme.css.",
     },
     schema: [],
-    messages: { rawMotion: RAW_MOTION_VALUE_MESSAGE },
+    messages: {
+      rawMotion: RAW_MOTION_VALUE_MESSAGE,
+      cssLiteralToken: CSS_LITERAL_TOKEN_MESSAGE,
+    },
   },
   create(context) {
     const check = (node, value) => {
       if (typeof value !== "string") return;
+      if (isCssLiteralWithTokenName(value)) {
+        context.report({ node, messageId: "cssLiteralToken" });
+        return;
+      }
       if (!RAW_MOTION_RE.test(value)) return;
       context.report({ node, messageId: "rawMotion" });
     };
@@ -2759,6 +2798,7 @@ export {
   NO_RAW_STORAGE_KEY_MESSAGE,
   REQUIRE_TOAST_ERROR_ACTION_MESSAGE,
   RAW_MOTION_VALUE_MESSAGE,
+  CSS_LITERAL_TOKEN_MESSAGE,
 };
 
 export default plugin;

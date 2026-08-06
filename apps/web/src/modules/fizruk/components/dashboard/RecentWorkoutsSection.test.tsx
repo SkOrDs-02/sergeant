@@ -50,7 +50,7 @@ describe("RecentWorkoutsSection", () => {
     expect(screen.getByText("850 кг")).toBeDefined();
     // 90 min → 1 год 30 хв
     expect(screen.getByText(/1 год 30 хв/)).toBeDefined();
-    expect(screen.getByText("1.5 т")).toBeDefined();
+    expect(screen.getByText("1,5 т")).toBeDefined();
   });
 
   it("uses '—' placeholders when duration or tonnage is zero/invalid", () => {

@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useMemo } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { Icon } from "@shared/components/ui/Icon";
+import { Measure } from "@shared/components/ui/Measure";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Input } from "@shared/components/ui/Input";
 import { WheelPicker } from "@shared/components/ui/WheelPicker";
@@ -199,11 +200,26 @@ export function FoodPickerSection({
                 )}
               </div>
               <div className="text-style-caption text-subtle mt-0.5">
-                {Math.round(pickedFood.per100?.kcal || 0)} ккал · Б{" "}
-                {Math.round(pickedFood.per100?.protein_g || 0)}г · Ж{" "}
-                {Math.round(pickedFood.per100?.fat_g || 0)}г · В{" "}
-                {Math.round(pickedFood.per100?.carbs_g || 0)}г{" "}
-                <span className="opacity-60">/ 100г</span>
+                <Measure
+                  value={Math.round(pickedFood.per100?.kcal || 0)}
+                  unit="ккал"
+                />{" "}
+                · Б{" "}
+                <Measure
+                  value={Math.round(pickedFood.per100?.protein_g || 0)}
+                  unit="г"
+                />{" "}
+                · Ж{" "}
+                <Measure
+                  value={Math.round(pickedFood.per100?.fat_g || 0)}
+                  unit="г"
+                />{" "}
+                · В{" "}
+                <Measure
+                  value={Math.round(pickedFood.per100?.carbs_g || 0)}
+                  unit="г"
+                />{" "}
+                <span className="opacity-60">/ 100 г</span>
               </div>
             </div>
             <button

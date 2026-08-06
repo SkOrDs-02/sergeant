@@ -162,7 +162,6 @@ export function LogCard({
         {meals.length === 0 ? (
           <EmptyState
             compact
-            surface="document"
             illustration={<NutritionEmptyIllustration size={64} />}
             module="nutrition"
             title="Поки немає записів"

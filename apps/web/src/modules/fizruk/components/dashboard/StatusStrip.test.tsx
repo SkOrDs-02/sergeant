@@ -213,7 +213,7 @@ describe("StatusStrip", () => {
         onOpenWorkouts={() => {}}
       />,
     );
-    const node = screen.getByText("−1.4 кг");
+    const node = screen.getByText("−1,4 кг");
     expect(node.className).toContain("text-success");
   });
 

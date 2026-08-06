@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { Measure } from "@shared/components/ui/Measure";
 import { cn } from "@shared/lib/ui/cn";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Card } from "@shared/components/ui/Card";
@@ -94,7 +95,9 @@ export function RoutineStatsPanel({
           <div className={C.statCard}>
             <Stat
               label="7 днів"
-              value={`${Math.round(summary.r7.rate * 100)}%`}
+              value={
+                <Measure value={Math.round(summary.r7.rate * 100)} unit="%" />
+              }
               sublabel={`${summary.r7.completed}/${summary.r7.scheduled}`}
               size="md"
             />
@@ -102,7 +105,9 @@ export function RoutineStatsPanel({
           <div className={C.statCard}>
             <Stat
               label="30 днів"
-              value={`${Math.round(summary.r30.rate * 100)}%`}
+              value={
+                <Measure value={Math.round(summary.r30.rate * 100)} unit="%" />
+              }
               sublabel={`${summary.r30.completed}/${summary.r30.scheduled}`}
               size="md"
             />
@@ -110,7 +115,9 @@ export function RoutineStatsPanel({
           <div className={cn(C.statCard, "col-span-2 sm:col-span-1")}>
             <Stat
               label="90 днів"
-              value={`${Math.round(summary.r90.rate * 100)}%`}
+              value={
+                <Measure value={Math.round(summary.r90.rate * 100)} unit="%" />
+              }
               sublabel={`${summary.r90.completed}/${summary.r90.scheduled}`}
               size="md"
             />

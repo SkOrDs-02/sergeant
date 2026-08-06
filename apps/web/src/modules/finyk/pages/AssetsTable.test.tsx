@@ -115,9 +115,9 @@ describe("AssetsNetworthCard", () => {
     );
     const valueEl = container.querySelector(".text-danger-strong");
     expect(valueEl).not.toBeNull();
-    expect(valueEl?.querySelector('[role="img"]')).toHaveAccessibleName(
-      /-68[\s\u00a0]?499/,
-    );
+    // Сума тепер `Money`, тож розкладена на тири — матчер по `textContent`,
+    // мінус U+2212, нерозривний у розрядах.
+    expect(valueEl?.textContent).toMatch(/−68\u00a0499/);
   });
 
   it("colours networth in finyk tone when non-negative", () => {
@@ -133,8 +133,18 @@ describe("AssetsNetworthCard", () => {
     expect(container.querySelector(".text-danger-strong")).toBeNull();
   });
 
-  it("vertically centres the currency next to the networth amount", () => {
-    render(
+  /**
+   * Борг закрито 2026-08-06: hero мав ВЛАСНУ, саморобну обробку тирів —
+   * одометр плюс окремий span із власним кеглем і кольором для ₴. Тобто
+   * дубль `Money` на найпомітнішому числі застосунку. Тест перевіряв саме
+   * той саморобний вузол; тепер перевіряє контракт `Money`.
+   *
+   * Роль `img` зникла разом з одометром і це не втрата: вона існувала
+   * лише щоб ховати барабани, що крутяться, від скрінрідера. Каскад —
+   * звичайний текст, і його читають як текст.
+   */
+  it("hero малює суму через Money — з тирами й вузьким нерозривним", () => {
+    const { container } = render(
       <AssetsNetworthCard
         networth={-38839}
         totalAssets={3719}
@@ -143,19 +153,13 @@ describe("AssetsNetworthCard", () => {
       />,
     );
 
-    // Скопійовано на hero навмисно: відколи рядок «Активи / Пасиви» під
-    // ним малюється через `Money`, символів ₴ на картці кілька. Hero має
-    // ВЛАСНУ, саморобну обробку тирів — окремий span із `leading-none`
-    // поруч із `AnimatedNumber`. Це дубль того, що робить `Money`, і
-    // борг на окремий прохід: перевести hero на `Money` означає
-    // узгодити маскування, роль `img` і одометр, а це не косметика.
-    const amount = screen.getByRole("img", { name: /-38[\s\u00a0]?839/ });
-    const currency = amount.nextElementSibling as HTMLElement;
-    expect(currency).not.toBeNull();
-    expect(currency.textContent).toBe("₴");
-    expect(currency.parentElement).toHaveClass("flex", "items-center");
-    expect(currency).toHaveClass("leading-none");
-    expect(amount).toHaveClass("items-center");
+    const hero = container.querySelector(".text-style-display");
+    expect(hero).not.toBeNull();
+    // Знак, розряди й символ — рівно та розкладка, що в `Money`.
+    expect(hero?.textContent).toMatch(/^−38\u00a0839\u202f₴$/);
+    // Жодного саморобного вузла з власним кеглем символу.
+    expect(hero?.querySelector(".leading-none")).toBeNull();
+    expect(hero?.querySelector('[role="img"]')).toBeNull();
   });
 });
 

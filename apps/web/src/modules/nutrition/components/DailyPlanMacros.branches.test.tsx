@@ -4,6 +4,7 @@
  * Status: Active
  */
 import { render, screen } from "@testing-library/react";
+import { flatMatch } from "@shared/testing/numberText";
 import { describe, expect, it } from "vitest";
 import type { NutritionPrefs } from "@sergeant/nutrition-domain";
 import { MacroBadge, MacroRatioBar } from "./DailyPlanMacros";
@@ -31,7 +32,7 @@ describe("MacroRatioBar", () => {
     expect(
       screen.getByText("Відсоткове співвідношення макро"),
     ).toBeInTheDocument();
-    expect(screen.getByText(/Б \d+%/)).toBeInTheDocument();
+    expect(screen.getByText(flatMatch(/Б \d+ %/))).toBeInTheDocument();
   });
 
   it("renders only protein segment when fat and carbs are zero", () => {
@@ -46,7 +47,7 @@ describe("MacroRatioBar", () => {
         }
       />,
     );
-    expect(screen.getByText(/Б 100%/)).toBeInTheDocument();
+    expect(screen.getByText(flatMatch(/Б 100 %/))).toBeInTheDocument();
   });
 });
 

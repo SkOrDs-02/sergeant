@@ -5,6 +5,7 @@
  * Unit tests for the `MealRow` log entry row.
  */
 import { fireEvent, render, screen } from "@testing-library/react";
+import { flatMatch } from "@shared/testing/numberText";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../lib/mealPhotoStorage", () => ({
@@ -32,8 +33,8 @@ describe("MealRow", () => {
     render(<MealRow meal={baseMeal as never} />);
     expect(screen.getByText("Гречка з куркою")).toBeInTheDocument();
     expect(screen.getByText("12:30")).toBeInTheDocument();
-    expect(screen.getByText("420 ккал")).toBeInTheDocument();
-    expect(screen.getByText("Б 35г")).toBeInTheDocument();
+    expect(screen.getByText(flatMatch("420 ккал"))).toBeInTheDocument();
+    expect(screen.getByText(flatMatch("Б 35 г"))).toBeInTheDocument();
   });
 
   it("shows an AI badge for photoAI-sourced macros", () => {
@@ -76,7 +77,7 @@ describe("MealRow", () => {
         }
       />,
     );
-    expect(screen.getByText("200 ккал")).toBeInTheDocument();
-    expect(screen.queryByText(/^Б /)).not.toBeInTheDocument();
+    expect(screen.getByText(flatMatch("200 ккал"))).toBeInTheDocument();
+    expect(screen.queryByText(flatMatch(/^Б /))).not.toBeInTheDocument();
   });
 });

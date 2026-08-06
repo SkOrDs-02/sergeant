@@ -4,6 +4,7 @@
  * Status: Active
  */
 import { fireEvent, render, screen } from "@testing-library/react";
+import { flatMatch } from "@shared/testing/numberText";
 import { describe, expect, it, vi } from "vitest";
 import { FoodHitRow } from "./FoodHitRow";
 
@@ -33,6 +34,6 @@ describe("FoodHitRow", () => {
         <FoodHitRow p={{ name: "Вода" }} onPick={vi.fn()} />
       </ul>,
     );
-    expect(screen.getByText("0 ккал")).toBeInTheDocument();
+    expect(screen.getByText(flatMatch("0 ккал"))).toBeInTheDocument();
   });
 });

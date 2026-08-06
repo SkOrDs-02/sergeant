@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Measure } from "@shared/components/ui/Measure";
 import { habitCompletionRate } from "../lib/streaks";
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
@@ -66,7 +67,8 @@ export function HabitLeadersBlock({
             <span className="truncate">{best.habit.name}</span>
           </p>
           <p className="text-style-caption text-subtle mt-0.5 tabular-nums">
-            {Math.round(best.rate * 100)}% · {best.completed}/{best.scheduled}
+            <Measure value={Math.round(best.rate * 100)} unit="%" /> ·{" "}
+            {best.completed}/{best.scheduled}
           </p>
         </div>
         {worst && (
@@ -79,8 +81,8 @@ export function HabitLeadersBlock({
               <span className="truncate">{worst.habit.name}</span>
             </p>
             <p className="text-style-caption text-subtle mt-0.5 tabular-nums">
-              {Math.round(worst.rate * 100)}% · {worst.completed}/
-              {worst.scheduled}
+              <Measure value={Math.round(worst.rate * 100)} unit="%" /> ·{" "}
+              {worst.completed}/{worst.scheduled}
             </p>
           </div>
         )}

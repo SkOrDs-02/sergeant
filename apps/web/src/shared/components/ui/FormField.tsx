@@ -63,7 +63,10 @@ export function Label({
       className={cn(
         caps
           ? "block text-style-caption text-muted uppercase tracking-wide font-semibold mb-1"
-          : "text-style-label block text-text mb-1",
+          : // `normal-case` явно: роль `text-style-label` задає лише кегль,
+            // вагу й трекінг — `text-transform` вона НЕ скидає, тож
+            // успадкований `uppercase` протік би крізь новий дефолт.
+            "text-style-label normal-case block text-text mb-1",
         className,
       )}
       {...props}

@@ -3,9 +3,9 @@
  * Status: Active
  */
 import { cn } from "@shared/lib/ui/cn";
+import { Measure } from "@shared/components/ui/Measure";
 import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
-import { fmt } from "../lib/numberFmt";
 
 function roundTo2_5(kg: number): number {
   return Math.round(kg / 2.5) * 2.5;
@@ -58,7 +58,7 @@ export function LoadCalculator({
           Калькулятор навантаження
         </SectionHeading>
         <div className="text-style-caption text-subtle">
-          {reduced ? "орієнтир" : "1RM"} = {fmt(oneRM, 0)} кг
+          {reduced ? "орієнтир" : "1RM"} = <Measure value={oneRM} unit="кг" />
         </div>
       </div>
       <div className="space-y-3">

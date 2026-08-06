@@ -3,6 +3,7 @@
  * Status: Active
  */
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Measure } from "@shared/components/ui/Measure";
 import type { Dispatch, RefObject, SetStateAction } from "react";
 import { Link } from "react-router-dom";
 import { cn } from "@shared/lib/ui/cn";
@@ -227,8 +228,10 @@ export function DailyPlanGoalSelectors({
                         {TDEE_GOAL_LABELS[goal]}
                       </div>
                       <div className="text-style-caption text-subtle mt-0.5">
-                        {targets.kcal} ккал · Б{targets.protein_g} · Ж
-                        {targets.fat_g} · В{targets.carbs_g}
+                        <Measure value={targets.kcal} unit="ккал" /> · Б{" "}
+                        <Measure value={targets.protein_g} unit="г" /> · Ж{" "}
+                        <Measure value={targets.fat_g} unit="г" /> · В{" "}
+                        <Measure value={targets.carbs_g} unit="г" />
                       </div>
                       <div className="text-style-caption text-nutrition-strong dark:text-nutrition mt-0.5">
                         розраховано з профілю

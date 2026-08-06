@@ -12,6 +12,7 @@
  * trend-card children are stubbed to markers.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { flatMatch } from "@shared/testing/numberText";
 import {
   render,
   screen,
@@ -126,8 +127,8 @@ describe("Body page — stats + optional CTAs", () => {
       return [];
     });
     render(<Body />);
-    expect(screen.getByText("81 кг")).toBeInTheDocument();
-    expect(screen.getByText("7.0 год")).toBeInTheDocument();
+    expect(screen.getByText(flatMatch("81,0 кг"))).toBeInTheDocument();
+    expect(screen.getByText(flatMatch("7,0 год"))).toBeInTheDocument();
   });
 
   it("бере вагу із «Замірів», коли daily_log порожній (регресія W1-WEIGHT-SOT)", () => {
@@ -136,7 +137,7 @@ describe("Body page — stats + optional CTAs", () => {
       { id: "m1", at: "2026-06-22T08:00:00Z", weightKg: 77 },
     ];
     render(<Body />);
-    expect(screen.getByText("77 кг")).toBeInTheDocument();
+    expect(screen.getByText(flatMatch("77,0 кг"))).toBeInTheDocument();
   });
 
   it("renders the RecoveryFocusCard only when onOpenAtlas is provided", () => {

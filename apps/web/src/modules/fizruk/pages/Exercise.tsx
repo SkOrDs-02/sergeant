@@ -8,6 +8,7 @@ import { cn } from "@shared/lib/ui/cn";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { Icon } from "@shared/components/ui/Icon";
+import { Measure } from "@shared/components/ui/Measure";
 import { useExerciseCatalog } from "../hooks/useExerciseCatalog";
 import { useWorkouts } from "../hooks/useWorkouts";
 import { useInjuries } from "../hooks/useInjuries";
@@ -29,7 +30,6 @@ import {
   type ProgressPoint,
 } from "../components/ExerciseProgressChart";
 import { buildStrengthProgressData } from "../lib/exerciseProgress";
-import { fmt } from "../lib/numberFmt";
 import { chartSeries, chartStatusSeries } from "@shared/charts";
 
 interface ExerciseProps {
@@ -228,12 +228,17 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
               Особистий рекорд
             </SectionHeading>
             <div className="text-style-headline text-text mt-1 tabular-nums">
-              {best.best1rm ? `${fmt(best.best1rm, 0)} кг` : "—"}
+              {best.best1rm ? <Measure value={best.best1rm} unit="кг" /> : "—"}
             </div>
             <div className="text-style-caption text-subtle mt-1">
-              {best.bestSet
-                ? `${best.bestSet.weightKg ?? 0} × ${best.bestSet.reps ?? 0} повт.`
-                : "Немає силових сетів"}
+              {best.bestSet ? (
+                <>
+                  <Measure value={best.bestSet.weightKg ?? 0} unit="кг" /> ×{" "}
+                  <Measure value={best.bestSet.reps ?? 0} unit="повт." />
+                </>
+              ) : (
+                "Немає силових сетів"
+              )}
             </div>
             {best.bestSet?.at && (
               <div className="text-style-caption text-subtle/70 mt-1">
@@ -255,21 +260,45 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
               Наступного разу
             </SectionHeading>
             <div className="text-style-headline text-text mt-1 tabular-nums">
-              {suggestedNext ? `${fmt(suggestedNext.weightKg, 1)} кг` : "—"}
+              {suggestedNext ? (
+                <Measure
+                  value={suggestedNext.weightKg}
+                  unit="кг"
+                  fractionDigits={1}
+                />
+              ) : (
+                "—"
+              )}
             </div>
             <div className="text-style-caption text-subtle mt-1">
-              {suggestedNext
-                ? `× ${suggestedNext.reps} повт.`
-                : "Заповни сети, щоб зʼявилась рекомендація"}
+              {suggestedNext ? (
+                <>
+                  × <Measure value={suggestedNext.reps} unit="повт." />
+                </>
+              ) : (
+                "Заповни сети, щоб зʼявилась рекомендація"
+              )}
             </div>
-            {suggestedNext?.altWeightKg != null && (
-              <div className="text-style-caption text-fizruk mt-1">
-                {`або ${fmt(suggestedNext.altWeightKg, 1)} × ${suggestedNext.altReps} повт.`}
-              </div>
-            )}
+            {/* Обидва поля в гейті, а не одне: `altReps` теж необовʼязкове,
+                і шаблонний рядок до цього виводив би буквальне
+                «undefined повт.». Типізація це показала, бо `Measure`
+                приймає число, а не рядок. */}
+            {suggestedNext?.altWeightKg != null &&
+              suggestedNext.altReps != null && (
+                <div className="text-style-caption text-fizruk mt-1">
+                  або{" "}
+                  <Measure
+                    value={suggestedNext.altWeightKg}
+                    unit="кг"
+                    fractionDigits={1}
+                  />{" "}
+                  × <Measure value={suggestedNext.altReps} unit="повт." />
+                </div>
+              )}
             {suggestedNext && best.lastTop && (
               <div className="text-style-caption text-subtle/70 mt-1">
-                {`зараз: ${best.lastTop.weightKg ?? 0} × ${best.lastTop.reps ?? 0}`}
+                зараз: <Measure value={best.lastTop.weightKg ?? 0} unit="кг" />{" "}
+                × <Measure value={best.lastTop.reps ?? 0} unit="повт." />
               </div>
             )}
           </Card>

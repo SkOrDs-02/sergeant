@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Input } from "@shared/components/ui/Input";
+import { Measure } from "@shared/components/ui/Measure";
 import { searchMealsByName } from "../lib/nutritionStorage";
 import { newMealId } from "../lib/mealId";
 import type { Meal, NutritionLog } from "@sergeant/nutrition-domain";
@@ -85,13 +86,21 @@ export function LogCardSearch({
                       {date}
                     </span>
                     {mac.kcal != null && (
-                      <span className="text-style-caption text-nutrition-strong dark:text-nutrition font-bold">
-                        {Math.round(mac.kcal)} ккал
-                      </span>
+                      <Measure
+                        value={Math.round(mac.kcal)}
+                        unit="ккал"
+                        tone="inherit"
+                        className="text-style-caption text-nutrition-strong dark:text-nutrition font-bold"
+                      />
                     )}
                     {mac.protein_g != null && (
                       <span className="text-style-caption text-subtle">
-                        Б{Math.round(mac.protein_g)}
+                        {/* Одиниця тут раніше була відсутня зовсім (`Б24`),
+                            тоді як сусідній `MealRow` набирав `Б 24г`, а
+                            `FoodHitRow` — `Б 24г` із пробілом після літери.
+                            Той самий факт трьома наборами — рівно те, проти
+                            чого П4. */}
+                        Б <Measure value={Math.round(mac.protein_g)} unit="г" />
                       </span>
                     )}
                   </div>

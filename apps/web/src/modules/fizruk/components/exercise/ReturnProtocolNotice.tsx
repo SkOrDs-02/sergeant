@@ -14,9 +14,9 @@
  * стелі `max-lines: 600` (Hard Rule #18).
  */
 import { Icon } from "@shared/components/ui/Icon";
+import { Measure } from "@shared/components/ui/Measure";
 import { messages } from "@shared/i18n/uk";
 import type { OneRmAging } from "@sergeant/fizruk-domain/domain";
-import { fmt } from "../../lib/numberFmt";
 
 export interface ReturnProtocolNoticeProps {
   aging: OneRmAging;
@@ -38,7 +38,8 @@ export function ReturnProtocolNotice({ aging }: ReturnProtocolNoticeProps) {
           {injury ? t.injuryNote : t.staleNote}
         </p>
         <p className="text-style-caption text-subtle mt-1 tabular-nums">
-          {`${t.referenceLabel}: ${fmt(aging.reference1rm, 0)} кг`}
+          {t.referenceLabel}:{" "}
+          <Measure value={aging.reference1rm} unit={t.kgUnit} />
           {aging.reductionPct > 0
             ? ` · −${aging.reductionPct}% ${t.reducedSuffix}`
             : ""}

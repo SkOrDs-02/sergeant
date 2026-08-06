@@ -77,4 +77,43 @@ describe("no-raw-motion-value", () => {
   it("бачить класи всередині шаблонного рядка", () => {
     assert.equal(lint("const a = `transition ease-in-out ${x}`;").length, 1);
   });
+
+  /**
+   * Регресія на реальну поломку 2026-08-06: прохід П5 замінював `ease-out`
+   * на `ease-standard` регуляркою, і чотири інлайнові стилі отримали ІМʼЯ
+   * КЛАСУ туди, де потрібна змінна. Браузер відкидає таку декларацію
+   * мовчки — перехід стає миттєвим, анімація не запускається, нічого не
+   * падає. Саме така помилка й мусить ловитись лінтом.
+   */
+  it("ловить імʼя токена в CSS-літералі", () => {
+    for (const css of [
+      "transform 0.2s ease-standard",
+      "transition: transform 0.1s ease-standard",
+      "r2-breathe 14s ease-standard infinite",
+      ".x { animation: esFloat 3.2s ease-standard infinite; }",
+      "transition: opacity duration-base ease-standard",
+    ]) {
+      assert.equal(lint(`const a = "${css}";`).length, 1, css);
+    }
+  });
+
+  it("справжній className із токенами не плутається з CSS", () => {
+    for (const cls of [
+      "transition-[transform,opacity] duration-base ease-standard",
+      "transition-colors duration-fast ease-decelerate",
+      "motion-safe:duration-slow ease-standard",
+    ]) {
+      assert.equal(lint(`const a = "${cls}";`).length, 0, cls);
+    }
+  });
+
+  it("правильна форма в CSS-літералі проходить", () => {
+    for (const css of [
+      "transform var(--motion-duration-base) var(--motion-ease-standard)",
+      "r2-breathe 14s var(--motion-ease-standard) infinite",
+      ".x { animation: esFloat 3.2s var(--motion-ease-standard) infinite; }",
+    ]) {
+      assert.equal(lint(`const a = "${css}";`).length, 0, css);
+    }
+  });
 });

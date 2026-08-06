@@ -3,6 +3,7 @@
  * Status: Active — updated with #1 scrub + #2 goal line
  */
 import { useRef, useMemo } from "react";
+import { Measure } from "@shared/components/ui/Measure";
 import { cn } from "@shared/lib/ui/cn";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { chartGradients, chartGrid, chartTick } from "@shared/charts";
@@ -139,7 +140,7 @@ export function WeeklyVolumeChart({
               className="tabular-nums font-semibold"
               style={{ color: FIZRUK_CHART_COLOR }}
             >
-              {activeDay} · {formatYAxis(activeVol)} кг×повт
+              {activeDay} · <Measure value={activeVol} unit="кг×повт" />
             </span>
           ) : (
             <>

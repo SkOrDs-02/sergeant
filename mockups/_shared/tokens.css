@@ -114,10 +114,16 @@
   --dur-slow: 320ms;
   --dur-slower: 480ms;
   --dur-slowest: 680ms;
-  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
-  --ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
+  /* Джерело істини — apps/web/src/styles/theme.css (--motion-ease-*).
+     Синхронізовано 2026-08-06: три криві тут розійшлися з продуктом, і
+     мокап показував рух, якого в застосунку немає. Найгірше було зі
+     `standard`: тут стояла стокова крива Material (0.4,0,0.2,1), тобто
+     рівно те «як у всіх», від чого анти-слоп і відводить, тоді як
+     продукт має власну (0.2,0,0,1) з різкішим стартом. */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasized: cubic-bezier(0.3, 0, 0, 1);
   --ease-accelerate: cubic-bezier(0.3, 0, 1, 1);
-  --ease-decelerate: cubic-bezier(0, 0, 0, 1);
+  --ease-decelerate: cubic-bezier(0, 0, 0.2, 1);
   --ease-overshoot: cubic-bezier(0.34, 1.56, 0.64, 1);
 
   /* --- Z-index tiers --- */

@@ -6,6 +6,7 @@
  * both so tests are deterministic regardless of real wall-clock time.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { flatMatch } from "@shared/testing/numberText";
 import { render, screen, cleanup } from "@testing-library/react";
 import type { Habit, RoutineState } from "../lib/types";
 
@@ -96,7 +97,7 @@ describe("HabitLeadersBlock", () => {
     expect(screen.queryByText("Найслабша")).not.toBeInTheDocument();
     expect(screen.getByText(/Вода/)).toBeInTheDocument();
     // Rate 100%
-    expect(screen.getByText(/100%/)).toBeInTheDocument();
+    expect(screen.getByText(flatMatch(/100 %/))).toBeInTheDocument();
   });
 
   it("shows both best and worst when two or more habits have different rates", () => {
@@ -108,8 +109,8 @@ describe("HabitLeadersBlock", () => {
     expect(screen.getByText("Найслабша")).toBeInTheDocument();
 
     // h1 is best (rate=1 → 100%), h2 is worst (rate=0.5 → 50%)
-    expect(screen.getByText(/100%/)).toBeInTheDocument();
-    expect(screen.getByText(/50%/)).toBeInTheDocument();
+    expect(screen.getByText(flatMatch(/100 %/))).toBeInTheDocument();
+    expect(screen.getByText(flatMatch(/50 %/))).toBeInTheDocument();
   });
 
   it("hides worst card when best and worst happen to be the same habit (single active)", () => {

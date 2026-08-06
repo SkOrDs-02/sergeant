@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Measure } from "@shared/components/ui/Measure";
 import { IconButton } from "@shared/components/ui/IconButton";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Sheet } from "@shared/components/ui/Sheet";
@@ -200,7 +201,13 @@ export function DayReportSheet({
             {done.length} з {counted} виконано
             {counted > 0 && (
               <span className="ml-1 font-semibold text-text">
-                ({Math.round((done.length / counted) * 100)}%)
+                (
+                <Measure
+                  value={Math.round((done.length / counted) * 100)}
+                  unit="%"
+                  tone="inherit"
+                />
+                )
               </span>
             )}
             {skipped.length > 0 && (

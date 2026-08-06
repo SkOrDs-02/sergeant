@@ -79,7 +79,7 @@ export function PullToRefreshIndicator({
               : `rotate(${pullProgress * 360}deg)`,
             transition: isRefreshing
               ? undefined
-              : "transform 0.1s ease-standard",
+              : "transform var(--motion-duration-instant) var(--motion-ease-standard)",
           }}
         >
           <path d="M21 12a9 9 0 11-6.219-8.56" />

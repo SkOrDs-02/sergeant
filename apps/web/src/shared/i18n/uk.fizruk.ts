@@ -132,6 +132,8 @@ export const fizrukPageMessages = {
     subtitle: "Вага · сон · самопочуття",
     weight: "Вага",
     sleep: "Сон",
+    kgUnit: "кг",
+    hoursUnit: "год",
     formAriaLabel: "Записати показники",
     formHeading: "Записати сьогодні",
     entryEmpty: "Заповни хоч одне поле, щоб зберегти запис",
@@ -230,6 +232,7 @@ export const fizrukPageMessages = {
     injuryNote:
       "Ти щойно зняв позначку. Перші тижні рахую від зниженого орієнтира.",
     referenceLabel: "орієнтир",
+    kgUnit: "кг",
     peakLabel: "рекорд",
     reducedSuffix: "від рекорду",
     lastSessionPrefix: "останній підхід",
