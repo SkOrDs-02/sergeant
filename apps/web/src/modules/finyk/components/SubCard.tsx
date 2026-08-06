@@ -4,6 +4,7 @@
  */
 import { memo, useState } from "react";
 import { pluralDays } from "@sergeant/shared";
+import { Money } from "@shared/components/ui/Money";
 import { daysUntil, fmtDate } from "../utils";
 import { cn } from "@shared/lib/ui/cn";
 import { Card } from "@shared/components/ui/Card";
@@ -109,7 +110,7 @@ function SubCardComponent({
           value={form.keyword}
           onChange={(e) => setForm((f) => ({ ...f, keyword: e.target.value }))}
         />
-        <p className="text-xs text-subtle">
+        <p className="text-style-caption text-subtle">
           Якщо немає ручної прив&apos;язки, для суми підписки знайдемо найновішу
           витратну транзакцію, опис якої містить це слово.
         </p>
@@ -196,7 +197,7 @@ function SubCardComponent({
         <div className="text-style-label truncate">{sub.name}</div>
         <div
           className={cn(
-            "text-xs mt-0.5",
+            "text-style-caption mt-0.5",
             veryClose
               ? "text-danger-strong dark:text-danger"
               : soon
@@ -217,12 +218,12 @@ function SubCardComponent({
           · {sub.billingDay}-го
         </div>
         {sub.linkedTxId && lastTx && (
-          <div className="text-xs text-finyk mt-0.5">
+          <div className="text-style-caption text-finyk mt-0.5">
             Привʼязано до транзакції · оновлює суму та дату
           </div>
         )}
         {lastTx && lastTx.time != null && (
-          <div className="text-xs text-subtle mt-0.5">
+          <div className="text-style-caption text-subtle mt-0.5">
             Останнє: {fmtDate(lastTx.time)}
           </div>
         )}
@@ -230,18 +231,30 @@ function SubCardComponent({
       <div className="flex flex-col items-end gap-1 shrink-0">
         {amount != null ? (
           <div className="text-style-label">
-            {showBalance
-              ? `${amount.toLocaleString("uk-UA", { maximumFractionDigits: 2 })}${currency}`
-              : "••••"}
+            {showBalance ? (
+              // `maxFractionDigits` без `minFractionDigits` навмисно: як і
+              // раніше, «500» лишається «500», а «500,5» — «500,5». Копійки
+              // тут не факт, а залишок ділення, і дописувати «,00» до
+              // кожної підписки означало б додати шум у кожен рядок.
+              <Money amount={amount} symbol={currency} maxFractionDigits={2} />
+            ) : (
+              "••••"
+            )}
           </div>
         ) : (
-          <div className="text-xs text-subtle">ще не списувалось</div>
+          <div className="text-style-caption text-subtle">
+            ще не списувалось
+          </div>
         )}
         <div className="flex flex-wrap justify-end gap-1.5 mt-1">
           {onLinkTransactions && (
             <Button
               variant="ghost"
               size="xs"
+              // AI-DANGER: `text-xs` — розмір КОНТРОЛА, не роль тексту.
+              // Це `Button` із власним `size="xs"`, якому тут збивають
+              // геометрію (`h-auto`, свій падинг), щоб він сів у ряд дій
+              // під сумою. Роль тексту описувала б інше.
               className="px-1.5 h-auto py-0.5 text-xs text-primary hover:bg-transparent hover:underline hover:text-primary"
               onClick={onLinkTransactions}
             >
