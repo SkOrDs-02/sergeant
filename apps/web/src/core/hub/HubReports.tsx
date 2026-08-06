@@ -17,6 +17,12 @@ import { cn } from "@shared/lib/ui/cn";
 import { generatePDFReport } from "@shared/lib/ui/export";
 import { messages } from "@shared/i18n/uk";
 import { useLocale } from "@shared/i18n/useLocale";
+import {
+  getActiveModules,
+  isActiveModule,
+  type DashboardModuleId,
+} from "@sergeant/shared";
+import { webKVStore } from "@shared/lib/storage/storage";
 import { generateInsights } from "../lib/insightsEngine";
 import { WeeklyDigestCard } from "../insights/WeeklyDigestCard";
 import { PaywallModal, useFeatureGate } from "../billing";
@@ -110,6 +116,26 @@ export function HubReports() {
 
   const label = formatPeriodLabel(period, offset);
   const isCurrentPeriod = offset === 0;
+
+  /**
+   * Звіт показує лише ті модулі, які людина лишила активними.
+   *
+   * AI-CONTEXT: беремо `getActiveModules`, а НЕ `getVibePicks` напряму.
+   * Різниця принципова і вже описана в `activeModules.ts`: порожній вибір
+   * означає «ми не знаємо, що вона обрала» (акаунт до візарда, новий
+   * пристрій), а не «вона обрала нічого». `getActiveModules` у цьому разі
+   * повертає всі чотири, тож сторінка ніколи не порожніє через
+   * невідомість — рівно та поведінка, яку тут і треба.
+   *
+   * Читаємо один раз на маунт — так само, як `useHubDashboardState.ts:251`
+   * і `DashboardSection.tsx:69`. Вибір міняється в налаштуваннях, тобто
+   * на іншому екрані, і повернення сюди перемонтовує вкладку.
+   */
+  const activeModules = useMemo(() => getActiveModules(webKVStore), []);
+  const shows = useCallback(
+    (id: DashboardModuleId) => isActiveModule(activeModules, id),
+    [activeModules],
+  );
 
   // F7 — surface the active period in each insight title so the context is
   // clear regardless of where the period selector sits on screen. Done in the
@@ -266,27 +292,38 @@ export function HubReports() {
           render it because there's no monthly digest yet. */}
       {period === "week" && <WeeklyDigestCard />}
 
+      {/* Картка модуля, який людина вимкнула, не рендериться взагалі —
+          не «порожній стан», не «підключити». Вимкнений модуль не має
+          що звітувати, і рядок про це був би шумом, а не інформацією. */}
       <div className="grid grid-cols-1 gap-3">
-        <ChunkErrorBoundary minH={56}>
-          <Suspense fallback={<CardSkeleton />}>
-            <FitnessCard period={period} offset={offset} />
-          </Suspense>
-        </ChunkErrorBoundary>
-        <ChunkErrorBoundary minH={56}>
-          <Suspense fallback={<CardSkeleton />}>
-            <ExpensesCard period={period} offset={offset} />
-          </Suspense>
-        </ChunkErrorBoundary>
-        <ChunkErrorBoundary minH={56}>
-          <Suspense fallback={<CardSkeleton />}>
-            <RoutineCard period={period} offset={offset} />
-          </Suspense>
-        </ChunkErrorBoundary>
-        <ChunkErrorBoundary minH={56}>
-          <Suspense fallback={<CardSkeleton />}>
-            <NutritionCard period={period} offset={offset} />
-          </Suspense>
-        </ChunkErrorBoundary>
+        {shows("fizruk") && (
+          <ChunkErrorBoundary minH={56}>
+            <Suspense fallback={<CardSkeleton />}>
+              <FitnessCard period={period} offset={offset} />
+            </Suspense>
+          </ChunkErrorBoundary>
+        )}
+        {shows("finyk") && (
+          <ChunkErrorBoundary minH={56}>
+            <Suspense fallback={<CardSkeleton />}>
+              <ExpensesCard period={period} offset={offset} />
+            </Suspense>
+          </ChunkErrorBoundary>
+        )}
+        {shows("routine") && (
+          <ChunkErrorBoundary minH={56}>
+            <Suspense fallback={<CardSkeleton />}>
+              <RoutineCard period={period} offset={offset} />
+            </Suspense>
+          </ChunkErrorBoundary>
+        )}
+        {shows("nutrition") && (
+          <ChunkErrorBoundary minH={56}>
+            <Suspense fallback={<CardSkeleton />}>
+              <NutritionCard period={period} offset={offset} />
+            </Suspense>
+          </ChunkErrorBoundary>
+        )}
       </div>
 
       {insights.length >= 1 ? (
