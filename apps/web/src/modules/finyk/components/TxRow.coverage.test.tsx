@@ -186,4 +186,43 @@ describe("TxRow", () => {
     expect(screen.getByText("не в статистиці")).toBeInTheDocument();
     expect(screen.queryByText("AI")).not.toBeInTheDocument();
   });
+
+  it("sets the amount through Money — sign, kopecks and symbol as own tiers", () => {
+    // AI-CONTEXT: тест пінить НАБІР, а не наявність цифр. Асерти вище
+    // (`/250/`, `getAllByText(/\d/)`) проходили й на сирому рядку
+    // `fmtAmt`, тобто не тримали нічого з того, що змінив П4.
+    const { container } = render(<TxRow tx={mkTx()} />);
+
+    // −250,00 ₴: знак U+2212 (не дефіс), символ через вузький
+    // нерозривний U+202F. `getAllByText` — бо обгортка `MaskedAmount`
+    // має той самий textContent, що й сам `Money`.
+    const amount = screen.getAllByText(
+      (_, el) =>
+        el?.tagName === "SPAN" &&
+        el.className.includes("tabular-nums") &&
+        el.textContent === "−250,00 ₴",
+    )[0];
+    expect(amount).toBeDefined();
+
+    // Регресія на конкретну ваду, яку прибрав П4: `fmtAmt` клеїв символ
+    // до суми без розділювача (`250,00₴`), бо шаблон рядка його не мав.
+    expect(amount?.textContent).not.toMatch(/\d₴/);
+
+    // Три приглушені тири: знак 0.78em, копійки 0.64em, символ 0.72em.
+    expect(container.querySelector(".text-\\[0\\.78em\\]")).not.toBeNull();
+    expect(container.querySelector(".text-\\[0\\.64em\\]")).not.toBeNull();
+    expect(container.querySelector(".text-\\[0\\.72em\\]")).not.toBeNull();
+  });
+
+  it("keeps the operation currency symbol on the foreign-amount line", () => {
+    render(<TxRow tx={mkTx({ currencyCode: 840, operationAmount: -1000 })} />);
+    // 840 → USD: другий рядок набирається тим самим Money, але з «$».
+    const foreign = screen.getAllByText(
+      (_, el) =>
+        el?.tagName === "SPAN" &&
+        el.className.includes("tabular-nums") &&
+        el.textContent === "−10,00 $",
+    )[0];
+    expect(foreign).toBeDefined();
+  });
 });

@@ -16,17 +16,17 @@ import type { CustomCategoryInput } from "@sergeant/finyk-domain/constants";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { MaskedAmount } from "@shared/components/ui/MaskedAmount";
+import { Money } from "@shared/components/ui/Money";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { Switch } from "@shared/components/ui/Switch";
 import { messages } from "@shared/i18n/uk";
 import {
-  CURRENCY,
   INCOME_CATEGORIES,
   INTERNAL_TRANSFER_ID,
   MCC_CATEGORIES,
   mergeExpenseCategoryDefinitions,
 } from "../constants";
-import { fmtAmt, getCategory, getIncomeCategory } from "../utils";
+import { getCategory, getIncomeCategory } from "../utils";
 import { TxRowCategoryPicker } from "./TxRowCategoryPicker";
 import { TxRowSplitEditor } from "./TxRowSplitEditor";
 
@@ -193,7 +193,7 @@ export function BankTransactionDetailsSheet({
             </div>
             <p className="shrink-0 text-style-title tabular-nums text-text">
               <MaskedAmount masked={hideAmount}>
-                {fmtAmt(transaction.amount, CURRENCY.UAH)}
+                <Money amount={transaction.amount / 100} signed kopecks />
               </MaskedAmount>
             </p>
           </div>

@@ -3,13 +3,12 @@
  * Status: Active
  */
 import { cn } from "@shared/lib/ui/cn";
-import { fmtAmt } from "../../utils";
-import { CURRENCY } from "../../constants";
 import {
   formatStickyDayLabel,
   type computeDaySummary,
 } from "./transactionsLib";
 import { MaskedAmount } from "@shared/components/ui/MaskedAmount";
+import { Money } from "@shared/components/ui/Money";
 import { messages } from "@shared/i18n/uk";
 
 export interface TransactionDayHeaderProps {
@@ -99,13 +98,19 @@ export function TransactionDayHeader({
               : "text-text",
           )}
         >
-          {/* fmtAmt сам додає `+`/`-` — не дублюємо префікс. */}
+          {/* `signed` дає `+` для додатних — знак несе сама сума, тож
+              префікс у розмітці не дублюємо (анти-слоп П4). */}
           <MaskedAmount
             masked={masked}
             interactive={false}
             label={messages.finyk.daySummaryLabel}
           >
-            {fmtAmt(summary.total, CURRENCY.UAH)}
+            <Money
+              amount={summary.total / 100}
+              signed
+              kopecks
+              tone={summary.total > 0 ? "inherit" : "muted"}
+            />
           </MaskedAmount>
         </span>
       )}
