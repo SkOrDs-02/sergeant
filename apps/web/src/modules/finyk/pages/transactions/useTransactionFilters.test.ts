@@ -146,12 +146,77 @@ describe("useTransactionFilters", () => {
     });
   });
 
+  /*
+   * Дрил-даун із Аналітики. `categoryFilter` — ОДНОРАЗОВА передача: власник
+   * кладе категорію, хук переносить її у власний стан і гасить проп.
+   *
+   * До 2026-08-06 переносу не було — значення читалось як `categoryFilter ??
+   * filter` і зникало разом із пропом, тобто дрил-даун не міг спрацювати
+   * взагалі. Тести нижче тримають саме перенос, а не сам факт застосування.
+   */
   describe("external categoryFilter override", () => {
     it("applies categoryFilter from props on mount", () => {
       const { result } = renderHook(() =>
         useTransactionFilters(buildDefaultParams({ categoryFilter: "food" })),
       );
       expect(result.current.filter).toBe("food");
+    });
+
+    it("keeps the filter after the one-shot prop is cleared", () => {
+      const onClear = vi.fn();
+      const { result, rerender } = renderHook(
+        (props: { categoryFilter: string | null }) =>
+          useTransactionFilters(
+            buildDefaultParams({
+              categoryFilter: props.categoryFilter,
+              onClearCategoryFilter: onClear,
+            }),
+          ),
+        { initialProps: { categoryFilter: "food" as string | null } },
+      );
+      expect(onClear).toHaveBeenCalled();
+
+      // Власник погасив проп — фільтр мусить лишитись.
+      rerender({ categoryFilter: null });
+      expect(result.current.filter).toBe("food");
+    });
+
+    it("re-applies the SAME category on a second drill-down", () => {
+      const { result, rerender } = renderHook(
+        (props: { categoryFilter: string | null }) =>
+          useTransactionFilters(
+            buildDefaultParams({ categoryFilter: props.categoryFilter }),
+          ),
+        { initialProps: { categoryFilter: "food" as string | null } },
+      );
+      rerender({ categoryFilter: null });
+      act(() => result.current.setFilter("all"));
+      expect(result.current.filter).toBe("all");
+
+      // Другий прихід у ту саму категорію: без скидання внутрішнього
+      // «вже бачив» значення дорівнювало б попередньому й не спрацювало б.
+      rerender({ categoryFilter: "food" });
+      expect(result.current.filter).toBe("food");
+    });
+
+    it("names the category even when it has no spend this month", () => {
+      // Порожній місяць: `catSpends` фільтрує по `spent > 0`, тож підпис
+      // мусить приходити з ПОВНОГО списку категорій, інакше чип був би без
+      // імені саме там, куди веде дрил-даун за інший місяць.
+      const { result } = renderHook(() =>
+        useTransactionFilters(buildDefaultParams({ categoryFilter: "food" })),
+      );
+      expect(result.current.catSpends.some((c) => c.id === "food")).toBe(false);
+      expect(result.current.activeCategoryLabel).toBe("Продукти");
+    });
+
+    it("has no category label for the base pills", () => {
+      const { result } = renderHook(() =>
+        useTransactionFilters(buildDefaultParams()),
+      );
+      expect(result.current.activeCategoryLabel).toBeNull();
+      act(() => result.current.setFilter("expense"));
+      expect(result.current.activeCategoryLabel).toBeNull();
     });
   });
 

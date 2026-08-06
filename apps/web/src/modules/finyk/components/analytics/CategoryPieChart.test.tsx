@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { CategoryPieChart } from "./CategoryPieChart";
 
@@ -74,5 +74,40 @@ describe("CategoryPieChart", () => {
     expect(
       screen.queryByTestId("finyk-analytics-donut-toggle"),
     ).not.toBeInTheDocument();
+  });
+
+  /*
+   * Дрил-даун у список операцій. Легенда стає інтерактивною ЛИШЕ коли є
+   * куди вести: кнопка без дії брехала б скрінрідеру про те, що тут щось
+   * станеться.
+   */
+  describe("drill-down into transactions", () => {
+    it("keeps the legend static without a handler", () => {
+      render(<CategoryPieChart data={[slice("food", 600)]} />);
+      expect(screen.queryByRole("button", { name: /FOOD/ })).toBeNull();
+    });
+
+    it("passes the category id up on click", () => {
+      const onSelect = vi.fn();
+      render(
+        <CategoryPieChart
+          data={[slice("food", 600), slice("fun", 400)]}
+          onSelectCategory={onSelect}
+        />,
+      );
+      fireEvent.click(screen.getByRole("button", { name: /FOOD/ }));
+      expect(onSelect).toHaveBeenCalledWith("food");
+    });
+
+    it("leaves the «Інше» bucket non-interactive", () => {
+      // Агрегат кількох категорій — фільтрувати по ньому нічого, тож він
+      // лишається `<div>` навіть коли решта рядків уже кнопки.
+      const data = Array.from({ length: 8 }, (_, i) =>
+        slice(`c${i}`, 1000 - i * 50),
+      );
+      render(<CategoryPieChart data={data} onSelectCategory={vi.fn()} />);
+      expect(screen.getByRole("button", { name: /C0/ })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /Інше/ })).toBeNull();
+    });
   });
 });

@@ -298,7 +298,17 @@ export default function App({
           key="page-analytics"
           title="Не вдалось показати «Аналітику»"
         >
-          <Analytics mono={mergedMono} storage={storage} />
+          <Analytics
+            mono={mergedMono}
+            storage={storage}
+            onSelectCategory={(categoryId) => {
+              // Порядок важливий: спершу кладемо категорію, тоді
+              // переходимо. `Transactions` монтується вже з нею й одразу
+              // показує звужений список — інакше був би кадр із повним.
+              setCategoryFilter(categoryId);
+              navigate("transactions");
+            }}
+          />
         </SectionErrorBoundary>
       );
     }
