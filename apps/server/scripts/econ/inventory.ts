@@ -249,6 +249,17 @@ export interface Persona {
   perMonth: Partial<Record<string, number>>;
   /** Який тир чату отримує (визначає модель синтезу). */
   tier: "premium" | "standard" | "floor";
+  /**
+   * Розкладка повідомлень по тирах, коли персона за добу перетинає межу
+   * деградації. Сума має дорівнювати `chatMessages`.
+   *
+   * WHY окреме поле, а не сам `tier`: `tier` описує ОДИН режим, а Pro на стелі
+   * живе у двох — перші 20 викликів доби йдуть premium-моделлю, наступні 80
+   * standard-ною (`aiQuota.ts`, `DEFAULT_PREMIUM_LIMIT` / `DEFAULT_STANDARD_LIMIT`).
+   * Порахувати всі 3000 як premium — завищити і COGS хвоста, і всю маржу парку,
+   * бо саме ця персона домінує в міксі.
+   */
+  chatTierMix?: Partial<Record<"premium" | "standard" | "floor", number>>;
   note: string;
 }
 
@@ -341,6 +352,7 @@ export const PERSONAS: readonly Persona[] = [
       "coach-insight": 60,
     },
     tier: "premium",
+    chatTierMix: { premium: 600, standard: 2400 },
     note: "30 днів × (20 premium + 80 standard); floor-хвіст не рахований",
   },
 ];
@@ -348,9 +360,14 @@ export const PERSONAS: readonly Persona[] = [
 // ── Комерція ─────────────────────────────────────────────────────────
 
 export const COMMERCE = {
-  /** ADR-0068 + `PRO_MONTHLY_UAH_KOPIYKAS` (19900 коп.). */
-  proMonthlyUah: 199,
-  proAnnualUahPerMonth: 124,
+  /**
+   * Ціни — у копійках (domain invariant: гроші в minor units як `number`).
+   * Дзеркалить `PRO_MONTHLY_UAH_KOPIYKAS` (дефолт 19900) і ADR-0068
+   * (₴199/міс, ₴1490/рік ≈ ₴124/міс). У гривні переводиться лише на межі
+   * конвертації в USD і у виводі.
+   */
+  proMonthlyUahKopiykas: 19_900,
+  proAnnualUahPerMonthKopiykas: 12_400,
   /** Курс не зафіксований у коді — параметр звіту, не константа продукту. */
   uahPerUsd: 42,
   /** Комісія платіжного провайдера. */

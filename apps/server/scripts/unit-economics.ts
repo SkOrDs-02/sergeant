@@ -22,6 +22,7 @@ import { resolve } from "node:path";
 import { COMMERCE, PERSONAS } from "./econ/inventory.js";
 import {
   chatMessageCost,
+  cogsShareOf,
   fleet,
   personaCost,
   prefixShareOfMessage,
@@ -44,7 +45,7 @@ const OUT = resolve(
   "../../../docs/90-work/audits/ai-unit-economics-2026-08-06.md",
 );
 
-const proUsd = COMMERCE.proMonthlyUah / COMMERCE.uahPerUsd;
+const proUsd = COMMERCE.proMonthlyUahKopiykas / 100 / COMMERCE.uahPerUsd;
 const money = (v: number, d = 2) => `$${v.toFixed(d)}`;
 const proTypical = PERSONAS.find((p) => p.key === "pro-typical")!;
 const free = PERSONAS.find((p) => p.key === "free")!;
@@ -57,6 +58,9 @@ const ceilGw = personaCost(ceiling, "openrouter").total;
 const prefixRatio = FACTS.gatewayPrefix.tokens / FACTS.anthropicPrefix.tokens;
 const prefixShare = prefixShareOfMessage("openrouter", "premium");
 const topCogs = topCogsPersona(1_000);
+const ceilCogs = cogsShareOf("pro-ceiling", 1_000);
+/** У скільки разів юзер хвоста важчий за середнього по парку. */
+const tailWeight = ceilCogs.share / ceilCogs.headcount;
 const msgPremium = chatMessageCost("openrouter", "premium", {
   toolUseRate: 0.6,
   sessionMessages: 5,
@@ -74,7 +78,7 @@ const doc = `<!-- AUTO-GENERATED FILE. Do not edit by hand. Generator: \`pnpm --
 > **Status:** Active
 
 Питання, на яке відповідає документ: **які моделі де стоять, скільки коштує
-кожен AI-шлях на різних сценаріях і навантаженнях, і чи сходиться це з ₴${COMMERCE.proMonthlyUah}/міс.**
+кожен AI-шлях на різних сценаріях і навантаженнях, і чи сходиться це з ₴${COMMERCE.proMonthlyUahKopiykas / 100}/міс.**
 
 Замінює § 9.5–9.6 [\`01-monetization-and-pricing.md\`](../../01-product/launch/business/01-monetization-and-pricing.md)
 у частині цифр: та оцінка датована 2026-07-25 і рахує чат як Sonnet + Haiku з
@@ -120,12 +124,14 @@ standard — ${money(msgStandard, 4)}, тобто **${(msgPremium / msgStandard)
 Free-юзер на тому самому обсязі коштує в стільки ж разів дорожче за
 здеградованого Pro — і не приносить нічого.
 
-**5. Ризик — не середній юзер, а хвіст.** Pro на стелі квоти коштує
-**${money(ceilGw)}/міс** проти виручки ${money(proUsd)} — ${(ceilGw / proUsd).toFixed(1)}× під водою.
-Типовий Pro при цьому прибутковий із великим запасом. Наслідок для парку
-неочевидний: при міксі нижче **${topCogs.label.toLowerCase()}** дає
-**${topCogs.share.toFixed(0)} % усього COGS**, і саме ця група, а не чисельні Free,
-з'їдає маржу.
+**5. Збиткові дві групи, і по-різному.** Pro на стелі квоти коштує
+**${money(ceilGw)}/міс** проти виручки ${money(proUsd)} — ${(ceilGw / proUsd).toFixed(1)}× під водою; типовий
+Pro при цьому прибутковий із великим запасом. На парку жодна група не домінує
+одноосібно: найбільша стаття — **${topCogs.label.toLowerCase()}** з
+${topCogs.share.toFixed(0)} % COGS при ${topCogs.headcount.toFixed(0)} % чисельності, але хвіст дає
+${ceilCogs.share.toFixed(0)} % COGS всього з ${ceilCogs.headcount.toFixed(0)} % юзерів — тобто **важить у
+${tailWeight.toFixed(0)} разів більше за середнього**. Free страшний кількістю, хвіст —
+щільністю; важелі під них потрібні різні.
 
 ## Чого цей документ не знає
 
@@ -218,7 +224,7 @@ Free коштує **${money(freeGw)}/міс** і не приносить ніч�
 Мікс MAU — гіпотеза: Free ${(COMMERCE.fleetMix.free * 100).toFixed(0)} %, trial ${(COMMERCE.fleetMix.trial * 100).toFixed(0)} %,
 Pro типовий ${(COMMERCE.fleetMix["pro-typical"] * 100).toFixed(0)} %, Pro на стелі ${(COMMERCE.fleetMix["pro-ceiling"] * 100).toFixed(0)} %.
 Остання група — свідомо песимістичне припущення: це юзери, які щодня впираються
-у стелю квоти. Виручка — ₴${COMMERCE.proMonthlyUah} мінус ${(COMMERCE.paymentFeeRate * 100).toFixed(0)} % комісії;
+у стелю квоти. Виручка — ₴${COMMERCE.proMonthlyUahKopiykas / 100} мінус ${(COMMERCE.paymentFeeRate * 100).toFixed(0)} % комісії;
 фікс — ${money(COMMERCE.fixedMonthlyUsd, 0)}/міс (Hetzner CX23 + домен, ADR-0074).
 
 Хто створює витрати при 1 000 MAU:
@@ -270,9 +276,10 @@ ${renderBandTable()}
    набір + модульний підбір. Масштаб важеля: сам префікс — **${prefixShare.toFixed(0)} %**
    вартості першого туру, тобто більшість грошей витрачається ще до того, як
    модель прочитала питання.
-2. **Поставити стелю на хвіст.** ${topCogs.label} дає ${topCogs.share.toFixed(0)} % COGS парку
-   при 1 % чисельності. Floor-тир уже існує й безлімітний — бракує саме
-   переходу в нього за витратами, а не за кількістю викликів. Готовий важіль:
+2. **Поставити стелю на хвіст.** ${ceilCogs.label} дає ${ceilCogs.share.toFixed(0)} % COGS парку
+   при ${ceilCogs.headcount.toFixed(0)} % чисельності — у ${tailWeight.toFixed(0)} разів щільніше за середнього.
+   Floor-тир уже існує й безлімітний — бракує саме переходу в нього за
+   ВИТРАТАМИ, а не за кількістю викликів. Готовий важіль:
    \`ANTHROPIC_BUDGET_HARD_DEGRADE_ALL\`, за замовчуванням вимкнений.
 3. **Перевернути інверсію Free → premium.** Кілька рядків у \`chat.ts\`; продуктове
    рішення founder-а, не технічне. Ефект — ${(msgPremium / msgStandard).toFixed(1)}× на найчисельнішій групі.

@@ -527,7 +527,7 @@ Breakeven subscribers    = ₴3 168 / ₴191 ≈ 17 Pro subscribers
 > [`docs/90-work/audits/ai-unit-economics-2026-08-06.md`](../../../90-work/audits/ai-unit-economics-2026-08-06.md)
 > (`pnpm --filter @sergeant/server econ`). Метод і застереження нижче лишаються
 > чинними — застаріли саме числа.
-
+>
 > **Це ОЦІНКА, не вимір.** Виведена з прайс-таблиці й лімітів у коді, не з
 > продакшн-телеметрії. Реальних даних немає: таблиця `ai_usage_daily` пише
 > per-user рядки `u:<userId>` із `est_cost_usd`, але **їх ніхто не читає** —

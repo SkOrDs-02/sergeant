@@ -138,17 +138,39 @@ export interface PersonaCost {
   byPipeline: Array<{ key: string; usd: number }>;
 }
 
+/**
+ * Вартість чату за місяць. `chatTierMix` (Pro на стелі) рахується по тирах
+ * окремо: перші 20 викликів доби йдуть premium-моделлю, решта — standard,
+ * і різниця між ними кратна. Персони без mix лишаються на одному тирі.
+ */
+function chatMonthlyCost(
+  persona: Persona,
+  gateway: Gateway,
+  band: TokenBand,
+): number {
+  const perTier = (tier: Persona["tier"], messages: number) =>
+    (chatMessageCost(gateway, tier, {
+      toolUseRate: persona.toolUseRate,
+      sessionMessages: persona.sessionMessages,
+      band,
+    }).expected ?? 0) * messages;
+
+  if (persona.chatTierMix) {
+    return Object.entries(persona.chatTierMix).reduce(
+      (sum, [tier, messages]) =>
+        sum + perTier(tier as Persona["tier"], messages ?? 0),
+      0,
+    );
+  }
+  return perTier(persona.tier, persona.chatMessages);
+}
+
 export function personaCost(
   persona: Persona,
   gateway: Gateway,
   band: TokenBand = "mid",
 ): PersonaCost {
-  const perMsg = chatMessageCost(gateway, persona.tier, {
-    toolUseRate: persona.toolUseRate,
-    sessionMessages: persona.sessionMessages,
-    band,
-  });
-  const chat = (perMsg.expected ?? 0) * persona.chatMessages;
+  const chat = chatMonthlyCost(persona, gateway, band);
 
   const byPipeline: Array<{ key: string; usd: number }> = [];
   let other = 0;
@@ -180,7 +202,7 @@ export function fleet(
   gateway: Gateway,
   band: TokenBand = "mid",
 ): FleetRow {
-  const proUsd = COMMERCE.proMonthlyUah / COMMERCE.uahPerUsd;
+  const proUsd = COMMERCE.proMonthlyUahKopiykas / 100 / COMMERCE.uahPerUsd;
   let cogs = 0;
   let paying = 0;
   for (const persona of PERSONAS) {
@@ -308,7 +330,7 @@ export function renderChatTable(band: TokenBand): string {
 }
 
 export function renderPersonaTable(band: TokenBand): string {
-  const proUsd = COMMERCE.proMonthlyUah / COMMERCE.uahPerUsd;
+  const proUsd = COMMERCE.proMonthlyUahKopiykas / 100 / COMMERCE.uahPerUsd;
   return table(
     [
       "Персона",
@@ -389,16 +411,47 @@ export function renderCogsMixTable(mau: number, band: TokenBand): string {
   );
 }
 
-/** Найбільша за COGS персона при заданому міксі — щоб проза не вгадувала. */
-export function topCogsPersona(mau: number, band: TokenBand = "mid") {
+interface CogsRow {
+  label: string;
+  key: string;
+  /** Частка COGS парку, %. */
+  share: number;
+  /** Частка чисельності парку, %. */
+  headcount: number;
+}
+
+function cogsRows(mau: number, band: TokenBand): CogsRow[] {
   const rows = PERSONAS.map((p) => {
-    const share =
-      COMMERCE.fleetMix[p.key as keyof typeof COMMERCE.fleetMix] ?? 0;
-    return { p, cogs: personaCost(p, "openrouter", band).total * mau * share };
+    const mix = COMMERCE.fleetMix[p.key as keyof typeof COMMERCE.fleetMix] ?? 0;
+    return {
+      p,
+      mix,
+      cogs: personaCost(p, "openrouter", band).total * mau * mix,
+    };
   });
   const total = rows.reduce((a, r) => a + r.cogs, 0);
-  const top = rows.sort((a, b) => b.cogs - a.cogs)[0]!;
-  return { label: top.p.label, share: (top.cogs / total) * 100 };
+  return rows
+    .sort((a, b) => b.cogs - a.cogs)
+    .map((r) => ({
+      label: r.p.label,
+      key: r.p.key,
+      share: (r.cogs / total) * 100,
+      headcount: r.mix * 100,
+    }));
+}
+
+/** Найбільша за COGS персона при заданому міксі — щоб проза не вгадувала. */
+export function topCogsPersona(mau: number, band: TokenBand = "mid"): CogsRow {
+  return cogsRows(mau, band)[0]!;
+}
+
+/** Частка COGS конкретної персони — для тверджень про хвіст. */
+export function cogsShareOf(
+  key: string,
+  mau: number,
+  band: TokenBand = "mid",
+): CogsRow {
+  return cogsRows(mau, band).find((r) => r.key === key)!;
 }
 
 /**
