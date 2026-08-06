@@ -1,6 +1,6 @@
 # 04. Launch readiness: legal, ops, edge cases, метрики, чеклист
 
-> **Last touched:** 2026-07-31 by @Skords-01. **Next review:** 2026-10-29.
+> **Last touched:** 2026-08-06 by @Skords-01. **Next review:** 2026-11-04.
 > **Status:** Active
 
 > **Update 2026-07-10:** billing UI (`PaywallModal`, `PricingPage`, `PlanSection`, `usePlan()`) і server routes (`/api/billing/*`, `stripeWebhook.ts`) shipped. Edge-case таблиця §2 оновлена: «scaffold shipped» vs «prod rollout pending». Pre-launch checklist §7 розділяє code shipped / prod config.
@@ -197,7 +197,7 @@ PATCH /api/me/preferences
 | EC-05 | Timezone billing                        | Stripe працює в UTC                                            | UI показує `period_end` у Kyiv timezone (`Europe/Kyiv`)                                      | Перевірити відображення дати закінчення підписки в UI                |
 | EC-06 | Валюта                                  | 🟡 UI показує ₴199/₴1490 (ADR-0068)                            | UI показує ціну в локальній валюті                                                           | Змінити browser locale → перевірити pricing page                     |
 | EC-07 | Downgrade Pro → Free                    | 🟡 `customer.subscription.updated/deleted` handlers shipped    | Дані залишаються, sync вимикається (`handleSubUpdated.ts`)                                   | Stripe Dashboard → cancel subscription → перевірити UI               |
-| EC-08 | Free юзер перевищує AI quota            | ✅ `requireAiQuota.ts` + 15 msg/day (ADR-0068)                 | Grandfather: grace period 30 днів для юзерів зареєстрованих до paywall                       | Реєстрація до paywall → 16-й AI запит → перевірити grace             |
+| EC-08 | Free юзер перевищує AI quota            | ✅ `requireAiQuota.ts` + 5 msg/day (ADR-0085)                  | Grandfather: grace period 30 днів для юзерів зареєстрованих до paywall                       | Реєстрація до paywall → 6-й AI запит → перевірити grace              |
 | EC-09 | Payment failed (карта declined)         | 🟡 `invoice.payment_failed` / `charge.failed` handlers shipped | Stripe retry 3× за 3 тижні → downgrade + email (`handlePaymentFailed.ts`)                    | Stripe test card `4000 0000 0000 0341` (decline after attach)        |
 | EC-10 | Subscription renewed (`invoice.paid`)   | 🟡 `customer.subscription.updated` renewal path shipped        | Оновити `current_period_end`, підтвердити Pro (`handleInvoicePaid.ts`)                       | `stripe trigger invoice.paid`                                        |
 | EC-11 | Офлайн з valid Pro                      | Plan cache в localStorage/MMKV                                 | Pro-фічі працюють офлайн без обмежень                                                        | DevTools → Network: offline → використати Pro-фічу                   |

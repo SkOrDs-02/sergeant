@@ -6,6 +6,9 @@ export interface EffectiveLimits {
   monoAutoSync: boolean;
 }
 
+// AI-CONTEXT: `aiRequestsPerDay` для Free — рішення ADR-0085 (уточнює один
+// рядок ADR-0068 після виміру unit-економіки). Число вже дрейфувало між
+// кодом і governance-документом; зміна — новим ADR, не правкою тут.
 const FREE_LIMITS: EffectiveLimits = {
   aiRequestsPerDay: 5,
   cloudSyncDevices: 2,

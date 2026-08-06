@@ -1,9 +1,9 @@
 # Sergeant — Launch & Monetization Docs
 
-> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
+> **Last touched:** 2026-08-06 by @Skords-01. **Next review:** 2026-11-04.
 > **Status:** Active
 
-> **Канон ціни (2026-07-10):** [ADR-0068](../../04-governance/adr/0068-pricing-v4-uah-reverse-trial.md) — **₴199/міс / ₴1490/рік**, reverse trial 7 днів, Free AI 15 msg/day. У старих блоках нижче ₴99/₴799 — historical context.
+> **Канон ціни (2026-07-10):** [ADR-0068](../../04-governance/adr/0068-pricing-v4-uah-reverse-trial.md) — **₴199/міс / ₴1490/рік**, reverse trial 7 днів; Free AI **5 msg/day** ([ADR-0085](../../04-governance/adr/0085-free-ai-quota-five-per-day.md), анонім — 1). У старих блоках нижче ₴99/₴799 і «15 msg/day» — historical context.
 >
 > Робочі документи запуску — згруповані за логікою у три піддерева:
 > бізнес-стратегія (`business/`), технічні roadmap-и продуктових сурфейсів (`tech/`),
@@ -76,7 +76,7 @@ Sergeant = один додаток замість п'яти
 ```
 
 **Модель:** Freemium + підписка Pro (**₴199/міс | ₴1490/рік**, ADR-0068).
-Soft metered paywall — всі модулі базово безкоштовно; ліміти на AI (15 msg/day Free), sync (2 devices Free), звіти.
+Soft metered paywall — всі модулі базово безкоштовно; ліміти на AI (5 msg/day Free), sync (2 devices Free), звіти.
 
 **Ринок:** Україна → Польща → англомовний.
 

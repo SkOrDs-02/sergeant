@@ -141,11 +141,12 @@ export function isAiQuotaDisabled(): boolean {
 // Anonymous callers get exactly one message a day: enough to see what the
 // assistant does, not enough to use it as a product. Lower than the
 // authenticated free-user cap (`FREE_LIMITS.aiRequestsPerDay` in
-// `billing/effectiveLimits.ts` — ADR-0068 §"Ліміти тірів" decided 15/day,
-// though the deployed constant has not moved off its ADR-0051-era 5 yet) on
-// purpose — an IP-keyed caller is the cheapest identity to spin up, so it
-// gets the tightest budget, and the 429 it hits is a sign-in prompt
-// (`AI_QUOTA_ANON` below), not a "try tomorrow" dead end.
+// `billing/effectiveLimits.ts` — 5/day) on purpose: an IP-keyed caller is the
+// cheapest identity to spin up, so it gets the tightest budget, and the 429 it
+// hits is a sign-in prompt (`AI_QUOTA_ANON` below), not a "try tomorrow" dead
+// end. Both numbers are decided by ADR-0085 (which refines the single Free
+// AI-chat row of ADR-0068 after the unit-economics measurement) — moving
+// either one needs a new ADR, not an edit here.
 //
 // The deployed value comes from env `AI_DAILY_ANON_LIMIT` — changing this
 // constant alone does NOT move production while that variable is set.
@@ -166,8 +167,8 @@ function anonDailyLimit(): number | null {
  * Distinct from a Pro plan: a founder keeps whatever billing plan they have
  * but is never blocked by the per-user counter, so internal dogfooding and
  * demos don't burn the authenticated free-tier cap
- * (`FREE_LIMITS.aiRequestsPerDay`, `billing/effectiveLimits.ts` — see
- * ADR-0068 for the current target vs. what's actually deployed).
+ * (`FREE_LIMITS.aiRequestsPerDay`, `billing/effectiveLimits.ts` — 5/day per
+ * ADR-0085).
  * Covers both the default chat bucket and tool-use buckets.
  */
 function isFounderUser(userId: string): boolean {
@@ -179,9 +180,9 @@ function isFounderUser(userId: string): boolean {
 /**
  * Plan-aware daily AI-message cap for an authenticated user (ADR-1.7).
  * Free → `FREE_LIMITS.aiRequestsPerDay`; Pro → `null` (unlimited). See
- * `billing/effectiveLimits.ts` for the live numeric value (ADR-0068
- * §"Ліміти тірів" decided 15/day for Free — do not hardcode the number
- * here, it has drifted from the ADR once already).
+ * `billing/effectiveLimits.ts` for the live numeric value (ADR-0085 decided
+ * 5/day for Free — do not hardcode the number here, it has drifted from its
+ * decision record once already).
  * Sourced from `billing/effectiveLimits` so the paid limit lives in one place.
  *
  * On a plan-lookup error we fall back to the FREE cap — never silently grant
