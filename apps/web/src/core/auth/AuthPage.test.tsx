@@ -504,3 +504,57 @@ describe("AuthPage — forgot password (UX roast 2026-Q2 A14)", () => {
     }
   });
 });
+
+describe("AuthPage — прапорець соцвходу", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("за замовчуванням показує Google і Apple", () => {
+    render(
+      <MemoryRouter>
+        <AuthPage />
+      </MemoryRouter>,
+    );
+
+    expect(
+      screen.queryByRole("button", { name: /Увійти через Google/ }),
+    ).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /Apple/ })).toBeTruthy();
+  });
+
+  it("VITE_SOCIAL_LOGIN_ENABLED=false ховає кнопки разом із роздільником", () => {
+    // Бета живе на власному домені, а `redirect_uri` будується з єдиного
+    // `BETTER_AUTH_URL` — Google повернув би тестера на прод. Роздільник
+    // «або» мусить зникнути разом із кнопками, інакше веде в нікуди.
+    vi.stubEnv("VITE_SOCIAL_LOGIN_ENABLED", "false");
+
+    render(
+      <MemoryRouter>
+        <AuthPage />
+      </MemoryRouter>,
+    );
+
+    expect(
+      screen.queryByRole("button", { name: /Увійти через Google/ }),
+    ).toBeNull();
+    expect(screen.queryByRole("button", { name: /Apple/ })).toBeNull();
+    expect(screen.queryByText("або")).toBeNull();
+    // Вхід поштою лишається — це весь сенс вправи.
+    expect(screen.queryByRole("button", { name: /^Увійти$/ })).toBeTruthy();
+  });
+
+  it("будь-яке інше значення лишає кнопки — вимикає лише рядок «false»", () => {
+    // Opt-out, а не opt-in: одруківка в конфігу не має мовчки знімати
+    // соцвхід із прода.
+    vi.stubEnv("VITE_SOCIAL_LOGIN_ENABLED", "true");
+    render(
+      <MemoryRouter>
+        <AuthPage />
+      </MemoryRouter>,
+    );
+    expect(
+      screen.queryByRole("button", { name: /Увійти через Google/ }),
+    ).toBeTruthy();
+  });
+});
