@@ -11,18 +11,17 @@ import { TransactionFilters } from "./TransactionFilters";
 
 afterEach(cleanup);
 
-const CATS = [
-  { id: "food", label: "🍔 Їжа" },
-  { id: "transport", label: "🚗 Транспорт" },
-];
-
-function renderStrip(filter = "all", onChange = vi.fn()) {
+function renderStrip(
+  filter = "all",
+  onChange = vi.fn(),
+  activeCategoryLabel: string | null = null,
+) {
   render(
     <TransactionFilters
       filter={filter}
       onChangeFilter={onChange}
       hasCreditAccounts={false}
-      catSpends={CATS}
+      activeCategoryLabel={activeCategoryLabel}
     />,
   );
   return onChange;
@@ -45,7 +44,7 @@ describe("TransactionFilters — toolbar a11y (F13)", () => {
   });
 
   it("falls back to the first pill when the active filter isn't rendered", () => {
-    // A category id that isn't in catSpends → no matching pill.
+    // Фільтр за категорією не має власної пігулки — якорем стає «Всі».
     renderStrip("missing-cat");
     expect(
       screen.getByRole("button", { name: "Всі" }).getAttribute("tabindex"),
@@ -61,17 +60,18 @@ describe("TransactionFilters — toolbar a11y (F13)", () => {
     expect(document.activeElement).toBe(expense);
     fireEvent.keyDown(expense, { key: "ArrowLeft" });
     expect(document.activeElement).toBe(all);
-    // wrap from first → last on ArrowLeft
+    // wrap from first → last on ArrowLeft. Остання пігулка — «Доходи»:
+    // чипів категорій у тулбарі більше немає.
     fireEvent.keyDown(all, { key: "ArrowLeft" });
     expect(document.activeElement).toBe(
-      screen.getByRole("button", { name: /Транспорт/ }),
+      screen.getByRole("button", { name: "Доходи" }),
     );
   });
 
   it("Home / End jump to first / last pill", () => {
     renderStrip("all");
     const all = screen.getByRole("button", { name: "Всі" });
-    const last = screen.getByRole("button", { name: /Транспорт/ });
+    const last = screen.getByRole("button", { name: "Доходи" });
     all.focus();
     fireEvent.keyDown(all, { key: "End" });
     expect(document.activeElement).toBe(last);
@@ -85,20 +85,43 @@ describe("TransactionFilters — toolbar a11y (F13)", () => {
     expect(onChange).toHaveBeenCalledWith("income");
   });
 
-  it("strips the leading emoji from category chip labels (§1)", () => {
+  /*
+    Рішення власника 2026-08-06: чипи категорій зі смуги прибрані —
+    їхню роль виконує клікабельне кільце на Аналітиці. Тести нижче
+    фіксують те, що прийшло на заміну.
+  */
+  it("не рендерить чипів категорій — лише базові фільтри", () => {
     renderStrip();
-    expect(
-      screen.getByRole("button", { name: "Транспорт" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: /🚗/ }),
-    ).not.toBeInTheDocument();
+    expect(screen.getAllByRole("button")).toHaveLength(3);
+    expect(screen.queryByRole("button", { name: /Їжа/ })).toBeNull();
   });
 
-  it("a repeat tap on the active category chip clears the filter back to 'all' (§1)", () => {
-    const onChange = renderStrip("food");
+  it("показує знімний чип, коли фільтр прийшов дрил-дауном", () => {
+    renderStrip("food", vi.fn(), "Їжа");
+    expect(screen.getByRole("button", { name: /Їжа/ })).toBeInTheDocument();
+  });
+
+  it("чип пояснює, ЩО він робить, а не лише називає категорію", () => {
+    renderStrip("food", vi.fn(), "Їжа");
+    // Доступна назва мусить містити дію — інакше скрінрідер оголосить
+    // саму лише назву категорії, і незрозуміло, що кнопка знімає фільтр.
+    expect(
+      screen.getByRole("button", { name: /прибрати фільтр за категорією/ }),
+    ).toBeInTheDocument();
+  });
+
+  it("клік по чипу скидає фільтр на «Всі»", () => {
+    const onChange = vi.fn();
+    renderStrip("food", onChange, "Їжа");
     fireEvent.click(screen.getByRole("button", { name: /Їжа/ }));
     expect(onChange).toHaveBeenCalledWith("all");
+  });
+
+  it("чип не бере участі в roving-tabindex тулбара", () => {
+    renderStrip("food", vi.fn(), "Їжа");
+    const chip = screen.getByRole("button", { name: /Їжа/ });
+    expect(chip.getAttribute("tabindex")).toBeNull();
+    expect(chip.getAttribute("aria-pressed")).toBeNull();
   });
 
   it("does not toggle off a base filter pill (all/income/expense/credit) on repeat tap", () => {
@@ -113,7 +136,6 @@ describe("TransactionFilters — toolbar a11y (F13)", () => {
         filter="all"
         onChangeFilter={vi.fn()}
         hasCreditAccounts={false}
-        catSpends={CATS}
       />,
     );
     const scroller = container.querySelector("[data-no-swipe]");

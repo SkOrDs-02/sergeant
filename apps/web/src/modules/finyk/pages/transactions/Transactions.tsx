@@ -407,7 +407,7 @@ export function Transactions({
               filter={filters.filter}
               onChangeFilter={filters.setFilter}
               hasCreditAccounts={filters.creditAccIds.size > 0}
-              catSpends={filters.catSpends}
+              activeCategoryLabel={filters.activeCategoryLabel}
             />
             {filters.amountBounds[1] > filters.amountBounds[0] && (
               <TransactionAmountFilter

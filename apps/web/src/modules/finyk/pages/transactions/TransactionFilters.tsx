@@ -6,18 +6,30 @@ export interface TransactionFiltersProps {
   filter: string;
   onChangeFilter: (id: string) => void;
   hasCreditAccounts: boolean;
-  catSpends: ReadonlyArray<{ id: string; label: string }>;
+  /**
+   * Підпис активної категорії, коли фільтр прийшов дрил-дауном із
+   * Аналітики. `null`, коли активний один із базових фільтрів.
+   */
+  activeCategoryLabel?: string | null;
 }
 
-/** Base (non-category) filter pills — these never toggle off on re-tap. */
-const BASE_FILTER_IDS = new Set(["all", "expense", "income", "credit"]);
-
 /**
- * Horizontal pill strip for the Transactions filter (All / Expense /
- * Income / Credit + per-category chips). Stateless — the active id and
- * change handler come from the page shell so the strip can also be
- * rendered from other surfaces (e.g. analytics drill-down) without
- * forking the markup.
+ * Smuga фільтрів операцій: Всі / Витрати / Доходи / Кредитна. Stateless —
+ * активний id і обробник приходять із шелу сторінки.
+ *
+ * AI-CONTEXT: чипів категорій тут БІЛЬШЕ НЕМА, і це не спрощення, а
+ * рішення власника 2026-08-06 (матеріал — `mockups/product/filters.html`).
+ * Їх було 4 базові плюс по чипу на кожну категорію з витратами, тобто
+ * список без верхньої межі, який доводилось горизонтально скролити —
+ * атрактор №7 анти-слоп-стратегії §3.2.
+ *
+ * Прибрано не заради вигляду, а тому, що та сама робота вже робиться
+ * краще в іншому місці: кільце категорій на Аналітиці показує і назву, і
+ * суму, і частку. Доти воно було глухим кутом — клік не робив нічого.
+ * Тепер клік веде СЮДИ з уже застосованим фільтром, а тут лишається
+ * знімний чип, який каже, чому список звужений.
+ *
+ * Тобто число й список більше не дублюють одне одного, а зʼєднані.
  *
  * A11y (page-audit-05 F13): the strip is a WAI-ARIA **toolbar** — a single
  * Tab stop with roving `tabindex` (only the active pill is `tabindex={0}`),
@@ -29,7 +41,7 @@ export function TransactionFilters({
   filter,
   onChangeFilter,
   hasCreditAccounts,
-  catSpends,
+  activeCategoryLabel,
 }: TransactionFiltersProps) {
   const toolbarRef = useRef<HTMLDivElement>(null);
 
@@ -38,23 +50,12 @@ export function TransactionFilters({
     { id: "expense", label: "Витрати" },
     { id: "income", label: "Доходи" },
     ...(hasCreditAccounts ? [{ id: "credit", label: "Кредитна" }] : []),
-    ...catSpends.map((c) => {
-      // §1: chip labels drop the leading category emoji — was previously
-      // reconstructed verbatim (space > 0 branch just rejoined the same
-      // string), so emoji still leaked into the pill despite Audit 05 F11's
-      // noUncheckedIndexedAccess fix. Categories without a leading emoji
-      // (legacy plain-text names) have no space to strip, so they fall
-      // back to the raw label unchanged.
-      const space = c.label.indexOf(" ");
-      const label = space > 0 ? c.label.slice(space + 1) : c.label;
-      return { id: c.id, label };
-    }),
   ];
 
-  // Roving-tabindex anchor: the selected pill owns the single Tab stop. If
-  // the active filter isn't a rendered pill (e.g. a category whose spend
-  // dropped to 0 and fell out of `catSpends`), fall back to the first pill
-  // ("all") so the toolbar always has exactly one `tabindex={0}`.
+  // Roving-tabindex anchor: активна пігулка володіє єдиною Tab-зупинкою.
+  // Коли фільтр — категорія (прийшла дрил-дауном), відповідної пігулки в
+  // смузі немає, тож якорем стає перша («Всі») і в тулбарі лишається рівно
+  // один `tabindex={0}`. Сам фільтр при цьому видно — знімним чипом нижче.
   const activeId = filters.some((f) => f.id === filter)
     ? filter
     : (filters[0]?.id ?? "all");
@@ -97,17 +98,7 @@ export function TransactionFilters({
             data-pill
             data-compact
             type="button"
-            onClick={() =>
-              onChangeFilter(
-                // Category chips (§1): a repeat tap on the already-active
-                // chip clears the filter back to "all" instead of being a
-                // no-op — makes the chip strip read as a real filter, not
-                // just a spend summary. Base pills (all/expense/income/
-                // credit) already have "Всі" as their explicit off-switch,
-                // so they keep the plain single-select behaviour.
-                !BASE_FILTER_IDS.has(f.id) && filter === f.id ? "all" : f.id,
-              )
-            }
+            onClick={() => onChangeFilter(f.id)}
             aria-pressed={filter === f.id}
             tabIndex={f.id === activeId ? 0 : -1}
             className={cn(
@@ -128,6 +119,37 @@ export function TransactionFilters({
             {f.label}
           </button>
         ))}
+        {activeCategoryLabel != null && (
+          /*
+            AI-CONTEXT: єдиний носій інформації про те, ЧОМУ список
+            звужений, коли фільтр прийшов з Аналітики. Без нього людина
+            бачила б неповний список без жодного пояснення — саме цей
+            розрив і був у коді доти, бо категорійний фільтр існував
+            пропом, але ніде не показувався.
+
+            Це не пігулка тулбара: вона не бере участі в roving-tabindex і
+            не має `aria-pressed`, бо це не перемикач стану, а дія
+            «прибрати звуження». Звідси `×` і власна Tab-зупинка.
+          */
+          <button
+            type="button"
+            onClick={() => onChangeFilter("all")}
+            className={cn(
+              "shrink-0 inline-flex items-center gap-1.5 h-7 px-3 rounded-full border transition-colors",
+              "pointer-coarse:min-h-[44px]",
+              "text-style-caption font-medium",
+              "bg-finyk/10 border-finyk/30 text-finyk-strong dark:text-finyk",
+              "hover:border-finyk/60",
+              "focus:outline-none focus-visible:ring-2 focus-visible:ring-finyk/50 focus-visible:ring-offset-1",
+            )}
+          >
+            {activeCategoryLabel}
+            <span aria-hidden>×</span>
+            <span className="sr-only">
+              {messages.finyk.clearCategoryFilter}
+            </span>
+          </button>
+        )}
       </div>
     </div>
   );

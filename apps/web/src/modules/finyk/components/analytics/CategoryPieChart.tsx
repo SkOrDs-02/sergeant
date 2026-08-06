@@ -1,4 +1,4 @@
-import { memo, useState } from "react";
+import { memo, useState, type ReactNode } from "react";
 import { chartHex } from "@sergeant/design-tokens/tokens";
 import { cn } from "@shared/lib/ui/cn";
 import { Money } from "@shared/components/ui/Money";
@@ -83,6 +83,40 @@ interface CategoryPieChartProps {
    * pass the shared total to keep the donut centre in lockstep.
    */
   total?: number;
+  /**
+   * Дрил-даун: перехід у список операцій, звужений цією категорією.
+   * Коли не передано, легенда лишається статичною.
+   */
+  onSelectCategory?: (categoryId: string) => void;
+}
+
+/**
+ * Рядок легенди. Кнопка, коли є куди вести, і `<div>`, коли нема —
+ * інтерактивна семантика без дії була б брехнею для скрінрідера.
+ */
+function Row({
+  onSelect,
+  children,
+}: {
+  onSelect?: () => void;
+  children: ReactNode;
+}) {
+  const shared = "w-full flex items-center gap-2 text-sm";
+  if (!onSelect) return <div className={shared}>{children}</div>;
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className={cn(
+        shared,
+        "text-left rounded-lg -mx-1 px-1 py-0.5 pointer-coarse:min-h-[44px]",
+        "transition-colors hover:bg-panelHi",
+        "focus:outline-none focus-visible:ring-2 focus-visible:ring-finyk/50",
+      )}
+    >
+      {children}
+    </button>
+  );
 }
 
 function CategoryPieChartComponent({
@@ -90,6 +124,7 @@ function CategoryPieChartComponent({
   size = 160,
   className,
   total: totalProp,
+  onSelectCategory,
 }: CategoryPieChartProps) {
   const [showAll, setShowAll] = useState(false);
   const hasOverflow = (data?.length ?? 0) > TOP_N;
@@ -211,9 +246,21 @@ function CategoryPieChartComponent({
 
         <div className="flex-1 w-full space-y-1.5 min-w-0">
           {arcs.map((arc) => (
-            <div
+            /*
+              AI-CONTEXT: рядок легенди — КНОПКА, коли є `onSelectCategory`.
+              Доти кільце було глухим кутом: воно казало «Продукти 1150 ₴»,
+              але дійти від цього числа до самих операцій було ніяк, а
+              операції фільтрувались окремим скролером чипів, який сум не
+              показував. Один факт у двох місцях, і жодного звʼязку.
+
+              «Інше» (`_other`) кнопкою НЕ стає: це агрегат кількох
+              категорій, фільтрувати по ньому нічого.
+            */
+            <Row
               key={arc.categoryId}
-              className="flex items-center gap-2 text-sm"
+              {...(onSelectCategory && arc.categoryId !== "_other"
+                ? { onSelect: () => onSelectCategory(arc.categoryId) }
+                : {})}
             >
               <span
                 className="w-2.5 h-2.5 rounded-full shrink-0"
@@ -238,7 +285,7 @@ function CategoryPieChartComponent({
                 amount={arc.spent}
                 className="text-text text-style-caption shrink-0"
               />
-            </div>
+            </Row>
           ))}
         </div>
       </div>

@@ -65,6 +65,12 @@ export interface AnalyticsProps {
     txSplits: TxSplitsMap;
     manualExpenses?: ManualExpense[];
   };
+  /**
+   * Дрил-даун із кільця категорій у список операцій. Саме він робить
+   * Аналітику не глухим кутом: доти вона казала «скільки», але дійти від
+   * числа до самих операцій було ніяк.
+   */
+  onSelectCategory?: (categoryId: string) => void;
 }
 
 // Презентаційний контейнер-секція. memo, бо приймає лише `title/className/children`
@@ -171,7 +177,7 @@ const ComparisonRow = memo(function ComparisonRow({
   );
 });
 
-export function Analytics({ mono, storage }: AnalyticsProps) {
+export function Analytics({ mono, storage, onSelectCategory }: AnalyticsProps) {
   // Use Kyiv-local year/month so "current month" tracks Europe/Kyiv day boundaries.
   const nowKyiv = getKyivDateParts();
   const [year, setYear] = useState(nowKyiv.year);
@@ -459,6 +465,7 @@ export function Analytics({ mono, storage }: AnalyticsProps) {
                 data={distribution}
                 total={distributionTotal}
                 className=""
+                {...(onSelectCategory ? { onSelectCategory } : {})}
               />
             </Suspense>
           )}

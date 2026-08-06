@@ -113,13 +113,44 @@ export function useTransactionFilters({
     [],
   );
 
-  const effectiveFilter = categoryFilter ?? filter;
+  /*
+    AI-CONTEXT: `categoryFilter` — ОДНОРАЗОВА передача з Аналітики, а не
+    другий стан фільтра. Доти було навпаки: `effectiveFilter` читався як
+    `categoryFilter ?? filter`, а ефект нижче проп гасив, нікуди його не
+    записавши. Тобто значення жило один рендер і зникало — дрил-даун
+    фізично не міг спрацювати, і саме тому `setCategoryFilter` ніде не
+    викликався зі значенням.
 
+    Підхоплюємо в РЕНДЕРІ, а не в ефекті (`react-hooks/set-state-in-effect`
+    і документований React-патерн «adjusting state when a prop changes»):
+    ефект дав би зайвий кадр зі старим фільтром, і на дрил-дауні цей кадр
+    показував би повний список.
+
+    `seenCategoryFilter` мусить скидатись і на `null` теж — інакше другий
+    прихід у ТУ САМУ категорію дорівнював би попередньому й нічого б не
+    зробив.
+  */
+  // AI-DANGER: нормалізація `undefined → null` обовʼязкова. Проп
+  // необовʼязковий, тож без неї порівняння `undefined !== null` істинне на
+  // КОЖНОМУ рендері — і це не теоретично: перша версія цього коду дала
+  // «Too many re-renders» у 24 тестах.
+  const incomingCategory = categoryFilter ?? null;
+  const [seenCategoryFilter, setSeenCategoryFilter] = useState<string | null>(
+    null,
+  );
+  if (incomingCategory !== seenCategoryFilter) {
+    setSeenCategoryFilter(incomingCategory);
+    if (incomingCategory) setFilter(incomingCategory);
+  }
+
+  // Гасимо одноразовий проп у власника, щоб він не «прилипав» до сторінки.
   useEffect(() => {
-    if (categoryFilter) {
-      onClearCategoryFilter?.();
-    }
+    if (categoryFilter) onClearCategoryFilter?.();
   }, [categoryFilter, onClearCategoryFilter]);
+
+  // Єдине джерело правди — власний стан. Після підхоплення вище проп уже
+  // нічого не перекриває.
+  const effectiveFilter = filter;
 
   const { year: kyivNowY, month: kyivNowM } = kyivNowMonth();
   const isCurrentMonth =
@@ -257,6 +288,27 @@ export function useTransactionFilters({
         .sort((a, b) => b.spent - a.spent),
     [statTx, txSplits, txCategories, customCategories],
   );
+
+  /**
+   * Підпис активної категорії для знімного чипа у смузі фільтрів.
+   *
+   * AI-DANGER: береться з ПОВНОГО списку категорій, а не з `catSpends` —
+   * той відфільтрований по `spent > 0`, і категорія, у якої цього місяця
+   * витрат немає, лишилась би взагалі без імені. А саме в такий стан і
+   * потрапляє людина, коли прийшла з Аналітики за інший місяць.
+   */
+  const activeCategoryLabel = useMemo(() => {
+    if (effectiveFilter === "all") return null;
+    if (["expense", "income", "credit"].includes(effectiveFilter)) return null;
+    const cat = mergeExpenseCategoryDefinitions(customCategories).find(
+      (c) => c.id === effectiveFilter,
+    );
+    if (!cat) return null;
+    // Емодзі на початку підпису прибираємо — те саме правило, що діяло
+    // для чипів категорій до їх зняття.
+    const space = cat.label.indexOf(" ");
+    return space > 0 ? cat.label.slice(space + 1) : cat.label;
+  }, [effectiveFilter, customCategories]);
 
   const txsToShow = useMemo(
     () =>
@@ -468,6 +520,7 @@ export function useTransactionFilters({
     creditAccIds,
     hiddenTxIdSet,
     catSpends,
+    activeCategoryLabel,
     filtered,
     groupedByDate,
     daySummaries,
