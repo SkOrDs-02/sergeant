@@ -60,7 +60,10 @@ describe("hubChatSessions", () => {
   describe("reconcileChatOwnerOnAuthChange (F12 privacy)", () => {
     it("first stamp keeps existing sessions (anonymous → first sign-in)", () => {
       saveSessions([createSession([makeUserMsg("Анонімний чернетковий чат")])]);
-      expect(reconcileChatOwnerOnAuthChange("user-A")).toBe(false);
+      expect(reconcileChatOwnerOnAuthChange("user-A")).toEqual({
+        changed: false,
+        prevOwnerWasUser: false,
+      });
       expect(loadSessions()).toHaveLength(1);
       expect(localStorage.getItem(CHAT_OWNER_KEY)).toContain("user-A");
     });
@@ -70,7 +73,12 @@ describe("hubChatSessions", () => {
       saveSessions([createSession([makeUserMsg("Скільки я витратив?")])]);
       saveActiveSessionId("some-id");
 
-      expect(reconcileChatOwnerOnAuthChange("user-B")).toBe(true);
+      // user → user': the ONLY transition that may trigger the heavy
+      // identity-wipe (RQ clear + persisted purge + reload) upstream.
+      expect(reconcileChatOwnerOnAuthChange("user-B")).toEqual({
+        changed: true,
+        prevOwnerWasUser: true,
+      });
 
       expect(loadSessions()).toEqual([]);
       expect(loadActiveSessionId()).toBeNull();
@@ -82,11 +90,33 @@ describe("hubChatSessions", () => {
       reconcileChatOwnerOnAuthChange("user-A");
       saveSessions([createSession([makeUserMsg("Приватне питання")])]);
 
-      expect(reconcileChatOwnerOnAuthChange(null)).toBe(true);
+      expect(reconcileChatOwnerOnAuthChange(null)).toEqual({
+        changed: true,
+        prevOwnerWasUser: true,
+      });
       expect(loadSessions()).toEqual([]);
 
       // Repeat with the same identity — no wipe reported, still empty.
-      expect(reconcileChatOwnerOnAuthChange(null)).toBe(false);
+      expect(reconcileChatOwnerOnAuthChange(null)).toEqual({
+        changed: false,
+        prevOwnerWasUser: false,
+      });
+      expect(loadSessions()).toEqual([]);
+    });
+
+    it("anon-after-logout → user wipes chat but is NOT a user-to-user switch", () => {
+      // logout stamped the anonymous placeholder…
+      reconcileChatOwnerOnAuthChange("user-A");
+      reconcileChatOwnerOnAuthChange(null);
+      saveSessions([createSession([makeUserMsg("Чернетка гостя")])]);
+
+      // …so the next sign-in wipes the guest chat (privacy) but must
+      // NOT report prevOwnerWasUser: the upstream identity-wipe (RQ
+      // teardown + reload) would break the anonymous-data migration.
+      expect(reconcileChatOwnerOnAuthChange("user-B")).toEqual({
+        changed: true,
+        prevOwnerWasUser: false,
+      });
       expect(loadSessions()).toEqual([]);
     });
   });

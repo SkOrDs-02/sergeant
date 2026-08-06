@@ -26,6 +26,7 @@ import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
 import { clearDemoFlag } from "../onboarding/onboardingGate";
 import { billingKeys } from "@shared/lib/api/queryKeys";
 import { reconcileChatOwnerOnAuthChange } from "../hub/hubChatSessions";
+import { clearPersistedQueryCache } from "@shared/lib/api/queryClientPersister";
 import { flushPendingSyncOpsBeforeLogout } from "../syncEngine/flushBeforeLogout";
 import { messages } from "../../shared/i18n/uk";
 import {
@@ -306,20 +307,45 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // й показували числа попереднього акаунта поряд із новим ім'ям
   // (браузерна верифікація 2026-08-06/07); модуль перезапише їх при
   // першому власному рендері.
+  //
+  // Identity-wipe (follow-up тієї ж верифікації): коли попередня
+  // identity на пристрої була ІНШИМ залогіненим користувачем, м'якої
+  // чистки замало — module-фіди попередника живуть у React-Query кеші
+  // (пам'ять) та в persisted-снапшоті на диску (keyed by build-id, не
+  // user-id), а module-scope singleton-и (booted-прапорці reader-ів,
+  // dualwrite prev-снапшоти) тримають стан старої SQLite-партиції.
+  // Тому: clear() → purge снапшота → повний reload у свіжу партицію.
+  // `anon → user` навмисно НЕ тригерить teardown — інакше
+  // anonymous-data migration не встигла б перенести локальні чернетки
+  // в акаунт. UI-logout сюди теж не потрапляє: `logout()` стампить
+  // owner ще до `setSignedOut`, і ефект бачить identity незмінною.
   useEffect(() => {
     if (status === "loading") return;
-    const identityChanged = reconcileChatOwnerOnAuthChange(user?.id ?? null);
-    if (identityChanged) {
-      for (const key of [
-        "finyk_quick_stats",
-        "fizruk_quick_stats",
-        "routine_quick_stats",
-        "nutrition_quick_stats",
-      ]) {
-        safeRemoveLS(key);
-      }
+    const { changed, prevOwnerWasUser } = reconcileChatOwnerOnAuthChange(
+      user?.id ?? null,
+    );
+    if (!changed) return;
+    for (const key of [
+      "finyk_quick_stats",
+      "fizruk_quick_stats",
+      "routine_quick_stats",
+      "nutrition_quick_stats",
+    ]) {
+      safeRemoveLS(key);
     }
-  }, [status, user?.id]);
+    if (!prevOwnerWasUser) return;
+    queryClient.clear();
+    void clearPersistedQueryCache()
+      .catch((err) => {
+        logger.warn(
+          "[auth.identityWipe] persisted RQ snapshot purge failed",
+          err,
+        );
+      })
+      .finally(() => {
+        window.location.reload();
+      });
+  }, [status, user?.id, queryClient]);
 
   const [authError, setAuthError] = useState<string | null>(null);
 
@@ -477,6 +503,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const proceed = await options.confirmUnsyncedLoss(pending);
         if (!proceed) return;
       }
+
+      // Identity-wipe координація: стампимо owner ДО `setSignedOut`,
+      // щоб reconcile-ефект вище побачив identity вже узгодженою і не
+      // запустив другий teardown+reload поверх logout-івського — увесь
+      // потрібний wipe (SW-кеші, SQLite-партиція, LS-слайси, RQ clear)
+      // logout виконує сам нижче.
+      reconcileChatOwnerOnAuthChange(null);
 
       // Перше і найголовніше: перемкнути UI у signed-out ще до мережі. Все
       // нижче — teardown, який не має права гейтити цей перехід (і історично

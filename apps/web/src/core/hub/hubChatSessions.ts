@@ -156,22 +156,39 @@ export function saveSessions(sessions: HubChatSession[]): void {
  *    id + the legacy mirror, then stamp. Covers logout (user → anon) and
  *    a different account signing in on the shared device.
  *
- * @returns `true` when a previous different owner's chat state was wiped
- *   — the caller uses this as the "identity actually changed on this
- *   device" signal to clear other non-user-scoped residue (quick-stats).
+ * @returns `changed` — a previous different owner's chat state was wiped
+ *   (the caller's "identity actually changed on this device" signal for
+ *   clearing other non-user-scoped residue, e.g. quick-stats);
+ *   `prevOwnerWasUser` — that previous owner was an AUTHENTICATED user
+ *   (not the anonymous placeholder). Only this stricter signal may
+ *   trigger the heavy teardown (React-Query clear + persisted-snapshot
+ *   purge + reload): an `anon → user` transition must stay soft so the
+ *   anonymous-data migration can carry local drafts into the account.
  */
-export function reconcileChatOwnerOnAuthChange(userId: string | null): boolean {
+export interface ChatOwnerReconcileResult {
+  changed: boolean;
+  prevOwnerWasUser: boolean;
+}
+
+export function reconcileChatOwnerOnAuthChange(
+  userId: string | null,
+): ChatOwnerReconcileResult {
   const nextOwner = userId ?? ANON_OWNER;
   const prevOwner = safeReadStringLS(CHAT_OWNER_KEY);
-  if (prevOwner === nextOwner) return false;
-  const wiped = prevOwner !== null;
-  if (wiped) {
+  if (prevOwner === nextOwner) {
+    return { changed: false, prevOwnerWasUser: false };
+  }
+  const changed = prevOwner !== null;
+  if (changed) {
     safeRemoveLS(SESSIONS_STORAGE_KEY);
     safeRemoveLS(ACTIVE_SESSION_KEY);
     safeRemoveLS(LEGACY_KEY);
   }
   safeWriteLS(CHAT_OWNER_KEY, nextOwner);
-  return wiped;
+  return {
+    changed,
+    prevOwnerWasUser: changed && prevOwner !== ANON_OWNER,
+  };
 }
 
 export function loadActiveSessionId(): string | null {
