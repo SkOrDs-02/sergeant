@@ -84,7 +84,9 @@ export function MealRow({ meal, onRemove, onEdit }: MealRowProps) {
             {meal.name}
           </span>
           {meal.time && (
-            <span className="text-xs text-subtle shrink-0">{meal.time}</span>
+            <span className="text-style-caption text-subtle shrink-0">
+              {meal.time}
+            </span>
           )}
           {sourceLabel && (
             <Badge
@@ -101,22 +103,22 @@ export function MealRow({ meal, onRemove, onEdit }: MealRowProps) {
         </div>
         <div className="flex gap-2 mt-0.5 flex-wrap">
           {mac.kcal != null && (
-            <span className="text-xs text-nutrition-strong dark:text-nutrition font-bold">
+            <span className="text-style-caption text-nutrition-strong dark:text-nutrition font-bold">
               {Math.round(mac.kcal)} ккал
             </span>
           )}
           {mac.protein_g != null && (
-            <span className="text-xs text-subtle">
+            <span className="text-style-caption text-subtle">
               Б {Math.round(mac.protein_g)}г
             </span>
           )}
           {mac.fat_g != null && (
-            <span className="text-xs text-subtle">
+            <span className="text-style-caption text-subtle">
               Ж {Math.round(mac.fat_g)}г
             </span>
           )}
           {mac.carbs_g != null && (
-            <span className="text-xs text-subtle">
+            <span className="text-style-caption text-subtle">
               В {Math.round(mac.carbs_g)}г
             </span>
           )}

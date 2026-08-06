@@ -413,7 +413,7 @@ export function BodyAtlas({
               ) : (
                 <>
                   <p className="text-style-label text-text">Оберіть мʼяз</p>
-                  <p className="mt-1 text-xs text-subtle">
+                  <p className="mt-1 text-style-caption text-subtle">
                     Торкніться групи мʼязів або її назви — підсвітка покаже стан
                     і вправи.
                   </p>
@@ -488,6 +488,14 @@ function SelectedCard({
     <>
       <div className="mb-1 flex items-center gap-2.5">
         <p className="text-base font-medium text-text">{label}</p>
+        {/* AI-DANGER: `text-xs` тут — ГЕОМЕТРІЯ пігулки, не роль тексту.
+            Падинг `px-2.5 py-1` підібраний під 12px із line-height 1rem;
+            роль `text-style-caption` дає 1.4, тобто пігулка стала б вищою
+            за сусідній рядок і поїхала б із базової лінії. Це і є справжня
+            причина правила «рамка + падинг = не текст»: не рамка сама по
+            собі, а те, що висота вузла вже узгоджена з чимось поруч.
+            Пор. банер конфлікту в `WorkoutItemCard` — там роль ЗАСТОСОВАНА,
+            бо line-height явно пришпилений `leading-snug`. */}
         <span className="inline-flex items-center gap-1.5 rounded-full border border-line px-2.5 py-1 text-xs text-text">
           <span className={cn("inline-block h-2 w-2 rounded-full", pill.dot)} />
           {pill.label}
@@ -511,11 +519,16 @@ function SelectedCard({
 
       {datum.exercises.length > 0 && (
         <>
-          <p className="mb-1.5 text-xs text-subtle">Вправи на цю групу</p>
+          <p className="mb-1.5 text-style-caption text-subtle">
+            Вправи на цю групу
+          </p>
           <div className="flex flex-wrap gap-1.5">
             {datum.exercises.map((ex) => (
               <span
                 key={ex}
+                // AI-DANGER: та сама геометрія, що й у пігулці вище —
+                // падинг узгоджений із 12px/1rem. Рамки немає, але
+                // висота однаково зафіксована фоном і падингом.
                 className="rounded-full bg-surface px-2.5 py-1 text-xs text-text"
               >
                 {ex}
