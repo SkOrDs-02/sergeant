@@ -369,7 +369,8 @@ UPDATE` у `kv_store`; cross-tab `onChange` через `BroadcastChannel("kv-sto
 
    **Зроблено:** Фінік → Огляд, Фізрук → Дашборд (`Dashboard`, `HeroCard`,
    `StatusStrip`, `RecentWorkoutsSection`), Їжа → Меню (`DailyPlanCard`,
-   `RecipesCard.Generator`, `RecipesCard.SavedSection`).
+   `RecipesCard.Generator`, `RecipesCard.SavedSection`), Рутина (17 сайтів
+   у 8 компонентах).
 
    **Пастка, на яку я наступив і яку треба знати наступному** — `text-xs` і
    `text-style-caption` дають однакові 12px, але роль **явно задає
@@ -382,9 +383,16 @@ UPDATE` у `kv_store`; cross-tab `onChange` через `BroadcastChannel("kv-sto
    активнішим — тобто правка «за правилами» дає ефект, протилежний до
    наміру. Перевіряти кожен сайт очима, не sed-ом.
 
+   **Оцінка залишку була завищена.** У `modules/routine` з 33 знайдених
+   `text-xs` **13 виявились `text-xs!`** — important-оверайди розміру на
+   `Button` (`h-9! px-3! text-xs!`), а не текст. Роль-утиліта без `!` їх
+   просто не перебила б, тож це взагалі не мішень цього проходу. Реальних
+   текстових сайтів було 20, з них зроблено 17. Той самий перерахунок
+   потрібен для `fizruk` і `nutrition`, перш ніж планувати решту: `grep
+text-xs` рахує і компонентні оверайди.
+
    **Найбільші лишки** (сирі `text-xs`): `modules/nutrition` — решта від 110
-   після проходу по Меню, `modules/fizruk` — решта від 123, `modules/routine`
-   — 33.
+   після проходу по Меню, `modules/fizruk` — решта від 123.
 
    **Два сайти в `DailyPlanCard.tsx` лишені навмисно** і позначені
    `AI-DANGER` просто в коді, щоб їх не «полагодили» наосліп: мітка поля

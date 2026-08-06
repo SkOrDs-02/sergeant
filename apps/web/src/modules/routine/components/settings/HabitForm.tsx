@@ -202,7 +202,7 @@ export function HabitForm({
         {errors?.name && (
           <p
             id={nameErrId}
-            className="text-xs text-danger-strong mt-1 dark:text-danger"
+            className="text-style-caption text-danger-strong mt-1 dark:text-danger"
           >
             {errors.name}
           </p>
@@ -218,7 +218,7 @@ export function HabitForm({
           single date), so we only surface the 4 repeating patterns
           here. */}
       <div>
-        <div className="text-xs text-subtle mb-1">Регулярність</div>
+        <div className="text-style-caption text-subtle mb-1">Регулярність</div>
         <div
           className="flex flex-wrap gap-1.5"
           role="radiogroup"
@@ -272,7 +272,7 @@ export function HabitForm({
           {errors?.weekdays && (
             <p
               id={weekdaysErrId}
-              className="text-xs text-danger-strong mt-2 dark:text-danger"
+              className="text-style-caption text-danger-strong mt-2 dark:text-danger"
             >
               {errors.weekdays}
             </p>
@@ -293,7 +293,7 @@ export function HabitForm({
         onClick={() => setShowAdvanced((v) => !v)}
         aria-expanded={showAdvanced}
         aria-controls={advancedId}
-        className="flex items-center gap-1 text-xs text-muted hover:text-text transition-colors"
+        className="flex items-center gap-1 text-style-caption text-muted hover:text-text transition-colors"
       >
         <span>{showAdvanced ? "Менше опцій" : "Більше опцій"}</span>
         <span aria-hidden className="text-style-caption">
@@ -329,14 +329,14 @@ export function HabitForm({
           </div>
           {/* М'яке вікно: зберігати дозволено, попереджаємо про рік. */}
           {dateWarning ? (
-            <p className="text-xs text-warning-strong dark:text-warning">
+            <p className="text-style-caption text-warning-strong dark:text-warning">
               {dateWarning}
             </p>
           ) : null}
 
           {(habitDraft.recurrence === "once" ||
             habitDraft.recurrence === "monthly") && (
-            <p className="text-xs text-subtle leading-snug">
+            <p className="text-style-caption text-subtle leading-snug">
               {habitDraft.recurrence === "once"
                 ? "Подія зʼявиться лише в день «Початок». Кінець можна залишити порожнім."
                 : "Орієнтир — день місяця з «Початок». У коротких місяцях (наприклад 31 → лютий) — останній день місяця."}
@@ -352,7 +352,7 @@ export function HabitForm({
             під одним чипом. Чипи-тумблери знімають обмеження, не чіпаючи схему.
           */}
           {routine.tags.length > 0 && (
-            <div className="block text-xs text-subtle">
+            <div className="block text-style-caption text-subtle">
               <span id={tagsLabelId}>Теги</span>
               <div
                 role="group"
@@ -392,7 +392,7 @@ export function HabitForm({
           )}
 
           {routine.categories.length > 0 && (
-            <label className="block text-xs text-subtle">
+            <label className="block text-style-caption text-subtle">
               Категорія
               <select
                 className="routine-touch-select mt-1"
