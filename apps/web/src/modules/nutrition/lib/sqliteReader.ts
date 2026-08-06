@@ -66,6 +66,14 @@ const EMPTY_CACHE: SqliteNutritionCache = {
 
 let cache: SqliteNutritionCache = { ...EMPTY_CACHE };
 
+// DCRUD-007b (mirror of finyk/sqliteReader.ts): concurrent refreshes
+// resolve last-writer-wins on `cache`; a refresh that started before a
+// local mutation but finished after the writer-queue's refresh used to
+// clobber the newer snapshot and escalate into a spurious diff-delete.
+// A refresh publishes only while no later-started refresh has published.
+let refreshSeq = 0;
+let publishedSeq = 0;
+
 /** Returns the current cached nutrition state (sync, zero-cost). */
 export function getCachedNutritionSqliteState(): SqliteNutritionCache {
   return cache;
@@ -255,6 +263,7 @@ export async function refreshNutritionSqliteState(
   client: SqliteMigrationClient,
   userId: string,
 ): Promise<SqliteNutritionCache> {
+  const seq = ++refreshSeq;
   const [
     mealRows,
     pantryRows,
@@ -364,6 +373,8 @@ export async function refreshNutritionSqliteState(
     ? normalizeShoppingList(safeParseJson<unknown>(shoppingRow.data_json, null))
     : null;
 
+  if (seq <= publishedSeq) return cache;
+  publishedSeq = seq;
   cache = {
     log,
     pantries,
@@ -380,6 +391,8 @@ export async function refreshNutritionSqliteState(
 /** Reset cache — used by tests and when the flag is toggled off. */
 export function clearNutritionSqliteCache(): void {
   cache = { ...EMPTY_CACHE };
+  refreshSeq = 0;
+  publishedSeq = 0;
 }
 
 /**

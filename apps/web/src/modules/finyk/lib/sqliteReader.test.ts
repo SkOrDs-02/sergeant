@@ -303,4 +303,56 @@ describe("refreshFinykSqliteState", () => {
     expect(getCachedFinykSqliteState().hiddenAccounts).toEqual([]);
     expect(getCachedFinykSqliteState().refreshedAt).toBeNull();
   });
+
+  it("DCRUD-007b: a late-finishing refresh that started earlier does not clobber a newer snapshot", async () => {
+    // Gate the *results* of the first refresh's SELECTs: they read the
+    // pre-mutation (empty) DB immediately, but resolve only after the
+    // latch opens — reproducing the boot-refresh that finishes after
+    // the writer-queue's own refresh.
+    let release!: () => void;
+    const latch = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let gated = true;
+    const slowClient: typeof handle.client = {
+      exec: (sql) => handle.client.exec(sql),
+      run: (sql, params) => handle.client.run(sql, params),
+      all: async (sql: string, params?: readonly unknown[]) => {
+        const rows = await handle.client.all(sql, params);
+        if (gated) await latch;
+        return rows;
+      },
+    } as typeof handle.client;
+
+    // 1) Boot-style refresh starts against the EMPTY db and hangs.
+    const bootRefresh = refreshFinykSqliteState(slowClient, UID);
+
+    // 2) A local mutation lands and the writer-queue refresh publishes
+    //    the newer snapshot.
+    await applyOps([
+      {
+        kind: "blob-upsert",
+        table: "finyk_manual_expenses",
+        entry: {
+          id: "e-1",
+          dataJson: JSON.stringify({ id: "e-1", amount: 285.5 }),
+        },
+      },
+    ]);
+    const writerCache = await refreshFinykSqliteState(handle.client, UID);
+    expect(writerCache.manualExpenses).toHaveLength(1);
+
+    // 3) The boot refresh finishes LAST with its stale (empty) rows.
+    gated = false;
+    release();
+    await bootRefresh;
+
+    // 4) The published cache still holds the newer snapshot — before
+    //    the generation guard this was clobbered back to empty, and the
+    //    overlay swap escalated into a spurious delete of the new row.
+    expect(getCachedFinykSqliteState().manualExpenses).toHaveLength(1);
+    expect(getCachedFinykSqliteState().refreshedAt).toBe(
+      writerCache.refreshedAt,
+    );
+  });
 });

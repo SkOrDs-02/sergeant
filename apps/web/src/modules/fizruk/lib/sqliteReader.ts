@@ -116,6 +116,14 @@ const EMPTY_CACHE: SqliteFizrukCache = {
 
 let cache: SqliteFizrukCache = { ...EMPTY_CACHE };
 
+// DCRUD-007b (mirror of finyk/sqliteReader.ts): concurrent refreshes
+// resolve last-writer-wins on `cache`; a refresh that started before a
+// local mutation but finished after the writer-queue's refresh used to
+// clobber the newer snapshot and escalate into a spurious diff-delete.
+// A refresh publishes only while no later-started refresh has published.
+let refreshSeq = 0;
+let publishedSeq = 0;
+
 /** Returns the current cached fizruk state (sync, zero-cost). */
 export function getCachedFizrukSqliteState(): SqliteFizrukCache {
   return cache;
@@ -362,6 +370,7 @@ export async function refreshFizrukSqliteState(
   client: SqliteMigrationClient,
   userId: string,
 ): Promise<SqliteFizrukCache> {
+  const seq = ++refreshSeq;
   const [
     workoutRows,
     itemRows,
@@ -469,6 +478,8 @@ export async function refreshFizrukSqliteState(
   const workoutTemplates = workoutTemplateRows.map(rowToWorkoutTemplate);
   const injuries = injuryRows.map(rowToInjury);
 
+  if (seq <= publishedSeq) return cache;
+  publishedSeq = seq;
   cache = {
     workouts,
     customExercises,
@@ -486,6 +497,8 @@ export async function refreshFizrukSqliteState(
 /** Reset cache — used by tests and when the flag is toggled off. */
 export function clearFizrukSqliteCache(): void {
   cache = { ...EMPTY_CACHE };
+  refreshSeq = 0;
+  publishedSeq = 0;
 }
 
 /**

@@ -53,6 +53,18 @@ const EMPTY_CACHE: SqliteCompletionsCache = {
 
 let cache: SqliteCompletionsCache = { ...EMPTY_CACHE };
 
+// DCRUD-007b (mirror of finyk/sqliteReader.ts): concurrent refreshes
+// resolve last-writer-wins on the cache; a refresh that started before
+// a local mutation but finished after the newer publish used to clobber
+// it and escalate into a spurious diff-delete. A refresh publishes only
+// while no later-started refresh (or write-through) has published.
+// Separate counters per cache; the write-through setters below publish
+// too, so an older in-flight refresh can never overwrite them.
+let completionsRefreshSeq = 0;
+let completionsPublishedSeq = 0;
+let stateRefreshSeq = 0;
+let statePublishedSeq = 0;
+
 /** Returns the current cached completions (sync, zero-cost). */
 export function getCachedSqliteCompletions(): SqliteCompletionsCache {
   return cache;
@@ -70,6 +82,7 @@ export async function refreshSqliteCompletions(
   client: SqliteMigrationClient,
   userId: string,
 ): Promise<SqliteCompletionsCache> {
+  const seq = ++completionsRefreshSeq;
   const rows = await client.all<{ id: string }>(
     `SELECT id FROM routine_entries
       WHERE user_id = ? AND deleted_at IS NULL`,
@@ -93,6 +106,8 @@ export async function refreshSqliteCompletions(
     list.sort();
   }
 
+  if (seq <= completionsPublishedSeq) return cache;
+  completionsPublishedSeq = seq;
   // eslint-disable-next-line no-restricted-syntax -- `refreshedAt` — це UTC-мітка «коли кеш прогріли», а не доменний день: вона порівнюється лише сама з собою (warm/cold гейт), тож київська межа доби до неї не застосовна
   cache = { completions, refreshedAt: new Date().toISOString() };
   return cache;
@@ -101,6 +116,8 @@ export async function refreshSqliteCompletions(
 /** Reset cache — used by tests and when the flag is toggled off. */
 export function clearSqliteCompletionsCache(): void {
   cache = { ...EMPTY_CACHE };
+  completionsRefreshSeq = 0;
+  completionsPublishedSeq = 0;
 }
 
 // -----------------------------------------------------------------------
@@ -147,6 +164,7 @@ export async function refreshSqliteRoutineState(
   client: SqliteMigrationClient,
   userId: string,
 ): Promise<SqliteRoutineStateCache> {
+  const seq = ++stateRefreshSeq;
   const [habits, tags, categories, prefs, pushups, order, notes, skips] =
     await Promise.all([
       readHabits(client, userId),
@@ -159,6 +177,8 @@ export async function refreshSqliteRoutineState(
       readHabitSkips(client, userId),
     ]);
 
+  if (seq <= statePublishedSeq) return stateCache;
+  statePublishedSeq = seq;
   stateCache = {
     habits,
     tags,
@@ -177,6 +197,8 @@ export async function refreshSqliteRoutineState(
 /** Reset full-state cache — used by tests. */
 export function clearSqliteRoutineStateCache(): void {
   stateCache = { ...EMPTY_STATE_CACHE };
+  stateRefreshSeq = 0;
+  statePublishedSeq = 0;
 }
 
 /**
@@ -202,6 +224,9 @@ export function setCachedSqliteRoutineState(
     | "skips"
   >,
 ): void {
+  // Write-through publishes too (DCRUD-007b): an older in-flight
+  // refresh must not clobber this just-saved state when it lands.
+  statePublishedSeq = ++stateRefreshSeq;
   stateCache = {
     habits: state.habits,
     tags: state.tags,
@@ -224,6 +249,8 @@ export function setCachedSqliteRoutineState(
 export function setCachedSqliteCompletions(
   completions: Record<string, string[]>,
 ): void {
+  // Write-through publishes too (DCRUD-007b) — see setCachedSqliteRoutineState.
+  completionsPublishedSeq = ++completionsRefreshSeq;
   // eslint-disable-next-line no-restricted-syntax -- `refreshedAt` — це UTC-мітка «коли кеш прогріли», а не доменний день: вона порівнюється лише сама з собою (warm/cold гейт), тож київська межа доби до неї не застосовна
   cache = { completions, refreshedAt: new Date().toISOString() };
 }

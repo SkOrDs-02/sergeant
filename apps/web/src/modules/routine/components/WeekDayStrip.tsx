@@ -33,6 +33,17 @@ export function WeekDayStrip({
 }: WeekDayStripProps) {
   const keys = weekKeysFromAnchor(anchorKey);
   const short = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"];
+  // Повна назва для aria-label: скорочення «Пн» + число в innerText SR
+  // читає як «Пн 3» без місяця — недостатньо для навігації по тижнях.
+  const full = [
+    "Понеділок",
+    "Вівторок",
+    "Середа",
+    "Четвер",
+    "Пʼятниця",
+    "Субота",
+    "Неділя",
+  ];
 
   return (
     <div
@@ -63,6 +74,7 @@ export function WeekDayStrip({
                 key={k}
                 type="button"
                 aria-pressed={isSel}
+                aria-label={`${full[i]}, ${k}${isToday ? " (сьогодні)" : ""}`}
                 onClick={() => onSelectDay(k)}
                 className={cn(
                   // Розміру шрифта на кнопці НЕМАЄ навмисно: обидва вкладені

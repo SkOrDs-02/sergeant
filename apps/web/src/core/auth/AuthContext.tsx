@@ -24,12 +24,16 @@ import { logger } from "@shared/lib";
 import { buildIdentifyTraits } from "../observability/identifyTraits";
 import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
 import { clearDemoFlag } from "../onboarding/onboardingGate";
+import { billingKeys } from "@shared/lib/api/queryKeys";
+import { reconcileChatOwnerOnAuthChange } from "../hub/hubChatSessions";
+import { clearPersistedQueryCache } from "@shared/lib/api/queryClientPersister";
 import { flushPendingSyncOpsBeforeLogout } from "../syncEngine/flushBeforeLogout";
 import { messages } from "../../shared/i18n/uk";
 import {
   safeReadStringSS,
   safeWriteSS,
   safeRemoveSS,
+  safeRemoveLS,
 } from "@shared/lib/storage/storage";
 
 // WF-60 OAuth signup attribution — `signIn.social` full-page-redirects to the
@@ -226,7 +230,16 @@ interface AuthContextValue {
   login: (email: string, password: string) => Promise<boolean>;
   loginWithGoogle: () => Promise<boolean>;
   loginWithApple: () => Promise<boolean>;
-  register: (email: string, password: string, name: string) => Promise<boolean>;
+  /**
+   * `true` — акаунт створено; `"exists"` — email вже зареєстровано
+   * (форма перемикається на login синхронно, без читання `authError`,
+   * який на момент повернення ще stale); `false` — інша помилка.
+   */
+  register: (
+    email: string,
+    password: string,
+    name: string,
+  ) => Promise<boolean | "exists">;
   /**
    * Вихід із акаунта з повним локальним teardown (включно зі стиранням
    * локальної SQLite).
@@ -286,11 +299,66 @@ export function AuthProvider({ children }: AuthProviderProps) {
       ? "authenticated"
       : "unauthenticated";
 
+  // F12 privacy: історія HubChat лежить у плоских LS-ключах — при зміні
+  // identity на цьому пристрої (logout, інший акаунт, протухла сесія)
+  // її треба стерти, інакше наступний юзер читає чужі розмови. Ефект на
+  // resolved identity ловить і UI-logout, і cookie-switch після reload.
+  // Той самий сигнал чистить і quick-stats хаб-карток — вони теж плоскі
+  // й показували числа попереднього акаунта поряд із новим ім'ям
+  // (браузерна верифікація 2026-08-06/07); модуль перезапише їх при
+  // першому власному рендері.
+  //
+  // Identity-wipe (follow-up тієї ж верифікації): коли попередня
+  // identity на пристрої була ІНШИМ залогіненим користувачем, м'якої
+  // чистки замало — module-фіди попередника живуть у React-Query кеші
+  // (пам'ять) та в persisted-снапшоті на диску (keyed by build-id, не
+  // user-id), а module-scope singleton-и (booted-прапорці reader-ів,
+  // dualwrite prev-снапшоти) тримають стан старої SQLite-партиції.
+  // Тому: clear() → purge снапшота → повний reload у свіжу партицію.
+  // `anon → user` навмисно НЕ тригерить teardown — інакше
+  // anonymous-data migration не встигла б перенести локальні чернетки
+  // в акаунт. UI-logout сюди теж не потрапляє: `logout()` стампить
+  // owner ще до `setSignedOut`, і ефект бачить identity незмінною.
+  useEffect(() => {
+    if (status === "loading") return;
+    const { changed, prevOwnerWasUser } = reconcileChatOwnerOnAuthChange(
+      user?.id ?? null,
+    );
+    if (!changed) return;
+    for (const key of [
+      "finyk_quick_stats",
+      "fizruk_quick_stats",
+      "routine_quick_stats",
+      "nutrition_quick_stats",
+    ]) {
+      safeRemoveLS(key);
+    }
+    if (!prevOwnerWasUser) return;
+    queryClient.clear();
+    void clearPersistedQueryCache()
+      .catch((err) => {
+        logger.warn(
+          "[auth.identityWipe] persisted RQ snapshot purge failed",
+          err,
+        );
+      })
+      .finally(() => {
+        window.location.reload();
+      });
+  }, [status, user?.id, queryClient]);
+
   const [authError, setAuthError] = useState<string | null>(null);
 
   const invalidateMe = useCallback(
     () =>
-      queryClient.invalidateQueries({ queryKey: apiQueryKeys.me.current() }),
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: apiQueryKeys.me.current() }),
+        // Tier is user-scoped: without this a `billing/status` snapshot
+        // cached just before the session change (or its 401 collapsed to
+        // "free" — usePlan has retry:false + staleTime 60s) survives the
+        // login and shows a paying/trialing user the Free plan.
+        queryClient.invalidateQueries({ queryKey: billingKeys.status }),
+      ]),
     [queryClient],
   );
 
@@ -394,7 +462,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const result = await signUp.email({ email, password, name });
         if (result?.error) {
           setAuthError(translateAuthError(result.error, "Помилка реєстрації"));
-          return false;
+          const code = (result.error as { code?: string }).code;
+          return code === "USER_ALREADY_EXISTS" ||
+            code === "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL"
+            ? "exists"
+            : false;
         }
         // WF-60 growth funnel рахує цю подію як перехід
         // visit → signup. Fire-and-forget — `trackEvent` ловить власні
@@ -431,6 +503,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const proceed = await options.confirmUnsyncedLoss(pending);
         if (!proceed) return;
       }
+
+      // Identity-wipe координація: стампимо owner ДО `setSignedOut`,
+      // щоб reconcile-ефект вище побачив identity вже узгодженою і не
+      // запустив другий teardown+reload поверх logout-івського — увесь
+      // потрібний wipe (SW-кеші, SQLite-партиція, LS-слайси, RQ clear)
+      // logout виконує сам нижче.
+      reconcileChatOwnerOnAuthChange(null);
 
       // Перше і найголовніше: перемкнути UI у signed-out ще до мережі. Все
       // нижче — teardown, який не має права гейтити цей перехід (і історично

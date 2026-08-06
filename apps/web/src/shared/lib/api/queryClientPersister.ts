@@ -189,6 +189,20 @@ export function createWebPersister() {
 }
 
 /**
+ * Знести persisted-снапшот RQ-кешу з диска (IDB `rq_cache`).
+ *
+ * Викликається identity-wipe-ефектом в `AuthContext`, коли на пристрої
+ * зʼявляється ІНША identity, ніж та, за якої снапшот писався: persister
+ * keyed by build-id, тож гідратація після reload віддавала наступному
+ * юзеру module-фіди попереднього (бюджети, журнали, транзакції) до
+ * першого revalidate. `queryClient.clear()` чистить лише памʼять —
+ * без цього виклику чужий снапшот повертається з диска.
+ */
+export async function clearPersistedQueryCache(): Promise<void> {
+  await idbKeyvalStorage.removeItem(STORAGE_KEYS.WEB_QUERY_CACHE);
+}
+
+/**
  * Селектор для `dehydrateOptions.shouldDehydrateQuery`.
  *
  * Експонується окремо, щоб тести могли його перевірити без підняття
