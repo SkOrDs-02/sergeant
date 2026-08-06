@@ -62,7 +62,7 @@ export function CrossModuleLinkRow(props: CrossModuleLinkCardProps) {
       )}
     >
       <div className="flex items-baseline justify-between gap-3">
-        <span className="text-style-caption font-bold uppercase tracking-wide">
+        <span className="text-style-caption font-semibold">
           <span className={MODULE_TEXT_CLASS[poleA.module]}>{poleA.label}</span>
           <span className="text-subtle" aria-hidden="true">
             {" × "}

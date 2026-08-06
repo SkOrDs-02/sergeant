@@ -309,7 +309,7 @@ export function EmptyState({
       {eyebrow && (
         <span
           className={cn(
-            "inline-flex items-center rounded-full px-2.5 py-0.5 font-bold uppercase tracking-widest",
+            "inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold",
             tokens.eyebrow,
             tone.eyebrow,
           )}
@@ -340,7 +340,7 @@ export function EmptyState({
               "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300 motion-safe:delay-100",
           )}
         >
-          <p className="text-style-caption text-muted mb-2 uppercase tracking-wide font-medium">
+          <p className="text-style-caption text-muted mb-2 font-medium">
             Приклад
           </p>
           {examplePreview}

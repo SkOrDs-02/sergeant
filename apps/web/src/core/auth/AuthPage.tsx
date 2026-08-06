@@ -134,7 +134,7 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
               <ForgotPasswordPanel state={forgot} authError={authError} />
             )}
 
-            <div className="my-6 flex items-center gap-3 text-style-overline text-muted">
+            <div className="my-6 flex items-center gap-3 text-style-caption text-muted">
               <span className="flex-1 h-px bg-line" />
               або
               <span className="flex-1 h-px bg-line" />

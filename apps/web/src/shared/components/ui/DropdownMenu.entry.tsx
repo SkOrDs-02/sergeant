@@ -10,6 +10,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
+import { SectionHeading } from "./SectionHeading";
 import type {
   DropdownMenuEntry,
   DropdownMenuItem,
@@ -42,12 +43,15 @@ export function DropdownMenuEntryView({
   }
   if (entry.type === "label") {
     return (
-      <div
+      <SectionHeading
+        as="div"
         role="presentation"
-        className="px-3 pt-2 pb-1 text-style-caption uppercase tracking-wide font-semibold text-subtle"
+        size="2xs"
+        variant="subtle"
+        className="px-3 pt-2 pb-1"
       >
         {entry.label}
-      </div>
+      </SectionHeading>
     );
   }
   const isSubmenu = entry.type === "submenu";

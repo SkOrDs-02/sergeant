@@ -158,9 +158,7 @@ export function PendingVoiceChip({
         className="flex-1 min-w-0 text-left text-style-caption leading-tight text-text hover:text-brand-strong line-clamp-2"
         title="Зберегти зараз"
       >
-        <span className="block text-style-caption uppercase tracking-wide text-subtle">
-          Голос
-        </span>
+        <span className="block text-style-caption text-subtle">Голос</span>
         <span className="block">{text}</span>
       </button>
 

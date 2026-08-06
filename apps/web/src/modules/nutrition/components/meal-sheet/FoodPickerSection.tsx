@@ -154,7 +154,7 @@ export function FoodPickerSection({
                 {offHits.length > 0 && (
                   <>
                     {foodHits.length > 0 && (
-                      <li className="px-3 py-1.5 text-style-caption text-subtle bg-panelHi/50 font-semibold uppercase tracking-widest">
+                      <li className="px-3 py-1.5 text-style-caption text-subtle bg-panelHi/50 font-semibold">
                         Open Food Facts
                       </li>
                     )}

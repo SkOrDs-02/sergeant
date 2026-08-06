@@ -528,7 +528,7 @@ export function WorkoutItemCard({
           {cardioMetrics && (
             <div className="grid grid-cols-2 gap-2">
               <div className="rounded-xl border border-line bg-bg px-3 py-2 text-center">
-                <div className="text-style-caption font-bold text-subtle uppercase tracking-widest">
+                <div className="text-style-caption font-semibold text-subtle">
                   Темп
                 </div>
                 <div className="text-style-label text-text tabular-nums">
@@ -536,7 +536,7 @@ export function WorkoutItemCard({
                 </div>
               </div>
               <div className="rounded-xl border border-line bg-bg px-3 py-2 text-center">
-                <div className="text-style-caption font-bold text-subtle uppercase tracking-widest">
+                <div className="text-style-caption font-semibold text-subtle">
                   Швидкість
                 </div>
                 <div className="text-style-label text-text tabular-nums">

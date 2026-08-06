@@ -27,7 +27,19 @@ import { cn } from "../../lib/ui/cn";
  */
 
 export interface LabelProps extends LabelHTMLAttributes<HTMLLabelElement> {
-  /** Disable the uppercase eyebrow look. */
+  /**
+   * Disable the uppercase eyebrow look.
+   *
+   * AI-DANGER: капс тут НЕ прибрано разом із рештою (правило 4 типографіки
+   * тексту, 2026-08-06) — і це усвідомлена пауза, а не недогляд. Мітка
+   * поля — інший елемент, ніж кікер: вона прив'язана `htmlFor`/`id` до
+   * інпута, стоїть у формі, і той самий вибір уже задокументовано в
+   * `modules/fizruk/pages/Measurements.tsx`. Головне ж — знявши капс тут,
+   * доведеться відповісти, що взагалі означає цей проп: він стане
+   * перемикачем між двома майже однаковими станами. Тобто це не заміна
+   * класів, а рішення про API. Заведено окремим пунктом у
+   * `docs/90-work/tech-debt/frontend.md`.
+   */
   normalCase?: boolean;
   /** Show a `· необов'язково` suffix for optional fields. */
   optional?: boolean;

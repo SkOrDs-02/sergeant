@@ -221,7 +221,7 @@ export function RecentWorkoutSummary({ workout }: RecentWorkoutSummaryProps) {
       <div className="flex items-center gap-2">
         <span className="text-style-label text-text">{dateLabel}</span>
         {!summary.isFinished ? (
-          <span className="text-style-caption uppercase font-bold text-warning-strong bg-warning/15 px-2 py-0.5 rounded-full">
+          <span className="text-style-caption font-semibold text-warning-strong bg-warning/15 px-2 py-0.5 rounded-full">
             Чернетка
           </span>
         ) : null}

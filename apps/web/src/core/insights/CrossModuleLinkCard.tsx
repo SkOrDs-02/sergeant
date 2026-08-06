@@ -192,7 +192,7 @@ function Pole({
     >
       <span
         className={cn(
-          "text-style-caption font-bold uppercase tracking-wide",
+          "text-style-caption font-semibold",
           MODULE_TEXT_CLASS[pole.module],
         )}
       >
@@ -352,7 +352,7 @@ function SilentBody({
 
   return (
     <div>
-      <div className="flex items-center gap-1.5 text-style-caption font-bold uppercase tracking-wide">
+      <div className="flex items-center gap-1.5 text-style-caption font-semibold">
         <span className={MODULE_TEXT_CLASS[poleA.module]}>{poleA.label}</span>
         <span className="text-subtle" aria-hidden="true">
           ×

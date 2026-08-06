@@ -272,7 +272,7 @@ export function FinykLoginScreen({
               : "Підключити Monobank"}
           </Button>
 
-          <div className="my-4 flex items-center gap-3 text-xs text-muted uppercase tracking-wider">
+          <div className="my-4 flex items-center gap-3 text-style-caption text-muted">
             <span className="flex-1 h-px bg-line" />
             або
             <span className="flex-1 h-px bg-line" />

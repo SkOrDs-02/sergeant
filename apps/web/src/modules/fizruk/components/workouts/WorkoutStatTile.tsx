@@ -42,9 +42,7 @@ export function WorkoutStatTile({
         className,
       )}
     >
-      <div className="text-style-caption uppercase tracking-wide text-fizruk-soft-fg">
-        {label}
-      </div>
+      <div className="text-style-caption text-fizruk-soft-fg">{label}</div>
       <div
         className={cn(
           "font-black text-fizruk-soft-fg tabular-nums",

@@ -11,22 +11,31 @@ afterEach(cleanup);
  * wrapper.
  */
 describe("SectionHeading", () => {
-  it("default size='xs' renders as <h3> with bold + uppercase + text-muted", () => {
+  it("default size='xs' renders as <h3> with the kicker bar, no caps", () => {
     const { container } = render(<SectionHeading>Розділ</SectionHeading>);
     const el = container.querySelector("h3")!;
     expect(el).not.toBeNull();
     // Цикл 6: eyebrow-розмір сидить на семантичній ролі `caption` (12px),
-    // а не на сирому `text-xs`. Casing / tracking / weight — шари поверх.
+    // а не на сирому `text-xs`.
     expect(el.className).toContain("text-style-caption");
-    expect(el.className).toContain("uppercase");
-    expect(el.className).toContain("tracking-wider");
-    expect(el.className).toContain("font-bold");
-    // `muted`, не `subtle`: 12px bold subtle у dark = 3.13:1 (axe serious,
+    // Правило 4: кікер несуть смужка й колір, а не форма літер. Капс і
+    // широкий трекінг прибрані — рішення власника 2026-08-06.
+    expect(el.className).not.toContain("uppercase");
+    expect(el.className).not.toContain("tracking-wide");
+    expect(el.className).not.toContain("tracking-wider");
+    expect(el.className).not.toContain("tracking-widest");
+    // Смужка — `before:`-псевдоелемент на `bg-current`, тож вона не в DOM
+    // і не читається скрінрідером. Пінимо клас, бо саме він її й створює.
+    expect(el.className).toContain("before:bg-current");
+    expect(el.className).toContain("before:shrink-0");
+    // Вага 600, не 700: разом із капсом пішла причина для сімсотої.
+    expect(el.className).toContain("font-semibold");
+    // `muted`, не `subtle`: 12px subtle у dark = 3.13:1 (axe serious,
     // design-audit F9); muted = 6.03:1.
     expect(el.className).toContain("text-muted");
   });
 
-  it("size='md' drops the uppercase/tracking treatment and uses font-semibold", () => {
+  it("size='md' is a body heading — no kicker bar", () => {
     const { container } = render(
       <SectionHeading size="md">Розділ</SectionHeading>,
     );
@@ -34,15 +43,16 @@ describe("SectionHeading", () => {
     expect(el.className).toContain("text-style-label");
     expect(el.className).toContain("font-semibold");
     expect(el.className).not.toContain("uppercase");
+    expect(el.className).not.toContain("before:bg-current");
   });
 
-  it("weight='semibold' overrides default bold on eyebrow sizes", () => {
+  it("weight='bold' overrides the default semibold on eyebrow sizes", () => {
     const { container } = render(
-      <SectionHeading weight="semibold">Розділ</SectionHeading>,
+      <SectionHeading weight="bold">Розділ</SectionHeading>,
     );
     const el = container.querySelector("h3")!;
-    expect(el.className).toContain("font-semibold");
-    expect(el.className).not.toContain("font-bold");
+    expect(el.className).toContain("font-bold");
+    expect(el.className).not.toContain("font-semibold");
   });
 
   it("weight='extrabold' lets callers promote an xs eyebrow to heavier", () => {
@@ -89,30 +99,45 @@ describe("SectionHeading", () => {
     expect(container.querySelector("h3")).toBeNull();
   });
 
-  it("size='2xs' renders the compact eyebrow scale (text-style-caption + uppercase + tracking-wide + bold)", () => {
+  it("size='2xs' renders the compact eyebrow scale (caption + kicker bar)", () => {
     const { container } = render(
       <SectionHeading size="2xs">Загальні рекомендації</SectionHeading>,
     );
     const cls = container.querySelector("h3")!.className;
     expect(cls).toContain("text-style-caption");
-    expect(cls).toContain("uppercase");
-    expect(cls).toContain("tracking-wide");
-    expect(cls).toContain("font-bold");
+    expect(cls).not.toContain("uppercase");
+    expect(cls).toContain("before:bg-current");
+    expect(cls).toContain("font-semibold");
     expect(cls).toContain("text-muted");
   });
 
-  it("weight='medium' / weight='normal' override the size-default bold", () => {
+  // AI-CONTEXT: пінить AI-DANGER біля `sizeTokens` — після зняття капсу
+  // три eyebrow-розміри відрізнялися лише трекінгом, тож стали
+  // ідентичними. Тест ловить момент, коли хтось спробує «полагодити» це
+  // штучною різницею замість зведення в одне ім'я (борг у frontend.md).
+  it("2xs / xs / sm are synonyms after the caps removal", () => {
+    const cls = (size: "2xs" | "xs" | "sm") => {
+      const { container } = render(
+        <SectionHeading size={size}>Розділ</SectionHeading>,
+      );
+      return container.querySelector("h3")!.className;
+    };
+    expect(cls("xs")).toBe(cls("2xs"));
+    expect(cls("sm")).toBe(cls("2xs"));
+  });
+
+  it("weight='medium' / weight='normal' override the size-default semibold", () => {
     const { container: med } = render(
       <SectionHeading weight="medium">Розділ</SectionHeading>,
     );
     expect(med.querySelector("h3")!.className).toContain("font-medium");
-    expect(med.querySelector("h3")!.className).not.toContain("font-bold");
+    expect(med.querySelector("h3")!.className).not.toContain("font-semibold");
 
     const { container: norm } = render(
       <SectionHeading weight="normal">Розділ</SectionHeading>,
     );
     expect(norm.querySelector("h3")!.className).toContain("font-normal");
-    expect(norm.querySelector("h3")!.className).not.toContain("font-bold");
+    expect(norm.querySelector("h3")!.className).not.toContain("font-semibold");
   });
 
   it("no `eyebrow` keeps the bare heading (no wrapper div)", () => {
@@ -129,7 +154,8 @@ describe("SectionHeading", () => {
     const kicker = getByText("Маркетинг");
     expect(kicker.tagName).toBe("P");
     expect(kicker.className).toContain("text-style-caption");
-    expect(kicker.className).toContain("uppercase");
+    expect(kicker.className).not.toContain("uppercase");
+    expect(kicker.className).toContain("before:bg-current");
     expect(kicker.className).toContain("text-subtle");
     // Eyebrow precedes the heading in DOM order.
     expect(wrapper.firstElementChild).toBe(kicker);
