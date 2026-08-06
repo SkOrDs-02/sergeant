@@ -100,7 +100,9 @@ export function LogCard({
             <span className="font-extrabold text-text text-base">
               {formatDate(selectedDate)}
             </span>
-            <span className="text-xs text-subtle">{selectedDate}</span>
+            <span className="text-style-caption text-subtle">
+              {selectedDate}
+            </span>
           </div>
           <button
             type="button"
@@ -129,7 +131,7 @@ export function LogCard({
         />
 
         {logSizeWarn && (
-          <div className="rounded-2xl border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning-strong">
+          <div className="rounded-2xl border border-warning/40 bg-warning/10 px-3 py-2 text-style-caption text-warning-strong">
             Журнал великий (~{Math.round(logBytes / 1024)} КБ).{" "}
             <button
               type="button"

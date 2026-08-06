@@ -81,7 +81,7 @@ export function WorkoutFinishSheets({
             >
               Самопочуття
             </div>
-            <p className="text-xs text-subtle leading-relaxed">
+            <p className="text-style-caption text-subtle leading-relaxed">
               Оціни по шкалі 1–5 (можна пропустити).
             </p>
             <div>
@@ -296,7 +296,7 @@ export function WorkoutFinishSheets({
             <span className="text-style-label text-text inline-flex items-center gap-1.5">
               <Icon name="check" size={15} aria-hidden /> Результати
             </span>
-            <span className="text-xs text-subtle tabular-nums">
+            <span className="text-style-caption text-subtle tabular-nums">
               {formatDurShort(finishFlash.durationSec)}
             </span>
           </button>
@@ -351,7 +351,7 @@ export function WorkoutFinishSheets({
             {finishFlash.savedWellbeing &&
               (finishFlash.savedWellbeing.energy ||
                 finishFlash.savedWellbeing.mood) && (
-                <div className="px-4 py-2.5 bg-panel border-b border-line flex items-center gap-3 text-xs text-subtle">
+                <div className="px-4 py-2.5 bg-panel border-b border-line flex items-center gap-3 text-style-caption text-subtle">
                   <span>Самопочуття:</span>
                   <span className="font-semibold text-text">
                     енергія {finishFlash.savedWellbeing.energy ?? "—"}/5
@@ -370,6 +370,11 @@ export function WorkoutFinishSheets({
               {!isCrossModulePromptSuppressed("fizruk-finish-to-meal") && (
                 <button
                   type="button"
+                  // AI-NOTE: `text-xs` лишається сирим — це розмір
+                  // КОНТРОЛА: висота кнопки задана парою `text-xs` +
+                  // `py-1.5`, і роль із `line-height: 1.4` зсунула б її
+                  // відносно сусідніх дій. Одна з двох причин лишати
+                  // сирий розмір (див. `tailwind-preset.js`, § ролі).
                   className="w-full text-xs text-muted hover:text-text transition-colors py-1.5 flex items-center justify-center gap-1.5"
                   onClick={() => {
                     recordCrossModulePromptAccepted("fizruk-finish-to-meal");

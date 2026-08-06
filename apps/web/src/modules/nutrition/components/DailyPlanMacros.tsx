@@ -103,6 +103,8 @@ export function MacroBadge({
   return (
     <span
       className={cn(
+        // AI-NOTE: сирий `text-xs` — розмір ЧИПА: висота плашки тримається
+        // на парі з `py-0.5`, а `rounded-xl` розрахований під неї.
         "inline-flex items-center gap-1 text-xs rounded-xl px-2 py-0.5",
         color || "bg-bg border border-line text-subtle",
       )}
