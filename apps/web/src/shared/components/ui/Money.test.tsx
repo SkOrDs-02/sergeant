@@ -158,6 +158,19 @@ describe("Money — анімоване ціле", () => {
     });
   });
 
+  it("порожній symbol не лишає привида пробілу", () => {
+    // Вживається там, де символ стоїть один раз на пару чисел
+    // («сплачено 1 000 з 5 000 ₴»). Без цієї гілки в розмітці лишався б
+    // самотній U+202F — вузький нерозривний пробіл, який нічого не
+    // відділяє, і рядок мовчки набував зайвого відступу перед сусіднім
+    // словом.
+    const { container } = render(<Money amount={1000} symbol="" />);
+    const root = container.firstElementChild as HTMLElement;
+    expect(root.textContent).toBe("1\u00a0000");
+    expect(root.textContent).not.toContain("\u202f");
+    expect(container.querySelector(".text-\\[0\\.72em\\]")).toBeNull();
+  });
+
   it("знак лишається окремим тиром і не потрапляє в анімацію", async () => {
     const { container } = render(<Money amount={-1250} animate />);
     const sign = container.querySelector(".text-\\[0\\.78em\\]");

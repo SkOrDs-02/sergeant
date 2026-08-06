@@ -324,7 +324,7 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
       {/* Persistent aria-live region: SR announces when a cell is selected */}
       <div aria-live="polite" aria-atomic="true" className="mt-3">
         {detailCell ? (
-          <div className="flex items-center justify-between gap-2 rounded-xl border border-line bg-bg px-3 py-2 text-xs">
+          <div className="flex items-center justify-between gap-2 rounded-xl border border-line bg-bg px-3 py-2 text-style-caption">
             <span className="text-subtle truncate">
               {detailCell.dt.toLocaleDateString("uk-UA", {
                 weekday: "long",

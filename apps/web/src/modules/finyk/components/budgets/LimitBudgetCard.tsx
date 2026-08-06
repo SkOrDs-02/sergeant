@@ -8,6 +8,7 @@ import { Skeleton } from "@shared/components/ui/Skeleton";
 import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { Card } from "@shared/components/ui/Card";
+import { Money } from "@shared/components/ui/Money";
 import { Input } from "@shared/components/ui/Input";
 import { Label } from "@shared/components/ui/FormField";
 import { Tooltip } from "@shared/components/ui/Tooltip";
@@ -190,9 +191,15 @@ function LimitBudgetCardComponent({
                   : "text-subtle",
             )}
           >
-            {overLimit
-              ? `Перевищено на ${(spent - budget.limit).toLocaleString("uk-UA")} ₴`
-              : `Залишок ${remaining.toLocaleString("uk-UA")} ₴ · ${pctRounded}% використано`}
+            {overLimit ? (
+              <>
+                Перевищено на <Money amount={spent - budget.limit} />
+              </>
+            ) : (
+              <>
+                Залишок <Money amount={remaining} /> · {pctRounded}% використано
+              </>
+            )}
           </div>
 
           {showProactiveAdvice &&

@@ -8,7 +8,7 @@ import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { Input } from "@shared/components/ui/Input";
 import { Label } from "@shared/components/ui/FormField";
-import { formatMoney } from "@sergeant/shared";
+import { Money } from "@shared/components/ui/Money";
 import { MAX_AMOUNT_HRYVNIA } from "@shared/lib/format/amount";
 import { clampNumericInput } from "@shared/lib/format/numberInput";
 import { FirstRunHintBanner } from "../../../../core/onboarding/FirstRunHintBanner";
@@ -100,10 +100,6 @@ function MonthlyPlanCardComponent({
   const expenseDelta = totalExpenseFact - planExpense;
   const savingsDelta = factSavings - planSavings;
 
-  const fmt = (n: number) => formatMoney(n);
-  const fmtSigned = (n: number) =>
-    `${n >= 0 ? "+" : "−"}${formatMoney(Math.abs(n))}`;
-
   return (
     <div
       className={cn(
@@ -127,25 +123,26 @@ function MonthlyPlanCardComponent({
           {hasPlan && !open && (
             <span
               className={cn(
-                // AI-DANGER: `text-xs` тут лишається навмисно. Роль
-                // `text-style-caption` явно задає `font-weight: 400`, а
-                // гілка `isOver` вмикає `font-semibold` — два правила ваги
-                // на ОДНОМУ вузлі, обидва в шарі utilities
-                // (`addUtilities` у `tailwind-preset.js`), тож переможець
-                // залежить від порядку в зібраному CSS. Перевитрата має
-                // лишатись важчою за норму: це єдине число, яке видно на
-                // згорнутій картці.
-                "text-xs tabular-nums",
+                // Роль + `font-semibold` на одному вузлі — це безпечно:
+                // вага виграє в каскаді (замір і межі застосовності — у
+                // `tailwind-preset.js`, блок «Роль + font-* на ОДНОМУ
+                // вузлі»). Перевитрата лишається важчою за норму, як і
+                // задумано: це єдине число, видне на згорнутій картці.
+                "text-style-caption tabular-nums",
                 isOver
                   ? "text-danger-strong dark:text-danger font-semibold"
                   : "text-muted",
               )}
             >
-              {isOver
-                ? `−${formatMoney(totalExpenseFact - planExpense)}`
-                : planExpense > 0
-                  ? `${pctExpense}% · ${formatMoney(remaining)}`
-                  : `+${formatMoney(planIncome)}`}
+              {isOver ? (
+                <Money amount={planExpense - totalExpenseFact} tone="inherit" />
+              ) : planExpense > 0 ? (
+                <>
+                  {pctExpense}% · <Money amount={remaining} />
+                </>
+              ) : (
+                <Money amount={planIncome} signed />
+              )}
             </span>
           )}
           {!hasPlan && !open && (
@@ -165,6 +162,21 @@ function MonthlyPlanCardComponent({
       {open && (
         <div className="px-5 pb-5 pt-1 space-y-3">
           {hasPlan ? (
+            /*
+              AI-CONTEXT: у стовпці Δ стоїть `Money signed`, а НЕ `Delta` —
+              попри те, що `Delta` існує рівно під дельти. Причина в тоні.
+              `Delta` знає два кольори: успіх і небезпека. Тут же недобір
+              доходу навмисно позначений `text-warning`, а не `text-danger`
+              — не дотягнути до плану це не аварія, і продукт про це
+              говорить рівно (той самий вибір, що «констатація, не докір» у
+              борді рекордів Фізрука). Перевести на `Delta` означало б
+              зробити недобір доходу червоним заодно з перевитратою.
+
+              Тож поверхня лишає свою семантику кольору, а від П4 бере те,
+              заради чого він і є — тири суми. `tone="inherit"` віддає
+              знаку, копійкам і символу колір комірки: інакше приглушений
+              сірий тир поруч із зеленим числом розповзається на два тони.
+            */
             <div className="grid grid-cols-[auto_1fr_1fr_1fr] gap-x-3 gap-y-1.5 text-sm tabular-nums items-baseline">
               <div />
               <div className="text-style-caption text-subtle text-right">
@@ -177,10 +189,14 @@ function MonthlyPlanCardComponent({
 
               <div className="text-style-caption text-muted">Дохід</div>
               <div className="text-right text-muted">
-                {planIncome > 0 ? fmt(planIncome) : "—"}
+                {planIncome > 0 ? <Money amount={planIncome} /> : "—"}
               </div>
               <div className="text-right text-success-strong dark:text-success">
-                {factIncome > 0 ? `+${fmt(factIncome)}` : "—"}
+                {factIncome > 0 ? (
+                  <Money amount={factIncome} signed tone="inherit" />
+                ) : (
+                  "—"
+                )}
               </div>
               <div
                 className={cn(
@@ -192,12 +208,16 @@ function MonthlyPlanCardComponent({
                       : "text-warning-strong dark:text-warning",
                 )}
               >
-                {planIncome > 0 ? fmtSigned(incomeDelta) : "—"}
+                {planIncome > 0 ? (
+                  <Money amount={incomeDelta} signed tone="inherit" />
+                ) : (
+                  "—"
+                )}
               </div>
 
               <div className="text-style-caption text-muted">Витрати</div>
               <div className="text-right text-muted">
-                {planExpense > 0 ? fmt(planExpense) : "—"}
+                {planExpense > 0 ? <Money amount={planExpense} /> : "—"}
               </div>
               <div
                 className={cn(
@@ -207,7 +227,11 @@ function MonthlyPlanCardComponent({
                     : "text-danger-strong/80 dark:text-danger/80",
                 )}
               >
-                {totalExpenseFact > 0 ? `−${fmt(totalExpenseFact)}` : "—"}
+                {totalExpenseFact > 0 ? (
+                  <Money amount={-totalExpenseFact} tone="inherit" />
+                ) : (
+                  "—"
+                )}
               </div>
               <div
                 className={cn(
@@ -219,12 +243,16 @@ function MonthlyPlanCardComponent({
                       : "text-success-strong dark:text-success",
                 )}
               >
-                {planExpense > 0 ? fmtSigned(expenseDelta) : "—"}
+                {planExpense > 0 ? (
+                  <Money amount={expenseDelta} signed tone="inherit" />
+                ) : (
+                  "—"
+                )}
               </div>
 
               <div className="text-style-caption text-muted">Накопич.</div>
               <div className="text-right text-muted">
-                {planSavings > 0 ? fmt(planSavings) : "—"}
+                {planSavings > 0 ? <Money amount={planSavings} /> : "—"}
               </div>
               <div
                 className={cn(
@@ -234,9 +262,11 @@ function MonthlyPlanCardComponent({
                     : "text-danger-strong dark:text-danger",
                 )}
               >
-                {planSavings > 0 || factSavings !== 0
-                  ? fmtSigned(factSavings)
-                  : "—"}
+                {planSavings > 0 || factSavings !== 0 ? (
+                  <Money amount={factSavings} signed tone="inherit" />
+                ) : (
+                  "—"
+                )}
               </div>
               <div
                 className={cn(
@@ -248,9 +278,11 @@ function MonthlyPlanCardComponent({
                       : "text-danger-strong dark:text-danger",
                 )}
               >
-                {planSavings > 0 || factSavings !== 0
-                  ? fmtSigned(savingsDelta)
-                  : "—"}
+                {planSavings > 0 || factSavings !== 0 ? (
+                  <Money amount={savingsDelta} signed tone="inherit" />
+                ) : (
+                  "—"
+                )}
               </div>
             </div>
           ) : (
@@ -265,12 +297,16 @@ function MonthlyPlanCardComponent({
                 <span>{pctExpense}% витрачено</span>
                 {safePerDay > 0 && daysLeft > 0 && !isOver && (
                   <span className="tabular-nums">
-                    {formatMoney(safePerDay)}/день · {daysLeft} дн.
+                    <Money amount={safePerDay} />
+                    /день · {daysLeft} дн.
                   </span>
                 )}
                 {isOver && (
                   <span className="text-danger-strong dark:text-danger font-semibold tabular-nums">
-                    −{formatMoney(totalExpenseFact - planExpense)}
+                    <Money
+                      amount={planExpense - totalExpenseFact}
+                      tone="inherit"
+                    />
                   </span>
                 )}
               </div>

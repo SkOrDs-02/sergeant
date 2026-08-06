@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
+import { Money } from "@shared/components/ui/Money";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 
 function formatDueDate(dueDate: string | null | undefined) {
@@ -77,9 +78,18 @@ function DebtCardComponent({
                 : "text-danger-strong dark:text-danger",
             )}
           >
-            {showBalance
-              ? `${isReceivable ? "+" : "−"}${remaining.toLocaleString("uk-UA", { maximumFractionDigits: 0 })} ₴`
-              : "••••"}
+            {showBalance ? (
+              // Знак веде НАПРЯМОК боргу, не арифметику: «мені винні» —
+              // плюс, «я винен» — мінус, а `remaining` в обох випадках
+              // додатне. Тому знак задається множенням, а не `signed`.
+              <Money
+                amount={isReceivable ? remaining : -remaining}
+                signed
+                tone="inherit"
+              />
+            ) : (
+              "••••"
+            )}
           </span>
           {onEdit && (
             <button
@@ -114,9 +124,13 @@ function DebtCardComponent({
       </div>
       <div className="text-xs text-subtle mt-2">
         {isReceivable ? "Отримано" : "Сплачено"}{" "}
-        {showBalance
-          ? `${paid.toLocaleString("uk-UA", { maximumFractionDigits: 0 })} з ${total.toLocaleString("uk-UA")} ₴`
-          : "••••"}
+        {showBalance ? (
+          <>
+            <Money amount={paid} symbol="" /> з <Money amount={total} />
+          </>
+        ) : (
+          "••••"
+        )}
       </div>
       {dueText && (
         <div
