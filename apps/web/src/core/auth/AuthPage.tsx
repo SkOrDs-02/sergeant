@@ -22,6 +22,21 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
   const { loginWithGoogle, loginWithApple, authError, setAuthError } =
     useAuth();
   const { CelebrationComponent } = useCelebration();
+  /**
+   * Соцвхід вимикається на деплої, який живе НЕ на домені з `BETTER_AUTH_URL`.
+   *
+   * Better Auth будує OAuth `redirect_uri` з єдиного статичного `baseURL`.
+   * Тому фронт на власному домені — як бета-проєкт на окремому Vercel —
+   * відправляє людину в Google зі свого домену, а Google повертає її на
+   * домен із `baseURL`, тобто на прод. Кнопка, яка викидає тестера з бети
+   * у чужий застосунок, гірша за відсутню.
+   *
+   * Opt-out, а не opt-in: прод на соцвхід покладається, і мовчазна втрата
+   * кнопки через незадану змінну коштувала б дорожче за зайвий рядок у
+   * конфігу бети.
+   */
+  const socialLoginEnabled =
+    import.meta.env["VITE_SOCIAL_LOGIN_ENABLED"] !== "false";
   const [mode, setMode] = useState<"login" | "register">("login");
   const [googleLoading, setGoogleLoading] = useState(false);
   const [appleLoading, setAppleLoading] = useState(false);
@@ -134,22 +149,28 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
               <ForgotPasswordPanel state={forgot} authError={authError} />
             )}
 
-            <div className="my-6 flex items-center gap-3 text-style-caption text-muted">
-              <span className="flex-1 h-px bg-line" />
-              або
-              <span className="flex-1 h-px bg-line" />
-            </div>
+            {socialLoginEnabled && (
+              <>
+                {/* Роздільник живе всередині гілки: без кнопок «або» веде
+                    в нікуди. */}
+                <div className="my-6 flex items-center gap-3 text-style-caption text-muted">
+                  <span className="flex-1 h-px bg-line" />
+                  або
+                  <span className="flex-1 h-px bg-line" />
+                </div>
 
-            <div className="space-y-3">
-              <GoogleSignInButton
-                loading={googleLoading}
-                onClick={handleGoogleSignIn}
-              />
-              <AppleSignInButton
-                loading={appleLoading}
-                onClick={handleAppleSignIn}
-              />
-            </div>
+                <div className="space-y-3">
+                  <GoogleSignInButton
+                    loading={googleLoading}
+                    onClick={handleGoogleSignIn}
+                  />
+                  <AppleSignInButton
+                    loading={appleLoading}
+                    onClick={handleAppleSignIn}
+                  />
+                </div>
+              </>
+            )}
 
             <div className="text-center pt-1">
               <button

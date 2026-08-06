@@ -36,6 +36,17 @@ interface ImportMetaEnv {
    * literal by `vite.config.js#define`.
    */
   readonly VITE_TARGET?: "web" | "capacitor";
+
+  /**
+   * Вимикає кнопки соцвходу (Google / Apple) на `AuthPage`. Єдине
+   * значення, що вимикає, — рядок `"false"`; будь-що інше, включно з
+   * незаданою змінною, лишає кнопки на місці.
+   *
+   * Потрібна деплоям на власному домені (бета-проєкт на окремому
+   * Vercel): OAuth `redirect_uri` будується з єдиного `BETTER_AUTH_URL`,
+   * тож Google повертає користувача не туди, звідки він пішов.
+   */
+  readonly VITE_SOCIAL_LOGIN_ENABLED?: string;
 }
 
 interface ImportMeta {
