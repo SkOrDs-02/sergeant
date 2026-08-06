@@ -121,6 +121,65 @@ describe("@sergeant/design-tokens — tailwind-preset.js", () => {
     });
   });
 
+  describe("край і зріз — підйом маскованого краю (анти-слоп П3)", () => {
+    /** Зібрати всі утиліти, які плагіни преcету реєструють через `addUtilities`. */
+    function collectUtilities() {
+      const out = {};
+      for (const plugin of preset.plugins) {
+        plugin({
+          addUtilities: (utils) => Object.assign(out, utils),
+          // Плагіни, які не кличуть `addUtilities`, просто нічого не додають.
+          addComponents: () => {},
+          addBase: () => {},
+          theme: () => undefined,
+          matchUtilities: () => {},
+        });
+      }
+      return out;
+    }
+
+    const utils = collectUtilities();
+
+    /**
+     * AI-DANGER: маска й підйом мусять жити на РІЗНИХ вузлах. Фільтр
+     * застосовується до маски, тож на одному вузлі маска зрізає й тінь —
+     * заміряно в headless Chromium 2026-08-06: `filter + mask` разом дають
+     * рівно те саме, що `box-shadow + mask`, тобто нічого. Цей тест ловить
+     * «спрощення», яке зіллє дві утиліти в одну.
+     */
+    it("підйом не несе маски, а маска не несе підйому", () => {
+      for (const masked of [".edge-perf", ".edge-stub"]) {
+        expect(utils[masked]).toBeDefined();
+        expect(utils[masked].mask).toBeTruthy();
+        expect(utils[masked]).not.toHaveProperty("filter");
+        expect(utils[masked].boxShadow ?? "none").toBe("none");
+      }
+      for (const lift of [".edge-lift", ".edge-lift-interactive"]) {
+        expect(utils[lift]).toBeDefined();
+        expect(utils[lift].filter).toBe("var(--drop-e1)");
+        expect(utils[lift]).not.toHaveProperty("mask");
+      }
+    });
+
+    it("інтерактивний підйом піднімається на hover, звичайний — ні", () => {
+      expect(utils[".edge-lift-interactive"]["&:hover"].filter).toBe(
+        "var(--drop-e2)",
+      );
+      expect(utils[".edge-lift"]).not.toHaveProperty("&:hover");
+    });
+
+    /**
+     * `edge-rule` маски НЕ має — це лише квадратний верх і 2px лінійка.
+     * Тому підйом їй не потрібен, і `boxShadow: none` там був рішенням, а
+     * не обмеженням. Тест фіксує саме цю різницю, бо через неї дві з трьох
+     * утиліт поводяться інакше.
+     */
+    it("друкарська лінійка лишається без маски", () => {
+      expect(utils[".edge-rule"]).toBeDefined();
+      expect(utils[".edge-rule"]).not.toHaveProperty("mask");
+    });
+  });
+
   describe("fontFamily — Manrope is the primary sans + display family", () => {
     const { fontFamily } = preset.theme.extend;
 

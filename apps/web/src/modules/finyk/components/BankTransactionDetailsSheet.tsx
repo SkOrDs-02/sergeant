@@ -176,28 +176,42 @@ export function BankTransactionDetailsSheet({
       }
     >
       <div className="space-y-5">
-        <section className="rounded-2xl border border-line bg-panelHi p-4">
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              <p className="text-style-label text-text break-words">
-                {transaction.description || copy.bankTransactionFallback}
-              </p>
-              <p className="mt-1 text-style-caption text-muted">
-                {formatTransactionDate(transaction)}
-              </p>
-              {accountLabel && (
-                <p className="mt-1 text-style-caption text-subtle">
-                  {accountLabel}
+        {/*
+          Квитанція операції — власний матеріал (анти-слоп П3, рішення
+          власника 2026-08-06). Найпряміший випадок із усіх: банківська
+          операція В ЖИТТІ і є відривний талон, тож `edge-stub` тут не
+          метафора, а те саме, чим річ є. Решта секцій шторки лишаються
+          звичайними картками навмисно — матеріал позначає ФАКТ операції,
+          а не форму редагування під ним.
+
+          AI-DANGER: `edge-lift` мусить бути на БАТЬКУ. Маска `edge-stub`
+          зрізає тінь на своєму вузлі — і `box-shadow`, і `drop-shadow`
+          однаково (заміряно; див. `.edge-lift` у `tailwind-preset.js`).
+        */}
+        <div className="edge-lift">
+          <section className="edge-stub border border-line bg-panelHi p-4">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-style-label text-text break-words">
+                  {transaction.description || copy.bankTransactionFallback}
                 </p>
-              )}
+                <p className="mt-1 text-style-caption text-muted">
+                  {formatTransactionDate(transaction)}
+                </p>
+                {accountLabel && (
+                  <p className="mt-1 text-style-caption text-subtle">
+                    {accountLabel}
+                  </p>
+                )}
+              </div>
+              <p className="shrink-0 text-style-title tabular-nums text-text">
+                <MaskedAmount masked={hideAmount}>
+                  <Money amount={transaction.amount / 100} signed kopecks />
+                </MaskedAmount>
+              </p>
             </div>
-            <p className="shrink-0 text-style-title tabular-nums text-text">
-              <MaskedAmount masked={hideAmount}>
-                <Money amount={transaction.amount / 100} signed kopecks />
-              </MaskedAmount>
-            </p>
-          </div>
-        </section>
+          </section>
+        </div>
 
         <section aria-labelledby="bank-transaction-category-title">
           <h3
