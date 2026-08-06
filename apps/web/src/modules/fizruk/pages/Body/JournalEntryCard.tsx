@@ -60,15 +60,21 @@ export function JournalEntryCard({
           <span
             aria-hidden
             className={cn(
+              // `text-xs` тут — розмір ГЛІФА ▾, а не роль тексту, тож
+              // семантична шкала до нього не застосовна.
               "inline-block w-3 text-muted transition-transform shrink-0 text-xs",
               open ? "rotate-180" : "rotate-0",
             )}
           >
             ▾
           </span>
-          <span className="text-xs text-subtle shrink-0">{dateLabel}</span>
+          <span className="text-style-caption text-muted shrink-0">
+            {dateLabel}
+          </span>
           {!open && summary && (
-            <span className="text-xs text-muted truncate">· {summary}</span>
+            <span className="text-style-caption text-muted truncate">
+              · {summary}
+            </span>
           )}
         </button>
         <button
@@ -94,8 +100,8 @@ export function JournalEntryCard({
         <div id={contentId} className="px-3 pb-3 pt-0">
           <div className="flex flex-wrap gap-x-3 gap-y-1">
             {entry.weightKg != null && (
-              <span className="text-xs text-text">
-                <span className="text-subtle">
+              <span className="text-style-caption text-text">
+                <span className="text-muted">
                   {messages.fizruk.journal.weightLabel}
                 </span>{" "}
                 <span className="font-semibold">
@@ -104,8 +110,8 @@ export function JournalEntryCard({
               </span>
             )}
             {entry.sleepHours != null && (
-              <span className="text-xs text-text">
-                <span className="text-subtle">
+              <span className="text-style-caption text-text">
+                <span className="text-muted">
                   {messages.fizruk.journal.sleepLabel}
                 </span>{" "}
                 <span className="font-semibold">
@@ -114,16 +120,16 @@ export function JournalEntryCard({
               </span>
             )}
             {entry.energyLevel != null && (
-              <span className="text-xs text-text">
-                <span className="text-subtle">
+              <span className="text-style-caption text-text">
+                <span className="text-muted">
                   {messages.fizruk.journal.energyLabel}
                 </span>{" "}
                 <span className="font-semibold">{entry.energyLevel}/5</span>
               </span>
             )}
             {entry.moodScore != null && (
-              <span className="text-xs text-text">
-                <span className="text-subtle">
+              <span className="text-style-caption text-text">
+                <span className="text-muted">
                   {messages.fizruk.journal.moodLabel}
                 </span>{" "}
                 <span className="font-semibold">{entry.moodScore}/5</span>
@@ -131,7 +137,9 @@ export function JournalEntryCard({
             )}
           </div>
           {entry.note && (
-            <p className="text-xs text-subtle mt-1 italic">{entry.note}</p>
+            <p className="text-style-caption text-muted mt-1 italic">
+              {entry.note}
+            </p>
           )}
         </div>
       )}

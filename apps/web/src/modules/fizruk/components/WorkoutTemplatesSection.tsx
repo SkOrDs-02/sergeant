@@ -181,7 +181,7 @@ export function WorkoutTemplatesSection({
 
   return (
     <div className="space-y-3">
-      <div className="text-xs text-subtle leading-relaxed">
+      <div className="text-style-caption text-muted leading-relaxed">
         Шаблони — лише твої: додай назву й послідовність вправ з каталогу. План
         на головній будується з цих шаблонів. Щоб стартувати тренування зі
         списку нижче — натисни «Почати» біля шаблону (відкриється журнал з
@@ -235,7 +235,7 @@ export function WorkoutTemplatesSection({
                 </button>
               ))}
               {pickList.length === 0 && (
-                <div className="p-3 text-xs text-subtle text-center">
+                <div className="p-3 text-style-caption text-muted text-center">
                   Нічого не знайдено
                 </div>
               )}
@@ -250,6 +250,14 @@ export function WorkoutTemplatesSection({
               {orderIds.length >= 2 && !groupSelectMode && (
                 <button
                   type="button"
+                  // AI-DANGER: `text-xs` на цій і сусідніх чіп-кнопках —
+                  // розмір КОНТРОЛА (бордер + падинг + hover), а не роль
+                  // тексту. Семантична шкала ролей описує текст: `caption`
+                  // це «мета, таймстемпи», і мітка кнопки нею не є.
+                  // Спеціальної ролі для контролів у шкалі немає, тож
+                  // правильна дія тут — лишити сирий розмір, а не
+                  // підібрати найближчу роль. Те саме стосується
+                  // `text-xs!` на компоненті `Button`.
                   className="text-xs px-2 py-1 rounded-xl border border-line text-subtle hover:text-text hover:bg-panelHi transition-colors"
                   onClick={() => {
                     setGroupSelectMode(true);
@@ -332,7 +340,7 @@ export function WorkoutTemplatesSection({
                           )}
                         </button>
                       )}
-                      <span className="text-xs text-subtle w-5 text-center">
+                      <span className="text-style-caption text-muted w-5 text-center tabular-nums">
                         {idx + 1}
                       </span>
                       <span className="flex-1 text-sm truncate min-w-0">
@@ -438,7 +446,7 @@ export function WorkoutTemplatesSection({
                 <div className="text-style-label text-text truncate">
                   {t.name}
                 </div>
-                <div className="text-xs text-subtle">
+                <div className="text-style-caption text-muted">
                   {(t.exerciseIds || []).length}{" "}
                   {pluralExercises((t.exerciseIds || []).length)}
                   {(t.groups || []).length > 0 && (
