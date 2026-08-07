@@ -13,6 +13,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const incTokens = vi.fn();
 const incCost = vi.fn();
 const incRequests = vi.fn();
+const toDb = vi.fn();
 
 vi.mock("../../obs/metrics.js", () => ({
   aiTokensTotal: { inc: incTokens },
@@ -23,6 +24,11 @@ vi.mock("../../obs/metrics.js", () => ({
 
 vi.mock("../../sentry.js", () => ({
   Sentry: { addBreadcrumb: vi.fn() },
+}));
+
+vi.mock("../anthropicUsageStore.js", () => ({
+  ANTHROPIC_PROVIDER_SUBJECT: "provider:anthropic",
+  recordAnthropicUsageToDb: toDb,
 }));
 
 const { OpenRouterProvider } = await import("./provider.js");
@@ -42,6 +48,7 @@ beforeEach(() => {
   incTokens.mockClear();
   incCost.mockClear();
   incRequests.mockClear();
+  toDb.mockClear();
 });
 
 afterEach(() => {
@@ -159,5 +166,77 @@ describe("OpenRouterProvider — облік вартості", () => {
     expect(r.ok).toBe(false);
     expect(incTokens).not.toHaveBeenCalled();
     expect(incCost).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * Лічильники вище живуть у памʼяті процесу й починаються з нуля на кожному
+ * деплої. Поки цей шлях не писав у `ai_usage_daily`, витрати коуча,
+ * дайджесту й readonly не переживали жодного рестарту — а денна стеля
+ * `anthropicBudgetGuard` читає тепер саме той леджер.
+ */
+describe("OpenRouterProvider — persistent-леджер", () => {
+  it("пише виклик у ai_usage_daily разом з ендпоінтом і фактом списання", async () => {
+    vi.stubGlobal(
+      "fetch",
+      mockGateway({ prompt_tokens: 900, completion_tokens: 120, cost: 0.0031 }),
+    );
+
+    await new OpenRouterProvider("k").generate({
+      model: "openai/gpt-5.1",
+      maxTokens: 300,
+      messages: [{ role: "user", content: "привіт" }],
+      endpoint: "coach-insight",
+      userId: "u_42",
+    });
+
+    expect(toDb).toHaveBeenCalledTimes(1);
+    const [model, usage, userId, endpoint, actualCost] = toDb.mock.calls[0]!;
+    expect(model).toBe("openai/gpt-5.1");
+    expect(usage).toMatchObject({ input_tokens: 900, output_tokens: 120 });
+    expect(userId).toBe("u_42");
+    // Без ендпоінта леджер склав би всі конвеєри в один рядок, і питання
+    // «скільки коштує коуч проти чату» знову лишилось би лише за
+    // лічильником у памʼяті.
+    expect(endpoint).toBe("coach-insight");
+    expect(actualCost).toBeCloseTo(0.0031, 6);
+  });
+
+  it("без cost від шлюзу actual лишається порожнім, а не нулем", async () => {
+    // Нуль читався б як «безкоштовний виклик» і занижував би стелю;
+    // `undefined` означає «беремо оцінку за прайс-таблицею».
+    vi.stubGlobal(
+      "fetch",
+      mockGateway({ prompt_tokens: 10, completion_tokens: 5 }),
+    );
+
+    await new OpenRouterProvider("k").generate({
+      model: "z-ai/glm-5.2",
+      maxTokens: 100,
+      messages: [{ role: "user", content: "x" }],
+      endpoint: "day-plan",
+    });
+
+    expect(toDb.mock.calls[0]?.[4]).toBeUndefined();
+  });
+
+  it("невдалий виклик у леджер не пише", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: async () => ({ error: { message: "boom" } }),
+      }),
+    );
+
+    await new OpenRouterProvider("k").generate({
+      model: "openai/gpt-5.1",
+      maxTokens: 10,
+      messages: [{ role: "user", content: "x" }],
+      endpoint: "coach-insight",
+    });
+
+    expect(toDb).not.toHaveBeenCalled();
   });
 });

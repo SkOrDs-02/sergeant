@@ -284,7 +284,20 @@ function recordUsage(
     // ledger-failure НЕ ламає Anthropic-flow. `void` навмисно, щоб eslint
     // no-floating-promises не репортив (recordAnthropicUsageToDb сам
     // ковтає рантайм-помилки).
-    void recordAnthropicUsageToDb(model, usage, userId);
+    //
+    // `ep` і `usage.cost` раніше сюди не доїжджали, хоч на два рядки вище
+    // обидва вже пораховані для Prometheus. Наслідок був у тому, що леджер
+    // складав усі кроки в один рядок `endpoint='legacy'` і знав лише
+    // оцінку за прайс-таблицею — тобто на питання «скільки коштує цей
+    // конкретний конвеєр» відповідав лише лічильник у памʼяті, який не
+    // переживає деплой.
+    void recordAnthropicUsageToDb(
+      model,
+      usage,
+      userId,
+      ep,
+      typeof usage.cost === "number" ? usage.cost : undefined,
+    );
   } catch {
     /* ignore */
   }

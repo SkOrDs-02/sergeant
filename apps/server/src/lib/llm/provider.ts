@@ -24,6 +24,7 @@ import {
   llmProviderInvocationsTotal,
 } from "../../obs/metrics.js";
 import { estimateAnthropicCostUsd } from "../aiPricing.js";
+import { recordAnthropicUsageToDb } from "../anthropicUsageStore.js";
 import { Sentry } from "../../sentry.js";
 import { anthropicMessages, extractAnthropicText } from "../anthropic.js";
 import { getCounterpartyNames } from "../counterpartyNames.js";
@@ -89,9 +90,10 @@ export interface LLMGenerateOpts {
    */
   promptVersion?: string | undefined;
   /**
-   * Better Auth user-id для per-user cost-ledger. Прокидається лише
-   * `AnthropicProvider`-ом (єдиний, що пише `ai_usage_daily`); OpenRouter/Stub
-   * ігнорують.
+   * Better Auth user-id для per-user cost-ledger. Пишуть обидва провайдери,
+   * що ходять по грошах — `AnthropicProvider` і `OpenRouterProvider`; `Stub`
+   * ігнорує. Необовʼязковий: без нього в `ai_usage_daily` лягає лише
+   * provider-рядок (`provider:anthropic`), а саме його читає денна стеля.
    */
   userId?: string | undefined;
 }
@@ -306,6 +308,7 @@ function recordOpenRouterUsage(
   model: string,
   endpoint: string | undefined,
   usage: { prompt_tokens?: number; completion_tokens?: number; cost?: number },
+  userId?: string | undefined,
 ): void {
   const labels = {
     provider: "anthropic",
@@ -336,6 +339,27 @@ function recordOpenRouterUsage(
   } catch {
     // Метрики — advisory. Збій реєстру не повинен ламати відповідь моделі.
   }
+
+  // Той самий запис у persistent-леджер `ai_usage_daily`. Лічильники вище
+  // живуть у памʼяті процесу, тож із кожним деплоєм починаються з нуля —
+  // а деплоїв тут кілька на добу. Поки цей рядок не існував, витрати коуча,
+  // дайджесту й readonly-шляху не переживали жодного рестарту, і денна
+  // стеля `anthropicBudgetGuard` разом із ними починала добу заново.
+  //
+  // Поза try вище навмисно: збій prom-client-реєстру не має забирати з
+  // собою запис у БД. Сам helper fail-open — ковтає власні помилки, тому
+  // `void` тут не ховає нічого, що варто було б знати.
+  void recordAnthropicUsageToDb(
+    model,
+    {
+      input_tokens: usage.prompt_tokens ?? 0,
+      output_tokens: usage.completion_tokens ?? 0,
+      cost: usage.cost ?? null,
+    },
+    userId,
+    endpoint,
+    typeof usage.cost === "number" ? usage.cost : undefined,
+  );
 }
 
 export class OpenRouterProvider implements LLMProvider {
@@ -458,7 +482,7 @@ export class OpenRouterProvider implements LLMProvider {
         if (typeof usage.completion_tokens === "number")
           usageOut.outputTokens = usage.completion_tokens;
         result.usage = usageOut;
-        recordOpenRouterUsage(model, opts.endpoint, usage);
+        recordOpenRouterUsage(model, opts.endpoint, usage, opts.userId);
       }
       return result;
     } catch (e: unknown) {
