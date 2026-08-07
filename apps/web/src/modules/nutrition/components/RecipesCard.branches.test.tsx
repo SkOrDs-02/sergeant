@@ -253,9 +253,16 @@ describe("RecipesCard — save-to-book branches", () => {
       expect(mockSaveRecipeToBook).toHaveBeenCalledWith(GENERATED_RECIPE),
     );
     expect(mockListSavedRecipes.mock.calls.length).toBe(listCallsBefore);
-    // Помилка теж мусить бути видимою, а не ковтатись мовчки.
+    // Помилка теж мусить бути видимою, а не ковтатись мовчки — і саме
+    // з action-кнопкою: `sergeant-design/require-toast-error-action`
+    // забороняє `toast.error` без дії, тож хендлер шле три аргументи.
+    // Очікування на один аргумент було стале й червоніло на main.
     await waitFor(() =>
-      expect(toastSpies.error).toHaveBeenCalledWith("Тест-фейл"),
+      expect(toastSpies.error).toHaveBeenCalledWith(
+        "Тест-фейл",
+        undefined,
+        expect.objectContaining({ label: "Повторити" }),
+      ),
     );
   });
 });
