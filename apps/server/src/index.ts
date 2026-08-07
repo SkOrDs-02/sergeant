@@ -176,10 +176,11 @@ configureFtuxDripDispatcher({ pool });
 const ftuxDripWorker: StartedFtuxDripWorker | null = startFtuxDripWorker();
 
 // Нагадування про звички / їжу / тренування. Свідомо НЕ BullMQ, на відміну
-// від сусідів вище: черга не стартує без `REDIS_URL`, якого у проді немає,
-// і канал мовчав би далі. Хвилинний таймер + claim-before-send дедуп у
-// Postgres дають ту саму гарантію «не більше одного пушу на подію» навіть
-// при кількох репліках. Деталі — `lib/reminders/sweep.ts`.
+// від сусідів вище — але не через відсутність Redis (він у проді є з
+// 2026-07-11): дедуп уже живе в Postgres, а робота тут — періодичний скан,
+// не дискретні задачі. Хвилинний таймер + claim-before-send дають ту саму
+// гарантію «не більше одного пушу на подію» навіть при кількох репліках.
+// Деталі — `lib/reminders/sweep.ts`.
 const reminderScheduler: StartedReminderScheduler | null =
   env.REMINDER_SWEEP_ENABLED ? startReminderScheduler(pool) : null;
 

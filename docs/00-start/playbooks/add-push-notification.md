@@ -1,6 +1,6 @@
 # Playbook: Add Push Notification
 
-> **Last touched:** 2026-08-02 by @claude. **Next review:** 2026-11-01.
+> **Last touched:** 2026-08-07 by @Skords-01. **Next review:** 2026-11-05.
 > **Status:** Active
 
 **Trigger:** «Надсилай push коли X» / «Додати новий тип сповіщення» / нагадування / реакція на зовнішню подію (Mono webhook, AI insight, scheduler).
@@ -21,7 +21,7 @@ Push-інфраструктура вже зібрана (див. `apps/server/sr
 - **Server fan-out** — `sendToUser(userId, payload)` з `apps/server/src/push/send.ts`. Читає з `push_devices` + `push_subscriptions`, паралельно б'є APNs/FCM/web-push, повертає аґреговану статистику. Не throw-ає; помилки конкретного каналу повертає у `errors[]`.
 - **Quiet variant** — `sendToUserQuietly(userId, payload)` для fire-and-forget (наприклад, всередині handler-а, що не має валитись через push).
 - **Client SW** (web) — `apps/web/src/sw.ts`, `self.addEventListener("push", …)`. Розбір payload-у живе в `apps/web/src/sw/pushPayload.ts` (`normalizePushPayload`) — там же захисні обрізки й allow-list модулів. SW читає `data.module`, `data.url` і `tag`; плоска форма `{module, tag}` без `data` лишається fallback-ом для внутрішнього `POST /api/push/send`.
-- **Нагадування за розкладом** — `apps/server/src/lib/reminders/`. Хвилинний прохід (`runReminderSweep`) читає вже синхронізовані `routine_habits` / `routine_prefs` / `fizruk_monthly_plan` / `nutrition_prefs`, звіряється з `routine_completion_events` і `routine_habit_skips`, стовпить рядок у `push_reminder_log` і лише потім шле. Не BullMQ: черга не стартує без `REDIS_URL`, якого у проді немає.
+- **Нагадування за розкладом** — `apps/server/src/lib/reminders/`. Хвилинний прохід (`runReminderSweep`) читає вже синхронізовані `routine_habits` / `routine_prefs` / `fizruk_monthly_plan` / `nutrition_prefs`, звіряється з `routine_completion_events` і `routine_habit_skips`, стовпить рядок у `push_reminder_log` і лише потім шле. Не BullMQ — і не через відсутність Redis (він у проді є): дедуп уже в Postgres, а робота тут періодичний скан, не дискретні задачі. Обґрунтування — шапка `lib/reminders/sweep.ts`.
 - **VAPID** — `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_EMAIL` у `.env` (опціонально, без них web-push мовчки skip-ається).
 
 Додавання нового **типу** push-у — це не новий transport, а нова **точка тригера** + (опціонально) новий routing у SW.
