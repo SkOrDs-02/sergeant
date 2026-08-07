@@ -118,7 +118,8 @@ deferred, trigger-gated на перший production contract-bug:
 
 | PR                                                     | Title                                                                   | Merged     |
 | ------------------------------------------------------ | ----------------------------------------------------------------------- | ---------- |
+| [#705](https://github.com/Skords-01/Sergeant/pull/705) | docs(docs): backlinks for #689 (+ діагноз, чому їх 57 таких)            | 2026-08-07 |
 | [#689](https://github.com/Skords-01/Sergeant/pull/689) | fix(ci): governance-sync відрізняє живе посилання від навмисно мертвого | 2026-08-07 |
 
-_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 2 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

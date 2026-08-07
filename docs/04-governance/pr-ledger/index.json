@@ -4,6 +4,13 @@
   "generated_at": "2026-08-07",
   "prs": [
     {
+      "number": 705,
+      "title": "docs(docs): backlinks for #689 (+ діагноз, чому їх 57 таких)",
+      "merged_at": "2026-08-07T14:33:18Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": ["docs/04-governance/adr/0062-openapi-source-of-truth.md"]
+    },
+    {
       "number": 689,
       "title": "fix(ci): governance-sync відрізняє живе посилання від навмисно мертвого",
       "merged_at": "2026-08-07T00:15:07Z",
