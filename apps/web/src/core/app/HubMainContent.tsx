@@ -216,7 +216,7 @@ export const HubMainContent = memo(function HubMainContent({
     const id = setTimeout(() => setSlideClass(""), 260);
     return () => clearTimeout(id);
     // HUB_TAB_ORDER is a module-level constant — no dep needed.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `HUB_TAB_ORDER` — module-level константа, dep не потрібен
   }, [hubView]);
 
   const handleRefresh = useCallback(async () => {
