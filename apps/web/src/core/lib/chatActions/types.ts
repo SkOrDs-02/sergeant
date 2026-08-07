@@ -66,6 +66,7 @@ import type {
   LogWaterAction,
   AddRecipeAction,
   AddToShoppingListAction,
+  ClearPantryAction,
   ConsumeFromPantryAction,
   SetDailyPlanAction,
   SuggestMealAction,
@@ -172,6 +173,7 @@ export type {
   LogWaterAction,
   AddRecipeAction,
   AddToShoppingListAction,
+  ClearPantryAction,
   ConsumeFromPantryAction,
   SetDailyPlanAction,
   SuggestMealAction,
@@ -259,6 +261,7 @@ export type ChatAction =
   | LogWaterAction
   | AddRecipeAction
   | AddToShoppingListAction
+  | ClearPantryAction
   | ConsumeFromPantryAction
   | SetDailyPlanAction
   | SuggestMealAction

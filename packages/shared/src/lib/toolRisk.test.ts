@@ -56,6 +56,8 @@ describe("TOOL_RISK ↔ каталог здібностей", () => {
     const confirming = [...RISKY_TOOL_IDS].filter(requiresConfirmation).sort();
     expect(confirming).toEqual([
       "batch_categorize",
+      // Стирає всі позиції активної комори одним викликом, без undo.
+      "clear_pantry",
       "delete_transaction",
       "forget",
       "import_monobank_range",

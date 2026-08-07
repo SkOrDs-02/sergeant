@@ -894,6 +894,18 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     requiresOnline: true,
   },
   {
+    id: "clear_pantry",
+    module: "nutrition",
+    label: "Очистити комору",
+    icon: "trash",
+    description: "Прибрати всі продукти з активної комори.",
+    examples: ["видали все з комори", "очисти комору"],
+    prompt: "Очисти комору",
+    requiresInput: false,
+    requiresOnline: true,
+    risky: true,
+  },
+  {
     id: "copy_meal_from_date",
     module: "nutrition",
     label: "Повторити їжу",

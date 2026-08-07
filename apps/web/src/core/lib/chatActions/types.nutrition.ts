@@ -49,6 +49,12 @@ export interface AddToShoppingListAction {
   };
 }
 
+export interface ClearPantryAction {
+  name: "clear_pantry";
+  /** Аргументів немає: очищується активна комора, інших варіантів нема. */
+  input: Record<string, never>;
+}
+
 export interface ConsumeFromPantryAction {
   name: "consume_from_pantry";
   /**
