@@ -2,6 +2,7 @@ import { memo, useState, type ReactNode } from "react";
 import { chartHex } from "@sergeant/design-tokens/tokens";
 import { cn } from "@shared/lib/ui/cn";
 import { Money } from "@shared/components/ui/Money";
+import { Icon } from "@shared/components/ui/Icon";
 
 // Convert a polar angle (0° = 12 o'clock, clockwise) to cartesian coordinates.
 function polarToXY(cx: number, cy: number, r: number, angleDeg: number) {
@@ -313,9 +314,10 @@ function CategoryPieChartComponent({
             onClick={() => setShowAll((v) => !v)}
             aria-expanded={expanded}
             data-testid="finyk-analytics-donut-toggle"
-            className="min-h-[44px] px-3 py-2 rounded-full border border-line bg-panelHi text-style-caption text-text hover:border-muted/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+            className="inline-flex items-center gap-1 min-h-[44px] px-3 py-2 rounded-full border border-line bg-panelHi text-style-caption text-text hover:border-muted/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
           >
-            {expanded ? "Згорнути ↑" : `Показати всі (${data.length}) ↓`}
+            {expanded ? "Згорнути" : `Показати всі (${data.length})`}
+            <Icon name={expanded ? "chevron-up" : "chevron-down"} size="sm" />
           </button>
         </div>
       ) : null}

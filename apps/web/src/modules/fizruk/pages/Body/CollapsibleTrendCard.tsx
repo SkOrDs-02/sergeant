@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Card } from "@shared/components/ui/Card";
+import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { safeWriteLS } from "@shared/lib/storage/storage";
 import { TREND_STORAGE_PREFIX, readTrendOpen } from "./storage";
@@ -91,11 +92,11 @@ export function CollapsibleTrendCard({
         <span
           aria-hidden
           className={cn(
-            "inline-block w-4 text-muted transition-transform shrink-0",
+            "inline-flex justify-center w-4 text-muted transition-transform shrink-0",
             open ? "rotate-180" : "rotate-0",
           )}
         >
-          ▾
+          <Icon name="chevron-down" size="md" />
         </span>
       </button>
       {open && (

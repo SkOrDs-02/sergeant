@@ -11,6 +11,7 @@ import { motionScrollBehavior } from "@shared/lib/ui/motion";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
+import { Icon } from "@shared/components/ui/Icon";
 import { DateField } from "@shared/components/ui/DateField";
 import { Input } from "@shared/components/ui/Input";
 import { Label } from "@shared/components/ui/FormField";
@@ -296,8 +297,14 @@ export function HabitForm({
         className="flex items-center gap-1 text-style-caption text-muted hover:text-text transition-colors"
       >
         <span>{showAdvanced ? "Менше опцій" : "Більше опцій"}</span>
-        <span aria-hidden className="text-style-caption">
-          {showAdvanced ? "▲" : "▼"}
+        <span
+          aria-hidden
+          className={cn(
+            "inline-flex shrink-0 transition-transform",
+            showAdvanced ? "rotate-180" : "rotate-0",
+          )}
+        >
+          <Icon name="chevron-down" size="sm" />
         </span>
       </button>
 

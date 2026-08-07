@@ -9,6 +9,7 @@ import type {
 } from "@sergeant/fizruk-domain";
 import { Input } from "@shared/components/ui/Input";
 import { Icon } from "@shared/components/ui/Icon";
+import { MorphChevron } from "@shared/components/ui/MorphChevron";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { FizrukEmptyIllustration } from "@shared/components/ui/EmptyStateIllustrations";
 import { cn } from "@shared/lib/ui/cn";
@@ -132,7 +133,7 @@ export function WorkoutCatalogSection({
       {mode === "log" && (
         <p className="text-style-caption text-muted mb-2 leading-relaxed">
           Розкрий групу й тапни по вправі — додасться в активне тренування.
-          Кнопка «ⓘ» праворуч — опис і фото без додавання.
+          Кнопка «Інфо» праворуч — опис і фото без додавання.
         </p>
       )}
 
@@ -160,9 +161,7 @@ export function WorkoutCatalogSection({
                   <div className="text-style-label text-text">{g.label}</div>
                   <div className="text-style-caption text-muted flex items-center gap-2">
                     <span>{g.total}</span>
-                    <span className="text-lg leading-none">
-                      {isOpen ? "▾" : "▸"}
-                    </span>
+                    <MorphChevron open={isOpen} size={16} />
                   </div>
                 </button>
 
@@ -223,12 +222,7 @@ export function WorkoutCatalogSection({
                               aria-label="Опис і фото вправи"
                               onClick={() => setSelected(ex)}
                             >
-                              <span
-                                className="text-base leading-none"
-                                aria-hidden
-                              >
-                                ⓘ
-                              </span>
+                              <Icon name="info" size="lg" />
                             </button>
                           )}
                         </div>

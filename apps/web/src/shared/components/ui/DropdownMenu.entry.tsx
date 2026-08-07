@@ -10,6 +10,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
+import { Icon } from "./Icon";
 import { SectionHeading } from "./SectionHeading";
 import type {
   DropdownMenuEntry,
@@ -113,12 +114,11 @@ export function DropdownMenuEntryView({
           </kbd>
         ) : null}
         {isSubmenu ? (
-          <span
-            aria-hidden="true"
-            className="shrink-0 ml-2 text-muted text-xs" /* icon-size, not type */
-          >
-            ▸
-          </span>
+          <Icon
+            name="chevron-right"
+            size="sm"
+            className="shrink-0 ml-2 text-muted"
+          />
         ) : null}
       </button>
       {isSubmenuOpen && entry.type === "submenu" ? (

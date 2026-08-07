@@ -358,7 +358,7 @@ export function AddMealSheet({
           className="w-9 h-9 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full bg-panelHi text-muted hover:text-text transition-colors"
           aria-label="Назад до вибору джерела"
         >
-          ←
+          <Icon name="chevron-left" size="lg" />
         </button>
       )}
       <span className="truncate">
@@ -368,9 +368,10 @@ export function AddMealSheet({
         <button
           type="button"
           onClick={handleBacktrack}
-          className="ml-auto shrink-0 text-style-caption text-nutrition-strong dark:text-nutrition hover:text-nutrition-hover underline decoration-dotted underline-offset-2 transition-colors min-h-[44px] px-1"
+          className="ml-auto shrink-0 inline-flex items-center gap-1 text-style-caption text-nutrition-strong dark:text-nutrition hover:text-nutrition-hover underline decoration-dotted underline-offset-2 transition-colors min-h-[44px] px-1"
         >
-          Обрати джерело ↑
+          Обрати джерело
+          <Icon name="arrow-up" size="sm" />
         </button>
       )}
     </div>

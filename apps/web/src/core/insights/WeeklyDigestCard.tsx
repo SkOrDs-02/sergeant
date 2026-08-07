@@ -641,9 +641,10 @@ export function WeeklyDigestCard({
             <button
               type="button"
               onClick={() => setSelectedWeekKey(currentWeekKey)}
-              className="text-style-label text-primary hover:underline"
+              className="inline-flex items-center gap-1 text-style-label text-primary hover:underline"
             >
-              ← Поточний тиждень
+              <Icon name="chevron-left" size="sm" />
+              Поточний тиждень
             </button>
           </div>
         )}

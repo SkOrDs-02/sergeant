@@ -199,7 +199,7 @@ describe("WorkoutCatalogSection — group accordion", () => {
     expect(handleExerciseInListClick).toHaveBeenCalledWith(ex);
   });
 
-  it("shows ⓘ button in log mode and calls setSelected on click", () => {
+  it("shows the info button in log mode and calls setSelected on click", () => {
     const setSelected = vi.fn();
     const ex = makeEx("bench", "Жим лежачи");
     const grouped = [makeGroup("chest", [ex])];
@@ -217,7 +217,7 @@ describe("WorkoutCatalogSection — group accordion", () => {
     expect(setSelected).toHaveBeenCalledWith(ex);
   });
 
-  it("hides ⓘ button in catalog mode", () => {
+  it("hides the info button in catalog mode", () => {
     const grouped = [makeGroup("chest", [makeEx("bench", "Жим лежачи")])];
     render(
       <WorkoutCatalogSection

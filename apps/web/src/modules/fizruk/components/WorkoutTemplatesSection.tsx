@@ -258,13 +258,14 @@ export function WorkoutTemplatesSection({
                   // правильна дія тут — лишити сирий розмір, а не
                   // підібрати найближчу роль. Те саме стосується
                   // `text-xs!` на компоненті `Button`.
-                  className="text-xs px-2 py-1 rounded-xl border border-line text-subtle hover:text-text hover:bg-panelHi transition-colors"
+                  className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-xl border border-line text-subtle hover:text-text hover:bg-panelHi transition-colors"
                   onClick={() => {
                     setGroupSelectMode(true);
                     setGroupSelected(new Set());
                   }}
                 >
-                  ⊕ Суперсет
+                  <Icon name="plus-circle" size="sm" />
+                  Суперсет
                 </button>
               )}
               {groupSelectMode && (
@@ -354,11 +355,11 @@ export function WorkoutTemplatesSection({
                         >
                           <button
                             type="button"
-                            className="text-style-caption text-danger-strong/60 dark:text-danger/60 hover:text-danger px-1"
+                            className="inline-flex items-center justify-center text-danger-strong/60 dark:text-danger/60 hover:text-danger px-1"
                             aria-label="Прибрати з групи"
                             onClick={() => handleRemoveGroup(group.id)}
                           >
-                            ⊗
+                            <Icon name="x-circle" size="sm" />
                           </button>
                         </Tooltip>
                       )}
@@ -366,19 +367,19 @@ export function WorkoutTemplatesSection({
                         <>
                           <button
                             type="button"
-                            className="min-w-[44px] min-h-[44px] text-subtle hover:text-text"
+                            className="inline-flex items-center justify-center min-w-[44px] min-h-[44px] text-subtle hover:text-text"
                             aria-label="Вище"
                             onClick={() => move(idx, -1)}
                           >
-                            ↑
+                            <Icon name="arrow-up" size={15} aria-hidden />
                           </button>
                           <button
                             type="button"
-                            className="min-w-[44px] min-h-[44px] text-subtle hover:text-text"
+                            className="inline-flex items-center justify-center min-w-[44px] min-h-[44px] text-subtle hover:text-text"
                             aria-label="Нижче"
                             onClick={() => move(idx, 1)}
                           >
-                            ↓
+                            <Icon name="arrow-down" size={15} aria-hidden />
                           </button>
                           <button
                             type="button"

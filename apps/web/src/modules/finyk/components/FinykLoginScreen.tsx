@@ -2,6 +2,7 @@ import { useState } from "react";
 import { z } from "zod";
 import { Button } from "@shared/components/ui/Button";
 import { Input } from "@shared/components/ui/Input";
+import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { useApiForm } from "@shared/forms";
 import { messages } from "@shared/i18n/uk";
@@ -296,7 +297,8 @@ export function FinykLoginScreen({
               className="mt-1 w-full min-h-[44px]"
               onClick={onBackToHub}
             >
-              ← {backLabel}
+              <Icon name="chevron-left" size="sm" />
+              {backLabel}
             </Button>
           )}
         </form>

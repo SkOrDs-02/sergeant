@@ -235,7 +235,8 @@ export function QuickStartSheet({
           onClick={() => setStep("choose")}
           aria-label="Повернутись до вибору способу"
         >
-          ← Назад
+          <Icon name="chevron-left" size="sm" />
+          Назад
         </Button>
       }
       footer={

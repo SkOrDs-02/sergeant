@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Card } from "@shared/components/ui/Card";
+import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
 import { JournalEntryCard } from "./JournalEntryCard";
@@ -72,11 +73,11 @@ export function JournalSection({
         <span
           aria-hidden
           className={cn(
-            "inline-block w-4 text-muted transition-transform shrink-0",
+            "inline-flex justify-center w-4 text-muted transition-transform shrink-0",
             open ? "rotate-180" : "rotate-0",
           )}
         >
-          ▾
+          <Icon name="chevron-down" size="md" />
         </span>
       </button>
       {open && (

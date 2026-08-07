@@ -333,9 +333,9 @@ describe("AddMealSheet — fill step (no templates/photoResult/initialMeal)", ()
     expect(screen.getByText("Додати прийом їжі")).toBeInTheDocument();
   });
 
-  it("shows 'Обрати джерело ↑' link when auto-skipped the source step", () => {
+  it("shows 'Обрати джерело' link when auto-skipped the source step", () => {
     renderSheet({ mealTemplates: [] });
-    expect(screen.getByText("Обрати джерело ↑")).toBeInTheDocument();
+    expect(screen.getByText("Обрати джерело")).toBeInTheDocument();
   });
 
   it("shows save and cancel buttons", () => {
@@ -359,11 +359,11 @@ describe("AddMealSheet — fill step (no templates/photoResult/initialMeal)", ()
     });
   });
 
-  it("backtracking via 'Обрати джерело ↑' returns to source step", () => {
+  it("backtracking via 'Обрати джерело' returns to source step", () => {
     renderSheet({ mealTemplates: [] });
     // Currently in fill (auto-skipped)
-    expect(screen.getByText("Обрати джерело ↑")).toBeInTheDocument();
-    fireEvent.click(screen.getByText("Обрати джерело ↑"));
+    expect(screen.getByText("Обрати джерело")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Обрати джерело"));
     // Now in source step
     expect(screen.getByText("Звідки страва?")).toBeInTheDocument();
   });
@@ -380,8 +380,8 @@ describe("AddMealSheet — editing an existing meal", () => {
       },
     });
     expect(screen.getByTestId("macros-editor")).toBeInTheDocument();
-    // Should NOT show the 'Обрати джерело ↑' link for edited meals
-    expect(screen.queryByText("Обрати джерело ↑")).not.toBeInTheDocument();
+    // Should NOT show the 'Обрати джерело' link for edited meals
+    expect(screen.queryByText("Обрати джерело")).not.toBeInTheDocument();
   });
 
   it("preserves foodId from initialMeal when saving an edit", async () => {
@@ -424,7 +424,7 @@ describe("AddMealSheet — photoResult import", () => {
       },
     });
     expect(screen.getByTestId("macros-editor")).toBeInTheDocument();
-    expect(screen.queryByText("Обрати джерело ↑")).not.toBeInTheDocument();
+    expect(screen.queryByText("Обрати джерело")).not.toBeInTheDocument();
     fireEvent.click(screen.getByText("Зберегти"));
     const dialog = await screen.findByRole("alertdialog");
     fireEvent.click(within(dialog).getByRole("button", { name: "Зберегти" }));

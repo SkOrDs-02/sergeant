@@ -4,6 +4,7 @@
  */
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Measure } from "@shared/components/ui/Measure";
+import { Icon } from "@shared/components/ui/Icon";
 import type { Dispatch, RefObject, SetStateAction } from "react";
 import { Link } from "react-router-dom";
 import { cn } from "@shared/lib/ui/cn";
@@ -195,8 +196,14 @@ export function DailyPlanGoalSelectors({
           {activeGoal
             ? `Пресет: ${TDEE_GOAL_LABELS[activeGoal]}`
             : "Підказати з пресету"}
-          <span aria-hidden className="text-style-caption">
-            ▾
+          <span
+            aria-hidden
+            className={cn(
+              "inline-flex shrink-0 transition-transform",
+              menuOpen ? "rotate-180" : "rotate-0",
+            )}
+          >
+            <Icon name="chevron-down" size="sm" />
           </span>
         </button>
         {menuOpen && (

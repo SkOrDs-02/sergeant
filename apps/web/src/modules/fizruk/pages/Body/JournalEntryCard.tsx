@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
 import {
@@ -60,13 +61,11 @@ export function JournalEntryCard({
           <span
             aria-hidden
             className={cn(
-              // `text-xs` тут — розмір ГЛІФА ▾, а не роль тексту, тож
-              // семантична шкала до нього не застосовна.
-              "inline-block w-3 text-muted transition-transform shrink-0 text-style-caption",
+              "inline-flex justify-center w-3 text-muted transition-transform shrink-0",
               open ? "rotate-180" : "rotate-0",
             )}
           >
-            ▾
+            <Icon name="chevron-down" size="sm" />
           </span>
           <span className="text-style-caption text-muted shrink-0">
             {dateLabel}

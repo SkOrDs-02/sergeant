@@ -6,6 +6,8 @@
  *
  * Group flavour mirrors `WorkoutGroup.type`.
  */
+import { Icon } from "@shared/components/ui/Icon";
+
 type WorkoutGroupType = "circuit" | "superset";
 
 export interface WorkoutGroupingControlsProps {
@@ -34,10 +36,11 @@ export function WorkoutGroupingControls({
       {!selectMode ? (
         <button
           type="button"
-          className="min-h-[44px] text-xs px-3 py-1.5 rounded-xl border border-line text-subtle hover:text-text hover:bg-panelHi transition-colors"
+          className="inline-flex items-center gap-1 min-h-[44px] text-xs px-3 py-1.5 rounded-xl border border-line text-subtle hover:text-text hover:bg-panelHi transition-colors"
           onClick={onEnterSelectMode}
         >
-          ⊕ Об{"'"}єднати в суперсет
+          <Icon name="plus-circle" size="sm" />
+          Об{"'"}єднати в суперсет
         </button>
       ) : (
         <>

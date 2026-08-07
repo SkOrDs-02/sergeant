@@ -308,10 +308,14 @@ export const BentoCard = memo(function BentoCard({
                 {preview.sub}
               </span>
             )}
-            {/* #8 — trend-delta chip: ▲/▼ vs previous period. Only shown
+            {/* #8 — trend-delta chip vs previous period. Only shown
                 when `trendDelta` is a non-null finite number. Positive =
-                success-ink (▲ green), negative = danger-ink (▼ red), zero
-                is omitted (no meaningful change to communicate). The chip
+                success-ink (up arrow, green), negative = danger-ink (down
+                arrow, red), zero is omitted (no meaningful change to
+                communicate). The direction glyph is a design-system `Icon`,
+                not a typographic ▲/▼: those come from the system font, so
+                their weight and baseline drift per OS and they ignore the
+                `strokeWidth` the rest of the card's iconography uses. The chip
                 sits below the sub-text and does not push the progress bar:
                 it is absolutely positioned in the bottom-left corner so it
                 never causes layout shift in the 120–132 px card height. */}
@@ -329,7 +333,13 @@ export const BentoCard = memo(function BentoCard({
                   )}
                   aria-label={`Зміна: ${config.trendDelta > 0 ? "+" : ""}${Math.round(config.trendDelta * 100)} %`}
                 >
-                  {config.trendDelta > 0 ? "▲" : "▼"}
+                  <Icon
+                    name={
+                      config.trendDelta > 0 ? "trending-up" : "trending-down"
+                    }
+                    size="xs"
+                    strokeWidth={2.5}
+                  />
                   {Math.abs(Math.round(config.trendDelta * 100))}%
                 </span>
               )}

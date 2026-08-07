@@ -31,7 +31,11 @@ describe("DailyPlanMealRow", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "+ Журнал" }));
     expect(onAddToLog).toHaveBeenCalledWith(MEAL);
-    fireEvent.click(screen.getByRole("button", { name: "↻ Замінити" }));
+    // Мітки були «↻ Замінити» / «▼ Інгредієнти» — типографічні гліфи в ролі
+    // іконок. Замінені на `Icon` (refresh-cw / chevron-down), а `<svg
+    // aria-hidden>` в accessible name не входить, тож у запитах лишився
+    // чистий текст.
+    fireEvent.click(screen.getByRole("button", { name: "Замінити" }));
     expect(onRegen).toHaveBeenCalledWith("lunch");
   });
 
@@ -39,7 +43,7 @@ describe("DailyPlanMealRow", () => {
     render(
       <DailyPlanMealRow meal={MEAL} onAddToLog={vi.fn()} onRegen={vi.fn()} />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "▼ Інгредієнти" }));
+    fireEvent.click(screen.getByRole("button", { name: "Інгредієнти" }));
     expect(screen.getByText("курка")).toBeInTheDocument();
   });
 

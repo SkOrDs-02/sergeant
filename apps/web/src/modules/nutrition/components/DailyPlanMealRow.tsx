@@ -4,6 +4,7 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import type { MealTypeId } from "@sergeant/nutrition-domain";
 import { MacroBadge } from "./DailyPlanMacros";
 import { Icon, type IconName } from "@shared/components/ui/Icon";
+import { cn } from "@shared/lib/ui/cn";
 
 export interface PlanMeal {
   type?: MealTypeId | string;
@@ -106,17 +107,28 @@ export function DailyPlanMealRow({
             onClick={() => onRegen(String(meal.type ?? ""))}
             disabled={busy}
           >
-            ↻ Замінити
+            <Icon name="refresh-cw" size="sm" />
+            Замінити
           </Button>
         </div>
       </div>
       {(meal.ingredients?.length ?? 0) > 0 && (
         <button
           type="button"
-          className="mt-2 text-style-caption text-nutrition-strong/90 dark:text-nutrition/70 hover:text-nutrition-strong dark:hover:text-nutrition transition-colors"
+          className="mt-2 inline-flex items-center gap-1 text-style-caption text-nutrition-strong/90 dark:text-nutrition/70 hover:text-nutrition-strong dark:hover:text-nutrition transition-colors"
           onClick={() => setExpanded((v) => !v)}
+          aria-expanded={expanded}
         >
-          {expanded ? "▲ Сховати інгредієнти" : "▼ Інгредієнти"}
+          <span
+            aria-hidden
+            className={cn(
+              "inline-flex shrink-0 transition-transform",
+              expanded ? "rotate-180" : "rotate-0",
+            )}
+          >
+            <Icon name="chevron-down" size="sm" />
+          </span>
+          {expanded ? "Сховати інгредієнти" : "Інгредієнти"}
         </button>
       )}
       {expanded && (meal.ingredients?.length ?? 0) > 0 && (

@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { Stat } from "./Stat";
+import { Icon } from "./Icon";
 
 /**
  * `Stat` — канонічний `eyebrow + big number + sublabel` triple, що повторюється
@@ -81,13 +82,18 @@ export const Danger: Story = {
   },
 };
 
-/** Із leading-emoji `icon` — швидка візуальна підказка модуля. */
+/**
+ * Із leading `icon` — швидка візуальна підказка модуля. Гліф береться з
+ * каталогу `Icon`, а не з емодзі: емодзі малюється системним шрифтом, тож
+ * має свою метрику й колір на кожній ОС і не тримає `strokeWidth` решти
+ * іконографії (`DESIGN.md § Заборонено` — «емодзі як іконки фіч»).
+ */
 export const WithIcon: Story = {
   args: {
     label: "Кроки",
     value: "11 240",
     sublabel: "+1.2k vs учора",
-    icon: "🏃",
+    icon: <Icon name="run" size="md" />,
     variant: "fizruk",
   },
 };
