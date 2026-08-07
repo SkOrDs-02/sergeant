@@ -7,7 +7,7 @@ import {
   Sec,
 } from "../_shared/primitives";
 
-const SAMPLE_USAGE = `// Semantic style — preferred (Hard Rule #16)
+const SAMPLE_USAGE = `// Semantic style — preferred (12px floor gated by check-design-conventions)
 <h2 className="text-style-title text-text">…</h2>
 
 // Eyebrow / overline label
@@ -50,10 +50,11 @@ export function TypographySection() {
       title="Типографіка"
       intro={
         <>
-          Семантичні <code>text-style-*</code> утиліті — переважно. Сира пара
-          <code>text-sm font-medium</code> → warn від{" "}
-          <code>prefer-text-style</code>. Заборонено <code>text-[Npx]</code> —
-          це блокер <code>no-arbitrary-text-size</code>.
+          Семантичні <code>text-style-*</code> утиліті — переважно; сира пара{" "}
+          <code>text-sm font-medium</code> лишається на review (ADR-0081).
+          Механічно блокується рівно 12px-floor: <code>text-2xs</code> і{" "}
+          <code>text-[Npx]</code> з N &lt; 12 валять{" "}
+          <code>check-design-conventions</code>.
         </>
       }
     >
@@ -152,15 +153,12 @@ export function TypographySection() {
       </Group>
 
       <RuleBadges
-        hardRules={[
-          { label: "HR #16", hint: "Типографічна шкала, 12px floor" },
-        ]}
+        hardRules={[]}
         lintRules={[
-          { label: "prefer-text-style" },
-          { label: "no-arbitrary-text-size" },
-          { label: "no-eyebrow-drift" },
-          { label: "no-ellipsis-dots" },
-          { label: "no-bare-empty-text" },
+          {
+            label: "check-design-conventions",
+            hint: "12px floor — text-2xs і text-[<12px] поза allowlist",
+          },
         ]}
       />
     </Sec>

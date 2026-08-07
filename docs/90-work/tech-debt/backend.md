@@ -1,5 +1,7 @@
 # Backend Tech Debt Inventory
 
+> **Оновлено 2026-08-07 (tech-debt reconcile).** Переміряно на HEAD: міграцій **117** up (`117_fizruk_workout_sets_user_idx.sql`), а не 82 — маркер від 2026-07-20 нижче застарів на 35 міграцій. `eslint.server-maxlines-allowlist.json` = `[]` (підтверджено). **Увесь блок § «P1 (наступний спринт)» виявився закритим і не переміряним:** `vitest --coverage` у CI живе job-ом `Test coverage (vitest)` (`ci.yml`, `test:coverage:ci` + `coverage-ratchet.mjs --floors`); Playwright happy-path — **23** `@critical`-специ (пункт просив «3–4»); CSP `report-uri` шле і `apps/web/vercel.json`, і `apps/landing/vercel.json` у сінк `/api/csp-report` (`routes/csp-report.ts`); explicit `Permissions-Policy` — там само, 19 директив, під pin-тестом `apps/web/src/test/permissionsPolicyHeader.test.ts`. **Хвіст:** докстрінг `apps/server/src/http/security.ts` досі стверджує, що `report-uri`/`report-to` endpoint не налаштований — це вже неправда для фронтенд-політики (для API-only CSP сервера — усе ще так). Server raw >600 LOC (12 файлів, найбільші `modules/chat/aiQuota.ts` 921, `env/env.ts` 852) лишаються під **effective** порогом — не борг.
+>
 > **Оновлено 2026-08-01.** § «Tests coverage map» нижче звірено з живим прогоном — застарілі цифри з 2026-05-05 (60.51% lines, три «0-15%» surface-и) замінені актуальними (93.02% lines; nutrition tool handlers / `syncV2.ts` / `weekly-digest.ts` тепер 95-100%). Заразом знайдено й полагоджено міграцією `096_finyk_fizruk_pk_text.sql`: **8 finyk + 7 fizruk таблиць** мали PK `uuid`, а клієнт шле доменно-префіксовані id (`b_…`, `w_…`, `dl_…`, тощо) — той самий клас бага, що й `094`/`095` того ж дня для routine/nutrition. Живий доказ — `invalid input syntax for type uuid` у CI на `finyk_manual_expenses` і `fizruk_daily_log`; повний розбір, включно з тим, чому «а де ще» знайшло ще 13 таблиць, — у коментарі міграції `097`. **Побічний хвіст того самого класу бага:** `apps/server/src/migrations/__tests__/{035-nutrition-tables,039-finyk-tables,050-routine-full-state,052-fizruk-full-state}.test.ts` (Testcontainers, `information_schema.columns` snapshot) досі очікували буквальний `uuid`-тип для тих самих колонок — `094`/`095` зламали два з них ще 2026-08-01 і ніхто не помітив (Docker-залежні, soft-skip локально), `097` зламала решту два. Виправлено: очікування → `text`, а «down → re-up restores the same schema fingerprint» тести обгорнуто down/up відповідної PK-міграції (`094`/`095`/`097`) навколо власного down/up тестованого файлу — інакше re-up без PK-міграції повертав колонку назад до `uuid`.
 >
 > **Last validated:** 2026-07-20 by @cursoragent (full reconcile vs HEAD). **Next review:** 2026-10-18.
@@ -745,13 +747,15 @@ two-phase DROP цього класу змін не покриває.
 4. ~~Sync zod-схем з handler-ами (`RefinePhotoSchema`)~~ — ✅ PR A.
 5. ~~Supertest-smoke на 8 ендпоінтів через `createApp()` factory~~ — ✅ PR #336.
 
-### P1 (наступний спринт)
+### P1 (наступний спринт) — ✅ порожній (звірено 2026-08-07)
+
+Список закритий повністю. Кожен рядок переміряний на HEAD, а не списаний з попереднього маркера:
 
 - ~~Розпил 5 найтовщих компонентів: `Assets.jsx` … `HubDashboard.tsx`.~~ **Усі декомпозовані** — `HubDashboard.tsx` зараз ~150 LOC (див. [`frontend.md` §4](./frontend.md)).
-- `vitest --coverage` у CI.
+- ~~`vitest --coverage` у CI.~~ **Done** — job `Test coverage (vitest)` у [`ci.yml`](../../../.github/workflows/ci.yml): `pnpm test:coverage:ci` + гейт `scripts/ci/coverage-ratchet.mjs --floors` (floors у `coverage-thresholds.json`). NB: `apps/mobile` навмисно виключений (`--filter=!@sergeant/mobile`, web-focus фаза) — саме тому mobile-floor 30 не має CI-виміру для ратчету.
 - ~~TS-міграція~~ **Done**.
-- 3–4 E2E happy-path у Playwright.
-- CSP `report-uri` + explicit `Permissions-Policy`.
+- ~~3–4 E2E happy-path у Playwright.~~ **Done з запасом** — **23** `@critical`-специ у `apps/web/tests/smoke/`, лейн `critical-flow` блокує PR.
+- ~~CSP `report-uri` + explicit `Permissions-Policy`.~~ **Done** — обидва заголовки в `apps/web/vercel.json` і `apps/landing/vercel.json`; `report-uri` + `report-to` вказують на `/api/csp-report` (сінк — `apps/server/src/routes/csp-report.ts`, `modules/observability/csp-report.ts`), `Permissions-Policy` має 19 директив і pin-тест `apps/web/src/test/permissionsPolicyHeader.test.ts`. **Залишковий борг — один докстрінг:** `apps/server/src/http/security.ts` усе ще пише «`report-uri`/`report-to` endpoint НЕ налаштований». Для API-only CSP самого сервера це правда, для фронтенд-політики — ні; формулювання вводить в оману і варте правки при наступному дотику до файлу.
 
 ---
 

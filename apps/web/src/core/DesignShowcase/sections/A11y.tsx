@@ -7,7 +7,7 @@ import {
   Sec,
 } from "../_shared/primitives";
 
-const SAMPLE_USAGE = `// Visible focus ring on keyboard nav only (Hard Rule #14)
+const SAMPLE_USAGE = `// Visible focus ring on keyboard nav only — "focus:" is gated by check-design-conventions
 <button className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60">
   Submit
 </button>
@@ -60,11 +60,13 @@ export function A11ySection() {
       title="A11y"
       intro={
         <>
-          Чотири стовпи: видимий фокус (HR #14), tap-targets ≥44×44 px, WCAG AA
-          контраст, повага до <code>prefers-reduced-motion: reduce</code> (HR
-          #17).
+          Чотири стовпи: видимий фокус, tap-targets ≥44×44 px, WCAG AA контраст,
+          повага до <code>prefers-reduced-motion: reduce</code>.{" "}
           <code>focus:</code> заборонено — використовуй{" "}
-          <code>focus-visible:</code>.
+          <code>focus-visible:</code> (гейт{" "}
+          <code>check-design-conventions</code>). 44px-floor гейтить лейн{" "}
+          <code>Mobile UI audit</code> у CI; контраст і reduced-motion —
+          review-only (ADR-0081).
         </>
       }
     >
@@ -207,14 +209,12 @@ export function A11ySection() {
       </Group>
 
       <RuleBadges
-        hardRules={[
-          { label: "HR #14", hint: "focus-visible only" },
-          { label: "HR #17", hint: "Motion budget — respect reduced-motion" },
-          { label: "HR #9", hint: "-strong companion for white-on-fill" },
-        ]}
+        hardRules={[]}
         lintRules={[
-          { label: "prefer-focus-visible" },
-          { label: "no-low-contrast-text-on-fill" },
+          {
+            label: "check-design-conventions",
+            hint: "`focus:` заборонено — лише focus-visible: / focus-within:",
+          },
         ]}
       />
     </Sec>

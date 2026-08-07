@@ -205,12 +205,26 @@ export function DoDont({ rows }: { rows: readonly DoDontRow[] }) {
 }
 
 export interface RuleEntry {
-  /** Display id, e.g. `HR #11` or `ESLint: no-hex-in-classname`. */
+  /** Display id, e.g. `HR #18` or `check-design-conventions`. */
   label: string;
   /** Optional helper string rendered as the title attribute. */
   hint?: string;
 }
 
+/**
+ * AI-CONTEXT (2026-08-07): колонка `lintRules` називається «Гейт», а не
+ * «ESLint», бо після ADR-0081 естетичні AST-правила видалені — механічний
+ * enforcement візуальних конвенцій дає grep-гейт
+ * `scripts/check-design-conventions.mjs`, не ESLint. Секції, що раніше
+ * рекламували `no-hex-in-classname` / `prefer-focus-visible` /
+ * `prefer-text-style` тощо, показували правила, яких у плагіні НЕ існує —
+ * тобто обіцяли enforcement, якого немає. Порожній список чесніший за
+ * неіснуючий бейдж: він рендериться як «convention-only».
+ *
+ * Перед додаванням бейджа сюди звіряйся з `rules` у
+ * `packages/eslint-plugin-sergeant-design/index.js` або зі `SCAN_DIRS`/`RULES`
+ * у `scripts/check-design-conventions.mjs`.
+ */
 export function RuleBadges({
   hardRules,
   lintRules,
@@ -241,7 +255,7 @@ export function RuleBadges({
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-style-caption uppercase tracking-wide text-subtle w-20 shrink-0">
-          ESLint
+          Гейт
         </span>
         {lintRules.length === 0 ? (
           <span className="text-style-caption text-subtle italic">

@@ -41,7 +41,18 @@ import { fileURLToPath } from "node:url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_ROOT = resolve(__dirname, "..");
 
-const SCAN_DIR = "apps/web/src";
+// Сканується КОЖНА web-поверхня з Tailwind-семантикою. `apps/landing/src` і
+// `apps/mobile-shell/src` додані 2026-08-07: обидві на нулі порушень, тож це
+// чистий guardrail без burndown-у — гейт тепер ловить регресію там, де раніше
+// її не бачив ніхто.
+//
+// `apps/mobile/src` СВІДОМО поза скоупом: NativeWind-поверхня має 156
+// порушень 12px-floor (17 `text-2xs` + 139 `text-[<12px]`) і — головне —
+// НУЛЬ `.text-style-*`, тобто мігрувати немає куди. Спершу потрібна
+// семантична шкала для mobile (owner-decision, `frontend.md` п.8), і лише
+// потім burndown + розширення цього списку. Правило `focusVariant` для
+// mobile у будь-якому разі не має сенсу (немає клавіатурного фокуса).
+const SCAN_DIRS = ["apps/web/src", "apps/landing/src", "apps/mobile-shell/src"];
 const SOURCE_EXT_RE = /\.(?:ts|tsx)$/;
 const SKIP_FILE_RE = /(?:\.test\.|\.stories\.|\.d\.ts$)/;
 
@@ -303,10 +314,11 @@ function* walk(dir) {
 
 export function scan(root = DEFAULT_ROOT) {
   const violations = [];
-  const absDir = resolve(root, SCAN_DIR);
-  for (const file of walk(absDir)) {
-    const rel = relative(root, file).split(sep).join("/");
-    violations.push(...scanSource(readFileSync(file, "utf8"), rel));
+  for (const dir of SCAN_DIRS) {
+    for (const file of walk(resolve(root, dir))) {
+      const rel = relative(root, file).split(sep).join("/");
+      violations.push(...scanSource(readFileSync(file, "utf8"), rel));
+    }
   }
   return violations;
 }
@@ -340,6 +352,7 @@ if (isMain) {
   }
 
   console.log(
-    "✅ [check-design-conventions] OK — raw hex / focus: / text-2xs / під-12px порушень не знайдено.",
+    `✅ [check-design-conventions] OK — raw hex / focus: / text-2xs / під-12px ` +
+      `порушень не знайдено (${SCAN_DIRS.join(", ")}).`,
   );
 }

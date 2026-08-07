@@ -1,6 +1,6 @@
 # Дизайн
 
-> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
+> **Last touched:** 2026-08-07 by @claude. **Next review:** 2026-11-05.
 > **Status:** Active
 
 Брендбук, дизайн-система, спеціалізовані патерни, активний v2-rollout і архів закритих аудитів.
@@ -68,9 +68,19 @@ migration, execution-plan, live execution-status, backlog) плюс index,
 [`scripts/check-design-conventions.mjs`](../../../scripts/check-design-conventions.mjs)
 (`pnpm lint:design-conventions`, входить у `pnpm lint` і CI `check`): no raw hex
 у className, `focus-visible:` замість `focus:`, 12px floor (`text-2xs` і
-`text-[<12px]` лише з allowlist-винятками у самому скрипті). **Review-only**
-лишаються AST-рівневі конвенції: opacity scale, `-strong` companions,
-module-accent containment — свідомо не покриті grep-скриптом.
+`text-[<12px]` лише з allowlist-винятками у самому скрипті). Скоуп скрипта —
+`apps/web/src`, `apps/landing/src`, `apps/mobile-shell/src` (`SCAN_DIRS`).
+**Review-only** лишаються AST-рівневі конвенції: opacity scale, `-strong`
+companions, module-accent containment — свідомо не покриті grep-скриптом.
+
+`apps/mobile/src` під гейт **не** заведений: NativeWind-поверхня має 156
+порушень 12px-floor і нуль `.text-style-*`, тож мігрувати немає куди —
+розширення gated на створення семантичної шкали для mobile
+([`frontend.md` п.8](../../90-work/tech-debt/frontend.md)).
+
+44×44 touch-target floor гейтить окремий лейн — блокуючий job
+`Mobile UI audit (44px touch targets)` у [`ci.yml`](../../../.github/workflows/ci.yml)
+(`apps/web/tests/mobile/*.spec.ts` під `pointer: coarse`).
 
 ## Пріоритет документів
 

@@ -130,7 +130,7 @@ function NetworthChartInner({
   const svgRef = useRef<SVGSVGElement>(null);
   const xPositions = useMemo(
     () => data.map((_, i) => px(i)),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `px(i)` — стабільна проєкція; додавання в deps перераховувало б memo щорендеру
     [data.length, W, PAD.left, PAD.right],
   );
 

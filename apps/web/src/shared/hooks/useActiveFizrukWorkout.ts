@@ -84,7 +84,7 @@ export function useActiveFizrukWorkout(): string | null {
     // touches — the SQLite warm cache and the localStorage pointer. The read
     // takes no arguments, so the rule cannot see that they are the whole
     // point of re-running it.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- ефект перезапускається саме на «тік» після запису, який правило не бачить
     [sqliteTick, storageEpoch],
   );
 

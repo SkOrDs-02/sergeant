@@ -253,10 +253,10 @@ describe("RecipesCard — save-to-book branches", () => {
       expect(mockSaveRecipeToBook).toHaveBeenCalledWith(GENERATED_RECIPE),
     );
     expect(mockListSavedRecipes.mock.calls.length).toBe(listCallsBefore);
-    // Помилка теж мусить бути видимою, а не ковтатись мовчки — і не просто
-    // видимою, а ДІЄВОЮ: `saveOne` передає третім аргументом дію «Повторити»,
-    // щоб невдача не була глухим кутом. Асершен на один аргумент цього не
-    // бачив і падав, хоч поведінка правильна.
+    // Помилка теж мусить бути видимою, а не ковтатись мовчки — і саме
+    // з action-кнопкою: `sergeant-design/require-toast-error-action`
+    // забороняє `toast.error` без дії, тож хендлер шле три аргументи.
+    // Очікування на один аргумент було стале й червоніло на main.
     await waitFor(() =>
       expect(toastSpies.error).toHaveBeenCalledWith(
         "Тест-фейл",

@@ -82,8 +82,11 @@
    `.text-style-*`. Два «display hero», два caption і два набори заголовків
    означали, що однакова роль на різних екранах отримувала різний розмір.
 
-   Усі 31 вживання переведені на семантичні ролі; повернення legacy-класів
-   ловить `sergeant-design/prefer-text-style`. Таблиця мапінгу — у
+   Усі 31 вживання переведені на семантичні ролі. NB: правило
+   `sergeant-design/prefer-text-style` більше НЕ існує (retired ADR-0081
+   разом з рештою естетичних AST-лінтів), тож повернення legacy-класів
+   механічно не ловиться — лише review. Механічно гейтиться тільки 12px-floor
+   (`scripts/check-design-conventions.mjs`). Таблиця мапінгу — у
    `docs/90-work/audits/2026-07-22-cycle-5.md`.
    ─────────────────────────────────────────────────────────────────────── */
 
@@ -96,7 +99,6 @@
    and letter-spacing, respecting the 12px floor (Hard Rule #16).
    `.text-style-headline` remains as a back-compat alias of `headline`.
    `.tnum` (font-variant-numeric: tabular-nums) is registered alongside.
-   Referenced by the `prefer-text-style` ESLint rule.
    ─────────────────────────────────────────────────────────────────────── */
 
 @utility panel {
