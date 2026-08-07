@@ -291,7 +291,15 @@ export function PantryManagerSheet({
             aria-controls="pantry-more-actions"
           >
             <span>Інше</span>
-            <span aria-hidden>{moreOpen ? "▴" : "▾"}</span>
+            <span
+              aria-hidden
+              className={cn(
+                "inline-flex shrink-0 transition-transform",
+                moreOpen ? "rotate-180" : "rotate-0",
+              )}
+            >
+              <Icon name="chevron-down" size="md" />
+            </span>
           </button>
           {moreOpen && (
             <div

@@ -195,10 +195,11 @@ export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
             type="button"
             onClick={handleUndo}
             title={"Відмінити останнє додавання"}
-            className="h-11 px-3 rounded-xl text-style-caption text-subtle hover:text-text border border-line transition-colors shrink-0 whitespace-nowrap"
+            className="h-11 px-3 inline-flex items-center gap-1 rounded-xl text-style-caption text-subtle hover:text-text border border-line transition-colors shrink-0 whitespace-nowrap"
             aria-label={`Відмінити останнє додавання (${lastAction.amount} мл)`}
           >
-            ↶ {lastAction.amount}
+            <Icon name="arrow-down-left" size="sm" />
+            {lastAction.amount}
           </button>
         )}
         {todayMl > 0 && (
@@ -234,7 +235,7 @@ export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
               }
             }}
             className={cn(
-              "h-11 px-3 rounded-xl text-style-caption transition-colors border shrink-0 whitespace-nowrap",
+              "h-11 px-3 inline-flex items-center justify-center rounded-xl text-style-caption transition-colors border shrink-0 whitespace-nowrap",
               resetPending
                 ? "text-danger border-danger/40"
                 : "text-subtle hover:text-danger border-line",
@@ -245,7 +246,7 @@ export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
                 : "Скинути воду за сьогодні"
             }
           >
-            {resetPending ? "Скинути?" : <span aria-hidden="true">↺</span>}
+            {resetPending ? "Скинути?" : <Icon name="refresh-cw" size="sm" />}
           </button>
         )}
       </div>

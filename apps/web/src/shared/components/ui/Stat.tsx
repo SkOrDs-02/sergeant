@@ -59,7 +59,13 @@ export interface StatProps {
   /** Colour variant for the value. Defaults to `default` (text-text). */
   variant?: StatVariant;
   size?: StatSize;
-  /** Optional leading icon / emoji rendered left of the value. */
+  /**
+   * Optional leading icon rendered left of the value. Pass an `<Icon />`
+   * from the design-system catalogue — not a raw emoji: emoji render in the
+   * system font, so they carry their own colour and metrics per OS and
+   * ignore the `strokeWidth` the rest of the iconography shares
+   * (`DESIGN.md § Заборонено` — "емодзі як іконки фіч").
+   */
   icon?: ReactNode;
   /** Align contents. Defaults to left. */
   align?: "left" | "center" | "right";

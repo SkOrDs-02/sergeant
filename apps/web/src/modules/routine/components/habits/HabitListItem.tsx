@@ -6,6 +6,7 @@ import { memo, type DragEventHandler } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
 import { IconButton } from "@shared/components/ui/IconButton";
+import { Icon } from "@shared/components/ui/Icon";
 import { RECURRENCE_OPTIONS } from "../../lib/routineConstants";
 import type { Habit } from "../../lib/types";
 import { HabitGlyph } from "../HabitGlyph";
@@ -83,20 +84,20 @@ export const HabitListItem = memo(function HabitListItem({
             <IconButton
               size="sm"
               variant="ghost"
-              className="rounded-xl border border-line text-xs! text-muted"
+              className="rounded-xl border border-line text-muted"
               onClick={onMoveUp}
               aria-label="Вгору в списку"
             >
-              ↑
+              <Icon name="arrow-up" size="sm" aria-hidden />
             </IconButton>
             <IconButton
               size="sm"
               variant="ghost"
-              className="rounded-xl border border-line text-xs! text-muted"
+              className="rounded-xl border border-line text-muted"
               onClick={onMoveDown}
               aria-label="Вниз в списку"
             >
-              ↓
+              <Icon name="arrow-down" size="sm" aria-hidden />
             </IconButton>
           </div>
           <Button

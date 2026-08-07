@@ -28,7 +28,10 @@ export const finykPageMessages = {
     noDescription: "Без опису",
     suggestedHint: "· схоже на це",
     unlink: "Зняти привʼязку",
-    back: "← Назад",
+    // Без гліфа «←» у рядку: стрілку малює `Icon name="chevron-left"` на
+    // call-site (`AssetsDebtTxPicker`). Типографічна стрілка бралася з
+    // системного шрифта, тож мала свою вагу й базову лінію на кожній ОС.
+    back: "Назад",
     debtHeader: "Транзакції по пасиву",
     receivableHeader: "Транзакції по активу",
     intro:

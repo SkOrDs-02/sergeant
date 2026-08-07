@@ -5,6 +5,7 @@ import {
   OptimizedHeroImage,
   OptimizedThumbnail,
 } from "./OptimizedImage";
+import { Icon } from "./Icon";
 
 /**
  * `OptimizedImage` — Lazy-loaded зображення з автоматичним aspect-ratio,
@@ -63,8 +64,8 @@ export const WithCustomFallback: Story = {
     wrapperClassName: "w-24 rounded-xl overflow-hidden",
     priority: true,
     fallback: (
-      <div className="w-24 h-24 bg-panelHi rounded-xl flex items-center justify-center text-2xl">
-        🏢
+      <div className="w-24 h-24 bg-panelHi rounded-xl flex items-center justify-center text-muted">
+        <Icon name="briefcase" size={32} />
       </div>
     ),
   },

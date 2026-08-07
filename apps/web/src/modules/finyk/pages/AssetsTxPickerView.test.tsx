@@ -91,7 +91,7 @@ describe("AssetsTxPickerView", () => {
           txPicker={{ type: "monoDebt", id: "missing" }}
         />,
       );
-      const back = screen.getByText("← Назад");
+      const back = screen.getByText("Назад");
       fireEvent.click(back);
       expect(setTxPicker).toHaveBeenCalledWith(null);
     });
@@ -284,7 +284,7 @@ describe("AssetsTxPickerView", () => {
           txPicker={{ type: "sub", subId: "missing" }}
         />,
       );
-      expect(screen.getByText("← Назад")).toBeInTheDocument();
+      expect(screen.getByText("Назад")).toBeInTheDocument();
     });
 
     it("links a transaction and sets the billing day from its Kyiv date", () => {
@@ -362,7 +362,7 @@ describe("AssetsTxPickerView", () => {
           txPicker={{ type: "debt", id: "missing" }}
         />,
       );
-      expect(screen.getByText("← Назад")).toBeInTheDocument();
+      expect(screen.getByText("Назад")).toBeInTheDocument();
     });
 
     it("renders a debt header and opens the role picker on tap", () => {

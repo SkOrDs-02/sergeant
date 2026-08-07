@@ -118,7 +118,7 @@ export function DayReportSheet({
                   className="shrink-0 rounded-xl border border-line text-sm! font-bold text-muted"
                   aria-label="Відмітити як виконано"
                 >
-                  ○
+                  <Icon name="circle-outline" size={14} aria-hidden />
                 </IconButton>
                 <span className="text-style-label text-muted flex items-center gap-1.5 truncate">
                   <HabitGlyph value={h.emoji} size="sm" />

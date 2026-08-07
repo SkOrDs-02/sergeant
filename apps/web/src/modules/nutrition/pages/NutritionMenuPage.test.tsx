@@ -240,7 +240,11 @@ describe("NutritionMenuPage", () => {
     expect(fetchDayPlan).toHaveBeenCalledWith(null);
   });
 
-  it("real meal row's '↻ Замінити' button calls fetchDayPlan(mealType)", async () => {
+  // Кнопка мала мітку «↻ Замінити» — типографічний гліф у ролі іконки.
+  // Гліф замінено на `Icon name="refresh-cw"` (анти-слоп атрактор №6), тож
+  // accessible name кнопки тепер «Замінити»: `<svg aria-hidden>` у нього не
+  // входить.
+  it("real meal row's 'Замінити' button calls fetchDayPlan(mealType)", async () => {
     const fetchDayPlan = vi.fn();
     renderMenuPage({
       fetchDayPlan,
@@ -250,7 +254,7 @@ describe("NutritionMenuPage", () => {
     const mealRow = screen.getByText("Каша вівсяна").closest("div")!
       .parentElement!.parentElement as HTMLElement;
     await userEvent.click(
-      within(mealRow).getByRole("button", { name: "↻ Замінити" }),
+      within(mealRow).getByRole("button", { name: "Замінити" }),
     );
     expect(fetchDayPlan).toHaveBeenCalledWith("breakfast");
   });

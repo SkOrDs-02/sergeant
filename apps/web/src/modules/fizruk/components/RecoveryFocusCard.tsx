@@ -67,11 +67,11 @@ export function RecoveryFocusCard({
           <span
             aria-hidden
             className={cn(
-              "inline-flex items-center justify-center w-5 h-5 mt-0.5 rounded-md text-muted shrink-0 text-xs transition-transform",
+              "inline-flex items-center justify-center w-5 h-5 mt-0.5 rounded-md text-muted shrink-0 transition-transform",
               open ? "rotate-180" : "rotate-0",
             )}
           >
-            ▾
+            <Icon name="chevron-down" size="md" />
           </span>
           <div className="min-w-0 flex-1">
             <h2 className="text-style-title text-text">Відновлення й фокус</h2>

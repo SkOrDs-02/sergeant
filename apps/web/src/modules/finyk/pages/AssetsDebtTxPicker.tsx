@@ -5,6 +5,7 @@
 import { useState, type ReactNode } from "react";
 import { TxRow, type TxRowTx } from "../components/TxRow";
 import { Card } from "@shared/components/ui/Card";
+import { Icon } from "@shared/components/ui/Icon";
 import { Money } from "@shared/components/ui/Money";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { Button } from "@shared/components/ui/Button";
@@ -196,8 +197,9 @@ export function AssetsDebtTxPicker({
         <button
           type="button"
           onClick={onBack}
-          className="text-sm text-muted hover:text-text transition-colors"
+          className="inline-flex items-center gap-1 text-sm text-muted hover:text-text transition-colors"
         >
+          <Icon name="chevron-left" size="sm" />
           {copy.back}
         </button>
         <span className="text-style-label">

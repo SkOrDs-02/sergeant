@@ -5,6 +5,7 @@
 import { useMemo, useState } from "react";
 import { TxRow, type TxRowTx } from "../components/TxRow";
 import { Card } from "@shared/components/ui/Card";
+import { Icon } from "@shared/components/ui/Icon";
 import { Money } from "@shared/components/ui/Money";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import { getAccountLabel, getMonoDebt } from "../utils";
@@ -232,9 +233,10 @@ export function AssetsTxPickerView({
             <button
               type="button"
               onClick={() => setTxPicker(null)}
-              className="text-sm text-muted hover:text-text transition-colors"
+              className="inline-flex items-center gap-1 text-sm text-muted hover:text-text transition-colors"
             >
-              ← Назад
+              <Icon name="chevron-left" size="sm" />
+              Назад
             </button>
           </div>
         </div>
@@ -271,9 +273,10 @@ export function AssetsTxPickerView({
         <div className="flex items-center gap-3 px-4 py-3 border-b border-line bg-bg sticky top-0 z-10">
           <button
             onClick={() => setTxPicker(null)}
-            className="text-sm text-muted hover:text-text transition-colors"
+            className="inline-flex items-center gap-1 text-sm text-muted hover:text-text transition-colors"
           >
-            ← Назад
+            <Icon name="chevron-left" size="sm" />
+            Назад
           </button>
           <span className="text-style-label">Погашення: {label}</span>
         </div>
@@ -313,8 +316,9 @@ export function AssetsTxPickerView({
               return (
                 <div key={i}>
                   {suggested && !isLinked && (
-                    <div className="text-style-caption font-semibold text-success-strong dark:text-success px-1 pt-1">
-                      ↑ Поповнення картки
+                    <div className="inline-flex items-center gap-1 text-style-caption font-semibold text-success-strong dark:text-success px-1 pt-1">
+                      <Icon name="arrow-up" size="sm" />
+                      Поповнення картки
                     </div>
                   )}
                   {isLinked && (
@@ -361,9 +365,10 @@ export function AssetsTxPickerView({
             <button
               type="button"
               onClick={() => setTxPicker(null)}
-              className="text-sm text-muted hover:text-text transition-colors"
+              className="inline-flex items-center gap-1 text-sm text-muted hover:text-text transition-colors"
             >
-              ← Назад
+              <Icon name="chevron-left" size="sm" />
+              Назад
             </button>
           </div>
         </div>
@@ -380,9 +385,10 @@ export function AssetsTxPickerView({
           <button
             type="button"
             onClick={() => setTxPicker(null)}
-            className="text-sm text-muted hover:text-text transition-colors"
+            className="inline-flex items-center gap-1 text-sm text-muted hover:text-text transition-colors"
           >
-            ← Назад
+            <Icon name="chevron-left" size="sm" />
+            Назад
           </button>
           <span className="text-style-label">Транзакція для «{sub.name}»</span>
         </div>
@@ -456,9 +462,10 @@ export function AssetsTxPickerView({
           <button
             type="button"
             onClick={() => setTxPicker(null)}
-            className="text-sm text-muted hover:text-text transition-colors"
+            className="inline-flex items-center gap-1 text-sm text-muted hover:text-text transition-colors"
           >
-            ← Назад
+            <Icon name="chevron-left" size="sm" />
+            Назад
           </button>
         </div>
       </div>

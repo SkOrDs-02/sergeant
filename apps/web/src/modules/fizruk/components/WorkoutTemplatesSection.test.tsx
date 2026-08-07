@@ -187,7 +187,7 @@ describe("WorkoutTemplatesSection", () => {
     fireEvent.click(screen.getByText("Жим лежачи"));
     fireEvent.click(screen.getByText("Присідання"));
     // Enter superset select mode.
-    fireEvent.click(screen.getByText("⊕ Суперсет"));
+    fireEvent.click(screen.getByText("Суперсет"));
     // Select both items.
     const checkboxes = screen
       .getAllByRole("button")
@@ -206,7 +206,7 @@ describe("WorkoutTemplatesSection", () => {
     fireEvent.click(screen.getByText("+ Новий шаблон"));
     fireEvent.click(screen.getByText("Жим лежачи"));
     fireEvent.click(screen.getByText("Присідання"));
-    fireEvent.click(screen.getByText("⊕ Суперсет"));
+    fireEvent.click(screen.getByText("Суперсет"));
     const checkboxes = screen
       .getAllByRole("button")
       .filter((b) => b.className.includes("w-5 h-5"));

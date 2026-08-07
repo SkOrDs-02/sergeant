@@ -7,6 +7,7 @@ import type { ChangeEvent, Dispatch, SetStateAction } from "react";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Input } from "@shared/components/ui/Input";
+import { Icon } from "@shared/components/ui/Icon";
 import { Button } from "@shared/components/ui/Button";
 import type { PickedFood } from "./FoodPickerSection";
 import {
@@ -101,9 +102,9 @@ export function MacrosEditor({
                 err: "",
               }))
             }
-            className="text-style-caption text-nutrition-strong dark:text-nutrition font-semibold hover:underline"
+            className="inline-flex items-center gap-1 text-style-caption text-nutrition-strong dark:text-nutrition font-semibold hover:underline"
           >
-            ← З результату фото
+            <Icon name="chevron-left" size="sm" />З результату фото
           </button>
         )}
       </div>

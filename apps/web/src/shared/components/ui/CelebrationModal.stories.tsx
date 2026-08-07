@@ -59,7 +59,7 @@ export const Achievement: Story = {
     theme: "finyk",
     rewards: [
       { icon: <Icon name="zap" size={20} />, label: "+50 XP" },
-      { icon: <span>🏆</span>, label: "Бейдж «Ощадливець»" },
+      { icon: <Icon name="award" size={20} />, label: "Бейдж «Ощадливець»" },
     ],
   },
 };
@@ -84,7 +84,7 @@ export const LevelUp: Story = {
     description: "Ти стаєш сильнішим!",
     progress: { current: 120, max: 200 },
     theme: "fizruk",
-    rewards: [{ icon: <span>⚡</span>, label: "+100 XP" }],
+    rewards: [{ icon: <Icon name="zap" size={20} />, label: "+100 XP" }],
   },
 };
 

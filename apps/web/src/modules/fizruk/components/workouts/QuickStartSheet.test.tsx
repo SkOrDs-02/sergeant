@@ -150,7 +150,7 @@ describe("QuickStartSheet — pick step", () => {
     expect(screen.getByRole("button", { name: /Почати/ })).toBeDisabled();
   });
 
-  it("'← Назад' returns to the choose step", () => {
+  it("'Назад' returns to the choose step", () => {
     gotoPick();
     fireEvent.click(
       screen.getByRole("button", { name: "Повернутись до вибору способу" }),
