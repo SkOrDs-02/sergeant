@@ -270,8 +270,13 @@ describe("useCoachInsight", () => {
     rerender();
     expect(result.current.adviceId).toBe(id);
 
-    const write = mockSafeWriteLS.mock.calls.at(-1);
-    expect(write?.[0]).toBe("hub_coach_insight_cache_v1");
+    // Шукаємо запис ПО КЛЮЧУ, а не беремо останній: через той самий мок
+    // `safeWriteLS` ходить ring-buffer аналітики (`hub_analytics_log_v1`),
+    // причому батчем після дебаунсу, тож останнім легко виявляється він.
+    const write = mockSafeWriteLS.mock.calls
+      .filter(([key]) => key === "hub_coach_insight_cache_v1")
+      .at(-1);
+    expect(write).toBeDefined();
     expect(write?.[1]).toMatchObject({ text: "Порада дня", adviceId: id });
 
     // id — випадковий, а НЕ хеш тексту: він не має бути похідною від поради.
@@ -297,7 +302,17 @@ describe("useCoachInsight", () => {
     await waitFor(() => expect(result.current.insight).toBe("Кешована порада"));
     expect(result.current.adviceId).toBe("advice-cached");
     // Кеш уже повний — переписувати його нема потреби.
-    expect(mockSafeWriteLS).not.toHaveBeenCalled();
+    //
+    // Фільтр по ключу, а не `not.toHaveBeenCalled()`: через той самий мок
+    // `safeWriteLS` ходить і ring-buffer аналітики (`hub_analytics_log_v1`),
+    // причому батчем після дебаунсу. Батч, запущений попереднім тестом,
+    // приземляється вже після `vi.clearAllMocks()` — і тест падав на чужому
+    // записі. Твердження тут вужче: коуч-кеш не переписано.
+    expect(
+      mockSafeWriteLS.mock.calls.filter(
+        ([key]) => key === "hub_coach_insight_cache_v1",
+      ),
+    ).toHaveLength(0);
   });
 
   it("не падає на legacy-записі без adviceId — дописує id ліниво", async () => {
