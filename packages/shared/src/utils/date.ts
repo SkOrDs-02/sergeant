@@ -1,20 +1,12 @@
 /**
  * Format a Date as `YYYY-MM-DD` in the **Europe/Kyiv** timezone.
  *
- * AI-DANGER: імʼя бреше. `toLocalISODate` читається як «доба пристрою», а
- * функція форсує `Europe/Kyiv` незалежно від середовища — і саме через імʼя
- * її легко покликати там, де потрібна доба ПРИСТРОЮ.
- *
- * Тут раніше стояло «all day boundaries must use Kyiv local time» — це
- * інваріант ДО [ADR-0078](../../../../docs/04-governance/adr/0078-day-boundary-device-local.md).
- * Тепер межа розділена: Київ лишається для показу часу, серверних звітів і
- * фінансових періодів, але день-ключ відмітки звички, логу їжі й денного
- * запису визначає годинник пристрою. Для цих випадків ця функція НЕ підходить.
- *
- * Перейменування — окремий борг: функція вживається широко, і зміна імені
- * має їхати без змішування з правками поведінки.
+ * Це КИЇВСЬКА доба, не доба пристрою. За [ADR-0078](../../../../docs/04-governance/adr/0078-day-boundary-device-local.md)
+ * межа розділена: Київ — для показу часу, серверних звітів і фінансових
+ * періодів, а день-ключ відмітки звички, логу їжі й денного запису визначає
+ * годинник ПРИСТРОЮ — там ця функція не підходить.
  */
-export function toLocalISODate(d: Date | number | string = new Date()): string {
+export function toKyivISODate(d: Date | number | string = new Date()): string {
   const dt = d instanceof Date ? d : new Date(d);
   if (Number.isNaN(dt.getTime())) return "1970-01-01";
   // en-CA gives YYYY-MM-DD; `timeZone` forces Europe/Kyiv regardless of
@@ -23,6 +15,16 @@ export function toLocalISODate(d: Date | number | string = new Date()): string {
     dt,
   );
 }
+
+/**
+ * @deprecated Імʼя бреше: читається як «доба пристрою», хоча форсує
+ * Europe/Kyiv. Використовуй {@link toKyivISODate}. Аліас лишено заради 150+
+ * викликів по монорепо — прибрати після міграції call-сайтів.
+ *
+ * AI-LEGACY: expires 2026-11-07 — прибрати цей аліас і перевести залишкові
+ * виклики на `toKyivISODate` напряму.
+ */
+export const toLocalISODate = toKyivISODate;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const HOUR_MS = 60 * 60 * 1000;
@@ -43,7 +45,7 @@ function dayKeyToUtcMidnight(dayKey: string): number {
 export function kyivDayStartMs(dayKey: string): number {
   const utcMidnight = dayKeyToUtcMidnight(dayKey);
   const summer = utcMidnight - 3 * HOUR_MS;
-  return toLocalISODate(summer) === dayKey ? summer : utcMidnight - 2 * HOUR_MS;
+  return toKyivISODate(summer) === dayKey ? summer : utcMidnight - 2 * HOUR_MS;
 }
 
 /**
@@ -54,7 +56,7 @@ export function kyivDayStartMs(dayKey: string): number {
 export function kyivDayEndMs(dayKey: string): number {
   // +26h from day start always lands inside the next Kyiv day, whatever
   // the current day's length (23/24/25h).
-  const nextKey = toLocalISODate(kyivDayStartMs(dayKey) + 26 * HOUR_MS);
+  const nextKey = toKyivISODate(kyivDayStartMs(dayKey) + 26 * HOUR_MS);
   return kyivDayStartMs(nextKey) - 1;
 }
 
@@ -67,8 +69,8 @@ export function kyivDayEndMs(dayKey: string): number {
  * boundaries are Kyiv local, never raw 24-hour windows.
  */
 export function kyivCalendarDaysBetween(aMs: number, bMs: number): number {
-  const a = dayKeyToUtcMidnight(toLocalISODate(aMs));
-  const b = dayKeyToUtcMidnight(toLocalISODate(bMs));
+  const a = dayKeyToUtcMidnight(toKyivISODate(aMs));
+  const b = dayKeyToUtcMidnight(toKyivISODate(bMs));
   return Math.round((a - b) / DAY_MS);
 }
 
@@ -102,10 +104,10 @@ export function kyivMondayStartMs(
 ): number {
   const ms = (d instanceof Date ? d : new Date(d)).getTime();
   if (Number.isNaN(ms)) return NaN;
-  const dayStart = kyivDayStartMs(toLocalISODate(ms));
+  const dayStart = kyivDayStartMs(toKyivISODate(ms));
   const mondayIndex =
     MONDAY_FIRST_INDEX[KYIV_WEEKDAY_FORMATTER.format(ms)] ?? 0;
   if (mondayIndex === 0) return dayStart;
   const approxMondayNoon = dayStart - mondayIndex * DAY_MS + DAY_MS / 2;
-  return kyivDayStartMs(toLocalISODate(approxMondayNoon));
+  return kyivDayStartMs(toKyivISODate(approxMondayNoon));
 }
