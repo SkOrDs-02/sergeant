@@ -111,3 +111,14 @@ deferred, trigger-gated на перший production contract-bug:
 - PR-23 spec: [`docs/90-work/initiatives/stack-pulse-2026-05/pr-23-openapi-contract-tests.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-23-openapi-contract-tests.md)
 - [zod-to-openapi](https://github.com/asteasolutions/zod-to-openapi)
 - [openapi-typescript](https://github.com/openapi-ts/openapi-typescript)
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                   | Merged     |
+| ------------------------------------------------------ | ----------------------------------------------------------------------- | ---------- |
+| [#689](https://github.com/Skords-01/Sergeant/pull/689) | fix(ci): governance-sync відрізняє живе посилання від навмисно мертвого | 2026-08-07 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
