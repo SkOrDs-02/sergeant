@@ -143,7 +143,14 @@ export function NutritionStartPage({
               refinePhoto={photo.refinePhoto}
               answers={photo.answers}
               setAnswers={photo.setAnswers}
-              onSaveToLog={photo.photoResult ? onSaveToLog : undefined}
+              // Не-їжу не можна класти в журнал: `PhotoAnalyzeCard` і так не
+              // рендерить кнопку в цій гілці, але гейт лишається і тут —
+              // джерело правди про «збережуване» одне, і воно серверне.
+              onSaveToLog={
+                photo.photoResult && photo.photoResult.isFood !== false
+                  ? onSaveToLog
+                  : undefined
+              }
               analyzing={photo.isAnalyzing}
               refining={photo.isRefining}
             />

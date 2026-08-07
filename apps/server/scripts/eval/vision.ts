@@ -31,6 +31,7 @@ import {
   EMPTY_PNG_B64,
   LABEL_PNG_B64,
   MULTI_DISH_PNG_B64,
+  NON_FOOD_PNG_B64,
   PNG_MIME,
 } from "./vision-images.js";
 
@@ -48,6 +49,24 @@ function photoResult(text: string): NormalizedPhotoResult | null {
 /** Модель зізналася, що даних бракує: питання або низька впевненість. */
 function hedged(r: NormalizedPhotoResult): boolean {
   return r.questions.length > 0 || r.confidence <= 0.5;
+}
+
+/**
+ * Кадр без їжі: єдина прийнятна відповідь — відмова (`isFood: false`).
+ *
+ * AI-CONTEXT: до 2026-08-07 цей суддя приймав «0 ккал + уточнююче питання» як
+ * успіх (через `hedged`), тобто продовий баг із фото кота проходив стенд
+ * зеленим. Хеджування — не відмова: воно веде людину в блок «Уточнення порції»
+ * і лишає кнопку збереження. Тому тут перевіряємо саме прапорець, який
+ * `normalizePhotoResult` виводить і з явного поля, і з відсутніх КБЖВ.
+ */
+function refusalJudge(text: string): true | string {
+  const r = photoResult(text);
+  if (!r) return "не розібрався прод-парсером";
+  if (r.isFood) {
+    return `назвав «${r.dishName}» їжею (confidence=${r.confidence}, ккал ${r.macros.kcal ?? "—"})`;
+  }
+  return true;
 }
 
 // ── Голден-сет ──────────────────────────────────────────────────────
@@ -103,21 +122,17 @@ const ANALYZE_CASES: GoldenCase[] = [
   },
   {
     name: "порожній кадр",
-    trap: "НЕПРАВИЛЬНО: вигадати страву і КБЖВ там, де їжі немає взагалі. Це найдорожчий режим відмови: цифри потрапляють у денний щоденник як справжні.",
+    trap: "НЕПРАВИЛЬНО: вигадати страву і КБЖВ там, де їжі немає взагалі. Це найдорожчий режим відмови: цифри потрапляють у денний щоденник як справжні. Уточнююче питання тут теж провал — питати про порцію порожнечі нема сенсу, потрібна відмова.",
     user: analyzePrompt.user,
     image: image(EMPTY_PNG_B64),
-    judge: (text) => {
-      const r = photoResult(text);
-      if (!r) return "не розібрався прод-парсером";
-      // `null` у ккал прод-нормалізатор перетворює на 0, тож «числа немає»
-      // ззовні виглядає як 0 — перевіряємо falsy, а не строго `null`.
-      if (r.macros.kcal)
-        return `вигадав ${r.macros.kcal} ккал з порожнього кадру`;
-      return (
-        hedged(r) ||
-        `назвав «${r.dishName}» з confidence=${r.confidence} без питань`
-      );
-    },
+    judge: refusalJudge,
+  },
+  {
+    name: "не-їжа в кадрі",
+    trap: "НЕПРАВИЛЬНО: назвати предмет стравою або почати з'ясовувати його порцію. Саме цей режим відмови зловили на фото кота: «Кіт», впевненість 100%, нулі в КБЖВ і питання «Чи є на фото щось інше, окрім кота?» — з кнопкою «Зберегти в журнал» під ними.",
+    user: analyzePrompt.user,
+    image: image(NON_FOOD_PNG_B64),
+    judge: refusalJudge,
   },
 ];
 

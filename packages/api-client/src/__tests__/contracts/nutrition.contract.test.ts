@@ -53,6 +53,7 @@ describe(
           res.headers({ "content-type": "application/json" });
           res.jsonBody({
             result: {
+              isFood: true,
               dishName: "Борщ із сметаною",
               confidence: 0.87,
               portion: { label: "тарілка", gramsApprox: 350 },
@@ -80,6 +81,7 @@ describe(
             mimeType: "image/png",
             locale: "uk-UA",
           });
+          expect(out.result?.isFood).toBe(true);
           expect(out.result?.dishName).toBe("Борщ із сметаною");
           expect(out.result?.macros.kcal).toBe(280);
           expect(out.result?.ingredients).toHaveLength(3);

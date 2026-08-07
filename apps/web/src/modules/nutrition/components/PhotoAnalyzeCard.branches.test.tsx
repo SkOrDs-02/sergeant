@@ -77,6 +77,81 @@ describe("PhotoAnalyzeCard", () => {
     expect(onSaveToLog).toHaveBeenCalled();
   });
 
+  it("refuses a non-food result: no macros, no save-to-log, no portion questions", () => {
+    // Регресія фото кота: сервер віддає `isFood: false`, і картка не має
+    // показувати ані КБЖВ, ані кнопку збереження, ані блок уточнень —
+    // саме через них не-їжа потрапляла в денний журнал як `photoAI`.
+    render(
+      <PhotoAnalyzeCard
+        {...baseProps}
+        photoResult={{
+          isFood: false,
+          dishName: "Кіт",
+          confidence: 1,
+          macros: { kcal: null, protein_g: null, fat_g: null, carbs_g: null },
+          questions: [],
+        }}
+        onSaveToLog={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("Не бачу тут страви")).toBeInTheDocument();
+    expect(screen.getByText(/схоже на «Кіт»/)).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Зберегти в журнал/ }),
+    ).toBeNull();
+    expect(screen.queryByText("Уточнення порції")).toBeNull();
+    expect(screen.queryByText("Ккал")).toBeNull();
+    expect(screen.queryByText(/Впевненість/)).toBeNull();
+  });
+
+  it("keeps the refusal readable when the model did not name the object", () => {
+    render(
+      <PhotoAnalyzeCard
+        {...baseProps}
+        photoResult={{ isFood: false, dishName: "", macros: {}, questions: [] }}
+      />,
+    );
+    expect(
+      screen.getByText(/На фото немає їжі, для якої можна порахувати КБЖВ/),
+    ).toBeInTheDocument();
+  });
+
+  it("hides the confidence percentage when there are no macros to be confident about", () => {
+    render(
+      <PhotoAnalyzeCard
+        {...baseProps}
+        photoResult={{
+          isFood: true,
+          dishName: "Щось",
+          confidence: 0.9,
+          macros: {},
+          questions: ["Що саме?"],
+        }}
+      />,
+    );
+    expect(screen.getByText("Щось")).toBeInTheDocument();
+    expect(screen.queryByText(/Впевненість/)).toBeNull();
+  });
+
+  it("labels the confidence as recognition confidence when macros exist", () => {
+    render(
+      <PhotoAnalyzeCard
+        {...baseProps}
+        photoResult={{
+          isFood: true,
+          dishName: "Борщ",
+          confidence: 0.82,
+          macros: { kcal: 250, protein_g: 8, fat_g: 10, carbs_g: 30 },
+          questions: [],
+        }}
+      />,
+    );
+    expect(
+      screen.getByText(/Впевненість у розпізнаванні: 82%/),
+    ).toBeInTheDocument();
+  });
+
   it("handles preview removal, file selection and analyze click", () => {
     const analyzePhoto = vi.fn();
     const onPickPhoto = vi.fn();

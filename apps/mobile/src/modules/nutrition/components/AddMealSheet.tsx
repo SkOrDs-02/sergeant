@@ -29,7 +29,10 @@ import { Button } from "@/components/ui/Button";
 import { Sheet } from "@/components/ui/Sheet";
 import { setNutritionScanPrefillHandler } from "../lib/nutritionScanBridge";
 import { formatPhotoApiError } from "../lib/photoErrorFormatting";
-import { mapPhotoResultToMealForm } from "../lib/photoResultToMealForm";
+import {
+  mapPhotoResultToMealForm,
+  notFoodMessage,
+} from "../lib/photoResultToMealForm";
 import {
   captureResizeAndReadBase64Jpeg,
   pickResizeAndReadBase64Jpeg,
@@ -263,6 +266,13 @@ export function AddMealSheet({
           }));
           return;
         }
+        // Не-їжа не переводить на крок «fill»: інакше форма прийому їжі
+        // заповнилась би назвою того, що на фото («Кіт»), і порожніми КБЖВ —
+        // рівно те, що web-картка показувала до серверного прапорця.
+        if (r.isFood === false) {
+          setForm((s) => ({ ...s, err: notFoodMessage(r.dishName) }));
+          return;
+        }
         applyPhotoAnalyzeSuccess(picked.base64, picked.mimeType, r);
       } catch (e) {
         const msg = formatPhotoApiError(e, "Помилка аналізу фото");
@@ -299,6 +309,10 @@ export function AddMealSheet({
       const r = out?.result;
       if (!r) {
         setForm((s) => ({ ...s, err: "Порожня відповідь (refine)." }));
+        return;
+      }
+      if (r.isFood === false) {
+        setForm((s) => ({ ...s, err: notFoodMessage(r.dishName) }));
         return;
       }
       setForm((s) => ({ ...s, ...mapPhotoResultToMealForm(r) }));

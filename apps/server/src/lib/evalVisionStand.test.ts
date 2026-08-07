@@ -97,23 +97,55 @@ describe("зоровий стенд", () => {
   it("суддя порожнього кадру валить вигадані КБЖВ", () => {
     const judge = caseByName("analyze-photo", "порожній кадр").judge;
     const invented = JSON.stringify({
+      isFood: true,
       dishName: "Салат Цезар",
       confidence: 0.92,
       macros: { kcal: 420, protein_g: 20, fat_g: 25, carbs_g: 18 },
       questions: [],
     });
     const honest = JSON.stringify({
-      dishName: "Не вдалося розпізнати їжу",
-      confidence: 0.1,
+      isFood: false,
+      dishName: "Порожній кадр",
+      confidence: 0.9,
       macros: { kcal: null, protein_g: null, fat_g: null, carbs_g: null },
-      questions: ["Що саме на фото?"],
+      questions: [],
     });
     // Провал — рядок із причиною, не голий `false` (див. `evalJudgeReason`).
-    expect(judge?.(invented)).toBe("вигадав 420 ккал з порожнього кадру");
+    expect(judge?.(invented)).toBe(
+      "назвав «Салат Цезар» їжею (confidence=0.92, ккал 420)",
+    );
     expect(judge?.(honest)).toBe(true);
     // Проза замість JSON — прод показав би порожній екран, це теж провал.
     expect(judge?.("На фото нічого немає.")).toBe(
       "не розібрався прод-парсером",
+    );
+  });
+
+  it("суддя не-їжі вимагає відмови, а не уточнюючого питання", () => {
+    const judge = caseByName("analyze-photo", "не-їжа в кадрі").judge;
+    // Рівно та відповідь, що приїхала на фото кота: назва об'єкта, нулі і
+    // питання про порцію. До 2026-08-07 суддя рахував це успіхом («модель
+    // хеджує»), і прод-баг проходив стенд зеленим. Тепер прод-нормалізатор
+    // виводить із нульових КБЖВ відмову — і кейс проходить саме тому, що
+    // користувач бачить відмову, а не блок «Уточнення порції».
+    const catLikeProd = JSON.stringify({
+      dishName: "Кіт",
+      confidence: 1,
+      macros: { kcal: 0, protein_g: 0, fat_g: 0, carbs_g: 0 },
+      questions: ["Чи є на фото щось інше, окрім кота?"],
+    });
+    expect(judge?.(catLikeProd)).toBe(true);
+
+    // А ось наполягання, що предмет — це страва з КБЖВ, лишається провалом.
+    const insists = JSON.stringify({
+      isFood: true,
+      dishName: "Смартфон у клярі",
+      confidence: 0.7,
+      macros: { kcal: 310, protein_g: 4, fat_g: 12, carbs_g: 44 },
+      questions: [],
+    });
+    expect(judge?.(insists)).toBe(
+      "назвав «Смартфон у клярі» їжею (confidence=0.7, ккал 310)",
     );
   });
 

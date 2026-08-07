@@ -43,6 +43,76 @@ describe("nutritionResponse normalizers", () => {
     expect(out.portion).toEqual({ label: "250 г", gramsApprox: 250 });
   });
 
+  it("normalizePhotoResult keeps isFood true when macros are present", () => {
+    const out = normalizePhotoResult({
+      dishName: "Борщ",
+      confidence: 0.8,
+      macros: { kcal: 280, protein_g: 18, fat_g: 12, carbs_g: 22 },
+      questions: ["Чи був хліб?"],
+    });
+    expect(out.isFood).toBe(true);
+    expect(out.questions).toEqual(["Чи був хліб?"]);
+  });
+
+  it("normalizePhotoResult drops macros and questions when the model says isFood:false", () => {
+    const out = normalizePhotoResult({
+      isFood: false,
+      dishName: "Кіт",
+      confidence: 1,
+      macros: { kcal: 250, protein_g: 10, fat_g: 5, carbs_g: 30 },
+      questions: ["Яка вага порції?"],
+    });
+    expect(out.isFood).toBe(false);
+    expect(out.dishName).toBe("Кіт");
+    expect(out.macros).toEqual({
+      kcal: null,
+      protein_g: null,
+      fat_g: null,
+      carbs_g: null,
+    });
+    expect(out.questions).toEqual([]);
+  });
+
+  it("normalizePhotoResult treats a macro-less answer without isFood as a refusal", () => {
+    // Рівно та відповідь, яку прод показував на фото кота до появи прапорця:
+    // впевненість 1.0, нулі в КБЖВ і питання про порцію того, чого не їдять.
+    const out = normalizePhotoResult({
+      dishName: "Кіт",
+      confidence: 1,
+      macros: { kcal: 0, protein_g: 0, fat_g: 0, carbs_g: 0 },
+      questions: ["Чи є на фото щось інше, окрім кота?"],
+    });
+    expect(out.isFood).toBe(false);
+    expect(out.questions).toEqual([]);
+    expect(out.macros.kcal).toBeNull();
+  });
+
+  it("normalizePhotoResult trusts an explicit isFood:true with zero macros (вода, чай)", () => {
+    const out = normalizePhotoResult({
+      isFood: true,
+      dishName: "Склянка води",
+      confidence: 0.9,
+      macros: { kcal: 0, protein_g: 0, fat_g: 0, carbs_g: 0 },
+      questions: [],
+    });
+    expect(out.isFood).toBe(true);
+    expect(out.macros.kcal).toBe(0);
+  });
+
+  it("normalizePhotoResult reads stringified and numeric isFood flags", () => {
+    expect(
+      normalizePhotoResult({ dishName: "Кіт", isFood: "false", macros: {} })
+        .isFood,
+    ).toBe(false);
+    expect(
+      normalizePhotoResult({ dishName: "Вода", isFood: "true", macros: {} })
+        .isFood,
+    ).toBe(true);
+    expect(
+      normalizePhotoResult({ dishName: "Кіт", isFood: 0, macros: {} }).isFood,
+    ).toBe(false);
+  });
+
   it("normalizePantryItems accepts {items} and drops invalid rows", () => {
     const out = normalizePantryItems({
       items: [

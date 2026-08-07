@@ -1,8 +1,24 @@
-import { mapPhotoResultToMealForm } from "../photoResultToMealForm";
+import {
+  mapPhotoResultToMealForm,
+  notFoodMessage,
+} from "../photoResultToMealForm";
+
+describe("notFoodMessage", () => {
+  it("називає те, що модель побачила на фото", () => {
+    expect(notFoodMessage("Кіт")).toMatch(/Не бачу тут страви.*«Кіт»/);
+  });
+
+  it("лишається читабельним без назви", () => {
+    expect(notFoodMessage("  ")).toBe(
+      "Не бачу тут страви. Спробуй інше фото або введи КБЖВ вручну.",
+    );
+  });
+});
 
 describe("mapPhotoResultToMealForm", () => {
   it("мапить макроси та назву", () => {
     const f = mapPhotoResultToMealForm({
+      isFood: true,
       dishName: "Борщ",
       confidence: 0.9,
       portion: null,
@@ -24,6 +40,7 @@ describe("mapPhotoResultToMealForm", () => {
 
   it("додає застереження при низькій confidence", () => {
     const f = mapPhotoResultToMealForm({
+      isFood: true,
       dishName: "X",
       confidence: 0.2,
       portion: null,
