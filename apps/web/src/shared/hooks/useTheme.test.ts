@@ -45,7 +45,7 @@ function addThemeColorMetas(): void {
   const light = document.createElement("meta");
   light.setAttribute("name", "theme-color");
   light.setAttribute("media", "(prefers-color-scheme: light)");
-  light.setAttribute("content", "#f2ecdf");
+  light.setAttribute("content", "#ecebe7");
   const dark = document.createElement("meta");
   dark.setAttribute("name", "theme-color");
   dark.setAttribute("media", "(prefers-color-scheme: dark)");
@@ -160,13 +160,13 @@ describe("useTheme", () => {
       ).map((m) => m.content);
 
     // Initial mount resolves to light (system, non-dark media stub).
-    expect(metas()).toEqual(["#f2ecdf", "#f2ecdf"]);
+    expect(metas()).toEqual(["#ecebe7", "#ecebe7"]);
 
     act(() => result.current.setChoice("dark"));
     expect(metas()).toEqual(["#14100e", "#14100e"]);
 
     act(() => result.current.setChoice("light"));
-    expect(metas()).toEqual(["#f2ecdf", "#f2ecdf"]);
+    expect(metas()).toEqual(["#ecebe7", "#ecebe7"]);
   });
 
   it("does not throw when no theme-color meta is present", () => {

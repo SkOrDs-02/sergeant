@@ -52,7 +52,7 @@ export interface SegmentedProps<V extends string = string> {
 
 // Solid mode active chip is inverted-ink («Чорнило» v3.1 § 6): dark —
 // `bg-ink` (#e7f0ea) + `text-bg` (#14100e, fg-as-bg); light — the mirror
-// inversion (`bg-ink` #17201b + `text-bg` #f2ecdf). Both tokens are
+// inversion (`bg-ink` #17201b + `text-bg` #ecebe7). Both tokens are
 // already theme-aware CSS vars, so one pair covers both themes. Border
 // keeps the module accent for visual continuity with siblings.
 const VARIANT_SOLID: Record<SegmentedVariant, string> = {
