@@ -1,6 +1,7 @@
-import { useEffect, useId, useRef } from "react";
+import { useId, useRef } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Input } from "@shared/components/ui/Input";
+import { useBodyScrollLock } from "@shared/hooks/useBodyScrollLock";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 
 interface DeleteAccountDialogProps {
@@ -30,14 +31,12 @@ export function DeleteAccountDialog({
     inertBackground: true,
   });
 
-  useEffect(() => {
-    if (!open) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [open]);
+  // Був hand-rolled `document.body.style.overflow = "hidden"`. Самого
+  // `overflow: hidden` не досить на iOS Safari (visual viewport усе одно
+  // rubber-band-ить сторінку під фіксованим оверлеєм), і він не має
+  // refcount-у, тож вкладений оверлей затирав відновлення. Спільний хук
+  // пінить body у `position: fixed` на поточному офсеті й рахує вкладеність.
+  useBodyScrollLock(open);
 
   if (!open) return null;
 

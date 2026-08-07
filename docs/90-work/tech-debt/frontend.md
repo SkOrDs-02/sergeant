@@ -62,8 +62,28 @@
 >    `<ProgressBar>` (додано `variant="neutral"` для ink-філла); MacroRings
 >    (circular, `ProgressRing`) лишився bespoke — інша сімʼя компонента.
 > 4. **Shared OverlayShell/Drawer.** ~14 файлів hand-roll `role="dialog"`
->    chrome; SettingsPrimitives.ConfirmModal без useBodyScrollLock;
->    DeleteAccountDialog — клон Modal.
+>    chrome — **переміряно 2026-08-07: 25** файлів, тобто борг ріс, поки його
+>    трекали. Сама консолідація лишається P4 (ризик фокусних/візуальних
+>    регресій по всьому застосунку, потрібен design-review зі скрінами).
+>    **Два іменовані під-пункти закриті 2026-08-07** — це були не «стиль», а
+>    справжні дефекти скрол-локу:
+>    - `SettingsPrimitives.ConfirmModal` не мав скрол-локу взагалі
+>      (`inertBackground` закриває фокус і a11y-дерево, але не скрол) →
+>      підключено `useBodyScrollLock`.
+>    - `DeleteAccountDialog` hand-roll-ив `document.body.style.overflow =
+"hidden"` — патерн, який докстрінг `useBodyScrollLock` прямо називає
+>      недостатнім на iOS Safari (visual viewport rubber-band-ить сторінку
+>      під фіксованим оверлеєм) і який не має refcount-у → замінено спільним
+>      хуком.
+>
+>    **Залишок для наступного проходу** (повноекранні `fixed inset-0` з
+>    `role="dialog"` без `useBodyScrollLock`, 9 файлів — кожен потребує
+>    рішення «модалка над сторінкою» vs «full-page takeover», тому sweep-ом
+>    не закривається): `FinykApp.tsx`, `BarcodeScanner.tsx`,
+>    `PdfPreviewModal.tsx`, `HubSearch.tsx`, `HubChatHistoryDrawer.tsx`,
+>    `BentoCard.tsx`, `OnboardingWizard.tsx`, `FirstEntryCelebrationModal.tsx`,
+>    `AppLock.tsx`.
+>
 > 5. **SubTabs → shared** як `bar`-варіант Segmented (зараз застряг у
 >    modules/nutrition, активний таб 40px).
 > 6. **DesignShowcase.** Покриває ~25/60 компонентів; proposal-демо — форки
