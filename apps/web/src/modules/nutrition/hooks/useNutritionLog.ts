@@ -6,7 +6,7 @@ import { useSqliteTickOverlay } from "@shared/hooks/useSqliteTickOverlay";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@shared/hooks/useToast";
-import { coachKeys, digestKeys } from "@shared/lib/api/queryKeys";
+import { digestKeys } from "@shared/lib/api/queryKeys";
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import {
   ANALYTICS_EVENTS,
@@ -104,28 +104,34 @@ export function useNutritionLog() {
     };
   }, []);
 
-  // Coach insight and weekly digest both derive from the nutrition log.
-  // Invalidate them whenever the log changes so the next mount / user
-  // refresh regenerates with the latest context.
+  // Журнал харчування живить і дайджест, і денну пораду коуча — але
+  // інвалідуємо тут ЛИШЕ дайджест.
   //
-  // Audit 08 F11 scope-tightening: previously called `coachKeys.all` /
-  // `digestKeys.all` — a broad sweep that refetched every coach query
-  // and every weekly-digest variant on each meal save. Now scoped to
-  // `coachKeys.insight(selectedDate)` (the only key whose data depends
-  // on the day the user edited) and `digestKeys.history` (the rolling
-  // list the user might be scrolling). Other coach / digest queries
-  // keep their `staleTime: Infinity` cache; they re-derive on their own
-  // next mount-cycle without a sync write storm here.
+  // Порада коуча навмисно НЕ інвалідується записом їжі. Вона денна за
+  // контрактом (`useCoachInsight`: ключ за днем, `staleTime: Infinity`,
+  // кеш у localStorage), і кожна інвалідація ламала цей контракт двічі.
+  // По-перше видимо: людина записувала обід, поверталась на дашборд — і
+  // читала ІНШИЙ текст. Не оновлений, а інший; денна порада не має
+  // змінюватись під руками. По-друге в грошах: генерація коштує ~$0.004,
+  // а снапшот, з якого вона будується, тижневий — одна страва зсуває
+  // середні на кілька відсотків і майже ніколи не змінює висновок.
+  //
+  // Джерела правди для регенерації лишаються два, обидва усвідомлені:
+  // pull-to-refresh (`HubMainContent`) і поява свіжих кореляцій після
+  // тижневого дайджесту (`useWeeklyDigest`). Обидва — це «зʼявилось щось
+  // нове», а не «користувач надрукував рядок».
+  //
+  // Audit 08 F11 звузив цей ефект із `coachKeys.all` / `digestKeys.all` до
+  // одного ключа кожен; тут прибрано другу половину. `digestKeys.history`
+  // лишається: це список, який людина може прокручувати просто зараз, і
+  // він дешевий — жодної моделі, лише локальна вибірка.
   useEffect(() => {
     if (!didMountRef.current) {
       didMountRef.current = true;
       return;
     }
-    queryClient.invalidateQueries({
-      queryKey: coachKeys.insight(selectedDate),
-    });
     queryClient.invalidateQueries({ queryKey: digestKeys.history });
-  }, [nutritionLog, selectedDate, queryClient]);
+  }, [nutritionLog, queryClient]);
 
   /**
    * Add a meal to the currently selected date and close the add-meal sheet.
