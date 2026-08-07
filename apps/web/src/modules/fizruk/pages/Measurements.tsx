@@ -349,59 +349,75 @@ export function Measurements() {
           </div>
         </Card>
 
+        {/*
+          П3 «край і зріз»: «Останній запис» і журнал «Історія» нижче
+          виглядають як стос, але не є ним — між картками стоїть той самий
+          `space-y-3`, що й між усіма іншими секціями сторінки (формою
+          додавання, статами). Стос вимагає СУМІЖНОСТІ: тут її немає, тож
+          `rule`/`perf` неправдиво стверджували б неперервність. Кожна
+          картка лишається самодостатнім аркушем — `edge="stub"`.
+        */}
         {latest && (
-          <Card radius="lg">
-            <div className="flex items-center justify-between">
-              <div>
-                <SectionHeading as="div" size="xs" variant="fizruk">
-                  {messages.fizruk.measurements.lastEntry}{" "}
-                  <span className="ml-1 normal-case tracking-normal font-medium text-subtle">
-                    · {stats.latestAt}
-                  </span>
-                </SectionHeading>
-              </div>
-              <div className="text-style-caption text-subtle">
-                {Object.keys(deltas).length ? "Δ від попереднього" : ""}
-              </div>
-            </div>
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              {MEASURE_FIELDS.filter((f) => latest[f.id] != null).map((f) => (
-                <div
-                  key={f.id}
-                  className="bg-bg border border-line rounded-2xl p-3"
-                >
+          <Card edge="stub" padding="none">
+            <div className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
                   <SectionHeading as="div" size="xs" variant="fizruk">
-                    {f.label}
+                    {messages.fizruk.measurements.lastEntry}{" "}
+                    <span className="ml-1 normal-case tracking-normal font-medium text-subtle">
+                      · {stats.latestAt}
+                    </span>
                   </SectionHeading>
-                  <div className="text-lg font-extrabold tabular-nums text-text mt-1">
-                    {Number.isFinite(Number(latest[f.id]))
-                      ? Number(latest[f.id]).toLocaleString("uk-UA")
-                      : "—"}{" "}
-                    {f.unit}
-                  </div>
-                  {(() => {
-                    const delta = deltas[f.id];
-                    return delta != null ? (
-                      <div
-                        className={cn(
-                          "text-style-caption mt-1",
-                          delta > 0
-                            ? "text-warning-strong dark:text-warning"
-                            : "text-success-strong dark:text-success",
-                        )}
-                      >
-                        {delta > 0 ? "+" : ""}
-                        {delta.toFixed(1)} {f.unit}
-                      </div>
-                    ) : null;
-                  })()}
                 </div>
-              ))}
+                <div className="text-style-caption text-subtle">
+                  {Object.keys(deltas).length ? "Δ від попереднього" : ""}
+                </div>
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                {MEASURE_FIELDS.filter((f) => latest[f.id] != null).map((f) => (
+                  <div
+                    key={f.id}
+                    className="bg-bg border border-line rounded-2xl p-3"
+                  >
+                    <SectionHeading as="div" size="xs" variant="fizruk">
+                      {f.label}
+                    </SectionHeading>
+                    <div className="text-lg font-extrabold tabular-nums text-text mt-1">
+                      {Number.isFinite(Number(latest[f.id]))
+                        ? Number(latest[f.id]).toLocaleString("uk-UA")
+                        : "—"}{" "}
+                      {f.unit}
+                    </div>
+                    {(() => {
+                      const delta = deltas[f.id];
+                      return delta != null ? (
+                        <div
+                          className={cn(
+                            "text-style-caption mt-1",
+                            delta > 0
+                              ? "text-warning-strong dark:text-warning"
+                              : "text-success-strong dark:text-success",
+                          )}
+                        >
+                          {delta > 0 ? "+" : ""}
+                          {delta.toFixed(1)} {f.unit}
+                        </div>
+                      ) : null;
+                    })()}
+                  </div>
+                ))}
+              </div>
             </div>
           </Card>
         )}
 
-        <Card radius="lg" padding="none" className="overflow-hidden">
+        {/*
+          Журнал записів за датами — теж окремий аркуш, а не «низ» стосу
+          (та сама причина вище). `overflow-hidden` знято: він жив тут лише
+          заради скруглення рядків під `rounded-2xl`, а край скасовує
+          скруглення взагалі — та сама правка, що в `WeeklyDigestCard`.
+        */}
+        <Card edge="stub" padding="none">
           <div className="px-4 py-3 bg-panelHi/60 border-b border-line">
             <SectionHeading as="div" size="xs" variant="fizruk">
               {messages.fizruk.measurements.history}

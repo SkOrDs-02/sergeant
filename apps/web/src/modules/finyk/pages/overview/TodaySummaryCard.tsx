@@ -28,16 +28,21 @@ function TodaySummaryCardImpl({
     showBalance ? <Money amount={Math.round(value)} /> : "••••";
 
   return (
+    // П3 «край і зріз»: підсумок дня — звіт, що веде далі, у список
+    // операцій, тому `edge="rule"`, а не `stub` — перфорація обіцяла б
+    // відрив, якого тут немає (та сама логіка, що дала `rule` hero-карткам).
+    // Скруглення знято й з кнопки-обгортки: інакше квадратний край картки
+    // обрізався б круглим фокус-кільцем `<button>`.
     <button
       type="button"
       onClick={onOpen}
-      className="focus-ring block w-full rounded-2xl text-left"
+      className="focus-ring block w-full text-left"
       aria-label={messages.finyk.todaySummary.openAria}
     >
       <Card
         module="finyk"
         prominence="interactive"
-        radius="lg"
+        edge="rule"
         className="space-y-3"
       >
         <div className="flex items-center justify-between gap-3">

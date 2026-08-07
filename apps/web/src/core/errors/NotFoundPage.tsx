@@ -35,7 +35,6 @@ export function NotFoundPage({ homePath = "/" }: NotFoundPageProps) {
         size="lg"
         variant="info"
         eyebrow="404"
-        surface="document"
         illustration={<NotFoundIllustration size={200} />}
         title="Сторінку не знайдено"
         // The empty state is the entire 404 surface, so it has to carry the

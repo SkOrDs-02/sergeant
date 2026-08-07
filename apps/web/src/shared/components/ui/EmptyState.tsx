@@ -115,31 +115,17 @@ export interface EmptyStateProps {
    * landmark content (the heading already covers the announcement).
    */
   ariaLive?: "polite" | "off" | undefined;
-  /**
-   * Власна поверхня порожнього стану.
-   *
-   * `none` (за замовчуванням) — компонент лишається голою колонкою, а
-   * поверхню дає той, хто його загортає. Так було завжди.
-   *
-   * `document` — «край і зріз» (анти-слоп П3, рішення власника
-   * 2026-08-06 на `mockups/product/pending-decisions.html`): відривний
-   * талон із лінійкою зверху й перфорацією знизу, без скруглення.
-   *
-   * AI-DANGER: матеріал НЕ йде всередину — коробка іконки й кнопка
-   * лишаються скругленими. Це рішення, а не недогляд: край описує, ЧИМ Є
-   * поверхня, а кнопка на ній — це дія. Круглий елемент на квадратному
-   * аркуші читається як бланк зі штампом. Зробивши квадратним і його, ми
-   * зобов'язалися б поміняти всі кнопки продукту, бо одна квадратна
-   * серед круглих виглядає помилкою — а це вже не поверхня, а новий
-   * принцип.
-   *
-   * AI-DANGER: `document` НЕ ставлять і на `compact`-станах усередині
-   * картки. Талон у талоні перетворює матеріал на візерунок — рівно те,
-   * від чого П3 і відводить (та сама причина, що розділяє `edge-rule` і
-   * `edge-perf` у списку транзакцій).
-   */
-  surface?: "none" | "document" | undefined;
 }
+
+/**
+ * П3 «край і зріз»: порожній стан НЕ отримує матеріал краю. Межа рішення
+ * власника 2026-08-07 — край для матеріалу ЗАПИСІВ І ЗВІТІВ (тест: чи існує
+ * ця річ у житті як аркуш), а порожній стан навпаки повідомляє про
+ * ВІДСУТНІСТЬ запису — паперового аналога в нього немає. До цього рішення
+ * тут жив проп `surface: "none" | "document"`; `document` прибрано разом із
+ * чотирма продуктовими виклик-сайтами (`NotFoundPage`, `ServerErrorPage`,
+ * `OfflinePage`, `ActiveHabitsSection`), які його використовували.
+ */
 
 interface TonePalette {
   container: string;
@@ -281,15 +267,13 @@ export function EmptyState({
   examplePreview,
   module,
   ariaLive = "polite",
-  surface = "none",
 }: EmptyStateProps) {
   const resolvedSize = resolveSize(size, compact);
   const tokens = SIZE_TOKENS[resolvedSize];
   const tone = resolveTone(module, variant);
   const isSm = resolvedSize === "sm";
   const primary = primaryAction ?? action;
-  const asDocument = surface === "document";
-  const body = (
+  return (
     // `role="status"` + `aria-live="polite"` keep the empty-state silent
     // until it appears dynamically (e.g. after a filter clears the list).
     // SR then announces `title` + `description` together via `aria-atomic`.
@@ -300,7 +284,6 @@ export function EmptyState({
       className={cn(
         "flex flex-col items-center justify-center text-center",
         tokens.outer,
-        asDocument && "edge-stub border border-line bg-panel",
         !disableAnimation &&
           "motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95 motion-safe:duration-slow",
         className,
@@ -419,17 +402,6 @@ export function EmptyState({
       )}
     </div>
   );
-
-  if (!asDocument) return body;
-
-  /*
-    AI-DANGER: підйом іде на БАТЬКІВСЬКОМУ вузлі, бо `edge-stub` вирізає
-    перфорацію маскою, а маска зрізає будь-яку тінь на своєму вузлі — і
-    `box-shadow`, і `filter: drop-shadow()` однаково. Заміряно в headless
-    Chromium; протокол — біля `.edge-lift` у `tailwind-preset.js`.
-    Прибереш обгортку — поверхня мовчки втратить глибину.
-  */
-  return <div className="edge-lift">{body}</div>;
 }
 
 /**

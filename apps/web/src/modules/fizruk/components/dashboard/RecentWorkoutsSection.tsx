@@ -16,6 +16,7 @@
  */
 
 import { Card } from "@shared/components/ui/Card";
+import { Icon } from "@shared/components/ui/Icon";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import type { DashboardRecentWorkout } from "@sergeant/fizruk-domain/domain";
 
@@ -65,66 +66,80 @@ export function RecentWorkoutsSection({
   onSeeAll,
 }: RecentWorkoutsSectionProps) {
   return (
+    // П3 «край і зріз»: список завершених тренувань — це журнал звітів
+    // (дата, тривалість, тоннаж), тест «існує як аркуш» проходить, тож
+    // `edge="stub"`. Скло (`prominence="glass"`) прибрано навмисно: скло й
+    // документ — дві різні мови для тієї самої поверхні (прозора площина
+    // проти паперового аркуша), і вони конфліктують. Обрано документ —
+    // саме він несе продуктовий смисл цієї секції; прозорість тут була
+    // суто декоративною.
     <Card
       as="section"
-      prominence="glass"
-      radius="lg"
+      edge="stub"
+      padding="none"
       aria-label="Останні тренування"
     >
-      <div className="flex items-baseline justify-between gap-2 mb-3">
-        <SectionHeading as="h2" size="xs" variant="fizruk">
-          Останні тренування
-        </SectionHeading>
-        {recent.length > 0 ? (
-          <button
-            type="button"
-            onClick={onSeeAll}
-            className="text-style-caption text-fizruk-strong dark:text-fizruk hover:underline active:opacity-70 rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
-            aria-label="Усі тренування"
-          >
-            Усі →
-          </button>
-        ) : null}
-      </div>
-
-      {recent.length === 0 ? (
-        <div
-          className="rounded-2xl border border-dashed border-surface-line p-6 flex flex-col items-center text-center"
-          data-testid="fizruk-dashboard-recent-empty"
-        >
-          <p className="text-style-label text-text">
-            Ще жодного завершеного тренування
-          </p>
-          <p className="text-style-caption text-muted mt-1">
-            Почни сесію — результати з&apos;являться тут автоматично.
-          </p>
-        </div>
-      ) : (
-        <ul className="flex flex-col gap-2">
-          {recent.map((row, idx) => (
-            <li
-              key={`${row.startedAt}-${idx}`}
-              className="rounded-2xl p-3 flex items-center justify-between gap-3"
+      <div className="p-4">
+        <div className="flex items-baseline justify-between gap-2 mb-3">
+          <SectionHeading as="h2" size="xs" variant="fizruk">
+            Останні тренування
+          </SectionHeading>
+          {recent.length > 0 ? (
+            <button
+              type="button"
+              onClick={onSeeAll}
+              className="inline-flex items-center gap-0.5 text-style-caption text-fizruk-strong dark:text-fizruk hover:underline active:opacity-70 rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+              aria-label="Усі тренування"
             >
-              <div className="min-w-0 flex-1">
-                <p className="text-style-label text-text truncate">
-                  {row.label}
-                </p>
-                <p className="text-style-caption text-muted mt-0.5">
-                  {formatDateShort(row.endedAt)} ·{" "}
-                  {formatDuration(row.durationSec)}
-                </p>
-              </div>
-              <div className="flex flex-col items-end shrink-0">
-                <span className="text-style-label text-fizruk-strong dark:text-fizruk">
-                  {formatTonnage(row.tonnageKg)}
-                </span>
-                <span className="text-style-caption text-muted">тоннаж</span>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
+              {/* Без гліфа «→»: типографічна стрілка бралася з системного
+                  шрифта — власна метрика й базова лінія на кожній ОС, повз
+                  розмірний токен. Той самий прохід, що зняв 30 гліфів зі
+                  слотів іконок. */}
+              Усі
+              <Icon name="chevron-right" size="xs" />
+            </button>
+          ) : null}
+        </div>
+
+        {recent.length === 0 ? (
+          <div
+            className="rounded-2xl border border-dashed border-surface-line p-6 flex flex-col items-center text-center"
+            data-testid="fizruk-dashboard-recent-empty"
+          >
+            <p className="text-style-label text-text">
+              Ще жодного завершеного тренування
+            </p>
+            <p className="text-style-caption text-muted mt-1">
+              Почни сесію — результати з&apos;являться тут автоматично.
+            </p>
+          </div>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {recent.map((row, idx) => (
+              <li
+                key={`${row.startedAt}-${idx}`}
+                className="rounded-2xl p-3 flex items-center justify-between gap-3"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="text-style-label text-text truncate">
+                    {row.label}
+                  </p>
+                  <p className="text-style-caption text-muted mt-0.5">
+                    {formatDateShort(row.endedAt)} ·{" "}
+                    {formatDuration(row.durationSec)}
+                  </p>
+                </div>
+                <div className="flex flex-col items-end shrink-0">
+                  <span className="text-style-label text-fizruk-strong dark:text-fizruk">
+                    {formatTonnage(row.tonnageKg)}
+                  </span>
+                  <span className="text-style-caption text-muted">тоннаж</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </Card>
   );
 }
