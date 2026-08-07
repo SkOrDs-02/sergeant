@@ -42,7 +42,14 @@ vi.mock("web-push", () => ({
 }));
 vi.mock("../../db.js", () => ({ default: { query: vi.fn() } }));
 vi.mock("../../lib/webpushSend.js", () => ({ sendWebPush: vi.fn() }));
-vi.mock("../../push/send.js", () => ({ sendToUser: vi.fn() }));
+// AI-NOTE: мок мусить віддавати ВСЕ, що `push.ts` імпортує з цього модуля.
+// `recordDomainOutcome` тут не тому, що тест його перевіряє, а тому, що
+// без нього fan-out падає на першому ж виклику — vi.mock замінює модуль
+// цілком, і невказаний експорт стає відсутнім, а не справжнім.
+vi.mock("../../push/send.js", () => ({
+  sendToUser: vi.fn(),
+  recordDomainOutcome: vi.fn(),
+}));
 vi.mock("./audit.js", () => ({ logPushSend: vi.fn() }));
 vi.mock("../../http/rateLimit.js", () => ({
   getIp: vi.fn(() => "203.0.113.7"),
