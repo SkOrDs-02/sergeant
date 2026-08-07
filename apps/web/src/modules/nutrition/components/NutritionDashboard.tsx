@@ -274,7 +274,17 @@ export function NutritionDashboard({
   return (
     <div className="grid gap-3">
       {/* ── Hero card ── */}
-      <Card prominence="hero" module="nutrition" edge="rule" padding="none">
+      {/* `min-w-0`: grid-item за дефолтом має `min-width:auto`, тобто його
+          мінімальна ширина = min-content вмісту. Досить одного широкого
+          нерозривного блоку всередині (рядок quick-add чіпів), щоб трек
+          колонки роздувся і разом із ним — УСІ картки цього гріда. */}
+      <Card
+        prominence="hero"
+        module="nutrition"
+        edge="rule"
+        padding="none"
+        className="min-w-0"
+      >
         <div className="p-4">
           <div className="flex items-center justify-between mb-3">
             <div>
