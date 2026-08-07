@@ -38,7 +38,21 @@ export function QuickAddChips({ chips, onTap }: QuickAddChipsProps) {
       // genuinely widened past the card's rounded border at narrow
       // viewports (page-audit nutrition-overview-01). Plain padding keeps
       // the row inside the card's existing horizontal padding.
-      className="flex gap-2 overflow-x-auto pb-1 min-w-0"
+      //
+      // AI-DANGER: `contain:inline-size` тут — не косметика, знімати не можна.
+      // `overflow-x-auto` робить рядок прокручуваним, але НЕ обнуляє його
+      // внесок у min-content ancestor-ів: min-content цього flex-рядка =
+      // сума чіпів (усі `shrink-0` + `whitespace-nowrap`). Хост — grid-item
+      // (`Card` у `grid gap-3` всередині `NutritionDashboard`) з дефолтним
+      // `min-width:auto`, тож той min-content ставав базою grid-треку і
+      // розпирав УСІ картки колонки далеко за viewport (заміряно в
+      // Chromium 390px: 996px замість 358px — і hero-карту, і графік тижня
+      // обрізало `overflow-x-hidden` сторінки). `min-w-0` на самому рядку
+      // цього не лікує — вона діє на нього як на item, а не на його внесок.
+      // Inline-size containment робить ширину рядка незалежною від вмісту,
+      // тож хост більше не бачить сумарну ширину чіпів. Дублюючий захист —
+      // `min-w-0` на hero-`Card` (працює і там, де немає `contain`).
+      className="flex gap-2 overflow-x-auto pb-1 min-w-0 [contain:inline-size]"
       role="group"
       aria-label={LABELS.group}
     >
