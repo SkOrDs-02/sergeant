@@ -14,7 +14,7 @@ import type { ChatAction } from "./types";
  *   - happy path: 200 + memories[] → форматована Markdown-light строка;
  *   - empty path: 200 + memories=[] → "Не знайшов схожих" повідомлення;
  *   - 401 → авторизаційне попередження;
- *   - 503 → "AI memory тимчасово недоступне";
+ *   - 503 → різні тексти за `code` (вимкнено vs провайдер лежить);
  *   - інший 5xx → загальна HTTP помилка;
  *   - timeout (AbortError) → "Recall таймаут — спробуй простіший запит";
  *   - network error → "Не вдалося звʼязатися з сервером для recall.";
@@ -233,7 +233,7 @@ describe("handleAsyncChatAction — recall_memory error paths", () => {
     expect(out).toBe("Потрібна авторизація для пошуку памʼяті.");
   });
 
-  it("→ 503 → 'AI memory тимчасово недоступне'", async () => {
+  it("→ 503 EMBEDDING_PROVIDER_UNAVAILABLE → 'тимчасово недоступна'", async () => {
     fetchMock.mockResolvedValueOnce(
       makeJsonResponse(
         { code: "EMBEDDING_PROVIDER_UNAVAILABLE" },
@@ -245,7 +245,38 @@ describe("handleAsyncChatAction — recall_memory error paths", () => {
       input: { query: "test" },
     } as unknown as ChatAction;
     const out = (await handleAsyncChatAction(action)) as string;
-    expect(out).toContain("AI memory тимчасово недоступне");
+    expect(out).toContain("тимчасово недоступна");
+    expect(out).toContain("провайдер ембеддингів");
+  });
+
+  /**
+   * Обидва стани віддають 503, але вимагають різних дій: провайдер відлежиться
+   * сам, а вимкнена фіча — ні. Раніше клієнт склеював їх у «тимчасово
+   * недоступне», тобто радив чекати того, що без зміни env не настане.
+   */
+  it("→ 503 AI_MEMORY_DISABLED → «чекати марно», а не «тимчасово»", async () => {
+    fetchMock.mockResolvedValueOnce(
+      makeJsonResponse({ code: "AI_MEMORY_DISABLED" }, { status: 503 }),
+    );
+    const action = {
+      name: "recall_memory",
+      input: { query: "test" },
+    } as unknown as ChatAction;
+    const out = (await handleAsyncChatAction(action)) as string;
+    expect(out).toContain("вимкнена на сервері");
+    expect(out).not.toContain("тимчасово");
+  });
+
+  it("→ 503 без тіла → падає у формулювання про провайдера", async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response("not json", { status: 503 }) as unknown as Response,
+    );
+    const action = {
+      name: "recall_memory",
+      input: { query: "test" },
+    } as unknown as ChatAction;
+    const out = (await handleAsyncChatAction(action)) as string;
+    expect(out).toContain("тимчасово недоступна");
   });
 
   it("→ 500 → загальне HTTP-повідомлення", async () => {
