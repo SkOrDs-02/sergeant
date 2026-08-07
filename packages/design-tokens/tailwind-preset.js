@@ -16,6 +16,7 @@ import {
   chartPalette,
   moduleColors,
   statusColors,
+  statusStrongHex,
   zTier,
 } from "./tokens.js";
 
@@ -261,12 +262,15 @@ const preset = {
         // `-soft-fg` contract: deep ink on the pale light/HC surface, bright
         // accent on the deep dark surface. Backed by `--c-brand-soft-fg`.
         "brand-soft-fg": "rgb(var(--c-brand-soft-fg) / <alpha-value>)",
-        // WCAG-AA companions: `text-{c}-strong` on cream / soft surfaces,
-        // `bg-{c}-strong text-white` on solid fills (Buttons, Badges, Tabs).
-        "success-strong": brandColors.emerald[700], // #047857 — 5.23:1 on cream / 5.48:1 on white
-        "warning-strong": "#b45309", // amber-700 — 4.83:1 on cream / 5.02:1 on white
-        "danger-strong": "#b91c1c", // red-700   — 6.17:1 on cream / 6.47:1 on white
-        "info-strong": "#0369a1", // sky-700   — 5.66:1 on cream / 5.93:1 on white
+        // WCAG-AA companions: `text-{c}-strong` on the page background /
+        // soft surfaces, `bg-{c}-strong text-white` on solid fills
+        // (Buttons, Badges, Tabs). Значення — з `statusStrongHex`, а не
+        // літералами тут: літерали не мали гейта й розійшлися з фактом
+        // (див. AI-CONTEXT біля мапи в `tokens.js`).
+        "success-strong": statusStrongHex.success, // #065f46 — 6.44:1 на #ecebe7 / 7.68:1 на білому
+        "warning-strong": statusStrongHex.warning, // #92400e — 5.94:1 на #ecebe7 / 7.09:1 на білому
+        "danger-strong": statusStrongHex.danger, // #991b1b — 6.97:1 на #ecebe7 / 8.31:1 на білому
+        "info-strong": statusStrongHex.info, // #075985 — 6.34:1 на #ecebe7 / 7.56:1 на білому
 
         // ═══════════════════════════════════════════════════════════════════
         // CHART PALETTE — For pie charts, graphs, data visualization
