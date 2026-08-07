@@ -116,3 +116,45 @@ describe("parseToolCalls — talk-to-your-data read/query tools (regression)", (
     expect(result.ok).toBe(true);
   });
 });
+
+describe("parseToolCalls — remember (regression)", () => {
+  /**
+   * Схема довго вимагала `{ key, value }`, тоді як серверне визначення тула,
+   * тип `RememberAction` і хендлер працюють з `{ fact, category }`. Модель
+   * слала правильну форму, фаєрвол відкидав усю пачку, і «Запамʼятай…»
+   * не спрацьовував ЖОДНОГО разу — користувач бачив тост «Не вдалося
+   * виконати дію» і «Немає відповіді».
+   */
+  it("приймає форму, яку реально шле модель", () => {
+    const out = parseToolCalls([
+      {
+        id: "t1",
+        name: "remember",
+        input: { fact: "не люблю чорнослив", category: "diet" },
+      },
+    ]);
+    expect(out.ok).toBe(true);
+  });
+
+  it("category необовʼязкова — enum гарантує сервер зі strict:true", () => {
+    const out = parseToolCalls([
+      { id: "t2", name: "remember", input: { fact: "біжу марафон у травні" } },
+    ]);
+    expect(out.ok).toBe(true);
+  });
+
+  it("порожній fact відкидається — зберігати нічого", () => {
+    const out = parseToolCalls([
+      { id: "t3", name: "remember", input: { fact: "", category: "diet" } },
+    ]);
+    expect(out.ok).toBe(false);
+  });
+
+  it("стара форма {key,value} більше не проходить", () => {
+    // Якщо схему колись відкотять, цей тест впаде першим.
+    const out = parseToolCalls([
+      { id: "t4", name: "remember", input: { key: "diet", value: "x" } },
+    ]);
+    expect(out.ok).toBe(false);
+  });
+});
