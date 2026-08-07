@@ -187,6 +187,14 @@ export function BankTransactionDetailsSheet({
           AI-DANGER: `edge-lift` мусить бути на БАТЬКУ. Маска `edge-stub`
           зрізає тінь на своєму вузлі — і `box-shadow`, і `drop-shadow`
           однаково (заміряно; див. `.edge-lift` у `tailwind-preset.js`).
+
+          Чому не проп `Card edge="stub"` (борг 1, інвентар 2026-08-07):
+          поверхня тут — `bg-panelHi` (підняте тло квитанції над
+          звичайним `bg-panel` шторки), а жодна `prominence` в `Card`
+          такого фону не дає — всі опираються на `bg-panel`. Переведення
+          означало б або підмінити фон, або тягти новий `prominence`
+          заради одного місця; клас лишається сирим (allowlisted у
+          `edgeMaterial.test.ts`).
         */}
         <div className="edge-lift">
           <section className="edge-stub border border-line bg-panelHi p-4">

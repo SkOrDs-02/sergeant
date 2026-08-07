@@ -82,6 +82,25 @@ function walk(dir: string): string[] {
   return out;
 }
 
+/**
+ * Файли, де матеріал застосовується сирими `edge-*` класами, а не
+ * пропом `Card.edge` (Борг 1, інвентар 2026-08-07, PR #710). Кожен
+ * запис має поруч у СВОЄМУ файлі коментар «Чому не проп `Card edge`»
+ * з конкретною причиною несумісності. Без цього allowlist-у половина
+ * застосувань краю не ловиться ґрепом по `edge=` — інвентар неповний
+ * за побудовою; список нижче робить межу перевіркою, а не памʼяттю.
+ *
+ * Нове сире застосування МАЄ або перейти на проп `Card`, або додатись
+ * сюди з таким самим поясненням у файлі — інакше цей тест червоніє.
+ */
+const RAW_EDGE_CLASSES = ["edge-stub", "edge-rule", "edge-perf"];
+const RAW_EDGE_ALLOWLIST = [
+  join("core", "insights", "WeeklyDigestCard.tsx"),
+  join("core", "hub", "ReportSheet.tsx"),
+  join("modules", "finyk", "components", "BankTransactionDetailsSheet.tsx"),
+  join("modules", "finyk", "pages", "transactions", "TransactionList.tsx"),
+];
+
 describe("край і зріз — маска й підйом не живуть на одному вузлі", () => {
   const files = walk(SRC);
 
@@ -118,5 +137,22 @@ describe("край і зріз — маска й підйом не живуть 
       if (!hasLift && !hasWaiver) missing.push(relative(SRC, file));
     }
     expect(missing).toEqual([]);
+  });
+
+  it("сирі edge-* класи (повз проп Card) існують лише у explicit allowlist", () => {
+    // `Card.tsx` — канонічне джерело цих рядків (`edges` map); саме тому
+    // виключений із перевірки, а не тому що йому дозволено «сире».
+    const CARD_SOURCE = join("shared", "components", "ui", "Card.tsx");
+    const offenders: string[] = [];
+    for (const file of files) {
+      const rel = relative(SRC, file);
+      if (rel === CARD_SOURCE) continue;
+      const src = readFileSync(file, "utf8");
+      const usesRaw = RAW_EDGE_CLASSES.some((c) =>
+        classGroups(src).some((l) => l.split(/\s+/).includes(c)),
+      );
+      if (usesRaw && !RAW_EDGE_ALLOWLIST.includes(rel)) offenders.push(rel);
+    }
+    expect(offenders).toEqual([]);
   });
 });
