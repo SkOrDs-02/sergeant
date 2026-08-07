@@ -8,18 +8,40 @@ interface Options {
   onAdvance: () => void;
 }
 
+// Cadence of the timer that drives progress when rAF is unavailable. Fast
+// enough to read as motion rather than as discrete steps, which matters
+// because on a frozen WebKit page this is the *only* driver.
+const TICK_MS = 100;
+
+// Upper bound on the time credited to a single tick. Both drivers can go
+// silent for minutes (backgrounded app, suspended page); without a clamp the
+// first tick after a resume would jump the bar — or blow through the whole
+// slide. With it, a resume costs at most one clamp window regardless of how
+// long the gap was, so correctness no longer depends on the page telling us
+// truthfully when it went away.
+const MAX_TICK_MS = 500;
+
 /**
  * rAF-driven progress (0–100). Resets to 0 whenever `key` changes, halts
  * while `paused` is true, and calls `onAdvance` at 100%.
  *
- * Uses requestAnimationFrame with wall-clock deltas so the progress bar
- * stays in sync with real time across frame drops. A secondary
- * `setInterval` guard advances progress on platforms where the browser
- * throttles or pauses rAF callbacks (iOS Safari standalone-PWA, low
- * power mode, WKWebView in Capacitor). When the tab is hidden the
- * browser stops calling rAF entirely, so we rebase the start time on
- * `visibilitychange` and re-schedule a rAF — preventing the progress
- * bar from jumping or stalling on resume.
+ * Progress is accumulated from clamped wall-clock deltas rather than derived
+ * from a fixed start timestamp, and a `setInterval` runs alongside rAF so the
+ * bar keeps moving on platforms that throttle or suspend rAF callbacks (iOS
+ * Safari standalone-PWA, low power mode, WKWebView in Capacitor).
+ *
+ * AI-CONTEXT: the interval used to no-op whenever
+ * `document.visibilityState === "hidden"`, which disabled the fallback in
+ * exactly the situation it exists for. An iOS PWA resumed from the background
+ * can be left with its page-visibility state machine stuck: rAF is never
+ * resumed *and* `visibilityState` keeps reporting `"hidden"` while the page is
+ * on screen and repainting. Both drivers died together, so the bar froze and
+ * slides stopped advancing while taps (event-driven) still worked. We now
+ * track visibility from `visibilitychange` *transitions* only — an event that
+ * fires when the app genuinely leaves the foreground — and start from
+ * "visible", since the overlay only ever mounts behind a user gesture. A lying
+ * `visibilityState` can no longer freeze autoplay; the delta clamp above keeps
+ * a genuine background stint from being credited to the current slide.
  */
 export function useStoriesAutoplay({
   key,
@@ -39,24 +61,24 @@ export function useStoriesAutoplay({
 
   useEffect(() => {
     if (paused) return;
-    if (typeof window === "undefined" || typeof performance === "undefined") {
-      return;
-    }
+    if (typeof window === "undefined") return;
 
     let rafId: number | null = null;
     let cancelled = false;
     let advanced = false;
-    // Mutable so visibilitychange can rebase without restarting the loop.
-    // Date.now keeps advancing on iOS standalone PWA even when the WebKit
-    // performance clock/rAF timestamp is temporarily frozen in low-power mode.
+    // Only a `visibilitychange` to "hidden" sets this — never a poll of
+    // `document.visibilityState`, which is the value we cannot trust.
+    let hidden = false;
+
     if (activeKeyRef.current !== key) {
       activeKeyRef.current = key;
       progressRef.current = 0;
     }
-    const state = {
-      startTs: Date.now() - (progressRef.current / 100) * durationMs,
-      lastProgress: progressRef.current,
-    };
+
+    // Date.now keeps advancing on iOS standalone PWA even when the WebKit
+    // performance clock/rAF timestamp is temporarily frozen in low-power mode.
+    let elapsedMs = (progressRef.current / 100) * durationMs;
+    let lastTs = Date.now();
 
     const doAdvance = () => {
       if (advanced || cancelled) return;
@@ -67,11 +89,10 @@ export function useStoriesAutoplay({
 
     const update = () => {
       if (cancelled || advanced) return;
-      const pct = Math.min(
-        100,
-        ((Date.now() - state.startTs) / durationMs) * 100,
-      );
-      state.lastProgress = pct;
+      const now = Date.now();
+      elapsedMs += Math.min(Math.max(now - lastTs, 0), MAX_TICK_MS);
+      lastTs = now;
+      const pct = Math.min(100, (elapsedMs / durationMs) * 100);
       progressRef.current = pct;
       setProgressState({ key, value: pct });
       if (pct >= 100) {
@@ -88,25 +109,20 @@ export function useStoriesAutoplay({
     };
     rafId = window.requestAnimationFrame(tick);
 
-    // Fallback: setInterval catches platforms where rAF silently stops
-    // (iOS Safari PWA, WKWebView, low-power mode). Runs at ~250ms — not
-    // visually smooth, but enough to keep the progress bar moving and
-    // guarantee the slide advances on time.
     const intervalId = window.setInterval(() => {
-      if (document.visibilityState === "hidden") return;
+      if (hidden) return;
       update();
-    }, 250);
+    }, TICK_MS);
 
     const onVisibility = () => {
-      if (document.visibilityState === "visible" && !cancelled && !advanced) {
-        // Rebase startTs so we resume from the last observed progress
-        // rather than crediting hidden-tab time to the current slide.
-        state.startTs = Date.now() - (state.lastProgress / 100) * durationMs;
-        // Re-kick rAF — some browsers drop the pending callback when the
-        // page was hidden; the interval guard covers the gap in between.
-        if (rafId !== null) window.cancelAnimationFrame(rafId);
-        rafId = window.requestAnimationFrame(tick);
-      }
+      hidden = document.visibilityState === "hidden";
+      if (hidden || cancelled || advanced) return;
+      // Coming back: drop the gap that accrued while we were away, then
+      // re-kick rAF — some browsers discard the pending callback when the
+      // page was hidden, and the interval alone would leave the bar steppy.
+      lastTs = Date.now();
+      if (rafId !== null) window.cancelAnimationFrame(rafId);
+      rafId = window.requestAnimationFrame(tick);
     };
     document.addEventListener("visibilitychange", onVisibility);
 
