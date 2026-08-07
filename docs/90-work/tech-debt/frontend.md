@@ -3,17 +3,51 @@
 > **Last validated:** 2026-07-20 by @cursoragent (full reconcile vs HEAD). **Next review:** 2026-10-18.
 > **Status:** Active
 
+> **Оновлено 2026-08-07 (tech-debt reconcile).** Переміряно бек-лог нижче на
+> HEAD — три пункти виявились закритими або значно застарілими, і закривались
+> вони не тим, що записано в плані:
+>
+> - **п.1 Enforcement-вакуум — здебільшого закритий.** `scripts/check-design-conventions.mjs`
+>   уже в ланцюгу `pnpm lint` і гейтить чотири з шести конвенцій (hex-бан,
+>   `focus:`, `text-2xs`, під-12px). Цим проходом скоуп розширено з
+>   `apps/web/src` на `apps/landing/src` + `apps/mobile-shell/src` (обидві на
+>   нулі) і додано 13 тестів на anti-false-positive контракт. **Відкритий
+>   залишок — рівно три AST-рівневі конвенції** (opacity-шкала, `-strong`
+>   companions, module-accent containment): вони свідомо review-only, і тепер
+>   це записано чесно і в `docs/05-design/design/README.md`, і в самому
+>   DesignShowcase. Заразом полагоджено гірший підвид цього ж боргу:
+>   showcase рекламував **13 неіснуючих ESLint-правил і 8 ретайрнутих Hard
+>   Rules** — тобто обіцяв enforcement, якого немає.
+> - **п.7 44px-аудит у CI — закрито.** Лейн промоутнуто з nightly у блокуючий
+>   job `Mobile UI audit (44px touch targets)` у `ci.yml`. Блокером був не
+>   wiring, а краш `FINYK_ASSETS` (`(webhookAccounts ?? []).filter` проти
+>   не-масиву) — фікс уже на main, лейн зелений у nightly 2026-08-06/08-07.
+> - **п.9 Сира типографіка — цифри застаріли втричі.** Було записано «389
+>   `text-xs` + 108 `text-sm` проти 1316 `text-style-*`»; факт на HEAD —
+>   **111 + 84 проти 2011**. Ратчет фактично відпрацював (значною мірою у
+>   PR #684), лишився довгий хвіст під правилом «торкнувся файлу — мігруй».
+>   NB: сирий розмір лишається легітимним у двох випадках, і вони
+>   задокументовані в `tailwind-preset.js` — розмір контрола та потреба саме в
+>   `line-height` 1rem; сліпий sweep їх зламає.
+>
+> Заразом виявлено **новий** запис для mobile: `apps/mobile/src` має 156
+> порушень 12px-floor (17 `text-2xs` + 139 `text-[<12px]`) і **нуль**
+> `.text-style-*` — мігрувати немає куди, тож розширення гейта на mobile
+> gated на створення семантичної шкали для NativeWind (див. п.8 нижче).
+>
 > **Оновлено 2026-08-04 (design-system deep audit).** Перенесений бек-лог із
 > аудиту дизайн-системи (звіт `docs/90-work/audits/2026-08-04-design-system-deep-audit.md`
 > видалено після фікс-хвилі за рішенням founder-а; історія — у merged PR #607).
 > Автофіксабельне виправлено (dark/hc token-parity, a11y діалогів, text-2xs,
 > mobile re-sync, docs↔ADR-0081). Невиправлений залишок — потребує рішень:
 >
-> 1. **Enforcement-вакуум (high).** Після ADR-0081 opacity-шкала, `-strong`,
->    hex-бан, module-accent, focus-visible, 12px floor — без жодної механічної
->    перевірки (ADR-0082 видалив VRT, Storybook CI перевіряє лише білд).
->    Рішення: дешевий grep/AST-скрипт у lint-ланцюг АБО чесний запис
->    «review-only» в ADR-0081.
+> 1. ~~**Enforcement-вакуум (high).**~~ — **здебільшого закрито** (див.
+>    маркер 2026-08-07 вище). Застосовані обидва запропоновані рішення, не
+>    одне з двох: grep-гейт `check-design-conventions.mjs` покриває hex-бан,
+>    `focus:` і 12px-floor на трьох поверхнях, а opacity-шкала, `-strong` і
+>    module-accent записані як review-only і в `docs/05-design/design/README.md`,
+>    і в бейджах showcase. Механічного боргу тут більше немає — лишається
+>    свідомий review-скоуп.
 > 2. ~~**Тема-сліпі чарти (high).**~~ — **Done** (хвиля 3, `e6a01ce`, 2026-08-04).
 >    `chartSeries.ts` / `statusColors.ts` більше не існують; у fizruk немає
 >    статичних hex поза тестами, `BodyAtlas.tsx` перейшов на var-backed кольори.
@@ -35,8 +69,11 @@
 > 6. **DesignShowcase.** Покриває ~25/60 компонентів; proposal-демо — форки
 >    шипнутих компонентів; 132 `text-2xs` + text-[9-10px] у showcase;
 >    DynamicThemeColorDemo/ProposalsVisual — stale #fdf9f3.
-> 7. **44px-аудит у CI.** mobile-ui-audit.spec.ts (єдина автоматична 44px
->    перевірка) не виконується жодним workflow — додати в critical-flow lane.
+> 7. ~~**44px-аудит у CI.**~~ — **закрито 2026-08-07.** Твердження «не
+>    виконується жодним workflow» було неточним: лейн жив у nightly
+>    `extended-e2e.yml`. Тепер це блокуючий job `Mobile UI audit (44px touch
+targets)` у `ci.yml`; сам status check у branch protection вмикається
+>    поза репо.
 > 8. **Mobile теми (high).** mobile.js — статична dark-only палітра при
 >    light+dark апці (23 споживачі); нема hc-режиму (web 4-mode, mobile
 >    3-mode); типографіка без семантичної шкали (140 sub-12px arbitrary,
@@ -44,9 +81,20 @@
 >    Android-сплеш без values-night; ProgressRing.tsx — третя off-brand
 >    макро-палітра; residual emerald у global.css (--c-ring/--c-selection-bg/
 >    --c-caret .dark, finyk/routine module-primary блок, hero-gradient-brand).
-> 9. **Сира типографіка ratchet.** 389 text-xs + 108 text-sm проти 1316
->    text-style-* — правило «торкнувся файлу — мігруй», старт із 3
->    nutrition-файлів (41 сайт).
+>    **Уточнено 2026-08-07:** відсутність семантичної шкали — це не косметика,
+>    а те, що блокує механічний гейт. `apps/mobile/src` дає **156** порушень
+>    12px-floor (17 `text-2xs` + 139 `text-[<12px]`) при **нулі**
+>    `.text-style-*` — тобто `check-design-conventions.mjs` не можна
+>    розширити на mobile, бо мігрувати немає куди. Порядок робіт: спершу
+>    шкала (owner-decision — які саме ролі й розміри), потім burndown, і лише
+>    тоді `apps/mobile/src` у `SCAN_DIRS`.
+> 9. **Сира типографіка ratchet** — цифри переміряні 2026-08-07: **111
+>    text-xs + 84 text-sm проти 2011 text-style-\*** (записано було 389/108
+>    проти 1316). Ратчет фактично відпрацював; nutrition-старт із 41 сайту
+>    розібраний до ~20. Правило лишається «торкнувся файлу — мігруй», але
+>    сліпий sweep заборонений: два легітимні випадки сирого розміру
+>    задокументовані в `packages/design-tokens/tailwind-preset.js` (розмір
+>    контрола; потреба саме в `line-height` 1rem).
 > 10. **Дрібне.** ~~`no-legacy-telegram-parse-mode` — dead-weight правило
 >     плагіна~~ (видалено 2026-08-06 разом із `sri-on-third-party-script`,
 >     обидва enabled ніде); storybook.md VRT-згадки ADR-0034 (пост-0082 stale); native
@@ -390,7 +438,6 @@ UPDATE` у `kv_store`; cross-tab `onChange` через `BroadcastChannel("kv-sto
    перейменування коштувало б 15 call-site-ів заради синоніма.
 
    **Два нових борги, які створив цей прохід:**
-
    - **`SectionHeading` `2xs`/`xs`/`sm` стали синонімами.** ✅ **Закрито
      2026-08-06** на прохання власника. 73 виклики в 46 файлах переведені
      на `xs`, самі імена вилучені з `SectionHeadingSize`. Доти домовленість

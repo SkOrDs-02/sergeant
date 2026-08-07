@@ -20,10 +20,17 @@
 | Mobile Phase 6 NotificationsSection   | TODO wire `useMonthlyPlan`          | **Closed** [#352](https://github.com/SkOrDs-02/Sergeant/pull/352)                                                                        |
 | `no-non-null-assertion` (перша хвиля) | 4 undocumented disables             | **Closed** [#353](https://github.com/SkOrDs-02/Sergeant/pull/353)                                                                        |
 
-**Відкритий actionable backlog (після waves):**
+**Відкритий actionable backlog (переміряно 2026-08-07):**
 
-1. Mobile coverage floor 30 → ratchet (P3) — лише після headroom у CI.
-2. Подальший `!` / eslint burndown (AccentColorPicker, barcode, server sync) — опційно, P3; low-risk web batch уже Done.
+1. Mobile coverage floor 30 → ratchet (P3). **Уточнення 2026-08-07: це не «чекає headroom», а не має вимірювання взагалі.** `test:coverage:ci` запускається з `--filter=!@sergeant/mobile`, тобто mobile-покриття в CI не рахується — ратчетити нема від чого. Спершу треба завести mobile у coverage-лейн (або окремим job-ом), і лише потім піднімати floor.
+2. Подальший `!` / eslint burndown — опційно, P3. **Скоуп зменшився:** `AccentColorPicker` видалено як компонент-сироту ще 2026-08-04, тож із трійки лишились barcode і server sync. Загальна кількість production-`eslint-disable` — **158** рядків (у Групі 3 нижче записано ~195).
+3. **Mobile 12px-floor — новий запис.** `apps/mobile/src`: 156 порушень (17 `text-2xs` + 139 `text-[<12px]`) при нулі `.text-style-*`. Gated на створення семантичної шкали для NativeWind (owner-decision) — деталі у `frontend.md` п.8.
+
+**Закрито цим проходом (2026-08-07):**
+
+- 44px-аудит промоутнуто у блокуючий CI-job (`frontend.md` п.7).
+- Enforcement-вакуум дизайн-системи здебільшого закрито: гейт розширено на landing + mobile-shell, додано тести, showcase перестав рекламувати 13 неіснуючих лінтів і 8 ретайрнутих Hard Rules (`frontend.md` п.1).
+- Увесь блок `backend.md` § «P1 (наступний спринт)» — був закритий, але не переміряний (CSP `report-uri`, `Permissions-Policy`, coverage у CI, 23 `@critical` E2E).
 
 **Blocked (агент не закриє без власника / інфри / депів)** — простими словами див. [`README.md § Blocked простими словами`](./README.md#blocked-простими-словами).
 
@@ -64,16 +71,16 @@
 
 ## Група 3 — eslint-disable burndown — частково Closed у waves
 
-Виміряно **~195** production-рядків з `eslint-disable` (web+server+mobile+packages, без тестів); ціль «<100» нереалістична — більшість by-design.
+Виміряно **~195** production-рядків з `eslint-disable` (web+server+mobile+packages, без тестів); ціль «<100» нереалістична — більшість by-design. **Переміряно 2026-08-07: 158** — хвилі та видалення мертвих компонентів зрізали ще ~37, окремої кампанії не потрібно.
 
-| Ціль                                                                         | Статус                                                                                                                             |
-| ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `no-raw-storage-key` / `no-restricted-syntax` WHY                            | ✅ [#351](https://github.com/SkOrDs-02/Sergeant/pull/351)                                                                          |
-| `@typescript-eslint/no-non-null-assertion` (перша хвиля)                     | ✅ [#353](https://github.com/SkOrDs-02/Sergeant/pull/353)                                                                          |
-| `!` low-risk web batch                                                       | ✅ (Avatar / FocusTrap / AnimatedList / KeyboardAccessory / accountVisual / DailyPlanMealRow / LogCardAnalytics / cleanupDemoData) |
-| Mobile exhaustive-deps catalog                                               | ✅ [#349](https://github.com/SkOrDs-02/Sergeant/pull/349)                                                                          |
-| Подальший security-pass / `!` / FS (AccentColorPicker, barcode, server sync) | Відкрито, P3 — opportunistic                                                                                                       |
-| Web exhaustive-deps catalog                                                  | ✅ Done (web=0)                                                                                                                    |
+| Ціль                                                      | Статус                                                                                                                             |
+| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `no-raw-storage-key` / `no-restricted-syntax` WHY         | ✅ [#351](https://github.com/SkOrDs-02/Sergeant/pull/351)                                                                          |
+| `@typescript-eslint/no-non-null-assertion` (перша хвиля)  | ✅ [#353](https://github.com/SkOrDs-02/Sergeant/pull/353)                                                                          |
+| `!` low-risk web batch                                    | ✅ (Avatar / FocusTrap / AnimatedList / KeyboardAccessory / accountVisual / DailyPlanMealRow / LogCardAnalytics / cleanupDemoData) |
+| Mobile exhaustive-deps catalog                            | ✅ [#349](https://github.com/SkOrDs-02/Sergeant/pull/349)                                                                          |
+| Подальший security-pass / `!` / FS (barcode, server sync) | Відкрито, P3 — opportunistic. `AccentColorPicker` відпав: компонент видалено 2026-08-04 як сироту                                  |
+| Web exhaustive-deps catalog                               | ✅ Done (web=0)                                                                                                                    |
 
 ## Група 4 — Рекласифіковано: dualWrite/residualImport — НЕ дублікати
 
@@ -92,7 +99,7 @@
 | Web max-lines: ManualExpenseSheet / TxRow       | ✅ Closed #348 / #350              | —                                                                                                                                             |
 | Privat upstream body scrub                      | ✅ Closed #347                     | —                                                                                                                                             |
 | Mobile Phase 6 NotificationsSection             | ✅ Closed #352                     | —                                                                                                                                             |
-| Mobile coverage floor 30 (TC-03)                | Відкрито, P3                       | Ratchet у `coverage-thresholds.json`                                                                                                          |
+| Mobile coverage floor 30 (TC-03)                | Відкрито, P3                       | **Спершу вимір:** `test:coverage:ci` виключає `@sergeant/mobile`, тож ратчетити нема від чого. Потім floor у `coverage-thresholds.json`.      |
 | UI-примітиви / overlay family (P4)              | ✅ Phase 1+2 done                  | Phase 1: `useFloatingPanelPosition`. Phase 2: ConfirmDialog/InputDialog — `bg-black/40`, `useBodyScrollLock`, portal. Not Radix (size-limit). |
 | `sync_op_log` партиціювання                     | 🚫 Blocked: multi-instance trigger | ADR-0065                                                                                                                                      |
 | Coolify env-var audit trail                     | 🚫 Blocked-reason: owner-decision  | `backend.md` § Operational visibility                                                                                                         |
