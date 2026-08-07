@@ -62,7 +62,7 @@ export function DayReportSheet({
       zIndex={200}
     >
       {scheduledHabits.length === 0 && (
-        <p className="text-sm text-muted text-center py-6">
+        <p className="text-style-label text-muted text-center py-6">
           На цей день немає запланованих звичок
         </p>
       )}

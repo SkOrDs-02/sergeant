@@ -302,7 +302,7 @@ export function WorkoutTemplatesSection({
               )}
             </div>
             {orderIds.length === 0 ? (
-              <div className="text-sm text-subtle text-center py-4">
+              <div className="text-style-label text-subtle text-center py-4">
                 Додай хоча б одну вправу
               </div>
             ) : (

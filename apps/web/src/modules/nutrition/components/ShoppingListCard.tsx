@@ -292,7 +292,7 @@ export function ShoppingListCard({
         )}
 
         {!hasItems && !shoppingBusy && (
-          <div className="rounded-2xl border border-line bg-panel p-4 text-sm text-muted text-center">
+          <div className="rounded-2xl border border-line bg-panel p-4 text-style-label text-muted text-center">
             Список покупок порожній. Вибери джерело і натисни кнопку генерації.
           </div>
         )}

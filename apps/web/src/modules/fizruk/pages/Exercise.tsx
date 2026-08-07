@@ -122,7 +122,11 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
     return (
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad">
-          <Card radius="lg" padding="lg" className="text-sm text-subtle">
+          <Card
+            radius="lg"
+            padding="lg"
+            className="text-style-label text-subtle"
+          >
             Невірний ID вправи
           </Card>
         </div>

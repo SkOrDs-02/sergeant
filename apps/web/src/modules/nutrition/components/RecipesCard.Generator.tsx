@@ -282,7 +282,7 @@ export function GeneratorCard({
         )}
 
         {recipesTried && !busy && recipes.length === 0 && !err && (
-          <div className="rounded-2xl border border-line bg-panel p-4 text-sm text-muted">
+          <div className="rounded-2xl border border-line bg-panel p-4 text-style-label text-muted">
             Рецептів не повернулося. Спробуй натиснути &quot;Розібрати&quot; або
             додати 2–3 базові продукти (яйця/крупа/овочі).
             {recipesRaw && (

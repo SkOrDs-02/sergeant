@@ -147,7 +147,7 @@ export function WorkoutItemsList({
 
   if (items.length === 0) {
     return (
-      <div className="text-sm text-subtle text-center py-6">
+      <div className="text-style-label text-subtle text-center py-6">
         Додай вправи, щоб почати логувати
       </div>
     );
