@@ -38,6 +38,11 @@ export interface PhotoIngredient {
 }
 
 export interface NormalizedPhotoResult {
+  /**
+   * Чи є на фото їжа. `false` — це відмова: КБЖВ і питання порожні, UI не дає
+   * зберегти такий результат у журнал. Див. `resolveIsFood`.
+   */
+  isFood: boolean;
   dishName: string;
   confidence: number;
   portion: PhotoPortion | null;
@@ -137,7 +142,26 @@ export function normalizePhotoResult(
       ? { label: `${fallbackGrams} г`, gramsApprox: fallbackGrams }
       : null);
 
+  const isFood = resolveIsFood(obj["isFood"], outMacros);
+
+  // Відмова мусить виглядати як відмова у КОЖНОМУ полі, не лише у прапорці:
+  // саме напівзаповнений результат («Кіт», 0 ккал, питання про порцію) UI і
+  // показував як їжу. Гасимо КБЖВ і питання тут, у нормалізаторі, щоб жоден
+  // споживач — web, mobile, стенд — не мусив повторювати цю перевірку.
+  if (!isFood) {
+    return {
+      isFood,
+      dishName,
+      confidence,
+      portion: finalPortion,
+      ingredients,
+      macros: { kcal: null, protein_g: null, fat_g: null, carbs_g: null },
+      questions: [],
+    };
+  }
+
   return {
+    isFood,
     dishName,
     confidence,
     portion: finalPortion,
@@ -145,6 +169,44 @@ export function normalizePhotoResult(
     macros: outMacros,
     questions,
   };
+}
+
+/**
+ * Чи вважати результат їжею — детермінованим кодом, а не лише проханням у промпті.
+ *
+ * WHY. Промпт просить `isFood: false` на не-їжі, але покладатись лише на це вже
+ * коштувало нам бага: до появи поля контракт узагалі не мав способу сказати «це
+ * не їжа», і `gemini-2.5-flash-lite` слухняно віддавав `{ dishName: "Кіт",
+ * confidence: 1, macros: 0, questions: ["Чи є на фото щось інше, окрім кота?"] }`
+ * — і кота можна було зберегти в денний журнал як `macroSource: photoAI`.
+ * Той самий принцип, що й у `mergeDuplicatePantryItem` нижче: інваріант, який
+ * ламається тихо, тримає код, а не слухняність моделі.
+ *
+ * Два входи, і порядок між ними важливий:
+ *
+ *   1. Явне `isFood` від моделі — головніше за все. Модель, яка вміє поле,
+ *      дотримується й решти контракту, тому `true` з нульовими КБЖВ (склянка
+ *      води, чай без цукру) лишається їжею — це легальний випадок.
+ *   2. Поля немає взагалі (стара або неслухняна модель) — виводимо з КБЖВ:
+ *      без жодного додатного числа немає що записувати в журнал, тож це
+ *      відмова. Компроміс свідомий: фото води від моделі, яка проігнорувала
+ *      контракт, теж отримає відмову.
+ */
+function resolveIsFood(declared: unknown, macros: PhotoMacros): boolean {
+  // Моделі повертають прапорці і рядком ("false"), і числом (0) — JSON тут
+  // пише LLM, не типізований клієнт.
+  if (typeof declared === "boolean") return declared;
+  if (typeof declared === "string") {
+    const s = declared.trim().toLowerCase();
+    if (s === "true" || s === "1") return true;
+    if (s === "false" || s === "0") return false;
+  }
+  if (typeof declared === "number" && Number.isFinite(declared)) {
+    return declared !== 0;
+  }
+  return [macros.kcal, macros.protein_g, macros.fat_g, macros.carbs_g].some(
+    (v) => v != null && v > 0,
+  );
 }
 
 export function normalizePantryItems(parsed: unknown): PantryItem[] {

@@ -79,12 +79,48 @@ interface PhotoIngredient {
   name?: string;
 }
 
+/** Чи є хоч одне число КБЖВ — тільки тоді відсоток впевненості щось означає. */
+function hasAnyMacro(result: {
+  macros?: Partial<NullableMacros> | null;
+}): boolean {
+  const m = result.macros;
+  if (!m) return false;
+  return [m.kcal, m.protein_g, m.fat_g, m.carbs_g].some((v) => v != null);
+}
+
 interface PhotoAnalyzeResult {
+  /** `false` — сервер сказав, що їжі на фото немає (див. `normalizePhotoResult`). */
+  isFood?: boolean;
   dishName?: string | null;
   macros?: Partial<NullableMacros> | null;
   confidence?: number | null;
   ingredients?: PhotoIngredient[];
   questions?: string[];
+}
+
+/**
+ * Відмова аналізу: на фото немає їжі.
+ *
+ * AI-CONTEXT: до цієї гілки картка рендерила КБЖВ, «Зберегти в журнал» і блок
+ * «Уточнення порції» щойно результат був не-null — тож фото кота давало нулі,
+ * «Впевненість: 100%» і питання «Чи є на фото щось інше, окрім кота?», а
+ * кнопка збереження писала це в денний журнал як `macroSource: photoAI`.
+ * Найдорожчою була саме кнопка, а не назва: вигадані нулі потрапляли в
+ * `estimatedKcalShare` і в підсумок дня.
+ */
+function NotFoodNotice({ dishName }: { dishName?: string | null | undefined }) {
+  const what = (dishName || "").trim();
+  return (
+    <div className="mt-4 rounded-2xl border border-line bg-panelHi p-3">
+      <div className="text-style-label text-text">Не бачу тут страви</div>
+      <p className="mt-1 text-style-caption text-muted leading-relaxed">
+        {what
+          ? `На фото схоже на «${what}» — порахувати КБЖВ немає з чого.`
+          : "На фото немає їжі, для якої можна порахувати КБЖВ."}{" "}
+        Обери інше фото вище — або додай прийом їжі вручну.
+      </p>
+    </div>
+  );
 }
 
 interface PhotoAnalyzeCardProps {
@@ -219,16 +255,24 @@ export function PhotoAnalyzeCard({
         </button>
       ) : null}
 
-      {photoResult && (
+      {photoResult && photoResult.isFood === false && (
+        <NotFoodNotice dishName={photoResult.dishName} />
+      )}
+
+      {photoResult && photoResult.isFood !== false && (
         <div className="mt-4 grid gap-3">
           <div className="flex items-center justify-between gap-2">
             <div>
               <div className="text-style-label text-text">
                 {photoResult.dishName || "Страва"}
               </div>
-              {photoResult.confidence != null && (
+              {/* Підпис навмисно довший за «Впевненість»: це впевненість у
+                  ТОМУ, ЩО НА ФОТО, а не в калоріях поруч. Коли чисел немає
+                  взагалі, відсоток нічого не означає — ховаємо. */}
+              {photoResult.confidence != null && hasAnyMacro(photoResult) && (
                 <div className="text-style-caption text-muted mt-0.5">
-                  Впевненість: {Math.round(photoResult.confidence * 100)}%
+                  Впевненість у розпізнаванні:{" "}
+                  {Math.round(photoResult.confidence * 100)}%
                 </div>
               )}
             </div>

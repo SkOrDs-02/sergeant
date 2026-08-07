@@ -85,6 +85,7 @@ describe("nutrition refine-photo handler — Anthropic invocation", () => {
     const body = asRecord(res.body);
     expect(body["rawText"]).toBe(rawText);
     expect(body["result"]).toEqual({
+      isFood: true,
       dishName: "Плов з куркою",
       confidence: 0.91,
       portion: { label: "порція", gramsApprox: 300 },

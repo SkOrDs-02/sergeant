@@ -26,6 +26,12 @@ export interface NutritionPhotoIngredient {
 }
 
 export interface NutritionPhotoResult {
+  /**
+   * `false` — на фото немає їжі. Сервер у цьому разі гарантує порожні `macros`
+   * і `questions`; споживач не має пропонувати ні збереження в журнал, ні
+   * уточнення порції. Джерело правди — `normalizePhotoResult` на сервері.
+   */
+  isFood: boolean;
   dishName: string;
   confidence: number;
   portion: NutritionPhotoPortion | null;

@@ -1317,6 +1317,7 @@
                 "notes": "телятина"
               }
             ],
+            "isFood": true,
             "macros": {
               "carbs_g": 22,
               "fat_g": 12,

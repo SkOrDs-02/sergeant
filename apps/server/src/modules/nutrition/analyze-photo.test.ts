@@ -86,6 +86,7 @@ describe("nutrition analyze-photo handler — Anthropic invocation", () => {
     const body = asRecord(res.body);
     expect(body["rawText"]).toBe(rawText);
     expect(body["result"]).toEqual({
+      isFood: true,
       dishName: "Борщ",
       confidence: 0.82,
       portion: { label: "тарілка", gramsApprox: 350 },

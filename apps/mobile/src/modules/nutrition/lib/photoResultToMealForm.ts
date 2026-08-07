@@ -4,6 +4,19 @@ import { mealTypeByNow } from "@sergeant/nutrition-domain";
 import type { MealFormState } from "../components/meal-sheet/mealFormUtils";
 import { currentTime } from "../components/meal-sheet/mealFormUtils";
 
+/**
+ * Текст відмови, коли сервер повернув `isFood: false`.
+ *
+ * Копія повідомлення веб-картки (`PhotoAnalyzeCard` → `NotFoodNotice`) — обидві
+ * поверхні мають казати людині те саме, бо причина відмови серверна й спільна.
+ */
+export function notFoodMessage(dishName?: string | null): string {
+  const what = (dishName || "").trim();
+  return what
+    ? `Не бачу тут страви: на фото схоже на «${what}». Спробуй інше фото або введи КБЖВ вручну.`
+    : "Не бачу тут страви. Спробуй інше фото або введи КБЖВ вручну.";
+}
+
 /** Мапінг відповіді analyze-photo → поля кроку «fill» AddMealSheet. */
 export function mapPhotoResultToMealForm(
   result: NutritionPhotoResult,
