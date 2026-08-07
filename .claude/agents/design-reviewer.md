@@ -49,10 +49,14 @@ The three tests (`DESIGN.md § Slop-тест`) are judgment calls you cannot set
 | A record or report surface (transaction, log entry, digest, day summary, finished workout) shipped with `rounded-*` instead of the `edge` material | Дані — П3 boundary: "does this exist in life as a sheet?" |
 | A new file under `modules/<a>/` that structurally mirrors one under `modules/<b>/` with only the accent token differing | Підміна — accent-swap ≠ identity |
 | Shape taken from an existing `@shared/components/ui` primitive while the data has a shape of its own (two axes rendered as two rows; a distribution rendered as one number; graded confidence rendered as show/hide) | Дані — form from the library, not from the data |
-| Typographic glyph (`▾ ▸ ○ ⓘ ⊕ ↻ ←`) or emoji standing in an icon slot | Дані — system-font glyph has its own metric, ignores `strokeWidth`, has no size token |
+| **Any** typographic glyph or emoji standing in an icon slot — judge by ROLE, not by character. Examples only, never a checklist: `▾ ▸ ○ ⓘ ⊕ ↻ ← ‹ › × ✓` | Дані — system-font glyph has its own metric, ignores `strokeWidth`, has no size token |
 
 Quote the line, name the test, and ask the summary question against that surface: **"що на цьому екрані не міг би зробити ніхто інший?"** If the diff answers it, say so and move on — a surface that passes deserves the note as much as one that doesn't.
 
+The table above lists **signals seen so far**, not the closed set. A search bounded by a literal list closes that list, not the defect — that failure is on record: a glyph sweep enumerated `▾ ▴ ▲ ▼ ▸ ○ ⓘ ⊕ ⊗ ← ↑ ↓ ↻ ↺ ↶`, called itself complete, and left 18 `‹ ›` untouched because guillemets were not on the list. When a diff shows a structure that threatens one of the three tests but matches no row here, report it anyway and say which test it threatens.
+
 ## Report format
 
-Group by convention name. Each finding: `file:line`, the offending class, the convention violated, severity (BLOCKER / WARNING / QUESTION). "✅ None" under clean conventions. Report the slop test as its own group, last — its findings are questions for the lead, not defects you have proven. Send findings to the lead.
+Group by convention name. Each finding: `file:line`, the offending class, the convention violated, severity (BLOCKER / WARNING / QUESTION). "✅ None" under clean conventions.
+
+**`QUESTION` is a required final group whenever you ran the slop test** — a separate heading, never folded into WARNING, even when it holds a single item or an explicit "✅ passes, and here is what only we could have built". The lead aggregates by group name (`sergeant-review-squad` § Synthesis protocol), so a QUESTION merged into WARNING either reads as a proven defect and gets "fixed" by repainting, or sinks among style notes and goes unanswered. Send findings to the lead.
