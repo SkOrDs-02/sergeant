@@ -84,7 +84,7 @@ function ShowcaseShell() {
         "h-dvh overflow-y-auto overscroll-contain bg-bg text-text",
         // Density modifier: compact tightens vertical rhythm without
         // changing the underlying spacing scale shown in the Spacing
-        // section. Hard Rule #16 is unaffected — only paddings shrink.
+        // section. The 12px type floor is unaffected — only paddings shrink.
         "data-[showcase-density=compact]:[&_section]:space-y-6",
       )}
     >

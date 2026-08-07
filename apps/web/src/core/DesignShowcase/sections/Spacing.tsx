@@ -166,12 +166,7 @@ export function SpacingSection() {
         hardRules={[
           { label: "HR #18", hint: "Module-size discipline (max-lines: 600)" },
         ]}
-        lintRules={[
-          {
-            label: "no-rounded-lg",
-            hint: "Use rounded-md/xl/2xl tiers — never the 8px in-between",
-          },
-        ]}
+        lintRules={[]}
       />
     </Sec>
   );

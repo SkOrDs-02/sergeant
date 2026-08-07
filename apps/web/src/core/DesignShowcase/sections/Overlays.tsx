@@ -156,13 +156,12 @@ export function OverlaysSection() {
       </Group>
 
       <RuleBadges
-        hardRules={[
-          { label: "HR #14", hint: "focus-visible only" },
-          { label: "HR #17", hint: "Motion budget — fade-in" },
-        ]}
+        hardRules={[]}
         lintRules={[
-          { label: "prefer-focus-visible" },
-          { label: "prefer-data-state" },
+          {
+            label: "check-design-conventions",
+            hint: "`focus:` заборонено — лише focus-visible: / focus-within:",
+          },
         ]}
       />
     </Sec>

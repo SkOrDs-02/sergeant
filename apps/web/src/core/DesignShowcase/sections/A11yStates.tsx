@@ -1,6 +1,6 @@
 /**
  * A11y / States — semantic tokens for focus, selection, scrollbar,
- * caret, and dividers (Hard Rule #14 + Design System polish track 2).
+ * caret, and dividers (focus-visible convention + Design System polish track 2).
  *
  * AI-CONTEXT: This section is the canonical visual contract for the new
  * `--c-ring*`, `--c-selection*`, `--c-caret`, `--c-scrollbar-*`, and
@@ -90,7 +90,7 @@ export function A11yStatesSection() {
             <code>
               focus-visible:ring-2 ring-focus/45 ring-offset-2 ring-offset-bg
             </code>
-            . Pointer-клік не блимає кільцем (Hard Rule #14).
+            . Pointer-клік не блимає кільцем.
           </p>
         </div>
       </Group>

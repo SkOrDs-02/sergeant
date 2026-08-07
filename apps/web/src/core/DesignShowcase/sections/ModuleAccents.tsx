@@ -13,7 +13,7 @@ const SAMPLE_USAGE = `// All four module tokens — used in cross-module surface
 </ModuleAccentProvider>
 
 // Inside apps/web/src/modules/finyk/** — only finyk accents allowed.
-// Foreign accent (e.g. text-fizruk) is blocked by no-foreign-module-accent.`;
+// Foreign accent (e.g. text-fizruk) — review-only convention (ADR-0081).`;
 
 type ModuleId = "finyk" | "fizruk" | "routine" | "nutrition";
 
@@ -89,9 +89,10 @@ export function ModuleAccentsSection() {
       intro={
         <>
           Чотири бренд-акценти модулів — emerald / teal / coral / lime. Кожен
-          модуль користується лише своїм акцентом (HR #12) — lint{" "}
-          <code>no-foreign-module-accent</code> блокує <code>text-fizruk</code>{" "}
-          у <code>apps/web/src/modules/finyk/**</code>.
+          модуль користується лише своїм акцентом — конвенція review-only
+          (ADR-0081), не lint. Тобто чужий <code>text-fizruk</code> у{" "}
+          <code>apps/web/src/modules/finyk/**</code> ловиться на review, а не
+          збіркою.
         </>
       }
     >
@@ -203,10 +204,7 @@ export function ModuleAccentsSection() {
         />
       </Group>
 
-      <RuleBadges
-        hardRules={[{ label: "HR #12", hint: "Module-accent containment" }]}
-        lintRules={[{ label: "no-foreign-module-accent" }]}
-      />
+      <RuleBadges hardRules={[]} lintRules={[]} />
     </Sec>
   );
 }
