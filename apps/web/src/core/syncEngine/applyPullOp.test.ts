@@ -726,6 +726,72 @@ describe("applyPullOp", () => {
     ).toBe("rejected");
   });
 
+  it("scopes the LWW lookup by user_id so another partition's row cannot block or be tombstoned", async () => {
+    // Regression: `routine_habits` (like most module tables) keys on `id`
+    // alone, and on the kvvfs fallback every partition shares one physical
+    // store. The unscoped lookup made the anonymous→profile handoff read
+    // its OWN source row as the LWW comparand, return "skipped", and then
+    // delete that row during cleanup — the data survived only on the
+    // server (browser QA 2026-08-06).
+    const sharedId = "habit-shared-pk";
+    const ts = "2026-07-10T08:00:00.000Z";
+
+    await applyPullOp(
+      client,
+      {
+        id: 30,
+        table: "routine_habits",
+        op: "insert",
+        row: { id: sharedId, user_id: "u-owner", name: "Owner habit" },
+        client_ts: ts,
+        server_ts: ts,
+        origin_device_id: "device-b",
+      },
+      "u-owner",
+      "device-a",
+    );
+
+    // Same primary key, same timestamp, different user — must still apply.
+    expect(
+      await applyPullOp(
+        client,
+        {
+          id: 31,
+          table: "routine_habits",
+          op: "insert",
+          row: { id: sharedId, user_id: "u-other", name: "Other habit" },
+          client_ts: ts,
+          server_ts: ts,
+          origin_device_id: "device-b",
+        },
+        "u-other",
+        "device-a",
+      ),
+    ).toBe("applied");
+
+    // A delete from one partition must not tombstone the other's row.
+    await applyPullOp(
+      client,
+      {
+        id: 32,
+        table: "routine_habits",
+        op: "delete",
+        row: { id: sharedId, user_id: "u-other" },
+        client_ts: "2026-07-10T09:00:00.000Z",
+        server_ts: "2026-07-10T09:00:00.000Z",
+        origin_device_id: "device-b",
+      },
+      "u-other",
+      "device-a",
+    );
+
+    const owner = await client.all<{ deleted_at: string | null }>(
+      `SELECT deleted_at FROM routine_habits WHERE id = ? AND user_id = ?`,
+      [sharedId, "u-owner"],
+    );
+    expect(owner[0]?.deleted_at ?? null).toBeNull();
+  });
+
   it("rejects generic delete on tables without deleted_at and reuses pragma caches", async () => {
     const userId = "u-prefs";
 
