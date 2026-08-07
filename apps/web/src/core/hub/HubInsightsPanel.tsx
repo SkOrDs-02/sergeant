@@ -141,7 +141,7 @@ export function HubInsightsPanel({
         )}
       >
         <span className="flex items-center gap-2 text-style-label font-semibold text-text">
-          {messages.hub.insights}
+          {messages.hub.otherTips}
           <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-panelHi text-style-caption font-bold text-muted">
             {total}
           </span>

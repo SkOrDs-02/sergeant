@@ -121,8 +121,8 @@ export function DashboardSection() {
           onChange={setShowTodayFocus}
         />
         <ToggleRow
-          label="Інсайти та AI-поради"
-          description="Згорнутий блок з інсайтами, порадою Сержанта та звітом тижня внизу головної."
+          label="Що зараз важливо"
+          description="Згорнутий блок з підказками, порадою Сержанта та звітом тижня внизу головної."
           checked={showInsights !== false}
           onChange={setShowInsights}
         />

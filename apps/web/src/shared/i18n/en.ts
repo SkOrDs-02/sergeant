@@ -243,7 +243,7 @@ export const messagesEn: Partial<MessageCatalog> = {
       confirm: "Yes, do it",
       cancel: "Cancel",
     },
-    insights: "Insights",
+    otherTips: "More tips",
     chatQuickActions: "Quick scenarios",
     valueProgressAria: "Progress toward your goals",
     crossModulePreviewAria: "What Sergeant will show next",

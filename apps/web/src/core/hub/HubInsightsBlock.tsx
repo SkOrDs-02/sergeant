@@ -96,7 +96,7 @@ export function HubInsightsBlock({
       storageKey="sergeant:hub.insights.open"
       defaultOpen={insightsDefaultOpen}
       onOpenChange={setInsightsOpen}
-      title="Інсайти"
+      title="Що зараз важливо"
       collapsedIcon="sparkles"
       collapsedSubtitle={
         coachLoading

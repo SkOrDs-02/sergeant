@@ -365,7 +365,10 @@ export const messages = {
     // Round 16 — Hub-shell-specific copy (ні header, ні bottom-nav). Сюди
     // потрапляють reused chat/insights/cross-module-preview labels та
     // довший offline-notice composer-а.
-    insights: "Інсайти",
+    // Вкладений список під «Що зараз важливо» — усе, що не влізло в топ.
+    // Не «Інсайти»: так називалась і батьківська секція, і секція на
+    // «Звʼязках», яка рахує зовсім інше й за інше вікно.
+    otherTips: "Інші підказки",
     overlayTitle: "AI-асистент",
     closeChat: "Закрити чат",
     chatQuickActions: "Швидкі сценарії",
