@@ -374,10 +374,17 @@ const preset = {
           surface: moduleColors.routine.surface,
           // Tint крок між surface (rose-50 #fff5f6) та surfaceAlt (rose-100 #ffe7eb) —
           // використовується для виділення активного дня / виконаного слота в календарі.
-          surface2: "#ffeeeb",
+          // AI-CONTEXT (2026-08-07): було `#ffeeeb` — персиковий відтінок
+          // коралової епохи, який після заміни рампи лишився сиротою: він не
+          // лежить між rose-50 і rose-100, а тягне в інший тон. Тепер це
+          // рівно середина двох сусідніх тирів.
+          surface2: "#ffeef0",
           surfaceAlt: moduleColors.routine.surfaceAlt,
           hover: brandColors.rose[600],
-          strong: brandColors.rose[700],
+          // AI-CONTEXT (2026-08-07): `-800`, як і решта трьох модулів. На
+          // `-700` `text-routine-strong` давав 4.43 на фоні сторінки — нижче
+          // AA (див. `moduleAccentRgb` у tokens.js).
+          strong: brandColors.rose[800],
           kicker: brandColors.rose[600],
           eyebrow: brandColors.rose[500],
           line: brandColors.rose[200],

@@ -1,6 +1,6 @@
 # Module-accent — канонічний reference
 
-> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
+> **Last touched:** 2026-08-07 by @claude. **Next review:** 2026-11-05.
 > **Status:** Active
 
 > Sergeant — 4 модулі з власним брендовим кольором. Замість того, щоб кожен компонент отримував пропс `module="finyk"` / `module="fizruk"` й мапив це у `bg-finyk` / `bg-fizruk`, ми публікуємо активний акцент як CSS-variable на дереві модуля і маємо одну Tailwind-утиліту, що тягне цей колір у будь-яку поверхню всередині модуля.
@@ -14,7 +14,7 @@
 </ModuleShell>
 ```
 
-- `bg-module-accent` → активний module-колір (`finyk`=teal-700, `fizruk`=cyan-700, `routine`=coral-500, `nutrition`=lime-500). Fizruk перейшов з teal-500 на cyan-700 у Sergeant v2 редизайн (2026-05), а finyk — з emerald-500 на teal-700 у M1-ребренді (2026-07) — див. [`redesign-v2/governance.md`](./redesign-v2/governance.md).
+- `bg-module-accent` → активний module-колір (`finyk`=teal-700, `fizruk`=cyan-700, `routine`=rose-500, `nutrition`=lime-500). Fizruk перейшов з teal-500 на cyan-700 у Sergeant v2 редизайн (2026-05), а finyk — з emerald-500 на teal-700 у M1-ребренді (2026-07) — див. [`redesign-v2/governance.md`](./redesign-v2/governance.md).
 - `bg-module-accent-strong` → WCAG-AA `-strong`-companion для фонів під `text-white` (clears 4.5 : 1).
 - Використовується у спільних компонентах, які живуть у 4 модулях — без hardcoded `bg-finyk` / `bg-fizruk`-лукапів.
 
@@ -113,7 +113,7 @@ const TINT = {
 // ❌ BAD — чужий module-accent у subtree іншого модуля
 // apps/web/src/modules/fizruk/pages/PlanCalendar.tsx
 <button className="focus-visible:ring-routine">…</button>
-// (coral focus-ring читається користувачем як «Рутина», а не «Фізрук»)
+// (трояндовий focus-ring читається користувачем як «Рутина», а не «Фізрук»)
 // Дизайн-конвенція — tokens + review (ex-Hard Rule #12, retired ADR-0081).
 
 // ✅ GOOD — ambient-акцент усередині поверхні модуля

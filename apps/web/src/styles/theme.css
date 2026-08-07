@@ -401,10 +401,15 @@
        (`mockups/landing/directions/*`) referencing brighter chart colors
        are matching the dark-mode register; light-mode landing alignment
        depends on Q3 landing-direction lock. */
-    --c-chart-finyk: 17 94 89; /* teal-800 — 5.12:1 vs cream (2026-07: was emerald-700) */
-    --c-chart-fizruk: 21 94 117; /* cyan-800 — 7.5:1 vs cream */
-    --c-chart-routine: 172 76 100; /* rose-700 — 5.06:1 vs cream */
-    --c-chart-nutrition: 70 98 18; /* lime-800 — 6.64:1 vs cream */
+    /* AI-CONTEXT (2026-08-07): числа поруч заміряні проти ФОНУ СТОРІНКИ
+       (`--c-bg` #ecebe7). Попередні підписи казали «vs cream», але
+       фактично рахувалися проти білого (fizruk 7.5 і nutrition 6.64 —
+       це рівно контраст на #ffffff), тож орієнтуватися на них було не
+       можна. Бар стоїть на фоні сторінки — міряємо там. */
+    --c-chart-finyk: 17 94 89; /* teal-800 — 6.36:1 vs bg (2026-07: was emerald-700) */
+    --c-chart-fizruk: 21 94 117; /* cyan-800 — 6.09:1 vs bg */
+    --c-chart-routine: 141 66 86; /* rose-800 — 5.78:1 vs bg (2026-08-07: was rose-700, 4.43 — єдиний тир, що вибивався) */
+    --c-chart-nutrition: 70 98 18; /* lime-800 — 5.84:1 vs bg */
 
     /* Chart STATUS colors — same contract as `--c-chart-{module}` above,
        for `statusColors.*` reused as chart LINE strokes/gradients (1RM
@@ -440,7 +445,7 @@
        light is the worst case). All clear the 3:1 non-text floor. */
     --c-chart-finyk-on-hero: 45 212 191; /* teal-400 — 4.1:1 vs teal-800 */
     --c-chart-fizruk-on-hero: 34 211 238; /* cyan-400 — 4.0:1 vs cyan-800 */
-    --c-chart-routine-on-hero: 252 179 193; /* rose-300 — 3.1:1 vs rose-700 */
+    --c-chart-routine-on-hero: 252 179 193; /* rose-300 — 4.06:1 vs rose-800 (було 3.11 на rose-700, найнижче з чотирьох) */
     --c-chart-nutrition-on-hero: 176 230 54; /* lime-400 — 4.7:1 vs lime-800 */
     --c-chart-accent-on-hero: 45 212 191; /* teal-400 — matches finyk */
     --c-chart-success-on-hero: 52 211 153; /* emerald-400 */
@@ -971,7 +976,12 @@
        inherit unchanged. */
     --c-chart-finyk: 17 94 89; /* teal-800 (2026-07: was emerald-700) */
     --c-chart-fizruk: 21 94 117; /* cyan-800 */
-    --c-chart-routine: 172 76 100; /* rose-700 */
+    /* AI-DANGER: мусить іти в парі з `:root` вище (2026-08-07). Тут
+       лишався rose-700 (4.43), коли `:root` уже пішов на rose-800 —
+       тобто high-contrast віддавав би МЕНШИЙ контраст, ніж звичайна
+       світла тема. HC-скоуп каскадить поверх light, тож розсинхрон
+       мовчазний: жоден тест не читає цей блок окремо. */
+    --c-chart-routine: 141 66 86; /* rose-800 */
     --c-chart-nutrition: 70 98 18; /* lime-800 */
   }
 

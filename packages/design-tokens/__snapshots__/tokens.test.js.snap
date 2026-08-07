@@ -206,7 +206,7 @@ exports[`@sergeant/design-tokens — tokens.js > moduleAccentRgb is stable (snap
   },
   "routine": {
     "default": "235 118 145",
-    "strong": "172 76 100",
+    "strong": "141 66 86",
   },
 }
 `;

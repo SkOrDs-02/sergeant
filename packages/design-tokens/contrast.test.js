@@ -12,7 +12,12 @@
  * retune), update the WCAG-AA proposal doc + BRANDBOOK in the same PR.
  */
 import { describe, it, expect } from "vitest";
-import { brandColors, moduleColors, inkTheme } from "./tokens.js";
+import {
+  brandColors,
+  moduleColors,
+  inkTheme,
+  moduleAccentRgb,
+} from "./tokens.js";
 
 function luminance(hex) {
   const r = parseInt(hex.slice(1, 3), 16) / 255;
@@ -29,6 +34,17 @@ function contrastRatio(hex1, hex2) {
   const lighter = Math.max(l1, l2);
   const darker = Math.min(l1, l2);
   return (lighter + 0.05) / (darker + 0.05);
+}
+
+/** `moduleAccentRgb` тримає значення як "R G B"; тут потрібен hex. */
+function rgbTripleToHex(triple) {
+  return (
+    "#" +
+    triple
+      .split(/\s+/)
+      .map((n) => Number(n).toString(16).padStart(2, "0"))
+      .join("")
+  );
 }
 
 // Each row: [name, foreground hex, background hex, shouldPassAA].
@@ -200,12 +216,19 @@ describe("@sergeant/design-tokens — «Чорнило» light pair (spec § 5)"
   const muted = "#5c665f"; // meta / captions
   const onAccent = "#fdf9f3"; // text over an accent fill
   // Strong-tier module accents (AA on white / cream).
-  const accents = {
-    finyk: "#115e59", // teal-800 (2026-07: was emerald-700 #047857)
-    fizruk: "#155e75", // cyan-800 (2026-08-07: був cyan-700 #0e7490)
-    routine: "#8d4256", // rose-800 (Р2, 2026-08-07)
-    nutrition: "#466212", // lime-800 (2026-08-07: був lime-700 #567c0f)
-  };
+  //
+  // AI-DANGER: читаємо `moduleAccentRgb`, а НЕ свою копію хексів
+  // (2026-08-07). Копія тут уже одного разу розійшлася з реальністю: тест
+  // стверджував, що routine стоїть на rose-800, тоді як
+  // `bg-routine-strong` і `--module-accent-strong` віддавали rose-700 з
+  // 4.43 на фоні сторінки. Тест був зелений, а екран — ні. Не повертай
+  // літерали: перевіряти треба те значення, яке справді доїжджає в CSS.
+  const accents = Object.fromEntries(
+    Object.entries(moduleAccentRgb).map(([name, { strong }]) => [
+      name,
+      rgbTripleToHex(strong),
+    ]),
+  );
 
   it("fg-strong ≥ 7:1 on both bg and surface (AAA)", () => {
     expect(contrastRatio(fgStrong, bg)).toBeGreaterThanOrEqual(7);

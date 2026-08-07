@@ -82,7 +82,7 @@ Back-compat: старі токени `panel` / `panelHi` / `line` продовж
 | `accent`       | `#0f766e` (teal-700)  | Семантичний акцент + focus ring (`--c-accent` / `--c-ring`)           |
 | `finyk`        | `#0f766e` (teal-700)  | ФІНІК — гроші, баланси (2026-07: було emerald `#10b981`)              |
 | `fizruk`       | `#0e7490` (cyan-700)  | ФІЗРУК — тренування (v2 redesign 2026-05; було teal-500)              |
-| `routine`      | `#f97066` (coral-500) | Рутина — звички, коралові                                             |
+| `routine`      | `#eb7691` (rose-500)  | Рутина — звички, трояндові                                            |
 | `nutrition`    | `#92cc17` (lime-500)  | Харчування — ліма                                                     |
 
 Для кожного модуля доступні градаційні шкали `-50`…`-900` + hero-поверхні:
@@ -137,11 +137,11 @@ Sergeant пережив дві brand-міграції. Легасі-докуме
 можуть посилатися на старіші назви — **завжди довіряй поточному рядку таблиці
 нижче**, а не історичним згадкам emerald.
 
-| Ера                              | Що змінилось                                                                                                                                                                                                                                  | Стан             |
-| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- |
-| **v1 — emerald** (до 2026-05)    | Один `brand` = emerald `#10b981`; він же focus ring, CTA і акцент finyk. Модулі ще не мали окремих hue — усе «зелене».                                                                                                                        | Superseded       |
-| **v2 namespace** (2026-05)       | Parallel v2 token namespace (glass, mesh, ink-strong, Manrope). Введено окремий **fizruk = cyan-700** (розчепив fizruk від teal). Legacy `--c-*` лишились активні.                                                                            | Active (rollout) |
-| **M1 — stone rebrand** (2026-07) | `brand` decoupled від teal → нейтральний **stone** (hub — тихий батько). `finyk` перейшов emerald → **teal-700**. Focus ring лишився teal через окремий `--c-ring`. Чотири модулі: finyk teal · fizruk cyan · routine coral · nutrition lime. | **Canonical**    |
+| Ера                              | Що змінилось                                                                                                                                                                                                                                  | Стан                                    |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| **v1 — emerald** (до 2026-05)    | Один `brand` = emerald `#10b981`; він же focus ring, CTA і акцент finyk. Модулі ще не мали окремих hue — усе «зелене».                                                                                                                        | Superseded                              |
+| **v2 namespace** (2026-05)       | Parallel v2 token namespace (glass, mesh, ink-strong, Manrope). Введено окремий **fizruk = cyan-700** (розчепив fizruk від teal). Legacy `--c-*` лишились активні.                                                                            | Active (rollout)                        |
+| **M1 — stone rebrand** (2026-07) | `brand` decoupled від teal → нейтральний **stone** (hub — тихий батько). `finyk` перейшов emerald → **teal-700**. Focus ring лишився teal через окремий `--c-ring`. Чотири модулі: finyk teal · fizruk cyan · routine coral · nutrition lime. | Superseded (routine → rose, 2026-08-07) |
 
 **Практичний висновок для контриб'ютора:**
 
@@ -175,7 +175,8 @@ Governance-trace міграцій: [`redesign-v2/`](../redesign-v2/README.md) (v
 
 > `brand-strong` = stone-800 (`#292524`) — з M1 rebrand hub-primary нейтральний
 > і проходить AAA навіть для body-тексту. Модульні рядки — для поточних акцентів
-> (finyk teal · fizruk cyan · routine coral · nutrition lime), не для legacy emerald.
+> (finyk teal · fizruk cyan · routine **rose** · nutrition lime), не для legacy emerald
+> і не для коралу (рампа Рутини замінена 2026-08-07).
 
 Виводи:
 

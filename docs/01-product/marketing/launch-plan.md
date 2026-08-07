@@ -566,7 +566,7 @@ Phase 5 — Launch transition (depends on App Store approval — exogenous)
 
 - **Landing Hub-Hero** (top of `/`) — **Soft & Organic** кремовий (`#fdf9f3 → #f0fdfa`). Зберігає voice ambiguity-free.
 - **Module showcase секції на landing** — bright tinted (`--hero-grad-{module}`). Демонструють ідентичність модулів.
-- **Marketing assets (соцмережі, email headers)** — нейтральний або Emerald-палітра. Не яскраві coral/lime окрім module-специфічного контенту.
+- **Marketing assets (соцмережі, email headers)** — нейтральний або Emerald-палітра. Не яскраві rose/lime окрім module-специфічного контенту.
 
 Це закриває T4 token gap з [`redesign-v2-execution-plan.md`](../../05-design/design/redesign-v2/execution-plan.md) як **policy decision**, не код. У brandbook.md можна додати «hero gradient lives in module-showcase scope; main hero stays Soft & Organic» одним рядком.
 

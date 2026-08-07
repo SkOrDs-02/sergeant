@@ -191,15 +191,23 @@ export const moduleColors = {
  *   className="bg-[rgb(var(--module-accent-rgb)/0.1)]"
  *   className="bg-[rgb(var(--module-accent-strong-rgb))] text-white"
  *
- * The `strong` triplet is the WCAG-AA companion shade — `-800` for
- * finyk/fizruk/nutrition (teal, cyan, lime — their `-700` still regresses
- * on white); routine is the one module where `-700` (rose) already
- * clears AA. It matches the `bg-{module}-strong` Tailwind utility.
+ * The `strong` triplet is the WCAG-AA companion shade — `-800` for усіх
+ * чотирьох модулів. It matches the `bg-{module}-strong` Tailwind utility.
+ *
+ * AI-CONTEXT (2026-08-07): routine стояв на `-700` і був єдиним винятком.
+ * Обґрунтування в цьому ж коментарі («routine — той модуль, де -700 уже
+ * тримає AA») міряло контраст проти БІЛОГО; на білому rose-700 справді
+ * дає 5.29. Але `text-routine-strong` стоїть і на фоні сторінки, а там
+ * після переходу на базу `#ecebe7` виходило 4.43 — нижче AA. Решта трьох
+ * модулів на `-800` дають 5.8–6.4, тобто routine був сиротою і за
+ * контрастом, і за тиром. `-800` (`#8d4256`) → 5.78 на фоні сторінки.
+ * Значення тут мусить збігатися з `--c-routine-accent` у `theme.css` —
+ * гейт `contrast.test.js` тепер читає саме цю мапу, а не свою копію.
  */
 export const moduleAccentRgb = {
   finyk: { default: "15 118 110", strong: "17 94 89" }, // teal-700 / teal-800 (2026-07: was emerald-500/-700)
   fizruk: { default: "14 116 144", strong: "21 94 117" }, // cyan-700 / cyan-800 — disambiguates fizruk from finyk emerald (was teal-500 / teal-700). `strong` companion ≈ 7.5:1 on white for hover/active states.
-  routine: { default: "235 118 145", strong: "172 76 100" }, // rose-500 / -700
+  routine: { default: "235 118 145", strong: "141 66 86" }, // rose-500 / -800 (2026-08-07: was rose-700, 4.43 на фоні сторінки)
   nutrition: { default: "146 204 23", strong: "70 98 18" }, // lime-500 / -800
 };
 
