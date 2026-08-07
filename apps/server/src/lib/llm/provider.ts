@@ -17,7 +17,12 @@
 // мають інші вимоги до latency / outcome-tracking.
 
 import { env } from "../../env/env.js";
-import { llmProviderInvocationsTotal } from "../../obs/metrics.js";
+import {
+  aiCostEstimateUsd,
+  aiTokensTotal,
+  llmProviderInvocationsTotal,
+} from "../../obs/metrics.js";
+import { estimateAnthropicCostUsd } from "../aiPricing.js";
 import { Sentry } from "../../sentry.js";
 import { anthropicMessages, extractAnthropicText } from "../anthropic.js";
 import { getCounterpartyNames } from "../counterpartyNames.js";
@@ -281,6 +286,53 @@ export class StubProvider implements LLMProvider {
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
+/**
+ * Записує токени й вартість виклику, що пішов через нативний OpenRouter-шлях.
+ *
+ * WHY окрема функція, а не запис у `invokeLLM`: `AnthropicProvider` ходить
+ * через `anthropicMessages`, який ці ж лічильники інкрементує САМ. Спільний
+ * запис в обгортці подвоїв би облік Anthropic-шляху. Кожен транспорт пише
+ * свій — тут це дзеркало того, що `lib/anthropic.ts` робить для свого.
+ *
+ * WHY лейбл `provider="anthropic"`, хоч транспорт openrouter: цей лейбл у
+ * нашій схемі позначає ПУЛ витрат, а не вендора — під ним уже лежать
+ * OpenRouter-моделі (`deepseek`, `glm-5.2`), бо чат ходить у шлюз через
+ * Anthropic-сумісний ендпоінт. Головне ж — `anthropicBudgetGuard` сумує
+ * рівно `provider="anthropic"`; з будь-яким іншим значенням ця витрата
+ * лишилась би поза денною стелею, а саме через це діру й закриваємо.
+ */
+function recordOpenRouterUsage(
+  model: string,
+  endpoint: string | undefined,
+  usage: { prompt_tokens?: number; completion_tokens?: number; cost?: number },
+): void {
+  const labels = {
+    provider: "anthropic",
+    model,
+    endpoint: endpoint ?? "unknown",
+  };
+  try {
+    if (typeof usage.prompt_tokens === "number")
+      aiTokensTotal.inc({ ...labels, kind: "prompt" }, usage.prompt_tokens);
+    if (typeof usage.completion_tokens === "number")
+      aiTokensTotal.inc(
+        { ...labels, kind: "completion" },
+        usage.completion_tokens,
+      );
+
+    // `usage.cost` від шлюза — факт; таблиця цін — запасний шлях для моделей,
+    // яких у ній немає, і тоді `null` означає «не рахуємо», а не «нуль».
+    const usd = estimateAnthropicCostUsd(model, {
+      input_tokens: usage.prompt_tokens ?? 0,
+      output_tokens: usage.completion_tokens ?? 0,
+      cost: usage.cost ?? null,
+    });
+    if (usd !== null && usd > 0) aiCostEstimateUsd.inc(labels, usd);
+  } catch {
+    // Метрики — advisory. Збій реєстру не повинен ламати відповідь моделі.
+  }
+}
+
 export class OpenRouterProvider implements LLMProvider {
   readonly name = "openrouter" as const;
 
@@ -309,6 +361,11 @@ export class OpenRouterProvider implements LLMProvider {
       model,
       messages,
       max_tokens: opts.maxTokens,
+      // Просимо шлюз повернути реальну списану суму в `usage.cost`. Без цього
+      // прапорця він її не шле, і вартість довелося б оцінювати за
+      // прайс-таблицею — а в ній немає половини моделей, якими ми ходимо
+      // (`z-ai/glm-5.2`, `deepseek/deepseek-v4-flash`).
+      usage: { include: true },
     };
     if (opts.temperature !== undefined) body["temperature"] = opts.temperature;
 
@@ -341,7 +398,16 @@ export class OpenRouterProvider implements LLMProvider {
 
     type OpenRouterData = {
       choices?: Array<{ message?: { content?: string | null } }>;
-      usage?: { prompt_tokens?: number; completion_tokens?: number };
+      usage?: {
+        prompt_tokens?: number;
+        completion_tokens?: number;
+        /**
+         * Скільки шлюз реально списав за цей виклик. Приходить лише коли в
+         * тілі запиту є `usage: { include: true }` (див. нижче). Це факт, а
+         * не оцінка: враховує і націнку OpenRouter, і поточний прайс моделі.
+         */
+        cost?: number;
+      };
       error?: { message?: string };
     };
 
@@ -387,6 +453,7 @@ export class OpenRouterProvider implements LLMProvider {
         if (typeof usage.completion_tokens === "number")
           usageOut.outputTokens = usage.completion_tokens;
         result.usage = usageOut;
+        recordOpenRouterUsage(model, opts.endpoint, usage);
       }
       return result;
     } catch (e: unknown) {
