@@ -28,13 +28,25 @@ import { billingKeys } from "@shared/lib/api/queryKeys";
 import { reconcileChatOwnerOnAuthChange } from "../hub/hubChatSessions";
 import { clearPersistedQueryCache } from "@shared/lib/api/queryClientPersister";
 import { flushPendingSyncOpsBeforeLogout } from "../syncEngine/flushBeforeLogout";
+import { SIGN_IN_PATH } from "../app/appPaths";
 import { messages } from "../../shared/i18n/uk";
 import {
   safeReadStringSS,
   safeWriteSS,
   safeRemoveSS,
   safeRemoveLS,
+  webKVStore,
 } from "@shared/lib/storage/storage";
+
+/**
+ * Літерал, а не `STORAGE_KEYS.SYNC_ORIGIN_DEVICE_ID`: динамічний імпорт
+ * `@sergeant/shared` саме тут перекроює чанки так, що analytics-модуль
+ * стартує з ще не ініціалізованими константами
+ * (`Cannot read properties of undefined (reading 'SIGNUP_COMPLETED')` —
+ * білий екран на бутi). Значення закріплене
+ * `AuthContext.originDeviceKey.test.ts`.
+ */
+const SYNC_ORIGIN_DEVICE_ID_KEY = "sync_origin_device_id_v1";
 
 // WF-60 OAuth signup attribution — `signIn.social` full-page-redirects to the
 // provider, so `loginWithGoogle`/`loginWithApple` never resolve on success and
@@ -580,6 +592,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // partition to `anon` for any post-logout anonymous usage. Dynamic import
       // keeps the sqlite-wasm chunk lazy (see `sqlite.lazy.test.ts`).
       try {
+        // Скидаємо origin-device-id ДО wipe, поки `kv_store` ще прив'язаний.
+        // Сервер відсіює на pull операції, чий `origin_device_id` дорівнює
+        // нашому — echo-suppression. Але id живе у `kv_store`, який не
+        // user-scoped, тож `wipeSqliteDb()` його не чіпає: пристрій лишався
+        // «тим самим», і власні рядки, які він же і запушив, більше НІКОЛИ
+        // не поверталися після того, як logout стер локальну копію.
+        // Виміряно 2026-08-06: акаунт із рядком на сервері входить назад на
+        // цей пристрій і бачить порожній Фінік, бо його єдина операція має
+        // origin цього ж пристрою. Свіжий id = pull віддає все своє.
+        await webKVStore.remove(SYNC_ORIGIN_DEVICE_ID_KEY);
+      } catch (err) {
+        logger.warn("[auth.logout] origin-device-id reset failed", err);
+      }
+      try {
         const sqliteMod = await import("../db/sqlite");
         await sqliteMod.wipeSqliteDb();
         sqliteMod.setSqliteUser(null);
@@ -604,6 +630,30 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // already in flight when the first clear ran can land afterwards and
       // repopulate the cache. Cheap and idempotent.
       queryClient.clear();
+
+      // Останнім — повний reload. Усе вище чистить сховища, але НЕ
+      // module-scope singleton-и: теплі SQLite-read-кеші модулів,
+      // `booted`-прапорці boot-ів, лічильники поколінь reader-ів. Вони
+      // живуть у памʼяті JS-модуля і переживають logout, тому наступний
+      // вхід іншим акаунтом бачив числа попереднього: quick-stats-boot
+      // рахував снапшот хаба з кешу старої партиції і переписував ним
+      // щойно очищені ключі (виміряно 2026-08-06 — хаб 4 420 ₴ від
+      // попереднього акаунта під сесією наступного). Identity-wipe-ефект
+      // сюди не дістає: `logout()` навмисно стампить owner заздалегідь,
+      // щоб не було двох teardown-ів, — тож reload має зробити logout.
+      // Той самий механізм, що вже прийнятий для user → user switch.
+      //
+      // `assign(SIGN_IN_PATH)`, а не `reload()`: teardown щойно вичистив і
+      // onboarding-прапорці, тож перезавантаження поточного маршруту
+      // висаджує щойно розлогіненого користувача на `/welcome` — пройти
+      // онбординг заново замість того, щоб просто увійти.
+      try {
+        globalThis.location?.assign(SIGN_IN_PATH);
+      } catch (err) {
+        // jsdom (`Not implemented: navigation`) і будь-який headless-раннер.
+        // Logout уже завершений — reload лише прибирає залишковий стан.
+        logger.warn("[auth.logout] reload after teardown failed", err);
+      }
     },
     [queryClient],
   );

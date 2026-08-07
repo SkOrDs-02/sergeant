@@ -68,7 +68,7 @@ export function createSyncEngineReaderRuntime(
       }
 
       const client = await deps.resolveClient();
-      let since = await readPullSinceCursor(client);
+      let since = await readPullSinceCursor(client, userId);
       let pulled = 0;
       let applied = 0;
       let skipped = 0;
@@ -103,7 +103,7 @@ export function createSyncEngineReaderRuntime(
 
         if (page.ops.length > 0) {
           since = maxOpId;
-          await writePullSinceCursor(client, maxOpId);
+          await writePullSinceCursor(client, userId, maxOpId);
         }
 
         if (page.next_cursor === null) break;
