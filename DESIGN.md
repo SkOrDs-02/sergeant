@@ -1,6 +1,6 @@
 # DESIGN.md — Sergeant
 
-> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
+> **Last touched:** 2026-08-07 by @claude. **Next review:** 2026-11-05.
 > **Status:** Active. **Призначення:** портативний конфіг візуальної системи для AI-агентів (Hallmark, frontend-design, Superdesign, будь-який SKILL.md-сумісний тул). Агент читає цей файл ПЕРЕД стилізацією і НЕ вигадує власну систему.
 > **Джерело правди:** `packages/design-tokens/tokens.js` + `tailwind-preset.js`. Цей файл — дзеркало для агентів; при розбіжності перемагають токени. Механічний enforcement: `eslint-plugin-sergeant-design` — лише runtime-, security-, storage-, API- і domain-інваріанти. Естетичні AST-правила retired [ADR-0081](./docs/04-governance/adr/0081-repository-simplification.md); візуальні конвенції тримають design tokens, Storybook і design-review.
 
@@ -20,16 +20,16 @@
 | --------- | ------------------- | ------------------------------- | --------- |
 | finyk     | teal-700 `#0f766e`  | teal-800 `#115e59`              | `#f0fdfa` |
 | fizruk    | cyan-700 `#0e7490`  | cyan-800 `#155e75`              | `#ecfeff` |
-| routine   | coral-500 `#f97066` | coral-700 `#c23a3a`             | `#fff5f3` |
+| routine   | coral-500 `#eb7691` | coral-700 `#ac4c64`             | `#fff5f6` |
 | nutrition | lime-500 `#92cc17`  | lime-800 `#466212`              | `#f8fee7` |
 
 Правило `-strong`: насичений brand-fill під `text-white` → тільки `-strong` companion (дизайн-конвенція). У коді — через `--module-accent-rgb` / `--module-accent-strong-rgb` (ModuleAccentProvider), не хардкод hex.
 
 **Статуси:** success `#10b981` · warning `#f59e0b` · danger `#ef4444` · info `#0ea5e9`. Семантичний колір ≠ акцент модуля.
 
-**Charts:** 8-колірна органічна палітра (`chartPalette` у tokens.js); макро-кільця nutrition: protein `#0e7490`, fat `#c23a3a`, carbs `#567c0f` (kcal бере статус-hue).
+**Charts:** 8-колірна органічна палітра (`chartPalette` у tokens.js); макро-кільця nutrition: protein `#0e7490`, fat `#ac4c64`, carbs `#567c0f` (kcal бере статус-hue).
 
-**Ink-акценти (dark):** finyk `#2dd4bf` · fizruk `#22d3ee` · routine `#ff8c78` · nutrition `#b0e636` — tier-400 модуля; текст поверх акцент-філу завжди ink, ніколи білий.
+**Ink-акценти (dark):** finyk `#2dd4bf` · fizruk `#22d3ee` · routine `#f68da4` · nutrition `#b0e636` — tier-400 модуля; текст поверх акцент-філу завжди ink, ніколи білий.
 
 <!-- /AUTOGEN:palette -->
 

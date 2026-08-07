@@ -45,7 +45,7 @@ const AUTO_CLOSE_MS = 10_000;
 const CONFETTI_COLORS = [
   "#10B981", // emerald
   "#14B8A6", // teal
-  "#F97066", // coral
+  "#EB7691", // coral
   "#84CC16", // lime
   "#FBBF24", // amber
 ];

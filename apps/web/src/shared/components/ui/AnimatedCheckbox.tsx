@@ -95,7 +95,7 @@ export const AnimatedCheckbox = memo(function AnimatedCheckbox({
       }
 
       if (showConfetti && !prefersReducedMotion) {
-        const colors = ["#10B981", "#F97066", "#84CC16", "#14B8A6", "#F59E0B"];
+        const colors = ["#10B981", "#EB7691", "#84CC16", "#14B8A6", "#F59E0B"];
         const particles = Array.from({ length: 12 }, (_, i) => ({
           id: i,
           x: (Math.random() - 0.5) * 60,

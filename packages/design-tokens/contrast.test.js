@@ -203,7 +203,7 @@ describe("@sergeant/design-tokens — «Чорнило» light pair (spec § 5)"
   const accents = {
     finyk: "#115e59", // teal-800 (2026-07: was emerald-700 #047857)
     fizruk: "#155e75", // cyan-800 (2026-08-07: був cyan-700 #0e7490)
-    routine: "#a13333", // coral-800 (2026-08-07: був coral-700 #c23a3a)
+    routine: "#8d4256", // rose-800 (Р2, 2026-08-07)
     nutrition: "#466212", // lime-800 (2026-08-07: був lime-700 #567c0f)
   };
 

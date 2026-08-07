@@ -57,9 +57,9 @@
     <rect x="795" y="636" width="20" height="36" rx="6" fill="white" opacity="0.7"/>
 
     <!-- Routine node (coral, bottom-left) glow -->
-    <circle cx="290" cy="654" r="145" fill="#e0786c" opacity="0.18"/>
+    <circle cx="290" cy="654" r="145" fill="#e5708c" opacity="0.18"/>
     <!-- Routine node solid -->
-    <circle cx="290" cy="654" r="108" fill="#e0786c"/>
+    <circle cx="290" cy="654" r="108" fill="#e5708c"/>
     <!-- Routine icon: calendar with checkmark -->
     <rect x="242" y="624" width="96" height="80" rx="10" fill="white" opacity="0.2" stroke="white" stroke-width="7"/>
     <line x1="242" y1="648" x2="338" y2="648" stroke="white" stroke-width="7"/>

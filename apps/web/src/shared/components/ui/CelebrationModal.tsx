@@ -46,7 +46,7 @@ interface ConfettiParticle {
 const MODULE_COLORS: Record<ModuleTheme, string[]> = {
   finyk: ["#0F766E", "#14B8A6", "#0D9488", "#2DD4BF"], // teal family (2026-07: was emerald)
   fizruk: ["#14B8A6", "#0D9488", "#2DD4BF", "#0F766E"],
-  routine: ["#F97066", "#FB923C", "#F59E0B", "#EF4444"],
+  routine: ["#EB7691", "#FB923C", "#F59E0B", "#EF4444"],
   nutrition: ["#84CC16", "#A3E635", "#65A30D", "#BEF264"],
   default: ["#10B981", "#F97066", "#84CC16", "#14B8A6"],
 };

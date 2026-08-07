@@ -82,7 +82,7 @@ function NavTab({
     transform: [{ scaleX: interpolate(progress.value, [0, 1], [0.5, 1]) }],
   }));
 
-  const iconColor = selected ? "#c23a3a" : "#a8a29e";
+  const iconColor = selected ? "#ac4c64" : "#a8a29e";
 
   return (
     <Pressable

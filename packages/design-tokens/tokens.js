@@ -65,18 +65,32 @@ export const brandColors = {
     400: "#eedcc4",
     500: "#e4ccab",
   },
-  // Soft coral for Routine module
+  // Тепла троянда для Рутини (рішення власника Б1+Р2, 2026-08-07).
+  //
+  // AI-CONTEXT: рампа побудована як ІЗОЛЮМІНАНТНА до попередньої коралової —
+  // відносна світлота кожного тира збережена (ΔL від −0.42% до +0.46%,
+  // CR(coral,rose) = 1.00 у всіх десяти). Тому всі задокументовані
+  // контрастні пари лишились чинними в межах 0.02, а драбина стріків у
+  // темній темі має ті самі кроки (1.33 / 1.23 / 1.36 / 1.39).
+  //
+  // Чому не корал: coral-600/700/900 мали hue РІВНО 0° — той самий, що
+  // `--c-danger` red-500 #ef4444. Тобто акцент Рутини був буквально одного
+  // відтінку з семантикою помилки. Троянда сидить на 344–346°.
+  //
+  // AI-DANGER: ключ і далі зветься `coral` — перейменування на `rose`
+  // винесене окремим кроком (58 Tailwind-класів у 25 файлах). Значення тут
+  // трояндові; не «виправляй» їх назад під ім'я.
   coral: {
-    50: "#fff5f3",
-    100: "#ffe8e3",
-    200: "#ffd4cb",
-    300: "#ffb4a6",
-    400: "#ff8c78",
-    500: "#f97066",
-    600: "#e64d4d",
-    700: "#c23a3a",
-    800: "#a13333",
-    900: "#862e2e",
+    50: "#fff5f6",
+    100: "#ffe7eb",
+    200: "#fed3db",
+    300: "#fcb3c1",
+    400: "#f68da4",
+    500: "#eb7691",
+    600: "#d15c7a",
+    700: "#ac4c64",
+    800: "#8d4256",
+    900: "#753949",
   },
   // Fresh lime for Nutrition module
   lime: {
@@ -120,7 +134,7 @@ export const brandColors = {
 export const chartPalette = {
   1: "#10b981", // emerald-500 (primary)
   2: "#14b8a6", // teal-500
-  3: "#f97066", // coral-500
+  3: "#eb7691", // coral-500
   4: "#92cc17", // lime-500
   5: "#60a5fa", // blue-400 (soft)
   6: "#a78bfa", // violet-400 (soft)
@@ -150,10 +164,10 @@ export const moduleColors = {
     accent: "#c8f264", // lime-300 (CTA highlight)
   },
   routine: {
-    primary: "#f97066", // coral-500
-    secondary: "#ff8c78", // coral-400
-    surface: "#fff5f3", // coral-50
-    surfaceAlt: "#ffe8e3", // coral-100
+    primary: "#eb7691", // coral-500
+    secondary: "#f68da4", // coral-400
+    surface: "#fff5f6", // coral-50
+    surfaceAlt: "#ffe7eb", // coral-100
   },
   nutrition: {
     primary: "#92cc17", // lime-500
@@ -185,7 +199,7 @@ export const moduleColors = {
 export const moduleAccentRgb = {
   finyk: { default: "15 118 110", strong: "17 94 89" }, // teal-700 / teal-800 (2026-07: was emerald-500/-700)
   fizruk: { default: "14 116 144", strong: "21 94 117" }, // cyan-700 / cyan-800 — disambiguates fizruk from finyk emerald (was teal-500 / teal-700). `strong` companion ≈ 7.5:1 on white for hover/active states.
-  routine: { default: "249 112 102", strong: "194 58 58" }, // coral-500 / -700
+  routine: { default: "235 118 145", strong: "172 76 100" }, // coral-500 / -700
   nutrition: { default: "146 204 23", strong: "70 98 18" }, // lime-500 / -800
 };
 
@@ -231,7 +245,7 @@ export const inkTheme = {
   accent: {
     finyk: brandColors.teal[400], // #2dd4bf (2026-07: was emerald-400 #34d399)
     fizruk: brandColors.cyan[400], // #22d3ee
-    routine: brandColors.coral[400], // #ff8c78
+    routine: brandColors.coral[400], // #f68da4
     nutrition: brandColors.lime[400], // #b0e636
   },
 };
@@ -391,6 +405,6 @@ export const chartHex = {
   // 3.03:1) — це був би прямий Hard Rule #9. Пари зафіксовані в
   // `contrast.test.js`, склад шкали — в `chartHex.contract.test.js`.
   protein: brandColors.cyan[700], // #0e7490 — 5.42:1 з text-white
-  fat: brandColors.coral[700], // #c23a3a — 5.34:1 з text-white
+  fat: brandColors.coral[700], // #ac4c64 — 5.34:1 з text-white
   carbs: brandColors.lime[700], // #567c0f — 4.90:1 з text-white
 };
