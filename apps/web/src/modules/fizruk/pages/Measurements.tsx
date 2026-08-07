@@ -117,11 +117,11 @@ export function Measurements() {
               <SectionHeading as="h2" size="lg">
                 {messages.fizruk.measurements.guideTitle}
               </SectionHeading>
-              <p className="mt-2 text-sm text-subtle leading-relaxed">
+              <p className="mt-2 text-style-body text-subtle leading-relaxed">
                 {messages.fizruk.measurements.guideIntro}
               </p>
             </div>
-            <ol className="list-decimal pl-5 space-y-3 text-sm text-text leading-relaxed">
+            <ol className="list-decimal pl-5 space-y-3 text-style-body text-text leading-relaxed">
               <li>{messages.fizruk.measurements.guideStep1}</li>
               <li>{messages.fizruk.measurements.guideStep2}</li>
               <li>{messages.fizruk.measurements.guideStep3}</li>
@@ -212,8 +212,9 @@ export function Measurements() {
             <SectionHeading as="div" size="xs" variant="fizruk">
               {messages.fizruk.measurements.manual}
             </SectionHeading>
-            <div className="text-style-label text-success-strong dark:text-success mt-0.5">
+            <div className="text-style-label text-success-strong dark:text-success mt-0.5 inline-flex items-center gap-0.5">
               {messages.fizruk.measurements.manualLink}
+              <Icon name="chevron-right" size="sm" />
             </div>
           </div>
         </button>

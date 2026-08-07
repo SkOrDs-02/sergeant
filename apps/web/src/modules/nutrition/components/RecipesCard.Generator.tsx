@@ -243,7 +243,7 @@ export function GeneratorCard({
                 </div>
 
                 {Array.isArray(r.ingredients) && r.ingredients.length > 0 && (
-                  <div className="mt-3 text-sm text-text wrap-break-word">
+                  <div className="mt-3 text-style-body text-text wrap-break-word">
                     <div className="text-style-caption text-muted mb-1">
                       Інгредієнти
                     </div>
@@ -252,7 +252,7 @@ export function GeneratorCard({
                 )}
 
                 {Array.isArray(r.steps) && r.steps.length > 0 && (
-                  <div className="mt-3 text-sm text-text">
+                  <div className="mt-3 text-style-body text-text">
                     <div className="text-style-caption text-muted mb-1">
                       Кроки
                     </div>
@@ -265,7 +265,7 @@ export function GeneratorCard({
                 )}
 
                 {Array.isArray(r.tips) && r.tips.length > 0 && (
-                  <div className="mt-3 text-sm text-text">
+                  <div className="mt-3 text-style-body text-text">
                     <div className="text-style-caption text-muted mb-1">
                       Поради
                     </div>

@@ -1,5 +1,6 @@
 import { memo, type ReactNode } from "react";
 import { Card } from "@shared/components/ui/Card";
+import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { Money } from "@shared/components/ui/Money";
 import { messages } from "@shared/i18n/uk";
@@ -48,8 +49,9 @@ function TodaySummaryCardImpl({
               {messages.finyk.todaySummary.dayScope}
             </p>
           </div>
-          <span className="text-style-caption text-finyk-strong dark:text-finyk">
+          <span className="text-style-caption text-finyk-strong dark:text-finyk inline-flex items-center gap-0.5">
             {messages.finyk.todaySummary.operations}
+            <Icon name="chevron-right" size="xs" />
           </span>
         </div>
 

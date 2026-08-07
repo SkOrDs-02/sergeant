@@ -144,7 +144,7 @@ export function ExerciseDetailSheet({
       )}
 
       {selected.description && (
-        <div className="text-sm text-text leading-relaxed mb-4">
+        <div className="text-style-body text-text leading-relaxed mb-4">
           {selected.description}
         </div>
       )}
@@ -196,7 +196,7 @@ export function ExerciseDetailSheet({
           </SectionHeading>
           <ul className="space-y-1.5">
             {tips.map((t) => (
-              <li key={t} className="text-sm text-text leading-relaxed">
+              <li key={t} className="text-style-body text-text leading-relaxed">
                 <span className="text-muted font-bold mr-2">•</span>
                 {t}
               </li>
