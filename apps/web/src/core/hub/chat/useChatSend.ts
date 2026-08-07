@@ -514,25 +514,44 @@ export function useChatSend({
             }
           }
 
-          const actionsText = toolResults
-            // U+2713 CHECK MARK — типографічний символ, не emoji: наслідує
-            // колір/шрифт повідомлення (emoji ✅ завжди зелена й чужа
-            // токенам). Re-audit §7.2 — системний статус-маркер.
-            .map((r) => `✓ ${r.content}`)
-            .join("\n");
-          const prefix = `${actionsText}\n\n`;
-
           // Build action cards for known tools. Unknown tool → null,
           // text-only fallback.
-          const cards: ChatActionCard[] = toolCalls
-            .map((tc, idx) =>
-              buildActionCard({
-                name: tc.name as string,
-                input: tc.input as Record<string, unknown>,
-                result: toolResults[idx]?.content || "",
-              }),
-            )
-            .filter((c): c is ChatActionCard => c !== null);
+          const builtCards = toolCalls.map((tc, idx) =>
+            buildActionCard({
+              name: tc.name as string,
+              input: tc.input as Record<string, unknown>,
+              result: toolResults[idx]?.content || "",
+            }),
+          );
+          const cards: ChatActionCard[] = builtCards.filter(
+            (c): c is ChatActionCard => c !== null,
+          );
+
+          /**
+           * Текстовий рядок «✓ …» — фолбек для інструментів БЕЗ картки.
+           *
+           * AI-CONTEXT (2026-08-07): раніше він друкувався для кожного
+           * виклику незалежно від картки, тобто дублював її слово в слово —
+           * і разом із тим виносив у чат сирий результат виконавця. Для
+           * `remember` це означало UUID запису пам'яті
+           * (`✓ Запам'ятав: Звати Діма (Інше, id:5c47fa7f-…)`) просто над
+           * карткою, яка каже те саме людськими словами. Виглядало як
+           * переказ моделі, але клеїв рядок саме цей код.
+           *
+           * Картка й рядок з'являються ОДНОЧАСНО (обидва летять у той самий
+           * `setMessages`), тож там, де картка є, рядок не додає нічого.
+           * Там, де її немає (невідомий tool), він лишається єдиним
+           * підтвердженням — тому не викидаємо його зовсім.
+           *
+           * U+2713 CHECK MARK — типографічний символ, не emoji: наслідує
+           * колір/шрифт повідомлення (emoji ✅ завжди зелена й чужа
+           * токенам). Re-audit §7.2 — системний статус-маркер.
+           */
+          const uncardedText = toolResults
+            .filter((_, idx) => builtCards[idx] == null)
+            .map((r) => `✓ ${r.content}`)
+            .join("\n");
+          const prefix = uncardedText ? `${uncardedText}\n\n` : "";
 
           const assistantId = newMsgId();
           setMessages((m) => [
@@ -620,14 +639,27 @@ export function useChatSend({
             setMessages((m) =>
               m.map((x) =>
                 x.id === assistantId
-                  ? { ...x, text: `${prefix}\n\n${friendlyChatError(e2)}` }
+                  ? // `prefix` уже закінчується порожнім рядком, коли не
+                    // порожній сам; окремі `\n\n` дали б чотири переноси
+                    // з карткою і два ведучі — без неї.
+                    { ...x, text: `${prefix}${friendlyChatError(e2)}` }
                   : x,
               ),
             );
           }
 
           if (shouldSpeak) {
-            const speakTarget = followUpText || actionsText;
+            // Озвучуємо те, що людина бачить. Раніше фолбеком був сирий
+            // результат виконавця — тобто TTS диктував UUID запису пам'яті
+            // вголос. Тепер: відповідь моделі → рядок без картки → короткі
+            // підписи карток.
+            const speakTarget =
+              followUpText ||
+              uncardedText ||
+              cards
+                .map((c) => c.summary)
+                .filter(Boolean)
+                .join(". ");
             if (speakTarget) maybeSpeak(speakTarget);
           }
 
@@ -635,7 +667,7 @@ export function useChatSend({
             queryKey: hubKeys.preview("finyk"),
           });
           scheduleContextBuild("after-tools", true);
-          replyLength = actionsText.length + followUpText.length;
+          replyLength = uncardedText.length + followUpText.length;
         } else {
           const reply = data.text || "Немає відповіді.";
           setMessages((m) => [...m, makeAssistantMsg(reply)]);

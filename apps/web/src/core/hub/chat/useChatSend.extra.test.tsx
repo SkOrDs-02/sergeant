@@ -239,10 +239,11 @@ describe("useChatSend — follow-up stream error paths", () => {
     });
 
     const flat = captured.flat();
-    const assistantMsg = flat.find((m) => m.role === "assistant");
+    // Останній знімок, а не перший: повідомлення тур-у створюється порожнім
+    // (у `log_water` є картка, тож текстового «✓ …» немає) і наповнюється
+    // вже в catch-гілці.
+    const assistantMsg = flat.filter((m) => m.role === "assistant").at(-1);
     expect(assistantMsg).toBeDefined();
-    // After a 500, the follow-up catch path appends a friendly error to
-    // the tool-call turn (text starts with the actionsText prefix).
     expect(assistantMsg!.text.length).toBeGreaterThan(0);
     expect(result.current.loading).toBe(false);
   });
@@ -278,7 +279,13 @@ describe("useChatSend — follow-up stream error paths", () => {
 // ─── TTS in tool-call path ────────────────────────────────────────────────────
 
 describe("useChatSend — TTS in tool-call path", () => {
-  it("speaks actionsText when followUpText is empty and fromVoice=true", async () => {
+  /**
+   * Фолбек TTS, коли модель нічого не сказала. Раніше диктувався сирий
+   * результат виконавця — для `remember` це означало UUID запису пам'яті
+   * вголос. Тепер: рядок без картки, а якщо всі інструменти дали картки —
+   * їхні короткі підписи.
+   */
+  it("озвучує підпис картки, коли модель промовчала", async () => {
     sendMock.mockResolvedValue({
       tool_calls: [{ id: "tc1", name: "log_water", input: { amount_ml: 200 } }],
       tool_calls_raw: [{ id: "tc1" }],
@@ -303,10 +310,50 @@ describe("useChatSend — TTS in tool-call path", () => {
       await result.current.send("голосом запиши воду", true /* fromVoice */);
     });
 
-    // followUpText="" so speakTarget falls back to actionsText ("✓ Записав 200 мл").
+    // `log_water` — відомий інструмент, тож у нього є картка й текстового
+    // «✓ …» немає. Озвучується підпис картки.
     expect(speakMock).toHaveBeenCalledTimes(1);
     const spokenText = speakMock.mock.calls[0]![0] as string;
-    expect(spokenText).toContain("Записав 200 мл");
+    expect(spokenText).toContain("200 мл");
+  });
+
+  /**
+   * `add_program_day` є в allow-list-і диспетчера, але його немає в
+   * `KNOWN_TOOLS` картко-білдера — тобто картки він не отримує. Саме для
+   * таких інструментів текстовий рядок «✓ …» і лишається.
+   *
+   * Другий кандидат на цю роль, `import_monobank_range`, не годиться: він
+   * `destructive`, тож `send` спершу чекає на діалог підтвердження і тест
+   * висить у таймауті.
+   */
+  it("для інструмента без картки озвучує текстовий рядок", async () => {
+    sendMock.mockResolvedValue({
+      tool_calls: [{ id: "tc1", name: "add_program_day", input: {} }],
+      tool_calls_raw: [{ id: "tc1" }],
+    });
+    executeActionsMock.mockResolvedValue([
+      { name: "add_program_day", result: "День програми додано" },
+    ]);
+    streamMock.mockResolvedValue(
+      new Response(JSON.stringify({ text: "" }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+
+    const { result } = renderHook(
+      () => useChatSend({ messages: [], setMessages: vi.fn() }),
+      { wrapper: makeWrapper() },
+    );
+
+    await act(async () => {
+      await result.current.send("додай день програми", true /* fromVoice */);
+    });
+
+    expect(speakMock).toHaveBeenCalledTimes(1);
+    expect(speakMock.mock.calls[0]![0] as string).toContain(
+      "День програми додано",
+    );
   });
 });
 
