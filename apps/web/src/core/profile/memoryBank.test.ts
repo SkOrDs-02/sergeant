@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import {
   PROFILE_KEY,
   CATEGORY_META,
@@ -15,6 +15,7 @@ import {
   buildMemoryImportPreview,
   isKnownMemoryCategory,
   toWritableMemoryCategory,
+  subscribeMemoryEntries,
 } from "./memoryBank";
 import type { MemoryEntry } from "./types";
 
@@ -252,5 +253,46 @@ describe("CATEGORY_META", () => {
     expect(CATEGORY_META["goal"]?.label).toBe("Цілі");
     // 2026-08-03: `emoji` → `icon` з іменем із атласу дизайн-системи.
     expect(CATEGORY_META["other"]?.icon).toBe("pen");
+  });
+});
+
+/**
+ * Банк пишуть дві незалежні поверхні: екран «Пам'ять ШІ» і виконавці
+ * чат-інструментів (`remember` / `forget`). Чат відкривається оверлеєм
+ * ПОВЕРХ екрана, тож екран не перемонтовується — без нотифікації його
+ * `useState`-знімок лишався таким, яким був до розмови. `window.storage`
+ * тут не рятує: у вкладці, яка сама зробила запис, він не спрацьовує.
+ */
+describe("subscribeMemoryEntries", () => {
+  it("сповіщає підписників після успішного запису", () => {
+    const seen: MemoryEntry[][] = [];
+    const off = subscribeMemoryEntries((entries) => seen.push(entries));
+
+    const next = upsertMemoryFact([], "Не любить чорнослив", "preference");
+    writeMemoryEntries(next.entries);
+
+    expect(seen).toHaveLength(1);
+    expect(seen[0]?.[0]?.fact).toBe("Не любить чорнослив");
+    off();
+  });
+
+  it("відписка справді відписує", () => {
+    const fn = vi.fn();
+    subscribeMemoryEntries(fn)();
+    writeMemoryEntries([]);
+    expect(fn).not.toHaveBeenCalled();
+  });
+
+  it("виняток в одному підписнику не глушить решту й не ховає запис", () => {
+    const ok = vi.fn();
+    const offBad = subscribeMemoryEntries(() => {
+      throw new Error("підписник упав");
+    });
+    const offOk = subscribeMemoryEntries(ok);
+
+    expect(() => writeMemoryEntries([])).not.toThrow();
+    expect(ok).toHaveBeenCalledTimes(1);
+    offBad();
+    offOk();
   });
 });

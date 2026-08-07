@@ -177,6 +177,31 @@ export function readMemoryEntries(): MemoryEntry[] {
     .filter((item): item is MemoryEntry => item !== null);
 }
 
+/**
+ * Підписники на зміну банку пам'яті В МЕЖАХ ЦІЄЇ ВКЛАДКИ.
+ *
+ * WHY. Банк пишуть дві незалежні поверхні: екран «Пам'ять ШІ» і виконавці
+ * чат-інструментів (`remember` / `forget`). Чат при цьому відкривається
+ * ОВЕРЛЕЄМ поверх екрана, тобто екран не перемонтовується і свій
+ * `useState`-знімок не переливає — список під оверлеєм лишався таким, яким
+ * був до розмови, разом із лічильником у шапці. Гірше: `openMemoryChat`
+ * обирає режим (інтерв'ю чи доповнення) за тим самим застарілим `length`.
+ *
+ * `window.storage` тут не рятує принципово: він не спрацьовує у вкладці, яка
+ * сама зробила запис. Тому нотифікація йде з єдиного писаря — так її не
+ * можна забути додати на новому call-site.
+ */
+type MemoryBankListener = (entries: MemoryEntry[]) => void;
+
+const listeners = new Set<MemoryBankListener>();
+
+export function subscribeMemoryEntries(fn: MemoryBankListener): () => void {
+  listeners.add(fn);
+  return () => {
+    listeners.delete(fn);
+  };
+}
+
 export function writeMemoryEntries(entries: MemoryEntry[]): void {
   // Profile entries dual-write to SQLite via the `useStorage()` per-row
   // path; the LS slot is a hub-side warm cache. Cross-device sync flows
@@ -184,6 +209,13 @@ export function writeMemoryEntries(entries: MemoryEntry[]): void {
   // `safeWriteLS` is enough here.
   if (!safeWriteLS(PROFILE_KEY, entries)) {
     throw new Error("Не вдалося зберегти пам'ять профілю");
+  }
+  // Після успішного запису: підписник, який кинув виняток, не має ховати
+  // сам запис — він уже стався.
+  for (const fn of listeners) {
+    try {
+      fn(entries);
+    } catch {}
   }
 }
 
