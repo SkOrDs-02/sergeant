@@ -8,10 +8,13 @@ import { renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const getKyivDateParts = vi.fn();
-const getKyivDayKey = vi.fn();
 vi.mock("@shared/lib/time/kyivTime", () => ({
   getKyivDateParts: () => getKyivDateParts(),
-  getKyivDayKey: () => getKyivDayKey(),
+}));
+
+const todayISODate = vi.fn();
+vi.mock("@sergeant/nutrition-domain", () => ({
+  todayISODate: () => todayISODate(),
 }));
 
 const getDaySummary = vi.fn();
@@ -26,7 +29,7 @@ const log = {} as never;
 
 beforeEach(() => {
   getKyivDateParts.mockReturnValue({ hour: 20 });
-  getKyivDayKey.mockReturnValue("2026-06-23");
+  todayISODate.mockReturnValue("2026-06-23");
   getDaySummary.mockReturnValue({ protein_g: 20, estimatedKcalShare: 0 });
 });
 

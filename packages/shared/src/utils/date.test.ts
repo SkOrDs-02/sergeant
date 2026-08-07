@@ -8,15 +8,20 @@ import {
   toLocalISODate,
 } from "./date";
 
+// Входи — ЯВНІ UTC-моменти опівдні, а не `new Date(рік, місяць, день)`.
+// Останнє дає локальну північ хоста, і на машині східніше за Київ (UTC+5 і
+// далі) той самий момент у київському поясі падає на ПОПЕРЕДНЮ добу — тобто
+// тест ловив би не форматування, а таймзону раннера. Полудень лишає запас у
+// півдоби в обидва боки, тож жоден реальний офсет межу не перетинає.
 describe("shared/lib/date – toKyivISODate", () => {
   it("formats a Date object with zero-padded month and day", () => {
-    expect(toKyivISODate(new Date(2026, 0, 5))).toBe("2026-01-05");
-    expect(toKyivISODate(new Date(2026, 8, 9))).toBe("2026-09-09");
-    expect(toKyivISODate(new Date(2026, 11, 31))).toBe("2026-12-31");
+    expect(toKyivISODate(new Date("2026-01-05T12:00:00Z"))).toBe("2026-01-05");
+    expect(toKyivISODate(new Date("2026-09-09T12:00:00Z"))).toBe("2026-09-09");
+    expect(toKyivISODate(new Date("2026-12-31T12:00:00Z"))).toBe("2026-12-31");
   });
 
   it("formats a numeric timestamp (milliseconds)", () => {
-    const ms = new Date(2026, 3, 19).getTime();
+    const ms = Date.parse("2026-04-19T12:00:00Z");
     expect(toKyivISODate(ms)).toBe("2026-04-19");
   });
 
@@ -46,8 +51,8 @@ describe("shared/lib/date – toKyivISODate", () => {
   });
 
   it("handles year boundaries correctly", () => {
-    expect(toKyivISODate(new Date(2024, 11, 31))).toBe("2024-12-31");
-    expect(toKyivISODate(new Date(2025, 0, 1))).toBe("2025-01-01");
+    expect(toKyivISODate(new Date("2024-12-31T12:00:00Z"))).toBe("2024-12-31");
+    expect(toKyivISODate(new Date("2025-01-01T12:00:00Z"))).toBe("2025-01-01");
   });
 });
 

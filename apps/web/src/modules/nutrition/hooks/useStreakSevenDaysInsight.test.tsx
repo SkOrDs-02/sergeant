@@ -7,11 +7,9 @@
 import { renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const getKyivDateParts = vi.fn();
-const getKyivDayKey = vi.fn();
-vi.mock("@shared/lib/time/kyivTime", () => ({
-  getKyivDateParts: () => getKyivDateParts(),
-  getKyivDayKey: () => getKyivDayKey(),
+const todayISODate = vi.fn();
+vi.mock("@sergeant/nutrition-domain", () => ({
+  todayISODate: () => todayISODate(),
 }));
 
 const getDayMacros = vi.fn();
@@ -26,8 +24,7 @@ import { useStreakSevenDaysInsight } from "./useStreakSevenDaysInsight";
 const log = {} as never;
 
 beforeEach(() => {
-  getKyivDateParts.mockReturnValue({ year: 2026, month: 6, day: 23 });
-  getKyivDayKey.mockReturnValue("2026-06-23");
+  todayISODate.mockReturnValue("2026-06-23");
   addDaysISODate.mockImplementation((d: string, n: number) => `${d}${n}`);
 });
 

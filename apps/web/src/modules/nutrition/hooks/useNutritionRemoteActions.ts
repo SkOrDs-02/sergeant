@@ -2,7 +2,8 @@ import { useCallback, type Dispatch, type SetStateAction } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { hapticSuccess } from "@shared/lib/adapters/haptic";
 import { nutritionApi } from "@shared/api";
-import { toLocalISODate, generatePrefixedId } from "@sergeant/shared";
+import { generatePrefixedId } from "@sergeant/shared";
+import { deviceDayKey } from "@sergeant/nutrition-domain";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import type {
   NutritionDayMeal,
@@ -498,10 +499,13 @@ export function useNutritionRemoteActions({
       // інакше для минулих/майбутніх днів сьогоднішній час виглядав би як баг
       // (запис "вчора 09:30 ранку" створений увечері). Див. H5 з аудиту.
       const now = new Date();
-      const isToday = log.selectedDate === toLocalISODate(now);
+      // ADR-0078: `log.selectedDate` is the device-local day key the log is
+      // written under (useNutritionLog) — comparing against a Kyiv key here
+      // would desync this check the moment device tz != Kyiv.
+      const isToday = log.selectedDate === deviceDayKey(now);
       // Stamp the meal time in Europe/Kyiv (domain-invariant) rather than
       // host-local — prefer-kyiv-time. Same-tz for Kyiv users, correct for
-      // travellers.
+      // travellers. (Time-of-day label only — not the day key above.)
       const { hour, minute } = getKyivDateParts(now);
       const time = isToday
         ? `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`

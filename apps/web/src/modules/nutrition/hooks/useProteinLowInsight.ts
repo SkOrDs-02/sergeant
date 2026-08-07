@@ -14,12 +14,16 @@
  */
 
 import { useMemo } from "react";
-import type { NutritionLog, NutritionPrefs } from "@sergeant/nutrition-domain";
+import {
+  todayISODate,
+  type NutritionLog,
+  type NutritionPrefs,
+} from "@sergeant/nutrition-domain";
 import {
   ESTIMATED_KCAL_SHARE_THRESHOLD,
   getDaySummary,
 } from "../lib/nutritionStorage";
-import { getKyivDateParts, getKyivDayKey } from "@shared/lib/time/kyivTime";
+import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import type { Insight } from "@shared/lib/insights/types";
 import { messages } from "@shared/i18n/uk";
 
@@ -31,10 +35,14 @@ export function useProteinLowInsight(
     const goal = prefs.dailyTargetProtein_g ?? 0;
     if (goal <= 0) return null;
 
+    // Час доби (>= 18:00) лишається Kyiv-анкорним навмисно — це НЕ день-ключ,
+    // а wall-clock gate, поза межами виміру ADR-0078 для цієї зміни.
     const { hour } = getKyivDateParts();
     if (hour < 18) return null;
 
-    const today = getKyivDayKey();
+    // ADR-0078: читаємо той самий день, під яким журнал зберігає прийоми
+    // їжі — день пристрою, а не Kyiv.
+    const today = todayISODate();
     const summary = getDaySummary(log, today);
     const consumed = Math.round(summary.protein_g ?? 0);
 

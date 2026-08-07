@@ -1,10 +1,12 @@
 import { useEffect, useRef } from "react";
 import { STORAGE_KEYS } from "@sergeant/shared";
-import { computeNutritionQuickStats } from "@sergeant/nutrition-domain";
+import {
+  computeNutritionQuickStats,
+  todayISODate,
+} from "@sergeant/nutrition-domain";
 import type { NutritionLog, NutritionPrefs } from "@sergeant/nutrition-domain";
 import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { emitHubBus } from "@shared/lib/modules/hubBus";
-import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 
 /**
  * Production writer for the Hub nutrition quick-stats snapshot.
@@ -15,9 +17,10 @@ import { getKyivDayKey } from "@shared/lib/time/kyivTime";
  * promise no matter how many meals they logged (test-observations A1).
  *
  * Mounted once at the nutrition module root, this recomputes the snapshot
- * whenever the log or prefs change and writes it back on the Europe/Kyiv day
- * boundary. A `storageUpdated` bump lets any same-tab Hub consumer re-read
- * immediately.
+ * whenever the log or prefs change and writes it back on the device-local
+ * day boundary (ADR-0078 — matches the day key `useNutritionLog` writes
+ * meals under). A `storageUpdated` bump lets any same-tab Hub consumer
+ * re-read immediately.
  */
 export function useNutritionQuickStatsWriter({
   log,
@@ -53,7 +56,9 @@ export function writeNutritionQuickStatsSnapshot({
   prefs: NutritionPrefs | null;
 }): string {
   const payload = JSON.stringify(
-    computeNutritionQuickStats(log, prefs, getKyivDayKey()),
+    // ADR-0078: картка показує "з'їдено сьогодні" за тим самим днем, під
+    // яким лог реально зберігає прийоми їжі — днем пристрою.
+    computeNutritionQuickStats(log, prefs, todayISODate()),
   );
   if (safeReadStringLS(STORAGE_KEYS.NUTRITION_QUICK_STATS) === payload) {
     return payload;

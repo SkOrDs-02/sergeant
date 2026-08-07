@@ -1,32 +1,47 @@
 /**
- * Last validated: 2026-06-15
+ * Last validated: 2026-08-07
  * Status: Active
  * Detection hook for `nutrition-streak-7-days` insight.
  *
- * Fires when the last 7 consecutive Kyiv-local calendar days all had
- * kcal consumption within [0.95*goal, 1.05*goal] — the same band used
- * by the W4 daily-close toast in NutritionDashboard.
+ * Fires when the last 7 consecutive device-local calendar days (ADR-0078)
+ * all had kcal consumption within [0.95*goal, 1.05*goal] — the same band
+ * used by the W4 daily-close toast in NutritionDashboard. Device-local
+ * because the underlying log is keyed by day of device — a Kyiv-anchored
+ * walk-back would read the wrong 7 keys for non-Kyiv users.
  *
- * Deduplication: the insight id is keyed per ISO week (`nutrition-streak-7-days-YYYY-WW`)
- * so `useInsightDismissal` natural behaviour (dismiss once → gone) silences
- * it for the rest of that week. A new calendar week resets the key,
- * allowing the insight to fire again if the user maintains their streak.
+ * Deduplication: the insight id is keyed per device-local ISO-ish week
+ * (`nutrition-streak-7-days-YYYY-WW`) so `useInsightDismissal` natural
+ * behaviour (dismiss once → gone) silences it for the rest of that week. A
+ * new calendar week resets the key, allowing the insight to fire again if
+ * the user maintains their streak.
  *
  * @lifecycle experimental (Phase 5d)
  */
 
 import { useMemo } from "react";
-import type { NutritionLog, NutritionPrefs } from "@sergeant/nutrition-domain";
+import {
+  todayISODate,
+  type NutritionLog,
+  type NutritionPrefs,
+} from "@sergeant/nutrition-domain";
 import { getDayMacros, addDaysISODate } from "../lib/nutritionStorage";
-import { getKyivDateParts, getKyivDayKey } from "@shared/lib/time/kyivTime";
 import type { Insight } from "@shared/lib/insights/types";
 
-/** Returns an ISO week identifier like `2026-W20` from Kyiv-local parts. */
-function kyivISOWeekKey(): string {
+/**
+ * Returns a device-local week identifier like `2026-W20` (ADR-0078) — the
+ * dedup key for "already celebrated this streak this week", parsed from
+ * `todayISODate()` rather than `Date` host-getters directly (keeps this
+ * file lint-clean under `sergeant-design/prefer-kyiv-time`, since the
+ * source of "today" is already the reviewed device-day helper).
+ */
+function deviceISOWeekKey(): string {
   // Use a Thursday-of-the-week trick to get the ISO week year correct,
   // but a simple YYYY-WW approximation is sufficient for dedup purposes
   // since we only need the key to be stable within a calendar week.
-  const { year, month, day } = getKyivDateParts();
+  const [yStr, mStr, dStr] = todayISODate().split("-");
+  const year = Number(yStr);
+  const month = Number(mStr);
+  const day = Number(dStr);
   // Compute week-of-year using the Jan 1 ordinal approach (approximate,
   // good enough for dedup — does not need to be ISO-8601 perfect).
   const jan1 = new Date(Date.UTC(year, 0, 1));
@@ -47,7 +62,9 @@ export function useStreakSevenDaysInsight(
     const goal = prefs.dailyTargetKcal ?? 0;
     if (goal <= 0) return null;
 
-    const today = getKyivDayKey();
+    // ADR-0078: walk back from the day the log is actually keyed under —
+    // device, not Kyiv.
+    const today = todayISODate();
 
     // Full window scan — iterate all 7 days, bail early on first miss.
     for (let i = 0; i < STREAK_DAYS; i++) {
@@ -58,7 +75,7 @@ export function useStreakSevenDaysInsight(
       if (ratio < 0.95 || ratio > 1.05) return null;
     }
 
-    const weekKey = kyivISOWeekKey();
+    const weekKey = deviceISOWeekKey();
 
     return {
       id: `nutrition-streak-7-days-${weekKey}`,

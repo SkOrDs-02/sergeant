@@ -24,6 +24,9 @@ export * from "./mergeItems.js";
 export * from "./recipeIds.js";
 export * from "./foodCategories.js";
 export * from "./nutritionFormat.js";
+// ADR-0078: device-local day-key helpers — межа доби логу їжі/води/денного
+// підсумку належить пристрою, не Kyiv. Див. docstring у deviceDayKey.ts.
+export * from "./deviceDayKey.js";
 
 export * from "./nutritionTypes.js";
 export * from "./nutritionPrefs.js";

@@ -4,8 +4,9 @@
  *
  * Reuses `getDayMacros` (the same day-total the NutritionDashboard shows)
  * so the card can never drift from the module, and reads the daily kcal
- * target straight from prefs. The Kyiv day boundary lives in the caller —
- * `dayKey` is passed in as a `YYYY-MM-DD` key, matching `getDayMacros`.
+ * target straight from prefs. The day boundary lives in the caller —
+ * `dayKey` is passed in as a `YYYY-MM-DD` key (device-local, ADR-0078),
+ * matching `getDayMacros`.
  */
 
 import { getDayMacros } from "./nutritionLog.js";
@@ -60,8 +61,9 @@ export interface NutritionPeriodAverages {
  * Hub-Reports на цю семантику — стадія 4. Реєстр розбіжностей:
  * `docs/02-engineering/architecture/metric-registry.md`.
  *
- * Межі доби задає викликач (`dayKeys` у форматі `YYYY-MM-DD`, Europe/Kyiv за
- * доменним інваріантом) — функція DOM-free і без власного годинника.
+ * Межі доби задає викликач (`dayKeys` у форматі `YYYY-MM-DD`; для журналу
+ * харчування це день ПРИСТРОЮ, ADR-0078) — функція DOM-free і без власного
+ * годинника.
  */
 export function calcNutritionPeriodAverages(
   log: NutritionLogLike,

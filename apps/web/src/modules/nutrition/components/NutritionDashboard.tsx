@@ -19,10 +19,11 @@ import { MacroRings } from "./MacroRings";
 import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
 import { pluralUa } from "@sergeant/shared";
-import type {
-  NutritionLog,
-  NutritionPrefs,
-  PantryItem,
+import {
+  todayISODate,
+  type NutritionLog,
+  type NutritionPrefs,
+  type PantryItem,
 } from "@sergeant/nutrition-domain";
 import {
   ESTIMATED_KCAL_SHARE_THRESHOLD,
@@ -36,7 +37,6 @@ import { WaterTrackerCard } from "./WaterTrackerCard";
 import { useToast } from "@shared/hooks/useToast";
 import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
 import {
-  getKyivDayKey,
   getKyivMondayIndex,
   getKyivWeekStartKey,
   parseKyivDate,
@@ -44,8 +44,15 @@ import {
 
 type WeekRow = MacrosRow;
 
+// ADR-0078: "сьогодні" на дашборді (кільце макросів, isToday-підсвітка в
+// тижневому графіку) — день ПРИСТРОЮ, не Kyiv, бо журнал, з якого читаються
+// ці дані, тепер сам пишеться під ключем дня пристрою (useNutritionLog).
+//
+// НЕ ЧІПАЛОСЬ навмисно: `getKyivWeekStartKey()` нижче (вікно тижневого
+// графіка) лишається Kyiv-анкорним. Це залишкова неузгодженість — див. звіт
+// агента / "потребує рішення власника".
 function todayISO(): string {
-  return getKyivDayKey();
+  return todayISODate();
 }
 
 /**

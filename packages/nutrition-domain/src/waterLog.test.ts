@@ -1,13 +1,7 @@
 // Pure-helpers журналу води: sanitize, normalize, add/subtract/reset.
-// Без `localStorage` / `window` — `today` береться через `toLocalISODate`,
-// тому замість `vi.useFakeTimers()` мокаємо саму функцію зі @sergeant/shared.
+// `today` — день ПРИСТРОЮ (ADR-0078), не Kyiv — тому мокаємо системний час
+// через `vi.useFakeTimers()` / `vi.setSystemTime()`, а не саму функцію.
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-
-vi.mock("@sergeant/shared", () => ({
-  toLocalISODate: vi.fn(() => "2025-06-18"),
-}));
-
-import { toLocalISODate } from "@sergeant/shared";
 import {
   WATER_LOG_KEY,
   normalizeWaterLog,
@@ -17,14 +11,13 @@ import {
   resetTodayWater,
 } from "./waterLog.js";
 
-const mockedToday = toLocalISODate as unknown as ReturnType<typeof vi.fn>;
-
 beforeEach(() => {
-  mockedToday.mockReturnValue("2025-06-18");
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date(2025, 5, 18, 10, 0, 0));
 });
 
 afterEach(() => {
-  vi.restoreAllMocks();
+  vi.useRealTimers();
 });
 
 describe("WATER_LOG_KEY", () => {
@@ -174,5 +167,19 @@ describe("resetTodayWater", () => {
     expect(resetTodayWater(null)).toEqual({});
     expect(resetTodayWater(undefined)).toEqual({});
     expect(resetTodayWater("garbage")).toEqual({});
+  });
+});
+
+describe("день пристрою, не Kyiv (ADR-0078)", () => {
+  // Це середовище (CI/local) працює в TZ=UTC, тож "пристрій" тут = UTC.
+  // 22:00Z 18 червня — ще "сьогодні" (06-18) за пристроєм, але вже "завтра"
+  // (06-19) за Kyiv (UTC+3 влітку). Якби `getTodayWaterMl`/`addWaterMl`
+  // досі форсували Kyiv, цей запис лягав би під 06-19.
+  it("зараховує воду під день пристрою, коли Kyiv уже перейшов на завтра", () => {
+    vi.setSystemTime(new Date(Date.UTC(2025, 5, 18, 22, 0, 0)));
+    expect(addWaterMl({}, 250)).toEqual({ "2025-06-18": 250 });
+    expect(getTodayWaterMl({ "2025-06-18": 250, "2025-06-19": 9999 })).toBe(
+      250,
+    );
   });
 });

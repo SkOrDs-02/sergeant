@@ -30,10 +30,10 @@ vi.mock("../lib/nutritionStorage", async () => {
 
 import { estimateLogBytes } from "../lib/nutritionStorage";
 import { LogCard } from "./LogCard";
-import { getKyivDayKey } from "@shared/lib/time/kyivTime";
-import { addDaysISODate } from "@sergeant/nutrition-domain";
+import { addDaysISODate, todayISODate } from "@sergeant/nutrition-domain";
 
-const today = getKyivDayKey();
+// ADR-0078: LogCard's "Сьогодні" is the device-local day key.
+const today = todayISODate();
 
 function renderLog(overrides: Record<string, unknown> = {}) {
   const setSelectedDate = vi.fn();
