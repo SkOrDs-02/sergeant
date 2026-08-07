@@ -43,6 +43,20 @@ export function RoutineFilterChips({
   const toggle = (value: string) =>
     setTagFilter((f) => (f === value ? null : value));
 
+  // AI-CONTEXT: атрактор №7 §3.2 — `tagChips` тепер обмежений тегами
+  // ПОТОЧНОГО періоду (useRoutineDerivedData.ts), тож зміна періоду може
+  // вивести активний тег-фільтр за межі списку чипів. Без цього блоку чип
+  // просто зникав і людина не могла зняти фільтр, навіть не бачачи, який
+  // він активний. Прецедент — знімний чип `activeCategoryLabel` у
+  // `TransactionFilters` (Фінік): показуємо назву фільтра окремим знімним
+  // чипом, замість мовчазного зникнення.
+  const isKnownSpecial =
+    tagFilter === "__fizruk" || tagFilter === "__finyk_sub";
+  const orphanTagFilter =
+    tagFilter !== null && !isKnownSpecial && !tagChips.includes(tagFilter)
+      ? tagFilter
+      : null;
+
   return (
     <div
       className="flex flex-nowrap overflow-x-auto gap-1.5 items-center pb-1 sm:flex-wrap sm:overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
@@ -113,6 +127,22 @@ export function RoutineFilterChips({
           {name}
         </button>
       ))}
+      {orphanTagFilter && (
+        <button
+          type="button"
+          onClick={onClearFilter}
+          className={cn(
+            CHIP_BASE,
+            CHIP_WRAPPING,
+            "max-w-[70vw] sm:max-w-[160px]",
+            C.chipOn,
+          )}
+        >
+          {orphanTagFilter}
+          <span aria-hidden> ×</span>
+          <span className="sr-only">{COPY.clearTagFilter}</span>
+        </button>
+      )}
     </div>
   );
 }

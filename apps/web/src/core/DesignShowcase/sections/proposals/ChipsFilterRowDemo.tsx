@@ -5,15 +5,27 @@ import { ProposalCard } from "./_PhoneFrame";
 import { ComparePair, MiniPhone } from "./_Compare";
 
 /**
- * R2-UI-17 — Horizontal chips-filter row with fade edges.
+ * R2-UI-17 — Horizontal chips-filter row with fade edges. **Відхилено.**
  *
- * Зараз: filters hide behind a "Фільтри" button — every filter change is a
+ * AI-CONTEXT: цю пропозицію активно рекламувала рівно ту схему, яку
+ * анти-слоп-стратегія (`docs/05-design/design/anti-slop-strategy.md`,
+ * атрактор №7 §3.2) називає провальним патерном — горизонтальний
+ * chip-scroller-фільтр без стелі, замаскований градієнтними fade-краями.
+ * Головного носія цього атрактора закрито 2026-08-06: у `TransactionFilters`
+ * (Фінік) чипи категорій прибрані, бо ту саму роботу вже краще робить
+ * клікабельне кільце категорій на Аналітиці — носія закрито НЕ
+ * перемальовуванням, а тим, що роботу вже робила краща поверхня.
+ *
+ * Fade-краї лікують СИМПТОМ («не видно, що є ще поза екраном»), а не
+ * ПРИЧИНУ (список фільтрів росте без верхньої межі — саме атрактор №7).
+ * Мокап лишається нижче лише як історичний референс review-хвилі 2026-07 —
+ * не бери його як зразок для нового UI.
+ *
+ * Було: filters hide behind a "Фільтри" button — every filter change is a
  * modal round-trip, and you can't see the active filter at a glance.
- * Може бути: a single scrollable row of toggle chips with gradient fade
- * masks on both edges (signalling "more off-screen"), so filters live one
- * tap away and the active one is always visible.
- *
- * Mock only — scroll the row and toggle chips on the right.
+ * Пропонувалось: a single scrollable row of toggle chips with gradient fade
+ * masks on both edges. Mock only — scroll the row and toggle chips on the
+ * right.
  */
 
 const CHIPS = [
@@ -34,9 +46,26 @@ export function ChipsFilterRowDemo() {
   return (
     <ProposalCard
       id="R2-UI-17"
-      title="Стрічка чипсів-фільтрів із fade-краями"
-      intent="Зараз фільтри сховані за кнопкою-модалкою; у пропозиції — горизонтальний скрол чипсів із градієнтними масками по краях. Скрол і тап праворуч."
+      status="rejected"
+      title="Стрічка чипсів-фільтрів із fade-краями (відхилено)"
+      intent="Горизонтальний chip-scroller із градієнтними масками по краях — рекламував саме атрактор №7 анти-слоп-стратегії. Мокап нижче лишається лише як історичний референс."
     >
+      <div
+        role="note"
+        className="mb-4 rounded-xl border border-danger/30 bg-danger/8 px-4 py-3 text-style-caption text-text"
+      >
+        <p className="font-medium text-danger-strong">
+          Відхилено: chip-scroller-фільтр без верхньої межі — атрактор №7
+        </p>
+        <p className="mt-1 text-muted">
+          Патерн суперечить анти-слоп атрактору №7 (chip-scroller-и як дефолтний
+          фільтр). Носія в Фініку закрито 2026-08-06 — не перемальовуванням, а
+          тим, що ту саму роботу вже краще робила інша поверхня (клікабельне
+          кільце категорій на Аналітиці). Fade-краї тут лікують симптом («не
+          видно, що є ще поза екраном»), а не причину (список фільтрів без
+          стелі).
+        </p>
+      </div>
       <ComparePair
         before={
           <MiniPhone dim>
