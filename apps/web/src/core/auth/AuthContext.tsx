@@ -263,6 +263,22 @@ interface AuthContextValue {
   refresh: () => Promise<void>;
 }
 
+/**
+ * Derived hub bento snapshots. Flat, not keyed by user, so they must be
+ * dropped on every identity change — including a UI logout, which
+ * pre-stamps the chat owner and therefore bypasses the reconcile effect.
+ */
+const HUB_QUICK_STATS_KEYS = [
+  "finyk_quick_stats",
+  "fizruk_quick_stats",
+  "routine_quick_stats",
+  "nutrition_quick_stats",
+] as const;
+
+function clearHubQuickStatsSnapshots(): void {
+  for (const key of HUB_QUICK_STATS_KEYS) safeRemoveLS(key);
+}
+
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 interface AuthProviderProps {
@@ -325,14 +341,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       user?.id ?? null,
     );
     if (!changed) return;
-    for (const key of [
-      "finyk_quick_stats",
-      "fizruk_quick_stats",
-      "routine_quick_stats",
-      "nutrition_quick_stats",
-    ]) {
-      safeRemoveLS(key);
-    }
+    clearHubQuickStatsSnapshots();
     if (!prevOwnerWasUser) return;
     queryClient.clear();
     void clearPersistedQueryCache()
@@ -510,6 +519,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // потрібний wipe (SW-кеші, SQLite-партиція, LS-слайси, RQ clear)
       // logout виконує сам нижче.
       reconcileChatOwnerOnAuthChange(null);
+      // Той пре-стамп вище споживає зміну identity, тож reconcile-ефект
+      // побачить `changed: false` і НЕ прибере hub-снапшоти сам — logout
+      // мусить зробити це власноруч. Інакше вони переживають вихід, а
+      // наступний вхід іде шляхом `anon → user`, який навмисно мʼякий
+      // (щоб не зламати anonymous-data migration) і теж їх не чистить:
+      // новий акаунт бачить на хабі числа попереднього, поки картки не
+      // перерахуються. Модульні екрани при цьому коректні — партиція
+      // SQLite своя (виміряно 2026-08-06: хаб 5 150 ₴ від попереднього
+      // акаунта, `/finyk` того ж моменту — власні 4 420 ₴).
+      clearHubQuickStatsSnapshots();
 
       // Перше і найголовніше: перемкнути UI у signed-out ще до мережі. Все
       // нижче — teardown, який не має права гейтити цей перехід (і історично
