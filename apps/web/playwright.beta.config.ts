@@ -34,6 +34,13 @@ export default defineConfig({
     baseURL: process.env["PW_BETA_BASE_URL"] || "http://127.0.0.1:4173",
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
+    // Контейнерні QA-середовища (напр. Claude Code on the web) постачають
+    // власний Chromium і забороняють `playwright install`; ревізія може не
+    // збігатися з тією, що очікує запінена версія @playwright/test. Ручка
+    // дозволяє вказати готовий бінарник, не докачуючи нічого.
+    ...(process.env["PW_CHROMIUM_PATH"]
+      ? { launchOptions: { executablePath: process.env["PW_CHROMIUM_PATH"] } }
+      : {}),
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
 });

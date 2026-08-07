@@ -137,7 +137,10 @@ for (const profile of PROFILES) {
           visibleText(page, `QA ${profile.id} звичка`),
         ).toBeVisible();
         await goto(page, "/finyk/transactions");
-        await expect(visibleText(page, "-249,00₴")).toBeVisible();
+        // UI рендерить типографський мінус U+2212 і пробіл перед ₴ —
+        // рядковий матчер з ASCII-дефісом його не ловить (знайдено
+        // репетиційним прогоном бета-лейна 2026-08-07).
+        await expect(visibleText(page, /[−-]\s?249,00\s?₴/)).toBeVisible();
         return;
       }
       await addExpense(page, `QA ${profile.id} витрата`, "249");
