@@ -218,50 +218,16 @@ describe("ModuleEmptyState — dismiss button a11y", () => {
   });
 });
 
-describe("EmptyState — власна поверхня «край і зріз» (П3)", () => {
-  it("за замовчуванням лишається голою колонкою", () => {
+describe("EmptyState — край і зріз (П3) НЕ застосовується", () => {
+  /**
+   * Межа рішення власника 2026-08-07: край — матеріал ЗАПИСІВ І ЗВІТІВ
+   * (тест: чи існує ця річ у житті як аркуш). Порожній стан повідомляє про
+   * ВІДСУТНІСТЬ запису, паперового аналога в нього немає — проп
+   * `surface: "document"` прибрано разом із цим тестом-контрактом.
+   */
+  it("ніколи не носить масковий край чи підйом", () => {
     const { container } = render(<EmptyState title="Порожньо" />);
     expect(container.querySelector(".edge-stub")).toBeNull();
     expect(container.querySelector(".edge-lift")).toBeNull();
-  });
-
-  /**
-   * AI-DANGER: маска `edge-stub` зрізає тінь на своєму вузлі — і
-   * `box-shadow`, і `filter: drop-shadow()` однаково (заміряно в headless
-   * Chromium). Підйом мусить бути на батьківському вузлі, інакше поверхня
-   * МОВЧКИ втрачає глибину: нічого не падає, просто тіні немає.
-   */
-  it("документ несе підйом зовні, а маску всередині", () => {
-    const { container } = render(
-      <EmptyState title="Порожньо" surface="document" />,
-    );
-    const lift = container.firstElementChild!;
-    expect(lift.className).toContain("edge-lift");
-    expect(lift.className).not.toContain("edge-stub");
-    expect(lift.querySelector(".edge-stub")).not.toBeNull();
-  });
-
-  /**
-   * Рішення власника 2026-08-06: матеріал НЕ йде всередину. Край описує,
-   * чим є поверхня; кнопка на ній — це дія. Квадратна кнопка тут
-   * зобов'язала б поміняти всі кнопки продукту.
-   */
-  it("матеріал не йде всередину — аркуш квадратний, деталі круглі", () => {
-    const { container, getByRole } = render(
-      <EmptyState
-        title="Порожньо"
-        surface="document"
-        icon={<span>₴</span>}
-        primaryAction={<Button variant="primary">Дія</Button>}
-      />,
-    );
-    // Сам аркуш — без скруглення: це і є край.
-    const sheet = container.querySelector(".edge-stub")!;
-    expect(sheet.className).not.toMatch(/(^|\s)rounded-/);
-    // А те, що на ньому лежить, скруглення зберігає.
-    expect(container.querySelector(".rounded-2xl")).not.toBeNull();
-    expect(getByRole("button", { name: "Дія" }).className).toMatch(
-      /(^|\s)rounded-/,
-    );
   });
 });

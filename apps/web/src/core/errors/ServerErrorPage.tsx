@@ -44,7 +44,6 @@ export function ServerErrorPage({ onReset }: ServerErrorPageProps) {
         size="lg"
         variant="danger"
         eyebrow="500"
-        surface="document"
         illustration={<ServerErrorIllustration size={200} />}
         title="Щось пішло не так"
         description="Сервер тимчасово не зміг обробити запит. Спробуй оновити сторінку — зазвичай це допомагає."
