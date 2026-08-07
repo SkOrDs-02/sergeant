@@ -342,6 +342,20 @@ export default defineConfig(({ mode }) => {
               // імпортами main bundle. Див. правило 2.3 у
               // `.agents/skills/sergeant-web-ui/SKILL.md`.
               if (id.includes("@sentry")) return "vendor-sentry";
+              // Те саме для PostHog. `core/observability/posthog.ts` тягне
+              // SDK через `await import("posthog-js")` і лише за наявності
+              // `VITE_POSTHOG_KEY` — тобто код УЖЕ лінивий. Але catch-all
+              // нижче зводив це нанівець: пакет падав у загальний
+              // `vendor`, який жадібно преложиться, і 224 kB сирої
+              // аналітики чекала людина до першого екрана.
+              //
+              // AI-CONTEXT: динамічний `import()` сам собою НЕ гарантує
+              // лінивості, коли є catch-all manual chunk — Rollup спершу
+              // слухає manualChunks, і аж потім розкладає по графу
+              // імпортів. Той самий трюк уже застосовано вище до
+              // Capacitor і sqlite; PostHog просто ніхто не перевірив.
+              if (id.includes("/node_modules/posthog-js/"))
+                return "vendor-posthog";
               // Те саме міркування для `web-vitals` — пакет малий (~1 KB
               // gzip), але імпортується через dynamic `import()` після
               // `requestIdleCallback`, тож не повинен тягнутись у main.
