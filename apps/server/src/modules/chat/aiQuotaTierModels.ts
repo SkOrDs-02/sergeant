@@ -84,7 +84,26 @@ function envStr(name: string, fallback: string): string {
 const PRO_TIER_MODEL: Record<ProTier, Record<ProEndpoint, () => string>> = {
   premium: {
     chat: () => envStr("CHAT_MODEL_SYNTHESIS", defaultChatModel("synthesis")),
-    coach: () => envStr("OPENROUTER_COACH_MODEL", "openai/gpt-5.1"),
+    // Sonnet, а не `openai/gpt-5.1` (стояло тут до 2026-08-07).
+    //
+    // Заміна зроблена за фактом, а не за прайс-листом. Замір за 12 днів у
+    // проді показав, що з десяти викликів коуча дев'ять обслуговував
+    // `claude-sonnet-4-6` — тобто OpenRouter падав, і його мовчки підміняв
+    // anthropic-фолбек (`FallbackProvider` у `lib/llm/provider.ts`). Тобто
+    // gpt-5.1 фактично ніколи не працював, а обґрунтування «у коуча
+    // НАЙБІЛЬШИЙ розрив у якості» в `aiQuota.ts::unpaid` спиралось на
+    // модель, якої користувач не бачив.
+    //
+    // Найімовірніша причина падінь — 20-секундний таймаут у `coach.ts`
+    // проти reasoning-моделі; каталог OpenRouter це підтверджує непрямо:
+    // gpt-5.1 дешевший ЗА ТОКЕН ($1.25/$10 проти $3/$15), але вийшов
+    // удвічі дорожчим ЗА ВИКЛИК ($20.2/1k проти $8.97/1k) — різницю дають
+    // reasoning-токени, які й з'їдають таймаут.
+    //
+    // Ставимо рівно ту модель, що вже обслуговує коуча, тільки через шлюз:
+    // якість та сама, шлях один, вартість видно в одному місці.
+    coach: () =>
+      envStr("OPENROUTER_COACH_MODEL", "anthropic/claude-sonnet-4.6"),
   },
   standard: {
     chat: () =>
