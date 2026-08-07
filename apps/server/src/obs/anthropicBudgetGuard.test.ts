@@ -1,38 +1,48 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
-const { captureMessageMock, getRedisMock, redisSetMock } = vi.hoisted(() => ({
-  captureMessageMock: vi.fn(),
-  getRedisMock: vi.fn(),
-  redisSetMock: vi.fn(),
-}));
+const { captureMessageMock, getRedisMock, redisSetMock, queryMock } =
+  vi.hoisted(() => ({
+    captureMessageMock: vi.fn(),
+    getRedisMock: vi.fn(),
+    redisSetMock: vi.fn(),
+    queryMock: vi.fn(),
+  }));
 vi.mock("../sentry.js", () => ({
   Sentry: { captureMessage: captureMessageMock },
 }));
 vi.mock("../lib/redis.js", () => ({
   getRedis: getRedisMock,
 }));
+vi.mock("../db.js", () => ({
+  default: { query: queryMock },
+}));
 
 import {
   AnthropicBudgetGuard,
   isAnthropicBudgetHardExceeded,
+  readSpendFromLedger,
   type AnthropicBudgetRedisClient,
   type AnthropicBudgetCaptureInput,
 } from "./anthropicBudgetGuard.js";
-import { aiCostEstimateUsd } from "./metrics.js";
 
-function recordSpend(spend: number, model = "claude-3-5-haiku"): void {
-  aiCostEstimateUsd.inc(
-    { provider: "anthropic", model, endpoint: "chat" },
-    spend,
-  );
+/**
+ * Витрата за добою. Раніше тести інкрементили Prometheus-лічильник —
+ * саме те джерело, яке гвард більше не читає (воно не переживало рестарт,
+ * див. шапку модуля). Тепер підставляємо `readSpendUsd` напряму: предмет
+ * цих тестів — пороги й ідемпотентність, а не SQL. Сам SQL перевіряється
+ * окремим describe-блоком нижче.
+ */
+let spendByDay: Map<string, number>;
+let defaultSpend: number;
+
+/** Додати витрату «на сьогодні» — для тестів, яким байдужа конкретна доба. */
+function recordSpend(spend: number, _model = "claude-3-5-haiku"): void {
+  defaultSpend += spend;
 }
 
-function recordOtherProviderSpend(spend: number): void {
-  // Counter інкрементується для іншого provider-а — guard має його ігнорувати.
-  aiCostEstimateUsd.inc(
-    { provider: "voyage", model: "voyage-3.5", endpoint: "embed" },
-    spend,
-  );
+/** Додати витрату на конкретну київську добу (для rollover-тестів). */
+function recordSpendOn(day: string, spend: number): void {
+  spendByDay.set(day, (spendByDay.get(day) ?? 0) + spend);
 }
 
 function createGuard(opts?: {
@@ -40,17 +50,22 @@ function createGuard(opts?: {
   capture?: (input: AnthropicBudgetCaptureInput) => void;
   redis?: AnthropicBudgetRedisClient | null;
   monthlyBudgetUsd?: () => number;
+  readSpendUsd?: (day: string) => Promise<number>;
 }): AnthropicBudgetGuard {
-  return new AnthropicBudgetGuard(opts);
+  return new AnthropicBudgetGuard({
+    readSpendUsd: (day) => Promise.resolve(spendByDay.get(day) ?? defaultSpend),
+    ...opts,
+  });
 }
 
 beforeEach(() => {
-  // Скидаємо counter ПЕРЕД instantiate-ом, щоб baseline-snapshot стартував з 0.
-  aiCostEstimateUsd.reset();
+  spendByDay = new Map();
+  defaultSpend = 0;
   captureMessageMock.mockClear();
   getRedisMock.mockReset();
   getRedisMock.mockReturnValue(null);
   redisSetMock.mockReset();
+  queryMock.mockReset();
 });
 
 afterEach(() => {
@@ -112,24 +127,7 @@ describe("AnthropicBudgetGuard — thresholds", () => {
     expect(guard.isHardBreached()).toBe(true);
   });
 
-  it("ignores spend on other providers (e.g. voyage)", async () => {
-    const captures: AnthropicBudgetCaptureInput[] = [];
-    const guard = createGuard({
-      capture: (input) => {
-        captures.push(input);
-      },
-      redis: null,
-    });
-    recordOtherProviderSpend(10);
-    recordSpend(0.5);
-    const result = await guard.runBudgetCheckTick();
-    expect(result.spendUsd).toBeCloseTo(0.5, 5);
-    expect(result.softFired).toBe(false);
-    expect(result.hardFired).toBe(false);
-    expect(captures).toHaveLength(0);
-  });
-
-  it("sums spend across multiple model/endpoint labels", async () => {
+  it("sums spend across multiple model/endpoint rows", async () => {
     const captures: AnthropicBudgetCaptureInput[] = [];
     const guard = createGuard({
       capture: (input) => {
@@ -139,10 +137,7 @@ describe("AnthropicBudgetGuard — thresholds", () => {
     });
     recordSpend(1.5, "claude-3-5-haiku");
     recordSpend(1.0, "claude-3-5-sonnet");
-    aiCostEstimateUsd.inc(
-      { provider: "anthropic", model: "claude-3-5-haiku", endpoint: "coach" },
-      0.75,
-    );
+    recordSpend(0.75, "claude-3-5-haiku");
     const result = await guard.runBudgetCheckTick();
     expect(result.spendUsd).toBeCloseTo(3.25, 5);
     expect(result.softFired).toBe(true);
@@ -279,24 +274,9 @@ describe("AnthropicBudgetGuard — idempotency", () => {
     expect(captures).toHaveLength(1);
     expect(captures[0]?.threshold).toBe("hard");
 
-    // Spend дрейфує вниз нижче hard-у але вище soft-у. Soft НЕ повинен
-    // спрацювати — день вже flagged як hard.
-    aiCostEstimateUsd.reset();
-    recordSpend(3.5);
-    const guard2 = createGuard({
-      capture: (input) => {
-        captures.push(input);
-      },
-      redis: null,
-    });
-    // Це окремий guard, але семантично: попередня перевірка проходить
-    // через ту саму in-memory firedAlerts — тому свіжий guard почне з 0.
-    // Перевіряємо через ОДИН guard, що порядок threshold-firing-у правильний.
-    void guard2;
-
-    // Інше: на тому ж guard додатково підкрутимо spend і викличемо tick —
-    // soft не повинен послатися другим event-ом (hard уже flagged + soft
-    // flag виставлений як deduper).
+    // Ще трохи витрати на тій самій добі — soft НЕ повинен послатися
+    // другим event-ом: день уже позначений як hard, і soft-прапорець
+    // виставлений разом із ним саме як дедупер.
     recordSpend(0.1);
     await guard.runBudgetCheckTick();
     expect(captures).toHaveLength(1);
@@ -393,31 +373,23 @@ describe("AnthropicBudgetGuard — fail-open", () => {
     await expect(guard.runBudgetCheckTick()).resolves.toBeDefined();
   });
 
-  it("returns zero spend on counter read failure (no false alert)", async () => {
-    // Спеціально мокаємо `aiCostEstimateUsd.get` щоб imitate-ити збій
-    // prom-client-у. Якщо counter API кидає — guard має повернути 0 spend,
-    // а не false-positive-нути hard alert.
-    const original = aiCostEstimateUsd.get.bind(aiCostEstimateUsd);
-    aiCostEstimateUsd.get = vi.fn(() => {
-      throw new Error("prom_client_down");
-    }) as unknown as typeof aiCostEstimateUsd.get;
-    try {
-      const captures: AnthropicBudgetCaptureInput[] = [];
-      const guard = createGuard({
-        capture: (input) => {
-          captures.push(input);
-        },
-        redis: null,
-      });
-      recordSpend(10);
-      const result = await guard.runBudgetCheckTick();
-      expect(result.spendUsd).toBe(0);
-      expect(result.softFired).toBe(false);
-      expect(result.hardFired).toBe(false);
-      expect(captures).toHaveLength(0);
-    } finally {
-      aiCostEstimateUsd.get = original;
-    }
+  it("падіння самого пулу не дає ані алерту, ані винятку", async () => {
+    // Раніше тут глушився prom-client; тепер джерело — Postgres, і
+    // сценарій той самий: читання кидає, гвард має віддати 0 spend і
+    // мовчати, а не false-positive-нути hard alert.
+    queryMock.mockRejectedValue(new Error("db down"));
+    const captures: AnthropicBudgetCaptureInput[] = [];
+    const guard = new AnthropicBudgetGuard({
+      capture: (input) => {
+        captures.push(input);
+      },
+      redis: null,
+    });
+    const result = await guard.runBudgetCheckTick();
+    expect(result.spendUsd).toBe(0);
+    expect(result.softFired).toBe(false);
+    expect(result.hardFired).toBe(false);
+    expect(captures).toHaveLength(0);
   });
 
   it("isHardBreached() defaults to false", () => {
@@ -427,7 +399,7 @@ describe("AnthropicBudgetGuard — fail-open", () => {
 });
 
 describe("AnthropicBudgetGuard — day rollover", () => {
-  it("resets baseline + flags + hardBreached on UTC day change", async () => {
+  it("resets flags + hardBreached on day change", async () => {
     const captures: AnthropicBudgetCaptureInput[] = [];
     let mockNow = new Date("2026-05-13T12:00:00Z").getTime();
     const guard = createGuard({
@@ -437,15 +409,15 @@ describe("AnthropicBudgetGuard — day rollover", () => {
       },
       redis: null,
     });
-    recordSpend(5.5);
+    recordSpendOn("2026-05-13", 5.5);
     await guard.runBudgetCheckTick();
     expect(guard.isHardBreached()).toBe(true);
     expect(captures).toHaveLength(1);
     expect(captures[0]?.day).toBe("2026-05-13");
 
-    // Rollover у наступну UTC-добу. Counter лишається той самий
-    // (process didn't restart) → новий baseline = current counter value.
-    // Тому новий tick має побачити spend = 0 і нічого не алертити.
+    // Нова доба — гвард питає леджер уже за неї, і там поки порожньо.
+    // Раніше цю нульову базу давав re-anchor лічильника; тепер вона
+    // просто випливає з ключа запиту, і рестарт процесу її не міняє.
     mockNow = new Date("2026-05-14T00:01:00Z").getTime();
     const result = await guard.runBudgetCheckTick();
     expect(result.day).toBe("2026-05-14");
@@ -466,7 +438,7 @@ describe("AnthropicBudgetGuard — day rollover", () => {
       },
       redis: null,
     });
-    recordSpend(3.5);
+    recordSpendOn("2026-05-13", 3.5);
     await guard.runBudgetCheckTick();
     expect(captures).toHaveLength(1);
 
@@ -474,8 +446,8 @@ describe("AnthropicBudgetGuard — day rollover", () => {
     // Rollover на новий день. Spend сьогодні поки що 0.
     await guard.runBudgetCheckTick();
 
-    // Ще $4 на сьогодні (counter monotonic) — soft має fire-нутись знову.
-    recordSpend(4);
+    // $4 уже на новій добі — soft має fire-нутись знову.
+    recordSpendOn("2026-05-14", 4);
     await guard.runBudgetCheckTick();
     expect(captures).toHaveLength(2);
     expect(captures[1]?.threshold).toBe("soft");
@@ -483,27 +455,85 @@ describe("AnthropicBudgetGuard — day rollover", () => {
   });
 });
 
-describe("AnthropicBudgetGuard — baseline drift handling", () => {
-  it("re-anchors baseline if counter monotonically decreased (restart race)", async () => {
+describe("AnthropicBudgetGuard — витрата переживає рестарт процесу", () => {
+  it("свіжий інстанс бачить уже витрачене за добу, а не нуль", async () => {
+    // Це і є та регресія, заради якої джерело змінили. Новий
+    // `AnthropicBudgetGuard` — точна модель рестарту: стан порожній,
+    // прапорці зняті. Поки витрата бралася з лічильника в памʼяті, тут
+    // був би нуль, і денна стеля починалась би заново з кожного деплою.
     const captures: AnthropicBudgetCaptureInput[] = [];
+    recordSpend(12);
+
     const guard = createGuard({
       capture: (input) => {
         captures.push(input);
       },
       redis: null,
     });
-    recordSpend(4);
-    await guard.runBudgetCheckTick();
-    expect(captures).toHaveLength(1);
-    expect(captures[0]?.threshold).toBe("soft");
+    const result = await guard.runBudgetCheckTick();
 
-    // Симулюємо "counter впав" (теоретично — рестарт + новий init
-    // потрапив у середину tick-у; counter не може piecewise зменшитись,
-    // але safety-сітка).
-    aiCostEstimateUsd.reset();
+    expect(result.spendUsd).toBeCloseTo(12, 5);
+    expect(result.hardFired).toBe(true);
+    expect(guard.isHardBreached()).toBe(true);
+  });
+
+  it("відʼємна сума з леджера затискається в нуль і не знімає breach", async () => {
+    const captures: AnthropicBudgetCaptureInput[] = [];
+    const guard = createGuard({
+      capture: (input) => {
+        captures.push(input);
+      },
+      redis: null,
+      readSpendUsd: () => Promise.resolve(-5),
+    });
     const result = await guard.runBudgetCheckTick();
     expect(result.spendUsd).toBe(0);
-    expect(captures).toHaveLength(1);
+    expect(captures).toHaveLength(0);
+  });
+
+  it("збій читання леджера не алертить і не валить тік", async () => {
+    const captures: AnthropicBudgetCaptureInput[] = [];
+    const guard = createGuard({
+      capture: (input) => {
+        captures.push(input);
+      },
+      redis: null,
+      readSpendUsd: () => Promise.reject(new Error("db down")),
+    });
+    const result = await guard.runBudgetCheckTick();
+    expect(result.spendUsd).toBe(0);
+    expect(result.hardFired).toBe(false);
+    expect(captures).toHaveLength(0);
+  });
+});
+
+describe("readSpendFromLedger — сам запит", () => {
+  it("фільтрує по provider-рядку й переданій добі", async () => {
+    queryMock.mockResolvedValue({ rows: [{ usd: "7.25" }] });
+    const usd = await readSpendFromLedger("2026-05-13");
+
+    expect(usd).toBeCloseTo(7.25, 5);
+    const [sql, params] = queryMock.mock.calls[0] as [string, unknown[]];
+    expect(sql).toContain("ai_usage_daily");
+    // Фільтр по subject_key — те, що раніше робив лейбл `provider` у
+    // лічильнику: без нього в суму потрапили б per-user рядки й подвоїли
+    // б витрату.
+    expect(params[0]).toBe("provider:anthropic");
+    expect(params[1]).toBe("2026-05-13");
+  });
+
+  it("порожня доба — нуль, а не NaN", async () => {
+    queryMock.mockResolvedValue({ rows: [{ usd: null }] });
+    expect(await readSpendFromLedger("2026-05-13")).toBe(0);
+  });
+
+  it("NUMERIC приходить рядком — приводимо до числа", async () => {
+    // `pg` віддає NUMERIC як string. Без приведення `"12.5" >= 15`
+    // порівнювало б рядки й мовчки не спрацьовувало б.
+    queryMock.mockResolvedValue({ rows: [{ usd: "12.5" }] });
+    const usd = await readSpendFromLedger("2026-05-13");
+    expect(typeof usd).toBe("number");
+    expect(usd).toBeCloseTo(12.5, 5);
   });
 });
 
@@ -619,13 +649,14 @@ describe("AnthropicBudgetGuard — monthly projection", () => {
       redis: null,
       monthlyBudgetUsd: () => 50,
     });
-    recordSpend(2);
+    recordSpendOn("2026-05-13", 2);
     await guard.runBudgetCheckTick();
     expect(captures.filter((c) => c.threshold === "monthly")).toHaveLength(1);
 
-    // Next UTC day, still May → monthly flag must survive the rollover.
+    // Наступна доба, той самий травень → monthly-прапорець має пережити
+    // rollover.
     mockNow = new Date("2026-05-14T00:01:00Z").getTime();
-    recordSpend(2); // fresh same-day spend so projection would breach again
+    recordSpendOn("2026-05-14", 2); // свіжа витрата, проєкція знову пробила б
     await guard.runBudgetCheckTick();
     expect(captures.filter((c) => c.threshold === "monthly")).toHaveLength(1);
   });
