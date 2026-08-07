@@ -8,7 +8,11 @@ vi.mock("@shared/lib/storage/storage", () => ({
 vi.mock("../../hubChatUtils", () => ({
   lsSet: vi.fn(),
 }));
-vi.mock("@shared/lib/time/kyivTime", () => ({
+// `parseKyivDate` лишається справжнім: воно чисте, DST-safe і саме воно
+// перетворює київський стінний годинник на інстант. Підмінити його стабом —
+// значить перевіряти стаб, а не той перерахунок, заради якого тест існує.
+vi.mock("@shared/lib/time/kyivTime", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@shared/lib/time/kyivTime")>()),
   getKyivDayKey: vi.fn(),
   getKyivDateParts: vi.fn(),
 }));
