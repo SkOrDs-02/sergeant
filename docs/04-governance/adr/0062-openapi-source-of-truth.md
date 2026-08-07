@@ -9,10 +9,21 @@
 
 ---
 
+> **Часткове відкликання 2026-08-06.** Рішення про code-first source-of-truth
+> лишається чинним. Відкликано лише другу половину — **шар згенерованих
+> TypeScript-типів** (`generated/openapi.d.ts` + `api:*-openapi-types`): за
+> весь час існування він не набув жодного споживача, `OpenApiPaths` /
+> `OpenApiComponents` / `OpenApiOperations` ніде не імпортувались, тож його
+> прибрано. Єдина public surface контракту — рукописні типи в
+> `packages/api-client/src/endpoints/*` (Hard Rule #3). Причина й шлях назад
+> — [`docs/02-engineering/api/README.md`](../../02-engineering/api/README.md).
+> Згадки видаленого файла нижче лишені навмисно: ADR — запис рішення на
+> свою дату, а не опис поточного дерева.
+
 ## Context and Problem Statement
 
 Sergeant API має один задокументований контракт (`docs/02-engineering/api/openapi.json`) і згенеровані
-TypeScript-типи (`packages/api-client/src/generated/openapi.d.ts`), на які спираються web- і
+TypeScript-типи (`packages/api-client/src/generated/openapi.d.ts`) <!-- removed -->, на які спираються web- і
 mobile-клієнти. Питання: **що є source-of-truth** для цього контракту — рукописний OpenAPI-spec
 чи runtime Zod-схеми сервера?
 
@@ -44,7 +55,7 @@ merged ADR назвав себе одразу `0057`, тож `0056` лишивс
 
 - **Generation:** `pnpm api:generate-openapi` (`scripts/api/generate-openapi.mjs`) → пише
   `docs/02-engineering/api/openapi.json` (`openapi: 3.1.0`, `title: "Sergeant API"`, `version: v1`).
-  `scripts/api/generate-openapi-types.mjs` → `packages/api-client/src/generated/openapi.d.ts`
+  `scripts/api/generate-openapi-types.mjs` → `packages/api-client/src/generated/openapi.d.ts` <!-- removed -->
   через `openapi-typescript`.
 - **Committed artifacts:** обидва файли в репо — single source-of-truth для documented spec і
   згенерований diff у code review.
@@ -80,7 +91,7 @@ merged ADR назвав себе одразу `0057`, тож `0056` лишивс
 ## Compliance
 
 `pnpm api:check-openapi` + `pnpm api:check-openapi-types` зелені в CI; `docs/02-engineering/api/openapi.json` і
-`packages/api-client/src/generated/openapi.d.ts` committed і свіжі.
+`packages/api-client/src/generated/openapi.d.ts` <!-- removed --> committed і свіжі.
 
 ## Scope
 

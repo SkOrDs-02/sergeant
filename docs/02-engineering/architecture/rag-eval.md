@@ -25,7 +25,7 @@ embeddings + pgvector). Складається з трьох частин:
 
 Крон PR-22 (`.github/workflows/rag-quality-gate.yml`) прибрано рішенням
 [ADR-0082](../../04-governance/adr/0082-private-storage-repo-posture.md) §4 — він ганявся
-в mock-режимі. Weekly-обгортку (`scripts/rag-eval-weekly.mjs` + n8n cron WF-29) прибрано
+в mock-режимі. Weekly-обгортку (`scripts/rag-eval-weekly.mjs` <!-- removed --> + n8n cron WF-29) прибрано
 2026-08-06 слідом: після ADR-0082 її тригер бив у видалений workflow (тихий 404 щопонеділка).
 CLI запускається вручну (`pnpm eval:rag`); автоматичного issue
 чи Sentry-alert-у при degradation немає. Day-60 decision-point: якщо
@@ -310,7 +310,7 @@ runtimeKillSwitch.ts`):
   process-restart** — це навмисно (operator може investigation-ити
   fresh, env-flag залишається authoritative source-of-truth).
 
-**Wrapper script** — retired 2026-08-06. `scripts/rag-eval-weekly.mjs` (alias
+**Wrapper script** — retired 2026-08-06. `scripts/rag-eval-weekly.mjs` <!-- removed --> (alias
 `pnpm eval:rag:weekly`) POST-ив summary на `/api/internal/eval/rag-weekly`;
 після ADR-0082 його cron-тригер лишився без workflow, тож обгортку і n8n
 WF-29 видалено. Схема вище — історичний контур; сам endpoint
