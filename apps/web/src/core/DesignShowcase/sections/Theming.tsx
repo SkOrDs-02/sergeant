@@ -14,7 +14,7 @@ document.documentElement.classList.toggle("dark");
 // In Tailwind classes, use semantic tokens — they swap automatically
 <div className="bg-panel text-text border border-line">…</div>
 
-// Anti-pattern (Hard Rule #13): see Do/Don't row below for the raw-palette example`;
+// Anti-pattern (review-only convention): see Do/Don't row below for the raw-palette example`;
 
 const THEME_MATRIX = [
   {
@@ -56,8 +56,9 @@ export function ThemingSection() {
         <>
           Світла / темна / high-contrast — всі живуть на одному tokenset.
           Перемикач у топ-барі змінює клас на <code>documentElement</code>.
-          Парні <code>dark:bg-stone-900</code> заборонено (HR #13, lint{" "}
-          <code>no-raw-dark-palette</code>).
+          Парні <code>dark:bg-stone-900</code> заборонено — конвенція
+          review-only (ADR-0081); механічно гейтиться лише сирий hex у className
+          (<code>check-design-conventions</code>).
         </>
       }
     >
@@ -141,13 +142,12 @@ export function ThemingSection() {
       </Group>
 
       <RuleBadges
-        hardRules={[
-          { label: "HR #13", hint: "No raw dark palette" },
-          { label: "HR #11", hint: "No hex in className" },
-        ]}
+        hardRules={[]}
         lintRules={[
-          { label: "no-raw-dark-palette" },
-          { label: "no-hex-in-classname" },
+          {
+            label: "check-design-conventions",
+            hint: "raw hex у className — кольори лише через токени",
+          },
         ]}
       />
     </Sec>

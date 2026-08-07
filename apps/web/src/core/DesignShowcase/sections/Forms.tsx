@@ -15,12 +15,12 @@ import {
   Sec,
 } from "../_shared/primitives";
 
-const SAMPLE_USAGE = `// Inputs use focus-visible only (Hard Rule #14)
+const SAMPLE_USAGE = `// Inputs use focus-visible only (gated by check-design-conventions)
 <FormField label="Email" htmlFor="email">
   <Input id="email" variant="default" size="md" placeholder="hi@example.com" />
 </FormField>
 
-// Submit button defaults to brand-strong + text-white (HR #9)
+// Submit button defaults to brand-strong + text-white (-strong companion)
 <Button size="md" variant="primary">Зберегти</Button>`;
 
 export function FormsSection() {
@@ -30,10 +30,11 @@ export function FormsSection() {
       title="Форми"
       intro={
         <>
-          Кнопки + Input / Textarea / Select / Switch. Контракт фокусу —
-          <code>focus-visible:</code> (HR #14, lint{" "}
-          <code>prefer-focus-visible</code>); цілі ≥44×44 px (HR stays-touchable
-          convention).
+          Кнопки + Input / Textarea / Select / Switch. Контракт фокусу —{" "}
+          <code>focus-visible:</code>, і це гейтить{" "}
+          <code>check-design-conventions</code>. Цілі ≥44×44 px під{" "}
+          <code>pointer: coarse</code> — Playwright-лейн{" "}
+          <code>Mobile UI audit</code> у CI.
         </>
       }
     >
@@ -121,13 +122,12 @@ export function FormsSection() {
       </Group>
 
       <RuleBadges
-        hardRules={[
-          { label: "HR #14", hint: "focus-visible only, no :focus" },
-          { label: "HR #9", hint: "-strong fill behind text-white" },
-        ]}
+        hardRules={[]}
         lintRules={[
-          { label: "prefer-focus-visible" },
-          { label: "prefer-data-state" },
+          {
+            label: "check-design-conventions",
+            hint: "`focus:` заборонено — лише focus-visible: / focus-within:",
+          },
         ]}
       />
     </Sec>

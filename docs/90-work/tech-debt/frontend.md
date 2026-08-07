@@ -3,17 +3,51 @@
 > **Last validated:** 2026-07-20 by @cursoragent (full reconcile vs HEAD). **Next review:** 2026-10-18.
 > **Status:** Active
 
+> **Оновлено 2026-08-07 (tech-debt reconcile).** Переміряно бек-лог нижче на
+> HEAD — три пункти виявились закритими або значно застарілими, і закривались
+> вони не тим, що записано в плані:
+>
+> - **п.1 Enforcement-вакуум — здебільшого закритий.** `scripts/check-design-conventions.mjs`
+>   уже в ланцюгу `pnpm lint` і гейтить чотири з шести конвенцій (hex-бан,
+>   `focus:`, `text-2xs`, під-12px). Цим проходом скоуп розширено з
+>   `apps/web/src` на `apps/landing/src` + `apps/mobile-shell/src` (обидві на
+>   нулі) і додано 13 тестів на anti-false-positive контракт. **Відкритий
+>   залишок — рівно три AST-рівневі конвенції** (opacity-шкала, `-strong`
+>   companions, module-accent containment): вони свідомо review-only, і тепер
+>   це записано чесно і в `docs/05-design/design/README.md`, і в самому
+>   DesignShowcase. Заразом полагоджено гірший підвид цього ж боргу:
+>   showcase рекламував **13 неіснуючих ESLint-правил і 8 ретайрнутих Hard
+>   Rules** — тобто обіцяв enforcement, якого немає.
+> - **п.7 44px-аудит у CI — закрито.** Лейн промоутнуто з nightly у блокуючий
+>   job `Mobile UI audit (44px touch targets)` у `ci.yml`. Блокером був не
+>   wiring, а краш `FINYK_ASSETS` (`(webhookAccounts ?? []).filter` проти
+>   не-масиву) — фікс уже на main, лейн зелений у nightly 2026-08-06/08-07.
+> - **п.9 Сира типографіка — цифри застаріли втричі.** Було записано «389
+>   `text-xs` + 108 `text-sm` проти 1316 `text-style-*`»; факт на HEAD —
+>   **111 + 84 проти 2011**. Ратчет фактично відпрацював (значною мірою у
+>   PR #684), лишився довгий хвіст під правилом «торкнувся файлу — мігруй».
+>   NB: сирий розмір лишається легітимним у двох випадках, і вони
+>   задокументовані в `tailwind-preset.js` — розмір контрола та потреба саме в
+>   `line-height` 1rem; сліпий sweep їх зламає.
+>
+> Заразом виявлено **новий** запис для mobile: `apps/mobile/src` має 156
+> порушень 12px-floor (17 `text-2xs` + 139 `text-[<12px]`) і **нуль**
+> `.text-style-*` — мігрувати немає куди, тож розширення гейта на mobile
+> gated на створення семантичної шкали для NativeWind (див. п.8 нижче).
+>
 > **Оновлено 2026-08-04 (design-system deep audit).** Перенесений бек-лог із
 > аудиту дизайн-системи (звіт `docs/90-work/audits/2026-08-04-design-system-deep-audit.md`
 > видалено після фікс-хвилі за рішенням founder-а; історія — у merged PR #607).
 > Автофіксабельне виправлено (dark/hc token-parity, a11y діалогів, text-2xs,
 > mobile re-sync, docs↔ADR-0081). Невиправлений залишок — потребує рішень:
 >
-> 1. **Enforcement-вакуум (high).** Після ADR-0081 opacity-шкала, `-strong`,
->    hex-бан, module-accent, focus-visible, 12px floor — без жодної механічної
->    перевірки (ADR-0082 видалив VRT, Storybook CI перевіряє лише білд).
->    Рішення: дешевий grep/AST-скрипт у lint-ланцюг АБО чесний запис
->    «review-only» в ADR-0081.
+> 1. ~~**Enforcement-вакуум (high).**~~ — **здебільшого закрито** (див.
+>    маркер 2026-08-07 вище). Застосовані обидва запропоновані рішення, не
+>    одне з двох: grep-гейт `check-design-conventions.mjs` покриває hex-бан,
+>    `focus:` і 12px-floor на трьох поверхнях, а opacity-шкала, `-strong` і
+>    module-accent записані як review-only і в `docs/05-design/design/README.md`,
+>    і в бейджах showcase. Механічного боргу тут більше немає — лишається
+>    свідомий review-скоуп.
 > 2. ~~**Тема-сліпі чарти (high).**~~ — **Done** (хвиля 3, `e6a01ce`, 2026-08-04).
 >    `chartSeries.ts` / `statusColors.ts` більше не існують; у fizruk немає
 >    статичних hex поза тестами, `BodyAtlas.tsx` перейшов на var-backed кольори.
@@ -28,15 +62,38 @@
 >    `<ProgressBar>` (додано `variant="neutral"` для ink-філла); MacroRings
 >    (circular, `ProgressRing`) лишився bespoke — інша сімʼя компонента.
 > 4. **Shared OverlayShell/Drawer.** ~14 файлів hand-roll `role="dialog"`
->    chrome; SettingsPrimitives.ConfirmModal без useBodyScrollLock;
->    DeleteAccountDialog — клон Modal.
+>    chrome — **переміряно 2026-08-07: 25** файлів, тобто борг ріс, поки його
+>    трекали. Сама консолідація лишається P4 (ризик фокусних/візуальних
+>    регресій по всьому застосунку, потрібен design-review зі скрінами).
+>    **Два іменовані під-пункти закриті 2026-08-07** — це були не «стиль», а
+>    справжні дефекти скрол-локу:
+>    - `SettingsPrimitives.ConfirmModal` не мав скрол-локу взагалі
+>      (`inertBackground` закриває фокус і a11y-дерево, але не скрол) →
+>      підключено `useBodyScrollLock`.
+>    - `DeleteAccountDialog` hand-roll-ив `document.body.style.overflow =
+"hidden"` — патерн, який докстрінг `useBodyScrollLock` прямо називає
+>      недостатнім на iOS Safari (visual viewport rubber-band-ить сторінку
+>      під фіксованим оверлеєм) і який не має refcount-у → замінено спільним
+>      хуком.
+>
+>    **Залишок для наступного проходу** (повноекранні `fixed inset-0` з
+>    `role="dialog"` без `useBodyScrollLock`, 9 файлів — кожен потребує
+>    рішення «модалка над сторінкою» vs «full-page takeover», тому sweep-ом
+>    не закривається): `FinykApp.tsx`, `BarcodeScanner.tsx`,
+>    `PdfPreviewModal.tsx`, `HubSearch.tsx`, `HubChatHistoryDrawer.tsx`,
+>    `BentoCard.tsx`, `OnboardingWizard.tsx`, `FirstEntryCelebrationModal.tsx`,
+>    `AppLock.tsx`.
+>
 > 5. **SubTabs → shared** як `bar`-варіант Segmented (зараз застряг у
 >    modules/nutrition, активний таб 40px).
 > 6. **DesignShowcase.** Покриває ~25/60 компонентів; proposal-демо — форки
 >    шипнутих компонентів; 132 `text-2xs` + text-[9-10px] у showcase;
 >    DynamicThemeColorDemo/ProposalsVisual — stale #fdf9f3.
-> 7. **44px-аудит у CI.** mobile-ui-audit.spec.ts (єдина автоматична 44px
->    перевірка) не виконується жодним workflow — додати в critical-flow lane.
+> 7. ~~**44px-аудит у CI.**~~ — **закрито 2026-08-07.** Твердження «не
+>    виконується жодним workflow» було неточним: лейн жив у nightly
+>    `extended-e2e.yml`. Тепер це блокуючий job `Mobile UI audit (44px touch
+targets)` у `ci.yml`; сам status check у branch protection вмикається
+>    поза репо.
 > 8. **Mobile теми (high).** mobile.js — статична dark-only палітра при
 >    light+dark апці (23 споживачі); нема hc-режиму (web 4-mode, mobile
 >    3-mode); типографіка без семантичної шкали (140 sub-12px arbitrary,
@@ -44,9 +101,20 @@
 >    Android-сплеш без values-night; ProgressRing.tsx — третя off-brand
 >    макро-палітра; residual emerald у global.css (--c-ring/--c-selection-bg/
 >    --c-caret .dark, finyk/routine module-primary блок, hero-gradient-brand).
-> 9. **Сира типографіка ratchet.** 389 text-xs + 108 text-sm проти 1316
->    text-style-* — правило «торкнувся файлу — мігруй», старт із 3
->    nutrition-файлів (41 сайт).
+>    **Уточнено 2026-08-07:** відсутність семантичної шкали — це не косметика,
+>    а те, що блокує механічний гейт. `apps/mobile/src` дає **156** порушень
+>    12px-floor (17 `text-2xs` + 139 `text-[<12px]`) при **нулі**
+>    `.text-style-*` — тобто `check-design-conventions.mjs` не можна
+>    розширити на mobile, бо мігрувати немає куди. Порядок робіт: спершу
+>    шкала (owner-decision — які саме ролі й розміри), потім burndown, і лише
+>    тоді `apps/mobile/src` у `SCAN_DIRS`.
+> 9. **Сира типографіка ratchet** — цифри переміряні 2026-08-07: **111
+>    text-xs + 84 text-sm проти 2011 text-style-\*** (записано було 389/108
+>    проти 1316). Ратчет фактично відпрацював; nutrition-старт із 41 сайту
+>    розібраний до ~20. Правило лишається «торкнувся файлу — мігруй», але
+>    сліпий sweep заборонений: два легітимні випадки сирого розміру
+>    задокументовані в `packages/design-tokens/tailwind-preset.js` (розмір
+>    контрола; потреба саме в `line-height` 1rem).
 > 10. **Дрібне.** ~~`no-legacy-telegram-parse-mode` — dead-weight правило
 >     плагіна~~ (видалено 2026-08-06 разом із `sri-on-third-party-script`,
 >     обидва enabled ніде); storybook.md VRT-згадки ADR-0034 (пост-0082 stale); native
@@ -54,7 +122,7 @@
 >     `--c-finyk-accent`-старт hero тепер на tier-800 — звірити з
 >     «start stop matches accent» коментарем при наступному ретюні.
 
-> **Оновлено 2026-07-20 (post-waves).** Hard Rule #18 leakers **закриті**: `ManualExpenseSheet.tsx` ~416 LOC ([#348](https://github.com/SkOrDs-02/Sergeant/pull/348)), `TxRow.tsx` ~270 LOC ([#350](https://github.com/SkOrDs-02/Sergeant/pull/350)). Storage-key WHY [#351](https://github.com/SkOrDs-02/Sergeant/pull/351); `no-non-null-assertion` burndown [#353](https://github.com/SkOrDs-02/Sergeant/pull/353). Re-audit baseline: **999** production sources / **875** tests; coverage floor **89**; allowlist порожній; `no-eyebrow-drift` 2 web / 1 mobile (станом на 2026-08-05; було 27/10); production `any` **2** by-design; web exhaustive-deps **0**; mobile **9** — [`apps-mobile-exhaustive-deps.md`](../../02-engineering/architecture/apps-mobile-exhaustive-deps.md). Initiative 0017 (§2.5) code-complete; RUM validation — окремий checkpoint.
+> **Оновлено 2026-07-20 (post-waves).** Hard Rule #18 leakers **закриті**: `ManualExpenseSheet.tsx` ~416 LOC ([#348](https://github.com/SkOrDs-02/Sergeant/pull/348)), `TxRow.tsx` ~270 LOC ([#350](https://github.com/SkOrDs-02/Sergeant/pull/350)). Storage-key WHY [#351](https://github.com/SkOrDs-02/Sergeant/pull/351); `no-non-null-assertion` burndown [#353](https://github.com/SkOrDs-02/Sergeant/pull/353). Re-audit baseline: **999** production sources / **875** tests; coverage floor **89**; allowlist порожній; `no-eyebrow-drift` 2 web / 1 mobile (станом на 2026-08-05; було 27/10) — **переміряно 2026-08-07: 0/0, правила більше не існує** (ретайрнуте ADR-0081); production `any` **2** by-design; web exhaustive-deps **0** — **переміряно 2026-08-07: 5**, mobile **10** (було записано 9); обидва каталоги: [`apps-web-exhaustive-deps.md`](../../02-engineering/architecture/apps-web-exhaustive-deps.md), [`apps-mobile-exhaustive-deps.md`](../../02-engineering/architecture/apps-mobile-exhaustive-deps.md). Initiative 0017 (§2.5) code-complete; RUM validation — окремий checkpoint.
 
 > **Оновлено 2026-06-01.** §7 follow-up виконано: ESLint-правило `no-console: error` додано до `apps/web/src/**` (виключення — `*.test.*`, `__tests__/`, `*.stories.*`); три documented call-sites (`perf.ts`, `sw/debug.ts`, `analytics.ts`) отримали `eslint-disable-next-line no-console` з обґрунтуванням; `logger.ts` — disable для canonical transport; ще 5 call-сайтів (`CommandPalette.tsx`, `serverBuildIdBus.ts`, `StatusPage.tsx`, `useDemoCommands.ts` ×2) мігровані на `logger`. §9 follow-up виконано: `@typescript-eslint/no-explicit-any` підвищено до `error` для `apps/web/src/modules/**` і `apps/web/src/core/**` (виключення — тести та stories). §6 follow-up виконано: `HubReports` / `useCoachInsight` / `useWeeklyDigest` coverage.
 
@@ -390,7 +458,6 @@ UPDATE` у `kv_store`; cross-tab `onChange` через `BroadcastChannel("kv-sto
    перейменування коштувало б 15 call-site-ів заради синоніма.
 
    **Два нових борги, які створив цей прохід:**
-
    - **`SectionHeading` `2xs`/`xs`/`sm` стали синонімами.** ✅ **Закрито
      2026-08-06** на прохання власника. 73 виклики в 46 файлах переведені
      на `xs`, самі імена вилучені з `SectionHeadingSize`. Доти домовленість
@@ -1564,6 +1631,6 @@ test-file glob-ів — правило `sergeant-design/no-strict-bypass` теп
 5. ~~**Overlay positioning (P4 Phase 1)**~~ — **Done**: shared `useFloatingPanelPosition` for Popover / Tooltip / DropdownMenu (geometry in `floatingPosition.ts`; no Radix — size-limit).
 6. ~~**Overlay shell (P4 Phase 2)**~~ — **Done**: `ConfirmDialog` / `InputDialog` — `bg-black/40` scrim, `useBodyScrollLock`, InputDialog portaled; kept `alertdialog` / form semantics.
 7. **Coverage ratchet (опційно)** — floor уже **89**; наступний крок лише після headroom у CI.
-8. ~~**Catalog-sync** `apps-web-exhaustive-deps.md`~~ — **Done** (web=0); живий список у [`apps-mobile-exhaustive-deps.md`](../../02-engineering/architecture/apps-mobile-exhaustive-deps.md).
+8. ~~**Catalog-sync** `apps-web-exhaustive-deps.md`~~ — **Done**, але «web=0» більше не так: після хвилі 4 з'явилось 5 нових свідомих винятків, каталог їх фіксує. 2026-08-07 закрито хвіст: 4 з 5 директив не несли inline-WHY (каталог стверджував протилежне) — інваріанти перенесені в код поруч із директивою.
 9. ~~**Міграція `no-raw-local-storage`**~~ — **Done** (production allowlist = 0).
 10. ~~**`import/extensions: never`**~~ — **Done** ([PR #1411](https://github.com/Skords-01/Sergeant/pull/1411)).

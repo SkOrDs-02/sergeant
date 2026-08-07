@@ -14,7 +14,7 @@ import {
 } from "../_shared/primitives";
 
 /**
- * 3-tier motion budget (Hard Rule #17):
+ * 3-tier motion budget (review-only convention after ADR-0081):
  *   Tier 1 — Ambient  : skeleton, spinner, pulse  (background states)
  *   Tier 2 — Response : slide, fade, scale        (user-triggered feedback)
  *   Tier 3 — Celebrate: streak, check, number     (milestone moments only)
@@ -243,8 +243,9 @@ export function MotionSection() {
       title="Motion"
       intro={
         <>
-          Бюджет — макс. 1 ambient + 1 response одночасно (HR #17). Кожна
-          анімація обгорнута в <code>motion-safe:</code> щоб поважати OS pref
+          Бюджет — макс. 1 ambient + 1 response одночасно (конвенція,
+          review-only після ADR-0081). Кожна анімація обгорнута в{" "}
+          <code>motion-safe:</code> щоб поважати OS pref
           <code>prefers-reduced-motion: reduce</code>. Celebrate — тільки на
           milestone-моментах (7 / 30 / 100 / 365 днів).
         </>
@@ -286,7 +287,7 @@ export function MotionSection() {
       </Group>
 
       <RuleBadges
-        hardRules={[{ label: "HR #17", hint: "Animation budget — 3 tiers" }]}
+        hardRules={[]}
         lintRules={[
           {
             label: "motion-safe convention",

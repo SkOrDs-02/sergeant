@@ -21,9 +21,10 @@ export function ColorsSection() {
       intro={
         <>
           Семантичні токени з <code>:root</code> та <code>.dark</code>. Hex у
-          класах заборонено (HR #11), парні light/dark literal — теж (HR #13).
-          Сатуровані бренд-заливки під <code>text-white</code> мають вмикати{" "}
-          <code>-strong</code> компаньйон (HR #9).
+          класах заборонено — це гейтить <code>check-design-conventions</code>.
+          Парні light/dark literal, opacity-шкала і <code>-strong</code>{" "}
+          компаньйон під <code>text-white</code> лишаються обовʼязковими, але
+          review-only (ADR-0081).
         </>
       }
     >
@@ -111,17 +112,12 @@ export function ColorsSection() {
       </Group>
 
       <RuleBadges
-        hardRules={[
-          { label: "HR #8", hint: "Opacity scale" },
-          { label: "HR #9", hint: "-strong companion" },
-          { label: "HR #11", hint: "No hex in className" },
-          { label: "HR #13", hint: "No raw dark palette" },
-        ]}
+        hardRules={[]}
         lintRules={[
-          { label: "valid-tailwind-opacity" },
-          { label: "no-low-contrast-text-on-fill" },
-          { label: "no-hex-in-classname" },
-          { label: "no-raw-dark-palette" },
+          {
+            label: "check-design-conventions",
+            hint: "raw hex у className — кольори лише через токени",
+          },
         ]}
       />
     </Sec>

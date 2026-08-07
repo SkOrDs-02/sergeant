@@ -37,7 +37,7 @@ exports[`mobile routine dual-write SQL snapshot (ADR-0073 Крок 0) emits a by
   },
   {
     "params": [
-      "h1|2026-06-22|2026-06-23T00:00:00.000Z|done|dev-snapshot",
+      "h1|2026-06-22|done|dev-snapshot",
       "u1",
       "h1",
       "2026-06-22",
@@ -56,7 +56,7 @@ exports[`mobile routine dual-write SQL snapshot (ADR-0073 Крок 0) emits a by
   },
   {
     "params": [
-      "h1|2026-06-21|2026-06-23T00:00:00.000Z|undone|dev-snapshot",
+      "h1|2026-06-21|undone|dev-snapshot",
       "u1",
       "h1",
       "2026-06-21",

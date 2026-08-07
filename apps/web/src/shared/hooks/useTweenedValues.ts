@@ -68,7 +68,7 @@ export function useTweenedValues(
     };
     // `values` intentionally omitted: including it would restart the tween
     // every frame. We only retarget when `target`/`duration` change.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `values` навмисно поза deps: інакше tween рестартує щокадру; retarget лише на `target`
   }, [target, duration]);
 
   return values;

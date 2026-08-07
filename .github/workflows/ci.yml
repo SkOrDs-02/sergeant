@@ -633,6 +633,90 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+  mobile-ui-audit:
+    name: Mobile UI audit (44px touch targets)
+    runs-on: ubuntu-latest
+    # No `needs:` — same rationale as critical-flow: a lint/test failure in
+    # `check` must not skip this gate.
+    #
+    # Промоутнуто з nightly (`extended-e2e.yml`) у блокуючий PR-гейт
+    # 2026-08-07. Лейн `apps/web/tests/mobile/*.spec.ts` — ЄДИНИЙ механічний
+    # enforcement 44×44 touch-target floor (WCAG 2.5.5 / Apple HIG) під
+    # `pointer: coarse`, плюс no-sideways-scroll і no-truncated-labels.
+    # Раніше він жив лише в nightly, бо `deep-route-viewport.spec.ts ::
+    # FINYK_ASSETS` падав у module error boundary: blanket API-мок віддає
+    # `{ ok: true }` на КОЖЕН GET, а `useMonobankWebhook` робив
+    # `(webhookAccounts ?? []).filter(...)` — `??` не ловить truthy не-масив,
+    # тож `.filter` кидав TypeError синхронно під час рендера. Фікс
+    # (`Array.isArray(...) ? ... : []`, дзеркалить `usePrivatbank.ts`) плюс
+    # регресійний тест у `FinykApp.test.tsx` уже на main; лейн зелений у
+    # nightly 2026-08-06 і 2026-08-07 — звідси промоушен.
+    #
+    # Постгрес/API-сервер не потрібні: специ мокають `**/api/**` повністю
+    # (route.fulfill), а playwright.mobile.config.ts сам білдить web і
+    # піднімає vite preview через webServer (VERCEL-unset outDir).
+    timeout-minutes: 20
+
+    steps:
+      # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      # pnpm/action-setup v6.0.3 (SHA-pinned for supply-chain hardening)
+      - uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093
+
+      # actions/setup-node v6.4.0 (SHA-pinned for supply-chain hardening)
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: "22"
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build @sergeant/db-schema
+        # The web build imports `@sergeant/db-schema/sqlite`, which the
+        # package's exports map resolves to dist/ — same step as in
+        # critical-flow. Cheap (~5s, tsc only).
+        run: pnpm --filter @sergeant/db-schema build
+
+      - name: Get Playwright version
+        id: pw-version
+        run: echo "version=$(pnpm --filter @sergeant/web exec playwright --version | head -1)" >> "$GITHUB_OUTPUT"
+
+      # actions/cache v5.0.5 (SHA-pinned for supply-chain hardening)
+      - name: Cache Playwright browsers
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae
+        id: pw-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-${{ runner.os }}-${{ steps.pw-version.outputs.version }}
+
+      - name: Install Playwright Chromium
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: pnpm --filter @sergeant/web exec playwright install --with-deps chromium
+
+      - name: Install Playwright system deps (cached browsers)
+        if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: pnpm --filter @sergeant/web exec playwright install-deps chromium
+
+      - name: Run mobile UI audit suite
+        # webServer у playwright.mobile.config.ts сам виконує
+        # `npm run build && npm run preview -- --port 4173` (timeout 360s),
+        # тому окремих build/preview кроків тут нема.
+        run: pnpm --filter @sergeant/web exec playwright test -c playwright.mobile.config.ts
+        env:
+          CI: "true"
+
+      - name: Upload Playwright report
+        if: always()
+        # actions/upload-artifact v7.0.0 (SHA-pinned)
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: playwright-mobile-ui-audit-report
+          path: apps/web/playwright-report
+          if-no-files-found: ignore
+          retention-days: 7
+
   server-integration:
     name: Server integration tests (Testcontainers)
     runs-on: ubuntu-latest
@@ -814,7 +898,7 @@ jobs:
     name: Pipeline duration (p95 trend)
     runs-on: ubuntu-latest
     # Run after all main jobs; report even when some fail.
-    needs: [check, coverage, a11y, critical-flow]
+    needs: [check, coverage, a11y, critical-flow, mobile-ui-audit]
     if: always()
     permissions:
       contents: read

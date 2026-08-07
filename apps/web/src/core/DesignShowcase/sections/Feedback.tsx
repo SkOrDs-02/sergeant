@@ -29,8 +29,8 @@ export function FeedbackSection() {
       intro={
         <>
           Badge, Spinner, Skeleton, Avatar, ProgressRing, Tooltip. Анімації
-          обгорнуті в <code>motion-safe:</code> (HR #17); статуси завжди через
-          variants — ніяких сирих <code>bg-green-500</code>.
+          обгорнуті в <code>motion-safe:</code>; статуси завжди через variants —
+          ніяких сирих <code>bg-green-500</code>.
         </>
       }
     >
@@ -148,16 +148,7 @@ export function FeedbackSection() {
         />
       </Group>
 
-      <RuleBadges
-        hardRules={[
-          { label: "HR #17", hint: "Motion budget" },
-          { label: "HR #14", hint: "focus-visible" },
-        ]}
-        lintRules={[
-          { label: "no-bare-empty-text" },
-          { label: "no-ellipsis-dots" },
-        ]}
-      />
+      <RuleBadges hardRules={[]} lintRules={[]} />
     </Sec>
   );
 }

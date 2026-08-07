@@ -10,6 +10,7 @@ import { Icon } from "@shared/components/ui/Icon";
 import { Card } from "@shared/components/ui/Card";
 import { Switch } from "@shared/components/ui/Switch";
 import { Skeleton, SkeletonText } from "@shared/components/ui/Skeleton";
+import { useBodyScrollLock } from "@shared/hooks/useBodyScrollLock";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import { messages } from "@shared/i18n/uk";
 
@@ -254,6 +255,9 @@ export function ConfirmModal({
     onEscape: onCancel,
     inertBackground: true,
   });
+  // `inertBackground` закриває фокус і a11y-дерево, але НЕ скрол — під
+  // повноекранним `fixed inset-0` сторінка позаду лишалась прокручуваною.
+  useBodyScrollLock(open);
 
   if (!open) return null;
   return (

@@ -165,13 +165,12 @@ export function ElevationSection() {
       </Group>
 
       <RuleBadges
-        hardRules={[
-          { label: "HR #11", hint: "No hex in className" },
-          { label: "HR #18", hint: "Module-size discipline" },
-        ]}
+        hardRules={[{ label: "HR #18", hint: "Module-size discipline" }]}
         lintRules={[
-          { label: "no-rounded-lg" },
-          { label: "no-low-contrast-text-on-fill" },
+          {
+            label: "check-design-conventions",
+            hint: "raw hex у className — кольори лише через токени",
+          },
         ]}
       />
     </Sec>
