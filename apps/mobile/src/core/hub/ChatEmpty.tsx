@@ -28,7 +28,7 @@ const MODULE_ACCENT = {
   finyk: "#0f766e", // teal-700 (2026-07: was emerald-500)
   fizruk: "#14b8a6",
   nutrition: "#92cc17",
-  routine: "#f97066",
+  routine: "#eb7691",
 } as const;
 
 export interface ChatEmptyProps {

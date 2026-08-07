@@ -154,7 +154,7 @@
     /* Module glow drop-shadows for bottom nav icons (active state). */
     --shadow-finyk-nav: 0 0 8px rgba(15, 118, 110, 0.3); /* teal-700 (2026-07: was emerald-500) */
     --shadow-fizruk-nav: 0 0 8px rgba(14, 116, 144, 0.3);
-    --shadow-routine-nav: 0 0 8px rgba(249, 112, 102, 0.3);
+    --shadow-routine-nav: 0 0 8px rgba(235, 118, 145, 0.3);
     --shadow-nutrition-nav: 0 0 8px rgba(146, 204, 23, 0.3); /* brand lime-500 #92cc17 (2026-08: was stock Tailwind lime-500 #84cc16) */
 
     /* Destructive hover ring (Button variant="destructive"). */
@@ -210,7 +210,7 @@
        AI-DANGER: не «оптимізуй» назад на -700 — на фоні сторінки воно
        не проходить. Пари проти --c-bg додані в contrast.test.js. */
     --c-fizruk-accent: 21 94 117; /* #155e75 — cyan-800 */
-    --c-routine-accent: 161 51 51; /* #a13333 — coral-800 (той самий зсув, що fizruk/nutrition: на #ecebe7 coral-700 давав 4.45) */
+    --c-routine-accent: 141 66 86; /* #8d4256 — coral-800 (той самий зсув, що fizruk/nutrition: на #ecebe7 coral-700 давав 4.45) */
     --c-nutrition-accent: 70 98 18; /* #466212 — lime-800 */
 
     /* Semantic aliases (design-token contract) — map 1:1 to existing vars.
@@ -316,9 +316,9 @@
     --c-fizruk-tile: 21 94 117; /* cyan-800 */
     --c-fizruk-tile-border: 21 94 117; /* cyan-800 */
 
-    --c-routine-soft: 255 245 243; /* coral-50 — parity with `brandColors.coral[50]` */
-    --c-routine-soft-border: 255 210 200; /* coral-200 */
-    --c-routine-soft-hover: 255 232 227; /* coral-100 */
+    --c-routine-soft: 255 245 246; /* coral-50 — parity with `brandColors.coral[50]` */
+    --c-routine-soft-border: 254 211 219; /* coral-200 */
+    --c-routine-soft-hover: 255 231 235; /* coral-100 */
 
     --c-nutrition-soft: 248 254 231; /* lime-50 — parity with `brandColors.lime[50]` */
     --c-nutrition-soft-border: 217 249 157; /* lime-200 */
@@ -335,7 +335,7 @@
     --c-brand-soft-fg: 41 37 36; /* stone-800 — neutral hub ink on brand-soft */
     --c-finyk-soft-fg: 17 94 89; /* teal-800 */
     --c-fizruk-soft-fg: 21 94 117; /* cyan-800 */
-    --c-routine-soft-fg: 194 58 58; /* coral-700 */
+    --c-routine-soft-fg: 172 76 100; /* coral-700 */
     --c-nutrition-soft-fg: 70 98 18; /* lime-800 */
 
     /* Status `-soft-fg` — deep ink on the pale `-100` status surfaces
@@ -370,11 +370,11 @@
        coral-600 3.80:1 · coral-700 5.34:1 · coral-800 6.9:1 ·
        amber-700 5.02:1. Шість серій мапляться на чотири видимі щаблі —
        3/7 і 14/30 діляться попарно. */
-    --c-streak-tier-3: 230 77 77; /* coral-600 */
-    --c-streak-tier-7: 230 77 77; /* coral-600 */
-    --c-streak-tier-14: 194 58 58; /* coral-700 */
-    --c-streak-tier-30: 194 58 58; /* coral-700 */
-    --c-streak-tier-60: 161 51 51; /* coral-800 */
+    --c-streak-tier-3: 209 92 122; /* coral-600 */
+    --c-streak-tier-7: 209 92 122; /* coral-600 */
+    --c-streak-tier-14: 172 76 100; /* coral-700 */
+    --c-streak-tier-30: 172 76 100; /* coral-700 */
+    --c-streak-tier-60: 141 66 86; /* coral-800 */
     /* Сота доба — святкування. Власний щабель, а не `--c-celebration`:
        amber-400 дає 1.66:1 на білому, тож для світлої теми береться
        AA-компаньйон amber-700 (той самий, що `warning-strong`). */
@@ -403,7 +403,7 @@
        depends on Q3 landing-direction lock. */
     --c-chart-finyk: 17 94 89; /* teal-800 — 5.12:1 vs cream (2026-07: was emerald-700) */
     --c-chart-fizruk: 21 94 117; /* cyan-800 — 7.5:1 vs cream */
-    --c-chart-routine: 194 58 58; /* coral-700 — 5.06:1 vs cream */
+    --c-chart-routine: 172 76 100; /* coral-700 — 5.06:1 vs cream */
     --c-chart-nutrition: 70 98 18; /* lime-800 — 6.64:1 vs cream */
 
     /* Chart STATUS colors — same contract as `--c-chart-{module}` above,
@@ -440,7 +440,7 @@
        light is the worst case). All clear the 3:1 non-text floor. */
     --c-chart-finyk-on-hero: 45 212 191; /* teal-400 — 4.1:1 vs teal-800 */
     --c-chart-fizruk-on-hero: 34 211 238; /* cyan-400 — 4.0:1 vs cyan-800 */
-    --c-chart-routine-on-hero: 255 180 165; /* coral-300 — 3.1:1 vs coral-700 */
+    --c-chart-routine-on-hero: 252 179 193; /* coral-300 — 3.1:1 vs coral-700 */
     --c-chart-nutrition-on-hero: 176 230 54; /* lime-400 — 4.7:1 vs lime-800 */
     --c-chart-accent-on-hero: 45 212 191; /* teal-400 — matches finyk */
     --c-chart-success-on-hero: 52 211 153; /* emerald-400 */
@@ -572,7 +572,7 @@
        counterpart of the light strong tier in `:root` (spec § 5). */
     --c-finyk-accent: 45 212 191; /* #2dd4bf — teal-400 (2026-07: was emerald-400 #34d399) */
     --c-fizruk-accent: 34 211 238; /* #22d3ee — cyan-400 */
-    --c-routine-accent: 255 140 120; /* #ff8c78 — coral-400 */
+    --c-routine-accent: 246 141 164; /* #f68da4 — coral-400 */
     --c-nutrition-accent: 176 230 54; /* #b0e636 — lime-400 */
 
     /* Bottom-nav glow — dark override. `:root` only defines the light-tier
@@ -586,11 +586,11 @@
 
     /* Драбина «жару» серії — темна тема. Тут працює світло, а не тінь,
        тож щаблі йдуть від блідого до насиченого й усі шість видимі. */
-    --c-streak-tier-3: 255 180 166; /* coral-300 */
-    --c-streak-tier-7: 255 140 120; /* coral-400 */
-    --c-streak-tier-14: 249 112 102; /* coral-500 */
-    --c-streak-tier-30: 230 77 77; /* coral-600 */
-    --c-streak-tier-60: 194 58 58; /* coral-700 */
+    --c-streak-tier-3: 252 179 193; /* coral-300 */
+    --c-streak-tier-7: 246 141 164; /* coral-400 */
+    --c-streak-tier-14: 235 118 145; /* coral-500 */
+    --c-streak-tier-30: 209 92 122; /* coral-600 */
+    --c-streak-tier-60: 172 76 100; /* coral-700 */
     --c-streak-tier-100: 251 191 36; /* amber-400 — святкування */
 
     /* `--c-celebration` dark override — matches `celebrationColors.dark`
@@ -691,9 +691,16 @@
     --c-fizruk-tile: 255 255 255; /* white */
     --c-fizruk-tile-border: 255 255 255; /* white */
 
-    --c-routine-soft: 159 36 30; /* coral-900 (≈ red-900 tuned) */
-    --c-routine-soft-border: 185 54 48; /* coral-800 */
-    --c-routine-soft-hover: 185 54 48; /* coral-800 */
+    /* AI-CONTEXT (Р2, 2026-08-07): значення НЕ рампові. Тут раніше стояли
+       #9f241e і #b93630, підписані «coral-900/800», але в рампі їх не було
+       (off-ramp сироти). Заразом пара soft-fg × soft-hover давала 4.27:1,
+       тобто НИЖЧЕ AA — дефект, що існував до цієї зміни. Пряме перенесення
+       на rose-900/-800 ламало межу (border vs panel 2.60). Обрана
+       комбінація — єдина, де проходять усі три пороги:
+       fg на soft 7.34 · fg на hover 4.50 · border vs panel 3.39. */
+    --c-routine-soft: 129 62 80; /* #813e50 — L-matched до старого #9f241e */
+    --c-routine-soft-border: 172 76 100; /* rose-700 */
+    --c-routine-soft-hover: 172 76 100; /* rose-700 */
 
     --c-nutrition-soft: 63 98 18; /* lime-800 — brighter than lime-900 for readability */
     --c-nutrition-soft-border: 86 124 15; /* lime-700 */
@@ -707,7 +714,14 @@
        they stay for soft-buttons/badges, spec § 2 point 3). */
     --hero-ink-finyk: linear-gradient(160deg, #12201a 0%, #0f1a15 100%);
     --hero-ink-fizruk: linear-gradient(160deg, #101d20 0%, #0e1719 100%);
-    --hero-ink-routine: linear-gradient(160deg, #1d1614 0%, #171110 100%);
+    /* AI-CONTEXT (Р2, 2026-08-07): підтон зсунуто 13°→340° / 9°→343°.
+       Старі значення підбирались під коралову родину (hue 0–10°), а троянда
+       сидить на 344–346° — по інший бік від червоного. Різниця майже
+       невидима наодинці, але hero-карта несе rose-400 border і glow, і над
+       теплішим фоном холодніший акцент давав би брудну межу. Світлота
+       збережена (±0.0007), усі пари не гіршають: text 16.67 (було 16.35),
+       muted 5.92 (5.81), rose-400 8.03 (7.87). */
+    --hero-ink-routine: linear-gradient(160deg, #1c1316 0%, #171012 100%);
     --hero-ink-nutrition: linear-gradient(160deg, #171f10 0%, #12180d 100%);
 
     /* Soft-fill FOREGROUND (dark) — bright `-300` accent tier. The module
@@ -720,7 +734,7 @@
     --c-brand-soft-fg: 214 211 209; /* stone-300 — neutral hub ink on dark brand-soft */
     --c-finyk-soft-fg: 94 234 212; /* teal-300 */
     --c-fizruk-soft-fg: 103 232 249; /* cyan-300 */
-    --c-routine-soft-fg: 255 212 203; /* coral-200 — AA on coral-900 */
+    --c-routine-soft-fg: 255 231 235; /* rose-100 — 4.50:1 на hover (rose-200 давав 4.31) */
     --c-nutrition-soft-fg: 200 242 100; /* lime-300 */
 
     /* Status `-soft-fg` (dark) — bright `-300` ink on the deep `-800/-900`
@@ -735,7 +749,7 @@
        Sync with `:root` chart vars + `chart-{module}` Tailwind palette. */
     --c-chart-finyk: 45 212 191; /* teal-400 (2026-07: was emerald-400) */
     --c-chart-fizruk: 34 211 238; /* cyan-400 */
-    --c-chart-routine: 255 140 120; /* coral-400 */
+    --c-chart-routine: 246 141 164; /* coral-400 */
     --c-chart-nutrition: 176 230 54; /* lime-400 */
 
     /* Chart STATUS colors (dark) — brighter -400 tier, mirrors the
@@ -763,8 +777,8 @@
     --c-finyk-border-dark: 15 118 110; /* teal-700 — mirrors moduleColors.finyk.primary (2026-07: was emerald-500) */
     --c-fizruk-surface-dark: 14 116 144; /* cyan-700 — mirrors moduleColors.fizruk.primary (was teal-500) */
     --c-fizruk-border-dark: 14 116 144; /* cyan-700 — mirrors moduleColors.fizruk.primary (was teal-500) */
-    --c-routine-surface-dark: 249 112 102; /* coral-500 */
-    --c-routine-border-dark: 249 112 102; /* coral-500 */
+    --c-routine-surface-dark: 235 118 145; /* coral-500 */
+    --c-routine-border-dark: 235 118 145; /* coral-500 */
     --c-nutrition-surface-dark: 176 230 54; /* lime-400 — WCAG AA ≥4.5:1 on dark panel */
     --c-nutrition-border-dark: 176 230 54; /* lime-400 */
   }
@@ -916,8 +930,8 @@
     --c-finyk-soft-border: 17 94 89; /* teal-800 — solid edge (2026-07: was emerald-800) */
     --c-fizruk-soft: 165 243 252; /* cyan-200 */
     --c-fizruk-soft-border: 21 94 117;
-    --c-routine-soft: 255 210 200; /* coral-200 */
-    --c-routine-soft-border: 159 36 30;
+    --c-routine-soft: 254 211 219; /* coral-200 */
+    --c-routine-soft-border: 117 57 73;
     --c-nutrition-soft: 217 249 157; /* lime-200 */
     --c-nutrition-soft-border: 63 98 18;
     /* `-soft-hover` — one tier deeper than `-soft` above (the light-theme
@@ -927,7 +941,7 @@
     --c-brand-soft-hover: 214 211 209; /* stone-300 */
     --c-finyk-soft-hover: 94 234 212; /* teal-300 */
     --c-fizruk-soft-hover: 103 232 249; /* cyan-300 */
-    --c-routine-soft-hover: 255 180 166; /* coral-300 */
+    --c-routine-soft-hover: 252 179 193; /* coral-300 */
     --c-nutrition-soft-hover: 200 242 100; /* lime-300 */
 
     /* Soft-fill foreground (HC light) — deepest `-900` ink for ≥7:1 AAA on
@@ -937,7 +951,7 @@
     --c-brand-soft-fg: 28 25 23; /* stone-900 — neutral hub ink on brand-soft (AAA) */
     --c-finyk-soft-fg: 19 78 74; /* teal-900 */
     --c-fizruk-soft-fg: 22 78 99; /* cyan-900 */
-    --c-routine-soft-fg: 134 46 46; /* coral-900 — hue-capped ≈6.4:1 (AA) */
+    --c-routine-soft-fg: 117 57 73; /* coral-900 — hue-capped ≈6.4:1 (AA) */
     --c-nutrition-soft-fg: 59 83 20; /* lime-900 */
 
     /* Status `-soft-fg` (HC light) — deepest `-900` ink for ≥7:1 AAA on the
@@ -957,7 +971,7 @@
        inherit unchanged. */
     --c-chart-finyk: 17 94 89; /* teal-800 (2026-07: was emerald-700) */
     --c-chart-fizruk: 21 94 117; /* cyan-800 */
-    --c-chart-routine: 194 58 58; /* coral-700 */
+    --c-chart-routine: 172 76 100; /* coral-700 */
     --c-chart-nutrition: 70 98 18; /* lime-800 */
   }
 
@@ -1002,8 +1016,8 @@
     --c-finyk-soft-border: 20 184 166; /* teal-500 */
     --c-fizruk-soft: 14 116 144; /* cyan-700 */
     --c-fizruk-soft-border: 6 182 212; /* cyan-500 */
-    --c-routine-soft: 185 54 48; /* coral-800 */
-    --c-routine-soft-border: 255 140 120;
+    --c-routine-soft: 161 72 95; /* #a1485f — L-matched до старого #b93630; тримає 3.08 vs panel */
+    --c-routine-soft-border: 246 141 164;
     --c-nutrition-soft: 86 124 15; /* lime-700 */
     --c-nutrition-soft-border: 176 230 54;
     /* `-soft-hover` — one tier LIGHTER than `-soft` above (the dark-theme
@@ -1013,7 +1027,7 @@
     --c-brand-soft-hover: 87 83 78; /* stone-600 */
     --c-finyk-soft-hover: 13 148 136; /* teal-600 */
     --c-fizruk-soft-hover: 8 145 178; /* cyan-600 */
-    --c-routine-soft-hover: 194 58 58; /* coral-700 */
+    --c-routine-soft-hover: 172 76 100; /* coral-700 */
     --c-nutrition-soft-hover: 113 163 13; /* lime-600 */
 
     /* Soft-fill foreground (HC dark) — white ink for maximum contrast on
@@ -1040,7 +1054,7 @@
        cascades on top of `.dark`, so those vars inherit unchanged. */
     --c-chart-finyk: 94 234 212; /* teal-300 (2026-07: was emerald-300) */
     --c-chart-fizruk: 103 232 249; /* cyan-300 */
-    --c-chart-routine: 255 180 165; /* coral-300 */
+    --c-chart-routine: 252 179 193; /* coral-300 */
     --c-chart-nutrition: 217 249 157; /* lime-300 */
   }
 
@@ -1173,8 +1187,8 @@
           text-hero-ink, mirrored here one tier deeper. */
     --hero-grad-routine: linear-gradient(
       135deg,
-      #a13333,
-      #c23a3a
+      #8d4256,
+      #ac4c64
     ); /* coral-800 → coral-700 — design-audit F2: light-theme hero text
           (hero-ink #fdf9f3) needs ≥4.5:1 for caption/body; the old
           →coral-400 light end capped even full-opacity ink at 2.16:1
@@ -1217,7 +1231,7 @@
        2 = cyan left, 3 = coral bottom. No 4th corner (perf on mobile). */
     --bg-mesh-1: rgba(52, 211, 153, 0.12); /* emerald-400 — top-right */
     --bg-mesh-2: rgba(34, 211, 238, 0.08); /* cyan-400 — left */
-    --bg-mesh-3: rgba(255, 140, 120, 0.08); /* coral-400 — bottom */
+    --bg-mesh-3: rgba(246, 141, 164, 0.08); /* coral-400 — bottom */
 
     /* Shadows dark — much stronger outer drops + faint bright inset. */
     --shadow-card-v2:
@@ -1273,7 +1287,7 @@
        contract while keeping the utility valid. */
     --hero-grad-finyk: linear-gradient(#115e59 0 0); /* teal-800 */
     --hero-grad-fizruk: linear-gradient(#155e75 0 0); /* cyan-800 */
-    --hero-grad-routine: linear-gradient(#c23a3a 0 0); /* coral-700 */
+    --hero-grad-routine: linear-gradient(#ac4c64 0 0); /* coral-700 */
     --hero-grad-nutrition: linear-gradient(#466212 0 0); /* lime-800 */
   }
 
@@ -1304,11 +1318,13 @@
        falling back to the near-neutral Chornylo hero. */
     --hero-grad-finyk: linear-gradient(#2dd4bf 0 0); /* teal-400 */
     --hero-grad-fizruk: linear-gradient(#06b6d4 0 0); /* cyan-500 */
-    --hero-grad-routine: linear-gradient(#ff8c78 0 0); /* coral-400 */
+    --hero-grad-routine: linear-gradient(#f68da4 0 0); /* coral-400 */
     --hero-grad-nutrition: linear-gradient(#b0e636 0 0); /* lime-400 */
     --hero-ink-finyk: linear-gradient(#134e4a 0 0); /* teal-900 */
     --hero-ink-fizruk: linear-gradient(#164e63 0 0); /* cyan-900 */
-    --hero-ink-routine: linear-gradient(#7f1d1d 0 0); /* red-900 */
+    --hero-ink-routine: linear-gradient(
+      #753949 0 0
+    ); /* rose-900 (був red-900 #7f1d1d — чужа родина) */
     --hero-ink-nutrition: linear-gradient(#365314 0 0); /* lime-900 */
   }
 }

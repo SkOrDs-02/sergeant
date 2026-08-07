@@ -43,16 +43,16 @@ exports[`@sergeant/design-tokens — mobile.js > mobile.spacing scale is stable 
 exports[`@sergeant/design-tokens — tokens.js > brandColors matrix is stable (emerald/teal/cyan/cream/coral/lime/stone scales) 1`] = `
 {
   "coral": {
-    "100": "#ffe8e3",
-    "200": "#ffd4cb",
-    "300": "#ffb4a6",
-    "400": "#ff8c78",
-    "50": "#fff5f3",
-    "500": "#f97066",
-    "600": "#e64d4d",
-    "700": "#c23a3a",
-    "800": "#a13333",
-    "900": "#862e2e",
+    "100": "#ffe7eb",
+    "200": "#fed3db",
+    "300": "#fcb3c1",
+    "400": "#f68da4",
+    "50": "#fff5f6",
+    "500": "#eb7691",
+    "600": "#d15c7a",
+    "700": "#ac4c64",
+    "800": "#8d4256",
+    "900": "#753949",
   },
   "cream": {
     "100": "#fdf9f3",
@@ -129,7 +129,7 @@ exports[`@sergeant/design-tokens — tokens.js > chartPalette / chartPaletteList
 {
   "1": "#10b981",
   "2": "#14b8a6",
-  "3": "#f97066",
+  "3": "#eb7691",
   "4": "#92cc17",
   "5": "#60a5fa",
   "6": "#a78bfa",
@@ -142,7 +142,7 @@ exports[`@sergeant/design-tokens — tokens.js > chartPalette / chartPaletteList
 [
   "#10b981",
   "#14b8a6",
-  "#f97066",
+  "#eb7691",
   "#92cc17",
   "#60a5fa",
   "#a78bfa",
@@ -154,7 +154,7 @@ exports[`@sergeant/design-tokens — tokens.js > chartPalette / chartPaletteList
 exports[`@sergeant/design-tokens — tokens.js > chartPalette / chartPaletteList / chartHex keep the same ordered palette 3`] = `
 {
   "carbs": "#567c0f",
-  "fat": "#c23a3a",
+  "fat": "#ac4c64",
   "limit": "#ef4444",
   "neutral": "#8a968e",
   "protein": "#0e7490",
@@ -205,8 +205,8 @@ exports[`@sergeant/design-tokens — tokens.js > moduleAccentRgb is stable (snap
     "strong": "70 98 18",
   },
   "routine": {
-    "default": "249 112 102",
-    "strong": "194 58 58",
+    "default": "235 118 145",
+    "strong": "172 76 100",
   },
 }
 `;
@@ -232,10 +232,10 @@ exports[`@sergeant/design-tokens — tokens.js > moduleColors define canonical f
     "surfaceAlt": "#effccb",
   },
   "routine": {
-    "primary": "#f97066",
-    "secondary": "#ff8c78",
-    "surface": "#fff5f3",
-    "surfaceAlt": "#ffe8e3",
+    "primary": "#eb7691",
+    "secondary": "#f68da4",
+    "surface": "#fff5f6",
+    "surfaceAlt": "#ffe7eb",
   },
 }
 `;

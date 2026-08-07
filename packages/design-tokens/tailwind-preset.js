@@ -285,7 +285,7 @@ const preset = {
         "chart-finyk": "rgb(var(--c-chart-finyk, 17 94 89) / <alpha-value>)", // teal-800 — 5.12:1 (2026-07: was emerald-700)
         "chart-fizruk": "rgb(var(--c-chart-fizruk, 21 94 117) / <alpha-value>)", // cyan-800 — 7.5:1 (v2 redesign: was teal-700 5.22:1)
         "chart-routine":
-          "rgb(var(--c-chart-routine, 194 58 58) / <alpha-value>)", // coral-700 — 5.06:1
+          "rgb(var(--c-chart-routine, 172 76 100) / <alpha-value>)", // coral-700 — 5.06:1
         "chart-nutrition":
           "rgb(var(--c-chart-nutrition, 70 98 18) / <alpha-value>)", // lime-800 — 6.64:1
 
@@ -372,7 +372,7 @@ const preset = {
           DEFAULT: moduleColors.routine.primary,
           secondary: moduleColors.routine.secondary,
           surface: moduleColors.routine.surface,
-          // Tint крок між surface (coral-50 #fff5f3) та surfaceAlt (coral-100 #ffe8e3) —
+          // Tint крок між surface (coral-50 #fff5f6) та surfaceAlt (coral-100 #ffe7eb) —
           // використовується для виділення активного дня / виконаного слота в календарі.
           surface2: "#ffeeeb",
           surfaceAlt: moduleColors.routine.surfaceAlt,
@@ -598,7 +598,7 @@ const preset = {
         glow: "0 0 0 3px var(--focus-ring-color, rgba(20, 184, 166, 0.15))",
         "glow-teal": "0 0 0 3px rgba(20, 184, 166, 0.15)",
         "glow-cyan": "0 0 0 3px rgba(14, 116, 144, 0.15)",
-        "glow-coral": "0 0 0 3px rgba(249, 112, 102, 0.15)",
+        "glow-coral": "0 0 0 3px rgba(235, 118, 145, 0.15)",
         "glow-lime": "0 0 0 3px rgba(146, 204, 23, 0.15)",
         // «Чорнило» accent glow — a luminescent tier-400 halo for solid
         // accent controls (module Buttons, spec § 4: glow 24px/35%),
@@ -608,7 +608,7 @@ const preset = {
         // 2026-08 design-audit T10 — zero consumers.
         "glow-accent-teal": "0 0 24px rgba(45, 212, 191, 0.35)", // teal-400 — finyk accent glow (2026-07)
         "glow-accent-cyan": "0 0 24px rgba(34, 211, 238, 0.35)",
-        "glow-accent-coral": "0 0 24px rgba(255, 140, 120, 0.35)",
+        "glow-accent-coral": "0 0 24px rgba(246, 141, 164, 0.35)",
         "glow-accent-lime": "0 0 24px rgba(176, 230, 54, 0.35)",
         // «Чорнило» hero inset-glow — a luminescent tier-400 halo inside
         // the card edge (spec § 3: depth = glow, not down-shadow). 40px
@@ -619,7 +619,7 @@ const preset = {
         // 2026-08 design-audit T10 — zero consumers.
         "glow-inset-teal": "inset 0 0 40px rgba(45, 212, 191, 0.08)", // teal-400 — finyk hero (2026-07)
         "glow-inset-cyan": "inset 0 0 40px rgba(34, 211, 238, 0.08)",
-        "glow-inset-coral": "inset 0 0 40px rgba(255, 140, 120, 0.08)",
+        "glow-inset-coral": "inset 0 0 40px rgba(246, 141, 164, 0.08)",
         "glow-inset-lime": "inset 0 0 40px rgba(176, 230, 54, 0.08)",
         // «Чорнило» hero light glow (spec § 3 point 2) — a soft downward
         // colour shadow, not a halo. Colour = the light-tier
@@ -695,7 +695,7 @@ const preset = {
         "hero-cyan":
           "linear-gradient(135deg, #ecfeff 0%, #cffafe 50%, #a5f3fc 100%)",
         "hero-coral":
-          "linear-gradient(135deg, #fff5f3 0%, #ffe8e3 50%, #ffd4cb 100%)",
+          "linear-gradient(135deg, #fff5f6 0%, #ffe7eb 50%, #fed3db 100%)",
         "hero-lime":
           "linear-gradient(135deg, #f8fee7 0%, #effccb 50%, #dff99d 100%)",
 
@@ -706,7 +706,7 @@ const preset = {
         // Card gradients (subtle). `card-emerald` (pre-teal-migration
         // orphan) removed 2026-08 design-audit T10 — zero consumers.
         "card-teal": "linear-gradient(135deg, #f0fdfa 0%, #ffffff 100%)",
-        "card-coral": "linear-gradient(135deg, #fff5f3 0%, #ffffff 100%)",
+        "card-coral": "linear-gradient(135deg, #fff5f6 0%, #ffffff 100%)",
         "card-lime": "linear-gradient(135deg, #f8fee7 0%, #ffffff 100%)",
 
         // Dark-mode overlays for module hero Card variants. Layered on top

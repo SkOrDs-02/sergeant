@@ -52,8 +52,8 @@
   --color-finyk-soft: #f0fdfa;
   --color-fizruk: #0e7490;
   --color-fizruk-soft: #ecfeff;
-  --color-routine: #f97066;
-  --color-routine-soft: #fff5f3;
+  --color-routine: #eb7691;
+  --color-routine-soft: #fff5f6;
   --color-nutrition: #466212;
   --color-nutrition-soft: #f8fee7;
 
@@ -85,7 +85,7 @@
   /* Акценти модулів у їхній ink-ролі — brandColors.*[400]. */
   --color-finyk-glow: #2dd4bf;
   --color-fizruk-glow: #22d3ee;
-  --color-routine-glow: #ff8c78;
+  --color-routine-glow: #f68da4;
   --color-nutrition-glow: #b0e636;
 
   --radius-card: 24px;

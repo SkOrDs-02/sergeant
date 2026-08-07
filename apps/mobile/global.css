@@ -64,10 +64,10 @@
     --c-fizruk-soft-hover: 207 250 254; /* cyan-100 */
     --c-fizruk-soft-fg: 21 94 117; /* cyan-800 */
 
-    --c-routine-soft: 255 245 243; /* coral-50 */
-    --c-routine-soft-border: 255 210 200; /* coral-200 */
-    --c-routine-soft-hover: 255 232 227; /* coral-100 */
-    --c-routine-soft-fg: 194 58 58; /* coral-700 */
+    --c-routine-soft: 255 245 246; /* coral-50 */
+    --c-routine-soft-border: 254 211 219; /* coral-200 */
+    --c-routine-soft-hover: 255 231 235; /* coral-100 */
+    --c-routine-soft-fg: 172 76 100; /* coral-700 */
 
     --c-nutrition-soft: 248 254 231; /* lime-50 */
     --c-nutrition-soft-border: 217 249 157; /* lime-200 */
@@ -78,7 +78,7 @@
        `bg-chart-{module}` progress fills used by the hub report cards. */
     --c-chart-finyk: 17 94 89; /* teal-800 */
     --c-chart-fizruk: 21 94 117; /* cyan-800 */
-    --c-chart-routine: 194 58 58; /* coral-700 */
+    --c-chart-routine: 172 76 100; /* coral-700 */
     --c-chart-nutrition: 70 98 18; /* lime-800 */
 
     /* Semantic A11y / states tokens — mirror apps/web/src/styles/theme.css.
@@ -99,7 +99,7 @@
 
     /* Celebration / gamification tokens */
     --c-celebration: 251 191 36; /* amber-400 */
-    --c-streak-glow: 249 112 102; /* coral-500 */
+    --c-streak-glow: 235 118 145; /* coral-500 */
     --c-xp: 139 92 246; /* violet-500 */
 
     /* Enhanced focus ring */
@@ -148,10 +148,10 @@
     --c-fizruk-soft-hover: 21 94 117; /* cyan-800 */
     --c-fizruk-soft-fg: 103 232 249; /* cyan-300 */
 
-    --c-routine-soft: 159 36 30; /* coral-900 */
-    --c-routine-soft-border: 185 54 48; /* coral-800 */
-    --c-routine-soft-hover: 185 54 48; /* coral-800 */
-    --c-routine-soft-fg: 255 212 203; /* coral-200 */
+    --c-routine-soft: 117 57 73; /* coral-900 */
+    --c-routine-soft-border: 172 76 100; /* coral-800 */
+    --c-routine-soft-hover: 172 76 100; /* coral-800 */
+    --c-routine-soft-fg: 254 211 219; /* coral-200 */
 
     --c-nutrition-soft: 63 98 18; /* lime-800 */
     --c-nutrition-soft-border: 86 124 15; /* lime-700 */
@@ -162,7 +162,7 @@
        Mirror apps/web/src/styles/theme.css. */
     --c-chart-finyk: 45 212 191; /* teal-400 */
     --c-chart-fizruk: 34 211 238; /* cyan-400 */
-    --c-chart-routine: 255 140 120; /* coral-400 */
+    --c-chart-routine: 246 141 164; /* coral-400 */
     --c-chart-nutrition: 176 230 54; /* lime-400 */
 
     /* Dark-theme A11y / states overrides — mirror apps/web/src/styles/theme.css. */
@@ -194,8 +194,8 @@
     --c-finyk-border-dark: 15 118 110; /* teal-700 (2026-07: was emerald-500) */
     --c-fizruk-surface-dark: 14 116 144; /* cyan-700 — mirrors moduleColors.fizruk.primary (was teal-500) */
     --c-fizruk-border-dark: 14 116 144; /* cyan-700 — mirrors moduleColors.fizruk.primary (was teal-500) */
-    --c-routine-surface-dark: 249 112 102; /* coral-500 */
-    --c-routine-border-dark: 249 112 102; /* coral-500 */
+    --c-routine-surface-dark: 235 118 145; /* coral-500 */
+    --c-routine-border-dark: 235 118 145; /* coral-500 */
     --c-nutrition-surface-dark: 176 230 54; /* lime-400 — WCAG AA ≥4.5:1 on dark panel (was lime-500) */
     --c-nutrition-border-dark: 176 230 54; /* lime-400 (was lime-500) */
   }
@@ -350,7 +350,7 @@
   --c-fizruk-primary: 14 116 144; /* cyan-700 (2026-07: was cyan-500 #06b6d4) */
   --c-fizruk-secondary: 8 145 178; /* cyan-600 */
 
-  --c-routine-primary: 249 112 102; /* coral-500 */
+  --c-routine-primary: 235 118 145; /* coral-500 */
   --c-routine-secondary: 239 68 68; /* red-500 */
 
   --c-nutrition-primary: 146 204 23; /* brand lime #92cc17 (was stock Tailwind lime-500 #84cc16) */
