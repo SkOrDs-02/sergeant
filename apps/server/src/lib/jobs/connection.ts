@@ -53,9 +53,12 @@ export function createBullConnection(name: string): IORedisClient | null {
  * (`QueueBase`). До цього історично `sergeant:auth-mail` працював і
  * зашивав namespace у назву; тепер namespace задається окремим полем.
  *
- * Зміна Redis-key-layout-у — backwards-compatible: до цього PR-а Redis у
- * production ніколи не був увімкнений (`REDIS_URL` не заданий), тож
- * legacy-job-ів зі старим префіксом не існує.
+ * Зміна Redis-key-layout-у була backwards-compatible: на момент переходу на
+ * окремий `prefix` (2026-05-02, Railway) Redis у production ніколи не був
+ * увімкнений, тож legacy-job-ів зі старим префіксом не існувало. Відтоді
+ * Redis зʼявився — з переїздом на Coolify (2026-07-11) `REDIS_URL` заданий,
+ * і всі три черги реально працюють. Тобто речення вище — історична довідка
+ * про ту міграцію, а не опис поточного стану.
  */
 export const BULLMQ_QUEUE_PREFIX = "sergeant";
 
