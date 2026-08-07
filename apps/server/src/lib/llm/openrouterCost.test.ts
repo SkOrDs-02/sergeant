@@ -12,10 +12,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const incTokens = vi.fn();
 const incCost = vi.fn();
+const incRequests = vi.fn();
 
 vi.mock("../../obs/metrics.js", () => ({
   aiTokensTotal: { inc: incTokens },
   aiCostEstimateUsd: { inc: incCost },
+  aiRequestsTotal: { inc: incRequests },
   llmProviderInvocationsTotal: { inc: vi.fn() },
 }));
 
@@ -39,6 +41,7 @@ function mockGateway(usage: Record<string, number>) {
 beforeEach(() => {
   incTokens.mockClear();
   incCost.mockClear();
+  incRequests.mockClear();
 });
 
 afterEach(() => {
@@ -70,6 +73,14 @@ describe("OpenRouterProvider — облік вартості", () => {
     expect(incCost).toHaveBeenCalledTimes(1);
     // `usage.cost` — факт списання, він має перемогти прайс-таблицю.
     expect(incCost.mock.calls[0]?.[1]).toBeCloseTo(0.0042, 6);
+
+    // Лічильник викликів — разом із рештою. Інакше $/виклик доводиться
+    // рахувати то через `ai_requests_total`, то через провайдерський.
+    expect(incRequests).toHaveBeenCalledTimes(1);
+    expect(incRequests.mock.calls[0]?.[0]).toMatchObject({
+      endpoint: "coach-insight",
+      outcome: "ok",
+    });
   });
 
   it("лейбл provider=anthropic — інакше стеля витрат цього не побачить", async () => {

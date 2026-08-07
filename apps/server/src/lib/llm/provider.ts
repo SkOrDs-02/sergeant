@@ -19,6 +19,7 @@
 import { env } from "../../env/env.js";
 import {
   aiCostEstimateUsd,
+  aiRequestsTotal,
   aiTokensTotal,
   llmProviderInvocationsTotal,
 } from "../../obs/metrics.js";
@@ -312,6 +313,10 @@ function recordOpenRouterUsage(
     endpoint: endpoint ?? "unknown",
   };
   try {
+    // Разом із токенами й вартістю — інакше три лічильники покривають різні
+    // множини ендпоінтів, і `$/виклик` доводиться рахувати то через
+    // `ai_requests_total`, то через `llm_provider_invocations_total`.
+    aiRequestsTotal.inc({ ...labels, outcome: "ok" });
     if (typeof usage.prompt_tokens === "number")
       aiTokensTotal.inc({ ...labels, kind: "prompt" }, usage.prompt_tokens);
     if (typeof usage.completion_tokens === "number")
