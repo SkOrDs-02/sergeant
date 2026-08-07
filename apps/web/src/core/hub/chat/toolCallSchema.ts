@@ -160,9 +160,25 @@ const SaveNoteInputSchema = z.object({
   title: z.string().optional(),
 });
 
+/**
+ * Дзеркало серверного визначення `remember`
+ * (`apps/server/src/modules/chat/toolDefs/memory.ts`) — `{ fact, category }`.
+ *
+ * Схема довго вимагала `{ key, value }` — форму, якої не виробляв ніхто:
+ * ні промпт, ні тип `RememberAction`, ні хендлер `crossActions/memoryHandlers`.
+ * Модель слала правильний `{fact, category}`, фаєрвол відкидав ВСЮ пачку
+ * tool_calls, і користувач бачив тост «Не вдалося виконати дію» плюс
+ * «Немає відповіді». Тобто «Запамʼятай…» не міг спрацювати жодного разу.
+ *
+ * `category` тут не звужується до enum навмисно: серверне визначення йде
+ * зі `strict: true`, тож grammar-constrained sampling уже гарантує значення
+ * зі списку, а дубль enum-у на клієнті став би другим місцем, яке треба
+ * синхронізувати при кожній новій категорії — рівно тією розсинхронізацією,
+ * що й спричинила цей баг.
+ */
 const RememberInputSchema = z.object({
-  key: z.string().min(1),
-  value: z.unknown(),
+  fact: z.string().min(1),
+  category: z.string().optional(),
 });
 
 /**
