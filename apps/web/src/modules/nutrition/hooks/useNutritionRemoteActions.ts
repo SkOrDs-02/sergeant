@@ -1,7 +1,8 @@
 import { useCallback, type Dispatch, type SetStateAction } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { hapticSuccess } from "@shared/lib/adapters/haptic";
 import { nutritionApi } from "@shared/api";
+import { nutritionKeys } from "@shared/lib/api/queryKeys";
 import { generatePrefixedId } from "@sergeant/shared";
 import { deviceDayKey } from "@sergeant/nutrition-domain";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
@@ -222,6 +223,8 @@ export function useNutritionRemoteActions({
   shopping,
   setShoppingBusy,
 }: UseNutritionRemoteActionsParams) {
+  const queryClient = useQueryClient();
+
   // ─── Recipes ────────────────────────────────────────────────────────────
   const recipesMutation = useMutation({
     mutationFn: () => {
@@ -343,7 +346,7 @@ export function useNutritionRemoteActions({
       const macros = summary.hasAnyMacros
         ? getDayMacros(log.nutritionLog, log.selectedDate)
         : { kcal: null, protein_g: null, fat_g: null, carbs_g: null };
-      return nutritionApi.dayHint({
+      const payload = {
         macros,
         hasMeals: summary.hasMeals,
         hasAnyMacros: summary.hasAnyMacros,
@@ -354,7 +357,20 @@ export function useNutritionRemoteActions({
           dailyTargetFat_g: prefs.dailyTargetFat_g,
           dailyTargetCarbs_g: prefs.dailyTargetCarbs_g,
         },
-        locale: "uk-UA",
+        locale: "uk-UA" as const,
+      };
+      // Незмінний вхід — незмінна відповідь. `fetchQuery` віддає закешоване,
+      // якщо ключ той самий, і йде в мережу лише коли payload змінився.
+      //
+      // Модель кличеться з `temperature: 0.3`, тож на однакових даних вона
+      // щоразу формулювала по-новому — той самий сенс іншими словами. Це
+      // читалось як випадковість асистента; гроші тут ні до чого (виклик
+      // коштує ~$0.00007). Мутація кешу не мала й не могла мати: React Query
+      // навмисно не кешує `useMutation`, кожен `mutate()` завжди йде в мережу.
+      return queryClient.fetchQuery({
+        queryKey: nutritionKeys.dayHint(payload),
+        queryFn: () => nutritionApi.dayHint(payload),
+        staleTime: Infinity,
       });
     },
     onMutate: () => {

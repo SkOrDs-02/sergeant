@@ -258,6 +258,79 @@ describe("useNutritionRemoteActions", () => {
       );
       expect(apiFetchDayHint).toHaveBeenCalled();
     });
+
+    /**
+     * Модель кличеться з `temperature: 0.3`, тож на незмінних даних вона
+     * щоразу формулювала по-новому — той самий сенс іншими словами. Це
+     * читалось як випадковість асистента. Кешу не було й не могло бути:
+     * React Query навмисно не кешує `useMutation`, кожен `mutate()` йде в
+     * мережу.
+     */
+    const dayWithMeal = (kcal: number) => ({
+      nutritionLog: {
+        "2025-01-01": {
+          meals: [
+            {
+              id: "m1",
+              mealType: "breakfast",
+              macros: { kcal, protein_g: 20, fat_g: 10, carbs_g: 30 },
+              macroSource: "manual",
+            },
+          ],
+        },
+      },
+      selectedDate: "2025-01-01",
+      handleAddMeal: vi.fn(),
+    });
+
+    it("другий клік без змін даних НЕ йде в мережу", async () => {
+      apiFetchDayHint.mockResolvedValue({ hint: "Додай білка" });
+      const { result, spies } = makeHarness({ log: dayWithMeal(300) });
+
+      act(() => {
+        result.current.fetchDayHint();
+      });
+      await waitFor(() =>
+        expect(spies.setDayHintText).toHaveBeenCalledWith("Додай білка"),
+      );
+      expect(apiFetchDayHint).toHaveBeenCalledTimes(1);
+
+      spies.setDayHintText.mockClear();
+      act(() => {
+        result.current.fetchDayHint();
+      });
+      await waitFor(() =>
+        expect(spies.setDayHintText).toHaveBeenCalledWith("Додай білка"),
+      );
+      // Текст той самий і другий виклик до API не пішов.
+      expect(apiFetchDayHint).toHaveBeenCalledTimes(1);
+    });
+
+    it("зміна даних дня — новий ключ, новий виклик", async () => {
+      apiFetchDayHint
+        .mockResolvedValueOnce({ hint: "Додай білка" })
+        .mockResolvedValueOnce({ hint: "Забагато калорій" });
+      const { result, rerender, base, spies } = makeHarness({
+        log: dayWithMeal(300),
+      });
+
+      act(() => {
+        result.current.fetchDayHint();
+      });
+      await waitFor(() =>
+        expect(spies.setDayHintText).toHaveBeenCalledWith("Додай білка"),
+      );
+
+      // Та сама доба, інші макроси → інший payload → інший ключ.
+      rerender({ ...base, log: dayWithMeal(1200) });
+      act(() => {
+        result.current.fetchDayHint();
+      });
+      await waitFor(() =>
+        expect(spies.setDayHintText).toHaveBeenCalledWith("Забагато калорій"),
+      );
+      expect(apiFetchDayHint).toHaveBeenCalledTimes(2);
+    });
   });
 
   describe("fetchDayPlan", () => {
