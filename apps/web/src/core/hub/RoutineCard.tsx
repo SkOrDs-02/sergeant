@@ -2,6 +2,7 @@
  * Lazy-loaded per-domain card for routine/habits data in HubReports.
  * Reads its own localStorage shard and aggregates independently.
  */
+import { ReportSheet } from "./ReportSheet";
 import { useMemo } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Icon } from "@shared/components/ui/Icon";
@@ -203,12 +204,7 @@ export default function RoutineCard({ period, offset }: RoutineCardProps) {
   const formattedPrev = prev.pct.toLocaleString("uk-UA");
 
   return (
-    <div
-      className={cn(
-        "report-card bg-panel border border-line rounded-2xl transition-shadow",
-        collapsed ? "p-3" : "report-card-open p-4 space-y-3",
-      )}
-    >
+    <ReportSheet collapsed={collapsed}>
       <button
         type="button"
         onClick={() => setCollapsed((c) => !c)}
@@ -275,6 +271,6 @@ export default function RoutineCard({ period, offset }: RoutineCardProps) {
           />
         </>
       )}
-    </div>
+    </ReportSheet>
   );
 }

@@ -143,29 +143,28 @@
 .dark .panel-soft,
 .dark .metric-card,
 .dark .metric-card-compact,
-.dark .glass-card,
-.dark .report-card {
+.dark .glass-card {
   box-shadow:
     var(--shadow-card),
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   REPORTS DOMAIN CARDS — «Чорнило» depth parity.
-   Звітні картки збиралися на сирому `bg-panel border border-line`, тож
-   у темній темі вони не отримували inset-glow, який мають `.panel` /
-   `.metric-card`, і читалися пласко на ink-поверхні. `.report-card` дає
-   їм той самий edge-light (див. dark inset-glow вище) + м'який accent-glow
-   при розгортанні, щоб глибина йшла від світла й акцентного краю, а не
-   від нейтральних роздільників (chornylo-visual-direction § 1).
+   REPORTS DOMAIN CARDS — знято 2026-08-07 разом із переходом звітних
+   карток хабу на матеріал «край і зріз» (П3).
+
+   Тут жили `.report-card` та `.report-card-open`: dark-режимний inset-glow
+   плюс accent-glow на розгортанні. Обидва давали глибину СВІТЛОМ, а цей
+   матеріал тримає верхню межу ФАРБОЮ — 2px друкарською лінійкою, — і
+   підіймає поверхню `filter: drop-shadow()` на батьківському вузлі.
+
+   Знімати було обовʼязково, а не охайно: `.dark .report-card` — селектор
+   із двох класів, тобто специфічніший за утиліту `.edge-stub`, тож його
+   `box-shadow` перемагав би `box-shadow: none`. А маска перфорації зрізає
+   будь-яку тінь на своєму вузлі — отже картка МОВЧКИ лишилась би пласкою
+   рівно там, де ми додавали глибину. Єдиними носіями обох класів були
+   чотири картки в `core/hub/`; тепер вони йдуть через `ReportSheet`.
    ═══════════════════════════════════════════════════════════════════════ */
-.dark .report-card.report-card-open {
-  box-shadow:
-    var(--shadow-card),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05),
-    0 0 0 1px rgb(var(--c-brand-soft-border) / 0.35),
-    0 8px 24px -12px rgb(var(--c-accent) / 0.35);
-}
 
 /* ═══════════════════════════════════════════════════════════════════════
    FLOATING ACTION BUTTON — `.fab` removed 2026-08 design-audit T11 (zero
