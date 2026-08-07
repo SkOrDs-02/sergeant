@@ -201,15 +201,15 @@ describe("resolveProTier — bypass paths return premium without touching DB", (
   });
 
   // Деградація неоплаченого трафіку стосується ЛИШЕ чату. У коуча розрив
-  // premium→standard це gpt-5.1 → gemini-lite: найбільша втрата якості за
-  // найменшу економію (~$0.0035 на виклик), а сам ендпоінт не має plan-gate,
-  // тож Free бачить його на дашборді щодня.
-  it("free на коучі лишається premium (gpt-5.1), на відміну від чату", async () => {
+  // premium→standard це Sonnet → gemini-lite: найбільша втрата якості за
+  // найменшу економію, а сам ендпоінт не має plan-gate, тож Free бачить
+  // його на дашборді щодня.
+  it("free на коучі лишається premium (Sonnet), на відміну від чату", async () => {
     getUserPlan.mockResolvedValue({ plan: "free" });
     const res = makeRes();
     const r = await resolveProTier(makeReq(), res, "coach");
     expect(r.tier).toBe("premium");
-    expect(r.model).toBe("openai/gpt-5.1");
+    expect(r.model).toBe("anthropic/claude-sonnet-4.6");
     expect(res.headers["X-AI-Tier"]).toBe("premium");
   });
 
@@ -217,7 +217,7 @@ describe("resolveProTier — bypass paths return premium without touching DB", (
     getSessionUser.mockResolvedValue(null);
     const r = await resolveProTier(makeReq(), makeRes(), "coach");
     expect(r.tier).toBe("premium");
-    expect(r.model).toBe("openai/gpt-5.1");
+    expect(r.model).toBe("anthropic/claude-sonnet-4.6");
   });
 
   it("Pro-каскад на коучі не зачеплено: вичерпаний premium → standard", async () => {
@@ -261,11 +261,34 @@ describe("resolveProTier — Pro cascade premium → standard → floor", () => 
     expect(res.headers["X-AI-Tier"]).toBe("floor");
   });
 
-  it("coach endpoint premium → OpenRouter gpt-5.1", async () => {
+  it("coach endpoint premium → Sonnet через OpenRouter", async () => {
     pool.query.mockResolvedValueOnce(ok(1));
     const r = await resolveProTier(makeReq(), makeRes(), "coach");
     expect(r.tier).toBe("premium");
-    expect(r.model).toBe("openai/gpt-5.1");
+    expect(r.model).toBe("anthropic/claude-sonnet-4.6");
+  });
+
+  /**
+   * Тут стояв `openai/gpt-5.1`, і за замірами проду він майже не працював:
+   * із десяти викликів коуча дев'ять обслуговував anthropic-фолбек із
+   * `claude-sonnet-4-6`, бо reasoning-модель не встигала у 20-секундний
+   * таймаут `coach.ts`. Ставимо ту саму модель, що й так відповідала,
+   * тільки через шлюз — щоб шлях був один і вартість була видна в одному
+   * місці. Id саме `anthropic/`-префіксований: голий `claude-sonnet-4-6`
+   * валідний для прямого Anthropic і НЕ валідний для OpenRouter.
+   */
+  it("id коуча — з OpenRouter-простору імен, не з Anthropic-івського", async () => {
+    pool.query.mockResolvedValueOnce(ok(1));
+    const r = await resolveProTier(makeReq(), makeRes(), "coach");
+    expect(r.model.startsWith("anthropic/")).toBe(true);
+    expect(r.model).not.toBe("claude-sonnet-4-6");
+  });
+
+  it("OPENROUTER_COACH_MODEL перекриває дефолт", async () => {
+    process.env["OPENROUTER_COACH_MODEL"] = "anthropic/claude-sonnet-5";
+    pool.query.mockResolvedValueOnce(ok(1));
+    const r = await resolveProTier(makeReq(), makeRes(), "coach");
+    expect(r.model).toBe("anthropic/claude-sonnet-5");
   });
 
   it("coach floor → reliable cheap OpenRouter model (gemini-flash-lite)", async () => {

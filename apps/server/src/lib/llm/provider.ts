@@ -23,6 +23,7 @@ import {
   aiTokensTotal,
   llmProviderInvocationsTotal,
 } from "../../obs/metrics.js";
+import { logger } from "../../obs/logger.js";
 import { estimateAnthropicCostUsd } from "../aiPricing.js";
 import { recordAnthropicUsageToDb } from "../anthropicUsageStore.js";
 import { Sentry } from "../../sentry.js";
@@ -629,6 +630,42 @@ export interface GetLLMProviderOverride {
   disableFallback?: boolean;
 }
 
+/**
+ * Продакшн-логер спрацювань фолбека.
+ *
+ * До 2026-08-07 `getLLMProvider` створював `FallbackProvider` БЕЗ `log`, а
+ * дефолт там — `() => undefined`. Тобто підміна провайдера не лишала ані
+ * метрики, ані рядка в логах: `invokeLLM` обгортає всю конструкцію й бачить
+ * фінальний `ok`, записуючи його з моделлю ФОЛБЕКА. Наслідок був не
+ * теоретичний — коуч дев'ять викликів із десяти обслуговувався не тією
+ * моделлю, що в конфігу, і знайшлось це випадково, звіркою розкладу витрат
+ * по моделях, а не сигналом.
+ *
+ * `llm_provider_invocations_total` тут інкрементиться з ІМЕНЕМ ПЕРВИННОГО
+ * провайдера й outcome-ом його ПРОВАЛУ — рівно там, де на нього подивиться
+ * той, хто питає «а чи працює шлюз». Успішний результат фолбека `invokeLLM`
+ * запише окремо; два записи на один виклик тут не подвійний облік, а два
+ * різні факти: «шлюз не зміг» і «відповідь усе-таки отримана».
+ */
+const productionFallbackLog: FallbackLogFn = (level, msg, fields) => {
+  const data = fields ?? {};
+  try {
+    logger[level]({ msg, ...data });
+  } catch {
+    /* лог ніколи не ламає запит */
+  }
+  if (msg !== "llm.fallback.triggered") return;
+  try {
+    llmProviderInvocationsTotal.inc({
+      provider: String(data["primary"] ?? "unknown"),
+      endpoint: String(data["endpoint"] ?? "unknown"),
+      outcome: typeof data["code"] === "string" ? data["code"] : "error",
+    });
+  } catch {
+    /* метрики ніколи не ламають запит */
+  }
+};
+
 export function getLLMProvider(
   override: GetLLMProviderOverride = {},
 ): LLMProvider {
@@ -652,6 +689,7 @@ export function getLLMProvider(
         return new FallbackProvider({
           primary,
           fallback: new AnthropicProvider(anthropicKey),
+          log: productionFallbackLog,
         });
       }
     }
