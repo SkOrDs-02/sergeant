@@ -1,8 +1,18 @@
 /**
  * Format a Date as `YYYY-MM-DD` in the **Europe/Kyiv** timezone.
  *
- * Domain invariant (AGENTS.md): all day boundaries must use Kyiv local time,
- * never UTC and never the server's local zone.
+ * AI-DANGER: імʼя бреше. `toLocalISODate` читається як «доба пристрою», а
+ * функція форсує `Europe/Kyiv` незалежно від середовища — і саме через імʼя
+ * її легко покликати там, де потрібна доба ПРИСТРОЮ.
+ *
+ * Тут раніше стояло «all day boundaries must use Kyiv local time» — це
+ * інваріант ДО [ADR-0078](../../../../docs/04-governance/adr/0078-day-boundary-device-local.md).
+ * Тепер межа розділена: Київ лишається для показу часу, серверних звітів і
+ * фінансових періодів, але день-ключ відмітки звички, логу їжі й денного
+ * запису визначає годинник пристрою. Для цих випадків ця функція НЕ підходить.
+ *
+ * Перейменування — окремий борг: функція вживається широко, і зміна імені
+ * має їхати без змішування з правками поведінки.
  */
 export function toLocalISODate(d: Date | number | string = new Date()): string {
   const dt = d instanceof Date ? d : new Date(d);
