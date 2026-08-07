@@ -2,8 +2,8 @@
 /**
  * Unit tests for `WaterHistorySheet`. `referenceMs`/"today" for the domain
  * math is pinned by mocking `Date.now` at the top of each test — the sheet
- * itself calls `toLocalISODate()` (no explicit `referenceMs`), so it always
- * resolves "today" against the real clock.
+ * itself calls `todayISODate()` (device-local, ADR-0078; no explicit
+ * `referenceMs`), so it always resolves "today" against the real clock.
  */
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi, afterEach } from "vitest";

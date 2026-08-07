@@ -33,7 +33,7 @@ vi.mock("@shared/lib/adapters/haptic", () => ({
 
 import { useNutritionRemoteActions } from "./useNutritionRemoteActions";
 import { nutritionApi } from "@shared/api";
-import { toLocalISODate } from "@sergeant/shared";
+import { deviceDayKey } from "@sergeant/nutrition-domain";
 
 type MockFn = ReturnType<typeof vi.fn>;
 const apiRecommendRecipes = nutritionApi.recommendRecipes as unknown as MockFn;
@@ -224,7 +224,8 @@ describe("useNutritionRemoteActions — day plan error branch", () => {
 
 describe("useNutritionRemoteActions — addMealFromPlan branches", () => {
   it("stamps current time only when selectedDate is today", () => {
-    const today = toLocalISODate(new Date());
+    // ADR-0078: `selectedDate` is the device-local day key.
+    const today = deviceDayKey(new Date());
     const handleAddMeal = vi.fn();
     const todayHarness = makeHarness({
       log: { nutritionLog: {}, selectedDate: today, handleAddMeal },

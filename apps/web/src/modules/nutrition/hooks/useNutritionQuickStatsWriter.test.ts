@@ -1,14 +1,18 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { STORAGE_KEYS } from "@sergeant/shared";
-import type { NutritionLog, NutritionPrefs } from "@sergeant/nutrition-domain";
+import {
+  todayISODate,
+  type NutritionLog,
+  type NutritionPrefs,
+} from "@sergeant/nutrition-domain";
 import { __resetHubBusForTests, onHubBus } from "@shared/lib/modules/hubBus";
-import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { writeNutritionQuickStatsSnapshot } from "./useNutritionQuickStatsWriter";
 
+// ADR-0078: the writer reads "today"'s kcal off the device-local day key.
 function logWithKcal(kcal: number): NutritionLog {
   return {
-    [getKyivDayKey()]: {
+    [todayISODate()]: {
       meals: [
         {
           id: "m1",

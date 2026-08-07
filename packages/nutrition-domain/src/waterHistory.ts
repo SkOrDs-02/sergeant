@@ -1,11 +1,14 @@
 /**
  * Pure-helpers для історії журналу води: last-N-days вибірка, середні за
- * 7/30 днів, поточна серія днів із досягнутою ціллю. Kyiv-межі доби беруться
- * з `@sergeant/shared` (`toLocalISODate` / `kyivDayStartMs`) — той самий
- * генератор ключа, що й `getTodayWaterMl` у `waterLog.ts`, аби «сьогодні» в
- * історії завжди збігалося з «сьогодні» в трекері.
+ * 7/30 днів, поточна серія днів із досягнутою ціллю.
+ *
+ * Межі доби — ПРИСТРІЙ, не Kyiv (ADR-0078): `deviceDayKey` /
+ * `previousDeviceDayKey` — той самий генератор ключа, що й `getTodayWaterMl`
+ * у `waterLog.ts`, аби «сьогодні» в історії завжди збігалося з «сьогодні» в
+ * трекері (інакше історія читала б інший день, ніж той, під яким трекер щойно
+ * записав).
  */
-import { toLocalISODate, kyivDayStartMs } from "@sergeant/shared";
+import { deviceDayKey, previousDeviceDayKey } from "./deviceDayKey.js";
 import { normalizeWaterLog, type WaterLog } from "./waterLog.js";
 
 export interface WaterHistoryDay {
@@ -14,17 +17,17 @@ export interface WaterHistoryDay {
 }
 
 /**
- * Попередній Kyiv-день ключ (DST-safe: один ms до початку дня `key`).
- * Експортована — UI-шар (day-list "Сьогодні/Вчора" formatter) реюзить той
- * самий генератор, щоб не дублювати DST-логіку.
+ * Попередній день пристрою (ADR-0078), DST-safe (див. docstring
+ * `previousDeviceDayKey`). Експортована — UI-шар (day-list "Сьогодні/Вчора"
+ * formatter) реюзить той самий генератор, щоб не дублювати логіку.
  */
 export function getPreviousWaterDayKey(key: string): string {
-  return toLocalISODate(kyivDayStartMs(key) - 1);
+  return previousDeviceDayKey(key);
 }
 const prevDayKey = getPreviousWaterDayKey;
 
 /**
- * Останні `count` Kyiv-днів, що закінчуються "сьогодні" (`referenceMs`),
+ * Останні `count` днів пристрою, що закінчуються "сьогодні" (`referenceMs`),
  * найстаріший день першим. Дні без запису → `ml: 0`.
  */
 export function getWaterLastNDays(
@@ -35,7 +38,7 @@ export function getWaterLastNDays(
   const normalized = normalizeWaterLog(log);
   if (count <= 0) return [];
   const keys: string[] = [];
-  let key = toLocalISODate(referenceMs);
+  let key = deviceDayKey(referenceMs);
   for (let i = 0; i < count; i++) {
     keys.push(key);
     key = prevDayKey(key);
@@ -44,7 +47,7 @@ export function getWaterLastNDays(
   return keys.map((dayKey) => ({ dayKey, ml: normalized[dayKey] ?? 0 }));
 }
 
-/** Середнє мл/день за останні `days` Kyiv-днів (дні без запису рахуються як 0). */
+/** Середнє мл/день за останні `days` днів пристрою (дні без запису рахуються як 0). */
 export function getWaterAverageMl(
   log: unknown,
   days: number,
@@ -57,7 +60,7 @@ export function getWaterAverageMl(
 }
 
 /**
- * Поточна серія послідовних Kyiv-днів із досягнутою ціллю, рахуючи назад
+ * Поточна серія послідовних днів пристрою із досягнутою ціллю, рахуючи назад
  * від сьогодні. Якщо ціль на сьогодні ще не досягнута, сьогоднішній день не
  * рахується як «зрив» серії (день ще не завершився) — відлік просто
  * починається з учора.
@@ -69,7 +72,7 @@ export function getWaterStreak(
 ): number {
   if (!(goalMl > 0)) return 0;
   const normalized = normalizeWaterLog(log);
-  let key = toLocalISODate(referenceMs);
+  let key = deviceDayKey(referenceMs);
   if ((normalized[key] ?? 0) < goalMl) key = prevDayKey(key);
   let streak = 0;
   while ((normalized[key] ?? 0) >= goalMl) {

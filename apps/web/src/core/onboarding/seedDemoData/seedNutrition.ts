@@ -19,6 +19,23 @@ export function seedNutrition(): void {
     fat: number,
     carbs: number,
     mealType: "breakfast" | "lunch" | "dinner" | "snack",
+    /**
+     * Страва, знята з фото: макроси вгадав ШІ.
+     *
+     * AI-CONTEXT: рівно один такий запис у демо — і це не декор. «Смуга дня»
+     * (`components/DayStrip.tsx`) кодує невпевненість ШТРИХУВАННЯМ, і це
+     * єдиний канал, якого немає в журналі під нею; `isEstimatedMeal`
+     * зараховує тільки `photoAI`. Доки всі демо-страви були `manual`,
+     * штрихування не рендерилось жодного разу, тобто новий користувач
+     * бачив вид без тієї частини, заради якої вид існує.
+     *
+     * Чому саме сніданок і чому один. Частка здогадок має лишатись НИЖЧЕ
+     * `ESTIMATED_KCAL_SHARE_THRESHOLD` (0.5): вище за нього дашборд і
+     * інсайт про білок пом'якшують копію, і демо почало б розповідати про
+     * себе «більшість калорій — здогадка». 420 із 1250 ккал дня — це 34%:
+     * штрихування добре видно, а тон не зсувається.
+     */
+    estimatedFromPhoto = false,
   ) => ({
     id: shortId("demo_meal", seed),
     demo: true,
@@ -32,8 +49,10 @@ export function seedNutrition(): void {
       fat_g: fat,
       carbs_g: carbs,
     },
-    source: "manual" as const,
-    macroSource: "manual" as const,
+    source: estimatedFromPhoto ? ("photo" as const) : ("manual" as const),
+    macroSource: estimatedFromPhoto
+      ? ("photoAI" as const)
+      : ("manual" as const),
     amount_g: null,
     foodId: null,
   });
@@ -51,6 +70,7 @@ export function seedNutrition(): void {
           18,
           38,
           "breakfast",
+          true,
         ),
         meal(
           2,

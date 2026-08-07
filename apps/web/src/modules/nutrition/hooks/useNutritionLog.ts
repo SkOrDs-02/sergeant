@@ -7,7 +7,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@shared/hooks/useToast";
 import { digestKeys } from "@shared/lib/api/queryKeys";
-import { getKyivDayKey } from "@shared/lib/time/kyivTime";
+import { todayISODate } from "@sergeant/nutrition-domain";
 import {
   ANALYTICS_EVENTS,
   trackEvent,
@@ -68,8 +68,11 @@ export function useNutritionLog() {
     },
     () => loadNutritionLog(NUTRITION_LOG_KEY),
   );
+  // ADR-0078: активний день журналу — день ПРИСТРОЮ, не Kyiv. Це і є ключ,
+  // під яким запис лягає в лог, тож усе, що читає "сьогодні" з того самого
+  // логу (LogCard, Dashboard, quick-chips), мусить рахувати той самий день.
   const [selectedDate, setSelectedDate] = useState<string>(() =>
-    getKyivDayKey(),
+    todayISODate(),
   );
   const [addMealSheetOpen, setAddMealSheetOpen] = useState(false);
   const [addMealPhotoResult, setAddMealPhotoResult] = useState<unknown>(null);

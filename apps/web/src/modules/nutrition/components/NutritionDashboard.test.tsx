@@ -25,9 +25,10 @@ vi.mock("@shared/hooks/useToast", () => ({
 }));
 
 import { NutritionDashboard } from "./NutritionDashboard";
-import { getKyivDayKey } from "@shared/lib/time/kyivTime";
+import { todayISODate } from "@sergeant/nutrition-domain";
 
-const today = getKyivDayKey();
+// ADR-0078: NutritionDashboard's "today" macros card is device-local.
+const today = todayISODate();
 
 function logWith(kcal: number, protein = 0, fat = 0, carbs = 0) {
   return {

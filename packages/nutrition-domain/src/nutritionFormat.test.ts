@@ -1,20 +1,8 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-
-vi.mock("@sergeant/shared", () => ({
-  toLocalISODate: vi.fn(() => "2025-06-18"),
-}));
-
-import { toLocalISODate } from "@sergeant/shared";
+import { describe, expect, it, vi, afterEach } from "vitest";
 import { fmtMacro, todayISODate } from "./nutritionFormat.js";
 
-const mockedToday = toLocalISODate as unknown as ReturnType<typeof vi.fn>;
-
-beforeEach(() => {
-  mockedToday.mockReturnValue("2025-06-18");
-});
-
 afterEach(() => {
-  vi.restoreAllMocks();
+  vi.useRealTimers();
 });
 
 describe("fmtMacro", () => {
@@ -44,11 +32,19 @@ describe("fmtMacro", () => {
 });
 
 describe("todayISODate", () => {
-  it("делегує у @sergeant/shared#toLocalISODate з new Date()", () => {
-    const result = todayISODate();
-    expect(result).toBe("2025-06-18");
-    expect(toLocalISODate).toHaveBeenCalledTimes(1);
-    const args = mockedToday.mock.calls[0]!;
-    expect(args[0]).toBeInstanceOf(Date);
+  it("повертає YYYY-MM-DD за годинником пристрою (ADR-0078)", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2025, 5, 18, 10, 0, 0));
+    expect(todayISODate()).toBe("2025-06-18");
+  });
+
+  // ADR-0078: день логу належить ПРИСТРОЮ, не Києву. 22:00Z 18 червня — це
+  // ще "сьогодні" (06-18) за пристроєм у цьому середовищі (TZ=UTC), але вже
+  // "завтра" (06-19) за Kyiv (UTC+3 влітку) — якби функція досі форсувала
+  // Kyiv, цей тест впав би.
+  it("не з'їжджає на київський день біля півночі Києва", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(Date.UTC(2025, 5, 18, 22, 0, 0)));
+    expect(todayISODate()).toBe("2025-06-18");
   });
 });

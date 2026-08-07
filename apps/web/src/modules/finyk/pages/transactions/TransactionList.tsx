@@ -58,17 +58,24 @@ function ListPlaceholder() {
  * icon so it aligns with the description text (replaces the old zebra bands).
  */
 function DayCardShell({
-  edge,
+  stackPosition,
   inset = false,
   children,
 }: {
-  edge: "top" | "middle" | "bottom" | "single";
+  /**
+   * Позиція слайсу в стосі дня — НЕ матеріал краю (Борг 2, інвентар
+   * 2026-08-07). Раніше звалась `edge` і зіткнення з `CardEdge` (проп
+   * `Card`, `"stub" | "rule" | "perf"`) читалось як те саме API, ним не
+   * будучи: тут значення описують МІСЦЕ в стосі, а матеріал (`edge-rule`
+   * / `edge-perf`) із нього лише виводиться нижче.
+   */
+  stackPosition: "top" | "middle" | "bottom" | "single";
   inset?: boolean;
   children: ReactNode;
 }) {
-  const groupEnd = edge === "bottom" || edge === "single";
-  const roundTop = edge === "top" || edge === "single";
-  const roundBottom = edge === "bottom" || edge === "single";
+  const groupEnd = stackPosition === "bottom" || stackPosition === "single";
+  const roundTop = stackPosition === "top" || stackPosition === "single";
+  const roundBottom = stackPosition === "bottom" || stackPosition === "single";
   return (
     <div className={cn(groupEnd && "pb-2.5")}>
       {/* AI-CONTEXT: день транзакцій — це чек, і тепер він так і
@@ -91,7 +98,14 @@ function DayCardShell({
           читають як один аркуш, і тінь під кожним днем зробила б із
           нього купку карток — рівно те, від чого матеріал і відводить.
           Тінь беруть окремі документи поза стосом (шторка операції,
-          тижневий дайджест). */}
+          тижневий дайджест).
+
+          Чому не проп `Card edge` (борг 1, інвентар 2026-08-07): `edge`
+          у `Card` приймає одне значення, а тут `edge-rule` і `edge-perf`
+          застосовуються НЕЗАЛЕЖНО одне від одного (`roundTop`/
+          `roundBottom`) — пряме переведення без зміни контракту `Card`
+          неможливе. Клас лишається сирим (allowlisted у
+          `edgeMaterial.test.ts`). */}
       <div
         className={cn(
           "bg-panel",
@@ -399,7 +413,9 @@ export function TransactionList({
                   // «ока» (showBalance=false) віддаємо її розмитою, а не ховаємо.
                   const hasTotal = summary.statCount > 0;
                   return (
-                    <DayCardShell edge={row.standalone ? "single" : "top"}>
+                    <DayCardShell
+                      stackPosition={row.standalone ? "single" : "top"}
+                    >
                       <TransactionDayHeader
                         dayKey={key}
                         collapsed={collapsed}
@@ -417,7 +433,7 @@ export function TransactionList({
                 const rowTx = t as TxRowTx;
                 return (
                   <DayCardShell
-                    edge={row.lastInGroup ? "bottom" : "middle"}
+                    stackPosition={row.lastInGroup ? "bottom" : "middle"}
                     inset={!row.firstInGroup}
                   >
                     <TxListItem

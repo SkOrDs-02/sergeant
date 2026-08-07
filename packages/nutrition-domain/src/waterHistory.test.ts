@@ -1,5 +1,6 @@
-// referenceMs у всіх тестах — полудень 2025-06-18 Kyiv (UTC+3 влітку), щоб
-// не залежати від системного часу і уникнути DST-межових крайніх випадків.
+// referenceMs у всіх тестах — 2025-06-18 09:00 UTC, тобто далеко від півночі
+// пристрою (ADR-0078: день пристрою, не Kyiv), щоб не залежати від
+// системного часу і уникнути DST-межових крайніх випадків.
 import { describe, expect, it } from "vitest";
 import {
   getWaterLastNDays,
@@ -7,7 +8,6 @@ import {
   getWaterStreak,
 } from "./waterHistory.js";
 
-// 2025-06-18 12:00 Kyiv (UTC+3) = 2025-06-18 09:00 UTC.
 const REF_MS = Date.UTC(2025, 5, 18, 9, 0, 0);
 
 describe("getWaterLastNDays", () => {

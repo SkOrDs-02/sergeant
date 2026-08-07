@@ -26,11 +26,11 @@ import { useMemo } from "react";
 import { type NullableMacros } from "@sergeant/shared";
 import {
   matchFoodName,
+  todayISODate,
   type NutritionLog,
   type PantryItem,
 } from "@sergeant/nutrition-domain";
 import { addDaysISODate } from "../lib/nutritionStorage";
-import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 
 export interface QuickChipMacros {
   kcal: number;
@@ -91,7 +91,10 @@ function aggregateRecentMeals(
   log: NutritionLog,
   windowDays: number,
 ): Map<string, Aggregate> {
-  const today = getKyivDayKey();
+  // ADR-0078: чіпи агрегують "останні N днів" ТОГО Ж журналу, що тепер
+  // пишеться під днем пристрою — Kyiv-ключ тут пропускав/хибно виключав би
+  // сьогоднішні записи для не-київських користувачів.
+  const today = todayISODate();
   const cutoff = addDaysISODate(today, -windowDays);
   const out = new Map<string, Aggregate>();
 

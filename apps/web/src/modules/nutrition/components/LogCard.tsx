@@ -8,9 +8,9 @@ import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { NutritionEmptyIllustration } from "@shared/components/ui/EmptyStateIllustrations";
 import { estimateLogBytes } from "../lib/nutritionStorage";
-import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import {
   addDaysISODate,
+  todayISODate,
   type Meal,
   type MealTypeId,
   type NutritionLog,
@@ -35,7 +35,10 @@ interface LogCardProps {
 }
 
 function formatDate(isoDate: string): string {
-  const today = getKyivDayKey();
+  // ADR-0078: "Сьогодні"/"Вчора"/"Завтра" мусять збігатись із ключем, під
+  // яким журнал зберігає записи (selectedDate — день пристрою), інакше
+  // мітка "Сьогодні" вказувала б не на той день, що реально відкритий.
+  const today = todayISODate();
   const yesterday = addDaysISODate(today, -1);
   const tomorrow = addDaysISODate(today, 1);
   if (isoDate === today) return "Сьогодні";

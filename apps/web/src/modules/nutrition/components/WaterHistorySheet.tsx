@@ -6,11 +6,12 @@
  * averages, current goal streak, and a 14-day list. Read-only: past days are
  * not editable (out of scope per water-history spec).
  */
-import { toLocalISODate, kyivDayStartMs } from "@sergeant/shared";
 import {
   getWaterLastNDays,
   getWaterAverageMl,
   getWaterStreak,
+  getPreviousWaterDayKey,
+  todayISODate,
   type WaterLog,
 } from "@sergeant/nutrition-domain";
 import { Sheet } from "@shared/components/ui/Sheet";
@@ -60,8 +61,10 @@ export function WaterHistorySheet({
   const streak = getWaterStreak(log, goalMl);
   const hasAnyData = week.some((d) => d.ml > 0) || last14.some((d) => d.ml > 0);
 
-  const todayKey = toLocalISODate();
-  const yesterdayKey = toLocalISODate(kyivDayStartMs(todayKey) - 1);
+  // ADR-0078: день пристрою, а не Kyiv — той самий ключ, під яким трекер
+  // (useWaterTracker → nutrition-domain waterLog) реально пише "сьогодні".
+  const todayKey = todayISODate();
+  const yesterdayKey = getPreviousWaterDayKey(todayKey);
 
   const maxMl = Math.max(goalMl, ...week.map((d) => d.ml), 1);
   const goalPct = goalMl > 0 ? Math.min(100, (goalMl / maxMl) * 100) : null;

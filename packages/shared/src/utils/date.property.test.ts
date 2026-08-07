@@ -6,7 +6,7 @@ import {
   kyivDayEndMs,
   kyivDayStartMs,
   kyivMondayStartMs,
-  toLocalISODate,
+  toKyivISODate,
 } from "./date";
 
 /**
@@ -48,14 +48,14 @@ function nextCalendarDayKey(dayKey: string): string {
 
 describe("shared/utils/date – Kyiv boundary properties", () => {
   it(
-    "kyivDayStartMs ↔ toLocalISODate round-trip",
+    "kyivDayStartMs ↔ toKyivISODate round-trip",
     () => {
       fc.assert(
         fc.property(arbitraryDate, (date) => {
-          const key = toLocalISODate(date);
+          const key = toKyivISODate(date);
           expect(key).toMatch(DAY_KEY_RE);
           // Початок доби, переформатований назад у Kyiv-ключ, дає той самий день.
-          expect(toLocalISODate(kyivDayStartMs(key))).toBe(key);
+          expect(toKyivISODate(kyivDayStartMs(key))).toBe(key);
         }),
         { numRuns: NUM_RUNS },
       );
@@ -68,11 +68,11 @@ describe("shared/utils/date – Kyiv boundary properties", () => {
     () => {
       fc.assert(
         fc.property(arbitraryDate, (date) => {
-          const key = toLocalISODate(date);
+          const key = toKyivISODate(date);
           const start = kyivDayStartMs(key);
           const end = kyivDayEndMs(key);
           // Кінець доби — той самий Kyiv-день…
-          expect(toLocalISODate(end)).toBe(key);
+          expect(toKyivISODate(end)).toBe(key);
           // …завжди строго після старту (навіть у 23-годинну DST-добу)…
           expect(end).toBeGreaterThan(start);
           // …і рівно на 1 мс передує старту наступного календарного дня.
@@ -100,7 +100,7 @@ describe("shared/utils/date – Kyiv boundary properties", () => {
           expect(kyivMondayStartMs(monday)).toBe(monday);
           // Понеділок ніколи не пізніше за сам день.
           expect(monday).toBeLessThanOrEqual(
-            kyivDayStartMs(toLocalISODate(date)),
+            kyivDayStartMs(toKyivISODate(date)),
           );
         }),
         { numRuns: NUM_RUNS },
@@ -124,7 +124,7 @@ describe("shared/utils/date – Kyiv boundary properties", () => {
               -kyivCalendarDaysBetween(bMs, aMs),
           ).toBe(true);
           // Старт наступного календарного дня рівно на 1 Kyiv-добу далі.
-          const key = toLocalISODate(aMs);
+          const key = toKyivISODate(aMs);
           const nextStart = kyivDayStartMs(nextCalendarDayKey(key));
           expect(kyivCalendarDaysBetween(nextStart, kyivDayStartMs(key))).toBe(
             1,
