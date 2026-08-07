@@ -76,14 +76,20 @@
     /* Page background — «Чорнило» light pair (spec § 5): a warm beige with
        a faint green-ink undertone so the light theme reads as the paired
        inverse of the dark ink base, not an unrelated warm cream. */
-    --c-bg: 242 236 223; /* #f2ecdf — ink-light page bg (spec § 5) */
+    /* AI-DANGER: базу задано у ДВОХ місцях цього файлу — тут (`--c-bg`,
+       legacy `:root`) і нижче в v2-namespace (`--c-bg-base`). `body` і
+       панелі читають перше, `.bg-mesh` — друге. Змінити одне без іншого =
+       сторінка одного кольору, mesh-фон іншого, і жоден тест цього не
+       ловить. Міняй парою. Те саме стосується `--c-panel-hi` і
+       `--surface-soft-glass`. */
+    --c-bg: 236 235 231; /* #ecebe7 — беж без жовтого (рішення власника Б1, 2026-08-07) */
 
     /* Cards/panels — pure white for contrast */
     --c-panel: 255 255 255; /* #ffffff — white cards (spec § 5 surface) */
-    --c-panel-hi: 250 247 240; /* #faf7f0 — warm hover/input bg */
+    --c-panel-hi: 246 245 242; /* #f6f5f2 — warm hover/input bg (Б1) */
 
     /* Borders — warm gray with cream undertone */
-    --c-line: 235 228 218; /* #ebe4da — warm border */
+    --c-line: 226 224 218; /* #e2e0da — warm border (Б1) */
 
     /* Text hierarchy — «Чорнило» light pair (spec § 5): green-ink tiers,
        the tonal inverse of the dark ink text. `--c-subtle` stays at the
@@ -193,9 +199,19 @@
        `.dark`. Consumed by the web-only `{module}` DEFAULT override in
        apps/web/tailwind.config.js. */
     --c-finyk-accent: 17 94 89; /* teal-800 (2026-07: was emerald-700 #047857) */
-    --c-fizruk-accent: 14 116 144; /* #0e7490 — cyan-700 */
-    --c-routine-accent: 194 58 58; /* #c23a3a — coral-700 */
-    --c-nutrition-accent: 86 124 15; /* #567c0f — lime-ink */
+    /* AI-CONTEXT (2026-08-07): fizruk і nutrition зсунуті на тир глибше
+       (cyan-700 → -800, lime-700 → -800) перед зміною світлої бази на
+       #ecebe7. Ці токени вживаються ТЕКСТОМ і на картці (#fff), і на фоні
+       сторінки — тож рахувати треба гірший випадок, тобто фон.
+       На старій базі: cyan-700 4.55 (впритул), lime-700 4.16 (вже нижче
+       AA — давній дефект, який ніхто не ловив, бо contrast.test.js пінить
+       ці пари проти #ffffff, а не проти --c-bg).
+       На новій базі стало б 4.49 і 4.11. Тир глибше дає 6.09 і 5.84.
+       AI-DANGER: не «оптимізуй» назад на -700 — на фоні сторінки воно
+       не проходить. Пари проти --c-bg додані в contrast.test.js. */
+    --c-fizruk-accent: 21 94 117; /* #155e75 — cyan-800 */
+    --c-routine-accent: 161 51 51; /* #a13333 — coral-800 (той самий зсув, що fizruk/nutrition: на #ecebe7 coral-700 давав 4.45) */
+    --c-nutrition-accent: 70 98 18; /* #466212 — lime-800 */
 
     /* Semantic aliases (design-token contract) — map 1:1 to existing vars.
        Prefer these names in new code: surface / surface-muted / fg / fg-muted.
@@ -245,7 +261,7 @@
     /* Scrollbar — warm-neutral thumb on cream track. The hover step is
        one shade deeper so the affordance stays visible on every
        overflow surface. */
-    --c-scrollbar-track: 250 247 241; /* panel-hi — warm cream */
+    --c-scrollbar-track: 246 245 242; /* panel-hi (Б1; було 250 247 241 — дрейф на 1 проти --c-panel-hi) */
     --c-scrollbar-thumb: 221 211 197; /* #ddd3c5 — warm beige */
     --c-scrollbar-thumb-hover: 180 174 169; /* #b4aea9 — warm muted on hover */
 
@@ -255,7 +271,7 @@
        single-surface group; `-strong` is the prominent split between
        major sections that the eye should anchor to. */
     --c-divider-weak: 245 238 228; /* #f5eee4 — feather hairline */
-    --c-divider: 235 228 218; /* matches --c-line */
+    --c-divider: 226 224 218; /* matches --c-line (Б1) */
     --c-divider-strong: 221 211 197; /* matches --c-border-strong */
 
     /* Soft status backgrounds — tinted surfaces for banners/badges/cards.
@@ -1054,7 +1070,7 @@
   :root {
     /* Background base — «Чорнило» light pair (spec § 5): warm beige with a
        faint green-ink undertone, matching the legacy `--c-bg`. */
-    --c-bg-base: 242 236 223; /* #f2ecdf — ink-light page bg (spec § 5) */
+    --c-bg-base: 236 235 231; /* #ecebe7 — ink-light page bg (Б1; парний до --c-bg вище) */
 
     /* Ink (text) — «Чорнило» light pair (spec § 5): green-ink body + display
        tiers (display drops the emerald tint for a near-black green ink).
@@ -1074,11 +1090,11 @@
     --surface-glass: rgba(255, 255, 255, 1); /* #ffffff — solid card */
     --surface-strong-glass: rgba(255, 255, 255, 1); /* #ffffff — navs, pills */
     --surface-soft-glass: rgba(
-      250,
-      247,
-      240,
+      246,
+      245,
+      242,
       1
-    ); /* #faf7f0 — surface-hi tint */
+    ); /* #f6f5f2 — surface-hi tint (Б1; парний до --c-panel-hi) */
     /* Card hairline — warm dark edge so glass cards read against the cream
        mesh background (and against each other) in light mode. The white
        inset highlight that sells the "glass" look lives in --shadow-card-v2,

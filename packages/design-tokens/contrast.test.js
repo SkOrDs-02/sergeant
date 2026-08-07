@@ -189,11 +189,11 @@ describe("@sergeant/design-tokens — «Чорнило» ink contrast", () => {
 
 describe("@sergeant/design-tokens — «Чорнило» light pair (spec § 5)", () => {
   // The light theme is the tonal inverse of the dark ink base: a warm-beige
-  // page (#f2ecdf) + white cards, green-ink text tiers, and strong-tier
+  // page (#ecebe7) + white cards, green-ink text tiers, and strong-tier
   // module accents. These literals mirror the values applied to the light
   // `:root` in apps/web/src/styles/theme.css; the test pins their AA/AAA
   // floors so the § 5 swap can't silently regress the DEFAULT theme.
-  const bg = "#f2ecdf"; // page background
+  const bg = "#ecebe7"; // page background (Б1, 2026-08-07; було #f2ecdf)
   const surface = "#ffffff"; // cards
   const fgStrong = "#0f1713"; // display / headings
   const fg = "#17201b"; // body
@@ -202,9 +202,9 @@ describe("@sergeant/design-tokens — «Чорнило» light pair (spec § 5)"
   // Strong-tier module accents (AA on white / cream).
   const accents = {
     finyk: "#115e59", // teal-800 (2026-07: was emerald-700 #047857)
-    fizruk: "#0e7490",
-    routine: "#c23a3a",
-    nutrition: "#567c0f",
+    fizruk: "#155e75", // cyan-800 (2026-08-07: був cyan-700 #0e7490)
+    routine: "#a13333", // coral-800 (2026-08-07: був coral-700 #c23a3a)
+    nutrition: "#466212", // lime-800 (2026-08-07: був lime-700 #567c0f)
   };
 
   it("fg-strong ≥ 7:1 on both bg and surface (AAA)", () => {
@@ -225,6 +225,15 @@ describe("@sergeant/design-tokens — «Чорнило» light pair (spec § 5)"
     });
     it(`on-accent text (#fdf9f3) ≥ 4.5:1 on the ${name} accent fill (AA)`, () => {
       expect(contrastRatio(onAccent, hex)).toBeGreaterThanOrEqual(4.5);
+    });
+    // AI-CONTEXT (2026-08-07): пари проти БІЛОГО тут були від початку, а
+    // проти фону сторінки — ні. Саме тому зміна бази могла мовчки опустити
+    // акцент нижче AA: `text-{module}` стоїть і на картці, і на `bg-bg`,
+    // тож гірший випадок — фон. На старій базі cyan-700 давав 4.55 (на
+    // межі), а lime-700 — 4.16, тобто був зламаний ще до Б1 і жоден тест
+    // цього не бачив. Ця пара закриває сліпу пляму.
+    it(`${name} strong accent ≥ 4.5:1 on the page background (AA text)`, () => {
+      expect(contrastRatio(hex, bg)).toBeGreaterThanOrEqual(4.5);
     });
   }
 });
