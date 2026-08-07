@@ -407,6 +407,31 @@
     --c-chart-danger: 185 28 28; /* red-700 — 5.50:1 vs cream */
     --c-chart-info: 3 105 161; /* sky-700 — 5.04:1 vs cream */
 
+    /* Chart colors ON A HERO SURFACE — the SAME luminescent -400 tier in
+       every theme scope, because a `Card prominence="hero"` surface is
+       dark in ALL of them (light: `--hero-grad-{module}` -800→-700
+       gradient; dark / HC: `--hero-ink-{module}` near-black or -900).
+       The tiers above are tuned against cream `bg-bg`, so on a hero they
+       collapse into the fill: `--c-chart-nutrition` (lime-800) is
+       literally the light nutrition hero gradient's own start stop, which
+       is why the nutrition macro rings read as invisible in light theme
+       (screenshot bug 2026-08-07). Deliberately NOT redeclared in
+       `.dark` / `html.hc*`: the surface these sit on does not change
+       between scopes, so neither should the color. Consume via
+       `ProgressRing onHero` — never as a general chart series. */
+    /* Contrast noted against the LIGHT hero gradient's start stop (the
+       darkest surface a ring can sit on is the dark theme's ink fill, so
+       light is the worst case). All clear the 3:1 non-text floor. */
+    --c-chart-finyk-on-hero: 45 212 191; /* teal-400 — 4.1:1 vs teal-800 */
+    --c-chart-fizruk-on-hero: 34 211 238; /* cyan-400 — 4.0:1 vs cyan-800 */
+    --c-chart-routine-on-hero: 255 180 165; /* coral-300 — 3.1:1 vs coral-700 */
+    --c-chart-nutrition-on-hero: 176 230 54; /* lime-400 — 4.7:1 vs lime-800 */
+    --c-chart-accent-on-hero: 45 212 191; /* teal-400 — matches finyk */
+    --c-chart-success-on-hero: 52 211 153; /* emerald-400 */
+    --c-chart-warning-on-hero: 251 191 36; /* amber-400 */
+    --c-chart-danger-on-hero: 248 113 113; /* red-400 */
+    --c-chart-info-on-hero: 56 189 248; /* sky-400 */
+
     /**
      * @deprecated v1 module hero card gradients — Sergeant v2 redesign
      * (introduced 2026-05) replaces these with `--hero-grad-{module}`

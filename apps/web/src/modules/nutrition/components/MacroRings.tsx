@@ -2,6 +2,7 @@ import {
   ProgressRing,
   type ProgressRingVariant,
 } from "@shared/components/ui/ProgressRing";
+import { cn } from "@shared/lib/ui/cn";
 
 /**
  * MacroRings (V-10)
@@ -32,6 +33,7 @@ export interface MacroRingDatum {
 export function MacroRings({
   macros,
   incomplete = false,
+  onHero = false,
   "aria-label": ariaLabel,
 }: {
   macros: MacroRingDatum[];
@@ -39,6 +41,13 @@ export function MacroRings({
   "aria-label": string;
   /** Day-level "partial data" flag — see `ProgressRing`'s `incomplete` prop. */
   incomplete?: boolean;
+  /**
+   * Rendered inside the nutrition hero card. Besides `ProgressRing`'s own
+   * `onHero` arc/track swap, this flips the caption stack to the `hero-ink`
+   * scale: `text-text`/`text-muted`/`text-subtle` are body-surface tokens
+   * and wash out on the saturated hero fill exactly like the rings did.
+   */
+  onHero?: boolean;
 }) {
   return (
     <ul className="grid grid-cols-3 gap-2" aria-label={ariaLabel}>
@@ -60,6 +69,7 @@ export function MacroRings({
               // that doesn't fight the shared component with `!important`.
               size="sm"
               incomplete={incomplete}
+              onHero={onHero}
               aria-label={
                 safeGoal > 0
                   ? `${label}: ${consumed} з ${safeGoal} ${unit}`
@@ -67,11 +77,21 @@ export function MacroRings({
               }
               label={
                 <span className="flex flex-col items-center leading-none gap-0.5">
-                  <span className="text-style-label text-text tabular-nums">
+                  <span
+                    className={cn(
+                      "text-style-label tabular-nums",
+                      onHero ? "text-hero-ink" : "text-text",
+                    )}
+                  >
                     {consumed}
                   </span>
                   {safeGoal > 0 && (
-                    <span className="text-style-caption text-muted tabular-nums">
+                    <span
+                      className={cn(
+                        "text-style-caption tabular-nums",
+                        onHero ? "text-hero-ink/75" : "text-muted",
+                      )}
+                    >
                       / {safeGoal}
                     </span>
                   )}
@@ -79,9 +99,21 @@ export function MacroRings({
               }
             />
             <div className="text-center">
-              <div className="text-style-caption text-text">{label}</div>
+              <div
+                className={cn(
+                  "text-style-caption",
+                  onHero ? "text-hero-ink" : "text-text",
+                )}
+              >
+                {label}
+              </div>
               {outcome && (
-                <div className="text-style-caption text-subtle text-pretty">
+                <div
+                  className={cn(
+                    "text-style-caption text-pretty",
+                    onHero ? "text-hero-ink/75" : "text-subtle",
+                  )}
+                >
                   {outcome}
                 </div>
               )}
