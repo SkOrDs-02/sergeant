@@ -43,6 +43,21 @@ export const nutritionKeys = {
   // Barcode lookup (shared between meal-sheet and pantry scan)
   barcode: (code: string) => ["nutrition", "barcode", code] as const,
 
+  /**
+   * Денна підказка — ключ за ВМІСТОМ запиту, не за днем.
+   *
+   * Підказка це чиста функція від макросів, цілей і складу дня. Ключ за
+   * датою був би неправильний двічі: додав страву — текст мав би змінитись,
+   * а він лишився б; натиснув удруге без змін — текст мінявся б, хоча не
+   * мав. Payload у ключі робить обидва випадки правильними самі собою.
+   *
+   * Обʼєкт кладемо як є, без власного хешу: React Query серіалізує ключі
+   * детерміновано (`hashKey` сортує поля), тож однаковий payload завжди
+   * дає однаковий ключ незалежно від порядку полів.
+   */
+  dayHint: (payload: Record<string, unknown>) =>
+    ["nutrition", "day-hint", payload] as const,
+
   // Push subscription status
   pushStatus: ["nutrition", "push-status"] as const,
 };
