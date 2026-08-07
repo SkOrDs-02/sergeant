@@ -452,9 +452,21 @@ describe("summaryFor", () => {
     expect(summaryFor("export_module_data", {}, "r")).toBe("Експорт даних");
   });
 
-  it("remember / forget", () => {
-    expect(summaryFor("remember", { key: "k1" }, "r")).toBe("k1");
-    expect(summaryFor("forget", { id: "i1" }, "r")).toBe("i1");
+  /**
+   * Регресія зі скріна 2026-08-07: у картці світився сирий UUID. Білдери
+   * шукали поля `key`/`id`, яких у схемах `remember`/`forget` немає, тож
+   * завжди повертали `undefined`, і картка падала у `truncate(result)` —
+   * а результат виконавця несе `(Уподобання, id:84920a0a-…)`.
+   */
+  it("remember / forget — картка без технічного id", () => {
+    const rawResult =
+      "Запам'ятав: Не любить чорнослив (Уподобання, id:84920a0a-84b4-4f5e-932a-43ef23733ffa)";
+    expect(
+      summaryFor("remember", { fact: "Не любить чорнослив" }, rawResult),
+    ).toBe("Не любить чорнослив");
+    expect(
+      summaryFor("forget", { fact_id: "84920a0a" }, "Забув: X"),
+    ).not.toContain("84920a0a");
   });
 
   it("my_profile", () => {
@@ -490,6 +502,7 @@ describe("summaryFor", () => {
       "fallback",
     );
     expect(summaryFor("save_note", {}, "fallback")).toBe("fallback");
+    // `remember` без `fact` — теоретичний випадок: поле обов'язкове за схемою.
     expect(summaryFor("remember", {}, "fallback")).toBe("fallback");
   });
 });
