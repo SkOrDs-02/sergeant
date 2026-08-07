@@ -31,7 +31,7 @@ enforcement. Це регулярний slim-audit, який можна повт�
 | [`apps/server/src/http/authMiddleware.ts`](../../../apps/server/src/http/authMiddleware.ts)                | Application-side rate-limit + auth-event metrics                                                |
 | [`apps/server/src/routes/internal/index.ts`](../../../apps/server/src/routes/internal/index.ts)            | `INTERNAL_API_KEY` bearer guard, `safeStringEqual`                                              |
 | [`apps/server/src/obs/logger.ts`](../../../apps/server/src/obs/logger.ts) `redactKeyNames` / `redactPaths` | Pino redaction для `authorization`, `x-internal-token` headers                                  |
-| `apps/server/src/obs/spans.ts` ignored headers _(файл видалено #679)_                                      | Span attribute scrubbing (OTel `obs/tracing.ts` reverted, PR #9 — `aiSpan` passthrough лишився) |
+| `apps/server/src/obs/spans.ts` <!-- removed --> ignored headers _(файл видалено #679)_                     | Span attribute scrubbing (OTel `obs/tracing.ts` reverted, PR #9 — `aiSpan` passthrough лишився) |
 
 Out of scope: crypto / cookie / session-fingerprint (round 1), WebAuthn,
 SSO / IdP integration. Magic-link не enabled у Sergeant — verdict

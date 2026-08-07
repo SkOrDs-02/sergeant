@@ -1,6 +1,6 @@
 # Sergeant API — OpenAPI-специфікація
 
-> **Last touched:** 2026-08-06 by @claude. **Next review:** 2026-11-04.
+> **Last touched:** 2026-08-07 by @claude. **Next review:** 2026-11-05.
 > **Status:** Active
 
 [`openapi.json`](./openapi.json) — згенерований OpenAPI 3.1 specification. Single source of truth — zod-схеми у [`packages/shared/src/schemas/api.ts`](../../../packages/shared/src/schemas/api.ts) + route-каталог у [`packages/shared/src/openapi/routes.ts`](../../../packages/shared/src/openapi/routes.ts). Автогенерований TS-клієнт (`packages/api-client/src/generated/`) виведено з експлуатації ponytail-аудитом (#679) разом зі скриптами генерації та звіркою `api:check-openapi-types`; типи `api-client` тепер пишуться вручну під контрактні тести (Hard Rule #3).
@@ -68,7 +68,7 @@ npx @redocly/cli preview-docs docs/02-engineering/api/openapi.json
 
 ## Phase 3 — типізований клієнт (retired 2026-08-06)
 
-Generated-типи (`packages/api-client/src/generated/openapi.d.ts` + `pnpm api:generate-openapi-types` / `pnpm api:check-openapi-types`) прибрано: за час існування шар не набув жодного споживача — `OpenApiPaths`/`OpenApiComponents`/`OpenApiOperations` ніде не імпортувались. Hand-written types у `packages/api-client/src/endpoints/*` — єдина public surface контракту (Hard Rule #3 triplet). Якщо колись з'явиться реальна потреба у spec-derived типах, генерацію легко повернути з [ADR-0025](../../04-governance/adr/0025-openapi-generation.md).
+Generated-типи (`packages/api-client/src/generated/openapi.d.ts` <!-- removed --> + `pnpm api:generate-openapi-types` / `pnpm api:check-openapi-types`) прибрано: за час існування шар не набув жодного споживача — `OpenApiPaths`/`OpenApiComponents`/`OpenApiOperations` ніде не імпортувались. Hand-written types у `packages/api-client/src/endpoints/*` — єдина public surface контракту (Hard Rule #3 triplet). Якщо колись з'явиться реальна потреба у spec-derived типах, генерацію легко повернути з [ADR-0025](../../04-governance/adr/0025-openapi-generation.md).
 
 ## Що НЕ покрито (Phase 4+, окремі PR-и)
 

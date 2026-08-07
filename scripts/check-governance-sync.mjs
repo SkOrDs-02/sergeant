@@ -250,6 +250,22 @@ function checkDanglingRefs() {
   // `apps/server/src/migrations/NNN_*.sql`.
   const PLACEHOLDER_CHARS = /[*?<>[\]{}]/;
 
+  // Точковий виняток для ПОСИЛАННЯ, а не для документа.
+  //
+  // Частина живих доків навмисно називає видалений файл — і саме в цьому
+  // їхня цінність: «генерацію типів прибрано», «`obs/spans.ts` видалено
+  // #679», «wrapper retired». Такий рядок ПРАВИЛЬНИЙ; ламається не
+  // документація, а перевірка, яка не відрізняє «ось де лежить код» від
+  // «ось що ми видалили».
+  //
+  // Doc-рівневий прапорець тут не годиться: він звільнив би від перевірки
+  // цілий документ, у якому решта посилань — живі контракти. Тому маркер
+  // діє рівно на свій рядок, і його видно в диффі — на відміну від
+  // allowlist-у, схованого в скрипті.
+  //
+  //     | `apps/server/src/obs/spans.ts` <!-- removed --> | … |
+  const REMOVED_MARKER = "<!-- removed -->";
+
   // Aspirational/roadmap doc trees: dangling refs describe planned/future
   // implementation, not current code. Report as warnings, not errors.
   function isAspirational(relPath) {
@@ -400,6 +416,15 @@ function checkDanglingRefs() {
     while ((refMatch = refRe.exec(content)) !== null) {
       const refPath = refMatch[1];
       if (PLACEHOLDER_CHARS.test(refPath)) continue;
+      // Область дії маркера — РЯДОК, не окреме посилання. У рядку таблиці
+      // з двома шляхами він звільнить обидва, тож ставити його можна лише
+      // там, де мертві всі. Точніша прив'язка вимагала б синтаксису на
+      // кшталт `<!-- removed: path -->`, а це ціна, якої поки нема за що
+      // платити: усі шість наявних місць мають рівно одне посилання.
+      const lineStart = content.lastIndexOf("\n", refMatch.index) + 1;
+      const lineEndRaw = content.indexOf("\n", refMatch.index);
+      const lineEnd = lineEndRaw === -1 ? content.length : lineEndRaw;
+      if (content.slice(lineStart, lineEnd).includes(REMOVED_MARKER)) continue;
       totalRefs++;
       const absRef = resolve(ROOT, refPath);
       if (!existsSync(absRef)) {
@@ -457,6 +482,12 @@ function findMdFiles(dir) {
   for (const entry of entries) {
     const fullPath = join(dir, entry.name);
     if (entry.name === "node_modules" || entry.name === ".git") continue;
+    // `.claude/worktrees/` — робочі дерева запущених агентів, тобто повні
+    // копії репо. Без цього пропуску кожен док рахувався б стільки разів,
+    // скільки агентів працює: локальний прогін давав 462 «помилки» при
+    // нулі справжніх, і гейт ставав непридатним саме тоді, коли він
+    // найпотрібніший. У CI воркдерев немає, тож розбіжність тиха.
+    if (entry.name === "worktrees" && dir.endsWith(".claude")) continue;
     if (entry.isDirectory()) {
       results.push(...findMdFiles(fullPath));
     } else if (entry.name.endsWith(".md")) {
