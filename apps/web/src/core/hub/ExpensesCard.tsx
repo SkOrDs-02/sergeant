@@ -2,6 +2,7 @@
  * Lazy-loaded per-domain card for finyk/expense data in HubReports.
  * Reads its own localStorage shard and aggregates independently.
  */
+import { ReportSheet } from "./ReportSheet";
 import { useMemo, useState } from "react";
 import { messages } from "@shared/i18n/uk";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
@@ -245,12 +246,7 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
   }, [period, offset, bump, mirrorTick]);
 
   return (
-    <div
-      className={cn(
-        "report-card bg-panel border border-line rounded-2xl transition-shadow",
-        collapsed ? "p-3" : "report-card-open p-4 space-y-3",
-      )}
-    >
+    <ReportSheet collapsed={collapsed}>
       <button
         type="button"
         onClick={() => setCollapsed((c) => !c)}
@@ -321,6 +317,6 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
           />
         </>
       )}
-    </div>
+    </ReportSheet>
   );
 }
