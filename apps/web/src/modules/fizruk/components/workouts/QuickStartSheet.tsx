@@ -183,9 +183,12 @@ export function QuickStartSheet({
                   Готовий набір вправ — старт із заповненим списком.
                 </div>
               </div>
-              <span className="text-subtle" aria-hidden>
-                ›
-              </span>
+              <Icon
+                name="chevron-right"
+                size="sm"
+                className="text-subtle"
+                aria-hidden
+              />
             </div>
           </button>
 
@@ -204,9 +207,12 @@ export function QuickStartSheet({
                   Обери вправи зараз і почни — без збереження шаблону.
                 </div>
               </div>
-              <span className="text-subtle" aria-hidden>
-                ›
-              </span>
+              <Icon
+                name="chevron-right"
+                size="sm"
+                className="text-subtle"
+                aria-hidden
+              />
             </div>
           </button>
         </div>

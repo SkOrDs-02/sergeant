@@ -7,6 +7,7 @@ import { Measure } from "@shared/components/ui/Measure";
 import type { Dispatch, SetStateAction } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
+import { Icon } from "@shared/components/ui/Icon";
 import { IconButton } from "@shared/components/ui/IconButton";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Sheet } from "@shared/components/ui/Sheet";
@@ -492,10 +493,10 @@ export function HabitDetailSheet({
                 size="xs"
                 variant="ghost"
                 onClick={() => goCalMonth(-1)}
-                className="rounded-xl border border-line text-sm! text-muted"
+                className="rounded-xl border border-line text-muted"
                 aria-label="Попередній місяць"
               >
-                ‹
+                <Icon name="chevron-left" size="xs" />
               </IconButton>
               <span className="text-style-caption text-text min-w-28 text-center capitalize">
                 {calMonthTitle}
@@ -504,10 +505,10 @@ export function HabitDetailSheet({
                 size="xs"
                 variant="ghost"
                 onClick={() => goCalMonth(1)}
-                className="rounded-xl border border-line text-sm! text-muted"
+                className="rounded-xl border border-line text-muted"
                 aria-label="Наступний місяць"
               >
-                ›
+                <Icon name="chevron-right" size="xs" />
               </IconButton>
             </div>
           </div>

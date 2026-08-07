@@ -3,6 +3,7 @@
  * Status: Active
  */
 import { cn } from "@shared/lib/ui/cn";
+import { Icon } from "@shared/components/ui/Icon";
 import { IconButton } from "@shared/components/ui/IconButton";
 import {
   addDays,
@@ -54,11 +55,11 @@ export function WeekDayStrip({
       <IconButton
         size="md"
         variant="ghost"
-        className="focus-ring shrink-0 rounded-xl border border-line bg-panel/90 text-lg! text-muted"
+        className="focus-ring shrink-0 rounded-xl border border-line bg-panel/90 text-muted"
         onClick={() => onShiftWeek(-1)}
         aria-label="Попередній тиждень"
       >
-        ‹
+        <Icon name="chevron-left" size="sm" />
       </IconButton>
       {/* Keep selection repaints immediate inside the overflow scroller.
           WebKit can retain split raster tiles when a day background changes
@@ -107,11 +108,11 @@ export function WeekDayStrip({
       <IconButton
         size="md"
         variant="ghost"
-        className="focus-ring shrink-0 rounded-xl border border-line bg-panel/90 text-lg! text-muted"
+        className="focus-ring shrink-0 rounded-xl border border-line bg-panel/90 text-muted"
         onClick={() => onShiftWeek(1)}
         aria-label="Наступний тиждень"
       >
-        ›
+        <Icon name="chevron-right" size="sm" />
       </IconButton>
     </div>
   );

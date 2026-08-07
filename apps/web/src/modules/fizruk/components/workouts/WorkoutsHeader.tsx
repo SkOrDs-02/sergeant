@@ -1,5 +1,6 @@
 import { pluralExercises } from "@sergeant/shared";
 import { Button } from "@shared/components/ui/Button";
+import { Icon } from "@shared/components/ui/Icon";
 import type { Workout } from "@sergeant/fizruk-domain";
 import type { WorkoutsView } from "../../pages/Workouts.types";
 
@@ -53,7 +54,7 @@ export function WorkoutsHeader({
           onClick={onBack}
           aria-label="Повернутись до тренувань"
         >
-          ‹
+          <Icon name="chevron-left" size="sm" />
         </button>
       ) : null}
       <div className="flex-1">

@@ -13,6 +13,7 @@ import {
   type ReactNode,
 } from "react";
 import { Card } from "@shared/components/ui/Card";
+import { Icon } from "@shared/components/ui/Icon";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Skeleton } from "@shared/components/ui/Skeleton";
 import { EmptyState } from "@shared/components/ui/EmptyState";
@@ -127,7 +128,7 @@ const MonthNav = memo(function MonthNav({
         className="min-w-[44px] min-h-[44px] rounded-xl border border-line flex items-center justify-center text-muted hover:text-text hover:bg-panelHi transition-colors"
         aria-label="Попередній місяць"
       >
-        ‹
+        <Icon name="chevron-left" size="sm" />
       </button>
       <span className="text-style-label text-text capitalize">{label}</span>
       <button
@@ -137,7 +138,7 @@ const MonthNav = memo(function MonthNav({
         className="min-w-[44px] min-h-[44px] rounded-xl border border-line flex items-center justify-center text-muted hover:text-text hover:bg-panelHi transition-colors disabled:opacity-30"
         aria-label="Наступний місяць"
       >
-        ›
+        <Icon name="chevron-right" size="sm" />
       </button>
     </div>
   );
