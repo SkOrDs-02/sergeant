@@ -1,17 +1,21 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from "vitest";
 import { renderHook } from "@testing-library/react";
-import type { NutritionLog, PantryItem } from "@sergeant/nutrition-domain";
-import { toLocalISODate } from "@sergeant/shared";
+import {
+  deviceDayKey,
+  type NutritionLog,
+  type PantryItem,
+} from "@sergeant/nutrition-domain";
 import { useNutritionQuickChips } from "./useNutritionQuickChips";
 
+// ADR-0078: the hook reads "today"/"recent days" off the device-local key.
 function mkLog(
   daysAgo: number,
   meals: Array<Partial<{ name: string; kcal: number; amount_g: number }>>,
 ): NutritionLog {
   const d = new Date();
   d.setDate(d.getDate() - daysAgo);
-  const date = toLocalISODate(d);
+  const date = deviceDayKey(d);
   return {
     [date]: {
       meals: meals.map((m, i) => ({
