@@ -188,7 +188,13 @@ export function WorkoutItemCard({
           </div>
           <div className="text-style-caption text-subtle mt-0.5">
             М{"'"}язи:{" "}
-            <span className="font-semibold text-muted">
+            {/* Типографіка тексту, правило 3: ієрархію несе ВАГА, не третій
+                відтінок. Тут стояв `text-muted` поверх батьківського
+                `text-subtle` — і тони суперечили вазі: `muted #8a968e`
+                СВІТЛІШИЙ за `subtle #5f6b64`, тобто напівжирне «важливіше»
+                фарбувалось у «менш важливе». Тон успадковується, виділяє
+                лише вага. */}
+            <span className="font-semibold">
               {(it.musclesPrimary || [])
                 .map((id) => musclesUk?.[id] || id)
                 .join(", ") || "—"}
