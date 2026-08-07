@@ -115,7 +115,7 @@ describe("sync v2 client round-trip (enqueue → pull apply)", () => {
     );
     expect(rows[0]?.name).toBe("Morning run");
 
-    await writePullSinceCursor(client, pullOp.id);
-    expect(await readPullSinceCursor(client)).toBe(42);
+    await writePullSinceCursor(client, userId, pullOp.id);
+    expect(await readPullSinceCursor(client, userId)).toBe(42);
   });
 });

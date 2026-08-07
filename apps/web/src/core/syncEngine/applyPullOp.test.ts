@@ -54,9 +54,21 @@ describe("syncOpCursor", () => {
   });
 
   it("defaults pull_since to 0 and persists updates", async () => {
-    expect(await readPullSinceCursor(client)).toBe(0);
-    await writePullSinceCursor(client, 42);
-    expect(await readPullSinceCursor(client)).toBe(42);
+    expect(await readPullSinceCursor(client, "u-cursor")).toBe(0);
+    await writePullSinceCursor(client, "u-cursor", 42);
+    expect(await readPullSinceCursor(client, "u-cursor")).toBe(42);
+  });
+
+  it("keeps the pull cursor per user on a shared store", async () => {
+    // Regression: `sync_op_cursor` has no `user_id`, and on the kvvfs
+    // fallback every account shares one physical store. `sync_op_log.id`
+    // is server-global, so account B's session pushed the single bare
+    // cursor past account A's own ops — A then signed back in on a device
+    // whose rows logout had wiped and pulled nothing (measured 2026-08-06).
+    await writePullSinceCursor(client, "u-b", 900);
+    expect(await readPullSinceCursor(client, "u-a")).toBe(0);
+    await writePullSinceCursor(client, "u-a", 10);
+    expect(await readPullSinceCursor(client, "u-b")).toBe(900);
   });
 });
 

@@ -98,7 +98,7 @@ describe("createSyncEngineReaderRuntime", () => {
       limit: 100,
       originDeviceId: "device-a",
     });
-    await writePullSinceCursor(client as never, 5);
+    await writePullSinceCursor(client as never, "u-1", 5);
     expect(runCalls.length).toBeGreaterThan(0);
   });
 
