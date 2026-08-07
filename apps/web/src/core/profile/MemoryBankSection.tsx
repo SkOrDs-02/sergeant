@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { pluralUa, type UaPluralForms } from "@sergeant/shared";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
@@ -17,6 +17,7 @@ import {
   MEMORY_ONBOARDING_PROMPT,
   readMemoryEntries,
   removeMemoryEntry,
+  subscribeMemoryEntries,
   upsertMemoryFact,
   writeMemoryEntries,
   type MemoryImportPreview,
@@ -45,6 +46,16 @@ export function MemoryBankSection() {
   const [pendingImport, setPendingImport] = useState<PendingImport | null>(
     null,
   );
+
+  /**
+   * Банк пишуть дві поверхні: цей екран і виконавці чат-інструментів
+   * (`remember` / `forget`). Чат відкривається ОВЕРЛЕЄМ поверх екрана, тож
+   * екран не перемонтовується — без підписки список і лічильник у шапці
+   * лишались такими, якими були до розмови. `openMemoryChat` до того ж
+   * обирає режим за `entries.length`, тобто застарілий знімок ще й ламав
+   * вибір між інтерв'ю і доповненням.
+   */
+  useEffect(() => subscribeMemoryEntries(setEntries), []);
 
   // Іменований function expression: retry у тості кличе сам себе, а `const`
   // ще в TDZ у момент створення замикання.
@@ -83,19 +94,27 @@ export function MemoryBankSection() {
     [entries, saveEntries, toast],
   );
 
-  // Порожній банк → інтервʼю, непорожній → доповнення. Разом із
-  // повідомленням їде `preset`: сама інструкція живе на сервері
-  // (`apps/server/src/modules/chat/chatPresets.ts`), а звідси йде лише
-  // ідентифікатор режиму. Preset також переводить розмову на окреме
-  // тижневе відро AI-квоти, щоб заповнення профілю не з'їдало денний ліміт.
-  const openMemoryChat = useCallback(() => {
-    const isOnboarding = entries.length === 0;
+  /**
+   * Два режими розмови про профіль. Разом із повідомленням їде `preset`:
+   * сама інструкція живе на сервері (`chatPresets.ts`), звідси йде лише
+   * ідентифікатор. Preset також переводить розмову на окреме тижневе відро
+   * AI-квоти, щоб заповнення профілю не з'їдало денний ліміт.
+   *
+   * AI-CONTEXT (2026-08-07): режим більше НЕ виводиться з `entries.length`.
+   * Раніше перший же запис назавжди перемикав кнопку на `profile_add_info`,
+   * і повне інтерв'ю ставало недосяжним — щоб пройти його вдруге, треба
+   * було спорожнити банк. Вибір тепер за користувачем: обидві дії видимі.
+   */
+  const openMemoryChat = useCallback((mode: "interview" | "add") => {
     emitHubBus("openChat", {
-      message: isOnboarding ? MEMORY_ONBOARDING_PROMPT : MEMORY_ADD_INFO_PROMPT,
+      message:
+        mode === "interview"
+          ? MEMORY_ONBOARDING_PROMPT
+          : MEMORY_ADD_INFO_PROMPT,
       autoSend: true,
-      preset: isOnboarding ? "profile_interview" : "profile_add_info",
+      preset: mode === "interview" ? "profile_interview" : "profile_add_info",
     });
-  }, [entries.length]);
+  }, []);
 
   const handleExport = useCallback(() => {
     const json = JSON.stringify(entries, null, 2);
@@ -238,7 +257,11 @@ export function MemoryBankSection() {
               уподобання та рівень активності
             </p>
             <div className="flex flex-wrap items-center justify-center gap-2">
-              <Button variant="primary" size="sm" onClick={openMemoryChat}>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => openMemoryChat("interview")}
+              >
                 <Icon name="sparkle" size={14} className="mr-1.5" />
                 Заповнити профіль
               </Button>
@@ -306,11 +329,24 @@ export function MemoryBankSection() {
             <div className="flex gap-2 mt-2">
               <button
                 type="button"
-                onClick={openMemoryChat}
+                onClick={() => openMemoryChat("add")}
                 className="flex-1 py-2.5 rounded-xl border border-dashed border-line text-style-label text-muted hover:text-text hover:border-muted transition-colors flex items-center justify-center gap-1.5"
               >
                 <Icon name="plus" size={14} />
                 Додати інфо
+              </button>
+              {/*
+                Повне інтерв'ю лишається доступним і з непорожнім банком:
+                воно ставить ширші питання, ніж «додати інфо», і людина може
+                захотіти пройти його ще раз — після зміни цілей, наприклад.
+              */}
+              <button
+                type="button"
+                onClick={() => openMemoryChat("interview")}
+                className="py-2.5 px-3 rounded-xl border border-line text-style-label text-muted hover:text-text hover:border-muted transition-colors flex items-center justify-center gap-1.5"
+              >
+                <Icon name="sparkle" size={14} />
+                Інтерв&apos;ю
               </button>
               <button
                 type="button"
