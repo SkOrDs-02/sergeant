@@ -57,7 +57,9 @@ export const finykPageMessages = {
   todaySummary: {
     title: "Сьогодні",
     dayScope: "Київська доба",
-    operations: "Операції →",
+    // Без гліфа «→»: стрілку малює `Icon name="chevron-right"` на call-site
+    // (`TodaySummaryCard`) — та сама причина, що в `debtTxLink.back`.
+    operations: "Операції",
     openAria: "Відкрити операції за сьогодні",
     expense: "Витрати",
     income: "Надходження",

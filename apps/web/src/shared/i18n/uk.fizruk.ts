@@ -93,7 +93,9 @@ export const fizrukPageMessages = {
   // Measurements page (`pages/Measurements.tsx`) — body-measurements log.
   measurements: {
     manual: "Мануал",
-    manualLink: "Як правильно робити заміри →",
+    // Без гліфа «→» — стрілку малює `Icon name="chevron-right"` на call-site
+    // (`Measurements.tsx`), як і «←» у `guideBack` нижче.
+    manualLink: "Як правильно робити заміри",
     manualLinkNewTab: "(відкриється в новій вкладці)",
     // Стрілку малює `Icon name="chevron-left"` на call-site
     // (`Measurements.tsx`), а не гліф «←» усередині рядка — див. коментар

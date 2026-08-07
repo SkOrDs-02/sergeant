@@ -18,15 +18,25 @@ import { memo, useMemo, type ReactNode } from "react";
  * `<span>` or `<p>` with the text content directly.
  */
 
+// AI-CONTEXT: три розміри тут ходять РАЗОМ — тіло, `h3`, `h4`. Це єдине
+// місце в застосунку, де верстка багаторівнева, тож заміна тільки тіла
+// (`text-sm` → `text-style-body`, 14 → 15–16px) зламала б ієрархію: `h4`
+// на `text-sm` став би МЕНШИЙ за тіло, а `h3` на `text-base` (16px)
+// зрівнявся б із ним. Тому:
+//   тіло — роль `body`;
+//   `h4` — розміру не задає взагалі, успадковує тіло й відрізняється
+//          лише вагою (600);
+//   `h3` — роль `title` (18–22px), і `font-bold` знято: вагу (600) тепер
+//          несе сама роль, як і в решті застосунку.
 const PROSE_CLASS_NAME =
-  "text-sm leading-relaxed [&_strong]:font-semibold [&_em]:italic " +
+  "text-style-body leading-relaxed [&_strong]:font-semibold [&_em]:italic " +
   "[&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 " +
   // my-2, а не my-1: абзац — єдиний візуальний розділювач між темами у
   // відповіді (VOICE_RULE вимагає «кожну тему з нового абзацу»), і 4 px
   // читаються як перенос рядка, а не як межа теми.
   "[&_p]:my-2 [&_li]:my-0.5 [&_a]:text-primary [&_a]:underline " +
-  "[&_h3]:text-base [&_h3]:font-bold [&_h3]:mt-2 [&_h3]:mb-1 " +
-  "[&_h4]:text-sm [&_h4]:font-semibold [&_h4]:mt-3 [&_h4]:mb-1 " +
+  "[&_h3]:text-style-title [&_h3]:mt-2 [&_h3]:mb-1 " +
+  "[&_h4]:font-semibold [&_h4]:mt-3 [&_h4]:mb-1 " +
   "[&_h4]:text-text " +
   "[&_blockquote]:border-l-2 [&_blockquote]:border-primary " +
   "[&_blockquote]:pl-3 [&_blockquote]:mt-3 [&_blockquote]:text-subtle " +

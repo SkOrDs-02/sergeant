@@ -151,7 +151,7 @@ export function SavedSection({
                       <div className="mt-3 pt-3 border-t border-line/40 space-y-3">
                         {Array.isArray(r.ingredients) &&
                           r.ingredients.length > 0 && (
-                            <div className="text-sm text-text wrap-break-word">
+                            <div className="text-style-body text-text wrap-break-word">
                               <div className="text-style-caption text-muted mb-1">
                                 Інгредієнти
                               </div>
@@ -159,7 +159,7 @@ export function SavedSection({
                             </div>
                           )}
                         {Array.isArray(r.steps) && r.steps.length > 0 && (
-                          <div className="text-sm text-text">
+                          <div className="text-style-body text-text">
                             <div className="text-style-caption text-muted mb-1">
                               Кроки
                             </div>
@@ -171,7 +171,7 @@ export function SavedSection({
                           </div>
                         )}
                         {Array.isArray(r.tips) && r.tips.length > 0 && (
-                          <div className="text-sm text-text">
+                          <div className="text-style-body text-text">
                             <div className="text-style-caption text-muted mb-1">
                               Поради
                             </div>
