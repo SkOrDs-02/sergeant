@@ -443,8 +443,14 @@ const SUMMARY_REGISTRY: Record<string, SummaryFn> = {
     return mod ? `Модуль: ${mod}` : "Експорт даних";
   },
 
-  remember: (input) => stringField(input, "key") || stringField(input, "id"),
-  forget: (input) => stringField(input, "key") || stringField(input, "id"),
+  // AI-DANGER: беремо саме `fact`, а не сирий `result`. У результаті
+  // виконавця живе технічний id (`…, id:84920a0a-…`) — він потрібен моделі,
+  // щоб потім викликати `forget`, але в картці це шум, який користувач
+  // читає як збій. Поля `key`/`id` тут стояли помилково: схема `remember`
+  // несе `fact` + `category`, тож білдер завжди повертав `undefined` і
+  // картка падала у `truncate(result)` — тобто показувала id.
+  remember: (input) => stringField(input, "fact"),
+  forget: () => "Запис видалено з памʼяті",
 
   my_profile: () => "Профіль користувача",
 

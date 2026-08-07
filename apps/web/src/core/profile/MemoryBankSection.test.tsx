@@ -26,6 +26,8 @@ const removeMemoryEntryMock = vi.fn((entries: MemoryEntry[], id: string) => ({
 
 vi.mock("./memoryBank", () => ({
   readMemoryEntries: () => storedEntries,
+  // Підписка на зміни зі сховища — компонент вішає її в `useEffect`.
+  subscribeMemoryEntries: () => () => {},
   writeMemoryEntries: (next: MemoryEntry[]) => writeMemoryEntriesMock(next),
   removeMemoryEntry: (entries: MemoryEntry[], id: string) =>
     removeMemoryEntryMock(entries, id),
@@ -178,6 +180,26 @@ describe("MemoryBankSection — populated", () => {
       message: "ADD_INFO_PROMPT",
       autoSend: true,
       preset: "profile_add_info",
+    });
+  });
+
+  /**
+   * Регресія 2026-08-07: режим виводився з `entries.length`, тож перший же
+   * запис назавжди перемикав кнопку на `profile_add_info`. Повне інтерв'ю
+   * ставало недосяжним — щоб пройти його вдруге, треба було спорожнити банк.
+   */
+  it("інтерв'ю доступне і з непорожнім банком", () => {
+    storedEntries = [ENTRY];
+    render(<MemoryBankSection />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Інтерв.ю/ }));
+
+    const [event, payload] = emitHubBusMock.mock.calls[0]!;
+    expect(event).toBe("openChat");
+    expect(payload).toEqual({
+      message: "ONBOARDING_PROMPT",
+      autoSend: true,
+      preset: "profile_interview",
     });
   });
 });
