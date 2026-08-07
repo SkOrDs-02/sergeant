@@ -184,9 +184,14 @@ describe("story slide components", () => {
 describe("StoriesProgressHeader", () => {
   afterEach(() => cleanup());
 
-  it("shows active progress, week range, and closes from the header button", () => {
+  const bars = (container: HTMLElement) =>
+    Array.from(
+      container.querySelectorAll<HTMLElement>(".h-\\[3px\\] > div"),
+    ).map((el) => el.style.transform);
+
+  it("marks past slides full and future slides empty, and closes from the header button", () => {
     const onClose = vi.fn();
-    render(
+    const { container } = render(
       <StoriesProgressHeader
         slides={[
           baseSlide,
@@ -194,7 +199,7 @@ describe("StoriesProgressHeader", () => {
           { ...baseSlide, id: "overall", kind: "overall", label: "Підсумок" },
         ]}
         currentIndex={1}
-        progress={37}
+        durationMs={6500}
         paused={false}
         activeLabel="Їжа"
         weekRange="20–26 липня"
@@ -204,30 +209,47 @@ describe("StoriesProgressHeader", () => {
 
     expect(screen.getByText("Дайджест · Їжа")).toBeInTheDocument();
     expect(screen.getByText("20–26 липня")).toBeInTheDocument();
-    expect(screen.getByTestId("active-story-progress")).toHaveStyle({
-      width: "37%",
-      transition: "width 50ms linear",
-    });
+    // Past bar full, future bar empty. The middle one is the active bar and is
+    // driven imperatively, so its transform is not asserted here.
+    const [past, , future] = bars(container);
+    expect(past).toBe("scaleX(1)");
+    expect(future).toBe("scaleX(0)");
 
     fireEvent.click(screen.getByRole("button", { name: "Закрити" }));
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  it("removes active progress transition while paused", () => {
+  it("hands the active bar a transition sized to the remaining slide time", () => {
     render(
       <StoriesProgressHeader
         slides={[baseSlide]}
         currentIndex={0}
-        progress={80}
+        durationMs={6500}
+        paused={false}
+        activeLabel="Старт"
+        onClose={vi.fn()}
+      />,
+    );
+
+    const active = screen.getByTestId("active-story-progress");
+    // One compositor-owned transition per slide — never a JS-driven width.
+    expect(active.style.transition).toBe("transform 6500ms linear");
+    expect(active.style.transform).toBe("scaleX(1)");
+  });
+
+  it("freezes the active bar in place while paused", () => {
+    render(
+      <StoriesProgressHeader
+        slides={[baseSlide]}
+        currentIndex={0}
+        durationMs={6500}
         paused
         activeLabel="Старт"
         onClose={vi.fn()}
       />,
     );
 
-    expect(screen.getByTestId("active-story-progress")).toHaveStyle({
-      width: "80%",
-      transition: "none",
-    });
+    const active = screen.getByTestId("active-story-progress");
+    expect(active.style.transition).toBe("none");
   });
 });
