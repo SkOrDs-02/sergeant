@@ -215,7 +215,7 @@ export function StrategyPage({ founderUserId }: StrategyPageProps) {
     <main className="mx-auto max-w-3xl p-6">
       <header className="mb-6">
         <h1 className="text-2xl font-semibold">{messages.strategy.title}</h1>
-        <p className="text-sm text-muted">
+        <p className="text-style-label text-muted">
           {messages.strategy.weekPrefix} <code>{weekStart}</code> &middot;{" "}
           {messages.strategy.placeholderTag}
         </p>
@@ -231,7 +231,9 @@ export function StrategyPage({ founderUserId }: StrategyPageProps) {
                 altering visual layout (fieldset uses `contents` display). */}
             <legend className="sr-only">{messages.strategy.addGoal}</legend>
             <label className="block">
-              <span className="text-sm">{messages.strategy.personaLabel}</span>
+              <span className="text-style-label">
+                {messages.strategy.personaLabel}
+              </span>
               <select
                 ref={personaSelectRef}
                 value={persona}
@@ -248,7 +250,9 @@ export function StrategyPage({ founderUserId }: StrategyPageProps) {
               </select>
             </label>
             <label className="block">
-              <span className="text-sm">{messages.strategy.goalTextLabel}</span>
+              <span className="text-style-label">
+                {messages.strategy.goalTextLabel}
+              </span>
               <textarea
                 ref={goalTextRef}
                 value={goalText}
@@ -268,7 +272,7 @@ export function StrategyPage({ founderUserId }: StrategyPageProps) {
             <p
               id="goal-text-error"
               role="alert"
-              className="text-sm text-danger-strong"
+              className="text-style-label text-danger-strong"
             >
               {submitError}
             </p>
@@ -290,9 +294,11 @@ export function StrategyPage({ founderUserId }: StrategyPageProps) {
           {messages.strategy.thisWeeksGoals}
         </h2>
         {isLoading ? (
-          <p className="text-sm text-muted">{messages.strategy.loading}</p>
+          <p className="text-style-label text-muted">
+            {messages.strategy.loading}
+          </p>
         ) : goals.length === 0 ? (
-          <p className="text-sm text-muted">
+          <p className="text-style-label text-muted">
             {messages.strategy.emptyStatePrefix} {weekStart}{" "}
             {messages.strategy.emptyStateSuffix}
           </p>

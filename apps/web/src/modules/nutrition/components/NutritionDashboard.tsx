@@ -446,7 +446,9 @@ export function NutritionDashboard({
             </button>
           </div>
           {dayHintText ? (
-            <p className="text-sm text-text leading-snug">{dayHintText}</p>
+            <p className="text-style-label text-text leading-snug">
+              {dayHintText}
+            </p>
           ) : (
             <p className="text-style-caption text-subtle">
               Аналіз харчування за сьогодні від AI

@@ -102,7 +102,7 @@ export function FinykLoginScreen({
             </svg>
           </div>
           <h1 className="text-style-headline text-text">ФІНІК</h1>
-          <p className="text-sm text-muted mt-1">
+          <p className="text-style-label text-muted mt-1">
             Персональний фінансовий менеджер
           </p>
         </div>
@@ -116,7 +116,7 @@ export function FinykLoginScreen({
           )}
         >
           <label
-            className="text-sm text-muted mb-2 block"
+            className="text-style-label text-muted mb-2 block"
             htmlFor="finyk-mono-token"
           >
             API токен Monobank
@@ -234,7 +234,7 @@ export function FinykLoginScreen({
           </p>
 
           {authError && (
-            <div className="mt-3 text-sm bg-warning/15 border border-warning/40 rounded-xl px-3 py-2.5 space-y-1">
+            <div className="mt-3 text-style-label bg-warning/15 border border-warning/40 rounded-xl px-3 py-2.5 space-y-1">
               <p className="font-semibold text-text">
                 Токен потребує оновлення
               </p>
@@ -247,7 +247,7 @@ export function FinykLoginScreen({
           {/* Server-level error (from useApiForm) or parent-provided error */}
           {(serverError || (error && !authError)) && (
             <p
-              className="mt-3 text-sm text-danger-strong dark:text-danger bg-danger/10 rounded-xl px-3 py-2"
+              className="mt-3 text-style-label text-danger-strong dark:text-danger bg-danger/10 rounded-xl px-3 py-2"
               role="alert"
             >
               {serverError ?? error}
