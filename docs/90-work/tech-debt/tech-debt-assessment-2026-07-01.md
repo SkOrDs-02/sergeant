@@ -31,6 +31,8 @@
 - 44px-аудит промоутнуто у блокуючий CI-job (`frontend.md` п.7).
 - Enforcement-вакуум дизайн-системи здебільшого закрито: гейт розширено на landing + mobile-shell, додано тести, showcase перестав рекламувати 13 неіснуючих лінтів і 8 ретайрнутих Hard Rules (`frontend.md` п.1).
 - Увесь блок `backend.md` § «P1 (наступний спринт)» — був закритий, але не переміряний (CSP `report-uri`, `Permissions-Policy`, coverage у CI, 23 `@critical` E2E).
+- **`pnpm check` на `main` був червоний, і жоден реєстр цього не фіксував.** `@sergeant/mobile#test`: 3 fail з 1201 — обидва тести кодували вже виправлені баги (event-id без `occurredAt` за W1-ROUTINE-APPEND; `title === habit.name` після переходу `emoji` на icon-slug). Полагоджено, сюїт зелений. Корінь той самий, що й у TC-03: mobile поза CI-lane-ом покриття, тож його регресії живуть довше за web-івські.
+- Два дефекти скрол-локу в модалках (`SettingsPrimitives.ConfirmModal` без локу взагалі; `DeleteAccountDialog` з hand-rolled `overflow: hidden`, недостатнім на iOS Safari) — `frontend.md` п.4.
 
 **Blocked (агент не закриє без власника / інфри / депів)** — простими словами див. [`README.md § Blocked простими словами`](./README.md#blocked-простими-словами).
 
