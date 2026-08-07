@@ -49,8 +49,8 @@ describe("chartTheme", () => {
     expect(chartHeatmap.routine.levels).toHaveLength(4);
     expect(chartHeatmap.routine.empty).toContain("bg-panelHi");
     expect(chartHeatmap.routine.future).toContain("bg-line");
-    expect(chartHeatmap.routine.ring).toContain("ring-coral");
-    expect(chartHeatmap.routine.outline).toContain("outline-coral");
+    expect(chartHeatmap.routine.ring).toContain("ring-rose");
+    expect(chartHeatmap.routine.outline).toContain("outline-rose");
   });
 
   it("builds two-stop gradients (opaque → transparent) for every module", () => {

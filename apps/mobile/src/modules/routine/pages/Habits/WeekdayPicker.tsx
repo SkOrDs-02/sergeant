@@ -14,7 +14,7 @@
  *
  * Intentional differences from web:
  *  - `<button>` → `Pressable`. NativeWind classes pick up the same
- *    visual accent (cream surface, coral routine tint).
+ *    visual accent (cream surface, rose routine tint).
  *  - `role="radiogroup"` is not reused — this is a multi-select chip
  *    row, not a radio group (the web copy also uses a plain `<div>`).
  *    Instead we annotate each chip with `accessibilityRole="checkbox"`
@@ -76,7 +76,7 @@ export const WeekdayPicker = memo(function WeekdayPicker({
               testID={testID ? `${testID}-day-${wd}` : undefined}
               className={
                 on
-                  ? "min-h-[40px] px-3 rounded-xl border border-coral-500 bg-coral-500 justify-center"
+                  ? "min-h-[40px] px-3 rounded-xl border border-rose-500 bg-rose-500 justify-center"
                   : "min-h-[40px] px-3 rounded-xl border border-cream-300 bg-cream-50 justify-center"
               }
             >

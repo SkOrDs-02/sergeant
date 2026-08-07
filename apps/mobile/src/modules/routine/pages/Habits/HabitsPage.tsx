@@ -240,7 +240,7 @@ export function HabitsPage({ testID }: HabitsPageProps) {
           accessibilityRole="button"
           accessibilityLabel="Додати звичку"
           testID={testID ? `${testID}-add` : undefined}
-          className="h-14 px-5 rounded-full bg-coral-500 items-center justify-center shadow-lg"
+          className="h-14 px-5 rounded-full bg-rose-500 items-center justify-center shadow-lg"
         >
           <Text className="text-base font-bold text-white">+ Додати</Text>
         </Pressable>

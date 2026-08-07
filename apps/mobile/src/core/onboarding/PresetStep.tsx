@@ -72,7 +72,7 @@ const PRESETS: PresetCatalog = {
   routine: {
     title: "Яку звичку почнемо?",
     desc: "Одне натискання — і вона у твоєму списку сьогодні.",
-    accentChip: "bg-coral-50 border border-coral-300/60",
+    accentChip: "bg-rose-50 border border-rose-300/60",
     fallback: { action: "add_habit", label: "Своя звичка" },
     items: [
       {

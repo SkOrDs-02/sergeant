@@ -8,7 +8,7 @@
  * lime-модулі бар читався як сторонній віджет.
  *
  * Правило: КОЖНЕ значення `chartHex` мусить бути або тиром бренд-палітри
- * (emerald / teal / cyan / cream / coral / lime), або ink-нейтраллю, або
+ * (emerald / teal / cyan / cream / rose / lime), або ink-нейтраллю, або
  * статус-кольором. Статус — свідомий виняток: «перевитрата» має бути
  * червоною, і жоден бренд-hue цього не замінить.
  *
@@ -71,6 +71,6 @@ describe("@sergeant/design-tokens — контракт складу chartHex", (
       Object.entries(brandColors).find(([, tiers]) =>
         Object.values(tiers).some((t) => norm(t) === hex),
       )?.[0];
-    expect(macro.map(familyOf)).toEqual(["cyan", "coral", "lime"]);
+    expect(macro.map(familyOf)).toEqual(["cyan", "rose", "lime"]);
   });
 });

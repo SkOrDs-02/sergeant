@@ -45,11 +45,11 @@ const PAIRS = [
     true,
   ],
   ["routine text on white", moduleColors.routine.primary, "#ffffff", false],
-  ["routine-strong on white", brandColors.coral[700], "#ffffff", true],
+  ["routine-strong on white", brandColors.rose[700], "#ffffff", true],
   [
-    "routine-strong on coral-50",
-    brandColors.coral[700],
-    brandColors.coral[50],
+    "routine-strong on rose-50",
+    brandColors.rose[700],
+    brandColors.rose[50],
     true,
   ],
   ["finyk-strong on white", brandColors.teal[800], "#ffffff", true], // 2026-07: was emerald[700]
@@ -66,26 +66,26 @@ const PAIRS = [
     true,
   ],
   // Routine hero (light) — реальні пари з рендера (design-audit F2):
-  // світлий градієнт стиснуто до coral-800→700, текст hero-ink #fdf9f3.
+  // світлий градієнт стиснуто до rose-800→700, текст hero-ink #fdf9f3.
   // Пари фіксують обидва стопи, щоб майбутнє «освітлення» героя знову
   // не впустило дрібний текст під 4.5:1 (виміряний фейл був 2.12:1 на
-  // старому стопі coral-400).
+  // старому стопі rose-400).
   [
-    "routine hero-ink on coral-700 (hero light end)",
+    "routine hero-ink on rose-700 (hero light end)",
     "#fdf9f3",
-    brandColors.coral[700],
+    brandColors.rose[700],
     true,
   ],
   [
-    "routine hero-ink on coral-800 (hero dark end)",
+    "routine hero-ink on rose-800 (hero dark end)",
     "#fdf9f3",
-    brandColors.coral[800],
+    brandColors.rose[800],
     true,
   ],
   [
-    "routine hero-ink on coral-400 (старий стоп — задокументований фейл)",
+    "routine hero-ink on rose-400 (старий стоп — задокументований фейл)",
     "#fdf9f3",
-    brandColors.coral[400],
+    brandColors.rose[400],
     false,
   ],
   // Fizruk + nutrition hero (light) — 2026-08 design-audit T2: same
@@ -134,7 +134,7 @@ const PAIRS = [
   // тир обирався за AA, а не за яскравістю: -600 із пропозиції аудиту
   // фейлить (пари нижче фіксують і це), -700 проходить.
   ["macro protein — white on cyan-700", "#ffffff", brandColors.cyan[700], true],
-  ["macro fat — white on coral-700", "#ffffff", brandColors.coral[700], true],
+  ["macro fat — white on rose-700", "#ffffff", brandColors.rose[700], true],
   ["macro carbs — white on lime-700", "#ffffff", brandColors.lime[700], true],
   [
     "macro protein — white on cyan-600 (відхилений тир)",

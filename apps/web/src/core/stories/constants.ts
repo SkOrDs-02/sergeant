@@ -18,7 +18,7 @@ export const MAX_DRAG_TRANSLATE = 260;
 // so `from-brand-500 …` silently rendered a gray slide. `indigo-*` / `rose-*`
 // were one-off foreign hues with no other call-site in the app. Every slide
 // now stays within its module's registered saturated family (finyk teal ·
-// fizruk cyan · routine coral · nutrition lime; intro mixes teal with the
+// fizruk cyan · routine rose · nutrition lime; intro mixes teal with the
 // neutral `brand-strong` stone), on the -600..-800 tier so fixed
 // `text-white` clears 4.5:1 — the -400 tiers used previously were too light
 // under white text.
@@ -32,7 +32,7 @@ export const BG_GRADIENTS = {
   nutrition:
     "from-lime-600 via-lime-700 to-lime-800 dark:from-lime-700 dark:via-lime-800 dark:to-lime-900",
   routine:
-    "from-coral-600 via-coral-700 to-coral-800 dark:from-coral-700 dark:via-coral-800 dark:to-coral-900",
+    "from-rose-600 via-rose-700 to-rose-800 dark:from-rose-700 dark:via-rose-800 dark:to-rose-900",
   overall:
-    "from-amber-600 via-orange-600 to-coral-700 dark:from-amber-800 dark:via-orange-800 dark:to-coral-800",
+    "from-amber-600 via-orange-600 to-rose-700 dark:from-amber-800 dark:via-orange-800 dark:to-rose-800",
 } as const;

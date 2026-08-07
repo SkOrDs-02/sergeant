@@ -40,20 +40,8 @@ exports[`@sergeant/design-tokens — mobile.js > mobile.spacing scale is stable 
 }
 `;
 
-exports[`@sergeant/design-tokens — tokens.js > brandColors matrix is stable (emerald/teal/cyan/cream/coral/lime/stone scales) 1`] = `
+exports[`@sergeant/design-tokens — tokens.js > brandColors matrix is stable (emerald/teal/cyan/cream/rose/lime/stone scales) 1`] = `
 {
-  "coral": {
-    "100": "#ffe7eb",
-    "200": "#fed3db",
-    "300": "#fcb3c1",
-    "400": "#f68da4",
-    "50": "#fff5f6",
-    "500": "#eb7691",
-    "600": "#d15c7a",
-    "700": "#ac4c64",
-    "800": "#8d4256",
-    "900": "#753949",
-  },
   "cream": {
     "100": "#fdf9f3",
     "200": "#faf3e8",
@@ -97,6 +85,18 @@ exports[`@sergeant/design-tokens — tokens.js > brandColors matrix is stable (e
     "700": "#567c0f",
     "800": "#466212",
     "900": "#3b5314",
+  },
+  "rose": {
+    "100": "#ffe7eb",
+    "200": "#fed3db",
+    "300": "#fcb3c1",
+    "400": "#f68da4",
+    "50": "#fff5f6",
+    "500": "#eb7691",
+    "600": "#d15c7a",
+    "700": "#ac4c64",
+    "800": "#8d4256",
+    "900": "#753949",
   },
   "stone": {
     "100": "#f5f5f4",

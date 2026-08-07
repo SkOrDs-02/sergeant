@@ -69,7 +69,7 @@ const variantContainer: Record<ButtonVariant, string> = {
   // Module-specific (dark mode uses slightly muted tones for better contrast)
   finyk: "bg-finyk-strong dark:bg-brand-500",
   fizruk: "bg-fizruk-strong dark:bg-teal-500",
-  routine: "bg-routine-strong dark:bg-coral-500",
+  routine: "bg-routine-strong dark:bg-rose-500",
   nutrition: "bg-nutrition-strong dark:bg-lime-500",
 
   // Soft module variants with dark mode support

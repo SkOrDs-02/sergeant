@@ -98,7 +98,7 @@
   box-shadow: 0 0 0 4px rgb(var(--c-accent) / 0.15);
 }
 
-.hover-glow-coral:hover {
+.hover-glow-rose:hover {
   box-shadow: 0 0 0 4px rgba(249, 112, 102, 0.15);
 }
 

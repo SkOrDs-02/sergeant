@@ -9,7 +9,7 @@ import { cn } from "@shared/lib/ui/cn";
  * The per-module accent *system* already exists (`[data-module-accent]` drives
  * border / ring / caret from `--module-accent-rgb`). What's missing is a
  * transition: today the accent swaps instantly when you move between modules.
- * The proposal crossfades the accent (emerald → cyan → coral …) so navigating
+ * The proposal crossfades the accent (emerald → cyan → rose …) so navigating
  * feels like one continuous surface re-tinting, not a hard cut.
  *
  * Mock only — tap the module chips to compare instant swap vs morph.

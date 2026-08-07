@@ -42,7 +42,7 @@ import {
  * - Consumers may render an additional center FAB as a sibling of
  *   the nav (NOT nested inside it) at `z-40`, positioned over the
  *   nav's top edge. See `RoutineBottomNav`. The FAB sits in front
- *   of the nav's stacking context and keeps its own coral gradient
+ *   of the nav's stacking context and keeps its own rose gradient
  *   per Routine identity.
  *
  * On-screen keyboard (spec `docs/90-work/planning/specs/keyboard-and-scroll.md`
@@ -115,7 +115,7 @@ const COLORS: Record<ModuleNavColor, ColorTokens> = {
   },
   routine: {
     fillLight: "bg-routine-strong",
-    fillDark: "dark:bg-coral-400",
+    fillDark: "dark:bg-rose-400",
     badge: "bg-routine",
   },
   nutrition: {

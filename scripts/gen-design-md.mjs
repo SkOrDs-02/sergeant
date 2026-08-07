@@ -9,7 +9,7 @@
 //   hand-mirror the palette, so it silently drifted from tokens.js — e.g. the
 //   finyk row still said `emerald-500 #10b981` months after finyk migrated to
 //   teal, and the nutrition macro-ring colours listed blue/yellow/green after
-//   the code had already moved to cyan/coral/lime. Agents that "read DESIGN.md
+//   the code had already moved to cyan/rose/lime. Agents that "read DESIGN.md
 //   first" were being handed a false palette, which seeds fresh violations.
 //
 //   This script owns the region between the AUTOGEN markers and rewrites it
@@ -53,7 +53,7 @@ function rgbTripleToHex(triple) {
 const MODULE_FAMILY = {
   finyk: { primary: "teal-700", strong: "teal-800" },
   fizruk: { primary: "cyan-700", strong: "cyan-800" },
-  routine: { primary: "coral-500", strong: "coral-700" },
+  routine: { primary: "rose-500", strong: "rose-700" },
   nutrition: { primary: "lime-500", strong: "lime-800" },
 };
 

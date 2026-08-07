@@ -24,7 +24,7 @@ export default meta;
 
 type Story = StoryObj<typeof StreakFlame>;
 
-/** 14-денний streak — orange/coral tint. */
+/** 14-денний streak — orange/rose tint. */
 export const Default: Story = {};
 
 /** Усі розміри — sm / md / lg / xl. */

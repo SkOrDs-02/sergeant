@@ -16,12 +16,12 @@
 
 **Акцент = модуль** (module-accent containment, дизайн-конвенція — чужий акцент у чужому модулі заборонений):
 
-| Модуль    | primary             | strong (WCAG-AA під text-white) | surface   |
-| --------- | ------------------- | ------------------------------- | --------- |
-| finyk     | teal-700 `#0f766e`  | teal-800 `#115e59`              | `#f0fdfa` |
-| fizruk    | cyan-700 `#0e7490`  | cyan-800 `#155e75`              | `#ecfeff` |
-| routine   | coral-500 `#eb7691` | coral-700 `#ac4c64`             | `#fff5f6` |
-| nutrition | lime-500 `#92cc17`  | lime-800 `#466212`              | `#f8fee7` |
+| Модуль    | primary            | strong (WCAG-AA під text-white) | surface   |
+| --------- | ------------------ | ------------------------------- | --------- |
+| finyk     | teal-700 `#0f766e` | teal-800 `#115e59`              | `#f0fdfa` |
+| fizruk    | cyan-700 `#0e7490` | cyan-800 `#155e75`              | `#ecfeff` |
+| routine   | rose-500 `#eb7691` | rose-700 `#ac4c64`              | `#fff5f6` |
+| nutrition | lime-500 `#92cc17` | lime-800 `#466212`              | `#f8fee7` |
 
 Правило `-strong`: насичений brand-fill під `text-white` → тільки `-strong` companion (дизайн-конвенція). У коді — через `--module-accent-rgb` / `--module-accent-strong-rgb` (ModuleAccentProvider), не хардкод hex.
 

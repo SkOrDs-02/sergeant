@@ -90,7 +90,7 @@ describe("Button", () => {
     // fizruk's registered `cyan` scale tops out at 900 (no 950 tier), so
     // hover and active share the same darkest step.
     ["fizruk", "hover:bg-cyan-900", "active:bg-cyan-900"],
-    ["routine", "hover:bg-coral-800", "active:bg-coral-900"],
+    ["routine", "hover:bg-rose-800", "active:bg-rose-900"],
     // nutrition's `-strong` is lime-800 already, so hover only goes to lime-900.
     ["nutrition", "hover:bg-lime-900", null],
   ] as const)(
@@ -157,7 +157,7 @@ describe("Button", () => {
       const cls = getByRole("button").className;
       expect(cls).toContain("dark:bg-routine");
       expect(cls).toContain("dark:text-bg");
-      expect(cls).toContain("dark:shadow-glow-accent-coral");
+      expect(cls).toContain("dark:shadow-glow-accent-rose");
     });
 
     it.each([

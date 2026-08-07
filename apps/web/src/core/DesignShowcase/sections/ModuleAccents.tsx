@@ -56,7 +56,7 @@ const MODULES: readonly ModuleEntry[] = [
   {
     id: "routine",
     label: "Рутина",
-    hue: "Coral",
+    hue: "Rose",
     role: "Звички, чек-листи",
     textCls: "text-routine",
     swatch: {
@@ -88,7 +88,7 @@ export function ModuleAccentsSection() {
       title="Module Accents"
       intro={
         <>
-          Чотири бренд-акценти модулів — emerald / teal / coral / lime. Кожен
+          Чотири бренд-акценти модулів — emerald / teal / rose / lime. Кожен
           модуль користується лише своїм акцентом (HR #12) — lint{" "}
           <code>no-foreign-module-accent</code> блокує <code>text-fizruk</code>{" "}
           у <code>apps/web/src/modules/finyk/**</code>.
