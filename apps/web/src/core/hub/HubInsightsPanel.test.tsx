@@ -32,7 +32,7 @@ describe("HubInsightsPanel", () => {
         onOpenModule={vi.fn()}
       />,
     );
-    const toggle = screen.getByRole("button", { name: /Інсайти/ });
+    const toggle = screen.getByRole("button", { name: /Інші підказки/ });
     expect(toggle).toHaveAttribute("aria-expanded", "false");
     expect(screen.getByText("2")).toBeInTheDocument();
 

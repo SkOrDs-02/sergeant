@@ -8,8 +8,6 @@
  */
 import { useState, useMemo, useCallback, lazy, Suspense } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
-import { EmptyState } from "@shared/components/ui/EmptyState";
-import { EmptyListIllustration } from "@assets/illustrations";
 import { Button } from "@shared/components/ui/Button";
 import { Segmented } from "@shared/components/ui/Segmented";
 import { Icon, type IconName } from "@shared/components/ui/Icon";
@@ -137,16 +135,17 @@ export function HubReports() {
     [activeModules],
   );
 
-  // F7 — surface the active period in each insight title so the context is
-  // clear regardless of where the period selector sits on screen. Done in the
-  // presentation layer to keep the localStorage-reading engine side-effect-free.
-  const insights = useMemo(() => {
-    const periodLabel = period === "week" ? "за тиждень" : "за місяць";
-    return generateInsights().map((ins) => ({
-      ...ins,
-      title: `${ins.title} (${periodLabel})`,
-    }));
-  }, [period]);
+  /**
+   * AI-CONTEXT (2026-08-07): раніше сюди дописувався суфікс «(за тиждень)» /
+   * «(за місяць)» — нібито щоб дати контекст незалежно від позиції
+   * перемикача. Насправді підпис брехав: `generateInsights()` не приймає
+   * аргументів, його вікна зашиті (≥4 тижні, ≥20 подій, ≥2 місяці) і на
+   * перемикач не реагують. Той самий текст їхав у PDF-експорт.
+   *
+   * Замість підпису секція переїхала НАД перемикач — туди, де вже стоять
+   * зв'язки, і рівно з тієї ж причини.
+   */
+  const insights = useMemo(() => generateInsights(), []);
 
   // Phase 7 D2 — cross-module PDF export is Premium. Free users see
   // the button but tapping it opens the paywall instead of generating
@@ -179,7 +178,7 @@ export function HubReports() {
                 .join("")}
             </tbody>
           </table>`
-        : "<p>Поки замало даних для інсайтів. Додай записи в модулях, щоб наступний експорт містив більше висновків.</p>";
+        : "<p>Поки замало даних для закономірностей. Додай записи в модулях, щоб наступний експорт містив більше висновків.</p>";
 
     setPreviewHtml(
       generatePDFReport({
@@ -191,7 +190,10 @@ export function HubReports() {
             content: `<p>${esc(label)}</p>`,
           },
           {
-            title: `Інсайти (${insights.length})`,
+            // Вікно в заголовку названо прямо: інсайти рахуються за весь час
+            // спостережень, а не за вибраний період, і сусідство з секцією
+            // «Період» раніше натякало на протилежне.
+            title: `Закономірності за весь час (${insights.length})`,
             content: insightsContent,
           },
         ],
@@ -214,6 +216,43 @@ export function HubReports() {
           <CrossModuleLinksSection />
         </Suspense>
       </ChunkErrorBoundary>
+
+      {/*
+        Сусід зв'язків, а не хвіст звітів. Обидва блоки рахуються за власним
+        фіксованим вікном і перемикач періоду ігнорують, тож під ним читались
+        би як зламані.
+
+        Назва «Закономірності», а не «Інсайти»: цим словом на головній
+        називається зовсім інше — тактичні модульні підказки за сьогодні
+        (`HubInsightsBlock`). Один термін на дві сутності з різними вікнами
+        читався як суперечність: «на головній інсайти вже є, а тут кажуть, що
+        даних замало».
+
+        Порожній стан прибрано свідомо. Сторінка вже має один — картку
+        мовчання у «Зв'язках між сферами», з реальною найближчою парою і
+        прогресом до порога. Пороги зв'язків НИЖЧІ за тутешні (5 спостережень
+        проти ≥20 подій), тож поки мовчать зв'язки, закономірностей
+        гарантовано немає: банер «Ще збираємо твої дані» нічого не додавав,
+        лише казав те саме вдруге і слабшими словами.
+      */}
+      {insights.length > 0 && (
+        <section className="space-y-3">
+          <div className="space-y-1">
+            <SectionHeading as="h2" size="xs">
+              Закономірності
+            </SectionHeading>
+            <p className="text-style-caption text-muted leading-relaxed">
+              Що повторюється у твоїх даних за весь час спостережень. Перемикач
+              періоду нижче на них не впливає.
+            </p>
+          </div>
+          <div className="space-y-3">
+            {insights.map((ins) => (
+              <InsightCard key={ins.id} {...ins} />
+            ))}
+          </div>
+        </section>
+      )}
 
       <div className="flex items-center justify-between gap-2">
         <Segmented<Period>
@@ -325,26 +364,6 @@ export function HubReports() {
           </ChunkErrorBoundary>
         )}
       </div>
-
-      {insights.length >= 1 ? (
-        <div className="space-y-3">
-          <SectionHeading as="p" size="xs">
-            Інсайти
-          </SectionHeading>
-          {insights.map((ins) => (
-            <InsightCard key={ins.id} {...ins} />
-          ))}
-        </div>
-      ) : (
-        <div className="bg-panel border border-line rounded-2xl">
-          <EmptyState
-            size="sm"
-            illustration={<EmptyListIllustration size={112} />}
-            title="Ще збираємо твої дані"
-            description="Додай записи в модулях — і тут з'являться інсайти за твій період."
-          />
-        </div>
-      )}
 
       {/* Phase 7 D2 — Premium-gated cross-module PDF export. Sits at the
           end of the reports view so it does not crowd the period picker;

@@ -78,15 +78,18 @@ describe("HubReports — render smoke (F23)", () => {
     localStorage.clear();
   });
 
-  it("renders the empty-insights copy when there is no source data", () => {
-    // Empty localStorage → `generateInsights()` returns `[]` (see
-    // `apps/web/src/core/lib/insightsEngine.ts`), which routes the
-    // component into the empty-state branch in `HubReports.tsx`.
+  /**
+   * Сторінка має ОДИН порожній стан — картку мовчання у «Зв'язках між
+   * сферами», з реальною найближчою парою і прогресом до порога. Інсайти
+   * свого банера не мають: їхні пороги вищі за пороги зв'язків, тож поки
+   * мовчать зв'язки, інсайтів гарантовано немає, і «Ще збираємо твої дані»
+   * лише повторював те саме слабшими словами.
+   */
+  it("не малює власного порожнього стану для закономірностей", () => {
     render(<HubReports />);
 
-    // Порожній стан тепер — ілюстрований `EmptyState` замість голого
-    // рядка (UX-пропозиція 2026-07).
-    expect(screen.getByText("Ще збираємо твої дані")).toBeInTheDocument();
+    expect(screen.queryByText("Ще збираємо твої дані")).not.toBeInTheDocument();
+    expect(screen.queryByText("Закономірності")).not.toBeInTheDocument();
   });
 
   it("renders all four domain card stubs via Suspense", () => {
@@ -197,7 +200,7 @@ describe("HubReports — render smoke (F23)", () => {
         title: "Sergeant — звіт",
         sections: expect.arrayContaining([
           expect.objectContaining({ title: "Період" }),
-          expect.objectContaining({ title: "Інсайти (0)" }),
+          expect.objectContaining({ title: "Закономірності за весь час (0)" }),
         ]),
       }),
     );
@@ -228,10 +231,11 @@ describe("HubReports — render smoke (F23)", () => {
     expect(nextBtn).not.toHaveAttribute("aria-hidden", "true");
   });
 
-  // ── F7: insight text includes period label ────────────────────────────────
-  // The presentation layer (HubReports) appends the active-period label to each
-  // insight title returned by the side-effect-free engine. Mock the engine to
-  // return a plain title and assert the period suffix reaches the DOM.
+  // ── Інсайти не залежать від перемикача періоду ────────────────────
+  // `generateInsights()` не приймає аргументів: вікна зашиті всередині
+  // (≥4 тижні, ≥20 подій, ≥2 місяці). Раніше презентаційний шар дописував до
+  // заголовка «(за тиждень)» / «(за місяць)» — підпис стверджував період, за
+  // який інсайт не рахувався, і той самий текст їхав у PDF-експорт.
   const plainInsight = {
     id: "best_workout_day",
     iconName: "calendar" as const,
@@ -240,17 +244,17 @@ describe("HubReports — render smoke (F23)", () => {
     detail: "5 з 22 тренувань",
   };
 
-  it("F7 — insight title gets the «за тиждень» suffix on the default period", () => {
+  it("заголовок інсайту не дописує період", () => {
     vi.mocked(generateInsights).mockReturnValue([plainInsight]);
 
     render(<HubReports />);
 
     expect(
-      screen.getByText("Найпродуктивніший день для тренувань (за тиждень)"),
+      screen.getByText("Найпродуктивніший день для тренувань"),
     ).toBeInTheDocument();
   });
 
-  it("F7 — insight title suffix switches to «за місяць» when the period changes", () => {
+  it("перемикання періоду заголовок інсайту не чіпає", () => {
     vi.mocked(generateInsights).mockReturnValue([plainInsight]);
 
     render(<HubReports />);
@@ -260,8 +264,27 @@ describe("HubReports — render smoke (F23)", () => {
     });
 
     expect(
-      screen.getByText("Найпродуктивніший день для тренувань (за місяць)"),
+      screen.getByText("Найпродуктивніший день для тренувань"),
     ).toBeInTheDocument();
+    expect(screen.queryByText(/за місяць\)/)).not.toBeInTheDocument();
+  });
+
+  /**
+   * Позиція, а не косметика: секція мусить стояти НАД перемикачем
+   * періоду, інакше читається як блок, що ігнорує контрол просто над ним.
+   */
+  it("секція закономірностей стоїть над перемикачем періоду", () => {
+    vi.mocked(generateInsights).mockReturnValue([plainInsight]);
+
+    render(<HubReports />);
+
+    const heading = screen.getByRole("heading", { name: "Закономірності" });
+    const switcher = screen.getByRole("tab", { name: "Тиждень" });
+
+    expect(
+      heading.compareDocumentPosition(switcher) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 
   // ── F23-c: period range header updates on offset change ───────────────────
