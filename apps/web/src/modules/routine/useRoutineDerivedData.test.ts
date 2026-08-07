@@ -238,11 +238,15 @@ describe("useRoutineDerivedData", () => {
   });
 
   describe("tagChips", () => {
-    it("returns tag names sorted alphabetically", () => {
+    it("returns tag names sorted alphabetically when the tag has events in the visible period", () => {
       const routine = mkRoutine({
         tags: [
           { id: "t1", name: "Zumba" },
           { id: "t2", name: "Yoga" },
+        ],
+        habits: [
+          { id: "h1", name: "Habit 1", tagIds: ["t1"] },
+          { id: "h2", name: "Habit 2", tagIds: ["t2"] },
         ],
       });
       const { result } = renderHook(() =>
@@ -253,6 +257,19 @@ describe("useRoutineDerivedData", () => {
 
     it("returns empty array when routine has no tags", () => {
       const { result } = renderHook(() => useRoutineDerivedData(buildParams()));
+      expect(result.current.tagChips).toEqual([]);
+    });
+
+    // Атрактор №7 анти-слоп-стратегії §3.2: тег без подій у видимому
+    // періоді не має рендерити глухий чип — стеля тепер прив'язана до
+    // видимого діапазону, а не до довжини `routine.tags`.
+    it("excludes a tag with no habits scheduled in the visible period", () => {
+      const routine = mkRoutine({
+        tags: [{ id: "t1", name: "Zumba" }],
+      });
+      const { result } = renderHook(() =>
+        useRoutineDerivedData(buildParams({ routine })),
+      );
       expect(result.current.tagChips).toEqual([]);
     });
   });

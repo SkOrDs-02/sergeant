@@ -15,11 +15,18 @@ export function ProposalCard({
   title,
   intent,
   children,
+  // `status` — мінімальний реєстр статусу пропозиції: раніше в
+  // DesignShowcase не було механізму «відхилено», кожна картка мовчазно
+  // трактувалась як «може бути». Дефолт зберігає стару поведінку;
+  // `"rejected"` перемикає бейдж і сигналить, що мокап лишається лише як
+  // історичний референс, а не активна пропозиція.
+  status = "proposed",
 }: {
   id: string;
   title: string;
   intent: ReactNode;
   children: ReactNode;
+  status?: "proposed" | "rejected";
 }) {
   return (
     <div className="rounded-2xl border border-line bg-panel overflow-hidden">
@@ -33,9 +40,15 @@ export function ProposalCard({
             {intent}
           </p>
         </div>
-        <Badge variant="warning" tone="soft" size="sm">
-          може бути
-        </Badge>
+        {status === "rejected" ? (
+          <Badge variant="danger" tone="soft" size="sm">
+            відхилено
+          </Badge>
+        ) : (
+          <Badge variant="warning" tone="soft" size="sm">
+            може бути
+          </Badge>
+        )}
       </div>
       <div className="p-4 flex justify-center bg-bg">{children}</div>
     </div>

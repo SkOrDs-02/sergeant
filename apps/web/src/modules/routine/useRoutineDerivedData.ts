@@ -134,16 +134,22 @@ export function useRoutineDerivedData({
     return ev;
   }, [events, tagFilter, listQuery]);
 
+  // AI-CONTEXT: атрактор №7 анти-слоп-стратегії §3.2 (chip-scroller без
+  // стелі). Раніше сет безумовно вливав УСІ `routine.tags` незалежно від
+  // видимого періоду — стеля відсутня, і чип для тега без подій у поточному
+  // діапазоні все одно рендерився та вів у порожній стан. Тепер чип існує
+  // лише для тегів, реально представлених подіями видимого періоду; хвіст
+  // (теги поза чипами) покриває поле пошуку в `RoutineCalendarPanel`, яке
+  // матчить `tagLabels` так само, як і чипи.
   const tagChips = useMemo<string[]>(() => {
     const set = new Set<string>();
-    for (const t of routine.tags) set.add(t.name);
     for (const e of events) {
       for (const x of e.tagLabels) {
         if (x !== FIZRUK_GROUP_LABEL && x !== FINYK_SUB_GROUP_LABEL) set.add(x);
       }
     }
     return [...set].sort((a, b) => a.localeCompare(b, "uk"));
-  }, [routine.tags, events]);
+  }, [events]);
 
   const listEvents = useMemo(() => {
     if (timeMode === "month")
