@@ -9,6 +9,9 @@ import {
   markChecklistSeen,
   isChecklistVisible,
   getChecklistProgress,
+  getAccountAgeDays,
+  isWithinChecklistWindow,
+  resolveChecklistSteps,
   resetAllChecklists,
 } from "./moduleChecklist";
 
@@ -180,5 +183,128 @@ describe("moduleChecklist — reset", () => {
     resetAllChecklists(store);
     expect(getChecklistState(store, "finyk").completedSteps).toEqual([]);
     expect(getChecklistState(store, "routine").completedSteps).toEqual([]);
+  });
+});
+
+// ───────────────────────────────────────────────────────────────────────
+// Regression: the checklist used to be tap-only and device-gated, so a
+// long-standing user who reinstalled the PWA saw "Фінік: Перші кроки —
+// 0/4" over data proving every step was long done.
+// ───────────────────────────────────────────────────────────────────────
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+describe("moduleChecklist — data signals", () => {
+  let store: ReturnType<typeof createMemoryKVStore>;
+
+  beforeEach(() => {
+    store = createMemoryKVStore();
+  });
+
+  it("completes a step from real data with no tap recorded", () => {
+    const steps = resolveChecklistSteps(store, "finyk", { add_expense: true });
+    const addExpense = steps.find((s) => s.id === "add_expense");
+    expect(addExpense?.done).toBe(true);
+    expect(addExpense?.provenByData).toBe(true);
+    expect(getChecklistState(store, "finyk").completedSteps).toEqual([]);
+  });
+
+  it("hides the card once data proves every step, without any tap", () => {
+    expect(isChecklistVisible(store, "finyk")).toBe(true);
+    const signals = Object.fromEntries(
+      MODULE_CHECKLISTS.finyk.steps.map((s) => [s.id, true]),
+    );
+    expect(isChecklistVisible(store, "finyk", { signals })).toBe(false);
+  });
+
+  it("treats a falsy signal as 'no proof', never as an un-tick", () => {
+    // routine.todayDone is 0 on a skipped day — that must not undo a step
+    // the user already ticked.
+    markChecklistStepDone(store, "routine", "complete_habit");
+    const steps = resolveChecklistSteps(store, "routine", {
+      complete_habit: false,
+    });
+    const step = steps.find((s) => s.id === "complete_habit");
+    expect(step?.done).toBe(true);
+    expect(step?.provenByData).toBe(false);
+  });
+
+  it("resolves impliedBy transitively (streak ⇒ complete ⇒ create)", () => {
+    const steps = resolveChecklistSteps(store, "routine", {
+      three_day_streak: true,
+    });
+    expect(steps.every((s) => s.done)).toBe(true);
+    expect(
+      getChecklistProgress(store, "routine", { three_day_streak: true }),
+    ).toEqual({ completed: 3, total: 3 });
+  });
+
+  it("counts data-proven and tapped steps together", () => {
+    markChecklistStepDone(store, "finyk", "view_analytics");
+    const progress = getChecklistProgress(store, "finyk", {
+      add_expense: true,
+      set_budget: true,
+    });
+    expect(progress.completed).toBe(3);
+    expect(progress.total).toBe(4);
+  });
+});
+
+describe("moduleChecklist — FTUX window is account-scoped", () => {
+  const now = Date.UTC(2026, 7, 7);
+  const iso = (daysAgo: number) =>
+    new Date(now - daysAgo * DAY_MS).toISOString();
+
+  it("reads account age in whole days from the server timestamp", () => {
+    expect(getAccountAgeDays(iso(30), now)).toBe(30);
+    expect(getAccountAgeDays(null, now)).toBeNull();
+    expect(getAccountAgeDays("not-a-date", now)).toBeNull();
+  });
+
+  it("treats a future createdAt as day 0 rather than as an old account", () => {
+    expect(getAccountAgeDays(new Date(now + DAY_MS).toISOString(), now)).toBe(
+      0,
+    );
+  });
+
+  it("closes the window for an old account even when the device looks new", () => {
+    // The exact reinstall case: localStorage wiped, so sessionDays is 1.
+    expect(
+      isWithinChecklistWindow({
+        accountCreatedAt: iso(120),
+        sessionDays: 1,
+        now,
+      }),
+    ).toBe(false);
+  });
+
+  it("keeps the window open for a genuinely fresh account", () => {
+    expect(
+      isWithinChecklistWindow({
+        accountCreatedAt: iso(2),
+        sessionDays: 2,
+        now,
+      }),
+    ).toBe(true);
+  });
+
+  it("falls back to device session days for an anonymous user", () => {
+    expect(
+      isWithinChecklistWindow({ accountCreatedAt: null, sessionDays: 3, now }),
+    ).toBe(true);
+    expect(
+      isWithinChecklistWindow({ accountCreatedAt: null, sessionDays: 9, now }),
+    ).toBe(false);
+  });
+
+  it("hides the card for an old account regardless of local state", () => {
+    const store = createMemoryKVStore();
+    expect(
+      isChecklistVisible(store, "finyk", {
+        accountCreatedAt: iso(200),
+        sessionDays: 1,
+        now,
+      }),
+    ).toBe(false);
   });
 });

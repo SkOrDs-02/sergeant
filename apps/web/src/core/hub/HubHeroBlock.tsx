@@ -46,6 +46,7 @@ export interface HubHeroBlockProps {
 export function HubHeroBlock({
   onOpenModule,
   onShowAuth,
+  user,
   hasRealEntry,
   sessionDays,
   entryCount,
@@ -110,6 +111,7 @@ export function HubHeroBlock({
       {showChecklist && primaryModule && (
         <ModuleChecklist
           moduleId={primaryModule}
+          accountCreatedAt={user?.createdAt ?? null}
           onAction={(action) => {
             openHubModuleWithAction(
               primaryModule as Parameters<typeof openHubModuleWithAction>[0],

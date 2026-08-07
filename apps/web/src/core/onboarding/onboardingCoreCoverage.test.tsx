@@ -104,6 +104,9 @@ vi.mock("@shared/lib/adapters/haptic", () => ({
   hapticSuccess: vi.fn(),
 }));
 
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import type { ReactNode } from "react";
+
 import { trackEvent } from "../observability/analytics";
 import { FirstActionHeroCard } from "./FirstActionSheet";
 import { FirstRunHintBanner } from "./FirstRunHintBanner";
@@ -182,6 +185,20 @@ describe("FirstActionHeroCard extended coverage", () => {
   });
 });
 
+// ModuleChecklist probes Monobank sync-state for the "Підключити
+// Monobank" step, so it needs the QueryClient the Hub gives it in
+// production.
+function renderChecklist(ui: ReactNode) {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(
+    <QueryClientProvider client={client}>
+      <ToastProvider>{ui}</ToastProvider>
+    </QueryClientProvider>,
+  );
+}
+
 describe("ModuleChecklist extended coverage", () => {
   beforeEach(() => {
     localStorage.clear();
@@ -196,11 +213,7 @@ describe("ModuleChecklist extended coverage", () => {
 
   it("collapses, expands, fires step actions, and dismisses", () => {
     const onAction = vi.fn();
-    render(
-      <ToastProvider>
-        <ModuleChecklist moduleId="finyk" onAction={onAction} />
-      </ToastProvider>,
-    );
+    renderChecklist(<ModuleChecklist moduleId="finyk" onAction={onAction} />);
 
     fireEvent.click(screen.getByRole("button", { name: /Фінік/ }));
     expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
@@ -219,11 +232,7 @@ describe("ModuleChecklist extended coverage", () => {
   });
 
   it("auto-hides shortly after the final step is completed", () => {
-    render(
-      <ToastProvider>
-        <ModuleChecklist moduleId="routine" />
-      </ToastProvider>,
-    );
+    renderChecklist(<ModuleChecklist moduleId="routine" />);
 
     const steps = screen.getAllByRole("checkbox");
     for (const step of steps) {

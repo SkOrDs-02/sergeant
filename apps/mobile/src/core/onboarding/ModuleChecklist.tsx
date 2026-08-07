@@ -2,11 +2,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import {
   MODULE_CHECKLISTS,
+  deriveChecklistSignals,
   getChecklistState,
   markChecklistStepDone,
   markChecklistSeen,
   dismissChecklist,
   isChecklistVisible,
+  isWithinChecklistWindow,
+  resolveChecklistStepsFromState,
   type DashboardModuleId,
   hapticTap,
 } from "@sergeant/shared";
@@ -21,26 +24,43 @@ function cx(...classes: Array<string | false | null | undefined>): string {
 export function ModuleChecklist({
   moduleId,
   onAction,
+  accountCreatedAt = null,
 }: {
   moduleId: DashboardModuleId;
   onAction?: (action: string) => void;
+  /**
+   * Server-stamped Better Auth `user.createdAt`. Anchors the 7-day FTUX
+   * window to the account rather than to this install's MMKV, which a
+   * reinstall resets — see `moduleChecklist.ts` for the full rationale.
+   */
+  accountCreatedAt?: string | null;
 }) {
+  // Positive-only evidence that a step is already done, read from the
+  // quick-stats snapshots. Without it `completedSteps` only ever grows
+  // from taps, so the card can never satisfy its own auto-hide.
+  const signals = useMemo(
+    () => deriveChecklistSignals(mmkvStore, moduleId),
+    [moduleId],
+  );
   const [visible, setVisible] = useState(() =>
-    isChecklistVisible(mmkvStore, moduleId),
+    isChecklistVisible(mmkvStore, moduleId, { signals, accountCreatedAt }),
   );
   const [state, setState] = useState(() =>
     getChecklistState(mmkvStore, moduleId),
   );
 
   const def = MODULE_CHECKLISTS[moduleId];
-  const completed = useMemo(
-    () =>
-      state.completedSteps.filter((s) =>
-        def.steps.some((step) => step.id === s),
-      ).length,
-    [state.completedSteps, def.steps],
+  const steps = useMemo(
+    () => resolveChecklistStepsFromState(def, state, signals),
+    [def, state, signals],
   );
-  const total = def.steps.length;
+  const completed = steps.filter((step) => step.done).length;
+  const total = steps.length;
+
+  // Derived, not state: the session resolves after first paint, so
+  // `accountCreatedAt` arrives late and an established account must drop
+  // the card the moment it does.
+  const shown = visible && isWithinChecklistWindow({ accountCreatedAt });
 
   // Fire `module_checklist_shown` exactly once per (moduleId × mount).
   // `markChecklistSeen` is idempotent at the storage level but the
@@ -48,33 +68,35 @@ export function ModuleChecklist({
   // mirroring `apps/web/src/core/onboarding/ModuleChecklist.tsx`.
   const shownFiredRef = useRef(false);
   useEffect(() => {
-    if (!visible) return;
+    if (!shown) return;
     markChecklistSeen(mmkvStore, moduleId);
     if (!shownFiredRef.current) {
       shownFiredRef.current = true;
       trackEvent(ANALYTICS_EVENTS.MODULE_CHECKLIST_SHOWN, { module: moduleId });
     }
-  }, [visible, moduleId]);
+  }, [shown, moduleId]);
 
   const handleStepDone = useCallback(
     (stepId: string) => {
       hapticTap();
       const next = markChecklistStepDone(mmkvStore, moduleId, stepId);
       setState(next);
-      const completedCount = next.completedSteps.filter((s) =>
-        def.steps.some((step) => step.id === s),
-      ).length;
+      // Count over resolved steps so data-proven rows are included —
+      // otherwise the last tap never reaches "all done" for a user whose
+      // other steps were satisfied by real activity.
+      const resolved = resolveChecklistStepsFromState(def, next, signals);
+      const completedCount = resolved.filter((step) => step.done).length;
       trackEvent(ANALYTICS_EVENTS.MODULE_CHECKLIST_STEP_DONE, {
         module: moduleId,
         stepId,
         completed: completedCount,
-        total: def.steps.length,
+        total: resolved.length,
       });
-      if (next.completedSteps.length >= def.steps.length) {
+      if (completedCount >= resolved.length) {
         setVisible(false);
       }
     },
-    [moduleId, def.steps],
+    [moduleId, def, signals],
   );
 
   const handleDismiss = useCallback(() => {
@@ -87,7 +109,7 @@ export function ModuleChecklist({
     });
   }, [moduleId, completed, total]);
 
-  if (!visible) return null;
+  if (!shown) return null;
 
   return (
     <View className="rounded-2xl border border-cream-200 bg-cream-50 p-4">
@@ -108,8 +130,8 @@ export function ModuleChecklist({
       </View>
 
       <View className="gap-1.5">
-        {def.steps.map((step) => {
-          const done = state.completedSteps.includes(step.id);
+        {steps.map((step) => {
+          const done = step.done;
           return (
             <Pressable
               key={step.id}

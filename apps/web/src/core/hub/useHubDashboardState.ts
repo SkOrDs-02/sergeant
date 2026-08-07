@@ -20,6 +20,7 @@ import {
   getVibePicks,
   hasSeenCrossModulePreview,
   isActiveModule,
+  isWithinChecklistWindow,
   normalizeDashboardDensity,
   recordLastActiveDate,
   setHideInactiveModules,
@@ -434,11 +435,23 @@ export function useHubDashboardState(props: {
 
   const primaryModule = activeModules[0] as
     "finyk" | "fizruk" | "routine" | "nutrition" | undefined;
+  // AI-CONTEXT: the FTUX window is anchored to the ACCOUNT, not to this
+  // device. `sessionDays` comes from `recordSessionDay()` in
+  // localStorage, so a reinstall / cleared storage / second browser
+  // restarts it at 1 and resurrected this checklist for long-standing
+  // users (their data syncs back down, so `hasRealEntry` flips true
+  // again and every other term of the gate passes). Better Auth's
+  // server-stamped `user.createdAt` cannot be reset that way; the device
+  // counter is kept only as the pre-auth fallback, where it is also the
+  // correct signal because there is no account yet.
   const showChecklist =
     primaryModule &&
     hasRealEntry &&
     !onboardingState.showFirstAction &&
-    sessionDays <= 7;
+    isWithinChecklistWindow({
+      accountCreatedAt: user?.createdAt ?? null,
+      sessionDays,
+    });
 
   // Smart-expand: open insights on first render when the user has at least
   // one actionable rec, is past FTUX, and is on a viewport wide enough to
