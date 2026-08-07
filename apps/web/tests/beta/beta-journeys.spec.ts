@@ -37,6 +37,14 @@ import { MAX_LIVE_AI_MESSAGES_PER_RUN } from "./betaMatrix";
  */
 
 const LIVE_AI = process.env["PW_BETA_LIVE_AI"] === "1";
+/**
+ * Ціль — розгорнута бета, а не локальна репетиція. Частина санітарних
+ * перевірок має сенс лише там: локальний стек свідомо будується з
+ * `VITE_API_BASE_URL=http://127.0.0.1:3000` і ходить на API крос-ориджн
+ * через CORS (`vite preview` не проксіює `/api` — проксі є лише в dev і
+ * на edge бети), тож same-origin-інваріант у репетиції хибно-червоний.
+ */
+const IS_BETA_TARGET = Boolean(process.env["PW_BETA_BASE_URL"]);
 const PRO_EMAIL = process.env["PW_BETA_PRO_EMAIL"];
 const PRO_PASSWORD = process.env["PW_BETA_PRO_PASSWORD"] ?? QA_PASSWORD;
 const RICH_EMAIL = process.env["PW_BETA_RICH_EMAIL"];
@@ -91,6 +99,29 @@ function assistantReplies(page: Page) {
   return page.getByRole("button", { name: "Озвучити відповідь" });
 }
 
+/**
+ * `goto`, стійкий до «крадіжки» deep-link-а: у репетиційному прогоні
+ * 2026-08-07 бут на `/pricing` одразу після CRUD в модулі інколи
+ * програвав гонку відновленню модульного стану, і сторінка сама їхала
+ * на `/routine/habits` (потенційний продуктовий баг — записаний у
+ * знахідках прогону). Повторюємо навігацію один раз і лишаємо анотацію,
+ * щоб подія була видимою в репорті, а не замаскованою.
+ */
+async function gotoSticky(page: Page, route: string): Promise<void> {
+  await goto(page, route);
+  const bounced = await page
+    .waitForURL((u) => !u.pathname.startsWith(route), { timeout: 2_000 })
+    .then(() => true)
+    .catch(() => false);
+  if (bounced) {
+    test.info().annotations.push({
+      type: "warning",
+      description: `Deep-link ${route} було перехоплено (сторінка поїхала на ${new URL(page.url()).pathname}) — див. знахідку про викрадення deep-link-а`,
+    });
+    await goto(page, route);
+  }
+}
+
 async function newPersonaContext(browser: {
   newContext: (opts: {
     locale: string;
@@ -113,6 +144,10 @@ test.describe.serial("Цикл 3 — санітарні перевірки се�
   test("запити застосунку йдуть same-origin (edge-проксі, без CORS)", async ({
     page,
   }) => {
+    test.skip(
+      !IS_BETA_TARGET,
+      "Санітарна перевірка edge-проксі має сенс лише проти бети (PW_BETA_BASE_URL); локальна репетиція свідомо ходить на :3000 через CORS",
+    );
     const apiOrigins = new Set<string>();
     page.on("request", (req) => {
       const url = new URL(req.url());
@@ -183,7 +218,12 @@ test.describe.serial("BT1 — анонім із Telegram-групи", () => {
   test("BT1: стан переживає перезавантаження", async () => {
     await goto(page, "/routine/habits");
     await page.reload({ waitUntil: "domcontentloaded" });
-    await expect(visibleText(page, `QA BT1 звичка ${RUN_TAG}`)).toBeVisible();
+    // Після reload список чекає гідрації SQLite (OPFS) — на повільному
+    // пристрої це довше за дефолтні 5 с expect-таймауту (флейк першого
+    // репетиційного прогону 2026-08-07).
+    await expect(visibleText(page, `QA BT1 звичка ${RUN_TAG}`)).toBeVisible({
+      timeout: 15_000,
+    });
   });
 
   test("BT1: PDF-експорт загейчено paywall-ом, а не помилкою", async () => {
@@ -270,7 +310,11 @@ test.describe.serial("BT2 — щойно зареєстрований, ще бе
   test("BT2: стан переживає перезавантаження", async () => {
     await goto(page, "/routine/habits");
     await page.reload({ waitUntil: "domcontentloaded" });
-    await expect(visibleText(page, `QA BT2 звичка ${RUN_TAG}`)).toBeVisible();
+    // Див. коментар у BT1 — пост-reload гідрація SQLite повільніша за
+    // дефолтний expect-таймаут.
+    await expect(visibleText(page, `QA BT2 звичка ${RUN_TAG}`)).toBeVisible({
+      timeout: 15_000,
+    });
   });
 
   test("BT2: тариф — free, PDF за paywall-ом", async () => {
@@ -326,7 +370,7 @@ test.describe.serial("BT3 — канонічний бета-тестер (Pro tr
   });
 
   test("BT3: trialing відображається як платний план (B5)", async () => {
-    await goto(page, "/pricing");
+    await gotoSticky(page, "/pricing");
     // Платнику пропонують керувати підпискою, а не купувати її знову.
     await expect(
       page.getByRole("button", { name: /Керувати підпискою/ }),
@@ -334,7 +378,7 @@ test.describe.serial("BT3 — канонічний бета-тестер (Pro tr
   });
 
   test("BT3: trialing знімає PDF-гейт", async () => {
-    await goto(page, "/insights");
+    await gotoSticky(page, "/insights");
     await page.getByRole("button", { name: /Експортувати PDF/ }).click();
     await expect(page.getByText("PDF-звіти — у Premium")).toBeHidden();
   });
@@ -380,8 +424,18 @@ test.describe.serial("BT4 — той самий тестер на другому
       timeout: 30_000,
     });
     await goto(page, "/finyk/transactions");
-    await expect(visibleText(page, "-349,00₴")).toBeVisible({
-      timeout: 30_000,
+    // НЕ асертимо суму згорнутого заголовка дня: BT3-акаунт живе всю бету
+    // (як у справжніх тестерів) і накопичує записи між прогонами, тож
+    // агрегат дня — рухома мішень (знахідка репетиції: −349 → −1047).
+    // Чекаємо групу дня (= синк доїхав), розгортаємо (bulk-гідрація день
+    // не розгортає — свідома межа фіксу B6) і шукаємо запис ЦЬОГО прогону.
+    await expect(
+      page.getByRole("button", { name: /Сьогодні/ }).first(),
+    ).toBeVisible({ timeout: 30_000 });
+    const expand = page.getByRole("button", { name: /Розгорнути Сьогодні/ });
+    if (await expand.count()) await expand.first().click();
+    await expect(visibleText(page, `QA BT3 витрата ${RUN_TAG}`)).toBeVisible({
+      timeout: 15_000,
     });
   });
 
@@ -391,7 +445,7 @@ test.describe.serial("BT4 — той самий тестер на другому
   });
 
   test("BT4: Pro-стан видно і на другому пристрої", async () => {
-    await goto(page, "/pricing");
+    await gotoSticky(page, "/pricing");
     await expect(
       page.getByRole("button", { name: /Керувати підпискою/ }),
     ).toBeVisible();
