@@ -11,6 +11,7 @@ import {
   STORAGE_KEYS,
   VIBE_PICKS_KEY,
   type Rec,
+  type User,
 } from "@sergeant/shared";
 import { ToastProvider } from "@shared/hooks/useToast";
 
@@ -232,15 +233,17 @@ import { HubDashboard } from "./HubDashboard";
 function renderDashboard({
   onOpenModule = vi.fn(),
   onShowAuth = vi.fn(),
+  user = null,
 }: {
   onOpenModule?: (module: string) => void;
   onShowAuth?: () => void;
+  user?: User | null;
 } = {}) {
   const result = render(
     <MemoryRouter>
       <ToastProvider>
         <HubDashboard
-          user={null}
+          user={user}
           onOpenModule={onOpenModule}
           onShowAuth={onShowAuth}
         />
@@ -248,6 +251,18 @@ function renderDashboard({
     </MemoryRouter>,
   );
   return { ...result, onOpenModule, onShowAuth };
+}
+
+/** Signed-in user whose account was created `daysAgo` days ago. */
+function userAged(daysAgo: number): User {
+  return {
+    id: "user-1",
+    email: "test@example.com",
+    name: "Test",
+    image: null,
+    emailVerified: true,
+    createdAt: new Date(Date.now() - daysAgo * 86_400_000).toISOString(),
+  };
 }
 
 function rec(overrides: Partial<TestRec>): TestRec {
@@ -346,6 +361,26 @@ describe("HubDashboard", () => {
     localStorage.setItem(VIBE_PICKS_KEY, JSON.stringify(["finyk"]));
 
     renderDashboard();
+
+    expect(screen.getByText(MODULE_CHECKLISTS.finyk.title)).toBeInTheDocument();
+  });
+
+  it("hides the checklist for an established account on a fresh device", () => {
+    // Regression: `sessionDays` lives in localStorage, so a reinstall or a
+    // second browser restarted it at 1 and resurrected «Перші кроки» for
+    // users who had been running Фінік for months. The FTUX window is now
+    // anchored to the server-stamped account age instead.
+    localStorage.setItem(VIBE_PICKS_KEY, JSON.stringify(["finyk"]));
+
+    renderDashboard({ user: userAged(200) });
+
+    expect(screen.queryByText(MODULE_CHECKLISTS.finyk.title)).toBeNull();
+  });
+
+  it("still shows the checklist for a genuinely new account", () => {
+    localStorage.setItem(VIBE_PICKS_KEY, JSON.stringify(["finyk"]));
+
+    renderDashboard({ user: userAged(2) });
 
     expect(screen.getByText(MODULE_CHECKLISTS.finyk.title)).toBeInTheDocument();
   });

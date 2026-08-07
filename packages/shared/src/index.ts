@@ -100,6 +100,9 @@ export * from "./lib/onboardingReset";
 // Module onboarding checklists (Phase 2 — activation).
 export * from "./lib/moduleChecklist";
 
+// Real-data evidence that a checklist step is already done.
+export * from "./lib/moduleChecklistSignals";
+
 // First-real-entry detection shared between web and mobile.
 export * from "./lib/firstRealEntry";
 

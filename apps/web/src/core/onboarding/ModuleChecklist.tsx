@@ -1,13 +1,19 @@
 /**
- * Last validated: 2026-05-14
+ * Last validated: 2026-08-07
  * Status: Active
  */
 /**
  * ModuleChecklist — Compact onboarding checklist for each module.
  *
  * Displays 3-4 actionable steps that guide the user from first entry
- * to "aha-moment". State is persisted per-module via localStorage.
- * The checklist auto-hides after 7 days or when all steps completed.
+ * to "aha-moment". The checklist auto-hides after 7 account-days or
+ * once every step is done.
+ *
+ * AI-CONTEXT: a step is done when real data proves it OR the user
+ * tapped the row. The data half (`deriveChecklistSignals` +
+ * `useChecklistSignals`) is what makes the card able to close itself —
+ * before it existed, `completedSteps` was tap-only and a user who had
+ * genuinely added expenses and connected a bank still saw "0/4".
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -23,11 +29,15 @@ import {
   markChecklistSeen,
   dismissChecklist,
   isChecklistVisible,
+  isWithinChecklistWindow,
+  resolveChecklistSteps,
+  resolveChecklistStepsFromState,
   saveChecklistState,
   type DashboardModuleId,
 } from "@sergeant/shared";
 import { ANALYTICS_EVENTS, trackEvent } from "../observability/analytics";
 import { messages } from "@shared/i18n/uk";
+import { useChecklistSignals } from "./useChecklistSignals";
 
 const MODULE_STYLES: Record<
   DashboardModuleId,
@@ -67,6 +77,11 @@ export interface ModuleChecklistProps {
   className?: string;
   /** Compact variant for tighter spaces */
   compact?: boolean;
+  /**
+   * Server-stamped Better Auth `user.createdAt`. Anchors the 7-day FTUX
+   * window to the account instead of to this device's localStorage.
+   */
+  accountCreatedAt?: string | null;
 }
 
 export function ModuleChecklist({
@@ -74,11 +89,10 @@ export function ModuleChecklist({
   onAction,
   className,
   compact = false,
+  accountCreatedAt = null,
 }: ModuleChecklistProps) {
   const toast = useToast();
-  const [visible, setVisible] = useState(() =>
-    isChecklistVisible(localStorageStore, moduleId),
-  );
+  const signals = useChecklistSignals(moduleId);
   const [state, setState] = useState(() =>
     getChecklistState(localStorageStore, moduleId),
   );
@@ -87,15 +101,28 @@ export function ModuleChecklist({
   const def = MODULE_CHECKLISTS[moduleId];
   const styles = MODULE_STYLES[moduleId];
 
-  const completed = useMemo(
-    () =>
-      state.completedSteps.filter((s) =>
-        def.steps.some((step) => step.id === s),
-      ).length,
-    [state.completedSteps, def.steps],
+  const steps = useMemo(
+    () => resolveChecklistStepsFromState(def, state, signals),
+    [def, state, signals],
   );
-  const total = def.steps.length;
+
+  const completed = steps.filter((step) => step.done).length;
+  const total = steps.length;
   const progress = total > 0 ? (completed / total) * 100 : 0;
+
+  const [visible, setVisible] = useState(() =>
+    isChecklistVisible(localStorageStore, moduleId, {
+      signals,
+      accountCreatedAt,
+    }),
+  );
+
+  // Derived, not state: the session resolves after first paint, so
+  // `accountCreatedAt` arrives as `null` and turns into a real timestamp
+  // a tick later. An established account has to drop the card the moment
+  // it does. Completion keeps its own delayed auto-hide below so the
+  // exit animation survives.
+  const shown = visible && isWithinChecklistWindow({ accountCreatedAt });
 
   // Mark as seen on first render. Fire `module_checklist_shown` exactly
   // once per (moduleId × mount) — `markChecklistSeen` is idempotent at
@@ -103,20 +130,25 @@ export function ModuleChecklist({
   // signal for the funnel, so we tie it to the first time the effect
   // fires for this module.
   useEffect(() => {
-    if (!visible) return;
+    if (!shown) return;
     markChecklistSeen(localStorageStore, moduleId);
     trackEvent(ANALYTICS_EVENTS.MODULE_CHECKLIST_SHOWN, { module: moduleId });
-  }, [visible, moduleId]);
+  }, [shown, moduleId]);
 
   const handleStepDone = useCallback(
     (stepId: string, action?: string) => {
       hapticTap();
-      let justCompleted = false;
+      // Completion is counted over the *resolved* steps, so a tap that
+      // fills the last gap next to data-proven rows still celebrates —
+      // and a card already complete by data never re-celebrates.
+      const doneBefore = resolveChecklistSteps(
+        localStorageStore,
+        moduleId,
+        signals,
+      ).every((step) => step.done);
+
       setState((previousState) => {
         const persistedState = getChecklistState(localStorageStore, moduleId);
-        const previouslyDone =
-          persistedState.completedSteps.length >= def.steps.length ||
-          previousState.completedSteps.length >= def.steps.length;
         const completedSteps = Array.from(
           new Set([
             ...persistedState.completedSteps,
@@ -130,9 +162,6 @@ export function ModuleChecklist({
           firstSeenAt: previousState.firstSeenAt ?? persistedState.firstSeenAt,
         };
         saveChecklistState(localStorageStore, moduleId, next);
-        if (!previouslyDone && completedSteps.length >= def.steps.length) {
-          justCompleted = true;
-        }
         return next;
       });
 
@@ -140,13 +169,13 @@ export function ModuleChecklist({
         onAction?.(action);
       }
 
-      const total = def.steps.length;
-      const completed = Math.min(
-        total,
-        getChecklistState(localStorageStore, moduleId).completedSteps.filter(
-          (s) => def.steps.some((step) => step.id === s),
-        ).length,
+      const resolvedAfter = resolveChecklistSteps(
+        localStorageStore,
+        moduleId,
+        signals,
       );
+      const total = resolvedAfter.length;
+      const completed = resolvedAfter.filter((step) => step.done).length;
       trackEvent(ANALYTICS_EVENTS.MODULE_CHECKLIST_STEP_DONE, {
         module: moduleId,
         stepId,
@@ -156,20 +185,20 @@ export function ModuleChecklist({
 
       // Celebrate only on the transition to "all done"; auto-hide is handled
       // by the useEffect below so we don't double-fire setTimeout here.
-      if (justCompleted) {
+      if (!doneBefore && completed >= total) {
         toast.success(`${def.title}: перші кроки виконано!`, 4000);
       }
     },
-    [moduleId, onAction, def.steps, def.title, toast],
+    [moduleId, onAction, signals, def.title, toast],
   );
 
   useEffect(() => {
-    if (visible && completed >= total) {
+    if (shown && completed >= total) {
       const timeout = setTimeout(() => setVisible(false), 600);
       return () => clearTimeout(timeout);
     }
     return undefined;
-  }, [completed, total, visible]);
+  }, [completed, total, shown]);
 
   const handleDismiss = useCallback(() => {
     hapticTap();
@@ -182,7 +211,7 @@ export function ModuleChecklist({
     });
   }, [moduleId, completed, total]);
 
-  if (!visible) return null;
+  if (!shown) return null;
 
   return (
     <div
@@ -273,8 +302,8 @@ export function ModuleChecklist({
       {/* Steps list */}
       {!isCollapsed && (
         <div className="px-4 pb-4 space-y-1.5">
-          {def.steps.map((step, idx) => {
-            const done = state.completedSteps.includes(step.id);
+          {steps.map((step, idx) => {
+            const done = step.done;
             return (
               <button
                 key={step.id}
@@ -344,18 +373,18 @@ export function ModuleChecklist({
 /**
  * Hook to check if a module checklist should be visible.
  * Useful for conditional rendering in parent components.
+ *
+ * Resolves against the same real-data signals the card itself uses, so
+ * a caller never reserves space for a checklist the data has already
+ * retired.
  */
 export function useModuleChecklistVisible(
   moduleId: DashboardModuleId,
+  accountCreatedAt: string | null = null,
 ): boolean {
-  const [visible, setVisible] = useState(() =>
-    isChecklistVisible(localStorageStore, moduleId),
-  );
-  const [prevModuleId, setPrevModuleId] = useState(moduleId);
-  if (moduleId !== prevModuleId) {
-    setPrevModuleId(moduleId);
-    setVisible(isChecklistVisible(localStorageStore, moduleId));
-  }
-
-  return visible;
+  const signals = useChecklistSignals(moduleId);
+  return isChecklistVisible(localStorageStore, moduleId, {
+    signals,
+    accountCreatedAt,
+  });
 }
