@@ -2,7 +2,7 @@
  * Last validated: 2026-05-18
  * Status: Active
  */
-import type { CSSProperties, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { cn } from "../../lib/ui/cn";
 
 /**
@@ -37,6 +37,15 @@ import { cn } from "../../lib/ui/cn";
  *   not "deficit" (nutrition daily ring — canon §5.2). Purely visual on
  *   the track circle; the filled arc keeps its normal solid stroke so the
  *   logged progress still reads clearly.
+ * - `onHero` — the ring sits on a `Card prominence="hero"` surface. The
+ *   default `--c-chart-*` tiers are tuned against cream `bg-bg`, and a
+ *   hero card is dark in every theme, so on a hero they collapse into the
+ *   fill — `chart-nutrition` (lime-800) IS the light nutrition hero
+ *   gradient's start stop, which made the nutrition macro rings invisible
+ *   in light theme (screenshot bug 2026-08-07). `onHero` routes the arc
+ *   through the `--c-chart-*-on-hero` -400 tier and flips the track to
+ *   `hero-ink` — the same fix `routine/DayProgressRing` already applies
+ *   by hand for the routine hero.
  *
  * A11y:
  * - `role="progressbar"` + `aria-valuenow` / `aria-valuemin` /
@@ -122,6 +131,8 @@ export interface ProgressRingProps extends Omit<
   showValue?: boolean;
   /** Dashes the track ring + appends a text a11y suffix — see file header. */
   incomplete?: boolean;
+  /** Ring sits on a `Card prominence="hero"` fill — see file header. */
+  onHero?: boolean;
 }
 
 export function ProgressRing({
@@ -134,6 +145,7 @@ export function ProgressRing({
   showPercent = true,
   showValue,
   incomplete = false,
+  onHero = false,
   className,
   "aria-label": ariaLabel,
   "aria-labelledby": ariaLabelledBy,
@@ -154,12 +166,15 @@ export function ProgressRing({
     label !== undefined ? label : showLabel ? `${percentText}%` : null;
 
   const isModuleVariant = MODULE_VARIANTS.has(variant);
-  const arcStroke: CSSProperties | undefined = isModuleVariant
-    ? {
-        stroke:
-          chartVar[variant as "finyk" | "fizruk" | "routine" | "nutrition"],
-      }
-    : undefined;
+  // On a hero fill EVERY variant — module and status alike — routes through
+  // the `-on-hero` tier: `warning`'s amber-700 and `routine`'s coral-700 sit
+  // as flat on a saturated hero as the module chart vars do. Off a hero only
+  // module variants leave `currentColor` (see the `chartVar` note above).
+  const arcStroke = onHero
+    ? `rgb(var(--c-chart-${variant}-on-hero))`
+    : isModuleVariant
+      ? chartVar[variant as "finyk" | "fizruk" | "routine" | "nutrition"]
+      : "currentColor";
 
   // ARIA progressbar requires an accessible name. The visible centre label
   // is `aria-hidden`, so derive a default `aria-label` ("65%" / "65 / 100")
@@ -189,7 +204,11 @@ export function ProgressRing({
       aria-labelledby={ariaLabelledBy}
       className={cn(
         "relative inline-flex items-center justify-center",
-        variantColor[variant],
+        // `text-hero-ink` on a hero: it tints the default percent label and
+        // feeds the track's `currentColor` (a colored track at 15% is what
+        // disappeared into the fill — neutral ink at 30% reads on both the
+        // light gradient and the dark ink surface).
+        onHero ? "text-hero-ink" : variantColor[variant],
         className,
       )}
       style={{ width: diameter, height: diameter }}
@@ -207,8 +226,8 @@ export function ProgressRing({
           cy={diameter / 2}
           r={radius}
           fill="none"
-          stroke={arcStroke?.stroke ?? "currentColor"}
-          strokeOpacity={0.15}
+          stroke={onHero ? "currentColor" : arcStroke}
+          strokeOpacity={onHero ? 0.3 : 0.15}
           strokeWidth={stroke}
           strokeDasharray={incomplete ? "4 3" : undefined}
         />
@@ -217,7 +236,7 @@ export function ProgressRing({
           cy={diameter / 2}
           r={radius}
           fill="none"
-          stroke={arcStroke?.stroke ?? "currentColor"}
+          stroke={arcStroke}
           strokeWidth={stroke}
           strokeLinecap="round"
           strokeDasharray={circumference}
@@ -229,7 +248,8 @@ export function ProgressRing({
         <span
           aria-hidden="true"
           className={cn(
-            "absolute inset-0 flex items-center justify-center font-semibold tabular-nums text-text",
+            "absolute inset-0 flex items-center justify-center font-semibold tabular-nums",
+            onHero ? "text-hero-ink" : "text-text",
             labelTextSize[size],
           )}
         >

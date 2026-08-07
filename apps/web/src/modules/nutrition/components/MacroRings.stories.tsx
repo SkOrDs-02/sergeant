@@ -4,6 +4,17 @@ import { MacroRings } from "./MacroRings";
 const meta: Meta<typeof MacroRings> = {
   title: "Nutrition/MacroRings",
   component: MacroRings,
+  // Продакшн-контекст компонента — hero-картка модуля, тож стори рендеряться
+  // на тій самій заливці: на кремовому фоні дефолтні токени виглядають
+  // нормально й ховають саме той дефект, який `onHero` лікує.
+  decorators: [
+    (Story) => (
+      <div className="bg-hero-grad-nutrition rounded-2xl p-4 max-w-sm">
+        <Story />
+      </div>
+    ),
+  ],
+  args: { onHero: true },
 };
 export default meta;
 

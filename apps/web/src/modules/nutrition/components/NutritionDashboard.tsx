@@ -310,6 +310,10 @@ export function NutritionDashboard({
                   max={kcalGoal}
                   size="lg"
                   incomplete={isIncompleteDay}
+                  // Both ring groups live on the `prominence="hero"` fill —
+                  // without this the arc is lime-800 on the lime-800→-700
+                  // hero gradient (invisible in light theme).
+                  onHero
                   aria-label={
                     isMostlyEstimated
                       ? `Калорії: ${kcalConsumed} з ${kcalGoal} · ${messages.nutrition.estimatedBadge.a11ySuffix}`
@@ -341,6 +345,7 @@ export function NutritionDashboard({
               <MacroRings
                 aria-label={messages.nutrition.macrosToday}
                 incomplete={isIncompleteDay}
+                onHero
                 macros={[
                   {
                     label: "Білки",
