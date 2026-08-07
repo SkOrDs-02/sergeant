@@ -178,7 +178,17 @@ export function useFinykStorageSlots(): FinykStorageSlots {
   // gone: the dual-write pipeline (`useFinykDualWriteSync`) is the
   // sole persistence sink.
   const sqliteCacheTick = useFinykSqliteReadTick();
-  const [prevSqliteTick, setPrevSqliteTick] = useState(sqliteCacheTick);
+  // Seeded with `-1` (never a real tick — the gate counts up from 0) so
+  // an ALREADY warm cache is applied on the first render. Seeding with
+  // the live tick meant "warmed before this hook mounted" produced no
+  // change and therefore no overlay at all: `useHubChatStorageBoot`
+  // warms the finyk cache app-wide and `bootFinykSqliteReadPath` is
+  // `booted`-guarded, so by the time the lazy `/finyk` shell mounts the
+  // only refresh has already happened. Authenticated sessions hid it —
+  // sync pulls keep bumping the tick — but an anonymous visitor has no
+  // sync, so their own expenses stayed invisible after reload
+  // (measured 2026-08-06).
+  const [prevSqliteTick, setPrevSqliteTick] = useState(-1);
   if (sqliteCacheTick !== prevSqliteTick) {
     setPrevSqliteTick(sqliteCacheTick);
     const cache = getCachedFinykSqliteState();

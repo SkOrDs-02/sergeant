@@ -4,6 +4,7 @@ import { toLocalISODate } from "@sergeant/shared";
 import { useFinykStorageSlots } from "./useFinykStorageSlots";
 import { useFinykStorageMutations } from "./useFinykStorageMutations";
 import { useFinykBackupSync } from "./useFinykBackupSync";
+import { useFinykDualWriteBoot } from "./useFinykDualWriteBoot";
 import { useFinykDualWriteSync } from "./useFinykDualWriteSync";
 import { useFinykSqliteReadBoot } from "./useFinykSqliteReadBoot";
 import { useFinykMonoMirrorBoot } from "./useFinykMonoMirrorBoot";
@@ -54,11 +55,21 @@ export function useStorage({
   const mutations = useFinykStorageMutations(slots);
   const backupSync = useFinykBackupSync(slots, toast);
 
-  // Mirror every slot mutation into SQLite (best-effort). The dual-write
-  // CONTEXT itself is installed app-wide by `FinykBootGate` in
-  // `RootLayout` so the hub AI assistant can mirror chat-action writes
-  // even when the Finyk screen isn't mounted; this hook only wires the
-  // slot watcher (a no-op until that context is registered).
+  // Mirror every slot mutation into SQLite (best-effort). `FinykBootGate`
+  // in `RootLayout` installs the same context app-wide so the hub AI
+  // assistant can mirror chat-action writes even when the Finyk screen
+  // isn't mounted — but that gate is `user || isDemoActive()`, so for an
+  // anonymous visitor it renders nothing and `useFinykDualWriteSync`
+  // stays a permanent no-op (`triggerFinykDualWrite` short-circuits on
+  // an unregistered context). Booting here too is what Routine
+  // (`useRoutineAppState`), Fizruk (`FizrukApp`) and Nutrition
+  // (`NutritionApp`) already do; without it every expense an anonymous
+  // visitor adds lives in the warm cache only and dies on reload —
+  // measured 2026-08-06, see
+  // `docs/90-work/planning/specs/anonymous-local-first-persistence.md`.
+  // Re-registration is idempotent: both call sites build an equivalent
+  // context and teardown only clears its own.
+  useFinykDualWriteBoot();
   useFinykDualWriteSync(slots);
 
   // Stage 4 PR #037 — boot the SQLite read overlay (idempotent, only
