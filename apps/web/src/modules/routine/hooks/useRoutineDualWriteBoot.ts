@@ -32,6 +32,8 @@
 
 import { useEffect } from "react";
 import { useLocalUserId } from "../../../core/auth/useLocalUserId";
+import { logger } from "@shared/lib";
+import { addSentryBreadcrumb } from "../../../core/observability/sentry";
 
 export function useRoutineDualWriteBoot(): void {
   const userId = useLocalUserId();
@@ -45,14 +47,30 @@ export function useRoutineDualWriteBoot(): void {
     // критичний шлях — див. `docs/90-work/tech-debt/frontend.md`.
     let teardown: (() => void) | undefined;
     let cancelled = false;
-    void import("../lib/dualWriteBoot.js").then((mod) => {
-      if (cancelled) return;
-      teardown = mod.bootRoutineDualWrite({
-        // Read the live value on each call so an auth change between
-        // dual-write triggers is observed without re-registration.
-        getUserId: () => userId,
+    void import("../lib/dualWriteBoot.js")
+      .then((mod) => {
+        if (cancelled) return;
+        teardown = mod.bootRoutineDualWrite({
+          // Read the live value on each call so an auth change between
+          // dual-write triggers is observed without re-registration.
+          getUserId: () => userId,
+        });
+      })
+      .catch((err: unknown) => {
+        // AI-DANGER: без цього `.catch` відхилений імпорт давав би
+        // UNHANDLED rejection, а dual-write лишався б вимкненим МОВЧКИ —
+        // тобто записи не доходили б до SQLite до перезавантаження, і
+        // жоден сигнал про це не з'являвся б.
+        //
+        // Після розмонтування мовчимо навмисно: скасування — не збій.
+        if (cancelled) return;
+        logger.warn("[routine] dual-write boot chunk failed", err);
+        addSentryBreadcrumb({
+          category: "storage",
+          level: "warning",
+          message: "routine_dual_write_boot_chunk_failed",
+        });
       });
-    });
     return () => {
       cancelled = true;
       teardown?.();

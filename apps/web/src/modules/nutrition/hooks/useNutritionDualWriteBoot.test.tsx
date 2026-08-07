@@ -53,10 +53,12 @@ describe("useNutritionDualWriteBoot", () => {
   it("does not boot while the session is still resolving", async () => {
     authStatus = "loading";
     renderHook(() => useNutritionDualWriteBoot());
-    // Даємо динамічному імпорту шанс спрацювати — інакше ассерт нижче
-    // нічого не доводить (див. шапку файлу).
+    // Барʼєр: чекаємо на РЕАЛЬНИЙ резолв того самого модуля, який хук
+    // імпортував би. Один `Promise.resolve()` тут не доводив би нічого —
+    // він просуває рівно одну мікрозадачу, а ланцюг `import()` може бути
+    // довшим, тож регресія «бутається, але пізніше» проскочила б.
     await act(async () => {
-      await Promise.resolve();
+      await import("../lib/dualWriteBoot.js");
     });
     expect(bootMock).not.toHaveBeenCalled();
   });

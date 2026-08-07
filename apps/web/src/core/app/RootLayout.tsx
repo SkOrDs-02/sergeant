@@ -60,6 +60,7 @@ import { useAnalyticsConsentBoot } from "../observability/useAnalyticsConsentBoo
 import { useActiveModulesSync } from "../hub/useActiveModulesSync";
 import { isDemoActive } from "../onboarding/onboardingGate";
 import { HubShellProvider, type HubShellValue } from "./HubShellContext";
+import { ErrorBoundary } from "../ErrorBoundary";
 
 // Side-effect-only children rendered for authenticated users AND demo
 // sessions. The nested boot hooks all resolve their storage id via
@@ -84,7 +85,23 @@ import { HubShellProvider, type HubShellValue } from "./HubShellContext";
 function BootGate({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   if (!user && !isDemoActive()) return null;
-  return <Suspense fallback={null}>{children}</Suspense>;
+  /*
+    AI-DANGER: `Suspense` тут НЕ досить, і це поширена хиба. Він ловить
+    лише ОЧІКУВАННЯ лінивого імпорту; ВІДХИЛЕНИЙ `React.lazy` кидає далі
+    вгору — тобто збій одного чанка дійшов би до зовнішнього boundary й
+    міг знести всю оболонку. А кластер тут невидимий: ціна його падіння
+    мусить бути «цей модуль не прогрів кеш», не «застосунок зник».
+
+    `ErrorBoundary` заразом дає stale-bundle recovery: після деплою старий
+    таб має старі хеші чанків, і `isChunkLoadError` вмикає одноразовий
+    `location.reload()` з cooldown-ом. Тобто найчастіший випадок збою
+    лікується сам, а не тихо лишає модуль без кешу.
+  */
+  return (
+    <ErrorBoundary fallback={null}>
+      <Suspense fallback={null}>{children}</Suspense>
+    </ErrorBoundary>
+  );
 }
 
 /**
