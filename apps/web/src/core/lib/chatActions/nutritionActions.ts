@@ -1,4 +1,5 @@
 import { logger } from "@shared/lib";
+import { pluralUa, type UaPluralForms } from "@sergeant/shared";
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { canonicalFoodKey } from "@sergeant/nutrition-domain";
 import { saveRecipeToBook } from "../../../modules/nutrition/lib/recipeBook";
@@ -48,6 +49,13 @@ import type {
   ChatAction,
   ChatActionResult,
 } from "./types";
+
+/** «1 позицію / 2 позиції / 5 позицій» у підсумку очищення комори. */
+const PANTRY_ITEM_FORMS: UaPluralForms = {
+  one: "позицію",
+  few: "позиції",
+  many: "позицій",
+};
 
 export function handleNutritionAction(
   action: ChatAction,
@@ -320,6 +328,43 @@ export function handleNutritionAction(
         return `Списано ${asked}${unit} «${rawName}», лишилось ${left}${unit} у коморі "${pantry.name}"`;
       }
       return `Продукт "${rawName}" прибрано з комори "${pantry.name}"`;
+    }
+    case "clear_pantry": {
+      const activeId = loadActivePantryId();
+      const pantries = loadPantries();
+      const idx = pantries.findIndex((p) => p.id === activeId);
+      const pantry = idx >= 0 ? pantries[idx] : undefined;
+      if (!pantry) return `Активну комору (${activeId}) не знайдено.`;
+      const items = Array.isArray(pantry.items) ? pantry.items : [];
+      if (items.length === 0) {
+        return `Комора "${pantry.name}" і так порожня.`;
+      }
+
+      const next = [...pantries];
+      next[idx] = { ...pantry, items: [] };
+      persistPantries(undefined, undefined, next, activeId);
+
+      // Подія на позицію — `adjust` з `absQty: 0`, а не `consume` з дельтою.
+      // Чекпойнт каже «тепер нуль» і не потребує знати попередній залишок:
+      // у коморі бувають позиції без кількості («сіль»), для яких дельта
+      // просто не існує, а журнал усе одно має зійтися (ADR-0077).
+      for (const item of items) {
+        appendNutritionPantryEvent({
+          id: null,
+          pantryId: activeId,
+          itemId: null,
+          itemKey: canonicalFoodKey(String(item.name || "")),
+          kind: "adjust",
+          deltaQty: null,
+          absQty: 0,
+          unit: item.unit ?? null,
+          source: "chat_tool",
+          mealId: null,
+        });
+      }
+
+      const n = items.length;
+      return `Комору "${pantry.name}" очищено: прибрано ${n} ${pluralUa(n, PANTRY_ITEM_FORMS)}`;
     }
     case "set_daily_plan": {
       const { kcal, protein_g, fat_g, carbs_g, water_ml } = (

@@ -277,6 +277,75 @@ describe("add_to_shopping_list", () => {
 });
 
 // ---------------------------------------------------------------------------
+// clear_pantry
+// ---------------------------------------------------------------------------
+describe("clear_pantry", () => {
+  it("happy: прибирає всі позиції активної комори", () => {
+    mem.pantries = [
+      {
+        id: "home",
+        name: "Домашня",
+        items: [{ name: "Молоко" }, { name: "Хліб" }, { name: "Сіль" }],
+      },
+    ];
+    const out = call({ name: "clear_pantry", input: {} });
+    expect(typeof out).toBe("string");
+    expect(out).toContain("Домашня");
+    expect(out).toContain("3 позиції");
+    expect(mem.pantries[0]!.items).toHaveLength(0);
+  });
+
+  it("ідемпотентно: порожня комора не помилка", () => {
+    mem.pantries = [{ id: "home", name: "Домашня", items: [] }];
+    const out = call({ name: "clear_pantry", input: {} });
+    expect(out).toContain("і так порожня");
+    expect(appendPantryEventSpy).not.toHaveBeenCalled();
+  });
+
+  /**
+   * Чекпойнт `adjust` з `absQty: 0`, а не `consume` з дельтою: у коморі
+   * бувають позиції без кількості («сіль»), для яких дельти не існує, а
+   * журнал усе одно має зійтися (ADR-0077).
+   */
+  it("пише в журнал чекпойнт на кожну прибрану позицію", () => {
+    mem.pantries = [
+      {
+        id: "home",
+        name: "Домашня",
+        items: [{ name: "Молоко", qty: 2, unit: "л" }, { name: "Сіль" }],
+      },
+    ];
+    call({ name: "clear_pantry", input: {} });
+
+    expect(appendPantryEventSpy).toHaveBeenCalledTimes(2);
+    for (const [event] of appendPantryEventSpy.mock.calls) {
+      expect(event).toMatchObject({
+        pantryId: "home",
+        kind: "adjust",
+        absQty: 0,
+        deltaQty: null,
+        source: "chat_tool",
+      });
+    }
+  });
+
+  it("торкається лише активної комори", () => {
+    // Активна — НЕ перша в списку: інакше тест був би зелений і на коді,
+    // який просто чистить `pantries[0]`.
+    mem.active = "dacha";
+    mem.pantries = [
+      { id: "home", name: "Домашня", items: [{ name: "Молоко" }] },
+      { id: "dacha", name: "Дача", items: [{ name: "Картопля" }] },
+    ];
+    const out = call({ name: "clear_pantry", input: {} });
+
+    expect(out).toContain("Дача");
+    expect(mem.pantries[0]!.items).toHaveLength(1);
+    expect(mem.pantries[1]!.items).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // consume_from_pantry
 // ---------------------------------------------------------------------------
 describe("consume_from_pantry", () => {

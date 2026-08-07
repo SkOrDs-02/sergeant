@@ -34,6 +34,7 @@ export function moduleFor(name: string): ChatActionCardModule {
     name === "add_recipe" ||
     name === "add_to_shopping_list" ||
     name === "consume_from_pantry" ||
+    name === "clear_pantry" ||
     name === "set_daily_plan" ||
     name === "suggest_meal" ||
     name === "copy_meal_from_date" ||
@@ -126,6 +127,8 @@ export function iconFor(name: string): string | undefined {
       return "shopping-cart";
     case "consume_from_pantry":
       return "check";
+    case "clear_pantry":
+      return "trash";
     case "set_daily_plan":
       return "target";
     case "suggest_meal":
@@ -266,6 +269,8 @@ export function titleFor(name: string, status: "completed" | "failed"): string {
       return `Продукт додано до списку покупок${failedSuffix}`;
     case "consume_from_pantry":
       return `Продукт спожито${failedSuffix}`;
+    case "clear_pantry":
+      return `Комору очищено${failedSuffix}`;
     case "set_daily_plan":
       return `Щоденний план оновлено${failedSuffix}`;
     case "suggest_meal":

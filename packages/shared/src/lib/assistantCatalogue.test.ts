@@ -82,7 +82,7 @@ describe("ASSISTANT_CAPABILITIES — invariants", () => {
   it("has a reasonable total count (sanity)", () => {
     // Spec calls for ~60 entries; allow a small drift.
     expect(ASSISTANT_CAPABILITIES.length).toBeGreaterThanOrEqual(50);
-    expect(ASSISTANT_CAPABILITIES.length).toBeLessThanOrEqual(80);
+    expect(ASSISTANT_CAPABILITIES.length).toBeLessThanOrEqual(85);
   });
 
   it("each entry has at least one example", () => {
