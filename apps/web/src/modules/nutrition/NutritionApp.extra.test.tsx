@@ -612,7 +612,21 @@ describe("NutritionApp — wrappedSaveMeal (add path)", () => {
       fireEvent.click(screen.getByTestId("save-meal-add"));
     });
     expect(vi.mocked(useNutritionLog)().handleAddMeal).toHaveBeenCalled();
-    expect(mockToast.success).toHaveBeenCalledWith("Страву додано.");
+    // Додавання миттєве — тост зобовʼязаний нести «Скасувати»
+    // (бета-фідбек 2026-08-07), як quick-chip і деструктивні дії Routine.
+    expect(mockToast.success).toHaveBeenCalledWith(
+      "Страву додано.",
+      undefined,
+      expect.objectContaining({ label: "Скасувати" }),
+    );
+    // Undo реально видаляє щойно доданий запис із дати журналу.
+    const action = mockToast.success.mock.calls.at(-1)?.[2] as
+      { onClick?: () => void } | undefined;
+    action?.onClick?.();
+    expect(vi.mocked(useNutritionLog)().handleRemoveMeal).toHaveBeenCalledWith(
+      "2026-01-01",
+      expect.any(String),
+    );
   });
 });
 

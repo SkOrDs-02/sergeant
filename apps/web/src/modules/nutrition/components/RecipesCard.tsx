@@ -119,7 +119,20 @@ export function RecipesCard({
 
   async function saveOne(r: RecipeLike) {
     const res = await saveRecipeToBook(r);
-    if (res.ok) await refreshSaved();
+    if (res.ok) {
+      await refreshSaved();
+      // Розгортаємо «Мої рецепти» і кажемо про успіх явно: раніше клік по
+      // «Зберегти» на згенерованому рецепті не давав ЖОДНОГО видимого
+      // фідбеку (секція згорнута, тоста нема, помилка ковталась) і
+      // виглядав як «не працює» (бета-фідбек 2026-08-07).
+      setSavedOpen(true);
+      toast.success(`Рецепт «${res.recipe.title}» збережено`);
+    } else {
+      toast.error(res.error || "Не вдалося зберегти рецепт", undefined, {
+        label: "Повторити",
+        onClick: () => void saveOne(r),
+      });
+    }
   }
 
   async function addRecipeAsMeal(

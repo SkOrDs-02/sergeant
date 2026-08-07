@@ -27,7 +27,10 @@ const {
   mockReadFizrukDailyLog,
   mockTxStatAmount,
 } = vi.hoisted(() => ({
-  mockCachedFinyk: vi.fn(() => ({ hiddenTransactions: [] as string[] })),
+  mockCachedFinyk: vi.fn(() => ({
+    hiddenTransactions: [] as string[],
+    manualExpenses: [] as unknown[],
+  })),
   mockCachedFinykMonoMirror: vi.fn(() => ({
     transactions: [] as unknown[],
     accounts: [] as unknown[],
@@ -84,7 +87,10 @@ beforeEach(() => {
   vi.setSystemTime(new Date("2026-04-22T12:00:00Z"));
 
   // Reset all mocks to their safe defaults.
-  mockCachedFinyk.mockReturnValue({ hiddenTransactions: [] });
+  mockCachedFinyk.mockReturnValue({
+    hiddenTransactions: [],
+    manualExpenses: [],
+  });
   mockCachedFinykMonoMirror.mockReturnValue({
     transactions: [],
     accounts: [],
@@ -188,7 +194,10 @@ describe("buildDailySeries — hidden transactions excluded", () => {
       accounts: [],
       refreshedAt: new Date().toISOString(),
     });
-    mockCachedFinyk.mockReturnValue({ hiddenTransactions: ["hidden-1"] });
+    mockCachedFinyk.mockReturnValue({
+      hiddenTransactions: ["hidden-1"],
+      manualExpenses: [],
+    });
 
     const s = buildDailySeries(["spending"], {
       from: "2026-04-22",
@@ -214,6 +223,82 @@ describe("buildDailySeries — hidden transactions excluded", () => {
     });
     const col = s.raw["income"]!;
     expect(col[0]).toBe(3000);
+  });
+});
+
+// ─── Ручні витрати у всесвіті витрат (F7, 2026-08-07) ────────────────────────
+
+describe("buildDailySeries — manual expenses included (F7)", () => {
+  it("spending: ручна витрата без жодної Mono-транзакції потрапляє в серію", () => {
+    // Регресія F7 (репетиція бета-прогону): раніше читалось лише
+    // Mono-дзеркало, і manual-only акаунт мав порожню серію spending.
+    mockCachedFinyk.mockReturnValue({
+      hiddenTransactions: [],
+      manualExpenses: [
+        {
+          id: "m-1",
+          date: "2026-04-22T10:00:00.000Z",
+          description: "Кава",
+          amount: 150,
+          category: "food",
+        },
+      ],
+    });
+
+    const s = buildDailySeries(["spending"], {
+      from: "2026-04-22",
+      to: "2026-04-22",
+    });
+    expect(s.raw["spending"]![0]).toBe(150);
+  });
+
+  it("spending: банк і ручний світ сумуються в одному дні", () => {
+    const nowSec = Math.floor(Date.now() / 1000);
+    mockCachedFinykMonoMirror.mockReturnValue({
+      transactions: [{ id: "bank-1", amount: -2000 * 100, time: nowSec }],
+      accounts: [],
+      refreshedAt: new Date().toISOString(),
+    });
+    mockCachedFinyk.mockReturnValue({
+      hiddenTransactions: [],
+      manualExpenses: [
+        {
+          id: "m-2",
+          date: "2026-04-22T10:00:00.000Z",
+          description: "Продукти",
+          amount: 500,
+          category: "food",
+        },
+      ],
+    });
+
+    const s = buildDailySeries(["spending"], {
+      from: "2026-04-22",
+      to: "2026-04-22",
+    });
+    expect(s.raw["spending"]![0]).toBe(2500);
+  });
+
+  it("income: ручний запис із kind='income' потрапляє в серію доходу", () => {
+    mockCachedFinyk.mockReturnValue({
+      hiddenTransactions: [],
+      manualExpenses: [
+        {
+          id: "m-3",
+          date: "2026-04-22T10:00:00.000Z",
+          description: "Фриланс",
+          amount: 700,
+          category: "salary",
+          kind: "income",
+        },
+      ],
+    });
+
+    const s = buildDailySeries(["income"], {
+      from: "2026-04-22",
+      to: "2026-04-22",
+    });
+    expect(s.raw["income"]![0]).toBe(700);
   });
 });
 
