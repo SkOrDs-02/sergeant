@@ -26,17 +26,14 @@ import {
   REGRESSION_NOTICE_PCT,
   computeOneRmAging,
 } from "@sergeant/fizruk-domain/domain";
-import { kyivMondayStartMs } from "@sergeant/shared";
 import { pluralize } from "../../../core/hub/useHubDashboardState";
 import { chartStatusSeries } from "@shared/charts";
 import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Stat } from "@shared/components/ui/Stat";
 import { PrBoard } from "./Progress/PrBoard";
-
-// F36: minimum bar width (%) so the smallest muscle-volume bar stays
-// visible and tap-able even when its value is a tiny fraction of the max.
-const MIN_BAR_WIDTH_PCT = 6;
+import { MuscleVolumeBlock } from "../components/MuscleWeekMatrix";
+import { buildMuscleWeekMatrix } from "../lib/muscleWeekMatrix";
 
 interface ProgressProps {
   onNavigate: (target: FizrukPage | string) => void;
@@ -102,58 +99,14 @@ export function Progress({ onNavigate }: ProgressProps) {
 
   const [nowMs] = useState(() => Date.now());
 
-  const weeklyByMuscle = useMemo(() => {
-    const now = nowMs;
-    const weeks = new Map<number, Record<string, number>>();
-    const DAY = 24 * 60 * 60 * 1000;
-    const cutoff = now - 28 * DAY;
-
-    for (const w of workouts || []) {
-      const t = w.startedAt ? Date.parse(w.startedAt) : NaN;
-      if (!Number.isFinite(t) || t < cutoff) continue;
-      // Domain-correct (Kyiv) week boundary so weekly-volume bars don't
-      // shift when the user roams (consolidated page-audit § Theme 1 — 07 F1).
-      const wk = kyivMondayStartMs(t);
-      if (!weeks.has(wk)) weeks.set(wk, {});
-      const bucket = weeks.get(wk);
-      if (!bucket) continue;
-      for (const it of w.items || []) {
-        const primary = it.musclesPrimary || [];
-        const secondary = it.musclesSecondary || [];
-        let pts = 0;
-        if (it.type === "strength") {
-          pts =
-            (it.sets || []).reduce(
-              (s, x) => s + (Number(x.weightKg) || 0) * (Number(x.reps) || 0),
-              0,
-            ) / 1000;
-        } else if (it.type === "time") {
-          pts = (Number(it.durationSec) || 0) / 240;
-        } else if (it.type === "distance") {
-          pts =
-            (Number(it.distanceM) || 0) / 1000 +
-            (Number(it.durationSec) || 0) / 60 / 30;
-        }
-        const add = (id: string, wgt: number) => {
-          if (!id) return;
-          bucket[id] = (bucket[id] || 0) + pts * wgt;
-        };
-        for (const id of primary) add(id, 1);
-        for (const id of secondary) add(id, 0.55);
-      }
-    }
-
-    const keys = Array.from(weeks.keys()).sort((a, b) => b - a);
-    const latestWeek = keys[0] || null;
-    const latestData = latestWeek ? weeks.get(latestWeek) : {};
-    const top = Object.entries(latestData || {})
-      .map(([id, v]) => ({ id, label: musclesUk?.[id] || id, value: v }))
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 10);
-
-    const max = top[0]?.value || 1;
-    return { latestWeek, top, max };
-  }, [workouts, musclesUk, nowMs]);
+  // П4 signature-view: матриця будувалась і тут-таки згорталась у один
+  // тиждень (`keys[0]`), тобто три чверті вже порахованого викидались за
+  // рядок від обчислення. Тепер вона доїжджає до екрана цілою —
+  // обґрунтування й межі у `../lib/muscleWeekMatrix.ts`.
+  const muscleMatrix = useMemo(
+    () => buildMuscleWeekMatrix(workouts, musclesUk, nowMs),
+    [workouts, musclesUk, nowMs],
+  );
 
   const prs = useMemo(() => {
     type PR = {
@@ -525,7 +478,7 @@ export function Progress({ onNavigate }: ProgressProps) {
           <SectionHeading size="xs" className="mb-3" variant="fizruk">
             {messages.fizruk.progress.muscleVolume}
           </SectionHeading>
-          {weeklyByMuscle.top.length === 0 ? (
+          {muscleMatrix.rows.length === 0 ? (
             <EmptyState
               compact
               title={messages.empty.nothingYet}
@@ -534,26 +487,7 @@ export function Progress({ onNavigate }: ProgressProps) {
               }
             />
           ) : (
-            <div className="space-y-2">
-              {weeklyByMuscle.top.map((m) => (
-                <div key={m.id} className="space-y-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="text-sm text-text truncate">{m.label}</div>
-                    <div className="text-style-caption text-subtle tabular-nums">
-                      {m.value.toFixed(1)}
-                    </div>
-                  </div>
-                  <div className="h-2 bg-bg rounded-full overflow-hidden border border-line">
-                    <div
-                      className="h-full bg-success/70"
-                      style={{
-                        width: `${Math.max(MIN_BAR_WIDTH_PCT, (m.value / weeklyByMuscle.max) * 100)}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
+            <MuscleVolumeBlock matrix={muscleMatrix} />
           )}
         </Card>
 

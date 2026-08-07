@@ -63,6 +63,17 @@ export const fizrukPageMessages = {
     wellbeing: "Самопочуття",
     muscleVolume: "Обʼєм по мʼязах",
     muscleVolumeEmptyDescription: "Немає даних за останні 4 тижні.",
+    // Матриця «мʼяз × тиждень». Плейсхолдери підставляються на місці
+    // виклику — та сама конвенція, що в гребені Фініка: `MessageCatalog`
+    // типізований як `string | MessageCatalog`, тож функції в каталозі
+    // неможливі.
+    muscleVolumeAria: "Обʼєм по мʼязах за чотири тижні",
+    muscleVolumeWindowHint: "Чотири тижні, зліва направо — останній справа",
+    muscleVolumeRowSpoken:
+      "{label}, по тижнях: {values}. Цього тижня: {latest}.",
+    // Тиждень без жодного запису — справжній нуль, а не пропуск: людина
+    // не тренувалась, і це відповідь, а не брак даних.
+    muscleVolumeRestWeek: "нуль",
     recordsHeading: "Рекорди (PR)",
     shown: "показано",
     filterAll: "Всі",
