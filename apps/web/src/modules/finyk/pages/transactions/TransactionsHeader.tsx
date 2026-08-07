@@ -1,4 +1,5 @@
 import { cn } from "@shared/lib/ui/cn";
+import { Icon } from "@shared/components/ui/Icon";
 
 export interface TransactionsHeaderProps {
   monthLabel: string;
@@ -42,9 +43,9 @@ export function TransactionsHeader({
         <button
           onClick={() => goMonth(-1)}
           aria-label="Попередній місяць"
-          className="w-8 h-8 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-subtle hover:text-text hover:bg-panelHi transition-colors text-lg"
+          className="w-8 h-8 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-subtle hover:text-text hover:bg-panelHi transition-colors"
         >
-          ‹
+          <Icon name="chevron-left" size="sm" />
         </button>
         <span className="text-style-label text-text capitalize px-1">
           {monthLabel}
@@ -53,9 +54,9 @@ export function TransactionsHeader({
           onClick={() => goMonth(1)}
           disabled={isCurrentMonth}
           aria-label="Наступний місяць"
-          className="w-8 h-8 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-subtle hover:text-text hover:bg-panelHi transition-colors text-lg disabled:opacity-30"
+          className="w-8 h-8 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-subtle hover:text-text hover:bg-panelHi transition-colors disabled:opacity-30"
         >
-          ›
+          <Icon name="chevron-right" size="sm" />
         </button>
       </div>
       <div className="flex items-center gap-1.5">

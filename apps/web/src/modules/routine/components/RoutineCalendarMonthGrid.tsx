@@ -31,7 +31,7 @@ export interface RoutineCalendarMonthGridProps {
 }
 
 /**
- * Month-mode block: top nav (‹ / month / ›), "Today" CTA, the 7×N grid
+ * Month-mode block: top nav (chevron / month / chevron), "Today" CTA, the 7×N grid
  * of day cells, the selected-day caption, and an inline list of the
  * day's grouped events. Only mounted when `timeMode === "month"`, so
  * the parent controls visibility.
@@ -66,7 +66,7 @@ export function RoutineCalendarMonthGrid({
             onClick={() => goMonth(-1)}
             aria-label="Попередній місяць"
           >
-            ‹
+            <Icon name="chevron-left" size="sm" />
           </IconButton>
           <span className="text-style-label capitalize flex-1 text-center">
             {monthTitle}
@@ -78,7 +78,7 @@ export function RoutineCalendarMonthGrid({
             onClick={() => goMonth(1)}
             aria-label="Наступний місяць"
           >
-            ›
+            <Icon name="chevron-right" size="sm" />
           </IconButton>
         </div>
         <Button

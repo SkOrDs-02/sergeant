@@ -9,6 +9,7 @@
  *   як вони потраплять у комору.
  */
 import { useState } from "react";
+import { Icon } from "@shared/components/ui/Icon";
 import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
 import type { PantryItem } from "../lib/pantryTextParser";
@@ -27,8 +28,11 @@ export function PantryListGuide() {
   return (
     <details className="mt-2 group">
       <summary className="text-style-caption text-subtle cursor-pointer list-none flex items-center gap-1.5 min-h-[44px] focus-visible:ring-2 focus-visible:ring-focus/45 rounded-xl">
+        {/* Каретка згортки. Обертання лишається на обгортці, а не на самій
+            іконці: `<details>` міняє `group-open`, і поворот має читати
+            стан елемента, а не стан іконки. */}
         <span aria-hidden className="transition-transform group-open:rotate-90">
-          ›
+          <Icon name="chevron-right" size="xs" />
         </span>
         {GUIDE.summary}
       </summary>

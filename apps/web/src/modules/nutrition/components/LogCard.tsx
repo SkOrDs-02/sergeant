@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { EmptyState } from "@shared/components/ui/EmptyState";
+import { Icon } from "@shared/components/ui/Icon";
 import { NutritionEmptyIllustration } from "@shared/components/ui/EmptyStateIllustrations";
 import { estimateLogBytes } from "../lib/nutritionStorage";
 import {
@@ -97,7 +98,7 @@ export function LogCard({
             className="w-10 h-10 touch-target flex items-center justify-center rounded-full bg-panelHi text-muted hover:text-text transition-colors"
             aria-label="Попередній день"
           >
-            ‹
+            <Icon name="chevron-left" size="sm" />
           </button>
           <div className="flex flex-col items-center gap-0.5">
             <span className="font-extrabold text-text text-base">
@@ -113,7 +114,7 @@ export function LogCard({
             className="w-10 h-10 touch-target flex items-center justify-center rounded-full bg-panelHi text-muted hover:text-text transition-colors"
             aria-label="Наступний день"
           >
-            ›
+            <Icon name="chevron-right" size="sm" />
           </button>
         </div>
 

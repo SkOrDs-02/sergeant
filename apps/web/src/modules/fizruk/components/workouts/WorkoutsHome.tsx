@@ -130,9 +130,12 @@ export function WorkoutsHome({
                   onClick={onOpenJournal}
                 >
                   <RecentWorkoutSummary workout={w} />
-                  <span className="text-subtle" aria-hidden>
-                    ›
-                  </span>
+                  <Icon
+                    name="chevron-right"
+                    size="sm"
+                    className="text-subtle"
+                    aria-hidden
+                  />
                 </button>
               </li>
             ))}
@@ -161,9 +164,12 @@ export function WorkoutsHome({
                   Пошук · групи м&apos;язів · своя вправа
                 </div>
               </div>
-              <span className="text-subtle" aria-hidden>
-                ›
-              </span>
+              <Icon
+                name="chevron-right"
+                size="sm"
+                className="text-subtle"
+                aria-hidden
+              />
             </div>
           </button>
           {onOpenSchedule && (
@@ -180,9 +186,12 @@ export function WorkoutsHome({
                     Відкрити календар тренувань у Routine
                   </div>
                 </div>
-                <span className="text-subtle" aria-hidden>
-                  ›
-                </span>
+                <Icon
+                  name="chevron-right"
+                  size="sm"
+                  className="text-subtle"
+                  aria-hidden
+                />
               </div>
             </button>
           )}
