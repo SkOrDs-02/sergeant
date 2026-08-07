@@ -1,6 +1,6 @@
 # Agents in apps/web
 
-> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
+> **Last touched:** 2026-08-07 by @Skords-01. **Next review:** 2026-11-05.
 > **Status:** Active
 
 > **Single source of truth → root [`AGENTS.md`](../../AGENTS.md).** Цей файл — sub-tree quick reference для агентів, що працюють лише в `apps/web/`. Не дублюй repo policy: hard rules, ownership map, performance budgets і CI matrix живуть у корені.
@@ -38,6 +38,7 @@ pnpm --filter @sergeant/web lighthouse          # Lighthouse CI (perf-budget gat
 - **Storage:** wrapper from `@shared/storage`; allowlist enforced by `pnpm lint:localstorage-allowlist`.
 - **Touch targets:** `Button` auto-applies `min-h-[44px] min-w-[44px]` **лише під `@media (pointer: coarse)`** for `xs`/`sm`/`iconOnly` (на fine-pointer/desktop-миші floor навмисно не діє — `Button.tsx` `pointer-coarse:` варіант); opt out with `data-compact` only for intentionally small cells (heatmaps).
 - **Vitest prerequisite:** run `pnpm --filter @sergeant/db-schema build` before `pnpm --filter @sergeant/web test`. Without it, Vitest cannot resolve `@sergeant/db-schema/sqlite` and hundreds of suites fail at import time with `(0 test)`.
+- **`AuthContext` × `@sergeant/shared` — білий екран на бутi.** Новий runtime-import `@sergeant/shared` у [`src/core/auth/AuthContext.tsx`](./src/core/auth/AuthContext.tsx) перекроює eager-чанки так, що analytics стартує з ще не ініціалізованими константами: `Cannot read properties of undefined (reading 'SIGNUP_COMPLETED')`, застосунок не рендериться взагалі. Ламає однаково і статичний import, і `await import(...)`; `import type` безпечний. Тому `SYNC_ORIGIN_DEVICE_ID_KEY` там продубльовано літералом під pin-тестом `AuthContext.originDeviceKey.test.ts`. **Typecheck і юніти цього не бачать** — перевіряй буту в браузері на prod-білді (`VERCEL=1 build` + статика з COOP/COEP). Знайдено browser-QA 2026-08-06.
 
 ## Bundle budget
 

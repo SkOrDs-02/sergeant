@@ -39,12 +39,19 @@ import {
 } from "@shared/lib/storage/storage";
 
 /**
- * Літерал, а не `STORAGE_KEYS.SYNC_ORIGIN_DEVICE_ID`: динамічний імпорт
- * `@sergeant/shared` саме тут перекроює чанки так, що analytics-модуль
- * стартує з ще не ініціалізованими константами
- * (`Cannot read properties of undefined (reading 'SIGNUP_COMPLETED')` —
- * білий екран на бутi). Значення закріплене
- * `AuthContext.originDeviceKey.test.ts`.
+ * AI-DANGER: цей файл сидить у eager-графі найближче до analytics, і
+ * НОВИЙ import `@sergeant/shared` саме звідси перекроює чанки так, що
+ * analytics-модуль стартує з ще не ініціалізованими константами:
+ * `Cannot read properties of undefined (reading 'SIGNUP_COMPLETED')`,
+ * білий екран на бутi (browser-QA 2026-08-06). Типи (`import type`)
+ * безпечні — вони стираються; ламає саме runtime-значення, і однаково
+ * як статичним імпортом, так і `await import(...)` усередині `logout`.
+ *
+ * Тому ключ тут — літерал, а не `STORAGE_KEYS.SYNC_ORIGIN_DEVICE_ID`.
+ * Синхрон із реєстром тримає `AuthContext.originDeviceKey.test.ts`.
+ * Потрібне ще одне значення зі `@sergeant/shared`? Або продублюй так
+ * само з pin-тестом, або спершу перевір буту у браузері на prod-білді —
+ * typecheck і юніти цю поломку не бачать.
  */
 const SYNC_ORIGIN_DEVICE_ID_KEY = "sync_origin_device_id_v1";
 
