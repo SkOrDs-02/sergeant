@@ -475,15 +475,33 @@ test.describe.serial("BT5 — активний тиждень (насіяні 7+
   });
 
   test("BT5: звʼязки показують контент, а не стан мовчання", async () => {
-    // Дані звʼязків рахуються локально з синкнутих рядів — даємо синку
-    // час, а потім вимагаємо КОНТЕНТ: стан мовчання рендерить
-    // `silentTitle` («Поки що зв'язків не бачу»), знайдений звʼязок — ні.
-    await goto(page, "/insights");
-    await expect(visibleText(page, /Зв.язки між сферами/)).toBeVisible();
-    await expect(
-      visibleText(page, /Поки що зв.язків не бачу/),
+    // Дані звʼязків рахуються локально з синкнутих рядів; кеш SQLite
+    // Фініка — синглтон JS-графа ДОКУМЕНТА, а секція рахує серії один
+    // раз на маунт. Тому як тестер: повне завантаження на транзакціях
+    // (кеш гріється — видима група дня), далі SPA-кліками «На хаб» →
+    // «Зв'язки» без reload. Мовчання рендерить «Поки що зв'язків не
+    // бачу», контент — ні.
+    let silent = true;
+    for (let attempt = 0; attempt < 3 && silent; attempt += 1) {
+      await goto(page, "/finyk/transactions");
+      await expect(
+        page.getByRole("button", { name: /Сьогодні|·/ }).first(),
+      ).toBeVisible({ timeout: 30_000 });
+      await page.getByRole("button", { name: "На хаб" }).click();
+      const hubNav = page.getByRole("navigation", { name: "Розділи хабу" });
+      await expect(hubNav).toBeVisible({ timeout: 15_000 });
+      await hubNav.getByRole("tab", { name: /Зв.язки/ }).click();
+      await expect(visibleText(page, /Зв.язки між сферами/)).toBeVisible({
+        timeout: 15_000,
+      });
+      silent = await visibleText(page, /Поки що зв.язків не бачу/)
+        .isVisible()
+        .catch(() => false);
+    }
+    expect(
+      silent,
       "На акаунті з ≥7 днями даних секція звʼязків не має лишатись у стані мовчання — перевір насіяний патерн (|r|≥0.4) і синк",
-    ).toBeHidden({ timeout: 30_000 });
+    ).toBe(false);
   });
 
   test("BT5: аналітика і дайджест рендеряться з тижнем даних", async () => {
