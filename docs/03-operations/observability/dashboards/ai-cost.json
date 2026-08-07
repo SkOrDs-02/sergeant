@@ -649,6 +649,206 @@
           "refId": "A"
         }
       ]
+    },
+    {
+      "title": "$ за 100 викликів — по конвеєрах",
+      "description": "Середня ціна сотні викликів у вибраному вікні: `увеличення вартості / увеличення кількості успішних викликів × 100`. Вікно бере `$__range`, тобто йде за таймпікером зверху — постав 30d і отримаєш середню за 30 днів. Ділиться саме на `outcome=\"ok\"`: невдалі виклики грошей не коштують, і без фільтра середня була б заниженою. `increase()` сам компенсує рестарти контейнера, тож деплої на це число не впливають.",
+      "type": "table",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 34
+      },
+      "id": 12,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "displayMode": "auto"
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "green", "value": null }]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Value" },
+            "properties": [
+              { "id": "unit", "value": "currencyUSD" },
+              { "id": "decimals", "value": 2 },
+              {
+                "id": "custom.cellOptions",
+                "value": { "type": "gauge", "mode": "gradient" }
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Time" },
+            "properties": [{ "id": "custom.hidden", "value": true }]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "sortBy": [{ "displayName": "Value", "desc": true }]
+      },
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "Time": true },
+            "indexByName": {},
+            "renameByName": {
+              "Value": "$ / 100 викликів",
+              "endpoint": "Конвеєр"
+            }
+          }
+        }
+      ],
+      "targets": [
+        {
+          "expr": "sort_desc(\n  sum by (endpoint) (increase(ai_cost_estimate_usd_total{provider=\"anthropic\"}[$__range]))\n  /\n  sum by (endpoint) (increase(ai_requests_total{provider=\"anthropic\",outcome=\"ok\"}[$__range]))\n  * 100\n)",
+          "refId": "A",
+          "instant": true,
+          "format": "table"
+        }
+      ]
+    },
+    {
+      "title": "$ за 100 викликів — по моделях",
+      "description": "Те саме, згорнуте по моделі. Відповідає на «наскільки дорожчий gpt-5.1 за gemini-flash-lite на нашому реальному трафіку», а не за прайс-листом: у число входять і довжина промпта, і кеш-хіти. Лейбл `provider=\"anthropic\"` тут означає ПУЛ витрат, а не вендора — під ним лежать і моделі шлюзу.",
+      "type": "table",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 34
+      },
+      "id": 13,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "displayMode": "auto"
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "green", "value": null }]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Value" },
+            "properties": [
+              { "id": "unit", "value": "currencyUSD" },
+              { "id": "decimals", "value": 2 },
+              {
+                "id": "custom.cellOptions",
+                "value": { "type": "gauge", "mode": "gradient" }
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Time" },
+            "properties": [{ "id": "custom.hidden", "value": true }]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "sortBy": [{ "displayName": "Value", "desc": true }]
+      },
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "Time": true },
+            "indexByName": {},
+            "renameByName": {
+              "Value": "$ / 100 викликів",
+              "model": "Модель"
+            }
+          }
+        }
+      ],
+      "targets": [
+        {
+          "expr": "sort_desc(\n  sum by (model) (increase(ai_cost_estimate_usd_total{provider=\"anthropic\"}[$__range]))\n  /\n  sum by (model) (increase(ai_requests_total{provider=\"anthropic\",outcome=\"ok\"}[$__range]))\n  * 100\n)",
+          "refId": "A",
+          "instant": true,
+          "format": "table"
+        }
+      ]
+    },
+    {
+      "title": "Виклики за вікном (по конвеєрах)",
+      "description": "Знаменник панелей вище, окремо. Тримати його на очах варто: середня «$ за 100» на десяти викликах — це шум, а не число. Порожньо тут означає, що `ai_requests_total` не приходить, і тоді сусідні панелі теж будуть порожні, а не нульові.",
+      "type": "table",
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 42
+      },
+      "id": 14,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": { "align": "auto", "displayMode": "auto" }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Time" },
+            "properties": [{ "id": "custom.hidden", "value": true }]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "sortBy": [{ "displayName": "Value", "desc": true }]
+      },
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "Time": true },
+            "indexByName": {},
+            "renameByName": {
+              "Value": "Викликів",
+              "endpoint": "Конвеєр",
+              "model": "Модель"
+            }
+          }
+        }
+      ],
+      "targets": [
+        {
+          "expr": "sort_desc(sum by (endpoint, model) (increase(ai_requests_total{provider=\"anthropic\",outcome=\"ok\"}[$__range])))",
+          "refId": "A",
+          "instant": true,
+          "format": "table"
+        }
+      ]
     }
   ],
   "refresh": "30s",
