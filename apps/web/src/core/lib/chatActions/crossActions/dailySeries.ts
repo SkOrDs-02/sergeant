@@ -17,6 +17,7 @@
  * навмисно: WP3 (кореляції у weekly digest → пам'ять коуча) переюзає той самий
  * обчислювальний код замість дублювання статистики.
  */
+import { buildFinykSpendingUniverse } from "@sergeant/finyk-domain";
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { ls } from "../../hubChatUtils";
 import { getTxStatAmount } from "../../../../modules/finyk/utils";
@@ -158,7 +159,16 @@ function addTo(map: Map<string, number>, day: string, amount: number): void {
 
 function readFinyk(sign: "spending" | "income"): Map<string, number> {
   const out = new Map<string, number>();
-  const txs = getVisibleFinykMonoMirrorState().transactions as Array<{
+  // Всесвіт витрат — банк + РУЧНІ записи, як вимагає канон finyk §5
+  // («банк і ручний світ рівні»). До 2026-08-07 тут читалось лише
+  // Mono-дзеркало, і для тестера без Monobank метрики spending/income
+  // були порожні назавжди — жодна курована пара з Фініком не могла
+  // заговорити (знахідка F7 репетиції бета-прогону,
+  // docs/90-work/audits/2026-08-07-beta-rehearsal-run.md).
+  const txs = buildFinykSpendingUniverse({
+    bankTxs: getVisibleFinykMonoMirrorState().transactions,
+    manualExpenses: getCachedFinykSqliteState().manualExpenses,
+  }).transactions as Array<{
     id: string;
     amount: number;
     time?: number;

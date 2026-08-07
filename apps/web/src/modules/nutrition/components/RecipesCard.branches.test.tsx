@@ -16,13 +16,32 @@ import {
 } from "@testing-library/react";
 import type { Meal, NutritionPrefs, Pantry } from "@sergeant/nutrition-domain";
 
-const { mockListSavedRecipes, mockSaveRecipeToBook, mockDeleteSavedRecipe } =
-  vi.hoisted(() => ({
-    mockListSavedRecipes:
-      vi.fn<() => Promise<import("../lib/recipeBook").SavedRecipe[]>>(),
-    mockSaveRecipeToBook: vi.fn(),
-    mockDeleteSavedRecipe: vi.fn(),
-  }));
+const {
+  mockListSavedRecipes,
+  mockSaveRecipeToBook,
+  mockDeleteSavedRecipe,
+  toastSpies,
+} = vi.hoisted(() => ({
+  mockListSavedRecipes:
+    vi.fn<() => Promise<import("../lib/recipeBook").SavedRecipe[]>>(),
+  mockSaveRecipeToBook: vi.fn(),
+  mockDeleteSavedRecipe: vi.fn(),
+  // Репо-патерн для тостів (як у NutritionDashboard.test): шпигуни замість
+  // DOM-асертів на реальному провайдері — його анімаційні таймери роблять
+  // текстові перевірки ламкими.
+  toastSpies: {
+    show: vi.fn(() => 1),
+    success: vi.fn(() => 1),
+    error: vi.fn(() => 1),
+    info: vi.fn(() => 1),
+    dismiss: vi.fn(),
+  },
+}));
+
+vi.mock("@shared/hooks/useToast", () => ({
+  ToastProvider: ({ children }: { children: React.ReactNode }) => children,
+  useToast: () => toastSpies,
+}));
 
 vi.mock("../../../core/db/kvStoreBoot", () => ({
   getActiveSqliteKvStore: () => null,
@@ -215,10 +234,17 @@ describe("RecipesCard — save-to-book branches", () => {
         listCallsBefore,
       ),
     );
+    // Бета-фідбек 2026-08-07: успіх мусить бути ВИДИМИМ — тост із назвою
+    // рецепта, інакше клік по «Зберегти» читається як no-op.
+    await waitFor(() =>
+      expect(toastSpies.success).toHaveBeenCalledWith(
+        expect.stringContaining("збережено"),
+      ),
+    );
   });
 
   it("does not refresh saved list when saveRecipeToBook returns not ok", async () => {
-    mockSaveRecipeToBook.mockResolvedValue({ ok: false });
+    mockSaveRecipeToBook.mockResolvedValue({ ok: false, error: "Тест-фейл" });
     renderCard(makeProps({ recipes: [GENERATED_RECIPE] }));
     await waitFor(() => expect(mockListSavedRecipes).toHaveBeenCalled());
     const listCallsBefore = mockListSavedRecipes.mock.calls.length;
@@ -227,6 +253,10 @@ describe("RecipesCard — save-to-book branches", () => {
       expect(mockSaveRecipeToBook).toHaveBeenCalledWith(GENERATED_RECIPE),
     );
     expect(mockListSavedRecipes.mock.calls.length).toBe(listCallsBefore);
+    // Помилка теж мусить бути видимою, а не ковтатись мовчки.
+    await waitFor(() =>
+      expect(toastSpies.error).toHaveBeenCalledWith("Тест-фейл"),
+    );
   });
 });
 
