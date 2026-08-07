@@ -41,6 +41,16 @@ describe("appendFinanceLines", () => {
     expect(out).toContain("[День місяця]");
   });
 
+  /**
+   * Регресія 2026-08-07: контекст ніс лише дату, тож на «почни тренування»
+   * о 02:48 модель підставляла у `start_workout.time` правдоподібне 09:00 —
+   * день вона знала, годину ні. 12:00Z 15 червня — це 15:00 за Києвом (EEST).
+   */
+  it("несе поточну київську годину, а не лише дату", () => {
+    const out = joined(baseData(), NOW);
+    expect(out).toContain("[Зараз] 15:00 за Києвом");
+  });
+
   it("emits cache time and client name when present", () => {
     const out = joined(
       baseData({ cacheTime: NOW.getTime(), clientName: "Тарас" }),

@@ -29,6 +29,16 @@ function appendOverviewLines(lines: string[], d: AllData, now: Date): void {
   lines.push(
     `[Сьогодні] ${now.toLocaleDateString("uk-UA", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Kyiv" })}`,
   );
+  // AI-CONTEXT (2026-08-07): годинник тут не косметика. До цього контекст
+  // ніс лише дату, тож на «почни тренування на сьогодні» о 02:48 модель
+  // підставляла у `start_workout.time` правдоподібну ранкову годину —
+  // 09:00, — бо знала день і не знала часу. Схема `time` опційна, але
+  // порожнє поле треба ще й лишити порожнім свідомо. Кеш контексту живе
+  // 15 с (`CONTEXT_TTL_MS`), тож до HH:MM він протухнути не встигає.
+  const { hour, minute } = getKyivDateParts(now);
+  lines.push(
+    `[Зараз] ${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")} за Києвом`,
+  );
   lines.push(
     `[День місяця] ${dayOfMonth} з ${daysInMonth} (залишилось ${daysLeft} днів)`,
   );
