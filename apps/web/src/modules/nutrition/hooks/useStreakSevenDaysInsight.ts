@@ -35,21 +35,31 @@ import type { Insight } from "@shared/lib/insights/types";
  * source of "today" is already the reviewed device-day helper).
  */
 function deviceISOWeekKey(): string {
-  // Use a Thursday-of-the-week trick to get the ISO week year correct,
-  // but a simple YYYY-WW approximation is sufficient for dedup purposes
-  // since we only need the key to be stable within a calendar week.
   const [yStr, mStr, dStr] = todayISODate().split("-");
   const year = Number(yStr);
   const month = Number(mStr);
   const day = Number(dStr);
-  // Compute week-of-year using the Jan 1 ordinal approach (approximate,
-  // good enough for dedup — does not need to be ISO-8601 perfect).
-  const jan1 = new Date(Date.UTC(year, 0, 1));
-  const dayOfYear =
-    Math.floor((Date.UTC(year, month - 1, day) - jan1.getTime()) / 86_400_000) +
-    1;
-  const week = Math.ceil(dayOfYear / 7);
-  return `${year}-W${String(week).padStart(2, "0")}`;
+
+  // AI-DANGER: тут потрібен САМЕ ISO-тиждень, а не «приблизно тиждень».
+  // Перша версія рахувала `Math.ceil(порядковий_день / 7)` і супроводжувалась
+  // коментарем «good enough for dedup». Не good enough: такий лічильник
+  // перемикається на фіксованих порядкових днях (8-й, 15-й…), а не в
+  // понеділок, тож межа тижня падає в СЕРЕДИНУ тижня. Наслідок рівно той,
+  // від якого ключ і захищає — знятий інсайт повертається в тому ж
+  // календарному тижні. Знахідка ревʼю.
+  //
+  // Четвер того самого тижня однозначно визначає і номер, і РІК ISO-тижня
+  // (тому 29 грудня може належати тижню наступного року) — звідси зсув
+  // `+4 - (день_тижня або 7)`.
+  const date = new Date(Date.UTC(year, month - 1, day));
+  date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay() || 7));
+
+  const weekYear = date.getUTCFullYear();
+  const yearStart = new Date(Date.UTC(weekYear, 0, 1));
+  const week = Math.ceil(
+    ((date.getTime() - yearStart.getTime()) / 86_400_000 + 1) / 7,
+  );
+  return `${weekYear}-W${String(week).padStart(2, "0")}`;
 }
 
 const STREAK_DAYS = 7;
