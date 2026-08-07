@@ -200,6 +200,23 @@ function renderAt(path = "/") {
   );
 }
 
+/**
+ * Скільки чекати на ПЕРШИЙ boot-хук кожного модуля.
+ *
+ * AI-NOTE: це не повільність продукту. Boot-кластери тепер за
+ * `React.lazy`, і кожен — окремий чанк зі своїм графом, у якому лежить
+ * справжній `use*QuickStatsBoot` (лишений реальним навмисно, див. шапку
+ * файлу). vitest трансформує цей граф саме всередині очікування; замір
+ * 2026-08-07 — ~11 с на два кластери. Раніше та сама вартість платилась
+ * при синхронному імпорті `RootLayout`, тобто ДО рендера, тому в
+ * таймаути не потрапляла.
+ *
+ * Довший таймаут потрібен першому ассерту КОЖНОГО модуля, а не одному
+ * на тест: чанки різні, і кожен платить за себе. Наступним ассертам
+ * того самого модуля вистачає дефолтного — він уже в памʼяті.
+ */
+const CLUSTER_LOAD_TIMEOUT_MS = 20_000;
+
 describe("RootLayout", () => {
   beforeEach(() => {
     window.localStorage.clear();
@@ -253,17 +270,33 @@ describe("RootLayout", () => {
         meFixtures.minimal.user.id,
       ),
     );
-    await waitFor(() =>
-      expect(useNutritionDualWriteBootMock).toHaveBeenCalled(),
+    await waitFor(
+      () => expect(useNutritionDualWriteBootMock).toHaveBeenCalled(),
+      {
+        timeout: CLUSTER_LOAD_TIMEOUT_MS,
+      },
     );
-    expect(useNutritionSqliteReadBootMock).toHaveBeenCalled();
-    expect(useFinykDualWriteBootMock).toHaveBeenCalled();
-    expect(useFinykSqliteReadBootMock).toHaveBeenCalled();
-    expect(useFinykMonoMirrorBootMock).toHaveBeenCalled();
-    expect(useFizrukDualWriteBootMock).toHaveBeenCalled();
-    expect(useFizrukSqliteReadBootMock).toHaveBeenCalled();
-    expect(useRoutineDualWriteBootMock).toHaveBeenCalled();
-    expect(useRoutineSqliteReadBootMock).toHaveBeenCalled();
+    await waitFor(() =>
+      expect(useNutritionSqliteReadBootMock).toHaveBeenCalled(),
+    );
+    await waitFor(() => expect(useFinykDualWriteBootMock).toHaveBeenCalled(), {
+      timeout: CLUSTER_LOAD_TIMEOUT_MS,
+    });
+    await waitFor(() => expect(useFinykSqliteReadBootMock).toHaveBeenCalled());
+    await waitFor(() => expect(useFinykMonoMirrorBootMock).toHaveBeenCalled());
+    await waitFor(() => expect(useFizrukDualWriteBootMock).toHaveBeenCalled(), {
+      timeout: CLUSTER_LOAD_TIMEOUT_MS,
+    });
+    await waitFor(() => expect(useFizrukSqliteReadBootMock).toHaveBeenCalled());
+    await waitFor(
+      () => expect(useRoutineDualWriteBootMock).toHaveBeenCalled(),
+      {
+        timeout: CLUSTER_LOAD_TIMEOUT_MS,
+      },
+    );
+    await waitFor(() =>
+      expect(useRoutineSqliteReadBootMock).toHaveBeenCalled(),
+    );
   });
 
   // Regression coverage for the demo-mode Hub Reports empty-cards bug: an
@@ -278,21 +311,39 @@ describe("RootLayout", () => {
       expect(screen.getByTestId("auth-loading")).toHaveTextContent("false"),
     );
     expect(screen.getByTestId("auth-user")).toHaveTextContent("anon");
-    expect(useNutritionDualWriteBootMock).toHaveBeenCalled();
-    expect(useNutritionSqliteReadBootMock).toHaveBeenCalled();
-    expect(useFinykDualWriteBootMock).toHaveBeenCalled();
-    expect(useFinykSqliteReadBootMock).toHaveBeenCalled();
+    await waitFor(
+      () => expect(useNutritionDualWriteBootMock).toHaveBeenCalled(),
+      {
+        timeout: CLUSTER_LOAD_TIMEOUT_MS,
+      },
+    );
+    await waitFor(() =>
+      expect(useNutritionSqliteReadBootMock).toHaveBeenCalled(),
+    );
+    await waitFor(() => expect(useFinykDualWriteBootMock).toHaveBeenCalled(), {
+      timeout: CLUSTER_LOAD_TIMEOUT_MS,
+    });
+    await waitFor(() => expect(useFinykSqliteReadBootMock).toHaveBeenCalled());
     // `useFinykMonoMirrorBoot` is mounted unconditionally alongside the
     // other Finyk boots here — its own internal gate (real `user.id` via
     // `useAuth`, not `useLocalUserId`) is what keeps it a no-op for demo
     // sessions in production; that real gate lives one level below this
     // mock, so it is covered by `useFinykMonoMirrorBoot`'s own test file,
     // not asserted here.
-    expect(useFinykMonoMirrorBootMock).toHaveBeenCalled();
-    expect(useFizrukDualWriteBootMock).toHaveBeenCalled();
-    expect(useFizrukSqliteReadBootMock).toHaveBeenCalled();
-    expect(useRoutineDualWriteBootMock).toHaveBeenCalled();
-    expect(useRoutineSqliteReadBootMock).toHaveBeenCalled();
+    await waitFor(() => expect(useFinykMonoMirrorBootMock).toHaveBeenCalled());
+    await waitFor(() => expect(useFizrukDualWriteBootMock).toHaveBeenCalled(), {
+      timeout: CLUSTER_LOAD_TIMEOUT_MS,
+    });
+    await waitFor(() => expect(useFizrukSqliteReadBootMock).toHaveBeenCalled());
+    await waitFor(
+      () => expect(useRoutineDualWriteBootMock).toHaveBeenCalled(),
+      {
+        timeout: CLUSTER_LOAD_TIMEOUT_MS,
+      },
+    );
+    await waitFor(() =>
+      expect(useRoutineSqliteReadBootMock).toHaveBeenCalled(),
+    );
   });
 
   it("pins the document title for the active route", () => {

@@ -1,5 +1,5 @@
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
-import { SYNC_OP_CURSOR_PULL_SINCE } from "@sergeant/db-schema/sqlite";
+import { SYNC_OP_CURSOR_PULL_SINCE } from "@sergeant/db-schema/shared";
 
 /** Read the durable `/v2/sync/pull?since=` cursor (defaults to 0). */
 export async function readPullSinceCursor(

@@ -484,5 +484,12 @@ export const syncOpCursor = sqliteTable("sync_op_cursor", {
     .default(sql`(datetime('now'))`),
 });
 
-/** Cursor key for the SPIKE's primary `/v2/sync/pull` cursor. */
-export const SYNC_OP_CURSOR_PULL_SINCE = "pull_since";
+/**
+ * Cursor key for the SPIKE's primary `/v2/sync/pull` cursor.
+ *
+ * Canonical definition moved to `../shared/constants.js` so boot-path
+ * callers can read it without pulling this Drizzle module (and the whole
+ * `vendor-sqlite` chunk) into the eager bundle. Re-exported here so the
+ * `./sqlite` barrel stays source-compatible.
+ */
+export { SYNC_OP_CURSOR_PULL_SINCE } from "../shared/constants.js";

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "current": "3.3.3",
+  "current": "3.3.4",
   "versions": {
     "0.1.0": {
       "releasedAt": "2026-06-29",
@@ -251,6 +251,14 @@
       "releasedAt": "2026-08-07",
       "changes": [
         "bump from 3.3.2 -> 3.3.3: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "3.3.4": {
+      "releasedAt": "2026-08-07",
+      "changes": [
+        "bump from 3.3.3 -> 3.3.4: typo / link / freshness-only change"
       ],
       "agentsTestedWith": [],
       "passRateBaseline": null
