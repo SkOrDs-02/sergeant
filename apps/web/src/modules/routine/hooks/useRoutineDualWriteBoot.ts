@@ -32,18 +32,30 @@
 
 import { useEffect } from "react";
 import { useLocalUserId } from "../../../core/auth/useLocalUserId";
-import { bootRoutineDualWrite } from "../lib/dualWriteBoot.js";
 
 export function useRoutineDualWriteBoot(): void {
   const userId = useLocalUserId();
 
   useEffect(() => {
     if (!userId) return;
-    const teardown = bootRoutineDualWrite({
-      // Read the live value on each call so an auth change between
-      // dual-write triggers is observed without re-registration.
-      getUserId: () => userId,
+    // AI-CONTEXT: імпорт динамічний, щоб `lib/dualWriteBoot.js`
+    // (→ `sqliteWriter/adapter.ts` → `@sergeant/db-schema/sqlite` →
+    // `drizzle-orm`) не потрапляв у eager-граф.
+    // Статичний імпорт тут тягнув би весь чанк `vendor-sqlite` у
+    // критичний шлях — див. `docs/90-work/tech-debt/frontend.md`.
+    let teardown: (() => void) | undefined;
+    let cancelled = false;
+    void import("../lib/dualWriteBoot.js").then((mod) => {
+      if (cancelled) return;
+      teardown = mod.bootRoutineDualWrite({
+        // Read the live value on each call so an auth change between
+        // dual-write triggers is observed without re-registration.
+        getUserId: () => userId,
+      });
     });
-    return teardown;
+    return () => {
+      cancelled = true;
+      teardown?.();
+    };
   }, [userId]);
 }

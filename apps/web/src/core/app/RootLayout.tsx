@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useState } from "react";
+import {
+  Suspense,
+  lazy,
+  useCallback,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useTheme } from "@shared/hooks/useTheme";
 import { useKeyboardShortcutsModal } from "@shared/components/ui/KeyboardShortcutsModal";
@@ -28,89 +35,56 @@ import { useAppEffects } from "./useAppEffects";
 import { useIosInstallBanner } from "./useIosInstallBanner";
 import { usePwaInstall } from "./usePwaInstall";
 import { useSWUpdate } from "./useSWUpdate";
-import { useNutritionDualWriteBoot } from "../../modules/nutrition/hooks/useNutritionDualWriteBoot";
-import { useNutritionSqliteReadBoot } from "../../modules/nutrition/hooks/useNutritionSqliteReadBoot";
-import { useNutritionQuickStatsBoot } from "../../modules/nutrition/hooks/useNutritionQuickStatsBoot";
-import { useFinykDualWriteBoot } from "../../modules/finyk/hooks/useFinykDualWriteBoot";
-import { useFinykMonoMirrorBoot } from "../../modules/finyk/hooks/useFinykMonoMirrorBoot";
-import { useFinykQuickStatsBoot } from "../../modules/finyk/hooks/useFinykQuickStatsBoot";
-import { useFinykSqliteReadBoot } from "../../modules/finyk/hooks/useFinykSqliteReadBoot";
-import { useFizrukDualWriteBoot } from "../../modules/fizruk/hooks/useFizrukDualWriteBoot";
-import { useFizrukSqliteReadBoot } from "../../modules/fizruk/hooks/useFizrukSqliteReadBoot";
-import { useFizrukQuickStatsBoot } from "../../modules/fizruk/hooks/useFizrukQuickStatsBoot";
-import { useRoutineDualWriteBoot } from "../../modules/routine/hooks/useRoutineDualWriteBoot";
-import { useSqliteReadBoot as useRoutineSqliteReadBoot } from "../../modules/routine/hooks/useSqliteReadBoot";
-import { useRoutineQuickStatsBoot } from "../../modules/routine/hooks/useRoutineQuickStatsBoot";
+// AI-CONTEXT: чотири модульні boot-кластери — ЛІНИВІ, і це не
+// оптимізація «про всяк випадок». Вони самі по собі невидимі
+// (рендерять `null`, працюють лише під автентифікованою чи demo-сесією),
+// тож на них ніщо не чекає очима. Але статично вони дотягувались до
+// `core/db/sqlite.ts` і `@sergeant/db-schema/sqlite`, а ті імпортують
+// `drizzle-orm` — який `manualChunks` склеює в ОДИН чанк `vendor-sqlite`.
+// Через це рівно одне eager-ребро звідси клало ~69 kB brotli на критичний
+// шлях. Розбір: `docs/90-work/tech-debt/frontend.md` § eager-бюджет.
+const NutritionBootCluster = lazy(
+  () => import("../../modules/nutrition/hooks/NutritionBootCluster"),
+);
+const FinykBootCluster = lazy(
+  () => import("../../modules/finyk/hooks/FinykBootCluster"),
+);
+const FizrukBootCluster = lazy(
+  () => import("../../modules/fizruk/hooks/FizrukBootCluster"),
+);
+const RoutineBootCluster = lazy(
+  () => import("../../modules/routine/hooks/RoutineBootCluster"),
+);
 import { useProfileWriteThroughBoot } from "../profile/useProfileWriteThroughBoot";
 import { useAnalyticsConsentBoot } from "../observability/useAnalyticsConsentBoot";
 import { useActiveModulesSync } from "../hub/useActiveModulesSync";
 import { isDemoActive } from "../onboarding/onboardingGate";
 import { HubShellProvider, type HubShellValue } from "./HubShellContext";
 
-// Side-effect-only child rendered for authenticated users AND demo sessions.
-// The nested boot hooks all resolve their storage id via `useLocalUserId`
-// (auth id, or the synthetic `demo-local` id while `isDemoActive()`), so
-// mounting them under either condition warms the SQLite read cache the
-// module's own screens rely on — and, transitively, the Hub Reports cards
-// that read the same cache without ever opening the module screen.
-function AuthenticatedNutritionBoot() {
-  useNutritionDualWriteBoot();
-  useNutritionSqliteReadBoot();
-  useNutritionQuickStatsBoot();
-  return null;
-}
-
-function NutritionBootGate() {
-  const { user } = useAuth();
-  return user || isDemoActive() ? <AuthenticatedNutritionBoot /> : null;
-}
-
-// Installs the Finyk storage context app-wide. The lightweight read/mirror
-// boots also rebuild the derived Hub quick-stats snapshot after login, so the
-// card never depends on opening the Finyk screen first.
-function AuthenticatedFinykBoot() {
-  useFinykDualWriteBoot();
-  useFinykSqliteReadBoot();
-  useFinykMonoMirrorBoot();
-  useFinykQuickStatsBoot();
-  return null;
-}
-
-function FinykBootGate() {
-  const { user } = useAuth();
-  return user || isDemoActive() ? <AuthenticatedFinykBoot /> : null;
-}
-
+// Side-effect-only children rendered for authenticated users AND demo
+// sessions. The nested boot hooks all resolve their storage id via
+// `useLocalUserId` (auth id, or the synthetic `demo-local` id while
+// `isDemoActive()`), so mounting them under either condition warms the
+// SQLite read cache the module's own screens rely on — and, transitively,
+// the Hub Reports cards that read the same cache without ever opening the
+// module screen.
+//
 // Fizruk and Routine previously only booted their SQLite read path inside
 // their own module shell (`FizrukApp.tsx`, `useRoutineAppState.ts`), so the
 // Hub Reports "Тренування" / "Звички" cards — which read the same warm
 // cache directly — stayed empty until the user opened that module at least
-// once. Mirrors the Nutrition/Finyk gates above.
-function AuthenticatedFizrukBoot() {
-  useFizrukDualWriteBoot();
-  useFizrukSqliteReadBoot();
-  // Знімок quick-stats для бенто-картки хаба. Без нього картка лишалася на
-  // empty-state-обіцянці до першого відкриття модуля — рівно як було у
-  // Фініка до `useFinykQuickStatsBoot` (browser QA 2026-08-05, F-007).
-  useFizrukQuickStatsBoot();
-  return null;
-}
-
-function FizrukBootGate() {
+// once. Finyk's read/mirror boots likewise rebuild the derived Hub
+// quick-stats snapshot after login.
+//
+// Each cluster renders `null` and is gated behind `<Suspense fallback={null}>`,
+// so the extra async hop costs no visible render — only a short delay before
+// the warm cache starts filling.
+// Each cluster gets its own Suspense boundary so a chunk that fails to load
+// only costs that module its warm cache, not all four.
+function BootGate({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  return user || isDemoActive() ? <AuthenticatedFizrukBoot /> : null;
-}
-
-function AuthenticatedRoutineBoot() {
-  useRoutineDualWriteBoot();
-  useRoutineSqliteReadBoot();
-  useRoutineQuickStatsBoot();
-  return null;
-}
-
-function RoutineBootGate() {
-  const { user } = useAuth();
-  return user || isDemoActive() ? <AuthenticatedRoutineBoot /> : null;
+  if (!user && !isDemoActive()) return null;
+  return <Suspense fallback={null}>{children}</Suspense>;
 }
 
 /**
@@ -153,10 +127,18 @@ function AppShell({ children }: { children: React.ReactNode }) {
           appLock.finishSetup();
         }}
       />
-      <NutritionBootGate />
-      <FinykBootGate />
-      <FizrukBootGate />
-      <RoutineBootGate />
+      <BootGate>
+        <NutritionBootCluster />
+      </BootGate>
+      <BootGate>
+        <FinykBootCluster />
+      </BootGate>
+      <BootGate>
+        <FizrukBootCluster />
+      </BootGate>
+      <BootGate>
+        <RoutineBootCluster />
+      </BootGate>
       <NpsSurveyGate />
       <DemoModeBadge />
       {children}

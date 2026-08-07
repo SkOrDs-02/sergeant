@@ -22,7 +22,7 @@
  */
 
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
-import { SYNC_OP_CURSOR_PULL_SINCE } from "@sergeant/db-schema/sqlite";
+import { SYNC_OP_CURSOR_PULL_SINCE } from "@sergeant/db-schema/shared";
 
 /**
  * Скільки годин після останнього успішного pull репліка вважається свіжою.

@@ -41,6 +41,18 @@ export type SyncModule = (typeof SYNC_MODULES)[number];
 export const DEFAULT_WAITLIST_SOURCE = "pricing_page" as const;
 
 /**
+ * Cursor key for the SPIKE's primary `/v2/sync/pull` cursor.
+ *
+ * Lives here rather than next to the `syncOpCursor` table definition in
+ * `../sqlite/routine.ts` on purpose: it is a plain string with no Drizzle
+ * dependency, and clients read it on the boot path. Importing it from the
+ * `./sqlite` barrel dragged `drizzle-orm/sqlite-core` (and therefore the
+ * whole `vendor-sqlite` manual chunk) into the eager bundle — see
+ * `docs/90-work/tech-debt/frontend.md` § eager-бюджет.
+ */
+export const SYNC_OP_CURSOR_PULL_SINCE = "pull_since";
+
+/**
  * Allowed `op` values for `sync_op_log` (migration 027). Mirrors the
  * CHECK constraint on the column. v2 sync uses these to apply per-row
  * mutations against module-specific tables (initial whitelist:

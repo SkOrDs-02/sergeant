@@ -12,16 +12,25 @@
 
 import { useEffect } from "react";
 import { useLocalUserId } from "../../../core/auth/useLocalUserId";
-import { bootNutritionDualWrite } from "../lib/dualWriteBoot.js";
 
 export function useNutritionDualWriteBoot(): void {
   const userId = useLocalUserId();
 
   useEffect(() => {
     if (!userId) return;
-    const teardown = bootNutritionDualWrite({
-      getUserId: () => userId,
+    // AI-CONTEXT: імпорт динамічний, щоб `lib/dualWriteBoot.js`
+    // (→ `core/db/sqlite.ts` → `drizzle-orm`) не потрапляв у eager-граф.
+    // Статичний імпорт тут тягнув би весь чанк `vendor-sqlite` у
+    // критичний шлях — див. `docs/90-work/tech-debt/frontend.md`.
+    let teardown: (() => void) | undefined;
+    let cancelled = false;
+    void import("../lib/dualWriteBoot.js").then((mod) => {
+      if (cancelled) return;
+      teardown = mod.bootNutritionDualWrite({ getUserId: () => userId });
     });
-    return teardown;
+    return () => {
+      cancelled = true;
+      teardown?.();
+    };
   }, [userId]);
 }

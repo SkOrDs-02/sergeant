@@ -28,23 +28,14 @@
  * the app continues with the LS-backed fallback in `resolveStore()`.
  */
 
-import { eq } from "drizzle-orm";
-import {
-  KV_STORE_CLIENT_MIGRATIONS,
-  KV_STORE_MIGRATIONS_TABLE,
-} from "@sergeant/db-schema/sqlite";
-import { kvStore } from "@sergeant/db-schema/sqlite";
-import {
-  createSqliteAdapter,
-  type SqliteMigrationClient,
-} from "@sergeant/db-schema/migrate/sqlite";
-// Import the runner from the dedicated `./migrate/runner` sub-path
-// rather than `./migrate`. The umbrella `./migrate` entry re-exports
-// `loadMigrationFiles` from `./files.js`, which top-level imports
-// `node:fs` / `node:path` and breaks Vite's browser bundle (white
-// screen on boot). The runner itself is dialect- and platform-free.
-// See routine/lib/clientMigrate.ts for the same pattern.
-import { runMigrations } from "@sergeant/db-schema/migrate/runner";
+// AI-DANGER: усі DB-залежності тут — ЛИШЕ `import type`.
+// Значення підвантажуються через `loadDbDeps()` нижче. Мета: прибрати
+// рантайм drizzle-orm (69 kB brotli, chunk `vendor-sqlite`) з eager-графа.
+// Раніше тут стояли статичні імпорти `drizzle-orm`, `@sergeant/db-schema/sqlite`,
+// `@sergeant/db-schema/migrate/{runner,sqlite}` і `./sqlite.js` — саме вони
+// робили увесь drizzle-стек критичним шляхом, бо `main.tsx` статично
+// імпортує `bootstrapKvStore` з цього файлу.
+import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 import type {
   BroadcastChannelLike,
   KVStore,
@@ -54,7 +45,52 @@ import type {
 import { createSqliteKVStore } from "@sergeant/shared";
 import { addSentryBreadcrumb } from "../observability/sentry.js";
 import { logger } from "@shared/lib";
-import { getSqliteDb, type SqliteDbHandle } from "./sqlite.js";
+import type { SqliteDbHandle } from "./sqlite.js";
+
+interface KvStoreDbDeps {
+  readonly eq: typeof import("drizzle-orm").eq;
+  readonly kvStore: typeof import("@sergeant/db-schema/sqlite").kvStore;
+  readonly KV_STORE_CLIENT_MIGRATIONS: typeof import("@sergeant/db-schema/sqlite").KV_STORE_CLIENT_MIGRATIONS;
+  readonly KV_STORE_MIGRATIONS_TABLE: typeof import("@sergeant/db-schema/sqlite").KV_STORE_MIGRATIONS_TABLE;
+  readonly createSqliteAdapter: typeof import("@sergeant/db-schema/migrate/sqlite").createSqliteAdapter;
+  readonly runMigrations: typeof import("@sergeant/db-schema/migrate/runner").runMigrations;
+  readonly getSqliteDb: typeof import("./sqlite.js").getSqliteDb;
+}
+
+let dbDepsPromise: Promise<KvStoreDbDeps> | null = null;
+
+/**
+ * Lazily resolve every drizzle / db-schema value this module needs.
+ *
+ * The runner comes from the dedicated `./migrate/runner` sub-path rather
+ * than `./migrate`: the umbrella entry re-exports `loadMigrationFiles`
+ * from `./files.js`, which top-level imports `node:fs` / `node:path` and
+ * breaks Vite's browser bundle (white screen on boot). The runner itself
+ * is dialect- and platform-free. See routine/lib/clientMigrate.ts for the
+ * same pattern.
+ */
+function loadDbDeps(): Promise<KvStoreDbDeps> {
+  dbDepsPromise ??= (async () => {
+    const [drizzleOrm, schema, migrateSqlite, migrateRunner, sqliteModule] =
+      await Promise.all([
+        import("drizzle-orm"),
+        import("@sergeant/db-schema/sqlite"),
+        import("@sergeant/db-schema/migrate/sqlite"),
+        import("@sergeant/db-schema/migrate/runner"),
+        import("./sqlite.js"),
+      ]);
+    return {
+      eq: drizzleOrm.eq,
+      kvStore: schema.kvStore,
+      KV_STORE_CLIENT_MIGRATIONS: schema.KV_STORE_CLIENT_MIGRATIONS,
+      KV_STORE_MIGRATIONS_TABLE: schema.KV_STORE_MIGRATIONS_TABLE,
+      createSqliteAdapter: migrateSqlite.createSqliteAdapter,
+      runMigrations: migrateRunner.runMigrations,
+      getSqliteDb: sqliteModule.getSqliteDb,
+    };
+  })();
+  return dbDepsPromise;
+}
 
 /**
  * Channel name for cross-tab `kv_store` writes. Stable so `apps/web`
@@ -195,19 +231,21 @@ export function getActiveSqliteKvStore(): KVStore | null {
  */
 export function makeSqliteKvStoreClient(
   handle: SqliteDbHandle,
-  getDb: () => Promise<SqliteDbHandle> = getSqliteDb,
+  getDb?: () => Promise<SqliteDbHandle>,
 ): SqliteKVStoreClient {
   let current = handle;
   // The boot-time handle already ran KV migrations inside bootstrapKvStore.
   const migrated = new WeakSet<SqliteDbHandle>([handle]);
-  const resolveHandle = async (): Promise<SqliteDbHandle> => {
-    const live = await getDb();
+  const resolveHandle = async (
+    deps: KvStoreDbDeps,
+  ): Promise<SqliteDbHandle> => {
+    const live = await (getDb ?? deps.getSqliteDb)();
     if (live !== current) {
       if (!migrated.has(live)) {
-        await runMigrations({
-          adapter: createSqliteAdapter(live.migrationClient()),
-          files: KV_STORE_CLIENT_MIGRATIONS,
-          tableName: KV_STORE_MIGRATIONS_TABLE,
+        await deps.runMigrations({
+          adapter: deps.createSqliteAdapter(live.migrationClient()),
+          files: deps.KV_STORE_CLIENT_MIGRATIONS,
+          tableName: deps.KV_STORE_MIGRATIONS_TABLE,
         });
         migrated.add(live);
       }
@@ -217,7 +255,9 @@ export function makeSqliteKvStoreClient(
   };
   return {
     async upsert(row) {
-      const db = await resolveHandle();
+      const deps = await loadDbDeps();
+      const { kvStore } = deps;
+      const db = await resolveHandle(deps);
       const updatedAt = new Date(row.updatedAt);
       await db.drizzle
         .insert(kvStore)
@@ -232,7 +272,9 @@ export function makeSqliteKvStoreClient(
         });
     },
     async remove(key) {
-      const db = await resolveHandle();
+      const deps = await loadDbDeps();
+      const { kvStore, eq } = deps;
+      const db = await resolveHandle(deps);
       await db.drizzle.delete(kvStore).where(eq(kvStore.key, key));
     },
   };
@@ -329,11 +371,14 @@ export async function bootstrapKvStore(
     kvStoreCrossTab = resolveBroadcastChannel(opts.broadcastChannel);
   }
 
-  const getDb = opts.getDb ?? getSqliteDb;
-
+  let deps: KvStoreDbDeps;
   let handle: SqliteDbHandle;
   try {
-    handle = await getDb();
+    // The lazy chunk resolves before the DB handle so a module-load
+    // failure lands on the same `sqlite-init` fallback path as an
+    // OPFS/WASM init failure — both leave `loaded = false` + LS fallback.
+    deps = await loadDbDeps();
+    handle = await (opts.getDb ?? deps.getSqliteDb)();
   } catch (err) {
     onError("sqlite-init", err);
     return {
@@ -343,13 +388,15 @@ export async function bootstrapKvStore(
       loaded: false,
     };
   }
+  const { kvStore } = deps;
+  const getDb = opts.getDb;
 
   const migrationClient: SqliteMigrationClient = handle.migrationClient();
   try {
-    await runMigrations({
-      adapter: createSqliteAdapter(migrationClient),
-      files: KV_STORE_CLIENT_MIGRATIONS,
-      tableName: KV_STORE_MIGRATIONS_TABLE,
+    await deps.runMigrations({
+      adapter: deps.createSqliteAdapter(migrationClient),
+      files: deps.KV_STORE_CLIENT_MIGRATIONS,
+      tableName: deps.KV_STORE_MIGRATIONS_TABLE,
     });
   } catch (err) {
     onError("kv-store-migration", err);
