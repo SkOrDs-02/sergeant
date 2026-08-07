@@ -7,6 +7,10 @@ import type { ReactNode } from "react";
 
 // The composition root pulls in SQLite/auth/mirror boot side-effects we do
 // not want in a unit test — stub them to no-ops.
+const dualWriteBootSpy = vi.fn();
+vi.mock("./useFinykDualWriteBoot", () => ({
+  useFinykDualWriteBoot: () => dualWriteBootSpy(),
+}));
 vi.mock("./useFinykDualWriteSync", () => ({
   useFinykDualWriteSync: () => {},
 }));
@@ -33,9 +37,21 @@ function wrapper({ children }: { children: ReactNode }) {
 
 beforeEach(() => {
   localStorage.clear();
+  dualWriteBootSpy.mockClear();
 });
 
 describe("useStorage composition root", () => {
+  it("registers the dual-write context itself, not only via RootLayout", () => {
+    // Regression: the only `useFinykDualWriteBoot` call site used to be
+    // `RootLayout`'s `FinykBootGate`, which renders nothing while
+    // `!user && !isDemoActive()`. `useFinykDualWriteSync` is then a
+    // permanent no-op, so every expense an anonymous visitor added
+    // reached the warm cache only and vanished on reload. Routine,
+    // Fizruk and Nutrition all boot from their own shell too.
+    renderHook(() => useStorage(), { wrapper });
+    expect(dualWriteBootSpy).toHaveBeenCalled();
+  });
+
   it("exposes the flat public contract", () => {
     const { result } = renderHook(() => useStorage(), { wrapper });
     for (const key of [

@@ -24,6 +24,7 @@
 import { useEffect, useRef } from "react";
 
 import {
+  diffFinykDualWriteOps,
   EMPTY_FINYK_STATE,
   isFinykDualWriteRegistered,
   triggerFinykDualWrite,
@@ -59,6 +60,19 @@ export function useFinykDualWriteSync(slots: FinykStorageSlots): void {
       // here avoids spamming a full re-upsert on every page load.
       prevRef.current = next;
       initialisedRef.current = true;
+      return;
+    }
+    // `useFinykStorageSlots` returns a fresh object literal on every
+    // render, so this effect fires on every render — including the ones
+    // it causes itself: `triggerFinykDualWrite` always ends with
+    // `notifyFinykSqliteCacheRefresh()`, the overlay in
+    // `useFinykStorageSlots` reacts to that tick, and the resulting
+    // render re-enters here. Without this guard that is a self-feeding
+    // write/notify storm (measured 2026-08-06: ~280 refreshes/s on
+    // `/finyk`). Diffing first makes the trigger fire only for real
+    // mutations — the same diff the pipeline computes anyway.
+    if (diffFinykDualWriteOps(prevRef.current, next).length === 0) {
+      prevRef.current = next;
       return;
     }
     triggerFinykDualWrite(prevRef.current, next);

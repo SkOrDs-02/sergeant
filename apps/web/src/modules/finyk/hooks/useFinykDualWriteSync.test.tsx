@@ -5,11 +5,13 @@ import { renderHook } from "@testing-library/react";
 const isRegistered = vi.fn();
 const trigger = vi.fn();
 const extract = vi.fn((..._a: unknown[]) => ({ marker: "next" }));
+const diff = vi.fn((..._a: unknown[]) => [{ op: "upsert" }]);
 
 vi.mock("../lib/sqliteWriter/index.js", () => ({
   EMPTY_FINYK_STATE: { marker: "empty" },
   isFinykDualWriteRegistered: () => isRegistered(),
   triggerFinykDualWrite: (...a: unknown[]) => trigger(...a),
+  diffFinykDualWriteOps: (...a: unknown[]) => diff(...a),
 }));
 vi.mock("../lib/sqliteWriter/extract.js", () => ({
   extractFinykDualWriteState: (...a: unknown[]) => extract(...a),
@@ -22,6 +24,7 @@ const slots = { showBalance: true } as unknown as FinykStorageSlots;
 
 beforeEach(() => {
   vi.clearAllMocks();
+  diff.mockReturnValue([{ op: "upsert" }]);
 });
 
 describe("useFinykDualWriteSync", () => {
@@ -56,5 +59,23 @@ describe("useFinykDualWriteSync", () => {
       { marker: "first" },
       { marker: "second" },
     );
+  });
+
+  it("skips the trigger when the diff is empty", () => {
+    // Regression: `useFinykStorageSlots` returns a fresh object literal
+    // per render, so this effect fires on every render — and
+    // `triggerFinykDualWrite` ends with a cache-refresh notify that
+    // re-renders it. Without the diff gate that loops forever
+    // (~280 refreshes/s measured on `/finyk`, 2026-08-06).
+    isRegistered.mockReturnValue(true);
+    diff.mockReturnValue([]);
+
+    const { rerender } = renderHook(({ s }) => useFinykDualWriteSync(s), {
+      initialProps: { s: slots },
+    });
+    rerender({ s: { showBalance: true } as unknown as FinykStorageSlots });
+    rerender({ s: { showBalance: true } as unknown as FinykStorageSlots });
+
+    expect(trigger).not.toHaveBeenCalled();
   });
 });
