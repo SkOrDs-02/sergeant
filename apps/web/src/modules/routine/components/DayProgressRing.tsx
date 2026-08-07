@@ -39,7 +39,7 @@ export function DayProgressRing({
           {/* «Чорнило» v3.1 § 3 — only rendered inside the routine hero's
               `ring` slot. `text-routine-strong`/`dark:text-routine`
               coincide almost exactly with the two ends of the new
-              `--hero-grad-routine` gradient (same coral hues), so the
+              `--hero-grad-routine` gradient (same rose hues), so the
               arc would nearly vanish depending on ring position; the
               track/arc/label all use hero-ink for guaranteed contrast. */}
           <circle

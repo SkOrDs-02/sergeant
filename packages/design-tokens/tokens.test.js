@@ -28,7 +28,7 @@ import {
 } from "./mobile.js";
 
 describe("@sergeant/design-tokens — tokens.js", () => {
-  it("brandColors matrix is stable (emerald/teal/cyan/cream/coral/lime/stone scales)", () => {
+  it("brandColors matrix is stable (emerald/teal/cyan/cream/rose/lime/stone scales)", () => {
     expect(brandColors).toMatchSnapshot();
   });
 

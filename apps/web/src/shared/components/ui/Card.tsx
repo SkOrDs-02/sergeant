@@ -233,10 +233,10 @@ const MODULE_PROMINENCE: Record<
       "bg-panel border border-fizruk-soft-border shadow-card dark:bg-cyan-400/10 dark:border-cyan-400/35 dark:shadow-none",
   },
   routine: {
-    hero: "border shadow-hero-routine bg-hero-grad-routine border-white/20 dark:bg-hero-ink-routine dark:border-coral-400/25 dark:shadow-glow-inset-coral",
+    hero: "border shadow-hero-routine bg-hero-grad-routine border-white/20 dark:bg-hero-ink-routine dark:border-rose-400/25 dark:shadow-glow-inset-rose",
     soft: "border bg-routine-soft border-routine-soft-border backdrop-blur-sm",
     tinted:
-      "bg-panel border border-routine-soft-border shadow-card dark:bg-coral-400/10 dark:border-coral-400/35 dark:shadow-none",
+      "bg-panel border border-routine-soft-border shadow-card dark:bg-rose-400/10 dark:border-rose-400/35 dark:shadow-none",
   },
   nutrition: {
     hero: "border shadow-hero-nutrition bg-hero-grad-nutrition border-white/20 dark:bg-hero-ink-nutrition dark:border-lime-400/25 dark:shadow-glow-inset-lime",

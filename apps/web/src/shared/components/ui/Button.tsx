@@ -153,7 +153,7 @@ const variants: Record<ButtonVariantLegacy, string> = {
   fizruk:
     "bg-fizruk-strong text-white shadow-sm hover:bg-cyan-900 hover:shadow-glow-cyan active:bg-cyan-900 active:scale-[0.98] dark:bg-fizruk dark:text-bg dark:shadow-glow-accent-cyan",
   routine:
-    "bg-routine-strong text-white shadow-sm hover:bg-coral-800 hover:shadow-glow-coral active:bg-coral-900 active:scale-[0.98] dark:bg-routine dark:text-bg dark:shadow-glow-accent-coral",
+    "bg-routine-strong text-white shadow-sm hover:bg-rose-800 hover:shadow-glow-rose active:bg-rose-900 active:scale-[0.98] dark:bg-routine dark:text-bg dark:shadow-glow-accent-rose",
   nutrition:
     "bg-nutrition-strong text-white shadow-sm hover:bg-lime-900 hover:shadow-glow-lime active:scale-[0.98] dark:bg-nutrition dark:text-bg dark:shadow-glow-accent-lime",
 
@@ -173,7 +173,7 @@ const variants: Record<ButtonVariantLegacy, string> = {
   "fizruk-soft":
     "bg-fizruk-soft text-fizruk-soft-fg dark:bg-fizruk/15 border border-fizruk-ring/50 dark:border-fizruk/30 hover:bg-cyan-100 dark:hover:bg-fizruk/25 active:scale-[0.98]",
   "routine-soft":
-    "bg-routine-surface text-routine-soft-fg dark:bg-routine/15 border border-routine-ring/50 dark:border-routine/30 hover:bg-coral-100 dark:hover:bg-routine/25 active:scale-[0.98]",
+    "bg-routine-surface text-routine-soft-fg dark:bg-routine/15 border border-routine-ring/50 dark:border-routine/30 hover:bg-rose-100 dark:hover:bg-routine/25 active:scale-[0.98]",
   "nutrition-soft":
     "bg-nutrition-soft text-nutrition-soft-fg dark:bg-nutrition/15 border border-nutrition-ring/50 dark:border-nutrition/30 hover:bg-lime-100 dark:hover:bg-nutrition/25 active:scale-[0.98]",
 

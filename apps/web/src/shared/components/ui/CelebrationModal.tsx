@@ -54,7 +54,7 @@ const MODULE_COLORS: Record<ModuleTheme, string[]> = {
 const MODULE_GRADIENTS: Record<ModuleTheme, string> = {
   finyk: "from-teal-600/20 to-teal-400/10",
   fizruk: "from-cyan-500/20 to-cyan-400/10",
-  routine: "from-coral-500/20 to-orange-500/10",
+  routine: "from-rose-500/20 to-orange-500/10",
   nutrition: "from-lime-500/20 to-green-500/10",
   // 2026-07: was `from-brand-500/20 to-emerald-500/10`, a stray
   // migration artefact — after the stone rebrand `brand-500` is a grey,

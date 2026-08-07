@@ -54,7 +54,7 @@ export type FABVariant =
   // tuned per module (handoff `02-component-map.md § FAB`):
   //   v2-finyk     emerald-400 → teal-700  (cross-family green-teal)
   //   v2-fizruk    cyan-400    → cyan-700
-  //   v2-routine   coral-400   → coral-700
+  //   v2-routine   rose-400   → rose-700
   //   v2-nutrition lime-400    → lime-600
   // Paired with `shadow-fab` (teal-tinted glow from theme.css).
   | "v2-finyk"
@@ -86,7 +86,7 @@ const variantStyles: Record<FABVariant, string> = {
   "v2-fizruk":
     "bg-gradient-to-br from-cyan-400 to-cyan-700 text-white shadow-fab hover:brightness-110",
   "v2-routine":
-    "bg-gradient-to-br from-coral-400 to-coral-700 text-white shadow-fab hover:brightness-110",
+    "bg-gradient-to-br from-rose-400 to-rose-700 text-white shadow-fab hover:brightness-110",
   "v2-nutrition":
     "bg-gradient-to-br from-lime-400 to-lime-600 text-white shadow-fab hover:brightness-110",
 };

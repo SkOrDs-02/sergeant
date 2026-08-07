@@ -1,6 +1,6 @@
 # Sergeant v2 — Migration guide для розробників
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-08-07 by @claude. **Next review:** 2026-11-05.
 > **Status:** Active
 
 Цей doc — практичний reference для **engineers** які пишуть новий код або торкаються існуючого у post-v2-rollout world. Містить **BEFORE/AFTER** для типових патернів.
@@ -60,7 +60,7 @@
 +<FloatingActionButton variant="v2-finyk" icon="plus" onClick={addExpense} />
 ```
 
-`v2-{module}`: gradient `from-brand-400 to-teal-700` (finyk), `from-cyan-400 to-cyan-700` (fizruk), `from-coral-400 to-coral-700` (routine), `from-lime-400 to-lime-600` (nutrition). Paired з `shadow-fab` (v2 token).
+`v2-{module}`: gradient `from-brand-400 to-teal-700` (finyk), `from-cyan-400 to-cyan-700` (fizruk), `from-rose-400 to-rose-800` (routine), `from-lime-400 to-lime-600` (nutrition). Paired з `shadow-fab` (v2 token).
 
 ### Hub-level sparkle / AI entry
 

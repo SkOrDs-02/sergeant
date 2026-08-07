@@ -28,7 +28,7 @@ export type SemanticOrModuleTone = SemanticTone | ModuleAccent;
 
 /** Primary brand colour ramps exposed by `brandColors` in tokens.js. */
 export type BrandColor =
-  "emerald" | "teal" | "cyan" | "cream" | "coral" | "lime";
+  "emerald" | "teal" | "cyan" | "cream" | "rose" | "lime";
 
 // ─── Runtime token shapes ────────────────────────────────────────────────
 
