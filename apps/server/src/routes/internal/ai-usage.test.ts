@@ -16,16 +16,29 @@ import type { RequestHandler } from "express";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createAiUsageInternalRouter } from "./ai-usage.js";
 
-function extractPostHandler(query: ReturnType<typeof vi.fn>): RequestHandler {
+function extractHandler(
+  query: ReturnType<typeof vi.fn>,
+  index: number,
+): RequestHandler {
   const router = createAiUsageInternalRouter({ pool: { query } as never });
-  const layer = (
+  const layers = (
     router as unknown as {
       stack: Array<{ route?: { stack: Array<{ handle: RequestHandler }> } }>;
     }
-  ).stack.find((l) => l.route);
-  const handle = layer?.route?.stack[0]?.handle;
+  ).stack.filter((l) => l.route);
+  const handle = layers[index]?.route?.stack[0]?.handle;
   if (!handle) throw new Error("route handler not found");
   return handle;
+}
+
+/** POST — писалка. */
+function extractPostHandler(query: ReturnType<typeof vi.fn>): RequestHandler {
+  return extractHandler(query, 0);
+}
+
+/** GET — читалка звіту. */
+function extractGetHandler(query: ReturnType<typeof vi.fn>): RequestHandler {
+  return extractHandler(query, 1);
 }
 
 interface FakeRes {
@@ -104,5 +117,90 @@ describe("POST /api/internal/ai-usage handler", () => {
     const [, values] = query.mock.calls[0]! as [string, unknown[]];
     // params: [subject_key, usage_day, bucket, input, output, total]
     expect(values[1]).toBe("2026-05-16");
+  });
+});
+
+describe("GET /api/internal/ai-usage — вікно звіту", () => {
+  it("рахує вікно від київського сьогодні, а не від CURRENT_DATE", async () => {
+    // 21:30 UTC = 00:30 наступної доби за Києвом. `CURRENT_DATE` у сесії
+    // Postgres (контейнер на UTC) віддав би 05-15, тоді як рядки за цю
+    // добу вже пишуться під 05-16 — край вікна їхав рівно на день.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-05-15T21:30:00Z"));
+
+    const query = vi.fn().mockResolvedValue({ rows: [] });
+    const res = await invoke(extractGetHandler(query), {
+      query: { days: "30" },
+    });
+
+    expect(res.statusCode).toBe(200);
+    const [sql, values] = query.mock.calls[0]! as [string, unknown[]];
+    expect(sql).not.toContain("CURRENT_DATE");
+    expect(values[0]).toBe("2026-05-16");
+    expect(values[1]).toBe(30);
+    expect(values[2]).toBe("provider:anthropic");
+  });
+
+  it("«останні N днів» включають сьогодні — рівно N, не N+1", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-05-15T12:00:00Z"));
+
+    const query = vi.fn().mockResolvedValue({ rows: [] });
+    const res = (await invoke(extractGetHandler(query), {
+      query: { days: "30" },
+    })) as { jsonBody: { from: string; until: string; days: number } };
+
+    // 2026-04-16 … 2026-05-15 включно = 30 діб. Раніше нижня межа була
+    // 04-15, тобто 31 доба витрат ділилась на 30 у «середньому за добу».
+    expect(res.jsonBody.from).toBe("2026-04-16");
+    expect(res.jsonBody.until).toBe("2026-05-15");
+    expect(res.jsonBody.days).toBe(30);
+  });
+
+  it("віддає $/виклик і $/1k — на них тримається питання «скільки коштує сто»", async () => {
+    const query = vi.fn().mockResolvedValue({
+      rows: [
+        {
+          endpoint: "coach-insight",
+          bucket: "anthropic:openai/gpt-5.1",
+          calls: "250",
+          input_tokens: "100000",
+          cache_read_tokens: "40000",
+          output_tokens: "5000",
+          // NUMERIC приходить рядком — коерція на межі API (Hard Rule #1).
+          cost_usd: "1.0175",
+        },
+      ],
+    });
+    const res = (await invoke(extractGetHandler(query), {
+      query: { days: "30" },
+    })) as {
+      jsonBody: {
+        totalCostUsd: number;
+        totalCalls: number;
+        items: Array<{
+          calls: number;
+          costPerCallUsd: number;
+          costPer1kUsd: number;
+          cacheHitPct: number;
+        }>;
+      };
+    };
+
+    const item = res.jsonBody.items[0]!;
+    expect(item.calls).toBe(250);
+    expect(item.costPerCallUsd).toBeCloseTo(0.00407, 6);
+    expect(item.costPer1kUsd).toBeCloseTo(4.07, 2);
+    expect(item.cacheHitPct).toBeCloseTo(40, 1);
+    expect(res.jsonBody.totalCalls).toBe(250);
+    expect(res.jsonBody.totalCostUsd).toBeCloseTo(1.0175, 4);
+  });
+
+  it("days затискається у [1, 90]", async () => {
+    const query = vi.fn().mockResolvedValue({ rows: [] });
+    const res = (await invoke(extractGetHandler(query), {
+      query: { days: "365" },
+    })) as { jsonBody: { days: number } };
+    expect(res.jsonBody.days).toBe(90);
   });
 });

@@ -83,6 +83,16 @@ export function createAiUsageInternalRouter({ pool }: { pool: Pool }): Router {
   r.get("/api/internal/ai-usage", async (req, res) => {
     const days = Math.min(90, Math.max(1, Number(req.query["days"]) || 7));
 
+    // Вікно рахуємо ВІД київського сьогодні, переданого параметром, а не від
+    // `CURRENT_DATE`. Два різні дні: `usage_day` пишеться через
+    // `toLocalISODate` (Europe/Kyiv), а `CURRENT_DATE` бере таймзону сесії
+    // Postgres — у контейнері це UTC. Між 00:00 і 03:00 за Києвом вони
+    // розходяться на добу, і край вікна їхав.
+    //
+    // `- (days - 1)` замість `- days`: «останні 30 днів» — це 30 днів разом
+    // із сьогоднішнім. Було на день більше, і `середнє за добу` ділило
+    // 31 день витрат на 30.
+    const today = toLocalISODate();
     const { rows } = await pool.query(
       `SELECT
          COALESCE(endpoint, 'legacy')           AS endpoint,
@@ -93,11 +103,12 @@ export function createAiUsageInternalRouter({ pool }: { pool: Pool }): Router {
          SUM(output_tokens)::bigint             AS output_tokens,
          SUM(COALESCE(actual_cost_usd, est_cost_usd))::numeric AS cost_usd
        FROM ai_usage_daily
-       WHERE usage_day >= (CURRENT_DATE - $1::int)
-         AND subject_key = $2
+       WHERE usage_day >= ($1::date - ($2::int - 1))
+         AND usage_day <= $1::date
+         AND subject_key = $3
        GROUP BY 1, 2
        ORDER BY cost_usd DESC NULLS LAST`,
-      [days, ANTHROPIC_PROVIDER_SUBJECT],
+      [today, days, ANTHROPIC_PROVIDER_SUBJECT],
     );
 
     // Hard Rule #1: pg віддає bigint/numeric рядками — коерцимо на межі API,
@@ -122,9 +133,18 @@ export function createAiUsageInternalRouter({ pool }: { pool: Pool }): Router {
       };
     });
 
+    // Межі вікна у відповіді — щоб споживач не здогадувався, від чого саме
+    // відлічені «останні N днів», і не перевідкривав київську межу в себе.
+    const from = toLocalISODate(
+      new Date(Date.parse(`${today}T12:00:00Z`) - (days - 1) * 86_400_000),
+    );
+
     res.json({
       days,
+      from,
+      until: today,
       totalCostUsd: +items.reduce((a, i) => a + i.costUsd, 0).toFixed(4),
+      totalCalls: items.reduce((a, i) => a + i.calls, 0),
       items,
     });
   });
