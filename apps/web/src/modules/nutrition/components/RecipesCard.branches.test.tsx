@@ -253,9 +253,16 @@ describe("RecipesCard — save-to-book branches", () => {
       expect(mockSaveRecipeToBook).toHaveBeenCalledWith(GENERATED_RECIPE),
     );
     expect(mockListSavedRecipes.mock.calls.length).toBe(listCallsBefore);
-    // Помилка теж мусить бути видимою, а не ковтатись мовчки.
+    // Помилка теж мусить бути видимою, а не ковтатись мовчки — і не просто
+    // видимою, а ДІЄВОЮ: `saveOne` передає третім аргументом дію «Повторити»,
+    // щоб невдача не була глухим кутом. Асершен на один аргумент цього не
+    // бачив і падав, хоч поведінка правильна.
     await waitFor(() =>
-      expect(toastSpies.error).toHaveBeenCalledWith("Тест-фейл"),
+      expect(toastSpies.error).toHaveBeenCalledWith(
+        "Тест-фейл",
+        undefined,
+        expect.objectContaining({ label: "Повторити" }),
+      ),
     );
   });
 });
