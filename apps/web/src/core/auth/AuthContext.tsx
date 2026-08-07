@@ -28,13 +28,32 @@ import { billingKeys } from "@shared/lib/api/queryKeys";
 import { reconcileChatOwnerOnAuthChange } from "../hub/hubChatSessions";
 import { clearPersistedQueryCache } from "@shared/lib/api/queryClientPersister";
 import { flushPendingSyncOpsBeforeLogout } from "../syncEngine/flushBeforeLogout";
+import { SIGN_IN_PATH } from "../app/appPaths";
 import { messages } from "../../shared/i18n/uk";
 import {
   safeReadStringSS,
   safeWriteSS,
   safeRemoveSS,
   safeRemoveLS,
+  webKVStore,
 } from "@shared/lib/storage/storage";
+
+/**
+ * AI-DANGER: цей файл сидить у eager-графі найближче до analytics, і
+ * НОВИЙ import `@sergeant/shared` саме звідси перекроює чанки так, що
+ * analytics-модуль стартує з ще не ініціалізованими константами:
+ * `Cannot read properties of undefined (reading 'SIGNUP_COMPLETED')`,
+ * білий екран на бутi (browser-QA 2026-08-06). Типи (`import type`)
+ * безпечні — вони стираються; ламає саме runtime-значення, і однаково
+ * як статичним імпортом, так і `await import(...)` усередині `logout`.
+ *
+ * Тому ключ тут — літерал, а не `STORAGE_KEYS.SYNC_ORIGIN_DEVICE_ID`.
+ * Синхрон із реєстром тримає `AuthContext.originDeviceKey.test.ts`.
+ * Потрібне ще одне значення зі `@sergeant/shared`? Або продублюй так
+ * само з pin-тестом, або спершу перевір буту у браузері на prod-білді —
+ * typecheck і юніти цю поломку не бачать.
+ */
+const SYNC_ORIGIN_DEVICE_ID_KEY = "sync_origin_device_id_v1";
 
 // WF-60 OAuth signup attribution — `signIn.social` full-page-redirects to the
 // provider, so `loginWithGoogle`/`loginWithApple` never resolve on success and
@@ -263,6 +282,22 @@ interface AuthContextValue {
   refresh: () => Promise<void>;
 }
 
+/**
+ * Derived hub bento snapshots. Flat, not keyed by user, so they must be
+ * dropped on every identity change — including a UI logout, which
+ * pre-stamps the chat owner and therefore bypasses the reconcile effect.
+ */
+const HUB_QUICK_STATS_KEYS = [
+  "finyk_quick_stats",
+  "fizruk_quick_stats",
+  "routine_quick_stats",
+  "nutrition_quick_stats",
+] as const;
+
+function clearHubQuickStatsSnapshots(): void {
+  for (const key of HUB_QUICK_STATS_KEYS) safeRemoveLS(key);
+}
+
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 interface AuthProviderProps {
@@ -325,14 +360,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       user?.id ?? null,
     );
     if (!changed) return;
-    for (const key of [
-      "finyk_quick_stats",
-      "fizruk_quick_stats",
-      "routine_quick_stats",
-      "nutrition_quick_stats",
-    ]) {
-      safeRemoveLS(key);
-    }
+    clearHubQuickStatsSnapshots();
     if (!prevOwnerWasUser) return;
     queryClient.clear();
     void clearPersistedQueryCache()
@@ -510,6 +538,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // потрібний wipe (SW-кеші, SQLite-партиція, LS-слайси, RQ clear)
       // logout виконує сам нижче.
       reconcileChatOwnerOnAuthChange(null);
+      // Той пре-стамп вище споживає зміну identity, тож reconcile-ефект
+      // побачить `changed: false` і НЕ прибере hub-снапшоти сам — logout
+      // мусить зробити це власноруч. Інакше вони переживають вихід, а
+      // наступний вхід іде шляхом `anon → user`, який навмисно мʼякий
+      // (щоб не зламати anonymous-data migration) і теж їх не чистить:
+      // новий акаунт бачить на хабі числа попереднього, поки картки не
+      // перерахуються. Модульні екрани при цьому коректні — партиція
+      // SQLite своя (виміряно 2026-08-06: хаб 5 150 ₴ від попереднього
+      // акаунта, `/finyk` того ж моменту — власні 4 420 ₴).
+      clearHubQuickStatsSnapshots();
 
       // Перше і найголовніше: перемкнути UI у signed-out ще до мережі. Все
       // нижче — teardown, який не має права гейтити цей перехід (і історично
@@ -561,6 +599,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // partition to `anon` for any post-logout anonymous usage. Dynamic import
       // keeps the sqlite-wasm chunk lazy (see `sqlite.lazy.test.ts`).
       try {
+        // Скидаємо origin-device-id ДО wipe, поки `kv_store` ще прив'язаний.
+        // Сервер відсіює на pull операції, чий `origin_device_id` дорівнює
+        // нашому — echo-suppression. Але id живе у `kv_store`, який не
+        // user-scoped, тож `wipeSqliteDb()` його не чіпає: пристрій лишався
+        // «тим самим», і власні рядки, які він же і запушив, більше НІКОЛИ
+        // не поверталися після того, як logout стер локальну копію.
+        // Виміряно 2026-08-06: акаунт із рядком на сервері входить назад на
+        // цей пристрій і бачить порожній Фінік, бо його єдина операція має
+        // origin цього ж пристрою. Свіжий id = pull віддає все своє.
+        await webKVStore.remove(SYNC_ORIGIN_DEVICE_ID_KEY);
+      } catch (err) {
+        logger.warn("[auth.logout] origin-device-id reset failed", err);
+      }
+      try {
         const sqliteMod = await import("../db/sqlite");
         await sqliteMod.wipeSqliteDb();
         sqliteMod.setSqliteUser(null);
@@ -585,6 +637,30 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // already in flight when the first clear ran can land afterwards and
       // repopulate the cache. Cheap and idempotent.
       queryClient.clear();
+
+      // Останнім — повний reload. Усе вище чистить сховища, але НЕ
+      // module-scope singleton-и: теплі SQLite-read-кеші модулів,
+      // `booted`-прапорці boot-ів, лічильники поколінь reader-ів. Вони
+      // живуть у памʼяті JS-модуля і переживають logout, тому наступний
+      // вхід іншим акаунтом бачив числа попереднього: quick-stats-boot
+      // рахував снапшот хаба з кешу старої партиції і переписував ним
+      // щойно очищені ключі (виміряно 2026-08-06 — хаб 4 420 ₴ від
+      // попереднього акаунта під сесією наступного). Identity-wipe-ефект
+      // сюди не дістає: `logout()` навмисно стампить owner заздалегідь,
+      // щоб не було двох teardown-ів, — тож reload має зробити logout.
+      // Той самий механізм, що вже прийнятий для user → user switch.
+      //
+      // `assign(SIGN_IN_PATH)`, а не `reload()`: teardown щойно вичистив і
+      // onboarding-прапорці, тож перезавантаження поточного маршруту
+      // висаджує щойно розлогіненого користувача на `/welcome` — пройти
+      // онбординг заново замість того, щоб просто увійти.
+      try {
+        globalThis.location?.assign(SIGN_IN_PATH);
+      } catch (err) {
+        // jsdom (`Not implemented: navigation`) і будь-який headless-раннер.
+        // Logout уже завершений — reload лише прибирає залишковий стан.
+        logger.warn("[auth.logout] reload after teardown failed", err);
+      }
     },
     [queryClient],
   );

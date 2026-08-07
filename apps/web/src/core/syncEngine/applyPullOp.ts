@@ -259,6 +259,20 @@ async function applyGenericRegistryRow(
   const whereClause = pkColumns.map((col) => `${col} = ?`).join(" AND ");
   const hasUpdatedAt = columns.includes("updated_at");
   const hasDeletedAt = columns.includes("deleted_at");
+  // Most module tables key on `id` alone, so the LWW lookup below can land
+  // on a row belonging to a DIFFERENT partition. That is not theoretical:
+  // on the kvvfs fallback (every Chrome main-thread session — the
+  // OPFS-SAH pool needs `createSyncAccessHandle`, which is worker-only)
+  // all partitions share one physical store. The anonymous→profile
+  // handoff re-keys a row to the same `id` under a new `user_id`, so an
+  // unscoped lookup found the source row, read an equal `updated_at`,
+  // and returned "skipped" — then the handoff's cleanup deleted that same
+  // row and the data existed only on the server (measured 2026-08-06).
+  const scopeByUser = columns.includes("user_id");
+  const lookupWhere = scopeByUser
+    ? `${whereClause} AND user_id = ?`
+    : whereClause;
+  const lookupValues = scopeByUser ? [...pkValues, userId] : pkValues;
 
   if (hasUpdatedAt) {
     const existing = await client.all<{
@@ -267,8 +281,8 @@ async function applyGenericRegistryRow(
     }>(
       `SELECT updated_at${hasDeletedAt ? ", deleted_at" : ""}
          FROM ${table}
-        WHERE ${whereClause}`,
-      pkValues,
+        WHERE ${lookupWhere}`,
+      lookupValues,
     );
     const local = existing[0];
     if (local && isStaleLocal(local.updated_at, incomingMs)) return "skipped";
@@ -287,8 +301,8 @@ async function applyGenericRegistryRow(
     await client.run(
       `UPDATE ${table}
           SET deleted_at = ?, updated_at = ?
-        WHERE ${whereClause}`,
-      [op.client_ts, op.client_ts, ...pkValues],
+        WHERE ${lookupWhere}`,
+      [op.client_ts, op.client_ts, ...lookupValues],
     );
     return "applied";
   }
