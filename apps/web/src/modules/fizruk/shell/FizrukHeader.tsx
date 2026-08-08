@@ -45,10 +45,12 @@ function backLabelFor(page: FizrukPage): string {
     case "exercise":
       return "Тренування";
     case "measurements":
-      // Measurements is entered exclusively from the «Прогрес і заміри»
-      // stat, so the back arrow leads there (mirrors
-      // FizrukApp.contextualBackTarget for "measurements").
-      return "Прогрес і заміри";
+      // Measurements is entered exclusively from the «Прогрес» stat, so the
+      // back arrow leads there (mirrors FizrukApp.contextualBackTarget for
+      // "measurements"). Текст дзеркалить підпис вкладки в
+      // `FIZRUK_NAV` — обіцянка стрілки має збігатися з тим, куди людина
+      // потрапляє, тож ці два рядки міняються разом.
+      return "Прогрес";
     default:
       return "ФІЗРУК";
   }

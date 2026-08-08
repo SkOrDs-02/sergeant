@@ -298,10 +298,19 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
                   `sr-only`-span: він не залежить від того, як саме візуальна
                   половина ховається зараз чи ховатиметься після редизайну.
                 */}
+                {/*
+                  `text-ellipsis`: стеля `max-w-[88px]` — реальна межа, і
+                  підпис, що в неї не вліз, раніше різало посеред слова
+                  («Прогрес і замір» — знахідка QA-аудиту 2026-08-04, скарга
+                  власника 2026-08-08). Багатослівний підпис у нижній
+                  навігації — сам собою помилка (і його вкорочують у
+                  відповідному `*Nav`-файлі), але обрив із трьома крапками
+                  читається як навмисне скорочення, а не як зламана верстка.
+                */}
                 <span
                   aria-hidden
                   className={cn(
-                    "text-style-caption font-semibold leading-none overflow-hidden whitespace-nowrap",
+                    "text-style-caption font-semibold leading-none overflow-hidden text-ellipsis whitespace-nowrap",
                     "transition-[max-width,opacity] duration-base motion-reduce:transition-none",
                     active
                       ? "max-w-[88px] opacity-100"

@@ -328,7 +328,7 @@ describe("FizrukApp (extra) — contextual back navigation", () => {
   it.each([
     ["atlas", "Моє тіло", "body"],
     ["exercise", "Тренування", "workouts"],
-    ["measurements", "Прогрес і заміри", "progress"],
+    ["measurements", "Прогрес", "progress"],
   ] as const)(
     "navigates from %s back to %s via contextual back",
     (page, backLabel, expectedTarget) => {

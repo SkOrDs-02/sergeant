@@ -95,6 +95,28 @@ describe("ModuleBottomNav", () => {
     expect(inactiveVisualLabel.className).toContain("max-w-0");
   });
 
+  // Стеля вище — реальна межа, тож підпис, який у неї не вліз, мусить
+  // обриватись трьома крапками, а не посеред слова: саме так виглядав
+  // «Прогрес і замір» у Фізруку (QA-аудит 2026-08-04 «кліп лейбла без
+  // ellipsis»). Сам той підпис уже вкорочено, але запобіжник лишається.
+  it("truncates an over-long label with an ellipsis instead of cutting mid-word", () => {
+    render(
+      <ModuleBottomNav
+        items={items}
+        activeId="overview"
+        onChange={vi.fn()}
+        module="finyk"
+        ariaLabel="Module sections"
+      />,
+    );
+
+    const activeVisualLabel = screen.getByText("Overview", {
+      selector: "span:not(.sr-only)",
+    });
+    expect(activeVisualLabel.className).toContain("text-ellipsis");
+    expect(activeVisualLabel.className).toContain("overflow-hidden");
+  });
+
   it("calls onChange when a nav item is clicked", () => {
     const onChange = vi.fn();
     render(
