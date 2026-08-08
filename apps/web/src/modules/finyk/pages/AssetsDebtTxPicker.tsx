@@ -53,6 +53,34 @@ const ROLE_HINT: Record<LinkedTxRole, Record<"debt" | "receivable", string>> = {
 
 const ROLE_ORDER: LinkedTxRole[] = ["source", "increase", "payment"];
 
+/**
+ * Тон підпису ролі. Живе тут, а не в домені: колір мусить бути ПАРОЮ
+ * (світлий тир + темний), бо підпис стоїть і на бежевому фоні сторінки,
+ * і на чорнильному. Домен про теми не знає — він віддає роль.
+ *
+ * AI-CONTEXT (рішення власника 2026-08-07, варіант Б на матеріалі
+ * `mockups/product/debt-role-colors.html`): кольорові лише ті дві ролі,
+ * що несуть справжню полярність — рух до нуля й від нуля. `source`
+ * (виникнення боргу) НАВМИСНО нейтральний.
+ *
+ * Виникнення — це факт, з якого запис починається, а не попередження:
+ * воно вже назване підписом, і фарбувати його ще й у бурштин означало б
+ * казати те саме двічі, гучніше. Плюс це знімає давнє розходження
+ * всередині Фініка — у `TxRow` витрата вже нейтральна (`text-text`),
+ * тобто модуль давно вирішив, що витрачати гроші не помилка, а
+ * `debtEngine` цього рішення не знав.
+ *
+ * Якщо колись захочеться повернути третій колір — це продуктове
+ * рішення, не косметика: воно додає тривожний сигнал на екран, де
+ * нічого не зламано. Тест `AssetsDebtTxPicker.roleTone.test.tsx`
+ * тримає межу.
+ */
+const ROLE_TONE: Record<LinkedTxRole, string> = {
+  payment: "text-success-strong dark:text-success",
+  increase: "text-danger-strong dark:text-danger",
+  source: "text-muted",
+};
+
 interface RoleSheetProps {
   tx: TxRowTx | null;
   kind: "debt" | "receivable";
@@ -244,8 +272,10 @@ export function AssetsDebtTxPicker({
               <div key={t.id || i}>
                 {isLinked && role && (
                   <div
-                    className="text-style-caption px-1 py-1"
-                    style={{ color: describeLinkedTxRole(role, kind).color }}
+                    className={cn(
+                      "text-style-caption px-1 py-1",
+                      ROLE_TONE[role],
+                    )}
                   >
                     {describeLinkedTxRole(role, kind).label}
                   </div>
