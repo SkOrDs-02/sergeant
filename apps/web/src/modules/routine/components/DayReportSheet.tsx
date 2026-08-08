@@ -82,10 +82,7 @@ export function DayReportSheet({
                   size="xs"
                   variant="ghost"
                   onClick={() => onToggleHabit(h.id, dateKey)}
-                  className={cn(
-                    "shrink-0 rounded-xl border text-sm! font-bold",
-                    C.done,
-                  )}
+                  className={cn("shrink-0 rounded-xl border font-bold", C.done)}
                   aria-label="Скасувати виконання"
                 >
                   <Icon name="check" size={14} aria-hidden />
@@ -115,7 +112,7 @@ export function DayReportSheet({
                   size="xs"
                   variant="ghost"
                   onClick={() => onToggleHabit(h.id, dateKey)}
-                  className="shrink-0 rounded-xl border border-line text-sm! font-bold text-muted"
+                  className="shrink-0 rounded-xl border border-line font-bold text-muted"
                   aria-label="Відмітити як виконано"
                 >
                   <Icon name="circle-outline" size={14} aria-hidden />

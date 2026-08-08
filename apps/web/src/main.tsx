@@ -113,7 +113,7 @@ function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
         <ServerErrorPage onReset={resetError} />
       </Suspense>
       {import.meta.env.DEV ? (
-        <pre className="text-xs text-danger-strong dark:text-danger whitespace-pre-wrap m-4 p-4 rounded-xl bg-panel border border-line">
+        <pre className="text-style-caption text-danger-strong dark:text-danger whitespace-pre-wrap m-4 p-4 rounded-xl bg-panel border border-line">
           {error?.message}
         </pre>
       ) : null}
