@@ -59,8 +59,13 @@ function setHooks(opts: {
   exercises?: unknown[];
   musclesUk?: Record<string, string>;
   pushup?: { stats: unknown; hasData: boolean };
+  /** Defaults to `true` — most tests exercise the post-cache-warm page. */
+  loaded?: boolean;
 }) {
-  useWorkouts.mockReturnValue({ workouts: opts.workouts ?? [] });
+  useWorkouts.mockReturnValue({
+    workouts: opts.workouts ?? [],
+    loaded: opts.loaded ?? true,
+  });
   useMeasurements.mockReturnValue({ entries: opts.entries ?? [] });
   useExerciseCatalog.mockReturnValue({
     exercises: opts.exercises ?? [],
@@ -215,6 +220,38 @@ describe("Progress page — muscle volume & PR board", () => {
     // because no exercises catalogue is provided).
     expect(screen.getByText("Груди")).toBeInTheDocument();
     expect(screen.getByText("Спина")).toBeInTheDocument();
+  });
+
+  // П3 — the bars plot an internal `loadPoints` score (тоннаж ÷ 1000 +
+  // сети × 0.15), not kilograms; a raw "0.6" gives the reader no chance to
+  // understand what it means. A legend under the section heading names the
+  // unit explicitly.
+  it("labels the muscle-volume numbers as load-score units, not kilograms (П3)", () => {
+    const at = new Date(NOW - 1 * DAY).toISOString();
+    setHooks({
+      musclesUk: { chest: "Груди" },
+      workouts: [
+        {
+          id: "w1",
+          startedAt: at,
+          endedAt: at,
+          items: [
+            {
+              id: "w1-a",
+              exerciseId: "bench",
+              type: "strength",
+              musclesPrimary: ["chest"],
+              musclesSecondary: [],
+              sets: [{ weightKg: 100, reps: 10 }],
+            },
+          ],
+        },
+      ],
+    });
+    render(<Progress onNavigate={onNavigate} />);
+    expect(
+      screen.getByText(/Умовні одиниці навантаження, не кілограми/),
+    ).toBeInTheDocument();
   });
 
   it("filters the PR board by muscle group and resets via «Всі»", () => {

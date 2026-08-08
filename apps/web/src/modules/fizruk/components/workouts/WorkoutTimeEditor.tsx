@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-05-14
+ * Last validated: 2026-08-08
  * Status: Active
  */
 import { useId } from "react";
@@ -32,7 +32,7 @@ export function WorkoutTimeEditor({
 
   return (
     <details className="mt-3 rounded-xl border border-line bg-panelHi/50 px-3 py-2">
-      <summary className="text-style-caption text-subtle cursor-pointer select-none">
+      <summary className="flex items-center min-h-[44px] -mx-1 px-1 rounded-lg text-style-caption text-subtle cursor-pointer select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg">
         Час тренування
       </summary>
       <div className="mt-2 space-y-2">

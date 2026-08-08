@@ -22,7 +22,11 @@ import {
   trackEvent,
 } from "../../../../core/observability/analytics";
 import { readSignalContext } from "../../../../core/observability/valueSignalAttribution";
-import type { Workout, WorkoutItem } from "@sergeant/fizruk-domain/domain";
+import {
+  computeWorkoutSetCount,
+  type Workout,
+  type WorkoutItem,
+} from "@sergeant/fizruk-domain/domain";
 import type { WorkoutFinishSummary } from "@sergeant/fizruk-domain";
 import type { RestTimerState } from "../../hooks/useFizrukRestSound";
 import { trackFizrukWorkoutDiscarded } from "../../lib/workoutTelemetry";
@@ -300,16 +304,17 @@ export function WorkoutJournalSection({
                 // назв вправ, нотаток і тоннажу тут немає і бути не має
                 // (Hard Rule #21 — `scrubPII` чистить за іменами ключів,
                 // тож назва вправи в події не була б вирізана).
+                // `sets`/`has_sets` use the same non-empty-set criterion as
+                // the journal row pill (`computeWorkoutSetCount` — a set
+                // counts only when `weightKg > 0 || reps > 0`), so the
+                // event matches what the user sees in the журнал instead
+                // of the raw `sets.length` (which also counts unfilled
+                // `{weightKg:0, reps:0}` rows the user never touched).
+                const setCount = computeWorkoutSetCount(activeWorkout);
                 trackEvent(ANALYTICS_EVENTS.FIZRUK_WORKOUT_FINISHED, {
                   items: sum?.items ?? (activeWorkout.items || []).length,
-                  sets: (activeWorkout.items || []).reduce(
-                    (total, item) => total + (item.sets?.length ?? 0),
-                    0,
-                  ),
-                  has_sets: (activeWorkout.items || []).some(
-                    (item) =>
-                      item.type === "strength" && (item.sets?.length ?? 0) > 0,
-                  ),
+                  sets: setCount,
+                  has_sets: setCount > 0,
                   duration_min:
                     sum === null ? null : Math.round(sum.durationSec / 60),
                   ...readSignalContext("fizruk"),

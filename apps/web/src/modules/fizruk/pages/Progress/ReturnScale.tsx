@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-08-06
+ * Last validated: 2026-08-08
  * Status: Active
  *
  * Шкала повернення — signature-view Фізрука (анти-слоп П1,
@@ -97,8 +97,26 @@ export function ReturnScale({
         />
       </div>
 
-      <div className="mt-1 flex items-center justify-between gap-2 text-style-caption text-muted tabular-nums">
+      {/*
+        П4 fix: the axis tick ("−25%") used to share a row with the status
+        text ("свіже · 0 дн. тому") and the peak label. On a fresh PR the
+        marker sits at the right edge next to "пік 101", but eyes still
+        pass over the "−25%" tick at the far-left on the way there — the
+        owner's repro read that as "you're at −25%" even though it is only
+        the scale's OTHER end. Splitting into two rows fixes the confusion:
+        the top row is purely the abstract axis (dim, small, brackets the
+        track), the bottom row is the two real numbers about YOU (temporal
+        status + the actual peak weight) — visually and semantically
+        separate from the axis.
+      */}
+      <div
+        aria-hidden
+        className="mt-1 flex items-center justify-between text-style-caption text-subtle/70 tabular-nums"
+      >
         <span>−{MAX_REDUCTION_PCT}%</span>
+        <span>0%</span>
+      </div>
+      <div className="mt-0.5 flex items-center justify-between gap-2 text-style-caption text-muted tabular-nums">
         {/*
           Тон навмисно констатувальний: канон `fizruk.md` §6 вимагає
           «констатація, не докір». Тому в середині стоїть факт про паузу

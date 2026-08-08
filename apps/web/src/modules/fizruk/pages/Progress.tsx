@@ -1,11 +1,13 @@
 /**
- * Last validated: 2026-05-14
+ * Last validated: 2026-08-08
  * Status: Active
  */
 import { useMemo, useState } from "react";
 import type { FizrukPage } from "../shell/fizrukRoute";
+import { Button } from "@shared/components/ui/Button";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { Icon } from "@shared/components/ui/Icon";
+import { Skeleton } from "@shared/components/ui/Skeleton";
 import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
 import { useDailyLog } from "../hooks/useDailyLog";
@@ -40,7 +42,14 @@ interface ProgressProps {
 }
 
 export function Progress({ onNavigate }: ProgressProps) {
-  const { workouts } = useWorkouts();
+  // `loaded` mirrors the fizruk SQLite warm-cache flag (`refreshedAt`) —
+  // `useMeasurements`/`useDailyLog` overlay the SAME cache, so this single
+  // flag is a faithful readiness signal for the whole page. Without it the
+  // page rendered its FINAL empty states (top empty-state, weight/fat
+  // dashes, muscle-volume and PR-board empties) during the cold-start
+  // window before the cache warmed — a false "nothing here" flash on every
+  // fresh boot (defect П1).
+  const { workouts, loaded } = useWorkouts();
   const { entries } = useMeasurements();
   // W1-WEIGHT-SOT стадія 1: «Тренд ваги» читав тільки `fizruk_measurements`,
   // тому зважування з екрана «Тіло» (daily_log) сюди не потрапляли.
@@ -260,244 +269,309 @@ export function Progress({ onNavigate }: ProgressProps) {
           </div>
           <div className="text-center">
             <div className="text-style-caption text-subtle">PR</div>
-            <div className="text-base font-extrabold text-text tabular-nums">
-              {quickStats.prsCount}
-            </div>
+            {loaded ? (
+              <div className="text-base font-extrabold text-text tabular-nums">
+                {quickStats.prsCount}
+              </div>
+            ) : (
+              <Skeleton className="h-5 w-6 mx-auto mt-0.5" module="fizruk" />
+            )}
           </div>
         </div>
 
-        {/* Round-3 UI audit T3: the old version was clickable text with no
-            visual affordance — owner: "не зрозуміло що то кнопка". Now a
-            bordered card-button with icon/title/subtitle/chevron, same
-            shape as other tappable rows in the module. */}
-        <button
-          type="button"
-          onClick={() => onNavigate("measurements")}
-          className="focus-ring touch-target w-full flex items-center gap-3 rounded-2xl border border-line bg-panelHi hover:bg-panel active:scale-[0.99] transition-[background-color,transform] px-4 py-3 text-left"
-        >
-          <div className="shrink-0 w-9 h-9 rounded-xl bg-fizruk/10 text-fizruk-strong dark:text-fizruk flex items-center justify-center">
-            <Icon name="ruler" size="md" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-style-label text-text">
-              {messages.fizruk.progress.measurementsTitle}
-            </div>
-            <div className="text-style-caption text-subtle truncate">
-              {messages.fizruk.progress.measurementsSubtitle} · {entries.length}{" "}
-              {pluralize(
-                entries.length,
-                messages.fizruk.progress.measurementOne,
-                messages.fizruk.progress.measurementFew,
-                messages.fizruk.progress.measurementMany,
-              )}
-            </div>
-          </div>
-          <Icon
-            name="chevron-right"
-            size="sm"
-            className="shrink-0 text-subtle"
-            aria-hidden
-          />
-        </button>
-
-        {!hasAny && (
-          <EmptyState
-            compact
-            icon={<Icon name="trending-up" size={22} aria-hidden />}
-            title={messages.fizruk.progress.emptyTitle}
-            description={messages.fizruk.progress.emptyDescription}
-          />
-        )}
-
-        {/* Weekly volume chart */}
-        {(workouts || []).some((w) => w.endedAt) && (
-          <Card radius="lg" padding="lg">
-            <WeeklyVolumeChart volumeKg={weekly.volumeKg} />
-          </Card>
-        )}
-
-        {/* Cross-module activity */}
-        {hasPushupData && (
-          <Card radius="lg">
-            <SectionHeading
-              as="div"
-              size="xs"
-              className="mb-3"
-              variant="fizruk"
-            >
-              {messages.fizruk.progress.crossModuleHeading}
-            </SectionHeading>
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-9 h-9 rounded-xl bg-fizruk/10 flex items-center justify-center shrink-0 text-base">
-                <Icon name="dumbbell" size={18} aria-hidden />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="text-style-label text-text">
-                  {messages.fizruk.progress.pushups}
-                </div>
-                <div className="text-style-caption text-subtle">
-                  {messages.fizruk.progress.pushupsSource}
-                </div>
-              </div>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              <div className="bg-bg border border-line rounded-xl p-2.5">
-                <Stat
-                  label={messages.period.today}
-                  value={pushupStats.todayCount}
-                  size="sm"
-                  align="center"
-                />
-              </div>
-              <div className="bg-bg border border-line rounded-xl p-2.5">
-                <Stat
-                  label={messages.period.week}
-                  value={pushupStats.week}
-                  size="sm"
-                  align="center"
-                />
-              </div>
-              <div className="bg-bg border border-line rounded-xl p-2.5">
-                <Stat
-                  label={messages.period.month}
-                  value={pushupStats.month}
-                  size="sm"
-                  align="center"
-                />
-              </div>
-            </div>
-          </Card>
-        )}
-
-        {/* Weight + fat cards */}
-        {(() => {
-          const weightDelta = weightStat.delta;
-          const fatDelta = meas.delta("bodyFatPct");
-          return (
+        {!loaded ? (
+          // П1 — cold-start skeleton. Before this, the page rendered its
+          // FINAL empty states (top empty-state, weight/fat dashes,
+          // muscle-volume and PR-board empties) while the SQLite cache was
+          // still warming, i.e. a false "nothing here" flash on every fresh
+          // boot. `loaded` (== `refreshedAt !== null` on the shared fizruk
+          // cache) gates the whole body until the cache has actually had a
+          // chance to answer.
+          <div
+            className="space-y-3"
+            role="status"
+            aria-live="polite"
+            aria-label={messages.status.loading}
+          >
+            <Skeleton className="h-[68px] w-full" module="fizruk" />
+            <Skeleton className="h-32 w-full" module="fizruk" />
             <div className="grid grid-cols-2 gap-3">
-              <Card radius="lg">
-                <Stat
-                  label={messages.fizruk.progress.weight}
-                  value={
-                    weightStat.latest != null
-                      ? `${weightStat.latest} ${messages.fizruk.kgUnit}`
-                      : "—"
-                  }
-                  sublabel={
-                    weightDelta == null ? (
-                      messages.fizruk.progress.noComparison
-                    ) : (
-                      <span
-                        className={cn(
-                          "font-semibold",
-                          weightDelta > 0
-                            ? "text-warning-strong dark:text-warning"
-                            : "text-success-strong dark:text-success",
-                        )}
-                      >
-                        {weightDelta > 0 ? "+" : ""}
-                        {weightDelta.toFixed(1)} {messages.fizruk.kgUnit}
-                      </span>
-                    )
-                  }
-                />
-              </Card>
-              <Card radius="lg">
-                <Stat
-                  label={messages.fizruk.progress.bodyFat}
-                  value={
-                    meas.latest?.["bodyFatPct"] != null
-                      ? `${meas.latest["bodyFatPct"]}%`
-                      : "—"
-                  }
-                  sublabel={
-                    fatDelta == null ? (
-                      "—"
-                    ) : (
-                      <span
-                        className={cn(
-                          "font-semibold",
-                          fatDelta > 0
-                            ? "text-warning-strong dark:text-warning"
-                            : "text-success-strong dark:text-success",
-                        )}
-                      >
-                        {fatDelta > 0 ? "+" : ""}
-                        {fatDelta.toFixed(1)}%
-                      </span>
-                    )
-                  }
-                />
-              </Card>
+              <Skeleton className="h-20 w-full" module="fizruk" />
+              <Skeleton className="h-20 w-full" module="fizruk" />
             </div>
-          );
-        })()}
+            <Skeleton className="h-40 w-full" module="fizruk" />
+          </div>
+        ) : (
+          <>
+            {/* Round-3 UI audit T3: the old version was clickable text with no
+                visual affordance — owner: "не зрозуміло що то кнопка". Now a
+                bordered card-button with icon/title/subtitle/chevron, same
+                shape as other tappable rows in the module. */}
+            <button
+              type="button"
+              onClick={() => onNavigate("measurements")}
+              className="focus-ring touch-target w-full flex items-center gap-3 rounded-2xl border border-line bg-panelHi hover:bg-panel active:scale-[0.99] transition-[background-color,transform] px-4 py-3 text-left"
+            >
+              <div className="shrink-0 w-9 h-9 rounded-xl bg-fizruk/10 text-fizruk-strong dark:text-fizruk flex items-center justify-center">
+                <Icon name="ruler" size="md" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-style-label text-text">
+                  {messages.fizruk.progress.measurementsTitle}
+                </div>
+                <div className="text-style-caption text-subtle truncate">
+                  {messages.fizruk.progress.measurementsSubtitle} ·{" "}
+                  {entries.length}{" "}
+                  {pluralize(
+                    entries.length,
+                    messages.fizruk.progress.measurementOne,
+                    messages.fizruk.progress.measurementFew,
+                    messages.fizruk.progress.measurementMany,
+                  )}
+                </div>
+              </div>
+              <Icon
+                name="chevron-right"
+                size="sm"
+                className="shrink-0 text-subtle"
+                aria-hidden
+              />
+            </button>
 
-        {/* Weight trend chart */}
-        {weightTrend.filter((d) => d.value != null).length >= 2 && (
-          <Card radius="lg">
-            <SectionHeading size="xs" className="mb-3" variant="fizruk">
-              {messages.fizruk.progress.weightTrend}
-            </SectionHeading>
-            <MiniLineChart
-              data={weightTrend}
-              unit={messages.fizruk.kgUnit}
-              color={chartStatusSeries.success}
-              metricLabel={messages.fizruk.progress.weightMetricLabel}
-            />
-          </Card>
+            {/*
+              П2 — a single honest empty state instead of a stack of four
+              near-identical "no data yet" cards (top empty-state, weight/fat
+              dashes, muscle-volume empty, PR-board empty). The rest of the
+              page (everything below) only mounts once `hasAny` is true, so
+              an empty profile shows exactly ONE state with ONE action.
+            */}
+            {!hasAny && (
+              <EmptyState
+                compact
+                icon={<Icon name="trending-up" size={22} aria-hidden />}
+                title={messages.fizruk.progress.emptyTitle}
+                description={messages.fizruk.progress.emptyDescription}
+                primaryAction={
+                  <Button
+                    variant="fizruk"
+                    size="sm"
+                    onClick={() => onNavigate("workouts")}
+                  >
+                    {messages.fizruk.startWorkoutFab}
+                  </Button>
+                }
+              />
+            )}
+
+            {/* Cross-module activity — real data from another module (not a
+                "no data yet" placeholder), so it stays outside the `hasAny`
+                gate and can show even on an otherwise-empty fizruk profile. */}
+            {hasPushupData && (
+              <Card radius="lg">
+                <SectionHeading size="xs" className="mb-3" variant="fizruk">
+                  {messages.fizruk.progress.crossModuleHeading}
+                </SectionHeading>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-9 h-9 rounded-xl bg-fizruk/10 text-fizruk-strong dark:text-fizruk flex items-center justify-center shrink-0 text-base">
+                    <Icon name="dumbbell" size={18} aria-hidden />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-style-label text-text">
+                      {messages.fizruk.progress.pushups}
+                    </div>
+                    <div className="text-style-caption text-subtle">
+                      {messages.fizruk.progress.pushupsSource}
+                    </div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="bg-bg border border-line rounded-xl p-2.5">
+                    <Stat
+                      label={messages.period.today}
+                      value={pushupStats.todayCount}
+                      size="sm"
+                      align="center"
+                    />
+                  </div>
+                  <div className="bg-bg border border-line rounded-xl p-2.5">
+                    <Stat
+                      label={messages.period.week}
+                      value={pushupStats.week}
+                      size="sm"
+                      align="center"
+                    />
+                  </div>
+                  <div className="bg-bg border border-line rounded-xl p-2.5">
+                    <Stat
+                      label={messages.period.month}
+                      value={pushupStats.month}
+                      size="sm"
+                      align="center"
+                    />
+                  </div>
+                </div>
+              </Card>
+            )}
+
+            {hasAny && (
+              <>
+                {/* Weekly volume chart */}
+                {(workouts || []).some((w) => w.endedAt) && (
+                  <Card radius="lg" padding="lg">
+                    <WeeklyVolumeChart
+                      volumeKg={weekly.volumeKg}
+                      isLoading={!loaded}
+                    />
+                  </Card>
+                )}
+
+                {/* Weight + fat cards */}
+                {(() => {
+                  const weightDelta = weightStat.delta;
+                  const fatDelta = meas.delta("bodyFatPct");
+                  return (
+                    <div className="grid grid-cols-2 gap-3">
+                      <Card radius="lg">
+                        <Stat
+                          label={messages.fizruk.progress.weight}
+                          value={
+                            weightStat.latest != null
+                              ? `${weightStat.latest} ${messages.fizruk.kgUnit}`
+                              : "—"
+                          }
+                          sublabel={
+                            weightDelta == null ? (
+                              messages.fizruk.progress.noComparison
+                            ) : (
+                              <span
+                                className={cn(
+                                  "font-semibold",
+                                  weightDelta > 0
+                                    ? "text-warning-strong dark:text-warning"
+                                    : "text-success-strong dark:text-success",
+                                )}
+                              >
+                                {weightDelta > 0 ? "+" : ""}
+                                {weightDelta.toFixed(1)}{" "}
+                                {messages.fizruk.kgUnit}
+                              </span>
+                            )
+                          }
+                        />
+                      </Card>
+                      <Card radius="lg">
+                        <Stat
+                          label={messages.fizruk.progress.bodyFat}
+                          value={
+                            meas.latest?.["bodyFatPct"] != null
+                              ? `${meas.latest["bodyFatPct"]}%`
+                              : "—"
+                          }
+                          sublabel={
+                            fatDelta == null ? (
+                              "—"
+                            ) : (
+                              <span
+                                className={cn(
+                                  "font-semibold",
+                                  fatDelta > 0
+                                    ? "text-warning-strong dark:text-warning"
+                                    : "text-success-strong dark:text-success",
+                                )}
+                              >
+                                {fatDelta > 0 ? "+" : ""}
+                                {fatDelta.toFixed(1)}%
+                              </span>
+                            )
+                          }
+                        />
+                      </Card>
+                    </div>
+                  );
+                })()}
+
+                {/* Weight trend chart */}
+                {weightTrend.filter((d) => d.value != null).length >= 2 && (
+                  <Card radius="lg">
+                    <SectionHeading size="xs" className="mb-3" variant="fizruk">
+                      {messages.fizruk.progress.weightTrend}
+                    </SectionHeading>
+                    <MiniLineChart
+                      data={weightTrend}
+                      unit={messages.fizruk.kgUnit}
+                      color={chartStatusSeries.success}
+                      metricLabel={messages.fizruk.progress.weightMetricLabel}
+                    />
+                  </Card>
+                )}
+
+                {/* Body fat trend chart */}
+                {fatTrend.filter((d) => d.value != null).length >= 2 && (
+                  <Card radius="lg">
+                    <SectionHeading size="xs" className="mb-3" variant="fizruk">
+                      {messages.fizruk.progress.bodyFatTrend}
+                    </SectionHeading>
+                    <MiniLineChart
+                      data={fatTrend}
+                      unit="%"
+                      color={chartStatusSeries.warning}
+                      metricLabel={messages.fizruk.progress.bodyFatMetricLabel}
+                    />
+                  </Card>
+                )}
+
+                {/* Wellbeing chart */}
+                {wellbeingData.length >= 2 && (
+                  <Card radius="lg">
+                    <SectionHeading size="xs" className="mb-3" variant="fizruk">
+                      {messages.fizruk.progress.wellbeing}
+                    </SectionHeading>
+                    <WellbeingChart data={wellbeingData} />
+                  </Card>
+                )}
+
+                {/* Muscle volume bars */}
+                <Card radius="lg" padding="lg">
+                  <SectionHeading size="xs" className="mb-1" variant="fizruk">
+                    {messages.fizruk.progress.muscleVolume}
+                  </SectionHeading>
+                  {/*
+                    П3 — the bars below plot `loadPoints`, an internal score
+                    (тоннаж ÷ 1000 + сети × 0.15), not kilograms. Without
+                    this line the raw "0.6" read as a broken weight. Full
+                    unit rename (or switching the metric itself to кг×повт,
+                    like the weekly-volume chart above) touches
+                    `components/MuscleWeekMatrix.tsx` + `lib/muscleWeekMatrix.ts`,
+                    both outside this change's file scope — tracked as a
+                    follow-up.
+                  */}
+                  <p className="text-style-caption text-subtle mb-3">
+                    {messages.fizruk.progress.muscleVolumeUnitsHint}
+                  </p>
+                  {muscleMatrix.rows.length === 0 ? (
+                    <EmptyState
+                      compact
+                      title={messages.empty.nothingYet}
+                      description={
+                        messages.fizruk.progress.muscleVolumeEmptyDescription
+                      }
+                    />
+                  ) : (
+                    <MuscleVolumeBlock matrix={muscleMatrix} />
+                  )}
+                </Card>
+
+                <PrBoard
+                  prs={prs}
+                  prFilter={prFilter}
+                  onPrFilterChange={setPrFilter}
+                  musclesUk={musclesUk}
+                  onSelect={(id) => onNavigate(`exercise/${id}`)}
+                />
+              </>
+            )}
+          </>
         )}
-
-        {/* Body fat trend chart */}
-        {fatTrend.filter((d) => d.value != null).length >= 2 && (
-          <Card radius="lg">
-            <SectionHeading size="xs" className="mb-3" variant="fizruk">
-              {messages.fizruk.progress.bodyFatTrend}
-            </SectionHeading>
-            <MiniLineChart
-              data={fatTrend}
-              unit="%"
-              color={chartStatusSeries.warning}
-              metricLabel={messages.fizruk.progress.bodyFatMetricLabel}
-            />
-          </Card>
-        )}
-
-        {/* Wellbeing chart */}
-        {wellbeingData.length >= 2 && (
-          <Card radius="lg">
-            <SectionHeading size="xs" className="mb-3" variant="fizruk">
-              {messages.fizruk.progress.wellbeing}
-            </SectionHeading>
-            <WellbeingChart data={wellbeingData} />
-          </Card>
-        )}
-
-        {/* Muscle volume bars */}
-        <Card radius="lg" padding="lg">
-          <SectionHeading size="xs" className="mb-3" variant="fizruk">
-            {messages.fizruk.progress.muscleVolume}
-          </SectionHeading>
-          {muscleMatrix.rows.length === 0 ? (
-            <EmptyState
-              compact
-              title={messages.empty.nothingYet}
-              description={
-                messages.fizruk.progress.muscleVolumeEmptyDescription
-              }
-            />
-          ) : (
-            <MuscleVolumeBlock matrix={muscleMatrix} />
-          )}
-        </Card>
-
-        <PrBoard
-          prs={prs}
-          prFilter={prFilter}
-          onPrFilterChange={setPrFilter}
-          musclesUk={musclesUk}
-          onSelect={(id) => onNavigate(`exercise/${id}`)}
-        />
       </div>
     </div>
   );

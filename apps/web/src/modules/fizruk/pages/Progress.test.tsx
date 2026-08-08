@@ -64,8 +64,13 @@ function setHooks(opts: {
   musclesUk?: Record<string, string>;
   pushup?: { stats: unknown; hasData: boolean };
   dailyLog?: unknown[];
+  /** Defaults to `true` — most tests exercise the post-cache-warm page. */
+  loaded?: boolean;
 }) {
-  useWorkouts.mockReturnValue({ workouts: opts.workouts ?? [] });
+  useWorkouts.mockReturnValue({
+    workouts: opts.workouts ?? [],
+    loaded: opts.loaded ?? true,
+  });
   useMeasurements.mockReturnValue({ entries: opts.entries ?? [] });
   useDailyLog.mockReturnValue({ entries: opts.dailyLog ?? [] });
   useExerciseCatalog.mockReturnValue({
@@ -95,6 +100,34 @@ describe("Progress page", () => {
     setHooks({});
     render(<Progress onNavigate={onNavigate} />);
     expect(screen.getByText("Даних ще немає")).toBeInTheDocument();
+  });
+
+  // П1 — cold-start regression: the page used to render the FINAL empty
+  // state (`hasAny === false`, since hooks default to `[]`) while the
+  // SQLite cache was still warming (`loaded === false`), i.e. a false
+  // "nothing here" flash on every fresh boot.
+  it("shows a loading skeleton instead of the empty state while the cache is still warming (П1)", () => {
+    setHooks({ loaded: false });
+    render(<Progress onNavigate={onNavigate} />);
+    expect(screen.queryByText("Даних ще немає")).not.toBeInTheDocument();
+    expect(screen.getByRole("status")).toBeInTheDocument();
+  });
+
+  // П2 — a single honest empty state with one action, not a stack of
+  // near-identical "no data yet" cards (weight/fat dashes, muscle-volume
+  // empty, PR-board empty all used to render alongside the top empty-state).
+  it("shows exactly one empty state with one CTA on a fully empty profile (П2)", () => {
+    setHooks({});
+    render(<Progress onNavigate={onNavigate} />);
+    expect(screen.getAllByText(/ще немає|немає/i).length).toBeGreaterThan(0);
+    // The muscle-volume and PR-board sections never mount at all — no
+    // second/third/fourth empty card stacked beneath the top one.
+    expect(screen.queryByText("Обʼєм по мʼязах")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Рекорди \(PR\)/)).not.toBeInTheDocument();
+
+    const cta = screen.getByRole("button", { name: "Почати тренування" });
+    fireEvent.click(cta);
+    expect(onNavigate).toHaveBeenCalledWith("workouts");
   });
 
   it("renders the page title", () => {

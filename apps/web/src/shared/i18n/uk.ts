@@ -593,6 +593,18 @@ export const messages = {
     hoursUnit: "год",
     secondsUnit: "с",
 
+    // Exercise detail page (`pages/Exercise.tsx`) — set-history pagination
+    // (defect #4: `history.slice(0, 20)` used to cut silently, no counter,
+    // no way to see the rest). Rendered as `${historyShownPrefix} ${shown}
+    // ${historyShownOfWord} ${total}` so the catalog stays plain-string
+    // (см. `MessageCatalog` constraint, той самий патерн, що
+    // `biometrics.ageLabel`).
+    exercise: {
+      historyShownPrefix: "Показано",
+      historyShownOfWord: "з",
+      showMoreHistory: "Показати ще",
+    },
+
     // Per-page Fizruk strings live in `uk.fizruk.ts` (split out for the
     // 600-line module-size guardrail, Hard Rule #18) and are spread here so
     // call-sites keep referencing `messages.fizruk.<page>.<key>`.

@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-05-19
+ * Last validated: 2026-08-08
  * Status: Active
  */
 import { useCallback, useMemo } from "react";
@@ -183,7 +183,7 @@ export function WorkoutItemsList({
             </span>
             <button
               type="button"
-              className="text-style-caption text-danger-strong/70 dark:text-danger/70 hover:text-danger px-1"
+              className="text-style-caption text-danger-strong/70 dark:text-danger/70 hover:text-danger px-1 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
               onClick={() => handleRemoveGroup(group.id)}
               title="Розгрупувати"
             >
@@ -204,7 +204,7 @@ export function WorkoutItemsList({
             </SectionHeading>
             <button
               type="button"
-              className="min-h-[40px] px-3 rounded-xl border-2 border-success bg-success/10 text-style-label text-success-strong dark:text-success hover:bg-success/20 transition-colors"
+              className="min-h-[44px] px-3 rounded-xl border-2 border-success bg-success/10 text-style-label text-success-strong dark:text-success hover:bg-success/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
               onClick={() =>
                 setRestTimer({
                   remaining: group.restSec || 60,
@@ -218,7 +218,7 @@ export function WorkoutItemsList({
               <button
                 key={sec}
                 type="button"
-                className="min-h-[40px] px-3 rounded-xl border border-line bg-panelHi text-sm text-text hover:bg-panel transition-colors"
+                className="min-h-[44px] px-3 rounded-xl border border-line bg-panelHi text-sm text-text hover:bg-panel transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
                 onClick={() => {
                   handleGroupRestSec(group.id, sec);
                   setRestTimer({ remaining: sec, total: sec });

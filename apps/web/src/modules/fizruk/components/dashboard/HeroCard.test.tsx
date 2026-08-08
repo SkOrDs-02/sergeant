@@ -1,8 +1,16 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import {
+  render,
+  screen,
+  fireEvent,
+  cleanup,
+  act,
+  waitFor,
+} from "@testing-library/react";
 
 import { HeroCard, type HeroCardState } from "./HeroCard";
+import { ScreenReaderAnnouncerProvider } from "@shared/components/ui/ScreenReaderAnnouncer";
 
 /**
  * Default callback prop bag reused across tests — each test only needs
@@ -94,6 +102,66 @@ describe("HeroCard · active state", () => {
       startedAtIso: "not-a-date",
     });
     expect(screen.getByText("0:00")).toBeInTheDocument();
+  });
+
+  // A11y regression guard (fixed 2026-08-08): the elapsed-timer `<p>` used
+  // to carry `aria-live="polite"` plus an `aria-label` embedding the
+  // ticking `elapsedSec`, so a screen reader re-announced the elapsed
+  // duration every second for the entire active session. The accessible
+  // name must now stay static across ticks; only a one-time mount
+  // announcement (asserted below via `ScreenReaderAnnouncerProvider`)
+  // carries the duration to screen-reader users.
+  it("keeps a stable role=timer aria-label across ticks — no per-second chatter", () => {
+    renderHero({
+      kind: "active",
+      startedAtIso: "2026-04-23T12:14:25Z",
+    });
+    const timer = screen.getByRole("timer");
+    expect(timer).not.toHaveAttribute("aria-live");
+    const label = timer.getAttribute("aria-label");
+    expect(label).toBeTruthy();
+    expect(label).not.toMatch(/\d/); // static copy — no interpolated seconds
+
+    act(() => {
+      vi.advanceTimersByTime(3000);
+    });
+    expect(screen.getByRole("timer").getAttribute("aria-label")).toBe(label);
+  });
+});
+
+// Kept outside the `describe("HeroCard · active state", …)` block above
+// on purpose: that block runs under `vi.useFakeTimers()`, and the
+// `requestAnimationFrame` the shared announcer schedules internally (see
+// `ScreenReaderAnnouncer.tsx`) does not reliably flush via
+// `advanceTimersByTime` once a *preceding* fake-timers test has left an
+// unflushed scheduling callback pending — real timers + `waitFor` sidestep
+// that cross-test fake-clock interaction entirely.
+describe("HeroCard · active state — screen-reader milestone announce", () => {
+  it("announces the elapsed duration once via the shared live region on mount", async () => {
+    const cbs = {
+      onResume: vi.fn(),
+      onStartToday: vi.fn(),
+      onOpenPlan: vi.fn(),
+      onOpenTemplates: vi.fn(),
+      onOpenPrograms: vi.fn(),
+    };
+    render(
+      <ScreenReaderAnnouncerProvider>
+        <HeroCard
+          // `startedAtIso` = "now" so the elapsed seconds stay near 0
+          // regardless of real wall-clock time when the test runs.
+          state={{ kind: "active", startedAtIso: new Date().toISOString() }}
+          greeting="Доброго дня"
+          today="середа, 23 квітня"
+          {...cbs}
+        />
+      </ScreenReaderAnnouncerProvider>,
+    );
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent(
+        /^Тренування триває, 0:0[0-5]$/,
+      ),
+    );
   });
 });
 

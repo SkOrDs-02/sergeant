@@ -22,6 +22,11 @@ function wrapper(initialPath: string) {
 describe("useFizrukRoute", () => {
   beforeEach(() => {
     window.location.hash = "";
+    // Defect #1 (source-aware exercise-page back navigation) persists a
+    // "where did the user come from" pointer in `sessionStorage` — clear it
+    // between tests so one test's navigation history can't leak into the
+    // next.
+    sessionStorage.clear();
   });
   afterEach(() => {
     vi.restoreAllMocks();
@@ -124,5 +129,84 @@ describe("useFizrukRoute", () => {
     }
     renderHook(() => Probe(), { wrapper: wrapper("/fizruk") });
     expect(seen.at(-1)).toBe("/fizruk/workouts");
+  });
+
+  describe("defect #1 — source-aware exercise-page back navigation", () => {
+    it("navigate('workouts') from the exercise page returns to Progress when that was the source", () => {
+      const seen: string[] = [];
+      function Probe() {
+        const loc = useLocation();
+        seen.push(loc.pathname);
+        return useFizrukRoute();
+      }
+      const { result } = renderHook(() => Probe(), {
+        wrapper: wrapper("/fizruk/progress"),
+      });
+      act(() => {
+        result.current.navigate("exercise/bench_press_barbell");
+      });
+      expect(seen.at(-1)).toBe("/fizruk/exercise/bench_press_barbell");
+
+      // The header's contextual back arrow (and the in-page "До журналу" /
+      // "Перейти до журналу" CTAs) all call `navigate("workouts")` — the
+      // page should return to Progress, not the hardcoded journal.
+      act(() => {
+        result.current.navigate("workouts");
+      });
+      expect(seen.at(-1)).toBe("/fizruk/progress");
+    });
+
+    it("navigate('workouts') from the exercise page returns to an active workout session when that was the source", () => {
+      const seen: string[] = [];
+      function Probe() {
+        const loc = useLocation();
+        seen.push(loc.pathname);
+        return useFizrukRoute();
+      }
+      const { result } = renderHook(() => Probe(), {
+        wrapper: wrapper("/fizruk/workout/w-42"),
+      });
+      act(() => {
+        result.current.navigate("exercise/bench_press_barbell");
+      });
+      expect(seen.at(-1)).toBe("/fizruk/exercise/bench_press_barbell");
+
+      act(() => {
+        result.current.navigate("workouts");
+      });
+      expect(seen.at(-1)).toBe("/fizruk/workout/w-42");
+    });
+
+    it("navigate('workouts') from the exercise page falls back to the journal for a fresh deep-link (no recorded source)", () => {
+      const seen: string[] = [];
+      function Probe() {
+        const loc = useLocation();
+        seen.push(loc.pathname);
+        return useFizrukRoute();
+      }
+      const { result } = renderHook(() => Probe(), {
+        wrapper: wrapper("/fizruk/exercise/bench_press_barbell"),
+      });
+      act(() => {
+        result.current.navigate("workouts");
+      });
+      expect(seen.at(-1)).toBe("/fizruk/workouts");
+    });
+
+    it("navigate('exercise/<id>') while already on the exercise page is unaffected (segment present)", () => {
+      const seen: string[] = [];
+      function Probe() {
+        const loc = useLocation();
+        seen.push(loc.pathname);
+        return useFizrukRoute();
+      }
+      const { result } = renderHook(() => Probe(), {
+        wrapper: wrapper("/fizruk/exercise/bench_press_barbell"),
+      });
+      act(() => {
+        result.current.navigate("exercise/deadlift_barbell");
+      });
+      expect(seen.at(-1)).toBe("/fizruk/exercise/deadlift_barbell");
+    });
   });
 });

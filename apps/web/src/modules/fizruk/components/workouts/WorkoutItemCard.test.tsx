@@ -183,11 +183,23 @@ describe("WorkoutItemCard — last-time hint + groups", () => {
     expect(screen.getByText(/70×5/)).toBeInTheDocument();
   });
 
-  it("renders the group-select checkbox in select mode and toggles it", () => {
+  it("renders the group-select checkbox with an accessible name + state and toggles it", () => {
     renderCard({ groupSelectMode: true, isSelected: false });
-    const checkbox = screen.getAllByRole("button")[0]!;
+    const checkbox = screen.getByRole("checkbox", {
+      name: "Жим лежачи — вибрати для об'єднання в суперсет",
+    });
+    expect(checkbox).toHaveAttribute("aria-checked", "false");
     fireEvent.click(checkbox);
     expect(onToggleGroupSelect).toHaveBeenCalledWith("it-1");
+  });
+
+  it("reflects isSelected via aria-checked on the group-select checkbox", () => {
+    renderCard({ groupSelectMode: true, isSelected: true });
+    expect(
+      screen.getByRole("checkbox", {
+        name: "Жим лежачи — вибрати для об'єднання в суперсет",
+      }),
+    ).toHaveAttribute("aria-checked", "true");
   });
 
   it("renders a superset badge when the item belongs to a group", () => {
@@ -277,6 +289,38 @@ describe("WorkoutItemCard — time + distance + read-only", () => {
     expect(weightInput).toHaveAttribute("readonly");
   });
 
+  it("read-only mode blocks the 'Тип' Segmented control from both click and keyboard, not just visually", () => {
+    renderCard({ isReadOnly: true });
+    const timeTab = screen.getByRole("tab", { name: "Час — секунди" });
+    const activeTab = screen.getByRole("tab", {
+      name: "Силова — кг × повтори × підходи",
+    });
+
+    // Click path: onChange is ignored entirely, even though jsdom's
+    // fireEvent bypasses CSS `pointer-events: none`.
+    fireEvent.click(timeTab);
+    expect(updateItem).not.toHaveBeenCalled();
+
+    // Keyboard path: ArrowRight on the active tab would normally move
+    // selection via Segmented's roving-tabindex handler.
+    activeTab.focus();
+    fireEvent.keyDown(activeTab, { key: "ArrowRight" });
+    expect(updateItem).not.toHaveBeenCalled();
+
+    // Every tab — active or not — is pulled out of the Tab order once
+    // read-only, so keyboard users can't even reach the control.
+    expect(activeTab).toHaveAttribute("tabindex", "-1");
+    expect(timeTab).toHaveAttribute("tabindex", "-1");
+  });
+
+  it("keeps a non-read-only Segmented tab in the normal roving-tabindex order", () => {
+    renderCard({ isReadOnly: false });
+    const activeTab = screen.getByRole("tab", {
+      name: "Силова — кг × повтори × підходи",
+    });
+    expect(activeTab).toHaveAttribute("tabindex", "0");
+  });
+
   it("navigates to the exercise detail when the name button is clicked", () => {
     renderCard();
     fireEvent.click(screen.getByRole("button", { name: "Жим лежачи" }));
@@ -286,6 +330,35 @@ describe("WorkoutItemCard — time + distance + read-only", () => {
 });
 
 describe("WorkoutItemCard — last-time hint variants", () => {
+  it("filters out empty 0×0 sets from the last-time hint, keeping populated ones", () => {
+    renderCard({
+      lastByExerciseId: {
+        bench: {
+          type: "strength",
+          sets: [
+            { weightKg: 80, reps: 8 },
+            { weightKg: 0, reps: 0 },
+          ],
+        },
+      },
+    });
+    expect(screen.getByText(/Минулого разу/)).toBeInTheDocument();
+    expect(screen.getByText(/80×8/)).toBeInTheDocument();
+    expect(screen.queryByText(/0×0/)).not.toBeInTheDocument();
+  });
+
+  it("renders no last-time hint at all when every strength set is empty", () => {
+    renderCard({
+      lastByExerciseId: {
+        bench: {
+          type: "strength",
+          sets: [{ weightKg: 0, reps: 0 }],
+        },
+      },
+    });
+    expect(screen.queryByText(/Минулого разу/)).not.toBeInTheDocument();
+  });
+
   it("renders distance metrics in the last-time hint for a distance entry", () => {
     renderCard({
       lastByExerciseId: {
@@ -370,5 +443,66 @@ describe("WorkoutItemCard — rest timer guards", () => {
       key: "Enter",
     });
     expect(setRestTimer).not.toHaveBeenCalled();
+  });
+});
+
+describe("WorkoutItemCard — stable set keys across a mid-list delete", () => {
+  it("keeps a surviving set's own input DOM node (not a value that drifted onto the wrong row) after deleting a set above it", () => {
+    const initialSets = [
+      { weightKg: 10, reps: 1 },
+      { weightKg: 20, reps: 2 },
+      { weightKg: 30, reps: 3 },
+    ];
+    const { rerender } = renderCard({ it: makeItem({ sets: initialSets }) });
+
+    const weightInputsBefore = screen.getAllByLabelText("Вага в кілограмах");
+    expect(weightInputsBefore).toHaveLength(3);
+    const thirdRowInput = weightInputsBefore[2]!; // weightKg: 30
+
+    // Delete the MIDDLE set (idx 1) — the click handler splices the
+    // internal stable-key bookkeeping at the same index before calling
+    // `updateItem`, so the mapping stays correct once the parent's
+    // `it.sets` prop reflects the change.
+    const deleteButtons = screen.getAllByRole("button", { name: "Видалити" });
+    expect(deleteButtons).toHaveLength(3);
+    fireEvent.click(deleteButtons[1]!);
+    expect(updateItem).toHaveBeenCalledWith("w1", "it-1", {
+      sets: [initialSets[0], initialSets[2]],
+    });
+
+    // Simulate the parent flowing the mutated array back down as props
+    // (in production this happens via the real state store; `updateItem`
+    // is mocked here).
+    rerender(
+      <MemoryRouter initialEntries={["/fizruk/workouts"]}>
+        <WorkoutItemCard
+          it={makeItem({ sets: [initialSets[0]!, initialSets[2]!] })}
+          activeWorkout={makeWorkout()}
+          group={null}
+          groupSelectMode={false}
+          isSelected={false}
+          isReadOnly={false}
+          lastByExerciseId={{}}
+          musclesUk={{ pec: "Грудні" }}
+          recBy={{}}
+          onToggleGroupSelect={onToggleGroupSelect}
+          removeItem={removeItem}
+          updateItem={updateItem}
+          setRestTimer={setRestTimer}
+          getDefaultForGroup={getDefaultForGroup}
+          onDeleteSet={onDeleteSet}
+        />
+      </MemoryRouter>,
+    );
+
+    const weightInputsAfter = screen.getAllByLabelText("Вага в кілограмах");
+    expect(weightInputsAfter).toHaveLength(2);
+    // The row that used to be third (weightKg 30) keeps its OWN DOM
+    // node — `key={idx}` would instead hand the second row's node
+    // (formerly weightKg 20) the third row's data, silently jumping any
+    // in-progress edit/focus onto the wrong set.
+    expect(weightInputsAfter[1]).toBe(thirdRowInput);
+    expect(weightInputsAfter[1]).toHaveValue(30);
+    expect(weightInputsAfter[0]).toHaveValue(10);
   });
 });
