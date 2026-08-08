@@ -160,7 +160,18 @@ for (const { name, path, seed } of SURFACES) {
     const results = await analyzeA11y(page);
 
     const blocking = results.violations.filter(
-      (v) => v.impact === "serious" || v.impact === "critical",
+      (v) =>
+        v.impact === "serious" ||
+        v.impact === "critical" ||
+        // Дефект №5 (адверсарне ревʼю 2026-08-08): `heading-order`
+        // (settings h1→h3 outline, тепер полагоджено на h1→h2→h3 —
+        // `SettingsGroup` заголовок став справжнім `<h2>`) має impact
+        // `moderate`, тож без цього рядка serious/critical-фільтр не ловив
+        // би його ВЗАГАЛІ. Звужено САМЕ до `heading-order` (а не до всього
+        // impact "moderate") навмисно: інші moderate-правила на інших
+        // сторінках можуть мати непов'язані latent-порушення поза обсягом
+        // цього фіксу — ширший фільтр раптово зачервонив би їхні тести.
+        v.id === "heading-order",
     );
 
     if (blocking.length > 0) {
@@ -264,7 +275,18 @@ for (const { name, path, seed, theme } of THEMED_SURFACES) {
     const results = await analyzeA11y(page);
 
     const blocking = results.violations.filter(
-      (v) => v.impact === "serious" || v.impact === "critical",
+      (v) =>
+        v.impact === "serious" ||
+        v.impact === "critical" ||
+        // Дефект №5 (адверсарне ревʼю 2026-08-08): `heading-order`
+        // (settings h1→h3 outline, тепер полагоджено на h1→h2→h3 —
+        // `SettingsGroup` заголовок став справжнім `<h2>`) має impact
+        // `moderate`, тож без цього рядка serious/critical-фільтр не ловив
+        // би його ВЗАГАЛІ. Звужено САМЕ до `heading-order` (а не до всього
+        // impact "moderate") навмисно: інші moderate-правила на інших
+        // сторінках можуть мати непов'язані latent-порушення поза обсягом
+        // цього фіксу — ширший фільтр раптово зачервонив би їхні тести.
+        v.id === "heading-order",
     );
 
     if (blocking.length > 0) {

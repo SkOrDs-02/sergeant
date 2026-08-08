@@ -38,10 +38,7 @@ export function FeedbackSection() {
       title={messages.feedback.settingsTitle}
       icon="message-circle"
     >
-      <SettingsSubGroup
-        title={messages.feedback.settingsSubGroupTitle}
-        defaultOpen
-      >
+      <SettingsSubGroup title={messages.feedback.settingsSubGroupTitle}>
         <p className="text-style-caption text-subtle leading-snug">
           {messages.feedback.settingsDescription}
         </p>
