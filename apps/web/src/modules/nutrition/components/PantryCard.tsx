@@ -303,7 +303,7 @@ export function PantryCard({
                   type="button"
                   onClick={onScanBarcode}
                   disabled={busy}
-                  className="w-8 h-8 min-h-[44px] min-w-[44px] rounded-xl bg-nutrition/10 text-nutrition-strong dark:text-nutrition border border-nutrition/30 hover:bg-nutrition/20 transition-colors disabled:opacity-50 flex items-center justify-center text-base"
+                  className="w-8 h-8 min-h-[44px] min-w-[44px] rounded-xl bg-nutrition/10 text-nutrition-strong dark:text-nutrition border border-nutrition/30 hover:bg-nutrition/20 transition-colors disabled:opacity-50 flex items-center justify-center"
                   aria-label="Сканувати штрих-код"
                 >
                   <Icon name="scanner" size={18} aria-hidden />

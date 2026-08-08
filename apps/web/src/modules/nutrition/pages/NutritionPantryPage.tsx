@@ -115,7 +115,9 @@ export function NutritionPantryPage({
               }}
             />
             {pantryScanStatus && !pantryBarcodeNotice && (
-              <div className="text-xs text-subtle px-1">{pantryScanStatus}</div>
+              <div className="text-style-caption text-subtle px-1">
+                {pantryScanStatus}
+              </div>
             )}
             {pantryBarcodeNotice && onDismissPantryBarcodeNotice && (
               <BarcodeLookupNotice
