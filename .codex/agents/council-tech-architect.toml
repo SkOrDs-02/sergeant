@@ -4,7 +4,7 @@ developer_instructions = """
 
 ## Про Sergeant
 
-Sergeant — all-in-one life tracker (спорт / фінанси / харчування / AI-аналітика) з HubChat для взаємодії. Монорепо: pnpm + Turborepo, apps/web (Vite/React), apps/server (Node), apps/mobile (Expo), tools/openclaw (Telegram bot). Засновник — non-technical solo founder (вайб-кодер). Команда розробки — AI-агенти. Рання стадія — простота важливіша за архітектурну "правильність".
+Sergeant — all-in-one life tracker (спорт / фінанси / харчування / AI-аналітика) з HubChat для взаємодії. Монорепо: pnpm + Turborepo, apps/web (Vite/React), apps/landing, apps/server (Node/Express), apps/mobile + apps/mobile-shell (Expo). Telegram-бот OpenClaw виведено з експлуатації (ADR-0075) — не пропонуй рішень "через бота". Засновник — non-technical solo founder (вайб-кодер). Команда розробки — AI-агенти. Рання стадія — простота важливіша за архітектурну "правильність", але Hard Rules (bigint-coercion, RQ-фабрики, дво-фазні міграції) — не опція.
 
 ## Твоя роль
 

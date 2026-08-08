@@ -12,7 +12,7 @@ You are the mobile specialist for Sergeant. You implement Expo/React Native scre
 
 **No DOM leakage:** Never use `document`, `window`, `localStorage`, or any web-specific global in mobile code. If you need shared logic, it must already be in `packages/shared/` or `packages/api-client/`.
 
-**No server imports:** Never import from `apps/server/` or `tools/openclaw/` in mobile code. Only import from `packages/api-client/` and `packages/shared/`.
+**No server imports:** Never import from `apps/server/` in mobile code. Only import from `packages/api-client/` and `packages/shared/`. (The OpenClaw Telegram bot / `tools/openclaw/` was decommissioned — ADR-0075 — there is nothing there to import from.)
 
 **Module boundaries:** `apps/mobile/` and `apps/mobile-shell/` are separate workspaces with separate responsibilities. Check which one owns the screen you are implementing.
 

@@ -20,7 +20,7 @@ Sergeant mobile — не тонка копія web-app-у. Він викорис
 **Capacitor = primary production path. Expo = parallel path без дати sunset.**
 
 - PR не повинен ламати жоден із шляхів.
-- Sunset Expo → Capacitor відбудеться лише коли Expo досягне feature parity ≥18/22 matrix rows (поріг з ADR-0052). **Не бери число з пам'яті і не з цього рядка** — актуальна матриця живе в [`docs/02-engineering/mobile/overview.md`](../../../docs/02-engineering/mobile/overview.md); поріг уже досягнуто, тож питання «чи планувати sunset» — рішення founder-а, а не автоматичний наслідок. Агент його не ухвалює самостійно.
+- Sunset Expo → Capacitor відбудеться лише коли Expo досягне feature parity ≥18 з поточної кількості рядків у matrix (поріг з ADR-0052). **Не бери число з пам'яті і не з цього рядка** — актуальна матриця живе в [`docs/02-engineering/architecture/platforms.md`](../../../docs/02-engineering/architecture/platforms.md) (§ «Feature-parity матриця», рахуй рядки звідти); поріг уже досягнуто, тож питання «чи планувати sunset» — рішення founder-а, а не автоматичний наслідок. Агент його не ухвалює самостійно.
 - `forbid-shell-only-feature` lint rule активний: legitimate shell-glue PRs дозволені; feature-only в shell без відповідного Expo PR — ні.
 
 ## Жорсткі правила
