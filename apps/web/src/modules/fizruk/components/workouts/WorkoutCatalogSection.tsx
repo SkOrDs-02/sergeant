@@ -105,9 +105,13 @@ export function WorkoutCatalogSection({
                       // описує текст; спеціальної ролі для контролів у
                       // ній немає, тож правильна дія — лишити сирий
                       // розмір, а не підібрати найближчу роль.
-                      "text-xs px-3 py-1.5 rounded-full border transition-colors",
+                      // Active-стан — ті самі fizruk-soft токени, що в
+                      // `Segmented` style="soft": інверсне «чорнило»
+                      // (bg-text/text-bg) читалось як чужорідний елемент
+                      // серед м'яких поверхонь модуля.
+                      "text-xs px-3 py-2 pointer-coarse:min-h-[44px] rounded-full border transition-colors",
                       active
-                        ? "bg-text text-bg border-text"
+                        ? "border-fizruk-ring bg-fizruk-surface text-fizruk-soft-fg font-semibold shadow-sm dark:border-fizruk-border-dark/40 dark:bg-fizruk-surface-dark/15"
                         : "border-line bg-bg text-muted hover:border-muted hover:text-text",
                     )}
                     aria-pressed={active}
@@ -121,7 +125,7 @@ export function WorkoutCatalogSection({
               <button
                 type="button"
                 onClick={() => setEquipmentFilter([])}
-                className="text-xs px-3 py-1.5 rounded-full border border-line text-muted hover:text-text hover:border-muted transition-colors"
+                className="text-xs px-3 py-2 pointer-coarse:min-h-[44px] rounded-full border border-line text-muted hover:text-text hover:border-muted transition-colors"
               >
                 Скинути
               </button>

@@ -57,6 +57,9 @@ describe("InjuryManager", () => {
 
   it("allows selecting several muscle groups", async () => {
     render(<InjuryManager />);
+    // М'язи згорнуті за замовчуванням (патерн фініш-фло, 2026-08-08) —
+    // спершу розгорнути групу.
+    fireEvent.click(screen.getByRole("button", { name: /Мʼязи/ }));
     fireEvent.click(screen.getByRole("button", { name: "Трицепс" }));
     fireEvent.click(screen.getByRole("button", { name: "Литки" }));
     fireEvent.click(screen.getByRole("button", { name: "Позначити біль" }));
@@ -78,8 +81,23 @@ describe("InjuryManager", () => {
     expect(mark).toHaveBeenCalledWith("spine-lumbar");
   });
 
+  it("renders joints expanded but muscles collapsed by default", () => {
+    render(<InjuryManager />);
+    // Суглоби видно одразу…
+    expect(screen.getByRole("button", { name: "Коліно" })).toBeInTheDocument();
+    // …а м'язові чипи — ні, лише тогл групи.
+    expect(
+      screen.queryByRole("button", { name: "Трицепс" }),
+    ).not.toBeInTheDocument();
+    const toggle = screen.getByRole("button", { name: /Мʼязи/ });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(toggle);
+    expect(screen.getByRole("button", { name: "Трицепс" })).toBeInTheDocument();
+  });
+
   it("does not offer a site that already carries an open mark", () => {
     render(<InjuryManager />);
+    fireEvent.click(screen.getByRole("button", { name: /Мʼязи/ }));
     const chestChip = screen
       .getAllByRole("button", { name: "Груди" })
       .find((el) => el.hasAttribute("disabled"));

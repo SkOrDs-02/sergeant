@@ -11,16 +11,20 @@ import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { useToast } from "@shared/hooks/useToast";
 import { cn } from "@shared/lib/ui/cn";
+import { pluralUa } from "@sergeant/shared";
 import { messages } from "@shared/i18n/uk";
 import { useInjuries } from "../hooks/useInjuries";
 
 /**
  * Marking surface for the "не можна" model (ADR-0083).
  *
- * Muscles and joints render as two labelled groups rather than one flat list.
- * The joint half is the reason the model exists — a muscle-only keyspace
- * cannot name knee or shoulder pain — so burying it among 18 muscle chips
- * would hide exactly the sites people actually injure.
+ * Joints and spine render FIRST and always expanded; the 18 muscle chips
+ * live behind a collapsed toggle — the same layout as the injury step of
+ * the workout finish flow (`WorkoutFinishSheets`), and for the same reason
+ * documented there: typical lifting injuries are joints, and a flat list
+ * with 18 muscles up front buried exactly the sites people actually injure
+ * (audit E-4, ADR-0083). Запит власника 2026-08-08: «Моє тіло» має
+ * поводитись як фініш-фло — мʼязи у згорнутому вигляді.
  */
 export function InjuryManager() {
   const t = messages.fizruk.injuries;
@@ -28,6 +32,10 @@ export function InjuryManager() {
   const toast = useToast();
   const [selected, setSelected] = useState<InjurySiteId[]>([]);
   const [busy, setBusy] = useState(false);
+  const [musclesOpen, setMusclesOpen] = useState(false);
+  const selectedMuscleCount = selected.filter((site) =>
+    (BODY_ATLAS_MUSCLE_IDS as readonly string[]).includes(site),
+  ).length;
 
   /**
    * Зняти позначку травми. `clear` пише у local-first сховище і кидає лише
@@ -72,9 +80,14 @@ export function InjuryManager() {
     );
   };
 
-  const renderGroup = (label: string, sites: readonly InjurySiteId[]) => (
+  // `label: null` — для згорнутої групи мʼязів: підпис уже несе сам тогл,
+  // дублювати його над чипами не треба.
+  const renderGroup = (
+    label: string | null,
+    sites: readonly InjurySiteId[],
+  ) => (
     <div className="space-y-2">
-      <div className="text-style-caption text-subtle">{label}</div>
+      {label && <div className="text-style-caption text-subtle">{label}</div>}
       <div className="flex flex-wrap gap-2">
         {sites.map((site) => {
           const already = activeSites.has(site);
@@ -133,8 +146,37 @@ export function InjuryManager() {
         </div>
       )}
 
-      {renderGroup(t.groupMuscles, BODY_ATLAS_MUSCLE_IDS)}
       {renderGroup(t.groupZones, INJURY_ZONE_IDS)}
+
+      <div>
+        <button
+          type="button"
+          aria-expanded={musclesOpen}
+          onClick={() => setMusclesOpen((open) => !open)}
+          className="flex w-full items-center justify-between gap-2 min-h-[44px] rounded-xl border border-line bg-panelHi px-3 py-2 text-style-label text-text transition-colors hover:border-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+        >
+          <span className="inline-flex items-center gap-2">
+            {t.groupMuscles}
+            {selectedMuscleCount > 0 && (
+              <span className="rounded-full bg-warning/15 px-2 py-0.5 text-style-caption text-warning-strong dark:text-warning">
+                {selectedMuscleCount}
+              </span>
+            )}
+          </span>
+          <span className="text-style-caption text-subtle">
+            {BODY_ATLAS_MUSCLE_IDS.length}{" "}
+            {pluralUa(BODY_ATLAS_MUSCLE_IDS.length, {
+              one: "зона",
+              few: "зони",
+              many: "зон",
+            })}
+            <span aria-hidden>{musclesOpen ? " ⌃" : " ⌄"}</span>
+          </span>
+        </button>
+        {musclesOpen && (
+          <div className="mt-2">{renderGroup(null, BODY_ATLAS_MUSCLE_IDS)}</div>
+        )}
+      </div>
 
       <Button
         module="fizruk"

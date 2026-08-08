@@ -30,6 +30,9 @@ import {
 import { WorkoutItemRecoveryChip } from "./WorkoutItemRecoveryChip";
 import { WorkoutItemRestPresets } from "./WorkoutItemRestPresets";
 import { isSetDone, WorkoutSetRow } from "./WorkoutSetRow";
+import { buildTypeSwitchPatch } from "./WorkoutItemTypeSwitcher";
+import { Segmented } from "@shared/components/ui/Segmented";
+import { messages } from "@shared/i18n/uk";
 
 import { useFizrukRoute } from "../../hooks/useFizrukRoute";
 
@@ -238,6 +241,58 @@ export function WorkoutItemCard({
           </button>
         )}
       </div>
+
+      {!isReadOnly && (
+        <div className="mt-2">
+          {/*
+            Компактний перемикач типу (повернено після скарги власника
+            2026-08-08). Редизайн (item 5) виніс повнорозмірний контрол в
+            `ExerciseDetailSheet`, але звідти він фактично недосяжний для
+            вправи в активному тренуванні: тап по назві веде на сторінку
+            статистики вправи, а не в аркуш, тож перемкнути «час/дистанцію»
+            для КОНКРЕТНОЇ вправи стало неможливо. Тут — `size="sm"` без
+            панелі й заголовка, щоб не повертати старий габарит.
+          */}
+          <Segmented
+            variant="fizruk"
+            size="sm"
+            ariaLabel={`${messages.fizruk.typeSwitcher.ariaLabel}: ${it.nameUk}`}
+            className="gap-1.5"
+            value={it.type || "strength"}
+            items={[
+              {
+                value: "strength",
+                label: messages.fizruk.typeSwitcher.strengthLabel,
+                title: messages.fizruk.typeSwitcher.strengthTitle,
+                ariaLabel: messages.fizruk.typeSwitcher.strengthAriaLabel,
+              },
+              {
+                value: "time",
+                label: messages.fizruk.typeSwitcher.timeLabel,
+                title: messages.fizruk.typeSwitcher.timeTitle,
+                ariaLabel: messages.fizruk.typeSwitcher.timeAriaLabel,
+              },
+              {
+                value: "distance",
+                label: messages.fizruk.typeSwitcher.distanceLabel,
+                title: messages.fizruk.typeSwitcher.distanceTitle,
+                ariaLabel: messages.fizruk.typeSwitcher.distanceAriaLabel,
+              },
+            ]}
+            onChange={(t) => {
+              const patch = buildTypeSwitchPatch(t, it);
+              // Тримаємо stable-key bookkeeping (див. коментар біля
+              // `setIds`) у локстепі з посівом сетів при перемиканні на
+              // силову — цей колсайт, на відміну від аркуша, МОЖЕ дістати
+              // `setSetIds`.
+              if (t === "strength") {
+                setSetIds((patch.sets || []).map(() => crypto.randomUUID()));
+              }
+              updateItem(activeWorkout.id, it.id, patch);
+            }}
+          />
+        </div>
+      )}
 
       {it.type === "strength" && (
         <div className="mt-2 space-y-1.5">

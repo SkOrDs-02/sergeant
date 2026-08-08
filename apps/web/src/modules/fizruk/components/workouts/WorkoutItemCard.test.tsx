@@ -7,10 +7,13 @@
  * flows, and the read-only mode. Every mutation flows through a prop,
  * so we assert on the spy callbacks.
  *
- * Redesign 2026-08 note: the "Тип" segmented control and the always-
- * expanded rest-timer preset row moved OUT of this card (see
+ * Redesign 2026-08 note: the full-size "Тип" segmented control and the
+ * always-expanded rest-timer preset row moved OUT of this card (see
  * `WorkoutItemTypeSwitcher.test.tsx` and the rewritten
- * `WorkoutItemRestPresets.tsx`) — this file no longer covers either.
+ * `WorkoutItemRestPresets.tsx`). A COMPACT type switcher returned to the
+ * card 2026-08-08 (owner report: switching час/дистанція for a specific
+ * exercise became unreachable) — covered by the "compact type switcher"
+ * block below.
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
@@ -256,6 +259,31 @@ describe("WorkoutItemCard — strength", () => {
       screen.getByRole("button", { name: "Видалити вправу з тренування" }),
     );
     expect(removeItem).toHaveBeenCalledWith("w1", "it-1");
+  });
+});
+
+describe("WorkoutItemCard — compact type switcher", () => {
+  it("switches the item to time type, seeding durationSec", () => {
+    renderCard();
+    fireEvent.click(screen.getByRole("tab", { name: "Час — секунди" }));
+    expect(updateItem).toHaveBeenCalledWith("w1", "it-1", {
+      type: "time",
+      durationSec: 0,
+    });
+  });
+
+  it("switches a time item back to strength, seeding one empty set", () => {
+    renderCard({ it: makeItem({ type: "time", durationSec: 60, sets: [] }) });
+    fireEvent.click(screen.getByRole("tab", { name: /Силова/ }));
+    expect(updateItem).toHaveBeenCalledWith("w1", "it-1", {
+      type: "strength",
+      sets: [{ weightKg: 0, reps: 0 }],
+    });
+  });
+
+  it("hides the switcher entirely in read-only mode", () => {
+    renderCard({ isReadOnly: true });
+    expect(screen.queryByRole("tablist")).not.toBeInTheDocument();
   });
 });
 
