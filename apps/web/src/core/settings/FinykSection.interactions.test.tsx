@@ -3,7 +3,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   cleanup,
   fireEvent,
-  render,
   screen,
   waitFor,
   within,
@@ -11,6 +10,7 @@ import {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import { finykKeys } from "@shared/lib/api/queryKeys";
+import { renderSettingsSection } from "../../test/helpers/collapsibleSection";
 
 // Extends FinykSection.test.tsx with the interaction-heavy branches: custom
 // categories, webhook connect error handling, backfill, disconnect confirm,
@@ -112,7 +112,7 @@ function renderSection() {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
-  const view = render(
+  const view = renderSettingsSection(
     <QueryClientProvider client={client}>
       <MemoryRouter>
         <FinykSection />

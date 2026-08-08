@@ -104,13 +104,12 @@ describe("DashboardSection", () => {
 
   it("toggles a dashboard module checkbox and blocks removing the last active one", () => {
     renderSection();
-    // Обидва рівні акордеона (SettingsGroup «Дашборд» і SettingsSubGroup
-    // «Розділи на головній») стартують згорнутими — колапсований вміст
+    // `SettingsGroup` «Дашборд» стартує згорнутою — колапсований вміст
     // отримує `inert`, і `getByRole`/`getAllByRole` ігнорують inert-
-    // піддерево (на відміну від `getByText`, яке його бачить). Розгортаємо
-    // обидва рівні, як реальний користувач.
+    // піддерево (на відміну від `getByText`, яке його бачить). Розгортаємо,
+    // як реальний користувач. «Розділи на головній» більше не другий
+    // рівень акордеона (Варіант A, §0.1) — її вміст видимий одразу.
     fireEvent.click(screen.getByText("Дашборд"));
-    fireEvent.click(screen.getByText("Розділи на головній"));
 
     // `role="checkbox"` тут матчить лише plain-чекбокси зі списку модулів —
     // тумблери «Вигляд» мають явний `role="switch"` і в цей запит не

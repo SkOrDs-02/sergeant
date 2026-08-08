@@ -1,5 +1,8 @@
 // @vitest-environment jsdom
 /**
+ * Last validated: 2026-08-08
+ * Status: Active
+ *
  * L-14: гонка GET/PUT у `useServerPreference`.
  *
  * `useServerPreference` запускає початковий `meApi.getPreferences()` у
@@ -93,10 +96,10 @@ describe("useServerPreference — L-14 GET/PUT race", () => {
     expect(result.current.value).toBe(true);
   });
 
-  // F3: an EARLIER-issued GET that resolves AFTER a LATER-issued set()/PUT
-  // has already failed must still apply — a failed PUT never told us
-  // anything new about the server, so the GET remains the only real
-  // confirmation we have.
+  // F3: РАНІШЕ виданий GET, що резолвиться ПІСЛЯ того, як ПІЗНІШЕ виданий
+  // set()/PUT уже впав, усе одно має застосуватись — провальний PUT
+  // нічого нового про сервер не повідомив, тож GET лишається єдиним
+  // реальним підтвердженням, яке в нас є.
   it("still applies a slow initial GET after an earlier-issued set()/PUT already failed and reverted optimistically", async () => {
     let resolveGet!: (prefs: UserPreferences) => void;
     const getPromise = new Promise<UserPreferences>((resolve) => {
@@ -133,12 +136,12 @@ describe("useServerPreference — L-14 GET/PUT race", () => {
     expect(result.current.loaded).toBe(true);
   });
 
-  // F3 (saving-latch corner case): a `set()` call must not leave `saving`
-  // stuck forever just because the effect re-issued its GET (deps change)
-  // while the PUT was still in flight — the old `requestId === current`
-  // check only cleared `saving` if THIS call happened to still be the
-  // most-recently-ISSUED request when it settled, which an unrelated
-  // effect re-run could silently break.
+  // F3 (крайовий випадок saving-latch): виклик `set()` не має лишати
+  // `saving` застряглим назавжди лише тому, що ефект перевидав свій GET
+  // (зміна deps), поки PUT ще летів — стара перевірка `requestId ===
+  // current` знімала `saving` лише якщо САМЕ цей виклик лишався
+  // найновіше-виданим запитом на момент завершення, а це міг мовчки
+  // зламати непов'язаний перезапуск ефекту.
   it("clears `saving` once its own set()/PUT settles, even if the effect re-ran (deps change) and re-issued a GET while it was in flight", async () => {
     getPreferencesMock.mockResolvedValue(BASE_PREFS);
     let resolveUpdate!: (prefs: UserPreferences) => void;
@@ -163,9 +166,9 @@ describe("useServerPreference — L-14 GET/PUT race", () => {
     });
     expect(result.current.saving).toBe(true);
 
-    // Deps change while the PUT above is still in flight — this re-runs
-    // the effect and issues a SECOND GET, bumping `requestIdRef` for a
-    // reason that has nothing to do with the pending PUT.
+    // Deps міняються, поки PUT вище ще летить — це перезапускає ефект і
+    // видає ДРУГИЙ GET, зсуваючи `requestIdRef` з причини, що не має
+    // нічого спільного з незавершеним PUT.
     rerender({ authRequired: "Потрібен новий вхід" });
     await waitFor(() => expect(getPreferencesMock).toHaveBeenCalledTimes(2));
 
@@ -175,5 +178,47 @@ describe("useServerPreference — L-14 GET/PUT race", () => {
     });
 
     expect(result.current.saving).toBe(false);
+  });
+
+  // Дефект #1 (CodeRabbit post-merge review PR #756): гейт `.then` GET-а
+  // раніше звучав "застосовуй, якщо ЩЕ ЖОДНА відповідь не виграла" —
+  // ненульовий `appliedRequestIdRef` назавжди дискваліфікував БУДЬ-ЯКУ
+  // наступну GET-відповідь, навіть свіжішу за попередню. Якщо `key`
+  // змінюється (він у deps ефекту), кожна зміна видає новий GET — і саме
+  // ця, друга, відповідь має застосуватись, бо вона й описує НОВИЙ ключ.
+  // Без фіксу `value` лишається значенням СТАРОГО ключа після rerender-у.
+  it("applies a fresh GET response after `key` changes on rerender, not the value from the previous key", async () => {
+    getPreferencesMock.mockResolvedValueOnce({
+      ...BASE_PREFS,
+      aiMemory: true,
+    });
+
+    const { result, rerender } = renderHook(
+      (props: { key: "aiMemory" | "pushNotifications" }) =>
+        useServerPreference(props.key, {
+          saveError: "Не вдалося зберегти",
+          authRequired: "Потрібен вхід",
+        }),
+      { initialProps: { key: "aiMemory" } },
+    );
+
+    await waitFor(() => expect(result.current.loaded).toBe(true));
+    expect(result.current.value).toBe(true);
+
+    // Змінюємо ключ — ефект перезапускається і видає ДРУГИЙ GET, чия
+    // відповідь описує НОВИЙ ключ (`pushNotifications: false`), а не
+    // старий (`aiMemory: true`).
+    getPreferencesMock.mockResolvedValueOnce({
+      ...BASE_PREFS,
+      aiMemory: true,
+      pushNotifications: false,
+    });
+    rerender({ key: "pushNotifications" });
+
+    await waitFor(() => expect(getPreferencesMock).toHaveBeenCalledTimes(2));
+    // Стара реалізація тут беззастережно відкидала другу GET-відповідь
+    // (`appliedRequestIdRef.current !== 0` вже було true від першої) —
+    // `value` лишався би `true` (значенням `aiMemory`, старого ключа).
+    await waitFor(() => expect(result.current.value).toBe(false));
   });
 });

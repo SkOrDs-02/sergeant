@@ -16,12 +16,12 @@ import { AiMemoryList } from "./AiMemoryList";
 
 const m = messages.privacy.lock;
 
-// Exported for `PrivacySection.test.tsx` (L-3): the loading gate below
-// means this value can never leak into the DOM or `analyticsConsent`
-// before hydration resolves, so it has to be asserted directly rather
-// than inferred from rendered output (2026-08-08 adversarial review
-// finding #4 — the prior test's `not.toBeChecked()` assertion actually
-// verified the server-mock response, not this constant).
+// Експортовано для `PrivacySection.test.tsx` (L-3): loading-гейт нижче
+// означає, що це значення НІКОЛИ не може просочитись у DOM чи
+// `analyticsConsent` до завершення гідрації, тож перевіряти його треба
+// напряму, а не виводити з відрендереного виводу (2026-08-08 adversarial
+// review, finding #4 — попередній assert `not.toBeChecked()` насправді
+// перевіряв відповідь server-мока, а не цю константу).
 export const DEFAULT_PREFERENCES: UserPreferences = {
   // L-3: продукт — opt-in analytics, не opt-out. Дефолт тут мусить
   // збігатися з серверним DEFAULT FALSE (apps/server/src/modules/me/
@@ -67,20 +67,20 @@ export function PrivacySection() {
   // під час ЖИВОГО ввімкнення тумблера (idle -> setup) і race-ила б із
   // handleToggle, зганяючи щойно виставлений прапор назад у false.
   const prevLockStateRef = useRef<LockState | null>(null);
-  // Finding #5 (2026-08-08 adversarial review): `appLock.hasPin`'s
-  // *identity* changes only when the signed-in user changes (see the
-  // eslint-disable comment below). Tracking it lets the reconciliation
-  // effect below also cover "shared device, different user": switching
-  // users touches neither `appLock.state` nor `flagEnabled`, so without
-  // this the effect re-ran (hasPin is already in its deps) but always
-  // hit the `!isMount && !cameFromLocked` early-return and silently kept
-  // showing "Блокування додатку" ON for a user with no PIN in their own
-  // partition.
+  // Finding #5 (2026-08-08 adversarial review): ІДЕНТИЧНІСТЬ
+  // `appLock.hasPin` міняється лише коли міняється залогінений користувач
+  // (див. eslint-disable-коментар нижче). Відстеження цього дає
+  // реконсиляційному ефекту нижче покрити ще й «спільний пристрій, інший
+  // користувач»: перемикання юзерів не чіпає ні `appLock.state`, ні
+  // `flagEnabled`, тож без цього ефект перезапускався б (hasPin і так у
+  // deps), але завжди впирався в ранній `!isMount && !cameFromLocked`
+  // return і мовчки лишав «Блокування додатку» ввімкненим для юзера без
+  // PIN-а в ЙОГО партиції.
   const prevHasPinRef = useRef<typeof appLock.hasPin | null>(null);
 
-  // L-3: extracted so the error state (see the render below) can offer a
-  // real retry instead of a dead end (finding #9) — `[]`-deps `useEffect`
-  // bodies can't be re-invoked from a click handler.
+  // L-3: винесено окремо, щоб стан помилки (див. рендер нижче) міг
+  // пропонувати справжній retry, а не глухий кут (finding #9) — тіло
+  // `useEffect` з `[]`-deps не можна повторно викликати з click-хендлера.
   const loadPreferences = useCallback(() => {
     let cancelled = false;
     meApi
@@ -134,11 +134,11 @@ export function PrivacySection() {
         setFlag("app-lock-enabled", false);
       })
       .catch(() => {
-        // Finding #6: `hasPin()` (lockStorage.hasPinSet -> loadCred)
-        // REJECTS on an IndexedDB failure (Safari private mode, storage
-        // pressure) rather than resolving `false` — this is a best-effort
-        // reconciliation, not a user-facing action, so swallow it instead
-        // of leaving an unhandled rejection on every Settings mount.
+        // Finding #6: `hasPin()` (lockStorage.hasPinSet -> loadCred) РЕДЖЕКТИТЬ
+        // при збої IndexedDB (приватний режим Safari, брак сховища), а не
+        // резолвиться в `false` — це best-effort реконсиляція, а не дія,
+        // видима юзеру, тож ковтаємо її мовчки замість того, щоб лишати
+        // unhandled rejection на кожному монтуванні Налаштувань.
       });
     return () => {
       cancelled = true;
@@ -149,8 +149,8 @@ export function PrivacySection() {
   const handleToggle = async (checked: boolean) => {
     if (checked) {
       setFlag("app-lock-enabled", true);
-      // Audit F16: check the *current user's* PIN partition, not `anon`.
-      // `appLock.hasPin()` closes over `user?.id` from `useAppLock`.
+      // Audit F16: перевіряємо PIN-партицію САМЕ поточного користувача, а
+      // не `anon`. `appLock.hasPin()` замикається на `user?.id` з `useAppLock`.
       const has = await appLock.hasPin();
       if (!has) {
         appLock.startSetup();
@@ -163,7 +163,7 @@ export function PrivacySection() {
   const handleDisableConfirm = async () => {
     setDisableConfirmOpen(false);
     setFlag("app-lock-enabled", false);
-    // Audit F16: clear the current user's credential, not the `anon` slot.
+    // Audit F16: стираємо креденшел поточного користувача, а не слот `anon`.
     await appLock.disablePin();
   };
 
@@ -173,12 +173,12 @@ export function PrivacySection() {
     const previous = preferences;
     setPreferences({ ...previous, [key]: checked });
     if (key === "analytics") {
-      // Optimistic, ahead of the network round trip (CodeRabbit PR #627):
-      // a dismiss fired between this click and the server's response must
-      // already respect the user's new choice — waiting for
-      // `updatePreferences()` to resolve left a window where a toggle-off
-      // still emitted `advice_shown`/`advice_dismissed` under the old
-      // (consenting) value. Reverted in the `catch` below on failure.
+      // Оптимістично, ще ДО мережевого round trip (CodeRabbit PR #627):
+      // dismiss, що стався між цим кліком і відповіддю сервера, має вже
+      // враховувати новий вибір юзера — очікування на резолв
+      // `updatePreferences()` лишало вікно, де вимкнений тумблер усе одно
+      // емітив `advice_shown`/`advice_dismissed` зі старим (згодним)
+      // значенням. Відкочується в `catch` нижче при збої.
       setAnalyticsConsent(checked);
     }
     try {
@@ -199,39 +199,59 @@ export function PrivacySection() {
 
   const handleClearMemoryConfirm = async () => {
     setClearMemoryConfirmOpen(false);
-    // Finding #2 (2026-08-08 adversarial review): batching this with
-    // `setClearingMemory(true)` closed the dialog and disabled its own
-    // trigger button in the SAME commit. `ConfirmDialog`'s focus-trap
-    // cleanup restores focus to that trigger once the dialog unmounts —
-    // `.focus()` on an already-`disabled` element is a silent no-op, so
-    // keyboard/AT users were stranded on `<body>`. Yielding one microtask
-    // lets React commit (and flush the pending passive-effect focus
-    // restore for) the dialog-close-only render first: any subsequent
-    // `setState` call flushes pending passive effects before processing
-    // the new update, so this ordering is deterministic, not a timing
-    // race — see `useDialogFocusTrap.ts`'s cleanup.
+    // Finding #2 (2026-08-08 adversarial review): якщо батчити це разом із
+    // `setClearingMemory(true)`, діалог закривався і його ж кнопка-тригер
+    // вимикалась в ОДНОМУ й тому ж коміті. Cleanup фокус-пастки
+    // `ConfirmDialog` повертає фокус саме на цей тригер після
+    // розмонтування діалогу — `.focus()` на вже `disabled`-елементі мовчки
+    // нічого не робить, тож keyboard/AT-юзери лишались на `<body>`.
+    // Пропуск одного мікротаску дає React спершу закомітити (і прогнати
+    // відкладений passive-ефект відновлення фокусу для) рендер, що лише
+    // закриває діалог: будь-який наступний виклик `setState` спершу
+    // прогонить відкладені passive-ефекти, перш ніж обробити нове
+    // оновлення — тож цей порядок детермінований, а не гонка з таймінгом —
+    // див. cleanup у `useDialogFocusTrap.ts`.
     await Promise.resolve();
     setClearingMemory(true);
     setMemoryClearStatus(null);
+    // Дефект #5 (CodeRabbit post-merge review PR #756): один спільний
+    // try/catch навколо серверного DELETE і локального запису видавав
+    // локальну помилку (наприклад переповнене localStorage у приватному
+    // режимі) за серверну — а сервер на той момент УЖЕ незворотно стер
+    // факти. Показувати "Не вдалося очистити памʼять ШІ" в такому разі —
+    // брехня (дані реально видалені), і гірше: інвалідація aiMemoryKeys
+    // пропускалась тим самим throw, тож AiMemoryList далі показував би
+    // факти, яких на сервері вже нема. Тому серверний виклик і локальний
+    // запис розділені на окремі кроки: результат для юзера залежить лише
+    // від сервера, а інвалідація кешу відбувається завжди, коли сервер
+    // підтвердив очищення — незалежно від того, чи вдався локальний запис.
     try {
       await meApi.clearAiMemory();
-      writeMemoryEntries([]);
-      // L-20: без явної інвалідації aiMemoryKeys інфініт-список у
-      // AiMemoryList лишається зі стертими фактами до наступного
-      // непов'язаного refetch — той самий ключ, який AiMemoryList сам
-      // інвалідує після точкового видалення ОДНОГО факту (AiMemoryList.tsx,
-      // remove.onSuccess). Тут стирається ВЕСЬ список, тож той самий шлях.
-      // Finding #10: NOT awaited — the clear itself already succeeded and
-      // `AiMemoryList`'s own refetch is background work; awaiting it here
-      // only kept the button reading "Очищаю…" for an extra round trip on
-      // a slow network for no correctness benefit.
-      void queryClient.invalidateQueries({ queryKey: aiMemoryKeys.all });
-      setMemoryClearStatus("Памʼять ШІ очищено.");
     } catch {
       setMemoryClearStatus("Не вдалося очистити памʼять ШІ.");
-    } finally {
       setClearingMemory(false);
+      return;
     }
+    try {
+      writeMemoryEntries([]);
+    } catch {
+      // Сервер уже чистий — локальна копія просто відстане до наступного
+      // refetch (нижче все одно інвалідуємо кеш). Мовчки ковтаємо: показ
+      // помилки тут стверджував би, що очищення не відбулось, хоча воно
+      // відбулось.
+    }
+    // L-20: без явної інвалідації aiMemoryKeys інфініт-список у
+    // AiMemoryList лишається зі стертими фактами до наступного
+    // непов'язаного refetch — той самий ключ, який AiMemoryList сам
+    // інвалідує після точкового видалення ОДНОГО факту (AiMemoryList.tsx,
+    // remove.onSuccess). Тут стирається ВЕСЬ список, тож той самий шлях.
+    // Finding #10: НЕ через await — саме очищення вже відбулось успішно, а
+    // власний refetch AiMemoryList — фонова робота; чекати на нього тут
+    // лише тримало б кнопку в стані "Очищаю…" зайвий round-trip на
+    // повільній мережі без жодної користі для коректності.
+    void queryClient.invalidateQueries({ queryKey: aiMemoryKeys.all });
+    setMemoryClearStatus("Памʼять ШІ очищено.");
+    setClearingMemory(false);
   };
 
   return (
@@ -315,22 +335,23 @@ export function PrivacySection() {
               }
             />
             {preferencesError ? (
-              // Finding #7: rendered right next to the toggle group that
-              // failed to save, instead of a screen-height away next to
-              // `LegalLinks` — a sighted user who just watched a switch
-              // silently revert (see `updatePreference`'s `catch` above)
-              // needs the explanation next to the control, not below the
-              // AI-memory facts list.
+              // Finding #7: рендериться одразу біля групи тумблерів, що не
+              // зберіглась, а не на висоту екрана нижче, поруч із
+              // `LegalLinks` — зрячий юзер, що щойно бачив, як тумблер
+              // мовчки відкотився (див. `catch` у `updatePreference`
+              // вище), потребує пояснення поруч із контролом, а не під
+              // списком фактів ШІ-пам'яті.
               <p className="text-style-caption text-danger-strong" role="alert">
                 {preferencesError}
               </p>
             ) : null}
           </>
         ) : preferencesError ? (
-          // Finding #9: a failed initial load used to render nothing at
-          // all here — no toggles (correct, see L-3 below), but also no
-          // way out short of leaving and re-entering Settings. Offer the
-          // same error text plus a real retry that re-invokes the fetch.
+          // Finding #9: провальне ПЕРШЕ завантаження раніше рендерило тут
+          // порожнечу — ні тумблерів (коректно, див. L-3 нижче), ні
+          // способу вийти з цього стану, крім виходу з Налаштувань і
+          // повернення. Пропонуємо той самий текст помилки плюс справжній
+          // retry, що повторно викликає fetch.
           <div className="flex flex-col items-start gap-2">
             <p className="text-style-caption text-danger-strong" role="alert">
               {preferencesError}
@@ -395,16 +416,16 @@ export function PrivacySection() {
         <LegalLinks compact className="justify-start" />
       </div>
 
-      {/* V-6 / finding #1 (2026-08-08 adversarial review): `SettingsGroup`
-          is a `Card prominence="glass"` (`backdrop-blur-md`) inside two
-          `overflow-hidden` wrappers — `backdrop-filter` makes the card a
-          `position: fixed` containing block, so a non-portaled dialog
-          (the local `ConfirmModal` this used to be) closes and clips
-          INSIDE the settings card instead of covering the screen. Same
-          failure already documented on this exact container in
+      {/* V-6 / finding #1 (2026-08-08 adversarial review): `SettingsGroup` —
+          це `Card prominence="glass"` (`backdrop-blur-md`) всередині двох
+          `overflow-hidden`-обгорток — `backdrop-filter` робить картку
+          containing block для `position: fixed`, тож непорталений діалог
+          (раніше тут був локальний `ConfirmModal`) закривався й обрізався
+          ВСЕРЕДИНІ картки налаштувань замість покрити весь екран. Той сам
+          збій уже задокументовано на цьому самому контейнері в
           `OnboardingWizard.tsx`. `ConfirmDialog` (`@shared/components/ui`)
-          portals to `document.body`, same primitive `PWASection` already
-          uses next to this one. */}
+          порталиться в `document.body` — той самий примітив, що й
+          `PWASection` уже використовує поруч. */}
       <ConfirmDialog
         open={disableConfirmOpen}
         title={m.disableConfirmTitle}

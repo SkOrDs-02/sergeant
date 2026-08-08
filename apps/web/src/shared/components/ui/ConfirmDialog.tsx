@@ -126,12 +126,21 @@ export const ConfirmDialog = memo(function ConfirmDialog({
           {title}
         </h2>
         {description && (
-          <p
+          // Дефект #2 (CodeRabbit post-merge review PR #756): `<p>` — блочний
+          // елемент, але його content model за специфікацією — лише phrasing
+          // content, тобто `<ul>` чи вкладений `<p>` усередині нього
+          // невалідні. Реальний HTML-парсер авто-закрив
+          // би `<p>` перед першим таким блоком, розірвавши
+          // `aria-describedby`-зв'язок і породжуючи React DOM-nesting
+          // warning. Викликачі (як `HubBackupPanel`) передають описи зі
+          // списками — `<div>` з тим самим класом дає той самий вигляд без
+          // невалідної вкладеності.
+          <div
             id={descId}
             className="text-style-body text-muted leading-relaxed mb-5"
           >
             {description}
-          </p>
+          </div>
         )}
         <div className="flex flex-col gap-2">
           <Button

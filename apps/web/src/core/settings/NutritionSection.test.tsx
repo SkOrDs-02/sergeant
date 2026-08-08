@@ -1,13 +1,8 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-  within,
-} from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { renderSettingsSection } from "../../test/helpers/collapsibleSection";
 
 const navigate = vi.fn();
 vi.mock("react-router-dom", async (importOriginal) => {
@@ -41,7 +36,7 @@ vi.mock("../../modules/nutrition/lib/nutritionStorage", () => ({
 import { NutritionSection } from "./NutritionSection";
 
 function renderSection() {
-  return render(
+  return renderSettingsSection(
     <MemoryRouter>
       <NutritionSection />
     </MemoryRouter>,

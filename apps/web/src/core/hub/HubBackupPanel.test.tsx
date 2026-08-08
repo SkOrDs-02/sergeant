@@ -19,13 +19,13 @@ const downloadJsonMock = vi.fn((_filename?: unknown, _payload?: unknown) =>
   Promise.resolve(),
 );
 
-// Adversarial review (backup group) #1: the component now calls
-// `isHubBackupPayload` to validate the file BEFORE opening the confirmation
-// dialog. This mirrors the real implementation in `hubBackup.ts` (kept
-// deliberately in sync with it — if that shape check changes, update this
-// too) rather than pulling in the real module, which would drag in the
-// finyk/fizruk/routine/nutrition storage modules the other mocks below
-// intentionally avoid touching.
+// Adversarial review (backup group) #1: компонент тепер викликає
+// `isHubBackupPayload` для валідації файлу ДО відкриття діалогу
+// підтвердження. Це дзеркалить реальну реалізацію в `hubBackup.ts`
+// (навмисно тримається з нею в синхроні — якщо перевірка форми там
+// зміниться, онови і тут) замість того, щоб тягнути реальний модуль, який
+// притягнув би storage-модулі finyk/fizruk/routine/nutrition, яких інші
+// моки нижче навмисно уникають.
 const isHubBackupPayloadMock = vi.fn(
   (parsed: unknown) =>
     parsed != null &&
@@ -66,10 +66,10 @@ vi.mock("@shared/hooks/useToast", () => ({
 
 import { HubBackupPanel } from "./HubBackupPanel";
 
-// A realistic full export — one non-`version` key under `finyk` and a
-// truthy (even if empty) value for each of the other three modules. This is
-// the shape `sectionsThatWillBeOverwritten` in the component reads to decide
-// which of the four modules to name in the confirmation dialog.
+// Реалістичний повний експорт — один не-`version` ключ під `finyk` і truthy
+// (навіть якщо порожнє) значення для кожного з інших трьох модулів. Це та
+// форма, яку `sectionsThatWillBeOverwritten` у компоненті читає, щоб
+// вирішити, які з чотирьох модулів назвати в діалозі підтвердження.
 const FULL_BACKUP_PAYLOAD = {
   kind: "hub-backup",
   schemaVersion: 1,
@@ -83,21 +83,21 @@ const FULL_BACKUP_PAYLOAD = {
 
 describe("HubBackupPanel", () => {
   beforeEach(() => {
-    // `clearAllMocks` resets call history, not the implementation passed to
-    // `vi.fn(...)` at module scope, so `isHubBackupPayloadMock` keeps
-    // working correctly across tests without being re-armed here.
+    // `clearAllMocks` скидає лише історію викликів, а не реалізацію,
+    // передану в `vi.fn(...)` на рівні модуля, тож `isHubBackupPayloadMock`
+    // і далі коректно працює між тестами без повторного озброєння тут.
     vi.clearAllMocks();
   });
 
   afterEach(() => {
     vi.clearAllMocks();
-    // Adversarial review (backup group) #6: this used to live at the end of
-    // every individual test body. If an `expect` earlier in the test threw
-    // (which is exactly what happens on the L-5 regression — see the
-    // comment on `selectBackupFile` below), the stubbed `location` leaked
-    // into subsequent tests, which then failed for unrelated reasons
-    // (`location.href`/`origin` missing). Centralizing the cleanup here
-    // makes it unconditional.
+    // Adversarial review (backup group) #6: раніше це жило в кінці кожного
+    // окремого тіла тесту. Якщо раніший `expect` у тесті кидав виняток
+    // (саме це стається на L-5-регресії — див. коментар до
+    // `selectBackupFile` нижче), застаблений `location` протікав у наступні
+    // тести, які потім падали з непов'язаних причин (відсутні
+    // `location.href`/`origin`). Централізація cleanup тут робить його
+    // безумовним.
     vi.unstubAllGlobals();
   });
 
@@ -135,10 +135,9 @@ describe("HubBackupPanel", () => {
     expect(clickSpy).toHaveBeenCalledTimes(1);
   });
 
-  // Selects a given (already-serializable) payload through the hidden file
-  // input. Does NOT wait for the dialog — callers that expect it to open
-  // do that explicitly, callers that expect an immediate error (§1 below)
-  // don't.
+  // Обирає заданий (уже серіалізовний) payload через прихований file-інпут.
+  // НЕ чекає на діалог — виклики, що очікують його відкриття, роблять це
+  // явно; ті, що очікують негайну помилку (§1 нижче), — ні.
   async function selectBackupFile(payload: unknown, filename = "backup.json") {
     const fileInput = document.querySelector(
       "input[type='file']",
@@ -155,14 +154,13 @@ describe("HubBackupPanel", () => {
     });
   }
 
-  // Adversarial review (backup group) #5: the previous comment here claimed
-  // that, without the L-5 fix, the assertions below would fail with
-  // "expected spy to not have been called". That's wrong — removing the fix
-  // doesn't change `selectBackupFile` at all, it changes whether
-  // `ConfirmDialog` ever renders. Without the fix this `waitFor` is what
-  // fails, after the default ~1s timeout, with "Unable to find role
-  // 'alertdialog'" — every test below that calls this helper pays that cost
-  // on a regression, not just the first one.
+  // Adversarial review (backup group) #5: попередній коментар тут
+  // стверджував, що без L-5-фіксу перевірки нижче впадуть з "expected spy
+  // to not have been called". Це неправильно — видалення фіксу взагалі не
+  // міняє `selectBackupFile`, воно міняє те, чи рендериться `ConfirmDialog`
+  // взагалі. Без фіксу впаде саме цей `waitFor`, після дефолтного ~1s
+  // таймауту, з "Unable to find role 'alertdialog'" — кожен тест нижче, що
+  // викликає цей хелпер, платить цю ціну при регресії, а не лише перший.
   async function selectValidBackupFile() {
     await selectBackupFile(FULL_BACKUP_PAYLOAD);
     await waitFor(() =>
@@ -191,21 +189,21 @@ describe("HubBackupPanel", () => {
     expect(dialog.textContent).toContain("Їжа");
   });
 
-  // Adversarial review (backup group) #2/#4 (HIGH/MEDIUM): before this fix
-  // the dialog always named all four modules from a static list, regardless
-  // of what the selected file actually contained — a file with only
-  // `finyk` in it still warned about erasing Фізрук/Рутина/Їжа. This test
-  // is the one that would have failed against the pre-fix static list (it
-  // always included all four strings), and fails now if the dynamic
-  // derivation regresses back to a static list.
+  // Adversarial review (backup group) #2/#4 (HIGH/MEDIUM): до цього фіксу
+  // діалог завжди називав усі чотири модулі зі статичного списку, незалежно
+  // від того, що насправді містив обраний файл — файл лише з `finyk`
+  // усе одно попереджав про стирання Фізрук/Рутина/Їжа. Саме цей тест
+  // впав би проти дофіксового статичного списку (він завжди містив усі
+  // чотири рядки) і падає зараз, якщо динамічний вивід регресує назад у
+  // статичний список.
   it("confirmation dialog names only the modules actually present in the file, not a static worst-case list", async () => {
     render(<HubBackupPanel />);
     await selectBackupFile({
       kind: "hub-backup",
       schemaVersion: 1,
       finyk: { accounts: [] },
-      // routine / fizruk / nutrition intentionally absent — e.g. a
-      // hand-trimmed export, or a module with nothing to export yet.
+      // routine / fizruk / nutrition навмисно відсутні — наприклад ручний
+      // обрізаний експорт, або модуль, з якого ще нема чого експортувати.
     });
     await waitFor(() =>
       expect(screen.getByRole("alertdialog")).toBeInTheDocument(),
@@ -218,12 +216,38 @@ describe("HubBackupPanel", () => {
     expect(dialog.textContent).not.toContain("Їжа");
   });
 
-  // Adversarial review (backup group) #1 (HIGH): before this fix, form
-  // validation lived only inside `applyHubBackupPayload`, which ran AFTER
-  // the user confirmed the "this cannot be undone" dialog. Selecting valid
-  // JSON that simply isn't a hub backup (e.g. `package.json`) opened that
-  // same irreversible-overwrite warning, and the only way to discover the
-  // file was wrong was to press the destructive "Перезаписати" button.
+  // Дефект #3 (CodeRabbit post-merge review PR #756): `applyHubBackupPayload`
+  // (`hubBackup.ts`) застосовує й секцію `hub` (`lastModule`/`chatHistory`),
+  // але `sectionsThatWillBeOverwritten` про неї раніше мовчала — бекап лише
+  // з `hub` показував ПОРОЖНІЙ список замість переліку того, що реально буде
+  // перетерто.
+  it("names the Hub section when the file contains only `hub`, not the empty-warning fallback", async () => {
+    render(<HubBackupPanel />);
+    await selectBackupFile({
+      kind: "hub-backup",
+      schemaVersion: 1,
+      hub: { lastModule: "finyk" },
+      // finyk / fizruk / routine / nutrition навмисно відсутні — hub-only
+      // експорт (наприклад лише `includeChat: true` без даних модулів).
+    });
+    await waitFor(() =>
+      expect(screen.getByRole("alertdialog")).toBeInTheDocument(),
+    );
+
+    const dialog = screen.getByRole("alertdialog");
+    expect(dialog.textContent).toContain("Hub");
+    expect(dialog.textContent).not.toContain(
+      "Цей файл не містить даних Фініка, Фізрука, Рутини чи Їжі",
+    );
+  });
+
+  // Adversarial review (backup group) #1 (HIGH): до цього фіксу валідація
+  // форми жила лише всередині `applyHubBackupPayload`, який запускався
+  // ПІСЛЯ того, як юзер підтвердив діалог "це незворотно". Вибір валідного
+  // JSON, який просто не є hub backup (наприклад `package.json`), відкривав
+  // те саме попередження про незворотне перезаписування, і єдиний спосіб
+  // дізнатись, що файл неправильний, — натиснути деструктивну кнопку
+  // "Перезаписати".
   it("selecting valid JSON that is not a hub backup shows an error immediately, without opening the confirmation dialog", async () => {
     const reloadMock = vi.fn();
     vi.stubGlobal("location", { reload: reloadMock });
@@ -269,11 +293,11 @@ describe("HubBackupPanel", () => {
     render(<HubBackupPanel />);
     await selectValidBackupFile();
 
-    // Both the scrim button (index 0) and the footer button (last) carry
-    // the accessible name "Скасувати" and both call the same `onCancel`
-    // (`ConfirmDialog.tsx` scrim button + footer secondary button) — which
-    // index we click isn't load-bearing for this assertion. We click the
-    // footer button as the more discoverable of the two.
+    // І кнопка-скрим (індекс 0), і футерна кнопка (остання) мають
+    // доступну назву "Скасувати" й обидві викликають той самий `onCancel`
+    // (`ConfirmDialog.tsx`: кнопка скриму + вторинна кнопка футера) — який
+    // саме індекс клікати, не є суттєвим для цієї перевірки. Клікаємо
+    // футерну кнопку як більш очевидну з двох.
     const cancelButtons = screen.getAllByRole("button", { name: "Скасувати" });
     fireEvent.click(cancelButtons[cancelButtons.length - 1] as HTMLElement);
 
@@ -305,6 +329,58 @@ describe("HubBackupPanel", () => {
 
     expect(applyPayloadMock).not.toHaveBeenCalled();
     await waitFor(() => expect(toastErrorMock).toHaveBeenCalledTimes(1));
+    expect(reloadMock).not.toHaveBeenCalled();
+  });
+
+  // Дефект #4 (CodeRabbit post-merge review PR #756): без `onerror` збій
+  // `readAsText` (пошкоджений файл, обрив читання) не давав ні тосту, ні
+  // скинутого значення інпута — повторний вибір ТОГО САМОГО файлу після
+  // цього не запускав `onChange` знову. Справжній `FileReader` у jsdom не
+  // вміє штучно впасти на звичайному `File`, тож стабимо глобальний клас,
+  // щоб змусити `readAsText` викликати саме `onerror`.
+  it("runImport: FileReader onerror calls toast.error and resets the input value", async () => {
+    const reloadMock = vi.fn();
+    vi.stubGlobal("location", { reload: reloadMock });
+
+    class FailingFileReader {
+      onload: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      result: string | null = null;
+      // `r.error` тут навмисно не читається компонентом — DOMException не
+      // `instanceof Error`, тож onerror показує фіксований текст (див.
+      // коментар у `HubBackupPanel.tsx`).
+      error = new DOMException("boom", "NotReadableError");
+      readAsText() {
+        queueMicrotask(() => this.onerror?.());
+      }
+    }
+    vi.stubGlobal("FileReader", FailingFileReader);
+
+    render(<HubBackupPanel />);
+    const fileInput = document.querySelector(
+      "input[type='file']",
+    ) as HTMLInputElement;
+    const file = new File(["irrelevant"], "backup.json", {
+      type: "application/json",
+    });
+
+    await act(async () => {
+      Object.defineProperty(fileInput, "files", {
+        value: [file],
+        configurable: true,
+      });
+      fireEvent.change(fileInput);
+    });
+
+    await waitFor(() =>
+      expect(toastErrorMock).toHaveBeenCalledWith(
+        "Не вдалось прочитати файл",
+        undefined,
+        expect.objectContaining({ label: "Обрати інший" }),
+      ),
+    );
+    expect(fileInput.value).toBe("");
+    expect(applyPayloadMock).not.toHaveBeenCalled();
     expect(reloadMock).not.toHaveBeenCalled();
   });
 

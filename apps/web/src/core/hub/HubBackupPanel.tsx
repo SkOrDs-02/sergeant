@@ -22,6 +22,12 @@ const OVERWRITE_LABELS: Record<string, string> = {
   fizruk: "Фізрук — тренування",
   routine: "Рутина — звички",
   nutrition: "Їжа — харчування",
+  // Дефект #3 (CodeRabbit post-merge review PR #756): `applyHubBackupPayload`
+  // (`hubBackup.ts`) застосовує й секцію `hub` (останній відкритий модуль +
+  // опційна історія чату), але цей список про неї мовчав — бекап лише з
+  // `hub` (наприклад окремий експорт із `includeChat: true`) показував
+  // порожнє попередження замість переліку того, що реально буде перетерто.
+  hub: "Hub — останній відкритий розділ і історія чату асистента",
 };
 
 // Adversarial review (backup group) #2 (HIGH): раніше цей список був
@@ -49,6 +55,12 @@ function sectionsThatWillBeOverwritten(data: unknown): string[] {
   if (record["fizruk"]) sections.push(OVERWRITE_LABELS["fizruk"] as string);
   if (record["nutrition"])
     sections.push(OVERWRITE_LABELS["nutrition"] as string);
+  // Дефект #3: та сама перевірка, що й `applyHubBackupPayload` для `hub`
+  // (`hubBackup.ts`) — `parsed.hub && typeof parsed.hub === "object"`.
+  const hub = record["hub"];
+  if (hub && typeof hub === "object") {
+    sections.push(OVERWRITE_LABELS["hub"] as string);
+  }
   return sections;
 }
 
@@ -115,6 +127,21 @@ export function HubBackupPanel({ className }: HubBackupPanelProps) {
       } catch (err) {
         showParseError(err);
       }
+      e.target.value = "";
+    };
+    // Дефект #4 (CodeRabbit post-merge review PR #756): без onerror збій
+    // readAsText (пошкоджений файл, обрив читання диска) не давав ні тосту,
+    // ні скинутого значення інпута — браузер вважає `<input type="file">`
+    // незмінним, якщо в ньому лежить той самий файл, тож повторний вибір
+    // ТОГО САМОГО файлу після цього взагалі не спрацьовував (onChange не
+    // фаериться). Та сама поведінка, що й catch-гілка в onload вище.
+    // Фіксований текст, а не `r.error?.message` — `FileReaderError`/
+    // `DOMException` НЕ є `instanceof Error` (ані в специфікації, ані в
+    // jsdom), тож `showParseError` однаково впала б на дефолтне повідомлення;
+    // явний текст стабільніший і зрозуміліший, ніж непередбачуваний
+    // browser-specific рядок `DOMException.message`.
+    r.onerror = () => {
+      showParseError(new Error("Не вдалось прочитати файл"));
       e.target.value = "";
     };
     r.readAsText(f);
@@ -206,11 +233,15 @@ export function HubBackupPanel({ className }: HubBackupPanelProps) {
             ) : (
               "Цей файл не містить даних Фініка, Фізрука, Рутини чи Їжі — імпорт нічого з цього не перезапише."
             )}
-            {/* Adversarial review (backup group) #7: ConfirmDialog обгортає
-                description у <p>; вкладений блочний <p> тут ламав розмітку
-                (реальний HTML-парсер авто-закрив би зовнішній <p>, розірвавши
-                aria-describedby). <span className="block"> дає той самий
-                візуальний перенос рядка без невалідного вкладення. */}
+            {/* Дефект #2 (CodeRabbit post-merge review PR #756): раніше
+                ConfirmDialog обгортав description у <p>, а <ul> вище (блочний
+                елемент) усередині <p> — невалідний HTML: реальний парсер
+                авто-закрив би зовнішній <p> ще до <ul>, розриваючи
+                aria-describedby, плюс React DOM-nesting warning. Виправлено
+                в ConfirmDialog.tsx (обгортка тепер <div>). <span
+                className="block"> нижче лишається — звичайний спосіб дати
+                блочний рядок тексту всередині фрагмента, а не обхідний
+                прийом під старе обмеження. */}
             <span className="mt-2 block">
               Скасувати цю дію після імпорту не можна.
             </span>

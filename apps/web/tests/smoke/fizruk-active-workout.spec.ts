@@ -81,7 +81,22 @@ test("@critical fizruk: start → set → refresh → resume → finish", async 
   await page
     .getByPlaceholder("Пошук (жим, підтягування, спина…)")
     .fill("Жим штанги лежачи");
-  await page.locator('button[aria-expanded="false"]').first().click();
+  // Локатор навмисно привʼязаний до `aria-controls="catalog-panel-*"`, а не
+  // до «перша кнопка на сторінці з aria-expanded=false». Стара форма зламалась
+  // від НАШОЇ Ж зміни: фікс V-8 з аудиту Фізрука переніс «Видалити» в
+  // overflow-меню «⋯» на базі `DropdownMenu` (`ActiveWorkoutHeader.tsx`), а
+  // його тригер за контрактом несе `aria-expanded` і стоїть у хедері — тобто
+  // РАНІШЕ каталогу в DOM. `.first()` почав клікати «⋯», група вправ лишалась
+  // згорнутою, і наступний крок падав по таймауту на неіснуючій кнопці вправи
+  // (30 с × 2 спроби, кожен прогін CI з 2026-08-07).
+  //
+  // `aria-controls` тут — стабільний гачок: його ставить сам
+  // `WorkoutCatalogSection` рівно на перемикачі групи, і жоден інший
+  // контрол сторінки на нього не схожий.
+  await page
+    .locator('button[aria-controls^="catalog-panel-"][aria-expanded="false"]')
+    .first()
+    .click();
   await page
     .getByRole("button", { name: /Жим штанги лежачи/ })
     .first()

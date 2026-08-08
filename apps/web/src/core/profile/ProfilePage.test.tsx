@@ -9,6 +9,7 @@ import {
   within,
 } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { expandAllCollapsedSections } from "../../test/helpers/collapsibleSection";
 
 // ── Mocks ────────────────────────────────────────────────────
 
@@ -248,7 +249,11 @@ describe("ProfilePage", () => {
 
     it("disables change password button when offline", () => {
       useOnlineStatusMock.mockReturnValue(false);
-      renderPage();
+      const { container } = renderPage();
+      // «Пароль» — один із п'яти `CollapsibleSection`, згорнутих за
+      // замовчуванням; L-7 фікс ховає їхній вміст через `inert` +
+      // `aria-hidden`, тож кнопку треба спершу розкрити, як зробив би юзер.
+      expandAllCollapsedSections(container);
       const changeBtn = screen.getByRole("button", {
         name: "Змінити пароль",
       });
@@ -257,7 +262,9 @@ describe("ProfilePage", () => {
 
     it("disables delete account button when offline", () => {
       useOnlineStatusMock.mockReturnValue(false);
-      renderPage();
+      const { container } = renderPage();
+      // «Видалення акаунта» згорнута за замовчуванням — див. коментар вище.
+      expandAllCollapsedSections(container);
       const deleteBtn = screen.getByRole("button", {
         name: "Видалити акаунт",
       });
@@ -302,7 +309,9 @@ describe("ProfilePage", () => {
 
     it("disables refresh button when offline", () => {
       useOnlineStatusMock.mockReturnValue(false);
-      renderPage();
+      const { container } = renderPage();
+      // «Активні сесії» згорнута за замовчуванням — див. коментар вище.
+      expandAllCollapsedSections(container);
       const refreshBtn = screen.getByRole("button", { name: "Оновити" });
       expect(refreshBtn).toBeDisabled();
     });
@@ -330,7 +339,9 @@ describe("ProfilePage", () => {
 
   describe("delete account dialog", () => {
     it("uses accessible labels and closes on Escape", () => {
-      renderPage();
+      const { container } = renderPage();
+      // «Видалення акаунта» згорнута за замовчуванням — див. коментар вище.
+      expandAllCollapsedSections(container);
 
       fireEvent.click(screen.getByRole("button", { name: "Видалити акаунт" }));
 
