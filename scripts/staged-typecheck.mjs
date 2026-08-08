@@ -111,7 +111,16 @@ const SKIP_PREFIXES_BY_TSCONFIG = {
   // this skip, `tsc-files` force-loads staged SW files under the main strict
   // config and reports flags (exactOptionalPropertyTypes /
   // noPropertyAccessFromIndexSignature) that the SW build never enforces.
-  "apps/web/tsconfig.json": ["src/sw.ts", "src/sw/"],
+  // `tests/` — той самий клас, але через `include`, а не `exclude`:
+  // `apps/web/tsconfig.json` має `include: ["src/**/*"]`, тож Playwright-специ
+  // взагалі не в програмі й канонічний `pnpm typecheck` їх не бачить. Вони
+  // ганяються власними `playwright.*.config.ts` і транспілюються без tsc.
+  // `tsc-files` форс-додає стейджнутий спец у `files` під `types: ["vite/client",
+  // "@testing-library/jest-dom", "node"]` — без типів Playwright, і легальний
+  // `test.use({ reducedMotion: "reduce" })` падає з TS2353, хоча в CI цей самий
+  // спец зелений (`Critical-flow E2E`, тест #42). Знайдено 2026-08-08, коли
+  // мердж main застейджив `tests/smoke/reduced-motion.spec.ts` і заблокував коміт.
+  "apps/web/tsconfig.json": ["src/sw.ts", "src/sw/", "tests/"],
   // Every `packages/*` tsconfig pins `rootDir: ./src` + `include: ["src/**/*"]`,
   // so the root-level `vitest.config.ts` sits outside the program and the
   // canonical `pnpm typecheck` never sees it. `tsc-files` force-adding it to
