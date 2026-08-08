@@ -7,6 +7,7 @@ import {
   addPantryItem,
   goto,
   recordConsole,
+  reload,
   signIn,
   signUp,
   uncaughtOnly,
@@ -171,7 +172,7 @@ test.describe.serial("Цикл 3 — санітарні перевірки се�
     // `goto` сам валить тест із діагностикою B1, якщо #root лишився порожнім.
     for (let i = 0; i < 3; i += 1) {
       await goto(page, "/");
-      await page.reload({ waitUntil: "domcontentloaded" });
+      await reload(page);
       await expect
         .poll(() =>
           page.evaluate(
@@ -217,7 +218,7 @@ test.describe.serial("BT1 — анонім із Telegram-групи", () => {
 
   test("BT1: стан переживає перезавантаження", async () => {
     await goto(page, "/routine/habits");
-    await page.reload({ waitUntil: "domcontentloaded" });
+    await reload(page);
     // Після reload список чекає гідрації SQLite (OPFS) — на повільному
     // пристрої це довше за дефолтні 5 с expect-таймауту (флейк першого
     // репетиційного прогону 2026-08-07).
@@ -309,7 +310,7 @@ test.describe.serial("BT2 — щойно зареєстрований, ще бе
 
   test("BT2: стан переживає перезавантаження", async () => {
     await goto(page, "/routine/habits");
-    await page.reload({ waitUntil: "domcontentloaded" });
+    await reload(page);
     // Див. коментар у BT1 — пост-reload гідрація SQLite повільніша за
     // дефолтний expect-таймаут.
     await expect(visibleText(page, `QA BT2 звичка ${RUN_TAG}`)).toBeVisible({

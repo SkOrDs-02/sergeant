@@ -7,6 +7,7 @@ import {
   addPantryItem,
   goto,
   recordConsole,
+  reload,
   signIn,
   signUp,
   uncaughtOnly,
@@ -150,7 +151,7 @@ for (const profile of PROFILES) {
 
     test(`${profile.id}: стан переживає перезавантаження`, async () => {
       await goto(page, "/routine/habits");
-      await page.reload({ waitUntil: "domcontentloaded" });
+      await reload(page);
       await expect(visibleText(page, `QA ${profile.id} звичка`)).toBeVisible();
     });
 
