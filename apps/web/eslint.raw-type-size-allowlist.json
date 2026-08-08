@@ -109,8 +109,6 @@
   "apps/web/src/modules/routine/components/habits/HabitListItem.tsx",
   "apps/web/src/modules/routine/components/settings/TagsSection.tsx",
   "apps/web/src/pages/strategy/StrategyPage.tsx",
-  "apps/web/src/shared/components/layout/ModuleHeader.tsx",
-  "apps/web/src/shared/components/layout/ModuleSettingsDrawer.tsx",
   "apps/web/src/shared/components/ui/Avatar.tsx",
   "apps/web/src/shared/components/ui/CelebrationModal.tsx",
   "apps/web/src/shared/components/ui/ProgressCircle.tsx",

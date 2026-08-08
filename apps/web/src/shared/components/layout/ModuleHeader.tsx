@@ -146,7 +146,7 @@ export function ModuleHeader({
                 // `getByRole("heading")` — роль тут не повинна зʼявитись.
                 <p
                   data-testid="module-header-title"
-                  className="text-base font-semibold tracking-wide text-text leading-tight flex items-center gap-2"
+                  className="text-style-body font-semibold tracking-wide text-text leading-tight flex items-center gap-2"
                 >
                   {mt ? (
                     <span
