@@ -355,7 +355,7 @@ export function WorkoutTemplatesSection({
                         >
                           <button
                             type="button"
-                            className="inline-flex items-center justify-center text-danger-strong/60 dark:text-danger/60 hover:text-danger px-1"
+                            className="inline-flex items-center justify-center text-danger-strong dark:text-danger hover:text-danger px-1"
                             aria-label="Прибрати з групи"
                             onClick={() => handleRemoveGroup(group.id)}
                           >
@@ -383,7 +383,7 @@ export function WorkoutTemplatesSection({
                           </button>
                           <button
                             type="button"
-                            className="min-w-[44px] min-h-[44px] text-danger-strong/80 dark:text-danger/80"
+                            className="min-w-[44px] min-h-[44px] text-danger-strong dark:text-danger"
                             aria-label="Прибрати з шаблону"
                             onClick={() => removeAt(idx)}
                           >

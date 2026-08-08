@@ -55,7 +55,7 @@ export function WorkoutItemLastTimeHint({
       : `${last.durationSec ?? 0}с`;
   if (!text) return null;
   return (
-    <div className="text-style-caption text-subtle/70 mb-1">
+    <div className="text-style-caption text-subtle mb-1">
       {messages.fizruk.lastTimeHint.label}{" "}
       {last._startedAt
         ? `(${new Date(last._startedAt).toLocaleDateString("uk-UA", { month: "short", day: "numeric" })})`

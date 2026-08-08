@@ -85,7 +85,7 @@ export function WorkoutSetRow({
       {ghostSet ? (
         <button
           type="button"
-          className="h-10 w-12 shrink-0 rounded-lg border border-dashed border-line/70 pointer-coarse:min-h-[44px] text-style-caption text-subtle/80 tabular-nums hover:border-fizruk/50 hover:text-fizruk-strong dark:hover:text-fizruk transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+          className="h-10 w-12 shrink-0 rounded-lg border border-dashed border-line/70 pointer-coarse:min-h-[44px] text-style-caption text-subtle tabular-nums hover:border-fizruk/50 hover:text-fizruk-strong dark:hover:text-fizruk transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
           onClick={onApplyGhost}
           aria-label={`${sr.ghostAriaPrefix} ${ghostSet.weightKg ?? 0}×${ghostSet.reps ?? 0} ${sr.ghostAriaSuffix}`}
         >

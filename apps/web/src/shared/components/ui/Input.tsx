@@ -172,7 +172,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           aria-invalid={error ? true : undefined}
           aria-describedby={helperText && id ? `${id}-helper` : undefined}
           className={cn(
-            "box-border w-full text-text placeholder:text-subtle/70",
+            "box-border w-full text-text placeholder:text-subtle",
             "outline-none transition-colors duration-base",
             "disabled:opacity-50 disabled:cursor-not-allowed",
             sizes[size],
@@ -272,7 +272,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           aria-invalid={error ? true : undefined}
           aria-describedby={helperText && id ? `${id}-helper` : undefined}
           className={cn(
-            "w-full px-4 py-3 text-style-body text-text placeholder:text-subtle/70 rounded-2xl",
+            "w-full px-4 py-3 text-style-body text-text placeholder:text-subtle rounded-2xl",
             "outline-none transition-colors duration-base resize-none",
             "disabled:opacity-50 disabled:cursor-not-allowed",
             variants[variant],

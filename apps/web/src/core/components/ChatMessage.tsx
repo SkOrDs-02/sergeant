@@ -193,7 +193,7 @@ function ConfirmCard({ card }: { card: ChatActionCard }) {
         <span className="text-style-label font-semibold text-danger-strong dark:text-danger flex-1 truncate">
           {card.title}
         </span>
-        <span className="shrink-0 text-style-caption font-semibold text-danger-strong/70 dark:text-danger/70 rounded-full bg-danger/10 px-1.5 py-0.5">
+        <span className="shrink-0 text-style-caption font-semibold text-danger-strong dark:text-danger rounded-full bg-danger/10 px-1.5 py-0.5">
           Виконано
         </span>
       </div>

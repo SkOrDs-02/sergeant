@@ -90,7 +90,7 @@ function ItemRow({
         disabled={busy}
         aria-label={`Прибрати ${item?.name || "продукт"}`}
         title="Прибрати"
-        className="shrink-0 text-subtle/60 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:ring-2 sm:focus-visible:ring-focus/45 sm:focus-visible:opacity-100 hover:text-danger hover:bg-danger/10 transition-[color,background-color,opacity]"
+        className="shrink-0 text-subtle sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:ring-2 sm:focus-visible:ring-focus/45 sm:focus-visible:opacity-100 hover:text-danger hover:bg-danger/10 transition-[color,background-color,opacity]"
       >
         ×
       </Button>

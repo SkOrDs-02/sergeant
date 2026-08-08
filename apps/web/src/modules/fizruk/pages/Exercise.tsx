@@ -252,7 +252,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
               <p className="text-style-label text-warning-strong dark:text-warning">
                 Новий особистий рекорд!
               </p>
-              <p className="text-style-caption text-warning-strong/80 dark:text-warning/70">
+              <p className="text-style-caption text-warning-strong dark:text-warning">
                 Найкращий результат за всю історію
               </p>
             </div>
@@ -291,7 +291,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
               )}
             </div>
             {best.bestSet?.at && (
-              <div className="text-style-caption text-subtle/70 mt-1">
+              <div className="text-style-caption text-subtle mt-1">
                 {new Date(best.bestSet.at).toLocaleDateString("uk-UA", {
                   day: "numeric",
                   month: "short",
@@ -346,7 +346,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
                 </div>
               )}
             {suggestedNext && best.lastTop && (
-              <div className="text-style-caption text-subtle/70 mt-1">
+              <div className="text-style-caption text-subtle mt-1">
                 зараз: <Measure value={best.lastTop.weightKg ?? 0} unit="кг" />{" "}
                 × <Measure value={best.lastTop.reps ?? 0} unit="повт." />
               </div>

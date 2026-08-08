@@ -134,7 +134,7 @@ export function ModuleHeader({
           {titleSlot ?? (
             <>
               {eyebrow ? (
-                <span className="text-style-overline text-brand-700 dark:text-brand/70 block leading-none mb-0.5">
+                <span className="text-style-overline text-brand-700 dark:text-brand block leading-none mb-0.5">
                   {eyebrow}
                 </span>
               ) : null}

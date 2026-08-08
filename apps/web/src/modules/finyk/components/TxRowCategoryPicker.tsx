@@ -129,7 +129,7 @@ export function TxRowCategoryPicker({
               trackTxCategorized(null);
               onClose();
             }}
-            className="text-xs px-3 py-2 rounded-xl border border-dashed border-danger/40 text-danger-strong/60 dark:text-danger/60 hover:text-danger transition-colors"
+            className="text-xs px-3 py-2 rounded-xl border border-dashed border-danger/40 text-danger-strong dark:text-danger hover:text-danger transition-colors"
           >
             <Icon name="close" size={13} aria-hidden /> Скинути
           </button>

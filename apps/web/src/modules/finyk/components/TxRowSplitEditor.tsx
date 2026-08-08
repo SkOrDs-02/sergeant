@@ -157,7 +157,7 @@ export function TxRowSplitEditor({
               onClick={() =>
                 setDraftSplits((prev) => prev.filter((_, j) => j !== i))
               }
-              className="text-danger-strong/50 dark:text-danger/50 hover:text-danger text-sm shrink-0"
+              className="text-danger-strong dark:text-danger hover:text-danger text-sm shrink-0"
             >
               <Icon name="trash" size={14} aria-hidden />
             </button>
@@ -208,7 +208,7 @@ export function TxRowSplitEditor({
         {existingSplitsCount > 0 && (
           <button
             onClick={onDelete}
-            className="text-xs py-2 px-3 rounded-xl border border-danger/30 text-danger-strong/70 dark:text-danger/70 hover:text-danger transition-colors"
+            className="text-xs py-2 px-3 rounded-xl border border-danger/30 text-danger-strong dark:text-danger hover:text-danger transition-colors"
           >
             Видалити
           </button>

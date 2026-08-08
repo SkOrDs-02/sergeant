@@ -90,7 +90,7 @@ export function FinykSection() {
                   <button
                     type="button"
                     onClick={() => removeCustomCategory(category.id)}
-                    className="text-style-label font-semibold text-danger/80 hover:text-danger shrink-0"
+                    className="text-style-label font-semibold text-danger-strong dark:text-danger hover:text-danger shrink-0"
                   >
                     Видалити
                   </button>
