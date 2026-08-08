@@ -100,7 +100,6 @@
   "apps/web/src/modules/nutrition/components/meal-sheet/MealTemplatesRow.tsx",
   "apps/web/src/modules/nutrition/pages/NutritionPantryPage.tsx",
   "apps/web/src/modules/routine/components/DayReportSheet.tsx",
-  "apps/web/src/modules/routine/components/HabitDetailSheet.tsx",
   "apps/web/src/modules/routine/components/RoutineCalendarMonthGrid.tsx",
   "apps/web/src/modules/routine/components/RoutineCalendarPanel.tsx",
   "apps/web/src/modules/routine/components/WeekDayStrip.tsx",
