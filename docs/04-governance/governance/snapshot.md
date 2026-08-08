@@ -1,7 +1,7 @@
 # Dynamic Snapshot — Governance
 
 > **Status:** Active
-> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
+> **Last touched:** 2026-08-08 by @claude. **Next review:** 2026-11-06.
 > **Owner:** @SkOrDs-02
 > **Supersedes:** —
 > **Related:** [ADR-0071](../adr/0071-dynamic-agent-snapshot.md) — rationale and design; [tools/agent-snapshot/README.md](../../../tools/agent-snapshot/README.md) — usage; §0.1 in [`.agents/skills/sergeant-start-here/SKILL.md`](../../../.agents/skills/sergeant-start-here/SKILL.md) — required entry point.
@@ -21,15 +21,15 @@ Every agent that loads `sergeant-start-here` MUST run `pnpm snapshot` before loa
 specialist skill. The script is zero-dep, offline-safe, and degrades gracefully. The
 agent reads `.kilocode/snapshot.md` and reacts to its 7 sections:
 
-| Section              | Failure mode          | Agent action when healthy                              | Agent action when degraded         |
-| -------------------- | --------------------- | ------------------------------------------------------ | ---------------------------------- |
-| Repo                 | never                 | orient                                                 | (n/a — never fails)                |
-| CI last run on main  | `gh` unavailable      | investigate if red before opening PR                   | proceed with caution, manual check |
-| Budgets              | bundle script missing | load `sergeant-deploy-and-observability` if >95%       | proceed, no live budget signal     |
-| Recent PR-ledger     | index parse error     | skim for adjacent work                                 | proceed, no recent-context signal  |
-| Hard-rule drift      | registry sync error   | re-read named rule before acting                       | proceed at own risk                |
-| Initiative deadlines | date parse error      | read named initiative file                             | proceed                            |
-| Agent hints          | never                 | apply                                                  | (n/a)                              |
+| Section              | Failure mode          | Agent action when healthy                        | Agent action when degraded         |
+| -------------------- | --------------------- | ------------------------------------------------ | ---------------------------------- |
+| Repo                 | never                 | orient                                           | (n/a — never fails)                |
+| CI last run on main  | `gh` unavailable      | investigate if red before opening PR             | proceed with caution, manual check |
+| Budgets              | bundle script missing | load `sergeant-deploy-and-observability` if >95% | proceed, no live budget signal     |
+| Recent PR-ledger     | index parse error     | skim for adjacent work                           | proceed, no recent-context signal  |
+| Hard-rule drift      | registry sync error   | re-read named rule before acting                 | proceed at own risk                |
+| Initiative deadlines | date parse error      | read named initiative file                       | proceed                            |
+| Agent hints          | never                 | apply                                            | (n/a)                              |
 
 A "degraded" section reads `[unavailable: <reason>]` — the agent MUST NOT block on
 degraded sections; it MUST log them and continue. The snapshot's job is to provide
