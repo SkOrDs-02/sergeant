@@ -1,6 +1,6 @@
 # Sergeant Brandbook & Design-система
 
-> **Last touched:** 2026-08-07 by @claude. **Next review:** 2026-11-05.
+> **Last touched:** 2026-08-08 by @claude. **Next review:** 2026-11-06.
 > **Status:** Active
 
 Дизайн-філософія Sergeant — **Soft & Organic** на теплій крем-базі.
