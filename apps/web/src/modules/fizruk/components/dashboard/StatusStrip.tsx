@@ -21,6 +21,7 @@
 
 import { Card } from "@shared/components/ui/Card";
 import { pluralUa } from "@sergeant/shared";
+import { messages } from "@shared/i18n/uk";
 import type { DashboardKpis } from "@sergeant/fizruk-domain/domain";
 import type { MuscleState } from "@sergeant/fizruk-domain";
 
@@ -63,6 +64,11 @@ function Chip({ label, value, tone, onClick, ariaLabel }: ChipProps) {
       padding="none"
       onClick={onClick}
       aria-label={ariaLabel}
+      // V-4 fix: the value line is visually truncated (`truncate` below) on
+      // narrow chips, so a hover/long-press title carries the same full
+      // sentence the aria-label already gives screen readers — sighted
+      // mouse users get the untruncated meaning too, not just AT users.
+      title={ariaLabel}
       className="flex-1 min-w-0 active:scale-[0.99] hover:opacity-90 px-3 py-2.5 text-left transition-[opacity,transform] focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
     >
       {/* AI-CONTEXT: значення першим, підпис під ним. Чип читають заради
@@ -89,8 +95,26 @@ function pluralWorkouts(n: number): string {
   return `${n} ${pluralUa(n, { one: "тренування", few: "тренування", many: "тренувань" })}`;
 }
 
+/**
+ * Full, untruncated sentence for 2+ fatigued groups — e.g. "3 групи
+ * втомлені" / "5 груп втомлено". Only ever feeds the chip's accessible
+ * name / hover title (`summariseReadiness.full`), never the visible chip
+ * face — see `compactFatiguedGroups` for why.
+ */
 function pluralFatiguedGroups(n: number): string {
   return `${n} ${pluralUa(n, { one: "група втомлена", few: "групи втомлені", many: "груп втомлено" })}`;
+}
+
+/**
+ * Fizruk audit V-4: the full sentence above (16+ characters at n≥2) does
+ * not fit the readiness chip's face on a 390px viewport — the first KPI
+ * cell rendered as «4 групи вто…», silently clipped by the `truncate` on
+ * `Chip`'s value line. This compact form stays well under that budget
+ * ("Втомлені: 10" tops out at 12 chars); the full sentence is still
+ * reachable via `aria-label`/`title` (see `Chip`).
+ */
+function compactFatiguedGroups(n: number): string {
+  return `${messages.fizruk.dashboard.fatiguedCompactPrefix}: ${n}`;
 }
 
 function formatWeightDelta(delta: number): {
@@ -113,22 +137,27 @@ function formatWeightDelta(delta: number): {
 }
 
 interface ReadinessSummary {
+  /** Short text rendered on the chip face — must survive `truncate` (V-4). */
   readonly value: string;
   readonly tone: ChipTone;
+  /** Full, untruncated sentence — feeds the chip's aria-label/title. */
+  readonly full: string;
 }
 
 function summariseReadiness(
   avoid: StatusStripRecoverySummary["avoid"],
 ): ReadinessSummary {
-  if (avoid.length === 0) return { value: "ОК", tone: "success" };
+  if (avoid.length === 0) return { value: "ОК", tone: "success", full: "ОК" };
   if (avoid.length === 1) {
     const label = avoid[0]?.label?.trim();
-    return {
-      value: label ? `${label} втомлені` : "1 група втомлена",
-      tone: "danger",
-    };
+    const value = label ? `${label} втомлені` : "1 група втомлена";
+    return { value, tone: "danger", full: value };
   }
-  return { value: pluralFatiguedGroups(avoid.length), tone: "danger" };
+  return {
+    value: compactFatiguedGroups(avoid.length),
+    tone: "danger",
+    full: pluralFatiguedGroups(avoid.length),
+  };
 }
 
 export function StatusStrip({
@@ -169,7 +198,7 @@ export function StatusStrip({
         value={readiness.value}
         tone={readiness.tone}
         onClick={onOpenBody}
-        ariaLabel={`Готовність: ${readiness.value}. Відкрити «Тіло»`}
+        ariaLabel={`Готовність: ${readiness.full}. Відкрити «Тіло»`}
       />
       <Chip
         label="Серія"

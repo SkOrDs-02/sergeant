@@ -76,7 +76,27 @@ describe("ActiveWorkoutHeader", () => {
     expect(screen.queryByRole("button", { name: /Згорнути/ })).toBeNull();
   });
 
-  it("invokes onDeleteWorkout from the Видалити button", () => {
+  // V-8 (audit): "Видалити" used to sit directly next to "Завершити" in
+  // the prime action row — same size, same gap, always visible. This
+  // guards the regression by asserting the destructive action is NOT a
+  // top-level button, and only reachable through the overflow menu.
+  it("does not render Видалити as a direct top-level button", () => {
+    render(
+      <ActiveWorkoutHeader
+        activeWorkout={baseWorkout()}
+        activeDuration={null}
+        onFinishClick={vi.fn()}
+        onDeleteWorkout={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByRole("button", { name: "Видалити" })).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Видалити тренування" }),
+    ).toBeNull();
+  });
+
+  it("invokes onDeleteWorkout from the Видалити menu item behind the overflow trigger", () => {
     const onDelete = vi.fn();
     render(
       <ActiveWorkoutHeader
@@ -87,7 +107,64 @@ describe("ActiveWorkoutHeader", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Видалити" }));
+    const trigger = screen.getByRole("button", {
+      name: "Ще дії з тренуванням",
+    });
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+
+    fireEvent.click(trigger);
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+
+    fireEvent.click(
+      screen.getByRole("menuitem", { name: "Видалити тренування" }),
+    );
     expect(onDelete).toHaveBeenCalledTimes(1);
+  });
+
+  // Guards the a11y requirements from the V-8 fix: Escape and an outside
+  // click must both close the menu without touching the destructive
+  // action, so a stray tap/press-anywhere can never look like a delete.
+  it("closes the overflow menu on Escape without invoking onDeleteWorkout", () => {
+    const onDelete = vi.fn();
+    render(
+      <ActiveWorkoutHeader
+        activeWorkout={baseWorkout()}
+        activeDuration={null}
+        onFinishClick={vi.fn()}
+        onDeleteWorkout={onDelete}
+      />,
+    );
+
+    const trigger = screen.getByRole("button", {
+      name: "Ще дії з тренуванням",
+    });
+    fireEvent.click(trigger);
+    expect(screen.getByRole("menu")).toBeInTheDocument();
+
+    fireEvent.keyDown(screen.getByRole("menu"), { key: "Escape" });
+    expect(screen.queryByRole("menu")).toBeNull();
+    expect(onDelete).not.toHaveBeenCalled();
+  });
+
+  it("closes the overflow menu on an outside click without invoking onDeleteWorkout", () => {
+    const onDelete = vi.fn();
+    render(
+      <ActiveWorkoutHeader
+        activeWorkout={baseWorkout()}
+        activeDuration={null}
+        onFinishClick={vi.fn()}
+        onDeleteWorkout={onDelete}
+      />,
+    );
+
+    const trigger = screen.getByRole("button", {
+      name: "Ще дії з тренуванням",
+    });
+    fireEvent.click(trigger);
+    expect(screen.getByRole("menu")).toBeInTheDocument();
+
+    fireEvent.mouseDown(document.body);
+    expect(screen.queryByRole("menu")).toBeNull();
+    expect(onDelete).not.toHaveBeenCalled();
   });
 });

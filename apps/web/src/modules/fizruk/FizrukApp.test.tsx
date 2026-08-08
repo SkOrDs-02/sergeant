@@ -124,8 +124,10 @@ describe("FizrukApp smoke tests", () => {
 
   it("renders the bottom navigation bar on the dashboard page", () => {
     render(<FizrukApp />);
-    // ModuleBottomNav renders nav items for fizruk — check for at least one
-    // The nav is shown when page !== 'atlas' && page !== 'exercise'
+    // ModuleBottomNav renders nav items for fizruk — check for at least one.
+    // Since the V-7 chrome audit fix the nav is shown on every Fizruk page
+    // (see FizrukApp.extra.test.tsx for the per-page coverage, including
+    // Атлас/Вправа/Заміри).
     const nav = screen.getByRole("navigation");
     expect(nav).toBeInTheDocument();
   });

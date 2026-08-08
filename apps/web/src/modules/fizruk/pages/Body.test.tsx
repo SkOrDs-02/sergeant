@@ -158,6 +158,27 @@ describe("Body page", () => {
     expect(screen.getByText("Тренди ще збираються")).toBeInTheDocument();
   });
 
+  // V-10 (fizruk deep audit, 2026-08-07): «Відновлення й фокус» is the
+  // module's canonical feature (canon fizruk §4) — it used to render AFTER
+  // the entry form and collapsed by default, so it lost priority on its own
+  // page. `RecoveryFocusCard` is only mounted when `onOpenAtlas` is passed
+  // (see the component-level module comment above), so this test supplies
+  // it and asserts both the new order and the expanded-by-default state.
+  it("renders RecoveryFocusCard before the entry form, expanded by default (V-10)", () => {
+    render(<Body onOpenAtlas={vi.fn()} />);
+    const recoveryHeading = screen.getByRole("heading", {
+      level: 2,
+      name: /Відновлення й фокус/,
+    });
+    const formHeading = screen.getByText("Записати сьогодні");
+    expect(
+      recoveryHeading.compareDocumentPosition(formHeading) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    // Expanded by default — the legend is visible without an extra tap.
+    expect(screen.getByText("готово")).toBeInTheDocument();
+  });
+
   it("wires deltaDirection per metric: neutral for weight, up-is-good for sleep/energy/mood", () => {
     mockDailyLogEntries = [
       { id: "dl1", at: "2026-06-18T08:00:00Z", weightKg: 84 },

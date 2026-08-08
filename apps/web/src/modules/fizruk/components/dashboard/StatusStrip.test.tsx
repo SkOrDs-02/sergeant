@@ -91,7 +91,16 @@ describe("StatusStrip", () => {
     expect(node.className).toContain("text-danger");
   });
 
-  it("pluralises Готовність when several muscle groups are fatigued", () => {
+  /**
+   * V-4 audit fix: `pluralUa`'s full "3 групи втомлені" sentence (16+
+   * chars) got silently cut off by the chip's `truncate` on a 390px
+   * viewport ("4 групи вто…"). The chip face must now show the short
+   * "Втомлені: N" form — this test pins the exact compact text so a
+   * future regression back to the full sentence fails loudly, rather
+   * than passing because jsdom (unlike a real browser) doesn't lay out
+   * CSS width and can't itself detect the visual clipping.
+   */
+  it("shows a compact readiness value when several muscle groups are fatigued (V-4)", () => {
     render(
       <StatusStrip
         kpis={makeKpis()}
@@ -107,7 +116,19 @@ describe("StatusStrip", () => {
         onOpenWorkouts={() => {}}
       />,
     );
-    expect(screen.getByText("3 групи втомлені")).toBeDefined();
+    const value = screen.getByText("Втомлені: 3");
+    expect(value).toBeDefined();
+    // Guards the underlying defect directly: the full sentence is far
+    // longer than what a quarter of a 390px strip can render without
+    // ellipsis-clipping (audit measured the break around 16 chars).
+    expect(value.textContent?.length).toBeLessThanOrEqual(12);
+    // Full sentence must still be reachable — accessible name (screen
+    // readers) and hover title (sighted mouse users) both carry it.
+    const chip = screen.getByLabelText(/Готовність: 3 групи втомлені/);
+    expect(chip).toHaveAttribute(
+      "title",
+      expect.stringContaining("3 групи втомлені"),
+    );
   });
 
   it("формує ТИЖНЕВИЙ стрік з українською плюралізацією", () => {

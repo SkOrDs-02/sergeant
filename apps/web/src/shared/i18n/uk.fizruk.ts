@@ -22,6 +22,16 @@ export const fizrukPageMessages = {
     finish: "Завершити старе й почати нове",
     discard: "Викинути старе й почати нове",
   },
+  // Header band of the active/finished-workout panel
+  // (`ActiveWorkoutHeader.tsx`). V-8 audit fix: "Видалити" moved off the
+  // primary action row into an overflow menu — these are the trigger +
+  // menu-item labels for that menu (the "Завершити"/"Згорнути" primary
+  // action itself stays a raw literal like the rest of this
+  // already-allowlisted component; see `eslint.i18n-allowlist.json`).
+  sessionHeader: {
+    moreActionsAriaLabel: "Ще дії з тренуванням",
+    deleteWorkout: "Видалити тренування",
+  },
   restTimer: {
     add: "Додати",
     subtract: "Відняти",
@@ -105,6 +115,17 @@ export const fizrukPageMessages = {
     chooseTemplate: "Обрати шаблон",
     noTemplates: "Шаблонів поки немає. Створи їх у Фізруку → Тренування.",
   },
+  // Dashboard status strip (`components/dashboard/StatusStrip.tsx`) — the
+  // readiness chip's compact face value when 2+ muscle groups are
+  // fatigued (fizruk audit V-4: the full "N груп(и) втомлені" sentence
+  // doesn't fit the chip on a 390px viewport and got silently clipped by
+  // `truncate`). The full sentence still reaches the user via the chip's
+  // aria-label/title — this prefix only composes the short on-screen form
+  // ("Втомлені: 4").
+  dashboard: {
+    fatiguedCompactPrefix: "Втомлені",
+  },
+
   // Progress page (`pages/Progress.tsx`) — analytics dashboard, PR board.
   progress: {
     title: "Прогрес",
@@ -230,6 +251,12 @@ export const fizrukPageMessages = {
     moreFieldsSuffix: "ще",
     collapseFieldsLabel: "Згорнути",
     showAllFieldsAriaSuffix: "показники запису від",
+    // V-9: форма «Додати замір» показує одразу лише 3 найчастіші поля
+    // (вага, % жиру, талія); решта 11 — за цим тоглом. Окремі ключі від
+    // `moreFieldsSuffix`/`collapseFieldsLabel` вище навмисно — та пара
+    // ховає ЗБЕРЕЖЕНІ поля рядка історії, ця — порожні поля форми ДОДАВАННЯ.
+    addFormMoreFields: "Більше полів",
+    addFormFewerFields: "Менше полів",
   },
 
   // Body page (`pages/Body.tsx`) — daily weight / sleep / wellbeing log.

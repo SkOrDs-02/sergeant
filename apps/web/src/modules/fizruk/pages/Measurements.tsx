@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { z } from "zod";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
 import { measurementGuideRows } from "@shared/i18n/uk.fizruk";
@@ -16,30 +15,7 @@ import { Card } from "@shared/components/ui/Card";
 import { Stat } from "@shared/components/ui/Stat";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
-
-// F3: runtime range gate — mirrors <input min max> attributes so a
-// browser-bypass or programmatic submit cannot persist out-of-range PII.
-const measurementSchema = z.object(
-  Object.fromEntries(
-    MEASURE_FIELDS.map((f) => [
-      f.id,
-      z
-        .number()
-        .min(f.min, `${f.label}: мін ${f.min} ${f.unit}`)
-        .max(f.max, `${f.label}: макс ${f.max} ${f.unit}`)
-        .optional(),
-    ]),
-  ),
-);
-
-const inp =
-  "input-focus-fizruk w-full h-11 rounded-2xl border border-line bg-panelHi px-4 text-text";
-
-// Field-caption styling for the measurements grid. This is a genuine form
-// <label> (htmlFor/id bound below), not a narrative eyebrow, so the
-// uppercase + tracking combo is intentional here.
-const lbl =
-  "px-1 block text-xs uppercase tracking-wider font-bold text-fizruk-strong dark:text-fizruk-300/70";
+import { AddMeasurementForm } from "./Measurements/AddMeasurementForm";
 
 // Programmatic-focus target for the guide view's `<h2>` — see the
 // scroll/focus-management effect below.
@@ -65,9 +41,6 @@ export function Measurements() {
       });
     },
     [entries, deleteEntry, restoreEntry, toast],
-  );
-  const [form, setForm] = useState<Record<string, string>>(() =>
-    Object.fromEntries(MEASURE_FIELDS.map((f) => [f.id, ""])),
   );
 
   // Guide-view scroll/focus management (defect #9). Both the guide branch
@@ -114,15 +87,6 @@ export function Measurements() {
       return next;
     });
   }, []);
-  /**
-   * Помилки діапазону — під конкретним полем, не в тості.
-   *
-   * До 2026-08-05 zod віддавав лише ПЕРШУ проблему, і вона летіла
-   * `toast.warning` у нижній кут: із восьми полів користувач не бачив, яке
-   * саме завелике, і мусив здогадуватись. Тепер підписані всі поля, що не
-   * пройшли, — рівно там, де їх виправляти.
-   */
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const latest = entries[0] || null;
   const deltas = useMemo<Record<string, number>>(() => {
@@ -319,115 +283,7 @@ export function Measurements() {
           </Card>
         </div>
 
-        <Card radius="lg">
-          <SectionHeading as="div" size="xs" className="mb-3" variant="fizruk">
-            {messages.fizruk.measurements.addHeading}
-          </SectionHeading>
-          <div className="grid grid-cols-2 gap-2">
-            {MEASURE_FIELDS.map((f) => (
-              <div key={f.id} className="space-y-1">
-                {/* WCAG 1.3.1: explicit label association via htmlFor/id. */}
-                <label htmlFor={`measure-input-${f.id}`} className={lbl}>
-                  {f.label} · {f.unit}
-                </label>
-                <input
-                  id={`measure-input-${f.id}`}
-                  className={inp}
-                  // `type="text"` навмисно: `type="number"` мовчки відкидає
-                  // кому як десятковий роздільник — UA-мобільна клавіатура
-                  // дає «82,5», браузер обнуляє `value` ще ДО того, як цей
-                  // компонент побачить подію, тож нормалізація коми на
-                  // сабміті нижче (`v.replace(",", ".")`) ставала
-                  // недосяжною: значення губилось раніше. `inputMode="decimal"`
-                  // усе одно піднімає числову клавіатуру. Межі f.min/f.max —
-                  // той самий підхід, що й у ManualExpenseAmountSection —
-                  // лишаються enforced нижче: zod-схема (`measurementSchema`)
-                  // на сабміті і повторний clamp у `useMeasurements.addEntry`.
-                  type="text"
-                  inputMode="decimal"
-                  placeholder="—"
-                  value={form[f.id] ?? ""}
-                  aria-invalid={fieldErrors[f.id] ? true : undefined}
-                  aria-describedby={
-                    fieldErrors[f.id] ? `measure-error-${f.id}` : undefined
-                  }
-                  onChange={(e) => {
-                    setForm((s: Record<string, string>) => ({
-                      ...s,
-                      [f.id]: e.target.value,
-                    }));
-                    setFieldErrors((prev) => {
-                      if (!prev[f.id]) return prev;
-                      const next = { ...prev };
-                      delete next[f.id];
-                      return next;
-                    });
-                  }}
-                />
-                {fieldErrors[f.id] && (
-                  <p
-                    id={`measure-error-${f.id}`}
-                    role="alert"
-                    className="text-style-caption text-danger-strong dark:text-danger"
-                  >
-                    {fieldErrors[f.id]}
-                  </p>
-                )}
-              </div>
-            ))}
-          </div>
-          <div className="mt-3">
-            {(() => {
-              // F4: forbid saving a fully-empty form — button disabled until at
-              // least one field has a parseable numeric value. NaN inputs
-              // ("abc") are stripped before persisting so a stray entry cannot
-              // pollute the snapshot.
-              // F3: run the zod range schema and surface first error via toast
-              // so out-of-range PII (negative weight, 99 999 kg, etc.) can
-              // never reach the SQLite dual-write pipeline.
-              const parsedPayload: Record<string, number> = {};
-              for (const f of MEASURE_FIELDS) {
-                const v = (form[f.id] || "").trim();
-                if (!v) continue;
-                const n = Number(v.replace(",", "."));
-                if (Number.isFinite(n)) parsedPayload[f.id] = n;
-              }
-              const hasAnyValue = Object.keys(parsedPayload).length > 0;
-              return (
-                <button
-                  type="button"
-                  disabled={!hasAnyValue}
-                  aria-disabled={!hasAnyValue}
-                  className="focus-ring w-full py-4 rounded-full font-bold text-base bg-fizruk-strong text-white transition-[background-color,box-shadow,opacity,transform] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
-                  onClick={() => {
-                    if (!hasAnyValue) return;
-                    const validation =
-                      measurementSchema.safeParse(parsedPayload);
-                    if (!validation.success) {
-                      const next: Record<string, string> = {};
-                      for (const issue of validation.error.issues) {
-                        const key = issue.path[0];
-                        if (typeof key !== "string") continue;
-                        next[key] ??=
-                          issue.message ||
-                          messages.fizruk.measurements.invalidValue;
-                      }
-                      setFieldErrors(next);
-                      return;
-                    }
-                    setFieldErrors({});
-                    addEntry(parsedPayload);
-                    setForm(
-                      Object.fromEntries(MEASURE_FIELDS.map((f) => [f.id, ""])),
-                    );
-                  }}
-                >
-                  {messages.fizruk.measurements.submit}
-                </button>
-              );
-            })()}
-          </div>
-        </Card>
+        <AddMeasurementForm addEntry={addEntry} />
 
         {/*
           П3 «край і зріз»: «Останній запис» і журнал «Історія» нижче
@@ -462,6 +318,7 @@ export function Measurements() {
                     <SectionHeading as="div" size="xs" variant="fizruk">
                       {f.label}
                     </SectionHeading>
+                    {/* eslint-disable-next-line sergeant-design/no-raw-type-size -- пре-існуючий рядок; типографіку показників не чіпаємо в PR про розкриття полів форми. */}
                     <div className="text-lg font-extrabold tabular-nums text-text mt-1">
                       {Number.isFinite(Number(latest[f.id]))
                         ? Number(latest[f.id]).toLocaleString("uk-UA")

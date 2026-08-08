@@ -35,6 +35,15 @@ vi.mock("../../hooks/useInjuries", () => ({
   useInjuries: () => ({ mark: markInjuries }),
 }));
 
+const addDailyLogEntry = vi.fn();
+let dailyLogEntries: Array<Record<string, unknown>> = [];
+vi.mock("../../hooks/useDailyLog", () => ({
+  useDailyLog: () => ({
+    entries: dailyLogEntries,
+    addEntry: addDailyLogEntry,
+  }),
+}));
+
 // useDialogFocusTrap — no-op in jsdom.
 vi.mock("@shared/hooks/useDialogFocusTrap", () => ({
   useDialogFocusTrap: vi.fn(),
@@ -43,6 +52,7 @@ vi.mock("@shared/hooks/useDialogFocusTrap", () => ({
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  dailyLogEntries = [];
 });
 
 function makeFlash(over: Partial<FinishFlashState> = {}): FinishFlashState {
@@ -186,6 +196,35 @@ describe("WorkoutFinishSheets — wellbeing step", () => {
       step: "injury",
       savedWellbeing: { energy: 4, mood: 5 },
     });
+  });
+});
+
+describe("WorkoutFinishSheets — самопочуття доїжджає в журнал Body", () => {
+  // До 2026-08 це були два незалежні входи одного факту: після
+  // «енергія 4 / настрій 5» тут форма самопочуття в Body лишалась
+  // порожня (аудит L-10.3).
+  it("«Зберегти» кладе оцінку і в денний журнал", () => {
+    renderSheets(makeFlash({ energy: 4, mood: 5 }), vi.fn());
+    fireEvent.click(screen.getByRole("button", { name: "Зберегти" }));
+    expect(addDailyLogEntry).toHaveBeenCalledWith({
+      energyLevel: 4,
+      moodScore: 5,
+    });
+  });
+
+  it("не чіпає журнал, коли нічого не оцінено", () => {
+    renderSheets(makeFlash({ energy: null, mood: null }), vi.fn());
+    fireEvent.click(screen.getByRole("button", { name: "Зберегти" }));
+    expect(addDailyLogEntry).not.toHaveBeenCalled();
+  });
+
+  it("не переписує сьогоднішню оцінку, зроблену вручну в Body", () => {
+    dailyLogEntries = [
+      { at: new Date().toISOString(), energyLevel: 2, moodScore: null },
+    ];
+    renderSheets(makeFlash({ energy: 4, mood: 5 }), vi.fn());
+    fireEvent.click(screen.getByRole("button", { name: "Зберегти" }));
+    expect(addDailyLogEntry).not.toHaveBeenCalled();
   });
 });
 

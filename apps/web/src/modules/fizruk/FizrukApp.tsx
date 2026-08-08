@@ -25,7 +25,7 @@ import {
   useWorkouts,
 } from "./hooks/useWorkouts";
 import { useFizrukQuickStatsWriter } from "./hooks/useFizrukQuickStatsWriter";
-import { FIZRUK_NAV } from "./shell/fizrukNav";
+import { FIZRUK_NAV, fizrukNavActiveId } from "./shell/fizrukNav";
 import { FizrukHeader } from "./shell/FizrukHeader";
 import { FizrukRouter } from "./shell/FizrukRouter";
 import { type FizrukPage } from "./shell/fizrukRoute";
@@ -126,16 +126,23 @@ export default function FizrukApp({
     if (fizrukFirstRun.firstRun) fizrukFirstRun.markSeen();
   }, [fizrukFirstRun]);
 
-  const showBottomNav = page !== "atlas" && page !== "exercise";
-
-  // FAB (fab-and-manual-income spec §5): «Почати тренування» коли немає
-  // активної сесії; «Продовжити» + перехід одразу в log-режим, коли є —
-  // canonical selector, той самий, що й Dashboard hero-картка.
+  // Fizruk chrome audit V-7: Атлас і Вправа used to hide the bottom nav
+  // entirely, leaving those two routes as chrome dead-ends reachable only
+  // via the contextual «←» back arrow (see `FizrukHeader`). They're full
+  // peer screens like every other Fizruk page, not modal steps, so the
+  // module nav — and with it lateral navigation to any other section —
+  // now stays present everywhere. `fizrukNavActiveId` resolves which tab
+  // should read as active on routes that don't own one of their own
+  // (Атлас → «Моє тіло», Вправа → «Тренування», …).
   const activeWorkoutId = useActiveFizrukWorkout();
   const handleFabClick = () => {
     navigate(activeWorkoutId ? `workout/${activeWorkoutId}` : "workouts");
   };
-  const showFab = showBottomNav && page !== "workouts" && page !== "workout";
+  // FAB (fab-and-manual-income spec §5): «Почати тренування» коли немає
+  // активної сесії; «Продовжити» + перехід одразу в log-режим, коли є —
+  // canonical selector, той самий, що й Dashboard hero-картка. Hidden only
+  // on the two pages that already manage workouts themselves.
+  const showFab = page !== "workouts" && page !== "workout";
 
   // Contextual back-button targets for the three sub-pages that show
   // a `← <label>` arrow instead of the module's "back to hub" arrow.
@@ -188,15 +195,13 @@ export default function FizrukApp({
           />
         }
         nav={
-          showBottomNav ? (
-            <ModuleBottomNav
-              items={FIZRUK_NAV}
-              activeId={page}
-              onChange={(id) => navigate(id)}
-              module="fizruk"
-              ariaLabel={messages.nav.fizrukSections}
-            />
-          ) : null
+          <ModuleBottomNav
+            items={FIZRUK_NAV}
+            activeId={fizrukNavActiveId(page)}
+            onChange={(id) => navigate(id)}
+            module="fizruk"
+            ariaLabel={messages.nav.fizrukSections}
+          />
         }
       >
         <FizrukRouter

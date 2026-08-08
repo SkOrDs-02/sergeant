@@ -163,6 +163,7 @@ export function Body({ onOpenAtlas }: BodyProps) {
               <div className="text-style-caption text-subtle">
                 {messages.fizruk.body.weight}
               </div>
+              {/* eslint-disable-next-line sergeant-design/no-raw-type-size -- пре-існуюча типографіка КПІ-смуги; три колонки мусять лишитись однакової висоти, і міняти їх шкалу в PR про порядок секцій — не те місце. */}
               <div className="text-base font-extrabold text-text tabular-nums">
                 {stats.latestWeight != null ? (
                   <Measure
@@ -179,6 +180,7 @@ export function Body({ onOpenAtlas }: BodyProps) {
               <div className="text-style-caption text-subtle">
                 {messages.fizruk.body.sleep}
               </div>
+              {/* eslint-disable-next-line sergeant-design/no-raw-type-size -- пре-існуюча типографіка КПІ-смуги; три колонки мусять лишитись однакової висоти, і міняти їх шкалу в PR про порядок секцій — не те місце. */}
               <div className="text-base font-extrabold text-text tabular-nums">
                 {/* `toFixed(1)` давав КРАПКУ («7.5 год») посеред
                     інтерфейсу, де всюди кома. `Measure` бере роздільник
@@ -198,6 +200,7 @@ export function Body({ onOpenAtlas }: BodyProps) {
               <div className="text-style-caption text-subtle">
                 {messages.fizruk.body.energyShort}
               </div>
+              {/* eslint-disable-next-line sergeant-design/no-raw-type-size -- пре-існуюча типографіка КПІ-смуги; три колонки мусять лишитись однакової висоти, і міняти їх шкалу в PR про порядок секцій — не те місце. */}
               <div className="text-base font-extrabold text-text tabular-nums">
                 {/* Defect #8: computed 7-day average energy already lived
                     in `stats` but never rendered anywhere on the page —
@@ -216,11 +219,21 @@ export function Body({ onOpenAtlas }: BodyProps) {
           </div>
         </div>
 
+        {/*
+          V-10 (fizruk deep audit, 2026-08-07): «Відновлення й фокус» — ключова
+          фіча модуля (канон fizruk §4) — раніше рендерилась ПІСЛЯ форми
+          запису і за замовчуванням згорнутою, тож на «своїй» сторінці
+          програвала пріоритет вводу даних. Тепер вона стоїть першою і
+          відкрита одразу (`RecoveryFocusCard` default `open=true`); форма
+          запису лишається розгорнутою нижче — це швидкий щоденний ритуал
+          (вага/сон/енергія за секунди), а не другорядна дія, тож ховати її
+          за додатковим кліком сенсу не має.
+        */}
+        {onOpenAtlas && <RecoveryFocusCard onOpenAtlas={onOpenAtlas} />}
+
         <BodyEntryForm onSubmitEntry={handleSubmitEntry} />
 
         <InjuryManager />
-
-        {onOpenAtlas && <RecoveryFocusCard onOpenAtlas={onOpenAtlas} />}
 
         {(
           [
