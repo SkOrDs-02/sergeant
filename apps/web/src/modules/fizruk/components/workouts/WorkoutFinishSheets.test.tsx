@@ -8,7 +8,13 @@
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { flatMatch } from "@shared/testing/numberText";
-import { render, screen, cleanup, fireEvent } from "@testing-library/react";
+import {
+  render,
+  screen,
+  cleanup,
+  fireEvent,
+  within,
+} from "@testing-library/react";
 import {
   WorkoutFinishSheets,
   type FinishFlashState,
@@ -184,11 +190,60 @@ describe("WorkoutFinishSheets — wellbeing step", () => {
 });
 
 describe("WorkoutFinishSheets — injury step", () => {
-  it("offers all 18 canonical groups and can skip", () => {
+  // Порядок груп — не косметика. `InjurySection.tsx` ставить суглоби
+  // першими за AI-CONTEXT у своїй шапці (типові травми на силовій —
+  // суглобові; мʼязова модель — провал аудиту E-4, ADR-0083). Цей аркуш
+  // до 2026-08-08 робив навпаки: 27 зон плоскою стрічкою з 18 мʼязами
+  // попереду, тож при `max-h 520px` під згином лишались усі девʼять
+  // суглобів і обидві кнопки дій.
+  it("показує суглоби без розкриття, а мʼязи — за ним", () => {
+    renderSheets(makeFlash({ step: "injury" }));
+    expect(screen.getByText("Щось болить?")).toBeInTheDocument();
+
+    expect(screen.getByRole("button", { name: "Коліно" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Поперек" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Груди" })).toBeNull();
+  });
+
+  it("розкриття «Мʼязи» відкриває мʼязову половину клавіатури зон", () => {
+    renderSheets(makeFlash({ step: "injury" }));
+    const toggle = screen.getByRole("button", { name: /Мʼязи/ });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+
+    fireEvent.click(toggle);
+
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("button", { name: "Груди" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Квадрицепс" }),
+    ).toBeInTheDocument();
+    // Суглоби нікуди не діваються — розкриття додає, а не перемикає.
+    expect(screen.getByRole("button", { name: "Коліно" })).toBeInTheDocument();
+  });
+
+  it("рахує обрані позначки в кнопці збереження", () => {
+    renderSheets(makeFlash({ step: "injury", injurySites: ["knee", "chest"] }));
+    expect(
+      screen.getByRole("button", { name: "Зберегти позначки (2)" }),
+    ).toBeInTheDocument();
+  });
+
+  // Позначений мʼяз може лежати у згорнутій групі — тоді єдиний слід про
+  // нього це лічильник на самому розкритті. Без нього людина бачить
+  // «Зберегти позначки (1)» і жодного підсвіченого чипа на екрані.
+  it("показує кількість обраних мʼязів на згорнутому розкритті", () => {
+    renderSheets(makeFlash({ step: "injury", injurySites: ["chest"] }));
+    const toggle = screen.getByRole("button", { name: /Мʼязи/ });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    // Саме окремий вузол лічильника, не `textContent.toContain("1")`:
+    // у кнопці поруч живе «18 зон», тож підрядкова перевірка проходила б
+    // і без лічильника взагалі.
+    expect(within(toggle).getByText("1")).toBeInTheDocument();
+  });
+
+  it("«Нічого не позначати» веде до саммарі", () => {
     const setFinishFlash = vi.fn();
     renderSheets(makeFlash({ step: "injury" }), setFinishFlash);
-    expect(screen.getByText("Щось болить?")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Груди" })).toBeInTheDocument();
     fireEvent.click(
       screen.getByRole("button", { name: "Нічого не позначати" }),
     );

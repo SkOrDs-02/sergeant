@@ -113,6 +113,21 @@ describe("StreakIndicator — same-tab storage refresh (F10)", () => {
     expect(document.body.textContent).toContain("5");
   });
 
+  // Бейдж підписаний «днів поспіль», а стрік Фізрука рахується в ТИЖНЯХ
+  // (`computeWeeklyStreakWeeks`). Поки він потрапляв у той самий `Math.max`,
+  // сім тижнів підряд ставали «7 днів поспіль» і в бейджі, і в
+  // `streak_milestone_reached` (аудит L-8, 2026-08-07).
+  it("не бере тижневий стрік Фізрука у бейдж днів", () => {
+    localStorage.setItem(
+      STORAGE_KEYS.FIZRUK_QUICK_STATS,
+      JSON.stringify({ streak: 9 }),
+    );
+
+    const { container } = render(<StreakIndicator />);
+
+    expect(container.firstChild).toBeNull();
+  });
+
   it("re-reads streak after storageUpdated signal fires with updated LS data", () => {
     localStorage.setItem(
       STORAGE_KEYS.ROUTINE_QUICK_STATS,

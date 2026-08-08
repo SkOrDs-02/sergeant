@@ -29,6 +29,22 @@ export function pluralDays(n: number): string {
   return pluralUa(n, DAYS_FORMS);
 }
 
+const WEEKS_FORMS: UaPluralForms = {
+  one: "тиждень",
+  few: "тижні",
+  many: "тижнів",
+};
+
+export function pluralWeeks(n: number): string {
+  return pluralUa(n, WEEKS_FORMS);
+}
+
+const SETS_FORMS: UaPluralForms = { one: "сет", few: "сети", many: "сетів" };
+
+export function pluralSets(n: number): string {
+  return pluralUa(n, SETS_FORMS);
+}
+
 const TIMES_FORMS: UaPluralForms = { one: "раз", few: "рази", many: "разів" };
 
 export function pluralTimes(n: number): string {

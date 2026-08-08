@@ -23,7 +23,7 @@
  */
 
 import { formatMoney } from "./formatMoney";
-import { pluralDays } from "../utils/ukrainianPlural";
+import { pluralDays, pluralWeeks } from "../utils/ukrainianPlural";
 
 export const QUICK_STATS_MODULE_IDS = [
   "finyk",
@@ -115,7 +115,12 @@ export function selectModulePreview(
       const streak = asFiniteNumber(stats["streak"]);
       return {
         main: weekWorkouts ? `${weekWorkouts} трен.` : null,
-        sub: streak ? `Серія: ${streak} ${pluralDays(streak)}` : null,
+        // Фізрук рахує серію в ТИЖНЯХ (`computeWeeklyStreakWeeks`), а плитка
+        // підписувала те саме число як «днів» — на одному екрані шляху
+        // користувача стояли «Серія: 5 днів» у хабі й «0 тижнів» у модулі
+        // (аудит L-8, 2026-08-07). Одиниця тут має збігатися з тією, яку
+        // повернув домен, а не з сусіднім модулем.
+        sub: streak ? `Серія: ${streak} ${pluralWeeks(streak)}` : null,
       };
     }
     case "routine": {

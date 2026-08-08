@@ -311,6 +311,8 @@ export const fizrukPageMessages = {
     submit: "Позначити біль",
     groupZones: "Суглоби й хребет",
     groupMuscles: "Мʼязи",
+    saveCta: "Зберегти позначки",
+    musclesToggleHint: "розгорнути",
     markedSuffix: "уже позначено",
     today: "сьогодні",
     yesterday: "вчора",
