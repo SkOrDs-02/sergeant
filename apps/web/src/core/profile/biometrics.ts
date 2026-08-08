@@ -74,6 +74,24 @@ export const ACTIVITY_LEVELS = [
 ] as const;
 export type ActivityLevel = (typeof ACTIVITY_LEVELS)[number];
 
+/**
+ * Valid input ranges for height/weight — single source of truth shared by
+ * BOTH the `BiometricsSchema` bounds below AND `BiometricsSection.tsx`'s
+ * `<Input min max>` attributes (imported from here, not redeclared).
+ *
+ * Audit finding D5 (profile-settings-deep-audit, 2026-08-08): before this,
+ * the same two numbers lived in THREE places — the UI's local constants,
+ * the i18n error copy, and inline numbers in this schema — and only the
+ * first two were kept in lockstep by a pin test. A schema left behind on
+ * an old range is the worst kind of drift: `readBiometrics()` parses every
+ * read through `safeReadLSValidated`, which falls back to
+ * `BIOMETRICS_DEFAULT` — silently dropping the ENTIRE record (birth date,
+ * sex, activity level, weight, not just the one out-of-sync field) — the
+ * moment a value inside the new-but-not-yet-validated range gets written.
+ */
+export const HEIGHT_CM_RANGE = { min: 80, max: 260 } as const;
+export const WEIGHT_KG_RANGE = { min: 20, max: 400 } as const;
+
 const SexSchema = z.enum(SEX_VALUES).nullable();
 const ActivityLevelSchema = z.enum(ACTIVITY_LEVELS).nullable();
 const IsoDateSchema = z
@@ -83,11 +101,19 @@ const IsoDateSchema = z
 const IsoTimestampSchema = z.string().min(1);
 
 export const BiometricsSchema = z.object({
-  heightCm: z.number().min(80).max(260).nullable(),
+  heightCm: z
+    .number()
+    .min(HEIGHT_CM_RANGE.min)
+    .max(HEIGHT_CM_RANGE.max)
+    .nullable(),
   birthDate: IsoDateSchema,
   sex: SexSchema,
   activityLevel: ActivityLevelSchema,
-  weightKg: z.number().min(20).max(400).nullable(),
+  weightKg: z
+    .number()
+    .min(WEIGHT_KG_RANGE.min)
+    .max(WEIGHT_KG_RANGE.max)
+    .nullable(),
   /**
    * ISO timestamp when `weightKg` was last set. Used as the LWW marker
    * for Profile ↔ Fizruk weight sync — the latest write wins,

@@ -9,6 +9,7 @@ const performSearch = vi.hoisted(() => vi.fn<(q: string) => Hit[]>(() => []));
 const navigate = vi.hoisted(() => vi.fn());
 const emitHubBus = vi.hoisted(() => vi.fn());
 const openHubModuleWithAction = vi.hoisted(() => vi.fn());
+const announceSettingsHashChange = vi.hoisted(() => vi.fn());
 const hapticTap = vi.hoisted(() => vi.fn());
 const askInline = vi.hoisted(() => vi.fn(() => Promise.resolve()));
 const resetInline = vi.hoisted(() => vi.fn());
@@ -22,7 +23,10 @@ vi.mock("react-router-dom", async (orig) => {
 });
 vi.mock("./searchSources", () => ({ performSearch }));
 vi.mock("@shared/lib/modules/hubBus", () => ({ emitHubBus }));
-vi.mock("@shared/lib/modules/hubNav", () => ({ openHubModuleWithAction }));
+vi.mock("@shared/lib/modules/hubNav", () => ({
+  openHubModuleWithAction,
+  announceSettingsHashChange,
+}));
 vi.mock("@shared/lib/adapters/haptic", () => ({ hapticTap }));
 vi.mock("../hubSearchEngine", () => ({
   getRecentQueries,
@@ -127,16 +131,72 @@ describe("useSearchEngine", () => {
     expect(onClose).not.toHaveBeenCalled();
   });
 
-  it("openHit: settings hit navigates with tab=settings", () => {
+  it("openHit: settings hit navigates to the dedicated /settings route", () => {
     const { result } = setup();
     act(() =>
       result.current.openHit(
         hit({ id: "s1", module: "settings", target: { kind: "settings" } }),
       ),
     );
-    expect(navigate).toHaveBeenCalled();
-    const arg = navigate.mock.calls[0]![0] as { search: string };
-    expect(arg.search).toContain("tab=settings");
+    expect(navigate).toHaveBeenCalledWith({ pathname: "/settings", hash: "" });
+  });
+
+  // L-13 (audit 2026-08-08): `hit.target.sectionId` was computed by
+  // `searchSettings.ts` for every settings hit but silently dropped here —
+  // clicking a ⌘K settings result (e.g. "Підписка та план") always landed
+  // on whichever inner Settings tab happened to be open, never on the
+  // section the user actually searched for. Regression guard: a settings
+  // hit that carries `sectionId` must navigate with the matching
+  // `#settings-<id>` hash — the same deep-link shape `HubSettingsPage`
+  // already reads on mount.
+  it("openHit: settings hit with sectionId navigates to its #settings-<id> hash and re-announces hashchange (audit finding #2a)", () => {
+    const { result } = setup();
+    act(() =>
+      result.current.openHit(
+        hit({
+          id: "s2",
+          module: "settings",
+          target: { kind: "settings", sectionId: "plan" },
+        }),
+      ),
+    );
+    expect(navigate).toHaveBeenCalledWith({
+      pathname: "/settings",
+      hash: "#settings-plan",
+    });
+    // Audit finding #2a: react-router's `navigate()` alone never fires a
+    // native `hashchange` event, so `SettingsGroup`'s anchor auto-open
+    // (which only listens for that event) silently no-op'd on every ⌘K
+    // settings hit landing on an ALREADY-mounted Settings page. This is
+    // the regression guard for the manual re-announce that fixes it —
+    // `announceSettingsHashChange` (`hubNav.ts`) is the shared helper that
+    // does the actual `window.dispatchEvent(new Event("hashchange"))`,
+    // covered directly by that module's own tests.
+    expect(announceSettingsHashChange).toHaveBeenCalledTimes(1);
+  });
+
+  // Audit finding #2b: the previous version reused the CURRENT
+  // `window.location.pathname`, so from a module route (`/finyk`, …) the
+  // navigation silently landed on `/finyk?tab=settings#settings-…` — a URL
+  // the Finyk module never reads — instead of anywhere near Settings.
+  it("openHit: settings hit always targets /settings, regardless of the current route", () => {
+    const original = `${window.location.pathname}${window.location.search}`;
+    window.history.pushState(null, "", "/finyk?range=custom");
+    const { result } = setup();
+    act(() =>
+      result.current.openHit(
+        hit({
+          id: "s3",
+          module: "settings",
+          target: { kind: "settings", sectionId: "notifications" },
+        }),
+      ),
+    );
+    expect(navigate).toHaveBeenCalledWith({
+      pathname: "/settings",
+      hash: "#settings-notifications",
+    });
+    window.history.pushState(null, "", original);
   });
 
   it("openHit: assistant with capability example opens chat", () => {

@@ -3,6 +3,8 @@ import { STORAGE_KEYS } from "@sergeant/shared";
 import {
   BIOMETRICS_DEFAULT,
   BiometricsSchema,
+  HEIGHT_CM_RANGE,
+  WEIGHT_KG_RANGE,
   computeAgeYears,
   isBiometricsCompleteForTdee,
   mirrorWeightToBiometrics,
@@ -76,6 +78,70 @@ describe("BiometricsSchema", () => {
   it("rejects malformed birthDate", () => {
     const invalid = { ...BIOMETRICS_DEFAULT, birthDate: "12/05/1990" };
     expect(BiometricsSchema.safeParse(invalid).success).toBe(false);
+  });
+
+  // D5 (adversarial review, P2): the schema's height/weight `min`/`max`
+  // used to be inline numbers, duplicating (and drifting from)
+  // `HEIGHT_CM_RANGE`/`WEIGHT_KG_RANGE` — the constants `BiometricsSection`
+  // uses for its `<Input min max>` attributes. That drift is the worst
+  // kind: `readBiometrics()` reads through `safeReadLSValidated`, which
+  // falls back to `BIOMETRICS_DEFAULT` on ANY schema failure — a stored
+  // value inside the UI's (widened) range but outside the schema's
+  // (stale) range would silently wipe the ENTIRE record, not just the
+  // one field. Pin the schema bounds to the exact same constants the UI
+  // reads, at both edges.
+  it("height bounds match HEIGHT_CM_RANGE exactly (schema ↔ UI constant)", () => {
+    expect(
+      BiometricsSchema.safeParse({
+        ...BIOMETRICS_DEFAULT,
+        heightCm: HEIGHT_CM_RANGE.min - 1,
+      }).success,
+    ).toBe(false);
+    expect(
+      BiometricsSchema.safeParse({
+        ...BIOMETRICS_DEFAULT,
+        heightCm: HEIGHT_CM_RANGE.min,
+      }).success,
+    ).toBe(true);
+    expect(
+      BiometricsSchema.safeParse({
+        ...BIOMETRICS_DEFAULT,
+        heightCm: HEIGHT_CM_RANGE.max,
+      }).success,
+    ).toBe(true);
+    expect(
+      BiometricsSchema.safeParse({
+        ...BIOMETRICS_DEFAULT,
+        heightCm: HEIGHT_CM_RANGE.max + 1,
+      }).success,
+    ).toBe(false);
+  });
+
+  it("weight bounds match WEIGHT_KG_RANGE exactly (schema ↔ UI constant)", () => {
+    expect(
+      BiometricsSchema.safeParse({
+        ...BIOMETRICS_DEFAULT,
+        weightKg: WEIGHT_KG_RANGE.min - 1,
+      }).success,
+    ).toBe(false);
+    expect(
+      BiometricsSchema.safeParse({
+        ...BIOMETRICS_DEFAULT,
+        weightKg: WEIGHT_KG_RANGE.min,
+      }).success,
+    ).toBe(true);
+    expect(
+      BiometricsSchema.safeParse({
+        ...BIOMETRICS_DEFAULT,
+        weightKg: WEIGHT_KG_RANGE.max,
+      }).success,
+    ).toBe(true);
+    expect(
+      BiometricsSchema.safeParse({
+        ...BIOMETRICS_DEFAULT,
+        weightKg: WEIGHT_KG_RANGE.max + 1,
+      }).success,
+    ).toBe(false);
   });
 });
 

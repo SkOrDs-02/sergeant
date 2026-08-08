@@ -76,6 +76,48 @@ describe("SettingsGroup — icon prop", () => {
     fireEvent.click(btn);
     expect(btn).toHaveAttribute("aria-expanded", "true");
   });
+
+  // L-7 parity (адверсарне ревʼю 2026-08-08, знахідка №4): CollapsibleSection
+  // закрив tab-trap для свого акордеона через `inert`, але SettingsGroup зі
+  // спільним `grid-rows-[0fr] overflow-hidden`-патерном лишався непокритим —
+  // Tab від згорнутого заголовка провалювався у приховані контроли.
+  //
+  // Round-trip в одному тесті: перевірка "після кліку inert знято" сама по
+  // собі нічого не доводить, якщо inert ніколи не виставлявся взагалі —
+  // ловимо регресію, лише зафіксувавши "виставлено" ДО кліку.
+  it("ставить inert+aria-hidden на вміст, коли група монтується згорнутою (default), і знімає обидва при розгортанні", () => {
+    render(
+      <SettingsGroup title="Дашборд" icon="layout">
+        <button type="button">Приховане поле</button>
+      </SettingsGroup>,
+    );
+    const btn = screen.getByRole("button", { name: /Дашборд/ });
+    const content = btn.nextElementSibling;
+    expect(content).not.toBeNull();
+    expect(content).toHaveAttribute("inert");
+    expect(content).toHaveAttribute("aria-hidden", "true");
+
+    fireEvent.click(btn);
+    expect(content).not.toHaveAttribute("inert");
+    expect(content).not.toHaveAttribute("aria-hidden");
+  });
+
+  it("не ставить inert/aria-hidden, коли група монтується розгорнутою, і ставить обидва при згортанні", () => {
+    render(
+      <SettingsGroup title="Профіль" icon="user" defaultOpen>
+        <button type="button">Видиме поле</button>
+      </SettingsGroup>,
+    );
+    const btn = screen.getByRole("button", { name: /Профіль/ });
+    const content = btn.nextElementSibling;
+    expect(content).not.toBeNull();
+    expect(content).not.toHaveAttribute("inert");
+    expect(content).not.toHaveAttribute("aria-hidden");
+
+    fireEvent.click(btn);
+    expect(content).toHaveAttribute("inert");
+    expect(content).toHaveAttribute("aria-hidden", "true");
+  });
 });
 
 describe("SettingsSubGroup", () => {
@@ -89,6 +131,70 @@ describe("SettingsSubGroup", () => {
     const btn = screen.getByRole("button");
     fireEvent.click(btn);
     expect(screen.getByText("вміст")).toBeTruthy();
+  });
+
+  // V-2: наживо на /settings усі 8 кнопок другого рівня мали
+  // aria-expanded === null (перший рівень, SettingsGroup, — коректно).
+  // Скрінрідер не міг оголосити стан розкриття другорівневих акордеонів.
+  it("виставляє aria-expanded і синхронізує його зі станом розкриття", () => {
+    render(
+      <SettingsSubGroup title="Вигляд">
+        <p>вміст</p>
+      </SettingsSubGroup>,
+    );
+
+    const btn = screen.getByRole("button", { name: /Вигляд/ });
+    expect(btn).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(btn);
+    expect(btn).toHaveAttribute("aria-expanded", "true");
+  });
+
+  // V-3 (переглянуто після адверсарного ревʼю 2026-08-08, знахідка №1/№3):
+  // "41px" було зафіксовано на fine-pointer, де floor навмисно не діє.
+  // Під pointer:coarse звичайний `<button>` без `data-compact` уже отримує
+  // 44×44 від глобального safety-net (`apps/web/src/styles/mobile.css`),
+  // незалежно від класу `touch-target` — клас був но-опом і прибраний.
+  // Пін на рядок класу нічого не міряв і видалений разом із класом; єдиний
+  // реальний enforcement 44px-floor під pointer:coarse — Playwright-аудит
+  // `apps/web/tests/mobile/mobile-ui-audit.spec.ts` (root AGENTS.md §
+  // Touch targets), який ця зміна не займає.
+
+  // L-7 parity (та сама знахідка №4, що й для SettingsGroup вище): другий
+  // рівень акордеона мав ідентичний непокритий tab-trap.
+  it("ставить inert+aria-hidden на вміст, коли підгрупа монтується згорнутою (default), і знімає обидва при розгортанні", () => {
+    render(
+      <SettingsSubGroup title="Розділи на головній">
+        <button type="button">Приховане поле</button>
+      </SettingsSubGroup>,
+    );
+    const btn = screen.getByRole("button", {
+      name: /Розділи на головній/,
+    });
+    const content = btn.nextElementSibling;
+    expect(content).not.toBeNull();
+    expect(content).toHaveAttribute("inert");
+    expect(content).toHaveAttribute("aria-hidden", "true");
+
+    fireEvent.click(btn);
+    expect(content).not.toHaveAttribute("inert");
+    expect(content).not.toHaveAttribute("aria-hidden");
+  });
+
+  it("не ставить inert/aria-hidden, коли підгрупа монтується розгорнутою, і ставить обидва при згортанні", () => {
+    render(
+      <SettingsSubGroup title="Деталі" defaultOpen>
+        <button type="button">Видиме поле</button>
+      </SettingsSubGroup>,
+    );
+    const btn = screen.getByRole("button", { name: /Деталі/ });
+    const content = btn.nextElementSibling;
+    expect(content).not.toBeNull();
+    expect(content).not.toHaveAttribute("inert");
+    expect(content).not.toHaveAttribute("aria-hidden");
+
+    fireEvent.click(btn);
+    expect(content).toHaveAttribute("inert");
+    expect(content).toHaveAttribute("aria-hidden", "true");
   });
 });
 

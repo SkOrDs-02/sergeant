@@ -31,7 +31,6 @@ import { useHubPref } from "./hubPrefs";
 
 export function DashboardSection() {
   const [calmMode, setCalmMode] = useHubPref<boolean>("calmMode", false);
-  const [showHints, setShowHints] = useHubPref<boolean>("showHints", true);
   const [adaptiveBento, setAdaptiveBento] = useHubPref<boolean>(
     "adaptiveBento",
     true,
@@ -102,12 +101,17 @@ export function DashboardSection() {
           checked={calmMode === true}
           onChange={setCalmMode}
         />
-        <ToggleRow
-          label="Показувати підказки"
-          description="Короткі підказки в моменті (без спаму)."
-          checked={showHints !== false}
-          onChange={setShowHints}
-        />
+        {/* L-10 (аудит 2026-08-08): перемикач «Показувати підказки» писав
+         * `showHints` у HUB_PREFS, але жоден web-код це поле не читав —
+         * grep по apps/web/src не дав жодного читача, окрім самого
+         * useHubPref-виклику вище. У apps/mobile є власний незалежний
+         * `showHints` (GeneralSection.tsx / core/hints/useHints.ts), але
+         * mobile і web мають окремі стори (MMKV vs localStorage), тож
+         * web-тумблер нічого там не вмикав і не вимикав. Прибрано лише
+         * UI+хук на web; поле лишається у вже збережених HUB_PREFS-блобах
+         * користувачів — hubPrefs.schema.ts валідує лише структурний
+         * конверт (open z.record), тож зайвий ключ безпечний і не потребує
+         * міграції. */}
         <ToggleRow
           label="Адаптивний порядок"
           description="Піднімає в топ модуль, актуальний зараз — за часом дня та сигналами. Ваш порядок зберігається."

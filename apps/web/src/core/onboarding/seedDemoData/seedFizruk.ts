@@ -129,13 +129,29 @@ export function seedFizruk(): void {
   writeJSON(FIZRUK_WORKOUTS_KEY, { schemaVersion: 1, workouts });
 
   // One recent measurement row so «Заміри» is populated.
+  //
+  // AI-DANGER: ці поля мають писатися рівно тими іменами, які SQLite
+  // dual-write адаптер (`upsertMeasurement` у `sqliteWriter/adapter.ts`)
+  // читає через `m["weightKg"]`/`m["waistCm"]`/`m["chestCm"]` — НЕ
+  // `weight`/`waist`/`chest`. Це НЕ те саме, що набір id-шників
+  // `MEASURE_FIELDS` (`hooks/useMeasurements.ts`): адаптер там також читає
+  // `bicepCm`, якого серед `MEASURE_FIELDS` немає (форма пише
+  // `bicepLCm`/`bicepRCm`, і саме `extractMeasurementSnapshots`
+  // (`fizrukDualWriteState.ts`) коалесує їх у `bicepCm` для адаптера), а
+  // частина `MEASURE_FIELDS` (`bodyFatPct`/`neckCm`/`forearm*`/`thigh*`/
+  // `calf*`) не має відповідної колонки в `fizruk_measurements`, і pipeline
+  // мовчки її відкидає. Невідомий ключ мовчки лягає в базу як NULL
+  // (`toRealOrNull(undefined) === null`) — рядок замірів все одно
+  // з'являється в SQLite (`id`/`measured_at` не-null), просто з
+  // порожніми полями: дата без жодного значення, а не порожня секція
+  // (L-21, знайдено 2026-08-08).
   writeJSON(FIZRUK_MEASUREMENTS_KEY, [
     {
       id: shortId("demo_m", 1),
       at: toISO(daysAgo(1, 8, 0)),
-      weight: 78.4,
-      waist: 82,
-      chest: 100,
+      weightKg: 78.4,
+      waistCm: 82,
+      chestCm: 100,
     },
   ]);
 

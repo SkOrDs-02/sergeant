@@ -29,7 +29,9 @@ import { messages } from "@shared/i18n/uk";
 import { useDailyLog } from "../../modules/fizruk/hooks/useDailyLog";
 import {
   ACTIVITY_LEVELS,
+  HEIGHT_CM_RANGE,
   SEX_VALUES,
+  WEIGHT_KG_RANGE,
   computeAgeYears,
   isBiometricsCompleteForTdee,
   type ActivityLevel,
@@ -92,32 +94,48 @@ function biometricsToForm(b: Biometrics): FormState {
 }
 
 /**
- * Діапазони дублюють `min`/`max` інпутів: браузерні атрибути — лише
- * підказка, а paste чи програмний сабміт їх обходить (той самий гейт, що
- * у `Measurements`). Це PII в профілі, тож за межі не пускаємо взагалі,
- * а не клемпимо — вигадане за користувача зростання гірше за помилку.
+ * `HEIGHT_CM_RANGE`/`WEIGHT_KG_RANGE` (imported from `./biometrics`) feed
+ * BOTH the `<Input min max>` attributes below AND `BiometricsSchema`'s
+ * bounds — one constant, not three copies (audit finding D5, see the
+ * comment above their declaration in `biometrics.ts`). Browser `min`/`max`
+ * are only a hint — paste or a programmatic submit bypasses them (the
+ * same gate as `Measurements`) — so this is PII in a profile: out-of-range
+ * input is rejected outright, never clamped. A guessed-for-the-user
+ * height is worse than an error.
+ *
+ * L-4: "reject" means "don't patch this field" — not "treat as empty".
+ * `parseInRangeOrNull` used to map invalid → `null` the same as an empty
+ * field, so `diff` saw `null !== 175` and wiped the saved height instead
+ * of just ignoring the bad input. See {@link parseRangedField}.
  */
-const HEIGHT_CM_RANGE = { min: 80, max: 260 } as const;
-const WEIGHT_KG_RANGE = { min: 20, max: 400 } as const;
 
 /** Дата народження має власне вікно — жорстке вікно календаря (з 1970-го)
  *  відрізало б усіх, хто народився раніше. */
 const BIRTH_DATE_MIN = "1900-01-01";
 
-function parseNumberOrNull(raw: string): number | null {
-  const trimmed = raw.trim();
-  if (trimmed === "") return null;
-  const value = Number(normalizeAmountInput(trimmed));
-  return Number.isFinite(value) ? value : null;
-}
+/**
+ * Три стани замість колишнього `number | null` — L-4. `empty` (поле
+ * порожнє) — навмисне очищення, дозволений `null`-патч. `invalid`
+ * (сміття або поза `[min; max]`) — НЕ патчимо це поле взагалі, лише
+ * показуємо помилку біля нього. `value` — валідне число, патчимо як є.
+ * Раніше `empty` і `invalid` конфлювали в один `null`, тож diff не міг
+ * відрізнити «користувач очистив поле» від «користувач ввів сміття» —
+ * і трактував друге як перше, стираючи збережене значення.
+ */
+type RangedFieldParse =
+  { kind: "empty" } | { kind: "invalid" } | { kind: "value"; value: number };
 
-function parseInRangeOrNull(
+function parseRangedField(
   raw: string,
   { min, max }: { min: number; max: number },
-): number | null {
-  const value = parseNumberOrNull(raw);
-  if (value == null) return null;
-  return value >= min && value <= max ? value : null;
+): RangedFieldParse {
+  const trimmed = raw.trim();
+  if (trimmed === "") return { kind: "empty" };
+  const value = Number(normalizeAmountInput(trimmed));
+  if (!Number.isFinite(value) || value < min || value > max) {
+    return { kind: "invalid" };
+  }
+  return { kind: "value", value };
 }
 
 /**
@@ -138,10 +156,18 @@ function diffFormAgainst(
   const patch: Partial<Omit<Biometrics, "updatedAt" | "weightUpdatedAt">> = {};
   let changed = false;
 
-  const formHeight = parseInRangeOrNull(form.heightCm, HEIGHT_CM_RANGE);
-  if (formHeight !== source.heightCm) {
-    patch.heightCm = formHeight;
-    changed = true;
+  // L-4: `invalid` навмисно НЕ потрапляє у diff — це і є фікс. Раніше
+  // out-of-range мапилось у `null`, `null !== 175` рахувалось за зміну,
+  // і Save стирав збережений зріст. Тепер invalid просто не бере участі
+  // в diff-порівнянні: ні зміни, ні патча, ні "dirty".
+  const heightParsed = parseRangedField(form.heightCm, HEIGHT_CM_RANGE);
+  if (heightParsed.kind !== "invalid") {
+    const formHeight =
+      heightParsed.kind === "value" ? heightParsed.value : null;
+    if (formHeight !== source.heightCm) {
+      patch.heightCm = formHeight;
+      changed = true;
+    }
   }
 
   const formBirthDate = form.birthDate.trim() === "" ? null : form.birthDate;
@@ -163,10 +189,14 @@ function diffFormAgainst(
     changed = true;
   }
 
-  const formWeight = parseInRangeOrNull(form.weightKg, WEIGHT_KG_RANGE);
-  if (formWeight !== source.weightKg) {
-    patch.weightKg = formWeight;
-    changed = true;
+  const weightParsed = parseRangedField(form.weightKg, WEIGHT_KG_RANGE);
+  if (weightParsed.kind !== "invalid") {
+    const formWeight =
+      weightParsed.kind === "value" ? weightParsed.value : null;
+    if (formWeight !== source.weightKg) {
+      patch.weightKg = formWeight;
+      changed = true;
+    }
   }
 
   if (!changed) return null;
@@ -198,16 +228,59 @@ export function BiometricsSection({ online = true }: BiometricsSectionProps) {
     biometricsToForm(biometrics),
   );
   const [prevBiometrics, setPrevBiometrics] = useState(biometrics);
+  // D4 (adversarial review): чи вже "чіпав" (blur-нув) користувач це поле.
+  // Гейтить лише ВІЗУАЛЬНИЙ показ помилки (див. `heightShowError` нижче) —
+  // не саму валідацію: без гейту кожен проміжний символ мобільного набору
+  // ("1" -> "17" -> "175") на секунду підсвічувався як невалідний,
+  // `role="alert"` спрацьовував на кожен префікс, а для ваги помилка ще й
+  // витісняла `weightSyncHint`, тож і текст, і `role` під полем мигали на
+  // кожне натискання.
+  const [heightTouched, setHeightTouched] = useState(false);
+  const [weightTouched, setWeightTouched] = useState(false);
   if (biometrics !== prevBiometrics) {
     setPrevBiometrics(biometrics);
     setForm(biometricsToForm(biometrics));
+    setHeightTouched(false);
+    setWeightTouched(false);
   }
 
   const diff = useMemo(
     () => diffFormAgainst(form, biometrics),
     [form, biometrics],
   );
-  const dirty = diff !== null;
+
+  // L-4: обчислюємо invalid незалежно від "dirty" — користувач мусить
+  // бачити, ЧОМУ введене не приймається, навіть якщо через це саме поле
+  // кнопка "Зберегти" лишається вимкненою (нема що патчити).
+  const heightParsed = useMemo(
+    () => parseRangedField(form.heightCm, HEIGHT_CM_RANGE),
+    [form.heightCm],
+  );
+  const weightParsed = useMemo(
+    () => parseRangedField(form.weightKg, WEIGHT_KG_RANGE),
+    [form.weightKg],
+  );
+  const heightInvalid = heightParsed.kind === "invalid";
+  const weightInvalid = weightParsed.kind === "invalid";
+  // D4: показ (червона рамка + helper-text + role="alert") гейтиться
+  // blur-ом; `heightInvalid`/`weightInvalid` самі лишаються live (не
+  // гейтяться) — вони й далі керують Save-гейтом нижче (D1), бо
+  // блокувати збереження треба навіть ДО того, як поле втратило фокус.
+  const heightShowError = heightInvalid && heightTouched;
+  const weightShowError = weightInvalid && weightTouched;
+
+  // D1 (adversarial review, P1): раніше `dirty` (з `diff`) єдиний керував
+  // Save-гейтом, а `diff` навмисно ІГНОРУЄ invalid-поля (L-4 вище). Тож
+  // "є невалідне поле" саме по собі НЕ блокувало Save — блокувало лише
+  // "нема жодної валідної зміни". Сценарій дефекту: збережено зріст 175;
+  // юзер набирає 1750 (invalid, не патчиться) І міняє стать (valid, diff
+  // непорожній) -> кнопка активна -> клік зберігає стать, зріст мовчки
+  // відкидається, toast.success все одно "Збережено". Мінімум-фікс з
+  // ревʼю: явно блокувати Save, доки БУДЬ-ЯКЕ поле invalid — replaced
+  // "мовчки відкинуто" на "видимо заблоковано", а не намагаємось описати
+  // часткове збереження в тості.
+  const hasInvalidField = heightInvalid || weightInvalid;
+  const dirty = diff !== null && !hasInvalidField;
 
   const ageYears = useMemo(
     () => computeAgeYears(biometrics.birthDate),
@@ -217,32 +290,57 @@ export function BiometricsSection({ online = true }: BiometricsSectionProps) {
 
   const handleSave = () => {
     if (!diff) return;
-    const { changed: _changed, weightKg, ...rest } = diff;
+    // `weightKg` НЕ виймаємо з `rest`: `hasOwnProperty` — рантайм-перевірка,
+    // яку TS не вміє звужувати, тож зібраний назад патч мав тип
+    // `number | null | undefined` і під `exactOptionalPropertyTypes: true`
+    // не проходив у `saveBiometrics`. Лишаючи ключ у `rest`, ми зберігаємо
+    // рівно ту саму семантику («вага їде в патч тоді й лише тоді, коли вона
+    // була в diff»), але без ручного перезбирання обʼєкта і без ризику
+    // підсунути `undefined` замість «не чіпати поле».
+    const { changed: _changed, ...rest } = diff;
     void _changed;
     const weightInPatch = Object.prototype.hasOwnProperty.call(
       diff,
       "weightKg",
     );
+    const weightKg = diff.weightKg;
+    // D7 (adversarial review, P3): `writeBiometricsPatch` НЕ ідемпотентний
+    // — щоразу, коли `weightKg` присутній у патчі, він перебиває
+    // `weightUpdatedAt` СВОЇМ "зараз" (`biometrics.ts`, `writeBiometricsPatch`).
+    // Коли вагу вже задзеркалено нижче через `addDailyLogEntry` (той самий
+    // писач, що й будь-яке інше зважування — `recordBodyWeight`),
+    // `weightUpdatedAt` МАЄ дорівнювати часу цього запису в журналі — його
+    // як `at` сідованого заміру читає `bodyWeightBootstrap.ts`. Тому
+    // `weightKg` явно виключається з другого (нижче) патча саме в цьому
+    // випадку — інакше `saveBiometrics` переписав би LWW-маркер часом
+    // кліку по «Зберегти», а не часом самого зважування.
+    const mirroredWeight = weightInPatch && weightKg != null;
+    const { weightKg: _mirroredWeightKg, ...nonWeightRest } = rest;
+    void _mirroredWeightKg;
+    const savePatch = mirroredWeight ? nonWeightRest : rest;
     try {
       // Weight first: addEntry mirrors back into biometrics with its
       // own `at` timestamp, so we want that write to land before the
-      // non-weight save (which preserves `weightUpdatedAt`). When the
-      // user clears the weight to `null` we still want the rest of the
-      // form to persist, but we don't write a `null` daily-log entry
-      // (Profile "clear" is a snapshot edit, not a journal deletion).
-      if (weightInPatch && weightKg != null) {
-        addDailyLogEntry({ weightKg });
+      // non-weight save. When the user clears the weight to `null` we
+      // still want the rest of the form to persist, but we don't write
+      // a `null` daily-log entry (Profile "clear" is a snapshot edit,
+      // not a journal deletion) — that path keeps `weightKg: null` in
+      // `savePatch` (see `mirroredWeight` above) so `saveBiometrics`
+      // still bumps `weightUpdatedAt` for the explicit clear.
+      if (mirroredWeight) {
+        addDailyLogEntry({ weightKg: weightKg as number });
       }
-      if (Object.keys(rest).length > 0 || (weightInPatch && weightKg == null)) {
-        // Pass the weight clear through so `weightKg: null` and
-        // `weightUpdatedAt` get bumped; otherwise just the non-weight
-        // fields go to biometrics.
-        const patch =
-          weightInPatch && weightKg == null
-            ? { ...rest, weightKg: null }
-            : rest;
-        saveBiometrics(patch);
-      }
+      // L-17: `saveBiometrics` кличеться БЕЗУМОВНО, доки є валідний
+      // `diff` — навіть коли `savePatch` порожній (тільки-вага-змінилась
+      // кейс, D8) — бо саме тут (`useBiometrics.ts`) живе write-through у
+      // `pushBiometricsToServer`. Раніше стояв гейт
+      // `if (Object.keys(rest).length > 0)`, який після появи `changed`-
+      // деструктуризації був мертвим кодом (`rest` завжди мав хоч один
+      // ключ, доки diff не null) — тепер, коли `savePatch` дійсно може
+      // стати порожнім через виключення вище, той самий гейт зробив би
+      // регресію: локально-порожній патч усе одно мусить дійти до пуша
+      // на сервер, інакше "змінили тільки вагу" знов ніколи не пушиться.
+      saveBiometrics(savePatch);
       toast.success(COPY.saveSuccess);
     } catch {
       // Значення лишились у полях форми, тож повтор шле рівно те саме.
@@ -281,16 +379,19 @@ export function BiometricsSection({ online = true }: BiometricsSectionProps) {
             id="biometrics-height"
             type="number"
             inputMode="numeric"
-            min={80}
-            max={260}
+            min={HEIGHT_CM_RANGE.min}
+            max={HEIGHT_CM_RANGE.max}
             step={1}
             value={form.heightCm}
             onChange={(e) =>
               setForm((prev) => ({ ...prev, heightCm: e.target.value }))
             }
+            onBlur={() => setHeightTouched(true)}
             placeholder="175"
             disabled={editingDisabled}
             className="min-w-0 max-w-full"
+            error={heightShowError}
+            helperText={heightShowError ? COPY.heightRangeError : undefined}
           />
         </div>
 
@@ -395,17 +496,21 @@ export function BiometricsSection({ online = true }: BiometricsSectionProps) {
             id="biometrics-weight"
             type="number"
             inputMode="decimal"
-            min={20}
-            max={400}
+            min={WEIGHT_KG_RANGE.min}
+            max={WEIGHT_KG_RANGE.max}
             step={0.1}
             value={form.weightKg}
             onChange={(e) =>
               setForm((prev) => ({ ...prev, weightKg: e.target.value }))
             }
+            onBlur={() => setWeightTouched(true)}
             placeholder="75.5"
             disabled={editingDisabled}
             className="min-w-0 max-w-full"
-            helperText={COPY.weightSyncHint}
+            error={weightShowError}
+            helperText={
+              weightShowError ? COPY.weightRangeError : COPY.weightSyncHint
+            }
           />
         </div>
 

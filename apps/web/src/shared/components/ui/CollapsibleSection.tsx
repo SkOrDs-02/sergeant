@@ -6,6 +6,7 @@ import {
   useState,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   type ReactNode,
 } from "react";
@@ -92,6 +93,37 @@ export function CollapsibleSection({
   useEffect(() => {
     onOpenChange?.(open);
   }, [open, onOpenChange]);
+
+  // L-7: секція ховає вміст візуально через `grid-rows-[0fr] overflow-hidden`
+  // (нижче), але DOM-підтерево лишалось змонтованим і фокусованим — Tab від
+  // заголовка провалювався у приховані поля пароля/сесій і кнопку
+  // «Видалити акаунт», де Enter наосліп відкривав діалог видалення.
+  // `inert`, а не `hidden`: `hidden` = display:none і ламає grid-template-rows
+  // анімацію (не можна анімувати висоту елемента, якого немає в layout-і).
+  // `inert` лишає вміст видимим/анімованим, але прибирає підтерево з
+  // tab-порядку й дерева доступності — саме туди, куди й треба.
+  //
+  // `aria-hidden` поряд з `inert` — той самий канонічний парний патерн, що й
+  // `useDialogFocusTrap.ts` (background-inert manager): рушії старіші за
+  // Safari 15.5 / Firefox 112 не знають `inert` узагалі, і без `aria-hidden`
+  // скрінрідер на них і далі озвучував би згорнутий вміст.
+  //
+  // `useLayoutEffect`, а не `useEffect` чи очікування `transitionend`:
+  // атрибут має зникнути СИНХРОННО з рендером, що вмикає розкриття, до
+  // першого пейнту — інакше анімація вже стартувала видимо, а перше
+  // натискання Tab одразу після кліку ще провалюється у ще-inert підтерево
+  // (кадр із видимим, але не focus-able вмістом).
+  useLayoutEffect(() => {
+    const el = gridRef.current;
+    if (!el) return;
+    if (open) {
+      el.removeAttribute("inert");
+      el.removeAttribute("aria-hidden");
+    } else {
+      el.setAttribute("inert", "");
+      el.setAttribute("aria-hidden", "true");
+    }
+  }, [open]);
 
   const toggle = useCallback(() => {
     setOpen((prev) => {

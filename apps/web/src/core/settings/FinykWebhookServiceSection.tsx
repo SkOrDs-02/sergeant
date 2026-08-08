@@ -8,6 +8,7 @@ import { isApiError, monoWebhookApi, type MonoSyncState } from "@shared/api";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { finykKeys, hubKeys } from "@shared/lib/api/queryKeys";
+import { isRetriableError } from "@shared/lib/api/queryClient";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
 import { BackfillProgressPill } from "@finyk/components/BackfillProgressPill";
@@ -48,6 +49,17 @@ const COPY = {
   refreshing: "Оновлення…",
   refresh: "Оновити дані",
   clearTransactions: "Очистити кеш транзакцій",
+  // L-15: `GET /api/mono/sync-state` може впасти через мережу/5xx —
+  // окремо від чесного "ще не підключено". Раніше обидва стани малювали
+  // однакову форму вводу токена, тож юзер із живим підключенням бачив
+  // прохання "підключити Monobank" через тимчасовий збій перевірки.
+  checkFailed:
+    "Не вдалося перевірити стан підключення Monobank. Це не означає, що підключення втрачено — перевір мережу і спробуй ще раз.",
+  retryCheck: "Спробувати ще раз",
+  // F7 (review): сусідня кнопка «Оновити дані» показує busy-стан
+  // (`disabled` + «Оновлення…») під час запиту — ретрай тут мав ту саму
+  // прогалину: без цього тап на повільній мережі виглядав мертвим.
+  checking: "Перевіряю…",
 } as const;
 
 export function FinykWebhookServiceSection({
@@ -73,6 +85,23 @@ export function FinykWebhookServiceSection({
   const webhookSyncState = syncStateQuery.data ?? null;
   const webhookConnected =
     webhookSyncState != null && webhookSyncState.status !== "disconnected";
+  // L-15: query-помилка (мережа/5xx/timeout) — це НЕ те саме, що чесний
+  // "disconnected" статус із валідної відповіді сервера. Без цього
+  // розрізнення `webhookConnected === false` і в обох випадках рендерився
+  // той самий "підключи Monobank" екран.
+  //
+  // F2 (review): `isError` саме по собі не розрізняє тимчасовий збій
+  // (мережа/5xx — власне випадок L-15) від ПОСТІЙНОЇ HTTP-помилки (напр.
+  // 404, коли `MONO_WEBHOOK_ENABLED=false` на сервері, або 401/403).
+  // Для таких кодів "спробувати ще раз" ніколи не допоможе — і без цього
+  // звуження `webhookCheckFailed` намертво ховав форму підключення позаду
+  // банера, що бреше про мережу. `isRetriableError` (той самий гейт, що
+  // й `queryClient`-ретраї) відсіює саме нересурсні/постійні помилки —
+  // для них рендер провалюється до звичайної форми токена.
+  const webhookCheckFailed =
+    syncStateQuery.isError &&
+    !webhookConnected &&
+    isRetriableError(syncStateQuery.error);
   const { progress: backfillProgress } = useMonoBackfillProgress({
     enabled: inView && webhookConnected,
   });
@@ -284,6 +313,24 @@ export function FinykWebhookServiceSection({
               </Button>
             </div>
             <BackfillProgressPill progress={backfillProgress} />
+          </div>
+        ) : webhookCheckFailed ? (
+          <div className="space-y-3">
+            <p
+              className="text-style-body text-danger bg-danger/10 rounded-xl px-3 py-2"
+              role="alert"
+            >
+              {COPY.checkFailed}
+            </p>
+            <Button
+              variant="ghost"
+              className="w-full h-11"
+              onClick={() => syncStateQuery.refetch()}
+              disabled={syncStateQuery.isFetching}
+            >
+              <Icon name="refresh-cw" size={16} aria-hidden />
+              {syncStateQuery.isFetching ? COPY.checking : COPY.retryCheck}
+            </Button>
           </div>
         ) : (
           <div className="space-y-3">

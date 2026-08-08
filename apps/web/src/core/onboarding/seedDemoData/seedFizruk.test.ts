@@ -41,6 +41,68 @@ describe("seedFizruk", () => {
     expect(keys).toContain("fizruk_measurements_v1");
   });
 
+  // L-21: сід писав `weight`/`waist`/`chest`, а SQLite dual-write адаптер
+  // (`upsertMeasurement` у `sqliteWriter/adapter.ts`) читає рівно
+  // `m["weightKg"]`/`m["waistCm"]`/`m["chestCm"]` — розбіжність імен
+  // мовчки лягала в базу як NULL (`toRealOrNull(undefined) === null`).
+  //
+  // Первісна версія цього тесту сканувала джерело адаптера регексом і
+  // вимагала буквального збігу КОЖНОГО засіяного ключа з тим, що читає
+  // `m["…"]` — це хибний інваріант: реальний шлях запису йде через
+  // `extractMeasurementSnapshots` (`fizrukDualWriteState.ts`), яка
+  // легітимно коалесує `bicepLCm`/`bicepRCm` у `bicepCm` ПІСЛЯ сіду, тож
+  // такий тест падав би й на коректному сіді. Цей тест натомість іде
+  // тим самим швом, яким дані рухаються насправді —
+  // `readFizrukDemoStateFromLs` → diff → `applyFizrukDualWriteOps`, усі
+  // три всередині `importFizrukDemoSeed` — і перевіряє, що засіяне
+  // значення долітає до SQL-параметрів UPSERT-у самим числом, а не
+  // гасне в `null`.
+  it("реальний dual-write pipeline записує засіяні заміри без NULL-полів (L-21)", async () => {
+    localStorage.clear();
+    try {
+      // На відміну від інших тестів файлу, тут `writeJSON` мусить реально
+      // писати в localStorage — `readFizrukDemoStateFromLs()` читає LS
+      // напряму (через `safeReadLS`), а не бачить mock-виклики.
+      writeJSONMock.mockImplementation((key: string, value: unknown) => {
+        localStorage.setItem(key, JSON.stringify(value));
+      });
+
+      seedFizruk();
+
+      const { importFizrukDemoSeed } =
+        await import("../../../modules/fizruk/lib/demoSeedImport");
+
+      const calls: Array<{ sql: string; params: readonly unknown[] }> = [];
+      const client = {
+        exec: () => {},
+        run: (sql: string, params: readonly unknown[] = []) => {
+          calls.push({ sql, params });
+        },
+        all: () => [],
+      };
+
+      const applied = await importFizrukDemoSeed({
+        client,
+        userId: "demo-local",
+        nowIso: "2026-08-08T10:00:00.000Z",
+      });
+      expect(applied).toBeGreaterThan(0);
+
+      const measurementCall = calls.find(({ sql }) =>
+        sql.includes("fizruk_measurements"),
+      );
+      expect(measurementCall).toBeDefined();
+      // 78.4 / 82 / 100 — засіяні weightKg/waistCm/chestCm. Якщо ключ у
+      // сіді розійдеться з ключем, який реально читає адаптер, сюди
+      // прилетить `null`, а не ці числа.
+      expect(measurementCall!.params).toEqual(
+        expect.arrayContaining([78.4, 82, 100]),
+      );
+    } finally {
+      localStorage.clear();
+    }
+  });
+
   it("сіє шаблони тренувань — «Із шаблону» не має відкривати порожнечу", () => {
     seedFizruk();
     const keys = writeJSONMock.mock.calls.map(([k]) => k);

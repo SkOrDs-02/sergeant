@@ -767,6 +767,19 @@ export const messages = {
     save: "Зберегти",
     saveSuccess: "Біометрію збережено",
     saveError: "Не вдалося зберегти біометрію",
+    // Числа тут дублюють `HEIGHT_CM_RANGE`/`WEIGHT_KG_RANGE` з
+    // `biometrics.ts` (єдине джерело для UI-атрибутів `<Input min max>` І
+    // zod-меж `BiometricsSchema` — D5) — інлайн, бо весь цей каталог
+    // складається з простих рядків без інтерполяції, тож самі рядки текст
+    // все одно не оновлять автоматично при зміні константи. Розсинхрон
+    // ловлять ДВА пін-тести в `BiometricsSection.test.tsx` (по одному на
+    // зріст і вагу, точна рівність — D3: `toContain` раніше пропускав
+    // підрядки на кшталт "60" усередині "260") + два пін-тести на межі
+    // самої zod-схеми в `biometrics.test.ts` — зсунута константа без
+    // синхронного оновлення будь-якого з цих чотирьох місць зробить
+    // відповідний тест червоним.
+    heightRangeError: "Зріст має бути від 80 до 260 см",
+    weightRangeError: "Вага має бути від 20 до 400 кг",
     // The age line is rendered as `${ageLabel}: ${n} ${ageYearsSuffix}` so
     // the catalog stays plain-string (см. `MessageCatalog` constraint).
     ageLabel: "Вік",

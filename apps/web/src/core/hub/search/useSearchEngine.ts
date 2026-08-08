@@ -9,7 +9,10 @@ import {
 import { useNavigate } from "react-router-dom";
 import { hapticTap } from "@shared/lib/adapters/haptic";
 import { emitHubBus } from "@shared/lib/modules/hubBus";
-import { openHubModuleWithAction } from "@shared/lib/modules/hubNav";
+import {
+  announceSettingsHashChange,
+  openHubModuleWithAction,
+} from "@shared/lib/modules/hubNav";
 import {
   clearRecentQueries,
   getRecentQueries,
@@ -165,10 +168,21 @@ export function useSearchEngine({
       // `target` carries the navigation intent so we don't have to re-derive
       // it from `hit.module` (which is the visual grouping, not the route):
       //   - module hits  → existing onOpenModule plumbing
-      //   - settings hit → URL-addressable settings tab (Settings page reads
-      //                    `?tab=settings` via useHubUIState); section deep-
-      //                    linking can be wired in a follow-up once the
-      //                    settings page exposes a section anchor API
+      //   - settings hit → URL-addressable `/settings` route
+      //                    (`core/settings/route.tsx`), which always mounts
+      //                    `HubSettingsPage` regardless of where ⌘K was
+      //                    opened from. L-13 (2026-08-08): `target.sectionId`
+      //                    used to be computed by `searchSettings.ts` and
+      //                    then silently dropped here — every settings hit
+      //                    landed on whichever inner tab happened to be
+      //                    open, not the one the user searched for.
+      //                    `#settings-<id>` mirrors the deep-link shape
+      //                    `HubSettingsPage` already reads on mount
+      //                    (`readSettingsSectionHash`) — same channel the
+      //                    inactive-Bento-card handoff uses
+      //                    (`openHubSettingsSection` in hubNav.ts), so a
+      //                    fresh navigation into Settings auto-selects the
+      //                    right group and scrolls/expands the section.
       //   - assistant hit→ if the hit carries a capability, open the chat
       //                    with its first example prefilled (the chat input
       //                    receives focus so the user can edit before
@@ -179,12 +193,28 @@ export function useSearchEngine({
           onOpenModule(hit.target.moduleId);
           break;
         case "settings": {
-          const url = new URL(window.location.href);
-          url.searchParams.set("tab", "settings");
+          const sectionId = hit.target.sectionId;
+          // Audit finding #2 (2026-08-08): the previous version reused the
+          // CURRENT `window.location.pathname`. On any module route
+          // (`/finyk`, `/nutrition/menu`, …) that landed on e.g.
+          // `/finyk?tab=settings#settings-plan` — `/finyk` renders the
+          // Finyk module, nobody there reads `?tab=settings`, so the click
+          // silently no-op'd. `/settings` is the dedicated standalone route
+          // that always mounts `HubSettingsPage`, independent of where ⌘K
+          // was opened from — same canonical target `capabilityRegistry.ts`
+          // already uses for its own settings deep-links.
           navigate({
-            pathname: url.pathname || "/",
-            search: url.search,
+            pathname: "/settings",
+            hash: sectionId ? `#settings-${sectionId}` : "",
           });
+          // If Settings is already open (`HubSettingsPage`/`SettingsGroup`
+          // already mounted — e.g. a second ⌘K settings hit without
+          // leaving the page), react-router's `navigate()` above moves
+          // `window.location.hash` via `history.pushState`, which never
+          // fires a native `hashchange` event on its own. `SettingsGroup`'s
+          // anchor auto-open only listens for that native event, so
+          // without this it silently no-ops on every hit after the first.
+          announceSettingsHashChange();
           break;
         }
         case "assistant": {

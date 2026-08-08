@@ -470,6 +470,8 @@ export const messagesEn: Partial<MessageCatalog> = {
     save: "Save",
     saveSuccess: "Biometrics saved",
     saveError: "Could not save biometrics",
+    heightRangeError: "Height must be between 80 and 260 cm",
+    weightRangeError: "Weight must be between 20 and 400 kg",
     ageLabel: "Age",
     ageYearsSuffix: "years",
   },
