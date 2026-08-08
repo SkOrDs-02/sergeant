@@ -265,7 +265,7 @@ export function ShoppingListCard({
                         <div className="min-w-0 flex-1">
                           <span
                             className={cn(
-                              "text-sm text-text",
+                              "text-style-label text-text",
                               item.checked && "line-through",
                             )}
                           >

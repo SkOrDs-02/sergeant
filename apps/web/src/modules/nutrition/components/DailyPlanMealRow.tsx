@@ -132,7 +132,7 @@ export function DailyPlanMealRow({
         </button>
       )}
       {expanded && (meal.ingredients?.length ?? 0) > 0 && (
-        <ul className="mt-1.5 text-xs text-text list-disc pl-4 space-y-0.5">
+        <ul className="mt-1.5 text-style-caption text-text list-disc pl-4 space-y-0.5">
           {meal.ingredients?.map((ing: string, i: number) => (
             <li key={i}>{ing}</li>
           ))}

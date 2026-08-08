@@ -126,7 +126,7 @@ function WebBarcodeScanner({ onDetected, onClose }: BarcodeScannerProps) {
           <button
             type="button"
             onClick={handleClose}
-            className="w-10 h-10 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-panelHi text-muted hover:text-text text-lg transition-colors"
+            className="w-10 h-10 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-panelHi text-muted hover:text-text transition-colors"
             aria-label="Закрити сканер"
           >
             <Icon name="close" size={18} aria-hidden />
