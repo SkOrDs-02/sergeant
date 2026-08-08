@@ -15,7 +15,6 @@
   "apps/web/src/core/hub/dashboard/BentoCard.tsx",
   "apps/web/src/core/insights/AssistantAdviceCard.tsx",
   "apps/web/src/core/onboarding/FirstRunHintBanner.tsx",
-  "apps/web/src/core/settings/FinykPrivatBankSection.tsx",
   "apps/web/src/core/stories/components/slides/OverallSlide.tsx",
   "apps/web/src/core/stories/components/slides/RoutineSlide.tsx",
   "apps/web/src/main.tsx",
@@ -89,6 +88,5 @@
   "apps/web/src/shared/components/ui/ProgressCircle.tsx",
   "apps/web/src/shared/components/ui/ProgressRing.tsx",
   "apps/web/src/shared/components/ui/SkipLink.tsx",
-  "apps/web/src/shared/components/ui/Stat.tsx",
   "apps/web/src/shared/components/ui/StreakFlame.tsx"
 ]

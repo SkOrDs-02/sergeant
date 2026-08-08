@@ -105,7 +105,7 @@ export function Stat({
       >
         {icon && (
           /* icon-size, not type */
-          <span className="text-base font-normal leading-none">{icon}</span>
+          <span className="font-normal leading-none">{icon}</span>
         )}
         <span>{value}</span>
       </div>
