@@ -224,7 +224,7 @@ function MonthlyPlanCardComponent({
                   "text-right",
                   isOver
                     ? "text-danger-strong dark:text-danger font-semibold"
-                    : "text-danger-strong/80 dark:text-danger/80",
+                    : "text-danger-strong dark:text-danger",
                 )}
               >
                 {totalExpenseFact > 0 ? (

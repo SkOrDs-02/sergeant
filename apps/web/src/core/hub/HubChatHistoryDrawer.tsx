@@ -178,7 +178,7 @@ export function HubChatHistoryDrawer({
                     onClick={(e) => handleDelete(e, s.id)}
                     aria-label={`Видалити бесіду ${s.title}`}
                     title="Видалити"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-subtle/60 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100 hover:text-danger hover:bg-danger/10"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-subtle sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100 hover:text-danger hover:bg-danger/10"
                   >
                     <Icon name="trash" size={14} />
                   </Button>

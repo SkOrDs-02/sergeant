@@ -349,7 +349,7 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
           <div
             role="group"
             aria-label="Легенда заповнення"
-            className="flex items-center gap-2 text-style-caption text-subtle/70 select-none"
+            className="flex items-center gap-2 text-style-caption text-subtle select-none"
           >
             <span>менше</span>
             {HEATMAP.levels.map((c, i) => (

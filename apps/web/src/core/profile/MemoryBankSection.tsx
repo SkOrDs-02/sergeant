@@ -252,7 +252,7 @@ export function MemoryBankSection() {
             <p className="text-style-body text-muted mb-1">
               Банк пам&apos;яті порожній
             </p>
-            <p className="text-style-caption text-muted/70 mb-4">
+            <p className="text-style-caption text-muted mb-4">
               ШІ задасть кілька запитань щоб дізнатися про ваші алергії, цілі,
               уподобання та рівень активності
             </p>
@@ -298,7 +298,7 @@ export function MemoryBankSection() {
               };
               return (
                 <div key={cat}>
-                  <div className="text-style-overline text-muted/70 mb-2 flex items-center gap-1.5">
+                  <div className="text-style-overline text-muted mb-2 flex items-center gap-1.5">
                     <Icon name={meta.icon} size="xs" aria-hidden />
                     {meta.label}
                   </div>

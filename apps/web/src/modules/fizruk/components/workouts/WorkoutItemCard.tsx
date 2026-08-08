@@ -230,7 +230,7 @@ export function WorkoutItemCard({
         {!isReadOnly && (
           <button
             type="button"
-            className="flex items-center justify-center shrink-0 rounded-xl pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] text-style-caption text-danger/80 hover:text-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+            className="flex items-center justify-center shrink-0 rounded-xl pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] text-style-caption text-danger-strong dark:text-danger hover:text-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
             onClick={() => removeItem(activeWorkout.id, it.id)}
             aria-label="Видалити вправу з тренування"
           >

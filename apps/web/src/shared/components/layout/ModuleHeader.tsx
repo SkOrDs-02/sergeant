@@ -134,7 +134,7 @@ export function ModuleHeader({
           {titleSlot ?? (
             <>
               {eyebrow ? (
-                <span className="text-style-overline text-brand-700 dark:text-brand/70 block leading-none mb-0.5">
+                <span className="text-style-overline text-brand-700 dark:text-brand block leading-none mb-0.5">
                   {eyebrow}
                 </span>
               ) : null}
@@ -146,7 +146,7 @@ export function ModuleHeader({
                 // `getByRole("heading")` — роль тут не повинна зʼявитись.
                 <p
                   data-testid="module-header-title"
-                  className="text-base font-semibold tracking-wide text-text leading-tight flex items-center gap-2"
+                  className="text-style-body font-semibold tracking-wide text-text leading-tight flex items-center gap-2"
                 >
                   {mt ? (
                     <span

@@ -70,7 +70,7 @@ export function ChartScrubOverlay({
         stroke="currentColor"
         strokeWidth="1"
         strokeDasharray="3 3"
-        className="text-muted/60 pointer-events-none"
+        className="text-muted pointer-events-none"
       />
 
       {/* Dot at data point */}

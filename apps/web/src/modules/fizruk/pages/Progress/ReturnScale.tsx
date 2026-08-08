@@ -111,7 +111,7 @@ export function ReturnScale({
       */}
       <div
         aria-hidden
-        className="mt-1 flex items-center justify-between text-style-caption text-subtle/70 tabular-nums"
+        className="mt-1 flex items-center justify-between text-style-caption text-subtle tabular-nums"
       >
         <span>−{MAX_REDUCTION_PCT}%</span>
         <span>0%</span>

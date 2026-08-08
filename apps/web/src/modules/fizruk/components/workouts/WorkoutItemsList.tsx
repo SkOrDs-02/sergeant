@@ -184,7 +184,7 @@ export function WorkoutItemsList({
             </span>
             <button
               type="button"
-              className="text-style-caption text-danger-strong/70 dark:text-danger/70 hover:text-danger px-1 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+              className="text-style-caption text-danger-strong dark:text-danger hover:text-danger px-1 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
               onClick={() => handleRemoveGroup(group.id)}
               title="Розгрупувати"
             >

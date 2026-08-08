@@ -85,7 +85,7 @@ export function SearchResultItem({
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
-        className="text-muted/40 shrink-0"
+        className="text-muted shrink-0"
         aria-hidden
       >
         <path d="M9 18l6-6-6-6" />

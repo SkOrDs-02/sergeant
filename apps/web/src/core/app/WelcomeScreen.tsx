@@ -118,7 +118,7 @@ function PeekBackdrop() {
           "hidden sm:flex sm:justify-center",
         )}
       >
-        <span className="text-style-caption text-muted/80">
+        <span className="text-style-caption text-muted">
           Це приклад. Твоя головна буде твоєю.
         </span>
       </div>

@@ -104,7 +104,7 @@ export function OutcomeCard({
                   <Icon name={module.icon} size="md" />
                 </span>
                 <span className="space-y-1">
-                  <span className="block text-sm font-semibold text-text">
+                  <span className="block text-style-label font-semibold text-text">
                     {module.title}
                   </span>
                   <span className="block text-style-caption text-muted leading-relaxed">

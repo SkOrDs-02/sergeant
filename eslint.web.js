@@ -24,6 +24,27 @@ const i18nAllowlist = JSON.parse(
   ),
 );
 
+// Burndown-список атрактора 8 (сирі розміри шрифта замість семантичних
+// ролей, анти-слоп §3.2). Той самий патерн, що в i18n вище, і з тієї ж
+// причини: `lint-staged` ганяє eslint із `--max-warnings=0`, тож
+// репо-широкий `warn` блокував би КОЖЕН коміт, що торкається одного зі
+// 118 файлів. Це «червоний завжди» в іншому одязі.
+//
+// Список закритий і може лише коротшати. Мігруй файл — прибирай рядок.
+// Коли масив спорожніє, підвищ правило до `error` і видали цей блок.
+//
+// Чому міграція не одним проходом: 15 місць захищені `AI-DANGER` /
+// `AI-NOTE` явно («це ГЕОМЕТРІЯ контрола, не роль тексту») і ще 15
+// мають `!` — навмисне перебиття власного розміру компонента, чого
+// роль не вміє. Сліпий sed один раз уже переписав текст усередині тих
+// самих коментарів і був відкочений (див. §3.6 канону).
+const rawTypeSizeAllowlist = JSON.parse(
+  readFileSync(
+    new URL("./apps/web/eslint.raw-type-size-allowlist.json", import.meta.url),
+    "utf8",
+  ),
+);
+
 export const webBlocks = [
   // Dark-mode anti-pattern guardrail — fires on a className that
   // pairs a raw-palette light utility (`bg-amber-50`, `text-coral-100`,
@@ -135,49 +156,40 @@ export const webBlocks = [
       "sergeant-design/no-raw-type-size": "off",
     },
   },
-  // Базова лінія атрактора 9 — 42 входження в 33 файлах, заміряно на
-  // `391ce9ab`. Список закритий: він може лише коротшати. Кожен рядок
-  // тут — сабконтрастний текст у проді (subtle/70 = 2.76 при потрібних
-  // 4.5), і виправлення візуально помітне, тому винесене в окреме
-  // рішення власника разом із мокапом, а не зроблене мовчки.
+  {
+    files: rawTypeSizeAllowlist,
+    rules: {
+      "sergeant-design/no-raw-type-size": "off",
+    },
+  },
+  // Залишок атрактора 9 після міграції 2026-08-08 (рішення власника):
+  // 33 місця виправлено, 7 файлів лишились навмисно. Правило до них не
+  // застосовне, а не «ще не дійшли руки»:
   //
-  // Додавати сюди файли ЗАБОРОНЕНО. Правило вище тримає нові місця на
-  // `error` саме для того, щоб цей список не ріс.
+  //   • hover-стан над правильною базою — спокійний стан і є те, що
+  //     мусить проходити поріг (PersonalInfoSection, PantryManagerSheet,
+  //     ModuleBottomNav);
+  //   • вимкнений / неактивний контрол — WCAG 1.4.3 їх не покриває
+  //     (Programs, HabitDetailSheet, WorkoutSetRow:137);
+  //   • неозначальна іконка з `aria-label` на кнопці — поріг 3:1, і
+  //     subtle/70 дає 3.05, тобто проходить (WorkoutSetRow:146);
+  //   • MonthPulseCard — збіг усередині JSDoc-прози, що ЦИТУЄ старий
+  //     поганий приклад; коду там немає.
+  //
+  // Список закритий і може лише коротшати.
   {
     files: [
-      "apps/web/src/core/ErrorBoundary.tsx",
-      "apps/web/src/core/app/WelcomeScreen.tsx",
-      "apps/web/src/core/components/ChatMessage.tsx",
-      "apps/web/src/core/hub/HubChatHistoryDrawer.tsx",
-      "apps/web/src/core/hub/search/SearchResultItem.tsx",
-      "apps/web/src/core/profile/MemoryBankSection.tsx",
       "apps/web/src/core/profile/PersonalInfoSection.tsx",
-      "apps/web/src/core/settings/FinykSection.tsx",
-      "apps/web/src/modules/finyk/components/SyncStatusBadge.tsx",
-      "apps/web/src/modules/finyk/components/TxRowCategoryPicker.tsx",
-      "apps/web/src/modules/finyk/components/TxRowSplitEditor.tsx",
-      "apps/web/src/modules/finyk/components/budgets/MonthlyPlanCard.tsx",
       "apps/web/src/modules/finyk/pages/overview/MonthPulseCard.tsx",
-      "apps/web/src/modules/fizruk/components/WorkoutTemplatesSection.tsx",
-      "apps/web/src/modules/fizruk/components/exercise/ReturnProtocolNotice.tsx",
-      "apps/web/src/modules/fizruk/components/workouts/WorkoutItemCard.tsx",
-      "apps/web/src/modules/fizruk/components/workouts/WorkoutItemLastTimeHint.tsx",
-      "apps/web/src/modules/fizruk/components/workouts/WorkoutItemsList.tsx",
       "apps/web/src/modules/fizruk/components/workouts/WorkoutSetRow.tsx",
-      "apps/web/src/modules/fizruk/components/workouts/WorkoutsHeader.tsx",
-      "apps/web/src/modules/fizruk/pages/Exercise.tsx",
       "apps/web/src/modules/fizruk/pages/Programs.tsx",
-      "apps/web/src/modules/fizruk/pages/Progress/ReturnScale.tsx",
-      "apps/web/src/modules/fizruk/pages/WorkoutHistory.tsx",
-      "apps/web/src/modules/nutrition/components/PantryCard.tsx",
       "apps/web/src/modules/nutrition/components/PantryManagerSheet.tsx",
-      "apps/web/src/modules/routine/RoutineTimeline.tsx",
       "apps/web/src/modules/routine/components/HabitDetailSheet.tsx",
-      "apps/web/src/modules/routine/components/HabitHeatmap.tsx",
-      "apps/web/src/shared/components/charts/ChartScrubOverlay.tsx",
-      "apps/web/src/shared/components/layout/StorageErrorBanner.tsx",
-      "apps/web/src/shared/components/ui/Input.tsx",
       "apps/web/src/shared/components/ui/ModuleBottomNav.tsx",
+      // EmptyState — чотири `icon:` тони `-soft-fg/80` на власному
+      // `-soft` тлі. Це декоративна іконка поряд із текстом, тобто
+      // поріг 3:1, а пара soft-fg↔soft підібрана саме під нього.
+      "apps/web/src/shared/components/ui/EmptyState.tsx",
     ],
     rules: {
       "sergeant-design/no-opacity-on-text-token": "off",

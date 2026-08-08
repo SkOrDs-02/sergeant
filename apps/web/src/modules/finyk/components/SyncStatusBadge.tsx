@@ -96,7 +96,7 @@ function SyncStatusBadgeComponent({
       )}
       {error && !isLoading && (
         <span
-          className="text-danger/80 text-style-caption truncate max-w-[160px]"
+          className="text-danger-strong dark:text-danger text-style-caption truncate max-w-[160px]"
           title={error}
         >
           {error}
