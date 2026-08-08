@@ -20,6 +20,39 @@ export interface FizrukNavItem extends ModuleBottomNavItem {
   id: Extract<FizrukPage, "dashboard" | "workouts" | "progress" | "body">;
 }
 
+/**
+ * Fizruk chrome audit V-7: not every `FizrukPage` owns a tab of its own
+ * — «Заміри» is a full page, but it lives under the «Прогрес і заміри»
+ * tab rather than getting a fifth icon in the strip, and the two
+ * detail-style routes («Атлас», «Вправа») don't own a tab either. Before
+ * this map existed `FizrukApp` passed the raw `page` straight through as
+ * `activeId`, so on any of those routes the nav rendered with **no**
+ * active state at all (nothing in `FIZRUK_NAV` has `id: "measurements"`,
+ * `"atlas"`, …). This resolves any `FizrukPage` to the tab that should
+ * read as active, mirroring the same "which section owns this route"
+ * judgement `FizrukApp.contextualBackTarget` already makes for the back
+ * arrow — kept as an explicit switch (not a lookup record) so a new
+ * `FizrukPage` fails to compile here until it's given a home tab.
+ */
+export function fizrukNavActiveId(page: FizrukPage): FizrukNavItem["id"] {
+  switch (page) {
+    case "dashboard":
+      return "dashboard";
+    case "workouts":
+    case "workout":
+    case "programs":
+    case "history":
+    case "exercise":
+      return "workouts";
+    case "progress":
+    case "measurements":
+      return "progress";
+    case "body":
+    case "atlas":
+      return "body";
+  }
+}
+
 export const FIZRUK_NAV: readonly FizrukNavItem[] = [
   {
     id: "dashboard",

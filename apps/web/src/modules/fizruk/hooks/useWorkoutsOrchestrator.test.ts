@@ -4,7 +4,7 @@
  * Status: Active
  * Branch-coverage tests for useWorkoutsOrchestrator.ts.
  * Covers: removeItemWithUndo, handleExerciseInListClick (modes),
- * startWorkoutFromTemplate (empty/risky/safe), submitRetroWorkout,
+ * startWorkoutFromTemplate (empty/risky/safe),
  * handleQuickStartConfirm (strength/cardio), handleDeleteExerciseConfirm,
  * handleRiskyTemplateConfirm, addExerciseToActive, executeTemplateStart
  * with groups, finishedCount/recentWorkouts, mode derivation.
@@ -424,33 +424,6 @@ describe("useWorkoutsOrchestrator – handleRiskyTemplateConfirm", () => {
     // confirm clears dialog and executes
     act(() => result.current.handleRiskyTemplateConfirm());
     expect(mockCreateWorkout).toHaveBeenCalled();
-  });
-});
-
-describe("useWorkoutsOrchestrator – submitRetroWorkout", () => {
-  it("creates a workout with startedAt from retroDate + retroTime", () => {
-    const { result } = renderHook(() => useWorkoutsOrchestrator());
-    act(() => result.current.submitRetroWorkout());
-    expect(mockCreateWorkoutWithTimes).toHaveBeenCalled();
-    const arg = mockCreateWorkoutWithTimes.mock.calls[0]?.[0] as {
-      startedAt: string;
-    };
-    expect(arg).toHaveProperty("startedAt");
-    expect(typeof arg.startedAt).toBe("string");
-  });
-
-  it("closes retroOpen after submit", () => {
-    const { result } = renderHook(() => useWorkoutsOrchestrator());
-    act(() => result.current.setRetroOpen(true));
-    expect(result.current.retroOpen).toBe(true);
-    act(() => result.current.submitRetroWorkout());
-    expect(result.current.retroOpen).toBe(false);
-  });
-
-  it("sets the new workout as active", () => {
-    const { result } = renderHook(() => useWorkoutsOrchestrator());
-    act(() => result.current.submitRetroWorkout());
-    expect(result.current.activeWorkoutId).toBe("w-retro");
   });
 });
 

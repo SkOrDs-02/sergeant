@@ -293,11 +293,6 @@ function makeOrchestrator(view: string = "home", overrides: object = {}) {
     selected: null,
     addOpen: false,
     quickStartOpen: false,
-    retroOpen: false,
-    retroDate: "",
-    setRetroDate: vi.fn(),
-    retroTime: "",
-    setRetroTime: vi.fn(),
     finishFlash: null,
     setFinishFlash: vi.fn(),
     toast: vi.fn(),
@@ -322,7 +317,6 @@ function makeOrchestrator(view: string = "home", overrides: object = {}) {
     setView: vi.fn(),
     setAddOpen: vi.fn(),
     setQuickStartOpen: vi.fn(),
-    setRetroOpen: vi.fn(),
     setDeleteExerciseConfirm: vi.fn(),
     setRiskyTemplateConfirm: vi.fn(),
     setActiveWorkoutId: vi.fn(),
@@ -343,7 +337,6 @@ function makeOrchestrator(view: string = "home", overrides: object = {}) {
     startWorkoutFromTemplate: vi.fn(),
     repeatWorkout: vi.fn(),
     summarizeWorkoutForFinish: vi.fn(),
-    submitRetroWorkout: vi.fn(),
     deleteWorkout: vi.fn(),
     restoreWorkout: vi.fn(),
     setRestTimer: vi.fn(),
@@ -411,6 +404,30 @@ describe("Workouts page — log view", () => {
   it("renders the journal section in log view", () => {
     render(<Workouts />);
     expect(screen.getByTestId("workout-journal-section")).toBeInTheDocument();
+  });
+
+  // §4.4 audit fix — the outer page container is `max-w-4xl` (896px), which
+  // used to stretch the set-input fields to ~230px and "+ Підхід" to
+  // ~800px on a 1280px viewport. The active-workout panel (a vertical
+  // list of short numeric fields) now gets its own narrower `max-w-xl`.
+  it("wraps the active-workout panel in a narrower max-w for desktop", () => {
+    render(<Workouts />);
+    const journal = screen.getByTestId("workout-journal-section");
+    expect(journal.closest(".max-w-xl")).not.toBeNull();
+  });
+
+  // Minimal fix per audit §4.4: the catalog is a browsable list, not a
+  // form, so it must NOT be pulled into the narrower wrapper — it stays
+  // at the outer `max-w-4xl` container width.
+  it("does not narrow the exercise catalog — it stays at the outer container width", () => {
+    mockedOrchestrator.mockReturnValue(
+      makeOrchestrator("log", {
+        activeWorkout: { id: "w1", endedAt: null },
+      }) as unknown as ReturnType<typeof useWorkoutsOrchestrator>,
+    );
+    render(<Workouts />);
+    const catalog = screen.getByTestId("workout-catalog-section");
+    expect(catalog.closest(".max-w-xl")).toBeNull();
   });
 
   it("does not render WorkoutsHome in log view", () => {

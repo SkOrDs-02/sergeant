@@ -23,7 +23,13 @@ export function RecoveryFocusCard({
   const rec = useRecovery();
   const freshness = useReplicaFreshness();
   const { musclesUk } = useExerciseCatalog();
-  const [open, setOpen] = useState(false);
+  // AI-CONTEXT: V-10 (fizruk deep audit, 2026-08-07) — «Відновлення й
+  // фокус» is the module's canonical feature (canon fizruk §4), but it
+  // used to render collapsed by default AND after the entry form on the
+  // `Body` page. Both defaults fought the same priority: a returning user
+  // saw a blank form before anything about recovery. Open-by-default here
+  // is the other half of the fix — see the render order in `Body.tsx`.
+  const [open, setOpen] = useState(true);
 
   const atlasData = useMemo(() => buildAtlasData(rec.by), [rec.by]);
 
@@ -98,6 +104,7 @@ export function RecoveryFocusCard({
           size="sm"
           // AI-DANGER: розмір контрола на `Button`, не текст — див.
           // той самий випадок у WorkoutCatalogSection.
+          // eslint-disable-next-line sergeant-design/no-raw-type-size -- розмір КОНТРОЛА: висоту цієї кнопки задає пара `text-xs` + `h-9`, і семантична роль із власним line-height зсунула б її відносно сусіднього заголовка секції.
           className="h-9 min-h-[40px] px-3 text-xs shrink-0"
           onClick={() => onOpenAtlas?.()}
           aria-label="Відкрити атлас мʼязів"

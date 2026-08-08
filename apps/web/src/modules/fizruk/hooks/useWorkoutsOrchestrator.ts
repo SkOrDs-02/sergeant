@@ -1,7 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { safeReadStringLS } from "@shared/lib/storage/storage";
 import { requestCloudPull } from "@shared/lib/modules/cloudPullRequest";
-import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import type { DataStateQueryLike } from "@shared/components/ui/DataState";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
@@ -31,7 +30,6 @@ import {
   buildGroupedExercises,
   collectLastByExerciseId,
   formatActiveDuration,
-  todayLocalDateString,
 } from "../pages/Workouts.helpers";
 import type { AddExerciseForm } from "../components/workouts/AddExerciseSheet";
 import {
@@ -72,7 +70,6 @@ export function useWorkoutsOrchestrator(
     workouts,
     loaded: workoutsLoaded,
     createWorkout,
-    createWorkoutWithTimes,
     updateWorkout,
     deleteWorkout,
     restoreWorkout,
@@ -127,12 +124,9 @@ export function useWorkoutsOrchestrator(
   const [riskyTemplateConfirm, setRiskyTemplateConfirm] =
     useState<WorkoutTemplate | null>(null);
   const [now, setNow] = useState(() => Date.now());
-  const [retroOpen, setRetroOpen] = useState(false);
   const [pendingWorkoutStart, setPendingWorkoutStart] = useState<
     (() => void) | null
   >(null);
-  const [retroDate, setRetroDate] = useState(() => todayLocalDateString());
-  const [retroTime, setRetroTime] = useState("18:00");
   const [form, setForm] = useState<AddExerciseForm>(() => ({
     nameUk: "",
     primaryGroup: "chest",
@@ -348,30 +342,6 @@ export function useWorkoutsOrchestrator(
     [exercises, rec.by, executeTemplateStart, requestWorkoutStart, toast],
   );
 
-  const submitRetroWorkout = useCallback(() => {
-    requestWorkoutStart(() => {
-      const parts = retroDate.split("-").map(Number);
-      const kyivNow = getKyivDateParts();
-      const y = parts[0] ?? kyivNow.year;
-      const mo = parts[1] ?? kyivNow.month;
-      const d = parts[2] ?? kyivNow.day;
-      const timeParts = (retroTime || "12:00").split(":").map(Number);
-      const hh = timeParts[0] ?? 12;
-      const mm = timeParts[1] ?? 0;
-      const startedAt = new Date(y, mo - 1, d, hh, mm, 0, 0).toISOString();
-      const w = createWorkoutWithTimes({ startedAt });
-      setActiveWorkoutId(w.id);
-      setRetroOpen(false);
-      if (onWorkoutStarted) onWorkoutStarted(w.id);
-    });
-  }, [
-    retroDate,
-    retroTime,
-    createWorkoutWithTimes,
-    onWorkoutStarted,
-    requestWorkoutStart,
-  ]);
-
   const lastByExerciseId = useMemo(
     () => collectLastByExerciseId(workouts, activeWorkoutId),
     [workouts, activeWorkoutId],
@@ -515,16 +485,10 @@ export function useWorkoutsOrchestrator(
     riskyTemplateConfirm,
     setRiskyTemplateConfirm,
     now,
-    retroOpen,
-    setRetroOpen,
     activeWorkoutConflictOpen: pendingWorkoutStart !== null,
     finishActiveAndContinue: () => continuePendingWorkoutStart("finish"),
     discardActiveAndContinue: () => continuePendingWorkoutStart("discard"),
     cancelPendingWorkoutStart: () => setPendingWorkoutStart(null),
-    retroDate,
-    setRetroDate,
-    retroTime,
-    setRetroTime,
     form,
     setForm,
     activeWorkout,
@@ -533,7 +497,6 @@ export function useWorkoutsOrchestrator(
     handleExerciseInListClick,
     startWorkoutFromTemplate,
     repeatWorkout,
-    submitRetroWorkout,
     lastByExerciseId,
     grouped,
     finishedCount,

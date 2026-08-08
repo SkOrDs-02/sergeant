@@ -50,6 +50,45 @@ export interface SqliteMigrationClient {
   ): R[] | Promise<R[]>;
 }
 
+/**
+ * Черга «одна міграція за раз» на КЛІЄНТА (а отже — на DB-хендл).
+ *
+ * AI-DANGER: `applyMigration` тримає `await` між `BEGIN` і `COMMIT`, а
+ * кожен `await` віддає керування циклу подій. У вебі чотири модульні
+ * мігратори (`migrateFizruk`, `migrateRoutine`, `migrateFinyk`,
+ * `migrateNutrition`) стартують із бут-ефектів одного рендеру й ділять
+ * ОДИН `oo1.DB`. Без цієї черги другий `BEGIN` прилітав усередину
+ * першої транзакції, sqlite відповідав `cannot start a transaction
+ * within a transaction`, бут модуля падав і він тихо лишався на
+ * LS-фолбеку. Симптом ловився лише без COOP/COEP (memory-VFS повільніший,
+ * тож вікно гонки ширше) — на OPFS та сама гонка просто рідша, не
+ * відсутня.
+ *
+ * `SAVEPOINT` замість `BEGIN` тут НЕ підходить: savepoint-и мають
+ * LIFO-семантику, тож `RELEASE` зовнішнього звільнив би і вкладений,
+ * зафіксувавши чужу напівзастосовану міграцію. Серіалізація — єдина
+ * коректна відповідь для спільного хендла.
+ */
+const clientLocks = new WeakMap<SqliteMigrationClient, Promise<void>>();
+
+function withClientLock<T>(
+  client: SqliteMigrationClient,
+  task: () => Promise<T>,
+): Promise<T> {
+  const previous = clientLocks.get(client) ?? Promise.resolve();
+  // `then(task, task)` — навмисно на обидві гілки: провалена міграція
+  // одного модуля не має назавжди заблокувати чергу для решти.
+  const result = previous.then(task, task);
+  clientLocks.set(
+    client,
+    result.then(
+      () => undefined,
+      () => undefined,
+    ),
+  );
+  return result;
+}
+
 export function createSqliteAdapter(
   client: SqliteMigrationClient,
 ): MigrationAdapter {
@@ -83,21 +122,24 @@ export function createSqliteAdapter(
 
     async applyMigration(tableName, name, sql) {
       const ident = quoteIdentifier(tableName);
-      await client.exec("BEGIN");
-      try {
-        if (sql.trim().length > 0) {
-          await client.exec(sql);
-        }
-        await client.run(`INSERT INTO ${ident} (name) VALUES (?)`, [name]);
-        await client.exec("COMMIT");
-      } catch (err) {
+      // Серіалізовано по клієнту — див. `withClientLock` вище.
+      return withClientLock(client, async () => {
+        await client.exec("BEGIN");
         try {
-          await client.exec("ROLLBACK");
-        } catch {
-          // Best-effort: surface the original migration error.
+          if (sql.trim().length > 0) {
+            await client.exec(sql);
+          }
+          await client.run(`INSERT INTO ${ident} (name) VALUES (?)`, [name]);
+          await client.exec("COMMIT");
+        } catch (err) {
+          try {
+            await client.exec("ROLLBACK");
+          } catch {
+            // Best-effort: surface the original migration error.
+          }
+          throw err;
         }
-        throw err;
-      }
+      });
     },
   };
 }

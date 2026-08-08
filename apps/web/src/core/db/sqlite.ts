@@ -295,9 +295,18 @@ async function initSqliteDb(
   const proxy = makeProxyDriver(driver.db);
   const drizzleDb = drizzle<SqliteSchema>(proxy, { schema: sqliteSchema });
 
+  // AI-DANGER: рівно ОДИН клієнт на хендл, а не новий на кожен виклик.
+  // Адаптер міграцій серіалізує `applyMigration` через `WeakMap` по
+  // об'єкту клієнта, тож свіжий об'єкт на кожен виклик робив би ту чергу
+  // порожньою — чотири модульні мігратори (fizruk / routine / finyk /
+  // nutrition) ділять цей `oo1.DB` і без спільного ключа знову
+  // перетинали б `BEGIN`, валячи бут із «cannot start a transaction
+  // within a transaction».
+  const sharedMigrationClient = makeMigrationClient(driver.db);
+
   const handle: SqliteDbHandle = {
     drizzle: drizzleDb,
-    migrationClient: () => makeMigrationClient(driver.db),
+    migrationClient: () => sharedMigrationClient,
     vfs: driver.vfs,
     crossOriginIsolated: coi,
     async close() {

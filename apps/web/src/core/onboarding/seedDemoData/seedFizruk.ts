@@ -1,6 +1,21 @@
-import { FIZRUK_MEASUREMENTS_KEY, FIZRUK_WORKOUTS_KEY } from "./keys";
+import {
+  FIZRUK_MEASUREMENTS_KEY,
+  FIZRUK_TEMPLATES_KEY,
+  FIZRUK_WORKOUTS_KEY,
+} from "./keys";
 import { daysAgo, shortId, toISO, writeJSON } from "./utils";
 
+/**
+ * AI-DANGER: `musclesPrimary` / `musclesSecondary` мусять містити ДОМЕННІ
+ * ключі — рівно ті, які розуміє `mapDomainMuscleToAtlas` у
+ * `packages/fizruk-domain/src/data/bodyAtlas.ts`: `pectoralis_major`, а не
+ * `chest`; `latissimus_dorsi`, а не `back`; `front_deltoid`, а не
+ * `shoulders`. Невідомий ключ мапиться в `null`, тобто мовчки випадає з
+ * силуету «Моє тіло» — і спливає сирим англійським рядком у списку
+ * «Почекати» («Почекати: Квадрицепс, back, shoulders»). Виявлено
+ * 2026-08-08, щойно демо знову почало доїжджати до модуля (L-8): доти
+ * ці дані просто ніде не рендерились.
+ */
 export function seedFizruk(): void {
   // A single finished workout 1 day ago — enough for the calendar
   // streak, the recovery map, and "останнє тренування" card to light
@@ -45,8 +60,8 @@ export function seedFizruk(): void {
           exerciseId: "bench_press",
           nameUk: "Жим штанги лежачи",
           primaryGroup: "chest",
-          musclesPrimary: ["chest"],
-          musclesSecondary: ["triceps", "shoulders"],
+          musclesPrimary: ["pectoralis_major"],
+          musclesSecondary: ["triceps", "front_deltoid"],
           type: "strength",
           sets: [
             { weightKg: 40, reps: 12 },
@@ -59,8 +74,8 @@ export function seedFizruk(): void {
           exerciseId: "deadlift",
           nameUk: "Станова тяга",
           primaryGroup: "back",
-          musclesPrimary: ["back", "hamstrings"],
-          musclesSecondary: ["glutes", "forearms"],
+          musclesPrimary: ["latissimus_dorsi", "hamstrings"],
+          musclesSecondary: ["gluteus_maximus", "forearms"],
           type: "strength",
           sets: [
             { weightKg: 80, reps: 8 },
@@ -84,7 +99,7 @@ export function seedFizruk(): void {
           exerciseId: "pullup",
           nameUk: "Підтягування",
           primaryGroup: "back",
-          musclesPrimary: ["back", "biceps"],
+          musclesPrimary: ["latissimus_dorsi", "biceps"],
           musclesSecondary: ["forearms"],
           type: "strength",
           sets: [
@@ -98,7 +113,7 @@ export function seedFizruk(): void {
           exerciseId: "ohp",
           nameUk: "Армійський жим",
           primaryGroup: "shoulders",
-          musclesPrimary: ["shoulders"],
+          musclesPrimary: ["front_deltoid"],
           musclesSecondary: ["triceps"],
           type: "strength",
           sets: [
@@ -121,6 +136,27 @@ export function seedFizruk(): void {
       weight: 78.4,
       waist: 82,
       chest: 100,
+    },
+  ]);
+
+  // Два шаблони — рівно щоб «Із шаблону» на хоумі відкривало не порожнечу.
+  // Вправи ті самі, що у засіяних тренуваннях, тож демо виглядає як один
+  // послідовний план, а не як набір непов'язаних прикладів.
+  writeJSON(FIZRUK_TEMPLATES_KEY, [
+    {
+      id: shortId("demo_tpl", 1),
+      name: "Ноги і спина",
+      exerciseIds: ["squat", "deadlift"],
+      groups: [],
+      updatedAt: toISO(daysAgo(5, 19, 50)),
+      lastUsedAt: toISO(daysAgo(1, 18, 30)),
+    },
+    {
+      id: shortId("demo_tpl", 2),
+      name: "Верх тіла",
+      exerciseIds: ["bench_press", "ohp", "pullup"],
+      groups: [],
+      updatedAt: toISO(daysAgo(5, 19, 50)),
     },
   ]);
 }

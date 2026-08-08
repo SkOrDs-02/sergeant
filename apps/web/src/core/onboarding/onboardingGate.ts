@@ -98,14 +98,20 @@ export function clearDemoFlag(): void {
  * Synthetic user id used to scope SQLite rows for a demo session.
  *
  * Demo mode bypasses auth, so `useAuth().user?.id` is `null`. The
- * per-module SQLite read-boot hooks (and the residual `*_v1` LS ->
- * SQLite drain they run) are `userId`-gated, so without a stand-in id
- * the demo payload `seedDemoData()` writes to LS never reaches the
- * SQLite cache the migrated modules read — the modules render empty
- * while the hub cards show the seeded quick-stats. Booting the read
- * path under this stable id lets the residual import warm the global
- * read cache. Isolated from any real account id (real users read under
- * their own id and never see these rows).
+ * per-module SQLite read-boot hooks are `userId`-gated, so without a
+ * stand-in id the demo payload `seedDemoData()` writes to LS never
+ * reaches the SQLite cache the migrated modules read — the modules
+ * render empty while the hub cards show the seeded quick-stats.
+ * Isolated from any real account id (real users read under their own
+ * id and never see these rows).
+ *
+ * ⚠️ Раніше тут писало, що LS→SQLite доносить «residual import». Той
+ * дренаж прибрали 2026-08 як legacy, і разом із ним тихо помер демо-
+ * режим — саме ту регресію зафіксував аудит L-8 (2026-08-07). Тепер
+ * місток явний і демо-специфічний: `importFizrukDemoSeed()` у
+ * `modules/fizruk/lib/demoSeedImport.ts`, викликаний із read-boot
+ * модуля під прапорцем демо. Решта модулів (routine / nutrition /
+ * finyk) того містка ЩЕ НЕ МАЮТЬ — їхнє демо лишається порожнім.
  */
 export const DEMO_LOCAL_USER_ID = "demo-local";
 

@@ -114,43 +114,54 @@ export function Workouts({
         ) : null}
 
         {o.view === "log" && (
-          <DataState
-            query={o.journalQuery}
-            skeleton={workoutsLoadingSkeleton}
-            errorAction={
-              // R2-UX-18 · If a retry of the journal query keeps failing
-              // (e.g. corrupted local cache after a bad sync), a full
-              // reload is the reliable second path out.
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => window.location.reload()}
-              >
-                {messages.actions.reload}
-              </Button>
-            }
-          >
-            {() => (
-              <WorkoutJournalSection
-                activeWorkout={o.activeWorkout}
-                activeDuration={o.activeDuration}
-                musclesUk={o.musclesUk}
-                recBy={o.rec.by}
-                lastByExerciseId={o.lastByExerciseId}
-                setRestTimer={o.setRestTimer}
-                updateWorkout={o.updateWorkout}
-                updateItem={o.updateItem}
-                removeItem={o.removeItemWithUndo}
-                setFinishFlash={o.setFinishFlash}
-                endWorkout={o.endWorkout}
-                summarizeWorkoutForFinish={o.summarizeWorkoutForFinish}
-                deleteWorkout={o.deleteWorkout}
-                restoreWorkout={o.restoreWorkout}
-                onRepeatWorkout={o.repeatWorkout}
-                onClose={() => onNavigate?.("workouts")}
-              />
-            )}
-          </DataState>
+          // §4.4 audit fix — on desktop the outer `max-w-4xl` (896px) let
+          // this panel stretch to ~1030px: set-input fields ballooned to
+          // ~230px and "+ Підхід" to ~800px, even though a set row is a
+          // short vertical stack of numeric fields, not something that
+          // benefits from extra width. The exercise catalog right below
+          // (`WorkoutCatalogSection`, outside this wrapper) intentionally
+          // stays at the outer `max-w-4xl` — it is a browsable list, not a
+          // form. Minimal fix per audit §4.4: narrow just this panel, no
+          // two-column layout.
+          <div className="max-w-xl mx-auto">
+            <DataState
+              query={o.journalQuery}
+              skeleton={workoutsLoadingSkeleton}
+              errorAction={
+                // R2-UX-18 · If a retry of the journal query keeps failing
+                // (e.g. corrupted local cache after a bad sync), a full
+                // reload is the reliable second path out.
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => window.location.reload()}
+                >
+                  {messages.actions.reload}
+                </Button>
+              }
+            >
+              {() => (
+                <WorkoutJournalSection
+                  activeWorkout={o.activeWorkout}
+                  activeDuration={o.activeDuration}
+                  musclesUk={o.musclesUk}
+                  recBy={o.rec.by}
+                  lastByExerciseId={o.lastByExerciseId}
+                  setRestTimer={o.setRestTimer}
+                  updateWorkout={o.updateWorkout}
+                  updateItem={o.updateItem}
+                  removeItem={o.removeItemWithUndo}
+                  setFinishFlash={o.setFinishFlash}
+                  endWorkout={o.endWorkout}
+                  summarizeWorkoutForFinish={o.summarizeWorkoutForFinish}
+                  deleteWorkout={o.deleteWorkout}
+                  restoreWorkout={o.restoreWorkout}
+                  onRepeatWorkout={o.repeatWorkout}
+                  onClose={() => onNavigate?.("workouts")}
+                />
+              )}
+            </DataState>
+          </div>
         )}
 
         {o.view === "templates" && (

@@ -129,16 +129,6 @@ describe("useWorkoutsOrchestrator", () => {
     expect(executed || risky).toBe(true);
   });
 
-  it("submitRetroWorkout creates a back-dated workout and closes the sheet", () => {
-    const { result } = setup();
-    act(() => result.current.setRetroDate("2024-02-15"));
-    act(() => result.current.setRetroTime("09:30"));
-    act(() => result.current.setRetroOpen(true));
-    act(() => result.current.submitRetroWorkout());
-    expect(result.current.retroOpen).toBe(false);
-    expect(result.current.activeWorkoutId).not.toBeNull();
-  });
-
   it("handleQuickStart builds an empty workout", () => {
     const { result } = setup();
     act(() => result.current.handleQuickStart());

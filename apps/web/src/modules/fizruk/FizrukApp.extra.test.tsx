@@ -255,16 +255,29 @@ describe("FizrukApp (extra) — bottom nav visibility", () => {
     expect(screen.getByTestId("fizruk-nav")).toBeInTheDocument();
   });
 
-  it.each(["atlas", "exercise"] as const)(
-    "hides bottom nav on the %s page",
-    (page) => {
+  // V-7 chrome audit: Атлас and Вправа used to hide the bottom nav
+  // entirely, so those two routes were chrome dead-ends reachable only
+  // via the header's contextual «←» arrow — no way to jump sideways to
+  // another module section without first backing out. They're full peer
+  // screens like the rest of Fizruk, so the nav now stays present there
+  // too, highlighting the tab that owns them (see `fizrukNav.test.tsx`
+  // for the id-mapping coverage).
+  it.each([
+    ["atlas", "body"],
+    ["exercise", "workouts"],
+  ] as const)(
+    "shows bottom nav on the %s page, active tab %s",
+    (page, expectedActive) => {
       vi.mocked(useFizrukRoute).mockReturnValueOnce({
         page,
         segments: page === "exercise" ? ["ex-1"] : [],
         navigate: navigateMock,
       });
       render(<FizrukApp />);
-      expect(screen.queryByTestId("fizruk-nav")).not.toBeInTheDocument();
+      expect(screen.getByTestId("fizruk-nav")).toBeInTheDocument();
+      expect(screen.getByTestId("active-page").textContent).toBe(
+        expectedActive,
+      );
     },
   );
 
@@ -281,6 +294,22 @@ describe("FizrukApp (extra) — bottom nav visibility", () => {
       expect(screen.getByTestId("active-page").textContent).toBe(page);
     },
   );
+
+  // V-7: «Заміри» has its own page and its own contextual back arrow
+  // (`FizrukHeader.backLabelFor`), but no tab of its own — before this
+  // fix `activeId={page}` sent "measurements" straight through and
+  // matched nothing in `FIZRUK_NAV`, so the nav rendered with no active
+  // tab highlighted at all.
+  it("shows bottom nav on the measurements page with «progress» as the active tab", () => {
+    vi.mocked(useFizrukRoute).mockReturnValueOnce({
+      page: "measurements",
+      segments: [],
+      navigate: navigateMock,
+    });
+    render(<FizrukApp />);
+    expect(screen.getByTestId("fizruk-nav")).toBeInTheDocument();
+    expect(screen.getByTestId("active-page").textContent).toBe("progress");
+  });
 });
 
 // ── Bottom nav onChange ───────────────────────────────────────────────────────

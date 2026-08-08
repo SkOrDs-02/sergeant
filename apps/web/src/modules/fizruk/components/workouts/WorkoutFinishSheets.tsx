@@ -21,6 +21,8 @@ import {
 import { pluralUa } from "@sergeant/shared";
 import { messages } from "@shared/i18n/uk";
 import { useInjuries } from "../../hooks/useInjuries";
+import { useDailyLog } from "../../hooks/useDailyLog";
+import { planWellbeingHandoff } from "../../lib/wellbeingBridge";
 import { WorkoutStatTile } from "./WorkoutStatTile";
 // `FinishFlashState` живе у `../../pages/Workouts.types` (там `useState`
 // setter, що ходить між обома sheet-ами). Імпортуємо звідти, щоб не дублювати
@@ -82,6 +84,8 @@ export function WorkoutFinishSheets({
   onDone,
 }: WorkoutFinishSheetsProps) {
   const { mark } = useInjuries();
+  const { entries: dailyLogEntries, addEntry: addDailyLogEntry } =
+    useDailyLog();
   const injuryCopy = messages.fizruk.injuries;
   const [savingInjuries, setSavingInjuries] = useState(false);
   const [musclesOpen, setMusclesOpen] = useState(false);
@@ -225,6 +229,19 @@ export function WorkoutFinishSheets({
                           : {}),
                       },
                     });
+                    // Той самий факт — і в денний журнал Body, інакше
+                    // після «енергія 4 / настрій 4» тут Body показував
+                    // порожню форму за сьогодні (аудит L-10.3). Місток
+                    // однобічний: дописує, але ніколи не переписує
+                    // оцінку, яку людина вже поставила вручну — правило
+                    // й межа доби живуть у `wellbeingBridge.ts`.
+                    const handoff = planWellbeingHandoff(
+                      { energy: finishFlash.energy, mood: finishFlash.mood },
+                      dailyLogEntries,
+                      // eslint-disable-next-line no-restricted-syntax -- ADR-0078: денний запис Body — особиста сутність, її доба належить пристрою
+                      new Date(),
+                    );
+                    if (handoff) addDailyLogEntry(handoff);
                   }
                   setFinishFlash(
                     (f) =>
@@ -416,7 +433,11 @@ export function WorkoutFinishSheets({
                 </div>
                 <button
                   type="button"
-                  className="w-9 h-9 pointer-coarse:min-w-[44px] pointer-coarse:min-h-[44px] flex items-center justify-center rounded-full bg-fizruk-tile/10 text-fizruk-soft-fg hover:opacity-70 text-lg"
+                  // `text-lg` прибрано: єдиний вміст кнопки — `<Icon size={16}>`,
+                  // тобто SVG із власним розміром, на який шкала шрифта не
+                  // впливає. Клас нічого не робив, лише тягнув за собою
+                  // попередження про сиру шкалу.
+                  className="w-9 h-9 pointer-coarse:min-w-[44px] pointer-coarse:min-h-[44px] flex items-center justify-center rounded-full bg-fizruk-tile/10 text-fizruk-soft-fg hover:opacity-70"
                   aria-label="Закрити"
                   onClick={closeFinish}
                 >
@@ -475,6 +496,7 @@ export function WorkoutFinishSheets({
                   // `py-1.5`, і роль із `line-height: 1.4` зсунула б її
                   // відносно сусідніх дій. Одна з двох причин лишати
                   // сирий розмір (див. `tailwind-preset.js`, § ролі).
+                  // eslint-disable-next-line sergeant-design/no-raw-type-size -- розмір КОНТРОЛА, причина розписана в AI-NOTE вище.
                   className="w-full text-xs text-muted hover:text-text transition-colors py-1.5 flex items-center justify-center gap-1.5"
                   onClick={() => {
                     recordCrossModulePromptAccepted("fizruk-finish-to-meal");
@@ -500,6 +522,7 @@ export function WorkoutFinishSheets({
                 </Button>
                 <button
                   type="button"
+                  // eslint-disable-next-line sergeant-design/no-raw-type-size -- розмір КОНТРОЛА: `text-base` + `py-3` тримають висоту головної CTA врівень із сусідньою кнопкою «Згорнути».
                   className="fizruk-cta-accent flex-1 py-3 rounded-full text-base"
                   onClick={closeFinish}
                 >
