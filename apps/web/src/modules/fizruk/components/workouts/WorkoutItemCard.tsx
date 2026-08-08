@@ -2,24 +2,16 @@
  * Last validated: 2026-08-08
  * Status: Active
  */
-import { useEffect, useRef, useState } from "react";
-import { SectionHeading } from "@shared/components/ui/SectionHeading";
+import { useState } from "react";
 import { Button } from "@shared/components/ui/Button";
-import { Segmented } from "@shared/components/ui/Segmented";
 import { Icon } from "@shared/components/ui/Icon";
 import { clampNumericInput } from "@shared/lib/format/numberInput";
-import {
-  MAX_DISTANCE_M,
-  MAX_DURATION_SEC,
-  MAX_REPS,
-  MAX_WEIGHT_KG,
-} from "../../lib/numericBounds";
-import {
-  recoveryConflictsForWorkoutItem,
-  type Workout,
-  type WorkoutGroup,
-  type WorkoutItem,
-  type WorkoutSet,
+import { MAX_DISTANCE_M, MAX_DURATION_SEC } from "../../lib/numericBounds";
+import type {
+  Workout,
+  WorkoutGroup,
+  WorkoutItem,
+  WorkoutSet,
 } from "@sergeant/fizruk-domain";
 import {
   getRestCategory,
@@ -29,12 +21,15 @@ import type { RestTimerState } from "../../hooks/useFizrukRestSound";
 import { VoiceMicButton } from "@shared/components/ui/VoiceMicButton";
 import { parseWorkoutSetSpeech } from "@sergeant/shared";
 import { calcCardioMetrics } from "./activeWorkoutLib";
-import { SupersetBadge } from "./SupersetBadge";
+import { SupersetMemberLabel } from "./SupersetBadge";
 import {
+  filterNonEmptyStrengthSets,
   WorkoutItemLastTimeHint,
   type LastByExerciseEntry,
 } from "./WorkoutItemLastTimeHint";
+import { WorkoutItemRecoveryChip } from "./WorkoutItemRecoveryChip";
 import { WorkoutItemRestPresets } from "./WorkoutItemRestPresets";
+import { isSetDone, WorkoutSetRow } from "./WorkoutSetRow";
 
 import { useFizrukRoute } from "../../hooks/useFizrukRoute";
 
@@ -42,6 +37,10 @@ export type WorkoutItemCardProps = {
   it: WorkoutItem;
   activeWorkout: Workout;
   group: WorkoutGroup | null | undefined;
+  /** 1-based position of `it` inside `group.itemIds` — renders as an
+   * "A1"/"A2" ordinal next to the title (see `SupersetMemberLabel`).
+   * `undefined` for standalone items or while `groupSelectMode` is on. */
+  groupMemberPosition?: number | undefined;
   groupSelectMode: boolean;
   isSelected: boolean;
   isReadOnly: boolean;
@@ -73,12 +72,23 @@ export type WorkoutItemCardProps = {
   ) => void;
 };
 
+/** Last SET in `sets` with both weight AND reps logged (>0), or `null`
+ * when none qualify. Used by "+ Підхід" to copy forward the most
+ * recently completed set instead of appending a blank `0×0` row. */
+function findLastDoneSet(sets: WorkoutSet[]): WorkoutSet | null {
+  for (let i = sets.length - 1; i >= 0; i -= 1) {
+    const s = sets[i];
+    if (s && isSetDone(s)) return s;
+  }
+  return null;
+}
+
 /**
  * Single editable workout-item tile rendered inside `ActiveWorkoutPanel`.
  *
  * Hosts type-specific inputs (strength sets / time / distance), the
- * "previous time" hint, recovery-conflict warnings, the per-item rest
- * timer with quick presets, and the multi-select checkbox used when the
+ * per-row "previous time" ghost, a compact recovery-conflict chip, the
+ * per-item rest timer, and the multi-select checkbox used when the
  * user is grouping items into a superset/circuit.
  *
  * Pure presentational component: every mutation (`updateItem`,
@@ -91,6 +101,7 @@ export function WorkoutItemCard({
   it,
   activeWorkout,
   group,
+  groupMemberPosition,
   groupSelectMode,
   isSelected,
   isReadOnly,
@@ -120,6 +131,11 @@ export function WorkoutItemCard({
     it.type === "distance"
       ? calcCardioMetrics(it.distanceM, it.durationSec)
       : null;
+  // Per-row "було" ghosts (item 1): same-position sets from the last
+  // session, filtered with the domain's non-empty criterion. Index N
+  // of this array suggests values for row N of the current sets list.
+  const lastFilteredSets =
+    last?.type === "strength" ? filterNonEmptyStrengthSets(last.sets) : [];
 
   const defSec = it.exerciseId
     ? (getDefaultForExercise?.(it.exerciseId, it.primaryGroup) ??
@@ -138,39 +154,19 @@ export function WorkoutItemCard({
   // ref — `react-hooks/refs` forbids reading `ref.current` during
   // render, and this array is read every render to build `key`s):
   // appended when the list grows, spliced out at the exact index the
-  // "Видалити" handler removes. Every `sets`-length mutation site below
-  // (delete, "+ Підхід", voice add, switching type to "strength" from
-  // empty) updates this array in lockstep, so the id↔set mapping can't
-  // drift as long as they stay in sync. `setKeys[idx]` falls back to a
-  // positional key if it ever does (e.g. an external non-add/delete
-  // mutation of `sets`) — no worse than the original `key={idx}`.
+  // per-row delete handler removes. Every `sets`-length mutation site
+  // below (delete, "+ Підхід", voice add) updates this array in
+  // lockstep, so the id↔set mapping can't drift as long as they stay in
+  // sync. `setKeys[idx]` falls back to a positional key if it ever does
+  // (e.g. an external non-add/delete mutation of `sets` — notably a
+  // type-switch from `ExerciseDetailSheet`/`WorkoutItemTypeSwitcher`,
+  // which lives outside this component and can't reach `setSetIds`) —
+  // no worse than the original `key={idx}`.
   const [setIds, setSetIds] = useState<string[]>(() =>
     (it.sets || []).map(() => crypto.randomUUID()),
   );
   const sets = it.sets || [];
   const setKeys = sets.map((_s, idx) => setIds[idx] ?? `set-fallback-${idx}`);
-
-  // `Segmented` has no `disabled` prop (see its API in
-  // `@shared/components/ui/Segmented`) and that shared component is out
-  // of scope for this fix. `opacity-50 pointer-events-none` on its own
-  // only blocks the mouse: Tab still lands on the active tab (roving
-  // `tabIndex=0`) and Arrow keys still fire `onChange`, letting the
-  // keyboard mutate the "Тип" of an already-completed workout item. The
-  // `onChange` guard below refuses the mutation outright; this effect
-  // force-removes every rendered tab from the Tab order after each
-  // commit so keyboard users can't even reach the control once
-  // read-only.
-  const segmentedTypeRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!isReadOnly) return;
-    const tabs =
-      segmentedTypeRef.current?.querySelectorAll<HTMLButtonElement>(
-        '[role="tab"]',
-      );
-    tabs?.forEach((tab) => {
-      tab.tabIndex = -1;
-    });
-  });
 
   return (
     <div
@@ -211,9 +207,10 @@ export function WorkoutItemCard({
             >
               {it.nameUk}
             </button>
-            {group && !groupSelectMode && (
-              <SupersetBadge type={group.type ?? "superset"} />
+            {group && !groupSelectMode && groupMemberPosition != null && (
+              <SupersetMemberLabel position={groupMemberPosition} />
             )}
+            <WorkoutItemRecoveryChip it={it} recBy={recBy} />
           </div>
           <div className="text-style-caption text-subtle mt-0.5">
             М{"'"}язи:{" "}
@@ -229,31 +226,6 @@ export function WorkoutItemCard({
                 .join(", ") || "—"}
             </span>
           </div>
-          {(() => {
-            const cf = recoveryConflictsForWorkoutItem(
-              it,
-              recBy as Parameters<typeof recoveryConflictsForWorkoutItem>[1],
-            );
-            if (!cf.hasWarning) return null;
-            const redL = cf.red.map((x) => x.label).join(", ");
-            const yelL = cf.yellow.map((x) => x.label).join(", ");
-            return (
-              <div className="text-style-caption mt-1.5 rounded-xl border border-warning/40 bg-warning/10 px-2 py-1.5 text-warning-strong dark:text-warning leading-snug">
-                {cf.red.length ? (
-                  <>
-                    Ще не відновились:{" "}
-                    <span className="font-semibold">{redL}</span>.{" "}
-                  </>
-                ) : null}
-                {cf.yellow.length ? (
-                  <>
-                    Краще почекати:{" "}
-                    <span className="font-semibold">{yelL}</span>.
-                  </>
-                ) : null}
-              </div>
-            );
-          })()}
         </div>
         {!isReadOnly && (
           <button
@@ -267,158 +239,64 @@ export function WorkoutItemCard({
         )}
       </div>
 
-      <div className="mt-2">
-        <div
-          ref={segmentedTypeRef}
-          aria-disabled={isReadOnly || undefined}
-          className="rounded-2xl border border-line bg-panelHi px-3"
-        >
-          <SectionHeading as="div" size="xs" variant="fizruk" className="pt-2">
-            Тип
-          </SectionHeading>
-          <Segmented
-            variant="fizruk"
-            style="solid"
-            size="md"
-            ariaLabel="Тип вправи"
-            className={isReadOnly ? "opacity-50 pointer-events-none" : ""}
-            value={it.type || "strength"}
-            items={[
-              {
-                value: "strength",
-                label: "Силова",
-                title: "Силова (кг × повтори × підходи)",
-                ariaLabel: "Силова — кг × повтори × підходи",
-              },
-              {
-                value: "time",
-                label: "Час",
-                title: "Час (секунди)",
-                ariaLabel: "Час — секунди",
-              },
-              {
-                value: "distance",
-                label: "Дист",
-                title: "Дистанція (метри) + час",
-                ariaLabel: "Дистанція — метри та час",
-              },
-            ]}
-            onChange={(t) => {
-              // Real block, not just visual — see the effect above this
-              // component's `return` for why (Segmented has no `disabled`
-              // prop, and both mouse AND keyboard paths land here).
-              if (isReadOnly) return;
-              if (t === "strength") {
-                if (!it.sets?.length) setSetIds([crypto.randomUUID()]);
-                updateItem(activeWorkout.id, it.id, {
-                  type: t,
-                  sets: it.sets?.length ? it.sets : [{ weightKg: 0, reps: 0 }],
-                });
-              }
-              if (t === "time")
-                updateItem(activeWorkout.id, it.id, {
-                  type: t,
-                  durationSec: it.durationSec ?? 0,
-                });
-              if (t === "distance")
-                updateItem(activeWorkout.id, it.id, {
-                  type: t,
-                  distanceM: it.distanceM ?? 0,
-                  durationSec: it.durationSec ?? 0,
-                });
-            }}
-          />
-        </div>
-      </div>
-
       {it.type === "strength" && (
-        <div className="mt-2 space-y-2">
+        <div className="mt-2 space-y-1.5">
           {sets.map((s, idx) => (
-            <div key={setKeys[idx]} className="grid grid-cols-3 gap-2">
-              <input
-                className="input-focus-fizruk h-10 rounded-xl border border-line bg-panelHi px-3 text-sm text-text read-only:opacity-70 read-only:cursor-not-allowed"
-                type="number"
-                inputMode="decimal"
-                placeholder="кг"
-                min={0}
-                max={MAX_WEIGHT_KG}
-                aria-label="Вага в кілограмах"
-                value={s.weightKg || ""}
-                readOnly={isReadOnly}
-                onFocus={(e) => e.target.select()}
-                onChange={(e) => {
-                  const next = [...(it.sets || [])];
-                  const current = next[idx];
-                  if (!current) return;
-                  next[idx] = {
-                    ...current,
-                    weightKg: clampNumericInput(e.target.value, MAX_WEIGHT_KG),
-                  };
-                  updateItem(activeWorkout.id, it.id, { sets: next });
-                }}
-              />
-              <input
-                className="input-focus-fizruk h-10 rounded-xl border border-line bg-panelHi px-3 text-sm text-text read-only:opacity-70 read-only:cursor-not-allowed"
-                type="number"
-                inputMode="numeric"
-                placeholder="повт."
-                min={0}
-                max={MAX_REPS}
-                aria-label="Кількість повторень"
-                value={s.reps || ""}
-                readOnly={isReadOnly}
-                onFocus={(e) => e.target.select()}
-                onChange={(e) => {
-                  const next = [...(it.sets || [])];
-                  const current = next[idx];
-                  if (!current) return;
-                  const reps = clampNumericInput(e.target.value, MAX_REPS);
-                  next[idx] = {
-                    ...current,
-                    reps,
-                  };
-                  updateItem(activeWorkout.id, it.id, { sets: next });
-                  if (
-                    !activeWorkout.endedAt &&
-                    !group &&
-                    (Number(current.reps) || 0) <= 0 &&
-                    reps > 0
-                  ) {
-                    setRestTimer({ remaining: defSec, total: defSec });
-                  }
-                }}
-              />
-              <button
-                type="button"
-                // AI-DANGER: `text-xs` тут — розмір КОНТРОЛА, а не роль
-                // тексту. Кнопка стоїть у ряд із полями вводу тієї самої
-                // висоти (`h-10`), тож її розмір належить формі керування,
-                // і роль `text-style-caption` (12px/400) описувала б не те.
-                // Не міняти на роль механічно — спершу перевір ряд.
-                // Touch floor gated to `pointer-coarse:` (not
-                // unconditional `min-h-[44px]`): this button sits in a
-                // row with the two `h-10` inputs above, and an
-                // always-on 44px floor broke that 4px alignment on
-                // mouse/desktop. Coarse pointers still get the full
-                // ≥44px target (Button.tsx uses the same gate for its
-                // xs/sm/iconOnly sizes).
-                className="h-10 pointer-coarse:min-h-[44px] rounded-xl border border-line text-xs text-subtle hover:text-danger hover:border-danger/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-subtle disabled:hover:border-line"
-                disabled={isReadOnly}
-                onClick={() => {
-                  const currentSets = it.sets || [];
-                  const snapshot = [...currentSets];
-                  const next = currentSets.filter((_, i) => i !== idx);
-                  // Keep the stable-key bookkeeping (see comment near
-                  // `setIds` above) in lockstep with the delete so the
-                  // surviving rows keep their own DOM nodes.
-                  setSetIds((prev) => prev.filter((_id, i) => i !== idx));
-                  updateItem(activeWorkout.id, it.id, { sets: next });
-                  onDeleteSet(activeWorkout.id, it.id, snapshot);
-                }}
-              >
-                Видалити
-              </button>
-            </div>
+            <WorkoutSetRow
+              key={setKeys[idx]}
+              index={idx}
+              set={s}
+              ghost={lastFilteredSets[idx] ?? null}
+              isReadOnly={isReadOnly}
+              onChangeWeight={(weightKg) => {
+                const next = [...(it.sets || [])];
+                const current = next[idx];
+                if (!current) return;
+                next[idx] = { ...current, weightKg };
+                updateItem(activeWorkout.id, it.id, { sets: next });
+              }}
+              onChangeReps={(reps) => {
+                const next = [...(it.sets || [])];
+                const current = next[idx];
+                if (!current) return;
+                next[idx] = { ...current, reps };
+                updateItem(activeWorkout.id, it.id, { sets: next });
+              }}
+              onApplyGhost={() => {
+                const ghost = lastFilteredSets[idx];
+                if (!ghost) return;
+                const next = [...(it.sets || [])];
+                const current = next[idx];
+                if (!current) return;
+                next[idx] = {
+                  ...current,
+                  weightKg: ghost.weightKg ?? 0,
+                  reps: ghost.reps ?? 0,
+                };
+                updateItem(activeWorkout.id, it.id, { sets: next });
+              }}
+              onCheckTap={() => {
+                // Explicit start (item 2): the rest timer used to
+                // auto-fire from the reps `onChange` transition
+                // 0 → N, which is exactly what produced stray 0×0
+                // sets — logging a rep count no longer has a side
+                // effect. Same grouped/ended-workout guard as before.
+                if (!activeWorkout.endedAt && !group) {
+                  setRestTimer({ remaining: defSec, total: defSec });
+                }
+              }}
+              onDelete={() => {
+                const currentSets = it.sets || [];
+                const snapshot = [...currentSets];
+                const next = currentSets.filter((_, i) => i !== idx);
+                // Keep the stable-key bookkeeping (see comment near
+                // `setIds` above) in lockstep with the delete so the
+                // surviving rows keep their own DOM nodes.
+                setSetIds((prev) => prev.filter((_id, i) => i !== idx));
+                updateItem(activeWorkout.id, it.id, { sets: next });
+                onDeleteSet(activeWorkout.id, it.id, snapshot);
+              }}
+            />
           ))}
           {!isReadOnly && (
             <div className="flex gap-2">
@@ -427,9 +305,27 @@ export function WorkoutItemCard({
                 className="flex-1 h-10 min-h-[44px]"
                 type="button"
                 onClick={() => {
+                  const currentSets = it.sets || [];
+                  // Item 4: copy the last COMPLETED set forward instead
+                  // of appending a blank `{0,0}` row — a fresh set
+                  // almost always repeats the previous weight/reps.
+                  // Falls back to the same-position "було" ghost when
+                  // nothing in the current list is done yet, and to an
+                  // empty row only when neither exists (first-ever log
+                  // of this exercise).
+                  const lastDone = findLastDoneSet(currentSets);
+                  const ghostFallback = lastFilteredSets[currentSets.length];
+                  const seed = lastDone
+                    ? { weightKg: lastDone.weightKg, reps: lastDone.reps }
+                    : ghostFallback
+                      ? {
+                          weightKg: ghostFallback.weightKg ?? 0,
+                          reps: ghostFallback.reps ?? 0,
+                        }
+                      : { weightKg: 0, reps: 0 };
                   setSetIds((prev) => [...prev, crypto.randomUUID()]);
                   updateItem(activeWorkout.id, it.id, {
-                    sets: [...(it.sets || []), { weightKg: 0, reps: 0 }],
+                    sets: [...currentSets, seed],
                   });
                 }}
               >
@@ -450,7 +346,10 @@ export function WorkoutItemCard({
                 // injects 0×0 sets that the cloud-sync queue silently
                 // persists; starting the rest timer on an ended/grouped
                 // workout is wrong. Re-verify the parser contract in
-                // speechParsers.ts before touching any of these.
+                // speechParsers.ts before touching any of these. Voice
+                // entry keeps its auto-start on purpose (2026-08 redesign,
+                // item 2) — the spoken set is already a complete, explicit
+                // action, unlike the old silent 0→N `onChange` heuristic.
                 onResult={(transcript) => {
                   const parsed = parseWorkoutSetSpeech(transcript);
                   // Refuse to add an empty set: parser returns a truthy

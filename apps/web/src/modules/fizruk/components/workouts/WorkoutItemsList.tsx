@@ -103,12 +103,13 @@ export function WorkoutItemsList({
   );
 
   const renderItem = useCallback(
-    (it: WorkoutItem) => (
+    (it: WorkoutItem, groupMemberPosition?: number) => (
       <WorkoutItemCard
         key={it.id}
         it={it}
         activeWorkout={activeWorkout}
         group={itemIdToGroup.get(it.id)}
+        groupMemberPosition={groupMemberPosition}
         groupSelectMode={groupSelectMode}
         isSelected={groupSelected.has(it.id)}
         isReadOnly={isReadOnly}
@@ -191,7 +192,9 @@ export function WorkoutItemsList({
             </button>
           </div>
         </div>
-        {groupItems.map((gIt: WorkoutItem) => renderItem(gIt))}
+        {groupItems.map((gIt: WorkoutItem, i: number) =>
+          renderItem(gIt, i + 1),
+        )}
         {!activeWorkout.endedAt && (
           <div className="flex flex-wrap items-center gap-2 px-1 pt-1 border-t border-success/20">
             <SectionHeading

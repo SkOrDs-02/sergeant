@@ -43,11 +43,56 @@ export const fizrukPageMessages = {
     presetsRecommendedTitle: "Рекомендований час для",
     presetsSaveDefaultTitle:
       "Запустити й зберегти як типовий час для цієї вправи",
+    // Compact single-button redesign (2026-08, item 7): the chevron
+    // trigger next to the "⏱ 90с" button opens the other presets in a
+    // `DropdownMenu` instead of a permanently-expanded chip row.
+    presetsMenuAriaLabel: "Інші варіанти часу відпочинку",
+    presetsMenuTriggerAriaLabel: "Показати інші варіанти часу відпочинку",
   },
   // "Минулого разу …" hint above a workout item
-  // (`WorkoutItemLastTimeHint.tsx`).
+  // (`WorkoutItemLastTimeHint.tsx`). Strength items no longer render
+  // this — see the per-row ghost keys below.
   lastTimeHint: {
     label: "Минулого разу",
+  },
+  // Per-row "було" ghost + done/delete controls inside a strength set
+  // row (`WorkoutSetRow.tsx`), redesign 2026-08 (items 1-3).
+  setRow: {
+    numberAriaPrefix: "Підхід",
+    ghostAriaPrefix: "Підставити",
+    ghostAriaSuffix: "з минулого разу",
+    doneAriaLabel: "зроблено, почати відпочинок",
+    notDoneAriaLabel: "ще не заповнено",
+    deleteAriaPrefix: "Видалити підхід",
+    weightPlaceholder: "кг",
+    repsPlaceholder: "повт.",
+    weightAriaLabel: "Вага в кілограмах",
+    repsAriaLabel: "Кількість повторень",
+  },
+  // "Тип" segmented control, moved out of `WorkoutItemCard` into
+  // `ExerciseDetailSheet` (`WorkoutItemTypeSwitcher.tsx`), redesign
+  // 2026-08 (item 5).
+  typeSwitcher: {
+    heading: "Тип",
+    ariaLabel: "Тип вправи",
+    strengthLabel: "Силова",
+    strengthTitle: "Силова (кг × повтори × підходи)",
+    strengthAriaLabel: "Силова — кг × повтори × підходи",
+    timeLabel: "Час",
+    timeTitle: "Час (секунди)",
+    timeAriaLabel: "Час — секунди",
+    distanceLabel: "Дист",
+    distanceTitle: "Дистанція (метри) + час",
+    distanceAriaLabel: "Дистанція — метри та час",
+  },
+  // Compact recovery-warning chip next to the exercise title
+  // (`WorkoutItemRecoveryChip.tsx`), redesign 2026-08 (item 6).
+  recoveryChip: {
+    triggerAriaLabel: "Попередження про відновлення",
+    detailAriaLabel: "Деталі попередження про відновлення",
+    injuryLine: "Ти позначив біль. Ми не радимо навантажувати цю групу.",
+    redPrefix: "Ще не відновились:",
+    yellowPrefix: "Краще почекати:",
   },
   dayPlan: {
     assignedTemplate: "Призначений шаблон",
@@ -326,6 +371,57 @@ export const fizrukPageMessages = {
     regressionTitle: "Зараз нижче за пік",
     regressionNote:
       "Це нормально після перерви — повертайся поступово, а не одразу до рекорду.",
+  },
+
+  /**
+   * 02-A — read-only summary of a finished workout, rendered on the same
+   * route (`/fizruk/workout/<id>`) that used to dead-end into "Активне
+   * тренування не знайдено" once the session was ended. Owned by
+   * `WorkoutSummaryView`.
+   */
+  workoutSummary: {
+    title: "Тренування завершено",
+    itemsLabel: "Вправ",
+    setsLabel: "Підходів",
+    volumeLabel: "Обʼєм",
+    wellbeingPrefix: "Самопочуття:",
+    energyLabel: "енергія",
+    moodLabel: "настрій",
+    outOfFive: "/5",
+    noteHeading: "Нотатка",
+    repeatCta: "Повторити це тренування",
+    notFoundTitle: "Тренування не знайдено",
+    notFoundDescription:
+      "Його вже видалили, або посилання застаріле. Повернись до списку тренувань.",
+    backToWorkouts: "До тренувань",
+  },
+
+  /**
+   * 03-A — dedicated history route (`/fizruk/history`). Pure read list:
+   * no "+ Нове" / "Шаблони" start-CTAs here — starting a session lives
+   * only on the Workouts home (`WorkoutsHome`). Owned by
+   * `WorkoutHistoryList` + `pages/WorkoutHistory.tsx`.
+   */
+  workoutHistory: {
+    title: "Історія тренувань",
+    subtitlePrefix: "Завершено:",
+    backAria: "Повернутись до тренувань",
+    emptyTitle: "Поки немає тренувань",
+    emptyDescription: "Заверши перше тренування — воно з'явиться тут.",
+    endedBadge: "Завершене",
+    activeBadge: "Активне",
+    deletedToast: "Тренування видалено",
+  },
+
+  /**
+   * 04-A — permanent "Програми" row in the Workouts-home "Довідники" block
+   * (`WorkoutsHome.tsx`). Previously Programs was reachable only from the
+   * empty-plan hero card on Огляд, which disappears once a workout starts.
+   */
+  programsRow: {
+    title: "Програми",
+    subtitle: "Спліти з розкладом",
+    activePrefix: "Активна:",
   },
 } as const;
 

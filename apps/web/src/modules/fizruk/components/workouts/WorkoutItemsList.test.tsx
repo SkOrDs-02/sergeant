@@ -11,17 +11,20 @@ vi.mock("./WorkoutItemCard", () => ({
   WorkoutItemCard: ({
     it,
     group,
+    groupMemberPosition,
     groupSelectMode,
     isSelected,
   }: {
     it: WorkoutItem;
     group?: WorkoutGroup;
+    groupMemberPosition?: number;
     groupSelectMode: boolean;
     isSelected: boolean;
   }) => (
     <div
       data-testid="workout-item-card"
       data-group-id={group?.id ?? ""}
+      data-group-member-position={groupMemberPosition ?? ""}
       data-select-mode={String(groupSelectMode)}
       data-selected={String(isSelected)}
     >
@@ -133,7 +136,13 @@ describe("WorkoutItemsList", () => {
       screen.getByText("Спільний таймер відпочинку між колами"),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "120 с" })).toBeInTheDocument();
-    expect(screen.getAllByTestId("workout-item-card")).toHaveLength(2);
+    const cards = screen.getAllByTestId("workout-item-card");
+    expect(cards).toHaveLength(2);
+    // Each member gets a 1-based position within the group so
+    // `WorkoutItemCard` can render an "A1"/"A2" ordinal instead of a
+    // second `SupersetBadge` (item 8).
+    expect(cards[0]).toHaveAttribute("data-group-member-position", "1");
+    expect(cards[1]).toHaveAttribute("data-group-member-position", "2");
   });
 
   it("updates and starts the shared group rest timer from quick options", () => {

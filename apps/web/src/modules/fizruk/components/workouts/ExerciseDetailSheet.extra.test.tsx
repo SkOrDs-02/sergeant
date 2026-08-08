@@ -318,6 +318,100 @@ describe("ExerciseDetailSheet – log mode", () => {
   });
 });
 
+describe("ExerciseDetailSheet – item type switcher (2026-08 redesign, item 5)", () => {
+  it("renders the type switcher when the exercise is already logged in the active workout and updateItem is provided", () => {
+    const updateItem = vi.fn();
+    const activeWorkout = {
+      id: "w1",
+      endedAt: null,
+      items: [
+        {
+          id: "item-1",
+          exerciseId: "ex_1",
+          nameUk: "Присідання",
+          type: "strength",
+          primaryGroup: "legs",
+          musclesPrimary: ["quad"],
+          musclesSecondary: [],
+          sets: [{ weightKg: 50, reps: 8 }],
+        },
+      ],
+      startedAt: new Date().toISOString(),
+    } as unknown as Workout;
+
+    render(
+      <ExerciseDetailSheet
+        {...baseProps}
+        mode="log"
+        selected={makeExercise()}
+        activeWorkoutId="w1"
+        activeWorkout={activeWorkout}
+        updateItem={updateItem}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: "Час — секунди" }));
+    expect(updateItem).toHaveBeenCalledWith(
+      "w1",
+      "item-1",
+      expect.objectContaining({ type: "time" }),
+    );
+  });
+
+  it("does not render the type switcher without updateItem (pre-redesign behaviour preserved)", () => {
+    const activeWorkout = {
+      id: "w1",
+      endedAt: null,
+      items: [
+        {
+          id: "item-1",
+          exerciseId: "ex_1",
+          nameUk: "Присідання",
+          type: "strength",
+          primaryGroup: "legs",
+          musclesPrimary: ["quad"],
+          musclesSecondary: [],
+          sets: [],
+        },
+      ],
+      startedAt: new Date().toISOString(),
+    } as unknown as Workout;
+
+    render(
+      <ExerciseDetailSheet
+        {...baseProps}
+        mode="log"
+        selected={makeExercise()}
+        activeWorkoutId="w1"
+        activeWorkout={activeWorkout}
+      />,
+    );
+    expect(screen.queryByRole("tab", { name: "Час — секунди" })).toBeNull();
+  });
+
+  it("does not render the type switcher when the exercise isn't logged in the active workout yet", () => {
+    const updateItem = vi.fn();
+    const activeWorkout = {
+      id: "w1",
+      endedAt: null,
+      items: [],
+      startedAt: new Date().toISOString(),
+    } as unknown as Workout;
+
+    render(
+      <ExerciseDetailSheet
+        {...baseProps}
+        mode="log"
+        selected={makeExercise()}
+        activeWorkoutId="w1"
+        activeWorkout={activeWorkout}
+        updateItem={updateItem}
+      />,
+    );
+    expect(screen.queryByRole("tab", { name: "Час — секунди" })).toBeNull();
+  });
+});
+
 describe("ExerciseDetailSheet – description", () => {
   it("renders description text when present", () => {
     const ex = makeExercise({
