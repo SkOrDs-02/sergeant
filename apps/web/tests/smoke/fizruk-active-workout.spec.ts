@@ -89,8 +89,13 @@ test("@critical fizruk: start → set → refresh → resume → finish", async 
 
   await page.getByRole("spinbutton", { name: "Вага в кілограмах" }).fill("42");
   await page.getByRole("spinbutton", { name: "Кількість повторень" }).fill("8");
+  // Скоуп саме на пігулку таймера, а не на `role="timer"`: цей role
+  // описує лише циферблат із цифрами (кнопки ±15/±30 і «Пропустити» —
+  // його сусіди), і ще один `role="timer"` живе в `HeroCard`. Скоуп на
+  // роль тут падав по таймауту, скоуп без нього був би неоднозначним
+  // після відкриття аркуша завершення з власною «Пропустити».
   await page
-    .getByRole("timer")
+    .getByTestId("rest-timer")
     .getByRole("button", { name: "Пропустити" })
     .click();
   await page.waitForTimeout(2_500);
