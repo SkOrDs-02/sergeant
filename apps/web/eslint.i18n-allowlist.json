@@ -215,8 +215,6 @@
   "apps/web/src/modules/fizruk/components/workouts/WorkoutFinishSheets.tsx",
   "apps/web/src/modules/fizruk/components/workouts/WorkoutGroupingControls.tsx",
   "apps/web/src/modules/fizruk/components/workouts/WorkoutItemCard.tsx",
-  "apps/web/src/modules/fizruk/components/workouts/WorkoutItemLastTimeHint.tsx",
-  "apps/web/src/modules/fizruk/components/workouts/WorkoutItemRestPresets.tsx",
   "apps/web/src/modules/fizruk/components/workouts/WorkoutItemsList.tsx",
   "apps/web/src/modules/fizruk/components/workouts/WorkoutJournalSection.tsx",
   "apps/web/src/modules/fizruk/components/workouts/WorkoutTimeEditor.tsx",
