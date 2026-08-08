@@ -1,6 +1,6 @@
 # Email-verification soft-gate sweep plan — legacy unverified users
 
-> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
+> **Last touched:** 2026-08-08 by @claude. **Next review:** 2026-11-06.
 > **Status:** Active
 
 | Field          | Value                                                                                                                                                                                             |
@@ -175,7 +175,7 @@ ETA повного циклу: ~6 робочих днів implementation + 14+ �
 | Squatter верифікує email (бо реально володіє ним як `victim@gmail.com` через інший fraud) — soft-gate не допомагає | низька      | високий  | Це поза скоупом цього sweep-у; mitigation — anti-fraud signal на sign-up (PR-плани, не у цьому документі)                                                  |
 | 80% verified-rate threshold недосяжний (наприклад, 60% legacy-юзерів deadweight)                                   | середня     | середній | Тоді global flip триггериться по `time-out` rule: 60 days після Phase D rollout flip-аємо незалежно від rate-у. Сабреш ув'язана у Decision gate `time-out` |
 | Per-user `forceVerifyAt` колонка вимагає DB migration; Hard Rule #4 — sequential numbering, two-phase для DROP     | середня     | середній | Стандартний flow — нова migration, no DROP needed; rollback = `UPDATE` not `ALTER`                                                                         |
-| `<VerifyEmailGate />` UI banner ламає mobile-layout у hub                                                          | середня     | низький  | Phase B PR має RTL + a11y тести (per ex-Hard Rule #14, retired ADR-0081, focus-visible); manual smoke на iPhone SE / iPad / desktop                                              |
+| `<VerifyEmailGate />` UI banner ламає mobile-layout у hub                                                          | середня     | низький  | Phase B PR має RTL + a11y тести (per ex-Hard Rule #14, retired ADR-0081, focus-visible); manual smoke на iPhone SE / iPad / desktop                        |
 
 ## Що **не** в скоупі цього документа
 
