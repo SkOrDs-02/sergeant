@@ -69,18 +69,18 @@ export const brandColors = {
   //
   // AI-CONTEXT: рампа побудована як ІЗОЛЮМІНАНТНА до попередньої коралової —
   // відносна світлота кожного тира збережена (ΔL від −0.42% до +0.46%,
-  // CR(coral,rose) = 1.00 у всіх десяти). Тому всі задокументовані
+  // CR(rose,rose) = 1.00 у всіх десяти). Тому всі задокументовані
   // контрастні пари лишились чинними в межах 0.02, а драбина стріків у
   // темній темі має ті самі кроки (1.33 / 1.23 / 1.36 / 1.39).
   //
-  // Чому не корал: coral-600/700/900 мали hue РІВНО 0° — той самий, що
+  // Чому не корал: rose-600/700/900 мали hue РІВНО 0° — той самий, що
   // `--c-danger` red-500 #ef4444. Тобто акцент Рутини був буквально одного
   // відтінку з семантикою помилки. Троянда сидить на 344–346°.
   //
-  // AI-DANGER: ключ і далі зветься `coral` — перейменування на `rose`
+  // AI-DANGER: ключ і далі зветься `rose` — перейменування на `rose`
   // винесене окремим кроком (58 Tailwind-класів у 25 файлах). Значення тут
   // трояндові; не «виправляй» їх назад під ім'я.
-  coral: {
+  rose: {
     50: "#fff5f6",
     100: "#ffe7eb",
     200: "#fed3db",
@@ -107,7 +107,7 @@ export const brandColors = {
   },
   // Warm neutral (stone) — the HUB chrome family (2026-07 design-audit M1).
   // The hub/shell is a *neutral parent* so the four module accents
-  // (finyk teal · fizruk cyan · routine coral · nutrition lime) each read
+  // (finyk teal · fizruk cyan · routine rose · nutrition lime) each read
   // as the single point of colour on any screen. Previously the hub `brand`
   // token aliased teal, making the shell indistinguishable from finyk and
   // effectively a fifth accent. This warm-gray ramp pairs with the cream
@@ -134,7 +134,7 @@ export const brandColors = {
 export const chartPalette = {
   1: "#10b981", // emerald-500 (primary)
   2: "#14b8a6", // teal-500
-  3: "#eb7691", // coral-500
+  3: "#eb7691", // rose-500
   4: "#92cc17", // lime-500
   5: "#60a5fa", // blue-400 (soft)
   6: "#a78bfa", // violet-400 (soft)
@@ -164,10 +164,10 @@ export const moduleColors = {
     accent: "#c8f264", // lime-300 (CTA highlight)
   },
   routine: {
-    primary: "#eb7691", // coral-500
-    secondary: "#f68da4", // coral-400
-    surface: "#fff5f6", // coral-50
-    surfaceAlt: "#ffe7eb", // coral-100
+    primary: "#eb7691", // rose-500
+    secondary: "#f68da4", // rose-400
+    surface: "#fff5f6", // rose-50
+    surfaceAlt: "#ffe7eb", // rose-100
   },
   nutrition: {
     primary: "#92cc17", // lime-500
@@ -182,7 +182,7 @@ export const moduleColors = {
  * `--module-accent-strong-rgb` CSS variables exposed by
  * `ModuleAccentProvider`. Kept here (not in the React component) so
  * the triplets stay in lockstep with `moduleColors.primary` and
- * `brandColors.{emerald,teal,coral,lime}[700|800]` — the single source
+ * `brandColors.{emerald,teal,rose,lime}[700|800]` — the single source
  * of truth for Sergeant module branding.
  *
  * Shape: "R G B" (space-separated, no commas) so the value is directly
@@ -191,15 +191,23 @@ export const moduleColors = {
  *   className="bg-[rgb(var(--module-accent-rgb)/0.1)]"
  *   className="bg-[rgb(var(--module-accent-strong-rgb))] text-white"
  *
- * The `strong` triplet is the WCAG-AA companion shade — `-800` for
- * finyk/fizruk/nutrition (teal, cyan, lime — their `-700` still regresses
- * on white); routine is the one module where `-700` (coral) already
- * clears AA. It matches the `bg-{module}-strong` Tailwind utility.
+ * The `strong` triplet is the WCAG-AA companion shade — `-800` for усіх
+ * чотирьох модулів. It matches the `bg-{module}-strong` Tailwind utility.
+ *
+ * AI-CONTEXT (2026-08-07): routine стояв на `-700` і був єдиним винятком.
+ * Обґрунтування в цьому ж коментарі («routine — той модуль, де -700 уже
+ * тримає AA») міряло контраст проти БІЛОГО; на білому rose-700 справді
+ * дає 5.29. Але `text-routine-strong` стоїть і на фоні сторінки, а там
+ * після переходу на базу `#ecebe7` виходило 4.43 — нижче AA. Решта трьох
+ * модулів на `-800` дають 5.8–6.4, тобто routine був сиротою і за
+ * контрастом, і за тиром. `-800` (`#8d4256`) → 5.78 на фоні сторінки.
+ * Значення тут мусить збігатися з `--c-routine-accent` у `theme.css` —
+ * гейт `contrast.test.js` тепер читає саме цю мапу, а не свою копію.
  */
 export const moduleAccentRgb = {
   finyk: { default: "15 118 110", strong: "17 94 89" }, // teal-700 / teal-800 (2026-07: was emerald-500/-700)
   fizruk: { default: "14 116 144", strong: "21 94 117" }, // cyan-700 / cyan-800 — disambiguates fizruk from finyk emerald (was teal-500 / teal-700). `strong` companion ≈ 7.5:1 on white for hover/active states.
-  routine: { default: "235 118 145", strong: "172 76 100" }, // coral-500 / -700
+  routine: { default: "235 118 145", strong: "141 66 86" }, // rose-500 / -800 (2026-08-07: was rose-700, 4.43 на фоні сторінки)
   nutrition: { default: "146 204 23", strong: "70 98 18" }, // lime-500 / -800
 };
 
@@ -224,7 +232,7 @@ export const moduleAccentRgb = {
  *
  * `surface`/`text` are authored here as the source of truth for the `.dark`
  * CSS variables in apps/web/src/styles/theme.css. `accent` re-surfaces the
- * existing `brandColors.{emerald,cyan,coral,lime}[400]` tier-400 tones in
+ * existing `brandColors.{emerald,cyan,rose,lime}[400]` tier-400 tones in
  * their module role — text placed over an accent fill is always `bg` ink
  * (#14100e), never white (spec § 1).
  */
@@ -245,7 +253,7 @@ export const inkTheme = {
   accent: {
     finyk: brandColors.teal[400], // #2dd4bf (2026-07: was emerald-400 #34d399)
     fizruk: brandColors.cyan[400], // #22d3ee
-    routine: brandColors.coral[400], // #f68da4
+    routine: brandColors.rose[400], // #f68da4
     nutrition: brandColors.lime[400], // #b0e636
   },
 };
@@ -256,6 +264,32 @@ export const statusColors = {
   warning: "#f59e0b", // amber-500
   danger: "#ef4444", // red-500
   info: "#0ea5e9", // sky-500
+};
+
+/**
+ * WCAG-AA компаньйони до `statusColors` — те, що рендериться як ТЕКСТ
+ * (`text-{c}-strong`) або як суцільний філ під `text-white`
+ * (`bg-{c}-strong`). Насичені `-500` вище для цього не годяться.
+ *
+ * AI-CONTEXT (2026-08-07): ці значення жили лише в `tailwind-preset.js`
+ * як літерали, і тому не мали гейта — `contrast.test.js` не імпортує
+ * пресет. Наслідок знайшли перезаміром таблиці brandbook:
+ * `warning-strong` на `amber-700` давав **4.21 на фоні сторінки**, тобто
+ * фейлив AA, а підпис у пресеті стверджував 4.83. Число 4.83 не було
+ * вигадкою — воно міряло стару кремову базу, яка зникла з переходом на
+ * `#ecebe7`. Тепер мапа експортується, пресет її споживає, а тест читає
+ * саме її: та сама схема, що закрила drift у `moduleAccentRgb`.
+ *
+ * Усі чотири на `-800` — один тир із чотирма модульними акцентами.
+ * Змішані тири і були тим ґрунтом, на якому виростали сироти: система з
+ * двома конвенціями не має способу відрізнити «свідомий виняток» від
+ * «забули підняти».
+ */
+export const statusStrongHex = {
+  success: "#065f46", // emerald-800 — 6.44:1 на #ecebe7 (was emerald-700, 4.60)
+  warning: "#92400e", // amber-800   — 5.94:1 на #ecebe7 (was amber-700, 4.21 — фейл AA)
+  danger: "#991b1b", // red-800     — 6.97:1 на #ecebe7 (was red-700, 5.42)
+  info: "#075985", // sky-800     — 6.34:1 на #ecebe7 (was sky-700, 4.97)
 };
 
 /**
@@ -398,13 +432,13 @@ export const chartHex = {
   // hue немає в палітрі Sergeant, і на lime-модулі бар читався як чужий
   // віджет. Шкала переведена на бренд-hue із семантикою:
   //   білки  → cyan  (сила, hue Фізрука)
-  //   жири   → coral (щільна енергія, hue Рутини)
+  //   жири   → rose (щільна енергія, hue Рутини)
   //   вуглеводи → lime (паливо, рідний hue Їжі)
   // Тир -700, а не -600/-500 із пропозиції аудиту: сегменти несуть
   // `text-white`, і -600 не витягує 4.5:1 (cyan-600 3.68:1, lime-600
   // 3.03:1) — це був би прямий Hard Rule #9. Пари зафіксовані в
   // `contrast.test.js`, склад шкали — в `chartHex.contract.test.js`.
   protein: brandColors.cyan[700], // #0e7490 — 5.42:1 з text-white
-  fat: brandColors.coral[700], // #ac4c64 — 5.34:1 з text-white
+  fat: brandColors.rose[700], // #ac4c64 — 5.34:1 з text-white
   carbs: brandColors.lime[700], // #567c0f — 4.90:1 з text-white
 };

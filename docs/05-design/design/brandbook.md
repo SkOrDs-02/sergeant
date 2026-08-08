@@ -1,6 +1,6 @@
 # Sergeant Brandbook & Design-система
 
-> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
+> **Last touched:** 2026-08-08 by @claude. **Next review:** 2026-11-06.
 > **Status:** Active
 
 Дизайн-філософія Sergeant — **Soft & Organic** на теплій крем-базі.
@@ -120,24 +120,50 @@ Info:     #0ea5e9 (Sky 500)
 
 ### WCAG-AA-тір `-strong`
 
-Насичені `-500`-відтінки вище коректні для **бренд-ідентичності** (лого, marketing-asset-и, dark-mode-рендер, App Store-скріншоти, solid-module-surface-и), але **не** проходять WCAG 2.1 AA 4.5 : 1 на кремовому `bg-bg` (`#fdf9f3`) чи чисто білому `bg-panel` (`#ffffff`) на body-розмірах. Кожен насичений brand-колір має `-strong`-companion-а, який проходить. **Використовуй тір strong, коли колір рендериться як текст або як fill під `text-white`.**
+Насичені відтінки вище коректні для **бренд-ідентичності** (лого, marketing-asset-и, dark-mode-рендер, App Store-скріншоти, solid-module-surface-и), але **не** проходять WCAG 2.1 AA 4.5 : 1 на фоні сторінки `bg-bg` (`#ecebe7`) чи чисто білому `bg-panel` (`#ffffff`) на body-розмірах. Кожен насичений brand-колір має `-strong`-companion-а. **Використовуй тір strong, коли колір рендериться як текст або як fill під `text-white`.**
 
-| Family    | Saturated (`-500`) | Strong (Tailwind utility)                                  | Hex       | Contrast vs `bg-bg` | Contrast vs `text-white` |
-| --------- | ------------------ | ---------------------------------------------------------- | --------- | ------------------- | ------------------------ |
-| brand     | `#44403c`          | `bg-brand-strong` / `text-brand-strong` (= stone-800)      | `#292524` | ~14 : 1             | ~14 : 1                  |
-| success   | `#10b981`          | `bg-success-strong` / `text-success-strong` (emerald-700)  | `#047857` | 5.23 : 1            | 5.48 : 1                 |
-| warning   | `#f59e0b`          | `bg-warning-strong` / `text-warning-strong` (amber-700)    | `#b45309` | 4.83 : 1            | 5.02 : 1                 |
-| danger    | `#ef4444`          | `bg-danger-strong` / `text-danger-strong` (red-700)        | `#b91c1c` | 6.17 : 1            | 6.47 : 1                 |
-| info      | `#0ea5e9`          | `bg-info-strong` / `text-info-strong` (sky-700)            | `#0369a1` | 5.66 : 1            | 5.93 : 1                 |
-| finyk     | `#10b981`          | `bg-finyk-strong` / `text-finyk-strong` (emerald-700)      | `#047857` | 5.23 : 1            | 5.48 : 1                 |
-| fizruk    | `#0e7490`          | `bg-fizruk-strong` / `text-fizruk-strong` (cyan-800)       | `#155e75` | 7.50 : 1            | 7.78 : 1                 |
-| routine   | `#f97066`          | `bg-routine-strong` / `text-routine-strong` (coral-700)    | `#c23a3a` | 5.06 : 1            | 5.30 : 1                 |
-| nutrition | `#92cc17`          | `bg-nutrition-strong` / `text-nutrition-strong` (lime-800) | `#466212` | 6.64 : 1            | 6.96 : 1                 |
+| Family    | Saturated (DEFAULT) | Strong (Tailwind utility)                                  | Hex       | vs `bg-bg` `#ecebe7` | vs `text-white` |
+| --------- | ------------------- | ---------------------------------------------------------- | --------- | -------------------- | --------------- |
+| brand     | `#44403c`           | `bg-brand-strong` / `text-brand-strong` (= stone-800)      | `#292524` | 12.72 : 1            | 15.17 : 1       |
+| success   | `#10b981`           | `bg-success-strong` / `text-success-strong` (emerald-800)  | `#065f46` | 6.44 : 1             | 7.68 : 1        |
+| warning   | `#f59e0b`           | `bg-warning-strong` / `text-warning-strong` (amber-800)    | `#92400e` | 5.94 : 1             | 7.09 : 1        |
+| danger    | `#ef4444`           | `bg-danger-strong` / `text-danger-strong` (red-800)        | `#991b1b` | 6.97 : 1             | 8.31 : 1        |
+| info      | `#0ea5e9`           | `bg-info-strong` / `text-info-strong` (sky-800)            | `#075985` | 6.34 : 1             | 7.56 : 1        |
+| finyk     | `#0f766e`           | `bg-finyk-strong` / `text-finyk-strong` (teal-800)         | `#115e59` | 6.36 : 1             | 7.58 : 1        |
+| fizruk    | `#0e7490`           | `bg-fizruk-strong` / `text-fizruk-strong` (cyan-800)       | `#155e75` | 6.09 : 1             | 7.27 : 1        |
+| routine   | `#eb7691`           | `bg-routine-strong` / `text-routine-strong` (rose-800)     | `#8d4256` | 5.78 : 1             | 6.89 : 1        |
+| nutrition | `#92cc17`           | `bg-nutrition-strong` / `text-nutrition-strong` (lime-800) | `#466212` | 5.84 : 1             | 6.96 : 1        |
 
+> **Числа переміряно 2026-08-07 — попередні були не тим, чим підписані.**
+> Колонка називалася «Contrast vs `bg-bg`», але кожне число в ній збігалося
+> з контрастом проти **білого**, а не проти фону сторінки. Тобто таблиця
+> двічі показувала один і той самий замір під двома різними заголовками, і
+> гірший з двох випадків (текст на фоні сторінки, а не на картці) не був
+> покритий узагалі. Рядок `finyk` до того ж лишався на `emerald-700` —
+> кольорі, який зник із коду ще в M1-ребренді 2026-07.
+>
+> **Наслідок, який видно лише після перезаміру:** `warning-strong` на
+> `amber-700` давав **4.21 : 1** на фоні сторінки — нижче AA. `success`
+> (4.60) та `info` (4.97) проходили, але з запасом менше 0.5 — рівно
+> той стан, у якому були модульні акценти перед зміною бази: формально
+> зелено, а будь-який наступний зсув фону ламає мовчки.
+>
+> **Закрито 2026-08-07: усі чотири семантичні тири пішли на `-800`**, на
+> той самий тир, що й чотири модульні акценти. Змішані тири і були тим
+> ґрунтом, на якому виростали сироти: система з двома конвенціями не має
+> способу відрізнити «свідомий виняток» від «забули підняти». Тепер
+> найслабший тир у палітрі — 5.78, і жоден не сидить на межі.
+>
+> Значення живуть у `statusStrongHex` (`packages/design-tokens/tokens.js`),
+> звідки їх читають і Tailwind-пресет, і `contrast.test.js`. До цього вони
+> були літералами в пресеті, який тест не імпортує — саме тому 4.21 жило
+> непоміченим.
+>
 > **Примітка про nutrition.** Lime винятково світлий на кожному степі;
-> `lime-700` (`#567c0f`) дає 4.67 : 1 — лише 0.17 над порогом. Тому nutrition-`-strong`
-> піднято ще на один степ до `lime-800` (`#466212`) з 6.64 : 1. Інші родини
-> лишаються на `-700`.
+> `lime-700` (`#567c0f`) дає 4.67 : 1 проти білого — лише 0.17 над порогом.
+> Тому nutrition-`-strong` піднято на `lime-800`. Той самий крок згодом
+> зробили finyk, fizruk і routine; на `-700` із чотирьох модулів не лишився
+> жоден.
 
 #### Матриця рішень — який тір для якого примітиву
 
@@ -174,11 +200,18 @@ Cross-platform: `-strong`-Tailwind-утиліти вивезені через
 ### Кольори фону (Light-режим)
 
 ```
-Page Background:    #fdf9f3 (Warm cream)
+Page Background:    #ecebe7 (Warm neutral — Б1, 2026-08-07)
 Panel/Card:         #ffffff (Pure white)
-Panel Hover:        #faf7f1 (Warm hover)
-Border:             #ebe4da (Warm gray)
+Panel Hover:        #f6f5f2 (Warm hover)
+Border:             #e2e0da (Warm gray)
 ```
+
+> **Було `#fdf9f3` / `#faf7f1` / `#ebe4da` до 2026-08-07.** `#fdf9f3` не
+> зник — це `cream.100`, і він далі працює як hero-ink та як фон
+> `apps/landing` (`--color-background`). Але фоном застосунку він не є вже
+> давно: до Б1 сторінка світилася `#f2ecdf`, тобто підпис у цьому блоці
+> розходився з кодом ще тоді. Джерело істини — `--c-bg` / `--c-panel-hi` /
+> `--c-line` у [`theme.css`](../../../apps/web/src/styles/theme.css).
 
 ### Кольори тексту (Light-режим)
 
@@ -443,8 +476,8 @@ background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 50%, #a7f3d0 100%);
 /* Teal (Fizruk) */
 background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 50%, #99f6e4 100%);
 
-/* Coral (Routine) */
-background: linear-gradient(135deg, #fff5f3 0%, #ffe8e3 50%, #ffd4cb 100%);
+/* Rose (Routine) */
+background: linear-gradient(135deg, #fff5f6 0%, #ffe7eb 50%, #fed3db 100%);
 
 /* Lime (Nutrition) */
 background: linear-gradient(135deg, #f8fee7 0%, #effccb 50%, #dff99d 100%);

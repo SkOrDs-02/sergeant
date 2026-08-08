@@ -174,11 +174,11 @@
 
 @utility routine-sheet {
   & button:focus-visible {
-    @apply outline-hidden ring-2 ring-coral-500/45 ring-offset-2 ring-offset-panel;
+    @apply outline-hidden ring-2 ring-rose-500/45 ring-offset-2 ring-offset-panel;
   }
 
   & a:focus-visible {
-    @apply outline-hidden ring-2 ring-coral-500/45 ring-offset-2 ring-offset-panel;
+    @apply outline-hidden ring-2 ring-rose-500/45 ring-offset-2 ring-offset-panel;
   }
 }
 
@@ -466,6 +466,6 @@
   @apply bg-linear-to-r from-brand-600 to-teal-600 bg-clip-text text-transparent;
 }
 
-@utility text-gradient-coral {
-  @apply bg-linear-to-r from-coral-500 to-coral-600 bg-clip-text text-transparent;
+@utility text-gradient-rose {
+  @apply bg-linear-to-r from-rose-500 to-rose-600 bg-clip-text text-transparent;
 }

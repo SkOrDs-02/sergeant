@@ -90,7 +90,7 @@ export const Fizruk: Story = {
   },
 };
 
-/** Routine — coral outline (light) / solid coral-400 fill (dark), без FAB. */
+/** Routine — rose outline (light) / solid rose-400 fill (dark), без FAB. */
 export const Routine: Story = {
   args: {
     module: "routine",

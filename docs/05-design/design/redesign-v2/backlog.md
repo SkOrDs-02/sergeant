@@ -109,7 +109,7 @@ parking lot із достатнім контекстом, щоб поверну�
 
 - [ ] **HubMainContent dashboard cards** — 4 module quick-open tiles + widgets мігрують `<Card>` → `prominence="glass"`, `radius="r-lg"`. Перевір що hero gradient усе ще видно через glass.
 - [ ] **HubHeader greeting row** — застосувати `text-style-headline` для greeting; перевірити що Manrope weight-800 рендериться.
-- [ ] **HubReports (Звіти)** — `Card prominence="glass"` для period selector + chart cards. Bar chart re-tint per module: `bg-chart-finyk` (emerald-700), `bg-chart-fizruk` (cyan-800), `bg-chart-routine` (coral-700), `bg-chart-nutrition` (lime-800).
+- [ ] **HubReports (Звіти)** — `Card prominence="glass"` для period selector + chart cards. Bar chart re-tint per module: `bg-chart-finyk` (emerald-700), `bg-chart-fizruk` (cyan-800), `bg-chart-routine` (rose-800), `bg-chart-nutrition` (lime-800).
 - [ ] **HubProfile** — avatar tile у `prominence="hero" module=null`, 3 stats grid у glass tinted cards.
 - [ ] **HubSettings** — section cards у glass; module-tinted icons зліва (як handoff Part 1 #05).
 - [ ] **HubBottomNav active ring** — оптично перевірити, що `bg-ink-strong` pill добре читається в усіх 4-х tabs (Головна, Звіти, Профіль, Налаштування). Якщо текст активного tab не видно — підняти `text-bg-base` contrast або тимчасово відкатати тип.
@@ -131,10 +131,10 @@ parking lot із достатнім контекстом, щоб поверну�
 
 ## Routine
 
-- [ ] **Today coral hero** — `prominence="hero" module="routine" radius="r-2xl"`. Week-strip у tinted glass pills. 5 habit checkboxes — animation when checked (existing `animate-check-pop`).
+- [ ] **Today трояндовий hero** — `prominence="hero" module="routine" radius="r-2xl"`. Week-strip у tinted glass pills. 5 habit checkboxes — animation when checked (existing `animate-check-pop`).
 - [ ] **Habits management** — habit list rows у glass; archive list зі `bg-surface-soft-glass`.
 - [ ] **Analytics heatmap** — 90-day grid в glass card; longest streak hero stat.
-- [ ] **Goals** — active goals list як glass cards з progress bars (coral).
+- [ ] **Goals** — active goals list як glass cards з progress bars (трояндові).
 
 ## Nutrition
 

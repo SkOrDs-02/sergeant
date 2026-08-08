@@ -12,7 +12,13 @@
  * retune), update the WCAG-AA proposal doc + BRANDBOOK in the same PR.
  */
 import { describe, it, expect } from "vitest";
-import { brandColors, moduleColors, inkTheme } from "./tokens.js";
+import {
+  brandColors,
+  moduleColors,
+  inkTheme,
+  moduleAccentRgb,
+  statusStrongHex,
+} from "./tokens.js";
 
 function luminance(hex) {
   const r = parseInt(hex.slice(1, 3), 16) / 255;
@@ -31,6 +37,17 @@ function contrastRatio(hex1, hex2) {
   return (lighter + 0.05) / (darker + 0.05);
 }
 
+/** `moduleAccentRgb` тримає значення як "R G B"; тут потрібен hex. */
+function rgbTripleToHex(triple) {
+  return (
+    "#" +
+    triple
+      .split(/\s+/)
+      .map((n) => Number(n).toString(16).padStart(2, "0"))
+      .join("")
+  );
+}
+
 // Each row: [name, foreground hex, background hex, shouldPassAA].
 // `shouldPassAA === false` means the pair is documented as failing AA;
 // the test asserts the failure so we don't accidentally start treating
@@ -45,11 +62,11 @@ const PAIRS = [
     true,
   ],
   ["routine text on white", moduleColors.routine.primary, "#ffffff", false],
-  ["routine-strong on white", brandColors.coral[700], "#ffffff", true],
+  ["routine-strong on white", brandColors.rose[700], "#ffffff", true],
   [
-    "routine-strong on coral-50",
-    brandColors.coral[700],
-    brandColors.coral[50],
+    "routine-strong on rose-50",
+    brandColors.rose[700],
+    brandColors.rose[50],
     true,
   ],
   ["finyk-strong on white", brandColors.teal[800], "#ffffff", true], // 2026-07: was emerald[700]
@@ -66,26 +83,26 @@ const PAIRS = [
     true,
   ],
   // Routine hero (light) — реальні пари з рендера (design-audit F2):
-  // світлий градієнт стиснуто до coral-800→700, текст hero-ink #fdf9f3.
+  // світлий градієнт стиснуто до rose-800→700, текст hero-ink #fdf9f3.
   // Пари фіксують обидва стопи, щоб майбутнє «освітлення» героя знову
   // не впустило дрібний текст під 4.5:1 (виміряний фейл був 2.12:1 на
-  // старому стопі coral-400).
+  // старому стопі rose-400).
   [
-    "routine hero-ink on coral-700 (hero light end)",
+    "routine hero-ink on rose-700 (hero light end)",
     "#fdf9f3",
-    brandColors.coral[700],
+    brandColors.rose[700],
     true,
   ],
   [
-    "routine hero-ink on coral-800 (hero dark end)",
+    "routine hero-ink on rose-800 (hero dark end)",
     "#fdf9f3",
-    brandColors.coral[800],
+    brandColors.rose[800],
     true,
   ],
   [
-    "routine hero-ink on coral-400 (старий стоп — задокументований фейл)",
+    "routine hero-ink on rose-400 (старий стоп — задокументований фейл)",
     "#fdf9f3",
-    brandColors.coral[400],
+    brandColors.rose[400],
     false,
   ],
   // Fizruk + nutrition hero (light) — 2026-08 design-audit T2: same
@@ -134,7 +151,7 @@ const PAIRS = [
   // тир обирався за AA, а не за яскравістю: -600 із пропозиції аудиту
   // фейлить (пари нижче фіксують і це), -700 проходить.
   ["macro protein — white on cyan-700", "#ffffff", brandColors.cyan[700], true],
-  ["macro fat — white on coral-700", "#ffffff", brandColors.coral[700], true],
+  ["macro fat — white on rose-700", "#ffffff", brandColors.rose[700], true],
   ["macro carbs — white on lime-700", "#ffffff", brandColors.lime[700], true],
   [
     "macro protein — white on cyan-600 (відхилений тир)",
@@ -200,12 +217,19 @@ describe("@sergeant/design-tokens — «Чорнило» light pair (spec § 5)"
   const muted = "#5c665f"; // meta / captions
   const onAccent = "#fdf9f3"; // text over an accent fill
   // Strong-tier module accents (AA on white / cream).
-  const accents = {
-    finyk: "#115e59", // teal-800 (2026-07: was emerald-700 #047857)
-    fizruk: "#155e75", // cyan-800 (2026-08-07: був cyan-700 #0e7490)
-    routine: "#8d4256", // rose-800 (Р2, 2026-08-07)
-    nutrition: "#466212", // lime-800 (2026-08-07: був lime-700 #567c0f)
-  };
+  //
+  // AI-DANGER: читаємо `moduleAccentRgb`, а НЕ свою копію хексів
+  // (2026-08-07). Копія тут уже одного разу розійшлася з реальністю: тест
+  // стверджував, що routine стоїть на rose-800, тоді як
+  // `bg-routine-strong` і `--module-accent-strong` віддавали rose-700 з
+  // 4.43 на фоні сторінки. Тест був зелений, а екран — ні. Не повертай
+  // літерали: перевіряти треба те значення, яке справді доїжджає в CSS.
+  const accents = Object.fromEntries(
+    Object.entries(moduleAccentRgb).map(([name, { strong }]) => [
+      name,
+      rgbTripleToHex(strong),
+    ]),
+  );
 
   it("fg-strong ≥ 7:1 on both bg and surface (AAA)", () => {
     expect(contrastRatio(fgStrong, bg)).toBeGreaterThanOrEqual(7);
@@ -236,4 +260,39 @@ describe("@sergeant/design-tokens — «Чорнило» light pair (spec § 5)"
       expect(contrastRatio(hex, bg)).toBeGreaterThanOrEqual(4.5);
     });
   }
+
+  // AI-CONTEXT (2026-08-07): семантичні тири не мали ЖОДНОЇ пари в цьому
+  // файлі — гейт покривав чотири модульні акценти й на цьому спинявся.
+  // Це та сама сліпа пляма, що й вище, лише на іншій половині палітри:
+  // `warning-strong` тримався на amber-700 = 4.21 на фоні сторінки, тобто
+  // фейлив AA, а підпис у пресеті стверджував 4.83 (замір проти старої
+  // кремової бази). Хекси беруться з `statusStrongHex` — того самого
+  // джерела, що споживає Tailwind-пресет, — щоб копія не могла розійтися.
+  for (const [name, hex] of Object.entries(statusStrongHex)) {
+    it(`${name}-strong ≥ 4.5:1 on the page background (AA text)`, () => {
+      expect(contrastRatio(hex, bg)).toBeGreaterThanOrEqual(4.5);
+    });
+    it(`${name}-strong ≥ 4.5:1 on white (AA text on cards)`, () => {
+      expect(contrastRatio(hex, surface)).toBeGreaterThanOrEqual(4.5);
+    });
+    it(`white text ≥ 4.5:1 on the ${name}-strong fill (AA)`, () => {
+      expect(contrastRatio("#ffffff", hex)).toBeGreaterThanOrEqual(4.5);
+    });
+  }
+
+  // Модульні й семантичні тири мусять лишатися на ОДНОМУ тирі. Не
+  // естетика: система з двома конвенціями не має способу відрізнити
+  // «свідомий виняток» від «забули підняти» — і саме так routine
+  // прожив на -700, поки решта пішла на -800.
+  it("семантичні тири не слабші за найслабший модульний акцент", () => {
+    const weakestModule = Math.min(
+      ...Object.values(accents).map((hex) => contrastRatio(hex, bg)),
+    );
+    for (const [name, hex] of Object.entries(statusStrongHex)) {
+      expect(
+        contrastRatio(hex, bg),
+        `${name}-strong слабший за найслабший модульний акцент`,
+      ).toBeGreaterThanOrEqual(weakestModule - 0.5);
+    }
+  });
 });

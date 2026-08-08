@@ -1,7 +1,7 @@
 /**
  * Sergeant Design System — Routine Module Theme Constants
  *
- * Soft & Organic aesthetic with coral accent.
+ * Soft & Organic aesthetic with rose accent.
  * Inspired by: Duolingo gamification, warm friendly feel
  */
 
@@ -49,7 +49,7 @@ export const ROUTINE_THEME = {
 
   // Month selector
   monthSel:
-    "bg-routine-surface dark:bg-routine-surface-dark/15 border-routine-ring dark:border-routine-border-dark/40 ring-1 ring-coral-100/50 dark:ring-routine-border-dark/30",
+    "bg-routine-surface dark:bg-routine-surface-dark/15 border-routine-ring dark:border-routine-border-dark/40 ring-1 ring-rose-100/50 dark:ring-routine-border-dark/30",
 
   // Completion states
   done: "border-routine-soft-border bg-routine-soft text-routine-soft-fg",
@@ -70,7 +70,7 @@ export const ROUTINE_THEME = {
   progressFill: "text-routine-strong dark:text-routine",
 
   // Hero card gradient
-  heroGradient: "bg-hero-coral",
+  heroGradient: "bg-hero-rose",
 
   // Success animation colors
   successPulse: "rgba(249, 112, 102, 0.4)",

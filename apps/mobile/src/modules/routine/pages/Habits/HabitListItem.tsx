@@ -72,7 +72,7 @@ export const HabitListItem = memo(function HabitListItem({
     .join(" · ");
 
   const rowClass = editing
-    ? "py-3 border-b border-cream-200 last:border-b-0 rounded-xl bg-coral-50"
+    ? "py-3 border-b border-cream-200 last:border-b-0 rounded-xl bg-rose-50"
     : "py-3 border-b border-cream-200 last:border-b-0";
 
   return (

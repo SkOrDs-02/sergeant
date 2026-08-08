@@ -156,8 +156,8 @@ export const chartHeatmap = {
       "bg-routine-heat-l2",
       "bg-routine-heat-l3",
     ] as const,
-    ring: "ring-coral-400/80 dark:ring-coral-300/70",
-    outline: "outline-coral-400",
+    ring: "ring-rose-400/80 dark:ring-rose-300/70",
+    outline: "outline-rose-400",
   },
 } as const;
 

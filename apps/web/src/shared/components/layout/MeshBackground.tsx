@@ -7,7 +7,7 @@
  * Base layout layer that renders the mesh-gradient surface. «Чорнило»
  * composites THREE radial glows (`--bg-mesh-1..3` defined in
  * `apps/web/src/styles/theme.css`) over `--c-bg-base` — emerald top-right,
- * cyan left, coral bottom (spec § 1), down from the legacy 4-corner mesh.
+ * cyan left, rose bottom (spec § 1), down from the legacy 4-corner mesh.
  * Background uses `background-attachment: fixed` для infinite-scroll-feel
  * (iOS Capacitor WebView has a known regression — fall back is
  * disabled-mesh on `prefers-reduced-motion: reduce`).

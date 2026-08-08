@@ -73,10 +73,10 @@
   );
 }
 
-/* ── Routine (coral) ─────────────────────────────────────────────────── */
+/* ── Routine (rose) ─────────────────────────────────────────────────── */
 
 .module-card-routine {
-  @apply module-card bg-linear-to-br from-coral-50/80 via-orange-50/30 to-white;
+  @apply module-card bg-linear-to-br from-rose-50/80 via-orange-50/30 to-white;
   border-color: rgba(255, 212, 203, 0.6);
 }
 
@@ -100,21 +100,21 @@
 
 /* ── Routine calendar hero — dark-mode on-color text ─────────────────────
    WHY: in dark mode the routine hero Card resolves to a saturated, opaque
-   coral-900 fill (`dark:bg-routine-soft`, rgb(117 57 73)). The shared
+   rose-900 fill (`dark:bg-routine-soft`, rgb(117 57 73)). The shared
    `KpiRowCompact` labels and the `HeroValueLine` narrative paint with the
    neutral `text-subtle` tertiary token (rgb(135 128 121)) — tuned for the
    app's dark panel, not for a coloured surface — yielding only ~1.96:1
-   against the coral fill (WCAG AA fails small text). We can't retint the
+   against the rose fill (WCAG AA fails small text). We can't retint the
    shared token (it would shift every other surface) so we scope an on-color
-   override to this hero only. coral-100 lands ~6.6:1 on coral-900; the
+   override to this hero only. rose-100 lands ~6.6:1 on rose-900; the
    `tabular-nums` value/metric already use `text-text` (warm-white, ~7.8:1)
    so they stay untouched. Light theme keeps the soft-pink hero where the
    neutral subtle token is already compliant — hence `.dark`-only. */
 .dark .routine-hero .text-subtle {
-  color: rgb(255 231 235); /* coral-100 — ≥4.5:1 on coral-900 */
+  color: rgb(255 231 235); /* rose-100 — ≥4.5:1 on rose-900 */
 }
 .dark .routine-hero .text-routine {
-  color: rgb(251 175 190); /* coral-300 — visible separator on coral-900 */
+  color: rgb(251 175 190); /* rose-300 — visible separator on rose-900 */
 }
 
 /* ── Routine heatmap cells ───────────────────────────────────────────────
@@ -125,32 +125,32 @@
 
    Level scale (0 → 3):
      0 → no activity (uses semantic `bg-panelHi dark:bg-line/25` directly)
-     1 → coral-200 light, coral-900 dark
-     2 → coral-400 light, coral-600 dark
-     3 → coral-500 light, coral-500 dark
+     1 → rose-200 light, rose-900 dark
+     2 → rose-400 light, rose-600 dark
+     3 → rose-500 light, rose-500 dark
 
    Opacity is baked into each declaration (light/dark differ slightly so
    the heatmap reads as warm in both themes without hand-tuning at the
    call-site). */
 .bg-routine-heat-l1 {
-  background-color: rgb(254 211 219 / 0.8); /* coral-200 @ 80% */
+  background-color: rgb(254 211 219 / 0.8); /* rose-200 @ 80% */
 }
 .dark .bg-routine-heat-l1 {
-  background-color: rgb(117 57 73 / 0.55); /* coral-900 @ 55% */
+  background-color: rgb(117 57 73 / 0.55); /* rose-900 @ 55% */
 }
 
 .bg-routine-heat-l2 {
-  background-color: rgb(246 141 164 / 0.75); /* coral-400 @ 75% */
+  background-color: rgb(246 141 164 / 0.75); /* rose-400 @ 75% */
 }
 .dark .bg-routine-heat-l2 {
-  background-color: rgb(209 92 122 / 0.7); /* coral-600 @ 70% */
+  background-color: rgb(209 92 122 / 0.7); /* rose-600 @ 70% */
 }
 
 .bg-routine-heat-l3 {
-  background-color: rgb(235 118 145 / 0.9); /* coral-500 @ 90% */
+  background-color: rgb(235 118 145 / 0.9); /* rose-500 @ 90% */
 }
 .dark .bg-routine-heat-l3 {
-  background-color: rgb(235 118 145 / 0.8); /* coral-500 @ 80% */
+  background-color: rgb(235 118 145 / 0.8); /* rose-500 @ 80% */
 }
 
 /* ── Nutrition (lime) ────────────────────────────────────────────────── */

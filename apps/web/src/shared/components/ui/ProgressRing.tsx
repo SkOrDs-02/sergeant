@@ -167,7 +167,7 @@ export function ProgressRing({
 
   const isModuleVariant = MODULE_VARIANTS.has(variant);
   // On a hero fill EVERY variant — module and status alike — routes through
-  // the `-on-hero` tier: `warning`'s amber-700 and `routine`'s coral-700 sit
+  // the `-on-hero` tier: `warning`'s amber-700 and `routine`'s rose-700 sit
   // as flat on a saturated hero as the module chart vars do. Off a hero only
   // module variants leave `currentColor` (see the `chartVar` note above).
   const arcStroke = onHero

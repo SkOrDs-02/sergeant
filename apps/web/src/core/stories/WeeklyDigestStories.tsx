@@ -50,7 +50,7 @@ export function WeeklyDigestStories({
 
   const pause = useStoriesPause();
 
-  const progress = useStoriesAutoplay({
+  useStoriesAutoplay({
     key: nav.index,
     durationMs: SLIDE_MS,
     paused: pause.isPaused,
@@ -109,7 +109,7 @@ export function WeeklyDigestStories({
         <StoriesProgressHeader
           slides={slides}
           currentIndex={nav.index}
-          progress={progress}
+          durationMs={SLIDE_MS}
           paused={pause.isPaused}
           activeLabel={slide.label}
           weekRange={weekRange}

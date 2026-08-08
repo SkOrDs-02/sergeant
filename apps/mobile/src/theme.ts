@@ -44,11 +44,11 @@ export const chartColors = {
   routine: {
     future: brandColors.cream[300]!, // #f5ead8 — disabled/future
     empty: brandColors.cream[200]!, // #faf3e8 — neutral
-    l1: brandColors.coral[200]!, // #fed3db — weak
-    l2: brandColors.coral[400]!, // #f68da4 — medium
-    l3: brandColors.coral[500]!, // #eb7691 — strong
-    strokeToday: brandColors.coral[700]!, // #ac4c64
-    strokeSelected: brandColors.coral[900]!, // #753949
+    l1: brandColors.rose[200]!, // #fed3db — weak
+    l2: brandColors.rose[400]!, // #f68da4 — medium
+    l3: brandColors.rose[500]!, // #eb7691 — strong
+    strokeToday: brandColors.rose[700]!, // #ac4c64
+    strokeSelected: brandColors.rose[900]!, // #753949
   },
   /** Nutrition module macro rings */
   nutrition: {
@@ -57,7 +57,7 @@ export const chartColors = {
     kcal: "#f97316", // orange-500 — calories
     protein: chartHex.protein, // #0e7490 — cyan-700
     carbs: chartHex.carbs, // #567c0f — lime-700 (was blue-500, off-brand)
-    fat: chartHex.fat, // #ac4c64 — coral-700 (was yellow-500, off-brand)
+    fat: chartHex.fat, // #ac4c64 — rose-700 (was yellow-500, off-brand)
     track: brandColors.cream[300]!, // #f5ead8 — background track
   },
   /** Fizruk module charts */
@@ -70,7 +70,7 @@ export const chartColors = {
   /** Finyk module charts */
   finyk: {
     income: brandColors.teal[700]!, // #0f766e (2026-07: was emerald-500, aligns with brand shift)
-    expense: brandColors.coral[500]!, // #eb7691
+    expense: brandColors.rose[500]!, // #eb7691
     balance: brandColors.teal[500]!, // #14b8a6
     track: brandColors.cream[300]!,
   },

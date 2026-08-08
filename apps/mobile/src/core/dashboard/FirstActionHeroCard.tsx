@@ -62,8 +62,8 @@ const ACTIONS: Record<DashboardModuleId, ActionSpec> = {
   routine: {
     title: "Створи першу звичку",
     desc: "~5 секунд. І серія днів стартує одразу.",
-    accentChip: "bg-coral-50 border border-coral-300/60",
-    accentText: "text-coral-700",
+    accentChip: "bg-rose-50 border border-rose-300/60",
+    accentText: "text-rose-700",
     shortLabel: "Звичка",
   },
   finyk: {

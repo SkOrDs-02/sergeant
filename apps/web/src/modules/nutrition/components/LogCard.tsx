@@ -17,8 +17,7 @@ import {
   type NutritionLog,
 } from "@sergeant/nutrition-domain";
 import { isMealTypeId, mealTypeFromLabel } from "../lib/mealTypes";
-import { VirtualMealList } from "./VirtualMealList";
-import { DayStrip } from "./DayStrip";
+import { DayLogSheet } from "./DayLogSheet";
 import { LogCardSearch } from "./LogCardSearch";
 import { LogCardWeeklyTable } from "./LogCardWeeklyTable";
 import { LogCardAnalytics } from "./LogCardAnalytics";
@@ -152,19 +151,16 @@ export function LogCard({
         <LogCardAnalytics log={log} selectedDate={selectedDate} />
 
         {/*
-          Смуга стоїть НАД журналом, а не замість нього (анти-слоп П1,
-          рішення власника 2026-08-06 на `signature-views.html`). Той самий
-          вибір, що гребінь над списком підписок: у смузі нема чого
-          натиснути — редагувати, видалити, змінити час можна лише в рядку.
-          Замінити список смугою означало б поміняти одну втрату
-          інформації на іншу.
+          П3 «край і зріз»: аркуш дня — це `DayLogSheet`, і все, що стоїть
+          у цьому `flex-col` навколо нього, аркушем НЕ є. Перемикач дати,
+          пошук, «скопіювати з попереднього дня», попередження про розмір
+          журналу й «+ Додати прийом їжі» — органи керування записом;
+          обвести їх перфорацією означало б повторити помилку, за яку край
+          зняли з hero Рутини. Розбір — в `DayLogSheet.tsx`.
 
-          Компонент сам вирішує, чи показуватись: нижче двох прийомів
-          повертає `null`. Порога тут навмисно немає — інакше правило
-          мовчання жило б у двох місцях.
+          Порожній стан лишається ПОЗА аркушем: він повідомляє про
+          відсутність запису, а не є записом.
         */}
-        <DayStrip meals={meals} />
-
         {meals.length === 0 ? (
           <EmptyState
             compact
@@ -174,7 +170,7 @@ export function LogCard({
             description="Додай перший прийом їжі, щоб почати вести журнал."
           />
         ) : (
-          <VirtualMealList
+          <DayLogSheet
             groups={groups}
             meals={meals}
             selectedDate={selectedDate}

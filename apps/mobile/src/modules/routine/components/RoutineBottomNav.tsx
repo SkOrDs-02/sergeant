@@ -100,9 +100,7 @@ function NavTab({
       />
       <Text
         className={`text-xs ${
-          selected
-            ? "text-coral-700 font-semibold"
-            : "text-fg-muted font-normal"
+          selected ? "text-rose-700 font-semibold" : "text-fg-muted font-normal"
         }`}
       >
         {item.label}
@@ -110,7 +108,7 @@ function NavTab({
       {/* Active indicator dot */}
       <Animated.View
         style={indicatorStyle}
-        className="absolute bottom-1.5 w-1 h-1 rounded-full bg-coral-600"
+        className="absolute bottom-1.5 w-1 h-1 rounded-full bg-rose-600"
       />
     </Pressable>
   );

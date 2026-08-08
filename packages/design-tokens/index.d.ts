@@ -28,7 +28,7 @@ export type SemanticOrModuleTone = SemanticTone | ModuleAccent;
 
 /** Primary brand colour ramps exposed by `brandColors` in tokens.js. */
 export type BrandColor =
-  "emerald" | "teal" | "cyan" | "cream" | "coral" | "lime";
+  "emerald" | "teal" | "cyan" | "cream" | "rose" | "lime";
 
 // ─── Runtime token shapes ────────────────────────────────────────────────
 
@@ -101,6 +101,13 @@ export declare const statusColors: Readonly<Record<StatusColor, string>>;
  * SVG / canvas / native call sites that consume raw `"#rrggbb"` strings.
  */
 export declare const statusHex: Readonly<Record<StatusColor, string>>;
+
+/**
+ * WCAG-AA `-strong` companions to `statusColors` — what `text-{c}-strong`
+ * and `bg-{c}-strong text-white` resolve to. All four sit on `-800`, the
+ * same tier as the four module accents; `contrast.test.js` pins that.
+ */
+export declare const statusStrongHex: Readonly<Record<StatusColor, string>>;
 
 /** Semantic chart colour identifiers (macro scale + structural). */
 export type ChartHexKey = "limit" | "neutral" | "protein" | "fat" | "carbs";

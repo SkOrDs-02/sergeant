@@ -82,7 +82,7 @@ const variantContainer: Record<CardVariant, string> = {
   fizruk:
     "rounded-3xl border border-teal-200/50 bg-fizruk-soft dark:bg-fizruk-surface-dark/10 dark:border-fizruk-border-dark/20",
   routine:
-    "rounded-3xl border border-coral-200/50 bg-routine-surface dark:bg-routine-surface-dark/10 dark:border-routine-border-dark/20",
+    "rounded-3xl border border-rose-200/50 bg-routine-surface dark:bg-routine-surface-dark/10 dark:border-routine-border-dark/20",
   nutrition:
     "rounded-3xl border border-lime-200/50 bg-nutrition-soft dark:bg-nutrition-surface-dark/10 dark:border-nutrition-border-dark/20",
 

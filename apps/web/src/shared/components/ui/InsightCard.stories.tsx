@@ -39,7 +39,7 @@ type Story = StoryObj<typeof InsightCard>;
 /** Default coffee-overspend insight. */
 export const CoffeeLimit: Story = {};
 
-/** Routine streak record insight — coral/red domain but visual stays ink. */
+/** Routine streak record insight — rose/red domain but visual stays ink. */
 export const RoutineStreak: Story = {
   args: {
     id: "demo-routine-streak",

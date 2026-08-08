@@ -1,6 +1,6 @@
 # Design System — Примітиви UI, Focus, A11y та Gestures
 
-> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-10-31.
+> **Last touched:** 2026-08-08 by @claude. **Next review:** 2026-11-06.
 > **Status:** Active (v2 redesign foundation merged 2026-05)
 
 Цей документ охоплює UI-примітиви, focus/disabled/loading контракт, правила кодування, міграційні патерни, нові компоненти та хуки, gestures/a11y, та keyboard-first overlays (DropdownMenu, CommandPalette).
@@ -180,7 +180,7 @@ Home/End, `role="tablist"`.
 | `routine`   | `text-routine-strong dark:text-routine-300/70` | brand-tint у модулі Рутина            |
 | `nutrition` | `text-nutrition-strong dark:text-nutrition/70` | brand-tint у модулі Харчування        |
 
-> **Dark-mode AA (Hard Rule a11y):** де-емфазований `/70` підпис має тримати ≥4.5:1 на `--c-panel` (#201c19). `finyk`/`routine`/`fizruk` беруть світліший `-300`-тир (emerald/coral/cyan-300 @ /70 ≈ 5.5–6.3:1); `nutrition` лишається на lime-500 (/70 ≈ 4.9:1, вже AA). DEFAULT-500 у finyk/routine чистий AA лише на повній непрозорості — `-300` застосовуємо **тільки** в `dark:` `/70`-слоті підпису.
+> **Dark-mode AA (Hard Rule a11y):** де-емфазований `/70` підпис має тримати ≥4.5:1 на `--c-panel` (#201c19). `finyk`/`routine`/`fizruk` беруть світліший `-300`-тир (teal/rose/cyan-300 @ /70 ≈ 5.5–6.3:1); `nutrition` лишається на lime-500 (/70 ≈ 4.9:1, вже AA). DEFAULT-500 у finyk/routine чистий AA лише на повній непрозорості — `-300` застосовуємо **тільки** в `dark:` `/70`-слоті підпису.
 
 Зірочкою (\*) — це значення за замовчуванням; їх можна не передавати.
 

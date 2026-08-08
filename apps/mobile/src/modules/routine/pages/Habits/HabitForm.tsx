@@ -269,7 +269,7 @@ export function HabitForm({
                     testID={testID ? `${testID}-emoji-${g}` : undefined}
                     className={
                       selected
-                        ? "w-10 h-10 rounded-lg items-center justify-center bg-coral-100 border border-coral-400"
+                        ? "w-10 h-10 rounded-lg items-center justify-center bg-rose-100 border border-rose-400"
                         : "w-10 h-10 rounded-lg items-center justify-center bg-white"
                     }
                   >
@@ -304,7 +304,7 @@ export function HabitForm({
                   }
                   className={
                     active
-                      ? "h-9 px-3 rounded-full border border-coral-500 bg-coral-500 items-center justify-center mr-2"
+                      ? "h-9 px-3 rounded-full border border-rose-500 bg-rose-500 items-center justify-center mr-2"
                       : "h-9 px-3 rounded-full border border-cream-300 bg-cream-50 items-center justify-center mr-2"
                   }
                 >
@@ -363,7 +363,7 @@ export function HabitForm({
                   testID={testID ? `${testID}-reminder-${p.id}` : undefined}
                   className={
                     active
-                      ? "h-9 px-3 rounded-full border border-coral-500 bg-coral-500 items-center justify-center"
+                      ? "h-9 px-3 rounded-full border border-rose-500 bg-rose-500 items-center justify-center"
                       : "h-9 px-3 rounded-full border border-cream-300 bg-cream-50 items-center justify-center"
                   }
                 >
@@ -453,7 +453,7 @@ export function HabitForm({
                     testID={testID ? `${testID}-tag-none` : undefined}
                     className={
                       draft.tagIds.length === 0
-                        ? "h-9 px-3 rounded-full border border-coral-500 bg-coral-500 items-center justify-center"
+                        ? "h-9 px-3 rounded-full border border-rose-500 bg-rose-500 items-center justify-center"
                         : "h-9 px-3 rounded-full border border-cream-300 bg-cream-50 items-center justify-center"
                     }
                   >
@@ -480,7 +480,7 @@ export function HabitForm({
                         testID={testID ? `${testID}-tag-${t.id}` : undefined}
                         className={
                           selected
-                            ? "h-9 px-3 rounded-full border border-coral-500 bg-coral-500 items-center justify-center"
+                            ? "h-9 px-3 rounded-full border border-rose-500 bg-rose-500 items-center justify-center"
                             : "h-9 px-3 rounded-full border border-cream-300 bg-cream-50 items-center justify-center"
                         }
                       >
@@ -517,7 +517,7 @@ export function HabitForm({
                     testID={testID ? `${testID}-category-none` : undefined}
                     className={
                       !draft.categoryId
-                        ? "h-9 px-3 rounded-full border border-coral-500 bg-coral-500 items-center justify-center"
+                        ? "h-9 px-3 rounded-full border border-rose-500 bg-rose-500 items-center justify-center"
                         : "h-9 px-3 rounded-full border border-cream-300 bg-cream-50 items-center justify-center"
                     }
                   >
@@ -546,7 +546,7 @@ export function HabitForm({
                         }
                         className={
                           selected
-                            ? "h-9 px-3 rounded-full border border-coral-500 bg-coral-500 items-center justify-center"
+                            ? "h-9 px-3 rounded-full border border-rose-500 bg-rose-500 items-center justify-center"
                             : "h-9 px-3 rounded-full border border-cream-300 bg-cream-50 items-center justify-center"
                         }
                       >

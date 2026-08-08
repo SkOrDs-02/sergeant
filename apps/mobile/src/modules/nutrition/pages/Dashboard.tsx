@@ -71,7 +71,7 @@ const MACRO_DEFS: readonly MacroDef[] = [
   {
     key: "fat_g",
     label: "Жири",
-    color: chartHex.fat, // coral-700 #c23a3a
+    color: chartHex.fat, // rose-700 #c23a3a
     prefKey: "dailyTargetFat_g",
     unit: "г",
   },

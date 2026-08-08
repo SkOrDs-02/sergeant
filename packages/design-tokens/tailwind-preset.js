@@ -16,6 +16,7 @@ import {
   chartPalette,
   moduleColors,
   statusColors,
+  statusStrongHex,
   zTier,
 } from "./tokens.js";
 
@@ -187,7 +188,7 @@ const preset = {
         // 2026-07 design-audit M1: `brand` is the HUB / shell identity and is
         // deliberately NEUTRAL — a warm-stone ramp with no module hue. The
         // four modules own the colour (finyk teal · fizruk cyan · routine
-        // coral · nutrition lime); the shell stays quiet so exactly one accent
+        // rose · nutrition lime); the shell stays quiet so exactly one accent
         // reads per screen. Previously `brand` aliased teal, making the hub
         // indistinguishable from finyk and effectively a fifth accent — that
         // weakened module-accent containment (Hard Rule #12).
@@ -218,7 +219,7 @@ const preset = {
         // for fizruk module surfaces — see docs/design/redesign-v2.md.
         cyan: brandColors.cyan,
         cream: brandColors.cream,
-        coral: brandColors.coral,
+        rose: brandColors.rose,
         lime: brandColors.lime,
 
         // ═══════════════════════════════════════════════════════════════════
@@ -261,12 +262,15 @@ const preset = {
         // `-soft-fg` contract: deep ink on the pale light/HC surface, bright
         // accent on the deep dark surface. Backed by `--c-brand-soft-fg`.
         "brand-soft-fg": "rgb(var(--c-brand-soft-fg) / <alpha-value>)",
-        // WCAG-AA companions: `text-{c}-strong` on cream / soft surfaces,
-        // `bg-{c}-strong text-white` on solid fills (Buttons, Badges, Tabs).
-        "success-strong": brandColors.emerald[700], // #047857 — 5.23:1 on cream / 5.48:1 on white
-        "warning-strong": "#b45309", // amber-700 — 4.83:1 on cream / 5.02:1 on white
-        "danger-strong": "#b91c1c", // red-700   — 6.17:1 on cream / 6.47:1 on white
-        "info-strong": "#0369a1", // sky-700   — 5.66:1 on cream / 5.93:1 on white
+        // WCAG-AA companions: `text-{c}-strong` on the page background /
+        // soft surfaces, `bg-{c}-strong text-white` on solid fills
+        // (Buttons, Badges, Tabs). Значення — з `statusStrongHex`, а не
+        // літералами тут: літерали не мали гейта й розійшлися з фактом
+        // (див. AI-CONTEXT біля мапи в `tokens.js`).
+        "success-strong": statusStrongHex.success, // #065f46 — 6.44:1 на #ecebe7 / 7.68:1 на білому
+        "warning-strong": statusStrongHex.warning, // #92400e — 5.94:1 на #ecebe7 / 7.09:1 на білому
+        "danger-strong": statusStrongHex.danger, // #991b1b — 6.97:1 на #ecebe7 / 8.31:1 на білому
+        "info-strong": statusStrongHex.info, // #075985 — 6.34:1 на #ecebe7 / 7.56:1 на білому
 
         // ═══════════════════════════════════════════════════════════════════
         // CHART PALETTE — For pie charts, graphs, data visualization
@@ -285,7 +289,7 @@ const preset = {
         "chart-finyk": "rgb(var(--c-chart-finyk, 17 94 89) / <alpha-value>)", // teal-800 — 5.12:1 (2026-07: was emerald-700)
         "chart-fizruk": "rgb(var(--c-chart-fizruk, 21 94 117) / <alpha-value>)", // cyan-800 — 7.5:1 (v2 redesign: was teal-700 5.22:1)
         "chart-routine":
-          "rgb(var(--c-chart-routine, 172 76 100) / <alpha-value>)", // coral-700 — 5.06:1
+          "rgb(var(--c-chart-routine, 172 76 100) / <alpha-value>)", // rose-700 — 5.06:1
         "chart-nutrition":
           "rgb(var(--c-chart-nutrition, 70 98 18) / <alpha-value>)", // lime-800 — 6.64:1
 
@@ -345,7 +349,7 @@ const preset = {
           // (cyan-300) is the light tier used only in `dark:` text slots, the
           // same shape as `success`'s `dark:text-brand-300` (≥11:1 on
           // `--c-panel`). The other modules keep their bright DEFAULT for dark
-          // text (emerald / coral / lime-500 already clear AA); only cyan-700
+          // text (emerald / rose / lime-500 already clear AA); only cyan-700
           // needed a dedicated lighter dark-text step.
           300: brandColors.cyan[300],
           // Theme-adaptive soft tint trio (Wave 1b).
@@ -367,34 +371,41 @@ const preset = {
           "tile-border": "rgb(var(--c-fizruk-tile-border) / <alpha-value>)",
         },
 
-        /** Рутина — Soft coral habit tracker */
+        /** Рутина — Soft rose habit tracker */
         routine: {
           DEFAULT: moduleColors.routine.primary,
           secondary: moduleColors.routine.secondary,
           surface: moduleColors.routine.surface,
-          // Tint крок між surface (coral-50 #fff5f6) та surfaceAlt (coral-100 #ffe7eb) —
+          // Tint крок між surface (rose-50 #fff5f6) та surfaceAlt (rose-100 #ffe7eb) —
           // використовується для виділення активного дня / виконаного слота в календарі.
-          surface2: "#ffeeeb",
+          // AI-CONTEXT (2026-08-07): було `#ffeeeb` — персиковий відтінок
+          // коралової епохи, який після заміни рампи лишився сиротою: він не
+          // лежить між rose-50 і rose-100, а тягне в інший тон. Тепер це
+          // рівно середина двох сусідніх тирів.
+          surface2: "#ffeef0",
           surfaceAlt: moduleColors.routine.surfaceAlt,
-          hover: brandColors.coral[600],
-          strong: brandColors.coral[700],
-          kicker: brandColors.coral[600],
-          eyebrow: brandColors.coral[500],
-          line: brandColors.coral[200],
-          ring: brandColors.coral[300],
-          done: brandColors.coral[700],
-          nav: brandColors.coral[500],
+          hover: brandColors.rose[600],
+          // AI-CONTEXT (2026-08-07): `-800`, як і решта трьох модулів. На
+          // `-700` `text-routine-strong` давав 4.43 на фоні сторінки — нижче
+          // AA (див. `moduleAccentRgb` у tokens.js).
+          strong: brandColors.rose[800],
+          kicker: brandColors.rose[600],
+          eyebrow: brandColors.rose[500],
+          line: brandColors.rose[200],
+          ring: brandColors.rose[300],
+          done: brandColors.rose[700],
+          nav: brandColors.rose[500],
           // Dark-mode subtitle companion — same rationale as `finyk.300`.
-          // coral-500/70 ≈ 3.6:1 (sub-AA for normal text); coral-300/70 ≈
+          // rose-500/70 ≈ 3.6:1 (sub-AA for normal text); rose-300/70 ≈
           // 5.5:1. Used ONLY in the `dark:` `/70` subtitle slot — the DEFAULT
-          // coral-500 already clears AA for full-opacity dark text.
-          300: brandColors.coral[300],
+          // rose-500 already clears AA for full-opacity dark text.
+          300: brandColors.rose[300],
           // Theme-adaptive soft tint trio (Wave 1b).
           soft: "rgb(var(--c-routine-soft) / <alpha-value>)",
           "soft-border": "rgb(var(--c-routine-soft-border) / <alpha-value>)",
           "soft-hover": "rgb(var(--c-routine-soft-hover) / <alpha-value>)",
           // Theme-aware foreground for soft-fill controls (`Button`
-          // `routine-soft`). Light = coral-700 ink; dark = coral-300 so text
+          // `routine-soft`). Light = rose-700 ink; dark = rose-300 so text
           // clears WCAG AA on `bg-routine/15` over the dark panel. Backed by
           // `--c-routine-soft-fg`.
           "soft-fg": "rgb(var(--c-routine-soft-fg) / <alpha-value>)",
@@ -598,7 +609,7 @@ const preset = {
         glow: "0 0 0 3px var(--focus-ring-color, rgba(20, 184, 166, 0.15))",
         "glow-teal": "0 0 0 3px rgba(20, 184, 166, 0.15)",
         "glow-cyan": "0 0 0 3px rgba(14, 116, 144, 0.15)",
-        "glow-coral": "0 0 0 3px rgba(235, 118, 145, 0.15)",
+        "glow-rose": "0 0 0 3px rgba(235, 118, 145, 0.15)",
         "glow-lime": "0 0 0 3px rgba(146, 204, 23, 0.15)",
         // «Чорнило» accent glow — a luminescent tier-400 halo for solid
         // accent controls (module Buttons, spec § 4: glow 24px/35%),
@@ -608,7 +619,7 @@ const preset = {
         // 2026-08 design-audit T10 — zero consumers.
         "glow-accent-teal": "0 0 24px rgba(45, 212, 191, 0.35)", // teal-400 — finyk accent glow (2026-07)
         "glow-accent-cyan": "0 0 24px rgba(34, 211, 238, 0.35)",
-        "glow-accent-coral": "0 0 24px rgba(246, 141, 164, 0.35)",
+        "glow-accent-rose": "0 0 24px rgba(246, 141, 164, 0.35)",
         "glow-accent-lime": "0 0 24px rgba(176, 230, 54, 0.35)",
         // «Чорнило» hero inset-glow — a luminescent tier-400 halo inside
         // the card edge (spec § 3: depth = glow, not down-shadow). 40px
@@ -619,7 +630,7 @@ const preset = {
         // 2026-08 design-audit T10 — zero consumers.
         "glow-inset-teal": "inset 0 0 40px rgba(45, 212, 191, 0.08)", // teal-400 — finyk hero (2026-07)
         "glow-inset-cyan": "inset 0 0 40px rgba(34, 211, 238, 0.08)",
-        "glow-inset-coral": "inset 0 0 40px rgba(246, 141, 164, 0.08)",
+        "glow-inset-rose": "inset 0 0 40px rgba(246, 141, 164, 0.08)",
         "glow-inset-lime": "inset 0 0 40px rgba(176, 230, 54, 0.08)",
         // «Чорнило» hero light glow (spec § 3 point 2) — a soft downward
         // colour shadow, not a halo. Colour = the light-tier
@@ -631,7 +642,7 @@ const preset = {
         "hero-routine": "0 8px 20px rgba(194, 58, 58, 0.22)",
         "hero-nutrition": "0 8px 20px rgba(86, 124, 15, 0.22)",
         // «Чорнило» FAB glow (spec § 4: FAB = module accent + glow
-        // 24px/40%) — `glow-fab-coral` removed 2026-08 design-audit T10
+        // 24px/40%) — `glow-fab-rose` removed 2026-08 design-audit T10
         // (zero consumers; `FloatingActionButton` uses the theme-aware
         // `shadow-fab` token instead).
         // Destructive hover ring (Button variant="destructive").
@@ -694,7 +705,7 @@ const preset = {
         // structure as `hero-teal`, re-hued to the module's `cyan` scale.
         "hero-cyan":
           "linear-gradient(135deg, #ecfeff 0%, #cffafe 50%, #a5f3fc 100%)",
-        "hero-coral":
+        "hero-rose":
           "linear-gradient(135deg, #fff5f6 0%, #ffe7eb 50%, #fed3db 100%)",
         "hero-lime":
           "linear-gradient(135deg, #f8fee7 0%, #effccb 50%, #dff99d 100%)",
@@ -706,7 +717,7 @@ const preset = {
         // Card gradients (subtle). `card-emerald` (pre-teal-migration
         // orphan) removed 2026-08 design-audit T10 — zero consumers.
         "card-teal": "linear-gradient(135deg, #f0fdfa 0%, #ffffff 100%)",
-        "card-coral": "linear-gradient(135deg, #fff5f6 0%, #ffffff 100%)",
+        "card-rose": "linear-gradient(135deg, #fff5f6 0%, #ffffff 100%)",
         "card-lime": "linear-gradient(135deg, #f8fee7 0%, #ffffff 100%)",
 
         // Dark-mode overlays for module hero Card variants. Layered on top

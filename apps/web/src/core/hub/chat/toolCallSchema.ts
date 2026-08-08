@@ -250,6 +250,7 @@ export const KNOWN_TOOL_NAMES: ReadonlySet<string> = new Set([
   "add_recipe",
   "add_to_shopping_list",
   "consume_from_pantry",
+  "clear_pantry",
   "set_daily_plan",
   "suggest_meal",
   "copy_meal_from_date",
