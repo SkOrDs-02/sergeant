@@ -372,7 +372,9 @@ export function __resetNutritionPantryBackfillForTests(): void {
   pantryBackfillDone = false;
 }
 
-function extractMealSnapshots(log: NutritionLog): NutritionMealSnapshot[] {
+export function extractMealSnapshots(
+  log: NutritionLog,
+): NutritionMealSnapshot[] {
   const out: NutritionMealSnapshot[] = [];
   for (const [dateKey, day] of Object.entries(log)) {
     const meals = Array.isArray(day?.meals) ? day.meals : [];
@@ -398,7 +400,7 @@ function extractMealSnapshots(log: NutritionLog): NutritionMealSnapshot[] {
   return out;
 }
 
-function extractPantrySnapshots(
+export function extractPantrySnapshots(
   pantries: readonly Pantry[],
 ): NutritionPantrySnapshot[] {
   // Pantry items in LS are positional and have no stable `id`. Generate a

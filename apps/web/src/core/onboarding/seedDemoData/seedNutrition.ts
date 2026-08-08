@@ -154,8 +154,15 @@ export function seedNutrition(): void {
   });
 
   // A half-full water log for today — tracker bar shows real progress.
+  //
+  // AI-DANGER: значення тут — число мілілітрів напряму, БЕЗ обгортки
+  // `{ ml: N }`. `WaterLog = Record<string, number>`
+  // (`packages/nutrition-domain/src/waterLog.ts`), а `sanitizeMl` робить
+  // `Number({ml:1400})` → `NaN` → `0` → ключ відкидається. Об'єктна форма
+  // мовчки гасила воду демо при БУДЬ-ЯКОМУ шляху читання (SQLite чи LS) —
+  // виявлено 2026-08-08 разом із поверненням демо-режиму (аудит L-8).
   writeJSON(NUTRITION_WATER_KEY, {
-    [today]: { ml: 1400 },
-    [yesterday]: { ml: 2200 },
+    [today]: 1400,
+    [yesterday]: 2200,
   });
 }

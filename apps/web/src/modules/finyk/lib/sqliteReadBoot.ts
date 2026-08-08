@@ -21,12 +21,20 @@
  * That one-time pre-beta drain was removed 2026-08 once no testers were
  * left with pre-SQLite LS data to migrate — see git history for the
  * prior implementation.
+ *
+ * ⚠️ Те видалення забрало з собою й ДЕМО-режим — той самий root cause,
+ * що й у Фізруку (аудит L-8, 2026-08-07; докладний AI-CONTEXT — у
+ * `./demoSeedImport.ts`). Крок 1.5 нижче — `importFinykDemoSeed()` —
+ * закриває розрив для ручних витрат / кастомних категорій / плану;
+ * це не повернення legacy-міграції.
  */
 
 import { logger } from "@shared/lib";
 import { recordReadFallback } from "../../../core/observability/dualWriteTelemetry.js";
 import { getSqliteDb } from "../../../core/db/sqlite.js";
+import { isDemoActive } from "../../../core/onboarding/onboardingGate.js";
 import { migrateFinyk } from "./clientMigrate.js";
+import { importFinykDemoSeed } from "./demoSeedImport.js";
 import { refreshFinykSqliteState } from "./sqliteReader.js";
 
 let booted = false;
@@ -48,6 +56,25 @@ export async function bootFinykSqliteReadPath(
     const handle = await getSqliteDb();
     const client = handle.migrationClient();
     await migrateFinyk(client);
+
+    // Демо: залити засіяний payload із LS у SQLite ДО першого читання,
+    // інакше модуль намалює порожньо (аудит L-8). Гейт на демо
+    // обов'язковий — див. AI-DANGER у `demoSeedImport.ts`. Порядок теж
+    // важливий: нижче йде `refreshFinykSqliteState`, який гріє кеш, з
+    // якого рендериться модуль.
+    if (isDemoActive()) {
+      const applied = await importFinykDemoSeed({
+        client,
+        userId,
+        // eslint-disable-next-line no-restricted-syntax -- LWW clientTs wall-clock, не день-ключ
+        nowIso: new Date().toISOString(),
+      });
+      if (applied > 0) {
+        logger.debug("[finyk.demoSeed] демо-дані залито в SQLite", {
+          applied,
+        });
+      }
+    }
 
     await refreshFinykSqliteState(client, userId);
 

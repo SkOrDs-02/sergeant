@@ -22,13 +22,24 @@
  * `./residualImport.ts`). That one-time pre-beta drain was removed
  * 2026-08 once no testers were left with pre-SQLite LS data to migrate
  * — see git history for the prior implementation.
+ *
+ * ⚠️ Те видалення забрало з собою й ДЕМО-режим: демо-сід пише payload у
+ * той самий LS-ключ (`hub_routine_v1`), і саме residual-дренаж доносив
+ * його до SQLite (це прямим текстом стоїть у докблоці
+ * `DEMO_LOCAL_USER_ID`). Без нього демо малювало порожній модуль поряд
+ * із засіяними картками хабу (аудит L-8, 2026-08-07). Крок нижче —
+ * `importRoutineDemoSeed()` — закриває саме цей розрив і працює ЛИШЕ під
+ * демо-прапорцем; це не повернення legacy-міграції. Дзеркалить
+ * `apps/web/src/modules/fizruk/lib/sqliteReadBoot.ts` (крок 1.5).
  */
 
 import { logger } from "@shared/lib";
 import { recordReadFallback } from "../../../core/observability/dualWriteTelemetry.js";
 import { getSqliteDb } from "../../../core/db/sqlite.js";
+import { isDemoActive } from "../../../core/onboarding/onboardingGate.js";
 
 import { migrateRoutine } from "./clientMigrate.js";
+import { importRoutineDemoSeed } from "./demoSeedImport.js";
 import {
   refreshSqliteCompletions,
   refreshSqliteRoutineState,
@@ -53,6 +64,26 @@ export async function bootSqliteReadPath(
     const handle = await getSqliteDb();
     const client = handle.migrationClient();
     await migrateRoutine(client);
+
+    // Демо: залити засіяний payload із LS у SQLite ДО першого читання,
+    // інакше модуль намалює порожньо (аудит L-8). Гейт на демо
+    // обов'язковий — див. AI-DANGER у `demoSeedImport.ts`. Порядок теж
+    // важливий: нижче йде `refreshSqliteCompletions` /
+    // `refreshSqliteRoutineState`, які гріють кеш, з якого рендериться
+    // модуль.
+    if (isDemoActive()) {
+      const applied = await importRoutineDemoSeed({
+        client,
+        userId,
+        // eslint-disable-next-line no-restricted-syntax -- LWW clientTs wall-clock, не день-ключ
+        nowIso: new Date().toISOString(),
+      });
+      if (applied > 0) {
+        logger.debug("[routine.demoSeed] демо-дані залито в SQLite", {
+          applied,
+        });
+      }
+    }
 
     await refreshSqliteCompletions(client, userId);
     // Stage 10: also warm the full-state cache (habits, tags,

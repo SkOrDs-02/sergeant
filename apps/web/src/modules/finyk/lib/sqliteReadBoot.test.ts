@@ -3,6 +3,8 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 const migrateFinyk = vi.fn(async (..._a: unknown[]) => {});
 const refreshFinykSqliteState = vi.fn(async (..._a: unknown[]) => {});
 const recordReadFallback = vi.fn();
+const importFinykDemoSeed = vi.fn();
+const isDemoActive = vi.fn();
 const migrationClient = { run: vi.fn() };
 const getSqliteDb = vi.fn(async () => ({
   migrationClient: () => migrationClient,
@@ -20,6 +22,12 @@ vi.mock("./sqliteReader.js", () => ({
 vi.mock("../../../core/observability/dualWriteTelemetry.js", () => ({
   recordReadFallback: (...a: unknown[]) => recordReadFallback(...a),
 }));
+vi.mock("./demoSeedImport.js", () => ({
+  importFinykDemoSeed: (...a: unknown[]) => importFinykDemoSeed(...a),
+}));
+vi.mock("../../../core/onboarding/onboardingGate.js", () => ({
+  isDemoActive: () => isDemoActive(),
+}));
 
 import {
   bootFinykSqliteReadPath,
@@ -29,6 +37,8 @@ import {
 beforeEach(() => {
   vi.clearAllMocks();
   __resetFinykSqliteReadBootForTests();
+  importFinykDemoSeed.mockResolvedValue(0);
+  isDemoActive.mockReturnValue(false);
 });
 
 describe("bootFinykSqliteReadPath", () => {
@@ -61,5 +71,45 @@ describe("bootFinykSqliteReadPath", () => {
       "finyk",
       expect.stringContaining("boot-failed"),
     );
+  });
+});
+
+describe("демо-сід у read-boot", () => {
+  // Найважливіший інваріант цієї пари файлів. Без гейта імпорт
+  // воскресив би legacy-LS у СПРАВЖНІХ акаунтів — рівно те, що
+  // прибрали навмисно 2026-08 разом із residual-дренажем, і що затерло
+  // б їхні SQLite-дані старим знімком.
+  it("НЕ ллє демо-payload, коли демо не активне", async () => {
+    isDemoActive.mockReturnValue(false);
+    await bootFinykSqliteReadPath("real-user-1");
+    expect(importFinykDemoSeed).not.toHaveBeenCalled();
+  });
+
+  it("ллє демо-payload під демо-прапорцем — до першого читання", async () => {
+    isDemoActive.mockReturnValue(true);
+    const order: string[] = [];
+    importFinykDemoSeed.mockImplementation(async () => {
+      order.push("import");
+      return 3;
+    });
+    refreshFinykSqliteState.mockImplementation(async () => {
+      order.push("refresh");
+    });
+
+    await bootFinykSqliteReadPath("demo-local");
+
+    expect(importFinykDemoSeed).toHaveBeenCalledTimes(1);
+    // Порядок — частина контракту: `refreshFinykSqliteState` гріє кеш,
+    // з якого рендериться модуль, тож імпорт мусить бути ДО нього,
+    // інакше перший кадр демо все одно порожній.
+    expect(order).toEqual(["import", "refresh"]);
+  });
+
+  it("падіння демо-імпорту не валить бут", async () => {
+    isDemoActive.mockReturnValue(true);
+    importFinykDemoSeed.mockRejectedValue(new Error("boom"));
+    // Імпортер сам не кидає (див. його тести), але навіть якщо колись
+    // почне — бут модуля не має від цього померти.
+    await expect(bootFinykSqliteReadPath("demo-local")).resolves.toBe(false);
   });
 });

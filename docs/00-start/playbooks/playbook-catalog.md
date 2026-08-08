@@ -1,6 +1,6 @@
 # Playbook Catalog
 
-> **Last touched:** 2026-08-02 by @Skords-01. **Next review:** 2026-10-31.
+> **Last touched:** 2026-08-08 by @claude. **Next review:** 2026-11-06.
 > **Status:** Active
 
 Scenario catalog: which playbook to open, which skill governs the work, and whether the document is primarily for humans, agents, or both.
@@ -28,6 +28,7 @@ Scenario catalog: which playbook to open, which skill governs the work, and whet
 | Clean up Codex branch after merged PR          | [`cleanup-codex-branch-after-pr.md`](./cleanup-codex-branch-after-pr.md)                  | `sergeant-review-and-merge`                             | Human + agent |
 | Review / merge gate                            | [`../governance/review-checklist.md`](../../04-governance/governance/review-checklist.md) | `sergeant-review-and-merge`                             | Human + agent |
 | PR review across 3+ governed surfaces          | [`run-squad-review.md`](./run-squad-review.md)                                            | `sergeant-review-squad`                                 | Human + agent |
+| Deep audit of one module (logic+flows+visual)  | [`deep-module-audit.md`](./deep-module-audit.md)                                          | `sergeant-web-ui`                                       | Human + agent |
 | Cross-surface feature delivery (DB→server→web) | [`run-squad-deliver.md`](./run-squad-deliver.md)                                          | `sergeant-deliver-squad`                                | Human + agent |
 | Sync client wiring (pull + outbox phases 0–4)  | [`sync-client-wiring-playbook.md`](../../90-work/planning/sync-client-wiring-playbook.md) | `sergeant-feature-delivery` + `sergeant-deliver-squad`  | Human + agent |
 | Full QA across all surfaces in parallel        | [`run-squad-qa.md`](./run-squad-qa.md)                                                    | `sergeant-qa-squad`                                     | Human + agent |
@@ -55,6 +56,7 @@ Curated table вище лишається швидким роутером для
 | [`cleanup-dead-code.md`](./cleanup-dead-code.md)                                   | «Видали X і всі його використання» / видалення застарілого модуля, компонента, утиліти або feature flag.                                                                                                                    |
 | [`cleanup-codex-branch-after-pr.md`](./cleanup-codex-branch-after-pr.md)           | PR merged / "онови main" / "видали гілку" / "поверни local dirty files" після Codex-гілки.                                                                                                                                  |
 | [`debug-chat-tool.md`](./debug-chat-tool.md)                                       | «Асистент каже що зробив, але нічого не сталось» / «Натиснув кнопку quick action — нема ефекту» / tool call повернувся текстом замість дії / `Невідома дія: …` у відповіді.                                                 |
+| [`deep-module-audit.md`](./deep-module-audit.md)                                   | «Проведи глибоке дослідження модуля X» / «Передивись, чи працюють усі елементи, кнопки, логіка» / наскрізна перевірка одного модуля перед бетою або після скарги власника.                                                  |
 | [`embedding-provider-migration.md`](./embedding-provider-migration.md)             | «Перемкнути embedding-провайдер або модель» / «Змінити embedding vendor» / «re-embed ai_memories на нову модель» / виявлено нову embedding-модель з кращою якістю або меншою вартістю.                                      |
 | [`enable-prompt-caching.md`](./enable-prompt-caching.md)                           | «Зменшити cost Anthropic» / «Anthropic API занадто дорогий» / `aiTokensTotal{kind="prompt"}` росте лінійно з трафіком, бо стабільні `SYSTEM_PREFIX` і `TOOLS` повторюються на кожному запиті.                               |
 | [`fix-exhaustive-deps.md`](./fix-exhaustive-deps.md)                               | "Виправити exhaustive-deps warnings" / ESLint `react-hooks/exhaustive-deps` violations / стале закриття з `apps-web-exhaustive-deps.md`.                                                                                    |

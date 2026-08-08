@@ -108,10 +108,11 @@ export function clearDemoFlag(): void {
  * ⚠️ Раніше тут писало, що LS→SQLite доносить «residual import». Той
  * дренаж прибрали 2026-08 як legacy, і разом із ним тихо помер демо-
  * режим — саме ту регресію зафіксував аудит L-8 (2026-08-07). Тепер
- * місток явний і демо-специфічний: `importFizrukDemoSeed()` у
- * `modules/fizruk/lib/demoSeedImport.ts`, викликаний із read-boot
- * модуля під прапорцем демо. Решта модулів (routine / nutrition /
- * finyk) того містка ЩЕ НЕ МАЮТЬ — їхнє демо лишається порожнім.
+ * місток явний і демо-специфічний: `demoSeedImport.ts` у КОЖНОМУ з
+ * чотирьох модулів (`modules/{fizruk,routine,nutrition,finyk}/lib/`),
+ * викликаний із read-boot модуля під прапорцем демо. Фіньок має ще
+ * другий місток для банківських транзакцій — у `monoMirrorBoot.ts`.
+ * Додаєш пʼятий модуль із SQLite-читанням — йому потрібен свій.
  */
 export const DEMO_LOCAL_USER_ID = "demo-local";
 
