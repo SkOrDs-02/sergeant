@@ -12,7 +12,6 @@
   "apps/web/src/core/DesignShowcase/sections/proposals/WheelPickerDemo.tsx",
   "apps/web/src/core/app/HubHeader.tsx",
   "apps/web/src/core/app/NotificationBell.tsx",
-  "apps/web/src/core/hub/OutcomeCard.tsx",
   "apps/web/src/core/hub/dashboard/BentoCard.tsx",
   "apps/web/src/core/insights/AssistantAdviceCard.tsx",
   "apps/web/src/core/onboarding/FirstRunHintBanner.tsx",
