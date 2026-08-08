@@ -1,32 +1,28 @@
 /**
- * Last validated: 2026-08-02
+ * Last validated: 2026-08-08
  * Status: Active
  *
- * «Що болить» — the entry point of the "не можна" model (ADR-0083).
+ * «Що болить» на сторінці Атласа — **лише читання**.
  *
- * AI-CONTEXT: The zone list is deliberately split into «Суглоби й хребет» and
- * «Мʼязи», and the joint half is listed FIRST. Typical lifting injuries are
- * joints, and the muscle-only model that the atlas alone could express is the
- * exact failure audit E-4 documented — a user who can only reach muscles will
- * mark the wrong thing and believe they are protected.
+ * AI-CONTEXT: до 2026-08-08 тут жив ПОВНИЙ пікер зон (кнопка «Позначити зону»
+ * + дві групи чипів), тобто другий екземпляр того, що вже є в `InjuryManager`
+ * на сторінці «Моє тіло». Дві поверхні для однієї дії розійшлися й механікою:
+ * тут тап по чипу позначав ЗРАЗУ, там — накопичував вибір до «Позначити біль».
+ * Людина не могла знати, чи її вибір збережено, доки не гляне на інший екран.
+ * Канонічний дім позначок — «Моє тіло»; Атлас візуалізує відновлення, а
+ * позначки болю його силует навіть не малює. Тому пікер прибрано (скарга
+ * власника 2026-08-08), а лишився рівно той зріз, який пояснює карту поруч:
+ * що саме зараз позначено і як це зняти.
  *
  * AI-DANGER: The copy here must never promise safety. The product does not
  * diagnose and does not treat (канон fizruk §5) — it only stops recommending
  * what overlaps a mark. Wording that implies more is a product bug, not a
  * style nit.
  */
-import { useState } from "react";
 import { Card } from "@shared/components/ui/Card";
 import { Button } from "@shared/components/ui/Button";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
-import {
-  BODY_ATLAS_MUSCLE_IDS,
-  BODY_ATLAS_MUSCLE_LABELS_UK,
-  INJURY_ZONE_IDS,
-  INJURY_ZONE_LABELS_UK,
-  injurySiteLabelUk,
-  type InjurySiteId,
-} from "@sergeant/fizruk-domain/data";
+import { injurySiteLabelUk } from "@sergeant/fizruk-domain/data";
 
 import { messages } from "@shared/i18n/uk";
 
@@ -43,9 +39,17 @@ function formatSince(startedAt: string): string {
   return `${days} дн. тому`;
 }
 
-export function InjurySection() {
-  const { active, activeSites, mark, clear } = useInjuries();
-  const [picking, setPicking] = useState(false);
+export interface InjurySectionProps {
+  /**
+   * Перехід на «Моє тіло» — єдине місце, де позначку СТАВЛЯТЬ. Без цього
+   * колбека секція лишається чисто інформативною (посилання не рендериться),
+   * що коректно для будь-якого майбутнього колсайту без навігації.
+   */
+  onOpenBody?: (() => void) | undefined;
+}
+
+export function InjurySection({ onOpenBody }: InjurySectionProps = {}) {
+  const { active, clear } = useInjuries();
 
   return (
     <Card as="section" radius="lg" padding="lg" aria-label={t.title}>
@@ -83,34 +87,16 @@ export function InjurySection() {
         </ul>
       )}
 
-      <div className="mt-3">
-        <Button
-          size="sm"
-          variant="secondary"
-          module="fizruk"
-          onClick={() => setPicking((v) => !v)}
-          aria-expanded={picking}
-        >
-          {picking ? t.collapseCta : t.markCta}
-        </Button>
-      </div>
-
-      {picking && (
-        <div className="mt-3 space-y-3">
-          <ZoneGroup
-            title={t.groupZones}
-            ids={INJURY_ZONE_IDS}
-            labels={INJURY_ZONE_LABELS_UK}
-            activeSites={activeSites}
-            onPick={mark}
-          />
-          <ZoneGroup
-            title={t.groupMuscles}
-            ids={BODY_ATLAS_MUSCLE_IDS}
-            labels={BODY_ATLAS_MUSCLE_LABELS_UK}
-            activeSites={activeSites}
-            onPick={mark}
-          />
+      {onOpenBody && (
+        <div className="mt-3">
+          <Button
+            size="sm"
+            variant="secondary"
+            module="fizruk"
+            onClick={onOpenBody}
+          >
+            {t.markOnBodyCta}
+          </Button>
         </div>
       )}
 
@@ -118,55 +104,5 @@ export function InjurySection() {
         {t.disclaimer}
       </p>
     </Card>
-  );
-}
-
-function ZoneGroup({
-  title,
-  ids,
-  labels,
-  activeSites,
-  onPick,
-}: {
-  title: string;
-  ids: readonly string[];
-  labels: Record<string, string>;
-  activeSites: ReadonlySet<InjurySiteId>;
-  onPick: (site: InjurySiteId) => void;
-}) {
-  return (
-    <div>
-      <p className="text-style-overline text-muted mb-2">{title}</p>
-      <div className="flex flex-wrap gap-2">
-        {ids.map((id) => {
-          const marked = activeSites.has(id as InjurySiteId);
-          return (
-            <Button
-              key={id}
-              size="sm"
-              variant={marked ? "primary" : "secondary"}
-              module="fizruk"
-              // Fixed 2026-08-08 (fizruk audit wave 2, defect #6): a
-              // freshly-marked chip used to flip to `disabled`, which pulls
-              // it out of the tab order and drops keyboard focus back to
-              // the document body mid-interaction. `mark()` is already a
-              // documented no-op for an already-active site (see
-              // `useInjuries.ts`), so the chip can stay enabled and keep
-              // focus — the state is communicated via `aria-pressed` +
-              // label suffix instead of via removal from the a11y tree.
-              aria-pressed={marked}
-              onClick={() => onPick(id as InjurySiteId)}
-              aria-label={
-                marked
-                  ? `${labels[id] ?? id} — ${t.markedSuffix}`
-                  : `${t.markCta}: ${labels[id] ?? id}`
-              }
-            >
-              {labels[id] ?? id}
-            </Button>
-          );
-        })}
-      </div>
-    </div>
   );
 }

@@ -10,7 +10,13 @@ import { useRecovery } from "../hooks/useRecovery";
 import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 
-export function Atlas() {
+interface AtlasProps {
+  /** Перехід на «Моє тіло» — там живе єдиний пікер зон болю (див. шапку
+   *  `InjurySection`). Тут секція лише читає активні позначки. */
+  onOpenBody?: (() => void) | undefined;
+}
+
+export function Atlas({ onOpenBody }: AtlasProps = {}) {
   const rec = useRecovery();
 
   // Memoized per `rec.by` so the SVG gets identity-stable input across
@@ -66,7 +72,7 @@ export function Atlas() {
           <BodyAtlas data={atlasData} />
         </Card>
 
-        <InjurySection />
+        <InjurySection onOpenBody={onOpenBody} />
       </div>
     </div>
   );

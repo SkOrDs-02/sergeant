@@ -41,6 +41,25 @@ describe("RecoveryFocusCard", () => {
     expect(onOpenAtlas).toHaveBeenCalledTimes(1);
   });
 
+  // Скарга власника 2026-08-08: тап по «Спереду»/«Ззаду» на мініатюрі
+  // одразу викидав на сторінку Атласа. Причина — обгортка-`<button>`
+  // навколо ВСЬОГО `BodyAtlas`, разом із перемикачем боку всередині:
+  // кнопка в кнопці, і клік спливав до навігації. Тепер клікабельний лише
+  // силует, тож перемикач боку гортає мініатюру на місці.
+  it("keeps the side toggle out of the navigation button — flipping side does not open the atlas", () => {
+    const onOpenAtlas = vi.fn();
+    render(<RecoveryFocusCard onOpenAtlas={onOpenAtlas} />);
+    fireEvent.click(screen.getByRole("button", { name: "Ззаду" }));
+    expect(onOpenAtlas).not.toHaveBeenCalled();
+  });
+
+  it("opens the atlas from the silhouette itself", () => {
+    const onOpenAtlas = vi.fn();
+    render(<RecoveryFocusCard onOpenAtlas={onOpenAtlas} />);
+    fireEvent.click(screen.getByLabelText("Відкрити атлас мʼязів за силуетом"));
+    expect(onOpenAtlas).toHaveBeenCalledTimes(1);
+  });
+
   // Defect #2: the title used to be a raw `<h2>` nested INSIDE the toggle
   // `<button>`, which loses heading semantics for most AT. The `<h2>` now
   // wraps the whole toggle button instead (WAI-ARIA disclosure pattern).

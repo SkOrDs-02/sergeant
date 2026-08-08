@@ -1,4 +1,12 @@
 // @vitest-environment jsdom
+/**
+ * `InjurySection` — read-only зріз позначок болю на сторінці Атласа.
+ *
+ * Пікер зон звідси прибрано 2026-08-08: він дублював `InjuryManager` на
+ * «Моє тіло», ще й з іншою механікою (тут тап позначав зразу, там —
+ * накопичував вибір до кнопки). Тести нижче тримають саме цю межу: список
+ * і зняття лишаються, ставити позначку звідси не можна.
+ */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 
@@ -9,7 +17,10 @@ vi.mock("../hooks/useInjuries", () => ({ useInjuries: vi.fn() }));
 
 const mockUseInjuries = vi.mocked(useInjuries);
 
-function setup(over: Partial<ReturnType<typeof useInjuries>> = {}) {
+function setup(
+  over: Partial<ReturnType<typeof useInjuries>> = {},
+  props: React.ComponentProps<typeof InjurySection> = {},
+) {
   const mark = vi.fn();
   const clear = vi.fn();
   mockUseInjuries.mockReturnValue({
@@ -21,7 +32,7 @@ function setup(over: Partial<ReturnType<typeof useInjuries>> = {}) {
     remove: vi.fn(),
     ...over,
   });
-  render(<InjurySection />);
+  render(<InjurySection {...props} />);
   return { mark, clear };
 }
 
@@ -51,53 +62,38 @@ describe("InjurySection", () => {
     expect(clear).toHaveBeenCalledWith("inj_1");
   });
 
-  it("offers joints and spine, not only atlas muscles", () => {
+  it("does not duplicate the zone picker that lives on «Моє тіло»", () => {
     setup();
-    fireEvent.click(screen.getByRole("button", { name: "Позначити зону" }));
-    // The whole point of ADR-0083: these have no home in the 18-muscle atlas.
-    for (const label of ["Коліно", "Лікоть", "Плечовий суглоб", "Поперек"]) {
-      expect(
-        screen.getByRole("button", { name: `Позначити зону: ${label}` }),
-      ).toBeInTheDocument();
-    }
-    // …and muscles are still reachable.
+    // Ні тогла пікера…
     expect(
-      screen.getByRole("button", { name: "Позначити зону: Груди" }),
-    ).toBeInTheDocument();
+      screen.queryByRole("button", { name: "Позначити зону" }),
+    ).not.toBeInTheDocument();
+    // …ні самих чипів зон — ані суглобових, ані мʼязових.
+    expect(
+      screen.queryByRole("button", { name: /Позначити зону: / }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Коліно" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Груди" }),
+    ).not.toBeInTheDocument();
   });
 
-  it("marks the picked zone", () => {
-    const { mark } = setup();
-    fireEvent.click(screen.getByRole("button", { name: "Позначити зону" }));
+  it("routes marking to «Моє тіло» when navigation is wired", () => {
+    const onOpenBody = vi.fn();
+    setup({}, { onOpenBody });
     fireEvent.click(
-      screen.getByRole("button", { name: "Позначити зону: Коліно" }),
+      screen.getByRole("button", { name: /Позначити на «Моє тіло»/ }),
     );
-    expect(mark).toHaveBeenCalledWith("knee");
+    expect(onOpenBody).toHaveBeenCalledTimes(1);
   });
 
-  // Fixed 2026-08-08 (fizruk audit wave 2, defect #6): an already-marked
-  // chip used to flip to `disabled`, which drops it out of the tab order —
-  // a keyboard user who just marked a zone loses their focus position
-  // mid-interaction. `mark()` is a documented no-op for an already-active
-  // site (see `useInjuries.ts`), so the chip now stays focusable and
-  // clickable; state is communicated via `aria-pressed` + a label suffix
-  // instead of via removal from the accessibility tree.
-  it("keeps an already-marked zone focusable — state via aria-pressed, not disabled", () => {
-    const { mark } = setup({ activeSites: new Set(["knee"] as const) });
-    fireEvent.click(screen.getByRole("button", { name: "Позначити зону" }));
-    const chip = screen.getByRole("button", {
-      name: /Коліно — уже позначено/,
-    });
-    expect(chip).not.toBeDisabled();
-    expect(chip).toHaveAttribute("aria-pressed", "true");
-
-    chip.focus();
-    fireEvent.click(chip);
-
-    // Still focusable/enabled after the click — no focus loss.
-    expect(chip).not.toBeDisabled();
-    expect(document.activeElement).toBe(chip);
-    expect(mark).toHaveBeenCalledWith("knee");
+  it("omits the navigation CTA when no target is wired", () => {
+    setup();
+    expect(
+      screen.queryByRole("button", { name: /Позначити на «Моє тіло»/ }),
+    ).not.toBeInTheDocument();
   });
 
   it("states the limits instead of promising safety", () => {

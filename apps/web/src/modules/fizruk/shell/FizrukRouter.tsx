@@ -110,7 +110,7 @@ function renderPage(props: FizrukRouterProps) {
         />
       );
     case "atlas":
-      return <Atlas />;
+      return <Atlas onOpenBody={() => onNavigate("body")} />;
     case "workouts":
       return (
         <Workouts
