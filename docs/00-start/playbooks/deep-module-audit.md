@@ -1,6 +1,6 @@
 # Playbook: Глибокий аудит модуля (логіка + фло + візуал)
 
-> **Last validated:** 2026-08-08 by @claude. **Next review:** 2026-11-06.
+> **Last touched:** 2026-08-08 by @github-actions[bot]. **Next review:** 2026-11-06.
 > **Status:** Active
 
 **Trigger:** «Проведи глибоке дослідження модуля X» / «Передивись, чи працюють усі елементи, кнопки, логіка» / «сторінка виглядає щільно і без структури» / наскрізна перевірка одного модуля чи сторінки перед бетою або після скарги власника.
@@ -123,3 +123,14 @@ SERGEANT_HEAVY_OK=1 pnpm build
 - Skills: `sergeant-web-ui`, `sergeant-bugfix-and-regression`, `sergeant-feature-delivery`, `sergeant-verify-before-done`
 - Playbooks: [`cleanup-dead-code.md`](./cleanup-dead-code.md) (мертвий код зі знахідок §6), [`reconcile-doc-drift.md`](./reconcile-doc-drift.md) (архівація завершеного аудиту)
 - Еталон: [`2026-08-07-fizruk-deep-audit.md`](../../90-work/audits/2026-08-07-fizruk-deep-audit.md)
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                      | Merged     |
+| ------------------------------------------------------ | -------------------------------------------------------------------------- | ---------- |
+| [#749](https://github.com/Skords-01/Sergeant/pull/749) | fix(web): оживити демо routine/nutrition/finyk + playbook глибокого аудиту | 2026-08-08 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
