@@ -60,16 +60,9 @@ function renderSection() {
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
   const result = render(<FinykWebhookServiceSection inView />, { wrapper });
-  // `SettingsSubGroup` (concurrent uncommitted work elsewhere in this
-  // tree, unrelated to L-14/L-15/L-18/L-19) defaults to collapsed —
-  // its content is `inert`/`aria-hidden` until expanded, so every
-  // `getByRole`/`findByRole` query below needs both accordions
-  // ("Monobank (Webhook)" and "Сервіс") opened first, exactly like a
-  // real user would have to.
-  fireEvent.click(
-    screen.getByRole("button", { name: /Monobank \(Webhook\)/i }),
-  );
-  fireEvent.click(screen.getByRole("button", { name: "Сервіс" }));
+  // `SettingsSubGroup` (Варіант A, profile/settings deep audit 2026-08-08
+  // §0.1) is no longer an accordion — it renders its content directly, so
+  // there is nothing to expand before querying by role here.
   return { ...result, queryClient };
 }
 

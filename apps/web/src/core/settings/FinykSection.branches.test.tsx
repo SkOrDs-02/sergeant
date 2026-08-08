@@ -10,13 +10,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   cleanup,
   fireEvent,
-  render,
   screen,
   waitFor,
   within,
 } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
+import { renderSettingsSection } from "../../test/helpers/collapsibleSection";
 
 const apiState = vi.hoisted(() => ({ isPro: true }));
 const inViewState = vi.hoisted(() => ({ inView: true }));
@@ -115,7 +115,7 @@ function renderSection() {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
-  return render(
+  return renderSettingsSection(
     <QueryClientProvider client={client}>
       <MemoryRouter>
         <FinykSection />

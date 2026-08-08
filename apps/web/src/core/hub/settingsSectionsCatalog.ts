@@ -54,14 +54,13 @@ export const SETTINGS_SECTIONS_CATALOG: readonly SettingsSectionMeta[] = [
   {
     id: "capabilities",
     title: messages.onboarding.capabilitiesGroupTitle,
-    // Audit finding #6 (2026-08-08): the standalone «Загальні» section
-    // merged into this one on 2026-08-03 (see the test comment in
-    // `search/searchSettings.test.ts`), but its search tokens didn't fully
-    // come along — «синхронізація», «акаунт», `sync`, `cloud`, `welcome`,
-    // «загальні» all stopped matching anything in ⌘K. `scoreMatch`
-    // requires EVERY query token to be a substring of title+keywords, so a
-    // dropped token doesn't just rank lower — it makes the query find
-    // nothing at all.
+    // Audit finding #6 (2026-08-08): окрема секція «Загальні» злилась із
+    // цією 2026-08-03 (див. коментар у тесті `search/searchSettings.test.ts`),
+    // але її пошукові токени переїхали не повністю — «синхронізація»,
+    // «акаунт», `sync`, `cloud`, `welcome`, «загальні» перестали матчити
+    // будь-що в ⌘K. `scoreMatch` вимагає, щоб КОЖЕН токен запиту був
+    // підрядком title+keywords, тож втрачений токен не просто знижує ранг —
+    // він робить запит таким, що не знаходить нічого.
     keywords:
       "можливості асистент сержант команди chat help допомога інструменти каталог tools знайомство онбординг onboarding що вміє додаток розділи синхронізація акаунт sync cloud welcome загальні",
   },
@@ -90,8 +89,13 @@ export const SETTINGS_SECTIONS_CATALOG: readonly SettingsSectionMeta[] = [
   {
     id: "nutrition",
     title: "Їжа",
+    // Дефект #6 (CodeRabbit post-merge review PR #756): `kбжу` — латинська
+    // `k` + кирилиця `бжу` — не матчила НІ кирилічний запит «кбжу» (токен не
+    // збігається байт-у-байт), НІ латинську транслітерацію (у токені все ще
+    // кирилиця). Кирилична `кбжу` (для запиту рідною) і окрема `kbzhu`
+    // (транслітерація) покривають обидва випадки.
     keywords:
-      "харчування їжа nutrition meals food kбжу калорії kcal білки жири вуглеводи вода комора pantry скан штрихкод barcode",
+      "харчування їжа nutrition meals food кбжу kbzhu калорії kcal білки жири вуглеводи вода комора pantry скан штрихкод barcode",
   },
   {
     id: "privacy",

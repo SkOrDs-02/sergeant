@@ -1,12 +1,7 @@
 /** @vitest-environment jsdom */
-import {
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-  within,
-} from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { renderSettingsSection } from "../../test/helpers/collapsibleSection";
 
 const {
   toastWarningMock,
@@ -112,7 +107,7 @@ describe("NotificationsSection", () => {
 
   it("shows the 'allow' button when permission is default", () => {
     stubNotification("default");
-    render(<NotificationsSection />);
+    renderSettingsSection(<NotificationsSection />);
     expect(screen.getByText("Не встановлено")).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Дозволити" }),
@@ -121,7 +116,7 @@ describe("NotificationsSection", () => {
 
   it("shows the granted label and hides the allow button", () => {
     stubNotification("granted");
-    render(<NotificationsSection />);
+    renderSettingsSection(<NotificationsSection />);
     expect(screen.getByText("Дозволено")).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: "Дозволити" }),
@@ -131,7 +126,7 @@ describe("NotificationsSection", () => {
   it("requests permission and warns when denied", async () => {
     const reqFn = stubNotification("default");
     reqFn.mockResolvedValue("denied");
-    render(<NotificationsSection />);
+    renderSettingsSection(<NotificationsSection />);
     fireEvent.click(screen.getByRole("button", { name: "Дозволити" }));
     await waitFor(() => expect(reqFn).toHaveBeenCalled());
     await waitFor(() => expect(toastWarningMock).toHaveBeenCalled());
@@ -140,7 +135,7 @@ describe("NotificationsSection", () => {
   it("enables the routine reminder pref once permission is granted", async () => {
     stubNotification("granted");
     requestPermMock.mockResolvedValue("granted");
-    render(<NotificationsSection />);
+    renderSettingsSection(<NotificationsSection />);
     clickSwitch("routine");
     await waitFor(() =>
       expect(updateRoutinePrefMock).toHaveBeenCalledWith(
@@ -153,7 +148,7 @@ describe("NotificationsSection", () => {
   it("does not enable routine reminders when permission is refused", async () => {
     stubNotification("default");
     requestPermMock.mockResolvedValue("denied");
-    render(<NotificationsSection />);
+    renderSettingsSection(<NotificationsSection />);
     clickSwitch("routine");
     await waitFor(() => expect(requestPermMock).toHaveBeenCalled());
     expect(updateRoutinePrefMock).not.toHaveBeenCalled();
@@ -162,7 +157,7 @@ describe("NotificationsSection", () => {
 
   it("toggles the fizruk reminder when permission is granted", async () => {
     stubNotification("granted");
-    render(<NotificationsSection />);
+    renderSettingsSection(<NotificationsSection />);
     clickSwitch("fizruk");
     await waitFor(() =>
       expect(monthlyPlanState.setReminderEnabled).toHaveBeenCalledWith(true),
@@ -174,7 +169,7 @@ describe("NotificationsSection", () => {
     monthlyPlanState.reminderEnabled = true;
     monthlyPlanState.reminderHour = 8;
     monthlyPlanState.reminderMinute = 30;
-    render(<NotificationsSection />);
+    renderSettingsSection(<NotificationsSection />);
     const timeInput = document.querySelector(
       'input[type="time"]',
     ) as HTMLInputElement;
@@ -185,7 +180,7 @@ describe("NotificationsSection", () => {
 
   it("persists nutrition reminder pref on toggle", async () => {
     stubNotification("granted");
-    render(<NotificationsSection />);
+    renderSettingsSection(<NotificationsSection />);
     clickSwitch("nutrition");
     await waitFor(() =>
       expect(persistNutritionPrefsMock).toHaveBeenCalledWith(
@@ -198,7 +193,7 @@ describe("NotificationsSection", () => {
   it("does not enable the fizruk reminder when permission is refused", async () => {
     stubNotification("default");
     requestPermMock.mockResolvedValue("denied");
-    render(<NotificationsSection />);
+    renderSettingsSection(<NotificationsSection />);
     clickSwitch("fizruk");
     await waitFor(() => expect(requestPermMock).toHaveBeenCalled());
     expect(monthlyPlanState.setReminderEnabled).not.toHaveBeenCalled();
@@ -208,7 +203,7 @@ describe("NotificationsSection", () => {
   it("does not persist the nutrition reminder when permission is refused", async () => {
     stubNotification("default");
     requestPermMock.mockResolvedValue("denied");
-    render(<NotificationsSection />);
+    renderSettingsSection(<NotificationsSection />);
     clickSwitch("nutrition");
     await waitFor(() => expect(requestPermMock).toHaveBeenCalled());
     expect(persistNutritionPrefsMock).not.toHaveBeenCalled();
@@ -221,7 +216,7 @@ describe("NotificationsSection", () => {
       reminderEnabled: true,
       reminderHour: 12,
     });
-    render(<NotificationsSection />);
+    renderSettingsSection(<NotificationsSection />);
     const hourInput = document.querySelector(
       'input[type="number"]',
     ) as HTMLInputElement;
@@ -239,7 +234,7 @@ describe("NotificationsSection", () => {
       reminderEnabled: true,
       reminderHour: 12,
     });
-    render(<NotificationsSection />);
+    renderSettingsSection(<NotificationsSection />);
     const hourInput = document.querySelector(
       'input[type="number"]',
     ) as HTMLInputElement;
@@ -252,7 +247,7 @@ describe("NotificationsSection", () => {
 
   it("renders 'unsupported' when Notification is missing", () => {
     vi.stubGlobal("Notification", undefined);
-    render(<NotificationsSection />);
+    renderSettingsSection(<NotificationsSection />);
     expect(screen.getByText("Не підтримується")).toBeInTheDocument();
   });
 
@@ -261,7 +256,7 @@ describe("NotificationsSection", () => {
   // разом із вкладкою. Тепер їх шле сервер, але тільки за наявності живої
   // push-підписки, тож обіцянка стала умовною.
   it("не обіцяє фонову доставку без push-підписки", () => {
-    render(<NotificationsSection />);
+    renderSettingsSection(<NotificationsSection />);
     expect(
       screen.getAllByText(/увімкни push-сповіщення вище/).length,
     ).toBeGreaterThanOrEqual(3);
@@ -270,7 +265,7 @@ describe("NotificationsSection", () => {
 
   it("обіцяє фонову доставку, коли підписка є", () => {
     pushState.subscribed = true;
-    render(<NotificationsSection />);
+    renderSettingsSection(<NotificationsSection />);
     expect(
       screen.getAllByText(/навіть коли застосунок закрито/).length,
     ).toBeGreaterThanOrEqual(3);

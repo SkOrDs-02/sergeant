@@ -125,6 +125,52 @@ describe("ConfirmDialog", () => {
     expect(onCancel).toHaveBeenCalledTimes(2);
   });
 
+  // Дефект #2 (CodeRabbit post-merge review PR #756): опис міг містити
+  // блочний контент (наприклад `<ul>`, як у `HubBackupPanel`) — обгортка
+  // `<p>` для такого контенту невалідна за HTML-специфікацією й породжує
+  // React DOM-nesting warning. Перевіряємо і фактичний тег обгортки, і
+  // відсутність попередження в консолі.
+  it("wraps a block-level description (e.g. a <ul>) in a <div>, not a <p> (defect #2)", () => {
+    const consoleErrorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+
+    render(
+      <ConfirmDialog
+        open
+        title="Замінити дані з файлу?"
+        description={
+          <>
+            Список:
+            <ul className="mt-2">
+              <li>Раз</li>
+              <li>Два</li>
+            </ul>
+          </>
+        }
+        onConfirm={() => {}}
+        onCancel={() => {}}
+      />,
+    );
+
+    const dialog = screen.getByRole("alertdialog");
+    const describedBy = dialog.getAttribute("aria-describedby");
+    const desc = document.getElementById(describedBy as string);
+    expect(desc?.tagName).toBe("DIV");
+    expect(screen.getByRole("list")).toBeInTheDocument();
+
+    const nestingWarning = consoleErrorSpy.mock.calls.some((args) =>
+      args.some(
+        (arg) =>
+          typeof arg === "string" &&
+          arg.includes("cannot appear as a descendant of"),
+      ),
+    );
+    expect(nestingWarning).toBe(false);
+
+    consoleErrorSpy.mockRestore();
+  });
+
   it("supports non-danger confirmations with the primary button variant", () => {
     render(
       <ConfirmDialog

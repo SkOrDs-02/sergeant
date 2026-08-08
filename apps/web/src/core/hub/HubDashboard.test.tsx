@@ -14,6 +14,7 @@ import {
   type User,
 } from "@sergeant/shared";
 import { ToastProvider } from "@shared/hooks/useToast";
+import { expandSingleCollapsedSection } from "../../test/helpers/collapsibleSection";
 
 type TestRec = Rec & { actionHash?: string };
 
@@ -493,10 +494,17 @@ describe("HubDashboard", () => {
       }),
     ];
 
-    renderDashboard({ onOpenModule });
+    const { container } = renderDashboard({ onOpenModule });
 
     expect(screen.getByText("Focus recommendation")).toBeInTheDocument();
     expect(screen.getByTestId("insight-count")).toHaveTextContent("2");
+
+    // «Що зараз важливо» (HubInsightsBlock → CollapsibleSection) згорнута
+    // за замовчуванням — L-7 фікс ховає її вміст через `inert` +
+    // `aria-hidden`, тож insight-кнопки нижче недоступні для getByRole,
+    // доки секцію не розкрито, так само як не побачив би їх реальний
+    // юзер без тапу по заголовку.
+    expandSingleCollapsedSection(container);
 
     fireEvent.click(screen.getByRole("button", { name: "focus-action" }));
     fireEvent.click(screen.getByRole("button", { name: "open-hashed" }));

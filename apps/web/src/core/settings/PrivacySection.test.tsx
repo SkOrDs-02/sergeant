@@ -13,13 +13,13 @@ import type { ReactNode } from "react";
 import type { UserPreferences } from "@shared/api";
 import type { UseAppLockReturn } from "../security/useAppLock";
 
-// --- Mocks -----------------------------------------------------------------
+// --- Моки -------------------------------------------------------------------
 //
-// The point of this suite is to lock in the audit-F16 fix: PrivacySection
-// must drive PIN state through the *user-scoped* `useAppLockContext` helpers
-// (`hasPin` / `disablePin`), never the bare `lockStorage` functions that
-// default to the `anon` partition. We therefore stub the context and assert
-// the right closures are invoked.
+// Мета цього набору — закріпити audit-F16 фікс: PrivacySection має вести
+// PIN-стан через helper-и `useAppLockContext`, ПРИВʼЯЗАНІ ДО КОРИСТУВАЧА
+// (`hasPin` / `disablePin`), а не голі функції `lockStorage`, що за
+// замовчуванням падають у партицію `anon`. Тому ми стабимо контекст і
+// перевіряємо, що викликаються саме правильні closures.
 
 const appLock: UseAppLockReturn = {
   state: "idle",
@@ -45,9 +45,22 @@ vi.mock("../lib/featureFlags", () => ({
   setFlag: mockSetFlag,
 }));
 
+// Дефект #5 (CodeRabbit post-merge review PR #756): за замовчуванням
+// поводиться як реальний `writeMemoryEntries` у щасливому шляху (нічого не
+// кидає) — окремі тести можуть змусити його впасти через
+// `mockImplementationOnce`, щоб перевірити розбіжність "сервер очистив,
+// локальний запис впав".
+const { mockWriteMemoryEntries } = vi.hoisted(() => ({
+  mockWriteMemoryEntries: vi.fn(),
+}));
+vi.mock("../profile/memoryBank", () => ({
+  writeMemoryEntries: (entries: unknown) => mockWriteMemoryEntries(entries),
+}));
+
 vi.mock("@shared/api", () => {
-  // Inlined inside the factory — `vi.mock` is hoisted above module-level
-  // consts, so referencing `DEFAULT_PREFS` here would hit a TDZ error.
+  // Інлайновано прямо у фабриці — `vi.mock` хойститься вище
+  // module-level-констант, тож звернення тут до `DEFAULT_PREFS` впало б у
+  // TDZ-помилку.
   const prefs: UserPreferences = {
     analytics: true,
     aiMemory: true,
@@ -66,16 +79,16 @@ vi.mock("@shared/api", () => {
   };
 });
 
-// LegalLinks pulls in router-aware navigation we don't exercise here.
+// LegalLinks тягне router-aware навігацію, яку тут не тестуємо.
 vi.mock("../legal/LegalLinks", () => ({
   LegalLinks: () => null,
 }));
 
-// AiMemoryList drives its own React Query traffic (`/api/ai-memory/list`).
-// This suite is about per-user PIN scoping — mounting the real list would
-// force a QueryClientProvider into every `render()` here and couple an
-// auth-audit regression test to an unrelated network surface. Its own
-// behaviour is covered in `AiMemoryList.test.tsx`.
+// AiMemoryList ганяє власний React Query трафік (`/api/ai-memory/list`).
+// Цей набір — про per-user PIN scoping — монтування реального списку
+// змусило б додавати QueryClientProvider у КОЖЕН `render()` тут і
+// прив'язало б auth-audit regression-тест до непов'язаної мережевої
+// поверхні. Власна поведінка списку покрита в `AiMemoryList.test.tsx`.
 vi.mock("./AiMemoryList", () => ({
   AiMemoryList: () => null,
 }));
@@ -95,11 +108,11 @@ async function openSection() {
   fireEvent.click(trigger);
 }
 
-// L-20 fix pulled `useQueryClient()` straight into PrivacySection (the AI
-// memory-clear invalidation), so every render now needs a real
-// QueryClientProvider ancestor — a bare `render(<PrivacySection />)` throws
-// "No QueryClient set, use QueryClientProvider to set one". Mirrors the
-// wrapper `AiMemoryList.test.tsx` already uses for the same reason.
+// L-20-фікс притягнув `useQueryClient()` прямо в PrivacySection
+// (інвалідація очищення памʼяті ШІ), тож кожному render-у тепер потрібен
+// справжній предок QueryClientProvider — голий `render(<PrivacySection />)`
+// кидає "No QueryClient set, use QueryClientProvider to set one". Дзеркалить
+// обгортку, яку `AiMemoryList.test.tsx` уже використовує з тієї ж причини.
 function renderSection() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -131,8 +144,8 @@ describe("PrivacySection — audit F16 (per-user PIN scoping)", () => {
     const toggle = screen.getByRole("switch", { name: /Блокування додатку/i });
     fireEvent.click(toggle);
 
-    // hasPin() (scoped to user?.id) drives the setup decision — and with no
-    // PIN on file the setup flow opens.
+    // hasPin() (прив'язаний до user?.id) визначає рішення про setup — і
+    // якщо PIN-а на диску нема, відкривається flow налаштування.
     await waitFor(() => expect(appLock.hasPin).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(appLock.startSetup).toHaveBeenCalledTimes(1));
     expect(mockSetFlag).toHaveBeenCalledWith("app-lock-enabled", true);
@@ -152,17 +165,17 @@ describe("PrivacySection — audit F16 (per-user PIN scoping)", () => {
   });
 
   it("disabling the lock clears the user-scoped credential (appLock.disablePin)", async () => {
-    // Finding #3 (2026-08-08 adversarial review): the `describe`-level
-    // `beforeEach` resolves `appLock.hasPin()` to `false`, which also
-    // feeds the L-11 mount-reconciliation effect in `PrivacySection`
-    // (audit F16 fix living alongside this one) — on mount it likewise
-    // calls `setFlag("app-lock-enabled", false)`, so without this
-    // override the assertion below passed regardless of whether the
-    // disable-confirm flow below ever ran `handleDisableConfirm`.
-    // Resolving `true` here makes that reconciliation effect a no-op, so
-    // the only source of a `false` call is the click flow under test.
+    // Finding #3 (2026-08-08 adversarial review): `beforeEach` на рівні
+    // `describe` резолвить `appLock.hasPin()` у `false`, а це також живить
+    // L-11 mount-реконсиляційний ефект у `PrivacySection` (audit F16 фікс,
+    // що живе поруч із цим) — на монтуванні він так само викликає
+    // `setFlag("app-lock-enabled", false)`, тож без цього оверайду
+    // перевірка нижче проходила б незалежно від того, чи взагалі
+    // відпрацював нижчий disable-confirm flow через `handleDisableConfirm`.
+    // Резолв у `true` тут робить той реконсиляційний ефект no-op-ом, тож
+    // єдине джерело виклику з `false` — саме клік-flow під тестом.
     appLock.hasPin = vi.fn().mockResolvedValue(true);
-    // Flag already on → the toggle renders checked; clicking it disables.
+    // Прапорець уже увімкнений → тумблер рендериться checked; клік вимикає.
     mockUseFlag.mockReturnValue(true);
     renderSection();
     await openSection();
@@ -171,7 +184,7 @@ describe("PrivacySection — audit F16 (per-user PIN scoping)", () => {
       screen.getByRole("switch", { name: /Блокування додатку/i }),
     );
 
-    // Confirm the destructive action in the modal.
+    // Підтверджуємо деструктивну дію в модалці.
     const confirm = await screen.findByRole("button", { name: "Вимкнути" });
     fireEvent.click(confirm);
 
@@ -180,23 +193,23 @@ describe("PrivacySection — audit F16 (per-user PIN scoping)", () => {
   });
 
   it("does not produce an unhandled rejection when hasPin() rejects on mount (finding #6)", async () => {
-    // ПРИЧИНА: `lockStorage.hasPinSet` -> `loadCred` REJECTS on an
-    // IndexedDB failure (Safari private mode, storage pressure) rather
-    // than resolving `false`. The mount-time reconciliation effect in
-    // `PrivacySection` chains `.then()` off `appLock.hasPin()` without a
-    // `.catch()`, so every Settings mount with the flag on would leave an
-    // unhandled promise rejection — Vitest (like the browser) surfaces
-    // that as a failure even though nothing in this test asserts on it
-    // directly.
+    // ПРИЧИНА: `lockStorage.hasPinSet` -> `loadCred` РЕДЖЕКТИТЬ при збої
+    // IndexedDB (приватний режим Safari, брак сховища), а не резолвиться
+    // в `false`. Реконсиляційний ефект на монтуванні в `PrivacySection`
+    // ланцюжком чіпляє `.then()` до `appLock.hasPin()` без `.catch()`,
+    // тож кожне монтування Налаштувань із увімкненим прапорцем лишало б
+    // unhandled promise rejection — Vitest (як і браузер) показує це як
+    // провал, навіть якщо жоден assert у цьому тесті на нього напряму не
+    // зважає.
     mockUseFlag.mockReturnValue(true);
     appLock.hasPin = vi.fn().mockRejectedValue(new Error("IDB unavailable"));
     renderSection();
     await openSection();
 
     await waitFor(() => expect(appLock.hasPin).toHaveBeenCalledTimes(1));
-    // Give the rejected promise's microtask queue a turn — an unhandled
-    // rejection here would otherwise surface after this test already
-    // "passed", attributed to whichever test runs next.
+    // Даємо чергу мікротасків реджекченого проміса прокрутитись — інакше
+    // unhandled rejection тут спливла б уже ПІСЛЯ того, як цей тест уже
+    // "пройшов", і була б віднесена до того, який тест виконується наступним.
     await new Promise((resolve) => setTimeout(resolve, 0));
   });
 });
@@ -218,12 +231,12 @@ describe("PrivacySection — preferences (analytics / aiMemory / pushNotificatio
     vi.mocked(meApi.getPreferences).mockResolvedValue({ ...basePrefs });
     vi.mocked(meApi.updatePreferences).mockResolvedValue({ ...basePrefs });
     __resetAnalyticsConsentForTests();
-    // This describe isn't about app-lock — reset its shared-module state
-    // explicitly rather than inherit whatever the F16 describe above left
-    // behind. `hasPin` resolving `true` here means "a PIN already exists",
-    // the realistic backdrop for these preference-only tests: it keeps the
-    // L-11 wipe-reconciliation effect (PrivacySection.tsx) a no-op unless a
-    // test deliberately sets up the wipe scenario itself.
+    // Цей describe не про app-lock — явно скидаємо стан спільного модуля,
+    // а не успадковуємо те, що лишив після себе F16-describe вище.
+    // Резолв `hasPin` у `true` тут означає "PIN уже існує" — реалістичне
+    // тло для цих чисто preference-тестів: воно тримає L-11
+    // wipe-реконсиляційний ефект (PrivacySection.tsx) no-op-ом, доки тест
+    // навмисно не влаштує сценарій wipe сам.
     appLock.state = "idle";
     appLock.hasPin = vi.fn().mockResolvedValue(true);
   });
@@ -250,13 +263,13 @@ describe("PrivacySection — preferences (analytics / aiMemory / pushNotificatio
     // якої нема. Перевіряємо і сам дефолт (кінцевий стан = false), і те,
     // що до відповіді сервера немає жодного тумблера — ні ON, ні OFF.
     //
-    // Finding #4 (2026-08-08 adversarial review): the *rendered* toggle
-    // below reflects whatever `resolveGetPreferences` is called with —
-    // i.e. the server mock — not `DEFAULT_PREFERENCES.analytics`. The
-    // loading gate a few lines up means the default can never leak into
-    // the DOM or `analyticsConsent` before hydration resolves, so the
-    // constant is asserted directly instead of inferred from output that
-    // would stay green even if the default flipped back to `true`.
+    // Finding #4 (2026-08-08 adversarial review): відрендерений тумблер
+    // нижче відображає те, чим викликано `resolveGetPreferences` — тобто
+    // server-мок, а НЕ `DEFAULT_PREFERENCES.analytics`. Loading-гейт
+    // кількома рядками вище означає, що дефолт ніколи не може просочитись
+    // у DOM чи `analyticsConsent` до завершення гідрації, тож константа
+    // перевіряється напряму, а не виводиться з виводу, який лишався б
+    // зеленим навіть якби дефолт відкотився назад у `true`.
     let resolveGetPreferences!: (value: UserPreferences) => void;
     const pending = new Promise<UserPreferences>((resolve) => {
       resolveGetPreferences = resolve;
@@ -392,20 +405,19 @@ describe("PrivacySection — preferences (analytics / aiMemory / pushNotificatio
     });
     fireEvent.click(analyticsToggle);
 
-    // The PUT is still in flight, but the synchronous consent gate must
-    // already reflect the user's choice — this is exactly the window an
-    // `InsightCard` dismiss can race into.
+    // PUT ще летить, але синхронний consent-гейт уже має відображати вибір
+    // юзера — це саме те вікно, в яке може встигнути race-нути dismiss
+    // `InsightCard`.
     expect(getAnalyticsConsent()).toBe(false);
     expect(meApi.updatePreferences).toHaveBeenCalledTimes(1);
 
-    // The request eventually fails (network drop, 5xx) — the optimistic
-    // consent value must revert along with the toggle itself. The
-    // `preferencesError` banner also becomes visible at this point (see
-    // the dedicated L-9 test above, which asserts on it directly); this
-    // test's job is narrower — the toggle's own reverted `checked` state
-    // and the `analyticsConsent` cache are the two values under test
-    // here, same as the pre-existing "handles failure without crashing"
-    // test above.
+    // Запит зрештою падає (обрив мережі, 5xx) — оптимістичне значення
+    // consent має відкотитись разом із самим тумблером. Банер
+    // `preferencesError` теж стає видимим у цей момент (див. окремий тест
+    // L-9 вище, що перевіряє це напряму); завдання цього тесту вужче —
+    // під тестом саме відкочений `checked`-стан тумблера і кеш
+    // `analyticsConsent`, так само як і в уже наявному тесті "handles
+    // failure without crashing" вище.
     rejectUpdate(new Error("500"));
     await waitFor(() => expect(analyticsToggle).toBeChecked());
     expect(getAnalyticsConsent()).toBe(true);
@@ -479,13 +491,13 @@ describe("PrivacySection — preferences (analytics / aiMemory / pushNotificatio
   });
 
   it("returns focus to the trigger button after confirming AI-memory clear, not <body> (finding #2)", async () => {
-    // ПРИЧИНА: `handleClearMemoryConfirm` used to batch closing the
-    // dialog (`setClearMemoryConfirmOpen(false)`) with disabling this
-    // same trigger (`setClearingMemory(true)`) in one render.
-    // `ConfirmDialog`'s focus-trap cleanup restores focus to whatever was
-    // focused when the dialog opened — a `disabled` button is
-    // unfocusable, so `.focus()` there silently no-ops and the keyboard
-    // user is dropped on `<body>` instead of back on this button.
+    // ПРИЧИНА: раніше `handleClearMemoryConfirm` батчив закриття діалогу
+    // (`setClearMemoryConfirmOpen(false)`) з вимкненням цього ж тригера
+    // (`setClearingMemory(true)`) в одному рендері. Cleanup фокус-пастки
+    // `ConfirmDialog` повертає фокус на те, що було в фокусі на момент
+    // відкриття діалогу — `disabled`-кнопка нефокусована, тож `.focus()`
+    // на ній мовчки нічого не робить, і keyboard-юзера скидає на `<body>`
+    // замість повернення на цю кнопку.
     renderSection();
     await openSection();
 
@@ -526,6 +538,58 @@ describe("PrivacySection — preferences (analytics / aiMemory / pushNotificatio
         queryKey: aiMemoryKeys.all,
       }),
     );
+  });
+
+  // Дефект #5 (CodeRabbit post-merge review PR #756): один спільний
+  // try/catch навколо серверного DELETE і локального `writeMemoryEntries`
+  // видавав локальну помилку (переповнене localStorage, приватний режим)
+  // за серверну — хоча сервер на той момент УЖЕ незворотно стер факти.
+  // Без фіксу цей тест бачив би банер "Не вдалося очистити памʼять ШІ" і
+  // жодного виклику `invalidateQueries`.
+  it("shows success and still invalidates the cache when the server clear succeeds but the local write fails", async () => {
+    mockWriteMemoryEntries.mockImplementationOnce(() => {
+      throw new Error("Не вдалося зберегти пам'ять профілю");
+    });
+    const { queryClient } = renderSection();
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+    await openSection();
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Очистити памʼять ШІ" }),
+    );
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Очистити назавжди" }),
+    );
+
+    await waitFor(() => expect(meApi.clearAiMemory).toHaveBeenCalledTimes(1));
+    expect(await screen.findByText("Памʼять ШІ очищено.")).toBeInTheDocument();
+    expect(
+      screen.queryByText("Не вдалося очистити памʼять ШІ."),
+    ).not.toBeInTheDocument();
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: aiMemoryKeys.all });
+  });
+
+  // Дзеркальний випадок: сервер САМ падає — тоді показ успіху був би
+  // брехнею (нічого не видалено), тож інвалідація кешу не має відбуватись.
+  it("shows the failure banner and does not invalidate the cache when the server clear itself fails", async () => {
+    vi.mocked(meApi.clearAiMemory).mockRejectedValueOnce(new Error("500"));
+    const { queryClient } = renderSection();
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+    await openSection();
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Очистити памʼять ШІ" }),
+    );
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Очистити назавжди" }),
+    );
+
+    expect(
+      await screen.findByText("Не вдалося очистити памʼять ШІ."),
+    ).toBeInTheDocument();
+    expect(invalidateSpy).not.toHaveBeenCalledWith({
+      queryKey: aiMemoryKeys.all,
+    });
   });
 
   it("finding #10: does not block the cleared-status message on the cache invalidation settling", async () => {
@@ -579,7 +643,7 @@ describe("PrivacySection — preferences (analytics / aiMemory / pushNotificatio
     await waitFor(() =>
       expect(meApi.updatePreferences).toHaveBeenCalledTimes(1),
     );
-    // Component remains mounted after failure (no crash)
+    // Компонент лишається змонтованим після збою (без падіння)
     expect(analyticsToggle).toBeInTheDocument();
   });
 
@@ -626,11 +690,11 @@ describe("PrivacySection — preferences (analytics / aiMemory / pushNotificatio
       screen.getByRole("switch", { name: /Блокування додатку/i }),
     );
 
-    // `getByText`, not `getByRole("button", { name: … })`: `ConfirmDialog`
-    // also renders a same-named scrim button (`aria-label="Скасувати"`,
-    // no visible text) to dismiss on tap-outside, so a name-based role
-    // query matches two elements. Mirrors `PWASection.test.tsx`'s
-    // existing `ConfirmDialog` cancel-click pattern.
+    // `getByText`, а не `getByRole("button", { name: … })`: `ConfirmDialog`
+    // також рендерить однойменну кнопку-скрим (`aria-label="Скасувати"`,
+    // без видимого тексту) для закриття по тапу поза діалогом, тож запит
+    // за роллю з іменем матчить два елементи. Дзеркалить наявний патерн
+    // клацання скасування `ConfirmDialog` з `PWASection.test.tsx`.
     const cancel = await screen.findByText("Скасувати");
     fireEvent.click(cancel);
 
@@ -643,7 +707,7 @@ describe("PrivacySection — preferences (analytics / aiMemory / pushNotificatio
     renderSection();
     await openSection();
 
-    // Buttons are rendered inside the flagEnabled branch
+    // Кнопки рендеряться всередині гілки flagEnabled
     await waitFor(() => {
       expect(
         screen.getByRole("button", { name: /Змінити PIN/i }),
@@ -714,24 +778,25 @@ describe("PrivacySection — audit L-11 (lock toggle reflects a PIN-store wipe)"
   });
 
   it("re-checks hasPin when the signed-in user changes without a lock-state transition (finding #5)", async () => {
-    // ПРИЧИНА: `appLock.hasPin`'s identity changes only when the
-    // signed-in user changes (`useCallback([userId])` in `useAppLock`).
-    // On a shared device, switching users touches neither `appLock.state`
-    // nor the (global) `app-lock-enabled` flag, so without tracking that
-    // identity change the reconciliation effect always fell into its
-    // `!isMount && !cameFromLocked` early-return and left "Блокування
-    // додатку" showing ON for a user with no PIN in their own partition.
+    // ПРИЧИНА: ІДЕНТИЧНІСТЬ `appLock.hasPin` міняється лише коли міняється
+    // залогінений користувач (`useCallback([userId])` у `useAppLock`). На
+    // спільному пристрої перемикання юзерів не чіпає ні `appLock.state`,
+    // ні (глобальний) прапор `app-lock-enabled`, тож без відстеження цієї
+    // зміни ідентичності реконсиляційний ефект завжди впирався в ранній
+    // `!isMount && !cameFromLocked` return і лишав «Блокування додатку»
+    // ввімкненим для юзера без PIN-а в ЙОГО ВЛАСНІЙ партиції.
     appLock.state = "idle";
-    appLock.hasPin = vi.fn().mockResolvedValue(true); // user A has a PIN
+    appLock.hasPin = vi.fn().mockResolvedValue(true); // у юзера A є PIN
     const { rerender } = renderSection();
     await openSection();
 
     await waitFor(() => expect(appLock.hasPin).toHaveBeenCalledTimes(1));
     expect(mockSetFlag).not.toHaveBeenCalledWith("app-lock-enabled", false);
 
-    // Switch users — a brand-new `hasPin` closure, `state` stays "idle"
-    // throughout (no locked -> idle transition to key off of).
-    appLock.hasPin = vi.fn().mockResolvedValue(false); // user B has no PIN
+    // Перемикаємо юзерів — цілком новий closure `hasPin`, `state` весь час
+    // лишається "idle" (без переходу locked -> idle, на який можна було б
+    // спертись).
+    appLock.hasPin = vi.fn().mockResolvedValue(false); // у юзера B нема PIN-а
     rerender(<PrivacySection />);
 
     await waitFor(() =>

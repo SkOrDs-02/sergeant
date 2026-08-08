@@ -9,7 +9,8 @@
  * живе в `modules/routine/components/RoutineHabitsPanel.test.tsx`.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, screen } from "@testing-library/react";
+import { renderSettingsSection } from "../../test/helpers/collapsibleSection";
 
 const routineState = vi.hoisted(() => ({
   routine: {
@@ -40,7 +41,7 @@ describe("RoutineSection", () => {
   afterEach(() => cleanup());
 
   it("renders the calendar toggles and the tags/categories subgroup", () => {
-    render(<RoutineSection />);
+    renderSettingsSection(<RoutineSection />);
     expect(
       screen.getByText("Показувати тренування з Фізрука в календарі"),
     ).toBeInTheDocument();
@@ -49,26 +50,26 @@ describe("RoutineSection", () => {
   });
 
   it("no longer hosts habit management — that moved into the module", () => {
-    render(<RoutineSection />);
+    renderSettingsSection(<RoutineSection />);
     expect(screen.queryByText("Активні звички")).not.toBeInTheDocument();
     expect(screen.queryByText("Архів")).not.toBeInTheDocument();
   });
 
   it("defaults the Fizruk-in-calendar toggle to on when pref is unset", () => {
-    render(<RoutineSection />);
+    renderSettingsSection(<RoutineSection />);
     const switches = screen.getAllByRole("switch");
     expect(switches[0]).toBeChecked();
   });
 
   it("reflects an explicit false pref as an off toggle", () => {
     routineState.routine = { prefs: { showFizrukInCalendar: false } };
-    render(<RoutineSection />);
+    renderSettingsSection(<RoutineSection />);
     expect(screen.getAllByRole("switch")[0]).not.toBeChecked();
   });
 
   it("calls updatePref when toggling the Fizruk calendar switch", () => {
     routineState.routine = { prefs: { showFizrukInCalendar: false } };
-    render(<RoutineSection />);
+    renderSettingsSection(<RoutineSection />);
     fireEvent.click(screen.getAllByRole("switch")[0]!);
     expect(routineState.updatePref).toHaveBeenCalledWith(
       "showFizrukInCalendar",
@@ -77,7 +78,7 @@ describe("RoutineSection", () => {
   });
 
   it("calls updatePref for the Finyk-subscriptions calendar switch", () => {
-    render(<RoutineSection />);
+    renderSettingsSection(<RoutineSection />);
     fireEvent.click(screen.getAllByRole("switch")[1]!);
     expect(routineState.updatePref).toHaveBeenCalledWith(
       "showFinykSubscriptionsInCalendar",
