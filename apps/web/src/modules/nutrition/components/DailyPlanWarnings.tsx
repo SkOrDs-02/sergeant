@@ -31,10 +31,10 @@ export function MacroKcalWarning({
 
   const tone = overshoot
     ? "border-danger/40 bg-danger/10"
-    : "border-warn/40 bg-warn/10";
+    : "border-warning/40 bg-warning/10";
   const iconTone = overshoot
     ? "text-danger-strong dark:text-danger"
-    : "text-warn";
+    : "text-warning-strong dark:text-warning";
 
   return (
     <div
@@ -150,7 +150,7 @@ export function MissingMacrosHint({
       role="status"
       aria-live="polite"
       className={cn(
-        "mt-3 rounded-xl border border-warn/40 bg-warn/10 px-3 py-2.5",
+        "mt-3 rounded-xl border border-warning/40 bg-warning/10 px-3 py-2.5",
         "text-style-caption space-y-2",
       )}
       data-testid="missing-macros-hint"
@@ -159,7 +159,7 @@ export function MissingMacrosHint({
         <Icon
           name="info"
           size="sm"
-          className="shrink-0 text-warn"
+          className="shrink-0 text-warning-strong dark:text-warning"
           aria-hidden
         />
         <p className="text-text leading-snug">
@@ -202,7 +202,7 @@ export function GoalRangeWarning({ prefs }: { prefs: NutritionPrefs }) {
       role="status"
       aria-live="polite"
       className={cn(
-        "mt-3 rounded-xl border border-warn/40 bg-warn/10 px-3 py-2.5",
+        "mt-3 rounded-xl border border-warning/40 bg-warning/10 px-3 py-2.5",
         "text-style-caption space-y-1",
       )}
       data-testid="goal-range-warning"
@@ -211,7 +211,7 @@ export function GoalRangeWarning({ prefs }: { prefs: NutritionPrefs }) {
         <Icon
           name="alert-triangle"
           size="sm"
-          className="shrink-0 text-warn"
+          className="shrink-0 text-warning-strong dark:text-warning"
           aria-hidden
         />
         <ul className="text-text leading-snug space-y-0.5 list-disc pl-4">

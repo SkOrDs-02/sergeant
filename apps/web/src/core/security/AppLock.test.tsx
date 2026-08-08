@@ -15,6 +15,7 @@ function renderLock(
     onUnlock: vi.fn(async () => true),
     onSetupDone: vi.fn(noop),
     onSetupCancel: vi.fn(noop),
+    onChangeCancel: vi.fn(noop),
     onSavePin: vi.fn(asyncNoop),
     ...overrides,
   };
@@ -126,5 +127,42 @@ describe("AppLock", () => {
     renderLock({ state: "setup", onSetupCancel });
     fireEvent.click(screen.getByRole("button", { name: "Скасувати" }));
     expect(onSetupCancel).toHaveBeenCalled();
+  });
+
+  // Audit finding L-6/#5: before this, the confirm step (second PIN entry)
+  // only rendered "Підтвердити"/"Назад" — a user two taps into setup had
+  // to go Back-then-Cancel, or reach for Escape, which doesn't exist on a
+  // touch keyboard. A Cancel button must be reachable at this step too.
+  it("cancel on the confirm step is reachable and calls onSetupCancel", async () => {
+    const onSetupCancel = vi.fn(noop);
+    renderLock({ state: "setup", onSetupCancel });
+    "1234".split("").forEach(pressDigit);
+    fireEvent.click(screen.getByRole("button", { name: "Далі" }));
+    await screen.findByText("Введи PIN ще раз для підтвердження");
+    fireEvent.click(screen.getByRole("button", { name: "Скасувати" }));
+    expect(onSetupCancel).toHaveBeenCalled();
+  });
+
+  // L-6 audit: RootLayout.tsx колись передавав ОДИН onSetupCancel для
+  // обох режимів ("setup" і "change"). Для "change" це вимикало
+  // блокування повністю, хоча стара PIN лишалась у сховищі — юзер тапав
+  // "Змінити PIN" → "Скасувати" і губив захист, не змінивши нічого. Тест
+  // ловить регресію, якщо хтось знову зверне "change" на onSetupCancel.
+  it("cancel in change mode calls onChangeCancel, not onSetupCancel", () => {
+    const onSetupCancel = vi.fn(noop);
+    const onChangeCancel = vi.fn(noop);
+    renderLock({ state: "change", onSetupCancel, onChangeCancel });
+    fireEvent.click(screen.getByRole("button", { name: "Скасувати" }));
+    expect(onChangeCancel).toHaveBeenCalled();
+    expect(onSetupCancel).not.toHaveBeenCalled();
+  });
+
+  it("Escape in change mode routes through onChangeCancel, not onSetupCancel", () => {
+    const onSetupCancel = vi.fn(noop);
+    const onChangeCancel = vi.fn(noop);
+    renderLock({ state: "change", onSetupCancel, onChangeCancel });
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(onChangeCancel).toHaveBeenCalled();
+    expect(onSetupCancel).not.toHaveBeenCalled();
   });
 });

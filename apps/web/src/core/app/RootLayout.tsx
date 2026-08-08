@@ -143,6 +143,11 @@ function AppShell({ children }: { children: React.ReactNode }) {
           setFlag("app-lock-enabled", false);
           appLock.finishSetup();
         }}
+        // Скасування "change PIN" не повинно чіпати вмикач блокування —
+        // стара PIN лишається в сховищі валідною, тож просто закриваємо
+        // діалог (audit L-6: раніше обидва режими ділили один хендлер, і
+        // скасування зміни PIN тихо гасило захист повністю).
+        onChangeCancel={appLock.finishSetup}
       />
       <BootGate>
         <NutritionBootCluster />

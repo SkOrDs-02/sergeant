@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type CSSProperties,
@@ -68,6 +69,46 @@ function matchesHash(anchorId: string | undefined): boolean {
   return window.location.hash === `#${anchorId}`;
 }
 
+/**
+ * L-7 parity fix (adversarial review 2026-08-08): `CollapsibleSection`
+ * (`@shared/components/ui`) closes the tab-trap for its accordion by
+ * marking the collapsed content `inert`, but `SettingsGroup` and
+ * `SettingsSubGroup` share the exact same `grid-rows-[0fr] overflow-hidden`
+ * collapse pattern and were left unfixed — Tab from a collapsed header
+ * (e.g. "Дашборд") still fell into ~15 hidden interactive controls
+ * (toggles, density buttons, module checkboxes), and Space on a hidden
+ * checkbox silently flipped a module on/off. Both default to
+ * `defaultOpen={false}`, so this is the common first-paint state, not an
+ * edge case.
+ *
+ * `aria-expanded={false}` on the trigger alone made this WORSE, not
+ * better: it explicitly told assistive tech "collapsed" while the content
+ * stayed live in the tab order and a11y tree — a lie by omission that
+ * plain silence didn't have.
+ *
+ * Mirrors `CollapsibleSection.tsx` 1:1: `inert` (not `hidden`, which is
+ * `display:none` and breaks the `grid-template-rows` height transition) +
+ * `aria-hidden` companion (canonical pairing, see
+ * `useDialogFocusTrap.ts`'s background-inert manager) via
+ * `useLayoutEffect` so the attributes clear synchronously with the render
+ * that expands the section, before the first paint.
+ */
+function useInertWhileCollapsed(open: boolean) {
+  const ref = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (open) {
+      el.removeAttribute("inert");
+      el.removeAttribute("aria-hidden");
+    } else {
+      el.setAttribute("inert", "");
+      el.setAttribute("aria-hidden", "true");
+    }
+  }, [open]);
+  return ref;
+}
+
 export function SettingsGroup({
   title,
   icon,
@@ -91,6 +132,7 @@ export function SettingsGroup({
   // Scoped module bg class — uses registered token pair, never raw RGB
   // (Hard Rule #12). Guard with ?. so noUncheckedIndexedAccess is satisfied.
   const moduleBg = module != null ? (MODULE_ICON_BG[module] ?? "") : "";
+  const contentRef = useInertWhileCollapsed(open);
 
   return (
     <Card
@@ -132,6 +174,7 @@ export function SettingsGroup({
         <ChevronIcon expanded={open} />
       </button>
       <div
+        ref={contentRef}
         className={cn(
           "grid transition-[grid-template-rows] duration-base ease-standard",
           open ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
@@ -159,11 +202,29 @@ export function SettingsSubGroup({
   defaultOpen = false,
 }: SettingsSubGroupProps) {
   const [open, setOpen] = useState<boolean>(defaultOpen);
+  const contentRef = useInertWhileCollapsed(open);
   return (
     <div className="rounded-xl bg-surface-soft-glass border border-surface-line shadow-soft overflow-hidden">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        // V-2: другому рівню акордеона (на відміну від `SettingsGroup`
+        // вище) бракувало `aria-expanded` — додано.
+        //
+        // V-3 (переглянуто після адверсарного ревʼю 2026-08-08): наживо
+        // "виміряно 41px" було зафіксовано на fine-pointer (десктоп-миша),
+        // де floor навмисно НЕ діє (root AGENTS.md § Touch targets — той
+        // самий `pointer-coarse:`-підхід, що й у `Button.tsx`). Під
+        // `pointer: coarse` цей звичайний `<button>` вже отримував
+        // 44×44 ДО будь-якої правки тут — глобальний safety-net
+        // (`apps/web/src/styles/mobile.css` `button:not([data-compact]):
+        // not(:disabled)`) ставить `min-height/min-width: 44px` на будь-яку
+        // некомпактну незадизейблену кнопку під тим самим медіа-запитом.
+        // Клас `touch-target` дублював рівно ту саму декларацію під тим
+        // самим `@media (pointer: coarse)` — но-оп, приберено. Реального
+        // sub-44px таргета під pointer:coarse тут немає; десктопні 41px —
+        // очікувана поведінка design-конвенції, а не дефект.
         className={cn(
           "flex items-center gap-2 w-full text-left group px-3 py-3",
           "hover:bg-surface-strong-glass transition-colors",
@@ -175,6 +236,7 @@ export function SettingsSubGroup({
         </span>
       </button>
       <div
+        ref={contentRef}
         className={cn(
           "grid transition-[grid-template-rows] duration-base ease-standard",
           open ? "grid-rows-[1fr]" : "grid-rows-[0fr]",

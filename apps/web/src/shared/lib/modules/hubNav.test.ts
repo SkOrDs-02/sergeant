@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { Mock } from "vitest";
+import { SETTINGS_SECTIONS_CATALOG } from "../../../core/hub/settingsSectionsCatalog";
 import {
   openHubModule,
   openHubModuleWithAction,
@@ -98,6 +99,47 @@ describe("openHubSettingsSection", () => {
 
   it("не диспатчить для невалідної section", () => {
     openHubSettingsSection("not-a-real-section");
+    expect(listener).not.toHaveBeenCalled();
+  });
+});
+
+// Audit finding #5 (2026-08-08): `VALID_SETTINGS_SECTIONS` used to be a
+// FOURTH hand-maintained id list, independent of `SETTINGS_SECTIONS_
+// CATALOG` — it carried the same two ghost ids ("general", "assistant")
+// the L-13 audit found and merged elsewhere, and was missing three real
+// section ids ("plan", "capabilities", "feedback"), so
+// `openHubSettingsSection("plan")` silently no-op'd without even
+// dispatching the event. It now derives from the catalog; this pins that
+// every real section is reachable and the known ghosts stay gone.
+describe("openHubSettingsSection ↔ SETTINGS_SECTIONS_CATALOG parity", () => {
+  let listener: EventSpy;
+
+  beforeEach(() => {
+    listener = vi.fn<(event: Event) => void>();
+    window.addEventListener(HUB_OPEN_SETTINGS_EVENT, listener);
+  });
+  afterEach(() => {
+    window.removeEventListener(HUB_OPEN_SETTINGS_EVENT, listener);
+  });
+
+  it("dispatches for every real settings section id in the catalog", () => {
+    for (const { id } of SETTINGS_SECTIONS_CATALOG) {
+      listener.mockClear();
+      openHubSettingsSection(id);
+      expect(listener).toHaveBeenCalledTimes(1);
+    }
+  });
+
+  it("previously-missing sections ('plan', 'capabilities', 'feedback') now dispatch", () => {
+    for (const id of ["plan", "capabilities", "feedback"]) {
+      openHubSettingsSection(id);
+    }
+    expect(listener).toHaveBeenCalledTimes(3);
+  });
+
+  it("previously-ghost ids ('general', 'assistant') still do not dispatch", () => {
+    openHubSettingsSection("general");
+    openHubSettingsSection("assistant");
     expect(listener).not.toHaveBeenCalled();
   });
 });

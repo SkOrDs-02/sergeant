@@ -199,6 +199,13 @@ function PinSetupFlow({ onDone, onCancel, onSave }: PinSetupFlowProps) {
       >
         {m.back}
       </Button>
+      {/* Audit finding L-6/#5: the confirm step used to have no touch
+          route out — "Confirm" or "Back" only, so a user two taps into
+          setup/change had to go Back-then-Cancel, or reach for Escape
+          (keyboard-only, unavailable on touch). */}
+      <Button variant="ghost" size="sm" onClick={onCancel}>
+        {messages.actions.cancel}
+      </Button>
     </div>
   );
 }
@@ -265,7 +272,17 @@ export interface AppLockProps {
   state: LockState;
   onUnlock: (pin: string) => Promise<boolean>;
   onSetupDone: () => void;
+  /** Cancel the initial (lock-not-yet-enabled) setup flow. */
   onSetupCancel: () => void;
+  /**
+   * Cancel the "change PIN" flow. MUST be a distinct handler from
+   * `onSetupCancel` (audit L-6): the old PIN is still valid in storage and
+   * the lock is already enabled, so cancelling a change is just "close the
+   * dialog" — routing it through `onSetupCancel` used to also disable the
+   * lock, leaving the user thinking nothing changed while protection had
+   * actually turned off.
+   */
+  onChangeCancel: () => void;
   /** Persist a new PIN, scoped to the current user (audit F16). */
   onSavePin: (pin: string) => Promise<void>;
 }
@@ -275,14 +292,19 @@ export function AppLock({
   onUnlock,
   onSetupDone,
   onSetupCancel,
+  onChangeCancel,
   onSavePin,
 }: AppLockProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const visible = state === "locked" || state === "setup" || state === "change";
+  // "change" і "setup" скасовуються по-різному (audit L-6) — change лишає
+  // блокування увімкненим і стару PIN недоторканою, setup-скасування вимикає
+  // блокування, бо його ще не було. Обираємо правильний handler один раз.
+  const cancelHandler = state === "change" ? onChangeCancel : onSetupCancel;
 
   // ESC intentionally disabled on locked — user cannot bypass with keyboard.
   useDialogFocusTrap(visible, panelRef, {
-    onEscape: state === "locked" ? undefined : onSetupCancel,
+    onEscape: state === "locked" ? undefined : cancelHandler,
     inertBackground: true,
   });
 
@@ -323,7 +345,7 @@ export function AppLock({
         ) : (
           <PinSetupFlow
             onDone={onSetupDone}
-            onCancel={onSetupCancel}
+            onCancel={cancelHandler}
             onSave={onSavePin}
           />
         )}

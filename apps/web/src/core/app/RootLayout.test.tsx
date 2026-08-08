@@ -127,12 +127,51 @@ vi.mock("../../modules/routine/hooks/useSqliteReadBoot", () => ({
 }));
 
 // ── Heavy child UI with its own dedicated coverage — see file docstring.
+//
+// L-6 regression coverage needs the REAL props RootLayout passes down, not
+// just "was the spy called after a click" — the pre-fix call site didn't
+// pass `onChangeCancel` at all, so a click on a button whose `onClick` is
+// `undefined` is a silent no-op and never calls anything, `setFlag`
+// included. A spy-based "not called" assertion alone passes identically in
+// that broken world and the fixed one. Capturing the props lets the tests
+// below assert the handler actually exists and is distinct from
+// `onSetupCancel` before ever dispatching the click.
+const { appLockPropsRef } = vi.hoisted(() => ({
+  appLockPropsRef: {
+    current: null as null | {
+      onSetupCancel: () => void;
+      onChangeCancel: () => void;
+    },
+  },
+}));
 vi.mock("../security/AppLock", () => ({
-  AppLock: ({ onSetupCancel }: { onSetupCancel: () => void }) => (
-    <button type="button" data-testid="app-lock-cancel" onClick={onSetupCancel}>
-      cancel-setup
-    </button>
-  ),
+  AppLock: (props: {
+    onSetupCancel: () => void;
+    onChangeCancel: () => void;
+  }) => {
+    appLockPropsRef.current = props;
+    return (
+      <>
+        <button
+          type="button"
+          data-testid="app-lock-cancel"
+          onClick={props.onSetupCancel}
+        >
+          cancel-setup
+        </button>
+        {/* L-6 regression coverage: RootLayout must wire a SEPARATE handler
+            for the "change PIN" cancel button, not the same onSetupCancel it
+            uses for first-time setup (see the tests below this mock). */}
+        <button
+          type="button"
+          data-testid="app-lock-cancel-change"
+          onClick={props.onChangeCancel}
+        >
+          cancel-change
+        </button>
+      </>
+    );
+  },
 }));
 vi.mock("../hub/HubChatOverlay", () => ({
   HubChatOverlay: () => <div data-testid="chat-overlay" />,
@@ -223,6 +262,7 @@ describe("RootLayout", () => {
     window.sessionStorage.clear();
     featureFlags.resetFlags();
     document.title = "";
+    appLockPropsRef.current = null;
     server.use(meUnauthenticatedHandler());
     vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => {
       cb(0);
@@ -368,6 +408,44 @@ describe("RootLayout", () => {
     expect(setFlagSpy).toHaveBeenCalledWith("app-lock-enabled", false);
     // Call-through spy — the real store was actually written.
     expect(featureFlags.getFlag("app-lock-enabled")).toBe(false);
+    setFlagSpy.mockRestore();
+  });
+
+  // L-6 audit: RootLayout used to wire the SAME onSetupCancel handler for
+  // both "setup" (lock not yet enabled) and "change" (lock already on,
+  // just rotating the PIN). Cancelling a change flowed through the
+  // setup-cancel branch and force-disabled "app-lock-enabled" — a user who
+  // tapped "Змінити PIN" → "Скасувати" lost their lock entirely while the
+  // old PIN silently stayed in storage, unreachable because the feature
+  // was now off.
+  //
+  // The pre-fix `<AppLock>` call site didn't pass an `onChangeCancel` prop
+  // at all, so this mock's destructured `onChangeCancel` was `undefined`
+  // and the "cancel-change" button's `onClick` was a no-op — clicking it
+  // called nothing, `setFlag` included. A bare "setFlag was not called
+  // with the disabling args" assertion therefore passes identically in
+  // that broken world and this fixed one. The two checks below close that
+  // hole by failing the instant `onChangeCancel` goes missing (not a
+  // function) or gets pointed at the very same handler as `onSetupCancel`
+  // — both are exactly the shapes the L-6 regression can take.
+  it("wires a real, distinct onChangeCancel handler that does not disable app-lock", async () => {
+    const setFlagSpy = vi.spyOn(featureFlags, "setFlag");
+    const user = userEvent.setup();
+    renderAt("/");
+
+    const props = appLockPropsRef.current;
+    if (!props) throw new Error("AppLock mock never rendered");
+    expect(props.onChangeCancel).toBeTypeOf("function");
+    expect(props.onChangeCancel).not.toBe(props.onSetupCancel);
+
+    // NB: не виставляємо тут "app-lock-enabled" у true через реальний
+    // featureFlags-стор — цей файл навмисно тримає флаг вимкненим (див.
+    // докстрінг файлу), інакше реальний `useAppLock()` піде в свій
+    // IndexedDB-шлях (`hasPinSet`), якого немає в jsdom. `AppLock`
+    // тут замокано повністю, тож для перевірки wiring RootLayout→cancel
+    // справжнє значення флага не потрібне.
+    await user.click(screen.getByTestId("app-lock-cancel-change"));
+    expect(setFlagSpy).not.toHaveBeenCalledWith("app-lock-enabled", false);
     setFlagSpy.mockRestore();
   });
 

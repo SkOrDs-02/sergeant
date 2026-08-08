@@ -52,6 +52,17 @@ vi.mock("../auth/AuthContext.jsx", () => ({
   useAuth: () => ({ logout: logoutMock }),
 }));
 
+// F1 (review): the unsynced-loss gate for a CURRENT-session revoke now
+// runs BEFORE `revokeSession` — via a direct call to this helper, not
+// via `logout()`'s `confirmUnsyncedLoss` option (which only fires AFTER
+// the session would already be dead). Default: nothing pending, so most
+// tests below proceed straight through without ever seeing the dialog.
+const flushPendingSyncOpsMock =
+  vi.fn<() => Promise<{ pending: number; unknown: boolean }>>();
+vi.mock("../syncEngine/flushBeforeLogout.js", () => ({
+  flushPendingSyncOpsBeforeLogout: () => flushPendingSyncOpsMock(),
+}));
+
 import { SessionsSection } from "./SessionsSection";
 
 function renderSection(online: boolean) {
@@ -84,6 +95,10 @@ describe("SessionsSection — revoke flow", () => {
         session: { id: SAMPLE_SESSION.id },
         user: { id: SAMPLE_SESSION.userId },
       },
+    });
+    flushPendingSyncOpsMock.mockResolvedValue({
+      pending: 0,
+      unknown: false,
     });
   });
 
@@ -254,6 +269,10 @@ describe("SessionsSection — «Цей пристрій» badge + last-seen (PR-
         user: { id: "u-1" },
       },
     });
+    flushPendingSyncOpsMock.mockResolvedValue({
+      pending: 0,
+      unknown: false,
+    });
   });
 
   it("renders 3 sessions with parsed UA labels", async () => {
@@ -324,5 +343,203 @@ describe("SessionsSection — «Цей пристрій» badge + last-seen (PR-
     expect(
       within(linuxRow as HTMLElement).getByText(/(дні|днів|день).*тому/),
     ).toBeTruthy();
+  });
+});
+
+// L-18: "Завершити" на ПОТОЧНІЙ сесії стирало локальну SQLite (разом із
+// чергою синхронізації) через `logout()` без жодного попередження про
+// незбережені записи — на відміну від кнопки «Вийти» на ProfilePage, яка
+// таке попередження вже мала (через `confirmUnsyncedLoss`). Пінимо, що
+// SessionsSection тепер прокидує той самий гейт.
+//
+// F1 (review): the gate must run BEFORE `revokeSession` is even called,
+// not after — so these tests drive it via `flushPendingSyncOpsMock`
+// directly (the real pre-revoke check) instead of via `logout()`'s
+// `confirmUnsyncedLoss` option, which the fixed code no longer passes.
+describe("SessionsSection — L-18 unsynced-loss gate for current-session revoke", () => {
+  beforeEach(() => {
+    cleanup();
+    vi.clearAllMocks();
+    listSessionsMock.mockResolvedValue({ data: [SAMPLE_SESSION] });
+    revokeSessionMock.mockResolvedValue({ error: null });
+    getSessionMock.mockResolvedValue({
+      data: {
+        session: { id: SAMPLE_SESSION.id },
+        user: { id: SAMPLE_SESSION.userId },
+      },
+    });
+    logoutMock.mockResolvedValue(undefined);
+  });
+
+  it("shows the «Є незбережені записи» dialog BEFORE revoking anything, and does NOT navigate while it's open", async () => {
+    flushPendingSyncOpsMock.mockResolvedValue({ pending: 3, unknown: false });
+    renderSection(true);
+
+    const revokeButton = await screen.findByRole("button", {
+      name: /Завершити/i,
+    });
+    fireEvent.click(revokeButton);
+
+    expect(await screen.findByText("Є незбережені записи")).toBeTruthy();
+    // F6: 3 is the Ukrainian "few" form — "записи", not "записів".
+    expect(
+      screen.getByText(/3 записи ще не збережено на сервері/),
+    ).toBeTruthy();
+    expect(navigateMock).not.toHaveBeenCalled();
+    // F1 regression pin: the dialog must appear BEFORE the session is
+    // touched — not merely before the redirect.
+    expect(revokeSessionMock).not.toHaveBeenCalled();
+    expect(logoutMock).not.toHaveBeenCalled();
+  });
+
+  it("cancelling («Залишитись») keeps the session genuinely alive — revokeSession is NEVER called, no navigate, no crash", async () => {
+    flushPendingSyncOpsMock.mockResolvedValue({ pending: 2, unknown: false });
+    renderSection(true);
+
+    fireEvent.click(await screen.findByRole("button", { name: /Завершити/i }));
+    // `ConfirmDialog` renders the scrim as a SECOND element with the same
+    // accessible name (`aria-label={cancelLabel}`) — scope to the
+    // `alertdialog` container so we press the visible Cancel button, not
+    // the backdrop.
+    const dialog = await screen.findByRole("alertdialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Залишитись" }));
+
+    await waitFor(() =>
+      expect(screen.queryByText("Є незбережені записи")).toBeNull(),
+    );
+    expect(navigateMock).not.toHaveBeenCalled();
+    // F5 (review): the OLD test here only asserted "no navigate", which
+    // stayed true regardless of revoke-ordering and so never caught F1.
+    // The real invariant a cancel must guarantee is that the session was
+    // never touched in the first place.
+    expect(revokeSessionMock).not.toHaveBeenCalled();
+    expect(logoutMock).not.toHaveBeenCalled();
+  });
+
+  it("confirming («Все одно завершити») revokes the session THEN proceeds to sign-in", async () => {
+    flushPendingSyncOpsMock.mockResolvedValue({ pending: 1, unknown: false });
+    renderSection(true);
+
+    fireEvent.click(await screen.findByRole("button", { name: /Завершити/i }));
+    // F6: 1 is the "one" form — "1 запис", not "1 записів"/"1 записи".
+    expect(
+      await screen.findByText(/1 запис ще не збережено на сервері/),
+    ).toBeTruthy();
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Все одно завершити" }),
+    );
+
+    await waitFor(() =>
+      expect(revokeSessionMock).toHaveBeenCalledWith({
+        token: SAMPLE_SESSION.token,
+      }),
+    );
+    await waitFor(() => expect(logoutMock).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(navigateMock).toHaveBeenCalledWith("/sign-in", { replace: true }),
+    );
+  });
+
+  // F4/F6 sibling coverage: the "many" plural form (5+) is also exercised
+  // here since only "one" (1) and "few" (3) are covered above.
+  it("uses the Ukrainian «many» plural form (5+) in the unsynced-loss copy", async () => {
+    flushPendingSyncOpsMock.mockResolvedValue({ pending: 5, unknown: false });
+    renderSection(true);
+
+    fireEvent.click(await screen.findByRole("button", { name: /Завершити/i }));
+
+    expect(
+      await screen.findByText(/5 записів ще не збережено на сервері/),
+    ).toBeTruthy();
+  });
+});
+
+// L-19: офлайн "Активні сесії" рендерили COPY.empty ("Немає сесій") —
+// брехливий порожній стан. `load()` виходить РАНІШЕ будь-якого запиту,
+// коли `online === false`, тож старий код ніколи не розрізняв "сервер
+// відповів: 0 сесій" від "ми взагалі не питали сервер".
+describe("SessionsSection — L-19 offline before first successful load", () => {
+  beforeEach(() => {
+    cleanup();
+    vi.clearAllMocks();
+  });
+
+  it("shows an offline 'could not load' message instead of the empty state", () => {
+    renderSection(false);
+
+    expect(
+      screen.getByText(/не вдалося завантажити активні сесії/i),
+    ).toBeTruthy();
+    // The dishonest empty-state copy must NOT appear in its place.
+    expect(screen.queryByText("Немає сесій")).toBeNull();
+    // And listSessions() must never have been called offline.
+    expect(listSessionsMock).not.toHaveBeenCalled();
+  });
+
+  it("shows the genuine empty state once a successful ONLINE load actually returns 0 sessions", async () => {
+    listSessionsMock.mockResolvedValue({ data: [] });
+    getSessionMock.mockResolvedValue({ data: { session: null } });
+    const { rerender } = render(
+      <MemoryRouter>
+        <SessionsSection online={true} />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => expect(listSessionsMock).toHaveBeenCalledTimes(1));
+    expect(await screen.findByText("Немає сесій")).toBeTruthy();
+
+    // Going offline afterwards must not regress the now-confirmed empty
+    // state back into the (removed) offline branch.
+    rerender(
+      <MemoryRouter>
+        <SessionsSection online={false} />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText("Немає сесій")).toBeTruthy();
+  });
+
+  // F4 (review): `load()` never re-armed `loading` — it was only ever set
+  // from the INITIAL `useState(online)`. A user who opens this section
+  // offline (correct honest message) and then reconnects re-enters
+  // `load()` with `loading` still `false`; while the now-online fetch is
+  // in flight, `sessions` is still `[]` and `everLoaded` still `false`,
+  // so the render fell straight through to the dishonest `COPY.empty`
+  // for the duration of the request — the exact lie L-19 exists to kill,
+  // just shifted to a different window.
+  it("does not flash the dishonest empty state while the offline→online transition's first fetch is still in flight", async () => {
+    let resolveList!: (v: { data: unknown[] }) => void;
+    const listPromise = new Promise<{ data: unknown[] }>((resolve) => {
+      resolveList = resolve;
+    });
+    listSessionsMock.mockReturnValue(listPromise);
+    getSessionMock.mockResolvedValue({ data: { session: null } });
+
+    const { rerender } = render(
+      <MemoryRouter>
+        <SessionsSection online={false} />
+      </MemoryRouter>,
+    );
+    expect(
+      screen.getByText(/не вдалося завантажити активні сесії/i),
+    ).toBeTruthy();
+
+    rerender(
+      <MemoryRouter>
+        <SessionsSection online={true} />
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(listSessionsMock).toHaveBeenCalledTimes(1));
+
+    // The fetch triggered by the transition is still pending — neither
+    // the offline message NOR the dishonest "Немає сесій" empty state
+    // may show while we wait for it.
+    expect(
+      screen.queryByText(/не вдалося завантажити активні сесії/i),
+    ).toBeNull();
+    expect(screen.queryByText("Немає сесій")).toBeNull();
+    expect(screen.getByText("Завантаження…")).toBeTruthy();
+
+    resolveList({ data: [] });
+    expect(await screen.findByText("Немає сесій")).toBeTruthy();
   });
 });

@@ -11,6 +11,7 @@
  */
 
 import type { ModuleAccent } from "@sergeant/design-tokens";
+import { SETTINGS_SECTIONS_CATALOG } from "../../../core/hub/settingsSectionsCatalog";
 
 export const HUB_OPEN_MODULE_EVENT = "hub:open-module";
 
@@ -96,24 +97,18 @@ export interface HubOpenSettingsDetail {
   section: string;
 }
 
-// Mirrors the section list in `HubSettingsPage.tsx`. Kept defensive at
-// runtime so a typo in a caller can't navigate the user to an
-// unscrollable hash, but the source of truth is HubSettingsPage.
+// Audit finding #5 (2026-08-08): this used to be a FOURTH hand-maintained
+// id list, independent of `SETTINGS_SECTIONS_CATALOG` — the shared source
+// of truth `HubSettingsPage.tsx` and `search/searchSettings.ts` already
+// derive from (L-13 fix, same audit). It had drifted the exact same way:
+// carrying ghost ids ("general", "assistant") no real section uses, and
+// missing three real ones ("plan", "capabilities", "feedback"), so
+// `openHubSettingsSection("plan")` silently no-op'd below without even
+// dispatching the event. Deriving from the catalog means it can't drift
+// again; parity is pinned in `hubNav.test.ts`.
 const VALID_SETTINGS_SECTIONS = new Set<string>([
   "",
-  "dashboard",
-  "general",
-  "notifications",
-  "ai",
-  "assistant",
-  "routine",
-  "fizruk",
-  "finyk",
-  "nutrition",
-  "privacy",
-  "pwa",
-  "dataExport",
-  "experimental",
+  ...SETTINGS_SECTIONS_CATALOG.map((section) => section.id),
 ]);
 
 /**
@@ -133,5 +128,35 @@ export function openHubSettingsSection(section: string = ""): void {
     );
   } catch {
     /* noop — SSR / disabled CustomEvent */
+  }
+}
+
+/**
+ * Notify `hashchange` listeners (e.g. `SettingsGroup`'s anchor auto-open in
+ * `core/settings/SettingsPrimitives.tsx`) that `window.location.hash`
+ * changed — WITHOUT the browser's native "scroll to fragment" navigation a
+ * direct `location.hash = "…"` assignment triggers.
+ *
+ * Audit finding #3 (2026-08-08): that assignment did two things wrong at
+ * once — (a) it walked every scrollable ancestor including the app-shell
+ * viewport (the exact iOS status-bar/bottom-nav layout bug the
+ * `Element.scrollIntoView()` avoidance elsewhere in `HubSettingsPage.tsx`
+ * already fixed once), and (b) `location.hash = …` always PUSHES a new
+ * history entry — a subsequent `navigate(…, { replace: true })` only
+ * replaces *that* entry, leaving the page it should have replaced (e.g. a
+ * `?billing=portal-return` return URL) reachable one Back-tap away.
+ *
+ * Call this AFTER the hash has already been moved some other way — e.g.
+ * react-router's `navigate({ hash })`, which drives the URL through
+ * `history.pushState`/`replaceState` (synchronous, no native scroll, no
+ * duplicate entry) but never fires a native `hashchange` event on its own,
+ * so anything that only listens for that event (like `SettingsGroup`)
+ * needs an explicit nudge.
+ */
+export function announceSettingsHashChange(): void {
+  try {
+    window.dispatchEvent(new Event("hashchange"));
+  } catch {
+    /* noop — SSR / disabled Event */
   }
 }

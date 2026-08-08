@@ -58,12 +58,16 @@ export function ExperimentalSection() {
       </p>
       <div
         role="note"
-        className="flex items-start gap-3 rounded-xl border border-warn/40 bg-warn/10 px-3 py-2.5"
+        // V-5: `warn` не існує у дизайн-системі (реальний токен — `warning`,
+        // див. packages/design-tokens/tailwind-preset.js) — банер рендерився
+        // без кольору/бордера. Патерн border/bg відповідає іншим
+        // warning-банерам (FinykManualExpenseConflictBanner).
+        className="flex items-start gap-3 rounded-xl border border-warning/40 bg-warning/10 px-3 py-2.5"
       >
         <Icon
           name="alert-triangle"
           size={16}
-          className="text-warn shrink-0 mt-0.5"
+          className="text-warning-strong dark:text-warning shrink-0 mt-0.5"
           aria-hidden
         />
         <p className="text-style-caption text-text leading-snug">
