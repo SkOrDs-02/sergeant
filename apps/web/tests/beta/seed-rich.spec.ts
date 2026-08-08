@@ -52,11 +52,16 @@ const RUN_TAG = `${Date.now()}`;
 const EMAIL = `qa.beta.bt5.${RUN_TAG}@example.com`;
 
 function dayAt(daysBack: number): Date {
-  const d = new Date();
+  const now = new Date();
+  const d = new Date(now);
   d.setHours(12, 0, 0, 0);
   // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- ADR-0078: сідер симулює особистий день ПРИСТРОЮ тестера (звичка/витрата), а день-ключ особистих сутностей device-local за каноном.
   d.setDate(d.getDate() - daysBack);
-  return d;
+  // Опівдні «сьогодні» — у МАЙБУТНЬОМУ, якщо сідер запущено вночі. Такий
+  // запис локально створюється (тост є), але на сервер не доїжджає, і
+  // прогін мовчки лишається без останнього дня — 7 із 8 замість 8
+  // (знахідка B6/B7, прогін 2026-08-09). Тримаємо позначку в минулому.
+  return d.getTime() > now.getTime() ? new Date(now.getTime() - 60_000) : d;
 }
 
 /**
@@ -209,8 +214,12 @@ test.describe.serial("@seed BT5 — автосідер активного тиж
     let silent = true;
     for (let attempt = 0; attempt < 3 && silent; attempt += 1) {
       await goto(verifyPage, "/finyk/transactions");
+      // Доказ гідрації — будь-яка група дня. Чекати саме «Сьогодні» не
+      // можна: сідер, запущений після опівночі, кладе день 0 у майбутнє
+      // (`dayAt(0)` = сьогодні 12:00), той запис не доїжджає на сервер, і
+      // остання видима група — вчорашня (знахідка B6, прогін 2026-08-09).
       await expect(
-        verifyPage.getByRole("button", { name: /Сьогодні/ }).first(),
+        verifyPage.getByRole("button", { name: /^Розгорнути / }).first(),
       ).toBeVisible({ timeout: 30_000 });
       await verifyPage.getByRole("button", { name: "На хаб" }).click();
       const hubNav = verifyPage.getByRole("navigation", {
