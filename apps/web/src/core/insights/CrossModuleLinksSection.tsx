@@ -18,6 +18,10 @@
 import { useMemo } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { messages } from "@shared/i18n/uk";
+import { useHubStorageBump } from "../hub/useHubStorageBump";
+import { useFinykSqliteReadTick } from "../../modules/finyk/lib/sqliteReadGate";
+import { useFizrukSqliteReadTick } from "../../modules/fizruk/lib/sqliteReadGate";
+import { useNutritionSqliteReadTick } from "../../modules/nutrition/lib/sqliteReadGate";
 import {
   CrossModuleLinkCard,
   type CrossModuleLinkCardProps,
@@ -55,6 +59,36 @@ function linkKey(pair: NotablePair): string {
 }
 
 export default function CrossModuleLinksSection() {
+  // AI-DANGER: тіки трьох модулів — не оптимізація, а умова коректності.
+  //
+  // `buildCrossModuleSeries` читає ряди з кешів SQLite Фініка, Їжі та
+  // Фізрука, а ці кеші — синглтони ДОКУМЕНТА: після повного завантаження
+  // сторінки вони порожні й наповнюються асинхронно, вже після першого
+  // рендера. З `useMemo(..., [])` секція рахувала рівно один раз — по
+  // холодному кешу — і більше ніколи, тож при повній базі впевнено
+  // заявляла «Поки що зв'язків не бачу · 0 з N спостережень». Той самий
+  // екран, відкритий SPA-переходом із модуля (кеш уже теплий), показував
+  // реальний зв'язок — тобто відповідь залежала від шляху навігації:
+  // закладка, hard reload і холодний старт PWA давали неправду.
+  //
+  // Знахідка B1 прийомного прогону бети 2026-08-09
+  // (`docs/90-work/audits/2026-08-09-beta-acceptance-run.md`). Раніше той
+  // самий симптом бачили в репетиції 2026-08-07, але списали на методику
+  // прогону — і навчили лейн ходити в обхід замість того, щоб завести баг.
+  //
+  // Тіки бампаються `notify*SqliteCacheRefresh` рівно тоді, коли кеш
+  // наповнився чи змінився, тож перерахунок відбувається за подією даних,
+  // а не за кожним рендером. Не прибирай їх із deps «для швидкості».
+  // `useHubStorageBump` — канонічний hub-сигнал «сховище змінилось»
+  // (routine пише через `emitRoutineStorage` → hubBus, плюс крос-табовий
+  // `window "storage"`). Його документація описує рівно наш збій: hub-картка
+  // агрегує крос-модульні дані в `useMemo` і лишається протухлою. Ряди
+  // Рутини читаються НЕ з SQLite, тож самих тіків для них не досить.
+  const storageBump = useHubStorageBump();
+  const finykTick = useFinykSqliteReadTick();
+  const nutritionTick = useNutritionSqliteReadTick();
+  const fizrukTick = useFizrukSqliteReadTick();
+
   // Один прохід по рядах на весь рендер: `buildCrossModuleSeries` читає
   // 60 днів × 10 метрик зі сховища, тож і картки, і стан мовчання беруть
   // дані з ОДНОГО обчислення, а не з двох незалежних.
@@ -75,7 +109,12 @@ export default function CrossModuleLinksSection() {
         ? { ...silentPoles(closest.a, closest.b), observations: closest.n }
         : null,
     };
-  }, []);
+    // deps нижче — це КЛЮЧІ ІНВАЛІДАЦІЇ, а не значення, які читає тіло:
+    // `buildCrossModuleSeries` бере дані з модульних кешів і сховища, тобто
+    // ззовні React. Правило їх не бачить і зве «unnecessary» — але без них
+    // секція застигає на холодному першому рендері (B1). Не прибирай.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storageBump, finykTick, nutritionTick, fizrukTick]);
 
   return (
     <section className="space-y-3">
