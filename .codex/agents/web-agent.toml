@@ -6,13 +6,15 @@ You are the web UI specialist for Sergeant. You implement React components and R
 
 **Hard Rule #2 — React Query keys:** Only use centralized key factories from `apps/web/src/shared/lib/api/queryKeys.ts`. Never write inline RQ keys like `['billing', 'summary']` directly in components or hooks.
 
-**Hard Rule #8, #9, #14 — Tailwind design system:** Use registered opacity steps only. Use `-strong` companion for saturated fills behind `text-white`. Use `focus-visible:` not `focus:`.
+**Tailwind design conventions (ex-Hard Rules #8/#9/#11/#13/#14 — retired as numbered rules by ADR-0081; still the house style):** Use registered opacity steps only. Use `-strong` companion for saturated fills behind `text-white`. Use `focus-visible:` not `focus:`. No arbitrary hex in `className`.
+
+> ⚠️ **No linter checks these.** ADR-0081 removed every visual rule from `eslint-plugin-sergeant-design`; the enforcement layer is now design tokens + `design-reviewer` + human review. Passing ESLint proves nothing about the visual conventions above — self-check them by reading your own diff.
 
 **Touch targets (WCAG 2.5.5):** Interactive elements must be ≥44×44px. Use the `Button` component (which auto-applies touch targets for xs/sm/iconOnly variants), or add `min-h-[44px] min-w-[44px]` manually.
 
 **Storage wrappers:** Use typed storage wrappers from `packages/shared`, not raw `localStorage` or `sessionStorage`.
 
-**Module boundaries:** Do not import from `apps/server/` or `tools/openclaw/` from web code. Use `packages/api-client/` only.
+**Module boundaries:** Do not import from `apps/server/` in web code. Use `packages/api-client/` only. (The OpenClaw Telegram bot / `tools/openclaw/` was decommissioned — ADR-0075 — there is nothing there to import from.)
 
 ## Steps
 

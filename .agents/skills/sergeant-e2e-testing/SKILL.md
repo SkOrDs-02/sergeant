@@ -7,7 +7,7 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 
 # E2E Testing (Playwright) у Sergeant
 
-Playwright tests in Sergeant run against a preview build (`vite build && vite preview`). The test suite lives in `apps/web/tests/`. Primary lanes: `tests/smoke/` (auth and critical path) and `tests/a11y/` (axe-core accessibility snapshots). Two more lanes exist and are easy to miss: `tests/mobile/` (44px touch-target audit, `pnpm --filter @sergeant/web e2e:mobile` — local-only, **not** wired into CI) and `tests/ledger/`; `tests/utils/` holds shared helpers, not specs. Configs: `apps/web/playwright.smoke.config.ts` (smoke/critical-flow — boots Postgres + server + build + preview via `tests/smoke/start-smoke-webserver.mjs`) and `apps/web/playwright.config.ts` (a11y only — self-managed build+preview `webServer`).
+Playwright tests in Sergeant run against a preview build (`vite build && vite preview`). The test suite lives in `apps/web/tests/`, split into 7 dirs: `smoke/` (auth and critical path), `a11y/` (axe-core accessibility snapshots), `beta/` (beta-readiness lane), `ledger/` (Finyk ledger flows), `mobile/` (44px touch-target audit, `pnpm --filter @sergeant/web e2e:mobile` — local-only, **not** wired into CI), `profiles/` (user-profile flows), and `utils/` (shared helpers — not a spec lane). Each spec lane has its own Playwright config: `playwright.config.ts` (base — a11y, self-managed build+preview `webServer`), `playwright.smoke.config.ts` (boots Postgres + server + build + preview via `tests/smoke/start-smoke-webserver.mjs`), `playwright.beta.config.ts`, `playwright.ledger.config.ts`, `playwright.mobile.config.ts`, `playwright.profiles.config.ts`, `playwright.pwa-regression.config.ts`, and `playwright.visual.config.ts` — 8 config files total.
 
 ## 8 Golden Rules
 
@@ -34,9 +34,15 @@ For deeper guidance on specific scenarios:
 Both configs boot their own web server — do not start `pnpm build && pnpm preview` manually.
 
 ```bash
-pnpm --filter @sergeant/web e2e        # smoke lane (playwright.smoke.config.ts, --grep @critical)
-pnpm --filter @sergeant/web e2e:auth   # auth lane (--grep @auth)
-pnpm --filter @sergeant/web test:a11y  # accessibility suite (playwright.config.ts)
+pnpm --filter @sergeant/web e2e            # smoke lane (playwright.smoke.config.ts, --grep @critical)
+pnpm --filter @sergeant/web e2e:auth       # auth lane (playwright.smoke.config.ts, --grep @auth)
+pnpm --filter @sergeant/web e2e:beta       # beta-readiness lane (playwright.beta.config.ts)
+pnpm --filter @sergeant/web e2e:mobile     # 44px touch-target audit (playwright.mobile.config.ts, local-only)
+pnpm --filter @sergeant/web e2e:profiles   # profiles lane (playwright.profiles.config.ts)
+pnpm --filter @sergeant/web test:a11y      # accessibility suite (playwright.config.ts, base config)
+pnpm --filter @sergeant/web test:visual    # visual regression (playwright.visual.config.ts, Argos)
+pnpm --filter @sergeant/web exec playwright test --config playwright.ledger.config.ts          # ledger lane (no dedicated script)
+pnpm --filter @sergeant/web exec playwright test --config playwright.pwa-regression.config.ts   # PWA regression lane (no dedicated script)
 pnpm --filter @sergeant/web exec playwright test --ui        # interactive UI mode (local debug)
 pnpm --filter @sergeant/web exec playwright test --trace on  # force-enable traces locally
 ```

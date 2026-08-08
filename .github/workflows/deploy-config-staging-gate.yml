@@ -6,13 +6,21 @@ name: Deploy-config staging gate
 
 # Closes initiative 0011 phase 1 PR 1.3 — process guard against the
 # "Vercel SSOT-flip" type-incident (PR #1595 → PR #1600). When a PR
-# touches deploy-config files (vercel.json / fly.toml /
-# Dockerfile* / apps/server/build.mjs / Caddyfile) it MUST carry a
+# touches deploy-config files (vercel.json / Dockerfile* /
+# apps/server/build.mjs) it MUST carry a
 # `verified-on-staging` label, applied by the author after manually
 # verifying the change on a staging environment. The escape-hatch
 # label `verified-on-staging-emergency` (for true production hotfixes
 # where staging cannot be exercised) is permitted but requires the
 # author to commit to a post-mortem as part of the PR.
+#
+# `fly.toml` / `Caddyfile` were dropped from the matcher 2026-08-08 —
+# Fly.io was never part of this stack, neither file ever existed in
+# this repo. Coolify app-config (env, pre-deploy command, health-check,
+# image tag) lives in the Coolify UI, not in git — this git-diff gate
+# structurally cannot see it, so that surface is verified by a human
+# against the live deploy per docs/00-start/playbooks/deploy-config-change.md §3.
+# This gate is not a no-op: it still enforces on vercel.json / Dockerfile.api / build.mjs.
 #
 # Comment-only / whitespace-only edits are exempt, because they cannot
 # change deploy semantics. The exemption check uses the unified diff

@@ -1,26 +1,36 @@
-description = "Use in QA squad to run and analyze web tests and typecheck for Sergeant apps/web. Reports pass/fail counts, failure details, and type errors. Part of sergeant-qa-squad."
+description = "Use in QA squad to run and analyze web tests and typecheck for Sergeant apps/web AND apps/landing. Reports pass/fail counts, failure details, and type errors. Part of sergeant-qa-squad."
 developer_instructions = """
-You run web quality checks for Sergeant and report results to the lead.
+You run web quality checks for Sergeant — covering **both** browser apps: `apps/web` (the product) and `apps/landing` (the marketing site) — and report results to the lead.
 
-## Steps
+## Steps — sequentially, not concurrently
 
-1. Run tests: `pnpm --filter @sergeant/web test --reporter=verbose`
-2. Run typecheck: `pnpm --filter @sergeant/web typecheck`
-3. Analyze both outputs.
+Concurrent heavy Node can OOM and garble output. One at a time:
+
+1. Run web typecheck: `pnpm --filter @sergeant/web typecheck`
+2. Run web tests: `pnpm --filter @sergeant/web test --reporter=verbose`
+3. Run landing typecheck: `pnpm --filter @sergeant/landing typecheck`
+4. Run landing tests: `pnpm --filter @sergeant/landing test`
+5. Analyze all outputs.
+
+Landing is small and usually silent — that is exactly why it rots unnoticed. Always report its two lines, even when they are trivially green; "not run" and "passed" must never look the same.
 
 ## Report format
 
 ```
 ### Web QA Results
+**apps/web**
+- Tests: X passed, Y failed, Z skipped
+- Typecheck: ✅ clean / ❌ N errors
+**apps/landing**
 - Tests: X passed, Y failed, Z skipped
 - Typecheck: ✅ clean / ❌ N errors
 - Failures:
-  - <test file> > <test name>: <brief failure reason>
+  - <app> > <test file> > <test name>: <brief failure reason>
 - Type errors (if any):
   - <file>:<line>: <error message>
 ```
 
-If all tests pass and typecheck is clean, write: `### Web QA Results — ✅ All green`
+If all tests pass and typecheck is clean for both apps, write: `### Web QA Results — ✅ All green`
 
 Send your report to the lead when done."""
 name = "qa-web"

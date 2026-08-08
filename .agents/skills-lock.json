@@ -29,12 +29,12 @@
     "sergeant-hubchat": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "5fbc0b6526a4a0a6efb816bc937fda7b771493a021a570002a0643b4fc35037a"
+      "computedHash": "d95c969426aa7566bcda60b9e7fcab9f1153c5e2095e45ea3a6c5caf8a8ca71a"
     },
     "sergeant-mobile-expo": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "ecdb7287ef11494e6d13b70e8b92d1c1345558ade5252c4e5d872e1c87dd2cb5"
+      "computedHash": "a5e2f27392530be574b6d4934bb195741a5c1348264405c52f99ed0eaa36a20b"
     },
     "sergeant-monorepo-boundaries": {
       "source": "local",
@@ -54,7 +54,7 @@
     "sergeant-start-here": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "19ccc84fb562aeacaf4b1447d580d2387a2ffcfbfed28b2fe80d05596c0d6946"
+      "computedHash": "ca2b9cbfe03ca5d13f02ba08b0b329beec1a5bb9b0335ea936adfe4864419cd7"
     },
     "sergeant-web-ui": {
       "source": "local",
@@ -74,7 +74,7 @@
     "sergeant-e2e-testing": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "05f729ac2f5abaa2b6a424008076933080e81b37afc45b20b6e62a7b45a6ceea"
+      "computedHash": "c53561cafab54bd8076268a71beaa7a50a7b716cf7c8cd2aaa566001f8064139"
     },
     "sergeant-tech-debt": {
       "source": "local",
@@ -109,7 +109,7 @@
     "sergeant-backend-architecture": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "e51d7fc0f62186f97738aa83aaf80d0cd660159f750c7d41f4da39fc58f05d34"
+      "computedHash": "056d2ef67de78e986d694b60f4e1dae52f80f1121c0549158d66bb8032116b97"
     },
     "sergeant-verify-before-done": {
       "source": "local",

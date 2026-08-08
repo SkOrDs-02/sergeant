@@ -4,8 +4,9 @@
  * Derives display properties for the `StreakFlame` XS adornment placed in
  * the top-right corner of `RoutineCalendarHero`. Hides the flame for cold
  * streaks (0 days) and strips the glow animation when the user prefers
- * reduced motion (Hard Rule #17 — one AMBIENT slot; motion-safe wrapper
- * moves glow to CSS, this hook gates render-level decisions).
+ * reduced motion (ex-Hard Rule #17, retired ADR-0081 — one AMBIENT slot;
+ * motion-safe wrapper moves glow to CSS, this hook gates render-level
+ * decisions).
  *
  * Intensity tiers:
  *   - 0          → not visible (no cold flame shown)

@@ -17,18 +17,15 @@
 
 ### 1. Оновити схему події в server
 
-Знайти типи та схеми в `apps/server/src/modules/mono/`:
+DTO та zod-schema для webhook-подій живуть інлайн у `apps/server/src/modules/mono/webhook.ts` (окремих `types.ts` / `http/schemas.ts` у цьому модулі нема):
 
 ```bash
-# Перевірити поточні типи
-cat apps/server/src/modules/mono/types.ts
-
-# Перевірити zod-schema
-cat apps/server/src/modules/mono/http/schemas.ts
+# Перевірити поточні типи й zod-schema (StatementItemSchema, WebhookPayloadSchema)
+cat apps/server/src/modules/mono/webhook.ts
 ```
 
-- Додати новий case / поле в DTO (`types.ts`).
-- Оновити zod-schema (`http/schemas.ts`) для валідації вхідного payload.
+- Додати новий case / поле в DTO прямо в `webhook.ts`.
+- Оновити `StatementItemSchema` / `WebhookPayloadSchema` (той самий файл) для валідації вхідного payload.
 
 ### 2. Додати handler
 

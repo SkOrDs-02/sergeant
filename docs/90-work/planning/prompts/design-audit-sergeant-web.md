@@ -19,7 +19,7 @@
 
 ### Контекст дизайн-системи Sergeant (нормативна база — відхилення = дефект)
 
-1. **Кольори — тільки семантичні токени.** `bg / panel / panelHi / line / text / muted / subtle / primary` + аліаси `surface / fg / border / accent`. Довільні hex у `className` заборонені (Hard Rule #11). Сирі light/dark-пари (`bg-white dark:bg-zinc-900`) заборонені (#13) — темна тема має «просто працювати» через CSS-змінні.
+1. **Кольори — тільки семантичні токени.** `bg / panel / panelHi / line / text / muted / subtle / primary` + аліаси `surface / fg / border / accent`. Довільні hex у `className` заборонені (ex-Hard Rule #11, retired ADR-0081). Сирі light/dark-пари (`bg-white dark:bg-zinc-900`) заборонені (ex-Hard Rule #13, retired ADR-0081) — темна тема має «просто працювати» через CSS-змінні.
 2. **Opacity-кроки** тільки з зареєстрованої шкали (#8).
 3. **Насичені брендові заливки під `text-white`** — тільки `-strong`-компаньйон (#9).
 4. **Module accents** (containment, #12): finyk = emerald, fizruk = cyan, routine = coral, nutrition = lime. Чужий акцент усередині піддерева модуля = дефект. Акцент — це ідентичність модуля, не декор.

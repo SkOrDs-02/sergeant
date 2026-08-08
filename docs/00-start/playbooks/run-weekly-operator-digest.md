@@ -13,6 +13,7 @@
 ## Потрібний контекст
 
 - Перегляньте [engineering-metrics.md](../../03-operations/observability/engineering-metrics.md), [feature-flags.md](../../04-governance/governance/feature-flags.md) і [review-checklist.md](../../04-governance/governance/review-checklist.md).
+- ADR-0082 (2026-07-30) зняв частину солоперевізьких крон-гейтів (`security-sla-reminder`, `docs-freshness`/`skill-freshness` календарні прогони) — solo-maintainer посадка не тримає окремого дашборду для них. Кроки нижче спираються на файли й живі workflow-и, що лишились після цього ADR.
 
 ## Кроки
 
@@ -22,13 +23,14 @@
 - час реакції на ревʼю (англ. review turnaround)
 - частота падінь CI за тиждень (англ. CI failure rate)
 - кількість «флакі»-тестів (нестабільних) за останні 7 днів
+- джерело: вкладка Actions репозиторію + [`docs/04-governance/pr-ledger/index.json`](../../04-governance/pr-ledger/index.json) (мердж-історія, оновлюється Hard Rule #26 при кожному PR, що чіпає canonical docs).
 
 ### 2. Перегляньте операційний борг (operating debt)
 
-- застарілі feature-прапори, які час прибрати
-- прострочені пункти дій з post-mortem-ів
-- governance-гейти з docs, що падали протягом тижня
-- відкриті винятки з безпекового SLA
+- застарілі feature-прапори, які час прибрати — [feature-flags.md](../../04-governance/governance/feature-flags.md)
+- прострочені пункти дій з post-mortem-ів і прострочені `Next review` дати — [`docs/open-work.md`](../../open-work.md) (генерується `pnpm docs:gen-open-work`, входить у `pnpm docs:gen-daily`; актуальність — ручний `workflow_dispatch` [`docs-daily-brief.yml`](../../../.github/workflows/docs-daily-brief.yml), календарний cron знято 2026-07-09 навмисно, щоб не палити Actions-хвилини solo-мейнтейнеру)
+- CI-гейти, що падали протягом тижня — перевір живі nightly/weekly cron-workflow-и: [`nightly-audit.yml`](../../../.github/workflows/nightly-audit.yml) (щодня 03:00 UTC), [`container-scan.yml`](../../../.github/workflows/container-scan.yml) (щодня 04:00), [`pact-drift.yml`](../../../.github/workflows/pact-drift.yml) (щодня 06:00), [`post-deploy-smoke.yml`](../../../.github/workflows/post-deploy-smoke.yml) (щодня 06:30), [`extended-e2e.yml`](../../../.github/workflows/extended-e2e.yml) (щодня 02:00), [`codeql.yml`](../../../.github/workflows/codeql.yml), [`mutation-testing.yml`](../../../.github/workflows/mutation-testing.yml), [`mobile-flaky-verify.yml`](../../../.github/workflows/mobile-flaky-verify.yml) (усі три — щопонеділка), [`db-backup-verify.yml`](../../../.github/workflows/db-backup-verify.yml) (щонеділі). `docs-freshness.yml`/`skill-freshness.yml` — тепер PR-only гейти (ADR-0082 §5, без окремого календарного прогону), дивись на них через історію PR, а не окремий дашборд.
+- відкриті винятки з безпекового SLA — [`audit-exceptions.md`](../../04-governance/security/audit-exceptions.md) (ledger waived CVE). `security-sla-reminder` крон, що раніше штовхав це автоматично, знято ADR-0082 §3 (retired як reviewer-oriented гейт без другого рев'юера в петлі) — перевіряй файл вручну щотижня саме тут.
 
 ### 3. Оберіть одну посилюючу (tightening) дію
 

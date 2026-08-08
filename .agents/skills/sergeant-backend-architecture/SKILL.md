@@ -12,7 +12,7 @@ Sergeant — **Express 5 моноліт** з пласкими модулями, 
 ## Реальна архітектура (перевір, перш ніж проєктувати)
 
 - **Точка входу:** `apps/server/src/index.ts` → `app.ts` (Express 5).
-- **Модулі:** `apps/server/src/modules/<domain>/**` — 19 штук (`finyk`, `nutrition`, `chat`, `mono`, `billing`, `sync`, `push`, `digest`, `ai-memory`, `alerts`, `waitlist`, `webhooks`, …). Модуль **плаский**: один файл = один use-case (`analyze-photo.ts`), поряд лежить `analyze-photo.test.ts`. Жодних `domain/` / `use-cases/` / `adapters/` / `infrastructure/` підпапок.
+- **Модулі:** `apps/server/src/modules/<domain>/**` (`finyk`, `nutrition`, `chat`, `mono`, `billing`, `sync`, `push`, `digest`, `ai-memory`, `alerts`, `waitlist`, `webhooks`, …). Кількість модулів дрейфує — перевір `ls apps/server/src/modules/`, не бери з памʼяті. Модуль **плаский**: один файл = один use-case (`analyze-photo.ts`), поряд лежить `analyze-photo.test.ts`. Жодних `domain/` / `use-cases/` / `adapters/` / `infrastructure/` підпапок.
 - **Роути:** `apps/server/src/routes/**`, монтуються через `routes/index.ts`. Роут — тонкий: валідація + виклик модуля + серіалізація.
 - **Серіалізатори:** `apps/server/src/lib/normalizers/*.ts`.
 - **БД:** `pg` Pool (`db.ts`) + `drizzle-orm` поверх того самого пулу (`drizzle.ts`) — **обидва шляхи живі** (див. § Два шляхи до БД). Опційна read-репліка — `dbReplica.ts` (opt-in, лише analytics-style читання).
@@ -62,7 +62,7 @@ Hard Rule #18 — `max-lines: 600` для server TS/JS. Ріж по use-case-а�
 ## Червоні прапорці в пропозиціях
 
 - «Винесемо в окремий сервіс / додамо Kafka / зробимо CQRS» — на поточній стадії майже завжди ні. Спершу: індекс, черга, кеш.
-- «Створимо `domain/` і `use-cases/` для чистоти» — конвенція репо пласка; такий PR розсинхронить 19 модулів.
+- «Створимо `domain/` і `use-cases/` для чистоти» — конвенція репо пласка; такий PR розсинхронить усі модулі (перевір актуальну кількість — `ls apps/server/src/modules/`).
 - Новий job без ідемпотентності або без ретрай-політики.
 - Нова таблиця без міграції в тому ж PR → `sergeant-data-and-migrations`.
 

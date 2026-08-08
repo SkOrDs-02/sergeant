@@ -1,9 +1,11 @@
 # Playbook: Dependency Sweeper (періодичний тріаж залежностей)
 
-> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
+> **Last touched:** 2026-08-08 by @claude. **Next review:** 2026-11-06.
 > **Status:** Active
 
-**Trigger:** запланований періодичний прогін (`/schedule`, cadence 6h–1d) або ручний запит «що застаріло / які CVE / що безпечно бампнути». Це **не** заміна Renovate — див. § «Чим це відрізняється від Renovate».
+**Trigger:** запланований періодичний прогін (через будь-який scheduler/cron-примітив харнеса, cadence 6h–1d) або ручний запит «що застаріло / які CVE / що безпечно бампнути». Це **не** заміна Renovate — див. § «Чим це відрізняється від Renovate».
+
+> **Про slash-команди в цьому файлі:** нижче зустрічаються узагальнені позначення на кшталт «періодичний тригер» і «ізольований worktree» — це harness-level можливості (scheduler / worktree-менеджер), а не конкретні repo-скоуп slash-команди. Кожен харнес реалізує їх по-своєму й конфігурує поза цим репо ([AGENTS.md § Harness config lives outside the repo](../../../AGENTS.md#harness-config-lives-outside-the-repo)) — свій примітив шукай у власному харнесі (наприклад Claude Code: MCP-сесії/рутини + `EnterWorktree`; інші харнеси — власні еквіваленти). Repo-скоуп slash-команди живуть лише в `.claude/commands/` (`initiative-task.md`, `web-ux-cycle.md`) і жодна з них тут не застосовна.
 
 ## Owner surface
 
@@ -29,13 +31,13 @@ Renovate у цьому репо вже відкриває PR-и на бампи 
 
 ## Фази патерна
 
-| Фаза                        | Що робить                                                         | Наш примітив                                                                |
-| --------------------------- | ----------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| **scan**                    | знайти застаріле + відомі CVE + license-дрейф                     | `pnpm -r outdated --format json`, `pnpm audit --json`, `pnpm licenses list` |
-| **triage-risk**             | класифікувати кожен апдейт: safe vs risky                         | движок: major/unknown → risky; patch/minor → safe                           |
-| **patch-safe** _(L2+)_      | безпечні застосувати в **ізольованому** worktree, окремим bump-PR | `/wt <topic>` → `pnpm up <pkg>@<v>` → commit `chore(deps): …`               |
-| **verify-worktree** _(L2+)_ | у тому ж worktree прогнати гейт                                   | `pnpm check` (мін. `--filter` typecheck+test зачепленого)                   |
-| **escalate-risky**          | major / high-CVE / denylist → людині                              | `mcp__ccd_session__spawn_task` чіп                                          |
+| Фаза                        | Що робить                                                         | Наш примітив                                                                                                                                                             |
+| --------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **scan**                    | знайти застаріле + відомі CVE + license-дрейф                     | `pnpm -r outdated --format json`, `pnpm audit --json`, `pnpm licenses list`                                                                                              |
+| **triage-risk**             | класифікувати кожен апдейт: safe vs risky                         | движок: major/unknown → risky; patch/minor → safe                                                                                                                        |
+| **patch-safe** _(L2+)_      | безпечні застосувати в **ізольованому** worktree, окремим bump-PR | харнес worktree-примітив (напр. `git worktree add` / `EnterWorktree`) → `pnpm up <pkg>@<v>` → commit `chore(deps): …`                                                    |
+| **verify-worktree** _(L2+)_ | у тому ж worktree прогнати гейт                                   | `pnpm check` (мін. `--filter` typecheck+test зачепленого)                                                                                                                |
+| **escalate-risky**          | major / high-CVE / denylist → людині                              | створи нову сесію/задачу для власника репо через харнес-специфічний примітив ескалації (не repo-скоуп) — конкретний виклик живе в конфігу харнеса, не в цьому playbook-у |
 
 **safe** = patch/minor bump у devDep або добре покритому пакеті. **risky** = major bump, high-sev CVE, denylist-пакет, unknown-range.
 
@@ -61,12 +63,12 @@ L1 безпечно ганяти unattended саме тому, що движок
 
 ---
 
-## L1: готова до запуску `/schedule`-рутина (report-only)
+## L1: готова до запуску періодична рутина (report-only)
 
-**Активація власником** (L1 — свідомо gated; движок треба закомітити, щоб хмарна рутина його бачила):
+**Активація власником** (L1 — свідомо gated; движок треба закомітити, щоб рутина хмарного харнеса його бачила):
 
 1. Закомітити 2 файли: `scripts/dependency-sweeper-report.mjs` + цей playbook (`chore(agents): add dependency-sweeper L1`).
-2. Створити рутину через `/schedule` з cron `0 6 * * *` (щодня 06:00 Europe/Kyiv) і таким **self-contained** промптом:
+2. Створити періодичний тригер у своєму харнесі (scheduler / cron-рутина, конкретний примітив — харнес-специфічний) з розкладом `0 6 * * *` (щодня 06:00 Europe/Kyiv) і таким **self-contained** промптом:
 
 ```text
 Dependency Sweeper — L1 report-only. Не комітити, не бампити, не відкривати PR.
@@ -102,7 +104,7 @@ node scripts/dependency-sweeper-report.mjs
 Коли L1-звіти кілька циклів виглядають надійно (safe-класифікація не дає хибних спрацювань, CVE-звірка з ledger коректна):
 
 1. Дай явний дозвіл на L2 (окремим повідомленням).
-2. Рутина отримує додатковий крок після звіту: для **safe**-рядків — `/wt deps-sweep-<date>` → `pnpm up <pkg>@<latest>` (тільки safe) → `pnpm check` у тому ж worktree → якщо green, окремий bump-PR `chore(deps): sweep safe patch/minor (<date>)`.
+2. Рутина отримує додатковий крок після звіту: для **safe**-рядків — ізольований worktree `deps-sweep-<date>` (харнес worktree-примітив або `git worktree add`) → `pnpm up <pkg>@<latest>` (тільки safe) → `pnpm check` у тому ж worktree → якщо green, окремий bump-PR `chore(deps): sweep safe patch/minor (<date>)`.
 3. Усе risky (major / high-CVE / denylist) лишається **тільки ескалацією чіпом** — L2 їх не чіпає.
 4. L3 (unattended automerge allowlisted, напр. `@types/*` patch) вмикається **лише** окремим явним дозволом.
 

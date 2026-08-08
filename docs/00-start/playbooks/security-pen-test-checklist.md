@@ -27,7 +27,7 @@
 
 ### 2. Підніми production-like API локально
 
-- `NODE_ENV=production`, `RAILWAY_ENVIRONMENT=production`, `DATABASE_URL=$STAGING_DATABASE_URL`, `BETTER_AUTH_SECRET=$STAGING_BETTER_AUTH_SECRET`.
+- `NODE_ENV=production`, `DATABASE_URL=$STAGING_DATABASE_URL`, `BETTER_AUTH_SECRET=$STAGING_BETTER_AUTH_SECRET`. (Railway декомісовано — `RAILWAY_ENVIRONMENT` більше не виставляється; `isDeployedProduction()` в [`apps/server/src/env/env.ts`](../../../apps/server/src/env/env.ts) визначає prod через `NODE_ENV === "production"` — цього одного досить для локального production-like підйому.)
 - НЕ підкидай реальний Stripe/Anthropic/Groq ключ — використовуй staging-credentials або mocks.
 - Перед стартом перевір startup-guards: налаштуй `AI_QUOTA_DISABLED=true` і впевнись, що сервер падає; потім зніми флаг.
 

@@ -95,27 +95,29 @@ export function useMonoBudgetForecast(monthKey: string) {
 
 ### 4. MSW handler для тестів
 
-Додай handler у `apps/web/src/test/msw/handlers/<module>.ts`:
+Реально MSW-хендлери лежать **одним файлом** `apps/web/src/test/msw/handlers.ts` (не директорією per-модуль) — там сидить лише спільний fallback-handler (unhandled request → 500, щоб тест падав швидко замість зависання). Per-test handler додається **в самому test-файлі** через `server.use(...)` з `apps/web/src/test/msw/server.ts`:
 
 ```ts
-// apps/web/src/test/msw/handlers/finyk.ts
+// apps/web/src/modules/finyk/hooks/useMonoBudgetForecast.test.ts
 import { http, HttpResponse } from "msw";
+import { server } from "../../../test/msw/server";
 
-export const finykHandlers = [
-  // ...
-  http.get("*/api/finyk/mono/budget-forecast", ({ request }) => {
-    const url = new URL(request.url);
-    const month = url.searchParams.get("month");
-    return HttpResponse.json({
-      monthKey: month,
-      projected: 1234500, // 12 345 ₴ у копійках
-      confidence: 0.82,
-    });
-  }),
-];
+beforeEach(() => {
+  server.use(
+    http.get("*/api/finyk/mono/budget-forecast", ({ request }) => {
+      const url = new URL(request.url);
+      const month = url.searchParams.get("month");
+      return HttpResponse.json({
+        monthKey: month,
+        projected: 1234500, // 12 345 ₴ у копійках
+        confidence: 0.82,
+      });
+    }),
+  );
+});
 ```
 
-Якщо в репо ще нема `apps/web/src/test/msw/handlers/<module>.ts` — глянь сусідній модуль; всі handlers агрегуються у `setupServer()` у `apps/web/src/test/setup.ts` (MSW landed у [#729](https://github.com/Skords-01/Sergeant/pull/729)).
+Додавай новий handler у спільний `handlers.ts` лише якщо його реально споживають кілька test-suite-ів — інакше тримай в `server.use(...)` локально у тесті (див. коментар на початку `handlers.ts`). `setupServer()` живе в `apps/web/src/test/msw/server.ts`, підключається в `apps/web/src/test/setup.ts` (MSW landed у [#729](https://github.com/Skords-01/Sergeant/pull/729)).
 
 ### 5. Тест хука
 
@@ -173,7 +175,7 @@ feat(web): add useMonoBudgetForecast hook
 - [ ] Ключ у `queryKeys.ts` factory (НЕ hardcoded).
 - [ ] Параметри в правильному порядку (від широкого до вузького).
 - [ ] Endpoint у `@sergeant/api-client` з типами, що збігаються із серверним response shape (AGENTS.md rule #3).
-- [ ] MSW handler в `apps/web/src/test/msw/handlers/<module>.ts`.
+- [ ] MSW handler — через `server.use(...)` у test-файлі (або в спільному `apps/web/src/test/msw/handlers.ts`, якщо реально розділяється кількома suite-ами).
 - [ ] Unit test для хука (минaute success path як мінімум).
 - [ ] `pnpm lint` + `pnpm typecheck` — green.
 - [ ] Якщо змінив API shape — оновлено snapshot-тест на сервері.

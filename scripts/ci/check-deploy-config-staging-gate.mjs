@@ -2,9 +2,18 @@
 // scripts/ci/check-deploy-config-staging-gate.mjs
 //
 // Initiative 0011 phase 1 PR 1.3 — staging-verification gate for PRs
-// that change deploy-config files (vercel.json / fly.toml /
-// Dockerfile* / apps/server/build.mjs / Caddyfile).
-// (`railway.toml` was tracked until Railway was decommissioned — ADR-0074.)
+// that change deploy-config files (vercel.json / Dockerfile* /
+// apps/server/build.mjs).
+// (`railway.toml` was tracked until Railway was decommissioned — ADR-0074.
+// `fly.toml` / `Caddyfile` were removed from this matcher 2026-08-08:
+// Fly.io was never actually part of this stack and those files never
+// existed in the repo — see docs/00-start/playbooks/deploy-config-change.md.
+// Coolify app-config (env vars, pre-deploy command, health-check, image
+// tag) lives in the Coolify UI, not in git, so it is structurally
+// invisible to a git-diff-based gate like this one — that surface is
+// verified by a human against the live deploy per playbook §3, not by
+// this script. This gate is NOT a no-op: it still covers the deploy-config
+// files that do exist (vercel.json, Dockerfile.api, build.mjs).)
 //
 // The job fails when:
 //   1. A deploy-config file has non-comment, non-whitespace changes
@@ -31,22 +40,25 @@ import { basename } from "node:path";
  *
  * Dialects:
  *   - `none` — file has no comment syntax (JSON). Any change counts.
- *   - `hash` — `# …` line comments (TOML, Dockerfile).
+ *   - `hash` — `# …` line comments (Dockerfile).
  *   - `js`   — `// …` line comments and `slash-star ... star-slash` block comments (apps/server/build.mjs).
  *
  * Patterns (basename / suffix-match):
  *   - `vercel.json` (anywhere)                  → none
- *   - `fly.toml`                                → hash
  *   - `Dockerfile*` (basename starts with)      → hash
- *   - `Caddyfile` (basename equals)             → hash
  *   - `apps/server/build.mjs` (exact path)      → js
+ *
+ * `fly.toml` and `Caddyfile` were removed from this matcher 2026-08-08 —
+ * Fly.io/Caddy were never part of this stack and neither file has ever
+ * existed in this repo (dead patterns that could never match). Coolify
+ * app-config is UI-managed, not tracked in git, so there is no file for
+ * this diff-based gate to match — that surface stays a human check
+ * against the live deploy (docs/00-start/playbooks/deploy-config-change.md §3).
  */
 export function deployConfigDialect(path) {
   const base = basename(path);
   if (base === "vercel.json") return "none";
-  if (base === "fly.toml") return "hash";
   if (base.startsWith("Dockerfile")) return "hash";
-  if (base === "Caddyfile") return "hash";
   if (path === "apps/server/build.mjs") return "js";
   return null;
 }

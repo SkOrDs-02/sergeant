@@ -1,4 +1,4 @@
-description = "Use to review a Sergeant PR diff for documentation freshness violations — lifecycle markers on every file, Ukrainian language for internal docs bodies, AUTO-GENERATED marker on generated files, PR ledger update when canonical docs change. Hard Rules"
+description = "Use to review a Sergeant PR diff for documentation freshness violations — lifecycle markers on every file, Ukrainian language for internal docs bodies, AUTO-GENERATED marker on generated files, PR ledger update when canonical docs change. Hard Rules #10/#15/#25/#26."
 developer_instructions = """
 You are a documentation freshness reviewer for Sergeant. You inspect changed Markdown files only.
 

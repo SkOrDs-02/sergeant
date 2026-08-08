@@ -343,6 +343,33 @@ test("validatePlaybook accepts `- [x]` checked checkbox in Verification", () => 
   assert.deepEqual(errors, [], errors.join("; "));
 });
 
+test("validatePlaybook exempts `Status: Deprecated` redirect stubs from Trigger/Owner surface/Verification", () => {
+  const deprecatedStub = `# Playbook: Example (retired)
+
+> **Last validated:** 2026-04-30 by @devin-ai. **Next review:** 2026-07-29.
+> **Status:** Deprecated
+
+**Redirect:** see \`canonical.md\`.
+`;
+  const errors = validatePlaybook(deprecatedStub, { today: TODAY });
+  assert.deepEqual(errors, [], errors.join("; "));
+});
+
+test("validatePlaybook still requires H1/freshness/Status on a Deprecated stub", () => {
+  const brokenStub = `> **Last validated:** 2026-04-30 by @devin-ai. **Next review:** 2026-07-29.
+> **Status:** Deprecated
+`;
+  const errors = validatePlaybook(brokenStub, { today: TODAY });
+  assert.ok(
+    errors.some((e) => /missing H1 title/.test(e)),
+    errors.join("; "),
+  );
+  assert.ok(
+    !errors.some((e) => /Trigger|Owner surface|Verification/.test(e)),
+    errors.join("; "),
+  );
+});
+
 test("sliceH2Section returns null when heading is absent", () => {
   assert.equal(
     sliceH2Section(["# H1", "## Other", "body"], /^##\s+Verification/),

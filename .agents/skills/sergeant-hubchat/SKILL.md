@@ -20,6 +20,7 @@ HubChat: tool defs на `apps/server`, executors на `apps/web`, дефінує
 - `apps/server/src/modules/chat/toolDefs/*.ts`
 - `apps/server/src/modules/chat/tools.ts`
 - `apps/web/src/core/lib/hubChatActions.ts`
+- `apps/web/src/core/lib/chatActions/` — фактичні per-domain executor-и (`finykActions`, `fizrukActions`, `nutritionActions`, `routineActions`, `serverActions`, `crossActions`, `query*Actions`)
 - `apps/web/src/core/lib/hubChatActionCards.ts`
 - quick actions або risky-tool маркіровка, коли змінюється user-visible поведінка
 
@@ -37,6 +38,7 @@ HubChat: tool defs на `apps/server`, executors на `apps/web`, дефінує
 - Використай задокументований curl- або local-UI flow для end-to-end виклику tool-а.
 - Перевір, чи tool слід позначити risky або відрендерити з action card.
 - Якщо зміна торкається tool def wording — прогони `pnpm --filter @sergeant/server test -- promptPrefixBudget toolSearch`.
+- `apps/web/src/core/lib/chatActions/toolParity.test.ts` — механічний гейт: кожне ім'я з `toolDefs/` має executor у `chatActions/` і навпаки. Прогони, коли додаєш/перейменовуєш tool.
 
 ## Корисні доки
 
