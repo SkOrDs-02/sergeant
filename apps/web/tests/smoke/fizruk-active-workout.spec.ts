@@ -89,6 +89,12 @@ test("@critical fizruk: start → set → refresh → resume → finish", async 
 
   await page.getByRole("spinbutton", { name: "Вага в кілограмах" }).fill("42");
   await page.getByRole("spinbutton", { name: "Кількість повторень" }).fill("8");
+  // Редизайн 2026-08 (рішення власника 01-A): rest-таймер більше НЕ стартує
+  // з побічного ефекту в `onChange` поля повторень — його запускає явний тап
+  // по ✓ «підхід зроблено». Саме та стара магія й плодила порожні 0×0-сети,
+  // тож цей крок описував поведінку, яку ми свідомо прибрали.
+  await page.getByRole("button", { name: /Підхід 1 — зроблено/ }).click();
+  await expect(page.getByTestId("rest-timer")).toBeVisible();
   // Скоуп саме на пігулку таймера, а не на `role="timer"`: цей role
   // описує лише циферблат із цифрами (кнопки ±15/±30 і «Пропустити» —
   // його сусіди), і ще один `role="timer"` живе в `HeroCard`. Скоуп на
