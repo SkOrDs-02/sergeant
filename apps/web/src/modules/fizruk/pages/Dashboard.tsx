@@ -484,7 +484,7 @@ export function Dashboard({
                       <button
                         key={tpl.id}
                         type="button"
-                        className="w-full text-left flex items-center gap-3 rounded-2xl hover:bg-panelHi p-3 min-h-[52px] transition-colors active:scale-[0.99]"
+                        className="w-full text-left flex items-center gap-3 rounded-2xl hover:bg-panelHi p-3 min-h-[52px] transition-colors active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
                         onClick={() => tryStartPlan(picks, tpl.id)}
                         disabled={!picks.length}
                       >
@@ -545,7 +545,7 @@ export function Dashboard({
         open={planConfirmOpen}
         onClose={closePlanConfirm}
         title="Увага"
-        panelClassName="fizruk-sheet max-w-4xl"
+        panelClassName="fizruk-sheet max-w-md"
         zIndex={100}
         footer={
           <div className="flex gap-2">

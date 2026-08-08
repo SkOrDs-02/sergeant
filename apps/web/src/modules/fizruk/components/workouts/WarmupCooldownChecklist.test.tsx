@@ -42,9 +42,36 @@ describe("WarmupCooldownChecklist", () => {
 
     expect(screen.getByText("1/2")).toBeInTheDocument();
     fireEvent.click(
-      screen.getByRole("button", { name: "Позначити як завершене" }),
+      screen.getByRole("button", { name: "Розтяжка: позначити як завершене" }),
     );
     expect(onToggle).toHaveBeenCalledWith("a");
+  });
+
+  it("gives each toggle a distinct accessible name that includes the item label", () => {
+    render(
+      <WarmupCooldownChecklist
+        title="Заминка"
+        items={[
+          { id: "a", label: "Розтяжка", done: false },
+          { id: "b", label: "Дихання", done: true },
+        ]}
+        onToggle={vi.fn()}
+        onInit={vi.fn()}
+        color={color}
+      />,
+    );
+
+    // Both toggles previously shared the generic "Позначити як
+    // завершене/незавершене" name, so a screen reader could not tell
+    // them apart. Each accessible name must now carry the item label.
+    expect(
+      screen.getByRole("button", { name: "Розтяжка: позначити як завершене" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", {
+        name: "Дихання: позначити як незавершене",
+      }),
+    ).toBeInTheDocument();
   });
 
   it("shows success styling when all items are done", () => {

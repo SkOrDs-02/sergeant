@@ -89,6 +89,25 @@ describe("WorkoutsHome", () => {
     expect(screen.queryByText("Програми")).not.toBeInTheDocument();
   });
 
+  it("exposes the start-paths label via role=group so it isn't a dangling div aria-label", () => {
+    const handlers = baseHandlers();
+    render(
+      <WorkoutsHome
+        activeWorkout={null}
+        activeDuration={null}
+        recentWorkouts={[]}
+        {...handlers}
+      />,
+    );
+
+    // A plain `<div aria-label>` with no role is not exposed to the
+    // accessibility tree — `role="group"` is what makes the name
+    // actually reach assistive tech.
+    expect(
+      screen.getByRole("group", { name: "Способи почати тренування" }),
+    ).toBeInTheDocument();
+  });
+
   it("shows the schedule CTA when onOpenSchedule is provided and calls it on click", () => {
     const handlers = baseHandlers();
     const onOpenSchedule = vi.fn();
@@ -105,6 +124,7 @@ describe("WorkoutsHome", () => {
     const scheduleBtn = screen.getByText("Планування");
     fireEvent.click(scheduleBtn);
     expect(onOpenSchedule).toHaveBeenCalledTimes(1);
+    expect(scheduleBtn.closest("button")).toHaveClass("focus-visible:ring-2");
   });
 
   it("shows the empty-journal placeholder and hides the 'Всі →' link when recentWorkouts is empty", () => {
@@ -141,10 +161,16 @@ describe("WorkoutsHome", () => {
     const allLink = screen.getByText("Всі →");
     fireEvent.click(allLink);
     expect(handlers.onOpenJournal).toHaveBeenCalledTimes(1);
+    // Raw `<button>` — must carry the canonical focus-visible ring, not
+    // rely on the browser default outline.
+    expect(allLink).toHaveClass("focus-visible:ring-2");
+    expect(allLink).toHaveClass("focus-visible:ring-focus/45");
 
     const listButtons = screen.getAllByRole("listitem");
     expect(listButtons).toHaveLength(2);
-    fireEvent.click(listButtons[0]!.querySelector("button")!);
+    const firstRowButton = listButtons[0]!.querySelector("button")!;
+    expect(firstRowButton).toHaveClass("focus-visible:ring-2");
+    fireEvent.click(firstRowButton);
     expect(handlers.onOpenJournal).toHaveBeenCalledTimes(2);
   });
 
@@ -159,8 +185,10 @@ describe("WorkoutsHome", () => {
       />,
     );
 
-    fireEvent.click(screen.getByText("Каталог вправ"));
+    const catalogText = screen.getByText("Каталог вправ");
+    fireEvent.click(catalogText);
     expect(handlers.onOpenCatalog).toHaveBeenCalledTimes(1);
+    expect(catalogText.closest("button")).toHaveClass("focus-visible:ring-2");
 
     expect(screen.queryByText("Програми")).not.toBeInTheDocument();
   });

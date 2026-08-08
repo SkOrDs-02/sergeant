@@ -82,8 +82,8 @@ export function WarmupCooldownChecklist({
               onClick={() => onToggle(item.id)}
               aria-label={
                 item.done
-                  ? "Позначити як незавершене"
-                  : "Позначити як завершене"
+                  ? `${item.label}: позначити як незавершене`
+                  : `${item.label}: позначити як завершене`
               }
             >
               {item.done && (

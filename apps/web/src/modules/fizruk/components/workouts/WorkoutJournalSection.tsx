@@ -152,7 +152,26 @@ function WorkoutRow({
 }
 
 const JOURNAL_ITEM_HEIGHT = 60;
+// A row with a `note` grows a second, italic, line-clamp(2) caption line
+// below the date/badge line (see `WorkoutRow` — `w.note &&
+// <div className="… line-clamp-2 …">`). At the `text-style-caption`
+// floor that adds roughly two more caption lines of height than the
+// bare row, so the flat `JOURNAL_ITEM_HEIGHT` estimate under-counts
+// noted rows and the fixed-height scroll container ends up shorter
+// than its actual content — a nested scrollbar/clipped last row
+// appears even though the intent was "fit all rows, no inner scroll"
+// for short lists. `estimateJournalRowHeight` and the `listHeight`
+// sum below both use this per-row estimate so the container and the
+// virtualizer's initial layout agree.
+const JOURNAL_ITEM_NOTE_EXTRA = 36;
 const MAX_JOURNAL_HEIGHT = JOURNAL_ITEM_HEIGHT * 10;
+
+function estimateJournalRowHeight(w: Workout | undefined): number {
+  if (!w) return JOURNAL_ITEM_HEIGHT;
+  return w.note
+    ? JOURNAL_ITEM_HEIGHT + JOURNAL_ITEM_NOTE_EXTRA
+    : JOURNAL_ITEM_HEIGHT;
+}
 
 export function WorkoutJournalSection({
   activeWorkout,
@@ -201,7 +220,7 @@ export function WorkoutJournalSection({
     [workouts, deleteWorkout, restoreWorkout, toast],
   );
   const listHeight = Math.min(
-    workoutList.length * JOURNAL_ITEM_HEIGHT,
+    workoutList.reduce((sum, w) => sum + estimateJournalRowHeight(w), 0),
     MAX_JOURNAL_HEIGHT,
   );
   // Guard the finish flow against double-click re-entry — the state updates
@@ -517,7 +536,9 @@ export function WorkoutJournalSection({
               <VirtualList
                 items={workoutList}
                 height={listHeight}
-                estimateSize={JOURNAL_ITEM_HEIGHT}
+                estimateSize={(index) =>
+                  estimateJournalRowHeight(workoutList[index])
+                }
                 getItemKey={(_, w) => w.id}
               >
                 {(w) => (

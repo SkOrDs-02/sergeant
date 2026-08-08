@@ -55,7 +55,7 @@ export function WorkoutGroupingControls({
           </button>
           <button
             type="button"
-            className="min-h-[44px] text-xs px-3 py-1.5 rounded-xl border border-fizruk/40 text-fizruk bg-fizruk/10 hover:bg-fizruk/20 transition-colors disabled:opacity-40"
+            className="min-h-[44px] text-xs px-3 py-1.5 rounded-xl border border-fizruk/40 text-fizruk-strong dark:text-fizruk bg-fizruk/10 hover:bg-fizruk/20 transition-colors disabled:opacity-40"
             disabled={disabled}
             onClick={() => onCreateGroup("circuit")}
             title="Обери 2-3 вправи"

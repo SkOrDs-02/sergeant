@@ -14,8 +14,18 @@ describe("FizrukHeader", () => {
     expect(screen.getByTestId("module-header-title")).toHaveTextContent(
       "Фізрук",
     );
-    fireEvent.click(screen.getByRole("button", { name: "Назад до Моє тіло" }));
+    const backBtn = screen.getByRole("button", {
+      name: "Назад до Моє тіло",
+    });
+    fireEvent.click(backBtn);
     expect(onContextualBack).toHaveBeenCalledTimes(1);
+
+    // Canonical focus-visible ring (was `ring-accent/50` with no offset)
+    // and the 44px floor gated to coarse pointers only, not unconditional.
+    expect(backBtn).toHaveClass("focus-visible:ring-focus/45");
+    expect(backBtn).toHaveClass("focus-visible:ring-offset-2");
+    expect(backBtn).toHaveClass("pointer-coarse:min-h-[44px]");
+    expect(backBtn).toHaveClass("pointer-coarse:min-w-[44px]");
   });
 
   it("shows hub back button when onBackToHub is provided", () => {

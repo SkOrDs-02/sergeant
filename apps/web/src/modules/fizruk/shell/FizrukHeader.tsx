@@ -67,9 +67,9 @@ function ContextualBackButton({
       type="button"
       onClick={onClick}
       className={cn(
-        "-ml-1 flex items-center gap-1 rounded-xl px-2 py-2 min-h-[44px] min-w-[44px]",
+        "-ml-1 flex items-center gap-1 rounded-xl px-2 py-2 pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px]",
         "text-style-label text-muted hover:text-text hover:bg-panelHi transition-colors",
-        "focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50",
+        "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
       )}
       aria-label={`Назад до ${label}`}
     >
