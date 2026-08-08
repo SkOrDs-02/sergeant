@@ -3,7 +3,7 @@ import { test, expect } from "@playwright/test";
 import { seedFTUX } from "../utils/seedFTUX";
 
 /**
- * Reduced-motion guard (Hard Rule #17, WCAG 2.3.3) — design-audit F1.
+ * Reduced-motion guard (WCAG 2.3.3) — design-audit F1.
  *
  * Під `prefers-reduced-motion: reduce` глобальний шар у `animations.css`
  * має колапсувати RESPONSE-анімації в opacity-fade (одноразово, 100 мс)

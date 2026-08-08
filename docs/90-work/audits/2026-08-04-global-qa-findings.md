@@ -255,13 +255,13 @@ check constraint "ai_usage_daily_request_count_check" (code 23514)
 - **Клавіатурний reorder сітки модулів захардкоджений на 2 колонки** при 3–4 фактичних (`HubModulesGrid.tsx:37`).
 - **Поля без accessible name** — reminder-time у Рутині (`ReminderPresets.tsx:75`), portion/refine у PhotoAnalyzeCard (`PhotoAnalyzeCard.tsx:276`).
 - **«Скинути» зносить усі 4 КБЖВ-цілі без підтвердження/undo** (`DailyPlanCard.tsx:241`).
-- **Rule #13 порушення на весь модуль Nutrition** — сирі light/dark пари замість токенів (`NutritionHeader.tsx:20`).
+- **Ex-Hard Rule #13, retired ADR-0081 (порушення дизайн-конвенції) на весь модуль Nutrition** — сирі light/dark пари замість токенів (`NutritionHeader.tsx:20`).
 - Стейл-копі у delete-confirm Рутини (`HabitDetailSheet.tsx:552`), кліп лейбла «Прогрес і заміри» без ellipsis (`fizrukNav.tsx:45`), диміс-контрол зі стрілкою «→» (`InsightCard.tsx:227`), невидимий для AT kcal-чарт (`LogCardAnalytics.tsx:97`), дроп-зона фото без фокус-індикатора (`PhotoAnalyzeCard.tsx:125`).
 
 **Low (31), домінантні патерни:**
 
-- **Rule #14**: відсутній/неканонічний focus-visible ring у ~10 місцях (dashboardCards, FirstInsightBanner, SyncStatusBadge, Dashboard Фізрука, RoutineFilterChips, RoutineCalendarPanel, NutritionDashboard…).
-- **Rule #13/#16 і радіуси**: сирі палітрові класи (`routineConstants.ts:52`, `MonthPulseCard.tsx:106`), 10px-текст нижче 12px-floor (`HabitForm.tsx:387`, `MacroRings.tsx:72`), заборонені tier-и радіусів (`DayReportSheet.tsx:132`, `HabitDetailSheet.tsx:511`, `NotificationBell.tsx:123`).
+- **Ex-Hard Rule #14, retired ADR-0081**: відсутній/неканонічний focus-visible ring у ~10 місцях (dashboardCards, FirstInsightBanner, SyncStatusBadge, Dashboard Фізрука, RoutineFilterChips, RoutineCalendarPanel, NutritionDashboard…).
+- **Ex-Hard Rules #13/#16, retired ADR-0081, і радіуси**: сирі палітрові класи (`routineConstants.ts:52`, `MonthPulseCard.tsx:106`), 10px-текст нижче 12px-floor (`HabitForm.tsx:387`, `MacroRings.tsx:72`), заборонені tier-и радіусів (`DayReportSheet.tsx:132`, `HabitDetailSheet.tsx:511`, `NotificationBell.tsx:123`).
 - **Стан**: таймер ActiveWorkoutBanner рахує від mount, не від старту тренування (`ActiveWorkoutBanner.tsx:8`); `<button>` без `type="button"` (`StatusStrip.tsx:59`).
 - **Копі**: стейл empty-state «формою вище» без форми (`ActiveHabitsSection.tsx:87`), грамroot-помилка в sync-error тості без action-prompt (`FinykApp.tsx:125`).
 - Решта — aria-expanded без aria-controls, selection тільки кольором, зламаний порядок заголовків `<h3>` перед `<h1>`, відсутній `min-w-0`.

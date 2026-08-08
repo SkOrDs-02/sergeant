@@ -25,10 +25,6 @@ describe("deployConfigDialect", () => {
     assert.equal(deployConfigDialect("nested/deep/vercel.json"), "none");
   });
 
-  it("matches fly.toml as 'hash'", () => {
-    assert.equal(deployConfigDialect("fly.toml"), "hash");
-  });
-
   it("no longer tracks railway.toml (Railway decommissioned — ADR-0074)", () => {
     assert.equal(deployConfigDialect("railway.toml"), null);
     assert.equal(deployConfigDialect("ops/grafana-alloy/railway.toml"), null);
@@ -40,9 +36,10 @@ describe("deployConfigDialect", () => {
     assert.equal(deployConfigDialect("ops/grafana-alloy/Dockerfile"), "hash");
   });
 
-  it("matches Caddyfile as 'hash'", () => {
-    assert.equal(deployConfigDialect("Caddyfile"), "hash");
-    assert.equal(deployConfigDialect("ops/Caddyfile"), "hash");
+  it("does not track fly.toml / Caddyfile (Fly.io/Caddy never part of this stack, neither file ever existed in this repo)", () => {
+    assert.equal(deployConfigDialect("fly.toml"), null);
+    assert.equal(deployConfigDialect("Caddyfile"), null);
+    assert.equal(deployConfigDialect("ops/Caddyfile"), null);
   });
 
   it("matches apps/server/build.mjs as 'js'", () => {
@@ -98,9 +95,9 @@ describe("isBlankOrCommentLine", () => {
 describe("diffIsCommentOnly", () => {
   it("returns true for a pure-comment hash diff", () => {
     const diff = [
-      "diff --git a/fly.toml b/fly.toml",
-      "--- a/fly.toml",
-      "+++ b/fly.toml",
+      "diff --git a/Dockerfile.api b/Dockerfile.api",
+      "--- a/Dockerfile.api",
+      "+++ b/Dockerfile.api",
       "@@ -1 +1,2 @@",
       "+# new comment line",
       "+# another comment",
@@ -109,7 +106,7 @@ describe("diffIsCommentOnly", () => {
   });
 
   it("returns false when one real-code line slips through", () => {
-    const diff = ["@@", "+# comment", "+kill_signal = 'SIGTERM'"].join("\n");
+    const diff = ["@@", "+# comment", "+RUN echo hi"].join("\n");
     assert.equal(diffIsCommentOnly(diff, "hash"), false);
   });
 
@@ -201,8 +198,8 @@ describe("evaluate", () => {
 
   it("passes when deploy-config diff is comment-only (no label needed)", () => {
     const r = evaluate({
-      changedFiles: ["fly.toml"],
-      getDiff: () => commentDiff("fly.toml"),
+      changedFiles: ["Dockerfile.api"],
+      getDiff: () => commentDiff("Dockerfile.api"),
       labelsJson: "[]",
     });
     assert.equal(r.ok, true);
@@ -223,13 +220,16 @@ describe("evaluate", () => {
 
   it("passes when verified-on-staging label is present", () => {
     const r = evaluate({
-      changedFiles: ["fly.toml", "Dockerfile.api"],
+      changedFiles: ["apps/web/vercel.json", "Dockerfile.api"],
       getDiff: realDiff,
       labelsJson: JSON.stringify([VERIFIED_LABEL, "size/M"]),
     });
     assert.equal(r.ok, true);
     assert.equal(r.label, VERIFIED_LABEL);
-    assert.deepEqual(r.offenders.sort(), ["Dockerfile.api", "fly.toml"]);
+    assert.deepEqual(r.offenders.sort(), [
+      "Dockerfile.api",
+      "apps/web/vercel.json",
+    ]);
   });
 
   it("passes (with emergency flag) when only emergency label is present", () => {
