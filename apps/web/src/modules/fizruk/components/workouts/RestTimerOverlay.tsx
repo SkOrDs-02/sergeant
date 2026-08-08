@@ -72,7 +72,17 @@ export function RestTimerOverlay({
   const urgent = restTimer.remaining <= 10 && restTimer.remaining > 0;
 
   return (
-    <div className="fixed inset-x-0 z-55 px-3 pointer-events-none fizruk-above-tabbar">
+    // AI-NOTE: `data-testid` — навмисний контракт для E2E, а не зайвий
+    // атрибут. Раніше smoke-спек шукав кнопку «Пропустити» ВСЕРЕДИНІ
+    // `getByRole("timer")`; коли той role з правильних a11y-міркувань
+    // переїхав на самі цифри, кнопки лишились поза ним і спек мовчки
+    // почав падати по таймауту. Роль описує, чим елемент є для AT, і
+    // може рухатись від будь-якого a11y-фіксу — тест на неї спиратись
+    // не повинен. Тут стабільний якір: пігулка таймера відпочинку.
+    <div
+      data-testid="rest-timer"
+      className="fixed inset-x-0 z-55 px-3 pointer-events-none fizruk-above-tabbar"
+    >
       <div
         className={
           "pointer-events-auto ml-auto flex w-fit max-w-full items-center gap-1.5 rounded-full border bg-panel px-2 py-1.5 shadow-float fizruk-sheet " +

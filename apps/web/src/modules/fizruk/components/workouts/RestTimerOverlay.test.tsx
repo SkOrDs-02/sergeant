@@ -90,6 +90,28 @@ describe("RestTimerOverlay", () => {
     expect(panel).toHaveClass("border-warning/60");
   });
 
+  // E2E-контракт (2026-08-08). `apps/web/tests/smoke/fizruk-active-workout`
+  // тапає «Пропустити» через `getByTestId("rest-timer")`. До цього спек
+  // скоупив пошук у `getByRole("timer")` — і коли той role з правильних
+  // a11y-міркувань переїхав з усієї пігулки на самі цифри, кнопки
+  // лишились поза ним, а critical-flow лег на кожному PR у репо.
+  //
+  // Юніти того падіння не бачили: вони шукають кнопку без скоупу. Тому
+  // пін саме на ВКЛАДЕНІСТЬ — щоб наступний a11y-фікс ловився тут, за
+  // секунди, а не в CI через шість хвилин Playwright.
+  it("тримає «Пропустити» всередині `data-testid=rest-timer` (контракт smoke-спека)", () => {
+    render(
+      <RestTimerOverlay
+        restTimer={{ remaining: 30, total: 60 }}
+        onCancel={vi.fn()}
+      />,
+    );
+
+    const scope = screen.getByTestId("rest-timer");
+    const skip = screen.getByRole("button", { name: /Пропустити/i });
+    expect(scope).toContainElement(skip);
+  });
+
   // Responsive-pill fix (fixed 2026-08-08, live-measured 390×844): all 6
   // controls (dial+digits, ±30, ±15, skip) overflowed the pill on phone
   // widths, and — because nothing in the dial+digits flex item truncates
