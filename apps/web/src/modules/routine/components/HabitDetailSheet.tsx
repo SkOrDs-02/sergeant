@@ -465,7 +465,7 @@ export function HabitDetailSheet({
                   />
                 )}
                 {pct7 === null && pct30 === null && pct90 === null && (
-                  <span className="text-sm text-muted">—</span>
+                  <span className="text-style-label text-muted">—</span>
                 )}
               </div>
               <p className="text-style-caption text-subtle mt-0.5">

@@ -43,7 +43,7 @@ export function ArchivedHabitsSection({
             key={h.id}
             className="flex flex-col gap-2 border-b border-line/40 pb-3 last:border-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between"
           >
-            <span className="flex items-center gap-1.5 text-sm text-muted">
+            <span className="flex items-center gap-1.5 text-style-label text-muted">
               <HabitGlyph value={h.emoji} size="sm" />
               <span className="truncate">{h.name}</span>
             </span>

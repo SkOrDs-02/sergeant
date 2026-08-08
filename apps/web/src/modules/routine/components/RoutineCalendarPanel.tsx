@@ -445,7 +445,7 @@ export function RoutineCalendarPanel({
                                 : undefined
                           }
                         >
-                          <p className="font-semibold text-text text-base leading-snug">
+                          <p className="font-semibold text-text text-style-body leading-snug">
                             {e.title}
                           </p>
                           <p className="text-style-caption text-subtle mt-0.5">
