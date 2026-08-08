@@ -87,10 +87,25 @@ describe("seedFinyk", () => {
     seedFinyk();
 
     expect(safeReadLS(FINYK_CUSTOM_CATS_KEY)).toEqual([]);
+    // Форма — РЯДКИ, три поля. `MonthlyPlan.income` допускає
+    // `string | number`, тож числа теж пройшли б typecheck, але рядок —
+    // форма, у якій це поле реально живе в проді (сирий
+    // `<input type="number">.value`, який тримає `MonthlyPlanCard`), і
+    // саме таку форму записує дефолт `useFinykStorageSlots`
+    // (`{income:"",expense:"",savings:""}`). Раніше сід писав числа й
+    // повністю пропускав `savings` — типізовано-required поле лишалось
+    // `undefined` у рантаймі. Регресійний тест саме на це: не
+    // «типи збігаються», а «форма буквально та сама, яку відтворює
+    // живий UI».
     expect(safeReadLS(FINYK_MONTHLY_PLAN_KEY)).toEqual({
-      income: 45000,
-      expense: 28000,
+      income: "45000",
+      expense: "28000",
+      savings: "0",
     });
+    const plan = safeReadLS<Record<string, unknown>>(FINYK_MONTHLY_PLAN_KEY)!;
+    expect(typeof plan["income"]).toBe("string");
+    expect(typeof plan["expense"]).toBe("string");
+    expect(typeof plan["savings"]).toBe("string");
   });
 
   it("sets the manual-only gate so Finyk skips the Monobank-login wall", () => {

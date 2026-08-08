@@ -275,7 +275,24 @@ export function seedFinyk(): void {
 
   // Monthly plan so the "бюджет vs факт" cards render with a target
   // instead of the "додай план" empty-state.
-  writeJSON(FINYK_MONTHLY_PLAN_KEY, { income: 45000, expense: 28000 });
+  //
+  // AI-CONTEXT: значення тут — РЯДКИ, а не числа. `MonthlyPlan.income`
+  // допускає `string | number`, тож числа теж пройшли б typecheck, але
+  // рядок — форма, у якій це поле реально живе в проді: `MonthlyPlanCard`
+  // тримає його як сирий `<input type="number">.value` (рядок, поки
+  // редагується), і саме таку форму записує `useFinykStorageSlots`'
+  // дефолт (`{income:"",expense:"",savings:""}`). Писати тут числа —
+  // технічно валідно, але це форма, якої продакшн-шлях НІКОЛИ не
+  // виробляє сам; рядки чесніше моделюють «як це виглядає з живого UI».
+  // `savings` раніше був відсутній узагалі — required-поле типу
+  // лишалось `undefined` у рантаймі, хоч і не ламало нічого (усі читачі
+  // роблять `Number(monthlyPlan?.savings || 0)`), тепер додано явним
+  // нулем для повноти форми.
+  writeJSON(FINYK_MONTHLY_PLAN_KEY, {
+    income: "45000",
+    expense: "28000",
+    savings: "0",
+  });
 
   // Skip the Monobank-login gate so Finyk renders its full UI.
   writeRaw(FINYK_MANUAL_ONLY_KEY, "1");

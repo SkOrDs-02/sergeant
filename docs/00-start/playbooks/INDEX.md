@@ -1,6 +1,6 @@
 # Playbooks — Trigger Index
 
-> **Last validated:** 2026-08-05 by @devin-ai. **Next review:** 2026-11-03.
+> **Last validated:** 2026-08-08 by @devin-ai. **Next review:** 2026-11-06.
 > **Status:** Active
 
 <!-- AUTO-GENERATED FILE. Do not edit by hand. Regenerate via `pnpm docs:gen-playbook-index`. -->
@@ -31,6 +31,7 @@ Lookup table for agents and humans: find the playbook that matches a user reques
 | [`cleanup-dead-code.md`](./cleanup-dead-code.md)                                   | Прибирання dead code                                      | «Видали X і всі його використання» / видалення застарілого модуля, компонента, утиліти або feature flag.                                                                                                                              |
 | [`debug-chat-tool.md`](./debug-chat-tool.md)                                       | Debug HubChat Tool                                        | «Асистент каже що зробив, але нічого не сталось» / «Натиснув кнопку quick action — нема ефекту» / tool call повернувся текстом замість дії / `Невідома дія: …` у відповіді.                                                           |
 | [`declare-incident.md`](./declare-incident.md)                                     | Оголошення інциденту                                      | продакшн-проблема вийшла за межі alert triage і вимагає явної severity, owner-а, шляху мітигації або координації rollback-у.                                                                                                          |
+| [`deep-module-audit.md`](./deep-module-audit.md)                                   | Глибокий аудит модуля (логіка + фло + візуал)             | «Проведи глибоке дослідження модуля X» / «Передивись, чи працюють усі елементи, кнопки, логіка» / «сторінка виглядає щільно і без структури» / наскрізна перевірка одного модуля чи сторінки перед бетою або після скарги власника.   |
 | [`dependency-sweeper.md`](./dependency-sweeper.md)                                 | Dependency Sweeper (періодичний тріаж залежностей)        | запланований періодичний прогін (`/schedule`, cadence 6h–1d) або ручний запит «що застаріло / які CVE / що безпечно бампнути». Це **не** заміна Renovate — див. § «Чим це відрізняється від Renovate».                                |
 | [`deploy-config-change.md`](./deploy-config-change.md)                             | Зміна deploy-конфігу (vercel / Dockerfile / Coolify)      | PR має non-comment зміни у deploy-config файлах (`vercel.json`, `fly.toml`, `Dockerfile*`, `Caddyfile`, `apps/server/build.mjs`) — CI-job `Deploy-config staging gate` падає без verification-лейбла.                                 |
 | [`embedding-provider-migration.md`](./embedding-provider-migration.md)             | Embedding Provider Migration                              | «Перемкнути embedding-провайдер або модель» / «Змінити embedding vendor» / «re-embed ai_memories на нову модель» / виявлено нову embedding-модель з кращою якістю або меншою вартістю.                                                |

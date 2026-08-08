@@ -258,6 +258,22 @@ export interface NutritionDualWriteState {
   readonly pantryEvents?: readonly NutritionPantryEventSnapshot[];
 }
 
+/**
+ * Порожній стартовий стан для diff-ів, що будують операції «з нуля» —
+ * зокрема `demoSeedImport.ts`, який рахує `diffNutritionDualWriteOps(EMPTY, next)`,
+ * бо демо-payload завжди йде в порожню SQLite-БД. Мірор
+ * `EMPTY_FIZRUK_DUAL_WRITE_STATE` (`fizruk/lib/fizrukDualWriteState.ts`).
+ */
+export const EMPTY_NUTRITION_DUAL_WRITE_STATE: NutritionDualWriteState = {
+  meals: [],
+  pantries: [],
+  prefs: null,
+  recipes: [],
+  waterLog: {},
+  shoppingList: null,
+  pantryEvents: [],
+};
+
 // -----------------------------------------------------------------------
 // Diff
 // -----------------------------------------------------------------------
