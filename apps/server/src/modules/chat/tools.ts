@@ -11,9 +11,12 @@
  *
  * INCIDENT 2026-05-16: `applyStrictModeToAll` (PR 830c1342) обгортав весь
  * масив у Anthropic Strict tool use. Anthropic API має жорсткий ліміт
- * **20 strict tools на запит**, а в нас 66 — тож кожен `/api/chat` падав
- * із 400 `Too many strict tools (66)`. Unit-тести верифікували `strict: true`
- * на кожному tool, але не били реальний Anthropic — регресія пройшла повз.
+ * **20 strict tools на запит**, а в масиві на той момент було 66 — тож кожен
+ * `/api/chat` падав із 400 `Too many strict tools (66)`. Unit-тести
+ * верифікували `strict: true` на кожному tool, але не били реальний
+ * Anthropic — регресія пройшла повз. Обидві «66» тут історичні (друга — цитата
+ * помилки API); реєстр відтоді виріс, актуальний розмір — довжина
+ * `ALL_HUBCHAT_TOOL_NAMES` у `@sergeant/shared`.
  *
  * ПОТОЧНА СТРАТЕГІЯ (opt-in ≤20): strict вмикається per-tool через `strict: true`
  * у domain-defs (`toolDefs/*.ts`) лише на high-value write-tools (гроші/вага/
