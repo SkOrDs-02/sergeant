@@ -222,7 +222,7 @@ export function RoutineCalendarMonthGrid({
                         if (e.habitId) onToggleHabit(e.habitId, e.date);
                       }}
                       className={cn(
-                        "shrink-0 rounded-xl border text-xs! font-bold",
+                        "shrink-0 rounded-xl border font-bold",
                         e.completed ? C.done : "border-line text-muted",
                       )}
                       aria-label={
