@@ -104,7 +104,7 @@ export function RecoveryFocusCard({
           size="sm"
           // AI-DANGER: розмір контрола на `Button`, не текст — див.
           // той самий випадок у WorkoutCatalogSection.
-          // eslint-disable-next-line sergeant-design/no-raw-type-size -- розмір КОНТРОЛА: висоту цієї кнопки задає пара `text-xs` + `h-9`, і семантична роль із власним line-height зсунула б її відносно сусіднього заголовка секції.
+
           className="h-9 min-h-[40px] px-3 text-xs shrink-0"
           onClick={() => onOpenAtlas?.()}
           aria-label="Відкрити атлас мʼязів"
@@ -154,14 +154,16 @@ export function RecoveryFocusCard({
             </div>
           )}
 
-          <button
-            type="button"
-            onClick={() => onOpenAtlas?.()}
-            aria-label="Відкрити атлас мʼязів за силуетом"
-            className="block w-full rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
-          >
-            <BodyAtlas data={atlasData} compact />
-          </button>
+          {/*
+            Клікабельний лише силует, і кнопку ставить сам `BodyAtlas`
+            (проп `onOpenFull`). Тут раніше стояла обгортка-`<button>`
+            навколо ВСЬОГО компонента — разом із перемикачем «Спереду/Ззаду»
+            всередині. Кнопка в кнопці: тап по «Ззаду» гортав бік, клік
+            спливав до обгортки, і людину одразу викидало на сторінку
+            Атласа — тобто гортати мініатюру на місці було неможливо
+            (скарга власника 2026-08-08).
+          */}
+          <BodyAtlas data={atlasData} compact onOpenFull={onOpenAtlas} />
 
           <div className="mt-4 pt-3 border-t border-line">
             <SectionHeading as="p" size="xs" variant="fizruk" className="mb-2">

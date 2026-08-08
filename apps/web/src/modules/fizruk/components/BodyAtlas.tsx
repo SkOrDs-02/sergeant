@@ -2,7 +2,13 @@
  * Last validated: 2026-06-12
  * Status: Active
  */
-import { useId, useMemo, useState, type CSSProperties } from "react";
+import {
+  useId,
+  useMemo,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import {
   ATLAS_VIEWBOX,
   BODY_ATLAS_GEOMETRY,
@@ -176,6 +182,33 @@ const STATUS_PILL: Record<RecoveryStatus, { label: string; dot: string }> = {
   red: { label: "потребує відпочинку", dot: "bg-danger" },
 };
 
+/**
+ * Обгортає САМ силует у кнопку «відкрити повний атлас», коли колбек є.
+ * Модульного рівня (а не вкладений у `BodyAtlas`) навмисно: вкладене
+ * оголошення міняло б identity компонента щорендеру й перемонтовувало весь
+ * SVG. Без колбека — прозорий фрагмент, тобто повна сторінка атласа лишається
+ * рівно такою, як була.
+ */
+function SilhouetteTap({
+  onOpenFull,
+  children,
+}: {
+  onOpenFull?: (() => void) | undefined;
+  children: ReactNode;
+}) {
+  if (!onOpenFull) return <>{children}</>;
+  return (
+    <button
+      type="button"
+      onClick={onOpenFull}
+      aria-label={t.openFullLabel}
+      className="block w-full rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+    >
+      {children}
+    </button>
+  );
+}
+
 interface BodyAtlasProps {
   data: AtlasData;
   /**
@@ -183,6 +216,18 @@ interface BodyAtlasProps {
    * only — no mode switch, no leader labels, no detail card.
    */
   compact?: boolean;
+  /**
+   * Compact-only: тап по САМОМУ силуету відкриває повний атлас.
+   *
+   * AI-DANGER: цей колбек мусить лишатись ТУТ, на рівні `<svg>`, а не на
+   * обгортці всього компонента. До 2026-08-08 `RecoveryFocusCard` загортав
+   * увесь `<BodyAtlas compact />` у власний `<button>` — разом із
+   * перемикачем «Спереду/Ззаду». Виходила кнопка всередині кнопки
+   * (невалідний HTML), і тап по «Ззаду» спершу гортав бік, а потім клік
+   * спливав до обгортки й викидав людину на сторінку Атласа — гортати
+   * мініатюру на місці було неможливо (скарга власника 2026-08-08).
+   */
+  onOpenFull?: (() => void) | undefined;
   /** Optional CTA: ask the coach for a session focused on a muscle. */
   onAskCoach?: (muscleLabel: string) => void;
 }
@@ -190,6 +235,7 @@ interface BodyAtlasProps {
 export function BodyAtlas({
   data,
   compact = false,
+  onOpenFull,
   onAskCoach,
 }: BodyAtlasProps) {
   const uid = useId();
@@ -304,149 +350,151 @@ export function BodyAtlas({
             `aria-label` below) *and* exposes interactive descendants — the
             fix is strictly "remove the role", not add a different one.
           */}
-          <svg
-            viewBox={ATLAS_VIEWBOX}
-            className="mx-auto block w-full max-w-[300px]"
-            style={{ "--atlas-neutral": NEUTRAL_VAR } as CSSProperties}
-            aria-label={fillVars(t.imageLabel, {
-              view: side === "front" ? t.viewFront : t.viewBack,
-            })}
-          >
-            <defs>
-              {geometry.muscles.flatMap((m) => {
-                const g = glossStops(fillFor(m.id));
-                return m.polygons.map((_, i) => {
-                  const gid = `${uid}-${side}-${m.id}-${i}`;
-                  return (
-                    <linearGradient
-                      key={gid}
-                      id={gid}
-                      x1="0"
-                      y1="0"
-                      x2="0"
-                      y2="1"
-                    >
-                      <stop offset="0%" stopColor={g.top} />
-                      <stop offset="38%" stopColor={g.mid} />
-                      <stop offset="100%" stopColor={g.bottom} />
-                    </linearGradient>
-                  );
-                });
+          <SilhouetteTap onOpenFull={compact ? onOpenFull : undefined}>
+            <svg
+              viewBox={ATLAS_VIEWBOX}
+              className="mx-auto block w-full max-w-[300px]"
+              style={{ "--atlas-neutral": NEUTRAL_VAR } as CSSProperties}
+              aria-label={fillVars(t.imageLabel, {
+                view: side === "front" ? t.viewFront : t.viewBack,
               })}
-            </defs>
+            >
+              <defs>
+                {geometry.muscles.flatMap((m) => {
+                  const g = glossStops(fillFor(m.id));
+                  return m.polygons.map((_, i) => {
+                    const gid = `${uid}-${side}-${m.id}-${i}`;
+                    return (
+                      <linearGradient
+                        key={gid}
+                        id={gid}
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop offset="0%" stopColor={g.top} />
+                        <stop offset="38%" stopColor={g.mid} />
+                        <stop offset="100%" stopColor={g.bottom} />
+                      </linearGradient>
+                    );
+                  });
+                })}
+              </defs>
 
-            {geometry.neutral.map((s) => (
-              <path
-                key={s.id}
-                d={smoothPath(s.points)}
-                style={{
-                  fill: NEUTRAL_BASE,
-                  stroke: `color-mix(in srgb, ${NEUTRAL_BASE}, rgb(var(--c-fg)) 18%)`,
-                  strokeWidth: 0.4,
-                  strokeLinejoin: "round",
-                }}
-              />
-            ))}
-
-            {geometry.muscles.map((m) => {
-              const isSel = selected === m.id;
-              const edge = glossStops(fillFor(m.id)).stroke;
-              return (
-                <g
-                  key={m.id}
-                  role={compact ? undefined : "button"}
-                  tabIndex={compact ? undefined : 0}
-                  aria-label={
-                    compact ? undefined : BODY_ATLAS_MUSCLE_LABELS_UK[m.id]
-                  }
-                  aria-pressed={compact ? undefined : isSel}
-                  className={cn(
-                    !compact && "cursor-pointer",
-                    // Kill the browser default SVG focus outline (renders as a
-                    // black bounding-box rect on the <g> when clicked); keep a
-                    // tidy keyboard focus-visible cue by overriding the muscle
-                    // edge stroke (driven by --atlas-edge so this can win).
-                    "focus:outline-none",
-                    "[&:focus-visible>path]:[stroke:rgb(var(--c-fg))]",
-                    "[&:focus-visible>path]:[stroke-width:1px]",
-                  )}
-                  onClick={compact ? undefined : () => selectMuscle(m.id)}
-                  onKeyDown={(e) => {
-                    if (compact) return;
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      selectMuscle(m.id);
-                    }
+              {geometry.neutral.map((s) => (
+                <path
+                  key={s.id}
+                  d={smoothPath(s.points)}
+                  style={{
+                    fill: NEUTRAL_BASE,
+                    stroke: `color-mix(in srgb, ${NEUTRAL_BASE}, rgb(var(--c-fg)) 18%)`,
+                    strokeWidth: 0.4,
+                    strokeLinejoin: "round",
                   }}
-                >
-                  <title>{BODY_ATLAS_MUSCLE_LABELS_UK[m.id]}</title>
-                  {m.polygons.map((p, i) => (
-                    <path
-                      key={i}
-                      d={smoothPath(p)}
-                      className="[stroke:var(--atlas-edge)] [stroke-linejoin:round] [stroke-width:0.5]"
-                      style={
-                        {
-                          fill: `url(#${uid}-${side}-${m.id}-${i})`,
-                          "--atlas-edge": edge,
-                        } as CSSProperties
+                />
+              ))}
+
+              {geometry.muscles.map((m) => {
+                const isSel = selected === m.id;
+                const edge = glossStops(fillFor(m.id)).stroke;
+                return (
+                  <g
+                    key={m.id}
+                    role={compact ? undefined : "button"}
+                    tabIndex={compact ? undefined : 0}
+                    aria-label={
+                      compact ? undefined : BODY_ATLAS_MUSCLE_LABELS_UK[m.id]
+                    }
+                    aria-pressed={compact ? undefined : isSel}
+                    className={cn(
+                      !compact && "cursor-pointer",
+                      // Kill the browser default SVG focus outline (renders as a
+                      // black bounding-box rect on the <g> when clicked); keep a
+                      // tidy keyboard focus-visible cue by overriding the muscle
+                      // edge stroke (driven by --atlas-edge so this can win).
+                      "focus:outline-none",
+                      "[&:focus-visible>path]:[stroke:rgb(var(--c-fg))]",
+                      "[&:focus-visible>path]:[stroke-width:1px]",
+                    )}
+                    onClick={compact ? undefined : () => selectMuscle(m.id)}
+                    onKeyDown={(e) => {
+                      if (compact) return;
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        selectMuscle(m.id);
                       }
-                    />
-                  ))}
-                  {isSel &&
-                    m.polygons.map((p, i) => (
+                    }}
+                  >
+                    <title>{BODY_ATLAS_MUSCLE_LABELS_UK[m.id]}</title>
+                    {m.polygons.map((p, i) => (
                       <path
-                        key={`sel-${i}`}
+                        key={i}
                         d={smoothPath(p)}
-                        style={{
-                          fill: "none",
-                          stroke: SELECTED_STROKE,
-                          strokeWidth: 1,
-                          strokeLinejoin: "round",
-                        }}
+                        className="[stroke:var(--atlas-edge)] [stroke-linejoin:round] [stroke-width:0.5]"
+                        style={
+                          {
+                            fill: `url(#${uid}-${side}-${m.id}-${i})`,
+                            "--atlas-edge": edge,
+                          } as CSSProperties
+                        }
                       />
                     ))}
-                </g>
-              );
-            })}
-
-            {!compact &&
-              geometry.labels.map((slot) => {
-                const c = centroids[slot.id];
-                if (!c) return null;
-                const isL = slot.column === "L";
-                const tx = isL ? -30 : 130;
-                const elbow = isL ? -6 : 106;
-                const isSel = selected === slot.id;
-                return (
-                  <g key={slot.id} aria-hidden="true">
-                    <polyline
-                      points={`${isL ? tx + 22 : tx - 22} ${slot.y} ${elbow} ${slot.y} ${c[0]} ${c[1]}`}
-                      className="fill-none stroke-line"
-                      strokeWidth={0.4}
-                    />
-                    <circle
-                      cx={c[0]}
-                      cy={c[1]}
-                      r={0.9}
-                      className="fill-subtle"
-                    />
-                    <text
-                      x={tx}
-                      y={slot.y + 2}
-                      textAnchor={isL ? "start" : "end"}
-                      fontSize={7.6}
-                      className={cn(
-                        "select-none",
-                        isSel ? "fill-text font-medium" : "fill-subtle",
-                      )}
-                    >
-                      {BODY_ATLAS_MUSCLE_LABELS_UK[slot.id]}
-                    </text>
+                    {isSel &&
+                      m.polygons.map((p, i) => (
+                        <path
+                          key={`sel-${i}`}
+                          d={smoothPath(p)}
+                          style={{
+                            fill: "none",
+                            stroke: SELECTED_STROKE,
+                            strokeWidth: 1,
+                            strokeLinejoin: "round",
+                          }}
+                        />
+                      ))}
                   </g>
                 );
               })}
-          </svg>
+
+              {!compact &&
+                geometry.labels.map((slot) => {
+                  const c = centroids[slot.id];
+                  if (!c) return null;
+                  const isL = slot.column === "L";
+                  const tx = isL ? -30 : 130;
+                  const elbow = isL ? -6 : 106;
+                  const isSel = selected === slot.id;
+                  return (
+                    <g key={slot.id} aria-hidden="true">
+                      <polyline
+                        points={`${isL ? tx + 22 : tx - 22} ${slot.y} ${elbow} ${slot.y} ${c[0]} ${c[1]}`}
+                        className="fill-none stroke-line"
+                        strokeWidth={0.4}
+                      />
+                      <circle
+                        cx={c[0]}
+                        cy={c[1]}
+                        r={0.9}
+                        className="fill-subtle"
+                      />
+                      <text
+                        x={tx}
+                        y={slot.y + 2}
+                        textAnchor={isL ? "start" : "end"}
+                        fontSize={7.6}
+                        className={cn(
+                          "select-none",
+                          isSel ? "fill-text font-medium" : "fill-subtle",
+                        )}
+                      >
+                        {BODY_ATLAS_MUSCLE_LABELS_UK[slot.id]}
+                      </text>
+                    </g>
+                  );
+                })}
+            </svg>
+          </SilhouetteTap>
         </div>
 
         {!compact && (

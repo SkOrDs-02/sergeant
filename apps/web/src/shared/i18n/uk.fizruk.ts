@@ -298,6 +298,10 @@ export const fizrukPageMessages = {
     // (`role="button"` on the silhouette has no native selected-state
     // announcement, so this carries it to screen readers explicitly).
     selectedPrefix: "Обрано:",
+    // Мініатюра на «Моє тіло»: клікабельний лише силует. Перемикач боку
+    // лишається поза цією кнопкою — інакше гортання мініатюри на місці
+    // неможливе (див. AI-DANGER біля `onOpenFull` у `BodyAtlas.tsx`).
+    openFullLabel: "Відкрити атлас мʼязів за силуетом",
   },
 
   // Body journal (`pages/Body/JournalSection.tsx`, `JournalEntryCard.tsx`).
@@ -333,6 +337,9 @@ export const fizrukPageMessages = {
       "Нічого не позначено. Познач зону — і я перестану радити вправи, які її навантажують.",
     activeListLabel: "Активні позначки болю",
     markCta: "Позначити зону",
+    // Атлас лише показує позначки; ставлять їх на «Моє тіло» — єдиному
+    // домі цієї дії після зняття дубль-пікера 2026-08-08.
+    markOnBodyCta: "Позначити на «Моє тіло»",
     collapseCta: "Згорнути",
     clearCta: "Зняти",
     submit: "Позначити біль",
