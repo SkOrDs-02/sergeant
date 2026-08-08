@@ -190,7 +190,7 @@ export function RecurringSuggestions({
                   </Button>
                   <button
                     onClick={() => onDismiss?.(c.key)}
-                    className="text-xs text-muted hover:text-text transition-colors px-2 py-1"
+                    className="text-style-caption text-muted hover:text-text transition-colors px-2 py-1"
                   >
                     Приховати
                   </button>

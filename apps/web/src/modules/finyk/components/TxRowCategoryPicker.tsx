@@ -113,7 +113,7 @@ export function TxRowCategoryPicker({
               onClose();
             }}
             className={cn(
-              "text-xs px-3 py-2 rounded-xl border transition-colors min-h-[34px]",
+              "text-style-caption px-3 py-2 rounded-xl border transition-colors min-h-[34px]",
               c.id === currentCatId
                 ? "bg-text text-bg border-text"
                 : "border-line text-subtle hover:border-muted hover:text-text",
@@ -129,7 +129,7 @@ export function TxRowCategoryPicker({
               trackTxCategorized(null);
               onClose();
             }}
-            className="text-xs px-3 py-2 rounded-xl border border-dashed border-danger/40 text-danger-strong dark:text-danger hover:text-danger transition-colors"
+            className="text-style-caption px-3 py-2 rounded-xl border border-dashed border-danger/40 text-danger-strong dark:text-danger hover:text-danger transition-colors"
           >
             <Icon name="close" size={13} aria-hidden /> Скинути
           </button>

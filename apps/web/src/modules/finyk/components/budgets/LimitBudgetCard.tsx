@@ -235,7 +235,7 @@ function LimitBudgetCardComponent({
                           <button
                             type="button"
                             onClick={onDismissAdvice}
-                            className="px-3 text-xs text-muted hover:text-text border-l border-line transition-colors"
+                            className="px-3 text-style-caption text-muted hover:text-text border-l border-line transition-colors"
                           >
                             Зрозуміло
                           </button>

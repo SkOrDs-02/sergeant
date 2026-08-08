@@ -420,7 +420,9 @@ export function Transactions({
         }
         trailing={
           filters.activeLoading && filters.activeTx.length > 0 ? (
-            <p className="text-center text-xs text-subtle py-2">⟳ оновлення…</p>
+            <p className="text-center text-style-caption text-subtle py-2">
+              ⟳ оновлення…
+            </p>
           ) : null
         }
         footer={

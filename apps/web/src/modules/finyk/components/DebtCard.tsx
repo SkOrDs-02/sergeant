@@ -105,7 +105,7 @@ function DebtCardComponent({
             <button
               type="button"
               onClick={onDelete}
-              className="text-subtle hover:text-danger text-sm transition-colors"
+              className="text-subtle hover:text-danger transition-colors"
               aria-label={`Видалити ${name}`}
             >
               <Icon name="trash" size={16} aria-hidden />
@@ -146,7 +146,7 @@ function DebtCardComponent({
       {onLink && (
         <button
           onClick={onLink}
-          className="mt-3 w-full text-xs text-muted border border-dashed border-line rounded-xl py-2 hover:border-primary hover:text-primary transition-colors"
+          className="mt-3 w-full text-style-caption text-muted border border-dashed border-line rounded-xl py-2 hover:border-primary hover:text-primary transition-colors"
         >
           <Icon name="link" size={14} aria-hidden /> Привʼязати транзакції (
           {linkedCount || 0})

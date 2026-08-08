@@ -82,7 +82,7 @@ export function AssetsAssetsSection({ state }: { state: State }) {
         </button>
         <div hidden={!receivablesExpanded} className="space-y-2">
           {receivables.length === 0 && !showRecvForm && (
-            <p className="text-xs text-muted px-1">
+            <p className="text-style-caption text-muted px-1">
               Зберігайте облік боргів і дат повернення — прив&apos;язуйте вхідні
               транзакції, щоб автоматично рахувати повернене.
             </p>
@@ -203,7 +203,7 @@ export function AssetsAssetsSection({ state }: { state: State }) {
         <div hidden={!assetsExpanded} className="space-y-2">
           {manualAssets.length === 0 && !showAssetForm && (
             <div className="space-y-2">
-              <p className="text-xs text-muted px-1">
+              <p className="text-style-caption text-muted px-1">
                 Готівка, заощадження, депозит, інвестиції, нерухомість, авто —
                 усе, що не на картці Monobank.
               </p>
@@ -271,7 +271,7 @@ export function AssetsAssetsSection({ state }: { state: State }) {
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <span
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-panelHi text-xl leading-none shrink-0"
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-panelHi leading-none shrink-0"
                     aria-hidden
                   >
                     <Icon name="wallet" size={18} className="text-muted" />
@@ -313,7 +313,7 @@ export function AssetsAssetsSection({ state }: { state: State }) {
                       });
                       setShowAssetForm(true);
                     }}
-                    className="text-subtle hover:text-text text-sm transition-colors"
+                    className="text-subtle hover:text-text transition-colors"
                     aria-label={`Редагувати актив ${a.name}`}
                   >
                     <Icon name="edit" size={16} aria-hidden />
@@ -336,7 +336,7 @@ export function AssetsAssetsSection({ state }: { state: State }) {
                           }),
                       });
                     }}
-                    className="text-subtle hover:text-danger text-sm transition-colors"
+                    className="text-subtle hover:text-danger transition-colors"
                     aria-label={`Видалити актив ${a.name}`}
                   >
                     <Icon name="trash" size={16} aria-hidden />

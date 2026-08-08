@@ -90,7 +90,7 @@ export function AssetsSubscriptionsSection({ state }: { state: State }) {
         <button
           type="button"
           onClick={() => openHubModule("routine", "")}
-          className="w-full text-xs text-muted hover:text-text transition-colors pb-2 flex items-center justify-center gap-1.5"
+          className="w-full text-style-caption text-muted hover:text-text transition-colors pb-2 flex items-center justify-center gap-1.5"
         >
           <Icon name="calendar" size={14} aria-hidden />
           <span>Побачити у календарі Рутини</span>

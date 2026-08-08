@@ -231,7 +231,7 @@ export function Overview({
             )}
 
             {d.loadingTx && (
-              <p className="text-center text-xs text-subtle py-4">
+              <p className="text-center text-style-caption text-subtle py-4">
                 {messages.status.updating}
               </p>
             )}

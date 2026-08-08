@@ -157,7 +157,7 @@ export function TxRowSplitEditor({
               onClick={() =>
                 setDraftSplits((prev) => prev.filter((_, j) => j !== i))
               }
-              className="text-danger-strong dark:text-danger hover:text-danger text-sm shrink-0"
+              className="text-danger-strong dark:text-danger hover:text-danger shrink-0"
             >
               <Icon name="trash" size={14} aria-hidden />
             </button>
@@ -166,7 +166,7 @@ export function TxRowSplitEditor({
       ))}
       <div
         className={cn(
-          "text-xs px-1 tabular-nums",
+          "text-style-caption px-1 tabular-nums",
           Math.abs(remaining) < 0.01
             ? "text-success-strong dark:text-success"
             : "text-warning-strong dark:text-warning",
@@ -208,7 +208,7 @@ export function TxRowSplitEditor({
         {existingSplitsCount > 0 && (
           <button
             onClick={onDelete}
-            className="text-xs py-2 px-3 rounded-xl border border-danger/30 text-danger-strong dark:text-danger hover:text-danger transition-colors"
+            className="text-style-caption py-2 px-3 rounded-xl border border-danger/30 text-danger-strong dark:text-danger hover:text-danger transition-colors"
           >
             Видалити
           </button>
@@ -217,7 +217,7 @@ export function TxRowSplitEditor({
           type="button"
           aria-label="Закрити редактор розподілу"
           onClick={onClose}
-          className="text-xs py-2 px-3 rounded-xl border border-line text-subtle hover:text-text transition-colors"
+          className="py-2 px-3 rounded-xl border border-line text-subtle hover:text-text transition-colors"
         >
           <Icon name="close" size={14} aria-hidden />
         </button>

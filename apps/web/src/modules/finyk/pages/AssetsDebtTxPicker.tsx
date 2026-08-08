@@ -225,7 +225,7 @@ export function AssetsDebtTxPicker({
         <button
           type="button"
           onClick={onBack}
-          className="inline-flex items-center gap-1 text-sm text-muted hover:text-text transition-colors"
+          className="inline-flex items-center gap-1 text-style-label text-muted hover:text-text transition-colors"
         >
           <Icon name="chevron-left" size="sm" />
           {copy.back}

@@ -110,9 +110,16 @@ export function TransactionsBatchToolbar({
               onClick={() => onApplyCategory(cat.id)}
               className="w-full text-left flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-panelHi transition-colors min-h-[48px]"
             >
-              <span className="text-lg">
-                {(cat as { emoji?: string }).emoji}
-              </span>
+              {/*
+                Тут стояв слот під емодзі категорії — `<span className="text-lg">`
+                із `(cat as { emoji?: string }).emoji`. Він не міг нічого
+                показати: `mergeExpenseCategoryDefinitions` збирає результат
+                із власних літералів `{ id, label, mccs, keywords }`
+                (finyk-domain/constants.ts), тож поле `emoji` втрачається на
+                мерджі, а каст приховував це від типів. Тобто рендерився
+                порожній flex-елемент, який через `gap-3` давав кожному рядку
+                12px відступу зліва ні за що.
+              */}
               <span className="text-style-label text-text">{cat.label}</span>
             </button>
           ))}

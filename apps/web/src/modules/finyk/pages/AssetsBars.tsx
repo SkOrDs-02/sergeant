@@ -108,7 +108,7 @@ export function QuickActionButton({
       type="button"
       onClick={onClick}
       className={cn(
-        "group flex flex-col items-center justify-center gap-1.5 py-3 px-2 text-xs bg-panelHi border border-line rounded-2xl shadow-soft transition-[transform,box-shadow,border-color] hover:shadow-card hover:-translate-y-px active:translate-y-0",
+        "group flex flex-col items-center justify-center gap-1.5 py-3 px-2 text-style-caption bg-panelHi border border-line rounded-2xl shadow-soft transition-[transform,box-shadow,border-color] hover:shadow-card hover:-translate-y-px active:translate-y-0",
         QUICK_TONE_BORDER[tone],
       )}
     >
@@ -180,7 +180,7 @@ export function SectionBar({
           )}
         </div>
       </div>
-      <span className="inline-flex items-center gap-1 text-xs text-muted shrink-0 ml-2 group-hover:text-text transition-colors">
+      <span className="inline-flex items-center gap-1 text-style-caption text-muted shrink-0 ml-2 group-hover:text-text transition-colors">
         <span>{open ? "Згорнути" : "Розкласти"}</span>
         <Icon
           name={open ? "chevron-up" : "chevron-down"}

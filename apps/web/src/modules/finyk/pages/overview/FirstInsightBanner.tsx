@@ -23,7 +23,7 @@ const FirstInsightBannerImpl = function FirstInsightBanner({
   return (
     <div className="rounded-2xl border border-finyk/25 bg-finyk/10 p-4 flex items-start gap-3">
       <div
-        className="w-10 h-10 shrink-0 rounded-2xl bg-finyk/15 flex items-center justify-center text-xl"
+        className="w-10 h-10 shrink-0 rounded-2xl bg-finyk/15 flex items-center justify-center"
         aria-hidden
       >
         <Icon name="lightbulb" size={20} aria-hidden />
@@ -46,7 +46,7 @@ const FirstInsightBannerImpl = function FirstInsightBanner({
           <button
             type="button"
             onClick={onDismiss}
-            className="px-3 py-1.5 rounded-xl text-xs text-muted hover:text-text hover:bg-panelHi transition"
+            className="px-3 py-1.5 rounded-xl text-style-caption text-muted hover:text-text hover:bg-panelHi transition"
           >
             Пізніше
           </button>
