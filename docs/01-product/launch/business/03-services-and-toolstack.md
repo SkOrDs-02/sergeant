@@ -1,6 +1,6 @@
 # 03. Сервіси та тулстек
 
-> **Last touched:** 2026-07-29 by @Skords-01. **Next review:** 2026-10-27.
+> **Last touched:** 2026-08-08 by @claude. **Next review:** 2026-11-06.
 > **Status:** Active
 
 > Повний аудит зовнішніх сервісів, інфраструктури, dev-інструментів: що є, що додати, що змінити.
@@ -439,6 +439,10 @@ GOOGLE_PLAY_SERVICE_ACCOUNT=     # JSON credentials для EAS Submit
 ---
 
 ## 6. Прогноз місячних витрат
+
+> **Каталог тарифів вище — чинний; прогноз нижче — ні.** Розрахунок
+> «breakeven ~30 Pro subs at 99 UAH/mo» стоїть на старій ціні, не має рядка ЄСВ
+> (₴1 902/міс) і не рахує Free-трафік. Чинні числа — [07 — Юніт-економіка](./07-unit-economics.md).
 
 ```
                     Pre-launch   Launch       Growth       Scale

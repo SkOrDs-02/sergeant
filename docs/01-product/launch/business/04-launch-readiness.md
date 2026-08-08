@@ -1,6 +1,6 @@
 # 04. Launch readiness: legal, ops, edge cases, метрики, чеклист
 
-> **Last touched:** 2026-08-06 by @Skords-01. **Next review:** 2026-11-04.
+> **Last touched:** 2026-08-08 by @claude. **Next review:** 2026-11-06.
 > **Status:** Active
 
 > **Update 2026-07-10:** billing UI (`PaywallModal`, `PricingPage`, `PlanSection`, `usePlan()`) і server routes (`/api/billing/*`, `stripeWebhook.ts`) shipped. Edge-case таблиця §2 оновлена: «scaffold shipped» vs «prod rollout pending». Pre-launch checklist §7 розділяє code shipped / prod config.
@@ -501,6 +501,11 @@ What was lucky:
 > [01 § Activation](./01-monetization-and-pricing.md#7-activation-і-конверсія-у-платників).
 
 ### 4.3 Unit Economics Target
+
+> **Superseded 2026-08-08 → [07 — Юніт-економіка](./07-unit-economics.md).** Таблиця
+> нижче лишається як перелік **цільових** значень, але її розрахунок беззбитковості
+> («~12 Pro-підписників») не враховує ні ЄСВ ₴1 902/міс, ні вартість
+> Free-користувачів, ні вартість reverse trial. Чинні числа — у 07.
 
 | Метрика                     | Формула                                 | Target              | Де вимірюється                        | Benchmark             |
 | --------------------------- | --------------------------------------- | ------------------- | ------------------------------------- | --------------------- |

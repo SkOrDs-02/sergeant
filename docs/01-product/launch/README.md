@@ -1,6 +1,6 @@
 # Sergeant — Launch & Monetization Docs
 
-> **Last touched:** 2026-08-06 by @Skords-01. **Next review:** 2026-11-04.
+> **Last touched:** 2026-08-08 by @claude. **Next review:** 2026-11-06.
 > **Status:** Active
 
 > **Канон ціни (2026-07-10):** [ADR-0068](../../04-governance/adr/0068-pricing-v4-uah-reverse-trial.md) — **₴199/міс / ₴1490/рік**, reverse trial 7 днів; Free AI **5 msg/day** ([ADR-0085](../../04-governance/adr/0085-free-ai-quota-five-per-day.md), анонім — 1). У старих блоках нижче ₴99/₴799 і «15 msg/day» — historical context.
@@ -16,7 +16,7 @@ docs/01-product/launch/
 ├── README.md  ← ви тут
 ├── email-verification-sweep.md          living sweep tracker
 ├── business/                            бізнес-стратегія + операції (нумерована послідовність milestone-ів)
-│   ├── 01-monetization-and-pricing.md … 06-monetization-architecture.md
+│   ├── 01-monetization-and-pricing.md … 07-unit-economics.md
 ├── tech/                                living product-surface roadmap
 │   └── ai-memory-activation.md            ADR-0028 rollout: pgvector, Voyage, recall flows
 ├── product-os/                          FTUX delivery (product-OS layer)
@@ -45,6 +45,7 @@ docs/01-product/launch/
 | Як зростати після запуску (SEO, referrals)?                       | [02 — Growth](./business/02-go-to-market.md#5-фаза-3--growth-ongoing)                                |
 | Який стек зараз і що додати?                                      | [03 — Стек](./business/03-services-and-toolstack.md#1-поточний-стек-що-вже-є)                        |
 | Скільки коштуватиме інфраструктура?                               | [03 — Бюджет](./business/03-services-and-toolstack.md#9-повна-monthly-cost-projection)               |
+| Скільки коштує один користувач і коли сходиться економіка?        | [07 — Юніт-економіка](./business/07-unit-economics.md) _(чинні числа; 01 §9 — історія)_              |
 | Коли і на що мігрувати (managed vs self-host)?                    | [architecture/hosting-evolution](../../02-engineering/architecture/hosting-evolution.md)             |
 | Що треба юридично перед запуском?                                 | [04 — Legal](./business/04-launch-readiness.md#1-юридичне-та-compliance)                             |
 | Чеклист «все готово до запуску»?                                  | [04 — Чеклист](./business/04-launch-readiness.md#7-pre-launch-чеклист)                               |
