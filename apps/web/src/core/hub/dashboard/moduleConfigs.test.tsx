@@ -41,7 +41,9 @@ describe("MODULE_CONFIGS", () => {
     });
     expect(MODULE_CONFIGS.fizruk.getPreview()).toEqual({
       main: "3 трен.",
-      sub: "Серія: 5 днів",
+      // Тижні, не дні: домен Фізрука рахує `computeWeeklyStreakWeeks`
+      // (аудит L-8, 2026-08-07).
+      sub: "Серія: 5 тижнів",
     });
     expect(MODULE_CONFIGS.routine.getPreview()).toEqual({
       main: "4/5",

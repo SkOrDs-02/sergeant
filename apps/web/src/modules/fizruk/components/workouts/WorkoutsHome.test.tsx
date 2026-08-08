@@ -250,6 +250,26 @@ describe("RecentWorkoutSummary", () => {
     expect(screen.getByText("порожнє тренування")).toBeInTheDocument();
   });
 
+  // Найчастіший стан картки — один підхід — і саме він читався найгірше:
+  // «1 сетів». Одиниця тут перевіряється окремо від множини, бо ламається
+  // саме межа one / few (аудит L-10, 2026-08-07).
+  it("відмінює одиничний підхід як «1 сет», не «1 сетів»", () => {
+    render(
+      <RecentWorkoutSummary
+        workout={{
+          id: "w1",
+          startedAt: "2026-07-01T10:00:00.000Z",
+          endedAt: "2026-07-01T10:20:00.000Z",
+          items: [{ type: "strength", sets: [{ weightKg: 50, reps: 8 }] }],
+        }}
+      />,
+    );
+    // Повний рядок, а не регекс із `\b`: у JS межа слова визначена через
+    // ASCII-\w, тож між «т» і пробілом її немає, і /1 сет\b/ не збігається
+    // з кирилицею взагалі.
+    expect(screen.getByText("1 вправа · 1 сет · 20 хв")).toBeInTheDocument();
+  });
+
   it("omits the Чернетка badge and builds a joined subtitle for a finished workout with items/sets/duration", () => {
     const started = "2026-07-01T10:00:00.000Z";
     const ended = "2026-07-01T10:45:00.000Z"; // 45 min later
@@ -273,7 +293,10 @@ describe("RecentWorkoutSummary", () => {
     );
     expect(screen.queryByText("Чернетка")).not.toBeInTheDocument();
     expect(screen.getByText(/1 вправ/)).toBeInTheDocument();
-    expect(screen.getByText(/2 сетів/)).toBeInTheDocument();
+    // «2 сети», не «2 сетів» — суфікс відмінюється через `pluralSets`
+    // (аудит L-10, 2026-08-07). Раніше тут стояв зашитий рядок «сетів»,
+    // і картка після одного підходу писала «1 сетів».
+    expect(screen.getByText(/2 сети/)).toBeInTheDocument();
     expect(screen.getByText(/45 хв/)).toBeInTheDocument();
   });
 });

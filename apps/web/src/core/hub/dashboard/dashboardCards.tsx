@@ -142,16 +142,15 @@ export function StreakIndicator() {
         STORAGE_KEYS.ROUTINE_QUICK_STATS,
         null,
       ) || readLegacy("routine_quick_stats");
-    const fizruk =
-      safeReadLS<Record<string, unknown>>(
-        STORAGE_KEYS.FIZRUK_QUICK_STATS,
-        null,
-      ) || readLegacy("fizruk_quick_stats");
 
-    const streaks = [
-      { days: Number(routine?.["streak"]) || 0 },
-      { days: Number(fizruk?.["streak"]) || 0 },
-    ]
+    // AI-DANGER: тільки ДЕННІ стріки. Фізрук навмисно НЕ в цьому списку —
+    // його `streak` перейшов на тижні (`computeWeeklyStreakWeeks`), а і цей
+    // бейдж, і `streak_milestone_reached` нижче міряють дні. Поки Фізрук
+    // тут був, `Math.max` над різними одиницями брав 5 тижнів як «більше»
+    // за 5 днів, і в аналітику летіло `days: 7` за сім ТИЖНІВ підряд —
+    // мовчазне псування воронки (аудит L-8, 2026-08-07). Додавати сюди
+    // модуль можна лише тоді, коли його стрік рахується в днях.
+    const streaks = [{ days: Number(routine?.["streak"]) || 0 }]
       .filter((s) => s.days >= 2)
       .sort((a, b) => b.days - a.days);
 

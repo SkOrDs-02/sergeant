@@ -89,8 +89,17 @@ describe("selectModulePreview — fizruk", () => {
     const raw = JSON.stringify({ weekWorkouts: 3, streak: 5 });
     expect(selectModulePreview("fizruk", raw)).toEqual({
       main: "3 трен.",
-      sub: "Серія: 5 днів",
+      sub: "Серія: 5 тижнів",
     });
+  });
+
+  // Одиниця стріка мусить збігатися з тією, яку рахує домен Фізрука
+  // (`computeWeeklyStreakWeeks` → ТИЖНІ). Поки тут стояло «днів», хаб і
+  // модуль на одному екрані шляху користувача показували різні речі:
+  // «Серія: 5 днів» проти «0 тижнів» (аудит L-8, 2026-08-07).
+  it("підписує серію тижнями — домен рахує тижні, не дні", () => {
+    const raw = JSON.stringify({ weekWorkouts: 1, streak: 5 });
+    expect(selectModulePreview("fizruk", raw).sub).not.toContain("дн");
   });
 
   it("renders zeros as null", () => {
@@ -105,11 +114,11 @@ describe("selectModulePreview — fizruk", () => {
   // (browser QA 2026-08-05, F-004): число підставлялося у зашитий множинний
   // суфікс. Три форми — три перевірки, бо саме межі 1 / 2-4 / 5+ і ламаються.
   it.each([
-    [1, "Серія: 1 день"],
-    [2, "Серія: 2 дні"],
-    [5, "Серія: 5 днів"],
-    [11, "Серія: 11 днів"],
-    [21, "Серія: 21 день"],
+    [1, "Серія: 1 тиждень"],
+    [2, "Серія: 2 тижні"],
+    [5, "Серія: 5 тижнів"],
+    [11, "Серія: 11 тижнів"],
+    [21, "Серія: 21 тиждень"],
   ])("declines the streak suffix for %i", (streak, expected) => {
     const raw = JSON.stringify({ weekWorkouts: 1, streak });
     expect(selectModulePreview("fizruk", raw).sub).toBe(expected);
