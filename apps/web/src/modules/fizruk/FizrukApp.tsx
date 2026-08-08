@@ -136,13 +136,16 @@ export default function FizrukApp({
   // (Атлас → «Моє тіло», Вправа → «Тренування», …).
   const activeWorkoutId = useActiveFizrukWorkout();
   const handleFabClick = () => {
-    navigate(activeWorkoutId ? `workout/${activeWorkoutId}` : "workouts");
+    if (activeWorkoutId) navigate(`workout/${activeWorkoutId}`);
   };
-  // FAB (fab-and-manual-income spec §5): «Почати тренування» коли немає
-  // активної сесії; «Продовжити» + перехід одразу в log-режим, коли є —
-  // canonical selector, той самий, що й Dashboard hero-картка. Hidden only
-  // on the two pages that already manage workouts themselves.
-  const showFab = page !== "workouts" && page !== "workout";
+  // FAB лише в режимі «Продовжити» (рішення власника 2026-08-08): стан
+  // «Почати» дублював таб «Тренування» в нижній навігації та hero-картку
+  // Дашборда, тож прибраний. Коли є активна сесія — один тап з будь-якої
+  // сторінки модуля веде прямо в її лог (canonical selector, той самий,
+  // що й Dashboard hero-картка). Hidden on the two pages that already
+  // manage workouts themselves.
+  const showFab =
+    Boolean(activeWorkoutId) && page !== "workouts" && page !== "workout";
 
   // Contextual back-button targets for the three sub-pages that show
   // a `← <label>` arrow instead of the module's "back to hub" arrow.
@@ -254,13 +257,9 @@ export default function FizrukApp({
         {showFab && (
           <FloatingActionButton
             variant="v2-fizruk"
-            icon={activeWorkoutId ? "play" : "plus"}
+            icon="play"
             onClick={handleFabClick}
-            aria-label={
-              activeWorkoutId
-                ? messages.fizruk.resumeWorkoutFab
-                : messages.fizruk.startWorkoutFab
-            }
+            aria-label={messages.fizruk.resumeWorkoutFab}
           />
         )}
       </ModuleShell>
