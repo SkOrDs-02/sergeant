@@ -62,8 +62,8 @@ export function Programs({
             </h1>
             <p className="text-style-caption text-subtle mt-0.5">
               {activeProgram
-                ? `Активна: ${activeProgram.name}`
-                : "Оберіть тренувальну програму"}
+                ? `${messages.fizruk.programs.activeProgramPrefix} ${activeProgram.name}`
+                : messages.fizruk.programs.subtitleDefault}
             </p>
           </div>
           {activeProgram && (
@@ -85,6 +85,10 @@ export function Programs({
             const todaySession = prog.schedule.find(
               (s: ProgramScheduleEntry) => s.day - 1 === todayDayIndex,
             );
+            // WCAG 1.3.1: gives the `aria-expanded` toggle below an
+            // `aria-controls` target so the disclosed region is
+            // programmatically tied to it, not just visually adjacent.
+            const detailsId = `program-details-${prog.id}`;
 
             return (
               <div
@@ -120,10 +124,12 @@ export function Programs({
                   <div
                     className="flex items-center gap-1.5 mt-3"
                     role="img"
-                    aria-label={`Розклад програми ${prog.name}: ${prog.schedule
+                    aria-label={`${messages.fizruk.programs.scheduleAriaPrefix} ${prog.name}: ${prog.schedule
                       .map((s: ProgramScheduleEntry) => DAY_LABELS[s.day - 1])
                       .filter(Boolean)
-                      .join(", ")} — тренування, інші дні відпочинок`}
+                      .join(
+                        ", ",
+                      )} ${messages.fizruk.programs.scheduleAriaSuffix}`}
                   >
                     {Array.from({ length: 7 }, (_, i) => {
                       const hasSession = prog.schedule.some(
@@ -134,7 +140,10 @@ export function Programs({
                         <div
                           key={i}
                           className={cn(
-                            "flex-1 text-center rounded py-1 text-style-caption font-bold transition-colors",
+                            // CONTROL tier (12px) — `rounded` (4px) has no
+                            // slot on the canonical radius scale (see
+                            // `packages/design-tokens/tailwind-preset.js`).
+                            "flex-1 text-center rounded-xl py-1 text-style-caption font-bold transition-colors",
                             hasSession
                               ? isToday && isActive
                                 ? "bg-success-strong text-white"
@@ -191,7 +200,15 @@ export function Programs({
                         )}
                         <button
                           type="button"
-                          className="focus-ring py-2.5 px-4 rounded-xl border border-line text-subtle text-sm hover:text-text hover:bg-panelHi transition-colors"
+                          // `text-style-label` (not raw `text-sm`): this
+                          // button shares the row with the primary CTA
+                          // above, which already carries the same role —
+                          // a raw size here would drift from it for no
+                          // reason (contrast the intentional raw-size
+                          // precedent in `WorkoutItemCard.tsx`, where the
+                          // control sits next to an input of matching
+                          // height, not another labelled button).
+                          className="focus-ring py-2.5 px-4 rounded-xl border border-line text-subtle text-style-label hover:text-text hover:bg-panelHi transition-colors"
                           onClick={deactivateProgram}
                         >
                           {messages.fizruk.programs.stop}
@@ -200,19 +217,26 @@ export function Programs({
                     )}
                     <button
                       type="button"
-                      className="focus-ring py-2.5 px-4 rounded-xl border border-line text-subtle text-sm hover:text-text hover:bg-panelHi transition-colors"
+                      className="focus-ring py-2.5 px-4 rounded-xl border border-line text-subtle text-style-label hover:text-text hover:bg-panelHi transition-colors"
                       onClick={() =>
                         setExpandedProgram(isExpanded ? null : prog.id)
                       }
                       aria-expanded={isExpanded}
+                      aria-controls={detailsId}
                     >
-                      {isExpanded ? "Згорнути" : "Деталі"}
+                      {isExpanded
+                        ? messages.fizruk.programs.collapseDetails
+                        : messages.fizruk.programs.details}
                     </button>
                   </div>
                 </div>
 
                 {isExpanded && (
-                  <ProgramDetails prog={prog} exercises={exercises} />
+                  <ProgramDetails
+                    id={detailsId}
+                    prog={prog}
+                    exercises={exercises}
+                  />
                 )}
               </div>
             );
@@ -224,13 +248,17 @@ export function Programs({
 }
 
 interface ProgramDetailsProps {
+  id: string;
   prog: TrainingProgramDef;
   exercises: RawExerciseDef[];
 }
 
-function ProgramDetails({ prog, exercises }: ProgramDetailsProps) {
+function ProgramDetails({ id, prog, exercises }: ProgramDetailsProps) {
   return (
-    <div className="border-t border-line px-4 pb-4 pt-3 space-y-3 bg-bg/50">
+    <div
+      id={id}
+      className="border-t border-line px-4 pb-4 pt-3 space-y-3 bg-bg/50"
+    >
       <SectionHeading as="div" size="xs" variant="fizruk">
         {messages.fizruk.programs.scheduleHeading}
       </SectionHeading>
@@ -238,8 +266,8 @@ function ProgramDetails({ prog, exercises }: ProgramDetailsProps) {
         const session = prog.sessions[schedEntry.sessionKey];
         if (!session) return null;
         const exList: RawExerciseDef[] = (session.exerciseIds || [])
-          .map((id: string) =>
-            exercises.find((e: RawExerciseDef) => e.id === id),
+          .map((exId: string) =>
+            exercises.find((e: RawExerciseDef) => e.id === exId),
           )
           .filter((e): e is RawExerciseDef => Boolean(e));
         return (
@@ -248,7 +276,9 @@ function ProgramDetails({ prog, exercises }: ProgramDetailsProps) {
             className="rounded-xl bg-panel border border-line/40 p-3"
           >
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-style-caption font-bold px-2 py-0.5 rounded-full bg-fizruk/10 text-success-strong dark:text-success border border-success/20">
+              {/* Fizruk module accent throughout — was mixing the cyan
+                  fill with the emerald `success` text/border pair. */}
+              <span className="text-style-caption font-bold px-2 py-0.5 rounded-full bg-fizruk/15 text-fizruk-strong dark:text-fizruk border border-fizruk/30">
                 {messages.fizruk.programs.daysPrefix} {schedEntry.day}
               </span>
               <span className="text-style-label text-text">

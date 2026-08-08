@@ -130,7 +130,9 @@ export function ExerciseProgressChart({
             cy={p.y}
             r="3"
             fill={color}
-            stroke="white"
+            /* #4 — surface token instead of a static white "cut-out" ring so
+             * dots stay clean against the dark-theme panel (`--c-panel`). */
+            stroke="rgb(var(--c-panel))"
             strokeWidth="1.5"
           />
         ))}

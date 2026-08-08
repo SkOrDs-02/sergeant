@@ -13,7 +13,12 @@ import {
 } from "@sergeant/fizruk-domain/data";
 import type { RecoveryStatus } from "@sergeant/fizruk-domain";
 import { cn } from "@shared/lib/ui/cn";
+import { messages } from "@shared/i18n/uk";
+import { useAnnounce } from "@shared/components/ui/ScreenReaderAnnouncer";
 import type { AtlasData, AtlasMuscleDatum } from "../lib/atlasData";
+import { BodyAtlasSegGroup } from "./BodyAtlasSegGroup";
+
+const t = messages.fizruk.atlas;
 
 export type { AtlasMuscleDatum, AtlasData } from "../lib/atlasData";
 
@@ -60,6 +65,13 @@ function glossStops(base: string) {
     bottom: `color-mix(in srgb, ${base}, rgb(var(--c-fg)) 30%)`,
     stroke: `color-mix(in srgb, ${base}, rgb(var(--c-fg)) 42%)`,
   };
+}
+
+/** Substitute `{key}` placeholders in a catalog template string. */
+function fillVars(tpl: string, vars: Record<string, string>): string {
+  return tpl.replace(/\{(\w+)\}/g, (m, k: string) =>
+    k in vars ? String(vars[k]) : m,
+  );
 }
 
 /** Parse a `"x y x y …"` points string into coordinate pairs. */
@@ -181,6 +193,7 @@ export function BodyAtlas({
   onAskCoach,
 }: BodyAtlasProps) {
   const uid = useId();
+  const { announce } = useAnnounce();
   const [side, setSide] = useState<BodyAtlasSide>("front");
   const [mode, setMode] = useState<AtlasMode>("recovery");
   const [selected, setSelected] = useState<BodyAtlasMuscleId | null>(null);
@@ -212,13 +225,32 @@ export function BodyAtlas({
     setSelected(null);
   }
 
+  /**
+   * Selecting a muscle on the silhouette has no native "selected" semantics
+   * a screen reader announces on its own (defect #2, fizruk audit wave 2) —
+   * `aria-pressed` covers the on-demand state check, but nothing narrates
+   * the *change*. Mirrors the milestone-`announce()` pattern already used
+   * by `RestTimerOverlay`.
+   */
+  function selectMuscle(id: BodyAtlasMuscleId) {
+    setSelected(id);
+    const d = data[id];
+    const label = BODY_ATLAS_MUSCLE_LABELS_UK[id];
+    const status = d ? STATUS_PILL[d.status].label : undefined;
+    announce(
+      status
+        ? `${t.selectedPrefix} ${label}, ${status}`
+        : `${t.selectedPrefix} ${label}`,
+    );
+  }
+
   const selectedDatum = selected ? data[selected] : undefined;
 
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
         {!compact && (
-          <SegGroup
+          <BodyAtlasSegGroup
             options={MODES}
             value={mode}
             onChange={setMode}
@@ -226,7 +258,7 @@ export function BodyAtlas({
           />
         )}
         <div className="flex-1" />
-        <SegGroup
+        <BodyAtlasSegGroup
           options={SIDES}
           value={side}
           onChange={pickSide}
@@ -237,8 +269,10 @@ export function BodyAtlas({
       <div className="flex flex-wrap items-start gap-4">
         <div
           className={cn(
-            "rounded-2xl bg-bg p-3",
-            compact ? "mx-auto flex-[0_0_200px]" : "flex-[0_0_300px]",
+            "min-w-0 shrink rounded-2xl bg-bg p-3",
+            compact
+              ? "mx-auto max-w-[200px] basis-[200px]"
+              : "max-w-[300px] basis-[300px]",
           )}
         >
           <div className="mb-1.5 flex items-center justify-center gap-2 text-style-caption text-subtle">
@@ -258,12 +292,25 @@ export function BodyAtlas({
             <span>{LEGEND_COPY[mode].right}</span>
           </div>
 
+          {/*
+            No explicit `role="img"` here (fixed 2026-08-08, fizruk audit
+            wave 2 defect #1): ARIA treats `img` as one of the roles whose
+            descendants are forced presentational, so the `role="button"`
+            muscles below became unreachable by keyboard/AT despite
+            rendering fine visually and even resolving in jsdom queries
+            (dom-testing-library doesn't emulate that AT-side pruning).
+            `<svg>` already maps to `graphics-document` per SVG-AAM without
+            an explicit role, which keeps an accessible name (via
+            `aria-label` below) *and* exposes interactive descendants — the
+            fix is strictly "remove the role", not add a different one.
+          */}
           <svg
             viewBox={ATLAS_VIEWBOX}
             className="mx-auto block w-full max-w-[300px]"
             style={{ "--atlas-neutral": NEUTRAL_VAR } as CSSProperties}
-            role="img"
-            aria-label={`Атлас м'язів, вигляд ${side === "front" ? "спереду" : "ззаду"}`}
+            aria-label={fillVars(t.imageLabel, {
+              view: side === "front" ? t.viewFront : t.viewBack,
+            })}
           >
             <defs>
               {geometry.muscles.flatMap((m) => {
@@ -312,6 +359,7 @@ export function BodyAtlas({
                   aria-label={
                     compact ? undefined : BODY_ATLAS_MUSCLE_LABELS_UK[m.id]
                   }
+                  aria-pressed={compact ? undefined : isSel}
                   className={cn(
                     !compact && "cursor-pointer",
                     // Kill the browser default SVG focus outline (renders as a
@@ -322,12 +370,12 @@ export function BodyAtlas({
                     "[&:focus-visible>path]:[stroke:rgb(var(--c-fg))]",
                     "[&:focus-visible>path]:[stroke-width:1px]",
                   )}
-                  onClick={compact ? undefined : () => setSelected(m.id)}
+                  onClick={compact ? undefined : () => selectMuscle(m.id)}
                   onKeyDown={(e) => {
                     if (compact) return;
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
-                      setSelected(m.id);
+                      selectMuscle(m.id);
                     }
                   }}
                 >
@@ -402,7 +450,7 @@ export function BodyAtlas({
         </div>
 
         {!compact && (
-          <div className="min-w-[260px] flex-1">
+          <div className="min-w-0 flex-1 basis-[260px]">
             <div className="rounded-2xl border border-line bg-bg p-4">
               {selected && selectedDatum ? (
                 <SelectedCard
@@ -412,10 +460,9 @@ export function BodyAtlas({
                 />
               ) : (
                 <>
-                  <p className="text-style-label text-text">Оберіть мʼяз</p>
+                  <p className="text-style-label text-text">{t.emptyTitle}</p>
                   <p className="mt-1 text-style-caption text-subtle">
-                    Торкніться групи мʼязів або її назви — підсвітка покаже стан
-                    і вправи.
+                    {t.emptyDescription}
                   </p>
                 </>
               )}
@@ -423,53 +470,6 @@ export function BodyAtlas({
           </div>
         )}
       </div>
-    </div>
-  );
-}
-
-interface SegOption<T extends string> {
-  id: T;
-  label: string;
-}
-
-function SegGroup<T extends string>({
-  options,
-  value,
-  onChange,
-  ariaLabel,
-}: {
-  options: ReadonlyArray<SegOption<T>>;
-  value: T;
-  onChange: (next: T) => void;
-  ariaLabel: string;
-}) {
-  return (
-    <div
-      role="tablist"
-      aria-label={ariaLabel}
-      className="flex gap-0.5 rounded-full bg-bg p-0.5"
-    >
-      {options.map((o) => {
-        const on = o.id === value;
-        return (
-          <button
-            key={o.id}
-            type="button"
-            role="tab"
-            aria-selected={on}
-            onClick={() => onChange(o.id)}
-            className={cn(
-              "min-h-[44px] rounded-full px-3 text-xs transition-colors",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fizruk/50",
-              on
-                ? "bg-surface font-medium text-text"
-                : "text-subtle hover:text-text",
-            )}
-          >
-            {o.label}
-          </button>
-        );
-      })}
     </div>
   );
 }
@@ -553,7 +553,7 @@ function SelectedCard({
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-md bg-surface p-2.5">
+    <div className="rounded-xl bg-surface p-2.5">
       <p className="text-style-caption text-subtle">{label}</p>
       <p className="mt-0.5 text-lg font-medium text-text">{value}</p>
     </div>

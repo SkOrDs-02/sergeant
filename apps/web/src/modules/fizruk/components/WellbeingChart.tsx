@@ -1,4 +1,5 @@
 import { EmptyState } from "@shared/components/ui/EmptyState";
+import { chartStatusSeries } from "@shared/charts";
 
 interface WellbeingPoint {
   label: string;
@@ -10,7 +11,7 @@ interface WellbeingChartProps {
   data: WellbeingPoint[] | null | undefined;
 }
 
-/** Grouped bar chart: energy (green) + mood (purple) per workout. */
+/** Grouped bar chart: energy (success green) + mood (info blue) per workout. */
 export function WellbeingChart({ data }: WellbeingChartProps) {
   if (!data || data.length === 0) {
     return (
@@ -49,9 +50,28 @@ export function WellbeingChart({ data }: WellbeingChartProps) {
 
   const MAX_SCORE = 5;
 
-  const colorEnergy = "rgb(22 163 74)"; // success green
-  const colorMood = "rgb(168 85 247)"; // purple-500
+  // #1 — var-backed chart tokens (`@shared/charts`) instead of hardcoded
+  // rgb() so the bars stay correct in both themes; `chartStatusSeries.*`
+  // flips per `.dark`/`html.hc` via `--c-chart-{success,info}` (see
+  // `chartTheme.ts`'s theme-blind-SVG-paint warning). No violet token
+  // exists in the status set, so "mood" reuses the info (sky-blue) series
+  // — still a distinct, theme-reactive hue from energy's green.
+  const colorEnergy = chartStatusSeries.success;
+  const colorMood = chartStatusSeries.info;
   const summaryId = "fizruk-wellbeing-summary";
+
+  // #5 — show at most 4 evenly-spread x-axis labels once font size grows
+  // to the 10px chart-tick floor, mirroring MiniLineChart's thinning so
+  // dense series (many workouts) don't overlap.
+  const labelIndices = new Set<number>();
+  if (n <= 4) {
+    for (let i = 0; i < n; i++) labelIndices.add(i);
+  } else {
+    labelIndices.add(0);
+    labelIndices.add(n - 1);
+    labelIndices.add(Math.floor(n / 3));
+    labelIndices.add(Math.floor((2 * n) / 3));
+  }
 
   return (
     <div className="w-full">
@@ -130,15 +150,17 @@ export function WellbeingChart({ data }: WellbeingChartProps) {
                   fillOpacity="0.85"
                 />
               )}
-              <text
-                x={cx}
-                y={h - 4}
-                textAnchor="middle"
-                fontSize="8"
-                className="fill-muted font-medium"
-              >
-                {d.label}
-              </text>
+              {labelIndices.has(i) && (
+                <text
+                  x={cx}
+                  y={h - 4}
+                  textAnchor="middle"
+                  fontSize="10"
+                  className="fill-muted font-medium"
+                >
+                  {d.label}
+                </text>
+              )}
             </g>
           );
         })}

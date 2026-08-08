@@ -75,12 +75,29 @@ describe("InjurySection", () => {
     expect(mark).toHaveBeenCalledWith("knee");
   });
 
-  it("disables an already-marked zone instead of duplicating it", () => {
-    setup({ activeSites: new Set(["knee"] as const) });
+  // Fixed 2026-08-08 (fizruk audit wave 2, defect #6): an already-marked
+  // chip used to flip to `disabled`, which drops it out of the tab order —
+  // a keyboard user who just marked a zone loses their focus position
+  // mid-interaction. `mark()` is a documented no-op for an already-active
+  // site (see `useInjuries.ts`), so the chip now stays focusable and
+  // clickable; state is communicated via `aria-pressed` + a label suffix
+  // instead of via removal from the accessibility tree.
+  it("keeps an already-marked zone focusable — state via aria-pressed, not disabled", () => {
+    const { mark } = setup({ activeSites: new Set(["knee"] as const) });
     fireEvent.click(screen.getByRole("button", { name: "Позначити зону" }));
-    expect(
-      screen.getByRole("button", { name: /Коліно — уже позначено/ }),
-    ).toBeDisabled();
+    const chip = screen.getByRole("button", {
+      name: /Коліно — уже позначено/,
+    });
+    expect(chip).not.toBeDisabled();
+    expect(chip).toHaveAttribute("aria-pressed", "true");
+
+    chip.focus();
+    fireEvent.click(chip);
+
+    // Still focusable/enabled after the click — no focus loss.
+    expect(chip).not.toBeDisabled();
+    expect(document.activeElement).toBe(chip);
+    expect(mark).toHaveBeenCalledWith("knee");
   });
 
   it("states the limits instead of promising safety", () => {

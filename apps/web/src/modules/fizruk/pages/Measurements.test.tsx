@@ -223,4 +223,119 @@ describe("Measurements page", () => {
     expect(waist).toHaveAttribute("type", "text");
     expect(waist).toHaveAttribute("inputMode", "decimal");
   });
+
+  // Defect #7 — a history row can carry up to 14 filled fields; slicing to
+  // 4 used to drop the rest with no indicator.
+  describe("history row overflow (defect #7)", () => {
+    beforeEach(() => {
+      mockEntries = [
+        {
+          id: "a",
+          at: "2026-05-14T08:00:00Z",
+          weightKg: 80,
+          bodyFatPct: 15,
+          neckCm: 38,
+          chestCm: 100,
+          waistCm: 85,
+        },
+      ];
+    });
+
+    it("shows a +N indicator instead of silently dropping fields past the limit", () => {
+      render(<Measurements />);
+      expect(screen.getByText("+1 ще")).toBeInTheDocument();
+      // The 5th field (Талія) is hidden until expanded. Match the exact
+      // history-row fragment ("Талія: 85 см") — "Талія" alone also appears
+      // in the always-rendered form field label and, with this fixture, in
+      // the "Останній замір" card, so a bare-word query would be ambiguous.
+      expect(screen.queryByText(/Талія: 85/)).not.toBeInTheDocument();
+    });
+
+    it("reveals the remaining fields when the +N toggle is clicked", () => {
+      render(<Measurements />);
+      fireEvent.click(screen.getByText("+1 ще"));
+      expect(screen.getByText(/Талія: 85/)).toBeInTheDocument();
+      expect(screen.getByText("Згорнути")).toBeInTheDocument();
+    });
+
+    it("collapses back to the 4-field summary when Згорнути is clicked", () => {
+      render(<Measurements />);
+      fireEvent.click(screen.getByText("+1 ще"));
+      fireEvent.click(screen.getByText("Згорнути"));
+      expect(screen.getByText("+1 ще")).toBeInTheDocument();
+      expect(screen.queryByText(/Талія: 85/)).not.toBeInTheDocument();
+    });
+
+    it("does not render an overflow toggle for a row with 4 or fewer fields", () => {
+      mockEntries = [{ id: "a", at: "2026-05-14T08:00:00Z", weightKg: 80 }];
+      render(<Measurements />);
+      expect(screen.queryByText(/^\+\d+ ще$/)).not.toBeInTheDocument();
+    });
+  });
+
+  // Defect #9 — toggling the guide view used to leave scroll position and
+  // keyboard/SR focus pointing at whatever was there before the swap.
+  describe("guide view focus + scroll management (defect #9)", () => {
+    it("moves focus to the guide heading when the guide opens", () => {
+      render(<Measurements />);
+      fireEvent.click(
+        screen.getByRole("button", { name: /Як правильно робити заміри/ }),
+      );
+      expect(
+        screen.getByRole("heading", { name: "Як правильно робити заміри" }),
+      ).toHaveFocus();
+    });
+
+    it("returns focus to the trigger button when the guide closes", () => {
+      render(<Measurements />);
+      fireEvent.click(
+        screen.getByRole("button", { name: /Як правильно робити заміри/ }),
+      );
+      fireEvent.click(screen.getByRole("button", { name: /Назад до замірів/ }));
+      // Re-query rather than reusing the pre-toggle handle: the guide and
+      // main views are structurally different subtrees, so React remounts
+      // the trigger button on the way back — the earlier reference is a
+      // detached node.
+      expect(
+        screen.getByRole("button", { name: /Як правильно робити заміри/ }),
+      ).toHaveFocus();
+    });
+
+    it("does not steal focus on initial mount", () => {
+      render(<Measurements />);
+      expect(document.body).toHaveFocus();
+    });
+
+    it("resets the scroll container position when the guide toggles", () => {
+      const { container } = render(<Measurements />);
+      const scrollEl = container.querySelector(
+        ".overflow-y-auto",
+      ) as HTMLElement;
+      expect(scrollEl).toBeTruthy();
+      scrollEl.scrollTop = 120;
+      expect(scrollEl.scrollTop).toBe(120);
+
+      fireEvent.click(
+        screen.getByRole("button", { name: /Як правильно робити заміри/ }),
+      );
+      expect(scrollEl.scrollTop).toBe(0);
+    });
+  });
+
+  // Defect #10 — `target="_blank"` links didn't announce the new-tab
+  // behaviour; the catalog string existed but was unused.
+  it("tells assistive tech that guide reference links open in a new tab (defect #10)", () => {
+    render(<Measurements />);
+    fireEvent.click(
+      screen.getByRole("button", { name: /Як правильно робити заміри/ }),
+    );
+    const cdcLink = screen.getByRole("link", {
+      name: /CDC.*відкриється в новій вкладці/,
+    });
+    expect(cdcLink).toHaveAttribute("href", expect.stringContaining("cdc.gov"));
+    const nhsLink = screen.getByRole("link", {
+      name: /NHS.*відкриється в новій вкладці/,
+    });
+    expect(nhsLink).toHaveAttribute("href", expect.stringContaining("nhs.uk"));
+  });
 });

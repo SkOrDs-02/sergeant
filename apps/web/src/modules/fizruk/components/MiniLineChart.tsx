@@ -58,6 +58,24 @@ export function MiniLineChart({
   );
   const w = 320;
   const h = 100;
+  /**
+   * #2 fix — the box must never letterbox internally.
+   *
+   * `useChartScrub` maps `clientX` → viewBox space with a simple
+   * `((clientX - rect.left) / rect.width) * viewBoxWidth` formula, which is
+   * only correct when the rendered box's aspect ratio matches the viewBox's
+   * (`w`/`h` = 3.2). With just `w-full h-auto max-h-[160px]`, a wide desktop
+   * container makes the CSS box wider than its aspect-preserving height, the
+   * `height: auto` chain clamps to `max-h` while `width: 100%` stays
+   * unconstrained, and the SVG's default `preserveAspectRatio="xMidYMid
+   * meet"` then letterboxes the 320×100 content inside that now-mismatched
+   * box — shifting every scrub coordinate off by the letterbox margin (the
+   * reported "tooltip misses the cursor on desktop" bug). Pairing `max-h`
+   * with a `max-w` at the *same* aspect ratio (160 * (320/100) = 512)
+   * guarantees the box can never grow wider than its aspect-preserving
+   * height allows, so `meet` never has anything to letterbox and the scrub
+   * hook's rect-based math stays exact at every viewport width.
+   */
   const padL = 40;
   const padR = 8;
   const padT = 10;
@@ -195,7 +213,7 @@ export function MiniLineChart({
       <svg
         ref={svgRef}
         viewBox={`0 0 ${w} ${h}`}
-        className="w-full h-auto max-h-[160px] overflow-visible touch-none cursor-crosshair"
+        className="w-full h-auto max-h-[160px] max-w-[512px] mx-auto overflow-visible touch-pan-y cursor-crosshair"
         role="img"
         aria-label={`Графік тренду — ${metricLabel}`}
         aria-describedby={summaryId}
@@ -267,7 +285,10 @@ export function MiniLineChart({
               cy={p.y}
               r="3.5"
               fill={color}
-              stroke="white"
+              /* #4 — "cut-out" halo uses the surface token, not a static
+               * white, so it stays invisible against the dark-theme panel
+               * (`--c-panel` = #1b1613) instead of ringing each dot. */
+              stroke="rgb(var(--c-panel))"
               strokeWidth="2"
             />
           );

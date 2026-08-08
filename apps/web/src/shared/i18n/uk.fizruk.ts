@@ -114,6 +114,11 @@ export const fizrukPageMessages = {
     title: "Програми",
     stop: "Зупинити",
     active: "Активна",
+    // Ти-форма (style-guide.uk.md) — префікс перед назвою активної
+    // програми, наприклад "Активна: Push Pull Legs".
+    activeProgramPrefix: "Активна:",
+    // Ти-форма плейсхолдера, коли жодна програма ще не активна.
+    subtitleDefault: "Обери тренувальну програму",
     daysPerWeekSuffix: "дн/тиждень",
     activate: "Активувати",
     startToday: "Розпочати сьогодні",
@@ -123,7 +128,17 @@ export const fizrukPageMessages = {
     restLabel: "Відпочинок:",
     progressionLabel: "Прогресія:",
     missingExercises:
-      "Вправи з програми відсутні в каталозі — додайте вправи з відповідними ID вручну.",
+      "Вправи з програми відсутні в каталозі — додай вправи з відповідними ID вручну.",
+    // Details toggle (`aria-expanded` button in the program card footer).
+    details: "Деталі",
+    collapseDetails: "Згорнути",
+    // Day-strip screen-reader summary — see `role="img"` aria-label in
+    // Programs.tsx. Split into prefix/suffix around the interpolated
+    // program name + day-label list (catalog strings stay plain, no
+    // template functions — see `MessageCatalog` comment on
+    // `measurementGuideRows` below).
+    scheduleAriaPrefix: "Розклад програми",
+    scheduleAriaSuffix: "— тренування, інші дні відпочинок",
   },
 
   // Measurements page (`pages/Measurements.tsx`) — body-measurements log.
@@ -165,6 +180,11 @@ export const fizrukPageMessages = {
     deleteAria: "Видалити замір",
     emptyTitle: "Поки замірів немає",
     emptyDescription: "Додай перший запис, щоб бачити динаміку показників.",
+    // Історія показує лише перші 4 з 14 можливих полів на рядок — суфікс
+    // під кнопкою розкриття решти (`+3 ще`) і підпис для згортання назад.
+    moreFieldsSuffix: "ще",
+    collapseFieldsLabel: "Згорнути",
+    showAllFieldsAriaSuffix: "показники запису від",
   },
 
   // Body page (`pages/Body.tsx`) — daily weight / sleep / wellbeing log.
@@ -190,6 +210,24 @@ export const fizrukPageMessages = {
       "Додай ще один запис ваги, сну чи енергії — графіки зʼявляться після двох точок.",
   },
 
+  // Body atlas (`components/BodyAtlas.tsx`) — interactive muscle silhouette.
+  atlas: {
+    imageLabel: "Атлас мʼязів, вигляд {view}",
+    viewFront: "спереду",
+    viewBack: "ззаду",
+    emptyTitle: "Обери мʼяз",
+    // Fixed 2026-08-08 (fizruk audit wave 2, defect #4): the old copy also
+    // invited touching the leader-line *name* text, but that text sits in
+    // an `aria-hidden` decorative group and was never a real click target —
+    // only the muscle group on the silhouette itself is.
+    emptyDescription:
+      "Торкнись потрібної групи мʼязів на силуеті — вона підсвітиться, і зʼявляться стан і вправи.",
+    // Prefix for the `useAnnounce()` call fired on muscle selection
+    // (`role="button"` on the silhouette has no native selected-state
+    // announcement, so this carries it to screen readers explicitly).
+    selectedPrefix: "Обрано:",
+  },
+
   // Body journal (`pages/Body/JournalSection.tsx`, `JournalEntryCard.tsx`).
   journal: {
     title: "Журнал",
@@ -199,6 +237,13 @@ export const fizrukPageMessages = {
     sleepLabel: "Сон:",
     energyLabel: "Енергія:",
     moodLabel: "Настрій:",
+    // «Показати ще» affordance (defect #1 — the header badge used to claim
+    // the full count while the list silently truncated to a fixed page).
+    // Rendered as `${shownPrefix} ${visibleCount} ${shownOfWord} ${totalCount}`
+    // — plain-string catalogue, same convention as `exercise.historyShownPrefix`.
+    shownPrefix: "Показано",
+    shownOfWord: "з",
+    showMore: "Показати ще",
   },
 
   /**
