@@ -384,6 +384,7 @@ export const fizrukPageMessages = {
     itemsLabel: "Вправ",
     setsLabel: "Підходів",
     volumeLabel: "Обʼєм",
+    kgUnit: "кг",
     wellbeingPrefix: "Самопочуття:",
     energyLabel: "енергія",
     moodLabel: "настрій",

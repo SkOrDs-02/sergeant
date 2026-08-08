@@ -8,7 +8,14 @@ import {
   safeWriteSS,
 } from "@shared/lib/storage/storage";
 
-export type FizrukWorkoutStartSource = "quick_start" | "template" | "resume";
+/**
+ * `repeat` — 02-A "Повторити це тренування" on the read-only summary of a
+ * finished workout (`WorkoutSummaryView`): starts a new session pre-filled
+ * with the same exercises (no sets), same conflict/telemetry path as every
+ * other start source.
+ */
+export type FizrukWorkoutStartSource =
+  "quick_start" | "template" | "resume" | "repeat";
 export type FizrukRestTimerOutcome = "completed" | "skipped";
 
 const NEW_ROUTE_MARKER = "fizruk_workout_new_route_v1";

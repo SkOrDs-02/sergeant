@@ -11,6 +11,7 @@ function baseHandlers() {
     onOpenCatalog: vi.fn(),
     onOpenTemplates: vi.fn(),
     onOpenJournal: vi.fn(),
+    onOpenPrograms: vi.fn(),
     onRequestStart: vi.fn(),
   };
 }
@@ -86,7 +87,6 @@ describe("WorkoutsHome", () => {
     expect(handlers.onRequestStart).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByText("Із шаблону"));
     expect(handlers.onOpenTemplates).toHaveBeenCalledTimes(1);
-    expect(screen.queryByText("Програми")).not.toBeInTheDocument();
   });
 
   it("exposes the start-paths label via role=group so it isn't a dangling div aria-label", () => {
@@ -189,8 +189,51 @@ describe("WorkoutsHome", () => {
     fireEvent.click(catalogText);
     expect(handlers.onOpenCatalog).toHaveBeenCalledTimes(1);
     expect(catalogText.closest("button")).toHaveClass("focus-visible:ring-2");
+  });
 
-    expect(screen.queryByText("Програми")).not.toBeInTheDocument();
+  it("04-A: always shows a Програми row in Довідники, with and without an active workout", () => {
+    const handlers = baseHandlers();
+    const { rerender } = render(
+      <WorkoutsHome
+        activeWorkout={null}
+        activeDuration={null}
+        recentWorkouts={[]}
+        {...handlers}
+      />,
+    );
+    const programsText = screen.getByText("Програми");
+    fireEvent.click(programsText);
+    expect(handlers.onOpenPrograms).toHaveBeenCalledTimes(1);
+    expect(programsText.closest("button")).toHaveClass("focus-visible:ring-2");
+
+    rerender(
+      <WorkoutsHome
+        activeWorkout={{
+          id: "w1",
+          startedAt: NOW,
+          endedAt: null,
+          items: [{ a: 1 }],
+        }}
+        activeDuration="05:00"
+        recentWorkouts={[]}
+        {...handlers}
+      />,
+    );
+    expect(screen.getByText("Програми")).toBeInTheDocument();
+  });
+
+  it("04-A: folds the active program name into the Програми row subtitle", () => {
+    const handlers = baseHandlers();
+    render(
+      <WorkoutsHome
+        activeWorkout={null}
+        activeDuration={null}
+        recentWorkouts={[]}
+        activeProgramName="Push Pull Legs"
+        {...handlers}
+      />,
+    );
+    expect(screen.getByText(/Push Pull Legs/)).toBeInTheDocument();
   });
 });
 

@@ -50,6 +50,63 @@ describe("useStaleActiveWorkoutCleanup", () => {
     renderHook(() => useStaleActiveWorkoutCleanup(false, [], "x", setId));
     expect(setId).not.toHaveBeenCalled();
   });
+
+  // 02-A — `routeOwnsWorkoutId` suppresses the two "home" behaviours that
+  // used to fight the route: auto-adopting an unfinished workout, and
+  // clearing the id the moment the routed workout ends (which is exactly
+  // what wiped out the finished-workout summary right after «Завершити»).
+  describe("routeOwnsWorkoutId", () => {
+    it("does NOT clear the id when the routed workout has just ended", () => {
+      const setId = vi.fn();
+      renderHook(() =>
+        useStaleActiveWorkoutCleanup(
+          true,
+          [{ id: "w1", endedAt: "2026-01-01T00:00:00Z" } as Workout],
+          "w1",
+          setId,
+          { routeOwnsWorkoutId: true },
+        ),
+      );
+      expect(setId).not.toHaveBeenCalled();
+    });
+
+    it("still clears the id when the routed workout genuinely does not exist", () => {
+      const setId = vi.fn();
+      renderHook(() =>
+        useStaleActiveWorkoutCleanup(true, [], "ghost", setId, {
+          routeOwnsWorkoutId: true,
+        }),
+      );
+      expect(setId).toHaveBeenCalledWith(null);
+    });
+
+    it("does not auto-adopt an unfinished workout when no id is selected", () => {
+      const setId = vi.fn();
+      renderHook(() =>
+        useStaleActiveWorkoutCleanup(
+          true,
+          [{ id: "w1", endedAt: null } as Workout],
+          null,
+          setId,
+          { routeOwnsWorkoutId: true },
+        ),
+      );
+      expect(setId).not.toHaveBeenCalled();
+    });
+
+    it("without the flag, still clears an ended workout (home behaviour unchanged)", () => {
+      const setId = vi.fn();
+      renderHook(() =>
+        useStaleActiveWorkoutCleanup(
+          true,
+          [{ id: "w1", endedAt: "2026-01-01T00:00:00Z" } as Workout],
+          "w1",
+          setId,
+        ),
+      );
+      expect(setId).toHaveBeenCalledWith(null);
+    });
+  });
 });
 
 describe("useWorkoutsViewFromSession", () => {

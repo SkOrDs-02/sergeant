@@ -7,6 +7,7 @@ import { pluralExercises } from "@sergeant/shared";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { Card } from "@shared/components/ui/Card";
+import { messages } from "@shared/i18n/uk";
 import { computeWorkoutSummary } from "@sergeant/fizruk-domain/domain";
 
 type WorkoutItem = ReadonlyArray<unknown>;
@@ -37,6 +38,18 @@ export interface WorkoutsHomeProps {
    * dead control on hosts where deep-linking isn't available.
    */
   onOpenSchedule?: (() => void) | undefined;
+  /**
+   * 04-A — navigates to `/fizruk/programs`. Programs used to be
+   * reachable only from the empty-plan hero card on Огляд, which
+   * disappears the moment a workout starts — leaving the route with no
+   * in-app entry point at all. `WorkoutsHome` now surfaces a permanent
+   * row in "Довідники" instead (not a fifth bottom-nav tab — the
+   * founder explicitly rejected that: four tabs fit 390px, Programs is
+   * a once-a-month visit).
+   */
+  onOpenPrograms: () => void;
+  /** Active program's display name, if any — folded into the row subtitle. */
+  activeProgramName?: string | null | undefined;
 }
 
 export function WorkoutsHome({
@@ -47,6 +60,8 @@ export function WorkoutsHome({
   onOpenCatalog,
   onOpenTemplates,
   onOpenJournal,
+  onOpenPrograms,
+  activeProgramName,
   onRequestStart,
   onOpenSchedule,
 }: WorkoutsHomeProps) {
@@ -163,6 +178,31 @@ export function WorkoutsHome({
                 <div className="text-style-label text-text">Каталог вправ</div>
                 <div className="text-style-caption text-subtle mt-0.5">
                   Пошук · групи м&apos;язів · своя вправа
+                </div>
+              </div>
+              <Icon
+                name="chevron-right"
+                size="sm"
+                className="text-subtle"
+                aria-hidden
+              />
+            </div>
+          </button>
+          <button
+            type="button"
+            className="rounded-2xl border border-line bg-bg p-4 text-left hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+            onClick={onOpenPrograms}
+          >
+            <div className="flex items-center gap-3">
+              <Icon name="list-checks" size={22} className="text-muted" />
+              <div className="flex-1 min-w-0">
+                <div className="text-style-label text-text">
+                  {messages.fizruk.programsRow.title}
+                </div>
+                <div className="text-style-caption text-subtle mt-0.5 truncate">
+                  {activeProgramName
+                    ? `${messages.fizruk.programsRow.activePrefix} ${activeProgramName}`
+                    : messages.fizruk.programsRow.subtitle}
                 </div>
               </div>
               <Icon

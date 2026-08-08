@@ -93,6 +93,23 @@ describe("useFizrukRoute", () => {
     expect(seen.at(-1)).toBe("/fizruk/workouts");
   });
 
+  it("navigate() reaches the dedicated history route", () => {
+    const seen: string[] = [];
+    function Probe() {
+      const loc = useLocation();
+      seen.push(loc.pathname);
+      return useFizrukRoute();
+    }
+    const { result } = renderHook(() => Probe(), {
+      wrapper: wrapper("/fizruk/workouts"),
+    });
+    act(() => {
+      result.current.navigate("history");
+    });
+    expect(seen.at(-1)).toBe("/fizruk/history");
+    expect(result.current.page).toBe("history");
+  });
+
   it("navigate() accepts a page/segment string", () => {
     const seen: string[] = [];
     function Probe() {

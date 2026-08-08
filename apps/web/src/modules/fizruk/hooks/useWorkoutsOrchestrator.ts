@@ -209,6 +209,7 @@ export function useWorkoutsOrchestrator(
     workouts,
     activeWorkoutId,
     setActiveWorkoutId,
+    { routeOwnsWorkoutId: Boolean(options.requestedWorkoutId) },
   );
   useWorkoutsViewFromSession(setView, !options.requestedWorkoutId);
 
@@ -414,6 +415,41 @@ export function useWorkoutsOrchestrator(
     });
   }, [createWorkout, onWorkoutStarted, requestWorkoutStart]);
 
+  /**
+   * 02-A "Повторити це тренування" — starts a fresh session pre-loaded
+   * with the same exercises as `source` (sets reset, nothing carried
+   * over except the exercise identity). Routed through
+   * `requestWorkoutStart` so it respects the same "one active workout"
+   * invariant/conflict dialog as every other start path.
+   */
+  const repeatWorkout = useCallback(
+    (source: Workout) => {
+      requestWorkoutStart(() => {
+        const w = createWorkout();
+        for (const item of source.items || []) {
+          addItem(w.id, {
+            exerciseId: item.exerciseId,
+            nameUk: item.nameUk,
+            primaryGroup: item.primaryGroup,
+            musclesPrimary: item.musclesPrimary,
+            musclesSecondary: item.musclesSecondary,
+            type: item.type,
+            ...(item.type === "strength"
+              ? { sets: [{ weightKg: 0, reps: 0 }] }
+              : {}),
+            durationSec: 0,
+            distanceM: 0,
+          });
+        }
+        setActiveWorkoutId(w.id);
+        trackFizrukWorkoutStarted(w.id, "repeat");
+        if (onWorkoutStarted) onWorkoutStarted(w.id);
+        else setView("log");
+      });
+    },
+    [createWorkout, addItem, onWorkoutStarted, requestWorkoutStart],
+  );
+
   const handleDeleteExerciseConfirm = useCallback(() => {
     if (selected) {
       const snapshot = selected;
@@ -496,6 +532,7 @@ export function useWorkoutsOrchestrator(
     addExerciseToActive,
     handleExerciseInListClick,
     startWorkoutFromTemplate,
+    repeatWorkout,
     submitRetroWorkout,
     lastByExerciseId,
     grouped,

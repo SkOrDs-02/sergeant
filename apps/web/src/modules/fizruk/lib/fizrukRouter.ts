@@ -11,7 +11,9 @@ export type FizrukPage =
   | "programs"
   | "body"
   | "exercise"
-  | "workout";
+  | "workout"
+  // 03-A — dedicated history route (`/fizruk/history`).
+  | "history";
 
 const VALID_FIZRUK_PAGES: readonly FizrukPage[] = [
   "dashboard",
@@ -23,6 +25,7 @@ const VALID_FIZRUK_PAGES: readonly FizrukPage[] = [
   "body",
   "exercise",
   "workout",
+  "history",
 ];
 
 export interface ParsedFizrukRoute {

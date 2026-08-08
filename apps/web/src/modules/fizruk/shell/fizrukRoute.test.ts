@@ -13,6 +13,7 @@ describe("fizrukRoute", () => {
       "body",
       "exercise",
       "workout",
+      "history",
     ]);
   });
 

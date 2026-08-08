@@ -26,6 +26,29 @@ export function useActiveWorkoutIdPersistence(
 }
 
 /**
+ * Options for `useStaleActiveWorkoutCleanup`.
+ */
+export interface StaleActiveWorkoutCleanupOptions {
+  /**
+   * True when the caller is a route that owns a specific workout id
+   * (`/fizruk/workout/<id>` — `Workouts.tsx` rendered with `workoutId`).
+   * Disables the two "home" behaviours that don't make sense once the
+   * URL has already picked a workout:
+   *  - auto-adopting the single unfinished workout into `activeWorkoutId`
+   *    when none is selected;
+   *  - clearing `activeWorkoutId` just because the selected workout has
+   *    `endedAt` set.
+   * Without this flag, a route-owned view of a *finished* workout used to
+   * self-clear right after «Завершити» (the effect ran, saw `endedAt`,
+   * and nulled the id) — the route then rendered a generic
+   * "not found" dead-end instead of the read-only summary (02-A).
+   * A genuinely missing workout (deleted, bad id) still clears — that
+   * branch does not check this flag.
+   */
+  routeOwnsWorkoutId?: boolean;
+}
+
+/**
  * Clear a stale `activeWorkoutId` that no longer matches any workout
  * (e.g. the workout was deleted on another device before sync).
  */
@@ -34,19 +57,32 @@ export function useStaleActiveWorkoutCleanup(
   workouts: readonly Workout[],
   activeWorkoutId: string | null,
   setActiveWorkoutId: Dispatch<SetStateAction<string | null>>,
+  options?: StaleActiveWorkoutCleanupOptions,
 ): void {
+  const routeOwnsWorkoutId = options?.routeOwnsWorkoutId ?? false;
   useEffect(() => {
     if (!workoutsLoaded) return;
     if (!activeWorkoutId) {
+      if (routeOwnsWorkoutId) return;
       const unfinished = workouts.find((workout) => !workout.endedAt);
       if (unfinished) setActiveWorkoutId(unfinished.id);
       return;
     }
     const selected = workouts.find((workout) => workout.id === activeWorkoutId);
-    if (!selected || selected.endedAt) {
+    if (!selected) {
+      setActiveWorkoutId(null);
+      return;
+    }
+    if (selected.endedAt && !routeOwnsWorkoutId) {
       setActiveWorkoutId(null);
     }
-  }, [workoutsLoaded, activeWorkoutId, workouts, setActiveWorkoutId]);
+  }, [
+    workoutsLoaded,
+    activeWorkoutId,
+    workouts,
+    setActiveWorkoutId,
+    routeOwnsWorkoutId,
+  ]);
 }
 
 /**

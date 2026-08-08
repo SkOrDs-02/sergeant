@@ -14,22 +14,8 @@ vi.mock("../workouts/ActiveWorkoutPanel", () => ({
   ),
 }));
 
-// VirtualList isn't relevant to the finish flow and needs ResizeObserver etc.
-// Replace it with a synchronous flat-render mock so the journal list renders trivially.
-vi.mock("@shared/components/ui/VirtualList", () => ({
-  VirtualList: ({
-    items,
-    children,
-  }: {
-    items: unknown[];
-    children: (item: unknown, index: number) => React.ReactNode;
-  }) => (
-    <div data-testid="virtual-list">
-      {items.map((item, i) => (
-        <div key={i}>{children(item, i)}</div>
-      ))}
-    </div>
-  ),
+vi.mock("../workouts/WorkoutSummaryView", () => ({
+  WorkoutSummaryView: () => <div data-testid="summary-view" />,
 }));
 
 import { ToastProvider } from "@shared/hooks/useToast";
@@ -59,17 +45,6 @@ function baseProps(
   return {
     activeWorkout: active,
     activeDuration: "00:42",
-    workouts: [active],
-    activeWorkoutId: active?.id ?? null,
-    setActiveWorkoutId: vi.fn(),
-    retroOpen: false,
-    setRetroOpen: vi.fn(),
-    retroDate: "",
-    setRetroDate: vi.fn(),
-    retroTime: "",
-    setRetroTime: vi.fn(),
-    createWorkout: vi.fn(),
-    setMode: vi.fn(),
     musclesUk: {},
     recBy: {},
     lastByExerciseId: {},
@@ -82,15 +57,15 @@ function baseProps(
       ...active,
       endedAt: new Date().toISOString(),
     })),
-    setDeleteWorkoutConfirm: vi.fn(),
     summarizeWorkoutForFinish: vi.fn(() => ({
       durationSec: 42,
       items: 0,
       tonnageKg: 0,
     })),
-    submitRetroWorkout: vi.fn(),
     deleteWorkout: vi.fn(),
     restoreWorkout: vi.fn(),
+    onRepeatWorkout: vi.fn(),
+    onClose: vi.fn(),
     ...overrides,
   };
 }
@@ -107,7 +82,6 @@ describe("WorkoutJournalSection – Завершити finish flow", () => {
     fireEvent.click(screen.getByTestId("finish-btn"));
 
     expect(props.endWorkout).toHaveBeenCalledWith("w-active");
-    expect(props.setActiveWorkoutId).toHaveBeenCalledWith(null);
     expect(props.setRestTimer).toHaveBeenCalledWith(null);
     expect(props.setFinishFlash).toHaveBeenCalledTimes(1);
     const flash = props.setFinishFlash.mock.calls[0]![0];
@@ -133,10 +107,15 @@ describe("WorkoutJournalSection – Завершити finish flow", () => {
     // not run a second time.
     expect(props.setFinishFlash).toHaveBeenCalledTimes(1);
     expect(props.setRestTimer).toHaveBeenCalledTimes(1);
-    expect(props.setActiveWorkoutId).toHaveBeenCalledTimes(1);
   });
 
-  it("does nothing when the shown workout is already finished", () => {
+  // 02-A: an already-ended workout no longer renders `ActiveWorkoutPanel`
+  // (hence no "Завершити" button reachable at all) — it renders the
+  // read-only `WorkoutSummaryView` instead. The in-component re-entry
+  // guard (`if (!activeWorkout || activeWorkout.endedAt) return;`) is
+  // kept as cheap defensive code but is structurally unreachable via the
+  // UI now; this test asserts the branch switch instead of a no-op click.
+  it("renders the read-only summary — not the editable panel — for an already-finished workout", () => {
     const ended = {
       id: "w-ended",
       startedAt: new Date("2025-01-01T10:00:00Z").toISOString(),
@@ -147,17 +126,12 @@ describe("WorkoutJournalSection – Завершити finish flow", () => {
       cooldown: null,
       note: "",
     };
-    const props = baseProps({
-      activeWorkout: ended,
-      activeWorkoutId: ended.id,
-    });
+    const props = baseProps({ activeWorkout: ended });
     renderWithToast(<WorkoutJournalSection {...props} />);
 
-    fireEvent.click(screen.getByTestId("finish-btn"));
-
+    expect(screen.getByTestId("summary-view")).toBeTruthy();
+    expect(screen.queryByTestId("finish-btn")).toBeNull();
     expect(props.endWorkout).not.toHaveBeenCalled();
     expect(props.setFinishFlash).not.toHaveBeenCalled();
-    expect(props.setRestTimer).not.toHaveBeenCalled();
-    expect(props.setActiveWorkoutId).not.toHaveBeenCalled();
   });
 });

@@ -26,6 +26,7 @@ describe("parseFizrukSegments", () => {
       "measurements",
       "programs",
       "body",
+      "history",
     ] as const) {
       expect(parseFizrukSegments([p])).toEqual({ page: p });
     }
@@ -66,6 +67,7 @@ describe("buildFizrukPath", () => {
   it("returns the page name for simple pages", () => {
     expect(buildFizrukPath("workouts")).toBe("workouts");
     expect(buildFizrukPath("progress")).toBe("progress");
+    expect(buildFizrukPath("history")).toBe("history");
   });
 
   it("joins page and segment for exercise", () => {
@@ -84,6 +86,7 @@ describe("fizrukRoutePath", () => {
     expect(fizrukRoutePath("workouts")).toBe("/fizruk/workouts");
     expect(fizrukRoutePath("exercise", "x1")).toBe("/fizruk/exercise/x1");
     expect(fizrukRoutePath("workout", "w1")).toBe("/fizruk/workout/w1");
+    expect(fizrukRoutePath("history")).toBe("/fizruk/history");
   });
 });
 
