@@ -42,7 +42,7 @@ fallback, `<50 KB` cap. Інтегровано в `sergeant-start-here` як §0
 "Dynamic context".
 
 **Harness Versioning (PR #75, ADR-0072).** Append-only registry
-`.kilo/harness-versions.json` (schemaVersion 1, поточна `3.4.0`), PR-time
+`.kilo/harness-versions.json` (schemaVersion 1, поточна `4.0.0`), PR-time
 bumper `scripts/ci-bump-harness-version.mjs`
 з auto-detect `patch`/`minor`/`major` за diff від `origin/main`,
 weekly A/B workflow `.github/workflows/harness-a-b.yml` з matrix

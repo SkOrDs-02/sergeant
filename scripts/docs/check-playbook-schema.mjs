@@ -27,6 +27,12 @@
 // some don't). Items 5 and 6 live below H2 cutoffs; their presence is checked
 // via H2 section detection over the full file, not the preamble.
 //
+// `Status: Deprecated` files are exempt from items 4-6 (Trigger/Owner
+// surface/Verification) — see ADR-0075 §Immutable-ADR link-graph: some
+// docs are kept in-place (not deleted) purely as redirect stubs so
+// immutable-ADR links and the internal link-checker stay green. Items
+// 1-3 (H1, freshness header, Status marker) still apply.
+//
 // Skipped files (treated as non-playbooks):
 //   - docs/00-start/playbooks/INDEX.md       (auto-generated lookup)
 //   - docs/00-start/playbooks/README.md      (overview)
@@ -141,6 +147,7 @@ export function validatePlaybook(content, opts = {}) {
 
   // 3. Status
   const statusLine = preamble.find((l) => /^>\s*\*\*Status:\*\*/.test(l));
+  let status = null;
   if (!statusLine) {
     errors.push(
       "missing lifecycle marker (`> **Status:** " +
@@ -155,7 +162,19 @@ export function validatePlaybook(content, opts = {}) {
       errors.push(
         `unknown status '${m[1]}'; allowed: ${[...ALLOWED_STATUSES].join(", ")}`,
       );
+    } else {
+      status = m[1];
     }
+  }
+
+  // `Deprecated` redirect stubs (ADR-0075 §Immutable-ADR link-graph: some
+  // docs must stay in-place — not deleted — so immutable-ADR links and the
+  // internal link-checker stay green) aren't actionable playbooks anymore.
+  // Requiring Trigger/Owner surface/Verification on them would force fake
+  // content on a file whose only job is to redirect. H1, freshness, and
+  // Status stay mandatory (checks 1-3 above); skip 4-6 below.
+  if (status === "Deprecated") {
+    return errors;
   }
 
   // 4. Trigger
