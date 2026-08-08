@@ -105,6 +105,22 @@ export const webBlocks = [
       // Tailwind, тож наступний автор напише його не зі зла, а тому,
       // що воно працює. Тести — виняток: там класи ЦИТУЮТЬ в асертах.
       "sergeant-design/no-raw-motion-value": "error",
+      // Прозорість на кольоровому токені тексту (анти-слоп §3.2,
+      // атрактор 9, аудит 2026-08-08). `error`, бо наслідок не
+      // естетичний: значення `--c-subtle` / `--c-muted` підібрані рівно
+      // на порозі AA, тож `/70` дає 2.76 на фоні сторінки. Наявні місця
+      // винесені в override нижче — фікс змінює вигляд і чекає рішення
+      // власника, але НОВІ місця блокуються вже зараз.
+      "sergeant-design/no-opacity-on-text-token": "error",
+      // Сирі розміри шрифта замість семантичних ролей (атрактор 8).
+      // `warn`, а не `error`: заміна не механічна — `text-style-label`
+      // це clamp(13→14px) + вага 500 проти рівних 14px з успадкованою
+      // вагою, тож кожне місце потребує ока. Зараз їх 226 за рахунком
+      // eslint (226 вузлів, 231 збіг регексом — у частині className
+      // сирих розмірів по два). `error` зробив би
+      // гейт червоним від народження, а «червоний завжди» = вимкнений.
+      // Прецедент рівня — `prefer-kyiv-time` вище.
+      "sergeant-design/no-raw-type-size": "warn",
     },
   },
   {
@@ -115,6 +131,56 @@ export const webBlocks = [
     ],
     rules: {
       "sergeant-design/no-raw-motion-value": "off",
+      "sergeant-design/no-opacity-on-text-token": "off",
+      "sergeant-design/no-raw-type-size": "off",
+    },
+  },
+  // Базова лінія атрактора 9 — 42 входження в 33 файлах, заміряно на
+  // `391ce9ab`. Список закритий: він може лише коротшати. Кожен рядок
+  // тут — сабконтрастний текст у проді (subtle/70 = 2.76 при потрібних
+  // 4.5), і виправлення візуально помітне, тому винесене в окреме
+  // рішення власника разом із мокапом, а не зроблене мовчки.
+  //
+  // Додавати сюди файли ЗАБОРОНЕНО. Правило вище тримає нові місця на
+  // `error` саме для того, щоб цей список не ріс.
+  {
+    files: [
+      "apps/web/src/core/ErrorBoundary.tsx",
+      "apps/web/src/core/app/WelcomeScreen.tsx",
+      "apps/web/src/core/components/ChatMessage.tsx",
+      "apps/web/src/core/hub/HubChatHistoryDrawer.tsx",
+      "apps/web/src/core/hub/search/SearchResultItem.tsx",
+      "apps/web/src/core/profile/MemoryBankSection.tsx",
+      "apps/web/src/core/profile/PersonalInfoSection.tsx",
+      "apps/web/src/core/settings/FinykSection.tsx",
+      "apps/web/src/modules/finyk/components/SyncStatusBadge.tsx",
+      "apps/web/src/modules/finyk/components/TxRowCategoryPicker.tsx",
+      "apps/web/src/modules/finyk/components/TxRowSplitEditor.tsx",
+      "apps/web/src/modules/finyk/components/budgets/MonthlyPlanCard.tsx",
+      "apps/web/src/modules/finyk/pages/overview/MonthPulseCard.tsx",
+      "apps/web/src/modules/fizruk/components/WorkoutTemplatesSection.tsx",
+      "apps/web/src/modules/fizruk/components/exercise/ReturnProtocolNotice.tsx",
+      "apps/web/src/modules/fizruk/components/workouts/WorkoutItemCard.tsx",
+      "apps/web/src/modules/fizruk/components/workouts/WorkoutItemLastTimeHint.tsx",
+      "apps/web/src/modules/fizruk/components/workouts/WorkoutItemsList.tsx",
+      "apps/web/src/modules/fizruk/components/workouts/WorkoutSetRow.tsx",
+      "apps/web/src/modules/fizruk/components/workouts/WorkoutsHeader.tsx",
+      "apps/web/src/modules/fizruk/pages/Exercise.tsx",
+      "apps/web/src/modules/fizruk/pages/Programs.tsx",
+      "apps/web/src/modules/fizruk/pages/Progress/ReturnScale.tsx",
+      "apps/web/src/modules/fizruk/pages/WorkoutHistory.tsx",
+      "apps/web/src/modules/nutrition/components/PantryCard.tsx",
+      "apps/web/src/modules/nutrition/components/PantryManagerSheet.tsx",
+      "apps/web/src/modules/routine/RoutineTimeline.tsx",
+      "apps/web/src/modules/routine/components/HabitDetailSheet.tsx",
+      "apps/web/src/modules/routine/components/HabitHeatmap.tsx",
+      "apps/web/src/shared/components/charts/ChartScrubOverlay.tsx",
+      "apps/web/src/shared/components/layout/StorageErrorBanner.tsx",
+      "apps/web/src/shared/components/ui/Input.tsx",
+      "apps/web/src/shared/components/ui/ModuleBottomNav.tsx",
+    ],
+    rules: {
+      "sergeant-design/no-opacity-on-text-token": "off",
     },
   },
   // Hash-router migration gate — initiative 0006 (frontend routing &
