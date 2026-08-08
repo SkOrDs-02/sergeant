@@ -1,8 +1,25 @@
 {
   "$schema": "../governance/schemas/pr-ledger.schema.json",
   "version": 1,
-  "generated_at": "2026-08-07",
+  "generated_at": "2026-08-08",
   "prs": [
+    {
+      "number": 751,
+      "title": "fix(agents): аудит рецептів/агентів/правил — CI-фікс, codex-sync, retired-rule cleanup",
+      "merged_at": "2026-08-08T15:43:42Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": [
+        "docs/00-start/playbooks/add-monobank-event-handler.md",
+        "docs/00-start/playbooks/add-react-query-hook.md",
+        "docs/00-start/playbooks/dependency-sweeper.md",
+        "docs/00-start/playbooks/deploy-config-change.md",
+        "docs/00-start/playbooks/rotate-openclaw-credentials.md",
+        "docs/00-start/playbooks/run-weekly-operator-digest.md",
+        "docs/00-start/playbooks/security-pen-test-checklist.md",
+        "docs/04-governance/adr/0045-hard-rules-taxonomy.md",
+        "docs/04-governance/governance/rules/15-governance-and-doc-language.md"
+      ]
+    },
     {
       "number": 689,
       "title": "fix(ci): governance-sync відрізняє живе посилання від навмисно мертвого",

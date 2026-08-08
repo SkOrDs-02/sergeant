@@ -1,6 +1,6 @@
 # Playbook: Add React Query Hook
 
-> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-02.
+> **Last touched:** 2026-08-08 by @github-actions[bot]. **Next review:** 2026-11-06.
 > **Status:** Active
 
 **Trigger:** «Дай хук який тягне X з API» / новий useQuery або useMutation у `apps/web` / нова server-state дата.
@@ -201,3 +201,14 @@ feat(web): add useMonoBudgetForecast hook
 - [AGENTS.md](../../../AGENTS.md) — hard rule #2 (RQ keys), rule #3 (API contract)
 - `apps/web/src/shared/lib/api/queryKeys.ts` — приклади existing factories
 - [#729](https://github.com/Skords-01/Sergeant/pull/729) — MSW setup
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                                  | Merged     |
+| ------------------------------------------------------ | -------------------------------------------------------------------------------------- | ---------- |
+| [#751](https://github.com/Skords-01/Sergeant/pull/751) | fix(agents): аудит рецептів/агентів/правил — CI-фікс, codex-sync, retired-rule cleanup | 2026-08-08 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

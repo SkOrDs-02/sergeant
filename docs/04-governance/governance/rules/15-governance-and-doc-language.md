@@ -104,3 +104,14 @@ If a reviewer sees a new prose paragraph or table cell in English in a doc that'
 ## Related
 
 - **agents** — #15
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                                  | Merged     |
+| ------------------------------------------------------ | -------------------------------------------------------------------------------------- | ---------- |
+| [#751](https://github.com/Skords-01/Sergeant/pull/751) | fix(agents): аудит рецептів/агентів/правил — CI-фікс, codex-sync, retired-rule cleanup | 2026-08-08 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
