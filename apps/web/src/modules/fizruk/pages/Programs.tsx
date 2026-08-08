@@ -7,11 +7,11 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
-import { getKyivMondayIndex } from "@shared/lib/time/kyivTime";
 import { captureException } from "../../../core/observability/sentry";
 import { useExerciseCatalog } from "../hooks/useExerciseCatalog";
 import {
   BUILTIN_PROGRAMS,
+  weekdayIndex,
   type FizrukData,
   type ProgramScheduleEntry,
   type ProgramSessionDef,
@@ -43,10 +43,14 @@ export function Programs({
   const { exercises } = useExerciseCatalog();
   const [expandedProgram, setExpandedProgram] = useState<string | null>(null);
 
-  // Monday-anchored "today" index in Kyiv local time so the "Розпочати
-  // сьогодні" CTA matches the user's actual day (consolidated page-audit
-  // § Theme 1 — 07 F2).
-  const todayDayIndex = getKyivMondayIndex();
+  // Monday-anchored "today" index in DEVICE-local time (ADR-0078): the
+  // personal day boundary belongs to the user's own clock, not Kyiv — same
+  // regime the rest of fizruk (Body, Measurements, monthly plan) already
+  // uses. A Kyiv-anchored index used to disagree with the device near
+  // midnight, so "Розпочати сьогодні" could open the wrong day's session.
+  // `weekdayIndex()` is the canonical fizruk-domain helper (already wired
+  // into the mobile Programs screen) — no local re-implementation.
+  const todayDayIndex = weekdayIndex();
 
   return (
     <div className="flex-1 overflow-y-auto">
