@@ -147,6 +147,18 @@ export function parseFrontmatter(source) {
  */
 export function stripNoise(body) {
   let s = body;
+  // AUTO-GENERATED-блоки. Їхній вміст пише генератор, а не автор доку:
+  // `PR-BACKLINKS` тягне заголовки PR-ів прямо з GitHub, тобто латиницю,
+  // якої автор не писав і не може перекласти, не зламавши backlink.
+  // Без цього два гейти суперечать один одному: `pnpm docs:gen-pr-backlinks`
+  // (вимога pr-ledger) дописує англомовну таблицю, і той самий файл одразу
+  // падає тут по співвідношенню — рівно це сталось на
+  // `rotate-openclaw-credentials.md` (cyrillic=341 latin=530, ratio=0.39,
+  // 2026-08-08). Мовний гейт має міряти мову АВТОРА, а не машинну вставку.
+  s = s.replace(
+    /<!--\s*AUTO-GENERATED:\s*([A-Z-]+)-START\s*-->[\s\S]*?<!--\s*AUTO-GENERATED:\s*\1-END\s*-->/g,
+    " ",
+  );
   // Fenced code blocks (``` ... ``` or ~~~).
   s = s.replace(/```[\s\S]*?```/g, " ");
   s = s.replace(/~~~[\s\S]*?~~~/g, " ");

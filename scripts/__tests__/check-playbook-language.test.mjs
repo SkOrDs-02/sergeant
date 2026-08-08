@@ -63,6 +63,47 @@ test("stripNoise removes fenced code blocks", () => {
   assert.doesNotMatch(stripNoise(src), /const/);
 });
 
+// Регресія 2026-08-08: `pnpm docs:gen-pr-backlinks` (вимога pr-ledger)
+// дописує у плейбук таблицю з англомовними заголовками PR-ів прямо з
+// GitHub — і той самий файл одразу падав тут по співвідношенню мов
+// (`rotate-openclaw-credentials.md`: cyrillic=341 latin=530, ratio=0.39).
+// Два гейти суперечили один одному, і жоден не був неправий окремо.
+// Мовний гейт має міряти мову АВТОРА, тож машинні блоки не рахуються.
+test("stripNoise drops AUTO-GENERATED blocks (machine-inserted English)", () => {
+  const src = [
+    "Текст автора українською.",
+    "<!-- AUTO-GENERATED: PR-BACKLINKS-START -->",
+    "## Recent PRs",
+    "| PR | Title | Merged |",
+    "| #508 | fix(docs): reconcile canonical docs with current repo | 2026-07-29 |",
+    "<!-- AUTO-GENERATED: PR-BACKLINKS-END -->",
+    "Ще текст автора.",
+  ].join("\n");
+  const out = stripNoise(src);
+  assert.match(out, /Текст автора/);
+  assert.match(out, /Ще текст автора/);
+  assert.doesNotMatch(out, /reconcile/);
+  assert.doesNotMatch(out, /Recent PRs/);
+});
+
+test("stripNoise leaves a non-matching AUTO-GENERATED marker pair alone", () => {
+  // Захист від жадібності: різні маркери не мають схлопуватись в один
+  // блок і зʼїдати авторський текст між ними.
+  const src = [
+    "<!-- AUTO-GENERATED: ALPHA-START -->",
+    "machine alpha",
+    "<!-- AUTO-GENERATED: ALPHA-END -->",
+    "Авторський текст посередині.",
+    "<!-- AUTO-GENERATED: BETA-START -->",
+    "machine beta",
+    "<!-- AUTO-GENERATED: BETA-END -->",
+  ].join("\n");
+  const out = stripNoise(src);
+  assert.match(out, /Авторський текст посередині/);
+  assert.doesNotMatch(out, /machine alpha/);
+  assert.doesNotMatch(out, /machine beta/);
+});
+
 test("stripNoise removes inline code", () => {
   assert.doesNotMatch(stripNoise("використай `Number(x)` тут"), /Number/);
 });
