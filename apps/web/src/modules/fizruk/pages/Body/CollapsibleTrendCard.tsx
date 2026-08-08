@@ -3,9 +3,23 @@ import type { ReactNode } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Card } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
+import { Measure } from "@shared/components/ui/Measure";
 import { cn } from "@shared/lib/ui/cn";
 import { safeWriteLS } from "@shared/lib/storage/storage";
 import { TREND_STORAGE_PREFIX, readTrendOpen } from "./storage";
+
+/**
+ * `Measure` (`splitMoneyParts`) needs an explicit fraction-digit count —
+ * unlike the old raw `{latestValue}` interpolation it won't just print
+ * however many decimals the number happens to carry. Weight/sleep inputs
+ * step by 0.1/0.5 so a genuine fraction is meaningful; energy/mood are
+ * always whole 1-5 scores. Rounding every card to a fixed 1 decimal would
+ * turn "4 /5" into "4,0 /5" — a cosmetic regression the locale fix (defect
+ * #7) doesn't ask for. Derive digits from the value itself instead.
+ */
+function latestValueFractionDigits(n: number): 0 | 1 {
+  return Number.isInteger(n) ? 0 : 1;
+}
 
 /**
  * Which direction of `delta` counts as an improvement for this metric.
@@ -73,51 +87,76 @@ export function CollapsibleTrendCard({
         : (deltaDirection === "up-is-good") === delta > 0
           ? "text-success-strong dark:text-success"
           : "text-warning-strong dark:text-warning";
-  const deltaLabel =
-    delta == null
-      ? ""
-      : `${delta > 0 ? "+" : ""}${delta.toFixed(1)} ${latestUnit}`;
 
   return (
     <Card as="section" radius="lg" padding="none" aria-label={ariaLabel}>
-      <button
-        type="button"
-        onClick={toggle}
-        aria-expanded={open}
-        aria-controls={contentId}
-        className={cn(
-          "w-full flex items-center gap-3 px-4 py-3 text-left",
-          "rounded-2xl transition-colors",
-          "hover:bg-panelHi/40",
-        )}
-      >
-        <div className="flex-1 min-w-0">
-          <SectionHeading as="h2" size="xs" className="mb-0!" variant="fizruk">
-            {title}
-          </SectionHeading>
-        </div>
-        {latestValue != null && (
-          <div className="flex items-baseline gap-2 shrink-0">
-            <span className="text-style-label tabular-nums text-text">
-              {latestValue} {latestUnit}
-            </span>
-            {delta != null && delta !== 0 && (
-              <span className={cn("text-style-caption", deltaClass)}>
-                {deltaLabel}
-              </span>
-            )}
-          </div>
-        )}
-        <span
-          aria-hidden
+      {/* AI-CONTEXT: `<h2>` wraps the WHOLE toggle button (WAI-ARIA
+          disclosure/accordion pattern) instead of living inside it —
+          a heading nested inside a `role="button"` (native `<button>`)
+          loses its heading semantics for most AT (defect #2). `contents`
+          removes the h2's own box so it doesn't affect the flex layout;
+          only the button inside participates in it. */}
+      <h2 className="contents">
+        <button
+          type="button"
+          onClick={toggle}
+          aria-expanded={open}
+          aria-controls={contentId}
           className={cn(
-            "inline-flex justify-center w-4 text-muted transition-transform shrink-0",
-            open ? "rotate-180" : "rotate-0",
+            "focus-ring w-full flex items-center gap-3 px-4 py-3 text-left",
+            "rounded-2xl transition-colors",
+            "hover:bg-panelHi/40",
           )}
         >
-          <Icon name="chevron-down" size="md" />
-        </span>
-      </button>
+          <div className="flex-1 min-w-0">
+            <SectionHeading
+              as="span"
+              size="xs"
+              className="mb-0!"
+              variant="fizruk"
+            >
+              {title}
+            </SectionHeading>
+          </div>
+          {latestValue != null && (
+            <div className="flex items-baseline gap-2 shrink-0">
+              <span
+                data-testid="trend-latest-value"
+                className="text-style-label tabular-nums text-text"
+              >
+                <Measure
+                  value={latestValue}
+                  unit={latestUnit}
+                  fractionDigits={latestValueFractionDigits(latestValue)}
+                />
+              </span>
+              {delta != null && delta !== 0 && (
+                <span
+                  data-testid="trend-delta"
+                  className={cn("text-style-caption", deltaClass)}
+                >
+                  <Measure
+                    value={delta}
+                    unit={latestUnit}
+                    fractionDigits={1}
+                    signed
+                    tone="inherit"
+                  />
+                </span>
+              )}
+            </div>
+          )}
+          <span
+            aria-hidden
+            className={cn(
+              "inline-flex justify-center w-4 text-muted transition-transform shrink-0",
+              open ? "rotate-180" : "rotate-0",
+            )}
+          >
+            <Icon name="chevron-down" size="md" />
+          </span>
+        </button>
+      </h2>
       {open && (
         <div id={contentId} className="px-4 pb-4 pt-1">
           {children}

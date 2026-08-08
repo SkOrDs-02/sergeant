@@ -25,6 +25,19 @@ const entry: JournalEntry = {
   note: "Після легкого тренування",
 };
 
+/** Builds `n` distinct entries (newest first) for pagination tests. */
+function buildEntries(n: number): JournalEntry[] {
+  return Array.from({ length: n }, (_, i) => ({
+    id: `entry-${i}`,
+    at: `2026-06-${String(30 - i).padStart(2, "0")}T07:00:00.000Z`,
+    weightKg: 80 + i,
+    sleepHours: null,
+    energyLevel: null,
+    moodScore: null,
+    note: "",
+  }));
+}
+
 function renderJournal(
   overrides: Partial<React.ComponentProps<typeof JournalSection>> = {},
 ) {
@@ -32,7 +45,6 @@ function renderJournal(
   return render(
     <JournalSection
       entries={overrides.entries ?? [entry]}
-      totalCount={overrides.totalCount ?? 1}
       onDelete={onDelete}
     />,
   );
@@ -107,5 +119,61 @@ describe("JournalSection", () => {
 
     expect(screen.queryByText(/· 82.5 кг/)).not.toBeInTheDocument();
     expect(screen.getByText(/Вага/i)).toBeInTheDocument();
+  });
+});
+
+describe("JournalSection — heading semantics (defect #2)", () => {
+  it("exposes the section title as an h2 heading, and the toggle stays a single button", () => {
+    renderJournal();
+    expect(
+      screen.getByRole("heading", { level: 2, name: /Журнал/ }),
+    ).toBeInTheDocument();
+    // The section toggle is the only top-level button when there is a
+    // single, collapsed entry — the entry row itself is a second button.
+    expect(screen.getAllByRole("button").length).toBeGreaterThanOrEqual(1);
+  });
+});
+
+describe("JournalSection — pagination affordance (defect #1)", () => {
+  // The header badge used to claim the FULL count while `Body.tsx` sliced
+  // the list to the first 15 entries before ever handing them to this
+  // component — no way to reach the rest existed. Pagination now lives
+  // here so the two numbers can never disagree.
+  it("renders only the first page and shows an honest 'shown of total' count", () => {
+    renderJournal({ entries: buildEntries(40) });
+
+    // Header badge shows the TRUE total, not the page size.
+    expect(screen.getByText("40")).toBeInTheDocument();
+    expect(screen.getByText(/Показано 15 з 40/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Показати ще" }),
+    ).toBeInTheDocument();
+
+    // Exactly the first 15 entry rows are mounted (weight labels are
+    // unique per entry: 80..94 kg is the first page, 95 kg starts page 2).
+    expect(screen.getByText(/80 кг/)).toBeInTheDocument();
+    expect(screen.getByText(/94 кг/)).toBeInTheDocument();
+    expect(screen.queryByText(/95 кг/)).not.toBeInTheDocument();
+  });
+
+  it("reveals the next page on 'Показати ще' and hides the affordance once exhausted", () => {
+    renderJournal({ entries: buildEntries(20) });
+
+    expect(screen.getByText(/Показано 15 з 20/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Показати ще" }));
+
+    expect(screen.getByText(/95 кг/)).toBeInTheDocument(); // 16th entry now visible
+    expect(screen.queryByText(/Показано/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Показати ще" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("hides the affordance entirely when the journal fits on one page", () => {
+    renderJournal({ entries: buildEntries(5) });
+    expect(screen.queryByText(/Показано/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Показати ще" }),
+    ).not.toBeInTheDocument();
   });
 });

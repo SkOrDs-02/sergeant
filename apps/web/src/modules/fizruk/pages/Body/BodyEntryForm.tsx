@@ -107,21 +107,33 @@ function handleScoreKeyDown(
   groupEl: HTMLDivElement | null,
 ) {
   const VALUES = [1, 2, 3, 4, 5] as const;
+  const FIRST = VALUES[0];
+  const LAST = VALUES[VALUES.length - 1] ?? 5;
   let next: number | null = null;
-  const cur = current ?? 0;
-  const idx = VALUES.indexOf(cur as (typeof VALUES)[number]);
+  // `current == null` (nothing selected yet) has no position on `VALUES` —
+  // mapping it to a phantom index -1 and wrapping through modulo
+  // arithmetic used to land the FIRST ArrowLeft/Up press on 4 instead of 5
+  // (defect #3: `(−1 − 1 + 5) % 5 === 3`, so the `?? 5` fallback below
+  // never actually ran). Handle "nothing selected" as its own case: the
+  // first press should land on the edge of the scale matching the
+  // direction, not on an arbitrary wrapped value.
+  const idx =
+    current == null ? -1 : VALUES.indexOf(current as (typeof VALUES)[number]);
   if (e.key === "ArrowRight" || e.key === "ArrowDown") {
     e.preventDefault();
-    next = VALUES[(idx + 1) % VALUES.length] ?? 1;
+    next = idx === -1 ? FIRST : (VALUES[(idx + 1) % VALUES.length] ?? FIRST);
   } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
     e.preventDefault();
-    next = VALUES[(idx - 1 + VALUES.length) % VALUES.length] ?? 5;
+    next =
+      idx === -1
+        ? LAST
+        : (VALUES[(idx - 1 + VALUES.length) % VALUES.length] ?? LAST);
   } else if (e.key === "Home") {
     e.preventDefault();
-    next = 1;
+    next = FIRST;
   } else if (e.key === "End") {
     e.preventDefault();
-    next = 5;
+    next = LAST;
   }
   if (next !== null) {
     setter(next);

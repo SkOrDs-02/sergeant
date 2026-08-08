@@ -28,4 +28,15 @@ describe("RecoveryFocusCard", () => {
     fireEvent.click(screen.getByLabelText("Відкрити атлас мʼязів"));
     expect(onOpenAtlas).toHaveBeenCalledTimes(1);
   });
+
+  // Defect #2: the title used to be a raw `<h2>` nested INSIDE the toggle
+  // `<button>`, which loses heading semantics for most AT. The `<h2>` now
+  // wraps the whole toggle button instead (WAI-ARIA disclosure pattern).
+  it("exposes the title as an h2 heading and keeps the toggle a real button", () => {
+    render(<RecoveryFocusCard />);
+    expect(
+      screen.getByRole("heading", { level: 2, name: /Відновлення й фокус/ }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { expanded: false })).toBeInTheDocument();
+  });
 });
