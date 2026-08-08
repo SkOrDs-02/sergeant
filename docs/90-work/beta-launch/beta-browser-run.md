@@ -1,6 +1,6 @@
 # Прийомний браузерний прогін бети
 
-> **Last touched:** 2026-08-07 by @claude. **Next review:** 2026-10-31.
+> **Last touched:** 2026-08-08 by @claude. **Next review:** 2026-11-06.
 > **Status:** Scaffolded — тимчасовий док на час закритої бети, термін 2026-10-31.
 > Прибрати разом з усією текою: [`README.md`](./README.md) § Що прибрати.
 
@@ -171,6 +171,7 @@ PW_BETA_SEED=1 [PW_BETA_BASE_URL=…] pnpm --filter @sergeant/web exec playwrigh
 
 ## Related
 
+- [`../audits/2026-08-09-beta-acceptance-run.md`](../audits/2026-08-09-beta-acceptance-run.md) — **прийомний прогін з усіма пʼятьма персонами** (перший з BT5): 20 passed / 1 failed, блокер B1 — секція звʼязків мовчить при повному завантаженні `/insights` при повній базі
 - [`../audits/2026-08-07-beta-rehearsal-run.md`](../audits/2026-08-07-beta-rehearsal-run.md) — **виконана репетиція** цього дизайну: 20/20 auto-кроків BT1–BT4 зелені, знахідки F1–F6 (відкрите — викрадення deep-link-а `/pricing`)
 - [`run-beta-wave.md`](./run-beta-wave.md) — хвиля бети, куди цей прогін вбудований
 - [`../audits/2026-08-05-browser-profile-testing.md`](../audits/2026-08-05-browser-profile-testing.md) — методологія і попередні знахідки
