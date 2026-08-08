@@ -1,0 +1,313 @@
+{
+  "meta": {
+    "pricesCheckedOn": "2026-08-08",
+    "note": "Кожен параметр має confidence: measured (поміряно в коді/стенді або офіційний тариф), derived (порахований із measured), estimated (припущення — його треба вимірювати), unknown (значення немає, стоїть заглушка). Модель читає лише .value; решта полів — для доку і для аудиту."
+  },
+
+  "fx": {
+    "uahPerUsd": {
+      "value": 44.76,
+      "unit": "UAH/USD",
+      "confidence": "measured",
+      "source": "НБУ, офіційний курс на 2026-07-31 (44.69) / на 2026-08-01 (44.76). Бюджетний курс-2026 — 45.7.",
+      "note": "Перевіряти щомісяця разом із рахунком AI-витрат: усі COGS у USD, уся виручка в ₴."
+    }
+  },
+
+  "pricing": {
+    "proMonthlyUah": {
+      "value": 199,
+      "unit": "UAH/міс",
+      "confidence": "measured",
+      "source": "ADR-0068"
+    },
+    "proAnnualUah": {
+      "value": 1490,
+      "unit": "UAH/рік",
+      "confidence": "measured",
+      "source": "ADR-0068"
+    },
+    "annualShare": {
+      "value": 0.6,
+      "unit": "частка підписників на річному плані",
+      "confidence": "estimated",
+      "source": "гіпотеза з 01-monetization-and-pricing.md §9.1",
+      "note": "Нуль спостережень — платних користувачів ще немає."
+    }
+  },
+
+  "taxes": {
+    "singleTaxRate": {
+      "value": 0.05,
+      "unit": "частка обороту",
+      "confidence": "measured",
+      "source": "ФОП 3 група без ПДВ, ставка 2026"
+    },
+    "militaryLevyRate": {
+      "value": 0.01,
+      "unit": "частка обороту",
+      "confidence": "measured",
+      "source": "військовий збір для ФОП 3 групи, 1% від доходу (2026)"
+    },
+    "esvMonthlyUah": {
+      "value": 1902.34,
+      "unit": "UAH/міс",
+      "confidence": "measured",
+      "source": "мінімальний ЄСВ 2026 = 22% від мінімалки ₴8 647",
+      "note": "Платиться незалежно від обороту — це фіксована, а не змінна витрата."
+    }
+  },
+
+  "acquiring": {
+    "primaryRate": {
+      "value": 0.013,
+      "unit": "частка платежу",
+      "confidence": "measured",
+      "source": "plata by mono — 1.3% для карток українських банків (2% для іноземних)"
+    },
+    "fallbackRate": {
+      "value": 0.0275,
+      "unit": "частка платежу",
+      "confidence": "measured",
+      "source": "LiqPay — базові 2.75% (1.5% за окремим тарифом для інтернет-магазинів)"
+    }
+  },
+
+  "ai": {
+    "chatFirstTurnUsd": {
+      "value": 0.00151,
+      "unit": "USD/повідомлення",
+      "confidence": "measured",
+      "source": "стенд 2026-08-04, `apps/server/src/env/chatModels.ts`: deepseek-v4-flash без кешу — $1.51/1k",
+      "note": "Перший тур несе payload інструментів; кешу під OpenRouter немає."
+    },
+    "chatSynthesisPremiumUsd": {
+      "value": 0.00164,
+      "unit": "USD/повідомлення",
+      "confidence": "measured",
+      "source": "стенд 2026-08-04: z-ai/glm-5.2 — $1.64/1k, 16/16 на пастках глибини"
+    },
+    "chatSynthesisStandardUsd": {
+      "value": 0.00032,
+      "unit": "USD/повідомлення",
+      "confidence": "measured",
+      "source": "стенд 2026-08-04: deepseek-v4-flash — $0.32/1k, 13/16"
+    },
+    "chatSynthesisFloorUsd": {
+      "value": 0.00016,
+      "unit": "USD/повідомлення",
+      "confidence": "measured",
+      "source": "стенд 2026-08-04: google/gemini-2.5-flash-lite — $0.16/1k, 11/16"
+    },
+    "coachUsd": {
+      "value": 0.00317,
+      "unit": "USD/виклик",
+      "confidence": "estimated",
+      "source": "openai/gpt-5.1 — $3.17/1k на чат-стенді, узято як проксі для `POST /api/coach/insight`",
+      "note": "Payload коуча інший за чатовий; похибка ±50%. Коуч навмисно лишився на premium (відкат деградації 2026-08-06)."
+    },
+    "visionUsd": {
+      "value": 0.00013,
+      "unit": "USD/фото",
+      "confidence": "measured",
+      "source": "зоровий стенд 2026-08-04: gemini-2.5-flash-lite — $0.13/1k, 10/10"
+    },
+    "digestUsd": {
+      "value": 0.0014,
+      "unit": "USD/дайджест",
+      "confidence": "derived",
+      "source": "gemini-2.5-flash-lite ($0.10/$0.40 за MTok) × ~10k in + ~1k out",
+      "note": "Розмір payload-у дайджесту — оцінка, не вимір."
+    },
+    "miscPerUserMonthUsd": {
+      "value": 0.05,
+      "unit": "USD/користувач/міс",
+      "confidence": "estimated",
+      "source": "mono-enrichment + classify (gemini-flash-lite), Voyage embeddings ($0.02/1M), Groq Whisper ($0.04/10 MB)",
+      "note": "Кожна зі складових мала окремо; разом узяті стелею, а не виміром."
+    }
+  },
+
+  "quota": {
+    "freeUnitsPerDay": {
+      "value": 5,
+      "unit": "одиниць квоти/добу",
+      "confidence": "measured",
+      "source": "`billing/effectiveLimits.ts`, ADR-0085"
+    },
+    "anonUnitsPerDay": {
+      "value": 1,
+      "unit": "одиниць квоти/добу",
+      "confidence": "measured",
+      "source": "`chat/aiQuota.ts` DEFAULT_ANON_LIMIT, ADR-0085"
+    },
+    "proPremiumUnitsPerDay": {
+      "value": 20,
+      "unit": "одиниць квоти/добу",
+      "confidence": "measured",
+      "source": "`AI_PRO_PREMIUM_DAILY_LIMIT`"
+    },
+    "proStandardUnitsPerDay": {
+      "value": 80,
+      "unit": "одиниць квоти/добу",
+      "confidence": "measured",
+      "source": "`AI_PRO_STANDARD_DAILY_LIMIT`"
+    },
+    "toolCostUnits": {
+      "value": 3,
+      "unit": "одиниць квоти за виклик з інструментом",
+      "confidence": "measured",
+      "source": "`DEFAULT_TOOL_COST` у `chat/aiQuota.ts`"
+    },
+    "toolShare": {
+      "value": 0.4,
+      "unit": "частка повідомлень, що тягнуть інструмент",
+      "confidence": "estimated",
+      "source": "гіпотеза; валідується через `chat_tool_invocations_total`"
+    }
+  },
+
+  "usage": {
+    "daysPerMonth": {
+      "value": 30.4,
+      "unit": "днів",
+      "confidence": "derived",
+      "source": "365/12"
+    },
+    "profiles": {
+      "light": {
+        "chatMsgsPerDay": 3,
+        "coachPerDay": 1,
+        "photosPerDay": 1,
+        "note": "спорадичний, кілька заходів на день"
+      },
+      "medium": {
+        "chatMsgsPerDay": 10,
+        "coachPerDay": 1,
+        "photosPerDay": 2,
+        "note": "щоденний користувач із фото-логом їжі"
+      },
+      "ceiling": {
+        "chatMsgsPerDay": 200,
+        "coachPerDay": 1,
+        "photosPerDay": 5,
+        "note": "упирається у квоту і сидить у безлімітному floor-хвості (стеля, яку дозволяє код)"
+      }
+    },
+    "freeProfile": {
+      "chatMsgsPerDay": 2,
+      "coachPerDay": 1,
+      "photosPerDay": 0,
+      "note": "активний Free — відкриває застосунок щодня і впирається у квоту (2 повідомлення × 1.8 одиниці + порада коуча ≈ 4.6 з 5 дозволених)"
+    },
+    "activeFreeShare": {
+      "value": 0.4,
+      "unit": "частка зареєстрованих Free, що торкаються AI за місяць",
+      "confidence": "estimated",
+      "source": "припущення; вимірюється як `COUNT(DISTINCT subject_key) / MAU` у `ai_usage_daily`",
+      "note": "Решта 60% рахуються нульовими. Разом із near-cap профілем вище це навмисно песимістичний край: активний Free моделюється як той, хто щодня доїдає квоту."
+    }
+  },
+
+  "funnel": {
+    "conversionFreeToPaid": {
+      "value": 0.04,
+      "unit": "частка",
+      "confidence": "estimated",
+      "source": "медіана freemium B2C 3.7% (First Page Sage); ціль 04-launch-readiness §4.2 — 3-8%"
+    },
+    "monthlyChurn": {
+      "value": 0.06,
+      "unit": "частка/міс",
+      "confidence": "estimated",
+      "source": "поріг go/no-go ≤8%, target <5% (04-launch-readiness §4.2)"
+    },
+    "cacAdsUah": {
+      "value": 30,
+      "unit": "UAH/платний",
+      "confidence": "estimated",
+      "source": "blended 70% organic / 30% paid із 01 §9.2"
+    },
+    "trialDays": {
+      "value": 7,
+      "unit": "днів",
+      "confidence": "measured",
+      "source": "reverse trial, ADR-0068"
+    },
+    "trialUsageProfile": {
+      "value": "medium",
+      "confidence": "estimated",
+      "note": "Reverse trial дає повний Pro без квоти — профіль тріалу свідомо береться не нижчий за medium."
+    }
+  },
+
+  "fixed": {
+    "hetznerUsdMonth": {
+      "value": 7,
+      "unit": "USD/міс",
+      "confidence": "measured",
+      "source": "Hetzner CX23 під Coolify — API + Postgres + Redis на одному VPS (ADR-0074)"
+    },
+    "domainDnsUsdMonth": {
+      "value": 2,
+      "unit": "USD/міс",
+      "confidence": "estimated",
+      "source": "домен .com.ua ~$10-20/рік + Cloudflare Free"
+    },
+    "appleDeveloperUsdYear": {
+      "value": 99,
+      "unit": "USD/рік",
+      "confidence": "measured",
+      "source": "Apple Developer Program — потрібен для APNs і Sign in with Apple"
+    },
+    "vercelProUsdMonth": {
+      "value": 20,
+      "unit": "USD/міс",
+      "confidence": "estimated",
+      "source": "Vercel Pro",
+      "note": "Hobby-план заявлений як non-commercial. Щойно з'являється платна підписка — фронт треба переводити на Pro. Пункт до перевірки в ToS перед першим платежем."
+    },
+    "posthogFreeEventsPerMonth": {
+      "value": 1000000,
+      "unit": "подій/міс",
+      "confidence": "measured",
+      "source": "PostHog free tier"
+    },
+    "posthogUsdPerEventOverage": {
+      "value": 0.00005,
+      "unit": "USD/подія понад free tier",
+      "confidence": "measured",
+      "source": "PostHog pay-as-you-go"
+    },
+    "eventsPerMauMonth": {
+      "value": 200,
+      "unit": "подій/MAU/міс",
+      "confidence": "estimated",
+      "source": "оцінка за реєстром аналітичних подій; вимірюється в PostHog"
+    }
+  },
+
+  "phases": {
+    "beta": {
+      "label": "Бета (сьогодні)",
+      "hasFop": false,
+      "hasVercelPro": false,
+      "mau": 50,
+      "note": "Платежів немає — Pro видається вручну; ФОП не зареєстровано."
+    },
+    "launch": {
+      "label": "Запуск (платежі увімкнені)",
+      "hasFop": true,
+      "hasVercelPro": true,
+      "mau": 500
+    },
+    "growth": {
+      "label": "Зростання (5 000 MAU)",
+      "hasFop": true,
+      "hasVercelPro": true,
+      "mau": 5000,
+      "vpsUsdMonth": 14,
+      "note": "VPS подвоєно (CX33-клас): один інстанс тримає API + Postgres + Redis, і саме база впирається першою."
+    }
+  }
+}
