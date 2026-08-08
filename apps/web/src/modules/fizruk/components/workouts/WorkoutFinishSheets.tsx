@@ -127,7 +127,12 @@ export function WorkoutFinishSheets({
           <Card
             prominence="elevated"
             radius="lg"
-            className="space-y-4 max-h-[min(70vh,520px)] overflow-y-auto"
+            // `overscroll-contain`: без нього жест, доведений до межі
+            // внутрішнього скролу, перекидався на сторінку ПІД аркушем —
+            // журнал їхав, аркуш стояв, і це читалось як «не скролиться».
+            // Особливо помітно при спробі повернутись угору з розкритих
+            // мʼязів (скарга власника 2026-08-08).
+            className="space-y-4 max-h-[min(70vh,520px)] overflow-y-auto overscroll-contain"
             role="dialog"
             aria-modal="true"
             aria-labelledby="fizruk-wellbeing-title"
@@ -266,12 +271,27 @@ export function WorkoutFinishSheets({
           <Card
             prominence="elevated"
             radius="lg"
-            className="space-y-4 max-h-[min(70vh,520px)] overflow-y-auto"
+            // `overscroll-contain`: без нього жест, доведений до межі
+            // внутрішнього скролу, перекидався на сторінку ПІД аркушем —
+            // журнал їхав, аркуш стояв, і це читалось як «не скролиться».
+            // Особливо помітно при спробі повернутись угору з розкритих
+            // мʼязів (скарга власника 2026-08-08).
+            className="space-y-4 max-h-[min(70vh,520px)] overflow-y-auto overscroll-contain"
             role="dialog"
             aria-modal="true"
             aria-labelledby="fizruk-injury-title"
           >
-            <div>
+            {/*
+              Липка шапка — пара до липкого рядка дій унизу. Розкриті
+              мʼязи роблять вміст удвічі вищим за вікно картки, і
+              заголовок «Щось болить?» їхав під верхню межу: щоб зрозуміти,
+              де ти взагалі перебуваєш, доводилось скролити назад угору
+              (скарга власника 2026-08-08). Тепер верх видно завжди, а
+              скрол лишається тільки за зонами. Відʼємні поля компенсують
+              `p-4` картки, щоб смуга діставала до її країв і під нею не
+              просвічували чипи, що проїжджають.
+            */}
+            <div className="sticky -top-4 -mx-4 -mt-4 px-4 pt-4 pb-3 bg-panel border-b border-line">
               <div
                 id="fizruk-injury-title"
                 className="text-style-label text-text"
@@ -496,7 +516,7 @@ export function WorkoutFinishSheets({
                   // `py-1.5`, і роль із `line-height: 1.4` зсунула б її
                   // відносно сусідніх дій. Одна з двох причин лишати
                   // сирий розмір (див. `tailwind-preset.js`, § ролі).
-                  // eslint-disable-next-line sergeant-design/no-raw-type-size -- розмір КОНТРОЛА, причина розписана в AI-NOTE вище.
+
                   className="w-full text-xs text-muted hover:text-text transition-colors py-1.5 flex items-center justify-center gap-1.5"
                   onClick={() => {
                     recordCrossModulePromptAccepted("fizruk-finish-to-meal");
@@ -522,7 +542,7 @@ export function WorkoutFinishSheets({
                 </Button>
                 <button
                   type="button"
-                  // eslint-disable-next-line sergeant-design/no-raw-type-size -- розмір КОНТРОЛА: `text-base` + `py-3` тримають висоту головної CTA врівень із сусідньою кнопкою «Згорнути».
+
                   className="fizruk-cta-accent flex-1 py-3 rounded-full text-base"
                   onClick={closeFinish}
                 >
