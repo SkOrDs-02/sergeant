@@ -1,8 +1,15 @@
 {
   "$schema": "../governance/schemas/pr-ledger.schema.json",
   "version": 1,
-  "generated_at": "2026-08-07",
+  "generated_at": "2026-08-08",
   "prs": [
+    {
+      "number": 756,
+      "title": "fix(web): хвиля фіксів аудиту Профілю і Налаштувань (L-2…L-21, V-1…V-16)",
+      "merged_at": "2026-08-08T19:53:56Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": ["docs/00-start/playbooks/rotate-openclaw-credentials.md"]
+    },
     {
       "number": 689,
       "title": "fix(ci): governance-sync відрізняє живе посилання від навмисно мертвого",
