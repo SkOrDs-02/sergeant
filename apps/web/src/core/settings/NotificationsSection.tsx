@@ -178,7 +178,7 @@ export function NotificationsSection() {
 
       <PushNotificationToggle className="p-3 rounded-xl bg-bg border border-line" />
 
-      <SettingsSubGroup title={sergeantCopy.name} defaultOpen>
+      <SettingsSubGroup title={sergeantCopy.name}>
         <ToggleRow
           label={sergeantCopy.nudgesToggleLabel}
           description={sergeantCopy.nudgesToggleDescription}
@@ -199,7 +199,7 @@ export function NotificationsSection() {
         )}
       </SettingsSubGroup>
 
-      <SettingsSubGroup title="Рутина (звички)" defaultOpen>
+      <SettingsSubGroup title="Рутина (звички)">
         <ToggleRow
           label="Нагадування про звички"
           description={backgroundHint(
@@ -210,7 +210,7 @@ export function NotificationsSection() {
         />
       </SettingsSubGroup>
 
-      <SettingsSubGroup title="Фізрук (тренування)" defaultOpen>
+      <SettingsSubGroup title="Фізрук (тренування)">
         <ToggleRow
           label="Нагадування про тренування"
           description={backgroundHint(
@@ -235,7 +235,7 @@ export function NotificationsSection() {
         )}
       </SettingsSubGroup>
 
-      <SettingsSubGroup title="Їжа" defaultOpen>
+      <SettingsSubGroup title="Їжа">
         <ToggleRow
           label="Нагадування про їжу"
           description={backgroundHint(

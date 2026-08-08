@@ -18,7 +18,10 @@ import { billingKeys } from "@shared/lib/api/queryKeys";
 import { announceSettingsHashChange } from "@shared/lib/modules/hubNav";
 import { useBrowserLocation } from "../hooks/useBrowserLocation";
 import ChunkErrorBoundary from "./ChunkErrorBoundary";
-import { SectionSkeleton } from "../settings/SettingsPrimitives";
+import {
+  SectionSkeleton,
+  SettingsGroupDefaultOpenContext,
+} from "../settings/SettingsPrimitives";
 import { AIDigestSection } from "../settings/AIDigestSection";
 import { CapabilitiesSection } from "../settings/CapabilitiesSection";
 import { DashboardSection } from "../settings/DashboardSection";
@@ -73,9 +76,15 @@ interface SettingsSection {
    * When true, the section is React.lazy() and renders inside a
    * `<Suspense>` boundary with a `<SectionSkeleton>` fallback. Used by
    * the heavy module-scoped sections (Initiative 0017 Sprint 1.1 PR-1.2).
-   * `minH` is the expected default-expanded height in pixels (headers +
-   * collapsed SubGroups) so the skeleton occupies the same footprint as
-   * the real section, preventing Cumulative Layout Shift on lazy swap.
+   * `minH` is the section's expected footprint AS IT FIRST PAINTS: the
+   * closed-header height for a section that mounts collapsed, or the
+   * full expanded-content height for a section that Варіант A
+   * force-opens by default because it's the first section of the active
+   * tab (see `SettingsGroupDefaultOpenContext` in
+   * `SettingsPrimitives.tsx`). No longer "headers + collapsed SubGroups"
+   * (adversarial review 2026-08-08, дефект №4) — Варіант A removed
+   * `SettingsSubGroup`'s own collapse state, so there's no middle-height
+   * state between "closed" and "fully open" anymore.
    */
   lazy?: { minH: number };
 }
@@ -103,9 +112,21 @@ const SECTION_RENDERERS: Readonly<Record<string, () => React.JSX.Element>> = {
 };
 
 // Suspense-fallback heights for the four module-scoped sections that are
-// React.lazy() (Initiative 0017 Sprint 1.1 PR-1.2) — see `SettingsSection.lazy`.
+// React.lazy() (Initiative 0017 Sprint 1.1 PR-1.2) — see
+// `SettingsSection.lazy` above for what each number represents.
+//
+// `routine` is the only one of the four that can be forced open by default
+// (it's index 0 of the «Розділи» tab under Варіант A): its skeleton has to
+// match the FULLY EXPANDED section (two `SettingsSubGroup`s — calendar
+// toggles, then tag/category editors), not a closed header, otherwise the
+// lazy-chunk swap causes a large downward layout shift that pushes the
+// rest of the tab's list (дефект №4, адверсарне ревʼю 2026-08-08). 600 is a
+// conservative expanded-height estimate, not a pixel-perfect measurement —
+// see RoutineSection.tsx for the actual content. `fizruk` / `finyk` /
+// `nutrition` are never index 0 in their own tab, so they stay mounted
+// collapsed and their existing (pre-Варіант-A) heights are untouched.
 const SECTION_LAZY: Readonly<Record<string, { minH: number }>> = {
-  routine: { minH: 248 },
+  routine: { minH: 600 },
   fizruk: { minH: 168 },
   finyk: { minH: 248 },
   nutrition: { minH: 280 },
@@ -185,6 +206,28 @@ function readSettingsSectionHash(hash: string): string | null {
   const raw = hash.replace(/^#/, "");
   if (!raw.startsWith("settings-")) return null;
   return raw.replace(/^settings-/, "");
+}
+
+/**
+ * Дефект №2 (адверсарне ревʼю 2026-08-08): billing-return (`?billing=
+ * portal-return|manage`) таргетить «Підписка та план» так само, як
+ * `#settings-plan` — обидва мусять суплресити форсоване відкриття першої
+ * секції вкладки. Для хеша це відомо СИНХРОННО (з `location.hash` на
+ * mount), але billing-таргет раніше ставав відомим лише ПІЗНІШЕ, через
+ * `queueMicrotask` в ефекті нижче — а на той момент «Дашборд» (перша
+ * секція «Загальних») уже змонтувався й зафіксував свій `open` через
+ * `useState`-ініціалізатор у `SettingsGroup`; пізніший `setHashSectionId`
+ * більше не міг це скасувати. Читаючи billing-параметр тут, у тому ж
+ * ініціалізаторі `hashSectionId` нижче, суплресія спрацьовує з ПЕРШОГО
+ * рендеру — до того, як «Дашборд» встигає змонтуватись.
+ */
+function readBillingReturnSectionId(search: string): string | null {
+  try {
+    const billing = new URLSearchParams(search).get("billing");
+    return billing === "portal-return" || billing === "manage" ? "plan" : null;
+  } catch {
+    return null;
+  }
 }
 
 function groupForSection(sectionId: string | null) {
@@ -286,8 +329,20 @@ export function HubSettingsPage({ scrollContainer }: HubSettingsPageProps) {
   const refs = useRef<Record<string, HTMLDivElement | null>>({});
   const stickyHeaderRef = useRef<HTMLDivElement | null>(null);
   const [hashSectionId, setHashSectionId] = useState<string | null>(
-    readSettingsSectionHash(location.hash),
+    () =>
+      readSettingsSectionHash(location.hash) ??
+      readBillingReturnSectionId(location.search),
   );
+  // Дефект №3 (адверсарне ревʼю 2026-08-08): явний вибір юзера (клік по
+  // заголовку) має пережити ремаунт секції — перемикання вкладки чи
+  // search ховає й показує секцію заново (`visible` фільтрує по
+  // активній вкладці/запиту), і без цього форсоване "перша секція
+  // вкладки відкрита" (Варіант A) щоразу перевідкривало секцію, яку юзер
+  // щойно сам згорнув. Ключ — id секції (стабільний між ремаунтами),
+  // значення — останній явний стан з `onUserToggle` (SettingsPrimitives.tsx).
+  const [sectionOpenOverrides, setSectionOpenOverrides] = useState<
+    Record<string, boolean>
+  >({});
 
   // Sections with the keywords a user might type to find them — id/title/
   // keywords come from the module-level `SECTIONS` (zipped from the shared
@@ -561,42 +616,85 @@ export function HubSettingsPage({ scrollContainer }: HubSettingsPageProps) {
             </Button>
           </div>
         ) : (
-          visible.map((s) => (
-            <div
-              key={s.id}
-              id={`settings-${s.id}`}
-              data-search-keywords={`${s.title} ${s.keywords}`}
-              ref={(el) => {
-                refs.current[s.id] = el;
-              }}
-              // The Search + Tabs row above is `sticky top-0` (≈120-140px on
-              // mobile/desktop). With `scroll-mt-4` (16px) the section title
-              // landed *behind* that sticky chrome after `scrollIntoView`,
-              // so deep-links like `#settings-dashboard` from the inactive
-              // Bento card felt like they "just opened the Settings tab"
-              // (issue 2026-05-08). 8rem clears the sticky header on every
-              // viewport while still leaving a small visual gap above the
-              // landed section.
-              className="scroll-mt-32"
-            >
-              {s.lazy ? (
-                <ChunkErrorBoundary minH={s.lazy.minH}>
-                  <Suspense
-                    fallback={
-                      <SectionSkeleton
-                        minH={s.lazy.minH}
-                        ariaLabel={`Завантажую ${s.title}`}
-                      />
-                    }
-                  >
-                    {s.render()}
-                  </Suspense>
-                </ChunkErrorBoundary>
-              ) : (
-                s.render()
-              )}
-            </div>
-          ))
+          visible.map((s, index) => {
+            // Дефект №2 (адверсарне ревʼю 2026-08-08): forced-first-of-tab
+            // не повинен спрацьовувати, коли хеш (чи billing-return, див.
+            // `readBillingReturnSectionId` вище) уже націлений на ІНШУ
+            // секцію ТІЄЇ Ж вкладки — інакше розгортаються ОБИДВІ: ціль
+            // хеша і перша секція вкладки, і сторінка приземляє юзера між
+            // двома розгорнутими картками замість однієї цільової.
+            // `hashSectionId` перевіряється саме проти `visibleSectionIds`
+            // (не голим `!!hashSectionId`): якщо юзер уже ПОКИНУВ
+            // хеш-вкладку і перемкнувся на іншу вручну, залишок
+            // `hashSectionId` із попередньої навігації не мусить назавжди
+            // глушити forced-first у ВСІХ інших вкладках.
+            const hashTargetsThisTab =
+              hashSectionId != null &&
+              visibleSectionIds.includes(hashSectionId);
+            const isFirstOfTab =
+              !q &&
+              index === 0 &&
+              (!hashTargetsThisTab || hashSectionId === s.id);
+            // Дефект №3: явний вибір юзера (запамʼятаний per-section-id у
+            // `sectionOpenOverrides`) переважає дефолт "перша секція
+            // відкрита" — якщо юзер сам згорнув форсовано-відкриту секцію,
+            // ремаунт (перемикання вкладки чи search, що ховає й показує
+            // секцію заново) більше не повертає її в розгорнутий стан.
+            // Пошук УЖЕ зберігав це випадково (та сама React-інстанція не
+            // розмонтовується, доки секція лишається серед результатів) —
+            // тепер це справжня, а не випадкова консистентність.
+            const userOverride = sectionOpenOverrides[s.id];
+            const defaultOpenForSection = userOverride ?? isFirstOfTab;
+
+            return (
+              <SettingsGroupDefaultOpenContext.Provider
+                key={s.id}
+                value={{
+                  defaultOpen: defaultOpenForSection,
+                  onUserToggle: (open) => {
+                    setSectionOpenOverrides((prev) => ({
+                      ...prev,
+                      [s.id]: open,
+                    }));
+                  },
+                }}
+              >
+                <div
+                  id={`settings-${s.id}`}
+                  data-search-keywords={`${s.title} ${s.keywords}`}
+                  ref={(el) => {
+                    refs.current[s.id] = el;
+                  }}
+                  // The Search + Tabs row above is `sticky top-0` (≈120-140px on
+                  // mobile/desktop). With `scroll-mt-4` (16px) the section title
+                  // landed *behind* that sticky chrome after `scrollIntoView`,
+                  // so deep-links like `#settings-dashboard` from the inactive
+                  // Bento card felt like they "just opened the Settings tab"
+                  // (issue 2026-05-08). 8rem clears the sticky header on every
+                  // viewport while still leaving a small visual gap above the
+                  // landed section.
+                  className="scroll-mt-32"
+                >
+                  {s.lazy ? (
+                    <ChunkErrorBoundary minH={s.lazy.minH}>
+                      <Suspense
+                        fallback={
+                          <SectionSkeleton
+                            minH={s.lazy.minH}
+                            ariaLabel={`Завантажую ${s.title}`}
+                          />
+                        }
+                      >
+                        {s.render()}
+                      </Suspense>
+                    </ChunkErrorBoundary>
+                  ) : (
+                    s.render()
+                  )}
+                </div>
+              </SettingsGroupDefaultOpenContext.Provider>
+            );
+          })
         )}
       </div>
     </div>

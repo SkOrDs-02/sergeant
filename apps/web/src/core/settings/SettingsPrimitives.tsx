@@ -1,4 +1,6 @@
 import {
+  createContext,
+  useContext,
   useEffect,
   useLayoutEffect,
   useRef,
@@ -70,14 +72,58 @@ function matchesHash(anchorId: string | undefined): boolean {
 }
 
 /**
+ * Варіант A (profile/settings deep audit 2026-08-08, рішення власника №4 —
+ * `docs/90-work/audits/2026-08-08-profile-settings-deep-audit.md` §0.1):
+ * прибрали другий рівень акордеона, і замість нього перша секція активної
+ * вкладки Налаштувань відкривається за замовчуванням — це закриває
+ * порожнечу внизу стартового екрана без вкладеного акордеона.
+ *
+ * `HubSettingsPage` не рендерить `<SettingsGroup>` напряму (кожна секція
+ * рендерить його всередині себе), і лише 3 з 14 секцій мають `anchorId`,
+ * тож прив'язатись до хеша не можна. Контекст — єдиний спосіб сторінці
+ * сказати "ти перша видима секція" секції, не знаючи наперед, яка секція
+ * що рендерить. Дефолт `{ defaultOpen: false }`: без провайдера (наприклад,
+ * юніт-тест, що монтує секцію окремо від `HubSettingsPage`) поведінка не
+ * міняється.
+ *
+ * Адверсарне ревʼю 2026-08-08 (дефект №3): голий `boolean` пам'ятав лише
+ * "чи форсити відкриття", але не давав секції способу сказати сторінці
+ * "юзер сам мене згорнув — не форси мене знову". Без цього перемикання
+ * вкладки (яке РЕМАУНТИТЬ секцію — вона зникає з `visible`, коли вкладка
+ * неактивна) скидало явний вибір юзера й перевідкривало форсовано-відкриту
+ * секцію, тоді як пошук (де та сама React-інстанція лишається змонтованою,
+ * доки збігається запит) той самий вибір випадково зберігав — одна дія
+ * юзера, дві різні поведінки. `onUserToggle` — зворотний виклик, яким
+ * секція повідомляє власника контексту про явний (не hash-, не дефолт-,
+ * не mount-) клік по заголовку.
+ */
+export interface SettingsGroupDefaultOpenState {
+  /** Чи секція відкривається за замовчуванням при монтуванні. */
+  defaultOpen: boolean;
+  /**
+   * Викликається з новим станом `open` щоразу, коли юзер сам тапає
+   * заголовок — НЕ при авто-розкритті через дефолт чи hash-deep-link.
+   */
+  onUserToggle?: (open: boolean) => void;
+}
+
+const DEFAULT_SETTINGS_GROUP_CONTEXT: SettingsGroupDefaultOpenState = {
+  defaultOpen: false,
+};
+
+export const SettingsGroupDefaultOpenContext =
+  createContext<SettingsGroupDefaultOpenState>(DEFAULT_SETTINGS_GROUP_CONTEXT);
+
+/**
  * L-7 parity fix (adversarial review 2026-08-08): `CollapsibleSection`
  * (`@shared/components/ui`) closes the tab-trap for its accordion by
- * marking the collapsed content `inert`, but `SettingsGroup` and
- * `SettingsSubGroup` share the exact same `grid-rows-[0fr] overflow-hidden`
- * collapse pattern and were left unfixed — Tab from a collapsed header
- * (e.g. "Дашборд") still fell into ~15 hidden interactive controls
- * (toggles, density buttons, module checkboxes), and Space on a hidden
- * checkbox silently flipped a module on/off. Both default to
+ * marking the collapsed content `inert`, but `SettingsGroup` shared the
+ * exact same `grid-rows-[0fr] overflow-hidden` collapse pattern (as did
+ * `SettingsSubGroup`, before Варіант A removed its accordion entirely —
+ * see the comment above `SettingsSubGroup` below) and was left unfixed —
+ * Tab from a collapsed header (e.g. "Дашборд") still fell into ~15 hidden
+ * interactive controls (toggles, density buttons, module checkboxes), and
+ * Space on a hidden checkbox silently flipped a module on/off. Defaults to
  * `defaultOpen={false}`, so this is the common first-paint state, not an
  * edge case.
  *
@@ -117,8 +163,11 @@ export function SettingsGroup({
   defaultOpen = false,
   anchorId,
 }: SettingsGroupProps) {
+  const { defaultOpen: contextDefaultOpen, onUserToggle } = useContext(
+    SettingsGroupDefaultOpenContext,
+  );
   const [open, setOpen] = useState<boolean>(
-    () => defaultOpen || matchesHash(anchorId),
+    () => defaultOpen || contextDefaultOpen || matchesHash(anchorId),
   );
   useEffect(() => {
     if (!anchorId) return;
@@ -147,32 +196,66 @@ export function SettingsGroup({
       // naturally imperceptible and the glass hairline carries separation.
       className="overflow-hidden shadow-e1"
     >
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        className={cn(
-          "w-full px-4 py-4 flex items-center justify-between gap-3",
-          "hover:bg-surface-strong-glass active:bg-surface-soft-glass transition-colors",
-          open && "bg-surface-soft-glass",
-        )}
-      >
-        <div className="flex items-center gap-3 min-w-0">
-          {icon && (
-            <span
-              className={cn(
-                "rounded-xl p-1.5 border flex items-center justify-center shrink-0",
-                moduleBg ||
-                  "bg-surface-soft-glass border-surface-line text-muted-v2",
-              )}
-            >
-              <Icon name={icon} size={18} />
-            </span>
+      {/* Дефект №5 (адверсарне ревʼю 2026-08-08): найближчий заголовок вище
+          — sr-only `<h1>Налаштування</h1>` на рівні сторінки; сама секція
+          малювала заголовок як `<span>` усередині кнопки, тобто не
+          заголовок узагалі, тож аутлайн стрибав h1 → h3 (заголовок
+          `SettingsSubGroup` нижче) — axe `heading-order` це ловить.
+          Канонічний disclosure-патерн — `<h2><button aria-expanded>…
+          </button></h2>`. `className="contents"` (display:contents) не
+          додає власного боксу в layout, тож кнопка лишається прямим
+          flex-дитям `<Card>` візуально й запити `getByRole("button", {
+          name })` не бачать різниці — але дерево заголовків стає
+          коректним h1 → h2 → h3.
+
+          Ризик, який тут треба знати: історично `display: contents`
+          ВИКИДАВ елемент із дерева доступності (Chrome/Firefox/Safari,
+          ~2018-2022) — тобто рівно той механізм, який мовчки звів би цей
+          фікс нанівець. У сучасних рушіях це полагоджено, і перевіряє це
+          не припущення, а гейт: `heading-order` тепер входить у фільтр
+          `tests/a11y/axe.spec.ts` і ганяється в справжньому Chromium
+          (CI-джоб «Accessibility (axe-core)»). Якщо колись візьмемо
+          рушій, де баг живий, той гейт почервоніє — і тоді заміна проста:
+          віддати `<h2>` реальний бокс і зняти flex-обгортку з кнопки. */}
+      <h2 className="contents">
+        <button
+          type="button"
+          onClick={() =>
+            setOpen((v) => {
+              const next = !v;
+              // Явний клік юзера — не mount, не hash, не Варіант A
+              // дефолт. Повідомляємо нагору (дефект №3), щоб власник
+              // контексту (зазвичай `HubSettingsPage`) міг запам'ятати
+              // цей вибір per-section-id і не форсити дефолт знову після
+              // ремаунту (перемикання вкладки чи search).
+              onUserToggle?.(next);
+              return next;
+            })
+          }
+          aria-expanded={open}
+          className={cn(
+            "w-full px-4 py-4 flex items-center justify-between gap-3",
+            "hover:bg-surface-strong-glass active:bg-surface-soft-glass transition-colors",
+            open && "bg-surface-soft-glass",
           )}
-          <span className="text-style-title text-text">{title}</span>
-        </div>
-        <ChevronIcon expanded={open} />
-      </button>
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            {icon && (
+              <span
+                className={cn(
+                  "rounded-xl p-1.5 border flex items-center justify-center shrink-0",
+                  moduleBg ||
+                    "bg-surface-soft-glass border-surface-line text-muted-v2",
+                )}
+              >
+                <Icon name={icon} size={18} />
+              </span>
+            )}
+            <span className="text-style-title text-text">{title}</span>
+          </div>
+          <ChevronIcon expanded={open} />
+        </button>
+      </h2>
       <div
         ref={contentRef}
         className={cn(
@@ -193,59 +276,25 @@ export function SettingsGroup({
 export interface SettingsSubGroupProps {
   title: string;
   children: ReactNode;
-  defaultOpen?: boolean;
 }
 
-export function SettingsSubGroup({
-  title,
-  children,
-  defaultOpen = false,
-}: SettingsSubGroupProps) {
-  const [open, setOpen] = useState<boolean>(defaultOpen);
-  const contentRef = useInertWhileCollapsed(open);
+/**
+ * Варіант A (profile/settings deep audit 2026-08-08, рішення власника №4 —
+ * `docs/90-work/audits/2026-08-08-profile-settings-deep-audit.md` §0.1):
+ * підрозділ більше не другий рівень акордеона. Раніше тут стояв власний
+ * `<button>` з `aria-expanded`, шевроном зліва (на відміну від
+ * `SettingsGroup` вище, де шеврон справа) і власною рамкою-коробкою — два
+ * різні патерни розкриття на шляху до одного тумблера (V-12 audit finding:
+ * підблок малювався пʼятьма різними рецептами по кодовій базі). Тепер це
+ * підписана група: заголовок-лейбл (`<h3>`) + завжди видимий вміст — без
+ * кнопки, стану, `aria-expanded`, `inert` чи власної рамки. Підрозділ
+ * візуально відділяється лейблом, а не вкладеною панеллю.
+ */
+export function SettingsSubGroup({ title, children }: SettingsSubGroupProps) {
   return (
-    <div className="rounded-xl bg-surface-soft-glass border border-surface-line shadow-soft overflow-hidden">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        // V-2: другому рівню акордеона (на відміну від `SettingsGroup`
-        // вище) бракувало `aria-expanded` — додано.
-        //
-        // V-3 (переглянуто після адверсарного ревʼю 2026-08-08): наживо
-        // "виміряно 41px" було зафіксовано на fine-pointer (десктоп-миша),
-        // де floor навмисно НЕ діє (root AGENTS.md § Touch targets — той
-        // самий `pointer-coarse:`-підхід, що й у `Button.tsx`). Під
-        // `pointer: coarse` цей звичайний `<button>` вже отримував
-        // 44×44 ДО будь-якої правки тут — глобальний safety-net
-        // (`apps/web/src/styles/mobile.css` `button:not([data-compact]):
-        // not(:disabled)`) ставить `min-height/min-width: 44px` на будь-яку
-        // некомпактну незадизейблену кнопку під тим самим медіа-запитом.
-        // Клас `touch-target` дублював рівно ту саму декларацію під тим
-        // самим `@media (pointer: coarse)` — но-оп, приберено. Реального
-        // sub-44px таргета під pointer:coarse тут немає; десктопні 41px —
-        // очікувана поведінка design-конвенції, а не дефект.
-        className={cn(
-          "flex items-center gap-2 w-full text-left group px-3 py-3",
-          "hover:bg-surface-strong-glass transition-colors",
-        )}
-      >
-        <ChevronIcon expanded={open} />
-        <span className="text-style-overline text-text group-hover:text-brand-strong transition-colors">
-          {title}
-        </span>
-      </button>
-      <div
-        ref={contentRef}
-        className={cn(
-          "grid transition-[grid-template-rows] duration-base ease-standard",
-          open ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
-        )}
-      >
-        <div className="overflow-hidden">
-          <div className="px-3 pb-3 pt-1 space-y-3">{children}</div>
-        </div>
-      </div>
+    <div className="space-y-3">
+      <h3 className="text-style-overline text-text">{title}</h3>
+      <div className="space-y-3">{children}</div>
     </div>
   );
 }
@@ -386,10 +435,16 @@ export function ConfirmModal({
 
 export interface SectionSkeletonProps {
   /**
-   * Minimum height in pixels. Matches the real section's default-expanded
-   * height (header + collapsed SubGroups + chrome padding) so the Suspense
-   * fallback does not cause Cumulative Layout Shift when the lazy chunk
-   * resolves and the real section paints.
+   * Minimum height in pixels. Matches the real section's footprint AS IT
+   * FIRST PAINTS — the closed-header height for a section that mounts
+   * collapsed, or the full expanded-content height for a section that
+   * Варіант A force-opens by default because it's the first section of
+   * the active Налаштування tab (see `SettingsGroupDefaultOpenContext`
+   * above). This is no longer "header + collapsed SubGroups" (adversarial
+   * review 2026-08-08, дефект №4): Варіант A removed `SettingsSubGroup`'s
+   * own collapse state entirely — its content is always visible now — so
+   * there's no in-between middle-height state left to match; it's either
+   * the closed header or the section's true rendered height.
    *
    * Per-section values are owned by the caller — each `<Suspense>`
    * boundary in `HubSettingsPage` passes the height it knows for its
