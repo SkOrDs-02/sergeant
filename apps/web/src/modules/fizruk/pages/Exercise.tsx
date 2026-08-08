@@ -32,6 +32,7 @@ import {
   type ProgressPoint,
 } from "../components/ExerciseProgressChart";
 import { buildStrengthProgressData } from "../lib/exerciseProgress";
+import { formatShortDate } from "../lib/dateFmt";
 import { chartSeries, chartStatusSeries } from "@shared/charts";
 
 interface ExerciseProps {
@@ -292,11 +293,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
             </div>
             {best.bestSet?.at && (
               <div className="text-style-caption text-subtle mt-1">
-                {new Date(best.bestSet.at).toLocaleDateString("uk-UA", {
-                  day: "numeric",
-                  month: "short",
-                  year: "2-digit",
-                })}
+                {formatShortDate(best.bestSet.at)}
               </div>
             )}
             {aging.isStale && (
@@ -447,14 +444,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
                     <div className="flex items-center justify-between gap-2">
                       <div className="text-style-caption text-subtle">
                         {workout?.startedAt
-                          ? new Date(workout.startedAt).toLocaleDateString(
-                              "uk-UA",
-                              {
-                                month: "short",
-                                day: "numeric",
-                                year: "2-digit",
-                              },
-                            )
+                          ? formatShortDate(workout.startedAt)
                           : "—"}
                       </div>
                       <div className="text-style-caption px-2 py-1 rounded-full border border-line text-subtle">

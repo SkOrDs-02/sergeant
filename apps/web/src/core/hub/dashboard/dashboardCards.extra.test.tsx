@@ -170,7 +170,14 @@ describe("StreakIndicator — milestone tracking + legacy fallback", () => {
     expect(trackEvent).not.toHaveBeenCalled();
   });
 
-  it("picks the longest streak across routine and fizruk", () => {
+  // Раніше цей тест стверджував протилежне — «бере найдовший стрік із
+  // routine і fizruk». Порівняння було некоректним із моменту, коли Фізрук
+  // перейшов на тижневий стрік (`computeWeeklyStreakWeeks`): бейдж
+  // підписаний «днів поспіль», тож 9 ТИЖНІВ вигравали в 3 днів і
+  // показувались як «9 днів», а `streak_milestone_reached` отримував ту
+  // саму цифру як `days` (аудит L-8, 2026-08-07). Максимум над різними
+  // одиницями не має сенсу — Фізрук тут просто не бере участі.
+  it("ігнорує тижневий стрік Фізрука і показує денний стрік Рутини", () => {
     localStorage.setItem(
       STORAGE_KEYS.ROUTINE_QUICK_STATS,
       JSON.stringify({ streak: 3 }),
@@ -180,6 +187,7 @@ describe("StreakIndicator — milestone tracking + legacy fallback", () => {
       JSON.stringify({ streak: 9 }),
     );
     render(<StreakIndicator />);
-    expect(document.body.textContent).toContain("9");
+    expect(document.body.textContent).toContain("3");
+    expect(document.body.textContent).not.toContain("9");
   });
 });
