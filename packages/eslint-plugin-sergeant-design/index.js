@@ -2748,8 +2748,111 @@ const rawMotionValue = {
   },
 };
 
+// ─── no-opacity-on-text-token ──────────────────────────────────────────
+//
+// Анти-слоп, атрактор 9 (аудит 2026-08-08). `--c-subtle` і `--c-muted`
+// підібрані так, щоб сидіти РІВНО на порозі WCAG AA — це записано в
+// `theme.css` прямим текстом («tertiary, WCAG AA ≥4.5:1 on
+// panel/panel-hi/bg»). Наслідок арифметичний, не смаковий: будь-яка
+// прозорість нижче 100% виводить такий текст під поріг.
+//
+//   subtle #6b645d на фоні сторінки #ecebe7:
+//     100% → 4.88   /80 → 3.32   /70 → 2.76   /60 → 2.34
+//
+// Гейт контрасту (`packages/design-tokens/contrast.test.js`) цього не
+// ловить і не може: він перевіряє ЗНАЧЕННЯ токенів, а `/70` дописують
+// у className, тобто на місці використання. Це той самий механізм, що
+// дав три копії семантичних тирів і хекс, який їхав через застосунок:
+// інваріант захищено там, де його визначають, і не захищено там, де
+// ним користуються. Правило закриває саме цей розрив.
+//
+// Семантичні кольори (`success`/`danger`/`warning`/`info`) тут теж є —
+// вони ще темніші за subtle і так само не мають запасу під розведення.
+const OPACITY_ON_TEXT_TOKEN_MESSAGE =
+  "Прозорість на кольоровому токені тексту. Значення токенів підібрані рівно на порозі WCAG AA (subtle 4.88 на фоні сторінки), тож уже /80 дає 3.3 і текст стає сабконтрастним. Потрібен тихіший рівень — бери тихіший ТОКЕН, а не розводь наявний. Обґрунтування й заміри — анти-слоп §3.2, атрактор 9.";
+
+const OPACITY_ON_TEXT_TOKEN_RE =
+  /\btext-(?:subtle|muted|text|success|danger|warning|info)\/\d{1,3}\b/;
+
+const noOpacityOnTextToken = {
+  meta: {
+    type: "problem",
+    docs: {
+      description:
+        "Forbid opacity modifiers on colour text tokens — their values already sit at the WCAG AA floor, so any dilution drops the text below 4.5:1.",
+    },
+    schema: [],
+    messages: { opacityOnTextToken: OPACITY_ON_TEXT_TOKEN_MESSAGE },
+  },
+  create(context) {
+    const check = (node, value) => {
+      if (typeof value !== "string") return;
+      if (!OPACITY_ON_TEXT_TOKEN_RE.test(value)) return;
+      context.report({ node, messageId: "opacityOnTextToken" });
+    };
+    return {
+      Literal(node) {
+        check(node, node.value);
+      },
+      TemplateElement(node) {
+        check(node, node.value && (node.value.cooked ?? node.value.raw));
+      },
+    };
+  },
+};
+
+// ─── no-raw-type-size ──────────────────────────────────────────────────
+//
+// Анти-слоп, атрактор 8 (аудит 2026-08-08). Правило вже було написане
+// прозою — П4, пункт 5: «Без сирих `text-xs` / `text-sm`. Дві
+// паралельні шкали = ієрархія, за якою не може стежити лінт». Замір
+// показав 300 входжень у 116 файлах: правило лишилось текстом, тож
+// його просто не виконували.
+//
+// Рівень `warn`, а не `error`, і це навмисно. Заміна НЕ механічна:
+// `text-style-label` — це clamp(13→14px) плюс вага 500, а сирий
+// `text-sm` — рівно 14px з успадкованою вагою. Тобто міграція змінює
+// вигляд, і кожне місце потребує ока, а не sed-у. `error` тут зробив
+// би гейт червоним від народження — рівно той стан «червоний завжди =
+// вимкнений», проти якого цей репо вже боровся з бандл-бюджетами.
+// Прецедент рівня — `prefer-kyiv-time: "warn"` у тому ж конфігу.
+const RAW_TYPE_SIZE_MESSAGE =
+  "Сирий розмір шрифта в className. Візьми семантичну роль: text-style-{display|headline|title|body|label|caption|overline|code}. Дві паралельні шкали дають ієрархію, за якою не стежить ніхто — анти-слоп §4/П4 правило 5, §3.2 атрактор 8.";
+
+const RAW_TYPE_SIZE_RE =
+  /(?:^|[\s"'`])(?:[a-z-]+:)*text-(?:xs|sm|base|lg|xl|2xl|3xl|4xl|5xl)(?![-a-z0-9])/;
+
+const noRawTypeSize = {
+  meta: {
+    type: "suggestion",
+    docs: {
+      description:
+        "Prefer the semantic type roles (text-style-*) over raw Tailwind font-size utilities in className.",
+    },
+    schema: [],
+    messages: { rawTypeSize: RAW_TYPE_SIZE_MESSAGE },
+  },
+  create(context) {
+    const check = (node, value) => {
+      if (typeof value !== "string") return;
+      if (!RAW_TYPE_SIZE_RE.test(value)) return;
+      context.report({ node, messageId: "rawTypeSize" });
+    };
+    return {
+      Literal(node) {
+        check(node, node.value);
+      },
+      TemplateElement(node) {
+        check(node, node.value && (node.value.cooked ?? node.value.raw));
+      },
+    };
+  },
+};
+
 const plugin = {
   rules: {
+    "no-opacity-on-text-token": noOpacityOnTextToken,
+    "no-raw-type-size": noRawTypeSize,
     "no-raw-tracked-storage": noRawTrackedStorage,
     "no-raw-local-storage": noRawLocalStorage,
     "no-finyk-token-in-storage": noFinykTokenInStorage,
@@ -2799,6 +2902,8 @@ export {
   REQUIRE_TOAST_ERROR_ACTION_MESSAGE,
   RAW_MOTION_VALUE_MESSAGE,
   CSS_LITERAL_TOKEN_MESSAGE,
+  OPACITY_ON_TEXT_TOKEN_MESSAGE,
+  RAW_TYPE_SIZE_MESSAGE,
 };
 
 export default plugin;
