@@ -96,6 +96,29 @@ export async function goto(page: Page, route: string): Promise<void> {
   ).toBeAttached();
 }
 
+/**
+ * `page.reload()` із тією ж толерантністю до `net::ERR_ABORTED`, що й
+ * {@link goto}.
+ *
+ * Сирий `page.reload()` рветься, якщо перезавантаження збіглося з роботою
+ * застосунку — у спостереженому випадку в черзі стояв невідправлений
+ * синк-пуш, і індикатор показував «Синхронізація · 1 в черзі». Це та сама
+ * гонка тесту з роутером, яку `goto` лікує повтором, — просто reload її не
+ * отримав (знахідка B9 прийомного прогону 2026-08-09: падало 1 із 4
+ * прогонів на кроці «BT2: стан переживає перезавантаження»).
+ *
+ * Повтор рівно один: якщо навігація рветься двічі поспіль, це вже не гонка
+ * і тест мусить впасти з оригінальною помилкою.
+ */
+export async function reload(page: Page): Promise<void> {
+  try {
+    await page.reload({ waitUntil: "domcontentloaded" });
+  } catch (err) {
+    if (!String(err).includes("ERR_ABORTED")) throw err;
+    await page.reload({ waitUntil: "domcontentloaded" });
+  }
+}
+
 export async function signUp(
   page: Page,
   name: string,
