@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-06-28
+ * Last validated: 2026-08-08
  * Status: Active
  */
 import { useEffect, useState } from "react";
@@ -61,8 +61,22 @@ export function DemoModeBadge() {
         // right-aligned FAB on the hub), so a centred pill lifted clear of
         // the nav has an unobstructed, always-visible slot. Desktop headers
         // are narrow → keep the original top-centre placement from `sm:` up.
+        //
+        // `above-tabbar-pill` (styles/utilities.css) replaces a flat
+        // `5rem`-above-safe-area guess: on Фізрук it undershot the *real*
+        // tabbar (coarse-pointer 64px row + safe-area-pb) enough that the
+        // pill's own hit-box landed ON TOP of the "Тренування" /
+        // "Прогрес і заміри" tabs, so tapping them silently exited demo
+        // instead of switching tabs — and while the rest-timer chip was up,
+        // the pill covered 3 of its 5 controls too (live-browser audit,
+        // 390×844). The utility reads the nav's *measured* height via a
+        // shared CSS var (falls back to plain safe-area on nav-less routes
+        // like `/welcome`, so no dead gap is reserved there) and adds
+        // enough headroom to also clear per-module floating controls docked
+        // just above the tabbar. Only the mobile band needs it — desktop
+        // never had this bug, it moves to the header via `sm:top-2` below.
         "fixed left-1/2 -translate-x-1/2 z-300 select-none",
-        "bottom-[calc(env(safe-area-inset-bottom,0px)+5rem)]",
+        "above-tabbar-pill",
         "sm:bottom-auto sm:top-2 sm:safe-area-pt",
         "inline-flex items-center gap-2 h-11 pl-4 pr-3.5 rounded-full",
         // Solid brand fill (not a translucent wash): the founder walked

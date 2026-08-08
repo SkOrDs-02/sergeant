@@ -146,6 +146,40 @@
   bottom: calc(60px + env(safe-area-inset-bottom, 0px));
 }
 
+@utility above-tabbar-pill {
+  /* ═══════════════════════════════════════════════════════════════════════
+     GENERIC "SITS ABOVE THE DOCKED TABBAR" OFFSET — for `fixed`,
+     bottom-anchored chrome (currently: `DemoModeBadge`) that must clear
+     whichever bottom-nav is actually mounted (`ModuleBottomNav` /
+     `HubBottomNav`), stay clear of per-module floating controls that
+     already dock directly above that nav via `fizruk-above-tabbar`
+     (rest-timer chip, workout-finish sheet), and collapse to a plain
+     safe-area offset on nav-less routes (auth, onboarding) instead of
+     reserving a stranded gap there.
+
+     `--sgt-bottom-nav-inset` is published by `useBottomInsetVar`
+     (shared/hooks/useBottomInsetVar.ts) off the *actual* mounted nav's
+     `getBoundingClientRect()` — not a guessed constant — onto `<html>`,
+     the one common ancestor for every `fixed` layer regardless of which
+     branch of the tree renders it (see `ToastContainer` for the sibling
+     precedent this copies). It already bakes in the nav's own
+     safe-area padding, so we `max()` against the raw env() value
+     instead of adding both and double-counting the inset.
+
+     The extra +4.5rem on top of that measured strip is deliberate
+     headroom, not a tight fit: `fizruk-above-tabbar` docks its own
+     floating controls (rest-timer, workout-finish sheet) directly above
+     the nav at roughly nav-height too, and those controls run another
+     ~44–56px tall. Landing edge-to-edge against that band is one
+     font-scale bump away from the exact overlap this utility exists to
+     fix — 4.5rem clears it with margin instead.
+     ═══════════════════════════════════════════════════════════════════════ */
+  bottom: calc(
+    max(env(safe-area-inset-bottom, 0px), var(--sgt-bottom-nav-inset, 0px)) +
+      4.5rem
+  );
+}
+
 @utility routine-touch-field {
   /* ═══════════════════════════════════════════════════════════════════════
      TOUCH INPUTS — iOS zoom prevention (min 16px)

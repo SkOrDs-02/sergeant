@@ -42,6 +42,20 @@ describe("DemoModeBadge", () => {
     expect(badge).toHaveTextContent("Вийти");
   });
 
+  it("sits above the tabbar via the shared measured-inset utility, not a flat guess", () => {
+    // Regression guard for the tabbar-tap-through bug: a flat `bottom-*rem`
+    // offset undershot the real (coarse-pointer) tabbar height on Фізрук,
+    // so the pill's hit-box landed on top of the bottom-nav tabs. See
+    // `above-tabbar-pill` in `styles/utilities.css` for the fix — reads the
+    // nav's measured height off `--sgt-bottom-nav-inset` instead of
+    // guessing a constant.
+    localStorage.setItem(DEMO_FLAG_KEY, "1");
+    render(<DemoModeBadge />);
+    const badge = screen.getByRole("button", { name: /вийти/i });
+    expect(badge.className).toContain("above-tabbar-pill");
+    expect(badge.className).not.toMatch(/bottom-\[calc/);
+  });
+
   it("exits demo on click: wipes the payload, fires event, navigates to /welcome", () => {
     localStorage.setItem(DEMO_FLAG_KEY, "1");
     localStorage.setItem("hub_onboarding_done_v1", "1");
