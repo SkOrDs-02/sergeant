@@ -20,6 +20,33 @@ export interface WorkoutItemTypeSwitcherProps {
 }
 
 /**
+ * Патч для перемикання типу вправи. Спільний для обох поверхонь, де тип
+ * можна змінити (`ExerciseDetailSheet` і компактний перемикач на
+ * `WorkoutItemCard`): перемикання на «силову» сідає поверх наявних
+ * сетів або сіє один порожній, «час»/«дистанція» зберігають уже введені
+ * значення.
+ */
+export function buildTypeSwitchPatch(
+  t: "strength" | "time" | "distance",
+  item: SwitchableWorkoutItem,
+): Partial<WorkoutItem> {
+  if (t === "strength") {
+    return {
+      type: t,
+      sets: item.sets?.length ? item.sets : [{ weightKg: 0, reps: 0 }],
+    };
+  }
+  if (t === "time") {
+    return { type: t, durationSec: item.durationSec ?? 0 };
+  }
+  return {
+    type: t,
+    distanceM: item.distanceM ?? 0,
+    durationSec: item.durationSec ?? 0,
+  };
+}
+
+/**
  * "Тип" segmented control (Силова / Час / Дистанція) for a logged
  * workout item. Moved out of `WorkoutItemCard` in the 2026-08 redesign
  * (item 5) — it was the single biggest control on the card, changed
@@ -93,22 +120,7 @@ export function WorkoutItemTypeSwitcher({
           // (Segmented has no `disabled` prop, and both mouse AND
           // keyboard paths land here).
           if (isReadOnly) return;
-          if (t === "strength") {
-            onChange({
-              type: t,
-              sets: item.sets?.length ? item.sets : [{ weightKg: 0, reps: 0 }],
-            });
-          }
-          if (t === "time") {
-            onChange({ type: t, durationSec: item.durationSec ?? 0 });
-          }
-          if (t === "distance") {
-            onChange({
-              type: t,
-              distanceM: item.distanceM ?? 0,
-              durationSec: item.durationSec ?? 0,
-            });
-          }
+          onChange(buildTypeSwitchPatch(t, item));
         }}
       />
     </div>

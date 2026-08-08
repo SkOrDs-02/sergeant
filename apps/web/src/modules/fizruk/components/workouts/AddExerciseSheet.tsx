@@ -179,9 +179,13 @@ export function AddExerciseSheet({
                     }))
                   }
                   className={cn(
+                    // Той самий active-стан, що в чіпах фільтра обладнання
+                    // каталогу (`WorkoutCatalogSection`) — fizruk-soft
+                    // токени замість інверсного «чорнила», щоб обидві
+                    // поверхні вибору обладнання виглядали однаково.
                     "text-xs px-3 py-2.5 min-h-[44px] rounded-full border transition-colors",
                     active
-                      ? "bg-text text-bg border-text"
+                      ? "border-fizruk-ring bg-fizruk-surface text-fizruk-soft-fg font-semibold shadow-sm dark:border-fizruk-border-dark/40 dark:bg-fizruk-surface-dark/15"
                       : "border-line bg-bg text-muted hover:border-muted hover:text-text",
                   )}
                   aria-pressed={active}
