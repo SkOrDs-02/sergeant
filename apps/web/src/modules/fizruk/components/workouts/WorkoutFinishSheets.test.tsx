@@ -280,6 +280,28 @@ describe("WorkoutFinishSheets — injury step", () => {
     expect(within(toggle).getByText("1")).toBeInTheDocument();
   });
 
+  // Скарга власника 2026-08-08: «екран погано скролиться вниз, щоб
+  // показати верх». Дві причини були різні. Перша — `overscroll-behavior:
+  // auto`: жест, доведений до межі, перекидався на сторінку ПІД аркушем,
+  // тож журнал їхав, а аркуш стояв. Друга — заголовок їхав під верхню
+  // межу разом із контентом, і повертатись до нього треба було вручну.
+  // jsdom не рахує layout, тож це пін на структурний намір: обидві смуги
+  // мусять лишатись `sticky`, а контейнер — `overscroll-contain`.
+  it("тримає шапку і рядок дій липкими, а скрол — у межах аркуша", () => {
+    renderSheets(makeFlash({ step: "injury" }));
+
+    const dialog = screen.getByRole("dialog", { name: "Щось болить?" });
+    expect(dialog.className).toContain("overscroll-contain");
+
+    const header = screen.getByText("Щось болить?").parentElement;
+    expect(header?.className).toContain("sticky");
+
+    const actionsRow = screen.getByRole("button", {
+      name: "Нічого не позначати",
+    }).parentElement;
+    expect(actionsRow?.className).toContain("sticky");
+  });
+
   it("«Нічого не позначати» веде до саммарі", () => {
     const setFinishFlash = vi.fn();
     renderSheets(makeFlash({ step: "injury" }), setFinishFlash);
