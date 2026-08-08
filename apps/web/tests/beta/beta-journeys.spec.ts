@@ -484,8 +484,14 @@ test.describe.serial("BT5 — активний тиждень (насіяні 7+
     let silent = true;
     for (let attempt = 0; attempt < 3 && silent; attempt += 1) {
       await goto(page, "/finyk/transactions");
+      // Доказ гідрації — наявність БУДЬ-ЯКОЇ групи дня, не сьогоднішньої.
+      // Матчер `/Сьогодні|·/` був неправий двічі: остання насіяна доба
+      // може бути вчорашньою (сідер, запущений після опівночі, кладе
+      // день 0 у майбутнє — знахідка B6 прогону 2026-08-09), а `·` живе
+      // лише у ВИДИМОМУ тексті групи — доступне імʼя кнопки завжди
+      // `"Розгорнути <день>"`, тож ця альтернатива не збігалась ніколи.
       await expect(
-        page.getByRole("button", { name: /Сьогодні|·/ }).first(),
+        page.getByRole("button", { name: /^Розгорнути / }).first(),
       ).toBeVisible({ timeout: 30_000 });
       await page.getByRole("button", { name: "На хаб" }).click();
       const hubNav = page.getByRole("navigation", { name: "Розділи хабу" });
