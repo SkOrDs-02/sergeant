@@ -21,7 +21,7 @@ export function ExerciseProgressChart({
 }: ExerciseProgressChartProps) {
   if (!points || points.length < 2) {
     return (
-      <div className="rounded-xl border border-dashed border-line bg-panelHi/50 py-6 text-center text-xs text-subtle">
+      <div className="rounded-xl border border-dashed border-line bg-panelHi/50 py-6 text-center text-style-caption text-subtle">
         Потрібно щонайменше 2 тренування для графіка
       </div>
     );

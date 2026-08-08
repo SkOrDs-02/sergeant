@@ -372,7 +372,7 @@ export function Progress({ onNavigate }: ProgressProps) {
                   {messages.fizruk.progress.crossModuleHeading}
                 </SectionHeading>
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-9 h-9 rounded-xl bg-fizruk/10 text-fizruk-strong dark:text-fizruk flex items-center justify-center shrink-0 text-base">
+                  <div className="w-9 h-9 rounded-xl bg-fizruk/10 text-fizruk-strong dark:text-fizruk flex items-center justify-center shrink-0">
                     <Icon name="dumbbell" size={18} aria-hidden />
                   </div>
                   <div className="min-w-0 flex-1">

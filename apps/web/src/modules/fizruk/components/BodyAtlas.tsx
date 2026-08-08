@@ -542,7 +542,7 @@ function SelectedCard({
         <button
           type="button"
           onClick={() => onAskCoach(label)}
-          className="mt-3 min-h-[44px] rounded-full border border-line px-3 text-xs text-text transition-colors hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fizruk/50"
+          className="mt-3 min-h-[44px] rounded-full border border-line px-3 text-style-caption text-text transition-colors hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fizruk/50"
         >
           Підказати наступне тренування →
         </button>

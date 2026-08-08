@@ -125,7 +125,7 @@ export function FizrukDayPlanSheet({
                         className="flex items-center gap-2 rounded-xl px-3 py-2 border border-line bg-panel/60"
                       >
                         <span className="w-1.5 h-1.5 rounded-full bg-info shrink-0" />
-                        <span className="text-sm text-text truncate">
+                        <span className="text-style-label text-text truncate">
                           {ex?.name?.uk || ex?.name?.en || ex.id}
                         </span>
                         {ex?.primaryGroup && (

@@ -228,7 +228,7 @@ export function WorkoutTemplatesSection({
                 <button
                   key={ex.id}
                   type="button"
-                  className="w-full text-left px-3 py-2.5 min-h-[44px] text-sm hover:bg-panelHi transition-colors"
+                  className="w-full text-left px-3 py-2.5 min-h-[44px] text-style-label hover:bg-panelHi transition-colors"
                   onClick={() => addEx(ex)}
                 >
                   {ex?.name?.uk || ex?.name?.en}
@@ -344,7 +344,7 @@ export function WorkoutTemplatesSection({
                       <span className="text-style-caption text-muted w-5 text-center tabular-nums">
                         {idx + 1}
                       </span>
-                      <span className="flex-1 text-sm truncate min-w-0">
+                      <span className="flex-1 text-style-label truncate min-w-0">
                         {ex?.name?.uk || ex?.name?.en || id}
                       </span>
                       {group && <SupersetBadge type={group.type} compact />}

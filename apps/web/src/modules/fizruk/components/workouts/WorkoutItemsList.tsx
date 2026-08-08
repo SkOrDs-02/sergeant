@@ -221,7 +221,7 @@ export function WorkoutItemsList({
               <button
                 key={sec}
                 type="button"
-                className="min-h-[44px] px-3 rounded-xl border border-line bg-panelHi text-sm text-text hover:bg-panel transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+                className="min-h-[44px] px-3 rounded-xl border border-line bg-panelHi text-style-label text-text hover:bg-panel transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
                 onClick={() => {
                   handleGroupRestSec(group.id, sec);
                   setRestTimer({ remaining: sec, total: sec });

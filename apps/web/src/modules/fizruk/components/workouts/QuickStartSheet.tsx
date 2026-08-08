@@ -285,7 +285,7 @@ export function QuickStartSheet({
         </div>
 
         {totalCount === 0 ? (
-          <div className="rounded-xl border border-line bg-panelHi p-4 text-center text-xs text-subtle">
+          <div className="rounded-xl border border-line bg-panelHi p-4 text-center text-style-caption text-subtle">
             {q.trim()
               ? "Нічого не знайдено за цим запитом."
               : "Каталог поки що порожній."}
@@ -337,7 +337,7 @@ export function QuickStartSheet({
                               <Icon name="check" size={14} aria-hidden />
                             ) : null}
                           </span>
-                          <span className="text-sm text-text truncate flex-1">
+                          <span className="text-style-label text-text truncate flex-1">
                             {name}
                           </span>
                         </button>
