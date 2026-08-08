@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 // tools/agent-snapshot/snapshot.mjs
 //
-// Dynamic agent snapshot for Sergeant — gathers CI status, budgets, open
-// entropy-janitor issues, recent PR-ledger entries, hard-rule drift, active
-// initiative deadlines, and AI-marker hints into a single small markdown
-// report. Called by agents at the start of a session so they can react to
-// the current state of the repo, not just its static policy.
+// Dynamic agent snapshot for Sergeant — gathers CI status, budgets, recent
+// PR-ledger entries, hard-rule drift, active initiative deadlines, and
+// AI-marker hints into a single small markdown report. Called by agents at
+// the start of a session so they can react to the current state of the
+// repo, not just its static policy.
 //
 // Spec: docs/04-governance/adr/0071-dynamic-agent-snapshot.md
 //
@@ -269,41 +269,6 @@ function formatKb(b) {
   return `${b} B`;
 }
 
-function sectionEntropyIssues() {
-  const data = tryJson("gh", [
-    "issue",
-    "list",
-    "--label",
-    "entropy-janitor/*",
-    "--state",
-    "open",
-    "--limit",
-    "20",
-    "--json",
-    "number,title,labels,createdAt",
-  ]);
-  if (data.__unavailable__) {
-    return [
-      "## Open entropy-janitor issues",
-      `- \`[gh unavailable: ${truncate(data.__unavailable__, 100)}]\``,
-    ].join("\n");
-  }
-  if (!Array.isArray(data) || data.length === 0) {
-    return ["## Open entropy-janitor issues", "- (none)"].join("\n");
-  }
-  const items = data.map((i) => {
-    const label = (i.labels || []).find(
-      (l) => l.name && l.name.startsWith("entropy-janitor/"),
-    );
-    return `- #${i.number}${label ? ` \`${label.name}\`` : ""}: ${truncate(i.title, 120)}`;
-  });
-  return [
-    "## Open entropy-janitor issues",
-    `- ${data.length} open`,
-    ...items,
-  ].join("\n");
-}
-
 function sectionPrLedger() {
   const ledgerPath = resolve(
     REPO_ROOT,
@@ -545,8 +510,6 @@ function buildSnapshot() {
     "",
     sectionBudgets(),
     "",
-    sectionEntropyIssues(),
-    "",
     sectionPrLedger(),
     "",
     sectionHardRuleDrift(),
@@ -593,15 +556,10 @@ function main() {
   let truncated = snapshot;
   let noteLine = "";
   if (bytes(truncated) > MAX_BYTES) {
-    truncated = truncated
-      .replace(
-        /^## Open entropy-janitor issues[\s\S]*?(?=^## )/gm,
-        "## Open entropy-janitor issues\n- (details omitted — snapshot exceeded 50KB)",
-      )
-      .replace(
-        /^## CI last run on main[\s\S]*?(?=^## )/gm,
-        "## CI last run on main\n- (details omitted — snapshot exceeded 50KB)",
-      );
+    truncated = truncated.replace(
+      /^## CI last run on main[\s\S]*?(?=^## )/gm,
+      "## CI last run on main\n- (details omitted — snapshot exceeded 50KB)",
+    );
     if (bytes(truncated) > MAX_BYTES) {
       truncated =
         truncated.slice(0, MAX_BYTES - 64) +

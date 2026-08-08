@@ -21,7 +21,7 @@ Sergeant is **tool-agnostic**. Any AI agent harness — Claude Code, Kilo Code, 
 | Touches `apps/server/**`, API contract, `api-client`, pino, OpenAPI            | `sergeant-server-api`               |
 | Touches `apps/mobile/**` or `apps/mobile-shell/**`, Expo, EAS                  | `sergeant-mobile-expo`              |
 | Touches `db-schema/`, migrations, drill-down, index audit                      | `sergeant-data-and-migrations`      |
-| Coolify / Vercel / Sentry / alerting/SLO / CI workflow change                  | `sergeant-deploy-and-observability` |
+| Coolify / Vercel / Sentry / alerting/SLO / CI workflow change / n8n            | `sergeant-deploy-and-observability` |
 | HubChat module / HubChat reset / HubChat E2E                                   | `sergeant-hubchat`                  |
 | Writing or running E2E (Playwright/Vitest browser)                             | `sergeant-e2e-testing`              |
 | Security review, vuln triage, secret scan, dependency CVE                      | `sergeant-security-audit`           |
@@ -32,7 +32,7 @@ Sergeant is **tool-agnostic**. Any AI agent harness — Claude Code, Kilo Code, 
 | Regression, hotfix, "this used to work"                                        | `sergeant-bugfix-and-regression`    |
 | Refactor, dead code, Knip baseline, eslint baseline reduction                  | `sergeant-tech-debt`                |
 | Creating or editing `.agents/skills/**/SKILL.md`                               | `sergeant-writing-skills`           |
-| Touches `tools/**`, `scripts/**`, ops tooling (janitors, snapshot, ci-скрипти) | `sergeant-tech-debt`                |
+| Touches `tools/**`, `scripts/**`, ops tooling (snapshot, ci-скрипти)          | `sergeant-tech-debt`                |
 | PR review, squash-merge, release-cut, changelog                                | `sergeant-review-and-merge`         |
 | Before claiming done/green/fixed — фінальна перевірка перед звітом             | `sergeant-verify-before-done`       |
 | PR review touching 3+ governed surfaces                                        | `sergeant-review-squad`             |
@@ -45,7 +45,7 @@ If two surfaces overlap (e.g. web + e2e), load the **owner** first; add the othe
 
 ### Harness config lives outside the repo
 
-Harnesses keep their config outside the checkout, with three deliberate exceptions: the harness-neutral version registry `.kilo/harness-versions.json` (§ Harness version), the repo-owned Codex layer `.codex/` (`config.toml`, `hooks.json`, `agents/*.toml` — 20 tracked files; стан через `pnpm codex:status`, опис у [`docs/00-start/agents/codex-capabilities.md`](./docs/00-start/agents/codex-capabilities.md)), and the shared MCP wiring in `.mcp.json`. Nothing else. Every harness is an **equal peer**: it reads `AGENTS.md` + `.agents/skills/` from the repo for shared policy, then keeps its own models, permissions, MCP wiring, custom agents and commands in its own global config home. **None of them is "the" driver of this repo.**
+Harnesses keep their config outside the checkout, with three deliberate exceptions: the harness-neutral version registry `.kilo/harness-versions.json` (§ Harness version), the repo-owned Codex layer `.codex/` (`config.toml`, `hooks.json`, `agents/*.toml` — 21 tracked files; стан через `pnpm codex:status`, опис у [`docs/00-start/agents/codex-capabilities.md`](./docs/00-start/agents/codex-capabilities.md)), and the shared MCP wiring in `.mcp.json`. Nothing else. Every harness is an **equal peer**: it reads `AGENTS.md` + `.agents/skills/` from the repo for shared policy, then keeps its own models, permissions, MCP wiring, custom agents and commands in its own global config home. **None of them is "the" driver of this repo.**
 
 | Harness     | Config home (global, outside the repo)                                                                         | Tool-specific wrapper                                                                        |
 | ----------- | -------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
@@ -238,7 +238,7 @@ The agent harness (AGENTS.md, `.agents/skills/**`, Hard Rules registry, `eslint-
 
 - **Schema:** `schemaVersion: 1` (bump on backward-incompatible layout changes).
 - **Current:** see `current` field in `.kilo/harness-versions.json`.
-- **A/B experiments:** tracked under `abExperiments` (empty until a treatment is added).
+- **A/B experiments:** `.github/workflows/harness-a-b.yml` прибрано [ADR-0082](docs/04-governance/adr/0082-private-storage-repo-posture.md) §4; A/B-прогони наразі ручні, реєстр `abExperiments` лишається чинним, але порожній.
 - **How to bump:** run `node scripts/ci-bump-harness-version.mjs` locally before opening a PR that touches AGENTS.md, a skill, a Hard Rule, or an ESLint design rule; the script auto-detects `patch` / `minor` / `major` from the diff and updates the file in place.
 - **Cross-read:** on session start, if `current` differs from the version noted in the previous session summary, re-read the linked governance doc and the latest `versions.<x.y.z>.changes` entry.
 

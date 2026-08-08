@@ -2,9 +2,18 @@
 // scripts/ci/check-deploy-config-staging-gate.mjs
 //
 // Initiative 0011 phase 1 PR 1.3 — staging-verification gate for PRs
-// that change deploy-config files (vercel.json / fly.toml /
-// Dockerfile* / apps/server/build.mjs / Caddyfile).
-// (`railway.toml` was tracked until Railway was decommissioned — ADR-0074.)
+// that change deploy-config files (vercel.json / Dockerfile* /
+// apps/server/build.mjs).
+// (`railway.toml` was tracked until Railway was decommissioned — ADR-0074.
+// `fly.toml` / `Caddyfile` were removed from this matcher 2026-08-08:
+// Fly.io was never actually part of this stack and those files never
+// existed in the repo — see docs/00-start/playbooks/deploy-config-change.md.
+// Coolify app-config (env vars, pre-deploy command, health-check, image
+// tag) lives in the Coolify UI, not in git, so it is structurally
+// invisible to a git-diff-based gate like this one — that surface is
+// verified by a human against the live deploy per playbook §3, not by
+// this script. This gate is NOT a no-op: it still covers the deploy-config
+// files that do exist (vercel.json, Dockerfile.api, build.mjs).)
 //
 // The job fails when:
 //   1. A deploy-config file has non-comment, non-whitespace changes

@@ -19,14 +19,13 @@ ADR-0071 explains _why_ the snapshot exists and _what_ it contains. This governa
 
 Every agent that loads `sergeant-start-here` MUST run `pnpm snapshot` before loading any
 specialist skill. The script is zero-dep, offline-safe, and degrades gracefully. The
-agent reads `.kilocode/snapshot.md` and reacts to its 8 sections:
+agent reads `.kilocode/snapshot.md` and reacts to its 7 sections:
 
 | Section              | Failure mode          | Agent action when healthy                              | Agent action when degraded         |
 | -------------------- | --------------------- | ------------------------------------------------------ | ---------------------------------- |
 | Repo                 | never                 | orient                                                 | (n/a — never fails)                |
 | CI last run on main  | `gh` unavailable      | investigate if red before opening PR                   | proceed with caution, manual check |
 | Budgets              | bundle script missing | load `sergeant-deploy-and-observability` if >95%       | proceed, no live budget signal     |
-| Open entropy issues  | `gh` unavailable      | load `sergeant-tech-debt` if touched surface mentioned | proceed, surface not in scope      |
 | Recent PR-ledger     | index parse error     | skim for adjacent work                                 | proceed, no recent-context signal  |
 | Hard-rule drift      | registry sync error   | re-read named rule before acting                       | proceed at own risk                |
 | Initiative deadlines | date parse error      | read named initiative file                             | proceed                            |
@@ -49,7 +48,6 @@ The snapshot answers **state** questions:
 
 - "Is CI green?"
 - "Are bundle budgets under 95%?"
-- "Which entropy-janitor issues are open and touch the surface I'm about to edit?"
 - "Which TODO-dated initiatives expire in the next 30 days?"
 
 These are **complementary, not redundant**. The recommended flow on session start:

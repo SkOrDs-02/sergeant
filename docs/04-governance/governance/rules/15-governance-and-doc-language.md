@@ -95,6 +95,7 @@ All **prose** in internal docs (ADRs, playbooks, audits, RFCs, architecture docs
 - PR titles & descriptions (English so reviewers across timezones / Devin / Codex can scan).
 - Code identifiers, command names, log lines, env-var names, error codes (always English).
 - Verbatim quotes from English-language sources (RFCs, vendor docs, Stripe error names, etc.).
+- `.agents/skills/**/SKILL.md` — `lang: uk` is the default (most skills). `lang: en` is allowed **only** with a mandatory `lang-reason:` field in the frontmatter, used when the skill body is critical to tool-routing stability (e.g. `sergeant-e2e-testing`, `sergeant-planning-batch`, `sergeant-security-audit`, `sergeant-tech-debt`, `sergeant-verify-before-done`). The `description:` field still carries a bilingual trigger phrase regardless of body language — see `sergeant-writing-skills` § Грамар.
 
 Inside any of those English surfaces it's still fine to mix Ukrainian prose where it clarifies (e.g. `> _Update 2026-04-30_:` blocks); the rule is about the **default** language for new prose, not a ban.
 

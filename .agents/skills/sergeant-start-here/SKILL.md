@@ -54,10 +54,10 @@ The script is zero-dep and offline-safe (`[gh unavailable: ...]` for sections th
 | Ревʼю PR, готовність до merge, pre-merge-перевірки               | `sergeant-review-and-merge`        |
 | Перед заявою «done/green/fixed» — доказ свіжим повним прогоном   | `sergeant-verify-before-done`      |
 | Web-UI, PWA-shell, Tailwind, accessibility                       | `sergeant-web-ui`                  |
-| Server-роути, серіалізатори, api-client, контракти               | `sergeant-server-api`              |
+| Server-роути, серіалізатори, api-client, контракти, pino, OpenAPI | `sergeant-server-api`              |
 | Backend-архітектура, CQRS, Temporal, Saga, service boundaries    | `sergeant-backend-architecture`    |
-| SQL, схема, дизайн запитів, міграції, prod DB rollout (Coolify)  | `sergeant-data-and-migrations`     |
-| Expo, React Native, mobile-shell, MMKV, deep-link-и              | `sergeant-mobile-expo`             |
+| SQL, схема, дизайн запитів, міграції, prod DB rollout (Coolify), `db-schema/`, index audit | `sergeant-data-and-migrations`     |
+| Expo, React Native, mobile-shell, MMKV, deep-link-и, EAS         | `sergeant-mobile-expo`             |
 | HubChat tool-defs, executors, prompt cache, action cards         | `sergeant-hubchat`                 |
 | Незрозуміло, де саме код має жити в монорепо                     | `sergeant-monorepo-boundaries`     |
 | Деплой, env-vars, health checks, Sentry, Coolify/Vercel, n8n     | `sergeant-deploy-and-observability`|
@@ -65,6 +65,7 @@ The script is zero-dep and offline-safe (`[gh unavailable: ...]` for sections th
 | Playwright / E2E тести / smoke test / accessibility automation    | `sergeant-e2e-testing`             |
 | Security review, аудит вразливостей, pnpm audit, PAT safety       | `sergeant-security-audit`          |
 | Технічний борг, dead code, ESLint baseline, module-size refactor  | `sergeant-tech-debt`               |
+| `tools/**`, `scripts/**`, ops tooling (janitors, snapshot, ci-скрипти) | `sergeant-tech-debt`               |
 | Створення / редагування `.agents/skills/**/SKILL.md`             | `sergeant-writing-skills`          |
 | PR review що торкається 3+ governed surfaces                     | `sergeant-review-squad`            |
 | Фіча через 2+ surfaces з contract dependencies (DB→server→web)  | `sergeant-deliver-squad`           |

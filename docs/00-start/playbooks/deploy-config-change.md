@@ -3,9 +3,9 @@
 > **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
 > **Status:** Active
 
-**Trigger:** PR має non-comment зміни у deploy-config файлах (`vercel.json`, `fly.toml`, `Dockerfile*`, `Caddyfile`, `apps/server/build.mjs`) — CI-job `Deploy-config staging gate` падає без verification-лейбла.
+**Trigger:** PR має non-comment зміни у deploy-config файлах (`vercel.json`, `Dockerfile*`, `apps/server/build.mjs`) — CI-job `Deploy-config staging gate` падає без verification-лейбла.
 
-> `railway.toml` більше не трекається гейтом — Railway декомісовано, файл видалено з репо ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md)).
+> `railway.toml` більше не трекається гейтом — Railway декомісовано, файл видалено з репо ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md)). `fly.toml`/`fly.staging.toml`/`Caddyfile` ніколи не існували в цьому репо — Fly.io в стеку немає. Coolify app-config (env, pre-deploy command, health-check, image tag) живе в Coolify UI, не в git, тож механічний гейт його фізично не бачить — верифікація там людська, див. [§3](#3-перевір-coolify-prod-деплой).
 
 ## Owner surface
 
@@ -34,7 +34,7 @@ PR #1595 → PR #1600 — «Vercel SSOT-flip». Edit deploy-конфігу у к
 **Q2: Яку поверхню зачіпає зміна?**
 
 - `apps/web/vercel.json` → [§1 Перевір Vercel preview](#1-перевір-vercel-preview).
-- `Dockerfile.api`, `apps/server/build.mjs`, `fly.toml` (api) → [§2 Перевір staging-деплой API](#2-перевір-staging-деплой-api).
+- `Dockerfile.api`, `apps/server/build.mjs` → §2 нижче — редіректить на [§3 Перевір Coolify prod-деплой](#3-перевір-coolify-prod-деплой).
 - Coolify app-config (env, pre-deploy command, health-check, image tag) → [§3 Перевір Coolify prod-деплой](#3-перевір-coolify-prod-деплой).
 - Кілька — застосуй кожну релевантну секцію перед тим, як ставити лейбл.
 
@@ -45,11 +45,11 @@ flowchart TD
     Q1 -- "Так" --> EMERG["§4 Emergency"]
 
     Q2 -- "vercel.json" --> WEB["§1 Vercel preview"]
-    Q2 -- "Dockerfile.api / build.mjs / fly.toml" --> API["§2 Staging API"]
+    Q2 -- "Dockerfile.api / build.mjs" --> API["§2 → редірект на §3"]
     Q2 -- "Coolify app-config" --> COOLIFY["§3 Coolify prod-деплой"]
 
     WEB --> LABEL["Постав verified-on-staging"]
-    API --> LABEL
+    API --> COOLIFY
     COOLIFY --> LABEL
     EMERG --> LABEL_E["Постав verified-on-staging-emergency<br/>+ post-mortem"]
 ```
@@ -69,16 +69,11 @@ flowchart TD
 4. Подивись Vercel-логи (Project → Logs) ~30 секунд: жодного 5xx-сплеска, жодних edge-config помилок.
 5. Якщо все зелене — постав лейбл `verified-on-staging`.
 
-### 2. Перевір staging-деплой API
+### 2. Окремого staging API немає — дивись §3
 
-1. Запушай гілку, дочекайся проходження CI.
-2. Вручну тригерни deploy на staging Fly-app (`fly deploy --app sergeant-api-staging --config fly.staging.toml --image-label devin-test`) **або** попроси maintainer-а задеплоїти твою гілку на staging.
-3. Smoke:
-   - `/health` повертає 200 з очікуваною формою JSON.
-   - `/health/liveness`, `/health/readiness`, `/health/startup` (якщо релевантно) — див. [add-sql-migration.md](./add-sql-migration.md) для migration-aware probe-ів.
-   - Прожени один auth-flow end-to-end через staging web-клієнт.
-4. Подивись staging Fly-логи ~5 хвилин (або два deploy-цикли — що довше). Жодних 5xx, migration-loop або boot-loop.
-5. Якщо все зелене — постав лейбл `verified-on-staging`.
+Історично тут стояв Fly.io staging-деплой (`fly deploy --app sergeant-api-staging --config fly.staging.toml`). Fly.io в стеку більше немає, і `fly.toml`/`fly.staging.toml` ніколи не існували в цьому репо — це був застарілий/помилковий текст playbook-а, не реальний flow.
+
+Чесно: окремого staging-середовища для API зараз нема. Прод-бекенд — один Hetzner CX23 інстанс під Coolify ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md)). Тому зміни `Dockerfile.api` / `apps/server/build.mjs` верифікуються так само, як Coolify app-config — на живому prod-деплої одразу після merge, з rollback-планом напоготові. Виконуй [§3 Перевір Coolify prod-деплой](#3-перевір-coolify-prod-деплой) для цих файлів; окремих кроків тут більше нема.
 
 ### 3. Перевір Coolify prod-деплой
 
