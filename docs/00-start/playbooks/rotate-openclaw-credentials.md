@@ -16,3 +16,15 @@ Hard Rule #20 (No OpenClaw PATs in production) **не скасовано** ADR-0
 - [`rotate-secrets.md`](./rotate-secrets.md) — канонічний плейбук ротації секретів.
 - [ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md) — decommission rationale.
 - [`playbook-catalog.md` § Deprecated redirect anchors](./playbook-catalog.md#deprecated-redirect-anchors).
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                                                                   | Merged     |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- | ---------- |
+| [#508](https://github.com/Skords-01/Sergeant/pull/508) | fix(docs): reconcile canonical docs with current repo                                                                   | 2026-07-29 |
+| [#334](https://github.com/Skords-01/Sergeant/pull/334) | docs(root): reconcile docs with code after 2026-07-20 audit (Railway->Coolify, CI gates, dual-write, domain invariants) | 2026-07-21 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 2 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
