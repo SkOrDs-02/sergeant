@@ -213,7 +213,7 @@ function GoalBudgetCardComponent({
                 <button
                   type="button"
                   onClick={onBeginEdit}
-                  className="text-subtle hover:text-text text-sm transition-colors"
+                  className="text-subtle hover:text-text transition-colors"
                   aria-label="Редагувати ціль"
                 >
                   <Icon name="edit" size={16} aria-hidden />

@@ -236,7 +236,7 @@ export function AssetsTxPickerView({
             <button
               type="button"
               onClick={() => setTxPicker(null)}
-              className="inline-flex items-center gap-1 text-sm text-muted hover:text-text transition-colors"
+              className="inline-flex items-center gap-1 text-style-label text-muted hover:text-text transition-colors"
             >
               <Icon name="chevron-left" size="sm" />
               Назад
@@ -276,7 +276,7 @@ export function AssetsTxPickerView({
         <div className="flex items-center gap-3 px-4 py-3 border-b border-line bg-bg sticky top-0 z-10">
           <button
             onClick={() => setTxPicker(null)}
-            className="inline-flex items-center gap-1 text-sm text-muted hover:text-text transition-colors"
+            className="inline-flex items-center gap-1 text-style-label text-muted hover:text-text transition-colors"
           >
             <Icon name="chevron-left" size="sm" />
             Назад
@@ -308,7 +308,7 @@ export function AssetsTxPickerView({
                 />
               </div>
             </Card>
-            <p className="text-xs text-subtle mb-3 px-1">
+            <p className="text-style-caption text-subtle mb-3 px-1">
               Тапни транзакцію щоб прив&apos;язати як погашення. Виділені
               зеленим — автоматично виявлені поповнення картки.
             </p>
@@ -368,7 +368,7 @@ export function AssetsTxPickerView({
             <button
               type="button"
               onClick={() => setTxPicker(null)}
-              className="inline-flex items-center gap-1 text-sm text-muted hover:text-text transition-colors"
+              className="inline-flex items-center gap-1 text-style-label text-muted hover:text-text transition-colors"
             >
               <Icon name="chevron-left" size="sm" />
               Назад
@@ -388,7 +388,7 @@ export function AssetsTxPickerView({
           <button
             type="button"
             onClick={() => setTxPicker(null)}
-            className="inline-flex items-center gap-1 text-sm text-muted hover:text-text transition-colors"
+            className="inline-flex items-center gap-1 text-style-label text-muted hover:text-text transition-colors"
           >
             <Icon name="chevron-left" size="sm" />
             Назад
@@ -465,7 +465,7 @@ export function AssetsTxPickerView({
           <button
             type="button"
             onClick={() => setTxPicker(null)}
-            className="inline-flex items-center gap-1 text-sm text-muted hover:text-text transition-colors"
+            className="inline-flex items-center gap-1 text-style-label text-muted hover:text-text transition-colors"
           >
             <Icon name="chevron-left" size="sm" />
             Назад

@@ -73,7 +73,7 @@ function SyncStatusBadgeComponent({
   return (
     <div
       className={cn(
-        "flex items-center gap-2 rounded-xl px-3 py-2 text-xs border",
+        "flex items-center gap-2 rounded-xl px-3 py-2 text-style-caption border",
         isError
           ? "bg-danger/10 border-danger/30"
           : isPartial

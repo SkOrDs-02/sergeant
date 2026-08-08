@@ -102,7 +102,7 @@ function Row({
   onSelect?: () => void;
   children: ReactNode;
 }) {
-  const shared = "w-full flex items-center gap-2 text-sm";
+  const shared = "w-full flex items-center gap-2";
   if (!onSelect) return <div className={shared}>{children}</div>;
   return (
     <button
