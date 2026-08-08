@@ -22,7 +22,7 @@ export interface FizrukNavItem extends ModuleBottomNavItem {
 
 /**
  * Fizruk chrome audit V-7: not every `FizrukPage` owns a tab of its own
- * — «Заміри» is a full page, but it lives under the «Прогрес і заміри»
+ * — «Заміри» is a full page, but it lives under the «Прогрес»
  * tab rather than getting a fifth icon in the strip, and the two
  * detail-style routes («Атлас», «Вправа») don't own a tab either. Before
  * this map existed `FizrukApp` passed the raw `page` straight through as
@@ -75,7 +75,16 @@ export const FIZRUK_NAV: readonly FizrukNavItem[] = [
   },
   {
     id: "progress",
-    label: "Прогрес і заміри",
+    // «Прогрес і заміри» (16 символів) не влазив у стелю підпису активної
+    // вкладки — `ModuleBottomNav` тримає її на `max-w-[88px]`, і хвіст
+    // зрізало посеред слова: «Прогрес і замір» (знахідка QA-аудиту
+    // 2026-08-04 «кліп лейбла без ellipsis», скарга власника 2026-08-08).
+    // Підпис нижньої навігації — це одне слово, а не назва розділу:
+    // сторінка має власний H1 «Прогрес», а вхід у заміри — перша картка
+    // на ній («Заміри тіла · Обхвати й динаміка»), тож маршрут
+    // `measurements` лишається під цією вкладкою (див. `fizrukNavActiveId`)
+    // без згадки в самому підписі.
+    label: "Прогрес",
     icon: (
       <svg {...NAV_SVG_PROPS}>
         <polyline points="3 17 9 11 13 15 21 7" />

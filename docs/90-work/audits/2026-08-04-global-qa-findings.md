@@ -1,6 +1,6 @@
 # Глобальна браузерна QA: знахідки
 
-> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-02.
+> **Last touched:** 2026-08-08 by @claude. **Next review:** 2026-11-06.
 > **Status:** Active
 
 Журнал знахідок прогону за
@@ -256,7 +256,7 @@ check constraint "ai_usage_daily_request_count_check" (code 23514)
 - **Поля без accessible name** — reminder-time у Рутині (`ReminderPresets.tsx:75`), portion/refine у PhotoAnalyzeCard (`PhotoAnalyzeCard.tsx:276`).
 - **«Скинути» зносить усі 4 КБЖВ-цілі без підтвердження/undo** (`DailyPlanCard.tsx:241`).
 - **Ex-Hard Rule #13, retired ADR-0081 (порушення дизайн-конвенції) на весь модуль Nutrition** — сирі light/dark пари замість токенів (`NutritionHeader.tsx:20`).
-- Стейл-копі у delete-confirm Рутини (`HabitDetailSheet.tsx:552`), кліп лейбла «Прогрес і заміри» без ellipsis (`fizrukNav.tsx:45`), диміс-контрол зі стрілкою «→» (`InsightCard.tsx:227`), невидимий для AT kcal-чарт (`LogCardAnalytics.tsx:97`), дроп-зона фото без фокус-індикатора (`PhotoAnalyzeCard.tsx:125`).
+- Стейл-копі у delete-confirm Рутини (`HabitDetailSheet.tsx:552`), кліп лейбла «Прогрес і заміри» без ellipsis (`fizrukNav.tsx:45`) — **виправлено 2026-08-08**: підпис вкорочено до «Прогрес» (нижня навігація тримає підпис на `max-w-[88px]`, тобто ≈13 символів; вхід у заміри лишається першою карткою на самій сторінці), плюс `text-ellipsis` у `ModuleBottomNav` як запобіжник проти обриву посеред слова, диміс-контрол зі стрілкою «→» (`InsightCard.tsx:227`), невидимий для AT kcal-чарт (`LogCardAnalytics.tsx:97`), дроп-зона фото без фокус-індикатора (`PhotoAnalyzeCard.tsx:125`).
 
 **Low (31), домінантні патерни:**
 

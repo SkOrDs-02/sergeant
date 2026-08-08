@@ -18,6 +18,23 @@ describe("FIZRUK_NAV", () => {
       "body",
     ]);
   });
+
+  // `ModuleBottomNav` тримає підпис активної вкладки на `max-w-[88px]`, а це
+  // ≈13 кириличних символів у 12px semibold. «Прогрес і заміри» (16) у стелю
+  // не вліз, і хвіст різало посеред слова (QA-аудит 2026-08-04, скарга
+  // власника 2026-08-08). Цифра нижче — не піксельний замір, а груба межа
+  // проти повторення саме цього класу помилки: підпис нижньої навігації
+  // мусить бути коротким, а не назвою розділу.
+  const NAV_LABEL_MAX_CHARS = 12;
+
+  it("keeps every tab label short enough for the active-pill ceiling", () => {
+    for (const item of FIZRUK_NAV) {
+      expect(
+        item.label.length,
+        `Підпис «${item.label}» задовгий для нижньої навігації`,
+      ).toBeLessThanOrEqual(NAV_LABEL_MAX_CHARS);
+    }
+  });
 });
 
 describe("fizrukNavActiveId (V-7 chrome audit)", () => {
@@ -34,9 +51,9 @@ describe("fizrukNavActiveId (V-7 chrome audit)", () => {
     }
   });
 
-  it("highlights «Прогрес і заміри» while on the Заміри page", () => {
+  it("highlights «Прогрес» while on the Заміри page", () => {
     // The specific V-7 regression: Заміри is a full page but not its own
-    // tab — it lives under «Прогрес і заміри» (fizrukNav.tsx FIZRUK_NAV).
+    // tab — it lives under «Прогрес» (fizrukNav.tsx FIZRUK_NAV).
     expect(fizrukNavActiveId("measurements")).toBe("progress");
   });
 

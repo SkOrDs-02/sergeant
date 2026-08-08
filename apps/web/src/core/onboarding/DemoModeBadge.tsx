@@ -66,7 +66,7 @@ export function DemoModeBadge() {
         // `5rem`-above-safe-area guess: on Фізрук it undershot the *real*
         // tabbar (coarse-pointer 64px row + safe-area-pb) enough that the
         // pill's own hit-box landed ON TOP of the "Тренування" /
-        // "Прогрес і заміри" tabs, so tapping them silently exited demo
+        // "Прогрес" tabs, so tapping them silently exited demo
         // instead of switching tabs — and while the rest-timer chip was up,
         // the pill covered 3 of its 5 controls too (live-browser audit,
         // 390×844). The utility reads the nav's *measured* height via a

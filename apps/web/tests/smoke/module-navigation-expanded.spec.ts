@@ -25,7 +25,7 @@ test("@critical fizruk: bottom nav switches path-backed module sections", async 
   await expect(workouts).toHaveAttribute("aria-current", "page");
   await expect(page.getByText("Немає активного тренування")).toBeVisible();
 
-  const progress = nav.getByRole("button", { name: "Прогрес і заміри" });
+  const progress = nav.getByRole("button", { name: "Прогрес" });
   await progress.click();
   await expect(page).toHaveURL(/\/fizruk\/progress$/);
   await expect(progress).toHaveAttribute("aria-current", "page");
