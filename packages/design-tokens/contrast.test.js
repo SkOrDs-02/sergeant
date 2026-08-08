@@ -17,6 +17,7 @@ import {
   moduleColors,
   inkTheme,
   moduleAccentRgb,
+  statusStrongHex,
 } from "./tokens.js";
 
 function luminance(hex) {
@@ -259,4 +260,39 @@ describe("@sergeant/design-tokens — «Чорнило» light pair (spec § 5)"
       expect(contrastRatio(hex, bg)).toBeGreaterThanOrEqual(4.5);
     });
   }
+
+  // AI-CONTEXT (2026-08-07): семантичні тири не мали ЖОДНОЇ пари в цьому
+  // файлі — гейт покривав чотири модульні акценти й на цьому спинявся.
+  // Це та сама сліпа пляма, що й вище, лише на іншій половині палітри:
+  // `warning-strong` тримався на amber-700 = 4.21 на фоні сторінки, тобто
+  // фейлив AA, а підпис у пресеті стверджував 4.83 (замір проти старої
+  // кремової бази). Хекси беруться з `statusStrongHex` — того самого
+  // джерела, що споживає Tailwind-пресет, — щоб копія не могла розійтися.
+  for (const [name, hex] of Object.entries(statusStrongHex)) {
+    it(`${name}-strong ≥ 4.5:1 on the page background (AA text)`, () => {
+      expect(contrastRatio(hex, bg)).toBeGreaterThanOrEqual(4.5);
+    });
+    it(`${name}-strong ≥ 4.5:1 on white (AA text on cards)`, () => {
+      expect(contrastRatio(hex, surface)).toBeGreaterThanOrEqual(4.5);
+    });
+    it(`white text ≥ 4.5:1 on the ${name}-strong fill (AA)`, () => {
+      expect(contrastRatio("#ffffff", hex)).toBeGreaterThanOrEqual(4.5);
+    });
+  }
+
+  // Модульні й семантичні тири мусять лишатися на ОДНОМУ тирі. Не
+  // естетика: система з двома конвенціями не має способу відрізнити
+  // «свідомий виняток» від «забули підняти» — і саме так routine
+  // прожив на -700, поки решта пішла на -800.
+  it("семантичні тири не слабші за найслабший модульний акцент", () => {
+    const weakestModule = Math.min(
+      ...Object.values(accents).map((hex) => contrastRatio(hex, bg)),
+    );
+    for (const [name, hex] of Object.entries(statusStrongHex)) {
+      expect(
+        contrastRatio(hex, bg),
+        `${name}-strong слабший за найслабший модульний акцент`,
+      ).toBeGreaterThanOrEqual(weakestModule - 0.5);
+    }
+  });
 });

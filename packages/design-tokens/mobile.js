@@ -8,6 +8,7 @@
  *
  * AI-NOTE: must stay `.js` + `.d.ts` (see AGENTS.md anti-pattern #2 / #720).
  */
+import { statusStrongHex } from "./tokens.js";
 
 /**
  * @type {Readonly<{
@@ -64,12 +65,18 @@ export const colors = Object.freeze({
   danger: "#ef4444",
   info: "#0ea5e9",
   // WCAG-AA companions for light surfaces (see AI-CONTEXT above).
-  // teal-800 / emerald-700 / amber-700 / red-700 / sky-700.
+  // teal-800 + чотири семантичні на -800.
+  //
+  // AI-DANGER: семантичні беруться зі `statusStrongHex`, а не літералами
+  // (2026-08-07). Тут стояла третя за рахунком копія тих самих значень —
+  // після пресета й `theme.css` — і всі три треба було правити руками.
+  // Саме так `warning` лишився на amber-700 (4.21 на фоні сторінки,
+  // фейл AA) уже після того, як модульні акценти пішли на -800.
   accentStrong: "#115e59", // teal-800 (2026-07: was #047857 emerald-700)
-  successStrong: "#047857",
-  warningStrong: "#b45309",
-  dangerStrong: "#b91c1c",
-  infoStrong: "#0369a1",
+  successStrong: statusStrongHex.success, // #065f46 — emerald-800
+  warningStrong: statusStrongHex.warning, // #92400e — amber-800
+  dangerStrong: statusStrongHex.danger, // #991b1b — red-800
+  infoStrong: statusStrongHex.info, // #075985 — sky-800
 });
 
 /** @type {Readonly<{ xs: number; sm: number; md: number; lg: number; xl: number; xxl: number; }>} */

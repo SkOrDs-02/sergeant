@@ -102,6 +102,13 @@ export declare const statusColors: Readonly<Record<StatusColor, string>>;
  */
 export declare const statusHex: Readonly<Record<StatusColor, string>>;
 
+/**
+ * WCAG-AA `-strong` companions to `statusColors` — what `text-{c}-strong`
+ * and `bg-{c}-strong text-white` resolve to. All four sit on `-800`, the
+ * same tier as the four module accents; `contrast.test.js` pins that.
+ */
+export declare const statusStrongHex: Readonly<Record<StatusColor, string>>;
+
 /** Semantic chart colour identifiers (macro scale + structural). */
 export type ChartHexKey = "limit" | "neutral" | "protein" | "fat" | "carbs";
 

@@ -915,10 +915,16 @@
        tokens.js has no dedicated red/amber/sky ramp to pull a fresh tier
        from. */
     --c-accent: 17 94 89; /* teal-800 — matches `chart-finyk` HC tier */
-    --c-success: 4 120 87; /* emerald-700 */
-    --c-warning: 180 83 9; /* amber-700 */
-    --c-danger: 185 28 28; /* red-700 */
-    --c-info: 3 105 161; /* sky-700 */
+    /* AI-DANGER: мусить іти в парі з `statusStrongHex` у tokens.js
+       (2026-08-07). Тут стояв тир -700, і `--c-warning` віддавав
+       amber-700 = 4.21 на фоні сторінки — тобто РЕЖИМ ВИСОКОГО
+       КОНТРАСТУ фейлив AA, тоді як його призначення протилежне. Той
+       самий клас помилки, що й `--c-chart-routine` у цьому ж блоці:
+       HC каскадить поверх light, тож розсинхрон нічим не видно. */
+    --c-success: 6 95 70; /* #065f46 — emerald-800, 6.44:1 vs bg */
+    --c-warning: 146 64 14; /* #92400e — amber-800,   5.94:1 vs bg */
+    --c-danger: 153 27 27; /* #991b1b — red-800,     6.97:1 vs bg */
+    --c-info: 7 89 133; /* #075985 — sky-800,     6.34:1 vs bg */
 
     /* Status soft surfaces flip to full-strength fills so banners /
        badges keep WCAG AAA contrast for their text inside HC. */

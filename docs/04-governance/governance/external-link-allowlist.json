@@ -245,6 +245,10 @@
     {
       "pattern": "^https?://moneypatrol\\.com/moneytalk/budgeting/ynab-vs-copilot/",
       "reason": "Порівняльний огляд, цитований у docs/90-work/audits/finyk-analytics-research.md; хост нестабільний для checker-а (504 gateway timeout на CI-запити), контент — історична референція дослідження."
+    },
+    {
+      "pattern": "^https?://medium\\.muz\\.li/why-every-ai-built-app-looks-the-same-and-how-to-escape-ai-slop-919bf2dc6fc0",
+      "reason": "Стаття Muzli про AI-slop — одне з двох першоджерел діагнозу в docs/05-design/design/anti-slop-strategy.md (§1 і §додатки). Medium віддає 403 будь-якому небраузерному User-Agent; у браузері лінк живий. Лінк додано ще в #641 і від того часу валив `Markdown link checker` на КОЖНОМУ PR незалежно від змісту — типовий «червоний завжди = вимкнений». Pattern звужено рівно до цього URL, решта medium.muz.li лишається під перевіркою."
     }
   ]
 }

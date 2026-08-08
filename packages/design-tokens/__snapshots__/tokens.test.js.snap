@@ -7,16 +7,16 @@ exports[`@sergeant/design-tokens — mobile.js > mobile.colors matches the canon
   "bg": "#0b0d10",
   "border": "#1f242c",
   "danger": "#ef4444",
-  "dangerStrong": "#b91c1c",
+  "dangerStrong": "#991b1b",
   "info": "#0ea5e9",
-  "infoStrong": "#0369a1",
+  "infoStrong": "#075985",
   "success": "#10b981",
-  "successStrong": "#047857",
+  "successStrong": "#065f46",
   "surface": "#13161b",
   "text": "#f2f4f7",
   "textMuted": "#8a94a6",
   "warning": "#f59e0b",
-  "warningStrong": "#b45309",
+  "warningStrong": "#92400e",
 }
 `;
 
