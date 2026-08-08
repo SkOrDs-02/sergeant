@@ -7,12 +7,27 @@ import { cn } from "@shared/lib/ui/cn";
 import { safeWriteLS } from "@shared/lib/storage/storage";
 import { TREND_STORAGE_PREFIX, readTrendOpen } from "./storage";
 
+/**
+ * Which direction of `delta` counts as an improvement for this metric.
+ *
+ * - `"up-is-good"` — e.g. energy, mood: a rising number is praise (success).
+ * - `"down-is-good"` — a falling number is praise (success). Kept as the
+ *   default so existing callers that don't pass this prop (weight-loss
+ *   framing, historically the only metric this card rendered) keep their
+ *   current colours unchanged.
+ * - `"neutral"` — the module has no stance on direction (e.g. weight, where
+ *   fizruk canon says there's no default goal) — render a flat, non-judging
+ *   tone instead of success/warning either way.
+ */
+export type TrendDeltaDirection = "up-is-good" | "down-is-good" | "neutral";
+
 export function CollapsibleTrendCard({
   storageKey,
   title,
   latestValue,
   latestUnit,
   delta,
+  deltaDirection = "down-is-good",
   ariaLabel,
   children,
 }: {
@@ -21,6 +36,8 @@ export function CollapsibleTrendCard({
   latestValue: number | null;
   latestUnit: string;
   delta: number | null;
+  /** @default "down-is-good" — preserves pre-existing behaviour for callers that don't pass it. */
+  deltaDirection?: TrendDeltaDirection;
   ariaLabel: string;
   children: ReactNode;
 }) {
@@ -51,9 +68,11 @@ export function CollapsibleTrendCard({
   const deltaClass =
     delta == null || delta === 0
       ? "text-muted"
-      : delta > 0
-        ? "text-warning-strong dark:text-warning"
-        : "text-success-strong dark:text-success";
+      : deltaDirection === "neutral"
+        ? "text-subtle"
+        : (deltaDirection === "up-is-good") === delta > 0
+          ? "text-success-strong dark:text-success"
+          : "text-warning-strong dark:text-warning";
   const deltaLabel =
     delta == null
       ? ""

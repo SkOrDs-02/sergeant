@@ -163,6 +163,65 @@ describe("CollapsibleTrendCard — delta display", () => {
   });
 });
 
+describe("CollapsibleTrendCard — deltaDirection", () => {
+  // Regression coverage for the inverted-colour bug: rising sleep/energy/mood
+  // used to render as `text-warning` (a "watch out" tone) even though more
+  // is better for those metrics. `up-is-good` must flip that to success.
+  it("defaults to down-is-good: a positive delta renders warning (weight-loss framing)", () => {
+    renderCard({ delta: 1.2 });
+    const label = screen.getByText("+1.2 кг");
+    expect(label.className).toContain("text-warning-strong");
+    expect(label.className).not.toContain("text-success-strong");
+  });
+
+  it("defaults to down-is-good: a negative delta renders success", () => {
+    renderCard({ delta: -0.5 });
+    const label = screen.getByText("-0.5 кг");
+    expect(label.className).toContain("text-success-strong");
+    expect(label.className).not.toContain("text-warning-strong");
+  });
+
+  it("up-is-good: a positive delta (more sleep) renders success, not warning", () => {
+    renderCard({ delta: 1.2, deltaDirection: "up-is-good" });
+    const label = screen.getByText("+1.2 кг");
+    expect(label.className).toContain("text-success-strong");
+    expect(label.className).not.toContain("text-warning-strong");
+  });
+
+  it("up-is-good: a negative delta (less sleep) renders warning, not success", () => {
+    renderCard({ delta: -0.5, deltaDirection: "up-is-good" });
+    const label = screen.getByText("-0.5 кг");
+    expect(label.className).toContain("text-warning-strong");
+    expect(label.className).not.toContain("text-success-strong");
+  });
+
+  it("neutral: neither positive nor negative delta uses success/warning colour", () => {
+    const { rerender } = renderCard({ delta: 1.2, deltaDirection: "neutral" });
+    let label = screen.getByText("+1.2 кг");
+    expect(label.className).not.toContain("text-success-strong");
+    expect(label.className).not.toContain("text-warning-strong");
+    expect(label.className).toContain("text-subtle");
+
+    rerender(
+      <CollapsibleTrendCard
+        storageKey="weight"
+        title="Вага"
+        latestValue={80}
+        latestUnit="кг"
+        delta={-0.5}
+        deltaDirection="neutral"
+        ariaLabel="Графік ваги"
+      >
+        <div data-testid="chart">chart content</div>
+      </CollapsibleTrendCard>,
+    );
+    label = screen.getByText("-0.5 кг");
+    expect(label.className).not.toContain("text-success-strong");
+    expect(label.className).not.toContain("text-warning-strong");
+    expect(label.className).toContain("text-subtle");
+  });
+});
+
 describe("CollapsibleTrendCard — null latestValue", () => {
   it("hides value/unit display when latestValue is null", () => {
     renderCard({ latestValue: null, latestUnit: "кг" });

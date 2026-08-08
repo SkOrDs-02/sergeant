@@ -51,6 +51,70 @@ describe("MiniLineChart", () => {
     expect(screen.getAllByText(/-5\.0 кг/).length).toBeGreaterThanOrEqual(1);
   });
 
+  describe("deltaDirection", () => {
+    // Regression coverage: rising sleep/energy/mood must render success, not
+    // the "watch out" warning tone the chart used to hardcode for any
+    // positive delta.
+    it("defaults to down-is-good: positive delta renders warning", () => {
+      render(<MiniLineChart data={points([80, 85])} unit="кг" color="#00f" />);
+      const label = screen.getByText((_c, el) => el?.textContent === "+5.0 кг");
+      expect(label.className).toContain("text-warning-strong");
+    });
+
+    it("defaults to down-is-good: negative delta renders success", () => {
+      render(<MiniLineChart data={points([85, 80])} unit="кг" color="#00f" />);
+      const label = screen.getByText((_c, el) => el?.textContent === "-5.0 кг");
+      expect(label.className).toContain("text-success-strong");
+    });
+
+    it("up-is-good: positive delta (more sleep) renders success, not warning", () => {
+      render(
+        <MiniLineChart
+          data={points([6, 8])}
+          unit="год"
+          color="#00f"
+          deltaDirection="up-is-good"
+        />,
+      );
+      const label = screen.getByText(
+        (_c, el) => el?.textContent === "+2.0 год",
+      );
+      expect(label.className).toContain("text-success-strong");
+      expect(label.className).not.toContain("text-warning-strong");
+    });
+
+    it("up-is-good: negative delta (less sleep) renders warning, not success", () => {
+      render(
+        <MiniLineChart
+          data={points([8, 6])}
+          unit="год"
+          color="#00f"
+          deltaDirection="up-is-good"
+        />,
+      );
+      const label = screen.getByText(
+        (_c, el) => el?.textContent === "-2.0 год",
+      );
+      expect(label.className).toContain("text-warning-strong");
+      expect(label.className).not.toContain("text-success-strong");
+    });
+
+    it("neutral: positive delta uses neither success nor warning colour", () => {
+      render(
+        <MiniLineChart
+          data={points([80, 85])}
+          unit="кг"
+          color="#00f"
+          deltaDirection="neutral"
+        />,
+      );
+      const label = screen.getByText((_c, el) => el?.textContent === "+5.0 кг");
+      expect(label.className).not.toContain("text-success-strong");
+      expect(label.className).not.toContain("text-warning-strong");
+      expect(label.className).toContain("text-subtle");
+    });
+  });
+
   it("handles gaps (null points) without crashing", () => {
     render(
       <MiniLineChart
