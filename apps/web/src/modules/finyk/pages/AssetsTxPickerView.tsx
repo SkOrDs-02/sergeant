@@ -89,8 +89,11 @@ interface AssetsTxPickerViewProps {
  *  - `sub` — subscription → recurring expense linking. Tapping a row
  *    sets `linkedTxId` + `billingDay` from that transaction's day.
  *  - `debt` / `receivable` — manual debt or receivable. Each linked
- *    transaction shows its role (charge / payment / partial) above the
- *    row tinted by `getDebtTxRole` / `getReceivableTxRole`.
+ *    transaction shows its role above the row; the label comes from
+ *    `describeLinkedTxRole`, the tone from `ROLE_TONE` in
+ *    `AssetsDebtTxPicker.tsx`. (Раніше тут стояло «tinted by
+ *    `getDebtTxRole` / `getReceivableTxRole`» — ці дві функції тон ніколи
+ *    не задавали, і колір домен більше не віддає взагалі.)
  *
  * The host page mounts this view as a full-screen overlay (header is
  * sticky, content scrolls) instead of the regular Assets layout — the

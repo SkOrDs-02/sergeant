@@ -1,13 +1,17 @@
-// Hex-кольори для inline-стилів, дубль значень з apps/web tailwind.config.js
-// (theme.extend.colors.success / danger / warning). Свідомо інлайнимо
-// константу тут, щоб пакет `@sergeant/finyk-domain` не тягнув web-only
-// залежність на `@shared/lib/themeHex`. Якщо знадобиться більше токенів —
-// винесемо в `@sergeant/shared/theme` окремим PR.
-const THEME_HEX = {
-  success: "#16a34a",
-  danger: "#dc2626",
-  warning: "#b45309",
-} as const;
+// AI-CONTEXT (2026-08-07): тут була константа `THEME_HEX` із трьома
+// сирими хексами — четверта копія семантичних кольорів у репо. Прибрана
+// не через дубль, а через те, що ЖОДЕН із трьох не проходив WCAG AA:
+// у світлій темі всі три, у темній — два з трьох. Замір на матеріалі
+// `mockups/product/debt-role-colors.html`.
+//
+// Причина була структурна, не в доборі відтінків. Підпис ролі стоїть і
+// на бежевому фоні сторінки, і на чорнильному — а хекс один. Значення,
+// яке читається на одному ґрунті, тоне на іншому; хекса, що пройшов би
+// обидва, не існує. Розвʼязує це лише ПАРА (світлий тир + темний), тобто
+// те, чого домен не може знати й не має знати.
+//
+// Тому домен більше не віддає колір. Він віддає РОЛЬ; колір обирає
+// вигляд — `ROLE_TONE` у `AssetsDebtTxPicker.tsx`.
 
 /**
  * Роль однієї привʼязаної транзакції всередині запису боргу.
@@ -70,7 +74,6 @@ export interface Tx {
 export interface TxRole {
   kind: "origin" | "payment";
   label: string;
-  color: string;
 }
 
 function toAmountUAH(tx: Tx): number {
@@ -124,18 +127,14 @@ function sumByRole(
 
 export function getDebtTxRole(tx: Pick<Tx, "amount">): TxRole {
   return tx.amount > 0
-    ? { kind: "origin", label: "📥 Виникнення боргу", color: THEME_HEX.danger }
-    : { kind: "payment", label: "✅ Сплата боргу", color: THEME_HEX.success };
+    ? { kind: "origin", label: "📥 Виникнення боргу" }
+    : { kind: "payment", label: "✅ Сплата боргу" };
 }
 
 export function getReceivableTxRole(tx: Pick<Tx, "amount">): TxRole {
   return tx.amount < 0
-    ? { kind: "origin", label: "📤 Виникнення боргу", color: THEME_HEX.danger }
-    : {
-        kind: "payment",
-        label: "✅ Погашення боргу",
-        color: THEME_HEX.success,
-      };
+    ? { kind: "origin", label: "📤 Виникнення боргу" }
+    : { kind: "payment", label: "✅ Погашення боргу" };
 }
 
 /**
@@ -151,20 +150,14 @@ export function describeLinkedTxRole(
     return {
       kind: "payment",
       label: kind === "debt" ? "✅ Сплата боргу" : "✅ Погашення боргу",
-      color: THEME_HEX.success,
     };
   }
   if (role === "increase") {
-    return {
-      kind: "origin",
-      label: "➕ Збільшення боргу",
-      color: THEME_HEX.danger,
-    };
+    return { kind: "origin", label: "➕ Збільшення боргу" };
   }
   return {
     kind: "origin",
     label: kind === "debt" ? "📥 Виникнення боргу" : "📤 Виникнення боргу",
-    color: THEME_HEX.warning,
   };
 }
 
