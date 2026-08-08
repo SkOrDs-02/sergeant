@@ -75,6 +75,29 @@ describe("WorkoutGroupingControls", () => {
     expect(onCreate).toHaveBeenCalledWith("circuit");
   });
 
+  it("pairs the «Коло» accent with its dark-mode-safe -strong companion (contrast fix)", () => {
+    render(
+      <WorkoutGroupingControls
+        selectedCount={2}
+        selectMode={true}
+        onEnterSelectMode={vi.fn()}
+        onCancelSelectMode={vi.fn()}
+        onCreateGroup={vi.fn()}
+      />,
+    );
+
+    const circuitBtn = screen.getByRole("button", { name: /Коло/ });
+    // Bare `text-fizruk` measured ~3:1 on the dark panel (sub-AA); the
+    // canonical pairing is the AA-safe light `-strong` ink with the
+    // brighter accent reserved for dark mode via `dark:`.
+    expect(circuitBtn).toHaveClass("text-fizruk-strong");
+    expect(circuitBtn).toHaveClass("dark:text-fizruk");
+    // No bare (un-prefixed, non-`-strong`) `text-fizruk` token should
+    // remain — that was the sub-AA class on the dark panel.
+    const classTokens = circuitBtn.className.split(/\s+/);
+    expect(classTokens).not.toContain("text-fizruk");
+  });
+
   it("invokes cancel from the Скасувати button", () => {
     const onCancel = vi.fn();
     render(

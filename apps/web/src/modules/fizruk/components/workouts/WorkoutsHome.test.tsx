@@ -11,6 +11,7 @@ function baseHandlers() {
     onOpenCatalog: vi.fn(),
     onOpenTemplates: vi.fn(),
     onOpenJournal: vi.fn(),
+    onOpenPrograms: vi.fn(),
     onRequestStart: vi.fn(),
   };
 }
@@ -86,7 +87,25 @@ describe("WorkoutsHome", () => {
     expect(handlers.onRequestStart).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByText("Із шаблону"));
     expect(handlers.onOpenTemplates).toHaveBeenCalledTimes(1);
-    expect(screen.queryByText("Програми")).not.toBeInTheDocument();
+  });
+
+  it("exposes the start-paths label via role=group so it isn't a dangling div aria-label", () => {
+    const handlers = baseHandlers();
+    render(
+      <WorkoutsHome
+        activeWorkout={null}
+        activeDuration={null}
+        recentWorkouts={[]}
+        {...handlers}
+      />,
+    );
+
+    // A plain `<div aria-label>` with no role is not exposed to the
+    // accessibility tree — `role="group"` is what makes the name
+    // actually reach assistive tech.
+    expect(
+      screen.getByRole("group", { name: "Способи почати тренування" }),
+    ).toBeInTheDocument();
   });
 
   it("shows the schedule CTA when onOpenSchedule is provided and calls it on click", () => {
@@ -105,6 +124,7 @@ describe("WorkoutsHome", () => {
     const scheduleBtn = screen.getByText("Планування");
     fireEvent.click(scheduleBtn);
     expect(onOpenSchedule).toHaveBeenCalledTimes(1);
+    expect(scheduleBtn.closest("button")).toHaveClass("focus-visible:ring-2");
   });
 
   it("shows the empty-journal placeholder and hides the 'Всі →' link when recentWorkouts is empty", () => {
@@ -141,10 +161,16 @@ describe("WorkoutsHome", () => {
     const allLink = screen.getByText("Всі →");
     fireEvent.click(allLink);
     expect(handlers.onOpenJournal).toHaveBeenCalledTimes(1);
+    // Raw `<button>` — must carry the canonical focus-visible ring, not
+    // rely on the browser default outline.
+    expect(allLink).toHaveClass("focus-visible:ring-2");
+    expect(allLink).toHaveClass("focus-visible:ring-focus/45");
 
     const listButtons = screen.getAllByRole("listitem");
     expect(listButtons).toHaveLength(2);
-    fireEvent.click(listButtons[0]!.querySelector("button")!);
+    const firstRowButton = listButtons[0]!.querySelector("button")!;
+    expect(firstRowButton).toHaveClass("focus-visible:ring-2");
+    fireEvent.click(firstRowButton);
     expect(handlers.onOpenJournal).toHaveBeenCalledTimes(2);
   });
 
@@ -159,10 +185,55 @@ describe("WorkoutsHome", () => {
       />,
     );
 
-    fireEvent.click(screen.getByText("Каталог вправ"));
+    const catalogText = screen.getByText("Каталог вправ");
+    fireEvent.click(catalogText);
     expect(handlers.onOpenCatalog).toHaveBeenCalledTimes(1);
+    expect(catalogText.closest("button")).toHaveClass("focus-visible:ring-2");
+  });
 
-    expect(screen.queryByText("Програми")).not.toBeInTheDocument();
+  it("04-A: always shows a Програми row in Довідники, with and without an active workout", () => {
+    const handlers = baseHandlers();
+    const { rerender } = render(
+      <WorkoutsHome
+        activeWorkout={null}
+        activeDuration={null}
+        recentWorkouts={[]}
+        {...handlers}
+      />,
+    );
+    const programsText = screen.getByText("Програми");
+    fireEvent.click(programsText);
+    expect(handlers.onOpenPrograms).toHaveBeenCalledTimes(1);
+    expect(programsText.closest("button")).toHaveClass("focus-visible:ring-2");
+
+    rerender(
+      <WorkoutsHome
+        activeWorkout={{
+          id: "w1",
+          startedAt: NOW,
+          endedAt: null,
+          items: [{ a: 1 }],
+        }}
+        activeDuration="05:00"
+        recentWorkouts={[]}
+        {...handlers}
+      />,
+    );
+    expect(screen.getByText("Програми")).toBeInTheDocument();
+  });
+
+  it("04-A: folds the active program name into the Програми row subtitle", () => {
+    const handlers = baseHandlers();
+    render(
+      <WorkoutsHome
+        activeWorkout={null}
+        activeDuration={null}
+        recentWorkouts={[]}
+        activeProgramName="Push Pull Legs"
+        {...handlers}
+      />,
+    );
+    expect(screen.getByText(/Push Pull Legs/)).toBeInTheDocument();
   });
 });
 

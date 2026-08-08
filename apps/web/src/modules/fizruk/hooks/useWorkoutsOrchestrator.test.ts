@@ -465,6 +465,66 @@ describe("useWorkoutsOrchestrator – handleQuickStart", () => {
   });
 });
 
+describe("useWorkoutsOrchestrator – repeatWorkout", () => {
+  function makeSourceWorkout(overrides: Record<string, unknown> = {}) {
+    return {
+      id: "w-src",
+      startedAt: "2026-07-01T10:00:00Z",
+      endedAt: "2026-07-01T11:00:00Z",
+      items: [
+        {
+          id: "i1",
+          exerciseId: "ex-chest-1",
+          nameUk: "Жим лежачи",
+          primaryGroup: "chest",
+          musclesPrimary: ["pectoralis_major"],
+          musclesSecondary: [],
+          type: "strength",
+          sets: [{ weightKg: 50, reps: 8 }],
+        },
+      ],
+      groups: [],
+      warmup: null,
+      cooldown: null,
+      note: "",
+      ...overrides,
+    };
+  }
+
+  it("creates a new workout with the same exercises but reset sets", () => {
+    const { result } = renderHook(() => useWorkoutsOrchestrator());
+    act(() => result.current.repeatWorkout(makeSourceWorkout() as never));
+    expect(mockCreateWorkout).toHaveBeenCalled();
+    expect(mockAddItem).toHaveBeenCalledWith(
+      "w-new",
+      expect.objectContaining({
+        exerciseId: "ex-chest-1",
+        nameUk: "Жим лежачи",
+        type: "strength",
+        sets: [{ weightKg: 0, reps: 0 }],
+      }),
+    );
+    expect(result.current.activeWorkoutId).toBe("w-new");
+  });
+
+  it("respects the one-active-workout invariant via the conflict dialog", () => {
+    mockWorkoutsList.push({
+      id: "w-current",
+      startedAt: "2026-07-01T09:00:00Z",
+      endedAt: null,
+      items: [],
+      groups: [],
+      warmup: null,
+      cooldown: null,
+      note: "",
+    });
+    const { result } = renderHook(() => useWorkoutsOrchestrator());
+    act(() => result.current.repeatWorkout(makeSourceWorkout() as never));
+    expect(mockCreateWorkout).not.toHaveBeenCalled();
+    expect(result.current.activeWorkoutConflictOpen).toBe(true);
+  });
+});
+
 describe("useWorkoutsOrchestrator – handleDeleteExerciseConfirm", () => {
   it("is a no-op when no exercise is selected", () => {
     const { result } = renderHook(() => useWorkoutsOrchestrator());

@@ -194,6 +194,25 @@ export function Body({ onOpenAtlas }: BodyProps) {
                 )}
               </div>
             </div>
+            <div className="text-center">
+              <div className="text-style-caption text-subtle">
+                {messages.fizruk.body.energyShort}
+              </div>
+              <div className="text-base font-extrabold text-text tabular-nums">
+                {/* Defect #8: computed 7-day average energy already lived
+                    in `stats` but never rendered anywhere on the page —
+                    third column, same treatment as weight/sleep above. */}
+                {stats.avgEnergy != null ? (
+                  <Measure
+                    value={stats.avgEnergy}
+                    unit="/5"
+                    fractionDigits={1}
+                  />
+                ) : (
+                  "—"
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -281,11 +300,11 @@ export function Body({ onOpenAtlas }: BodyProps) {
         {[weightData, sleepData, energyData, moodData].every(
           (d) => d.length < 2,
         ) && (
-          <Card
-            radius="lg"
-            padding="lg"
-            aria-label={messages.fizruk.body.trendsCollecting}
-          >
+          <Card radius="lg" padding="lg">
+            {/* Defect #5: `aria-label` on a generic `<div>` (no ARIA role)
+                is dropped by AT and flagged by axe (`aria-prohibited-attr`).
+                The label text is already the visible first paragraph below —
+                removing it loses nothing, screen readers read the text. */}
             <p className="text-style-label text-text">
               {messages.fizruk.body.trendsCollecting}
             </p>
@@ -297,8 +316,7 @@ export function Body({ onOpenAtlas }: BodyProps) {
 
         {entries.length > 0 && (
           <JournalSection
-            entries={entries.slice(0, 15)}
-            totalCount={entries.length}
+            entries={entries}
             onDelete={handleDeleteJournalEntry}
           />
         )}

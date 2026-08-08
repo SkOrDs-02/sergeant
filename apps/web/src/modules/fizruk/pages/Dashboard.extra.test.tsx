@@ -304,7 +304,12 @@ describe("Dashboard extended coverage", () => {
 
     // The Quick-start card is labelled "Швидкий старт"
     expect(screen.getByLabelText("Швидкий старт")).toBeInTheDocument();
-    expect(screen.getByText("Жим лежачи A")).toBeInTheDocument();
+    const tplButton = screen.getByText("Жим лежачи A").closest("button");
+    expect(tplButton).toBeInTheDocument();
+    // Raw `<button>` template row — must carry the canonical
+    // focus-visible ring, not rely on the browser default outline.
+    expect(tplButton).toHaveClass("focus-visible:ring-2");
+    expect(tplButton).toHaveClass("focus-visible:ring-focus/45");
   });
 
   it("shows 'Нещодавно використані' label when recentlyUsed templates exist", () => {

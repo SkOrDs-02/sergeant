@@ -16,6 +16,7 @@ import { WorkoutsHome } from "../components/workouts/WorkoutsHome";
 import { WorkoutsHeader } from "../components/workouts/WorkoutsHeader";
 import { WorkoutsConfirmDialogs } from "../components/workouts/WorkoutsConfirmDialogs";
 import { useWorkoutsOrchestrator } from "../hooks/useWorkoutsOrchestrator";
+import { useTrainingProgram } from "../hooks/useTrainingProgram";
 import { useCloudPullPending } from "@shared/hooks/useCloudPullPending";
 import { messages } from "@shared/i18n/uk";
 
@@ -48,6 +49,14 @@ export function Workouts({
       : undefined,
   });
   const cloudPullPending = useCloudPullPending();
+  // 04-A — permanent "Програми" row in the home "Довідники" block reads
+  // the active program name directly (cheap: `BUILTIN_PROGRAMS.find` over
+  // a static in-memory list + one localStorage read on mount, no network).
+  // A second `useTrainingProgram()` instance alongside `FizrukApp.tsx`'s
+  // is intentional here — this call only *reads* `activeProgram`, never
+  // `activateProgram`/`deactivateProgram`, so there is nothing to keep in
+  // sync beyond what a fresh mount already re-reads from `localStorage`.
+  const { activeProgram } = useTrainingProgram();
 
   const workoutsLoadingSkeleton = (
     <div
@@ -84,6 +93,7 @@ export function Workouts({
             activeWorkout={o.activeWorkout}
             activeDuration={o.activeDuration}
             recentWorkouts={o.recentWorkouts}
+            activeProgramName={activeProgram?.name ?? null}
             onOpenSession={() => {
               if (o.activeWorkout?.id && onNavigate) {
                 onNavigate(`workout/${o.activeWorkout.id}`);
@@ -93,7 +103,11 @@ export function Workouts({
             }}
             onOpenCatalog={() => o.setView("catalog")}
             onOpenTemplates={() => o.setView("templates")}
-            onOpenJournal={() => o.setView("log")}
+            // 03-A — "Всі →" now owns its own URL (`/fizruk/history`)
+            // instead of flipping `view` to "log" on the same
+            // `/fizruk/workouts` path (the dual start-path bug).
+            onOpenJournal={() => onNavigate?.("history")}
+            onOpenPrograms={() => onNavigate?.("programs")}
             onRequestStart={o.handleQuickStart}
             onOpenSchedule={onOpenRoutine}
           />
@@ -120,17 +134,6 @@ export function Workouts({
               <WorkoutJournalSection
                 activeWorkout={o.activeWorkout}
                 activeDuration={o.activeDuration}
-                workouts={o.workouts}
-                activeWorkoutId={o.activeWorkoutId}
-                setActiveWorkoutId={o.setActiveWorkoutId}
-                retroOpen={o.retroOpen}
-                setRetroOpen={o.setRetroOpen}
-                retroDate={o.retroDate}
-                setRetroDate={o.setRetroDate}
-                retroTime={o.retroTime}
-                setRetroTime={o.setRetroTime}
-                createWorkout={o.createWorkout}
-                setMode={o.setView}
                 musclesUk={o.musclesUk}
                 recBy={o.rec.by}
                 lastByExerciseId={o.lastByExerciseId}
@@ -141,13 +144,10 @@ export function Workouts({
                 setFinishFlash={o.setFinishFlash}
                 endWorkout={o.endWorkout}
                 summarizeWorkoutForFinish={o.summarizeWorkoutForFinish}
-                submitRetroWorkout={o.submitRetroWorkout}
                 deleteWorkout={o.deleteWorkout}
                 restoreWorkout={o.restoreWorkout}
-                activeOnly={activeOnly}
-                onSessionClosed={
-                  activeOnly ? () => onNavigate?.("workouts") : undefined
-                }
+                onRepeatWorkout={o.repeatWorkout}
+                onClose={() => onNavigate?.("workouts")}
               />
             )}
           </DataState>
@@ -166,7 +166,15 @@ export function Workouts({
           />
         )}
 
-        {(o.view === "catalog" || o.view === "log") && (
+        {(o.view === "catalog" ||
+          // 02-A item 3 — the catalog used to hang around under the "log"
+          // view even when the routed workout was finished or missing
+          // (the error-state-plus-full-catalog dead end from the audit).
+          // Only show it in "log" while there is a real, in-flight
+          // workout to add exercises to.
+          (o.view === "log" &&
+            Boolean(o.activeWorkout) &&
+            !o.activeWorkout?.endedAt)) && (
           <WorkoutCatalogSection
             mode={o.mode}
             q={o.q}
@@ -197,6 +205,7 @@ export function Workouts({
           activeWorkoutId={o.activeWorkoutId}
           activeWorkout={o.activeWorkout}
           addExerciseToActive={o.addExerciseToActive}
+          updateItem={o.updateItem}
           onDeleteRequest={() => o.setDeleteExerciseConfirm(true)}
           toast={o.toast}
         />

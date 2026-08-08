@@ -82,6 +82,13 @@ vi.mock("../pages/Programs", () => ({
     <div data-testid="page-programs">{p.activeProgramId ?? "none"}</div>
   ),
 }));
+vi.mock("../pages/WorkoutHistory", () => ({
+  WorkoutHistory: (p: { onNavigate: (t: string) => void }) => (
+    <div data-testid="page-history">
+      <button onClick={() => p.onNavigate("workouts")}>hist-back</button>
+    </div>
+  ),
+}));
 
 function baseProps(over: Partial<FizrukRouterProps> = {}): FizrukRouterProps {
   return {
@@ -118,6 +125,7 @@ describe("FizrukRouter — page switch", () => {
     ["programs", "page-programs"],
     ["body", "page-body"],
     ["exercise", "page-exercise"],
+    ["history", "page-history"],
   ] as const)("renders the %s page", async (page, testid) => {
     render(<FizrukRouter {...baseProps({ page })} />);
     expect(await screen.findByTestId(testid)).toBeInTheDocument();
@@ -193,6 +201,13 @@ describe("FizrukRouter — prop wiring", () => {
     );
     const node = await screen.findByTestId("page-exercise");
     expect(node).toHaveTextContent("");
+  });
+
+  it("history onNavigate routes through props", async () => {
+    const onNavigate = vi.fn();
+    render(<FizrukRouter {...baseProps({ page: "history", onNavigate })} />);
+    fireEvent.click(await screen.findByText("hist-back"));
+    expect(onNavigate).toHaveBeenCalledWith("workouts");
   });
 
   it("programs receives the active program id", async () => {

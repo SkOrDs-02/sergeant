@@ -60,7 +60,7 @@ export function InjurySection() {
           {active.map((m) => (
             <li
               key={m.id}
-              className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2"
+              className="flex items-center justify-between gap-3 rounded-xl border border-border px-3 py-2"
             >
               <span className="min-w-0">
                 <span className="block text-sm font-medium truncate">
@@ -146,7 +146,15 @@ function ZoneGroup({
               size="sm"
               variant={marked ? "primary" : "secondary"}
               module="fizruk"
-              disabled={marked}
+              // Fixed 2026-08-08 (fizruk audit wave 2, defect #6): a
+              // freshly-marked chip used to flip to `disabled`, which pulls
+              // it out of the tab order and drops keyboard focus back to
+              // the document body mid-interaction. `mark()` is already a
+              // documented no-op for an already-active site (see
+              // `useInjuries.ts`), so the chip can stay enabled and keep
+              // focus — the state is communicated via `aria-pressed` +
+              // label suffix instead of via removal from the a11y tree.
+              aria-pressed={marked}
               onClick={() => onPick(id as InjurySiteId)}
               aria-label={
                 marked

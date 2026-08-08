@@ -26,4 +26,15 @@ describe("Atlas page", () => {
     expect(screen.getByText("Стан відновлення")).toBeInTheDocument();
     expect(screen.getByLabelText("Атлас мʼязів")).toBeInTheDocument();
   });
+
+  it("does not reserve the 88px bottom-tabbar clearance — Atlas renders without a bottom nav", () => {
+    // `FizrukApp.showBottomNav` excludes "atlas", so the 88px
+    // `page-tabbar-pad` clearance meant for that chrome is dead space
+    // here. Only the plain safe-area inset should remain.
+    const { container } = render(<Atlas />);
+    const scrollRoot = container.querySelector(".max-w-4xl");
+    expect(scrollRoot).not.toBeNull();
+    expect(scrollRoot).not.toHaveClass("page-tabbar-pad");
+    expect(scrollRoot).toHaveClass("safe-area-pb");
+  });
 });

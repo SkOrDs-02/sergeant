@@ -131,6 +131,19 @@ describe("Body page — stats + optional CTAs", () => {
     expect(screen.getByText(flatMatch("7,0 год"))).toBeInTheDocument();
   });
 
+  it("shows the 7-day average energy in the header (defect #8 — it was computed but never rendered)", () => {
+    entries = [{ id: "w", at: "2026-06-22T08:00:00Z", weightKg: 81 }];
+    recentWith.mockImplementation((field: string) => {
+      if (field === "energyLevel")
+        return [{ id: "e", at: "2026-06-22T08:00:00Z", energyLevel: 4 }];
+      return [];
+    });
+    render(<Body />);
+    // Matches the fixed 1-decimal treatment already used by the sibling
+    // weight/sleep stat columns above (`Measure fractionDigits={1}`).
+    expect(screen.getByText(flatMatch("4,0 /5"))).toBeInTheDocument();
+  });
+
   it("бере вагу із «Замірів», коли daily_log порожній (регресія W1-WEIGHT-SOT)", () => {
     entries = [];
     measurementEntries = [
@@ -215,6 +228,27 @@ describe("Body page — radiogroup keyboard roving", () => {
     const group = screen.getByRole("radiogroup", { name: "Рівень енергії" });
     fireEvent.keyDown(group, { key: "Home" });
     fireEvent.keyDown(group, { key: "ArrowLeft" });
+    const radios = within(group).getAllByRole("radio");
+    expect(radios[4]!.getAttribute("aria-checked")).toBe("true");
+  });
+
+  // Defect #3: from an EMPTY selection (nothing picked yet, not "wrapped
+  // from 1"), the first ArrowLeft/Up press used to land on 4 — the never-
+  // taken `?? 5` fallback masked a modulo bug ((−1 − 1 + 5) % 5 === 3).
+  it("ArrowLeft from an empty selection lands on the last value (5), not 4", () => {
+    render(<Body />);
+    const group = screen.getByRole("radiogroup", { name: "Настрій" });
+    fireEvent.keyDown(group, { key: "ArrowLeft" });
+    const radios = within(group).getAllByRole("radio");
+    expect(radios[4]!.getAttribute("aria-checked")).toBe("true");
+    expect(radios[3]!.getAttribute("aria-checked")).toBe("false");
+  });
+
+  // Same edge case via ArrowUp (aliases ArrowLeft in this roving pattern).
+  it("ArrowUp from an empty selection lands on the last value (5), not 4", () => {
+    render(<Body />);
+    const group = screen.getByRole("radiogroup", { name: "Рівень енергії" });
+    fireEvent.keyDown(group, { key: "ArrowUp" });
     const radios = within(group).getAllByRole("radio");
     expect(radios[4]!.getAttribute("aria-checked")).toBe("true");
   });

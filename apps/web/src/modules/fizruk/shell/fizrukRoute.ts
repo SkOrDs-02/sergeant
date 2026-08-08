@@ -12,6 +12,9 @@ export const FIZRUK_PAGES = [
   "body",
   "exercise",
   "workout",
+  // 03-A — dedicated history route (`/fizruk/history`). Own URL, no
+  // start-CTA; see `pages/WorkoutHistory.tsx`.
+  "history",
 ] as const;
 
 export type FizrukPage = (typeof FIZRUK_PAGES)[number];

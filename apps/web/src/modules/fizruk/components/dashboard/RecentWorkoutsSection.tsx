@@ -88,7 +88,7 @@ export function RecentWorkoutsSection({
             <button
               type="button"
               onClick={onSeeAll}
-              className="inline-flex items-center gap-0.5 text-style-caption text-fizruk-strong dark:text-fizruk hover:underline active:opacity-70 rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+              className="inline-flex items-center gap-0.5 text-style-caption text-fizruk-strong dark:text-fizruk hover:underline active:opacity-70 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
               aria-label="Усі тренування"
             >
               {/* Без гліфа «→»: типографічна стрілка бралася з системного

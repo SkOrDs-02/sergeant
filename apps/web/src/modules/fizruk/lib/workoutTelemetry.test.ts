@@ -44,6 +44,15 @@ describe("fizruk workout telemetry", () => {
     });
   });
 
+  // 02-A — «Повторити це тренування» on the read-only summary is its own
+  // start source, distinct from quick_start/template/resume.
+  it("accepts 'repeat' as a start source", () => {
+    trackFizrukWorkoutStarted("w2", "repeat");
+    expect(trackEvent).toHaveBeenCalledWith("fizruk_workout_started", {
+      source: "repeat",
+    });
+  });
+
   it("records a later route restoration as resume", () => {
     trackFizrukWorkoutRouteOpened("w1");
     expect(trackEvent).toHaveBeenCalledWith("fizruk_workout_started", {

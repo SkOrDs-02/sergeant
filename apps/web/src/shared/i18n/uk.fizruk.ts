@@ -43,11 +43,56 @@ export const fizrukPageMessages = {
     presetsRecommendedTitle: "Рекомендований час для",
     presetsSaveDefaultTitle:
       "Запустити й зберегти як типовий час для цієї вправи",
+    // Compact single-button redesign (2026-08, item 7): the chevron
+    // trigger next to the "⏱ 90с" button opens the other presets in a
+    // `DropdownMenu` instead of a permanently-expanded chip row.
+    presetsMenuAriaLabel: "Інші варіанти часу відпочинку",
+    presetsMenuTriggerAriaLabel: "Показати інші варіанти часу відпочинку",
   },
   // "Минулого разу …" hint above a workout item
-  // (`WorkoutItemLastTimeHint.tsx`).
+  // (`WorkoutItemLastTimeHint.tsx`). Strength items no longer render
+  // this — see the per-row ghost keys below.
   lastTimeHint: {
     label: "Минулого разу",
+  },
+  // Per-row "було" ghost + done/delete controls inside a strength set
+  // row (`WorkoutSetRow.tsx`), redesign 2026-08 (items 1-3).
+  setRow: {
+    numberAriaPrefix: "Підхід",
+    ghostAriaPrefix: "Підставити",
+    ghostAriaSuffix: "з минулого разу",
+    doneAriaLabel: "зроблено, почати відпочинок",
+    notDoneAriaLabel: "ще не заповнено",
+    deleteAriaPrefix: "Видалити підхід",
+    weightPlaceholder: "кг",
+    repsPlaceholder: "повт.",
+    weightAriaLabel: "Вага в кілограмах",
+    repsAriaLabel: "Кількість повторень",
+  },
+  // "Тип" segmented control, moved out of `WorkoutItemCard` into
+  // `ExerciseDetailSheet` (`WorkoutItemTypeSwitcher.tsx`), redesign
+  // 2026-08 (item 5).
+  typeSwitcher: {
+    heading: "Тип",
+    ariaLabel: "Тип вправи",
+    strengthLabel: "Силова",
+    strengthTitle: "Силова (кг × повтори × підходи)",
+    strengthAriaLabel: "Силова — кг × повтори × підходи",
+    timeLabel: "Час",
+    timeTitle: "Час (секунди)",
+    timeAriaLabel: "Час — секунди",
+    distanceLabel: "Дист",
+    distanceTitle: "Дистанція (метри) + час",
+    distanceAriaLabel: "Дистанція — метри та час",
+  },
+  // Compact recovery-warning chip next to the exercise title
+  // (`WorkoutItemRecoveryChip.tsx`), redesign 2026-08 (item 6).
+  recoveryChip: {
+    triggerAriaLabel: "Попередження про відновлення",
+    detailAriaLabel: "Деталі попередження про відновлення",
+    injuryLine: "Ти позначив біль. Ми не радимо навантажувати цю групу.",
+    redPrefix: "Ще не відновились:",
+    yellowPrefix: "Краще почекати:",
   },
   dayPlan: {
     assignedTemplate: "Призначений шаблон",
@@ -114,6 +159,11 @@ export const fizrukPageMessages = {
     title: "Програми",
     stop: "Зупинити",
     active: "Активна",
+    // Ти-форма (style-guide.uk.md) — префікс перед назвою активної
+    // програми, наприклад "Активна: Push Pull Legs".
+    activeProgramPrefix: "Активна:",
+    // Ти-форма плейсхолдера, коли жодна програма ще не активна.
+    subtitleDefault: "Обери тренувальну програму",
     daysPerWeekSuffix: "дн/тиждень",
     activate: "Активувати",
     startToday: "Розпочати сьогодні",
@@ -123,7 +173,17 @@ export const fizrukPageMessages = {
     restLabel: "Відпочинок:",
     progressionLabel: "Прогресія:",
     missingExercises:
-      "Вправи з програми відсутні в каталозі — додайте вправи з відповідними ID вручну.",
+      "Вправи з програми відсутні в каталозі — додай вправи з відповідними ID вручну.",
+    // Details toggle (`aria-expanded` button in the program card footer).
+    details: "Деталі",
+    collapseDetails: "Згорнути",
+    // Day-strip screen-reader summary — see `role="img"` aria-label in
+    // Programs.tsx. Split into prefix/suffix around the interpolated
+    // program name + day-label list (catalog strings stay plain, no
+    // template functions — see `MessageCatalog` comment on
+    // `measurementGuideRows` below).
+    scheduleAriaPrefix: "Розклад програми",
+    scheduleAriaSuffix: "— тренування, інші дні відпочинок",
   },
 
   // Measurements page (`pages/Measurements.tsx`) — body-measurements log.
@@ -165,6 +225,11 @@ export const fizrukPageMessages = {
     deleteAria: "Видалити замір",
     emptyTitle: "Поки замірів немає",
     emptyDescription: "Додай перший запис, щоб бачити динаміку показників.",
+    // Історія показує лише перші 4 з 14 можливих полів на рядок — суфікс
+    // під кнопкою розкриття решти (`+3 ще`) і підпис для згортання назад.
+    moreFieldsSuffix: "ще",
+    collapseFieldsLabel: "Згорнути",
+    showAllFieldsAriaSuffix: "показники запису від",
   },
 
   // Body page (`pages/Body.tsx`) — daily weight / sleep / wellbeing log.
@@ -190,6 +255,24 @@ export const fizrukPageMessages = {
       "Додай ще один запис ваги, сну чи енергії — графіки зʼявляться після двох точок.",
   },
 
+  // Body atlas (`components/BodyAtlas.tsx`) — interactive muscle silhouette.
+  atlas: {
+    imageLabel: "Атлас мʼязів, вигляд {view}",
+    viewFront: "спереду",
+    viewBack: "ззаду",
+    emptyTitle: "Обери мʼяз",
+    // Fixed 2026-08-08 (fizruk audit wave 2, defect #4): the old copy also
+    // invited touching the leader-line *name* text, but that text sits in
+    // an `aria-hidden` decorative group and was never a real click target —
+    // only the muscle group on the silhouette itself is.
+    emptyDescription:
+      "Торкнись потрібної групи мʼязів на силуеті — вона підсвітиться, і зʼявляться стан і вправи.",
+    // Prefix for the `useAnnounce()` call fired on muscle selection
+    // (`role="button"` on the silhouette has no native selected-state
+    // announcement, so this carries it to screen readers explicitly).
+    selectedPrefix: "Обрано:",
+  },
+
   // Body journal (`pages/Body/JournalSection.tsx`, `JournalEntryCard.tsx`).
   journal: {
     title: "Журнал",
@@ -199,6 +282,13 @@ export const fizrukPageMessages = {
     sleepLabel: "Сон:",
     energyLabel: "Енергія:",
     moodLabel: "Настрій:",
+    // «Показати ще» affordance (defect #1 — the header badge used to claim
+    // the full count while the list silently truncated to a fixed page).
+    // Rendered as `${shownPrefix} ${visibleCount} ${shownOfWord} ${totalCount}`
+    // — plain-string catalogue, same convention as `exercise.historyShownPrefix`.
+    shownPrefix: "Показано",
+    shownOfWord: "з",
+    showMore: "Показати ще",
   },
 
   /**
@@ -281,6 +371,58 @@ export const fizrukPageMessages = {
     regressionTitle: "Зараз нижче за пік",
     regressionNote:
       "Це нормально після перерви — повертайся поступово, а не одразу до рекорду.",
+  },
+
+  /**
+   * 02-A — read-only summary of a finished workout, rendered on the same
+   * route (`/fizruk/workout/<id>`) that used to dead-end into "Активне
+   * тренування не знайдено" once the session was ended. Owned by
+   * `WorkoutSummaryView`.
+   */
+  workoutSummary: {
+    title: "Тренування завершено",
+    itemsLabel: "Вправ",
+    setsLabel: "Підходів",
+    volumeLabel: "Обʼєм",
+    kgUnit: "кг",
+    wellbeingPrefix: "Самопочуття:",
+    energyLabel: "енергія",
+    moodLabel: "настрій",
+    outOfFive: "/5",
+    noteHeading: "Нотатка",
+    repeatCta: "Повторити це тренування",
+    notFoundTitle: "Тренування не знайдено",
+    notFoundDescription:
+      "Його вже видалили, або посилання застаріле. Повернись до списку тренувань.",
+    backToWorkouts: "До тренувань",
+  },
+
+  /**
+   * 03-A — dedicated history route (`/fizruk/history`). Pure read list:
+   * no "+ Нове" / "Шаблони" start-CTAs here — starting a session lives
+   * only on the Workouts home (`WorkoutsHome`). Owned by
+   * `WorkoutHistoryList` + `pages/WorkoutHistory.tsx`.
+   */
+  workoutHistory: {
+    title: "Історія тренувань",
+    subtitlePrefix: "Завершено:",
+    backAria: "Повернутись до тренувань",
+    emptyTitle: "Поки немає тренувань",
+    emptyDescription: "Заверши перше тренування — воно з'явиться тут.",
+    endedBadge: "Завершене",
+    activeBadge: "Активне",
+    deletedToast: "Тренування видалено",
+  },
+
+  /**
+   * 04-A — permanent "Програми" row in the Workouts-home "Довідники" block
+   * (`WorkoutsHome.tsx`). Previously Programs was reachable only from the
+   * empty-plan hero card on Огляд, which disappears once a workout starts.
+   */
+  programsRow: {
+    title: "Програми",
+    subtitle: "Спліти з розкладом",
+    activePrefix: "Активна:",
   },
 } as const;
 

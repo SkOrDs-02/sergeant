@@ -7,7 +7,6 @@
  * не має (Hard Rule #21 — `scrubPII` чистить за іменами ключів, тож
  * `nameUk` у події не був би вирізаний).
  */
-import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 
@@ -24,20 +23,8 @@ vi.mock("../workouts/ActiveWorkoutPanel", () => ({
     </button>
   ),
 }));
-vi.mock("@shared/components/ui/VirtualList", () => ({
-  VirtualList: ({
-    items,
-    children,
-  }: {
-    items: unknown[];
-    children: (item: unknown, index: number) => React.ReactNode;
-  }) => (
-    <div>
-      {items.map((item, i) => (
-        <div key={i}>{children(item, i)}</div>
-      ))}
-    </div>
-  ),
+vi.mock("../workouts/WorkoutSummaryView", () => ({
+  WorkoutSummaryView: () => <div data-testid="summary-view" />,
 }));
 
 import { ToastProvider } from "@shared/hooks/useToast";
@@ -100,17 +87,6 @@ function baseProps(overrides: Record<string, unknown> = {}) {
   return {
     activeWorkout: active,
     activeDuration: "00:42",
-    workouts: [active],
-    activeWorkoutId: active.id,
-    setActiveWorkoutId: vi.fn(),
-    retroOpen: false,
-    setRetroOpen: vi.fn(),
-    retroDate: "",
-    setRetroDate: vi.fn(),
-    retroTime: "",
-    setRetroTime: vi.fn(),
-    createWorkout: vi.fn(),
-    setMode: vi.fn(),
     musclesUk: {},
     recBy: {},
     lastByExerciseId: {},
@@ -125,9 +101,10 @@ function baseProps(overrides: Record<string, unknown> = {}) {
       items: active.items.length,
       tonnageKg: 0,
     })),
-    submitRetroWorkout: vi.fn(),
     deleteWorkout: vi.fn(),
     restoreWorkout: vi.fn(),
+    onRepeatWorkout: vi.fn(),
+    onClose: vi.fn(),
     ...overrides,
   };
 }
@@ -203,7 +180,10 @@ describe("WorkoutJournalSection — телеметрія завершення", 
     expect(finishCalls()).toHaveLength(1);
   });
 
-  it("уже завершене тренування не емітить події", () => {
+  // 02-A: an already-ended workout renders the read-only summary, not the
+  // editable panel — there is no "Завершити" button reachable at all, so
+  // no click can (re-)emit the finish event.
+  it("уже завершене тренування рендерить лише summary — без finish-btn і без події", () => {
     const props = baseProps({
       activeWorkout: {
         endedAt: new Date("2025-01-01T11:00:00Z").toISOString(),
@@ -211,8 +191,8 @@ describe("WorkoutJournalSection — телеметрія завершення", 
     });
     renderSection(props);
 
-    fireEvent.click(screen.getByTestId("finish-btn"));
-
+    expect(screen.getByTestId("summary-view")).toBeTruthy();
+    expect(screen.queryByTestId("finish-btn")).toBeNull();
     expect(finishCalls()).toHaveLength(0);
   });
 

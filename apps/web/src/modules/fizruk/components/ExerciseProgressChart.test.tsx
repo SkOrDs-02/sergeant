@@ -71,4 +71,20 @@ describe("ExerciseProgressChart", () => {
     );
     expect(screen.getByLabelText("Графік Присід")).toBeInTheDocument();
   });
+
+  it("uses the surface token (not a static white) for the point-dot halo (#4)", () => {
+    const { container } = render(
+      <ExerciseProgressChart
+        points={pts([50, 55, 60])}
+        label="Жим"
+        unit="кг"
+        color="#0f0"
+      />,
+    );
+    const dots = container.querySelectorAll("circle[stroke]");
+    expect(dots.length).toBeGreaterThan(0);
+    dots.forEach((dot) => {
+      expect(dot.getAttribute("stroke")).toBe("rgb(var(--c-panel))");
+    });
+  });
 });

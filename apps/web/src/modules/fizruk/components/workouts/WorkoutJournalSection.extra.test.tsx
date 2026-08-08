@@ -1,20 +1,19 @@
 // @vitest-environment jsdom
 /**
- * Last validated: 2026-07-10
+ * Last validated: 2026-08-08
  * Status: Active
- * Extra branch-coverage tests for WorkoutJournalSection.tsx.
- * Focuses on: retroOpen state, empty list, WorkoutRow badge variants,
- * no-active-workout card, and handleSwipeDelete.
+ *
+ * Branch-coverage for `WorkoutJournalSection.tsx`'s three route-owned
+ * branches (02-A): not-found, read-only summary for an ended workout,
+ * and the editable active panel. The "Останні тренування" list this
+ * component used to render in a `!activeOnly` mode moved to
+ * `WorkoutHistoryList.test.tsx` (03-A) — see that file for row/badge/
+ * swipe-delete/virtualization coverage. The dead `retroOpen` form (never
+ * wired to a trigger button in the live app) moved with it.
  */
 import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import {
-  render,
-  screen,
-  fireEvent,
-  cleanup,
-  act,
-} from "@testing-library/react";
+import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import type { Workout } from "@sergeant/fizruk-domain/domain";
 import { ToastProvider } from "@shared/hooks/useToast";
 
@@ -37,41 +36,19 @@ vi.mock("../workouts/ActiveWorkoutPanel", () => ({
   ),
 }));
 
-vi.mock("@shared/components/ui/VirtualList", () => ({
-  VirtualList: ({
-    items,
-    children,
+vi.mock("../workouts/WorkoutSummaryView", () => ({
+  WorkoutSummaryView: ({
+    workout,
+    onRepeat,
   }: {
-    items: unknown[];
-    children: (item: unknown, index: number) => React.ReactNode;
+    workout: Workout;
+    onRepeat: () => void;
   }) => (
-    <div data-testid="virtual-list">
-      {items.map((item, i) => (
-        <div key={i}>{children(item, i)}</div>
-      ))}
-    </div>
-  ),
-}));
-
-// SwipeToAction just renders its children (label and delete actions aren't
-// needed for the branch coverage targeted here).
-vi.mock("@shared/components/ui/SwipeToAction", () => ({
-  SwipeToAction: ({
-    children,
-    onSwipeLeft,
-    rightLabel,
-  }: {
-    children: React.ReactNode;
-    onSwipeLeft?: () => void;
-    rightLabel?: string;
-  }) => (
-    <div data-testid="swipe-wrapper">
-      {children}
-      {onSwipeLeft && (
-        <button type="button" data-testid="swipe-delete" onClick={onSwipeLeft}>
-          {rightLabel ?? "Видалити"}
-        </button>
-      )}
+    <div data-testid="summary-view">
+      <span data-testid="summary-workout-id">{workout.id}</span>
+      <button type="button" onClick={onRepeat}>
+        Повторити це тренування
+      </button>
     </div>
   ),
 }));
@@ -100,17 +77,6 @@ function baseProps(overrides: Record<string, unknown> = {}) {
   return {
     activeWorkout: null,
     activeDuration: null,
-    workouts: [],
-    activeWorkoutId: null,
-    setActiveWorkoutId: vi.fn(),
-    retroOpen: false,
-    setRetroOpen: vi.fn(),
-    retroDate: "2025-03-10",
-    setRetroDate: vi.fn(),
-    retroTime: "10:00",
-    setRetroTime: vi.fn(),
-    createWorkout: vi.fn(() => makeWorkout()),
-    setMode: vi.fn(),
     musclesUk: {},
     recBy: {},
     lastByExerciseId: {},
@@ -121,9 +87,10 @@ function baseProps(overrides: Record<string, unknown> = {}) {
     setFinishFlash: vi.fn(),
     endWorkout: vi.fn(),
     summarizeWorkoutForFinish: vi.fn(() => null),
-    submitRetroWorkout: vi.fn(),
     deleteWorkout: vi.fn(),
     restoreWorkout: vi.fn(),
+    onRepeatWorkout: vi.fn(),
+    onClose: vi.fn(),
     ...overrides,
   };
 }
@@ -137,212 +104,63 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe("WorkoutJournalSection – no active workout card", () => {
-  it("shows the no-active-workout card when activeWorkout is null", () => {
+describe("WorkoutJournalSection – not found", () => {
+  it("shows the not-found card when the routed workout is missing, no editable panel or summary", () => {
     renderWithToast(<WorkoutJournalSection {...baseProps()} />);
-    expect(screen.getByText(/немає активного тренування/i)).toBeTruthy();
+    expect(screen.getByText(/тренування не знайдено/i)).toBeTruthy();
+    expect(screen.queryByTestId("active-panel")).toBeNull();
+    expect(screen.queryByTestId("summary-view")).toBeNull();
   });
 
-  it("creates a new workout on '+ Нове' click", () => {
-    const createWorkout = vi.fn(() => makeWorkout());
-    const setActiveWorkoutId = vi.fn();
-    renderWithToast(
-      <WorkoutJournalSection
-        {...baseProps({ createWorkout, setActiveWorkoutId })}
-      />,
-    );
-    fireEvent.click(screen.getByRole("button", { name: /^\+ нове$/i }));
-    expect(createWorkout).toHaveBeenCalledTimes(1);
-    expect(setActiveWorkoutId).toHaveBeenCalledWith("w1");
-  });
-
-  it("calls setMode(templates) on Шаблони click", () => {
-    const setMode = vi.fn();
-    renderWithToast(<WorkoutJournalSection {...baseProps({ setMode })} />);
-    fireEvent.click(screen.getByRole("button", { name: /^шаблони$/i }));
-    expect(setMode).toHaveBeenCalledWith("templates");
+  it("navigates back to workouts via the not-found CTA", () => {
+    const onClose = vi.fn();
+    renderWithToast(<WorkoutJournalSection {...baseProps({ onClose })} />);
+    fireEvent.click(screen.getByRole("button", { name: /до тренувань/i }));
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 });
 
-describe("WorkoutJournalSection – empty workout list", () => {
-  it("shows the empty state when workouts list is empty", () => {
-    renderWithToast(<WorkoutJournalSection {...baseProps()} />);
-    expect(screen.getByText(/поки немає тренувань/i)).toBeTruthy();
-  });
-});
-
-describe("WorkoutJournalSection – retroOpen state", () => {
-  it("shows the retro form when retroOpen=true", () => {
-    renderWithToast(
-      <WorkoutJournalSection {...baseProps({ retroOpen: true })} />,
-    );
-    expect(screen.getByText(/записати тренування заднім числом/i)).toBeTruthy();
-  });
-
-  it("closes the retro form via the × button", () => {
-    const setRetroOpen = vi.fn();
-    renderWithToast(
-      <WorkoutJournalSection
-        {...baseProps({ retroOpen: true, setRetroOpen })}
-      />,
-    );
-    fireEvent.click(screen.getByLabelText(/закрити/i));
-    expect(setRetroOpen).toHaveBeenCalledWith(false);
-  });
-
-  it("calls submitRetroWorkout when Створити й заповнити clicked", () => {
-    const submitRetroWorkout = vi.fn();
-    renderWithToast(
-      <WorkoutJournalSection
-        {...baseProps({ retroOpen: true, submitRetroWorkout })}
-      />,
-    );
-    fireEvent.click(screen.getByText(/створити й заповнити/i));
-    expect(submitRetroWorkout).toHaveBeenCalledTimes(1);
-  });
-
-  it("updates retroDate when date input changes", () => {
-    const setRetroDate = vi.fn();
-    renderWithToast(
-      <WorkoutJournalSection
-        {...baseProps({ retroOpen: true, setRetroDate })}
-      />,
-    );
-    const dateInput =
-      document.querySelector<HTMLInputElement>('input[type="date"]');
-    expect(dateInput).not.toBeNull();
-    fireEvent.change(dateInput!, { target: { value: "2025-04-01" } });
-    expect(setRetroDate).toHaveBeenCalledWith("2025-04-01");
-  });
-
-  it("updates retroTime when time input changes", () => {
-    const setRetroTime = vi.fn();
-    renderWithToast(
-      <WorkoutJournalSection
-        {...baseProps({ retroOpen: true, setRetroTime })}
-      />,
-    );
-    const timeInput =
-      document.querySelector<HTMLInputElement>('input[type="time"]');
-    expect(timeInput).not.toBeNull();
-    fireEvent.change(timeInput!, { target: { value: "09:30" } });
-    expect(setRetroTime).toHaveBeenCalledWith("09:30");
-  });
-});
-
-describe("WorkoutJournalSection – WorkoutRow badge variants", () => {
-  it("shows Завершене badge for ended workout", () => {
+describe("WorkoutJournalSection – ended workout renders the read-only summary", () => {
+  it("renders WorkoutSummaryView instead of the editable panel", () => {
     const ended = makeWorkout({
       id: "w-ended",
       endedAt: new Date().toISOString(),
     });
     renderWithToast(
-      <WorkoutJournalSection {...baseProps({ workouts: [ended] })} />,
+      <WorkoutJournalSection {...baseProps({ activeWorkout: ended })} />,
     );
-    expect(screen.getByText("Завершене")).toBeTruthy();
+    expect(screen.getByTestId("summary-view")).toBeTruthy();
+    expect(screen.getByTestId("summary-workout-id")).toHaveTextContent(
+      "w-ended",
+    );
+    expect(screen.queryByTestId("active-panel")).toBeNull();
   });
 
-  it("shows Активне badge for active non-ended workout (selected)", () => {
-    const active = makeWorkout({ id: "w-active" });
+  it("wires onRepeat to onRepeatWorkout with the ended workout", () => {
+    const ended = makeWorkout({
+      id: "w-ended",
+      endedAt: new Date().toISOString(),
+    });
+    const onRepeatWorkout = vi.fn();
     renderWithToast(
       <WorkoutJournalSection
-        {...baseProps({ workouts: [active], activeWorkoutId: "w-active" })}
+        {...baseProps({ activeWorkout: ended, onRepeatWorkout })}
       />,
     );
-    expect(screen.getByText("Активне")).toBeTruthy();
-  });
-
-  it("shows Чернетка badge for non-ended workout that is not selected", () => {
-    const draft = makeWorkout({ id: "w-draft" });
-    renderWithToast(
-      <WorkoutJournalSection
-        {...baseProps({ workouts: [draft], activeWorkoutId: null })}
-      />,
+    fireEvent.click(
+      screen.getByRole("button", { name: /повторити це тренування/i }),
     );
-    expect(screen.getByText("Чернетка")).toBeTruthy();
-  });
-
-  it("shows workout note when present", () => {
-    const noted = makeWorkout({ id: "w-note", note: "Важке тренування" });
-    renderWithToast(
-      <WorkoutJournalSection {...baseProps({ workouts: [noted] })} />,
-    );
-    expect(screen.getByText("Важке тренування")).toBeTruthy();
-  });
-
-  it("toggles selected state on row click (select)", () => {
-    const setActiveWorkoutId = vi.fn();
-    const w = makeWorkout({ id: "w-row" });
-    renderWithToast(
-      <WorkoutJournalSection
-        {...baseProps({
-          workouts: [w],
-          activeWorkoutId: null,
-          setActiveWorkoutId,
-        })}
-      />,
-    );
-    // Find the button for the workout row
-    const rowBtn = screen
-      .getAllByRole("button")
-      .find((el) => el.getAttribute("aria-pressed") !== null);
-    expect(rowBtn).toBeTruthy();
-    fireEvent.click(rowBtn!);
-    expect(setActiveWorkoutId).toHaveBeenCalledWith("w-row");
-  });
-
-  it("deselects on row click when already selected", () => {
-    const setActiveWorkoutId = vi.fn();
-    const w = makeWorkout({ id: "w-row" });
-    renderWithToast(
-      <WorkoutJournalSection
-        {...baseProps({
-          workouts: [w],
-          activeWorkoutId: "w-row",
-          setActiveWorkoutId,
-        })}
-      />,
-    );
-    const rowBtn = screen
-      .getAllByRole("button")
-      .find((el) => el.getAttribute("aria-pressed") !== null);
-    fireEvent.click(rowBtn!);
-    expect(setActiveWorkoutId).toHaveBeenCalledWith(null);
+    expect(onRepeatWorkout).toHaveBeenCalledWith(ended);
   });
 });
 
-describe("WorkoutJournalSection – swipe-to-delete", () => {
-  it("calls deleteWorkout on swipe-left for a non-active workout", () => {
-    const deleteWorkout = vi.fn();
-    const restoreWorkout = vi.fn();
-    const w = makeWorkout({ id: "w-del" });
+describe("WorkoutJournalSection – in-flight workout renders the editable panel", () => {
+  it("renders ActiveWorkoutPanel for a non-ended workout", () => {
+    const active = makeWorkout({ id: "w-active" });
     renderWithToast(
-      <WorkoutJournalSection
-        {...baseProps({
-          workouts: [w],
-          activeWorkoutId: null,
-          deleteWorkout,
-          restoreWorkout,
-        })}
-      />,
+      <WorkoutJournalSection {...baseProps({ activeWorkout: active })} />,
     );
-    const deleteBtn = screen.getByTestId("swipe-delete");
-    act(() => {
-      fireEvent.click(deleteBtn);
-    });
-    expect(deleteWorkout).toHaveBeenCalledWith("w-del");
-  });
-
-  it("does NOT render swipe-delete for the currently active workout", () => {
-    const w = makeWorkout({ id: "w-active" });
-    renderWithToast(
-      <WorkoutJournalSection
-        {...baseProps({
-          workouts: [w],
-          activeWorkoutId: "w-active",
-        })}
-      />,
-    );
-    expect(screen.queryByTestId("swipe-delete")).toBeNull();
+    expect(screen.getByTestId("active-panel")).toBeTruthy();
+    expect(screen.queryByTestId("summary-view")).toBeNull();
   });
 });

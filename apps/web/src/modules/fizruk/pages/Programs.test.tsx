@@ -155,9 +155,37 @@ describe("Programs page", () => {
     expect(screen.getByText("Розклад та вправи")).toBeInTheDocument();
     expect(
       screen.getAllByText(
-        "Вправи з програми відсутні в каталозі — додайте вправи з відповідними ID вручну.",
+        "Вправи з програми відсутні в каталозі — додай вправи з відповідними ID вручну.",
       ).length,
     ).toBeGreaterThan(0);
+  });
+
+  it("uses ти-звертання for on-page copy, not ви-form (style-guide.uk.md)", () => {
+    render(<Programs {...baseProps()} />);
+    // No active program → subtitle prompts in the ти-form ("Обери", not
+    // "Оберіть").
+    expect(screen.getByText("Обери тренувальну програму")).toBeInTheDocument();
+    expect(
+      screen.queryByText("Оберіть тренувальну програму"),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Деталі" })[0]!);
+    expect(
+      screen.getAllByText(
+        "Вправи з програми відсутні в каталозі — додай вправи з відповідними ID вручну.",
+      ).length,
+    ).toBeGreaterThan(0);
+  });
+
+  it("ties the Деталі toggle to its region via aria-controls/id (a11y)", () => {
+    render(<Programs {...baseProps()} />);
+    const toggle = screen.getAllByRole("button", { name: "Деталі" })[0]!;
+    const controlsId = toggle.getAttribute("aria-controls");
+    expect(controlsId).toBeTruthy();
+
+    fireEvent.click(toggle);
+
+    expect(document.getElementById(controlsId!)).toBeInTheDocument();
   });
 
   it("renders resolved exercise names inside expanded program details", () => {

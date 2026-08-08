@@ -2,12 +2,14 @@ import type {
   FizrukData,
   recoveryConflictsForExercise as recoveryConflictsForExerciseFn,
   Workout,
+  WorkoutItem,
 } from "@sergeant/fizruk-domain";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
+import { WorkoutItemTypeSwitcher } from "./WorkoutItemTypeSwitcher";
 
 type RecExerciseFn = typeof recoveryConflictsForExerciseFn;
 type RecoveryByMap = Parameters<RecExerciseFn>[1];
@@ -30,6 +32,20 @@ type ExerciseDetailSheetProps = {
   addExerciseToActive: (ex: FizrukData.RawExerciseDef) => void;
   onDeleteRequest: () => void;
   toast?: ToastApi;
+  /**
+   * Optional — when supplied AND `activeWorkout` already logs `selected`
+   * as an item, the sheet renders the "Тип" switcher for that item
+   * (moved here from `WorkoutItemCard` in the 2026-08 redesign, item 5:
+   * the type control was the single biggest widget on the card despite
+   * changing once per exercise or never). Same signature as the
+   * `updateItem` already threaded through `WorkoutJournalSection` →
+   * `WorkoutItemsList` → `WorkoutItemCard` — pass `o.updateItem` from
+   * `Workouts.tsx` to wire it up; omitting it just keeps the sheet's
+   * pre-redesign behaviour (no type editing here).
+   */
+  updateItem?:
+    | ((workoutId: string, itemId: string, patch: Partial<WorkoutItem>) => void)
+    | undefined;
 };
 
 export function ExerciseDetailSheet({
@@ -46,8 +62,14 @@ export function ExerciseDetailSheet({
   addExerciseToActive,
   onDeleteRequest,
   toast,
+  updateItem,
 }: ExerciseDetailSheetProps) {
   if (!selected) return null;
+
+  const activeItem =
+    mode === "log"
+      ? (activeWorkout?.items.find((i) => i.exerciseId === selected.id) ?? null)
+      : null;
 
   const cf = recoveryConflictsForExercise(selected, rec?.by);
   const isCustom =
@@ -214,6 +236,18 @@ export function ExerciseDetailSheet({
           >
             Видалити з каталогу
           </Button>
+        </div>
+      )}
+
+      {activeItem && updateItem && activeWorkout && (
+        <div className="mt-4">
+          <WorkoutItemTypeSwitcher
+            item={activeItem}
+            isReadOnly={Boolean(activeWorkout.endedAt)}
+            onChange={(patch) =>
+              updateItem(activeWorkout.id, activeItem.id, patch)
+            }
+          />
         </div>
       )}
 

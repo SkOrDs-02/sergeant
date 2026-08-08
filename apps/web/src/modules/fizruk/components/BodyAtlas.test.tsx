@@ -3,14 +3,31 @@
  * BodyAtlas tests — pure-SVG renderer (no body-highlighter).
  *
  * Covers:
- *  - Mode + side segmented controls render and toggle aria-selected.
+ *  - Mode + side segmented button-groups render and toggle aria-pressed.
  *  - Switching side swaps the muscle set (front-only vs back-only groups).
  *  - Muscle groups are keyboard-focusable role="button" with a UA aria-label.
  *  - Enter / Space / click select a muscle and populate the detail card.
  *  - The detail card surfaces status, fatigue and exercise chips.
+ *
+ * Fizruk audit wave 2 (2026-08-08) regression guards:
+ *  - defect #1: the silhouette `<svg>` no longer carries `role="img"` (which
+ *    forces ARIA descendants presentational and hides the muscle buttons
+ *    from AT — a bug jsdom/RTL doesn't emulate, so only an explicit
+ *    assertion on the attribute catches a regression).
+ *  - defect #2: selecting a muscle sets `aria-pressed` and fires a
+ *    `useAnnounce()` message into the shared live region.
+ *  - defect #3: the mode/side pickers are a plain `role="group"` of toggle
+ *    buttons (`aria-pressed`), not a fake `tablist`/`tab` pair.
  */
 import { describe, it, expect, beforeEach } from "vitest";
-import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import {
+  render,
+  screen,
+  fireEvent,
+  cleanup,
+  waitFor,
+} from "@testing-library/react";
+import { ScreenReaderAnnouncerProvider } from "@shared/components/ui/ScreenReaderAnnouncer";
 import { BodyAtlas, type AtlasMuscleDatum } from "./BodyAtlas";
 
 const DATA: Partial<Record<string, AtlasMuscleDatum>> = {
@@ -52,35 +69,46 @@ const DATA: Partial<Record<string, AtlasMuscleDatum>> = {
 };
 
 const renderAtlas = () =>
-  render(<BodyAtlas data={DATA as Record<string, AtlasMuscleDatum>} />);
+  render(
+    <ScreenReaderAnnouncerProvider>
+      <BodyAtlas data={DATA as Record<string, AtlasMuscleDatum>} />
+    </ScreenReaderAnnouncerProvider>,
+  );
 
 beforeEach(cleanup);
 
 describe("BodyAtlas · segmented controls", () => {
-  it("renders mode + side tabs with the front view selected by default", () => {
+  it("renders mode + side toggle groups with the front view selected by default", () => {
     renderAtlas();
-    expect(screen.getByRole("tab", { name: "Відновлення" })).toHaveAttribute(
-      "aria-selected",
+    // defect #3: real button groups, not a fake tablist/tab pair — no
+    // aria-controls/tabpanel/roving-tabindex machinery to half-implement.
+    expect(
+      screen.getByRole("group", { name: "Режим карти м'язів" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Відновлення" })).toHaveAttribute(
+      "aria-pressed",
       "true",
     );
-    expect(screen.getByRole("tab", { name: "Спереду" })).toHaveAttribute(
-      "aria-selected",
+    expect(screen.getByRole("button", { name: "Спереду" })).toHaveAttribute(
+      "aria-pressed",
       "true",
     );
-    expect(screen.getByRole("tab", { name: "Ззаду" })).toHaveAttribute(
-      "aria-selected",
+    expect(screen.getByRole("button", { name: "Ззаду" })).toHaveAttribute(
+      "aria-pressed",
       "false",
     );
+    expect(screen.queryByRole("tablist")).not.toBeInTheDocument();
+    expect(screen.queryByRole("tab")).not.toBeInTheDocument();
   });
 
   it("switching side swaps muscle groups (front-only chest → back-only gluteal)", () => {
     renderAtlas();
     expect(screen.getByRole("button", { name: "Груди" })).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("tab", { name: "Ззаду" }));
+    fireEvent.click(screen.getByRole("button", { name: "Ззаду" }));
 
-    expect(screen.getByRole("tab", { name: "Ззаду" })).toHaveAttribute(
-      "aria-selected",
+    expect(screen.getByRole("button", { name: "Ззаду" })).toHaveAttribute(
+      "aria-pressed",
       "true",
     );
     expect(screen.getByRole("button", { name: "Сідниці" })).toBeInTheDocument();
@@ -97,7 +125,7 @@ describe("BodyAtlas · muscle selection", () => {
     );
 
     expect(screen.queryByRole("button", { name: "Груди" })).toBeNull();
-    expect(screen.queryByText(/Оберіть м.?яз/)).toBeNull();
+    expect(screen.queryByText(/Обери м.?яз/)).toBeNull();
   });
 
   it("muscle groups are role=button with Ukrainian aria-labels", () => {
@@ -136,8 +164,48 @@ describe("BodyAtlas · muscle selection", () => {
     fireEvent.click(screen.getByRole("button", { name: "Груди" }));
     expect(screen.getByText("потребує відпочинку")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("tab", { name: "Ззаду" }));
-    expect(screen.getByText(/Оберіть м.?яз/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Ззаду" }));
+    expect(screen.getByText(/Обери м.?яз/)).toBeInTheDocument();
+  });
+});
+
+describe("BodyAtlas · muscle a11y (fizruk audit wave 2)", () => {
+  // defect #1: role="img" on the silhouette forces every descendant
+  // presentational per ARIA (svg elements are in the "presentational
+  // children" table for the `img` role), which makes the muscle
+  // role="button"s unreachable for AT even though DOM-level queries in
+  // jsdom still find them. The fix is removing the role, not swapping it.
+  it("does not put role=img on the silhouette svg (would hide muscle buttons from AT)", () => {
+    const { container } = renderAtlas();
+    const svg = container.querySelector("svg");
+    expect(svg).not.toBeNull();
+    expect(svg).not.toHaveAttribute("role", "img");
+    expect(svg).toHaveAttribute("aria-label", "Атлас мʼязів, вигляд спереду");
+  });
+
+  // defect #2: selection needs both an on-demand state (aria-pressed) and
+  // an announced state change (useAnnounce, since selecting a muscle isn't
+  // a native form control with its own SR feedback).
+  it("marks the selected muscle with aria-pressed and announces the change", async () => {
+    renderAtlas();
+    const chest = screen.getByRole("button", { name: "Груди" });
+    expect(chest).toHaveAttribute("aria-pressed", "false");
+
+    fireEvent.click(chest);
+
+    expect(chest).toHaveAttribute("aria-pressed", "true");
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent(
+        "Обрано: Груди, потребує відпочинку",
+      ),
+    );
+  });
+
+  it("does not carry a fake tablist/tab pair for the mode/side pickers", () => {
+    renderAtlas();
+    expect(screen.queryByRole("tablist")).not.toBeInTheDocument();
+    expect(screen.queryByRole("tab")).not.toBeInTheDocument();
+    expect(screen.getAllByRole("group").length).toBeGreaterThanOrEqual(2);
   });
 });
 

@@ -2,10 +2,15 @@
 /**
  * Tests for WorkoutItemCard — the editable per-item tile inside the
  * active-workout panel. Covers the three item types (strength / time /
- * distance), the "last time" hint, group multi-select, the delete-item
- * and delete-set flows, type switching, rest-timer presets, and the
- * read-only mode. Every mutation flows through a prop, so we assert on
- * the spy callbacks.
+ * distance), the per-row "було" ghost, the ✓ done control, group
+ * member labelling, the recovery chip, the delete-item and delete-set
+ * flows, and the read-only mode. Every mutation flows through a prop,
+ * so we assert on the spy callbacks.
+ *
+ * Redesign 2026-08 note: the "Тип" segmented control and the always-
+ * expanded rest-timer preset row moved OUT of this card (see
+ * `WorkoutItemTypeSwitcher.test.tsx` and the rewritten
+ * `WorkoutItemRestPresets.tsx`) — this file no longer covers either.
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
@@ -61,6 +66,7 @@ function renderCard(
         it={item}
         activeWorkout={activeWorkout}
         group={props.group ?? null}
+        groupMemberPosition={props.groupMemberPosition}
         groupSelectMode={props.groupSelectMode ?? false}
         isSelected={props.isSelected ?? false}
         isReadOnly={props.isReadOnly ?? false}
@@ -92,10 +98,15 @@ describe("WorkoutItemCard — strength", () => {
     expect(screen.getByText("Грудні")).toBeInTheDocument();
   });
 
-  it("renders weight + reps inputs for a strength set", () => {
+  it("renders a set row with an ordinal, weight + reps inputs, and a done control", () => {
     renderCard();
     expect(screen.getByLabelText("Вага в кілограмах")).toBeInTheDocument();
     expect(screen.getByLabelText("Кількість повторень")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", {
+        name: "Підхід 1 — зроблено, почати відпочинок",
+      }),
+    ).toBeInTheDocument();
   });
 
   it("editing the weight input calls updateItem with the new sets array", () => {
@@ -108,43 +119,133 @@ describe("WorkoutItemCard — strength", () => {
     });
   });
 
-  it("'+ Підхід' appends a new empty set", () => {
+  it("'+ Підхід' copies the last completed set forward", () => {
     renderCard();
     fireEvent.click(screen.getByRole("button", { name: "+ Підхід" }));
     expect(updateItem).toHaveBeenCalledWith("w1", "it-1", {
       sets: [
         { weightKg: 50, reps: 8 },
-        { weightKg: 0, reps: 0 },
+        { weightKg: 50, reps: 8 },
       ],
     });
   });
 
-  it("'Видалити' on a set snapshots and calls onDeleteSet", () => {
+  it("'+ Підхід' falls back to the previous-session ghost when nothing is completed yet", () => {
+    renderCard({
+      it: makeItem({ sets: [] }),
+      lastByExerciseId: {
+        bench: { type: "strength", sets: [{ weightKg: 80, reps: 8 }] },
+      },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "+ Підхід" }));
+    expect(updateItem).toHaveBeenCalledWith("w1", "it-1", {
+      sets: [{ weightKg: 80, reps: 8 }],
+    });
+  });
+
+  it("'+ Підхід' seeds an empty row when there is no completed set and no ghost", () => {
+    renderCard({ it: makeItem({ sets: [] }) });
+    fireEvent.click(screen.getByRole("button", { name: "+ Підхід" }));
+    expect(updateItem).toHaveBeenCalledWith("w1", "it-1", {
+      sets: [{ weightKg: 0, reps: 0 }],
+    });
+  });
+
+  it("deleting a set snapshots and calls onDeleteSet", () => {
     renderCard();
-    fireEvent.click(screen.getByRole("button", { name: "Видалити" }));
+    fireEvent.click(screen.getByRole("button", { name: "Видалити підхід 1" }));
     expect(updateItem).toHaveBeenCalledWith("w1", "it-1", { sets: [] });
     expect(onDeleteSet).toHaveBeenCalledWith("w1", "it-1", [
       { weightKg: 50, reps: 8 },
     ]);
   });
 
-  it("logging reps for an empty set starts the rest timer automatically", () => {
+  it("tapping the done ✓ control on a completed row starts the rest timer", () => {
+    renderCard();
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Підхід 1 — зроблено, почати відпочинок",
+      }),
+    );
+    expect(setRestTimer).toHaveBeenCalledWith({ remaining: 90, total: 90 });
+  });
+
+  it("the done ✓ control is disabled while the row is incomplete and does not start the timer", () => {
+    renderCard({ it: makeItem({ sets: [{ weightKg: 0, reps: 0 }] }) });
+    const doneButton = screen.getByRole("button", {
+      name: "Підхід 1 — ще не заповнено",
+    });
+    expect(doneButton).toBeDisabled();
+    fireEvent.click(doneButton);
+    expect(setRestTimer).not.toHaveBeenCalled();
+  });
+
+  it("treats a bodyweight set (0 кг × N) as done — ✓ works for підтягування/віджимання", () => {
+    // Регрес, спійманий на рев'ю редизайну: критерій «зроблено» вимагав
+    // ваги > 0, тож для вправ із власною вагою ✓ була мертвою і таймер
+    // не стартував узагалі. Каталог має окремий фільтр обладнання
+    // «Власна вага», тобто цей клас вправ — не крайній випадок.
+    renderCard({ it: makeItem({ sets: [{ weightKg: 0, reps: 12 }] }) });
+    const doneButton = screen.getByRole("button", {
+      name: "Підхід 1 — зроблено, почати відпочинок",
+    });
+    expect(doneButton).not.toBeDisabled();
+    fireEvent.click(doneButton);
+    expect(setRestTimer).toHaveBeenCalledWith({ remaining: 90, total: 90 });
+  });
+
+  it("editing reps no longer auto-starts the rest timer (explicit ✓ tap required)", () => {
     renderCard({ it: makeItem({ sets: [{ weightKg: 50, reps: 0 }] }) });
     fireEvent.change(screen.getByLabelText("Кількість повторень"), {
       target: { value: "8" },
     });
-    expect(setRestTimer).toHaveBeenCalledWith({ remaining: 90, total: 90 });
+    expect(setRestTimer).not.toHaveBeenCalled();
   });
 
-  it("renders the recommended rest-timer preset and quick options", () => {
+  it("tapping a per-row ghost fills weight + reps from the previous session", () => {
+    renderCard({
+      it: makeItem({ sets: [{ weightKg: 0, reps: 0 }] }),
+      lastByExerciseId: {
+        bench: { type: "strength", sets: [{ weightKg: 80, reps: 8 }] },
+      },
+    });
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Підставити 80×8 з минулого разу",
+      }),
+    );
+    expect(updateItem).toHaveBeenCalledWith("w1", "it-1", {
+      sets: [{ weightKg: 80, reps: 8 }],
+    });
+  });
+
+  it("hides the per-row ghost once the row is already done", () => {
+    renderCard({
+      lastByExerciseId: {
+        bench: { type: "strength", sets: [{ weightKg: 80, reps: 8 }] },
+      },
+    });
+    expect(
+      screen.queryByRole("button", { name: /Підставити/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("renders the recommended rest-timer preset and opens the presets menu", () => {
     const setDefaultForExercise = vi.fn();
     renderCard({ setDefaultForExercise });
-    // Default 90 → "90 с" recommended button. Гліф «★» прибрано
-    // 2026-08-03; «рекомендований» лишається в `title` кнопки.
+    // Default 90 → "90 с" recommended button, always visible.
     expect(screen.getByText("90 с")).toBeInTheDocument();
-    // Quick options exclude the default (90).
-    expect(screen.getByRole("button", { name: "60 с" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "60 с" }));
+    // Other presets live behind the menu trigger now (item 7 redesign).
+    expect(
+      screen.queryByRole("button", { name: "60 с" }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Показати інші варіанти часу відпочинку",
+      }),
+    );
+    const option = screen.getByRole("menuitem", { name: "60 с" });
+    fireEvent.click(option);
     expect(setRestTimer).toHaveBeenCalledWith({ remaining: 60, total: 60 });
     expect(setDefaultForExercise).toHaveBeenCalledWith("bench", 60);
   });
@@ -156,33 +257,34 @@ describe("WorkoutItemCard — strength", () => {
     );
     expect(removeItem).toHaveBeenCalledWith("w1", "it-1");
   });
+});
 
-  it("switching the type to 'Час' calls updateItem with a duration", () => {
-    renderCard();
-    fireEvent.click(screen.getByRole("tab", { name: "Час — секунди" }));
-    expect(updateItem).toHaveBeenCalledWith(
-      "w1",
-      "it-1",
-      expect.objectContaining({ type: "time" }),
+describe("WorkoutItemCard — rest timer guards on the done ✓ control", () => {
+  it("does not start the rest timer when the workout has already ended", () => {
+    renderCard({
+      activeWorkout: makeWorkout({ endedAt: "2026-06-22T11:00:00Z" }),
+    });
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Підхід 1 — зроблено, почати відпочинок",
+      }),
     );
+    expect(setRestTimer).not.toHaveBeenCalled();
+  });
+
+  it("does not start the rest timer for a grouped item (shared group timer applies instead)", () => {
+    const group = { id: "g1", type: "superset" } as WorkoutGroup;
+    renderCard({ group, groupMemberPosition: 1 });
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Підхід 1 — зроблено, почати відпочинок",
+      }),
+    );
+    expect(setRestTimer).not.toHaveBeenCalled();
   });
 });
 
-describe("WorkoutItemCard — last-time hint + groups", () => {
-  it("renders the 'last time' hint from lastByExerciseId", () => {
-    renderCard({
-      lastByExerciseId: {
-        bench: {
-          type: "strength",
-          sets: [{ weightKg: 70, reps: 5 }],
-          _startedAt: "2026-06-15T10:00:00Z",
-        },
-      },
-    });
-    expect(screen.getByText(/Минулого разу/)).toBeInTheDocument();
-    expect(screen.getByText(/70×5/)).toBeInTheDocument();
-  });
-
+describe("WorkoutItemCard — groups", () => {
   it("renders the group-select checkbox with an accessible name + state and toggles it", () => {
     renderCard({ groupSelectMode: true, isSelected: false });
     const checkbox = screen.getByRole("checkbox", {
@@ -202,11 +304,17 @@ describe("WorkoutItemCard — last-time hint + groups", () => {
     ).toHaveAttribute("aria-checked", "true");
   });
 
-  it("renders a superset badge when the item belongs to a group", () => {
+  it("renders an A1-style group-member label instead of the full superset badge", () => {
     const group = { id: "g1", type: "superset" } as WorkoutGroup;
-    renderCard({ group });
+    renderCard({ group, groupMemberPosition: 1 });
+    expect(screen.getByText("A1")).toBeInTheDocument();
     // Grouped strength items hide the per-item rest-timer block.
     expect(screen.queryByText("90 с")).not.toBeInTheDocument();
+  });
+
+  it("does not render a group-member label without a position (standalone item)", () => {
+    renderCard();
+    expect(screen.queryByText(/^A\d+$/)).not.toBeInTheDocument();
   });
 });
 
@@ -268,57 +376,21 @@ describe("WorkoutItemCard — time + distance + read-only", () => {
     expect(updateItem).toHaveBeenCalledWith("w1", "it-1", { durationSec: 400 });
   });
 
-  it("switching type to 'distance' calls updateItem with distanceM + durationSec", () => {
-    renderCard();
-    fireEvent.click(
-      screen.getByRole("tab", { name: "Дистанція — метри та час" }),
-    );
-    expect(updateItem).toHaveBeenCalledWith(
-      "w1",
-      "it-1",
-      expect.objectContaining({ type: "distance" }),
-    );
-  });
-
-  it("read-only mode hides the delete-item button and disables set delete", () => {
+  it("read-only mode hides the delete-item button and disables set editing/deletion", () => {
     renderCard({ isReadOnly: true });
     expect(
       screen.queryByRole("button", { name: "Видалити вправу з тренування" }),
     ).not.toBeInTheDocument();
     const weightInput = screen.getByLabelText("Вага в кілограмах");
     expect(weightInput).toHaveAttribute("readonly");
-  });
-
-  it("read-only mode blocks the 'Тип' Segmented control from both click and keyboard, not just visually", () => {
-    renderCard({ isReadOnly: true });
-    const timeTab = screen.getByRole("tab", { name: "Час — секунди" });
-    const activeTab = screen.getByRole("tab", {
-      name: "Силова — кг × повтори × підходи",
-    });
-
-    // Click path: onChange is ignored entirely, even though jsdom's
-    // fireEvent bypasses CSS `pointer-events: none`.
-    fireEvent.click(timeTab);
-    expect(updateItem).not.toHaveBeenCalled();
-
-    // Keyboard path: ArrowRight on the active tab would normally move
-    // selection via Segmented's roving-tabindex handler.
-    activeTab.focus();
-    fireEvent.keyDown(activeTab, { key: "ArrowRight" });
-    expect(updateItem).not.toHaveBeenCalled();
-
-    // Every tab — active or not — is pulled out of the Tab order once
-    // read-only, so keyboard users can't even reach the control.
-    expect(activeTab).toHaveAttribute("tabindex", "-1");
-    expect(timeTab).toHaveAttribute("tabindex", "-1");
-  });
-
-  it("keeps a non-read-only Segmented tab in the normal roving-tabindex order", () => {
-    renderCard({ isReadOnly: false });
-    const activeTab = screen.getByRole("tab", {
-      name: "Силова — кг × повтори × підходи",
-    });
-    expect(activeTab).toHaveAttribute("tabindex", "0");
+    expect(
+      screen.getByRole("button", { name: "Видалити підхід 1" }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole("button", {
+        name: "Підхід 1 — зроблено, почати відпочинок",
+      }),
+    ).toBeDisabled();
   });
 
   it("navigates to the exercise detail when the name button is clicked", () => {
@@ -329,36 +401,7 @@ describe("WorkoutItemCard — time + distance + read-only", () => {
   });
 });
 
-describe("WorkoutItemCard — last-time hint variants", () => {
-  it("filters out empty 0×0 sets from the last-time hint, keeping populated ones", () => {
-    renderCard({
-      lastByExerciseId: {
-        bench: {
-          type: "strength",
-          sets: [
-            { weightKg: 80, reps: 8 },
-            { weightKg: 0, reps: 0 },
-          ],
-        },
-      },
-    });
-    expect(screen.getByText(/Минулого разу/)).toBeInTheDocument();
-    expect(screen.getByText(/80×8/)).toBeInTheDocument();
-    expect(screen.queryByText(/0×0/)).not.toBeInTheDocument();
-  });
-
-  it("renders no last-time hint at all when every strength set is empty", () => {
-    renderCard({
-      lastByExerciseId: {
-        bench: {
-          type: "strength",
-          sets: [{ weightKg: 0, reps: 0 }],
-        },
-      },
-    });
-    expect(screen.queryByText(/Минулого разу/)).not.toBeInTheDocument();
-  });
-
+describe("WorkoutItemCard — last-time hint (time/distance only)", () => {
   it("renders distance metrics in the last-time hint for a distance entry", () => {
     renderCard({
       lastByExerciseId: {
@@ -384,7 +427,7 @@ describe("WorkoutItemCard — last-time hint variants", () => {
     expect(screen.getByText(/120с/)).toBeInTheDocument();
   });
 
-  it("renders the last-time hint without a date when _startedAt is missing", () => {
+  it("renders no caption hint for a strength entry — its ghost lives in the set row instead", () => {
     renderCard({
       lastByExerciseId: {
         bench: {
@@ -393,13 +436,12 @@ describe("WorkoutItemCard — last-time hint variants", () => {
         },
       },
     });
-    expect(screen.getByText(/Минулого разу/)).toBeInTheDocument();
-    expect(screen.getByText(/60×6/)).toBeInTheDocument();
+    expect(screen.queryByText(/Минулого разу/)).not.toBeInTheDocument();
   });
 });
 
-describe("WorkoutItemCard — recovery conflict warning", () => {
-  it("shows recovery warning when a primary muscle is red in recBy", () => {
+describe("WorkoutItemCard — recovery conflict chip", () => {
+  it("shows a recovery chip and reveals detail on tap when a primary muscle is red in recBy", () => {
     renderCard({
       recBy: {
         pec: {
@@ -413,36 +455,16 @@ describe("WorkoutItemCard — recovery conflict warning", () => {
         },
       },
     });
+    expect(screen.queryByText(/Ще не відновились/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText("Попередження про відновлення"));
     expect(screen.getByText(/Ще не відновились/)).toBeInTheDocument();
   });
-});
 
-describe("WorkoutItemCard — rest timer guards", () => {
-  it("Enter on reps with zero weight and zero reps does NOT start the rest timer", () => {
-    renderCard({ it: makeItem({ sets: [{ weightKg: 0, reps: 0 }] }) });
-    fireEvent.keyDown(screen.getByLabelText("Кількість повторень"), {
-      key: "Enter",
-    });
-    expect(setRestTimer).not.toHaveBeenCalled();
-  });
-
-  it("Enter on reps in a completed workout does NOT start the rest timer", () => {
-    renderCard({
-      activeWorkout: makeWorkout({ endedAt: "2026-06-22T11:00:00Z" }),
-    });
-    fireEvent.keyDown(screen.getByLabelText("Кількість повторень"), {
-      key: "Enter",
-    });
-    expect(setRestTimer).not.toHaveBeenCalled();
-  });
-
-  it("Enter on reps in a grouped item does NOT start the rest timer", () => {
-    const group = { id: "g1", type: "superset" } as WorkoutGroup;
-    renderCard({ group });
-    fireEvent.keyDown(screen.getByLabelText("Кількість повторень"), {
-      key: "Enter",
-    });
-    expect(setRestTimer).not.toHaveBeenCalled();
+  it("renders no recovery chip when there is no conflict", () => {
+    renderCard();
+    expect(
+      screen.queryByLabelText("Попередження про відновлення"),
+    ).not.toBeInTheDocument();
   });
 });
 
@@ -463,7 +485,9 @@ describe("WorkoutItemCard — stable set keys across a mid-list delete", () => {
     // internal stable-key bookkeeping at the same index before calling
     // `updateItem`, so the mapping stays correct once the parent's
     // `it.sets` prop reflects the change.
-    const deleteButtons = screen.getAllByRole("button", { name: "Видалити" });
+    const deleteButtons = screen.getAllByRole("button", {
+      name: /^Видалити підхід \d+$/,
+    });
     expect(deleteButtons).toHaveLength(3);
     fireEvent.click(deleteButtons[1]!);
     expect(updateItem).toHaveBeenCalledWith("w1", "it-1", {

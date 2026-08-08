@@ -58,29 +58,41 @@ export function RecoveryFocusCard({
           variant for the same reason: a filled, branded pill is unambiguous
           where a transparent ghost label looked like inert text.
         */}
-        <button
-          type="button"
-          className="min-w-0 flex-1 text-left flex items-start gap-2 rounded-xl px-2 py-2 -mx-2 -my-2 hover:bg-panelHi/80 active:bg-panelHi transition-colors"
-          onClick={() => setOpen((o) => !o)}
-          aria-expanded={open}
-        >
-          <span
-            aria-hidden
-            className={cn(
-              "inline-flex items-center justify-center w-5 h-5 mt-0.5 rounded-md text-muted shrink-0 transition-transform",
-              open ? "rotate-180" : "rotate-0",
-            )}
+        {/* AI-CONTEXT: `<h2>` wraps the WHOLE toggle button (WAI-ARIA
+            disclosure/accordion pattern) instead of living inside it — a
+            heading nested inside a native `<button>` loses its heading
+            semantics for most AT (defect #2). `contents` drops the h2's
+            own box so it doesn't affect the flex layout; `block` on the
+            former-heading text keeps the description paragraph below it
+            on its own line (no longer implicit from `<h2>` being a block
+            element by default). */}
+        <h2 className="contents">
+          <button
+            type="button"
+            className="focus-ring min-w-0 flex-1 text-left flex items-start gap-2 rounded-xl px-2 py-2 -mx-2 -my-2 hover:bg-panelHi/80 active:bg-panelHi transition-colors"
+            onClick={() => setOpen((o) => !o)}
+            aria-expanded={open}
           >
-            <Icon name="chevron-down" size="md" />
-          </span>
-          <div className="min-w-0 flex-1">
-            <h2 className="text-style-title text-text">Відновлення й фокус</h2>
-            <p className="text-style-caption text-muted mt-1 leading-snug">
-              Колір на силуеті — готовність груп; чіпи — пріоритет після
-              відпочинку.
-            </p>
-          </div>
-        </button>
+            <span
+              aria-hidden
+              className={cn(
+                "inline-flex items-center justify-center w-5 h-5 mt-0.5 rounded-md text-muted shrink-0 transition-transform",
+                open ? "rotate-180" : "rotate-0",
+              )}
+            >
+              <Icon name="chevron-down" size="md" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <span className="block text-style-title text-text">
+                Відновлення й фокус
+              </span>
+              <p className="text-style-caption text-muted mt-1 leading-snug">
+                Колір на силуеті — готовність груп; чіпи — пріоритет після
+                відпочинку.
+              </p>
+            </div>
+          </button>
+        </h2>
         <Button
           variant="fizruk-soft"
           size="sm"

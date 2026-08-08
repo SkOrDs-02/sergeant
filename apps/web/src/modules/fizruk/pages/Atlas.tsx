@@ -19,7 +19,12 @@ export function Atlas() {
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad space-y-3">
+      {/* Atlas is one of the two sub-pages (`FizrukApp.showBottomNav`)
+          rendered without the module bottom nav, so the 88px
+          `page-tabbar-pad` clearance meant for that chrome would just be
+          dead space here. `safe-area-pb` still clears the iOS home
+          indicator on standalone/PWA. */}
+      <div className="max-w-4xl mx-auto px-4 pt-4 safe-area-pb space-y-3">
         <Card
           as="section"
           module="fizruk"

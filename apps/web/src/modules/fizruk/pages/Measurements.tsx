@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
@@ -41,6 +41,15 @@ const inp =
 const lbl =
   "px-1 block text-xs uppercase tracking-wider font-bold text-fizruk-strong dark:text-fizruk-300/70";
 
+// Programmatic-focus target for the guide view's `<h2>` — see the
+// scroll/focus-management effect below.
+const GUIDE_HEADING_ID = "measurements-guide-heading";
+
+// History row shows at most this many filled fields before collapsing the
+// rest behind a "+N ще" toggle (defect #7 — a record can carry up to 14
+// fields, and slicing to 4 used to drop the rest with no indicator).
+const HISTORY_ROW_FIELD_LIMIT = 4;
+
 export function Measurements() {
   const [guideOpen, setGuideOpen] = useState(false);
   const { entries, addEntry, deleteEntry, restoreEntry } = useMeasurements();
@@ -60,6 +69,51 @@ export function Measurements() {
   const [form, setForm] = useState<Record<string, string>>(() =>
     Object.fromEntries(MEASURE_FIELDS.map((f) => [f.id, ""])),
   );
+
+  // Guide-view scroll/focus management (defect #9). Both the guide branch
+  // and the main branch render the same top-level `.flex-1.overflow-y-auto`
+  // element in the same position, so React reconciles them onto ONE DOM
+  // node across the `guideOpen` toggle and its `scrollTop` survives the
+  // swap — reset it explicitly on every toggle. Move focus to the new
+  // view's entry point too, otherwise a keyboard/SR user is left pointing
+  // at a node that just left the DOM (WCAG 2.4.3 focus order): the guide's
+  // own `<h2>` when opening, the trigger button when closing (return focus
+  // to the invoker — the main view has no page-level heading to target).
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const guideTriggerRef = useRef<HTMLButtonElement>(null);
+  const isInitialGuideRender = useRef(true);
+  useEffect(() => {
+    // Plain `scrollTop` assignment, not `scrollTo({ top: 0 })`: jsdom only
+    // stubs `window.scrollTo`, not the `Element.prototype` method, so the
+    // richer API throws under Vitest/RTL. A snap-to-top on a view swap
+    // doesn't need smooth-scroll anyway.
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 0;
+    }
+    if (isInitialGuideRender.current) {
+      isInitialGuideRender.current = false;
+      return;
+    }
+    if (guideOpen) {
+      document.getElementById(GUIDE_HEADING_ID)?.focus();
+    } else {
+      guideTriggerRef.current?.focus();
+    }
+  }, [guideOpen]);
+
+  // History-row disclosure (defect #7) — a record can carry up to 14
+  // fields; rows over `HISTORY_ROW_FIELD_LIMIT` collapse behind "+N ще".
+  const [expandedHistoryIds, setExpandedHistoryIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const toggleHistoryRow = useCallback((id: string) => {
+    setExpandedHistoryIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
   /**
    * Помилки діапазону — під конкретним полем, не в тості.
    *
@@ -102,19 +156,29 @@ export function Measurements() {
 
   if (guideOpen) {
     return (
-      <div className="flex-1 overflow-y-auto">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto">
         <article className="max-w-2xl mx-auto px-4 pt-4 page-tabbar-pad space-y-4">
           <button
             type="button"
             onClick={() => setGuideOpen(false)}
-            className="inline-flex items-center gap-1 min-h-11 text-style-label text-fizruk-strong hover:underline"
+            className="focus-ring rounded-lg inline-flex items-center gap-1 min-h-11 text-style-label text-fizruk-strong hover:underline"
           >
             <Icon name="chevron-left" size="sm" />
             {messages.fizruk.measurements.guideBack}
           </button>
           <Card radius="lg" className="space-y-4">
             <div>
-              <SectionHeading as="h2" size="lg">
+              {/* `id` + `tabIndex={-1}` — programmatic focus target for the
+                  scroll/focus-management effect above (not part of tab
+                  order; SectionHeading isn't a forwardRef component, so a
+                  DOM ref isn't available here — id + getElementById is the
+                  pragmatic substitute). */}
+              <SectionHeading
+                as="h2"
+                size="lg"
+                id={GUIDE_HEADING_ID}
+                tabIndex={-1}
+              >
                 {messages.fizruk.measurements.guideTitle}
               </SectionHeading>
               <p className="mt-2 text-style-body text-subtle leading-relaxed">
@@ -165,17 +229,25 @@ export function Measurements() {
                 href="https://www.cdc.gov/diabetes/living-with/healthy-weight.html"
                 target="_blank"
                 rel="noreferrer"
-                className="min-h-11 inline-flex items-center text-fizruk-strong hover:underline"
+                className="focus-ring rounded-lg min-h-11 inline-flex items-center text-fizruk-strong hover:underline"
               >
                 {messages.fizruk.measurements.guideWhoLink}
+                <span className="sr-only">
+                  {" "}
+                  {messages.fizruk.measurements.manualLinkNewTab}
+                </span>
               </a>
               <a
                 href="https://www.nhs.uk/health-assessment-tools/calculate-your-waist-to-height-ratio"
                 target="_blank"
                 rel="noreferrer"
-                className="min-h-11 inline-flex items-center text-fizruk-strong hover:underline"
+                className="focus-ring rounded-lg min-h-11 inline-flex items-center text-fizruk-strong hover:underline"
               >
                 {messages.fizruk.measurements.guideCdcLink}
+                <span className="sr-only">
+                  {" "}
+                  {messages.fizruk.measurements.manualLinkNewTab}
+                </span>
               </a>
             </div>
           </Card>
@@ -185,12 +257,13 @@ export function Measurements() {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto">
+    <div ref={scrollContainerRef} className="flex-1 overflow-y-auto">
       <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad space-y-3">
         <button
+          ref={guideTriggerRef}
           type="button"
           onClick={() => setGuideOpen(true)}
-          className="flex items-center gap-3 bg-panel border border-line rounded-2xl p-4 shadow-card"
+          className="focus-ring flex items-center gap-3 bg-panel border border-line rounded-2xl p-4 shadow-card"
         >
           <div className="shrink-0 w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center text-success">
             <svg
@@ -430,39 +503,67 @@ export function Measurements() {
               {messages.fizruk.measurements.history}
             </SectionHeading>
           </div>
-          {(entries || []).map((e) => (
-            <div
-              key={e.id}
-              className="px-4 py-3 border-b border-line last:border-0"
-            >
-              <div className="flex items-center justify-between">
-                <div className="text-style-label text-text">
-                  {new Date(e.at).toLocaleDateString("uk-UA", {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                  })}
+          {(entries || []).map((e) => {
+            const dateLabel = new Date(e.at).toLocaleDateString("uk-UA", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            });
+            const filledFields = MEASURE_FIELDS.filter((f) => e[f.id] != null);
+            // Defect #7: a record can carry up to 14 fields — silently
+            // slicing to 4 dropped the rest with no indicator. Collapse
+            // behind an explicit "+N ще" toggle instead so nothing is lost
+            // without a trace.
+            const hasOverflow = filledFields.length > HISTORY_ROW_FIELD_LIMIT;
+            const isRowExpanded = expandedHistoryIds.has(e.id);
+            const visibleFields = isRowExpanded
+              ? filledFields
+              : filledFields.slice(0, HISTORY_ROW_FIELD_LIMIT);
+            const hiddenCount = filledFields.length - visibleFields.length;
+            return (
+              <div
+                key={e.id}
+                className="px-4 py-3 border-b border-line last:border-0"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="text-style-label text-text">{dateLabel}</div>
+                  <button
+                    type="button"
+                    aria-label={messages.fizruk.measurements.deleteAria}
+                    className="focus-ring touch-target -mr-2 px-2 inline-flex items-center justify-center rounded-full text-style-caption text-danger-strong hover:text-danger transition-colors"
+                    onClick={() => handleDelete(e.id)}
+                  >
+                    {messages.actions.delete}
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  aria-label={messages.fizruk.measurements.deleteAria}
-                  className="focus-ring touch-target -mr-2 px-2 inline-flex items-center justify-center rounded-full text-style-caption text-danger-strong hover:text-danger transition-colors"
-                  onClick={() => handleDelete(e.id)}
-                >
-                  {messages.actions.delete}
-                </button>
+                <div className="text-style-caption text-subtle mt-1">
+                  {visibleFields
+                    .map(
+                      (f) =>
+                        `${f.label}: ${Number(e[f.id]).toLocaleString("uk-UA")} ${f.unit}`,
+                    )
+                    .join(" · ") || "—"}
+                  {hasOverflow && (
+                    <button
+                      type="button"
+                      className="focus-ring touch-target ml-1 -my-2 px-1 rounded-lg inline-flex items-center text-fizruk-strong dark:text-fizruk font-semibold hover:underline"
+                      aria-expanded={isRowExpanded}
+                      aria-label={
+                        isRowExpanded
+                          ? `${messages.fizruk.measurements.collapseFieldsLabel} — ${messages.fizruk.measurements.showAllFieldsAriaSuffix} ${dateLabel}`
+                          : `+${hiddenCount} ${messages.fizruk.measurements.moreFieldsSuffix} — ${messages.fizruk.measurements.showAllFieldsAriaSuffix} ${dateLabel}`
+                      }
+                      onClick={() => toggleHistoryRow(e.id)}
+                    >
+                      {isRowExpanded
+                        ? messages.fizruk.measurements.collapseFieldsLabel
+                        : `+${hiddenCount} ${messages.fizruk.measurements.moreFieldsSuffix}`}
+                    </button>
+                  )}
+                </div>
               </div>
-              <div className="text-style-caption text-subtle mt-1">
-                {MEASURE_FIELDS.filter((f) => e[f.id] != null)
-                  .slice(0, 4)
-                  .map(
-                    (f) =>
-                      `${f.label}: ${Number(e[f.id]).toLocaleString("uk-UA")} ${f.unit}`,
-                  )
-                  .join(" · ") || "—"}
-              </div>
-            </div>
-          ))}
+            );
+          })}
           {(entries || []).length === 0 && (
             <EmptyState
               compact

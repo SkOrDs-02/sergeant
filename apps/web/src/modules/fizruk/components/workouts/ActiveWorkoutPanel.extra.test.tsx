@@ -131,8 +131,14 @@ describe("ActiveWorkoutPanel extended coverage", () => {
 
     render(wrap(<ActiveWorkoutPanel activeWorkout={workout} {...props} />));
 
-    // The checklist item renders a toggle button
-    fireEvent.click(screen.getByLabelText("Позначити як завершене"));
+    // The checklist item renders a toggle button. Its accessible name now
+    // includes the item label (fizruk audit wave 2, defect #6 — every
+    // warmup/cooldown toggle used to share the same generic
+    // "Позначити як завершене" name, so a screen reader could not tell
+    // them apart).
+    fireEvent.click(
+      screen.getByLabelText("Кардіо 5 хв: позначити як завершене"),
+    );
 
     expect(props.updateWorkout).toHaveBeenCalledWith(
       "w1",

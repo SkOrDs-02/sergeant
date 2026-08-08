@@ -28,6 +28,7 @@ const PAGE_ERROR_TITLES: Record<FizrukPage, string> = {
   body: "Не вдалось показати «Склад тіла»",
   exercise: "Не вдалось показати вправу",
   workout: "Не вдалось показати активне тренування",
+  history: "Не вдалось показати історію тренувань",
 };
 
 // Per-page lazy chunks. Previously this file eager-imported all nine
@@ -45,6 +46,10 @@ const Workouts = lazyImport(() => import("../pages/Workouts"), "Workouts");
 const ActiveWorkout = lazyImport(
   () => import("../pages/ActiveWorkout"),
   "ActiveWorkout",
+);
+const WorkoutHistory = lazyImport(
+  () => import("../pages/WorkoutHistory"),
+  "WorkoutHistory",
 );
 const Progress = lazyImport(() => import("../pages/Progress"), "Progress");
 const Measurements = lazyImport(
@@ -121,6 +126,8 @@ function renderPage(props: FizrukRouterProps) {
       return (
         <ActiveWorkout workoutId={workoutId ?? ""} onNavigate={onNavigate} />
       );
+    case "history":
+      return <WorkoutHistory onNavigate={onNavigate} />;
     case "progress":
       return <Progress onNavigate={onNavigate} />;
     case "measurements":

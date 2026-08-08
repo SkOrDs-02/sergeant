@@ -62,6 +62,7 @@ vi.mock("../components/workouts/WorkoutsHome", () => ({
     onOpenCatalog,
     onOpenTemplates,
     onOpenJournal,
+    onOpenPrograms,
     onRequestStart,
     onOpenSchedule,
   }: {
@@ -69,6 +70,7 @@ vi.mock("../components/workouts/WorkoutsHome", () => ({
     onOpenCatalog: () => void;
     onOpenTemplates: () => void;
     onOpenJournal: () => void;
+    onOpenPrograms: () => void;
     onRequestStart: () => void;
     onOpenSchedule?: () => void;
   }) => (
@@ -88,6 +90,13 @@ vi.mock("../components/workouts/WorkoutsHome", () => ({
       </button>
       <button type="button" onClick={onOpenJournal} data-testid="open-journal">
         Історія
+      </button>
+      <button
+        type="button"
+        onClick={onOpenPrograms}
+        data-testid="open-programs"
+      >
+        Програми
       </button>
       <button
         type="button"
@@ -125,11 +134,16 @@ vi.mock("../components/workouts/ExerciseDetailSheet", () => ({
   ExerciseDetailSheet: ({
     onClose,
     onDeleteRequest,
+    updateItem,
   }: {
     onClose: () => void;
     onDeleteRequest: () => void;
+    updateItem?: unknown;
   }) => (
-    <div data-testid="exercise-detail-sheet">
+    <div
+      data-testid="exercise-detail-sheet"
+      data-has-update-item={updateItem ? "true" : "false"}
+    >
       <button type="button" data-testid="close-detail" onClick={onClose}>
         Закрити
       </button>
@@ -327,6 +341,7 @@ function makeOrchestrator(view: string = "home", overrides: object = {}) {
     handleRiskyTemplateConfirm: vi.fn(),
     handleQuickStart: vi.fn(),
     startWorkoutFromTemplate: vi.fn(),
+    repeatWorkout: vi.fn(),
     summarizeWorkoutForFinish: vi.fn(),
     submitRetroWorkout: vi.fn(),
     deleteWorkout: vi.fn(),
@@ -393,15 +408,46 @@ describe("Workouts page — log view", () => {
     );
   });
 
-  it("renders journal and catalog sections in log view", () => {
+  it("renders the journal section in log view", () => {
     render(<Workouts />);
     expect(screen.getByTestId("workout-journal-section")).toBeInTheDocument();
-    expect(screen.getByTestId("workout-catalog-section")).toBeInTheDocument();
   });
 
   it("does not render WorkoutsHome in log view", () => {
     render(<Workouts />);
     expect(screen.queryByTestId("workouts-home")).not.toBeInTheDocument();
+  });
+
+  // 02-A item 3 — the exercise catalog used to hang around in "log" view
+  // even when the routed workout was finished or missing (the dead-end
+  // "Активне тренування не знайдено" + full catalog combo from the audit).
+  it("does not render the catalog when there is no in-flight active workout", () => {
+    render(<Workouts />);
+    expect(
+      screen.queryByTestId("workout-catalog-section"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("does not render the catalog when the routed workout is already ended", () => {
+    mockedOrchestrator.mockReturnValue(
+      makeOrchestrator("log", {
+        activeWorkout: { id: "w1", endedAt: "2026-01-01T00:00:00Z" },
+      }) as unknown as ReturnType<typeof useWorkoutsOrchestrator>,
+    );
+    render(<Workouts />);
+    expect(
+      screen.queryByTestId("workout-catalog-section"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("renders the catalog only while there is a real in-flight workout", () => {
+    mockedOrchestrator.mockReturnValue(
+      makeOrchestrator("log", {
+        activeWorkout: { id: "w1", endedAt: null },
+      }) as unknown as ReturnType<typeof useWorkoutsOrchestrator>,
+    );
+    render(<Workouts />);
+    expect(screen.getByTestId("workout-catalog-section")).toBeInTheDocument();
   });
 });
 
@@ -545,9 +591,58 @@ describe("Workouts page — home action wiring", () => {
 
     expect(handleQuickStart).toHaveBeenCalledTimes(1);
   });
+
+  // 03-A — "Всі →" must own its own URL instead of flipping `view` to
+  // "log" on the same `/fizruk/workouts` path (the dual start-path bug).
+  it("'open-journal' navigates to the dedicated history route", () => {
+    mockedOrchestrator.mockReturnValue(
+      makeOrchestrator("home") as unknown as ReturnType<
+        typeof useWorkoutsOrchestrator
+      >,
+    );
+    const onNavigate = vi.fn();
+
+    render(<Workouts onNavigate={onNavigate} />);
+    fireEvent.click(screen.getByTestId("open-journal"));
+
+    expect(onNavigate).toHaveBeenCalledWith("history");
+  });
+
+  // 04-A — permanent "Програми" entry in the Довідники block.
+  it("'open-programs' navigates to the programs route", () => {
+    mockedOrchestrator.mockReturnValue(
+      makeOrchestrator("home") as unknown as ReturnType<
+        typeof useWorkoutsOrchestrator
+      >,
+    );
+    const onNavigate = vi.fn();
+
+    render(<Workouts onNavigate={onNavigate} />);
+    fireEvent.click(screen.getByTestId("open-programs"));
+
+    expect(onNavigate).toHaveBeenCalledWith("programs");
+  });
 });
 
 describe("Workouts page — sheet and confirm callback wiring", () => {
+  // Regression guard (01-A follow-up): the exercise-type switcher moved
+  // out of the item card and into `ExerciseDetailSheet`, which needs
+  // `updateItem` to render it at all. `Workouts.tsx` is the only mounter
+  // of this sheet — dropping the prop makes the switcher unreachable
+  // anywhere in the app.
+  it("passes updateItem through to ExerciseDetailSheet", () => {
+    mockedOrchestrator.mockReturnValue(
+      makeOrchestrator("home") as unknown as ReturnType<
+        typeof useWorkoutsOrchestrator
+      >,
+    );
+    render(<Workouts />);
+    expect(screen.getByTestId("exercise-detail-sheet")).toHaveAttribute(
+      "data-has-update-item",
+      "true",
+    );
+  });
+
   it("wires close/delete callbacks for always-mounted sheets", () => {
     const setSelected = vi.fn();
     const setAddOpen = vi.fn();

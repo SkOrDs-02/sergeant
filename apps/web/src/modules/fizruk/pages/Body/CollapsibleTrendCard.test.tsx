@@ -13,6 +13,8 @@ import {
   fireEvent,
   act,
 } from "@testing-library/react";
+import { MINUS_SIGN } from "@sergeant/shared";
+import { flatText } from "@shared/testing/numberText";
 import { CollapsibleTrendCard } from "./CollapsibleTrendCard";
 import { TREND_STORAGE_PREFIX } from "./storage";
 
@@ -58,7 +60,20 @@ describe("CollapsibleTrendCard — initial state", () => {
 
   it("renders the latest value and unit", () => {
     renderCard();
-    expect(screen.getByText(/80.*кг/)).toBeInTheDocument();
+    expect(flatText(screen.getByTestId("trend-latest-value"))).toBe("80 кг");
+  });
+});
+
+describe("CollapsibleTrendCard — heading semantics (defect #2)", () => {
+  // A heading nested INSIDE a native `<button>` loses its heading role for
+  // most AT — the fix wraps the whole toggle button in `<h2>` instead
+  // (WAI-ARIA disclosure/accordion pattern).
+  it("exposes the title as an h2 heading, and the toggle stays a single button", () => {
+    renderCard();
+    expect(
+      screen.getByRole("heading", { level: 2, name: /Вага/ }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByRole("button")).toHaveLength(1);
   });
 });
 
@@ -140,26 +155,29 @@ describe("CollapsibleTrendCard — cross-tab sync", () => {
 });
 
 describe("CollapsibleTrendCard — delta display", () => {
-  it("renders positive delta when delta > 0", () => {
+  // Defect #7: `delta.toFixed(1)` printed a decimal POINT in a
+  // comma-locale UI ("+2.0 кг"). `Measure` formats via `uk-UA` and uses
+  // the real minus glyph (U+2212, not a hyphen) for negative deltas.
+  it("renders positive delta when delta > 0, locale-formatted with a comma", () => {
     renderCard({ delta: 1.2 });
-    expect(screen.getByText("+1.2 кг")).toBeInTheDocument();
+    expect(flatText(screen.getByTestId("trend-delta"))).toBe("+1,2 кг");
   });
 
-  it("renders negative delta when delta < 0", () => {
+  it("renders negative delta when delta < 0, with the U+2212 minus glyph", () => {
     renderCard({ delta: -0.5 });
-    expect(screen.getByText("-0.5 кг")).toBeInTheDocument();
+    expect(flatText(screen.getByTestId("trend-delta"))).toBe(
+      `${MINUS_SIGN}0,5 кг`,
+    );
   });
 
   it("hides delta when delta is null", () => {
     renderCard({ delta: null });
-    // neither + nor - delta label should appear
-    expect(screen.queryByText(/\+/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/-\d/)).not.toBeInTheDocument();
+    expect(screen.queryByTestId("trend-delta")).not.toBeInTheDocument();
   });
 
   it("hides delta when delta is exactly 0", () => {
     renderCard({ delta: 0 });
-    expect(screen.queryByText(/\+0/)).not.toBeInTheDocument();
+    expect(screen.queryByTestId("trend-delta")).not.toBeInTheDocument();
   });
 });
 
@@ -169,35 +187,35 @@ describe("CollapsibleTrendCard — deltaDirection", () => {
   // is better for those metrics. `up-is-good` must flip that to success.
   it("defaults to down-is-good: a positive delta renders warning (weight-loss framing)", () => {
     renderCard({ delta: 1.2 });
-    const label = screen.getByText("+1.2 кг");
+    const label = screen.getByTestId("trend-delta");
     expect(label.className).toContain("text-warning-strong");
     expect(label.className).not.toContain("text-success-strong");
   });
 
   it("defaults to down-is-good: a negative delta renders success", () => {
     renderCard({ delta: -0.5 });
-    const label = screen.getByText("-0.5 кг");
+    const label = screen.getByTestId("trend-delta");
     expect(label.className).toContain("text-success-strong");
     expect(label.className).not.toContain("text-warning-strong");
   });
 
   it("up-is-good: a positive delta (more sleep) renders success, not warning", () => {
     renderCard({ delta: 1.2, deltaDirection: "up-is-good" });
-    const label = screen.getByText("+1.2 кг");
+    const label = screen.getByTestId("trend-delta");
     expect(label.className).toContain("text-success-strong");
     expect(label.className).not.toContain("text-warning-strong");
   });
 
   it("up-is-good: a negative delta (less sleep) renders warning, not success", () => {
     renderCard({ delta: -0.5, deltaDirection: "up-is-good" });
-    const label = screen.getByText("-0.5 кг");
+    const label = screen.getByTestId("trend-delta");
     expect(label.className).toContain("text-warning-strong");
     expect(label.className).not.toContain("text-success-strong");
   });
 
   it("neutral: neither positive nor negative delta uses success/warning colour", () => {
     const { rerender } = renderCard({ delta: 1.2, deltaDirection: "neutral" });
-    let label = screen.getByText("+1.2 кг");
+    let label = screen.getByTestId("trend-delta");
     expect(label.className).not.toContain("text-success-strong");
     expect(label.className).not.toContain("text-warning-strong");
     expect(label.className).toContain("text-subtle");
@@ -215,7 +233,7 @@ describe("CollapsibleTrendCard — deltaDirection", () => {
         <div data-testid="chart">chart content</div>
       </CollapsibleTrendCard>,
     );
-    label = screen.getByText("-0.5 кг");
+    label = screen.getByTestId("trend-delta");
     expect(label.className).not.toContain("text-success-strong");
     expect(label.className).not.toContain("text-warning-strong");
     expect(label.className).toContain("text-subtle");
@@ -225,6 +243,19 @@ describe("CollapsibleTrendCard — deltaDirection", () => {
 describe("CollapsibleTrendCard — null latestValue", () => {
   it("hides value/unit display when latestValue is null", () => {
     renderCard({ latestValue: null, latestUnit: "кг" });
-    expect(screen.queryByText(/кг/)).not.toBeInTheDocument();
+    expect(screen.queryByTestId("trend-latest-value")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("trend-delta")).not.toBeInTheDocument();
+  });
+});
+
+describe("CollapsibleTrendCard — latest-value fraction digits (defect #7)", () => {
+  it("shows whole-number values without a forced decimal (energy/mood scale)", () => {
+    renderCard({ latestValue: 4, latestUnit: "/5" });
+    expect(flatText(screen.getByTestId("trend-latest-value"))).toBe("4 /5");
+  });
+
+  it("shows a single decimal, comma-separated, for fractional values", () => {
+    renderCard({ latestValue: 82.5, latestUnit: "кг" });
+    expect(flatText(screen.getByTestId("trend-latest-value"))).toBe("82,5 кг");
   });
 });
