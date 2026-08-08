@@ -3,7 +3,9 @@
 > **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** Active
 
-**Trigger:** запланований періодичний прогін (`/schedule`, cadence 6h–1d) або ручний запит «що застаріло / які CVE / що безпечно бампнути». Це **не** заміна Renovate — див. § «Чим це відрізняється від Renovate».
+**Trigger:** запланований періодичний прогін (через будь-який scheduler/cron-примітив харнеса, cadence 6h–1d) або ручний запит «що застаріло / які CVE / що безпечно бампнути». Це **не** заміна Renovate — див. § «Чим це відрізняється від Renovate».
+
+> **Про slash-команди в цьому файлі:** нижче зустрічаються узагальнені позначення на кшталт «періодичний тригер» і «ізольований worktree» — це harness-level можливості (scheduler / worktree-менеджер), а не конкретні repo-скоуп slash-команди. Кожен харнес реалізує їх по-своєму й конфігурує поза цим репо ([AGENTS.md § Harness config lives outside the repo](../../../AGENTS.md#harness-config-lives-outside-the-repo)) — свій примітив шукай у власному харнесі (наприклад Claude Code: MCP-сесії/рутини + `EnterWorktree`; інші харнеси — власні еквіваленти). Repo-скоуп slash-команди живуть лише в `.claude/commands/` (`initiative-task.md`, `web-ux-cycle.md`) і жодна з них тут не застосовна.
 
 ## Owner surface
 

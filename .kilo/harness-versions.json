@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "current": "3.4.0",
+  "current": "4.0.0",
   "versions": {
     "0.1.0": {
       "releasedAt": "2026-06-29",
@@ -96,7 +96,9 @@
     },
     "2.0.0": {
       "releasedAt": "2026-07-24",
-      "changes": ["bump from 1.0.2 -> 2.0.0: Hard Rule files changed"],
+      "changes": [
+        "bump from 1.0.2 -> 2.0.0: Hard Rule files changed"
+      ],
       "agentsTestedWith": [],
       "passRateBaseline": null
     },
@@ -265,7 +267,17 @@
     },
     "3.4.0": {
       "releasedAt": "2026-08-07",
-      "changes": ["bump from 3.3.4 -> 3.4.0: AGENTS.md modified"],
+      "changes": [
+        "bump from 3.3.4 -> 3.4.0: AGENTS.md modified"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "4.0.0": {
+      "releasedAt": "2026-08-08",
+      "changes": [
+        "bump from 3.4.0 -> 4.0.0: Hard Rule files changed; AGENTS.md modified; skill file added/modified"
+      ],
       "agentsTestedWith": [],
       "passRateBaseline": null
     }

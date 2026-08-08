@@ -245,7 +245,11 @@ describe("evaluate", () => {
 
   it("flags multiple deploy-config files at once", () => {
     const r = evaluate({
-      changedFiles: ["apps/web/vercel.json", "fly.toml", "Dockerfile.api"],
+      changedFiles: [
+        "apps/web/vercel.json",
+        "apps/server/build.mjs",
+        "Dockerfile.api",
+      ],
       getDiff: realDiff,
       labelsJson: "[]",
     });
@@ -255,8 +259,8 @@ describe("evaluate", () => {
 
   it("ignores comment-only deploy-config diffs even when label is missing", () => {
     const r = evaluate({
-      changedFiles: ["fly.toml", "src/index.ts"],
-      getDiff: (p) => (p === "fly.toml" ? commentDiff(p) : realDiff(p)),
+      changedFiles: ["Dockerfile.api", "src/index.ts"],
+      getDiff: (p) => (p === "Dockerfile.api" ? commentDiff(p) : realDiff(p)),
       labelsJson: "[]",
     });
     assert.equal(r.ok, true);
