@@ -7,6 +7,26 @@ import {
   parseLegacyFizrukHash,
   type FizrukPage,
 } from "../lib/fizrukRouter";
+import { safeReadStringSS, safeWriteSS } from "@shared/lib/storage/storage";
+
+/**
+ * Defect #1 (page-audit follow-up): the contextual back arrow in
+ * `FizrukHeader` and the in-page «Перейти до журналу» / «До журналу» CTAs
+ * all resolve to a hardcoded `navigate("workouts")` call (see
+ * `FizrukApp.contextualBackTarget`) — no matter whether the user actually
+ * arrived from Progress, the journal, or an active workout session.
+ *
+ * Tracking the last non-`exercise` fizruk pathname here — and substituting
+ * it in for a bare `workouts` target while currently on the exercise page
+ * — makes «Назад» return to the real origin without any of those
+ * call-sites needing to change. `sessionStorage` (not `localStorage`) is
+ * deliberate: tab-scoped, survives a refresh within the tab (Hard Rule /
+ * defect requirement), and degrades honestly to the pre-existing
+ * `workouts` default once the tab/session is gone — e.g. a fresh
+ * direct deep-link to `/fizruk/exercise/<id>` in a new tab, which is
+ * exactly the "sensible default" the defect asks for.
+ */
+const EXERCISE_RETURN_SESSION_KEY = "fizruk_exercise_return_path";
 
 /**
  * Path-based router for the Fizruk module (initiative 0006 §Phase 2.c —
@@ -89,6 +109,16 @@ export function useFizrukRoute(
     navigateRR(target, { replace: true });
   }, [navigateRR]);
 
+  // Defect #1: remember the last non-exercise page so `navigate("workouts")`
+  // issued *while on the exercise page* can return there instead of the
+  // hardcoded journal fallback. Only writes when we're NOT on the exercise
+  // page, so the value survives the transition into `exercise/<id>` and
+  // stays available for `navigate()` below to read.
+  useEffect(() => {
+    if (page === "exercise") return;
+    safeWriteSS(EXERCISE_RETURN_SESSION_KEY, location.pathname);
+  }, [location.pathname, page]);
+
   const navigate = useCallback(
     (next: FizrukPage | string) => {
       // Accept either a typed `FizrukPage` (`navigate("workouts")`) or a
@@ -98,11 +128,32 @@ export function useFizrukRoute(
       const raw = String(next || "").trim();
       const parts = raw.split("/").filter(Boolean);
       const result = parseFizrukSegments(parts);
+
+      // Defect #1: on the exercise page, a bare `workouts` target (no
+      // segment) is always a "back"-shaped call — the header's contextual
+      // back arrow, the invalid-id/not-found CTAs, and the «Перейти до
+      // журналу» footer CTA all resolve to exactly this. Redirect to the
+      // remembered source page instead, when we have one. Deep-links with
+      // no recorded source (fresh tab, no prior fizruk navigation this
+      // session) fall through to the normal `workouts` target below — the
+      // honest default the defect asks for.
+      if (
+        page === "exercise" &&
+        result.page === "workouts" &&
+        !result.segment
+      ) {
+        const remembered = safeReadStringSS(EXERCISE_RETURN_SESSION_KEY);
+        if (remembered && remembered !== location.pathname) {
+          navigateRR(remembered, { replace: false });
+          return;
+        }
+      }
+
       const target = fizrukRoutePath(result.page, result.segment);
       if (location.pathname === target) return;
       navigateRR(target, { replace: false });
     },
-    [location.pathname, navigateRR],
+    [location.pathname, navigateRR, page],
   );
 
   return { page, segments, navigate };

@@ -26,12 +26,13 @@
  * unit-tested in isolation.
  */
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { pluralDays, pluralExercises } from "@sergeant/shared";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
+import { useAnnounce } from "@shared/components/ui/ScreenReaderAnnouncer";
 
 /**
  * Discriminated union for the four hero states. Keeping each state's
@@ -284,6 +285,22 @@ function ActiveState({
   readonly cornerSlot?: ReactNode;
 }) {
   const elapsedSec = useElapsedSec(state.startedAtIso);
+  const { announce } = useAnnounce();
+  const hasAnnouncedStartRef = useRef(false);
+  // A11y (fixed 2026-08-08): this used to be `aria-live="polite"` plus an
+  // `aria-label` embedding `elapsedSec` — i.e. a label that changes every
+  // second inside a live region, so a screen reader read the elapsed
+  // duration out loud continuously for the whole active session. The
+  // visible digits still tick every second for sighted users; a screen
+  // reader only needs the duration once, at the moment the card first
+  // shows the active session (mount-only announce, deliberately `[]`
+  // deps — see `RestTimerOverlay.tsx` for the same pattern).
+  useEffect(() => {
+    if (hasAnnouncedStartRef.current) return;
+    hasAnnouncedStartRef.current = true;
+    announce(`Тренування триває, ${formatElapsed(elapsedSec)}`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only announce, see comment above.
+  }, []);
   const meta =
     state.itemsCount != null && state.itemsCount > 0
       ? `${state.itemsCount} ${pluralExercises(state.itemsCount)} у сесії`
@@ -294,8 +311,8 @@ function ActiveState({
       <HeroStateLabel>Тренування триває</HeroStateLabel>
       <p
         className="mt-1 text-hero font-black text-hero-ink leading-none tabular-nums"
-        aria-live="polite"
-        aria-label={`Час тренування ${formatElapsed(elapsedSec)}`}
+        role="timer"
+        aria-label="Тривалість активного тренування"
       >
         {formatElapsed(elapsedSec)}
       </p>

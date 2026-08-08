@@ -1,11 +1,12 @@
 /**
- * Last validated: 2026-07-25
- * Status: Active — updated with #1 scrub + #2 goal line
+ * Last validated: 2026-08-08
+ * Status: Active — updated with #1 scrub + #2 goal line + `isLoading` skeleton
  */
 import { useRef, useMemo } from "react";
 import { Measure } from "@shared/components/ui/Measure";
 import { cn } from "@shared/lib/ui/cn";
 import { EmptyState } from "@shared/components/ui/EmptyState";
+import { Skeleton } from "@shared/components/ui/Skeleton";
 import { chartGradients, chartGrid, chartTick } from "@shared/charts";
 import { useChartScrub } from "@shared/hooks";
 import { ChartScrubOverlay, ChartGoalLine } from "@shared/components/charts";
@@ -28,12 +29,22 @@ interface WeeklyVolumeChartProps {
    * goal line with a "Ціль" label.
    */
   weeklyGoal?: number;
+  /**
+   * П1 — while the host page's data source is still warming (e.g. the
+   * fizruk SQLite cache on cold boot), `volumeKg` is indistinguishable
+   * from "genuinely zero this week". Passing `isLoading` renders a
+   * skeleton instead of the "Поки без обʼєму за тиждень" empty-state, so
+   * a cold-start render never claims "no volume" before the real answer
+   * is known.
+   */
+  isLoading?: boolean;
 }
 
 export function WeeklyVolumeChart({
   volumeKg,
   className,
   weeklyGoal,
+  isLoading = false,
 }: WeeklyVolumeChartProps) {
   const vals = useMemo(
     () =>
@@ -64,6 +75,17 @@ export function WeeklyVolumeChart({
     xPositions,
     viewBoxWidth: w,
   });
+
+  if (isLoading) {
+    return (
+      <div className={cn("w-full", className)}>
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-style-caption text-text">Тижневий обʼєм</span>
+        </div>
+        <Skeleton className="h-[120px] w-full" module="fizruk" />
+      </div>
+    );
+  }
 
   if (totalVol <= 0) {
     return (

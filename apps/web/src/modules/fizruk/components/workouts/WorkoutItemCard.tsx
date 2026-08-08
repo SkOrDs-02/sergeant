@@ -1,7 +1,8 @@
 /**
- * Last validated: 2026-05-19
+ * Last validated: 2026-08-08
  * Status: Active
  */
+import { useEffect, useRef, useState } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Segmented } from "@shared/components/ui/Segmented";
@@ -29,10 +30,13 @@ import { VoiceMicButton } from "@shared/components/ui/VoiceMicButton";
 import { parseWorkoutSetSpeech } from "@sergeant/shared";
 import { calcCardioMetrics } from "./activeWorkoutLib";
 import { SupersetBadge } from "./SupersetBadge";
+import {
+  WorkoutItemLastTimeHint,
+  type LastByExerciseEntry,
+} from "./WorkoutItemLastTimeHint";
+import { WorkoutItemRestPresets } from "./WorkoutItemRestPresets";
 
 import { useFizrukRoute } from "../../hooks/useFizrukRoute";
-
-type LastByExerciseEntry = WorkoutItem & { _startedAt?: string };
 
 export type WorkoutItemCardProps = {
   it: WorkoutItem;
@@ -125,39 +129,64 @@ export function WorkoutItemCard({
   const catLabel = REST_CATEGORY_LABELS[cat] || "";
   const quickOptions = [60, 90, 120, 180].filter((s) => s !== defSec);
 
+  // WorkoutSet has no stable id in `@sergeant/fizruk-domain` (it's just
+  // `{weightKg, reps}`) — adding one is a domain-type change out of
+  // scope for this component. `key={idx}` therefore let React reuse the
+  // wrong DOM node after a mid-list delete: the row that had focus kept
+  // its node, but that node's data silently jumped to the neighbouring
+  // set. We keep a session-local id per set in state instead (NOT a
+  // ref — `react-hooks/refs` forbids reading `ref.current` during
+  // render, and this array is read every render to build `key`s):
+  // appended when the list grows, spliced out at the exact index the
+  // "Видалити" handler removes. Every `sets`-length mutation site below
+  // (delete, "+ Підхід", voice add, switching type to "strength" from
+  // empty) updates this array in lockstep, so the id↔set mapping can't
+  // drift as long as they stay in sync. `setKeys[idx]` falls back to a
+  // positional key if it ever does (e.g. an external non-add/delete
+  // mutation of `sets`) — no worse than the original `key={idx}`.
+  const [setIds, setSetIds] = useState<string[]>(() =>
+    (it.sets || []).map(() => crypto.randomUUID()),
+  );
+  const sets = it.sets || [];
+  const setKeys = sets.map((_s, idx) => setIds[idx] ?? `set-fallback-${idx}`);
+
+  // `Segmented` has no `disabled` prop (see its API in
+  // `@shared/components/ui/Segmented`) and that shared component is out
+  // of scope for this fix. `opacity-50 pointer-events-none` on its own
+  // only blocks the mouse: Tab still lands on the active tab (roving
+  // `tabIndex=0`) and Arrow keys still fire `onChange`, letting the
+  // keyboard mutate the "Тип" of an already-completed workout item. The
+  // `onChange` guard below refuses the mutation outright; this effect
+  // force-removes every rendered tab from the Tab order after each
+  // commit so keyboard users can't even reach the control once
+  // read-only.
+  const segmentedTypeRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!isReadOnly) return;
+    const tabs =
+      segmentedTypeRef.current?.querySelectorAll<HTMLButtonElement>(
+        '[role="tab"]',
+      );
+    tabs?.forEach((tab) => {
+      tab.tabIndex = -1;
+    });
+  });
+
   return (
     <div
       className={`border rounded-2xl p-3 bg-bg transition-colors ${groupSelectMode && isSelected ? "border-success bg-success/5" : "border-line"}`}
     >
-      {last && (
-        <div className="text-style-caption text-subtle/70 mb-1">
-          Минулого разу{" "}
-          {last._startedAt
-            ? `(${new Date(last._startedAt).toLocaleDateString("uk-UA", { month: "short", day: "numeric" })})`
-            : ""}
-          :{" "}
-          {last.type === "strength"
-            ? (last.sets || [])
-                .map((s: WorkoutSet) => `${s.weightKg ?? 0}×${s.reps ?? 0}`)
-                .slice(0, 3)
-                .join(", ")
-            : last.type === "distance"
-              ? (() => {
-                  const m = calcCardioMetrics(last.distanceM, last.durationSec);
-                  return m
-                    ? `${last.distanceM ?? 0}м · ${m.pace}`
-                    : `${last.distanceM ?? 0}м за ${last.durationSec ?? 0}с`;
-                })()
-              : `${last.durationSec ?? 0}с`}
-        </div>
-      )}
+      <WorkoutItemLastTimeHint last={last} />
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             {groupSelectMode && (
               <button
                 type="button"
-                className={`w-5 h-5 rounded-xl border flex items-center justify-center shrink-0 transition-colors ${isSelected ? "bg-success-strong border-success-strong text-white" : "border-line bg-bg"}`}
+                role="checkbox"
+                aria-checked={isSelected}
+                aria-label={`${it.nameUk} — вибрати для об'єднання в суперсет`}
+                className={`w-5 h-5 rounded-xl border flex items-center justify-center shrink-0 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg ${isSelected ? "bg-success-strong border-success-strong text-white" : "border-line bg-bg"}`}
                 onClick={() => onToggleGroupSelect(it.id)}
               >
                 {isSelected && (
@@ -175,7 +204,7 @@ export function WorkoutItemCard({
             )}
             <button
               type="button"
-              className="text-style-label text-text truncate text-left hover:underline"
+              className="text-style-label text-text truncate text-left hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
               onClick={() => {
                 if (it.exerciseId) navigate(`exercise/${it.exerciseId}`);
               }}
@@ -229,7 +258,7 @@ export function WorkoutItemCard({
         {!isReadOnly && (
           <button
             type="button"
-            className="text-style-caption text-danger/80 hover:text-danger"
+            className="flex items-center justify-center shrink-0 rounded-xl pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] text-style-caption text-danger/80 hover:text-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
             onClick={() => removeItem(activeWorkout.id, it.id)}
             aria-label="Видалити вправу з тренування"
           >
@@ -239,7 +268,11 @@ export function WorkoutItemCard({
       </div>
 
       <div className="mt-2">
-        <div className="rounded-2xl border border-line bg-panelHi px-3">
+        <div
+          ref={segmentedTypeRef}
+          aria-disabled={isReadOnly || undefined}
+          className="rounded-2xl border border-line bg-panelHi px-3"
+        >
           <SectionHeading as="div" size="xs" variant="fizruk" className="pt-2">
             Тип
           </SectionHeading>
@@ -271,11 +304,17 @@ export function WorkoutItemCard({
               },
             ]}
             onChange={(t) => {
-              if (t === "strength")
+              // Real block, not just visual — see the effect above this
+              // component's `return` for why (Segmented has no `disabled`
+              // prop, and both mouse AND keyboard paths land here).
+              if (isReadOnly) return;
+              if (t === "strength") {
+                if (!it.sets?.length) setSetIds([crypto.randomUUID()]);
                 updateItem(activeWorkout.id, it.id, {
                   type: t,
                   sets: it.sets?.length ? it.sets : [{ weightKg: 0, reps: 0 }],
                 });
+              }
               if (t === "time")
                 updateItem(activeWorkout.id, it.id, {
                   type: t,
@@ -294,8 +333,8 @@ export function WorkoutItemCard({
 
       {it.type === "strength" && (
         <div className="mt-2 space-y-2">
-          {(it.sets || []).map((s, idx) => (
-            <div key={idx} className="grid grid-cols-3 gap-2">
+          {sets.map((s, idx) => (
+            <div key={setKeys[idx]} className="grid grid-cols-3 gap-2">
               <input
                 className="input-focus-fizruk h-10 rounded-xl border border-line bg-panelHi px-3 text-sm text-text read-only:opacity-70 read-only:cursor-not-allowed"
                 type="number"
@@ -356,12 +395,23 @@ export function WorkoutItemCard({
                 // висоти (`h-10`), тож її розмір належить формі керування,
                 // і роль `text-style-caption` (12px/400) описувала б не те.
                 // Не міняти на роль механічно — спершу перевір ряд.
-                className="h-10 min-h-[44px] rounded-xl border border-line text-xs text-subtle hover:text-danger hover:border-danger/40 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-subtle disabled:hover:border-line"
+                // Touch floor gated to `pointer-coarse:` (not
+                // unconditional `min-h-[44px]`): this button sits in a
+                // row with the two `h-10` inputs above, and an
+                // always-on 44px floor broke that 4px alignment on
+                // mouse/desktop. Coarse pointers still get the full
+                // ≥44px target (Button.tsx uses the same gate for its
+                // xs/sm/iconOnly sizes).
+                className="h-10 pointer-coarse:min-h-[44px] rounded-xl border border-line text-xs text-subtle hover:text-danger hover:border-danger/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-subtle disabled:hover:border-line"
                 disabled={isReadOnly}
                 onClick={() => {
                   const currentSets = it.sets || [];
                   const snapshot = [...currentSets];
                   const next = currentSets.filter((_, i) => i !== idx);
+                  // Keep the stable-key bookkeeping (see comment near
+                  // `setIds` above) in lockstep with the delete so the
+                  // surviving rows keep their own DOM nodes.
+                  setSetIds((prev) => prev.filter((_id, i) => i !== idx));
                   updateItem(activeWorkout.id, it.id, { sets: next });
                   onDeleteSet(activeWorkout.id, it.id, snapshot);
                 }}
@@ -376,11 +426,12 @@ export function WorkoutItemCard({
                 variant="secondary"
                 className="flex-1 h-10 min-h-[44px]"
                 type="button"
-                onClick={() =>
+                onClick={() => {
+                  setSetIds((prev) => [...prev, crypto.randomUUID()]);
                   updateItem(activeWorkout.id, it.id, {
                     sets: [...(it.sets || []), { weightKg: 0, reps: 0 }],
-                  })
-                }
+                  });
+                }}
               >
                 + Підхід
               </Button>
@@ -420,6 +471,7 @@ export function WorkoutItemCard({
                     weightKg: parsed.weight ?? 0,
                     reps: parsed.reps ?? 0,
                   };
+                  setSetIds((prev) => [...prev, crypto.randomUUID()]);
                   updateItem(activeWorkout.id, it.id, {
                     sets: [...(it.sets || []), newSet],
                   });
@@ -431,42 +483,14 @@ export function WorkoutItemCard({
             </div>
           )}
           {!activeWorkout.endedAt && !group && (
-            <div className="flex flex-wrap items-center gap-2 mt-2 pt-2 border-t border-line">
-              <div className="flex items-center justify-between w-full gap-1">
-                <SectionHeading as="span" size="xs" variant="fizruk">
-                  Таймер відпочинку
-                </SectionHeading>
-                <span className="text-style-caption text-muted">
-                  {catLabel} · реком. {defSec}с
-                </span>
-              </div>
-              <button
-                type="button"
-                className="min-h-[44px] px-4 rounded-xl border-2 border-success bg-success/10 text-style-label text-success-strong dark:text-success hover:bg-success/20 transition-colors"
-                onClick={() =>
-                  setRestTimer({ remaining: defSec, total: defSec })
-                }
-                title={`Рекомендований час для ${catLabel.toLowerCase()}`}
-              >
-                {defSec} с
-              </button>
-              {quickOptions.map((sec) => (
-                <button
-                  key={sec}
-                  type="button"
-                  className="min-h-[44px] px-4 rounded-xl border border-line bg-panelHi text-sm text-text hover:bg-panel transition-colors"
-                  onClick={() => {
-                    if (it.exerciseId) {
-                      setDefaultForExercise?.(it.exerciseId, sec);
-                    }
-                    setRestTimer({ remaining: sec, total: sec });
-                  }}
-                  title="Запустити й зберегти як типовий час для цієї вправи"
-                >
-                  {sec} с
-                </button>
-              ))}
-            </div>
+            <WorkoutItemRestPresets
+              catLabel={catLabel}
+              defSec={defSec}
+              quickOptions={quickOptions}
+              exerciseId={it.exerciseId}
+              setRestTimer={setRestTimer}
+              setDefaultForExercise={setDefaultForExercise}
+            />
           )}
         </div>
       )}

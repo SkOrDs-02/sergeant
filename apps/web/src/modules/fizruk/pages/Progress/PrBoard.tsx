@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-06-15
+ * Last validated: 2026-08-08
  * Status: Active
  */
 import { cn } from "@shared/lib/ui/cn";
@@ -73,7 +73,7 @@ export function PrBoard({
   return (
     <Card radius="lg" padding="lg">
       <div className="flex items-center justify-between gap-2 mb-3">
-        <SectionHeading as="div" size="xs" variant="fizruk">
+        <SectionHeading size="xs" variant="fizruk">
           {messages.fizruk.prBoard.heading} · {prs.length}
         </SectionHeading>
         {filtered.length !== prs.length && (
@@ -162,7 +162,13 @@ export function PrBoard({
                     {messages.fizruk.kgUnit}
                   </div>
                 </div>
-                <div className="flex items-center gap-2 mt-0.5">
+                {/*
+                  П4 — with all four badges present (weight×reps, date,
+                  stale/regression badge, muscle-group chip) this row could
+                  overflow on narrow screens; `flex-wrap` + `min-w-0` let it
+                  wrap onto a second line instead of clipping.
+                */}
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-0.5 min-w-0">
                   <span className="text-style-caption text-muted tabular-nums">
                     {p.weightKg ?? 0} {messages.fizruk.kgUnit} × {p.reps ?? 0}
                   </span>
@@ -193,7 +199,11 @@ export function PrBoard({
                     </span>
                   )}
                   {p.muscleGroupLabel && (
-                    <span className="ml-auto text-style-caption px-2 py-0.5 rounded-full bg-fizruk/10 text-fizruk/70 font-medium shrink-0">
+                    // Contrast fix (П4): `text-fizruk/70` cleared only
+                    // ≈2.2:1 on the dark chip background — below WCAG AA.
+                    // `-strong`/module-tint pair mirrors the icon tiles
+                    // above and clears AA in both themes.
+                    <span className="ml-auto text-style-caption px-2 py-0.5 rounded-full bg-fizruk/10 text-fizruk-strong dark:text-fizruk font-medium shrink-0">
                       {p.muscleGroupLabel}
                     </span>
                   )}

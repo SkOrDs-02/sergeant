@@ -43,6 +43,7 @@ vi.mock("../hooks/useExerciseCatalog", () => ({
 vi.mock("../hooks/useWorkouts", () => ({
   useWorkouts: vi.fn(() => ({
     workouts: [],
+    loaded: true,
   })),
 }));
 

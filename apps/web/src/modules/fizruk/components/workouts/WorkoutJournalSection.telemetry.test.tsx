@@ -65,6 +65,26 @@ function strengthItem(sets: number): WorkoutItem {
   };
 }
 
+/**
+ * A strength item whose `sets` array mixes real (non-zero) rows with
+ * untouched `{weightKg: 0, reps: 0}` rows — the shape a set editor leaves
+ * behind when a row was added but never filled in.
+ */
+function itemWithSets(
+  sets: Array<{ reps: number; weightKg: number }>,
+): WorkoutItem {
+  return {
+    id: `i-mixed-${sets.length}`,
+    exerciseId: "squat",
+    nameUk: "Присідання",
+    primaryGroup: "legs",
+    musclesPrimary: [],
+    musclesSecondary: [],
+    type: "strength",
+    sets: sets.map((s, i) => ({ id: `s-${i}`, ...s })) as WorkoutItem["sets"],
+  };
+}
+
 function baseProps(overrides: Record<string, unknown> = {}) {
   const active: Workout = {
     id: "w-active",
@@ -207,6 +227,49 @@ describe("WorkoutJournalSection — телеметрія завершення", 
       after_signal: true,
       signal: "fizruk-rest-day-overdue",
     });
+  });
+
+  it("порожні сети (weightKg:0, reps:0) не рахуються — sets/has_sets узгоджені з журналом", () => {
+    // Raw `sets.length` across items would be 4 (3 + 1); the canonical
+    // `computeWorkoutSetCount` criterion (weightKg > 0 || reps > 0) counts
+    // only 2 — this is the exact bug from the live audit: the event
+    // showed `sets: 3` while the journal showed «1 сетів» for the same
+    // session.
+    const props = baseProps({
+      activeWorkout: {
+        items: [
+          itemWithSets([
+            { reps: 8, weightKg: 60 },
+            { reps: 0, weightKg: 0 }, // untouched row — must not count
+            { reps: 0, weightKg: 0 }, // untouched row — must not count
+          ]),
+          itemWithSets([{ reps: 5, weightKg: 40 }]),
+        ],
+      },
+    });
+    renderSection(props);
+
+    fireEvent.click(screen.getByTestId("finish-btn"));
+
+    expect(finishPayload()).toMatchObject({ sets: 2, has_sets: true });
+  });
+
+  it("тренування лише з порожніми сетами дає has_sets=false", () => {
+    const props = baseProps({
+      activeWorkout: {
+        items: [
+          itemWithSets([
+            { reps: 0, weightKg: 0 },
+            { reps: 0, weightKg: 0 },
+          ]),
+        ],
+      },
+    });
+    renderSection(props);
+
+    fireEvent.click(screen.getByTestId("finish-btn"));
+
+    expect(finishPayload()).toMatchObject({ sets: 0, has_sets: false });
   });
 
   it("у payload немає назв вправ і нотаток (Hard Rule #21)", () => {

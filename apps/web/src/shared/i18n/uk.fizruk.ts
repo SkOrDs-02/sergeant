@@ -27,6 +27,27 @@ export const fizrukPageMessages = {
     subtract: "Відняти",
     secondsSuffix: "секунд",
     skip: "Пропустити",
+    // Static — does NOT interpolate `remaining`. A changing aria-label on
+    // a `role="timer"` element re-triggers screen-reader announcement on
+    // every 1 Hz tick; see `RestTimerOverlay.tsx` for the milestone-only
+    // announcement that replaces it.
+    ariaLabel: "Таймер відпочинку",
+    restingPrefix: "Відпочинок",
+    finished: "Відпочинок завершено",
+    endingSoon: "Відпочинок закінчується",
+    // Per-item quick-pick row inside `WorkoutItemCard`
+    // (`WorkoutItemRestPresets.tsx`).
+    presetsHeading: "Таймер відпочинку",
+    presetsRecommendedPrefix: "реком.",
+    presetsSecondsShort: "с",
+    presetsRecommendedTitle: "Рекомендований час для",
+    presetsSaveDefaultTitle:
+      "Запустити й зберегти як типовий час для цієї вправи",
+  },
+  // "Минулого разу …" hint above a workout item
+  // (`WorkoutItemLastTimeHint.tsx`).
+  lastTimeHint: {
+    label: "Минулого разу",
   },
   dayPlan: {
     assignedTemplate: "Призначений шаблон",
@@ -62,6 +83,10 @@ export const fizrukPageMessages = {
     bodyFatMetricLabel: "відсоток жиру",
     wellbeing: "Самопочуття",
     muscleVolume: "Обʼєм по мʼязах",
+    // The bars plot `loadPoints`, an internal score — without this line a
+    // raw "0.6" reads as a broken weight value.
+    muscleVolumeUnitsHint:
+      "Умовні одиниці навантаження, не кілограми: тоннаж (кг×повт) ÷ 1000 + кількість сетів × 0.15.",
     muscleVolumeEmptyDescription: "Немає даних за останні 4 тижні.",
     // Матриця «мʼяз × тиждень». Плейсхолдери підставляються на місці
     // виклику — та сама конвенція, що в гребені Фініка: `MessageCatalog`

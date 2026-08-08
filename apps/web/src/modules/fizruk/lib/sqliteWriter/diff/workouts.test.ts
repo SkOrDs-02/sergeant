@@ -119,4 +119,22 @@ describe("diffWorkoutsOps", () => {
       { kind: "workout-upsert", workout: next },
     ]);
   });
+
+  it("emits an upsert (and preserves group type/restSec) when only the group's restSec changes", () => {
+    const prev = baseWorkout({
+      groups: [{ id: "g1", itemIds: ["i1"], type: "circuit", restSec: 60 }],
+    });
+    const next = baseWorkout({
+      groups: [{ id: "g1", itemIds: ["i1"], type: "circuit", restSec: 90 }],
+    });
+    expect(diffWorkoutsOps([prev], [next])).toEqual([
+      { kind: "workout-upsert", workout: next },
+    ]);
+    expect(next.groups[0]).toEqual({
+      id: "g1",
+      itemIds: ["i1"],
+      type: "circuit",
+      restSec: 90,
+    });
+  });
 });

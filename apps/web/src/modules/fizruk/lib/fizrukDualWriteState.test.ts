@@ -95,6 +95,46 @@ describe("extractWorkoutSnapshots", () => {
     expect(snap!.wellbeing).toBeNull();
     expect(snap!.items[0]!.type).toBe("strength");
   });
+
+  it("carries group type and restSec through the snapshot", () => {
+    const [snap] = extractWorkoutSnapshots([
+      {
+        id: "w3",
+        startedAt: "2024-01-01T00:00:00Z",
+        items: [{ id: "i1", exerciseId: "e1" }],
+        groups: [{ id: "g1", itemIds: ["i1"], type: "circuit", restSec: 90 }],
+      } as never,
+    ]);
+    expect(snap!.groups).toEqual([
+      { id: "g1", itemIds: ["i1"], type: "circuit", restSec: 90 },
+    ]);
+  });
+
+  it("omits group type/restSec when the source group lacks them", () => {
+    const [snap] = extractWorkoutSnapshots([
+      {
+        id: "w4",
+        startedAt: "2024-01-01T00:00:00Z",
+        items: [{ id: "i1", exerciseId: "e1" }],
+        groups: [{ id: "g1", itemIds: ["i1"] }],
+      } as never,
+    ]);
+    expect(snap!.groups).toEqual([{ id: "g1", itemIds: ["i1"] }]);
+    expect(snap!.groups[0]).not.toHaveProperty("type");
+    expect(snap!.groups[0]).not.toHaveProperty("restSec");
+  });
+
+  it("drops an invalid group type and a non-numeric restSec", () => {
+    const [snap] = extractWorkoutSnapshots([
+      {
+        id: "w5",
+        startedAt: "2024-01-01T00:00:00Z",
+        items: [{ id: "i1", exerciseId: "e1" }],
+        groups: [{ id: "g1", itemIds: ["i1"], type: "bogus", restSec: "90" }],
+      } as never,
+    ]);
+    expect(snap!.groups).toEqual([{ id: "g1", itemIds: ["i1"] }]);
+  });
 });
 
 describe("extractCustomExerciseSnapshots", () => {

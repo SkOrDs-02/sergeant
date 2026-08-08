@@ -8,6 +8,16 @@ export interface MiniLineChartDataPoint {
   label: string;
 }
 
+/**
+ * Which direction of the footer delta counts as an improvement.
+ * Mirrors `TrendDeltaDirection` in `../pages/Body/CollapsibleTrendCard` —
+ * kept as an independent local union (rather than a cross-import from
+ * `pages/` into `components/`) to avoid an upward module dependency; the
+ * two are structurally identical by convention, not by shared type.
+ */
+export type MiniLineChartDeltaDirection =
+  "up-is-good" | "down-is-good" | "neutral";
+
 interface MappedPoint {
   x: number;
   y: number | null;
@@ -25,6 +35,12 @@ interface MiniLineChartProps {
    * Rendered as a dashed goal line with a "Ціль" label.
    */
   goalValue?: number;
+  /**
+   * Direction of improvement for the footer delta colour.
+   * @default "down-is-good" — preserves the chart's original weight-loss-framed
+   * colouring for callers that don't pass this prop (e.g. `Progress.tsx`).
+   */
+  deltaDirection?: MiniLineChartDeltaDirection;
 }
 
 /** SVG line chart for measurement trends (weight, body fat %). */
@@ -34,6 +50,7 @@ export function MiniLineChart({
   color,
   metricLabel = "показник",
   goalValue,
+  deltaDirection = "down-is-good",
 }: MiniLineChartProps) {
   const valid = (data || []).filter(
     (d: MiniLineChartDataPoint) =>
@@ -140,6 +157,12 @@ export function MiniLineChart({
   const lastValid = [...valid].pop() as MiniLineChartDataPoint;
   const firstValid = valid[0] as MiniLineChartDataPoint;
   const delta = Number(lastValid.value) - Number(firstValid.value);
+  const deltaClass =
+    deltaDirection === "neutral"
+      ? "text-subtle"
+      : (deltaDirection === "up-is-good") === delta > 0
+        ? "text-success-strong dark:text-success"
+        : "text-warning-strong dark:text-warning";
   const gradId = `mlcFill${color.replace(/[^a-zA-Z0-9]/g, "")}`;
   const summaryId = `fizruk-mini-line-${metricLabel.replace(/\s/g, "-")}`;
 
@@ -308,9 +331,7 @@ export function MiniLineChart({
             : `${lastValid.value} ${unit}`}
         </span>
         {delta !== 0 && activeIndex === null && (
-          <span
-            className={`text-style-caption ${delta > 0 ? "text-warning-strong dark:text-warning" : "text-success-strong dark:text-success"}`}
-          >
+          <span className={`text-style-caption ${deltaClass}`}>
             {delta > 0 ? "+" : ""}
             {delta.toFixed(1)} {unit}
           </span>

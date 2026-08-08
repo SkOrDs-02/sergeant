@@ -132,14 +132,26 @@ describe("Measurements page", () => {
 
   it("parses a decimal field value before persisting", () => {
     render(<Measurements />);
-    // % жиру range is 2..70 — a dot decimal within bounds. (The form input
-    // is type=number so the browser normalises separators; the page's
-    // `replace(",", ".")` is a defensive fallback for programmatic values.)
+    // % жиру range is 2..70 — a dot decimal within bounds.
     fireEvent.change(screen.getByLabelText(/% жиру · %/), {
       target: { value: "12.5" },
     });
     fireEvent.click(getSaveButton());
     expect(addEntry).toHaveBeenCalledWith({ bodyFatPct: 12.5 });
+  });
+
+  it("accepts a UA comma decimal separator (type=text bugfix)", () => {
+    // Regression test: `type="number"` used to silently drop "82,5" before
+    // this component ever saw an onChange — the comma-to-dot normalisation
+    // below existed but was unreachable. `type="text"` lets the comma reach
+    // state; `Number(v.replace(",", "."))` on submit does the rest.
+    render(<Measurements />);
+    fireEvent.change(screen.getByLabelText(/Вага · кг/), {
+      target: { value: "82,5" },
+    });
+    expect(getSaveButton()).toBeEnabled();
+    fireEvent.click(getSaveButton());
+    expect(addEntry).toHaveBeenCalledWith({ weightKg: 82.5 });
   });
 
   it("blocks an out-of-range value and marks the offending field (F3)", () => {
@@ -205,7 +217,10 @@ describe("Measurements page", () => {
   it("each measurement input is associated with a label (a11y)", () => {
     render(<Measurements />);
     // 14 numeric fields, each with htmlFor/id binding (F13 closed earlier).
+    // `type="text"` + `inputMode="decimal"` (not `type="number"`) so a UA
+    // comma decimal separator reaches state — see the comma bugfix test.
     const waist = screen.getByLabelText(/Талія · см/);
-    expect(waist).toHaveAttribute("type", "number");
+    expect(waist).toHaveAttribute("type", "text");
+    expect(waist).toHaveAttribute("inputMode", "decimal");
   });
 });

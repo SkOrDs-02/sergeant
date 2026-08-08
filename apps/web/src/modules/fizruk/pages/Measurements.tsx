@@ -260,11 +260,18 @@ export function Measurements() {
                 <input
                   id={`measure-input-${f.id}`}
                   className={inp}
-                  type="number"
+                  // `type="text"` навмисно: `type="number"` мовчки відкидає
+                  // кому як десятковий роздільник — UA-мобільна клавіатура
+                  // дає «82,5», браузер обнуляє `value` ще ДО того, як цей
+                  // компонент побачить подію, тож нормалізація коми на
+                  // сабміті нижче (`v.replace(",", ".")`) ставала
+                  // недосяжною: значення губилось раніше. `inputMode="decimal"`
+                  // усе одно піднімає числову клавіатуру. Межі f.min/f.max —
+                  // той самий підхід, що й у ManualExpenseAmountSection —
+                  // лишаються enforced нижче: zod-схема (`measurementSchema`)
+                  // на сабміті і повторний clamp у `useMeasurements.addEntry`.
+                  type="text"
                   inputMode="decimal"
-                  step="0.1"
-                  min={f.min}
-                  max={f.max}
                   placeholder="—"
                   value={form[f.id] ?? ""}
                   aria-invalid={fieldErrors[f.id] ? true : undefined}

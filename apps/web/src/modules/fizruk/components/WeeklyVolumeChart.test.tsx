@@ -39,4 +39,20 @@ describe("WeeklyVolumeChart", () => {
     // max = 2000 → top tick formatted as "2.0k"
     expect(screen.getByText("2.0k")).toBeInTheDocument();
   });
+
+  // П1 — cold-start regression: `volumeKg={[0,...]}` is indistinguishable
+  // from "still loading" unless the host explicitly says so via `isLoading`.
+  it("renders a skeleton instead of the empty-state while isLoading", () => {
+    render(<WeeklyVolumeChart volumeKg={[0, 0, 0, 0, 0, 0, 0]} isLoading />);
+    expect(
+      screen.queryByText("Поки без обʼєму за тиждень"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("renders the empty-state (not a skeleton) once isLoading resolves to false with no volume", () => {
+    render(
+      <WeeklyVolumeChart volumeKg={[0, 0, 0, 0, 0, 0, 0]} isLoading={false} />,
+    );
+    expect(screen.getByText("Поки без обʼєму за тиждень")).toBeInTheDocument();
+  });
 });

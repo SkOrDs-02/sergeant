@@ -34,7 +34,12 @@ export interface FizrukWorkoutSnapshot {
   readonly startedAt: string;
   readonly endedAt: string | null;
   readonly items: FizrukItemSnapshot[];
-  readonly groups: { id: string; itemIds: string[] }[];
+  readonly groups: {
+    id: string;
+    itemIds: string[];
+    type?: "circuit" | "superset";
+    restSec?: number;
+  }[];
   readonly warmup: { id: string; done: boolean; label: string }[] | null;
   readonly cooldown: { id: string; done: boolean; label: string }[] | null;
   readonly note: string;

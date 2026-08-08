@@ -213,6 +213,10 @@ export function Body({ onOpenAtlas }: BodyProps) {
               unit: "кг",
               color: chartStatusSeries.success,
               metricLabel: "вагу",
+              // Fizruk-канон: модуль не задає дефолтну ціль по вазі — ні
+              // зростання, ні зниження саме по собі не «краще». Нейтральний
+              // тон, а не success/warning в будь-який бік.
+              deltaDirection: "neutral",
             },
             {
               storageKey: "sleep",
@@ -222,6 +226,7 @@ export function Body({ onOpenAtlas }: BodyProps) {
               unit: "год",
               color: chartSeries.fizruk.primary as string,
               metricLabel: "сон",
+              deltaDirection: "up-is-good",
             },
             {
               storageKey: "energy",
@@ -231,6 +236,7 @@ export function Body({ onOpenAtlas }: BodyProps) {
               unit: "/5",
               color: chartStatusSeries.warning,
               metricLabel: "рівень енергії",
+              deltaDirection: "up-is-good",
             },
             {
               storageKey: "mood",
@@ -240,6 +246,7 @@ export function Body({ onOpenAtlas }: BodyProps) {
               unit: "/5",
               color: chartPalette[8] as string,
               metricLabel: "настрій",
+              deltaDirection: "up-is-good",
             },
           ] as const
         )
@@ -258,12 +265,14 @@ export function Body({ onOpenAtlas }: BodyProps) {
                 latestValue={latest}
                 latestUnit={card.unit}
                 delta={delta}
+                deltaDirection={card.deltaDirection}
               >
                 <MiniLineChart
                   data={card.data}
                   unit={card.unit}
                   color={card.color}
                   metricLabel={card.metricLabel}
+                  deltaDirection={card.deltaDirection}
                 />
               </CollapsibleTrendCard>
             );

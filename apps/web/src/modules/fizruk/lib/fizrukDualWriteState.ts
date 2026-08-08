@@ -339,11 +339,23 @@ function toItemSnapshot(item: WorkoutItem): FizrukItemSnapshot {
 function toGroupSnapshot(group: WorkoutGroup): {
   id: string;
   itemIds: string[];
+  type?: "circuit" | "superset";
+  restSec?: number;
 } {
-  return {
+  const out: {
+    id: string;
+    itemIds: string[];
+    type?: "circuit" | "superset";
+    restSec?: number;
+  } = {
     id: String(group.id),
     itemIds: Array.isArray(group.itemIds) ? group.itemIds.map(String) : [],
   };
+  if (group.type === "circuit" || group.type === "superset") {
+    out.type = group.type;
+  }
+  if (typeof group.restSec === "number") out.restSec = group.restSec;
+  return out;
 }
 
 function toChecklistSnapshot(item: ChecklistItem): {

@@ -2,17 +2,19 @@
  * Last validated: 2026-05-14
  * Status: Active
  */
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import type { FizrukPage } from "../shell/fizrukRoute";
-import { cn } from "@shared/lib/ui/cn";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { Icon } from "@shared/components/ui/Icon";
 import { Measure } from "@shared/components/ui/Measure";
+import { Button } from "@shared/components/ui/Button";
+import { Skeleton } from "@shared/components/ui/Skeleton";
 import { useExerciseCatalog } from "../hooks/useExerciseCatalog";
 import { useWorkouts } from "../hooks/useWorkouts";
 import { useInjuries } from "../hooks/useInjuries";
 import {
+  formatDurShort,
   latestClearedInjuryAtForExercise,
   suggestNextSet,
 } from "@sergeant/fizruk-domain";
@@ -44,10 +46,23 @@ interface ExerciseProps {
   onNavigate: (page: FizrukPage) => void;
 }
 
+/** Set-history page size for the «Показати ще» affordance (defect #4 —
+ * `history` is unbounded, the old `.slice(0, 20)` silently dropped the
+ * rest with no counter or way to see more). */
+const HISTORY_PAGE_SIZE = 20;
+
 export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
   const { exercises, musclesUk } = useExerciseCatalog();
-  const { workouts } = useWorkouts();
+  // `loaded` mirrors `getCachedFizrukSqliteState().refreshedAt !== null` —
+  // during a cold SQLite-WASM boot `workouts` (and the custom-exercise
+  // overlay in `useExerciseCatalog`) resolve to `[]` before the cache is
+  // warm, which used to read as "Вправу не знайдено" / "Немає силових
+  // сетів" for a flash (defects #2, #3). Gate the whole page on this flag
+  // instead of trusting an empty array as a final answer.
+  const { workouts, loaded } = useWorkouts();
   const { all: injuryMarks } = useInjuries();
+  const [visibleHistoryCount, setVisibleHistoryCount] =
+    useState(HISTORY_PAGE_SIZE);
 
   const ex = useMemo(
     () => (exercises || []).find((x) => x?.id === exerciseId) || null,
@@ -122,13 +137,45 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
     return (
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad">
-          <Card
-            radius="lg"
-            padding="lg"
-            className="text-style-label text-subtle"
-          >
-            Невірний ID вправи
+          <Card radius="lg" padding="lg">
+            <EmptyState
+              title="Невірний ID вправи"
+              description="Посилання пошкоджене або застаріле. Повернись до журналу тренувань і обери вправу зі списку."
+              action={
+                <Button variant="fizruk" onClick={() => onNavigate("workouts")}>
+                  До журналу
+                </Button>
+              }
+            />
           </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // Defects #2/#3: `workouts` (and the custom-exercise overlay) resolve to
+  // `[]` during a cold SQLite-WASM boot, before `loaded` flips true. Without
+  // this gate the page briefly rendered its FINAL empty copy ("Вправу не
+  // знайдено", "Немає силових сетів", "Поки немає записів") and then
+  // replaced it with real content once the cache warmed up — a confusing
+  // blink for anyone opening a deep-link to a custom exercise. Show a
+  // skeleton instead and defer every data-dependent branch below until the
+  // cache is actually warm.
+  if (!loaded) {
+    return (
+      <div className="flex-1 overflow-y-auto">
+        <div
+          className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad space-y-3"
+          role="status"
+          aria-live="polite"
+          aria-label="Завантаження вправи"
+        >
+          <Skeleton className="h-8 w-2/3" />
+          <div className="grid grid-cols-2 gap-3">
+            <Skeleton className="h-24 w-full" variant="card" />
+            <Skeleton className="h-24 w-full" variant="card" />
+          </div>
+          <Skeleton className="h-40 w-full" variant="card" />
         </div>
       </div>
     );
@@ -149,13 +196,12 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
               description="Можливо, її видалили з каталогу. Повернись до журналу і обери зі списку."
               action={
                 onNavigate ? (
-                  <button
-                    type="button"
+                  <Button
+                    variant="fizruk"
                     onClick={() => onNavigate("workouts")}
-                    className="min-h-touch-target inline-flex items-center justify-center rounded-2xl bg-fizruk-strong text-white px-4 text-style-label"
                   >
                     До журналу
-                  </button>
+                  </Button>
                 ) : undefined
               }
             />
@@ -228,7 +274,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
 
         <div className="grid grid-cols-2 gap-3">
           <Card radius="lg">
-            <SectionHeading as="div" size="xs" variant="fizruk">
+            <SectionHeading as="h2" size="xs" variant="fizruk">
               Особистий рекорд
             </SectionHeading>
             <div className="text-style-headline text-text mt-1 tabular-nums">
@@ -260,7 +306,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
             )}
           </Card>
           <Card radius="lg">
-            <SectionHeading as="div" size="xs" variant="fizruk">
+            <SectionHeading as="h2" size="xs" variant="fizruk">
               Наступного разу
             </SectionHeading>
             <div className="text-style-headline text-text mt-1 tabular-nums">
@@ -310,12 +356,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
 
         {hasStrength && (
           <Card radius="lg">
-            <SectionHeading
-              as="div"
-              size="xs"
-              className="mb-3"
-              variant="fizruk"
-            >
+            <SectionHeading as="h2" size="xs" className="mb-3" variant="fizruk">
               Прогресія 1RM (за тижнями)
             </SectionHeading>
             <ExerciseProgressChart
@@ -329,12 +370,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
 
         {hasStrength && (
           <Card radius="lg">
-            <SectionHeading
-              as="div"
-              size="xs"
-              className="mb-3"
-              variant="fizruk"
-            >
+            <SectionHeading as="h2" size="xs" className="mb-3" variant="fizruk">
               Обʼєм тренування (кг × повтори, за тижнями)
             </SectionHeading>
             <ExerciseProgressChart
@@ -348,12 +384,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
 
         {hasCardio && (
           <Card radius="lg">
-            <SectionHeading
-              as="div"
-              size="xs"
-              className="mb-3"
-              variant="fizruk"
-            >
+            <SectionHeading as="h2" size="xs" className="mb-3" variant="fizruk">
               Темп (хв/км) — кардіо
             </SectionHeading>
             <ExerciseProgressChart
@@ -370,12 +401,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
 
         {hasCardio && (
           <Card radius="lg">
-            <SectionHeading
-              as="div"
-              size="xs"
-              className="mb-3"
-              variant="fizruk"
-            >
+            <SectionHeading as="h2" size="xs" className="mb-3" variant="fizruk">
               Дистанція (км) — кардіо
             </SectionHeading>
             <ExerciseProgressChart
@@ -400,7 +426,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
         )}
 
         <Card radius="lg" padding="lg">
-          <SectionHeading as="div" size="xs" className="mb-3" variant="fizruk">
+          <SectionHeading as="h2" size="xs" className="mb-3" variant="fizruk">
             Історія сетів
           </SectionHeading>
           {history.length === 0 ? (
@@ -411,74 +437,97 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
             />
           ) : (
             <div className="space-y-2">
-              {history.slice(0, 20).map(({ workout, item }) => (
-                <div
-                  key={`${workout.id}_${item.id}`}
-                  className="border border-line rounded-2xl p-3 bg-bg"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="text-style-caption text-subtle">
-                      {workout?.startedAt
-                        ? new Date(workout.startedAt).toLocaleDateString(
-                            "uk-UA",
-                            { month: "short", day: "numeric", year: "2-digit" },
-                          )
-                        : "—"}
+              {history
+                .slice(0, visibleHistoryCount)
+                .map(({ workout, item }) => (
+                  <div
+                    key={`${workout.id}_${item.id}`}
+                    className="border border-line rounded-2xl p-3 bg-bg"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="text-style-caption text-subtle">
+                        {workout?.startedAt
+                          ? new Date(workout.startedAt).toLocaleDateString(
+                              "uk-UA",
+                              {
+                                month: "short",
+                                day: "numeric",
+                                year: "2-digit",
+                              },
+                            )
+                          : "—"}
+                      </div>
+                      <div className="text-style-caption px-2 py-1 rounded-full border border-line text-subtle">
+                        {item.type === "strength"
+                          ? "силова"
+                          : item.type === "distance"
+                            ? "дистанція"
+                            : "час"}
+                      </div>
                     </div>
-                    <div
-                      className={cn(
-                        "text-style-caption px-2 py-1 rounded-full border",
-                        item.type === "strength"
-                          ? "border-line text-subtle"
-                          : "border-line text-subtle",
-                      )}
-                    >
+                    <div className="text-sm text-text mt-2">
                       {item.type === "strength"
-                        ? "силова"
+                        ? (item.sets || [])
+                            .map((s) => `${s.weightKg ?? 0}×${s.reps ?? 0}`)
+                            .join(", ") || "—"
                         : item.type === "distance"
-                          ? "дистанція"
-                          : "час"}
+                          ? (() => {
+                              const dist = Number(item.distanceM) || 0;
+                              const dur = Number(item.durationSec) || 0;
+                              const base = `${dist} м за ${formatDurShort(dur)}`;
+                              if (dist > 0 && dur > 0) {
+                                const distKm = dist / 1000;
+                                const paceMinKm = dur / 60 / distKm;
+                                let pm = Math.floor(paceMinKm);
+                                let ps = Math.round((paceMinKm - pm) * 60);
+                                if (ps >= 60) {
+                                  pm += 1;
+                                  ps = 0;
+                                }
+                                const speed = (distKm / (dur / 3600)).toFixed(
+                                  1,
+                                );
+                                return `${base} · ${pm}:${String(ps).padStart(2, "0")} хв/км · ${speed} км/год`;
+                              }
+                              return base;
+                            })()
+                          : formatDurShort(item.durationSec ?? 0)}
                     </div>
                   </div>
-                  <div className="text-sm text-text mt-2">
-                    {item.type === "strength"
-                      ? (item.sets || [])
-                          .map((s) => `${s.weightKg ?? 0}×${s.reps ?? 0}`)
-                          .join(", ") || "—"
-                      : item.type === "distance"
-                        ? (() => {
-                            const dist = Number(item.distanceM) || 0;
-                            const dur = Number(item.durationSec) || 0;
-                            const base = `${dist} м за ${dur} с`;
-                            if (dist > 0 && dur > 0) {
-                              const distKm = dist / 1000;
-                              const paceMinKm = dur / 60 / distKm;
-                              let pm = Math.floor(paceMinKm);
-                              let ps = Math.round((paceMinKm - pm) * 60);
-                              if (ps >= 60) {
-                                pm += 1;
-                                ps = 0;
-                              }
-                              const speed = (distKm / (dur / 3600)).toFixed(1);
-                              return `${base} · ${pm}:${String(ps).padStart(2, "0")} хв/км · ${speed} км/год`;
-                            }
-                            return base;
-                          })()
-                        : `${item.durationSec ?? 0} с`}
-                  </div>
+                ))}
+              {history.length > visibleHistoryCount && (
+                <div className="flex flex-col items-center gap-2 pt-1">
+                  <p className="text-style-caption text-subtle">
+                    {messages.fizruk.exercise.historyShownPrefix}{" "}
+                    {visibleHistoryCount}{" "}
+                    {messages.fizruk.exercise.historyShownOfWord}{" "}
+                    {history.length}
+                  </p>
+                  <Button
+                    variant="fizruk-soft"
+                    size="sm"
+                    onClick={() =>
+                      setVisibleHistoryCount((prev) =>
+                        Math.min(prev + HISTORY_PAGE_SIZE, history.length),
+                      )
+                    }
+                  >
+                    {messages.fizruk.exercise.showMoreHistory}
+                  </Button>
                 </div>
-              ))}
+              )}
             </div>
           )}
 
           <div className="mt-3">
-            <button
-              type="button"
-              className="w-full py-4 rounded-full font-bold text-base bg-fizruk-strong text-white"
+            <Button
+              variant="fizruk"
+              size="lg"
+              className="w-full rounded-full"
               onClick={() => onNavigate("workouts")}
             >
               Перейти до журналу
-            </button>
+            </Button>
           </div>
         </Card>
       </div>
