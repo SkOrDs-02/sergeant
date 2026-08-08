@@ -4,7 +4,6 @@
  */
 import { describe, it, expect, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
-import { THEME_HEX } from "@shared/lib/ui/themeHex";
 import { FlowRow, type FlowItem } from "./FlowRow";
 
 afterEach(() => cleanup());
@@ -54,16 +53,20 @@ describe("FlowRow (branches)", () => {
     expect(container.textContent).toMatch(/−\?\u202f₴/);
   });
 
-  it("applies success tone when flow.color matches THEME_HEX.success", () => {
-    const { container } = render(
-      <FlowRow flow={mkFlow({ color: THEME_HEX.success, sign: "+" })} />,
-    );
+  // Тон бере напрямок зі `sign`, а не з хекса (2026-08-07). Раніше тут
+  // передавали `color: THEME_HEX.success` — тобто тест ішов тим самим
+  // шляхом, що й баг: підтверджував, що семантику можна відновити зі
+  // значення кольору.
+  it("надходження — зелений тон", () => {
+    const { container } = render(<FlowRow flow={mkFlow({ sign: "+" })} />);
     expect(container.querySelector(".text-success-strong")).not.toBeNull();
+    expect(container.querySelector(".text-danger-strong")).toBeNull();
   });
 
-  it("applies danger tone for non-success flows", () => {
-    const { container } = render(<FlowRow flow={mkFlow()} />);
+  it("відплив — червоний тон", () => {
+    const { container } = render(<FlowRow flow={mkFlow({ sign: "-" })} />);
     expect(container.querySelector(".text-danger-strong")).not.toBeNull();
+    expect(container.querySelector(".text-success-strong")).toBeNull();
   });
 
   it("renders title and hint text", () => {

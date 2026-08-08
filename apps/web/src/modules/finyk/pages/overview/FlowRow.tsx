@@ -1,13 +1,11 @@
 import { memo } from "react";
 import { cn } from "@shared/lib/ui/cn";
-import { THEME_HEX } from "@shared/lib/ui/themeHex";
 import { Money } from "@shared/components/ui/Money";
 import { MINUS_SIGN, NARROW_NBSP } from "@sergeant/shared";
 
 export interface FlowItem {
   title: string;
   hint?: string;
-  color?: string;
   amount: number | null;
   sign: string;
   currency: string;
@@ -26,7 +24,22 @@ export const FlowRow = memo(function FlowRow({
   flow,
   showAmount = true,
 }: FlowRowProps) {
-  const isGreen = flow.color === THEME_HEX.success;
+  /*
+    AI-CONTEXT (2026-08-07): тут стояло `const isGreen = flow.color ===
+    THEME_HEX.success` — тобто семантика ВІДНОВЛЮВАЛАСЯ ЗІ ЗНАЧЕННЯ
+    КОЛЬОРУ. Хекс приходив із `useOverviewData` лише щоб тут його
+    порівняли й викинули: у розмітку він не потрапляв ніколи, колір
+    малювали класи нижче.
+
+    Поле прибрано, а не замінено на семантичне: усі три виробники потоків
+    ставили `sign: "-"` рівно там, де ставили `danger`, і `"+"` там, де
+    `success`. Тобто `isGreen` завжди дорівнював `!negative` — носій
+    дублював `sign` повністю.
+
+    Небезпека була не в дублі, а в мовчазності: підняли б `statusHex.
+    success` на інший тир — і порівняння перестало б збігатися, всі рядки
+    стали б червоними, а жоден тип не заперечив би.
+  */
   /*
     AI-CONTEXT: знак приходить рядком від `useOverviewData`, і там він
     ДЕФІС (`"-"`), а не мінус. Тут він нормалізується у напрямок, а сам
@@ -46,9 +59,9 @@ export const FlowRow = memo(function FlowRow({
       <div
         className={cn(
           "text-style-title tabular-nums shrink-0",
-          isGreen
-            ? "text-success-strong dark:text-success"
-            : "text-danger-strong dark:text-danger",
+          negative
+            ? "text-danger-strong dark:text-danger"
+            : "text-success-strong dark:text-success",
         )}
       >
         {!showAmount ? (

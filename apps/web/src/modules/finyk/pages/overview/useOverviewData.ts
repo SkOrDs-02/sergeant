@@ -34,7 +34,6 @@ import {
   getDaysInMonth,
   getKyivDayKey,
 } from "@shared/lib/time/kyivTime";
-import { THEME_HEX } from "@shared/lib/ui/themeHex";
 import { logger } from "@shared/lib";
 import { computeAssetsSummary } from "@sergeant/finyk-domain/domain/assets/aggregates";
 import { filterToKyivMonth, txEpochMs } from "../../lib/monthWindow";
@@ -329,7 +328,6 @@ export function useOverviewData({
           title: `${sub.emoji} ${sub.name}`,
           amount,
           sign: "-",
-          color: THEME_HEX.danger,
           daysLeft,
           hint: formatDaysLeft(daysLeft),
           currency,
@@ -354,7 +352,6 @@ export function useOverviewData({
             title: d.name || "Борг",
             amount: d.remaining,
             sign: "-",
-            color: THEME_HEX.danger,
             daysLeft,
             hint: formatDaysLeft(daysLeft),
             currency: "₴",
@@ -382,7 +379,6 @@ export function useOverviewData({
             title: r.name || "Дебіторка",
             amount: r.remaining,
             sign: "+",
-            color: THEME_HEX.success,
             daysLeft,
             hint: formatDaysLeft(daysLeft),
             currency: "₴",
