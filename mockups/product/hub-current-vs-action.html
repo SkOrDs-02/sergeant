@@ -422,6 +422,46 @@
         font-variant-numeric: tabular-nums;
       }
 
+      /* згорнутий рядок модулів (правий екран) */
+      .modrow {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 11px 12px;
+        display: flex;
+        justify-content: space-between;
+        gap: 6px;
+      }
+      .modrow a {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+        flex: 1;
+        text-decoration: none;
+        color: inherit;
+      }
+      .modrow .ch {
+        width: 34px;
+        height: 34px;
+        border-radius: 12px;
+        display: grid;
+        place-items: center;
+      }
+      .modrow .ch svg {
+        width: 17px;
+        height: 17px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 1.7;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .modrow .lb {
+        font-size: 11.5px;
+        color: var(--muted);
+      }
+
       /* нижня навігація */
       .tabs {
         margin-top: auto;
@@ -802,6 +842,76 @@
                   </div>
                 </div>
 
+                <!--
+                  Вхід у модуль. БЕЗ чисел навмисно: це навігація, а не
+                  другий дашборд. Числа тут повернули б рівно ту однорідну
+                  сітку, від якої вісь відходить, тільки дрібнішу.
+                -->
+                <div class="modrow">
+                  <a>
+                    <span
+                      class="ch"
+                      style="
+                        background: var(--finyk-soft);
+                        color: var(--finyk-strong);
+                      "
+                    >
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <rect x="4" y="5" width="16" height="14" rx="3" />
+                        <path d="M8 10h5M8 14h8" />
+                      </svg>
+                    </span>
+                    <span class="lb">Фінік</span>
+                  </a>
+                  <a>
+                    <span
+                      class="ch"
+                      style="
+                        background: var(--fizruk-soft);
+                        color: var(--fizruk-strong);
+                      "
+                    >
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="10" cy="7" r="3" />
+                        <path d="M4 20c0-3.3 2.7-6 6-6M16 15l1.8 1.8L21 13" />
+                      </svg>
+                    </span>
+                    <span class="lb">Фізрук</span>
+                  </a>
+                  <a>
+                    <span
+                      class="ch"
+                      style="
+                        background: var(--routine-soft);
+                        color: var(--routine-strong);
+                      "
+                    >
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="8" />
+                        <path d="M8.5 12.5l2.2 2.2 4.8-4.8" />
+                      </svg>
+                    </span>
+                    <span class="lb">Рутина</span>
+                  </a>
+                  <a>
+                    <span
+                      class="ch"
+                      style="
+                        background: var(--nutrition-soft);
+                        color: var(--nutrition-strong);
+                      "
+                    >
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path
+                          d="M12 21c-4 0-7-3-7-7 0-4 3-8 7-11 4 3 7 7 7 11 0 4-3 7-7 7z"
+                        />
+                        <path d="M12 21V8" />
+                      </svg>
+                    </span>
+                    <span class="lb">Їжа</span>
+                  </a>
+                </div>
+
                 <div class="airow">
                   <span class="ic">
                     <svg
@@ -877,6 +987,13 @@
         кольоровою міткою збоку. Те, що закрито, не зникає, але згортається в
         рядок.
       </p>
+      <p>
+        Модулі справа нікуди не діваються — але стають
+        <strong>входом, а не дашбордом</strong>: рядок із чотирьох іконок унизу,
+        без чисел. Зайти в Фінік і погортати історію можна так само за один тап;
+        просто число «0 ₴» більше не займає чверть екрана, коли з ним нічого не
+        треба робити.
+      </p>
       <p class="note">
         Чесно про ціну правого: у день, коли все закрито, він
         <em>довший</em> за лівий — купа «Закрито» росте саме тоді, коли у вас
@@ -902,8 +1019,9 @@
             тоді шукали і скільки тапів на це пішло?
           </li>
           <li>
-            На правому екрані зникли постійні плитки з числами. Чого вам би
-            бракувало найбільше?
+            На правому екрані замість плиток із числами — рядок іконок унизу.
+            Заходити в модулі так само зручно? Чого з чисел бракувало б
+            найбільше?
           </li>
           <li>
             У день, коли все закрито, правий — це чотири рядки «✓». Це приємно,
