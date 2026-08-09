@@ -307,25 +307,24 @@ export interface ToggleRowProps {
 /**
  * Рядок «підпис ліворуч — тумблер праворуч» у Налаштуваннях.
  *
- * **Чому обгортка — `<div>`, а не `<label>`.** Доти нею був `<label>`, який
- * обгортав увесь рядок разом із `Switch`, а сам `Switch` малює ВЛАСНИЙ
- * `<label htmlFor>` навколо треку. Вкладений `<label>` заборонений
- * контент-моделлю HTML («no descendant label elements»), і Chrome на такій
- * розмітці не виводив тумблеру доступного імені взагалі: axe бачив
- * `[critical] label: Form elements must have labels` на чотирьох вузлах
- * `/settings`. Порушення пре-існуюче — відтворюється і на `origin/main`
- * (`9cd0361`), не внесене цим PR, але лагодиться тут, бо саме тут джоб
- * `Accessibility (axe-core)` уперше дійшов до запуску: він `needs: check`,
- * а доти `check` падав раніше і a11y просто не стартував (`0s` у списку).
+ * Візуал (tappable-картка з бордером і hover-станом) — PR-37 ux-roast
+ * 2026-Q3 §3.1: доти рядок читався як звичайний текст на тлі секції і
+ * тумблери губились. Обгортка лишається `label` саме заради цього —
+ * тапається весь рядок, а не лише підпис чи трек.
  *
- * Тепер асоціація явна: підпис — `<label htmlFor>`, тумблер має свій `id`,
- * пояснення прив'язане через `aria-describedby`. Клік по підпису й далі
- * перемикає; втрачається лише клік по порожньому просвіту між підписом і
- * треком (підпис займає `flex-1`, тож це вузька смуга).
+ * **Чому імʼя тумблера задається через `aria-labelledby`, а не структурою.**
+ * У цьому рядку два конкуруючі варіанти фіксу зійшлись у мерджі: гілка
+ * PR #762 розводила вкладеність (обгортка → `div`, підпис → `label htmlFor`),
+ * `main` (PR #760) лишив обгортку `label` і додав явний `aria-labelledby`.
+ * Взято варіант `main` — він змерджений, зелений у CI і зберігає тап по
+ * всьому рядку; підхід PR #762 звужував тап-зону до підпису й треку.
  *
- * Візуал рядка (tappable-картка з бордером і hover-станом) — PR-37
- * ux-roast 2026-Q3 §3.1: доти рядок читався як звичайний текст на тлі
- * секції і тумблери губились.
+ * Ціна вибору названа чесно: вкладений `label` лишається невалідним за
+ * контент-моделлю HTML («no descendant label elements»). Саме ця
+ * невалідність і була КОРЕНЕМ падіння axe — Chrome на такій розмітці не
+ * виводив інпуту доступного імені взагалі. `aria-labelledby` знімає
+ * симптом (імʼя тепер явне), але не саму вкладеність, тож структурне
+ * прибирання лишається відкритим боргом.
  */
 export function ToggleRow({
   label,
@@ -333,52 +332,44 @@ export function ToggleRow({
   checked,
   onChange,
 }: ToggleRowProps) {
-  const uid = useId();
-  const switchId = `toggle-row-${uid}`;
-  const descId = `${switchId}-description`;
+  const labelId = useId();
   return (
-    <div
+    <label
       className={cn(
-        "flex items-center justify-between gap-4 group min-h-[44px]",
+        "flex items-center justify-between gap-4 cursor-pointer group min-h-[44px]",
         "p-3 rounded-2xl border border-line/60 bg-surface-soft-glass shadow-soft",
         "hover:border-brand/40 hover:bg-surface-strong-glass active:bg-surface-soft-glass",
         "transition-[background-color,border-color]",
       )}
     >
       <div className="flex-1 min-w-0">
-        <label
-          htmlFor={switchId}
-          className="block cursor-pointer text-style-label text-text group-hover:text-brand-strong transition-colors"
+        <span
+          id={labelId}
+          className="text-style-label text-text group-hover:text-brand-strong transition-colors"
         >
           {label}
-        </label>
+        </span>
         {description && (
-          // `text-muted`, а не `text-subtle`: у темній темі `subtle`
-          // (#5f6b64) на поверхні картки (#1b1613) дає 3.22:1, а це
-          // пояснювальне речення на 12px — WCAG AA вимагає 4.5:1
-          // (послаблення до 3:1 починається з 18.66px bold / 24px, не з
-          // 12px, як припускає коментар біля токена в `tokens.js`).
-          // `muted` (#8a968e) — 5.6:1. axe ловив це як
-          // `[serious] color-contrast` на чотирьох вузлах `/settings [dark]`
-          // ще на `b7133a3`, до правки лейблів вище — знахідка пре-існуюча,
-          // просто раніше джоб `Accessibility` не доходив до запуску.
-          <p
-            id={descId}
-            className="text-style-caption text-muted mt-1 leading-relaxed"
-          >
+          // `text-muted`, не `text-subtle`: на 12px у «Чорнилі» subtle дає
+          // контраст 3.22 при потрібних 4.5 (axe color-contrast, serious —
+          // #5f6b64 на #1b1613). Опис тумблера пояснює, ЩО саме вмикаєш, —
+          // тобто це не декоративний текст, і читабельним він мусить бути.
+          //
+          // Обидві гілки мерджу зійшлись тут на одному й тому ж висновку
+          // незалежно одна від одної.
+          <p className="text-style-caption text-muted mt-1 leading-relaxed">
             {description}
           </p>
         )}
       </div>
       <div className="shrink-0">
         <Switch
-          id={switchId}
           checked={checked}
           onChange={onChange}
-          aria-describedby={description ? descId : undefined}
+          aria-labelledby={labelId}
         />
       </div>
-    </div>
+    </label>
   );
 }
 

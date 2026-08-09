@@ -69,16 +69,16 @@ export interface SwitchProps {
   /** Native `aria-label` fallback when no visible `label`. */
   "aria-label"?: string;
   /**
-   * Id(и) зовнішнього опису — коли пояснювальний текст малює НЕ цей
-   * компонент, а рядок навколо нього (`ToggleRow` у Налаштуваннях). Без
-   * цього такий текст лишався б взагалі поза a11y-деревом тумблера:
-   * власний `description` тут рендериться праворуч від треку, а рядок
-   * Налаштувань хоче його ліворуч, тож `description` там не передають.
-   *
-   * Складається з внутрішнім `description`, а не заміняє його —
-   * `aria-describedby` за специфікацією приймає список id.
+   * Id зовнішнього елемента, що називає перемикач, коли підпис живе НЕ
+   * всередині `Switch` (напр. `ToggleRow` у Налаштуваннях малює власний
+   * рядок-картку). Без цього такий перемикач лишався зовсім без
+   * доступного імені: власний `<label htmlFor>` компонента містить лише
+   * `aria-hidden`-спани треку й бігунка, тож обчислене імʼя порожнє, а
+   * зовнішній `<label>`-обгортка не рахується — вкладені `<label>`
+   * невалідні, і внутрішній explicit-label перемагає.
+   * Знахідка axe-гейта 2026-08-09: `label` critical, 5 вузлів на `/settings`.
    */
-  "aria-describedby"?: string | undefined;
+  "aria-labelledby"?: string;
 }
 
 const trackSize: Record<SwitchSize, string> = {
@@ -112,7 +112,7 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(function Switch(
     announceText,
     className,
     "aria-label": ariaLabel,
-    "aria-describedby": ariaDescribedBy,
+    "aria-labelledby": ariaLabelledBy,
   },
   ref,
 ) {
@@ -120,9 +120,6 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(function Switch(
   const inputId = id ?? `switch-${generatedId}`;
   const labelId = `${inputId}-label`;
   const descId = `${inputId}-description`;
-  const describedBy =
-    [description ? descId : null, ariaDescribedBy].filter(Boolean).join(" ") ||
-    undefined;
   const { announce } = useAnnounce();
 
   const isControlled = checked !== undefined;
@@ -189,8 +186,8 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(function Switch(
           aria-checked={currentChecked}
           aria-invalid={error || undefined}
           aria-label={!label && ariaLabel ? ariaLabel : undefined}
-          aria-labelledby={label ? labelId : undefined}
-          aria-describedby={describedBy}
+          aria-labelledby={label ? labelId : ariaLabelledBy}
+          aria-describedby={description ? descId : undefined}
           disabled={disabled}
           onChange={handleChange}
           className="peer sr-only"

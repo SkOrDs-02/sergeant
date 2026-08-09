@@ -11,6 +11,7 @@ import {
   signIn,
   signUp,
   uncaughtOnly,
+  waitForSyncQuiet,
   visibleText,
   type Recorder,
 } from "../utils/liveJourneyHelpers";
@@ -398,6 +399,13 @@ test.describe.serial("BT3 — канонічний бета-тестер (Pro tr
   test("BT3: без неперехоплених винятків", async () => {
     expect(uncaughtOnly(rec), `Персона BT3 (${PRO_EMAIL})`).toEqual([]);
   });
+
+  test("BT3: записи доїхали на сервер (барʼєр для BT4)", async () => {
+    // BT4 читає з сервера рівно те, що написав BT3. Без цього кроку
+    // «пристрій» BT3 закривався одразу після останнього асерту, і черга
+    // синку могла піти в нікуди — саме так BT4 інколи не бачив витрати.
+    await waitForSyncQuiet(page);
+  });
 });
 
 test.describe.serial("BT4 — той самий тестер на другому пристрої", () => {
@@ -428,16 +436,33 @@ test.describe.serial("BT4 — той самий тестер на другому
     // НЕ асертимо суму згорнутого заголовка дня: BT3-акаунт живе всю бету
     // (як у справжніх тестерів) і накопичує записи між прогонами, тож
     // агрегат дня — рухома мішень (знахідка репетиції: −349 → −1047).
-    // Чекаємо групу дня (= синк доїхав), розгортаємо (bulk-гідрація день
-    // не розгортає — свідома межа фіксу B6) і шукаємо запис ЦЬОГО прогону.
-    await expect(
-      page.getByRole("button", { name: /Сьогодні/ }).first(),
-    ).toBeVisible({ timeout: 30_000 });
-    const expand = page.getByRole("button", { name: /Розгорнути Сьогодні/ });
-    if (await expand.count()) await expand.first().click();
-    await expect(visibleText(page, `QA BT3 витрата ${RUN_TAG}`)).toBeVisible({
-      timeout: 15_000,
-    });
+    //
+    // І з тієї ж причини поява групи «Сьогодні» — НЕ барʼєр синхронізації:
+    // на акаунті, який уже має сьогоднішні записи з минулих прогонів, група
+    // існує від початку, очікування задовольняється миттєво, і далі тест
+    // просто гнався з push-ом BT3 за 15 с (флейк BT4, прогін 2026-08-09 —
+    // у базі було 5 сьогоднішніх витрат від попередніх заходів). Справжній
+    // барʼєр стоїть у teardown BT3 (`waitForSyncQuiet`), а тут чекаємо
+    // рівно запис ЦЬОГО прогону — одним щедрим поллом, який дорогою
+    // розгортає день (bulk-гідрація його не розгортає — межа фіксу B6).
+    const runRecord = visibleText(page, `QA BT3 витрата ${RUN_TAG}`);
+    await expect
+      .poll(
+        async () => {
+          const expand = page.getByRole("button", {
+            name: /Розгорнути Сьогодні/,
+          });
+          if (await expand.count()) {
+            await expand
+              .first()
+              .click()
+              .catch(() => {});
+          }
+          return runRecord.isVisible().catch(() => false);
+        },
+        { timeout: 45_000, intervals: [1_000] },
+      )
+      .toBe(true);
   });
 
   test("BT4: активні модулі повернулись (регресія B2)", async () => {
