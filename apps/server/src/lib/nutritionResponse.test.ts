@@ -99,6 +99,73 @@ describe("nutritionResponse normalizers", () => {
     expect(out.macros.kcal).toBe(0);
   });
 
+  it("normalizePhotoResult carries the not-food category through", () => {
+    const cat = normalizePhotoResult({
+      isFood: false,
+      notFoodKind: "animal",
+      dishName: "Кіт",
+      macros: {},
+    });
+    expect(cat.notFoodKind).toBe("animal");
+
+    const human = normalizePhotoResult({
+      isFood: false,
+      notFoodKind: "person",
+      dishName: "Селфі",
+      macros: {},
+    });
+    expect(human.notFoodKind).toBe("person");
+  });
+
+  it("normalizePhotoResult accepts the Ukrainian category the prompt invites", () => {
+    // Промпт україномовний — модель регулярно відповідає в його мові, і
+    // «тварина» замість "animal" не має коштувати людині теплої репліки.
+    expect(
+      normalizePhotoResult({
+        isFood: false,
+        notFoodKind: " Тварина ",
+        dishName: "Кіт",
+        macros: {},
+      }).notFoodKind,
+    ).toBe("animal");
+    expect(
+      normalizePhotoResult({
+        isFood: false,
+        notFoodKind: "людина",
+        dishName: "Селфі",
+        macros: {},
+      }).notFoodKind,
+    ).toBe("person");
+  });
+
+  it("normalizePhotoResult falls back to 'other' for a missing or unknown category", () => {
+    expect(
+      normalizePhotoResult({ isFood: false, dishName: "Кіт", macros: {} })
+        .notFoodKind,
+    ).toBe("other");
+    expect(
+      normalizePhotoResult({
+        isFood: false,
+        notFoodKind: "spaceship",
+        dishName: "Ракета",
+        macros: {},
+      }).notFoodKind,
+    ).toBe("other");
+  });
+
+  it("normalizePhotoResult nulls the category when there IS food on the photo", () => {
+    // Категорія описує причину відмови; при їжі описувати нічого, і клієнт не
+    // має отримати рядок, за яким можна намалювати відмовний блок.
+    const out = normalizePhotoResult({
+      isFood: true,
+      notFoodKind: "animal",
+      dishName: "Борщ",
+      macros: { kcal: 280 },
+    });
+    expect(out.isFood).toBe(true);
+    expect(out.notFoodKind).toBeNull();
+  });
+
   it("normalizePhotoResult reads stringified and numeric isFood flags", () => {
     expect(
       normalizePhotoResult({ dishName: "Кіт", isFood: "false", macros: {} })

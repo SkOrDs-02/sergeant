@@ -1,20 +1,47 @@
-import type { NutritionPhotoResult } from "@sergeant/api-client";
+import type {
+  NutritionNotFoodKind,
+  NutritionPhotoResult,
+} from "@sergeant/api-client";
 import { mealTypeByNow } from "@sergeant/nutrition-domain";
 
 import type { MealFormState } from "../components/meal-sheet/mealFormUtils";
 import { currentTime } from "../components/meal-sheet/mealFormUtils";
+
+const NOT_FOOD_COPY: Record<
+  NutritionNotFoodKind,
+  { lead: string; action: string }
+> = {
+  animal: {
+    lead: "Це не страва, а тваринка",
+    action:
+      "Краще погладь і пригости смаколиком, а для журналу зроби фото їжі.",
+  },
+  person: {
+    lead: "Це людина, а не страва",
+    action: "Наведи камеру на тарілку або введи КБЖВ вручну.",
+  },
+  other: {
+    lead: "Не бачу тут страви",
+    action: "Спробуй інше фото або введи КБЖВ вручну.",
+  },
+};
 
 /**
  * Текст відмови, коли сервер повернув `isFood: false`.
  *
  * Копія повідомлення веб-картки (`PhotoAnalyzeCard` → `NotFoodNotice`) — обидві
  * поверхні мають казати людині те саме, бо причина відмови серверна й спільна.
+ * Тут це один рядок у полі `err`, а не блок, тож заголовок і дія склеєні.
  */
-export function notFoodMessage(dishName?: string | null): string {
+export function notFoodMessage(
+  dishName?: string | null,
+  kind?: NutritionNotFoodKind | null,
+): string {
   const what = (dishName || "").trim();
+  const copy = NOT_FOOD_COPY[kind ?? "other"];
   return what
-    ? `Не бачу тут страви: на фото схоже на «${what}». Спробуй інше фото або введи КБЖВ вручну.`
-    : "Не бачу тут страви. Спробуй інше фото або введи КБЖВ вручну.";
+    ? `${copy.lead}: на фото схоже на «${what}». ${copy.action}`
+    : `${copy.lead}. ${copy.action}`;
 }
 
 /** Мапінг відповіді analyze-photo → поля кроку «fill» AddMealSheet. */

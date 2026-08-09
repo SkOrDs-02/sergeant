@@ -54,6 +54,7 @@ describe(
           res.jsonBody({
             result: {
               isFood: true,
+              notFoodKind: null,
               dishName: "Борщ із сметаною",
               confidence: 0.87,
               portion: { label: "тарілка", gramsApprox: 350 },
@@ -82,6 +83,7 @@ describe(
             locale: "uk-UA",
           });
           expect(out.result?.isFood).toBe(true);
+          expect(out.result?.notFoodKind).toBeNull();
           expect(out.result?.dishName).toBe("Борщ із сметаною");
           expect(out.result?.macros.kcal).toBe(280);
           expect(out.result?.ingredients).toHaveLength(3);

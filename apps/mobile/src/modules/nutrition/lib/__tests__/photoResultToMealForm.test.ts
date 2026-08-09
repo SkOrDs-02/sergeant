@@ -13,12 +13,29 @@ describe("notFoodMessage", () => {
       "Не бачу тут страви. Спробуй інше фото або введи КБЖВ вручну.",
     );
   });
+
+  it("вітається з тваринкою замість того, щоб просити інше фото", () => {
+    expect(notFoodMessage("Кіт", "animal")).toBe(
+      "Це не страва, а тваринка: на фото схоже на «Кіт». Краще погладь і пригости смаколиком, а для журналу зроби фото їжі.",
+    );
+  });
+
+  it("відправляє камеру на тарілку, коли в кадрі людина", () => {
+    expect(notFoodMessage("Селфі", "person")).toMatch(
+      /Це людина, а не страва.*Наведи камеру на тарілку/,
+    );
+  });
+
+  it("тримає нейтральний текст для невідомої категорії", () => {
+    expect(notFoodMessage("Клавіатура", "other")).toMatch(/Не бачу тут страви/);
+  });
 });
 
 describe("mapPhotoResultToMealForm", () => {
   it("мапить макроси та назву", () => {
     const f = mapPhotoResultToMealForm({
       isFood: true,
+      notFoodKind: null,
       dishName: "Борщ",
       confidence: 0.9,
       portion: null,
@@ -41,6 +58,7 @@ describe("mapPhotoResultToMealForm", () => {
   it("додає застереження при низькій confidence", () => {
     const f = mapPhotoResultToMealForm({
       isFood: true,
+      notFoodKind: null,
       dishName: "X",
       confidence: 0.2,
       portion: null,

@@ -9,6 +9,7 @@ import { Input } from "@shared/components/ui/Input";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Spinner } from "@shared/components/ui/Spinner";
 import { cn } from "@shared/lib/ui/cn";
+import type { NutritionNotFoodKind } from "@sergeant/api-client";
 import type { NullableMacros } from "@sergeant/shared";
 
 /**
@@ -91,6 +92,8 @@ function hasAnyMacro(result: {
 interface PhotoAnalyzeResult {
   /** `false` — сервер сказав, що їжі на фото немає (див. `normalizePhotoResult`). */
   isFood?: boolean;
+  /** Що в кадрі замість їжі — задає тон відмови. Див. `NotFoodNotice`. */
+  notFoodKind?: NutritionNotFoodKind | null;
   dishName?: string | null;
   macros?: Partial<NullableMacros> | null;
   confidence?: number | null;
@@ -108,16 +111,45 @@ interface PhotoAnalyzeResult {
  * Найдорожчою була саме кнопка, а не назва: вигадані нулі потрапляли в
  * `estimatedKcalShare` і в підсумок дня.
  */
-function NotFoodNotice({ dishName }: { dishName?: string | null | undefined }) {
+const NOT_FOOD_COPY: Record<
+  NutritionNotFoodKind,
+  { title: string; unnamed: string; action: string }
+> = {
+  animal: {
+    title: "Це не страва, а тваринка",
+    unnamed: "На фото тваринка, а не їжа.",
+    action:
+      "Краще погладь і пригости смаколиком — а для журналу зроби фото їжі.",
+  },
+  person: {
+    title: "Це людина, а не страва",
+    unnamed: "На фото людина, а не їжа.",
+    action: "Наведи камеру на тарілку — або додай прийом їжі вручну.",
+  },
+  other: {
+    title: "Не бачу тут страви",
+    unnamed: "На фото немає їжі, для якої можна порахувати КБЖВ.",
+    action: "Обери інше фото вище — або додай прийом їжі вручну.",
+  },
+};
+
+function NotFoodNotice({
+  dishName,
+  kind,
+}: {
+  dishName?: string | null | undefined;
+  kind?: NutritionNotFoodKind | null | undefined;
+}) {
   const what = (dishName || "").trim();
+  const copy = NOT_FOOD_COPY[kind ?? "other"];
   return (
     <div className="mt-4 rounded-2xl border border-line bg-panelHi p-3">
-      <div className="text-style-label text-text">Не бачу тут страви</div>
+      <div className="text-style-label text-text">{copy.title}</div>
       <p className="mt-1 text-style-caption text-muted leading-relaxed">
         {what
           ? `На фото схоже на «${what}» — порахувати КБЖВ немає з чого.`
-          : "На фото немає їжі, для якої можна порахувати КБЖВ."}{" "}
-        Обери інше фото вище — або додай прийом їжі вручну.
+          : copy.unnamed}{" "}
+        {copy.action}
       </p>
     </div>
   );
@@ -256,7 +288,10 @@ export function PhotoAnalyzeCard({
       ) : null}
 
       {photoResult && photoResult.isFood === false && (
-        <NotFoodNotice dishName={photoResult.dishName} />
+        <NotFoodNotice
+          dishName={photoResult.dishName}
+          kind={photoResult.notFoodKind}
+        />
       )}
 
       {photoResult && photoResult.isFood !== false && (

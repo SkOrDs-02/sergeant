@@ -105,6 +105,84 @@ describe("PhotoAnalyzeCard", () => {
     expect(screen.queryByText(/Впевненість/)).toBeNull();
   });
 
+  it("greets an animal instead of offering another photo", () => {
+    // Фото кота — найчастіша не-їжа в кадрі, і нейтральне «обери інше фото»
+    // тут читається як помилка застосунку, хоча розпізнавання спрацювало.
+    render(
+      <PhotoAnalyzeCard
+        {...baseProps}
+        photoResult={{
+          isFood: false,
+          notFoodKind: "animal",
+          dishName: "Кіт",
+          macros: {},
+          questions: [],
+        }}
+        onSaveToLog={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("Це не страва, а тваринка")).toBeInTheDocument();
+    expect(
+      screen.getByText(/погладь і пригости смаколиком/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/схоже на «Кіт»/)).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Зберегти в журнал/ }),
+    ).toBeNull();
+  });
+
+  it("names an animal even when the model did not", () => {
+    render(
+      <PhotoAnalyzeCard
+        {...baseProps}
+        photoResult={{
+          isFood: false,
+          notFoodKind: "animal",
+          dishName: "",
+          macros: {},
+          questions: [],
+        }}
+      />,
+    );
+    expect(screen.getByText(/На фото тваринка, а не їжа/)).toBeInTheDocument();
+  });
+
+  it("points a person back at the plate", () => {
+    render(
+      <PhotoAnalyzeCard
+        {...baseProps}
+        photoResult={{
+          isFood: false,
+          notFoodKind: "person",
+          dishName: "Селфі",
+          macros: {},
+          questions: [],
+        }}
+      />,
+    );
+    expect(screen.getByText("Це людина, а не страва")).toBeInTheDocument();
+    expect(screen.getByText(/Наведи камеру на тарілку/)).toBeInTheDocument();
+  });
+
+  it("keeps the neutral refusal for an unknown category", () => {
+    // Стара модель без поля і будь-яка не-їжа поза таксономією — той самий
+    // текст, що й до появи категорій.
+    render(
+      <PhotoAnalyzeCard
+        {...baseProps}
+        photoResult={{
+          isFood: false,
+          dishName: "Клавіатура",
+          macros: {},
+          questions: [],
+        }}
+      />,
+    );
+    expect(screen.getByText("Не бачу тут страви")).toBeInTheDocument();
+    expect(screen.getByText(/Обери інше фото вище/)).toBeInTheDocument();
+  });
+
   it("keeps the refusal readable when the model did not name the object", () => {
     render(
       <PhotoAnalyzeCard

@@ -270,7 +270,10 @@ export function AddMealSheet({
         // заповнилась би назвою того, що на фото («Кіт»), і порожніми КБЖВ —
         // рівно те, що web-картка показувала до серверного прапорця.
         if (r.isFood === false) {
-          setForm((s) => ({ ...s, err: notFoodMessage(r.dishName) }));
+          setForm((s) => ({
+            ...s,
+            err: notFoodMessage(r.dishName, r.notFoodKind),
+          }));
           return;
         }
         applyPhotoAnalyzeSuccess(picked.base64, picked.mimeType, r);
@@ -312,7 +315,10 @@ export function AddMealSheet({
         return;
       }
       if (r.isFood === false) {
-        setForm((s) => ({ ...s, err: notFoodMessage(r.dishName) }));
+        setForm((s) => ({
+          ...s,
+          err: notFoodMessage(r.dishName, r.notFoodKind),
+        }));
         return;
       }
       setForm((s) => ({ ...s, ...mapPhotoResultToMealForm(r) }));
