@@ -36,7 +36,6 @@ export type PageKey =
   | "profile"
   | "reports"
   | "settings"
-  | "pricing"
   | "assistant"
   | "resetPassword"
   | "design";
@@ -49,12 +48,14 @@ const moduleImports: Record<ModuleKey, () => Promise<unknown>> = {
   nutrition: () => import("../../modules/nutrition/NutritionApp"),
 };
 
+// No `pricing` entry: `/pricing` is hidden for the closed beta and answers
+// 404, so prefetching its chunk only pulled it back into the build. Restore
+// this together with `VITE_ENABLE_COMMERCE`.
 const pageImports: Record<PageKey, () => Promise<unknown>> = {
   auth: () => import("../auth/AuthPage"),
   profile: () => import("../profile/ProfilePage"),
   reports: () => import("../hub/HubReports"),
   settings: () => import("../hub/HubSettingsPage"),
-  pricing: () => import("../PricingPage"),
   assistant: () => import("../AssistantCataloguePage"),
   resetPassword: () => import("../auth/ResetPasswordPage"),
   design: () => import("../DesignShowcase"),

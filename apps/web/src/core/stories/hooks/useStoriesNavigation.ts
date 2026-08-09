@@ -32,15 +32,19 @@ export function useStoriesNavigation({ total, onExhausted }: Options): Api {
     }
   }
 
+  // `onExhausted` is fired here, NOT from inside a `setIndex` updater.
+  // React treats updaters as pure and may run them twice (StrictMode) or
+  // during the render phase, so a side effect in there could close the
+  // overlay twice or schedule a parent update mid-render. Reading `index`
+  // from this render is safe and matches the "no refs, no mirrors" contract
+  // above: the callback is recreated whenever `index` changes.
   const next = useCallback(() => {
-    setIndex((i) => {
-      if (i >= total - 1) {
-        onExhausted?.();
-        return i;
-      }
-      return i + 1;
-    });
-  }, [total, onExhausted]);
+    if (index >= total - 1) {
+      onExhausted?.();
+      return;
+    }
+    setIndex(index + 1);
+  }, [index, total, onExhausted]);
 
   const prev = useCallback(() => {
     setIndex((i) => (i > 0 ? i - 1 : 0));

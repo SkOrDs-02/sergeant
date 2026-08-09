@@ -11,7 +11,7 @@
  */
 
 import type { ModuleAccent } from "@sergeant/design-tokens";
-import { SETTINGS_SECTIONS_CATALOG } from "../../../core/hub/settingsSectionsCatalog";
+import { VISIBLE_SETTINGS_SECTIONS } from "../../../core/hub/settingsSectionsCatalog";
 
 export const HUB_OPEN_MODULE_EVENT = "hub:open-module";
 
@@ -108,7 +108,7 @@ export interface HubOpenSettingsDetail {
 // again; parity is pinned in `hubNav.test.ts`.
 const VALID_SETTINGS_SECTIONS = new Set<string>([
   "",
-  ...SETTINGS_SECTIONS_CATALOG.map((section) => section.id),
+  ...VISIBLE_SETTINGS_SECTIONS.map((section) => section.id),
 ]);
 
 /**

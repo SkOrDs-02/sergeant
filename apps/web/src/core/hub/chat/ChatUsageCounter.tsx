@@ -3,6 +3,7 @@ import { chatApi } from "@shared/api";
 import { chatKeys } from "@shared/lib/api/queryKeys";
 import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
+import { COMMERCE_SURFACES_ENABLED } from "../../lib/betaSurfaces";
 
 /**
  * Free-tier daily AI-chat counter pill (PR-42, tracker §15). Reads
@@ -42,13 +43,17 @@ export function ChatUsageCounter() {
           : "bg-panelHi text-muted",
       )}
     >
-      {exhausted ? (
+      {exhausted && COMMERCE_SURFACES_ENABLED ? (
         <a
           href="/pricing"
           className="underline focus-visible:ring-2 focus-visible:ring-focus/45"
         >
           {messages.hub.chatUsageExhausted}
         </a>
+      ) : exhausted ? (
+        // Beta: same "you are out of quota" signal, minus a link to a
+        // tariffs page that 404s. The server-side 429 gate is unchanged.
+        messages.hub.chatUsageExhausted
       ) : (
         `${used}/${data.limit} ${messages.hub.chatUsageUnit}`
       )}

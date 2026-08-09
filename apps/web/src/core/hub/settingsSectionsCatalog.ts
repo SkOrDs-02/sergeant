@@ -1,4 +1,5 @@
 import { messages } from "@shared/i18n/uk";
+import { COMMERCE_SURFACES_ENABLED } from "../lib/betaSurfaces";
 
 /**
  * Single source of truth for Settings-section identity (id/title/keywords).
@@ -152,6 +153,21 @@ export const SETTINGS_SECTIONS_CATALOG: readonly SettingsSectionMeta[] = [
  * immediately (at render time, not a silently blank header) so a
  * renamed/removed catalog entry is caught the moment a section reads it.
  */
+/**
+ * The catalog minus sections hidden for the closed beta.
+ *
+ * Every consumer that *lists* sections (the Settings page, the ⌘K palette,
+ * the valid-tab-id set in `hubNav`) reads this instead of the raw catalog, so
+ * a hidden section disappears from all three at once — the whole point of
+ * having one catalog. `SETTINGS_SECTIONS_CATALOG` itself stays complete on
+ * purpose: `settingsSectionTitle()` throws on an unknown id, and a section
+ * that is merely hidden still has a legitimate title.
+ */
+export const VISIBLE_SETTINGS_SECTIONS: readonly SettingsSectionMeta[] =
+  SETTINGS_SECTIONS_CATALOG.filter(
+    (section) => COMMERCE_SURFACES_ENABLED || section.id !== "plan",
+  );
+
 export function settingsSectionTitle(id: string): string {
   const section = SETTINGS_SECTIONS_CATALOG.find((s) => s.id === id);
   if (!section) {
