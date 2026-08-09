@@ -35,6 +35,14 @@
       "reason": "Cited as a mobile retention benchmark in docs/01-product/launch/business/01-monetization-and-pricing.md; the report+year is the auditable claim, not the live URL — host has had stability issues throughout 2026."
     },
     {
+      "pattern": "^https?://(www\\.)?ibtimes\\.sg/",
+      "reason": "IBTimes SG article cited in docs/05-design/design/anti-slop-strategy.md alongside the Muzli piece; the host answers 502 to every request from CI (verified three consecutive attempts 2026-08-08), so the citation \u2014 outlet + headline + year \u2014 is the auditable claim, not the live URL."
+    },
+    {
+      "pattern": "^https?://medium\\.muz\\.li/",
+      "reason": "Muzli/Medium article cited in docs/05-design/design/anti-slop-strategy.md as the source of the \u00abevery AI-built app looks the same\u00bb argument; Medium returns 403 to HEAD/GET from non-browser user-agents while the page renders fine in browsers."
+    },
+    {
       "pattern": "^https?://(www\\.)?producthunt\\.com/(directory/upcoming|coming-soon)",
       "reason": "Product Hunt blocks HEAD/GET from non-browser user-agents and frequently returns 403/404 to checker tools even when the page renders fine in browsers."
     },

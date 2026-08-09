@@ -37,7 +37,7 @@ import { NotificationsSection } from "../settings/NotificationsSection";
 import { PlanSection } from "../settings/PlanSection";
 import { PrivacySection } from "../settings/PrivacySection";
 import { PWASection } from "../settings/PWASection";
-import { SETTINGS_SECTIONS_CATALOG } from "./settingsSectionsCatalog";
+import { VISIBLE_SETTINGS_SECTIONS } from "./settingsSectionsCatalog";
 
 // Initiative 0017 Sprint 1.1 PR-1.2 — the four module-scoped sections
 // (`Finyk`/`Fizruk`/`Nutrition`/`Routine`) bootstrap heavy cross-module
@@ -171,7 +171,7 @@ const SECTION_LAZY: Readonly<Record<string, { minH: number }>> = {
 // Zips the shared catalog with the local render wiring above. Module scope
 // (not `useMemo`) — the renderer closures don't capture any component-
 // instance state, so this only needs to compute once per module load.
-const SECTIONS: readonly SettingsSection[] = SETTINGS_SECTIONS_CATALOG.map(
+const SECTIONS: readonly SettingsSection[] = VISIBLE_SETTINGS_SECTIONS.map(
   (meta) => {
     const render = SECTION_RENDERERS[meta.id];
     if (!render) {

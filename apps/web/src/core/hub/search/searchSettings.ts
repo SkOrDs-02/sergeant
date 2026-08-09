@@ -2,7 +2,7 @@ import {
   ASSISTANT_CAPABILITIES,
   CAPABILITY_MODULE_META,
 } from "@sergeant/shared";
-import { SETTINGS_SECTIONS_CATALOG } from "../settingsSectionsCatalog";
+import { VISIBLE_SETTINGS_SECTIONS } from "../settingsSectionsCatalog";
 import { type Hit, pushScored } from "./searchTypes";
 
 // Settings sections — id/title/keywords come from the shared
@@ -93,7 +93,7 @@ export const SETTINGS_INDEX: ReadonlyArray<{
   description: string;
   keywords: string;
   icon: string;
-}> = SETTINGS_SECTIONS_CATALOG.map((section) => {
+}> = VISIBLE_SETTINGS_SECTIONS.map((section) => {
   // Falls back to a generic gear icon/empty description rather than
   // throwing — a new catalog entry without a presentation record should
   // still be searchable (just visually plain) instead of crashing ⌘K.

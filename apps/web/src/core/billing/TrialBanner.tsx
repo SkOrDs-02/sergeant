@@ -1,6 +1,7 @@
 import { useInRouterContext, useNavigate } from "react-router-dom";
 import { Button } from "@shared/components/ui/Button";
 import { usePlan } from "./usePlan";
+import { COMMERCE_SURFACES_ENABLED } from "../lib/betaSurfaces";
 
 /**
  * Trial-expiry banner (initiative 0010 Phase 4 / audit `2026-05-13-revenue-monetization-roast.md` P1-9).
@@ -82,6 +83,11 @@ function TrialBannerInner({ now = Date.now }: TrialBannerProps) {
   const navigate = useNavigate();
   const { subscription } = usePlan();
 
+  // Beta: the banner exists only to push a trial towards checkout, and its
+  // CTA lands on a `/pricing` that 404s while commerce is hidden.
+  if (!COMMERCE_SURFACES_ENABLED) {
+    return null;
+  }
   if (!subscription || subscription.status !== "trialing") {
     return null;
   }

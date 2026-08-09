@@ -28,13 +28,14 @@ type DeepLinkBridgeWindow = Window & {
   [SHELL_DEEPLINK_BRIDGE_READY_KEY]?: boolean;
 };
 
+// `/pricing` intentionally absent: hidden for the closed beta
+// (`VITE_ENABLE_COMMERCE`), so a shell deep-link would land on a 404.
 const ALLOWED_PATH_PREFIXES: readonly string[] = [
   "/sign-in",
   "/welcome",
   "/reset-password",
   "/profile",
   "/design",
-  "/pricing",
   "/status",
   "/assistant",
   "/chat",

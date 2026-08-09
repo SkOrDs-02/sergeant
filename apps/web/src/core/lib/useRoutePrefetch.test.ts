@@ -84,8 +84,8 @@ describe("prefetchPage / prefetchPageOnIntent / isPagePrefetched", () => {
   it("marks a page as prefetched on intent and reports it", () => {
     // prefetchPageOnIntent → importPageChunk runs synchronously (no idle wrap).
     // The dynamic import is fire-and-forget; the chunk-set flag is set first.
-    prefetchPageOnIntent("pricing");
-    expect(isPagePrefetched("pricing")).toBe(true);
+    prefetchPageOnIntent("assistant");
+    expect(isPagePrefetched("assistant")).toBe(true);
   });
 
   it("skips on slow connection", () => {

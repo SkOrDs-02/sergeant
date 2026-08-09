@@ -19,6 +19,15 @@ import { SETTINGS_INDEX, searchSettings } from "./searchSettings";
  * two tests below check things that actually depend on catalog CONTENT
  * (which can still drift) rather than the `.map()` shape.
  */
+// This suite pins the behaviour of the commerce/legal surfaces as they look
+// when SHOWN. Both are hidden by default for the closed beta, so the gate is
+// forced on here — otherwise re-enabling them later would ship against zero
+// coverage. The hidden state is covered in `core/lib/betaSurfaces.hidden.test.tsx`.
+vi.mock("../../lib/betaSurfaces", () => ({
+  COMMERCE_SURFACES_ENABLED: true,
+  LEGAL_SURFACES_ENABLED: true,
+}));
+
 describe("SETTINGS_INDEX ↔ SETTINGS_SECTIONS_CATALOG parity", () => {
   it("previously-orphaned ids ('general', 'assistant') are gone", () => {
     // Locks in the specific regression: these two ids were hardcoded into
@@ -70,14 +79,16 @@ describe("SETTINGS_PRESENTATION fallback (audit finding #10)", () => {
     // record) and re-import `searchSettings` fresh so it builds
     // `SETTINGS_INDEX` from the mocked catalog instead of the real one.
     vi.resetModules();
+    const mysterySection = {
+      id: "mystery-no-presentation",
+      title: "Загадкова секція",
+      keywords: "загадкова mystery",
+    };
     vi.doMock("../settingsSectionsCatalog", () => ({
-      SETTINGS_SECTIONS_CATALOG: [
-        {
-          id: "mystery-no-presentation",
-          title: "Загадкова секція",
-          keywords: "загадкова mystery",
-        },
-      ],
+      SETTINGS_SECTIONS_CATALOG: [mysterySection],
+      // `searchSettings` builds its index from the beta-filtered list; the
+      // mystery section is not beta-hidden, so both views are identical here.
+      VISIBLE_SETTINGS_SECTIONS: [mysterySection],
     }));
     const { searchSettings: searchWithMockedCatalog } =
       await import("./searchSettings");
