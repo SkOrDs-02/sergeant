@@ -35,10 +35,14 @@ import type { SpendingTxLike } from "./transactions.js";
 /**
  * Мінімальна форма транзакції для всесвіту витрат: те саме, що приймають
  * `calcFinykSpendingTotal` / `calcFinykPeriodAggregate`, плюс `time`
- * (секунди або мілісекунди — нормалізується всередині).
+ * (секунди або мілісекунди — нормалізується всередині) і канонічні
+ * `categoryId` / `type` — за ними впізнається переказ, позначений на самій
+ * транзакції, а не в мапі оверрайдів.
  */
 export interface FinykUniverseTx extends SpendingTxLike {
   time?: number;
+  categoryId?: string | undefined;
+  type?: string | undefined;
 }
 
 /** Запис отримуваного боргу; важливі лише привʼязані транзакції. */
@@ -55,6 +59,24 @@ export interface FinykExcludedTxIdsInput {
   receivables?: readonly (FinykReceivableLike | null | undefined)[] | null;
   /** `finyk_excluded_stat_txs` — явне «виключити зі статистики». */
   excludedStatTxIds?: readonly string[] | null;
+  /**
+   * Самі транзакції — потрібні лише для того, щоб побачити переказ,
+   * позначений НА ТРАНЗАКЦІЇ (`categoryId: "internal_transfer"` або
+   * `type: "transfer"`), а не в мапі оверрайдів `finyk_tx_cats`.
+   *
+   * AI-CONTEXT: обидві мітки рівноправні — `resolveType` у
+   * `domain/transactions.ts` сам ставить `type: "transfer"` нормалізованій
+   * транзакції з переказною категорією, а `isAlreadyTransfer`
+   * (`domain/transferMatching.ts`) уже читає всі три джерела. Без цього
+   * поля excluded-set бачив лише мапу, тож ручний запис або імпорт із
+   * переказною категорією рахувався витратою.
+   */
+  transactions?: readonly (FinykUniverseTx | null | undefined)[] | null;
+}
+
+/** Переказ, позначений на самій транзакції (не через мапу оверрайдів). */
+function isTxLevelTransfer(tx: FinykUniverseTx): boolean {
+  return tx.categoryId === INTERNAL_TRANSFER_ID || tx.type === "transfer";
 }
 
 /**
@@ -80,6 +102,10 @@ export function buildFinykExcludedTxIds(
     for (const [txId, catId] of Object.entries(cats)) {
       if (txId && catId === INTERNAL_TRANSFER_ID) out.add(String(txId));
     }
+  }
+
+  for (const tx of input.transactions ?? []) {
+    if (tx?.id && isTxLevelTransfer(tx)) out.add(String(tx.id));
   }
 
   for (const r of input.receivables ?? []) {
@@ -171,6 +197,9 @@ export function buildFinykSpendingUniverse(
 
   return {
     transactions,
-    excludedTxIds: buildFinykExcludedTxIds(input),
+    // Транзакції передаємо у excluded-set явно: серед них уже є
+    // нормалізовані ручні записи, у яких переказ позначений полем
+    // `categoryId`/`type`, а не рядком у `finyk_tx_cats`.
+    excludedTxIds: buildFinykExcludedTxIds({ ...input, transactions }),
   };
 }
