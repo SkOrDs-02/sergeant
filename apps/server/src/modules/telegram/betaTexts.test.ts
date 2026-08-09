@@ -79,17 +79,31 @@ describe("installReply", () => {
 });
 
 describe("helpReply", () => {
-  it("розводить чотири канали й починає з in-app віджета", () => {
+  it("розводить канали й починає з групи бети", () => {
     const out = helpReply(FULL);
-    // Віджет першим свідомо: він прикладає екран і версію, тож не доводиться
-    // перепитувати «а де саме».
-    const widgetAt = out.indexOf("Повідомити про проблему");
     const groupAt = out.indexOf(FULL.groupLink);
-    expect(widgetAt).toBeGreaterThan(-1);
-    expect(widgetAt).toBeLessThan(groupAt);
+    const formAt = out.indexOf(FULL.feedbackFormUrl);
+    expect(groupAt).toBeGreaterThan(-1);
+    expect(groupAt).toBeLessThan(formAt);
 
-    expect(out).toContain(FULL.feedbackFormUrl);
     expect(out).toContain(FULL.founderUsername);
+  });
+
+  it("не відсилає в in-app віджет фідбеку", () => {
+    // Бета його не показує. Названий у довідці канал, якого людина не
+    // знаходить, коштує дорожче за невказаний: вона вирішує, що зламався
+    // застосунок, і не пише нікуди.
+    const out = helpReply(FULL);
+    expect(out).not.toContain("Повідомити про проблему");
+    expect(out).not.toMatch(/віджет/i);
+  });
+
+  it("веде баги тим самим маршрутом, що й решту — у групу бети", () => {
+    const out = helpReply(FULL);
+    const bugAt = out.search(/Зламалось/);
+    expect(bugAt).toBeGreaterThan(-1);
+    // Саме в рядку групи, а не окремим осиротілим пунктом.
+    expect(bugAt).toBeLessThan(out.indexOf(FULL.groupLink));
   });
 
   it("перелічує саме ті команди, які бот розуміє", () => {
@@ -106,8 +120,15 @@ describe("helpReply", () => {
     const out = helpReply({ ...FULL, feedbackFormUrl: "", groupLink: "" });
     expect(out).not.toContain("анонімна форма");
     expect(out).not.toContain("група бети");
-    // Але баг-віджет лишається — він не залежить від жодної змінної.
-    expect(out).toContain("Повідомити про проблему");
+  });
+
+  it("без групи не лишає баги без адресата", () => {
+    // Група — основний канал для багів, тож коли її немає, контакт
+    // founder-а мусить розширитись, а не лишитись «особистим і терміновим».
+    const out = helpReply({ ...FULL, groupLink: "" });
+    expect(out).toContain(FULL.founderUsername);
+    expect(out).toMatch(/баг/i);
+    expect(out).not.toMatch(/Особисте або термінове/);
   });
 });
 
