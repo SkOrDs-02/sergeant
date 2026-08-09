@@ -12,11 +12,12 @@
  * ендпоінт: рішення «час запрошувати» ухвалює людина, а не розклад.
  *
  *   node scripts/telegram/broadcast-waitlist.mjs --dry-run
- *   node scripts/telegram/broadcast-waitlist.mjs --limit 25
+ *   node scripts/telegram/broadcast-waitlist.mjs            # дефолтна хвиля — 30
  *
  * Прапорці:
  *   --dry-run       нічого не шле; друкує текст і кількість адресатів
- *   --limit N       не більше N адресатів за прогін (хвилями безпечніше)
+ *   --limit N       не більше N адресатів за прогін; дефолт 30,
+ *                   `--limit 0` знімає стелю (шле всій черзі)
  *   --text "..."    свій текст замість дефолтного інвайту
  *
  * Env: DATABASE_URL, TELEGRAM_WAITLIST_BOT_TOKEN, TELEGRAM_BETA_INVITE_LINK.
@@ -31,7 +32,28 @@ const valueOf = (flag) => {
 };
 
 const DRY_RUN = has("--dry-run");
-const LIMIT = Number(valueOf("--limit") ?? 0) || null;
+
+// Дефолт — 30 адресатів за прогін. Раніше голий запуск не мав стелі взагалі
+// і слав усьому вейтлісту одразу; для дії, яку неможливо відкликати (лист у
+// Telegram уже доставлено), безпечний дефолт важливіший за зручність. Хвиля
+// на 30 людей також дає читабельний сигнал: чи зрозумілий лист і чи витримує
+// група потік. Свідомо зняти стелю — `--limit 0`.
+const DEFAULT_LIMIT = 30;
+const LIMIT = (() => {
+  const raw = valueOf("--limit");
+  if (raw === undefined) return DEFAULT_LIMIT;
+  const n = Number(raw);
+  // Мовчазний `NaN → без ліміту` тут коштував би розсилки всьому вейтлісту
+  // через одну одруківку, тому падаємо голосно.
+  if (!Number.isInteger(n) || n < 0) {
+    console.error(
+      `--limit має бути цілим числом ≥ 0 — отримано «${raw}».\n` +
+        "Наприклад: --limit 30, або --limit 0 щоб зняти стелю.",
+    );
+    process.exit(1);
+  }
+  return n === 0 ? null : n;
+})();
 
 const BOT_TOKEN = process.env.TELEGRAM_WAITLIST_BOT_TOKEN;
 const INVITE_LINK = process.env.TELEGRAM_BETA_INVITE_LINK;
