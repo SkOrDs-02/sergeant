@@ -1,9 +1,83 @@
+import { z } from "zod";
 import { STORAGE_KEYS } from "@sergeant/shared";
-import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
+import {
+  safeReadLS,
+  safeReadLSValidated,
+  safeWriteLS,
+} from "@shared/lib/storage/storage";
 import type { MemoryEntry } from "./types";
 import type { IconName } from "@shared/components/ui/Icon";
 
 export const PROFILE_KEY = STORAGE_KEYS.USER_PROFILE;
+
+/**
+ * L-8 (2026-08-08, profile-settings-deep-audit): «коли банк пам'яті
+ * востаннє писали на ЦЬОМУ пристрої» — потрібен `profileWriteThrough.ts`
+ * для LWW-звірки з `/api/me/profile` (migration 115). ОКРЕМИЙ ключ, а не
+ * поле всередині `PROFILE_KEY`: той зберігає РІВНО `MemoryEntry[]`
+ * (сумісність із `readMemoryEntries()`/`writeMemoryEntries()` — і
+ * `MemoryBankSection.tsx`, і чат-тули `remember`/`forget`/`myProfile`
+ * очікують масив, не конверт), тож мітка часу не може жити в тому самому
+ * blob-і без зламу формату для КОЖНОГО існуючого користувача.
+ *
+ * НЕ в `packages/shared/src/lib/storageKeys.ts` (`STORAGE_KEYS`) навмисно
+ * — задача L-8 explicitly не чіпає `packages/**`, а логаут-очистка
+ * (`purgeAppOwnedLocalData` → `APP_OWNED_LS_PREFIXES`) і так підхоплює
+ * цей ключ через префікс `hub_`, тож окремої реєстрації для privacy-
+ * гарантій не потрібно.
+ */
+const MEMORY_BANK_META_KEY = "hub_user_profile_meta_v1";
+
+const MemoryBankMetaSchema = z.object({
+  updatedAt: z.string().min(1),
+  ownerId: z.string().nullable().default(null),
+});
+type MemoryBankMeta = z.infer<typeof MemoryBankMetaSchema>;
+
+/**
+ * «Локально ще ніколи не писали» — той самий EPOCH-sentinel, що й
+ * `biometrics.ts`. Легасі-факти (записані ДО цього фіксу) теж читають цей
+ * дефолт для МІТКИ ЧАСУ — сама мітка просто не існувала — але це НЕ
+ * означає, що вони порожні: emptiness перевіряємо за `entries.length`,
+ * не за міткою (див. `reconcileMemoryBankWithServerProfile`).
+ */
+export const MEMORY_BANK_META_EPOCH = new Date(0).toISOString();
+
+const MEMORY_BANK_META_DEFAULT: MemoryBankMeta = {
+  updatedAt: MEMORY_BANK_META_EPOCH,
+  ownerId: null,
+};
+
+/**
+ * Юзер поточної сесії пристрою — той самий патерн, що
+ * `currentBiometricsOwner` у `biometrics.ts` (CodeRabbit PR #627).
+ * Виставляється з `useProfileWriteThroughBoot` при кожній зміні `userId`.
+ */
+let currentMemoryBankOwner: string | null = null;
+
+export function setMemoryBankOwner(userId: string | null): void {
+  currentMemoryBankOwner = userId;
+}
+
+export function readMemoryBankMeta(): MemoryBankMeta {
+  return safeReadLSValidated(
+    MEMORY_BANK_META_KEY,
+    MemoryBankMetaSchema,
+    MEMORY_BANK_META_DEFAULT,
+  );
+}
+
+/** Дзеркало `readBiometricsOwnerId` — власник ОСТАННЬОГО запису в `PROFILE_KEY`. */
+export function readMemoryBankOwnerId(): string | null {
+  return readMemoryBankMeta().ownerId;
+}
+
+function writeMemoryBankMeta(updatedAt: string): void {
+  safeWriteLS(MEMORY_BANK_META_KEY, {
+    updatedAt,
+    ownerId: currentMemoryBankOwner,
+  });
+}
 
 // `icon` — імʼя з атласу дизайн-системи (`@shared/components/ui/Icon`).
 // До 2026-08-03 поле звалось `emoji` і містило системні emoji-гліфи.
@@ -195,11 +269,40 @@ type MemoryBankListener = (entries: MemoryEntry[]) => void;
 
 const listeners = new Set<MemoryBankListener>();
 
+/**
+ * L-8: підписники на САМЕ ЛОКАЛЬНІ записи (протилежність — гідратація з
+ * сервера, `writeMemoryEntriesFromServer`, яка НЕ сповіщає цей канал).
+ * `profileWriteThrough.ts`/`useProfileWriteThroughBoot.ts` підписуються
+ * сюди, щоб пуштонути write-through після кожного локального збереження —
+ * так само, як `useBiometrics.saveBiometrics` пушить біометрію. Окремий
+ * канал від `subscribeMemoryEntries` (UI-реактивність) навмисно: якби
+ * гідратація теж проходила через нього, вона одразу тригерила б пуш тих
+ * самих щойно отриманих даних НАЗАД на сервер по колу.
+ */
+const localEditListeners = new Set<MemoryBankListener>();
+
 export function subscribeMemoryEntries(fn: MemoryBankListener): () => void {
   listeners.add(fn);
   return () => {
     listeners.delete(fn);
   };
+}
+
+export function subscribeLocalMemoryEdit(fn: MemoryBankListener): () => void {
+  localEditListeners.add(fn);
+  return () => {
+    localEditListeners.delete(fn);
+  };
+}
+
+function notify(set: Set<MemoryBankListener>, entries: MemoryEntry[]): void {
+  // Підписник, який кинув виняток, не має ховати сам запис — він уже
+  // стався — і не має заважати решті підписників.
+  for (const fn of set) {
+    try {
+      fn(entries);
+    } catch {}
+  }
 }
 
 export function writeMemoryEntries(entries: MemoryEntry[]): void {
@@ -210,13 +313,31 @@ export function writeMemoryEntries(entries: MemoryEntry[]): void {
   if (!safeWriteLS(PROFILE_KEY, entries)) {
     throw new Error("Не вдалося зберегти пам'ять профілю");
   }
-  // Після успішного запису: підписник, який кинув виняток, не має ховати
-  // сам запис — він уже стався.
-  for (const fn of listeners) {
-    try {
-      fn(entries);
-    } catch {}
+  // L-8: генуїнний ЛОКАЛЬНИЙ запис — нова мітка часу ("зараз") + поточний
+  // owner, які `profileWriteThrough.ts` звіряє з сервером на наступному
+  // boot-і (і які тригерять write-through push через `localEditListeners`
+  // нижче).
+  writeMemoryBankMeta(new Date().toISOString());
+  notify(listeners, entries);
+  notify(localEditListeners, entries);
+}
+
+/**
+ * L-8: гідратація з сервера (`reconcileMemoryBankWithServerProfile`) — НЕ
+ * "локальний запис". Мітка часу приходить ГОТОВОЮ із сервера (не
+ * "зараз", інакше наступний reconcile помилково вважав би щойно
+ * гідрований локальний кеш "новішим" за той самий сервер), і
+ * `localEditListeners` навмисно НЕ сповіщаються (див. коментар вище).
+ */
+export function writeMemoryEntriesFromServer(
+  entries: MemoryEntry[],
+  serverUpdatedAt: string,
+): void {
+  if (!safeWriteLS(PROFILE_KEY, entries)) {
+    throw new Error("Не вдалося зберегти пам'ять профілю");
   }
+  writeMemoryBankMeta(serverUpdatedAt);
+  notify(listeners, entries);
 }
 
 export function groupMemoryEntries(

@@ -1,9 +1,20 @@
 /** @vitest-environment jsdom */
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { ConfirmDialog } from "./ConfirmDialog";
 
 describe("ConfirmDialog", () => {
+  // CodeRabbit post-merge review PR #757 (зауваження #4): раніше
+  // `consoleErrorSpy.mockRestore()` викликався в кінці тіла ОДНОГО тесту
+  // (defect #2 нижче) — якщо `render()` чи `expect` ВИЩЕ по тілу того тесту
+  // кинули б виняток, `mockRestore()` не виконався б узагалі, і застаблений
+  // `console.error` протік би в НАСТУПНІ тести, глушачи їхні реальні
+  // попередження без жодного видимого сліду чому. `afterEach` — безумовний:
+  // спрацьовує навіть якщо тест впав, тож spy завжди відновлюється.
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it("exposes an alertdialog role for assistive tech", () => {
     render(
       <ConfirmDialog
@@ -83,10 +94,10 @@ describe("ConfirmDialog", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Видалити" }));
     expect(onConfirm).toHaveBeenCalledTimes(1);
-    // The scrim and the footer button share the "Скасувати" name; the
-    // footer cancel button is the last match.
-    const cancelButtons = screen.getAllByRole("button", { name: "Скасувати" });
-    fireEvent.click(cancelButtons[cancelButtons.length - 1] as HTMLElement);
+    // Ім'я «Скасувати» тепер належить РІВНО кнопці підвалу — скрим зветься
+    // «Закрити» (V-8, 2026-08-08), тож обхід через «останній збіг» більше
+    // не потрібен і тільки маскував би повернення дубля.
+    fireEvent.click(screen.getByRole("button", { name: "Скасувати" }));
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
 
@@ -102,9 +113,9 @@ describe("ConfirmDialog", () => {
     );
     const dialog = screen.getByRole("alertdialog");
     expect(dialog.ownerDocument.body.contains(dialog)).toBe(true);
-    const scrim = screen.getAllByRole("button", { name: "Скасувати" })[0];
-    expect(scrim?.className).toContain("bg-black/40");
-    expect(scrim?.className).not.toContain("bg-text/40");
+    const scrim = screen.getByRole("button", { name: "Закрити" });
+    expect(scrim.className).toContain("bg-black/40");
+    expect(scrim.className).not.toContain("bg-text/40");
   });
 
   it("keyboard-activating the scrim cancels the dialog", () => {
@@ -119,7 +130,7 @@ describe("ConfirmDialog", () => {
       />,
     );
 
-    const scrim = screen.getAllByRole("button", { name: "Скасувати" })[0]!;
+    const scrim = screen.getByRole("button", { name: "Закрити" });
     fireEvent.keyDown(scrim, { key: "Enter" });
     fireEvent.keyDown(scrim, { key: " " });
     expect(onCancel).toHaveBeenCalledTimes(2);
@@ -167,8 +178,8 @@ describe("ConfirmDialog", () => {
       ),
     );
     expect(nestingWarning).toBe(false);
-
-    consoleErrorSpy.mockRestore();
+    // Відновлення spy-а — у спільному `afterEach` вище (безумовно, навіть
+    // якщо один із `expect` вище впаде).
   });
 
   it("supports non-danger confirmations with the primary button variant", () => {
@@ -186,5 +197,28 @@ describe("ConfirmDialog", () => {
     expect(
       screen.getByRole("button", { name: "Зберегти" }).className,
     ).toContain("bg-brand-strong");
+  });
+});
+
+describe("ConfirmDialog — доступні імена скрима і кнопок", () => {
+  // V-8 (аудит Профілю/Налаштувань 2026-08-08). Скрим і кнопка «Скасувати»
+  // мали однакове `aria-label`, тож у дереві доступності стояли дві кнопки
+  // з одним іменем: скрінрідер їх не розрізняв, а role-запит падав на
+  // «Found multiple elements». Пін саме на УНІКАЛЬНІСТЬ імені кнопки
+  // скасування, а не на конкретний текст скрима — інакше тест ламався б
+  // від будь-якої зміни копії, не ловлячи власне дефект.
+  it("кнопка скасування має унікальне ім'я — скрим не дублює його", () => {
+    render(
+      <ConfirmDialog
+        open
+        title="Видалити?"
+        cancelLabel="Скасувати"
+        onConfirm={() => {}}
+        onCancel={() => {}}
+      />,
+    );
+    expect(screen.getAllByRole("button", { name: "Скасувати" })).toHaveLength(
+      1,
+    );
   });
 });

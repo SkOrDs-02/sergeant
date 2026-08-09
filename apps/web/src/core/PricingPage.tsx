@@ -210,7 +210,11 @@ export function PricingPage() {
       void queryClient.invalidateQueries({ queryKey: billingKeys.status });
       toast.success(t.toast.subscriptionActive, undefined, {
         label: t.toast.subscriptionActiveCta,
-        onClick: () => navigate("/settings"),
+        // Пряма ціль вкладки хаба, не `/settings` — L-1 (2026-08-08,
+        // ще одне місце, знайдене поза заявленим списком у ТЗ фіксу):
+        // `/settings` тепер сам лише редиректить сюди ж, тож старий
+        // виклик платив зайвим стрибком навігації без жодної користі.
+        onClick: () => navigate("/?tab=settings"),
       });
       return;
     }

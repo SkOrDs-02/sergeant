@@ -92,11 +92,26 @@ export function ProfilePage() {
   // default to collapsed; their open/closed state is persisted per
   // `storageKey` so the user's preference survives reload. Multiple
   // sections can be open simultaneously (non-mutually-exclusive).
+  //
+  // V-10 (deep-module-audit 2026-08-08, § «Профіль і Налаштування»,
+  // рішення власника: Профіль рухається до сітки Налаштувань): контейнер
+  // раніше дублював `max-w-lg`/`px-5` ОБОЛОНКИ хаба (`HubMainContent.tsx`
+  // dає `max-w-lg md:max-w-2xl lg:max-w-3xl` + `contentClassName="px-5
+  // pb-28"` обом вкладкам), тож `px-5` рахувався двічі (=40px), власний
+  // `max-w-lg` перебивав ширші брейкпоінти оболонки на планшеті/десктопі,
+  // а `space-y-2` (8px) удвічі щільніший за `gap-4` (16px) сусідньої
+  // вкладки Налаштувань. Форма нижче — точна копія кореневого контейнера
+  // `HubSettingsPage.tsx` (`flex flex-col gap-4 pt-3 pb-6`, без власних
+  // `max-w`/`px`), тож обидві вкладки одного хаба тепер мають однакову
+  // ширину й ритм. `pb-6` (не `pb-10`, як було) — оболонка вже резервує
+  // `pb-28` під нижню навігацію в `contentClassName`, тож власний нижній
+  // відступ і там, і там лишається лише «повітрям» між останнім елементом
+  // і межею скролу, без подвоєння.
   return (
-    <div className="max-w-lg mx-auto px-5 pb-10 space-y-2 pt-6">
+    <div className="flex flex-col gap-4 pt-3 pb-6">
       <h1 className="sr-only">{messages.nav.profile}</h1>
       {!online && (
-        <div className="flex items-center gap-2 rounded-xl bg-warning/10 border border-warning/30 px-4 py-3 mb-2">
+        <div className="flex items-center gap-2 rounded-xl bg-warning/10 border border-warning/30 px-4 py-3">
           <Icon name="wifi-off" size={16} className="text-warning shrink-0" />
           <p className="text-style-label text-warning-strong dark:text-warning">
             Ви офлайн — редагування профілю тимчасово недоступне
@@ -114,10 +129,21 @@ export function ProfilePage() {
         <PersonalInfoSection user={user} online={online} onRefresh={refresh} />
       </CollapsibleSection>
 
+      {/* V-4 (аудит 2026-08-08): решта пʼяти секцій малюють власну шапку
+          картки (іконка + заголовок/мета) — `headingSize="md"` піднімає
+          зовнішній заголовок до того самого `text-style-label`, яким
+          намальована внутрішня шапка, щоб зовнішній рівень ієрархії
+          більше не був ДРІБНІШИМ за вкладений. Деталі й що саме прибрано
+          з кожної внутрішньої шапки — канонічний коментар у
+          `MemoryBankSection.tsx` над її `<div>`-шапкою; решта файлів лише
+          посилаються на нього. `PersonalInfoSection` тут навмисно БЕЗ
+          `headingSize` — її шапка (аватар-хіро) не малює текстового
+          заголовка, дублю немає, інверсії немає. */}
       <CollapsibleSection
         storageKey="sergeant.profile.memory.open"
         title="Пам'ять"
         defaultOpen={false}
+        headingSize="md"
         collapsedIcon="brain"
         collapsedSubtitle="Що асистент знає про тебе"
       >
@@ -128,6 +154,7 @@ export function ProfilePage() {
         storageKey="sergeant.profile.biometrics.open"
         title="Біометрія"
         defaultOpen={false}
+        headingSize="md"
         collapsedIcon="activity"
         collapsedSubtitle="Зріст, вага, активність — для розрахунку калорій"
       >
@@ -138,6 +165,7 @@ export function ProfilePage() {
         storageKey="sergeant.profile.password.open"
         title="Пароль"
         defaultOpen={false}
+        headingSize="md"
         collapsedIcon="lock"
         collapsedSubtitle="Зміна пароля"
       >
@@ -148,16 +176,25 @@ export function ProfilePage() {
         storageKey="sergeant.profile.sessions.open"
         title="Активні сесії"
         defaultOpen={false}
+        headingSize="md"
         collapsedIcon="monitor"
         collapsedSubtitle="Пристрої з доступом до акаунта"
       >
         <SessionsSection online={online} />
       </CollapsibleSection>
 
+      {/* DangerZoneSection малює власну шапку «Небезпечна зона» — на
+          відміну від решти чотирьох, це НЕ дублікат зовнішнього заголовка
+          («Видалення акаунта»), а окрема інформація (застереження про
+          розділ), тож текст лишається. Але вона все одно намальована
+          `text-style-label`, тож без `headingSize="md"` зовнішній xs-кікер
+          був би дрібнішим за неї — та сама інверсія, лише без дублю
+          тексту. */}
       <CollapsibleSection
         storageKey="sergeant.profile.danger.open"
         title="Видалення акаунта"
         defaultOpen={false}
+        headingSize="md"
         collapsedIcon="alert-triangle"
         collapsedSubtitle="Незворотні дії"
       >
@@ -168,7 +205,7 @@ export function ProfilePage() {
         type="button"
         variant="secondary"
         size="md"
-        className="w-full justify-center gap-2 mt-4"
+        className="w-full justify-center gap-2"
         disabled={loggingOut}
         loading={loggingOut}
         onClick={handleLogout}

@@ -359,9 +359,14 @@ export function BiometricsSection({ online = true }: BiometricsSectionProps) {
       padding="none"
       className="min-w-0 max-w-full overflow-hidden"
     >
+      {/* V-4 (2026-08-08) — той самий фікс, що й `MemoryBankSection.tsx`
+          (канонічний коментар там): `COPY.sectionTitle` тут дослівно
+          збігався з зовнішнім заголовком «Біометрія» в `ProfilePage.tsx`
+          і малювався `text-style-label`, більшим за `xs`-кікер
+          `CollapsibleSection`. Прибрано; іконка й статус готовності TDEE
+          (мета-інформація) лишились. */}
       <div className="px-4 py-3.5 flex items-center gap-2 border-b border-line">
         <Icon name="activity" size={18} className="text-muted" />
-        <span className="text-style-label text-text">{COPY.sectionTitle}</span>
         <span className="ml-auto text-style-caption text-muted">
           {tdeeReady ? COPY.statusReady : COPY.statusIncomplete}
         </span>

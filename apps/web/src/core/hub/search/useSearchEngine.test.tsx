@@ -131,14 +131,21 @@ describe("useSearchEngine", () => {
     expect(onClose).not.toHaveBeenCalled();
   });
 
-  it("openHit: settings hit navigates to the dedicated /settings route", () => {
+  // L-1 (profile/settings deep audit, 2026-08-08): `/settings` is now a
+  // pure redirect BACK into the hub's own Settings tab — navigating
+  // straight to `/?tab=settings` here skips that pointless extra hop.
+  it("openHit: settings hit navigates to the hub Settings tab (L-1, 2026-08-08)", () => {
     const { result } = setup();
     act(() =>
       result.current.openHit(
         hit({ id: "s1", module: "settings", target: { kind: "settings" } }),
       ),
     );
-    expect(navigate).toHaveBeenCalledWith({ pathname: "/settings", hash: "" });
+    expect(navigate).toHaveBeenCalledWith({
+      pathname: "/",
+      search: "?tab=settings",
+      hash: "",
+    });
   });
 
   // L-13 (audit 2026-08-08): `hit.target.sectionId` was computed by
@@ -161,7 +168,8 @@ describe("useSearchEngine", () => {
       ),
     );
     expect(navigate).toHaveBeenCalledWith({
-      pathname: "/settings",
+      pathname: "/",
+      search: "?tab=settings",
       hash: "#settings-plan",
     });
     // Audit finding #2a: react-router's `navigate()` alone never fires a
@@ -178,8 +186,12 @@ describe("useSearchEngine", () => {
   // Audit finding #2b: the previous version reused the CURRENT
   // `window.location.pathname`, so from a module route (`/finyk`, …) the
   // navigation silently landed on `/finyk?tab=settings#settings-…` — a URL
-  // the Finyk module never reads — instead of anywhere near Settings.
-  it("openHit: settings hit always targets /settings, regardless of the current route", () => {
+  // the Finyk module never reads — instead of anywhere near Settings. L-1
+  // (2026-08-08): the target moved from the (now-redirect-only) `/settings`
+  // route to the hub root directly, but the absolute-target contract this
+  // test guards is unchanged — it must never be derived from the CURRENT
+  // pathname.
+  it("openHit: settings hit always targets the hub root, regardless of the current route", () => {
     const original = `${window.location.pathname}${window.location.search}`;
     window.history.pushState(null, "", "/finyk?range=custom");
     const { result } = setup();
@@ -193,7 +205,8 @@ describe("useSearchEngine", () => {
       ),
     );
     expect(navigate).toHaveBeenCalledWith({
-      pathname: "/settings",
+      pathname: "/",
+      search: "?tab=settings",
       hash: "#settings-notifications",
     });
     window.history.pushState(null, "", original);

@@ -4,6 +4,7 @@ import { messages } from "@shared/i18n/uk";
 import { Icon } from "@shared/components/ui/Icon";
 import { createTypedStore } from "../../shared/lib/storage/typedStore";
 import { FLAG_REGISTRY, setFlag, useAllFlags } from "../lib/featureFlags";
+import { settingsSectionTitle } from "../hub/settingsSectionsCatalog";
 import { SettingsGroup, ToggleRow } from "./SettingsPrimitives";
 
 // Збереження «користувач визнав ризик експериментальних фіч». Живе
@@ -52,7 +53,14 @@ export function ExperimentalSection() {
   const togglesDisabled = !acknowledged;
 
   return (
-    <SettingsGroup title={copy.title} icon="tool">
+    // V-7 (2026-08-08): title читається з каталогу, не з `copy.title` — ⌘K і
+    // сторінка мали окремі, тому колись розійшлись рядки ("Додаткові
+    // можливості" тут vs "Експериментальні" у пошуку), і сама видима назва
+    // майже дублювала сусідню секцію «Можливості». Нове ім'я секції —
+    // "Експериментальні функції" (КОПІЯ ДЛЯ ЗАТВЕРДЖЕННЯ ВЛАСНИКОМ) — тепер
+    // єдине джерело: `settingsSectionsCatalog.ts`, дзеркалиться в
+    // `messages.experimentalSection.title` (uk.ts/en.ts) для узгодженості.
+    <SettingsGroup title={settingsSectionTitle("experimental")} icon="tool">
       <p className="text-style-caption text-subtle leading-snug">
         {copy.intro}
       </p>

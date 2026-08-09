@@ -223,13 +223,14 @@ export function SessionsSection({ online }: { online: boolean }) {
 
   return (
     <Card radius="lg" padding="none" className="overflow-hidden">
+      {/* V-4 (2026-08-08) — той самий фікс, що й `MemoryBankSection.tsx`
+          (канонічний коментар там): `COPY.sectionTitle` тут дослівно
+          збігався з зовнішнім заголовком «Активні сесії» в
+          `ProfilePage.tsx` і малювався `text-style-label`, більшим за
+          `xs`-кікер `CollapsibleSection`. Прибрано; іконка й кнопка
+          «Оновити» (дія, не заголовок) лишились без змін. */}
       <div className="px-4 py-3.5 flex items-center justify-between border-b border-line">
-        <div className="flex items-center gap-2">
-          <Icon name="monitor" size={16} className="text-muted" />
-          <span className="text-style-label text-text">
-            {COPY.sectionTitle}
-          </span>
-        </div>
+        <Icon name="monitor" size={16} className="text-muted" />
         <Button
           variant="ghost"
           size="xs"

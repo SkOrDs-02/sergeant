@@ -379,7 +379,8 @@ export const messagesEn: Partial<MessageCatalog> = {
   },
 
   experimentalSection: {
-    title: "Experimental",
+    // V-7 (2026-08-08): mirrors the uk.ts rename — see that file's comment.
+    title: "Experimental features",
     intro:
       "These features are still being tested. Enable at your own risk — behavior may change in future versions.",
     warningBanner:

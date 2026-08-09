@@ -265,7 +265,7 @@ describe("FinykSection branch gaps", () => {
     mockedSyncState.mockResolvedValue(ACTIVE);
     renderSection();
     fireEvent.click(await screen.findByText("Від'єднати"));
-    const dialog = await screen.findByRole("dialog");
+    const dialog = await screen.findByRole("alertdialog");
     expect(within(dialog).getByText("Вийти з Monobank?")).toBeInTheDocument();
     expect(
       within(dialog).getByText(/Webhook-з'єднання буде від'єднано/),

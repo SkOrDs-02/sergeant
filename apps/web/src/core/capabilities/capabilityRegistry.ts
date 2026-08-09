@@ -126,7 +126,10 @@ export const CAPABILITY_GROUPS: readonly CapabilityGroup[] = [
         description:
           "Записи зберігаються на пристрої, тож застосунок відкривається й без мережі. Синхронізація доганяє, коли звʼязок повернеться.",
         icon: "cloud-off",
-        href: "/settings?group=advanced#settings-pwa",
+        // Пряма ціль вкладки хаба (не `/settings`) — L-1 (2026-08-08):
+        // `/settings` тепер сам є лише редиректом сюди ж, тож старий
+        // href платив зайвим стрибком навігації без жодної користі.
+        href: "/?tab=settings&group=advanced#settings-pwa",
       },
       {
         id: "privacy",
@@ -134,7 +137,7 @@ export const CAPABILITY_GROUPS: readonly CapabilityGroup[] = [
         description:
           "Вхід за PIN-кодом, керування згодами на аналітику й AI-памʼять, повне видалення акаунта.",
         icon: "lock",
-        href: "/settings?group=advanced#settings-privacy",
+        href: "/?tab=settings&group=advanced#settings-privacy",
       },
       {
         id: "export",
@@ -142,7 +145,7 @@ export const CAPABILITY_GROUPS: readonly CapabilityGroup[] = [
         description:
           "Забрати всі свої дані одним JSON-файлом або перенести їх на інший пристрій.",
         icon: "download",
-        href: "/settings?group=advanced#settings-dataExport",
+        href: "/?tab=settings&group=advanced#settings-dataExport",
       },
     ],
   },

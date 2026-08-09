@@ -13,7 +13,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ToastProvider } from "@shared/hooks/useToast";
 import { ToastContainer } from "@shared/components/ui/Toast";
 import { billingKeys } from "@shared/lib/api/queryKeys";
-import { GROUPS, HubSettingsPage } from "./HubSettingsPage";
+import { GROUPS, HubSettingsPage, lazySectionMinH } from "./HubSettingsPage";
 import { SETTINGS_SECTIONS_CATALOG } from "./settingsSectionsCatalog";
 
 // `DashboardSection` and `PWASection` consume `useToast`, which throws
@@ -418,6 +418,58 @@ describe("HubSettingsPage", () => {
     ).toBeInTheDocument();
   });
 
+  // §6 аудиту 2026-08-08 («найнебезпечніші дії без тестів» — «пошук по
+  // секціях» також не мав власного unit-покриття, лише живу перевірку
+  // §2 звіту). Позитивний кейс: запит матчить секцію з НЕАКТИВНОЇ вкладки
+  // («Фінік» належить «Розділам», активна вкладка — «Загальні») — це
+  // доводить, що пошук глобальний, а не обмежений поточним табом, і що
+  // рядок табів ховається на час пошуку (`!q`-гейт на `<Tabs>`).
+  it("finds a section that belongs to a different, currently inactive tab, and hides the tab strip while searching", async () => {
+    renderWithBrowserToast(<HubSettingsPage />);
+
+    expect(screen.getByRole("tablist")).toBeInTheDocument();
+
+    const input = screen.getByPlaceholderText("Пошук налаштувань…");
+    fireEvent.change(input, { target: { value: "фінанси" } });
+
+    expect(screen.queryByRole("tablist")).not.toBeInTheDocument();
+    // «Фінік» (id `finyk`) живе у вкладці «Розділи», не в активній
+    // «Загальні» — знайдений результат кросить межу вкладки.
+    expect(await screen.findByText("Finyk section")).toBeInTheDocument();
+    // «Дашборд» — перша секція АКТИВНОЇ вкладки і не матчить «фінанси» —
+    // без справжньої фільтрації вона лишилась би на екрані за замовчуванням.
+    expect(
+      screen.queryByRole("button", { name: /Дашборд/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  // Порожній результат — уже покрито (V-16-тест вище: порожній стан +
+  // кнопка «Очистити пошук»). Тут — сам факт очищення: клік по
+  // empty-state CTA (а не прямий `fireEvent.change(input, "")`, як в
+  // інших тестах файлу) повертає І список секцій активної вкладки, І
+  // рядок вкладок — обидва ховаються під час пошуку одним і тим самим
+  // `!q`-гейтом, і регресія в будь-якому з двох не впала б жодним іншим
+  // тестом файлу.
+  it("clearing a zero-result search via the empty-state CTA restores the full section list and the tab strip", () => {
+    renderWithBrowserToast(<HubSettingsPage />);
+    const input = screen.getByPlaceholderText(
+      "Пошук налаштувань…",
+    ) as HTMLInputElement;
+
+    fireEvent.change(input, { target: { value: "zzz-does-not-exist-zzz" } });
+    expect(screen.queryByRole("tablist")).not.toBeInTheDocument();
+    expect(screen.getByText(/Нічого не знайдено/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Очистити пошук" }));
+
+    expect(input.value).toBe("");
+    expect(screen.queryByText(/Нічого не знайдено/)).not.toBeInTheDocument();
+    expect(screen.getByRole("tablist")).toBeInTheDocument();
+    // «Дашборд» — перша секція «Загальні» — рендериться знову, а не
+    // лишається порожнім результатом попереднього пошуку.
+    expect(screen.getByRole("button", { name: /Дашборд/ })).toBeInTheDocument();
+  });
+
   // Audit finding #12 (2026-08-08): the clear <Button> used to live INSIDE
   // the <label> wrapping the search input. The accname "embedded control"
   // rule folds a descendant control's own accessible name into the
@@ -576,5 +628,25 @@ describe("GROUPS ↔ SETTINGS_SECTIONS_CATALOG parity", () => {
         expect(catalogIds.has(id)).toBe(true);
       }
     }
+  });
+});
+
+// V-15 (аудит Профілю/Налаштувань 2026-08-08): skeleton lazy-секції
+// резервував 168–280px під секцію, яка після завантаження чанку малюється
+// згорнутим рядком у 72px — і список стрибав УГОРУ, коли skeleton зникав.
+// Тобто той самий layout-shift, якого skeleton має уникати, лише у
+// зворотний бік. Розгорнутою lazy-секція буває у двох випадках (перша
+// секція активної вкладки за Варіантом A або ціль хеш-діп-лінка), і обидва
+// відомі в тому ж `map`, де рендериться `<Suspense>`.
+describe("lazySectionMinH — V-15", () => {
+  it("резервує повну висоту лише коли секція намалюється розгорнутою", () => {
+    expect(lazySectionMinH(600, true)).toBe(600);
+  });
+
+  it("резервує висоту згорнутого рядка, коли секція намалюється згорнутою", () => {
+    // 72 — висота закритої `SettingsGroup` (бейдж + заголовок + `py-4`);
+    // те саме число, що дефолт `minH` у `SectionSkeleton`.
+    expect(lazySectionMinH(600, false)).toBe(72);
+    expect(lazySectionMinH(280, false)).toBe(72);
   });
 });

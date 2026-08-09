@@ -195,4 +195,26 @@ describe("FinykSection", () => {
     // Legacy token section should not be visible.
     expect(screen.queryByText(/secret-token/)).toBeNull();
   });
+
+  // V-13 (profile/settings deep audit 2026-08-08, §«Вкладка Розділи») —
+  // без `module="finyk"` іконка секції рендериться нейтрально-сірою.
+  // Перевіряємо, що бейдж іконки несе саме finyk-акцент.
+  it("renders the section icon badge with the finyk module accent", async () => {
+    mockedSyncState.mockResolvedValue({
+      status: "disconnected",
+      webhookActive: false,
+      lastEventAt: null,
+      lastBackfillAt: null,
+      accountsCount: 0,
+    });
+    const { container } = renderWithProviders();
+    await waitFor(() => {
+      expect(screen.getByText(/Токен відправляється на сервер/)).toBeTruthy();
+    });
+    const badge = container.querySelector("svg")?.closest("span");
+    expect(badge).not.toBeNull();
+    expect(badge?.className).toContain("bg-finyk-soft");
+    expect(badge?.className).toContain("border-finyk-soft-border");
+    expect(badge?.className).toContain("text-finyk");
+  });
 });

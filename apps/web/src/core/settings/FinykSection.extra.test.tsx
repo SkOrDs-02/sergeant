@@ -136,17 +136,19 @@ describe("FinykSection extra branches", () => {
     sessionStorage.clear();
   });
 
-  // ── Cancel paths on ConfirmModal ─────────────────────────────────────────
+  // ── Cancel paths on the confirmation dialog ──────────────────────────────
+  // Раніше тут стояло «ConfirmModal» — той примітив видалено (V-8, аудит
+  // 2026-08-08); канонічна оболонка одна, `@shared/components/ui/ConfirmDialog`.
 
   it("cancels the cache-clear confirm modal without clearing anything", async () => {
     mockedSyncState.mockResolvedValue(DISCONNECTED);
     renderSection();
     fireEvent.click(await screen.findByText("Очистити кеш транзакцій"));
 
-    const dialog = await screen.findByRole("dialog");
+    const dialog = await screen.findByRole("alertdialog");
     fireEvent.click(within(dialog).getByText("Скасувати"));
 
-    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
     expect(removeFinykStorageItem).not.toHaveBeenCalled();
   });
 
@@ -155,10 +157,10 @@ describe("FinykSection extra branches", () => {
     renderSection();
     fireEvent.click(await screen.findByText("Від'єднати"));
 
-    const dialog = await screen.findByRole("dialog");
+    const dialog = await screen.findByRole("alertdialog");
     fireEvent.click(within(dialog).getByText("Скасувати"));
 
-    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
     expect(mockedDisconnect).not.toHaveBeenCalled();
   });
 
@@ -204,7 +206,7 @@ describe("FinykSection extra branches", () => {
     renderSection();
     fireEvent.click(await screen.findByText("Від'єднати"));
 
-    const dialog = await screen.findByRole("dialog");
+    const dialog = await screen.findByRole("alertdialog");
     fireEvent.click(within(dialog).getByText("Вийти"));
 
     await waitFor(() => expect(mockedDisconnect).toHaveBeenCalledTimes(1));
@@ -276,7 +278,7 @@ describe("FinykSection extra branches", () => {
     renderSection();
     fireEvent.click(await screen.findByText("Очистити кеш транзакцій"));
 
-    const dialog = await screen.findByRole("dialog");
+    const dialog = await screen.findByRole("alertdialog");
     fireEvent.click(within(dialog).getByText("Очистити"));
 
     await waitFor(() =>

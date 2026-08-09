@@ -286,3 +286,83 @@ describe("MemoryBankSection — import", () => {
     });
   });
 });
+
+describe("MemoryBankSection — довгі факти не обрізаються (V-9, аудит 2026-08-08)", () => {
+  it("факт переноситься повністю (break-words), а не truncate в один рядок", () => {
+    const longFact =
+      "Не їм молочне, бо лактозна непереносимість, але твердий сир ок";
+    storedEntries = [
+      { id: "m2", fact: longFact, category: "health" } as MemoryEntry,
+    ];
+    render(<MemoryBankSection />);
+
+    const factNode = screen.getByText(longFact);
+    // `truncate` різав контент, заради якого секція існує, без жодного
+    // способу прочитати решту (ні title, ні розкриття) — V-9.
+    expect(factNode.className).not.toMatch(/\btruncate\b/);
+    expect(factNode.className).toMatch(/\bbreak-words\b/);
+  });
+
+  it("кнопка видалення вирівняна по верху (items-start), а не по центру рядка", () => {
+    const longFact =
+      "Не їм молочне, бо лактозна непереносимість, але твердий сир ок";
+    storedEntries = [
+      { id: "m2", fact: longFact, category: "health" } as MemoryEntry,
+    ];
+    render(<MemoryBankSection />);
+
+    // На багаторядковому факті `items-center` зсунув би кнопку в середину
+    // блоку тексту замість верхнього краю першого рядка.
+    const row = screen.getByText(longFact).closest("div.group");
+    expect(row?.className).toMatch(/\bitems-start\b/);
+    expect(row?.className).not.toMatch(/\bitems-center\b/);
+  });
+});
+
+describe("MemoryBankSection — порожні стани через спільний EmptyState (V-14, аудит 2026-08-08)", () => {
+  it("порожній банк памʼяті малює <EmptyState> (role=status) з усіма трьома діями", () => {
+    storedEntries = [];
+    render(<MemoryBankSection />);
+
+    const status = screen.getByRole("status");
+    expect(status).toHaveTextContent("Банк пам'яті порожній");
+    expect(
+      screen.getByRole("button", { name: /Заповнити профіль/ }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: /Заповнити вручну/ }),
+    ).toBeTruthy();
+    expect(screen.getByRole("button", { name: /Імпорт/ })).toBeTruthy();
+
+    // Прихований input лишається в DOM — програмне відкриття діалогу вибору
+    // файлу (кнопка «Імпорт») досі має куди клікати.
+    expect(document.querySelector('input[type="file"]')).toBeTruthy();
+  });
+
+  it("імпорт самих дублів показує порожній стан преview через <EmptyState>, а не голий <p>", async () => {
+    storedEntries = [ENTRY];
+    render(<MemoryBankSection />);
+
+    const input = document.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement;
+    const duplicateOnly = [
+      { id: ENTRY.id, fact: ENTRY.fact, category: ENTRY.category },
+    ];
+    const content = JSON.stringify(duplicateOnly);
+    const file = new File([content], "dup.json", {
+      type: "application/json",
+    });
+    Object.defineProperty(file, "text", {
+      value: () => Promise.resolve(content),
+    });
+    fireEvent.change(input, { target: { files: [file] } });
+
+    await vi.waitFor(() => {
+      expect(screen.getByText(/Перевір імпорт/)).toBeInTheDocument();
+    });
+
+    const status = screen.getByRole("status");
+    expect(status).toHaveTextContent("Нових записів немає");
+  });
+});

@@ -346,6 +346,13 @@ const RECALL_MEMORY_SOURCES = [
   // `POST /api/ai-memory/event-sync`. Дозволяємо у recall-filter, щоб
   // founder міг запитати combined `sources=['cofounder','product']` view.
   "product",
+  // Migration 118 — L-8 (аудит Профілю/Налаштувань 2026-08-08). `profile` —
+  // явно заявлені людиною факти про себе (банк памʼяті: інтервʼю з
+  // асистентом або ручне введення). Дозволяємо у recall-фільтрі, бо саме
+  // заради recall-у цей source і заводиться: `ai-memory/ragContext.ts`
+  // автоматично вкидає top-K схожих записів у system prompt чату, тож
+  // асистент враховує «не їм молочне» без явного виклику тула `my_profile`.
+  "profile",
 ] as const;
 
 /** POST /api/ai-memory/recall — semantic memory retrieval. */
