@@ -177,6 +177,7 @@ export function buildMemoryDeleteHandler(pool: Pool) {
     const client = await pool.connect();
     let deleted = false;
     let source: string | null = null;
+    let rollbackFailed = false;
     try {
       await client.query("BEGIN");
       // `user_id = $1` — не декорація: без нього будь-хто з сесією стирав би
@@ -200,11 +201,20 @@ export function buildMemoryDeleteHandler(pool: Pool) {
       await client.query("COMMIT");
     } catch (error) {
       await client.query("ROLLBACK").catch(() => {
-        /* nested rollback failure — original error wins */
+        // ROLLBACK не пройшов — зʼєднання лишилось усередині обірваної
+        // транзакції. Повернути таке в пул означає віддати наступному
+        // викликачу зламане зʼєднання (його перший же запит отримає
+        // `current transaction is aborted`). `release(err)` натомість
+        // знищує зʼєднання, і пул відкриває свіже.
+        //
+        // Оригінальна помилка все одно перемагає — вона й летить далі.
+        rollbackFailed = true;
       });
       throw error;
     } finally {
-      client.release();
+      // `release(true)` — знищити, `release()` — повернути в пул.
+      if (rollbackFailed) client.release(true);
+      else client.release();
     }
 
     if (deleted) {

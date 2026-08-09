@@ -295,6 +295,42 @@ function contentFingerprint(fact: string): string {
     .slice(0, 12);
 }
 
+/**
+ * Скільки операцій дзеркалення тримаємо в польоті одночасно.
+ *
+ * `PROFILE_MEMORY_MAX_ENTRIES` — 200, і без стелі `Promise.all` по всьому
+ * списку відкривав би до 200 паралельних `forgetSource` (DELETE по
+ * партиційованій `ai_memories`) або 200 паралельних enqueue. Другий випадок
+ * гірший, ніж виглядає: **без Redis** черга падає у `runDirectDispatch`, і
+ * тоді 200 «дешевих push-ів у Redis» стають 200 одночасними Voyage-
+ * ембеддингами на інтерактивному шляху `PUT /api/me/profile`. Пул зʼєднань
+ * (`pg` дефолт — 10) вичерпується першим, решта стоїть у черзі, а роут
+ * чекає на всіх.
+ *
+ * 10 — рівно розмір дефолтного пулу `pg`: більше не дає паралелізму, лише
+ * довшу чергу очікування на зʼєднання.
+ */
+const MIRROR_CONCURRENCY = 10;
+
+/**
+ * `Promise.all` порціями по `MIRROR_CONCURRENCY`. Свідомо послідовний між
+ * порціями: жодна порція не стартує, доки попередня не завершилась.
+ *
+ * Помилка будь-якої операції в порції відхиляє весь виклик — це навмисно:
+ * викликач (`mirrorProfileMemoryEntries`) ловить її і повертає `ok:false`,
+ * і краще зупинитись на першій порції, ніж дожати решту 190 операцій у
+ * стан, який ми однаково відзвітуємо як невдалий.
+ */
+async function runChunked<T>(
+  items: readonly T[],
+  run: (item: T) => Promise<unknown>,
+): Promise<void> {
+  for (let i = 0; i < items.length; i += MIRROR_CONCURRENCY) {
+    const chunk = items.slice(i, i + MIRROR_CONCURRENCY);
+    await Promise.all(chunk.map((item) => run(item)));
+  }
+}
+
 function toRememberInput(
   userId: string,
   entry: NormalizedProfileMemoryEntry,
@@ -359,7 +395,13 @@ export async function mirrorProfileMemoryEntries(
 
     const incomingIds = new Set(entries.map((entry) => entry.id));
     const toForget: string[] = [];
-    const toWrite: RememberInput[] = [];
+    // Тип — саме `ReturnType<typeof toRememberInput>`, не `RememberInput[]`.
+    // `toRememberInput` повертає `RememberInput & { dedupeSalt: string }`, і
+    // під ширшим типом сіль виживала б лише тому, що обʼєкт проходить
+    // наскрізь незміненим. Рефактор, який перезбирає елемент за оголошеним
+    // типом, тихо загубив би `dedupeSalt` — і повернув би баг дедупу BullMQ,
+    // описаний вище, БЕЗ помилки типів.
+    const toWrite: Array<ReturnType<typeof toRememberInput>> = [];
     let inserted = 0;
     let updated = 0;
 
@@ -390,10 +432,8 @@ export async function mirrorProfileMemoryEntries(
 
     const service = getAiMemory();
     if (toForget.length > 0) {
-      await Promise.all(
-        toForget.map((sourceRef) =>
-          service.forgetSource(userId, PROFILE_SOURCE, sourceRef),
-        ),
+      await runChunked(toForget, (sourceRef) =>
+        service.forgetSource(userId, PROFILE_SOURCE, sourceRef),
       );
     }
     if (toWrite.length > 0) {
@@ -417,7 +457,7 @@ export async function mirrorProfileMemoryEntries(
       // `(user_id, source, source_ref)` у 025 НЕ unique, тож дедуп у нас
       // тримається на діфі вище — jobId додає другий шар рівно на той
       // випадок, коли два пуші профілю прилетять паралельно.
-      await Promise.all(toWrite.map((input) => enqueueMemoryIngest(input)));
+      await runChunked(toWrite, (input) => enqueueMemoryIngest(input));
     }
 
     return {

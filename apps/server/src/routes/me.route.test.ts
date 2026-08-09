@@ -16,7 +16,7 @@ const {
   mockPool,
   queryMock,
   getSessionUserMock,
-  rememberMock,
+  enqueueMock,
   forgetSourceMock,
 } = vi.hoisted(() => {
   process.env["AI_MEMORY_ENABLED"] = "true";
@@ -30,13 +30,13 @@ const {
     waitingCount: 0,
   };
   const getSessionUserMock = vi.fn().mockResolvedValue(null);
-  const rememberMock = vi.fn().mockResolvedValue(undefined);
+  const enqueueMock = vi.fn().mockResolvedValue(undefined);
   const forgetSourceMock = vi.fn().mockResolvedValue(undefined);
   return {
     mockPool,
     queryMock,
     getSessionUserMock,
-    rememberMock,
+    enqueueMock,
     forgetSourceMock,
   };
 });
@@ -54,9 +54,25 @@ vi.mock("./../auth.js", () => ({
   getSessionUserSoft: vi.fn().mockResolvedValue(null),
 }));
 
+// Мокаємо саме ЧЕРГУ, а не `service.remember()`.
+//
+// `profileMirror.ts` викликає `enqueueMemoryIngest`, і `remember()` за цим
+// шляхом досяжний ЛИШЕ через fallback `runDirectDispatch`, який вмикається
+// коли немає Redis. Тобто попередня версія цього тесту перевіряла не
+// контракт роуту, а випадкову властивість середовища (у CI Redis немає) —
+// і на машині з піднятим Redis ті самі перевірки мовчки перестали б щось
+// перевіряти: `rememberMock` не викликався б узагалі, а `mockRejectedValue`
+// на ньому не дійшов би до межі помилки, яку тест нібито тестує.
+vi.mock("./../modules/ai-memory/ingestQueue.js", async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import("./../modules/ai-memory/ingestQueue.js")
+  >()),
+  enqueueMemoryIngest: enqueueMock,
+}));
+
 vi.mock("./../modules/ai-memory/bootstrap.js", () => ({
   getAiMemory: () => ({
-    remember: rememberMock,
+    remember: vi.fn().mockResolvedValue(undefined),
     recall: vi.fn().mockResolvedValue([]),
     forgetUser: vi.fn().mockResolvedValue(0),
     forgetSource: forgetSourceMock,
@@ -110,8 +126,8 @@ beforeEach(() => {
   scriptQueries();
   getSessionUserMock.mockReset();
   getSessionUserMock.mockResolvedValue({ id: "u1" });
-  rememberMock.mockReset();
-  rememberMock.mockResolvedValue(undefined);
+  enqueueMock.mockReset();
+  enqueueMock.mockResolvedValue(undefined);
   forgetSourceMock.mockReset();
   forgetSourceMock.mockResolvedValue(undefined);
   process.env["AI_MEMORY_ENABLED"] = "true";
@@ -132,21 +148,25 @@ describe("PUT /api/me/profile — happy path", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.profile).toEqual(STORED_PROFILE);
-    expect(rememberMock).toHaveBeenCalledTimes(1);
-    const writes = rememberMock.mock.calls[0]?.[0];
-    expect(writes).toEqual([
+    expect(enqueueMock).toHaveBeenCalledTimes(1);
+    expect(enqueueMock.mock.calls[0]?.[0]).toEqual(
       expect.objectContaining({
+        userId: "u1",
         source: "profile",
         sourceRef: "fact-1",
         content: "алергія на горіхи",
+        // Відбиток тексту факту — без нього jobId BullMQ не розрізняв би
+        // ЗМІСТ, і повторний інжест того самого id після видалення був би
+        // тихо проковтнутий дедупом на добу.
+        dedupeSalt: expect.any(String),
       }),
-    ]);
+    );
   });
 });
 
-describe("PUT /api/me/profile — ПАСТКА 4: ai-memory service падає, PUT все одно 200", () => {
-  it("service.remember() кидає (Voyage circuit open) → профіль усе одно збережено і 200", async () => {
-    rememberMock.mockRejectedValueOnce(new Error("circuit_open: voyage"));
+describe("PUT /api/me/profile — ПАСТКА 4: шлях дзеркалення падає, PUT все одно 200", () => {
+  it("enqueueMemoryIngest кидає → профіль усе одно збережено і 200", async () => {
+    enqueueMock.mockRejectedValueOnce(new Error("redis unavailable"));
     const app = createApp();
     const res = await request(app)
       .put("/api/me/profile")
@@ -158,12 +178,14 @@ describe("PUT /api/me/profile — ПАСТКА 4: ai-memory service падає, 
   });
 });
 
-describe("PUT /api/me/profile — вимкнений консент не ламає збереження профілю", () => {
-  it("service.remember() no-op-ить (як реальний service.ts при consent=false) → профіль усе одно збережено", async () => {
-    // Дзеркалить справжню поведінку `service.ts::remember()` коли
-    // `isConsentEnabled(userId)` === false для всіх inputs:
-    // consentedInputs порожній → ранній return, жодного запису, без throw.
-    rememberMock.mockImplementationOnce(async () => {});
+describe("PUT /api/me/profile — консент не ламає збереження профілю", () => {
+  it("енкʼю проходить успішно → профіль збережено; консент перевіряється вже у воркері", async () => {
+    // Роут НЕ вирішує питання консенту — він лише кладе роботу в чергу.
+    // `isConsentEnabled(userId)` перевіряє `service.remember()`, який
+    // виконується у воркері (або у `runDirectDispatch` без Redis), уже
+    // після того, як цей PUT відповів. Отже гарантія тут одна: профіль
+    // зберігається незалежно від того, чим скінчиться дзеркалення.
+    enqueueMock.mockImplementationOnce(async () => {});
     const app = createApp();
     const res = await request(app)
       .put("/api/me/profile")
@@ -172,7 +194,7 @@ describe("PUT /api/me/profile — вимкнений консент не лам�
 
     expect(res.status).toBe(200);
     expect(res.body.profile).toEqual(STORED_PROFILE);
-    expect(rememberMock).toHaveBeenCalledTimes(1);
+    expect(enqueueMock).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -186,6 +208,6 @@ describe("PUT /api/me/profile — auth guard", () => {
       .send({ profile: STORED_PROFILE });
 
     expect(res.status).toBe(401);
-    expect(rememberMock).not.toHaveBeenCalled();
+    expect(enqueueMock).not.toHaveBeenCalled();
   });
 });

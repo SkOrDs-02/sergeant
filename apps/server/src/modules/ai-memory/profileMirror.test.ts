@@ -261,7 +261,7 @@ describe("profileMirror — вимкнена фіча (AI_MEMORY_ENABLED=false)"
 });
 
 describe("profileMirror — ніколи не кидає (ПАСТКА 4)", () => {
-  it("service.remember() кидає (Voyage circuit open) → mirrorProfileMemoryEntries резолвиться з ok:false, не throw", async () => {
+  it("enqueueMemoryIngest кидає → mirrorProfileMemoryEntries резолвиться з ok:false, не throw", async () => {
     enqueueMock.mockRejectedValueOnce(new Error("circuit_open: voyage"));
     const pool = makeFakePool([]);
     await expect(
@@ -286,10 +286,12 @@ describe("profileMirror — ніколи не кидає (ПАСТКА 4)", () =
     ).resolves.toMatchObject({ ok: false });
   });
 
-  it("consent вимкнений (remember() no-op-ить, як реальний service.ts) — не кидає", async () => {
-    // Дзеркалить справжню поведінку service.ts::remember() коли
-    // isConsentEnabled(userId) === false: consentedInputs порожній →
-    // ранній return без запису й без throw.
+  it("успішний енкʼю нового факту → ok:true і рівно один виклик черги", async () => {
+    // Раніше цей тест називався «consent вимкнений (remember() no-op-ить)»
+    // і був неправдою після переходу на чергу: консент перевіряє
+    // `service.remember()`, а він тепер виконується у ВОРКЕРІ, за межами
+    // цього шляху. Дзеркалення про консент нічого не знає й знати не
+    // мусить — воно лише кладе роботу в чергу. Тест і перевіряє рівно це.
     enqueueMock.mockImplementationOnce(async () => {});
     const pool = makeFakePool([]);
     const result = await mirrorProfileMemoryEntries(
