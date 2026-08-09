@@ -20,7 +20,9 @@ import { PageLoader } from "./PageLoader";
  *    ├── /nutrition/* → NutritionRoute (lazy chunk)
  *    ├── /routine/*  → RoutineRoute (lazy chunk)
  *    ├── /insights/* → InsightsRoute (lazy chunk)
- *    ├── /settings/* → SettingsRoute (lazy chunk)
+ *    ├── /settings/* → редирект у `/?tab=settings` (L-1, 2026-08-08 —
+ *    │                  зберігає query+hash, `replace: true`; сама
+ *    │                  оболонка Налаштувань живе у вкладці хаба, не тут)
  *    ├── /onboarding/* → OnboardingRoute (lazy chunk)
  *    └── *           → HubPage      (standalone routes + 404)
  *

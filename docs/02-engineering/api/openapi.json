@@ -3301,7 +3301,8 @@
                 "journal",
                 "digest",
                 "cofounder",
-                "product"
+                "product",
+                "profile"
               ]
             }
           }
@@ -5583,7 +5584,8 @@
                     "journal",
                     "digest",
                     "cofounder",
-                    "product"
+                    "product",
+                    "profile"
                   ]
                 },
                 "sourceRef": {

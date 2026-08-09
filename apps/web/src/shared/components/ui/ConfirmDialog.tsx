@@ -11,6 +11,7 @@ import { useBodyScrollLock } from "@shared/hooks/useBodyScrollLock";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import { useSwipeToDismiss } from "@shared/hooks/useSwipeToDismiss";
 import { cn } from "@shared/lib/ui/cn";
+import { messages } from "@shared/i18n/uk";
 import { Button } from "./Button";
 
 export interface ConfirmDialogProps {
@@ -75,10 +76,19 @@ export const ConfirmDialog = memo(function ConfirmDialog({
       className="fixed inset-0 z-200 flex items-end justify-center sm:items-center motion-safe:animate-fade-in"
       role="presentation"
     >
-      {/* Scrim — real <button> keeps dismiss reachable by keyboard & AT. */}
+      {/* Scrim — real <button> keeps dismiss reachable by keyboard & AT.
+
+          Ім'я скрима НЕ дорівнює `cancelLabel` (V-8, аудит Профілю/
+          Налаштувань 2026-08-08). Доти обидва звалися «Скасувати», і в
+          дереві доступності виходили дві кнопки з однаковим іменем —
+          скрінрідер не міг їх розрізнити, а role-запит у тестах ламався на
+          «Found multiple elements». Той самий дефект уже ловили в цьому ж
+          аудиті на парі «хрестик пошуку» ↔ «Очистити пошук». Скрим —
+          не дублікат кнопки скасування, а окремий засіб «закрити діалог
+          тапом повз нього», і зватись має саме так. */}
       <button
         type="button"
-        aria-label={cancelLabel}
+        aria-label={messages.actions.close}
         onClick={onCancel}
         onKeyDown={handleScrimKey}
         className="absolute inset-0 bg-black/40 backdrop-blur-sm"

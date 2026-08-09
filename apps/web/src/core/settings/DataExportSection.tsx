@@ -5,7 +5,7 @@ import { meApi, type MeExportResponse } from "@shared/api";
 import { downloadString } from "@shared/lib/ui/export";
 import { messages } from "@shared/i18n/uk";
 import { HubBackupPanel } from "../hub/HubBackupPanel";
-import { SettingsGroup } from "./SettingsPrimitives";
+import { SettingsGroup, SettingsSubGroup } from "./SettingsPrimitives";
 
 const m = messages.dataExport;
 
@@ -81,74 +81,83 @@ export function DataExportSection() {
       </p>
       <HubBackupPanel className="" />
 
-      <div className="space-y-3 rounded-2xl border border-line/60 bg-surface-soft-glass p-3">
-        <div>
-          <h3 className="text-style-label text-text">Права на дані</h3>
-          <p className="mt-1 text-style-caption text-subtle leading-relaxed">
+      {/* V-12 (аудит 2026-08-08, docs/90-work/audits/2026-08-08-profile-settings-deep-audit.md
+          §5): три саморобні `<h3 class="text-style-label">` → спільний
+          примітив `SettingsSubGroup` (h3, `text-style-overline`) — той
+          самий рецепт, канонічно пояснений у `PrivacySection.tsx`.
+          Рамка-картка (border/bg/padding) навколо кожного підблоку —
+          візуальне групування, не структурний заголовок, тож лишається
+          зовнішньою обгорткою навколо примітиву, а не частиною самого
+          `SettingsSubGroup`. */}
+      <div className="rounded-2xl border border-line/60 bg-surface-soft-glass p-3">
+        <SettingsSubGroup title="Права на дані">
+          <p className="text-style-caption text-subtle leading-relaxed">
             Серверний експорт не включає сирі секрети й токени. Видалити акаунт
             можна у профілі — там зібрані всі дії керування акаунтом.
           </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            onClick={() => void handleServerExport("json")}
-            disabled={serverExportBusy}
-          >
-            {serverExportBusy ? m.busy : m.downloadJson}
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            onClick={() => void handleServerExport("csv")}
-            disabled={serverExportBusy}
-          >
-            {serverExportBusy ? m.busy : m.downloadCsv}
-          </Button>
-        </div>
-        <p className="text-style-caption text-subtle leading-relaxed">
-          {m.formatsHint}
-        </p>
-        {serverMessage ? (
-          <p className="text-style-caption text-success-strong" role="status">
-            {serverMessage}
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => void handleServerExport("json")}
+              disabled={serverExportBusy}
+            >
+              {serverExportBusy ? m.busy : m.downloadJson}
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => void handleServerExport("csv")}
+              disabled={serverExportBusy}
+            >
+              {serverExportBusy ? m.busy : m.downloadCsv}
+            </Button>
+          </div>
+          <p className="text-style-caption text-subtle leading-relaxed">
+            {m.formatsHint}
           </p>
-        ) : null}
-        {serverError ? (
-          <p className="text-style-caption text-danger-strong" role="alert">
-            {serverError}
-          </p>
-        ) : null}
+          {serverMessage ? (
+            <p className="text-style-caption text-success-strong" role="status">
+              {serverMessage}
+            </p>
+          ) : null}
+          {serverError ? (
+            <p className="text-style-caption text-danger-strong" role="alert">
+              {serverError}
+            </p>
+          ) : null}
+        </SettingsSubGroup>
       </div>
 
       {/* Рішення founder-а #10, друга половина: маскування без декларації —
           внутрішня деталь, про яку користувач не знає. Перелік обробників
           стоїть тут, поруч із експортом, бо це те саме питання «що ви про
           мене знаєте і куди воно дівається». */}
-      <div className="space-y-1 rounded-2xl border border-line/60 bg-surface-soft-glass p-3">
-        <h3 className="text-style-label text-text">{m.subprocessors.title}</h3>
-        <p className="text-style-caption text-subtle leading-relaxed">
-          {m.subprocessors.body}
-        </p>
-        <p className="text-style-caption text-subtle leading-relaxed">
-          {m.subprocessors.photoNote}
-        </p>
+      <div className="rounded-2xl border border-line/60 bg-surface-soft-glass p-3">
+        <SettingsSubGroup title={m.subprocessors.title}>
+          <p className="text-style-caption text-subtle leading-relaxed">
+            {m.subprocessors.body}
+          </p>
+          <p className="text-style-caption text-subtle leading-relaxed">
+            {m.subprocessors.photoNote}
+          </p>
+        </SettingsSubGroup>
       </div>
 
       {/* Рішення founder-а #6: попередження за 30 днів + вікно на експорт.
           Обіцянка живе В ПРОДУКТІ, поруч із кнопками, якими її виконують —
           а не лише в умовах використання, куди ніхто не заходить. */}
-      <div className="space-y-1 rounded-2xl border border-line/60 bg-surface-soft-glass p-3">
-        <h3 className="text-style-label text-text">{m.sunset.title}</h3>
-        <p className="text-style-caption text-subtle leading-relaxed">
-          {m.sunset.body}
-        </p>
-        <p className="text-style-caption text-subtle leading-relaxed">
-          {m.sunset.bankNote}
-        </p>
+      <div className="rounded-2xl border border-line/60 bg-surface-soft-glass p-3">
+        <SettingsSubGroup title={m.sunset.title}>
+          <p className="text-style-caption text-subtle leading-relaxed">
+            {m.sunset.body}
+          </p>
+          <p className="text-style-caption text-subtle leading-relaxed">
+            {m.sunset.bankNote}
+          </p>
+        </SettingsSubGroup>
       </div>
     </SettingsGroup>
   );

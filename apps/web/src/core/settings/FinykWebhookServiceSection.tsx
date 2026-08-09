@@ -15,7 +15,13 @@ import { BackfillProgressPill } from "@finyk/components/BackfillProgressPill";
 import { useMonoBackfillProgress } from "@finyk/hooks/useMonoBackfillProgress";
 import { removeItem as removeFinykStorageItem } from "@finyk/lib/finykStorage";
 import { PaywallModal, usePlan } from "../billing";
-import { ConfirmModal, SettingsSubGroup } from "./SettingsPrimitives";
+// V-8 (аудит Профілю/Налаштувань 2026-08-08): раніше тут був локальний
+// `ConfirmModal` із `SettingsPrimitives` — друга оболонка підтвердження з
+// власним затемненням і, головне, без `createPortal`: вона малювалась у
+// потоці батька, тож усередині glass-картки Налаштувань її обрізало.
+// Канонічна оболонка одна — `ConfirmDialog`, вона портальна.
+import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
+import { SettingsSubGroup } from "./SettingsPrimitives";
 
 type ConfirmKind = "cache" | "disconnect" | null;
 
@@ -224,12 +230,12 @@ export function FinykWebhookServiceSection({
         title={COPY.paywallTitle}
         description={COPY.paywallDescription}
       />
-      <ConfirmModal
+      <ConfirmDialog
         open={confirmKind !== null}
         title={
           confirmKind === "cache" ? COPY.clearCacheTitle : COPY.disconnectTitle
         }
-        body={
+        description={
           confirmKind === "cache" ? COPY.clearCacheBody : COPY.disconnectBody
         }
         confirmLabel={confirmKind === "cache" ? COPY.clear : COPY.exit}

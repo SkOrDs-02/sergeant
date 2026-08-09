@@ -262,7 +262,7 @@ describe("FinykSection interactions", () => {
     renderSection();
     fireEvent.click(await screen.findByText("Від'єднати"));
 
-    const dialog = await screen.findByRole("dialog");
+    const dialog = await screen.findByRole("alertdialog");
     fireEvent.click(within(dialog).getByText("Вийти"));
     await waitFor(() => expect(mockedDisconnect).toHaveBeenCalledTimes(1));
   });
@@ -272,7 +272,7 @@ describe("FinykSection interactions", () => {
     renderSection();
     fireEvent.click(await screen.findByText("Очистити кеш транзакцій"));
 
-    const dialog = await screen.findByRole("dialog");
+    const dialog = await screen.findByRole("alertdialog");
     fireEvent.click(within(dialog).getByText("Очистити"));
     await waitFor(() =>
       expect(removeFinykStorageItem).toHaveBeenCalledWith("finyk_tx_cache"),
@@ -401,7 +401,7 @@ describe("FinykSection interactions", () => {
     fireEvent.click(await screen.findByText("Від'єднати"));
     const removeQueries = vi.spyOn(client, "removeQueries");
     fireEvent.click(
-      within(await screen.findByRole("dialog")).getByText("Вийти"),
+      within(await screen.findByRole("alertdialog")).getByText("Вийти"),
     );
 
     expect(await screen.findByRole("alert")).toHaveTextContent(

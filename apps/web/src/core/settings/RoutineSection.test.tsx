@@ -85,4 +85,17 @@ describe("RoutineSection", () => {
       false,
     );
   });
+
+  // V-13 (profile/settings deep audit 2026-08-08, §«Вкладка Розділи») —
+  // без `module="routine"` іконка секції рендериться нейтрально-сірою
+  // (`bg-surface-soft-glass`), і всі чотири модульні секції виглядають
+  // однаково. Перевіряємо, що бейдж іконки несе саме routine-акцент.
+  it("renders the section icon badge with the routine module accent", () => {
+    const { container } = renderSettingsSection(<RoutineSection />);
+    const badge = container.querySelector("svg")?.closest("span");
+    expect(badge).not.toBeNull();
+    expect(badge?.className).toContain("bg-routine-soft");
+    expect(badge?.className).toContain("border-routine-soft-border");
+    expect(badge?.className).toContain("text-routine");
+  });
 });

@@ -84,6 +84,15 @@ describe("AiMemoryList", () => {
     expect(await screen.findByText(/Поки що ШІ нічого/)).toBeTruthy();
   });
 
+  it("порожня пам'ять малює спільний <EmptyState> (role=status), не голий <p> (V-14, аудит 2026-08-08)", async () => {
+    // `findByRole("status")` тут не годиться напряму — стан завантаження
+    // теж має `role="status"`, і `findByRole` підхопив би саме його.
+    listAiMemory.mockResolvedValue(page([]));
+    renderList();
+    const text = await screen.findByText(/Поки що ШІ нічого/);
+    expect(text.closest('[role="status"]')).toBeTruthy();
+  });
+
   it("НЕ видаляє без підтвердження", async () => {
     // Дія незворотна на сервері. Клік по ✕ мусить лише відкрити діалог;
     // якщо колись «спростять» до прямого виклику, юзер втрачатиме факти

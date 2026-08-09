@@ -127,4 +127,34 @@ describe("DataExportSection", () => {
     expect(content).toContain("# Підписки");
     expect(content).not.toContain('"user"');
   });
+
+  // V-12 (аудит 2026-08-08, docs/90-work/audits/2026-08-08-profile-settings-deep-audit.md
+  // §5): три саморобні `<h3 class="text-style-label">` («Права на дані»,
+  // «Куди їдуть дані для AI», «Якщо Sergeant колись закриється») переведено
+  // на спільний примітив `SettingsSubGroup` — тепер усі `<h3
+  // class="text-style-overline">`. Рівень заголовка (h3) не змінився, тож
+  // heading-order не зачіпається (h2 → h3 → h3 → h3, без розриву); фікс
+  // тут лише про типографічну конвенцію.
+  it("V-12: усі три підблоки рендерять h3 із text-style-overline (SettingsSubGroup), а не text-style-label", () => {
+    const { container } = render(<DataExportSection />);
+
+    const rightsHeading = screen.getByText("Права на дані");
+    const subprocessorsHeading = screen.getByText("Куди їдуть дані для AI");
+    const sunsetHeading = screen.getByText("Якщо Sergeant колись закриється");
+
+    for (const heading of [
+      rightsHeading,
+      subprocessorsHeading,
+      sunsetHeading,
+    ]) {
+      expect(heading.tagName).toBe("H3");
+      expect(heading).toHaveClass("text-style-overline");
+      expect(heading).not.toHaveClass("text-style-label");
+    }
+
+    const levels = Array.from(
+      container.querySelectorAll("h1,h2,h3,h4,h5,h6"),
+    ).map((el) => Number(el.tagName.slice(1)));
+    expect(levels).toEqual([2, 3, 3, 3]);
+  });
 });

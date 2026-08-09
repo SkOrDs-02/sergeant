@@ -19,6 +19,11 @@ import { announceSettingsHashChange } from "@shared/lib/modules/hubNav";
 import { useBrowserLocation } from "../hooks/useBrowserLocation";
 import ChunkErrorBoundary from "./ChunkErrorBoundary";
 import {
+  groupForSection,
+  readBillingReturnSectionId,
+  readSettingsGroupParam,
+} from "./hubSettingsUrlParams";
+import {
   SectionSkeleton,
   SettingsGroupDefaultOpenContext,
 } from "../settings/SettingsPrimitives";
@@ -76,15 +81,18 @@ interface SettingsSection {
    * When true, the section is React.lazy() and renders inside a
    * `<Suspense>` boundary with a `<SectionSkeleton>` fallback. Used by
    * the heavy module-scoped sections (Initiative 0017 Sprint 1.1 PR-1.2).
-   * `minH` is the section's expected footprint AS IT FIRST PAINTS: the
-   * closed-header height for a section that mounts collapsed, or the
-   * full expanded-content height for a section that Варіант A
-   * force-opens by default because it's the first section of the active
-   * tab (see `SettingsGroupDefaultOpenContext` in
-   * `SettingsPrimitives.tsx`). No longer "headers + collapsed SubGroups"
-   * (adversarial review 2026-08-08, дефект №4) — Варіант A removed
-   * `SettingsSubGroup`'s own collapse state, so there's no middle-height
-   * state between "closed" and "fully open" anymore.
+   *
+   * `minH` — висота секції в РОЗГОРНУТОМУ стані. Це не те саме, що
+   * резервує skeleton: рішення «розгорнута чи згорнута» ухвалює
+   * `lazySectionMinH()` у місці рендеру, бо лише там відоме
+   * `defaultOpenForSection` (V-15, аудит 2026-08-08). До того числа тут
+   * підставлялись безумовно, і секція, що монтується згорнутою, резервувала
+   * втричі більше, ніж малювала.
+   *
+   * Проміжного стану «шапка + згорнуті SubGroup-и» більше не існує
+   * (адверсарне ревʼю 2026-08-08, дефект №4): Варіант A прибрав власний
+   * collapse у `SettingsSubGroup`, тож висота буває тільки двох видів —
+   * закрита шапка або справжня повна.
    */
   lazy?: { minH: number };
 }
@@ -111,20 +119,48 @@ const SECTION_RENDERERS: Readonly<Record<string, () => React.JSX.Element>> = {
   experimental: () => <ExperimentalSection />,
 };
 
+// Висота згорнутої `SettingsGroup` — бейдж іконки + рядок заголовка +
+// падінги (`px-4 py-4`). Те саме число, що дефолт `minH` у
+// `SectionSkeleton`; тримаємо копію тут, щоб вибір нижче читався без
+// стрибка у файл примітиву.
+const COLLAPSED_SECTION_MIN_H = 72;
+
+/**
+ * Яку висоту резервувати під lazy-секцію, доки її чанк вантажиться.
+ *
+ * Експортовано заради тесту: у `HubSettingsPage.test.tsx` усі чотири
+ * lazy-секції замоковані через `vi.mock`, тож `React.lazy` резолвиться
+ * миттєво і skeleton у тому файлі не рендериться ЖОДНОГО разу — assert-у
+ * по реальному DOM там просто нема на чому тримати. Тому пінимо саме
+ * рішення, а не його наслідок.
+ */
+export function lazySectionMinH(
+  expandedMinH: number,
+  willRenderOpen: boolean,
+): number {
+  return willRenderOpen ? expandedMinH : COLLAPSED_SECTION_MIN_H;
+}
+
 // Suspense-fallback heights for the four module-scoped sections that are
 // React.lazy() (Initiative 0017 Sprint 1.1 PR-1.2) — see
 // `SettingsSection.lazy` above for what each number represents.
 //
-// `routine` is the only one of the four that can be forced open by default
-// (it's index 0 of the «Розділи» tab under Варіант A): its skeleton has to
-// match the FULLY EXPANDED section (two `SettingsSubGroup`s — calendar
-// toggles, then tag/category editors), not a closed header, otherwise the
-// lazy-chunk swap causes a large downward layout shift that pushes the
-// rest of the tab's list (дефект №4, адверсарне ревʼю 2026-08-08). 600 is a
-// conservative expanded-height estimate, not a pixel-perfect measurement —
-// see RoutineSection.tsx for the actual content. `fizruk` / `finyk` /
-// `nutrition` are never index 0 in their own tab, so they stay mounted
-// collapsed and their existing (pre-Варіант-A) heights are untouched.
+// V-15 (аудит Профілю/Налаштувань 2026-08-08): число тут — висота секції в
+// РОЗГОРНУТОМУ стані, і застосовується воно лише тоді, коли секція справді
+// намалюється розгорнутою. Раніше воно було безумовним, і три з чотирьох
+// секцій, які монтуються ЗГОРНУТИМИ, резервували 168–280px під рядок у
+// 72px: skeleton зникав — і решта списку стрибала ВГОРУ, тобто рівно той
+// layout-shift, якого skeleton має уникати, тільки у зворотний бік.
+//
+// Розгорнутою lazy-секція буває у двох випадках, і обидва відомі в тому ж
+// `map`, де рендериться `<Suspense>` (`defaultOpenForSection`): це або
+// перша секція активної вкладки (Варіант A), або ціль хеш-діп-лінка
+// `#settings-<id>`. Для `routine` перший випадок — типовий: він index 0
+// вкладки «Розділи», тому 600 (консервативна оцінка двох `SettingsSubGroup`
+// — календарні перемикачі, далі редактори тегів/категорій; не піксельний
+// вимір, див. RoutineSection.tsx). Для `fizruk` / `finyk` / `nutrition`
+// типовий шлях — згорнуто, а їхні числа лишаються оцінкою на рідший
+// хеш-випадок.
 const SECTION_LAZY: Readonly<Record<string, { minH: number }>> = {
   routine: { minH: 600 },
   fizruk: { minH: 168 },
@@ -208,52 +244,11 @@ function readSettingsSectionHash(hash: string): string | null {
   return raw.replace(/^settings-/, "");
 }
 
-/**
- * Дефект №2 (адверсарне ревʼю 2026-08-08): billing-return (`?billing=
- * portal-return|manage`) таргетить «Підписка та план» так само, як
- * `#settings-plan` — обидва мусять суплресити форсоване відкриття першої
- * секції вкладки. Для хеша це відомо СИНХРОННО (з `location.hash` на
- * mount), але billing-таргет раніше ставав відомим лише ПІЗНІШЕ, через
- * `queueMicrotask` в ефекті нижче — а на той момент «Дашборд» (перша
- * секція «Загальних») уже змонтувався й зафіксував свій `open` через
- * `useState`-ініціалізатор у `SettingsGroup`; пізніший `setHashSectionId`
- * більше не міг це скасувати. Читаючи billing-параметр тут, у тому ж
- * ініціалізаторі `hashSectionId` нижче, суплресія спрацьовує з ПЕРШОГО
- * рендеру — до того, як «Дашборд» встигає змонтуватись.
- */
-function readBillingReturnSectionId(search: string): string | null {
-  try {
-    const billing = new URLSearchParams(search).get("billing");
-    return billing === "portal-return" || billing === "manage" ? "plan" : null;
-  } catch {
-    return null;
-  }
-}
-
-function groupForSection(sectionId: string | null) {
-  if (!sectionId) return undefined;
-  return GROUPS.find((group) =>
-    (group.sections as readonly string[]).includes(sectionId),
-  );
-}
-
-/**
- * Read the active inner-tab from `?group=…`. Returns the group id only if
- * it matches a known `GROUPS[].id`; anything else (missing / malformed /
- * unknown) returns `null` so the caller falls back to the default
- * resolution chain (hash → "general"). Kept in module scope so the SSR
- * guard and validation stay co-located with `GROUPS`.
- */
-function readSettingsGroupParam(search: string): string | null {
-  try {
-    const raw = new URLSearchParams(search).get("group");
-    if (!raw) return null;
-    if (GROUPS.some((group) => group.id === raw)) return raw;
-  } catch {
-    /* SSR / non-browser */
-  }
-  return null;
-}
+// `readBillingReturnSectionId` / `groupForSection` / `readSettingsGroupParam`
+// live in `./hubSettingsUrlParams.ts` (CodeRabbit-ревʼю PR #757) — тут вони
+// викликаються з `GROUPS` (вище) явним параметром, оскільки `GROUPS` —
+// даність структури ЦІЄЇ сторінки (вкладки, які вона ж і рендерить), а не
+// URL-хелпер.
 
 export interface HubSettingsPageProps {
   /** The app-owned scroll host. Hash navigation must never scroll document. */
@@ -313,10 +308,10 @@ export function HubSettingsPage({ scrollContainer }: HubSettingsPageProps) {
   // deep-links) → hash-section's parent group (existing legacy path
   // from Bento «Налаштування» deep-links) → "general" default.
   const [tab, setTabRaw] = useState<string>(() => {
-    const fromQuery = readSettingsGroupParam(location.search);
+    const fromQuery = readSettingsGroupParam(location.search, GROUPS);
     if (fromQuery) return fromQuery;
     const sectionId = readSettingsSectionHash(location.hash);
-    return groupForSection(sectionId)?.id ?? "general";
+    return groupForSection(sectionId, GROUPS)?.id ?? "general";
   });
   const setTab = useCallback(
     (next: string) => {
@@ -367,7 +362,7 @@ export function HubSettingsPage({ scrollContainer }: HubSettingsPageProps) {
     const syncHash = () => {
       const sectionId = readSettingsSectionHash(window.location.hash);
       if (!sectionId) return;
-      const group = groupForSection(sectionId);
+      const group = groupForSection(sectionId, GROUPS);
       if (!group) return;
       setQuery("");
       setTab(group.id);
@@ -395,7 +390,7 @@ export function HubSettingsPage({ scrollContainer }: HubSettingsPageProps) {
     billingReturnHandledRef.current = true;
 
     const targetSectionId = "plan";
-    const group = groupForSection(targetSectionId);
+    const group = groupForSection(targetSectionId, GROUPS);
 
     // Усе, що торкається стану, — у мікротаску. Синхронний `setState`
     // усередині ефекту ловить `react-hooks/set-state-in-effect`, і правило
@@ -676,11 +671,19 @@ export function HubSettingsPage({ scrollContainer }: HubSettingsPageProps) {
                   className="scroll-mt-32"
                 >
                   {s.lazy ? (
-                    <ChunkErrorBoundary minH={s.lazy.minH}>
+                    // V-15: резервуємо рівно ту висоту, якою секція
+                    // намалюється — розгорнуту лише тоді, коли вона справді
+                    // буде розгорнутою (див. `SECTION_LAZY` вище).
+                    <ChunkErrorBoundary
+                      minH={lazySectionMinH(s.lazy.minH, defaultOpenForSection)}
+                    >
                       <Suspense
                         fallback={
                           <SectionSkeleton
-                            minH={s.lazy.minH}
+                            minH={lazySectionMinH(
+                              s.lazy.minH,
+                              defaultOpenForSection,
+                            )}
                             ariaLabel={`Завантажую ${s.title}`}
                           />
                         }

@@ -144,7 +144,9 @@ export function NutritionSection() {
   }, [navigate]);
 
   return (
-    <SettingsGroup title="Їжа" icon="utensils">
+    // V-13 — акцент бейджа вимагає пари `icon` + `module`; чому саме так,
+    // розписано у `FinykSection.tsx`.
+    <SettingsGroup title="Їжа" icon="utensils" module="nutrition">
       {storageErr && (
         <div className="rounded-xl border border-danger/40 bg-danger/10 px-3 py-2 text-style-body text-danger-strong dark:text-danger">
           {storageErr}

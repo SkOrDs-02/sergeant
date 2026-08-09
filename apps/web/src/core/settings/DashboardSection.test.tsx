@@ -9,8 +9,12 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { ToastContainer } from "@shared/components/ui/Toast";
 import { ToastProvider } from "@shared/hooks/useToast";
 import type { UserPreferences } from "@shared/api";
-import { getActiveModules } from "@sergeant/shared";
-import { webKVStore } from "@shared/lib/storage/storage";
+import {
+  DASHBOARD_DENSITY_EVENT,
+  getActiveModules,
+  STORAGE_KEYS,
+} from "@sergeant/shared";
+import { safeReadStringLS, webKVStore } from "@shared/lib/storage/storage";
 
 // pushActiveModules (activeModulesSync.ts) fire-and-forgets
 // `meApi.updatePreferences` на кожному кліку по модулю — без мока цей
@@ -142,5 +146,66 @@ describe("DashboardSection", () => {
       "Щонайменше один модуль має бути активним",
     );
     expect(toastMsg.closest('[data-toast-type="warning"]')).toBeTruthy();
+  });
+
+  // §6 аудиту 2026-08-08: «DashboardSection цілком» без тестів. Секцію
+  // покрито вище, але блок щільності (`DASHBOARD_DENSITIES`) не мав
+  // ЖОДНОГО тесту — ні дефолту, ні кліку, ні персисту, ні події, на яку
+  // підписаний дашборд для live-ресайзу карток без reload.
+  it("density selector: defaults to «Комфортно», persists a click to storage and broadcasts DASHBOARD_DENSITY_EVENT", () => {
+    const listener = vi.fn();
+    window.addEventListener(DASHBOARD_DENSITY_EVENT, listener);
+    try {
+      renderSection();
+
+      const comfortableBtn = screen.getByText("Комфортно").closest("button");
+      const compactBtn = screen.getByText("Компактно").closest("button");
+      if (!comfortableBtn || !compactBtn) {
+        throw new Error("density buttons missing");
+      }
+      // Дефолт без збереженого значення — `DEFAULT_DASHBOARD_DENSITY`
+      // ("comfortable"), не перша чи остання кнопка списку.
+      expect(comfortableBtn).toHaveAttribute("aria-pressed", "true");
+      expect(compactBtn).toHaveAttribute("aria-pressed", "false");
+
+      fireEvent.click(compactBtn);
+
+      expect(compactBtn).toHaveAttribute("aria-pressed", "true");
+      expect(comfortableBtn).toHaveAttribute("aria-pressed", "false");
+      // Персист і подія — це те, на що підписані інші споживачі (сам
+      // хабовий грід читає STORAGE_KEYS.DASHBOARD_DENSITY на старті і
+      // слухає подію для live-ресайзу без перезавантаження сторінки);
+      // без обох секція виглядає так, ніби змінилась, але сусідній грід
+      // про це не дізнається, доки юзер не оновить сторінку.
+      expect(safeReadStringLS(STORAGE_KEYS.DASHBOARD_DENSITY)).toBe("compact");
+      expect(listener).toHaveBeenCalledTimes(1);
+      const event = listener.mock.calls[0]?.[0] as CustomEvent<string>;
+      expect(event.detail).toBe("compact");
+    } finally {
+      window.removeEventListener(DASHBOARD_DENSITY_EVENT, listener);
+    }
+  });
+
+  // Наявний тест "toggles a dashboard module checkbox…" вимикає модулі, але
+  // ніколи не вмикає їх назад — гілка `ALL_MODULES.filter(x => prev.includes(x)
+  // || x === id)` (повторне ввімкнення, збереження порядку ALL_MODULES) не
+  // мала покриття взагалі.
+  it("re-enables a previously disabled module and restores it to the active set", () => {
+    renderSection();
+    fireEvent.click(screen.getByText("Дашборд"));
+
+    const checkboxes = screen.getAllByRole("checkbox");
+    const target = checkboxes[0]!;
+    expect(target).toBeChecked();
+
+    fireEvent.click(target);
+    expect(target).not.toBeChecked();
+    const afterDisable = getActiveModules(webKVStore);
+    expect(afterDisable).toHaveLength(checkboxes.length - 1);
+
+    fireEvent.click(target);
+    expect(target).toBeChecked();
+    const afterReEnable = getActiveModules(webKVStore);
+    expect(afterReEnable).toHaveLength(checkboxes.length);
   });
 });

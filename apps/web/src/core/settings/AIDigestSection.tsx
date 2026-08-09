@@ -6,6 +6,7 @@ import { useState } from "react";
 import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { STORAGE_KEYS } from "@sergeant/shared";
 import { messages } from "@shared/i18n/uk";
+import { settingsSectionTitle } from "../hub/settingsSectionsCatalog";
 import { useWeeklyDigest } from "../insights/useWeeklyDigest";
 import { SettingsGroup, ToggleRow } from "./SettingsPrimitives";
 
@@ -35,7 +36,10 @@ export function AIDigestSection() {
   // `WeeklyDigestFooter`), тож «Згенерувати/Оновити» було двічі. У
   // налаштуваннях лишився тільки тумблер автогенерації по понеділках.
   return (
-    <SettingsGroup title="AI Звіт тижня" icon="clipboard">
+    // V-7 (2026-08-08): title читається з каталогу — раніше цей рядок і
+    // ⌘K-індекс (settingsSectionsCatalog.ts) розходились ("AI Звіт тижня"
+    // тут vs "AI-дайджести" у пошуку) без жодної перевірки.
+    <SettingsGroup title={settingsSectionTitle("ai")} icon="clipboard">
       <div className="space-y-3">
         <p className="text-style-caption text-subtle leading-snug">
           Тижневий AI-аналіз прогресу по всіх модулях: фінанси, тренування,

@@ -12,7 +12,9 @@ export function FizrukSection() {
   const typedSettings = settings as Record<RestCategory, number>;
 
   return (
-    <SettingsGroup title="Фізрук" icon="dumbbell">
+    // V-13 — акцент бейджа вимагає пари `icon` + `module`; чому саме так,
+    // розписано у `FinykSection.tsx`.
+    <SettingsGroup title="Фізрук" icon="dumbbell" module="fizruk">
       <SettingsSubGroup title="Таймер відпочинку">
         <p className="text-style-caption text-subtle leading-snug">
           Скільки відпочивати між підходами. Обране значення стає таймером за

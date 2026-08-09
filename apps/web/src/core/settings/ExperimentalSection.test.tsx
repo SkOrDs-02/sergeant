@@ -13,7 +13,12 @@ import {
 import { __flagsStoreForTests, FLAG_REGISTRY } from "../lib/featureFlags";
 
 const COPY = {
-  title: "Додаткові можливості",
+  // V-7 (2026-08-08): було "Додаткові можливості" — перейменовано на
+  // "Експериментальні функції", щоб не дублювати сусідню секцію
+  // «Можливості» (settingsSectionsCatalog.ts). Title тепер читається з
+  // каталогу (`settingsSectionTitle("experimental")`), тож цей рядок
+  // мусить лишатись синхронним з `SETTINGS_SECTIONS_CATALOG`.
+  title: "Експериментальні функції",
   warningBanner:
     "Ці можливості можуть змінюватися або працювати нестабільно. Увімкни їх лише якщо готовий швидко вимкнути назад.",
   optInLabel: "Я розумію, що це ранні можливості",

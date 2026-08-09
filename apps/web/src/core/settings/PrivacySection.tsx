@@ -9,7 +9,11 @@ import { useFlag, setFlag } from "../lib/featureFlags";
 import { useAppLockContext } from "../security/AppLockContext";
 import type { LockState } from "../security/useAppLock";
 import { LegalLinks } from "../legal/LegalLinks";
-import { SettingsGroup, ToggleRow } from "./SettingsPrimitives";
+import {
+  SettingsGroup,
+  SettingsSubGroup,
+  ToggleRow,
+} from "./SettingsPrimitives";
 import { writeMemoryEntries } from "../profile/memoryBank";
 import { setAnalyticsConsent } from "../observability/analyticsConsent";
 import { AiMemoryList } from "./AiMemoryList";
@@ -232,25 +236,38 @@ export function PrivacySection() {
       setClearingMemory(false);
       return;
     }
+    // CodeRabbit-ревʼю PR #757 (продовження дефекту #5): попередній фікс
+    // розділив кроки, але ковтав локальну помилку МОВЧКИ і завжди
+    // показував "Памʼять ШІ очищено." — тобто повне видалення, хоча факти
+    // локально ЛИШАЮТЬСЯ на пристрої. Для дії про приватність це брехня в
+    // інший бік: людині кажуть "стерто", коли частина даних на місці.
+    // Показувати "Не вдалося очистити памʼять ШІ." теж не можна — сервер
+    // УЖЕ незворотно стер факти, і це твердження було б неправдою в
+    // протилежний бік. Тому третій, окремий стан: сервер очищено, локальну
+    // копію стерти не вдалося.
+    let localWriteFailed = false;
     try {
       writeMemoryEntries([]);
     } catch {
-      // Сервер уже чистий — локальна копія просто відстане до наступного
-      // refetch (нижче все одно інвалідуємо кеш). Мовчки ковтаємо: показ
-      // помилки тут стверджував би, що очищення не відбулось, хоча воно
-      // відбулось.
+      localWriteFailed = true;
     }
     // L-20: без явної інвалідації aiMemoryKeys інфініт-список у
     // AiMemoryList лишається зі стертими фактами до наступного
     // непов'язаного refetch — той самий ключ, який AiMemoryList сам
     // інвалідує після точкового видалення ОДНОГО факту (AiMemoryList.tsx,
     // remove.onSuccess). Тут стирається ВЕСЬ список, тож той самий шлях.
+    // Інвалідація відбувається В БУДЬ-ЯКОМУ разі — сервер підтвердив
+    // очищення вище, і статус локального запису на це не впливає.
     // Finding #10: НЕ через await — саме очищення вже відбулось успішно, а
     // власний refetch AiMemoryList — фонова робота; чекати на нього тут
     // лише тримало б кнопку в стані "Очищаю…" зайвий round-trip на
     // повільній мережі без жодної користі для коректності.
     void queryClient.invalidateQueries({ queryKey: aiMemoryKeys.all });
-    setMemoryClearStatus("Памʼять ШІ очищено.");
+    setMemoryClearStatus(
+      localWriteFailed
+        ? "Памʼять ШІ очищено на сервері, але локальну копію стерти не вдалося."
+        : "Памʼять ШІ очищено.",
+    );
     setClearingMemory(false);
   };
 
@@ -288,16 +305,26 @@ export function PrivacySection() {
         </div>
       )}
 
-      <div className="space-y-3">
-        <div>
-          <h3 className="text-style-label text-text">Згода та дані</h3>
-          <p className="mt-1 text-style-caption text-subtle leading-relaxed">
-            Обери, що Sergeant може використовувати для якості продукту та
-            персоналізації. Дані для входу, безпеки й оплати залишаються
-            потрібними для роботи застосунку. Сповіщення налаштовуються в
-            окремому розділі.
-          </p>
-        </div>
+      {/* V-12 (аудит 2026-08-08, docs/90-work/audits/2026-08-08-profile-settings-deep-audit.md
+          §5): підблок «Згода та дані» і вкладений під ним підблок «Що ШІ
+          про тебе памʼятає» малювались саморобно (`<h3>`/`<h4>` з
+          `text-style-label`) замість спільного примітиву `SettingsSubGroup`
+          (`SettingsPrimitives.tsx`, який тут НЕ чіпаємо — над ним може
+          працювати інший агент). Примітив фіксовано рендерить
+          `<h3 class="text-style-overline">`, тож варіанта «зберегти h4-
+          глибину вкладеного блоку через примітив» немає — переведено ОБИДВА
+          підблоки, і вкладений теж стає h3 (див. нижче біля AiMemory-блоку).
+          heading-order (блокуючий axe-гейт tests/a11y/axe.spec.ts) це не
+          порушує: рівні йдуть h2 (SettingsGroup «Конфіденційність») → h3 →
+          h3 без розриву — axe забороняє СТРИБОК рівня вниз (напр. h2→h4),
+          а не повтор того самого рівня. */}
+      <SettingsSubGroup title="Згода та дані">
+        <p className="text-style-caption text-subtle leading-relaxed">
+          Обери, що Sergeant може використовувати для якості продукту та
+          персоналізації. Дані для входу, безпеки й оплати залишаються
+          потрібними для роботи застосунку. Сповіщення налаштовуються в окремому
+          розділі.
+        </p>
         {preferencesLoaded ? (
           <>
             <ToggleRow
@@ -404,17 +431,16 @@ export function PrivacySection() {
             </p>
           ) : null}
           <div className="mt-3 border-t border-line pt-3">
-            <h4 className="text-style-label text-text">
-              {messages.privacy.aiMemory.sectionTitle}
-            </h4>
-            <p className="mt-1 mb-2 text-style-caption text-subtle leading-relaxed">
-              {messages.privacy.aiMemory.sectionHint}
-            </p>
-            <AiMemoryList />
+            <SettingsSubGroup title={messages.privacy.aiMemory.sectionTitle}>
+              <p className="text-style-caption text-subtle leading-relaxed">
+                {messages.privacy.aiMemory.sectionHint}
+              </p>
+              <AiMemoryList />
+            </SettingsSubGroup>
           </div>
         </div>
         <LegalLinks compact className="justify-start" />
-      </div>
+      </SettingsSubGroup>
 
       {/* V-6 / finding #1 (2026-08-08 adversarial review): `SettingsGroup` —
           це `Card prominence="glass"` (`backdrop-blur-md`) всередині двох

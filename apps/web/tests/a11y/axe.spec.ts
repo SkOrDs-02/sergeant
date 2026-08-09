@@ -110,6 +110,32 @@ async function analyzeA11y(page: Page) {
   }
 }
 
+type AxeViolation = Awaited<
+  ReturnType<AxeBuilder["analyze"]>
+>["violations"][number];
+
+// CodeRabbit post-merge review PR #757 (зауваження #5): цей предикат разом
+// із восьмирядковим коментарем-поясненням був продубльований у двох місцях
+// (незалежний theme-цикл нижче повторював той самий фільтр). Один хелпер,
+// кліканий з обох local-циклів (light-theme `SURFACES` і `THEMED_SURFACES`)
+// — зміна порогу блокування тепер редагується один раз, а не ризикує
+// розійтись між двома копіями.
+function isBlockingViolation(v: AxeViolation): boolean {
+  return (
+    v.impact === "serious" ||
+    v.impact === "critical" ||
+    // Дефект №5 (адверсарне ревʼю 2026-08-08): `heading-order`
+    // (settings h1→h3 outline, тепер полагоджено на h1→h2→h3 —
+    // `SettingsGroup` заголовок став справжнім `<h2>`) має impact
+    // `moderate`, тож без цього рядка serious/critical-фільтр не ловив
+    // би його ВЗАГАЛІ. Звужено САМЕ до `heading-order` (а не до всього
+    // impact "moderate") навмисно: інші moderate-правила на інших
+    // сторінках можуть мати непов'язані latent-порушення поза обсягом
+    // цього фіксу — ширший фільтр раптово зачервонив би їхні тести.
+    v.id === "heading-order"
+  );
+}
+
 const SURFACES: Array<{
   name: string;
   path: string;
@@ -159,20 +185,7 @@ for (const { name, path, seed } of SURFACES) {
 
     const results = await analyzeA11y(page);
 
-    const blocking = results.violations.filter(
-      (v) =>
-        v.impact === "serious" ||
-        v.impact === "critical" ||
-        // Дефект №5 (адверсарне ревʼю 2026-08-08): `heading-order`
-        // (settings h1→h3 outline, тепер полагоджено на h1→h2→h3 —
-        // `SettingsGroup` заголовок став справжнім `<h2>`) має impact
-        // `moderate`, тож без цього рядка serious/critical-фільтр не ловив
-        // би його ВЗАГАЛІ. Звужено САМЕ до `heading-order` (а не до всього
-        // impact "moderate") навмисно: інші moderate-правила на інших
-        // сторінках можуть мати непов'язані latent-порушення поза обсягом
-        // цього фіксу — ширший фільтр раптово зачервонив би їхні тести.
-        v.id === "heading-order",
-    );
+    const blocking = results.violations.filter(isBlockingViolation);
 
     if (blocking.length > 0) {
       const summary = blocking
@@ -274,20 +287,7 @@ for (const { name, path, seed, theme } of THEMED_SURFACES) {
 
     const results = await analyzeA11y(page);
 
-    const blocking = results.violations.filter(
-      (v) =>
-        v.impact === "serious" ||
-        v.impact === "critical" ||
-        // Дефект №5 (адверсарне ревʼю 2026-08-08): `heading-order`
-        // (settings h1→h3 outline, тепер полагоджено на h1→h2→h3 —
-        // `SettingsGroup` заголовок став справжнім `<h2>`) має impact
-        // `moderate`, тож без цього рядка serious/critical-фільтр не ловив
-        // би його ВЗАГАЛІ. Звужено САМЕ до `heading-order` (а не до всього
-        // impact "moderate") навмисно: інші moderate-правила на інших
-        // сторінках можуть мати непов'язані latent-порушення поза обсягом
-        // цього фіксу — ширший фільтр раптово зачервонив би їхні тести.
-        v.id === "heading-order",
-    );
+    const blocking = results.violations.filter(isBlockingViolation);
 
     if (blocking.length > 0) {
       const summary = blocking

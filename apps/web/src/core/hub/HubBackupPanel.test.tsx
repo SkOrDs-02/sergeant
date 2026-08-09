@@ -369,6 +369,19 @@ describe("HubBackupPanel", () => {
         value: [file],
         configurable: true,
       });
+      // Засіваємо непорожнє значення ДО зміни: справжній `.value` файлового
+      // інпута лишався б порожнім і без будь-якого фіксу (jsdom, як і
+      // браузери, не дозволяє програмно ставити довільний непорожній рядок
+      // напряму — лише порожній), тож без цього кроку фінальний
+      // `expect(fileInput.value).toBe("")` нижче проходив би НАВІТЬ ЯКЩО
+      // `onerror` компонента взагалі нічого не скидає (вакуумна перевірка).
+      // Переозначаємо дескриптор так само, як для `files` вище, щоб обійти
+      // нативне обмеження і зробити reset у `onerror` дійсно спостережним.
+      Object.defineProperty(fileInput, "value", {
+        value: "C:\\fakepath\\backup.json",
+        writable: true,
+        configurable: true,
+      });
       fireEvent.change(fileInput);
     });
 

@@ -168,10 +168,16 @@ export function useSearchEngine({
       // `target` carries the navigation intent so we don't have to re-derive
       // it from `hit.module` (which is the visual grouping, not the route):
       //   - module hits  → existing onOpenModule plumbing
-      //   - settings hit → URL-addressable `/settings` route
-      //                    (`core/settings/route.tsx`), which always mounts
-      //                    `HubSettingsPage` regardless of where ⌘K was
-      //                    opened from. L-13 (2026-08-08): `target.sectionId`
+      //   - settings hit → the hub's own Settings tab (`?tab=settings`,
+      //                    `useHubUIState.readViewFromSearch`). L-1
+      //                    (profile/settings deep audit, 2026-08-08):
+      //                    `/settings` used to be a dedicated standalone
+      //                    route that always mounted `HubSettingsPage`
+      //                    on its own, chrome-less page — it is now a
+      //                    pure redirect BACK into this same hub tab
+      //                    (`core/settings/route.tsx`), so navigating
+      //                    straight to the tab here skips a pointless
+      //                    extra hop. L-13 (2026-08-08): `target.sectionId`
       //                    used to be computed by `searchSettings.ts` and
       //                    then silently dropped here — every settings hit
       //                    landed on whichever inner tab happened to be
@@ -194,17 +200,18 @@ export function useSearchEngine({
           break;
         case "settings": {
           const sectionId = hit.target.sectionId;
-          // Audit finding #2 (2026-08-08): the previous version reused the
+          // Audit finding #2b (2026-08-08): the previous version reused the
           // CURRENT `window.location.pathname`. On any module route
           // (`/finyk`, `/nutrition/menu`, …) that landed on e.g.
           // `/finyk?tab=settings#settings-plan` — `/finyk` renders the
           // Finyk module, nobody there reads `?tab=settings`, so the click
-          // silently no-op'd. `/settings` is the dedicated standalone route
-          // that always mounts `HubSettingsPage`, independent of where ⌘K
-          // was opened from — same canonical target `capabilityRegistry.ts`
-          // already uses for its own settings deep-links.
+          // silently no-op'd. The target must stay ABSOLUTE (`/`, the hub
+          // root) regardless of where ⌘K was opened from — same canonical
+          // target `capabilityRegistry.ts` already uses for its own
+          // settings deep-links.
           navigate({
-            pathname: "/settings",
+            pathname: "/",
+            search: "?tab=settings",
             hash: sectionId ? `#settings-${sectionId}` : "",
           });
           // If Settings is already open (`HubSettingsPage`/`SettingsGroup`
