@@ -10,7 +10,12 @@ import {
   UserProfileResponseSchema,
   type MeResponse,
 } from "@sergeant/shared";
-import { parseBody, requireSession, setModule } from "../http/index.js";
+import {
+  parseBody,
+  rateLimitExpress,
+  requireSession,
+  setModule,
+} from "../http/index.js";
 import { pool } from "../db.js";
 import {
   buildMeExport,
@@ -118,6 +123,29 @@ export function createMeRouter(): Router {
 
   r.put(
     "/api/me/profile",
+    // L-8 Фаза 2 (2026-08-09). Цей роут перестав бути дешевим upsert-ом:
+    // після дзеркалення він кладе в чергу інжесту до
+    // `PROFILE_MEMORY_MAX_ENTRIES` (200) job-ів, кожен з яких — окремий
+    // Voyage-ембеддинг. Тобто це рівно той «дорогий шлях», який
+    // `routes/ai-memory.ts` захищає своїм `heavyRateLimit` із коментарем
+    // «черга ingest-у + Voyage-ембеддинги».
+    //
+    // Дифу самого по собі мало: незмінний профіль справді no-op-ить, але
+    // скрипт, що щоразу МІНЯЄ текст фактів, змушує ембедити наново на
+    // кожному запиті. `me` лишався єдиним роутером репо взагалі без
+    // лімітера (решта вісімнадцяти файлів у `routes/` його мають), і саме
+    // ця зміна зробила прогалину дорогою.
+    //
+    // 60/5хв — свідомо щедріше за `heavyRateLimit` (30/5хв): веб пушить
+    // профіль після КОЖНОГО локального редагування біометрії чи банку
+    // памʼяті (`profileWriteThrough.ts`), тож людина, яка правит кілька
+    // полів поспіль, легко дає десяток запитів за хвилину і не має
+    // впертись у стелю. Скрипт — впреться.
+    rateLimitExpress({
+      key: "api:me:profile",
+      limit: 60,
+      windowMs: 5 * 60_000,
+    }),
     requireSession(),
     async (req: Request, res: Response) => {
       const user = (req as Request & { user: AuthedUser }).user;
