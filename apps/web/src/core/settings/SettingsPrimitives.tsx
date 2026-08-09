@@ -1,6 +1,7 @@
 import {
   createContext,
   useContext,
+  useId,
   useEffect,
   useLayoutEffect,
   useRef,
@@ -312,6 +313,13 @@ export function ToggleRow({
   checked,
   onChange,
 }: ToggleRowProps) {
+  // Підпис живе тут, у рядку-картці, а не всередині `Switch`. Без явного
+  // звʼязку інпут лишався БЕЗ доступного імені: власний `<label htmlFor>`
+  // компонента містить лише `aria-hidden`-спани, а ця зовнішня
+  // `<label>`-обгортка не рахується (вкладені `<label>` невалідні —
+  // внутрішній explicit-label перемагає). Гейт axe ловив це як `label`
+  // critical, 5 вузлів на `/settings`, у всіх трьох темах.
+  const labelId = useId();
   return (
     <label
       // PR-37 ux-roast 2026-Q3 / §3.1: row reads as plain copy on the
@@ -326,17 +334,28 @@ export function ToggleRow({
       )}
     >
       <div className="flex-1 min-w-0">
-        <span className="text-style-label text-text group-hover:text-brand-strong transition-colors">
+        <span
+          id={labelId}
+          className="text-style-label text-text group-hover:text-brand-strong transition-colors"
+        >
           {label}
         </span>
         {description && (
-          <p className="text-style-caption text-subtle mt-1 leading-relaxed">
+          // `text-muted`, не `text-subtle`: на 12px у «Чорнилі» subtle дає
+          // контраст 3.22 при потрібних 4.5 (axe color-contrast, serious —
+          // #5f6b64 на #1b1613). Опис тумблера пояснює, ЩО саме вмикаєш, —
+          // тобто це не декоративний текст, і читабельним він мусить бути.
+          <p className="text-style-caption text-muted mt-1 leading-relaxed">
             {description}
           </p>
         )}
       </div>
       <div className="shrink-0">
-        <Switch checked={checked} onChange={onChange} />
+        <Switch
+          checked={checked}
+          onChange={onChange}
+          aria-labelledby={labelId}
+        />
       </div>
     </label>
   );
