@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { logger } from "@shared/lib";
+import { COMMERCE_SURFACES_ENABLED } from "../lib/betaSurfaces";
 import {
   createDeepLinkChannel,
   isCapacitor,
@@ -28,14 +29,16 @@ type DeepLinkBridgeWindow = Window & {
   [SHELL_DEEPLINK_BRIDGE_READY_KEY]?: boolean;
 };
 
-// `/pricing` intentionally absent: hidden for the closed beta
-// (`VITE_ENABLE_COMMERCE`), so a shell deep-link would land on a 404.
 const ALLOWED_PATH_PREFIXES: readonly string[] = [
   "/sign-in",
   "/welcome",
   "/reset-password",
   "/profile",
   "/design",
+  // Gated rather than removed: with commerce enabled the route exists, and a
+  // shell deep-link rejecting it would be an inconsistency between two
+  // contracts that must agree.
+  ...(COMMERCE_SURFACES_ENABLED ? ["/pricing"] : []),
   "/status",
   "/assistant",
   "/chat",

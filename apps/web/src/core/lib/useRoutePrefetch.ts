@@ -36,6 +36,7 @@ export type PageKey =
   | "profile"
   | "reports"
   | "settings"
+  | "pricing"
   | "assistant"
   | "resetPassword"
   | "design";
@@ -48,14 +49,21 @@ const moduleImports: Record<ModuleKey, () => Promise<unknown>> = {
   nutrition: () => import("../../modules/nutrition/NutritionApp"),
 };
 
-// No `pricing` entry: `/pricing` is hidden for the closed beta and answers
-// 404, so prefetching its chunk only pulled it back into the build. Restore
-// this together with `VITE_ENABLE_COMMERCE`.
-const pageImports: Record<PageKey, () => Promise<unknown>> = {
+// `pricing` is present only when commerce is enabled. The condition is an
+// inline `import.meta.env` literal, not the shared `COMMERCE_SURFACES_ENABLED`
+// const, for the same reason as `app/StandaloneRoutes.tsx`: routed through the
+// module the branch does not fold, and this map alone was enough to drag the
+// `PricingPage` chunk back into a build where the route 404s. The key stays in
+// `PageKey` so callers keep type-checking across both builds; a missing entry
+// is already tolerated by `importPageChunk`.
+const pageImports: Partial<Record<PageKey, () => Promise<unknown>>> = {
   auth: () => import("../auth/AuthPage"),
   profile: () => import("../profile/ProfilePage"),
   reports: () => import("../hub/HubReports"),
   settings: () => import("../hub/HubSettingsPage"),
+  ...(import.meta.env.VITE_ENABLE_COMMERCE === "1"
+    ? { pricing: () => import("../PricingPage") }
+    : {}),
   assistant: () => import("../AssistantCataloguePage"),
   resetPassword: () => import("../auth/ResetPasswordPage"),
   design: () => import("../DesignShowcase"),

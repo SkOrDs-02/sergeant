@@ -43,7 +43,9 @@ export function useStoriesNavigation({ total, onExhausted }: Options): Api {
       onExhausted?.();
       return;
     }
-    setIndex(index + 1);
+    // Functional form so two calls batched into one render still compose into
+    // two advances instead of collapsing onto the same captured `index`.
+    setIndex((i) => (i >= total - 1 ? i : i + 1));
   }, [index, total, onExhausted]);
 
   const prev = useCallback(() => {

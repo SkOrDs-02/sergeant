@@ -9,6 +9,7 @@ import type {
   WhatsNewItemKind,
   WhatsNewRelease,
 } from "./releases";
+import { isHiddenBetaHref } from "../lib/betaSurfaces";
 
 /**
  * `<WhatsNewModal />` — in-product release notes overlay (PR-18 у
@@ -76,13 +77,21 @@ export function WhatsNewModal({
 
   if (!release) return null;
 
+  // A release note can outlive the surface its CTA points at — the newest one
+  // still links to `/pricing`, which 404s while commerce is hidden. Drop the
+  // button in that case and show the note without it.
+  const cta =
+    release.cta && !isHiddenBetaHref(release.cta.href)
+      ? release.cta
+      : undefined;
+
   const handleCtaClick = () => {
-    if (!release.cta) return;
+    if (!cta) return;
     onCtaClick();
-    if (isExternalHref(release.cta.href)) {
-      window.open(release.cta.href, "_blank", "noopener,noreferrer");
+    if (isExternalHref(cta.href)) {
+      window.open(cta.href, "_blank", "noopener,noreferrer");
     } else {
-      navigate(release.cta.href);
+      navigate(cta.href);
     }
   };
 
@@ -117,15 +126,15 @@ export function WhatsNewModal({
         <div
           className={cn(
             "flex flex-wrap gap-2",
-            release.cta ? "justify-end" : "justify-end",
+            cta ? "justify-end" : "justify-end",
           )}
         >
           <Button variant="ghost" onClick={() => onClose("close")}>
             {messages.whatsNew.dismiss}
           </Button>
-          {release.cta && (
+          {cta && (
             <Button variant="primary" onClick={handleCtaClick}>
-              {release.cta.label}
+              {cta.label}
             </Button>
           )}
         </div>

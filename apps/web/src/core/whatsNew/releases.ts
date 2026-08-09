@@ -28,8 +28,6 @@
  * See `docs/whats-new/README.md` для шаблону + how-to.
  */
 
-import { COMMERCE_SURFACES_ENABLED } from "../lib/betaSurfaces";
-
 export type WhatsNewItemKind = "feature" | "fix" | "improvement";
 
 export interface WhatsNewItem {
@@ -135,13 +133,5 @@ export function pickRelease(lastSeenId: string | null): WhatsNewRelease | null {
   const latest = RELEASES[0];
   if (!latest) return null;
   if (lastSeenId === latest.id) return null;
-  // Release notes are an append-only archive, so a CTA written months ago can
-  // outlive the surface it points at. Strip any CTA aimed at a surface hidden
-  // for the closed beta rather than editing history — the single selector is
-  // the one place both the modal and its analytics read from.
-  if (!COMMERCE_SURFACES_ENABLED && latest.cta?.href.startsWith("/pricing")) {
-    const { cta: _hidden, ...withoutCta } = latest;
-    return withoutCta;
-  }
   return latest;
 }

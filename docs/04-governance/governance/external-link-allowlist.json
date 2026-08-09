@@ -35,12 +35,8 @@
       "reason": "Cited as a mobile retention benchmark in docs/01-product/launch/business/01-monetization-and-pricing.md; the report+year is the auditable claim, not the live URL — host has had stability issues throughout 2026."
     },
     {
-      "pattern": "^https?://(www\\.)?ibtimes\\.sg/",
-      "reason": "IBTimes SG article cited in docs/05-design/design/anti-slop-strategy.md alongside the Muzli piece; the host answers 502 to every request from CI (verified three consecutive attempts 2026-08-08), so the citation \u2014 outlet + headline + year \u2014 is the auditable claim, not the live URL."
-    },
-    {
-      "pattern": "^https?://medium\\.muz\\.li/",
-      "reason": "Muzli/Medium article cited in docs/05-design/design/anti-slop-strategy.md as the source of the \u00abevery AI-built app looks the same\u00bb argument; Medium returns 403 to HEAD/GET from non-browser user-agents while the page renders fine in browsers."
+      "pattern": "^https?://(www\\.)?ibtimes\\.sg/why-so-many-ai-built-websites-are-starting-look-same-91292",
+      "reason": "\u0421\u0442\u0430\u0442\u0442\u044f IBTimes SG \u2014 \u0434\u0440\u0443\u0433\u0435 \u0437 \u0434\u0432\u043e\u0445 \u043f\u0435\u0440\u0448\u043e\u0434\u0436\u0435\u0440\u0435\u043b \u0434\u0456\u0430\u0433\u043d\u043e\u0437\u0443 \u0432 docs/05-design/design/anti-slop-strategy.md (\u043f\u043e\u0440\u0443\u0447 \u0456\u0437 Muzli). \u0425\u043e\u0441\u0442 \u0432\u0456\u0434\u0434\u0430\u0454 502 \u043d\u0430 \u0431\u0443\u0434\u044c-\u044f\u043a\u0438\u0439 CI-\u0437\u0430\u043f\u0438\u0442 (\u043f\u0435\u0440\u0435\u0432\u0456\u0440\u0435\u043d\u043e \u0442\u0440\u044c\u043c\u0430 \u0441\u043f\u0440\u043e\u0431\u0430\u043c\u0438 \u043f\u043e\u0441\u043f\u0456\u043b\u044c 2026-08-08). Pattern \u0437\u0432\u0443\u0436\u0435\u043d\u043e \u0440\u0456\u0432\u043d\u043e \u0434\u043e \u0446\u044c\u043e\u0433\u043e URL \u2014 \u044f\u043a \u0456 \u0434\u043b\u044f Muzli \u043d\u0438\u0436\u0447\u0435, \u0440\u0435\u0448\u0442\u0430 \u0445\u043e\u0441\u0442\u0430 \u043b\u0438\u0448\u0430\u0454\u0442\u044c\u0441\u044f \u043f\u0456\u0434 \u043f\u0435\u0440\u0435\u0432\u0456\u0440\u043a\u043e\u044e."
     },
     {
       "pattern": "^https?://(www\\.)?producthunt\\.com/(directory/upcoming|coming-soon)",
