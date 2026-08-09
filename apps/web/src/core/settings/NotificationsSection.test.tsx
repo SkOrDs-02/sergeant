@@ -1,5 +1,5 @@
 /** @vitest-environment jsdom */
-import { fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderSettingsSection } from "../../test/helpers/collapsibleSection";
 
@@ -77,10 +77,17 @@ const SWITCH_LABEL = {
   nutrition: "Нагадування про їжу",
 } as const;
 
+// Шукаємо тумблер за ДОСТУПНИМ ІМЕНЕМ, а не за DOM-сусідством. Доти
+// тут стояло `getByText(...).closest("label")` + пошук усередині: рядок
+// `ToggleRow` сам був `<label>`, який обгортав і підпис, і `Switch`.
+// Після фіксу `[critical] label: Form elements must have labels` (axe на
+// `/settings`) рядок — звичайний `<div>`, а `<label htmlFor>` — тільки
+// сам підпис, тож `closest("label")` більше не веде до тумблера. Запит
+// за іменем стійкіший саме тому, що резолвиться тим самим
+// accname-алгоритмом, що й axe: якщо він знову знайде тумблер — значить
+// ім'я на місці.
 function clickSwitch(which: keyof typeof SWITCH_LABEL) {
-  const row = screen.getByText(SWITCH_LABEL[which]).closest("label");
-  if (!row) throw new Error(`row not found: ${SWITCH_LABEL[which]}`);
-  const toggle = within(row).getByRole("switch");
+  const toggle = screen.getByRole("switch", { name: SWITCH_LABEL[which] });
   fireEvent.click(toggle);
 }
 

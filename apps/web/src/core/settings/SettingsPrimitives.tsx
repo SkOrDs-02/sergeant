@@ -1,10 +1,8 @@
 import {
   createContext,
   useContext,
-  useId,
   useEffect,
-  useLayoutEffect,
-  useRef,
+  useId,
   useState,
   type CSSProperties,
   type ReactNode,
@@ -14,6 +12,7 @@ import { Icon } from "@shared/components/ui/Icon";
 import { Card } from "@shared/components/ui/Card";
 import { Switch } from "@shared/components/ui/Switch";
 import { Skeleton, SkeletonText } from "@shared/components/ui/Skeleton";
+import { useInertWhileCollapsed } from "@shared/hooks/useInertWhileCollapsed";
 import { messages } from "@shared/i18n/uk";
 
 interface ChevronIconProps {
@@ -138,29 +137,13 @@ export const SettingsGroupDefaultOpenContext =
  * stayed live in the tab order and a11y tree — a lie by omission that
  * plain silence didn't have.
  *
- * Mirrors `CollapsibleSection.tsx` 1:1: `inert` (not `hidden`, which is
- * `display:none` and breaks the `grid-template-rows` height transition) +
- * `aria-hidden` companion (canonical pairing, see
- * `useDialogFocusTrap.ts`'s background-inert manager) via
- * `useLayoutEffect` so the attributes clear synchronously with the render
- * that expands the section, before the first paint.
+ * Механізм — `useInertWhileCollapsed` (`@shared/hooks`), СПІЛЬНИЙ із
+ * `CollapsibleSection.tsx`. Доти обидва компоненти несли власну копію тієї
+ * самої логіки; розходження копій не впало б жодним тестом і не було б
+ * видно на екрані — одна з поверхонь просто тихо втратила б гарантію
+ * tab-порядку. Чому саме `inert` + `aria-hidden` + `useLayoutEffect` —
+ * розписано в докстрінгу хука.
  */
-function useInertWhileCollapsed(open: boolean) {
-  const ref = useRef<HTMLDivElement>(null);
-  useLayoutEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    if (open) {
-      el.removeAttribute("inert");
-      el.removeAttribute("aria-hidden");
-    } else {
-      el.setAttribute("inert", "");
-      el.setAttribute("aria-hidden", "true");
-    }
-  }, [open]);
-  return ref;
-}
-
 export function SettingsGroup({
   title,
   icon,
@@ -321,25 +304,37 @@ export interface ToggleRowProps {
   onChange: (checked: boolean) => void;
 }
 
+/**
+ * Рядок «підпис ліворуч — тумблер праворуч» у Налаштуваннях.
+ *
+ * Візуал (tappable-картка з бордером і hover-станом) — PR-37 ux-roast
+ * 2026-Q3 §3.1: доти рядок читався як звичайний текст на тлі секції і
+ * тумблери губились. Обгортка лишається `label` саме заради цього —
+ * тапається весь рядок, а не лише підпис чи трек.
+ *
+ * **Чому імʼя тумблера задається через `aria-labelledby`, а не структурою.**
+ * У цьому рядку два конкуруючі варіанти фіксу зійшлись у мерджі: гілка
+ * PR #762 розводила вкладеність (обгортка → `div`, підпис → `label htmlFor`),
+ * `main` (PR #760) лишив обгортку `label` і додав явний `aria-labelledby`.
+ * Взято варіант `main` — він змерджений, зелений у CI і зберігає тап по
+ * всьому рядку; підхід PR #762 звужував тап-зону до підпису й треку.
+ *
+ * Ціна вибору названа чесно: вкладений `label` лишається невалідним за
+ * контент-моделлю HTML («no descendant label elements»). Саме ця
+ * невалідність і була КОРЕНЕМ падіння axe — Chrome на такій розмітці не
+ * виводив інпуту доступного імені взагалі. `aria-labelledby` знімає
+ * симптом (імʼя тепер явне), але не саму вкладеність, тож структурне
+ * прибирання лишається відкритим боргом.
+ */
 export function ToggleRow({
   label,
   description,
   checked,
   onChange,
 }: ToggleRowProps) {
-  // Підпис живе тут, у рядку-картці, а не всередині `Switch`. Без явного
-  // звʼязку інпут лишався БЕЗ доступного імені: власний `<label htmlFor>`
-  // компонента містить лише `aria-hidden`-спани, а ця зовнішня
-  // `<label>`-обгортка не рахується (вкладені `<label>` невалідні —
-  // внутрішній explicit-label перемагає). Гейт axe ловив це як `label`
-  // critical, 5 вузлів на `/settings`, у всіх трьох темах.
   const labelId = useId();
   return (
     <label
-      // PR-37 ux-roast 2026-Q3 / §3.1: row reads as plain copy on the
-      // section background — користувачі скаржаться, що тумблери губляться
-      // на тлі. Тепер це явна tappable картка з бордером і фоном, явним
-      // hover/active-стейтом, по всій ширині.
       className={cn(
         "flex items-center justify-between gap-4 cursor-pointer group min-h-[44px]",
         "p-3 rounded-2xl border border-line/60 bg-surface-soft-glass shadow-soft",
@@ -359,6 +354,9 @@ export function ToggleRow({
           // контраст 3.22 при потрібних 4.5 (axe color-contrast, serious —
           // #5f6b64 на #1b1613). Опис тумблера пояснює, ЩО саме вмикаєш, —
           // тобто це не декоративний текст, і читабельним він мусить бути.
+          //
+          // Обидві гілки мерджу зійшлись тут на одному й тому ж висновку
+          // незалежно одна від одної.
           <p className="text-style-caption text-muted mt-1 leading-relaxed">
             {description}
           </p>

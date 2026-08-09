@@ -427,6 +427,10 @@ export const messagesEn: Partial<MessageCatalog> = {
 
     aiMemory: {
       sectionTitle: "What the AI remembers about you",
+      // V-11 (2026-08-09): mirrors the uk.privacy.ts addition — see the
+      // comment there for why this scope line exists.
+      sectionScope:
+        "Everything the assistant has remembered — from chat, modules and your profile.",
       sectionHint:
         "Each fact can be deleted individually. Deleted facts are gone for good.",
       loading: "Loading memory…",

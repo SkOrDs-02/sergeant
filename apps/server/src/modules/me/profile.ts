@@ -61,3 +61,93 @@ export async function upsertUserProfile(
     updatedAt: maybeIso(row.updated_at),
   };
 }
+
+export interface RemoveMemoryBankEntryResult {
+  /** `false` — не було рядка / секції `memoryBank` / факту з таким id (ідемпотентно). */
+  removed: boolean;
+}
+
+/**
+ * L-8 Фаза 2 (2026-08-09) — узгоджене видалення. Викликається з
+ * `ai-memory/listRoute.ts::buildMemoryDeleteHandler` в ОДНІЙ транзакції з
+ * `DELETE FROM ai_memories`, коли стертий рядок мав `source='profile'`:
+ * без цього наступний write-through пуш профілю (Фаза 2 дзеркалення,
+ * `profileMirror.ts`) мовчки повертає "видалений" факт назад, бо він і
+ * досі сидить у `user_profile.payload.memoryBank.entries` — сервер бачить
+ * source_ref, якого немає серед наявних `ai_memories`-рядків, і вставляє
+ * його наново.
+ *
+ * `db` приймає і `Pool`, і транзакційний `PoolClient` — викликач тримає
+ * DELETE + цю зміну в ОДНІЙ транзакції (`BEGIN`/`COMMIT`/`ROLLBACK` у
+ * `listRoute.ts`), щоб обидві зміни приземлились разом або жодна.
+ *
+ * `SELECT ... FOR UPDATE` блокує рядок на час транзакції — два паралельні
+ * DELETE того самого юзера (різні факти, той самий момент) не мають
+ * загубити одна одну через read-modify-write гонку на тому самому JSONB.
+ */
+export async function removeMemoryBankEntry(
+  db: Queryable,
+  userId: string,
+  entryId: string,
+): Promise<RemoveMemoryBankEntryResult> {
+  const result = await db.query<{ payload: unknown }>(
+    `SELECT payload FROM user_profile WHERE user_id = $1 FOR UPDATE`,
+    [userId],
+  );
+  if (result.rows.length === 0) {
+    // Рядка `user_profile` взагалі немає — узгоджувати нема з чим. Не
+    // помилка: наприклад, `ai_memories`-рядок міг лишитись від старого
+    // ручного ingest-у до того, як цей юзер хоч раз зберіг профіль.
+    return { removed: false };
+  }
+  const payload = result.rows[0]!.payload;
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    return { removed: false };
+  }
+  const payloadObj = payload as Record<string, unknown>;
+  const memoryBank = payloadObj["memoryBank"];
+  if (
+    !memoryBank ||
+    typeof memoryBank !== "object" ||
+    Array.isArray(memoryBank)
+  ) {
+    return { removed: false };
+  }
+  const memoryBankObj = memoryBank as Record<string, unknown>;
+  const entries = memoryBankObj["entries"];
+  if (!Array.isArray(entries)) {
+    return { removed: false };
+  }
+
+  const nextEntries = entries.filter((entry) => {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry))
+      return true;
+    return (entry as Record<string, unknown>)["id"] !== entryId;
+  });
+  if (nextEntries.length === entries.length) {
+    // Факту з таким id у банку вже нема — подвійний тап / гонка кількох
+    // вкладок. Ідемпотентно, як і сам DELETE-хендлер у listRoute.ts.
+    return { removed: false };
+  }
+
+  const nextPayload: Record<string, unknown> = {
+    ...payloadObj,
+    memoryBank: {
+      ...memoryBankObj,
+      entries: nextEntries,
+      // Бампимо мітку часу секції: інший пристрій, що ще не бачив цього
+      // видалення, на наступному reconcile (`reconcileMemoryBankWithServerProfile`
+      // у веб-клієнті) порівнює САМЕ `memoryBank.updatedAt`, і серверна
+      // версія має виглядати не старішою за той пристрій, що прострочив
+      // синхронізацію — інакше стара локальна копія з фактом, що його
+      // щойно видалили тут, переможе і воскресить факт при наступному пуші.
+      updatedAt: new Date().toISOString(),
+    },
+  };
+
+  await db.query(
+    `UPDATE user_profile SET payload = $2::jsonb, updated_at = NOW() WHERE user_id = $1`,
+    [userId, JSON.stringify(nextPayload)],
+  );
+  return { removed: true };
+}

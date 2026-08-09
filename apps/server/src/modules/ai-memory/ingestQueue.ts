@@ -67,6 +67,27 @@ export interface MemoryIngestPayload {
   sourceRef: string | null;
   content: string;
   metadata?: Record<string, unknown> | undefined;
+  /**
+   * Необовʼязковий «сіль»-суфікс до idempotent jobId. НЕ персиститься:
+   * `processMemoryIngestJob` бере з payload рівно пʼять полів і це серед них
+   * не значиться, тож у рядок `ai_memories` воно не потрапляє.
+   *
+   * Навіщо (L-8 фаза 2, 2026-08-09). Дедуп по jobId припускає, що
+   * `sourceRef` МІНЯЄТЬСЯ разом зі змістом — так і є для `finyk`
+   * (`mono_tx_id` незмінної транзакції), `digest` (`week_key`) чи `product`
+   * (`event:user:day`). Для `profile` це НЕ так: `sourceRef` — це локальний
+   * id факту, і він переживає редагування тексту. Виходило, що
+   * `profileMirror` спершу hard-видаляв старий рядок, а потім клав у чергу
+   * job із тим самим jobId — і BullMQ мовчки його відкидав, поки старий
+   * висів у Redis (`removeOnComplete: 24h`, `removeOnFail: 14d`). Факт
+   * зникав із RAG, лишаючись на екрані. Без Redis (`runDirectDispatch`)
+   * цього не видно взагалі, тож ні локально, ні в CI баг не проявлявся.
+   *
+   * Викликач, чий `sourceRef` стабільний щодо змісту, передає сюди
+   * відбиток змісту. Тоді той самий текст і далі дедуплікується, а
+   * змінений — ні.
+   */
+  dedupeSalt?: string | undefined;
 }
 
 /**
@@ -166,7 +187,10 @@ function buildJobId(payload: MemoryIngestPayload): string | undefined {
   if (payload.sourceRef == null) return undefined;
   // Не використовуємо `:` як роздільник — він валідний у jobId, але
   // у логах і UI BullMQ зручніше читати з `__`. URL-safe.
-  return `${payload.userId}__${payload.source}__${payload.sourceRef}`;
+  const base = `${payload.userId}__${payload.source}__${payload.sourceRef}`;
+  // `dedupeSalt` — для source-ів, чий `sourceRef` НЕ міняється зі змістом
+  // (див. докстрінг поля). Без солі поведінка та сама, що й раніше.
+  return payload.dedupeSalt ? `${base}__${payload.dedupeSalt}` : base;
 }
 
 /**

@@ -10,7 +10,12 @@ import {
   UserProfileResponseSchema,
   type MeResponse,
 } from "@sergeant/shared";
-import { parseBody, requireSession, setModule } from "../http/index.js";
+import {
+  parseBody,
+  rateLimitExpress,
+  requireSession,
+  setModule,
+} from "../http/index.js";
 import { pool } from "../db.js";
 import {
   buildMeExport,
@@ -19,6 +24,7 @@ import {
   upsertUserPreferences,
 } from "../modules/me/dataRights.js";
 import { getUserProfile, upsertUserProfile } from "../modules/me/profile.js";
+import { mirrorProfileMemoryEntries } from "../modules/ai-memory/profileMirror.js";
 
 type AuthedUser = {
   id: string;
@@ -117,13 +123,65 @@ export function createMeRouter(): Router {
 
   r.put(
     "/api/me/profile",
+    // L-8 Фаза 2 (2026-08-09). Цей роут перестав бути дешевим upsert-ом:
+    // після дзеркалення він кладе в чергу інжесту до
+    // `PROFILE_MEMORY_MAX_ENTRIES` (200) job-ів, кожен з яких — окремий
+    // Voyage-ембеддинг. Тобто це рівно той «дорогий шлях», який
+    // `routes/ai-memory.ts` захищає своїм `heavyRateLimit` із коментарем
+    // «черга ingest-у + Voyage-ембеддинги».
+    //
+    // Дифу самого по собі мало: незмінний профіль справді no-op-ить, але
+    // скрипт, що щоразу МІНЯЄ текст фактів, змушує ембедити наново на
+    // кожному запиті. `me` лишався єдиним роутером репо взагалі без
+    // лімітера (решта вісімнадцяти файлів у `routes/` його мають), і саме
+    // ця зміна зробила прогалину дорогою.
+    //
+    // 60/5хв — свідомо щедріше за `heavyRateLimit` (30/5хв): веб пушить
+    // профіль після КОЖНОГО локального редагування біометрії чи банку
+    // памʼяті (`profileWriteThrough.ts`), тож людина, яка правит кілька
+    // полів поспіль, легко дає десяток запитів за хвилину і не має
+    // впертись у стелю. Скрипт — впреться.
+    //
+    // ПОРЯДОК: `requireSession()` СТОЇТЬ ПЕРШИМ, і це свідомо інакше, ніж
+    // у решти роутерів репо (`ai-memory`, `finyk`, `nutrition`, `sync`
+    // ставлять лімітер попереду). Причина — `rateLimitSubject()`
+    // (`http/rateLimit.ts`) повертає `u:<id>` лише коли `req.user` уже
+    // виставлений; до сесії він віддає `ip:<clientIp>`. Тобто з лімітером
+    // попереду мій власний коментар вище був би неправдою: бакет ділився б
+    // НЕ між запитами однієї людини, а між усіма за одним egress-ом (NAT
+    // оператора, офіс), і 60/5хв ловило б сусідів, а не скрипт.
+    //
+    // Ціна перестановки — неавтентифікований флуд доходить до резолюції
+    // сесії перед 401. Прийнятно саме тут: усі інші роути цього ж файлу
+    // (`GET /api/me`, `/export`, `PATCH /preferences`) і так починаються з
+    // `requireSession()` взагалі без лімітера, тож флуд у `me.ts` уже
+    // коштує рівно стільки ж.
+    //
+    // `ipLimit` — вторинний бакет M9: тримає машинний стель незалежно від
+    // того, скільки акаунтів на ній заведено. 300/5хв ≈ пʼятеро легітимних
+    // людей за одним NAT на повній швидкості, але скрипт із півсотнею
+    // акаунтів упреться. Це перший продакшн-роут, який його вмикає взагалі
+    // — досі `ipLimit` жив лише в тестах `rateLimit.test.ts`.
     requireSession(),
+    rateLimitExpress({
+      key: "api:me:profile",
+      limit: 60,
+      windowMs: 5 * 60_000,
+      ipLimit: 300,
+    }),
     async (req: Request, res: Response) => {
       const user = (req as Request & { user: AuthedUser }).user;
       const body = parseBody(UserProfilePutBodySchema, req);
       const payload = UserProfileResponseSchema.parse(
         await upsertUserProfile(pool, user.id, body.profile),
       );
+      // L-8 Фаза 2 (2026-08-09): дзеркалимо `memoryBank`-факти в
+      // `ai_memories` (source='profile') ПІСЛЯ успішного upsert-у профілю.
+      // Побічний ефект, best-effort — `mirrorProfileMemoryEntries` НІКОЛИ
+      // не кидає (Voyage down / circuit open / AI_MEMORY_ENABLED=false /
+      // вимкнений консент усі no-op-ляться всередині), тож профіль уже
+      // збережено і відповідь 200 не залежить від результату дзеркалення.
+      await mirrorProfileMemoryEntries(pool, user.id, body.profile);
       res.json(payload);
     },
   );

@@ -31,7 +31,11 @@ const {
   const queryMock = vi.fn().mockResolvedValue({ rows: [{ "?column?": 1 }] });
   const mockPool = {
     query: queryMock,
-    connect: vi.fn(),
+    // L-8 Фаза 2 (2026-08-09): `buildMemoryDeleteHandler` тепер відкриває
+    // транзакцію (`pool.connect()` + BEGIN/COMMIT/ROLLBACK) для узгодженого
+    // видалення з `user_profile`. Клієнт делегує в той самий `queryMock`,
+    // тож `stubAiMemorySql`-диспетчер нижче ловить і транзакційні виклики.
+    connect: vi.fn().mockResolvedValue({ query: queryMock, release: vi.fn() }),
     on: vi.fn(),
     totalCount: 0,
     idleCount: 0,

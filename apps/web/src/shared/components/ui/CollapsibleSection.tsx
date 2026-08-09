@@ -6,10 +6,10 @@ import {
   useState,
   useCallback,
   useEffect,
-  useLayoutEffect,
   useRef,
   type ReactNode,
 } from "react";
+import { useInertWhileCollapsed } from "@shared/hooks/useInertWhileCollapsed";
 import { cn } from "../../lib/ui/cn";
 import { motionScrollBehavior } from "../../lib/ui/motion";
 import { Icon } from "./Icon";
@@ -71,6 +71,25 @@ export interface CollapsibleSectionProps {
  *
  * Collapse animation uses CSS `grid-template-rows` for smooth height
  * transitions (no JavaScript measurement needed).
+ *
+ * **Чому в репо ДВА дисклоужери, і чому це не борг.** §6 аудиту Профілю і
+ * Налаштувань (2026-08-08) записав «два collapsible-примітиви з різною
+ * поведінкою: Профіль памʼятає відкрите, Налаштування — ні» як борг. Після
+ * рішення власника про Варіант A (§0.1 того ж аудиту) різниця стала
+ * НАСЛІДКОМ цього рішення, а не недоглядом:
+ *
+ * - Тут — 6 стабільних секцій, кожна зі своїм `storageKey`. Людина
+ *   повертається до тієї самої секції, тож памʼятати її стан корисно.
+ * - `SettingsGroup` — 14 секцій у трьох вкладках, де Варіант A відкриває
+ *   ПЕРШУ секцію активної вкладки, а явний вибір людини живе в памʼяті
+ *   сесії (`sectionOpenOverrides` у `HubSettingsPage`). Персистити там
+ *   означало б воювати з власним дефолтом: збережене «закрито» знищило б
+ *   авто-відкриття, збережене «відкрито» на всіх 14 повернуло б стіну
+ *   розгорнутих секцій, заради усунення якої Варіант A і обирався.
+ *
+ * Спільне між ними — інваріант доступності L-7, і він винесений у
+ * `useInertWhileCollapsed`. Саме там була справжня вада: не «компонентів
+ * два», а «гарантія tab-порядку написана двічі й могла розійтись».
  */
 export function CollapsibleSection({
   storageKey,
@@ -87,43 +106,21 @@ export function CollapsibleSection({
     () => safeReadLS<boolean>(storageKey, defaultOpen) ?? defaultOpen,
   );
   const sectionRef = useRef<HTMLElement>(null);
-  // Вузол сітки — з нього приходить `transitionend`.
-  const gridRef = useRef<HTMLDivElement>(null);
+  // Вузол сітки. Несе дві ролі одночасно: з нього приходить `transitionend`
+  // (див. `toggle` нижче) і на ньому ж L-7 ставить `inert`/`aria-hidden`.
+  //
+  // Логіка L-7 живе у СПІЛЬНОМУ хуку `useInertWhileCollapsed`
+  // (`@shared/hooks`) — той самий, що використовує `SettingsGroup`
+  // (`core/settings/SettingsPrimitives.tsx`). Доти кожен із двох
+  // дисклоужерів репо ніс власну копію тієї самої логіки: розходження
+  // копій не впало б жодним тестом і не було б видно на екрані — одна з
+  // поверхонь просто тихо втратила б гарантію tab-порядку. Чому саме
+  // `inert` + `aria-hidden` + `useLayoutEffect` — у докстрінгу хука.
+  const gridRef = useInertWhileCollapsed(open);
 
   useEffect(() => {
     onOpenChange?.(open);
   }, [open, onOpenChange]);
-
-  // L-7: секція ховає вміст візуально через `grid-rows-[0fr] overflow-hidden`
-  // (нижче), але DOM-підтерево лишалось змонтованим і фокусованим — Tab від
-  // заголовка провалювався у приховані поля пароля/сесій і кнопку
-  // «Видалити акаунт», де Enter наосліп відкривав діалог видалення.
-  // `inert`, а не `hidden`: `hidden` = display:none і ламає grid-template-rows
-  // анімацію (не можна анімувати висоту елемента, якого немає в layout-і).
-  // `inert` лишає вміст видимим/анімованим, але прибирає підтерево з
-  // tab-порядку й дерева доступності — саме туди, куди й треба.
-  //
-  // `aria-hidden` поряд з `inert` — той самий канонічний парний патерн, що й
-  // `useDialogFocusTrap.ts` (background-inert manager): рушії старіші за
-  // Safari 15.5 / Firefox 112 не знають `inert` узагалі, і без `aria-hidden`
-  // скрінрідер на них і далі озвучував би згорнутий вміст.
-  //
-  // `useLayoutEffect`, а не `useEffect` чи очікування `transitionend`:
-  // атрибут має зникнути СИНХРОННО з рендером, що вмикає розкриття, до
-  // першого пейнту — інакше анімація вже стартувала видимо, а перше
-  // натискання Tab одразу після кліку ще провалюється у ще-inert підтерево
-  // (кадр із видимим, але не focus-able вмістом).
-  useLayoutEffect(() => {
-    const el = gridRef.current;
-    if (!el) return;
-    if (open) {
-      el.removeAttribute("inert");
-      el.removeAttribute("aria-hidden");
-    } else {
-      el.setAttribute("inert", "");
-      el.setAttribute("aria-hidden", "true");
-    }
-  }, [open]);
 
   const toggle = useCallback(() => {
     setOpen((prev) => {
@@ -167,7 +164,12 @@ export function CollapsibleSection({
       }
       return next;
     });
-  }, [storageKey]);
+    // `gridRef` у залежностях, хоч ідентичність ref-а й стабільна: доти він
+    // створювався тут же через `useRef`, і ESLint знав це за побудовою. Після
+    // виносу L-7 у спільний хук ref приходить із виклику функції, і правило
+    // `react-hooks/exhaustive-deps` більше не може довести стабільність.
+    // Додати в масив чесніше, ніж глушити правило — на поведінку не впливає.
+  }, [storageKey, gridRef]);
 
   return (
     <section ref={sectionRef} className={cn("space-y-2", className)}>

@@ -288,6 +288,29 @@ describe("ToggleRow", () => {
     fireEvent.click(input);
     expect(onChange).toHaveBeenCalled();
   });
+
+  // Регресія на `[critical] label: Form elements must have labels` — axe
+  // ловив це на `/settings` у всіх трьох темах. Причина: рядок сам є
+  // `label` і обгортає `Switch`, який малює власний `label htmlFor`;
+  // вкладені `label` невалідні за контент-моделлю HTML, внутрішній
+  // explicit-label перемагає, і Chrome не давав інпуту доступного імені
+  // взагалі. Лікується явним `aria-labelledby` на підпис рядка.
+  //
+  // Запит `getByRole(..., { name })` резолвиться тим самим accname-
+  // алгоритмом, що й axe, тож перевіряє рівно те, що падало в гейті.
+  it("gives the switch an accessible name from the row label", () => {
+    render(<ToggleRow label="Сповіщення" checked={false} onChange={vi.fn()} />);
+    expect(screen.getByRole("switch", { name: "Сповіщення" })).toBeTruthy();
+  });
+
+  it("toggles when the visible label text is clicked", () => {
+    const onChange = vi.fn();
+    render(
+      <ToggleRow label="Сповіщення" checked={false} onChange={onChange} />,
+    );
+    fireEvent.click(screen.getByText("Сповіщення"));
+    expect(onChange).toHaveBeenCalledWith(true);
+  });
 });
 
 describe("SectionSkeleton — Suspense fallback (0017 Sprint 1.1)", () => {

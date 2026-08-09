@@ -48,6 +48,20 @@ function renderSection(): ReturnType<typeof render> {
   );
 }
 
+/**
+ * `SettingsGroup` монтується згорнутою (`defaultOpen = false`), а згорнутий
+ * вміст несе `inert` + `aria-hidden="true"` — інваріант L-7
+ * (`useInertWhileCollapsed`). Тому запити за роллю його НЕ бачать, і це не
+ * вада запиту, а рівно та гарантія tab-порядку, яку ми ставили навмисно.
+ * Розгортаємо секцію так само, як це робить людина.
+ *
+ * Тести вище шукають текст (`getByText`), який `aria-hidden` не фільтрує —
+ * тому вони й проходять без розкриття.
+ */
+function openSection() {
+  fireEvent.click(screen.getByRole("button", { name: "Дашборд" }));
+}
+
 beforeEach(() => {
   localStorage.clear();
 });
@@ -85,18 +99,18 @@ describe("DashboardSection", () => {
 
   it("defaults «Адаптивний порядок» to on when no pref is stored", () => {
     renderSection();
-    const row = screen.getByText("Адаптивний порядок").closest("label");
-    if (!row) throw new Error("toggle row missing");
-    const toggle = row.querySelector('[role="switch"]');
+    openSection();
+    // Пошук за доступним іменем, не за `closest("label")` — рядок
+    // `ToggleRow` більше не `<label>` навколо тумблера (фікс axe
+    // `label: Form elements must have labels` на `/settings`).
+    const toggle = screen.getByRole("switch", { name: "Адаптивний порядок" });
     expect(toggle).toHaveAttribute("aria-checked", "true");
   });
 
   it("flips «Чистий режим» on click and persists it to HUB_PREFS", () => {
     renderSection();
-    const row = screen.getByText("Чистий режим").closest("label");
-    if (!row) throw new Error("toggle row missing");
-    const toggle = row.querySelector('[role="switch"]');
-    if (!toggle) throw new Error("switch missing");
+    openSection();
+    const toggle = screen.getByRole("switch", { name: "Чистий режим" });
     expect(toggle).toHaveAttribute("aria-checked", "false");
 
     fireEvent.click(toggle);
