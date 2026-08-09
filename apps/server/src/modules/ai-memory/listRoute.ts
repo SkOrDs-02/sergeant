@@ -26,6 +26,17 @@
  * Тому тут `DELETE`, і UI має право писати «назавжди» без зірочки. Не
  * «уніфікуй» це з `forget.ts` — то інший шлях з іншим власником і іншою
  * обіцянкою.
+ *
+ * AI-DANGER: **узгоджене видалення з `user_profile`** (L-8 Фаза 2,
+ * 2026-08-09). Відколи `profileMirror.ts` дзеркалить `memoryBank.entries`
+ * у `source='profile'` рядки, цей список ПОКАЗУЄ і ЇХ теж — з тією самою
+ * кнопкою видалення. Без узгодження стирання одного `ai_memories`-рядка
+ * НЕ прибирає сам факт із `user_profile.payload.memoryBank.entries`, тож
+ * наступний write-through пуш (з будь-якого пристрою, будь-яке
+ * редагування банку — `pushCombinedProfile` завжди шле ПОВНИЙ локальний
+ * список) мовчки воскрешає "видалений" факт. Тому `deleteMemoryHandler`
+ * робить DELETE + (за потреби) `removeMemoryBankEntry` в ОДНІЙ транзакції
+ * — див. `modules/me/profile.ts::removeMemoryBankEntry`.
  */
 import type { Request, Response } from "express";
 import type { Pool } from "pg";
@@ -37,6 +48,7 @@ import type {
 import { AiMemoryListQuerySchema } from "@sergeant/shared";
 
 import { logger } from "../../obs/logger.js";
+import { removeMemoryBankEntry } from "../me/profile.js";
 
 type WithSessionUser = Request & { user?: { id: string } };
 
@@ -155,17 +167,53 @@ export function buildMemoryDeleteHandler(pool: Pool) {
       return;
     }
 
-    // `user_id = $1` — не декорація: без нього будь-хто з сесією стирав би
-    // чужі факти за перебором id. Партиційний ключ теж user_id, тож умова
-    // ще й тримає запит в одній партиції.
-    const result = await pool.query(
-      `DELETE FROM ai_memories WHERE user_id = $1 AND id = $2`,
-      [userId, id],
-    );
-    const deleted = (result.rowCount ?? 0) > 0;
+    // L-8 Фаза 2 (2026-08-09): DELETE + узгоджене прибирання з
+    // `user_profile` (коли рядок мав `source='profile'`) — В ОДНІЙ
+    // транзакції. "Обидві зміни або разом, або жодна": якщо
+    // `removeMemoryBankEntry` кине (наприклад, мережева помилка Postgres
+    // на другому запиті), ROLLBACK повертає й сам `ai_memories`-DELETE —
+    // інакше факт зникає зі списку, але кнопка "видалення" насправді
+    // нічого не гарантує, рівно той баг, що ця зміна лагодить.
+    const client = await pool.connect();
+    let deleted = false;
+    let source: string | null = null;
+    try {
+      await client.query("BEGIN");
+      // `user_id = $1` — не декорація: без нього будь-хто з сесією стирав би
+      // чужі факти за перебором id. Партиційний ключ теж user_id, тож умова
+      // ще й тримає запит в одній партиції.
+      const result = await client.query<{
+        source: string;
+        source_ref: string | null;
+      }>(
+        `DELETE FROM ai_memories WHERE user_id = $1 AND id = $2 RETURNING source, source_ref`,
+        [userId, id],
+      );
+      deleted = (result.rowCount ?? 0) > 0;
+      const row = result.rows[0];
+      source = row?.source ?? null;
+
+      if (deleted && row?.source === "profile" && row.source_ref) {
+        await removeMemoryBankEntry(client, userId, row.source_ref);
+      }
+
+      await client.query("COMMIT");
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => {
+        /* nested rollback failure — original error wins */
+      });
+      throw error;
+    } finally {
+      client.release();
+    }
 
     if (deleted) {
-      logger.info({ msg: "ai_memory_deleted_by_user", userId, memoryId: id });
+      logger.info({
+        msg: "ai_memory_deleted_by_user",
+        userId,
+        memoryId: id,
+        source,
+      });
     }
 
     const payload: AiMemoryDeleteResponse = { ok: true, deleted };

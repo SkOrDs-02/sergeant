@@ -9,7 +9,7 @@ import {
   useRef,
   type ReactNode,
 } from "react";
-import { useInertWhileCollapsed } from "../../hooks/useInertWhileCollapsed";
+import { useInertWhileCollapsed } from "@shared/hooks/useInertWhileCollapsed";
 import { cn } from "../../lib/ui/cn";
 import { motionScrollBehavior } from "../../lib/ui/motion";
 import { Icon } from "./Icon";

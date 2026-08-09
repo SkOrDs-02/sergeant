@@ -19,6 +19,7 @@ import {
   upsertUserPreferences,
 } from "../modules/me/dataRights.js";
 import { getUserProfile, upsertUserProfile } from "../modules/me/profile.js";
+import { mirrorProfileMemoryEntries } from "../modules/ai-memory/profileMirror.js";
 
 type AuthedUser = {
   id: string;
@@ -124,6 +125,13 @@ export function createMeRouter(): Router {
       const payload = UserProfileResponseSchema.parse(
         await upsertUserProfile(pool, user.id, body.profile),
       );
+      // L-8 Фаза 2 (2026-08-09): дзеркалимо `memoryBank`-факти в
+      // `ai_memories` (source='profile') ПІСЛЯ успішного upsert-у профілю.
+      // Побічний ефект, best-effort — `mirrorProfileMemoryEntries` НІКОЛИ
+      // не кидає (Voyage down / circuit open / AI_MEMORY_ENABLED=false /
+      // вимкнений консент усі no-op-ляться всередині), тож профіль уже
+      // збережено і відповідь 200 не залежить від результату дзеркалення.
+      await mirrorProfileMemoryEntries(pool, user.id, body.profile);
       res.json(payload);
     },
   );

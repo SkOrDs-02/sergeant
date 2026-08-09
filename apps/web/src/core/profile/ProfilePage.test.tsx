@@ -589,6 +589,12 @@ describe("V-11: два входи в памʼять розрізняються �
     const memoryTrigger = screen.getByText("Пам'ять").closest("button");
     expect(memoryTrigger).not.toBeNull();
     const subtitle = memoryTrigger?.textContent ?? "";
+    // Позитивний assert ПЕРЕД негативними (CodeRabbit-ревʼю PR #762): самих
+    // лише «не містить X» замало — порожній або зовсім сторонній підзаголовок
+    // проходив би обидві перевірки, і тест зеленів би на регресі, який
+    // просто прибрав текст. Пін на «Твої факти» тримає саме те, що робить
+    // фікс: підзаголовок називає ДЖЕРЕЛО фактів.
+    expect(subtitle).toContain("Твої факти");
     expect(subtitle).not.toContain(messages.privacy.aiMemory.sectionTitle);
     // І навпаки — щоб фікс не звівся до перестановки слів: підзаголовок
     // мусить називати ДЖЕРЕЛО фактів, а не повторювати «що знає ШІ».
