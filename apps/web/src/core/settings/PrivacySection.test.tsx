@@ -99,6 +99,7 @@ import {
   getAnalyticsConsent,
 } from "../observability/analyticsConsent";
 import { aiMemoryKeys } from "@shared/lib/api/queryKeys";
+import { messages } from "@shared/i18n/uk";
 import { DEFAULT_PREFERENCES, PrivacySection } from "./PrivacySection";
 
 async function openSection() {
@@ -540,13 +541,18 @@ describe("PrivacySection — preferences (analytics / aiMemory / pushNotificatio
     );
   });
 
-  // Дефект #5 (CodeRabbit post-merge review PR #756): один спільний
-  // try/catch навколо серверного DELETE і локального `writeMemoryEntries`
-  // видавав локальну помилку (переповнене localStorage, приватний режим)
-  // за серверну — хоча сервер на той момент УЖЕ незворотно стер факти.
-  // Без фіксу цей тест бачив би банер "Не вдалося очистити памʼять ШІ" і
-  // жодного виклику `invalidateQueries`.
-  it("shows success and still invalidates the cache when the server clear succeeds but the local write fails", async () => {
+  // Дефект #5 (CodeRabbit post-merge review PR #756, продовжено ревʼю
+  // PR #757): один спільний try/catch навколо серверного DELETE і
+  // локального `writeMemoryEntries` видавав локальну помилку (переповнене
+  // localStorage, приватний режим) за серверну — хоча сервер на той
+  // момент УЖЕ незворотно стер факти. Перший фікс (PR #756) розділив
+  // кроки, але мовчки ковтав локальну помилку і показував той самий
+  // текст повного успіху "Памʼять ШІ очищено." — тобто рапортував ПОВНЕ
+  // видалення, хоча локальна копія факту лишається на пристрої. Це
+  // неприйнятно для дії про приватність. PR #757 додає ТРЕТІЙ, окремий
+  // стан: сервер очищено, локальну копію стерти не вдалося — відмінний і
+  // від повного успіху, і від повного провалу (сервер сам не чистив).
+  it("shows a distinct partial-clear status (not the full-success text) and still invalidates the cache when the server clear succeeds but the local write fails", async () => {
     mockWriteMemoryEntries.mockImplementationOnce(() => {
       throw new Error("Не вдалося зберегти пам'ять профілю");
     });
@@ -562,7 +568,14 @@ describe("PrivacySection — preferences (analytics / aiMemory / pushNotificatio
     );
 
     await waitFor(() => expect(meApi.clearAiMemory).toHaveBeenCalledTimes(1));
-    expect(await screen.findByText("Памʼять ШІ очищено.")).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        "Памʼять ШІ очищено на сервері, але локальну копію стерти не вдалося.",
+      ),
+    ).toBeInTheDocument();
+    // Ні текст повного успіху, ні текст повного провалу не мають зʼявитись
+    // — це саме третій, окремий стан, а не переперевикористання іншого.
+    expect(screen.queryByText("Памʼять ШІ очищено.")).not.toBeInTheDocument();
     expect(
       screen.queryByText("Не вдалося очистити памʼять ШІ."),
     ).not.toBeInTheDocument();
@@ -802,5 +815,57 @@ describe("PrivacySection — audit L-11 (lock toggle reflects a PIN-store wipe)"
     await waitFor(() =>
       expect(mockSetFlag).toHaveBeenCalledWith("app-lock-enabled", false),
     );
+  });
+});
+
+// V-12 (аудит 2026-08-08, docs/90-work/audits/2026-08-08-profile-settings-deep-audit.md
+// §5): «Згода та дані» і вкладений «Що ШІ про тебе памʼятає» переведено на
+// спільний примітив `SettingsSubGroup` замість саморобних `<h3>`/`<h4>`
+// з `text-style-label`. Обидва тепер `<h3 class="text-style-overline">` —
+// heading-order лишається h2→h3→h3 (без розриву рівня), детальне
+// обґрунтування — коментар над `<SettingsSubGroup title="Згода та дані">`
+// у `PrivacySection.tsx`.
+describe("PrivacySection — V-12 (SettingsSubGroup primitive)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockUseFlag.mockReturnValue(false);
+    appLock.hasPin = vi.fn().mockResolvedValue(true);
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  it("«Згода та дані» рендериться як SettingsSubGroup (h3 + text-style-overline), а не саморобний h3 з text-style-label", async () => {
+    renderSection();
+    await openSection();
+
+    const heading = await screen.findByText("Згода та дані");
+    expect(heading.tagName).toBe("H3");
+    expect(heading).toHaveClass("text-style-overline");
+    expect(heading).not.toHaveClass("text-style-label");
+  });
+
+  it("вкладений підблок «Що ШІ про тебе памʼятає» теж стає h3 (SettingsSubGroup) — heading-order лишається h2→h3→h3 без розриву рівня", async () => {
+    const { container } = renderSection();
+    await openSection();
+
+    const nestedHeading = await screen.findByText(
+      messages.privacy.aiMemory.sectionTitle,
+    );
+    expect(nestedHeading.tagName).toBe("H3");
+    expect(nestedHeading).toHaveClass("text-style-overline");
+
+    // axe heading-order (блокуючий гейт tests/a11y/axe.spec.ts) забороняє
+    // СТРИБОК рівня вниз (напр. h2→h4), але дозволяє повтор того самого
+    // рівня (h3→h3) — перевіряємо це напряму на реальній DOM-послідовності
+    // заголовків секції.
+    const levels = Array.from(
+      container.querySelectorAll("h1,h2,h3,h4,h5,h6"),
+    ).map((el) => Number(el.tagName.slice(1)));
+    expect(levels.length).toBeGreaterThanOrEqual(3);
+    for (let i = 1; i < levels.length; i++) {
+      expect(levels[i]! - levels[i - 1]!).toBeLessThanOrEqual(1);
+    }
   });
 });

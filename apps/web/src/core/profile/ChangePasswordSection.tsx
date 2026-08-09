@@ -74,9 +74,14 @@ export function ChangePasswordSection({ online }: { online: boolean }) {
 
   return (
     <Card radius="lg" padding="none" className="overflow-hidden">
+      {/* V-4 (2026-08-08) — той самий фікс, що й `MemoryBankSection.tsx`
+          (канонічний коментар там): текстовий заголовок «Пароль» дослівно
+          дублював заголовок `CollapsibleSection` у `ProfilePage.tsx` і
+          малювався `text-style-label`, більшим за `xs`-кікер. Прибрано;
+          іконка лишилась — тут немає власної мета-інформації (лічильника
+          чи статусу), яку варто було б винести на її місце. */}
       <div className="px-4 py-3.5 flex items-center gap-2 border-b border-line">
         <Icon name="lock" size={16} className="text-muted" />
-        <span className="text-style-label text-text">Пароль</span>
       </div>
 
       <form onSubmit={submit} noValidate className="px-4 py-4 space-y-3">

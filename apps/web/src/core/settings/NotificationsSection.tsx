@@ -4,6 +4,7 @@ import { Button } from "@shared/components/ui/Button";
 import { useToast } from "@shared/hooks/useToast";
 import { requestNotificationPermission } from "@shared/hooks/useModuleReminder";
 import { usePushNotifications } from "@shared/hooks/usePushNotifications";
+import { settingsSectionTitle } from "../hub/settingsSectionsCatalog";
 import { useRoutineState } from "../../modules/routine/hooks/useRoutineState";
 import { useMonthlyPlan } from "../../modules/fizruk/hooks/useMonthlyPlan";
 import {
@@ -146,7 +147,10 @@ export function NotificationsSection() {
   const permColor = permColors[permStatus] ?? "text-muted";
 
   return (
-    <SettingsGroup title="Сповіщення" icon="bell">
+    // V-7 (2026-08-08): title читається з каталогу, а не хардкодиться тут —
+    // раніше цей рядок і ⌘K-індекс (settingsSectionsCatalog.ts) розходились
+    // ("Сповіщення" тут vs "Нагадування" у пошуку) без жодної перевірки.
+    <SettingsGroup title={settingsSectionTitle("notifications")} icon="bell">
       <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-bg border border-line">
         <div>
           <p className="text-style-label text-text">Push-сповіщення</p>

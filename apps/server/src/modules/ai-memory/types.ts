@@ -35,6 +35,16 @@ export const ALLOWED_MEMORY_SOURCES = [
   // лишається на `sources=['cofounder']`; combined recall — через
   // `POST /api/ai-memory/recall` з явним `sources=['cofounder','product']`.
   "product",
+  // Migration 118 — L-8, аудит Профілю/Налаштувань (2026-08-08,
+  // docs/90-work/audits/2026-08-08-profile-settings-deep-audit.md). Явно
+  // заявлені факти про самого користувача (client-side «банк пам'яті»
+  // `hub_user_profile_v1` / `USER_PROFILE`, дзеркальований серверним
+  // `user_profile` з міграції 115) — НЕ поведінкові events (`product`) і
+  // НЕ витяг із чату (`chat`). ФАЗА 1 (ця міграція): лише CHECK-constraint
+  // + union-тип. Ingestion-hook, що реально пише source='profile' рядки,
+  // приземляється окремим PR-ом (Фаза 2) — до того source дозволений, але
+  // порожній.
+  "profile",
 ] as const;
 
 export type MemorySource = (typeof ALLOWED_MEMORY_SOURCES)[number];

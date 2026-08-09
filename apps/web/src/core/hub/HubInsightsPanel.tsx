@@ -13,7 +13,9 @@ import { messages } from "@shared/i18n/uk";
 type Recommendation = Rec;
 
 // Audit F9: hub-shell не повинен фарбуватися у foreign module-токени
-// (Hard Rule #12). Accent повністю severity-driven; fallback на `info`
+// (конвенція module-accent containment, ex-Hard Rule #12 — правило retired
+// ADR-0081, сама конвенція чинна й тримається tokens + ревʼю).
+// Accent повністю severity-driven; fallback на `info`
 // для нейтральних рекомендацій без поточного severity.
 type RecSeverity = "danger" | "warning" | "info" | "success";
 

@@ -7,7 +7,10 @@ import { isApiError, privatApi } from "@shared/api";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { messages } from "@shared/i18n/uk";
-import { ConfirmModal, SettingsSubGroup } from "./SettingsPrimitives";
+// V-8 (аудит 2026-08-08): переїзд із локального `ConfirmModal` на канонічний
+// портальний `ConfirmDialog` — причина в `FinykWebhookServiceSection.tsx`.
+import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
+import { SettingsSubGroup } from "./SettingsPrimitives";
 
 interface FinykPrivatBankSectionProps {
   enabled: boolean;
@@ -126,10 +129,10 @@ export function FinykPrivatBankSection({
   return (
     <SettingsSubGroup title={COPY.title}>
       {confirmDisconnectPrivat && (
-        <ConfirmModal
+        <ConfirmDialog
           open
           title={COPY.disconnectTitle}
-          body={COPY.disconnectBody}
+          description={COPY.disconnectBody}
           confirmLabel={COPY.disconnectLabel}
           danger
           onCancel={() => setConfirmDisconnectPrivat(false)}

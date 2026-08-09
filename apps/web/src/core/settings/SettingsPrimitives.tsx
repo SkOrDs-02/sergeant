@@ -14,8 +14,6 @@ import { Icon } from "@shared/components/ui/Icon";
 import { Card } from "@shared/components/ui/Card";
 import { Switch } from "@shared/components/ui/Switch";
 import { Skeleton, SkeletonText } from "@shared/components/ui/Skeleton";
-import { useBodyScrollLock } from "@shared/hooks/useBodyScrollLock";
-import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import { messages } from "@shared/i18n/uk";
 
 interface ChevronIconProps {
@@ -38,9 +36,16 @@ function ChevronIcon({ expanded }: ChevronIconProps) {
 /** Module names accepted by SettingsGroup (mirrors CardModule but decoupled). */
 type SettingsModule = "finyk" | "fizruk" | "routine" | "nutrition";
 
-/** Scoped bg-class for the icon badge — avoids global accent-rgb emission
- *  (Hard Rule #12). Each module has a registered `-soft` / `-soft-border`
- *  pair in the design token contract. */
+/** Scoped bg-class for the icon badge — avoids global accent-rgb emission.
+ *  Each module has a registered `-soft` / `-soft-border` pair in the design
+ *  token contract.
+ *
+ *  Раніше тут стояло «Hard Rule #12» — правило retired
+ *  [ADR-0081](../../../../../docs/04-governance/adr/0081-repository-simplification.md):
+ *  module-accent containment лишається чинною конвенцією, але тримається
+ *  design tokens і ревʼю, а не ESLint-гейтом. Посилання на неіснуючий номер
+ *  правила прибрано (§6 боргу, аудит Профілю/Налаштувань 2026-08-08) — саме
+ *  той клас коментаря, що пережив свій механізм. */
 const MODULE_ICON_BG: Record<SettingsModule, string> = {
   finyk: "bg-finyk-soft border-finyk-soft-border text-finyk",
   fizruk: "bg-fizruk-soft border-fizruk-soft-border text-fizruk",
@@ -180,7 +185,9 @@ export function SettingsGroup({
   }, [anchorId]);
 
   // Scoped module bg class — uses registered token pair, never raw RGB
-  // (Hard Rule #12). Guard with ?. so noUncheckedIndexedAccess is satisfied.
+  // (конвенція module-accent containment, ex-Hard Rule #12, retired
+  // ADR-0081 — див. коментар над `MODULE_ICON_BG`). Guard with ?. so
+  // noUncheckedIndexedAccess is satisfied.
   const moduleBg = module != null ? (MODULE_ICON_BG[module] ?? "") : "";
   const contentRef = useInertWhileCollapsed(open);
 
@@ -221,18 +228,25 @@ export function SettingsGroup({
       <h2 className="contents">
         <button
           type="button"
-          onClick={() =>
-            setOpen((v) => {
-              const next = !v;
-              // Явний клік юзера — не mount, не hash, не Варіант A
-              // дефолт. Повідомляємо нагору (дефект №3), щоб власник
-              // контексту (зазвичай `HubSettingsPage`) міг запам'ятати
-              // цей вибір per-section-id і не форсити дефолт знову після
-              // ремаунту (перемикання вкладки чи search).
-              onUserToggle?.(next);
-              return next;
-            })
-          }
+          onClick={() => {
+            // CodeRabbit-ревʼю PR #757: апдейтер `setOpen` мусить лишатись
+            // ЧИСТИМ — React 18 (незалежно від dev/prod) інколи обчислює
+            // updater-функцію "eager" одразу в обробнику dispatch-у (щоб
+            // перевірити, чи справді змінюється стан), а потім ЩЕ РАЗ під
+            // час самого рендеру — побічний ефект (`onUserToggle`)
+            // усередині апдейтера стріляв би більше одного разу на клік.
+            // Рахуємо `next` з поточного `open` ПОЗА апдейтером,
+            // викликаємо `setOpen`, і лише ПІСЛЯ цього — `onUserToggle`,
+            // рівно один раз.
+            const next = !open;
+            setOpen(next);
+            // Явний клік юзера — не mount, не hash, не Варіант A
+            // дефолт. Повідомляємо нагору (дефект №3), щоб власник
+            // контексту (зазвичай `HubSettingsPage`) міг запам'ятати
+            // цей вибір per-section-id і не форсити дефолт знову після
+            // ремаунту (перемикання вкладки чи search).
+            onUserToggle?.(next);
+          }}
           aria-expanded={open}
           className={cn(
             "w-full px-4 py-4 flex items-center justify-between gap-3",
@@ -361,97 +375,17 @@ export function ToggleRow({
   );
 }
 
-export interface ConfirmModalProps {
-  open: boolean;
-  title: string;
-  body?: ReactNode;
-  confirmLabel: string;
-  danger?: boolean;
-  onConfirm: () => void;
-  onCancel: () => void;
-}
-
-export function ConfirmModal({
-  open,
-  title,
-  body,
-  confirmLabel,
-  danger,
-  onConfirm,
-  onCancel,
-}: ConfirmModalProps) {
-  const panelRef = useRef<HTMLDivElement>(null);
-  useDialogFocusTrap(open, panelRef, {
-    onEscape: onCancel,
-    inertBackground: true,
-  });
-  // `inertBackground` закриває фокус і a11y-дерево, але НЕ скрол — під
-  // повноекранним `fixed inset-0` сторінка позаду лишалась прокручуваною.
-  useBodyScrollLock(open);
-
-  if (!open) return null;
-  return (
-    <div
-      className="fixed inset-0 z-120 flex items-center justify-center p-4"
-      role="presentation"
-    >
-      <button
-        type="button"
-        className="absolute inset-0 bg-black/60 backdrop-blur-md motion-safe:animate-fade-in"
-        onClick={onCancel}
-        aria-label={messages.actions.close}
-      />
-      <div
-        ref={panelRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="confirm-modal-title"
-        className={cn(
-          "relative w-full max-w-sm p-6 z-10 motion-safe:animate-scale-in",
-          // v2 glass surface — auto-upgrades to opaque in HC (theme.css
-          // §HC v2 overrides: --surface-glass → rgba(255,255,255,1) /
-          // rgba(32,28,25,1) dark-HC). No separate `html.hc &` needed.
-          "bg-surface-glass backdrop-blur-xl border border-surface-line",
-          "rounded-3xl shadow-card-v2",
-        )}
-      >
-        <h2
-          id="confirm-modal-title"
-          className="text-style-title text-text leading-tight"
-        >
-          {title}
-        </h2>
-        {body && (
-          <p className="text-style-body text-muted mt-3 leading-relaxed">
-            {body}
-          </p>
-        )}
-        <div className="flex gap-3 mt-6">
-          <button
-            type="button"
-            className="text-style-label flex-1 py-3.5 rounded-xl border border-line text-muted hover:bg-surface-strong-glass hover:text-text transition-colors"
-            onClick={onCancel}
-          >
-            {messages.actions.cancel}
-          </button>
-          <button
-            type="button"
-            className={cn(
-              "text-style-label flex-1 py-3.5 rounded-xl text-white transition-colors shadow-soft",
-              danger
-                ? "bg-danger-strong hover:bg-danger/90 active:bg-danger/80"
-                : "bg-brand-strong hover:bg-brand/90 active:bg-brand/80",
-            )}
-            onClick={onConfirm}
-          >
-            {confirmLabel}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
+// `ConfirmModal` видалено (V-8, аудит Профілю/Налаштувань 2026-08-08).
+// Це була ДРУГА оболонка підтвердження на тих самих двох сторінках, з
+// власним затемненням (`bg-black/60 backdrop-blur-md` проти `bg-black/40`
+// у канонічному `ConfirmDialog`) і — головне — БЕЗ `createPortal`: вона
+// малювалась у потоці батька, тож усередині glass-картки Налаштувань її
+// обрізало (той самий симптом, що вже описаний у `OnboardingWizard.tsx`).
+// На момент видалення продуктових споживачів не лишилось жодного —
+// останній (`PrivacySection`) переїхав на `ConfirmDialog` хвилею 2. Мертвий
+// код із відомим дефектом небезпечніший за відсутній: наступний, хто
+// шукатиме «модалку в цьому файлі», знайде саме його.
+// Канонічна оболонка одна — `@shared/components/ui/ConfirmDialog`.
 export interface SectionSkeletonProps {
   /**
    * Minimum height in pixels. Matches the real section's footprint AS IT

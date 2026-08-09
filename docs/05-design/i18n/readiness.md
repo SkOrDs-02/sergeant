@@ -1,6 +1,6 @@
 # i18n readiness — Sergeant web
 
-> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
+> **Last touched:** 2026-08-09 by @claude. **Next review:** 2026-11-07.
 > **Status:** Active
 
 ## Контекст
@@ -35,7 +35,7 @@ Roadmap-довідник: [`docs/90-work/audits/2026-05-03-web-deep-dive`](https
     TagsSection) переведено на `messages.validation.*` (~22 рядки,
     20 нових ключів). Тести пройдено без зміни assertions.
   - ESLint rule `sergeant-design/no-cyrillic-jsx-literal` додано в
-    warn-режимі з allowlist на 292 файли (станом на 2026-08-05; round-14 baseline був 239)
+    warn-режимі з allowlist на 283 файли (станом на 2026-08-08; round-14 baseline був 239)
     (`apps/web/eslint.i18n-allowlist.json`). Burndown — зменшувати
     allowlist у наступних PR-ах; коли `[]` — promote до `error`.
   - Unit tests rule-у: 13 кейсів (file scoping, allowlist behaviour,
@@ -104,7 +104,7 @@ node scripts/codemods/i18n-burndown/script.mjs --filter=foo # subset
 (`messages.x.y`), template literals (next-round scope), та файли з
 allowlist у `apps/web/eslint.i18n-allowlist.json`.
 
-Round-14 baseline: 239 файлів у allowlist; поточний стан — 292 (регрес, див. таблицю нижче). Кожен наступний PR
+Round-14 baseline: 239 файлів у allowlist; поточний стан — 283 (регрес, див. таблицю нижче). Кожен наступний PR
 скорочує цей файл (одне-два видалення на PR). Після `[]` — promote
 до `"error"` у `eslint.config.js`.
 
@@ -127,7 +127,7 @@ allowlist-у через follow-up PR-и. Перевірити фактичну �
 
 ```bash
 jq 'length' apps/web/eslint.i18n-allowlist.json
-# → 292 (2026-08-05; число росте, коли нові екрани заходять із inline-кирилицею)
+# → 283 (2026-08-08; число росте, коли нові екрани заходять із inline-кирилицею)
 ```
 
 Або через ESLint warning count (eslint-rule безпосередньо):

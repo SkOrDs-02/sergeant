@@ -20,12 +20,15 @@ import {
 } from "@tanstack/react-query";
 
 import { Button } from "@shared/components/ui/Button";
+import { EmptyState } from "@shared/components/ui/EmptyState";
 import { meApi } from "@shared/api";
 import { messages } from "@shared/i18n/uk";
 import { aiMemoryKeys } from "@shared/lib/api/queryKeys";
 import type { AiMemoryListItem } from "@sergeant/api-client";
 
-import { ConfirmModal } from "./SettingsPrimitives";
+// V-8 (аудит 2026-08-08): переїзд із локального `ConfirmModal` на канонічний
+// портальний `ConfirmDialog` — причина в `FinykWebhookServiceSection.tsx`.
+import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { Icon } from "@shared/components/ui/Icon";
 
 const m = messages.privacy.aiMemory;
@@ -43,6 +46,10 @@ const SOURCE_LABEL: Record<string, string> = {
   digest: "Підсумок тижня",
   cofounder: "Співзасновник",
   product: "Продукт",
+  // Міграція 118 / L-8 (аудит 2026-08-08): факти, які людина заявила про
+  // себе сама — через інтервʼю з асистентом або вручну в банку памʼяті.
+  // Без цього рядка fallback `?? item.source` показав би сире «profile».
+  profile: "Профіль",
 };
 
 function formatDay(iso: string): string {
@@ -105,11 +112,11 @@ export function AiMemoryList() {
   }
 
   if (items.length === 0) {
-    return (
-      <p className="text-style-caption text-subtle leading-relaxed">
-        {m.empty}
-      </p>
-    );
+    // V-14 (аудит 2026-08-08): був голий <p> — окремий рецепт порожнього
+    // стану, ніж спільний `EmptyState` (немає role=status/aria-live,
+    // інша типографіка). `MemoryBankSection` — другий вхід у «що ШІ про
+    // мене знає» — тепер малює порожнечу тим самим примітивом.
+    return <EmptyState size="sm" description={m.empty} />;
   }
 
   return (
@@ -162,10 +169,10 @@ export function AiMemoryList() {
         </p>
       ) : null}
 
-      <ConfirmModal
+      <ConfirmDialog
         open={pending !== null}
         title={m.confirmTitle}
-        body={`«${pending?.content ?? ""}» ${m.confirmBody}`}
+        description={`«${pending?.content ?? ""}» ${m.confirmBody}`}
         confirmLabel={m.confirmButton}
         danger
         onConfirm={() => {

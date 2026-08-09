@@ -196,7 +196,8 @@ export function StreakIndicator() {
 /**
  * Wraps a dashboard *group* in a fade-up animation. The hub uses three
  * stable groups — Hero / Modules / Insights — and each `index` maps to
- * a fixed delay (`index * 30ms`, capped at 150ms per Hard Rule #17)
+ * a fixed delay (`index * 30ms`, capped at 150ms — бюджет анімації,
+ * ex-Hard Rule #17, retired ADR-0081; числа лишаються конвенцією)
  * instead of the per-element ramp we used before. Grouping keeps the
  * reveal under ~100ms for the three current groups so users don't see
  * a long staircase of fades on slower devices, and prevents the index
@@ -210,7 +211,8 @@ export function StaggerChild({
   children: ReactNode;
 }) {
   const style: CSSProperties = {
-    // Hard Rule #17 (Animation budget): stagger ≤ 30 ms between children,
+    // Бюджет анімації (ex-Hard Rule #17, retired ADR-0081, конвенція
+    // лишається): stagger ≤ 30 ms between children,
     // total delay cap ≤ 150 ms. Three fixed groups (Hero / Modules /
     // Insights) map to indices 0–2 → 0/30/60ms, so the cap rarely bites
     // — but keep the `Math.min` so any future fourth group still

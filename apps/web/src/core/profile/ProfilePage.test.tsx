@@ -389,6 +389,161 @@ describe("ProfilePage", () => {
     });
   });
 
+  // §6 аудиту 2026-08-08 («найнебезпечніші дії без тестів»): гейт «є
+  // незбережені записи» на виході — `logout()` бере `confirmUnsyncedLoss`
+  // і чекає на відповідь, перш ніж стерти локальну БД. Мок `logout` тут
+  // імітує РЕАЛЬНУ поведінку `AuthContext.logout()` (`flushPendingSyncOpsBeforeLogout`
+  // → якщо лишилось недоставлене — питає callback і чекає на його Promise),
+  // а не просто резолвиться миттєво — інакше діалог ніколи б не встиг
+  // змонтуватись і тест перевіряв би повітря.
+  describe("unsynced records gate on logout", () => {
+    function mockLogoutAsksForConfirmation(pending = 3) {
+      logoutMock.mockImplementationOnce(
+        async (options?: {
+          confirmUnsyncedLoss?: (pending: number) => Promise<boolean>;
+        }) => {
+          await options?.confirmUnsyncedLoss?.(pending);
+        },
+      );
+    }
+
+    it('"Все одно вийти": proceeds with logout — toast + redirect fire, exactly like a clean exit', async () => {
+      mockLogoutAsksForConfirmation(3);
+      renderPage();
+      fireEvent.click(screen.getByRole("button", { name: "Вийти" }));
+
+      const dialog = await screen.findByRole("alertdialog", {
+        name: "Є незбережені записи",
+      });
+      // `^`-анкор — щоб `pending=3` не міг випадково збігтися з рядком, де
+      // "3" є суфіксом іншого числа (напр. "13 записів").
+      expect(
+        within(dialog).getByText(/^3 записів ще не збережено на сервері\./),
+      ).toBeInTheDocument();
+
+      fireEvent.click(
+        within(dialog).getByRole("button", { name: "Все одно вийти" }),
+      );
+
+      await waitFor(() =>
+        expect(toastSuccessMock).toHaveBeenCalledWith("Ви вийшли з акаунта"),
+      );
+      expect(navigateMock).toHaveBeenCalledWith("/sign-in", { replace: true });
+      expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    });
+
+    it('"Залишитись": cancels logout — session stays alive, so no toast and no redirect', async () => {
+      mockLogoutAsksForConfirmation(1);
+      renderPage();
+      fireEvent.click(screen.getByRole("button", { name: "Вийти" }));
+
+      const dialog = await screen.findByRole("alertdialog", {
+        name: "Є незбережені записи",
+      });
+      // Однина: pending === 1 бере окрему гілку копірайту. Regex (не
+      // exact-рядок) — опис рендериться трьома сусідніми текстовими
+      // вузлами всередині одного `<div>` (речення + пробіл + друге
+      // речення), тож `getByText` з точним рядком не матчить жоден
+      // окремий вузол — лише конкатенований текст контейнера.
+      expect(
+        within(dialog).getByText(/^1 запис ще не збережено на сервері\./),
+      ).toBeInTheDocument();
+
+      fireEvent.click(
+        within(dialog).getByRole("button", { name: "Залишитись" }),
+      );
+
+      await waitFor(() =>
+        expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument(),
+      );
+      // Сесія лишається живою — жодного сигналу «ви вийшли», жодного
+      // редиректу на екран входу. Це саме те, що мало б зламатись, якби
+      // `cancelled` ігнорувався після `await logout(...)`.
+      expect(toastSuccessMock).not.toHaveBeenCalledWith("Ви вийшли з акаунта");
+      expect(navigateMock).not.toHaveBeenCalledWith("/sign-in", {
+        replace: true,
+      });
+      // Кнопка "Вийти" повертається в звичайний стан — не залипає у
+      // loading, ніби вихід досі триває.
+      expect(screen.getByRole("button", { name: "Вийти" })).not.toBeDisabled();
+    });
+  });
+
+  // V-4 / V-10 (deep-module-audit 2026-08-08, §5): Профіль приведено до
+  // сітки Налаштувань (V-10) і виправлено інверсію заголовків секцій
+  // (V-4). Ці тести червоніли на коді ДО фіксу — див. коментарі в
+  // `ProfilePage.tsx`/`MemoryBankSection.tsx` (канонічний) для деталей.
+  describe("section container and header hierarchy (V-4 / V-10 audit 2026-08-08)", () => {
+    it("matches HubSettingsPage's own container shape — no duplicated max-w/px from the hub shell (V-10)", () => {
+      const { container } = renderPage();
+      const root = container.firstElementChild as HTMLElement;
+      // Було: "max-w-lg mx-auto px-5 pb-10 space-y-2 pt-6" — дублювало
+      // max-w/px хабової оболонки (`HubMainContent.tsx`) і мало вдвічі
+      // щільніший ритм за `gap-4` сусідньої вкладки Налаштувань.
+      expect(root.className).not.toContain("max-w-lg");
+      expect(root.className).not.toContain("px-5");
+      expect(root.className).not.toContain("space-y-2");
+      expect(root.className).toContain("gap-4");
+    });
+
+    it("does not render a duplicated card-header title inside expanded sections (V-4)", () => {
+      const { container } = renderPage();
+      expandAllCollapsedSections(container);
+      // До фіксу кожен з цих заголовків рендерився ДВІЧІ: раз як
+      // зовнішній заголовок `CollapsibleSection`, раз — як внутрішня
+      // шапка картки (`COPY.sectionTitle` дослівно збігався з `title`).
+      expect(screen.getAllByText("Активні сесії")).toHaveLength(1);
+      expect(screen.getAllByText("Біометрія")).toHaveLength(1);
+      expect(screen.getAllByText("Пароль")).toHaveLength(1);
+      // MemoryBankSection мала близький, а не дослівний дублікат —
+      // «Пам'ять ШІ» замість «Пам'ять» — цей текст мав зникнути повністю.
+      expect(screen.queryByText("Пам'ять ШІ")).not.toBeInTheDocument();
+    });
+
+    it("raises the outer section heading to text-style-label so it is never smaller than its inner card header (V-4)", () => {
+      const { container } = renderPage();
+      expandAllCollapsedSections(container);
+      for (const title of [
+        "Активні сесії",
+        "Пам'ять",
+        "Біометрія",
+        "Пароль",
+        "Видалення акаунта",
+      ]) {
+        const el = screen.getByText(title);
+        expect(el.className).toContain("text-style-label");
+        expect(el.className).not.toContain("text-style-caption");
+      }
+    });
+
+    it("keeps DangerZoneSection's own non-duplicate heading text intact — it is NOT a literal duplicate of the outer title (V-4)", () => {
+      const { container } = renderPage();
+      expandAllCollapsedSections(container);
+      // «Небезпечна зона» — інша інформація, ніж «Видалення акаунта»
+      // (застереження про розділ, не назва секції), тож текст лишається:
+      // на відміну від чотирьох секцій вище, тут нічого не дублювалось.
+      expect(screen.getByText("Небезпечна зона")).toBeInTheDocument();
+      expect(screen.getByText("Видалення акаунта")).toBeInTheDocument();
+    });
+
+    it("keeps MemoryBankSection's meta info (entry count + storage size) after removing the duplicated title (V-4)", () => {
+      localStorage.setItem(
+        "hub_user_profile_v1",
+        JSON.stringify([
+          {
+            id: "mem_1",
+            fact: "Не їм арахіс",
+            category: "allergy",
+            createdAt: "2026-01-01T00:00:00Z",
+          },
+        ]),
+      );
+      const { container } = renderPage();
+      expandAllCollapsedSections(container);
+      expect(screen.getByText(/1 запис/)).toBeInTheDocument();
+    });
+  });
+
   describe("memory bank", () => {
     it("renders stored profile memory and exposes visible delete action", () => {
       localStorage.setItem(

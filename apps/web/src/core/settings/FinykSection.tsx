@@ -49,7 +49,11 @@ export function FinykSection() {
 
   return (
     <div ref={sectionRef}>
-      <SettingsGroup title="Фінік" icon="credit-card">
+      {/* V-13 (аудит Профілю/Налаштувань 2026-08-08): `SettingsGroup`
+          фарбує бейдж модульним акцентом лише коли задані ОБИДВА — `icon`
+          і `module`. Без другого всі чотири модульні секції вкладки
+          «Розділи» падали на спільний сірий фолбек. */}
+      <SettingsGroup title="Фінік" icon="credit-card" module="finyk">
         <SettingsSubGroup title="Власні категорії витрат">
           <p className="text-style-caption text-subtle leading-snug">
             Додаються до списку категорій у транзакціях, сплітах і лімітах

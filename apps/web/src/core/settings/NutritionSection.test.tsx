@@ -127,4 +127,16 @@ describe("NutritionSection", () => {
     renderSection();
     expect(screen.getByText("Немає комор")).toBeInTheDocument();
   });
+
+  // V-13 (profile/settings deep audit 2026-08-08, §«Вкладка Розділи») —
+  // без `module="nutrition"` іконка секції рендериться нейтрально-сірою.
+  // Перевіряємо, що бейдж іконки несе саме nutrition-акцент.
+  it("renders the section icon badge with the nutrition module accent", () => {
+    const { container } = renderSection();
+    const badge = container.querySelector("svg")?.closest("span");
+    expect(badge).not.toBeNull();
+    expect(badge?.className).toContain("bg-nutrition-soft");
+    expect(badge?.className).toContain("border-nutrition-soft-border");
+    expect(badge?.className).toContain("text-nutrition");
+  });
 });

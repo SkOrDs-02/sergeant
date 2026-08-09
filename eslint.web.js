@@ -14,9 +14,21 @@ import { readFileSync } from "node:fs";
 // relative path to a file that still has inline cyrillic JSX literals.
 // Migrate strings → `apps/web/src/shared/i18n/uk.ts` and remove the
 // path from the JSON. When the array is empty, promote the rule from
-// "warn" to "error". See `docs/i18n/readiness.md` § Burndown.
-// TARGET DEADLINE: 2026-Q3 (до 2026-09-30). Поточний розмір: ~30 файлів.
-// Відповідальний: @Skords-01. Прогрес: docs/i18n/readiness.md § Burndown.
+// "warn" to "error". See `docs/05-design/i18n/readiness.md` § Burndown.
+//
+// Розмір: 283 файли (2026-08-08). Тут стояло «~30 файлів» — заниження на
+// порядок, і саме воно робило дедлайн правдоподібним. При темпі burndown-а
+// 5–10 файлів на PR («pack»-и, `scripts/codemods/i18n-burndown/`) 283 файли
+// — це десятки PR-ів, тож попередній «TARGET DEADLINE: до 2026-09-30» тут
+// прибрано як недосяжний: дата без плану, що її досягає, гасить сигнал так
+// само, як вічно червоний гейт. Нову дату ставить власник разом із рішенням
+// про темп.
+//
+// Ще одна причина, чому число розʼїхалось: allowlist ріс не лише міграцією
+// назад, а й перейменуваннями — аудит Профілю/Налаштувань (2026-08-08, §6)
+// знайшов у ньому 9 шляхів до файлів, яких у репо вже немає. Вони прибрані;
+// мертвий запис нічого не ламає, але роздуває число, за яким міряють борг.
+// Відповідальний: @Skords-01. Прогрес: docs/05-design/i18n/readiness.md § Burndown.
 const i18nAllowlist = JSON.parse(
   readFileSync(
     new URL("./apps/web/eslint.i18n-allowlist.json", import.meta.url),

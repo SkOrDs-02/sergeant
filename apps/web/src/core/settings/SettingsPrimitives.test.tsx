@@ -3,6 +3,7 @@
 // PR-A v2-polish-redesign — SettingsPrimitives icon prop + glass surface.
 // Covers: SettingsGroup renders the design-system <Icon>; module badge applies
 // the correct scoped surface class.
+import { StrictMode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 
@@ -11,7 +12,6 @@ import {
   SettingsGroupDefaultOpenContext,
   SettingsSubGroup,
   ToggleRow,
-  ConfirmModal,
   SectionSkeleton,
 } from "./SettingsPrimitives";
 
@@ -217,6 +217,43 @@ describe("SettingsGroupDefaultOpenContext", () => {
     expect(onUserToggle).toHaveBeenCalledTimes(2);
   });
 
+  // CodeRabbit-ревʼю PR #757: раніше `onUserToggle` викликався ВСЕРЕДИНІ
+  // функціонального апдейтера `setOpen`, а updater мусить лишатись
+  // ЧИСТИМ — React 18 (незалежно від dev/prod) інколи обчислює апдейтер
+  // "eager" — одразу в обробнику диспатчу, щоб перевірити, чи справді
+  // змінюється стан, а потім ЩЕ РАЗ під час самого рендеру. Емпірично це
+  // не проявляється на першому кліку по щойно змонтованому компоненту
+  // (React ще не має "eager"-шляху для першого dispatch на fiber-і), але
+  // проявляється на ДРУГОМУ й наступних — тому тест клікає двічі:
+  // перевіряємо, що юзер, який клікнув двічі, бачить РІВНО два виклики,
+  // а не три через побічний ефект, що подвоївся всередині апдейтера.
+  // Сьогоднішній `HubSettingsPage` цього не бачить лише тому, що його
+  // `setSectionOpenOverrides` ідемпотентний (той самий `next` двічі —
+  // той самий підсумковий стан), але будь-який лічильник тапів чи
+  // аналітична подія на цьому колбеку задвоїлась би.
+  it("викликає onUserToggle рівно один раз на кожен клік, а не більше через побічний ефект усередині апдейтера setOpen (CodeRabbit PR #757)", () => {
+    const onUserToggle = vi.fn();
+    render(
+      <StrictMode>
+        <SettingsGroupDefaultOpenContext.Provider
+          value={{ defaultOpen: false, onUserToggle }}
+        >
+          <SettingsGroup title="Секція" icon="compass">
+            <p>вміст</p>
+          </SettingsGroup>
+        </SettingsGroupDefaultOpenContext.Provider>
+      </StrictMode>,
+    );
+
+    const btn = screen.getByRole("button", { name: /Секція/ });
+    fireEvent.click(btn);
+    fireEvent.click(btn);
+
+    expect(onUserToggle).toHaveBeenCalledTimes(2);
+    expect(onUserToggle).toHaveBeenNthCalledWith(1, true);
+    expect(onUserToggle).toHaveBeenNthCalledWith(2, false);
+  });
+
   // Дефект №5 (адверсарне ревʼю 2026-08-08): найближчий заголовок вище на
   // сторінці Налаштувань — sr-only `<h1>`; заголовок секції малювався як
   // голий `<span>` усередині кнопки (не заголовок узагалі), тож аутлайн
@@ -250,61 +287,6 @@ describe("ToggleRow", () => {
     if (!input) throw new Error("Switch input not found");
     fireEvent.click(input);
     expect(onChange).toHaveBeenCalled();
-  });
-});
-
-describe("ConfirmModal", () => {
-  it("renders nothing when closed", () => {
-    render(
-      <ConfirmModal
-        open={false}
-        title="Видалити?"
-        confirmLabel="Так"
-        onConfirm={vi.fn()}
-        onCancel={vi.fn()}
-      />,
-    );
-
-    expect(screen.queryByRole("dialog")).toBeNull();
-  });
-
-  it("renders dialog and calls onConfirm", () => {
-    const onConfirm = vi.fn();
-    const onCancel = vi.fn();
-    render(
-      <ConfirmModal
-        open={true}
-        title="Видалити акаунт?"
-        confirmLabel="Підтвердити"
-        onConfirm={onConfirm}
-        onCancel={onCancel}
-      />,
-    );
-
-    expect(screen.getByRole("dialog")).toBeTruthy();
-    fireEvent.click(screen.getByText("Підтвердити"));
-    expect(onConfirm).toHaveBeenCalled();
-  });
-
-  it("calls onCancel on backdrop click", () => {
-    const onCancel = vi.fn();
-    render(
-      <ConfirmModal
-        open={true}
-        title="Тест"
-        confirmLabel="ОК"
-        onConfirm={vi.fn()}
-        onCancel={onCancel}
-      />,
-    );
-
-    // Backdrop button is the sibling of the dialog panel.
-    const backdrop = document.querySelector(
-      "button.absolute.inset-0",
-    ) as HTMLButtonElement | null;
-    if (!backdrop) throw new Error("backdrop button not found");
-    fireEvent.click(backdrop);
-    expect(onCancel).toHaveBeenCalled();
   });
 });
 

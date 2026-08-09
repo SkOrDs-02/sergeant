@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { pluralUa, type UaPluralForms } from "@sergeant/shared";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
+import { EmptyState } from "@shared/components/ui/EmptyState";
 import { Icon } from "@shared/components/ui/Icon";
 import { Textarea } from "@shared/components/ui/Input";
 import { useToast } from "@shared/hooks/useToast";
@@ -233,9 +234,20 @@ export function MemoryBankSection() {
 
   return (
     <Card radius="lg" padding="none" className="overflow-hidden">
+      {/* V-4 (deep-module-audit 2026-08-08, § «Профіль і Налаштування»):
+          цей `<div>` раніше малював власний текстовий заголовок
+          «Пам'ять ШІ» поверх `text-style-label` — БІЛЬШИМ за зовнішній
+          `CollapsibleSection`-заголовок «Пам'ять» (`SectionHeading
+          size="xs"` у `ProfilePage.tsx`), тобто інверсія ієрархії:
+          дрібніший зовнішній рівень над більшим вкладеним. Заголовок-текст
+          прибрано, іконка й лічильник/розмір сховища (мета-інформація,
+          заради якої шапка існує) лишились без змін. Зовнішній заголовок
+          піднято до `headingSize="md"` (той самий `text-style-label`), щоб
+          рівень над ним більше не міг стати дрібнішим за будь-який текст
+          усередині — цей коментар канонічний, решта секцій Профілю з тим
+          самим фіксом лише посилаються на нього. */}
       <div className="px-4 py-3.5 flex items-center gap-2 border-b border-line">
         <Icon name="sparkle" size={18} className="text-muted" />
-        <span className="text-style-label text-text">Пам&apos;ять ШІ</span>
         <span className="ml-auto text-style-caption text-muted">
           {entries.length} {pluralUa(entries.length, MEMORY_ENTRY_FORMS)}
           {" \u00b7 "}
@@ -245,42 +257,49 @@ export function MemoryBankSection() {
 
       <div className="p-4">
         {isEmpty ? (
-          <div className="text-center py-6">
-            <div className="w-12 h-12 rounded-2xl bg-brand-500/10 flex items-center justify-center mx-auto mb-3">
-              <Icon name="sparkle" size={22} className="text-brand-500" />
-            </div>
-            <p className="text-style-body text-muted mb-1">
-              Банк пам&apos;яті порожній
-            </p>
-            <p className="text-style-caption text-muted mb-4">
-              ШІ задасть кілька запитань щоб дізнатися про ваші алергії, цілі,
-              уподобання та рівень активності
-            </p>
-            <div className="flex flex-wrap items-center justify-center gap-2">
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => openMemoryChat("interview")}
-              >
-                <Icon name="sparkle" size={14} className="mr-1.5" />
-                Заповнити профіль
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setManualOpen(true)}
-              >
-                Заповнити вручну
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => importRef.current?.click()}
-              >
-                <Icon name="upload" size={14} className="mr-1.5" />
-                Імпорт
-              </Button>
-            </div>
+          // V-14 (аудит 2026-08-08): був саморобний стек div-ів — окремий
+          // рецепт порожнього стану замість спільного `EmptyState`. Усі три
+          // дії лишаються: `action`/`secondaryAction` — рідні слоти
+          // примітиву, третю (імпорт) веземо через `tertiaryLink` — новий
+          // проп у самому `EmptyState` заводити не можна, це не наш файл.
+          <>
+            <EmptyState
+              size="sm"
+              icon={
+                <Icon name="sparkle" size={22} className="text-brand-500" />
+              }
+              title="Банк пам'яті порожній"
+              description="ШІ задасть кілька запитань щоб дізнатися про ваші алергії, цілі, уподобання та рівень активності"
+              action={
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => openMemoryChat("interview")}
+                >
+                  <Icon name="sparkle" size={14} className="mr-1.5" />
+                  Заповнити профіль
+                </Button>
+              }
+              secondaryAction={
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setManualOpen(true)}
+                >
+                  Заповнити вручну
+                </Button>
+              }
+              tertiaryLink={
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => importRef.current?.click()}
+                >
+                  <Icon name="upload" size={14} className="mr-1.5" />
+                  Імпорт
+                </Button>
+              }
+            />
             <input
               ref={importRef}
               type="file"
@@ -288,7 +307,7 @@ export function MemoryBankSection() {
               className="hidden"
               onChange={handleImport}
             />
-          </div>
+          </>
         ) : (
           <div className="space-y-3">
             {Object.entries(grouped).map(([cat, items]) => {
@@ -306,9 +325,15 @@ export function MemoryBankSection() {
                     {items.map((entry) => (
                       <div
                         key={entry.id}
-                        className="flex items-center gap-2 group"
+                        // V-9 (аудит 2026-08-08): факт — контент, заради
+                        // якого секція існує; `truncate` різав його без
+                        // жодного способу прочитати решту (ні title, ні
+                        // розкриття). `items-start` тримає кнопку видалення
+                        // біля верхнього краю тепер, коли факт може зайняти
+                        // кілька рядків, а не з'їжджає в середину блоку.
+                        className="flex items-start gap-2 group"
                       >
-                        <span className="text-style-label text-text flex-1 min-w-0 truncate">
+                        <span className="text-style-label text-text flex-1 min-w-0 break-words">
                           {entry.fact}
                         </span>
                         <button
@@ -448,9 +473,24 @@ export function MemoryBankSection() {
                 ))}
               </ul>
             ) : (
-              <p className="mt-2 text-style-caption text-warning-strong dark:text-warning">
-                Нових записів немає — існуюча памʼять не буде перезаписана.
-              </p>
+              // V-14 (аудит 2026-08-08): третій саморобний рецепт
+              // порожнього стану в цьому файлі — список нових записів для
+              // імпорту порожній (усе виявилось дублями), і замість голого
+              // <p> тепер той самий примітив, що й два інші.
+              <EmptyState
+                size="sm"
+                variant="warning"
+                // Іконка тут не декор: `variant` у `EmptyState` фарбує
+                // РІВНО контейнер іконки і чип eyebrow — сам title/description
+                // лишаються нейтральними завжди. Без жодного з двох слотів
+                // `variant="warning"` — мертвий проп, і попереджувальний тон,
+                // який до V-14 несло саме забарвлення тексту
+                // (`text-warning-strong`), зник би при переїзді на примітив.
+                icon={<Icon name="alert-triangle" size={18} />}
+                title="Нових записів немає"
+                description="Існуюча памʼять не буде перезаписана."
+                className="mt-2"
+              />
             )}
             <div className="mt-3 flex flex-wrap justify-end gap-2">
               <Button

@@ -302,7 +302,16 @@ export const HubMainContent = memo(function HubMainContent({
               id="hub-panel-profile"
               role="tabpanel"
               aria-labelledby="hub-tab-profile"
-              className={cn("pt-2", slideClass)}
+              // Без `pt-2` — на відміну від dashboard/reports вище (V-10,
+              // аудит Профілю/Налаштувань 2026-08-08). Рішення власника —
+              // звести Профіль до сітки Налаштувань, а панель Налаштувань
+              // теж не має тут відступу: його оголошує сама сторінка
+              // (`pt-3` у корені `HubSettingsPage`), і `ProfilePage` тепер
+              // повторює ту саму форму. Лишити `pt-2` означало б 20px
+              // згори проти 12px у сусідній вкладці — рівно та розбіжність
+              // сусідніх вкладок одного хаба, яку V-10 і фіксує, просто
+              // переїхала б на рівень вище.
+              className={slideClass || undefined}
             >
               <SuspenseWithMinDelay fallback={<PageLoader />}>
                 <ProfilePage />
