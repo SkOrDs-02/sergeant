@@ -363,3 +363,46 @@ describe("profileMirror — захисна валідація (ПАСТКА 3)",
     expect(keptIds.has("fact-0")).toBe(false);
   });
 });
+
+describe("profileMirror — jobId черги мусить розрізняти ЗМІСТ, не лише id", () => {
+  // Знайдено security-ревʼю дифу (2026-08-09), і це найтихіший баг цього PR.
+  //
+  // `buildJobId` у `ingestQueue.ts` — це `(userId, source, sourceRef)`. Для
+  // `profile` `sourceRef` = локальний id факту, який ПЕРЕЖИВАЄ редагування
+  // тексту. Тож оновлення факту йшло так: `forgetSource` hard-видаляє рядок,
+  // далі enqueue з тим самим jobId — і BullMQ мовчки його відкидає, поки
+  // попередній job тримається в Redis (`removeOnComplete: 24h`).
+  // Факт зникав із RAG, лишаючись на екрані.
+  //
+  // Відтворити це через сам BullMQ тут не можна — без Redis черга падає в
+  // `runDirectDispatch`, де дедупу немає взагалі (саме тому баг був
+  // прод-only і не з'явився б ані локально, ані в CI). Тому пінимо ВХІД, від
+  // якого дедуп залежить: різний текст того самого факту мусить дати різну
+  // сіль, однаковий — однакову.
+  async function saltFor(fact: string): Promise<string | undefined> {
+    enqueueMock.mockClear();
+    const pool = makeFakePool([]);
+    await mirrorProfileMemoryEntries(
+      pool,
+      "user-1",
+      memoryBankProfile([{ id: "fact-1", fact }]),
+    );
+    const payload = enqueueMock.mock.calls[0]?.[0] as
+      { dedupeSalt?: string } | undefined;
+    return payload?.dedupeSalt;
+  }
+
+  it("змінений текст того самого факту дає ІНШУ сіль — job не буде дедуплікований", async () => {
+    const before = await saltFor("алергія на горіхи");
+    const after = await saltFor("алергія на горіхи і на молоко");
+    expect(before).toBeTruthy();
+    expect(after).toBeTruthy();
+    expect(after).not.toBe(before);
+  });
+
+  it("незмінений текст дає ТУ САМУ сіль — справжня ідемпотентність збережена", async () => {
+    const first = await saltFor("тренується 3 рази на тиждень");
+    const second = await saltFor("тренується 3 рази на тиждень");
+    expect(first).toBe(second);
+  });
+});

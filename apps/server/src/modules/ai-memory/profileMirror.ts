@@ -72,6 +72,8 @@
  * гейтиться.
  */
 
+import { createHash } from "node:crypto";
+
 import type { Pool } from "pg";
 
 import { env } from "../../env.js";
@@ -264,16 +266,46 @@ function normalizeIncomingEntries(rawEntries: unknown[]): NormalizeOutcome {
  *      кладемо її в `metadata.category`, а не в текст, що йде під
  *      cosine-similarity.
  */
+/**
+ * Короткий детермінований відбиток тексту факту — сіль для idempotent
+ * jobId черги інжесту.
+ *
+ * Навіщо саме тут (знайдено security-ревʼю дифу, 2026-08-09). `sourceRef`
+ * для `profile` — це локальний id факту, і він НЕ міняється, коли людина
+ * редагує текст. А `buildJobId` у `ingestQueue.ts` складається саме з
+ * `(userId, source, sourceRef)`. Тобто після переходу дзеркалення на чергу
+ * оновлення факту виглядало так: старий рядок hard-видаляється
+ * (`forgetSource`), новий job лягає в чергу з ТИМ САМИМ jobId — і BullMQ
+ * мовчки його відкидає, поки попередній тримається в Redis
+ * (`removeOnComplete: 24h`, `removeOnFail: 14d`). Факт зникав із RAG, а на
+ * екрані лишався: у `user_profile` і localStorage він живий.
+ *
+ * Найгірше — без Redis (`runDirectDispatch`-фолбек) цього не відтворити,
+ * тож ані локальні прогони, ані CI цього не бачили б. Це був би прод-only
+ * баг із виглядом «асистент чомусь забув те, що я щойно виправив».
+ *
+ * 12 символів base64url (72 біти) — колізія тут коштувала б лише зайвої
+ * дедуплікації двох різних текстів ОДНОГО факту одного юзера, тож повний
+ * дайджест зайвий, а jobId лишається читабельним у BullMQ UI.
+ */
+function contentFingerprint(fact: string): string {
+  return createHash("sha256")
+    .update(fact, "utf8")
+    .digest("base64url")
+    .slice(0, 12);
+}
+
 function toRememberInput(
   userId: string,
   entry: NormalizedProfileMemoryEntry,
-): RememberInput {
+): RememberInput & { dedupeSalt: string } {
   return {
     userId,
     source: PROFILE_SOURCE,
     sourceRef: entry.id,
     content: entry.fact,
     metadata: { category: entry.category },
+    dedupeSalt: contentFingerprint(entry.fact),
   };
 }
 
