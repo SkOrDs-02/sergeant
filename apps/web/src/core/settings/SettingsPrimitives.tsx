@@ -2,6 +2,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useId,
   useState,
   type CSSProperties,
   type ReactNode,
@@ -303,39 +304,81 @@ export interface ToggleRowProps {
   onChange: (checked: boolean) => void;
 }
 
+/**
+ * Рядок «підпис ліворуч — тумблер праворуч» у Налаштуваннях.
+ *
+ * **Чому обгортка — `<div>`, а не `<label>`.** Доти нею був `<label>`, який
+ * обгортав увесь рядок разом із `Switch`, а сам `Switch` малює ВЛАСНИЙ
+ * `<label htmlFor>` навколо треку. Вкладений `<label>` заборонений
+ * контент-моделлю HTML («no descendant label elements»), і Chrome на такій
+ * розмітці не виводив тумблеру доступного імені взагалі: axe бачив
+ * `[critical] label: Form elements must have labels` на чотирьох вузлах
+ * `/settings`. Порушення пре-існуюче — відтворюється і на `origin/main`
+ * (`9cd0361`), не внесене цим PR, але лагодиться тут, бо саме тут джоб
+ * `Accessibility (axe-core)` уперше дійшов до запуску: він `needs: check`,
+ * а доти `check` падав раніше і a11y просто не стартував (`0s` у списку).
+ *
+ * Тепер асоціація явна: підпис — `<label htmlFor>`, тумблер має свій `id`,
+ * пояснення прив'язане через `aria-describedby`. Клік по підпису й далі
+ * перемикає; втрачається лише клік по порожньому просвіту між підписом і
+ * треком (підпис займає `flex-1`, тож це вузька смуга).
+ *
+ * Візуал рядка (tappable-картка з бордером і hover-станом) — PR-37
+ * ux-roast 2026-Q3 §3.1: доти рядок читався як звичайний текст на тлі
+ * секції і тумблери губились.
+ */
 export function ToggleRow({
   label,
   description,
   checked,
   onChange,
 }: ToggleRowProps) {
+  const uid = useId();
+  const switchId = `toggle-row-${uid}`;
+  const descId = `${switchId}-description`;
   return (
-    <label
-      // PR-37 ux-roast 2026-Q3 / §3.1: row reads as plain copy on the
-      // section background — користувачі скаржаться, що тумблери губляться
-      // на тлі. Тепер це явна tappable картка з бордером і фоном, явним
-      // hover/active-стейтом, по всій ширині.
+    <div
       className={cn(
-        "flex items-center justify-between gap-4 cursor-pointer group min-h-[44px]",
+        "flex items-center justify-between gap-4 group min-h-[44px]",
         "p-3 rounded-2xl border border-line/60 bg-surface-soft-glass shadow-soft",
         "hover:border-brand/40 hover:bg-surface-strong-glass active:bg-surface-soft-glass",
         "transition-[background-color,border-color]",
       )}
     >
       <div className="flex-1 min-w-0">
-        <span className="text-style-label text-text group-hover:text-brand-strong transition-colors">
+        <label
+          htmlFor={switchId}
+          className="block cursor-pointer text-style-label text-text group-hover:text-brand-strong transition-colors"
+        >
           {label}
-        </span>
+        </label>
         {description && (
-          <p className="text-style-caption text-subtle mt-1 leading-relaxed">
+          // `text-muted`, а не `text-subtle`: у темній темі `subtle`
+          // (#5f6b64) на поверхні картки (#1b1613) дає 3.22:1, а це
+          // пояснювальне речення на 12px — WCAG AA вимагає 4.5:1
+          // (послаблення до 3:1 починається з 18.66px bold / 24px, не з
+          // 12px, як припускає коментар біля токена в `tokens.js`).
+          // `muted` (#8a968e) — 5.6:1. axe ловив це як
+          // `[serious] color-contrast` на чотирьох вузлах `/settings [dark]`
+          // ще на `b7133a3`, до правки лейблів вище — знахідка пре-існуюча,
+          // просто раніше джоб `Accessibility` не доходив до запуску.
+          <p
+            id={descId}
+            className="text-style-caption text-muted mt-1 leading-relaxed"
+          >
             {description}
           </p>
         )}
       </div>
       <div className="shrink-0">
-        <Switch checked={checked} onChange={onChange} />
+        <Switch
+          id={switchId}
+          checked={checked}
+          onChange={onChange}
+          aria-describedby={description ? descId : undefined}
+        />
       </div>
-    </label>
+    </div>
   );
 }
 

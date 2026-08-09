@@ -288,6 +288,51 @@ describe("ToggleRow", () => {
     fireEvent.click(input);
     expect(onChange).toHaveBeenCalled();
   });
+
+  // Регресія на `[critical] label: Form elements must have labels` —
+  // чотири вузли на `/settings`, відтворювані і на `origin/main`. Причина
+  // була в тому, що рядок сам був `<label>` і обгортав `Switch`, який
+  // малює власний `<label htmlFor>`: вкладені `<label>` заборонені
+  // контент-моделлю HTML, і Chrome не давав інпуту доступного імені
+  // взагалі. `getByRole(..., { name })` резолвиться тим самим accname-
+  // алгоритмом, що й axe, тож перевіряє саме те, що падало.
+  it("gives the switch an accessible name from the row label", () => {
+    render(<ToggleRow label="Сповіщення" checked={false} onChange={vi.fn()} />);
+    expect(screen.getByRole("switch", { name: "Сповіщення" })).toBeTruthy();
+  });
+
+  it("does not nest a <label> inside another <label>", () => {
+    const { container } = render(
+      <ToggleRow label="Сповіщення" checked={false} onChange={vi.fn()} />,
+    );
+    expect(container.querySelector("label label")).toBeNull();
+  });
+
+  it("wires the row description as the switch's description", () => {
+    render(
+      <ToggleRow
+        label="Сповіщення"
+        description="Раз на день, зранку"
+        checked={false}
+        onChange={vi.fn()}
+      />,
+    );
+    const input = screen.getByRole("switch", { name: "Сповіщення" });
+    const descId = input.getAttribute("aria-describedby");
+    expect(descId).toBeTruthy();
+    expect(document.getElementById(descId as string)?.textContent).toBe(
+      "Раз на день, зранку",
+    );
+  });
+
+  it("toggles when the visible label text is clicked", () => {
+    const onChange = vi.fn();
+    render(
+      <ToggleRow label="Сповіщення" checked={false} onChange={onChange} />,
+    );
+    fireEvent.click(screen.getByText("Сповіщення"));
+    expect(onChange).toHaveBeenCalledWith(true);
+  });
 });
 
 describe("SectionSkeleton — Suspense fallback (0017 Sprint 1.1)", () => {

@@ -70,12 +70,10 @@ describe("ExperimentalSection (PR-36 / §9.3)", () => {
     if (!firstFlag) throw new Error("expected at least one experimental flag");
 
     // Tap the first toggle while still locked — нічого не міняється у store.
-    const row = screen.getByText(firstFlag.label).closest("label");
-    if (!row) throw new Error("toggle row missing");
-    const toggleInput = row.querySelector(
-      'input[type="checkbox"]',
-    ) as HTMLInputElement | null;
-    if (!toggleInput) throw new Error("toggle input missing");
+    // Пошук за доступним іменем, не за `closest("label")` — рядок
+    // `ToggleRow` більше не `<label>` навколо тумблера (фікс axe
+    // `label: Form elements must have labels` на `/settings`).
+    const toggleInput = screen.getByRole("switch", { name: firstFlag.label });
     fireEvent.click(toggleInput);
 
     expect(__flagsStoreForTests.get()[firstFlag.id]).toBeUndefined();
@@ -127,12 +125,7 @@ describe("ExperimentalSection (PR-36 / §9.3)", () => {
     // Тумблер тепер реагує на клік.
     const firstFlag = FLAG_REGISTRY.find((f) => f.experimental);
     if (!firstFlag) throw new Error("expected at least one experimental flag");
-    const row = screen.getByText(firstFlag.label).closest("label");
-    if (!row) throw new Error("toggle row missing");
-    const toggleInput = row.querySelector(
-      'input[type="checkbox"]',
-    ) as HTMLInputElement | null;
-    if (!toggleInput) throw new Error("toggle input missing");
+    const toggleInput = screen.getByRole("switch", { name: firstFlag.label });
     fireEvent.click(toggleInput);
 
     expect(__flagsStoreForTests.get()[firstFlag.id]).toBe(

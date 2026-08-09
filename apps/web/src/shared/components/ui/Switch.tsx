@@ -68,6 +68,17 @@ export interface SwitchProps {
   className?: string;
   /** Native `aria-label` fallback when no visible `label`. */
   "aria-label"?: string;
+  /**
+   * Id(и) зовнішнього опису — коли пояснювальний текст малює НЕ цей
+   * компонент, а рядок навколо нього (`ToggleRow` у Налаштуваннях). Без
+   * цього такий текст лишався б взагалі поза a11y-деревом тумблера:
+   * власний `description` тут рендериться праворуч від треку, а рядок
+   * Налаштувань хоче його ліворуч, тож `description` там не передають.
+   *
+   * Складається з внутрішнім `description`, а не заміняє його —
+   * `aria-describedby` за специфікацією приймає список id.
+   */
+  "aria-describedby"?: string | undefined;
 }
 
 const trackSize: Record<SwitchSize, string> = {
@@ -101,6 +112,7 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(function Switch(
     announceText,
     className,
     "aria-label": ariaLabel,
+    "aria-describedby": ariaDescribedBy,
   },
   ref,
 ) {
@@ -108,6 +120,9 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(function Switch(
   const inputId = id ?? `switch-${generatedId}`;
   const labelId = `${inputId}-label`;
   const descId = `${inputId}-description`;
+  const describedBy =
+    [description ? descId : null, ariaDescribedBy].filter(Boolean).join(" ") ||
+    undefined;
   const { announce } = useAnnounce();
 
   const isControlled = checked !== undefined;
@@ -175,7 +190,7 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(function Switch(
           aria-invalid={error || undefined}
           aria-label={!label && ariaLabel ? ariaLabel : undefined}
           aria-labelledby={label ? labelId : undefined}
-          aria-describedby={description ? descId : undefined}
+          aria-describedby={describedBy}
           disabled={disabled}
           onChange={handleChange}
           className="peer sr-only"
