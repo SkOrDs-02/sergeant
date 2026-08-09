@@ -100,10 +100,22 @@ describe("helpReply", () => {
 
   it("веде баги тим самим маршрутом, що й решту — у групу бети", () => {
     const out = helpReply(FULL);
-    const bugAt = out.search(/Зламалось/);
-    expect(bugAt).toBeGreaterThan(-1);
-    // Саме в рядку групи, а не окремим осиротілим пунктом.
-    expect(bugAt).toBeLessThan(out.indexOf(FULL.groupLink));
+    // Перевіряємо саме РЯДОК з лінком групи, а не порядок збігів у тексті:
+    // позиційна асерція лишалась би зеленою і тоді, коли баги знову
+    // від'їхали б в окремий пункт вище.
+    const groupLine = out
+      .split("\n")
+      .find((line) => line.includes(FULL.groupLink));
+    expect(groupLine).toBeDefined();
+    expect(groupLine).toContain("Зламалось");
+  });
+
+  it("просить назвати екран і попередню дію", () => {
+    // Віджет прикладав екран і версію сам, група — ні. Без цього рядка
+    // кожен баг довелось би перепитувати.
+    const out = helpReply(FULL);
+    expect(out).toContain("з якого екрана");
+    expect(out).toContain("що ти робив перед ним");
   });
 
   it("перелічує саме ті команди, які бот розуміє", () => {
