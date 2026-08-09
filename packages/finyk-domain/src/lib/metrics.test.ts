@@ -51,6 +51,26 @@ describe("buildFinykExcludedTxIds", () => {
     const excluded = buildFinykExcludedTxIds({ excludedStatTxIds: ["stat-1"] });
     expect(excluded.has("stat-1")).toBe(true);
   });
+
+  it("виключає переказ, позначений на самій транзакції (categoryId / type)", () => {
+    // Мапа `finyk_tx_cats` ключується банківськими id — ручний запис або
+    // імпорт несе мітку переказу в самій транзакції. Без цієї гілки такий
+    // запис рахувався витратою в дайджесті й у коуча.
+    const excluded = buildFinykExcludedTxIds({
+      transactions: [
+        {
+          id: "tx-transfer",
+          amount: -50_000,
+          categoryId: INTERNAL_TRANSFER_ID,
+        },
+        { id: "typed-transfer", amount: -50_000, type: "transfer" },
+        { id: "food-1", amount: -30_000, categoryId: "food", type: "expense" },
+        null,
+      ],
+    });
+
+    expect([...excluded].sort()).toEqual(["tx-transfer", "typed-transfer"]);
+  });
 });
 
 describe("buildFinykSpendingUniverse", () => {
@@ -84,6 +104,27 @@ describe("buildFinykSpendingUniverse", () => {
 
     expect(bankOnly).toBe(350);
     expect(withManual).toBe(500);
+  });
+
+  it("ручний переказ між власними рахунками не рахується витратою", () => {
+    // Ручний запис із переказною категорією нормалізується у
+    // `type: "transfer"` (`resolveType`), тож всесвіт має віддати його
+    // id в excluded-set — навіть якщо в `finyk_tx_cats` рядка немає.
+    const { transactions, excludedTxIds } = buildFinykSpendingUniverse({
+      bankTxs: [],
+      manualExpenses: [
+        {
+          id: "t1",
+          date: "2026-05-06",
+          amount: 500,
+          kind: "expense",
+          category: INTERNAL_TRANSFER_ID,
+        },
+      ],
+    });
+
+    expect(excludedTxIds.has("manual_t1")).toBe(true);
+    expect(calcFinykSpendingTotal(transactions, { excludedTxIds })).toBe(0);
   });
 
   it("ручний дохід не потрапляє у витрати, але лишається у всесвіті", () => {
