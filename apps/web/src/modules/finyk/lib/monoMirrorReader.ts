@@ -22,6 +22,7 @@ import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
 import { STORAGE_KEYS } from "@sergeant/shared";
 import { safeReadLS } from "@shared/lib/storage/storage";
+import { getCachedFinykSqliteState } from "./sqliteReader";
 
 interface MonoAccountCacheEntry {
   id: string;
@@ -90,11 +91,22 @@ export function getCachedFinykMonoMirrorStateWithLastGood(): SqliteMonoMirrorCac
  * для ingest-шляху (`useMonobankWebhook` overlay-ить кеш назад у стейт —
  * фільтрація там зробила б приховані картки невідновними) і для
  * повного експорту даних (`exportHandler`).
+ *
+ * AI-CONTEXT (bug 2026-08-09): список читається з SQLite, а НЕ з
+ * `finyk_hidden` — той ключ tombstoned (Stage 8 PR #057k), у нього більше
+ * ніхто не пише, і residual-import дренає його на буті. Читання лише з LS
+ * робило фільтр беззубим: вимкнена тумблером картка все одно потрапляла в
+ * тижневий дайджест і в решту синхронних споживачів. LS лишається
+ * fallback-ом рівно поки SQLite-кеш холодний.
  */
+function readHiddenAccountIds(): string[] {
+  const cache = getCachedFinykSqliteState();
+  if (cache.refreshedAt !== null) return cache.hiddenAccounts;
+  return safeReadLS<string[]>(STORAGE_KEYS.FINYK_HIDDEN, []) ?? [];
+}
+
 function filterHiddenAccountTx(txs: Transaction[]): Transaction[] {
-  const hidden = new Set(
-    safeReadLS<string[]>(STORAGE_KEYS.FINYK_HIDDEN, []) ?? [],
-  );
+  const hidden = new Set(readHiddenAccountIds());
   if (hidden.size === 0) return txs;
   return txs.filter((t) => {
     const accountId = t._accountId ?? t.accountId;

@@ -18,7 +18,7 @@ import { buildDigestCorrelations } from "./digestCorrelations";
 import { coachKeys, digestKeys } from "@shared/lib/api/queryKeys";
 import { formatApiError } from "@shared/lib/api/apiErrorFormat";
 import { trackAdviceFailed } from "../observability/adviceTelemetry";
-import { MCC_CATEGORIES, INCOME_CATEGORIES } from "@finyk/constants";
+import { getCategory } from "@sergeant/finyk-domain/lib/categories";
 import { readFinykStatsContext } from "@finyk/lib/lsStats";
 import { getCachedFinykSqliteState } from "@finyk/lib/sqliteReader";
 import { loadRoutineState } from "@routine/lib/routineStorage";
@@ -34,38 +34,11 @@ import type { MonthlyPlan } from "@finyk/hooks/useStorage.types";
 
 const DIGEST_PREFIX = STORAGE_KEYS.WEEKLY_DIGEST_PREFIX;
 
-const ALL_CATS = [...MCC_CATEGORIES, ...INCOME_CATEGORIES];
-
 interface Category {
   id?: string;
   label?: string;
   name?: string;
   mccs?: number[];
-}
-
-function resolveCatLabel(
-  catIdOrMcc: string | number,
-  customCategories: Category[] = [],
-): string {
-  if (!catIdOrMcc || catIdOrMcc === "other") return "Інше";
-  const byId = [...ALL_CATS, ...customCategories].find(
-    (c) => c.id === catIdOrMcc,
-  );
-  if (byId)
-    return (
-      (byId as { label?: string; name?: string }).label ??
-      (byId as { name?: string }).name ??
-      String(catIdOrMcc)
-    );
-  const mcc = Number(catIdOrMcc);
-  if (!Number.isNaN(mcc) && mcc > 0) {
-    const byMcc = MCC_CATEGORIES.find(
-      (c) => Array.isArray(c.mccs) && c.mccs.includes(mcc),
-    );
-    if (byMcc) return byMcc.label;
-    return `MCC ${mcc}`;
-  }
-  return String(catIdOrMcc);
 }
 
 function localDateKey(d = new Date()): string {
@@ -148,8 +121,8 @@ export function aggregateFinyk(weekKey: string): FinykAggregate {
   // делегуємо у `@sergeant/finyk-domain` (calcFinykPeriodAggregate) і
   // використовуємо канонічний excluded-set Фініка (hidden + transfers + recv +
   // finyk_excluded_stat_txs) — той самий, що Overview/Reports. byCategory
-  // ключуємо за «label після resolveCatLabel», як і раніше, щоб мерджити
-  // різні id-шники, що мапляться в одну UI-категорію.
+  // ключуємо за label-ом категорії, щоб мерджити різні id-шники, що
+  // мапляться в одну UI-категорію.
   const aggregate = calcFinykPeriodAggregate(txs, {
     start: monday,
     end: sunday,
@@ -170,8 +143,19 @@ export function aggregateFinyk(weekKey: string): FinykAggregate {
       };
       const manualCategory =
         manualTx.manual && manualTx.categoryId ? manualTx.categoryId : null;
-      const raw = txCategories[tx.id] ?? manualCategory ?? tx.mcc ?? "other";
-      return resolveCatLabel(raw, customCategories as Category[]);
+      const override = txCategories[tx.id] ?? manualCategory ?? null;
+      // AI-CONTEXT (bug 2026-08-09): резолвимо КАНОНІЧНОЮ `getCategory` —
+      // тією самою, що друкує підпис у стрічці транзакцій і в Звітах.
+      // Власний резолвер дайджесту не знав ані keyword-матчингу, ані
+      // фолбеку «Інше»: невідомий MCC витікав користувачеві сирим рядком
+      // `MCC 4829` (це «переказ коштів»), і той самий рядок ішов у промпт
+      // моделі, яка потім пояснювала людині її ж «категорію MCC 4829».
+      return getCategory(
+        tx.description ?? "",
+        tx.mcc ?? 0,
+        override,
+        customCategories as Category[],
+      ).label;
     },
   });
 
