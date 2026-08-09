@@ -28,6 +28,20 @@ describe("useStoriesNavigation", () => {
     expect(onExhausted).toHaveBeenCalledTimes(1);
   });
 
+  it("composes two next() calls batched into a single render", () => {
+    // Both calls read the same `index` from the render that queued them, so a
+    // direct `setIndex(index + 1)` would collapse them onto one advance. The
+    // functional updater keeps each queued transition. Not reachable from the
+    // current call-sites (autoplay guards itself, taps and key presses land in
+    // separate ticks) — pinned so a future batched caller cannot regress it.
+    const { result } = renderHook(() => useStoriesNavigation({ total: 4 }));
+    act(() => {
+      result.current.next();
+      result.current.next();
+    });
+    expect(result.current.index).toBe(2);
+  });
+
   it("prev() decrements but never goes below 0", () => {
     const { result } = renderHook(() => useStoriesNavigation({ total: 3 }));
     act(() => result.current.next());
