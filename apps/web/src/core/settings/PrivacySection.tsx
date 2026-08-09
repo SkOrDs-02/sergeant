@@ -432,6 +432,14 @@ export function PrivacySection() {
           ) : null}
           <div className="mt-3 border-t border-line pt-3">
             <SettingsSubGroup title={messages.privacy.aiMemory.sectionTitle}>
+              {/* V-11 (фаза 2 L-8, 2026-08-09): обсяг перед правилом.
+                  Спершу кажемо, ЩО тут лежить (включно з фактами профілю,
+                  які тепер дзеркаляться сюди), і лише потім — що з ним
+                  можна зробити. Без цього рядка мітка «Профіль» на факті
+                  читається як дубль секції «Пам'ять» у Профілі. */}
+              <p className="text-style-caption text-subtle leading-relaxed">
+                {messages.privacy.aiMemory.sectionScope}
+              </p>
               <p className="text-style-caption text-subtle leading-relaxed">
                 {messages.privacy.aiMemory.sectionHint}
               </p>

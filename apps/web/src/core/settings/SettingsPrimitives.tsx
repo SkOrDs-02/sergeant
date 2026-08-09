@@ -2,8 +2,6 @@ import {
   createContext,
   useContext,
   useEffect,
-  useLayoutEffect,
-  useRef,
   useState,
   type CSSProperties,
   type ReactNode,
@@ -13,6 +11,7 @@ import { Icon } from "@shared/components/ui/Icon";
 import { Card } from "@shared/components/ui/Card";
 import { Switch } from "@shared/components/ui/Switch";
 import { Skeleton, SkeletonText } from "@shared/components/ui/Skeleton";
+import { useInertWhileCollapsed } from "@shared/hooks/useInertWhileCollapsed";
 import { messages } from "@shared/i18n/uk";
 
 interface ChevronIconProps {
@@ -137,29 +136,13 @@ export const SettingsGroupDefaultOpenContext =
  * stayed live in the tab order and a11y tree — a lie by omission that
  * plain silence didn't have.
  *
- * Mirrors `CollapsibleSection.tsx` 1:1: `inert` (not `hidden`, which is
- * `display:none` and breaks the `grid-template-rows` height transition) +
- * `aria-hidden` companion (canonical pairing, see
- * `useDialogFocusTrap.ts`'s background-inert manager) via
- * `useLayoutEffect` so the attributes clear synchronously with the render
- * that expands the section, before the first paint.
+ * Механізм — `useInertWhileCollapsed` (`@shared/hooks`), СПІЛЬНИЙ із
+ * `CollapsibleSection.tsx`. Доти обидва компоненти несли власну копію тієї
+ * самої логіки; розходження копій не впало б жодним тестом і не було б
+ * видно на екрані — одна з поверхонь просто тихо втратила б гарантію
+ * tab-порядку. Чому саме `inert` + `aria-hidden` + `useLayoutEffect` —
+ * розписано в докстрінгу хука.
  */
-function useInertWhileCollapsed(open: boolean) {
-  const ref = useRef<HTMLDivElement>(null);
-  useLayoutEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    if (open) {
-      el.removeAttribute("inert");
-      el.removeAttribute("aria-hidden");
-    } else {
-      el.setAttribute("inert", "");
-      el.setAttribute("aria-hidden", "true");
-    }
-  }, [open]);
-  return ref;
-}
-
 export function SettingsGroup({
   title,
   icon,
