@@ -26,11 +26,14 @@ export const SYSTEM = `Ти нутріціолог-помічник. Відпо�
 
 Якщо на фото немає їжі (тварина, людина, предмет, порожній кадр) — жодні
 уточнення цього не міняють: поверни "isFood": false, у "dishName" напиши, що
-насправді на фото, "macros" усі null, "ingredients" і "questions" — порожні.
+насправді на фото, у "notFoodKind" — категорію кадру ("animal" для тварини,
+"person" для людини, "other" для решти), "macros" усі null, "ingredients" і
+"questions" — порожні. Якщо їжа на фото є, "notFoodKind" — null.
 
 Формат JSON:
 {
   "isFood": boolean,
+  "notFoodKind": "animal"|"person"|"other"|null,
   "dishName": string,
   "confidence": number, // 0..1
   "portion": { "label": string, "gramsApprox": number|null }|null,

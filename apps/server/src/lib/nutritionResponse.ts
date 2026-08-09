@@ -37,12 +37,25 @@ export interface PhotoIngredient {
   notes: string | null;
 }
 
+/**
+ * Категорія кадру, коли їжі на ньому немає. Рівно три значення, бо рівно три
+ * різні репліки: тваринці кажемо погладити, людині — навести камеру на
+ * тарілку, решті (предмет, краєвид, скріншот, порожній кадр) — нейтральне
+ * «обери інше фото». Ширша таксономія була б полем, яке жоден екран не читає.
+ */
+export type NotFoodKind = "animal" | "person" | "other";
+
 export interface NormalizedPhotoResult {
   /**
    * Чи є на фото їжа. `false` — це відмова: КБЖВ і питання порожні, UI не дає
    * зберегти такий результат у журнал. Див. `resolveIsFood`.
    */
   isFood: boolean;
+  /**
+   * Що саме в кадрі замість їжі — заповнене ТІЛЬКИ при `isFood: false`, інакше
+   * `null`. Клієнти беруть із нього тон відмови; назву показує `dishName`.
+   */
+  notFoodKind: NotFoodKind | null;
   dishName: string;
   confidence: number;
   portion: PhotoPortion | null;
@@ -151,6 +164,7 @@ export function normalizePhotoResult(
   if (!isFood) {
     return {
       isFood,
+      notFoodKind: resolveNotFoodKind(obj["notFoodKind"]),
       dishName,
       confidence,
       portion: finalPortion,
@@ -162,6 +176,7 @@ export function normalizePhotoResult(
 
   return {
     isFood,
+    notFoodKind: null,
     dishName,
     confidence,
     portion: finalPortion,
@@ -169,6 +184,25 @@ export function normalizePhotoResult(
     macros: outMacros,
     questions,
   };
+}
+
+/**
+ * Категорія не-їжі — з тією ж недовірою до слухняності моделі, що й
+ * `resolveIsFood` нижче.
+ *
+ * Два послаблення проти буквального контракту, обидва вимушені. По-перше,
+ * промпт цілком україномовний, тож модель регулярно віддає значення теж
+ * українською («тварина» замість `"animal"`) — просити англійський enum
+ * посеред української інструкції і потім вірити на слово ми вже пробували на
+ * `isFood`. По-друге, невідоме значення НЕ роняє відмову: воно згортається в
+ * `"other"`, і людина бачить нейтральний текст замість порожнечі. Гірший
+ * сценарій тут — «кіт» із загальною реплікою, а не зламаний екран.
+ */
+function resolveNotFoodKind(declared: unknown): NotFoodKind {
+  const raw = typeof declared === "string" ? declared.trim().toLowerCase() : "";
+  if (/^(animal|pet|тварин)/.test(raw)) return "animal";
+  if (/^(person|human|people|людин)/.test(raw)) return "person";
+  return "other";
 }
 
 /**

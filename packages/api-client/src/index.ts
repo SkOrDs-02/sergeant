@@ -159,6 +159,7 @@ export {
   type NutritionEndpoints,
   type NutritionMacros,
   type NutritionMealType,
+  type NutritionNotFoodKind,
   type NutritionPantryItem,
   type NutritionParsePantryResponse,
   type NutritionPhotoIngredient,

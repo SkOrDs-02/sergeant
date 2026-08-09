@@ -25,6 +25,13 @@ export interface NutritionPhotoIngredient {
   notes: string | null;
 }
 
+/**
+ * Що в кадрі замість їжі. Заповнене ТІЛЬКИ при `isFood: false` — і саме воно
+ * задає тон відмови на екрані (тваринку пропонуємо погладити, а не «обрати
+ * інше фото»). Джерело правди — `resolveNotFoodKind` на сервері.
+ */
+export type NutritionNotFoodKind = "animal" | "person" | "other";
+
 export interface NutritionPhotoResult {
   /**
    * `false` — на фото немає їжі. Сервер у цьому разі гарантує порожні `macros`
@@ -32,6 +39,8 @@ export interface NutritionPhotoResult {
    * уточнення порції. Джерело правди — `normalizePhotoResult` на сервері.
    */
   isFood: boolean;
+  /** Непорожнє лише при `isFood: false`; при `true` сервер шле `null`. */
+  notFoodKind: NutritionNotFoodKind | null;
   dishName: string;
   confidence: number;
   portion: NutritionPhotoPortion | null;
