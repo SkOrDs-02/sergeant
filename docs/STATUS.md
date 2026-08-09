@@ -1,6 +1,6 @@
 # Sergeant — Панель керування
 
-> **Last touched:** 2026-08-08 by docs:gen-status. **Next review:** 2026-08-15.
+> **Last touched:** 2026-08-09 by docs:gen-status. **Next review:** 2026-08-16.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED, ОКРІМ блоку FOCUS. Редагуй лише між `<!-- FOCUS:START -->` / `<!-- FOCUS:END -->`; решту регенеруй через `pnpm docs:gen-status`. -->

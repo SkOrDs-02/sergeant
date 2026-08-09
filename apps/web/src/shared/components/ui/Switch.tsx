@@ -68,6 +68,17 @@ export interface SwitchProps {
   className?: string;
   /** Native `aria-label` fallback when no visible `label`. */
   "aria-label"?: string;
+  /**
+   * Id зовнішнього елемента, що називає перемикач, коли підпис живе НЕ
+   * всередині `Switch` (напр. `ToggleRow` у Налаштуваннях малює власний
+   * рядок-картку). Без цього такий перемикач лишався зовсім без
+   * доступного імені: власний `<label htmlFor>` компонента містить лише
+   * `aria-hidden`-спани треку й бігунка, тож обчислене імʼя порожнє, а
+   * зовнішній `<label>`-обгортка не рахується — вкладені `<label>`
+   * невалідні, і внутрішній explicit-label перемагає.
+   * Знахідка axe-гейта 2026-08-09: `label` critical, 5 вузлів на `/settings`.
+   */
+  "aria-labelledby"?: string;
 }
 
 const trackSize: Record<SwitchSize, string> = {
@@ -101,6 +112,7 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(function Switch(
     announceText,
     className,
     "aria-label": ariaLabel,
+    "aria-labelledby": ariaLabelledBy,
   },
   ref,
 ) {
@@ -174,7 +186,7 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(function Switch(
           aria-checked={currentChecked}
           aria-invalid={error || undefined}
           aria-label={!label && ariaLabel ? ariaLabel : undefined}
-          aria-labelledby={label ? labelId : undefined}
+          aria-labelledby={label ? labelId : ariaLabelledBy}
           aria-describedby={description ? descId : undefined}
           disabled={disabled}
           onChange={handleChange}

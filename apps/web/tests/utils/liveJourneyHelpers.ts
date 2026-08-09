@@ -119,6 +119,28 @@ export async function reload(page: Page): Promise<void> {
   }
 }
 
+/**
+ * Чекає, поки черга синку спорожніє — справжній барʼєр «мої записи вже на
+ * сервері» перед тим, як інша персона піде їх читати.
+ *
+ * `OfflineBanner` рендерить `null` у стані спокою, а поки черга не порожня —
+ * кнопку «Синхронізація · N в черзі». Тож зникнення цієї кнопки і є сигнал.
+ *
+ * Навіщо окремий барʼєр (знахідка BT4-флейку прогону 2026-08-09): персона,
+ * що дописує дані, закривала «пристрій» одразу після останнього асерту, а
+ * наступна персона починала читати з сервера те, що ще стояло в черзі.
+ * Той самий урок уже вшито в автосідер (`trackSyncPushes` +
+ * `waitForPushAfter`) — тут він потрібен рівно з тієї ж причини.
+ */
+export async function waitForSyncQuiet(
+  page: Page,
+  timeoutMs = 30_000,
+): Promise<void> {
+  await expect(page.getByRole("button", { name: /в черзі/ })).toBeHidden({
+    timeout: timeoutMs,
+  });
+}
+
 export async function signUp(
   page: Page,
   name: string,
