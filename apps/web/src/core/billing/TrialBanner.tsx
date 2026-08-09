@@ -76,6 +76,13 @@ export function TrialBanner(props: TrialBannerProps = {}) {
   if (!inRouter) {
     return null;
   }
+  // Beta: the banner exists only to push a trial towards checkout, and its CTA
+  // lands on a `/pricing` that 404s while commerce is hidden. Bailing out here
+  // rather than inside `TrialBannerInner` also skips `usePlan()`, so a hidden
+  // build never fires the `/api/billing/status` request at all.
+  if (!COMMERCE_SURFACES_ENABLED) {
+    return null;
+  }
   return <TrialBannerInner {...props} />;
 }
 
@@ -83,11 +90,6 @@ function TrialBannerInner({ now = Date.now }: TrialBannerProps) {
   const navigate = useNavigate();
   const { subscription } = usePlan();
 
-  // Beta: the banner exists only to push a trial towards checkout, and its
-  // CTA lands on a `/pricing` that 404s while commerce is hidden.
-  if (!COMMERCE_SURFACES_ENABLED) {
-    return null;
-  }
   if (!subscription || subscription.status !== "trialing") {
     return null;
   }

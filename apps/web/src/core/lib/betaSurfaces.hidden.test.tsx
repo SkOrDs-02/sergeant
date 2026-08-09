@@ -16,6 +16,7 @@ import { MemoryRouter } from "react-router-dom";
 import {
   COMMERCE_SURFACES_ENABLED,
   LEGAL_SURFACES_ENABLED,
+  isHiddenBetaHref,
 } from "./betaSurfaces";
 import { LegalLinks } from "../legal/LegalLinks";
 import {
@@ -23,7 +24,7 @@ import {
   VISIBLE_SETTINGS_SECTIONS,
   settingsSectionTitle,
 } from "../hub/settingsSectionsCatalog";
-import { RELEASES, pickRelease } from "../whatsNew/releases";
+import { pickRelease } from "../whatsNew/releases";
 import { SETTINGS_INDEX } from "../hub/search/searchSettings";
 
 describe("beta surface gates (default: hidden)", () => {
@@ -54,19 +55,19 @@ describe("beta surface gates (default: hidden)", () => {
     expect(settingsSectionTitle("plan")).toBe("Підписка та план");
   });
 
-  it("never surfaces a release CTA pointing at the hidden tariffs page", () => {
+  it("classifies hrefs into hidden surfaces, including the live release CTA", () => {
+    expect(isHiddenBetaHref("/pricing")).toBe(true);
+    expect(isHiddenBetaHref("/pricing?source=whats_new")).toBe(true);
+    expect(isHiddenBetaHref("/legal/privacy")).toBe(true);
+    expect(isHiddenBetaHref("/")).toBe(false);
+    expect(isHiddenBetaHref("https://example.com")).toBe(false);
+
+    // Not hypothetical: the release the modal actually shows still carries a
+    // «Подивитись тарифи» → `/pricing` CTA, so without this the What's New
+    // modal would offer every user a button straight into a 404.
     const release = pickRelease(null);
-    expect(release).not.toBeNull();
-    // The archive still holds a `Подивитись тарифи` → `/pricing` CTA on an
-    // older entry. `pickRelease` only ever returns the newest release, so
-    // that one is already unreachable — the guard in the selector is there
-    // so a future release note (or a reorder of the archive) cannot quietly
-    // put a dead link back in front of users.
-    expect(release?.cta?.href ?? "").not.toMatch(/^\/pricing/);
-    expect(
-      RELEASES.some((r) => r.cta?.href.startsWith("/pricing")),
-      "archive still carries the historical /pricing CTA the guard exists for",
-    ).toBe(true);
+    expect(release?.cta?.href).toBe("/pricing");
+    expect(isHiddenBetaHref(release?.cta?.href ?? "")).toBe(true);
   });
 });
 

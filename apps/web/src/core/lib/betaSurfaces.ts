@@ -30,12 +30,37 @@
  * the surface a GDPR request asks for.
  */
 
+// `import.meta.env` only exists inside the Vite pipeline. Playwright's esbuild
+// loader does not provide it, and this module is reachable from there, so the
+// access is optional — reading the property off an undefined object threw and
+// took down two CI lanes. Vite's `define` substitutes the exact text
+// `import.meta.env.VITE_*`, which this indirection no longer matches; that is
+// fine here, because these consts drive runtime branches only. The one place
+// that genuinely needs the literal substitution (to make the lazy route import
+// statically dead) spells it out inline — see `app/StandaloneRoutes.tsx`.
+const env = import.meta.env as ImportMetaEnv | undefined;
+
 /**
  * Tariffs page, the Settings → «Підписка та план» section, paywall purchase
  * CTAs, trial banner, and every in-app link to `/pricing`.
  */
-export const COMMERCE_SURFACES_ENABLED =
-  import.meta.env.VITE_ENABLE_COMMERCE === "1";
+export const COMMERCE_SURFACES_ENABLED = env?.VITE_ENABLE_COMMERCE === "1";
 
 /** `/legal/privacy`, `/legal/terms`, `/legal/cookies`, `/legal/offer`. */
-export const LEGAL_SURFACES_ENABLED = import.meta.env.VITE_ENABLE_LEGAL === "1";
+export const LEGAL_SURFACES_ENABLED = env?.VITE_ENABLE_LEGAL === "1";
+
+/**
+ * True when an in-app href points at a surface hidden for the closed beta.
+ *
+ * Exists for content that outlives the surface it links to: release notes are
+ * an append-only archive, so the newest note still carries a
+ * «Подивитись тарифи» → `/pricing` CTA. Rather than editing history — or
+ * teaching the data module about build flags, since `whatsNew/releases.ts` is
+ * imported by Playwright helpers and must stay free of `import.meta.env` —
+ * the consumer asks this before rendering the link.
+ */
+export function isHiddenBetaHref(href: string): boolean {
+  if (!COMMERCE_SURFACES_ENABLED && href.startsWith("/pricing")) return true;
+  if (!LEGAL_SURFACES_ENABLED && href.startsWith("/legal/")) return true;
+  return false;
+}

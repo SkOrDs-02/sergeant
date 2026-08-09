@@ -46,7 +46,7 @@ export function ChatUsageCounter() {
       {exhausted && COMMERCE_SURFACES_ENABLED ? (
         <a
           href="/pricing"
-          className="underline focus-visible:ring-2 focus-visible:ring-focus/45"
+          className="touch-target underline focus-visible:ring-2 focus-visible:ring-focus/45"
         >
           {messages.hub.chatUsageExhausted}
         </a>
