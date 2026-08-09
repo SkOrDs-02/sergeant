@@ -7,6 +7,7 @@
     "dev": "vite --port 5173 --host 0.0.0.0",
     "build": "vite build",
     "build:capacitor": "cross-env VITE_TARGET=capacitor vite build",
+    "build:e2e": "cross-env VITE_ENABLE_COMMERCE=1 VITE_ENABLE_LEGAL=1 vite build",
     "build:analyze": "cross-env ANALYZE=1 vite build",
     "preview": "vite preview",
     "preview:lhci": "vite preview --port 4173 --strictPort --host 127.0.0.1",
