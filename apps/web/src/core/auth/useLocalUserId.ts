@@ -37,10 +37,13 @@ export { LOCAL_ANON_USER_ID } from "./localIdentity";
  *
  * Decision Р2(а) in the spec above: on the first authorised boot these
  * rows migrate onto the real `userId` and the `local-anon` copies are
- * dropped. That migration is NOT implemented yet — until it ships, a
- * visitor who works anonymously and then signs in sees an empty
- * account. Do not treat this constant as private to the boot hooks;
- * the migration will need it too.
+ * dropped. **Це вже реалізовано** — `core/durability/anonymousDataMigration.ts`,
+ * що його запускає `AnonymousDataMigrationProvider` на кожному
+ * автентизованому буті: знімок рядків `local-anon` по
+ * `CLIENT_PULL_SUPPORTED_TABLES` → застосування в партицію акаунта →
+ * push у sync-outbox → і лише ПІСЛЯ підтвердження сервера видалення
+ * джерела. (Докстрінг до 2026-08-10 стверджував протилежне — «NOT
+ * implemented yet» — і встиг застаріти щонайменше на два тижні.)
  */
 export function useLocalUserId(): string | null {
   const { user, status } = useAuth();

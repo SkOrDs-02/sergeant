@@ -58,17 +58,15 @@ const RoutineBootCluster = lazy(
 import { useProfileWriteThroughBoot } from "../profile/useProfileWriteThroughBoot";
 import { useAnalyticsConsentBoot } from "../observability/useAnalyticsConsentBoot";
 import { useActiveModulesSync } from "../hub/useActiveModulesSync";
-import { isDemoActive } from "../onboarding/onboardingGate";
 import { HubShellProvider, type HubShellValue } from "./HubShellContext";
 import { ErrorBoundary } from "../ErrorBoundary";
 
-// Side-effect-only children rendered for authenticated users AND demo
-// sessions. The nested boot hooks all resolve their storage id via
-// `useLocalUserId` (auth id, or the synthetic `demo-local` id while
-// `isDemoActive()`), so mounting them under either condition warms the
-// SQLite read cache the module's own screens rely on — and, transitively,
-// the Hub Reports cards that read the same cache without ever opening the
-// module screen.
+// Side-effect-only children rendered for EVERY session — автентизованої,
+// демо й анонімної. Всі вкладені boot-хуки резолвлять свій storage-id через
+// `useLocalUserId`, а він покриває всі три випадки (auth-id, синтетичний
+// `demo-local`, `LOCAL_ANON_USER_ID`), тож монтування прогріває SQLite
+// read-кеш, на який спираються екрани модуля — і транзитивно картки Hub
+// Reports, що читають той самий кеш, не відкриваючи модуль.
 //
 // Fizruk and Routine previously only booted their SQLite read path inside
 // their own module shell (`FizrukApp.tsx`, `useRoutineAppState.ts`), so the
@@ -82,9 +80,24 @@ import { ErrorBoundary } from "../ErrorBoundary";
 // the warm cache starts filling.
 // Each cluster gets its own Suspense boundary so a chunk that fails to load
 // only costs that module its warm cache, not all four.
+// Гейта по auth тут свідомо НЕМАЄ, і це не недогляд.
+//
+// Донедавна стояло `if (!user && !isDemoActive()) return null` — точне
+// дзеркало того, що `useLocalUserId` умів на момент написання: auth-id або
+// синтетичний `demo-local`. Спека `anonymous-local-first-persistence.md`
+// додала третій випадок, `LOCAL_ANON_USER_ID`, оновила резолвер — і лишила
+// дзеркало. Два місця з одним предикатом розійшлись, як і мали.
+//
+// Ціна розходження: анонімний відвідувач не монтував жодного boot-хука, тож
+// dual-write контекст не реєструвався, і FTUX-пресет на хабі («Яку звичку
+// почнемо?») ДЕТЕРМІНОВАНО падав у «Не вдалося зберегти» — головна кнопка
+// першого досвіду не мала куди писати. Знахідка founder-а 2026-08-10.
+//
+// Дублювати предикат не треба взагалі: кожен із семи хуків усередині
+// кластерів уже виходить на `!userId`, а `useLocalUserId` віддає `null`
+// рівно поки сесія в польоті. Тобто «не бутити, доки не знаємо id» тримає
+// сам резолвер — на один рівень нижче, де його неможливо забути оновити.
 function BootGate({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
-  if (!user && !isDemoActive()) return null;
   /*
     AI-DANGER: `Suspense` тут НЕ досить, і це поширена хиба. Він ловить
     лише ОЧІКУВАННЯ лінивого імпорту; ВІДХИЛЕНИЙ `React.lazy` кидає далі
@@ -114,10 +127,11 @@ function BootGate({ children }: { children: ReactNode }) {
 function AppShell({ children }: { children: React.ReactNode }) {
   const appLock = useAppLockContext();
   // Write-through reconcile for `hub_biometrics_v1` ↔ `/api/me/profile`.
-  // Unlike the module boot-gates below, this hook is self-gating (its own
-  // `useQuery` is `enabled: false` while signed out), so it mounts
-  // unconditionally rather than behind a `user || isDemoActive()` gate —
-  // demo sessions have no server profile to reconcile against.
+  // Self-gating: власний `useQuery` стоїть `enabled: false`, поки сесії
+  // немає, тож хук монтується беззастережно — демо- й анонімним сесіям
+  // просто нема з чим звірятись на сервері. Модульні boot-кластери нижче
+  // тепер тримаються того самого принципу: гейт живе всередині, а не
+  // дублюється предикатом зовні (див. коментар над `BootGate`).
   useProfileWriteThroughBoot();
   // Hydrates the synchronous `analyticsConsent` gate from the server as
   // soon as possible after an authenticated boot (CodeRabbit PR #627) —
