@@ -1,3 +1,5 @@
+import type { PantryMode } from "@sergeant/shared";
+
 import {
   formatPantryForPrompt,
   type PantryPromptFormatOptions,
@@ -37,7 +39,24 @@ export interface PantryPromptSectionOptions {
   pantry: unknown;
   preset: PantryPresetKey;
   label?: string;
+  /**
+   * Режим комори з запиту. `ignore` — користувач попросив НЕ спиратись на
+   * наявні продукти. Дефолт `prefer` = історична поведінка.
+   */
+  mode?: PantryMode;
 }
+
+/**
+ * Секція промпту, яка стає на місце списку комори, коли режим — `ignore`.
+ *
+ * AI-CONTEXT: список тут навмисно НЕ рендериться. Посилити словами
+ * («ігноруй наявне») недостатньо: модель бачить перелік продуктів і все одно
+ * тягне з нього страви, бо решта промпту просить «реалістичний план». Єдиний
+ * надійний важіль — не показувати того, чого не можна використати.
+ */
+export const PANTRY_IGNORE_SECTION =
+  "Комору НЕ враховуй: користувач попросив план без огляду на наявні вдома продукти. " +
+  "Список комори тобі свідомо не передано — не згадуй його, не питай про нього і не припускай, що там лежить.";
 
 /**
  * Будує секцію промпту з відформатованим списком комори. Повертає готовий
@@ -48,14 +67,22 @@ export interface PantryPromptSectionOptions {
  *   - молоко — 1 л
  *
  * Для flat-формату (shopping-list: `joinWith: ", "`) — без `- ` prefix.
+ * Для `mode: "ignore"` — [`PANTRY_IGNORE_SECTION`] без жодної позиції.
  */
 export function pantryPromptSection({
   pantry,
   preset,
   label = "Наявні продукти",
+  mode = "prefer",
 }: PantryPromptSectionOptions): string {
+  if (mode === "ignore") return PANTRY_IGNORE_SECTION;
   const opts = PANTRY_PRESETS[preset];
   const formatted = formatPantryForPrompt(pantry, opts);
   const isList = opts.joinWith.includes("\n");
-  return isList ? `${label}:\n- ${formatted}` : `${label}:\n${formatted}`;
+  const section = isList
+    ? `${label}:\n- ${formatted}`
+    : `${label}:\n${formatted}`;
+  return mode === "only"
+    ? `${section}\n\nВикористовуй ТІЛЬКИ ці продукти — плюс сіль, олія, вода й базові спеції. Позиції поза списком не пропонуй.`
+    : section;
 }

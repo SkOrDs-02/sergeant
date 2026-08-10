@@ -4515,6 +4515,14 @@
               ]
             }
           },
+          "pantryMode": {
+            "type": "string",
+            "enum": [
+              "prefer",
+              "only",
+              "ignore"
+            ]
+          },
           "targets": {
             "type": "object",
             "properties": {
@@ -4689,6 +4697,14 @@
                 }
               ]
             }
+          },
+          "pantryMode": {
+            "type": "string",
+            "enum": [
+              "prefer",
+              "only",
+              "ignore"
+            ]
           },
           "preferences": {
             "type": "object",

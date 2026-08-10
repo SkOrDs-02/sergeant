@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import type { z } from "zod";
+import type { PantryMode } from "@sergeant/shared";
 import { env } from "../../env/env.js";
 import { extractJsonFromText } from "../../http/jsonSafe.js";
 import { parseBody } from "../../http/validate.js";
@@ -19,18 +20,34 @@ type WithAnthropicKey = Request & {
   user?: { id: string };
 };
 
-export const SYSTEM = `Ти шеф-кухар і нутріціолог. Відповідай ТІЛЬКИ українською.
-
-${ADVICE_BOUNDARY_RULE}
-Поверни ТІЛЬКИ валідний JSON без markdown і без додаткового тексту.
-
-Задача: запропонувати 2–4 реалістичних рецептів з наявних продуктів.
+/**
+ * Задача + правило комори. У `prefer`/`only` вона звучить як «рецепти з
+ * наявних продуктів, не вигадуй інгредієнти»; у `ignore` це формулювання
+ * прямо суперечило б вибору користувача, тож підмінюється цілком.
+ */
+const TASK_RULE: Record<PantryMode, string> = {
+  prefer: `Задача: запропонувати 2–4 реалістичних рецептів з наявних продуктів.
+Не вигадуй інгредієнти. Дозволено додати лише базові "припущення" (сіль, перець, вода, олія) і тоді явно познач їх у tips.`,
+  only: `Задача: запропонувати 2–4 реалістичних рецептів з наявних продуктів.
 Не вигадуй інгредієнти. Дозволено додати лише базові "припущення" (сіль, перець, вода, олія) і тоді явно познач їх у tips.
 Режим комори "only" означає БУКВАЛЬНО тільки те, що є в списку: кожен інгредієнт
 рецепта мусить бути в коморі, окрім тих самих базових. Якщо з наявного не
 складається жоден пристойний рецепт — поверни менше рецептів або порожній
 "recipes". Рецепт із продуктом, якого в користувача немає, гірший за відсутність
-рецепта: людина стане готувати й зупиниться на середині.
+рецепта: людина стане готувати й зупиниться на середині.`,
+  ignore: `Задача: запропонувати 2–4 реалістичних рецептів під ціль користувача.
+Комору не враховуй — списку наявних продуктів тобі свідомо не передано. Бери будь-які звичайні доступні продукти й не припускай, що саме є вдома.`,
+};
+
+export function buildRecommendRecipesSystem(
+  mode: PantryMode = "prefer",
+): string {
+  return `Ти шеф-кухар і нутріціолог. Відповідай ТІЛЬКИ українською.
+
+${ADVICE_BOUNDARY_RULE}
+Поверни ТІЛЬКИ валідний JSON без markdown і без додаткового тексту.
+
+${TASK_RULE[mode]}
 Дай короткі поради по приготуванню і безпеці (температура/час) без зайвої води.
 ВАЖЛИВО: відповідь має бути КОРОТКА і НЕ Обрізана. Якщо не вміщається — поверни МЕНШЕ рецептів і/або коротші steps/tips.
 
@@ -49,6 +66,10 @@ ${ADVICE_BOUNDARY_RULE}
   ]
 }
 `;
+}
+
+/** Дефолтний system-промпт (`prefer`) — сумісність зі старими імпортами. */
+export const SYSTEM = buildRecommendRecipesSystem("prefer");
 
 /**
  * Промпт рекомендації рецептів — рівно той, що йде в прод (винесено заради
@@ -65,12 +86,13 @@ export function buildRecommendRecipesPrompt(input: RecommendRecipesInput): {
   const timeMinutes = Number(prefs.timeMinutes || 25);
   const exclude = String(prefs.exclude || "");
   const mealType = String(prefs.mealType || "any");
-  const pantryMode = String(prefs.pantryMode || "prefer");
+  const pantryMode: PantryMode = prefs.pantryMode ?? "prefer";
   const locale = String(prefs.locale || "uk-UA");
 
   const pantrySec = pantryPromptSection({
     pantry: pantryIn,
     preset: "recipes",
+    mode: pantryMode,
   });
 
   const prompt = `Мова: ${locale}.
@@ -90,7 +112,7 @@ ${pantrySec}
 - ingredients: тільки ключові позиції
 Якщо продуктів мало — все одно поверни 2 прості рецепти.`;
 
-  return { system: SYSTEM, user: prompt };
+  return { system: buildRecommendRecipesSystem(pantryMode), user: prompt };
 }
 
 /**

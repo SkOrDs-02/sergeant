@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { PANTRY_PRESETS, pantryPromptSection } from "./prompt-builders.js";
+import {
+  PANTRY_IGNORE_SECTION,
+  PANTRY_PRESETS,
+  pantryPromptSection,
+} from "./prompt-builders.js";
 
 describe("prompt-builders", () => {
   it("PANTRY_PRESETS covers all four nutrition endpoints", () => {
@@ -39,6 +43,37 @@ describe("prompt-builders", () => {
       label: "Продукти вдома",
     });
     expect(result.startsWith("Продукти вдома:")).toBe(true);
+  });
+
+  it("mode=ignore не показує жодної позиції комори", () => {
+    // Модель не може використати те, чого не бачить. Інструкція «ігноруй»
+    // поруч зі списком продуктів — слабкий важіль; тут перевіряється саме
+    // відсутність списку, а не наявність слова «ігноруй».
+    const result = pantryPromptSection({
+      pantry: [{ name: "яйця", qty: "10", unit: "шт" }, { name: "молоко" }],
+      preset: "dayPlan",
+      mode: "ignore",
+    });
+    expect(result).toBe(PANTRY_IGNORE_SECTION);
+    expect(result).not.toContain("яйця");
+    expect(result).not.toContain("молоко");
+  });
+
+  it("mode=only додає жорстке обмеження поверх списку", () => {
+    const result = pantryPromptSection({
+      pantry: [{ name: "рис" }],
+      preset: "dayPlan",
+      mode: "only",
+    });
+    expect(result).toContain("рис");
+    expect(result).toContain("ТІЛЬКИ ці продукти");
+  });
+
+  it("mode=prefer (дефолт) лишає історичну поведінку", () => {
+    const items = [{ name: "гречка" }];
+    expect(pantryPromptSection({ pantry: items, preset: "dayPlan" })).toBe(
+      pantryPromptSection({ pantry: items, preset: "dayPlan", mode: "prefer" }),
+    );
   });
 
   it("pantryPromptSection uses fallbackWhenEmpty from preset", () => {

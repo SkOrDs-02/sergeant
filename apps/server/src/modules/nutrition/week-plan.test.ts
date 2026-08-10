@@ -104,6 +104,53 @@ describe("week-plan handler", () => {
     expect(JSON.stringify(opts["messages"])).toContain("гречка");
   });
 
+  it("pantryMode=ignore прибирає і список комори, і заборону «поза списком»", async () => {
+    // System-промпт week-plan історично казав «Не вигадуй екзотичні
+    // інгредієнти поза списком» — тобто фактично тримав план у межах комори
+    // НЕЗАЛЕЖНО від наміру користувача. У режимі ignore обмеження мусить
+    // зникнути разом зі списком.
+    invokeLLM.mockResolvedValueOnce({
+      ok: true,
+      text: JSON.stringify({ days: [] }),
+    });
+
+    await handler(
+      makeReq({
+        pantry: [{ name: "яйця", qty: 6, unit: "шт" }, "гречка"],
+        pantryMode: "ignore",
+        locale: "uk-UA",
+      }),
+      makeRes(),
+    );
+
+    const opts = asRecord(invokeLLM.mock.calls[0]?.[1]);
+    const messages = JSON.stringify(opts["messages"]);
+    expect(messages).not.toContain("яйця");
+    expect(messages).not.toContain("гречка");
+    expect(String(opts["system"])).not.toContain(
+      "Не вигадуй екзотичні інгредієнти поза списком",
+    );
+    expect(String(opts["system"])).toContain("Комору не враховуй");
+  });
+
+  it("без pantryMode тижневий план лишається прив'язаним до комори", async () => {
+    invokeLLM.mockResolvedValueOnce({
+      ok: true,
+      text: JSON.stringify({ days: [] }),
+    });
+
+    await handler(
+      makeReq({ pantry: [{ name: "яйця" }], locale: "uk-UA" }),
+      makeRes(),
+    );
+
+    const opts = asRecord(invokeLLM.mock.calls[0]?.[1]);
+    expect(JSON.stringify(opts["messages"])).toContain("яйця");
+    expect(String(opts["system"])).toContain(
+      "Не вигадуй екзотичні інгредієнти поза списком",
+    );
+  });
+
   it("falls back to default labels for malformed day entries", async () => {
     invokeLLM.mockResolvedValueOnce({
       ok: true,
