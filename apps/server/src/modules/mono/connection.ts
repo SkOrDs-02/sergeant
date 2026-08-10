@@ -326,6 +326,87 @@ export async function disconnectHandler(
   res.status(200).json(MonoDisconnectResponseSchema.parse({ ok: true }));
 }
 
+/**
+ * Скільки чекати на `client-info` під час перевірки живості токена.
+ *
+ * Навмисно НЕ `MONO_API_TIMEOUT_MS` (15 с): та стеля стоїть на явних
+ * діях користувача — «підключити», «синхронізувати», — де почекати
+ * прийнятно. Тут перевірка сидить усередині GET-а, який малює екран
+ * Налаштувань, тож 15 с підвисання екрана заради службової перевірки —
+ * гірше за невизначеність. Не встигли — вважаємо результат невідомим.
+ */
+const MONO_TOKEN_PROBE_TIMEOUT_MS = 4_000;
+
+type TokenLiveness = "alive" | "revoked" | "unknown";
+
+/**
+ * Питає Monobank, чи токен ще живий.
+ *
+ * `revoked` повертається ЛИШЕ на явну відмову в авторизації (401/403).
+ * Будь-що інше — таймаут, 429, 5xx, обрив мережі — це `unknown`, і
+ * підключення лишається як було. Помилятись тут можна тільки в один бік:
+ * назвати робоче підключення мертвим — значить своїми руками відрізати
+ * людину від її банку через чужу тимчасову аварію.
+ */
+async function probeTokenLiveness(userId: string): Promise<TokenLiveness> {
+  const ring = monoKeyRing();
+  if (!ring) return "unknown";
+
+  const tokenResult = await query<MonoTokenRow>(
+    `SELECT token_ciphertext, token_iv, token_tag, token_key_version
+       FROM mono_connection WHERE user_id = $1`,
+    [userId],
+    { op: "mono_token_probe_select" },
+  );
+  const row = tokenResult.rows[0];
+  if (!row) return "unknown";
+
+  const token = await decryptAndLazyReencrypt(row, userId, ring);
+
+  const probeRes = await fetch("https://api.monobank.ua/personal/client-info", {
+    headers: { "X-Token": token },
+    signal: AbortSignal.timeout(MONO_TOKEN_PROBE_TIMEOUT_MS),
+  });
+  if (probeRes.ok) return "alive";
+  if (probeRes.status === 401 || probeRes.status === 403) return "revoked";
+  return "unknown";
+}
+
+/**
+ * Позначає підключення як таке, що втратило звʼязок, і повертає новий
+ * статус для відповіді (або `null`, якщо статус не змінився).
+ *
+ * Відмітка `last_token_check_at` ставиться на БУДЬ-ЯКОМУ результаті,
+ * включно з `unknown`. Це свідомий вибір: якщо не стямпити невдалу
+ * спробу, то під час аварії на боці Monobank КОЖЕН запит `sync-state`
+ * платив би повний таймаут перевірки — тобто зовнішній збій перетворював
+ * би екран Налаштувань на повільний. Ціна вибору: відкликаний токен
+ * помічається на один цикл (6 год) пізніше, якщо не пощастило збігтися з
+ * аварією. Повільний екран у всіх гірший за пізніше попередження в одного.
+ */
+async function recordTokenCheck(
+  userId: string,
+  liveness: TokenLiveness,
+): Promise<"invalid" | null> {
+  if (liveness === "revoked") {
+    await query(
+      `UPDATE mono_connection
+          SET status = 'invalid', last_token_check_at = NOW(), updated_at = NOW()
+        WHERE user_id = $1`,
+      [userId],
+      { op: "mono_token_probe_revoked" },
+    );
+    logger.info({ msg: "mono_token_revoked_detected" });
+    return "invalid";
+  }
+  await query(
+    "UPDATE mono_connection SET last_token_check_at = NOW() WHERE user_id = $1",
+    [userId],
+    { op: "mono_token_probe_stamp" },
+  );
+  return null;
+}
+
 export async function syncStateHandler(
   req: Request,
   res: Response,
@@ -334,13 +415,36 @@ export async function syncStateHandler(
   const userId = getUserId(req as AuthedRequest, res);
   if (!userId) return;
 
+  // `token_check_due` рахується в SQL, а не в Node, з двох причин: це той
+  // самий годинник, що й у колонок (сервер і база можуть розʼїхатись), і
+  // всі чотири пороги видно в одному місці замість розкиданих констант.
+  //
+  //   status = 'active'          — `invalid`/`disconnected` перевіряти нема сенсу;
+  //   webhook_registered_at      — щойно підключені (<30 хв) не чіпаємо:
+  //                                `connect` сам щойно ходив у client-info,
+  //                                а повторний виклик впіймав би ліміт 1/60 с;
+  //   last_event_at              — підключення з подіями за останні 3 доби
+  //                                живе очевидно, зовнішній виклик зайвий.
+  //                                Саме цей предикат тримає перевірку рідкісною:
+  //                                звичайний активний юзер під неї не потрапляє
+  //                                НІКОЛИ, тож затримку платять лише підозрілі;
+  //   last_token_check_at        — вікно троттлінга (міграція 120).
   const connResult = await query<{
     status: string;
     webhook_registered_at: Date | string | null;
     last_event_at: Date | string | null;
     last_backfill_at: Date | string | null;
+    token_check_due?: boolean | null;
   }>(
-    `SELECT status, webhook_registered_at, last_event_at, last_backfill_at
+    `SELECT status, webhook_registered_at, last_event_at, last_backfill_at,
+            (status = 'active'
+              AND webhook_registered_at IS NOT NULL
+              AND webhook_registered_at < NOW() - INTERVAL '30 minutes'
+              AND (last_event_at IS NULL
+                   OR last_event_at < NOW() - INTERVAL '3 days')
+              AND (last_token_check_at IS NULL
+                   OR last_token_check_at < NOW() - INTERVAL '6 hours')
+            ) AS token_check_due
      FROM mono_connection WHERE user_id = $1`,
     [userId],
     { op: "mono_sync_state" },
@@ -361,6 +465,25 @@ export async function syncStateHandler(
 
   const conn = connResult.rows[0];
 
+  // Перевірка живості токена. Обгорнута цілком: цей ендпоінт малює екран
+  // Налаштувань, і жоден збій СЛУЖБОВОЇ перевірки не має права перетворити
+  // робочу відповідь на 500. Не вдалося перевірити — віддаємо стан із бази,
+  // рівно як до міграції 120.
+  let probedStatus: "invalid" | null = null;
+  if (conn!.token_check_due === true) {
+    try {
+      probedStatus = await recordTokenCheck(
+        userId,
+        await probeTokenLiveness(userId),
+      );
+    } catch (err) {
+      logger.warn({
+        msg: "mono_token_probe_failed",
+        err: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
   // `is_jar = FALSE` (міграція 119) тримає цей лічильник у згоді з тим,
   // що реально віддає `/api/mono/accounts`. Інакше «підключено N
   // рахунків» рахувало б і заглушки під банки, яких у списку немає.
@@ -371,11 +494,12 @@ export async function syncStateHandler(
     { op: "mono_accounts_count" },
   );
 
+  const status = probedStatus ?? conn!.status;
+
   res.status(200).json(
     MonoSyncStateSchema.parse({
-      status: conn!.status,
-      webhookActive:
-        conn!.status === "active" && conn!.webhook_registered_at != null,
+      status,
+      webhookActive: status === "active" && conn!.webhook_registered_at != null,
       lastEventAt:
         conn!.last_event_at instanceof Date
           ? conn!.last_event_at.toISOString()
