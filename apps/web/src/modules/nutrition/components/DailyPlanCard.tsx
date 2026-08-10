@@ -33,6 +33,7 @@ export {
   calcGoalRangeIssues,
   calcMacroKcalMismatch,
 } from "../lib/dailyPlanValidation";
+import { describePlanFreshness } from "../lib/planFreshness";
 
 interface WeekPlanDay {
   label?: string;
@@ -46,6 +47,8 @@ interface DailyPlanCardProps {
   pantryItems?: PantryItem[];
   busy?: boolean;
   dayPlan?: NutritionDayPlan | null;
+  /** Unix ms генерації — підпис свіжості. `null` = мітки немає. */
+  dayPlanSavedAt?: number | null;
   dayPlanBusy?: boolean;
   fetchDayPlan: () => void | Promise<void>;
   regenMeal: (mealType: string) => void | Promise<void>;
@@ -71,6 +74,7 @@ export function DailyPlanCard({
   pantryItems,
   busy,
   dayPlan,
+  dayPlanSavedAt,
   dayPlanBusy,
   fetchDayPlan,
   regenMeal,
@@ -94,6 +98,11 @@ export function DailyPlanCard({
   const weekPlanDays = Array.isArray(weekPlan?.days)
     ? (weekPlan.days as WeekPlanDay[])
     : [];
+
+  // План навмисно не протухає (`planStorage.ts`), тож заголовок мусить
+  // перестати обіцяти «сьогодні», щойно доба змінилась. Без цього єдина
+  // помітна користувачеві неправда — саме цей рядок.
+  const freshness = describePlanFreshness(dayPlanSavedAt);
 
   return (
     <Card className="p-4">
@@ -360,8 +369,15 @@ export function DailyPlanCard({
         {sortedMeals.length > 0 && (
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-2">
-              <div className="text-style-label text-text">
-                Ваш план на сьогодні
+              <div className="min-w-0">
+                <div className="text-style-label text-text">
+                  {freshness.stale ? "Ваш план" : "Ваш план на сьогодні"}
+                </div>
+                {freshness.label && (
+                  <div className="text-style-caption text-muted">
+                    {freshness.label}
+                  </div>
+                )}
               </div>
               {dayPlan?.totalKcal != null && (
                 <span className="text-style-caption text-muted">

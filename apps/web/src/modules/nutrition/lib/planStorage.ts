@@ -75,16 +75,19 @@ export function loadDayPlan(): StoredDayPlan | null {
   };
 }
 
-export function saveDayPlan(plan: NutritionDayPlan | null): void {
+/** Повертає записаний `savedAt`, або `null`, якщо слот очищено. */
+export function saveDayPlan(plan: NutritionDayPlan | null): number | null {
   const meals = plan?.meals;
   if (!plan || !Array.isArray(meals) || meals.length === 0) {
     nutritionStorage.removeItem(NUTRITION_DAY_PLAN_KEY);
-    return;
+    return null;
   }
+  const savedAt = Date.now();
   nutritionStorage.writeJSON(NUTRITION_DAY_PLAN_KEY, {
     plan,
-    savedAt: Date.now(),
+    savedAt,
   } satisfies StoredDayPlan);
+  return savedAt;
 }
 
 export function loadWeekPlan(): StoredWeekPlan | null {

@@ -41,11 +41,20 @@ export interface UseNutritionPlanStateResult {
   setWeekPlanRaw: Dispatch<SetStateAction<string>>;
   dayPlan: NutritionDayPlan | null;
   setDayPlan: Dispatch<SetStateAction<NutritionDayPlan | null>>;
+  /**
+   * Коли денний план згенеровано (unix ms), `null` — якщо плану немає або
+   * запис зі старої версії без мітки. Картка підписує ним несьогоднішній
+   * план: план не протухає, тож мусить чесно казати свій вік.
+   */
+  dayPlanSavedAt: number | null;
 }
 
 export function useNutritionPlanState(): UseNutritionPlanStateResult {
   const [dayPlan, setDayPlan] = useState<NutritionDayPlan | null>(
     () => loadDayPlan()?.plan ?? null,
+  );
+  const [dayPlanSavedAt, setDayPlanSavedAt] = useState<number | null>(
+    () => loadDayPlan()?.savedAt ?? null,
   );
 
   const [weekPlan, setWeekPlan] = useState<NutritionWeekPlan | null>(
@@ -66,7 +75,9 @@ export function useNutritionPlanState(): UseNutritionPlanStateResult {
       dayPlanPristine.current = false;
       return;
     }
-    saveDayPlan(dayPlan);
+    // Мітка йде зі сховища, а не з окремого `Date.now()` тут — інакше вони
+    // розійшлися б, і підпис у картці показував би не те, що збережено.
+    setDayPlanSavedAt(saveDayPlan(dayPlan));
   }, [dayPlan]);
 
   // Обидва поля тижневого плану пишуться одним записом: `plan` і `raw` — це
@@ -88,5 +99,6 @@ export function useNutritionPlanState(): UseNutritionPlanStateResult {
     setWeekPlanRaw,
     dayPlan,
     setDayPlan,
+    dayPlanSavedAt,
   };
 }

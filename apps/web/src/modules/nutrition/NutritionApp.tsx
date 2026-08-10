@@ -196,6 +196,7 @@ export default function NutritionApp({
     setWeekPlanBusy,
     dayPlan,
     setDayPlan,
+    dayPlanSavedAt,
     dayPlanBusy,
     setDayPlanBusy,
     shoppingBusy,
@@ -610,6 +611,7 @@ export default function NutritionApp({
                   dayPlan={dayPlan}
                   dayPlanBusy={dayPlanBusy}
                   dayPlanQuery={dayPlanQuery}
+                  dayPlanSavedAt={dayPlanSavedAt}
                   dayPlanLoadingSkeleton={dayPlanLoadingSkeleton}
                   fetchDayPlan={fetchDayPlan}
                   addMealFromPlan={addMealFromPlan}

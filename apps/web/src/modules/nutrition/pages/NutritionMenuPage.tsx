@@ -38,6 +38,7 @@ interface NutritionMenuPageProps {
   dayPlan: NutritionDayPlan | null;
   dayPlanBusy: boolean;
   dayPlanQuery: DataStateQueryLike<NutritionDayPlan | null>;
+  dayPlanSavedAt: number | null;
   dayPlanLoadingSkeleton: ReactNode;
   fetchDayPlan: (mealType: string | null) => void | Promise<void>;
   addMealFromPlan: (meal: PlanMeal) => void | Promise<void>;
@@ -67,6 +68,7 @@ export function NutritionMenuPage({
   dayPlan,
   dayPlanBusy,
   dayPlanQuery,
+  dayPlanSavedAt,
   dayPlanLoadingSkeleton,
   fetchDayPlan,
   addMealFromPlan,
@@ -121,6 +123,7 @@ export function NutritionMenuPage({
                 pantryItems={pantry.effectiveItems}
                 busy={busy}
                 dayPlan={dayPlan}
+                dayPlanSavedAt={dayPlanSavedAt}
                 dayPlanBusy={dayPlanBusy}
                 fetchDayPlan={() => fetchDayPlan(null)}
                 regenMeal={(mealType) => fetchDayPlan(mealType)}

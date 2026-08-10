@@ -59,6 +59,8 @@ export interface UseNutritionUiStateResult {
 
   dayPlan: NutritionDayPlan | null;
   setDayPlan: Dispatch<SetStateAction<NutritionDayPlan | null>>;
+  /** Час генерації денного плану (unix ms) — підпис свіжості в картці. */
+  dayPlanSavedAt: number | null;
   dayPlanBusy: boolean;
   setDayPlanBusy: Dispatch<SetStateAction<boolean>>;
 
@@ -102,6 +104,7 @@ export function useNutritionUiState(): UseNutritionUiStateResult {
     setWeekPlanRaw,
     dayPlan,
     setDayPlan,
+    dayPlanSavedAt,
   } = useNutritionPlanState();
   const [weekPlanBusy, setWeekPlanBusy] = useState(false);
 
@@ -138,6 +141,7 @@ export function useNutritionUiState(): UseNutritionUiStateResult {
     setWeekPlanBusy,
     dayPlan,
     setDayPlan,
+    dayPlanSavedAt,
     dayPlanBusy,
     setDayPlanBusy,
     shoppingBusy,
