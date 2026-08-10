@@ -1,0 +1,59 @@
+name: PostHog release annotation
+
+# Owner: @SkOrDs-02 (solo maintainer).
+# Triage: джоб fail-open — без секрету або з помилкою API він зелений і
+# лише друкує причину. Якщо анотації перестали зʼявлятися на дашбордах —
+# дивись лог кроку "Post annotation" на предмет `::warning::`.
+#
+# Кожен merge у `main` тригерить production deploy (Vercel + Coolify). Цей
+# воркфлоу в той самий момент постить анотацію в PostHog, яка малюється
+# вертикальною лінією поверх усіх дашбордів — щоб «просів DAU о 14:30»
+# одразу звʼязувалося з конкретним релізом.
+#
+# Док: docs/03-operations/observability/frontend.md § Release annotations.
+# Логіка й контракт env — scripts/ci/posthog-release-annotation.mjs.
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Показати payload без запиту до PostHog"
+        type: boolean
+        default: false
+
+# Анотації не мають накопичувати чергу: якщо в main прилетіло кілька
+# комітів підряд, важливий останній стан, але кожен реліз усе одно вартий
+# своєї лінії — тому cancel-in-progress: false.
+concurrency:
+  group: posthog-release-annotation-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  annotate:
+    name: Post release annotation
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Потрібен коміт-сабджект для тексту анотації — вистачає одного.
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Post annotation
+        env:
+          POSTHOG_PERSONAL_API_KEY: ${{ secrets.POSTHOG_PERSONAL_API_KEY }}
+          POSTHOG_PROJECT_ID: ${{ vars.POSTHOG_PROJECT_ID }}
+          POSTHOG_HOST: ${{ vars.POSTHOG_HOST }}
+        run: |
+          node scripts/ci/posthog-release-annotation.mjs \
+            ${{ inputs.dry_run && '--dry-run' || '' }}

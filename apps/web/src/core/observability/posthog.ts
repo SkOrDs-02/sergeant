@@ -220,6 +220,19 @@ export function initPostHog(): Promise<void> {
           capture_unhandled_errors: true,
           capture_unhandled_rejections: true,
         },
+        // Heatmaps — другий і останній виняток із `autocapture: false`.
+        //
+        // Шле окремі `$$heatmap` події з КООРДИНАТАМИ кліків і глибиною
+        // скролу, агрегованими по `$current_url`. Це принципово не те саме,
+        // що autocapture: DOM-вміст, текст елементів і значення полів не
+        // збираються, тож PII-поверхня не зростає.
+        //
+        // Навіщо: воронка бети губить ~81% людей між входом у застосунок і
+        // стартом онбордингу. Подієва телеметрія каже «пішли», але не каже
+        // «куди тицяли перед тим» — heatmap на Hub і лендінгу відповідає
+        // саме на це, і, на відміну від session replay, не записує екран
+        // користувача.
+        enable_heatmaps: true,
         // PII-скраб — див. `applyPostHogBeforeSend` вище. Раніше тут
         // стояв `sanitize_properties`; posthog-js вважає його
         // deprecated і логує `console.error` на КОЖНІЙ події.
