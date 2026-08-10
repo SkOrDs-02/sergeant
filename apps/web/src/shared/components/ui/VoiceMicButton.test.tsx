@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
-import { render, cleanup, act } from "@testing-library/react";
+import { render, cleanup, act, screen } from "@testing-library/react";
 import { VoiceMicButton } from "./VoiceMicButton";
 
 /**
@@ -72,6 +72,55 @@ describe("VoiceMicButton", () => {
     };
     const { container } = render(<VoiceMicButton onResult={() => {}} />);
     expect(container.firstChild).toBeNull();
+  });
+
+  it("підпис зникає РАЗОМ із кнопкою, а не лишається сиротою", () => {
+    // Регресія 2026-08-10: підпис «Сказати» стояв сусіднім `<span>` у
+    // `ManualExpenseAmountSection`, тож при `supported=false` (і згодом при
+    // вимкненому kill-switch) лишався текст без іконки. Тепер він проп
+    // компонента й не може пережити кнопку.
+    vi.stubEnv("VITE_ENABLE_VOICE_INPUT", "");
+    type W = typeof window & { webkitSpeechRecognition?: unknown };
+    (window as W).webkitSpeechRecognition = class {
+      lang = "";
+      interimResults = false;
+      maxAlternatives = 1;
+      continuous = false;
+      onstart: (() => void) | null = null;
+      onend: (() => void) | null = null;
+      onresult: ((e: unknown) => void) | null = null;
+      onerror: ((e: unknown) => void) | null = null;
+      start() {}
+      stop() {}
+      abort() {}
+    };
+    const { container } = render(
+      <VoiceMicButton onResult={() => {}} caption="Сказати" />,
+    );
+    expect(container.firstChild).toBeNull();
+    expect(screen.queryByText("Сказати")).toBeNull();
+  });
+
+  it("рендерить підпис поруч із кнопкою, коли голос увімкнено", () => {
+    type W = typeof window & { webkitSpeechRecognition?: unknown };
+    (window as W).webkitSpeechRecognition = class {
+      lang = "";
+      interimResults = false;
+      maxAlternatives = 1;
+      continuous = false;
+      onstart: (() => void) | null = null;
+      onend: (() => void) | null = null;
+      onresult: ((e: unknown) => void) | null = null;
+      onerror: ((e: unknown) => void) | null = null;
+      start() {}
+      stop() {}
+      abort() {}
+    };
+    const { container } = render(
+      <VoiceMicButton onResult={() => {}} caption="Сказати" />,
+    );
+    expect(container.querySelector("button")).not.toBeNull();
+    expect(screen.getByText("Сказати")).toBeInTheDocument();
   });
 
   it("рендерить кнопку коли Web Speech API доступний", () => {
