@@ -154,6 +154,15 @@ export interface PastWorkoutTimes {
    * не як мінус 23 години.
    */
   crossesMidnight: boolean;
+  /**
+   * `true`, коли кінець ще не настав. Завершене тренування в майбутньому —
+   * не «проведене»: воно потрапило б у стрік і статистику за день, якого ще
+   * не було. `max` на полі дати цього НЕ ловить: він обмежує лише добу, тож
+   * «сьогодні 23:00», введене о десятій ранку, проходить. Найтихіший випадок —
+   * сесія через північ на сьогоднішній даті: перенос на завтра робить кінець
+   * майбутнім завжди.
+   */
+  inFuture: boolean;
 }
 
 /** `YYYY-MM-DD` + `HH:MM` → локальний `datetime-local`-рядок. */
@@ -177,6 +186,8 @@ export function buildPastWorkoutTimes(
   dateKey: string,
   startTime: string,
   endTime: string,
+  // eslint-disable-next-line no-restricted-syntax -- порівнюємо мить із миттю (кінець проти «зараз»), а не межі доби; київський календар тут ні до чого. Параметр існує, щоб тест міг запнути годинник.
+  now: Date = new Date(),
 ): PastWorkoutTimes | null {
   if (!dateKey || !startTime || !endTime) return null;
 
@@ -204,5 +215,6 @@ export function buildPastWorkoutTimes(
     startedAt: new Date(startMs).toISOString(),
     endedAt: new Date(endMs).toISOString(),
     crossesMidnight,
+    inFuture: endMs > now.getTime(),
   };
 }

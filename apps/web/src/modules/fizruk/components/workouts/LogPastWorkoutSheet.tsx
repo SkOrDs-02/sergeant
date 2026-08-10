@@ -96,8 +96,8 @@ export function LogPastWorkoutSheet({
           <input
             id={dateId}
             type="date"
-            // Тренування в майбутньому — не «проведене». Дешевий гейт на
-            // рівні контрола замість тексту помилки під полем.
+            // Відсікає майбутні ДНІ в самому пікері. Майбутній ЧАС у межах
+            // сьогодні цим не ловиться — це робить `times.inFuture` нижче.
             max={today}
             className="input-focus-fizruk mt-1 w-full h-11 rounded-xl border border-line bg-panelHi px-3 text-style-body text-text"
             value={date}
@@ -136,16 +136,21 @@ export function LogPastWorkoutSheet({
         </div>
       </div>
 
-      {times?.crossesMidnight ? (
+      {/* Майбутній кінець — блокуючий стан, тож його підпис витісняє
+          нейтральний «наступного дня»: інакше під формою висіли б два
+          підписи, з яких лише один пояснює, чому кнопка мертва. */}
+      {times?.inFuture ? (
+        <p className="text-style-caption text-subtle">{t.inFuture}</p>
+      ) : times?.crossesMidnight ? (
         <p className="text-style-caption text-subtle">{t.crossesMidnight}</p>
       ) : null}
 
       <Button
         module="fizruk"
         className="w-full h-11"
-        disabled={!times}
+        disabled={!times || times.inFuture}
         onClick={() => {
-          if (!times) return;
+          if (!times || times.inFuture) return;
           onSubmit({ startedAt: times.startedAt, endedAt: times.endedAt });
         }}
       >

@@ -70,6 +70,26 @@ describe("WorkoutsHome", () => {
     expect(screen.getByText("Немає активного тренування")).toBeInTheDocument();
   });
 
+  it("keeps «Внести проведене заняття» reachable while a workout is in flight", () => {
+    // Ретро нічого не стартує — сесія народжується завершеною, тож інваріант
+    // «одне активне» тут ні до чого. Ховати кнопку означало б, що людина, яка
+    // забула внести вчорашнє заняття, мусить спершу завершити сьогоднішнє.
+    const handlers = baseHandlers();
+    render(
+      <WorkoutsHome
+        activeWorkout={{ id: "w1", startedAt: NOW, endedAt: null, items: [] }}
+        activeDuration="12:34"
+        recentWorkouts={[]}
+        {...handlers}
+      />,
+    );
+
+    fireEvent.click(screen.getByText(/Внести проведене/));
+    expect(handlers.onLogPast).toHaveBeenCalledTimes(1);
+    // І воно не підмінило собою вхід у живу сесію.
+    expect(screen.getByRole("button", { name: /Відкрити/ })).toBeVisible();
+  });
+
   it("shows two start paths plus «Внести проведене заняття»", () => {
     // Раніше цей тест стверджував «рівно два шляхи» — формулювання з #589,
     // де рішення насправді стосувалось прибирання «Програм» як третього

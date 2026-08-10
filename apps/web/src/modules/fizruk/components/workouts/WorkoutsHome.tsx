@@ -101,6 +101,18 @@ export function WorkoutsHome({
               Відкрити →
             </Button>
           </div>
+          {/* Ретро лишається доступним і під час живої сесії: воно нічого не
+              стартує, тож інваріант «одне активне» не зачеплено. Ховати його
+              тут означало б, що людина, яка забула внести вчорашнє заняття,
+              мусить спершу завершити сьогоднішнє. */}
+          <Button
+            variant="secondary"
+            className="mt-3 w-full h-11"
+            onClick={onLogPast}
+          >
+            <Icon name="edit" size={16} aria-hidden />{" "}
+            {messages.fizruk.logPast.cta}
+          </Button>
         </div>
       ) : (
         <div className="rounded-2xl border border-border bg-surface p-4 text-center">
