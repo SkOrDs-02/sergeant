@@ -57,7 +57,8 @@ describe("upsertJars", () => {
       { id: "jar_1", title: "На відпустку", currencyCode: 980, balance: 5000 },
     ]);
 
-    expect(dbQuery).toHaveBeenCalledTimes(1);
+    // 1 upsert + 1 реконсиляція заглушок-привидів (міграція 119).
+    expect(dbQuery).toHaveBeenCalledTimes(2);
     const [sql, params] = dbQuery.mock.calls[0]!;
     expect(String(sql)).toContain("INSERT INTO mono_jar");
     expect(String(sql)).toContain(
@@ -76,6 +77,8 @@ describe("upsertJars", () => {
   });
 
   it("is a no-op for an empty jars array", async () => {
+    // Порожній `jars[]` означає «Mono не знає про банки взагалі» — тоді й
+    // реконсилювати нема з чим, тож жодного запиту.
     await upsertJars("user_1", []);
     expect(dbQuery).not.toHaveBeenCalled();
   });
@@ -86,7 +89,34 @@ describe("upsertJars", () => {
       { id: "jar_1", currencyCode: 980 },
       { id: "jar_2", currencyCode: 840 },
     ]);
-    expect(dbQuery).toHaveBeenCalledTimes(2);
+    // 2 upsert-и + 1 реконсиляція.
+    expect(dbQuery).toHaveBeenCalledTimes(3);
+  });
+
+  // Регресія: вебхук створює рядок у `mono_account` для будь-якого
+  // невідомого рахунку, включно з банкою (FK `mono_transaction` вимагає
+  // його існування). Без цієї позначки банка світилась у списку карток
+  // безіменною «Карткою», а її баланс потрапляв у капітал двічі — раз як
+  // картка, раз через `sumJarsUAH`. Знахідка founder-а 2026-08-10.
+  it("позначає заглушки-привиди під банки після upsert-у", async () => {
+    dbQuery.mockResolvedValue({ rows: [], rowCount: 1 });
+
+    await upsertJars("user_1", [
+      { id: "jar_1", title: "просто", currencyCode: 980, balance: 600_000 },
+    ]);
+
+    const [sql, params] = dbQuery.mock.calls.at(-1)!;
+    const text = String(sql);
+    expect(text).toContain("UPDATE mono_account");
+    expect(text).toContain("SET is_jar = TRUE");
+    // Джерело істини — `mono_jar`, а не список із цього виклику: банка,
+    // збережена раніше, теж має знімати свій привид.
+    expect(text).toContain("FROM mono_jar");
+    // Звужуємо до одного юзера і до ще не позначених рядків, щоб у
+    // сталому стані UPDATE не писав нічого.
+    expect(text).toContain("a.user_id = $1");
+    expect(text).toContain("a.is_jar = FALSE");
+    expect(params).toEqual(["user_1"]);
   });
 });
 
@@ -130,8 +160,8 @@ describe("refreshJarsFromMono", () => {
       "https://api.monobank.ua/personal/client-info",
       expect.objectContaining({ headers: { "X-Token": "mono-token-abc" } }),
     );
-    // 1 connection SELECT + 1 jar upsert
-    expect(dbQuery).toHaveBeenCalledTimes(2);
+    // 1 connection SELECT + 1 jar upsert + 1 реконсиляція привидів
+    expect(dbQuery).toHaveBeenCalledTimes(3);
     const upsertCall = dbQuery.mock.calls[1]!;
     expect(String(upsertCall[0])).toContain("INSERT INTO mono_jar");
   });

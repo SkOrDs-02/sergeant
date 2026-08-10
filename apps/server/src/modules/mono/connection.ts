@@ -361,8 +361,12 @@ export async function syncStateHandler(
 
   const conn = connResult.rows[0];
 
+  // `is_jar = FALSE` (міграція 119) тримає цей лічильник у згоді з тим,
+  // що реально віддає `/api/mono/accounts`. Інакше «підключено N
+  // рахунків» рахувало б і заглушки під банки, яких у списку немає.
   const countResult = await query<{ count: string }>(
-    "SELECT COUNT(*)::text AS count FROM mono_account WHERE user_id = $1",
+    `SELECT COUNT(*)::text AS count FROM mono_account
+      WHERE user_id = $1 AND is_jar = FALSE`,
     [userId],
     { op: "mono_accounts_count" },
   );

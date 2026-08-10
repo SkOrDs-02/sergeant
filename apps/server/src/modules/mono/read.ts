@@ -53,6 +53,13 @@ export async function accountsHandler(
        last_seen_at     AS "lastSeenAt"
      FROM mono_account
      WHERE user_id = $1
+       -- Заглушки під банки (міграція 119) - не картки. Вебхук змушений
+       -- створювати для них рядок тут через FK mono_transaction, але
+       -- назовні вони мають бути рівно в одному місці - /api/mono/jars.
+       -- Без цього фільтра клієнт малював безіменну «Картка / Monobank»,
+       -- а getMonoOwnFunds зараховував баланс банки в капітал повторно
+       -- (другий раз він приходить через sumJarsUAH).
+       AND is_jar = FALSE
      ORDER BY currency_code, mono_account_id`,
     [userId],
     { op: "mono_accounts_read" },

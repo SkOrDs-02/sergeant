@@ -321,6 +321,11 @@ export async function backfillHandler(
     return;
   }
 
+  // `is_jar` (міграція 119) тут НЕ фільтрується, і це свідомо. Прапорець
+  // ховає заглушки під банки від читачів «рахунків» — але в банки є
+  // власна історія переказів, і Monobank віддає її тим самим
+  // `/personal/statement/{account}`. Відфільтрувати тут означало б
+  // мовчки лишити перекази в банки поза бекфілом.
   const { rows: accounts } = await query<{ mono_account_id: string }>(
     `SELECT mono_account_id FROM mono_account WHERE user_id = $1`,
     [userId],

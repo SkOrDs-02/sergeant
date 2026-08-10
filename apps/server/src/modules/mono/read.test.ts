@@ -104,6 +104,23 @@ describe("accountsHandler", () => {
     expect(res.statusCode).toBe(401);
   });
 
+  // Регресія: банка теж має рахунковий id і теж шле statement-items, тож
+  // вебхук був змушений заводити під неї рядок у `mono_account` (FK
+  // `mono_transaction`). Без фільтра вона верталась сюди як картка —
+  // безіменна «Картка / Monobank» у списку, а її баланс входив у капітал
+  // двічі: як картка і вдруге через `sumJarsUAH`. Знахідка founder-а
+  // 2026-08-10; DB-рівнева перевірка — у `read.integration.test.ts`.
+  it("виключає заглушки під банки зі списку рахунків", async () => {
+    queryMock.mockResolvedValueOnce({ rows: [] });
+
+    const res = makeRes();
+    await accountsHandler(makeReq(), res);
+
+    const sql = String(queryMock.mock.calls[0]![0]);
+    expect(sql).toContain("FROM mono_account");
+    expect(sql).toContain("is_jar = FALSE");
+  });
+
   it("coerces bigint string columns (balance, creditLimit) to numbers", async () => {
     // node-postgres returns bigint columns as strings by default. The
     // client computes `!a.creditLimit` — non-empty string "0" is truthy
