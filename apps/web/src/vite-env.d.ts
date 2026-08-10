@@ -73,6 +73,21 @@ interface ImportMetaEnv {
    * повернути раніше за тарифи.
    */
   readonly VITE_ENABLE_LEGAL?: string;
+
+  /**
+   * Показує кнопку голосового вводу (`VoiceMicButton` — 5 call-сайтів у
+   * Finyk / Fizruk / Nutrition / Routine). Вмикає рівно рядок `"1"`;
+   * незадана змінна ховає — та сама полярність, що й у двох прапорців
+   * вище.
+   *
+   * Знято з продукту 2026-08-10 на прохання власника. Дві причини —
+   * повністю розписані у
+   * `shared/components/ui/voice/resolveVoiceProvider.ts#isVoiceInputEnabled`:
+   * непередбачувана поведінка на iOS standalone-PWA (гейт WebKit-бага
+   * стоїть лише на Web-Speech-шляху, не на Groq) і вартість
+   * `/api/transcribe` — $1.00/добу/юзер без plan-gate.
+   */
+  readonly VITE_ENABLE_VOICE_INPUT?: string;
 }
 
 interface ImportMeta {

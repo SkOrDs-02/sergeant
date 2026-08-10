@@ -1,5 +1,5 @@
 /** @vitest-environment jsdom */
-import { describe, it, expect, afterEach, vi } from "vitest";
+import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import { render, cleanup, act } from "@testing-library/react";
 import { VoiceMicButton } from "./VoiceMicButton";
 
@@ -18,8 +18,17 @@ import { VoiceMicButton } from "./VoiceMicButton";
  * тому за замовчуванням `supported=false` для обох → null.
  */
 
+beforeEach(() => {
+  // Голосовий ввід за замовчуванням ВИМКНЕНИЙ (kill-switch, 2026-08-10 —
+  // див. `voice/resolveVoiceProvider.ts`). Решта тестів перевіряє поведінку
+  // увімкненої фічі, тож піднімаємо прапорець; сам kill-switch має власний
+  // тест нижче.
+  vi.stubEnv("VITE_ENABLE_VOICE_INPUT", "1");
+});
+
 afterEach(() => {
   cleanup();
+  vi.unstubAllEnvs();
   vi.restoreAllMocks();
   // Прибираємо все, що тести могли поставити на window.
   // `MediaRecorder` оголошений у lib.dom.d.ts як обовʼязковий → перетинна
@@ -38,6 +47,29 @@ afterEach(() => {
 
 describe("VoiceMicButton", () => {
   it("повертає null коли немає ні Web Speech, ні MediaRecorder", () => {
+    const { container } = render(<VoiceMicButton onResult={() => {}} />);
+    expect(container.firstChild).toBeNull();
+  });
+
+  it("не рендериться без VITE_ENABLE_VOICE_INPUT, навіть коли провайдер доступний", () => {
+    // Це і є контракт kill-switch-а: провайдер підтримується (Web Speech
+    // присутній — рівно та сама підготовка, що й у тесті нижче), але
+    // прапорець не піднятий, тож поверхні в продукті немає.
+    vi.stubEnv("VITE_ENABLE_VOICE_INPUT", "");
+    type W = typeof window & { webkitSpeechRecognition?: unknown };
+    (window as W).webkitSpeechRecognition = class {
+      lang = "";
+      interimResults = false;
+      maxAlternatives = 1;
+      continuous = false;
+      onstart: (() => void) | null = null;
+      onend: (() => void) | null = null;
+      onresult: ((e: unknown) => void) | null = null;
+      onerror: ((e: unknown) => void) | null = null;
+      start() {}
+      stop() {}
+      abort() {}
+    };
     const { container } = render(<VoiceMicButton onResult={() => {}} />);
     expect(container.firstChild).toBeNull();
   });

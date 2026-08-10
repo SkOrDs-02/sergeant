@@ -6,7 +6,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { hapticTap } from "@shared/lib/adapters/haptic";
 import { PendingVoiceChip } from "./voice/PendingVoiceChip";
-import { resolveConfiguredProvider } from "./voice/resolveVoiceProvider";
+import {
+  isVoiceInputEnabled,
+  resolveConfiguredProvider,
+} from "./voice/resolveVoiceProvider";
 import { useGroqVoiceInput } from "./voice/useGroqVoiceInput";
 import { useVoiceInput } from "./voice/useVoiceInput";
 
@@ -153,6 +156,11 @@ export function VoiceMicButton({
     };
   }, []);
 
+  // Kill-switch стоїть ПІСЛЯ всіх хуків (Rules of Hooks) і ПЕРЕД будь-яким
+  // рендером: жоден із хуків вище не має side-effect-ів до `start()`, тож
+  // вимкнена фіча нічого не ініціалізує — ні мікрофон, ні мережу.
+  // Обґрунтування дефолту (вимкнено) — у `isVoiceInputEnabled`.
+  if (!isVoiceInputEnabled()) return null;
   if (!active.supported) return null;
 
   const isUploading = useGroq ? groq.uploading : false;
