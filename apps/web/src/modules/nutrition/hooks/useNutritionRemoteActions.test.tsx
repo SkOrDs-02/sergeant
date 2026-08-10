@@ -84,6 +84,7 @@ function makeHarness(overrides: Partial<UseNutritionRemoteActionsParams> = {}) {
     recipeCacheKey: "k",
     weekPlan: null,
     setWeekPlan,
+    weekPlanRaw: "",
     setWeekPlanRaw,
     setWeekPlanBusy,
     setDayPlan,
@@ -213,6 +214,27 @@ describe("useNutritionRemoteActions", () => {
         expect.objectContaining({ pantry: [] }),
       );
       expect(spies.setErr).not.toHaveBeenCalledWith("Додай продукти в комору.");
+    });
+
+    it("відкат повертає і структуру, і сирий текст", async () => {
+      // Це два представлення ОДНІЄЇ відповіді LLM. Відкат, що вертає лише
+      // структуру, лишає картку з планом одного покоління і текстом іншого.
+      // Доки стан жив у памʼяті, розбіжність помирала на розмонтуванні;
+      // відколи план пишеться у сховище — переживає перезапуск.
+      apiFetchWeekPlan.mockRejectedValueOnce(new Error("мережа впала"));
+      const { result, spies } = makeHarness({
+        weekPlan: { days: [{ day: "Пн" }] },
+        weekPlanRaw: "попередній текст",
+      });
+      act(() => {
+        result.current.fetchWeekPlan();
+      });
+      await waitFor(() =>
+        expect(spies.setWeekPlan).toHaveBeenCalledWith({
+          days: [{ day: "Пн" }],
+        }),
+      );
+      expect(spies.setWeekPlanRaw).toHaveBeenCalledWith("попередній текст");
     });
   });
 

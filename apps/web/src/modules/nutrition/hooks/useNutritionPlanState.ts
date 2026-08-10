@@ -15,7 +15,13 @@
  * `useState` читає сховище ще до першого рендера, тож перший запис
  * збігається з тим, що вже лежить у сховищі, і жодного вікна немає.
  */
-import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 
 import {
   loadDayPlan,
@@ -49,14 +55,29 @@ export function useNutritionPlanState(): UseNutritionPlanStateResult {
     () => loadWeekPlan()?.raw ?? "",
   );
 
+  // Перший прогін ефекту пропускається — і це не мікрооптимізація. Стан на
+  // маунті вже дорівнює тому, що лежить у сховищі (його звідти й прочитали),
+  // тож запис був би не просто зайвим: `saveDayPlan` штампує новий `savedAt`,
+  // і кожне перемонтування «омолоджувало» б план, який ніхто не генерував.
+  // Мітка часу перестала б означати те, для чого існує.
+  const dayPlanPristine = useRef(true);
   useEffect(() => {
+    if (dayPlanPristine.current) {
+      dayPlanPristine.current = false;
+      return;
+    }
     saveDayPlan(dayPlan);
   }, [dayPlan]);
 
   // Обидва поля тижневого плану пишуться одним записом: `plan` і `raw` — це
   // два представлення однієї відповіді LLM, і розʼїхавшись вони дали б картку,
   // де структура з одного покоління, а сирий текст із іншого.
+  const weekPlanPristine = useRef(true);
   useEffect(() => {
+    if (weekPlanPristine.current) {
+      weekPlanPristine.current = false;
+      return;
+    }
     saveWeekPlan(weekPlan, weekPlanRaw);
   }, [weekPlan, weekPlanRaw]);
 

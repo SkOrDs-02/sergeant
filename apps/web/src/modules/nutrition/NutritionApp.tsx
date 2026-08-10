@@ -365,6 +365,7 @@ export default function NutritionApp({
     recipeCacheKey,
     weekPlan,
     setWeekPlan,
+    weekPlanRaw,
     setWeekPlanRaw,
     setWeekPlanBusy,
     setDayPlan,
