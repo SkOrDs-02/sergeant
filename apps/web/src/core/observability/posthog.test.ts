@@ -302,6 +302,18 @@ describe("capture_exceptions config", () => {
     });
   });
 
+  it("вмикає heatmaps, лишаючи autocapture вимкненим", async () => {
+    // Heatmaps шлють лише координати кліків, без DOM-вмісту — тому це
+    // свідомо НЕ суперечить `autocapture: false` поруч.
+    const mod = await import("./posthog");
+    await mod.initPostHog();
+
+    expect(posthogInit.mock.calls[0]![1]).toMatchObject({
+      enable_heatmaps: true,
+      autocapture: false,
+    });
+  });
+
   it("не використовує deprecated sanitize_properties", async () => {
     // posthog-js логує console.error на КОЖНІЙ події, поки цей хук
     // виставлений. Скраб живе у before_send.
