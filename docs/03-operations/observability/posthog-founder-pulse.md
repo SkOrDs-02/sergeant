@@ -1,6 +1,6 @@
 # PostHog Founder Pulse dashboard — runbook
 
-> **Last validated:** 2026-05-13 by @Skords-01 / Devin. **Next review:** 2026-08-11.
+> **Last validated:** 2026-08-10 by @claude. **Next review:** 2026-11-08.
 > **Status:** Active
 
 > **⚠️ Дашборд не працює станом на 2026-07-26 — цифрам не вір.**
@@ -72,6 +72,7 @@ funnel breakdown, D1/D7/D30 retention, activation rate, new-MRR і
 
 - `platform: "web" | "ios" | "android"`
 - `is_capacitor: boolean`
+- `environment: string` — з `VITE_APP_ENV`, дефолт `"production"`. **Той самий перемикач, що й Sentry** (`sentry.ts` читає ту саму змінну як fallback). Змінна **задана** на Vercel-проєкті бети (Production + Preview, додано 2026-07-30) — але чек-лист [`run-beta-wave.md` § Змінні для бета-проєкту](../../90-work/beta-launch/run-beta-wave.md#змінні-для-бета-проєкту) її історично не документував (виправлено в тому ж PR, що й ця секція). Значення в UI приховане (`Sensitive`), тож саме `"beta"` воно чи щось інше — не перевірено з коду; §3.8 нижче — канарка саме на це: 0 рядків `beta` при активних тестерах означає або порожню, або хибну змінну.
 
 **Person-properties** (`identifyPostHogUser`, [`apps/web/src/core/observability/identifyTraits.ts`](../../../apps/web/src/core/observability/identifyTraits.ts)):
 
@@ -269,6 +270,32 @@ ORDER BY day
 
 **Targets:** any step = 0 / 24h while previous 7d > 0 → P1 (deploy broke `trackEvent` calls or KV namespace drifted).
 
+### 3.8 Traffic by environment — prod vs beta
+
+**Type:** HogQL (Trends table) · **Time range:** Last 14 days · **Breakdown:** super-property `environment`.
+
+**HogQL:**
+
+```sql
+SELECT
+  toDate(timestamp) AS day,
+  properties.environment AS environment,
+  uniq(distinct_id) AS active_users,
+  countIf(event = 'signup_completed') AS signups,
+  countIf(event = 'hubchat_message_sent') AS hubchat_messages
+FROM events
+WHERE timestamp >= now() - INTERVAL 14 DAY
+GROUP BY day, environment
+ORDER BY day, environment
+```
+
+**Чому:** усі інші панелі цього дашборда рахують `prod` і `beta` разом — жодна не відповідає на питання «чи взагалі бачимо бету окремо». `VITE_APP_ENV` заданий на Vercel-проєкті бети (§2), але його значення не перевірено з коду. Ця панель — найдешевша канарка на розрив: якщо тестери активні, а рядка `environment = 'beta'` немає 14 днів поспіль — змінна порожня або задана неправильним значенням, і бета-трафік тихо змішується з продом у кожній іншій панелі вище.
+
+**Targets:**
+
+- Рядки `beta` присутні щодня під час активної хвилі бети (30 тестерів). 0 рядків `beta` при відомо активних тестерах → P2, перевір значення `VITE_APP_ENV` на Vercel (див. §2) — воно має дорівнювати саме `beta`.
+- Обсяг `beta` лишається малою обмеженою часткою (~30 тестерів) від `production` — стрибок означає, що домен бети розповсюдили ширше запрошень.
+
 ---
 
 ## 4. Umbrella dashboard
@@ -284,6 +311,7 @@ ORDER BY day
 | 4   | §3.5 New subscriptions — count + new MRR                         | half  |
 | 5   | §3.6 Cohort retention — D1 / D7 / D30                            | full  |
 | 6   | §3.7 Funnel ZEROES canary                                        | full  |
+| 7   | §3.8 Traffic by environment — prod vs beta                       | full  |
 
 **Refresh cadence:** PostHog default (30 хв). On-call ротується через umbrella під час morning standup.
 

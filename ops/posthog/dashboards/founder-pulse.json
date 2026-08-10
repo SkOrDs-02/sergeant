@@ -44,7 +44,7 @@
       "introduced_by": "PR-09 (#2525)"
     }
   },
-  "super_properties": ["platform", "is_capacitor"],
+  "super_properties": ["platform", "is_capacitor", "environment"],
   "person_properties": ["vibe", "plan", "locale", "signup_date"],
   "panels": [
     {
@@ -198,6 +198,24 @@
         "kind": "HogQLQuery",
         "query": "SELECT toDate(timestamp) AS day, countIf(event = 'signup_completed') AS signups, countIf(event = 'onboarding_completed') AS onboardings, countIf(event = 'first_action_completed') AS first_actions, countIf(event = 'subscription_started') AS subscriptions FROM events WHERE timestamp >= now() - INTERVAL 14 DAY GROUP BY day ORDER BY day"
       }
+    },
+    {
+      "key": "traffic-by-environment",
+      "name": "Traffic by environment — prod vs beta",
+      "name_uk": "Трафік за середовищем — прод vs бета",
+      "description_uk": "Щоденний DAU і ключові події воронки, розбиті по супер-властивості `environment` (prod / beta / preview). Основне призначення — канарка на сам факт розрізнення: якщо бета активна (тестери заходять), а рядка `beta` немає — `VITE_APP_ENV` не заданий на бета-Vercel-проєкті, і всі події бети тихо змішуються з продом.",
+      "type": "hogql",
+      "size": "wide",
+      "description": "Daily unique users and canonical funnel-event counts, grouped by the `environment` super-property (`apps/web/src/core/observability/posthog.ts` registers it from `VITE_APP_ENV`, default `production`). Time range: last 14 days.",
+      "rationale": "Closed-beta runbook (`docs/90-work/beta-launch/run-beta-wave.md`) sets `VITE_SENTRY_ENVIRONMENT=beta` explicitly on the beta Vercel project but historically omitted `VITE_APP_ENV`, which is the value PostHog actually reads. Without it, beta traffic reports as `environment: production` and is indistinguishable from real users in every other panel on this dashboard. This panel is the cheapest way to catch that: a beta wave with zero `beta` rows means the env tag is missing, not that testers are idle.",
+      "targets": {
+        "beta rows present": "during an active beta wave, `environment = 'beta'` rows appear daily — 0 rows while testers are known to be active means `VITE_APP_ENV` is unset on the beta Vercel project (see run-beta-wave.md § Змінні для бета-проєкту)",
+        "no beta leakage into prod baselines": "`environment = 'beta'` volume should stay a small, bounded fraction (~30 testers) of `environment = 'production'` volume — a spike suggests the beta domain is being crawled or shared beyond the invite list"
+      },
+      "query": {
+        "kind": "HogQLQuery",
+        "query": "SELECT toDate(timestamp) AS day, properties.environment AS environment, uniq(distinct_id) AS active_users, countIf(event = 'signup_completed') AS signups, countIf(event = 'hubchat_message_sent') AS hubchat_messages FROM events WHERE timestamp >= now() - INTERVAL 14 DAY GROUP BY day, environment ORDER BY day, environment"
+      }
     }
   ],
   "alerts": [
@@ -239,7 +257,8 @@
       { "panel": "activation-rate", "row": 4, "width": "half" },
       { "panel": "new-subscriptions", "row": 4, "width": "half" },
       { "panel": "retention-d1-d7-d30", "row": 5, "width": "full" },
-      { "panel": "funnel-zeroes-canary", "row": 6, "width": "full" }
+      { "panel": "funnel-zeroes-canary", "row": 6, "width": "full" },
+      { "panel": "traffic-by-environment", "row": 7, "width": "full" }
     ]
   }
 }
