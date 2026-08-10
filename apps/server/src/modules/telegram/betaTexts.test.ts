@@ -16,14 +16,12 @@ import {
 const FULL: BetaLinks = {
   appUrl: "https://beta.sergeant.app",
   groupLink: "https://t.me/+abc123",
-  feedbackFormUrl: "https://forms.gle/xyz",
   founderUsername: "@skords",
 };
 
 const EMPTY: BetaLinks = {
   appUrl: "",
   groupLink: "",
-  feedbackFormUrl: "",
   founderUsername: "",
 };
 
@@ -79,35 +77,29 @@ describe("installReply", () => {
 });
 
 describe("helpReply", () => {
-  it("розводить канали й починає з групи бети", () => {
+  it("називає рівно один канал — групу бети", () => {
     const out = helpReply(FULL);
-    const groupAt = out.indexOf(FULL.groupLink);
-    const formAt = out.indexOf(FULL.feedbackFormUrl);
-    expect(groupAt).toBeGreaterThan(-1);
-    expect(groupAt).toBeLessThan(formAt);
-
-    expect(out).toContain(FULL.founderUsername);
-  });
-
-  it("не відсилає в in-app віджет фідбеку", () => {
-    // Бета його не показує. Названий у довідці канал, якого людина не
-    // знаходить, коштує дорожче за невказаний: вона вирішує, що зламався
-    // застосунок, і не пише нікуди.
-    const out = helpReply(FULL);
+    expect(out).toContain(FULL.groupLink);
+    // Жодних інших маршрутів: ні віджета в застосунку, ні анонімної форми,
+    // ні особистого контакту. Вибір між каналами коштує повідомлення,
+    // якого потім немає.
     expect(out).not.toContain("Повідомити про проблему");
     expect(out).not.toMatch(/віджет/i);
+    expect(out).not.toMatch(/форма/i);
+    expect(out).not.toContain(FULL.founderUsername);
   });
 
-  it("веде баги тим самим маршрутом, що й решту — у групу бети", () => {
+  it("веде баги в ту саму групу, що й питання з ідеями", () => {
     const out = helpReply(FULL);
     // Перевіряємо саме РЯДОК з лінком групи, а не порядок збігів у тексті:
-    // позиційна асерція лишалась би зеленою і тоді, коли баги знову
-    // від'їхали б в окремий пункт вище.
+    // позиційна асерція лишалась би зеленою і тоді, коли баги від'їхали б
+    // в окремий пункт вище.
     const groupLine = out
       .split("\n")
       .find((line) => line.includes(FULL.groupLink));
     expect(groupLine).toBeDefined();
-    expect(groupLine).toContain("Зламалось");
+    expect(groupLine).toContain("зламалось");
+    expect(groupLine).toContain("питання");
   });
 
   it("просить назвати екран і попередню дію", () => {
@@ -128,19 +120,13 @@ describe("helpReply", () => {
     expect(out).not.toContain("/stats");
   });
 
-  it("ненастроєні канали просто зникають зі списку", () => {
-    const out = helpReply({ ...FULL, feedbackFormUrl: "", groupLink: "" });
-    expect(out).not.toContain("анонімна форма");
-    expect(out).not.toContain("група бети");
-  });
-
-  it("без групи не лишає баги без адресата", () => {
-    // Група — основний канал для багів, тож коли її немає, контакт
-    // founder-а мусить розширитись, а не лишитись «особистим і терміновим».
+  it("без групи прибирає блок цілком, а не лишає порожній заголовок", () => {
     const out = helpReply({ ...FULL, groupLink: "" });
-    expect(out).toContain(FULL.founderUsername);
-    expect(out).toMatch(/баг/i);
-    expect(out).not.toMatch(/Особисте або термінове/);
+    expect(out).not.toContain("група бети");
+    expect(out).not.toMatch(/Куди писати/);
+    // Правило й перелік команд лишаються — довідка не має ставати порожньою.
+    expect(out).toMatch(/Правило одне/);
+    expect(out).toContain("/install");
   });
 });
 

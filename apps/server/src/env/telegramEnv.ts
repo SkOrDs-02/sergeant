@@ -32,14 +32,9 @@ export const telegramEnvShape = {
    */
   TELEGRAM_BETA_APP_URL: stringWithDefault("https://beta-tau-gilt.vercel.app"),
   /**
-   * Анонімна форма зворотного звʼязку бети (Google Form / Tally). Окремий
-   * канал від групи саме тому, що анонімний: частина відгуків не звучить,
-   * поки під ними стоїть імʼя.
-   */
-  TELEGRAM_BETA_FEEDBACK_FORM_URL: stringWithDefault(""),
-  /**
-   * Контакт founder-а разом із `@` (наприклад `@skords`). Останній канал у
-   * `/help` — для особистого й термінового.
+   * Контакт founder-а разом із `@` (наприклад `@skords`). Використовується
+   * лише в `/install` — куди написати, якщо потрібний пункт меню не
+   * знаходиться. У `/help` контактів немає: єдиний канал там — група бети.
    */
   TELEGRAM_BETA_FOUNDER_USERNAME: stringWithDefault(""),
   /**
