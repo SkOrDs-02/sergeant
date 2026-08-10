@@ -16,7 +16,13 @@ vi.mock("./observability/sentry", () => ({
   captureException: vi.fn(),
 }));
 const capturePostHogExceptionMock = vi.fn();
-vi.mock("./observability/posthog", () => ({
+// Спред реального модуля, а не заміна цілком: `ErrorBoundary` сьогодні
+// імпортує звідси лише `capturePostHogException`, але щойно він (чи будь-що
+// в графі цього тесту) візьме ще й `initPostHog` / `capturePostHogEvent` —
+// той біндинг став би `undefined` і впав у момент виклику, вказуючи на
+// компонент, а не на цей мок.
+vi.mock("./observability/posthog", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./observability/posthog")>()),
   capturePostHogException: (...args: unknown[]) =>
     capturePostHogExceptionMock(...args),
 }));
