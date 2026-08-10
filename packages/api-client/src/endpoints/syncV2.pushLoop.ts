@@ -214,7 +214,24 @@ export type MarkOutboxRetryFn = (
 export type MarkOutboxRejectedFn = (
   id: number,
   reason: string,
+  meta?: RejectedOpMeta,
 ) => Promise<void>;
+
+/**
+ * Що саме відхилено — для обсервабіліті на боці харнеса.
+ *
+ * Раніше сюди доїжджали тільки `id` рядка outbox-а й причина, тож у Sentry
+ * було видно «щось відкинуто через tombstoned» і не видно ЩО. Розбір
+ * `SERGEANT-WEB-Q` через це звівся до археології по коду замість погляду в
+ * теги. `table` + `op` знімають рівно цю сліпоту.
+ *
+ * `row` (payload) сюди НЕ передається навмисно: там суми, назви й нотатки
+ * користувача, а це прямий шлях у Sentry повз redaction (Hard Rule #21).
+ */
+export interface RejectedOpMeta {
+  readonly table: string;
+  readonly op: SyncV2OpKind;
+}
 
 /**
  * DI: pure retry-policy. Mirror of `planRetry` from
@@ -396,7 +413,10 @@ export async function runSyncEnginePushOnce(
         typeof result.reason === "string" && result.reason.length > 0
           ? result.reason
           : "unspecified";
-      await deps.markRejected(row.id, reason);
+      await deps.markRejected(row.id, reason, {
+        table: row.table,
+        op: row.op,
+      });
       rejected += 1;
       continue;
     }

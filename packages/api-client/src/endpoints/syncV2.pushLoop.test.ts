@@ -319,7 +319,12 @@ describe("runSyncEnginePushOnce — terminal reject path", () => {
       rejected: 1,
     });
     expect(markRejected).toHaveBeenCalledTimes(1);
-    expect(markRejected).toHaveBeenCalledWith(5, "op_not_supported");
+    // Третій аргумент — метадані для обсервабіліті: без них у Sentry
+    // видно причину відмови й не видно, ЩО саме відхилено.
+    expect(markRejected).toHaveBeenCalledWith(5, "op_not_supported", {
+      table: "routine_streaks",
+      op: "increment",
+    });
     expect(markSuccess).not.toHaveBeenCalled();
     expect(markRetry).not.toHaveBeenCalled();
   });
@@ -342,8 +347,14 @@ describe("runSyncEnginePushOnce — terminal reject path", () => {
     await runSyncEnginePushOnce(deps, { limit: 100 });
 
     expect(markRejected).toHaveBeenCalledTimes(2);
-    expect(markRejected).toHaveBeenNthCalledWith(1, 1, "unspecified");
-    expect(markRejected).toHaveBeenNthCalledWith(2, 2, "unspecified");
+    expect(markRejected).toHaveBeenNthCalledWith(1, 1, "unspecified", {
+      table: "routine_streaks",
+      op: "increment",
+    });
+    expect(markRejected).toHaveBeenNthCalledWith(2, 2, "unspecified", {
+      table: "routine_streaks",
+      op: "increment",
+    });
   });
 });
 
@@ -512,7 +523,10 @@ describe("runSyncEnginePushOnce — mixed batch", () => {
     expect(markSuccess).toHaveBeenCalledTimes(1);
     expect(markSuccess).toHaveBeenCalledWith(1);
     expect(markRejected).toHaveBeenCalledTimes(1);
-    expect(markRejected).toHaveBeenCalledWith(2, "tombstoned");
+    expect(markRejected).toHaveBeenCalledWith(2, "tombstoned", {
+      table: "routine_streaks",
+      op: "increment",
+    });
     expect(markRetry).toHaveBeenCalledTimes(1);
     const [retriedId, retriedPlan] = markRetry.mock.calls[0]!;
     expect(retriedId).toBe(3);

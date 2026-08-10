@@ -110,6 +110,37 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
     return entry;
   };
 
+  /**
+   * Повернути щойно видалену витрату після «Скасувати» в тості.
+   *
+   * Свідомо НЕ `addManualExpense(snapshot)`: знімок несе старий `id`, а
+   * сервер уже позначив той рядок видаленим. Операція з тим самим id
+   * прилітає в тумбстоун і відхиляється (`reason: "tombstoned"`) — запис
+   * повертається локально й НЕ повертається на сервері. Людина цього не
+   * бачить: розходження випливає на іншому пристрої або після втрати
+   * кешу, і виглядає як «застосунок сам видалив мою витрату».
+   * У Sentry — `SERGEANT-WEB-Q`.
+   *
+   * Чому новий id, а не дозвіл воскрешати на сервері. Гвардія тумбстоуна
+   * тримається на інваріанті «новий запис = новий id», і для таблиць із
+   * випадковим PK він чинний: легітимний insert у видалений рядок
+   * неможливий за побудовою. Саме на цій підставі гвардію лишили для
+   * finyk / fizruk / nutrition і зняли для `routine_entries`, де PK
+   * детермінований (`habitId:dateKey`) — див.
+   * `docs/90-work/audits/product-knowledge-routine.md` § E-1. Undo був
+   * єдиним місцем, яке інваріант порушувало. Тож лагодимо порушення, а не
+   * прибираємо захист.
+   *
+   * Для користувача нічого не змінюється: та сама сума, назва, дата й
+   * місце в списку. Змінюється лише невидимий ідентифікатор, а видалення
+   * лишається видаленням — що й правда, бо воно вже доїхало на сервер.
+   */
+  const restoreManualExpense = (snapshot: Partial<ManualExpense>) => {
+    const { id: _discardedId, ...withoutId } = snapshot;
+    void _discardedId;
+    addManualExpense(withoutId);
+  };
+
   const removeManualExpense = (id: string) => {
     const removed = manualExpenses.find((e) => e.id === id);
     setManualExpenses((prev) => prev.filter((e) => e.id !== id));
@@ -393,6 +424,7 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
 
   return {
     addManualExpense,
+    restoreManualExpense,
     removeManualExpense,
     editManualExpense,
     toggleHideAccount,

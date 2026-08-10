@@ -121,7 +121,7 @@ export interface TransactionsStorageSlice {
   txNotes: Record<string, string | undefined>;
   setTxNote: (id: string, note: string | null) => void;
   manualExpenses: ManualExpense[] | undefined;
-  addManualExpense: (expense: ManualExpense) => void;
+  addManualExpense: (expense: Omit<ManualExpense, "id">) => void;
   removeManualExpense: (id: string) => void;
 }
 

@@ -499,7 +499,7 @@ export default function App({
             if (snapshot) {
               showUndoToast(toast, {
                 msg: isIncome ? "Видалив надходження" : "Видалив витрату",
-                onUndo: () => storage.addManualExpense(snapshot),
+                onUndo: () => storage.restoreManualExpense(snapshot),
               });
             } else {
               toast.success("Видалив витрату");

@@ -46,16 +46,42 @@ const BENIGN_REJECT_REASONS: ReadonlySet<string> = new Set(["lww_conflict"]);
  * `syncV2.pushLoop` навмисно лишається без обсервабіліті (це переносний
  * примітив), тож звітуємо тут — у місці, де рантайм збирається для вебу.
  */
-function reportTerminalRejection(id: number, reason: string): void {
+function reportTerminalRejection(
+  id: number,
+  reason: string,
+  meta?: { readonly table: string; readonly op: string },
+): void {
   if (BENIGN_REJECT_REASONS.has(reason)) return;
   void (async () => {
     try {
       const { logger } = await import("@shared/lib");
-      logger.warn("[sync] outbox op rejected terminally", { id, reason });
-      const { captureException } = await import("../observability/sentry");
-      captureException(new Error(`sync outbox op rejected: ${reason}`), {
-        tags: { area: "sync", reject_reason: reason },
+      logger.warn("[sync] outbox op rejected terminally", {
+        id,
+        reason,
+        table: meta?.table,
+        op: meta?.op,
       });
+      const { captureException } = await import("../observability/sentry");
+      // Таблиця й тип операції — в ЗАГОЛОВОК помилки, не лише в теги:
+      // Sentry групує issue за текстом, тож без цього відхилення різних
+      // сутностей злипаються в одну issue, і в ній видно причину без
+      // предмета. Саме так `SERGEANT-WEB-Q` («tombstoned», 25 юзерів)
+      // мовчав про те, що йдеться про finyk і про undo.
+      //
+      // `row` (payload) не логуємо й не шлемо: там суми, назви й нотатки
+      // користувача (Hard Rule #21).
+      const subject = meta ? `${meta.table}.${meta.op}` : "unknown";
+      captureException(
+        new Error(`sync outbox op rejected: ${reason} (${subject})`),
+        {
+          tags: {
+            area: "sync",
+            reject_reason: reason,
+            sync_table: meta?.table ?? "unknown",
+            sync_op: meta?.op ?? "unknown",
+          },
+        },
+      );
     } catch {
       /* обсервабіліті ніколи не має ламати шлях запису */
     }
@@ -486,8 +512,8 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
         shared.dbSchema.markOutboxSuccess(await shared.resolveClient(), id),
       markRetry: async (id, plan) =>
         shared.dbSchema.markOutboxRetry(await shared.resolveClient(), id, plan),
-      markRejected: async (id, reason) => {
-        reportTerminalRejection(id, reason);
+      markRejected: async (id, reason, meta) => {
+        reportTerminalRejection(id, reason, meta);
         return shared.dbSchema.markOutboxRejected(
           await shared.resolveClient(),
           id,

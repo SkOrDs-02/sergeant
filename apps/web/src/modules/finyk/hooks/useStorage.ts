@@ -206,6 +206,7 @@ export function useStorage({
     manualExpenses,
     setManualExpenses,
     addManualExpense: mutations.addManualExpense,
+    restoreManualExpense: mutations.restoreManualExpense,
     editManualExpense: mutations.editManualExpense,
     removeManualExpense: mutations.removeManualExpense,
     showBalance,
