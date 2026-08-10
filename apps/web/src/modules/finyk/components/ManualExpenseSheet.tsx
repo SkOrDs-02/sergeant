@@ -33,12 +33,14 @@ import {
   resolveManualExpenseKind,
   type ManualExpenseKind,
 } from "@sergeant/finyk-domain/domain/transactions";
+import type { CustomCategoryInput } from "@sergeant/finyk-domain";
 import {
   CATEGORY_DISPLAY,
   CATEGORY_SLUGS,
   DEFAULT_CATEGORY,
   upgradeCategory,
-  type CategorySlug,
+  upgradeCategoryAllowingCustom,
+  type CategoryDisplay,
 } from "./manualExpenseCategories";
 import {
   INCOME_CATEGORY_DISPLAY,
@@ -96,6 +98,18 @@ interface ManualExpenseSheetProps {
   frequentMerchants?: FrequentMerchant[];
   initialCategory?: string | null;
   initialDescription?: string | null;
+  /**
+   * Категорії, які користувач завів сам. Вбудований набір
+   * (`CATEGORY_SLUGS`) про них не знає, тож без цього пропа щойно
+   * створена категорія просто не з'являлась у пікері — спіймано
+   * бета-тестером 2026-08-10.
+   *
+   * Лише для витрат: надходження мають фіксовану таксономію з пʼяти
+   * слагів (`INCOME_CATEGORY_SLUGS`, спека fab-and-manual-income §3), і
+   * `mergeExpenseCategoryDefinitions` у домені так само зшиває власні
+   * категорії тільки з витратними.
+   */
+  customCategories?: readonly CustomCategoryInput[];
 }
 
 export function ManualExpenseSheet({
@@ -108,6 +122,7 @@ export function ManualExpenseSheet({
   frequentMerchants = [],
   initialCategory,
   initialDescription,
+  customCategories = [],
 }: ManualExpenseSheetProps) {
   const formId = useId();
   const descId = `${formId}-desc`;
@@ -116,6 +131,21 @@ export function ManualExpenseSheet({
   const catLabelId = `${formId}-cat-label`;
   const isEditing = !!initialExpense?.id;
   const [kind, setKind] = useState<ManualExpenseKind>("expense");
+
+  // Власні категорії — лише витратні (див. проп). Тримаємо їх окремим
+  // мемо, щоб `customIds` був стабільним для нормалізації нижче.
+  const customExpenseCategories = useMemo(
+    () =>
+      customCategories.filter(
+        (c): c is CustomCategoryInput =>
+          typeof c?.id === "string" && c.id.trim() !== "",
+      ),
+    [customCategories],
+  );
+  const customIds = useMemo(
+    () => new Set(customExpenseCategories.map((c) => c.id)),
+    [customExpenseCategories],
+  );
 
   // UX-15 batch entry. `keepOpenRef` is read inside `onSubmit` to decide
   // whether to close or reset-and-stay. `batchFocusRef` lets the amount
@@ -147,8 +177,15 @@ export function ManualExpenseSheet({
                 ];
               })()
             : (() => {
-                const s = upgradeCategory(values.category);
-                return [s, trimmedDesc || (CATEGORY_DISPLAY[s]?.label ?? s)];
+                // `upgradeCategory` звів би id власної категорії до
+                // `DEFAULT_CATEGORY` — саме тут обрана людиною категорія
+                // тихо ставала «Інше». Підпис теж беремо з об'єднаної мапи,
+                // інакше в опис витрати потрапив би сирий id.
+                const s = upgradeCategoryAllowingCustom(
+                  values.category,
+                  customIds,
+                );
+                return [s, trimmedDesc || (categoryDisplay[s]?.label ?? s)];
               })();
         hapticSuccess();
         onSave?.({
@@ -290,16 +327,23 @@ export function ManualExpenseSheet({
           category:
             initialKind === "income"
               ? upgradeIncomeCategory(initialExpense.category)
-              : upgradeCategory(initialExpense.category),
+              : upgradeCategoryAllowingCustom(
+                  initialExpense.category,
+                  customIds,
+                ),
           date: initialExpense.date
             ? toLocalISODate(initialExpense.date)
             : toLocalISODate(),
         });
       } else {
         setKind("expense");
-        let startCategory: CategorySlug = DEFAULT_CATEGORY;
+        // Не `CategorySlug`: власна категорія за визначенням поза union-ом.
+        let startCategory: string = DEFAULT_CATEGORY;
         if (initialCategory) {
-          startCategory = upgradeCategory(initialCategory);
+          startCategory = upgradeCategoryAllowingCustom(
+            initialCategory,
+            customIds,
+          );
         } else if (frequentCategories.length > 0) {
           const top = frequentCategories[0];
           if (top) {
@@ -335,6 +379,10 @@ export function ManualExpenseSheet({
     initialCategory,
     initialDescription,
     frequentCategories,
+    // Гвардія `openInitKey === prevOpenInitKey` вище робить цю залежність
+    // безкоштовною: зміна набору власних категорій перезапустить ефект,
+    // він побачить незмінений ключ і вийде, не чіпаючи чернетку форми.
+    customIds,
     reset,
   ]);
 
@@ -344,7 +392,25 @@ export function ManualExpenseSheet({
   );
 
   const isIncome = kind === "income";
-  const categoryDisplay = isIncome ? INCOME_CATEGORY_DISPLAY : CATEGORY_DISPLAY;
+
+  // Підписи власних категорій. `tag` — та сама іконка, що й у вбудованого
+  // «Інше»: власної категорія не має, а заводити тут другий словник іконок
+  // поруч із канонічним не варто. Порожній `label` навмисно пропускаємо —
+  // фолбек `display[slug]?.label ?? slug` на місці рендера чесніший за
+  // порожній рядок у списку.
+  const customCategoryDisplay: Readonly<Record<string, CategoryDisplay>> =
+    Object.fromEntries(
+      customExpenseCategories
+        .filter((c) => c.label)
+        .map((c) => [c.id, { iconName: "tag" as const, label: c.label ?? "" }]),
+    );
+
+  // Без `useMemo`: React Compiler не зміг зберегти ручну мемоізацію на
+  // гілці з достроковими return-ами (`react-hooks/preserve-manual-memoization`),
+  // а сам він це кешує краще. Обчислення — спред двох невеликих обʼєктів.
+  const categoryDisplay: Readonly<Record<string, CategoryDisplay>> = isIncome
+    ? INCOME_CATEGORY_DISPLAY
+    : { ...CATEGORY_DISPLAY, ...customCategoryDisplay };
 
   // Normalise the watched category value so comparison against slug list is
   // stable even if a legacy value slips through. Income has a fixed 5-slug
@@ -352,12 +418,17 @@ export function ManualExpenseSheet({
   const categorySlug = category
     ? isIncome
       ? upgradeIncomeCategory(category)
-      : upgradeCategory(category)
+      : upgradeCategoryAllowingCustom(category, customIds)
     : "";
 
   // Dropdown shows every category at once (D3 decision) — no collapsed
   // top-N row, so frequency ordering just becomes the <option> order.
-  const categorySlugs = isIncome ? INCOME_CATEGORY_SLUGS : sortedCategories;
+  // Власні йдуть у хвіст: частотне сортування рахується лише по вбудованих
+  // (`sortCategoriesByFrequency` — перестановка `CATEGORY_SLUGS`), тож
+  // вмішувати їх у той порядок означало б вигадати їм ранг.
+  const categorySlugs: string[] = isIncome
+    ? [...INCOME_CATEGORY_SLUGS]
+    : [...sortedCategories, ...customExpenseCategories.map((c) => c.id)];
 
   // Merchant-driven quick amounts / description hints are expense-only —
   // they come from banking-merchant history and have no income analogue.

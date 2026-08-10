@@ -494,3 +494,97 @@ describe("ManualExpenseSheet — межові значення (beta-input-bound
     expect(onSave).not.toHaveBeenCalled();
   });
 });
+
+/**
+ * Власні категорії користувача в пікері ручної витрати.
+ *
+ * Спіймано бета-тестером 2026-08-10: «додав власну категорію витрат, а у
+ * пікері при додаванні витрат вона не з'явилася». Причина була не в
+ * сортуванні — `sortCategoriesByFrequency` повертає перестановку
+ * `CATEGORY_SLUGS`, тобто виключно вбудований набір, і `customCategories`
+ * у цей аркуш взагалі не передавались.
+ *
+ * Другий тест тут важливіший за перший. Показати категорію мало: на шляху
+ * збереження стояв `upgradeCategory`, який зводить будь-яке невідоме
+ * значення до `DEFAULT_CATEGORY`. Тобто «полагоджений» пікер без цієї
+ * частини дав би гіршу поведінку, ніж баг: людина обирає «Кава з друзями»,
+ * зберігає — і бачить «Інше», без жодного натяку, що вибір підмінили.
+ */
+describe("ManualExpenseSheet — власні категорії", () => {
+  const CUSTOM = [
+    { id: "custom_coffee_friends", label: "Кава з друзями" },
+    { id: "custom_pets", label: "Тваринки" },
+  ];
+
+  it("показує власні категорії в пікері поряд із вбудованими", () => {
+    render(
+      <ManualExpenseSheet open onClose={vi.fn()} customCategories={CUSTOM} />,
+    );
+
+    expect(
+      screen.getByRole("option", { name: "Кава з друзями" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("option", { name: "Тваринки" }),
+    ).toBeInTheDocument();
+    // Вбудовані нікуди не зникли.
+    expect(screen.getByRole("option", { name: "Інше" })).toBeInTheDocument();
+  });
+
+  it("зберігає обраний власний id, а не підміняє його на «other»", async () => {
+    const onSave = vi.fn();
+    render(
+      <ManualExpenseSheet
+        open
+        onClose={vi.fn()}
+        onSave={onSave}
+        customCategories={CUSTOM}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText("Сума ₴"), {
+      target: { value: "75" },
+    });
+    fireEvent.change(screen.getByLabelText(/Категорія/), {
+      target: { value: "custom_coffee_friends" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Додати витрату" }));
+
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    const call = onSave.mock.calls[0]![0] as {
+      category: string;
+      description: string;
+    };
+    expect(call.category).toBe("custom_coffee_friends");
+    // Порожня назва підставляє ПІДПИС категорії, а не сирий id — інакше в
+    // списку витрат світився б «custom_coffee_friends».
+    expect(call.description).toBe("Кава з друзями");
+  });
+
+  it("без власних категорій поведінка не змінилась", async () => {
+    const onSave = vi.fn();
+    render(<ManualExpenseSheet open onClose={vi.fn()} onSave={onSave} />);
+
+    fireEvent.change(screen.getByLabelText("Сума ₴"), {
+      target: { value: "10" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Додати витрату" }));
+
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    expect((onSave.mock.calls[0]![0] as { category: string }).category).toBe(
+      "other",
+    );
+  });
+
+  it("надходження власних категорій НЕ показують — у них своя таксономія", () => {
+    render(
+      <ManualExpenseSheet open onClose={vi.fn()} customCategories={CUSTOM} />,
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: "Надходження" }));
+
+    expect(
+      screen.queryByRole("option", { name: "Кава з друзями" }),
+    ).not.toBeInTheDocument();
+  });
+});

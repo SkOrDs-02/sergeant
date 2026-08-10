@@ -480,6 +480,7 @@ export default function App({
           initialDescription={quickAddDescription}
           frequentCategories={frequentCategories}
           frequentMerchants={frequentMerchants}
+          customCategories={storage.customCategories}
           onSave={(expense) => {
             handleExpenseSave(expense);
             handlePostSavePrompt(expense);
