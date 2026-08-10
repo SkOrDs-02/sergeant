@@ -151,6 +151,33 @@ describe("mono/read — integration (real Postgres)", () => {
       expect(body[0]!["lastSeenAt"]).toBe("2026-01-15T10:00:00.000Z");
     });
 
+    // Регресія на реальному Postgres: заглушка під банку не має верталась
+    // як картка. Вебхук змушений заводити для неї рядок у `mono_account`
+    // (FK `mono_transaction` → `mono_account`), інакше транзакцію банки
+    // нікуди записати. Поки фільтра не було, вона їхала клієнту
+    // безіменною «Карткою», а її баланс входив у капітал двічі — як
+    // картка і вдруге через `sumJarsUAH`. Знахідка founder-а 2026-08-10,
+    // міграція 119.
+    it("не віддає заглушки під банки серед рахунків", async () => {
+      await testQuery(
+        `INSERT INTO mono_account
+           (user_id, mono_account_id, type, currency_code, balance, is_jar)
+         VALUES ($1, 'acct_white', 'white', 980, 103549, FALSE),
+                ($1, 'jar_prosto', NULL,    980, 600000, TRUE)`,
+        [TEST_USER_ID],
+      );
+
+      const res = makeRes();
+      await accountsHandler(makeReq(), res);
+
+      expect(res.statusCode).toBe(200);
+      const body = res.body as Array<Record<string, unknown>>;
+      expect(body).toHaveLength(1);
+      expect(body[0]!["monoAccountId"]).toBe("acct_white");
+      // Саме цей рядок і був привидом на скріншоті founder-а.
+      expect(body.map((r) => r["monoAccountId"])).not.toContain("jar_prosto");
+    });
+
     it("handles null balance/creditLimit from real Postgres", async () => {
       await testQuery(
         `INSERT INTO mono_account

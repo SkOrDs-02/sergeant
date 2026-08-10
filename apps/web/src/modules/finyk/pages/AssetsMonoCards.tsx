@@ -7,7 +7,10 @@ import { CollapsibleSection } from "@shared/components/ui/CollapsibleSection";
 import { cn } from "@shared/lib/ui/cn";
 import { Money } from "@shared/components/ui/Money";
 import { getAccountVisual } from "../lib/accountVisual";
-import { getMonoOwnFunds } from "@sergeant/finyk-domain/lib/accounts";
+import {
+  getMonoDebt,
+  getMonoOwnFunds,
+} from "@sergeant/finyk-domain/lib/accounts";
 import { messages } from "@shared/i18n/uk";
 
 const t = messages.finyk.monoCards;
@@ -78,6 +81,9 @@ export function AssetsMonoCards({
         // (getMonoOwnFunds), не сирий balance — інакше сума виглядає
         // задвоєною з боргом кредитки у «Пасивах» (F-decision 1).
         const displayBalance = isCredit ? getMonoOwnFunds(a) : (a.balance ?? 0);
+        // `getMonoDebt` повертає ГРИВНІ (вже поділені на 100), на відміну
+        // від `getMonoOwnFunds`, що віддає копійки. Тому тут без /100.
+        const creditDebt = isCredit ? getMonoDebt(a) : 0;
         return (
           <button
             key={id || i}
@@ -130,6 +136,29 @@ export function AssetsMonoCards({
                   "••••"
                 )}
               </div>
+              {/*
+                Кредитка з боргом інакше читається як порожня картка:
+                зверху чесний 0 (власних коштів понад ліміт справді
+                немає), а сам борг лежить у «Пасивах» без жодного
+                натяку тут. Припис — місток між двома числами, а не
+                друга сума: `getMonoDebt` тут ЛИШЕ показується, у
+                капітал він входить рівно один раз, через
+                `getMonoTotals().debt`.
+
+                Ховається разом із балансом: під `showBalance = false`
+                борг — така сама приватна цифра, як і залишок.
+              */}
+              {showBalance && creditDebt > 0 && (
+                <div className="text-style-caption text-warning-strong dark:text-warning mt-0.5">
+                  {t.debtHintPrefix}{" "}
+                  <Money
+                    amount={creditDebt}
+                    tone="inherit"
+                    symbol={currencySymbol(a.currencyCode)}
+                  />{" "}
+                  {t.debtHintSuffix}
+                </div>
+              )}
             </div>
           </button>
         );
