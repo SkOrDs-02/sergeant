@@ -218,3 +218,82 @@ describe("FinykWebhookServiceSection — L-15 network-error vs disconnected", ()
     );
   });
 });
+
+/**
+ * Перевірка живості токена (міграція 120).
+ *
+ * Спіймано на беті 2026-08-10: тестер відкликав токен у застосунку
+ * Monobank, а Налаштування далі малювали «Webhook активний · 5 рахунків».
+ * `sync-state` був суто читачем бази, а база про відкликання не знає —
+ * Monobank нам про це не повідомляє, вебхук просто замовкає.
+ *
+ * Тепер сервер, побачивши підозріле підключення (вебхук зареєстрований,
+ * подій нема), питає Monobank і на явну відмову ставить `invalid`.
+ * Пінимо саме те, що робить фікс видимим для людини: `invalid` — це НЕ
+ * «підключено», і разом із поясненням має приїхати форма нового токена.
+ * Без форми попередження було б глухим кутом: воно повідомляє про
+ * проблему й не дає жодного способу її полагодити.
+ */
+describe("FinykWebhookServiceSection — відкликаний токен (status: invalid)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  const INVALID_STATE: MonoSyncState = {
+    status: "invalid",
+    webhookActive: false,
+    lastEventAt: null,
+    lastBackfillAt: null,
+    accountsCount: 5,
+  };
+
+  it("пояснює втрату звʼязку і одразу дає поле для нового токена", async () => {
+    syncStateMock.mockResolvedValue(INVALID_STATE);
+    renderSection();
+
+    expect(
+      await screen.findByText(/Monobank втратив звʼязок/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText("Токен Monobank API"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Підключити новий токен/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("не видає мертве підключення за живе", async () => {
+    syncStateMock.mockResolvedValue(INVALID_STATE);
+    const { queryClient } = renderSection();
+
+    await waitFor(() =>
+      expect(queryClient.getQueryState(finykKeys.monoSyncState)?.status).toBe(
+        "success",
+      ),
+    );
+
+    // Головна брехня, яку лікує фікс: зелений блок «Webhook активний» над
+    // даними, що застигли назавжди. `accountsCount: 5` у відповіді
+    // навмисно — саме він робив картинку переконливою.
+    expect(screen.queryByText(/Webhook активний/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/5 рахунків/i)).not.toBeInTheDocument();
+    // І це не «збій перевірки» — сервер відповів успішно, просто банк
+    // сказав «ні». Банер про мережу тут був би хибним діагнозом.
+    expect(
+      screen.queryByText(/Не вдалося перевірити стан підключення/i),
+    ).not.toBeInTheDocument();
+  });
+
+  it("лишає вихід через «Відʼєднати» для тих, хто не хоче перепідключатись", async () => {
+    syncStateMock.mockResolvedValue(INVALID_STATE);
+    renderSection();
+
+    expect(
+      await screen.findByRole("button", { name: /Від'єднати/i }),
+    ).toBeInTheDocument();
+  });
+});

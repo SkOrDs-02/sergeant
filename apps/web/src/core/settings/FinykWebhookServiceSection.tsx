@@ -10,7 +10,6 @@ import { Icon } from "@shared/components/ui/Icon";
 import { finykKeys, hubKeys } from "@shared/lib/api/queryKeys";
 import { isRetriableError } from "@shared/lib/api/queryClient";
 import { cn } from "@shared/lib/ui/cn";
-import { messages } from "@shared/i18n/uk";
 import { BackfillProgressPill } from "@finyk/components/BackfillProgressPill";
 import { useMonoBackfillProgress } from "@finyk/hooks/useMonoBackfillProgress";
 import { removeItem as removeFinykStorageItem } from "@finyk/lib/finykStorage";
@@ -22,6 +21,7 @@ import { PaywallModal, usePlan } from "../billing";
 // Канонічна оболонка одна — `ConfirmDialog`, вона портальна.
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { SettingsSubGroup } from "./SettingsPrimitives";
+import { MonoTokenInlineForm } from "./MonoTokenInlineForm";
 
 type ConfirmKind = "cache" | "disconnect" | null;
 
@@ -45,9 +45,6 @@ const COPY = {
   disconnect: "Від'єднати",
   tokenHelp:
     "Токен відправляється на сервер і не зберігається у браузері. Mono → Налаштування → Інші → API.",
-  tokenPlaceholder: "Токен Monobank API",
-  hideToken: "Приховати токен",
-  showToken: "Показати токен",
   connect: "Підключити Monobank",
   serviceTitle: "Сервіс",
   serviceHelp:
@@ -66,6 +63,13 @@ const COPY = {
   // (`disabled` + «Оновлення…») під час запиту — ретрай тут мав ту саму
   // прогалину: без цього тап на повільній мережі виглядав мертвим.
   checking: "Перевіряю…",
+  // Перевірка живості токена (міграція 120). Формулювання навмисно не
+  // звинувачує людину й не каже «помилка»: найчастіша причина — вона сама
+  // відкликала токен у Monobank, і це нормальна дія, а не поломка.
+  reconnectTitle: "Monobank втратив звʼязок",
+  reconnectBody:
+    "Monobank більше не приймає збережений токен — найчастіше так буває, якщо його відкликали в застосунку банку. Транзакції не оновлюються. Встав новий токен, щоб відновити: Mono → Налаштування → Інші → API.",
+  reconnect: "Підключити новий токен",
 } as const;
 
 export function FinykWebhookServiceSection({
@@ -78,7 +82,6 @@ export function FinykWebhookServiceSection({
   const [webhookTokenInput, setWebhookTokenInput] = useState("");
   const [webhookConnecting, setWebhookConnecting] = useState(false);
   const [webhookError, setWebhookError] = useState("");
-  const [showWebhookToken, setShowWebhookToken] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const syncStateQuery = useQuery<MonoSyncState>({
@@ -89,8 +92,18 @@ export function FinykWebhookServiceSection({
     refetchOnWindowFocus: true,
   });
   const webhookSyncState = syncStateQuery.data ?? null;
+  // `invalid` — це підключення, яке БУЛО живим і перестало: сервер сходив
+  // у Monobank і дістав явну відмову в авторизації (перевірка живості
+  // токена, міграція 120). Раніше такий статус потрапляв у
+  // `webhookConnected` разом з `active`/`pending` і малював той самий блок
+  // «підключено», тільки з червоною крапкою — тобто повідомляв про
+  // проблему й водночас не давав жодного способу її полагодити, крім
+  // «Відʼєднати» наосліп. Тепер це окрема гілка з формою нового токена.
+  const webhookNeedsReconnect = webhookSyncState?.status === "invalid";
   const webhookConnected =
-    webhookSyncState != null && webhookSyncState.status !== "disconnected";
+    webhookSyncState != null &&
+    webhookSyncState.status !== "disconnected" &&
+    !webhookNeedsReconnect;
   // L-15: query-помилка (мережа/5xx/timeout) — це НЕ те саме, що чесний
   // "disconnected" статус із валідної відповіді сервера. Без цього
   // розрізнення `webhookConnected === false` і в обох випадках рендерився
@@ -320,6 +333,39 @@ export function FinykWebhookServiceSection({
             </div>
             <BackfillProgressPill progress={backfillProgress} />
           </div>
+        ) : webhookNeedsReconnect ? (
+          <div className="space-y-3">
+            <div
+              className="flex items-start gap-3 p-3 rounded-xl border border-warning/40 bg-warning/10"
+              role="alert"
+            >
+              <span
+                className="w-2.5 h-2.5 mt-1.5 rounded-full shrink-0 bg-warning"
+                aria-hidden
+              />
+              <div className="flex-1 min-w-0">
+                <div className="text-style-label">{COPY.reconnectTitle}</div>
+                <p className="text-style-caption text-subtle mt-0.5 leading-snug">
+                  {COPY.reconnectBody}
+                </p>
+              </div>
+            </div>
+            <MonoTokenInlineForm
+              value={webhookTokenInput}
+              onChange={setWebhookTokenInput}
+              onSubmit={connectWebhook}
+              submitting={webhookConnecting}
+              submitLabel={COPY.reconnect}
+              help={null}
+            />
+            <Button
+              variant="danger"
+              className="w-full h-11"
+              onClick={() => setConfirmKind("disconnect")}
+            >
+              {COPY.disconnect}
+            </Button>
+          </div>
         ) : webhookCheckFailed ? (
           <div className="space-y-3">
             <p
@@ -339,43 +385,14 @@ export function FinykWebhookServiceSection({
             </Button>
           </div>
         ) : (
-          <div className="space-y-3">
-            <p className="text-style-caption text-subtle leading-snug">
-              {COPY.tokenHelp}
-            </p>
-            <div className="relative">
-              <input
-                type={showWebhookToken ? "text" : "password"}
-                value={webhookTokenInput}
-                onChange={(event) => setWebhookTokenInput(event.target.value)}
-                placeholder={COPY.tokenPlaceholder}
-                autoComplete="off"
-                className="input-focus-finyk w-full h-11 rounded-xl border border-line bg-panelHi px-3 pr-10 text-style-body text-text"
-                onKeyDown={(event) => event.key === "Enter" && connectWebhook()}
-              />
-              <button
-                type="button"
-                onClick={() => setShowWebhookToken((visible) => !visible)}
-                className="focus-ring touch-target absolute right-0 top-1/2 -translate-y-1/2 rounded-xl text-subtle hover:text-text"
-                aria-label={showWebhookToken ? COPY.hideToken : COPY.showToken}
-              >
-                <Icon
-                  name={showWebhookToken ? "eye-off" : "eye"}
-                  size={16}
-                  aria-hidden
-                />
-              </button>
-            </div>
-            <Button
-              className="w-full h-11"
-              onClick={connectWebhook}
-              disabled={webhookConnecting}
-            >
-              {webhookConnecting
-                ? messages.loadingActions.connecting
-                : COPY.connect}
-            </Button>
-          </div>
+          <MonoTokenInlineForm
+            value={webhookTokenInput}
+            onChange={setWebhookTokenInput}
+            onSubmit={connectWebhook}
+            submitting={webhookConnecting}
+            submitLabel={COPY.connect}
+            help={COPY.tokenHelp}
+          />
         )}
         {webhookError && (
           <p

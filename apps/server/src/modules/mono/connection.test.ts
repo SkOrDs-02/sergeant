@@ -486,3 +486,127 @@ describe("syncStateHandler", () => {
     expect(res.body.accountsCount).toBe(5);
   });
 });
+
+// ── Перевірка живості токена (міграція 120) ──────────────────────────────
+//
+// Спіймано на беті 2026-08-10: тестер відкликав токен у Monobank, а
+// `sync-state` — суто читач бази — далі бадьоро віддавав `active` з
+// пʼятьма рахунками. Наш рядок про відкликання не знає ніколи, бо Mono
+// нам про це не повідомляє: вебхук просто замовкає.
+//
+// Гейт `token_check_due` рахує САМ SQL, тож тести підставляють його
+// прямо в рядок — так само, як його поверне Postgres.
+describe("syncStateHandler — перевірка живості токена", () => {
+  const CONN_BASE = {
+    status: "active",
+    webhook_registered_at: "2026-04-25T10:00:00Z",
+    last_event_at: null,
+    last_backfill_at: null,
+  };
+
+  function makeGetReq(): Request {
+    return { method: "GET", user: { id: "user_1" } } as unknown as Request;
+  }
+
+  /**
+   * Рядок токена, який `decryptAndLazyReencrypt` розшифрує без побічних
+   * ефектів. `token_key_version: 1` тут обовʼязковий: при `NULL` рядок
+   * вважається легасі-форматом, і читач дописує лінивий re-encrypt —
+   * зайвий UPDATE, який зʼїв би наступний `mockResolvedValueOnce` і зсунув
+   * усю чергу моків. Заглушки з порожніх буферів не годяться взагалі:
+   * розшифрування падає, перевірка мовчки йде в catch, і тест «на 401»
+   * зеленів би, ніколи не дійшовши до fetch.
+   */
+  async function tokenRow() {
+    const { encryptToken } = await import("./crypto.js");
+    const enc = encryptToken("token_for_probe", mockEnv.MONO_TOKEN_ENC_KEY);
+    return {
+      token_ciphertext: enc.ciphertext,
+      token_iv: enc.iv,
+      token_tag: enc.tag,
+      token_key_version: 1,
+    };
+  }
+
+  it("не ходить у Monobank, поки SQL не сказав `token_check_due`", async () => {
+    dbQuery.mockResolvedValueOnce({
+      rows: [{ ...CONN_BASE, token_check_due: false }],
+    });
+    dbQuery.mockResolvedValueOnce({ rows: [{ count: "5" }] });
+
+    const res = makeRes();
+    await syncStateHandler(makeGetReq(), res);
+
+    expect(mockFetch).not.toHaveBeenCalled();
+    expect(res.body.status).toBe("active");
+  });
+
+  it("на 401 від Monobank ставить `invalid` у БД і у відповіді", async () => {
+    dbQuery.mockResolvedValueOnce({
+      rows: [{ ...CONN_BASE, token_check_due: true }],
+    });
+    // Читання токена для перевірки.
+    dbQuery.mockResolvedValueOnce({ rows: [await tokenRow()] });
+    mockFetch.mockResolvedValueOnce({ ok: false, status: 401 });
+    dbQuery.mockResolvedValueOnce({ rows: [] }); // UPDATE → invalid
+    dbQuery.mockResolvedValueOnce({ rows: [{ count: "5" }] });
+
+    const res = makeRes();
+    await syncStateHandler(makeGetReq(), res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.status).toBe("invalid");
+    // `webhookActive` мусить впасти разом зі статусом — інакше UI малює
+    // зелену крапку «Webhook активний» над мертвим підключенням.
+    expect(res.body.webhookActive).toBe(false);
+
+    const updates = dbQuery.mock.calls
+      .map((c) => String(c[0]))
+      .filter((sql) => sql.includes("UPDATE mono_connection"));
+    expect(updates.some((sql) => sql.includes("status = 'invalid'"))).toBe(
+      true,
+    );
+  });
+
+  it("на 429 лишає статус недоторканим, але стямпує вікно троттлінга", async () => {
+    dbQuery.mockResolvedValueOnce({
+      rows: [{ ...CONN_BASE, token_check_due: true }],
+    });
+    dbQuery.mockResolvedValueOnce({ rows: [await tokenRow()] });
+    mockFetch.mockResolvedValueOnce({ ok: false, status: 429 });
+    dbQuery.mockResolvedValueOnce({ rows: [] }); // UPDATE → лише стамп
+    dbQuery.mockResolvedValueOnce({ rows: [{ count: "5" }] });
+
+    const res = makeRes();
+    await syncStateHandler(makeGetReq(), res);
+
+    // 429 означає «спитали зарано», а не «токен мертвий». Відрізати людину
+    // від банку через власний ліміт запитів — найгірший з можливих виходів.
+    expect(res.body.status).toBe("active");
+
+    const updates = dbQuery.mock.calls
+      .map((c) => String(c[0]))
+      .filter((sql) => sql.includes("UPDATE mono_connection"));
+    expect(updates).toHaveLength(1);
+    expect(updates[0]).toContain("last_token_check_at = NOW()");
+    expect(updates[0]).not.toContain("status =");
+  });
+
+  it("падіння перевірки не ламає відповідь", async () => {
+    dbQuery.mockResolvedValueOnce({
+      rows: [{ ...CONN_BASE, token_check_due: true }],
+    });
+    dbQuery.mockResolvedValueOnce({ rows: [await tokenRow()] });
+    mockFetch.mockRejectedValueOnce(new Error("TimeoutError"));
+    dbQuery.mockResolvedValueOnce({ rows: [{ count: "5" }] });
+
+    const res = makeRes();
+    await syncStateHandler(makeGetReq(), res);
+
+    // Обірвана мережа до Monobank не має перетворювати екран Налаштувань
+    // на 500 — це службова перевірка, а не суть запиту.
+    expect(res.statusCode).toBe(200);
+    expect(res.body.status).toBe("active");
+    expect(res.body.accountsCount).toBe(5);
+  });
+});
