@@ -18,16 +18,26 @@
  * лишили б рівно ту скаргу, з якої все почалось: кінець виставити нічим.
  * Тому питаємо обидві мітки одразу.
  *
- * **Чому створюємо ВЖЕ завершене.** Ретро — це не старт. Завершене
- * тренування не займає слот «одне активне», не конфліктує з живою сесією і
- * не запускає rest-таймер. Заповнювати вправи людина йде на route-owned
- * `workout/<id>`, де завершене тренування лишається відкритим
- * (`useWorkoutsLifecycle` скидає активне лише коли route НЕ володіє id).
+ * **Чому `Sheet`, а не інлайн-смуга.** Перша версія рендерилась просто
+ * блоком у потоці сторінки — і на беті це читалось як «кнопка не працює»:
+ * форма зʼявлялась ПІД картками «Останні тренування» й «Довідники», тобто
+ * за межами екрана, а кнопка, яка її відкриває, — угорі. Плюс вигляд голої
+ * смуги без панелі. `Sheet` — канонічний примітив (портал повз усі
+ * transform-контексти, фокус-трап, Escape, затемнення, свайп-закриття,
+ * кнопка закриття 44×44, відступ під нижнє меню й клавіатуру); саме заради
+ * таких випадків він і зводив докупи шість саморобних шітів.
+ *
+ * **Кінець не записується одразу.** Форма віддає обидві мітки, але сесія
+ * створюється НЕзавершеною, а введений кінець чекає у `pendingRetroEnd` до
+ * кроку «Завершити». Перша версія ставила `endedAt` відразу — і тим вела
+ * людину повз увесь післятренувальний потік: завершене тренування малюється
+ * read-only підсумком, тож ні вправи додати, ні оцінку пройти. Розбір —
+ * у [`fizruk.md` §3](../../../../../../docs/01-product/model/fizruk.md).
  */
-import { useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 import { Button } from "@shared/components/ui/Button";
-import { Icon } from "@shared/components/ui/Icon";
+import { Sheet } from "@shared/components/ui/Sheet";
 import { messages } from "@shared/i18n/uk";
 import {
   buildPastWorkoutTimes,
@@ -37,7 +47,10 @@ import {
 export interface LogPastWorkoutSheetProps {
   open: boolean;
   onClose: () => void;
-  /** Створює завершене тренування і веде на нього. */
+  /**
+   * Створює ЖИВУ сесію з цими мітками й веде на неї. `endedAt` не пишеться
+   * одразу — він чекає кроку «Завершити» (див. докблок вище).
+   */
   onSubmit: (times: { startedAt: string; endedAt: string }) => void;
 }
 
@@ -55,10 +68,22 @@ export function LogPastWorkoutSheet({
   const startId = `${fieldsId}-start`;
   const endId = `${fieldsId}-end`;
 
-  const today = todayLocalDateString();
+  // Перераховуємо на КОЖНЕ відкриття, а не раз на монтування. Шіт живе в
+  // дереві постійно (закритий = `open: false`), тож обчислений один раз
+  // «сьогодні» переживає північ: застосунок, відкритий звечора, о 00:02
+  // пропонував учорашню дату й ліміт `max` теж учорашній.
+  const today = useMemo(() => (open ? todayLocalDateString() : ""), [open]);
   const [date, setDate] = useState(today);
   const [start, setStart] = useState(DEFAULT_START);
   const [end, setEnd] = useState(DEFAULT_END);
+
+  // Відкриття = новий запис: підставляємо свіже «сьогодні» замість того, що
+  // лишилось від минулого разу.
+  const lastOpenRef = useRef(false);
+  useEffect(() => {
+    if (open && !lastOpenRef.current) setDate(today);
+    lastOpenRef.current = open;
+  }, [open, today]);
 
   const t = messages.fizruk.logPast;
 
@@ -67,95 +92,94 @@ export function LogPastWorkoutSheet({
     [date, start, end],
   );
 
-  if (!open) return null;
+  const blocked = !times || times.inFuture || times.implausiblyLong;
 
   return (
-    <div className="px-4 py-3 border-b border-line bg-bg space-y-3">
-      <div className="flex items-start justify-between gap-2">
-        <p className="text-style-caption text-text">{t.title}</p>
+    <Sheet
+      open={open}
+      onClose={onClose}
+      title={t.title}
+      closeLabel={messages.actions.close}
+      footer={
         <Button
-          variant="secondary"
-          size="xs"
-          iconOnly
-          onClick={onClose}
-          aria-label={messages.actions.close}
-          title={messages.actions.close}
+          module="fizruk"
+          className="w-full h-11"
+          disabled={blocked}
+          onClick={() => {
+            // Та сама умова, що й `disabled` — кнопка не єдиний шлях сюди
+            // (Enter, автоклік, тест), і розʼїхатись цим двом не можна.
+            if (blocked) return;
+            onSubmit({ startedAt: times.startedAt, endedAt: times.endedAt });
+          }}
         >
-          <Icon name="x" size={14} aria-hidden />
+          {t.submit}
         </Button>
+      }
+    >
+      <div className="space-y-3 pt-1">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div>
+            <label
+              className="block text-style-caption text-subtle"
+              htmlFor={dateId}
+            >
+              {t.date}
+            </label>
+            <input
+              id={dateId}
+              type="date"
+              // Відсікає майбутні ДНІ в самому пікері. Майбутній ЧАС у межах
+              // сьогодні цим не ловиться — це робить `times.inFuture` нижче.
+              max={today}
+              className="input-focus-fizruk mt-1 w-full h-11 rounded-xl border border-line bg-panelHi px-3 text-style-body text-text"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+            />
+          </div>
+          <div>
+            <label
+              className="block text-style-caption text-subtle"
+              htmlFor={startId}
+            >
+              {t.start}
+            </label>
+            <input
+              id={startId}
+              type="time"
+              className="input-focus-fizruk mt-1 w-full h-11 rounded-xl border border-line bg-panelHi px-3 text-style-body text-text"
+              value={start}
+              onChange={(e) => setStart(e.target.value)}
+            />
+          </div>
+          <div>
+            <label
+              className="block text-style-caption text-subtle"
+              htmlFor={endId}
+            >
+              {t.end}
+            </label>
+            <input
+              id={endId}
+              type="time"
+              className="input-focus-fizruk mt-1 w-full h-11 rounded-xl border border-line bg-panelHi px-3 text-style-body text-text"
+              value={end}
+              onChange={(e) => setEnd(e.target.value)}
+            />
+          </div>
+        </div>
+
+        {/* Один підпис за раз, у порядку «причина → наслідок». Описка в часі
+            («18:00 → 16:00») на сьогоднішній даті дає ОБИДВА стани, бо
+            перенесений кінець їде в завтра; показати тут «завершення ще не
+            настало» означало б пояснити наслідок і сховати причину. */}
+        {times?.implausiblyLong ? (
+          <p className="text-style-caption text-subtle">{t.implausiblyLong}</p>
+        ) : times?.inFuture ? (
+          <p className="text-style-caption text-subtle">{t.inFuture}</p>
+        ) : times?.crossesMidnight ? (
+          <p className="text-style-caption text-subtle">{t.crossesMidnight}</p>
+        ) : null}
       </div>
-
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <div>
-          <label
-            className="block text-style-caption text-subtle"
-            htmlFor={dateId}
-          >
-            {t.date}
-          </label>
-          <input
-            id={dateId}
-            type="date"
-            // Відсікає майбутні ДНІ в самому пікері. Майбутній ЧАС у межах
-            // сьогодні цим не ловиться — це робить `times.inFuture` нижче.
-            max={today}
-            className="input-focus-fizruk mt-1 w-full h-11 rounded-xl border border-line bg-panelHi px-3 text-style-body text-text"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-          />
-        </div>
-        <div>
-          <label
-            className="block text-style-caption text-subtle"
-            htmlFor={startId}
-          >
-            {t.start}
-          </label>
-          <input
-            id={startId}
-            type="time"
-            className="input-focus-fizruk mt-1 w-full h-11 rounded-xl border border-line bg-panelHi px-3 text-style-body text-text"
-            value={start}
-            onChange={(e) => setStart(e.target.value)}
-          />
-        </div>
-        <div>
-          <label
-            className="block text-style-caption text-subtle"
-            htmlFor={endId}
-          >
-            {t.end}
-          </label>
-          <input
-            id={endId}
-            type="time"
-            className="input-focus-fizruk mt-1 w-full h-11 rounded-xl border border-line bg-panelHi px-3 text-style-body text-text"
-            value={end}
-            onChange={(e) => setEnd(e.target.value)}
-          />
-        </div>
-      </div>
-
-      {/* Майбутній кінець — блокуючий стан, тож його підпис витісняє
-          нейтральний «наступного дня»: інакше під формою висіли б два
-          підписи, з яких лише один пояснює, чому кнопка мертва. */}
-      {times?.inFuture ? (
-        <p className="text-style-caption text-subtle">{t.inFuture}</p>
-      ) : times?.crossesMidnight ? (
-        <p className="text-style-caption text-subtle">{t.crossesMidnight}</p>
-      ) : null}
-
-      <Button
-        module="fizruk"
-        className="w-full h-11"
-        disabled={!times || times.inFuture}
-        onClick={() => {
-          if (!times || times.inFuture) return;
-          onSubmit({ startedAt: times.startedAt, endedAt: times.endedAt });
-        }}
-      >
-        {t.submit}
-      </Button>
-    </div>
+    </Sheet>
   );
 }

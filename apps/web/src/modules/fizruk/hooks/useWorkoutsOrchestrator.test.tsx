@@ -183,28 +183,44 @@ describe("useWorkoutsOrchestrator", () => {
       endedAt: "2026-08-09T16:30:00.000Z",
     };
 
-    it("створює тренування ВЖЕ завершеним", () => {
-      // Ядро сценарію: ретро — не старт. Завершене не займає слот
-      // «одне активне» і не вдає живу сесію.
+    it("створює НЕзавершене тренування з введеним початком", () => {
+      // Ядро правки: якби `endedAt` стояв одразу, маршрут показав би
+      // read-only підсумок — ні вправ додати, ні оцінки пройти. Саме на це
+      // й поскаржився тестер.
       const { result } = setup();
       act(() => result.current.submitPastWorkout(TIMES));
 
       const w = result.current.workouts[0]!;
       expect(w.startedAt).toBe(TIMES.startedAt);
-      expect(w.endedAt).toBe(TIMES.endedAt);
+      expect(w.endedAt).toBeNull();
     });
 
-    it("не займає слот активного тренування", () => {
-      // Якби воно ставало активним, наступний «Швидкий старт» питав би,
-      // чи кинути «незавершену» сесію, якої насправді немає.
+    it("підставляє введений кінець, коли людина натискає «Завершити»", () => {
+      // Введений час не губиться — він просто чекає кроку «Завершити»,
+      // разом з яким іде оцінка самопочуття й зони болю.
       const { result } = setup();
       act(() => result.current.submitPastWorkout(TIMES));
-      expect(result.current.activeWorkout).toBeNull();
+      const id = result.current.workouts[0]!.id;
+
+      act(() => {
+        result.current.endWorkout(id);
+      });
+
+      expect(result.current.workouts[0]!.endedAt).toBe(TIMES.endedAt);
     });
 
-    it("не питає про конфлікт, коли є жива сесія", () => {
-      // Гейт «одне активне» тут навмисно обійдено: запис учорашнього
-      // заняття не має пропонувати кинути сьогоднішнє.
+    it("робить ретро активною сесією", () => {
+      // Поки його заповнюють, воно НЕ відрізняється від живого — тож і слот
+      // займає чесно. Інакше «Швидкий старт» поруч дав би дві активні.
+      const { result } = setup();
+      act(() => result.current.submitPastWorkout(TIMES));
+      expect(result.current.activeWorkout?.endedAt).toBeNull();
+      expect(result.current.activeWorkout?.startedAt).toBe(TIMES.startedAt);
+    });
+
+    it("питає про конфлікт, коли вже є жива сесія", () => {
+      // Плата за повний потік: ретро тепер справді займає слот, тож іде
+      // через той самий діалог, що й решта шляхів.
       const { result } = setup();
       act(() => result.current.handleQuickStart());
       const liveId = result.current.activeWorkout?.id;
@@ -212,9 +228,20 @@ describe("useWorkoutsOrchestrator", () => {
 
       act(() => result.current.submitPastWorkout(TIMES));
 
-      expect(result.current.activeWorkoutConflictOpen).toBe(false);
+      expect(result.current.activeWorkoutConflictOpen).toBe(true);
       expect(result.current.activeWorkout?.id).toBe(liveId);
-      expect(result.current.workouts).toHaveLength(2);
+      expect(result.current.workouts).toHaveLength(1);
+    });
+
+    it("після розвʼязання конфлікту ретро таки створюється", () => {
+      const { result } = setup();
+      act(() => result.current.handleQuickStart());
+      act(() => result.current.submitPastWorkout(TIMES));
+      act(() => result.current.discardActiveAndContinue());
+
+      expect(result.current.activeWorkoutConflictOpen).toBe(false);
+      expect(result.current.activeWorkout?.startedAt).toBe(TIMES.startedAt);
+      expect(result.current.workouts).toHaveLength(1);
     });
 
     it("закриває форму після внесення", () => {

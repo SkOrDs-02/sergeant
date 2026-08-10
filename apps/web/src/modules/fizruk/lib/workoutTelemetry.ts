@@ -19,7 +19,7 @@ export type FizrukWorkoutStartSource =
   | "template"
   | "resume"
   | "repeat"
-  /** «Внести проведене заняття» — створене вже завершеним, заднім числом. */
+  /** «Внести проведене заняття» — жива сесія з мітками часу заднім числом. */
   | "past";
 export type FizrukRestTimerOutcome = "completed" | "skipped";
 

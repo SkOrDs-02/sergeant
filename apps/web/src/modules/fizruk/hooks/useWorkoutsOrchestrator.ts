@@ -31,6 +31,10 @@ import {
   collectLastByExerciseId,
   formatActiveDuration,
 } from "../pages/Workouts.helpers";
+import {
+  peekPendingRetroEnd,
+  setPendingRetroEnd,
+} from "../lib/pendingRetroEnd";
 import type { AddExerciseForm } from "../components/workouts/AddExerciseSheet";
 import {
   trackFizrukWorkoutDiscarded,
@@ -130,6 +134,20 @@ export function useWorkoutsOrchestrator(
   const [pendingWorkoutStart, setPendingWorkoutStart] = useState<
     (() => void) | null
   >(null);
+  /**
+   * Кінець ретро-сесії, яку ще заповнюють. Читаємо сховище рівно раз — при
+   * монтуванні, — і далі оновлюємо явно у `submitPastWorkout`. Ефект тут був
+   * би зайвим: перехід на `workout/<id>` монтує цей хук наново, тож ліниве
+   * `useState` покриває і цей випадок. Значення потрібне лише для показу
+   * тривалості; щойно `endedAt` записано, воно перестає впливати на будь-що.
+   */
+  const [pendingRetroEnd, setPendingRetroEndValue] = useState<string | null>(
+    () => {
+      const id =
+        options.requestedWorkoutId ?? safeReadStringLS(ACTIVE_WORKOUT_KEY);
+      return id ? peekPendingRetroEnd(id) : null;
+    },
+  );
   const [form, setForm] = useState<AddExerciseForm>(() => ({
     nameUk: "",
     primaryGroup: "chest",
@@ -162,10 +180,13 @@ export function useWorkoutsOrchestrator(
     () =>
       formatActiveDuration(
         activeWorkout?.startedAt,
-        activeWorkout?.endedAt,
+        // Показуємо введену тривалість, а не лічильник від учорашнього вечора:
+        // інакше над щойно внесеною сесією цокало б «30:12:05», і це читалось
+        // би як зламаний таймер.
+        activeWorkout?.endedAt ?? pendingRetroEnd,
         now,
       ),
-    [activeWorkout?.startedAt, activeWorkout?.endedAt, now],
+    [activeWorkout?.startedAt, activeWorkout?.endedAt, pendingRetroEnd, now],
   );
 
   const conflictingWorkout = useMemo(
@@ -391,26 +412,34 @@ export function useWorkoutsOrchestrator(
   /**
    * «Внести проведене заняття» — тренування заднім числом.
    *
-   * Свідомо НЕ йде через `requestWorkoutStart`: той гейт боронить інваріант
-   * «одне активне», а створене тут тренування народжується вже завершеним
-   * (`endedAt` задано), тож слот не займає. Інакше запис учорашньої сесії
-   * питав би, чи кинути сьогоднішню живу — і це був би той самий діалог,
-   * якого сценарій узагалі не потребує.
+   * **Створюємо НЕзавершеним, хоч кінець уже відомий.** Перша версія ставила
+   * `endedAt` одразу — і тим викидала людину повз увесь післятренувальний
+   * потік: завершене тренування малюється read-only підсумком, тож ні вправ
+   * не додаси, ні оцінки самопочуття та зон болю не пройдеш. Введений кінець
+   * чекає у `pendingRetroEnd` і підставляється в `endWorkout`, коли людина
+   * натисне «Завершити». Тобто ретро — це та сама сесія, просто з іншими
+   * мітками часу, а не окремий беззмістовний режим.
    *
-   * `setActiveWorkoutId` теж не викликаємо: `useWorkoutsLifecycle` скидає
-   * завершене з активного, щойно route ним не володіє, тож виставляти його
-   * означало б покластися на гонку. Замість цього одразу ведемо на
-   * route-owned `workout/<id>`, де воно лишається відкритим для заповнення.
+   * **Наслідок: слот «одне активне» тепер зайнято**, тому вхід іде через
+   * `requestWorkoutStart` — той самий діалог конфлікту, що й у решти шляхів.
+   * Це плата за повний потік: заповнюване ретро НЕ відрізнити від живої
+   * сесії, тож удавати, що воно нічого не займає, було б неправдою, з якої
+   * виросли б дві «активні» сесії одночасно.
    */
   const submitPastWorkout = useCallback(
     ({ startedAt, endedAt }: { startedAt: string; endedAt: string }) => {
-      const workout = createWorkoutWithTimes({ startedAt, endedAt });
-      trackFizrukWorkoutStarted(workout.id, "past");
       setLogPastOpen(false);
-      if (onWorkoutStarted) onWorkoutStarted(workout.id);
-      else setView("log");
+      requestWorkoutStart(() => {
+        const workout = createWorkoutWithTimes({ startedAt });
+        setPendingRetroEnd(workout.id, endedAt);
+        setPendingRetroEndValue(endedAt);
+        setActiveWorkoutId(workout.id);
+        trackFizrukWorkoutStarted(workout.id, "past");
+        if (onWorkoutStarted) onWorkoutStarted(workout.id);
+        else setView("log");
+      });
     },
-    [createWorkoutWithTimes, onWorkoutStarted],
+    [createWorkoutWithTimes, onWorkoutStarted, requestWorkoutStart],
   );
 
   /**

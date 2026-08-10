@@ -155,6 +155,16 @@ export interface PastWorkoutTimes {
    */
   crossesMidnight: boolean;
   /**
+   * `true`, коли перенос через північ дав неправдоподібно довгу сесію.
+   *
+   * «18:00 → 16:00» формально означає добу мінус дві години, тобто 22-годинне
+   * тренування — насправді це майже завжди описка в одному з полів. Мовчки
+   * приймати такий перенос двічі погано: у журнал лягає сесія на 22 години, а
+   * на СЬОГОДНІШНІЙ даті кінець ще й переїжджає в завтра, тож людина отримує
+   * «завершення ще не настало» — повідомлення про наслідок, а не про причину.
+   */
+  implausiblyLong: boolean;
+  /**
    * `true`, коли кінець ще не настав. Завершене тренування в майбутньому —
    * не «проведене»: воно потрапило б у стрік і статистику за день, якого ще
    * не було. `max` на полі дати цього НЕ ловить: він обмежує лише добу, тож
@@ -164,6 +174,14 @@ export interface PastWorkoutTimes {
    */
   inFuture: boolean;
 }
+
+/**
+ * Стеля тривалості для сесії, ЯКУ довелось перенести через північ. Свідомо
+ * щедра: нічний похід чи довгий заїзд у 8-10 годин мають проходити. Усе, що
+ * довше, — не тренування через північ, а описка в одному з полів, і форма
+ * має сказати саме це.
+ */
+const MAX_ROLLOVER_SESSION_MS = 12 * 60 * 60 * 1000;
 
 /** `YYYY-MM-DD` + `HH:MM` → локальний `datetime-local`-рядок. */
 function joinLocal(dateKey: string, time: string): string {
@@ -195,8 +213,6 @@ export function buildPastWorkoutTimes(
   let endMs = Date.parse(joinLocal(dateKey, endTime));
   if (Number.isNaN(startMs) || Number.isNaN(endMs)) return null;
 
-  // Рівні мітки — теж перенесення: тренування нульової тривалості не буває,
-  // а «22:00 → 22:00» найімовірніше означає добу, а не помилку вводу.
   const crossesMidnight = endMs <= startMs;
   if (crossesMidnight) {
     const next = new Date(startMs);
@@ -215,6 +231,8 @@ export function buildPastWorkoutTimes(
     startedAt: new Date(startMs).toISOString(),
     endedAt: new Date(endMs).toISOString(),
     crossesMidnight,
+    implausiblyLong:
+      crossesMidnight && endMs - startMs > MAX_ROLLOVER_SESSION_MS,
     inFuture: endMs > now.getTime(),
   };
 }
