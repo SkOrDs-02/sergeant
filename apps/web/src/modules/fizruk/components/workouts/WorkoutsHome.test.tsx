@@ -13,6 +13,7 @@ function baseHandlers() {
     onOpenJournal: vi.fn(),
     onOpenPrograms: vi.fn(),
     onRequestStart: vi.fn(),
+    onLogPast: vi.fn(),
   };
 }
 
@@ -69,7 +70,32 @@ describe("WorkoutsHome", () => {
     expect(screen.getByText("Немає активного тренування")).toBeInTheDocument();
   });
 
-  it("shows exactly «Швидкий старт» and template as workout start paths", () => {
+  it("keeps «Внести проведене заняття» reachable while a workout is in flight", () => {
+    // Ретро нічого не стартує — сесія народжується завершеною, тож інваріант
+    // «одне активне» тут ні до чого. Ховати кнопку означало б, що людина, яка
+    // забула внести вчорашнє заняття, мусить спершу завершити сьогоднішнє.
+    const handlers = baseHandlers();
+    render(
+      <WorkoutsHome
+        activeWorkout={{ id: "w1", startedAt: NOW, endedAt: null, items: [] }}
+        activeDuration="12:34"
+        recentWorkouts={[]}
+        {...handlers}
+      />,
+    );
+
+    fireEvent.click(screen.getByText(/Внести проведене/));
+    expect(handlers.onLogPast).toHaveBeenCalledTimes(1);
+    // І воно не підмінило собою вхід у живу сесію.
+    expect(screen.getByRole("button", { name: /Відкрити/ })).toBeVisible();
+  });
+
+  it("shows two start paths plus «Внести проведене заняття»", () => {
+    // Раніше цей тест стверджував «рівно два шляхи» — формулювання з #589,
+    // де рішення насправді стосувалось прибирання «Програм» як третього
+    // ВХОДУ, а ретро змело мовчки. Третя кнопка — не третій старт: заняття
+    // вже відбулось, сесія народжується завершеною. Історію й обґрунтування
+    // тримає докблок `LogPastWorkoutSheet`.
     const handlers = baseHandlers();
     render(
       <WorkoutsHome
@@ -81,12 +107,16 @@ describe("WorkoutsHome", () => {
     );
 
     expect(screen.getByText("Немає активного тренування")).toBeInTheDocument();
-    const startPaths = screen.getByLabelText("Способи почати тренування");
-    expect(startPaths.querySelectorAll("button")).toHaveLength(2);
+    const startPaths = screen.getByLabelText(
+      "Способи почати або внести тренування",
+    );
+    expect(startPaths.querySelectorAll("button")).toHaveLength(3);
     fireEvent.click(screen.getByText("Швидкий старт"));
     expect(handlers.onRequestStart).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByText("Із шаблону"));
     expect(handlers.onOpenTemplates).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByText(/Внести проведене/));
+    expect(handlers.onLogPast).toHaveBeenCalledTimes(1);
   });
 
   it("exposes the start-paths label via role=group so it isn't a dangling div aria-label", () => {
@@ -104,7 +134,9 @@ describe("WorkoutsHome", () => {
     // accessibility tree — `role="group"` is what makes the name
     // actually reach assistive tech.
     expect(
-      screen.getByRole("group", { name: "Способи почати тренування" }),
+      screen.getByRole("group", {
+        name: "Способи почати або внести тренування",
+      }),
     ).toBeInTheDocument();
   });
 

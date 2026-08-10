@@ -13,6 +13,7 @@ import { ExerciseDetailSheet } from "../components/workouts/ExerciseDetailSheet"
 import { WorkoutJournalSection } from "../components/workouts/WorkoutJournalSection";
 import { WorkoutCatalogSection } from "../components/workouts/WorkoutCatalogSection";
 import { WorkoutsHome } from "../components/workouts/WorkoutsHome";
+import { LogPastWorkoutSheet } from "../components/workouts/LogPastWorkoutSheet";
 import { WorkoutsHeader } from "../components/workouts/WorkoutsHeader";
 import { WorkoutsConfirmDialogs } from "../components/workouts/WorkoutsConfirmDialogs";
 import { useWorkoutsOrchestrator } from "../hooks/useWorkoutsOrchestrator";
@@ -109,7 +110,16 @@ export function Workouts({
             onOpenJournal={() => onNavigate?.("history")}
             onOpenPrograms={() => onNavigate?.("programs")}
             onRequestStart={o.handleQuickStart}
+            onLogPast={() => o.setLogPastOpen(true)}
             onOpenSchedule={onOpenRoutine}
+          />
+        ) : null}
+
+        {o.view === "home" ? (
+          <LogPastWorkoutSheet
+            open={o.logPastOpen}
+            onClose={() => o.setLogPastOpen(false)}
+            onSubmit={o.submitPastWorkout}
           />
         ) : null}
 

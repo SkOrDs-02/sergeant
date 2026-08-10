@@ -30,9 +30,18 @@ export interface WorkoutsHomeProps {
   /** Starts an empty workout immediately. */
   onRequestStart: () => void;
   /**
+   * Відкриває форму «Внести проведене заняття» — тренування заднім числом.
+   *
+   * Третій шлях свідомо: #589 звів старт до двох, але в описі того PR
+   * рішення пояснене прибиранням «Програм», а ретро змело мовчки. Це не
+   * старт — сесія народжується вже завершеною, тож інваріант «одне
+   * активне» не зачеплено.
+   */
+  onLogPast: () => void;
+  /**
    * Deep-link into the Routine module's calendar so the user can
-   * schedule a future training session. Surfaced as a third stacked
-   * CTA next to «Почати тренування» / «Внести проведене заняття»
+   * schedule a future training session. Surfaced as an extra stacked
+   * CTA under «Швидкий старт» / «Із шаблону» / «Внести проведене заняття»
    * when the host (`Workouts.tsx`) wires it through. The button is
    * hidden when `onOpenSchedule` is not provided so we don't show a
    * dead control on hosts where deep-linking isn't available.
@@ -63,6 +72,7 @@ export function WorkoutsHome({
   onOpenPrograms,
   activeProgramName,
   onRequestStart,
+  onLogPast,
   onOpenSchedule,
 }: WorkoutsHomeProps) {
   const hasActive = !!activeWorkout && !activeWorkout.endedAt;
@@ -91,6 +101,18 @@ export function WorkoutsHome({
               Відкрити →
             </Button>
           </div>
+          {/* Ретро лишається доступним і під час живої сесії: воно нічого не
+              стартує, тож інваріант «одне активне» не зачеплено. Ховати його
+              тут означало б, що людина, яка забула внести вчорашнє заняття,
+              мусить спершу завершити сьогоднішнє. */}
+          <Button
+            variant="secondary"
+            className="mt-3 w-full h-11"
+            onClick={onLogPast}
+          >
+            <Icon name="edit" size={16} aria-hidden />{" "}
+            {messages.fizruk.logPast.cta}
+          </Button>
         </div>
       ) : (
         <div className="rounded-2xl border border-border bg-surface p-4 text-center">
@@ -98,12 +120,13 @@ export function WorkoutsHome({
             Немає активного тренування
           </div>
           <div className="text-style-caption text-subtle mt-1">
-            Почни порожнє тренування або обери готовий шаблон.
+            Почни порожнє тренування, обери шаблон — або внеси те, що вже
+            провів.
           </div>
           <div
             role="group"
             className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2"
-            aria-label="Способи почати тренування"
+            aria-label="Способи почати або внести тренування"
           >
             <Button
               module="fizruk"
@@ -118,6 +141,16 @@ export function WorkoutsHome({
               onClick={onOpenTemplates}
             >
               <Icon name="clipboard" size={16} aria-hidden /> Із шаблону
+            </Button>
+            {/* Третій у сітці, але не третій «старт»: заняття вже відбулось,
+                тут його лише записують. Тому й іконка не play, а edit. */}
+            <Button
+              variant="secondary"
+              className="h-12 text-base sm:col-span-2"
+              onClick={onLogPast}
+            >
+              <Icon name="edit" size={16} aria-hidden />{" "}
+              {messages.fizruk.logPast.cta}
             </Button>
           </div>
         </div>

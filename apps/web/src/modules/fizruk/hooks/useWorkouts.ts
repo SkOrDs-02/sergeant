@@ -151,13 +151,24 @@ export function useWorkouts() {
     return w;
   }, [persist]);
 
+  /**
+   * `endedAt` — для сценарію «внести проведене заняття»: тренування
+   * створюється ВЖЕ завершеним, тож не займає слот «одне активне» і не
+   * вдає живу сесію (rest-таймер не стартує). Без нього — звичайний старт.
+   */
   const createWorkoutWithTimes = useCallback(
-    ({ startedAt }: { startedAt: string }): Workout => {
+    ({
+      startedAt,
+      endedAt = null,
+    }: {
+      startedAt: string;
+      endedAt?: string | null;
+    }): Workout => {
       const w: Workout = {
         id: uid("w"),
         // eslint-disable-next-line no-restricted-syntax -- UTC-anchored wall-clock instant для startedAt (не Kyiv-межа доби)
         startedAt: startedAt || new Date().toISOString(),
-        endedAt: null,
+        endedAt,
         items: [],
         groups: [],
         warmup: null,

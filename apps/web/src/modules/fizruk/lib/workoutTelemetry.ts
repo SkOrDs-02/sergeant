@@ -15,7 +15,12 @@ import {
  * other start source.
  */
 export type FizrukWorkoutStartSource =
-  "quick_start" | "template" | "resume" | "repeat";
+  | "quick_start"
+  | "template"
+  | "resume"
+  | "repeat"
+  /** «Внести проведене заняття» — створене вже завершеним, заднім числом. */
+  | "past";
 export type FizrukRestTimerOutcome = "completed" | "skipped";
 
 const NEW_ROUTE_MARKER = "fizruk_workout_new_route_v1";

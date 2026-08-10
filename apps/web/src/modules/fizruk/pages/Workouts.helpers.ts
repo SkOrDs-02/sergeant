@@ -140,3 +140,81 @@ export function todayLocalDateString(): string {
   // shifts the date for late-evening / non-Kyiv hosts and breaks streaks.
   return getKyivDayKey();
 }
+
+/** Результат розбору форми «Внести проведене заняття». */
+export interface PastWorkoutTimes {
+  /** ISO-мітка початку. */
+  startedAt: string;
+  /** ISO-мітка завершення — завжди пізніша за `startedAt`. */
+  endedAt: string;
+  /**
+   * `true`, коли кінець переповз на наступну добу (сесія через північ).
+   * Форма показує це підписом: додавати добу мовчки не можна — людина
+   * має бачити, що «23:40 → 00:20» вона щойно записала як 40 хвилин, а
+   * не як мінус 23 години.
+   */
+  crossesMidnight: boolean;
+  /**
+   * `true`, коли кінець ще не настав. Завершене тренування в майбутньому —
+   * не «проведене»: воно потрапило б у стрік і статистику за день, якого ще
+   * не було. `max` на полі дати цього НЕ ловить: він обмежує лише добу, тож
+   * «сьогодні 23:00», введене о десятій ранку, проходить. Найтихіший випадок —
+   * сесія через північ на сьогоднішній даті: перенос на завтра робить кінець
+   * майбутнім завжди.
+   */
+  inFuture: boolean;
+}
+
+/** `YYYY-MM-DD` + `HH:MM` → локальний `datetime-local`-рядок. */
+function joinLocal(dateKey: string, time: string): string {
+  return `${dateKey}T${time}`;
+}
+
+/**
+ * Збирає пару ISO-міток із того, що людина ввела у формі.
+ *
+ * Час читається як **настінний годинник пристрою** — так само, як у
+ * `WorkoutTimeEditor` (`datetime-local` → `datetimeLocalValueToIso`).
+ * Це навмисно: обидва контроли правлять ту саму сутність, і якби ретро-форма
+ * рахувала київський час, а редактор — пристроєвий, та сама сесія показувала б
+ * різні години залежно від того, звідки її відкрили. Київ лишається лише для
+ * ДЕФОЛТНОЇ дати (`todayLocalDateString`), бо це межа доби, а не мить.
+ *
+ * `null` — коли ввід неповний або нерозбірний; форма тоді просто не пускає далі.
+ */
+export function buildPastWorkoutTimes(
+  dateKey: string,
+  startTime: string,
+  endTime: string,
+  // eslint-disable-next-line no-restricted-syntax -- порівнюємо мить із миттю (кінець проти «зараз»), а не межі доби; київський календар тут ні до чого. Параметр існує, щоб тест міг запнути годинник.
+  now: Date = new Date(),
+): PastWorkoutTimes | null {
+  if (!dateKey || !startTime || !endTime) return null;
+
+  const startMs = Date.parse(joinLocal(dateKey, startTime));
+  let endMs = Date.parse(joinLocal(dateKey, endTime));
+  if (Number.isNaN(startMs) || Number.isNaN(endMs)) return null;
+
+  // Рівні мітки — теж перенесення: тренування нульової тривалості не буває,
+  // а «22:00 → 22:00» найімовірніше означає добу, а не помилку вводу.
+  const crossesMidnight = endMs <= startMs;
+  if (crossesMidnight) {
+    const next = new Date(startMs);
+    /* eslint-disable-next-line sergeant-design/prefer-kyiv-time -- ADR-0078:
+       додається доба до МОМЕНТУ, який людина щойно ввела своїм годинником,
+       а не до межі київської доби. Поля-конструктори `Date` самі коректно
+       перекочують через DST; київський календар тут дав би зсув для
+       не-київського хоста рівно там, де його не має бути. */
+    next.setDate(next.getDate() + 1);
+    const [hh, mm] = endTime.split(":").map(Number);
+    next.setHours(hh ?? 0, mm ?? 0, 0, 0);
+    endMs = next.getTime();
+  }
+
+  return {
+    startedAt: new Date(startMs).toISOString(),
+    endedAt: new Date(endMs).toISOString(),
+    crossesMidnight,
+    inFuture: endMs > now.getTime(),
+  };
+}
