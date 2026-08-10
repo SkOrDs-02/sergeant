@@ -16,14 +16,12 @@ import {
 const FULL: BetaLinks = {
   appUrl: "https://beta.sergeant.app",
   groupLink: "https://t.me/+abc123",
-  feedbackFormUrl: "https://forms.gle/xyz",
   founderUsername: "@skords",
 };
 
 const EMPTY: BetaLinks = {
   appUrl: "",
   groupLink: "",
-  feedbackFormUrl: "",
   founderUsername: "",
 };
 
@@ -79,17 +77,37 @@ describe("installReply", () => {
 });
 
 describe("helpReply", () => {
-  it("розводить чотири канали й починає з in-app віджета", () => {
+  it("називає рівно один канал — групу бети", () => {
     const out = helpReply(FULL);
-    // Віджет першим свідомо: він прикладає екран і версію, тож не доводиться
-    // перепитувати «а де саме».
-    const widgetAt = out.indexOf("Повідомити про проблему");
-    const groupAt = out.indexOf(FULL.groupLink);
-    expect(widgetAt).toBeGreaterThan(-1);
-    expect(widgetAt).toBeLessThan(groupAt);
+    expect(out).toContain(FULL.groupLink);
+    // Жодних інших маршрутів: ні віджета в застосунку, ні анонімної форми,
+    // ні особистого контакту. Вибір між каналами коштує повідомлення,
+    // якого потім немає.
+    expect(out).not.toContain("Повідомити про проблему");
+    expect(out).not.toMatch(/віджет/i);
+    expect(out).not.toMatch(/форма/i);
+    expect(out).not.toContain(FULL.founderUsername);
+  });
 
-    expect(out).toContain(FULL.feedbackFormUrl);
-    expect(out).toContain(FULL.founderUsername);
+  it("веде баги в ту саму групу, що й питання з ідеями", () => {
+    const out = helpReply(FULL);
+    // Перевіряємо саме РЯДОК з лінком групи, а не порядок збігів у тексті:
+    // позиційна асерція лишалась би зеленою і тоді, коли баги від'їхали б
+    // в окремий пункт вище.
+    const groupLine = out
+      .split("\n")
+      .find((line) => line.includes(FULL.groupLink));
+    expect(groupLine).toBeDefined();
+    expect(groupLine).toContain("зламалось");
+    expect(groupLine).toContain("питання");
+  });
+
+  it("просить назвати екран і попередню дію", () => {
+    // Віджет прикладав екран і версію сам, група — ні. Без цього рядка
+    // кожен баг довелось би перепитувати.
+    const out = helpReply(FULL);
+    expect(out).toContain("з якого екрана");
+    expect(out).toContain("що ти робив перед ним");
   });
 
   it("перелічує саме ті команди, які бот розуміє", () => {
@@ -102,12 +120,13 @@ describe("helpReply", () => {
     expect(out).not.toContain("/stats");
   });
 
-  it("ненастроєні канали просто зникають зі списку", () => {
-    const out = helpReply({ ...FULL, feedbackFormUrl: "", groupLink: "" });
-    expect(out).not.toContain("анонімна форма");
+  it("без групи прибирає блок цілком, а не лишає порожній заголовок", () => {
+    const out = helpReply({ ...FULL, groupLink: "" });
     expect(out).not.toContain("група бети");
-    // Але баг-віджет лишається — він не залежить від жодної змінної.
-    expect(out).toContain("Повідомити про проблему");
+    expect(out).not.toMatch(/Куди писати/);
+    // Правило й перелік команд лишаються — довідка не має ставати порожньою.
+    expect(out).toMatch(/Правило одне/);
+    expect(out).toContain("/install");
   });
 });
 
