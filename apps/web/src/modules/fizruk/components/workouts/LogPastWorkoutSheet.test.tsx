@@ -1,6 +1,12 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
 
 import { LogPastWorkoutSheet } from "./LogPastWorkoutSheet";
 
@@ -16,14 +22,14 @@ const PAST_DAY = "2026-08-01";
 function setup(overrides: Partial<{ open: boolean }> = {}) {
   const onClose = vi.fn();
   const onSubmit = vi.fn();
-  render(
+  const { container } = render(
     <LogPastWorkoutSheet
       open={overrides.open ?? true}
       onClose={onClose}
       onSubmit={onSubmit}
     />,
   );
-  return { onClose, onSubmit };
+  return { onClose, onSubmit, container };
 }
 
 function field(name: string): HTMLInputElement {
@@ -40,10 +46,23 @@ describe("LogPastWorkoutSheet", () => {
   });
 
   it("нічого не рендерить, поки закрита", () => {
-    const { container } = render(
+    render(
       <LogPastWorkoutSheet open={false} onClose={vi.fn()} onSubmit={vi.fn()} />,
     );
-    expect(container).toBeEmptyDOMElement();
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("відкривається діалогом поверх сторінки, а не смугою в її потоці", () => {
+    // Регресія з бети: перша версія рендерилась блоком у потоці — під
+    // картками «Останні тренування» й «Довідники», тобто за межами екрана.
+    // Кнопка вгорі, форма внизу — виглядало як «нічого не сталося».
+    const { container } = setup();
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toHaveAttribute("aria-modal", "true");
+    // Портал у `document.body` — саме він рятує від transform-контекстів
+    // предків, через які `position: fixed` прив'язується не до вікна.
+    expect(container).not.toContainElement(dialog);
+    expect(within(dialog).getByLabelText("Дата")).toBeVisible();
   });
 
   it("віддає обидві мітки — і початок, і кінець", () => {
@@ -134,8 +153,13 @@ describe("LogPastWorkoutSheet", () => {
   });
 
   it("закривається хрестиком", () => {
+    // Затемнення теж має aria-label «Закрити», тож шукаємо саме всередині
+    // панелі — інакше запит став би неоднозначним і тест упав би на цьому,
+    // а не на поведінці.
     const { onClose } = setup();
-    fireEvent.click(screen.getByLabelText("Закрити"));
+    fireEvent.click(
+      within(screen.getByRole("dialog")).getByLabelText("Закрити"),
+    );
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 });

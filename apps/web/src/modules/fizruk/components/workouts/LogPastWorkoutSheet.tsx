@@ -18,6 +18,15 @@
  * лишили б рівно ту скаргу, з якої все почалось: кінець виставити нічим.
  * Тому питаємо обидві мітки одразу.
  *
+ * **Чому `Sheet`, а не інлайн-смуга.** Перша версія рендерилась просто
+ * блоком у потоці сторінки — і на беті це читалось як «кнопка не працює»:
+ * форма зʼявлялась ПІД картками «Останні тренування» й «Довідники», тобто
+ * за межами екрана, а кнопка, яка її відкриває, — угорі. Плюс вигляд голої
+ * смуги без панелі. `Sheet` — канонічний примітив (портал повз усі
+ * transform-контексти, фокус-трап, Escape, затемнення, свайп-закриття,
+ * кнопка закриття 44×44, відступ під нижнє меню й клавіатуру); саме заради
+ * таких випадків він і зводив докупи шість саморобних шітів.
+ *
  * **Чому створюємо ВЖЕ завершене.** Ретро — це не старт. Завершене
  * тренування не займає слот «одне активне», не конфліктує з живою сесією і
  * не запускає rest-таймер. Заповнювати вправи людина йде на route-owned
@@ -27,7 +36,7 @@
 import { useId, useMemo, useState } from "react";
 
 import { Button } from "@shared/components/ui/Button";
-import { Icon } from "@shared/components/ui/Icon";
+import { Sheet } from "@shared/components/ui/Sheet";
 import { messages } from "@shared/i18n/uk";
 import {
   buildPastWorkoutTimes,
@@ -67,95 +76,89 @@ export function LogPastWorkoutSheet({
     [date, start, end],
   );
 
-  if (!open) return null;
+  const blocked = !times || times.inFuture;
 
   return (
-    <div className="px-4 py-3 border-b border-line bg-bg space-y-3">
-      <div className="flex items-start justify-between gap-2">
-        <p className="text-style-caption text-text">{t.title}</p>
+    <Sheet
+      open={open}
+      onClose={onClose}
+      title={t.title}
+      closeLabel={messages.actions.close}
+      footer={
         <Button
-          variant="secondary"
-          size="xs"
-          iconOnly
-          onClick={onClose}
-          aria-label={messages.actions.close}
-          title={messages.actions.close}
+          module="fizruk"
+          className="w-full h-11"
+          disabled={blocked}
+          onClick={() => {
+            if (!times || times.inFuture) return;
+            onSubmit({ startedAt: times.startedAt, endedAt: times.endedAt });
+          }}
         >
-          <Icon name="x" size={14} aria-hidden />
+          {t.submit}
         </Button>
+      }
+    >
+      <div className="space-y-3 pt-1">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div>
+            <label
+              className="block text-style-caption text-subtle"
+              htmlFor={dateId}
+            >
+              {t.date}
+            </label>
+            <input
+              id={dateId}
+              type="date"
+              // Відсікає майбутні ДНІ в самому пікері. Майбутній ЧАС у межах
+              // сьогодні цим не ловиться — це робить `times.inFuture` нижче.
+              max={today}
+              className="input-focus-fizruk mt-1 w-full h-11 rounded-xl border border-line bg-panelHi px-3 text-style-body text-text"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+            />
+          </div>
+          <div>
+            <label
+              className="block text-style-caption text-subtle"
+              htmlFor={startId}
+            >
+              {t.start}
+            </label>
+            <input
+              id={startId}
+              type="time"
+              className="input-focus-fizruk mt-1 w-full h-11 rounded-xl border border-line bg-panelHi px-3 text-style-body text-text"
+              value={start}
+              onChange={(e) => setStart(e.target.value)}
+            />
+          </div>
+          <div>
+            <label
+              className="block text-style-caption text-subtle"
+              htmlFor={endId}
+            >
+              {t.end}
+            </label>
+            <input
+              id={endId}
+              type="time"
+              className="input-focus-fizruk mt-1 w-full h-11 rounded-xl border border-line bg-panelHi px-3 text-style-body text-text"
+              value={end}
+              onChange={(e) => setEnd(e.target.value)}
+            />
+          </div>
+        </div>
+
+        {/* Майбутній кінець — блокуючий стан, тож його підпис витісняє
+            нейтральний «наступного дня»: інакше під формою висіли б два
+            підписи, з яких лише один пояснює, чому кнопка мертва. */}
+        {times?.inFuture ? (
+          <p className="text-style-caption text-subtle">{t.inFuture}</p>
+        ) : times?.crossesMidnight ? (
+          <p className="text-style-caption text-subtle">{t.crossesMidnight}</p>
+        ) : null}
       </div>
-
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <div>
-          <label
-            className="block text-style-caption text-subtle"
-            htmlFor={dateId}
-          >
-            {t.date}
-          </label>
-          <input
-            id={dateId}
-            type="date"
-            // Відсікає майбутні ДНІ в самому пікері. Майбутній ЧАС у межах
-            // сьогодні цим не ловиться — це робить `times.inFuture` нижче.
-            max={today}
-            className="input-focus-fizruk mt-1 w-full h-11 rounded-xl border border-line bg-panelHi px-3 text-style-body text-text"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-          />
-        </div>
-        <div>
-          <label
-            className="block text-style-caption text-subtle"
-            htmlFor={startId}
-          >
-            {t.start}
-          </label>
-          <input
-            id={startId}
-            type="time"
-            className="input-focus-fizruk mt-1 w-full h-11 rounded-xl border border-line bg-panelHi px-3 text-style-body text-text"
-            value={start}
-            onChange={(e) => setStart(e.target.value)}
-          />
-        </div>
-        <div>
-          <label
-            className="block text-style-caption text-subtle"
-            htmlFor={endId}
-          >
-            {t.end}
-          </label>
-          <input
-            id={endId}
-            type="time"
-            className="input-focus-fizruk mt-1 w-full h-11 rounded-xl border border-line bg-panelHi px-3 text-style-body text-text"
-            value={end}
-            onChange={(e) => setEnd(e.target.value)}
-          />
-        </div>
-      </div>
-
-      {/* Майбутній кінець — блокуючий стан, тож його підпис витісняє
-          нейтральний «наступного дня»: інакше під формою висіли б два
-          підписи, з яких лише один пояснює, чому кнопка мертва. */}
-      {times?.inFuture ? (
-        <p className="text-style-caption text-subtle">{t.inFuture}</p>
-      ) : times?.crossesMidnight ? (
-        <p className="text-style-caption text-subtle">{t.crossesMidnight}</p>
-      ) : null}
-
-      <Button
-        module="fizruk"
-        className="w-full h-11"
-        disabled={!times || times.inFuture}
-        onClick={() => {
-          if (!times || times.inFuture) return;
-          onSubmit({ startedAt: times.startedAt, endedAt: times.endedAt });
-        }}
-      >
-        {t.submit}
-      </Button>
-    </div>
+    </Sheet>
   );
 }
