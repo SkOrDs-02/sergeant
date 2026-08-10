@@ -38,7 +38,7 @@ export interface UseTransactionSelectionParams {
   setSplitTx: (id: string, splits: TxSplit[] | null) => void;
   setTxNote: (id: string, note: string | null) => void;
   removeManualExpense: ((id: string) => void) | undefined;
-  addManualExpense: ((expense: ManualExpense) => void) | undefined;
+  addManualExpense: ((expense: Omit<ManualExpense, "id">) => void) | undefined;
   onEditManualExpense: ((id: string) => void) | undefined;
   toast: ReturnType<typeof useToast>;
 }
@@ -207,8 +207,13 @@ export function useTransactionSelection({
     // resurrects the record under its original kind instead of silently
     // defaulting back to expense.
     const isIncome = Number(tx.amount || 0) > 0;
-    const snapshot: ManualExpense = {
-      id: String(manualId),
+    // Без `id` навмисно: знімок існує лише заради undo, а `addManualExpense`
+    // без нього згенерує НОВИЙ ідентифікатор. Зі старим id операція
+    // прилітала б на сервері в тумбстоун видаленого рядка й відхилялась
+    // (`reason: "tombstoned"`) — запис повертався б локально й не
+    // повертався на сервері. Те саме, що лікує `restoreManualExpense` для
+    // другого шляху undo; тут дешевше просто не класти id у знімок.
+    const snapshot: Omit<ManualExpense, "id"> = {
       date: tx.time
         ? new Date(tx.time * 1000).toISOString()
         : // eslint-disable-next-line no-restricted-syntax -- UTC wall-clock fallback when tx.time is missing, not a day-boundary calc.

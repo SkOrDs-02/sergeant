@@ -137,6 +137,35 @@ describe("addManualExpense", () => {
     expect(secondFired).toHaveLength(1);
   });
 
+  it("не губить дані undo: відновлення отримує НОВИЙ id", () => {
+    // Сервер уже позначив старий рядок видаленим. Повернення під тим самим
+    // id прилітає в тумбстоун і відхиляється — запис є локально й нема на
+    // сервері (`SERGEANT-WEB-Q`). Тому знімок відновлюється як новий запис.
+    const { slots, state } = makeSlots();
+    const { result } = renderMutations(slots);
+
+    const original = result.current.addManualExpense({
+      id: "exp-1",
+      amount: 250,
+      description: "Кава",
+      category: "cafe",
+    });
+    result.current.removeManualExpense("exp-1");
+    expect(state["manualExpenses"]).toHaveLength(0);
+
+    result.current.restoreManualExpense(original);
+
+    const restored = (state["manualExpenses"] as { id: string }[])[0]!;
+    expect(state["manualExpenses"]).toHaveLength(1);
+    expect(restored.id).not.toBe("exp-1");
+    // Для людини нічого не змінилось — той самий запис, інший внутрішній id.
+    expect(restored).toMatchObject({
+      amount: 250,
+      description: "Кава",
+      category: "cafe",
+    });
+  });
+
   it("coerces a provided id to string", () => {
     const { slots } = makeSlots();
     const { result } = renderMutations(slots);
