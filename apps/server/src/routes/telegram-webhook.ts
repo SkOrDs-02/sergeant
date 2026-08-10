@@ -94,14 +94,8 @@ export function createTelegramWebhookRouter({ pool }: { pool: Pool }): Router {
     const update = req.body as TelegramUpdate;
     const origin = resolveUpdateOrigin(update);
 
-    // Приватний діалог від живої людини — єдине, що обробляємо. Апдейти з
-    // груп і від інших ботів ігноруємо: підписник вейтліста це той, з ким
-    // ми можемо говорити віч-на-віч.
-    if (
-      typeof origin.chatId !== "number" ||
-      origin.chatType !== "private" ||
-      origin.fromBot
-    ) {
+    // Інші боти — завжди тиша, у будь-якому типі чату.
+    if (typeof origin.chatId !== "number" || origin.fromBot) {
       res.json({ ok: true });
       return;
     }
@@ -111,6 +105,41 @@ export function createTelegramWebhookRouter({ pool }: { pool: Pool }): Router {
     if (command.kind === "ignore") {
       res.json({ ok: true });
       return;
+    }
+
+    // Поза приватним діалогом дозволені лише довідкові команди.
+    //
+    // Раніше тут стояв суцільний `chatType !== "private"` — апдейт із групи
+    // відсікався до парсингу, тож бот мовчав на все. Це помітили, коли його
+    // додали в чат: людина бачить бота в списку учасників і природно очікує
+    // бодай `/help`.
+    //
+    // Але пустити ВСЕ не можна, і причина не в обережності, а в моделі
+    // даних: `chat_id` — це ключ підписника. У групі він належить групі, не
+    // людині. `/start` завів би підписником саму групу, `/stop` відписав би
+    // її за одним учасником, а `/stats` звіряється з
+    // `TELEGRAM_WAITLIST_ADMIN_CHAT_ID` — ід власника, якого в груповому
+    // апдейті просто нема. Кнопки опитування редагують конкретне надіслане
+    // повідомлення й теж мають сенс лише віч-на-віч.
+    //
+    // `app` / `install` / `help` вільні від цього цілком: це статичний
+    // текст із `betaTexts.ts`, вони не читають і не пишуть БД і не залежать
+    // від того, чий це `chat_id`. Тому allowlist, а не blocklist — нова
+    // команда за замовчуванням лишається приватною, і забути про це
+    // неможливо.
+    //
+    // Privacy mode тут ні до чого: Telegram доставляє боту повідомлення, що
+    // починаються зі слеша, і в групах теж. Єдиним гейтом був цей код.
+    const GROUP_SAFE_COMMANDS = ["app", "install", "help"] as const;
+    const inGroup = origin.chatType !== "private";
+    if (inGroup) {
+      const groupSafe = (GROUP_SAFE_COMMANDS as readonly string[]).includes(
+        command.kind,
+      );
+      if (!groupSafe) {
+        res.json({ ok: true });
+        return;
+      }
     }
 
     // `/stats` — тільки власнику. Чужому не відмовляємо повідомленням, а
@@ -135,7 +164,7 @@ export function createTelegramWebhookRouter({ pool }: { pool: Pool }): Router {
 
     let reply: string | null;
     try {
-      reply = await composeReply(pool, chatId, command, update);
+      reply = await composeReply(pool, chatId, command, update, inGroup);
     } catch (err) {
       // Єдиний випадок, де ретрай справді потрібен: апдейт не втрачається.
       logger.error({
@@ -201,6 +230,7 @@ async function composeReply(
   chatId: number,
   command: Exclude<ParsedCommand, { kind: "ignore" } | { kind: "survey" }>,
   update: TelegramUpdate,
+  inGroup: boolean,
 ): Promise<string | null> {
   const links = betaLinks();
 
@@ -215,7 +245,7 @@ async function composeReply(
       return installReply(links);
 
     case "help":
-      return helpReply(links);
+      return helpReply(links, inGroup);
 
     case "stop":
       await recordStop(pool, chatId);
