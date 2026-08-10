@@ -145,6 +145,11 @@ vi.mock("./meal-sheet/MacrosEditor", () => ({
         aria-label="Калорії"
         onChange={(e) => field("kcal")(e.target.value)}
       />
+      <input
+        data-testid="protein-input"
+        aria-label="Білки"
+        onChange={(e) => field("protein_g")(e.target.value)}
+      />
     </div>
   ),
 }));
@@ -456,6 +461,31 @@ describe("AddMealSheet — save validation branches", () => {
       macros: { kcal: 350 },
     });
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+  });
+
+  it("приймає кому як десятковий роздільник (баг бета-тестера 2026-08-10)", async () => {
+    // `inputMode="decimal"` на UA-розкладці дає кому, а `Number("1212,1")`
+    // це `NaN` — форма відхиляла цілком коректний ввід. Перевіряємо всі
+    // чотири поля разом: падали вони однаково.
+    const onSave = vi.fn();
+    renderSheet({ mealTemplates: [], onSave });
+    fireEvent.change(screen.getByTestId("name-input"), {
+      target: { value: "Лаови" },
+    });
+    fireEvent.change(screen.getByTestId("kcal-input"), {
+      target: { value: "1212,1" },
+    });
+    fireEvent.change(screen.getByTestId("protein-input"), {
+      target: { value: "121,1" },
+    });
+    fireEvent.click(screen.getByText("Зберегти"));
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    expect(onSave.mock.calls[0]![0]).toMatchObject({
+      macros: { kcal: 1212.1, protein_g: 121.1 },
+    });
+    expect(
+      screen.queryByText("Некоректне значення КБЖВ."),
+    ).not.toBeInTheDocument();
   });
 
   it("shows macro validation error for negative kcal", async () => {

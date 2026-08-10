@@ -5,6 +5,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@shared/components/ui/Button";
 import { nutritionKeys } from "@shared/lib/api/queryKeys";
+import { parseDecimalInput } from "@shared/lib/format/numberInput";
 import { upsertFood } from "../../lib/foodDb/foodDb";
 import type { PickedFood } from "./FoodPickerSection";
 import type { MealFormState } from "./mealFormUtils";
@@ -42,21 +43,26 @@ export function SaveAsFood({
             }));
             return;
           }
-          const kcal = form.kcal === "" ? 0 : Number(form.kcal);
-          const protein_g = form.protein_g === "" ? 0 : Number(form.protein_g);
-          const fat_g = form.fat_g === "" ? 0 : Number(form.fat_g);
-          const carbs_g = form.carbs_g === "" ? 0 : Number(form.carbs_g);
-          if (
-            [kcal, protein_g, fat_g, carbs_g].some(
-              (n) => !Number.isFinite(n) || n < 0,
-            )
-          ) {
+          // `parseDecimalInput`, а не `Number()`: `inputMode="decimal"` на
+          // українській розкладці дає кому, і `Number("1212,1")` — `NaN`.
+          // Порожнє поле тут означає нуль (продукт без цього макросу).
+          const macros = (
+            ["kcal", "protein_g", "fat_g", "carbs_g"] as const
+          ).map((key) =>
+            form[key] === ""
+              ? { ok: true as const, value: 0 }
+              : parseDecimalInput(form[key]),
+          );
+          if (macros.some((m) => !m.ok)) {
             setForm((s) => ({
               ...s,
               err: "КБЖВ має бути числами (без від'ємних значень).",
             }));
             return;
           }
+          const [kcal, protein_g, fat_g, carbs_g] = macros.map((m) =>
+            m.ok ? m.value : 0,
+          ) as [number, number, number, number];
           const res = await upsertFood({
             name,
             per100: { kcal, protein_g, fat_g, carbs_g },
