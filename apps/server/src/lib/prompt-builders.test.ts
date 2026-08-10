@@ -69,6 +69,31 @@ describe("prompt-builders", () => {
     expect(result).toContain("ТІЛЬКИ ці продукти");
   });
 
+  it("mode=only з порожньою коморою НЕ ставить обмеження", () => {
+    // Стан став досяжним лише коли режим поїхав у плани: доти `only` жив
+    // тільки в рецептах, де порожню комору відсікає клієнт. «Використовуй
+    // ТІЛЬКИ ці продукти» під заглушкою «продукти не вказані» — це промпт,
+    // який суперечить сам собі, і модель має право віддати будь-що.
+    const result = pantryPromptSection({
+      pantry: [],
+      preset: "dayPlan",
+      mode: "only",
+    });
+    expect(result).not.toContain("ТІЛЬКИ ці продукти");
+    expect(result).toContain("продукти не вказані");
+  });
+
+  it("mode=only з порожньою коморою тижневого плану теж без обмеження", () => {
+    // У weekPlan-пресета немає `fallbackWhenEmpty`, тож список порожній
+    // буквально — обмеження висіло б узагалі ні над чим.
+    const result = pantryPromptSection({
+      pantry: [],
+      preset: "weekPlan",
+      mode: "only",
+    });
+    expect(result).not.toContain("ТІЛЬКИ ці продукти");
+  });
+
   it("mode=prefer (дефолт) лишає історичну поведінку", () => {
     const items = [{ name: "гречка" }];
     expect(pantryPromptSection({ pantry: items, preset: "dayPlan" })).toBe(
