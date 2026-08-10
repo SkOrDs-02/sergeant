@@ -34,7 +34,6 @@ const {
     TELEGRAM_BETA_WAVE_SIZE: 35,
     TELEGRAM_BETA_APP_URL: "https://beta.sergeant.app",
     TELEGRAM_BETA_INVITE_LINK: "https://t.me/+abc123",
-    TELEGRAM_BETA_FEEDBACK_FORM_URL: "https://forms.gle/xyz",
     TELEGRAM_BETA_FOUNDER_USERNAME: "@skords",
   } as Record<string, string | number>,
 }));
@@ -246,14 +245,15 @@ describe("POST /api/telegram/webhook — довідкові команди", () 
     expect(query).not.toHaveBeenCalled();
   });
 
-  it("/help віддає всі налаштовані канали", async () => {
+  it("/help віддає єдиний канал — групу бети", async () => {
     const query = vi.fn();
     await post(query, textUpdate(777002, "/help"));
 
     const text = String(sendMessageMock.mock.calls[0]?.[0]?.text);
     expect(text).toContain("https://t.me/+abc123");
-    expect(text).toContain("https://forms.gle/xyz");
-    expect(text).toContain("@skords");
+    // Контакт founder-а в оточенні заданий і живе в `/install` — але в
+    // довідці маршрут рівно один, і роутер не має права підмішати інший.
+    expect(text).not.toContain("@skords");
   });
 });
 

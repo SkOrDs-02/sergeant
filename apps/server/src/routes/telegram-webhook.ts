@@ -186,7 +186,6 @@ function betaLinks(): BetaLinks {
   return {
     appUrl: env.TELEGRAM_BETA_APP_URL,
     groupLink: env.TELEGRAM_BETA_INVITE_LINK,
-    feedbackFormUrl: env.TELEGRAM_BETA_FEEDBACK_FORM_URL,
     founderUsername: env.TELEGRAM_BETA_FOUNDER_USERNAME,
   };
 }
