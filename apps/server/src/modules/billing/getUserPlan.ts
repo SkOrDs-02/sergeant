@@ -1,4 +1,5 @@
 import type { Pool } from "pg";
+import { env } from "../../env/env.js";
 
 export type Plan = "free" | "pro";
 
@@ -36,18 +37,41 @@ export function isFounderUser(userId: string): boolean {
   return raw.split(",").some((id) => id.trim() !== "" && id.trim() === userId);
 }
 
+/**
+ * AI-LEGACY: expires 2026-10-31 — інфраструктура закритої бети.
+ *
+ * `BILLING_ALL_PRO` видає Pro всім автентизованим, не заводячи рядків у
+ * `subscriptions`. Читається через `env`, а не `process.env`, бо Zod-схема
+ * валить старт на одруківці — мовчазне «всі лишились на Free» тут гірше за
+ * відмову стартувати.
+ *
+ * Експортується з тієї ж причини, що й `isFounderUser`: план читають ДВА
+ * незалежні шляхи — цей модуль і роут `/api/billing/status`, який ходить у
+ * `subscriptions` напряму. Одного разу вони вже розійшлись саме так
+ * (round-2 UI audit S1), і наслідок був характерний: сервер пускав, а
+ * клієнт малював Free. Один прапорець — одна перевірка на обох шляхах.
+ */
+export function isAllProEnabled(): boolean {
+  return env.BILLING_ALL_PRO;
+}
+
+/** Синтетичний Pro-запис для байпасів — без рядка в `subscriptions`. */
+function syntheticProPlan(): UserPlanResult {
+  return {
+    plan: "pro",
+    status: "active",
+    currentPeriodEnd: null,
+    cancelAtPeriodEnd: false,
+    provider: "manual",
+  };
+}
+
 export async function getUserPlan(
   pool: Pool,
   userId: string,
 ): Promise<UserPlanResult> {
-  if (isFounderUser(userId)) {
-    return {
-      plan: "pro",
-      status: "active",
-      currentPeriodEnd: null,
-      cancelAtPeriodEnd: false,
-      provider: "manual",
-    };
+  if (isFounderUser(userId) || isAllProEnabled()) {
+    return syntheticProPlan();
   }
 
   const result = await pool.query<{
