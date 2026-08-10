@@ -109,7 +109,14 @@ export function installReply(links: BetaLinks): string {
  * Порожній `groupLink` прибирає блок цілком: «Куди що писати:» без жодного
  * пункту гірше за його відсутність.
  */
-export function helpReply(links: BetaLinks): string {
+/**
+ * `inGroup` дописує рядок про те, що підписочні команди працюють лише в
+ * особистих. Без нього довідка в групі перелічувала б `/stop` як робочу
+ * команду, хоча вебхук її там навмисно ігнорує (`telegram-webhook.ts`,
+ * allowlist групових команд) — тобто відтворювала б рівно ту саму тишу у
+ * відповідь на запрошення, через яку бота й пішли перевіряти.
+ */
+export function helpReply(links: BetaLinks, inGroup = false): string {
   return joinBlocks([
     "Бета Sergeant — два тижні, закрите коло",
 
@@ -128,6 +135,12 @@ export function helpReply(links: BetaLinks): string {
       "/install — як поставити на головний екран\n" +
       "/help — це повідомлення\n" +
       "/stop — відписатись від розсилки",
+
+    inGroup
+      ? "Тут, у групі, я відповідаю лише на /app, /install і /help. " +
+        "Підписка й відписка — в особистих зі мною: розсилка йде конкретній " +
+        "людині, а не чату."
+      : null,
   ]);
 }
 

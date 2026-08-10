@@ -344,3 +344,116 @@ describe("POST /api/telegram/webhook — опитування", () => {
     expect(answerCallbackQueryMock).not.toHaveBeenCalled();
   });
 });
+
+/**
+ * Груповий чат: довідка працює, підписка — ні.
+ *
+ * Раніше апдейт із групи відсікався суцільним `chatType !== "private"` ще
+ * до парсингу команди, тож бот мовчав на все. Помітили, коли його додали в
+ * чат і він не відповів навіть на `/help`.
+ *
+ * Межа проведена не за обережністю, а за моделлю даних: `chat_id` — ключ
+ * підписника, і в групі він належить ГРУПІ. Тому нижче пінимо обидва боки:
+ * довідка відповідає, а все, що пише в `subscriptions`/`waitlist` або
+ * звіряється з ід власника, лишається німим і не торкається БД.
+ */
+describe("telegram webhook — груповий чат", () => {
+  function groupUpdate(groupChatId: number, text: string) {
+    return {
+      message: {
+        // Ід групи від'ємний — саме так їх шле Telegram. Беремо справжню
+        // форму, бо гейт `/stats` порівнює `chat_id` рядком, і додатне
+        // число тут випадково зробило б тест поблажливішим.
+        chat: { id: groupChatId, type: "supergroup" },
+        from: { id: 999111, is_bot: false, username: "u", first_name: "F" },
+        text,
+      },
+    };
+  }
+
+  const GROUP_ID = -1002233445566;
+
+  it.each(["/help", "/app", "/install"])(
+    "%s відповідає у групі й не чіпає БД",
+    async (cmd) => {
+      const query = vi.fn();
+      const res = await post(query, groupUpdate(GROUP_ID, cmd));
+
+      expect(res.status).toBe(200);
+      expect(sendMessageMock).toHaveBeenCalledTimes(1);
+      expect(String(sendMessageMock.mock.calls[0]?.[0]?.chatId)).toBe(
+        String(GROUP_ID),
+      );
+      expect(query).not.toHaveBeenCalled();
+    },
+  );
+
+  it("довідка в групі попереджає, що підписка — в особистих", async () => {
+    const query = vi.fn();
+    await post(query, groupUpdate(GROUP_ID, "/help"));
+
+    // Довідка перелічує /stop, а він у групі мовчить. Без цього рядка
+    // текст запрошував би до команди, яка тут нічого не робить — тобто
+    // відтворював би ту саму тишу, через яку бота й пішли перевіряти.
+    const text = String(sendMessageMock.mock.calls[0]?.[0]?.text);
+    expect(text).toMatch(/в особистих/i);
+  });
+
+  it("та сама довідка в приватному чаті цього рядка НЕ має", async () => {
+    const query = vi.fn();
+    await post(query, textUpdate(777042, "/help"));
+
+    const text = String(sendMessageMock.mock.calls[0]?.[0]?.text);
+    expect(text).not.toMatch(/в особистих/i);
+  });
+
+  it("суфікс /help@bot у групі теж працює", async () => {
+    const query = vi.fn();
+    const res = await post(query, groupUpdate(GROUP_ID, "/help@sergeant_bot"));
+
+    expect(res.status).toBe(200);
+    expect(sendMessageMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("/start у групі мовчить і НЕ заводить підписника", async () => {
+    const query = vi.fn();
+    const res = await post(query, groupUpdate(GROUP_ID, "/start hero"));
+
+    expect(res.status).toBe(200);
+    expect(sendMessageMock).not.toHaveBeenCalled();
+    // Найважливіше в цьому тесті. Підписником стала б сама група, і
+    // розсилка полетіла б у чат, який ніхто на неї не підписував.
+    expect(query).not.toHaveBeenCalled();
+  });
+
+  it("/stop у групі мовчить і НЕ відписує", async () => {
+    const query = vi.fn();
+    const res = await post(query, groupUpdate(GROUP_ID, "/stop"));
+
+    expect(res.status).toBe(200);
+    expect(sendMessageMock).not.toHaveBeenCalled();
+    expect(query).not.toHaveBeenCalled();
+  });
+
+  it("звичайний текст у групі не записується як причина відписки", async () => {
+    const query = vi.fn();
+    const res = await post(query, groupUpdate(GROUP_ID, "просто балачка"));
+
+    expect(res.status).toBe(200);
+    expect(sendMessageMock).not.toHaveBeenCalled();
+    expect(query).not.toHaveBeenCalled();
+  });
+
+  it("/stats у групі мовчить навіть коли ід групи збігається з ADMIN_CHAT_ID", async () => {
+    // Патологічний, але дешевий випадок: якби гейт групи стояв ПІСЛЯ
+    // перевірки власника, статистику вейтліста можна було б витягти в
+    // спільний чат. Порядок перевірок тут і пінимо.
+    envStub["TELEGRAM_WAITLIST_ADMIN_CHAT_ID"] = String(GROUP_ID);
+    const query = vi.fn();
+    const res = await post(query, groupUpdate(GROUP_ID, "/stats"));
+
+    expect(res.status).toBe(200);
+    expect(sendMessageMock).not.toHaveBeenCalled();
+    expect(query).not.toHaveBeenCalled();
+  });
+});
