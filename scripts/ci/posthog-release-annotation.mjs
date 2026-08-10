@@ -55,7 +55,8 @@ function readSubject(sha) {
 
 function buildContent({ sha, branch, subject, runId }) {
   const shortSha = sha ? sha.slice(0, 7) : "unknown";
-  const parts = [`Release ${shortSha}`];
+  // `Merged`, а не `Deployed` — див. AI-CONTEXT у `main()` про `date_marker`.
+  const parts = [`Merged ${shortSha}`];
   if (branch) parts[0] += ` (${branch})`;
   if (subject) parts.push(subject);
   const tail = runId ? ` [run #${runId}]` : "";
@@ -82,8 +83,19 @@ async function main() {
     runId,
   });
 
-  // `date_marker` — момент деплою. Беремо час запуску скрипта: він іде
-  // одразу після успішного деплою, тож похибка — секунди.
+  // `date_marker` — момент, коли реліз ПОТРАПИВ У `main`, а не коли він
+  // доїхав до користувачів.
+  //
+  // AI-CONTEXT: різницю не прибрати без брехні. Веб їде на Vercel, який
+  // взагалі не є GitHub-воркфлоу, тож події «деплой успішний» для нього не
+  // існує. `deploy-api.yml` тригериться лише на зміни сервера, тож привʼязка
+  // до нього лишила б веб-онлі релізи (більшість) БЕЗ позначки. Тому мітка
+  // ставиться на мердж і чесно так називається — краще позначка з відомим
+  // зміщенням у кілька хвилин, ніж позначка, якої немає, або яка бреше.
+  //
+  // Практичний наслідок: якщо деплой згодом упав, позначка лишиться. Тому
+  // в тексті префікс `Merged`, а не `Deployed` — читач бачить, що саме
+  // сталося в цю мить.
   const payload = {
     content,
     scope: "project",
