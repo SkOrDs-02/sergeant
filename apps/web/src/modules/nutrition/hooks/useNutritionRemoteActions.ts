@@ -170,6 +170,28 @@ export interface UseNutritionRemoteActionsParams {
  */
 type RecipeFromApi = ApiNutritionRecipe & { id?: unknown };
 
+/**
+ * Режим комори з prefs. Один вибір користувача («Як враховувати комору» в
+ * «Меню») керує ВСІМА трьома генераторами: рецепти, денний план, тижневий.
+ */
+function pantryModeOf(prefs: RemoteActionsPrefs): "prefer" | "only" | "ignore" {
+  return prefs.recipePantryMode ?? "prefer";
+}
+
+/**
+ * Комора для тіла запиту. При `ignore` шлемо порожній список навмисно:
+ * інструкція «не враховуй комору» поруч зі списком продуктів — слабкий
+ * важіль, модель усе одно тягне страви зі списку. Не показати списку —
+ * надійніше, ніж попросити його не використовувати.
+ */
+function pantryPayload(
+  items: PantryItem[],
+  mode: "prefer" | "only" | "ignore",
+  limit: number,
+): PantryItem[] {
+  return mode === "ignore" ? [] : items.slice(0, limit);
+}
+
 /** Coerce a possibly-numeric pref value to a number with a fallback. */
 function toNumber(value: unknown, fallback: number): number {
   const n = Number(value);
@@ -232,20 +254,18 @@ export function useNutritionRemoteActions({
   const recipesMutation = useMutation({
     mutationFn: () => {
       const items = pantry.effectiveItems;
-      if (
-        items.length === 0 &&
-        (prefs.recipePantryMode ?? "prefer") !== "ignore"
-      )
+      const mode = pantryModeOf(prefs);
+      if (items.length === 0 && mode !== "ignore")
         throw new Error("Дай хоча б 2–3 продукти для рецептів.");
       return nutritionApi.recommendRecipes({
-        pantry: items.slice(0, 40),
+        pantry: pantryPayload(items, mode, 40),
         preferences: {
           goal: prefs.goal,
           servings: toNumber(prefs.servings, 1),
           timeMinutes: toNumber(prefs.timeMinutes, 25),
           exclude: String(prefs.exclude || ""),
           mealType: prefs.recipeMealType ?? "any",
-          pantryMode: prefs.recipePantryMode ?? "prefer",
+          pantryMode: mode,
           locale: "uk-UA",
         },
       });
@@ -288,9 +308,10 @@ export function useNutritionRemoteActions({
   // ─── Week plan ──────────────────────────────────────────────────────────
   const weekPlanMutation = useMutation({
     mutationFn: () => {
-      const items = pantry.effectiveItems;
+      const mode = pantryModeOf(prefs);
       return nutritionApi.weekPlan({
-        pantry: items.slice(0, 50),
+        pantry: pantryPayload(pantry.effectiveItems, mode, 50),
+        pantryMode: mode,
         preferences: { goal: prefs.goal },
         locale: "uk-UA",
       });
@@ -407,7 +428,8 @@ export function useNutritionRemoteActions({
     mutationFn: (regenerateMealType: string | null | undefined) =>
       nutritionApi
         .dayPlan({
-          pantry: pantry.effectiveItems.slice(0, 50),
+          pantry: pantryPayload(pantry.effectiveItems, pantryModeOf(prefs), 50),
+          pantryMode: pantryModeOf(prefs),
           targets: {
             kcal: prefs.dailyTargetKcal,
             protein_g: prefs.dailyTargetProtein_g,

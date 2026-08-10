@@ -190,6 +190,28 @@ describe("DailyPlanCard — basic render", () => {
     );
     expect(screen.getByText(/Додай продукти в комору/i)).toBeInTheDocument();
   });
+
+  it("дає керувати коморою прямо з картки плану", () => {
+    // Пікер «Як враховувати комору» жив тільки в під-вкладці «Рецепти»,
+    // тож із «Плану на день» вибір був недосяжний — а тепер ще й впливає
+    // на цю картку, отже мусить бути тут.
+    render(<DailyPlanCard prefs={EMPTY_PREFS} {...defaultHandlers} />);
+    expect(
+      screen.getByRole("combobox", { name: "Використання комори" }),
+    ).toBeInTheDocument();
+  });
+
+  it("не обіцяє врахувати комору, коли обрано «не враховувати»", () => {
+    render(
+      <DailyPlanCard
+        prefs={withPrefs({ recipePantryMode: "ignore" })}
+        {...defaultHandlers}
+        pantryItems={[]}
+      />,
+    );
+    expect(screen.getByText(/Комору зараз не враховує/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Додай продукти в комору/i)).toBeNull();
+  });
 });
 
 describe("DailyPlanCard — firstRunHint", () => {
