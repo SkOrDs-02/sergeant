@@ -21,6 +21,7 @@ import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { hapticSuccess } from "@shared/lib/adapters/haptic";
 import { clampText } from "@shared/lib/text/limits";
+import { parseDecimalInput } from "@shared/lib/format/numberInput";
 import type {
   Meal,
   MealTemplate,
@@ -76,6 +77,19 @@ function macrosAreAllEmpty(macros: {
   carbs_g: number | null;
 }): boolean {
   return !Object.values(macros).some((v) => v != null && v !== 0);
+}
+
+/**
+ * Грами порції з поля вводу; 100 г — дефолт, коли поле порожнє або зіпсоване.
+ *
+ * Раніше тут стояло `Number(pickedGrams) || 100`, і це мовчки з'їдало кому:
+ * «150,5» ставало `NaN`, `|| 100` перетворював його на 100 г, і в журнал
+ * потрапляла НЕ та вага без жодного натяку користувачу. Тиха підміна даних
+ * гірша за помилку, тому парсинг тут спільний із КБЖВ.
+ */
+function gramsOrDefault(raw: string): number {
+  const parsed = parseDecimalInput(raw);
+  return parsed.ok && parsed.value > 0 ? parsed.value : 100;
 }
 
 interface AddMealSheetProps {
@@ -243,18 +257,20 @@ export function AddMealSheet({
       setForm((s) => ({ ...s, err: "Введи назву страви." }));
       return;
     }
-    const kcal = form.kcal === "" ? null : Number(form.kcal);
-    const protein_g = form.protein_g === "" ? null : Number(form.protein_g);
-    const fat_g = form.fat_g === "" ? null : Number(form.fat_g);
-    const carbs_g = form.carbs_g === "" ? null : Number(form.carbs_g);
-    if (
-      [kcal, protein_g, fat_g, carbs_g].some(
-        (n) => n != null && (!Number.isFinite(n) || n < 0),
-      )
-    ) {
+    // `parseDecimalInput`, а не `Number()`: поля мають `inputMode="decimal"`,
+    // і українська (як і більшість європейських) розкладка дає кому —
+    // `Number("1212,1")` це `NaN`, тож коректний ввід відхилявся.
+    // Порожнє поле лишається `null` («не вказано»), і це НЕ помилка.
+    const macroInputs = (
+      ["kcal", "protein_g", "fat_g", "carbs_g"] as const
+    ).map((key) => (form[key] === "" ? null : parseDecimalInput(form[key])));
+    if (macroInputs.some((m) => m != null && !m.ok)) {
       setForm((s) => ({ ...s, err: "Некоректне значення КБЖВ." }));
       return;
     }
+    const [kcal, protein_g, fat_g, carbs_g] = macroInputs.map((m) =>
+      m != null && m.ok ? m.value : null,
+    ) as [number | null, number | null, number | null, number | null];
     if (kcal != null && kcal > MAX_KCAL_PER_MEAL) {
       setForm((s) => ({
         ...s,
@@ -297,7 +313,7 @@ export function AddMealSheet({
       source,
       macroSource,
       foodId: effectiveFoodId ? String(effectiveFoodId) : null,
-      amount_g: hasAmount ? Number(pickedGrams) || 100 : null,
+      amount_g: hasAmount ? gramsOrDefault(pickedGrams) : null,
     };
     // Founder decision: warn, don't block. A meal with all-empty/zero
     // macros (photo AI couldn't identify the food, or a manual entry with
@@ -312,7 +328,7 @@ export function AddMealSheet({
 
   function finalizeSave(meal: Meal) {
     if (fromPantryItem && onConsumePantryItem) {
-      const grams = Number(pickedGrams) || 100;
+      const grams = gramsOrDefault(pickedGrams);
       onConsumePantryItem(fromPantryItem, grams);
     }
     hapticSuccess();
