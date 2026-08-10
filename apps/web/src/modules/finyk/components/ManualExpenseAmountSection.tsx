@@ -159,40 +159,37 @@ export function ManualExpenseAmountSection({
           }}
         />
       </div>
-      {/* Mic-only icon was indistinguishable from the rest of the form
-          chrome — users didn't realise they could dictate the whole
-          expense. Pair the mic with a "Сказати" label so the affordance
-          is visible at rest. `VoiceMicButton` hides itself when the
-          Web Speech API isn't supported, so we hide the label too in
-          that case via `hidden:*`-style absent fallback (the button
-          returns null and the flex container collapses to the input
-          alone). */}
-      <div className="flex flex-col items-center gap-0.5 pb-1">
-        <VoiceMicButton
-          size="md"
-          label="Сказати голосом"
-          promptHint="Витрата у гривнях: кава 60 гривень, продукти 350 грн, таксі 200, обід 150."
-          onResult={(transcript) => {
-            const parsed = parseExpenseSpeech(transcript);
-            if (!parsed) return;
-            if (parsed.name) {
-              setValue("description", parsed.name, { shouldDirty: true });
-            }
-            if (parsed.amount != null) {
-              setValue("amount", String(Math.round(parsed.amount)), {
-                shouldDirty: true,
-                shouldValidate: Boolean(amountError),
-              });
-            }
-          }}
-        />
-        <span
-          className="text-style-caption text-subtle select-none"
-          aria-hidden
-        >
-          Сказати
-        </span>
-      </div>
+      {/* Гола іконка мікрофона губилася серед решти хрому форми — люди не
+          розуміли, що витрату можна надиктувати цілком. Тому в неї є
+          видимий підпис «Сказати».
+
+          Підпис передається ПРОПОМ, а не сусіднім елементом. Раніше він
+          стояв окремим `<span>` у цьому ж `div`, і тутешній коментар
+          стверджував, що контейнер «сколапситься» разом із кнопкою. Не
+          сколапсувався: `VoiceMicButton` повертає `null`, а span лишався
+          сиротою — підпис без іконки в кожному сценарії, де голосу немає
+          (провайдер не підтримується; з 2026-08-10 — вимкнений
+          kill-switch). Прив'язка до компонента робить це неможливим. */}
+      <VoiceMicButton
+        size="md"
+        label="Сказати голосом"
+        caption="Сказати"
+        captionWrapperClassName="pb-1"
+        promptHint="Витрата у гривнях: кава 60 гривень, продукти 350 грн, таксі 200, обід 150."
+        onResult={(transcript) => {
+          const parsed = parseExpenseSpeech(transcript);
+          if (!parsed) return;
+          if (parsed.name) {
+            setValue("description", parsed.name, { shouldDirty: true });
+          }
+          if (parsed.amount != null) {
+            setValue("amount", String(Math.round(parsed.amount)), {
+              shouldDirty: true,
+              shouldValidate: Boolean(amountError),
+            });
+          }
+        }}
+      />
     </div>
   );
 }

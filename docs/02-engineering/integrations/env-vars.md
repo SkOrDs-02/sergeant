@@ -1,6 +1,6 @@
 # Environment variables — повний reference
 
-> **Last touched:** 2026-08-06 by @claude. **Next review:** 2026-11-04.
+> **Last touched:** 2026-08-10 by @claude. **Next review:** 2026-11-08.
 > **Status:** Active
 
 Цей документ — канонічний reference усіх змінних оточення Sergeant. Мінімальний `.env` (12 змінних, потрібних для `pnpm dev:web` + `pnpm dev:server`) лежить у [`/.env.example`](../../../.env.example) у корені репо. Сюди винесено: повний опис, формати, default-и, наслідки незаповненості, перехресні посилання на код / ADR / hardening-ноти.
@@ -657,6 +657,7 @@ Full rollout playbook: [`docs/04-governance/security/api-internal-hmac.md`](../.
 
 ## See also
 
+- [`docs/02-engineering/architecture/feature-flags.md`](../architecture/feature-flags.md) — **реєстр тумблерів**: лише булеві прапорці, але з дефолтами, наслідками перемикання і умовою зняття. Покриває також те, чого тут немає за визначенням — клієнтський `FLAG_REGISTRY` і in-memory kill-switch (це не змінні оточення).
 - [`/.env.example`](../../../.env.example) — мінімальний `.env` для `pnpm dev`.
 - [`docs/02-engineering/integrations/railway-vercel.md`](./railway-vercel.md) — топологія хостингу + проксі.
 - [`docs/00-start/agents/onboarding.md`](../../00-start/agents/onboarding.md) — quickstart для AI-агентів.

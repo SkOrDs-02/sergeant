@@ -1,6 +1,6 @@
 # Agents in Sergeant
 
-> **Last touched:** 2026-08-08 by @claude. **Next review:** 2026-11-06.
+> **Last touched:** 2026-08-10 by @claude. **Next review:** 2026-11-08.
 > **Status:** Active
 
 > **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load one owner skill for the primary touched surface. Load extra workflow/squad/helper skills only when `docs/00-start/agents/agent-workflows.md` or the routing catalog explicitly says to. The routing catalog lives in `docs/00-start/agents/agent-skills-catalog.md`.
@@ -227,6 +227,7 @@ PR body follows [`.github/PULL_REQUEST_TEMPLATE.md`](./.github/PULL_REQUEST_TEMP
 - [`docs/01-product/model/`](docs/01-product/model/) — **продуктові канони модулів і шарів**: `finyk.md` (модуль особистих фінансів), `hub-coach.md` (крос-модульний AI-шар: hub, HubChat, coach, weekly-digest). Перед продуктовою зміною читай відповідний канон; PR, що змінює продуктову поведінку, оновлює канон **у тому ж PR**. Секції з поміткою `[ІНТЕРВ'Ю]` — слова founder-а: код може з ними розійтись (це знахідка аудиту), але агент їх не редагує без явного рішення founder-а. Розбіжності канон↔доки↔код: [`product-knowledge-finyk.md`](docs/90-work/audits/product-knowledge-finyk.md), [`product-knowledge-hub-coach.md`](docs/90-work/audits/product-knowledge-hub-coach.md).
 - [`.agents/skills/`](.agents/skills/) — current `SKILL.md` files for AI agents; start with `sergeant-start-here`.
 - [`docs/02-engineering/architecture/`](docs/02-engineering/architecture/) — repo map, module ownership, domain invariants, C4 diagrams.
+- [`docs/02-engineering/architecture/feature-flags.md`](docs/02-engineering/architecture/feature-flags.md) — **реєстр усіх тумблерів**: чотири системи (build-time `VITE_*`, серверні env, користувацькі `FLAG_REGISTRY`, in-memory kill-switch), дефолти, що ламається при протилежному значенні і **умова зняття**. Читай перед тим, як додавати новий прапорець — там же критерій вибору системи і чому `VITE_*` ніколи не секрет.
 - [`docs/04-governance/governance/rules/`](docs/04-governance/governance/rules/) — per-rule canonical bodies with BAD/GOOD examples.
 - [`docs/04-governance/governance/freshness-dashboard.html`](docs/04-governance/governance/freshness-dashboard.html) — generated `Last validated` / `Next review` dashboard for tracked docs.
 - [`docs/04-governance/security/audit-exceptions.md`](docs/04-governance/security/audit-exceptions.md) — tracked vulnerabilities with no available fix.
