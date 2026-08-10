@@ -30,9 +30,20 @@ export function resolveConfiguredProvider(): VoiceProvider {
  *    plan-gate** (роут має лише `requireSession`). Це до $30/міс на
  *    ОДНОГО юзера — і Free, і Pro однаково — проти виручки Pro ≈$4.52/міс.
  *
- * Прибирає рівно UI-поверхню (5 call-сайтів `VoiceMicButton`). Серверний
- * ендпоінт лишається живим: щоб закрити і його, приберіть `GROQ_API_KEY`
- * у Coolify — `requireGroqKey()` почне віддавати 503.
+ * Прибирає рівно UI-поверхню: 5 call-сайтів `VoiceMicButton` + власна
+ * кнопка мікрофона у `core/components/ChatInput.tsx` (вона НЕ використовує
+ * цей компонент і читає прапорець окремо). Серверний ендпоінт лишається
+ * живим: щоб закрити і його, приберіть `GROQ_API_KEY` у Coolify —
+ * `requireGroqKey()` почне віддавати 503.
+ *
+ * **Умова зняття (обидві мають виконатись):**
+ *   1. Полагоджено гейт iOS standalone-PWA на Groq-шляху — щоб «підтримка
+ *      голосу» перестала залежати від наявності серверного ключа.
+ *   2. Вартість `/api/transcribe` приведена під виручку: plan-gate на роуті
+ *      або нижчий `TRANSCRIBE_USD_CAP_DAILY_MICROS`.
+ * Доки хоч одна не виконана — прапорець лишається, і це не «тимчасово
+ * забули», а свідомий стан. Реєстр усіх прапорців і їхніх умов зняття —
+ * `docs/02-engineering/architecture/feature-flags.md`.
  */
 export function isVoiceInputEnabled(): boolean {
   return import.meta.env.VITE_ENABLE_VOICE_INPUT === "1";
