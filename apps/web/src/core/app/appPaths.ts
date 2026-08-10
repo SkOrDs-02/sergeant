@@ -40,7 +40,11 @@ export const ROUTE_TITLES: Readonly<Record<string, string>> = {
   // ділили загальний `APP_TITLE`. Прибрано, а не залишено: мертвий
   // запис для недосяжної локації — саме той клас коментаря/даних-привида,
   // що вже плутав людей в інших місцях цього аудиту (§6 аудиту).
-  "/insights": "Sergeant — Зв'язки",
+  // Немає запису для "/insights" (2026-08-10) — з тієї ж причини, що й
+  // для "/settings" вище: `core/insights/route.tsx` тепер редиректить у
+  // вкладку хаба (`/?tab=reports`), тож цей pathname більше ніколи не є
+  // ОСІЛОЮ локацією. Хаб-вкладки власного title не мають — усі чотири
+  // ділять `APP_TITLE`.
   "/legal/privacy": "Sergeant — Політика приватності",
   "/legal/terms": "Sergeant — Умови використання",
   "/legal/cookies": "Sergeant — Політика cookies",
