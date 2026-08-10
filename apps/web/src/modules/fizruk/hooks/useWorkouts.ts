@@ -14,6 +14,10 @@ import {
 } from "../lib/fizrukDualWriteState";
 import { getCachedFizrukSqliteState } from "../lib/sqliteReader";
 import { useFizrukSqliteReadTick } from "../lib/sqliteReadGate";
+import {
+  clearPendingRetroEnd,
+  takePendingRetroEnd,
+} from "../lib/pendingRetroEnd";
 
 /**
  * Window event fired when persisting workouts fails. Kept for backwards
@@ -152,9 +156,10 @@ export function useWorkouts() {
   }, [persist]);
 
   /**
-   * `endedAt` — для сценарію «внести проведене заняття»: тренування
-   * створюється ВЖЕ завершеним, тож не займає слот «одне активне» і не
-   * вдає живу сесію (rest-таймер не стартує). Без нього — звичайний старт.
+   * `startedAt` із форми — для «внести проведене заняття»: сесія жива, просто
+   * почалась не зараз. `endedAt` тут лишається необовʼязковим і в ретро-шляху
+   * НЕ передається: введений кінець чекає у `pendingRetroEnd` до кроку
+   * «Завершити», інакше тренування одразу стало б read-only підсумком.
    */
   const createWorkoutWithTimes = useCallback(
     ({
@@ -183,8 +188,11 @@ export function useWorkouts() {
 
   const endWorkout = useCallback(
     (id: string): Workout | null => {
+      // Ретро-сесія («Внести проведене заняття») заклала свій кінець ще у
+      // формі — беремо його замість «зараз». Гасіння всередині `take`, тож
+      // повторне завершення того самого id вже піде звичайним шляхом.
       // eslint-disable-next-line no-restricted-syntax -- UTC-anchored wall-clock instant для endedAt (не Kyiv-межа доби)
-      const nowIso = new Date().toISOString();
+      const nowIso = takePendingRetroEnd(id) ?? new Date().toISOString();
       let ended: Workout | null = null;
       persist((prev: Workout[]) =>
         prev.map((w: Workout): Workout => {
@@ -213,6 +221,9 @@ export function useWorkouts() {
 
   const deleteWorkout = useCallback(
     (id: string) => {
+      // Ретро викинули, не завершивши — інакше його мітка дочекалась би
+      // наступного тренування й тихо переписала б тому чужий `endedAt`.
+      clearPendingRetroEnd(id);
       persist((prev: Workout[]) => prev.filter((w: Workout) => w.id !== id));
     },
     [persist],

@@ -134,13 +134,40 @@ describe("LogPastWorkoutSheet", () => {
   });
 
   it("майбутній підпис витісняє нейтральний «наступного дня»", () => {
-    // Сесія через північ на сьогоднішній даті — обидва стани разом. Показувати
-    // два підписи означало б залишити людину гадати, який із них блокує кнопку.
+    // Правдоподібна сесія через північ на сьогоднішній даті — обидва стани
+    // разом. Два підписи лишили б людину гадати, який із них блокує кнопку.
     setup();
-    fireEvent.change(field("Початок"), { target: { value: "02:00" } });
-    fireEvent.change(field("Завершення"), { target: { value: "01:00" } });
+    fireEvent.change(field("Початок"), { target: { value: "23:00" } });
+    fireEvent.change(field("Завершення"), { target: { value: "00:30" } });
     expect(screen.getByText(/Завершення ще не настало/)).toBeVisible();
     expect(screen.queryByText("Завершення — наступного дня.")).toBeNull();
+  });
+
+  it("описку в часі називає опискою, а не «ще не настало»", () => {
+    // Скарга з бети: «18:00 → 16:00» на сьогоднішній даті давало
+    // «Завершення ще не настало» — повідомлення про наслідок переносу, а не
+    // про причину. Причина тут одна: кінець раніше за початок.
+    const { onSubmit } = setup();
+    fireEvent.change(field("Початок"), { target: { value: "18:00" } });
+    fireEvent.change(field("Завершення"), { target: { value: "16:00" } });
+
+    expect(screen.getByText(/Завершення раніше за початок/)).toBeVisible();
+    expect(screen.queryByText(/Завершення ще не настало/)).toBeNull();
+    const submit = screen.getByText("Внести й додати вправи");
+    expect(submit).toBeDisabled();
+    fireEvent.click(submit);
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it("на минулій даті описка теж не проходить мовчки", () => {
+    // Без стелі це просто лягало б у журнал 22-годинною сесією — тихо, бо
+    // «наступного дня» звучить як нормальний стан.
+    setup();
+    fireEvent.change(field("Дата"), { target: { value: PAST_DAY } });
+    fireEvent.change(field("Початок"), { target: { value: "18:00" } });
+    fireEvent.change(field("Завершення"), { target: { value: "16:00" } });
+    expect(screen.getByText(/Завершення раніше за початок/)).toBeVisible();
+    expect(screen.getByText("Внести й додати вправи")).toBeDisabled();
   });
 
   it("блокує кнопку, доки ввід неповний", () => {

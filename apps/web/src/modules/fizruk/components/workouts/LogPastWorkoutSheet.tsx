@@ -27,13 +27,14 @@
  * кнопка закриття 44×44, відступ під нижнє меню й клавіатуру); саме заради
  * таких випадків він і зводив докупи шість саморобних шітів.
  *
- * **Чому створюємо ВЖЕ завершене.** Ретро — це не старт. Завершене
- * тренування не займає слот «одне активне», не конфліктує з живою сесією і
- * не запускає rest-таймер. Заповнювати вправи людина йде на route-owned
- * `workout/<id>`, де завершене тренування лишається відкритим
- * (`useWorkoutsLifecycle` скидає активне лише коли route НЕ володіє id).
+ * **Кінець не записується одразу.** Форма віддає обидві мітки, але сесія
+ * створюється НЕзавершеною, а введений кінець чекає у `pendingRetroEnd` до
+ * кроку «Завершити». Перша версія ставила `endedAt` відразу — і тим вела
+ * людину повз увесь післятренувальний потік: завершене тренування малюється
+ * read-only підсумком, тож ні вправи додати, ні оцінку пройти. Розбір —
+ * у [`fizruk.md` §3](../../../../../../docs/01-product/model/fizruk.md).
  */
-import { useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 import { Button } from "@shared/components/ui/Button";
 import { Sheet } from "@shared/components/ui/Sheet";
@@ -46,7 +47,10 @@ import {
 export interface LogPastWorkoutSheetProps {
   open: boolean;
   onClose: () => void;
-  /** Створює завершене тренування і веде на нього. */
+  /**
+   * Створює ЖИВУ сесію з цими мітками й веде на неї. `endedAt` не пишеться
+   * одразу — він чекає кроку «Завершити» (див. докблок вище).
+   */
   onSubmit: (times: { startedAt: string; endedAt: string }) => void;
 }
 
@@ -64,10 +68,22 @@ export function LogPastWorkoutSheet({
   const startId = `${fieldsId}-start`;
   const endId = `${fieldsId}-end`;
 
-  const today = todayLocalDateString();
+  // Перераховуємо на КОЖНЕ відкриття, а не раз на монтування. Шіт живе в
+  // дереві постійно (закритий = `open: false`), тож обчислений один раз
+  // «сьогодні» переживає північ: застосунок, відкритий звечора, о 00:02
+  // пропонував учорашню дату й ліміт `max` теж учорашній.
+  const today = useMemo(() => (open ? todayLocalDateString() : ""), [open]);
   const [date, setDate] = useState(today);
   const [start, setStart] = useState(DEFAULT_START);
   const [end, setEnd] = useState(DEFAULT_END);
+
+  // Відкриття = новий запис: підставляємо свіже «сьогодні» замість того, що
+  // лишилось від минулого разу.
+  const lastOpenRef = useRef(false);
+  useEffect(() => {
+    if (open && !lastOpenRef.current) setDate(today);
+    lastOpenRef.current = open;
+  }, [open, today]);
 
   const t = messages.fizruk.logPast;
 
@@ -76,7 +92,7 @@ export function LogPastWorkoutSheet({
     [date, start, end],
   );
 
-  const blocked = !times || times.inFuture;
+  const blocked = !times || times.inFuture || times.implausiblyLong;
 
   return (
     <Sheet
@@ -90,7 +106,9 @@ export function LogPastWorkoutSheet({
           className="w-full h-11"
           disabled={blocked}
           onClick={() => {
-            if (!times || times.inFuture) return;
+            // Та сама умова, що й `disabled` — кнопка не єдиний шлях сюди
+            // (Enter, автоклік, тест), і розʼїхатись цим двом не можна.
+            if (blocked) return;
             onSubmit({ startedAt: times.startedAt, endedAt: times.endedAt });
           }}
         >
@@ -150,10 +168,13 @@ export function LogPastWorkoutSheet({
           </div>
         </div>
 
-        {/* Майбутній кінець — блокуючий стан, тож його підпис витісняє
-            нейтральний «наступного дня»: інакше під формою висіли б два
-            підписи, з яких лише один пояснює, чому кнопка мертва. */}
-        {times?.inFuture ? (
+        {/* Один підпис за раз, у порядку «причина → наслідок». Описка в часі
+            («18:00 → 16:00») на сьогоднішній даті дає ОБИДВА стани, бо
+            перенесений кінець їде в завтра; показати тут «завершення ще не
+            настало» означало б пояснити наслідок і сховати причину. */}
+        {times?.implausiblyLong ? (
+          <p className="text-style-caption text-subtle">{t.implausiblyLong}</p>
+        ) : times?.inFuture ? (
           <p className="text-style-caption text-subtle">{t.inFuture}</p>
         ) : times?.crossesMidnight ? (
           <p className="text-style-caption text-subtle">{t.crossesMidnight}</p>
