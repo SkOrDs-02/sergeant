@@ -129,7 +129,12 @@ export function isCategorySlug(value: string): value is CategorySlug {
 function stripLeadingEmoji(str: string): string {
   const s = String(str || "");
   let i = 0;
-  while (i < s.length && !/[\p{L}\p{N}]/u.test(s[i]!)) i++;
+  // `s[i]` під `noUncheckedIndexedAccess` — `string | undefined`, хоча
+  // умова `i < s.length` це вже виключає. Раніше тут стояв non-null
+  // assertion; `?? ""` дає той самий результат без придушення перевірки:
+  // порожній рядок не матчить `[\p{L}\p{N}]`, тобто недосяжна гілка
+  // поводиться так само, як і була б із `!`.
+  while (i < s.length && !/[\p{L}\p{N}]/u.test(s[i] ?? "")) i++;
   return s.slice(i).trim();
 }
 
@@ -163,4 +168,30 @@ export function upgradeCategory(raw: string | null | undefined): CategorySlug {
 
   // Unknown legacy value — graceful fallback.
   return DEFAULT_CATEGORY;
+}
+
+/**
+ * `upgradeCategory`, який не з'їдає користувацькі категорії.
+ *
+ * `upgradeCategory` нормалізує будь-яке невідоме значення в
+ * `DEFAULT_CATEGORY` — і це правильно для легасі-рядків трьох ер. Але id
+ * власної категорії теж «невідомий» цій таксономії, тож на шляху
+ * збереження ручної витрати він мовчки ставав «Інше»: людина обирала
+ * «Кава з друзями», а в списку з'являлось інше слово. Підміна даних без
+ * сліду гірша за відмову — той самий висновок, що й у `parseDecimalInput`.
+ *
+ * Тому власні id перевіряються ПЕРШИМИ і повертаються як є. Колізія з
+ * вбудованим слагом нешкідлива: рядок той самий.
+ *
+ * Повертає `string`, а не `CategorySlug`: власна категорія за визначенням
+ * поза union-ом, і тип тут має про це чесно попереджати, а не вдавати,
+ * що будь-яка категорія витрати — вбудована.
+ */
+export function upgradeCategoryAllowingCustom(
+  raw: string | null | undefined,
+  customIds: ReadonlySet<string>,
+): string {
+  const trimmed = raw?.trim();
+  if (trimmed && customIds.has(trimmed)) return trimmed;
+  return upgradeCategory(raw);
 }
