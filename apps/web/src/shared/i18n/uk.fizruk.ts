@@ -16,6 +16,21 @@ export const fizrukPageMessages = {
   // Only one unfinished workout may exist, so every start path funnels
   // through this prompt. Shared by the Workouts dialogs and the program
   // start flow in the module shell — same wording in both, one source.
+  /**
+   * «Внести проведене заняття» — тренування заднім числом.
+   * Копія свідомо не каже «почати»: заняття вже відбулось, тут його
+   * лише записують. Обґрунтування — докблок `LogPastWorkoutSheet`.
+   */
+  logPast: {
+    cta: "Внести проведене заняття",
+    title: "Записати тренування заднім числом",
+    date: "Дата",
+    start: "Початок",
+    end: "Завершення",
+    /** Підпис зʼявляється лише коли кінець переповз за північ. */
+    crossesMidnight: "Завершення — наступного дня.",
+    submit: "Внести й додати вправи",
+  },
   activeWorkoutConflict: {
     title: "Уже є активне тренування",
     description: "Перш ніж почати нове, заверши поточне або викинь його.",

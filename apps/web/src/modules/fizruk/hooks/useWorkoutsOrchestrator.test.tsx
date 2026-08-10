@@ -176,4 +176,52 @@ describe("useWorkoutsOrchestrator", () => {
     act(() => result.current.handleRiskyTemplateConfirm());
     expect(result.current.riskyTemplateConfirm).toBeNull();
   });
+
+  describe("submitPastWorkout — внести проведене заняття", () => {
+    const TIMES = {
+      startedAt: "2026-08-09T15:00:00.000Z",
+      endedAt: "2026-08-09T16:30:00.000Z",
+    };
+
+    it("створює тренування ВЖЕ завершеним", () => {
+      // Ядро сценарію: ретро — не старт. Завершене не займає слот
+      // «одне активне» і не вдає живу сесію.
+      const { result } = setup();
+      act(() => result.current.submitPastWorkout(TIMES));
+
+      const w = result.current.workouts[0]!;
+      expect(w.startedAt).toBe(TIMES.startedAt);
+      expect(w.endedAt).toBe(TIMES.endedAt);
+    });
+
+    it("не займає слот активного тренування", () => {
+      // Якби воно ставало активним, наступний «Швидкий старт» питав би,
+      // чи кинути «незавершену» сесію, якої насправді немає.
+      const { result } = setup();
+      act(() => result.current.submitPastWorkout(TIMES));
+      expect(result.current.activeWorkout).toBeNull();
+    });
+
+    it("не питає про конфлікт, коли є жива сесія", () => {
+      // Гейт «одне активне» тут навмисно обійдено: запис учорашнього
+      // заняття не має пропонувати кинути сьогоднішнє.
+      const { result } = setup();
+      act(() => result.current.handleQuickStart());
+      const liveId = result.current.activeWorkout?.id;
+      expect(liveId).toBeTruthy();
+
+      act(() => result.current.submitPastWorkout(TIMES));
+
+      expect(result.current.activeWorkoutConflictOpen).toBe(false);
+      expect(result.current.activeWorkout?.id).toBe(liveId);
+      expect(result.current.workouts).toHaveLength(2);
+    });
+
+    it("закриває форму після внесення", () => {
+      const { result } = setup();
+      act(() => result.current.setLogPastOpen(true));
+      act(() => result.current.submitPastWorkout(TIMES));
+      expect(result.current.logPastOpen).toBe(false);
+    });
+  });
 });

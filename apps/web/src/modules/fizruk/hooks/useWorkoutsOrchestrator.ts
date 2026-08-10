@@ -70,6 +70,7 @@ export function useWorkoutsOrchestrator(
     workouts,
     loaded: workoutsLoaded,
     createWorkout,
+    createWorkoutWithTimes,
     updateWorkout,
     deleteWorkout,
     restoreWorkout,
@@ -109,6 +110,8 @@ export function useWorkoutsOrchestrator(
   const [selected, setSelected] = useState<RawExerciseDef | null>(null);
   const [open, setOpen] = useState<Record<string, boolean>>(() => ({}));
   const [addOpen, setAddOpen] = useState(false);
+  /** Форма «Внести проведене заняття» — див. `submitPastWorkout` нижче. */
+  const [logPastOpen, setLogPastOpen] = useState(false);
   // Pulled out of `options` so the start callbacks can depend on the function
   // itself rather than on the whole options object, which is a fresh literal
   // on every render of the host page.
@@ -386,6 +389,31 @@ export function useWorkoutsOrchestrator(
   }, [createWorkout, onWorkoutStarted, requestWorkoutStart]);
 
   /**
+   * «Внести проведене заняття» — тренування заднім числом.
+   *
+   * Свідомо НЕ йде через `requestWorkoutStart`: той гейт боронить інваріант
+   * «одне активне», а створене тут тренування народжується вже завершеним
+   * (`endedAt` задано), тож слот не займає. Інакше запис учорашньої сесії
+   * питав би, чи кинути сьогоднішню живу — і це був би той самий діалог,
+   * якого сценарій узагалі не потребує.
+   *
+   * `setActiveWorkoutId` теж не викликаємо: `useWorkoutsLifecycle` скидає
+   * завершене з активного, щойно route ним не володіє, тож виставляти його
+   * означало б покластися на гонку. Замість цього одразу ведемо на
+   * route-owned `workout/<id>`, де воно лишається відкритим для заповнення.
+   */
+  const submitPastWorkout = useCallback(
+    ({ startedAt, endedAt }: { startedAt: string; endedAt: string }) => {
+      const workout = createWorkoutWithTimes({ startedAt, endedAt });
+      trackFizrukWorkoutStarted(workout.id, "past");
+      setLogPastOpen(false);
+      if (onWorkoutStarted) onWorkoutStarted(workout.id);
+      else setView("log");
+    },
+    [createWorkoutWithTimes, onWorkoutStarted],
+  );
+
+  /**
    * 02-A "Повторити це тренування" — starts a fresh session pre-loaded
    * with the same exercises as `source` (sets reset, nothing carried
    * over except the exercise identity). Routed through
@@ -504,6 +532,9 @@ export function useWorkoutsOrchestrator(
     handlePullRefresh,
     journalQuery,
     handleQuickStart,
+    logPastOpen,
+    setLogPastOpen,
+    submitPastWorkout,
     handleDeleteExerciseConfirm,
     handleRiskyTemplateConfirm,
     summarizeWorkoutForFinish,
