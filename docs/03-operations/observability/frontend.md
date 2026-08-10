@@ -1,6 +1,6 @@
 # Frontend-observability — web і mobile
 
-> **Last touched:** 2026-07-20 by @dimastahov16012003. **Next review:** 2026-10-18.
+> **Last touched:** 2026-08-10 by @claude. **Next review:** 2026-11-08.
 > **Status:** Active
 
 Observability-стек для web- і mobile-клієнтів Sergeant: error tracking,
@@ -181,10 +181,26 @@ Init-конфіг (`posthog.init`):
   виклики, без зайвих кліків/переходів у шумі.
 - `person_profiles: "identified_only"` — анонімні відвідувачі не створюють
   person у PostHog (залишає free-tier event budget для реальних юзерів).
-- `sanitize_properties` — фільтрує `$cookies` з payload.
+- `capture_exceptions` — **єдиний увімкнений автокаптур** попри
+  `autocapture: false` вище: `capture_unhandled_errors` і
+  `capture_unhandled_rejections`. Краші не можна зібрати явними викликами —
+  `window.onerror` / `unhandledrejection` спрацьовують саме там, де вже нема
+  кому виконати `trackEvent`. Прапорець виставлений **явно**, бо без нього
+  значення береться з remote config (тумблер у налаштуваннях проєкту
+  PostHog), і поки той вимкнений — жодної `$exception` події не надходить.
+  `capture_console_errors` лишається на дефолтному `false`: шумно і дублює
+  Sentry.
+- `before_send` — PII-скраб, див. `applyPostHogBeforeSend` нижче.
 
 Super-properties, що додаються автоматично: `platform` (`web`/`ios`/`android`)
 і `is_capacitor` (boolean) — теж через `@sergeant/shared`.
+
+**React-помилки автокаптур не бачить.** React ловить помилку рендеру сам і
+віддає її в `componentDidCatch`, тож до `window.onerror` вона не доходить.
+`ErrorBoundary` (`apps/web/src/core/ErrorBoundary.tsx`) форвардить її явно
+через `capturePostHogException(error, { componentStack, requestId })` —
+паралельно з тим самим форвардом у Sentry. Без цього форварду падіння UI —
+найцінніший клас крашів — було б видиме тільки в Sentry.
 
 ### Перегляди сторінок
 
@@ -346,8 +362,24 @@ VITE_POSTHOG_HOST=https://eu.i.posthog.com
 
 Payload для `trackEvent` уже має бути без PII (див. `ANALYTICS_EVENTS`
 JSDoc). PostHog-distinctId — `user.id` (UUID Better Auth), ніколи не email
-і не bearer-токен. `sanitize_properties` додатково страхує від `$cookies`,
-якщо autocapture у майбутньому увімкнуть.
+і не bearer-токен.
+
+`applyPostHogBeforeSend` (`posthog.ts`) — браузерний аналог
+`applyWebBeforeSend` із `sentry.ts`, підключений через `before_send`:
+
+- викидає `$cookies`;
+- редактить секрети в query-параметрах `$current_url` / `$referrer` /
+  `$pathname` (`redactSensitiveQueryParams`) — magic-link і OAuth-колбеки
+  (`?token=`, `?code=`) є найчастішою поверхнею витоку;
+- скрабить PII-патерни в `$exception_message` / `$exception_type` і в
+  кожному записі `$exception_list` — включно з `value` та іменами файлів у
+  стек-фреймах (`scrubPIIString`). Це машинні діагностичні рядки, тож
+  збіг патерну майже завжди означає реальний витік.
+
+> Раніше тут стояв `sanitize_properties`. posthog-js вважає його
+> deprecated і, поки хук виставлений, логує `console.error` на **кожній**
+> події — тобто прод постійно шумів деприкейшн-повідомленням. `before_send`
+> — санкціонована заміна, і саме вона покриває поля винятків.
 
 ### Release annotations (GitHub Actions → PostHog API)
 
