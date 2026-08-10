@@ -1,5 +1,6 @@
 import { cn } from "@shared/lib/ui/cn";
 import { Tooltip } from "@shared/components/ui/Tooltip";
+import { isVoiceInputEnabled } from "@shared/components/ui/voice/resolveVoiceProvider";
 import { stopSpeaking, unlockTTS } from "../lib/hubChatSpeech";
 import { useSpeech } from "../hooks/useSpeech";
 import {
@@ -70,12 +71,20 @@ export function ChatInput({
   const {
     listening,
     toggle: rawToggleMic,
-    supported: speechSupported,
+    supported: rawSpeechSupported,
   } = useSpeech((text) => {
     if (text.trim()) {
       sendRef.current?.(text.trim(), true);
     }
   });
+
+  // Той самий kill-switch, що ховає `VoiceMicButton` у чотирьох модулях
+  // (`voice/resolveVoiceProvider.ts#isVoiceInputEnabled`). Чат — ДРУГА,
+  // незалежна голосова поверхня: він не використовує `VoiceMicButton`, а
+  // тримає власний `useSpeech` + власну кнопку нижче. Без цього рядка
+  // «прибрали голос із продукту» було б неправдою рівно в одному місці —
+  // і саме в тому, де мікрофон бачить найбільше людей.
+  const speechSupported = rawSpeechSupported && isVoiceInputEnabled();
 
   const toggleMic = useCallback(() => {
     unlockTTS();

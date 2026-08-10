@@ -4,7 +4,7 @@
  * Status: Active
  * Unit tests for ChatInput — send button, keyboard shortcut, mic toggle, speak-stop.
  */
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { useRef, type Dispatch, type SetStateAction } from "react";
 import { ChatInput } from "./ChatInput";
@@ -81,11 +81,20 @@ function TestWrapper({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Голосовий ввід за замовчуванням ВИМКНЕНИЙ (kill-switch 2026-08-10 —
+  // `shared/components/ui/voice/resolveVoiceProvider.ts`). Тести мікрофона
+  // нижче перевіряють поведінку УВІМКНЕНОЇ фічі, тож піднімаємо прапорець;
+  // сам kill-switch має власний тест.
+  vi.stubEnv("VITE_ENABLE_VOICE_INPUT", "1");
   vi.mocked(useSpeech).mockReturnValue({
     listening: false,
     toggle: vi.fn(),
     supported: false,
   });
+});
+
+afterEach(() => {
+  vi.unstubAllEnvs();
 });
 
 describe("ChatInput", () => {
@@ -182,6 +191,19 @@ describe("ChatInput", () => {
     expect(
       screen.getByRole("button", { name: "Голосовий ввід" }),
     ).toBeInTheDocument();
+  });
+
+  it("hides the mic button when the voice kill-switch is off, even if speech is supported", () => {
+    // Чат — друга, незалежна голосова поверхня (власний `useSpeech`, не
+    // `VoiceMicButton`), тож kill-switch мусить накривати і її.
+    vi.stubEnv("VITE_ENABLE_VOICE_INPUT", "");
+    vi.mocked(useSpeech).mockReturnValue({
+      listening: false,
+      toggle: vi.fn(),
+      supported: true,
+    });
+    render(<TestWrapper speaking={false} />);
+    expect(screen.queryByRole("button", { name: "Голосовий ввід" })).toBeNull();
   });
 
   it("input is disabled when offline", () => {
