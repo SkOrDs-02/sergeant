@@ -24,7 +24,7 @@ import {
   VISIBLE_SETTINGS_SECTIONS,
   settingsSectionTitle,
 } from "../hub/settingsSectionsCatalog";
-import { pickRelease } from "../whatsNew/releases";
+import { RELEASES } from "../whatsNew/releases";
 import { SETTINGS_INDEX } from "../hub/search/searchSettings";
 
 describe("beta surface gates (default: hidden)", () => {
@@ -62,12 +62,22 @@ describe("beta surface gates (default: hidden)", () => {
     expect(isHiddenBetaHref("/")).toBe(false);
     expect(isHiddenBetaHref("https://example.com")).toBe(false);
 
-    // Not hypothetical: the release the modal actually shows still carries a
-    // «Подивитись тарифи» → `/pricing` CTA, so without this the What's New
-    // modal would offer every user a button straight into a 404.
-    const release = pickRelease(null);
-    expect(release?.cta?.href).toBe("/pricing");
-    expect(isHiddenBetaHref(release?.cta?.href ?? "")).toBe(true);
+    // Not hypothetical: shipped releases still carry a «Подивитись тарифи» →
+    // `/pricing` CTA, so without this the What's New modal would offer users a
+    // button straight into a 404. Assert against the whole feed rather than
+    // `pickRelease(null)` — the newest entry is incidental content and rotates
+    // with every release, while the guard's job does not.
+    const ctaHrefs = RELEASES.map((r) => r.cta?.href).filter(
+      (href): href is string => href !== undefined,
+    );
+    // Vacuity guard: if the feed ever loses every CTA, the loop below passes
+    // for the wrong reason and this test stops proving anything.
+    expect(ctaHrefs).toContain("/pricing");
+    for (const href of ctaHrefs) {
+      const shouldBeHidden =
+        href.startsWith("/pricing") || href.startsWith("/legal/");
+      expect(isHiddenBetaHref(href), href).toBe(shouldBeHidden);
+    }
   });
 });
 
