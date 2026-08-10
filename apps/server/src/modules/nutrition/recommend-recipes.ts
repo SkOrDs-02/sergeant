@@ -7,7 +7,10 @@ import { parseBody } from "../../http/validate.js";
 import { RecommendRecipesSchema } from "../../http/schemas.js";
 import { makeAiProviderError } from "../../obs/errors.js";
 import { getLLMProvider, invokeLLM } from "../../lib/llm/provider.js";
-import { pantryPromptSection } from "../../lib/prompt-builders.js";
+import {
+  pantryPromptSection,
+  resolvePantryMode,
+} from "../../lib/prompt-builders.js";
 import { normalizeRecipes } from "../../lib/nutritionResponse.js";
 import { NUTRITION_AI_TIMEOUTS_MS } from "./timeouts.js";
 
@@ -86,7 +89,12 @@ export function buildRecommendRecipesPrompt(input: RecommendRecipesInput): {
   const timeMinutes = Number(prefs.timeMinutes || 25);
   const exclude = String(prefs.exclude || "");
   const mealType = String(prefs.mealType || "any");
-  const pantryMode: PantryMode = prefs.pantryMode ?? "prefer";
+  // Один режим на весь запит — і в секцію комори, і в system-промпт.
+  const pantryMode: PantryMode = resolvePantryMode(
+    pantryIn,
+    "recipes",
+    prefs.pantryMode,
+  );
   const locale = String(prefs.locale || "uk-UA");
 
   const pantrySec = pantryPromptSection({

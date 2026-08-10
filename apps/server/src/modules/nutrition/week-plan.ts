@@ -7,7 +7,10 @@ import { parseBody } from "../../http/validate.js";
 import { WeekPlanSchema } from "../../http/schemas.js";
 import { makeAiProviderError } from "../../obs/errors.js";
 import { getLLMProvider, invokeLLM } from "../../lib/llm/provider.js";
-import { pantryPromptSection } from "../../lib/prompt-builders.js";
+import {
+  pantryPromptSection,
+  resolvePantryMode,
+} from "../../lib/prompt-builders.js";
 import { NUTRITION_AI_TIMEOUTS_MS } from "./timeouts.js";
 
 import { ADVICE_BOUNDARY_RULE } from "../../lib/adviceBoundary.js";
@@ -104,7 +107,8 @@ export function buildWeekPlanPrompt(input: WeekPlanInput): {
   const prefs = preferences || {};
   const goal = String(prefs.goal || "balanced");
   const loc = String(locale || "uk-UA");
-  const mode: PantryMode = pantryMode ?? "prefer";
+  // Один режим на весь запит — і в секцію комори, і в system-промпт.
+  const mode: PantryMode = resolvePantryMode(pantryIn, "weekPlan", pantryMode);
 
   const pantrySec = pantryPromptSection({
     pantry: pantryIn,

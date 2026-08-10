@@ -298,6 +298,34 @@ describe("nutrition day-plan handler", () => {
     expect(String(opts["system"])).toContain("Використовуй ТІЛЬКИ продукти");
   });
 
+  it.each([
+    ["порожній масив", [] as unknown[]],
+    ["поле відсутнє", undefined],
+    ["позиції без назви", [{}, { name: "" }, ""] as unknown[]],
+  ])(
+    "pantryMode=only з порожньою коморою (%s) не суперечить сам собі",
+    async (_label, pantry) => {
+      // Обмеження «ТІЛЬКИ зі списку» над відсутнім списком не обмежує нічого,
+      // зате ламає відповідь: модель отримує вимогу, яку неможливо виконати.
+      // Перевіряємо ОБИДВІ половини промпту — user і system: спершу правку
+      // зробили лише в секції комори, і суперечність просто переїхала в
+      // system, лишившись невидимою для тесту, що дивився на одну половину.
+      invokeLLM.mockResolvedValueOnce({ ok: true, text: '{"meals":[]}' });
+
+      await handler(
+        makeReq({ pantry, pantryMode: "only", locale: "uk-UA" }),
+        makeRes(),
+      );
+
+      const opts = asRecord(invokeLLM.mock.calls[0]?.[1]);
+      const messages = opts["messages"] as Array<{ content: string }>;
+      expect(messages[0]?.content).not.toContain("ТІЛЬКИ ці продукти");
+      expect(String(opts["system"])).not.toContain(
+        "Використовуй ТІЛЬКИ продукти",
+      );
+    },
+  );
+
   it("без pantryMode поведінка лишається історичною (prefer)", async () => {
     invokeLLM.mockResolvedValueOnce({ ok: true, text: '{"meals":[]}' });
 

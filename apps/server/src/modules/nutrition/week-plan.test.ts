@@ -255,6 +255,47 @@ describe("week-plan handler", () => {
     });
   });
 
+  it("pantryMode=only обмежує план наявним", async () => {
+    invokeLLM.mockResolvedValueOnce({ ok: true, text: '{"days":[]}' });
+
+    await handler(
+      makeReq({
+        pantry: [{ name: "кабачок" }],
+        pantryMode: "only",
+        locale: "uk-UA",
+      }),
+      makeRes(),
+    );
+
+    const opts = asRecord(invokeLLM.mock.calls[0]?.[1]);
+    const messages = opts["messages"] as Array<{ content: string }>;
+    expect(messages[0]?.content).toContain("кабачок");
+    expect(String(opts["system"])).toContain("ТІЛЬКИ продукти зі списку");
+  });
+
+  it.each([
+    ["порожній масив", [] as unknown[]],
+    ["поле відсутнє", undefined],
+    ["позиції без назви", [{}, { name: "" }] as unknown[]],
+  ])(
+    "pantryMode=only з порожньою коморою (%s) не суперечить сам собі",
+    async (_label, pantry) => {
+      // Пін на обидві половини промпту: у week-plan правило «ТІЛЬКИ зі списку»
+      // живе в system, тож правка самої лише секції комори його б не зняла.
+      invokeLLM.mockResolvedValueOnce({ ok: true, text: '{"days":[]}' });
+
+      await handler(
+        makeReq({ pantry, pantryMode: "only", locale: "uk-UA" }),
+        makeRes(),
+      );
+
+      const opts = asRecord(invokeLLM.mock.calls[0]?.[1]);
+      const messages = opts["messages"] as Array<{ content: string }>;
+      expect(messages[0]?.content).not.toContain("ТІЛЬКИ ці продукти");
+      expect(String(opts["system"])).not.toContain("ТІЛЬКИ продукти зі списку");
+    },
+  );
+
   it("passes userId to the provider when session user is present", async () => {
     invokeLLM.mockResolvedValueOnce({
       ok: true,

@@ -7,7 +7,10 @@ import { parseBody } from "../../http/validate.js";
 import { DayPlanSchema } from "../../http/schemas.js";
 import { makeAiProviderError } from "../../obs/errors.js";
 import { getLLMProvider, invokeLLM } from "../../lib/llm/provider.js";
-import { pantryPromptSection } from "../../lib/prompt-builders.js";
+import {
+  pantryPromptSection,
+  resolvePantryMode,
+} from "../../lib/prompt-builders.js";
 import { NUTRITION_AI_TIMEOUTS_MS } from "./timeouts.js";
 
 import { ADVICE_BOUNDARY_RULE } from "../../lib/adviceBoundary.js";
@@ -162,7 +165,10 @@ export function buildDayPlanPrompt(input: DayPlanInput): {
     locale,
   } = input;
   const loc = String(locale || "uk-UA");
-  const mode: PantryMode = pantryMode ?? "prefer";
+  // Один режим на весь запит — і в секцію комори, і в system-промпт. `only`
+  // без жодної відрендереної позиції деградує до `prefer`: обмеження «тільки
+  // зі списку» над порожнім списком суперечить саме собі.
+  const mode: PantryMode = resolvePantryMode(pantryIn, "dayPlan", pantryMode);
 
   const tgt = targets || {};
   const kcal = tgt.kcal != null ? Number(tgt.kcal) : null;
