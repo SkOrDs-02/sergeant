@@ -236,8 +236,9 @@ describe("connectHandler", () => {
     await connectHandler(makeReq({ token: "valid_personal_token_12345" }), res);
 
     expect(res.statusCode).toBe(200);
-    // 1 connection upsert + 1 account upsert + 1 jar upsert = 3 DB calls
-    expect(dbQuery).toHaveBeenCalledTimes(3);
+    // 1 connection upsert + 1 account upsert + 1 jar upsert
+    // + 1 реконсиляція заглушок-привидів (міграція 119) = 4 DB calls
+    expect(dbQuery).toHaveBeenCalledTimes(4);
     const jarUpsertCall = dbQuery.mock.calls.find((c) =>
       String(c[0]).includes("INSERT INTO mono_jar"),
     );
@@ -450,6 +451,14 @@ describe("syncStateHandler", () => {
     expect(res.body.webhookActive).toBe(true);
     expect(res.body.lastEventAt).toBe("2026-04-25T12:00:00Z");
     expect(res.body.accountsCount).toBe(3);
+
+    // Лічильник має рахувати рівно те, що віддає `/api/mono/accounts`.
+    // Заглушки під банки (`is_jar`, міграція 119) звідти виключені, тож
+    // без цього ж фільтра «підключено N рахунків» показувало б більше
+    // рахунків, ніж є в списку.
+    const countSql = String(dbQuery.mock.calls[1]![0]);
+    expect(countSql).toContain("FROM mono_account");
+    expect(countSql).toContain("is_jar = FALSE");
   });
 
   it("coerces pg Date objects to ISO strings (TIMESTAMPTZ columns)", async () => {

@@ -30,6 +30,12 @@ export async function upsertJars(
   userId: string,
   jars: readonly MonoClientInfoJar[],
 ): Promise<void> {
+  // Порожній `jars[]` — «Mono не знає про банки взагалі». Реконсиляція
+  // нижче тоді безпредметна, а ця гілка лишається чистим no-op-ом: її
+  // кличе і `refreshJarsFromMono`, який ковтає помилки Mono, тож зайвий
+  // запис у БД на кожен невдалий рефреш був би даремним навантаженням.
+  if (jars.length === 0) return;
+
   for (const jar of jars) {
     await query(
       `INSERT INTO mono_jar
@@ -57,6 +63,34 @@ export async function upsertJars(
       { op: "mono_jar_upsert" },
     );
   }
+
+  // Реконсиляція заглушок-привидів (міграція 119).
+  //
+  // Вебхук створює рядок у `mono_account` для БУДЬ-ЯКОГО невідомого
+  // рахунку, включно з банкою — інакше транзакцію банки нікуди покласти
+  // (FK `mono_transaction` → `mono_account`). Момент, коли ми вперше
+  // дізнаємось, що цей id насправді банка, — саме тут: client-info
+  // приніс `jars[]`. Позначка знімає рядок зі списку карток і з
+  // капіталу, а транзакції на ньому лишаються.
+  //
+  // Чому не досить позначки в самому вебхуку: банку можна створити й
+  // одразу поповнити між двома читаннями client-info, тож заглушка
+  // з'являється РАНІШЕ за відповідний `mono_jar`. Ця гілка добирає такі
+  // випадки на наступному ж синку.
+  //
+  // `is_jar = FALSE` у WHERE робить UPDATE no-op-ом у сталому стані —
+  // жодного запису, коли реконсилювати нічого.
+  await query(
+    `UPDATE mono_account a
+        SET is_jar = TRUE
+       FROM mono_jar j
+      WHERE a.user_id = $1
+        AND a.is_jar = FALSE
+        AND j.user_id = a.user_id
+        AND j.mono_jar_id = a.mono_account_id`,
+    [userId],
+    { op: "mono_account_jar_reconcile" },
+  );
 }
 
 /**

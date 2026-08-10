@@ -628,6 +628,20 @@ describe("webhookHandler", () => {
     const stubCall = client.query.mock.calls[rollbackIdx + 1]!;
     expect(stubCall[1]!).toEqual(["user_1", "acc_uah", 980, 1500000]);
 
+    // Заглушка визначає `is_jar` тим самим INSERT-ом, без окремого
+    // round-trip-у. Без цього банка осідала б у таблиці КАРТОК: Mono
+    // шле statement-items і по банках теж, а `mono_transaction` вимагає
+    // рядок у `mono_account` через FK. Наслідок був подвійний —
+    // безіменна «Картка» у списку і баланс банки в капіталі двічі
+    // (як картка + через `mono_jar`). Знахідка founder-а 2026-08-10.
+    const stubSql = String(stubCall[0]);
+    expect(stubSql).toContain("is_jar");
+    expect(stubSql).toContain("FROM mono_jar j");
+    expect(stubSql).toMatch(/j\.mono_jar_id = \$2/);
+    // Ідемпотентність збережена: повторна доставка того самого
+    // StatementItem не має перезаписувати рядок.
+    expect(stubSql).toContain("DO NOTHING");
+
     expect(client.release).toHaveBeenCalledTimes(1);
   });
 

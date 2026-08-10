@@ -352,6 +352,16 @@ export async function webhookHandler(
       // + balance) і ретраїмо upsert один раз. Решта полів (type, masked_pan,
       // iban, ...) лишаються NULL — наступний `/connect` reconcile або
       // окремий backfill підтягне їх з `client-info`.
+      //
+      // `is_jar` (міграція 119) — НЕ косметика. Банка теж має рахунковий
+      // id і теж шле statement-items, тож без цієї позначки заглушка під
+      // банку осідала в таблиці КАРТОК: `/api/mono/accounts` віддавав її
+      // безіменною карткою, а її баланс потрапляв у капітал двічі — раз
+      // як картка, раз через `mono_jar`. `EXISTS` рахується всередині
+      // того самого INSERT, тож зайвого round-trip немає. Якщо банка ще
+      // не доїхала в `mono_jar` (створена й поповнена між двома
+      // читаннями client-info) — прапорець лишиться FALSE, і рядок
+      // добере реконсиляція в `upsertJars` на наступному синку.
       const code =
         err && typeof err === "object" && "code" in err
           ? (err as { code?: unknown }).code
@@ -367,8 +377,12 @@ export async function webhookHandler(
       });
       await client.query(
         `INSERT INTO mono_account
-           (user_id, mono_account_id, currency_code, balance, last_seen_at)
-         VALUES ($1, $2, $3, $4, NOW())
+           (user_id, mono_account_id, currency_code, balance, is_jar,
+            last_seen_at)
+         SELECT $1, $2, $3, $4,
+                EXISTS (SELECT 1 FROM mono_jar j
+                         WHERE j.user_id = $1 AND j.mono_jar_id = $2),
+                NOW()
          ON CONFLICT (user_id, mono_account_id) DO NOTHING`,
         [userId, monoAccountId, item.currencyCode, item.balance ?? null],
       );
