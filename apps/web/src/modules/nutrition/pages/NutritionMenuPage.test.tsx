@@ -152,6 +152,7 @@ function renderMenuPage(overrides: RenderMenuPageOptions = {}) {
             dayPlan={dayPlan}
             dayPlanBusy={overrides.dayPlanBusy ?? false}
             dayPlanQuery={dayPlanQuery}
+            dayPlanSavedAt={null}
             dayPlanLoadingSkeleton={
               <div data-testid="skeleton">Завантаження…</div>
             }

@@ -149,6 +149,8 @@ export interface UseNutritionRemoteActionsParams {
   recipeCacheKey: string;
   weekPlan: UiNutritionWeekPlan | null;
   setWeekPlan: (value: UiNutritionWeekPlan | null) => void;
+  /** Потрібен для відкату: структура і сирий текст мають вертатись разом. */
+  weekPlanRaw: string;
   setWeekPlanRaw: (value: string) => void;
   setWeekPlanBusy: AnySetter<boolean>;
   setDayPlan: Dispatch<SetStateAction<UiNutritionDayPlan | null>>;
@@ -211,6 +213,7 @@ export function useNutritionRemoteActions({
   // week plan
   weekPlan,
   setWeekPlan,
+  weekPlanRaw,
   setWeekPlanRaw,
   setWeekPlanBusy,
   // day plan / day hint
@@ -295,8 +298,13 @@ export function useNutritionRemoteActions({
     onMutate: () => {
       setWeekPlanBusy(true);
       setErr("");
-      // Capture snapshot for rollback on error (weekPlanRaw not passed as param)
-      return { prevWeekPlan: weekPlan };
+      // Знімок для відкату. `plan` і `raw` — два представлення ОДНІЄЇ
+      // відповіді LLM, тож і зберігаються, і вертаються разом. Раніше тут
+      // лежав лише `plan`, і невдала генерація лишала структуру старого
+      // покоління поряд із сирим текстом нового. Доки стан жив у памʼяті,
+      // розбіжність помирала на розмонтуванні; відколи план пишеться у
+      // сховище — вона переживає перезапуск.
+      return { prevWeekPlan: weekPlan, prevWeekPlanRaw: weekPlanRaw };
     },
     onSuccess: (data) => {
       const plan = (data?.plan ?? null) as
@@ -309,6 +317,7 @@ export function useNutritionRemoteActions({
       // Rollback to previous week plan on failure
       if (ctx) {
         setWeekPlan(ctx.prevWeekPlan);
+        setWeekPlanRaw(ctx.prevWeekPlanRaw);
       }
       setErr(formatNutritionError(err, "Помилка плану"));
     },

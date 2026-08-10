@@ -95,6 +95,7 @@ function makeHarness(overrides: Partial<UseNutritionRemoteActionsParams> = {}) {
     recipeCacheKey: "k",
     weekPlan: { days: [{ day: 1 }] },
     setWeekPlan,
+    weekPlanRaw: "",
     setWeekPlanRaw,
     setWeekPlanBusy,
     setDayPlan,

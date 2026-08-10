@@ -1,6 +1,6 @@
 # Hard rules — enforcement matrix
 
-> **Last validated:** 2026-08-09 by docs:hard-rules-generate. **Next review:** 2026-11-07.
+> **Last validated:** 2026-08-10 by docs:hard-rules-generate. **Next review:** 2026-11-08.
 > **Status:** Active
 
 <!-- AUTO-GENERATED FILE. Do not edit by hand. Source: `docs/04-governance/governance/hard-rules.json`. Regenerate via `pnpm hard-rules:generate`. -->
