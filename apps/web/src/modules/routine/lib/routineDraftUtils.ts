@@ -8,6 +8,7 @@ export {
   REMINDER_PRESETS,
   emptyHabitDraft,
   habitDraftToPatch,
+  matchReminderPreset,
   normalizeReminderTimes,
   routineTodayDate,
 } from "@sergeant/routine-domain";
