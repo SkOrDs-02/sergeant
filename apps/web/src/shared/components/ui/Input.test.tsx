@@ -51,6 +51,40 @@ describe("Input type-aware defaults", () => {
     expect(input.getAttribute("spellcheck")).toBe("true");
   });
 
+  // Tester video 2026-08-10: Chrome's password manager claimed the hub
+  // search box — saved-account dropdown, e-mail autofilled, and refilled
+  // again after every click on the clear "×". `type="search"` now carries
+  // the autofill guard so the manager stops classifying it as a username
+  // field. See `@shared/lib/ui/searchFieldProps`.
+  it("вимикає автозаповнення на type='search'", () => {
+    const { container } = render(<Input type="search" />);
+    const input = container.querySelector("input")!;
+    expect(input.getAttribute("autocomplete")).toBe("off");
+    expect(input.getAttribute("data-1p-ignore")).toBe("");
+    expect(input.getAttribute("data-lpignore")).toBe("true");
+    expect(input.getAttribute("data-bwignore")).toBe("true");
+    expect(input.getAttribute("data-form-type")).toBe("other");
+  });
+
+  it("не чіпає автозаповнення на не-пошукових типах", () => {
+    const { container } = render(<Input type="email" />);
+    const input = container.querySelector("input")!;
+    // Логін-форми навпаки ПОТРЕБУЮТЬ менеджера паролів — гард має бути
+    // вузьким і не текти на решту полів.
+    expect(input.getAttribute("autocomplete")).toBeNull();
+    expect(input.getAttribute("data-lpignore")).toBeNull();
+  });
+
+  it("дає caller-у перекрити autoComplete на type='search'", () => {
+    const { container } = render(
+      <Input type="search" autoComplete="on" name="custom" />,
+    );
+    const input = container.querySelector("input")!;
+    expect(input.getAttribute("autocomplete")).toBe("on");
+    // Гард не має затирати `name`, яким форм-бібліотеки прив'язують поле.
+    expect(input.getAttribute("name")).toBe("custom");
+  });
+
   it("lets caller override inputMode explicitly", () => {
     const { container } = render(<Input type="number" inputMode="numeric" />);
     const input = container.querySelector("input")!;

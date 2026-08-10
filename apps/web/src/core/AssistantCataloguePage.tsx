@@ -8,6 +8,7 @@ import { Card } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
 import { useLocalStorageState } from "@shared/hooks";
 import { cn } from "@shared/lib/ui/cn";
+import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
 import { messages } from "@shared/i18n/uk";
 import { emitHubBus } from "@shared/lib/modules/hubBus";
 import {
@@ -196,6 +197,7 @@ export function AssistantCataloguePage({
           </span>
           <input
             type="search"
+            {...searchFieldProps("capabilities-search")}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Пошук — наприклад, «витрата», «звичка», «1RM»…"

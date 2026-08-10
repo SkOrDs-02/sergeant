@@ -6,6 +6,7 @@ import {
   type TextareaHTMLAttributes,
 } from "react";
 import { cn } from "../../lib/ui/cn";
+import { searchFieldAutofillGuard } from "../../lib/ui/searchFieldProps";
 import type { FormVariant, SmallMediumLarge } from "./types";
 
 /**
@@ -146,6 +147,12 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     spellCheck ?? (type && NON_PROSE_TYPES.has(type) ? false : undefined);
   const resolvedInputMode =
     inputMode ?? (type ? DEFAULT_INPUT_MODE[type] : undefined);
+  // Password-manager guard for search fields (tester report 2026-08-10:
+  // Chrome offered saved credentials in the settings-search box and refilled
+  // the e-mail after every clear). Spread BEFORE `...props` below so an
+  // explicit `autoComplete` / `name` from the caller still wins — see
+  // `searchFieldProps.ts` for why `autocomplete="off"` alone is not enough.
+  const searchGuard = type === "search" ? searchFieldAutofillGuard : undefined;
 
   return (
     <div className="flex w-full min-w-0 max-w-full flex-col gap-1">
@@ -167,6 +174,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           ref={ref}
           id={id}
           type={type}
+          {...searchGuard}
           spellCheck={resolvedSpellCheck}
           inputMode={resolvedInputMode}
           aria-invalid={error ? true : undefined}

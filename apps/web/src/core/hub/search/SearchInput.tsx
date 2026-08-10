@@ -1,6 +1,7 @@
 import { forwardRef } from "react";
 import { Icon } from "@shared/components/ui/Icon";
 import { messages } from "@shared/i18n/uk";
+import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
 
 export interface SearchInputProps {
   query: string;
@@ -35,6 +36,11 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
           <input
             ref={ref}
             type="search"
+            // Keeps Chrome's password manager off the box — see
+            // `searchFieldProps.ts`. Doubly important here: this input already
+            // owns a combobox listbox, so a browser-drawn credential dropdown
+            // renders on top of our own suggestions.
+            {...searchFieldProps("hub-search")}
             placeholder={messages.nav.searchPlaceholder}
             value={query}
             onChange={(e) => onQueryChange(e.target.value)}

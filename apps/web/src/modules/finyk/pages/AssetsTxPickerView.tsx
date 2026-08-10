@@ -27,6 +27,7 @@ import {
 import type { MonoAccount } from "@sergeant/finyk-domain/lib/accounts";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain/constants";
 import { Input } from "@shared/components/ui/Input";
+import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
 import { Button } from "@shared/components/ui/Button";
 import { Skeleton } from "@shared/components/ui/Skeleton";
 import { messages } from "@shared/i18n/uk";
@@ -181,6 +182,7 @@ export function AssetsTxPickerView({
       <Input
         type="search"
         aria-label="Пошук транзакцій"
+        {...searchFieldProps("transactions-search")}
         placeholder="Пошук за описом або сумою"
         value={query}
         onChange={(event) => setQuery(event.target.value)}

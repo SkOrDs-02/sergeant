@@ -479,6 +479,28 @@ describe("HubSettingsPage", () => {
     expect(screen.getByRole("button", { name: /Дашборд/ })).toBeInTheDocument();
   });
 
+  // Тестерське відео 2026-08-10: Chrome показував над цим полем дропдаун
+  // менеджера паролів зі збереженим акаунтом, автозаповнював туди e-mail і
+  // повертав його назад після кожного кліку по хрестику — поле неможливо
+  // було очистити. Причина: поле не мало ні `name`, ні `autocomplete`, а
+  // весь його текстовий контекст — кирилиця, під яку евристики Chromium не
+  // матчаться, тож браузер забирав його як username-поле форми входу.
+  // Розбір шарів фіксу — `@shared/lib/ui/searchFieldProps`.
+  it("не дає менеджеру паролів захопити поле пошуку налаштувань", () => {
+    renderWithBrowserToast(<HubSettingsPage />);
+    const input = screen.getByPlaceholderText("Пошук налаштувань…");
+
+    // Шар 1 — прямий сигнал найвищого пріоритету.
+    expect(input).toHaveAttribute("autocomplete", "off");
+    // Шар 2 — `name`, щоб евристика читала поле як пошукове, а не username.
+    expect(input).toHaveAttribute("name", "settings-search");
+    // Шар 3 — сторонні менеджери паролів, які `autocomplete` не читають.
+    expect(input).toHaveAttribute("data-1p-ignore");
+    expect(input).toHaveAttribute("data-lpignore", "true");
+    expect(input).toHaveAttribute("data-bwignore", "true");
+    expect(input).toHaveAttribute("data-form-type", "other");
+  });
+
   // Audit finding #12 (2026-08-08): the clear <Button> used to live INSIDE
   // the <label> wrapping the search input. The accname "embedded control"
   // rule folds a descendant control's own accessible name into the

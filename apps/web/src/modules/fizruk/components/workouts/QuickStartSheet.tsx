@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Input } from "@shared/components/ui/Input";
+import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { Icon } from "@shared/components/ui/Icon";
@@ -277,6 +278,7 @@ export function QuickStartSheet({
          */}
         <div className="sticky top-0 z-10 -mx-5 px-5 pt-1 pb-2 bg-panel">
           <Input
+            {...searchFieldProps("quick-start-exercise-search")}
             placeholder="Пошук вправи…"
             value={q}
             onChange={(e) => setQ(e.target.value)}

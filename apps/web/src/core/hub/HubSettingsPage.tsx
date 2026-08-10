@@ -13,6 +13,7 @@ import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { Tabs } from "@shared/components/ui/Tabs";
 import { motionScrollBehavior } from "@shared/lib/ui/motion";
+import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
 import { useToast } from "@shared/hooks/useToast";
 import { billingKeys } from "@shared/lib/api/queryKeys";
 import { announceSettingsHashChange } from "@shared/lib/modules/hubNav";
@@ -519,6 +520,15 @@ export function HubSettingsPage({ scrollContainer }: HubSettingsPageProps) {
             </span>
             <input
               type="search"
+              // Chrome's password manager used to claim this box: it showed
+              // the saved-account dropdown, autofilled the e-mail and refilled
+              // it after every click on the clear "×", so the field could not
+              // be emptied at all (tester video 2026-08-10). The field carried
+              // no `name`/`autocomplete`, and its only text context is
+              // Cyrillic, which Chromium's field heuristics cannot read — so
+              // it stayed unclassified and got picked up as a username field.
+              // `searchFieldProps` supplies both layers Chromium looks at.
+              {...searchFieldProps("settings-search")}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Пошук налаштувань…"
