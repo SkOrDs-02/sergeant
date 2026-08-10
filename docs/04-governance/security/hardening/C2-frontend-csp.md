@@ -1,6 +1,6 @@
 # C2 — Frontend SPA не має Content-Security-Policy
 
-> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
+> **Last touched:** 2026-08-10 by @claude. **Next review:** 2026-11-08.
 > **Status:** In progress — Phase 1 (Report-Only canary + sink + meta fallback) shipped 2026-05-04; Phase 2 side-by-side enforce-mode rolled out (Report-Only retained for regression tracking); awaiting 24h soak then 7-day clean window before removing Report-Only. **Update 2026-06-01:** the 7-day clean window has elapsed by calendar (enforce rolled out 2026-05-24); the only remaining step is to confirm zero `/api/csp-report` violations over that window, then drop the Report-Only header in a follow-up — operational, not code.
 
 | Field              | Value                                                                                             |
@@ -166,10 +166,16 @@ impact than script XSS, and the W3C explicitly allows the split.
 - **Stripe** — only used via hosted Checkout/Billing-portal redirect
   (`window.location.href = session.url`); `js.stripe.com` is **not**
   loaded. No `frame-src`/`script-src` allowlist needed.
-- **PostHog** — `autocapture: false`, no `session_recording` flag set
-  (default off as of `posthog-js@1.372`). Only the script bundle and
-  `connect-src https://*.posthog.com` are needed. **No `worker-src`
-  blob: dependency** for analytics.
+- **PostHog** — `autocapture: false`, але з 2026-08-10 увімкнено три
+  цілеспрямовані збирачі: `capture_exceptions` (error tracking),
+  `enable_heatmaps` (координати кліків) і `session_recording` (replay з
+  `maskAllInputs: true` + `maskTextSelector: "*"`). Потрібні: script-бандл,
+  `connect-src https://*.posthog.com` — і, **на відміну від попередньої
+  редакції цього рядка, `worker-src blob:`**: rrweb стискає запис сесії у
+  web worker. Директива вже присутня в обох політиках
+  (`apps/web/vercel.json`), тож зміна CSP не знадобилась — але залежність
+  тепер реальна, і прибирати `worker-src blob:` не можна, не вимкнувши
+  спершу replay.
 - **Sentry replay** (`replayIntegration` in
   `apps/web/src/core/observability/sentry.ts:313`) — requires
   `worker-src blob:` (already present) and `connect-src` to

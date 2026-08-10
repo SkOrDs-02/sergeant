@@ -314,6 +314,21 @@ describe("capture_exceptions config", () => {
     });
   });
 
+  it("session replay пише з маскуванням і полів вводу, і всього тексту", async () => {
+    // Пін-тест на приватність: Sergeant тримає гроші, харчові щоденники й
+    // травми. Послаблення будь-якого з двох маскувань — рішення власника
+    // плюс оновлення політики приватності, а не тихий рефактор.
+    const mod = await import("./posthog");
+    await mod.initPostHog();
+
+    expect(posthogInit.mock.calls[0]![1]).toMatchObject({
+      session_recording: {
+        maskAllInputs: true,
+        maskTextSelector: "*",
+      },
+    });
+  });
+
   it("не використовує deprecated sanitize_properties", async () => {
     // posthog-js логує console.error на КОЖНІЙ події, поки цей хук
     // виставлений. Скраб живе у before_send.
