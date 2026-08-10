@@ -62,7 +62,33 @@ vi.mock("@sergeant/finyk-domain", () => ({
 }));
 
 // ── Fizruk: one in-week completed workout with volume + recovery ─────────────
-const recentIso = new Date(Date.now() - 2 * 3_600_000).toISOString(); // 2h ago
+//
+// AI-CONTEXT: НЕ фіксовані «2 години тому». `aggregateCurrentSnapshot`
+// рахує тижневе вікно від ПОНЕДІЛКА 00:00 за локальним часом хоста
+// (`useCoachInsight.ts` — `mondayOffset` / `weekStart`) і фільтрує
+// `startedAt >= weekStart`. CI-раннер живе в UTC, тож у вікні
+// «понеділок 00:00–02:00» позначка «2 години тому» падає на неділю —
+// тобто в ПОПЕРЕДНІЙ тиждень: `workoutsCount` стає 0, і тест червонів
+// рівно дві години на тиждень. Спіймано на прогоні 2026-08-10 01:35 UTC
+// (понеділок), падало `expect(workoutsCount).toBe(1)` → отримано 0.
+//
+// Затискаємо зсув знизу початком тижня. Обидва інваріанти тесту тримаються
+// за побудовою, без залежності від дня прогону:
+//   * `max(now − 2h, weekStart) >= weekStart` — тренування завжди в
+//     поточному тижні, тож `workoutsCount === 1`;
+//   * пройшло щонайбільше 2 год < 20 — тож `recoveryLabel === "Відновлення"`.
+// Верхньої межі не треба: `weekStart <= now` завжди, тож позначка ніколи
+// не опиняється в майбутньому.
+function inWeekRecentIso(): string {
+  const now = new Date();
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+  weekStart.setHours(0, 0, 0, 0);
+  return new Date(
+    Math.max(now.getTime() - 2 * 3_600_000, weekStart.getTime()),
+  ).toISOString();
+}
+const recentIso = inWeekRecentIso();
 vi.mock("@fizruk/lib/sqliteReader", () => ({
   getCachedFizrukSqliteState: () => ({
     refreshedAt: new Date().toISOString(),
