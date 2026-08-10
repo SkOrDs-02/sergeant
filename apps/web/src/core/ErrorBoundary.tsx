@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { captureException } from "./observability/sentry";
+import { capturePostHogException } from "./observability/posthog";
 import { isChunkLoadError, reloadOnceForChunkError } from "./lib/chunkReload";
 import {
   extractRequestId,
@@ -78,6 +79,19 @@ export class ErrorBoundary extends Component<
       });
     } catch {
       /* noop — error boundary не має ламатись через телеметрію */
+    }
+    // Той самий краш і в PostHog error tracking. Автокаптур
+    // (`capture_exceptions`) сюди не дістає: React проковтує помилку
+    // рендеру до того, як вона доходить до `window.onerror`, тож без
+    // цього форварду саме падіння UI — найцінніший клас крашів —
+    // лишалося б видимим тільки в Sentry.
+    try {
+      capturePostHogException(error, {
+        componentStack: info?.componentStack ?? null,
+        ...(requestId ? { requestId } : {}),
+      });
+    } catch {
+      /* noop — телеметрія не має ламати error boundary */
     }
   }
 

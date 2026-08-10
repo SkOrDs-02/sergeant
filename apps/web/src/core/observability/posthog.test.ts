@@ -18,6 +18,7 @@ const posthogCapture = vi.fn();
 const posthogIdentify = vi.fn();
 const posthogReset = vi.fn();
 const posthogRegister = vi.fn();
+const posthogCaptureException = vi.fn();
 
 vi.mock("posthog-js", () => ({
   default: {
@@ -26,6 +27,7 @@ vi.mock("posthog-js", () => ({
     identify: posthogIdentify,
     reset: posthogReset,
     register: posthogRegister,
+    captureException: posthogCaptureException,
   },
 }));
 
@@ -51,6 +53,7 @@ beforeEach(() => {
   posthogIdentify.mockReset();
   posthogReset.mockReset();
   posthogRegister.mockReset();
+  posthogCaptureException.mockReset();
   isCapacitorMock.mockReset().mockReturnValue(false);
   getPlatformMock.mockReset().mockReturnValue("web");
   vi.stubEnv("VITE_POSTHOG_KEY", "phc_test_key");
@@ -281,5 +284,122 @@ describe("error resilience", () => {
     // не викликається (queue порожня і має залишатися такою).
     await mod.initPostHog();
     expect(posthogCapture).not.toHaveBeenCalled();
+  });
+});
+
+describe("capture_exceptions config", () => {
+  it("вмикає автокаптур unhandled errors і promise rejections явно", async () => {
+    // Без явного значення прапорець резолвиться з remote config, тобто
+    // збір крашів мовчки залежав би від тумблера в UI проєкту.
+    const mod = await import("./posthog");
+    await mod.initPostHog();
+
+    expect(posthogInit.mock.calls[0]![1]).toMatchObject({
+      capture_exceptions: {
+        capture_unhandled_errors: true,
+        capture_unhandled_rejections: true,
+      },
+    });
+  });
+
+  it("не використовує deprecated sanitize_properties", async () => {
+    // posthog-js логує console.error на КОЖНІЙ події, поки цей хук
+    // виставлений. Скраб живе у before_send.
+    const mod = await import("./posthog");
+    await mod.initPostHog();
+
+    const opts = posthogInit.mock.calls[0]![1] as Record<string, unknown>;
+    expect(opts["sanitize_properties"]).toBeUndefined();
+    expect(typeof opts["before_send"]).toBe("function");
+  });
+});
+
+describe("applyPostHogBeforeSend", () => {
+  it("викидає $cookies і редактить секрети в URL-полях", async () => {
+    const mod = await import("./posthog");
+    const result = mod.applyPostHogBeforeSend({
+      properties: {
+        $cookies: "session=abc",
+        $current_url: "https://app.test/auth/callback?code=secret123&tab=hub",
+        $referrer: "https://app.test/login?token=abcdef",
+        keep: "me",
+      },
+    });
+
+    const props = result!.properties!;
+    expect(props["$cookies"]).toBeUndefined();
+    expect(props["$current_url"]).not.toContain("secret123");
+    expect(props["$current_url"]).toContain("tab=hub");
+    expect(props["$referrer"]).not.toContain("abcdef");
+    expect(props["keep"]).toBe("me");
+  });
+
+  it("скрабить PII у повідомленні винятку та у стеку", async () => {
+    const mod = await import("./posthog");
+    const result = mod.applyPostHogBeforeSend({
+      properties: {
+        $exception_message: "failed for user@example.com",
+        $exception_list: [
+          {
+            type: "Error",
+            value: "token leaked for user@example.com",
+            stacktrace: {
+              frames: [
+                { filename: "https://app.test/a.js?access_token=zzz" },
+                { filename: "https://app.test/b.js" },
+              ],
+            },
+          },
+        ],
+      },
+    });
+
+    const props = result!.properties!;
+    expect(props["$exception_message"]).not.toContain("user@example.com");
+    const list = props["$exception_list"] as Array<Record<string, unknown>>;
+    expect(list[0]!["value"]).not.toContain("user@example.com");
+    const frames = (
+      list[0]!["stacktrace"] as { frames: { filename: string }[] }
+    ).frames;
+    expect(frames[0]!.filename).not.toContain("zzz");
+    expect(frames[1]!.filename).toBe("https://app.test/b.js");
+  });
+
+  it("не падає на null і на подіях без properties", async () => {
+    const mod = await import("./posthog");
+    expect(mod.applyPostHogBeforeSend(null)).toBeNull();
+    expect(mod.applyPostHogBeforeSend({})).toEqual({});
+  });
+});
+
+describe("capturePostHogException", () => {
+  it("після init — форвардить у posthog.captureException", async () => {
+    const mod = await import("./posthog");
+    await mod.initPostHog();
+    const err = new Error("boom");
+    mod.capturePostHogException(err, { componentStack: "<App/>" });
+
+    expect(posthogCaptureException).toHaveBeenCalledWith(err, {
+      componentStack: "<App/>",
+    });
+  });
+
+  it("буферизує виняток до завершення init і flush-ить після", async () => {
+    const mod = await import("./posthog");
+    const err = new Error("early boom");
+    mod.capturePostHogException(err);
+    expect(posthogCaptureException).not.toHaveBeenCalled();
+
+    await mod.initPostHog();
+    expect(posthogCaptureException).toHaveBeenCalledWith(err, {});
+  });
+
+  it("без VITE_POSTHOG_KEY — ні виклику, ні буферизації", async () => {
+    vi.stubEnv("VITE_POSTHOG_KEY", "");
+    const mod = await import("./posthog");
+    mod.capturePostHogException(new Error("x"));
+    await mod.initPostHog();
+
+    expect(posthogCaptureException).not.toHaveBeenCalled();
   });
 });

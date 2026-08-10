@@ -2,7 +2,12 @@
  * @status Active
  * @owner @Skords-01
  */
-import { getPlatform, isCapacitor } from "@sergeant/shared";
+import {
+  getPlatform,
+  isCapacitor,
+  redactSensitiveQueryParams,
+  scrubPIIString,
+} from "@sergeant/shared";
 
 /**
  * Lazy PostHog transport for product analytics.
@@ -33,7 +38,105 @@ type QueuedCall =
       userId: string;
       traits?: Record<string, unknown> | undefined;
     }
-  | { kind: "reset" };
+  | { kind: "reset" }
+  | {
+      kind: "exception";
+      error: unknown;
+      properties: Record<string, unknown>;
+    };
+
+/**
+ * Structural subset of posthog-js `CaptureResult` that
+ * `applyPostHogBeforeSend` touches. Declared locally (rather than
+ * importing `CaptureResult` from `@posthog/types`) for the same reason
+ * `sentry.ts` declares `WebBeforeSendEvent`: the helper must stay
+ * unit-testable without pulling SDK types, and a real `CaptureResult`
+ * stays structurally assignable so the `before_send` call-site needs no
+ * cast.
+ */
+export interface PostHogBeforeSendEvent {
+  properties?: Record<string, unknown>;
+}
+
+/**
+ * Event properties that carry a URL. PostHog attaches `$current_url` to
+ * every event, and magic-link / OAuth callbacks are the usual leak
+ * surface (`?token=`, `?code=`) — same reasoning as the
+ * `redactSensitiveQueryParams` call in `sentry.ts`'s `applyWebBeforeSend`.
+ */
+const URL_PROPERTY_KEYS = ["$current_url", "$referrer", "$pathname"] as const;
+
+/**
+ * Machine-generated exception strings. Unlike free-text, a PII pattern
+ * hit here is almost always a real leak (a token in a failing request
+ * URL, an email in a validation error), so string-scrubbing them is
+ * worth the false-positive risk — mirrors `applyWebBeforeSend` §P0-S3.
+ */
+const EXCEPTION_STRING_KEYS = [
+  "$exception_message",
+  "$exception_type",
+] as const;
+
+function scrubExceptionEntry(entry: unknown): void {
+  if (!entry || typeof entry !== "object") return;
+  const record = entry as Record<string, unknown>;
+  for (const key of ["value", "type"]) {
+    const value = record[key];
+    if (typeof value === "string") record[key] = scrubPIIString(value);
+  }
+  const stacktrace = record["stacktrace"];
+  if (!stacktrace || typeof stacktrace !== "object") return;
+  const frames = (stacktrace as Record<string, unknown>)["frames"];
+  if (!Array.isArray(frames)) return;
+  for (const frame of frames) {
+    if (!frame || typeof frame !== "object") continue;
+    const frameRecord = frame as Record<string, unknown>;
+    const filename = frameRecord["filename"];
+    if (typeof filename === "string") {
+      frameRecord["filename"] = redactSensitiveQueryParams(filename);
+    }
+  }
+}
+
+/**
+ * PostHog counterpart of `applyWebBeforeSend` (`./sentry.ts`).
+ *
+ * Replaces the previous `sanitize_properties` hook, which posthog-js
+ * marks deprecated and — more importantly — logs a `console.error`
+ * through on EVERY captured event once set, so the old wiring was
+ * emitting deprecation noise in production on every `trackEvent`.
+ *
+ * Mutates in place and returns the same object (the SDK contract allows
+ * returning `null` to drop an event; we never drop).
+ */
+export function applyPostHogBeforeSend<T extends PostHogBeforeSendEvent | null>(
+  captureResult: T,
+): T {
+  const properties = captureResult?.properties;
+  if (!properties) return captureResult;
+
+  // Never ship cookies — carried over from the previous sanitizer.
+  delete properties["$cookies"];
+
+  for (const key of URL_PROPERTY_KEYS) {
+    const value = properties[key];
+    if (typeof value === "string") {
+      properties[key] = redactSensitiveQueryParams(value);
+    }
+  }
+  for (const key of EXCEPTION_STRING_KEYS) {
+    const value = properties[key];
+    if (typeof value === "string") properties[key] = scrubPIIString(value);
+  }
+  // `$exception_list` — one entry per chained cause, each with its own
+  // message and stack frames.
+  const exceptionList = properties["$exception_list"];
+  if (Array.isArray(exceptionList)) {
+    for (const entry of exceptionList) scrubExceptionEntry(entry);
+  }
+
+  return captureResult;
+}
 
 let posthogModule: PostHogLib | null = null;
 let initPromise: Promise<void> | null = null;
@@ -52,6 +155,8 @@ function flushQueue() {
         posthogModule.capture(call.name, call.payload);
       } else if (call.kind === "identify") {
         posthogModule.identify(call.userId, call.traits);
+      } else if (call.kind === "exception") {
+        posthogModule.captureException(call.error, call.properties);
       } else {
         posthogModule.reset();
       }
@@ -98,12 +203,27 @@ export function initPostHog(): Promise<void> {
         // Persist тільки для залогінених — анонімні відвідувачі не
         // створюють person profile у PostHog (лишає free-tier events).
         person_profiles: "identified_only",
-        // Санітайзер: ніколи не шлемо cookies/session storage у events.
-        sanitize_properties: (properties) => {
-          const sanitized = { ...properties };
-          delete sanitized["$cookies"];
-          return sanitized;
+        // Error tracking. Свідомо ЄДИНИЙ автокаптур, який лишається
+        // увімкненим попри `autocapture: false` вище: краші не можна
+        // зібрати явними викликами — `window.onerror` і
+        // `unhandledrejection` за визначенням спрацьовують там, де
+        // коду вже нема кому виконати `trackEvent`.
+        //
+        // Без цього прапорця значення резолвиться з remote config
+        // (тобто з налаштувань проєкту в PostHog), і поки там вимкнено —
+        // жодної `$exception` події не надходить. Ставимо явно, щоб
+        // збір не залежав від стану серверного тумблера.
+        //
+        // `capture_console_errors` лишається на дефолтному `false`:
+        // console.error шумний і дублює те, що вже йде через Sentry.
+        capture_exceptions: {
+          capture_unhandled_errors: true,
+          capture_unhandled_rejections: true,
         },
+        // PII-скраб — див. `applyPostHogBeforeSend` вище. Раніше тут
+        // стояв `sanitize_properties`; posthog-js вважає його
+        // deprecated і логує `console.error` на КОЖНІЙ події.
+        before_send: (captureResult) => applyPostHogBeforeSend(captureResult),
       });
 
       posthog.register({
@@ -160,6 +280,35 @@ export function capturePostHogEvent(
   if (!import.meta.env["VITE_POSTHOG_KEY"]) return;
   if (initFailed) return;
   enqueue({ kind: "capture", name, payload });
+}
+
+/**
+ * Fire-and-forget відправка винятку в PostHog error tracking.
+ *
+ * Доповнює автокаптур (`capture_exceptions` у `initPostHog`), який ловить
+ * лише `window.onerror` / `unhandledrejection`. React-помилки рендеру туди
+ * НЕ доходять: React ловить їх сам і віддає в `componentDidCatch`, тож
+ * `ErrorBoundary` форвардить їх сюди явно — так само, як уже робить для
+ * Sentry.
+ *
+ * Семантика буферизації та no-op-режиму — рівно як у
+ * `capturePostHogEvent`.
+ */
+export function capturePostHogException(
+  error: unknown,
+  properties: Record<string, unknown> = {},
+): void {
+  if (posthogModule) {
+    try {
+      posthogModule.captureException(error, properties);
+    } catch {
+      /* noop */
+    }
+    return;
+  }
+  if (!import.meta.env["VITE_POSTHOG_KEY"]) return;
+  if (initFailed) return;
+  enqueue({ kind: "exception", error, properties });
 }
 
 /**
