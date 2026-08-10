@@ -62,7 +62,31 @@ vi.mock("@sergeant/finyk-domain", () => ({
 }));
 
 // ── Fizruk: one in-week completed workout with volume + recovery ─────────────
-const recentIso = new Date(Date.now() - 2 * 3_600_000).toISOString(); // 2h ago
+//
+// Позначка мусить одночасно потрапити у ДВА вікна, які рахує
+// `aggregateCurrentSnapshot`:
+//   * `>= weekStart` — понеділкова північ за локальним часом хоста
+//     (`useCoachInsight.ts:158-160`, фільтр на 204) → `workoutsCount === 1`;
+//   * `< 20 год тому` → `recoveryLabel === "Відновлення"`.
+//
+// Голе «2 години тому» перше вікно не витримувало: щопонеділка між 00:00 і
+// 02:00 за локальним часом ця позначка падала в НЕДІЛЮ, тобто в минулий
+// тиждень, і `workoutsCount` ставав 0. Дві години на тиждень — рівно той
+// розмір вікна, за який флейк ловиться раз на кілька місяців і щоразу
+// виглядає як «якась незрозуміла регресія». Спіймано прогоном CI о 01:38
+// UTC у понеділок 2026-08-10.
+//
+// Тому нижня межа підрізана понеділковою північчю. Клампимо саме до неї, а
+// не до `weekStart + ε`: фільтр інклюзивний (`>=`), а рахувати епсилон, який
+// не вилетить у майбутнє о 00:00:30, — зайва арифметика заради нічого.
+const recentIso = (() => {
+  const now = new Date();
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+  weekStart.setHours(0, 0, 0, 0);
+  const twoHoursAgo = now.getTime() - 2 * 3_600_000;
+  return new Date(Math.max(twoHoursAgo, weekStart.getTime())).toISOString();
+})();
 vi.mock("@fizruk/lib/sqliteReader", () => ({
   getCachedFizrukSqliteState: () => ({
     refreshedAt: new Date().toISOString(),
