@@ -391,6 +391,43 @@ export function ManualExpenseSheet({
     [frequentCategories],
   );
 
+  // Довантаження власних категорій ПІСЛЯ відкриття аркуша.
+  //
+  // Слоти сховища віддають синхронний LS як фолбек першого пейнту, а
+  // значення з SQLite приходить, «once it warms» (`useStorage.ts`). Аркуш,
+  // відкритий у цьому вікні, бачить порожній `customIds`, і категорія
+  // редагованої витрати вже нормалізувалась у `DEFAULT_CATEGORY`. Гвардія
+  // `openInitKey` ефекту ініціалізації правильно не дає йому
+  // перезапуститись — він скинув би чернетку, — тож без окремої звірки
+  // збереження записало б «Інше» замість власної категорії. Рівно та
+  // мовчазна підміна, проти якої цей аркуш і правили. Знайдено рев'ю #781.
+  //
+  // Звірка спрацьовує РІВНО ОДИН РАЗ на відкриття. Це не оптимізація, а
+  // єдина працездатна семантика: `dirtyFields` тут не помічник, бо RHF
+  // рахує dirty відносно `defaultValues`, а там уже лежить `other` —
+  // вибір «Інше» руками не відрізняється від нашої ж нормалізації. Ефект
+  // без лічильника через це бився б із користувачем: кожен вибір «Інше»
+  // після гідратації одразу перекидало б назад на власну категорію.
+  //
+  // Лишається один неоднозначний випадок: людина свідомо обрала «Інше» до
+  // того, як категорії доїхали. Її вибір один раз перекине на збережену
+  // категорію. Це видима зміна, яку видно й можна повторити, — на відміну
+  // від альтернативи, де ми тихо перезаписуємо реальні дані на «Інше».
+  const rawInitialCategory = initialExpense?.category ?? initialCategory;
+  const reconciledKeyRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!open) {
+      reconciledKeyRef.current = null;
+      return;
+    }
+    const trimmed = rawInitialCategory?.trim();
+    if (!trimmed || !customIds.has(trimmed)) return;
+    if (reconciledKeyRef.current === openInitKey) return;
+    reconciledKeyRef.current = openInitKey;
+    if (category !== DEFAULT_CATEGORY) return;
+    setValue("category", trimmed, { shouldDirty: false });
+  }, [open, openInitKey, rawInitialCategory, customIds, category, setValue]);
+
   const isIncome = kind === "income";
 
   // Підписи власних категорій. `tag` — та сама іконка, що й у вбудованого

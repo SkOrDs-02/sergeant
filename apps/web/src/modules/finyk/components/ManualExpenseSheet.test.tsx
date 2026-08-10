@@ -587,4 +587,101 @@ describe("ManualExpenseSheet — власні категорії", () => {
       screen.queryByRole("option", { name: "Кава з друзями" }),
     ).not.toBeInTheDocument();
   });
+
+  it("відновлює власну категорію, якщо вона довантажилась ПІСЛЯ відкриття", async () => {
+    // Слоти сховища віддають LS синхронно, а SQLite — «once it warms»
+    // (`useStorage.ts`). Аркуш, відкритий у цьому вікні, бачить порожній
+    // список і нормалізує категорію редагованої витрати в «other». Без
+    // звірки збереження записало б саме «other» — мовчазна підміна.
+    const onSave = vi.fn();
+    const expense = {
+      id: "e1",
+      description: "Латте",
+      amount: 90,
+      category: "custom_coffee_friends",
+      date: "2026-08-10T12:00:00.000Z",
+      kind: "expense",
+    };
+
+    const { rerender } = render(
+      <ManualExpenseSheet
+        open
+        onClose={vi.fn()}
+        onSave={onSave}
+        initialExpense={expense}
+        customCategories={[]}
+      />,
+    );
+
+    // Категорії приїхали пізніше — той самий аркуш, той самий `openInitKey`.
+    rerender(
+      <ManualExpenseSheet
+        open
+        onClose={vi.fn()}
+        onSave={onSave}
+        initialExpense={expense}
+        customCategories={CUSTOM}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(
+        (screen.getByLabelText(/Категорія/) as HTMLSelectElement).value,
+      ).toBe("custom_coffee_friends");
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /Зберегти|Додати/ }));
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    expect((onSave.mock.calls[0]![0] as { category: string }).category).toBe(
+      "custom_coffee_friends",
+    );
+  });
+
+  it("після звірки вибір користувача більше не перекидає", async () => {
+    // `dirtyFields` тут не працює: RHF рахує dirty відносно
+    // `defaultValues`, а там уже «other» — тож «людина обрала Інше» і
+    // «ми нормалізували в Інше» нерозрізненні. Тому звірка одноразова:
+    // один видимий перекид, після якого поле належить людині.
+    const expense = {
+      id: "e2",
+      description: "Латте",
+      amount: 90,
+      category: "custom_coffee_friends",
+      date: "2026-08-10T12:00:00.000Z",
+      kind: "expense",
+    };
+    const { rerender } = render(
+      <ManualExpenseSheet
+        open
+        onClose={vi.fn()}
+        initialExpense={expense}
+        customCategories={[]}
+      />,
+    );
+
+    rerender(
+      <ManualExpenseSheet
+        open
+        onClose={vi.fn()}
+        initialExpense={expense}
+        customCategories={CUSTOM}
+      />,
+    );
+
+    const select = () =>
+      screen.getByLabelText(/Категорія/) as HTMLSelectElement;
+    await waitFor(() => expect(select().value).toBe("custom_coffee_friends"));
+
+    // Тепер людина свідомо обирає «Інше» — і воно лишається.
+    fireEvent.change(select(), { target: { value: "other" } });
+    rerender(
+      <ManualExpenseSheet
+        open
+        onClose={vi.fn()}
+        initialExpense={expense}
+        customCategories={CUSTOM}
+      />,
+    );
+    await waitFor(() => expect(select().value).toBe("other"));
+  });
 });
