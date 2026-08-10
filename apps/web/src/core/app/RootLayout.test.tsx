@@ -285,21 +285,52 @@ describe("RootLayout", () => {
     expect(screen.getByTestId("child")).toBeInTheDocument();
   });
 
-  it("does not boot nutrition/finyk/fizruk/routine sqlite hooks for an anonymous, non-demo visitor", async () => {
+  // Раніше цей тест закріплював ПРОТИЛЕЖНЕ — що анонімний відвідувач
+  // кластери не бутить. Те закріплення було вірним дзеркалом свого часу:
+  // `useLocalUserId` тоді знав лише два id, auth і `demo-local`, тож
+  // `user || isDemoActive()` у гейті точно повторював його область
+  // визначення.
+  //
+  // Спека `anonymous-local-first-persistence.md` додала третій випадок —
+  // `LOCAL_ANON_USER_ID` — і оновила резолвер, але дзеркало в `BootGate`
+  // лишила. Наслідок бачив кожен новий бета-тестер: FTUX-пресет «Яку
+  // звичку почнемо?» на хабі писав через `applyPreset` →
+  // `dualWriteRoutineState`, той не знаходив зареєстрованого контексту
+  // (бо хук, що його реєструє, не змонтований) і повертав
+  // `skipped/context-unset` → червона плашка «Не вдалося зберегти»
+  // ДЕТЕРМІНОВАНО, скільки не тисни. Знахідка founder-а 2026-08-10.
+  //
+  // Гейт по auth тут зайвий за побудовою: кожен із семи хуків уже
+  // самостійно виходить на `!userId`, а `useLocalUserId` віддає `null`
+  // рівно поки сесія в польоті — тобто саме тоді, коли бутити й не треба.
+  it("boots nutrition/finyk/fizruk/routine sqlite hooks for an anonymous, non-demo visitor", async () => {
     renderAt("/");
     await waitFor(() =>
       expect(screen.getByTestId("auth-loading")).toHaveTextContent("false"),
     );
     expect(screen.getByTestId("auth-user")).toHaveTextContent("anon");
-    expect(useNutritionDualWriteBootMock).not.toHaveBeenCalled();
-    expect(useNutritionSqliteReadBootMock).not.toHaveBeenCalled();
-    expect(useFinykDualWriteBootMock).not.toHaveBeenCalled();
-    expect(useFinykSqliteReadBootMock).not.toHaveBeenCalled();
-    expect(useFinykMonoMirrorBootMock).not.toHaveBeenCalled();
-    expect(useFizrukDualWriteBootMock).not.toHaveBeenCalled();
-    expect(useFizrukSqliteReadBootMock).not.toHaveBeenCalled();
-    expect(useRoutineDualWriteBootMock).not.toHaveBeenCalled();
-    expect(useRoutineSqliteReadBootMock).not.toHaveBeenCalled();
+    await waitFor(
+      () => expect(useRoutineDualWriteBootMock).toHaveBeenCalled(),
+      { timeout: CLUSTER_LOAD_TIMEOUT_MS },
+    );
+    await waitFor(() =>
+      expect(useRoutineSqliteReadBootMock).toHaveBeenCalled(),
+    );
+    await waitFor(
+      () => expect(useNutritionDualWriteBootMock).toHaveBeenCalled(),
+      { timeout: CLUSTER_LOAD_TIMEOUT_MS },
+    );
+    await waitFor(() =>
+      expect(useNutritionSqliteReadBootMock).toHaveBeenCalled(),
+    );
+    await waitFor(() => expect(useFinykDualWriteBootMock).toHaveBeenCalled(), {
+      timeout: CLUSTER_LOAD_TIMEOUT_MS,
+    });
+    await waitFor(() => expect(useFinykSqliteReadBootMock).toHaveBeenCalled());
+    await waitFor(() => expect(useFizrukDualWriteBootMock).toHaveBeenCalled(), {
+      timeout: CLUSTER_LOAD_TIMEOUT_MS,
+    });
+    await waitFor(() => expect(useFizrukSqliteReadBootMock).toHaveBeenCalled());
   });
 
   it("boots nutrition/finyk/fizruk/routine sqlite hooks once the /api/v1/me fetch resolves a user", async () => {
