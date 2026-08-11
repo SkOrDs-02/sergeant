@@ -75,8 +75,31 @@ export function usePhotoAnalysis({
       });
       return next;
     });
+    seedPortionGrams(photoResult);
   } else if (photoResult !== prevPhotoResult) {
     setPrevPhotoResult(photoResult);
+    seedPortionGrams(photoResult);
+  }
+
+  /**
+   * Підставити вагу, яку модель уже прочитала, у поле «Порція (г)».
+   *
+   * WHY. На фото цінника вага написана просто в кадрі ("Вага (кг) 0,314"), і
+   * модель кладе її в `portion.gramsApprox` — а поле лишалось порожнім із
+   * плейсхолдером «напр. 320», бо `analyzeMutation.onMutate` гасить його на
+   * кожен новий аналіз. Людина бачила, що «грами не зчитались», і вводила
+   * вручну те, що застосунок уже знав.
+   *
+   * Тільки коли поле порожнє: щойно людина ввела свою вагу, вона головніша
+   * за оцінку моделі — інакше `refine` затирав би власний ввід користувача
+   * значенням, яке сам же і повернув.
+   */
+  function seedPortionGrams(next: NutritionPhotoResult | null): void {
+    const grams = next?.portion?.gramsApprox;
+    if (typeof grams !== "number" || !Number.isFinite(grams) || grams <= 0) {
+      return;
+    }
+    setPortionGrams((cur) => (cur.trim() ? cur : String(Math.round(grams))));
   }
 
   useEffect(() => {

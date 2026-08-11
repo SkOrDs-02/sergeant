@@ -181,9 +181,42 @@ export function normalizePhotoResult(
     confidence,
     portion: finalPortion,
     ingredients,
-    macros: outMacros,
+    macros: unknownMacrosAsNull(outMacros, questions),
     questions,
   };
+}
+
+/**
+ * Нулі, які насправді означають «не порахував», → `null`.
+ *
+ * WHY. Контракт має `null` для невідомого, але модель про це не знала, і на
+ * фото цінника Сільпо (назва + вага, таблиці харчової цінності немає) вона
+ * віддавала `{ kcal: 0, protein_g: 0, fat_g: 0, carbs_g: 0 }` разом із
+ * `confidence: 0.9` і питаннями про порцію. Обидва клієнти показували це як
+ * упевнену відповідь: `fmtMacro` малює `null` як «—», а нуль — як «0», і
+ * `hasAnyMacro` (перевірка `!= null`) пропускала нулі, тож поруч світився
+ * ще й відсоток. Людина бачила «0 ккал, впевненість 90%» на реальній страві
+ * і могла зберегти її в журнал такою.
+ *
+ * Дискримінант — саме НЕВІДПОВІДЕНІ питання. Модель, яка ще питає «яка
+ * порція?», за власним визнанням оцінку не завершила, тож її нулі — це
+ * чернетка. Коли питань немає, нулі лишаються недоторканими: склянка води і
+ * чай без цукру — легальний нуль, і затирати його було б брехнею в інший бік.
+ *
+ * Промпти обох шляхів тепер теж просять `null` замість нулів (див.
+ * `analyze-photo.ts` § «Нуль і „не знаю“»). Це той самий принцип, що і в
+ * `resolveIsFood` та `mergeDuplicatePantryItem`: інваріант, який ламається
+ * тихо, тримає код, а не слухняність моделі.
+ */
+function unknownMacrosAsNull(
+  macros: PhotoMacros,
+  questions: readonly string[],
+): PhotoMacros {
+  if (questions.length === 0) return macros;
+  const values = [macros.kcal, macros.protein_g, macros.fat_g, macros.carbs_g];
+  const allZero = values.every((v) => v === 0);
+  if (!allZero) return macros;
+  return { kcal: null, protein_g: null, fat_g: null, carbs_g: null };
 }
 
 /**

@@ -8,7 +8,7 @@ import {
 vi.mock("../../lib/anthropic.js", () => createAnthropicMockHandle());
 
 import { anthropicMessages as _anthropicMessages } from "../../lib/anthropic.js";
-import handler from "./refine-photo.js";
+import handler, { buildRefinePhotoPrompt } from "./refine-photo.js";
 
 const anthropicMessages = _anthropicMessages as unknown as Mock;
 
@@ -172,5 +172,33 @@ describe("nutrition refine-photo handler — Anthropic invocation", () => {
       status: 502,
       code: "ANTHROPIC_ERROR",
     });
+  });
+});
+
+/**
+ * Дзеркало правил `analyze-photo`. Уточнення — це другий шанс на ту саму
+ * страву, і без цих рядків він був марним: `prior_result` із нулями якорив
+ * модель, і повторний прогін віддавав ті самі нулі (репорт тестера
+ * 2026-08-11 — «давала відповіді на питання, все одно не допомогло»).
+ */
+describe("nutrition refine-photo — правила промпта", () => {
+  const { system } = buildRefinePhotoPrompt({
+    prior_result: { dishName: "Плов" },
+    locale: "uk-UA",
+  });
+
+  it("не дозволяє повторювати нулі з попереднього результату", () => {
+    expect(system).toMatch(/Попередній результат — чернетка, а не істина/);
+    expect(system).toMatch(/оціни заново/);
+  });
+
+  it("вміє етикетку так само, як analyze-photo", () => {
+    expect(system).toMatch(/етикетка, цінник або упаковка/);
+    expect(system).toMatch(/вага порції \/ 100/);
+    expect(system).toMatch(/оціни КБЖВ за назвою страви/);
+  });
+
+  it("забороняє нуль замість «не знаю»", () => {
+    expect(system).toMatch(/Нуль і «не знаю» — різні речі/);
   });
 });

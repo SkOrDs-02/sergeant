@@ -8,7 +8,7 @@ import {
 vi.mock("../../lib/anthropic.js", () => createAnthropicMockHandle());
 
 import { anthropicMessages as _anthropicMessages } from "../../lib/anthropic.js";
-import handler from "./analyze-photo.js";
+import handler, { buildAnalyzePhotoPrompt } from "./analyze-photo.js";
 
 const anthropicMessages = _anthropicMessages as unknown as Mock;
 
@@ -214,5 +214,32 @@ describe("nutrition analyze-photo handler — Anthropic invocation", () => {
       status: 502,
       code: "ANTHROPIC_ERROR",
     });
+  });
+});
+
+/**
+ * Правила з репорту тестера 2026-08-11 (фото цінника Сільпо: назва + вага,
+ * таблиці харчової цінності немає — модель віддавала нулі).
+ *
+ * Пін саме на промпті, а не на відповіді моделі: сам фікс тут — текст
+ * інструкції, і без цих перевірок його можна тихо викинути при наступному
+ * редагуванні, а тести все одно лишились би зеленими.
+ */
+describe("nutrition analyze-photo — правила промпта", () => {
+  const { system } = buildAnalyzePhotoPrompt({ locale: "uk-UA" });
+
+  it("забороняє нуль замість «не знаю»", () => {
+    expect(system).toMatch(/Нуль і «не знаю» — різні речі/);
+    expect(system).toMatch(/став null/);
+  });
+
+  it("вчить читати етикетку: назва, вага в грамах, таблиця на 100 г", () => {
+    expect(system).toMatch(/Етикетка, цінник чи упаковка продукту — це ЇЖА/);
+    expect(system).toMatch(/portion\.gramsApprox/);
+    expect(system).toMatch(/вага порції \/ 100/);
+  });
+
+  it("вимагає оцінку за назвою, коли таблиці харчової цінності немає", () => {
+    expect(system).toMatch(/таблиці немає — усе одно ОЦІНИ КБЖВ за назвою/);
   });
 });

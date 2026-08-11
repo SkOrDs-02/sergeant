@@ -107,6 +107,77 @@ describe("usePhotoAnalysis", () => {
       expect(result.current.isAnalyzing).toBe(false);
     });
 
+    // Репорт тестера 2026-08-11: на фото цінника Сільпо вага стоїть просто в
+    // кадрі («Вага (кг) 0,314»), модель клала її в `portion.gramsApprox` — а
+    // поле «Порція (г)» лишалось порожнім із плейсхолдером «напр. 320», бо
+    // `onMutate` гасить його на кожен аналіз. Виглядало як «грами не зчитались».
+    it("seeds the portion field from the grams the model already read", async () => {
+      apiAnalyzePhoto.mockResolvedValueOnce({
+        result: {
+          dishName: "Салат із запечених овочів",
+          portion: { label: "314 г з етикетки", gramsApprox: 314 },
+          questions: ["Чи є на етикетці таблиця харчової цінності?"],
+        },
+      });
+      const { result } = renderUsePhotoAnalysis();
+      attachFile(result, fakeImageFile());
+
+      act(() => {
+        result.current.analyzePhoto();
+      });
+
+      await waitFor(() => {
+        expect(result.current.portionGrams).toBe("314");
+      });
+    });
+
+    it("never overwrites grams the user typed", async () => {
+      apiAnalyzePhoto.mockResolvedValueOnce({
+        result: {
+          dishName: "Салат",
+          portion: { label: "314 г", gramsApprox: 314 },
+          questions: ["Яка вага порції?"],
+        },
+      });
+      const { result } = renderUsePhotoAnalysis();
+      attachFile(result, fakeImageFile());
+
+      act(() => {
+        result.current.setPortionGrams("250");
+      });
+      act(() => {
+        result.current.analyzePhoto();
+      });
+
+      await waitFor(() => {
+        expect(result.current.photoResult).not.toBeNull();
+      });
+      // `onMutate` чистить поле перед запитом, тож після відповіді сюди
+      // лягає оцінка моделі — але це вже НЕ ввід користувача, він стерся
+      // разом із попереднім результатом. Пін тут на тому, що підстановка
+      // не б'ється з непорожнім полем: див. `refine` нижче.
+      expect(result.current.portionGrams).toBe("314");
+
+      apiRefinePhoto.mockResolvedValueOnce({
+        result: {
+          dishName: "Салат",
+          portion: { label: "314 г", gramsApprox: 314 },
+          questions: [],
+        },
+      });
+      act(() => {
+        result.current.setPortionGrams("250");
+      });
+      act(() => {
+        result.current.refinePhoto();
+      });
+
+      await waitFor(() => {
+        expect(apiRefinePhoto).toHaveBeenCalled();
+      });
+      expect(result.current.portionGrams).toBe("250");
+    });
+
     it("flips isAnalyzing true while the mutation is in flight", async () => {
       let resolveAnalyze!: (v: unknown) => void;
       apiAnalyzePhoto.mockReturnValueOnce(

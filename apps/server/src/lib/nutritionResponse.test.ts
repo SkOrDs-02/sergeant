@@ -99,6 +99,48 @@ describe("nutritionResponse normalizers", () => {
     expect(out.macros.kcal).toBe(0);
   });
 
+  // Репорт тестера 2026-08-11: фото цінника Сільпо («Салат із запечених
+  // овочів», вага 0,314 кг, таблиці харчової цінності на етикетці немає).
+  // Модель віддавала нулі як «не порахував» — і UI малював «0 ккал» поруч із
+  // «впевненість 90%», бо `fmtMacro` показує «—» лише для null.
+  it("normalizePhotoResult treats all-zero macros as unknown while questions remain", () => {
+    const out = normalizePhotoResult({
+      isFood: true,
+      dishName: "Салат із запечених овочів",
+      confidence: 0.9,
+      portion: { label: "314 г з етикетки", gramsApprox: 314 },
+      ingredients: [{ name: "овочі", notes: null }],
+      macros: { kcal: 0, protein_g: 0, fat_g: 0, carbs_g: 0 },
+      questions: ["Яка вага порції?"],
+    });
+    expect(out.isFood).toBe(true);
+    expect(out.macros).toEqual({
+      kcal: null,
+      protein_g: null,
+      fat_g: null,
+      carbs_g: null,
+    });
+    // Порція і питання лишаються: це не відмова, а незавершена оцінка.
+    expect(out.portion).toEqual({
+      label: "314 г з етикетки",
+      gramsApprox: 314,
+    });
+    expect(out.questions).toEqual(["Яка вага порції?"]);
+  });
+
+  it("normalizePhotoResult keeps a partial zero — воно не «не знаю»", () => {
+    const out = normalizePhotoResult({
+      isFood: true,
+      dishName: "Куряча грудка на парі",
+      confidence: 0.8,
+      macros: { kcal: 165, protein_g: 31, fat_g: 0, carbs_g: 0 },
+      questions: ["Яка вага порції?"],
+    });
+    expect(out.macros.fat_g).toBe(0);
+    expect(out.macros.carbs_g).toBe(0);
+    expect(out.macros.kcal).toBe(165);
+  });
+
   it("normalizePhotoResult carries the not-food category through", () => {
     const cat = normalizePhotoResult({
       isFood: false,
