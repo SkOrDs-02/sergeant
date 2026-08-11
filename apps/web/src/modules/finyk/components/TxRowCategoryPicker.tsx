@@ -114,8 +114,13 @@ export function TxRowCategoryPicker({
             }}
             className={cn(
               "text-style-caption px-3 py-2 rounded-xl border transition-colors min-h-[34px]",
+              // Обрана категорія — акцентом модуля, а не інверсією чорнила.
+              // `bg-text text-bg` давало чорну плашку: заливка є, але вона
+              // нічого не каже про те, ЩО обрано, і читається як «вимкнено».
+              // Трійка `-soft` (фон / межа / текст) — той самий рецепт, що в
+              // чипах Рутини, і вже перевірена на контраст.
               c.id === currentCatId
-                ? "bg-text text-bg border-text"
+                ? "border-finyk-soft-border bg-finyk-soft text-finyk-soft-fg shadow-sm"
                 : "border-line text-subtle hover:border-muted hover:text-text",
             )}
           >
