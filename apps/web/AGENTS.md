@@ -1,6 +1,6 @@
 # Agents in apps/web
 
-> **Last touched:** 2026-08-07 by @Skords-01. **Next review:** 2026-11-05.
+> **Last touched:** 2026-08-11 by @claude. **Next review:** 2026-11-09.
 > **Status:** Active
 
 > **Single source of truth → root [`AGENTS.md`](../../AGENTS.md).** Цей файл — sub-tree quick reference для агентів, що працюють лише в `apps/web/`. Не дублюй repo policy: hard rules, ownership map, performance budgets і CI matrix живуть у корені.
@@ -34,6 +34,7 @@ pnpm --filter @sergeant/web lighthouse          # Lighthouse CI (perf-budget gat
 - **Tailwind colour-opacity (дизайн-конвенція — tokens + review, ex-Hard Rules #8/#9, retired [ADR-0081](../../docs/04-governance/adr/0081-repository-simplification.md)):** opacity steps must be on the registered scale; saturated brand fills behind `text-white` need the `-strong` companion. Конвенція чинна, але без ESLint-enforcement — тримається design tokens + design-review.
 - **No arbitrary hex / focus-visible (дизайн-конвенція — tokens + review, ex-Rules #11/#14, retired ADR-0081):** no arbitrary hex in `className`; use `focus-visible:` not `focus:`.
 - **Module accents (дизайн-конвенція — tokens + review, ex-Rule #12, retired ADR-0081):** module-accent containment — no foreign accents inside a module subtree.
+- **Кольори категорій Фініка ≠ бренд-палітра.** 16 категорій витрат мають власну родину `categoryColors` (`@sergeant/design-tokens`), свідомо розведену з модульними акцентами — не фарбуй категорію бренд-тиром. Hue гейтить `packages/design-tokens/categoryColors.contract.test.js`, правки — через `categoryColors.gen.js`. У JSX — `catChipVars()` + класи `.cat-chip` / `.cat-dot`; інлайн-hex не потрібен.
 - **Module size (Hard Rule #18):** `max-lines: 600` for web TS/TSX. Permanent lint-enforced convention — split before crossing.
 - **Storage:** wrapper from `@shared/storage`; allowlist enforced by `pnpm lint:localstorage-allowlist`.
 - **Touch targets:** `Button` auto-applies `min-h-[44px] min-w-[44px]` **лише під `@media (pointer: coarse)`** for `xs`/`sm`/`iconOnly` (на fine-pointer/desktop-миші floor навмисно не діє — `Button.tsx` `pointer-coarse:` варіант); opt out with `data-compact` only for intentionally small cells (heatmaps).

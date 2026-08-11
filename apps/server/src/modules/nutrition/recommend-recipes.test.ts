@@ -225,6 +225,78 @@ describe("recommend-recipes handler", () => {
     expect(messages).toContain("Ціль: low-carb");
   });
 
+  it("pantryMode=ignore не показує моделі список комори", async () => {
+    // `pantryMode` тут доїжджав і раніше, але лише як рядок «Режим комори:
+    // ignore» поруч із повним списком продуктів і system-промптом «рецепти з
+    // наявних продуктів. Не вигадуй інгредієнти» — суперечлива інструкція,
+    // якої модель не зобов'язана слухатись.
+    invokeLLM.mockResolvedValueOnce({
+      ok: true,
+      text: JSON.stringify({ recipes: [] }),
+    });
+
+    await handler(
+      makeReq({
+        pantry: ["гречка", "кабачок"],
+        preferences: { pantryMode: "ignore" },
+        locale: "uk-UA",
+      }),
+      makeRes(),
+    );
+
+    const opts = asRecord(invokeLLM.mock.calls[0]?.[1]);
+    const messages = JSON.stringify(opts["messages"]);
+    expect(messages).not.toContain("гречка");
+    expect(messages).not.toContain("кабачок");
+    expect(String(opts["system"])).not.toContain(
+      "рецептів з наявних продуктів",
+    );
+    expect(String(opts["system"])).toContain("Комору не враховуй");
+  });
+
+  it("pantryMode=only обмежує рецепти наявним", async () => {
+    invokeLLM.mockResolvedValueOnce({ ok: true, text: '{"recipes":[]}' });
+
+    await handler(
+      makeReq({
+        pantry: [{ name: "кабачок" }],
+        preferences: { pantryMode: "only", locale: "uk-UA" },
+      }),
+      makeRes(),
+    );
+
+    const opts = asRecord(invokeLLM.mock.calls[0]?.[1]);
+    const messages = opts["messages"] as Array<{ content: string }>;
+    expect(messages[0]?.content).toContain("кабачок");
+    expect(String(opts["system"])).toContain("БУКВАЛЬНО тільки те");
+  });
+
+  it.each([
+    ["порожній масив", [] as unknown[]],
+    ["поле відсутнє", undefined],
+    ["позиції без назви", [{}, { name: "" }] as unknown[]],
+  ])(
+    "pantryMode=only з порожньою коморою (%s) не суперечить сам собі",
+    async (_label, pantry) => {
+      // «Кожен інгредієнт мусить бути в коморі» над порожньою коморою прямо
+      // просить порожню відповідь — і це не те, чого хотів користувач.
+      invokeLLM.mockResolvedValueOnce({ ok: true, text: '{"recipes":[]}' });
+
+      await handler(
+        makeReq({
+          pantry,
+          preferences: { pantryMode: "only", locale: "uk-UA" },
+        }),
+        makeRes(),
+      );
+
+      const opts = asRecord(invokeLLM.mock.calls[0]?.[1]);
+      const messages = opts["messages"] as Array<{ content: string }>;
+      expect(messages[0]?.content).not.toContain("ТІЛЬКИ ці продукти");
+      expect(String(opts["system"])).not.toContain("БУКВАЛЬНО тільки те");
+    },
+  );
+
   it("passes userId to the provider when session user is present", async () => {
     invokeLLM.mockResolvedValueOnce({
       ok: true,

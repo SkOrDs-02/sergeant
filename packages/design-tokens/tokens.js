@@ -145,6 +145,191 @@ export const chartPalette = {
 export const chartPaletteList = Object.values(chartPalette);
 
 /**
+ * Кольори категорій витрат Фініка — окрема родина, НЕ похідна від
+ * модульних акцентів (рішення власника 2026-08-11, репорт тестера
+ * «якби лейби категорій мали кольорову диференціацію, було б легше
+ * зчитувати»).
+ *
+ * AI-CONTEXT: чому окрема родина, а не бренд-палітра. Чотири з шести
+ * бренд-родин уже зайняті модулями (teal=Фінік, cyan=Фізрук,
+ * rose=Рутина, lime=Їжа), а stone — нейтральна хромота хабу. Тобто на
+ * 16 категорій лишалося дві родини — фарбувати категорії бренд-тирами
+ * означало б або повторювати hue між категоріями, або вносити акцент
+ * чужого модуля всередину піддерева Фініка. Тому категорії дістали
+ * власний набір hue, свідомо РОЗВЕДЕНИЙ із модульними.
+ *
+ * Заборонені смуги (OKLCH hue ±~15°, заміряно з самих токенів):
+ *   teal 182–186 · cyan 215–223 · lime 128 · rose 7 · danger 25.
+ * Жоден hue нижче в ці смуги не потрапляє — це гейт
+ * `categoryColors.contract.test.js`, а не домовленість на словах.
+ *
+ * Тири на категорію:
+ *   tint     — фон чипа/строки у світлій темі (OKLCH L .945, C ≤ .042)
+ *   border   — межа того ж чипа (L .885)
+ *   ink      — гліф і текст поверх `tint` (L .46) — ≥ 5.6:1 і на `tint`,
+ *              і на фоні сторінки `#ecebe7`, і на білій картці
+ *   solid    — насичений мід-тон для точок і сегментів діаграм (L .62)
+ *   tintDark / inkDark — та сама пара для «Чорнила» (≥ 9.2:1)
+ *
+ * AI-GENERATED: packages/design-tokens/categoryColors.gen.js — правити
+ * генератор (hue + тир), не хекси руками; гейт звіряє їх deep-equal.
+ *
+ * Чесне обмеження: 16 взаємно-розрізнюваних приглушених кольорів на
+ * 232° дуги (після вирізання модульних смуг) не існує — сусідні пари
+ * на кшталт `travel`/`utilities` різняться на 13°. Колір тут ПІДСИЛЮЄ
+ * підпис, а не замінює його; частотні категорії (їжа, ресторан,
+ * транспорт, покупки, здоровʼя) навмисно рознесені максимально.
+ */
+export const categoryColors = {
+  restaurant: {
+    tint: "#fee7df",
+    border: "#facebd",
+    ink: "#874124",
+    solid: "#ca653c",
+    tintDark: "#3a2015",
+    inkDark: "#febca2",
+  }, // H 42
+  travel: {
+    tint: "#fee8db",
+    border: "#f7d0b8",
+    ink: "#844514",
+    solid: "#c66a25",
+    tintDark: "#392112",
+    inkDark: "#fbbf9a",
+  }, // H 53
+  utilities: {
+    tint: "#fee9d4",
+    border: "#f3d3b3",
+    ink: "#7e4a00",
+    solid: "#bd7200",
+    tintDark: "#37230e",
+    inkDark: "#f4c392",
+  }, // H 66
+  smoking: {
+    tint: "#f6ebda",
+    border: "#e5d7c1",
+    ink: "#6b542d",
+    solid: "#a18049",
+    tintDark: "#2f2618",
+    inkDark: "#e0cba9",
+  }, // H 79, C×0.6
+  charity: {
+    tint: "#f7edce",
+    border: "#e6d9b0",
+    ink: "#6b5603",
+    solid: "#a18304",
+    tintDark: "#30270a",
+    inkDark: "#e2cd8d",
+  }, // H 92
+  sport: {
+    tint: "#f0efcf",
+    border: "#dedcb2",
+    ink: "#605a01",
+    solid: "#928a07",
+    tintDark: "#2b290c",
+    inkDark: "#d6d190",
+  }, // H 105
+  food: {
+    tint: "#dcf5dc",
+    border: "#c3e3c3",
+    ink: "#2c6730",
+    solid: "#479c4d",
+    tintDark: "#192d1a",
+    inkDark: "#abddac",
+  }, // H 145
+  entertainment: {
+    tint: "#d6f6e3",
+    border: "#bbe5cd",
+    ink: "#036944",
+    solid: "#019f68",
+    tintDark: "#112e20",
+    inkDark: "#9cdfbb",
+  }, // H 160
+  transport: {
+    tint: "#ddf0fe",
+    border: "#b9dffa",
+    ink: "#015e8c",
+    solid: "#0a8fd1",
+    tintDark: "#102a3b",
+    inkDark: "#9cd6ff",
+  }, // H 240
+  education: {
+    tint: "#e2eeff",
+    border: "#c3dbfe",
+    ink: "#2f5892",
+    solid: "#4b86d9",
+    tintDark: "#19283e",
+    inkDark: "#b0d0fe",
+  }, // H 257
+  subscriptions: {
+    tint: "#e7ecff",
+    border: "#cdd7fe",
+    ink: "#465292",
+    solid: "#6d7dda",
+    tintDark: "#21263e",
+    inkDark: "#becbfe",
+  }, // H 274
+  shopping: {
+    tint: "#eceaff",
+    border: "#d9d3fc",
+    ink: "#594c8e",
+    solid: "#8874d3",
+    tintDark: "#28233c",
+    inkDark: "#cdc5fe",
+  }, // H 291
+  beauty: {
+    tint: "#f3e7ff",
+    border: "#e3d0f6",
+    ink: "#684685",
+    solid: "#9e6cc6",
+    tintDark: "#2e2139",
+    inkDark: "#ddbff9",
+  }, // H 308
+  health: {
+    tint: "#fce4fd",
+    border: "#eccdee",
+    ink: "#754178",
+    solid: "#b066b4",
+    tintDark: "#332034",
+    inkDark: "#ebbbed",
+  }, // H 325
+  debt: {
+    tint: "#ffe4f4",
+    border: "#f4cbe3",
+    ink: "#7e3e68",
+    solid: "#be619e",
+    tintDark: "#371e2e",
+    inkDark: "#f5b8dd",
+  }, // H 342
+  other: {
+    tint: "#efece9",
+    border: "#dcd8d4",
+    ink: "#5c5750",
+    solid: "#8c857b",
+    tintDark: "#292725",
+    inkDark: "#d2cdc7",
+  }, // H 74, C×0.12 — тепла нейтраль
+};
+
+/**
+ * Палітра для КАСТОМНИХ категорій (їх id наперед невідомий). Порядок —
+ * максимальний хроматичний крок між сусідами, щоб дві поспіль створені
+ * категорії не виявились однакового відтінку.
+ */
+export const categoryFallbackOrder = [
+  "transport",
+  "restaurant",
+  "shopping",
+  "food",
+  "health",
+  "charity",
+  "subscriptions",
+  "travel",
+  "entertainment",
+  "beauty",
+];
+
+/**
  * Module-specific accent colors. Each module has its own personality.
  */
 export const moduleColors = {

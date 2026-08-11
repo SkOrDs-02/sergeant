@@ -12,6 +12,7 @@ import { INTERNAL_TRANSFER_ID } from "../constants";
 import { Badge } from "@shared/components/ui/Badge";
 import { Icon } from "@shared/components/ui/Icon";
 import type { MonoAccount } from "@sergeant/finyk-domain/lib/accounts";
+import { catChipVars } from "../lib/categoryChip";
 import type { TxRowTx } from "./txRowHelpers";
 
 interface TxRowMetaChipsProps {
@@ -50,7 +51,16 @@ export function TxRowMetaChips({
           {accountName}
         </span>
       )}
-      <span className="shrink-0 text-style-caption text-subtle">{catName}</span>
+      {/* Назва категорії — єдиний елемент рядка, що несе колір самої
+          категорії (`.cat-chip` бере його з CSS-змінних). Решта чипів
+          лишається нейтральною: якби кольору набралось двоє-троє, рядок
+          перестав би читатись за один погляд — а це і був запит. */}
+      <span
+        style={catChipVars(catId)}
+        className="cat-chip shrink-0 text-style-caption border px-1.5 py-0.5 rounded-full font-medium"
+      >
+        {catName}
+      </span>
       {/* 6.4: AI-source tag — surfaces auto-categorized expense rows
           so users can tell which categorizations are inferred (MCC +
           description match) vs explicit (user override, manual entry,

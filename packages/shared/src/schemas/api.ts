@@ -515,6 +515,14 @@ const PantryItem = z.union([
   }),
 ]);
 
+/**
+ * Як генератор має ставитись до комори. Спільний для рецептів, денного і
+ * тижневого плану — користувач обирає режим один раз у «Меню», і всі три
+ * генератори мусять його поважати (інакше вибір «ignore» тихо губиться).
+ */
+export const PantryModeSchema = z.enum(["prefer", "only", "ignore"]);
+export type PantryMode = z.infer<typeof PantryModeSchema>;
+
 /** /api/nutrition/recommend-recipes */
 export const RecommendRecipesSchema = z.object({
   pantry: z.array(PantryItem).max(200).optional(),
@@ -527,7 +535,7 @@ export const RecommendRecipesSchema = z.object({
       mealType: z
         .enum(["any", "breakfast", "lunch", "dinner", "snack"])
         .optional(),
-      pantryMode: z.enum(["prefer", "only", "ignore"]).optional(),
+      pantryMode: PantryModeSchema.optional(),
       locale: Locale,
     })
     .partial()
@@ -583,6 +591,8 @@ export const DayHintSchema = z.object({
 
 export const DayPlanSchema = z.object({
   pantry: z.array(PantryItem).max(200).optional(),
+  /** Дефолт — `prefer` (історична поведінка ендпоінта до появи поля). */
+  pantryMode: PantryModeSchema.optional(),
   targets: NutritionTargets.optional(),
   regenerateMealType: z
     .enum(["breakfast", "lunch", "dinner", "snack"])
@@ -592,6 +602,8 @@ export const DayPlanSchema = z.object({
 
 export const WeekPlanSchema = z.object({
   pantry: z.array(PantryItem).max(200).optional(),
+  /** Дефолт — `prefer` (історична поведінка ендпоінта до появи поля). */
+  pantryMode: PantryModeSchema.optional(),
   preferences: z
     .object({
       goal: z.string().max(40).optional(),

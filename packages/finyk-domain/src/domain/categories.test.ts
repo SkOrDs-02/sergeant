@@ -1,14 +1,20 @@
 import { describe, it, expect } from "vitest";
+import { categoryColors } from "@sergeant/design-tokens";
 import {
   buildExpenseCategoryList,
   getCatColor,
+  getCatTiers,
   getCategorySpendList,
 } from "./categories";
 
 describe("categories: getCatColor", () => {
+  // Очікування читаємо з токенів, а не з літерала: інакше кожен зсув
+  // hue в `categoryColors.gen.js` ламав би цей тест, хоча контракт
+  // («колір категорії приходить із дизайн-токенів») не змінився. Сам
+  // склад палітри гейтить `categoryColors.contract.test.js`.
   it("returns the preset color for known ids", () => {
-    expect(getCatColor("food")).toBe("#10b981");
-    expect(getCatColor("restaurant")).toBe("#f59e0b");
+    expect(getCatColor("food")).toBe(categoryColors.food.solid);
+    expect(getCatColor("restaurant")).toBe(categoryColors.restaurant.solid);
   });
 
   it("falls back to custom color, then palette by idx", () => {
@@ -18,6 +24,21 @@ describe("categories: getCatColor", () => {
     const a = getCatColor("unknown", [], 0);
     const b = getCatColor("unknown", [], 1);
     expect(a).not.toBe(b);
+  });
+});
+
+describe("categories: getCatTiers", () => {
+  it("returns the full tier set for a builtin id", () => {
+    expect(getCatTiers("transport")).toBe(categoryColors.transport);
+  });
+
+  // Кастомний hex свідомо ігнорується: один довільний колір не дає пари
+  // фон/чорнило, тож чип із нього був би нечитабельним.
+  it("ignores the user's raw hex and wraps the fallback palette by idx", () => {
+    const a = getCatTiers("custom1", 0);
+    const b = getCatTiers("custom1", 1);
+    expect(a).not.toBe(b);
+    expect(getCatTiers("custom1", 0)).toBe(a);
   });
 });
 

@@ -1,12 +1,16 @@
 import type { Request, Response } from "express";
 import type { z } from "zod";
+import type { PantryMode } from "@sergeant/shared";
 import { env } from "../../env/env.js";
 import { extractJsonFromText } from "../../http/jsonSafe.js";
 import { parseBody } from "../../http/validate.js";
 import { DayPlanSchema } from "../../http/schemas.js";
 import { makeAiProviderError } from "../../obs/errors.js";
 import { getLLMProvider, invokeLLM } from "../../lib/llm/provider.js";
-import { pantryPromptSection } from "../../lib/prompt-builders.js";
+import {
+  pantryPromptSection,
+  resolvePantryMode,
+} from "../../lib/prompt-builders.js";
 import { NUTRITION_AI_TIMEOUTS_MS } from "./timeouts.js";
 
 import { ADVICE_BOUNDARY_RULE } from "../../lib/adviceBoundary.js";
@@ -41,7 +45,21 @@ interface NormalizedDayPlan {
   note: string;
 }
 
-export const SYSTEM = `Ти нутріціолог і шеф-кухар. Відповідай ТІЛЬКИ українською.
+/**
+ * Правило комори в system-промпті. Раніше тут беззастережно стояло
+ * «Намагайся використовувати продукти з наявного списку (pantry)» — і саме
+ * воно перекривало вибір користувача «не враховувати комору», навіть коли б
+ * той вибір доїхав до сервера.
+ */
+const PANTRY_RULE: Record<PantryMode, string> = {
+  prefer: "- Намагайся використовувати продукти з наявного списку (pantry)",
+  only: "- Використовуй ТІЛЬКИ продукти з наявного списку (pantry) плюс сіль, олію, воду й базові спеції",
+  ignore:
+    "- Комору НЕ враховуй: складай план вільно, з будь-яких доступних у магазині продуктів. Списку наявного тобі не передано — не вигадуй його вміст",
+};
+
+export function buildDayPlanSystem(mode: PantryMode = "prefer"): string {
+  return `Ти нутріціолог і шеф-кухар. Відповідай ТІЛЬКИ українською.
 
 ${ADVICE_BOUNDARY_RULE}
 Поверни ТІЛЬКИ валідний JSON без markdown і без додаткового тексту.
@@ -70,11 +88,15 @@ ${ADVICE_BOUNDARY_RULE}
 
 Правила:
 - Сніданок (breakfast), обід (lunch), вечеря (dinner), і 1-2 перекуси (snack)
-- Намагайся використовувати продукти з наявного списку (pantry)
+${PANTRY_RULE[mode]}
 - Загальні макроси мають максимально відповідати цільовим значенням
 - description — 1-2 рядки опису страви
 - ingredients — список ключових інгредієнтів з кількостями
 - Якщо цільові макроси не задані — пропонуй збалансоване харчування ~2000 ккал`;
+}
+
+/** Дефолтний system-промпт (`prefer`) — сумісність зі старими імпортами. */
+export const SYSTEM = buildDayPlanSystem("prefer");
 
 function numOrNull(v: unknown): number | null {
   return v != null && Number.isFinite(Number(v)) ? Number(v) : null;
@@ -135,8 +157,18 @@ export function buildDayPlanPrompt(input: DayPlanInput): {
   system: string;
   user: string;
 } {
-  const { pantry: pantryIn, targets, regenerateMealType, locale } = input;
+  const {
+    pantry: pantryIn,
+    pantryMode,
+    targets,
+    regenerateMealType,
+    locale,
+  } = input;
   const loc = String(locale || "uk-UA");
+  // Один режим на весь запит — і в секцію комори, і в system-промпт. `only`
+  // без жодної відрендереної позиції деградує до `prefer`: обмеження «тільки
+  // зі списку» над порожнім списком суперечить саме собі.
+  const mode: PantryMode = resolvePantryMode(pantryIn, "dayPlan", pantryMode);
 
   const tgt = targets || {};
   const kcal = tgt.kcal != null ? Number(tgt.kcal) : null;
@@ -147,7 +179,11 @@ export function buildDayPlanPrompt(input: DayPlanInput): {
   const pantrySec = pantryPromptSection({
     pantry: pantryIn,
     preset: "dayPlan",
-    label: "Наявні продукти (намагайся використовувати їх)",
+    label:
+      mode === "only"
+        ? "Наявні продукти (тільки вони)"
+        : "Наявні продукти (намагайся використовувати їх)",
+    mode,
   });
 
   const targetsStr =
@@ -166,7 +202,7 @@ ${pantrySec}
 
 ${regenStr}`;
 
-  return { system: SYSTEM, user: prompt };
+  return { system: buildDayPlanSystem(mode), user: prompt };
 }
 
 /**

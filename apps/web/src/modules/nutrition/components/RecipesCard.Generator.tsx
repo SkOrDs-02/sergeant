@@ -17,6 +17,7 @@ import { cn } from "@shared/lib/ui/cn";
 import type { NutritionPrefs, Pantry } from "@sergeant/nutrition-domain";
 import type { RecipeCacheEntry } from "../lib/recipeCache";
 import type { RecipeLike } from "./RecipesCard.helpers";
+import { PantryModeSelect } from "./PantryModeSelect";
 
 interface GeneratorProps {
   busy?: boolean | undefined;
@@ -155,28 +156,7 @@ export function GeneratorCard({
               <option value="snack">Перекус</option>
             </select>
           </label>
-          <label className="block">
-            <span className="block text-style-caption text-muted mb-1">
-              Як враховувати комору
-            </span>
-            <select
-              aria-label="Використання комори"
-              value={prefs.recipePantryMode}
-              onChange={(e) =>
-                setPrefs((p) => ({
-                  ...p,
-                  recipePantryMode: e.target
-                    .value as NutritionPrefs["recipePantryMode"],
-                }))
-              }
-              className="input-focus-nutrition w-full h-11 rounded-2xl bg-panel border border-line px-4 text-sm text-text"
-              disabled={busy}
-            >
-              <option value="prefer">Переважно з наявного</option>
-              <option value="only">Тільки з наявного</option>
-              <option value="ignore">Не враховувати комору</option>
-            </select>
-          </label>
+          <PantryModeSelect prefs={prefs} setPrefs={setPrefs} disabled={busy} />
         </div>
 
         <button

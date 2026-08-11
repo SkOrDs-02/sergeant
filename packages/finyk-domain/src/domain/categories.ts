@@ -5,6 +5,11 @@
 //  - побудову списку сум по категоріях для статистики.
 // `getCategory`, `resolveExpenseCategoryMeta`, `calcCategorySpent` реекспортуються
 // з `utils`, щоб UI/хуки могли імпортувати все з одного domain-модуля.
+import {
+  categoryColors,
+  categoryFallbackOrder,
+  type CategoryColorTiers,
+} from "@sergeant/design-tokens";
 import { mergeExpenseCategoryDefinitions } from "../constants";
 import {
   calcCategorySpent,
@@ -33,57 +38,57 @@ interface CustomCategory extends Category {
   color?: string | undefined;
 }
 
-// Стабільні кольори для базових категорій витрат.
-const CAT_COLORS: Record<string, string> = {
-  food: "#10b981",
-  restaurant: "#f59e0b",
-  transport: "#3b82f6",
-  subscriptions: "#8b5cf6",
-  health: "#ec4899",
-  shopping: "#f97316",
-  entertainment: "#14b8a6",
-  sport: "#22c55e",
-  beauty: "#e879f9",
-  smoking: "#78716c",
-  education: "#6366f1",
-  travel: "#0ea5e9",
-  debt: "#ef4444",
-  charity: "#84cc16",
-  utilities: "#64748b",
-  other: "#94a3b8",
-};
+/**
+ * Тири кольору категорії: `tint`/`border`/`ink` для чипів і строк,
+ * `solid` для точок і сегментів діаграм, `tintDark`/`inkDark` — те саме
+ * для «Чорнила». Джерело правди — `@sergeant/design-tokens`.
+ *
+ * AI-CONTEXT: до 2026-08-11 тут лежала таблиця сирих хексів
+ * (`#10b981`, `#84cc16`, `#14b8a6`, …), і два з них були буквально
+ * акцентами інших модулів: `entertainment` = teal-500 (Фінік),
+ * `charity` = lime-ish (Їжа), `travel` — майже cyan Фізрука. Тобто
+ * всередині Фініка діаграма фарбувалась чужою айдентикою, і жоден
+ * лінтер цього не бачив — hex сидів у домені, а не в `className`.
+ * Тепер hue гейтить `categoryColors.contract.test.js`.
+ */
+const CAT_TIERS: Record<string, CategoryColorTiers> = categoryColors;
 
-// Палітра для невідомих категорій — використовуємо idx, щоб кольори
-// не стрибали між рендерами.
-const FALLBACK_COLORS = [
-  "#6366f1",
-  "#10b981",
-  "#f59e0b",
-  "#ec4899",
-  "#0ea5e9",
-  "#f97316",
-  "#14b8a6",
-  "#8b5cf6",
-  "#22c55e",
-  "#e879f9",
-];
+/**
+ * Порядок кольорів для КАСТОМНИХ категорій — беремо за `idx`, щоб колір
+ * не стрибав між рендерами.
+ */
+const FALLBACK_TIERS: CategoryColorTiers[] = categoryFallbackOrder.map(
+  (id) => categoryColors[id],
+);
+
+/**
+ * Повний набір тирів для категорії: вбудована → з палітри за індексом.
+ *
+ * Кастомний колір користувача (`custom.color`) тут НЕ враховується — це
+ * один довільний hex без пари під текст, тож із нього не можна зібрати
+ * читабельну пару фон/чорнило. Для сирого кольору є `getCatColor`.
+ */
+export function getCatTiers(categoryId: string, idx = 0): CategoryColorTiers {
+  const base = CAT_TIERS[categoryId];
+  if (base) return base;
+  return FALLBACK_TIERS[idx % FALLBACK_TIERS.length] ?? FALLBACK_TIERS[0]!;
+}
 
 // Повертає HEX-колір для категорії: базовий → користувацький → з палітри.
-// `FALLBACK_COLORS` гарантовано непорожня, тому fallback на `[0]` нижче
-// не буде null — індекс просто wrap-иться по модулю.
+// `FALLBACK_TIERS` гарантовано непорожня, тому fallback нижче не буде null —
+// індекс просто wrap-иться по модулю.
 export function getCatColor(
   categoryId: string,
   customCategories: CustomCategory[] = [],
   idx = 0,
 ): string {
-  const base = CAT_COLORS[categoryId];
-  if (base) return base;
+  const base = CAT_TIERS[categoryId];
+  if (base) return base.solid;
   const custom = Array.isArray(customCategories)
     ? customCategories.find((c) => c.id === categoryId)
     : null;
   if (custom?.color) return custom.color;
-  const palette = FALLBACK_COLORS;
-  return palette[idx % palette.length] ?? palette[0]!;
+  return getCatTiers(categoryId, idx).solid;
 }
 
 // Повний список категорій витрат (базові + користувацькі). За замовчуванням

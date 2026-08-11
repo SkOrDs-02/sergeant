@@ -46,6 +46,7 @@ import {
   emptyHabitDraft,
   habitDraftToPatch,
   habitToDraft,
+  matchReminderPreset,
   validateHabitDraft,
   type Habit,
   type HabitDraft,
@@ -156,16 +157,14 @@ export function HabitForm({
 
   // Which reminder preset (if any) matches the current times — drives
   // the "selected" state of the preset chip row.
-  const activePresetId = useMemo<string | null>(() => {
-    const cur = (draft.reminderTimes || []).slice().sort();
-    for (const p of REMINDER_PRESETS) {
-      const ref = [...p.times].sort();
-      if (cur.length === ref.length && cur.every((t, i) => t === ref[i])) {
-        return p.id;
-      }
-    }
-    return null;
-  }, [draft.reminderTimes]);
+  // Збіг за ЧАСТИНОЮ ДОБИ, а не за точним часом: правка 08:00 → 11:00 має
+  // перевести підсвітку на «День», а не погасити її. Розбір і межі — у
+  // `matchReminderPreset` (`@sergeant/routine-domain`), спільному з вебом,
+  // щоб дві поверхні не розійшлись у тому, що вважають «ранком».
+  const activePresetId = useMemo<string | null>(
+    () => matchReminderPreset(draft.reminderTimes || [])?.id ?? null,
+    [draft.reminderTimes],
+  );
 
   const handleSelectPreset = useCallback((presetId: string) => {
     const preset = REMINDER_PRESETS.find((p) => p.id === presetId);

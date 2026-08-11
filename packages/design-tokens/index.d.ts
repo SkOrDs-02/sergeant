@@ -44,6 +44,56 @@ export declare const chartPalette: Readonly<Record<string, string>>;
 export declare const chartPaletteList: readonly string[];
 
 /**
+ * Ідентифікатори вбудованих категорій витрат Фініка, які мають власний
+ * колір. Кастомні категорії кольору тут не мають — вони беруть його з
+ * `categoryFallbackOrder` за індексом.
+ */
+export type CategoryColorKey =
+  | "restaurant"
+  | "travel"
+  | "utilities"
+  | "smoking"
+  | "charity"
+  | "sport"
+  | "food"
+  | "entertainment"
+  | "transport"
+  | "education"
+  | "subscriptions"
+  | "shopping"
+  | "beauty"
+  | "health"
+  | "debt"
+  | "other";
+
+/** Тири одного кольору категорії. Див. `categoryColors` в `tokens.js`. */
+export interface CategoryColorTiers {
+  /** Фон чипа/строки, світла тема. */
+  readonly tint: string;
+  /** Межа того ж чипа. */
+  readonly border: string;
+  /** Гліф і текст поверх `tint` — AA і на `tint`, і на фоні сторінки. */
+  readonly ink: string;
+  /** Насичений мід-тон: точки, сегменти діаграм. */
+  readonly solid: string;
+  /** Фон чипа у «Чорнилі». */
+  readonly tintDark: string;
+  /** Текст поверх `tintDark`. */
+  readonly inkDark: string;
+}
+
+/**
+ * Кольори категорій витрат — окрема родина, свідомо розведена з
+ * модульними акцентами (гейт `categoryColors.contract.test.js`).
+ */
+export declare const categoryColors: Readonly<
+  Record<CategoryColorKey, CategoryColorTiers>
+>;
+
+/** Порядок кольорів для кастомних категорій (за індексом). */
+export declare const categoryFallbackOrder: readonly CategoryColorKey[];
+
+/**
  * Module-specific accent colours keyed by module identifier. Every module
  * guarantees a `primary` shade; additional shades (`secondary`, `surface`, …)
  * are module-dependent and surface as `string | undefined` under

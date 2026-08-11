@@ -43,6 +43,17 @@ function makeWrapper() {
   };
 }
 
+const BASE_PREFS: UseNutritionRemoteActionsParams["prefs"] = {
+  goal: "balanced",
+  servings: 2,
+  timeMinutes: 30,
+  exclude: "",
+  dailyTargetKcal: 2000,
+  dailyTargetProtein_g: 120,
+  dailyTargetFat_g: 70,
+  dailyTargetCarbs_g: 200,
+};
+
 function makeHarness(overrides: Partial<UseNutritionRemoteActionsParams> = {}) {
   const setBusy = vi.fn();
   const setErr = vi.fn();
@@ -67,16 +78,7 @@ function makeHarness(overrides: Partial<UseNutritionRemoteActionsParams> = {}) {
     pantry: {
       effectiveItems: [{ name: "яйця", qty: 10, unit: "шт", notes: null }],
     },
-    prefs: {
-      goal: "balanced",
-      servings: 2,
-      timeMinutes: 30,
-      exclude: "",
-      dailyTargetKcal: 2000,
-      dailyTargetProtein_g: 120,
-      dailyTargetFat_g: 70,
-      dailyTargetCarbs_g: 200,
-    },
+    prefs: BASE_PREFS,
     recipes: [],
     setRecipes,
     setRecipesRaw,
@@ -214,6 +216,23 @@ describe("useNutritionRemoteActions", () => {
         expect.objectContaining({ pantry: [] }),
       );
       expect(spies.setErr).not.toHaveBeenCalledWith("Додай продукти в комору.");
+    });
+
+    it("шле pantryMode і не шле комору, коли обрано «не враховувати»", async () => {
+      // Репорт founder-а: у пікері обрано «не враховувати комору», а тижневий
+      // план усе одно пропонував страви з комори. Причина — тіло запиту
+      // взагалі не мало `pantryMode`, а список комори йшов беззастережно.
+      apiFetchWeekPlan.mockResolvedValueOnce({ plan: { days: [] } });
+      const { result } = makeHarness({
+        prefs: { ...BASE_PREFS, recipePantryMode: "ignore" },
+      });
+      act(() => {
+        result.current.fetchWeekPlan();
+      });
+      await waitFor(() => expect(apiFetchWeekPlan).toHaveBeenCalled());
+      expect(apiFetchWeekPlan).toHaveBeenCalledWith(
+        expect.objectContaining({ pantryMode: "ignore", pantry: [] }),
+      );
     });
 
     it("відкат повертає і структуру, і сирий текст", async () => {
@@ -411,6 +430,40 @@ describe("useNutritionRemoteActions", () => {
       );
       expect(body).not.toHaveProperty("items");
       expect(body).not.toHaveProperty("regenerateMealType");
+    });
+
+    it("шле pantryMode і не шле комору, коли обрано «не враховувати»", async () => {
+      // Ядро репорту founder-а: вибір «не враховувати комору» не доїжджав до
+      // денного плану взагалі — у тілі запиту не було ані `pantryMode`, ані
+      // причини не слати повний список продуктів.
+      apiFetchDayPlan.mockResolvedValueOnce({ plan: { meals: [] } });
+      const { result } = makeHarness({
+        prefs: { ...BASE_PREFS, recipePantryMode: "ignore" },
+      });
+      act(() => {
+        result.current.fetchDayPlan();
+      });
+      await waitFor(() => expect(apiFetchDayPlan).toHaveBeenCalled());
+      const body = apiFetchDayPlan.mock.calls.at(-1)?.[0];
+      expect(body).toEqual(
+        expect.objectContaining({ pantryMode: "ignore", pantry: [] }),
+      );
+    });
+
+    it("шле повну комору в режимі prefer (дефолт)", async () => {
+      apiFetchDayPlan.mockResolvedValueOnce({ plan: { meals: [] } });
+      const { result } = makeHarness();
+      act(() => {
+        result.current.fetchDayPlan();
+      });
+      await waitFor(() => expect(apiFetchDayPlan).toHaveBeenCalled());
+      const body = apiFetchDayPlan.mock.calls.at(-1)?.[0];
+      expect(body).toEqual(
+        expect.objectContaining({
+          pantryMode: "prefer",
+          pantry: [{ name: "яйця", qty: 10, unit: "шт", notes: null }],
+        }),
+      );
     });
 
     it("includes regenerateMealType when regenerating a specific meal", async () => {

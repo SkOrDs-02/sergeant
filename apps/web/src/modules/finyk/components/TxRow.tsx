@@ -10,6 +10,7 @@ import type { MonoAccount } from "@sergeant/finyk-domain/lib/accounts";
 import type { TxSplitsMap } from "@sergeant/finyk-domain/domain/types";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon, type IconName } from "@shared/components/ui/Icon";
+import { catChipVars } from "../lib/categoryChip";
 import {
   CATEGORY_ICON_MAP,
   getAccountShortName,
@@ -91,16 +92,20 @@ function TxRowImpl({
         </span>
       ) : (
         // 28px tinted circle — decorative, non-interactive (aria-hidden).
-        // bg-finyk/10 gives a soft teal wash; text-finyk-strong
-        // ensures ≥4.5:1 contrast on the bg-panel surface in light mode.
-        // dark:bg-finyk/15 lifts the wash slightly for dark-surface parity.
+        //
+        // Колір кола — власний колір КАТЕГОРІЇ, не акцент модуля. До
+        // 2026-08-11 тут стояв `bg-finyk/10 + text-finyk-strong`: одна
+        // й та сама бірюза на кожному рядку, тобто колір був, а
+        // інформації в ньому не було. Тепер іконка, чип із назвою і
+        // обраний чип у пікері тримають один відтінок — око чіпляється
+        // за колір, а не перечитує підпис.
         <span
           aria-hidden="true"
+          style={catChipVars(cat.id)}
           className={cn(
             "shrink-0 inline-flex items-center justify-center rounded-full",
             "w-7 h-7",
-            "bg-finyk/10 dark:bg-finyk/15",
-            "text-finyk-strong dark:text-finyk",
+            "cat-chip",
           )}
         >
           <Icon name={pillIconName} size={16} strokeWidth={1.75} />

@@ -7,6 +7,7 @@ import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
 import { Measure } from "@shared/components/ui/Measure";
 import { cn } from "@shared/lib/ui/cn";
+import { messages } from "@shared/i18n/uk";
 import { FirstRunHintBanner } from "../../../core/onboarding/FirstRunHintBanner";
 import type { NutritionPrefs, PantryItem } from "@sergeant/nutrition-domain";
 import type {
@@ -25,6 +26,7 @@ import {
   type PlanMeal,
 } from "./DailyPlanMealRow";
 import { DailyPlanGoalSelectors } from "./DailyPlanGoalSelectors";
+import { PantryModeSelect } from "./PantryModeSelect";
 
 // Re-export pure validation helpers for tests / consumers that already
 // imported them from the original (now slimmed) component module. The
@@ -104,12 +106,18 @@ export function DailyPlanCard({
   // помітна користувачеві неправда — саме цей рядок.
   const freshness = describePlanFreshness(dayPlanSavedAt);
 
+  // Копія мусить відповідати режиму комори: обіцяти «з урахуванням продуктів
+  // з комори», коли користувач обрав «не враховувати», — це та сама неправда,
+  // що й ігнорувати сам вибір.
+  const pantryIgnored = prefs.recipePantryMode === "ignore";
+
   return (
     <Card className="p-4">
       <div className="text-style-label text-text">Денний план</div>
       <div className="text-style-caption text-muted mt-0.5">
-        AI генерує персоналізований план прийомів їжі з урахуванням твоїх цілей
-        та продуктів з комори.
+        {pantryIgnored
+          ? messages.nutrition.dayPlanIntro.pantryIgnored
+          : messages.nutrition.dayPlanIntro.withPantry}
       </div>
 
       <div className="mt-4 space-y-4">
@@ -289,6 +297,12 @@ export function DailyPlanCard({
           )}
         </div>
 
+        <PantryModeSelect
+          prefs={prefs}
+          setPrefs={setPrefs}
+          disabled={busy || dayPlanBusy || weekPlanBusy}
+        />
+
         <div className="grid gap-2">
           <button
             type="button"
@@ -316,7 +330,7 @@ export function DailyPlanCard({
           )}
         </div>
 
-        {pantryItems?.length === 0 && (
+        {pantryItems?.length === 0 && !pantryIgnored && (
           <div className="text-style-caption text-muted text-center -mt-2">
             Додай продукти в комору — AI врахує їх у плані
           </div>

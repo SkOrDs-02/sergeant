@@ -254,6 +254,97 @@ describe("nutrition day-plan handler", () => {
     ]);
   });
 
+  it("pantryMode=ignore прибирає комору і з user-, і з system-промпту", async () => {
+    // Репорт founder-а: у пікері обрано «не враховувати комору», а план усе
+    // одно спирався на комору. Причина була двошарова — параметр не доїжджав
+    // до сервера ВЗАГАЛІ, а system-промпт беззастережно просив
+    // «використовувати продукти з наявного списку».
+    invokeLLM.mockResolvedValueOnce({ ok: true, text: '{"meals":[]}' });
+
+    await handler(
+      makeReq({
+        pantry: [{ name: "вівсянка", qty: 500, unit: "г" }],
+        pantryMode: "ignore",
+        locale: "uk-UA",
+      }),
+      makeRes(),
+    );
+
+    const opts = asRecord(invokeLLM.mock.calls[0]?.[1]);
+    const messages = opts["messages"] as Array<{ content: string }>;
+    expect(messages[0]?.content).not.toContain("вівсянка");
+    expect(messages[0]?.content).toContain("Комору НЕ враховуй");
+    expect(String(opts["system"])).not.toContain(
+      "Намагайся використовувати продукти з наявного списку",
+    );
+    expect(String(opts["system"])).toContain("Комору НЕ враховуй");
+  });
+
+  it("pantryMode=only просить рівно наявне", async () => {
+    invokeLLM.mockResolvedValueOnce({ ok: true, text: '{"meals":[]}' });
+
+    await handler(
+      makeReq({
+        pantry: [{ name: "вівсянка", qty: 500, unit: "г" }],
+        pantryMode: "only",
+        locale: "uk-UA",
+      }),
+      makeRes(),
+    );
+
+    const opts = asRecord(invokeLLM.mock.calls[0]?.[1]);
+    const messages = opts["messages"] as Array<{ content: string }>;
+    expect(messages[0]?.content).toContain("вівсянка — 500 г");
+    expect(String(opts["system"])).toContain("Використовуй ТІЛЬКИ продукти");
+  });
+
+  it.each([
+    ["порожній масив", [] as unknown[]],
+    ["поле відсутнє", undefined],
+    ["позиції без назви", [{}, { name: "" }, ""] as unknown[]],
+  ])(
+    "pantryMode=only з порожньою коморою (%s) не суперечить сам собі",
+    async (_label, pantry) => {
+      // Обмеження «ТІЛЬКИ зі списку» над відсутнім списком не обмежує нічого,
+      // зате ламає відповідь: модель отримує вимогу, яку неможливо виконати.
+      // Перевіряємо ОБИДВІ половини промпту — user і system: спершу правку
+      // зробили лише в секції комори, і суперечність просто переїхала в
+      // system, лишившись невидимою для тесту, що дивився на одну половину.
+      invokeLLM.mockResolvedValueOnce({ ok: true, text: '{"meals":[]}' });
+
+      await handler(
+        makeReq({ pantry, pantryMode: "only", locale: "uk-UA" }),
+        makeRes(),
+      );
+
+      const opts = asRecord(invokeLLM.mock.calls[0]?.[1]);
+      const messages = opts["messages"] as Array<{ content: string }>;
+      expect(messages[0]?.content).not.toContain("ТІЛЬКИ ці продукти");
+      expect(String(opts["system"])).not.toContain(
+        "Використовуй ТІЛЬКИ продукти",
+      );
+    },
+  );
+
+  it("без pantryMode поведінка лишається історичною (prefer)", async () => {
+    invokeLLM.mockResolvedValueOnce({ ok: true, text: '{"meals":[]}' });
+
+    await handler(
+      makeReq({
+        pantry: [{ name: "вівсянка", qty: 500, unit: "г" }],
+        locale: "uk-UA",
+      }),
+      makeRes(),
+    );
+
+    const opts = asRecord(invokeLLM.mock.calls[0]?.[1]);
+    const messages = opts["messages"] as Array<{ content: string }>;
+    expect(messages[0]?.content).toContain("вівсянка — 500 г");
+    expect(String(opts["system"])).toContain(
+      "Намагайся використовувати продукти з наявного списку",
+    );
+  });
+
   it("passes userId to the provider when session user is present", async () => {
     invokeLLM.mockResolvedValueOnce({ ok: true, text: '{"meals":[]}' });
 

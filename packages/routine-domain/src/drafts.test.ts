@@ -6,6 +6,7 @@ import {
   habitDraftToPatch,
   habitToDraft,
   isHabitDraftValid,
+  matchReminderPreset,
   normalizeReminderTimes,
   routineTodayDate,
   validateHabitDraft,
@@ -156,6 +157,52 @@ describe("routine-domain/drafts", () => {
       draft.recurrence = "daily";
       draft.weekdays = [];
       expect(validateHabitDraft(draft)).toEqual({});
+    });
+  });
+
+  describe("matchReminderPreset", () => {
+    // Репорт тестера: правиш 08:00 на 11:00 — і підсвітка «Ранок» гасне.
+    // «Якби вона стрибала на інший час доби, то ок; а так наче чогось не
+    // вистачає, коли зовсім зникає.» Тому збіг — за частиною доби.
+    it("тримає підсвітку, коли час лишився в тій самій частині доби", () => {
+      expect(matchReminderPreset(["07:15"])?.id).toBe("morning");
+      expect(matchReminderPreset(["21:30"])?.id).toBe("evening");
+    });
+
+    it("перестрибує на сусідній пресет, коли час перейшов межу", () => {
+      // Рівно випадок зі скріншота: 08:00 → 11:00. 11:00 ближче до якоря
+      // 13:00, ніж до 08:00, тож засвічується «День», а не порожнеча.
+      expect(matchReminderPreset(["11:00"])?.id).toBe("afternoon");
+    });
+
+    it("точні часи пресетів матчаться самі на себе", () => {
+      for (const preset of REMINDER_PRESETS) {
+        expect(matchReminderPreset(preset.times)?.id).toBe(preset.id);
+      }
+    });
+
+    it("рахує ніч як вечір, а не як ранок", () => {
+      // 23:00 по колу ближче до 20:00 (3 год), ніж до 08:00 (9 год).
+      expect(matchReminderPreset(["23:00"])?.id).toBe("evening");
+    });
+
+    it("тримає складені пресети при зсуві однієї з міток", () => {
+      expect(matchReminderPreset(["07:30", "21:00"])?.id).toBe("twice");
+      expect(matchReminderPreset(["07:30", "12:30", "21:00"])?.id).toBe(
+        "thrice",
+      );
+    });
+
+    it("два часи в одній частині доби — НЕ пресет", () => {
+      // Інакше чип брехав би про поточний стан, а повторний клік по ньому
+      // мовчки знищив би одне з двох нагадувань.
+      expect(matchReminderPreset(["08:00", "09:00"])).toBeNull();
+    });
+
+    it("порожній список і сміття не матчаться", () => {
+      expect(matchReminderPreset([])).toBeNull();
+      expect(matchReminderPreset(["не-час"])).toBeNull();
+      expect(matchReminderPreset(["25:00"])).toBeNull();
     });
   });
 });
