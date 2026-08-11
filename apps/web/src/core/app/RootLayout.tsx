@@ -8,6 +8,7 @@ import {
 } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useTheme } from "@shared/hooks/useTheme";
+import { useResetPinchZoomOnResume } from "@shared/hooks/useResetPinchZoomOnResume";
 import { useKeyboardShortcutsModal } from "@shared/components/ui/KeyboardShortcutsModal";
 import { useCommandPaletteHotkey } from "@shared/components/ui/CommandPalette";
 import { SkipLink } from "@shared/components/ui/SkipLink";
@@ -248,6 +249,10 @@ function RootLayoutInner() {
   // Global side effects
   useTheme();
   useActivationV2Boot();
+  // Recovers from iOS Safari leaving the page pinch-zoomed after the
+  // native camera sheet closes (e.g. PhotoAnalyzeCard's photo picker) —
+  // see the hook's doc comment for the WebKit mechanics.
+  useResetPinchZoomOnResume();
 
   // Keep the tab title pinned per route on every navigation. The static
   // <title> in index.html is set once at load; some sub-routes (e.g.
