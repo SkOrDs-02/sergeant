@@ -3,6 +3,7 @@ import { pluralExercises } from "@sergeant/shared";
 import type { FizrukData } from "@sergeant/fizruk-domain";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Input } from "@shared/components/ui/Input";
+import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
 import { Label } from "@shared/components/ui/FormField";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
@@ -218,6 +219,7 @@ export function WorkoutTemplatesSection({
               Додати вправу з каталогу
             </SectionHeading>
             <Input
+              {...searchFieldProps("template-exercise-search")}
               placeholder="Пошук…"
               value={q}
               onChange={(e) => setQ(e.target.value)}

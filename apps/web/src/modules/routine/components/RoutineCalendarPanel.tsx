@@ -8,6 +8,7 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
+import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
 import { Segmented } from "@shared/components/ui/Segmented";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { WeekDayStrip } from "./WeekDayStrip";
@@ -265,6 +266,7 @@ export function RoutineCalendarPanel({
 
       <Input
         className="routine-touch-field w-full max-w-md"
+        {...searchFieldProps("routine-feed-search")}
         placeholder="Пошук у стрічці…"
         value={listQueryDraft}
         onChange={(e: ChangeEvent<HTMLInputElement>) =>

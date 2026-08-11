@@ -8,6 +8,7 @@ import type {
   recoveryConflictsForExercise as recoveryConflictsForExerciseFn,
 } from "@sergeant/fizruk-domain";
 import { Input } from "@shared/components/ui/Input";
+import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
 import { Icon } from "@shared/components/ui/Icon";
 import { MorphChevron } from "@shared/components/ui/MorphChevron";
 import { EmptyState } from "@shared/components/ui/EmptyState";
@@ -67,6 +68,7 @@ export function WorkoutCatalogSection({
     <>
       <div className="relative mb-3">
         <Input
+          {...searchFieldProps("workout-catalog-search")}
           placeholder="Пошук (жим, підтягування, спина…)"
           value={q}
           onChange={(e) => setQ(e.target.value)}

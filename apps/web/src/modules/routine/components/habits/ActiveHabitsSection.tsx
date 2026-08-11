@@ -7,6 +7,7 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
+import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { RoutineEmptyIllustration } from "@shared/components/ui/EmptyStateIllustrations";
 import { sortHabitsByOrder } from "../../lib/habitOrder";
@@ -72,6 +73,7 @@ export function ActiveHabitsSection({
       </p>
       <Input
         className="routine-touch-field w-full max-w-md"
+        {...searchFieldProps("habit-list-search")}
         placeholder="Пошук у списку звичок…"
         value={habitListQuery}
         onChange={(e) => setHabitListQuery(e.target.value)}
