@@ -912,6 +912,9 @@ importers:
 
   packages/finyk-domain:
     dependencies:
+      '@sergeant/design-tokens':
+        specifier: workspace:*
+        version: link:../design-tokens
       '@sergeant/shared':
         specifier: workspace:*
         version: link:../shared

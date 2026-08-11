@@ -26,6 +26,7 @@
     "mutation:core": "cross-env TZ=Europe/Kyiv stryker run stryker.core.conf.json"
   },
   "dependencies": {
+    "@sergeant/design-tokens": "workspace:*",
     "@sergeant/shared": "workspace:*"
   },
   "devDependencies": {

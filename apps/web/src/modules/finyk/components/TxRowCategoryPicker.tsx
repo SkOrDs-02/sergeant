@@ -14,6 +14,7 @@ import {
   trackEvent,
 } from "../../../core/observability/analytics";
 import { readSignalContext } from "../../../core/observability/valueSignalAttribution";
+import { catChipVars } from "../lib/categoryChip";
 import { stripLeadingEmoji } from "./txRowHelpers";
 
 interface CategoryOption {
@@ -88,9 +89,10 @@ export function TxRowCategoryPicker({
   return (
     <div className="pb-3 px-2 space-y-2">
       <div className="flex flex-wrap gap-1.5">
-        {categories.map((c) => (
+        {categories.map((c, idx) => (
           <button
             key={c.id}
+            style={catChipVars(c.id, idx)}
             onClick={() => {
               const nextCatId =
                 c.id === currentCatId && overrideCatId ? null : c.id;
@@ -114,16 +116,29 @@ export function TxRowCategoryPicker({
             }}
             className={cn(
               "text-style-caption px-3 py-2 rounded-xl border transition-colors min-h-[34px]",
-              // Обрана категорія — акцентом модуля, а не інверсією чорнила.
-              // `bg-text text-bg` давало чорну плашку: заливка є, але вона
-              // нічого не каже про те, ЩО обрано, і читається як «вимкнено».
-              // Трійка `-soft` (фон / межа / текст) — той самий рецепт, що в
-              // чипах Рутини, і вже перевірена на контраст.
+              "inline-flex items-center gap-1.5",
+              // Обрана категорія — заливка ВЛАСНИМ кольором категорії.
+              // Спершу тут стояла інверсія чорнила (`bg-text text-bg`) —
+              // чорна плашка, яка нічого не каже про те, ЩО обрано; потім
+              // акцент модуля — уже краще, але однаковий для всіх 16
+              // категорій, тобто підказував лише «обрано», не «що саме».
+              // Тепер обрана категорія тримає свій відтінок, і той самий
+              // відтінок людина потім бачить у строці транзакції.
               c.id === currentCatId
-                ? "border-finyk-soft-border bg-finyk-soft text-finyk-soft-fg shadow-sm"
+                ? "cat-chip shadow-sm"
                 : "border-line text-subtle hover:border-muted hover:text-text",
             )}
           >
+            {/* Необраний чип отримує лише 6px крапку: колір читається,
+                але 16 залитих плашок поспіль перетворили б пікер на
+                вітраж. Крапка декоративна — назва поруч несе сенс. */}
+            <span
+              aria-hidden="true"
+              className={cn(
+                "cat-dot shrink-0 rounded-full w-1.5 h-1.5",
+                c.id === currentCatId && "hidden",
+              )}
+            />
             {stripLeadingEmoji(c.label)}
           </button>
         ))}
