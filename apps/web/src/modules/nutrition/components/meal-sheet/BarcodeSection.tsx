@@ -3,85 +3,46 @@
  * Status: Active
  */
 import type { Dispatch, SetStateAction } from "react";
-import { SectionHeading } from "@shared/components/ui/SectionHeading";
-import { Input } from "@shared/components/ui/Input";
 import { Button } from "@shared/components/ui/Button";
+import { Icon } from "@shared/components/ui/Icon";
 import { BarcodeLookupNotice } from "../BarcodeLookupNotice";
 import type { BarcodeLookupNotice as BarcodeLookupNoticeState } from "./useBarcodeLookup";
 
 interface BarcodeSectionProps {
-  barcode: string;
-  setBarcode: Dispatch<SetStateAction<string>>;
   barcodeStatus: string;
   setBarcodeStatus: Dispatch<SetStateAction<string>>;
   barcodeNotice?: BarcodeLookupNoticeState | null | undefined;
   onDismissBarcodeNotice?: (() => void) | undefined;
   onRetryBarcodeLookup?: (() => void) | undefined;
   onUsePhotoForBarcode?: (() => void) | undefined;
-  handleBarcodeLookup: (barcode: string) => void | Promise<void>;
-  handleBarcodeBind: (barcode: string) => void | Promise<void>;
   setScannerOpen: Dispatch<SetStateAction<boolean>>;
 }
 
 export function BarcodeSection({
-  barcode,
-  setBarcode,
   barcodeStatus,
   setBarcodeStatus,
   barcodeNotice,
   onDismissBarcodeNotice,
   onRetryBarcodeLookup,
   onUsePhotoForBarcode,
-  handleBarcodeLookup,
-  handleBarcodeBind,
   setScannerOpen,
 }: BarcodeSectionProps) {
   return (
-    <div className="mb-4 rounded-2xl border border-line bg-panel/40 px-3 py-3">
-      <SectionHeading as="div" size="xs" variant="nutrition" className="mb-2">
-        Штрихкод
-      </SectionHeading>
-      <div className="flex flex-wrap gap-2 items-center">
-        <Input
-          value={barcode}
-          onChange={(e) => {
-            setBarcode(e.target.value.replace(/\s+/g, ""));
-            setBarcodeStatus("");
-            onDismissBarcodeNotice?.();
-          }}
-          inputMode="numeric"
-          placeholder="EAN/UPC…"
-          aria-label="Штрихкод"
-          className="w-[160px]"
-        />
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          onClick={() => handleBarcodeLookup(barcode)}
-        >
-          Знайти
-        </Button>
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          onClick={() => handleBarcodeBind(barcode)}
-        >
-          Прив{"'"}язати
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          className="h-9 text-xs"
-          onClick={() => {
-            setBarcodeStatus("");
-            setScannerOpen(true);
-          }}
-        >
-          Сканувати
-        </Button>
-      </div>
+    <div className="min-w-0">
+      <Button
+        type="button"
+        variant="secondary"
+        className="w-full h-12 min-h-[44px] flex items-center justify-center gap-2"
+        onClick={() => {
+          setBarcodeStatus("");
+          onDismissBarcodeNotice?.();
+          setScannerOpen(true);
+        }}
+        aria-label="Сканувати штрихкод"
+      >
+        <Icon name="scanner" size="sm" aria-hidden />
+        <span>Сканувати</span>
+      </Button>
       {barcodeStatus && !barcodeNotice && (
         <div className="text-style-caption text-subtle mt-1">
           {barcodeStatus}

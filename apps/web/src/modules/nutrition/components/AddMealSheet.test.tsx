@@ -337,7 +337,8 @@ describe("AddMealSheet — source step (with templates)", () => {
         },
       ],
     });
-    fireEvent.click(screen.getAllByText("Ввести вручну")[0]!);
+    expect(screen.getAllByText("Ввести вручну")).toHaveLength(1);
+    fireEvent.click(screen.getByText("Ввести вручну"));
     expect(screen.getByTestId("macros-editor")).toBeInTheDocument();
     expect(screen.getByText("Додати прийом їжі")).toBeInTheDocument();
   });
@@ -661,7 +662,9 @@ describe("AddMealSheet — source step branches", () => {
       mealTemplates: [template],
       onRequestPhoto,
     });
-    fireEvent.click(screen.getByLabelText("Сфотографувати страву"));
+    expect(screen.getByText("Фото")).toBeInTheDocument();
+    expect(screen.queryByText("Сфотографувати страву")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText("Додати страву з фото"));
     expect(onRequestPhoto).toHaveBeenCalledTimes(1);
   });
 
@@ -690,7 +693,7 @@ describe("AddMealSheet — source step branches", () => {
 
   it("shows back arrow after manual forward navigation from source", () => {
     renderSheet({ mealTemplates: [template] });
-    fireEvent.click(screen.getAllByText("Ввести вручну")[0]!);
+    fireEvent.click(screen.getByText("Ввести вручну"));
     expect(
       screen.getByLabelText("Назад до вибору джерела"),
     ).toBeInTheDocument();
@@ -698,7 +701,7 @@ describe("AddMealSheet — source step branches", () => {
 
   it("back arrow returns to source step", () => {
     renderSheet({ mealTemplates: [template] });
-    fireEvent.click(screen.getAllByText("Ввести вручну")[0]!);
+    fireEvent.click(screen.getByText("Ввести вручну"));
     fireEvent.click(screen.getByLabelText("Назад до вибору джерела"));
     expect(screen.getByText("Звідки страва?")).toBeInTheDocument();
   });

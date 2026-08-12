@@ -154,7 +154,6 @@ export function AddMealSheet({
     scannerOpen,
     setScannerOpen,
     handleBarcodeLookup,
-    handleBarcodeBind,
   } = useBarcodeLookup({
     pickedFood,
     setPickedFood,
@@ -450,27 +449,10 @@ export function AddMealSheet({
       >
         {step === "source" ? (
           <>
-            {/* Intro row doubles as a primary shortcut: the old paragraph
-                ended with «…або заповніть вручну» which described an
-                action hidden at the bottom of the sheet, making first-time
-                users scroll past templates/pantry/search/barcode/photo just
-                to find it. Pair the hint with an inline «Ввести вручну →»
-                link so the quickest manual log is one tap from the sheet
-                opening. The full button stays below for discoverability
-                when users scroll past the sources. */}
-            <div className="mb-3 flex items-start justify-between gap-3">
-              <p className="text-style-caption text-muted">
-                Оберіть джерело нижче. Макроси, назву й час відредагуєте на
-                наступному кроці.
-              </p>
-              <button
-                type="button"
-                onClick={() => setStep("fill")}
-                className="shrink-0 text-style-caption text-nutrition-strong dark:text-nutrition hover:text-nutrition-hover underline decoration-dotted underline-offset-2 transition-colors min-h-[36px] px-1"
-              >
-                Ввести вручну →
-              </button>
-            </div>
+            <p className="mb-3 text-style-caption text-muted">
+              Оберіть джерело нижче. Макроси, назву й час відредагуєте на
+              наступному кроці.
+            </p>
 
             {/* Templates / pantry rows disappear when empty so a
                   first-time user sees search + barcode as the whole step
@@ -534,22 +516,20 @@ export function AddMealSheet({
               setPickedGrams={setPickedGrams}
             />
 
-            <BarcodeSection
-              barcode={barcode}
-              setBarcode={setBarcode}
-              barcodeStatus={barcodeStatus}
-              setBarcodeStatus={setBarcodeStatus}
-              barcodeNotice={barcodeNotice}
-              onDismissBarcodeNotice={() => setBarcodeNotice(null)}
-              onRetryBarcodeLookup={() => void handleBarcodeLookup(barcode)}
-              onUsePhotoForBarcode={onRequestPhoto}
-              handleBarcodeLookup={handleBarcodeLookup}
-              handleBarcodeBind={handleBarcodeBind}
-              setScannerOpen={setScannerOpen}
-            />
+            <div
+              className={`mt-4 grid gap-3 ${onRequestPhoto ? "grid-cols-2" : "grid-cols-1"}`}
+            >
+              <BarcodeSection
+                barcodeStatus={barcodeStatus}
+                setBarcodeStatus={setBarcodeStatus}
+                barcodeNotice={barcodeNotice}
+                onDismissBarcodeNotice={() => setBarcodeNotice(null)}
+                onRetryBarcodeLookup={() => void handleBarcodeLookup(barcode)}
+                onUsePhotoForBarcode={onRequestPhoto}
+                setScannerOpen={setScannerOpen}
+              />
 
-            {onRequestPhoto && (
-              <div className="mt-4">
+              {onRequestPhoto && (
                 <Button
                   type="button"
                   variant="secondary"
@@ -562,13 +542,13 @@ export function AddMealSheet({
                     // `add_meal_photo` PWA shortcut already uses.
                     onRequestPhoto();
                   }}
-                  aria-label="Сфотографувати страву"
+                  aria-label="Додати страву з фото"
                 >
                   <Icon name="camera" size="sm" aria-hidden />
-                  <span>Сфотографувати страву</span>
+                  <span>Фото</span>
                 </Button>
-              </div>
-            )}
+              )}
+            </div>
 
             <div className="mt-5 flex items-center gap-3 text-style-caption text-muted">
               <span className="flex-1 h-px bg-line" />
