@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, type Mock, vi } from "vitest";
 import type { Request, Response } from "express";
+import { PANTRY_ONLY_EMPTY_MESSAGE } from "@sergeant/shared";
 
 vi.mock("../../lib/llm/provider.js", () => ({
   getLLMProvider: vi.fn(() => ({ name: "stub" })),
@@ -296,6 +297,7 @@ describe("nutrition day-plan handler", () => {
     const messages = opts["messages"] as Array<{ content: string }>;
     expect(messages[0]?.content).toContain("вівсянка — 500 г");
     expect(String(opts["system"])).toContain("Використовуй ТІЛЬКИ продукти");
+    expect(String(opts["system"])).toContain("відсутніх продуктів не додавай");
   });
 
   it.each([
@@ -303,26 +305,19 @@ describe("nutrition day-plan handler", () => {
     ["поле відсутнє", undefined],
     ["позиції без назви", [{}, { name: "" }, ""] as unknown[]],
   ])(
-    "pantryMode=only з порожньою коморою (%s) не суперечить сам собі",
+    "pantryMode=only з порожньою коморою (%s) не запускає LLM",
     async (_label, pantry) => {
-      // Обмеження «ТІЛЬКИ зі списку» над відсутнім списком не обмежує нічого,
-      // зате ламає відповідь: модель отримує вимогу, яку неможливо виконати.
-      // Перевіряємо ОБИДВІ половини промпту — user і system: спершу правку
-      // зробили лише в секції комори, і суперечність просто переїхала в
-      // system, лишившись невидимою для тесту, що дивився на одну половину.
-      invokeLLM.mockResolvedValueOnce({ ok: true, text: '{"meals":[]}' });
-
-      await handler(
-        makeReq({ pantry, pantryMode: "only", locale: "uk-UA" }),
-        makeRes(),
-      );
-
-      const opts = asRecord(invokeLLM.mock.calls[0]?.[1]);
-      const messages = opts["messages"] as Array<{ content: string }>;
-      expect(messages[0]?.content).not.toContain("ТІЛЬКИ ці продукти");
-      expect(String(opts["system"])).not.toContain(
-        "Використовуй ТІЛЬКИ продукти",
-      );
+      await expect(
+        handler(
+          makeReq({ pantry, pantryMode: "only", locale: "uk-UA" }),
+          makeRes(),
+        ),
+      ).rejects.toMatchObject({
+        status: 400,
+        code: "VALIDATION",
+        message: PANTRY_ONLY_EMPTY_MESSAGE,
+      });
+      expect(invokeLLM).not.toHaveBeenCalled();
     },
   );
 

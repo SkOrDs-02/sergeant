@@ -3,7 +3,10 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { hapticSuccess } from "@shared/lib/adapters/haptic";
 import { nutritionApi } from "@shared/api";
 import { nutritionKeys } from "@shared/lib/api/queryKeys";
-import { generatePrefixedId } from "@sergeant/shared";
+import {
+  generatePrefixedId,
+  pantryModeAvailabilityError,
+} from "@sergeant/shared";
 import { deviceDayKey } from "@sergeant/nutrition-domain";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import type {
@@ -192,6 +195,14 @@ function pantryPayload(
   return mode === "ignore" ? [] : items.slice(0, limit);
 }
 
+function assertPantryModeAvailable(
+  items: PantryItem[],
+  mode: "prefer" | "only" | "ignore",
+): void {
+  const error = pantryModeAvailabilityError(items, mode);
+  if (error) throw new Error(error);
+}
+
 /** Coerce a possibly-numeric pref value to a number with a fallback. */
 function toNumber(value: unknown, fallback: number): number {
   const n = Number(value);
@@ -255,8 +266,7 @@ export function useNutritionRemoteActions({
     mutationFn: () => {
       const items = pantry.effectiveItems;
       const mode = pantryModeOf(prefs);
-      if (items.length === 0 && mode !== "ignore")
-        throw new Error("Дай хоча б 2–3 продукти для рецептів.");
+      assertPantryModeAvailable(items, mode);
       return nutritionApi.recommendRecipes({
         pantry: pantryPayload(items, mode, 40),
         preferences: {
@@ -309,6 +319,7 @@ export function useNutritionRemoteActions({
   const weekPlanMutation = useMutation({
     mutationFn: () => {
       const mode = pantryModeOf(prefs);
+      assertPantryModeAvailable(pantry.effectiveItems, mode);
       return nutritionApi.weekPlan({
         pantry: pantryPayload(pantry.effectiveItems, mode, 50),
         pantryMode: mode,
@@ -425,11 +436,13 @@ export function useNutritionRemoteActions({
 
   // ─── Day plan ───────────────────────────────────────────────────────────
   const dayPlanMutation = useMutation({
-    mutationFn: (regenerateMealType: string | null | undefined) =>
-      nutritionApi
+    mutationFn: (regenerateMealType: string | null | undefined) => {
+      const mode = pantryModeOf(prefs);
+      assertPantryModeAvailable(pantry.effectiveItems, mode);
+      return nutritionApi
         .dayPlan({
-          pantry: pantryPayload(pantry.effectiveItems, pantryModeOf(prefs), 50),
-          pantryMode: pantryModeOf(prefs),
+          pantry: pantryPayload(pantry.effectiveItems, mode, 50),
+          pantryMode: mode,
           targets: {
             kcal: prefs.dailyTargetKcal,
             protein_g: prefs.dailyTargetProtein_g,
@@ -445,7 +458,8 @@ export function useNutritionRemoteActions({
             throw new Error("Не вдалося отримати план харчування");
           }
           return { plan, regenerateMealType };
-        }),
+        });
+    },
     onMutate: (regenerateMealType) => {
       setDayPlanBusy(true);
       setErr("");

@@ -3,6 +3,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
+import { PANTRY_ONLY_EMPTY_MESSAGE } from "@sergeant/shared";
 import type { UseNutritionRemoteActionsParams } from "./useNutritionRemoteActions";
 
 vi.mock("@shared/api", async () => {
@@ -172,17 +173,33 @@ describe("useNutritionRemoteActions", () => {
       );
     });
 
-    it("throws validation error when pantry is empty", async () => {
-      const { result, spies } = makeHarness({ pantry: { effectiveItems: [] } });
+    it("блокує only, коли комора порожня", async () => {
+      const { result, spies } = makeHarness({
+        pantry: { effectiveItems: [] },
+        prefs: { ...BASE_PREFS, recipePantryMode: "only" },
+      });
       act(() => {
         result.current.recommendRecipes();
       });
       await waitFor(() => {
-        expect(spies.setErr).toHaveBeenCalledWith(
-          "Дай хоча б 2–3 продукти для рецептів.",
-        );
+        expect(spies.setErr).toHaveBeenCalledWith(PANTRY_ONLY_EMPTY_MESSAGE);
       });
       expect(apiRecommendRecipes).not.toHaveBeenCalled();
+    });
+
+    it("дозволяє prefer без продуктів — комора не є обов'язковою", async () => {
+      apiRecommendRecipes.mockResolvedValueOnce({ recipes: [] });
+      const { result } = makeHarness({
+        pantry: { effectiveItems: [] },
+        prefs: { ...BASE_PREFS, recipePantryMode: "prefer" },
+      });
+
+      act(() => result.current.recommendRecipes());
+
+      await waitFor(() => expect(apiRecommendRecipes).toHaveBeenCalled());
+      expect(apiRecommendRecipes).toHaveBeenCalledWith(
+        expect.objectContaining({ pantry: [] }),
+      );
     });
   });
 
@@ -216,6 +233,20 @@ describe("useNutritionRemoteActions", () => {
         expect.objectContaining({ pantry: [] }),
       );
       expect(spies.setErr).not.toHaveBeenCalledWith("Додай продукти в комору.");
+    });
+
+    it("блокує only на порожній коморі й не викликає API", async () => {
+      const { result, spies } = makeHarness({
+        pantry: { effectiveItems: [] },
+        prefs: { ...BASE_PREFS, recipePantryMode: "only" },
+      });
+
+      act(() => result.current.fetchWeekPlan());
+
+      await waitFor(() =>
+        expect(spies.setErr).toHaveBeenCalledWith(PANTRY_ONLY_EMPTY_MESSAGE),
+      );
+      expect(apiFetchWeekPlan).not.toHaveBeenCalled();
     });
 
     it("шле pantryMode і не шле комору, коли обрано «не враховувати»", async () => {
@@ -409,6 +440,20 @@ describe("useNutritionRemoteActions", () => {
           "Не вдалося отримати план харчування",
         ),
       );
+    });
+
+    it("блокує only на порожній коморі й не викликає API", async () => {
+      const { result, spies } = makeHarness({
+        pantry: { effectiveItems: [] },
+        prefs: { ...BASE_PREFS, recipePantryMode: "only" },
+      });
+
+      act(() => result.current.fetchDayPlan());
+
+      await waitFor(() =>
+        expect(spies.setErr).toHaveBeenCalledWith(PANTRY_ONLY_EMPTY_MESSAGE),
+      );
+      expect(apiFetchDayPlan).not.toHaveBeenCalled();
     });
 
     it("posts `pantry` (not `items`) and omits regenerateMealType when no regen target", async () => {

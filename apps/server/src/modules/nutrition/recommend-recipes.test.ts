@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 import type { Request, Response } from "express";
+import { PANTRY_ONLY_EMPTY_MESSAGE } from "@sergeant/shared";
 import { anthropicError } from "../../test/__mocks__/anthropic.js";
 
 vi.mock("../../lib/llm/provider.js", () => ({
@@ -268,7 +269,28 @@ describe("recommend-recipes handler", () => {
     const opts = asRecord(invokeLLM.mock.calls[0]?.[1]);
     const messages = opts["messages"] as Array<{ content: string }>;
     expect(messages[0]?.content).toContain("кабачок");
+    expect(messages[0]?.content).toContain(
+      "поверни менше або порожній recipes",
+    );
+    expect(messages[0]?.content).not.toContain("все одно поверни 2");
     expect(String(opts["system"])).toContain("БУКВАЛЬНО тільки те");
+  });
+
+  it("pantryMode=prefer віддає перевагу коморі, але дозволяє доповнення", async () => {
+    invokeLLM.mockResolvedValueOnce({ ok: true, text: '{"recipes":[]}' });
+
+    await handler(
+      makeReq({
+        pantry: [{ name: "кабачок" }],
+        preferences: { pantryMode: "prefer", locale: "uk-UA" },
+      }),
+      makeRes(),
+    );
+
+    const opts = asRecord(invokeLLM.mock.calls[0]?.[1]);
+    expect(String(opts["system"])).toContain("Віддавай перевагу");
+    expect(String(opts["system"])).toContain("можна додати");
+    expect(String(opts["system"])).not.toContain("БУКВАЛЬНО тільки те");
   });
 
   it.each([
@@ -276,24 +298,22 @@ describe("recommend-recipes handler", () => {
     ["поле відсутнє", undefined],
     ["позиції без назви", [{}, { name: "" }] as unknown[]],
   ])(
-    "pantryMode=only з порожньою коморою (%s) не суперечить сам собі",
+    "pantryMode=only з порожньою коморою (%s) не запускає LLM",
     async (_label, pantry) => {
-      // «Кожен інгредієнт мусить бути в коморі» над порожньою коморою прямо
-      // просить порожню відповідь — і це не те, чого хотів користувач.
-      invokeLLM.mockResolvedValueOnce({ ok: true, text: '{"recipes":[]}' });
-
-      await handler(
-        makeReq({
-          pantry,
-          preferences: { pantryMode: "only", locale: "uk-UA" },
-        }),
-        makeRes(),
-      );
-
-      const opts = asRecord(invokeLLM.mock.calls[0]?.[1]);
-      const messages = opts["messages"] as Array<{ content: string }>;
-      expect(messages[0]?.content).not.toContain("ТІЛЬКИ ці продукти");
-      expect(String(opts["system"])).not.toContain("БУКВАЛЬНО тільки те");
+      await expect(
+        handler(
+          makeReq({
+            pantry,
+            preferences: { pantryMode: "only", locale: "uk-UA" },
+          }),
+          makeRes(),
+        ),
+      ).rejects.toMatchObject({
+        status: 400,
+        code: "VALIDATION",
+        message: PANTRY_ONLY_EMPTY_MESSAGE,
+      });
+      expect(invokeLLM).not.toHaveBeenCalled();
     },
   );
 

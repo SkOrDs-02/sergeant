@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 import type { Request, Response } from "express";
+import { PANTRY_ONLY_EMPTY_MESSAGE } from "@sergeant/shared";
 import { anthropicError } from "../../test/__mocks__/anthropic.js";
 
 vi.mock("../../lib/llm/provider.js", () => ({
@@ -146,9 +147,9 @@ describe("week-plan handler", () => {
 
     const opts = asRecord(invokeLLM.mock.calls[0]?.[1]);
     expect(JSON.stringify(opts["messages"])).toContain("яйця");
-    expect(String(opts["system"])).toContain(
-      "Не вигадуй екзотичні інгредієнти поза списком",
-    );
+    expect(String(opts["system"])).toContain("Віддавай перевагу продуктам");
+    expect(String(opts["system"])).toContain("можна додавати");
+    expect(String(opts["system"])).not.toContain("ТІЛЬКИ продукти зі списку");
   });
 
   it("falls back to default labels for malformed day entries", async () => {
@@ -271,6 +272,7 @@ describe("week-plan handler", () => {
     const messages = opts["messages"] as Array<{ content: string }>;
     expect(messages[0]?.content).toContain("кабачок");
     expect(String(opts["system"])).toContain("ТІЛЬКИ продукти зі списку");
+    expect(String(opts["system"])).toContain("відсутніх продуктів не додавай");
   });
 
   it.each([
@@ -278,21 +280,19 @@ describe("week-plan handler", () => {
     ["поле відсутнє", undefined],
     ["позиції без назви", [{}, { name: "" }] as unknown[]],
   ])(
-    "pantryMode=only з порожньою коморою (%s) не суперечить сам собі",
+    "pantryMode=only з порожньою коморою (%s) не запускає LLM",
     async (_label, pantry) => {
-      // Пін на обидві половини промпту: у week-plan правило «ТІЛЬКИ зі списку»
-      // живе в system, тож правка самої лише секції комори його б не зняла.
-      invokeLLM.mockResolvedValueOnce({ ok: true, text: '{"days":[]}' });
-
-      await handler(
-        makeReq({ pantry, pantryMode: "only", locale: "uk-UA" }),
-        makeRes(),
-      );
-
-      const opts = asRecord(invokeLLM.mock.calls[0]?.[1]);
-      const messages = opts["messages"] as Array<{ content: string }>;
-      expect(messages[0]?.content).not.toContain("ТІЛЬКИ ці продукти");
-      expect(String(opts["system"])).not.toContain("ТІЛЬКИ продукти зі списку");
+      await expect(
+        handler(
+          makeReq({ pantry, pantryMode: "only", locale: "uk-UA" }),
+          makeRes(),
+        ),
+      ).rejects.toMatchObject({
+        status: 400,
+        code: "VALIDATION",
+        message: PANTRY_ONLY_EMPTY_MESSAGE,
+      });
+      expect(invokeLLM).not.toHaveBeenCalled();
     },
   );
 

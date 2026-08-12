@@ -29,8 +29,10 @@ type WithAnthropicKey = Request & {
  * прямо суперечило б вибору користувача, тож підмінюється цілком.
  */
 const TASK_RULE: Record<PantryMode, string> = {
-  prefer: `Задача: запропонувати 2–4 реалістичних рецептів з наявних продуктів.
-Не вигадуй інгредієнти. Дозволено додати лише базові "припущення" (сіль, перець, вода, олія) і тоді явно познач їх у tips.`,
+  prefer: `Задача: запропонувати 2–4 реалістичних рецепти під ціль користувача.
+Віддавай перевагу продуктам із комори, коли вони пасують. За потреби можна додати
+звичайні доступні продукти поза списком — просто назви їх в ingredients, не видавай
+за те, що вже є вдома.`,
   only: `Задача: запропонувати 2–4 реалістичних рецептів з наявних продуктів.
 Не вигадуй інгредієнти. Дозволено додати лише базові "припущення" (сіль, перець, вода, олія) і тоді явно познач їх у tips.
 Режим комори "only" означає БУКВАЛЬНО тільки те, що є в списку: кожен інгредієнт
@@ -90,11 +92,7 @@ export function buildRecommendRecipesPrompt(input: RecommendRecipesInput): {
   const exclude = String(prefs.exclude || "");
   const mealType = String(prefs.mealType || "any");
   // Один режим на весь запит — і в секцію комори, і в system-промпт.
-  const pantryMode: PantryMode = resolvePantryMode(
-    pantryIn,
-    "recipes",
-    prefs.pantryMode,
-  );
+  const pantryMode: PantryMode = resolvePantryMode(prefs.pantryMode);
   const locale = String(prefs.locale || "uk-UA");
 
   const pantrySec = pantryPromptSection({
@@ -102,6 +100,11 @@ export function buildRecommendRecipesPrompt(input: RecommendRecipesInput): {
     preset: "recipes",
     mode: pantryMode,
   });
+
+  const scarcityRule =
+    pantryMode === "only"
+      ? "Якщо з наявного не складаються 3 рецепти — поверни менше або порожній recipes; відсутніх продуктів не додавай."
+      : "Якщо продуктів у коморі мало, добирай звичайні доступні продукти відповідно до обраного режиму.";
 
   const prompt = `Мова: ${locale}.
 Ціль: ${goal}.
@@ -118,7 +121,7 @@ ${pantrySec}
 - steps: максимум 7 кроків
 - tips: максимум 4 поради
 - ingredients: тільки ключові позиції
-Якщо продуктів мало — все одно поверни 2 прості рецепти.`;
+${scarcityRule}`;
 
   return { system: buildRecommendRecipesSystem(pantryMode), user: prompt };
 }
