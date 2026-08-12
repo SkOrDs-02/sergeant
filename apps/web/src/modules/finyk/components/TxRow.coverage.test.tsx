@@ -74,6 +74,22 @@ describe("TxRow", () => {
     }
   });
 
+  it("does not duplicate a legacy auto-filled category label as the title", () => {
+    render(
+      <TxRow
+        tx={mkTx({
+          description: "Розваги",
+          mcc: 0,
+          categoryId: "entertainment",
+          _manual: true,
+        })}
+      />,
+    );
+
+    expect(screen.getByText("Ручна витрата")).toBeInTheDocument();
+    expect(screen.getAllByText("Розваги")).toHaveLength(1);
+  });
+
   it("shows the AI badge for an auto-categorized expense", () => {
     // food MCC, no override, not manual, not transfer, not "other"
     render(<TxRow tx={mkTx({ mcc: 5411, description: "Сільпо" })} />);
