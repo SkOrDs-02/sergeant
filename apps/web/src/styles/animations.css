@@ -633,8 +633,8 @@
 }
 
 /*
- * Linear countdown bar for toasts that carry a recoverable action (undo
- * pattern). `animation-duration` is supplied inline by `<ToastRow>` so a
+ * Linear auto-dismiss countdown bar for every toast. `animation-duration`
+ * is supplied inline by `<ToastRow>` so a
  * single keyframe set works for any toast lifetime (3.5 s auto-dismiss,
  * 5 s undo). RESPONSE tier — one-shot, linear easing for accurate time
  * mapping; `animation-play-state` lets us pause on hover/focus without

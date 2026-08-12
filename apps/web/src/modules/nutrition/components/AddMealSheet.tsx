@@ -131,15 +131,7 @@ export function AddMealSheet({
   // search / barcode / photo / manual) then "fill" (name, time, macros,
   // save). Editing an existing meal or a photo import skips straight to
   // "fill" since the source is already decided.
-  // When there are no meal templates and no pre-filled content, "source"
-  // offers nothing useful (food-search and barcode still work, but the
-  // picker header is confusing when there are no shortcuts to show).
-  // In that case we start at "fill" directly.
   const [step, setStep] = useState("source");
-  // Tracks whether the current sheet opening auto-skipped the source step,
-  // so we can show the "Обрати джерело ↑" backtrack link instead of the
-  // regular ← arrow that only appears after forward navigation.
-  const [wasAutoSkipped, setWasAutoSkipped] = useState(false);
 
   const { foodHits, offHits, foodBusy, offBusy, foodErr, setFoodErr } =
     useFoodSearch(foodQuery);
@@ -223,15 +215,12 @@ export function AddMealSheet({
     setEditingTemplateId(null);
     setPendingMeal(null);
     setRememberForRepeat(false);
-    const autoSkip =
-      !initialMeal?.id &&
-      !photoResult &&
-      mealTemplates.length === 0 &&
-      quickChips.length === 0;
-    const initialStep =
-      initialMeal?.id || photoResult ? "fill" : autoSkip ? "fill" : "source";
-    setWasAutoSkipped(autoSkip && initialStep === "fill");
-    setStep(initialStep);
+    // Creating a meal always starts with the source chooser. Even without
+    // templates/recent meals it still offers product search, barcode scan,
+    // photo and manual entry, so skipping it silently biases the primary FAB
+    // toward manual input. Editing/photo import already has a source and may
+    // open the fill form directly.
+    setStep(initialMeal?.id || photoResult ? "fill" : "source");
     void ensureSeedFoods();
   } else if (!open && prevOpen) {
     setPrevOpen(false);
@@ -387,22 +376,17 @@ export function AddMealSheet({
   );
 
   const canBacktrack = step === "fill" && !initialMeal?.id && !photoResult;
-  // When the user was auto-skipped (no templates/photo/initialMeal), show a
-  // text link "Обрати джерело ↑" inline with the title rather than a ← icon
-  // button, because the icon back button implies "you navigated here" which
-  // would confuse users who never saw the source step.
   function handleBacktrack() {
     // Clear any picked source to prevent the auto-advance effect from
     // immediately pushing back to "fill" when we return to "source".
     setPickedFood(null);
     setFromPantryItem(null);
-    setWasAutoSkipped(false);
     setStep("source");
   }
 
   const title = (
     <div className="flex items-center gap-2 min-w-0">
-      {canBacktrack && !wasAutoSkipped && (
+      {canBacktrack && (
         <button
           type="button"
           onClick={handleBacktrack}
@@ -415,16 +399,6 @@ export function AddMealSheet({
       <span className="truncate">
         {step === "source" ? "Звідки страва?" : "Додати прийом їжі"}
       </span>
-      {wasAutoSkipped && (
-        <button
-          type="button"
-          onClick={handleBacktrack}
-          className="ml-auto shrink-0 inline-flex items-center gap-1 text-style-caption text-nutrition-strong dark:text-nutrition hover:text-nutrition-hover underline decoration-dotted underline-offset-2 transition-colors min-h-[44px] px-1"
-        >
-          Обрати джерело
-          <Icon name="arrow-up" size="sm" />
-        </button>
-      )}
     </div>
   );
 

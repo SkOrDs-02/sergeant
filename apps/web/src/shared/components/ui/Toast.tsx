@@ -348,7 +348,12 @@ function ToastRow({ toast, dismiss, pause, resume }: ToastRowProps) {
           className={cn(
             "absolute left-0 bottom-0 h-0.5 w-full origin-left",
             COUNTDOWN_BAR_TINT[toast.type],
-            "motion-safe:animate-toast-countdown motion-reduce:scale-x-0",
+            // This animation is a custom class from animations.css, not a
+            // Tailwind utility. A `motion-safe:` prefix therefore has no CSS
+            // rule and leaves the line full-width and static. Apply the real
+            // class directly; the reduced-motion transform below still hides
+            // it for users who requested less motion.
+            "animate-toast-countdown motion-reduce:scale-x-0",
             paused ? "motion-safe:[animation-play-state:paused]" : "",
           )}
           data-toast-countdown

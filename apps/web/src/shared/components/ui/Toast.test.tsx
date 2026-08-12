@@ -163,6 +163,7 @@ describe("Toast — auto-dismiss pause/resume", () => {
     );
     expect(bar).not.toBeNull();
     expect(bar?.style.animationDuration).toBe("3200ms");
+    expect(bar).toHaveClass("animate-toast-countdown");
   });
 
   it("countdown-bar для undo-toast має animationDuration=5000ms і paused під час hover", () => {

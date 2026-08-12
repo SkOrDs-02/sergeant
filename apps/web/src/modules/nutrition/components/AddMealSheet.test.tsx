@@ -255,6 +255,14 @@ function renderSheet(
   return render(<AddMealSheet {...defaults} {...props} />);
 }
 
+function renderManualSheet(
+  props: Partial<React.ComponentProps<typeof AddMealSheet>> = {},
+) {
+  const view = renderSheet(props);
+  fireEvent.click(screen.getByRole("button", { name: "Ввести вручну" }));
+  return view;
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   stableBarcodeLookup.scannerOpen = false;
@@ -360,20 +368,15 @@ describe("AddMealSheet — source step (with templates)", () => {
 });
 
 describe("AddMealSheet — fill step (no templates/photoResult/initialMeal)", () => {
-  it("auto-starts at fill step when there are no templates, no photo, no initialMeal", () => {
+  it("starts at source step even when there are no templates or recent meals", () => {
     renderSheet({ mealTemplates: [] });
-    // The source step should be skipped — macros editor should be visible
-    expect(screen.getByTestId("macros-editor")).toBeInTheDocument();
-    expect(screen.getByText("Додати прийом їжі")).toBeInTheDocument();
-  });
-
-  it("shows 'Обрати джерело' link when auto-skipped the source step", () => {
-    renderSheet({ mealTemplates: [] });
-    expect(screen.getByText("Обрати джерело")).toBeInTheDocument();
+    expect(screen.getByText("Звідки страва?")).toBeInTheDocument();
+    expect(screen.getByText("Ввести вручну")).toBeInTheDocument();
+    expect(screen.queryByTestId("macros-editor")).not.toBeInTheDocument();
   });
 
   it("shows save and cancel buttons", () => {
-    renderSheet({ mealTemplates: [], setPrefs: vi.fn() });
+    renderManualSheet({ mealTemplates: [], setPrefs: vi.fn() });
     expect(
       screen.getByRole("button", { name: "Додати прийом" }),
     ).toBeInTheDocument();
@@ -386,7 +389,7 @@ describe("AddMealSheet — fill step (no templates/photoResult/initialMeal)", ()
   it("adds the meal and remembers one reusable whole-meal template", async () => {
     const onSave = vi.fn();
     const setPrefs = vi.fn();
-    renderSheet({ mealTemplates: [], onSave, setPrefs });
+    renderManualSheet({ mealTemplates: [], onSave, setPrefs });
     fireEvent.change(screen.getByTestId("name-input"), {
       target: { value: "Сирна запіканка" },
     });
@@ -411,28 +414,19 @@ describe("AddMealSheet — fill step (no templates/photoResult/initialMeal)", ()
 
   it("clicking 'Скасувати' calls onClose", () => {
     const onClose = vi.fn();
-    renderSheet({ mealTemplates: [], onClose });
+    renderManualSheet({ mealTemplates: [], onClose });
     fireEvent.click(screen.getByText("Скасувати"));
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
   it("shows error when saving with empty name", async () => {
-    renderSheet({ mealTemplates: [] });
+    renderManualSheet({ mealTemplates: [] });
     fireEvent.click(
       screen.getByRole("button", { name: /Додати прийом|Зберегти зміни/ }),
     );
     await waitFor(() => {
       expect(screen.getByText("Введи назву страви.")).toBeInTheDocument();
     });
-  });
-
-  it("backtracking via 'Обрати джерело' returns to source step", () => {
-    renderSheet({ mealTemplates: [] });
-    // Currently in fill (auto-skipped)
-    expect(screen.getByText("Обрати джерело")).toBeInTheDocument();
-    fireEvent.click(screen.getByText("Обрати джерело"));
-    // Now in source step
-    expect(screen.getByText("Звідки страва?")).toBeInTheDocument();
   });
 });
 
@@ -511,7 +505,7 @@ describe("AddMealSheet — photoResult import", () => {
 describe("AddMealSheet — save validation branches", () => {
   it("saves directly (no confirm) when macros are entered", async () => {
     const onSave = vi.fn();
-    renderSheet({ mealTemplates: [], onSave });
+    renderManualSheet({ mealTemplates: [], onSave });
     fireEvent.change(screen.getByTestId("name-input"), {
       target: { value: "Суп" },
     });
@@ -536,7 +530,7 @@ describe("AddMealSheet — save validation branches", () => {
     // це `NaN` — форма відхиляла цілком коректний ввід. Перевіряємо всі
     // чотири поля разом: падали вони однаково.
     const onSave = vi.fn();
-    renderSheet({ mealTemplates: [], onSave });
+    renderManualSheet({ mealTemplates: [], onSave });
     fireEvent.change(screen.getByTestId("name-input"), {
       target: { value: "Лаови" },
     });
@@ -559,7 +553,7 @@ describe("AddMealSheet — save validation branches", () => {
   });
 
   it("shows macro validation error for negative kcal", async () => {
-    renderSheet({ mealTemplates: [] });
+    renderManualSheet({ mealTemplates: [] });
     fireEvent.change(screen.getByTestId("name-input"), {
       target: { value: "Суп" },
     });
@@ -578,7 +572,7 @@ describe("AddMealSheet — save validation branches", () => {
 describe("AddMealSheet — empty-macro confirm step", () => {
   it("shows a confirm dialog instead of saving when all macros are empty", async () => {
     const onSave = vi.fn();
-    renderSheet({ mealTemplates: [], onSave });
+    renderManualSheet({ mealTemplates: [], onSave });
     fireEvent.change(screen.getByTestId("name-input"), {
       target: { value: "Суп" },
     });
@@ -594,7 +588,7 @@ describe("AddMealSheet — empty-macro confirm step", () => {
 
   it("proceeds with the save when the confirm dialog is confirmed", async () => {
     const onSave = vi.fn();
-    renderSheet({ mealTemplates: [], onSave });
+    renderManualSheet({ mealTemplates: [], onSave });
     fireEvent.change(screen.getByTestId("name-input"), {
       target: { value: "Суп" },
     });
@@ -613,7 +607,7 @@ describe("AddMealSheet — empty-macro confirm step", () => {
 
   it("keeps the sheet open and does not save when the confirm dialog is cancelled", async () => {
     const onSave = vi.fn();
-    renderSheet({ mealTemplates: [], onSave });
+    renderManualSheet({ mealTemplates: [], onSave });
     fireEvent.change(screen.getByTestId("name-input"), {
       target: { value: "Суп" },
     });
