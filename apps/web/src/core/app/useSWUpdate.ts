@@ -117,9 +117,10 @@ export function useSWUpdate() {
         hardTimeoutId = null;
       }
 
-      toastRef.current.info("Доступна нова версія", 15000, {
+      toastRef.current.info("Доступна нова версія", null, {
         label: "Оновити",
         onClick: applyUpdateRef.current,
+        dismissLabel: "Пізніше",
       });
     }
 

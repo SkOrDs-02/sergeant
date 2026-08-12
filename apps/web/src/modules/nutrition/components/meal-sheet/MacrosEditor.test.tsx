@@ -36,7 +36,7 @@ beforeEach(() => vi.clearAllMocks());
 afterEach(() => vi.clearAllMocks());
 
 describe("MacrosEditor", () => {
-  it("renders the four macro inputs with the unlinked heading", () => {
+  it("renders the four self-labelled macro inputs without a redundant heading", () => {
     render(
       <MacrosEditor
         form={makeForm()}
@@ -48,7 +48,7 @@ describe("MacrosEditor", () => {
         hasPhotoMacros={false}
       />,
     );
-    expect(screen.getByText("КБЖВ")).toBeInTheDocument();
+    expect(screen.queryByText("КБЖВ")).not.toBeInTheDocument();
     expect(screen.getByLabelText("Ккал")).toBeInTheDocument();
     expect(screen.getByLabelText("Білки г")).toBeInTheDocument();
     expect(screen.getByLabelText("Жири г")).toBeInTheDocument();
@@ -77,7 +77,7 @@ describe("MacrosEditor", () => {
     expect(setProtein).toHaveBeenCalledWith("20");
   });
 
-  it("shows the linked heading and lets kcal edits bypass the unlink guard", () => {
+  it("lets kcal edits bypass the unlink guard without adding a redundant heading", () => {
     const setKcal = vi.fn();
     const field = vi.fn((key: keyof MealFormState) =>
       key === "kcal" ? setKcal : vi.fn(),
@@ -93,7 +93,9 @@ describe("MacrosEditor", () => {
         hasPhotoMacros={false}
       />,
     );
-    expect(screen.getByText("КБЖВ (редагувати вручну)")).toBeInTheDocument();
+    expect(
+      screen.queryByText("КБЖВ (редагувати вручну)"),
+    ).not.toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("Ккал"), {
       target: { value: "400" },
     });

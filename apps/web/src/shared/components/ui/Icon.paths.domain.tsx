@@ -197,6 +197,13 @@ export const DOMAIN_PATHS: Record<string, ReactNode> = {
   ),
   // `egg` — nutrition: dairy/protein category.
   egg: <path d="M12 3c-4 0-7 6-7 11a7 7 0 0 0 14 0c0-5-3-11-7-11z" />,
+  // `barcode` — product barcode scan action (Nutrition module).
+  barcode: (
+    <>
+      <path d="M3 5v14M6 5v14M10 5v14M14 5v14M18 5v14M21 5v14" />
+      <path d="M8 5v14M16 5v14" strokeWidth="1" />
+    </>
+  ),
   // `scanner` — barcode / photo scanner trigger (Nutrition module).
   scanner: (
     <>

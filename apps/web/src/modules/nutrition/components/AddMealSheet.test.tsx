@@ -255,6 +255,14 @@ function renderSheet(
   return render(<AddMealSheet {...defaults} {...props} />);
 }
 
+function renderManualSheet(
+  props: Partial<React.ComponentProps<typeof AddMealSheet>> = {},
+) {
+  const view = renderSheet(props);
+  fireEvent.click(screen.getByRole("button", { name: "Ввести вручну" }));
+  return view;
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   stableBarcodeLookup.scannerOpen = false;
@@ -269,6 +277,34 @@ describe("AddMealSheet — closed state", () => {
 });
 
 describe("AddMealSheet — source step (with templates)", () => {
+  it("keeps recent meals in the add flow and closes after one-tap repeat", () => {
+    const onQuickAddMeal = vi.fn();
+    const onClose = vi.fn();
+    renderSheet({
+      onClose,
+      onQuickAddMeal,
+      quickChips: [
+        {
+          id: "recent-1",
+          label: "Сирна запіканка",
+          grams: 250,
+          source: "recent-meal",
+          lastUsedAt: "2026-08-12T18:00:00.000Z",
+          macros: { kcal: 350, protein_g: 12, fat_g: 6, carbs_g: 60 },
+        },
+      ],
+    });
+
+    expect(screen.getByText("Нещодавні прийоми")).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Додати Сирна запіканка — 250 грамів",
+      }),
+    );
+    expect(onQuickAddMeal).toHaveBeenCalledTimes(1);
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
   it("shows 'Звідки страва?' heading when opened with templates", () => {
     renderSheet({
       mealTemplates: [
@@ -309,7 +345,8 @@ describe("AddMealSheet — source step (with templates)", () => {
         },
       ],
     });
-    fireEvent.click(screen.getAllByText("Ввести вручну")[0]!);
+    expect(screen.getAllByText("Ввести вручну")).toHaveLength(1);
+    fireEvent.click(screen.getByText("Ввести вручну"));
     expect(screen.getByTestId("macros-editor")).toBeInTheDocument();
     expect(screen.getByText("Додати прийом їжі")).toBeInTheDocument();
   });
@@ -331,46 +368,65 @@ describe("AddMealSheet — source step (with templates)", () => {
 });
 
 describe("AddMealSheet — fill step (no templates/photoResult/initialMeal)", () => {
-  it("auto-starts at fill step when there are no templates, no photo, no initialMeal", () => {
+  it("starts at source step even when there are no templates or recent meals", () => {
     renderSheet({ mealTemplates: [] });
-    // The source step should be skipped — macros editor should be visible
-    expect(screen.getByTestId("macros-editor")).toBeInTheDocument();
-    expect(screen.getByText("Додати прийом їжі")).toBeInTheDocument();
-  });
-
-  it("shows 'Обрати джерело' link when auto-skipped the source step", () => {
-    renderSheet({ mealTemplates: [] });
-    expect(screen.getByText("Обрати джерело")).toBeInTheDocument();
+    expect(screen.getByText("Звідки страва?")).toBeInTheDocument();
+    expect(screen.getByText("Ввести вручну")).toBeInTheDocument();
+    expect(screen.queryByTestId("macros-editor")).not.toBeInTheDocument();
   });
 
   it("shows save and cancel buttons", () => {
-    renderSheet({ mealTemplates: [] });
-    expect(screen.getByText("Зберегти")).toBeInTheDocument();
+    renderManualSheet({ mealTemplates: [], setPrefs: vi.fn() });
+    expect(
+      screen.getByRole("button", { name: "Додати прийом" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("checkbox", { name: "Запам’ятати для повтору" }),
+    ).toBeInTheDocument();
     expect(screen.getByText("Скасувати")).toBeInTheDocument();
+  });
+
+  it("adds the meal and remembers one reusable whole-meal template", async () => {
+    const onSave = vi.fn();
+    const setPrefs = vi.fn();
+    renderManualSheet({ mealTemplates: [], onSave, setPrefs });
+    fireEvent.change(screen.getByTestId("name-input"), {
+      target: { value: "Сирна запіканка" },
+    });
+    fireEvent.change(screen.getByTestId("kcal-input"), {
+      target: { value: "350" },
+    });
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: "Запам’ятати для повтору" }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Додати прийом" }));
+
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    expect(setPrefs).toHaveBeenCalledTimes(1);
+    const updater = setPrefs.mock.calls[0]![0];
+    const next = updater({ mealTemplates: [] });
+    expect(next.mealTemplates).toHaveLength(1);
+    expect(next.mealTemplates[0]).toMatchObject({
+      name: "Сирна запіканка",
+      macros: { kcal: 350, protein_g: null, fat_g: null, carbs_g: null },
+    });
   });
 
   it("clicking 'Скасувати' calls onClose", () => {
     const onClose = vi.fn();
-    renderSheet({ mealTemplates: [], onClose });
+    renderManualSheet({ mealTemplates: [], onClose });
     fireEvent.click(screen.getByText("Скасувати"));
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
   it("shows error when saving with empty name", async () => {
-    renderSheet({ mealTemplates: [] });
-    fireEvent.click(screen.getByText("Зберегти"));
+    renderManualSheet({ mealTemplates: [] });
+    fireEvent.click(
+      screen.getByRole("button", { name: /Додати прийом|Зберегти зміни/ }),
+    );
     await waitFor(() => {
       expect(screen.getByText("Введи назву страви.")).toBeInTheDocument();
     });
-  });
-
-  it("backtracking via 'Обрати джерело' returns to source step", () => {
-    renderSheet({ mealTemplates: [] });
-    // Currently in fill (auto-skipped)
-    expect(screen.getByText("Обрати джерело")).toBeInTheDocument();
-    fireEvent.click(screen.getByText("Обрати джерело"));
-    // Now in source step
-    expect(screen.getByText("Звідки страва?")).toBeInTheDocument();
   });
 });
 
@@ -402,7 +458,9 @@ describe("AddMealSheet — editing an existing meal", () => {
         macros: { kcal: 200, protein_g: 8, fat_g: 2, carbs_g: 40 },
       },
     });
-    fireEvent.click(screen.getByText("Зберегти"));
+    fireEvent.click(
+      screen.getByRole("button", { name: /Додати прийом|Зберегти зміни/ }),
+    );
     await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
     expect(onSave.mock.calls[0]![0]).toMatchObject({
       id: "existing-meal-1",
@@ -430,7 +488,9 @@ describe("AddMealSheet — photoResult import", () => {
     });
     expect(screen.getByTestId("macros-editor")).toBeInTheDocument();
     expect(screen.queryByText("Обрати джерело")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByText("Зберегти"));
+    fireEvent.click(
+      screen.getByRole("button", { name: /Додати прийом|Зберегти зміни/ }),
+    );
     const dialog = await screen.findByRole("alertdialog");
     fireEvent.click(within(dialog).getByRole("button", { name: "Зберегти" }));
     await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
@@ -445,14 +505,16 @@ describe("AddMealSheet — photoResult import", () => {
 describe("AddMealSheet — save validation branches", () => {
   it("saves directly (no confirm) when macros are entered", async () => {
     const onSave = vi.fn();
-    renderSheet({ mealTemplates: [], onSave });
+    renderManualSheet({ mealTemplates: [], onSave });
     fireEvent.change(screen.getByTestId("name-input"), {
       target: { value: "Суп" },
     });
     fireEvent.change(screen.getByTestId("kcal-input"), {
       target: { value: "350" },
     });
-    fireEvent.click(screen.getByText("Зберегти"));
+    fireEvent.click(
+      screen.getByRole("button", { name: /Додати прийом|Зберегти зміни/ }),
+    );
     await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
     expect(onSave.mock.calls[0]![0]).toMatchObject({
       name: "Суп",
@@ -468,7 +530,7 @@ describe("AddMealSheet — save validation branches", () => {
     // це `NaN` — форма відхиляла цілком коректний ввід. Перевіряємо всі
     // чотири поля разом: падали вони однаково.
     const onSave = vi.fn();
-    renderSheet({ mealTemplates: [], onSave });
+    renderManualSheet({ mealTemplates: [], onSave });
     fireEvent.change(screen.getByTestId("name-input"), {
       target: { value: "Лаови" },
     });
@@ -478,7 +540,9 @@ describe("AddMealSheet — save validation branches", () => {
     fireEvent.change(screen.getByTestId("protein-input"), {
       target: { value: "121,1" },
     });
-    fireEvent.click(screen.getByText("Зберегти"));
+    fireEvent.click(
+      screen.getByRole("button", { name: /Додати прийом|Зберегти зміни/ }),
+    );
     await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
     expect(onSave.mock.calls[0]![0]).toMatchObject({
       macros: { kcal: 1212.1, protein_g: 121.1 },
@@ -489,14 +553,16 @@ describe("AddMealSheet — save validation branches", () => {
   });
 
   it("shows macro validation error for negative kcal", async () => {
-    renderSheet({ mealTemplates: [] });
+    renderManualSheet({ mealTemplates: [] });
     fireEvent.change(screen.getByTestId("name-input"), {
       target: { value: "Суп" },
     });
     fireEvent.change(screen.getByTestId("kcal-input"), {
       target: { value: "-5" },
     });
-    fireEvent.click(screen.getByText("Зберегти"));
+    fireEvent.click(
+      screen.getByRole("button", { name: /Додати прийом|Зберегти зміни/ }),
+    );
     await waitFor(() => {
       expect(screen.getByText("Некоректне значення КБЖВ.")).toBeInTheDocument();
     });
@@ -506,11 +572,13 @@ describe("AddMealSheet — save validation branches", () => {
 describe("AddMealSheet — empty-macro confirm step", () => {
   it("shows a confirm dialog instead of saving when all macros are empty", async () => {
     const onSave = vi.fn();
-    renderSheet({ mealTemplates: [], onSave });
+    renderManualSheet({ mealTemplates: [], onSave });
     fireEvent.change(screen.getByTestId("name-input"), {
       target: { value: "Суп" },
     });
-    fireEvent.click(screen.getByText("Зберегти"));
+    fireEvent.click(
+      screen.getByRole("button", { name: /Додати прийом|Зберегти зміни/ }),
+    );
     await waitFor(() => {
       expect(screen.getByRole("alertdialog")).toBeInTheDocument();
     });
@@ -520,11 +588,13 @@ describe("AddMealSheet — empty-macro confirm step", () => {
 
   it("proceeds with the save when the confirm dialog is confirmed", async () => {
     const onSave = vi.fn();
-    renderSheet({ mealTemplates: [], onSave });
+    renderManualSheet({ mealTemplates: [], onSave });
     fireEvent.change(screen.getByTestId("name-input"), {
       target: { value: "Суп" },
     });
-    fireEvent.click(screen.getByText("Зберегти"));
+    fireEvent.click(
+      screen.getByRole("button", { name: /Додати прийом|Зберегти зміни/ }),
+    );
     const dialog = await screen.findByRole("alertdialog");
     fireEvent.click(within(dialog).getByRole("button", { name: "Зберегти" }));
     await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
@@ -537,11 +607,13 @@ describe("AddMealSheet — empty-macro confirm step", () => {
 
   it("keeps the sheet open and does not save when the confirm dialog is cancelled", async () => {
     const onSave = vi.fn();
-    renderSheet({ mealTemplates: [], onSave });
+    renderManualSheet({ mealTemplates: [], onSave });
     fireEvent.change(screen.getByTestId("name-input"), {
       target: { value: "Суп" },
     });
-    fireEvent.click(screen.getByText("Зберегти"));
+    fireEvent.click(
+      screen.getByRole("button", { name: /Додати прийом|Зберегти зміни/ }),
+    );
     const dialog = await screen.findByRole("alertdialog");
     fireEvent.click(
       within(dialog).getByRole("button", { name: "Повернутись" }),
@@ -584,7 +656,9 @@ describe("AddMealSheet — source step branches", () => {
       mealTemplates: [template],
       onRequestPhoto,
     });
-    fireEvent.click(screen.getByLabelText("Сфотографувати страву"));
+    expect(screen.getByText("Фото")).toBeInTheDocument();
+    expect(screen.queryByText("Сфотографувати страву")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText("Додати страву з фото"));
     expect(onRequestPhoto).toHaveBeenCalledTimes(1);
   });
 
@@ -613,7 +687,7 @@ describe("AddMealSheet — source step branches", () => {
 
   it("shows back arrow after manual forward navigation from source", () => {
     renderSheet({ mealTemplates: [template] });
-    fireEvent.click(screen.getAllByText("Ввести вручну")[0]!);
+    fireEvent.click(screen.getByText("Ввести вручну"));
     expect(
       screen.getByLabelText("Назад до вибору джерела"),
     ).toBeInTheDocument();
@@ -621,7 +695,7 @@ describe("AddMealSheet — source step branches", () => {
 
   it("back arrow returns to source step", () => {
     renderSheet({ mealTemplates: [template] });
-    fireEvent.click(screen.getAllByText("Ввести вручну")[0]!);
+    fireEvent.click(screen.getByText("Ввести вручну"));
     fireEvent.click(screen.getByLabelText("Назад до вибору джерела"));
     expect(screen.getByText("Звідки страва?")).toBeInTheDocument();
   });
@@ -654,7 +728,9 @@ describe("AddMealSheet — pantry consume on save", () => {
     fireEvent.change(screen.getByTestId("kcal-input"), {
       target: { value: "120" },
     });
-    fireEvent.click(screen.getByText("Зберегти"));
+    fireEvent.click(
+      screen.getByRole("button", { name: /Додати прийом|Зберегти зміни/ }),
+    );
     await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
     expect(onConsumePantryItem).toHaveBeenCalledWith("Молоко", 100);
     expect(onSave.mock.calls[0]![0].name).toBe("Молоко");
@@ -683,7 +759,9 @@ describe("AddMealSheet — pantry consume on save", () => {
       onSave,
     });
     fireEvent.click(screen.getByTestId("pick-pantry"));
-    fireEvent.click(screen.getByText("Зберегти"));
+    fireEvent.click(
+      screen.getByRole("button", { name: /Додати прийом|Зберегти зміни/ }),
+    );
     const dialog = await screen.findByRole("alertdialog");
     expect(onConsumePantryItem).not.toHaveBeenCalled();
     fireEvent.click(within(dialog).getByRole("button", { name: "Зберегти" }));

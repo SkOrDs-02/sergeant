@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import path from "node:path";
 
 import { seedFTUX } from "../utils/seedFTUX";
 import { collectPageErrors, waitForInitialSqliteRefresh } from "./smokeHelpers";
@@ -62,4 +63,32 @@ test("@critical nutrition: today dashboard → add-meal CTA opens sheet", async 
   expect(errors, "Uncaught page errors on nutrition CTA happy path").toEqual(
     [],
   );
+});
+
+test("@critical nutrition: photo preview stays inside a 390px viewport", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await seedFTUX(page, "post-ftux");
+  await page.goto("/nutrition", { waitUntil: "domcontentloaded" });
+  await waitForInitialSqliteRefresh(page, "nutrition");
+
+  const photoDetails = page.getByTestId("nutrition-photo-details");
+  await photoDetails.getByText("Аналіз фото страви", { exact: true }).click();
+  await photoDetails
+    .locator('input[type="file"]')
+    .setInputFiles(
+      path.resolve(process.cwd(), "tests/fixtures/nutrition-photo.svg"),
+    );
+  await expect(photoDetails.getByAltText("Обране фото")).toBeVisible();
+
+  for (const region of [
+    page.getByTestId("nutrition-dashboard"),
+    photoDetails,
+  ]) {
+    const box = await region.boundingBox();
+    expect(box).not.toBeNull();
+    expect(box!.x).toBeGreaterThanOrEqual(0);
+    expect(box!.x + box!.width).toBeLessThanOrEqual(390);
+  }
 });

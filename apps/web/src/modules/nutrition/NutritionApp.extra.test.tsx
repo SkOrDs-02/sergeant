@@ -295,15 +295,26 @@ vi.mock("./components/NutritionPantrySelector", () => ({
   ),
 }));
 
-// NutritionOverlays exposes wrappedSaveMeal and onRequestMealPhoto
+// NutritionOverlays exposes save, photo and quick-repeat callbacks.
 vi.mock("./components/NutritionOverlays", () => ({
   NutritionOverlays: ({
     wrappedSaveMeal,
     onRequestMealPhoto,
+    onQuickAddMeal,
     editingMeal,
   }: {
     wrappedSaveMeal: (meal: Meal) => Promise<void>;
     onRequestMealPhoto: () => void;
+    onQuickAddMeal: (chip: {
+      label: string;
+      macros: {
+        kcal: number;
+        protein_g: number;
+        fat_g: number;
+        carbs_g: number;
+      };
+      grams: number;
+    }) => void;
     editingMeal: Meal | null;
   }) => (
     <div data-testid="nutrition-overlays">
@@ -356,41 +367,6 @@ vi.mock("./components/NutritionOverlays", () => ({
       >
         Request Photo
       </button>
-    </div>
-  ),
-}));
-
-// NutritionStartPage exposes onSaveToLog and onQuickAddMeal
-vi.mock("./pages/NutritionStartPage", () => ({
-  NutritionStartPage: ({
-    onSaveToLog,
-    onRequestAddMeal,
-    onQuickAddMeal,
-  }: {
-    onSaveToLog: () => void;
-    onRequestAddMeal: () => void;
-    onQuickAddMeal: (chip: {
-      label: string;
-      macros: {
-        kcal: number;
-        protein_g: number;
-        fat_g: number;
-        carbs_g: number;
-      };
-      grams: number;
-    }) => void;
-  }) => (
-    <div data-testid="nutrition-start-page">
-      <button type="button" data-testid="save-to-log" onClick={onSaveToLog}>
-        Save to log
-      </button>
-      <button
-        type="button"
-        data-testid="request-add-meal"
-        onClick={onRequestAddMeal}
-      >
-        Add Meal
-      </button>
       <button
         type="button"
         data-testid="quick-add"
@@ -403,6 +379,30 @@ vi.mock("./pages/NutritionStartPage", () => ({
         }
       >
         Quick Add
+      </button>
+    </div>
+  ),
+}));
+
+// NutritionStartPage exposes the dashboard actions.
+vi.mock("./pages/NutritionStartPage", () => ({
+  NutritionStartPage: ({
+    onSaveToLog,
+    onRequestAddMeal,
+  }: {
+    onSaveToLog: () => void;
+    onRequestAddMeal: () => void;
+  }) => (
+    <div data-testid="nutrition-start-page">
+      <button type="button" data-testid="save-to-log" onClick={onSaveToLog}>
+        Save to log
+      </button>
+      <button
+        type="button"
+        data-testid="request-add-meal"
+        onClick={onRequestAddMeal}
+      >
+        Add Meal
       </button>
     </div>
   ),

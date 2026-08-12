@@ -8,43 +8,28 @@ import { describe, expect, it, vi } from "vitest";
 import { BarcodeSection } from "./BarcodeSection";
 
 describe("BarcodeSection", () => {
-  it("strips whitespace from barcode input", () => {
-    const setBarcode = vi.fn();
+  it("shows only the scanner action and hides manual barcode controls", () => {
     const setBarcodeStatus = vi.fn();
-    render(
-      <BarcodeSection
-        barcode=""
-        setBarcode={setBarcode}
-        barcodeStatus=""
-        setBarcodeStatus={setBarcodeStatus}
-        handleBarcodeLookup={vi.fn()}
-        handleBarcodeBind={vi.fn()}
-        setScannerOpen={vi.fn()}
-      />,
-    );
-    fireEvent.change(screen.getByLabelText("Штрихкод"), {
-      target: { value: "48 0123" },
-    });
-    expect(setBarcode).toHaveBeenCalledWith("480123");
-  });
-
-  it("invokes lookup and scanner handlers", () => {
-    const handleBarcodeLookup = vi.fn();
     const setScannerOpen = vi.fn();
     render(
       <BarcodeSection
-        barcode="123"
-        setBarcode={vi.fn()}
         barcodeStatus=""
-        setBarcodeStatus={vi.fn()}
-        handleBarcodeLookup={handleBarcodeLookup}
-        handleBarcodeBind={vi.fn()}
+        setBarcodeStatus={setBarcodeStatus}
         setScannerOpen={setScannerOpen}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Знайти" }));
-    expect(handleBarcodeLookup).toHaveBeenCalledWith("123");
-    fireEvent.click(screen.getByRole("button", { name: /Сканувати/ }));
+
+    expect(screen.queryByLabelText("Штрихкод")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Знайти" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Прив'язати" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByTestId("barcode-action-icon")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Сканувати штрихкод" }));
+    expect(setBarcodeStatus).toHaveBeenCalledWith("");
     expect(setScannerOpen).toHaveBeenCalledWith(true);
   });
 });

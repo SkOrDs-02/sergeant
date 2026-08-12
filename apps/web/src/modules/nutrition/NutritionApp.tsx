@@ -564,8 +564,6 @@ export default function NutritionApp({
                   photoCardForceOpen={photoCardForceOpen}
                   setPhotoCardForceOpen={setPhotoCardForceOpen}
                   onSaveToLog={handleSaveToLog}
-                  pantryItems={pantry.effectiveItems}
-                  onQuickAddMeal={handleQuickAddMealFromChip}
                 />
               )}
 
@@ -670,6 +668,7 @@ export default function NutritionApp({
           setRestoreConfirm={setRestoreConfirm}
           applyRestorePayload={applyRestorePayload}
           onRequestMealPhoto={handleRequestMealPhoto}
+          onQuickAddMeal={handleQuickAddMealFromChip}
         />
       </MeshBackground>
     </ModuleAccentProvider>

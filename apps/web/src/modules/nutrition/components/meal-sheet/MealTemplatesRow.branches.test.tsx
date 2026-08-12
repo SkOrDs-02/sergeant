@@ -53,10 +53,14 @@ describe("MealTemplatesRow", () => {
   it("does not render edit/delete affordances without setPrefs", () => {
     render(<MealTemplatesRow mealTemplates={[TEMPLATE]} setForm={vi.fn()} />);
     expect(
-      screen.queryByRole("button", { name: "Редагувати шаблон Омлет" }),
+      screen.queryByRole("button", {
+        name: "Редагувати швидкий прийом Омлет",
+      }),
     ).toBeNull();
     expect(
-      screen.queryByRole("button", { name: "Видалити шаблон Омлет" }),
+      screen.queryByRole("button", {
+        name: "Видалити швидкий прийом Омлет",
+      }),
     ).toBeNull();
   });
 
@@ -72,7 +76,9 @@ describe("MealTemplatesRow", () => {
       />,
     );
     fireEvent.click(
-      screen.getByRole("button", { name: "Редагувати шаблон Омлет" }),
+      screen.getByRole("button", {
+        name: "Редагувати швидкий прийом Омлет",
+      }),
     );
     expect(setForm).toHaveBeenCalled();
     expect(onEditTemplate).toHaveBeenCalledWith(TEMPLATE);
@@ -89,9 +95,11 @@ describe("MealTemplatesRow", () => {
       />,
     );
     fireEvent.click(
-      screen.getByRole("button", { name: "Видалити шаблон Омлет" }),
+      screen.getByRole("button", {
+        name: "Видалити швидкий прийом Омлет",
+      }),
     );
-    expect(screen.getByText("Видалити шаблон?")).toBeInTheDocument();
+    expect(screen.getByText("Видалити швидкий прийом?")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Видалити" }));
     expect(setPrefs).toHaveBeenCalled();
     const updater = setPrefs.mock.calls[0]![0];

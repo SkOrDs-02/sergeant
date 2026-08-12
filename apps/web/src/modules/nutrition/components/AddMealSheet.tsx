@@ -48,10 +48,11 @@ import {
 } from "./meal-sheet/FoodPickerSection";
 import { BarcodeSection } from "./meal-sheet/BarcodeSection";
 import { MacrosEditor } from "./meal-sheet/MacrosEditor";
-import { SaveAsFood } from "./meal-sheet/SaveAsFood";
 import { SaveAsTemplate } from "./meal-sheet/SaveAsTemplate";
 import { useFoodSearch } from "./meal-sheet/useFoodSearch";
 import { useBarcodeLookup } from "./meal-sheet/useBarcodeLookup";
+import { QuickAddChips } from "./QuickAddChips";
+import type { QuickChip } from "../hooks/useNutritionQuickChips";
 
 /**
  * Фізіологічно правдоподібні стелі для одного прийому їжі. Не медичні
@@ -103,6 +104,8 @@ interface AddMealSheetProps {
   pantryItems?: PantryItem[] | undefined;
   onConsumePantryItem?: ((itemName: string, grams: number) => void) | undefined;
   onRequestPhoto?: (() => void) | undefined;
+  quickChips?: readonly QuickChip[] | undefined;
+  onQuickAddMeal?: ((chip: QuickChip) => void) | undefined;
 }
 
 export function AddMealSheet({
@@ -116,6 +119,8 @@ export function AddMealSheet({
   pantryItems = [],
   onConsumePantryItem,
   onRequestPhoto,
+  quickChips = [],
+  onQuickAddMeal,
 }: AddMealSheetProps) {
   const [form, setForm] = useState<MealFormState>(() => emptyForm(null));
   const [foodQuery, setFoodQuery] = useState("");
@@ -126,15 +131,7 @@ export function AddMealSheet({
   // search / barcode / photo / manual) then "fill" (name, time, macros,
   // save). Editing an existing meal or a photo import skips straight to
   // "fill" since the source is already decided.
-  // When there are no meal templates and no pre-filled content, "source"
-  // offers nothing useful (food-search and barcode still work, but the
-  // picker header is confusing when there are no shortcuts to show).
-  // In that case we start at "fill" directly.
   const [step, setStep] = useState("source");
-  // Tracks whether the current sheet opening auto-skipped the source step,
-  // so we can show the "Обрати джерело ↑" backtrack link instead of the
-  // regular ← arrow that only appears after forward navigation.
-  const [wasAutoSkipped, setWasAutoSkipped] = useState(false);
 
   const { foodHits, offHits, foodBusy, offBusy, foodErr, setFoodErr } =
     useFoodSearch(foodQuery);
@@ -149,7 +146,6 @@ export function AddMealSheet({
     scannerOpen,
     setScannerOpen,
     handleBarcodeLookup,
-    handleBarcodeBind,
   } = useBarcodeLookup({
     pickedFood,
     setPickedFood,
@@ -176,6 +172,7 @@ export function AddMealSheet({
   // it's cleared on confirm (→ finalizeSave) or cancel (sheet stays open,
   // untouched).
   const [pendingMeal, setPendingMeal] = useState<Meal | null>(null);
+  const [rememberForRepeat, setRememberForRepeat] = useState(false);
 
   const [prevOpen, setPrevOpen] = useState(false);
   if (open && !prevOpen) {
@@ -217,12 +214,13 @@ export function AddMealSheet({
     setFromPantryItem(null);
     setEditingTemplateId(null);
     setPendingMeal(null);
-    const autoSkip =
-      !initialMeal?.id && !photoResult && mealTemplates.length === 0;
-    const initialStep =
-      initialMeal?.id || photoResult ? "fill" : autoSkip ? "fill" : "source";
-    setWasAutoSkipped(autoSkip && initialStep === "fill");
-    setStep(initialStep);
+    setRememberForRepeat(false);
+    // Creating a meal always starts with the source chooser. Even without
+    // templates/recent meals it still offers product search, barcode scan,
+    // photo and manual entry, so skipping it silently biases the primary FAB
+    // toward manual input. Editing/photo import already has a source and may
+    // open the fill form directly.
+    setStep(initialMeal?.id || photoResult ? "fill" : "source");
     void ensureSeedFoods();
   } else if (!open && prevOpen) {
     setPrevOpen(false);
@@ -331,6 +329,32 @@ export function AddMealSheet({
       const grams = gramsOrDefault(pickedGrams);
       onConsumePantryItem(fromPantryItem, grams);
     }
+    if (rememberForRepeat && !initialMeal?.id && setPrefs) {
+      setPrefs((prefs) => {
+        const existing = Array.isArray(prefs.mealTemplates)
+          ? prefs.mealTemplates
+          : [];
+        const normalizedName = meal.name.trim().toLocaleLowerCase("uk-UA");
+        const previous = existing.find(
+          (template) =>
+            template.mealType === meal.mealType &&
+            template.name.trim().toLocaleLowerCase("uk-UA") === normalizedName,
+        );
+        const remembered: MealTemplate = {
+          id: previous?.id ?? `tpl_${Date.now()}`,
+          name: meal.name,
+          mealType: meal.mealType,
+          macros: { ...meal.macros },
+        };
+        return {
+          ...prefs,
+          mealTemplates: [
+            remembered,
+            ...existing.filter((template) => template.id !== previous?.id),
+          ].slice(0, 40),
+        };
+      });
+    }
     hapticSuccess();
     onSave(meal);
   }
@@ -352,22 +376,17 @@ export function AddMealSheet({
   );
 
   const canBacktrack = step === "fill" && !initialMeal?.id && !photoResult;
-  // When the user was auto-skipped (no templates/photo/initialMeal), show a
-  // text link "Обрати джерело ↑" inline with the title rather than a ← icon
-  // button, because the icon back button implies "you navigated here" which
-  // would confuse users who never saw the source step.
   function handleBacktrack() {
     // Clear any picked source to prevent the auto-advance effect from
     // immediately pushing back to "fill" when we return to "source".
     setPickedFood(null);
     setFromPantryItem(null);
-    setWasAutoSkipped(false);
     setStep("source");
   }
 
   const title = (
     <div className="flex items-center gap-2 min-w-0">
-      {canBacktrack && !wasAutoSkipped && (
+      {canBacktrack && (
         <button
           type="button"
           onClick={handleBacktrack}
@@ -380,16 +399,6 @@ export function AddMealSheet({
       <span className="truncate">
         {step === "source" ? "Звідки страва?" : "Додати прийом їжі"}
       </span>
-      {wasAutoSkipped && (
-        <button
-          type="button"
-          onClick={handleBacktrack}
-          className="ml-auto shrink-0 inline-flex items-center gap-1 text-style-caption text-nutrition-strong dark:text-nutrition hover:text-nutrition-hover underline decoration-dotted underline-offset-2 transition-colors min-h-[44px] px-1"
-        >
-          Обрати джерело
-          <Icon name="arrow-up" size="sm" />
-        </button>
-      )}
     </div>
   );
 
@@ -414,27 +423,10 @@ export function AddMealSheet({
       >
         {step === "source" ? (
           <>
-            {/* Intro row doubles as a primary shortcut: the old paragraph
-                ended with «…або заповніть вручну» which described an
-                action hidden at the bottom of the sheet, making first-time
-                users scroll past templates/pantry/search/barcode/photo just
-                to find it. Pair the hint with an inline «Ввести вручну →»
-                link so the quickest manual log is one tap from the sheet
-                opening. The full button stays below for discoverability
-                when users scroll past the sources. */}
-            <div className="mb-3 flex items-start justify-between gap-3">
-              <p className="text-style-caption text-muted">
-                Оберіть джерело нижче. Макроси, назву й час відредагуєте на
-                наступному кроці.
-              </p>
-              <button
-                type="button"
-                onClick={() => setStep("fill")}
-                className="shrink-0 text-style-caption text-nutrition-strong dark:text-nutrition hover:text-nutrition-hover underline decoration-dotted underline-offset-2 transition-colors min-h-[36px] px-1"
-              >
-                Ввести вручну →
-              </button>
-            </div>
+            <p className="mb-3 text-style-caption text-muted">
+              Оберіть джерело нижче. Макроси, назву й час відредагуєте на
+              наступному кроці.
+            </p>
 
             {/* Templates / pantry rows disappear when empty so a
                   first-time user sees search + barcode as the whole step
@@ -448,6 +440,27 @@ export function AddMealSheet({
                 onSelected={() => setStep("fill")}
                 onEditTemplate={(t) => setEditingTemplateId(t.id)}
               />
+            )}
+
+            {onQuickAddMeal && quickChips.length > 0 && (
+              <section
+                className="mb-4 min-w-0"
+                aria-labelledby="recent-meals-heading"
+              >
+                <h3
+                  id="recent-meals-heading"
+                  className="mb-2 text-style-label text-text"
+                >
+                  Нещодавні прийоми
+                </h3>
+                <QuickAddChips
+                  chips={quickChips}
+                  onTap={(chip) => {
+                    onQuickAddMeal(chip);
+                    onClose();
+                  }}
+                />
+              </section>
             )}
 
             {pantryItems.length > 0 && (
@@ -470,28 +483,27 @@ export function AddMealSheet({
               foodBusy={foodBusy}
               offBusy={offBusy}
               foodErr={foodErr}
+              setFoodErr={setFoodErr}
               pickedFood={pickedFood}
               setPickedFood={setPickedFood}
               pickedGrams={pickedGrams}
               setPickedGrams={setPickedGrams}
             />
 
-            <BarcodeSection
-              barcode={barcode}
-              setBarcode={setBarcode}
-              barcodeStatus={barcodeStatus}
-              setBarcodeStatus={setBarcodeStatus}
-              barcodeNotice={barcodeNotice}
-              onDismissBarcodeNotice={() => setBarcodeNotice(null)}
-              onRetryBarcodeLookup={() => void handleBarcodeLookup(barcode)}
-              onUsePhotoForBarcode={onRequestPhoto}
-              handleBarcodeLookup={handleBarcodeLookup}
-              handleBarcodeBind={handleBarcodeBind}
-              setScannerOpen={setScannerOpen}
-            />
+            <div
+              className={`mt-4 grid gap-3 ${onRequestPhoto ? "grid-cols-2" : "grid-cols-1"}`}
+            >
+              <BarcodeSection
+                barcodeStatus={barcodeStatus}
+                setBarcodeStatus={setBarcodeStatus}
+                barcodeNotice={barcodeNotice}
+                onDismissBarcodeNotice={() => setBarcodeNotice(null)}
+                onRetryBarcodeLookup={() => void handleBarcodeLookup(barcode)}
+                onUsePhotoForBarcode={onRequestPhoto}
+                setScannerOpen={setScannerOpen}
+              />
 
-            {onRequestPhoto && (
-              <div className="mt-4">
+              {onRequestPhoto && (
                 <Button
                   type="button"
                   variant="secondary"
@@ -504,13 +516,13 @@ export function AddMealSheet({
                     // `add_meal_photo` PWA shortcut already uses.
                     onRequestPhoto();
                   }}
-                  aria-label="Сфотографувати страву"
+                  aria-label="Додати страву з фото"
                 >
                   <Icon name="camera" size="sm" aria-hidden />
-                  <span>Сфотографувати страву</span>
+                  <span>Фото</span>
                 </Button>
-              </div>
-            )}
+              )}
+            </div>
 
             <div className="mt-5 flex items-center gap-3 text-style-caption text-muted">
               <span className="flex-1 h-px bg-line" />
@@ -543,30 +555,45 @@ export function AddMealSheet({
               hasPhotoMacros={hasPhotoMacros}
             />
 
-            {!pickedFood && (
-              <SaveAsFood
-                form={form}
-                setForm={setForm}
-                setPickedFood={setPickedFood}
-                setPickedGrams={setPickedGrams}
-                setFoodQuery={setFoodQuery}
-                setFoodErr={setFoodErr}
-              />
-            )}
-
             {form.err && (
               <div className="text-style-caption text-danger-strong dark:text-danger mt-2">
                 {form.err}
               </div>
             )}
 
-            <SaveAsTemplate
-              form={form}
-              setForm={setForm}
-              setPrefs={setPrefs}
-              editingTemplateId={editingTemplateId}
-              onDoneEditing={() => setEditingTemplateId(null)}
-            />
+            {editingTemplateId ? (
+              <SaveAsTemplate
+                form={form}
+                setForm={setForm}
+                setPrefs={setPrefs}
+                editingTemplateId={editingTemplateId}
+                onDoneEditing={() => setEditingTemplateId(null)}
+              />
+            ) : (
+              !initialMeal?.id &&
+              typeof setPrefs === "function" && (
+                <label className="mt-4 flex min-h-[44px] cursor-pointer items-start gap-3 rounded-2xl border border-line bg-panelHi p-3">
+                  <input
+                    type="checkbox"
+                    aria-label="Запам’ятати для повтору"
+                    checked={rememberForRepeat}
+                    onChange={(event) =>
+                      setRememberForRepeat(event.currentTarget.checked)
+                    }
+                    className="mt-0.5 h-5 w-5 shrink-0 accent-nutrition-strong"
+                  />
+                  <span className="min-w-0">
+                    <span className="block text-style-label text-text">
+                      Запам’ятати для повтору
+                    </span>
+                    <span className="mt-0.5 block text-style-caption text-muted">
+                      Назва, тип прийому та КБЖВ з’являться серед швидких
+                      прийомів.
+                    </span>
+                  </span>
+                </label>
+              )
+            )}
 
             <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-2">
               <Button
@@ -574,7 +601,7 @@ export function AddMealSheet({
                 className="h-12 min-h-[44px] bg-nutrition-strong text-white hover:bg-nutrition-hover"
                 onClick={handleSave}
               >
-                Зберегти
+                {initialMeal?.id ? "Зберегти зміни" : "Додати прийом"}
               </Button>
               <Button
                 type="button"

@@ -3,7 +3,7 @@
  * Status: Active
  */
 import type { Dispatch, Ref, SetStateAction } from "react";
-import type { NutritionPrefs, PantryItem } from "@sergeant/nutrition-domain";
+import type { NutritionPrefs } from "@sergeant/nutrition-domain";
 import { Card } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
 import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
@@ -11,7 +11,6 @@ import { useLocale } from "@shared/i18n/useLocale";
 import { PaywallModal, useFeatureGate } from "../../../core/billing";
 import { NutritionDashboard } from "../components/NutritionDashboard";
 import { PhotoAnalyzeCard } from "../components/PhotoAnalyzeCard";
-import type { QuickChip } from "../hooks/useNutritionQuickChips";
 import type { useNutritionLog } from "../hooks/useNutritionLog";
 import type { usePhotoAnalysis } from "../hooks/usePhotoAnalysis";
 import type { NutritionPage } from "../lib/nutritionRouter";
@@ -33,8 +32,6 @@ interface NutritionStartPageProps {
   photoCardForceOpen: boolean;
   setPhotoCardForceOpen: Dispatch<SetStateAction<boolean>>;
   onSaveToLog: () => void;
-  pantryItems?: readonly PantryItem[];
-  onQuickAddMeal?: (chip: QuickChip) => void;
 }
 
 export function NutritionStartPage({
@@ -50,8 +47,6 @@ export function NutritionStartPage({
   photoCardForceOpen,
   setPhotoCardForceOpen,
   onSaveToLog,
-  pantryItems,
-  onQuickAddMeal,
 }: NutritionStartPageProps) {
   // Phase 7 D2 — gate AI-powered photo macro analysis behind Premium.
   // The hook owns paywall-open state; we proxy `analyzePhoto` through
@@ -72,8 +67,6 @@ export function NutritionStartPage({
         <NutritionDashboard
           log={log.nutritionLog}
           prefs={prefs}
-          pantryItems={pantryItems}
-          onQuickAddMeal={onQuickAddMeal}
           onGoToLog={() => setActivePageAndHash("log")}
           onGoToDailyPlan={() => {
             setActivePageAndHash("menu");
@@ -84,7 +77,8 @@ export function NutritionStartPage({
           onAddMeal={onRequestAddMeal}
         />
         <details
-          className="group"
+          className="group min-w-0"
+          data-testid="nutrition-photo-details"
           open={photoCardForceOpen || undefined}
           onToggle={(e) => {
             if (!e.currentTarget.open) setPhotoCardForceOpen(false);
@@ -96,7 +90,7 @@ export function NutritionStartPage({
             prominence="tinted"
             padding="md"
             radius="xl"
-            className="flex items-center gap-3 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden"
+            className="flex min-w-0 items-center gap-3 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden"
           >
             <span className="flex items-center justify-center w-9 h-9 rounded-xl bg-nutrition/15 shrink-0">
               <svg
@@ -129,7 +123,7 @@ export function NutritionStartPage({
               className="text-muted transition-transform group-open:rotate-90 shrink-0"
             />
           </Card>
-          <div className="pt-2">
+          <div className="min-w-0 pt-2">
             <PhotoAnalyzeCard
               busy={busy}
               analyzePhoto={gatedAnalyzePhoto}

@@ -24,6 +24,9 @@ vi.mock("./MacroChip", () => ({
     </div>
   ),
 }));
+vi.mock("./SaveAsFood", () => ({
+  SaveAsFood: () => <div data-testid="create-own-food" />,
+}));
 
 import { FoodPickerSection, type PickedFood } from "./FoodPickerSection";
 import type { MealFormState } from "./mealFormUtils";

@@ -153,8 +153,11 @@ describe("useSWUpdate — defer-while-busy", () => {
     expect(mockToastInfo).toHaveBeenCalledOnce();
     expect(mockToastInfo).toHaveBeenCalledWith(
       "Доступна нова версія",
-      15000,
-      expect.objectContaining({ label: "Оновити" }),
+      null,
+      expect.objectContaining({
+        label: "Оновити",
+        dismissLabel: "Пізніше",
+      }),
     );
   });
 

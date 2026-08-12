@@ -614,8 +614,8 @@ export const messages = {
   nutrition: {
     fromPantry: "З комори",
     mealType: "Прийом їжі",
-    templates: "Шаблони",
-    deleteTemplateTitle: "Видалити шаблон?",
+    templates: "Швидкі прийоми",
+    deleteTemplateTitle: "Видалити швидкий прийом?",
     reportHeading: "Їжа (ккал/день)", // HubReports NutritionCard
     kcalUnit: "ккал",
     macrosToday: "Макроси за сьогодні", // MacroRings group label (V-10)

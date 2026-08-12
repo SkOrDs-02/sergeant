@@ -4,6 +4,7 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { ToastProvider, useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { ToastContainer } from "./Toast";
+import { Sheet } from "./Sheet";
 
 /**
  * Тестова обгортка — рендерить `<ToastContainer>` всередині `<ToastProvider>`
@@ -152,6 +153,40 @@ describe("Toast — auto-dismiss pause/resume", () => {
     expect(document.querySelector("[data-toast-id]")).not.toBeNull();
   });
 
+  it("countdown-bar для звичайного toast має duration із API", () => {
+    const { api } = renderHarness();
+    act(() => {
+      api.info("Збережено", 3200);
+    });
+    const bar = getToastRoot().querySelector<HTMLElement>(
+      "[data-toast-countdown]",
+    );
+    expect(bar).not.toBeNull();
+    expect(bar?.style.animationDuration).toBe("3200ms");
+    expect(bar).toHaveClass("animate-toast-countdown");
+  });
+
+  it("persistent toast показує явне «Пізніше» без countdown-bar", () => {
+    const { api } = renderHarness();
+    act(() => {
+      api.info("Доступна нова версія", null, {
+        label: "Оновити",
+        dismissLabel: "Пізніше",
+        onClick: vi.fn(),
+      });
+    });
+
+    expect(screen.getByRole("button", { name: "Пізніше" })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Закрити" }),
+    ).not.toBeInTheDocument();
+    expect(getToastRoot().querySelector("[data-toast-countdown]")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Пізніше" }));
+    expect(getToastRoot()).toHaveAttribute("data-toast-id");
+    expect(getToastRoot()).toHaveClass("motion-safe:animate-toast-exit");
+  });
+
   it("countdown-bar для undo-toast має animationDuration=5000ms і paused під час hover", () => {
     const { api } = renderHarness();
     act(() => {
@@ -170,6 +205,46 @@ describe("Toast — auto-dismiss pause/resume", () => {
 
     fireEvent.mouseLeave(row);
     expect(bar?.getAttribute("data-toast-paused")).toBe("false");
+  });
+});
+
+describe("Toast — поверх modal/sheet", () => {
+  it("лишається поза inert-фоном і виконує дію, поки Sheet відкритий", () => {
+    const onAction = vi.fn();
+    const apiRef: { current: ReturnType<typeof useToast> | null } = {
+      current: null,
+    };
+
+    function ApiBridge() {
+      apiRef.current = useToast();
+      return null;
+    }
+
+    render(
+      <ToastProvider>
+        <ApiBridge />
+        <ToastContainer />
+        <Sheet open onClose={vi.fn()} title="Активна модалка">
+          Вміст
+        </Sheet>
+      </ToastProvider>,
+    );
+
+    if (!apiRef.current) throw new Error("ApiBridge not mounted");
+    act(() => {
+      apiRef.current?.success("Прийом додано", 5000, {
+        label: "Скасувати",
+        onClick: onAction,
+      });
+    });
+
+    const tray = screen.getByTestId("toast-tray");
+    expect(tray.parentElement).toBe(document.body);
+    expect(tray.closest("[inert]")).toBeNull();
+    expect(tray).not.toHaveAttribute("aria-hidden");
+
+    fireEvent.click(screen.getByRole("button", { name: "Скасувати" }));
+    expect(onAction).toHaveBeenCalledTimes(1);
   });
 });
 

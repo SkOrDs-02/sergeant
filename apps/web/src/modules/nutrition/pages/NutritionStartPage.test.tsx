@@ -297,5 +297,6 @@ describe("NutritionStartPage", () => {
     const detailsEl = document.querySelector("details");
     expect(detailsEl).toBeTruthy();
     expect(detailsEl!.hasAttribute("open")).toBe(true);
+    expect(detailsEl).toHaveClass("min-w-0");
   });
 });

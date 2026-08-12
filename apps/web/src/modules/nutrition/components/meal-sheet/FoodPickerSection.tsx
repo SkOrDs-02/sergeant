@@ -18,6 +18,7 @@ import { macrosForGrams, type FoodProduct } from "../../lib/foodDb/foodDb";
 import type { MealFormState } from "./mealFormUtils";
 import { clampNumericInput } from "@shared/lib/format/numberInput";
 import { NAME_MAX_LEN } from "@shared/lib/text/limits";
+import { SaveAsFood } from "./SaveAsFood";
 
 /** 10 кг однієї порції — межа проти зайвого нуля, не дієтологія. */
 const MAX_PORTION_GRAMS = 10_000;
@@ -46,6 +47,7 @@ interface FoodPickerSectionProps {
   foodBusy: boolean;
   offBusy: boolean;
   foodErr: string;
+  setFoodErr: Dispatch<SetStateAction<string>>;
   pickedFood: PickedFood | null;
   setPickedFood: Dispatch<SetStateAction<PickedFood | null>>;
   pickedGrams: string;
@@ -62,6 +64,7 @@ export function FoodPickerSection({
   foodBusy,
   offBusy,
   foodErr,
+  setFoodErr,
   pickedFood,
   setPickedFood,
   pickedGrams,
@@ -179,6 +182,12 @@ export function FoodPickerSection({
               </ul>
             </div>
           )}
+          <SaveAsFood
+            setPickedFood={setPickedFood}
+            setPickedGrams={setPickedGrams}
+            setFoodQuery={setFoodQuery}
+            setFoodErr={setFoodErr}
+          />
         </>
       ) : (
         /* Продукт вибраний — картка з live КБЖВ */
