@@ -109,13 +109,13 @@ describe("addManualExpense", () => {
     const entry = result.current.addManualExpense({ amount: 1250 });
 
     expect(entry.amount).toBe(1250);
-    expect(entry.category).toBe("інше");
+    expect(entry.category).toBe("other");
     expect(typeof entry.id).toBe("string");
     expect(state["manualExpenses"]).toHaveLength(1);
     expect(invalidateSpy).toHaveBeenCalled();
     expect(trackEvent).toHaveBeenCalledWith(
       "expense_added",
-      expect.objectContaining({ category: "інше", source: "manual" }),
+      expect.objectContaining({ category: "other", source: "manual" }),
     );
   });
 
@@ -212,6 +212,20 @@ describe("removeManualExpense / editManualExpense", () => {
     expect(arr[0]!["description"]).toBe("new");
     expect(arr[0]!["amount"]).toBe(999);
     expect(arr[0]!["date"]).toBe("d1");
+  });
+
+  it("normalizes an emptied expense category to the canonical other slug", () => {
+    const { slots, state } = makeSlots({
+      manualExpenses: [
+        { id: "a", date: "d1", description: "", amount: 1, category: "food" },
+      ],
+    });
+    const { result } = renderMutations(slots);
+
+    result.current.editManualExpense("a", { category: "" });
+
+    const arr = state["manualExpenses"] as Array<Record<string, unknown>>;
+    expect(arr[0]!["category"]).toBe("other");
   });
 });
 

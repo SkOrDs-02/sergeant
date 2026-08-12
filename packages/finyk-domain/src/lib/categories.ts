@@ -15,12 +15,53 @@ export interface CategoryLike {
 }
 
 /**
+ * Канонічні categoryId, записані на самій транзакції, мають перевагу над
+ * повторною евристикою за MCC/описом. Користувацький override лишається
+ * найвищим пріоритетом.
+ */
+export interface CategorizedTransactionLike {
+  description?: string | undefined;
+  mcc?: number | undefined;
+  categoryId?: string | undefined;
+  manual?: boolean | undefined;
+  _manual?: boolean | undefined;
+  source?: string | undefined;
+}
+
+/**
  * Широкий вхідний тип: і strict `CategoryLike[]` (мобільний), і легасі
  * `unknown[]` / `{ id: string; label?: string }[]` з `apps/web` повинні
  * прийматись без змін у web. Вузьке звуження відбувається всередині
  * функцій.
  */
 type CategoryLikeInput = readonly unknown[];
+
+// Ручна форма історично має дещо детальнішу таксономію за MCC-каталог.
+// Ці id уже лежать у persisted blobs, тому їх не можна зводити до `other`
+// або перейменовувати міграцією під час читання.
+const MANUAL_EXPENSE_CATEGORIES: readonly CategoryLike[] = [
+  { id: "food", label: "🍴 Їжа" },
+  { id: "groceries", label: "🛒 Продукти" },
+  { id: "cafe", label: "☕ Кафе та ресторани" },
+  { id: "transport", label: "🚗 Транспорт" },
+  { id: "entertainment", label: "🎮 Розваги" },
+  { id: "health", label: "💊 Здоров'я" },
+  { id: "shopping", label: "🛍 Покупки" },
+  { id: "utilities", label: "🏠 Комунальні" },
+  { id: "tech", label: "🖥 Техніка" },
+  { id: "subscriptions", label: "🎵 Підписки" },
+  { id: "education", label: "📚 Навчання" },
+  { id: "travel", label: "✈️ Подорожі" },
+  { id: "other", label: "💳 Інше" },
+];
+
+const MANUAL_INCOME_CATEGORIES: readonly CategoryLike[] = [
+  { id: "salary", label: "Зарплата" },
+  { id: "freelance", label: "Фріланс" },
+  { id: "gift", label: "Подарунок" },
+  { id: "refund", label: "Повернення" },
+  { id: "other-income", label: "Інше" },
+];
 
 function isCategoryLike(v: unknown): v is CategoryLike {
   return (
@@ -37,6 +78,8 @@ function resolveExpenseOverride(
   if (!overrideId) return null;
   const fromMcc = MCC_CATEGORIES.find((c: CategoryLike) => c.id === overrideId);
   if (fromMcc) return fromMcc;
+  const fromManual = MANUAL_EXPENSE_CATEGORIES.find((c) => c.id === overrideId);
+  if (fromManual) return fromManual;
   const custom = customCategories
     .filter(isCategoryLike)
     .find((c) => c.id === overrideId);
@@ -65,6 +108,7 @@ export function getIncomeCategory(
 ): CategoryLike {
   if (overrideId) {
     const found =
+      MANUAL_INCOME_CATEGORIES.find((c: CategoryLike) => c.id === overrideId) ||
       INCOME_CATEGORIES.find((c: CategoryLike) => c.id === overrideId) ||
       MCC_CATEGORIES.find((c: CategoryLike) => c.id === overrideId);
     if (found) return found;
@@ -96,4 +140,46 @@ export function getCategory(
       return cat;
   }
   return { id: "other", label: "💳 Інше", mccs: [], keywords: [] };
+}
+
+export function getExpenseCategoryForTransaction(
+  transaction: CategorizedTransactionLike,
+  overrideId: string | null | undefined = null,
+  customCategories: CategoryLikeInput = [],
+): CategoryLike {
+  const explicitId = overrideId || transaction.categoryId || null;
+  const isManual =
+    transaction.manual === true ||
+    transaction._manual === true ||
+    transaction.source === "manual";
+  if (isManual && explicitId) {
+    const manualCategory = MANUAL_EXPENSE_CATEGORIES.find(
+      (category) => category.id === explicitId,
+    );
+    if (manualCategory) return manualCategory;
+  }
+  return getCategory(
+    transaction.description ?? "",
+    transaction.mcc ?? 0,
+    explicitId,
+    customCategories,
+  );
+}
+
+export function getIncomeCategoryForTransaction(
+  transaction: CategorizedTransactionLike,
+  overrideId: string | null | undefined = null,
+): CategoryLike {
+  const explicitId = overrideId || transaction.categoryId || null;
+  const isManual =
+    transaction.manual === true ||
+    transaction._manual === true ||
+    transaction.source === "manual";
+  if (isManual && explicitId) {
+    const manualCategory = MANUAL_INCOME_CATEGORIES.find(
+      (category) => category.id === explicitId,
+    );
+    if (manualCategory) return manualCategory;
+  }
+  return getIncomeCategory(transaction.description ?? "", explicitId);
 }

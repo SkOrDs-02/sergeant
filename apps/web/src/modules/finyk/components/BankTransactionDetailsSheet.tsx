@@ -26,7 +26,10 @@ import {
   MCC_CATEGORIES,
   mergeExpenseCategoryDefinitions,
 } from "../constants";
-import { getCategory, getIncomeCategory } from "../utils";
+import {
+  getExpenseCategoryForTransaction,
+  getIncomeCategoryForTransaction,
+} from "../utils";
 import { TxRowCategoryPicker } from "./TxRowCategoryPicker";
 import { TxRowSplitEditor } from "./TxRowSplitEditor";
 
@@ -101,10 +104,9 @@ export function BankTransactionDetailsSheet({
   const copy = messages.finyk.transactionDetails;
   const isIncome = transaction.amount > 0;
   const category = isIncome
-    ? getIncomeCategory(transaction.description ?? "", overrideCatId)
-    : getCategory(
-        transaction.description ?? "",
-        transaction.mcc ?? 0,
+    ? getIncomeCategoryForTransaction(transaction, overrideCatId)
+    : getExpenseCategoryForTransaction(
+        transaction,
         overrideCatId,
         customCategories as readonly unknown[],
       );

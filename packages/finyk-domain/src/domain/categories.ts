@@ -53,6 +53,14 @@ interface CustomCategory extends Category {
  */
 const CAT_TIERS: Record<string, CategoryColorTiers> = categoryColors;
 
+// Детальні slug-и ручної форми наслідують колір найближчої канонічної
+// категорії замість одного й того самого fallback-кольору для всіх.
+const CATEGORY_COLOR_ALIASES: Readonly<Record<string, string>> = {
+  groceries: "food",
+  cafe: "restaurant",
+  tech: "shopping",
+};
+
 /**
  * Порядок кольорів для КАСТОМНИХ категорій — беремо за `idx`, щоб колір
  * не стрибав між рендерами.
@@ -69,7 +77,8 @@ const FALLBACK_TIERS: CategoryColorTiers[] = categoryFallbackOrder.map(
  * читабельну пару фон/чорнило. Для сирого кольору є `getCatColor`.
  */
 export function getCatTiers(categoryId: string, idx = 0): CategoryColorTiers {
-  const base = CAT_TIERS[categoryId];
+  const paletteId = CATEGORY_COLOR_ALIASES[categoryId] ?? categoryId;
+  const base = CAT_TIERS[paletteId];
   if (base) return base;
   return FALLBACK_TIERS[idx % FALLBACK_TIERS.length] ?? FALLBACK_TIERS[0]!;
 }
@@ -82,7 +91,8 @@ export function getCatColor(
   customCategories: CustomCategory[] = [],
   idx = 0,
 ): string {
-  const base = CAT_TIERS[categoryId];
+  const paletteId = CATEGORY_COLOR_ALIASES[categoryId] ?? categoryId;
+  const base = CAT_TIERS[paletteId];
   if (base) return base.solid;
   const custom = Array.isArray(customCategories)
     ? customCategories.find((c) => c.id === categoryId)

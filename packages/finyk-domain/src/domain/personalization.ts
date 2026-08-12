@@ -11,7 +11,7 @@
 //  - для мерчантів додатково зберігаємо найчастішу категорію
 //    (щоб quick add міг підставити її автоматично).
 // Без ML, без ваг на зразок TF-IDF — тільки підрахунки + сортування.
-import { getCategory } from "../utils";
+import { getCategory, getExpenseCategoryForTransaction } from "../utils";
 import { INTERNAL_TRANSFER_ID } from "../constants";
 import type { Category, Transaction } from "./types";
 
@@ -235,9 +235,8 @@ export function getFrequentCategories(
     const ts = toTimestampMs(tx);
     if (!inWindow(ts)) continue;
     const overrideId = txCategories[tx.id];
-    const cat = getCategory(
-      tx.description || "",
-      tx.mcc || 0,
+    const cat = getExpenseCategoryForTransaction(
+      tx,
       overrideId,
       customCategories,
     );
@@ -343,9 +342,8 @@ export function getFrequentMerchants(
     const ts = toTimestampMs(tx);
     if (!inWindow(ts)) continue;
     const overrideId = txCategories[tx.id];
-    const cat = getCategory(
-      tx.description || "",
-      tx.mcc || 0,
+    const cat = getExpenseCategoryForTransaction(
+      tx,
       overrideId,
       customCategories,
     );

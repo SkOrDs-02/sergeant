@@ -167,30 +167,26 @@ export function ManualExpenseSheet({
         // Branch fully per-kind (rather than indexing a union display map
         // with a union slug) so each `display[slug]` lookup stays narrowly
         // typed against its own taxonomy.
-        const [slug, description]: [string, string] =
+        const slug: string =
           kind === "income"
             ? (() => {
                 const s = upgradeIncomeCategory(values.category);
-                return [
-                  s,
-                  trimmedDesc || (INCOME_CATEGORY_DISPLAY[s]?.label ?? s),
-                ];
+                return s;
               })()
             : (() => {
                 // `upgradeCategory` звів би id власної категорії до
                 // `DEFAULT_CATEGORY` — саме тут обрана людиною категорія
-                // тихо ставала «Інше». Підпис теж беремо з об'єднаної мапи,
-                // інакше в опис витрати потрапив би сирий id.
+                // тихо ставала «Інше».
                 const s = upgradeCategoryAllowingCustom(
                   values.category,
                   customIds,
                 );
-                return [s, trimmedDesc || (categoryDisplay[s]?.label ?? s)];
+                return s;
               })();
         hapticSuccess();
         onSave?.({
           ...(initialExpense?.id ? { id: String(initialExpense.id) } : {}),
-          description,
+          description: trimmedDesc,
           // Локальний blob Фініка досі зберігає гривні (див.
           // domain-invariants.md § Money) — парсер лише гарантує, що сюди
           // не доїде `1e9`, `12.345` чи від'ємне.

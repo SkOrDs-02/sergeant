@@ -3,7 +3,10 @@
  * Status: Active
  */
 import { memo, useMemo } from "react";
-import { getCategory, getIncomeCategory } from "../utils";
+import {
+  getExpenseCategoryForTransaction,
+  getIncomeCategoryForTransaction,
+} from "../utils";
 import { CURRENCY, CURRENCY_SYMBOL } from "../constants";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain/constants";
 import type { MonoAccount } from "@sergeant/finyk-domain/lib/accounts";
@@ -58,10 +61,9 @@ function TxRowImpl({
 }: TxRowProps) {
   const isIncome = tx.amount > 0;
   const cat = isIncome
-    ? getIncomeCategory(tx.description ?? "", overrideCatId)
-    : getCategory(
-        tx.description ?? "",
-        tx.mcc ?? 0,
+    ? getIncomeCategoryForTransaction(tx, overrideCatId)
+    : getExpenseCategoryForTransaction(
+        tx,
         overrideCatId,
         customCategories as readonly unknown[],
       );
@@ -118,7 +120,12 @@ function TxRowImpl({
             hidden && "line-through",
           )}
         >
-          {tx.description || "Транзакція"}
+          {tx.description ||
+            (tx._manual
+              ? isIncome
+                ? "Ручне надходження"
+                : "Ручна витрата"
+              : "Транзакція")}
         </div>
         <TxRowMetaChips
           tx={tx}

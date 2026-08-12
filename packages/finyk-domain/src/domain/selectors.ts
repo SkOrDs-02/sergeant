@@ -4,7 +4,7 @@
 // wrap in `useMemo` or call from tests.
 import {
   getTxStatAmount,
-  getCategory,
+  getExpenseCategoryForTransaction,
   resolveExpenseCategoryMeta,
 } from "../utils";
 import { INTERNAL_TRANSFER_ID } from "../constants";
@@ -147,9 +147,8 @@ export function computeCategorySpendIndex(
         totalSpent += s.amount;
       }
     } else {
-      const cat = getCategory(
-        tx.description,
-        tx.mcc,
+      const cat = getExpenseCategoryForTransaction(
+        tx,
         txCategories[tx.id],
         customCategories,
       );
