@@ -67,9 +67,20 @@ function TxRowImpl({
         overrideCatId,
         customCategories as readonly unknown[],
       );
-  const catName = isIncome
-    ? cat.label
-    : cat.label.slice(cat.label.indexOf(" ") + 1);
+  const catName = cat.label.replace(/^[^\p{L}\p{N}]+/u, "").trim();
+  const rawDescription = tx.description?.trim() ?? "";
+  // До 2026-08-13 форма підставляла підпис вибраної категорії в порожню
+  // необов'язкову назву. На старих ручних записах не дублюємо цей
+  // згенерований текст над таким самим чипом категорії. Власні назви, які
+  // відрізняються від підпису категорії, лишаються без змін.
+  const hasLegacyGeneratedDescription =
+    tx._manual === true &&
+    rawDescription.localeCompare(catName, "uk-UA", {
+      sensitivity: "accent",
+    }) === 0;
+  const displayDescription = hasLegacyGeneratedDescription
+    ? ""
+    : rawDescription;
 
   const account: MonoAccount | undefined = accounts?.find(
     (a) => a.id === tx._accountId,
@@ -120,7 +131,7 @@ function TxRowImpl({
             hidden && "line-through",
           )}
         >
-          {tx.description ||
+          {displayDescription ||
             (tx._manual
               ? isIncome
                 ? "Ручне надходження"
