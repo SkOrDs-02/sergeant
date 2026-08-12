@@ -40,7 +40,12 @@ export function BarcodeSection({
         }}
         aria-label="Сканувати штрихкод"
       >
-        <Icon name="scanner" size="sm" aria-hidden />
+        <Icon
+          name="barcode"
+          size="sm"
+          aria-hidden
+          data-testid="barcode-action-icon"
+        />
         <span>Сканувати</span>
       </Button>
       {barcodeStatus && !barcodeNotice && (
