@@ -269,6 +269,34 @@ describe("AddMealSheet — closed state", () => {
 });
 
 describe("AddMealSheet — source step (with templates)", () => {
+  it("keeps recent meals in the add flow and closes after one-tap repeat", () => {
+    const onQuickAddMeal = vi.fn();
+    const onClose = vi.fn();
+    renderSheet({
+      onClose,
+      onQuickAddMeal,
+      quickChips: [
+        {
+          id: "recent-1",
+          label: "Сирна запіканка",
+          grams: 250,
+          source: "recent-meal",
+          lastUsedAt: "2026-08-12T18:00:00.000Z",
+          macros: { kcal: 350, protein_g: 12, fat_g: 6, carbs_g: 60 },
+        },
+      ],
+    });
+
+    expect(screen.getByText("Нещодавні прийоми")).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Додати Сирна запіканка — 250 грамів",
+      }),
+    );
+    expect(onQuickAddMeal).toHaveBeenCalledTimes(1);
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
   it("shows 'Звідки страва?' heading when opened with templates", () => {
     renderSheet({
       mealTemplates: [
@@ -344,9 +372,40 @@ describe("AddMealSheet — fill step (no templates/photoResult/initialMeal)", ()
   });
 
   it("shows save and cancel buttons", () => {
-    renderSheet({ mealTemplates: [] });
-    expect(screen.getByText("Зберегти")).toBeInTheDocument();
+    renderSheet({ mealTemplates: [], setPrefs: vi.fn() });
+    expect(
+      screen.getByRole("button", { name: "Додати прийом" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("checkbox", { name: "Запам’ятати для повтору" }),
+    ).toBeInTheDocument();
     expect(screen.getByText("Скасувати")).toBeInTheDocument();
+  });
+
+  it("adds the meal and remembers one reusable whole-meal template", async () => {
+    const onSave = vi.fn();
+    const setPrefs = vi.fn();
+    renderSheet({ mealTemplates: [], onSave, setPrefs });
+    fireEvent.change(screen.getByTestId("name-input"), {
+      target: { value: "Сирна запіканка" },
+    });
+    fireEvent.change(screen.getByTestId("kcal-input"), {
+      target: { value: "350" },
+    });
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: "Запам’ятати для повтору" }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Додати прийом" }));
+
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    expect(setPrefs).toHaveBeenCalledTimes(1);
+    const updater = setPrefs.mock.calls[0]![0];
+    const next = updater({ mealTemplates: [] });
+    expect(next.mealTemplates).toHaveLength(1);
+    expect(next.mealTemplates[0]).toMatchObject({
+      name: "Сирна запіканка",
+      macros: { kcal: 350, protein_g: null, fat_g: null, carbs_g: null },
+    });
   });
 
   it("clicking 'Скасувати' calls onClose", () => {
@@ -358,7 +417,9 @@ describe("AddMealSheet — fill step (no templates/photoResult/initialMeal)", ()
 
   it("shows error when saving with empty name", async () => {
     renderSheet({ mealTemplates: [] });
-    fireEvent.click(screen.getByText("Зберегти"));
+    fireEvent.click(
+      screen.getByRole("button", { name: /Додати прийом|Зберегти зміни/ }),
+    );
     await waitFor(() => {
       expect(screen.getByText("Введи назву страви.")).toBeInTheDocument();
     });
@@ -402,7 +463,9 @@ describe("AddMealSheet — editing an existing meal", () => {
         macros: { kcal: 200, protein_g: 8, fat_g: 2, carbs_g: 40 },
       },
     });
-    fireEvent.click(screen.getByText("Зберегти"));
+    fireEvent.click(
+      screen.getByRole("button", { name: /Додати прийом|Зберегти зміни/ }),
+    );
     await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
     expect(onSave.mock.calls[0]![0]).toMatchObject({
       id: "existing-meal-1",
@@ -430,7 +493,9 @@ describe("AddMealSheet — photoResult import", () => {
     });
     expect(screen.getByTestId("macros-editor")).toBeInTheDocument();
     expect(screen.queryByText("Обрати джерело")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByText("Зберегти"));
+    fireEvent.click(
+      screen.getByRole("button", { name: /Додати прийом|Зберегти зміни/ }),
+    );
     const dialog = await screen.findByRole("alertdialog");
     fireEvent.click(within(dialog).getByRole("button", { name: "Зберегти" }));
     await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
@@ -452,7 +517,9 @@ describe("AddMealSheet — save validation branches", () => {
     fireEvent.change(screen.getByTestId("kcal-input"), {
       target: { value: "350" },
     });
-    fireEvent.click(screen.getByText("Зберегти"));
+    fireEvent.click(
+      screen.getByRole("button", { name: /Додати прийом|Зберегти зміни/ }),
+    );
     await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
     expect(onSave.mock.calls[0]![0]).toMatchObject({
       name: "Суп",
@@ -478,7 +545,9 @@ describe("AddMealSheet — save validation branches", () => {
     fireEvent.change(screen.getByTestId("protein-input"), {
       target: { value: "121,1" },
     });
-    fireEvent.click(screen.getByText("Зберегти"));
+    fireEvent.click(
+      screen.getByRole("button", { name: /Додати прийом|Зберегти зміни/ }),
+    );
     await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
     expect(onSave.mock.calls[0]![0]).toMatchObject({
       macros: { kcal: 1212.1, protein_g: 121.1 },
@@ -496,7 +565,9 @@ describe("AddMealSheet — save validation branches", () => {
     fireEvent.change(screen.getByTestId("kcal-input"), {
       target: { value: "-5" },
     });
-    fireEvent.click(screen.getByText("Зберегти"));
+    fireEvent.click(
+      screen.getByRole("button", { name: /Додати прийом|Зберегти зміни/ }),
+    );
     await waitFor(() => {
       expect(screen.getByText("Некоректне значення КБЖВ.")).toBeInTheDocument();
     });
@@ -510,7 +581,9 @@ describe("AddMealSheet — empty-macro confirm step", () => {
     fireEvent.change(screen.getByTestId("name-input"), {
       target: { value: "Суп" },
     });
-    fireEvent.click(screen.getByText("Зберегти"));
+    fireEvent.click(
+      screen.getByRole("button", { name: /Додати прийом|Зберегти зміни/ }),
+    );
     await waitFor(() => {
       expect(screen.getByRole("alertdialog")).toBeInTheDocument();
     });
@@ -524,7 +597,9 @@ describe("AddMealSheet — empty-macro confirm step", () => {
     fireEvent.change(screen.getByTestId("name-input"), {
       target: { value: "Суп" },
     });
-    fireEvent.click(screen.getByText("Зберегти"));
+    fireEvent.click(
+      screen.getByRole("button", { name: /Додати прийом|Зберегти зміни/ }),
+    );
     const dialog = await screen.findByRole("alertdialog");
     fireEvent.click(within(dialog).getByRole("button", { name: "Зберегти" }));
     await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
@@ -541,7 +616,9 @@ describe("AddMealSheet — empty-macro confirm step", () => {
     fireEvent.change(screen.getByTestId("name-input"), {
       target: { value: "Суп" },
     });
-    fireEvent.click(screen.getByText("Зберегти"));
+    fireEvent.click(
+      screen.getByRole("button", { name: /Додати прийом|Зберегти зміни/ }),
+    );
     const dialog = await screen.findByRole("alertdialog");
     fireEvent.click(
       within(dialog).getByRole("button", { name: "Повернутись" }),
@@ -654,7 +731,9 @@ describe("AddMealSheet — pantry consume on save", () => {
     fireEvent.change(screen.getByTestId("kcal-input"), {
       target: { value: "120" },
     });
-    fireEvent.click(screen.getByText("Зберегти"));
+    fireEvent.click(
+      screen.getByRole("button", { name: /Додати прийом|Зберегти зміни/ }),
+    );
     await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
     expect(onConsumePantryItem).toHaveBeenCalledWith("Молоко", 100);
     expect(onSave.mock.calls[0]![0].name).toBe("Молоко");
@@ -683,7 +762,9 @@ describe("AddMealSheet — pantry consume on save", () => {
       onSave,
     });
     fireEvent.click(screen.getByTestId("pick-pantry"));
-    fireEvent.click(screen.getByText("Зберегти"));
+    fireEvent.click(
+      screen.getByRole("button", { name: /Додати прийом|Зберегти зміни/ }),
+    );
     const dialog = await screen.findByRole("alertdialog");
     expect(onConsumePantryItem).not.toHaveBeenCalled();
     fireEvent.click(within(dialog).getByRole("button", { name: "Зберегти" }));

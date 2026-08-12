@@ -1,11 +1,11 @@
 /**
  * Last validated: 2026-06-15
  * Status: Active
- * Phase 6.6 — pantry-aware quick-add chips for Nutrition hero.
+ * Phase 6.6 — pantry-aware quick-add chips for the add-meal flow.
  *
  * Returns up to 5 chips representing meals the user habitually logs. Each chip
  * carries a full macro snapshot so the parent can call the existing meal
- * persistence path without going through `AddMealSheet`.
+ * persistence path from the source step inside `AddMealSheet`.
  *
  * Source classification:
  *   - `pantry`      → meal name normalizes to a pantry-item name (currently
@@ -18,7 +18,7 @@
  * lookup — keeps the hook purely synchronous and avoids a render-time IDB
  * round-trip on the dashboard).
  *
- * Returns `[]` when no candidates exist; the parent renders nothing.
+ * Returns `[]` when no candidates exist; the source step renders nothing.
  *
  * @last-validated 2026-05-21
  */

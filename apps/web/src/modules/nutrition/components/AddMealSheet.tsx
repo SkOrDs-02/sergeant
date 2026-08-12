@@ -48,10 +48,11 @@ import {
 } from "./meal-sheet/FoodPickerSection";
 import { BarcodeSection } from "./meal-sheet/BarcodeSection";
 import { MacrosEditor } from "./meal-sheet/MacrosEditor";
-import { SaveAsFood } from "./meal-sheet/SaveAsFood";
 import { SaveAsTemplate } from "./meal-sheet/SaveAsTemplate";
 import { useFoodSearch } from "./meal-sheet/useFoodSearch";
 import { useBarcodeLookup } from "./meal-sheet/useBarcodeLookup";
+import { QuickAddChips } from "./QuickAddChips";
+import type { QuickChip } from "../hooks/useNutritionQuickChips";
 
 /**
  * Фізіологічно правдоподібні стелі для одного прийому їжі. Не медичні
@@ -103,6 +104,8 @@ interface AddMealSheetProps {
   pantryItems?: PantryItem[] | undefined;
   onConsumePantryItem?: ((itemName: string, grams: number) => void) | undefined;
   onRequestPhoto?: (() => void) | undefined;
+  quickChips?: readonly QuickChip[] | undefined;
+  onQuickAddMeal?: ((chip: QuickChip) => void) | undefined;
 }
 
 export function AddMealSheet({
@@ -116,6 +119,8 @@ export function AddMealSheet({
   pantryItems = [],
   onConsumePantryItem,
   onRequestPhoto,
+  quickChips = [],
+  onQuickAddMeal,
 }: AddMealSheetProps) {
   const [form, setForm] = useState<MealFormState>(() => emptyForm(null));
   const [foodQuery, setFoodQuery] = useState("");
@@ -176,6 +181,7 @@ export function AddMealSheet({
   // it's cleared on confirm (→ finalizeSave) or cancel (sheet stays open,
   // untouched).
   const [pendingMeal, setPendingMeal] = useState<Meal | null>(null);
+  const [rememberForRepeat, setRememberForRepeat] = useState(false);
 
   const [prevOpen, setPrevOpen] = useState(false);
   if (open && !prevOpen) {
@@ -217,8 +223,12 @@ export function AddMealSheet({
     setFromPantryItem(null);
     setEditingTemplateId(null);
     setPendingMeal(null);
+    setRememberForRepeat(false);
     const autoSkip =
-      !initialMeal?.id && !photoResult && mealTemplates.length === 0;
+      !initialMeal?.id &&
+      !photoResult &&
+      mealTemplates.length === 0 &&
+      quickChips.length === 0;
     const initialStep =
       initialMeal?.id || photoResult ? "fill" : autoSkip ? "fill" : "source";
     setWasAutoSkipped(autoSkip && initialStep === "fill");
@@ -330,6 +340,32 @@ export function AddMealSheet({
     if (fromPantryItem && onConsumePantryItem) {
       const grams = gramsOrDefault(pickedGrams);
       onConsumePantryItem(fromPantryItem, grams);
+    }
+    if (rememberForRepeat && !initialMeal?.id && setPrefs) {
+      setPrefs((prefs) => {
+        const existing = Array.isArray(prefs.mealTemplates)
+          ? prefs.mealTemplates
+          : [];
+        const normalizedName = meal.name.trim().toLocaleLowerCase("uk-UA");
+        const previous = existing.find(
+          (template) =>
+            template.mealType === meal.mealType &&
+            template.name.trim().toLocaleLowerCase("uk-UA") === normalizedName,
+        );
+        const remembered: MealTemplate = {
+          id: previous?.id ?? `tpl_${Date.now()}`,
+          name: meal.name,
+          mealType: meal.mealType,
+          macros: { ...meal.macros },
+        };
+        return {
+          ...prefs,
+          mealTemplates: [
+            remembered,
+            ...existing.filter((template) => template.id !== previous?.id),
+          ].slice(0, 40),
+        };
+      });
     }
     hapticSuccess();
     onSave(meal);
@@ -450,6 +486,27 @@ export function AddMealSheet({
               />
             )}
 
+            {onQuickAddMeal && quickChips.length > 0 && (
+              <section
+                className="mb-4 min-w-0"
+                aria-labelledby="recent-meals-heading"
+              >
+                <h3
+                  id="recent-meals-heading"
+                  className="mb-2 text-style-label text-text"
+                >
+                  Нещодавні прийоми
+                </h3>
+                <QuickAddChips
+                  chips={quickChips}
+                  onTap={(chip) => {
+                    onQuickAddMeal(chip);
+                    onClose();
+                  }}
+                />
+              </section>
+            )}
+
             {pantryItems.length > 0 && (
               <FromPantryRow
                 pantryItems={pantryItems}
@@ -470,6 +527,7 @@ export function AddMealSheet({
               foodBusy={foodBusy}
               offBusy={offBusy}
               foodErr={foodErr}
+              setFoodErr={setFoodErr}
               pickedFood={pickedFood}
               setPickedFood={setPickedFood}
               pickedGrams={pickedGrams}
@@ -543,30 +601,45 @@ export function AddMealSheet({
               hasPhotoMacros={hasPhotoMacros}
             />
 
-            {!pickedFood && (
-              <SaveAsFood
-                form={form}
-                setForm={setForm}
-                setPickedFood={setPickedFood}
-                setPickedGrams={setPickedGrams}
-                setFoodQuery={setFoodQuery}
-                setFoodErr={setFoodErr}
-              />
-            )}
-
             {form.err && (
               <div className="text-style-caption text-danger-strong dark:text-danger mt-2">
                 {form.err}
               </div>
             )}
 
-            <SaveAsTemplate
-              form={form}
-              setForm={setForm}
-              setPrefs={setPrefs}
-              editingTemplateId={editingTemplateId}
-              onDoneEditing={() => setEditingTemplateId(null)}
-            />
+            {editingTemplateId ? (
+              <SaveAsTemplate
+                form={form}
+                setForm={setForm}
+                setPrefs={setPrefs}
+                editingTemplateId={editingTemplateId}
+                onDoneEditing={() => setEditingTemplateId(null)}
+              />
+            ) : (
+              !initialMeal?.id &&
+              typeof setPrefs === "function" && (
+                <label className="mt-4 flex min-h-[44px] cursor-pointer items-start gap-3 rounded-2xl border border-line bg-panelHi p-3">
+                  <input
+                    type="checkbox"
+                    aria-label="Запам’ятати для повтору"
+                    checked={rememberForRepeat}
+                    onChange={(event) =>
+                      setRememberForRepeat(event.currentTarget.checked)
+                    }
+                    className="mt-0.5 h-5 w-5 shrink-0 accent-nutrition-strong"
+                  />
+                  <span className="min-w-0">
+                    <span className="block text-style-label text-text">
+                      Запам’ятати для повтору
+                    </span>
+                    <span className="mt-0.5 block text-style-caption text-muted">
+                      Назва, тип прийому та КБЖВ з’являться серед швидких
+                      прийомів.
+                    </span>
+                  </span>
+                </label>
+              )
+            )}
 
             <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-2">
               <Button
@@ -574,7 +647,7 @@ export function AddMealSheet({
                 className="h-12 min-h-[44px] bg-nutrition-strong text-white hover:bg-nutrition-hover"
                 onClick={handleSave}
               >
-                Зберегти
+                {initialMeal?.id ? "Зберегти зміни" : "Додати прийом"}
               </Button>
               <Button
                 type="button"

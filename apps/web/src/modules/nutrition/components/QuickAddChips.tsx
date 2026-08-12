@@ -1,9 +1,9 @@
 /**
- * Phase 6.6 — pantry-aware quick-add chips for Nutrition hero.
+ * Phase 6.6 — pantry-aware quick-add chips for the add-meal source step.
  *
  * Pure presentational component. Receives chip data from
- * `useNutritionQuickChips` and surfaces them as a horizontal scroll row above
- * the existing «+ Додати» trigger. One tap = log a meal with the chip's
+ * `useNutritionQuickChips` and surfaces them as a horizontal scroll row. One
+ * tap = log a meal with the chip's
  * pre-derived macros via `onTap`; the parent owns the storage write so this
  * stays free of side-effects.
  *
@@ -24,7 +24,7 @@ interface QuickAddChipsProps {
 // shared catalog — `sergeant-design/no-cyrillic-jsx-literal` only flags
 // bare JSX Literal nodes, not a referenced MemberExpression like this one.
 const LABELS = {
-  group: "Швидке додавання улюблених страв",
+  group: "Нещодавні прийоми їжі",
   chip: (label: string, grams: number) => `Додати ${label} — ${grams} грамів`,
 };
 
@@ -65,18 +65,14 @@ export function QuickAddChips({ chips, onTap }: QuickAddChipsProps) {
           className={cn(
             "shrink-0 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5",
             "min-h-touch-target text-style-label",
-            // «Чорнило» v3.1 § 3 — the pill sits on the Nutrition hero
-            // (translucent bg-nutrition/[.08] wash still shows the
-            // saturated hero gradient through it), so text uses hero-ink
-            // rather than the dark `nutrition-strong` tier.
-            "bg-nutrition/8 text-hero-ink",
+            "border border-line bg-panelHi text-text",
             "hover:bg-nutrition/15 active:scale-[0.97] transition-[background-color,transform]",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutrition/40",
           )}
         >
           <Icon name="plus" size={12} aria-hidden />
           <span className="whitespace-nowrap">{chip.label}</span>
-          <span className="text-style-caption text-hero-ink/75 whitespace-nowrap">
+          <span className="text-style-caption text-muted whitespace-nowrap">
             · {chip.macros.kcal} {messages.nutrition.kcalUnit}
           </span>
         </button>

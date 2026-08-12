@@ -37,7 +37,7 @@ describe("QuickAddChips", () => {
   it("keeps the scroll row's width independent of its content", () => {
     render(<QuickAddChips chips={[CHIP]} onTap={vi.fn()} />);
     const row = screen.getByRole("group", {
-      name: "Швидке додавання улюблених страв",
+      name: "Нещодавні прийоми їжі",
     });
     expect(row.className).toContain("overflow-x-auto");
     expect(row.className).toContain("[contain:inline-size]");

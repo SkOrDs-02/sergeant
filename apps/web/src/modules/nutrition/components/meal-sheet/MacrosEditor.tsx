@@ -85,11 +85,8 @@ export function MacrosEditor({
 
   return (
     <div className="mb-1">
-      <div className="flex items-center justify-between mb-2">
-        <SectionHeading as="div" size="xs" variant="nutrition">
-          {pickedFood ? "КБЖВ (редагувати вручну)" : "КБЖВ"}
-        </SectionHeading>
-        {hasPhotoMacros && (
+      {hasPhotoMacros && (
+        <div className="mb-2 flex justify-end">
           <button
             type="button"
             onClick={() =>
@@ -106,8 +103,8 @@ export function MacrosEditor({
           >
             <Icon name="chevron-left" size="sm" />З результату фото
           </button>
-        )}
-      </div>
+        </div>
+      )}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {(
           [

@@ -5,6 +5,7 @@
 import type { Dispatch, SetStateAction } from "react";
 import type { NutritionPrefs } from "@sergeant/nutrition-domain";
 import { useToast } from "@shared/hooks/useToast";
+import { parseDecimalInput } from "@shared/lib/format/numberInput";
 import type { MealFormState } from "./mealFormUtils";
 
 interface SaveAsTemplateProps {
@@ -37,20 +38,25 @@ export function SaveAsTemplate({
           if (!name) {
             setForm((s) => ({
               ...s,
-              err: "Спочатку введіть назву для шаблону.",
+              err: "Спочатку введи назву швидкого прийому.",
             }));
             return;
           }
-          const kcal = form.kcal === "" ? 0 : Number(form.kcal);
-          const protein_g = form.protein_g === "" ? 0 : Number(form.protein_g);
-          const fat_g = form.fat_g === "" ? 0 : Number(form.fat_g);
-          const carbs_g = form.carbs_g === "" ? 0 : Number(form.carbs_g);
-          if (
-            [kcal, protein_g, fat_g, carbs_g].some((n) => !Number.isFinite(n))
-          ) {
-            setForm((s) => ({ ...s, err: "Некоректне КБЖВ для шаблону." }));
+          const parsedMacros = (
+            ["kcal", "protein_g", "fat_g", "carbs_g"] as const
+          ).map((key) =>
+            form[key] === "" ? null : parseDecimalInput(form[key]),
+          );
+          if (parsedMacros.some((macro) => macro != null && !macro.ok)) {
+            setForm((s) => ({
+              ...s,
+              err: "Некоректне КБЖВ для швидкого прийому.",
+            }));
             return;
           }
+          const [kcal, protein_g, fat_g, carbs_g] = parsedMacros.map((macro) =>
+            macro != null && macro.ok ? macro.value : null,
+          ) as [number | null, number | null, number | null, number | null];
           const macros = { kcal, protein_g, fat_g, carbs_g };
           setPrefs((p) => {
             const existing = Array.isArray(p.mealTemplates)
@@ -70,28 +76,35 @@ export function SaveAsTemplate({
                 return { ...p, mealTemplates: next };
               }
             }
+            const normalizedName = name.toLocaleLowerCase("uk-UA");
+            const duplicate = existing.find(
+              (template) =>
+                template.mealType === form.mealType &&
+                template.name.trim().toLocaleLowerCase("uk-UA") ===
+                  normalizedName,
+            );
             return {
               ...p,
               mealTemplates: [
-                ...existing,
                 {
-                  id: `tpl_${Date.now()}`,
+                  id: duplicate?.id ?? `tpl_${Date.now()}`,
                   name,
                   mealType: form.mealType,
                   macros,
                 },
+                ...existing.filter((template) => template.id !== duplicate?.id),
               ].slice(0, 40),
             };
           });
           toast.success(
             editingTemplateId
-              ? `Шаблон «${name}» оновлено.`
-              : `Шаблон «${name}» збережено.`,
+              ? `Швидкий прийом «${name}» оновлено.`
+              : `Швидкий прийом «${name}» збережено.`,
           );
           onDoneEditing?.();
         }}
       >
-        {isEditing ? "Оновити шаблон" : "+ Зберегти як шаблон"}
+        {isEditing ? "Оновити швидкий прийом" : "+ Запам’ятати для повтору"}
       </button>
     </div>
   );

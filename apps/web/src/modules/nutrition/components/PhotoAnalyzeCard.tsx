@@ -193,7 +193,7 @@ export function PhotoAnalyzeCard({
   refining,
 }: PhotoAnalyzeCardProps) {
   return (
-    <Card className="p-4">
+    <Card className="min-w-0 p-4">
       <div className="flex items-center justify-between gap-3 mb-4">
         <div className="min-w-0">
           <div className="text-style-label text-text">Аналіз фото страви</div>
@@ -245,7 +245,7 @@ export function PhotoAnalyzeCard({
               decoding="async"
               width="600"
               height="280"
-              className="w-full max-h-[280px] object-cover rounded-2xl"
+              className="block w-full max-w-full max-h-[280px] object-cover rounded-2xl"
             />
             <span className="absolute bottom-3 right-3 rounded-xl bg-panel/95 px-3 py-2 text-style-caption text-text shadow-soft">
               Замінити фото

@@ -1,35 +1,19 @@
 // @vitest-environment jsdom
 /**
- * Last validated: 2026-06-23
+ * Last validated: 2026-08-12
  * Status: Active
- * Unit tests for the meal-sheet `SaveAsFood` action.
  */
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import type { ReactElement, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const upsertFood = vi.fn();
 vi.mock("../../lib/foodDb/foodDb", () => ({
-  upsertFood: (...a: unknown[]) => upsertFood(...a),
+  upsertFood: (...args: unknown[]) => upsertFood(...args),
 }));
 
 import { SaveAsFood } from "./SaveAsFood";
-import type { MealFormState } from "./mealFormUtils";
-
-function form(overrides: Partial<MealFormState> = {}): MealFormState {
-  return {
-    name: "Йогурт",
-    mealType: "snack",
-    time: "10:00",
-    kcal: "60",
-    protein_g: "5",
-    fat_g: "2",
-    carbs_g: "7",
-    err: "",
-    ...overrides,
-  };
-}
 
 function wrapper({ children }: { children: ReactNode }) {
   const client = new QueryClient({
@@ -38,63 +22,82 @@ function wrapper({ children }: { children: ReactNode }) {
   return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
 }
 
-function renderSaveAsFood(overrides: Record<string, unknown> = {}) {
+function renderSaveAsFood() {
   const props = {
-    form: form(),
-    setForm: vi.fn(),
     setPickedFood: vi.fn(),
     setPickedGrams: vi.fn(),
     setFoodQuery: vi.fn(),
     setFoodErr: vi.fn(),
-    ...overrides,
   };
-  const Comp = SaveAsFood as (p: typeof props) => ReactElement;
-  render(<Comp {...props} />, { wrapper });
+  render(<SaveAsFood {...props} />, { wrapper });
+  fireEvent.click(screen.getByText("Створити власний продукт"));
   return props;
+}
+
+function fillValidProduct() {
+  fireEvent.change(screen.getByLabelText("Назва"), {
+    target: { value: "Йогурт" },
+  });
+  fireEvent.change(screen.getByLabelText("Ккал / 100 г"), {
+    target: { value: "60" },
+  });
+  fireEvent.change(screen.getByLabelText("Білки / 100 г"), {
+    target: { value: "5" },
+  });
 }
 
 afterEach(() => vi.clearAllMocks());
 
 describe("SaveAsFood", () => {
-  it("errors when the name is empty", () => {
-    const setForm = vi.fn();
-    renderSaveAsFood({ form: form({ name: "" }), setForm });
-    fireEvent.click(screen.getByText(/Зберегти як продукт/));
-    expect(setForm).toHaveBeenCalled();
+  it("requires a product name", () => {
+    const props = renderSaveAsFood();
+    fireEvent.click(screen.getByRole("button", { name: "Створити продукт" }));
+    expect(props.setFoodErr).toHaveBeenCalledWith("Введи назву продукту.");
     expect(upsertFood).not.toHaveBeenCalled();
   });
 
-  it("errors on invalid macro values", () => {
-    const setForm = vi.fn();
-    renderSaveAsFood({ form: form({ kcal: "-1" }), setForm });
-    fireEvent.click(screen.getByText(/Зберегти як продукт/));
-    expect(setForm).toHaveBeenCalled();
+  it("rejects invalid per-100g values", () => {
+    const props = renderSaveAsFood();
+    fillValidProduct();
+    fireEvent.change(screen.getByLabelText("Ккал / 100 г"), {
+      target: { value: "-1" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Створити продукт" }));
+    expect(props.setFoodErr).toHaveBeenCalledWith(
+      "Введи невід’ємні КБЖВ на 100 г і додатну вагу порції.",
+    );
     expect(upsertFood).not.toHaveBeenCalled();
   });
 
-  it("saves the food and picks it on success", async () => {
+  it("saves explicit per-100g values and picks the product", async () => {
     upsertFood.mockResolvedValue({
       ok: true,
       product: { id: "food_1", name: "Йогурт" },
     });
-    const setPickedFood = vi.fn();
-    const setFoodQuery = vi.fn();
-    renderSaveAsFood({ setPickedFood, setFoodQuery });
-    fireEvent.click(screen.getByText(/Зберегти як продукт/));
-    await waitFor(() => expect(setPickedFood).toHaveBeenCalled());
-    expect(upsertFood).toHaveBeenCalledWith(
-      expect.objectContaining({ name: "Йогурт", defaultGrams: 100 }),
-    );
-    expect(setFoodQuery).toHaveBeenCalledWith("Йогурт");
+    const props = renderSaveAsFood();
+    fillValidProduct();
+    fireEvent.change(screen.getByLabelText("Типова порція, г"), {
+      target: { value: "125" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Створити продукт" }));
+
+    await waitFor(() => expect(props.setPickedFood).toHaveBeenCalled());
+    expect(upsertFood).toHaveBeenCalledWith({
+      name: "Йогурт",
+      per100: { kcal: 60, protein_g: 5, fat_g: 0, carbs_g: 0 },
+      defaultGrams: 125,
+    });
+    expect(props.setPickedGrams).toHaveBeenCalledWith("125");
+    expect(props.setFoodQuery).toHaveBeenCalledWith("Йогурт");
   });
 
-  it("reports a save failure via setFoodErr", async () => {
+  it("reports a save failure", async () => {
     upsertFood.mockResolvedValue({ ok: false, error: "Збій збереження" });
-    const setFoodErr = vi.fn();
-    renderSaveAsFood({ setFoodErr });
-    fireEvent.click(screen.getByText(/Зберегти як продукт/));
+    const props = renderSaveAsFood();
+    fillValidProduct();
+    fireEvent.click(screen.getByRole("button", { name: "Створити продукт" }));
     await waitFor(() =>
-      expect(setFoodErr).toHaveBeenCalledWith("Збій збереження"),
+      expect(props.setFoodErr).toHaveBeenCalledWith("Збій збереження"),
     );
   });
 });

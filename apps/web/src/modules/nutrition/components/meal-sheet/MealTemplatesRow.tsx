@@ -66,7 +66,7 @@ export function MealTemplatesRow({
     }));
     if (removed) {
       showUndoToast(toast, {
-        msg: `Видалено шаблон «${removed.name}»`,
+        msg: `Видалено швидкий прийом «${removed.name}»`,
         onUndo: () =>
           setPrefs((p) => {
             const next = Array.isArray(p.mealTemplates)
@@ -105,7 +105,7 @@ export function MealTemplatesRow({
             {canManage && (
               <>
                 <IconButton
-                  aria-label={`Редагувати шаблон ${t.name}`}
+                  aria-label={`Редагувати швидкий прийом ${t.name}`}
                   variant="ghost"
                   size="sm"
                   onClick={() => {
@@ -117,7 +117,7 @@ export function MealTemplatesRow({
                   <Icon name="edit" size={13} aria-hidden />
                 </IconButton>
                 <IconButton
-                  aria-label={`Видалити шаблон ${t.name}`}
+                  aria-label={`Видалити швидкий прийом ${t.name}`}
                   variant="ghost"
                   size="sm"
                   className="text-danger-strong dark:text-danger"

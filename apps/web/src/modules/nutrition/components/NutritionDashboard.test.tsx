@@ -113,9 +113,15 @@ describe("NutritionDashboard", () => {
         onGoToDailyPlan={onGoToDailyPlan}
       />,
     );
-    expect(screen.getByText(/Встанови ціль калорій/)).toBeInTheDocument();
-    fireEvent.click(screen.getByText(/Налаштувати денні цілі/));
-    expect(onGoToDailyPlan).toHaveBeenCalled();
+    const cta = screen.getByRole("button", {
+      name: "Встановити денну ціль, щоб бачити прогрес",
+    });
+    expect(cta).toBeInTheDocument();
+    expect(
+      screen.queryByText(/Налаштувати денні цілі КБЖВ/),
+    ).not.toBeInTheDocument();
+    fireEvent.click(cta);
+    expect(onGoToDailyPlan).toHaveBeenCalledTimes(1);
   });
 
   it("invokes onAddMeal and onGoToLog callbacks", () => {

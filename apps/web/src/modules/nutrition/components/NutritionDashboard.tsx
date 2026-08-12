@@ -7,13 +7,7 @@ import { InsightCard } from "@shared/components/ui/InsightCard";
 import { Measure } from "@shared/components/ui/Measure";
 import { useProteinLowInsight } from "../hooks/useProteinLowInsight";
 import { useStreakSevenDaysInsight } from "../hooks/useStreakSevenDaysInsight";
-import {
-  useNutritionQuickChips,
-  type QuickChip,
-} from "../hooks/useNutritionQuickChips";
-import { QuickAddChips } from "./QuickAddChips";
 import { Card } from "@shared/components/ui/Card";
-import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { ProgressRing } from "@shared/components/ui/ProgressRing";
 import { MacroRings } from "./MacroRings";
 import { messages } from "@shared/i18n/uk";
@@ -23,7 +17,6 @@ import {
   todayISODate,
   type NutritionLog,
   type NutritionPrefs,
-  type PantryItem,
 } from "@sergeant/nutrition-domain";
 import {
   ESTIMATED_KCAL_SHARE_THRESHOLD,
@@ -160,16 +153,6 @@ interface NutritionDashboardProps {
   onFetchDayHint?: (() => void | Promise<void>) | undefined;
   dayHintText?: string | undefined;
   dayHintBusy?: boolean | undefined;
-  /**
-   * Pantry items for chip dedupe — meals whose normalized name matches a
-   * stocked pantry item are tagged as `source: "pantry"` and surfaced first.
-   */
-  pantryItems?: readonly PantryItem[] | undefined;
-  /**
-   * Phase 6.6 — one-tap add for a quick-chip. The parent owns the storage
-   * write (reuse the same path `AddMealSheet` calls on submit).
-   */
-  onQuickAddMeal?: ((chip: QuickChip) => void) | undefined;
 }
 
 export function NutritionDashboard({
@@ -181,8 +164,6 @@ export function NutritionDashboard({
   onFetchDayHint,
   dayHintText,
   dayHintBusy,
-  pantryItems,
-  onQuickAddMeal,
 }: NutritionDashboardProps) {
   const today = todayISO();
 
@@ -254,11 +235,6 @@ export function NutritionDashboard({
     goal: prefs.dailyTargetCarbs_g || 0,
   };
 
-  // Phase 6.6 — pantry-aware quick-add chips. Hook returns `[]` when no
-  // candidates exist (zero recent meals with macros), so we render `null`
-  // for first-time users via QuickAddChips' own empty guard.
-  const quickChips = useNutritionQuickChips(log, pantryItems ?? []);
-
   // Phase 5d — nutrition insight triggers.
   // Both hooks return null when their condition is not met; InsightCard
   // additionally checks the dismissal LS key so dismissed cards stay gone.
@@ -272,7 +248,7 @@ export function NutritionDashboard({
     .slice(0, 2) as NonNullable<typeof proteinLowInsight>[];
 
   return (
-    <div className="grid gap-3">
+    <div className="grid min-w-0 gap-3" data-testid="nutrition-dashboard">
       {/* ── Hero card ── */}
       {/* `min-w-0`: grid-item за дефолтом має `min-width:auto`, тобто його
           мінімальна ширина = min-content вмісту. Досить одного широкого
@@ -311,12 +287,6 @@ export function NutritionDashboard({
               + Додати
             </button>
           </div>
-
-          {onQuickAddMeal && quickChips.length > 0 && (
-            <div className="mb-3">
-              <QuickAddChips chips={quickChips} onTap={onQuickAddMeal} />
-            </div>
-          )}
 
           {hasGoal ? (
             <div className="flex flex-col gap-4">
@@ -392,25 +362,14 @@ export function NutritionDashboard({
               />
             </div>
           ) : (
-            <div className="flex flex-col items-center gap-3 py-2">
-              {/* «Чорнило» v3.1 § 3 — `variant="nutrition"`'s light
-                  `text-nutrition-strong` is invisible on the saturated
-                  hero gradient; dark's `text-nutrition/70` already reads
-                  fine and stays. */}
-              <SectionHeading
-                as="div"
-                size="xs"
-                variant="nutrition"
-                className="text-hero-ink"
-              >
-                Встанови ціль калорій щоб бачити прогрес дня
-              </SectionHeading>
+            <div className="flex justify-center py-2">
               <button
                 type="button"
                 onClick={onGoToDailyPlan ?? onGoToLog}
-                className="text-style-caption min-h-[44px] min-w-[44px] px-4 text-hero-ink hover:underline text-center"
+                className="text-style-caption min-h-[44px] min-w-[44px] rounded-xl px-4 text-center text-hero-ink hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hero-ink/60"
               >
-                Налаштувати денні цілі КБЖВ →
+                Встановити денну ціль, щоб бачити прогрес
+                <span aria-hidden="true"> →</span>
               </button>
             </div>
           )}

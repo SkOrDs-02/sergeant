@@ -18,6 +18,10 @@ import type {
 } from "../hooks/useNutritionUiState";
 import type { useNutritionPantries } from "../hooks/useNutritionPantries";
 import type { useNutritionLog } from "../hooks/useNutritionLog";
+import {
+  useNutritionQuickChips,
+  type QuickChip,
+} from "../hooks/useNutritionQuickChips";
 
 type PantryController = ReturnType<typeof useNutritionPantries>;
 type LogController = ReturnType<typeof useNutritionLog>;
@@ -43,6 +47,7 @@ interface NutritionOverlaysProps {
   setRestoreConfirm: Dispatch<SetStateAction<RestoreConfirmState | null>>;
   applyRestorePayload: (payload: unknown) => void | Promise<void>;
   onRequestMealPhoto?: () => void;
+  onQuickAddMeal?: (chip: QuickChip) => void;
 }
 
 export function NutritionOverlays({
@@ -64,7 +69,13 @@ export function NutritionOverlays({
   setRestoreConfirm,
   applyRestorePayload,
   onRequestMealPhoto,
+  onQuickAddMeal,
 }: NutritionOverlaysProps) {
+  const quickChips = useNutritionQuickChips(
+    log.nutritionLog,
+    pantry.effectiveItems,
+  );
+
   return (
     <>
       <PantryManagerSheet
@@ -142,6 +153,8 @@ export function NutritionOverlays({
         mealTemplates={prefs.mealTemplates || []}
         setPrefs={setPrefs}
         pantryItems={pantry.effectiveItems}
+        quickChips={quickChips}
+        onQuickAddMeal={onQuickAddMeal}
         onConsumePantryItem={pantry.consumePantryItem}
         onRequestPhoto={onRequestMealPhoto}
       />
