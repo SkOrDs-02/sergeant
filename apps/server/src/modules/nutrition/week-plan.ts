@@ -71,8 +71,8 @@ function normalizeWeekPlan(parsed: unknown): NormalizedWeekPlan {
  */
 const PANTRY_RULE: Record<PantryMode, string> = {
   prefer:
-    "Не вигадуй екзотичні інгредієнти поза списком — дозволено додати сіль, олію, базові спеції.",
-  only: "Використовуй ТІЛЬКИ продукти зі списку — дозволено додати сіль, олію, базові спеції.",
+    "Віддавай перевагу продуктам зі списку, але за потреби можна додавати звичайні доступні продукти поза ним. Усі додані продукти називай прямо.",
+  only: "Використовуй ТІЛЬКИ продукти зі списку — дозволено додати сіль, олію, воду й базові спеції. Якщо продуктів не вистачає на 7 різних днів — повторюй прості варіанти або лишай частину прийомів порожньою; відсутніх продуктів не додавай.",
   ignore:
     "Комору не враховуй: списку наявних продуктів тобі не передано, тож склади план вільно зі звичайних доступних продуктів. Не вигадуй, що є вдома.",
 };
@@ -108,7 +108,7 @@ export function buildWeekPlanPrompt(input: WeekPlanInput): {
   const goal = String(prefs.goal || "balanced");
   const loc = String(locale || "uk-UA");
   // Один режим на весь запит — і в секцію комори, і в system-промпт.
-  const mode: PantryMode = resolvePantryMode(pantryIn, "weekPlan", pantryMode);
+  const mode: PantryMode = resolvePantryMode(pantryMode);
 
   const pantrySec = pantryPromptSection({
     pantry: pantryIn,

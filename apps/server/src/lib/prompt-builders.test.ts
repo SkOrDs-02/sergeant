@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { PANTRY_ONLY_EMPTY_MESSAGE } from "@sergeant/shared";
 import {
   PANTRY_IGNORE_SECTION,
   PANTRY_PRESETS,
@@ -69,30 +70,14 @@ describe("prompt-builders", () => {
     expect(result).toContain("ТІЛЬКИ ці продукти");
   });
 
-  it("mode=only з порожньою коморою НЕ ставить обмеження", () => {
-    // Стан став досяжним лише коли режим поїхав у плани: доти `only` жив
-    // тільки в рецептах, де порожню комору відсікає клієнт. «Використовуй
-    // ТІЛЬКИ ці продукти» під заглушкою «продукти не вказані» — це промпт,
-    // який суперечить сам собі, і модель має право віддати будь-що.
-    const result = pantryPromptSection({
-      pantry: [],
-      preset: "dayPlan",
-      mode: "only",
-    });
-    expect(result).not.toContain("ТІЛЬКИ ці продукти");
-    expect(result).toContain("продукти не вказані");
-  });
-
-  it("mode=only з порожньою коморою тижневого плану теж без обмеження", () => {
-    // У weekPlan-пресета немає `fallbackWhenEmpty`, тож список порожній
-    // буквально — обмеження висіло б узагалі ні над чим.
-    const result = pantryPromptSection({
-      pantry: [],
-      preset: "weekPlan",
-      mode: "only",
-    });
-    expect(result).not.toContain("ТІЛЬКИ ці продукти");
-  });
+  it.each(["dayPlan", "weekPlan", "recipes"] as const)(
+    "mode=only з порожньою коморою відсікає %s до промпту",
+    (preset) => {
+      expect(() =>
+        pantryPromptSection({ pantry: [], preset, mode: "only" }),
+      ).toThrow(PANTRY_ONLY_EMPTY_MESSAGE);
+    },
+  );
 
   it("mode=prefer (дефолт) лишає історичну поведінку", () => {
     const items = [{ name: "гречка" }];
@@ -108,4 +93,13 @@ describe("prompt-builders", () => {
     });
     expect(result).toContain("продукти не вказані");
   });
+
+  it.each(["recipes", "weekPlan"] as const)(
+    "prefer з порожньою коморою не залишає порожній список у %s",
+    (preset) => {
+      expect(pantryPromptSection({ pantry: [], preset })).toContain(
+        "продукти не вказані",
+      );
+    },
+  );
 });

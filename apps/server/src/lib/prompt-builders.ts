@@ -1,9 +1,10 @@
-import type { PantryMode } from "@sergeant/shared";
+import { pantryModeAvailabilityError, type PantryMode } from "@sergeant/shared";
 
 import {
   formatPantryForPrompt,
   type PantryPromptFormatOptions,
 } from "./pantryFormat.js";
+import { ValidationError } from "../obs/errors.js";
 
 /**
  * Попередньо визначені пресети для `formatPantryForPrompt`. Кожен
@@ -20,11 +21,13 @@ export const PANTRY_PRESETS = {
     itemFormat: "nameQuantityNotes",
     limit: 60,
     joinWith: "\n- ",
+    fallbackWhenEmpty: "продукти не вказані",
   },
   weekPlan: {
     itemFormat: "nameOnly",
     limit: 50,
     joinWith: "\n- ",
+    fallbackWhenEmpty: "продукти не вказані",
   },
   shoppingList: {
     itemFormat: "nameOnly",
@@ -76,35 +79,21 @@ export function pantryPromptSection({
   mode = "prefer",
 }: PantryPromptSectionOptions): string {
   if (mode === "ignore") return PANTRY_IGNORE_SECTION;
+  const availabilityError = pantryModeAvailabilityError(pantry, mode);
+  if (availabilityError) {
+    throw new ValidationError(availabilityError, {
+      cause: { details: [{ path: "pantry", message: availabilityError }] },
+    });
+  }
   const opts = PANTRY_PRESETS[preset];
   const formatted = formatPantryForPrompt(pantry, opts);
   const isList = opts.joinWith.includes("\n");
   const section = isList
     ? `${label}:\n- ${formatted}`
     : `${label}:\n${formatted}`;
-  return resolvePantryMode(pantry, preset, mode) === "only"
+  return resolvePantryMode(mode) === "only"
     ? `${section}\n\nВикористовуй ТІЛЬКИ ці продукти — плюс сіль, олія, вода й базові спеції. Позиції поза списком не пропонуй.`
     : section;
-}
-
-/**
- * Чи лишиться в промпті бодай одна позиція комори.
- *
- * Рахуємо саме ВІДРЕНДЕРЕНЕ, а не довжину масиву: `PantryItem` пропускає
- * `""`, `{}` і `{ name: "" }`, а `formatPantryForPrompt` викидає їх через
- * `.filter(Boolean)`. Масив із таких значень непорожній, а список у промпті —
- * порожній. Заглушку пресета (`fallbackWhenEmpty`) при підрахунку гасимо:
- * «продукти не вказані» — це текст про відсутність позицій, а не позиція.
- */
-export function hasRenderablePantry(
-  pantry: unknown,
-  preset: PantryPresetKey,
-): boolean {
-  // Ключ саме ВИДАЛЯЄМО, а не занулюємо: під `exactOptionalPropertyTypes`
-  // явний `undefined` необовʼязковому полю не присвоїти.
-  const opts: PantryPromptFormatOptions = { ...PANTRY_PRESETS[preset] };
-  delete opts.fallbackWhenEmpty;
-  return formatPantryForPrompt(pantry, opts).trim().length > 0;
 }
 
 /**
@@ -116,13 +105,9 @@ export function hasRenderablePantry(
  * system-промпт далі казав «використовуй ТІЛЬКИ продукти зі списку», тобто
  * суперечність нікуди не поділась, лише переїхала.
  *
- * `only` без жодної позиції нічого не обмежує, тож деградує до `prefer`.
+ * `only` ніколи не деградує до `prefer`: порожню комору відсікає
+ * `pantryPromptSection` як очікувану 400-помилку ще до виклику моделі.
  */
-export function resolvePantryMode(
-  pantry: unknown,
-  preset: PantryPresetKey,
-  mode: PantryMode = "prefer",
-): PantryMode {
-  if (mode !== "only") return mode;
-  return hasRenderablePantry(pantry, preset) ? "only" : "prefer";
+export function resolvePantryMode(mode: PantryMode = "prefer"): PantryMode {
+  return mode;
 }
