@@ -1,4 +1,4 @@
-import { getCategory } from "../utils";
+import { getExpenseCategoryForTransaction } from "../utils";
 import { toLocalISODate } from "@sergeant/shared";
 import { INTERNAL_TRANSFER_ID } from "../constants";
 import type { Category, TxCategoriesMap, TxSplitsMap } from "../domain/types";
@@ -68,9 +68,8 @@ function buildDailySpending(
           (dayMap[dayKey][s.categoryId] || 0) + (s.amount || 0);
       }
     } else {
-      const cat = getCategory(
-        tx.description,
-        tx.mcc,
+      const cat = getExpenseCategoryForTransaction(
+        tx,
         txCategories[tx.id],
         customCategories,
       );

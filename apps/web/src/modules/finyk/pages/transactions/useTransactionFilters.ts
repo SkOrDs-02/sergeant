@@ -12,7 +12,11 @@ import type { TxAccount } from "./Transactions";
 import { perfMark, perfEnd } from "@shared/lib/ui/perf";
 import { getKyivDateParts, getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { mergeExpenseCategoryDefinitions } from "../../constants";
-import { calcCategorySpent, getCategory, getIncomeCategory } from "../../utils";
+import {
+  calcCategorySpent,
+  getExpenseCategoryForTransaction,
+  getIncomeCategoryForTransaction,
+} from "../../utils";
 import {
   DAY_COLLAPSE_KEY,
   computeDaySummary,
@@ -256,10 +260,9 @@ export function useTransactionFilters({
   const getEffectiveCat = useCallback(
     (t: Transaction) =>
       t.amount > 0
-        ? getIncomeCategory(t.description, txCategories[t.id])
-        : getCategory(
-            t.description,
-            t.mcc,
+        ? getIncomeCategoryForTransaction(t, txCategories[t.id])
+        : getExpenseCategoryForTransaction(
+            t,
             txCategories[t.id],
             customCategories,
           ),

@@ -1,5 +1,5 @@
 import { INTERNAL_TRANSFER_ID } from "../constants";
-import { getCategory } from "./categories.js";
+import { getExpenseCategoryForTransaction } from "./categories.js";
 
 /**
  * Мінімальна форма транзакції, достатня для spend-селекторів.
@@ -11,6 +11,7 @@ export interface SpendingTxLike {
   amount: number;
   description?: string;
   mcc?: number;
+  categoryId?: string | undefined;
 }
 
 /**
@@ -75,9 +76,8 @@ export function calcCategorySpent(
           );
         }
         if (
-          getCategory(
-            t.description ?? "",
-            t.mcc ?? 0,
+          getExpenseCategoryForTransaction(
+            t,
             txCategories[t.id] ?? null,
             customCategories,
           ).id === categoryId

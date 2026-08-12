@@ -8,6 +8,8 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
   getIncomeCategory,
   getCategory,
+  getExpenseCategoryForTransaction,
+  getIncomeCategoryForTransaction,
   fmtAmt,
   fmtDate,
   getAccountLabel,
@@ -64,6 +66,37 @@ describe("getCategory (expense)", () => {
   });
   it("fallback 'other' для невідомого MCC без ключових слів", () => {
     expect(getCategory("щось випадкове", 9999).id).toBe("other");
+  });
+
+  it("бере канонічний categoryId транзакції раніше за MCC/опис", () => {
+    const tx = {
+      description: "Розваги",
+      mcc: 0,
+      categoryId: "entertainment",
+      source: "manual",
+    };
+    expect(getExpenseCategoryForTransaction(tx).id).toBe("entertainment");
+    expect(getExpenseCategoryForTransaction(tx, "tech").id).toBe("tech");
+  });
+
+  it("зберігає точний підпис детальнішої ручної таксономії", () => {
+    expect(
+      getExpenseCategoryForTransaction({
+        description: "",
+        mcc: 0,
+        categoryId: "food",
+        source: "manual",
+      }).label,
+    ).toBe("🍴 Їжа");
+  });
+
+  it("бере канонічний categoryId ручного надходження", () => {
+    expect(
+      getIncomeCategoryForTransaction({
+        description: "",
+        categoryId: "gift",
+      }).id,
+    ).toBe("gift");
   });
 });
 

@@ -74,7 +74,7 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
       date: expense.date || new Date().toISOString(),
       description: expense.description || "",
       amount: Number(expense.amount) || 0,
-      category: expense.category || (isIncome ? "other-income" : "інше"),
+      category: expense.category || (isIncome ? "other-income" : "other"),
       kind: isIncome ? "income" : "expense",
     };
     setManualExpenses((prev) => [entry, ...prev]);
@@ -166,7 +166,7 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
         if (patch?.description != null)
           next.description = String(patch.description || "");
         if (patch?.category != null)
-          next.category = String(patch.category || "інше");
+          next.category = String(patch.category || "other");
         if (patch?.amount != null) next.amount = Number(patch.amount) || 0;
         if (patch?.kind === "income" || patch?.kind === "expense")
           next.kind = patch.kind;

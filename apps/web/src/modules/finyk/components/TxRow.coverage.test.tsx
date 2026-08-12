@@ -15,6 +15,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { TxRow, type TxRowTx } from "./TxRow";
 import type { MonoAccount } from "@sergeant/finyk-domain/lib/accounts";
+import { getCatTiers } from "@sergeant/finyk-domain/domain/categories";
 
 const KYIV_NOON = new Date("2026-06-04T09:00:00Z"); // 12:00 EEST
 
@@ -49,6 +50,28 @@ describe("TxRow", () => {
   it("falls back to 'Транзакція' when description is empty", () => {
     render(<TxRow tx={mkTx({ description: "" })} />);
     expect(screen.getByText("Транзакція")).toBeInTheDocument();
+  });
+
+  it("shows a manual transaction's canonical category and its category colour", () => {
+    const { container } = render(
+      <TxRow
+        tx={mkTx({
+          description: "",
+          mcc: 0,
+          categoryId: "entertainment",
+          _manual: true,
+        })}
+      />,
+    );
+
+    expect(screen.getByText("Ручна витрата")).toBeInTheDocument();
+    expect(screen.getByText("Розваги")).toBeInTheDocument();
+    const expectedTint = getCatTiers("entertainment").tint;
+    const categoryChips = container.querySelectorAll<HTMLElement>(".cat-chip");
+    expect(categoryChips).toHaveLength(2);
+    for (const chip of categoryChips) {
+      expect(chip.style.getPropertyValue("--cat-tint")).toBe(expectedTint);
+    }
   });
 
   it("shows the AI badge for an auto-categorized expense", () => {

@@ -149,13 +149,13 @@ describe("ManualExpenseSheet — useApiForm + zod (Item #8 round-13)", () => {
       description: string;
       category: string;
     };
-    // CATEGORY_DISPLAY["food"].label = "Їжа" (capitalised, no emoji).
-    expect(call.description).toBe("Їжа");
+    // Порожня необов'язкова назва не дублює категорію в заголовку операції.
+    expect(call.description).toBe("");
     // Write path always emits slug.
     expect(call.category).toBe("food");
   });
 
-  it("falls back to category display label when name is empty (Era 1 initialCategory)", async () => {
+  it("keeps name empty after upgrading an Era 1 initialCategory", async () => {
     const onSave = vi.fn();
     render(
       <ManualExpenseSheet
@@ -180,7 +180,7 @@ describe("ManualExpenseSheet — useApiForm + zod (Item #8 round-13)", () => {
       description: string;
       category: string;
     };
-    expect(call.description).toBe("Транспорт");
+    expect(call.description).toBe("");
     expect(call.category).toBe("transport");
   });
 });
@@ -556,9 +556,8 @@ describe("ManualExpenseSheet — власні категорії", () => {
       description: string;
     };
     expect(call.category).toBe("custom_coffee_friends");
-    // Порожня назва підставляє ПІДПИС категорії, а не сирий id — інакше в
-    // списку витрат світився б «custom_coffee_friends».
-    expect(call.description).toBe("Кава з друзями");
+    // Порожня необов'язкова назва не дублює категорію і не показує сирий id.
+    expect(call.description).toBe("");
   });
 
   it("без власних категорій поведінка не змінилась", async () => {

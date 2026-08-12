@@ -136,6 +136,16 @@ describe("finyk selectors", () => {
     ]);
   });
 
+  it("рахує ручну витрату за її categoryId, а не повторно вгадує «Інше»", () => {
+    const manual = tx("manual", -10_000, jan, "", 0);
+    manual.categoryId = "entertainment";
+
+    expect(computeCategorySpendIndex([manual])).toEqual({
+      catSpend: { entertainment: 100 },
+      totalSpent: 100,
+    });
+  });
+
   it("compares trends and formats summary copy directions", () => {
     const current = [tx("current", -20_000, feb), tx("income", 30_000, feb)];
     const previous = [tx("prev", -10_000, jan), tx("prev-income", 20_000, jan)];
