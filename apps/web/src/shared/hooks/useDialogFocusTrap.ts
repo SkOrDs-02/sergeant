@@ -277,6 +277,11 @@ function syncInert(): void {
       for (const sibling of Array.from(parent.children)) {
         if (sibling === node) continue;
         if (keepAlive.has(sibling)) continue;
+        // Global live-status surfaces (currently the portalled toast tray)
+        // stay interactive above a modal. They can contain a time-limited
+        // Undo action, so making them inert would leave a visible control
+        // that sends the pointer event to the dialog scrim underneath.
+        if (sibling.hasAttribute("data-dialog-inert-exempt")) continue;
         desired.add(sibling);
       }
       if (parent === document.body) break;

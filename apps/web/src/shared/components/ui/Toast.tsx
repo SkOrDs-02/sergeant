@@ -7,6 +7,7 @@ import {
   type KeyboardEvent,
   type TouchEvent,
 } from "react";
+import { createPortal } from "react-dom";
 import {
   useToast,
   MAX_VISIBLE_TOASTS,
@@ -68,9 +69,8 @@ const ICON_NAME: Record<ToastType, IconName> = {
 };
 
 /**
- * Countdown progress bar for toasts that own a recoverable side-effect
- * (the undo-pattern). Tints with the same semantic accent as the stripe/
- * icon, at low opacity, so it reads as part of the same colour signal
+ * Auto-dismiss progress bar. Tints with the same semantic accent as the
+ * stripe/icon, at low opacity, so it reads as part of the same colour signal
  * rather than a fifth arbitrary tone.
  */
 const COUNTDOWN_BAR_TINT: Record<ToastType, string> = {
@@ -338,8 +338,12 @@ function ToastRow({ toast, dismiss, pause, resume }: ToastRowProps) {
       >
         <Icon name="close" size={14} strokeWidth={2.5} aria-hidden />
       </button>
-      {hasAction && !isLeaving && (
+      {!isLeaving && (
         <span
+          // A repeated actionless toast resets its provider timer. Remount the
+          // compositor animation at the same time so the visual countdown and
+          // the real deadline cannot drift apart.
+          key={`${toast.id}-${toast.repeat}`}
           aria-hidden
           className={cn(
             "absolute left-0 bottom-0 h-0.5 w-full origin-left",
@@ -401,7 +405,7 @@ export function ToastContainer() {
     visible.push(t);
   }
 
-  return (
+  const tray = (
     <div
       // Bottom-anchored above the bottom-nav, the optional
       // `ActiveWorkoutBanner` and the iOS home-indicator safe-area.
@@ -421,8 +425,8 @@ export function ToastContainer() {
       // двічі. Fallback-гілка `max()` тримає safe-area для екранів без
       // навігації (auth, onboarding).
       //
-      // `z-9999` keeps the tray over the FAB and module shells but still
-      // below modal portals when they are explicitly placed at `z-[10000]`.
+      // The tray is portalled to <body> below, so this tier is global rather
+      // than trapped inside an app-shell stacking context.
       className={cn(
         "fixed left-1/2 -translate-x-1/2 z-9999",
         "flex flex-col items-center gap-2 pointer-events-none",
@@ -432,6 +436,10 @@ export function ToastContainer() {
         bottom: `calc(max(env(safe-area-inset-bottom, 0px), var(${BOTTOM_NAV_INSET_VAR}, 0px), var(${WORKOUT_BANNER_INSET_VAR}, 0px)) + 0.75rem)`,
       }}
       data-testid="toast-tray"
+      // Modal focus-management makes the rest of the page inert. A toast is
+      // a live, top-most status surface and may contain an Undo action, so it
+      // must remain hit-testable while a dialog is open.
+      data-dialog-inert-exempt
     >
       {visible.map((t) => (
         <ToastRow
@@ -444,4 +452,11 @@ export function ToastContainer() {
       ))}
     </div>
   );
+
+  // Sheets and modals are portalled to <body>. Keeping the global toast tray
+  // there too makes its z-index comparable and, together with the explicit
+  // inert exemption above, prevents visible actions from becoming inert.
+  return typeof document === "undefined"
+    ? tray
+    : createPortal(tray, document.body);
 }
