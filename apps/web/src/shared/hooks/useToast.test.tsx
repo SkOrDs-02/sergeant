@@ -167,6 +167,34 @@ describe("useToast", () => {
     unmount();
   });
 
+  it("keeps a null-duration toast until the user dismisses it", () => {
+    vi.useFakeTimers();
+    const { result, unmount } = renderHook(() => useToast(), { wrapper });
+
+    let id = 0;
+    act(() => {
+      id = result.current.info("Доступна нова версія", null, {
+        label: "Оновити",
+        dismissLabel: "Пізніше",
+        onClick: vi.fn(),
+      });
+    });
+
+    expect(result.current.toasts[0]).toMatchObject({
+      duration: null,
+      action: { label: "Оновити", dismissLabel: "Пізніше" },
+    });
+
+    act(() => vi.advanceTimersByTime(24 * 60 * 60 * 1000));
+    expect(result.current.toasts).toHaveLength(1);
+
+    act(() => result.current.dismiss(id));
+    act(() => vi.advanceTimersByTime(200));
+    expect(result.current.toasts).toHaveLength(0);
+
+    unmount();
+  });
+
   it("marks a toast as leaving before removing it on dismiss", () => {
     vi.useFakeTimers();
     const { result, unmount } = renderHook(() => useToast(), { wrapper });

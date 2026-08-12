@@ -166,6 +166,27 @@ describe("Toast — auto-dismiss pause/resume", () => {
     expect(bar).toHaveClass("animate-toast-countdown");
   });
 
+  it("persistent toast показує явне «Пізніше» без countdown-bar", () => {
+    const { api } = renderHarness();
+    act(() => {
+      api.info("Доступна нова версія", null, {
+        label: "Оновити",
+        dismissLabel: "Пізніше",
+        onClick: vi.fn(),
+      });
+    });
+
+    expect(screen.getByRole("button", { name: "Пізніше" })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Закрити" }),
+    ).not.toBeInTheDocument();
+    expect(getToastRoot().querySelector("[data-toast-countdown]")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Пізніше" }));
+    expect(getToastRoot()).toHaveAttribute("data-toast-id");
+    expect(getToastRoot()).toHaveClass("motion-safe:animate-toast-exit");
+  });
+
   it("countdown-bar для undo-toast має animationDuration=5000ms і paused під час hover", () => {
     const { api } = renderHarness();
     act(() => {

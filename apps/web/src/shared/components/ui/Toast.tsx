@@ -113,10 +113,9 @@ function ToastRow({ toast, dismiss, pause, resume }: ToastRowProps) {
   const touchStartTimeRef = useRef(0);
 
   const hasAction = !!toast.action?.onClick;
-  // Error toasts and undo-bearing toasts use `assertive` politeness so the
-  // screen-reader interrupts whatever is being read — the user has at most
-  // `toast.duration` ms (5 s for undo) to react, so we can't wait for the
-  // queue to drain naturally.
+  // Error and action-bearing toasts use `assertive` politeness so the
+  // screen-reader announces the available choice immediately. Timed undo
+  // actions especially cannot wait for the polite queue to drain.
   const assertive = toast.type === "error" || hasAction;
 
   const isLeaving = !!toast.leaving;
@@ -327,18 +326,31 @@ function ToastRow({ toast, dismiss, pause, resume }: ToastRowProps) {
           {toast.action.label || "Дія"}
         </button>
       )}
-      <button
-        type="button"
-        onClick={() => dismiss(toast.id)}
-        className={cn(
-          "shrink-0 opacity-70 hover:opacity-100 transition-opacity touch-target",
-          "outline-none focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-1 focus-visible:ring-offset-transparent rounded-md",
-        )}
-        aria-label={messages.actions.close}
-      >
-        <Icon name="close" size={14} strokeWidth={2.5} aria-hidden />
-      </button>
-      {!isLeaving && (
+      {toast.action?.dismissLabel ? (
+        <button
+          type="button"
+          onClick={() => dismiss(toast.id)}
+          className={cn(
+            "shrink-0 px-2.5 py-1 rounded-xl text-muted hover:text-text hover:bg-line/10 transition-colors font-semibold",
+            "outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-1 focus-visible:ring-offset-transparent",
+          )}
+        >
+          {toast.action.dismissLabel}
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => dismiss(toast.id)}
+          className={cn(
+            "shrink-0 opacity-70 hover:opacity-100 transition-opacity touch-target",
+            "outline-none focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-1 focus-visible:ring-offset-transparent rounded-md",
+          )}
+          aria-label={messages.actions.close}
+        >
+          <Icon name="close" size={14} strokeWidth={2.5} aria-hidden />
+        </button>
+      )}
+      {!isLeaving && toast.duration !== null && (
         <span
           // A repeated actionless toast resets its provider timer. Remount the
           // compositor animation at the same time so the visual countdown and
