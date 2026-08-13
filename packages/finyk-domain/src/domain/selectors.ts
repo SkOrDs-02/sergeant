@@ -169,7 +169,7 @@ function buildCategoryList(
   customCategories: Category[] = [],
 ): TopCategory[] {
   return Object.entries(catSpend)
-    .map(([categoryId, rawSpent], idx) => {
+    .map(([categoryId, rawSpent]) => {
       const meta = resolveExpenseCategoryMeta(categoryId, customCategories) || {
         id: categoryId,
         label: "💳 Інше",
@@ -179,7 +179,7 @@ function buildCategoryList(
         label: meta.label,
         spent: Math.round(rawSpent),
         pct: totalSpent > 0 ? Math.round((rawSpent / totalSpent) * 100) : 0,
-        color: getCatColor(categoryId, customCategories, idx),
+        color: getCatColor(categoryId, customCategories),
       };
     })
     .sort((a, b) => b.spent - a.spent);
@@ -207,10 +207,10 @@ export function selectCategoryDistributionFromIndex(
     typeof index?.totalSpent === "number" && index.totalSpent > 0
       ? index.totalSpent
       : top.reduce((s, c) => s + c.spent, 0);
-  return top.map((c, idx) => ({
+  return top.map((c) => ({
     ...c,
     pct: total > 0 ? Math.round((c.spent / total) * 100) : 0,
-    color: c.color || getCatColor(c.categoryId, customCategories, idx),
+    color: c.color || getCatColor(c.categoryId, customCategories),
   }));
 }
 

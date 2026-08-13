@@ -23,13 +23,16 @@ describe("categories: getCatColor", () => {
     expect(getCatColor("restaurant")).toBe(categoryColors.restaurant.solid);
   });
 
-  it("falls back to custom color, then palette by idx", () => {
+  it("falls back to the user's own hex, then to the palette by identity", () => {
     expect(
       getCatColor("custom1", [{ id: "custom1", color: "#abcdef" } as never]),
     ).toBe("#abcdef");
-    const a = getCatColor("unknown", [], 0);
-    const b = getCatColor("unknown", [], 1);
-    expect(a).not.toBe(b);
+    // Раніше тут стояло `getCatColor("unknown", [], 0)` ≠ `(…, [], 1)` —
+    // тобто колір НЕВІДОМОЇ категорії свідомо залежав від позиційного
+    // аргументу. Саме це й робило відтінок нестабільним. Тепер контракт
+    // протилежний: той самий id — той самий колір.
+    expect(getCatColor("unknown", [])).toBe(getCatColor("unknown", []));
+    expect(getCatColor("unknown", [])).not.toBe(getCatColor("unknown-2", []));
   });
 });
 
@@ -115,19 +118,32 @@ describe("categories: resolveCatTiers — стабільність кольор�
   // Регресія в самому фіксі (CodeRabbit на PR #799): `stable || idx`
   // не відрізняв стабільний індекс 0 від «не знайшов», тож ПЕРША власна
   // категорія й далі брала позиційний колір викликача.
-  it("перша власна категорія тримає свій індекс, а не позиційний idx", () => {
-    expect(getCatColor("custom_a", custom, 5)).toBe(
-      getCatColor("custom_a", custom, 0),
-    );
-    expect(getCatColor("custom_a", custom, 5)).toBe(
+  it("перша власна категорія тримає свій індекс", () => {
+    expect(getCatColor("custom_a", custom)).toBe(
       resolveCatTiers("custom_a", custom).solid,
     );
   });
 
-  it("id поза списком власних категорій ще користується idx", () => {
-    expect(getCatColor("phantom", custom, 0)).not.toBe(
-      getCatColor("phantom", custom, 1),
+  // Сирота: id лежить у старих транзакціях, а самої категорії в списку
+  // вже нема (людину видалила). Доти такий чип брав позиційний індекс
+  // викликача — у діаграмі це місце в сортуванні за сумою, тож відтінок
+  // стрибав від місяця до місяця. Тепер він рахується з id.
+  it("сирота тримає той самий колір при будь-якому списку й порядку", () => {
+    const orphan = "custom_deleted";
+    const solid = getCatColor(orphan, custom);
+    expect(getCatColor(orphan, [])).toBe(solid);
+    expect(getCatColor(orphan, [...custom].reverse())).toBe(solid);
+    expect(
+      getCatColor(orphan, [{ id: "custom_new", label: "Нова" }, ...custom]),
+    ).toBe(solid);
+    expect(resolveCatTiers(orphan, custom).solid).toBe(solid);
+  });
+
+  it("різні сироти не злипаються в один відтінок", () => {
+    const solids = ["deleted_a", "deleted_b", "deleted_c", "deleted_d"].map(
+      (id) => getCatColor(id, custom),
     );
+    expect(new Set(solids).size).toBeGreaterThan(1);
   });
 
   it("вбудована категорія ігнорує список і тримає власний тир", () => {

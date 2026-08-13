@@ -112,6 +112,37 @@ export function getCatTiers(categoryId: string, idx = 0): CategoryColorTiers {
 }
 
 /**
+ * Fallback-індекс, порахований із самого id — для категорії, якої в
+ * списку власних НЕМА.
+ *
+ * Такий id — не помилка: людина видалила свою категорію, а транзакції,
+ * підписані нею, лишились. Позиції в списку в неї вже немає, тож доти
+ * тут спрацьовував позиційний індекс від викликача. Для діаграми це
+ * місце в сортуванні за сумою, тобто осиротілий чип міняв відтінок від
+ * місяця до місяця разом із рейтингом витрат — рівно та нестабільність,
+ * яку лікує `customCategoryIndex` для живих категорій.
+ *
+ * FNV-1a: детермінований, без залежностей, однаковий у вебі, мобільному
+ * й тестах. Головне тут не якість розсіювання, а те, що вхід —
+ * ідентичність, а не порядок рендеру.
+ *
+ * Чому це НЕ поширюється на живі категорії: `categoryFallbackOrder`
+ * навмисно впорядкований так, щоб сусідні за створенням категорії
+ * діставали максимально різні відтінки. Хеш цей порядок ігнорує, тож
+ * дві поспіль створені категорії могли б випасти майже однаковими —
+ * саме те, від чого той порядок і захищає. Для сиріт порядку немає в
+ * принципі, тому там хеш нічого не втрачає.
+ */
+function fallbackIndexFromId(categoryId: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < categoryId.length; i++) {
+    h ^= categoryId.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return (h >>> 0) % FALLBACK_TIERS.length;
+}
+
+/**
  * Стабільний fallback-індекс кастомної категорії — її позиція у списку
  * власних категорій користувача.
  *
@@ -138,7 +169,8 @@ export function resolveCatTiers(
 ): CategoryColorTiers {
   return getCatTiers(
     categoryId,
-    customCategoryIndex(categoryId, customCategories) ?? 0,
+    customCategoryIndex(categoryId, customCategories) ??
+      fallbackIndexFromId(categoryId),
   );
 }
 
@@ -176,14 +208,14 @@ function customCategoryIndex(
 // `FALLBACK_TIERS` гарантовано непорожня, тому fallback нижче не буде null —
 // індекс просто wrap-иться по модулю.
 //
-// `idx` лишається лише для id, якого НЕМА у списку власних категорій
-// (фантомний ключ у старому блобі). Коли категорія в списку є, індекс
-// беремо з неї — інакше сегмент діаграми міняв би колір щоразу, коли
-// категорія переїжджає в сортуванні за сумою. Див. `resolveCatTiers`.
+// Позиційного `idx` тут БІЛЬШЕ НЕМА. Він лишався для id, якого немає у
+// списку власних категорій, і саме через нього сегмент діаграми міняв
+// колір разом із місцем у сортуванні за сумою. Тепер обидві гілки
+// залежать від ідентичності: є категорія в списку — індекс зі списку,
+// немає — `fallbackIndexFromId`. Див. `resolveCatTiers`.
 export function getCatColor(
   categoryId: string,
   customCategories: CustomCategory[] = [],
-  idx = 0,
 ): string {
   const paletteId = CATEGORY_COLOR_ALIASES[categoryId] ?? categoryId;
   const base = CAT_TIERS[paletteId];
@@ -192,8 +224,7 @@ export function getCatColor(
     ? customCategories.find((c) => c.id === categoryId)
     : null;
   if (custom?.color) return custom.color;
-  const stable = customCategoryIndex(categoryId, customCategories);
-  return getCatTiers(categoryId, stable ?? idx).solid;
+  return resolveCatTiers(categoryId, customCategories).solid;
 }
 
 // Повний список категорій витрат (базові + користувацькі). За замовчуванням
