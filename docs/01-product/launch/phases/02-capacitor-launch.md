@@ -1,10 +1,10 @@
 # Phase 2 — Capacitor launch roadmap with users
 
-> **Last touched:** 2026-05-13 by Devin (Phase 2 child session of `andrijvigrav@gmail. **Next review:** 2027-05-24.
-**Status:** Active — research deliverable for the parent launch program.
-**Owner surface:** `apps/mobile-shell`(Capacitor 7 shell over`apps/web`).
-**Strategy anchor:** [ADR-0052 — Capacitor primary, Expo parallel](../../../04-governance/adr/0052-mobile-strategy-capacitor-primary.md).
-**Sibling phases:** Phase 1 — Web (`01-web-launch-with-users.md`), Phase 0 — audit (`00-readiness-audit.md`). Phase 3 (Native Expo) — conditional decision gate, описаний inline у [`README.md § Phase 3`](./README.md#phase-3--native-expo--conditional).
+> **Last validated:** 2026-05-13 by Devin (Phase 2 child session of `andrijvigrav@gmail.com`). **Next review:** 2027-05-24.
+> **Status:** Active — research deliverable for the parent launch program.
+> **Owner surface:** `apps/mobile-shell` (Capacitor 7 shell over `apps/web`).
+> **Strategy anchor:** [ADR-0052 — Capacitor primary, Expo parallel](../../../04-governance/adr/0052-mobile-strategy-capacitor-primary.md).
+> **Sibling phases:** Phase 1 — Web (`01-web-launch-with-users.md`), Phase 0 — audit (`00-readiness-audit.md`). Phase 3 (Native Expo) — conditional decision gate, описаний inline у [`README.md § Phase 3`](./README.md#phase-3--native-expo--conditional).
 > **Scope:** як запустити Capacitor-shell на TestFlight + Play Internal Testing і провести цикл бета-тестування з реальними людьми до GA.
 
 ---
