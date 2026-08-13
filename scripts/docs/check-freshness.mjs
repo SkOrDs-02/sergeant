@@ -33,7 +33,7 @@
 //   GITHUB_REPOSITORY     — "owner/repo" (auto-set by Actions; defaults to Skords-01/Sergeant)
 //   DRY_RUN               — if truthy, skip issue creation
 
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -351,7 +351,13 @@ export function runCoverage({ rootDir = REPO_ROOT } = {}) {
   const candidates = listTrackedMarkdown(rootDir);
   const readFile = (path) => {
     const full = resolve(rootDir, path);
-    return existsSync(full) ? readFileSync(full, "utf8") : null;
+    // Без `existsSync`: перевірка й читання — дві операції над іменем
+    // файлу, і між ними воно може перестати існувати (js/file-system-race).
+    try {
+      return readFileSync(full, "utf8");
+    } catch {
+      return null;
+    }
   };
   const gaps = computeCoverageGaps({ candidates, config, readFile });
   return gaps;
@@ -404,7 +410,13 @@ export function runCadenceCheck({
   const { tracked } = loadConfig({ rootDir });
   const readFile = (path) => {
     const full = resolve(rootDir, path);
-    return existsSync(full) ? readFileSync(full, "utf8") : null;
+    // Без `existsSync`: перевірка й читання — дві операції над іменем
+    // файлу, і між ними воно може перестати існувати (js/file-system-race).
+    try {
+      return readFileSync(full, "utf8");
+    } catch {
+      return null;
+    }
   };
   return evaluateFreshnessCadence({ tracked, readFile, today });
 }

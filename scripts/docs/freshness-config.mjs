@@ -12,7 +12,7 @@
 // All exports are pure for unit-testability — no fs / git side effects in
 // this module's pure helpers; the file-system entry point is `loadConfig`.
 
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -256,8 +256,13 @@ export const DEFAULT_CONFIG = {
 
 /** Read the JSON config file (if present) and merge with DEFAULT_CONFIG. */
 export function readConfigFile(path = CONFIG_PATH) {
-  if (!existsSync(path)) return { ...DEFAULT_CONFIG };
-  const raw = JSON.parse(readFileSync(path, "utf8"));
+  let text;
+  try {
+    text = readFileSync(path, "utf8");
+  } catch {
+    return { ...DEFAULT_CONFIG };
+  }
+  const raw = JSON.parse(text);
   return {
     ...DEFAULT_CONFIG,
     ...raw,
@@ -283,8 +288,11 @@ export function readConfigFile(path = CONFIG_PATH) {
  * even if its current header parsing fails.
  */
 export function readLegacyAllowlist(path = LEGACY_ALLOWLIST_PATH) {
-  if (!existsSync(path)) return [];
-  return JSON.parse(readFileSync(path, "utf8"));
+  try {
+    return JSON.parse(readFileSync(path, "utf8"));
+  } catch {
+    return [];
+  }
 }
 
 /**
@@ -385,8 +393,13 @@ export function loadConfig({
 
   const readFile = (path) => {
     const fullPath = resolve(rootDir, path);
-    if (!existsSync(fullPath)) return null;
-    return readFileSync(fullPath, "utf8");
+    // Перевірка й читання як дві операції над іменем — гонка
+    // (js/file-system-race). Ловимо відсутність із самого читання.
+    try {
+      return readFileSync(fullPath, "utf8");
+    } catch {
+      return null;
+    }
   };
 
   const tracked = buildTrackedList({
