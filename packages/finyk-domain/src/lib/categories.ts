@@ -1,5 +1,6 @@
 import { MCC_CATEGORIES, INCOME_CATEGORIES } from "../constants";
 import {
+  legacyManualCategoryId,
   MANUAL_EXPENSE_TAXONOMY,
   MANUAL_INCOME_TAXONOMY,
   taxonomyLabel,
@@ -145,6 +146,26 @@ export function getExpenseCategoryForTransaction(
       (category) => category.id === explicitId,
     );
     if (manualCategory) return manualCategory;
+    // Ери 1–2: у сховищі лежить український підпис (`"їжа"`, `"🍴 їжа"`),
+    // а не слаг. Без цієї гілки такий запис не матчив ані ручну
+    // таксономію, ані MCC-каталог, ані ключові слова — і рядок малювався
+    // як «Інше» з нейтральним сірим, хоча форма редагування того ж
+    // запису показувала правильну категорію (`upgradeCategory` живе
+    // лише в ній). Знайдено браузерною перевіркою 2026-08-13.
+    //
+    // Порядок важливий: спершу `resolveExpenseOverride` (MCC → ручні →
+    // ВЛАСНІ), і лише потім легасі-підписи. Інакше власна категорія з
+    // id на кшталт «їжа» була б з'їдена мапою — та сама підміна даних,
+    // від якої застерігає `upgradeCategoryAllowingCustom`.
+    const fromOverride = resolveExpenseOverride(explicitId, customCategories);
+    if (fromOverride) return fromOverride;
+    const legacySlug = legacyManualCategoryId(explicitId);
+    if (legacySlug) {
+      const upgraded = MANUAL_EXPENSE_CATEGORIES.find(
+        (category) => category.id === legacySlug,
+      );
+      if (upgraded) return upgraded;
+    }
   }
   return getCategory(
     transaction.description ?? "",

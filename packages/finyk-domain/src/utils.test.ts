@@ -108,6 +108,49 @@ describe("getCategory (expense)", () => {
     expect(label("groceries")).toBe("🛒 Продукти");
   });
 
+  // Знайдено браузерною перевіркою 2026-08-13: запис Ери 1–2 малювався
+  // в стрічці як «Інше», хоча форма редагування того ж запису показувала
+  // правильну категорію — `upgradeCategory` жила лише у формі, а рядок
+  // ходив через цей резолвер.
+  it("піднімає підписи Ер 1–2 до слага замість падіння в «Інше»", () => {
+    const label = (categoryId: string) =>
+      getExpenseCategoryForTransaction({
+        description: "",
+        mcc: 0,
+        categoryId,
+        source: "manual",
+      }).label;
+    expect(label("🍴 їжа")).toBe("🛒 Продукти");
+    expect(label("їжа")).toBe("🛒 Продукти");
+    expect(label("продукти")).toBe("🛒 Продукти");
+    expect(label("🚗 транспорт")).toBe("🚗 Транспорт");
+    expect(label("одяг")).toBe("🛍 Покупки");
+  });
+
+  // Порядок усередині резолвера: кастомні ПЕРЕД легасі-мапою. Інакше
+  // власна категорія з українським id була б з'їдена — та сама тиха
+  // підміна даних, від якої застерігає `upgradeCategoryAllowingCustom`.
+  it("власна категорія з легасі-подібним id лишається собою", () => {
+    const cat = getExpenseCategoryForTransaction(
+      { description: "", mcc: 0, categoryId: "їжа", source: "manual" },
+      null,
+      [{ id: "їжа", label: "Моя їжа" }],
+    );
+    expect(cat.id).toBe("їжа");
+    expect(cat.label).toBe("Моя їжа");
+  });
+
+  it("невідомий рядок і далі падає в «Інше», а не вгадується", () => {
+    expect(
+      getExpenseCategoryForTransaction({
+        description: "",
+        mcc: 0,
+        categoryId: "щось своє",
+        source: "manual",
+      }).id,
+    ).toBe("other");
+  });
+
   it("бере канонічний categoryId ручного надходження", () => {
     expect(
       getIncomeCategoryForTransaction({

@@ -9,6 +9,7 @@
  */
 import type { IconName } from "@shared/components/ui/Icon";
 import {
+  legacyManualCategoryId,
   MANUAL_EXPENSE_PICKER,
   MANUAL_EXPENSE_TAXONOMY,
 } from "@sergeant/finyk-domain/lib/manualTaxonomy";
@@ -84,53 +85,15 @@ export const CATEGORY_SLUGS: CategorySlug[] = MANUAL_EXPENSE_PICKER.map(
 
 export const DEFAULT_CATEGORY: CategorySlug = "other";
 
-// Era 1 upgrade map: bare UA label (lower-case) → slug.
-// Covers all the pre-emoji strings that were stored before the emoji era.
-const LEGACY_RAW_TO_SLUG: Record<string, CategorySlug> = {
-  їжа: "food",
-  продукти: "groceries",
-  "кафе та ресторани": "cafe",
-  кафе: "cafe",
-  транспорт: "transport",
-  розваги: "entertainment",
-  "здоров'я": "health",
-  здоров: "health",
-  одяг: "shopping",
-  покупки: "shopping",
-  комунальні: "utilities",
-  техніка: "tech",
-  підписки: "subscriptions",
-  навчання: "education",
-  подорожі: "travel",
-  інше: "other",
-};
-
-// Era 2 upgrade map: stripped UA label from emoji string → slug.
-// Keys are the labels that appear AFTER the emoji prefix (lower-case).
-// Identical to LEGACY_RAW_TO_SLUG — the strip makes them equivalent,
-// so we reuse the same map for both eras.
-const UA_LABEL_TO_SLUG = LEGACY_RAW_TO_SLUG;
-
+// Ери 1–2 (голий і емодзі-префіксований український підпис) резолвить
+// `legacyManualCategoryId` із `@sergeant/finyk-domain`. Раніше та сама
+// мапа стояла тут окремим літералом — п'ятою копією списку категорій, і
+// саме вона розійшлась із доменом: рядок транзакції показував «Інше»
+// там, де форма редагування показувала правильну категорію, бо мапу
+// бачила лише форма.
 /** Returns true if the value is a known slug. */
 export function isCategorySlug(value: string): value is CategorySlug {
   return Object.prototype.hasOwnProperty.call(CATEGORY_DISPLAY, value);
-}
-
-/**
- * Strips leading emoji + space so "🍴 їжа" → "їжа".
- * Accepts any run of non-letter / non-digit grapheme chunks so compound
- * emoji (ZWJ sequences, variation selectors) are all peeled off.
- */
-function stripLeadingEmoji(str: string): string {
-  const s = String(str || "");
-  let i = 0;
-  // `s[i]` під `noUncheckedIndexedAccess` — `string | undefined`, хоча
-  // умова `i < s.length` це вже виключає. Раніше тут стояв non-null
-  // assertion; `?? ""` дає той самий результат без придушення перевірки:
-  // порожній рядок не матчить `[\p{L}\p{N}]`, тобто недосяжна гілка
-  // поводиться так само, як і була б із `!`.
-  while (i < s.length && !/[\p{L}\p{N}]/u.test(s[i] ?? "")) i++;
-  return s.slice(i).trim();
 }
 
 /**
@@ -155,11 +118,9 @@ export function upgradeCategory(raw: string | null | undefined): CategorySlug {
   // Era 3: known slug — use directly.
   if (isCategorySlug(trimmed)) return trimmed;
 
-  // Era 2: emoji-prefixed string — strip emoji then map the UA label.
-  // Era 1: bare UA label — also matched by the stripped path (no-op strip).
-  const stripped = stripLeadingEmoji(trimmed).toLocaleLowerCase("uk-UA");
-  const fromLabel = UA_LABEL_TO_SLUG[stripped];
-  if (fromLabel) return fromLabel;
+  // Ери 1–2 — спільний резолвер домену (емодзі зрізається всередині).
+  const fromLabel = legacyManualCategoryId(trimmed);
+  if (fromLabel && isCategorySlug(fromLabel)) return fromLabel;
 
   // Unknown legacy value — graceful fallback.
   return DEFAULT_CATEGORY;

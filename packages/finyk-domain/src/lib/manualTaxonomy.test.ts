@@ -6,6 +6,8 @@ import {
   MANUAL_INCOME_TAXONOMY,
   MANUAL_TAXONOMY_BY_ID,
   canonicalManualCategoryId,
+  legacyManualCategoryId,
+  stripCategoryEmoji,
   taxonomyLabel,
 } from "./manualTaxonomy";
 
@@ -91,5 +93,42 @@ describe("taxonomyLabel", () => {
   it("надходження лишаються без емодзі-префікса", () => {
     const salary = MANUAL_TAXONOMY_BY_ID.get("salary")!;
     expect(taxonomyLabel(salary)).toBe("Зарплата");
+  });
+});
+
+describe("legacyManualCategoryId — підписи Ер 1–2", () => {
+  it("голий український підпис (Ера 1) → слаг", () => {
+    expect(legacyManualCategoryId("їжа")).toBe("food");
+    expect(legacyManualCategoryId("продукти")).toBe("food");
+    expect(legacyManualCategoryId("транспорт")).toBe("transport");
+    expect(legacyManualCategoryId("інше")).toBe("other");
+  });
+
+  it("емодзі-префіксований підпис (Ера 2) → той самий слаг", () => {
+    expect(legacyManualCategoryId("🍴 їжа")).toBe("food");
+    expect(legacyManualCategoryId("🛒 Продукти")).toBe("food");
+    expect(legacyManualCategoryId("✈️ подорожі")).toBe("travel");
+  });
+
+  // `продукти` свідомо резолвиться у канонічний `food`, а не в
+  // legacy-аліас `groceries`: підпис однаковий, але лише `food`
+  // лишився опцією пікера, тож форма редагування старого запису
+  // відкривається на наявному чипі.
+  it("веде в id, який реально є в пікері", () => {
+    expect(legacyManualCategoryId("продукти")).not.toBe("groceries");
+  });
+
+  // Ключове: НЕ `"other"`. Кастомна категорія теж «незнайома» цій мапі,
+  // і звести її до «Інше» означало б підмінити дані мовчки.
+  it("незнайомий рядок і порожнє значення → undefined", () => {
+    expect(legacyManualCategoryId("кава з друзями")).toBeUndefined();
+    expect(legacyManualCategoryId("")).toBeUndefined();
+    expect(legacyManualCategoryId(null)).toBeUndefined();
+  });
+
+  it("stripCategoryEmoji знімає складені емодзі цілком", () => {
+    expect(stripCategoryEmoji("🍴 їжа")).toBe("їжа");
+    expect(stripCategoryEmoji("✈️ подорожі")).toBe("подорожі");
+    expect(stripCategoryEmoji("їжа")).toBe("їжа");
   });
 });
