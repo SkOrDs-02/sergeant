@@ -112,6 +112,24 @@ describe("categories: resolveCatTiers — стабільність кольор�
     expect(a).not.toBe(b);
   });
 
+  // Регресія в самому фіксі (CodeRabbit на PR #799): `stable || idx`
+  // не відрізняв стабільний індекс 0 від «не знайшов», тож ПЕРША власна
+  // категорія й далі брала позиційний колір викликача.
+  it("перша власна категорія тримає свій індекс, а не позиційний idx", () => {
+    expect(getCatColor("custom_a", custom, 5)).toBe(
+      getCatColor("custom_a", custom, 0),
+    );
+    expect(getCatColor("custom_a", custom, 5)).toBe(
+      resolveCatTiers("custom_a", custom).solid,
+    );
+  });
+
+  it("id поза списком власних категорій ще користується idx", () => {
+    expect(getCatColor("phantom", custom, 0)).not.toBe(
+      getCatColor("phantom", custom, 1),
+    );
+  });
+
   it("вбудована категорія ігнорує список і тримає власний тир", () => {
     expect(resolveCatTiers("food", custom)).toBe(categoryColors.food);
     expect(resolveCatTiers("food", [])).toBe(categoryColors.food);

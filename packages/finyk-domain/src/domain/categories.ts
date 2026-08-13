@@ -138,7 +138,7 @@ export function resolveCatTiers(
 ): CategoryColorTiers {
   return getCatTiers(
     categoryId,
-    customCategoryIndex(categoryId, customCategories),
+    customCategoryIndex(categoryId, customCategories) ?? 0,
   );
 }
 
@@ -160,12 +160,16 @@ function hasOwnTier(categoryId: string): boolean {
 function customCategoryIndex(
   categoryId: string,
   categories: readonly CategoryIdLike[] = [],
-): number {
-  if (!Array.isArray(categories)) return 0;
+): number | undefined {
+  if (!Array.isArray(categories)) return undefined;
   const at = categories
     .filter((c) => c?.id && !hasOwnTier(c.id))
     .findIndex((c) => c.id === categoryId);
-  return at >= 0 ? at : 0;
+  // `undefined`, а не 0, коли категорії в списку немає: інакше ПЕРША
+  // власна категорія (стабільний індекс 0) не відрізнялась би від
+  // «не знайшов», і викликач із ненульовим `idx` віддавав би їй знову
+  // позиційний колір — тобто рівно той баг, який лікує ця функція.
+  return at >= 0 ? at : undefined;
 }
 
 // Повертає HEX-колір для категорії: базовий → користувацький → з палітри.
@@ -189,7 +193,7 @@ export function getCatColor(
     : null;
   if (custom?.color) return custom.color;
   const stable = customCategoryIndex(categoryId, customCategories);
-  return getCatTiers(categoryId, stable || idx).solid;
+  return getCatTiers(categoryId, stable ?? idx).solid;
 }
 
 // Повний список категорій витрат (базові + користувацькі). За замовчуванням
