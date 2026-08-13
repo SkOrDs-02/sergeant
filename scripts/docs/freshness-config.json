@@ -1,6 +1,6 @@
 {
   "$schema": "./freshness-config.schema.json",
-  "_comment": "See scripts/docs/freshness-config.mjs for semantics. Default cadence is 90 days; only put paths here if they need a different cadence or explicit include/exclude.",
+  "_comment": "See scripts/docs/freshness-config.mjs for semantics. cadenceOverrides accepts exact paths AND globs; exact wins, then the longest matching glob, then defaultCadenceDays. Tiers exist because a flat cadence over ~400 docs is a review load nobody can carry — see docs/04-governance/governance/doc-freshness.md § Каденція.",
   "defaultCadenceDays": 90,
   "cadenceOverrides": {
     "docs/03-operations/observability/runbook.md": 60,
@@ -11,7 +11,30 @@
     "docs/00-start/playbooks/investigate-alert.md": 60,
     "docs/00-start/playbooks/pre-merge-migration-checklist.md": 60,
     "docs/00-start/playbooks/rotate-secrets.md": 60,
-    "docs/04-governance/governance/audit-freeze-2026-05-05.md": 180
+    "docs/04-governance/governance/audit-freeze-2026-05-05.md": 180,
+
+    "docs/04-governance/security/**": 365,
+    "docs/90-work/audits/**": 365,
+    "docs/90-work/planning/**": 365,
+    "docs/90-work/research/**": 365,
+    "docs/90-work/beta-launch/**": 365,
+    "docs/90-work/superpowers/**": 365,
+    "docs/02-engineering/notes/**": 365,
+    "docs/03-operations/postmortems/**": 365,
+    "docs/01-product/whats-new/**": 365,
+    "docs/01-product/launch/**": 365,
+    "docs/assets/**": 365,
+
+    "docs/01-product/**": 180,
+    "docs/02-engineering/**": 180,
+    "docs/05-design/**": 180,
+    "docs/90-work/**": 180,
+
+    "docs/01-product/model/**": 90,
+    "docs/02-engineering/architecture/**": 90,
+    "docs/90-work/tech-debt/**": 90,
+
+    "docs/04-governance/governance/rules/**": 180
   },
   "excludeGlobs": [
     "docs/90-work/initiatives/follow-ups.md",

@@ -1,6 +1,6 @@
 # Журнал рішень для агентів
 
-> **Last touched:** 2026-07-29 by Codex. **Next review:** 2026-10-27.
+> **Last touched:** 2026-07-29 by Codex. **Next review:** 2026-10-31.
 > **Status:** Active
 
 Курований, append-only журнал **усталених рішень і вподобань**, щоб агент не перепитував те, що вже вирішено, а maintainer не розжовував контекст щоразу (Initiative 0020, Tier 3 agent-OS).

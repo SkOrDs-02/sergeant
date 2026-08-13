@@ -2,7 +2,7 @@
 
 # Усунення founder-feedback регресій у web PWA
 
-> **Last touched:** 2026-07-16 by Codex. **Next review:** 2026-10-14.
+> **Last touched:** 2026-07-16 by Codex. **Next review:** 2027-02-23.
 > **Status:** Active
 
 ## Мета

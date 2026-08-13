@@ -1,6 +1,6 @@
 # Audit-винятки
 
-> **Last touched:** 2026-08-07 by Claude (додано виняток image-size — патчу не існує; nanoid закрито override-ом, не винятком). **Next review:** 2026-11-05.
+> **Last touched:** 2026-08-07 by Claude (додано виняток image-size — патчу не існує; nanoid закрито override-ом, не винятком). **Next review:** 2027-11-05.
 > **Status:** Active
 
 > Відстежені вразливості, які тимчасово допускаються через машинно-читаний

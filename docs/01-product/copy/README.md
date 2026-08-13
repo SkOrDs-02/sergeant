@@ -1,6 +1,6 @@
 # Copy
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-12-06.
 > **Status:** Active
 
 Канонічні правила UA-копії для всього продукту — tone-of-voice, address-форма, патерни

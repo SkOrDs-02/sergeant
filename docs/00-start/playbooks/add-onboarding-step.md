@@ -1,6 +1,6 @@
 # Playbook: Add Onboarding Step
 
-> **Last touched:** 2026-07-24 by @Skords-01. **Next review:** 2026-10-22.
+> **Last touched:** 2026-07-24 by @Skords-01. **Next review:** 2026-11-06.
 > **Status:** Active
 
 **Trigger:** «Додай новий крок в онбординг» / зміна послідовності перших кроків нового юзера / новий FTUX-етап.

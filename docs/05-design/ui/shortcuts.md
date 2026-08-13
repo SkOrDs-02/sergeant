@@ -1,6 +1,6 @@
 # Keyboard shortcuts registry
 
-> **Last touched:** 2026-08-13 by @claude. **Next review:** 2026-11-11.
+> **Last touched:** 2026-05-13 by Devin (audit `2026-05-13-web-frontend-ergonomics-roast`). **Next review:** 2026-12-22.
 > **Status:** Active.
 
 Канонічний реєстр клавіатурних шорткатів `apps/web` + browser-conflict

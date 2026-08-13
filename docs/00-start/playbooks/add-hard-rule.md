@@ -1,6 +1,6 @@
 # Playbook: Додати Hard Rule
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-16.
 > **Status:** Active
 
 **Trigger:** "Додати новий Hard Rule" / "Додати нову обов'язкову конвенцію" / будь-яке правило, яке потрібно енфорсити для всіх контриб'юторів і AI-агентів.

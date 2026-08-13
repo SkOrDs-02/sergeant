@@ -1,6 +1,6 @@
 # Design-consistency audit (2026-07)
 
-> **Last touched:** 2026-07-26 by @it+v0agent. **Next review:** 2026-10-24.
+> **Last touched:** 2026-07-26 by @it+v0agent. **Next review:** 2027-02-27.
 > **Status:** Resolved — all findings fixed (A–I) or dismissed (H). Button orthogonality (G) landed with byte-identical legacy aliases.
 
 > **Аудиторія:** дизайн-система maintainers, ревʼюери design-token PR-ів.

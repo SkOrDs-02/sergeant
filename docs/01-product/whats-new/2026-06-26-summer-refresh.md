@@ -1,6 +1,6 @@
 # 2026-06-26 — Велике оновлення: Premium, новий вигляд і розумніший AI
 
-> **Last touched:** 2026-06-26 by @dimastahov16012003. **Next review:** 2026-09-24.
+> **Last touched:** 2026-06-26 by @dimastahov16012003. **Next review:** 2027-10-04.
 > **Status:** Active
 
 > **Modal id:** `2026-06-26-summer-refresh` —

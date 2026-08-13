@@ -2,7 +2,7 @@
 
 # Loop Budget — Autonomous Agent Workflows
 
-> **Last touched:** 2026-07-01 by @claude. **Next review:** 2026-09-29.
+> **Last touched:** 2026-07-01 by @claude. **Next review:** 2026-10-02.
 > **Status:** Active
 > **Source of truth:** [`registry.yaml`](./registry.yaml) — поля `cost.*`
 

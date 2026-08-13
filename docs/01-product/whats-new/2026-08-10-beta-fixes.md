@@ -1,6 +1,6 @@
 # 2026-08-10 — Перша порція виправлень за репортами бети
 
-> **Last validated:** 2026-08-10 by @claude. **Next review:** 2026-11-08.
+> **Last validated:** 2026-08-10 by @claude. **Next review:** 2027-09-08.
 > **Status:** Active
 
 > **Modal id:** `2026-08-10-beta-fixes` —

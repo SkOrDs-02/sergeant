@@ -1,6 +1,6 @@
 # Security Hardening Backlog
 
-> **Last validated:** 2026-07-20 by @cursoragent (post fast-forward archive). **Next review:** 2026-10-18.
+> **Last validated:** 2026-07-20 by @cursoragent (post fast-forward archive). **Next review:** 2027-11-04.
 > **Status:** Active — жива картка: [`C2-frontend-csp.md`](./C2-frontend-csp.md). Усі Closed-картки й sprint-overview — у [`archive/`](./archive/) (Batch 2026-07-20).
 
 Беклог посилення безпеки (security hardening) — структурований список знахідок із внутрішнього security-review від 2026-05-03. Кожна знахідка живе у власному файлі-картці (`<id>-<slug>.md`), згрупована у спринти за пріоритетом усунення.

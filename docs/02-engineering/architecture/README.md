@@ -1,6 +1,6 @@
 # 🏗️ Architecture
 
-> **Last touched:** 2026-08-02 by @claude. **Next review:** 2026-10-31.
+> **Last touched:** 2026-08-02 by @claude. **Next review:** 2026-11-29.
 > **Status:** Active
 
 System architecture and runtime surface inventory for Sergeant.

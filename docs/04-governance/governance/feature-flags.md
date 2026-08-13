@@ -1,6 +1,6 @@
 # Feature Flags Registry
 
-> **Last validated:** 2026-07-10 by @cursoragent (sync з `featureFlags.ts`: sqlite_v2 quartet removed). **Next review:** 2026-10-08.
+> **Last validated:** 2026-07-10 by @cursoragent (sync з `featureFlags.ts`: sqlite_v2 quartet removed). **Next review:** 2026-10-15.
 > **Status:** Active
 
 Operational registry for release toggles, experiments, and kill switches in Sergeant. Code remains the executable source of truth; this file is the human-readable operating registry for rollout and cleanup.

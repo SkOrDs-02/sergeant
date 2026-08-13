@@ -1,6 +1,6 @@
 # PostHog FTUX dashboards — runbook
 
-> **Last touched:** 2026-07-19 by Codex. **Next review:** 2026-10-17.
+> **Last touched:** 2026-07-19 by Codex. **Next review:** 2026-10-26.
 > **Status:** Active
 
 Operational runbook for PostHog (Cloud EU) dashboards that monitor the

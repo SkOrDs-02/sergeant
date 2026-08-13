@@ -1,6 +1,6 @@
 # Міграція анонімних даних у профіль
 
-> **Last touched:** 2026-07-28 by @dimastahov16012003. **Next review:** 2026-10-26.
+> **Last touched:** 2026-07-28 by @dimastahov16012003. **Next review:** 2027-02-10.
 > **Status:** Shipped — implementation pending PR.
 
 ## Мета

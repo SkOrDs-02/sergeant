@@ -17,6 +17,7 @@ import {
   issueBody,
   evaluateFreshnessCadence,
 } from "../check-freshness.mjs";
+import { nextReviewFor } from "../freshness-config.mjs";
 
 // ── parseHeader ──────────────────────────────────────────────────────────────
 
@@ -255,11 +256,18 @@ describe("evaluateFreshnessCadence", () => {
       today: "2026-05-14",
     });
 
+    // `docs/legacy.md` не має явної дати перегляду, тож вона рахується
+    // так само, як її записав би бампер: каденція + детермінований
+    // розкид від шляху. Рахуємо тією ж функцією, а не хардкодимо число.
+    const legacyDue = nextReviewFor("docs/legacy.md", "2026-01-01", {
+      defaultCadenceDays: 30,
+      cadenceOverrides: {},
+    });
     assert.deepEqual(
       failures.map((f) => [f.path, f.status, f.nextReview]),
       [
         ["docs/overdue.md", "overdue", "2026-02-01"],
-        ["docs/legacy.md", "overdue", "2026-01-31"],
+        ["docs/legacy.md", "overdue", legacyDue],
       ],
     );
   });

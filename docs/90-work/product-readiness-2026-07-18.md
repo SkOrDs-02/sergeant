@@ -1,6 +1,6 @@
 # Готовність продукту й залишок робіт — 2026-07-18
 
-> **Last validated:** 2026-07-29 by Codex (fresh `pnpm snapshot --refresh`). **Next review:** 2026-08-18.
+> **Last validated:** 2026-07-29 by Codex (fresh `pnpm snapshot --refresh`). **Next review:** 2027-02-27.
 > **Status:** Reference — ручний зріз на 2026-07-18; актуальний стан бета-підготовки живе в `docs/90-work/audits/2026-08-04-global-qa-*` і `docs/open-work.md`.
 
 Це ручний portfolio-зріз поверх автоматичного [`open-work.md`](../open-work.md).

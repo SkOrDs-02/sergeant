@@ -1,6 +1,6 @@
 # RAG eval harness — golden-set, metrics, baseline comparison
 
-> **Last touched:** 2026-08-13 by @claude. **Next review:** 2026-11-11.
+> **Last validated:** 2026-06-02 by @SkOrDs-02 / Devin.
 > **Status:** Active
 
 > Canonical reference for the RAG quality-eval pipeline shipped as **PR-20**

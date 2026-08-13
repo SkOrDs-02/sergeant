@@ -1,6 +1,6 @@
 # SPEC: Сканування чеків — QR/ДПС + vision, автовитрата з позиціями
 
-> **Last validated:** 2026-08-01 by @claude (spec-інтервʼю з founder-ом, brainstorming-сесія). **Next review:** 2026-10-30.
+> **Last validated:** 2026-08-01 by @claude (spec-інтервʼю з founder-ом, brainstorming-сесія). **Next review:** 2027-11-20.
 > **Status:** Active — дизайн затверджено founder-ом 2026-08-01; відкритий гейт: токен публічної частини ДПС (§ Ризики)
 
 ## Проблема

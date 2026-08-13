@@ -1,6 +1,6 @@
 # Theme 1 — Kyiv timezone discipline
 
-> **Last touched:** 2026-08-04 by @claude (звірено з ADR-0078: правило більше не вимагає Kyiv для межі особистої доби). **Next review:** 2026-11-02.
+> **Last touched:** 2026-08-04 by @claude (звірено з ADR-0078: правило більше не вимагає Kyiv для межі особистої доби). **Next review:** 2027-02-10.
 > **Status:** Active
 
 ## Одне правило межі доби

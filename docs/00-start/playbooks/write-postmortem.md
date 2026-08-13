@@ -1,6 +1,6 @@
 # Playbook: Postmortem після інциденту
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-10-04.
 > **Status:** Active
 
 **Trigger:** стався SEV1/SEV2 інцидент, повторюваний продакшн-збій потребує формального уроку, або repo guardrails змінилися саме через інцидент.

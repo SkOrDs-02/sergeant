@@ -1,7 +1,7 @@
 # Harness Engineering v1 — Rollout Summary
 
 > **Status:** Reference — rollout v1 завершено (2026-06-29), follow-up-и закрито 2026-07-20; harness `1.0.0` + skill-trigger evals + golden-task suite + freshness-janitor + playbook-routing evals. Відкритих пунктів немає — документ лишається як довідник по чотирьох компонентах harness-у.
-> **Last touched:** 2026-07-25 by @claude (Active → Reference: відкритих пунктів немає). **Next review:** 2026-10-23.
+> **Last touched:** 2026-07-25 by @claude (Active → Reference: відкритих пунктів немає). **Next review:** 2027-11-22.
 > **Owner:** @SkOrDs-02
 > **Supersedes:** —
 > **Related:** `E:\Temp\kilo\harness-plan.md` (тимчасовий план, видаляється після merge цієї сторінки), NxCode "Harness-инженерия: Полное руководство" (посилання-плейсхолдер видалено — джерело офлайн) (2026-03-01)

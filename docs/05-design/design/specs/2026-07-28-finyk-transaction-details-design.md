@@ -2,7 +2,7 @@
 
 # Канонічні деталі операції та глобальний FAB Фініка
 
-> **Last touched:** 2026-07-28 by Codex. **Next review:** 2026-10-26.
+> **Last touched:** 2026-07-28 by Codex. **Next review:** 2027-01-27.
 > **Status:** Active — implementation ready, PR pending
 
 ## Мета

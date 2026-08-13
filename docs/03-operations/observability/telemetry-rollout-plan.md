@@ -1,6 +1,6 @@
 # Telemetry rollout plan
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-10-05.
 > **Status:** Active
 
 > Канонічний план перебудови product-telemetry layer Sergeant. Згенеровано

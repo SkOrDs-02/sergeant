@@ -45,9 +45,11 @@ import { performance } from "node:perf_hooks";
 import { fileURLToPath } from "node:url";
 
 import {
+  cadenceForPath,
   DEFAULT_CONFIG,
   matchesAnyGlob,
   readConfigFile,
+  reviewJitterDays,
 } from "./freshness-config.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -146,6 +148,11 @@ export function bumpHeader({
   today,
   handle,
   cadenceDays,
+  // Детермінований розкид дати перегляду, щоб пачка доків, збамплена
+  // одним комітом, не прийшла до перегляду одного дня. Передається як
+  // готове число (а не шлях), бо `bumpHeader` — чиста й нічого не знає
+  // про файлову систему; рахує його викликач через `reviewJitterDays`.
+  spreadDays = 0,
   lineLimit = HEADER_LINE_LIMIT,
 }) {
   const found = findHeaderLine(content, lineLimit);
@@ -158,7 +165,7 @@ export function bumpHeader({
   const newHandle = handle ?? found.handle;
   const newNextReview = sameDate
     ? found.nextReview
-    : addDays(today, cadenceDays);
+    : addDays(today, cadenceDays + spreadDays);
 
   // Migrate the legacy `Last validated:` label to the honest `Last touched:`
   // whenever we rewrite the line — whitespace is preserved.
@@ -206,11 +213,11 @@ function getCommitterEmail() {
 }
 
 function getCadenceDays(filePath, config) {
-  return (
-    config.cadenceOverrides[filePath] ??
-    config.defaultCadenceDays ??
-    DEFAULT_CONFIG.defaultCadenceDays
-  );
+  return cadenceForPath(filePath, {
+    ...config,
+    defaultCadenceDays:
+      config.defaultCadenceDays ?? DEFAULT_CONFIG.defaultCadenceDays,
+  });
 }
 
 /**
@@ -241,11 +248,13 @@ export function bumpFiles({
       continue;
     }
     const cadenceDays = getCadenceDays(rel, config);
+    const spreadDays = reviewJitterDays(rel, cadenceDays);
     const { content: next, changed } = bumpHeader({
       content,
       today,
       handle,
       cadenceDays,
+      spreadDays,
     });
     if (!changed) {
       log(`  skip (no-op): ${rel}`);
@@ -253,7 +262,7 @@ export function bumpFiles({
     }
     writeFileSync(full, next);
     modified.push(rel);
-    log(`  bumped: ${rel} → ${today} (next +${cadenceDays}d)`);
+    log(`  bumped: ${rel} → ${today} (next +${cadenceDays}d +${spreadDays}d)`);
   }
   return modified;
 }

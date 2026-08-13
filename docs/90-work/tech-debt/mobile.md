@@ -1,6 +1,6 @@
 # Mobile Tech Debt — Sergeant Mobile (Expo + Capacitor)
 
-> **Last validated:** 2026-07-20 by @cursoragent (full reconcile vs HEAD). **Next review:** 2026-10-18.
+> **Last validated:** 2026-07-20 by @cursoragent (full reconcile vs HEAD). **Next review:** 2026-11-08.
 > **Status:** Active
 
 > **Оновлено 2026-08-07 (tech-debt reconcile).** **Головна знахідка: `pnpm check` на `main` був червоний, і жоден реєстр цього не фіксував.** `@sergeant/mobile#test` давав 3 fail з 1201 — обидва не регресії коду, а тести, що кодували вже виправлені баги: (1) `adapter.snapshot.test.ts` очікував event id з таймстемпом, хоча `occurredAt` прибрано з ключа навмисно (`buildCompletionEventId`, аудит W1-ROUTINE-APPEND — інакше кожен холодний старт плодив дублі, яких `INSERT OR IGNORE` не ловить); web-двійник снапшоту оновили тоді ж, mobile пропустили. (2) `Calendar.test.tsx` шукав `«💧 Випити воду»`, хоча з 2026-08-03 у полі `emoji` лежить icon-slug, і склейку з назвою прибрали (аудит 2026-08-04, знахідка 12). Виправлено; сюїт зелений — 182 suites / 1201 tests / 6 snapshots. **Урок для процесу:** mobile-jest не входить у CI-lane покриття (`--filter=!@sergeant/mobile`), а `pnpm check` локально ганяють рідко — тому mobile-регресії живуть довше за web-івські. Це той самий корінь, що й TC-03 нижче.

@@ -1,6 +1,6 @@
 # 00 · Start — точка входу
 
-> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
+> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-11-14.
 > **Status:** Active
 
 Звідси починають і люди, і агенти: онбординг, маршрутизація в skill-и,

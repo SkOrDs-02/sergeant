@@ -1,6 +1,6 @@
 # Playbook: Dependency Sweeper (періодичний тріаж залежностей)
 
-> **Last touched:** 2026-08-08 by @claude. **Next review:** 2026-11-06.
+> **Last touched:** 2026-08-08 by @claude. **Next review:** 2026-12-02.
 > **Status:** Active
 
 **Trigger:** запланований періодичний прогін (через будь-який scheduler/cron-примітив харнеса, cadence 6h–1d) або ручний запит «що застаріло / які CVE / що безпечно бампнути». Це **не** заміна Renovate — див. § «Чим це відрізняється від Renovate».

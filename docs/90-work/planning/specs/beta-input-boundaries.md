@@ -1,6 +1,6 @@
 # SPEC: межові значення форм вводу — підготовка apps/web до бети
 
-> **Last touched:** 2026-08-01 by @Skords-01. **Next review:** 2026-10-29.
+> **Last touched:** 2026-08-01 by @Skords-01. **Next review:** 2027-11-22.
 > **Status:** Active — фази 1–3 реалізовані; лишились click-through, офлайн-індикатор і Playwright `@extended`. Стан по пунктах — у § «Стан виконання» в кінці.
 
 ## Проблема

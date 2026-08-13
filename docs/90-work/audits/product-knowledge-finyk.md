@@ -1,6 +1,6 @@
 # Продуктовий аудит знань: finyk — diff-звіт тріангуляції
 
-> **Last touched:** 2026-07-29 by Codex. **Next review:** 2026-10-27.
+> **Last touched:** 2026-07-29 by Codex. **Next review:** 2027-09-20.
 > **Status:** Reference — deliverable завершено; виконувані залишки консолідовані в `product-knowledge-backlog.md`.
 
 > **Що це.** Звіт тріангуляції «founder ↔ документація ↔ код» по модулю finyk

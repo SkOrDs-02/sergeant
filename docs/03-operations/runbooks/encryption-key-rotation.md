@@ -1,6 +1,6 @@
 # Encryption key rotation — runbook
 
-> **Last touched:** 2026-07-29 by @Skords-01. **Next review:** 2026-10-27.
+> **Last touched:** 2026-07-29 by @Skords-01. **Next review:** 2026-11-05.
 > **Status:** Active
 
 > **Hosting:** server env vars (`BETTER_AUTH_*`, `MONO_*`) живуть у **Coolify** app `sergeant-api` ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md)). Після кожної зміни Environment Variables виконай redeploy. n8n env (legacy hosting) оновлюється окремо лише для workflow-consumer-ів.

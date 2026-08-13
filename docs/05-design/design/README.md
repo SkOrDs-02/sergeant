@@ -1,6 +1,6 @@
 # Дизайн
 
-> **Last touched:** 2026-08-07 by @claude. **Next review:** 2026-11-05.
+> **Last touched:** 2026-08-07 by @claude. **Next review:** 2027-03-21.
 > **Status:** Active
 
 Брендбук, дизайн-система, спеціалізовані патерни, активний v2-rollout і архів закритих аудитів.

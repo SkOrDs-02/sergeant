@@ -1,6 +1,6 @@
 # i18n readiness — Sergeant web
 
-> **Last touched:** 2026-08-09 by @claude. **Next review:** 2026-11-07.
+> **Last touched:** 2026-08-09 by @claude. **Next review:** 2027-03-01.
 > **Status:** Active
 
 ## Контекст

@@ -1,6 +1,6 @@
 # Skills Evolution Roadmap — запозичення з ecosystem-у agent skills
 
-> **Last touched:** 2026-08-13 by @claude. **Next review:** 2026-11-11.
+> **Last touched:** 2026-06-14 by Claude (drift reconcile: PR 4/10/11 merged #2925; PR 7 superseded by central eval harness). **Next review:** 2026-09-26.
 > **Status:** Active (proposal — sequencing only; кожен пункт окремий PR із власним acceptance criteria)
 
 > **Що це.** Курований план, як еволюціонувати repo-owned skill-систему Sergeant (`.agents/skills/**`) запозичивши перевірені патерни з широкого agent-skills ecosystem-у — без розмиття існуючих 12 specialist-skill-ів і без імпорту generic-обгорток. Документ працює як roadmap для будь-якого AI-агента (Claude Code, Devin, Codex, Cursor, Gemini CLI), що візьметься за конкретний пункт.

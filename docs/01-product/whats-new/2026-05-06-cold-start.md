@@ -1,6 +1,6 @@
 # 2026-05-06 — Перший екран більше не порожній
 
-> **Last touched:** 2026-07-30 by @claude. **Next review:** 2026-10-28.
+> **Last touched:** 2026-07-30 by @claude. **Next review:** 2027-08-04.
 > **Status:** Active
 
 > **Modal id:** `2026-05-06-cold-start` —

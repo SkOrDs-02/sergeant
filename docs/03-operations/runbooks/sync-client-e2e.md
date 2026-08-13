@@ -1,7 +1,7 @@
 # Sync client E2E — manual runbook (Phase 1 gate)
 
 > **Status:** Active
-> **Last touched:** 2026-07-25 by @claude. **Next review:** 2026-10-23.
+> **Last touched:** 2026-07-25 by @claude. **Next review:** 2026-11-07.
 > Ручний прогін multi-device sync після merge PR-1…PR-4 ([`sync-client-wiring-playbook.md`](../../90-work/planning/sync-client-wiring-playbook.md) §4.5, §8).
 
 ## Prerequisites

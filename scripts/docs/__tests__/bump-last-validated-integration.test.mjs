@@ -17,7 +17,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { bumpFiles } from "../bump-last-validated.mjs";
-import { DEFAULT_CONFIG } from "../freshness-config.mjs";
+import {
+  cadenceForPath,
+  DEFAULT_CONFIG,
+  nextReviewFor,
+} from "../freshness-config.mjs";
 
 const HEADER = (date, handle, next) =>
   `# Doc\n\n> **Last validated:** ${date} by @${handle}. **Next review:** ${next}.\n> **Status:** Active\n\nbody\n`;
@@ -52,9 +56,15 @@ describe("bumpFiles (integration)", () => {
     assert.deepEqual(modified, [rel]);
     const after = readFileSync(join(dir, rel), "utf8");
     // Legacy `Last validated:` migrates to the honest `Last touched:` on bump.
+    // Дата перегляду — каденція ПЛЮС детермінований розкид від шляху
+    // (`reviewJitterDays`), тож рахуємо її тією ж функцією, а не хардкодимо:
+    // інакше тест пінить магічне число й ламається від зміни політики.
+    const due = nextReviewFor(rel, "2026-04-30", config);
     assert.match(
       after,
-      /\*\*Last touched:\*\* 2026-04-30 by @new\. \*\*Next review:\*\* 2026-07-29\./,
+      new RegExp(
+        `\\*\\*Last touched:\\*\\* 2026-04-30 by @new\\. \\*\\*Next review:\\*\\* ${due}\\.`,
+      ),
     );
   });
 
@@ -69,8 +79,10 @@ describe("bumpFiles (integration)", () => {
       rootDir: dir,
     });
     const after = readFileSync(join(dir, rel), "utf8");
-    // 60-day cadence override
-    assert.match(after, /\*\*Next review:\*\* 2026-06-29\./);
+    // 60-day cadence override (+ той самий розкид)
+    const due = nextReviewFor(rel, "2026-04-30", config);
+    assert.equal(cadenceForPath(rel, config), 60);
+    assert.match(after, new RegExp(`\\*\\*Next review:\\*\\* ${due}\\.`));
   });
 
   it("skips excluded paths (ADR)", () => {
