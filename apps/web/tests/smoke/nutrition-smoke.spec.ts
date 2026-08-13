@@ -74,7 +74,14 @@ test("@critical nutrition: photo preview stays inside a 390px viewport", async (
   await waitForInitialSqliteRefresh(page, "nutrition");
 
   const photoDetails = page.getByTestId("nutrition-photo-details");
-  await photoDetails.getByText("Аналіз фото страви", { exact: true }).click();
+  // Рядок «Аналіз фото страви» всередині `<details>` є двічі: у `<summary>`
+  // і в хедері самої `PhotoAnalyzeCard`, яка рендериться завжди (details лише
+  // ховає її, з DOM не прибирає). Без прив'язки до `summary` локатор ловить
+  // обидва вузли і падає strict-mode violation ще до кліку.
+  await photoDetails
+    .locator("summary")
+    .getByText("Аналіз фото страви", { exact: true })
+    .click();
   await photoDetails
     .locator('input[type="file"]')
     .setInputFiles(
