@@ -21,7 +21,7 @@
 //   node scripts/docs/restamp-next-review.mjs
 //   node scripts/docs/restamp-next-review.mjs --check   # CI-гейт
 
-import { readFileSync, writeFileSync } from "node:fs";
+import { open } from "node:fs/promises";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -75,9 +75,50 @@ export function restampHeader(
   };
 }
 
-function main() {
+/**
+ * Обробити один файл, тримаючи ОДИН дескриптор між читанням і записом.
+ *
+ * Навіщо дескриптор, а не `readFileSync` + `writeFileSync` по шляху.
+ * Це дві незалежні операції над іменем файлу, і між ними шлях може
+ * почати вказувати на щось інше — класична гонка «перевірив одне,
+ * записав в інше» (CodeQL js/file-system-race). Відкритий handle
+ * прив'язаний до самого файлу, а не до імені, тож вікна немає.
+ *
+ * `existsSync` теж свідомо немає: список шляхів приходить із
+ * `git ls-files`, тож відсутній файл — нормальна ситуація (видалений,
+ * але ще не закомічений). Ловимо її з самої спроби відкриття.
+ */
+async function restampOne(rel, full, config, write) {
+  let handle;
+  try {
+    handle = await open(full, write ? "r+" : "r");
+  } catch {
+    return null;
+  }
+  try {
+    const content = await handle.readFile("utf8");
+    if (!hasFreshnessHeader(content)) return null;
+    if (isOffCalendar(content)) return null;
+    // Згенеровані файли володіють власним заголовком — його пише
+    // генератор, і переписування розійшлось би з тим, що очікує --check.
+    if (content.includes("<!-- AUTO-GENERATED FILE")) return null;
+
+    const res = restampHeader(content, rel, config);
+    if (!res.changed) return null;
+    if (write) {
+      await handle.truncate(0);
+      await handle.write(res.content, 0, "utf8");
+    }
+    return { path: rel, from: res.from, to: res.to };
+  } finally {
+    await handle.close();
+  }
+}
+
+async function main() {
   const dryRun = process.argv.includes("--dry-run");
   const checkMode = process.argv.includes("--check");
+  const write = !dryRun && !checkMode;
   const config = readConfigFile();
   const candidates = listTrackedMarkdown(REPO_ROOT);
 
@@ -86,27 +127,8 @@ function main() {
     if (matchesAnyGlob(rel, config.excludeGlobs)) continue;
     if (config.explicitExclude.includes(rel)) continue;
     const full = resolve(REPO_ROOT, rel);
-    // Свідомо БЕЗ `existsSync` перед читанням: перевірка й використання —
-    // дві різні операції, між якими файл може зникнути (CodeQL
-    // js/file-system-race). Список шляхів приходить із `git ls-files`, тож
-    // відсутній файл тут — нормальна ситуація (видалений, але ще не
-    // закомічений), а не помилка. Ловимо її з самої спроби читання.
-    let content;
-    try {
-      content = readFileSync(full, "utf8");
-    } catch {
-      continue;
-    }
-    if (!hasFreshnessHeader(content)) continue;
-    if (isOffCalendar(content)) continue;
-    // Згенеровані файли володіють власним заголовком — його пише
-    // генератор, і переписування розійшлось би з тим, що очікує --check.
-    if (content.includes("<!-- AUTO-GENERATED FILE")) continue;
-
-    const res = restampHeader(content, rel, config);
-    if (!res.changed) continue;
-    changes.push({ path: rel, from: res.from, to: res.to });
-    if (!dryRun && !checkMode) writeFileSync(full, res.content);
+    const change = await restampOne(rel, full, config, write);
+    if (change) changes.push(change);
   }
 
   if (checkMode) {
@@ -139,4 +161,9 @@ function main() {
 const isMain =
   process.argv[1] &&
   resolve(process.argv[1]) === resolve(fileURLToPath(import.meta.url));
-if (isMain) main();
+if (isMain) {
+  main().catch((err) => {
+    console.error("[restamp]", err);
+    process.exit(1);
+  });
+}
