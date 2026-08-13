@@ -4,10 +4,10 @@
  * Status: Active
  * Extended tests for NutritionApp covering callback handlers not exercised
  * by the base smoke tests:
- *   • handleSaveToLog  (onSaveToLog from NutritionStartPage)
+ *   • handleOpenMealPhoto  (onOpenMealPhoto from NutritionStartPage —
+ *     opens AddMealSheet at its photo step via addMealInitialStep)
  *   • handleQuickAddMealFromChip  (onQuickAddMeal from NutritionStartPage)
  *   • handleRequestAddMeal + pending "open-add-meal" effect
- *   • handleRequestMealPhoto  (onRequestMealPhoto from NutritionOverlays)
  *   • handlePullRefresh + handlePullRefreshError  (PTR callbacks)
  *   • wrappedSaveMeal – add path and edit path  (via NutritionOverlays)
  *   • statusText / err banners  (via captured setters from hook args)
@@ -16,7 +16,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { act, render, screen, fireEvent } from "@testing-library/react";
 import type { Meal } from "@sergeant/nutrition-domain";
-import { usePhotoAnalysis } from "./hooks/usePhotoAnalysis";
 
 // ─── Storage chain ─────────────────────────────────────────────────────────
 vi.mock("@shared/lib/storage/storage", () => ({
@@ -95,8 +94,6 @@ const mockLog = {
   setSelectedDate: vi.fn(),
   addMealSheetOpen: false,
   setAddMealSheetOpen: vi.fn(),
-  addMealPhotoResult: null,
-  setAddMealPhotoResult: vi.fn(),
   handleAddMeal: vi.fn(),
   handleEditMeal: vi.fn(),
   handleRemoveMeal: vi.fn(),
@@ -148,23 +145,6 @@ vi.mock("./hooks/useNutritionUiState", () => ({
     setPantryScannerOpen: vi.fn(),
     pantryScanStatus: "",
     setPantryScanStatus: vi.fn(),
-  })),
-}));
-
-const mockPhotoRef = { current: null as HTMLInputElement | null };
-vi.mock("./hooks/usePhotoAnalysis", () => ({
-  usePhotoAnalysis: vi.fn(() => ({
-    fileRef: mockPhotoRef,
-    photoPreviewUrl: "",
-    photoResult: { meals: [] },
-    lastPhotoPayload: null,
-    answers: {},
-    setAnswers: vi.fn(),
-    portionGrams: "",
-    setPortionGrams: vi.fn(),
-    onPickPhoto: vi.fn(),
-    analyzePhoto: vi.fn(),
-    refinePhoto: vi.fn(),
   })),
 }));
 
@@ -295,16 +275,17 @@ vi.mock("./components/NutritionPantrySelector", () => ({
   ),
 }));
 
-// NutritionOverlays exposes save, photo and quick-repeat callbacks.
+// NutritionOverlays exposes save and quick-repeat callbacks plus the
+// addMealInitialStep marker (крок, з якого відкриється AddMealSheet).
 vi.mock("./components/NutritionOverlays", () => ({
   NutritionOverlays: ({
     wrappedSaveMeal,
-    onRequestMealPhoto,
+    addMealInitialStep,
     onQuickAddMeal,
     editingMeal,
   }: {
     wrappedSaveMeal: (meal: Meal) => Promise<void>;
-    onRequestMealPhoto: () => void;
+    addMealInitialStep?: "source" | "photo";
     onQuickAddMeal: (chip: {
       label: string;
       macros: {
@@ -317,7 +298,10 @@ vi.mock("./components/NutritionOverlays", () => ({
     }) => void;
     editingMeal: Meal | null;
   }) => (
-    <div data-testid="nutrition-overlays">
+    <div
+      data-testid="nutrition-overlays"
+      data-initial-step={addMealInitialStep ?? "source"}
+    >
       <button
         type="button"
         data-testid="save-meal-add"
@@ -362,13 +346,6 @@ vi.mock("./components/NutritionOverlays", () => ({
       )}
       <button
         type="button"
-        data-testid="request-meal-photo"
-        onClick={onRequestMealPhoto}
-      >
-        Request Photo
-      </button>
-      <button
-        type="button"
         data-testid="quick-add"
         onClick={() =>
           onQuickAddMeal({
@@ -387,15 +364,19 @@ vi.mock("./components/NutritionOverlays", () => ({
 // NutritionStartPage exposes the dashboard actions.
 vi.mock("./pages/NutritionStartPage", () => ({
   NutritionStartPage: ({
-    onSaveToLog,
+    onOpenMealPhoto,
     onRequestAddMeal,
   }: {
-    onSaveToLog: () => void;
+    onOpenMealPhoto: () => void;
     onRequestAddMeal: () => void;
   }) => (
     <div data-testid="nutrition-start-page">
-      <button type="button" data-testid="save-to-log" onClick={onSaveToLog}>
-        Save to log
+      <button
+        type="button"
+        data-testid="open-meal-photo"
+        onClick={onOpenMealPhoto}
+      >
+        Open photo
       </button>
       <button
         type="button"
@@ -500,16 +481,33 @@ beforeEach(() => {
 
 // ─── Tests ─────────────────────────────────────────────────────────────────
 
-describe("NutritionApp — handleSaveToLog", () => {
-  it("calls log.setAddMealPhotoResult with photoResult and opens the add-meal sheet", () => {
+describe("NutritionApp — handleOpenMealPhoto", () => {
+  it("opens the add-meal sheet at the photo step", () => {
     render(<NutritionApp />);
-    fireEvent.click(screen.getByTestId("save-to-log"));
-    expect(
-      vi.mocked(useNutritionLog)().setAddMealPhotoResult,
-    ).toHaveBeenCalledWith(expect.objectContaining({ meals: [] }));
+    fireEvent.click(screen.getByTestId("open-meal-photo"));
     expect(
       vi.mocked(useNutritionLog)().setAddMealSheetOpen,
     ).toHaveBeenCalledWith(true);
+    expect(screen.getByTestId("nutrition-overlays")).toHaveAttribute(
+      "data-initial-step",
+      "photo",
+    );
+  });
+
+  it("a later plain add-meal open resets the sheet back to the source step", () => {
+    // Регресія залишкового кроку: після фото-CTA звичайний FAB «Додати
+    // прийом їжі» не має відкривати sheet на кроці фото.
+    render(<NutritionApp />);
+    fireEvent.click(screen.getByTestId("open-meal-photo"));
+    expect(screen.getByTestId("nutrition-overlays")).toHaveAttribute(
+      "data-initial-step",
+      "photo",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Додати прийом їжі" }));
+    expect(screen.getByTestId("nutrition-overlays")).toHaveAttribute(
+      "data-initial-step",
+      "source",
+    );
   });
 });
 
@@ -534,9 +532,6 @@ describe("NutritionApp — handleRequestAddMeal", () => {
     expect(activePage).toBe("log");
 
     rerender(<NutritionApp />);
-    expect(
-      vi.mocked(useNutritionLog)().setAddMealPhotoResult,
-    ).toHaveBeenCalledWith(null);
     expect(
       vi.mocked(useNutritionLog)().setAddMealSheetOpen,
     ).toHaveBeenCalledWith(true);
@@ -653,52 +648,6 @@ describe("NutritionApp — wrappedSaveMeal (edit path)", () => {
   });
 });
 
-describe("NutritionApp — handleRequestMealPhoto", () => {
-  it("closes the add-meal sheet, clears photo, and navigates to start", () => {
-    render(<NutritionApp />);
-    fireEvent.click(screen.getByTestId("request-meal-photo"));
-    const log = vi.mocked(useNutritionLog)();
-    expect(log.setAddMealSheetOpen).toHaveBeenCalledWith(false);
-    expect(log.setAddMealPhotoResult).toHaveBeenCalledWith(null);
-    const route = vi.mocked(useNutritionRoute)();
-    expect(route.setActivePageAndHash).toHaveBeenCalledWith("start");
-  });
-
-  it("clicks the hidden file input after start page + disclosure commit", () => {
-    const click = vi.fn();
-    mockPhotoRef.current = { click } as unknown as HTMLInputElement;
-
-    let activePage: NutritionPage = "log";
-    vi.mocked(useNutritionRoute).mockImplementation(() => ({
-      activePage,
-      setActivePage: vi.fn(),
-      setActivePageAndHash: vi.fn((page: NutritionPage) => {
-        activePage = page;
-      }),
-      pantrySubTab: "items",
-      menuSubTab: "plan",
-      setPantrySubTab: vi.fn(),
-      setMenuSubTab: vi.fn(),
-    }));
-
-    const raf = vi
-      .spyOn(globalThis, "requestAnimationFrame")
-      .mockImplementation((cb: FrameRequestCallback) => {
-        cb(0);
-        return 1;
-      });
-
-    const { rerender } = render(<NutritionApp />);
-    fireEvent.click(screen.getByTestId("request-meal-photo"));
-    expect(activePage).toBe("start");
-
-    rerender(<NutritionApp />);
-    expect(click).toHaveBeenCalledTimes(1);
-    raf.mockRestore();
-    mockPhotoRef.current = null;
-  });
-});
-
 describe("NutritionApp — page shells", () => {
   it.each([
     ["log", "nutrition-log-page"],
@@ -730,32 +679,5 @@ describe("NutritionApp — statusText and err banners", () => {
       .getByText("Помилка мережі")
       .closest("[data-testid='banner']");
     expect(banner).toHaveAttribute("data-variant", "danger");
-  });
-
-  it("suppresses the top status banner while photo analysis is in flight — the in-card status line owns it instead", () => {
-    // `mockReturnValue` (not `...Once`) — `setStatusText` triggers a
-    // re-render, and `usePhotoAnalysis()` is called again on that pass;
-    // a one-shot override would only cover the initial render.
-    vi.mocked(usePhotoAnalysis).mockReturnValue({
-      fileRef: mockPhotoRef,
-      photoPreviewUrl: "",
-      photoResult: { meals: [] },
-      lastPhotoPayload: null,
-      answers: {},
-      setAnswers: vi.fn(),
-      portionGrams: "",
-      setPortionGrams: vi.fn(),
-      onPickPhoto: vi.fn(),
-      analyzePhoto: vi.fn(),
-      refinePhoto: vi.fn(),
-      isAnalyzing: true,
-      isRefining: false,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any);
-    render(<NutritionApp />);
-    act(() => {
-      capturedSetStatusText("Аналізую фото…");
-    });
-    expect(screen.queryByText("Аналізую фото…")).toBeNull();
   });
 });

@@ -133,6 +133,38 @@ vi.mock("./meal-sheet/BarcodeSection", () => ({
   BarcodeSection: () => <div data-testid="barcode-section" />,
 }));
 
+// PhotoStep owns usePhotoAnalysis + the Premium gate + PaywallModal — its
+// internals are covered by PhotoAnalyzeCard tests; here we only exercise
+// the step wiring: entering the step and applying a result to the form.
+vi.mock("./meal-sheet/PhotoStep", () => ({
+  PhotoStep: ({
+    onApply,
+  }: {
+    onApply: (
+      result: { dishName: string; macros: Record<string, number | null> },
+      file: File | null,
+    ) => void;
+  }) => (
+    <div data-testid="photo-step">
+      <button
+        type="button"
+        data-testid="apply-photo"
+        onClick={() =>
+          onApply(
+            {
+              dishName: "Борщ",
+              macros: { kcal: 250, protein_g: 10, fat_g: 5, carbs_g: 30 },
+            },
+            new File(["img"], "borsch.png", { type: "image/png" }),
+          )
+        }
+      >
+        Зберегти в журнал
+      </button>
+    </div>
+  ),
+}));
+
 vi.mock("./meal-sheet/MacrosEditor", () => ({
   MacrosEditor: ({
     field,
@@ -471,23 +503,23 @@ describe("AddMealSheet — editing an existing meal", () => {
   });
 });
 
-describe("AddMealSheet — photoResult import", () => {
-  it("opens at fill step and uses photo dish name on save", async () => {
+describe("AddMealSheet — photo step", () => {
+  it("initialStep='photo' opens straight at the photo step", () => {
+    renderSheet({ initialStep: "photo" });
+    expect(screen.getByTestId("photo-step")).toBeInTheDocument();
+    expect(screen.queryByTestId("macros-editor")).not.toBeInTheDocument();
+  });
+
+  it("applying a photo result advances to fill and saves with photoAI semantics", async () => {
     // Note: `mealFormUtils` is mocked above so `emptyForm` always returns
-    // empty macro strings regardless of `photoResult.macros` — mirrors the
+    // empty macro strings regardless of the applied macros — mirrors the
     // "AI couldn't read macros from the photo" case, so saving routes
     // through the empty-macro confirm step (see the dedicated describe
     // block below for that flow's own coverage).
     const onSave = vi.fn();
-    renderSheet({
-      onSave,
-      photoResult: {
-        dishName: "Борщ",
-        macros: { kcal: 250, protein_g: 10, fat_g: 5, carbs_g: 30 },
-      },
-    });
+    renderSheet({ onSave, initialStep: "photo" });
+    fireEvent.click(screen.getByTestId("apply-photo"));
     expect(screen.getByTestId("macros-editor")).toBeInTheDocument();
-    expect(screen.queryByText("Обрати джерело")).not.toBeInTheDocument();
     fireEvent.click(
       screen.getByRole("button", { name: /Додати прийом|Зберегти зміни/ }),
     );
@@ -498,6 +530,35 @@ describe("AddMealSheet — photoResult import", () => {
       name: "Борщ",
       source: "photo",
       macroSource: "photoAI",
+    });
+    // Оригінал фото їде разом зі стравою — з нього host зробить мініатюру.
+    expect(onSave.mock.calls[0]![1]).toBeInstanceOf(File);
+  });
+
+  it("backtracking from fill after a photo apply drops photoAI semantics", async () => {
+    // Користувач застосував фото, повернувся на «Звідки страва?» і ввів
+    // вручну — страва не має зберегти macroSource: photoAI.
+    const onSave = vi.fn();
+    renderSheet({ onSave, initialStep: "photo", mealTemplates: [] });
+    fireEvent.click(screen.getByTestId("apply-photo"));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Назад до вибору джерела" }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Ввести вручну" }));
+    fireEvent.change(screen.getByTestId("name-input"), {
+      target: { value: "Суп" },
+    });
+    fireEvent.change(screen.getByTestId("kcal-input"), {
+      target: { value: "350" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: /Додати прийом|Зберегти зміни/ }),
+    );
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    expect(onSave.mock.calls[0]![0]).toMatchObject({
+      name: "Суп",
+      source: "manual",
+      macroSource: "manual",
     });
   });
 });
@@ -650,16 +711,19 @@ describe("AddMealSheet — source step branches", () => {
     expect(screen.getByTestId("from-pantry-row")).toBeInTheDocument();
   });
 
-  it("calls onRequestPhoto when photo button is clicked", () => {
-    const onRequestPhoto = vi.fn();
-    renderSheet({
-      mealTemplates: [template],
-      onRequestPhoto,
-    });
+  it("opens the in-sheet photo step when the photo button is clicked", () => {
+    // Крок фото — всередині sheet-а: без закриття, навігації на «Огляд» і
+    // синтетичного кліку по file input (старий onRequestPhoto-маршрут).
+    renderSheet({ mealTemplates: [template] });
     expect(screen.getByText("Фото")).toBeInTheDocument();
-    expect(screen.queryByText("Сфотографувати страву")).not.toBeInTheDocument();
     fireEvent.click(screen.getByLabelText("Додати страву з фото"));
-    expect(onRequestPhoto).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("photo-step")).toBeInTheDocument();
+    // Back affordance returns to the source step.
+    fireEvent.click(
+      screen.getByRole("button", { name: "Назад до вибору джерела" }),
+    );
+    expect(screen.queryByTestId("photo-step")).not.toBeInTheDocument();
+    expect(screen.getByText("Фото")).toBeInTheDocument();
   });
 
   it("auto-advances to fill when a food is picked", () => {

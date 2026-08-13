@@ -147,8 +147,6 @@ function makeLog(overrides: Record<string, unknown> = {}) {
   return {
     addMealSheetOpen: false,
     setAddMealSheetOpen: vi.fn(),
-    addMealPhotoResult: null,
-    setAddMealPhotoResult: vi.fn(),
     ...overrides,
   } as never;
 }
@@ -245,7 +243,6 @@ describe("NutritionOverlays", () => {
 
   it("clears meal-editing state when AddMealSheet closes", () => {
     const setAddMealSheetOpen = vi.fn();
-    const setAddMealPhotoResult = vi.fn();
     const setEditingMeal = vi.fn();
 
     render(
@@ -254,7 +251,6 @@ describe("NutritionOverlays", () => {
           log: makeLog({
             addMealSheetOpen: true,
             setAddMealSheetOpen,
-            setAddMealPhotoResult,
           }),
           setEditingMeal,
         })}
@@ -263,7 +259,6 @@ describe("NutritionOverlays", () => {
     fireEvent.click(screen.getByText("close-add-meal"));
 
     expect(setAddMealSheetOpen).toHaveBeenCalledWith(false);
-    expect(setAddMealPhotoResult).toHaveBeenCalledWith(null);
     expect(setEditingMeal).toHaveBeenCalledWith(null);
   });
 

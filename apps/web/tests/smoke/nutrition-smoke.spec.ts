@@ -73,19 +73,21 @@ test("@critical nutrition: photo preview stays inside a 390px viewport", async (
   await page.goto("/nutrition", { waitUntil: "domcontentloaded" });
   await waitForInitialSqliteRefresh(page, "nutrition");
 
-  const photoDetails = page.getByTestId("nutrition-photo-details");
-  await photoDetails.getByText("Аналіз фото страви", { exact: true }).click();
-  await photoDetails
+  // Photo analysis lives inside AddMealSheet's photo step now; the Start
+  // page carries only the CTA card that opens the sheet at that step.
+  await page.getByTestId("nutrition-photo-cta").click();
+  const photoSheet = page.getByRole("dialog");
+  await expect(photoSheet).toBeVisible({ timeout: 10_000 });
+  await expect(photoSheet).toContainText("Аналіз фото страви");
+
+  await photoSheet
     .locator('input[type="file"]')
     .setInputFiles(
       path.resolve(process.cwd(), "tests/fixtures/nutrition-photo.svg"),
     );
-  await expect(photoDetails.getByAltText("Обране фото")).toBeVisible();
+  await expect(photoSheet.getByAltText("Обране фото")).toBeVisible();
 
-  for (const region of [
-    page.getByTestId("nutrition-dashboard"),
-    photoDetails,
-  ]) {
+  for (const region of [photoSheet]) {
     const box = await region.boundingBox();
     expect(box).not.toBeNull();
     expect(box!.x).toBeGreaterThanOrEqual(0);

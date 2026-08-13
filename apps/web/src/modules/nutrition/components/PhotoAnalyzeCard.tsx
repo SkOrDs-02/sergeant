@@ -4,7 +4,6 @@
  */
 import { useState, type Dispatch, type Ref, type SetStateAction } from "react";
 import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
-import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Spinner } from "@shared/components/ui/Spinner";
@@ -193,11 +192,13 @@ export function PhotoAnalyzeCard({
   refining,
 }: PhotoAnalyzeCardProps) {
   return (
-    <Card className="min-w-0 p-4">
+    // Раніше — самостійна картка на сторінці «Огляд»; тепер живе кроком
+    // усередині AddMealSheet, тож без власного Card-хрому: панель і
+    // паддінги дає sheet.
+    <div className="min-w-0">
       <div className="flex items-center justify-between gap-3 mb-4">
         <div className="min-w-0">
-          <div className="text-style-label text-text">Аналіз фото страви</div>
-          <div className="text-style-caption text-muted mt-0.5">
+          <div className="text-style-caption text-muted">
             ШІ визначить КБЖВ і запропонує уточнення
           </div>
         </div>
@@ -436,6 +437,6 @@ export function PhotoAnalyzeCard({
             )}
         </div>
       )}
-    </Card>
+    </div>
   );
 }

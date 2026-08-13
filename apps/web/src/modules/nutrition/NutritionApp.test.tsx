@@ -89,9 +89,8 @@ describe("NutritionApp — shell + routing (real component tree)", () => {
     renderApp();
     // Real header title + bottom nav (not mock testids).
     expect(bottomNav()).toBeInTheDocument();
-    // Start page renders the photo-analysis entry card. The label appears
-    // twice by design — once in the always-visible `<summary>` header and
-    // once inside the collapsed `<details>` body (`PhotoAnalyzeCard`).
+    // Start page renders the photo-analysis CTA card (the analysis UI
+    // itself lives inside AddMealSheet's photo step now).
     expect(screen.getAllByText("Аналіз фото страви").length).toBeGreaterThan(0);
   });
 

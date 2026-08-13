@@ -75,7 +75,6 @@ export function useNutritionLog() {
     todayISODate(),
   );
   const [addMealSheetOpen, setAddMealSheetOpen] = useState(false);
-  const [addMealPhotoResult, setAddMealPhotoResult] = useState<unknown>(null);
   const [storageErr, setStorageErr] = useState("");
   const pendingThumbDeletesRef = useRef<
     Map<string, ReturnType<typeof setTimeout>>
@@ -142,7 +141,6 @@ export function useNutritionLog() {
   const handleAddMeal = (meal: Partial<Meal>) => {
     setNutritionLog((log) => addLogEntry(log, selectedDate, meal));
     setAddMealSheetOpen(false);
-    setAddMealPhotoResult(null);
     // Телеметрія (Хвиля 2, `nutrition_meal_logged`). Fire-and-forget поза
     // state-updater-ом: `setNutritionLog` — оновлювач, і сайд-ефект у ньому
     // виконався б у render-фазі (та сама пастка, що в routine).
@@ -172,7 +170,6 @@ export function useNutritionLog() {
     if (!meal?.id) return;
     setNutritionLog((log) => updateLogEntry(log, date, meal));
     setAddMealSheetOpen(false);
-    setAddMealPhotoResult(null);
   };
 
   /**
@@ -301,8 +298,6 @@ export function useNutritionLog() {
     setSelectedDate,
     addMealSheetOpen,
     setAddMealSheetOpen,
-    addMealPhotoResult,
-    setAddMealPhotoResult,
     handleAddMeal,
     handleEditMeal,
     handleRemoveMeal,

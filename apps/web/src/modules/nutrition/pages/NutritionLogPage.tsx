@@ -20,12 +20,19 @@ interface NutritionLogPageProps {
   log: LogController;
   toast: Toast;
   setEditingMeal: Dispatch<SetStateAction<EditingMealState | null>>;
+  /**
+   * Create-флоу відкривається через хост (NutritionApp), а не напряму
+   * `setAddMealSheetOpen`: хост скидає крок sheet-а на "source", інакше
+   * після фото-CTA наступне «Додати» відкрилось би на кроці фото.
+   */
+  onOpenAddMeal: () => void;
 }
 
 export function NutritionLogPage({
   log,
   toast,
   setEditingMeal,
+  onOpenAddMeal,
 }: NutritionLogPageProps) {
   return (
     <SectionErrorBoundary key="page-log" title="Не вдалось показати «Щоденник»">
@@ -34,10 +41,7 @@ export function NutritionLogPage({
         log={log.nutritionLog}
         selectedDate={log.selectedDate}
         setSelectedDate={log.setSelectedDate}
-        onAddMeal={() => {
-          log.setAddMealPhotoResult(null);
-          log.setAddMealSheetOpen(true);
-        }}
+        onAddMeal={onOpenAddMeal}
         onAddMealFromSearch={(meal) => {
           const id = newMealId();
           log.handleAddMeal({ ...meal, id });
@@ -52,7 +56,6 @@ export function NutritionLogPage({
         }}
         onEditMeal={(date: string, meal: Meal) => {
           setEditingMeal({ date, ...meal });
-          log.setAddMealPhotoResult(null);
           log.setAddMealSheetOpen(true);
         }}
         onDuplicateYesterday={log.duplicateYesterday}

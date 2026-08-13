@@ -1,81 +1,59 @@
 /**
- * Last validated: 2026-06-15
+ * Last validated: 2026-08-13
  * Status: Active
  */
-import { useEffect, type Dispatch, type SetStateAction } from "react";
+import { useEffect } from "react";
 import type { NutritionPage } from "../lib/nutritionRouter";
 import type { useNutritionLog } from "./useNutritionLog";
-import type { usePhotoAnalysis } from "./usePhotoAnalysis";
 
 type LogController = ReturnType<typeof useNutritionLog>;
-type PhotoController = ReturnType<typeof usePhotoAnalysis>;
 
 interface UseNutritionPwaActionArgs {
   pwaAction?: string | null | undefined;
   log: LogController;
-  photo: PhotoController;
   setActivePageAndHash: (page: NutritionPage) => void;
-  setPhotoCardForceOpen: Dispatch<SetStateAction<boolean>>;
+  /** Відкрити AddMealSheet одразу на кроці аналізу фото. */
+  onOpenMealPhoto: () => void;
   onPwaActionConsumed?: (() => void) | undefined;
 }
 
 /**
  * Reacts to the `pwaAction` prop from the PWA shell:
  * - `add_meal` → route to «Щоденник» and open the AddMealSheet.
- * - `add_meal_photo` → route to «Старт», force the photo disclosure open
- *   and pop the native file picker (RAF + 80 ms fallback for mobile).
+ * - `add_meal_photo` → route to «Щоденник» and open the AddMealSheet at
+ *   its photo step (the step itself pops the native file picker).
  *
- * Cleans up RAF / timeout when the effect tears down so a slow PWA
- * navigation can't dangling-click a torn-down file input.
+ * AI-CONTEXT: раніше `add_meal_photo` вів на «Огляд», force-відкривав
+ * `<details>` з PhotoAnalyzeCard і синтетично клікав file input (rAF +
+ * 80 ms fallback). Фото тепер крок AddMealSheet, тож обидва шорткати —
+ * просто «відкрий sheet», а піккер відкриває сам крок.
  */
 export function useNutritionPwaAction({
   pwaAction,
   log,
-  photo,
   setActivePageAndHash,
-  setPhotoCardForceOpen,
+  onOpenMealPhoto,
   onPwaActionConsumed,
 }: UseNutritionPwaActionArgs): void {
-  // Extract the stable ref object so it can be listed as a dep without
-  // pulling the full photo controller (which may have changing fields).
-  const { fileRef } = photo;
   useEffect(() => {
     if (pwaAction === "add_meal") {
       setActivePageAndHash("log");
       log.setAddMealSheetOpen(true);
       onPwaActionConsumed?.();
-      return undefined;
+      return;
     }
     if (pwaAction === "add_meal_photo") {
-      setActivePageAndHash("start");
-      setPhotoCardForceOpen(true);
-      const raf = requestAnimationFrame(() => {
-        try {
-          fileRef.current?.click();
-        } catch {
-          /* noop — picker may be blocked without a user gesture */
-        }
-      });
-      const fallback = window.setTimeout(() => {
-        try {
-          fileRef.current?.click();
-        } catch {
-          /* noop */
-        }
-      }, 80);
+      // «Щоденник» як фон: збережена страва ляже саме туди, тож після
+      // закриття sheet-а користувач бачить результат, а не дашборд.
+      setActivePageAndHash("log");
+      onOpenMealPhoto();
       onPwaActionConsumed?.();
-      return () => {
-        cancelAnimationFrame(raf);
-        window.clearTimeout(fallback);
-      };
     }
-    return undefined;
   }, [
     log,
+    onOpenMealPhoto,
     onPwaActionConsumed,
     pwaAction,
     setActivePageAndHash,
-    setPhotoCardForceOpen,
-    fileRef,
   ]);
 }
