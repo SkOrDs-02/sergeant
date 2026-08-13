@@ -42,10 +42,15 @@ function InlineAnalysisStatus({ text }: { text: string }) {
  *
  * Попередження одноразове навмисно: постійний банер над кожним фото
  * перестають читати за тиждень, і тоді він захищає не людину, а нас.
+ *
+ * Ack — це ще й гейт авто-аналізу (рішення founder-а 2026-08-13):
+ * до підтвердження аналіз стартує лише явним тапом, після — сам при
+ * виборі/заміні фото. Тому `PhotoStep` читає той самий ключ і слухає
+ * `onPrivacyAck`.
  */
-const PHOTO_PRIVACY_ACK_KEY = "sergeant.nutrition.photoPrivacyAck.v1";
+export const PHOTO_PRIVACY_ACK_KEY = "sergeant.nutrition.photoPrivacyAck.v1";
 
-function PhotoPrivacyNotice() {
+function PhotoPrivacyNotice({ onAck }: { onAck?: (() => void) | undefined }) {
   const [acked, setAcked] = useState(
     // Пара read/write мусить бути узгоджена: `safeWriteLS` кладе JSON,
     // тому й читаємо через `safeReadLS`. Рядковий читач повернув би
@@ -66,6 +71,7 @@ function PhotoPrivacyNotice() {
         onClick={() => {
           safeWriteLS(PHOTO_PRIVACY_ACK_KEY, true);
           setAcked(true);
+          onAck?.();
         }}
         className="mt-2 min-h-11 px-3 text-style-caption text-nutrition-strong dark:text-nutrition hover:underline"
       >
@@ -172,6 +178,8 @@ interface PhotoAnalyzeCardProps {
   analyzing?: boolean | undefined;
   /** `photo.isRefining` — drives the inline status line next to «Перерахувати». */
   refining?: boolean | undefined;
+  /** Fired once when the user confirms the privacy notice («Зрозуміло»). */
+  onPrivacyAck?: (() => void) | undefined;
 }
 
 export function PhotoAnalyzeCard({
@@ -190,6 +198,7 @@ export function PhotoAnalyzeCard({
   onSaveToLog,
   analyzing,
   refining,
+  onPrivacyAck,
 }: PhotoAnalyzeCardProps) {
   return (
     // Раніше — самостійна картка на сторінці «Огляд»; тепер живе кроком
@@ -217,7 +226,7 @@ export function PhotoAnalyzeCard({
 
       {analyzing && <InlineAnalysisStatus text="Аналізую фото…" />}
 
-      <PhotoPrivacyNotice />
+      <PhotoPrivacyNotice onAck={onPrivacyAck} />
 
       {/* Drop-zone */}
       <label

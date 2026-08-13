@@ -19,11 +19,12 @@
  */
 import { useEffect, useRef, useState, type Ref } from "react";
 import type { NutritionPhotoResult } from "@shared/api";
+import { safeReadLS } from "@shared/lib/storage/storage";
 import { useLocale } from "@shared/i18n/useLocale";
 import { PaywallModal, useFeatureGate } from "../../../../core/billing";
 import { usePhotoAnalysis } from "../../hooks/usePhotoAnalysis";
 import { fmtMacro } from "../../lib/nutritionFormat";
-import { PhotoAnalyzeCard } from "../PhotoAnalyzeCard";
+import { PHOTO_PRIVACY_ACK_KEY, PhotoAnalyzeCard } from "../PhotoAnalyzeCard";
 
 interface PhotoStepProps {
   /**
@@ -54,6 +55,33 @@ export function PhotoStep({ onApply }: PhotoStepProps) {
     if (!photoGate.requireAccess()) return;
     void photo.analyzePhoto();
   };
+
+  // Авто-аналіз після вибору/заміни фото (рішення founder-а 2026-08-13).
+  // Три гейти — кожен навмисний:
+  //  · privacy-ack: до «Зрозуміло» кадр НЕ їде сам — нотіс просить
+  //    перевірити, що в кадр не потрапило зайве, і ця перевірка має
+  //    відбутись до відправлення (founder 2026-07-26);
+  //  · Pro: для Free авто-запуск означав би paywall одразу після вибору
+  //    файлу — paywall лишається на явний тап «Аналізувати»;
+  //  · один запуск на кадр (ref по blob-URL): «Замінити фото» дає новий
+  //    URL і перезапускає аналіз, а ре-рендери/ack без нового кадру — ні.
+  // Кнопка «Аналізувати» лишається як retry після помилки і вхід для Free.
+  const [privacyAcked, setPrivacyAcked] = useState(
+    () => safeReadLS<boolean>(PHOTO_PRIVACY_ACK_KEY, false) === true,
+  );
+  const lastAutoAnalyzedUrlRef = useRef("");
+  const previewUrl = photo.photoPreviewUrl;
+  const canAutoAnalyze = photoGate.canAccess && privacyAcked;
+  useEffect(() => {
+    if (!previewUrl || !canAutoAnalyze) return;
+    if (lastAutoAnalyzedUrlRef.current === previewUrl) return;
+    lastAutoAnalyzedUrlRef.current = previewUrl;
+    void photo.analyzePhoto();
+    // `photo.analyzePhoto` навмисно поза deps: його ідентичність
+    // змінюється щорендера (обгортка над mutation.mutate), а повторний
+    // запуск для того самого кадру відсікає ref вище.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [previewUrl, canAutoAnalyze]);
 
   // Вхід у крок — це вже жест «хочу дати фото», тож одразу відкриваємо
   // нативний піккер (та сама поведінка, що мав PWA-шорткат
@@ -109,6 +137,9 @@ export function PhotoStep({ onApply }: PhotoStepProps) {
         }
         analyzing={photo.isAnalyzing}
         refining={photo.isRefining}
+        // «Зрозуміло» на першому фото = і згода, і намір: якщо кадр уже
+        // обраний — аналіз стартує одразу (ефект вище зловить зміну гейта).
+        onPrivacyAck={() => setPrivacyAcked(true)}
       />
       {photoErr && (
         <div
