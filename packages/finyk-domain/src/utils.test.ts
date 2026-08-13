@@ -79,15 +79,33 @@ describe("getCategory (expense)", () => {
     expect(getExpenseCategoryForTransaction(tx, "tech").id).toBe("tech");
   });
 
+  // Підпис ручного `food` зведено з MCC-каталогом (2026-08-13): обидва —
+  // «Продукти». Доти пікер пропонував «Їжа» і «Продукти» окремими чипами,
+  // хоча обидва падали в ОДИН кошик `food`, тож у стрічці стояло «Їжа», а
+  // в тижневому звіті — «Продукти» на ту саму операцію.
   it("зберігає точний підпис детальнішої ручної таксономії", () => {
     expect(
       getExpenseCategoryForTransaction({
         description: "",
         mcc: 0,
-        categoryId: "food",
+        categoryId: "cafe",
         source: "manual",
       }).label,
-    ).toBe("🍴 Їжа");
+    ).toBe("☕ Кафе та ресторани");
+  });
+
+  it("ручний `food` і legacy `groceries` дають один підпис — канонічний", () => {
+    const label = (categoryId: string) =>
+      getExpenseCategoryForTransaction({
+        description: "",
+        mcc: 0,
+        categoryId,
+        source: "manual",
+      }).label;
+    expect(label("food")).toBe("🛒 Продукти");
+    // `groceries` більше не в пікері, але вже лежить у сховищі — має
+    // резолвитись, а не ставати «Інше».
+    expect(label("groceries")).toBe("🛒 Продукти");
   });
 
   it("бере канонічний categoryId ручного надходження", () => {

@@ -8,7 +8,10 @@
  * no React.
  */
 import type { IconName } from "@shared/components/ui/Icon";
-import { MANUAL_EXPENSE_TAXONOMY } from "@sergeant/finyk-domain/lib/manualTaxonomy";
+import {
+  MANUAL_EXPENSE_PICKER,
+  MANUAL_EXPENSE_TAXONOMY,
+} from "@sergeant/finyk-domain/lib/manualTaxonomy";
 
 // ─── Category slug system (F5b, 2026-05) ────────────────────────────────────
 //
@@ -67,9 +70,15 @@ export const CATEGORY_DISPLAY: Record<CategorySlug, CategoryDisplay> =
 
 /**
  * The ordered list of slugs used for the category picker.
- * Matches the former CATEGORIES array in display order.
+ *
+ * Свідомо БЕЗ legacy-аліасів (`MANUAL_EXPENSE_PICKER`), на відміну від
+ * `CATEGORY_DISPLAY` вище — той лишається повним. Якби `groceries` зник
+ * і звідти, `isCategorySlug("groceries")` став би `false`, а
+ * `upgradeCategory` звів би вже збережені записи до «Інше» — тобто
+ * рівно та підміна даних, від якої застерігає
+ * `upgradeCategoryAllowingCustom` нижче.
  */
-export const CATEGORY_SLUGS: CategorySlug[] = MANUAL_EXPENSE_TAXONOMY.map(
+export const CATEGORY_SLUGS: CategorySlug[] = MANUAL_EXPENSE_PICKER.map(
   (d) => d.id as CategorySlug,
 );
 
