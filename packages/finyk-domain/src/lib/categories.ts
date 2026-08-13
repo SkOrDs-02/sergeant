@@ -1,4 +1,9 @@
 import { MCC_CATEGORIES, INCOME_CATEGORIES } from "../constants";
+import {
+  MANUAL_EXPENSE_TAXONOMY,
+  MANUAL_INCOME_TAXONOMY,
+  taxonomyLabel,
+} from "./manualTaxonomy.js";
 
 /**
  * Мінімальний тип кастомної категорії: достатньо для overlay-пошуку
@@ -38,30 +43,13 @@ type CategoryLikeInput = readonly unknown[];
 
 // Ручна форма історично має дещо детальнішу таксономію за MCC-каталог.
 // Ці id уже лежать у persisted blobs, тому їх не можна зводити до `other`
-// або перейменовувати міграцією під час читання.
-const MANUAL_EXPENSE_CATEGORIES: readonly CategoryLike[] = [
-  { id: "food", label: "🍴 Їжа" },
-  { id: "groceries", label: "🛒 Продукти" },
-  { id: "cafe", label: "☕ Кафе та ресторани" },
-  { id: "transport", label: "🚗 Транспорт" },
-  { id: "entertainment", label: "🎮 Розваги" },
-  { id: "health", label: "💊 Здоров'я" },
-  { id: "shopping", label: "🛍 Покупки" },
-  { id: "utilities", label: "🏠 Комунальні" },
-  { id: "tech", label: "🖥 Техніка" },
-  { id: "subscriptions", label: "🎵 Підписки" },
-  { id: "education", label: "📚 Навчання" },
-  { id: "travel", label: "✈️ Подорожі" },
-  { id: "other", label: "💳 Інше" },
-];
+// або перейменовувати міграцією під час читання. Джерело правди —
+// `manualTaxonomy.ts`; тут лише проєкція «id + підпис».
+const MANUAL_EXPENSE_CATEGORIES: readonly CategoryLike[] =
+  MANUAL_EXPENSE_TAXONOMY.map((d) => ({ id: d.id, label: taxonomyLabel(d) }));
 
-const MANUAL_INCOME_CATEGORIES: readonly CategoryLike[] = [
-  { id: "salary", label: "Зарплата" },
-  { id: "freelance", label: "Фріланс" },
-  { id: "gift", label: "Подарунок" },
-  { id: "refund", label: "Повернення" },
-  { id: "other-income", label: "Інше" },
-];
+const MANUAL_INCOME_CATEGORIES: readonly CategoryLike[] =
+  MANUAL_INCOME_TAXONOMY.map((d) => ({ id: d.id, label: taxonomyLabel(d) }));
 
 function isCategoryLike(v: unknown): v is CategoryLike {
   return (

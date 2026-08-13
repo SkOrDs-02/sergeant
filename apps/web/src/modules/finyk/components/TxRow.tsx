@@ -114,7 +114,7 @@ function TxRowImpl({
         // за колір, а не перечитує підпис.
         <span
           aria-hidden="true"
-          style={catChipVars(cat.id)}
+          style={catChipVars(cat.id, customCategories)}
           className={cn(
             "shrink-0 inline-flex items-center justify-center rounded-full",
             "w-7 h-7",
@@ -142,6 +142,7 @@ function TxRowImpl({
           tx={tx}
           catId={cat.id}
           catName={catName}
+          customCategories={customCategories}
           isIncome={isIncome}
           overrideCatId={overrideCatId}
           existingSplitsCount={existingSplits.length}

@@ -8,28 +8,25 @@
  * legacy-era upgrade path needed since this taxonomy launches fresh.
  */
 import type { CategoryDisplay } from "./manualExpenseCategories";
+import { MANUAL_INCOME_TAXONOMY } from "@sergeant/finyk-domain/lib/manualTaxonomy";
+import type { IconName } from "@shared/components/ui/Icon";
 
 export type IncomeCategorySlug =
   "salary" | "freelance" | "gift" | "refund" | "other-income";
 
+/** Похідна від `MANUAL_INCOME_TAXONOMY` — див. `manualExpenseCategories`. */
 export const INCOME_CATEGORY_DISPLAY: Record<
   IncomeCategorySlug,
   CategoryDisplay
-> = {
-  salary: { iconName: "briefcase", label: "Зарплата" },
-  freelance: { iconName: "monitor", label: "Фріланс" },
-  gift: { iconName: "package", label: "Подарунок" },
-  refund: { iconName: "refresh-cw", label: "Повернення" },
-  "other-income": { iconName: "tag", label: "Інше" },
-};
+> = Object.fromEntries(
+  MANUAL_INCOME_TAXONOMY.map((d) => [
+    d.id,
+    { iconName: d.iconName as IconName, label: d.label },
+  ]),
+) as Record<IncomeCategorySlug, CategoryDisplay>;
 
-export const INCOME_CATEGORY_SLUGS: IncomeCategorySlug[] = [
-  "salary",
-  "freelance",
-  "gift",
-  "refund",
-  "other-income",
-];
+export const INCOME_CATEGORY_SLUGS: IncomeCategorySlug[] =
+  MANUAL_INCOME_TAXONOMY.map((d) => d.id as IncomeCategorySlug);
 
 export const DEFAULT_INCOME_CATEGORY: IncomeCategorySlug = "salary";
 

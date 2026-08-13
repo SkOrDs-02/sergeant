@@ -5,7 +5,13 @@ import {
   getCatColor,
   getCatTiers,
   getCategorySpendList,
+  resolveCatTiers,
 } from "./categories";
+import {
+  LEGACY_INCOME_IDS,
+  MANUAL_EXPENSE_TAXONOMY,
+  MANUAL_INCOME_TAXONOMY,
+} from "../lib/manualTaxonomy";
 
 describe("categories: getCatColor", () => {
   // Очікування читаємо з токенів, а не з літерала: інакше кожен зсув
@@ -39,6 +45,76 @@ describe("categories: getCatTiers", () => {
     const b = getCatTiers("custom1", 1);
     expect(a).not.toBe(b);
     expect(getCatTiers("custom1", 0)).toBe(a);
+  });
+});
+
+describe("categories: тир кожної категорії з таксономії ручної форми", () => {
+  // Регресія 2026-08-13. Жоден income-id не мав запису в палітрі, тож
+  // `getCatTiers` віддавав їм ПЕРШИЙ fallback-тир — а це буквально
+  // `categoryFallbackOrder[0]` === "transport". У стрічці це читалось
+  // як «усі надходження належать до категорії Транспорт».
+  it("усі надходження беруть спільний тир income, а не колір транспорту", () => {
+    const incomeIds = [
+      ...MANUAL_INCOME_TAXONOMY.map((d) => d.id),
+      ...LEGACY_INCOME_IDS,
+    ];
+    for (const id of incomeIds) {
+      expect(getCatTiers(id), `income-id "${id}"`).toBe(categoryColors.income);
+      expect(getCatTiers(id), `income-id "${id}"`).not.toBe(
+        categoryColors.transport,
+      );
+    }
+  });
+
+  it("кожна ручна категорія витрати має тир своєї канонічної категорії", () => {
+    for (const def of MANUAL_EXPENSE_TAXONOMY) {
+      const tiers = categoryColors[def.canonicalId as "food"];
+      expect(
+        tiers,
+        `канонічної категорії "${def.canonicalId}" немає в палітрі`,
+      ).toBeDefined();
+      expect(getCatTiers(def.id), `ручний slug "${def.id}"`).toBe(tiers);
+    }
+  });
+
+  // `groceries`/`cafe`/`tech` — три слаги, яких немає в MCC-каталозі.
+  // Саме на них колір і агрегація раніше розходились.
+  it("детальні ручні слаги діляться кольором із канонічною категорією", () => {
+    expect(getCatTiers("groceries")).toBe(getCatTiers("food"));
+    expect(getCatTiers("cafe")).toBe(getCatTiers("restaurant"));
+    expect(getCatTiers("tech")).toBe(getCatTiers("shopping"));
+  });
+});
+
+describe("categories: resolveCatTiers — стабільність кольору кастомної категорії", () => {
+  const custom = [
+    { id: "custom_a", label: "A" },
+    { id: "custom_b", label: "B" },
+    { id: "custom_c", label: "C" },
+  ];
+
+  // Регресія 2026-08-13: строка транзакції не передавала idx (тобто 0),
+  // пікер передавав номер чипа, діаграма — місце в сортуванні за сумою.
+  // Одна категорія мала три різні кольори одночасно.
+  it("дає один тир незалежно від позиції у списку рендеру", () => {
+    const fromRow = resolveCatTiers("custom_c", custom);
+    const merged = [
+      { id: "food", label: "Їжа" },
+      { id: "transport", label: "Транспорт" },
+      ...custom,
+    ];
+    expect(resolveCatTiers("custom_c", merged)).toBe(fromRow);
+  });
+
+  it("сусідні за створенням категорії дістають різні тири", () => {
+    const a = resolveCatTiers("custom_a", custom);
+    const b = resolveCatTiers("custom_b", custom);
+    expect(a).not.toBe(b);
+  });
+
+  it("вбудована категорія ігнорує список і тримає власний тир", () => {
+    expect(resolveCatTiers("food", custom)).toBe(categoryColors.food);
+    expect(resolveCatTiers("food", [])).toBe(categoryColors.food);
   });
 });
 

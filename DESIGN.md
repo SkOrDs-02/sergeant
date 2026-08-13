@@ -1,6 +1,6 @@
 # DESIGN.md — Sergeant
 
-> **Last touched:** 2026-08-11 by @claude. **Next review:** 2026-11-09.
+> **Last touched:** 2026-08-13 by @claude. **Next review:** 2026-11-11.
 > **Status:** Active. **Призначення:** портативний конфіг візуальної системи для AI-агентів (Hallmark, frontend-design, Superdesign, будь-який SKILL.md-сумісний тул). Агент читає цей файл ПЕРЕД стилізацією і НЕ вигадує власну систему.
 > **Джерело правди:** `packages/design-tokens/tokens.js` + `tailwind-preset.js`. Цей файл — дзеркало для агентів; при розбіжності перемагають токени. Механічний enforcement: `eslint-plugin-sergeant-design` — лише runtime-, security-, storage-, API- і domain-інваріанти. Естетичні AST-правила retired [ADR-0081](./docs/04-governance/adr/0081-repository-simplification.md); візуальні конвенції тримають design tokens, Storybook і design-review.
 
@@ -51,6 +51,7 @@
 | health        | `#fce4fd`     | `#754178`        | `#b066b4`        | `#332034` | `#ebbbed` |
 | debt          | `#ffe4f4`     | `#7e3e68`        | `#be619e`        | `#371e2e` | `#f5b8dd` |
 | other         | `#efece9`     | `#5c5750`        | `#8c857b`        | `#292725` | `#d2cdc7` |
+| income        | `#e5f0ea`     | `#465f52`        | `#6c907d`        | `#212a25` | `#bdd4c8` |
 
 <!-- /AUTOGEN:palette -->
 

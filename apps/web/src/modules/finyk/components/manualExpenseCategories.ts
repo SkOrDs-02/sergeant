@@ -8,6 +8,7 @@
  * no React.
  */
 import type { IconName } from "@shared/components/ui/Icon";
+import { MANUAL_EXPENSE_TAXONOMY } from "@sergeant/finyk-domain/lib/manualTaxonomy";
 
 // ─── Category slug system (F5b, 2026-05) ────────────────────────────────────
 //
@@ -50,42 +51,27 @@ export interface CategoryDisplay {
 /**
  * Canonical display map: slug → { iconName, label }.
  * Single source of truth for rendering. No emoji — icons only.
+ *
+ * Похідна від `MANUAL_EXPENSE_TAXONOMY` (`@sergeant/finyk-domain`): та
+ * сама таблиця живить підпис у резолверах домену, колірний аліас і
+ * іконку в рядку транзакції. Доки список був продубльований тут, вони
+ * розходились непомітно — `utilities` мала колір, але не мала іконки.
  */
-export const CATEGORY_DISPLAY: Record<CategorySlug, CategoryDisplay> = {
-  food: { iconName: "utensils", label: "Їжа" },
-  groceries: { iconName: "shopping-cart", label: "Продукти" },
-  cafe: { iconName: "coffee", label: "Кафе та ресторани" },
-  transport: { iconName: "truck", label: "Транспорт" },
-  entertainment: { iconName: "sparkles", label: "Розваги" },
-  health: { iconName: "heart", label: "Здоров'я" },
-  shopping: { iconName: "tag", label: "Покупки" },
-  utilities: { iconName: "home", label: "Комунальні" },
-  tech: { iconName: "monitor", label: "Техніка" },
-  subscriptions: { iconName: "repeat", label: "Підписки" },
-  education: { iconName: "book", label: "Навчання" },
-  travel: { iconName: "compass", label: "Подорожі" },
-  other: { iconName: "tag", label: "Інше" },
-};
+export const CATEGORY_DISPLAY: Record<CategorySlug, CategoryDisplay> =
+  Object.fromEntries(
+    MANUAL_EXPENSE_TAXONOMY.map((d) => [
+      d.id,
+      { iconName: d.iconName as IconName, label: d.label },
+    ]),
+  ) as Record<CategorySlug, CategoryDisplay>;
 
 /**
  * The ordered list of slugs used for the category picker.
  * Matches the former CATEGORIES array in display order.
  */
-export const CATEGORY_SLUGS: CategorySlug[] = [
-  "food",
-  "groceries",
-  "cafe",
-  "transport",
-  "entertainment",
-  "health",
-  "shopping",
-  "utilities",
-  "tech",
-  "subscriptions",
-  "education",
-  "travel",
-  "other",
-];
+export const CATEGORY_SLUGS: CategorySlug[] = MANUAL_EXPENSE_TAXONOMY.map(
+  (d) => d.id as CategorySlug,
+);
 
 export const DEFAULT_CATEGORY: CategorySlug = "other";
 

@@ -4,7 +4,7 @@ import {
 } from "../../../modules/finyk/constants";
 import { calcFinykPeriodAggregate } from "@sergeant/finyk-domain";
 import {
-  getCategory,
+  getExpenseCategoryForTransaction,
   getMonoTotals,
   calcCategorySpent,
   calcDebtRemaining,
@@ -154,9 +154,13 @@ function appendMonthlyTotals(lines: string[], d: AllData, now: Date): void {
   if (recent.length === 0) return;
   lines.push("[Останні операції]");
   recent.forEach((t) => {
-    const cat = getCategory(
-      t.description,
-      t.mcc,
+    // `statTx` містить і ручні операції (`buildFinykSpendingUniverse`).
+    // У них `mcc: 0`, опис часто порожній, а `txCategories` ключується
+    // банківськими id — тож стара `getCategory` віддавала «💳 Інше» на
+    // КОЖЕН ручний запис, і саме це їхало в промпт моделі. Резолвер
+    // нижче спершу читає `categoryId` самої операції.
+    const cat = getExpenseCategoryForTransaction(
+      t,
       d.txCategories[t.id],
       d.customCategories,
     );

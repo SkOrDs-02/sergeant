@@ -25,6 +25,8 @@ interface TxRowMetaChipsProps {
   isCreditCard: boolean;
   account: MonoAccount | undefined;
   accountName: string | null;
+  /** Власні категорії — джерело стабільного відтінку для кастомних чипів. */
+  customCategories?: readonly { id: string }[] | undefined;
   /** User's own free-text annotation — rendered last, truncates first. */
   note?: string | undefined;
 }
@@ -40,6 +42,7 @@ export function TxRowMetaChips({
   account,
   accountName,
   note,
+  customCategories = [],
 }: TxRowMetaChipsProps) {
   return (
     <div className="flex items-center gap-1.5 mt-0.5 overflow-hidden">
@@ -56,7 +59,7 @@ export function TxRowMetaChips({
           лишається нейтральною: якби кольору набралось двоє-троє, рядок
           перестав би читатись за один погляд — а це і був запит. */}
       <span
-        style={catChipVars(catId)}
+        style={catChipVars(catId, customCategories)}
         className="cat-chip shrink-0 text-style-caption border px-1.5 py-0.5 rounded-full font-medium"
       >
         {catName}

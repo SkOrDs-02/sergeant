@@ -89,10 +89,10 @@ export function TxRowCategoryPicker({
   return (
     <div className="pb-3 px-2 space-y-2">
       <div className="flex flex-wrap gap-1.5">
-        {categories.map((c, idx) => (
+        {categories.map((c) => (
           <button
             key={c.id}
-            style={catChipVars(c.id, idx)}
+            style={catChipVars(c.id, categories)}
             onClick={() => {
               const nextCatId =
                 c.id === currentCatId && overrideCatId ? null : c.id;
