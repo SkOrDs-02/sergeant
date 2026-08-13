@@ -410,7 +410,14 @@ export function AddMealSheet({
     // immediately pushing back to "fill" when we return to "source".
     setPickedFood(null);
     setFromPantryItem(null);
-    setAppliedPhoto(null);
+    // Відмова від фото-джерела мусить прибрати і засіяні ним значення:
+    // інакше AI-оцінка КБЖВ пережила б backtrack і збереглась би під
+    // `macroSource: manual` — підміна походження даних (канон: «скільки
+    // логів через AI» має лишатись чесним питанням).
+    if (appliedPhoto) {
+      setAppliedPhoto(null);
+      setForm(emptyForm(null));
+    }
     setStep("source");
   }
 

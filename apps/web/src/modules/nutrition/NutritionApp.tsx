@@ -246,8 +246,8 @@ export default function NutritionApp({
 
   useNutritionPwaAction({
     pwaAction,
-    log,
     setActivePageAndHash,
+    onOpenAddMeal: handleOpenAddMeal,
     onOpenMealPhoto: handleOpenMealPhoto,
     onPwaActionConsumed,
   });

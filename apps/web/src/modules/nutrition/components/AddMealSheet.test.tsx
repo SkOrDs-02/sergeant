@@ -537,13 +537,20 @@ describe("AddMealSheet — photo step", () => {
 
   it("backtracking from fill after a photo apply drops photoAI semantics", async () => {
     // Користувач застосував фото, повернувся на «Звідки страва?» і ввів
-    // вручну — страва не має зберегти macroSource: photoAI.
+    // вручну — страва не має зберегти macroSource: photoAI, а форма не має
+    // тягти AI-засіяні значення (emptyForm тут замокано, тож перевіряємо
+    // сам скидальний виклик emptyForm(null) на backtrack-і).
     const onSave = vi.fn();
+    const { emptyForm } = await import("./meal-sheet/mealFormUtils");
     renderSheet({ onSave, initialStep: "photo", mealTemplates: [] });
     fireEvent.click(screen.getByTestId("apply-photo"));
+    expect(vi.mocked(emptyForm)).toHaveBeenLastCalledWith(
+      expect.objectContaining({ dishName: "Борщ" }),
+    );
     fireEvent.click(
       screen.getByRole("button", { name: "Назад до вибору джерела" }),
     );
+    expect(vi.mocked(emptyForm)).toHaveBeenLastCalledWith(null);
     fireEvent.click(screen.getByRole("button", { name: "Ввести вручну" }));
     fireEvent.change(screen.getByTestId("name-input"), {
       target: { value: "Суп" },
