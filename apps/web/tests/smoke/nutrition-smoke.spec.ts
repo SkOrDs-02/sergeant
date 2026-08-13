@@ -75,6 +75,8 @@ test("@critical nutrition: photo preview stays inside a 390px viewport", async (
 
   // Photo analysis lives inside AddMealSheet's photo step now; the Start
   // page carries only the CTA card that opens the sheet at that step.
+  // (main's summary-scoped locator fix targeted the old <details> wrapper,
+  // which this branch removed — the strict-mode duplicate is gone with it.)
   await page.getByTestId("nutrition-photo-cta").click();
   const photoSheet = page.getByRole("dialog");
   await expect(photoSheet).toBeVisible({ timeout: 10_000 });

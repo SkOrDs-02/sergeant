@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-07-26
+ * Last validated: 2026-08-13
  * Status: Active
  */
 import { useState, type Dispatch, type Ref, type SetStateAction } from "react";
@@ -367,17 +367,46 @@ export function PhotoAnalyzeCard({
           </div>
 
           {onSaveToLog && (
-            <button
-              type="button"
-              onClick={onSaveToLog}
-              disabled={busy}
-              className={cn(
-                "text-style-label w-full h-11 rounded-2xl border border-nutrition/40",
-                "text-nutrition-strong dark:text-nutrition hover:bg-nutrition/10 disabled:opacity-50 transition-colors",
-              )}
-            >
-              Зберегти в журнал
-            </button>
+            /* AI-CONTEXT: тестер 2026-08-13 «ледь не пропустила цей пункт» —
+               збереження було outline-кнопкою, а «Перерахувати» нижче —
+               залитою. Тобто найважливіша дія картки виглядала слабшою за
+               допоміжну. У зоні результату тепер рівно одна залита кнопка, і
+               це вона; «Перерахувати» знижено до secondary (залите
+               «Аналізувати» лишається в хедері — інша зона, інший момент).
+               Підпис під нею потрібен
+               окремо: з самої картки не видно, що без кліку аналіз нікуди
+               не дінеться. */
+            <div className="grid gap-1.5">
+              <button
+                type="button"
+                onClick={onSaveToLog}
+                disabled={busy}
+                className={cn(
+                  "text-style-label inline-flex w-full items-center justify-center gap-2 h-12 rounded-2xl shadow-soft",
+                  "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors",
+                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
+                )}
+              >
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
+                  <path d="M20 6 9 17l-5-5" />
+                </svg>
+                Зберегти в журнал
+              </button>
+              <p className="text-style-caption text-muted text-center">
+                Сам аналіз у журнал не потрапляє — збережи, щоб він порахувався
+                в дні.
+              </p>
+            </div>
           )}
 
           {Array.isArray(photoResult.ingredients) &&
@@ -433,8 +462,9 @@ export function PhotoAnalyzeCard({
                   onClick={refinePhoto}
                   disabled={busy}
                   className={cn(
-                    "text-style-label w-full h-11 rounded-2xl",
-                    "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors",
+                    "text-style-label w-full h-11 rounded-2xl border border-nutrition/40",
+                    "text-nutrition-strong dark:text-nutrition hover:bg-nutrition/10 disabled:opacity-50 transition-colors",
+                    "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
                   )}
                 >
                   Перерахувати за всіма відповідями
