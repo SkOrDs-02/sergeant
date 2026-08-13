@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * Last validated: 2026-07-10
+ * Last validated: 2026-08-13
  * Status: Active
  */
 import { fireEvent, render, screen } from "@testing-library/react";
@@ -75,6 +75,34 @@ describe("PhotoAnalyzeCard", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: /Зберегти в журнал/ }));
     expect(onSaveToLog).toHaveBeenCalled();
+  });
+
+  it("keeps save-to-log the only filled action of the card", () => {
+    // Регресія тестера 2026-08-13 («ледь не пропустила цей пункт»): збереження
+    // було outline-кнопкою, а допоміжне «Перерахувати» — залитим, тож головна
+    // дія картки читалась як другорядна. Пін на ієрархію, а не на естетику.
+    render(
+      <PhotoAnalyzeCard
+        {...baseProps}
+        photoResult={{
+          dishName: "Борщ",
+          macros: { kcal: 250, protein_g: 8, fat_g: 10, carbs_g: 30 },
+          questions: ["Порція?"],
+        }}
+        onSaveToLog={vi.fn()}
+      />,
+    );
+
+    const save = screen.getByRole("button", { name: /Зберегти в журнал/ });
+    const refine = screen.getByRole("button", {
+      name: "Перерахувати за всіма відповідями",
+    });
+
+    expect(save.className).toContain("bg-nutrition-strong");
+    expect(refine.className).not.toContain("bg-nutrition-strong");
+    expect(
+      screen.getByText(/Сам аналіз у журнал не потрапляє/),
+    ).toBeInTheDocument();
   });
 
   it("refuses a non-food result: no macros, no save-to-log, no portion questions", () => {
