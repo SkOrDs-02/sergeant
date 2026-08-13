@@ -89,10 +89,11 @@ describe("NutritionApp — shell + routing (real component tree)", () => {
     renderApp();
     // Real header title + bottom nav (not mock testids).
     expect(bottomNav()).toBeInTheDocument();
-    // Start page renders the photo-analysis entry card. The label appears
-    // twice by design — once in the always-visible `<summary>` header and
-    // once inside the collapsed `<details>` body (`PhotoAnalyzeCard`).
-    expect(screen.getAllByText("Аналіз фото страви").length).toBeGreaterThan(0);
+    // Start page renders the photo-analysis entry card. Підпис має бути
+    // РІВНО один — у `<summary>`. До 2026-08-13 той самий заголовок
+    // дублювався всередині `PhotoAnalyzeCard`, і тест це терпів
+    // (`toBeGreaterThan(0)`), тоді як smoke падав на strict-mode.
+    expect(screen.getAllByText("Аналіз фото страви")).toHaveLength(1);
   });
 
   it("a genuinely first Nutrition visit auto-routes to Меню → План на день with the first-run hint", async () => {
