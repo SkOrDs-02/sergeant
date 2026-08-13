@@ -1,7 +1,6 @@
 # Keyboard shortcuts registry
 
 > **Last touched:** 2026-08-13 by @claude. **Next review:** 2026-11-11.
-> **Next review:** 2026-08-11.
 > **Status:** Active.
 
 Канонічний реєстр клавіатурних шорткатів `apps/web` + browser-conflict
