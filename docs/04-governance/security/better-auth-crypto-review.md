@@ -1,6 +1,6 @@
 # Better Auth crypto review (PR-48 / stack-pulse PR-10)
 
-> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
+> **Last touched:** 2026-08-13 by @claude. **Next review:** 2026-11-11.
 > **Status:** Reference
 
 | Field        | Value                                                                                                                                                                                                                        |

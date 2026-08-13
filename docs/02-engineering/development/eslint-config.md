@@ -1,6 +1,6 @@
 # ESLint config — структура та roadmap split
 
-> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
+> **Last touched:** 2026-08-13 by @claude. **Next review:** 2026-11-11.
 > **Status:** Active
 
 Sergeant використовує ESLint flat-config (v9+). Цей документ описує:

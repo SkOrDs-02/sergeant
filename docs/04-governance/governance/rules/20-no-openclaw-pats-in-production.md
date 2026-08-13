@@ -2,7 +2,7 @@
 
 > **Category:** `blocker-invariant`
 > **Severity:** `blocker`
-> **Last validated:** 2026-05-13 by @Skords-01
+> **Last touched:** 2026-08-13 by @claude. **Next review:** 2026-11-11.
 > **Next review:** 2026-08-11
 > **Status:** Active
 

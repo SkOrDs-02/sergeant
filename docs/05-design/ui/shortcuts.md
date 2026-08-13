@@ -1,6 +1,6 @@
 # Keyboard shortcuts registry
 
-> **Last validated:** 2026-05-13 by Devin (audit `2026-05-13-web-frontend-ergonomics-roast`).
+> **Last touched:** 2026-08-13 by @claude. **Next review:** 2026-11-11.
 > **Next review:** 2026-08-11.
 > **Status:** Active.
 

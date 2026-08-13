@@ -22,7 +22,8 @@
     "scripts/__tests__/fixtures/**",
     ".telemetry/**",
     "mockups/**",
-    "_scratch/**"
+    "_scratch/**",
+    "docs/**/archive/**"
   ],
   "explicitInclude": [],
   "explicitExclude": [

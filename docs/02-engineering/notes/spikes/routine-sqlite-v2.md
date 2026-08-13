@@ -1,6 +1,6 @@
 # SPIKE — Routine module on SQLite v2
 
-> **Last validated:** 2026-05-13. **Archived:** 2026-05-02.
+> **Last touched:** 2026-08-13 by @claude. **Next review:** 2026-11-11.
 > **Status:** Archived
 
 > **Owner:** @SkOrDs-02 · **Created:** 2026-05-02 ·
