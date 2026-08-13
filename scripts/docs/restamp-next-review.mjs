@@ -21,7 +21,7 @@
 //   node scripts/docs/restamp-next-review.mjs
 //   node scripts/docs/restamp-next-review.mjs --check   # CI-гейт
 
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -86,8 +86,17 @@ function main() {
     if (matchesAnyGlob(rel, config.excludeGlobs)) continue;
     if (config.explicitExclude.includes(rel)) continue;
     const full = resolve(REPO_ROOT, rel);
-    if (!existsSync(full)) continue;
-    const content = readFileSync(full, "utf8");
+    // Свідомо БЕЗ `existsSync` перед читанням: перевірка й використання —
+    // дві різні операції, між якими файл може зникнути (CodeQL
+    // js/file-system-race). Список шляхів приходить із `git ls-files`, тож
+    // відсутній файл тут — нормальна ситуація (видалений, але ще не
+    // закомічений), а не помилка. Ловимо її з самої спроби читання.
+    let content;
+    try {
+      content = readFileSync(full, "utf8");
+    } catch {
+      continue;
+    }
     if (!hasFreshnessHeader(content)) continue;
     if (isOffCalendar(content)) continue;
     // Згенеровані файли володіють власним заголовком — його пише
