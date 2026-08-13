@@ -1,6 +1,6 @@
 # Сьогодні в роботі
 
-> **Last touched:** 2026-08-11 by docs:gen-today. **Next review:** 2026-08-18.
+> **Last touched:** 2026-08-13 by docs:gen-today. **Next review:** 2026-08-20.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED FILE. Do not edit by hand. Regenerate via `pnpm docs:gen-today`. -->
@@ -13,9 +13,12 @@ Sorted: `blocked` items first, далі явні `agent-ready`, потім за 
 
 - [`90-work/planning/specs/anonymous-local-first-persistence.md`](./90-work/planning/specs/anonymous-local-first-persistence.md) — Спека: персистентність даних незалогіненого користувача → **agent-ready** _(Планування)_
 
-## Прострочений review (0)
+## Прострочений review (2)
 
-_Жодного документа не пропустило `Next review:` дату. 🎉_
+Документи, чия `Next review:` дата минула. Або bump date після швидкого re-read, або переведи в `Status: Closed`/`Archived`.
+
+- [`01-product/launch/phases/02-capacitor-launch.md`](./01-product/launch/phases/02-capacitor-launch.md) — Phase 2 — Capacitor launch roadmap with users _(due 2026-08-11, **2d overdue**)_
+- [`90-work/planning/specs/anonymous-local-first-persistence.md`](./90-work/planning/specs/anonymous-local-first-persistence.md) — Спека: персистентність даних незалогіненого користувача _(due 2026-08-12, **1d overdue**)_
 
 ## WIP load — 🟢 healthy
 
