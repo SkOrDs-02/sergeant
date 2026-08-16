@@ -1,6 +1,6 @@
 # Playbook: Write or Debug a Playwright E2E Test
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-10-01.
+> **Last touched:** 2026-08-16 by @github-actions[bot]. **Next review:** 2026-11-14.
 > **Status:** Active
 
 **Trigger:** «Напиши E2E-тест на сценарій X» / «smoke-тест на критичний шлях» / «a11y-снапшот для нового екрана» / падає Playwright-спека в CI, а локально зелено, і треба зрозуміти чому.
@@ -125,3 +125,14 @@ pnpm playwright show-trace test-results/.../trace.zip
 - [change-auth-flow.md](./change-auth-flow.md) — якщо тест ламається через зміну логіну/сесії
 - [AGENTS.md](../../../AGENTS.md) — Pre-existing flaky tests, verification before PR
 - `.agents/skills/sergeant-e2e-testing/SKILL.md` — 8 золотих правил + `references/`
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                   | Merged     |
+| ------------------------------------------------------ | ----------------------------------------------------------------------- | ---------- |
+| [#799](https://github.com/Skords-01/Sergeant/pull/799) | fix(finyk-domain): одна таблиця ручних категорій і колір для надходжень | 2026-08-16 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

@@ -2,7 +2,7 @@
 
 # Playbook: Squad deliver — sequential cross-surface feature delivery
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-30.
+> **Last touched:** 2026-08-16 by @github-actions[bot]. **Next review:** 2026-12-11.
 > **Status:** Active
 
 **Trigger:** Фіча потребує змін у ≥2 surfaces з contract dependencies: DB schema → server serializer → api-client types → web/mobile UI.
@@ -93,3 +93,14 @@ pnpm check
 ## Governing skill
 
 [`sergeant-deliver-squad`](../../../.agents/skills/sergeant-deliver-squad/SKILL.md)
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                   | Merged     |
+| ------------------------------------------------------ | ----------------------------------------------------------------------- | ---------- |
+| [#799](https://github.com/Skords-01/Sergeant/pull/799) | fix(finyk-domain): одна таблиця ручних категорій і колір для надходжень | 2026-08-16 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

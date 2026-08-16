@@ -1,6 +1,6 @@
 # Playbook: Add New Page Route
 
-> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-27.
+> **Last touched:** 2026-08-16 by @github-actions[bot]. **Next review:** 2026-12-01.
 > **Status:** Active
 
 **Trigger:** "Додати нову сторінку в apps/web" / новий розділ UI / новий route для SPA.
@@ -111,3 +111,14 @@ pnpm --filter @sergeant/web exec playwright test
 - [add-api-endpoint.md](./add-api-endpoint.md) — якщо потрібен новий backend endpoint
 - [frontend-tech-debt.md](../../90-work/tech-debt/frontend.md) — загальні фронтенд-конвенції
 - [AGENTS.md](../../../AGENTS.md) — rule #2 (RQ keys)
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                   | Merged     |
+| ------------------------------------------------------ | ----------------------------------------------------------------------- | ---------- |
+| [#799](https://github.com/Skords-01/Sergeant/pull/799) | fix(finyk-domain): одна таблиця ручних категорій і колір для надходжень | 2026-08-16 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

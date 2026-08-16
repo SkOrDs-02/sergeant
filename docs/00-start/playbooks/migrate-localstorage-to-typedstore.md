@@ -1,6 +1,6 @@
 # Playbook: Migrate localStorage to typedStore
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-08.
+> **Last touched:** 2026-08-16 by @github-actions[bot]. **Next review:** 2026-12-09.
 > **Status:** Active
 
 **Trigger:** "Мігрувати файл X з прямого localStorage на typedStore" / зменшити TODO-список у ESLint allowlist / `frontend-tech-debt.md` #2.
@@ -113,3 +113,14 @@ pnpm lint
 - [frontend-tech-debt.md](../../90-work/tech-debt/frontend.md) — §2 Прямі localStorage виклики
 - [cleanup-dead-code.md](./cleanup-dead-code.md) — якщо під час міграції знайдено мертвий код
 - [AGENTS.md](../../../AGENTS.md) — загальні конвенції
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                   | Merged     |
+| ------------------------------------------------------ | ----------------------------------------------------------------------- | ---------- |
+| [#799](https://github.com/Skords-01/Sergeant/pull/799) | fix(finyk-domain): одна таблиця ручних категорій і колір для надходжень | 2026-08-16 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

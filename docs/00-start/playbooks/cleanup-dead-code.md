@@ -1,6 +1,6 @@
 # Playbook: Прибирання dead code
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-29.
+> **Last touched:** 2026-08-16 by @github-actions[bot]. **Next review:** 2026-12-10.
 > **Status:** Active
 
 **Trigger:** «Видали X і всі його використання» / видалення застарілого модуля, компонента, утиліти або feature flag.
@@ -142,3 +142,14 @@ pnpm build         # має успішно пройти
 - Завжди видаляй окремим PR — не змішуй із feature-роботою (AGENTS.md soft rule).
 - Якщо видаляєш файл — спочатку переконайся, що він не імпортується динамічно (шукай `import()` вирази).
 - Якщо є сумніви — `pnpm check` (повний CI-набір) — це остаточна верифікація.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                   | Merged     |
+| ------------------------------------------------------ | ----------------------------------------------------------------------- | ---------- |
+| [#799](https://github.com/Skords-01/Sergeant/pull/799) | fix(finyk-domain): одна таблиця ручних категорій і колір для надходжень | 2026-08-16 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

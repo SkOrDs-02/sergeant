@@ -1,6 +1,6 @@
 # Playbook: Dependency Sweeper (періодичний тріаж залежностей)
 
-> **Last touched:** 2026-08-08 by @claude. **Next review:** 2026-12-02.
+> **Last touched:** 2026-08-16 by @github-actions[bot]. **Next review:** 2026-12-12.
 > **Status:** Active
 
 **Trigger:** запланований періодичний прогін (через будь-який scheduler/cron-примітив харнеса, cadence 6h–1d) або ручний запит «що застаріло / які CVE / що безпечно бампнути». Це **не** заміна Renovate — див. § «Чим це відрізняється від Renovate».
@@ -118,3 +118,14 @@ node scripts/dependency-sweeper-report.mjs
 - [bump-dep-safely.md](./bump-dep-safely.md) — власне механіка одного бампа.
 - [audit-exceptions.md](../../04-governance/security/audit-exceptions.md) — ledger waived-CVE.
 - [renovate-usage.md](../../02-engineering/integrations/renovate-usage.md) — як працює Renovate тут.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                   | Merged     |
+| ------------------------------------------------------ | ----------------------------------------------------------------------- | ---------- |
+| [#799](https://github.com/Skords-01/Sergeant/pull/799) | fix(finyk-domain): одна таблиця ручних категорій і колір для надходжень | 2026-08-16 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

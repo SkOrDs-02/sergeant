@@ -1,6 +1,6 @@
 # Playbook: Sync RN Migration Progress
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-29.
+> **Last touched:** 2026-08-16 by @github-actions[bot]. **Next review:** 2026-11-28.
 > **Status:** Active
 
 **Trigger:** після merge порту web → mobile (див. `port-web-screen-to-mobile.md`) — оновити progress tracker `docs/02-engineering/mobile/react-native-migration.md`.
@@ -88,3 +88,14 @@ Diff має містити **тільки** zміни прогресу + авт�
 - [prettier-pass-on-docs.md](./prettier-pass-on-docs.md) — якщо CI лає prettier на цьому doc-у поза sync-flow.
 - [`docs/02-engineering/mobile/react-native-migration.md`](../../02-engineering/mobile/react-native-migration.md) — сам tracker.
 - [AGENTS.md](../../../AGENTS.md) — rule #5 (commit scope enum), rule #7 (no `--no-verify`).
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                   | Merged     |
+| ------------------------------------------------------ | ----------------------------------------------------------------------- | ---------- |
+| [#799](https://github.com/Skords-01/Sergeant/pull/799) | fix(finyk-domain): одна таблиця ручних категорій і колір для надходжень | 2026-08-16 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

@@ -1,6 +1,6 @@
 # Playbook: Виконання батчу planning-тасків (parallel fan-out)
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-12.
+> **Last touched:** 2026-08-16 by @github-actions[bot]. **Next review:** 2026-11-27.
 > **Status:** Active
 
 **Trigger:** «Прожени N тасків з планінгу» / «виконай батч PR-карток з `docs/90-work/planning/*`» / «закрий пачку planning-тасків і онови трекери» — коли робота охоплює кілька PR-карток одночасно й потребує паралельних агентів.
@@ -120,3 +120,14 @@ Planning-док готовий до cleanup лише коли follow-up-и за�
 - [`reconcile-doc-drift.md`](./reconcile-doc-drift.md) — коли картка суто docs/трекери.
 - [`run-squad-deliver.md`](./run-squad-deliver.md) — коли картка cross-surface code.
 - [`docs/00-start/agents/agent-workflows.md`](../agents/agent-workflows.md) §12 — parallel fan-out layer.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                   | Merged     |
+| ------------------------------------------------------ | ----------------------------------------------------------------------- | ---------- |
+| [#799](https://github.com/Skords-01/Sergeant/pull/799) | fix(finyk-domain): одна таблиця ручних категорій і колір для надходжень | 2026-08-16 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

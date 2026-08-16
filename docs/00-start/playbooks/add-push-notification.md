@@ -1,6 +1,6 @@
 # Playbook: Add Push Notification
 
-> **Last touched:** 2026-08-07 by @Skords-01. **Next review:** 2026-11-26.
+> **Last touched:** 2026-08-16 by @github-actions[bot]. **Next review:** 2026-12-01.
 > **Status:** Active
 
 **Trigger:** «Надсилай push коли X» / «Додати новий тип сповіщення» / нагадування / реакція на зовнішню подію (Mono webhook, AI insight, scheduler).
@@ -184,3 +184,14 @@ pnpm --filter @sergeant/server exec vitest run src/modules/<your-domain>
 - `apps/web/src/sw.ts` — `push` / `notificationclick` listeners; розбір payload-у у `apps/web/src/sw/pushPayload.ts`
 - `apps/server/src/lib/reminders/` — хвилинний прохід нагадувань (`due.ts` — чисті предикати, `sweep.ts` — БД і відправка, `scheduler.ts` — таймер)
 - `packages/shared/src/types/index.ts` — `PushPayload` контракт
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                   | Merged     |
+| ------------------------------------------------------ | ----------------------------------------------------------------------- | ---------- |
+| [#799](https://github.com/Skords-01/Sergeant/pull/799) | fix(finyk-domain): одна таблиця ручних категорій і колір для надходжень | 2026-08-16 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

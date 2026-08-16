@@ -1,6 +1,6 @@
 # Playbook: Звірка дрифту документації та архівація
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-15.
+> **Last touched:** 2026-08-16 by @github-actions[bot]. **Next review:** 2026-11-18.
 > **Status:** Active
 
 **Trigger:** «Актуалізуй документацію» / «Знайди дрифт і не позначені виконані таски» / «Заархівуй завершені плани/ініціативи/аудити» / періодична гігієна docs, щоб у кожному документі було видно стан і залишок роботи.
@@ -214,3 +214,14 @@ git commit -m "docs(docs): reconcile drift and close completed trackers"
 - [`cleanup-dead-code.md`](./cleanup-dead-code.md) — видалення мертвого коду (окремий PR)
 - [`prettier-pass-on-docs.md`](./prettier-pass-on-docs.md) — форматування docs
 - Скіли: `audits-runner` (триаж аудитів), `initiative-task` (наступний таск ініціативи), `sergeant-tech-debt` (governing)
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                   | Merged     |
+| ------------------------------------------------------ | ----------------------------------------------------------------------- | ---------- |
+| [#799](https://github.com/Skords-01/Sergeant/pull/799) | fix(finyk-domain): одна таблиця ручних категорій і колір для надходжень | 2026-08-16 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

@@ -1,6 +1,6 @@
 # Playbook: Оголошення інциденту
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-15.
+> **Last touched:** 2026-08-16 by @github-actions[bot]. **Next review:** 2026-11-30.
 > **Status:** Active
 
 **Trigger:** продакшн-проблема вийшла за межі alert triage і вимагає явної severity, owner-а, шляху мітигації або координації rollback-у.
@@ -60,3 +60,14 @@
 - [hotfix-prod-regression.md](./hotfix-prod-regression.md)
 - [write-postmortem.md](./write-postmortem.md)
 - Skill: `sergeant-bugfix-and-regression`
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                   | Merged     |
+| ------------------------------------------------------ | ----------------------------------------------------------------------- | ---------- |
+| [#799](https://github.com/Skords-01/Sergeant/pull/799) | fix(finyk-domain): одна таблиця ручних категорій і колір для надходжень | 2026-08-16 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

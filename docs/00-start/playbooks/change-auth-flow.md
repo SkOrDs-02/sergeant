@@ -1,6 +1,6 @@
 # Playbook: Change an Auth Flow (Better Auth)
 
-> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-11-01.
+> **Last touched:** 2026-08-16 by @github-actions[bot]. **Next review:** 2026-12-11.
 > **Status:** Active
 
 **Trigger:** «Зміни логін / реєстрацію / скидання пароля» / правка session middleware, cookie- чи redirect-поведінки / новий Better Auth plugin / зміна account lifecycle або token refresh.
@@ -102,3 +102,14 @@ E2E-покриття auth-флоу веди за [`write-e2e-test.md`](./write-e
 - [write-e2e-test.md](./write-e2e-test.md) — E2E-покриття login/logout/reset
 - [docs/02-engineering/integrations/railway-vercel.md](../../02-engineering/integrations/railway-vercel.md) — cross-site cookie контракт
 - `.agents/skills/better-auth-best-practices/SKILL.md` — жорсткі правила auth
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                   | Merged     |
+| ------------------------------------------------------ | ----------------------------------------------------------------------- | ---------- |
+| [#799](https://github.com/Skords-01/Sergeant/pull/799) | fix(finyk-domain): одна таблиця ручних категорій і колір для надходжень | 2026-08-16 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

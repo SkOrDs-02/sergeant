@@ -1,6 +1,6 @@
 # Playbook: Тижневий operator-дайджест
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-10-01.
+> **Last touched:** 2026-08-16 by @github-actions[bot]. **Next review:** 2026-12-06.
 > **Status:** Active
 
 **Trigger:** щотижневий операційний огляд (operating review) здоров'я репозиторію, релізної дисципліни, інцидентів і процесного тертя (process friction).
@@ -55,3 +55,14 @@
 - [release.md](./release.md)
 - [write-postmortem.md](./write-postmortem.md)
 - [retire-feature-flag.md](./retire-feature-flag.md)
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                   | Merged     |
+| ------------------------------------------------------ | ----------------------------------------------------------------------- | ---------- |
+| [#799](https://github.com/Skords-01/Sergeant/pull/799) | fix(finyk-domain): одна таблиця ручних категорій і колір для надходжень | 2026-08-16 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
