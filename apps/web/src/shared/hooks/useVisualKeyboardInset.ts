@@ -34,6 +34,11 @@ import {
   setVisualKeyboardInsetAdapter,
   type VisualKeyboardInsetAdapter,
 } from "@sergeant/shared";
+// Спільний предикат з `useKeyboardAwareOverlay`: обидва файли рахують
+// клавіатуру за однією ознакою (гап + сфокусоване текстове поле), і
+// розійтись їм не можна — інакше аркуш компенсує пан там, де інсету
+// вже немає, або навпаки.
+import { isTextEntryElement } from "./useKeyboardAwareOverlay";
 
 function readVisualKeyboardInsetPx(): number {
   const vv = window.visualViewport;
@@ -65,16 +70,6 @@ function subscribeVisualViewport(onStoreChange: () => void): () => void {
     document.removeEventListener("focusin", onStoreChange);
     document.removeEventListener("focusout", onStoreChange);
   };
-}
-
-function isTextEntryElement(el: Element | null): el is HTMLElement {
-  if (!el) return false;
-  const tag = el.tagName;
-  return (
-    tag === "INPUT" ||
-    tag === "TEXTAREA" ||
-    (el as HTMLElement).isContentEditable
-  );
 }
 
 /** Піднімає bottom sheet над віртуальною клавіатурою (iOS/Android Chrome). */

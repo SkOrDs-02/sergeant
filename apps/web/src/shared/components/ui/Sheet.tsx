@@ -8,6 +8,7 @@ import {
 import { createPortal } from "react-dom";
 import { cn } from "../../lib/ui/cn";
 import { useBodyScrollLock } from "../../hooks/useBodyScrollLock";
+import { useKeyboardAwareOverlay } from "../../hooks/useKeyboardAwareOverlay";
 import { useDialogFocusTrap } from "../../hooks/useDialogFocusTrap";
 import { useHistoryDismiss } from "../../hooks/useHistoryDismiss";
 import { useSwipeToDismiss } from "../../hooks/useSwipeToDismiss";
@@ -107,6 +108,7 @@ export function Sheet({
   variant = "default",
 }: SheetProps) {
   const panelRef = useRef<HTMLDivElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const detectedKbInsetPx = useVisualKeyboardInset(open);
   const resolvedKbInsetPx = kbInsetPx ?? detectedKbInsetPx;
@@ -130,6 +132,15 @@ export function Sheet({
 
   // Browser / Android Back closes the sheet instead of leaving the module.
   useHistoryDismiss(open, onClose);
+
+  // iOS панує visual viewport, щоб підняти сфокусоване поле над
+  // клавіатурою; `position: fixed` прив'язаний до layout viewport, тож
+  // разом із паном їде весь оверлей — аркуш зависає ВИЩЕ клавіатури, а
+  // шапка ховається під статус-бар («підскакує вгору занадто», звіт
+  // тестера 2026-08-16). Хук компенсує пан трансформом і синхронно
+  // підтягує щойно сфокусоване поле у видиму зону, коли клавіатура вже
+  // відкрита. Деталі й межі — у шапці `useKeyboardAwareOverlay`.
+  useKeyboardAwareOverlay(open, overlayRef);
 
   // Announce the sheet title to assistive tech when it opens. The
   // `aria-labelledby` wiring already exposes the title to screen
@@ -191,6 +202,10 @@ export function Sheet({
   // full root-cause writeup).
   const sheet = (
     <div
+      ref={overlayRef}
+      // `animate-fade-in` — суто opacity-кейфрейми (`fadeIn` у
+      // tailwind-preset), тож інлайновий `transform` від
+      // `useKeyboardAwareOverlay` з анімацією не конфліктує.
       className="fixed inset-0 flex items-end justify-center motion-safe:animate-fade-in"
       style={{ zIndex }}
     >
