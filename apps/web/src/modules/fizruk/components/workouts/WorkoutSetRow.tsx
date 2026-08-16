@@ -5,6 +5,7 @@
 import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { clampNumericInput } from "@shared/lib/format/numberInput";
+import { useDecimalDraft } from "@shared/hooks/useDecimalDraft";
 import type { WorkoutSet } from "@sergeant/fizruk-domain";
 import { messages } from "@shared/i18n/uk";
 import { MAX_REPS, MAX_WEIGHT_KG } from "../../lib/numericBounds";
@@ -73,6 +74,15 @@ export function WorkoutSetRow({
   const done = isSetDone(set);
   const setNumber = index + 1;
   const ghostSet = ghost && !done && !isReadOnly ? ghost : null;
+  // Вага — єдине десяткове поле рядка (повторення цілі), тож кома потрібна
+  // саме тут: «82,5» під `type="number"` доїжджало сюди порожнім рядком і
+  // клемп мовчки писав 0. Порожнє поле лишається нулем — 0 кг це валідна
+  // вправа з власною вагою, а не «не вказано» (див. `isSetDone`).
+  const weightDraft = useDecimalDraft(
+    set.weightKg || "",
+    MAX_WEIGHT_KG,
+    (value) => onChangeWeight(value ?? 0),
+  );
 
   return (
     <div className="flex items-center gap-1.5">
@@ -96,18 +106,14 @@ export function WorkoutSetRow({
       )}
       <input
         className="input-focus-fizruk h-10 min-w-0 flex-1 rounded-xl border border-line bg-panelHi px-2 text-sm text-text read-only:opacity-70 read-only:cursor-not-allowed"
-        type="number"
+        type="text"
         inputMode="decimal"
         placeholder={sr.weightPlaceholder}
-        min={0}
-        max={MAX_WEIGHT_KG}
         aria-label={sr.weightAriaLabel}
-        value={set.weightKg || ""}
+        value={weightDraft.value}
         readOnly={isReadOnly}
         onFocus={(e) => e.target.select()}
-        onChange={(e) =>
-          onChangeWeight(clampNumericInput(e.target.value, MAX_WEIGHT_KG))
-        }
+        onChange={weightDraft.onChange}
       />
       <input
         className="input-focus-fizruk h-10 min-w-0 flex-1 rounded-xl border border-line bg-panelHi px-2 text-sm text-text read-only:opacity-70 read-only:cursor-not-allowed"

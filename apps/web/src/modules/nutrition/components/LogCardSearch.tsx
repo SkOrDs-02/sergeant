@@ -8,6 +8,7 @@ import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Input } from "@shared/components/ui/Input";
 import { Measure } from "@shared/components/ui/Measure";
+import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
 import { searchMealsByName } from "../lib/nutritionStorage";
 import { newMealId } from "../lib/mealId";
 import type { Meal, NutritionLog } from "@sergeant/nutrition-domain";
@@ -52,6 +53,10 @@ export function LogCardSearch({
         onChange={(e) => setSearchQuery(e.target.value)}
         placeholder="Назва страви…"
         aria-label="Пошук по журналу"
+        // Без `type="search"`, тож автоматичний guard з `Input` сюди не
+        // дістає — спред обовʼязковий. Розбір, чому Chrome інакше пропонує
+        // тут збережений пароль, — у `searchFieldProps.ts`.
+        {...searchFieldProps("nutrition-log-search")}
       />
       {searchQuery.trim() && (
         <ul className="max-h-48 overflow-y-auto space-y-1">

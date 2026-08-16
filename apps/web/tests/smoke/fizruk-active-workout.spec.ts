@@ -102,7 +102,11 @@ test("@critical fizruk: start → set → refresh → resume → finish", async 
     .first()
     .click();
 
-  await page.getByRole("spinbutton", { name: "Вага в кілограмах" }).fill("42");
+  // Вага — `textbox`, а не `spinbutton`: поле перейшло на `type="text"` +
+  // `inputMode="decimal"`, щоб приймати кому (під `type="number"` браузер
+  // віддає порожній рядок, і «82,5» ставало 0). Повторення цілі, тож там
+  // `type="number"` лишився.
+  await page.getByRole("textbox", { name: "Вага в кілограмах" }).fill("42");
   await page.getByRole("spinbutton", { name: "Кількість повторень" }).fill("8");
   // Редизайн 2026-08 (рішення власника 01-A): rest-таймер більше НЕ стартує
   // з побічного ефекту в `onChange` поля повторень — його запускає явний тап
@@ -124,7 +128,7 @@ test("@critical fizruk: start → set → refresh → resume → finish", async 
   await page.reload({ waitUntil: "domcontentloaded" });
   await waitForInitialSqliteRefresh(page, "fizruk");
   await expect(
-    page.getByRole("spinbutton", { name: "Вага в кілограмах" }),
+    page.getByRole("textbox", { name: "Вага в кілограмах" }),
   ).toHaveValue("42");
   await expect(
     page.getByRole("spinbutton", { name: "Кількість повторень" }),

@@ -7,6 +7,7 @@ import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { Input } from "@shared/components/ui/Input";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Spinner } from "@shared/components/ui/Spinner";
+import { useResetPinchZoomAfterCameraCapture } from "@shared/hooks/useResetPinchZoomOnResume";
 import { cn } from "@shared/lib/ui/cn";
 import type { NutritionNotFoodKind } from "@sergeant/api-client";
 import type { NullableMacros } from "@sergeant/shared";
@@ -200,6 +201,7 @@ export function PhotoAnalyzeCard({
   refining,
   onPrivacyAck,
 }: PhotoAnalyzeCardProps) {
+  const armPinchZoomReset = useResetPinchZoomAfterCameraCapture();
   return (
     // Раніше — самостійна картка на сторінці «Огляд»; тепер живе кроком
     // усередині AddMealSheet, тож без власного Card-хрому: панель і
@@ -243,6 +245,10 @@ export function PhotoAnalyzeCard({
           ref={fileRef}
           type="file"
           accept="image/*"
+          // Озброюємо скидання масштабу рівно тут: iOS вміє повернутися з
+          // нативної шторки камери зі застряглим pinch-zoom, і тоді
+          // інтерфейс «їде». Поза цим сценарієм масштаб не чіпаємо.
+          onClick={armPinchZoomReset}
           onChange={(e) => onPickPhoto(e.target.files?.[0])}
           className="sr-only"
           aria-label="Обрати фото страви"

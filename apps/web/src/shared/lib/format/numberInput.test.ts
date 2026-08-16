@@ -17,6 +17,14 @@ describe("clampNumericInput", () => {
     expect(clampNumericInput("82.5", MAX_WEIGHT_KG)).toBe(82.5);
   });
 
+  it("приймає кому — тут вона так само обовʼязкова, як у parseDecimalInput", () => {
+    // До 2026-08-16 докстрінг стверджував, що споживачів немає, тож кому
+    // можна не підтримувати. Споживачів було пʼять, і всі вони мовчки
+    // писали 0 замість дробу: вага, грами, план, сума розбиття.
+    expect(clampNumericInput("82,5", MAX_WEIGHT_KG)).toBe(82.5);
+    expect(clampNumericInput("1 212,1", 99999)).toBe(1212.1);
+  });
+
   it("clamps above the ceiling instead of storing it", () => {
     expect(clampNumericInput("99999999", MAX_WEIGHT_KG)).toBe(MAX_WEIGHT_KG);
     expect(clampNumericInput("1e9", MAX_WEIGHT_KG)).toBe(MAX_WEIGHT_KG);

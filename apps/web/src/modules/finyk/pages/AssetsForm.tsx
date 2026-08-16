@@ -16,6 +16,7 @@ import type { TxRowTx } from "../components/TxRow";
 import { parseAmountToMinor } from "@shared/lib/format/amount";
 import { amountStringToHryvnia } from "@shared/lib/format/amountSchema";
 import { NAME_MAX_LEN } from "@shared/lib/text/limits";
+import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
 
 // Спільні межі сум (спека beta-input-boundaries): додає верхню стелю й
 // відсікання «1e9» до наявної вимоги «строго додатне».
@@ -68,6 +69,11 @@ export function SubscriptionForm({
         <Input
           id="subscription-transaction-keyword"
           aria-label="Пошук транзакції за описом"
+          // Поле стоїть посеред форми з іншими текстовими інпутами, тож без
+          // явних `name`/`autocomplete` менеджер паролів має всі підстави
+          // прийняти його за логін (див. `searchFieldProps.ts`). Побічно
+          // знімає й автокапіталізацію — «netflix» не має ставати «Netflix».
+          {...searchFieldProps("subscription-keyword-search")}
           placeholder="Наприклад, netflix"
           maxLength={NAME_MAX_LEN}
           showCharCount={false}

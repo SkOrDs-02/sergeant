@@ -16,7 +16,8 @@ import { FoodHitRow } from "./FoodHitRow";
 import { MacroChip } from "./MacroChip";
 import { macrosForGrams, type FoodProduct } from "../../lib/foodDb/foodDb";
 import type { MealFormState } from "./mealFormUtils";
-import { clampNumericInput } from "@shared/lib/format/numberInput";
+import { useDecimalDraft } from "@shared/hooks/useDecimalDraft";
+import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
 import { NAME_MAX_LEN } from "@shared/lib/text/limits";
 import { SaveAsFood } from "./SaveAsFood";
 
@@ -74,6 +75,12 @@ export function FoodPickerSection({
   // over half the sheet; a scroll-snap wheel keeps the value inline. Desktop
   // keeps the precise +/− stepper + numeric field (arbitrary grams).
   const coarsePointer = useCoarsePointer();
+  // Кома в грамах: «150,5» під `type="number"` доїжджало сюди порожнім
+  // рядком, і поле стрибало на 0 прямо під час набору. Стан лишається
+  // канонічним рядком із крапкою — усі `Number(pickedGrams)` нижче цілі.
+  const gramsDraft = useDecimalDraft(pickedGrams, MAX_PORTION_GRAMS, (value) =>
+    setPickedGrams(value == null ? "" : String(value)),
+  );
   const gramValues = useMemo(() => {
     const base: number[] = [];
     for (let g = 5; g <= 1000; g += 5) base.push(g);
@@ -139,6 +146,10 @@ export function FoodPickerSection({
             maxLength={NAME_MAX_LEN}
             showCharCount={false}
             aria-label="Пошук продукту"
+            // Не `type="search"` (поле має власний UX без нативного
+            // хрестика), тож guard з `Input` не спрацьовує — спред потрібен
+            // явно. Причина — у `searchFieldProps.ts`.
+            {...searchFieldProps("food-search")}
           />
           {foodErr && (
             <div className="text-style-caption text-muted">{foodErr}</div>
@@ -276,23 +287,10 @@ export function FoodPickerSection({
                 </button>
                 <div className="relative">
                   <input
-                    type="number"
+                    type="text"
                     inputMode="decimal"
-                    value={pickedGrams}
-                    min={1}
-                    max={MAX_PORTION_GRAMS}
-                    onChange={(e) =>
-                      setPickedGrams(
-                        e.target.value === ""
-                          ? ""
-                          : String(
-                              clampNumericInput(
-                                e.target.value,
-                                MAX_PORTION_GRAMS,
-                              ),
-                            ),
-                      )
-                    }
+                    value={gramsDraft.value}
+                    onChange={gramsDraft.onChange}
                     aria-label="Грами"
                     className="input-focus-nutrition w-[76px] text-center bg-panel border border-line rounded-xl px-2 py-2 text-style-label text-text [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                   />

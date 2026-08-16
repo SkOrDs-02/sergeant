@@ -9,6 +9,7 @@ import { Card } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
 import { Input } from "@shared/components/ui/Input";
 import { useToast } from "@shared/hooks/useToast";
+import { useResetPinchZoomAfterCameraCapture } from "@shared/hooks/useResetPinchZoomOnResume";
 import { useApiForm } from "@shared/forms";
 import { mapApiErrorToUserCopy } from "@shared/lib/api/mapApiErrorToUserCopy";
 import { cn } from "@shared/lib/ui/cn";
@@ -53,6 +54,7 @@ export function PersonalInfoSection({
   onRefresh,
 }: PersonalInfoSectionProps) {
   const toast = useToast();
+  const armPinchZoomReset = useResetPinchZoomAfterCameraCapture();
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [confirmRemoveAvatar, setConfirmRemoveAvatar] = useState(false);
@@ -284,6 +286,9 @@ export function PersonalInfoSection({
             type="file"
             accept="image/*"
             className="hidden"
+            // Другий вхід у нативну камеру в застосунку — той самий
+            // застряглий pinch-zoom на iOS, що й у фото страви.
+            onClick={armPinchZoomReset}
             onChange={handleAvatarChange}
           />
         </div>
