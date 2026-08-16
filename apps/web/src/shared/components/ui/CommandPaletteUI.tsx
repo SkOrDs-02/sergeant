@@ -26,6 +26,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@shared/lib/ui/cn";
+import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
 import { logger } from "@shared/lib";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import { useBodyScrollLock } from "@shared/hooks/useBodyScrollLock";
@@ -178,6 +179,10 @@ export function CommandPaletteUI() {
           <input
             ref={inputRef}
             type="text"
+            // Сире поле без `name` і `autocomplete` — рівно той стан, у
+            // якому Chrome бере інпут за кандидата в логін і підставляє
+            // збережений акаунт (розбір — у `searchFieldProps.ts`).
+            {...searchFieldProps("command-palette-query")}
             value={rawQuery}
             onChange={(e) => {
               setRawQuery(e.target.value);
