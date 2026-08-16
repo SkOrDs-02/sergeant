@@ -1,6 +1,6 @@
 # Environment variables — повний reference
 
-> **Last touched:** 2026-08-10 by @claude. **Next review:** 2027-03-25.
+> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-11-26.
 > **Status:** Active
 
 Цей документ — канонічний reference усіх змінних оточення Sergeant. Мінімальний `.env` (12 змінних, потрібних для `pnpm dev:web` + `pnpm dev:server`) лежить у [`/.env.example`](../../../.env.example) у корені репо. Сюди винесено: повний опис, формати, default-и, наслідки незаповненості, перехресні посилання на код / ADR / hardening-ноти.
@@ -318,6 +318,17 @@ Operator-toggle для n8n WF-30 [`30-ai-memory-daily-digest.json`](../../../ops
 | `LOG_SLOW_QUERIES`         | `true`  | Логування повільних запитів у warn-лог + метрика `db_slow_queries_total`.                                                                                        |
 | `SLOW_QUERY_THRESHOLD_MS`  | `100`   | Поріг для slow-query попереджень.                                                                                                                                |
 
+### `MIGRATION_DRIFT_BLOCKS_READINESS` _(optional, default `false`)_
+
+Чи має розбіжність «міграції в образі ↔ міграції в базі» валити `/readyz`.
+
+Перевірка виконується один раз на старті процесу (`apps/server/src/lib/schemaDrift.ts`) і **завжди** пише `logger.error` + `Sentry.captureMessage` з переліком незастосованих міграцій, незалежно від цієї змінної. Змінна керує лише тим, чи знімати контейнер з трафіку.
+
+- `false` (default) — гучний алерт, `/healthz` віддає `schema: unhealthy`, але `/readyz` лишається зеленим. Хибне спрацювання не спричиняє простою.
+- `true` — `/readyz` віддає 503 при дрейфі, тож Coolify не пускає трафік і відкочує деплой. Вмикати свідомо: ціна хибного спрацювання — повний простій (пор. інцидент 2026-08-06, коли health-check без `/bin/wget` відкочував КОЖЕН деплой).
+
+Навіщо взагалі: за серпень 2026 прод тричі віддавав 500 на колонках, яких не було в базі (`is_jar`, `last_token_check_at`, `active_modules`) — міграції 119/120/116 лежали в тому ж релізі, але pre-deploy їх не застосував, і єдиним сигналом ставав потік помилок від живих користувачів (найдовший епізод — 106 хвилин).
+
 ---
 
 ## 7. Observability — логування, metrics
@@ -436,6 +447,14 @@ Base URL бекенд-API (Coolify), який [`apps/web/middleware.ts`](../../.
 
 Збір Core Web Vitals (LCP/INP/CLS/FCP/TTFB) на бекенд у Prometheus (`POST /api/metrics/web-vitals`). **Default**: увімкнено. `0` вимикає збір без re-deploy.
 
+### `VITE_CANONICAL_HOSTS` _(optional)_
+
+Кома-розділений список хостів, які вважаються «справжніми» деплоями. Default: `sergeant.vercel.app,beta-tau-gilt.vercel.app,sergeant-landing.vercel.app`.
+
+Читає `apps/web/src/core/observability/deployEnvironment.ts` — спільний резолвер `environment` для Sentry і PostHog. Усе, чого немає в списку і що не є localhost, отримує `environment: "preview"`.
+
+Навіщо hostname, а не лише `VITE_APP_ENV`: Vercel віддає preview-збіркам env-vars основного деплою, тож гілкові URL успадковують `VITE_APP_ENV=beta` і осідають у прод-проєкті PostHog під виглядом бети. За 30 днів до аудиту 2026-08-16 туди натекли події з шести preview-хостів. Змінну успадкувати можна, канонічний домен — ні, тому вирішує він.
+
 ---
 
 ## 13. Sentry (error tracking)
@@ -451,13 +470,15 @@ Base URL бекенд-API (Coolify), який [`apps/web/middleware.ts`](../../.
 
 ### Фронтенд (Vercel)
 
-| Змінна                           | Default | Опис                                                                     |
-| -------------------------------- | ------- | ------------------------------------------------------------------------ |
-| `VITE_SENTRY_DSN`                | _empty_ | DSN із Sentry-проєкту (тип: React). Префікс `VITE_` → клієнтський бандл. |
-| `VITE_SENTRY_ENVIRONMENT`        | _empty_ | Як і backend.                                                            |
-| `VITE_SENTRY_RELEASE`            | _empty_ | Версія релізу.                                                           |
-| `VITE_SENTRY_TRACES_SAMPLE_RATE` | `0.1`   | Sample rate для performance traces.                                      |
-| `VITE_SENTRY_REPLAY_SAMPLE_RATE` | `0`     | Session Replay sample rate. `0` = вимкнено; `0.1` = 10% сесій.           |
+| Змінна                           | Default | Опис                                                                                                                                                       |
+| -------------------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `VITE_SENTRY_DSN`                | _empty_ | DSN із Sentry-проєкту (тип: React). Префікс `VITE_` → клієнтський бандл. **Кожен фронт-деплой має вказувати на `sergeant-web`** — див. попередження нижче. |
+| `VITE_SENTRY_ENVIRONMENT`        | _empty_ | Вужчий override над `VITE_APP_ENV`; якщо не задано — резолвиться з хоста (`VITE_CANONICAL_HOSTS`).                                                         |
+| `VITE_SENTRY_RELEASE`            | _empty_ | Версія релізу.                                                                                                                                             |
+| `VITE_SENTRY_TRACES_SAMPLE_RATE` | `0.1`   | Sample rate для performance traces.                                                                                                                        |
+| `VITE_SENTRY_REPLAY_SAMPLE_RATE` | `0`     | Session Replay sample rate. `0` = вимкнено; `0.1` = 10% сесій.                                                                                             |
+
+> **⚠ DSN задавай окремо на КОЖНОМУ фронт-деплої.** На 2026-08-16 beta-деплой (`beta-tau-gilt.vercel.app`) слав браузерні помилки в проєкт **`sergeant-api`**, а не `sergeant-web`. Симптом легко впізнати: в API-проєкті лежать issue з культпритами на кшталт `/nutrition`, `/fizruk`, `/pricing` і стектрейсами у `assets/vendor-*.js`, а поле `release` змішує два формати — `sergeant@<short-sha>` (сервер) і голі 40-символьні SHA (фронт). Наслідок: одна й та сама помилка живе двома окремими issue в двох проєктах (`SERGEANT-API-M` і `SERGEANT-WEB-R` — той самий wasm-краш), і жодне число «скільки в нас фронт-помилок» не є правдою.
 
 ---
 
