@@ -146,6 +146,11 @@ export * from "./lib/abTest";
 // Canonical analytics event names shared across platforms.
 export * from "./lib/analyticsEvents";
 
+// Landing → Telegram-bot attribution handoff. Один формат `start`-payload на
+// два боки (лендінг збирає, вебхук бота розбирає), щоб половини воронки
+// склеювались по спільному `ref`.
+export * from "./lib/landingAttribution";
+
 // DOM-free haptic contract (platform adapters register at app bootstrap).
 export * from "./lib/haptic";
 

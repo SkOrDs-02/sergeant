@@ -334,14 +334,25 @@ export const ANALYTICS_EVENTS = Object.freeze({
   // і так живе в Telegram. Payload:
   //
   //   LANDING_TELEGRAM_CLICKED { source: "hero" | "footer" | "thanks",
-  //                              locale: "uk" | "en" }
+  //                              locale: "uk" | "en",
+  //                              ref: string }
+  //   LANDING_TELEGRAM_STARTED { placement: "hero" | "footer",
+  //                              ref: string,
+  //                              first_start: boolean }
   //
-  // Це ОСТАННЯ подія, яку бачить клієнт: сам `/start` відбувається вже в
-  // Telegram. Другу половину воронки (скільки кліків стали Start-ами) рахуємо
-  // як `COUNT(telegram_waitlist)` у БД — заводити серверний PostHog-транспорт
-  // заради однієї події не варто. Через це знаменник і чисельник живуть у
-  // РІЗНИХ системах: не зводити їх автоматично, звіряти вручну.
+  // `LANDING_TELEGRAM_CLICKED` — остання подія, яку бачить КЛІЄНТ: сам
+  // `/start` відбувається вже в Telegram. Раніше друга половина воронки
+  // рахувалась як `COUNT(telegram_waitlist)` у БД, тож знаменник і чисельник
+  // жили в різних системах і зводились вручну. Тепер вебхук бота шле
+  // `LANDING_TELEGRAM_STARTED` серверним транспортом (`lib/posthogCapture.ts`,
+  // заведений 2026-07-26), і обидві половини лежать в одному місці.
+  //
+  // Склеюються вони по `ref` — одноразовому токену з deep link-а
+  // (`lib/landingAttribution.ts`), а НЕ по `distinct_id`: лендінг cookieless,
+  // тож його анонім і користувач апки — принципово різні персони. Тому
+  // воронку по цих двох подіях будувати саме join-ом по `ref`.
   LANDING_TELEGRAM_CLICKED: "landing_telegram_clicked",
+  LANDING_TELEGRAM_STARTED: "landing_telegram_started",
 
   // Auth multi-provider (initiative 0010 Phase 4.3). Better Auth wires
   // Apple + Google + Email/password fallback; these events split the
@@ -417,20 +428,34 @@ export const ANALYTICS_EVENTS = Object.freeze({
   // PWA install prompt (Wave 1 PR-07 — `docs/01-product/launch/product-os/ftux-master-tracker.md`).
   // Funnel:
   //   PWA_INSTALL_PROMPTED  ≥  PWA_INSTALL_ACCEPTED + PWA_INSTALL_DISMISSED
-  //   PWA_INSTALLED          ≤  PWA_INSTALL_ACCEPTED                  (Android/Chromium only;
-  //                                                                     iOS Safari has no
-  //                                                                     `appinstalled` event)
+  //   PWA_INSTALLED          — термінальний успіх, фіксується на ОБОХ платформах
   //
   // The success metric we maintain is
   //   `pwa_installed / first_real_entry ≥ 8 %`
   // — i.e. of users who hit their first real entry, at least 8 % go on
-  // to install the app. Payload contracts:
+  // to install the app.
+  //
+  // `PWA_INSTALLED` має два джерела, бо `appinstalled` — Chromium-only, а вся
+  // наша база на iOS Safari. До 2026-08-16 існувало лише перше, і подія не
+  // спрацювала жодного разу за весь час (231 `pwa_install_prompted`, 0
+  // `pwa_installed`) — success-плече воронки було структурно невимірним саме
+  // на тій платформі, де всі користувачі:
+  //
+  //   - `via: "appinstalled"`         — Chromium `window.appinstalled`;
+  //   - `via: "standalone_detected"`  — перший запуск у `display-mode:
+  //                                     standalone`. Потрапити туди можна лише
+  //                                     через Add to Home Screen, тож для iOS
+  //                                     це і є момент інсталяції.
+  //
+  // Обидва джерела дедупляться спільним прапорцем у storage, тож на одну
+  // інсталяцію припадає рівно одна подія. Payload contracts:
   //
   //   PWA_INSTALL_PROMPTED   { surface: "android" | "ios" }
   //   PWA_INSTALL_ACCEPTED   {}  // native chooser → outcome === "accepted"
   //   PWA_INSTALL_DISMISSED  { surface: "android" | "ios",
   //                            via: "banner" | "chooser" }
-  //   PWA_INSTALLED          {}  // window `appinstalled` event
+  //   PWA_INSTALLED          { surface: "android" | "ios",
+  //                            via: "appinstalled" | "standalone_detected" }
   PWA_INSTALL_PROMPTED: "pwa_install_prompted",
   PWA_INSTALL_ACCEPTED: "pwa_install_accepted",
   PWA_INSTALL_DISMISSED: "pwa_install_dismissed",
