@@ -2,7 +2,7 @@
  * Last validated: 2026-06-15
  * Status: Active
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { Meal } from "@sergeant/nutrition-domain";
 import { useQuickAddMealFromChip } from "./hooks/useQuickAddMealFromChip";
 import {
@@ -36,7 +36,6 @@ import { useNutritionLog } from "./hooks/useNutritionLog";
 import { useNutritionDualWriteBoot } from "./hooks/useNutritionDualWriteBoot";
 import { useNutritionSqliteReadBoot } from "./hooks/useNutritionSqliteReadBoot";
 import { useNutritionSqliteReadTick } from "./lib/sqliteReadGate";
-import { usePhotoAnalysis } from "./hooks/usePhotoAnalysis";
 import { useShoppingList } from "./hooks/useShoppingList";
 import { useNutritionUiState } from "./hooks/useNutritionUiState";
 import { useNutritionRoute } from "./hooks/useNutritionRoute";
@@ -69,8 +68,7 @@ interface NutritionAppProps {
 
 // One-shot imperative follow-ups that must run *after* a page/state change has
 // committed. Resolved by effects keyed on the relevant page/state, not timers.
-type PendingNutritionAction =
-  { kind: "open-add-meal" } | { kind: "open-photo-picker" } | null;
+type PendingNutritionAction = { kind: "open-add-meal" } | null;
 
 export default function NutritionApp({
   onBackToHub,
@@ -135,42 +133,23 @@ export default function NutritionApp({
   const pantry = useNutritionPantries({ setBusy, setErr, setStatusText });
   const log = useNutritionLog();
   const ui = useNutritionUiState();
-  const photo = usePhotoAnalysis({ setBusy, setErr, setStatusText });
   const shopping = useShoppingList();
 
-  // When the photo-first FTUX CTA lands us here (#S0.3), we force the
-  // "Аналіз фото страви" disclosure open and pop the native file picker
-  // on the next frame — no extra "Звідки страва?" detour.
-  const [photoCardForceOpen, setPhotoCardForceOpen] = useState(false);
-
   // AI-CONTEXT: Cross-page imperative follow-ups (open the add-meal sheet
-  // once the Log page is mounted, pop the file picker once the Start page's
-  // PhotoAnalyzeCard is force-open) are driven by this pending-action state
+  // once the Log page is mounted) are driven by this pending-action state
   // machine instead of `setTimeout` timing-guesses. An effect fires the
-  // follow-up deterministically when the target page/state has committed,
-  // then clears the action — no race on cold-load / low-end devices
-  // (page-audit-08 F13). The single rAF handle is cleared on unmount so a
-  // late `.click()` never touches a torn-down input.
+  // follow-up deterministically when the target page has committed, then
+  // clears the action — no race on cold-load / low-end devices
+  // (page-audit-08 F13). The photo-picker variant is gone: photo analysis
+  // is an AddMealSheet step now, so «дати фото» ніде не чекає навігації.
   const [pendingAction, setPendingAction] =
     useState<PendingNutritionAction>(null);
-  const pendingRafRef = useRef<number | null>(null);
-  useEffect(() => {
-    return () => {
-      if (pendingRafRef.current !== null) {
-        cancelAnimationFrame(pendingRafRef.current);
-        pendingRafRef.current = null;
-      }
-    };
-  }, []);
 
-  useNutritionPwaAction({
-    pwaAction,
-    log,
-    photo,
-    setActivePageAndHash,
-    setPhotoCardForceOpen,
-    onPwaActionConsumed,
-  });
+  // Крок, з якого відкриється AddMealSheet: "photo" для шорткатів
+  // `add_meal_photo` / CTA на «Огляді», інакше — звичайний "source".
+  const [addMealInitialStep, setAddMealInitialStep] = useState<
+    "source" | "photo"
+  >("source");
 
   const sqliteCacheTick = useNutritionSqliteReadTick();
   const { prefs, setPrefs, prefsStorageErr } =
@@ -246,19 +225,32 @@ export default function NutritionApp({
 
   useNutritionReminders(prefs);
 
-  const handleSaveToLog = () => {
-    log.setAddMealPhotoResult(photo.photoResult);
-    log.setAddMealSheetOpen(true);
-  };
-
   // FAB (fab-and-manual-income spec §5): єдина точка входу для «додати
   // прийом їжі», уніфікована з рештою модулів. Скидає edit-стан, щоб
   // sheet завжди відкривався у create-режимі.
   const handleOpenAddMeal = useCallback(() => {
     setEditingMeal(null);
-    log.setAddMealPhotoResult(null);
+    setAddMealInitialStep("source");
     log.setAddMealSheetOpen(true);
   }, [log, setEditingMeal]);
+
+  // «Дати фото» звідусіль (PWA-шорткат `add_meal_photo`, hub quick action,
+  // CTA на «Огляді») — той самий sheet, відкритий одразу на кроці фото.
+  // Раніше це був маршрут «закрити sheet → на Огляд → force-відкрити
+  // disclosure → синтетичний клік по input» зі своєю state-машиною.
+  const handleOpenMealPhoto = useCallback(() => {
+    setEditingMeal(null);
+    setAddMealInitialStep("photo");
+    log.setAddMealSheetOpen(true);
+  }, [log, setEditingMeal]);
+
+  useNutritionPwaAction({
+    pwaAction,
+    setActivePageAndHash,
+    onOpenAddMeal: handleOpenAddMeal,
+    onOpenMealPhoto: handleOpenMealPhoto,
+    onPwaActionConsumed,
+  });
 
   // "Додати прийом їжі" from the Start dashboard: jump to today + Log page,
   // then open the add-meal sheet once that page has mounted. We request the
@@ -279,61 +271,10 @@ export default function NutritionApp({
     pendingAction !== prevPendingAddMeal
   ) {
     setPrevPendingAddMeal(pendingAction);
-    log.setAddMealPhotoResult(null);
+    setAddMealInitialStep("source");
     log.setAddMealSheetOpen(true);
     setPendingAction(null);
   }
-
-  // Resolve "open-photo-picker" once the Start page + force-open disclosure
-  // have committed. One rAF lets the freshly-mounted <input> paint before we
-  // synthesise the click; the handle is cleared on unmount (effect above).
-  const [photoPickerTick, setPhotoPickerTick] = useState(0);
-  const [prevPendingPhotoPicker, setPrevPendingPhotoPicker] =
-    useState<PendingNutritionAction>(null);
-  if (
-    pendingAction?.kind === "open-photo-picker" &&
-    activePage === "start" &&
-    photoCardForceOpen &&
-    pendingAction !== prevPendingPhotoPicker
-  ) {
-    setPrevPendingPhotoPicker(pendingAction);
-    setPendingAction(null);
-    setPhotoPickerTick((t) => t + 1);
-  }
-  useEffect(() => {
-    if (photoPickerTick === 0) return;
-    pendingRafRef.current = requestAnimationFrame(() => {
-      pendingRafRef.current = null;
-      try {
-        photo.fileRef.current?.click();
-      } catch {
-        /* noop — picker may be blocked without a user gesture */
-      }
-    });
-    return () => {
-      if (pendingRafRef.current !== null) {
-        cancelAnimationFrame(pendingRafRef.current);
-        pendingRafRef.current = null;
-      }
-    };
-  }, [photoPickerTick, photo.fileRef]);
-
-  // Requested from inside AddMealSheet's source-step (S13). Close the
-  // sheet, route to the Start page where PhotoAnalyzeCard lives, force
-  // the disclosure open and pop the native file picker — mirrors the
-  // `add_meal_photo` PWA shortcut so there's a single path for "дати
-  // фото" regardless of where the user starts.
-  const handleRequestMealPhoto = () => {
-    log.setAddMealSheetOpen(false);
-    log.setAddMealPhotoResult(null);
-    setEditingMeal(null);
-    setActivePageAndHash("start");
-    setPhotoCardForceOpen(true);
-    // The file picker is popped by the effect below once the Start page +
-    // force-open disclosure have actually committed (deterministic, no 80ms
-    // guess — see PendingNutritionAction).
-    setPendingAction({ kind: "open-photo-picker" });
-  };
 
   const {
     scan: handlePantryBarcodeDetected,
@@ -402,7 +343,7 @@ export default function NutritionApp({
   );
 
   const wrappedSaveMeal = useCallback(
-    async (meal: Meal) => {
+    async (meal: Meal, photoFile?: File | null) => {
       const isEdit = !!editingMeal?.id;
       if (isEdit && editingMeal && editingMeal.date) {
         log.handleEditMeal(editingMeal.date, meal);
@@ -420,12 +361,14 @@ export default function NutritionApp({
           },
         });
       }
-      if (meal.source === "photo" && photo.fileRef?.current?.files?.[0]) {
-        const blob = await fileToThumbnailBlob(photo.fileRef.current.files[0]);
+      // Оригінал фото приходить із AddMealSheet (крок фото демонтується
+      // до збереження, тож file input там уже недоступний).
+      if (meal.source === "photo" && photoFile) {
+        const blob = await fileToThumbnailBlob(photoFile);
         if (blob) await saveMealThumbnail(meal.id, blob);
       }
     },
-    [editingMeal, log, photo.fileRef, setEditingMeal, toast],
+    [editingMeal, log, setEditingMeal, toast],
   );
 
   // Phase 6.6 quick-chip: логіка в `useQuickAddMealFromChip` (винесено
@@ -513,19 +456,12 @@ export default function NutritionApp({
           <div className="max-w-2xl mx-auto px-4 pt-4 pb-6 w-full min-w-0 overflow-x-hidden">
             <NutritionPantrySelector pantry={pantry} busy={busy} />
 
-            {/* Photo analyze/refine status now renders inline inside
-                `PhotoAnalyzeCard` (near the button it describes — see
-                `photo.isAnalyzing` / `photo.isRefining` below) because the
-                card lives inside a collapsed `<details>` at the bottom of
-                the Start page, far from this top banner; users reported the
-                banner as "silent failure" since they never scrolled up to
-                see it. Suppress the duplicate top banner for exactly those
-                two flows; every other `setStatusText` caller (pantry list
-                parsing, recipe/day-plan fetches, …) has no in-card anchor
-                yet, so it keeps using this banner. */}
-            {statusText && !(photo.isAnalyzing || photo.isRefining) && (
-              <Banner className="mb-4">{statusText}</Banner>
-            )}
+            {/* Photo analyze/refine status renders inline inside the
+                AddMealSheet photo step (`PhotoStep` owns its own busy/err
+                state), so this banner only carries the flows without an
+                in-place anchor: pantry list parsing, recipe/day-plan
+                fetches, … */}
+            {statusText && <Banner className="mb-4">{statusText}</Banner>}
             {err && (
               <Banner
                 variant="danger"
@@ -553,17 +489,13 @@ export default function NutritionApp({
               {activePage === "start" && (
                 <NutritionStartPage
                   log={log}
-                  photo={photo}
                   prefs={prefs}
-                  busy={busy}
                   setActivePageAndHash={setActivePageAndHash}
                   fetchDayHint={fetchDayHint}
                   dayHintText={dayHintText}
                   dayHintBusy={dayHintBusy}
                   onRequestAddMeal={handleRequestAddMeal}
-                  photoCardForceOpen={photoCardForceOpen}
-                  setPhotoCardForceOpen={setPhotoCardForceOpen}
-                  onSaveToLog={handleSaveToLog}
+                  onOpenMealPhoto={handleOpenMealPhoto}
                 />
               )}
 
@@ -594,6 +526,7 @@ export default function NutritionApp({
                   log={log}
                   toast={toast}
                   setEditingMeal={setEditingMeal}
+                  onOpenAddMeal={handleOpenAddMeal}
                 />
               )}
 
@@ -667,7 +600,7 @@ export default function NutritionApp({
           restoreConfirm={restoreConfirm}
           setRestoreConfirm={setRestoreConfirm}
           applyRestorePayload={applyRestorePayload}
-          onRequestMealPhoto={handleRequestMealPhoto}
+          addMealInitialStep={addMealInitialStep}
           onQuickAddMeal={handleQuickAddMealFromChip}
         />
       </MeshBackground>

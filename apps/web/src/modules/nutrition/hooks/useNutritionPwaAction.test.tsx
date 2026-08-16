@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
 /**
- * Last validated: 2026-06-23
+ * Last validated: 2026-08-13
  * Status: Active
  * Unit tests for the `useNutritionPwaAction` PWA-shell action effect.
  */
 import { renderHook } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { useNutritionPwaAction } from "./useNutritionPwaAction";
 
@@ -14,89 +14,68 @@ type Args = Parameters<typeof useNutritionPwaAction>[0];
 function makeArgs(overrides: Partial<Args> = {}): Args {
   return {
     pwaAction: undefined,
-    log: { setAddMealSheetOpen: vi.fn() } as unknown as Args["log"],
-    photo: {
-      fileRef: { current: { click: vi.fn() } },
-    } as unknown as Args["photo"],
     setActivePageAndHash: vi.fn(),
-    setPhotoCardForceOpen: vi.fn(),
+    onOpenAddMeal: vi.fn(),
+    onOpenMealPhoto: vi.fn(),
     onPwaActionConsumed: vi.fn(),
     ...overrides,
   };
 }
-
-beforeEach(() => {
-  vi.useFakeTimers();
-});
-
-afterEach(() => {
-  vi.runOnlyPendingTimers();
-  vi.useRealTimers();
-});
 
 describe("useNutritionPwaAction", () => {
   it("does nothing for an undefined action", () => {
     const args = makeArgs();
     renderHook(() => useNutritionPwaAction(args));
     expect(args.setActivePageAndHash).not.toHaveBeenCalled();
+    expect(args.onOpenAddMeal).not.toHaveBeenCalled();
+    expect(args.onOpenMealPhoto).not.toHaveBeenCalled();
     expect(args.onPwaActionConsumed).not.toHaveBeenCalled();
   });
 
-  it("handles add_meal: routes to log and opens the sheet", () => {
+  it("handles add_meal: routes to log and opens the sheet via the host callback", () => {
+    // Через onOpenAddMeal (не прямий setAddMealSheetOpen): хост скидає
+    // initialStep sheet-а на "source" — інакше add_meal після
+    // add_meal_photo відкривався б на кроці фото.
     const args = makeArgs({ pwaAction: "add_meal" });
     renderHook(() => useNutritionPwaAction(args));
     expect(args.setActivePageAndHash).toHaveBeenCalledWith("log");
-    expect(args.log.setAddMealSheetOpen).toHaveBeenCalledWith(true);
+    expect(args.onOpenAddMeal).toHaveBeenCalledTimes(1);
+    expect(args.onOpenMealPhoto).not.toHaveBeenCalled();
     expect(args.onPwaActionConsumed).toHaveBeenCalledTimes(1);
   });
 
-  it("handles add_meal_photo: routes to start, forces card open, clicks picker", () => {
-    const click = vi.fn();
-    const args = makeArgs({
-      pwaAction: "add_meal_photo",
-      photo: {
-        fileRef: { current: { click } },
-      } as unknown as Args["photo"],
-    });
-    const raf = vi
-      .spyOn(globalThis, "requestAnimationFrame")
-      .mockImplementation((cb: FrameRequestCallback) => {
-        cb(0);
-        return 1;
-      });
-
+  it("handles add_meal_photo: routes to log and opens the sheet at the photo step", () => {
+    // Фото — крок AddMealSheet: шорткат більше не навігує на «Огляд» і не
+    // клікає file input синтетично — це робить сам крок при монтуванні.
+    const args = makeArgs({ pwaAction: "add_meal_photo" });
     renderHook(() => useNutritionPwaAction(args));
-    expect(args.setActivePageAndHash).toHaveBeenCalledWith("start");
-    expect(args.setPhotoCardForceOpen).toHaveBeenCalledWith(true);
-    // RAF path fired one click immediately…
-    expect(click).toHaveBeenCalledTimes(1);
-    // …and the 80ms fallback fires a second click.
-    vi.advanceTimersByTime(80);
-    expect(click).toHaveBeenCalledTimes(2);
+    expect(args.setActivePageAndHash).toHaveBeenCalledWith("log");
+    expect(args.onOpenMealPhoto).toHaveBeenCalledTimes(1);
+    expect(args.onOpenAddMeal).not.toHaveBeenCalled();
     expect(args.onPwaActionConsumed).toHaveBeenCalledTimes(1);
-    raf.mockRestore();
   });
 
-  it("swallows a throwing picker click", () => {
-    const args = makeArgs({
-      pwaAction: "add_meal_photo",
-      photo: {
-        fileRef: {
-          current: {
-            click: () => {
-              throw new Error("blocked");
-            },
-          },
-        },
-      } as unknown as Args["photo"],
-    });
-    vi.spyOn(globalThis, "requestAnimationFrame").mockImplementation(
-      (cb: FrameRequestCallback) => {
-        cb(0);
-        return 1;
-      },
+  it("add_meal after add_meal_photo goes through onOpenAddMeal (step reset regression)", () => {
+    // Регресія залишкового кроку: обидва відкриття мають іти через хостові
+    // колбеки, щоб хост міг виставити правильний initialStep на кожне.
+    const args = makeArgs({ pwaAction: "add_meal_photo" });
+    const { rerender } = renderHook(
+      (props: Args) => useNutritionPwaAction(props),
+      { initialProps: args },
     );
-    expect(() => renderHook(() => useNutritionPwaAction(args))).not.toThrow();
-    expect(() => vi.advanceTimersByTime(80)).not.toThrow();
+    expect(args.onOpenMealPhoto).toHaveBeenCalledTimes(1);
+
+    rerender({ ...args, pwaAction: "add_meal" });
+    expect(args.onOpenAddMeal).toHaveBeenCalledTimes(1);
+    expect(args.onOpenMealPhoto).toHaveBeenCalledTimes(1);
+  });
+
+  it("ignores an unknown action", () => {
+    const args = makeArgs({ pwaAction: "add_expense" });
+    renderHook(() => useNutritionPwaAction(args));
+    expect(args.setActivePageAndHash).not.toHaveBeenCalled();
+    expect(args.onOpenAddMeal).not.toHaveBeenCalled();
+    expect(args.onOpenMealPhoto).not.toHaveBeenCalled();
+    expect(args.onPwaActionConsumed).not.toHaveBeenCalled();
   });
 });

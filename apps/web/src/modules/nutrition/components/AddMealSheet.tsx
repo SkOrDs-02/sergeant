@@ -1,17 +1,19 @@
 /**
- * AddMealSheet — two-step bottom sheet for logging a meal.
+ * AddMealSheet — three-step bottom sheet for logging a meal.
  *
  * Step flow:
  *   "source" → user picks where the meal comes from (template, pantry,
  *              food-search, barcode, photo, or manual entry).
+ *   "photo"  → AI photo analysis (PhotoStep owns the usePhotoAnalysis
+ *              controller and the Premium gate); applying the result
+ *              seeds the fill form and advances.
  *   "fill"   → user edits name, time, macros and saves.
  *
- * Auto-skip: when mealTemplates is empty AND there is no initialMeal AND no
- * photoResult, step "source" has no shortcuts to offer, so the sheet opens
- * directly at step "fill". A "Обрати джерело ↑" text link in the header lets
- * the user backtrack if needed.
+ * Editing an existing meal skips straight to "fill". `initialStep="photo"`
+ * opens directly at the photo step (PWA shortcut `add_meal_photo`, hub
+ * quick action, Start-page CTA).
  *
- * @last-validated 2026-05-19
+ * @last-validated 2026-08-13
  */
 import { useState } from "react";
 import { Icon } from "@shared/components/ui/Icon";
@@ -39,6 +41,7 @@ import {
   type MealFormState,
 } from "./meal-sheet/mealFormUtils";
 import { MealTemplatesRow } from "./meal-sheet/MealTemplatesRow";
+import { PhotoStep } from "./meal-sheet/PhotoStep";
 import { MealTypePicker } from "./meal-sheet/MealTypePicker";
 import { NameTimeRow } from "./meal-sheet/NameTimeRow";
 import { FromPantryRow } from "./meal-sheet/FromPantryRow";
@@ -96,29 +99,35 @@ function gramsOrDefault(raw: string): number {
 interface AddMealSheetProps {
   open: boolean;
   onClose: () => void;
-  onSave: (meal: Meal) => void;
-  photoResult?: MealFormPhotoResult | null | undefined;
+  /** `photoFile` — оригінал фото для мініатюри, коли страва прийшла з AI-аналізу. */
+  onSave: (meal: Meal, photoFile?: File | null) => void;
+  /** `"photo"` — відкритись одразу на кроці аналізу фото (шорткати/CTA). */
+  initialStep?: "source" | "photo" | undefined;
   initialMeal?: Partial<Meal> | null | undefined;
   mealTemplates?: MealTemplate[] | undefined;
   setPrefs?: Dispatch<SetStateAction<NutritionPrefs>> | undefined;
   pantryItems?: PantryItem[] | undefined;
   onConsumePantryItem?: ((itemName: string, grams: number) => void) | undefined;
-  onRequestPhoto?: (() => void) | undefined;
   quickChips?: readonly QuickChip[] | undefined;
   onQuickAddMeal?: ((chip: QuickChip) => void) | undefined;
+}
+
+/** Результат кроку «фото», застосований до форми (photo → fill). */
+interface AppliedPhoto {
+  result: MealFormPhotoResult;
+  file: File | null;
 }
 
 export function AddMealSheet({
   open,
   onClose,
   onSave,
-  photoResult,
+  initialStep,
   initialMeal,
   mealTemplates = [],
   setPrefs,
   pantryItems = [],
   onConsumePantryItem,
-  onRequestPhoto,
   quickChips = [],
   onQuickAddMeal,
 }: AddMealSheetProps) {
@@ -127,11 +136,15 @@ export function AddMealSheet({
   const [pickedFood, setPickedFood] = useState<PickedFood | null>(null);
   const [pickedGrams, setPickedGrams] = useState("100");
   const [fromPantryItem, setFromPantryItem] = useState<string | null>(null);
-  // Two-step flow: "source" (pick a source — template / pantry / food
-  // search / barcode / photo / manual) then "fill" (name, time, macros,
-  // save). Editing an existing meal or a photo import skips straight to
-  // "fill" since the source is already decided.
+  // Three-step flow: "source" (pick a source — template / pantry / food
+  // search / barcode / photo / manual), "photo" (AI analysis inside the
+  // sheet) and "fill" (name, time, macros, save). Editing an existing
+  // meal skips straight to "fill" since the source is already decided.
   const [step, setStep] = useState("source");
+  // Set on the photo → fill transition; drives `source`/`macroSource` and
+  // the meal-thumbnail save. Cleared on backtrack so a user who returns
+  // to "source" and picks another source doesn't keep photoAI semantics.
+  const [appliedPhoto, setAppliedPhoto] = useState<AppliedPhoto | null>(null);
 
   const { foodHits, offHits, foodBusy, offBusy, foodErr, setFoodErr } =
     useFoodSearch(foodQuery);
@@ -197,7 +210,7 @@ export function AddMealSheet({
         err: "",
       });
     } else {
-      setForm(emptyForm(photoResult));
+      setForm(emptyForm(null));
     }
     setFoodQuery("");
     setPickedFood(null);
@@ -215,12 +228,16 @@ export function AddMealSheet({
     setEditingTemplateId(null);
     setPendingMeal(null);
     setRememberForRepeat(false);
+    setAppliedPhoto(null);
     // Creating a meal always starts with the source chooser. Even without
     // templates/recent meals it still offers product search, barcode scan,
     // photo and manual entry, so skipping it silently biases the primary FAB
-    // toward manual input. Editing/photo import already has a source and may
-    // open the fill form directly.
-    setStep(initialMeal?.id || photoResult ? "fill" : "source");
+    // toward manual input. Editing already has a source and opens the fill
+    // form directly; `initialStep="photo"` (shortcuts/CTA) opens the photo
+    // step without the "Звідки страва?" detour.
+    setStep(
+      initialMeal?.id ? "fill" : initialStep === "photo" ? "photo" : "source",
+    );
     void ensureSeedFoods();
   } else if (!open && prevOpen) {
     setPrevOpen(false);
@@ -249,7 +266,7 @@ export function AddMealSheet({
       form.name.trim() ||
         pickedFoodName ||
         (typeof fromPantryItem === "string" ? fromPantryItem.trim() : "") ||
-        (photoResult?.dishName || "").trim(),
+        (appliedPhoto?.result.dishName || "").trim(),
     );
     if (!name) {
       setForm((s) => ({ ...s, err: "Введи назву страви." }));
@@ -287,13 +304,13 @@ export function AddMealSheet({
     }
     const mealLabel =
       MEAL_TYPES.find((m) => m.id === form.mealType)?.label || "Прийом їжі";
-    const source = photoResult ? "photo" : "manual";
+    const source = appliedPhoto ? "photo" : "manual";
     // Пріоритет foodId: новий вибір з pickedFood → інакше зберігаємо foodId з оригінальної страви.
     // Раніше при простому редагуванні страви з продуктом зв'язок з foodDb втрачався, бо pickedFood
     // скидається в null при відкритті схита.
     const effectiveFoodId = pickedFood?.id ?? initialMeal?.foodId ?? null;
     const hasAmount = pickedFood || initialMeal?.amount_g != null;
-    const macroSource = photoResult
+    const macroSource = appliedPhoto
       ? "photoAI"
       : pickedFood
         ? "productDb"
@@ -356,7 +373,7 @@ export function AddMealSheet({
       });
     }
     hapticSuccess();
-    onSave(meal);
+    onSave(meal, appliedPhoto?.file ?? null);
   }
 
   function handleConfirmEmptyMacrosSave() {
@@ -369,18 +386,38 @@ export function AddMealSheet({
   }
 
   const hasPhotoMacros = Boolean(
-    photoResult?.macros &&
-    Object.values(photoResult.macros).some(
+    appliedPhoto?.result.macros &&
+    Object.values(appliedPhoto.result.macros).some(
       (v: unknown) => v != null && v !== 0,
     ),
   );
 
-  const canBacktrack = step === "fill" && !initialMeal?.id && !photoResult;
+  // Photo → fill: seed the form from the analysis (same `emptyForm` path
+  // the old host-held photoResult used at sheet-open) and remember the
+  // applied result for macroSource/thumbnail. A picked food/pantry item
+  // from an earlier detour must not survive alongside photoAI macros.
+  function handlePhotoApply(result: MealFormPhotoResult, file: File | null) {
+    setPickedFood(null);
+    setFromPantryItem(null);
+    setForm(emptyForm(result));
+    setAppliedPhoto({ result, file });
+    setStep("fill");
+  }
+
+  const canBacktrack = step !== "source" && !initialMeal?.id;
   function handleBacktrack() {
     // Clear any picked source to prevent the auto-advance effect from
     // immediately pushing back to "fill" when we return to "source".
     setPickedFood(null);
     setFromPantryItem(null);
+    // Відмова від фото-джерела мусить прибрати і засіяні ним значення:
+    // інакше AI-оцінка КБЖВ пережила б backtrack і збереглась би під
+    // `macroSource: manual` — підміна походження даних (канон: «скільки
+    // логів через AI» має лишатись чесним питанням).
+    if (appliedPhoto) {
+      setAppliedPhoto(null);
+      setForm(emptyForm(null));
+    }
     setStep("source");
   }
 
@@ -397,7 +434,11 @@ export function AddMealSheet({
         </button>
       )}
       <span className="truncate">
-        {step === "source" ? "Звідки страва?" : "Додати прийом їжі"}
+        {step === "source"
+          ? "Звідки страва?"
+          : step === "photo"
+            ? "Аналіз фото страви"
+            : "Додати прийом їжі"}
       </span>
     </div>
   );
@@ -490,38 +531,29 @@ export function AddMealSheet({
               setPickedGrams={setPickedGrams}
             />
 
-            <div
-              className={`mt-4 grid gap-3 ${onRequestPhoto ? "grid-cols-2" : "grid-cols-1"}`}
-            >
+            <div className="mt-4 grid gap-3 grid-cols-2">
               <BarcodeSection
                 barcodeStatus={barcodeStatus}
                 setBarcodeStatus={setBarcodeStatus}
                 barcodeNotice={barcodeNotice}
                 onDismissBarcodeNotice={() => setBarcodeNotice(null)}
                 onRetryBarcodeLookup={() => void handleBarcodeLookup(barcode)}
-                onUsePhotoForBarcode={onRequestPhoto}
+                onUsePhotoForBarcode={() => setStep("photo")}
                 setScannerOpen={setScannerOpen}
               />
 
-              {onRequestPhoto && (
-                <Button
-                  type="button"
-                  variant="secondary"
-                  className="w-full h-12 min-h-[44px] flex items-center justify-center gap-2"
-                  onClick={() => {
-                    // Hand off to the host (NutritionApp) so the heavy
-                    // photo-analysis UI stays in one place. The host
-                    // closes this sheet, opens the Photo disclosure and
-                    // triggers the native file picker — same flow the
-                    // `add_meal_photo` PWA shortcut already uses.
-                    onRequestPhoto();
-                  }}
-                  aria-label="Додати страву з фото"
-                >
-                  <Icon name="camera" size="sm" aria-hidden />
-                  <span>Фото</span>
-                </Button>
-              )}
+              <Button
+                type="button"
+                variant="secondary"
+                className="w-full h-12 min-h-[44px] flex items-center justify-center gap-2"
+                // Photo analysis is an in-sheet step now — no detour
+                // through the Start page and its force-open disclosure.
+                onClick={() => setStep("photo")}
+                aria-label="Додати страву з фото"
+              >
+                <Icon name="camera" size="sm" aria-hidden />
+                <span>Фото</span>
+              </Button>
             </div>
 
             <div className="mt-5 flex items-center gap-3 text-style-caption text-muted">
@@ -538,6 +570,8 @@ export function AddMealSheet({
               Ввести вручну
             </Button>
           </>
+        ) : step === "photo" ? (
+          <PhotoStep onApply={handlePhotoApply} />
         ) : (
           <>
             <MealTypePicker mealType={form.mealType} setForm={setForm} />
@@ -551,7 +585,7 @@ export function AddMealSheet({
               pickedFood={pickedFood}
               setPickedFood={setPickedFood}
               pickedGrams={pickedGrams}
-              photoResult={photoResult}
+              photoResult={appliedPhoto?.result}
               hasPhotoMacros={hasPhotoMacros}
             />
 

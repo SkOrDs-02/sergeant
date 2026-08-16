@@ -73,26 +73,23 @@ test("@critical nutrition: photo preview stays inside a 390px viewport", async (
   await page.goto("/nutrition", { waitUntil: "domcontentloaded" });
   await waitForInitialSqliteRefresh(page, "nutrition");
 
-  const photoDetails = page.getByTestId("nutrition-photo-details");
-  // Рядок «Аналіз фото страви» всередині `<details>` є двічі: у `<summary>`
-  // і в хедері самої `PhotoAnalyzeCard`, яка рендериться завжди (details лише
-  // ховає її, з DOM не прибирає). Без прив'язки до `summary` локатор ловить
-  // обидва вузли і падає strict-mode violation ще до кліку.
-  await photoDetails
-    .locator("summary")
-    .getByText("Аналіз фото страви", { exact: true })
-    .click();
-  await photoDetails
+  // Photo analysis lives inside AddMealSheet's photo step now; the Start
+  // page carries only the CTA card that opens the sheet at that step.
+  // (main's summary-scoped locator fix targeted the old <details> wrapper,
+  // which this branch removed — the strict-mode duplicate is gone with it.)
+  await page.getByTestId("nutrition-photo-cta").click();
+  const photoSheet = page.getByRole("dialog");
+  await expect(photoSheet).toBeVisible({ timeout: 10_000 });
+  await expect(photoSheet).toContainText("Аналіз фото страви");
+
+  await photoSheet
     .locator('input[type="file"]')
     .setInputFiles(
       path.resolve(process.cwd(), "tests/fixtures/nutrition-photo.svg"),
     );
-  await expect(photoDetails.getByAltText("Обране фото")).toBeVisible();
+  await expect(photoSheet.getByAltText("Обране фото")).toBeVisible();
 
-  for (const region of [
-    page.getByTestId("nutrition-dashboard"),
-    photoDetails,
-  ]) {
+  for (const region of [photoSheet]) {
     const box = await region.boundingBox();
     expect(box).not.toBeNull();
     expect(box!.x).toBeGreaterThanOrEqual(0);

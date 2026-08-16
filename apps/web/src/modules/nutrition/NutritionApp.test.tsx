@@ -89,10 +89,10 @@ describe("NutritionApp — shell + routing (real component tree)", () => {
     renderApp();
     // Real header title + bottom nav (not mock testids).
     expect(bottomNav()).toBeInTheDocument();
-    // Start page renders the photo-analysis entry card. Підпис має бути
-    // РІВНО один — у `<summary>`. До 2026-08-13 той самий заголовок
-    // дублювався всередині `PhotoAnalyzeCard`, і тест це терпів
-    // (`toBeGreaterThan(0)`), тоді як smoke падав на strict-mode.
+    // Start page renders the photo-analysis CTA card — і підпис має бути
+    // РІВНО один (пін з main проти дубля заголовка): аналіз-UI живе у
+    // кроці AddMealSheet, закритої за замовчуванням, а її title — єдине
+    // інше місце цієї назви.
     expect(screen.getAllByText("Аналіз фото страви")).toHaveLength(1);
   });
 

@@ -4,7 +4,6 @@
  */
 import type { Dispatch, SetStateAction } from "react";
 import type { Meal, NutritionPrefs } from "@sergeant/nutrition-domain";
-import type { MealFormPhotoResult } from "./meal-sheet/mealFormUtils";
 import { PantryManagerSheet } from "./PantryManagerSheet";
 import { ItemEditSheet } from "./ItemEditSheet";
 import { BarcodeScanner } from "./BarcodeScanner";
@@ -35,7 +34,10 @@ interface NutritionOverlaysProps {
   handlePantryBarcodeDetected: (barcode: string) => void | Promise<void>;
   editingMeal: EditingMealState | null;
   setEditingMeal: Dispatch<SetStateAction<EditingMealState | null>>;
-  wrappedSaveMeal: (meal: Meal) => void | Promise<void>;
+  wrappedSaveMeal: (
+    meal: Meal,
+    photoFile?: File | null,
+  ) => void | Promise<void>;
   prefs: NutritionPrefs;
   setPrefs: Dispatch<SetStateAction<NutritionPrefs>>;
   backupPasswordDialog: BackupPasswordDialogState | null;
@@ -46,7 +48,8 @@ interface NutritionOverlaysProps {
   restoreConfirm: RestoreConfirmState | null;
   setRestoreConfirm: Dispatch<SetStateAction<RestoreConfirmState | null>>;
   applyRestorePayload: (payload: unknown) => void | Promise<void>;
-  onRequestMealPhoto?: () => void;
+  /** `"photo"` — AddMealSheet відкривається одразу на кроці аналізу фото. */
+  addMealInitialStep?: "source" | "photo" | undefined;
   onQuickAddMeal?: (chip: QuickChip) => void;
 }
 
@@ -68,7 +71,7 @@ export function NutritionOverlays({
   restoreConfirm,
   setRestoreConfirm,
   applyRestorePayload,
-  onRequestMealPhoto,
+  addMealInitialStep,
   onQuickAddMeal,
 }: NutritionOverlaysProps) {
   const quickChips = useNutritionQuickChips(
@@ -142,13 +145,10 @@ export function NutritionOverlays({
         open={log.addMealSheetOpen}
         onClose={() => {
           log.setAddMealSheetOpen(false);
-          log.setAddMealPhotoResult(null);
           setEditingMeal(null);
         }}
         onSave={wrappedSaveMeal}
-        photoResult={
-          log.addMealPhotoResult as MealFormPhotoResult | null | undefined
-        }
+        initialStep={addMealInitialStep}
         initialMeal={editingMeal}
         mealTemplates={prefs.mealTemplates || []}
         setPrefs={setPrefs}
@@ -156,7 +156,6 @@ export function NutritionOverlays({
         quickChips={quickChips}
         onQuickAddMeal={onQuickAddMeal}
         onConsumePantryItem={pantry.consumePantryItem}
-        onRequestPhoto={onRequestMealPhoto}
       />
 
       <InputDialog
