@@ -61,7 +61,7 @@ const KEYBOARD_GAP_MIN_PX = 56;
  * Поріг «сторінку не зумили пальцями». Pinch-zoom теж рухає
  * `offsetTop`, але той пан — свідома дія людини (типово: слабкий зір,
  * читає дрібний текст). Компенсувати його означало б зробити аркуш
- * непанованим. Компенсуємо лише пан під клавіатуру, на масштабі 1.
+ * непанованим. Рухаємось лише під клавіатуру, на масштабі 1.
  */
 const NO_ZOOM_SCALE_MAX = 1.01;
 
@@ -79,6 +79,19 @@ export function isTextEntryElement(el: Element | null): el is HTMLElement {
 function keyboardIsOpen(vv: VisualViewport): boolean {
   if (!isTextEntryElement(document.activeElement)) return false;
   return window.innerHeight - vv.height > KEYBOARD_GAP_MIN_PX;
+}
+
+/**
+ * Спільний гейт для обох втручань хука. Зумленого користувача не
+ * чіпаємо взагалі: `keyboardIsOpen` дивиться лише на гап висот, а
+ * pinch-zoom дає такий самий гап — тобто під зумом предикат каже
+ * «клавіатура» навіть тоді, коли viewport стиснув палець, а не вона.
+ * Зсувати під таким користувачем скрол-контейнер (`scrollIntoView`)
+ * так само шкідливо, як і компенсувати його власний пан: він читає
+ * конкретне місце сторінки, і воно поїде.
+ */
+function shouldHandleKeyboard(vv: VisualViewport): boolean {
+  return vv.scale <= NO_ZOOM_SCALE_MAX && keyboardIsOpen(vv);
 }
 
 /**
@@ -105,8 +118,7 @@ export function useKeyboardAwareOverlay(
       const el = overlayRef.current;
       if (!el) return;
       const offsetTop = Math.round(vv.offsetTop);
-      const anchored =
-        offsetTop > 0 && vv.scale <= NO_ZOOM_SCALE_MAX && keyboardIsOpen(vv);
+      const anchored = offsetTop > 0 && shouldHandleKeyboard(vv);
       el.style.transform = anchored ? `translate3d(0, ${offsetTop}px, 0)` : "";
     };
 
@@ -116,7 +128,7 @@ export function useKeyboardAwareOverlay(
       // Перехід «клавіатури не було → з'явилась» уже покритий H2-фолбеком
       // в адаптері інсету; тут нас цікавить рівно перескок фокуса між
       // полями при вже відкритій клавіатурі.
-      if (!keyboardIsOpen(vv)) return;
+      if (!shouldHandleKeyboard(vv)) return;
       // `?.` — jsdom не реалізує `scrollIntoView`.
       (target as HTMLElement).scrollIntoView?.({ block: "nearest" });
     };

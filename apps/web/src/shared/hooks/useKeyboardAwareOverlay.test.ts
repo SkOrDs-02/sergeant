@@ -149,6 +149,27 @@ describe("useKeyboardAwareOverlay", () => {
     expect(scrollIntoView).toHaveBeenCalledWith({ block: "nearest" });
   });
 
+  it("не скролить поле під pinch-zoom — гап висот там неоднозначний", () => {
+    // Зум стискає visual viewport так само, як клавіатура, тож гап сам
+    // по собі каже «клавіатура» і під зумом теж. Смикати скрол-контейнер
+    // під людиною, яка свідомо зазумила конкретне місце, не можна — той
+    // самий мотив, що й у гейта компенсації пану.
+    const { overlay, input } = mountOverlay();
+    const second = document.createElement("input");
+    overlay.appendChild(second);
+    const vv = installVisualViewport(500);
+    input.focus();
+    renderHook(() => useKeyboardAwareOverlay(true, { current: overlay }));
+
+    const scrollIntoView = vi.mocked(Element.prototype.scrollIntoView);
+    scrollIntoView.mockClear();
+    act(() => {
+      vv.scale = 2.5;
+      second.focus();
+    });
+    expect(scrollIntoView).not.toHaveBeenCalled();
+  });
+
   it("не скролить нічого, поки клавіатури немає (це кейс H2-фолбека)", () => {
     const { overlay, input } = mountOverlay();
     installVisualViewport(800); // гап 0
