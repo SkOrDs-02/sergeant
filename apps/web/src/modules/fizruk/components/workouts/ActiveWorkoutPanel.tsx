@@ -44,6 +44,15 @@ export interface ActiveWorkoutPanelProps {
   /** Pre-formatted duration string (e.g. "42 хв") for the header. */
   activeDuration: string | null;
   /**
+   * Кінець ретро-сесії, який людина ввела у формі «Записати тренування
+   * заднім числом», але який ще не записаний у `endedAt` (див.
+   * `pendingRetroEnd`). Прокидається у `WorkoutTimeEditor`, щоб уже введена
+   * мітка була видимою й редагованою, а не зникала до кроку «Завершити».
+   */
+  pendingRetroEnd?: string | null | undefined;
+  /** Правка цієї відкладеної мітки. */
+  onPendingRetroEndChange?: ((iso: string) => void) | undefined;
+  /**
    * Map of exerciseId → previous-session snapshot used by `WorkoutItemCard`
    * to render the "last time" hint. Loosely typed to match the persisted
    * shape from `useWorkouts`.
@@ -79,6 +88,8 @@ export interface ActiveWorkoutPanelProps {
 export function ActiveWorkoutPanel({
   activeWorkout,
   activeDuration,
+  pendingRetroEnd,
+  onPendingRetroEndChange,
   lastByExerciseId,
   musclesUk,
   recBy,
@@ -207,6 +218,8 @@ export function ActiveWorkoutPanel({
         <WorkoutTimeEditor
           activeWorkout={activeWorkout}
           updateWorkout={updateWorkout}
+          pendingEndedAt={pendingRetroEnd}
+          onPendingEndChange={onPendingRetroEndChange}
         />
 
         <div className="mt-3 space-y-2">

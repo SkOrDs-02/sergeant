@@ -154,6 +154,8 @@ export function Workouts({
                 <WorkoutJournalSection
                   activeWorkout={o.activeWorkout}
                   activeDuration={o.activeDuration}
+                  pendingRetroEnd={o.pendingRetroEnd}
+                  onPendingRetroEndChange={o.updatePendingRetroEnd}
                   musclesUk={o.musclesUk}
                   recBy={o.rec.by}
                   lastByExerciseId={o.lastByExerciseId}
