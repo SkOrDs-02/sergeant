@@ -1,6 +1,6 @@
 # Playbook: Hotfix Production Regression
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-08-15.
+> **Last validated:** 2026-08-16 by @claude. **Next review:** 2026-10-22.
 > **Status:** Active
 
 **Trigger:** "Прод впав" / користувачі скаржаться / `/health` деградував / Sentry або ops канал показує активну регресію після релізу.

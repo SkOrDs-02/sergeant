@@ -1,6 +1,6 @@
 # 98-error-handler — global n8n error workflow
 
-> **Last touched:** 2026-05-13 by Devin. **Next review:** 2026-08-15.
+> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-11-18.
 > **Status:** Active
 
 Глобальний error workflow (configured як **Error Workflow** у n8n settings).
@@ -92,7 +92,10 @@ ORDER BY event_count DESC;
 PR-15 (48-plan) rollout-шаги:
 
 1. Merge migration `058_n8n_failure_events_signature.sql` у `main`.
-2. Дочекатися `pnpm db:migrate` на Railway (pre-deploy step).
+2. Дочекатися pre-deploy міграції на Coolify — крок `node dist-server/migrate.js`
+   (`pre_deployment_command`, потребує `MIGRATE_DATABASE_URL`). Раніше тут
+   стояв `pnpm db:migrate` на Railway; Railway виведено з експлуатації
+   ([ADR-0074](../../docs/04-governance/adr/0074-hosting-hetzner-coolify.md)).
 3. Імпортувати оновлений `98-error-handler.json` у n8n production
    instance (Settings → Workflows → Import from File).
 4. Verify: створити dummy failure (test workflow з `throw new Error('test')`),
