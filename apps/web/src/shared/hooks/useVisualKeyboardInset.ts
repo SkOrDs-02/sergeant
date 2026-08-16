@@ -4,10 +4,10 @@
  * Binds the `@sergeant/shared` contract to `window.visualViewport`:
  * the hook reports the gap between the layout viewport height and the
  * visual viewport height, which is how both iOS Safari and Android
- * Chrome surface the on-screen keyboard to web content. The 56 px
- * threshold filters out browser chrome resizes (URL bar auto-hide,
- * pinned toolbars) so we only lift bottom sheets when an actual
- * keyboard is present.
+ * Chrome surface the on-screen keyboard to web content. What counts as
+ * a keyboard (gap threshold + focused text-entry element) lives in
+ * `@shared/lib/platform/softKeyboard` — shared verbatim with
+ * `useKeyboardAwareOverlay`, which must agree with this hook.
  *
  * Only `resize` is tracked — NOT `scroll`. iOS fires `scroll` on
  * `visualViewport` continuously while it pans the visual viewport to
@@ -34,25 +34,21 @@ import {
   setVisualKeyboardInsetAdapter,
   type VisualKeyboardInsetAdapter,
 } from "@sergeant/shared";
-// Спільний предикат з `useKeyboardAwareOverlay`: обидва файли рахують
-// клавіатуру за однією ознакою (гап + сфокусоване текстове поле), і
-// розійтись їм не можна — інакше аркуш компенсує пан там, де інсету
-// вже немає, або навпаки.
-import { isTextEntryElement } from "./useKeyboardAwareOverlay";
+// Визначення «клавіатура на екрані» спільне з `useKeyboardAwareOverlay`
+// і живе в одному місці — `softKeyboardGapPx`. Розійтись їм не можна:
+// інакше аркуш компенсує пан там, де інсету вже немає, або навпаки.
+// Гепу самого по собі мало (браузерний chrome дає такий самий, і через
+// це `HubBottomNav` ховався при холодному старті з пуша) — деталі
+// предиката у шапці `softKeyboard.ts`.
+import {
+  isTextEntryElement,
+  softKeyboardGapPx,
+} from "@shared/lib/platform/softKeyboard";
 
 function readVisualKeyboardInsetPx(): number {
   const vv = window.visualViewport;
   if (!vv) return 0;
-  // Гепу самого по собі мало. Браузерний chrome (URL-бар + нижній тулбар),
-  // який з'являється при холодному відкритті з пуш-сповіщення, дає таку саму
-  // різницю layout↔visual viewport — і `HubBottomNav` ховався
-  // (`translate-y-full` + `aria-hidden`) без жодної клавіатури на екрані
-  // (user report: «при переході в апку через пуш зникає навбар у хабі»).
-  // Клавіатури не буває без сфокусованого поля вводу, тож це і є
-  // відсутній предикат.
-  if (!isTextEntryElement(document.activeElement)) return 0;
-  const gap = window.innerHeight - vv.height;
-  return gap > 56 ? Math.round(gap) : 0;
+  return softKeyboardGapPx(vv);
 }
 
 function subscribeVisualViewport(onStoreChange: () => void): () => void {

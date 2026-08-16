@@ -3,6 +3,9 @@ import { Button } from "@shared/components/ui/Button";
 import { Input } from "@shared/components/ui/Input";
 import { useBodyScrollLock } from "@shared/hooks/useBodyScrollLock";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
+import { useKeyboardAwareOverlay } from "@shared/hooks/useKeyboardAwareOverlay";
+import { useVisualKeyboardInset } from "@sergeant/shared";
+import { keyboardOverlayStyles } from "@shared/lib/ui/keyboardOverlay";
 
 interface DeleteAccountDialogProps {
   open: boolean;
@@ -22,6 +25,7 @@ export function DeleteAccountDialog({
   onConfirm,
 }: DeleteAccountDialogProps) {
   const panelRef = useRef<HTMLDivElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const descriptionId = useId();
   const passwordId = useId();
@@ -38,10 +42,23 @@ export function DeleteAccountDialog({
   // пінить body у `position: fixed` на поточному офсеті й рахує вкладеність.
   useBodyScrollLock(open);
 
+  // Центрований діалог із полем пароля. Без keyboard-геометрії поле
+  // опиняється під клавіатурою, і видимим його робив лише пан visual
+  // viewport від iOS — а `useKeyboardAwareOverlay` цей пан гасить, тож
+  // геометрія тут не «покращення», а умова коректності компенсації
+  // (розбір — у шапці `keyboardOverlay.ts`).
+  const kbInsetPx = useVisualKeyboardInset(open);
+  const kbStyles = keyboardOverlayStyles(kbInsetPx);
+  useKeyboardAwareOverlay(open, overlayRef);
+
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-120 flex items-center justify-center p-4">
+    <div
+      ref={overlayRef}
+      className="fixed inset-0 z-120 flex items-center justify-center p-4"
+      style={kbStyles.container}
+    >
       <button
         type="button"
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
@@ -50,7 +67,11 @@ export function DeleteAccountDialog({
       />
       <div
         ref={panelRef}
-        className="relative w-full max-w-sm bg-panel border border-line rounded-2xl shadow-soft p-5 z-10"
+        // `overflow-y-auto` — пара до `kbStyles.panel`: під клавіатурою
+        // висота обрізається, і без власного скролу кнопки внизу стали б
+        // недосяжними.
+        className="relative w-full max-w-sm bg-panel border border-line rounded-2xl shadow-soft p-5 z-10 overflow-y-auto overscroll-contain"
+        style={kbStyles.panel}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}

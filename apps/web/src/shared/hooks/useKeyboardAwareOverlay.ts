@@ -50,12 +50,10 @@
  */
 import { useEffect, type RefObject } from "react";
 
-/**
- * Мінімальний гап layout↔visual viewport, який вважаємо клавіатурою.
- * Те саме число, що й у `useVisualKeyboardInset` — менші дельти дає
- * браузерний chrome (URL-бар, нижній тулбар).
- */
-const KEYBOARD_GAP_MIN_PX = 56;
+import {
+  isTextEntryElement,
+  softKeyboardGapPx,
+} from "@shared/lib/platform/softKeyboard";
 
 /**
  * Поріг «сторінку не зумили пальцями». Pinch-zoom теж рухає
@@ -65,25 +63,9 @@ const KEYBOARD_GAP_MIN_PX = 56;
  */
 const NO_ZOOM_SCALE_MAX = 1.01;
 
-export function isTextEntryElement(el: Element | null): el is HTMLElement {
-  if (!el) return false;
-  const tag = el.tagName;
-  return (
-    tag === "INPUT" ||
-    tag === "TEXTAREA" ||
-    (el as HTMLElement).isContentEditable
-  );
-}
-
-/** Клавіатури не буває без сфокусованого поля — той самий предикат, що в інсеті. */
-function keyboardIsOpen(vv: VisualViewport): boolean {
-  if (!isTextEntryElement(document.activeElement)) return false;
-  return window.innerHeight - vv.height > KEYBOARD_GAP_MIN_PX;
-}
-
 /**
  * Спільний гейт для обох втручань хука. Зумленого користувача не
- * чіпаємо взагалі: `keyboardIsOpen` дивиться лише на гап висот, а
+ * чіпаємо взагалі: `softKeyboardGapPx` дивиться лише на гап висот, а
  * pinch-zoom дає такий самий гап — тобто під зумом предикат каже
  * «клавіатура» навіть тоді, коли viewport стиснув палець, а не вона.
  * Зсувати під таким користувачем скрол-контейнер (`scrollIntoView`)
@@ -91,7 +73,7 @@ function keyboardIsOpen(vv: VisualViewport): boolean {
  * конкретне місце сторінки, і воно поїде.
  */
 function shouldHandleKeyboard(vv: VisualViewport): boolean {
-  return vv.scale <= NO_ZOOM_SCALE_MAX && keyboardIsOpen(vv);
+  return vv.scale <= NO_ZOOM_SCALE_MAX && softKeyboardGapPx(vv) > 0;
 }
 
 /**

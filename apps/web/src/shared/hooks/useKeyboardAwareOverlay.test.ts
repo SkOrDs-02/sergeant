@@ -211,6 +211,27 @@ describe("useKeyboardAwareOverlay", () => {
     );
   });
 
+  it("перераховує компенсацію і на `resize`, не лише на `scroll`", () => {
+    // Клавіатура закривається без окремого `scroll`: тоді єдиний сигнал —
+    // `resize`. Без цього слухача трансформ лишився б висіти назавжди.
+    const { overlay, input } = mountOverlay();
+    const vv = installVisualViewport(500);
+    input.focus();
+    renderHook(() => useKeyboardAwareOverlay(true, { current: overlay }));
+
+    act(() => {
+      vv.offsetTop = 52;
+      vv._fire("scroll");
+    });
+    expect(overlay.style.transform).toBe("translate3d(0, 52px, 0)");
+
+    act(() => {
+      vv.height = 800; // гап 0 — клавіатура зникла
+      vv._fire("resize");
+    });
+    expect(overlay.style.transform).toBe("");
+  });
+
   it("є no-op без visualViewport", () => {
     const { overlay } = mountOverlay();
     Object.defineProperty(window, "visualViewport", {
