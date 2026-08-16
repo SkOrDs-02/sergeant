@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { resolveDeployEnvironment } from "./deployEnvironment.js";
+import {
+  resolveDeployEnvironment,
+  resolveSentryEnvironment,
+} from "./deployEnvironment.js";
 
 /**
  * Регресійні тести на два реальні інциденти розмітки середовища
@@ -32,9 +35,12 @@ describe("resolveDeployEnvironment", () => {
     expect(resolveDeployEnvironment("beta-tau-gilt.vercel.app")).toBe("beta");
   });
 
-  it("дає VITE_SENTRY_ENVIRONMENT пріоритет над VITE_APP_ENV", () => {
+  // Sentry-only override НЕ має протікати у спільний резолвер: інакше змінна,
+  // задокументована як «розвести Sentry окремо», мовчки перемічувала б і
+  // події PostHog.
+  it("ігнорує VITE_SENTRY_ENVIRONMENT", () => {
     stubEnv({ VITE_APP_ENV: "beta", VITE_SENTRY_ENVIRONMENT: "staging" });
-    expect(resolveDeployEnvironment("sergeant.vercel.app")).toBe("staging");
+    expect(resolveDeployEnvironment("sergeant.vercel.app")).toBe("beta");
   });
 
   // Інцидент 2: preview успадковує env-vars основного деплою, тож хост мусить
@@ -76,5 +82,34 @@ describe("resolveDeployEnvironment", () => {
   it("падає на env-var, коли hostname недоступний (SSR / worker)", () => {
     stubEnv({ VITE_APP_ENV: "beta" });
     expect(resolveDeployEnvironment("")).toBe("beta");
+  });
+});
+
+describe("resolveSentryEnvironment", () => {
+  it("дає VITE_SENTRY_ENVIRONMENT пріоритет над VITE_APP_ENV", () => {
+    stubEnv({ VITE_APP_ENV: "beta", VITE_SENTRY_ENVIRONMENT: "staging" });
+    expect(resolveSentryEnvironment("sergeant.vercel.app")).toBe("staging");
+  });
+
+  it("падає на VITE_APP_ENV, коли Sentry-override не заданий", () => {
+    stubEnv({ VITE_APP_ENV: "beta" });
+    expect(resolveSentryEnvironment("beta-tau-gilt.vercel.app")).toBe("beta");
+  });
+
+  // Override не має бути лазівкою навколо hostname-класифікації: інакше
+  // preview-збірка з `VITE_SENTRY_ENVIRONMENT=production` знову зливалась би
+  // з продом — тобто рівно та проблема, заради якої резолвер і з'явився.
+  it("не дозволяє override-у видати preview за production", () => {
+    stubEnv({ VITE_SENTRY_ENVIRONMENT: "production" });
+    expect(
+      resolveSentryEnvironment(
+        "beta-git-feature-skords-01s-projects.vercel.app",
+      ),
+    ).toBe("preview");
+  });
+
+  it("не дозволяє override-у перебити localhost", () => {
+    stubEnv({ VITE_SENTRY_ENVIRONMENT: "production" });
+    expect(resolveSentryEnvironment("localhost")).toBe("development");
   });
 });

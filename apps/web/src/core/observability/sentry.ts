@@ -9,7 +9,7 @@ import {
   scrubPIIString,
   redactSensitiveQueryParams,
 } from "@sergeant/shared";
-import { resolveDeployEnvironment } from "./deployEnvironment.js";
+import { resolveSentryEnvironment } from "./deployEnvironment.js";
 
 type SentryModule = typeof import("@sentry/react");
 
@@ -323,7 +323,7 @@ export async function initSentry() {
     // проєкті `sergeant-web` сторонній environment `vercel-production`,
     // невидимий для фільтра по `production`. Деталі й порядок резолву —
     // `deployEnvironment.ts`.
-    environment: resolveDeployEnvironment(),
+    environment: resolveSentryEnvironment(),
     release: import.meta.env["VITE_SENTRY_RELEASE"],
     integrations: [mod.browserTracingIntegration()],
     // Dynamic per-op + per-route sampler (stack-pulse PR-12 / H6).

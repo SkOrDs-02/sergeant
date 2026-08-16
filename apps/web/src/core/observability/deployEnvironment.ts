@@ -58,26 +58,19 @@ function isLocalHost(hostname: string): boolean {
   );
 }
 
-/**
- * Явно задане середовище. `VITE_SENTRY_ENVIRONMENT` лишається вужчим
- * override-ом на випадок, коли Sentry треба розвести окремо від PostHog;
- * `VITE_APP_ENV` — спільний перемикач.
- */
-function explicitEnvironment(): string | null {
-  const raw =
-    (import.meta.env["VITE_SENTRY_ENVIRONMENT"] as string | undefined) ||
-    (import.meta.env["VITE_APP_ENV"] as string | undefined);
-  const trimmed = raw?.trim();
+function readEnv(name: string): string | null {
+  const trimmed = (import.meta.env[name] as string | undefined)?.trim();
   return trimmed ? trimmed : null;
 }
 
 /**
- * Резолвить середовище для телеметрії.
- *
- * @param hostname Перевизначення хоста — лише для тестів. У рантаймі береться
- *   `window.location.hostname`.
+ * Спільне ядро резолву. `explicit` — значення, яке система телеметрії вважає
+ * явно заданим для себе; воно застосовується ЛИШЕ на канонічному хості.
  */
-export function resolveDeployEnvironment(hostname?: string): string {
+function resolveWithExplicit(
+  explicit: string | null,
+  hostname?: string,
+): string {
   const host = (
     hostname ??
     (typeof window !== "undefined" ? window.location?.hostname : undefined)
@@ -85,7 +78,7 @@ export function resolveDeployEnvironment(hostname?: string): string {
 
   // Без `window` (SSR, воркер, тести без jsdom) hostname-евристика недоступна —
   // лишається лише те, що явно задано на білді.
-  if (!host) return explicitEnvironment() ?? "production";
+  if (!host) return explicit ?? "production";
 
   if (isLocalHost(host)) return "development";
 
@@ -93,5 +86,37 @@ export function resolveDeployEnvironment(hostname?: string): string {
   // тож довіряти їм тут не можна (див. doc-string модуля, пункт 2).
   if (!canonicalHosts().includes(host)) return "preview";
 
-  return explicitEnvironment() ?? "production";
+  return explicit ?? "production";
+}
+
+/**
+ * Середовище для продуктової аналітики (PostHog) — і дефолт для будь-якої
+ * іншої телеметрії. Читає ТІЛЬКИ `VITE_APP_ENV`.
+ *
+ * `VITE_SENTRY_ENVIRONMENT` тут свідомо не бере участі: він задокументований як
+ * вужчий override саме для Sentry, і якби спільний резолвер його читав, то
+ * Sentry-only змінна мовчки перемічувала б і події PostHog — тобто override
+ * робив би рівно протилежне обіцяному. Його застосовує лише
+ * {@link resolveSentryEnvironment}.
+ *
+ * @param hostname Перевизначення хоста — лише для тестів. У рантаймі береться
+ *   `window.location.hostname`.
+ */
+export function resolveDeployEnvironment(hostname?: string): string {
+  return resolveWithExplicit(readEnv("VITE_APP_ENV"), hostname);
+}
+
+/**
+ * Середовище для Sentry: `VITE_SENTRY_ENVIRONMENT` перекриває `VITE_APP_ENV`.
+ *
+ * Hostname-класифікація лишається тією самою і так само має пріоритет —
+ * override діє тільки там, де взагалі діяв би `VITE_APP_ENV`, тобто на
+ * канонічному хості. Задати preview-збірці `production` через цю змінну
+ * неможливо, і це навмисно.
+ */
+export function resolveSentryEnvironment(hostname?: string): string {
+  return resolveWithExplicit(
+    readEnv("VITE_SENTRY_ENVIRONMENT") ?? readEnv("VITE_APP_ENV"),
+    hostname,
+  );
 }

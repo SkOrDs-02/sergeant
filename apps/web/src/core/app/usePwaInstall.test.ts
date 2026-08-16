@@ -169,6 +169,8 @@ describe("usePwaInstall — appinstalled event", () => {
  * проєкту: подія висіла на Chromium-only event-і, а вся база — iOS Safari.
  */
 describe("usePwaInstall — standalone detection (iOS success arm)", () => {
+  const originalUserAgent = navigator.userAgent;
+
   // jsdom не реалізує `matchMedia`, тож `vi.spyOn` тут не працює (нема що
   // підміняти) — визначаємо властивість напряму й прибираємо після тесту.
   function stubStandalone(matches: boolean) {
@@ -189,8 +191,28 @@ describe("usePwaInstall — standalone detection (iOS success arm)", () => {
     });
   }
 
+  // iOS Safari не підтримує `display-mode: standalone` і має власний
+  // прапорець. Це і є цільова платформа фіксу, тож шлях мусить бути покритий
+  // окремо від media-query-гілки.
+  function stubIosStandalone() {
+    Object.defineProperty(navigator, "userAgent", {
+      configurable: true,
+      value:
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6 Mobile/15E148 Safari/604.1",
+    });
+    Object.defineProperty(navigator, "standalone", {
+      configurable: true,
+      value: true,
+    });
+  }
+
   afterEach(() => {
     delete (window as { matchMedia?: unknown }).matchMedia;
+    delete (navigator as { standalone?: unknown }).standalone;
+    Object.defineProperty(navigator, "userAgent", {
+      configurable: true,
+      value: originalUserAgent,
+    });
   });
 
   it("не стріляє pwa_installed у звичайній вкладці браузера", () => {
@@ -216,6 +238,32 @@ describe("usePwaInstall — standalone detection (iOS success arm)", () => {
     renderHook(() => usePwaInstall());
     trackEventMock.mockReset();
     // Другий «запуск» застосунку — той самий storage, новий монтаж хука.
+    renderHook(() => usePwaInstall());
+    expect(trackEventMock.mock.calls.map(([n]) => n)).not.toContain(
+      "pwa_installed",
+    );
+  });
+
+  it("зараховує інсталяцію на iOS через navigator.standalone", () => {
+    // Без media-query взагалі — рівно те, що бачить Safari.
+    stubIosStandalone();
+    renderHook(() => usePwaInstall());
+    expect(trackEventMock).toHaveBeenCalledWith("pwa_installed", {
+      surface: "ios",
+      via: "standalone_detected",
+    });
+  });
+
+  it("не зараховує інсталяцію на iOS у звичайній вкладці Safari", () => {
+    Object.defineProperty(navigator, "userAgent", {
+      configurable: true,
+      value:
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6 Mobile/15E148 Safari/604.1",
+    });
+    Object.defineProperty(navigator, "standalone", {
+      configurable: true,
+      value: false,
+    });
     renderHook(() => usePwaInstall());
     expect(trackEventMock.mock.calls.map(([n]) => n)).not.toContain(
       "pwa_installed",

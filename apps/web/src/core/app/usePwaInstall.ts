@@ -48,8 +48,11 @@ interface BeforeInstallPromptEvent extends Event {
  *
  * Єдиний сигнал, доступний на iOS, — те, що застосунок узагалі стартував у
  * standalone-режимі: потрапити туди можна виключно через Add to Home Screen.
- * Тому перший запуск у standalone і є подією інсталяції. Дедуп — через
- * `PWA_INSTALL_REPORTED_KEY`, інакше кожен запуск з іконки рахувався б знову.
+ * Тому перший запуск у standalone і є подією інсталяції. Сам режим визначає
+ * `isStandalonePWA()` за двома сигналами — media-query `display-mode:
+ * standalone` і `navigator.standalone`; на iOS спрацьовує саме другий, бо
+ * Safari media-query не підтримує. Дедуп — через `PWA_INSTALL_REPORTED_KEY`,
+ * інакше кожен запуск з іконки рахувався б знову.
  */
 export function usePwaInstall() {
   const [prompt, setPrompt] = useState<BeforeInstallPromptEvent | null>(null);

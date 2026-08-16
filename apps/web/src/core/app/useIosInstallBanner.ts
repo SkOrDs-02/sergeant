@@ -12,9 +12,12 @@ const IOS_BANNER_DISMISSED_KEY = "ios_install_banner_dismissed";
  * fire `beforeinstallprompt` / `appinstalled` events, so this hook is the
  * only signal we have on the iOS side; we track impression + dismiss here.
  *
- * Success-плече живе в `usePwaInstall` — перший запуск у `display-mode:
- * standalone` зараховується як інсталяція. Раніше тут стояла обіцянка, що це
- * зробить «серверна перевірка display-mode»; такого коду не існувало, і
+ * Success-плече живе в `usePwaInstall` — перший запуск у standalone-режимі
+ * зараховується як інсталяція. Режим визначає `isStandalonePWA()` за двома
+ * сигналами: media-query `display-mode: standalone` і власний прапорець
+ * `navigator.standalone`. Для нас важливіший другий — Safari media-query не
+ * підтримує, тож саме він і покриває iOS. Раніше тут стояла обіцянка, що успіх
+ * зарахує «серверна перевірка display-mode»; такого коду не існувало, і
  * `pwa_installed` не спрацював жодного разу (аудит телеметрії 2026-08-16).
  */
 export function useIosInstallBanner() {
