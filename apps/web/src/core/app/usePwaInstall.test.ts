@@ -156,6 +156,83 @@ describe("usePwaInstall — appinstalled event", () => {
     act(() => {
       window.dispatchEvent(new Event("appinstalled"));
     });
-    expect(trackEventMock).toHaveBeenCalledWith("pwa_installed", {});
+    expect(trackEventMock).toHaveBeenCalledWith("pwa_installed", {
+      surface: "android",
+      via: "appinstalled",
+    });
+  });
+});
+
+/**
+ * Success-плече для платформ без `appinstalled` (аудит телеметрії 2026-08-16).
+ * До цього `pwa_installed` не спрацював жодного разу за весь час життя
+ * проєкту: подія висіла на Chromium-only event-і, а вся база — iOS Safari.
+ */
+describe("usePwaInstall — standalone detection (iOS success arm)", () => {
+  // jsdom не реалізує `matchMedia`, тож `vi.spyOn` тут не працює (нема що
+  // підміняти) — визначаємо властивість напряму й прибираємо після тесту.
+  function stubStandalone(matches: boolean) {
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      writable: true,
+      value: (query: string) =>
+        ({
+          matches: matches && query === "(display-mode: standalone)",
+          media: query,
+          onchange: null,
+          addListener: vi.fn(),
+          removeListener: vi.fn(),
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          dispatchEvent: vi.fn(),
+        }) as unknown as MediaQueryList,
+    });
+  }
+
+  afterEach(() => {
+    delete (window as { matchMedia?: unknown }).matchMedia;
+  });
+
+  it("не стріляє pwa_installed у звичайній вкладці браузера", () => {
+    stubStandalone(false);
+    renderHook(() => usePwaInstall());
+    expect(trackEventMock.mock.calls.map(([n]) => n)).not.toContain(
+      "pwa_installed",
+    );
+  });
+
+  it("зараховує інсталяцію на першому запуску в standalone", () => {
+    stubStandalone(true);
+    renderHook(() => usePwaInstall());
+    expect(trackEventMock).toHaveBeenCalledWith("pwa_installed", {
+      surface: "android",
+      via: "standalone_detected",
+    });
+    expect(window.localStorage.getItem("pwa_install_reported")).toBe("1");
+  });
+
+  it("не дублює подію на наступних запусках з іконки", () => {
+    stubStandalone(true);
+    renderHook(() => usePwaInstall());
+    trackEventMock.mockReset();
+    // Другий «запуск» застосунку — той самий storage, новий монтаж хука.
+    renderHook(() => usePwaInstall());
+    expect(trackEventMock.mock.calls.map(([n]) => n)).not.toContain(
+      "pwa_installed",
+    );
+  });
+
+  it("не дублює, коли слідом за standalone-стартом приходить appinstalled", () => {
+    stubStandalone(true);
+    renderHook(() => usePwaInstall());
+    const before = trackEventMock.mock.calls.filter(
+      ([n]) => n === "pwa_installed",
+    ).length;
+    act(() => {
+      window.dispatchEvent(new Event("appinstalled"));
+    });
+    expect(
+      trackEventMock.mock.calls.filter(([n]) => n === "pwa_installed"),
+    ).toHaveLength(before);
   });
 });
