@@ -14,17 +14,24 @@ Every auto-generated artifact in the repo. Currently:
 
 **Повністю генеровані файли** (`pnpm docs:gen-daily` регенерує весь блок):
 
-| Артефакт                                                 | Генератор                            |
-| -------------------------------------------------------- | ------------------------------------ |
-| `docs/open-work.md`                                      | `pnpm docs:gen-open-work`            |
-| `docs/today.md`                                          | `pnpm docs:gen-today`                |
-| `docs/STATUS.md`                                         | `pnpm docs:gen-status`               |
-| `docs/90-work/initiatives/follow-ups.md`                 | `pnpm docs:gen-initiative-followups` |
-| `docs/00-start/playbooks/INDEX.md`                       | `pnpm docs:gen-playbook-index`       |
-| `docs/04-governance/governance/hard-rules-matrix.md`     | `pnpm hard-rules:generate`           |
-| `docs/04-governance/governance/freshness-dashboard.html` | `pnpm docs:freshness-dashboard`      |
-| `docs/04-governance/governance/repo-map.auto.json`       | `pnpm docs:gen-repo-map`             |
-| `docs/02-engineering/architecture/service-catalog.md`    | `pnpm docs:gen-service-catalog`      |
+| Артефакт                                                  | Генератор                            |
+| --------------------------------------------------------- | ------------------------------------ |
+| `docs/open-work.md`                                       | `pnpm docs:gen-open-work`            |
+| `docs/today.md`                                           | `pnpm docs:gen-today`                |
+| `docs/STATUS.md`                                          | `pnpm docs:gen-status`               |
+| `docs/90-work/initiatives/follow-ups.md`                  | `pnpm docs:gen-initiative-followups` |
+| `docs/04-governance/governance/hard-rules-matrix.md`      | `pnpm hard-rules:generate`           |
+| `docs/04-governance/governance/freshness-dashboard.html`  | `pnpm docs:freshness-dashboard`      |
+| `docs/04-governance/governance/repo-map.auto.json`        | `pnpm docs:gen-repo-map`             |
+| `docs/04-governance/governance/service-catalog.auto.json` | `pnpm docs:gen-service-catalog`      |
+
+**Повністю генеровані поза `docs:gen-daily`** — регенеруються власною командою:
+
+| Артефакт                           | Генератор                      | Гейт                             |
+| ---------------------------------- | ------------------------------ | -------------------------------- |
+| `docs/00-start/playbooks/INDEX.md` | `pnpm docs:gen-playbook-index` | `pnpm docs:check-playbook-index` |
+
+Уточнювальна межа (звірка 2026-08-16): генерується саме JSON-дзеркало `service-catalog.auto.json`, а не людиночитний [`docs/02-engineering/architecture/service-catalog.md`](../../../02-engineering/architecture/service-catalog.md): той лишається рукописним (редакторські колонки — runbook, alerts, rollback, data-sensitivity), а `pnpm docs:check-service-catalog` лише звіряє, що кожна поверхня з JSON у ньому згадана. Тому маркера `<!-- AUTO-GENERATED -->` у ньому немає й бути не повинно.
 
 **Частково генеровані** — редагується лише текст поза маркованим регіоном:
 

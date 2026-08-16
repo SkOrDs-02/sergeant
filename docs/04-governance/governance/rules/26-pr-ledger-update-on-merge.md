@@ -36,7 +36,7 @@ See [ADR-0061](../../adr/0061-pr-backlink-storage.md) for the storage rationale 
 
 ## Backfill
 
-The ledger ships empty — historical PRs are not auto-backfilled. To populate retroactively:
+Леджер більше не порожній — з моменту введення правила його наповнює сам workflow (станом на звірку 2026-08-16 у ньому 24 PR-и, останній — #689). Історичні PR-и до введення правила автоматично НЕ добираються. Щоб додати такий заднім числом:
 
 ```bash
 node scripts/ci/update-pr-backlinks.mjs --pr <PR_NUMBER>

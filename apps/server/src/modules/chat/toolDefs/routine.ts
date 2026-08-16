@@ -103,7 +103,7 @@ export const ROUTINE_TOOLS: AnthropicTool[] = [
   {
     name: "add_calendar_event",
     description:
-      "Додати разову подію в календар Рутини (реалізовано як звичка recurrence='once' на одну дату). Корисно для нагадувань про зустріч, деньнародження тощо.",
+      "Додати разову подію в календар Рутини (реалізовано як звичка recurrence='once' на одну дату). Корисно для нагадувань про зустріч, день народження тощо.",
     input_schema: {
       type: "object",
       properties: {
