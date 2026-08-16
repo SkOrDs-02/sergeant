@@ -1,8 +1,19 @@
 {
   "$schema": "../governance/schemas/pr-ledger.schema.json",
   "version": 1,
-  "generated_at": "2026-08-07",
+  "generated_at": "2026-08-16",
   "prs": [
+    {
+      "number": 804,
+      "title": "docs(docs): ревалідувати пʼять прострочених доків і зняти дрейф",
+      "merged_at": "2026-08-16T17:20:13Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": [
+        "docs/00-start/playbooks/hotfix-prod-regression.md",
+        "docs/04-governance/governance/rules/25-auto-generated-marker.md",
+        "docs/04-governance/governance/rules/26-pr-ledger-update-on-merge.md"
+      ]
+    },
     {
       "number": 689,
       "title": "fix(ci): governance-sync відрізняє живе посилання від навмисно мертвого",

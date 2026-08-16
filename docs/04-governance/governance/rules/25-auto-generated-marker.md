@@ -75,8 +75,9 @@ For JSON outputs (e.g. `repo-map.auto.json`), JSON has no comments — instead t
 
 | PR                                                       | Title                                                              | Merged     |
 | -------------------------------------------------------- | ------------------------------------------------------------------ | ---------- |
+| [#804](https://github.com/Skords-01/Sergeant/pull/804)   | docs(docs): ревалідувати пʼять прострочених доків і зняти дрейф    | 2026-08-16 |
 | [#508](https://github.com/Skords-01/Sergeant/pull/508)   | fix(docs): reconcile canonical docs with current repo              | 2026-07-29 |
 | [#2900](https://github.com/Skords-01/Sergeant/pull/2900) | docs(docs): hard rules 24/25/26 for Initiative 0014 (HR follow-up) | 2026-05-15 |
 
-_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 2 most recent PRs touching this file._
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 3 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->
