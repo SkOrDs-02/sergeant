@@ -1,6 +1,6 @@
 # 98-error-handler — global n8n error workflow
 
-> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-11-14.
+> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-11-18.
 > **Status:** Active
 
 Глобальний error workflow (configured як **Error Workflow** у n8n settings).
