@@ -42,6 +42,12 @@
     overscroll-behavior: none;
   }
 
+  @supports (-webkit-touch-callout: none) {
+    html {
+      background-attachment: scroll;
+    }
+  }
+
   /* WebKit reports `dvh`, `visualViewport.height`, and the fixed-position
      containing block without the viewport-fit extension in installed PWAs.
      The result is a root that starts under the status bar but ends one top
@@ -74,6 +80,11 @@
     background: var(--app-mesh-background, rgb(var(--c-bg-base)));
     background-attachment: fixed;
     text-rendering: optimizeLegibility;
+    /* AI-DANGER: на iOS цей `fixed` не мав ЖОДНОГО фолбеку — навіть у
+       Capacitor-обгортці, де `.bg-mesh` свій уже має (`theme.css`). Тому
+       артефакт зсунутого фонового шару (рожеві смуги впоперек пігулок)
+       ловився і в застосунку, і в мобільному Safari. Деталі механізму —
+       у `@supports`-блоці біля `.bg-mesh` у `theme.css`. */
     -webkit-font-feature-settings:
       "kern" 1,
       "liga" 1,

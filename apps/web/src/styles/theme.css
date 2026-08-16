@@ -1376,6 +1376,29 @@ html[data-ios-capacitor="true"] .bg-mesh {
   background-attachment: scroll;
 }
 
+/* AI-DANGER: фолбек вище покриває ЛИШЕ Capacitor-обгортку — прапорець
+ * ставиться в `main.tsx` під `isCapacitor() && getPlatform() === "ios"`.
+ * У мобільному Safari бриджа немає, тож там лишався `fixed` — той самий
+ * «known bug», про який попереджає коментар до `.bg-mesh` вище.
+ *
+ * На iOS фіксований фон живе в окремому шарі, прибитому до viewport-а, і
+ * не перереєстровується разом зі скролом контенту. Сусідні поверхні з
+ * `backdrop-blur` (Card, чипи «Рутини») семплять цей зсунутий шар — і
+ * рожевий герой-градієнт «протікає» смугами на пігулки поруч. Репорт
+ * власника 2026-08-17: заливка обраного дня видно наполовину на 17, на
+ * половину на 18; те саме на чіпах Сьогодні / Завтра / Тиждень.
+ *
+ * `-webkit-touch-callout` — iOS-only властивість, стабільна на всіх
+ * актуальних версіях (на відміну від `-webkit-overflow-scrolling`, який
+ * iOS 13+ тихо викинув — див. коментар у `main.tsx`). Одне правило
+ * покриває і Safari, і WKWebView; `data-ios-capacitor` лишаємо як явний
+ * запис наміру. */
+@supports (-webkit-touch-callout: none) {
+  .bg-mesh {
+    background-attachment: scroll;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .bg-mesh {
     background: rgb(var(--c-bg-base));
