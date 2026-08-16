@@ -554,7 +554,10 @@ describe("WorkoutItemCard — stable set keys across a mid-list delete", () => {
     // (formerly weightKg 20) the third row's data, silently jumping any
     // in-progress edit/focus onto the wrong set.
     expect(weightInputsAfter[1]).toBe(thirdRowInput);
-    expect(weightInputsAfter[1]).toHaveValue(30);
-    expect(weightInputsAfter[0]).toHaveValue(10);
+    // Рядкові значення, а не числові: поле ваги — `type="text"`
+    // + `inputMode="decimal"`, бо під `type="number"` браузер віддавав
+    // порожній рядок на кому і «82,5» мовчки ставало 0.
+    expect(weightInputsAfter[1]).toHaveValue("30");
+    expect(weightInputsAfter[0]).toHaveValue("10");
   });
 });

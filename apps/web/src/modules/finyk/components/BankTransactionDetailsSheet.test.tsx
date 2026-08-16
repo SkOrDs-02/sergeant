@@ -110,7 +110,10 @@ describe("BankTransactionDetailsSheet", () => {
     const handlers = renderSheet();
 
     fireEvent.click(screen.getByRole("button", { name: /Розділити/ }));
-    const amounts = screen.getAllByRole("spinbutton");
+    // `getAllByLabelText`, а не роль `spinbutton`: поля сум перейшли на
+    // `type="text"` + `inputMode="decimal"`, щоб приймати кому — під
+    // `type="number"` «150,50» приходило порожнім рядком і частка ставала 0.
+    const amounts = screen.getAllByLabelText("Сума частки");
     fireEvent.change(amounts[0]!, { target: { value: "150" } });
     fireEvent.change(amounts[1]!, { target: { value: "100" } });
     fireEvent.click(screen.getByRole("button", { name: "Зберегти" }));

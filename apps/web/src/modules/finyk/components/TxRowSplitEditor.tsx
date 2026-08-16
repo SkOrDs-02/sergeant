@@ -10,7 +10,7 @@ import { formatMoney } from "@sergeant/shared";
 import type { TxSplit } from "@sergeant/finyk-domain/domain/types";
 import { cn } from "@shared/lib/ui/cn";
 import { MAX_AMOUNT_HRYVNIA } from "@shared/lib/format/amount";
-import { clampNumericInput } from "@shared/lib/format/numberInput";
+import { useDecimalDraft } from "@shared/hooks/useDecimalDraft";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import {
@@ -22,6 +22,38 @@ import {
 interface SplitCategoryOption {
   id: string;
   label: string;
+}
+
+/**
+ * Сума однієї частки. Окремий компонент, бо поля живуть у `.map()`, а
+ * `useDecimalDraft` — хук: по одному виклику на рядок, не цикл усередині
+ * батька.
+ *
+ * Поле було `type="number"`, тож «250,50» приходило сюди порожнім рядком і
+ * частка мовчки ставала 0 — при тому, що сума часток звіряється із загальною сумою
+ * транзакції, і розбіжність виглядала б як помилка користувача.
+ */
+function SplitAmountInput({
+  amount,
+  onCommit,
+}: {
+  amount: number;
+  onCommit: (amount: number) => void;
+}) {
+  const draft = useDecimalDraft(amount || "", MAX_AMOUNT_HRYVNIA, (next) =>
+    onCommit(next ?? 0),
+  );
+  return (
+    <input
+      type="text"
+      inputMode="decimal"
+      value={draft.value}
+      onChange={draft.onChange}
+      className="input-focus-finyk w-24 text-xs h-9 rounded-xl border border-line bg-panelHi px-2 text-right text-text"
+      placeholder="₴"
+      aria-label="Сума частки"
+    />
+  );
 }
 
 interface TxRowSplitEditorProps {
@@ -127,28 +159,13 @@ export function TxRowSplitEditor({
               ))}
             </div>
           )}
-          <input
-            type="number"
-            min={0}
-            max={MAX_AMOUNT_HRYVNIA}
-            value={sp.amount || ""}
-            onChange={(e) =>
+          <SplitAmountInput
+            amount={sp.amount}
+            onCommit={(amount) =>
               setDraftSplits((prev) =>
-                prev.map((p, j) =>
-                  j === i
-                    ? {
-                        ...p,
-                        amount: clampNumericInput(
-                          e.target.value,
-                          MAX_AMOUNT_HRYVNIA,
-                        ),
-                      }
-                    : p,
-                ),
+                prev.map((p, j) => (j === i ? { ...p, amount } : p)),
               )
             }
-            className="input-focus-finyk w-24 text-xs h-9 rounded-xl border border-line bg-panelHi px-2 text-right text-text"
-            placeholder="₴"
           />
           {draftSplits.length > 2 && (
             <button

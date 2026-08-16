@@ -10,22 +10,52 @@ import { Input } from "@shared/components/ui/Input";
 import { Label } from "@shared/components/ui/FormField";
 import { Money } from "@shared/components/ui/Money";
 import { MAX_AMOUNT_HRYVNIA } from "@shared/lib/format/amount";
-import { clampNumericInput } from "@shared/lib/format/numberInput";
+import { useDecimalDraft } from "@shared/hooks/useDecimalDraft";
 import { FirstRunHintBanner } from "../../../../core/onboarding/FirstRunHintBanner";
 
 // Mirrors `useStorage`'s MonthlyPlan: required income/expense/savings,
-// each persisted as the raw `<input type="number">` value (string while
-// editing, number once committed). Defined inline here so the card
-// stays free of a hook import; if a third file ever needs the type,
-// hoist it to a shared module.
+// each persisted as the canonical dot-form value (string while editing,
+// number once committed). Defined inline here so the card stays free of a
+// hook import; if a third file ever needs the type, hoist it to a shared
+// module.
+
 /**
- * Поле лишається рядком, поки користувач друкує, тож порожнє значення не
- * можна перетворювати на «0» — інакше поле не очистити. Клемпимо лише
- * реальний ввід.
+ * Одне з трьох полів плану. Окремий компонент, бо `useDecimalDraft` — хук:
+ * три поля означають три виклики, а не цикл.
+ *
+ * Кома тут обовʼязкова так само, як у КБЖВ: «40 000,50» під `type="number"`
+ * доїжджало обробнику порожнім рядком. Порожнє поле лишається порожнім
+ * рядком, а не нулем, інакше план неможливо очистити.
  */
-function clampPlanAmount(raw: string): string {
-  if (raw === "") return "";
-  return String(clampNumericInput(raw, MAX_AMOUNT_HRYVNIA));
+function PlanAmountField({
+  id,
+  label,
+  placeholder,
+  value,
+  onCommit,
+}: {
+  id: string;
+  label: string;
+  placeholder: string;
+  value: number | string;
+  onCommit: (next: string) => void;
+}) {
+  const draft = useDecimalDraft(value, MAX_AMOUNT_HRYVNIA, (next) =>
+    onCommit(next == null ? "" : String(next)),
+  );
+  return (
+    <div>
+      <Label htmlFor={id}>{label}</Label>
+      <Input
+        id={id}
+        type="text"
+        inputMode="decimal"
+        placeholder={placeholder}
+        value={draft.value}
+        onChange={draft.onChange}
+      />
+    </div>
+  );
 }
 
 export type MonthlyPlan = {
@@ -348,60 +378,33 @@ function MonthlyPlanCardComponent({
                   onDismiss={onDismissFirstRunHint ?? (() => {})}
                 />
               )}
-              <div>
-                <Label htmlFor={incomeId}>План доходу</Label>
-                <Input
-                  id={incomeId}
-                  type="number"
-                  inputMode="decimal"
-                  placeholder="Напр. 40000 ₴"
-                  value={monthlyPlan?.income ?? ""}
-                  min={0}
-                  max={MAX_AMOUNT_HRYVNIA}
-                  onChange={(e) =>
-                    onChangeMonthlyPlan((p) => ({
-                      ...p,
-                      income: clampPlanAmount(e.target.value),
-                    }))
-                  }
-                />
-              </div>
-              <div>
-                <Label htmlFor={expenseId}>План витрат</Label>
-                <Input
-                  id={expenseId}
-                  type="number"
-                  inputMode="decimal"
-                  placeholder="Напр. 25000 ₴"
-                  value={monthlyPlan?.expense ?? ""}
-                  min={0}
-                  max={MAX_AMOUNT_HRYVNIA}
-                  onChange={(e) =>
-                    onChangeMonthlyPlan((p) => ({
-                      ...p,
-                      expense: clampPlanAmount(e.target.value),
-                    }))
-                  }
-                />
-              </div>
-              <div>
-                <Label htmlFor={savingsId}>План накопичень</Label>
-                <Input
-                  id={savingsId}
-                  type="number"
-                  inputMode="decimal"
-                  placeholder="Напр. 10000 ₴"
-                  value={monthlyPlan?.savings ?? ""}
-                  min={0}
-                  max={MAX_AMOUNT_HRYVNIA}
-                  onChange={(e) =>
-                    onChangeMonthlyPlan((p) => ({
-                      ...p,
-                      savings: clampPlanAmount(e.target.value),
-                    }))
-                  }
-                />
-              </div>
+              <PlanAmountField
+                id={incomeId}
+                label="План доходу"
+                placeholder="Напр. 40000 ₴"
+                value={monthlyPlan?.income ?? ""}
+                onCommit={(income) =>
+                  onChangeMonthlyPlan((p) => ({ ...p, income }))
+                }
+              />
+              <PlanAmountField
+                id={expenseId}
+                label="План витрат"
+                placeholder="Напр. 25000 ₴"
+                value={monthlyPlan?.expense ?? ""}
+                onCommit={(expense) =>
+                  onChangeMonthlyPlan((p) => ({ ...p, expense }))
+                }
+              />
+              <PlanAmountField
+                id={savingsId}
+                label="План накопичень"
+                placeholder="Напр. 10000 ₴"
+                value={monthlyPlan?.savings ?? ""}
+                onCommit={(savings) =>
+                  onChangeMonthlyPlan((p) => ({ ...p, savings }))
+                }
+              />
             </div>
           )}
         </div>
