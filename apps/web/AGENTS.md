@@ -1,6 +1,6 @@
 # Agents in apps/web
 
-> **Last touched:** 2026-08-11 by @claude. **Next review:** 2026-12-05.
+> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-12-05.
 > **Status:** Active
 
 > **Single source of truth → root [`AGENTS.md`](../../AGENTS.md).** Цей файл — sub-tree quick reference для агентів, що працюють лише в `apps/web/`. Не дублюй repo policy: hard rules, ownership map, performance budgets і CI matrix живуть у корені.
@@ -39,6 +39,7 @@ pnpm --filter @sergeant/web lighthouse          # Lighthouse CI (perf-budget gat
 - **Storage:** wrapper from `@shared/storage`; allowlist enforced by `pnpm lint:localstorage-allowlist`.
 - **Touch targets:** `Button` auto-applies `min-h-[44px] min-w-[44px]` **лише під `@media (pointer: coarse)`** for `xs`/`sm`/`iconOnly` (на fine-pointer/desktop-миші floor навмисно не діє — `Button.tsx` `pointer-coarse:` варіант); opt out with `data-compact` only for intentionally small cells (heatmaps).
 - **Vitest prerequisite:** run `pnpm --filter @sergeant/db-schema build` before `pnpm --filter @sergeant/web test`. Without it, Vitest cannot resolve `@sergeant/db-schema/sqlite` and hundreds of suites fail at import time with `(0 test)`.
+- **`position: fixed` оверлеї × софт-клавіатура iOS.** `useBodyScrollLock` пінить `body` у `position: fixed`, тож документу нікуди скролитись — і WebKit, підіймаючи сфокусоване поле над клавіатурою, **панує visual viewport** (`visualViewport.offsetTop > 0`) замість скролу. `fixed` прив'язаний до layout viewport, тож оверлей цілком їде вгору: `Sheet` зависає ВИЩЕ клавіатури, а шапка ховається під статус-бар (звіт тестера 2026-08-16). Лікується не інсетом (`useVisualKeyboardInset` навмисно ігнорує `offsetTop` — § H1 джитер), а компенсуючим `transform` повз React-стан — [`useKeyboardAwareOverlay`](./src/shared/hooks/useKeyboardAwareOverlay.ts). Той самий хук синхронно підтягує щойно сфокусоване поле, коли клавіатура вже відкрита (H2-фолбек інсету ловить лише перехід «не було → з'явилась»). Пишеш новий fullscreen-оверлей із полями вводу — став його на `Sheet` або підключай хук.
 - **`AuthContext` × `@sergeant/shared` — білий екран на бутi.** Новий runtime-import `@sergeant/shared` у [`src/core/auth/AuthContext.tsx`](./src/core/auth/AuthContext.tsx) перекроює eager-чанки так, що analytics стартує з ще не ініціалізованими константами: `Cannot read properties of undefined (reading 'SIGNUP_COMPLETED')`, застосунок не рендериться взагалі. Ламає однаково і статичний import, і `await import(...)`; `import type` безпечний. Тому `SYNC_ORIGIN_DEVICE_ID_KEY` там продубльовано літералом під pin-тестом `AuthContext.originDeviceKey.test.ts`. **Typecheck і юніти цього не бачать** — перевіряй буту в браузері на prod-білді (`VERCEL=1 build` + статика з COOP/COEP). Знайдено browser-QA 2026-08-06.
 
 ## Bundle budget
