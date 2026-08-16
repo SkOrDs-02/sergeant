@@ -10,7 +10,10 @@ import { createPortal } from "react-dom";
 import { z } from "zod";
 import { useBodyScrollLock } from "@shared/hooks/useBodyScrollLock";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
+import { useKeyboardAwareOverlay } from "@shared/hooks/useKeyboardAwareOverlay";
+import { useVisualKeyboardInset } from "@sergeant/shared";
 import { cn } from "@shared/lib/ui/cn";
+import { keyboardOverlayStyles } from "@shared/lib/ui/keyboardOverlay";
 import { useApiForm } from "@shared/forms";
 import { Button } from "./Button";
 
@@ -62,6 +65,7 @@ export function InputDialog({
   onCancel,
 }: InputDialogProps) {
   const ref = useRef<HTMLFormElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
   // Mutable cell so we can merge our local ref with RHF's `register().ref`
   // callback ref (which writes into our ref via the callback below). React's
   // overload for `useRef<T>(null)` returns the read-only `RefObject<T>`,
@@ -84,6 +88,15 @@ export function InputDialog({
   useDialogFocusTrap(open, ref, { onEscape: onCancel, inertBackground: true });
   useBodyScrollLock(open);
 
+  // Діалог із єдиним полем вводу — клавіатура тут відкривається завжди
+  // (див. автофокус нижче), тож обидві половини keyboard-геометрії
+  // обов'язкові. `kbInset` звужує бокс до видимої смуги, а хук гасить
+  // пан visual viewport, яким iOS інакше зсуває весь `fixed` оверлей
+  // угору — деталі у шапці `keyboardOverlay.ts`.
+  const kbInsetPx = useVisualKeyboardInset(open);
+  const kbStyles = keyboardOverlayStyles(kbInsetPx);
+  useKeyboardAwareOverlay(open, overlayRef);
+
   useEffect(() => {
     if (!open) return;
     reset({ value: defaultValue });
@@ -105,7 +118,9 @@ export function InputDialog({
 
   return createPortal(
     <div
+      ref={overlayRef}
       className="fixed inset-0 z-200 flex items-end justify-center sm:items-center motion-safe:animate-fade-in"
+      style={kbStyles.container}
       role="presentation"
     >
       <button
@@ -125,8 +140,12 @@ export function InputDialog({
         onSubmit={submit}
         onPointerDown={(e) => e.stopPropagation()}
         noValidate
+        style={kbStyles.panel}
         className={cn(
-          "relative z-10 w-full max-w-sm mx-4 mb-4 sm:mb-0 overscroll-contain",
+          // `overflow-y-auto` — пара до `kbStyles.panel`: під клавіатурою
+          // висота обрізається, і без власного скролу низ форми (кнопки)
+          // став би недосяжним на низьких екранах.
+          "relative z-10 w-full max-w-sm mx-4 mb-4 sm:mb-0 overscroll-contain overflow-y-auto",
           "bg-panel rounded-3xl shadow-float border border-line p-6",
           "motion-safe:animate-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-base",
         )}

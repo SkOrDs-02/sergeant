@@ -30,6 +30,9 @@ import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
 import { logger } from "@shared/lib";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import { useBodyScrollLock } from "@shared/hooks/useBodyScrollLock";
+import { useKeyboardAwareOverlay } from "@shared/hooks/useKeyboardAwareOverlay";
+import { useVisualKeyboardInset } from "@sergeant/shared";
+import { keyboardOverlayStyles } from "@shared/lib/ui/keyboardOverlay";
 import { Icon } from "./Icon";
 import { SectionHeading } from "./SectionHeading";
 import {
@@ -46,6 +49,7 @@ export function CommandPaletteUI() {
   const titleId = useId();
   const listId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [rawQuery, setRawQuery] = useState("");
   const [query, setQuery] = useState("");
@@ -84,6 +88,14 @@ export function CommandPaletteUI() {
   // `overflow: hidden` toggle) — the toggle alone doesn't stop rubber-band
   // scrolling on iOS (C3 web-audit).
   useBodyScrollLock(open);
+
+  // Поле пошуку тут вгорі екрана (`pt-[10vh]`), тож під клавіатуру воно
+  // не потрапляє і пану зазвичай не буде — компенсація стоїть як
+  // страховка. Реальну користь дає інсет: без нього список результатів
+  // (`max-h-[70vh]` від 10vh) наполовину ховається за клавіатурою.
+  const kbInsetPx = useVisualKeyboardInset(open);
+  const kbStyles = keyboardOverlayStyles(kbInsetPx);
+  useKeyboardAwareOverlay(open, overlayRef);
 
   const allCommands = getAll();
 
@@ -151,7 +163,9 @@ export function CommandPaletteUI() {
 
   return createPortal(
     <div
+      ref={overlayRef}
       className="fixed inset-0 z-200 flex items-start justify-center p-4 pt-[10vh]"
+      style={kbStyles.container}
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
@@ -165,6 +179,9 @@ export function CommandPaletteUI() {
       />
       <div
         ref={panelRef}
+        // Під клавіатурою `70vh` завеликі — інлайн ріже панель до
+        // видимої смуги, список усередині вже свій скрол має.
+        style={kbStyles.panel}
         className={cn(
           "relative w-full max-w-xl max-h-[70vh] flex flex-col overflow-hidden",
           "bg-panel border border-line rounded-3xl shadow-float",
