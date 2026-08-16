@@ -56,6 +56,27 @@ describe("isChunkLoadError", () => {
       isChunkLoadError("Failed to fetch dynamically imported module: x.js"),
     ).toBe(true);
   });
+
+  // Аудит телеметрії 2026-08-16: 18 користувачів на SERGEANT-API-M /
+  // SERGEANT-WEB-R. `sqlite3.wasm` тягне власний `fetch()` у emscripten-glue,
+  // тому старі патерни (усі про JS-модулі) цей стейл-асет не бачили.
+  it("matches emscripten wasm fetch abort from a stale deploy", () => {
+    expect(
+      isChunkLoadError(
+        new Error(
+          "Aborted(both async and sync fetching of the wasm failed). Build with -sASSERTIONS for more info.",
+        ),
+      ),
+    ).toBe(true);
+  });
+
+  it("matches the async wasm prepare failure wording", () => {
+    expect(
+      isChunkLoadError(
+        new Error("failed to asynchronously prepare wasm: TypeError"),
+      ),
+    ).toBe(true);
+  });
 });
 
 describe("reloadOnceForChunkError", () => {
@@ -83,6 +104,42 @@ describe("reloadOnceForChunkError", () => {
     expect(reloadOnceForChunkError(1_000)).toBe(true);
     expect(reloadSpy).toHaveBeenCalledTimes(1);
     expect(sessionStorage.getItem("__sergeant_chunk_reload_at")).toBe("1000");
+  });
+
+  // Офлайн reload міняє живий застосунок на порожню сторінку і нічого не
+  // лікує. Перевіряємо і що релоаду немає, і що спроба не з'їла бюджет
+  // `MAX_RELOADS` — він потрібен реальному stale-деплою, а не тунелю метро.
+  describe("offline guard", () => {
+    function setOnLine(value: boolean) {
+      Object.defineProperty(navigator, "onLine", {
+        configurable: true,
+        value,
+      });
+    }
+
+    afterEach(() => {
+      setOnLine(true);
+    });
+
+    it("refuses to reload while offline", () => {
+      setOnLine(false);
+      expect(reloadOnceForChunkError(1_000)).toBe(false);
+      expect(reloadSpy).not.toHaveBeenCalled();
+    });
+
+    it("does not consume the reload budget while offline", () => {
+      setOnLine(false);
+      reloadOnceForChunkError(1_000);
+      expect(sessionStorage.getItem("__sergeant_chunk_reload_at")).toBeNull();
+      expect(
+        sessionStorage.getItem("__sergeant_chunk_reload_count"),
+      ).toBeNull();
+
+      // Мережа повернулась — перший же реальний збій має пройти нормально.
+      setOnLine(true);
+      expect(reloadOnceForChunkError(2_000)).toBe(true);
+      expect(reloadSpy).toHaveBeenCalledTimes(1);
+    });
   });
 
   it("blocks reload within cooldown window (10s)", () => {

@@ -2,6 +2,10 @@ import { drizzle, type SqliteRemoteDatabase } from "drizzle-orm/sqlite-proxy";
 import * as sqliteSchema from "@sergeant/db-schema/sqlite";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 import { addSentryBreadcrumb } from "../observability/sentry.js";
+import {
+  isChunkLoadError,
+  reloadOnceForChunkError,
+} from "../lib/chunkReload.js";
 import { logger } from "@shared/lib";
 import { isSyncableUserId } from "../syncEngine/syncableUserId.js";
 import { CLIENT_PULL_SUPPORTED_TABLES } from "../syncEngine/applyPullOp.js";
@@ -288,8 +292,23 @@ async function initSqliteDb(
   // `apps/web/vite.config.js`). Note: `sqlite3InitModule()` deliberately
   // takes no arguments — the upstream type definition omits the
   // Emscripten options (see sqlite-wasm PR #129).
-  const sqlite3InitModule = await loadSqliteWasm();
-  const sqlite3 = await sqlite3InitModule();
+  // Stale-deploy recovery. Обидва кроки нижче тягнуть версійовані асети:
+  // `loadSqliteWasm()` — JS-чанк, `sqlite3InitModule()` — сам `sqlite3.wasm`
+  // власним `fetch()` усередині emscripten-glue. Після деплою старий
+  // `index.html` у відкритій вкладці посилається на хеші, яких уже немає, і
+  // другий крок падає `RuntimeError: Aborted(...)`. Глобальні слухачі в
+  // `installChunkLoadRecover` сюди не дістають: помилка ловиться вище по
+  // стеку storage-бутом і йде в Sentry як `handled`, тож вкладка лишається
+  // живою, але без локальної БД. Ловимо на місці й віддаємо у той самий
+  // one-shot-reload, що й решта чанків (guard-и cooldown/лічильника — там).
+  let sqlite3: Sqlite3Static;
+  try {
+    const sqlite3InitModule = await loadSqliteWasm();
+    sqlite3 = await sqlite3InitModule();
+  } catch (err) {
+    if (isChunkLoadError(err)) reloadOnceForChunkError();
+    throw err;
+  }
 
   const driver = await openDb(sqlite3, userKey);
   const proxy = makeProxyDriver(driver.db);
