@@ -64,6 +64,9 @@ interface WorkoutJournalSectionProps {
   /** The workout this route resolved to — `null` means "not found". */
   activeWorkout: Workout | null;
   activeDuration: string | null;
+  /** Введений у ретро-формі, але ще не записаний кінець — див. `pendingRetroEnd`. */
+  pendingRetroEnd?: string | null | undefined;
+  onPendingRetroEndChange?: ((iso: string) => void) | undefined;
   musclesUk: Record<string, string>;
   recBy: Record<string, unknown>;
   lastByExerciseId: Record<string, unknown>;
@@ -96,6 +99,8 @@ interface WorkoutJournalSectionProps {
 export function WorkoutJournalSection({
   activeWorkout,
   activeDuration,
+  pendingRetroEnd,
+  onPendingRetroEndChange,
   musclesUk,
   recBy,
   lastByExerciseId,
@@ -162,6 +167,8 @@ export function WorkoutJournalSection({
         <ActiveWorkoutPanel
           activeWorkout={activeWorkout}
           activeDuration={activeDuration}
+          pendingRetroEnd={pendingRetroEnd}
+          onPendingRetroEndChange={onPendingRetroEndChange}
           lastByExerciseId={lastByExerciseId}
           musclesUk={musclesUk}
           recBy={recBy}

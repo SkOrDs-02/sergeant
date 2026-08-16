@@ -3,7 +3,7 @@
 > **Category:** `lint-enforced-convention`
 > **Severity:** `blocker`
 > **Last validated:** 2026-08-16 by @claude
-> **Next review:** 2026-11-14
+> **Next review:** 2027-03-27
 > **Status:** Active
 
 > Per-rule canonical body for Hard Rule #25. Compact summary lives in [`AGENTS.md § Hard rules`](../../../../AGENTS.md#hard-rules-do-not-break). The machine-readable registry lives in [`docs/04-governance/governance/hard-rules.json`](../hard-rules.json). 3-way sync (AGENTS.md ↔ JSON ↔ this file) is enforced by `pnpm lint:hard-rules-registry`.
@@ -26,7 +26,7 @@ Every auto-generated artifact in the repo. Currently:
 | `docs/04-governance/governance/repo-map.auto.json`        | `pnpm docs:gen-repo-map`             |
 | `docs/04-governance/governance/service-catalog.auto.json` | `pnpm docs:gen-service-catalog`      |
 
-Дві уточнювальні межі (ревалідація 2026-08-16):
+Дві уточнювальні межі (звірка 2026-08-16):
 
 - `docs/00-start/playbooks/INDEX.md` генерує `pnpm docs:gen-playbook-index`, і цей генератор **не входить** у `pnpm docs:gen-daily` — його дзеркалить окремий `--check` (`pnpm docs:check-playbook-index`).
 - Генерується саме JSON-дзеркало `service-catalog.auto.json`, а не людиночитний [`docs/02-engineering/architecture/service-catalog.md`](../../../02-engineering/architecture/service-catalog.md): той лишається рукописним (редакторські колонки — runbook, alerts, rollback, data-sensitivity), а `pnpm docs:check-service-catalog` лише звіряє, що кожна поверхня з JSON у ньому згадана. Тому маркера `<!-- AUTO-GENERATED -->` у ньому немає й бути не повинно.

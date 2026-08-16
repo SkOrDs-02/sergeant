@@ -189,6 +189,20 @@ export function useWorkoutsOrchestrator(
     [activeWorkout?.startedAt, activeWorkout?.endedAt, pendingRetroEnd, now],
   );
 
+  /**
+   * Правка відкладеного кінця з `WorkoutTimeEditor`. Пишемо в обидва місця
+   * одразу: сховище переживає перехід маршруту й перезавантаження, стан —
+   * тримає шапку («· 50:00») узгодженою з полем без перемонтування.
+   */
+  const updatePendingRetroEnd = useCallback(
+    (iso: string) => {
+      if (!activeWorkoutId) return;
+      setPendingRetroEnd(activeWorkoutId, iso);
+      setPendingRetroEndValue(iso);
+    },
+    [activeWorkoutId],
+  );
+
   const conflictingWorkout = useMemo(
     () => workouts.find((workout) => !workout.endedAt) ?? null,
     [workouts],
@@ -550,6 +564,8 @@ export function useWorkoutsOrchestrator(
     setForm,
     activeWorkout,
     activeDuration,
+    pendingRetroEnd,
+    updatePendingRetroEnd,
     addExerciseToActive,
     handleExerciseInListClick,
     startWorkoutFromTemplate,

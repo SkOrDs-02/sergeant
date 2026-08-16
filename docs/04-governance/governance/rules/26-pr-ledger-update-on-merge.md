@@ -3,7 +3,7 @@
 > **Category:** `lint-enforced-convention`
 > **Severity:** `blocker`
 > **Last validated:** 2026-08-16 by @claude
-> **Next review:** 2026-11-14
+> **Next review:** 2027-04-12
 > **Status:** Active
 
 > Per-rule canonical body for Hard Rule #26. Compact summary lives in [`AGENTS.md § Hard rules`](../../../../AGENTS.md#hard-rules-do-not-break). The machine-readable registry lives in [`docs/04-governance/governance/hard-rules.json`](../hard-rules.json). 3-way sync (AGENTS.md ↔ JSON ↔ this file) is enforced by `pnpm lint:hard-rules-registry`.
@@ -36,7 +36,7 @@ See [ADR-0061](../../adr/0061-pr-backlink-storage.md) for the storage rationale 
 
 ## Backfill
 
-Леджер більше не порожній — з моменту введення правила його наповнює сам workflow (станом на ревалідацію 2026-08-16 останній запис — PR #689, `generated_at: 2026-08-07`). Історичні PR-и до введення правила автоматично НЕ добираються. Щоб додати такий заднім числом:
+Леджер більше не порожній — з моменту введення правила його наповнює сам workflow (станом на звірку 2026-08-16 у ньому 24 PR-и, останній — #689). Історичні PR-и до введення правила автоматично НЕ добираються. Щоб додати такий заднім числом:
 
 ```bash
 node scripts/ci/update-pr-backlinks.mjs --pr <PR_NUMBER>

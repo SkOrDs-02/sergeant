@@ -92,7 +92,10 @@ ORDER BY event_count DESC;
 PR-15 (48-plan) rollout-шаги:
 
 1. Merge migration `058_n8n_failure_events_signature.sql` у `main`.
-2. Дочекатися міграцій на pre-deploy кроці Coolify (`node dist-server/migrate.js`, [ADR-0074](../../docs/04-governance/adr/0074-hosting-hetzner-coolify.md); до 2026-07 тут був Railway).
+2. Дочекатися pre-deploy міграції на Coolify — крок `node dist-server/migrate.js`
+   (`pre_deployment_command`, потребує `MIGRATE_DATABASE_URL`). Раніше тут
+   стояв `pnpm db:migrate` на Railway; Railway виведено з експлуатації
+   ([ADR-0074](../../docs/04-governance/adr/0074-hosting-hetzner-coolify.md)).
 3. Імпортувати оновлений `98-error-handler.json` у n8n production
    instance (Settings → Workflows → Import from File).
 4. Verify: створити dummy failure (test workflow з `throw new Error('test')`),

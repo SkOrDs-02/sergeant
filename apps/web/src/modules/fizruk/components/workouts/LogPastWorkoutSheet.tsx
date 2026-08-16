@@ -33,11 +33,20 @@
  * людину повз увесь післятренувальний потік: завершене тренування малюється
  * read-only підсумком, тож ні вправи додати, ні оцінку пройти. Розбір —
  * у [`fizruk.md` §3](../../../../../../docs/01-product/model/fizruk.md).
+ *
+ * **Поля — спільні примітиви, а не сирі `<input>`.** Перша версія малювала
+ * `type="date"` / `type="time"` руками з `w-full`, і на iOS форма виїжджала
+ * за екран: нативні контроли мають власний intrinsic inline-size, а комірка
+ * grid-а з дефолтним `min-width: auto` слухняно під нього розширювалась.
+ * `DateField` існує рівно проти цього (той самий баг ловили у формах Фініка),
+ * `TimeField` — його time-двійник. Скарга тестера 2026-08-16.
  */
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 import { Button } from "@shared/components/ui/Button";
+import { DateField } from "@shared/components/ui/DateField";
 import { Sheet } from "@shared/components/ui/Sheet";
+import { TimeField } from "@shared/components/ui/TimeField";
 import { messages } from "@shared/i18n/uk";
 import {
   buildPastWorkoutTimes,
@@ -116,52 +125,34 @@ export function LogPastWorkoutSheet({
         </Button>
       }
     >
-      <div className="space-y-3 pt-1">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <div>
-            <label
-              className="block text-style-caption text-subtle"
-              htmlFor={dateId}
-            >
-              {t.date}
-            </label>
-            <input
+      <div className="w-full min-w-0 max-w-full space-y-3 pt-1">
+        {/* `min-w-0` на КОЖНІЙ комірці, не лише на самих полях: без нього
+            grid-трек росте під intrinsic-ширину нативного пікера, і картка
+            їде за екран навіть тоді, коли поле всередині поводиться чемно. */}
+        <div className="grid w-full min-w-0 max-w-full grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="min-w-0">
+            <DateField
               id={dateId}
-              type="date"
+              label={t.date}
               // Відсікає майбутні ДНІ в самому пікері. Майбутній ЧАС у межах
               // сьогодні цим не ловиться — це робить `times.inFuture` нижче.
               max={today}
-              className="input-focus-fizruk mt-1 w-full h-11 rounded-xl border border-line bg-panelHi px-3 text-style-body text-text"
               value={date}
               onChange={(e) => setDate(e.target.value)}
             />
           </div>
-          <div>
-            <label
-              className="block text-style-caption text-subtle"
-              htmlFor={startId}
-            >
-              {t.start}
-            </label>
-            <input
+          <div className="min-w-0">
+            <TimeField
               id={startId}
-              type="time"
-              className="input-focus-fizruk mt-1 w-full h-11 rounded-xl border border-line bg-panelHi px-3 text-style-body text-text"
+              label={t.start}
               value={start}
               onChange={(e) => setStart(e.target.value)}
             />
           </div>
-          <div>
-            <label
-              className="block text-style-caption text-subtle"
-              htmlFor={endId}
-            >
-              {t.end}
-            </label>
-            <input
+          <div className="min-w-0">
+            <TimeField
               id={endId}
-              type="time"
-              className="input-focus-fizruk mt-1 w-full h-11 rounded-xl border border-line bg-panelHi px-3 text-style-body text-text"
+              label={t.end}
               value={end}
               onChange={(e) => setEnd(e.target.value)}
             />
