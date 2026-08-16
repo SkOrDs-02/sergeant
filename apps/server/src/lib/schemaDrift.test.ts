@@ -8,21 +8,33 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // `vi.mock` піднімається на верх файлу, тож фабрики не бачать звичайних
 // `const` — моки мусять жити у `vi.hoisted`.
-const { listShippedMigrationsMock, loggerMock } = vi.hoisted(() => ({
-  listShippedMigrationsMock: vi.fn<() => Promise<string[]>>(),
-  loggerMock: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
-}));
+const { listShippedMigrationsMock, loggerMock, migrationsDirRef } = vi.hoisted(
+  () => ({
+    listShippedMigrationsMock: vi.fn<() => Promise<string[]>>(),
+    loggerMock: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+    // Мутабельний, бо `access(MIGRATIONS_DIR)` читає його на кожен виклик:
+    // дефолт — реальний каталог репо (він існує), а кейс зламаного артефакта
+    // підміняє шлях на неіснуючий.
+    migrationsDirRef: { current: "" },
+  }),
+);
 
 vi.mock("../db.js", () => ({
   listShippedMigrations: () => listShippedMigrationsMock(),
-  MIGRATIONS_DIR: "/app/migrations",
+  get MIGRATIONS_DIR() {
+    return migrationsDirRef.current;
+  },
 }));
 vi.mock("../obs/logger.js", () => ({ logger: loggerMock }));
+
+const REAL_MIGRATIONS_DIR = new URL("../migrations", import.meta.url).pathname;
 
 import {
   checkSchemaDrift,
   driftBlocksReadiness,
   getLastSchemaDriftReport,
+  getSchemaDriftCheckState,
+  markSchemaDriftCheckStarted,
   reportSchemaDriftAtBoot,
   __resetSchemaDriftCacheForTests,
 } from "./schemaDrift.js";
@@ -46,6 +58,7 @@ function fakePool(applied: string[] | null) {
 }
 
 beforeEach(() => {
+  migrationsDirRef.current = REAL_MIGRATIONS_DIR;
   __resetSchemaDriftCacheForTests();
   listShippedMigrationsMock.mockReset();
   loggerMock.info.mockReset();
@@ -94,6 +107,25 @@ describe("checkSchemaDrift", () => {
     expect(report.applied).toBe(0);
     expect(report.pending).toEqual(["001_a.sql"]);
     expect(report.inSync).toBe(false);
+  });
+
+  // Порожній список від зламаного артефакта невідрізнимий від справді
+  // синхронної схеми: на свіжій базі обидва дають shipped:0/applied:0. Без
+  // окремої позначки детектор мовчки рапортував би «здорово» і не підняв би
+  // алерту — тобто гарантія, заради якої він існує, тихо зникла б.
+  it("не вважає відсутній каталог міграцій синхронною схемою", async () => {
+    migrationsDirRef.current = "/nonexistent/migrations-dir";
+    listShippedMigrationsMock.mockResolvedValue([]);
+    const report = await checkSchemaDrift(fakePool([]));
+    expect(report.migrationsDirMissing).toBe(true);
+    expect(report.inSync).toBe(false);
+  });
+
+  it("не піднімає прапорець, коли каталог на місці", async () => {
+    listShippedMigrationsMock.mockResolvedValue(["001_a.sql"]);
+    const report = await checkSchemaDrift(fakePool(["001_a.sql"]));
+    expect(report.migrationsDirMissing).toBe(false);
+    expect(report.inSync).toBe(true);
   });
 
   it("позначає відкат на старіший образ через unknown, не через pending", async () => {
@@ -150,6 +182,56 @@ describe("reportSchemaDriftAtBoot", () => {
     await expect(
       reportSchemaDriftAtBoot(fakePool([]), captureMessage),
     ).resolves.toMatchObject({ inSync: false });
+  });
+});
+
+describe("стан стартової перевірки", () => {
+  it("починає з idle і переходить у done після успіху", async () => {
+    listShippedMigrationsMock.mockResolvedValue(["001_a.sql"]);
+    expect(getSchemaDriftCheckState()).toBe("idle");
+    await reportSchemaDriftAtBoot(fakePool(["001_a.sql"]), vi.fn());
+    expect(getSchemaDriftCheckState()).toBe("done");
+  });
+
+  it("переходить у failed, коли база недоступна", async () => {
+    listShippedMigrationsMock.mockResolvedValue(["001_a.sql"]);
+    const pool = {
+      query: vi.fn().mockRejectedValue(new Error("ECONNREFUSED")),
+    } as never;
+    await reportSchemaDriftAtBoot(pool, vi.fn());
+    expect(getSchemaDriftCheckState()).toBe("failed");
+  });
+
+  // Ключове вікно: між `app.listen` і резолвом запиту в `schema_migrations`
+  // звіту ще немає. Якби цей стан читався як «дрейфу немає», увімкнений гейт
+  // пропустив би трафік на контейнер із неперевіреною схемою.
+  it("тримає стан checking, поки запит не завершився", async () => {
+    listShippedMigrationsMock.mockResolvedValue(["001_a.sql"]);
+    let release: (() => void) | undefined;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const pool = {
+      query: vi.fn(async (sql: string) => {
+        await gate;
+        if (sql.includes("to_regclass")) return { rows: [{ reg: null }] };
+        return { rows: [] };
+      }),
+    } as never;
+
+    const inFlight = reportSchemaDriftAtBoot(pool, vi.fn());
+    expect(getSchemaDriftCheckState()).toBe("checking");
+    expect(getLastSchemaDriftReport()).toBeNull();
+
+    release?.();
+    await inFlight;
+    expect(getSchemaDriftCheckState()).toBe("done");
+  });
+
+  it("markSchemaDriftCheckStarted виставляє checking синхронно", () => {
+    expect(getSchemaDriftCheckState()).toBe("idle");
+    markSchemaDriftCheckStarted();
+    expect(getSchemaDriftCheckState()).toBe("checking");
   });
 });
 

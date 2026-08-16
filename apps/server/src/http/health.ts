@@ -11,6 +11,7 @@ import { getMonoEnrichmentWorkerStatus } from "../modules/mono/enrichmentWorker.
 import {
   driftBlocksReadiness,
   getLastSchemaDriftReport,
+  getSchemaDriftCheckState,
 } from "../lib/schemaDrift.js";
 
 interface DbPool {
@@ -65,13 +66,27 @@ export function createReadyzHandler(pool: DbPool): RequestHandler {
     // кожні кілька секунд, а схема між рестартами не міняється (pre-deploy
     // відпрацьовує до старту процесу). Гейт опційний — ціна хибного
     // спрацювання тут повний простій, див. `lib/schemaDrift.ts`.
+    //
+    // Коли гейт увімкнено, «ще не знаємо» трактуємо як «не готові». Інакше
+    // між `app.listen` і резолвом запиту в `schema_migrations` лишалось би
+    // вікно, у якому проба зелена, а схема ще не перевірена — і платформа
+    // встигала б завести трафік саме на той контейнер, який гейт мав відсіяти.
+    //
+    // `failed` при цьому НЕ блокує — свідомо. Звірка виконується один раз на
+    // буті, тож разовий мережевий збій у момент старту назавжди лишив би
+    // контейнер не-ready і відкотив би справний деплой. Реально недоступну БД
+    // ловить `SELECT 1` вище в цьому ж хендлері.
     const drift = getLastSchemaDriftReport();
+    const driftState = getSchemaDriftCheckState();
+    const schemaUnverified = driftState === "idle" || driftState === "checking";
     const schemaBlocks =
-      driftBlocksReadiness() && drift !== null && !drift.inSync;
+      driftBlocksReadiness() &&
+      (schemaUnverified || (drift !== null && !drift.inSync));
     if (schemaBlocks) {
       logger.error({
         msg: "readyz_schema_drift_block",
-        pending: drift.pending,
+        state: driftState,
+        pending: drift?.pending ?? null,
       });
     }
 

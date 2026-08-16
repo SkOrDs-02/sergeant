@@ -24,7 +24,10 @@ import { pool } from "./db.js";
 import { drainReplicaPool } from "./dbReplica.js";
 import { env } from "./env.js";
 import { markStartupComplete } from "./lib/appState.js";
-import { reportSchemaDriftAtBoot } from "./lib/schemaDrift.js";
+import {
+  markSchemaDriftCheckStarted,
+  reportSchemaDriftAtBoot,
+} from "./lib/schemaDrift.js";
 import {
   startAuthMailWorker,
   type StartedAuthMailWorker,
@@ -504,6 +507,13 @@ for (const sig of ["SIGTERM", "SIGINT"]) {
 // (див. `scripts/migrate.mjs` / `npm run db:migrate`). При rolling deploy з 2+
 // реплік race на `INSERT schema_migrations` раніше валив один із процесів,
 // плюс readiness-проб затримувався часом виконання міграцій.
+// Позначаємо звірку схеми як розпочату СИНХРОННО, до прив'язки до порту.
+// Сам запит іде нижче, у `listen`-колбеку, але readiness мусить знати про
+// «перевірка ще не завершена» вже з першої проби: інакше під увімкненим
+// `MIGRATION_DRIFT_BLOCKS_READINESS` існує вікно, у якому `/readyz` зелений,
+// а схема ще не звірена, і платформа встигає завести трафік.
+markSchemaDriftCheckStarted();
+
 httpServer = app.listen(config.port, "0.0.0.0", () => {
   // Сигнал для `/startupz` (a.k.a. `/health/startup`): процес завершив
   // env-assert, Sentry-init і прив'язку до порту, тож платформа може

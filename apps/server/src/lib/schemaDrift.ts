@@ -26,8 +26,9 @@
  * свідомо через `MIGRATION_DRIFT_BLOCKS_READINESS`.
  */
 
+import { access } from "node:fs/promises";
 import type { Pool } from "pg";
-import { listShippedMigrations } from "../db.js";
+import { MIGRATIONS_DIR, listShippedMigrations } from "../db.js";
 import { logger } from "../obs/logger.js";
 
 export interface SchemaDriftReport {
@@ -46,7 +47,19 @@ export interface SchemaDriftReport {
    * знати про це треба.
    */
   unknown: string[];
-  /** `true`, коли `pending` порожній. */
+  /**
+   * Каталогу міграцій немає в образі взагалі.
+   *
+   * Це НЕ те саме, що «жодної міграції не чекає»: порожній список від
+   * відсутнього каталогу невідрізнимий від справді синхронної схеми — на
+   * свіжій базі обидва дають `shipped: 0, applied: 0`. Якби зламана збірка
+   * викинула `src/migrations` з образу, детектор мовчки рапортував би
+   * «здорово» і не підняв би жодного алерту — тобто гарантія, заради якої він
+   * існує, тихо зникла б. Тому стан позначаємо окремо і не вважаємо
+   * синхронним.
+   */
+  migrationsDirMissing: boolean;
+  /** `true`, коли `pending` порожній і каталог міграцій на місці. */
   inSync: boolean;
 }
 
@@ -61,6 +74,15 @@ export async function checkSchemaDrift(
   pool: Pick<Pool, "query">,
 ): Promise<SchemaDriftReport> {
   const shipped = await listShippedMigrations();
+
+  // `MIGRATIONS_DIR` рахується від `__dirname`, тож чужий cwd цього стану дати
+  // не може — лише реально зламаний артефакт збірки.
+  let migrationsDirMissing = false;
+  try {
+    await access(MIGRATIONS_DIR);
+  } catch {
+    migrationsDirMissing = true;
+  }
 
   // Наявність таблиці перевіряємо ОКРЕМИМ запитом, а не умовою у `WHERE`:
   // `SELECT ... FROM schema_migrations` падає ще на плануванні, якщо
@@ -89,7 +111,8 @@ export async function checkSchemaDrift(
     applied: appliedSet.size,
     pending,
     unknown,
-    inSync: pending.length === 0,
+    migrationsDirMissing,
+    inSync: pending.length === 0 && !migrationsDirMissing,
   };
 }
 
@@ -110,6 +133,33 @@ export function driftBlocksReadiness(): boolean {
  */
 let lastReport: SchemaDriftReport | null = null;
 
+/**
+ * Стан стартової перевірки. Потрібен окремо від `lastReport`, бо `null` там
+ * означає одразу дві різні речі — «ще не рахували» і «порахувати не вдалося», —
+ * а readiness мусить їх розрізняти.
+ *
+ * `checking` виставляється СИНХРОННО, до `app.listen`. Інакше між підняттям
+ * порту і резолвом запиту в `schema_migrations` існує вікно, у якому
+ * `getLastSchemaDriftReport()` віддає `null`, гейт вважає це «дрейфу немає», і
+ * `/readyz` пускає трафік на контейнер із неперевіреною схемою — тобто рівно
+ * те, що гейт має не допустити.
+ */
+export type SchemaDriftCheckState = "idle" | "checking" | "done" | "failed";
+
+let checkState: SchemaDriftCheckState = "idle";
+
+export function getSchemaDriftCheckState(): SchemaDriftCheckState {
+  return checkState;
+}
+
+/**
+ * Позначає перевірку як розпочату. Викликається синхронно на буті, ДО того як
+ * платформа отримає перший readiness-запит.
+ */
+export function markSchemaDriftCheckStarted(): void {
+  checkState = "checking";
+}
+
 export function getLastSchemaDriftReport(): SchemaDriftReport | null {
   return lastReport;
 }
@@ -117,6 +167,7 @@ export function getLastSchemaDriftReport(): SchemaDriftReport | null {
 /** Скидання кешу між тест-кейсами. */
 export function __resetSchemaDriftCacheForTests(): void {
   lastReport = null;
+  checkState = "idle";
 }
 
 /**
@@ -130,10 +181,13 @@ export async function reportSchemaDriftAtBoot(
   pool: Pick<Pool, "query">,
   captureMessage: (message: string, context: SchemaDriftReport) => void,
 ): Promise<SchemaDriftReport | null> {
+  markSchemaDriftCheckStarted();
+
   let report: SchemaDriftReport;
   try {
     report = await checkSchemaDrift(pool);
   } catch (e: unknown) {
+    checkState = "failed";
     logger.warn({
       msg: "schema_drift_check_failed",
       err: { message: e instanceof Error ? e.message : String(e) },
@@ -142,6 +196,7 @@ export async function reportSchemaDriftAtBoot(
   }
 
   lastReport = report;
+  checkState = "done";
 
   if (report.unknown.length > 0) {
     logger.warn({
@@ -160,20 +215,29 @@ export async function reportSchemaDriftAtBoot(
     return report;
   }
 
+  // Зламаний артефакт і відсталу базу лікують по-різному, тож і повідомлення
+  // різні: у першому випадку `migrate.js` не допоможе — міграцій в образі
+  // просто немає.
+  const message = report.migrationsDirMissing
+    ? "Schema drift: the migrations directory is missing from this image — schema state cannot be verified at all."
+    : `Schema drift: ${report.pending.length} migration(s) shipped but not applied — endpoints touching the new columns will 500.`;
+
   logger.error({
-    msg: "schema_drift_detected",
+    msg: report.migrationsDirMissing
+      ? "schema_migrations_dir_missing"
+      : "schema_drift_detected",
     shipped: report.shipped,
     applied: report.applied,
     pending: report.pending,
+    migrationsDirMissing: report.migrationsDirMissing,
     blocksReadiness: driftBlocksReadiness(),
-    hint: "Pre-deploy міграції не відпрацювали. Запусти `node dist-server/migrate.js` проти цієї бази перед тим, як пускати трафік.",
+    hint: report.migrationsDirMissing
+      ? "Каталог `src/migrations` не потрапив в образ — перевір збірку (`Dockerfile.api`, крок копіювання міграцій)."
+      : "Pre-deploy міграції не відпрацювали. Запусти `node dist-server/migrate.js` проти цієї бази перед тим, як пускати трафік.",
   });
 
   try {
-    captureMessage(
-      `Schema drift: ${report.pending.length} migration(s) shipped but not applied — endpoints touching the new columns will 500.`,
-      report,
-    );
+    captureMessage(message, report);
   } catch {
     // Транспорт алерту не має права завалити бут.
   }
