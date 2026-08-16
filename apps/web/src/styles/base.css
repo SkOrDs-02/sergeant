@@ -42,12 +42,6 @@
     overscroll-behavior: none;
   }
 
-  @supports (-webkit-touch-callout: none) {
-    html {
-      background-attachment: scroll;
-    }
-  }
-
   /* WebKit reports `dvh`, `visualViewport.height`, and the fixed-position
      containing block without the viewport-fit extension in installed PWAs.
      The result is a root that starts under the status bar but ends one top
@@ -96,6 +90,15 @@
       "calt" 1,
       "ss01" 1;
     font-kerning: normal;
+  }
+
+  /* Мусить іти ПІСЛЯ `html` вище: `@supports` не додає специфічності, тож
+     при однаковій вазі виграє те правило, що нижче. Раніше цей блок стояв
+     перед ним і мовчки не діяв (спіймано на рев'ю PR #808). */
+  @supports (-webkit-touch-callout: none) {
+    html {
+      background-attachment: scroll;
+    }
   }
 
   body {
