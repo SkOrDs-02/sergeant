@@ -6,6 +6,10 @@
  * Hard Rule #18 `max-lines: 600` ceiling.
  */
 import { INTERNAL_TRANSFER_ID } from "../constants";
+import {
+  MANUAL_EXPENSE_TAXONOMY,
+  MANUAL_INCOME_TAXONOMY,
+} from "@sergeant/finyk-domain/lib/manualTaxonomy";
 import type { IconName } from "@shared/components/ui/Icon";
 import type { MonoAccount } from "@sergeant/finyk-domain/lib/accounts";
 
@@ -18,6 +22,20 @@ export const SPLIT_INPUT_CLASS =
  * Phase 6.1 — Expensa-inspired category-tinted icon pill.
  */
 export const CATEGORY_ICON_MAP: Record<string, IconName> = {
+  // Ручна таксономія йде ПЕРШОЮ, щоб MCC-записи нижче лишались
+  // сильнішими: збіжні id (`food`, `transport`, …) мають зберегти рівно
+  // ті іконки, що й до 2026-08-13, а з таблиці нам потрібні тільки ті,
+  // яких у MCC-каталозі немає — `groceries`, `cafe`, `tech`,
+  // `utilities`, `other` і всі надходження. Без них рядок ручної
+  // операції діставав правильний підпис і правильний колір, але
+  // generic-іконку «tag»: три факти про одну категорію бралися з трьох
+  // різних таблиць. Джерело — `manualTaxonomy.ts`.
+  ...Object.fromEntries(
+    [...MANUAL_EXPENSE_TAXONOMY, ...MANUAL_INCOME_TAXONOMY].map((d) => [
+      d.id,
+      d.iconName as IconName,
+    ]),
+  ),
   food: "shopping-cart",
   restaurant: "coffee",
   transport: "truck",

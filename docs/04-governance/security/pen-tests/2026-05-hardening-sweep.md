@@ -1,6 +1,6 @@
 # Hardening pen-test sweep — 2026-05 (H5/H6/H8/H9)
 
-> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
+> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-12-12.
 > **Status:** Reference
 
 | Field        | Value                                                                                                                                                                                                                  |

@@ -1,6 +1,6 @@
 # API contracts — runtime consumer-driven contract testing (Pact)
 
-> **Last touched:** 2026-08-06 by @claude. **Next review:** 2026-11-04.
+> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-11-28.
 > **Status:** Active
 >
 > **v2 (persona-extend) coverage:** 22 consumer interactions → 14 unique routes; 8+ provider replays у `provider.test.ts` (решта — `it.todo` або auth-stubbed). Див. header comment у `apps/server/src/__tests__/contracts/provider.test.ts`.

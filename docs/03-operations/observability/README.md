@@ -1,6 +1,6 @@
 # Observability
 
-> **Last touched:** 2026-07-21 by @Skords-01. **Next review:** 2026-10-19.
+> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-12-12.
 > **Status:** Active
 
 SLOs, runtime signals, dashboards, and production operations.

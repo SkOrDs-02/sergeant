@@ -1,6 +1,6 @@
 # What's New — release notes content
 
-> **Last touched:** 2026-08-10 by @claude. **Next review:** 2026-11-08.
+> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-12-12.
 > **Status:** Active
 
 Це **джерело істини** для in-product «Що нового» модала

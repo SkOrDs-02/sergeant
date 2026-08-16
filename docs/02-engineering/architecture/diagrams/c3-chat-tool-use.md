@@ -1,6 +1,6 @@
 # C3 — HubChat tool-use loop
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-12-03.
 > **Status:** Active
 
 Як працює tool-use цикл всередині однієї chat-сесії. HubChat — це AI-помічник, що бачить локальні дані користувача через tool-handlers на клієнті.

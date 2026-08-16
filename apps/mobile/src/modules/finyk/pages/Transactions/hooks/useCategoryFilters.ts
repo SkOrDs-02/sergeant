@@ -7,8 +7,8 @@
 import { useCallback, useMemo } from "react";
 
 import {
-  getCategory,
-  getIncomeCategory,
+  getExpenseCategoryForTransaction,
+  getIncomeCategoryForTransaction,
   mergeExpenseCategoryDefinitions,
   INCOME_CATEGORIES,
 } from "@sergeant/finyk-domain";
@@ -81,14 +81,13 @@ export function useCategoryFilters({
   const getEffectiveCat = useCallback(
     (t: Transaction): { id: string; label: string } => {
       if (t.amount > 0) {
-        return getIncomeCategory(t.description, txCategories[t.id]) as {
+        return getIncomeCategoryForTransaction(t, txCategories[t.id]) as {
           id: string;
           label: string;
         };
       }
-      return getCategory(
-        t.description,
-        t.mcc,
+      return getExpenseCategoryForTransaction(
+        t,
         txCategories[t.id],
         customCategories,
       ) as { id: string; label: string };

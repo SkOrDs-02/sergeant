@@ -15,7 +15,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { TxRow, type TxRowTx } from "./TxRow";
 import type { MonoAccount } from "@sergeant/finyk-domain/lib/accounts";
-import { getCatTiers } from "@sergeant/finyk-domain/domain/categories";
+import {
+  getCatTiers,
+  resolveCatTiers,
+} from "@sergeant/finyk-domain/domain/categories";
 
 const KYIV_NOON = new Date("2026-06-04T09:00:00Z"); // 12:00 EEST
 
@@ -88,6 +91,53 @@ describe("TxRow", () => {
 
     expect(screen.getByText("Ручна витрата")).toBeInTheDocument();
     expect(screen.getAllByText("Розваги")).toHaveLength(1);
+  });
+
+  // Регресія 2026-08-13. Жоден income-id не мав запису в палітрі, тож
+  // усі надходження діставали ПЕРШИЙ fallback-тир — колір категорії
+  // «Транспорт». У стрічці зарплата була пофарбована як поїздка.
+  it("paints an income row with the income tier, not the transport colour", () => {
+    const { container } = render(
+      <TxRow
+        tx={mkTx({ amount: 42000, description: "", categoryId: "salary" })}
+        overrideCatId={null}
+      />,
+    );
+
+    expect(screen.getByText("Зарплата")).toBeInTheDocument();
+    const chips = container.querySelectorAll<HTMLElement>(".cat-chip");
+    expect(chips.length).toBeGreaterThan(0);
+    for (const chip of chips) {
+      expect(chip.style.getPropertyValue("--cat-tint")).toBe(
+        getCatTiers("income").tint,
+      );
+      expect(chip.style.getPropertyValue("--cat-tint")).not.toBe(
+        getCatTiers("transport").tint,
+      );
+    }
+  });
+
+  // Пікер обіцяє коментарем «той самий відтінок людина потім бачить у
+  // строці транзакції». До 2026-08-13 обіцянка не виконувалась для
+  // кастомних категорій: рядок не передавав індекс палітри взагалі.
+  it("gives a custom category the same tint in the row as resolveCatTiers", () => {
+    const customCategories = [
+      { id: "custom_a", label: "A" },
+      { id: "custom_kava", label: "Кава з друзями" },
+    ];
+    const { container } = render(
+      <TxRow
+        tx={mkTx({ description: "", mcc: 0 })}
+        overrideCatId="custom_kava"
+        customCategories={customCategories}
+      />,
+    );
+
+    const expected = resolveCatTiers("custom_kava", customCategories).tint;
+    expect(expected).not.toBe(getCatTiers("custom_kava", 0).tint);
+    for (const chip of container.querySelectorAll<HTMLElement>(".cat-chip")) {
+      expect(chip.style.getPropertyValue("--cat-tint")).toBe(expected);
+    }
   });
 
   it("shows the AI badge for an auto-categorized expense", () => {

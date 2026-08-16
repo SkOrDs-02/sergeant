@@ -2,7 +2,7 @@
 
 # Playbook: Council — рада директорів для product рішень
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-12-07.
 > **Status:** Active
 
 **Trigger:** Засновник губиться, не знає що робити далі, або хоче валідувати ідею/рішення з кількох точок зору одночасно.

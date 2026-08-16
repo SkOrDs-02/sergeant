@@ -1,6 +1,6 @@
 # Paywall UX placement — sketch + decision doc
 
-> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
+> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-11-22.
 > **Status:** Active draft (sketch). Закриває tracker `PR-19` per [ftux-master-tracker §3.4](./ftux-master-tracker.md#34-хвиля-4--paywall--polish-week-5-6-4-pr).
 >
 > **Update 2026-07-10:** trial-механіка в коді — ADR-0068 **reverse trial 7 днів** (авто Pro → downgrade), не 14d opt-in trial без картки з §1 нижче. Placement sketch (post-first-real-entry sheet) лишається валідним; trial copy оновити під ADR-0068.

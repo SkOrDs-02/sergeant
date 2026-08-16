@@ -203,7 +203,9 @@ export function PhotoAnalyzeCard({
   return (
     // Раніше — самостійна картка на сторінці «Огляд»; тепер живе кроком
     // усередині AddMealSheet, тож без власного Card-хрому: панель і
-    // паддінги дає sheet.
+    // паддінги дає sheet. Заголовка тут навмисно НЕМА (main лагодив той
+    // самий дубль ще під <details>-обгортку): назву «Аналіз фото страви»
+    // несе title самої шторки, картці лишається тільки підпис.
     <div className="min-w-0">
       <div className="flex items-center justify-between gap-3 mb-4">
         <div className="min-w-0">

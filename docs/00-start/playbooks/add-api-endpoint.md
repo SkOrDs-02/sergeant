@@ -1,6 +1,6 @@
 # Playbook: Add API Endpoint
 
-> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
+> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-12-08.
 > **Status:** Active
 
 **Trigger:** "Додати новий endpoint в `apps/server`" / нова API-функціональність / зміна REST surface, яку будуть споживати web, mobile або HubChat.

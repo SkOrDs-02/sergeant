@@ -1,6 +1,6 @@
 # DB index audit — template
 
-> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
+> **Last touched:** 2026-05-13 by Devin. **Next review:** 2026-09-03.
 > **Status:** Active (template only)
 
 Цей файл — **template** для one-time index-audit snapshot-ів проти

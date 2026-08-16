@@ -1,6 +1,6 @@
 # Skill Authoring Guide — `references/` convention
 
-> **Last validated:** 2026-06-14 by Claude. **Next review:** 2026-09-12.
+> **Last validated:** 2026-06-14 by Claude. **Next review:** 2026-09-23.
 > **Status:** Active
 
 Канонічна конвенція для reference-файлів усередині repo-owned skill-ів (`.agents/skills/<slug>/references/`). Мета — щоб 3-tier progressive disclosure не дрейфував між скілами (один скіл — `references/{prefix}-*.md`, інший — `refs/*.md`), а формат був машинно-перевірюваним. Запозичено з [`agentskills.io`](https://agentskills.io/) open standard і [`anthropics/skills`](https://github.com/anthropics/skills) (§ «Anatomy of a Skill»).

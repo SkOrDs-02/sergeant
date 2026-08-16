@@ -1,6 +1,6 @@
 # 0022 — Імпорт даних з зовнішніх трекерів (CSV-onboarding)
 
-> **Last touched:** 2026-08-05 by @claude (зафіксовано founder-рішення по dedup-стратегії). **Next review:** 2026-11-03.
+> **Last touched:** 2026-08-05 by @claude (зафіксовано founder-рішення по dedup-стратегії). **Next review:** 2027-03-14.
 > **Status:** Proposed (2026-06-28) — драфт плану; не почато. Чекає на founder-greenlight по скоупу Фази 1 + рішення по валютній нормалізації (див. § Відкриті рішення; dedup-стратегію вже вирішено 2026-08-04).
 > **Agent-ready:** needs-decision
 > **Priority:** P2 (growth / activation lever — не блокер launch-у 0010)

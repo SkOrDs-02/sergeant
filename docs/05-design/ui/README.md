@@ -1,6 +1,6 @@
 # UI policy
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-11-15.
 > **Status:** Active
 
 Cross-cutting UI-політики поведінкового рівня — клавіатурні скорочення й toast-и. Не

@@ -1,6 +1,6 @@
 # PR Ledger — canonical reverse PR ↔ doc index
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-11-30.
 > **Status:** Active
 
 Bidirectional companion to [`docs/open-work.md`](../../open-work.md). Open-work scans canonical docs for `#NNNN` mentions (forward link: doc → PR). This ledger goes the other way: merged PRs → docs they touched.

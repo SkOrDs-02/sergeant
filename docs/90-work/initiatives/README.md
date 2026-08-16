@@ -1,6 +1,6 @@
 # Engineering Initiatives
 
-> **Last touched:** 2026-07-20 by @cursoragent (active-table refresh after m083 / billing hygiene). **Next review:** 2026-10-18.
+> **Last touched:** 2026-07-20 by @cursoragent (active-table refresh after m083 / billing hygiene). **Next review:** 2027-02-07.
 > **Status:** Active
 
 Цей розділ — **операційний плейлист** для інженерної команди. Кожен файл — одна окрема ініціатива, яка описує проблему, обсяг змін, план виконання та критерії готовності.

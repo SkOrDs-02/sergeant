@@ -1,6 +1,6 @@
 # `/api/internal/*` HMAC signing — rollout playbook
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-11-28.
 > **Status:** Active (grace mode).
 > **Owner:** ops + server.
 > **Related:** [`better-auth-audit-2026-05.md`](./better-auth-audit-2026-05.md), [`logging-redaction-policy.md`](./logging-redaction-policy.md), [`docs/03-operations/observability/alert-bot-routing.md`](../../03-operations/observability/alert-bot-routing.md).

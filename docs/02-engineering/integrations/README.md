@@ -1,6 +1,6 @@
 # Інтеграції
 
-> **Last validated:** 2026-05-13 by @devin-ai-integration[bot]. **Next review:** 2026-08-11.
+> **Last validated:** 2026-05-13 by @devin-ai-integration[bot].
 > **Status:** Active
 
 Документація сторонніх сервісів і інтеграцій.

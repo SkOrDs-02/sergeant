@@ -1,6 +1,6 @@
 # Error-budget-політика
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-11-29.
 > **Status:** Active
 
 > Автор: obs-team. Огляд щокварталу (див. [`docs/04-governance/governance/policy-review.md`](../../04-governance/governance/policy-review.md)).

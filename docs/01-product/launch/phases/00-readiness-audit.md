@@ -1,6 +1,6 @@
 # 00 — Launch readiness audit: 5 застосунків Sergeant
 
-> **Last touched:** 2026-07-29 by @Skords-01. **Next review:** 2026-10-27.
+> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-12-01.
 > **Status:** Active
 
 > **Канон 2026-07-29:** billing scaffold, in-app landing і standalone `apps/landing` shipped у коді. Для marketing surface не підтверджені з репо лише зовнішні Vercel production deployment і `sergeant.com.ua` DNS. Public launch блокується legal publish, live payment env/cookie consent/store readiness — не створенням ще одного лендінгу.

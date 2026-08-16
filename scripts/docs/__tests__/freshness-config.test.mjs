@@ -14,6 +14,11 @@ import {
   hasFreshnessHeader,
   buildTrackedList,
   computeCoverageGaps,
+  cadenceForPath,
+  reviewJitterDays,
+  nextReviewFor,
+  addDaysISO,
+  isOffCalendar,
 } from "../freshness-config.mjs";
 
 // ── globToRegex / matchesAnyGlob ─────────────────────────────────────────────
@@ -284,5 +289,154 @@ describe("computeCoverageGaps", () => {
       readFile: () => headerContent,
     });
     assert.deepEqual(gaps, []);
+  });
+});
+
+// ── cadenceForPath ───────────────────────────────────────────────────────────
+
+describe("cadenceForPath", () => {
+  const config = {
+    defaultCadenceDays: 90,
+    cadenceOverrides: {
+      "docs/00-start/playbooks/rotate-secrets.md": 60,
+      "docs/02-engineering/**": 180,
+      "docs/02-engineering/notes/**": 365,
+      "docs/02-engineering/architecture/**": 90,
+    },
+  };
+
+  it("exact path beats every glob", () => {
+    assert.equal(
+      cadenceForPath("docs/00-start/playbooks/rotate-secrets.md", config),
+      60,
+    );
+  });
+
+  it("longest matching glob wins over a shallower one", () => {
+    // Обидва патерни матчать, але `notes/**` специфічніший.
+    assert.equal(
+      cadenceForPath("docs/02-engineering/notes/spikes/x.md", config),
+      365,
+    );
+    assert.equal(
+      cadenceForPath("docs/02-engineering/architecture/repo-map.md", config),
+      90,
+    );
+    assert.equal(
+      cadenceForPath("docs/02-engineering/testing/x.md", config),
+      180,
+    );
+  });
+
+  it("falls back to the default when nothing matches", () => {
+    assert.equal(
+      cadenceForPath("docs/00-start/agents/onboarding.md", config),
+      90,
+    );
+  });
+});
+
+// ── reviewJitterDays ─────────────────────────────────────────────────────────
+
+describe("reviewJitterDays", () => {
+  it("is deterministic for the same path", () => {
+    assert.equal(
+      reviewJitterDays("docs/a.md", 90),
+      reviewJitterDays("docs/a.md", 90),
+    );
+  });
+
+  it("never shortens the cadence and stays inside a third of it", () => {
+    for (const p of ["docs/a.md", "docs/b.md", "docs/c/d.md", "AGENTS.md"]) {
+      for (const c of [60, 90, 180, 365]) {
+        const j = reviewJitterDays(p, c);
+        assert.ok(j >= 0, `${p}@${c} → ${j}`);
+        assert.ok(j < Math.max(1, Math.floor(c / 3)), `${p}@${c} → ${j}`);
+      }
+    }
+  });
+
+  // Сенс усієї функції: пачка доків, збамплена одним комітом, не має
+  // прийти до перегляду одного дня.
+  it("spreads a batch stamped on the same day across many dates", () => {
+    const batch = Array.from(
+      { length: 40 },
+      (_, i) => `docs/batch/doc-${i}.md`,
+    );
+    const dues = new Set(
+      batch.map((p) =>
+        nextReviewFor(p, "2026-05-13", {
+          defaultCadenceDays: 90,
+          cadenceOverrides: {},
+        }),
+      ),
+    );
+    assert.ok(dues.size > 15, `очікували розкид, дістали ${dues.size} дат`);
+  });
+});
+
+// ── nextReviewFor ────────────────────────────────────────────────────────────
+
+describe("nextReviewFor", () => {
+  const config = {
+    defaultCadenceDays: 90,
+    cadenceOverrides: { "docs/rec/**": 365 },
+  };
+
+  it("is cadence + spread after the last-touched date", () => {
+    const due = nextReviewFor("docs/x.md", "2026-01-01", config);
+    const j = reviewJitterDays("docs/x.md", 90);
+    assert.equal(due, addDaysISO("2026-01-01", 90 + j));
+  });
+
+  it("honours the tier for the path", () => {
+    const due = nextReviewFor("docs/rec/audit.md", "2026-01-01", config);
+    const j = reviewJitterDays("docs/rec/audit.md", 365);
+    assert.equal(due, addDaysISO("2026-01-01", 365 + j));
+  });
+
+  it("is idempotent — re-deriving gives the same date", () => {
+    const a = nextReviewFor("docs/x.md", "2026-01-01", config);
+    const b = nextReviewFor("docs/x.md", "2026-01-01", config);
+    assert.equal(a, b);
+  });
+});
+
+// ── lifecycle status ─────────────────────────────────────────────────────────
+
+describe("isOffCalendar", () => {
+  const doc = (status) =>
+    `# T\n\n> **Last touched:** 2026-01-01 by @x. **Next review:** 2026-04-01.\n> **Status:** ${status}\n\nbody`;
+
+  it("takes finished and frozen docs off the calendar", () => {
+    for (const s of [
+      "Archived",
+      "Superseded",
+      "Done",
+      "Deprecated",
+      "Closed",
+    ]) {
+      assert.equal(isOffCalendar(doc(s)), true, s);
+    }
+  });
+
+  it("keeps living docs on it", () => {
+    for (const s of ["Active", "Scaffolded", "Reference"]) {
+      assert.equal(isOffCalendar(doc(s)), false, s);
+    }
+  });
+
+  it("treats a doc with no status as living", () => {
+    assert.equal(
+      isOffCalendar("# T\n\n> **Last touched:** 2026-01-01 by @x.\n"),
+      false,
+    );
+  });
+
+  // Статус живе у блоці заголовка; згадка слова нижче по тексту не має
+  // знімати документ з календаря.
+  it("ignores the word appearing later in the body", () => {
+    const body = `# T\n\n> **Last touched:** 2026-01-01 by @x.\n> **Status:** Active\n\n${"x\n".repeat(20)}> **Status:** Archived\n`;
+    assert.equal(isOffCalendar(body), false);
   });
 });

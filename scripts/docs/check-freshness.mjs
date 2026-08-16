@@ -33,7 +33,7 @@
 //   GITHUB_REPOSITORY     — "owner/repo" (auto-set by Actions; defaults to Skords-01/Sergeant)
 //   DRY_RUN               — if truthy, skip issue creation
 
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -42,6 +42,7 @@ import {
   computeCoverageGaps,
   listTrackedMarkdown,
   readConfigFile,
+  reviewJitterDays,
 } from "./freshness-config.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -110,11 +111,23 @@ export function addDays(isoDate, days) {
   return d.toISOString().slice(0, 10);
 }
 
-/** Compute the effective next-review date from the header + allowlist cadence. */
-export function effectiveNextReview(header, cadenceDays) {
+/**
+ * Compute the effective next-review date from the header + cadence.
+ *
+ * Коли дата перегляду в заголовку є — вона й виграє: це те, що людина
+ * (або бампер) реально записала у файл.
+ *
+ * Коли її немає — рахуємо так само, як її записав би бампер: каденція
+ * ПЛЮС детермінований розкид від шляху. Без розкиду тут гейт і бампер
+ * розходились: док без явної дати ставав простроченим на день X, а
+ * після першого ж коміту стрибав на X+jitter. `path` необов'язковий
+ * лише заради старих викликів у тестах — без нього розкид нульовий.
+ */
+export function effectiveNextReview(header, cadenceDays, path = null) {
   if (header.nextReview) return header.nextReview;
-  if (header.lastValidated) return addDays(header.lastValidated, cadenceDays);
-  return null;
+  if (!header.lastValidated) return null;
+  const spread = path ? reviewJitterDays(path, cadenceDays) : 0;
+  return addDays(header.lastValidated, cadenceDays + spread);
 }
 
 /** Return true if `nextReview` is strictly before `todayISO`. */
@@ -274,7 +287,7 @@ export async function run() {
       continue;
     }
 
-    const nextReview = effectiveNextReview(header, cadence);
+    const nextReview = effectiveNextReview(header, cadence, entry.path);
     if (!nextReview) {
       results.push({ path: filePath, status: "no-next-review" });
       continue;
@@ -338,7 +351,13 @@ export function runCoverage({ rootDir = REPO_ROOT } = {}) {
   const candidates = listTrackedMarkdown(rootDir);
   const readFile = (path) => {
     const full = resolve(rootDir, path);
-    return existsSync(full) ? readFileSync(full, "utf8") : null;
+    // Без `existsSync`: перевірка й читання — дві операції над іменем
+    // файлу, і між ними воно може перестати існувати (js/file-system-race).
+    try {
+      return readFileSync(full, "utf8");
+    } catch {
+      return null;
+    }
   };
   const gaps = computeCoverageGaps({ candidates, config, readFile });
   return gaps;
@@ -353,7 +372,11 @@ export function evaluateFreshnessCadence({ tracked, readFile, today }) {
     const header = parseHeader(content);
     if (!header.lastValidated) continue;
 
-    const nextReview = effectiveNextReview(header, entry.cadenceDays);
+    const nextReview = effectiveNextReview(
+      header,
+      entry.cadenceDays,
+      entry.path,
+    );
     if (!nextReview) {
       failures.push({
         path: entry.path,
@@ -387,7 +410,13 @@ export function runCadenceCheck({
   const { tracked } = loadConfig({ rootDir });
   const readFile = (path) => {
     const full = resolve(rootDir, path);
-    return existsSync(full) ? readFileSync(full, "utf8") : null;
+    // Без `existsSync`: перевірка й читання — дві операції над іменем
+    // файлу, і між ними воно може перестати існувати (js/file-system-race).
+    try {
+      return readFileSync(full, "utf8");
+    } catch {
+      return null;
+    }
   };
   return evaluateFreshnessCadence({ tracked, readFile, today });
 }

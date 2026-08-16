@@ -1,6 +1,6 @@
 # Цикл 6, стадія 2 — сирі Tailwind-розміри в `core/**`
 
-> **Last touched:** 2026-07-25 by @claude. **Next review:** 2026-10-23.
+> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-11-21.
 > **Status:** Reference — звіт про виконання наряду циклу 6, стадія 2; baseline
 > скорингу — [`2026-07-21-design-audit.md`](./2026-07-21-design-audit.md).
 

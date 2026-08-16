@@ -1,6 +1,6 @@
 # Web: навмисні винятки `react-hooks/exhaustive-deps`
 
-> **Last touched:** 2026-08-07 by @claude. **Next review:** 2026-11-05.
+> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-11-15.
 > **Status:** Active
 
 Документ фіксує **інваріанти** там, де ESLint `react-hooks/exhaustive-deps` вимкнено у виробничих модулях. Мета — не «вимкнути правило», а зафіксувати контракт для рев'ю та рефакторингу.

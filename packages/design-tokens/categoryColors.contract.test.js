@@ -99,6 +99,28 @@ describe("@sergeant/design-tokens — контракт categoryColors", () => {
     });
   }
 
+  /**
+   * `other` і `income` сидять за 5° і 2° від сусіда по дузі — вони
+   * тримаються не кутом, а хромою. Якщо хтось «вирівняє» їхній множник
+   * до 1, гейт вище цього не побачить (hue не зрушив), а в стрічці
+   * зʼявиться пара однакових чипів: `other` зіллється з `charity`,
+   * `income` — з `entertainment`. Тому окремо міряємо саме хрому.
+   */
+  for (const [id, neighbour] of [
+    ["other", "charity"],
+    ["income", "entertainment"],
+  ]) {
+    it(`${id} відділений від "${neighbour}" хромою, а не кутом`, () => {
+      const c = hexToOklch(categoryColors[id].tint).C;
+      const n = hexToOklch(categoryColors[neighbour].tint).C;
+      expect(
+        n / c,
+        `хрома "${id}" (${c.toFixed(4)}) надто близька до "${neighbour}" ` +
+          `(${n.toFixed(4)}) — на сусідньому hue це той самий колір`,
+      ).toBeGreaterThanOrEqual(2);
+    });
+  }
+
   it("fallback-порядок посилається лише на наявні категорії й без повторів", () => {
     for (const id of categoryFallbackOrder) {
       expect(categoryColors, `невідома категорія "${id}"`).toHaveProperty(id);

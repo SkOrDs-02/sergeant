@@ -89,9 +89,11 @@ describe("NutritionApp — shell + routing (real component tree)", () => {
     renderApp();
     // Real header title + bottom nav (not mock testids).
     expect(bottomNav()).toBeInTheDocument();
-    // Start page renders the photo-analysis CTA card (the analysis UI
-    // itself lives inside AddMealSheet's photo step now).
-    expect(screen.getAllByText("Аналіз фото страви").length).toBeGreaterThan(0);
+    // Start page renders the photo-analysis CTA card — і підпис має бути
+    // РІВНО один (пін з main проти дубля заголовка): аналіз-UI живе у
+    // кроці AddMealSheet, закритої за замовчуванням, а її title — єдине
+    // інше місце цієї назви.
+    expect(screen.getAllByText("Аналіз фото страви")).toHaveLength(1);
   });
 
   it("a genuinely first Nutrition visit auto-routes to Меню → План на день with the first-run hint", async () => {

@@ -1,6 +1,6 @@
 # Playbook: Оголошення інциденту
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-11-27.
 > **Status:** Active
 
 **Trigger:** продакшн-проблема вийшла за межі alert triage і вимагає явної severity, owner-а, шляху мітигації або координації rollback-у.

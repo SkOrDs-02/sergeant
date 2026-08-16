@@ -1,6 +1,6 @@
 # FTUX Master Tracker — стан, проблеми, план
 
-> **Last touched:** 2026-07-20 by @cursor (docs-drift: S6.3/S6.11/PR-12 reconciled). **Next review:** 2026-10-17.
+> **Last touched:** 2026-07-20 by @cursor (docs-drift: S6.3/S6.11/PR-12 reconciled). **Next review:** 2027-10-23.
 > **Status:** Active — **single source of truth** для First-Time User Experience.
 >
 > **Update 2026-07-10:** billing scaffold landed (`usePlan()`, `PaywallModal`, `TrialBanner`, `/api/billing/*`). Pricing — ADR-0068 (₴199, reverse trial 7d). Summer refresh whats-new shipped (`2026-06-26-summer-refresh`). Секції §1–§3 нижче містять historical PR-snapshots (2026-05) + новий зріз.

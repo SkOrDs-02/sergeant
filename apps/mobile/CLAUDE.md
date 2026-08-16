@@ -1,6 +1,6 @@
 # Claude in apps/mobile
 
-> **Last touched:** 2026-07-20 by @dimastahov16012003. **Next review:** 2026-10-18.
+> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-11-23.
 > **Status:** Active. Sub-tree bridge — інлайнить `apps/mobile/AGENTS.md` у контекст Claude Code, коли працюєш у цьому subtree. Repo-wide policy приходить з root `CLAUDE.md` (завантажений при старті сесії). Не дублюй тут — редагуй `apps/mobile/AGENTS.md`.
 
 Specialist skill для цієї поверхні: `sergeant-mobile-expo`.

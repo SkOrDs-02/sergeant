@@ -1,6 +1,6 @@
 # Sergeant — Launch phases plan-guide
 
-> **Last touched:** 2026-08-02 by @Skords-01. **Next review:** 2026-10-31.
+> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-12-04.
 > **Status:** Active — draft master plan-guide for sequencing launch with real users.
 >
 > **Update 2026-07-29:** in-app landing і standalone `apps/landing` shipped у коді; marketing landing має Telegram-конверсію, OG, cookieless PostHog і окремий Vercel config. Зовнішні `sergeant.com.ua` DNS/production-deploy треба підтвердити в Vercel. Public launch далі блокується legal/live payment env/cookie consent/store readiness.

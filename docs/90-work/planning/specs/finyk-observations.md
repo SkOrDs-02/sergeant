@@ -1,6 +1,6 @@
 # SPEC: Фінік — борги, прогноз, перекази (огляд 2026-07-31)
 
-> **Last touched:** 2026-07-31 by @Skords-01. **Next review:** 2026-10-29.
+> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-12-13.
 > **Status:** Scaffolded
 
 ## Проблема

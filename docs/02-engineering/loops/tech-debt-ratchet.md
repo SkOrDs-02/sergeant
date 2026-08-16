@@ -1,6 +1,6 @@
 # Tech-debt ratchet — вкладені цикли (nested loops)
 
-> **Last touched:** 2026-06-23 by @claude. **Next review:** 2026-09-21.
+> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-11-30.
 > **Status:** Active
 
 Runbook для зниження технічного боргу в пакеті як **ланцюг однозадачних

@@ -1,6 +1,6 @@
 # Tech-debt assessment 2026-07-01 — групи, інструкції до фіксу, burndown-план
 
-> **Last touched:** 2026-07-20 by @cursoragent (post-waves sync). **Next review:** 2026-10-18.
+> **Last touched:** 2026-07-20 by @cursoragent (post-waves sync). **Next review:** 2026-11-08.
 > **Status:** Active
 
 > **Методологія (оригінал 2026-07-01):** повний прогін механічних гейтів + воркфло з підагентів. **Re-audit 2026-07-20:** повторне вимірювання на `main` — потім **agent waves** закрили actionable P1 (див. нижче). Цей файл = живий burndown після хвиль.

@@ -1,6 +1,6 @@
 # n8n Reporting Matrix
 
-> **Last touched:** 2026-07-24 by @Skords-01. **Next review:** 2026-10-22.
+> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-11-28.
 > **Status:** Active. Live since 2026-05-02 — supergroup `Sergeant Ops` (chat
 > id `-1003924852082`) у Forum mode, 7 канонічних топіків створені, кожен
 > workflow JSON шле через `={{ $env.TELEGRAM_TOPIC_* }}` expression на

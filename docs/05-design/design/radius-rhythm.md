@@ -1,6 +1,6 @@
 # Ритм border-radius
 
-> **Last validated:** 2026-08-04 by @claude (enforcement переведено на convention-wording per ADR-0081). **Next review:** 2026-10-26.
+> **Last validated:** 2026-08-04 by @claude (enforcement переведено на convention-wording per ADR-0081). **Next review:** 2027-02-25.
 > **Status:** Active
 
 > **Аудиторія:** усі, хто пише UI у `apps/web` або `apps/mobile`.

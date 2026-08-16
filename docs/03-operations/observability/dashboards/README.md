@@ -1,6 +1,6 @@
 # Дашборди Grafana
 
-> **Last touched:** 2026-08-07 by @Skords-01. **Next review:** 2026-11-05.
+> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-12-08.
 > **Status:** Active
 
 JSON-файли дашбордів Grafana для observability сервера Sergeant — готові до імпорту.

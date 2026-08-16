@@ -1,7 +1,7 @@
 # Sync client wiring — multi-device op-log після SQLite cut-over
 
 > **Status:** Active
-> **Last touched:** 2026-07-20 by @cursor (docs-drift: Phase 1/2 code shipped; gap section refreshed). **Next review:** 2026-10-17.
+> **Last touched:** 2026-07-20 by @cursor (docs-drift: Phase 1/2 code shipped; gap section refreshed). **Next review:** 2027-09-28.
 > Трек-документ follow-up ініціативи після [`dualwrite-teardown.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/dualwrite-teardown.md) (SQLite — єдиний writer модульних даних на клієнті) і [`storage-roadmap.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md) (Stage 5 sync v2 server-side). **Фаза 1 (enqueue + pull) і Phase 2 registry expansion (27→42) — shipped у коді.** Залишок: локальна/CI verification (Testcontainers, dual-device E2E), потім Phase 3 SSE/ops.
 
 ---

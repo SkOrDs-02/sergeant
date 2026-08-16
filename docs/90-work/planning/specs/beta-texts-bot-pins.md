@@ -1,6 +1,6 @@
 # Тексти бети — піни й відповіді бота
 
-> **Last touched:** 2026-08-02 by @Skords-01. **Next review:** 2026-10-31.
+> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-12-12.
 > **Status:** Active
 
 Статичні тексти: налаштовуються один раз до старту й далі не змінюються. Те, що поститься по днях, — у [`beta-texts-posts.md`](./beta-texts-posts.md).

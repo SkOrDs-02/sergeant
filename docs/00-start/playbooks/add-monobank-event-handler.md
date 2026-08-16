@@ -1,6 +1,6 @@
 # Playbook: Add Monobank Event Handler
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-12-01.
 > **Status:** Active
 
 **Trigger:** "Треба обробити нову подію X від Monobank" / новий тип webhook event / новий статус транзакції від Monobank API.

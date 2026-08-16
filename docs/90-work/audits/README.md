@@ -1,6 +1,6 @@
 # Audits — каталог документів та статусів
 
-> **Last validated:** 2026-07-29 by Codex (code-reconcile cleanup). **Next review:** 2026-10-27.
+> **Last validated:** 2026-07-29 by Codex (code-reconcile cleanup). **Next review:** 2027-08-18.
 > **Status:** Active
 
 > **Single source of truth → root [`AGENTS.md`](../../../AGENTS.md).** Цей файл —

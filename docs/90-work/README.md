@@ -1,6 +1,6 @@
 # 90 · Work — активні tracker-и
 
-> **Last validated:** 2026-07-20 by @cursoragent (post fast-forward archive). **Next review:** 2026-10-18.
+> **Last validated:** 2026-07-20 by @cursoragent (post fast-forward archive). **Next review:** 2027-02-15.
 > **Status:** Active
 
 > **Update 2026-07-10:** pricing canon — [ADR-0068](../04-governance/adr/0068-pricing-v4-uah-reverse-trial.md). Billing scaffold shipped; `tools/openclaw` removed (ADR-0055 external gateway). Product/governance doc passes: #220, #221.

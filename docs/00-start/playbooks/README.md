@@ -1,6 +1,6 @@
 # Playbooks
 
-> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
+> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-11-20.
 > **Status:** Active
 
 Playbooks are the canonical execution layer for repeatable tasks in Sergeant. Skills decide the governing surface and repo rules; playbooks define the execution order.

@@ -4,7 +4,8 @@ import {
 } from "../../../modules/finyk/constants";
 import { calcFinykPeriodAggregate } from "@sergeant/finyk-domain";
 import {
-  getCategory,
+  getExpenseCategoryForTransaction,
+  getIncomeCategoryForTransaction,
   getMonoTotals,
   calcCategorySpent,
   calcDebtRemaining,
@@ -154,12 +155,22 @@ function appendMonthlyTotals(lines: string[], d: AllData, now: Date): void {
   if (recent.length === 0) return;
   lines.push("[Останні операції]");
   recent.forEach((t) => {
-    const cat = getCategory(
-      t.description,
-      t.mcc,
-      d.txCategories[t.id],
-      d.customCategories,
-    );
+    // `statTx` містить і ручні операції (`buildFinykSpendingUniverse`).
+    // У них `mcc: 0`, опис часто порожній, а `txCategories` ключується
+    // банківськими id — тож стара `getCategory` віддавала «💳 Інше» на
+    // КОЖЕН ручний запис, і саме це їхало в промпт моделі. Резолвер
+    // нижче спершу читає `categoryId` самої операції.
+    // `recent` — увесь `statTx`, разом із надходженнями, тож розгалуження
+    // за знаком обовʼязкове: expense-резолвер віддав би ручній зарплаті
+    // «💳 Інше» замість «Зарплата». Той самий поділ, що в TxRow.
+    const cat =
+      t.amount > 0
+        ? getIncomeCategoryForTransaction(t, d.txCategories[t.id])
+        : getExpenseCategoryForTransaction(
+            t,
+            d.txCategories[t.id],
+            d.customCategories,
+          );
     const date = t.time
       ? new Date(t.time * 1000).toLocaleDateString("uk-UA", {
           day: "numeric",

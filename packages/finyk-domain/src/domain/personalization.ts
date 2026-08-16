@@ -12,6 +12,7 @@
 //    (щоб quick add міг підставити її автоматично).
 // Без ML, без ваг на зразок TF-IDF — тільки підрахунки + сортування.
 import { getCategory, getExpenseCategoryForTransaction } from "../utils";
+import { MANUAL_EXPENSE_TAXONOMY } from "../lib/manualTaxonomy.js";
 import { INTERNAL_TRANSFER_ID } from "../constants";
 import type { Category, Transaction } from "./types";
 
@@ -131,11 +132,25 @@ function normalizeManualLabel(label: string | undefined | null): string {
     .toLocaleLowerCase("uk-UA");
 }
 
+/**
+ * Era 3 (слаг) → canonical id. `MANUAL_CATEGORY_ID_MAP` вище знає лише
+ * УКРАЇНСЬКІ підписи Ер 1–2, тож слаги крізь нього проходили як є — і
+ * `groceries`, `cafe`, `tech` осідали окремими «категоріями», яких
+ * немає в MCC-каталозі. Наслідок: ліміт, поставлений на «Кафе та
+ * ресторани» (`restaurant`), не бачив ручних витрат зі слагом `cafe`, а
+ * рекомендації рахували продукти й їжу як дві різні звички. Кольори ці
+ * самі три слаги вже зводили до канонічної категорії з 2026-08-12 —
+ * тепер так само робить і агрегація. Джерело обох — `manualTaxonomy.ts`.
+ */
+const SLUG_TO_CANONICAL_ID: Record<string, string> = Object.fromEntries(
+  MANUAL_EXPENSE_TAXONOMY.map((d) => [d.id, d.canonicalId]),
+);
+
 /** Підпис manual-категорії → canonical id або сам підпис (для custom). */
 export function manualCategoryToCanonicalId(label: string | undefined): string {
   const norm = normalizeManualLabel(label);
   if (!norm) return "other";
-  return MANUAL_CATEGORY_ID_MAP[norm] || norm;
+  return SLUG_TO_CANONICAL_ID[norm] || MANUAL_CATEGORY_ID_MAP[norm] || norm;
 }
 
 function toTimestampMs(tx: Transaction): number {

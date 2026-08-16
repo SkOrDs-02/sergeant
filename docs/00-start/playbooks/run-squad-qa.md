@@ -2,7 +2,7 @@
 
 # Playbook: Squad QA — паралельний QA по всіх surfaces
 
-> **Last touched:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-19.
+> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-11-21.
 > **Status:** Active
 
 **Trigger:** Перед release, після великого рефактора, або коли потрібен per-surface звіт про стан тестів (не лише агрегований pass/fail).

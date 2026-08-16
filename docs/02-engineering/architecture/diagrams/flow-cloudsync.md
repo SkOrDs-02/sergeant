@@ -1,6 +1,6 @@
 # Flow — Sync v2 push/pull
 
-> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
+> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-12-10.
 > **Status:** Active
 
 Sync v2: UI пише у локальний SQLite-WASM, `SyncEnginePushScheduler` батчить операції з `sync_op_outbox` та пушить на сервер; pull тягне зміни інших пристроїв. CloudSync v1 (`POST /api/sync`) знятий (ADR-0047); sunset-middleware прибрано після 90-денного вікна, тож роут відповідає звичайним `404`.

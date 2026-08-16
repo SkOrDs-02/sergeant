@@ -13,14 +13,24 @@
  * через `.dark &`. Хекси беруться з токенів — сирих значень тут немає.
  */
 import type { CSSProperties } from "react";
-import { getCatTiers } from "@sergeant/finyk-domain/domain/categories";
+import { resolveCatTiers } from "@sergeant/finyk-domain/domain/categories";
 
 /**
- * Змінні одного чипа. `idx` потрібен лише для кастомних категорій —
- * вбудовані мають власний тир і індекс ігнорують.
+ * Змінні одного чипа.
+ *
+ * `customCategories` потрібен лише кастомним категоріям — вбудовані
+ * мають власний тир і список ігнорують. Але передавати його треба
+ * ЗАВЖДИ, коли він під рукою: саме з нього береться стабільний
+ * fallback-відтінок. Раніше тут стояв позиційний `idx`, і кожен
+ * виклик рахував його по-своєму — строка транзакції давала 0, пікер
+ * номер чипа, діаграма місце в сортуванні, — тож одна кастомна
+ * категорія мала три різні кольори. Розбір — `resolveCatTiers`.
  */
-export function catChipVars(categoryId: string, idx = 0): CSSProperties {
-  const t = getCatTiers(categoryId, idx);
+export function catChipVars(
+  categoryId: string,
+  customCategories: readonly { id: string }[] = [],
+): CSSProperties {
+  const t = resolveCatTiers(categoryId, customCategories);
   return {
     "--cat-tint": t.tint,
     "--cat-border": t.border,

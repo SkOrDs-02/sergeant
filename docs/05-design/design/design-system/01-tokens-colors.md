@@ -1,6 +1,6 @@
 # Design System — Принципи та Кольорові токени
 
-> **Last validated:** 2026-08-04 by @claude (принципи §1 переведено на convention-wording per ADR-0081). **Next review:** 2026-10-25.
+> **Last validated:** 2026-08-04 by @claude (принципи §1 переведено на convention-wording per ADR-0081). **Next review:** 2027-02-26.
 > **Status:** Active (v2 redesign foundation merged 2026-05; brand palette → stone via 2026-07 M1)
 
 Цей документ охоплює базові принципи дизайн-системи, кольорові токени та WCAG AA контраст.

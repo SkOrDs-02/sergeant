@@ -1,6 +1,6 @@
 # Frontend Tech Debt — Sergeant Web
 
-> **Last validated:** 2026-07-20 by @cursoragent (full reconcile vs HEAD). **Next review:** 2026-10-18.
+> **Last validated:** 2026-07-20 by @cursoragent (full reconcile vs HEAD). **Next review:** 2026-09-23.
 > **Status:** Active
 
 > **Оновлено 2026-08-07 (tech-debt reconcile).** Переміряно бек-лог нижче на

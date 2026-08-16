@@ -1,6 +1,6 @@
 # Мінімальні Grafana-дашборди (Prometheus)
 
-> **Last validated:** 2026-05-13 by @Skords-01 / Devin. **Next review:** 2026-08-11.
+> **Last validated:** 2026-05-13 by @Skords-01 / Devin.
 > **Status:** Active
 
 Це "starter pack" панелей, яких достатньо, щоб швидко зрозуміти: **що саме горить**

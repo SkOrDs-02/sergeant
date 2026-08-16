@@ -18,7 +18,11 @@ import { buildDigestCorrelations } from "./digestCorrelations";
 import { coachKeys, digestKeys } from "@shared/lib/api/queryKeys";
 import { formatApiError } from "@shared/lib/api/apiErrorFormat";
 import { trackAdviceFailed } from "../observability/adviceTelemetry";
-import { getCategory } from "@sergeant/finyk-domain/lib/categories";
+import {
+  getCategory,
+  resolveExpenseCategoryMeta,
+} from "@sergeant/finyk-domain/lib/categories";
+import { canonicalManualCategoryId } from "@sergeant/finyk-domain/lib/manualTaxonomy";
 import { readFinykStatsContext } from "@finyk/lib/lsStats";
 import { getCachedFinykSqliteState } from "@finyk/lib/sqliteReader";
 import { loadRoutineState } from "@routine/lib/routineStorage";
@@ -150,12 +154,25 @@ export function aggregateFinyk(weekKey: string): FinykAggregate {
       // фолбеку «Інше»: невідомий MCC витікав користувачеві сирим рядком
       // `MCC 4829` (це «переказ коштів»), і той самий рядок ішов у промпт
       // моделі, яка потім пояснювала людині її ж «категорію MCC 4829».
-      return getCategory(
+      const resolved = getCategory(
         tx.description ?? "",
         tx.mcc ?? 0,
         override,
         customCategories as Category[],
-      ).label;
+      );
+      // Ключ — підпис КАНОНІЧНОЇ категорії. Детальні слаги ручної форми
+      // (`cafe`, `tech`, `groceries`) не мають запису в MCC-каталозі, тож
+      // без цього зведення `cafe` давав рядок «☕ Кафе та ресторани»
+      // ПОРУЧ із банківським «🍔 Кафе та ресторани» — дві позиції з
+      // однаковою назвою і різним емодзі, бо ключування за label-ом
+      // мерджить лише те, що вже має однаковий підпис. Кастомні id
+      // проходять недоторканими.
+      const canonicalId = canonicalManualCategoryId(resolved.id);
+      if (canonicalId === resolved.id) return resolved.label;
+      return (
+        resolveExpenseCategoryMeta(canonicalId, customCategories as Category[])
+          ?.label ?? resolved.label
+      );
     },
   });
 

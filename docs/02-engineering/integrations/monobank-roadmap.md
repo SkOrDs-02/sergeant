@@ -1,6 +1,6 @@
 # Monobank integration — план покращень після webhook-міграції
 
-> **Last validated:** 2026-07-22 by @Skords-01 (finyk-аудит D2: MCC-мапінг знято з «pending», зафіксовано як реалізований). **Next review:** 2026-10-20.
+> **Last validated:** 2026-07-22 by @Skords-01 (finyk-аудит D2: MCC-мапінг знято з «pending», зафіксовано як реалізований). **Next review:** 2027-03-18.
 > **Status:** Active
 
 **Статус документа:** plan / draft. Створено 2026-04-25 одразу після cutover (#705 → #708).

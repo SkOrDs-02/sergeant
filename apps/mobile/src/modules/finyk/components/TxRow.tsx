@@ -42,8 +42,8 @@ import {
   MCC_CATEGORIES,
   fmtAmt,
   fmtDate,
-  getCategory,
-  getIncomeCategory,
+  getExpenseCategoryForTransaction,
+  getIncomeCategoryForTransaction,
 } from "@sergeant/finyk-domain";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain/constants";
 import type { TxSplitsMap } from "@sergeant/finyk-domain/domain/types";
@@ -119,8 +119,8 @@ function cx(...classes: Array<string | false | null | undefined>): string {
 }
 
 // Keep the ESLint rule exempt — INCOME_CATEGORIES / MCC_CATEGORIES are
-// consumed inside `getCategory` / `getIncomeCategory` and we re-import
-// them only to keep the module self-documenting alongside the web twin.
+// consumed inside the category resolvers and we re-import them only to
+// keep the module self-documenting alongside the web twin.
 void INCOME_CATEGORIES;
 void MCC_CATEGORIES;
 
@@ -141,14 +141,9 @@ function TxRowImpl({
   const cat = useMemo(
     () =>
       isIncome
-        ? getIncomeCategory(tx.description ?? "", overrideCatId)
-        : getCategory(
-            tx.description ?? "",
-            tx.mcc ?? 0,
-            overrideCatId,
-            customCategories,
-          ),
-    [isIncome, tx.description, tx.mcc, overrideCatId, customCategories],
+        ? getIncomeCategoryForTransaction(tx, overrideCatId)
+        : getExpenseCategoryForTransaction(tx, overrideCatId, customCategories),
+    [isIncome, tx, overrideCatId, customCategories],
   );
 
   const catIcon = isIncome

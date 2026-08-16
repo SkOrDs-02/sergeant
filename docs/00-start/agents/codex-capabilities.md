@@ -1,6 +1,6 @@
 # Codex capabilities у Sergeant
 
-> **Last touched:** 2026-08-08 by @claude. **Next review:** 2026-11-06.
+> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-11-16.
 > **Status:** Active
 
 Цей документ пояснює простими словами, що Codex у цьому репо вже вміє, як це викликати, і що потребує явної команди від тебе.

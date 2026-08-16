@@ -1,6 +1,6 @@
 # Monorepo deploy filtering — Vercel ignoreCommand + GitHub Actions path filters
 
-> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
+> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-12-10.
 > **Status:** Active
 >
 > **⚠️ Бекенд-тригер переписано ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md)):** `apps/server` більше **не** деплоїться через Railway `watchPatterns`/GraphQL — тепер це GitHub Actions [`deploy-api.yml`](../../../.github/workflows/deploy-api.yml) з `on.push.paths`, що білдить образ → `ghcr.io` → Coolify webhook. Файли `railway*.toml` видалено з репо 2026-07-19. OpenClaw Gateway ніде не задеплоєний (див. [`service-catalog.md`](../../02-engineering/architecture/service-catalog.md)). Vercel-секція нижче чинна без змін.

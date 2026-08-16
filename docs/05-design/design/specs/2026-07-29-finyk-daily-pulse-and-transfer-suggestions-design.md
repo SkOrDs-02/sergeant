@@ -2,7 +2,7 @@
 
 # Денний пульс і підказки внутрішніх переказів у Фініку
 
-> **Last touched:** 2026-07-29 by Codex. **Next review:** 2026-10-27.
+> **Last touched:** 2026-07-29 by Codex. **Next review:** 2027-02-12.
 > **Status:** Active — implementation ready, PR pending
 
 ## Мета

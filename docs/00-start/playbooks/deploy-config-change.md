@@ -1,6 +1,6 @@
 # Playbook: Зміна deploy-конфігу (vercel / Dockerfile / Coolify)
 
-> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
+> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-12-05.
 > **Status:** Active
 
 **Trigger:** PR має non-comment зміни у deploy-config файлах (`vercel.json`, `Dockerfile*`, `apps/server/build.mjs`) — CI-job `Deploy-config staging gate` падає без verification-лейбла.

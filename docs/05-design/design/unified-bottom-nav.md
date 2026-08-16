@@ -1,6 +1,6 @@
 # Unified Bottom Navigation
 
-> **Last validated:** 2026-07-28 by Codex (solid active indicator, active-only label і tablist keyboard contract verified). **Next review:** 2026-10-26.
+> **Last validated:** 2026-07-28 by Codex (solid active indicator, active-only label і tablist keyboard contract verified). **Next review:** 2027-03-11.
 > **Status:** Active — **form unified**. `HubBottomNav` і `ModuleBottomNav` ділять один shell.
 
 > **TL;DR:** Хаб і 4 модулі живуть під **одним** навігаційним патерном —

@@ -1,6 +1,6 @@
 # AI memory architecture
 
-> **Last validated:** 2026-06-02 by Devin. **Next review:** 2026-08-11.
+> **Last touched:** 2026-06-02 by Devin. **Next review:** 2026-09-27.
 > **Status:** Active
 
 > Single source of truth для серверного episodic-memory store (`ai_memories` table з migration 025) — ingestion, recall, backfill. Не плутати з local-first Memory Bank (ADR-0021) — той зберігає user-fact strings.

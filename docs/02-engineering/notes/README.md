@@ -1,6 +1,6 @@
 # Notes
 
-> **Last touched:** 2026-07-20 by @dimastahov16012003. **Next review:** 2026-10-18.
+> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-11-14.
 > **Status:** Active
 
 Exploratory engineering notes that don't fit neatly into ADRs (decisions), playbooks (recipes), or planning (roadmaps). These are short-lived investigations — once the work lands, the spike doc is either archived in place with `Status: Completed & archived` or folded into a permanent home (ADR / planning / tech-debt registry).

@@ -1,6 +1,6 @@
 # Data exchange & storage audit
 
-> **Last touched:** 2026-07-22 by @Skords-01 (finyk-аудит: §4.1 узгоджено з `sync-client-wiring.md`). **Next review:** 2026-10-20.
+> **Last touched:** 2026-07-22 by @Skords-01 (finyk-аудит: §4.1 узгоджено з `sync-client-wiring.md`). **Next review:** 2026-11-08.
 > **Status:** Active
 
 Зріз поточного стану: як у Sergeant рухаються і зберігаються дані, де слабкі місця, і який практичний напрям розвитку варто тримати.

@@ -1,6 +1,6 @@
 # Capacitor deep links — App Links (Android) + Universal Links (iOS)
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-12-08.
 > **Status:** Active
 
 Цей документ описує HTTPS-варіант deep-лінків для Capacitor-shell-а
