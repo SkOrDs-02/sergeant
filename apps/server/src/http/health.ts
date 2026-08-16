@@ -8,6 +8,10 @@ import { elapsedMs } from "../lib/timing.js";
 import { appState } from "../lib/appState.js";
 import { getMemoryIngestWorkerStats } from "../modules/ai-memory/ingestQueue.js";
 import { getMonoEnrichmentWorkerStatus } from "../modules/mono/enrichmentWorker.js";
+import {
+  driftBlocksReadiness,
+  getLastSchemaDriftReport,
+} from "../lib/schemaDrift.js";
 
 interface DbPool {
   query(sql: string): Promise<unknown>;
@@ -56,7 +60,22 @@ export function createReadyzHandler(pool: DbPool): RequestHandler {
         err: { message: err.message || String(e), code: err.code },
       });
     }
-    if (dbOk) res.status(200).type("text/plain").send("ok");
+
+    // Дрейф схеми читаємо з кешу, порахованого на старті: проба смикається
+    // кожні кілька секунд, а схема між рестартами не міняється (pre-deploy
+    // відпрацьовує до старту процесу). Гейт опційний — ціна хибного
+    // спрацювання тут повний простій, див. `lib/schemaDrift.ts`.
+    const drift = getLastSchemaDriftReport();
+    const schemaBlocks =
+      driftBlocksReadiness() && drift !== null && !drift.inSync;
+    if (schemaBlocks) {
+      logger.error({
+        msg: "readyz_schema_drift_block",
+        pending: drift.pending,
+      });
+    }
+
+    if (dbOk && !schemaBlocks) res.status(200).type("text/plain").send("ok");
     else res.status(503).type("text/plain").send("unhealthy");
   };
 }
@@ -84,6 +103,30 @@ export function createHealthzHandler(pool: DbPool): RequestHandler {
       checks["database"] = {
         status: "unhealthy",
         details: { error: e instanceof Error ? e.message : String(e) },
+      };
+    }
+
+    // Schema drift. Читається з кешу стартової перевірки; `null` означає, що
+    // вона не встигла або впала — це «невідомо», а не «здорово».
+    const drift = getLastSchemaDriftReport();
+    if (drift === null) {
+      checks["schema"] = { status: "unknown" };
+    } else if (drift.inSync) {
+      checks["schema"] = {
+        status: "healthy",
+        details: { applied: drift.applied, shipped: drift.shipped },
+      };
+    } else {
+      // Незастосовані міграції = гарантовані 500 на роутах, що читають нові
+      // колонки. Це не degraded, це зламано — навіть якщо `SELECT 1` зелений.
+      overallHealthy = false;
+      checks["schema"] = {
+        status: "unhealthy",
+        details: {
+          applied: drift.applied,
+          shipped: drift.shipped,
+          pending: drift.pending,
+        },
       };
     }
 

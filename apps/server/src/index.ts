@@ -24,6 +24,7 @@ import { pool } from "./db.js";
 import { drainReplicaPool } from "./dbReplica.js";
 import { env } from "./env.js";
 import { markStartupComplete } from "./lib/appState.js";
+import { reportSchemaDriftAtBoot } from "./lib/schemaDrift.js";
 import {
   startAuthMailWorker,
   type StartedAuthMailWorker,
@@ -512,5 +513,22 @@ httpServer = app.listen(config.port, "0.0.0.0", () => {
     msg: "server_listening",
     role: config.role,
     port: config.port,
+  });
+
+  // Звірка «схема в образі ↔ схема в базі». Міграції тут НЕ запускаються (це
+  // задача release-stage, див. коментар вище) — але результат release-stage
+  // хтось мусить перевірити. Тричі за серпень 2026 не перевірив ніхто, і
+  // єдиним сигналом ставав потік 500-ок від живих людей; найдовший епізод —
+  // 106 хвилин. Тепер розбіжність стає алертом ще до першого запиту.
+  //
+  // Не блокує старт: перевірка асинхронна і навмисно не в `await`, щоб
+  // недоступна на цю мить база не затримала readiness. Гейт на readiness —
+  // опційний, через `MIGRATION_DRIFT_BLOCKS_READINESS`.
+  void reportSchemaDriftAtBoot(pool, (message, report) => {
+    Sentry.captureMessage(message, {
+      level: "error",
+      tags: { area: "migrations" },
+      extra: { ...report },
+    });
   });
 });
