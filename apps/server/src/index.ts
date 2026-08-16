@@ -25,6 +25,10 @@ import { drainReplicaPool } from "./dbReplica.js";
 import { env } from "./env.js";
 import { markStartupComplete } from "./lib/appState.js";
 import {
+  markSchemaDriftCheckStarted,
+  reportSchemaDriftAtBoot,
+} from "./lib/schemaDrift.js";
+import {
   startAuthMailWorker,
   type StartedAuthMailWorker,
 } from "./lib/jobs/authMail.js";
@@ -503,6 +507,13 @@ for (const sig of ["SIGTERM", "SIGINT"]) {
 // (див. `scripts/migrate.mjs` / `npm run db:migrate`). При rolling deploy з 2+
 // реплік race на `INSERT schema_migrations` раніше валив один із процесів,
 // плюс readiness-проб затримувався часом виконання міграцій.
+// Позначаємо звірку схеми як розпочату СИНХРОННО, до прив'язки до порту.
+// Сам запит іде нижче, у `listen`-колбеку, але readiness мусить знати про
+// «перевірка ще не завершена» вже з першої проби: інакше під увімкненим
+// `MIGRATION_DRIFT_BLOCKS_READINESS` існує вікно, у якому `/readyz` зелений,
+// а схема ще не звірена, і платформа встигає завести трафік.
+markSchemaDriftCheckStarted();
+
 httpServer = app.listen(config.port, "0.0.0.0", () => {
   // Сигнал для `/startupz` (a.k.a. `/health/startup`): процес завершив
   // env-assert, Sentry-init і прив'язку до порту, тож платформа може
@@ -512,5 +523,22 @@ httpServer = app.listen(config.port, "0.0.0.0", () => {
     msg: "server_listening",
     role: config.role,
     port: config.port,
+  });
+
+  // Звірка «схема в образі ↔ схема в базі». Міграції тут НЕ запускаються (це
+  // задача release-stage, див. коментар вище) — але результат release-stage
+  // хтось мусить перевірити. Тричі за серпень 2026 не перевірив ніхто, і
+  // єдиним сигналом ставав потік 500-ок від живих людей; найдовший епізод —
+  // 106 хвилин. Тепер розбіжність стає алертом ще до першого запиту.
+  //
+  // Не блокує старт: перевірка асинхронна і навмисно не в `await`, щоб
+  // недоступна на цю мить база не затримала readiness. Гейт на readiness —
+  // опційний, через `MIGRATION_DRIFT_BLOCKS_READINESS`.
+  void reportSchemaDriftAtBoot(pool, (message, report) => {
+    Sentry.captureMessage(message, {
+      level: "error",
+      tags: { area: "migrations" },
+      extra: { ...report },
+    });
   });
 });

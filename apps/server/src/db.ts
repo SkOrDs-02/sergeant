@@ -349,6 +349,36 @@ const MIGRATIONS_ADVISORY_LOCK_KEY = 7317483629462015n;
  * Після розблокування другий увійде, побачить уже застосовані файли у
  * `schema_migrations` і тихо no-op-не.
  */
+/** Каталог із SQL-міграціями, що поїхали в цьому образі. */
+export const MIGRATIONS_DIR = path.join(__dirname, "migrations");
+
+/**
+ * Імена міграцій, які містить ЦЕЙ образ, у порядку застосування.
+ *
+ * Forward-only runner: `.down.sql` — явні rollback-скрипти, які DBA запускає
+ * руками (див. коментар у відповідному файлі). Виключаємо їх з auto-apply,
+ * інакше `006_push_devices.down.sql` відкотив би міграцію одразу після її
+ * застосування.
+ *
+ * Винесено з `runPendingSqlMigrations`, щоб detector дрейфу
+ * (`lib/schemaDrift.ts`) рахував рівно той самий список — інакше «застосовано
+ * все» і «застосовано все, що ми вміємо застосовувати» розійшлись би.
+ *
+ * Порожній масив, якщо каталогу немає (dev-запуск із чужого cwd).
+ */
+export async function listShippedMigrations(): Promise<string[]> {
+  let files: string[];
+  try {
+    files = await fs.readdir(MIGRATIONS_DIR);
+  } catch (e: unknown) {
+    if (pgErr(e).code === "ENOENT") return [];
+    throw e;
+  }
+  return files
+    .filter((f) => f.endsWith(".sql") && !f.endsWith(".down.sql"))
+    .sort();
+}
+
 async function runPendingSqlMigrations(client: PoolClient): Promise<void> {
   await client.query("SELECT pg_advisory_lock($1)", [
     MIGRATIONS_ADVISORY_LOCK_KEY.toString(),
@@ -361,22 +391,8 @@ async function runPendingSqlMigrations(client: PoolClient): Promise<void> {
     )
   `);
 
-  const migrationsDir = path.join(__dirname, "migrations");
-  let files: string[];
-  try {
-    files = await fs.readdir(migrationsDir);
-  } catch (e: unknown) {
-    if (pgErr(e).code === "ENOENT") return;
-    throw e;
-  }
-
-  // Forward-only runner: `.down.sql` — явні rollback-скрипти, які DBA
-  // запускає руками (див. коментар у відповідному файлі). Виключаємо їх з
-  // auto-apply, інакше `006_push_devices.down.sql` відкотив би міграцію
-  // одразу після її застосування.
-  const sqlFiles = files
-    .filter((f) => f.endsWith(".sql") && !f.endsWith(".down.sql"))
-    .sort();
+  const migrationsDir = MIGRATIONS_DIR;
+  const sqlFiles = await listShippedMigrations();
   for (const file of sqlFiles) {
     const { rows } = await client.query(
       "SELECT 1 AS ok FROM schema_migrations WHERE name = $1",
