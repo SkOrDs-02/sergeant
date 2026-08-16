@@ -1,6 +1,6 @@
 # Playbook: Тижневий operator-дайджест
 
-> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-12-09.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-10-01.
 > **Status:** Active
 
 **Trigger:** щотижневий операційний огляд (operating review) здоров'я репозиторію, релізної дисципліни, інцидентів і процесного тертя (process friction).

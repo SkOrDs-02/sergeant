@@ -1,6 +1,6 @@
 # Codemods
 
-> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-12-05.
+> **Last touched:** 2026-08-13 by @claude. **Next review:** 2026-11-11.
 > **Status:** Active
 
 Одноразові міграційні скрипти, які запускались **один раз** у певному PR, виконали structural rewrite у репі і більше не потрібні в нормальному workflow. Зберігаються тут для:

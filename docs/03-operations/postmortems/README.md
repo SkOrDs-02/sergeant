@@ -1,6 +1,6 @@
 # Postmortems
 
-> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-12-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2027-06-19.
 > **Status:** Active
 
 Incident reviews and follow-up memory.

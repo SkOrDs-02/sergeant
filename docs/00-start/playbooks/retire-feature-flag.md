@@ -1,6 +1,6 @@
 # Playbook: Retire Feature Flag
 
-> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-11-19.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-29.
 > **Status:** Active
 
 **Trigger:** feature flag завершив rollout, expired, або перетворився на rollout-debt і його треба прибрати з кодової бази та registry.

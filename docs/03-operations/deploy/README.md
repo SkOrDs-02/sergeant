@@ -1,6 +1,6 @@
 # Deploy
 
-> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-11-14.
+> **Last touched:** 2026-07-21 by @cursoragent. **Next review:** 2026-11-15.
 > **Status:** Active
 
 Step-by-step deploy walkthroughs for Sergeant runtime surfaces. **Current backend:** Hetzner CX23 + Coolify ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md)). **OpenClaw:** decommissioned ([ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md)).

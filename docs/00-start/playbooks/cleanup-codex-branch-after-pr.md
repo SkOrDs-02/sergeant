@@ -2,7 +2,7 @@
 
 # Playbook: Cleanup Codex branch after PR
 
-> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-12-13.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-21.
 > **Status:** Active
 
 **Trigger:** PR merged / "онови main" / "видали гілку" / "поверни local dirty files" після Codex-гілки.

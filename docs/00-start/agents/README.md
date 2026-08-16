@@ -1,6 +1,6 @@
 # Agents
 
-> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-12-12.
+> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-15.
 > **Status:** Active
 
 Операційний розділ для AI-агентів у Sergeant — це **operating system для AI-агентів, які працюють у репо**, а не AI-фічі продукту (HubChat, AI Coach, Mono-classifier тощо живуть під `apps/web` і `apps/server` і документуються в окремих модулях). Тут навігація по repo-owned skills, decision trees для типових flow і design specs.

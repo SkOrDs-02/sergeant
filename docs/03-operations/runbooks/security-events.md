@@ -1,6 +1,6 @@
 # Security Events — Операційний Playbook
 
-> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-12-12.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-12.
 > **Status:** Active
 
 ## Загальна архітектура

@@ -1,6 +1,6 @@
 # Playbook: Add New Page Route
 
-> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-12-06.
+> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-27.
 > **Status:** Active
 
 **Trigger:** "Додати нову сторінку в apps/web" / новий розділ UI / новий route для SPA.

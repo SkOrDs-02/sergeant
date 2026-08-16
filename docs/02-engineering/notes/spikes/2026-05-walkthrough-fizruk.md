@@ -1,6 +1,6 @@
 # Walkthrough: `fizruk` module
 
-> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-12-03.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2027-07-26.
 > **Status:** Draft
 > **Purpose:** Bus-factor knowledge-transfer (stack-pulse PR-04). One-hour guide for an engineer new to this module.
 

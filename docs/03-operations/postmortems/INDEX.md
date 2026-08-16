@@ -1,6 +1,6 @@
 # Postmortem Index
 
-> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-11-22.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2027-06-25.
 > **Status:** Active
 
 Index of incident reviews and follow-up expectations.

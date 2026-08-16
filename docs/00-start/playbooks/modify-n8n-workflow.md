@@ -1,6 +1,6 @@
 # Playbook: Зміна або додавання n8n-воркфлоу
 
-> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-11-15.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-13.
 > **Status:** Active
 
 **Trigger:** "Додай новий n8n workflow" / "Зміни логіку workflow X" / зміна в `ops/n8n-workflows/` або `manifest.json`.

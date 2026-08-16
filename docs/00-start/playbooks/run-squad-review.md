@@ -2,7 +2,7 @@
 
 # Playbook: Squad review — паралельний PR review через 4 lens-агентів
 
-> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-12-11.
+> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-22.
 > **Status:** Active
 
 **Trigger:** PR торкається ≥3 governed surfaces одночасно: SQL migrations, server serializers, web UI, mobile UI, SKILL.md, або HubChat tool defs.

@@ -1,6 +1,6 @@
 # Agents in apps/web
 
-> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-12-05.
+> **Last touched:** 2026-08-11 by @claude. **Next review:** 2026-12-05.
 > **Status:** Active
 
 > **Single source of truth → root [`AGENTS.md`](../../AGENTS.md).** Цей файл — sub-tree quick reference для агентів, що працюють лише в `apps/web/`. Не дублюй repo policy: hard rules, ownership map, performance budgets і CI matrix живуть у корені.

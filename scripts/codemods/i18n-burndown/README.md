@@ -1,6 +1,6 @@
 # `i18n-burndown` codemod
 
-> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-12-10.
+> **Last touched:** 2026-08-13 by @claude. **Next review:** 2026-11-11.
 > **Status:** Active
 
 Migrates inline UA JSX literals (text + attribute strings) to references

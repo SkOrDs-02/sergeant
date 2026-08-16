@@ -6,7 +6,7 @@
 ![TypeScript 6](https://img.shields.io/badge/TypeScript-6-blue)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
-> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-12-09.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-25.
 > **Status:** Active
 
 > **Гроші, тіло, звички, їжа — в одному додатку. Local-first. Приватно.**

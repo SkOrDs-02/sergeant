@@ -1,6 +1,6 @@
 # Сканування container-image — Trivy
 
-> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-11-21.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2027-11-21.
 > **Status:** Active
 
 ## Огляд

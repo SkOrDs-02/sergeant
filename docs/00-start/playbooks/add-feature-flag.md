@@ -1,6 +1,6 @@
 # Playbook: Додати feature flag
 
-> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-11-27.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-27.
 > **Status:** Active
 
 **Trigger:** «Сховай фічу X за прапорцем» / будь-яка нова експериментальна фіча, яку треба вмикати/вимикати без редеплою.

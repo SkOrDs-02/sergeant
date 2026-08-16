@@ -1,6 +1,6 @@
 # 03 · Operations — деплой, спостережуваність, runbook-и
 
-> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-11-24.
+> **Last validated:** 2026-06-12 by @claude. **Next review:** 2026-09-11.
 > **Status:** Active
 
 Експлуатаційний шар: як деплоїти, як стежити, як діяти в інцидент. Жанр —

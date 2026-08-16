@@ -1,6 +1,6 @@
 # Secret Ownership Register
 
-> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-12-12.
+> **Last touched:** 2026-07-29 by @Skords-01. **Next review:** 2027-10-04.
 > **Status:** Active
 
 Operational metadata registry for secrets and privileged system credentials in Sergeant. This register documents ownership and blast radius, never secret values.

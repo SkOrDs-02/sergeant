@@ -1,6 +1,6 @@
 # Tally build-spec — опитування ЦА блок-за-блоком
 
-> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-11-29.
+> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2027-07-22.
 > **Status:** Active
 
 > Tally не імпортує з файлу, тож збираєш руками. Це точна специфікація: тип поля + варіанти + logic.

@@ -1,6 +1,6 @@
 # C1 — System Context
 
-> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-11-15.
+> **Last touched:** 2026-07-21 by @Skords-01. **Next review:** 2026-10-21.
 > **Status:** Active
 
 Sergeant у контексті користувача та зовнішніх систем.

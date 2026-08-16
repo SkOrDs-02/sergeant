@@ -1,6 +1,6 @@
 # Playbook: Тестове відновлення бекапу
 
-> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-12-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-10.
 > **Status:** Active
 
 **Trigger:** планова репетиція відновлення (recovery rehearsal), перевірка довіри до бекапів, або сигнал, що снапшоти існують, але давно не перевірялися на придатність.

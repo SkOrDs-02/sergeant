@@ -1,6 +1,6 @@
 # 2026-08-10 — Тренування заднім числом і плани, що не зникають
 
-> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-11-29.
+> **Last validated:** 2026-08-10 by @claude. **Next review:** 2027-10-10.
 > **Status:** Active
 
 > **Modal id:** `2026-08-10-retro-and-plans` —

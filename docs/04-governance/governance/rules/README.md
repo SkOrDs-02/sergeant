@@ -1,6 +1,6 @@
 # Hard Rules — per-rule canonical files
 
-> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-12-12.
+> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2027-02-17.
 > **Status:** Active
 
 > One file per Hard Rule (full prose + BAD/GOOD examples). Compact summary table in [`AGENTS.md § Hard rules`](../../../../AGENTS.md#hard-rules-do-not-break). Registry: [`hard-rules.json`](../hard-rules.json). Matrix: [`hard-rules-matrix.md`](../hard-rules-matrix.md). Sync gate: `pnpm lint:hard-rules-registry`.

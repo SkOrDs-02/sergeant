@@ -1,6 +1,6 @@
 # Pre-commit timing — як читати і чим міряти
 
-> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-12-08.
+> **Last touched:** 2026-07-19 by @claude. **Next review:** 2027-01-22.
 > **Status:** Active
 
 > Закриває P1-5 з [`docs/90-work/audits/2026-05-13-testing-devx-roast.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-05-13-testing-devx-roast.md) — «Pre-commit timing не вимірюється».

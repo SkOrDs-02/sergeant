@@ -1,6 +1,6 @@
 # Playbook: Author or Edit a SKILL.md
 
-> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-12-13.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-29.
 > **Status:** Active
 
 **Trigger:** «Створи новий `.agents/skills/<slug>/SKILL.md`» / «зміни правила або приклади в існуючому SKILL» / «заархівуй skill» / правка будь-якого файлу під `.agents/skills/**`.

@@ -1,6 +1,6 @@
 # Глобальна браузерна QA: трекер прогресу
 
-> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-12-05.
+> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2027-11-15.
 > **Status:** Active
 
 Живий трекер прогону за планом

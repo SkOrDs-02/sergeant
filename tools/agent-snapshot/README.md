@@ -1,6 +1,6 @@
 # tools/agent-snapshot
 
-> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-11-16.
+> **Last validated:** 2026-07-01 by @claude. **Next review:** 2026-10-20.
 > **Status:** Active
 
 Single-file Node script that gathers a "dynamic context" report for Sergeant

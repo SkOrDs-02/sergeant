@@ -1,6 +1,6 @@
 # Log-level policy
 
-> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-11-30.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-28.
 > **Status:** Active
 
 ## Default levels

@@ -1,6 +1,6 @@
 # Аудит сиротілого коду, елементів і таблиць — 2026-08-05
 
-> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-11-15.
+> **Last touched:** 2026-08-07 by @claude. **Next review:** 2027-08-30.
 > **Status:** Active
 
 > **Governing skill:** `sergeant-tech-debt` · **Playbook:** [`cleanup-dead-code.md`](../../00-start/playbooks/cleanup-dead-code.md).

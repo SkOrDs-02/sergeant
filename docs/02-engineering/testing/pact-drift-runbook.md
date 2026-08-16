@@ -1,6 +1,6 @@
 # Pact contract drift — runbook
 
-> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-11-28.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2027-02-22.
 > **Status:** Active
 
 > **Статус автоматизації:** [`.github/workflows/pact-drift.yml`](../../../.github/workflows/pact-drift.yml) закомічений — cron 06:00 UTC + `workflow_dispatch`. Локально/ad-hoc — CLI [`scripts/pact-drift-check.mjs`](../../../scripts/pact-drift-check.mjs). § Workflow YAML — дзеркало для review у docs.

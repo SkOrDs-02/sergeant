@@ -1,6 +1,6 @@
 # C3 — Sync Engine v2 (web)
 
-> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-11-14.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-14.
 > **Status:** Active
 
 Внутрішня структура sync engine v2 у `apps/web`. CloudSync v1 (dirtyMap / offlineQueue / LWW resolver) знятий (ADR-0047). Єдиний sync-шлях — **op-log outbox**: UI пише у локальний SQLite-WASM, `SyncEnginePushScheduler` батчить операції й пушить на сервер через `/api/v2/sync/push`.

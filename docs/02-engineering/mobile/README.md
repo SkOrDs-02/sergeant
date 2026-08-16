@@ -1,6 +1,6 @@
 # Mobile (мобільні додатки)
 
-> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-12-11.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-12-22.
 > **Status:** Active
 
 Документація мобільних додатків: Expo (React Native) та Capacitor shell.

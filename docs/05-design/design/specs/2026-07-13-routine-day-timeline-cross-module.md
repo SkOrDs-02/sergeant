@@ -2,7 +2,7 @@
 
 # Routine — timeline дня та кросмодульний календар
 
-> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-11-21.
+> **Last touched:** 2026-07-19 by @claude. **Next review:** 2027-02-16.
 > **Status:** Active
 
 > **Статус:** Draft — product interview complete, implementation not started.

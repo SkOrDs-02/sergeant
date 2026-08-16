@@ -1,6 +1,6 @@
 # AI quota kill-switch policy
 
-> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-11-27.
+> **Last validated:** 2026-08-05 by @claude. **Next review:** 2027-10-25.
 > **Status:** Active
 
 ## TL;DR

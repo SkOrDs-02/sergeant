@@ -1,6 +1,6 @@
 # Playbook: Розслідування alert-у
 
-> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-11-24.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-08-25.
 > **Status:** Active
 
 **Trigger:** спрацював Prometheus alert / росте Sentry issue / підозрілі 5xx, latency або деградація health-ендпоїнтів, але ще не очевидно, чи це інцидент, false positive або транзитний шум.

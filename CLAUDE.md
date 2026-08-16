@@ -1,6 +1,6 @@
 # Claude in Sergeant
 
-> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-12-03.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-05.
 > **Status:** Active
 
 > **Single source of truth → [AGENTS.md](./AGENTS.md).** Тонкий wrapper; repo policy приходить нижче через `@import` — не дублюй її тут.

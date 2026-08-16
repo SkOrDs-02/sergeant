@@ -1,6 +1,6 @@
 # Marketing
 
-> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-11-14.
+> **Last touched:** 2026-07-22 by @dimastahov16012003. **Next review:** 2027-03-02.
 > **Status:** Active
 
 Go-to-market та pre-launch матеріали. Reference-плани, що звіряються з shipped-станом —
