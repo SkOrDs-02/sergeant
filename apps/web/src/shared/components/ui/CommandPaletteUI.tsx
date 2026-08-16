@@ -190,6 +190,9 @@ export function CommandPaletteUI() {
             }}
             onKeyDown={onKeyDown}
             placeholder="Знайди команду…"
+            // Явне доступне ім'я: плейсхолдер ним не є, тож поле досі
+            // приходило до скрінрідера безіменним.
+            aria-label="Пошук команд"
             className={cn(
               "flex-1 bg-transparent outline-none border-none",
               "text-style-body text-text placeholder:text-subtle",
