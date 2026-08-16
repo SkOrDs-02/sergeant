@@ -1,10 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ANALYTICS_EVENTS } from "@sergeant/shared";
+import { isIOS, isStandalonePWA } from "@shared/lib/platform/iosStandalone";
 import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { trackEvent } from "../observability/analytics";
 
 const PWA_SESSIONS_KEY = "pwa_session_count";
 const PWA_DISMISSED_KEY = "pwa_install_dismissed";
+/**
+ * Прапорець «успішну інсталяцію вже зараховано». Живе в storage самого
+ * standalone-контексту, тож переживає перезапуски застосунку і не дає
+ * рахувати кожен запуск з домашнього екрана як нову інсталяцію.
+ */
+const PWA_INSTALL_REPORTED_KEY = "pwa_install_reported";
 const INSTALL_DELAY_MS = 30000;
 const MIN_SESSIONS = 2;
 
@@ -30,12 +37,41 @@ interface BeforeInstallPromptEvent extends Event {
  * `appinstalled` фіксується незалежно від банера: інсталяція може стати з
  * нативного browser-меню (наприклад, Chrome address bar prompt), і ми хочемо
  * зарахувати її у funnel так само, як coming-from-banner шлях.
+ *
+ * **Standalone-детекція (аудит телеметрії 2026-08-16).** `beforeinstallprompt`
+ * і `appinstalled` — Chromium-only. У Safari їх немає взагалі, а вся наша база
+ * сидить на iOS (кожна подія в Sentry — Mobile Safari / iOS 18.x). Тому
+ * success-плече воронки не спрацювало жодного разу: за 30 днів 231 показ
+ * `pwa_install_prompted` і НУЛЬ `pwa_installed`. `useIosInstallBanner` обіцяв у
+ * коментарі, що успіх зарахує «серверна перевірка display-mode», але такого
+ * коду ніколи не існувало.
+ *
+ * Єдиний сигнал, доступний на iOS, — те, що застосунок узагалі стартував у
+ * standalone-режимі: потрапити туди можна виключно через Add to Home Screen.
+ * Тому перший запуск у standalone і є подією інсталяції. Сам режим визначає
+ * `isStandalonePWA()` за двома сигналами — media-query `display-mode:
+ * standalone` і `navigator.standalone`; на iOS спрацьовує саме другий, бо
+ * Safari media-query не підтримує. Дедуп — через `PWA_INSTALL_REPORTED_KEY`,
+ * інакше кожен запуск з іконки рахувався б знову.
  */
 export function usePwaInstall() {
   const [prompt, setPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [ready, setReady] = useState(false);
   const deferredRef = useRef<BeforeInstallPromptEvent | null>(null);
   const promptedRef = useRef(false);
+
+  // Success-плече воронки для платформ без `appinstalled` (насамперед iOS).
+  // Стоїть окремим ефектом і ДО банерної логіки: у standalone-режимі банер не
+  // показується взагалі, тож зарахувати інсталяцію більше ніде.
+  useEffect(() => {
+    if (!isStandalonePWA()) return;
+    if (safeReadStringLS(PWA_INSTALL_REPORTED_KEY) === "1") return;
+    safeWriteLS(PWA_INSTALL_REPORTED_KEY, "1");
+    trackEvent(ANALYTICS_EVENTS.PWA_INSTALLED, {
+      surface: isIOS() ? "ios" : "android",
+      via: "standalone_detected",
+    });
+  }, []);
 
   useEffect(() => {
     const count = parseInt(safeReadStringLS(PWA_SESSIONS_KEY) || "0", 10) + 1;
@@ -51,7 +87,16 @@ export function usePwaInstall() {
       // `appinstalled` стріляє і коли інсталяція пройшла з нашого банера,
       // і коли user обрав native browser-меню — у будь-якому разі це
       // термінальна успішна точка funnel-у.
-      trackEvent(ANALYTICS_EVENTS.PWA_INSTALLED, {});
+      //
+      // Той самий прапорець, що й у standalone-гілці: інакше Chromium дав би
+      // дві події на одну інсталяцію — `appinstalled` зараз і
+      // `standalone_detected` при наступному запуску з іконки.
+      if (safeReadStringLS(PWA_INSTALL_REPORTED_KEY) === "1") return;
+      safeWriteLS(PWA_INSTALL_REPORTED_KEY, "1");
+      trackEvent(ANALYTICS_EVENTS.PWA_INSTALLED, {
+        surface: isIOS() ? "ios" : "android",
+        via: "appinstalled",
+      });
     };
     window.addEventListener("beforeinstallprompt", handler);
     window.addEventListener("appinstalled", installedHandler);

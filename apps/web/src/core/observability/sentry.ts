@@ -9,6 +9,7 @@ import {
   scrubPIIString,
   redactSensitiveQueryParams,
 } from "@sergeant/shared";
+import { resolveSentryEnvironment } from "./deployEnvironment.js";
 
 type SentryModule = typeof import("@sentry/react");
 
@@ -316,19 +317,13 @@ export async function initSentry() {
 
   mod.init({
     dsn,
-    // `VITE_APP_ENV` — спільний перемикач середовища для всієї телеметрії
-    // (його ж читає `posthog.ts`), щоб не задавати одне значення двома
-    // змінними й не давати їм розійтись. `VITE_SENTRY_ENVIRONMENT` лишається
-    // вужчим override-ом на випадок, коли Sentry треба розвести окремо.
-    //
-    // Фолбек на `MODE` свідомо ОСТАННІЙ: на Vercel він віддає власне
-    // значення білду, і саме так у проєкті `sergeant-web` завівся сторонній
-    // environment `vercel-production` — фільтр по `production` його не бачить.
-    environment:
-      import.meta.env["VITE_SENTRY_ENVIRONMENT"] ||
-      import.meta.env["VITE_APP_ENV"] ||
-      import.meta.env.MODE ||
-      "production",
+    // Середовище резолвиться спільним хелпером — тим самим, що читає
+    // `posthog.ts`, щоб дві системи не могли розійтись у розмітці одного
+    // деплою. Фолбек на `import.meta.env.MODE` прибрано: саме він завів у
+    // проєкті `sergeant-web` сторонній environment `vercel-production`,
+    // невидимий для фільтра по `production`. Деталі й порядок резолву —
+    // `deployEnvironment.ts`.
+    environment: resolveSentryEnvironment(),
     release: import.meta.env["VITE_SENTRY_RELEASE"],
     integrations: [mod.browserTracingIntegration()],
     // Dynamic per-op + per-route sampler (stack-pulse PR-12 / H6).

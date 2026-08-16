@@ -8,6 +8,7 @@ import {
   redactSensitiveQueryParams,
   scrubPIIString,
 } from "@sergeant/shared";
+import { resolveDeployEnvironment } from "./deployEnvironment.js";
 
 /**
  * Lazy PostHog transport for product analytics.
@@ -272,9 +273,12 @@ export function initPostHog(): Promise<void> {
         // події закритої бети незрізняються від прод-подій, якщо їх нічим
         // не позначити; ця властивість і є позначкою.
         //
-        // Дефолт `production`, бо незаданий `VITE_APP_ENV` у проді —
-        // нормальний стан, а в бета-/preview-збірках змінна задається явно.
-        environment: import.meta.env["VITE_APP_ENV"] || "production",
+        // Резолвиться спільним хелпером — тим самим, що читає `sentry.ts`.
+        // Покладатись лише на `VITE_APP_ENV` тут було не можна: Vercel віддає
+        // preview-збіркам env-vars основного деплою, тож гілкові URL-и
+        // приходили в цей проєкт із чужою міткою `beta`. Хост preview
+        // успадкувати не може, тому він і вирішує. Див. `deployEnvironment.ts`.
+        environment: resolveDeployEnvironment(),
       });
 
       posthogModule = posthog;

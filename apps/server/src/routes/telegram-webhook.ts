@@ -1,9 +1,15 @@
 import { Router } from "express";
 import type { Request, Response } from "express";
 import type { Pool } from "pg";
+import {
+  ANALYTICS_EVENTS,
+  newLandingRef,
+  parseLandingStartPayload,
+} from "@sergeant/shared";
 import { rateLimitExpress, setModule } from "../http/index.js";
 import { env } from "../env/env.js";
 import { logger } from "../obs/logger.js";
+import { capturePostHogEvent } from "../lib/posthogCapture.js";
 import {
   createTelegramApiClient,
   type TelegramApiClient,
@@ -267,6 +273,7 @@ async function composeReply(
         languageCode: update.message?.from?.language_code ?? null,
         startPayload: command.payload,
       });
+      reportLandingStart(command.payload, created);
       // Позиція стабільна, тож повторний /start за межами хвилі покаже той
       // самий номер — гілка навмисно перевіряється ДО `created`.
       if (position > env.TELEGRAM_BETA_WAVE_SIZE)
@@ -274,6 +281,48 @@ async function composeReply(
       return created ? START_REPLY_NEW : START_REPLY_AGAIN;
     }
   }
+}
+
+/**
+ * Друга половина воронки лендінга.
+ *
+ * До 2026-08-16 вона не існувала в PostHog взагалі: клієнт бачив
+ * `landing_telegram_clicked` і на цьому слід обривався, а `/start`-и рахувались
+ * окремо як `COUNT(telegram_waitlist)` у БД. Дві системи, ручне зведення — і
+ * через це воронка «лендінг → бот» показувала нуль, хоча CTR по кнопці був 28%
+ * (39 кліків із 136 переглядів за 30 днів).
+ *
+ * Fire-and-forget свідомо. Telegram ретраїть апдейт, поки не отримає `200`, а
+ * `capturePostHogEvent` ходить у мережу з 5-секундним таймаутом — чекати на
+ * нього означало б плодити дублі `/start` на кожному тормозі аналітики.
+ * Телеметрія не має права впливати на відповідь боту.
+ */
+function reportLandingStart(payload: string | null, created: boolean): void {
+  const attribution = parseLandingStartPayload(payload);
+
+  void capturePostHogEvent({
+    event: ANALYTICS_EVENTS.LANDING_TELEGRAM_STARTED,
+    // Join-ключ — саме `ref`, і він же `distinct_id`, щоб зшивання було видно
+    // в UI PostHog без SQL. Коли атрибуції немає (пряме посилання, переслане
+    // другом, навігаційний лінк у футері) — разовий випадковий токен: старт
+    // усе одно рахується, але окремою анонімною персоною, а не зливається з
+    // рештою неатрибутованих у одну фейкову людину.
+    //
+    // `chat_id` сюди свідомо НЕ їде: це ідентифікатор конкретної людини в
+    // сторонньому сервісі, і в аналітиці йому робити нічого.
+    distinctId: attribution?.ref ?? newLandingRef(),
+    properties: {
+      placement: attribution?.placement ?? null,
+      ref: attribution?.ref ?? null,
+      attributed: attribution !== null,
+      first_start: created,
+    },
+  }).catch((err: unknown) => {
+    logger.warn({
+      msg: "landing_start_capture_failed",
+      err: { message: err instanceof Error ? err.message : String(err) },
+    });
+  });
 }
 
 /**

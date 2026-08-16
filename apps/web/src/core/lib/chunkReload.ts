@@ -64,6 +64,14 @@ const CHUNK_ERROR_PATTERNS: ReadonlyArray<RegExp> = [
   /Loading CSS chunk \S+ failed/i,
   /not a valid JavaScript MIME type/i,
   /error loading dynamically imported module/i,
+  // Не-JS асети зі стейл-деплою. `sqlite3.wasm` тягне не імпорт-хелпер Vite, а
+  // власний `fetch()` усередині emscripten-glue, тож жоден із патернів вище
+  // його не ловить — а симптом рівно той самий: HTML закешований, шлях до
+  // асета вже інший. Саме це дало 18 користувачів на двох issue
+  // (SERGEANT-API-M / SERGEANT-WEB-R) після деплою 2026-08-10, коли
+  // `vendor-sqlite` виїхав з eager-графа й змінив хеш.
+  /both async and sync fetching of the wasm failed/i,
+  /failed to asynchronously prepare wasm/i,
 ];
 
 function getMessage(value: unknown): string {
@@ -127,6 +135,15 @@ export class ChunkPersistentError extends Error {
  */
 export function reloadOnceForChunkError(now: number = Date.now()): boolean {
   if (typeof window === "undefined") return false;
+
+  // Офлайн reload не лікує нічого: перезавантаження без мережі дасть або той
+  // самий провал, або взагалі порожню сторінку замість уже відрендереного
+  // застосунку. Виходимо ДО обліку, щоб мережевий провал у тунелі чи метро не
+  // з'їдав бюджет `MAX_RELOADS`, який потрібен реальному stale-деплою.
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    return false;
+  }
+
   let storage: Storage | null = null;
   try {
     storage = window.sessionStorage;
