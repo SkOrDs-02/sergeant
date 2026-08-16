@@ -70,7 +70,15 @@ const okPool = { query: async () => ({ rows: [{ reg: null }] }) };
 
 async function callReadyz(pool = okPool) {
   const res = fakeRes();
-  await createReadyzHandler(pool as never)({} as Request, res, () => {});
+  // Тип `RequestHandler` оголошує три параметри, але реалізація readyz бере
+  // рівно два — `next` вона не викликає. Тому звужуємо тип до фактичної
+  // сигнатури й не передаємо третій аргумент: інакше це superfluous argument
+  // (CodeQL js/superfluous-trailing-arguments) і заглушка, яку ніхто не смикне.
+  const handler = createReadyzHandler(pool as never) as unknown as (
+    req: Request,
+    res: Response,
+  ) => Promise<void>;
+  await handler({} as Request, res);
   return res;
 }
 
