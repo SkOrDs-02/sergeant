@@ -1,6 +1,6 @@
 # Security Incident Policy
 
-> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-18.
 > **Status:** Active
 
 Use this policy when the incident is primarily about identity compromise, privileged misuse, leaked credentials, or unauthorized access to sensitive systems.

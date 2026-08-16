@@ -1,6 +1,6 @@
 # Реєстр метрик — одна метрика, одна агрегація
 
-> **Last touched:** 2026-08-09 by Claude (§ Фікс 2026-08-09: адаптер excluded-set перейшов із дренованих LS-ключів на канонічний SQLite-кеш). **Next review:** 2026-11-07.
+> **Last touched:** 2026-08-09 by Claude (§ Фікс 2026-08-09: адаптер excluded-set перейшов із дренованих LS-ключів на канонічний SQLite-кеш). **Next review:** 2026-12-02.
 > **Status:** Active
 
 > Канон, який цей файл обслуговує: [`hub-coach.md §6.1`](../../01-product/model/hub-coach.md) —

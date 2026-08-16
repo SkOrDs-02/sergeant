@@ -1,6 +1,6 @@
 # Phase 2 — Capacitor launch roadmap with users
 
-> **Last validated:** 2026-05-13 by Devin (Phase 2 child session of `andrijvigrav@gmail.com`). **Next review:** 2026-08-11.
+> **Last validated:** 2026-05-13 by Devin (Phase 2 child session of `andrijvigrav@gmail.com`). **Next review:** 2027-05-24.
 > **Status:** Active — research deliverable for the parent launch program.
 > **Owner surface:** `apps/mobile-shell` (Capacitor 7 shell over `apps/web`).
 > **Strategy anchor:** [ADR-0052 — Capacitor primary, Expo parallel](../../../04-governance/adr/0052-mobile-strategy-capacitor-primary.md).

@@ -1,6 +1,6 @@
 # Playbook: Change an Auth Flow (Better Auth)
 
-> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
+> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-11-01.
 > **Status:** Active
 
 **Trigger:** «Зміни логін / реєстрацію / скидання пароля» / правка session middleware, cookie- чи redirect-поведінки / новий Better Auth plugin / зміна account lifecycle або token refresh.

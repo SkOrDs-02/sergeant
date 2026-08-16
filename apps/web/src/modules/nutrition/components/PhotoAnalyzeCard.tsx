@@ -194,13 +194,13 @@ export function PhotoAnalyzeCard({
 }: PhotoAnalyzeCardProps) {
   return (
     <Card className="min-w-0 p-4">
-      <div className="flex items-center justify-between gap-3 mb-4">
-        <div className="min-w-0">
-          <div className="text-style-label text-text">Аналіз фото страви</div>
-          <div className="text-style-caption text-muted mt-0.5">
-            ШІ визначить КБЖВ і запропонує уточнення
-          </div>
-        </div>
+      {/* Заголовка тут навмисно НЕМА. Єдине бойове місце цієї картки —
+          тіло `<details>` у `NutritionStartPage`, а його `<summary>` уже
+          несе і назву «Аналіз фото страви», і підпис. Доки дубль стояв,
+          розгорнутий блок показував той самий заголовок двічі поспіль, а
+          smoke-тест падав на strict-mode: `getByText(...)` знаходив два
+          елементи (`nutrition-smoke.spec.ts` § photo preview). */}
+      <div className="flex items-center justify-end gap-3 mb-4">
         <button
           type="button"
           onClick={analyzePhoto}

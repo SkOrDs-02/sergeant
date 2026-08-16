@@ -1,6 +1,6 @@
 # Спека: Telegram-вейтліст
 
-> **Last touched:** 2026-08-10 by @claude. **Next review:** 2026-11-08.
+> **Last touched:** 2026-08-10 by @claude. **Next review:** 2027-10-06.
 > **Status:** Implemented — бот вейтліста живий (`apps/server/src/modules/telegram/waitlistBot.ts`, міграція `089_telegram_waitlist.sql`, follow-up `/stats` у #524). Спека лишається як reference на прийняті рішення.
 
 ## Проблема

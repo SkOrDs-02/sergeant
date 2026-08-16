@@ -1,6 +1,6 @@
 # 0010 — Revenue-first launch: ship paid, focus wedge
 
-> **Last validated:** 2026-07-20 by @cursoragent (post-hygiene reconcile: m083 DROP + billing copy + OpenAPI billing roundtrip). **Next review:** 2026-10-18.
+> **Last validated:** 2026-07-20 by @cursoragent (post-hygiene reconcile: m083 DROP + billing copy + OpenAPI billing roundtrip). **Next review:** 2027-02-02.
 > **Status:** In progress
 > **Code reconciliation (2026-07-20):** billing routes, LandingPage, local EN catalog, activation capture, PlanSection і paywall уже landed. **Платіжний провайдер — LiqPay** (власник підтвердив 2026-07-20): multi-provider (`liqpay`+`plata` for UA; Stripe dormant). **Hygiene closed:** orphan `billing_subscriptions` (m047) dropped in `083_drop_billing_subscriptions.sql`; pricing/PlanSection copy LiqPay/Plata-first; OpenAPI roundtrip covers `/api/billing/status` + `/providers`. Open acceptance — **founder-ops only:** live LiqPay/Plata keys + ФОП, `APPLE_*` у Coolify, перший paid user + webhook evidence, A/B decision, launch smoke (CI/a11y/LHCI).
 > **Update 2026-07-10:** TL;DR нижче — **historical decision snapshot** (2026-05-04). Фактичний стан: billing landed; pricing canon — [ADR-0068](../../04-governance/adr/0068-pricing-v4-uah-reverse-trial.md) (₴199/₴1490); `tools/openclaw` removed → external gateway (ADR-0055). Founder blockers: live LiqPay (ключі + ФОП). Нижче історичний план говорить «Stripe» — заморожений snapshot до pivot-у.

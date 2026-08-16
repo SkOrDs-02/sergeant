@@ -1,6 +1,6 @@
 # Планування
 
-> **Last validated:** 2026-07-29 by Codex (semantic work-tracker reconcile). **Next review:** 2026-10-27.
+> **Last validated:** 2026-07-29 by Codex (semantic work-tracker reconcile). **Next review:** 2027-10-16.
 > **Status:** Active
 
 Активні roadmap-и, дослідницькі плани і decision-rationale документи розвитку Sergeant.

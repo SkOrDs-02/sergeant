@@ -1,6 +1,6 @@
 # Міграція на React Native (Expo)
 
-> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-02.
+> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2027-03-06.
 > **Status:** Active
 
 > **Стратегічний контекст:** за [ADR-0052](../../04-governance/adr/0052-mobile-strategy-capacitor-primary.md)

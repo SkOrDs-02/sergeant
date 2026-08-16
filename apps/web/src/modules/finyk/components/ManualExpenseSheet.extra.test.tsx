@@ -144,7 +144,10 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
       // Disabled placeholder — required so switching Витрата ↔ Надходження can
       // blank the field and force an explicit pick from the new taxonomy.
       "Оберіть категорію",
-      "Їжа",
+      // 2026-08-13: «Їжа» (`food`) і «Продукти» (`groceries`) були двома
+      // чипами на ОДИН канонічний кошик `food`, який MCC-каталог зве
+      // «Продукти». Лишився один — `food` під канонічним підписом;
+      // `groceries` резолвиться далі (persisted-дані), але не пропонується.
       "Продукти",
       "Кафе та ресторани",
       "Транспорт",

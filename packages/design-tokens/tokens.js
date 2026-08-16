@@ -179,6 +179,15 @@ export const chartPaletteList = Object.values(chartPalette);
  * на кшталт `travel`/`utilities` різняться на 13°. Колір тут ПІДСИЛЮЄ
  * підпис, а не замінює його; частотні категорії (їжа, ресторан,
  * транспорт, покупки, здоровʼя) навмисно рознесені максимально.
+ *
+ * 17-й запис `income` (2026-08-13) — спільний тир УСІХ надходжень
+ * (`salary`, `freelance`, `gift`, `refund`, `other-income` і легасі
+ * `in_*` та `internal_transfer`). До нього жодне з цих id не мало
+ * запису в палітрі, тож `getCatTiers` віддавав їм перший fallback-тир —
+ * і кожен чип доходу малювався кольором категорії «Транспорт». Дохід
+ * навмисно ОДНОТИРНИЙ: вільного hue на 5 окремих кольорів уже немає,
+ * а розрізняти види доходу має підпис, не відтінок. Відділений від
+ * `entertainment` (160) хромою, не кутом — див. `categoryColors.gen.js`.
  */
 export const categoryColors = {
   restaurant: {
@@ -309,6 +318,14 @@ export const categoryColors = {
     tintDark: "#292725",
     inkDark: "#d2cdc7",
   }, // H 74, C×0.12 — тепла нейтраль
+  income: {
+    tint: "#e5f0ea",
+    border: "#cfddd5",
+    ink: "#465f52",
+    solid: "#6c907d",
+    tintDark: "#212a25",
+    inkDark: "#bdd4c8",
+  }, // H 162, C×0.35 — приглушена зелень, спільний тир усіх надходжень
 };
 
 /**

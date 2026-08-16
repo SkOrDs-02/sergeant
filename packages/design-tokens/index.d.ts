@@ -64,7 +64,9 @@ export type CategoryColorKey =
   | "beauty"
   | "health"
   | "debt"
-  | "other";
+  | "other"
+  /** Спільний тир усіх надходжень — див. `categoryColors` в `tokens.js`. */
+  | "income";
 
 /** Тири одного кольору категорії. Див. `categoryColors` в `tokens.js`. */
 export interface CategoryColorTiers {

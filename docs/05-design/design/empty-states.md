@@ -1,6 +1,6 @@
 # Empty-states
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2027-02-02.
 > **Status:** Active
 
 > **Аудиторія:** усі, хто пише UI у `apps/web` або `apps/mobile`.

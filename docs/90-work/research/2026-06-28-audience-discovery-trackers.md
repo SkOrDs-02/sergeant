@@ -1,6 +1,6 @@
 # Дослідження ЦА: трекери — чи юзають, для чого, чому кидають
 
-> **Last touched:** 2026-07-25 by @claude. **Next review:** 2026-10-23.
+> **Last touched:** 2026-07-25 by @claude. **Next review:** 2027-09-04.
 > **Status:** Active
 
 > Дизайн exploratory-дослідження ЦА Sergeant перед/під час раннього запуску.

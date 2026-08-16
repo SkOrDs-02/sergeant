@@ -1,6 +1,6 @@
 # `INTERNAL_API_KEY` — rotation, audit & revocation runbook
 
-> **Last validated:** 2026-07-29 by @Skords-01 (Coolify topology; OpenClaw consumer removed). **Next review:** 2026-10-27.
+> **Last validated:** 2026-07-29 by @Skords-01 (Coolify topology; OpenClaw consumer removed). **Next review:** 2027-10-03.
 > **Status:** Scaffolded.
 > **Owner:** ops + server.
 > **Related:** [`api-internal-hmac.md`](./api-internal-hmac.md), [`secret-ownership-register.md`](./secret-ownership-register.md), [`secret-rotation.md`](./secret-rotation.md), [`docs/90-work/initiatives/stack-pulse-2026-05/pr-27-internal-api-key-rotation.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-27-internal-api-key-rotation.md).

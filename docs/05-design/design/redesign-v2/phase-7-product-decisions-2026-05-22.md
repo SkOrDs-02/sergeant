@@ -1,6 +1,6 @@
 # Sergeant v2 Phase 7 — Product Decisions (2026-05-22)
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2027-01-11.
 > **Author:** @Skords-01 (decisions) + Claude Code (recording)
 > **Date:** 2026-05-22
 > **Status:** Active — these are locked product calls that unblock Phase 7 implementation

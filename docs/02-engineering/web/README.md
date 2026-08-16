@@ -1,6 +1,6 @@
 # Web platform
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-12-06.
 > **Status:** Active
 
 Платформні deep-dive-и для `apps/web`, що не вкладаються в design- чи architecture-розділи —

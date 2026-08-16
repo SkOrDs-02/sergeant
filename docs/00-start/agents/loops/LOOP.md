@@ -2,7 +2,7 @@
 
 # Loop Manifest — Autonomous Agent Workflows
 
-> **Last touched:** 2026-07-01 by @claude (per-run brakes: max_turns/max_budget_usd/circuit_breaker/heartbeat). **Next review:** 2026-09-29.
+> **Last touched:** 2026-07-01 by @claude (per-run brakes: max_turns/max_budget_usd/circuit_breaker/heartbeat). **Next review:** 2026-10-24.
 > **Status:** Active
 > **Source of truth:** [`registry.yaml`](./registry.yaml) (machine-readable, 10 loops)
 

@@ -1,6 +1,6 @@
 # Sergeant Design System
 
-> **Last validated:** 2026-07-27 by @v0 (brand palette synced to M1 stone rebrand). **Next review:** 2026-10-25.
+> **Last validated:** 2026-07-27 by @v0 (brand palette synced to M1 stone rebrand). **Next review:** 2027-01-25.
 > **Status:** Active (v2 redesign foundation merged 2026-05; brand → stone via 2026-07 M1; backlog of per-page polish — див. [`redesign-v2/backlog.md`](./redesign-v2/backlog.md))
 
 Єдина візуальна мова для хаба з 4 модулями: **ФІНІК**, **ФІЗРУК**, **Рутина**,

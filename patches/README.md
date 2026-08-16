@@ -1,6 +1,6 @@
 # patches/
 
-> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
+> **Last touched:** 2026-05-13 by Devin. **Next review:** 2026-08-18.
 > **Status:** Active
 
 This directory contains pnpm-managed patches applied to upstream packages

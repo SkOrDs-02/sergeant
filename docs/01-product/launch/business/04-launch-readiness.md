@@ -1,6 +1,6 @@
 # 04. Launch readiness: legal, ops, edge cases, метрики, чеклист
 
-> **Last touched:** 2026-08-06 by @Skords-01. **Next review:** 2026-11-04.
+> **Last touched:** 2026-08-06 by @Skords-01. **Next review:** 2027-09-07.
 > **Status:** Active
 
 > **Update 2026-07-10:** billing UI (`PaywallModal`, `PricingPage`, `PlanSection`, `usePlan()`) і server routes (`/api/billing/*`, `stripeWebhook.ts`) shipped. Edge-case таблиця §2 оновлена: «scaffold shipped» vs «prod rollout pending». Pre-launch checklist §7 розділяє code shipped / prod config.

@@ -1,6 +1,6 @@
 # Глобальна браузерна QA: знахідки
 
-> **Last touched:** 2026-08-08 by @claude. **Next review:** 2026-11-06.
+> **Last touched:** 2026-08-08 by @claude. **Next review:** 2027-09-17.
 > **Status:** Active
 
 Журнал знахідок прогону за

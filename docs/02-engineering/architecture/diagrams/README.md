@@ -1,6 +1,6 @@
 # C4 діаграми Sergeant
 
-> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-21.
 > **Status:** Active
 
 GitHub-renderable Mermaid діаграми. Чотири рівні C4 + ключові sequence-flows. Запит виник у [`docs/90-work/audits/2026-05-03-web-deep-dive` §9.2](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md).

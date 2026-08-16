@@ -1,6 +1,6 @@
 # Playbook: Restore from Backup
 
-> **Last touched:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-19.
+> **Last touched:** 2026-07-21 by @cursoragent. **Next review:** 2026-11-03.
 > **Status:** Active
 
 **Trigger:** критичні дані треба відновити після corruption, destructive міграції, provider-інциденту або невідновлюваної втрати runtime-стану.

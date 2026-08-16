@@ -1,6 +1,6 @@
 # Цикл 6, стадія 1 — сирі Tailwind-розміри в `shared/components/ui`
 
-> **Last touched:** 2026-07-24 by @Skords-01. **Next review:** 2026-10-22.
+> **Last touched:** 2026-07-24 by @Skords-01. **Next review:** 2027-07-26.
 > **Status:** Reference — звіт про виконання наряду циклу 6; baseline скорингу —
 > [`2026-07-21-design-audit.md`](./2026-07-21-design-audit.md).
 

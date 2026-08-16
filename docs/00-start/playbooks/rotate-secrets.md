@@ -1,6 +1,6 @@
 # Playbook: Rotate Secrets
 
-> **Last validated:** 2026-07-12 by @claude. **Next review:** 2026-10-10.
+> **Last validated:** 2026-07-12 by @claude. **Next review:** 2026-09-22.
 > **Status:** Active
 
 **Trigger:** "Secret leaked" / планова ротація / security audit / підозріла активність.

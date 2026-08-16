@@ -1,6 +1,6 @@
 # Database backup / restore — runbook (PR #049)
 
-> **Last validated:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-18.
+> **Last validated:** 2026-07-21 by @cursoragent. **Next review:** 2026-11-08.
 > **Status:** Active
 
 > **⚠️ Платформа мігрована ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md), 2026-07-11):** Postgres переїхав з Railway на **Coolify-керований `pgvector/pgvector:pg18`** на Hetzner CX23 VPS. Операторські кроки нижче (§1–2, §6–7) переписано під Coolify; platform-agnostic частини (§3–5 — `pg_dump`/`pg_restore`/`psql` smoke-тести) чинні без змін, бо це чистий Postgres. Автоматичний weekly-verify job ([`db-backup-verify.yml`](../../../.github/workflows/db-backup-verify.yml)) теж мігровано — деталі у §6.

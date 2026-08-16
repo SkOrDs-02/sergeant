@@ -1,4 +1,10 @@
 import { MCC_CATEGORIES, INCOME_CATEGORIES } from "../constants";
+import {
+  legacyManualCategoryId,
+  MANUAL_EXPENSE_TAXONOMY,
+  MANUAL_INCOME_TAXONOMY,
+  taxonomyLabel,
+} from "./manualTaxonomy.js";
 
 /**
  * Мінімальний тип кастомної категорії: достатньо для overlay-пошуку
@@ -38,30 +44,13 @@ type CategoryLikeInput = readonly unknown[];
 
 // Ручна форма історично має дещо детальнішу таксономію за MCC-каталог.
 // Ці id уже лежать у persisted blobs, тому їх не можна зводити до `other`
-// або перейменовувати міграцією під час читання.
-const MANUAL_EXPENSE_CATEGORIES: readonly CategoryLike[] = [
-  { id: "food", label: "🍴 Їжа" },
-  { id: "groceries", label: "🛒 Продукти" },
-  { id: "cafe", label: "☕ Кафе та ресторани" },
-  { id: "transport", label: "🚗 Транспорт" },
-  { id: "entertainment", label: "🎮 Розваги" },
-  { id: "health", label: "💊 Здоров'я" },
-  { id: "shopping", label: "🛍 Покупки" },
-  { id: "utilities", label: "🏠 Комунальні" },
-  { id: "tech", label: "🖥 Техніка" },
-  { id: "subscriptions", label: "🎵 Підписки" },
-  { id: "education", label: "📚 Навчання" },
-  { id: "travel", label: "✈️ Подорожі" },
-  { id: "other", label: "💳 Інше" },
-];
+// або перейменовувати міграцією під час читання. Джерело правди —
+// `manualTaxonomy.ts`; тут лише проєкція «id + підпис».
+const MANUAL_EXPENSE_CATEGORIES: readonly CategoryLike[] =
+  MANUAL_EXPENSE_TAXONOMY.map((d) => ({ id: d.id, label: taxonomyLabel(d) }));
 
-const MANUAL_INCOME_CATEGORIES: readonly CategoryLike[] = [
-  { id: "salary", label: "Зарплата" },
-  { id: "freelance", label: "Фріланс" },
-  { id: "gift", label: "Подарунок" },
-  { id: "refund", label: "Повернення" },
-  { id: "other-income", label: "Інше" },
-];
+const MANUAL_INCOME_CATEGORIES: readonly CategoryLike[] =
+  MANUAL_INCOME_TAXONOMY.map((d) => ({ id: d.id, label: taxonomyLabel(d) }));
 
 function isCategoryLike(v: unknown): v is CategoryLike {
   return (
@@ -157,6 +146,26 @@ export function getExpenseCategoryForTransaction(
       (category) => category.id === explicitId,
     );
     if (manualCategory) return manualCategory;
+    // Ери 1–2: у сховищі лежить український підпис (`"їжа"`, `"🍴 їжа"`),
+    // а не слаг. Без цієї гілки такий запис не матчив ані ручну
+    // таксономію, ані MCC-каталог, ані ключові слова — і рядок малювався
+    // як «Інше» з нейтральним сірим, хоча форма редагування того ж
+    // запису показувала правильну категорію (`upgradeCategory` живе
+    // лише в ній). Знайдено браузерною перевіркою 2026-08-13.
+    //
+    // Порядок важливий: спершу `resolveExpenseOverride` (MCC → ручні →
+    // ВЛАСНІ), і лише потім легасі-підписи. Інакше власна категорія з
+    // id на кшталт «їжа» була б з'їдена мапою — та сама підміна даних,
+    // від якої застерігає `upgradeCategoryAllowingCustom`.
+    const fromOverride = resolveExpenseOverride(explicitId, customCategories);
+    if (fromOverride) return fromOverride;
+    const legacySlug = legacyManualCategoryId(explicitId);
+    if (legacySlug) {
+      const upgraded = MANUAL_EXPENSE_CATEGORIES.find(
+        (category) => category.id === legacySlug,
+      );
+      if (upgraded) return upgraded;
+    }
   }
   return getCategory(
     transaction.description ?? "",

@@ -1,6 +1,6 @@
 # Продуктовий аудит знань: product-overview (парасолька) — diff-звіт тріангуляції
 
-> **Last touched:** 2026-07-29 by Codex. **Next review:** 2026-10-27.
+> **Last touched:** 2026-07-29 by Codex. **Next review:** 2027-11-04.
 > **Status:** Reference — deliverable завершено; виконувані залишки консолідовані в `product-knowledge-backlog.md`.
 
 > **Що це.** Фінальний прогін product-knowledge-конвеєра — тріангуляція

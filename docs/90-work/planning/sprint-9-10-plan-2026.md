@@ -1,6 +1,6 @@
 # Sergeant — план Спринтів 9-10 (2026-07-07 – 2026-08-01)
 
-> **Last validated:** 2026-07-29 by Codex (code-reconcile against current main). **Next review:** 2026-10-27.
+> **Last validated:** 2026-07-29 by Codex (code-reconcile against current main). **Next review:** 2027-10-17.
 > **Status:** Active — Sprint 9 code-side closed; Sprint 10 shipped S10-T2, S10-Q1, S10-X1, S10-T3 (JSON), S10-F2 and OG/Twitter slice of S10-R1. Open residuals: S10-R2 (custom-i18n decision/original contract) and S10-R1 (`/app` routing only).
 
 > **Оновлено 2026-07-20 (S10-Q1):** mutation tier-1 для `apps/server/src/lib/normalizers/{mono,off,upcitemdb,usda}.ts` (`pnpm --filter @sergeant/server mutation:normalizers`, break ≥70%, score ~90%); weekly CI job `server-normalizers` + artifacts `mutation-tier-1-*-report`. `uk-to-en.ts` виключено (статичний словник). Harness follow-ups (п.9): golden-task suite + `pnpm harness:bench`, `lint:harness-version-freshness`, `eval:playbooks` — див. `harness-engineering-v1.md` / `ai-coding-improvements.md`.

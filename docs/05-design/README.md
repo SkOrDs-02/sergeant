@@ -1,6 +1,6 @@
 # 05 · Design — дизайн-система, UI-політика, i18n
 
-> **Last validated:** 2026-06-12 by @claude. **Next review:** 2026-09-10.
+> **Last validated:** 2026-06-12 by @claude. **Next review:** 2027-01-29.
 > **Status:** Active
 
 Дизайн-шар: бренд, accent-система, dark mode, крос-cutting UI-поведінка й

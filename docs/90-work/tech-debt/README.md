@@ -1,6 +1,6 @@
 # Технічний борг
 
-> **Last validated:** 2026-07-20 by @cursoragent (post-waves docs sync). **Next review:** 2026-10-18.
+> **Last validated:** 2026-07-20 by @cursoragent (post-waves docs sync). **Next review:** 2026-11-12.
 > **Status:** Active — живі реєстри: `backend.md` / `frontend.md` / `mobile.md` / `tech-debt-assessment-2026-07-01.md`. Закриті плани у [`archive/`](./archive/).
 
 > **Оновлено 2026-07-20 (post-waves).** Після reconcile [#345](https://github.com/SkOrDs-02/Sergeant/pull/345) агентські хвилі закрили: ManualExpenseSheet [#348](https://github.com/SkOrDs-02/Sergeant/pull/348), TxRow [#350](https://github.com/SkOrDs-02/Sergeant/pull/350), mobile exhaustive-deps catalog [#349](https://github.com/SkOrDs-02/Sergeant/pull/349), Privat body scrub [#347](https://github.com/SkOrDs-02/Sergeant/pull/347), storage-key WHY [#351](https://github.com/SkOrDs-02/Sergeant/pull/351), NotificationsSection Phase 6 [#352](https://github.com/SkOrDs-02/Sergeant/pull/352), non-null burndown [#353](https://github.com/SkOrDs-02/Sergeant/pull/353). Живі реєстри синхронізовано з `main`. Blocked — нижче § «Blocked простими словами».

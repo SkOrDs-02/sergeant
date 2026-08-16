@@ -1,6 +1,6 @@
 # Domain invariants
 
-> **Last touched:** 2026-07-22 by @Skords-01 (finyk-аудит D1/D3: internal_transfer — 7 місць не 3; додано § Money про дві одиниці грошей). **Next review:** 2026-10-20.
+> **Last touched:** 2026-07-22 by @Skords-01 (finyk-аудит D1/D3: internal_transfer — 7 місць не 3; додано § Money про дві одиниці грошей). **Next review:** 2026-11-06.
 > **Status:** Active
 
 > Things that bite hard if assumed wrong. Compact pointer in [`AGENTS.md § Domain invariants`](../../../AGENTS.md#domain-invariants); deep prose lives here. Treat this file as canonical when web ↔ mobile ↔ server logic disagrees.
