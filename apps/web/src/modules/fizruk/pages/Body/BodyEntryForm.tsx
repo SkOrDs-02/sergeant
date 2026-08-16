@@ -18,6 +18,7 @@ import { Label } from "@shared/components/ui/FormField";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { useApiForm } from "@shared/forms";
 import { messages } from "@shared/i18n/uk";
+import { parseDecimalInput } from "@shared/lib/format/numberInput";
 import { cn } from "@shared/lib/ui/cn";
 import {
   ENERGY_LABELS,
@@ -33,21 +34,38 @@ import {
  * client-side валідація працює на string-полях, а конверсія в number
  * відбувається в `onSubmit`.
  */
+/**
+ * Число з поля, або `null` для порожнього і зіпсованого вводу.
+ *
+ * `parseDecimalInput`, а не `Number()`: поля мають `inputMode="decimal"`, і
+ * українська розкладка дає кому — `Number("82,5")` це `NaN`, тож форма
+ * відхиляла коректну вагу. Той самий баг, що бета-тестер зловив 2026-08-10
+ * у КБЖВ; тут його просто ще не встигли зловити.
+ */
+function bodyFieldValue(raw: string): number | null {
+  if (raw === "") return null;
+  const parsed = parseDecimalInput(raw);
+  return parsed.ok ? parsed.value : null;
+}
+
+/** `true`, якщо поле порожнє або тримає число в межах діапазону. */
+function bodyFieldInRange(raw: string, min: number, max: number): boolean {
+  if (raw === "") return true;
+  const value = bodyFieldValue(raw);
+  return value != null && value >= min && value <= max;
+}
+
 const bodyFormObjectSchema = z.object({
   weightKg: z
     .string()
     .refine(
-      (v) =>
-        v === "" ||
-        (!Number.isNaN(Number(v)) && Number(v) >= 20 && Number(v) <= 300),
+      (v) => bodyFieldInRange(v, 20, 300),
       messages.validation.weightKgRange,
     ),
   sleepHours: z
     .string()
     .refine(
-      (v) =>
-        v === "" ||
-        (!Number.isNaN(Number(v)) && Number(v) >= 0 && Number(v) <= 24),
+      (v) => bodyFieldInRange(v, 0, 24),
       messages.validation.sleepHoursRange,
     ),
   energyLevel: z.number().int().min(1).max(5).nullable(),
@@ -172,9 +190,8 @@ export function BodyEntryForm({ onSubmitEntry }: BodyEntryFormProps) {
       defaultValues: DEFAULT_VALUES,
       onSubmit: async (values) => {
         onSubmitEntry({
-          weightKg: values.weightKg !== "" ? Number(values.weightKg) : null,
-          sleepHours:
-            values.sleepHours !== "" ? Number(values.sleepHours) : null,
+          weightKg: bodyFieldValue(values.weightKg),
+          sleepHours: bodyFieldValue(values.sleepHours),
           energyLevel: values.energyLevel,
           moodScore: values.moodScore,
           note: values.note.trim(),
@@ -256,13 +273,14 @@ export function BodyEntryForm({ onSubmitEntry }: BodyEntryFormProps) {
             </Label>
             <input
               id="body-weight"
-              type="number"
+              // `type="text"`, а не `number`: під `number` браузер віддає
+              // порожній рядок, щойно вміст перестає бути валідним числом,
+              // тож «82,5» доїжджало сюди як «нічого не ввели» і вага тихо
+              // не зберігалась. `inputMode` лишає цифрову клавіатуру.
+              type="text"
               inputMode="decimal"
-              step="0.1"
-              min="20"
-              max="300"
               className="input-focus-fizruk w-full h-11 rounded-xl border border-line bg-panelHi px-3 text-sm text-text"
-              placeholder="70.5"
+              placeholder="70,5"
               disabled={isSubmitting}
               aria-invalid={weightError ? true : undefined}
               aria-describedby={weightError ? "body-weight-error" : undefined}
@@ -284,13 +302,11 @@ export function BodyEntryForm({ onSubmitEntry }: BodyEntryFormProps) {
             </Label>
             <input
               id="body-sleep"
-              type="number"
+              // Той самий привід, що й у полі ваги вище.
+              type="text"
               inputMode="decimal"
-              step="0.5"
-              min="0"
-              max="24"
               className="input-focus-fizruk w-full h-11 rounded-xl border border-line bg-panelHi px-3 text-sm text-text"
-              placeholder="8.0"
+              placeholder="8,0"
               disabled={isSubmitting}
               aria-invalid={sleepError ? true : undefined}
               aria-describedby={sleepError ? "body-sleep-error" : undefined}
