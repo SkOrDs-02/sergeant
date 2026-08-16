@@ -46,7 +46,21 @@ vi.mock("@sergeant/shared", async () => {
   };
 });
 
+/**
+ * `environment` резолвиться з хоста (`deployEnvironment.ts`), а не лише з
+ * env-var — бо preview-деплої на Vercel успадковують змінні основного деплою.
+ * jsdom за замовчуванням віддає `localhost`, тобто `development`, тож тести
+ * про прод/бету мусять явно задати канонічний хост.
+ */
+function stubHostname(hostname: string) {
+  Object.defineProperty(window, "location", {
+    configurable: true,
+    value: { ...window.location, hostname },
+  });
+}
+
 beforeEach(() => {
+  stubHostname("sergeant.vercel.app");
   vi.resetModules();
   posthogInit.mockReset();
   posthogCapture.mockReset();
@@ -87,12 +101,27 @@ describe("initPostHog", () => {
   });
 
   it("бере environment із VITE_APP_ENV, щоб бета не зливалась із продом", async () => {
+    stubHostname("beta-tau-gilt.vercel.app");
     vi.stubEnv("VITE_APP_ENV", "beta");
     const mod = await import("./posthog");
     await mod.initPostHog();
 
     expect(posthogRegister).toHaveBeenCalledWith(
       expect.objectContaining({ environment: "beta" }),
+    );
+  });
+
+  // Регресія аудиту 2026-08-16: Vercel віддає preview-збіркам env-vars
+  // основного деплою, тож гілкові хости приходили в прод-проєкт із міткою
+  // `beta` і мішались із реальними подіями. Хост має бити env-var.
+  it("позначає preview-хост як preview попри успадкований VITE_APP_ENV", async () => {
+    stubHostname("beta-git-codex-nutrition-skords-01s-projects.vercel.app");
+    vi.stubEnv("VITE_APP_ENV", "beta");
+    const mod = await import("./posthog");
+    await mod.initPostHog();
+
+    expect(posthogRegister).toHaveBeenCalledWith(
+      expect.objectContaining({ environment: "preview" }),
     );
   });
 
