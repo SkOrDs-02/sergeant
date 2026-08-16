@@ -20,16 +20,18 @@ Every auto-generated artifact in the repo. Currently:
 | `docs/today.md`                                           | `pnpm docs:gen-today`                |
 | `docs/STATUS.md`                                          | `pnpm docs:gen-status`               |
 | `docs/90-work/initiatives/follow-ups.md`                  | `pnpm docs:gen-initiative-followups` |
-| `docs/00-start/playbooks/INDEX.md`                        | `pnpm docs:gen-playbook-index`       |
 | `docs/04-governance/governance/hard-rules-matrix.md`      | `pnpm hard-rules:generate`           |
 | `docs/04-governance/governance/freshness-dashboard.html`  | `pnpm docs:freshness-dashboard`      |
 | `docs/04-governance/governance/repo-map.auto.json`        | `pnpm docs:gen-repo-map`             |
 | `docs/04-governance/governance/service-catalog.auto.json` | `pnpm docs:gen-service-catalog`      |
 
-Дві уточнювальні межі (звірка 2026-08-16):
+**Повністю генеровані поза `docs:gen-daily`** — регенеруються власною командою:
 
-- `docs/00-start/playbooks/INDEX.md` генерує `pnpm docs:gen-playbook-index`, і цей генератор **не входить** у `pnpm docs:gen-daily` — його дзеркалить окремий `--check` (`pnpm docs:check-playbook-index`).
-- Генерується саме JSON-дзеркало `service-catalog.auto.json`, а не людиночитний [`docs/02-engineering/architecture/service-catalog.md`](../../../02-engineering/architecture/service-catalog.md): той лишається рукописним (редакторські колонки — runbook, alerts, rollback, data-sensitivity), а `pnpm docs:check-service-catalog` лише звіряє, що кожна поверхня з JSON у ньому згадана. Тому маркера `<!-- AUTO-GENERATED -->` у ньому немає й бути не повинно.
+| Артефакт                           | Генератор                      | Гейт                             |
+| ---------------------------------- | ------------------------------ | -------------------------------- |
+| `docs/00-start/playbooks/INDEX.md` | `pnpm docs:gen-playbook-index` | `pnpm docs:check-playbook-index` |
+
+Уточнювальна межа (звірка 2026-08-16): генерується саме JSON-дзеркало `service-catalog.auto.json`, а не людиночитний [`docs/02-engineering/architecture/service-catalog.md`](../../../02-engineering/architecture/service-catalog.md): той лишається рукописним (редакторські колонки — runbook, alerts, rollback, data-sensitivity), а `pnpm docs:check-service-catalog` лише звіряє, що кожна поверхня з JSON у ньому згадана. Тому маркера `<!-- AUTO-GENERATED -->` у ньому немає й бути не повинно.
 
 **Частково генеровані** — редагується лише текст поза маркованим регіоном:
 
