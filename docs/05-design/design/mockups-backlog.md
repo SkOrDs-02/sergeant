@@ -1,7 +1,7 @@
 # Mockups · Backlog
 
-> **Last validated:** 2026-07-02 by @claude (cadence bump — Next review сплив 2026-07-01 і блокував docs-freshness gate на всіх PR; змістовна ревалідація беклогу — за @Skords-01).
-> **Next review:** 2026-08-13.
+> **Last validated:** 2026-08-16 by @claude (звірено з деревом `mockups/` — усі 4 «заплановані» поверхні й уся міграція структури виявились закритими; цифри кластерів за 2026-05-18 лишаю як історичний зріз, живий стан — портал).
+> **Next review:** 2027-04-01.
 > **Status:** Active.
 > **Maintainer:** founder + Claude (designer-assistant).
 
@@ -13,12 +13,20 @@
 
 - `mockups/index.html` — живий портал зі статусами кожної поверхні.
 - `mockups/README.md` — структура папок, правила, промпт-шаблони для агентів.
-- `Mockups Audit.html` (one-time артефакт у корені проєкту з мокапів) —
-  початковий аудит трьох розкиданих кластерів. Замінено цим документом.
+- ~~`Mockups Audit.html`~~ — one-time аудит трьох розкиданих кластерів,
+  замінений цим документом. У репо файлу вже немає (перевірено 2026-08-16).
 
 ---
 
-## Зведено · 2026-05-18
+## Зведено · 2026-05-18 (історичний зріз)
+
+> Таблиця нижче — стан на 18 травня. Станом на 2026-08-16 дерево виросло
+> значно ширше (`landing` 12 · `marketing` 17 · `flows` 4 · `product` 40
+> html-файлів), і колонка «Заплановано» вже порожня — див. § «Раніше
+> заплановане». Перераховувати «поверхні» тут навмисно не став: одна
+> поверхня — це тека з `index.html`, а більшість нових файлів у `product/` —
+> це варіанти й досліди, і механічний перелік дав би хибну точність.
+> **Живий стан — `mockups/index.html`.**
 
 | Кластер                                                 | Усього | У продукті | Заплановано |
 | ------------------------------------------------------- | -----: | ---------: | ----------: |
@@ -75,18 +83,22 @@ A/E відхилено, C/D — фаза 2). Воронка 5 PostHog подій
 
 ---
 
-## Не зроблено · що чекає на наступну сесію
+## Раніше заплановане · усе закрито
 
-**Усі 4 поверхні з попереднього беклогу закриті 18 травня 2026.**
+Ревалідація 2026-08-16: усі чотири поверхні існують на диску. Рядки лишені
+з датами закриття, щоб було видно, що беклог порожній, а не забутий.
 
-Нижче — оригінальний список пріоритетів, лишений для історичного контексту.
+| #   | Поверхня                                                        | Файл на диску                     | Стан |
+| --- | --------------------------------------------------------------- | --------------------------------- | ---- |
+| 1   | **Налаштування + приватність** `product/settings/`              | `mockups/product/settings/`       | ✅   |
+| 2   | **Швидкий запис · плаваюча кнопка + лист** `product/quick-add/` | `mockups/product/quick-add/`      | ✅   |
+| 3   | **Push-сповіщення** `product/push/`                             | `mockups/product/push/`           | ✅   |
+| 4   | **Telegram-бот · сценарій** `flows/telegram-bot.html`           | `mockups/flows/telegram-bot.html` | ✅   |
 
-| #   | Поверхня                                                        | Пріоритет    | Орієнтовний обсяг | Джерело-план                                             |
-| --- | --------------------------------------------------------------- | ------------ | ----------------- | -------------------------------------------------------- |
-| 1   | **Налаштування + приватність** `product/settings/`              | високо (2)   | M · 4-6 год       | brandbook §local-first claims                            |
-| 2   | **Швидкий запис · плаваюча кнопка + лист** `product/quick-add/` | високо (2)   | M · 4-6 год       | redesign-v2 backlog · FAB                                |
-| 3   | **Push-сповіщення** `product/push/`                             | високо (2)   | M · 4-6 год       | cross-module-prompts.md + ще не існуючий push-schema doc |
-| 4   | **Telegram-бот · сценарій** `flows/telegram-bot.html`           | середньо (3) | M · 4-6 год       | `telegram-improvements-roadmap.md` (31кб)                |
+Понад цей список у `product/` з травня зʼявились ще `nudges/` і `splash/`
+(теки з `index.html`), плюс великий пласт одиничних досліджень — від
+`anti-slop-*` і `hub-axes-*` до `number-typography.html`. У беклог їх не
+заводжу: він про заплановані поверхні, а не про реєстр усього намальованого.
 
 ### Окремо · поза цим беклогом, але згадане у початковому аудиті
 
@@ -103,17 +115,21 @@ A/E відхилено, C/D — фаза 2). Воронка 5 PostHog подій
 
 ## Що змінилось у структурі від початкового аудиту
 
-| Звідки                                                     | Куди                                                  | Статус                            |
-| ---------------------------------------------------------- | ----------------------------------------------------- | --------------------------------- |
-| `docs/01-product/launch/landing-mockups/mockup-NN-*.html`  | `mockups/landing/campaigns/<slug>.html`               | ✅                                |
-| `mockups/landing/v*.html`                                  | `mockups/landing/directions/v*.html`                  | ✅                                |
-| `docs/05-design/design/redesign-v2/handoff-package/*.html` | `mockups/product/{module}/*.html`                     | ✅                                |
-| `mockups/shared.css`                                       | `mockups/_shared/{tokens,marketing,product}.css`      | ✅                                |
-| `mockups/{email-drip, social-posts, …}.html`               | `mockups/marketing/<same>.html`                       | 🟡 чекає `git mv` від Claude Code |
-| `mockups/{signup-flow, referral-flow, n8n-flow}.html`      | `mockups/flows/<same>.html`                           | 🟡 чекає `git mv` від Claude Code |
-| Старий `mockups/index.html` (19кб)                         | Видалити після того як новий перевірений              | 🟡                                |
-| Старий `mockups/shared.css` (5кб)                          | Видалити після того як `_shared/marketing.css` працює | 🟡                                |
-| Старий `mockups/landing/README.md`                         | Видалити (замінив `mockups/README.md`)                | 🟡                                |
+| Звідки                                                     | Куди                                             | Статус |
+| ---------------------------------------------------------- | ------------------------------------------------ | ------ |
+| `docs/01-product/launch/landing-mockups/mockup-NN-*.html`  | `mockups/landing/campaigns/<slug>.html`          | ✅     |
+| `mockups/landing/v*.html`                                  | `mockups/landing/directions/v*.html`             | ✅     |
+| `docs/05-design/design/redesign-v2/handoff-package/*.html` | `mockups/product/{module}/*.html`                | ✅     |
+| `mockups/shared.css`                                       | `mockups/_shared/{tokens,marketing,product}.css` | ✅     |
+| `mockups/{email-drip, social-posts, …}.html`               | `mockups/marketing/<same>.html`                  | ✅     |
+| `mockups/{signup-flow, referral-flow, n8n-flow}.html`      | `mockups/flows/<same>.html`                      | ✅     |
+| Старий `mockups/index.html` (19кб)                         | Замінений новим порталом                         | ✅     |
+| Старий `mockups/shared.css` (5кб)                          | Видалений, працює `_shared/marketing.css`        | ✅     |
+| Старий `mockups/landing/README.md`                         | Видалений (замінив `mockups/README.md`)          | ✅     |
+
+Усі пʼять рядків перевірені на диску 2026-08-16: у корені `mockups/` лишився
+єдиний `index.html`, `shared.css` і `landing/README.md` відсутні, теки
+`marketing/` і `flows/` наповнені.
 
 ---
 
@@ -134,10 +150,10 @@ A/E відхилено, C/D — фаза 2). Воронка 5 PostHog подій
 
 ## Дрібні правки / техдебт у самих мокапах
 
-| #   | Що                                                                | Де                                                                            |
-| --- | ----------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| 1   | `Mockups Audit.html` у корені — one-time артефакт                 | Переміщати у `docs/90-work/audits/2026-05-17-mockups-audit.html` або видалити |
-| 2   | Перевірити з мобілки що 3-колонковий layout не ламається на 360px | усі продуктові мокапи                                                         |
-| 3   | Лінк зі старого `landing/README.md` на нову теку                  | після видалення                                                               |
-| 4   | `last-validated` дати скрізь — 2026-05-18                         | усі мокапи M-2..M-5                                                           |
-| 5   | `_shared/code-references.md` додати hubchat-файли                 | code-references                                                               |
+| #   | Що                                                                | Де                       |
+| --- | ----------------------------------------------------------------- | ------------------------ |
+| 1   | ~~`Mockups Audit.html` у корені~~ — файлу немає, пункт закрито    | ✅ перевірено 2026-08-16 |
+| 2   | Перевірити з мобілки що 3-колонковий layout не ламається на 360px | усі продуктові мокапи    |
+| 3   | Лінк зі старого `landing/README.md` на нову теку                  | після видалення          |
+| 4   | `last-validated` дати скрізь — 2026-05-18                         | усі мокапи M-2..M-5      |
+| 5   | `_shared/code-references.md` додати hubchat-файли                 | code-references          |
