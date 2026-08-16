@@ -5,6 +5,7 @@
 import type { ReactNode } from "react";
 import type { ModuleAccent } from "@sergeant/design-tokens";
 import { cn } from "@shared/lib/ui/cn";
+import { VT_NAME_ATTR } from "@shared/lib/ui/viewTransition";
 import { hapticTap } from "@shared/lib/adapters/haptic";
 import { emitHubBus } from "@shared/lib/modules/hubBus";
 import { openHubModule } from "@shared/lib/modules/hubNav";
@@ -124,9 +125,13 @@ export function ModuleHeader({
       // makes the module chrome grow out of the tapped card on entry and
       // collapse back on exit. Only set when the header is module-scoped;
       // generic headers stay part of the plain root crossfade.
-      style={
-        module ? { viewTransitionName: `sgt-module-${module}` } : undefined
-      }
+      //
+      // Ім'я віддаємо через `data-vt-name`, а не інлайновим стилем:
+      // `startViewTransition` проставляє його на час переходу і знімає
+      // після. Постійний `view-transition-name` лишав цей рожевий хедер
+      // окремим snapshot-шаром, який WebKit малював поверх сусідніх рядів
+      // (див. `shared/lib/ui/viewTransition.ts`).
+      {...(module ? { [VT_NAME_ATTR]: `sgt-module-${module}` } : {})}
     >
       <div className="flex min-h-[68px] items-center px-4 py-2 sm:px-5 gap-3">
         {left}

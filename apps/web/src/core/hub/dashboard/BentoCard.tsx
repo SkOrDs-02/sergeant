@@ -13,6 +13,7 @@ import {
   type PointerEvent,
 } from "react";
 import { cn } from "@shared/lib/ui/cn";
+import { VT_NAME_ATTR } from "@shared/lib/ui/viewTransition";
 import { Icon } from "@shared/components/ui/Icon";
 import { hapticTap } from "@shared/lib/adapters/haptic";
 import {
@@ -713,7 +714,12 @@ export const SortableCard = memo(function SortableCard({
       // exit). Suppressed in edit mode — during drag/reorder the tile is
       // transformed and there is no navigation to transition into, so a
       // captured name would only risk snapshotting a mid-drag frame.
-      style={editMode ? undefined : { viewTransitionName: `sgt-module-${id}` }}
+      //
+      // Через `data-vt-name`, а не інлайновий стиль: ім'я живе лише на час
+      // переходу (див. `shared/lib/ui/viewTransition.ts`). Постійне ім'я
+      // тут дублювало ім'я хедера модуля, а дублікат робить перехід
+      // невалідним за спекою.
+      {...(editMode ? {} : { [VT_NAME_ATTR]: `sgt-module-${id}` })}
       // #18 — long-press peek: attach to the wrapper so the gesture works
       // regardless of which child element is under the pointer.
       {...(!longPressDisabled ? longPressHandlers : {})}
