@@ -858,6 +858,228 @@ export const paths: ZodOpenApiPathsObject = {
     },
   },
 
+  // ────────────────────── Silpo MCP integration (walking-skeleton) ──────────
+  // Spec: `docs/90-work/planning/specs/silpo-mcp-integration.md`. All routes
+  // gated by `requireSession()` + `SILPO_ENABLED` kill switch (503
+  // `SILPO_DISABLED` when off — shared across every path below).
+  "/api/silpo/connect": {
+    get: {
+      summary: "Розпочати OAuth-підключення до Silpo (302 redirect)",
+      description:
+        "NAVIGATION-ONLY — браузер редіректиться на Silpo consent screen. " +
+        "Не для fetch/XHR-виклику; `@sergeant/api-client` дає " +
+        "`silpoConnectUrl()` для `window.location.href`.",
+      tags: ["silpo"],
+      security: cookieOrBearer,
+      responses: {
+        "302": { description: "Redirect до Silpo OAuth authorization URL." },
+        "401": unauthorized,
+        "503": {
+          description:
+            "SILPO_DISABLED (kill switch) або SILPO_CONFIG_MISSING (redirect URI не сконфігуровано).",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+      },
+    },
+  },
+  "/api/silpo/callback": {
+    get: {
+      summary: "OAuth callback від Silpo (302 redirect на /settings)",
+      description:
+        "Server-only — браузер потрапляє сюди після Silpo consent screen, " +
+        "жоден клієнт не викликає цей шлях напряму.",
+      tags: ["silpo"],
+      security: cookieOrBearer,
+      responses: {
+        "302": {
+          description:
+            "Redirect на `/settings?silpo=connected|error` (+ `reason` при помилці).",
+        },
+        "401": unauthorized,
+        "503": {
+          description: "SILPO_DISABLED (kill switch).",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+      },
+    },
+  },
+  "/api/silpo/disconnect": {
+    post: {
+      summary: "Відключити Silpo (mono-патерн — чеки/items survive)",
+      tags: ["silpo"],
+      security: cookieOrBearer,
+      responses: {
+        "200": {
+          description: "`silpo_connection` видалено.",
+          content: {
+            "application/json": {
+              schema: namedSchemas.SilpoDisconnectResponse,
+            },
+          },
+        },
+        "401": unauthorized,
+        "503": {
+          description: "SILPO_DISABLED (kill switch).",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+      },
+    },
+  },
+  "/api/silpo/wipe": {
+    post: {
+      summary:
+        "Повне видалення Silpo-даних (чеки → items → finyk_tx_receipt_links)",
+      description:
+        "Підтверджені `finyk_tx_splits` та pantry-events НІКОЛИ не чіпаються.",
+      tags: ["silpo"],
+      security: cookieOrBearer,
+      responses: {
+        "200": {
+          description: "Видалено; `deletedReceipts` — лічильник.",
+          content: {
+            "application/json": { schema: namedSchemas.SilpoWipeResponse },
+          },
+        },
+        "401": unauthorized,
+        "503": {
+          description: "SILPO_DISABLED (kill switch).",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+      },
+    },
+  },
+  "/api/silpo/sync-state": {
+    get: {
+      summary: "Статус Silpo-інтеграції + лічильники (Settings-картка)",
+      tags: ["silpo"],
+      security: cookieOrBearer,
+      responses: {
+        "200": {
+          description:
+            "`status: 'disconnected'` — синтетичний стан (немає рядка `silpo_connection`).",
+          content: {
+            "application/json": { schema: namedSchemas.SilpoSyncState },
+          },
+        },
+        "401": unauthorized,
+        "503": {
+          description: "SILPO_DISABLED (kill switch).",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+      },
+    },
+  },
+  "/api/silpo/sync": {
+    post: {
+      summary: "«Оновити чеки» — pull + normalize + match до транзакцій",
+      description:
+        "`status` у відповіді — стан ПІСЛЯ спроби синку (може стати " +
+        "`reauth_required`, якщо lazy-refresh відвалився посеред синку).",
+      tags: ["silpo"],
+      security: cookieOrBearer,
+      responses: {
+        "200": {
+          description: "Діагностичні лічильники pull/insert/match.",
+          content: {
+            "application/json": { schema: namedSchemas.SilpoSyncResult },
+          },
+        },
+        "401": unauthorized,
+        "409": {
+          description: "SILPO_NOT_CONNECTED або SILPO_REAUTH_REQUIRED.",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+        "429": {
+          description: "SILPO_RATE_LIMITED — забагато синків поспіль.",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+        "502": {
+          description: "SILPO_UPSTREAM_ERROR або SILPO_SCHEMA_DRIFT.",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+        "503": {
+          description: "SILPO_DISABLED (kill switch).",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+      },
+    },
+  },
+  "/api/silpo/receipts": {
+    get: {
+      summary: "Cursor-paginated список чеків Silpo",
+      tags: ["silpo"],
+      security: cookieOrBearer,
+      requestParams: { query: namedSchemas.SilpoReceiptsQuery },
+      responses: {
+        "200": {
+          description: "Сторінка `SilpoReceiptSummaryDto[]` + nextCursor.",
+          content: {
+            "application/json": { schema: namedSchemas.SilpoReceiptsPage },
+          },
+        },
+        "400": validationError,
+        "401": unauthorized,
+        "503": {
+          description: "SILPO_DISABLED (kill switch).",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+      },
+    },
+  },
+  "/api/silpo/receipts/{id}": {
+    get: {
+      summary: "Один чек Silpo — summary + line items",
+      tags: ["silpo"],
+      security: cookieOrBearer,
+      requestParams: {
+        path: z.object({
+          id: z.string().describe("`silpo_receipts.receipt_id`."),
+        }),
+      },
+      responses: {
+        "200": {
+          description: "Summary + масив items.",
+          content: {
+            "application/json": { schema: namedSchemas.SilpoReceiptDetailDto },
+          },
+        },
+        "401": unauthorized,
+        "404": {
+          description: "Чек не знайдено (не існує або належить іншому юзеру).",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+        "503": {
+          description: "SILPO_DISABLED (kill switch).",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+      },
+    },
+  },
+
   // ────────────────────── Waitlist (Phase 0 monetization) ───────────────────
   // Сервер монтує обидва префікси (`/api/waitlist` + `/api/v1/waitlist`), щоб
   // pricing-page CTA працював незалежно від стадії API-versioning shim-у.

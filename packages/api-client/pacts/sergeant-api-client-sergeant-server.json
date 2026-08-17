@@ -849,6 +849,163 @@
       }
     },
     {
+      "description": "a GET /api/v1/silpo/receipts request with limit=2",
+      "providerStates": [
+        {
+          "name": "user-pact-001 has 2 silpo_receipts rows"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/silpo/receipts",
+        "query": {
+          "limit": [
+            "2"
+          ]
+        }
+      },
+      "response": {
+        "body": {
+          "data": [
+            {
+              "channel": "offline",
+              "paymentHint": "card",
+              "purchasedAt": "2026-08-16T18:20:00.000Z",
+              "receiptId": "rcpt-pact-0002",
+              "storeId": "store-042",
+              "totalKop": 45690,
+              "transactionId": "tx-pact-0099"
+            },
+            {
+              "channel": "online",
+              "paymentHint": null,
+              "purchasedAt": "2026-08-15T09:05:00.000Z",
+              "receiptId": "rcpt-pact-0001",
+              "storeId": null,
+              "totalKop": 12000,
+              "transactionId": null
+            }
+          ],
+          "nextCursor": "2026-08-15T09:05:00.000Z:rcpt-pact-0001"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/silpo/receipts/rcpt-pact-0001 request",
+      "providerStates": [
+        {
+          "name": "user-pact-001 owns receipt rcpt-pact-0001 with 2 items"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/silpo/receipts/rcpt-pact-0001"
+      },
+      "response": {
+        "body": {
+          "channel": "online",
+          "items": [
+            {
+              "barcode": "4820000000017",
+              "categorySlug": "dairy",
+              "id": 501,
+              "name": "Молоко 2.5%",
+              "priceKop": 4500,
+              "qty": 1,
+              "unit": "шт"
+            },
+            {
+              "barcode": null,
+              "categorySlug": null,
+              "id": 502,
+              "name": "Хліб житній",
+              "priceKop": 7500,
+              "qty": null,
+              "unit": null
+            }
+          ],
+          "paymentHint": null,
+          "purchasedAt": "2026-08-15T09:05:00.000Z",
+          "receiptId": "rcpt-pact-0001",
+          "storeId": null,
+          "totalKop": 12000,
+          "transactionId": null
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/silpo/sync-state request",
+      "providerStates": [
+        {
+          "name": "user-pact-001 has a connected Silpo account with 5 receipts synced"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/silpo/sync-state"
+      },
+      "response": {
+        "body": {
+          "accessTokenExpiresAt": "2026-08-24T10:00:00.000Z",
+          "lastSyncAt": "2026-08-17T09:15:00.000Z",
+          "receiptsCount": 5,
+          "status": "connected"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/silpo/sync-state request (no connection)",
+      "providerStates": [
+        {
+          "name": "user-pact-002 has never connected Silpo"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/silpo/sync-state"
+      },
+      "response": {
+        "body": {
+          "accessTokenExpiresAt": null,
+          "lastSyncAt": null,
+          "receiptsCount": 0,
+          "status": "disconnected"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
       "description": "a GET /api/v2/sync/pull?since=0&limit=2 request (first page, more data)",
       "providerStates": [
         {
@@ -1519,6 +1676,89 @@
         "body": {
           "ok": true,
           "platform": "web"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/v1/silpo/disconnect request (no body)",
+      "providerStates": [
+        {
+          "name": "user-pact-001 has a connected Silpo account"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/silpo/disconnect"
+      },
+      "response": {
+        "body": {
+          "ok": true
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/v1/silpo/sync request (no body)",
+      "providerStates": [
+        {
+          "name": "user-pact-001 has a connected Silpo account, 2 new receipts"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/silpo/sync"
+      },
+      "response": {
+        "body": {
+          "ambiguous": 0,
+          "itemsInserted": 7,
+          "matched": 1,
+          "offlinePulled": 1,
+          "onlinePulled": 1,
+          "receiptsInserted": 2,
+          "status": "connected",
+          "unmatched": 1
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/v1/silpo/wipe request (no body)",
+      "providerStates": [
+        {
+          "name": "user-pact-001 has 3 silpo_receipts rows"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/silpo/wipe"
+      },
+      "response": {
+        "body": {
+          "deletedReceipts": 3,
+          "ok": true
         },
         "headers": {
           "Content-Type": "application/json",

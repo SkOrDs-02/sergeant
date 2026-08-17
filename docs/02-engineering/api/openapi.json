@@ -2242,6 +2242,462 @@
         }
       }
     },
+    "/api/silpo/connect": {
+      "get": {
+        "summary": "Розпочати OAuth-підключення до Silpo (302 redirect)",
+        "description": "NAVIGATION-ONLY — браузер редіректиться на Silpo consent screen. Не для fetch/XHR-виклику; `@sergeant/api-client` дає `silpoConnectUrl()` для `window.location.href`.",
+        "tags": [
+          "silpo"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirect до Silpo OAuth authorization URL."
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SILPO_DISABLED (kill switch) або SILPO_CONFIG_MISSING (redirect URI не сконфігуровано).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/silpo/callback": {
+      "get": {
+        "summary": "OAuth callback від Silpo (302 redirect на /settings)",
+        "description": "Server-only — браузер потрапляє сюди після Silpo consent screen, жоден клієнт не викликає цей шлях напряму.",
+        "tags": [
+          "silpo"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirect на `/settings?silpo=connected|error` (+ `reason` при помилці)."
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SILPO_DISABLED (kill switch).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/silpo/disconnect": {
+      "post": {
+        "summary": "Відключити Silpo (mono-патерн — чеки/items survive)",
+        "tags": [
+          "silpo"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`silpo_connection` видалено.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SilpoDisconnectResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SILPO_DISABLED (kill switch).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/silpo/wipe": {
+      "post": {
+        "summary": "Повне видалення Silpo-даних (чеки → items → finyk_tx_receipt_links)",
+        "description": "Підтверджені `finyk_tx_splits` та pantry-events НІКОЛИ не чіпаються.",
+        "tags": [
+          "silpo"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Видалено; `deletedReceipts` — лічильник.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SilpoWipeResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SILPO_DISABLED (kill switch).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/silpo/sync-state": {
+      "get": {
+        "summary": "Статус Silpo-інтеграції + лічильники (Settings-картка)",
+        "tags": [
+          "silpo"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`status: 'disconnected'` — синтетичний стан (немає рядка `silpo_connection`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SilpoSyncState"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SILPO_DISABLED (kill switch).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/silpo/sync": {
+      "post": {
+        "summary": "«Оновити чеки» — pull + normalize + match до транзакцій",
+        "description": "`status` у відповіді — стан ПІСЛЯ спроби синку (може стати `reauth_required`, якщо lazy-refresh відвалився посеред синку).",
+        "tags": [
+          "silpo"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Діагностичні лічильники pull/insert/match.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SilpoSyncResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "SILPO_NOT_CONNECTED або SILPO_REAUTH_REQUIRED.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "SILPO_RATE_LIMITED — забагато синків поспіль.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "SILPO_UPSTREAM_ERROR або SILPO_SCHEMA_DRIFT.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SILPO_DISABLED (kill switch).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/silpo/receipts": {
+      "get": {
+        "summary": "Cursor-paginated список чеків Silpo",
+        "tags": [
+          "silpo"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 50,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "type": "string",
+              "minLength": 3
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Сторінка `SilpoReceiptSummaryDto[]` + nextCursor.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SilpoReceiptsPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SILPO_DISABLED (kill switch).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/silpo/receipts/{id}": {
+      "get": {
+        "summary": "Один чек Silpo — summary + line items",
+        "tags": [
+          "silpo"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": {
+              "type": "string",
+              "description": "`silpo_receipts.receipt_id`."
+            },
+            "required": true,
+            "description": "`silpo_receipts.receipt_id`."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Summary + масив items.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SilpoReceiptDetailDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Чек не знайдено (не існує або належить іншому юзеру).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SILPO_DISABLED (kill switch).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/waitlist": {
       "post": {
         "summary": "Sign-up на waitlist для майбутнього Pro-тіру (анонімний)",
@@ -6319,6 +6775,374 @@
         ],
         "additionalProperties": false,
         "description": "Відповідь GET /api/mono/backfill-progress — поточний стан per-user backfill job."
+      },
+      "SilpoDisconnectResponse": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "const": true
+          }
+        },
+        "required": [
+          "ok"
+        ],
+        "additionalProperties": false,
+        "description": "Відповідь POST /api/silpo/disconnect — `{ ok: true }` (mono-патерн: видаляє лише `silpo_connection`)."
+      },
+      "SilpoWipeResponse": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "const": true
+          },
+          "deletedReceipts": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "ok",
+          "deletedReceipts"
+        ],
+        "additionalProperties": false,
+        "description": "Відповідь POST /api/silpo/wipe — повне видалення чеків користувача, `deletedReceipts` — лічильник."
+      },
+      "SilpoSyncState": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "disconnected",
+              "connected",
+              "reauth_required"
+            ]
+          },
+          "accessTokenExpiresAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lastSyncAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "receiptsCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "status",
+          "accessTokenExpiresAt",
+          "lastSyncAt",
+          "receiptsCount"
+        ],
+        "additionalProperties": false,
+        "description": "Відповідь GET /api/silpo/sync-state — статус інтеграції + лічильники для Settings-картки."
+      },
+      "SilpoSyncResult": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "disconnected",
+              "connected",
+              "reauth_required"
+            ]
+          },
+          "offlinePulled": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "onlinePulled": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "receiptsInserted": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "itemsInserted": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "matched": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "ambiguous": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "unmatched": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "status",
+          "offlinePulled",
+          "onlinePulled",
+          "receiptsInserted",
+          "itemsInserted",
+          "matched",
+          "ambiguous",
+          "unmatched"
+        ],
+        "additionalProperties": false,
+        "description": "Відповідь POST /api/silpo/sync — діагностичні лічильники pull/insert/match ПІСЛЯ спроби синхронізації."
+      },
+      "SilpoReceiptsPage": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "receiptId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "purchasedAt": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "storeId": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "channel": {
+                  "type": "string",
+                  "enum": [
+                    "online",
+                    "offline"
+                  ]
+                },
+                "paymentHint": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "totalKop": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "transactionId": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "receiptId",
+                "purchasedAt",
+                "storeId",
+                "channel",
+                "paymentHint",
+                "totalKop",
+                "transactionId"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "data",
+          "nextCursor"
+        ],
+        "additionalProperties": false,
+        "description": "Відповідь GET /api/silpo/receipts — cursor-paginated `{data, nextCursor}`."
+      },
+      "SilpoReceiptDetailDto": {
+        "type": "object",
+        "properties": {
+          "receiptId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "purchasedAt": {
+            "type": "string",
+            "minLength": 1
+          },
+          "storeId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "channel": {
+            "type": "string",
+            "enum": [
+              "online",
+              "offline"
+            ]
+          },
+          "paymentHint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "totalKop": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "transactionId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "qty": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "unit": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "priceKop": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "categorySlug": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "barcode": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "qty",
+                "unit",
+                "priceKop",
+                "categorySlug",
+                "barcode"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "receiptId",
+          "purchasedAt",
+          "storeId",
+          "channel",
+          "paymentHint",
+          "totalKop",
+          "transactionId",
+          "items"
+        ],
+        "additionalProperties": false,
+        "description": "SilpoReceiptSummaryDto + масив SilpoReceiptItemDto."
       },
       "WaitlistSubmitResponse": {
         "type": "object",

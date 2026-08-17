@@ -2,6 +2,7 @@ import { createDocument } from "zod-openapi";
 import { z } from "zod";
 
 import * as schemas from "../schemas/api";
+import * as silpoSchemas from "../schemas/silpo";
 
 /**
  * Builds OpenAPI 3.1 document from zod-схем у `@sergeant/shared/schemas/api`.
@@ -230,6 +231,56 @@ const MonoBackfillProgress = schemas.MonoBackfillProgressSchema.meta({
   description:
     "Відповідь GET /api/mono/backfill-progress — поточний стан per-user backfill job.",
 });
+// ── Silpo MCP integration (walking-skeleton experiment) ──────────────────
+// Shapes below describe our OWN normalized storage (`silpo_receipts` /
+// `silpo_receipt_items`, migration 121), not the raw MCP tool payload — see
+// the docstring in `packages/shared/src/schemas/silpo.ts`.
+const SilpoSyncState = silpoSchemas.SilpoSyncStateSchema.meta({
+  id: "SilpoSyncState",
+  description:
+    "Відповідь GET /api/silpo/sync-state — статус інтеграції + лічильники для Settings-картки.",
+});
+const SilpoDisconnectResponse = silpoSchemas.SilpoDisconnectResponseSchema.meta(
+  {
+    id: "SilpoDisconnectResponse",
+    description:
+      "Відповідь POST /api/silpo/disconnect — `{ ok: true }` (mono-патерн: видаляє лише `silpo_connection`).",
+  },
+);
+const SilpoWipeResponse = silpoSchemas.SilpoWipeResponseSchema.meta({
+  id: "SilpoWipeResponse",
+  description:
+    "Відповідь POST /api/silpo/wipe — повне видалення чеків користувача, `deletedReceipts` — лічильник.",
+});
+const SilpoSyncResult = silpoSchemas.SilpoSyncResultSchema.meta({
+  id: "SilpoSyncResult",
+  description:
+    "Відповідь POST /api/silpo/sync — діагностичні лічильники pull/insert/match ПІСЛЯ спроби синхронізації.",
+});
+const SilpoReceiptItemDto = silpoSchemas.SilpoReceiptItemDtoSchema.meta({
+  id: "SilpoReceiptItemDto",
+  description:
+    "Рядок `silpo_receipt_items` після нормалізації (bigint coerce: `id`, `priceKop`).",
+});
+const SilpoReceiptSummaryDto = silpoSchemas.SilpoReceiptSummaryDtoSchema.meta({
+  id: "SilpoReceiptSummaryDto",
+  description:
+    "Рядок `silpo_receipts` без line items (bigint coerce: `totalKop`); `transactionId: null` — перше-класний стан «чек без транзакції».",
+});
+const SilpoReceiptDetailDto = silpoSchemas.SilpoReceiptDetailDtoSchema.meta({
+  id: "SilpoReceiptDetailDto",
+  description: "SilpoReceiptSummaryDto + масив SilpoReceiptItemDto.",
+});
+const SilpoReceiptsPage = silpoSchemas.SilpoReceiptsPageSchema.meta({
+  id: "SilpoReceiptsPage",
+  description:
+    "Відповідь GET /api/silpo/receipts — cursor-paginated `{data, nextCursor}`.",
+});
+const SilpoReceiptsQuery = silpoSchemas.SilpoReceiptsQuerySchema.meta({
+  id: "SilpoReceiptsQuery",
+  description: "Query для GET /api/silpo/receipts — limit (coerced) + cursor.",
+});
+
 const Pagination = schemas.PaginationSchema.meta({
   id: "Pagination",
   description:
@@ -387,6 +438,15 @@ export const namedSchemas = {
   MonoDisconnectResponse,
   MonoBackfillResponse,
   MonoBackfillProgress,
+  SilpoSyncState,
+  SilpoDisconnectResponse,
+  SilpoWipeResponse,
+  SilpoSyncResult,
+  SilpoReceiptItemDto,
+  SilpoReceiptSummaryDto,
+  SilpoReceiptDetailDto,
+  SilpoReceiptsPage,
+  SilpoReceiptsQuery,
   Pagination,
   WaitlistSubmit,
   WaitlistSubmitResponse,

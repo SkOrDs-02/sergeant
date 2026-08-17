@@ -220,6 +220,24 @@ export {
 } from "./endpoints/privat";
 
 export {
+  createSilpoEndpoints,
+  silpoConnectUrl,
+  type SilpoConnectionStatus,
+  type SilpoDisconnectResponse,
+  type SilpoEndpoints,
+  type SilpoReceiptChannel,
+  type SilpoReceiptDetailDto,
+  type SilpoReceiptItemDto,
+  type SilpoReceiptsListParams,
+  type SilpoReceiptsPage,
+  type SilpoReceiptsQuery,
+  type SilpoReceiptSummaryDto,
+  type SilpoSyncResult,
+  type SilpoSyncState,
+  type SilpoWipeResponse,
+} from "./endpoints/silpo";
+
+export {
   createWaitlistEndpoints,
   WaitlistSubmitRequestSchema,
   WaitlistSubmitResponseSchema,
