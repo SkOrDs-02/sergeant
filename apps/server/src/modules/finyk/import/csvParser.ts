@@ -245,6 +245,18 @@ export function parseCalendarDateKey(
     return null;
   }
 
+  // Реальна календарна перевірка (ревʼю PR #818): «30.02» і «29.02» у
+  // невисокосний рік проходили діапазонні межі вище — Date у UTC
+  // round-trip-ом ловить неіснуючі дати без злих сюрпризів таймзон.
+  const probe = new Date(Date.UTC(year, month - 1, day));
+  if (
+    probe.getUTCFullYear() !== year ||
+    probe.getUTCMonth() !== month - 1 ||
+    probe.getUTCDate() !== day
+  ) {
+    return null;
+  }
+
   const key = `${year}-${pad2(month)}-${pad2(day)}`;
   return boundedDayKeySchema.safeParse(key).success ? key : null;
 }

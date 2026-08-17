@@ -111,10 +111,18 @@ export default async function commitImportHandler(
   const userId = (req as WithSessionUser).user!.id;
 
   const ids = assignImportRowIds(userId, body.rows);
-  const rowsWithIds = body.rows.map((row, idx) => ({
-    row,
-    id: ids[idx] ?? "",
-  }));
+  const rowsWithIds = body.rows.map((row, idx) => {
+    const id = ids[idx];
+    // Fail loud (ревʼю PR #818): порожній id тихо пішов би в
+    // ON CONFLICT (id) DO NOTHING і кожен наступний такий рядок батчу
+    // рахувався б «дублем» — мовчазна втрата даних замість помилки.
+    if (!id) {
+      throw new Error(
+        "assignImportRowIds повернув менше id, ніж рядків — інваріант порушено",
+      );
+    }
+    return { row, id };
+  });
 
   const client = await pool.connect();
   try {

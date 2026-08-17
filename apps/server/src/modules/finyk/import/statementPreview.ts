@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import { parseBody } from "../../../http/validate.js";
+import { ValidationError } from "../../../obs/errors.js";
 import {
   ImportStatementPreviewRequestSchema,
   ImportStatementPreviewResponseSchema,
@@ -115,6 +116,14 @@ function classifyRows(
  * попередньому виклику — це defensive-порядок для повторного виклику з
  * застарілим тілом, не очікуваний UX-шлях).
  */
+/**
+ * Кап на кількість data-рядків preview (ревʼю PR #818): байтовий ліміт
+ * csv_text не обмежує кількість рядків, а відповідь несе обʼєкт на кожен.
+ * Річна виписка — тисячі рядків; 10k — межа з запасом, далі просимо
+ * розбити файл.
+ */
+const MAX_PREVIEW_DATA_ROWS = 10_000;
+
 export default async function statementPreviewHandler(
   req: Request,
   res: Response,
@@ -133,6 +142,16 @@ export default async function statementPreviewHandler(
   const headerRow = allRows[0] ?? [];
   const dataRows = allRows.slice(1);
   const headers = headerRow.map((h) => h.trim());
+
+  // Кап на кількість рядків (ревʼю PR #818): 5MB-ліміт байтів сам по собі
+  // не обмежує КІЛЬКІСТЬ рядків (мільйон однобайтових), а відповідь несе
+  // по обʼєкту на кожен — людське 400 замість роздутого JSON. Реальні
+  // річні виписки — тисячі рядків, межа з запасом.
+  if (dataRows.length > MAX_PREVIEW_DATA_ROWS) {
+    throw new ValidationError(
+      `Виписка завелика: ${dataRows.length} рядків (максимум ${MAX_PREVIEW_DATA_ROWS}). Розбий файл на менші періоди.`,
+    );
+  }
 
   const autodetected = detectCsvProfile(headers);
   if (autodetected) {

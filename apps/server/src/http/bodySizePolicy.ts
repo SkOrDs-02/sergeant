@@ -89,6 +89,34 @@ export const BODY_SIZE_POLICY: ReadonlyArray<BodySizeRule> = [
     reason: "Manual nutrition backup blob",
   },
   {
+    pathPrefix: "/api/finyk/receipts/analyze",
+    kind: "json",
+    limit: "10mb",
+    reason:
+      "Фото чека base64 (vision, validateImageBase64 5MB × base64 ×1.37 + JSON) — дзеркало nutrition/analyze-photo; без entry дефолтні 128KB 413-лять легітимний upload ще в bodyParser (ревʼю PR #818)",
+  },
+  {
+    pathPrefix: "/api/finyk/import/screenshot/analyze",
+    kind: "json",
+    limit: "10mb",
+    reason:
+      "Скрін банкінгу base64 (vision) — той самий клас payload-у, що /api/finyk/receipts/analyze",
+  },
+  {
+    pathPrefix: "/api/finyk/import/statement/preview",
+    kind: "json",
+    limit: "6mb",
+    reason:
+      "csv_text до 5MB (IMPORT_STATEMENT_MAX_CSV_BYTES) + JSON-конверт; дефолтні 128KB різали б реальні виписки до схеми (ревʼю PR #818)",
+  },
+  {
+    pathPrefix: "/api/finyk/import/commit",
+    kind: "json",
+    limit: "2mb",
+    reason:
+      "До IMPORT_COMMIT_MAX_ROWS draft-рядків (~150B/рядок) — з запасом над дефолтні 128KB",
+  },
+  {
     pathPrefix: "/api/sync",
     kind: "json",
     limit: "6mb",

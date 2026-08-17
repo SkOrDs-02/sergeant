@@ -1,3 +1,4 @@
+import { IMPORT_BATCH_STATUSES } from "@sergeant/shared";
 import type { ImportBatchStatus } from "@sergeant/shared";
 
 /**
@@ -78,7 +79,11 @@ function toStatus(v: string): ImportBatchStatus {
   // домену", БЕЗ DB CHECK). Невідоме значення — driver/дані-аномалія;
   // fail loud за тим самим принципом, що bigint-коерсія вище, а не тихий
   // фолбек на 'completed', який приховав би биті дані від API-споживача.
-  if (v === "completed" || v === "undone") return v;
+  // Перевірка — від спільного IMPORT_BATCH_STATUSES (ревʼю PR #818):
+  // хардкод-літерали тут дрейфували б від словника схеми мовчки.
+  if ((IMPORT_BATCH_STATUSES as readonly string[]).includes(v)) {
+    return v as ImportBatchStatus;
+  }
   throw new Error(`serializeImportBatch: невідомий status "${v}"`);
 }
 

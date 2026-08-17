@@ -90,7 +90,11 @@ export function normalizeImportScreenshotResult(
   // рев'ю цього PR (row N міг отримати `time` рядка N-k після того, як
   // k попередніх рядків відкинуло filter).
   const rows: ImportScreenshotRow[] = [];
-  for (const r of rawRows.slice(0, MAX_SCREENSHOT_ROWS)) {
+  // Кап — на ПРИДАТНІ рядки, не на вхідне вікно (ревʼю PR #818): slice до
+  // фільтра дозволяв би пачці нечитабельних перших рядків виїсти бюджет і
+  // викинути валідні пізніші.
+  for (const r of rawRows) {
+    if (rows.length >= MAX_SCREENSHOT_ROWS) break;
     const row = isRecord(r) ? r : {};
     const date = isValidDayKey(row["date"]) ? (row["date"] as string) : null;
     const amountKopiykas = toSafePositiveIntKopiykas(row["amount_kopiykas"]);
