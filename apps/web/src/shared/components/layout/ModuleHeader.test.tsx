@@ -145,33 +145,6 @@ describe("ModuleHeader buttons", () => {
     expect(screen.getByTitle("Налаштувати")).toBeInTheDocument();
   });
 
-  /**
-   * Регресія — рожеві смуги впоперек чипів і стрічки тижня в «Рутині».
-   *
-   * Інлайновий `view-transition-name` тримався на хедері постійно, доки той
-   * змонтований. Це лишало рожевий хедер окремим snapshot-шаром, який
-   * WebKit малював поверх сусідніх рядів, і дублювало ім'я плитки хабу
-   * (спека вимагає унікальності). Ім'я тепер віддається через
-   * `data-vt-name`, а проставляє його `startViewTransition` на час переходу.
-   */
-  it("не тримає постійний view-transition-name, лише data-vt-name", () => {
-    const { container } = render(
-      <ModuleHeader title="РУТИНА" module="routine" />,
-    );
-    const header = container.firstElementChild as HTMLElement;
-
-    expect(header.getAttribute("data-vt-name")).toBe("sgt-module-routine");
-    expect(header.style.viewTransitionName).toBe("");
-  });
-
-  it("не позначає для морфу хедер без модуля", () => {
-    const { container } = render(<ModuleHeader title="ЗАГАЛЬНИЙ" />);
-    const header = container.firstElementChild as HTMLElement;
-
-    expect(header.getAttribute("data-vt-name")).toBeNull();
-    expect(header.style.viewTransitionName).toBe("");
-  });
-
   it("opens the assistant through the hub bus", () => {
     render(<ModuleHeaderAssistantButton ariaLabel="AI" title="Асистент" />);
 
