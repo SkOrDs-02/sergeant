@@ -73,13 +73,18 @@ test("@critical nutrition: photo preview stays inside a 390px viewport", async (
   await page.goto("/nutrition", { waitUntil: "domcontentloaded" });
   await waitForInitialSqliteRefresh(page, "nutrition");
 
-  // Photo analysis lives inside AddMealSheet's photo step now; the Start
-  // page carries only the CTA card that opens the sheet at that step.
-  // (main's summary-scoped locator fix targeted the old <details> wrapper,
-  // which this branch removed — the strict-mode duplicate is gone with it.)
-  await page.getByTestId("nutrition-photo-cta").click();
+  // Photo analysis lives inside AddMealSheet's photo step, and since the
+  // Start-page CTA card was removed (2026-08-17, duplicate entry point) the
+  // in-module path is the only one: FAB → «Звідки страва?» → «Фото».
+  await page
+    .getByRole("button", { name: /Додати прийом їжі/ })
+    .first()
+    .click();
   const photoSheet = page.getByRole("dialog");
   await expect(photoSheet).toBeVisible({ timeout: 10_000 });
+  await photoSheet
+    .getByRole("button", { name: "Додати страву з фото" })
+    .click();
   await expect(photoSheet).toContainText("Аналіз фото страви");
 
   await photoSheet

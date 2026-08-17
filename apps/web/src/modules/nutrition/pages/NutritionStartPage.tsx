@@ -1,10 +1,19 @@
 /**
- * Last validated: 2026-08-13
+ * Last validated: 2026-08-17
  * Status: Active
+ *
+ * AI-CONTEXT: тут стояла CTA-картка «Аналіз фото страви» — спершу повний
+ * дубль UI аналізу у згорнутому `<details>`, потім (після переносу аналізу
+ * в крок sheet-а) тонка кнопка-ярлик у хвості сторінки. Прибрана 2026-08-17
+ * як другий вхід у той самий флоу: канонічний шлях — «Додати прийом їжі» →
+ * джерело «Фото» (`meal-sheet/PhotoStep`), а поза модулем лишається
+ * hub quick-action `add_meal_photo` (long-press на бенто-картці «Їжа»).
+ * Не повертай картку без продуктового рішення: `NutritionApp` уміє
+ * відкривати sheet одразу на кроці фото (`addMealInitialStep`), тож
+ * будь-який новий вхід має йти через `handleOpenMealPhoto`, а не рендерити
+ * власний аналіз.
  */
 import type { NutritionPrefs } from "@sergeant/nutrition-domain";
-import { Card } from "@shared/components/ui/Card";
-import { Icon } from "@shared/components/ui/Icon";
 import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
 import { useLocale } from "@shared/i18n/useLocale";
 import { NutritionDashboard } from "../components/NutritionDashboard";
@@ -21,8 +30,6 @@ interface NutritionStartPageProps {
   dayHintText: string;
   dayHintBusy: boolean;
   onRequestAddMeal: () => void;
-  /** Відкриває AddMealSheet одразу на кроці аналізу фото. */
-  onOpenMealPhoto: () => void;
 }
 
 export function NutritionStartPage({
@@ -33,7 +40,6 @@ export function NutritionStartPage({
   dayHintText,
   dayHintBusy,
   onRequestAddMeal,
-  onOpenMealPhoto,
 }: NutritionStartPageProps) {
   const { messages } = useLocale();
   return (
@@ -52,53 +58,6 @@ export function NutritionStartPage({
           dayHintBusy={dayHintBusy}
           onAddMeal={onRequestAddMeal}
         />
-        {/* AI-CONTEXT: тут стояв повний дубль UI аналізу фото у згорнутому
-            `<details>` (PhotoAnalyzeCard + Premium-гейт + paywall) — а
-            кнопка «Фото» в AddMealSheet навігувала СЮДИ через state-машину
-            pendingAction. Тепер аналіз — крок самого sheet-а
-            (`meal-sheet/PhotoStep`), а ця картка — лише помітний вхід у
-            флагманську AI-можливість модуля з дашборда. */}
-        <Card
-          as="button"
-          module="nutrition"
-          prominence="tinted"
-          padding="md"
-          radius="xl"
-          data-testid="nutrition-photo-cta"
-          onClick={onOpenMealPhoto}
-          className="flex w-full min-w-0 items-center gap-3 text-left cursor-pointer"
-        >
-          <span className="flex items-center justify-center w-9 h-9 rounded-xl bg-nutrition/15 shrink-0">
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.6"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="text-nutrition-strong"
-              aria-hidden
-            >
-              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-              <circle cx="12" cy="13" r="4" />
-            </svg>
-          </span>
-          <span className="flex-1 min-w-0">
-            <span className="block text-style-label text-text">
-              Аналіз фото страви
-            </span>
-            <span className="mt-0.5 block text-style-caption text-subtle">
-              ШІ визначить КБЖВ за фото
-            </span>
-          </span>
-          <Icon
-            name="chevron-right"
-            size={16}
-            className="text-muted shrink-0"
-          />
-        </Card>
       </>
     </SectionErrorBoundary>
   );

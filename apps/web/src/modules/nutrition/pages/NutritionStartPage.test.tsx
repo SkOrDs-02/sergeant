@@ -4,10 +4,11 @@
 //
 // NutritionStartPage orchestrates:
 //   • <NutritionDashboard> — gets log, prefs, callbacks
-//   • The photo-analysis CTA card — delegates to onOpenMealPhoto (the host
-//     opens AddMealSheet at its photo step; Premium-гейт і paywall живуть
-//     у самому кроці — meal-sheet/PhotoStep, не на цій сторінці)
 //   • useLocale() — resolves the sr-only page heading
+//
+// Фотоаналізу тут немає взагалі: ані UI (він крок AddMealSheet —
+// meal-sheet/PhotoStep), ані CTA-ярлика в нього (прибраний 2026-08-17 як
+// другий вхід у той самий флоу).
 //
 // Strategy: vi.mock `useLocale` and NutritionDashboard so tests stay
 // focused on the page's wiring.
@@ -103,13 +104,11 @@ function renderStartPage(
     log?: Partial<ReturnType<typeof useNutritionLog>>;
     setActivePageAndHash?: (page: string) => void;
     onRequestAddMeal?: () => void;
-    onOpenMealPhoto?: () => void;
   } = {},
 ) {
   const log = makeLog(overrides.log);
   const setActivePageAndHash = overrides.setActivePageAndHash ?? vi.fn();
   const onRequestAddMeal = overrides.onRequestAddMeal ?? vi.fn();
-  const onOpenMealPhoto = overrides.onOpenMealPhoto ?? vi.fn();
 
   render(
     <NutritionStartPage
@@ -124,11 +123,10 @@ function renderStartPage(
       dayHintText=""
       dayHintBusy={false}
       onRequestAddMeal={onRequestAddMeal}
-      onOpenMealPhoto={onOpenMealPhoto}
     />,
   );
 
-  return { log, setActivePageAndHash, onRequestAddMeal, onOpenMealPhoto };
+  return { log, setActivePageAndHash, onRequestAddMeal };
 }
 
 afterEach(() => {
@@ -136,11 +134,9 @@ afterEach(() => {
 });
 
 describe("NutritionStartPage", () => {
-  it("renders without crashing — shows NutritionDashboard and the photo CTA", () => {
+  it("renders without crashing — shows NutritionDashboard", () => {
     renderStartPage();
     expect(screen.getByTestId("nutrition-dashboard")).toBeTruthy();
-    expect(screen.getByTestId("nutrition-photo-cta")).toBeTruthy();
-    expect(screen.getByText("Аналіз фото страви")).toBeTruthy();
   });
 
   it("'До щоденника' button calls setActivePageAndHash('log')", async () => {
@@ -174,16 +170,13 @@ describe("NutritionStartPage", () => {
     expect(onRequestAddMeal).toHaveBeenCalledTimes(1);
   });
 
-  it("photo CTA delegates to onOpenMealPhoto (host opens AddMealSheet at the photo step)", async () => {
-    // Аналіз фото — крок AddMealSheet (meal-sheet/PhotoStep); сторінка
-    // лише просить хоста відкрити sheet одразу на цьому кроці. Раніше тут
-    // жив повний дубль UI аналізу у <details> + force-open state-машина.
-    const onOpenMealPhoto = vi.fn();
+  it("не тримає власного входу у фотоаналіз — він лишається джерелом у AddMealSheet", () => {
+    // Пін проти повернення дубля: спершу тут жив повний UI аналізу у
+    // <details>, потім CTA-ярлик у нього. Обидва прибрані — «Огляд» не
+    // веде у фото повз потік «Додати прийом їжі».
+    renderStartPage();
 
-    renderStartPage({ onOpenMealPhoto });
-
-    await userEvent.click(screen.getByTestId("nutrition-photo-cta"));
-
-    expect(onOpenMealPhoto).toHaveBeenCalledTimes(1);
+    expect(screen.queryByTestId("nutrition-photo-cta")).toBeNull();
+    expect(screen.queryByText("Аналіз фото страви")).toBeNull();
   });
 });

@@ -146,7 +146,7 @@ export default function NutritionApp({
     useState<PendingNutritionAction>(null);
 
   // Крок, з якого відкриється AddMealSheet: "photo" для шорткатів
-  // `add_meal_photo` / CTA на «Огляді», інакше — звичайний "source".
+  // `add_meal_photo`, інакше — звичайний "source".
   const [addMealInitialStep, setAddMealInitialStep] = useState<
     "source" | "photo"
   >("source");
@@ -234,10 +234,12 @@ export default function NutritionApp({
     log.setAddMealSheetOpen(true);
   }, [log, setEditingMeal]);
 
-  // «Дати фото» звідусіль (PWA-шорткат `add_meal_photo`, hub quick action,
-  // CTA на «Огляді») — той самий sheet, відкритий одразу на кроці фото.
+  // «Дати фото» ззовні модуля (PWA-шорткат `add_meal_photo`, hub
+  // quick-action) — той самий sheet, відкритий одразу на кроці фото.
   // Раніше це був маршрут «закрити sheet → на Огляд → force-відкрити
   // disclosure → синтетичний клік по input» зі своєю state-машиною.
+  // Всередині модуля вхід один — джерело «Фото» в самому sheet-і; CTA-картка
+  // на «Огляді» прибрана 2026-08-17 як дубль (див. NutritionStartPage).
   const handleOpenMealPhoto = useCallback(() => {
     setEditingMeal(null);
     setAddMealInitialStep("photo");
@@ -495,7 +497,6 @@ export default function NutritionApp({
                   dayHintText={dayHintText}
                   dayHintBusy={dayHintBusy}
                   onRequestAddMeal={handleRequestAddMeal}
-                  onOpenMealPhoto={handleOpenMealPhoto}
                 />
               )}
 

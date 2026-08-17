@@ -89,11 +89,11 @@ describe("NutritionApp — shell + routing (real component tree)", () => {
     renderApp();
     // Real header title + bottom nav (not mock testids).
     expect(bottomNav()).toBeInTheDocument();
-    // Start page renders the photo-analysis CTA card — і підпис має бути
-    // РІВНО один (пін з main проти дубля заголовка): аналіз-UI живе у
-    // кроці AddMealSheet, закритої за замовчуванням, а її title — єдине
-    // інше місце цієї назви.
-    expect(screen.getAllByText("Аналіз фото страви")).toHaveLength(1);
+    // Пін проти дубля фото-входу (спадкоємець пінa з main, який тримав
+    // «рівно один» підпис): «Огляд» більше не веде у фотоаналіз узагалі —
+    // ні карткою-ярликом, ні власним UI. Єдине місце цієї назви — title
+    // кроку AddMealSheet, а вона закрита за замовчуванням.
+    expect(screen.queryAllByText("Аналіз фото страви")).toHaveLength(0);
   });
 
   it("a genuinely first Nutrition visit auto-routes to Меню → План на день with the first-run hint", async () => {
