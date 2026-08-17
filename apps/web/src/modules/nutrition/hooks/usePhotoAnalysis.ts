@@ -21,6 +21,24 @@ export interface PhotoAnalysisPayload {
   locale: string;
 }
 
+/**
+ * Підпис, під яким вільне зауваження людини їде в `qna` разом із
+ * відповідями на питання моделі.
+ *
+ * AI-CONTEXT: сервер приймає `qna` як довільні пари `{question, answer}`
+ * (`RefinePhotoSchema`, до 8 пар, по 500 символів) і вкладає їх у промпт
+ * як є — тож окремого поля в контракті цьому каналу не треба. Підпис має
+ * читатись у промпті сам по собі: модель бачить рядок без нашого UI.
+ *
+ * Звідки взялось: тестова група 2026-08-12 — розпізнало 2 страви з 3, і
+ * жодне з питань моделі не питало про третю. Питання ставить модель, а
+ * знає, що саме не так, людина.
+ */
+export const PHOTO_NOTE_QUESTION = "Вільне зауваження користувача";
+
+/** Ліміт `qna[].answer` у `RefinePhotoSchema` — тримаємо ввід у межах контракту. */
+export const PHOTO_NOTE_MAX_LENGTH = 500;
+
 export interface UsePhotoAnalysisParams {
   setBusy: Dispatch<SetStateAction<boolean>>;
   setErr: Dispatch<SetStateAction<string>>;
@@ -34,6 +52,9 @@ export interface UsePhotoAnalysisResult {
   lastPhotoPayload: PhotoAnalysisPayload | null;
   answers: Record<string, string>;
   setAnswers: Dispatch<SetStateAction<Record<string, string>>>;
+  /** Вільне зауваження — їде в `qna` під `PHOTO_NOTE_QUESTION`. */
+  note: string;
+  setNote: Dispatch<SetStateAction<string>>;
   portionGrams: string;
   setPortionGrams: Dispatch<SetStateAction<string>>;
   onPickPhoto: (file: File | null | undefined) => Promise<void>;
@@ -58,6 +79,7 @@ export function usePhotoAnalysis({
   const [lastPhotoPayload, setLastPhotoPayload] =
     useState<PhotoAnalysisPayload | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [note, setNote] = useState("");
   const [portionGrams, setPortionGrams] = useState("");
 
   const [prevPhotoResult, setPrevPhotoResult] =
@@ -174,6 +196,9 @@ export function usePhotoAnalysis({
       setStatusText("Аналізую фото…");
       setPhotoResult(null);
       setAnswers({});
+      // Новий кадр — новий контекст: зауваження до попередньої страви
+      // поїхало б у промпт мовчки і зіпсувало б розбір цієї.
+      setNote("");
       setPortionGrams("");
     },
     onSuccess: (data) => {
@@ -201,9 +226,16 @@ export function usePhotoAnalysis({
       const questions = Array.isArray(photoResult?.questions)
         ? photoResult.questions.slice(0, 6)
         : [];
-      const qna = questions
+      const answered = questions
         .map((q) => ({ question: q, answer: String(answers[q] || "").trim() }))
         .filter((x) => x.answer);
+      // Зауваження стоїть ПЕРШИМ: `qna` ріжеться до 8 пар на сервері, і
+      // якщо модель колись поставить більше питань, першою випаде не та
+      // репліка, яку людина написала своїми словами.
+      const freeNote = note.trim().slice(0, PHOTO_NOTE_MAX_LENGTH);
+      const qna = freeNote
+        ? [{ question: PHOTO_NOTE_QUESTION, answer: freeNote }, ...answered]
+        : answered;
       const grams = Number(String(portionGrams).replace(",", "."));
       return nutritionApi.refinePhoto({
         ...lastPhotoPayload,
@@ -242,6 +274,8 @@ export function usePhotoAnalysis({
     lastPhotoPayload,
     answers,
     setAnswers,
+    note,
+    setNote,
     portionGrams,
     setPortionGrams,
     onPickPhoto,

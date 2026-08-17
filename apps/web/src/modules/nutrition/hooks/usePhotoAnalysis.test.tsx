@@ -19,7 +19,7 @@ vi.mock("../lib/fileToBase64.js", () => ({
   fileToBase64: vi.fn(() => Promise.resolve("BASE64")),
 }));
 
-import { usePhotoAnalysis } from "./usePhotoAnalysis";
+import { PHOTO_NOTE_QUESTION, usePhotoAnalysis } from "./usePhotoAnalysis";
 import { nutritionApi } from "@shared/api";
 const apiAnalyzePhoto = nutritionApi.analyzePhoto as unknown as ReturnType<
   typeof vi.fn
@@ -284,6 +284,101 @@ describe("usePhotoAnalysis", () => {
           locale: "uk-UA",
         }),
       );
+    });
+
+    it("sends the free-form note first, ahead of the model's own questions", async () => {
+      // Порядок не косметичний: сервер ріже `qna` до 8 пар, і при повному
+      // наборі питань першим випав би саме той рядок, який людина написала
+      // своїми словами (звіт тестової групи 2026-08-12 — «третє не булочка,
+      // а сирник»).
+      apiAnalyzePhoto.mockResolvedValueOnce({
+        result: { name: "v1", questions: ["Яка порція?"] },
+      });
+      apiRefinePhoto.mockResolvedValueOnce({ result: { name: "v2" } });
+      const { result } = renderUsePhotoAnalysis();
+      attachFile(result, fakeImageFile());
+
+      act(() => {
+        result.current.analyzePhoto();
+      });
+      await waitFor(() =>
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        expect((result.current.photoResult as any)?.name).toBe("v1"),
+      );
+
+      act(() => {
+        result.current.setAnswers((a) => ({ ...a, "Яка порція?": "звичайна" }));
+        result.current.setNote("  третє — не булочка, а сирник  ");
+      });
+
+      act(() => {
+        result.current.refinePhoto();
+      });
+      await waitFor(() =>
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        expect((result.current.photoResult as any)?.name).toBe("v2"),
+      );
+
+      expect(apiRefinePhoto).toHaveBeenCalledWith(
+        expect.objectContaining({
+          qna: [
+            {
+              question: PHOTO_NOTE_QUESTION,
+              answer: "третє — не булочка, а сирник",
+            },
+            { question: "Яка порція?", answer: "звичайна" },
+          ],
+        }),
+      );
+    });
+
+    it("omits the note pair when the field is blank", async () => {
+      apiAnalyzePhoto.mockResolvedValueOnce({ result: { name: "v1" } });
+      apiRefinePhoto.mockResolvedValueOnce({ result: { name: "v2" } });
+      const { result } = renderUsePhotoAnalysis();
+      attachFile(result, fakeImageFile());
+
+      act(() => {
+        result.current.analyzePhoto();
+      });
+      await waitFor(() =>
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        expect((result.current.photoResult as any)?.name).toBe("v1"),
+      );
+
+      act(() => {
+        result.current.setNote("   ");
+      });
+      act(() => {
+        result.current.refinePhoto();
+      });
+      await waitFor(() =>
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        expect((result.current.photoResult as any)?.name).toBe("v2"),
+      );
+
+      expect(apiRefinePhoto).toHaveBeenCalledWith(
+        expect.objectContaining({ qna: [] }),
+      );
+    });
+
+    it("drops the note when a new photo is analyzed", async () => {
+      // Зауваження до попередньої страви поїхало б у промпт наступного
+      // кадру мовчки — і зіпсувало б розбір, який людина навіть не
+      // пов'язала б із тим, що вона колись написала.
+      apiAnalyzePhoto.mockResolvedValue({ result: { name: "v1" } });
+      const { result } = renderUsePhotoAnalysis();
+      attachFile(result, fakeImageFile());
+
+      act(() => {
+        result.current.setNote("третє — сирник");
+      });
+      expect(result.current.note).toBe("третє — сирник");
+
+      act(() => {
+        result.current.analyzePhoto();
+      });
+      await waitFor(() => expect(result.current.note).toBe(""));
     });
   });
 

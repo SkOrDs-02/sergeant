@@ -18,6 +18,8 @@ const baseProps = {
   refinePhoto: vi.fn(),
   answers: {},
   setAnswers: vi.fn(),
+  note: "",
+  setNote: vi.fn(),
 };
 
 describe("PhotoAnalyzeCard", () => {
@@ -95,7 +97,7 @@ describe("PhotoAnalyzeCard", () => {
 
     const save = screen.getByRole("button", { name: /Зберегти в журнал/ });
     const refine = screen.getByRole("button", {
-      name: "Перерахувати за всіма відповідями",
+      name: "Перерахувати з урахуванням уточнень",
     });
 
     expect(save.className).toContain("bg-nutrition-strong");
@@ -128,9 +130,59 @@ describe("PhotoAnalyzeCard", () => {
     expect(
       screen.queryByRole("button", { name: /Зберегти в журнал/ }),
     ).toBeNull();
-    expect(screen.queryByText("Уточнення порції")).toBeNull();
+    expect(screen.queryByText("Уточнення")).toBeNull();
     expect(screen.queryByText("Ккал")).toBeNull();
     expect(screen.queryByText(/Впевненість/)).toBeNull();
+  });
+
+  it("offers the clarification block even when the model asked nothing", () => {
+    // Звіт тестової групи 2026-08-12: розпізнало 2 страви з 3, питань модель
+    // не поставила — і саме тоді канал «сказати своїми словами» був потрібен
+    // найбільше. Поки блок гейтився на `questions.length > 0`, впевнена
+    // модель мовчки забирала в людини єдиний спосіб її виправити.
+    render(
+      <PhotoAnalyzeCard
+        {...baseProps}
+        photoResult={{
+          dishName: "Рис з овочами, рагу, булочка",
+          macros: { kcal: 455, protein_g: 11, fat_g: 6, carbs_g: 88 },
+          questions: [],
+        }}
+      />,
+    );
+
+    expect(screen.getByText("Уточнення")).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText("напр. третє — не булочка, а сирник"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", {
+        name: "Перерахувати з урахуванням уточнень",
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it("keeps the free-form note inside the contract limit and warns about the re-roll", () => {
+    const setNote = vi.fn();
+    render(
+      <PhotoAnalyzeCard
+        {...baseProps}
+        photoResult={{ dishName: "Борщ", macros: {}, questions: [] }}
+        setNote={setNote}
+      />,
+    );
+
+    const note = screen.getByLabelText("Що не так? Опиши своїми словами");
+    // 500 — стеля `qna[].answer` у `RefinePhotoSchema`; без неї довгий
+    // текст їхав би на сервер і повертався 400 вже після аналізу.
+    expect(note).toHaveAttribute("maxLength", "500");
+
+    fireEvent.change(note, { target: { value: "третє — сирник" } });
+    expect(setNote).toHaveBeenCalledWith("третє — сирник");
+
+    // Перерахунок переписує весь результат — людина має знати ціну кліку
+    // до того, як загубить дві правильні страви.
+    expect(screen.getByText(/оновлює весь результат/)).toBeInTheDocument();
   });
 
   it("greets an animal instead of offering another photo", () => {
@@ -338,7 +390,9 @@ describe("PhotoAnalyzeCard", () => {
     });
 
     fireEvent.click(
-      screen.getByRole("button", { name: "Перерахувати за всіма відповідями" }),
+      screen.getByRole("button", {
+        name: "Перерахувати з урахуванням уточнень",
+      }),
     );
     expect(refinePhoto).toHaveBeenCalledTimes(1);
   });
