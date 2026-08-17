@@ -61,10 +61,30 @@ export function WeekDayStrip({
       >
         <Icon name="chevron-left" size="sm" />
       </IconButton>
-      {/* Keep selection repaints immediate inside the overflow scroller.
-          WebKit can retain split raster tiles when a day background changes
-          during smooth scroll snapping or a colour transition. */}
-      <div className="min-w-0 flex-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      {/* AI-DANGER: `will-change-transform` тут — не оптимізація, а фікс.
+          На iOS скрол-контейнер отримує композиторний шар, у якому
+          перемальовка лягає зі ЗСУВОМ: при зміні виділення заливка
+          попередньо обраного дня лишалась на екрані рожевою смугою впоперек
+          сусіднього ПРАВОРУЧ (обрано 17 — підфарбоване 18).
+
+          Механізм підтверджено однофакторним експериментом власника
+          2026-08-17: у двох рядах чипів «Рутини» скролер прибрано (вони
+          вміщаються без нього) — смуги там зникли; у цій стрічці скролер
+          лишили — смуги лишились. Скрол їй справді потрібен: контент семи
+          клітинок 344px проти 232px доступних на екрані 390px (заміряно
+          Playwright-ом на чотирьох вьюпортах), тож прибрати його без
+          порушення 44px-флору touch-таргета не можна.
+
+          `will-change: transform` змушує скролер у стабільний власний шар,
+          щоб він інвалідувався цілком. Якщо на пристрої це не допоможе —
+          наступний крок узгоджений із власником: перенести шеврони у рядок
+          заголовка і дати стрічці переноситись у два рядки (4+3) на вузьких
+          екранах, тобто прибрати скролер так само, як на чипах.
+
+          Попередній коментар тут (і зняття `transition-colors`) лікував
+          гаданий «split raster tiles» від колірного переходу — це була хибна
+          діагностика, симптом лишався. */}
+      <div className="min-w-0 flex-1 overflow-x-auto will-change-transform [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <div className="flex gap-1.5 sm:gap-2">
           {keys.map((k, i) => {
             const isSel = k === selectedDay;
