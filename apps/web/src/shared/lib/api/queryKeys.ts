@@ -107,6 +107,28 @@ export const finykKeys = {
     ["finyk", "privat", "statement", idHash, accId, from, to] as const,
 };
 
+// ─── Silpo (MCP receipts integration, walking-skeleton experiment) ────────
+//
+// `SILPO_ENABLED` defaults to `false` server-side — `syncState`/`receipts`
+// then 503 with `{code: "SILPO_DISABLED"}`. Hooks surface that as a
+// synthetic client-side "disabled" state (never invalidated via these
+// keys — it's derived from the error, not cached data).
+export const silpoKeys = {
+  all: ["silpo"] as const,
+  syncState: ["silpo", "sync-state"] as const,
+  /** Cursor-paginated `GET /api/silpo/receipts` list, keyed by params so
+   *  distinct pages/limits don't collide in cache. */
+  receipts: (params?: { limit?: number; cursor?: string }) =>
+    [
+      "silpo",
+      "receipts",
+      params?.limit ?? null,
+      params?.cursor ?? null,
+    ] as const,
+  receiptDetail: (receiptId: string) =>
+    ["silpo", "receipts", "detail", receiptId] as const,
+};
+
 // ─── Push notifications ───────────────────────────────────────────────────
 export const pushKeys = {
   all: ["push"] as const,

@@ -1,0 +1,154 @@
+// @vitest-environment jsdom
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+vi.mock("@shared/api", async () => {
+  const actual =
+    await vi.importActual<typeof import("@shared/api")>("@shared/api");
+  return {
+    ...actual,
+    silpoApi: {
+      syncState: vi.fn(),
+      sync: vi.fn(),
+      disconnect: vi.fn(),
+      wipe: vi.fn(),
+      receipts: vi.fn(),
+      receiptDetail: vi.fn(),
+    },
+    silpoConnectUrl: () => "https://example.test/api/v1/silpo/connect",
+  };
+});
+
+const toastMock = {
+  show: vi.fn(),
+  success: vi.fn(),
+  error: vi.fn(),
+  info: vi.fn(),
+  warning: vi.fn(),
+  dismiss: vi.fn(),
+  pause: vi.fn(),
+  resume: vi.fn(),
+};
+vi.mock("@shared/hooks/useToast", () => ({
+  useToast: () => toastMock,
+}));
+
+import { silpoApi } from "@shared/api";
+import { SilpoIntegrationSection } from "./SilpoIntegrationSection";
+import { ApiError } from "@sergeant/api-client";
+
+const mockedSyncState = silpoApi.syncState as unknown as ReturnType<
+  typeof vi.fn
+>;
+const mockedWipe = silpoApi.wipe as unknown as ReturnType<typeof vi.fn>;
+
+function renderSection() {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(
+    <QueryClientProvider client={client}>
+      <SilpoIntegrationSection inView />
+    </QueryClientProvider>,
+  );
+}
+
+describe("SilpoIntegrationSection", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+  afterEach(cleanup);
+
+  it("shows the quiet 'not enabled' card on 503 SILPO_DISABLED", async () => {
+    mockedSyncState.mockRejectedValue(
+      new ApiError({
+        kind: "http",
+        message: "disabled",
+        status: 503,
+        body: { code: "SILPO_DISABLED" },
+        url: "/api/silpo/sync-state",
+      }),
+    );
+
+    renderSection();
+
+    expect(
+      await screen.findByText("Інтеграція ще не увімкнена"),
+    ).toBeInTheDocument();
+    // No connect CTA, no danger section — the card degrades quietly.
+    expect(screen.queryByText("Зв'язати Сільпо")).not.toBeInTheDocument();
+  });
+
+  it("shows the connect CTA when disconnected", async () => {
+    mockedSyncState.mockResolvedValue({
+      status: "disconnected",
+      accessTokenExpiresAt: null,
+      lastSyncAt: null,
+      receiptsCount: 0,
+    });
+
+    renderSection();
+
+    expect(await screen.findByText("Зв'язати Сільпо")).toBeInTheDocument();
+  });
+
+  it("shows connected status with receipt count and last sync", async () => {
+    mockedSyncState.mockResolvedValue({
+      status: "connected",
+      accessTokenExpiresAt: "2026-08-24T10:00:00.000Z",
+      lastSyncAt: "2026-08-17T09:15:00.000Z",
+      receiptsCount: 5,
+    });
+
+    renderSection();
+
+    expect(await screen.findByText("Сільпо зв'язано")).toBeInTheDocument();
+    expect(screen.getByText(/5 чеків/)).toBeInTheDocument();
+    expect(screen.getByText("Оновити чеки")).toBeInTheDocument();
+    expect(screen.getByText("Видалити всі дані Сільпо")).toBeInTheDocument();
+  });
+
+  it("shows the reauth banner and reconnect CTA when reauth_required", async () => {
+    mockedSyncState.mockResolvedValue({
+      status: "reauth_required",
+      accessTokenExpiresAt: null,
+      lastSyncAt: "2026-08-10T09:15:00.000Z",
+      receiptsCount: 3,
+    });
+
+    renderSection();
+
+    expect(
+      await screen.findByText("Сільпо просить повторну авторизацію"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Підключити повторно")).toBeInTheDocument();
+  });
+
+  it("wipe requires explicit confirm and calls silpoApi.wipe on confirmation", async () => {
+    mockedSyncState.mockResolvedValue({
+      status: "connected",
+      accessTokenExpiresAt: "2026-08-24T10:00:00.000Z",
+      lastSyncAt: "2026-08-17T09:15:00.000Z",
+      receiptsCount: 5,
+    });
+    mockedWipe.mockResolvedValue({ ok: true, deletedReceipts: 5 });
+
+    renderSection();
+
+    fireEvent.click(await screen.findByText("Видалити всі дані Сільпо"));
+
+    const dialog = await screen.findByRole("alertdialog");
+    expect(dialog.textContent).toContain("Видалити всі дані Сільпо?");
+    // Explicit wording: splits/pantry survive, only Silpo-owned rows go.
+    expect(dialog.textContent).toContain("Підтверджені спліти категорій");
+    expect(dialog.textContent).toContain("НЕ видаляються");
+
+    // Wipe must not fire before the user confirms.
+    expect(mockedWipe).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Видалити назавжди" }));
+
+    await vi.waitFor(() => expect(mockedWipe).toHaveBeenCalledTimes(1));
+  });
+});

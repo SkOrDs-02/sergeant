@@ -1,0 +1,293 @@
+/**
+ * Last validated: 2026-08-17
+ * Status: Active — walking-skeleton experiment (Silpo MCP integration,
+ * track A). See `docs/90-work/planning/specs/silpo-mcp-integration.md`.
+ *
+ * Settings card for the Silpo receipts integration — mono-pattern
+ * disconnect (tokens only, receipts survive) + a separate, explicitly
+ * confirmed "Видалити всі дані Сільпо" wipe action. `SILPO_ENABLED`
+ * defaults to `false` server-side (503 `SILPO_DISABLED`); this card must
+ * degrade to a quiet "не увімкнена" state, never an error banner —
+ * `useSilpoSyncState` already turns that 503 into `status: "disabled"`.
+ */
+import { useState } from "react";
+import { silpoConnectUrl } from "@shared/api";
+import { Button } from "@shared/components/ui/Button";
+import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
+import { Icon } from "@shared/components/ui/Icon";
+import { apiUrl, getApiPrefix } from "@shared/lib/api/apiUrl";
+import { useToast } from "@shared/hooks/useToast";
+import {
+  useSilpoDisconnect,
+  useSilpoSync,
+  useSilpoWipe,
+} from "@finyk/hooks/useSilpoMutations";
+import { useSilpoSyncState } from "@finyk/hooks/useSilpoSyncState";
+import { SettingsSubGroup } from "./SettingsPrimitives";
+
+interface SilpoIntegrationSectionProps {
+  inView: boolean;
+}
+
+const COPY = {
+  title: "Сільпо (чеки)",
+  help: "Зв'яжи акаунт Сільпо, щоб покупки з чеків збагачували транзакції Monobank позиціями товарів. Дані обробляються на сервері — токен у браузер не потрапляє.",
+  disabledTitle: "Інтеграція ще не увімкнена",
+  disabledBody:
+    "Зв'язка з Сільпо поки недоступна в цьому середовищі — спробуй пізніше.",
+  checkFailed:
+    "Не вдалося перевірити стан підключення Сільпо. Це не означає, що звʼязок втрачено — перевір мережу і спробуй ще раз.",
+  retryCheck: "Спробувати ще раз",
+  checking: "Перевіряю…",
+  connect: "Зв'язати Сільпо",
+  connected: "Сільпо зв'язано",
+  receipts: "чеків",
+  lastSync: "Востаннє оновлено",
+  neverSynced: "Ще не синхронізовано",
+  sync: "Оновити чеки",
+  syncing: "Оновлюю…",
+  disconnect: "Відключити",
+  disconnectTitle: "Відключити Сільпо?",
+  disconnectBody:
+    "Звʼязок буде розірвано — токен видаляється з сервера. Уже завантажені чеки лишаються і нікуди не діваються; щоб видалити й їх, скористайся окремою дією нижче.",
+  disconnectConfirm: "Відключити",
+  reauthTitle: "Сільпо просить повторну авторизацію",
+  reauthBody:
+    "Доступ до акаунта Сільпо закінчився або був відкликаний. Підключи заново, щоб чеки продовжили оновлюватись.",
+  reauthCta: "Підключити повторно",
+  dangerTitle: "Небезпечна дія",
+  wipeCta: "Видалити всі дані Сільпо",
+  wipeTitle: "Видалити всі дані Сільпо?",
+  wipeBody:
+    "Видалю всі завантажені чеки, позиції товарів і їх зв'язки з транзакціями Monobank. Підтверджені спліти категорій і записи комори, створені на основі покупок, НЕ видаляються — це вже твої дані, а не дані Сільпо.",
+  wipeConfirm: "Видалити назавжди",
+} as const;
+
+type ConfirmKind = "disconnect" | "wipe" | null;
+
+function formatKyivDateTime(iso: string): string {
+  return new Date(iso).toLocaleString("uk-UA", {
+    hour: "2-digit",
+    minute: "2-digit",
+    day: "numeric",
+    month: "short",
+    timeZone: "Europe/Kyiv",
+  });
+}
+
+export function SilpoIntegrationSection({
+  inView,
+}: SilpoIntegrationSectionProps) {
+  const toast = useToast();
+  const [confirmKind, setConfirmKind] = useState<ConfirmKind>(null);
+  const {
+    data: syncState,
+    status,
+    isError: checkFailed,
+    isFetching,
+    refetch,
+  } = useSilpoSyncState({ enabled: inView });
+  const syncMutation = useSilpoSync();
+  const disconnectMutation = useSilpoDisconnect();
+  const wipeMutation = useSilpoWipe();
+
+  // `GET /api/silpo/connect` is a 302 browser-redirect endpoint —
+  // navigation-only (see `silpoConnectUrl()` doc comment in
+  // `packages/api-client/src/endpoints/silpo.ts`). `window.location.href`
+  // is the documented way to trigger it, not a `fetch`/`<a href>` click.
+  const goToSilpoConnect = () => {
+    window.location.href = silpoConnectUrl({
+      baseUrl: apiUrl(""),
+      apiPrefix: getApiPrefix(),
+    });
+  };
+
+  const runSync = async () => {
+    try {
+      const result = await syncMutation.mutateAsync();
+      toast.success(
+        `Знайдено ${result.receiptsInserted} нових чеків, зіставлено ${result.matched} із транзакціями.`,
+      );
+    } catch (error) {
+      toast.error(
+        error instanceof Error && error.message
+          ? error.message
+          : "Не вдалося оновити чеки.",
+        undefined,
+        { label: "Повторити", onClick: () => void runSync() },
+      );
+    }
+  };
+
+  const runDisconnect = async () => {
+    try {
+      await disconnectMutation.mutateAsync();
+      toast.success("Сільпо відключено. Завантажені чеки лишились.");
+    } catch (error) {
+      toast.error(
+        error instanceof Error && error.message
+          ? error.message
+          : "Не вдалося відключити Сільпо.",
+        undefined,
+        { label: "Повторити", onClick: () => void runDisconnect() },
+      );
+    }
+  };
+
+  const runWipe = async () => {
+    try {
+      const result = await wipeMutation.mutateAsync();
+      toast.success(`Видалено чеків: ${result.deletedReceipts}.`);
+    } catch (error) {
+      toast.error(
+        error instanceof Error && error.message
+          ? error.message
+          : "Не вдалося видалити дані Сільпо.",
+        undefined,
+        { label: "Повторити", onClick: () => void runWipe() },
+      );
+    }
+  };
+
+  if (status === "disabled") {
+    return (
+      <SettingsSubGroup title={COPY.title}>
+        <div className="rounded-xl border border-line bg-panel p-3">
+          <p className="text-style-label text-text">{COPY.disabledTitle}</p>
+          <p className="mt-1 text-style-caption text-subtle">
+            {COPY.disabledBody}
+          </p>
+        </div>
+      </SettingsSubGroup>
+    );
+  }
+
+  return (
+    <>
+      <ConfirmDialog
+        open={confirmKind !== null}
+        title={confirmKind === "wipe" ? COPY.wipeTitle : COPY.disconnectTitle}
+        description={
+          confirmKind === "wipe" ? COPY.wipeBody : COPY.disconnectBody
+        }
+        confirmLabel={
+          confirmKind === "wipe" ? COPY.wipeConfirm : COPY.disconnectConfirm
+        }
+        danger
+        onCancel={() => setConfirmKind(null)}
+        onConfirm={() => {
+          if (confirmKind === "wipe") void runWipe();
+          if (confirmKind === "disconnect") void runDisconnect();
+          setConfirmKind(null);
+        }}
+      />
+
+      <SettingsSubGroup title={COPY.title}>
+        <p className="text-style-caption text-subtle leading-snug">
+          {COPY.help}
+        </p>
+
+        {checkFailed ? (
+          <div className="space-y-3">
+            <p
+              className="text-style-body text-danger bg-danger/10 rounded-xl px-3 py-2"
+              role="alert"
+            >
+              {COPY.checkFailed}
+            </p>
+            <Button
+              variant="ghost"
+              className="w-full h-11"
+              onClick={refetch}
+              disabled={isFetching}
+            >
+              <Icon name="refresh-cw" size={16} aria-hidden />
+              {isFetching ? COPY.checking : COPY.retryCheck}
+            </Button>
+          </div>
+        ) : status === "connected" ? (
+          <div className="space-y-3">
+            <div className="flex items-center gap-3 p-3 rounded-xl border border-success/30 bg-bg">
+              <div className="w-2.5 h-2.5 rounded-full shrink-0 bg-success" />
+              <div className="flex-1 min-w-0">
+                <div className="text-style-label">{COPY.connected}</div>
+                <div className="text-style-caption text-subtle mt-0.5">
+                  {syncState?.receiptsCount ?? 0} {COPY.receipts}
+                  {" · "}
+                  {syncState?.lastSyncAt
+                    ? `${COPY.lastSync} ${formatKyivDateTime(syncState.lastSyncAt)}`
+                    : COPY.neverSynced}
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                className="flex-1 h-11"
+                onClick={runSync}
+                disabled={syncMutation.isPending}
+              >
+                <Icon name="refresh-cw" size={16} aria-hidden />
+                {syncMutation.isPending ? COPY.syncing : COPY.sync}
+              </Button>
+              <Button
+                variant="danger"
+                className="flex-1 h-11"
+                onClick={() => setConfirmKind("disconnect")}
+              >
+                {COPY.disconnect}
+              </Button>
+            </div>
+          </div>
+        ) : status === "reauth_required" ? (
+          <div className="space-y-3">
+            <div
+              className="flex items-start gap-3 p-3 rounded-xl border border-warning/40 bg-warning/10"
+              role="alert"
+            >
+              <span
+                className="w-2.5 h-2.5 mt-1.5 rounded-full shrink-0 bg-warning"
+                aria-hidden
+              />
+              <div className="flex-1 min-w-0">
+                <div className="text-style-label">{COPY.reauthTitle}</div>
+                <p className="mt-0.5 text-style-caption text-subtle leading-snug">
+                  {COPY.reauthBody}
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="secondary"
+              className="w-full h-11"
+              onClick={goToSilpoConnect}
+            >
+              {COPY.reauthCta}
+            </Button>
+          </div>
+        ) : (
+          <Button
+            variant="secondary"
+            className="w-full h-11"
+            onClick={goToSilpoConnect}
+          >
+            <Icon name="shopping-cart" size={16} aria-hidden />
+            {COPY.connect}
+          </Button>
+        )}
+      </SettingsSubGroup>
+
+      {(status === "connected" || status === "reauth_required") && (
+        <SettingsSubGroup title={COPY.dangerTitle}>
+          <Button
+            variant="danger"
+            className="w-full h-11"
+            onClick={() => setConfirmKind("wipe")}
+          >
+            <Icon name="trash" size={16} aria-hidden />
+            {COPY.wipeCta}
+          </Button>
+        </SettingsSubGroup>
+      )}
+    </>
+  );
+}

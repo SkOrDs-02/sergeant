@@ -10,6 +10,7 @@ import { useInView } from "@shared/hooks/useInView";
 import { useStorage as useFinykStorage } from "@finyk/hooks/useStorage";
 import { FinykPrivatBankSection } from "./FinykPrivatBankSection";
 import { FinykWebhookServiceSection } from "./FinykWebhookServiceSection";
+import { SilpoIntegrationSection } from "./SilpoIntegrationSection";
 import { SettingsGroup, SettingsSubGroup } from "./SettingsPrimitives";
 
 // ПриватБанк-секція готова, але без live-rollout рішення лишається за
@@ -53,7 +54,12 @@ export function FinykSection() {
           фарбує бейдж модульним акцентом лише коли задані ОБИДВА — `icon`
           і `module`. Без другого всі чотири модульні секції вкладки
           «Розділи» падали на спільний сірий фолбек. */}
-      <SettingsGroup title="Фінік" icon="credit-card" module="finyk">
+      <SettingsGroup
+        title="Фінік"
+        icon="credit-card"
+        module="finyk"
+        anchorId="settings-finyk"
+      >
         <SettingsSubGroup title="Власні категорії витрат">
           <p className="text-style-caption text-subtle leading-snug">
             Додаються до списку категорій у транзакціях, сплітах і лімітах
@@ -113,6 +119,7 @@ export function FinykSection() {
         </SettingsSubGroup>
 
         <FinykWebhookServiceSection inView={inView} />
+        <SilpoIntegrationSection inView={inView} />
         <FinykPrivatBankSection enabled={PRIVAT_ENABLED} />
       </SettingsGroup>
     </div>

@@ -30,6 +30,7 @@ import {
   getExpenseCategoryForTransaction,
   getIncomeCategoryForTransaction,
 } from "../utils";
+import { SilpoReceiptSection } from "./SilpoReceiptSection";
 import { TxRowCategoryPicker } from "./TxRowCategoryPicker";
 import { TxRowSplitEditor } from "./TxRowSplitEditor";
 
@@ -289,6 +290,8 @@ export function BankTransactionDetailsSheet({
             )}
           </section>
         )}
+
+        {!isIncome && <SilpoReceiptSection transactionId={transaction.id} />}
 
         <section className="space-y-2 rounded-2xl border border-line bg-panel p-3">
           <Switch

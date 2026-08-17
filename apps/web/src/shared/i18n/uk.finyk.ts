@@ -106,6 +106,14 @@ export const finykPageMessages = {
     hideLabel: "Приховати зі списку",
     hideDescription: "Її можна повернути через показ прихованих операцій",
   },
+  // "Чек" — секція деталей транзакції для Silpo MCP walking-skeleton
+  // експерименту (докс `docs/90-work/planning/specs/silpo-mcp-integration.md`).
+  silpoReceipt: {
+    title: "Чек із Сільпо",
+    splitCta: "Розбити за чеком",
+    splitComingSoon: "Розбиття за позиціями чека — скоро",
+    itemsPending: "Знайдено чек, але позиції ще не завантажились.",
+  },
   nonUahAssetsExcluded: {
     one: "актив в іноземній валюті не враховую в нетворсі",
     few: "активи в іноземній валюті не враховую в нетворсі",

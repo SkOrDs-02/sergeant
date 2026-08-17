@@ -27,6 +27,9 @@ vi.mock("./FinykPrivatBankSection", () => ({
 vi.mock("./FinykWebhookServiceSection", () => ({
   FinykWebhookServiceSection: () => null,
 }));
+vi.mock("./SilpoIntegrationSection", () => ({
+  SilpoIntegrationSection: () => null,
+}));
 vi.mock("@finyk/hooks/useStorage", () => ({
   useStorage: () => ({
     customCategories: [],
