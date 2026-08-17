@@ -236,7 +236,15 @@ export function RoutineCalendarPanel({
         size="sm"
         variant="routine"
         ariaLabel="Часовий діапазон"
-        className="overflow-x-auto flex-nowrap sm:flex-wrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [&>button]:shrink-0"
+        // AI-DANGER: без `overflow-x-auto` навмисно. Чотири чипи діапазону
+        // вміщаються в найвужчий підтримуваний екран, а якщо колись не
+        // вмістяться — перенесуться рядком (`flex-wrap` у `Segmented`).
+        // Горизонтальний скролер тут не потрібен, зате він створював
+        // композиторний шар, який iOS малював зі зсувом: заливка обраного
+        // чипа зʼявлялась на сусідньому ПРАВОРУЧ (обрано «Тиждень» —
+        // рожевий «Місяць»). Репорт власника 2026-08-17, підтверджено
+        // зсувом на двох незалежних рядах.
+        className="[&>button]:shrink-0"
         items={timeModeItems}
         value={timeMode}
         onChange={applyTimeMode}
