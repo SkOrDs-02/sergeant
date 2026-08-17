@@ -1,6 +1,6 @@
 # 0022 — Імпорт даних з зовнішніх трекерів (CSV-onboarding)
 
-> **Last touched:** 2026-08-05 by @claude (зафіксовано founder-рішення по dedup-стратегії). **Next review:** 2027-03-14.
+> **Last touched:** 2026-08-17 by @claude (лінк на receipt-scan § Фаза 2 — конкретизація банківської гілки Фази 3). **Next review:** 2027-03-14.
 > **Status:** Proposed (2026-06-28) — драфт плану; не почато. Чекає на founder-greenlight по скоупу Фази 1 + рішення по валютній нормалізації (див. § Відкриті рішення; dedup-стратегію вже вирішено 2026-08-04).
 > **Agent-ready:** needs-decision
 > **Priority:** P2 (growth / activation lever — не блокер launch-у 0010)
@@ -77,6 +77,7 @@
 - **Валютна нормалізація — головна гача:** експорти у валюті юзера, ми зберігаємо UAH у копійках (`number`, Hard Rule #1 — bigint→number у серіалайзерах). Потрібен крок «валюта джерела + курс/дата».
 - Уже є живий Monobank-вебхук — CSV-імпорт тут для тих, хто йде з закордонних бюджетників.
 - **Privat24** — формат виписки звірити окремо до старту Фази 3 (research не підтвердив точну структуру).
+- **Банківська гілка деталізована окремою спекою.** Виписки CSV/XLS з автопрофілями mono/Privat24, скріни банкінгу через vision і триярусний дедуп (mono/Privat matcher + семантичний row-key + чекова ідемпотентність) — у [`specs/receipt-scan.md`](../planning/specs/receipt-scan.md) § «Фаза 2 — Масове ведення». Конвеєр спільний: ця ініціатива лишається власником upload-шару (multipart/ZIP/кодування) і не-фінансових адаптерів; хто перший імплементується — закладає спільний шар.
 
 ### Фаза 4 (опційно) — Apple Health XML як агрегатор
 
@@ -122,6 +123,7 @@
 
 - Доповнює: [0010-revenue-first-launch](./0010-revenue-first-launch.md) (activation після онбордингу).
 - Патерн-донор: Monobank-модуль ([`apps/server/src/modules/mono/`](../../../apps/server/src/modules/mono)) — ідемпотентний UPSERT, токен-шифрування, resilient HTTP.
+- Фінансова гілка (виписки, скріни банкінгу, чеки пачкою): [`specs/receipt-scan.md`](../planning/specs/receipt-scan.md) § «Фаза 2 — Масове ведення» — конкретизація Фази 3 цієї ініціативи поверх рішення №2 (семантичний row-key).
 - Плейбук: [`docs/00-start/playbooks/onboard-external-api.md`](../../00-start/playbooks/onboard-external-api.md) — для майбутніх API-інтеграцій (out-of-scope тут, але наступний крок).
 - Skill: основна поверхня — `sergeant-server-api` (Фаза 1 server) + `sergeant-feature-delivery` (cross-surface); для cross-surface delivery — `sergeant-deliver-squad`.
 
