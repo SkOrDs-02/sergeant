@@ -1,14 +1,33 @@
 /**
- * 7-денна mini-bar-chart ккал. Mirror web `MiniBar` з
- * `NutritionDashboard.tsx`. Сегмент для "сьогодні" підсвічується
- * bg-nutrition full, інші — bg-nutrition/30.
+ * 7-денна mini-bar-chart ккал. Mirror web `WeekKcalCard`
+ * (`apps/web/src/modules/nutrition/components/WeekKcalCard.tsx`).
+ *
+ * AI-CONTEXT: обидві поверхні рахували шкалу власним інлайновим рядком і
+ * успадкували ту саму пару дефектів (фідбек тестера 2026-08-17: «не
+ * зрозуміла шкала»). Тепер модель приходить з `computeWeekKcalChart`
+ * (`@sergeant/nutrition-domain`) — стеля осі, лінія цілі й ознака
+ * порожнього дня рахуються в одному місці, тож дзеркала не розійдуться.
+ *
+ * Свідома розбіжність із web: тут НЕМА tap-to-select із ккал вибраного дня
+ * (web-first до traction — `docs/00-start/agents/decisions.md`, 2026-06-29).
+ * Опора шкали — підписана ціль/стеля — є на обох поверхнях, бо саме без неї
+ * графік нечитабельний.
  */
 import { Text, View } from "react-native";
 
-import type { MacrosRow } from "@sergeant/nutrition-domain";
+import {
+  computeWeekKcalChart,
+  type MacrosRow,
+} from "@sergeant/nutrition-domain";
 
 const DAY_LABELS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"] as const;
 const CHART_HEIGHT = 48;
+/** Мінімальна видима висота ненульового дня — 50 ккал теж мусять бути видні. */
+const MIN_BAR_HEIGHT = 3;
+
+function fmtKcal(n: number): string {
+  return Math.round(n).toLocaleString("uk-UA");
+}
 
 export interface WeekKcalChartProps {
   rows: MacrosRow[];
@@ -21,45 +40,99 @@ export function WeekKcalChart({
   targetKcal,
   todayIso,
 }: WeekKcalChartProps) {
-  const max = Math.max(targetKcal || 1, ...rows.map((r) => r.kcal || 0));
+  const model = computeWeekKcalChart(rows, targetKcal);
+
+  const summaryText =
+    model.daysLogged > 0
+      ? `${fmtKcal(model.totalKcal)} ккал · сер. ${fmtKcal(model.avgKcal)}/день`
+      : "Ще немає записів цього тижня";
+
+  let scaleText: string | null = null;
+  if (model.goalKcal > 0) {
+    scaleText = `ціль ${fmtKcal(model.goalKcal)}`;
+  } else if (model.totalKcal > 0) {
+    scaleText = `макс ${fmtKcal(model.ceiling)}`;
+  }
 
   return (
-    <View className="flex-row items-end gap-1 h-16">
-      {rows.map((r) => {
-        const ratio = max > 0 ? r.kcal / max : 0;
-        const height = Math.max(3, ratio * CHART_HEIGHT);
-        const isToday = r.date === todayIso;
-        const [y, m, d] = r.date.split("-").map(Number);
-        const dt = new Date(y!, (m ?? 1) - 1, d ?? 1);
-        const label = DAY_LABELS[(dt.getDay() + 6) % 7];
-        return (
-          <View key={r.date} className="flex-1 items-center gap-0.5">
-            <View
-              style={{ height: CHART_HEIGHT, justifyContent: "flex-end" }}
-              className="w-full items-center"
-            >
+    <View>
+      <View className="flex-row items-baseline justify-between gap-2 mb-2">
+        <Text className="text-[11px] text-fg-subtle">{summaryText}</Text>
+        {scaleText !== null && (
+          <Text className="text-[11px] text-fg-subtle">{scaleText}</Text>
+        )}
+      </View>
+
+      <View className="flex-row items-end gap-1 h-16">
+        {model.bars.map((bar) => {
+          const isToday = bar.date === todayIso;
+          const [y, m, d] = bar.date.split("-").map(Number);
+          const dt = new Date(y!, (m ?? 1) - 1, d ?? 1);
+          const label = DAY_LABELS[(dt.getDay() + 6) % 7];
+          const height = bar.isEmpty
+            ? 0
+            : Math.max(MIN_BAR_HEIGHT, bar.ratio * CHART_HEIGHT);
+          return (
+            <View key={bar.date} className="flex-1 items-center gap-0.5">
               <View
-                style={{
-                  height,
-                  width: 18,
-                  borderTopLeftRadius: 4,
-                  borderTopRightRadius: 4,
-                }}
-                className={isToday ? "bg-lime-500" : "bg-lime-500/30"}
-              />
+                style={{ height: CHART_HEIGHT, justifyContent: "flex-end" }}
+                className="w-full items-center"
+              >
+                {model.goalRatio !== null && (
+                  <View
+                    style={{
+                      position: "absolute",
+                      left: 0,
+                      right: 0,
+                      bottom: model.goalRatio * CHART_HEIGHT,
+                      borderTopWidth: 1,
+                      borderStyle: "dashed",
+                    }}
+                    className="border-fg-subtle/40"
+                  />
+                )}
+                {bar.isEmpty ? (
+                  // Канон §5.2: пропущений день — неповні дані, а не нуль
+                  // спожитого. Плаский трек, а не огризок стовпчика.
+                  <View
+                    testID={`week-kcal-empty-${bar.date}`}
+                    style={{ height: 2, width: 18, borderRadius: 999 }}
+                    className="bg-fg-subtle/20"
+                  />
+                ) : (
+                  <View
+                    testID={`week-kcal-bar-${bar.date}`}
+                    style={{
+                      height,
+                      width: 18,
+                      borderTopLeftRadius: 4,
+                      borderTopRightRadius: 4,
+                    }}
+                    className={
+                      bar.isOver
+                        ? isToday
+                          ? "bg-amber-500"
+                          : "bg-amber-500/40"
+                        : isToday
+                          ? "bg-lime-500"
+                          : "bg-lime-500/40"
+                    }
+                  />
+                )}
+              </View>
+              <Text
+                className={
+                  isToday
+                    ? "text-[9px] leading-none text-fg font-bold"
+                    : "text-[9px] leading-none text-fg-subtle"
+                }
+              >
+                {label}
+              </Text>
             </View>
-            <Text
-              className={
-                isToday
-                  ? "text-[9px] leading-none text-fg font-bold"
-                  : "text-[9px] leading-none text-fg-subtle"
-              }
-            >
-              {label}
-            </Text>
-          </View>
-        );
-      })}
+          );
+        })}
+      </View>
     </View>
   );
 }
