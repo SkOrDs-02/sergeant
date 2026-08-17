@@ -218,7 +218,12 @@ export type ImportCommitRow = z.infer<typeof ImportCommitRowSchema>;
 /** 5000 — не зі спеки буквально (не задане явно), розумний stopgap-кап
  * проти патологічного payload-у в одному HTTP-запиті; великі виписки
  * (роки історії) — задокументований follow-up (§ звіт server-agent). */
-export const IMPORT_COMMIT_MAX_ROWS = 5000;
+// 1000, не 5000 (ревʼю PR #818): commit обробляє рядки послідовно в одній
+// транзакції (дедуп-запит + insert на рядок) — 5000 рядків тримали б
+// pooled-клієнт на ~10k запитів. Багаторічна виписка йде кількома
+// commit-ами; set-based переписування — окремий крок, якщо виникне
+// реальна потреба.
+export const IMPORT_COMMIT_MAX_ROWS = 1000;
 
 export const ImportCommitRequestSchema = z
   .object({
@@ -268,8 +273,8 @@ export const ImportBatchSchema = z.object({
   /** `finyk_manual_expenses.id` (TEXT, migration 096) — усі рядки, які цей
    * батч створив, для undo-tombstone. */
   createdRowIds: z.array(z.string()),
-  createdAt: z.string(),
-  updatedAt: z.string(),
+  createdAt: z.iso.datetime(),
+  updatedAt: z.iso.datetime(),
 });
 export type ImportBatch = z.infer<typeof ImportBatchSchema>;
 
