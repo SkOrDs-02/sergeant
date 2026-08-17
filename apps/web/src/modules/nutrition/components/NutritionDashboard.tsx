@@ -24,18 +24,12 @@ import {
   getDayMacros,
   getDaySummary,
   getMacrosForDateRange,
-  type MacrosRow,
 } from "../lib/nutritionStorage";
 import { WaterTrackerCard } from "./WaterTrackerCard";
+import { WeekKcalCard } from "./WeekKcalCard";
 import { useToast } from "@shared/hooks/useToast";
 import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
-import {
-  getKyivMondayIndex,
-  getKyivWeekStartKey,
-  parseKyivDate,
-} from "@shared/lib/time/kyivTime";
-
-type WeekRow = MacrosRow;
+import { getKyivWeekStartKey } from "@shared/lib/time/kyivTime";
 
 // ADR-0078: "сьогодні" на дашборді (кільце макросів, isToday-підсвітка в
 // тижневому графіку) — день ПРИСТРОЮ, не Kyiv, бо журнал, з якого читаються
@@ -80,68 +74,6 @@ function formatMacroOutcome(
     return `${Math.round(gap)} г запас`;
   }
   return `${Math.round(gap)} г до цілі`;
-}
-
-function MiniBar({
-  rows,
-  targetKcal,
-}: {
-  rows: WeekRow[];
-  targetKcal: number;
-}) {
-  const max = Math.max(targetKcal || 1, ...rows.map((r) => r.kcal || 0));
-  const dayLabels = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"];
-  const weekSummary = rows
-    .map((r) => {
-      const mondayIndex = getKyivMondayIndex(
-        parseKyivDate(r.date) ?? undefined,
-      );
-      return `${dayLabels[mondayIndex]} ${Math.round(r.kcal)} ккал`;
-    })
-    .join(", ");
-  return (
-    <div
-      className="flex items-end gap-1 h-16"
-      role="img"
-      aria-label={`Калорії за тиждень: ${weekSummary}`}
-    >
-      {rows.map((r) => {
-        const h = max > 0 ? Math.max(2, (r.kcal / max) * 100) : 2;
-        const isToday = r.date === todayISO();
-        const mondayIndex = getKyivMondayIndex(
-          parseKyivDate(r.date) ?? undefined,
-        );
-        const label = dayLabels[mondayIndex];
-        return (
-          <div
-            key={r.date}
-            className="flex-1 flex flex-col items-center gap-0.5"
-          >
-            <div
-              className="w-full flex justify-center"
-              style={{ height: "48px", alignItems: "flex-end" }}
-            >
-              <div
-                className={cn(
-                  "w-full max-w-[18px] rounded-t-md transition-[height,background-color] duration-slow",
-                  isToday ? "bg-nutrition" : "bg-nutrition/30",
-                )}
-                style={{ height: `${h}%`, minHeight: "3px" }}
-              />
-            </div>
-            <span
-              className={cn(
-                "text-style-caption leading-none",
-                isToday ? "text-text font-bold" : "text-muted",
-              )}
-            >
-              {label}
-            </span>
-          </div>
-        );
-      })}
-    </div>
-  );
 }
 
 interface NutritionDashboardProps {
@@ -397,19 +329,12 @@ export function NutritionDashboard({
         />
       ))}
 
-      <Card className="p-4">
-        <div className="flex items-center justify-between mb-2">
-          <div className="text-style-label text-text">Тиждень · ккал</div>
-          <button
-            type="button"
-            onClick={onGoToLog}
-            className="text-style-caption text-nutrition-strong dark:text-nutrition hover:underline"
-          >
-            Журнал →
-          </button>
-        </div>
-        <MiniBar rows={weekRows} targetKcal={prefs.dailyTargetKcal || 0} />
-      </Card>
+      <WeekKcalCard
+        rows={weekRows}
+        targetKcal={prefs.dailyTargetKcal || 0}
+        todayIso={today}
+        onGoToLog={onGoToLog}
+      />
 
       <WaterTrackerCard goalMl={prefs.waterGoalMl ?? 2000} />
 
