@@ -26,6 +26,7 @@ import {
   parseDateKey,
   habitScheduledOnDate,
 } from "../lib/hubCalendarAggregate";
+import { addDays, dateKeyFromDate } from "../lib/weekUtils";
 import {
   ROUTINE_THEME as C,
   ROUTINE_TIME_MODES as TIME_MODES,
@@ -156,6 +157,12 @@ export function RoutineCalendarPanel({
     return out;
   }, [routine.skips, todayKey]);
 
+  // Завтрашній ключ для узгодження стрічки з чипами (див. `onSelectDay`).
+  const tomorrowKey = useMemo(
+    () => dateKeyFromDate(addDays(parseDateKey(todayKey), 1)),
+    [todayKey],
+  );
+
   const dayLabel = parseDateKey(todayKey).toLocaleDateString("uk-UA", {
     weekday: "long",
     day: "numeric",
@@ -172,6 +179,7 @@ export function RoutineCalendarPanel({
     >
       <RoutineCalendarHero
         rangeLabel={rangeLabel}
+        timeMode={timeMode}
         headlineDate={headlineDate}
         dayProgress={dayProgress}
         filteredCount={filtered.length}
@@ -279,7 +287,17 @@ export function RoutineCalendarPanel({
           todayKey={todayKey}
           onSelectDay={(k) => {
             setSelectedDay(k);
-            setTimeMode("day");
+            // Стрічка узгоджена з чипами: тап по сьогоднішній даті дає режим
+            // `today`, по завтрашній — `tomorrow`, і лише довільний день —
+            // `day`. Раніше будь-який тап давав `day`, тож навіть після
+            // вибору СЬОГОДНІ знизу висів припис «Обрано один день…», і
+            // зняти його можна було тільки чипом (репорт власника
+            // 2026-08-17). Діапазон від цього не змінюється: для
+            // `today`/`tomorrow` він такий самий однодневний, як для `day`
+            // із тією ж датою (`useRoutineDerivedData` § range).
+            setTimeMode(
+              k === todayKey ? "today" : k === tomorrowKey ? "tomorrow" : "day",
+            );
           }}
         />
         {timeMode === "day" && (

@@ -192,12 +192,16 @@ export function useRoutineDerivedData({
     if (timeMode === "day") return fmtUk(selectedDay);
     if (timeMode === "today") return fmtUk(tk);
     if (timeMode === "tomorrow") return fmtUk(dateKeyFromDate(addDays(t0, 1)));
-    if (timeMode === "week") {
+    // AI-CONTEXT: місяць показує СВІЙ діапазон, як і тиждень. Раніше тут було
+    // `fmtUk(selectedDay)`, а `applyMode("month")` ставить `selectedDay` на
+    // сьогодні — тож герой у режимі місяця показував рівно сьогоднішню дату і
+    // був не відрізнити від режиму «Сьогодні» (репорт власника 2026-08-17).
+    // Межі місяця вже лежать у `range` (`monthBounds`), лишалось їх узяти.
+    if (timeMode === "week" || timeMode === "month") {
       const a = fmtUk(range.startKey);
       const b = fmtUk(range.endKey);
       return range.startKey === range.endKey ? a : `${a} — ${b}`;
     }
-    if (timeMode === "month") return fmtUk(selectedDay);
     return fmtUk(tk);
   }, [timeMode, selectedDay, range.startKey, range.endKey]);
 

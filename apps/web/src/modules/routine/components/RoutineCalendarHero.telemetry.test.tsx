@@ -31,6 +31,7 @@ function renderHero(currentStreak: number) {
   return render(
     <RoutineCalendarHero
       rangeLabel="Сьогодні"
+      timeMode="today"
       headlineDate="25 липня"
       dayProgress={{ completed: 1, scheduled: 2 }}
       filteredCount={2}
@@ -80,6 +81,7 @@ describe("RoutineCalendarHero — експозиція стріку", () => {
       rerender(
         <RoutineCalendarHero
           rangeLabel="Сьогодні"
+          timeMode="today"
           headlineDate="25 липня"
           dayProgress={{ completed: 1, scheduled: 2 }}
           filteredCount={2}

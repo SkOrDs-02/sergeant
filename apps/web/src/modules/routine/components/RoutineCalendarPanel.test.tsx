@@ -216,6 +216,58 @@ describe("RoutineCalendarPanel", () => {
     expect(screen.getByLabelText("Пошук подій")).toBeInTheDocument();
   });
 
+  /**
+   * Репорт власника 2026-08-17: тап по ЛЮБІЙ даті стрічки давав режим `day`,
+   * тож навіть після вибору сьогоднішнього дня знизу висів припис «Обрано
+   * один день…», і зняти його можна було тільки чипом. Тепер стрічка й чипи
+   * називають той самий стан однаково.
+   */
+  describe("стрічка тижня узгоджена з чипами", () => {
+    it("тап по сьогоднішній даті → режим 'today'", () => {
+      render(<RoutineCalendarPanel />);
+      fireEvent.click(
+        screen.getByRole("button", { name: "Вівторок, 2026-06-23 (сьогодні)" }),
+      );
+      expect(setSelectedDay).toHaveBeenCalledWith("2026-06-23");
+      expect(setTimeMode).toHaveBeenCalledWith("today");
+    });
+
+    it("тап по завтрашній даті → режим 'tomorrow'", () => {
+      render(<RoutineCalendarPanel />);
+      fireEvent.click(
+        screen.getByRole("button", { name: "Середа, 2026-06-24" }),
+      );
+      expect(setSelectedDay).toHaveBeenCalledWith("2026-06-24");
+      expect(setTimeMode).toHaveBeenCalledWith("tomorrow");
+    });
+
+    it("тап по довільній даті → режим 'day'", () => {
+      render(<RoutineCalendarPanel />);
+      fireEvent.click(
+        screen.getByRole("button", { name: "Пʼятниця, 2026-06-26" }),
+      );
+      expect(setSelectedDay).toHaveBeenCalledWith("2026-06-26");
+      expect(setTimeMode).toHaveBeenCalledWith("day");
+    });
+
+    it("припис про один день висить лише в режимі 'day'", () => {
+      render(<RoutineCalendarPanel />);
+      expect(screen.queryByText(/Обрано один день/)).not.toBeInTheDocument();
+      cleanup();
+
+      dataFixture.mockReturnValue(baseData({ timeMode: "today" }));
+      render(<RoutineCalendarPanel />);
+      expect(screen.queryByText(/Обрано один день/)).not.toBeInTheDocument();
+      cleanup();
+
+      dataFixture.mockReturnValue(
+        baseData({ timeMode: "day", selectedDay: "2026-06-26" }),
+      );
+      render(<RoutineCalendarPanel />);
+      expect(screen.getByText(/Обрано один день/)).toBeInTheDocument();
+    });
+  });
+
   it("hides the panel content when hidden prop is set", () => {
     render(<RoutineCalendarPanel hidden />);
     const panel = document.getElementById("routine-panel-calendar");
