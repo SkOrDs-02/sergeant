@@ -70,13 +70,31 @@
   }
 }
 
+/* AI-DANGER: fill-mode тут САМЕ `backwards`, не `both`. Фінальний кадр обох
+   keyframes (`opacity: 1; transform: translateX(0)`) дорівнює природному
+   стану елемента, тож `forwards` не давав нічого візуально — але залишав на
+   корені модуля/хаба вічну identity-трансформу (`matrix(1,0,0,1,0,0)`), а з
+   нею й промоутнутий композиторний шар на весь час сесії.
+
+   На iOS перемальовка всередині такого шару не інвалідується: при зміні
+   виділення заливка попередньої пігулки лишалась на екрані рожевою смугою
+   впоперек сусідніх — у чипах діапазону і в стрічці тижня «Рутини». Репорт
+   власника, ніч проти 17 серпня 2026 за Києвом.
+
+   Діагноз зійшовся на трьох незалежних спостереженнях: після прямого
+   перезавантаження чисто (шар є, але ще нічого не перемальовувалось);
+   смуги зʼявляються від кліків по чипах/датах (перемальовка в шарі); під
+   `prefers-reduced-motion` їх немає взагалі — там keyframes підміняється на
+   `rm-opacity-fade`, який трансформи не має (див. § reduced motion нижче).
+
+   `backwards` лишаємо: він тримає `from`-стан до старту й гасить спалах. */
 .module-enter {
   animation: module-slide-in var(--motion-duration-base)
-    var(--motion-ease-standard) both;
+    var(--motion-ease-standard) backwards;
 }
 .hub-enter {
   animation: hub-slide-in var(--motion-duration-base)
-    var(--motion-ease-standard) both;
+    var(--motion-ease-standard) backwards;
 }
 .animate-onboarding-enter {
   animation: onboarding-enter var(--motion-duration-slow)
