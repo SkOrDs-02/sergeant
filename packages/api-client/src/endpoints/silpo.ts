@@ -11,6 +11,9 @@ import type {
   SilpoSyncState as SharedSilpoSyncState,
   SilpoWipeResponse as SharedSilpoWipeResponse,
 } from "@sergeant/shared/schemas";
+// Рантайм-імпорт — лише з кореневого барела: Vite-аліас `@sergeant/shared`
+// у apps/web вказує на файл `src/index.ts`, тож субшлях `/schemas` для
+// value-імпортів не резолвиться (type-імпорти стираються до бандлінгу).
 import {
   SilpoDisconnectResponseSchema,
   SilpoReceiptDetailDtoSchema,
@@ -18,7 +21,7 @@ import {
   SilpoSyncResultSchema,
   SilpoSyncStateSchema,
   SilpoWipeResponseSchema,
-} from "@sergeant/shared/schemas";
+} from "@sergeant/shared";
 import { applyApiPrefix, DEFAULT_API_PREFIX } from "../httpClient";
 import type { HttpClient } from "../httpClient";
 import type { RequestOptions } from "../types";
