@@ -4,13 +4,14 @@
  */
 import { useState, type Dispatch, type Ref, type SetStateAction } from "react";
 import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
-import { Input } from "@shared/components/ui/Input";
+import { Input, Textarea } from "@shared/components/ui/Input";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Spinner } from "@shared/components/ui/Spinner";
 import { useResetPinchZoomAfterCameraCapture } from "@shared/hooks/useResetPinchZoomOnResume";
 import { cn } from "@shared/lib/ui/cn";
 import type { NutritionNotFoodKind } from "@sergeant/api-client";
 import type { NullableMacros } from "@sergeant/shared";
+import { PHOTO_NOTE_MAX_LENGTH } from "../hooks/usePhotoAnalysis";
 
 /**
  * Inline "in progress" line — spinner + copy, anchored right where the
@@ -174,6 +175,9 @@ interface PhotoAnalyzeCardProps {
   refinePhoto: () => void | Promise<void>;
   answers: Record<string, string>;
   setAnswers: Dispatch<SetStateAction<Record<string, string>>>;
+  /** Вільне зауваження людини — їде в `qna` разом із відповідями. */
+  note: string;
+  setNote: Dispatch<SetStateAction<string>>;
   onSaveToLog?: (() => void | Promise<void>) | undefined;
   /** `photo.isAnalyzing` — drives the inline status line next to «Аналізувати». */
   analyzing?: boolean | undefined;
@@ -196,6 +200,8 @@ export function PhotoAnalyzeCard({
   refinePhoto,
   answers,
   setAnswers,
+  note,
+  setNote,
   onSaveToLog,
   analyzing,
   refining,
@@ -428,60 +434,85 @@ export function PhotoAnalyzeCard({
               </div>
             )}
 
-          {Array.isArray(photoResult.questions) &&
-            photoResult.questions.length > 0 && (
-              <div className="rounded-2xl border border-line bg-panelHi p-3 grid gap-3">
-                <SectionHeading as="div" size="xs" variant="nutrition">
-                  Уточнення порції
-                </SectionHeading>
+          {/* AI-CONTEXT: блок навмисно НЕ гейтиться на `questions.length > 0`.
+              Питання ставить модель — і саме тоді, коли вона впевнена, вона
+              не питає нічого. Тестова група 2026-08-12: розпізнало 2 страви
+              з 3, питань — жодного, тож канал «сказати своїми словами» був
+              недосяжний рівно в тому випадку, заради якого потрібен. Порція
+              і вільне зауваження доступні завжди; питання — коли є. */}
+          <div className="rounded-2xl border border-line bg-panelHi p-3 grid gap-3">
+            <SectionHeading as="div" size="xs" variant="nutrition">
+              Уточнення
+            </SectionHeading>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <div className="text-style-caption text-muted mb-1">
-                      Порція (г), якщо знаєш
-                    </div>
-                    <Input
-                      value={portionGrams}
-                      onChange={(e) => setPortionGrams(e.target.value)}
-                      inputMode="decimal"
-                      placeholder="напр. 320"
-                      disabled={busy}
-                    />
-                  </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <div className="text-style-caption text-muted mb-1">
+                  Порція (г), якщо знаєш
                 </div>
-
-                {photoResult.questions.slice(0, 6).map((q: string) => (
-                  <div key={q}>
-                    <div className="text-style-caption text-muted mb-1">
-                      {q}
-                    </div>
-                    <Input
-                      value={answers[q] || ""}
-                      onChange={(e) =>
-                        setAnswers((a) => ({ ...a, [q]: e.target.value }))
-                      }
-                      placeholder="твоя відповідь…"
-                      disabled={busy}
-                    />
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  onClick={refinePhoto}
+                <Input
+                  value={portionGrams}
+                  onChange={(e) => setPortionGrams(e.target.value)}
+                  inputMode="decimal"
+                  placeholder="напр. 320"
                   disabled={busy}
-                  className={cn(
-                    "text-style-label w-full h-11 rounded-2xl border border-nutrition/40",
-                    "text-nutrition-strong dark:text-nutrition hover:bg-nutrition/10 disabled:opacity-50 transition-colors",
-                    "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
-                  )}
-                >
-                  Перерахувати за всіма відповідями
-                </button>
-                {refining && (
-                  <InlineAnalysisStatus text="Уточнюю порцію та перераховую…" />
-                )}
+                />
               </div>
+            </div>
+
+            {Array.isArray(photoResult.questions) &&
+              photoResult.questions.slice(0, 6).map((q: string) => (
+                <div key={q}>
+                  <div className="text-style-caption text-muted mb-1">{q}</div>
+                  <Input
+                    value={answers[q] || ""}
+                    onChange={(e) =>
+                      setAnswers((a) => ({ ...a, [q]: e.target.value }))
+                    }
+                    placeholder="твоя відповідь…"
+                    disabled={busy}
+                  />
+                </div>
+              ))}
+
+            <div>
+              <div className="text-style-caption text-muted mb-1">
+                Що не так? Опиши своїми словами
+              </div>
+              <Textarea
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                rows={2}
+                maxLength={PHOTO_NOTE_MAX_LENGTH}
+                aria-label="Що не так? Опиши своїми словами"
+                placeholder="напр. третє — не булочка, а сирник"
+                disabled={busy}
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={refinePhoto}
+              disabled={busy}
+              className={cn(
+                "text-style-label w-full h-11 rounded-2xl border border-nutrition/40",
+                "text-nutrition-strong dark:text-nutrition hover:bg-nutrition/10 disabled:opacity-50 transition-colors",
+                "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
+              )}
+            >
+              Перерахувати з урахуванням уточнень
+            </button>
+            {/* Чесність про ціну кнопки: перерахунок — це новий прогін
+                моделі по всьому кадру, а не точкова правка. Те, що вона
+                вгадала правильно, теж може змінитись. */}
+            <p className="text-style-caption text-muted">
+              Перерахунок оновлює весь результат, а не лише те, що ти згадаєш —
+              уже правильні страви теж можуть змінитися.
+            </p>
+            {refining && (
+              <InlineAnalysisStatus text="Уточнюю порцію та перераховую…" />
             )}
+          </div>
         </div>
       )}
     </div>

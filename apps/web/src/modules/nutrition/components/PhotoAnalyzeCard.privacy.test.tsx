@@ -27,6 +27,8 @@ function renderCard() {
       refinePhoto={() => {}}
       answers={{}}
       setAnswers={() => {}}
+      note=""
+      setNote={() => {}}
     />,
   );
 }

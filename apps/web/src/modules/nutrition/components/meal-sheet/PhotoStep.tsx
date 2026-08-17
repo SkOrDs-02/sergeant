@@ -130,6 +130,8 @@ export function PhotoStep({ onApply }: PhotoStepProps) {
         refinePhoto={photo.refinePhoto}
         answers={photo.answers}
         setAnswers={photo.setAnswers}
+        note={photo.note}
+        setNote={photo.setNote}
         onSaveToLog={
           photo.photoResult && photo.photoResult.isFood !== false
             ? handleApply

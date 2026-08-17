@@ -1,6 +1,6 @@
 # Відкрита робота — єдиний дашборд
 
-> **Last validated:** 2026-08-13 by @codex. **Next review:** 2026-11-11.
+> **Last validated:** 2026-08-17 by @codex. **Next review:** 2026-11-15.
 > **Status:** Active
 
 <!-- AUTO-GENERATED FILE. Do not edit by hand. Regenerate via `pnpm docs:gen-open-work`. -->
@@ -11,9 +11,9 @@
 
 **Колонки.** `Документ` — шлях відносно директорії трекера. `Статус` — повний текст `Status:` хедера (truncated до 180 символів; `❓` = `unknown` бакет, треба полагодити header). `PR-згадки` — auto-extracted `#NNNN` згадки (≥3 цифри, deduped, sorted ascending; перші 10 показано). Це навігаційні згадки з документа, не live-стан GitHub PR. Ініціативи й Plans мають додатково: `Agent-ready` (🟢 yes / 🟡 needs-decision / 🔴 blocked — рядки сортуються `yes` → `needs-decision` → `blocked`), `Skill` (canonical Sergeant specialist skill) і `Playbook` (best-fit playbook). Останні дві — heuristic suggestions з [`scripts/docs/skill-mapping.json`](../scripts/docs/skill-mapping.json), editable вручну.
 
-**Усього відкритих документів:** **56** — Ініціативи: **3** · Планування: **19** · Launch / запуск: **12** · Аудити й прожарки: **17** · Security hardening: **1** · Техборг: **4** · Superpowers — плани впровадження: **0**.
+**Усього відкритих документів:** **57** — Ініціативи: **4** · Планування: **19** · Launch / запуск: **12** · Аудити й прожарки: **17** · Security hardening: **1** · Техборг: **4** · Superpowers — плани впровадження: **0**.
 
-## Ініціативи (3)
+## Ініціативи (4)
 
 > Нумеровані multi-PR ініціативи з acceptance criteria. Source: [`docs/90-work/initiatives/`](./90-work/initiatives/README.md).
 
@@ -21,6 +21,7 @@
 | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- | --------------------- | ------------------------ |
 | [`0010-revenue-first-launch.md`](./90-work/initiatives/0010-revenue-first-launch.md)                   | In progress                                                                                                                                                                          | [#1792](https://github.com/Skords-01/Sergeant/pull/1792) [#2080](https://github.com/Skords-01/Sergeant/pull/2080) [#3109](https://github.com/Skords-01/Sergeant/pull/3109) | 🟡 needs-decision | `sergeant-web-ui`     | `release.md`             |
 | [`0022-import-from-external-trackers.md`](./90-work/initiatives/0022-import-from-external-trackers.md) | Proposed (2026-06-28) — драфт плану; не почато. Чекає на founder-greenlight по скоупу Фази 1 + рішення по валютній нормалізації (див. § Відкриті рішення; dedup-стратегію вже виріш… | —                                                                                                                                                                          | 🟡 needs-decision | `sergeant-server-api` | —                        |
+| [`0023-photo-analysis-multi-item.md`](./90-work/initiatives/0023-photo-analysis-multi-item.md)         | Proposed (2026-08-17) — драфт плану; Фаза 0 вже в проді, Фази 1–3 чекають на founder-рішення по формі відповіді (див. § Відкриті рішення).                                           | —                                                                                                                                                                          | 🟡 needs-decision | `sergeant-web-ui`     | —                        |
 | [`0015-docs-automation-daily-ops.md`](./90-work/initiatives/0015-docs-automation-daily-ops.md)         | In progress — **Phase 1 + Phase 2 code-complete.** Phase 2 (Bundle Beta) shipped: skill+playbook columns + `agent-ready` field on all initiatives + `lint:initiative-agent-ready` g… | [#508](https://github.com/Skords-01/Sergeant/pull/508) [#3418](https://github.com/Skords-01/Sergeant/pull/3418) [#3551](https://github.com/Skords-01/Sergeant/pull/3551)   | 🔴 blocked        | `sergeant-tech-debt`  | `reconcile-doc-drift.md` |
 
 ## Планування (19)
