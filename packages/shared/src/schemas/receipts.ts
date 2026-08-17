@@ -55,9 +55,16 @@ const receiptItemQtySchema = z
   .min(-RECEIPT_ITEM_QTY_ABS_MAX)
   .max(RECEIPT_ITEM_QTY_ABS_MAX);
 
+/** Межі position та кількості позицій draft-у — експортовані з тим самим
+ * "reuse for clamping" мотивом, що `RECEIPT_ITEM_NAME_MAX_LEN`: серверні
+ * парсери недовіреного вводу (`dpsXml.ts`, `analyze.ts`) деградують до цих
+ * меж graceful-но замість валити `.parse()` ВЛАСНОЇ відповіді 500-кою. */
+export const RECEIPT_ITEM_POSITION_MAX = 10_000;
+export const RECEIPT_DRAFT_ITEMS_MAX = 200;
+
 export const ReceiptDraftItemSchema = z.object({
   /** Порядок рядка в чеку, як його віддав парсер ДПС/vision (1-based). */
-  position: z.number().int().min(0).max(10_000),
+  position: z.number().int().min(0).max(RECEIPT_ITEM_POSITION_MAX),
   name: z.string().min(1).max(RECEIPT_ITEM_NAME_MAX_LEN),
   qty: receiptItemQtySchema,
   priceKopiykas: receiptItemMoneySchema,
@@ -79,7 +86,7 @@ export type ReceiptDraftItem = z.infer<typeof ReceiptDraftItemSchema>;
  */
 const receiptDraftItemsSchema = z
   .array(ReceiptDraftItemSchema)
-  .max(200)
+  .max(RECEIPT_DRAFT_ITEMS_MAX)
   .superRefine((items, ctx) => {
     const seenPositions = new Set<number>();
     items.forEach((item, idx) => {
