@@ -1,13 +1,13 @@
 import { z } from "zod";
-// Субшлях замість кореневого барела: барел тягне categories.ts →
-// @sergeant/design-tokens, якого нема в server-бандлі (esbuild у
-// Dockerfile.api резолвить УСІ імпорти барела ще до tree-shaking).
+import type { PoolClient } from "pg";
+// Субшлях замість кореневого барела: барел тягне categories.ts → design-tokens,
+// якого нема в server-бандлі (esbuild резолвить усі імпорти до tree-shaking).
 import {
   matchReceiptsToTransactions,
   type MonoTxForReceiptMatching,
   type ReceiptForMatching,
 } from "@sergeant/finyk-domain/domain/receiptMatching";
-import { query as defaultQuery } from "../../db.js";
+import { pool, query as defaultQuery } from "../../db.js";
 import { logger } from "../../obs/logger.js";
 import {
   AppError,
@@ -20,28 +20,18 @@ import {
   type QueryFn,
   type SilpoAuthedCallErrorKind,
 } from "./tokenStore.js";
-import {
-  normalizeSilpoReceiptDetail,
-  normalizeSilpoReceiptSummary,
-  type NormalizedSilpoReceiptDetail,
-  type NormalizedSilpoReceiptSummary,
-} from "../../lib/normalizers/silpo.js";
 
 /**
  * Pulls Silpo order history (offline + online), normalizes it into our own
  * `silpo_receipts` / `silpo_receipt_items` snapshot, and runs the
  * deterministic matcher against the user's Mono transactions. Spec:
  * `docs/90-work/planning/specs/silpo-mcp-integration.md` § Рішення дизайну
- * ("Збагачення, а не створення витрат" / "Unmatched-чеки — першокласний
- * стан").
+ * ("Збагачення, а не створення витрат" / "Unmatched-чеки — першокласний стан").
  *
- * PROVISIONAL parsing (spike §0 not run): field names below
- * (`total`/`totalKop`/`amount`, `purchasedAt`/`createdAt`/`date`, …) are
- * best guesses at the real `silpo_get_my_*_orders` tool output. Every raw
- * schema is `.passthrough()`; a receipt/item that doesn't parse is
- * DROPPED with a `logger.warn` (never crashes the sync), so a wrong guess
- * degrades to "fewer receipts than expected" rather than a broken sync
- * button. Re-derive these once the spike captures real payloads.
+ * PROVISIONAL parsing (spike §0 not run): field names below are best
+ * guesses at the real `silpo_get_my_*_orders` tool output. Every raw schema
+ * is `.passthrough()`; a receipt/item that doesn't parse is DROPPED with a
+ * `logger.warn` (never crashes the sync). Re-derive once the spike runs.
  */
 
 // ─────────────────────────── Provisional raw shapes ─────────────────────────
@@ -83,7 +73,17 @@ const RawOrderSchema = z
   .passthrough();
 type RawOrder = z.infer<typeof RawOrderSchema>;
 
-const RawOrdersListSchema = z.array(RawOrderSchema);
+/**
+ * Envelope-level schema handed to `callMcpTool` — `z.unknown()` per
+ * element, NOT `RawOrderSchema`. `schema.safeParse` there is all-or-nothing
+ * over the whole payload, so validating every order with `RawOrderSchema`
+ * at THAT layer would fail the entire array (→ `schema_drift` 502) on one
+ * malformed order — contradicting the documented degradation ("кривий чек
+ * DROP-ається з `logger.warn`", spec § "Дрейф схеми tools — контрактний
+ * пояс"). `fetchOrderList()` below does the real per-order
+ * `RawOrderSchema.safeParse` once the envelope array itself parsed fine.
+ */
+const RawOrdersEnvelopeSchema = z.array(z.unknown());
 
 // ─────────────────────────── Normalization (provisional) ────────────────────
 
@@ -179,16 +179,43 @@ function normalizeRawOrder(
 
 // ─────────────────────────────── MCP fetch step ─────────────────────────────
 
+/**
+ * Fetches one order list and parses it **per order**: an MCP-level failure
+ * (network/auth/protocol/schema-drift on the envelope) still surfaces as
+ * an `McpError`, but a single malformed *element* is dropped +
+ * `logger.warn("silpo_raw_order_unparseable")` instead of failing the sync.
+ */
 async function fetchOrderList(
   accessToken: string,
   toolName: "silpo_get_my_offline_orders" | "silpo_get_my_online_orders",
 ): Promise<McpResult<RawOrder[]>> {
-  return callMcpTool({
+  const result = await callMcpTool({
     accessToken,
     toolName,
     args: {},
-    schema: RawOrdersListSchema,
+    schema: RawOrdersEnvelopeSchema,
   });
+  if (!result.ok) return result;
+
+  const orders: RawOrder[] = [];
+  result.data.forEach((raw, index) => {
+    const parsed = RawOrderSchema.safeParse(raw);
+    if (!parsed.success) {
+      logger.warn({
+        msg: "silpo_raw_order_unparseable",
+        toolName,
+        index,
+        issues: parsed.error.issues.map((i) => ({
+          path: i.path.join("."),
+          code: i.code,
+        })),
+      });
+      return;
+    }
+    orders.push(parsed.data);
+  });
+
+  return { ok: true, data: orders };
 }
 
 interface BothOrderLists {
@@ -214,63 +241,111 @@ async function fetchBothOrderLists(
 
 // ─────────────────────────────── DB upsert step ─────────────────────────────
 
-/** Inserts a receipt (+ its items, only when the receipt itself was newly inserted — receipts are treated as immutable snapshots once stored). Returns whether it was newly inserted and how many items were inserted. */
+/**
+ * Runs `fn` inside `BEGIN…COMMIT` on ONE dedicated `pool` client — mirrors
+ * `modules/mono/webhook.ts` (raw `pool.connect()` +
+ * `client.query("BEGIN"/"COMMIT"/"ROLLBACK")`), NOT a sequence of
+ * independent `pool.query()` calls, which may each grab a different
+ * physical connection and silently not be transactional at all.
+ */
+export type SilpoTransactionRunner = <T>(
+  fn: (queryFn: QueryFn) => Promise<T>,
+) => Promise<T>;
+
+/** Adapts a `PoolClient` to the `QueryFn` shape this module's SQL helpers already use (`meta` is accepted + ignored — `PoolClient.query` has no such concept). */
+const clientAsQueryFn: (client: PoolClient) => QueryFn = (client) =>
+  (async (text, values) => {
+    const sql = typeof text === "string" ? text : text.text;
+    return client.query(sql, values);
+  }) satisfies QueryFn;
+
+async function defaultWithTransaction<T>(
+  fn: (queryFn: QueryFn) => Promise<T>,
+): Promise<T> {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const result = await fn(clientAsQueryFn(client));
+    await client.query("COMMIT");
+    return result;
+  } catch (err) {
+    try {
+      await client.query("ROLLBACK");
+    } catch {
+      // Best-effort — original error matters more than a rollback failure.
+    }
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Inserts a receipt (+ its items, only when newly inserted — receipts are
+ * immutable snapshots once stored). Both statements run inside ONE
+ * transaction: before this fix they were independent, so a failed items
+ * INSERT left an item-less receipt behind FOREVER (`ON CONFLICT DO
+ * NOTHING` on the receipt insert blocks a retried sync from self-healing
+ * it). A rolled-back receipt insert means the next sync retries cleanly.
+ */
 async function upsertReceipt(
   userId: string,
   channel: "online" | "offline",
   receipt: ParsedReceipt,
-  queryFn: QueryFn,
+  withTransaction: SilpoTransactionRunner,
 ): Promise<{ inserted: boolean; itemsInserted: number }> {
-  const res = await queryFn(
-    `INSERT INTO silpo_receipts
-       (user_id, receipt_id, purchased_at, store_id, channel, payment_hint, total_kop, raw)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-     ON CONFLICT (user_id, receipt_id) DO NOTHING`,
-    [
-      userId,
-      receipt.receiptId,
-      new Date(receipt.purchasedAtMs),
-      receipt.storeId,
-      channel,
-      receipt.paymentHint,
-      receipt.totalKop,
-      JSON.stringify(receipt.raw),
-    ],
-    { op: "silpo_receipt_upsert" },
-  );
-  const inserted = (res.rowCount ?? 0) > 0;
-  if (!inserted || receipt.items.length === 0) {
-    return { inserted, itemsInserted: 0 };
-  }
+  return withTransaction(async (queryFn) => {
+    const res = await queryFn(
+      `INSERT INTO silpo_receipts
+         (user_id, receipt_id, purchased_at, store_id, channel, payment_hint, total_kop, raw)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       ON CONFLICT (user_id, receipt_id) DO NOTHING`,
+      [
+        userId,
+        receipt.receiptId,
+        new Date(receipt.purchasedAtMs),
+        receipt.storeId,
+        channel,
+        receipt.paymentHint,
+        receipt.totalKop,
+        JSON.stringify(receipt.raw),
+      ],
+      { op: "silpo_receipt_upsert" },
+    );
+    const inserted = (res.rowCount ?? 0) > 0;
+    if (!inserted || receipt.items.length === 0) {
+      return { inserted, itemsInserted: 0 };
+    }
 
-  // Multi-row VALUES insert — receipt.items.length is bounded by a single
-  // Silpo order (tens, not thousands), so one round-trip is fine.
-  const values: unknown[] = [];
-  const rows: string[] = [];
-  let i = 1;
-  for (const item of receipt.items) {
-    rows.push(
-      `($${i++}, $${i++}, $${i++}, $${i++}, $${i++}, $${i++}, $${i++}, $${i++})`,
+    // Multi-row VALUES insert — receipt.items.length is bounded by a single
+    // Silpo order (tens, not thousands), so one round-trip is fine.
+    const values: unknown[] = [];
+    const rows: string[] = [];
+    let i = 1;
+    for (const item of receipt.items) {
+      rows.push(
+        `($${i++}, $${i++}, $${i++}, $${i++}, $${i++}, $${i++}, $${i++}, $${i++})`,
+      );
+      values.push(
+        userId,
+        receipt.receiptId,
+        item.name,
+        item.qty,
+        item.unit,
+        item.priceKop,
+        item.categorySlug,
+        item.barcode,
+      );
+    }
+    await queryFn(
+      `INSERT INTO silpo_receipt_items
+         (user_id, receipt_id, name, qty, unit, price_kop, category_slug, barcode)
+       VALUES ${rows.join(", ")}`,
+      values,
+      { op: "silpo_receipt_items_insert" },
     );
-    values.push(
-      userId,
-      receipt.receiptId,
-      item.name,
-      item.qty,
-      item.unit,
-      item.priceKop,
-      item.categorySlug,
-      item.barcode,
-    );
-  }
-  await queryFn(
-    `INSERT INTO silpo_receipt_items
-       (user_id, receipt_id, name, qty, unit, price_kop, category_slug, barcode)
-     VALUES ${rows.join(", ")}`,
-    values,
-    { op: "silpo_receipt_items_insert" },
-  );
-  return { inserted, itemsInserted: receipt.items.length };
+    return { inserted, itemsInserted: receipt.items.length };
+  });
 }
 
 // ─────────────────────────────── Matcher step ───────────────────────────────
@@ -445,16 +520,16 @@ export function silpoErrorToAppError(
  * receipts that don't already have a `finyk_tx_receipt_links` row.
  *
  * Throws a mapped {@link AppError} (via {@link silpoErrorToAppError}) on
- * connection/upstream failure — this is an explicit user-triggered action,
- * so a clean 4xx/5xx to the click is correct; the "staleness banner,
- * never a crash" principle (spec § Ізоляція збою) governs BACKGROUND
- * degradation, not this synchronous button.
+ * connection/upstream failure — explicit user-triggered action, so a clean
+ * 4xx/5xx is correct; the "staleness banner, never a crash" principle
+ * (spec § Ізоляція збою) governs BACKGROUND degradation, not this button.
  */
 export async function pullAndSyncReceipts(
   userId: string,
-  deps: { query?: QueryFn } = {},
+  deps: { query?: QueryFn; withTransaction?: SilpoTransactionRunner } = {},
 ): Promise<SilpoSyncResult> {
   const queryFn = deps.query ?? defaultQuery;
+  const withTransaction = deps.withTransaction ?? defaultWithTransaction;
 
   const call = await callWithFreshAccessToken(userId, fetchBothOrderLists, {
     query: queryFn,
@@ -471,12 +546,12 @@ export async function pullAndSyncReceipts(
   let receiptsInserted = 0;
   let itemsInserted = 0;
   for (const receipt of offlineParsed) {
-    const r = await upsertReceipt(userId, "offline", receipt, queryFn);
+    const r = await upsertReceipt(userId, "offline", receipt, withTransaction);
     if (r.inserted) receiptsInserted++;
     itemsInserted += r.itemsInserted;
   }
   for (const receipt of onlineParsed) {
-    const r = await upsertReceipt(userId, "online", receipt, queryFn);
+    const r = await upsertReceipt(userId, "online", receipt, withTransaction);
     if (r.inserted) receiptsInserted++;
     itemsInserted += r.itemsInserted;
   }
@@ -506,125 +581,18 @@ export async function pullAndSyncReceipts(
   };
 }
 
-// ───────────────────────────────── Read paths ────────────────────────────────
+// Read paths live in `receiptsRead.ts` (Hard Rule #18), re-exported here.
+export {
+  listReceipts,
+  getReceiptDetail,
+  type ReceiptsPage,
+  type ReceiptSummaryRow,
+} from "./receiptsRead.js";
 
-export interface ReceiptsPage {
-  data: NormalizedSilpoReceiptSummary[];
-  nextCursor: string | null;
-}
-
-type ReceiptSummaryRow = {
-  receiptId: string;
-  purchasedAt: Date | string;
-  storeId: string | null;
-  channel: "online" | "offline";
-  paymentHint: string | null;
-  totalKop: unknown;
-  transactionId: string | null;
+// Re-exported for tests exercising internals without a DB.
+export const __test__ = {
+  normalizeRawOrder,
+  normalizeRawItem,
+  upsertReceipt,
+  defaultWithTransaction,
 };
-
-/** `GET /api/silpo/receipts` — cursor-paginated, newest first. */
-export async function listReceipts(
-  userId: string,
-  opts: { limit: number; cursor?: string | undefined },
-  queryFn: QueryFn = defaultQuery,
-): Promise<ReceiptsPage> {
-  const conditions = ["r.user_id = $1"];
-  const params: unknown[] = [userId];
-  let paramIdx = 2;
-
-  if (opts.cursor) {
-    const lastColon = opts.cursor.lastIndexOf(":");
-    if (lastColon <= 0) {
-      throw new AppError("Invalid cursor format", {
-        status: 400,
-        code: "VALIDATION",
-      });
-    }
-    const cursorPurchasedAt = opts.cursor.slice(0, lastColon);
-    const cursorReceiptId = opts.cursor.slice(lastColon + 1);
-    conditions.push(
-      `(r.purchased_at < $${paramIdx} OR (r.purchased_at = $${paramIdx} AND r.receipt_id < $${paramIdx + 1}))`,
-    );
-    params.push(cursorPurchasedAt, cursorReceiptId);
-    paramIdx += 2;
-  }
-
-  params.push(opts.limit + 1);
-  const { rows } = await queryFn<ReceiptSummaryRow>(
-    `SELECT r.receipt_id AS "receiptId",
-            r.purchased_at AS "purchasedAt",
-            r.store_id AS "storeId",
-            r.channel,
-            r.payment_hint AS "paymentHint",
-            r.total_kop AS "totalKop",
-            l.transaction_id AS "transactionId"
-       FROM silpo_receipts r
-       LEFT JOIN finyk_tx_receipt_links l
-              ON l.user_id = r.user_id AND l.receipt_id = r.receipt_id
-      WHERE ${conditions.join(" AND ")}
-      ORDER BY r.purchased_at DESC, r.receipt_id DESC
-      LIMIT $${paramIdx}`,
-    params,
-    { op: "silpo_receipts_list" },
-  );
-
-  const hasMore = rows.length > opts.limit;
-  const items = hasMore ? rows.slice(0, opts.limit) : rows;
-  const data = items.map((r) => normalizeSilpoReceiptSummary(r));
-  const last = items[items.length - 1];
-  const nextCursor =
-    hasMore && last
-      ? `${normalizeSilpoReceiptSummary(last).purchasedAt}:${last.receiptId}`
-      : null;
-
-  return { data, nextCursor };
-}
-
-/** `GET /api/silpo/receipts/:id` — summary + line items, or `null` when not found / not owned by `userId`. */
-export async function getReceiptDetail(
-  userId: string,
-  receiptId: string,
-  queryFn: QueryFn = defaultQuery,
-): Promise<NormalizedSilpoReceiptDetail | null> {
-  const { rows: receiptRows } = await queryFn<ReceiptSummaryRow>(
-    `SELECT r.receipt_id AS "receiptId",
-            r.purchased_at AS "purchasedAt",
-            r.store_id AS "storeId",
-            r.channel,
-            r.payment_hint AS "paymentHint",
-            r.total_kop AS "totalKop",
-            l.transaction_id AS "transactionId"
-       FROM silpo_receipts r
-       LEFT JOIN finyk_tx_receipt_links l
-              ON l.user_id = r.user_id AND l.receipt_id = r.receipt_id
-      WHERE r.user_id = $1 AND r.receipt_id = $2`,
-    [userId, receiptId],
-    { op: "silpo_receipt_detail_select" },
-  );
-  const receiptRow = receiptRows[0];
-  if (!receiptRow) return null;
-
-  const { rows: itemRows } = await queryFn<{
-    id: unknown;
-    name: string;
-    qty: unknown;
-    unit: string | null;
-    priceKop: unknown;
-    categorySlug: string | null;
-    barcode: string | null;
-  }>(
-    `SELECT id, name, qty, unit, price_kop AS "priceKop",
-            category_slug AS "categorySlug", barcode
-       FROM silpo_receipt_items
-      WHERE user_id = $1 AND receipt_id = $2
-      ORDER BY id ASC`,
-    [userId, receiptId],
-    { op: "silpo_receipt_items_select" },
-  );
-
-  return normalizeSilpoReceiptDetail(receiptRow, itemRows);
-}
-
-// Re-exported for tests that want to exercise normalization without a DB.
-export const __test__ = { normalizeRawOrder, normalizeRawItem };

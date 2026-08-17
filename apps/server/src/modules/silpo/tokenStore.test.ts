@@ -161,16 +161,19 @@ describe("persistTokens / readAndDecrypt — round trip", () => {
 
     const decrypted = await readAndDecrypt("user-1", ring, db.query);
     expect(decrypted).toMatchObject({
-      accessToken: "at-secret",
-      refreshToken: "rt-secret",
-      status: "connected",
+      kind: "connected",
+      connection: {
+        accessToken: "at-secret",
+        refreshToken: "rt-secret",
+        status: "connected",
+      },
     });
   });
 
-  it("returns null when the user has never connected", async () => {
+  it("returns not_connected when the user has never connected", async () => {
     const db = makeFakeDb();
     const decrypted = await readAndDecrypt("nobody", ringV1Only(), db.query);
-    expect(decrypted).toBeNull();
+    expect(decrypted).toEqual({ kind: "not_connected" });
   });
 
   it("opportunistically re-encrypts both triples together on a version bump", async () => {
@@ -186,10 +189,36 @@ describe("persistTokens / readAndDecrypt — round trip", () => {
     const decrypted = await readAndDecrypt("user-1", ringV1AndV2(), db.query);
 
     expect(decrypted).toMatchObject({
-      accessToken: "at-1",
-      refreshToken: "rt-1",
+      kind: "connected",
+      connection: { accessToken: "at-1", refreshToken: "rt-1" },
     });
     expect(db.getRow()!.token_key_version).toBe(2);
+  });
+
+  it("regression: a row under a key version that was rotated OUT of the ring returns reauth_required instead of throwing", async () => {
+    const db = makeFakeDb();
+    // Encrypt under v1+v2 (v2 current), simulating a row written before v1
+    // was retired.
+    await persistTokens(
+      "user-1",
+      ringV1AndV2(),
+      { accessToken: "at-1", refreshToken: "rt-1", expiresAtMs: null },
+      db.query,
+    );
+    expect(db.getRow()!.token_key_version).toBe(2);
+
+    // Now the ring has ONLY v3 — v2 (the row's version) was rotated out.
+    const KEY_V3 = "3".repeat(64);
+    const ringV3Only = parseKeyRing({
+      keysCsv: `v3:${KEY_V3}`,
+      currentVersion: "v3",
+      envName: "SILPO_TOKEN_ENC_KEY",
+    })!;
+
+    const decrypted = await readAndDecrypt("user-1", ringV3Only, db.query);
+
+    expect(decrypted).toEqual({ kind: "reauth_required" });
+    expect(db.getRow()!.status).toBe("reauth_required");
   });
 });
 
@@ -339,8 +368,8 @@ describe("callWithFreshAccessToken", () => {
 
     const reread = await readAndDecrypt("user-1", ringV1Only(), db.query);
     expect(reread).toMatchObject({
-      accessToken: "at-fresh",
-      refreshToken: "rt-2",
+      kind: "connected",
+      connection: { accessToken: "at-fresh", refreshToken: "rt-2" },
     });
   });
 

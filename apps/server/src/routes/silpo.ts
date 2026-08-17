@@ -38,6 +38,11 @@ import {
  * below) AND `assertSilpoEnabled` (kill switch — spec § Рішення дизайну,
  * "`SILPO_ENABLED` як kill switch"). `SILPO_ENABLED=false` is the default
  * for this walking-skeleton experiment (offer/ToS gate still open).
+ *
+ * Every route also carries its own `rateLimitExpress` bucket (CodeQL
+ * "missing rate limiting" finding, review round) — unlike `finyk`/
+ * `nutrition`, this router has no single broad `r.use(...)` bucket covering
+ * `/api/silpo/*`, so each `r.get`/`r.post` below needs an explicit limiter.
  */
 
 interface AuthedRequest extends Request {
@@ -345,17 +350,69 @@ export function createSilpoRouter(): Router {
     rateLimitExpress({ key: "api:silpo:connect", limit: 10, windowMs: 60_000 }),
     connectHandler,
   );
-  r.get("/api/silpo/callback", callbackHandler);
-  r.post("/api/silpo/disconnect", disconnectHandler);
-  r.post("/api/silpo/wipe", wipeHandler);
-  r.get("/api/silpo/sync-state", syncStateHandler);
+  r.get(
+    "/api/silpo/callback",
+    // Same bucket/limit as `connect` — this is the OTHER half of the same
+    // authorization_code round-trip, so it should never be hit more often
+    // than `connect` redirects the browser here. Reading `code`/`state`
+    // from `req.query` inside `callbackHandler` is inherent to the OAuth
+    // redirect flow (that's how every authorization_code callback receives
+    // them) and is out of scope here — tracked separately.
+    rateLimitExpress({
+      key: "api:silpo:callback",
+      limit: 10,
+      windowMs: 60_000,
+    }),
+    callbackHandler,
+  );
+  r.post(
+    "/api/silpo/disconnect",
+    rateLimitExpress({
+      key: "api:silpo:disconnect",
+      limit: 10,
+      windowMs: 60_000,
+    }),
+    disconnectHandler,
+  );
+  r.post(
+    "/api/silpo/wipe",
+    // Destructive (cascades to receipts/items/links) — throttled as tightly
+    // as `sync`, not the lighter `disconnect` bucket.
+    rateLimitExpress({ key: "api:silpo:wipe", limit: 5, windowMs: 60_000 }),
+    wipeHandler,
+  );
+  r.get(
+    "/api/silpo/sync-state",
+    rateLimitExpress({
+      key: "api:silpo:sync-state",
+      limit: 60,
+      windowMs: 60_000,
+    }),
+    syncStateHandler,
+  );
   r.post(
     "/api/silpo/sync",
     rateLimitExpress({ key: "api:silpo:sync", limit: 5, windowMs: 60_000 }),
     syncHandler,
   );
-  r.get("/api/silpo/receipts", receiptsListHandler);
-  r.get("/api/silpo/receipts/:id", receiptDetailHandler);
+  r.get(
+    "/api/silpo/receipts",
+    rateLimitExpress({
+      key: "api:silpo:receipts",
+      limit: 60,
+      windowMs: 60_000,
+    }),
+    receiptsListHandler,
+  );
+  r.get(
+    "/api/silpo/receipts/:id",
+    rateLimitExpress({
+      key: "api:silpo:receipt-detail",
+      limit: 60,
+      windowMs: 60_000,
+    }),
+    receiptDetailHandler,
+  );
 
   return r;
 }

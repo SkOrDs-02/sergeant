@@ -77,6 +77,21 @@ export interface DecryptedSilpoConnection {
   status: SilpoConnectionStatus;
 }
 
+/**
+ * `readAndDecrypt` outcome. A discriminated union (not `T | null`) because
+ * "no row at all" (`not_connected`) and "row exists but its
+ * `token_key_version` was retired from the ring" (`reauth_required`) are
+ * two DIFFERENT states the caller (`callWithFreshAccessToken`) must map to
+ * different `AppError`s (409 `SILPO_NOT_CONNECTED` vs 409
+ * `SILPO_REAUTH_REQUIRED`) — collapsing both into `null` would surface a
+ * rotated-out key as "not connected", which is wrong (the user IS
+ * connected, they just need to re-consent).
+ */
+export type ReadAndDecryptResult =
+  | { kind: "connected"; connection: DecryptedSilpoConnection }
+  | { kind: "not_connected" }
+  | { kind: "reauth_required" };
+
 function rowToEncrypted(row: SilpoConnectionRow): {
   access: EncryptedToken;
   refresh: EncryptedToken;
@@ -100,16 +115,29 @@ function rowToEncrypted(row: SilpoConnectionRow): {
 }
 
 /**
- * Reads + decrypts a user's `silpo_connection` row. Returns `null` when the
- * user has never connected. Opportunistically (best-effort, never throws)
- * re-encrypts BOTH triples together under `ring.current.version` when the
- * row is under a stale key version.
+ * Reads + decrypts a user's `silpo_connection` row. Returns `{ kind:
+ * "not_connected" }` when the user has never connected. Opportunistically
+ * (best-effort, never throws) re-encrypts BOTH triples together under
+ * `ring.current.version` when the row is under a stale-but-still-present
+ * key version.
+ *
+ * A row whose `token_key_version` was retired from the ring entirely
+ * (rotation exit — the old key was dropped from `SILPO_TOKEN_ENC_KEYS`
+ * before this row got lazily re-encrypted) can NEVER be decrypted again.
+ * Before this fix, `decryptTokenWithRing` → `getKeyForVersion` threw for
+ * that case and the throw propagated all the way to a generic 500 at the
+ * route. That row is unrecoverable but NOT a server bug — it's exactly the
+ * situation `status = 'reauth_required'` models, so we flip the row to
+ * that status and return `{ kind: "reauth_required" }` instead of
+ * throwing. Any OTHER decrypt failure (tampered ciphertext/auth-tag
+ * mismatch under a key version that IS present) still throws — fail
+ * closed, per `decryptTokenWithRing`'s docstring.
  */
 export async function readAndDecrypt(
   userId: string,
   ring: KeyRing,
   queryFn: QueryFn = defaultQuery,
-): Promise<DecryptedSilpoConnection | null> {
+): Promise<ReadAndDecryptResult> {
   const { rows } = await queryFn<SilpoConnectionRow>(
     `SELECT access_token_ciphertext, access_token_iv, access_token_tag,
             refresh_token_ciphertext, refresh_token_iv, refresh_token_tag,
@@ -119,9 +147,20 @@ export async function readAndDecrypt(
     { op: "silpo_connection_select" },
   );
   const row = rows[0];
-  if (!row) return null;
+  if (!row) return { kind: "not_connected" };
 
   const rowVersion = row.token_key_version ?? LEGACY_KEY_VERSION;
+
+  if (!ring.byVersion.has(rowVersion)) {
+    logger.warn({
+      msg: "silpo_token_key_version_rotated_out",
+      rowVersion,
+      ringVersions: ring.versions,
+    });
+    await markReauthRequired(userId, queryFn);
+    return { kind: "reauth_required" };
+  }
+
   const { access, refresh } = rowToEncrypted(row);
   const accessToken = decryptTokenWithRing(access, ring, rowVersion);
   const refreshToken = decryptTokenWithRing(refresh, ring, rowVersion);
@@ -137,12 +176,15 @@ export async function readAndDecrypt(
   }
 
   return {
-    accessToken,
-    refreshToken,
-    expiresAt: row.access_token_expires_at
-      ? new Date(row.access_token_expires_at)
-      : null,
-    status: row.status,
+    kind: "connected",
+    connection: {
+      accessToken,
+      refreshToken,
+      expiresAt: row.access_token_expires_at
+        ? new Date(row.access_token_expires_at)
+        : null,
+      status: row.status,
+    },
   };
 }
 
@@ -317,13 +359,23 @@ export async function callWithFreshAccessToken<T>(
     };
   }
 
-  const connection = await readAndDecrypt(userId, ring, queryFn);
-  if (!connection) {
+  const decrypted = await readAndDecrypt(userId, ring, queryFn);
+  if (decrypted.kind === "not_connected") {
     return {
       ok: false,
       error: { kind: "not_connected", message: "Silpo is not connected" },
     };
   }
+  if (decrypted.kind === "reauth_required") {
+    return {
+      ok: false,
+      error: {
+        kind: "reauth_required",
+        message: "Silpo connection needs re-authorization",
+      },
+    };
+  }
+  const connection = decrypted.connection;
   if (connection.status === "reauth_required") {
     return {
       ok: false,
