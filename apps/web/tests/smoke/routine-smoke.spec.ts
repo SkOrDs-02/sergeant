@@ -119,7 +119,7 @@ test("@critical routine: today → tomorrow → week keeps one selected day", as
   await deferAnonymousMigration(page);
 
   await page.goto("/routine", { waitUntil: "domcontentloaded" });
-  const range = page.getByRole("tablist", { name: "Часовий діапазон" });
+  const range = page.getByRole("tablist", { name: "Діапазон стрічки" });
   const week = page.getByRole("group", { name: "Тиждень" });
 
   for (const label of ["Сьогодні", "Завтра", "Тиждень"]) {

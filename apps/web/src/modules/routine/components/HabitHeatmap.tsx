@@ -49,9 +49,33 @@ function cellBg(ratio: number, isFuture: boolean): string {
 export interface HabitHeatmapProps {
   habits: Habit[] | null | undefined;
   completions: RoutineState["completions"] | null | undefined;
+  /**
+   * Скільки ISO-тижнів історії малювати. Дефолт — рік (`HISTORY_WEEKS`);
+   * коротші вікна приходять із перемикача діапазону на сторінці статистики
+   * (`lib/statsRanges.ts`).
+   */
+  historyWeeks?: number;
+  /** Скільки тижнів look-ahead малювати після сьогоднішнього. */
+  futureWeeks?: number;
+  /** Як назвати вікно в підказці над сіткою — «рік», «3 місяці». */
+  historyLabel?: string;
+  /**
+   * Підказка над сіткою. Дефолт згадує горизонтальний скрол — правда для
+   * річного вікна, але НЕ для коротших: 13 тижнів вміщаються у ширину екрана
+   * без скролера, і «гортай ліворуч» там просто неправда. Тому короткі вікна
+   * передають свій рядок (`RoutineStatsRange.heatmapCaption`).
+   */
+  caption?: string;
 }
 
-export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
+export function HabitHeatmap({
+  habits,
+  completions,
+  historyWeeks = HISTORY_WEEKS,
+  futureWeeks = FUTURE_WEEKS,
+  historyLabel = "рік",
+  caption,
+}: HabitHeatmapProps) {
   const [selected, setSelected] = useState<string | null>(null);
   const [focusedKey, setFocusedKey] = useState<string | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -97,8 +121,8 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
     // забороняє. Вмикати `"scheduled"` без freeze не можна.
     //
     // Числа зросли одноразово, тому METRICS_VERSION піднято до 2.
-    const grid = buildHeatmapGrid(habits, completions, today, HISTORY_WEEKS, {
-      futureWeeks: FUTURE_WEEKS,
+    const grid = buildHeatmapGrid(habits, completions, today, historyWeeks, {
+      futureWeeks,
       denominator: "scheduled",
       freezePausedPast: true,
     });
@@ -138,7 +162,7 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
     });
 
     return { weeks, monthMarkers };
-  }, [habits, completions]);
+  }, [habits, completions, historyWeeks, futureWeeks]);
 
   // key → (w, d) lookup for O(1) arrow-key navigation
   const cellPositions = useMemo(() => {
@@ -244,7 +268,8 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
       </SectionHeading>
 
       <div className="mb-2 text-style-caption text-subtle">
-        Відкривається на сьогодні — гортай ліворуч, щоб побачити історію за рік.
+        {caption ??
+          `Відкривається на сьогодні — гортай ліворуч, щоб побачити історію за ${historyLabel}.`}
       </div>
 
       <div ref={viewportRef} className="overflow-x-auto -mx-1 px-1 pb-1">
@@ -268,7 +293,7 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
 
           <div
             role="group"
-            aria-label="Теплова карта активності за рік"
+            aria-label={`Теплова карта активності за ${historyLabel}`}
             className="flex gap-0.5"
           >
             {weeks.map((week, w) => (
