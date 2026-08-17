@@ -66,13 +66,17 @@ export function useSilpoSyncState({
       !isSilpoDisabledError(error) && failureCount < 2,
   });
 
-  const status: SilpoIntegrationStatus = query.data
-    ? query.data.status
-    : query.isError
-      ? isSilpoDisabledError(query.error)
-        ? "disabled"
-        : "unknown"
-      : "unknown";
+  // `SILPO_DISABLED` must win over a stale cached `data` — a refetch that
+  // lands on the kill switch (feature turned off after the cache already
+  // had a "connected" answer) has to flip the card to the quiet disabled
+  // state, not keep showing the last-known-good connection.
+  const status: SilpoIntegrationStatus = isSilpoDisabledError(query.error)
+    ? "disabled"
+    : query.data
+      ? query.data.status
+      : query.isError
+        ? "unknown"
+        : "unknown";
 
   return {
     data: query.data ?? null,

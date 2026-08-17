@@ -107,6 +107,39 @@ describe("useSilpoSyncState", () => {
     expect(result.current.status).toBe("unknown");
   });
 
+  it("prioritizes a 503 SILPO_DISABLED refetch error over a stale 'connected' cache", async () => {
+    mockedSyncState.mockResolvedValueOnce({
+      status: "connected",
+      accessTokenExpiresAt: "2026-08-24T10:00:00.000Z",
+      lastSyncAt: "2026-08-17T09:15:00.000Z",
+      receiptsCount: 5,
+    });
+
+    const { result } = renderHook(() => useSilpoSyncState(), {
+      wrapper: makeWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.status).toBe("connected"));
+
+    mockedSyncState.mockRejectedValueOnce(
+      new ApiError({
+        kind: "http",
+        message: "Service disabled",
+        status: 503,
+        body: { code: "SILPO_DISABLED" },
+        url: "/api/silpo/sync-state",
+      }),
+    );
+
+    result.current.refetch();
+
+    // `query.data` still holds the stale "connected" payload here (React
+    // Query keeps `data` around across a failed refetch) — the kill-switch
+    // error must still win over it.
+    await waitFor(() => expect(result.current.status).toBe("disabled"));
+    expect(result.current.isError).toBe(false);
+  });
+
   it("does not fetch when disabled via the enabled option", () => {
     const { result } = renderHook(() => useSilpoSyncState({ enabled: false }), {
       wrapper: makeWrapper(),

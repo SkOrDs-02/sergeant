@@ -91,6 +91,29 @@ describe("SilpoIntegrationSection", () => {
     renderSection();
 
     expect(await screen.findByText("Зв'язати Сільпо")).toBeInTheDocument();
+    // No leftover receipts — no single point of deletion needed.
+    expect(
+      screen.queryByText("Видалити всі дані Сільпо"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("keeps the wipe action reachable after disconnect when receipts remain", async () => {
+    mockedSyncState.mockResolvedValue({
+      status: "disconnected",
+      accessTokenExpiresAt: null,
+      lastSyncAt: "2026-08-10T09:15:00.000Z",
+      receiptsCount: 3,
+    });
+
+    renderSection();
+
+    expect(await screen.findByText("Зв'язати Сільпо")).toBeInTheDocument();
+    // `findByText` (not `getByText`) — the danger group only appears once
+    // `syncState.receiptsCount` has actually loaded, not at the initial
+    // "unknown" pre-fetch render (which also shows the connect CTA).
+    expect(
+      await screen.findByText("Видалити всі дані Сільпо"),
+    ).toBeInTheDocument();
   });
 
   it("shows connected status with receipt count and last sync", async () => {

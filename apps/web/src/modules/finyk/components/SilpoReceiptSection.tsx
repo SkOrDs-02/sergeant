@@ -57,17 +57,17 @@ export function SilpoReceiptSection({
           />
           <h3 className="text-style-label text-text">{copy.title}</h3>
         </div>
-        <Button
-          variant="secondary"
-          module="finyk"
-          size="xs"
-          disabled
-          title={copy.splitComingSoon}
-        >
+        <Button variant="secondary" module="finyk" size="xs" disabled>
           <Icon name="shuffle" size={15} aria-hidden />
           {copy.splitCta}
         </Button>
       </div>
+      {/* `title` on a disabled button is unreachable by keyboard/screen
+          reader/touch (§ code review PR #819) — a visible caption next to
+          the CTA carries the same "not yet" explanation to everyone. */}
+      <p className="mt-1 text-right text-style-caption text-subtle">
+        {copy.splitComingSoon}
+      </p>
 
       {items.length > 0 ? (
         <ul className="mt-3 space-y-2">

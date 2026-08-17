@@ -90,6 +90,12 @@ export function SilpoIntegrationSection({
   const syncMutation = useSilpoSync();
   const disconnectMutation = useSilpoDisconnect();
   const wipeMutation = useSilpoWipe();
+  // Both mutations are destructive and irreversible (token revoke / data
+  // delete) — while either is in flight, block opening the confirm dialog
+  // again and block re-confirming, so a double-tap can't fire a second
+  // destructive call before the first settles.
+  const destructivePending =
+    wipeMutation.isPending || disconnectMutation.isPending;
 
   // `GET /api/silpo/connect` is a 302 browser-redirect endpoint —
   // navigation-only (see `silpoConnectUrl()` doc comment in
@@ -176,6 +182,10 @@ export function SilpoIntegrationSection({
         danger
         onCancel={() => setConfirmKind(null)}
         onConfirm={() => {
+          // Guard against a second confirm firing while the first
+          // destructive call is still in flight (e.g. a fast double-tap
+          // before the dialog has closed).
+          if (destructivePending) return;
           if (confirmKind === "wipe") void runWipe();
           if (confirmKind === "disconnect") void runDisconnect();
           setConfirmKind(null);
@@ -198,7 +208,7 @@ export function SilpoIntegrationSection({
             <Button
               variant="ghost"
               className="w-full h-11"
-              onClick={refetch}
+              onClick={() => void refetch()}
               disabled={isFetching}
             >
               <Icon name="refresh-cw" size={16} aria-hidden />
@@ -234,6 +244,7 @@ export function SilpoIntegrationSection({
                 variant="danger"
                 className="flex-1 h-11"
                 onClick={() => setConfirmKind("disconnect")}
+                disabled={destructivePending}
               >
                 {COPY.disconnect}
               </Button>
@@ -276,12 +287,15 @@ export function SilpoIntegrationSection({
         )}
       </SettingsSubGroup>
 
-      {(status === "connected" || status === "reauth_required") && (
+      {(status === "connected" ||
+        status === "reauth_required" ||
+        (syncState?.receiptsCount ?? 0) > 0) && (
         <SettingsSubGroup title={COPY.dangerTitle}>
           <Button
             variant="danger"
             className="w-full h-11"
             onClick={() => setConfirmKind("wipe")}
+            disabled={destructivePending}
           >
             <Icon name="trash" size={16} aria-hidden />
             {COPY.wipeCta}
