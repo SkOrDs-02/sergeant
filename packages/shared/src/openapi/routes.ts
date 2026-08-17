@@ -874,6 +874,19 @@ export const paths: ZodOpenApiPathsObject = {
       responses: {
         "302": { description: "Redirect до Silpo OAuth authorization URL." },
         "401": unauthorized,
+        "429": {
+          description: "Rate-limit перевищено (rateLimitExpress).",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+        "502": {
+          description:
+            "SILPO_UPSTREAM_ERROR — не вдалося побудувати authorization URL (metadata discovery впав).",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
         "503": {
           description:
             "SILPO_DISABLED (kill switch) або SILPO_CONFIG_MISSING (redirect URI не сконфігуровано).",

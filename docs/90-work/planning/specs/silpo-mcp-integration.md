@@ -258,7 +258,7 @@ wipe|sync-state|receipts|receipts/:id` + реєстрація в `routes/index.t
   `shared/lib/api/queryKeys.ts` — `silpoKeys`. 44px touch targets, UA-копія
   за style-guide.
 - Owner-скіли: `sergeant-server-api` (основна поверхня) →
-  `sergeant-data-and-migrations` (091) → `sergeant-web-ui`;
+  `sergeant-data-and-migrations` (121) → `sergeant-web-ui`;
   PR-boundary — `sergeant-review-and-merge`.
 - Канони: якщо/коли треки стають продуктовою поведінкою — оновлення
   `finyk.md` (§4 сутності: чек-оверлей) і `nutrition.md` (§9 комора; §8.2 —
@@ -333,7 +333,7 @@ rollout лишається заблокованим гейтом оферти. M
 ## Верифікація (обов'язково)
 
 1. `pnpm check` зелений; contract-тести silpo-схем; snapshot-тест
-   `tools/list`; migration-тест 091 (Testcontainers) + `rollback-sanity`.
+   `tools/list`; migration-тест 121 (Testcontainers) + `rollback-sanity`.
 2. Click-through: Налаштування → «Зв'язати Сільпо» → OAuth-редірект →
    повернення зі статусом connected → «Оновити чеки» → у finyk-транзакції
    «Сільпо» з'являється секція «Чек» з позиціями → «Розбити за чеком» →

@@ -680,25 +680,25 @@ Full rollout playbook: [`docs/04-governance/security/api-internal-hmac.md`](../.
 
 ---
 
-## 24. Silpo MCP integration (walking-skeleton experiment, 2026-08-17)
+## 24. Інтеграція Silpo MCP (walking-skeleton експеримент, 2026-08-17)
 
-Spec: [`docs/90-work/planning/specs/silpo-mcp-integration.md`](../../90-work/planning/specs/silpo-mcp-integration.md) § Експеримент. Exact parity with the `MONO_TOKEN_ENC_KEY*` / `MONO_WEBHOOK_ENABLED` triplet in § 16 — same `KeyRing` helper, same validation shape. **Offer/ToS gate is still open** (spec § Відкриті гейти) — do not flip `SILPO_ENABLED=true` in production until it clears.
+Спека: [`docs/90-work/planning/specs/silpo-mcp-integration.md`](../../90-work/planning/specs/silpo-mcp-integration.md) § Експеримент. Точна парність із трійкою `MONO_TOKEN_ENC_KEY*` / `MONO_WEBHOOK_ENABLED` у § 16 — той самий `KeyRing`-хелпер, та сама форма валідації. **Гейт оферти/ToS досі відкритий** (спека § Відкриті гейти) — не вмикай `SILPO_ENABLED=true` у продакшні, доки він не знятий.
 
-### `SILPO_ENABLED` _(optional, default `false`)_
+### `SILPO_ENABLED` _(опційна, дефолт `false`)_
 
-Feature flag / kill switch for the whole `/api/silpo/*` surface. `false` → every route returns `503 SILPO_DISABLED` (checked inside each handler, after the session guard). `true` requires `SILPO_TOKEN_ENC_KEY`(S), `SILPO_OAUTH_CLIENT_ID`, and `PUBLIC_API_BASE_URL` — startup throws otherwise (`assertStartupEnv`).
+Feature flag / kill switch для всієї поверхні `/api/silpo/*`. `false` → кожен роут відповідає `503 SILPO_DISABLED` (перевірка всередині кожного хендлера, після session guard). `true` вимагає `SILPO_TOKEN_ENC_KEY`(S), `SILPO_OAUTH_CLIENT_ID` і `PUBLIC_API_BASE_URL` — інакше старт падає (`assertStartupEnv`).
 
-### `SILPO_MCP_URL` _(optional, default `https://mcp.silpo.ua/mcp`)_
+### `SILPO_MCP_URL` _(опційна, дефолт `https://mcp.silpo.ua/mcp`)_
 
-Streamable-HTTP JSON-RPC endpoint for the Silpo MCP server (`apps/server/src/modules/silpo/mcpClient.ts`). OAuth metadata discovery (`/.well-known/oauth-authorization-server`) is fetched relative to this URL's origin.
+Streamable-HTTP JSON-RPC endpoint MCP-сервера Сільпо (`apps/server/src/modules/silpo/mcpClient.ts`). Discovery OAuth-метаданих (`/.well-known/oauth-authorization-server`) фетчиться відносно origin-а цього URL.
 
-### `SILPO_OAUTH_CLIENT_ID` _(required if `SILPO_ENABLED=true`)_
+### `SILPO_OAUTH_CLIENT_ID` _(обовʼязкова якщо `SILPO_ENABLED=true`)_
 
-Public OAuth 2.1 client id from Dynamic Client Registration (RFC 7591) against the Silpo authorization server's `registration_endpoint`. **DCR is a one-time ops/runbook step, never run at request time** — `modules/silpo/oauth.ts::registerDynamicClient()` exists as the script entry point, not as route-triggered logic. Re-registration after the shared client_id gets throttled/banned is the same runbook step (spec § Ризики — "Спільний DCR client_id — SPOF на всю базу"), not an automatic fallback.
+Публічний OAuth 2.1 client id з Dynamic Client Registration (RFC 7591) проти `registration_endpoint` авторизаційного сервера Сільпо. **DCR — одноразовий ops/runbook-крок, ніколи не виконується в рантаймі запиту** — `modules/silpo/oauth.ts::registerDynamicClient()` існує як entry point для скрипта, не як route-логіка. Ре-реєстрація після тротлінгу/бану спільного client_id — той самий runbook-крок (спека § Ризики — «Спільний DCR client_id — SPOF на всю базу»), не автоматичний fallback.
 
-### `SILPO_TOKEN_ENC_KEY` / `SILPO_TOKEN_ENC_KEYS` / `SILPO_TOKEN_ENC_KEY_CURRENT_VERSION` _(required if `SILPO_ENABLED=true`)_
+### `SILPO_TOKEN_ENC_KEY` / `SILPO_TOKEN_ENC_KEYS` / `SILPO_TOKEN_ENC_KEY_CURRENT_VERSION` _(обовʼязкові якщо `SILPO_ENABLED=true`)_
 
-AES-256-GCM `KeyRing` for encrypting BOTH token triples (access + refresh) in `silpo_connection` — same format/rotation mechanics as `MONO_TOKEN_ENC_KEY*` (§ 16): `SILPO_TOKEN_ENC_KEYS=v1:<64-hex>,v2:<64-hex>` + `SILPO_TOKEN_ENC_KEY_CURRENT_VERSION=v2`, or the legacy single-key `SILPO_TOKEN_ENC_KEY=<64-hex>` fallback. Generate a key: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`.
+AES-256-GCM `KeyRing` для шифрування ОБОХ токен-трійок (access + refresh) у `silpo_connection` — формат і механіка ротації ті самі, що в `MONO_TOKEN_ENC_KEY*` (§ 16): `SILPO_TOKEN_ENC_KEYS=v1:<64-hex>,v2:<64-hex>` + `SILPO_TOKEN_ENC_KEY_CURRENT_VERSION=v2`, або legacy-фолбек з одним ключем `SILPO_TOKEN_ENC_KEY=<64-hex>`. Згенерувати ключ: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`.
 
 ---
 
