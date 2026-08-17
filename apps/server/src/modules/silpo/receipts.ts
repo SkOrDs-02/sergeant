@@ -1,5 +1,12 @@
 import { z } from "zod";
-import { FinykDomain } from "@sergeant/finyk-domain";
+// Субшлях замість кореневого барела: барел тягне categories.ts →
+// @sergeant/design-tokens, якого нема в server-бандлі (esbuild у
+// Dockerfile.api резолвить УСІ імпорти барела ще до tree-shaking).
+import {
+  matchReceiptsToTransactions,
+  type MonoTxForReceiptMatching,
+  type ReceiptForMatching,
+} from "@sergeant/finyk-domain/domain/receiptMatching";
 import { query as defaultQuery } from "../../db.js";
 import { logger } from "../../obs/logger.js";
 import {
@@ -280,7 +287,7 @@ type MonoTxCandidateRow = {
 async function loadUnresolvedReceipts(
   userId: string,
   queryFn: QueryFn,
-): Promise<FinykDomain.ReceiptForMatching[]> {
+): Promise<ReceiptForMatching[]> {
   const { rows } = await queryFn<{
     receipt_id: string;
     total_kop: number;
@@ -308,7 +315,7 @@ async function loadCandidateTransactions(
   windowStartMs: number,
   windowEndMs: number,
   queryFn: QueryFn,
-): Promise<FinykDomain.MonoTxForReceiptMatching[]> {
+): Promise<MonoTxForReceiptMatching[]> {
   const { rows } = await queryFn<MonoTxCandidateRow>(
     `SELECT t.mono_tx_id AS "id",
             t.amount AS "amountKop",
@@ -357,10 +364,7 @@ async function matchAndLink(
     queryFn,
   );
 
-  const result = FinykDomain.matchReceiptsToTransactions(
-    receipts,
-    transactions,
-  );
+  const result = matchReceiptsToTransactions(receipts, transactions);
 
   for (const m of result.matches) {
     await queryFn(
