@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
-import { WeekDayStrip } from "./WeekDayStrip";
+import { WeekDayStrip, WeekShiftControls } from "./WeekDayStrip";
 
 describe("WeekDayStrip", () => {
   afterEach(cleanup);
@@ -14,7 +14,6 @@ describe("WeekDayStrip", () => {
         selectedDay="2026-07-09"
         todayKey="2026-07-10"
         onSelectDay={onSelectDay}
-        onShiftWeek={vi.fn()}
       />,
     );
 
@@ -27,17 +26,15 @@ describe("WeekDayStrip", () => {
     expect(onSelectDay).toHaveBeenCalled();
   });
 
+  /**
+   * Шеврони переїхали з ряду днів у рядок заголовка (`WeekShiftControls`) —
+   * у ряду вони забирали 100px і не давали семи клітинкам влізти без
+   * скролера, а скролер на iOS давав рожеві смуги. Див. `AI-DANGER` у
+   * `WeekDayStrip`.
+   */
   it("shifts week via prev/next controls", () => {
     const onShiftWeek = vi.fn();
-    render(
-      <WeekDayStrip
-        anchorKey="2026-07-07"
-        selectedDay="2026-07-09"
-        todayKey="2026-07-10"
-        onSelectDay={vi.fn()}
-        onShiftWeek={onShiftWeek}
-      />,
-    );
+    render(<WeekShiftControls onShiftWeek={onShiftWeek} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Попередній тиждень" }));
     expect(onShiftWeek).toHaveBeenCalledWith(-1);
@@ -46,12 +43,28 @@ describe("WeekDayStrip", () => {
     expect(onShiftWeek).toHaveBeenCalledWith(1);
   });
 
+  it("не тримає горизонтального скролера в ряду днів", () => {
+    const { container } = render(
+      <WeekDayStrip
+        anchorKey="2026-07-07"
+        selectedDay="2026-07-09"
+        todayKey="2026-07-10"
+        onSelectDay={vi.fn()}
+      />,
+    );
+
+    expect(container.querySelector(".overflow-x-auto")).toBeNull();
+    const grid = container.querySelector(".grid");
+    expect(grid).not.toBeNull();
+    expect(grid?.className).toContain("grid-cols-4");
+    expect(grid?.className).toContain("sm:grid-cols-7");
+  });
+
   it("repaints exactly one complete selected day after today → tomorrow → week changes", () => {
     const props = {
       anchorKey: "2026-08-03",
       todayKey: "2026-08-03",
       onSelectDay: vi.fn(),
-      onShiftWeek: vi.fn(),
     };
     const { rerender } = render(
       <WeekDayStrip {...props} selectedDay="2026-08-03" />,
