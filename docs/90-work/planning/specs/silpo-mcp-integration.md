@@ -1,7 +1,7 @@
 # SPEC: Інтеграція Silpo MCP — чеки, комора, продуктові дані
 
-> **Last touched:** 2026-07-31 by @Skords-01. **Next review:** 2027-10-07.
-> **Status:** Active — спека ухвалена founder-ом 2026-07-31 (G/H ратифіковано як Pro, хакатон — не подаємось); відкриті гейти: оферта Сільпо, формулювання приватності
+> **Last touched:** 2026-08-17 by @claude. **Next review:** 2026-10-07.
+> **Status:** Active — спека ухвалена founder-ом 2026-07-31 (G/H ратифіковано як Pro, хакатон — не подаємось); відкриті гейти: оферта Сільпо, формулювання приватності. Експериментальний walking skeleton треку A — див. § Експеримент.
 
 ## Контекст
 
@@ -217,14 +217,18 @@ E/F — сателіти відповідних треків після нако
 
 ## Поверхня змін (Phase 1 = трек A, Phase 2+ = трек B)
 
-- `apps/server/src/migrations/091_silpo_integration.sql` (+ `.down.sql`) —
+- `apps/server/src/migrations/121_silpo_integration.sql` (+ `.down.sql`;
+  номер звірити з main на момент PR — Hard Rule #4, генератор `pnpm gen` →
+  migration, гейт `pnpm lint:migrations`) —
   `silpo_connection` (дзеркало mono), `silpo_receipts`
   (PK `(user_id, receipt_id)`, `purchased_at`, `store_id`, `channel
 online|offline`, `payment_hint` (спосіб оплати з чека, якщо MCP віддає —
   §0), `total_kop BIGINT`, `raw JSONB`), `silpo_receipt_items`
   (позиції: name, qty, unit, `price_kop`, category_slug, barcode?),
   `finyk_tx_receipt_links` (PK `(user_id, transaction_id)` → receipt_id) —
-  link-патерн як `finyk_mono_debt_links`. Hard Rule #4.
+  link-патерн як `finyk_mono_debt_links`. Hard Rule #4. `mono_connection`
+  живе лише в raw SQL (без drizzle-моделі) — для silpo-таблиць так само
+  достатньо SQL + типів у `db-schema` за фактичним патерном сусідніх таблиць.
 - `packages/db-schema/src/pg/silpo.ts` + barrel + snapshot-тест.
 - `apps/server/src/modules/silpo/` — `mcpClient.ts` (JSON-RPC, timeouts,
   backoff, `recordExternalHttp("silpo", …)`, snapshot-тест `tools/list`),
@@ -236,8 +240,12 @@ wipe|sync-state|receipts|receipts/:id` + реєстрація в `routes/index.t
   rate-limit; `requireSession`. `disconnect` видаляє лише `silpo_connection`;
   `wipe` — чеки/позиції/лінки (див. § Рішення дизайну).
 - `apps/server/src/env/env.ts` — `SILPO_ENABLED` (kill switch),
-  `SILPO_MCP_URL`, `SILPO_OAUTH_CLIENT_ID`, `SILPO_TOKEN_ENC_KEY(S)` за
-  парним патерном `MONO_*`; документація `env-vars.md`.
+  `SILPO_MCP_URL`, `SILPO_OAUTH_CLIENT_ID`, і трійка
+  `SILPO_TOKEN_ENC_KEY` / `SILPO_TOKEN_ENC_KEYS` /
+  `SILPO_TOKEN_ENC_KEY_CURRENT_VERSION` — точна парність фактичного патерну
+  `MONO_TOKEN_ENC_KEY[S]` + key ring (`lib/keyRing.ts` вже спільний;
+  AES-GCM-хелпери `mono/crypto.ts` ring-генеричні — реюз, не копія);
+  документація `env-vars.md`.
 - `packages/shared/src/schemas/silpo.ts` + `packages/api-client` endpoints +
   contract-тест (Hard Rule #3, `pnpm api:generate-openapi*`).
 - `packages/shared/src/lib/pii.ts` — `silpoToken`, loyalty-поля у
@@ -286,6 +294,27 @@ wipe|sync-state|receipts|receipts/:id` + реєстрація в `routes/index.t
    формулювання приватності (§ Відкриті гейти). HubChat-tools — лише
    deferred (tool-бюджет), confirm перед записом у зовнішній кошик,
    канон nutrition §8.2 оновлюється у PR імплементації.
+
+## Експеримент (2026-08-17)
+
+Гілка `claude/msp-silpo-spec-experiment-vipt1a` — **walking skeleton треку A**
+для оцінки обсягу й вартості інтеграції до спайку §0. Що входить:
+
+- міграція `121_silpo_integration.sql` (+down) — усі чотири таблиці;
+- `apps/server/src/modules/silpo/` — mcpClient (JSON-RPC), oauth (PKCE+DCR),
+  tokenStore (реюз key ring), receipts pull/upsert;
+- `apps/server/src/routes/silpo.ts` — повний REST-контур за спекою;
+- `packages/finyk-domain/receiptMatching.ts` — детермінований matcher з
+  тестами (амбігуїті → не матчимо; «Власний Рахунок» виключено);
+- api-client типи + contract-тест; web: картка інтеграції в налаштуваннях +
+  `silpoKeys`.
+
+Обмеження експерименту: реальний MCP-endpoint не смиканий (спайк §0 не
+пройдений — потрібен акаунт founder-а), тому форми відповідей MCP —
+провізійні zod-схеми з ліберальним парсингом; snapshot-тест `tools/list`
+зафіксує фактичний контракт лише після першого живого прогону. Публічний
+rollout лишається заблокованим гейтом оферти. Merge експерименту ≠ запуск:
+`SILPO_ENABLED` за замовчуванням `false`.
 
 ## Поза скоупом
 
