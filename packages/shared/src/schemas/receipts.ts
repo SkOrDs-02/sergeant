@@ -38,19 +38,62 @@ const receiptItemMoneySchema = z
   .min(-AMOUNT_MINOR_MAX)
   .max(AMOUNT_MINOR_MAX);
 
+/** Межа довжини назви позиції/магазину — експортовано так, щоб сервер
+ * (напр. `analyze.ts::normalizeVisionResult`, який будує чернетку з
+ * довільного LLM-JSON) міг кламп-ити до ТІЄЇ САМОЇ межі, а не тримати
+ * окрему магічну константу, яка може розійтись зі схемою. */
+export const RECEIPT_ITEM_NAME_MAX_LEN = 300;
+export const RECEIPT_STORE_MAX_LEN = 300;
+
 /** Кількість/вага позиції — може бути дробовою (вагові товари, напр. 0.345
- * кг) і теоретично від'ємною (рядок знижки без власної кількості). */
-const receiptItemQtySchema = z.number().finite().min(-1_000_000).max(1_000_000);
+ * кг) і теоретично від'ємною (рядок знижки без власної кількості). Той
+ * самий "reuse for clamping" мотив, що й `RECEIPT_ITEM_NAME_MAX_LEN`. */
+export const RECEIPT_ITEM_QTY_ABS_MAX = 1_000_000;
+const receiptItemQtySchema = z
+  .number()
+  .finite()
+  .min(-RECEIPT_ITEM_QTY_ABS_MAX)
+  .max(RECEIPT_ITEM_QTY_ABS_MAX);
 
 export const ReceiptDraftItemSchema = z.object({
   /** Порядок рядка в чеку, як його віддав парсер ДПС/vision (1-based). */
   position: z.number().int().min(0).max(10_000),
-  name: z.string().min(1).max(300),
+  name: z.string().min(1).max(RECEIPT_ITEM_NAME_MAX_LEN),
   qty: receiptItemQtySchema,
   priceKopiykas: receiptItemMoneySchema,
   sumKopiykas: receiptItemMoneySchema,
 });
 export type ReceiptDraftItem = z.infer<typeof ReceiptDraftItemSchema>;
+
+/**
+ * Дубль `position` у межах ОДНОГО чека → 400 ще тут (review-фікс,
+ * MINOR): без цього першим бар'єром був би `receipt_items_receipt_id_
+ * position_idx` UNIQUE(receipt_id, position) з міграції 121 — pg
+ * unique_violation (23505) без спеціального catch у `save.ts::
+ * insertReceiptItems` (на відміну від `finyk_tx_receipt_links`, де є
+ * SAVEPOINT-обробка) означало б непіймане 500 замість чистого 400 з
+ * поясненням. Застосовано і до `ReceiptDraftSchema` (не лише Save) —
+ * lookup/analyze самі `.parse()`-ять свою відповідь через цю ж форму
+ * (Hard Rule #3), тож дубль-position з кривого ДПС-парсингу теж ловиться
+ * тут, а не проривається до review-екрана невиправним.
+ */
+const receiptDraftItemsSchema = z
+  .array(ReceiptDraftItemSchema)
+  .max(200)
+  .superRefine((items, ctx) => {
+    const seenPositions = new Set<number>();
+    items.forEach((item, idx) => {
+      if (seenPositions.has(item.position)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Дублікат position (${item.position}) у items — кожна позиція чека мусить мати унікальний position`,
+          path: [idx, "position"],
+        });
+        return;
+      }
+      seenPositions.add(item.position);
+    });
+  });
 
 /**
  * Опаковий сирий payload джерела (XML ДПС серіалізований у JSON, або
@@ -95,17 +138,32 @@ const receiptRawPayloadSchema = z
 export const ReceiptDraftSchema = z.object({
   source: z.enum(RECEIPT_DRAFT_SOURCES),
   fiscalNum: z.string().min(1).max(64).nullable(),
-  store: z.string().max(300),
+  store: z.string().max(RECEIPT_STORE_MAX_LEN),
   storeTaxId: z.string().min(1).max(32).nullable(),
   /** ISO-8601 з offset — момент покупки (Kyiv wall-clock конвертований у
    * справжній UTC-момент серверним парсером/нормалізатором). */
   purchasedAt: z.string().datetime({ offset: true }),
   totalKopiykas: z.number().int().min(0).max(AMOUNT_MINOR_MAX),
-  items: z.array(ReceiptDraftItemSchema).max(200),
+  items: receiptDraftItemsSchema,
   /** Лише для `source: 'vision'` — review-екран показує бейдж «перевір
    * суми». `null` для `'dps'` (структуровані дані, довіра висока). */
   confidence: z.number().min(0).max(1).nullable().optional(),
   rawPayload: receiptRawPayloadSchema,
+  /**
+   * Опційний client-generated UUID — retry-дедуп для vision-чеків
+   * (`fiscalNum: null`, спека не визначає партіальний UNIQUE для цих
+   * рядків, review-фікс MAJOR). Клієнт генерує ОДИН РАЗ на спробу
+   * збереження і шле те саме значення в КОЖНОМУ retry — `save.ts`
+   * (`fiscalNum === null` гілка) шукає існуючий чек за ним ПЕРЕД
+   * insert-ом замість сліпого дубль-запису. Живе всередині
+   * `receipts.raw_payload` JSONB (БЕЗ нової колонки/міграції), не в
+   * окремому полі БД. Присутнє в `ReceiptDraftSchema` (не лише Save),
+   * бо `ReceiptSaveRequestSchema` — `.extend()` над цією схемою; сервер
+   * САМ це поле в lookup/analyze-відповідях не проставляє. Без
+   * `clientScanId` — поведінка НЕ змінюється (кожен save з
+   * `fiscalNum: null` і далі створює новий рядок, як і раніше).
+   */
+  clientScanId: z.string().uuid().nullable().optional(),
 });
 export type ReceiptDraft = z.infer<typeof ReceiptDraftSchema>;
 

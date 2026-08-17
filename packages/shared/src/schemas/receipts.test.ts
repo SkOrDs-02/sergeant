@@ -105,6 +105,88 @@ describe("ReceiptDraftSchema", () => {
     );
     expect(r.success).toBe(false);
   });
+
+  // Review-фікс MINOR: дубль position → 400 ще на схемі, інакше
+  // `receipt_items_receipt_id_position_idx` UNIQUE(receipt_id, position)
+  // з міграції 121 дав би непіймане 500 при save.
+  it("відхиляє дубль position у items (superRefine)", () => {
+    const r = ReceiptDraftSchema.safeParse(
+      validDraft({
+        items: [
+          {
+            position: 1,
+            name: "A",
+            qty: 1,
+            priceKopiykas: 100,
+            sumKopiykas: 100,
+          },
+          {
+            position: 1,
+            name: "B",
+            qty: 1,
+            priceKopiykas: 200,
+            sumKopiykas: 200,
+          },
+        ],
+      }),
+    );
+    expect(r.success).toBe(false);
+  });
+
+  it("приймає РІЗНІ position у межах одного чека", () => {
+    const r = ReceiptDraftSchema.safeParse(
+      validDraft({
+        items: [
+          {
+            position: 1,
+            name: "A",
+            qty: 1,
+            priceKopiykas: 100,
+            sumKopiykas: 100,
+          },
+          {
+            position: 2,
+            name: "B",
+            qty: 1,
+            priceKopiykas: 200,
+            sumKopiykas: 200,
+          },
+        ],
+      }),
+    );
+    expect(r.success).toBe(true);
+  });
+
+  // Review-фікс MAJOR (retry-дедуп vision-чеків): опційний clientScanId.
+  describe("clientScanId (retry-дедуп vision-чеків)", () => {
+    it("приймає чернетку БЕЗ clientScanId (undefined) — не ламає існуючих клієнтів", () => {
+      const draft = validDraft() as Record<string, unknown>;
+      expect("clientScanId" in draft).toBe(false);
+      const r = ReceiptDraftSchema.safeParse(draft);
+      expect(r.success).toBe(true);
+    });
+
+    it("приймає валідний uuid", () => {
+      const r = ReceiptDraftSchema.safeParse(
+        validDraft({ clientScanId: "8e6b1f1e-2222-4444-8888-abcdefabcdef" }),
+      );
+      expect(r.success).toBe(true);
+    });
+
+    it("приймає clientScanId: null", () => {
+      const r = ReceiptDraftSchema.safeParse(
+        validDraft({ clientScanId: null }),
+      );
+      expect(r.success).toBe(true);
+    });
+
+    it("відхиляє невалідний uuid", () => {
+      const r = ReceiptDraftSchema.safeParse(
+        validDraft({ clientScanId: "not-a-uuid" }),
+      );
+      expect(r.success).toBe(false);
+    });
+  });
 });
 
 describe("ReceiptLookupRequestSchema", () => {
@@ -173,6 +255,43 @@ describe("ReceiptSaveRequestSchema", () => {
 
   it("відхиляє порожню category", () => {
     const r = ReceiptSaveRequestSchema.safeParse(validDraft({ category: "" }));
+    expect(r.success).toBe(false);
+  });
+
+  it("приймає save-запит з clientScanId (retry-дедуп vision-чеків, review-фікс MAJOR)", () => {
+    const r = ReceiptSaveRequestSchema.safeParse(
+      validDraft({
+        category: "food",
+        source: "vision",
+        fiscalNum: null,
+        clientScanId: "8e6b1f1e-2222-4444-8888-abcdefabcdef",
+      }),
+    );
+    expect(r.success).toBe(true);
+  });
+
+  it("відхиляє дубль position навіть з валідною category (superRefine діє й через .extend())", () => {
+    const r = ReceiptSaveRequestSchema.safeParse(
+      validDraft({
+        category: "food",
+        items: [
+          {
+            position: 1,
+            name: "A",
+            qty: 1,
+            priceKopiykas: 100,
+            sumKopiykas: 100,
+          },
+          {
+            position: 1,
+            name: "B",
+            qty: 1,
+            priceKopiykas: 200,
+            sumKopiykas: 200,
+          },
+        ],
+      }),
+    );
     expect(r.success).toBe(false);
   });
 });
