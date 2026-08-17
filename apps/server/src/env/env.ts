@@ -437,6 +437,16 @@ const envSchema = z.object({
 
   MONO_TOKEN: stringWithDefault(""),
 
+  /**
+   * Персональний токен ДПС (Електронний кабінет → «Токени публічної
+   * частини») для `GET /ws/api_public/rro/chkAll` — чек-скан v1, QR/ДПС-шлях
+   * (`docs/90-work/planning/specs/receipt-scan.md`). Один спільний токен
+   * founder-а на всіх користувачів — дані чека публічні. Відсутність —
+   * толерантний стан: `POST /api/finyk/receipts/lookup` віддає 503 з
+   * людським повідомленням; vision-шлях (`/analyze`) від цього не залежить.
+   */
+  DPS_API_TOKEN: stringWithDefault(""),
+
   RATE_LIMIT_MAX: intFromEnv(100),
 
   RATE_LIMIT_WINDOW_SEC: intFromEnv(60),
@@ -663,10 +673,17 @@ export function assertStartupEnv(): void {
     env.LLM_COACH_PROVIDER,
     env.LLM_NUTRITION_PROVIDER,
     env.LLM_MONO_PROVIDER,
+    env.LLM_RECEIPT_PROVIDER,
   ];
   if (openrouterProviders.includes("openrouter") && !env.OPENROUTER_API_KEY) {
     warnings.push(
       "OPENROUTER_API_KEY is not set but LLM_*_PROVIDER=openrouter — those paths will degrade to StubProvider.",
+    );
+  }
+
+  if (!env.DPS_API_TOKEN) {
+    warnings.push(
+      "DPS_API_TOKEN is not set — POST /api/finyk/receipts/lookup returns 503; /analyze (vision) is unaffected.",
     );
   }
 

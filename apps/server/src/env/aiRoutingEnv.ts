@@ -36,6 +36,14 @@ export const aiRoutingEnvShape = {
   OPENROUTER_MONO_MODEL: stringWithDefault("google/gemini-2.5-flash-lite"),
 
   /**
+   * `POST /api/finyk/receipts/analyze` (чек-скан v1, vision-fallback без
+   * QR — `docs/90-work/planning/specs/receipt-scan.md`). Той самий
+   * Flash-Lite, що вже дефолт для nutrition/mono — 10/10 на пастках
+   * зорового стенду за копійки/чек (спека § Вартість).
+   */
+  OPENROUTER_RECEIPT_MODEL: stringWithDefault("google/gemini-2.5-flash-lite"),
+
+  /**
    * Модель зору під шлюзом. `gemini-2.5-flash-lite` — 10/10 на пастках
    * зорового стенду (розмите фото, порожній кадр, етикетка іноземною,
    * перерахунок порції) за $0.13/1k і 1.3 с. Новіші `gemini-3.1/3.5-flash-lite`
@@ -49,6 +57,14 @@ export const aiRoutingEnvShape = {
   LLM_COACH_PROVIDER: llmProviderEnum("openrouter"),
   LLM_NUTRITION_PROVIDER: llmProviderEnum("openrouter"),
   LLM_MONO_PROVIDER: llmProviderEnum("openrouter"),
+  /**
+   * Провайдер для `POST /api/finyk/receipts/analyze`. `openrouter`
+   * (дефолт) маршрутизує крізь `anthropicMessages({allowOpenRouter:true})`
+   * — той самий транспорт, що nutrition analyze-photo, лише інша
+   * env-пара моделі/провайдера (`modules/finyk/receipts/visionTransport.ts`).
+   * `stub` — без мережі взагалі (тести/dev без ключів).
+   */
+  LLM_RECEIPT_PROVIDER: llmProviderEnum("openrouter"),
 
   LLM_FALLBACK_ENABLED: boolFromEnvLocal(true),
   LLM_DIGEST_FALLBACK_ON_ERROR: boolFromEnvLocal(true),
