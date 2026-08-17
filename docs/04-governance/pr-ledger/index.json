@@ -1,8 +1,17 @@
 {
   "$schema": "../governance/schemas/pr-ledger.schema.json",
   "version": 1,
-  "generated_at": "2026-08-07",
+  "generated_at": "2026-08-17",
   "prs": [
+    {
+      "number": 812,
+      "title": "feat(web): вільне зауваження до фото-аналізу + план розбивки на позиції",
+      "merged_at": "2026-08-17T17:34:48Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": [
+        "docs/90-work/initiatives/0023-photo-analysis-multi-item.md"
+      ]
+    },
     {
       "number": 689,
       "title": "fix(ci): governance-sync відрізняє живе посилання від навмисно мертвого",
