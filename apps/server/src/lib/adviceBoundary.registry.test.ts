@@ -48,6 +48,10 @@ const EXTRACTION_PROMPTS = new Map([
     "finyk/receipts/prompts.ts",
     "розпізнає товарний чек із фото (чек-скан v1 vision-fallback), повертає структурований JSON магазину/сум/позицій — не поради",
   ],
+  [
+    "finyk/import/prompts.ts",
+    "розпізнає скрін банкінгу з фото (масове ведення, Фаза 2а), повертає структурований JSON doc_type/bank/транзакцій-рядків — не поради",
+  ],
 ]);
 
 /**
@@ -64,6 +68,10 @@ const PROMPT_CONSUMERS = new Map([
   [
     "finyk/receipts/visionClient.ts",
     "передає RECEIPT_VISION_SYSTEM_PROMPT з prompts.ts у payload.system — сам тексту не визначає",
+  ],
+  [
+    "finyk/import/visionClient.ts",
+    "передає IMPORT_SCREENSHOT_VISION_SYSTEM_PROMPT з prompts.ts у payload.system — сам тексту не визначає",
   ],
 ]);
 
