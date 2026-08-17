@@ -241,10 +241,10 @@ afterAll(() => {
 const pact = loadPact();
 
 describe("Pact provider replay — consumer=sergeant-api-client, provider=sergeant-server", () => {
-  it("pact file has 44 expected consumer interactions across 29 routes", () => {
+  it("pact file has 51 expected consumer interactions across 35 routes", () => {
     expect(pact.consumer.name).toBe("sergeant-api-client");
     expect(pact.provider.name).toBe("sergeant-server");
-    expect(pact.interactions).toHaveLength(44);
+    expect(pact.interactions).toHaveLength(51);
     const expectedRoutes = new Set([
       // PR-42 baseline (5)
       "GET /api/v1/me",
@@ -285,6 +285,14 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
       // 2026-08-05) додала 3 інтеракції на вже наявний
       // `GET /api/v1/me/preferences` — маршрут той самий, тож набір
       // маршрутів не змінився, змінилась лише їх кількість (41 → 44).
+      // silpo walking-skeleton (PR #819): 7 інтеракцій / 6 маршрутів
+      // (sync-state має і success-, і disabled-інтеракцію; 44 → 51).
+      "GET /api/v1/silpo/receipts",
+      "GET /api/v1/silpo/receipts/rcpt-pact-0001",
+      "GET /api/v1/silpo/sync-state",
+      "POST /api/v1/silpo/disconnect",
+      "POST /api/v1/silpo/sync",
+      "POST /api/v1/silpo/wipe",
     ]);
     const actualRoutes = new Set(
       pact.interactions.map((i) => `${i.request.method} ${i.request.path}`),

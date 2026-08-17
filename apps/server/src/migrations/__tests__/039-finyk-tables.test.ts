@@ -132,10 +132,16 @@ async function resetSchema(p: pg.Pool): Promise<void> {
   await p.query(`GRANT ALL ON SCHEMA public TO public;`);
 }
 
+// `finyk_tx_receipt_links` ділить finyk_-префікс, але належить міграції 121
+// (Silpo-інтеграція), а не 039 — виключаємо з namespace-асертів цього тесту,
+// інакше up-перелік і down-дриль 039 хибно червоніють на чужій таблиці.
+const FOREIGN_FINYK_PREFIX = "finyk_tx_receipt_links";
+
 async function listTables(p: pg.Pool): Promise<string[]> {
   const r = await p.query<{ tablename: string }>(
     `SELECT tablename FROM pg_tables
      WHERE schemaname = 'public' AND tablename LIKE 'finyk_%'
+       AND tablename NOT LIKE '${FOREIGN_FINYK_PREFIX}%'
      ORDER BY tablename`,
   );
   return r.rows.map((row) => row.tablename);
@@ -145,6 +151,7 @@ async function listFinykIndexes(p: pg.Pool): Promise<string[]> {
   const r = await p.query<{ indexname: string }>(
     `SELECT indexname FROM pg_indexes
      WHERE schemaname = 'public' AND indexname LIKE 'finyk_%'
+       AND indexname NOT LIKE '${FOREIGN_FINYK_PREFIX}%'
      ORDER BY indexname`,
   );
   return r.rows.map((row) => row.indexname);
