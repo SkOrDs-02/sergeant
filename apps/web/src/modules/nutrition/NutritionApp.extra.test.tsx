@@ -4,8 +4,10 @@
  * Status: Active
  * Extended tests for NutritionApp covering callback handlers not exercised
  * by the base smoke tests:
- *   • handleOpenMealPhoto  (onOpenMealPhoto from NutritionStartPage —
- *     opens AddMealSheet at its photo step via addMealInitialStep)
+ *   • handleOpenMealPhoto  (onOpenMealPhoto passed to useNutritionPwaAction —
+ *     opens AddMealSheet at its photo step via addMealInitialStep). Раніше
+ *     той самий хендлер приходив ще й з CTA-картки «Огляду»; картку прибрано
+ *     2026-08-17, тож єдиний зовнішній вхід — PWA-шорткат / hub quick-action.
  *   • handleQuickAddMealFromChip  (onQuickAddMeal from NutritionStartPage)
  *   • handleRequestAddMeal + pending "open-add-meal" effect
  *   • handlePullRefresh + handlePullRefreshError  (PTR callbacks)
@@ -364,20 +366,11 @@ vi.mock("./components/NutritionOverlays", () => ({
 // NutritionStartPage exposes the dashboard actions.
 vi.mock("./pages/NutritionStartPage", () => ({
   NutritionStartPage: ({
-    onOpenMealPhoto,
     onRequestAddMeal,
   }: {
-    onOpenMealPhoto: () => void;
     onRequestAddMeal: () => void;
   }) => (
     <div data-testid="nutrition-start-page">
-      <button
-        type="button"
-        data-testid="open-meal-photo"
-        onClick={onOpenMealPhoto}
-      >
-        Open photo
-      </button>
       <button
         type="button"
         data-testid="request-add-meal"
@@ -458,6 +451,7 @@ import NutritionApp from "./NutritionApp";
 import { useNutritionLog } from "./hooks/useNutritionLog";
 import { useNutritionUiState } from "./hooks/useNutritionUiState";
 import { useNutritionRoute } from "./hooks/useNutritionRoute";
+import { useNutritionPwaAction } from "./hooks/useNutritionPwaAction";
 import type { UseNutritionRouteResult } from "./hooks/useNutritionRoute";
 import type { NutritionPage } from "./lib/nutritionRouter";
 import { requestCloudPull } from "@shared/lib/modules/cloudPullRequest";
@@ -482,9 +476,26 @@ beforeEach(() => {
 // ─── Tests ─────────────────────────────────────────────────────────────────
 
 describe("NutritionApp — handleOpenMealPhoto", () => {
+  /**
+   * Хендлер більше не має UI-входу всередині модуля (CTA-картку «Огляду»
+   * прибрано 2026-08-17) — його єдиний зовнішній споживач це
+   * `useNutritionPwaAction` (PWA-шорткат `add_meal_photo` + hub
+   * quick-action). Беремо його прямо з аргументів мокнутого хука.
+   */
+  function openMealPhoto() {
+    const args = vi.mocked(useNutritionPwaAction).mock.calls.at(-1)?.[0];
+    expect(
+      args,
+      "useNutritionPwaAction має отримати onOpenMealPhoto",
+    ).toBeTruthy();
+    act(() => {
+      args!.onOpenMealPhoto();
+    });
+  }
+
   it("opens the add-meal sheet at the photo step", () => {
     render(<NutritionApp />);
-    fireEvent.click(screen.getByTestId("open-meal-photo"));
+    openMealPhoto();
     expect(
       vi.mocked(useNutritionLog)().setAddMealSheetOpen,
     ).toHaveBeenCalledWith(true);
@@ -495,10 +506,10 @@ describe("NutritionApp — handleOpenMealPhoto", () => {
   });
 
   it("a later plain add-meal open resets the sheet back to the source step", () => {
-    // Регресія залишкового кроку: після фото-CTA звичайний FAB «Додати
-    // прийом їжі» не має відкривати sheet на кроці фото.
+    // Регресія залишкового кроку: після входу через фото-шорткат звичайний
+    // FAB «Додати прийом їжі» не має відкривати sheet на кроці фото.
     render(<NutritionApp />);
-    fireEvent.click(screen.getByTestId("open-meal-photo"));
+    openMealPhoto();
     expect(screen.getByTestId("nutrition-overlays")).toHaveAttribute(
       "data-initial-step",
       "photo",
