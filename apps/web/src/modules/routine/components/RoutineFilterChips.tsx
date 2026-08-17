@@ -59,7 +59,13 @@ export function RoutineFilterChips({
 
   return (
     <div
-      className="flex flex-nowrap overflow-x-auto gap-1.5 items-center pb-1 sm:flex-wrap sm:overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      // AI-DANGER: `flex-wrap` без скролера на всіх ширинах — навмисно.
+      // Раніше на мобільному тут був `overflow-x-auto`, який створював
+      // композиторний шар; iOS малював його зі зсувом, і заливка активного
+      // чипа зʼявлялась на сусідньому. Кількість тег-чипів змінна, тож
+      // перенос рядком — правильніша поведінка, ніж горизонтальний скрол.
+      // Деталі механізму — у `RoutineCalendarPanel` біля `<Segmented>`.
+      className="flex flex-wrap gap-1.5 items-center pb-1"
       role="group"
       aria-label={COPY.groupLabel}
     >

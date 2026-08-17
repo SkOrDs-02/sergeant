@@ -11,7 +11,7 @@ import { Input } from "@shared/components/ui/Input";
 import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
 import { Segmented } from "@shared/components/ui/Segmented";
 import { EmptyState } from "@shared/components/ui/EmptyState";
-import { WeekDayStrip } from "./WeekDayStrip";
+import { WeekDayStrip, WeekShiftControls } from "./WeekDayStrip";
 import { HabitDetailSheet } from "./HabitDetailSheet";
 import { FizrukDayPlanSheet } from "@fizruk/components/planning/FizrukDayPlanSheet";
 import { SwipeToAction } from "@shared/components/ui/SwipeToAction";
@@ -236,16 +236,29 @@ export function RoutineCalendarPanel({
         size="sm"
         variant="routine"
         ariaLabel="Часовий діапазон"
-        className="overflow-x-auto flex-nowrap sm:flex-wrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [&>button]:shrink-0"
+        // AI-DANGER: без `overflow-x-auto` навмисно. Чотири чипи діапазону
+        // вміщаються в найвужчий підтримуваний екран, а якщо колись не
+        // вмістяться — перенесуться рядком (`flex-wrap` у `Segmented`).
+        // Горизонтальний скролер тут не потрібен, зате він створював
+        // композиторний шар, який iOS малював зі зсувом: заливка обраного
+        // чипа зʼявлялась на сусідньому ПРАВОРУЧ (обрано «Тиждень» —
+        // рожевий «Місяць»). Репорт власника 2026-08-17, підтверджено
+        // зсувом на двох незалежних рядах.
+        className="[&>button]:shrink-0"
         items={timeModeItems}
         value={timeMode}
         onChange={applyTimeMode}
       />
 
       <Card variant="default" radius="lg" padding="sm" className="bg-panel/80">
-        <SectionHeading as="p" size="xs" className="mb-2" variant="routine">
-          Тиждень
-        </SectionHeading>
+        {/* Шеврони тут, а не в ряду днів: там вони забирали 100px і не давали
+            сімці клітинок влізти без скролера (див. `WeekDayStrip`). */}
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <SectionHeading as="p" size="xs" variant="routine">
+            Тиждень
+          </SectionHeading>
+          <WeekShiftControls onShiftWeek={shiftWeekStrip} />
+        </div>
         <WeekDayStrip
           anchorKey={selectedDay}
           selectedDay={selectedDay}
@@ -254,7 +267,6 @@ export function RoutineCalendarPanel({
             setSelectedDay(k);
             setTimeMode("day");
           }}
-          onShiftWeek={shiftWeekStrip}
         />
         {timeMode === "day" && (
           <p className="mt-2 text-center text-style-caption text-subtle">
