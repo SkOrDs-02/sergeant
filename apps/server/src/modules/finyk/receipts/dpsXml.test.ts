@@ -240,3 +240,114 @@ describe("parseDpsCheckXml — згруповані тисячні суми (MAJ
     expect(parsed?.items[0]?.sumKopiykas).toBe(150000); // COST пріоритетний, той самий формат
   });
 });
+
+// Ревʼю PR #818: жодне грошове значення парсера не сміє покидати safe-int /
+// ±AMOUNT_MINOR_MAX (1e9 копійок) межі схеми draft-у — інакше lookup валив
+// би `.parse()` ВЛАСНОЇ відповіді 500-кою замість керованого 502/фолбеку.
+describe("parseDpsCheckXml — safe-int та ±AMOUNT_MINOR_MAX межі грошей", () => {
+  const checkWith = (sum: string, rows: string): string =>
+    `<CHECK><CHECKHEAD><ORGNM>Тест</ORGNM><ORDATE>20260115</ORDATE><ORTIME>120000</ORTIME><SUM>${sum}</SUM></CHECKHEAD><CHECKBODY>${rows}</CHECKBODY></CHECK>`;
+  const ROW_OK = `<ROW><NAME>Товар</NAME><AMOUNT>1</AMOUNT><PRICE>100</PRICE><COST>100</COST></ROW>`;
+
+  it("SUM поза safe integer (цілі копійки «1e307») → null, не Infinity далі", () => {
+    expect(parseDpsCheckXml(checkWith("1e307", ROW_OK))).toBeNull();
+  });
+
+  it("SUM-гривні, чиї копійки переповнюють safe integer («99999999999999999.99») → null", () => {
+    expect(
+      parseDpsCheckXml(checkWith("99999999999999999.99", ROW_OK)),
+    ).toBeNull();
+  });
+
+  it("SUM safe, але понад AMOUNT_MINOR_MAX («2000000000» копійок > 1e9) → null", () => {
+    expect(parseDpsCheckXml(checkWith("2000000000", ROW_OK))).toBeNull();
+  });
+
+  it("від'ємний загальний SUM → null (схема: totalKopiykas ≥ 0)", () => {
+    expect(parseDpsCheckXml(checkWith("-100", ROW_OK))).toBeNull();
+  });
+
+  it("PRICE поза межею → 0-фолбек рядка; COST відсутній → sum теж 0", () => {
+    const parsed = parseDpsCheckXml(
+      checkWith(
+        "100",
+        `<ROW><NAME>Товар</NAME><AMOUNT>1</AMOUNT><PRICE>1e307</PRICE></ROW>`,
+      ),
+    );
+    expect(parsed?.items[0]).toMatchObject({
+      priceKopiykas: 0,
+      sumKopiykas: 0,
+    });
+  });
+
+  it("добуток price*qty понад AMOUNT_MINOR_MAX (COST відсутній) → sum 0, не 500-подібний overflow", () => {
+    // 1e8 копійок × 1000 шт = 1e11 > 1e9: кожен множник у межах, добуток — ні.
+    const parsed = parseDpsCheckXml(
+      checkWith(
+        "100",
+        `<ROW><NAME>Опт</NAME><AMOUNT>1000</AMOUNT><PRICE>100000000</PRICE></ROW>`,
+      ),
+    );
+    expect(parsed?.items[0]?.priceKopiykas).toBe(100000000);
+    expect(parsed?.items[0]?.sumKopiykas).toBe(0);
+  });
+
+  it("AMOUNT понад RECEIPT_ITEM_QTY_ABS_MAX (2e6 > 1e6) → qty=1 фолбек", () => {
+    const parsed = parseDpsCheckXml(
+      checkWith(
+        "100",
+        `<ROW><NAME>Товар</NAME><AMOUNT>2000000</AMOUNT><PRICE>100</PRICE></ROW>`,
+      ),
+    );
+    expect(parsed?.items[0]?.qty).toBe(1);
+    expect(parsed?.items[0]?.sumKopiykas).toBe(100); // 100 × 1
+  });
+});
+
+// Ревʼю PR #818 (та сама категорія «парсер не сміє ламати власну схему»):
+// position ≤ 10 000 і унікальний, items ≤ 200 — сміттєвий XML деградує
+// graceful-но, а не 400/500 на `.parse()` відповіді.
+describe("parseDpsCheckXml — межі position/кількості рядків", () => {
+  const checkWithRows = (rows: string): string =>
+    `<CHECK><CHECKHEAD><ORGNM>Тест</ORGNM><ORDATE>20260115</ORDATE><ORTIME>120000</ORTIME><SUM>100</SUM></CHECKHEAD><CHECKBODY>${rows}</CHECKBODY></CHECK>`;
+
+  it("нецілий ROWNUM («2.5») → фолбек на порядковий індекс", () => {
+    const parsed = parseDpsCheckXml(
+      checkWithRows(
+        `<ROW ROWNUM="2.5"><NAME>Товар</NAME><AMOUNT>1</AMOUNT><PRICE>100</PRICE><COST>100</COST></ROW>`,
+      ),
+    );
+    expect(parsed?.items[0]?.position).toBe(1);
+  });
+
+  it("ROWNUM понад 10 000 → фолбек на порядковий індекс", () => {
+    const parsed = parseDpsCheckXml(
+      checkWithRows(
+        `<ROW ROWNUM="99999"><NAME>Товар</NAME><AMOUNT>1</AMOUNT><PRICE>100</PRICE><COST>100</COST></ROW>`,
+      ),
+    );
+    expect(parsed?.items[0]?.position).toBe(1);
+  });
+
+  it("дубльовані ROWNUM → усі позиції перенумеровано послідовно 1..n у порядку джерела", () => {
+    const parsed = parseDpsCheckXml(
+      checkWithRows(
+        `<ROW ROWNUM="7"><NAME>А</NAME><AMOUNT>1</AMOUNT><PRICE>100</PRICE><COST>100</COST></ROW>` +
+          `<ROW ROWNUM="7"><NAME>Б</NAME><AMOUNT>1</AMOUNT><PRICE>200</PRICE><COST>200</COST></ROW>`,
+      ),
+    );
+    expect(parsed?.items.map((i) => i.position)).toEqual([1, 2]);
+    expect(parsed?.items.map((i) => i.name)).toEqual(["А", "Б"]);
+  });
+
+  it("понад 200 ROW → рівно 200 items (хвіст відкинуто, чек не валиться)", () => {
+    const rows = Array.from(
+      { length: 205 },
+      (_, i) =>
+        `<ROW ROWNUM="${i + 1}"><NAME>Т${i + 1}</NAME><AMOUNT>1</AMOUNT><PRICE>10</PRICE><COST>10</COST></ROW>`,
+    ).join("");
+    const parsed = parseDpsCheckXml(checkWithRows(rows));
+    expect(parsed?.items).toHaveLength(200);
+    expect(parsed?.items[199]?.name).toBe("Т200");
+  });
+});

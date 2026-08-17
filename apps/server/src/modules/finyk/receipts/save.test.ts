@@ -530,6 +530,136 @@ describe("saveReceiptHandler — vision retry-дедуп через clientScanId
       client.calls.some((c) => c.sql.includes("INSERT INTO receipts")),
     ).toBe(true);
   });
+
+  it("КОНКУРЕНТНА гонка (23505 на receipts_user_client_scan_idx) → ROLLBACK TO SAVEPOINT + reload переможця, 200 alreadyExists", async () => {
+    // Обидва конкурентні запити пройшли дедуп-SELECT до першого INSERT-у;
+    // цей — програв гонку на партіальному UNIQUE (міграція 121).
+    const raceError = Object.assign(new Error("duplicate key"), {
+      code: "23505",
+      constraint: "receipts_user_client_scan_idx",
+    });
+    let receiptSelects = 0;
+    const client = makeFakeClient({
+      selectReceipt: () => {
+        receiptSelects += 1;
+        // 1-й виклик — дедуп-SELECT (переможець ще не був видимий);
+        // 2-й — reload після 23505, переможець уже закомічений.
+        return receiptSelects === 1
+          ? { rows: [] }
+          : { rows: [receiptDbRow({ fiscal_num: null, source: "vision" })] };
+      },
+      insertReceipt: () => {
+        throw raceError;
+      },
+      selectItems: () => ({ rows: [itemDbRow] }),
+      selectLink: () => ({
+        rows: [{ tx_kind: "manual", tx_ref: "expense-1" }],
+      }),
+    });
+    mocks.connect.mockResolvedValue(client);
+
+    const res = makeRes();
+    await saveReceiptHandler(
+      makeReq(
+        baseSaveBody({
+          source: "vision",
+          fiscalNum: null,
+          items: [],
+          clientScanId: CLIENT_SCAN_ID,
+        }),
+      ),
+      res,
+    );
+
+    expect(res.statusCode).toBe(200);
+    const body = res.body as { alreadyExists: boolean };
+    expect(body.alreadyExists).toBe(true);
+    expect(
+      client.calls.some(
+        (c) => c.sql.trim() === "SAVEPOINT insert_vision_receipt",
+      ),
+    ).toBe(true);
+    expect(
+      client.calls.some((c) =>
+        c.sql.trim().startsWith("ROLLBACK TO SAVEPOINT insert_vision_receipt"),
+      ),
+    ).toBe(true);
+    // Програвший гонку НЕ створює власних item/matcher/expense/link.
+    expect(mocks.matchReceiptToMono).not.toHaveBeenCalled();
+    expect(
+      client.calls.some((c) =>
+        c.sql.includes("INSERT INTO finyk_manual_expenses"),
+      ),
+    ).toBe(false);
+    expect(client.calls.some((c) => c.sql.trim() === "COMMIT")).toBe(true);
+  });
+
+  it("23505 з ІНШИМ constraint у vision-гілці → НЕ гонка: пробрасується, ROLLBACK без COMMIT", async () => {
+    const otherError = Object.assign(new Error("duplicate key"), {
+      code: "23505",
+      constraint: "receipts_pkey",
+    });
+    const client = makeFakeClient({
+      selectReceipt: () => ({ rows: [] }),
+      insertReceipt: () => {
+        throw otherError;
+      },
+    });
+    mocks.connect.mockResolvedValue(client);
+
+    await expect(
+      saveReceiptHandler(
+        makeReq(
+          baseSaveBody({
+            source: "vision",
+            fiscalNum: null,
+            items: [],
+            clientScanId: CLIENT_SCAN_ID,
+          }),
+        ),
+        makeRes(),
+      ),
+    ).rejects.toThrow("duplicate key");
+
+    expect(client.calls.some((c) => c.sql.trim() === "ROLLBACK")).toBe(true);
+    expect(client.calls.some((c) => c.sql.trim() === "COMMIT")).toBe(false);
+  });
+
+  it("clientScanId, вкладений клієнтом ЛИШЕ в rawPayload (без body-поля) → дедуп-SELECT працює з ним же", async () => {
+    // Ефективний ключ — те, що реально ляже в raw_payload (і що бачить
+    // партіальний UNIQUE): дедуп-SELECT/guard мусять дивитись туди ж,
+    // інакше конфлікт, видимий індексу, давав би нез'ясовне 500.
+    const client = makeFakeClient({
+      selectReceipt: () => ({
+        rows: [receiptDbRow({ fiscal_num: null, source: "vision" })],
+      }),
+      selectItems: () => ({ rows: [] }),
+      selectLink: () => ({ rows: [] }),
+    });
+    mocks.connect.mockResolvedValue(client);
+
+    const res = makeRes();
+    await saveReceiptHandler(
+      makeReq(
+        baseSaveBody({
+          source: "vision",
+          fiscalNum: null,
+          items: [],
+          rawPayload: { text: "vision JSON", clientScanId: CLIENT_SCAN_ID },
+        }),
+      ),
+      res,
+    );
+
+    expect(res.statusCode).toBe(200);
+    const dedupCall = client.calls.find((c) =>
+      c.sql.includes("raw_payload ->> 'clientScanId'"),
+    );
+    expect(dedupCall?.params?.[2]).toBe(CLIENT_SCAN_ID);
+    expect(
+      client.calls.some((c) => c.sql.includes("INSERT INTO receipts")),
+    ).toBe(false);
+  });
 });
 
 describe("saveReceiptHandler — rollback on failure", () => {

@@ -215,17 +215,18 @@ async function insertManualExpenseForReceipt(
  * (без нового item/matcher/expense) з `alreadyExists: true`, HTTP 200.
  * Новий чек — 201.
  *
- * `fiscalNum: null` (vision без QR) — партіальний unique-індекс не бачить
+ * `fiscalNum: null` (vision без QR) — фіскальний unique-індекс не бачить
  * ці рядки, тож ON CONFLICT-гілку для них не застосовуємо. Без
  * `clientScanId` кожен save = новий рядок (задокументована поведінка,
  * незмінна review-фіксом нижче). З `clientScanId` — клієнт-генерований
  * uuid, що лишається тим самим на КОЖЕН retry того самого save; сервер
  * шукає існуючий чек за ним ПЕРЕД insert-ом
  * (`findExistingVisionReceiptByClientScanId`) — той самий "no new
- * rows/expense on replay" контракт, що fiscalNum-гілка вище, лише ключ
- * ідемпотентності живе в `raw_payload`, не в partial UNIQUE (review-фікс
+ * rows/expense on replay" контракт, що fiscalNum-гілка вище (review-фікс
  * MAJOR: без цього мережевий таймаут+retry на save дублював і чек, і
- * manual-витрату).
+ * manual-витрату). Послідовний retry ловить SELECT; КОНКУРЕНТНУ гонку —
+ * партіальний UNIQUE `receipts_user_client_scan_idx` (міграція 121) на
+ * JSONB-виразі + SAVEPOINT-обробка 23505 у гілці insert-у нижче.
  */
 export default async function saveReceiptHandler(
   req: Request,
@@ -236,9 +237,23 @@ export default async function saveReceiptHandler(
 
   const storeName = body.store.trim() || FALLBACK_STORE_NAME;
   const purchasedAt = new Date(body.purchasedAt);
-  const rawPayloadJson = JSON.stringify(
-    withClientScanId(body.rawPayload, body.clientScanId ?? null),
+  const rawPayloadWithScanId = withClientScanId(
+    body.rawPayload,
+    body.clientScanId ?? null,
   );
+  const rawPayloadJson = JSON.stringify(rawPayloadWithScanId);
+  // ЕФЕКТИВНИЙ ключ ідемпотентності — те, що РЕАЛЬНО ляже в raw_payload і
+  // що бачить партіальний UNIQUE `receipts_user_client_scan_idx` (міграція
+  // 121): body.clientScanId, а без нього — рядковий clientScanId, який
+  // клієнт міг покласти в opaque blob самостійно. Дедуп-SELECT, guard
+  // 23505-гонки нижче і предикат індексу (jsonb_typeof = 'string') мусять
+  // дивитись на ОДНЕ значення — конфлікт, який індекс бачить, а код ні,
+  // давав би нез'ясовне 500 замість reload-у існуючого чека.
+  const effectiveClientScanId =
+    isPlainRecord(rawPayloadWithScanId) &&
+    typeof rawPayloadWithScanId["clientScanId"] === "string"
+      ? rawPayloadWithScanId["clientScanId"]
+      : null;
 
   const client = await pool.connect();
   try {
@@ -284,12 +299,12 @@ export default async function saveReceiptHandler(
         }
       }
     } else {
-      const existingByClientScanId = body.clientScanId
+      const existingByClientScanId = effectiveClientScanId
         ? await findExistingVisionReceiptByClientScanId(
             client,
             userId,
             purchasedAt,
-            body.clientScanId,
+            effectiveClientScanId,
           )
         : undefined;
 
@@ -301,28 +316,64 @@ export default async function saveReceiptHandler(
         receiptRow = existingByClientScanId;
         isNew = false;
       } else {
-        const inserted = await client.query<ReceiptRow>(
-          `INSERT INTO receipts
-             (user_id, source, fiscal_num, store_name, store_tax_id, purchased_at, total_kopiykas, raw_payload)
-           VALUES ($1, $2, NULL, $3, $4, $5, $6, $7::jsonb)
-           RETURNING id, user_id, source, fiscal_num, store_name, store_tax_id,
-                     purchased_at, total_kopiykas, created_at, updated_at`,
-          [
-            userId,
-            body.source,
-            storeName,
-            body.storeTaxId,
-            purchasedAt.toISOString(),
-            body.totalKopiykas,
-            rawPayloadJson,
-          ],
-        );
-        receiptRow = inserted.rows[0];
-        isNew = true;
-        if (!receiptRow) {
-          throw new Error(
-            "receipts INSERT (fiscalNum=null) повернув 0 рядків — драйвер-аномалія",
+        // SAVEPOINT (ревʼю PR #818): дедуп-SELECT вище ловить лише
+        // ПОСЛІДОВНИЙ retry — два КОНКУРЕНТНІ запити з одним clientScanId
+        // обидва бачать «нема рядка» до першого INSERT-у. Гонку закриває
+        // партіальний UNIQUE `receipts_user_client_scan_idx` (міграція
+        // 121): той, хто програв, отримує 23505, відкочується до
+        // savepoint-у (після помилки Postgres блокує транзакцію до
+        // ROLLBACK — той самий патерн, що link_mono нижче) і перечитує
+        // рядок переможця — isNew=false, як у послідовному retry.
+        await client.query("SAVEPOINT insert_vision_receipt");
+        try {
+          const inserted = await client.query<ReceiptRow>(
+            `INSERT INTO receipts
+               (user_id, source, fiscal_num, store_name, store_tax_id, purchased_at, total_kopiykas, raw_payload)
+             VALUES ($1, $2, NULL, $3, $4, $5, $6, $7::jsonb)
+             RETURNING id, user_id, source, fiscal_num, store_name, store_tax_id,
+                       purchased_at, total_kopiykas, created_at, updated_at`,
+            [
+              userId,
+              body.source,
+              storeName,
+              body.storeTaxId,
+              purchasedAt.toISOString(),
+              body.totalKopiykas,
+              rawPayloadJson,
+            ],
           );
+          receiptRow = inserted.rows[0];
+          isNew = true;
+          if (!receiptRow) {
+            throw new Error(
+              "receipts INSERT (fiscalNum=null) повернув 0 рядків — драйвер-аномалія",
+            );
+          }
+        } catch (err) {
+          const clientScanIdRace =
+            typeof err === "object" &&
+            err !== null &&
+            (err as { code?: string }).code === "23505" &&
+            (err as { constraint?: string }).constraint ===
+              "receipts_user_client_scan_idx";
+          if (!clientScanIdRace || effectiveClientScanId === null) throw err;
+          await client.query("ROLLBACK TO SAVEPOINT insert_vision_receipt");
+          receiptRow = await findExistingVisionReceiptByClientScanId(
+            client,
+            userId,
+            purchasedAt,
+            effectiveClientScanId,
+          );
+          isNew = false;
+          // 23505 на receipts_user_client_scan_idx гарантує, що рядок
+          // переможця існує і закомічений (unique-перевірка чекала його
+          // COMMIT-у); порожній reload = аномалія, fail loud (той самий
+          // guard, що fiscalNum-гілка вище).
+          if (!receiptRow) {
+            throw new Error(
+              "23505 на receipts_user_client_scan_idx, але reload за clientScanId порожній — драйвер-аномалія",
+            );
+          }
         }
       }
     }

@@ -125,6 +125,26 @@ CREATE UNIQUE INDEX IF NOT EXISTS receipts_user_fiscal_idx
   ON receipts (user_id, fiscal_num)
   WHERE fiscal_num IS NOT NULL;
 
+-- Конкурентна ідемпотентність vision-ретраю (ревʼю PR #818): pre-INSERT
+-- SELECT у save.ts ловить лише ПОСЛІДОВНИЙ retry того самого clientScanId;
+-- два КОНКУРЕНТНІ запити (подвійний тап / мережевий retry) обидва проходять
+-- дедуп-SELECT до першого INSERT-у й без цього індексу створили б два чеки
+-- і дві manual-витрати. Партіальний UNIQUE перетворює того, хто програв
+-- гонку, на 23505, який save.ts ловить SAVEPOINT-ом і перечитує рядок
+-- переможця (той самий патерн, що finyk_tx_receipt_links_tx_idx нижче).
+-- Предикат дзеркалить findExistingVisionReceiptByClientScanId: лише
+-- vision-чеки БЕЗ fiscal_num (fiscalNum-шлях має власний арбітр вище) і
+-- лише з clientScanId у payload (без нього кожен save — новий рядок,
+-- задокументована поведінка). jsonb_typeof = 'string' (не просто
+-- IS NOT NULL): save.ts читає ключ лише як РЯДОК — нерядкове сміття з
+-- opaque клієнтського blob-а (число/об'єкт під тим самим ключем) не
+-- потрапляє в індекс і не породжує 23505, якого код не вміє обробити.
+CREATE UNIQUE INDEX IF NOT EXISTS receipts_user_client_scan_idx
+  ON receipts (user_id, (raw_payload ->> 'clientScanId'))
+  WHERE source = 'vision'
+    AND fiscal_num IS NULL
+    AND jsonb_typeof(raw_payload -> 'clientScanId') = 'string';
+
 -- «Мої чеки за період» + matcher-вибірка по користувачу, найсвіжіші перші.
 CREATE INDEX IF NOT EXISTS receipts_user_purchased_at_idx
   ON receipts (user_id, purchased_at DESC);

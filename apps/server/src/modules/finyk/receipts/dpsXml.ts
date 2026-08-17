@@ -1,3 +1,9 @@
+import {
+  AMOUNT_MINOR_MAX,
+  RECEIPT_DRAFT_ITEMS_MAX,
+  RECEIPT_ITEM_POSITION_MAX,
+  RECEIPT_ITEM_QTY_ABS_MAX,
+} from "@sergeant/shared";
 import { kyivWallClockToUtc } from "./kyivClock.js";
 
 /**
@@ -182,10 +188,23 @@ function normalizeGroupedMoney(trimmed: string): string {
 }
 
 /**
+ * Копійкове значення придатне для draft-у, лише якщо це safe integer у
+ * межах `±AMOUNT_MINOR_MAX` (ревʼю PR #818): `Math.round(1e307 * 100)` дає
+ * `Infinity`, а safe-but-huge значення (понад ліміт `receiptItemMoneySchema`
+ * / `totalKopiykas`) завалило б `.parse()` ВЛАСНОЇ відповіді lookup-а —
+ * 500 замість керованої відмови. Межа зі схеми, не окрема константа, щоб
+ * парсер і контракт не дрейфували.
+ */
+function toBoundedKopiykas(n: number): number | null {
+  return Number.isSafeInteger(n) && Math.abs(n) <= AMOUNT_MINOR_MAX ? n : null;
+}
+
+/**
  * Гроші (SUM/PRICE/COST) — або ціле число копійок ("15000"), або рядок з
  * десятковим роздільником як гривні ("150.00" / "150,00"), можливо із
  * тисячним групуванням ("1 500,00" / "1,500.00" — `normalizeGroupedMoney`
- * вище). Від'ємні значення (рядки знижок) зберігаються як є.
+ * вище). Від'ємні значення (рядки знижок) зберігаються як є. Не-safe-int /
+ * позамежні значення → `null` (як нечитабельні), не Infinity/огром далі.
  */
 function parseMoneyKopiykas(raw: string | null): number | null {
   if (raw == null) return null;
@@ -195,10 +214,10 @@ function parseMoneyKopiykas(raw: string | null): number | null {
   if (normalized.includes(".")) {
     const hryvnia = Number(normalized);
     if (!Number.isFinite(hryvnia)) return null;
-    return Math.round(hryvnia * 100);
+    return toBoundedKopiykas(Math.round(hryvnia * 100));
   }
   const n = Number(normalized);
-  return Number.isFinite(n) ? Math.trunc(n) : null;
+  return Number.isFinite(n) ? toBoundedKopiykas(Math.trunc(n)) : null;
 }
 
 /**
@@ -299,12 +318,19 @@ export function parseDpsCheckXml(xml: string): ParsedDpsCheck | null {
   const timeParts = parseDpsTime(extractFirstTag(head, "ORTIME"));
   const purchasedAt = kyivWallClockToUtc({ ...dateParts, ...timeParts });
 
+  // Від'ємний загальний SUM — не легітимний чек (схема draft-у:
+  // totalKopiykas ≥ 0; на відміну від рядків-знижок, де мінус легальний).
   const totalKopiykas = parseMoneyKopiykas(extractFirstTag(head, "SUM"));
-  if (totalKopiykas == null) return null;
+  if (totalKopiykas == null || totalKopiykas < 0) return null;
 
   const items: ParsedDpsCheckItem[] = [];
   const rowBlocks = extractAllTagBlocks(body, "ROW");
   for (let i = 0; i < rowBlocks.length; i++) {
+    // Кап схеми draft-у (`receiptDraftItemsSchema.max`) — хвіст понад
+    // межу відкидаємо тут, а не валимо весь lookup на `.parse()` власної
+    // відповіді (реальний чек на 200+ позицій — за межами правдоподібного,
+    // це захист від сміттєвого/зловмисного XML).
+    if (items.length >= RECEIPT_DRAFT_ITEMS_MAX) break;
     const block = rowBlocks[i];
     if (!block) continue;
     const name = extractFirstTag(block.content, "NAME");
@@ -312,12 +338,19 @@ export function parseDpsCheckXml(xml: string): ParsedDpsCheck | null {
 
     const qtyRaw = extractFirstTag(block.content, "AMOUNT");
     const qtyParsed = qtyRaw != null ? Number(qtyRaw.replace(",", ".")) : 1;
-    // Нечитабельна/нульова/від'ємна кількість → 1 (безпечний дефолт, той
-    // самий підхід, що ORDATE/ORTIME/ROWNUM fallback-и вище) — 0/від'ємне
-    // AMOUNT для звичайного рядка товару найімовірніше зламаний парсинг,
-    // не легітимний домен-кейс (на відміну від рядка знижки, який кодує
-    // від'ємність через PRICE/COST, не AMOUNT).
-    const qty = Number.isFinite(qtyParsed) && qtyParsed > 0 ? qtyParsed : 1;
+    // Нечитабельна/нульова/від'ємна/позамежна кількість → 1 (безпечний
+    // дефолт, той самий підхід, що ORDATE/ORTIME/ROWNUM fallback-и вище) —
+    // 0/від'ємне AMOUNT для звичайного рядка товару найімовірніше зламаний
+    // парсинг, не легітимний домен-кейс (на відміну від рядка знижки, який
+    // кодує від'ємність через PRICE/COST, не AMOUNT); понад
+    // `RECEIPT_ITEM_QTY_ABS_MAX` — та сама категорія сміття, і схема
+    // draft-у такий qty однаково не пропустить.
+    const qty =
+      Number.isFinite(qtyParsed) &&
+      qtyParsed > 0 &&
+      qtyParsed <= RECEIPT_ITEM_QTY_ABS_MAX
+        ? qtyParsed
+        : 1;
     const priceKopiykas =
       parseMoneyKopiykas(extractFirstTag(block.content, "PRICE")) ?? 0;
     const costKopiykas = parseMoneyKopiykas(
@@ -325,20 +358,59 @@ export function parseDpsCheckXml(xml: string): ParsedDpsCheck | null {
     );
     const rowNum = Number(extractAttr(block.attrs, "ROWNUM"));
 
+    // COST з ДПС має пріоритет (структуровані дані джерела, не наш
+    // добуток). Фолбек — округлений ДОБУТОК price*qty, НЕ
+    // price*round(qty): останнє спотворює вагові рядки (0.850 кг ×
+    // 8235 копійок/кг раніше округлював qty ДО множення —
+    // Math.round(0.85)=1 → 8235×1=8235 — замість Math.round(8235×0.85)
+    // = 7000). Добуток теж проганяється через safe-int/±AMOUNT_MINOR_MAX
+    // межу (ревʼю PR #818): price і qty окремо валідні, а їх добуток міг
+    // би переповнити контракт — тоді 0 («сума нечитабельна», користувач
+    // виправить на review-екрані), не 500 на серіалізації відповіді.
+    const derivedSum = toBoundedKopiykas(Math.round(priceKopiykas * qty));
+
     items.push({
-      position: Number.isFinite(rowNum) && rowNum > 0 ? rowNum : i + 1,
+      position:
+        Number.isInteger(rowNum) &&
+        rowNum > 0 &&
+        rowNum <= RECEIPT_ITEM_POSITION_MAX
+          ? rowNum
+          : i + 1,
       name,
       qty,
       priceKopiykas,
-      // COST з ДПС має пріоритет (структуровані дані джерела, не наш
-      // добуток). Фолбек — округлений ДОБУТОК price*qty, НЕ
-      // price*round(qty): останнє спотворює вагові рядки (0.850 кг ×
-      // 8235 копійок/кг раніше округлював qty ДО множення —
-      // Math.round(0.85)=1 → 8235×1=8235 — замість Math.round(8235×0.85)
-      // = 7000).
-      sumKopiykas: costKopiykas ?? Math.round(priceKopiykas * qty),
+      sumKopiykas: costKopiykas ?? derivedSum ?? 0,
     });
   }
 
-  return { fiscalNum, store, storeTaxId, purchasedAt, totalKopiykas, items };
+  // Схемний інваріант draft-у: position унікальний у межах чека і
+  // ≤ RECEIPT_ITEM_POSITION_MAX. Сирі ROWNUM-и можуть дублюватись або
+  // мішатись із `i + 1`-фолбеками (дірки від пропущених рядків здатні
+  // виштовхнути i+1 за межу на сміттєвому XML) — на будь-яке порушення
+  // перенумеровуємо ВСІ позиції послідовно 1..n, зберігаючи порядок
+  // джерела: краще стабільна синтетична нумерація, ніж 400/500 від
+  // `.parse()` власної відповіді.
+  const seenPositions = new Set<number>();
+  const positionsValid = items.every((item) => {
+    if (
+      item.position > RECEIPT_ITEM_POSITION_MAX ||
+      seenPositions.has(item.position)
+    ) {
+      return false;
+    }
+    seenPositions.add(item.position);
+    return true;
+  });
+  const normalizedItems = positionsValid
+    ? items
+    : items.map((item, idx) => ({ ...item, position: idx + 1 }));
+
+  return {
+    fiscalNum,
+    store,
+    storeTaxId,
+    purchasedAt,
+    totalKopiykas,
+    items: normalizedItems,
+  };
 }
