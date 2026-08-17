@@ -1,8 +1,17 @@
 {
   "$schema": "../governance/schemas/pr-ledger.schema.json",
   "version": 1,
-  "generated_at": "2026-08-07",
+  "generated_at": "2026-08-17",
   "prs": [
+    {
+      "number": 817,
+      "title": "docs(docs): розширити спеку чек-скану Фазою 2 «масове ведення»",
+      "merged_at": "2026-08-17T20:17:00Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": [
+        "docs/90-work/initiatives/0022-import-from-external-trackers.md"
+      ]
+    },
     {
       "number": 689,
       "title": "fix(ci): governance-sync відрізняє живе посилання від навмисно мертвого",

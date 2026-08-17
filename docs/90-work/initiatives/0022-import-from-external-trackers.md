@@ -152,3 +152,14 @@
 **Звички (Фаза-out на потім):**
 
 - [Habitica & Loop Habit Tracker — Data Export](https://habitica.fandom.com/wiki/Data_Export) — `history.csv` / CSV-ZIP по звичці.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                          | Merged     |
+| ------------------------------------------------------ | -------------------------------------------------------------- | ---------- |
+| [#817](https://github.com/Skords-01/Sergeant/pull/817) | docs(docs): розширити спеку чек-скану Фазою 2 «масове ведення» | 2026-08-17 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
