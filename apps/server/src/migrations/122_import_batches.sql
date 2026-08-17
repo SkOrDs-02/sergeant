@@ -68,7 +68,18 @@ CREATE TABLE IF NOT EXISTS import_batches (
   rows_skipped      INTEGER NOT NULL DEFAULT 0,
   created_row_ids   JSONB NOT NULL DEFAULT '[]',
   created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  updated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  -- Ревʼю PR #818: лічильники — невідʼємні за визначенням, а
+  -- created_row_ids зобовʼязаний лишатись МАСИВОМ — обʼєкт/рядок/число
+  -- тут мовчки зламали б undo («немає що tombstone-ити»).
+  CONSTRAINT import_batches_counts_nonnegative_check CHECK (
+    rows_total >= 0
+    AND rows_created >= 0
+    AND rows_linked >= 0
+    AND rows_skipped >= 0
+  ),
+  CONSTRAINT import_batches_created_row_ids_array_check
+    CHECK (jsonb_typeof(created_row_ids) = 'array')
 );
 
 -- «Журнал моїх імпортів» — найсвіжіші перші. Спека прямо описує лише

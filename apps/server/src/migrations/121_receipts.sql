@@ -23,9 +23,13 @@
 --
 -- `fiscal_num` — фіскальний номер чека з QR (`fn` у URL ДПС кабінету);
 -- NULL для vision-чеків без QR. Партіальний UNIQUE нижче на
--- `(user_id, source, fiscal_num) WHERE fiscal_num IS NOT NULL` робить
--- повторний скан того самого чека ідемпотентним no-op (спека: «повторний
--- скан того ж чека НЕ створює дубль»).
+-- `(user_id, fiscal_num) WHERE fiscal_num IS NOT NULL` робить повторний
+-- скан того самого чека ідемпотентним no-op (спека: «повторний скан
+-- того ж чека НЕ створює дубль»). `source` у ключі НЕМАЄ навмисно
+-- (ревʼю PR #818): фіскальний номер ідентифікує паперовий чек незалежно
+-- від шляху потрапляння — ДПС-скан сьогодні і silpo-історія завтра
+-- мають злитись в один рядок, інакше silpo-шлях продублював би вже
+-- засканований чек разом із витратою.
 --
 -- `total_kopiykas BIGINT` — Hard Rule #1: `pg` повертає bigint як
 -- string — coerce до `number` у серіалізаторі, ніколи не віддавати
@@ -111,12 +115,14 @@ CREATE TABLE IF NOT EXISTS receipts (
   CONSTRAINT receipts_source_check CHECK (source IN ('dps', 'vision', 'silpo'))
 );
 
--- Ідемпотентний повторний скан того самого чека — no-op замість дубля.
+-- Ідемпотентний повторний скан того самого чека — no-op замість дубля,
+-- крос-джерельно (без source у ключі: dps-скан і майбутня silpo-історія
+-- того самого фіскального чека — один рядок, див. шапку файлу).
 -- WHERE fiscal_num IS NOT NULL: vision-чеки без фіскального номера не
 -- беруть участі в цьому обмеженні (дедуп для чеків без QR у v1 не
 -- визначений спекою).
-CREATE UNIQUE INDEX IF NOT EXISTS receipts_user_source_fiscal_idx
-  ON receipts (user_id, source, fiscal_num)
+CREATE UNIQUE INDEX IF NOT EXISTS receipts_user_fiscal_idx
+  ON receipts (user_id, fiscal_num)
   WHERE fiscal_num IS NOT NULL;
 
 -- «Мої чеки за період» + matcher-вибірка по користувачу, найсвіжіші перші.
@@ -124,7 +130,7 @@ CREATE INDEX IF NOT EXISTS receipts_user_purchased_at_idx
   ON receipts (user_id, purchased_at DESC);
 
 COMMENT ON TABLE receipts IS
-  'Один розпізнаний чек (QR/ДПС, vision-фото, або координація з силпо-спекою). docs/90-work/planning/specs/receipt-scan.md § Модель даних. Ідемпотентний повторний скан того ж чека — partial UNIQUE(user_id, source, fiscal_num) WHERE fiscal_num IS NOT NULL.';
+  'Один розпізнаний чек (QR/ДПС, vision-фото, або координація з силпо-спекою). docs/90-work/planning/specs/receipt-scan.md § Модель даних. Ідемпотентний повторний скан того ж чека — partial UNIQUE(user_id, fiscal_num) WHERE fiscal_num IS NOT NULL, крос-джерельний (без source у ключі).';
 
 COMMENT ON COLUMN receipts.total_kopiykas IS
   'Сума чека, kopiykas. Hard Rule #1: pg повертає BIGINT як string — coerce до number у серіалізаторі, ніколи не віддавати рядок API-споживачу чи в RQ-кеш.';
@@ -133,7 +139,7 @@ COMMENT ON COLUMN receipts.raw_payload IS
   'Сирий payload джерела (XML з ДПС, серіалізований у JSON перед збереженням; або JSON-відповідь vision-LLM). NOT NULL без дефолту — insert завжди несе реальні дані джерела. Може містити адресу магазину — не піднімати в логи понад pino-редакцію (Hard Rule #21).';
 
 COMMENT ON COLUMN receipts.fiscal_num IS
-  'Фіскальний номер чека (fn з QR URL ДПС). NULL для vision-чеків без QR. Разом із (user_id, source) — ключ ідемпотентності повторного сканування.';
+  'Фіскальний номер чека (fn з QR URL ДПС). NULL для vision-чеків без QR. Разом із user_id — крос-джерельний ключ ідемпотентності повторного сканування (source у ключі немає навмисно).';
 
 CREATE TABLE IF NOT EXISTS receipt_items (
   id                BIGSERIAL PRIMARY KEY,
@@ -150,7 +156,11 @@ CREATE TABLE IF NOT EXISTS receipt_items (
 -- (sergeant-data-and-migrations/references/schema-foreign-key-indexes.md)
 -- — цей індекс і покриває FK-джойн, і дає впорядкованість
 -- `ORDER BY position` для розгортки транзакції безкоштовно.
-CREATE INDEX IF NOT EXISTS receipt_items_receipt_id_position_idx
+-- UNIQUE (ревʼю PR #818): position привласнює writer (save нормалізує
+-- порядок позицій у межах чека), тож дубль position можливий лише як
+-- баг вставки — унікальність ловить його на межі БД замість
+-- недетермінованого порядку в розгортці.
+CREATE UNIQUE INDEX IF NOT EXISTS receipt_items_receipt_id_position_idx
   ON receipt_items (receipt_id, position);
 
 COMMENT ON TABLE receipt_items IS
@@ -176,7 +186,12 @@ CREATE TABLE IF NOT EXISTS finyk_tx_receipt_links (
 -- Зворотний lookup «чи має ця транзакція привʼязаний чек» — читається на
 -- кожен рендер списку транзакцій finyk (спека § Розгортка). Caveat щодо
 -- user-ізоляції — дивись великий коментар про tx_ref вище в шапці файлу.
-CREATE INDEX IF NOT EXISTS finyk_tx_receipt_links_tx_idx
+-- UNIQUE (ревʼю PR #818): кардинальність 1:1 в обидва боки — одна
+-- транзакція має щонайбільше один чек (спека: «лінк без дубля»).
+-- Save-хендлер трактує 23505 тут як «цей платіж уже має чек»: чек
+-- зберігається unmatched (першокласний стан), manual expense НЕ
+-- створюється — інакше та сама покупка порахувалась би двічі.
+CREATE UNIQUE INDEX IF NOT EXISTS finyk_tx_receipt_links_tx_idx
   ON finyk_tx_receipt_links (tx_kind, tx_ref);
 
 COMMENT ON TABLE finyk_tx_receipt_links IS

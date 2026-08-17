@@ -22,14 +22,15 @@
 // incrementally — so "last one wins" reconstructs the constraint as it
 // exists in a freshly-migrated database, without needing a live Postgres.
 //
-// Heuristic scope note: the regex below matches ANY `CHECK (source IN
-// (...))` in the migrations directory, not just ones scoped to
-// `ai_memories`. At time of writing this is safe — every such occurrence in
-// `apps/server/src/migrations/**` belongs to `ai_memories_source_check`
-// (verified via `grep -rn "CHECK (source IN" apps/server/src/migrations`).
-// If a future migration adds an unrelated `source` CHECK column on a
-// different table using this exact phrasing, this test would need to be
-// scoped to `ai_memories`/`ai_memories_source_check` explicitly.
+// Scope note: спершу тест матчив БУДЬ-ЯКИЙ `CHECK (source IN (...))` у
+// директорії міграцій — це було безпечно, поки єдиним таким констрейнтом
+// був `ai_memories_source_check`. Міграція 121 (`receipts.source IN
+// ('dps','vision','silpo')`) зламала це припущення рівно так, як
+// передбачав старий коментар, тому тепер сканування скоуплене до
+// SQL-стейтментів, що згадують `ai_memories`: файл ріжеться по `;`, і
+// регекс проганяється лише по стейтментах з `ai_memories` усередині
+// (покриває і inline CHECK у CREATE TABLE 025, і ALTER TABLE ... ADD
+// CONSTRAINT у 028/068/118).
 
 import { describe, it, expect } from "vitest";
 import { readFileSync, readdirSync } from "node:fs";
@@ -58,7 +59,14 @@ function currentSourceCheckList(): string[] {
   let last: string[] | null = null;
   for (const file of files) {
     const content = readFileSync(path.join(MIGRATIONS_DIR, file), "utf8");
-    const matches = [...content.matchAll(CHECK_SOURCE_IN_RE)];
+    // Лише стейтменти про ai_memories — інші таблиці мають право на
+    // власні `CHECK (source IN (...))` (першою стала receipts у 121).
+    const aiMemoriesStatements = content
+      .split(";")
+      .filter((stmt) => /ai_memories/i.test(stmt));
+    const matches = aiMemoriesStatements.flatMap((stmt) => [
+      ...stmt.matchAll(CHECK_SOURCE_IN_RE),
+    ]);
     if (matches.length === 0) continue;
     // A single migration is not expected to touch this constraint more than
     // once; if it did, the last match in the file wins (mirrors SQL
