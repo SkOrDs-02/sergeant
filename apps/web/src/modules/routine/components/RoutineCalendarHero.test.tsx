@@ -19,6 +19,7 @@ describe("RoutineCalendarHero", () => {
     render(
       <RoutineCalendarHero
         rangeLabel="Сьогодні"
+        timeMode="today"
         headlineDate="10 липня"
         dayProgress={{ completed: 2, scheduled: 4 }}
         filteredCount={5}
@@ -36,11 +37,41 @@ describe("RoutineCalendarHero", () => {
     expect(screen.queryByText("Виконання")).not.toBeInTheDocument();
   });
 
+  /**
+   * Кікер був хардкодом «Сьогоднішні звички» на всі режими, тож «Сьогодні» і
+   * «Місяць» читались однаково (репорт власника 2026-08-17). Мод-залежний
+   * `rangeLabel` існував, але йшов лише в `aria-label`.
+   */
+  it("кікер називає зріз, а не завжди «сьогоднішні»", () => {
+    const seen = new Set<string>();
+    for (const mode of ["today", "tomorrow", "day", "week", "month"] as const) {
+      render(
+        <RoutineCalendarHero
+          rangeLabel="—"
+          timeMode={mode}
+          headlineDate="10 липня"
+          dayProgress={{ completed: 0, scheduled: 0 }}
+          filteredCount={0}
+          activeHabitsCount={0}
+          completionRate={{ rate: 0, completed: 0, scheduled: 0 }}
+          currentStreak={0}
+          onOpenDayReport={vi.fn()}
+        />,
+      );
+      const kicker = screen.getByText(/звички/i).textContent ?? "";
+      expect(seen.has(kicker)).toBe(false);
+      seen.add(kicker);
+      cleanup();
+    }
+    expect(seen.size).toBe(5);
+  });
+
   it("opens day report via progress ring click", () => {
     const onOpenDayReport = vi.fn();
     render(
       <RoutineCalendarHero
         rangeLabel="Сьогодні"
+        timeMode="today"
         headlineDate="10 липня"
         dayProgress={{ completed: 1, scheduled: 1 }}
         filteredCount={1}

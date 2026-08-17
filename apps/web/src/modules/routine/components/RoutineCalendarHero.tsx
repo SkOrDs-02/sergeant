@@ -11,11 +11,31 @@ import {
   trackEvent,
 } from "../../../core/observability/analytics";
 import { DayProgressRing } from "./DayProgressRing";
+import type { RoutineTimeMode } from "../context/RoutineCalendarContext";
 import { useStreakFlame } from "../hooks/useStreakFlame";
 import { claimStreakShownOnce, markStreakSeen } from "../lib/streakExposure";
 
+/**
+ * Назва зрізу для кікера героя. Раніше там був хардкод «Сьогоднішні звички»
+ * на всі режими, тож «Сьогодні» і «Місяць» читались однаково — надто що в
+ * режимі місяця заголовок теж показував сьогоднішню дату (репорт власника
+ * 2026-08-17). Мод-залежний `rangeLabel` існував, але йшов лише в
+ * `aria-label`, тобто його чув скрінрідер і не бачило око.
+ *
+ * Тут саме іменникові фрази, а не назви кнопок: кікер описує, ЩО за набір
+ * показано, а конкретну дату чи діапазон дає заголовок під ним.
+ */
+const SLICE_LABEL: Record<RoutineTimeMode, string> = {
+  today: "Сьогоднішні звички",
+  tomorrow: "Звички на завтра",
+  day: "Звички за день",
+  week: "Звички за тиждень",
+  month: "Звички за місяць",
+};
+
 export interface RoutineCalendarHeroProps {
   rangeLabel: string;
+  timeMode: RoutineTimeMode;
   headlineDate: string;
   dayProgress: { completed: number; scheduled: number };
   filteredCount: number;
@@ -39,6 +59,7 @@ export interface RoutineCalendarHeroProps {
  */
 export function RoutineCalendarHero({
   rangeLabel,
+  timeMode,
   headlineDate,
   dayProgress,
   currentStreak,
@@ -117,7 +138,7 @@ export function RoutineCalendarHero({
         </div>
         <div className="min-w-0 flex-1 pr-12">
           <p className="text-style-caption font-semibold text-hero-ink/95">
-            Сьогоднішні звички
+            {SLICE_LABEL[timeMode]}
           </p>
           <p className="mt-1 text-style-headline text-hero-ink">
             {headlineDate}
