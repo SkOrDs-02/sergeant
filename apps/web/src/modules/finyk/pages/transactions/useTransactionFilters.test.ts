@@ -546,66 +546,6 @@ describe("useTransactionFilters", () => {
     });
   });
 
-  describe("amount range filter (UI-16)", () => {
-    it("defaults amountRange to null and derives bounds from rows", () => {
-      // amounts are kopecks: -12000 = 120₴, -3400 = 34₴
-      const realTx = [mkTx("a", -12000), mkTx("b", -3400)];
-      const { result } = renderHook(() =>
-        useTransactionFilters(buildDefaultParams({ realTx })),
-      );
-      expect(result.current.amountRange).toBeNull();
-      // max abs = 120₴ → rounded up to nearest 50 = 150
-      expect(result.current.amountBounds).toEqual([0, 150]);
-    });
-
-    it("bounds collapse to [0,0] when there are no rows", () => {
-      const { result } = renderHook(() =>
-        useTransactionFilters(buildDefaultParams()),
-      );
-      expect(result.current.amountBounds).toEqual([0, 0]);
-    });
-
-    it("narrows filtered rows to the active absolute UAH range", () => {
-      const realTx = [
-        mkTx("small", -3400), // 34₴
-        mkTx("mid", -12000), // 120₴
-        mkTx("big", -50000), // 500₴
-      ];
-      const { result } = renderHook(() =>
-        useTransactionFilters(buildDefaultParams({ realTx })),
-      );
-      act(() => result.current.setAmountRange([100, 200]));
-      expect(result.current.filtered.map((t) => t.id)).toEqual(["mid"]);
-    });
-
-    it("applies the range to income and expense alike (absolute)", () => {
-      const realTx = [
-        mkTx("inc", 15000), // +150₴
-        mkTx("exp", -15000), // −150₴
-        mkTx("tiny", -100), // −1₴
-      ];
-      const { result } = renderHook(() =>
-        useTransactionFilters(buildDefaultParams({ realTx })),
-      );
-      act(() => result.current.setAmountRange([100, 200]));
-      expect(result.current.filtered.map((t) => t.id).sort()).toEqual([
-        "exp",
-        "inc",
-      ]);
-    });
-
-    it("resets amountRange to null when the month changes", () => {
-      const realTx = [mkTx("a", -12000)];
-      const { result } = renderHook(() =>
-        useTransactionFilters(buildDefaultParams({ realTx })),
-      );
-      act(() => result.current.setAmountRange([50, 100]));
-      expect(result.current.amountRange).toEqual([50, 100]);
-      act(() => result.current.goMonth(-1));
-      expect(result.current.amountRange).toBeNull();
-    });
-  });
-
   describe("monthLabel", () => {
     it("monthLabel is a non-empty string for the current month", () => {
       const { result } = renderHook(() =>

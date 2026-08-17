@@ -6,7 +6,6 @@ import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { TransactionsHeader } from "./TransactionsHeader";
 import { TransactionsBatchToolbar } from "./TransactionsBatchToolbar";
 import { TransactionFilters } from "./TransactionFilters";
-import { TransactionAmountFilter } from "./TransactionAmountFilter";
 import { TransactionList } from "./TransactionList";
 import { TransactionSyncPill } from "./TransactionSyncPill";
 import { useTransactionFilters } from "./useTransactionFilters";
@@ -409,13 +408,6 @@ export function Transactions({
               hasCreditAccounts={filters.creditAccIds.size > 0}
               activeCategoryLabel={filters.activeCategoryLabel}
             />
-            {filters.amountBounds[1] > filters.amountBounds[0] && (
-              <TransactionAmountFilter
-                bounds={filters.amountBounds}
-                value={filters.amountRange}
-                onChange={filters.setAmountRange}
-              />
-            )}
           </section>
         }
         trailing={
