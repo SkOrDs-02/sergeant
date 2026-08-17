@@ -33,6 +33,10 @@ export * from "./nutritionPrefs.js";
 export * from "./nutritionPantries.js";
 export * from "./nutritionLog.js";
 export * from "./quickStats.js";
+// Модель тижневого ккал-графіка (стеля осі, лінія цілі, порожні дні) —
+// спільна для web-`WeekKcalCard` і mobile-`WeekKcalChart`, щоб дзеркала не
+// розходились у шкалі. Див. AI-CONTEXT у weekKcalChart.ts.
+export * from "./weekKcalChart.js";
 export * from "./waterLog.js";
 export * from "./waterHistory.js";
 export * from "./shoppingList.js";
