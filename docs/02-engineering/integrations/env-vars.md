@@ -1,6 +1,6 @@
 # Environment variables — повний reference
 
-> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-11-26.
+> **Last touched:** 2026-08-17 by @claude. **Next review:** 2026-11-27.
 > **Status:** Active
 
 Цей документ — канонічний reference усіх змінних оточення Sergeant. Мінімальний `.env` (12 змінних, потрібних для `pnpm dev:web` + `pnpm dev:server`) лежить у [`/.env.example`](../../../.env.example) у корені репо. Сюди винесено: повний опис, формати, default-и, наслідки незаповненості, перехресні посилання на код / ADR / hardening-ноти.
@@ -677,6 +677,28 @@ Endpoint `/api/internal/alerts/send` приймає `dedupSignature` (stable has
 Replay-вікно для `X-Timestamp` (UNIX seconds, симетрично навколо `now`). 5min default матчить Stripe/GitHub/Slack webhook signatures. Збільшувати лише за наявністю clock-skew у конкретного n8n воркера (видно у Grafana `reason="timestamp_out_of_window"`); зменшувати — лише з твердим NTP-sync на n8n Railway side.
 
 Full rollout playbook: [`docs/04-governance/security/api-internal-hmac.md`](../../04-governance/security/api-internal-hmac.md). Audit context: [`docs/04-governance/security/better-auth-audit-2026-05.md#f5b`](../../04-governance/security/better-auth-audit-2026-05.md).
+
+---
+
+## 24. Silpo MCP integration (walking-skeleton experiment, 2026-08-17)
+
+Spec: [`docs/90-work/planning/specs/silpo-mcp-integration.md`](../../90-work/planning/specs/silpo-mcp-integration.md) § Експеримент. Exact parity with the `MONO_TOKEN_ENC_KEY*` / `MONO_WEBHOOK_ENABLED` triplet in § 16 — same `KeyRing` helper, same validation shape. **Offer/ToS gate is still open** (spec § Відкриті гейти) — do not flip `SILPO_ENABLED=true` in production until it clears.
+
+### `SILPO_ENABLED` _(optional, default `false`)_
+
+Feature flag / kill switch for the whole `/api/silpo/*` surface. `false` → every route returns `503 SILPO_DISABLED` (checked inside each handler, after the session guard). `true` requires `SILPO_TOKEN_ENC_KEY`(S), `SILPO_OAUTH_CLIENT_ID`, and `PUBLIC_API_BASE_URL` — startup throws otherwise (`assertStartupEnv`).
+
+### `SILPO_MCP_URL` _(optional, default `https://mcp.silpo.ua/mcp`)_
+
+Streamable-HTTP JSON-RPC endpoint for the Silpo MCP server (`apps/server/src/modules/silpo/mcpClient.ts`). OAuth metadata discovery (`/.well-known/oauth-authorization-server`) is fetched relative to this URL's origin.
+
+### `SILPO_OAUTH_CLIENT_ID` _(required if `SILPO_ENABLED=true`)_
+
+Public OAuth 2.1 client id from Dynamic Client Registration (RFC 7591) against the Silpo authorization server's `registration_endpoint`. **DCR is a one-time ops/runbook step, never run at request time** — `modules/silpo/oauth.ts::registerDynamicClient()` exists as the script entry point, not as route-triggered logic. Re-registration after the shared client_id gets throttled/banned is the same runbook step (spec § Ризики — "Спільний DCR client_id — SPOF на всю базу"), not an automatic fallback.
+
+### `SILPO_TOKEN_ENC_KEY` / `SILPO_TOKEN_ENC_KEYS` / `SILPO_TOKEN_ENC_KEY_CURRENT_VERSION` _(required if `SILPO_ENABLED=true`)_
+
+AES-256-GCM `KeyRing` for encrypting BOTH token triples (access + refresh) in `silpo_connection` — same format/rotation mechanics as `MONO_TOKEN_ENC_KEY*` (§ 16): `SILPO_TOKEN_ENC_KEYS=v1:<64-hex>,v2:<64-hex>` + `SILPO_TOKEN_ENC_KEY_CURRENT_VERSION=v2`, or the legacy single-key `SILPO_TOKEN_ENC_KEY=<64-hex>` fallback. Generate a key: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`.
 
 ---
 

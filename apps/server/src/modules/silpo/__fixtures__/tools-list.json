@@ -1,0 +1,5 @@
+{
+  "_placeholder": true,
+  "_note": "PLACEHOLDER FIXTURE — replace after spike §0 runs. See docs/90-work/planning/specs/silpo-mcp-integration.md § Фази, step 0: the live https://mcp.silpo.ua/mcp endpoint has not been exercised against a real Silpo account yet, so this file does not reflect the real `tools/list` response. Once the spike runs (founder's own Silpo account), capture the ACTUAL tools/list JSON-RPC result here (the `{tools: [...]}` result object), set `_placeholder` to false (or delete both `_placeholder`/`_note`), and `mcpClient.tools-list-snapshot.test.ts` will start asserting against it instead of skipping — that's the contract-drift belt from spec § Рішення дизайну ('Дрейф схеми tools — контрактний пояс').",
+  "tools": []
+}
