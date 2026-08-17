@@ -321,6 +321,70 @@ describe("useRoutineDerivedData", () => {
     });
   });
 
+  /**
+   * Репорт власника 2026-08-17: герой писав однакове в режимах «Сьогодні» і
+   * «Місяць». Причина — `headlineDate` у місяці брав `selectedDay`, а
+   * `applyMode("month")` ставить його на сьогодні. Тепер місяць показує свій
+   * діапазон, як і тиждень.
+   */
+  describe("headlineDate", () => {
+    it("'month' mode → діапазон місяця, а не сьогоднішня дата", () => {
+      const { result } = renderHook(() =>
+        useRoutineDerivedData(
+          buildParams({
+            timeState: mkTimeState({
+              timeMode: "month",
+              monthCursor: { y: 2026, m: 5 },
+              selectedDay: "2026-06-04",
+            }),
+          }),
+        ),
+      );
+      expect(result.current.headlineDate).toContain("1 червня");
+      expect(result.current.headlineDate).toContain("30 червня");
+      expect(result.current.headlineDate).toContain("—");
+    });
+
+    it("'month' і 'today' більше не читаються однаково", () => {
+      const monthState = mkTimeState({
+        timeMode: "month",
+        monthCursor: { y: 2026, m: 5 },
+        selectedDay: "2026-06-04",
+      });
+      const month = renderHook(() =>
+        useRoutineDerivedData(buildParams({ timeState: monthState })),
+      );
+      const today = renderHook(() =>
+        useRoutineDerivedData(
+          buildParams({ timeState: mkTimeState({ timeMode: "today" }) }),
+        ),
+      );
+      expect(month.result.current.headlineDate).not.toBe(
+        today.result.current.headlineDate,
+      );
+    });
+
+    it("'week' mode → діапазон Пн..Нд поточного тижня", () => {
+      const { result } = renderHook(() =>
+        useRoutineDerivedData(
+          buildParams({ timeState: mkTimeState({ timeMode: "week" }) }),
+        ),
+      );
+      expect(result.current.headlineDate).toContain("1 червня");
+      expect(result.current.headlineDate).toContain("7 червня");
+    });
+
+    it("'today' mode → рівно одна дата, без діапазону", () => {
+      const { result } = renderHook(() =>
+        useRoutineDerivedData(
+          buildParams({ timeState: mkTimeState({ timeMode: "today" }) }),
+        ),
+      );
+      expect(result.current.headlineDate).toContain("4 червня");
+      expect(result.current.headlineDate).not.toContain("—");
+    });
+  });
+
   describe("listQuery filtering", () => {
     it("filtered is empty when listQuery matches nothing", () => {
       const routine = mkRoutine({
