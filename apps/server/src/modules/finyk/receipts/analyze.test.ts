@@ -130,6 +130,138 @@ describe("normalizeVisionResult", () => {
     });
     expect(draft.items).toHaveLength(200);
   });
+
+  // Review-фікс MAJOR: без клампінгу LLM-галюцинація валила б
+  // `ReceiptDraftResponseSchema.parse()` у 500 замість редагованої
+  // чернетки — кожен тест нижче перевіряє ОДНУ межу схеми.
+  describe("клампінг до меж shared-схеми (review-фікс MAJOR)", () => {
+    it("клампить totalKopiykas знизу (LLM дав від'ємне число) до 0", () => {
+      const draft = normalizeVisionResult({
+        store: "x",
+        total_kopiykas: -500,
+        items: [],
+      });
+      expect(draft.totalKopiykas).toBe(0);
+    });
+
+    it("клампить totalKopiykas зверху до AMOUNT_MINOR_MAX", () => {
+      const draft = normalizeVisionResult({
+        store: "x",
+        total_kopiykas: 5_000_000_000,
+        items: [],
+      });
+      expect(draft.totalKopiykas).toBe(1_000_000_000);
+    });
+
+    it("клампить задовгу назву магазину до 300 символів", () => {
+      const draft = normalizeVisionResult({
+        store: "х".repeat(500),
+        total_kopiykas: 1,
+        items: [],
+      });
+      expect(draft.store).toHaveLength(300);
+    });
+
+    it("клампить задовгу назву позиції до 300 символів", () => {
+      const draft = normalizeVisionResult({
+        store: "x",
+        total_kopiykas: 1,
+        items: [
+          { name: "т".repeat(500), qty: 1, price_kopiykas: 1, sum_kopiykas: 1 },
+        ],
+      });
+      expect(draft.items[0]?.name).toHaveLength(300);
+    });
+
+    it("клампить qty у межі [-1_000_000, 1_000_000]", () => {
+      const draft = normalizeVisionResult({
+        store: "x",
+        total_kopiykas: 1,
+        items: [
+          { name: "A", qty: 5_000_000, price_kopiykas: 1, sum_kopiykas: 1 },
+          { name: "B", qty: -5_000_000, price_kopiykas: 1, sum_kopiykas: 1 },
+        ],
+      });
+      expect(draft.items[0]?.qty).toBe(1_000_000);
+      expect(draft.items[1]?.qty).toBe(-1_000_000);
+    });
+
+    it("клампить price_kopiykas/sum_kopiykas у межі [-AMOUNT_MINOR_MAX, AMOUNT_MINOR_MAX]", () => {
+      const draft = normalizeVisionResult({
+        store: "x",
+        total_kopiykas: 1,
+        items: [
+          {
+            name: "A",
+            qty: 1,
+            price_kopiykas: 5_000_000_000,
+            sum_kopiykas: -5_000_000_000,
+          },
+        ],
+      });
+      expect(draft.items[0]?.priceKopiykas).toBe(1_000_000_000);
+      expect(draft.items[0]?.sumKopiykas).toBe(-1_000_000_000);
+    });
+  });
+
+  // Review-фікс MAJOR: регекс перевіряв лише ФОРМАТ дати/часу, не
+  // календарну коректність — `Date.UTC` мовчки "перекочував" неможливі
+  // компоненти (2026-02-31 → березень) замість fallback на "зараз".
+  describe("календарна валідація дати/часу (review-фікс MAJOR)", () => {
+    it("2026-02-31 (формат ОК, календарно неможливо) → fallback на 'зараз', НЕ перекочена дата", () => {
+      const before = Date.now();
+      const draft = normalizeVisionResult({
+        store: "x",
+        date: "2026-02-31",
+        time: "10:00",
+        total_kopiykas: 1,
+        items: [],
+      });
+      const after = Date.now();
+      const purchasedAtMs = new Date(draft.purchasedAt).getTime();
+      // Старий баг: Date.UTC(2026,1,31,...) мовчки перекочував би в
+      // 2026-03-03 — це НЕ "зараз" і має провалити діапазон нижче.
+      expect(purchasedAtMs).toBeGreaterThanOrEqual(before);
+      expect(purchasedAtMs).toBeLessThanOrEqual(after);
+    });
+
+    it("2026-13-05 (місяць поза 1..12) → fallback на 'зараз'", () => {
+      const before = Date.now();
+      const draft = normalizeVisionResult({
+        store: "x",
+        date: "2026-13-05",
+        total_kopiykas: 1,
+        items: [],
+      });
+      const after = Date.now();
+      const purchasedAtMs = new Date(draft.purchasedAt).getTime();
+      expect(purchasedAtMs).toBeGreaterThanOrEqual(before);
+      expect(purchasedAtMs).toBeLessThanOrEqual(after);
+    });
+
+    it("99:99 (формат ОК, час неможливий) при ВАЛІДНІЙ даті → дата збережена, час дефолт 12:00 Kyiv", () => {
+      const draft = normalizeVisionResult({
+        store: "x",
+        date: "2026-01-15",
+        time: "99:99",
+        total_kopiykas: 1,
+        items: [],
+      });
+      // Kyiv 12:00 EET (UTC+2, зима) 2026-01-15 → 10:00 UTC.
+      expect(draft.purchasedAt).toBe("2026-01-15T10:00:00.000Z");
+    });
+
+    it("валідні дата+час далі конвертуються як і раніше (без регресії)", () => {
+      const draft = normalizeVisionResult({
+        store: "x",
+        date: "2026-01-15",
+        time: "14:32",
+        total_kopiykas: 1,
+        items: [],
+      });
+      expect(draft.purchasedAt).toBe("2026-01-15T12:32:00.000Z");
+    });
+  });
 });
 
 describe("analyzeReceiptHandler", () => {

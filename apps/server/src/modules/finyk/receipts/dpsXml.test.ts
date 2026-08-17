@@ -144,3 +144,99 @@ describe("parseDpsCheckXml — зламаний / неповний вхід", ()
     expect(parseDpsCheckXml(huge)).toBeNull();
   });
 });
+
+// Review-фікси (CRITICAL double-decode/injection + MAJOR sum-фолбек +
+// Trivial numeric entities) — фікстури нижче навмисно ІЗОЛЬОВАНІ від
+// RRO/PRRO-варіантів вище: кожна б'є РІВНО в один патч.
+
+describe("parseDpsCheckXml — sumKopiykas-фолбек (COST відсутній)", () => {
+  it("округлює ДОБУТОК price*qty, не price*round(qty) — ваговий рядок (0.850 кг)", () => {
+    const xml = `<CHECK><CHECKHEAD><ORGNM>Тест</ORGNM><ORDATE>20260115</ORDATE><ORTIME>120000</ORTIME><SUM>100</SUM></CHECKHEAD><CHECKBODY><ROW ROWNUM="1"><NAME>Яблука вагові</NAME><AMOUNT>0.850</AMOUNT><PRICE>8235</PRICE></ROW></CHECKBODY></CHECK>`;
+    const parsed = parseDpsCheckXml(xml);
+    expect(parsed?.items).toHaveLength(1);
+    expect(parsed?.items[0]).toEqual({
+      position: 1,
+      name: "Яблука вагові",
+      qty: 0.85,
+      priceKopiykas: 8235,
+      // Math.round(8235 * 0.85) = Math.round(6999.75) = 7000. СТАРИЙ баг:
+      // price * Math.round(qty) = 8235 * Math.round(0.85) = 8235 * 1 = 8235.
+      sumKopiykas: 7000,
+    });
+  });
+
+  it("AMOUNT відсутній/нульовий/від'ємний → qty=1 фолбек (не 0, не від'ємне)", () => {
+    const xml = `<CHECK><CHECKHEAD><ORGNM>Тест</ORGNM><ORDATE>20260115</ORDATE><ORTIME>120000</ORTIME><SUM>100</SUM></CHECKHEAD><CHECKBODY><ROW ROWNUM="1"><NAME>Товар А</NAME><AMOUNT>0</AMOUNT><PRICE>500</PRICE></ROW><ROW ROWNUM="2"><NAME>Товар Б</NAME><AMOUNT>-3</AMOUNT><PRICE>500</PRICE></ROW></CHECKBODY></CHECK>`;
+    const parsed = parseDpsCheckXml(xml);
+    expect(parsed?.items[0]).toMatchObject({ qty: 1, sumKopiykas: 500 });
+    expect(parsed?.items[1]).toMatchObject({ qty: 1, sumKopiykas: 500 });
+  });
+});
+
+describe("parseDpsCheckXml — контейнер-decode CRITICAL фікс (double-decode/injection)", () => {
+  it("екранована розмітка в NAME НЕ породжує синтетичний ROW — лишається літеральним текстом", () => {
+    const xml = `<CHECK>
+<CHECKHEAD>
+<ORGNM>Тест</ORGNM>
+<ORDATE>20260115</ORDATE>
+<ORTIME>120000</ORTIME>
+<SUM>100</SUM>
+</CHECKHEAD>
+<CHECKBODY>
+<ROW ROWNUM="1"><NAME>Знижка &lt;ROW ROWNUM=&quot;99&quot;&gt;&lt;NAME&gt;X&lt;/NAME&gt;&lt;COST&gt;-9999&lt;/COST&gt;&lt;/ROW&gt;</NAME><AMOUNT>1</AMOUNT><PRICE>100</PRICE><COST>100</COST></ROW>
+</CHECKBODY>
+</CHECK>`;
+    const parsed = parseDpsCheckXml(xml);
+    expect(parsed).not.toBeNull();
+    // РІВНО 1 рядок — інжектований "ROW" у тексті НЕ став другим items[1].
+    expect(parsed?.items).toHaveLength(1);
+    expect(parsed?.items[0]?.name).toBe(
+      'Знижка <ROW ROWNUM="99"><NAME>X</NAME><COST>-9999</COST></ROW>',
+    );
+    // COST справжнього (єдиного) рядка — не інжектована "-9999".
+    expect(parsed?.items[0]?.sumKopiykas).toBe(100);
+    expect(parsed?.totalKopiykas).toBe(100); // header SUM неушкоджений
+  });
+
+  it("декодує &amp;amp; РІВНО один раз — 'Кава &amp; чай', не подвійно-розкодоване 'Кава & чай'", () => {
+    const xml = `<CHECK><CHECKHEAD><ORGNM>Тест</ORGNM><ORDATE>20260115</ORDATE><ORTIME>120000</ORTIME><SUM>100</SUM></CHECKHEAD><CHECKBODY><ROW ROWNUM="1"><NAME>Кава &amp;amp; чай</NAME><AMOUNT>1</AMOUNT><PRICE>100</PRICE><COST>100</COST></ROW></CHECKBODY></CHECK>`;
+    const parsed = parseDpsCheckXml(xml);
+    expect(parsed?.items[0]?.name).toBe("Кава &amp; чай");
+  });
+
+  it("ORGNM з екранованою лапкою/дужками через CHECKHEAD-контейнер декодується РІВНО один раз", () => {
+    const xml = `<CHECK><CHECKHEAD><ORGNM>ТОВ &quot;Знак &lt;b&gt;&quot;</ORGNM><ORDATE>20260115</ORDATE><ORTIME>120000</ORTIME><SUM>100</SUM></CHECKHEAD><CHECKBODY></CHECKBODY></CHECK>`;
+    const parsed = parseDpsCheckXml(xml);
+    expect(parsed?.store).toBe('ТОВ "Знак <b>"');
+  });
+});
+
+describe("parseDpsCheckXml — числові character references (Trivial фікс)", () => {
+  it("декодує hex (&#x421;) і decimal (&#1057;) — обидва Cyrillic С (U+0421)", () => {
+    const xml = `<CHECK><CHECKHEAD><ORGNM>Тест</ORGNM><ORDATE>20260115</ORDATE><ORTIME>120000</ORTIME><SUM>100</SUM></CHECKHEAD><CHECKBODY><ROW ROWNUM="1"><NAME>&#x421;&#1057;&#X421;</NAME><AMOUNT>1</AMOUNT><PRICE>100</PRICE><COST>100</COST></ROW></CHECKBODY></CHECK>`;
+    const parsed = parseDpsCheckXml(xml);
+    expect(parsed?.items[0]?.name).toBe("ССС");
+  });
+
+  it("декодує астральну (>0xFFFF) числову сутність через fromCodePoint, не обрізає fromCharCode-ом", () => {
+    const xml = `<CHECK><CHECKHEAD><ORGNM>Тест</ORGNM><ORDATE>20260115</ORDATE><ORTIME>120000</ORTIME><SUM>100</SUM></CHECKHEAD><CHECKBODY><ROW ROWNUM="1"><NAME>Чек &#x1F600;</NAME><AMOUNT>1</AMOUNT><PRICE>100</PRICE><COST>100</COST></ROW></CHECKBODY></CHECK>`;
+    const parsed = parseDpsCheckXml(xml);
+    expect(parsed?.items[0]?.name).toBe("Чек \u{1F600}");
+  });
+
+  it("невалідний код-поінт (поза 0..0x10FFFF) лишається буквальним текстом, не кидає", () => {
+    const xml = `<CHECK><CHECKHEAD><ORGNM>Тест</ORGNM><ORDATE>20260115</ORDATE><ORTIME>120000</ORTIME><SUM>100</SUM></CHECKHEAD><CHECKBODY><ROW ROWNUM="1"><NAME>x&#99999999;y</NAME><AMOUNT>1</AMOUNT><PRICE>100</PRICE><COST>100</COST></ROW></CHECKBODY></CHECK>`;
+    const parsed = parseDpsCheckXml(xml);
+    expect(parsed?.items[0]?.name).toBe("x&#99999999;y");
+  });
+});
+
+describe("parseDpsCheckXml — згруповані тисячні суми (MAJOR фікс)", () => {
+  it("пробіл+кома (укр. групування) і кома+крапка (US-style) дають той самий kopiykas-результат", () => {
+    const xml = `<CHECK><CHECKHEAD><ORGNM>Тест</ORGNM><ORDATE>20260115</ORDATE><ORTIME>120000</ORTIME><SUM>1 500,00</SUM></CHECKHEAD><CHECKBODY><ROW ROWNUM="1"><NAME>Товар</NAME><AMOUNT>1</AMOUNT><PRICE>1,500.00</PRICE><COST>1,500.00</COST></ROW></CHECKBODY></CHECK>`;
+    const parsed = parseDpsCheckXml(xml);
+    expect(parsed?.totalKopiykas).toBe(150000); // "1 500,00" (укр.) → 1500 ₴
+    expect(parsed?.items[0]?.priceKopiykas).toBe(150000); // "1,500.00" (US) → 1500 ₴
+    expect(parsed?.items[0]?.sumKopiykas).toBe(150000); // COST пріоритетний, той самий формат
+  });
+});

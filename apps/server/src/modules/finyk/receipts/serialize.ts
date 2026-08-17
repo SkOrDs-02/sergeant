@@ -76,12 +76,39 @@ export interface SerializedReceipt {
  * driver-аномалія (issue #708 у Hard Rule #1: мовчазний `NaN`/string leak
  * ламає арифметику клієнта непомітно, тому тут — fail loud, не fail
  * silent).
+ *
+ * Використовуй ЛИШЕ для полів, що можуть бути легітимно дробовими (`qty
+ * NUMERIC(12,3)`) — для цілочисельних bigint-полів (`id`, `receipt_id`,
+ * `*_kopiykas`) використовуй `toSafeIntegerOrThrow` нижче.
  */
 function toNumberOrThrow(v: unknown, field: string): number {
   const n = typeof v === "number" ? v : Number(v);
   if (!Number.isFinite(n)) {
     throw new Error(
       `serializeReceipt: не вдалось коерсити поле "${field}" (${String(v)}) у number`,
+    );
+  }
+  return n;
+}
+
+/**
+ * Той самий коерсійний рубіж, що `toNumberOrThrow`, але для ЦІЛОЧИСЕЛЬНИХ
+ * bigint-полів (`id`, `receipt_id`, `price_kopiykas`, `sum_kopiykas`,
+ * `total_kopiykas`) — вимагає `Number.isSafeInteger`, не лише
+ * `Number.isFinite` (review-фікс MAJOR). `Number.isFinite` пропускає
+ * значення поза `Number.MAX_SAFE_INTEGER` (2^53-1): рядок
+ * `"9007199254740993"` конвертується в `Number(...)` у
+ * `9007199254740992` — ТИХЕ округлення bigint, не помічене
+ * `Number.isFinite`, яке ламає арифметику клієнта непомітно (той самий
+ * клас бага, що і string-leak issue #708, лише на іншому краю). `qty`
+ * ЛИШАЄТЬСЯ на `toNumberOrThrow` — воно легітимно дробове
+ * (`NUMERIC(12,3)`), вимагати ціле там некоректно.
+ */
+function toSafeIntegerOrThrow(v: unknown, field: string): number {
+  const n = typeof v === "number" ? v : Number(v);
+  if (!Number.isSafeInteger(n)) {
+    throw new Error(
+      `serializeReceipt: поле "${field}" (${String(v)}) поза Number.MAX_SAFE_INTEGER — bigint мовчки округлився б`,
     );
   }
   return n;
@@ -95,13 +122,13 @@ export function serializeReceiptItem(
   row: ReceiptItemRow,
 ): SerializedReceiptItem {
   return {
-    id: toNumberOrThrow(row.id, "id"),
-    receiptId: toNumberOrThrow(row.receipt_id, "receipt_id"),
+    id: toSafeIntegerOrThrow(row.id, "id"),
+    receiptId: toSafeIntegerOrThrow(row.receipt_id, "receipt_id"),
     position: row.position,
     name: row.name,
     qty: toNumberOrThrow(row.qty, "qty"),
-    priceKopiykas: toNumberOrThrow(row.price_kopiykas, "price_kopiykas"),
-    sumKopiykas: toNumberOrThrow(row.sum_kopiykas, "sum_kopiykas"),
+    priceKopiykas: toSafeIntegerOrThrow(row.price_kopiykas, "price_kopiykas"),
+    sumKopiykas: toSafeIntegerOrThrow(row.sum_kopiykas, "sum_kopiykas"),
   };
 }
 
@@ -111,13 +138,13 @@ export function serializeReceipt(
   link: ReceiptLinkRow | null,
 ): SerializedReceipt {
   return {
-    id: toNumberOrThrow(row.id, "id"),
+    id: toSafeIntegerOrThrow(row.id, "id"),
     source: row.source,
     fiscalNum: row.fiscal_num,
     store: row.store_name,
     storeTaxId: row.store_tax_id,
     purchasedAt: isoOf(row.purchased_at),
-    totalKopiykas: toNumberOrThrow(row.total_kopiykas, "total_kopiykas"),
+    totalKopiykas: toSafeIntegerOrThrow(row.total_kopiykas, "total_kopiykas"),
     items: items.map(serializeReceiptItem),
     link: link ? { txKind: link.tx_kind, txRef: link.tx_ref } : null,
     createdAt: isoOf(row.created_at),

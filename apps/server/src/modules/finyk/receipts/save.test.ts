@@ -362,7 +362,7 @@ describe("saveReceiptHandler — ідемпотентність (повторн�
     expect(client.calls.some((c) => c.sql.trim() === "COMMIT")).toBe(true);
   });
 
-  it("vision-чек (fiscalNum: null) завжди створює новий рядок — без ON CONFLICT-гілки", async () => {
+  it("vision-чек (fiscalNum: null) БЕЗ clientScanId завжди створює новий рядок — задокументована поведінка, без ON CONFLICT-гілки", async () => {
     mocks.matchReceiptToMono.mockResolvedValueOnce({ kind: "none" });
     const client = makeFakeClient({
       insertReceipt: () => ({
@@ -385,6 +385,150 @@ describe("saveReceiptHandler — ідемпотентність (повторн�
       c.sql.includes("INSERT INTO receipts"),
     );
     expect(insertCall?.sql).not.toContain("ON CONFLICT");
+    // Без clientScanId у body дедуп-SELECT (review-фікс MAJOR нижче)
+    // взагалі не викликається — поведінка НЕ регресує.
+    expect(
+      client.calls.some((c) =>
+        c.sql.includes("raw_payload ->> 'clientScanId'"),
+      ),
+    ).toBe(false);
+  });
+});
+
+describe("saveReceiptHandler — vision retry-дедуп через clientScanId (review-фікс MAJOR)", () => {
+  const CLIENT_SCAN_ID = "8e6b1f1e-2222-4444-8888-abcdefabcdef";
+
+  it("другий save з тим самим clientScanId → 200 alreadyExists, БЕЗ нових item/manualExpense/link INSERT-ів", async () => {
+    const client = makeFakeClient({
+      selectReceipt: () => ({
+        rows: [receiptDbRow({ fiscal_num: null, source: "vision" })],
+      }),
+      selectItems: () => ({ rows: [itemDbRow] }),
+      selectLink: () => ({
+        rows: [{ tx_kind: "manual", tx_ref: "expense-1" }],
+      }),
+    });
+    mocks.connect.mockResolvedValue(client);
+
+    const res = makeRes();
+    await saveReceiptHandler(
+      makeReq(
+        baseSaveBody({
+          source: "vision",
+          fiscalNum: null,
+          items: [],
+          clientScanId: CLIENT_SCAN_ID,
+        }),
+      ),
+      res,
+    );
+
+    expect(res.statusCode).toBe(200);
+    const body = res.body as {
+      alreadyExists: boolean;
+      receipt: Record<string, unknown>;
+    };
+    expect(body.alreadyExists).toBe(true);
+
+    expect(mocks.matchReceiptToMono).not.toHaveBeenCalled();
+    expect(
+      client.calls.some((c) => c.sql.includes("INSERT INTO receipts")),
+    ).toBe(false);
+    expect(
+      client.calls.some((c) => c.sql.includes("INSERT INTO receipt_items")),
+    ).toBe(false);
+    expect(
+      client.calls.some((c) =>
+        c.sql.includes("INSERT INTO finyk_manual_expenses"),
+      ),
+    ).toBe(false);
+    expect(
+      client.calls.some((c) =>
+        c.sql.includes("INSERT INTO finyk_tx_receipt_links"),
+      ),
+    ).toBe(false);
+
+    // Дедуп-SELECT бив саме по clientScanId + purchased_at (звужує до
+    // (user_id, purchased_at)-індексу, review-коментар).
+    const dedupCall = client.calls.find((c) =>
+      c.sql.includes("raw_payload ->> 'clientScanId'"),
+    );
+    expect(dedupCall?.params).toEqual([
+      "u1",
+      "2026-01-15T12:32:10.000Z",
+      CLIENT_SCAN_ID,
+    ]);
+    expect(client.calls.some((c) => c.sql.trim() === "COMMIT")).toBe(true);
+  });
+
+  it("clientScanId потрапляє у raw_payload НАВІТЬ якщо клієнт не поклав його самостійно", async () => {
+    mocks.matchReceiptToMono.mockResolvedValueOnce({ kind: "none" });
+    let insertedRawPayload: unknown;
+    const client = makeFakeClient({
+      selectReceipt: () => ({ rows: [] }), // дедуп-SELECT нічого не знайшов — новий scan
+      insertReceipt: (params) => {
+        insertedRawPayload = params[6]; // fiscalNum=null гілка — 7-елементний params, raw_payload $7 → index 6
+        return {
+          rows: [receiptDbRow({ fiscal_num: null, source: "vision" })],
+        };
+      },
+      insertItems: () => ({ rows: [] }),
+      insertManualExpense: () => ({ rows: [] }),
+      insertLink: () => ({ rows: [] }),
+    });
+    mocks.connect.mockResolvedValue(client);
+
+    await saveReceiptHandler(
+      makeReq(
+        baseSaveBody({
+          source: "vision",
+          fiscalNum: null,
+          items: [],
+          clientScanId: CLIENT_SCAN_ID,
+          rawPayload: { text: "vision JSON, без clientScanId усередині" },
+        }),
+      ),
+      makeRes(),
+    );
+
+    const parsed = JSON.parse(insertedRawPayload as string) as Record<
+      string,
+      unknown
+    >;
+    expect(parsed["clientScanId"]).toBe(CLIENT_SCAN_ID);
+    expect(parsed["text"]).toBe("vision JSON, без clientScanId усередині");
+  });
+
+  it("clientScanId, що НЕ знайдено (перший save з новим scan-ом) → звичайний INSERT, 201", async () => {
+    mocks.matchReceiptToMono.mockResolvedValueOnce({ kind: "none" });
+    const client = makeFakeClient({
+      selectReceipt: () => ({ rows: [] }), // дедуп-SELECT нічого не знайшов
+      insertReceipt: () => ({
+        rows: [receiptDbRow({ fiscal_num: null, source: "vision" })],
+      }),
+      insertItems: () => ({ rows: [] }),
+      insertManualExpense: () => ({ rows: [] }),
+      insertLink: () => ({ rows: [] }),
+    });
+    mocks.connect.mockResolvedValue(client);
+
+    const res = makeRes();
+    await saveReceiptHandler(
+      makeReq(
+        baseSaveBody({
+          source: "vision",
+          fiscalNum: null,
+          items: [],
+          clientScanId: CLIENT_SCAN_ID,
+        }),
+      ),
+      res,
+    );
+
+    expect(res.statusCode).toBe(201);
+    expect(
+      client.calls.some((c) => c.sql.includes("INSERT INTO receipts")),
+    ).toBe(true);
   });
 });
 
@@ -400,6 +544,32 @@ describe("saveReceiptHandler — rollback on failure", () => {
     await expect(
       saveReceiptHandler(makeReq(baseSaveBody()), makeRes()),
     ).rejects.toThrow("matcher boom");
+
+    expect(client.calls.some((c) => c.sql.trim() === "ROLLBACK")).toBe(true);
+    expect(client.calls.some((c) => c.sql.trim() === "COMMIT")).toBe(false);
+    expect(client.release).toHaveBeenCalledTimes(1);
+  });
+
+  // Review-фікс Trivial: serializeReceipt + Schema.parse тепер будуються
+  // ДО COMMIT — падіння серіалізації мусить ROLLBACK-увати, не лишати
+  // транзакцію закомічену без відповіді клієнту.
+  it("падіння serializeReceipt (нечислове total_kopiykas) → ROLLBACK, НЕ COMMIT; помилка пробрасується", async () => {
+    const client = makeFakeClient({
+      insertReceipt: () => ({
+        rows: [receiptDbRow({ total_kopiykas: "not-a-number" })],
+      }),
+      insertItems: () => ({ rows: [itemDbRow] }),
+      insertLink: () => ({ rows: [] }),
+    });
+    mocks.connect.mockResolvedValue(client);
+    mocks.matchReceiptToMono.mockResolvedValueOnce({
+      kind: "mono",
+      monoTxId: "mono-tx-1",
+    });
+
+    await expect(
+      saveReceiptHandler(makeReq(baseSaveBody()), makeRes()),
+    ).rejects.toThrow(/total_kopiykas/);
 
     expect(client.calls.some((c) => c.sql.trim() === "ROLLBACK")).toBe(true);
     expect(client.calls.some((c) => c.sql.trim() === "COMMIT")).toBe(false);

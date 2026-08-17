@@ -126,4 +126,24 @@ describe("fetchDpsCheckXml", () => {
     });
     expect(fetch).toHaveBeenCalledTimes(3);
   });
+
+  // Review-фікс Trivial: 401/403 — зламаний/протермінований токен, не
+  // "upstream тимчасово лежить" — окремий, не-ретраєбельний код.
+  it.each([401, 403])(
+    "кидає ExternalServiceError (503, DPS_AUTH_ERROR) на %i від upstream, БЕЗ ретраю",
+    async (status) => {
+      envMock.DPS_API_TOKEN = "secret-token";
+      const fetch = fetchMock().mockResolvedValue(
+        response(status, "forbidden"),
+      );
+
+      await expect(fetchDpsCheckXml(PARAMS)).rejects.toMatchObject({
+        status: 503,
+        code: "DPS_AUTH_ERROR",
+      });
+      // Не-ретраєбельний: bankProxyFetch ретраїть лише 5xx
+      // (`isRetryableStatus`), тож РІВНО одна спроба на 401/403.
+      expect(fetch).toHaveBeenCalledTimes(1);
+    },
+  );
 });

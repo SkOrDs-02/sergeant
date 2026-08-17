@@ -59,8 +59,21 @@ export async function fetchDpsCheckXml(
       token,
     },
     headers: { Accept: "application/xml" },
-    // Токен — секретна частина cache-ключа (bankProxyFetch хешує
-    // cacheKeySecret, ніколи не кладе його у відкритому вигляді в ключ).
+    // AI-NOTE: review finding, MINOR security, ВІДКЛАДЕНО поза цим PR.
+    // `token` тут ІДЕ і в `query` (сам upstream-запит вимагає його як
+    // query-параметр — див. AI-DANGER на docstring-і функції вище), і в
+    // `cacheKeySecret`.
+    // `bankProxyFetch` хешує лише `cacheKeySecret` окремим доданком
+    // cache-ключа — сам `query` (разом із `token`) серіалізується в
+    // `qs` і йде у cache-ключ ВЕРБАТИМ, нехешованим (`lib/bankProxy.ts`
+    // `hashForCache(cacheKeySecret)` конкатенується З РАДКОМ `qs`, не
+    // ЗАМІСТЬ нього). Токен лишається лише в in-memory `Map` (ніколи не
+    // логується/не персистить), тож ризик MINOR, не CRITICAL — але
+    // коректний фікс (хешувати серіалізовані query-параметри перед
+    // складанням cacheKey) живе у `lib/bankProxy.ts`, спільному
+    // transport-шарі з Monobank/PrivatBank — поза поверхнею цього PR
+    // (`modules/finyk/receipts/*` + `packages/shared/.../receipts.ts`).
+    // Дію не змінює: сам HTTP-запит до ДПС і далі йде через query.
     cacheKeySecret: token,
   });
 
@@ -74,6 +87,27 @@ export async function fetchDpsCheckXml(
       return { status: "not_found" };
     }
     return { status: "ok", xml: body };
+  }
+
+  if (result.status === 401 || result.status === 403) {
+    // Токен ПРИСУТНІЙ (інакше ми не дійшли б до мережевого виклику —
+    // "no_token" гілка вище, до `bankProxyFetch`), але ДПС його
+    // відхилив: не тимчасова недоступність upstream-а (retry тут не
+    // допоможе — `bankProxyFetch` і так не ретраїть 4xx,
+    // `isRetryableStatus` покриває лише 5xx), а зламаний/протермінований
+    // токен. Окремий код — DPS_AUTH_ERROR, не DPS_UPSTREAM_ERROR — щоб
+    // алертинг/дешборд міг відрізнити "ДПС лежить" від "у нас невалідний
+    // токен" (перше самолікується, друге потребує founder-ської дії).
+    // Hard Rule #21 — НЕ логуй body/token тут, той самий контракт, що
+    // генеральна 5xx-гілка нижче.
+    throw new ExternalServiceError(
+      "Пошук чека за QR тимчасово недоступний — спробуй сфотографувати чек.",
+      {
+        status: 503,
+        code: "DPS_AUTH_ERROR",
+        cause: { message: `dps chkAll upstream returned ${result.status}` },
+      },
+    );
   }
 
   // Hard Rule #21 — НЕ логуй body тут: може містити адресу магазину/ПІБ.

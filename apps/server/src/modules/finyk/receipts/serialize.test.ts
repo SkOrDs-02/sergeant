@@ -95,6 +95,58 @@ describe("serializeReceiptItem — bigint/numeric coercion (Hard Rule #1)", () =
       serializeReceiptItem(itemRow({ price_kopiykas: "not-a-number" })),
     ).toThrow(/price_kopiykas/);
   });
+
+  // Review-фікс MAJOR: `Number.isFinite` пропускає значення поза
+  // `Number.MAX_SAFE_INTEGER` — `Number("9007199254740993")` мовчки
+  // округлюється до `9007199254740992`, ламаючи арифметику клієнта БЕЗ
+  // жодного сигналу. `toSafeIntegerOrThrow` мусить це ловити.
+  describe("Number.MAX_SAFE_INTEGER межа (review-фікс MAJOR)", () => {
+    const UNSAFE = "9007199254740993"; // MAX_SAFE_INTEGER (2^53-1) + 2
+
+    it("кидає на id поза Number.MAX_SAFE_INTEGER", () => {
+      expect(() => serializeReceiptItem(itemRow({ id: UNSAFE }))).toThrow(/id/);
+    });
+
+    it("кидає на receipt_id поза Number.MAX_SAFE_INTEGER", () => {
+      expect(() =>
+        serializeReceiptItem(itemRow({ receipt_id: UNSAFE })),
+      ).toThrow(/receipt_id/);
+    });
+
+    it("кидає на price_kopiykas поза Number.MAX_SAFE_INTEGER", () => {
+      expect(() =>
+        serializeReceiptItem(itemRow({ price_kopiykas: UNSAFE })),
+      ).toThrow(/price_kopiykas/);
+    });
+
+    it("кидає на sum_kopiykas поза Number.MAX_SAFE_INTEGER", () => {
+      expect(() =>
+        serializeReceiptItem(itemRow({ sum_kopiykas: UNSAFE })),
+      ).toThrow(/sum_kopiykas/);
+    });
+
+    it("НЕ кидає на Number.MAX_SAFE_INTEGER РІВНО (межа інклюзивна)", () => {
+      const safe = String(Number.MAX_SAFE_INTEGER);
+      const out = serializeReceiptItem(
+        itemRow({
+          id: safe,
+          receipt_id: safe,
+          price_kopiykas: safe,
+          sum_kopiykas: safe,
+        }),
+      );
+      expect(out.id).toBe(Number.MAX_SAFE_INTEGER);
+    });
+
+    it("qty ЛИШАЄТЬСЯ на finite-перевірці — великий дробовий qty НЕ кидає (не safe-integer вимога)", () => {
+      // `qty` — NUMERIC(12,3), легітимно дробове; вимога safe-integer
+      // тут була б хибною, тому serialize.ts свідомо лишає qty на
+      // toNumberOrThrow (лише Number.isFinite), не на
+      // toSafeIntegerOrThrow.
+      const out = serializeReceiptItem(itemRow({ qty: "99999999999.999" }));
+      expect(out.qty).toBeCloseTo(99999999999.999, 3);
+    });
+  });
 });
 
 describe("serializeReceipt", () => {
@@ -148,5 +200,15 @@ describe("serializeReceipt", () => {
     expect(() =>
       serializeReceipt(receiptRow({ total_kopiykas: "NaN-ish" }), [], null),
     ).toThrow(/total_kopiykas/);
+  });
+
+  it("кидає (fail loud) на total_kopiykas/id поза Number.MAX_SAFE_INTEGER (review-фікс MAJOR)", () => {
+    const UNSAFE = "9007199254740993";
+    expect(() =>
+      serializeReceipt(receiptRow({ total_kopiykas: UNSAFE }), [], null),
+    ).toThrow(/total_kopiykas/);
+    expect(() =>
+      serializeReceipt(receiptRow({ id: UNSAFE }), [], null),
+    ).toThrow(/id/);
   });
 });

@@ -21,12 +21,13 @@ import { kyivWallClockToUtc } from "./kyivClock.js";
  *
  * Формат SUM/PRICE/COST теж не підтверджений: `parseMoneyKopiykas`
  * обробляє ОБИДВА правдоподібні варіанти (ціле число копійок "15000" АБО
- * рядок з крапкою як гривні-з-копійками "150.00") — розрізняє за
- * наявністю десяткового роздільника, тому жодна гілка мовчки не спотворює
- * суму.
+ * рядок з крапкою/комою як гривні-з-копійками "150.00"/"150,00"), а також
+ * "згруповані" тисячні роздільники ("1 500,00", "1,500.00") — розрізняє
+ * ОСТАННІЙ роздільник як десятковий, решта прибираються як групувальні.
  */
 
 const MAX_XML_BYTES = 512 * 1024;
+const MAX_CODE_POINT = 0x10ffff;
 
 export interface ParsedDpsCheckItem {
   position: number;
@@ -45,6 +46,23 @@ export interface ParsedDpsCheck {
   items: ParsedDpsCheckItem[];
 }
 
+/** Декодує ОДНУ числову character reference (`&#123;` чи `&#x7B;`, код-поінт
+ * уже розпарсений) — `null`, якщо код-поінт поза `[0, 0x10FFFF]` (замість
+ * кидати чи мовчки псувати рядок). `fromCodePoint`, НЕ `fromCharCode` —
+ * останній обрізає код-поінти понад `0xFFFF` (астральна площина, напр.
+ * емодзі чи рідкісні кирилichні розширення) до нижніх 16 біт замість
+ * правильної UTF-16 сурогатної пари. */
+function decodeNumericEntity(code: number): string | null {
+  if (!Number.isInteger(code) || code < 0 || code > MAX_CODE_POINT) {
+    return null;
+  }
+  try {
+    return String.fromCodePoint(code);
+  } catch {
+    return null;
+  }
+}
+
 function decodeXmlText(raw: string): string {
   let s = raw;
   const cdataMatch = /^\s*<!\[CDATA\[([\s\S]*?)\]\]>\s*$/.exec(s);
@@ -55,22 +73,60 @@ function decodeXmlText(raw: string): string {
       .replace(/&gt;/g, ">")
       .replace(/&quot;/g, '"')
       .replace(/&apos;/g, "'")
-      .replace(/&#(\d+);/g, (_m, code: string) =>
-        String.fromCharCode(Number(code)),
+      // Hex-форма (`&#x7B;`/`&#X7B;`, case-insensitive через /i) — і
+      // decimal-форма (`&#123;`) НІКОЛИ не перетинаються (перша вимагає
+      // літеру `x`/`X` одразу після `#`, друга — цифру), порядок між
+      // ними не важливий для коректності.
+      .replace(
+        /&#x([0-9a-f]+);/gi,
+        (m, hex: string) => decodeNumericEntity(parseInt(hex, 16)) ?? m,
       )
-      // `&amp;` decoded LAST — інакше "&amp;lt;" подвійно розкодувався б у "<".
+      .replace(
+        /&#(\d+);/g,
+        (m, dec: string) => decodeNumericEntity(Number(dec)) ?? m,
+      )
+      // `&amp;` decoded LAST — інакше "&amp;lt;" подвійно розкодувався б у "<",
+      // і "&amp;#39;" (екранований `&` + буквальний текст "#39;")
+      // помилково прочитався б як numeric-сутність.
       .replace(/&amp;/g, "&")
       .trim()
   );
 }
 
-/** Перший `<tag>...</tag>` (з довільними атрибутами у відкритому тезі) у `xml`. */
-function extractFirstTag(xml: string, tag: string): string | null {
-  // eslint-disable-next-line security/detect-non-literal-regexp -- `tag` завжди хардкоджений літерал у виклику (напр. "ORGNM", "SUM"), ніколи не з `xml`/зовнішнього вводу; лише `xml` (текст, що зіставляється, не патерн) містить дані джерела.
+/**
+ * Перший `<tag>...</tag>` (з довільними атрибутами у відкритому тезі) у
+ * `xml` — БЕЗ декодування XML-сутностей. Використовуй ЛИШЕ для
+ * КОНТЕЙНЕРНИХ тегів (CHECKHEAD/CHECKBODY), по вмісту яких далі
+ * ганяються leaf/ROW-регекси.
+ *
+ * AI-DANGER: декодування контейнера ДО leaf-екстракції (CRITICAL
+ * review-фікс) давало (а) подвійне декодування кожного leaf-значення
+ * (контейнер декодувався тут, а тоді ЩЕ РАЗ на leaf-рівні —
+ * `&amp;amp;` → `&amp;` → `&` замість `&amp;` → `&`) і (б) інʼєкцію
+ * розмітки: екранований `&lt;ROW&gt;…&lt;COST&gt;-9999…&lt;/ROW&gt;`
+ * ВСЕРЕДИНІ якогось leaf-тексту (напр. назви товару) ставав ЖИВИМ `<ROW>`
+ * одразу після декодування контейнера — `extractAllTagBlocks` нижче
+ * підхопив би його як справжній рядок чека і підмінив би позиції/SUM.
+ * Лишаючи контейнер raw, escaped-розмітка так і лишається текстом (regex
+ * шукає буквальні `<ROW`, не `&lt;ROW`), а decode відбувається РІВНО ОДИН
+ * раз — на leaf-рівні, через `extractFirstTag` нижче.
+ */
+function extractFirstTagRaw(xml: string, tag: string): string | null {
+  // eslint-disable-next-line security/detect-non-literal-regexp -- `tag` завжди хардкоджений літерал у виклику (напр. "CHECKHEAD", "ORGNM"), ніколи не з `xml`/зовнішнього вводу; лише `xml` (текст, що зіставляється, не патерн) містить дані джерела.
   const re = new RegExp(`<${tag}(?:\\s[^>]*)?>([\\s\\S]*?)<\\/${tag}>`, "i");
   const m = re.exec(xml);
   if (!m) return null;
-  return decodeXmlText(m[1] ?? "");
+  return m[1] ?? "";
+}
+
+/**
+ * Перший `<tag>...</tag>` — ЛИСТОВЕ значення (ORGNM/SUM/NAME/AMOUNT/...),
+ * декодоване. НІКОЛИ не використовуй для контейнерів (CHECKHEAD/
+ * CHECKBODY) — див. `extractFirstTagRaw` вище.
+ */
+function extractFirstTag(xml: string, tag: string): string | null {
+  const raw = extractFirstTagRaw(xml, tag);
+  return raw == null ? null : decodeXmlText(raw);
 }
 
 interface TagBlock {
@@ -80,7 +136,7 @@ interface TagBlock {
 
 /** Усі блоки `<tag attrs?>...</tag>` у `xml` (для повторюваних ROW). */
 function extractAllTagBlocks(xml: string, tag: string): TagBlock[] {
-  // eslint-disable-next-line security/detect-non-literal-regexp -- `tag` завжди хардкоджений літерал (напр. "ROW"), той самий обґрунтований case, що `extractFirstTag` вище.
+  // eslint-disable-next-line security/detect-non-literal-regexp -- `tag` завжди хардкоджений літерал (напр. "ROW"), той самий обґрунтований case, що `extractFirstTagRaw` вище.
   const re = new RegExp(`<${tag}([^>]*)>([\\s\\S]*?)<\\/${tag}>`, "gi");
   const out: TagBlock[] = [];
   let m: RegExpExecArray | null;
@@ -95,28 +151,53 @@ function extractAllTagBlocks(xml: string, tag: string): TagBlock[] {
 }
 
 function extractAttr(attrs: string, name: string): string | null {
-  // eslint-disable-next-line security/detect-non-literal-regexp -- `name` завжди хардкоджений літерал (напр. "ROWNUM"), той самий обґрунтований case, що `extractFirstTag` вище.
+  // eslint-disable-next-line security/detect-non-literal-regexp -- `name` завжди хардкоджений літерал (напр. "ROWNUM"), той самий обґрунтований case, що `extractFirstTagRaw` вище.
   const re = new RegExp(`${name}\\s*=\\s*"([^"]*)"`, "i");
   const m = re.exec(attrs);
   return m ? (m[1] ?? null) : null;
 }
 
 /**
+ * Нормалізує "згруповані" грошові рядки (тисячні роздільники) у форму, яку
+ * розуміє `Number()`. Прибирає пробіли-групувальники (звичайний і
+ * нерозривний/тонкий); коли в рядку зустрічаються ОБИДВА `,` і `.` —
+ * найправіший вважається десятковим, решта входжень ОБОХ символів
+ * прибираються як групувальні («1,500.00» → «1500.00», «1 500,00» (після
+ * прибирання пробілу — «1500,00») → «1500.00»). Один тип символу, але
+ * ПОВТОРЕНИЙ (напр. «1,500,000», без десяткової крапки) — увесь рядок
+ * групувальний, десяткової частини нема.
+ */
+function normalizeGroupedMoney(trimmed: string): string {
+  const s = trimmed.replace(/\s/g, "");
+  const commaCount = (s.match(/,/g) ?? []).length;
+  const dotCount = (s.match(/\./g) ?? []).length;
+  if (commaCount === 0 && dotCount === 0) return s;
+  if (commaCount > 1 && dotCount === 0) return s.replace(/,/g, "");
+  if (dotCount > 1 && commaCount === 0) return s.replace(/\./g, "");
+
+  const decimalIdx = Math.max(s.lastIndexOf(","), s.lastIndexOf("."));
+  const integerPart = s.slice(0, decimalIdx).replace(/[,.]/g, "");
+  const fractionPart = s.slice(decimalIdx + 1).replace(/[,.]/g, "");
+  return `${integerPart}.${fractionPart}`;
+}
+
+/**
  * Гроші (SUM/PRICE/COST) — або ціле число копійок ("15000"), або рядок з
- * десятковим роздільником як гривні ("150.00" / "150,00"). Кома
- * нормалізується до крапки (укр. фіскальні системи іноді пишуть кому).
- * Від'ємні значення (рядки знижок) зберігаються як є.
+ * десятковим роздільником як гривні ("150.00" / "150,00"), можливо із
+ * тисячним групуванням ("1 500,00" / "1,500.00" — `normalizeGroupedMoney`
+ * вище). Від'ємні значення (рядки знижок) зберігаються як є.
  */
 function parseMoneyKopiykas(raw: string | null): number | null {
   if (raw == null) return null;
-  const trimmed = raw.trim().replace(",", ".");
+  const trimmed = raw.trim();
   if (!trimmed) return null;
-  if (trimmed.includes(".")) {
-    const hryvnia = Number(trimmed);
+  const normalized = normalizeGroupedMoney(trimmed);
+  if (normalized.includes(".")) {
+    const hryvnia = Number(normalized);
     if (!Number.isFinite(hryvnia)) return null;
     return Math.round(hryvnia * 100);
   }
-  const n = Number(trimmed);
+  const n = Number(normalized);
   return Number.isFinite(n) ? Math.trunc(n) : null;
 }
 
@@ -200,8 +281,11 @@ export function parseDpsCheckXml(xml: string): ParsedDpsCheck | null {
   if (!checkMatch) return null;
   const checkXml = checkMatch[1] ?? "";
 
-  const head = extractFirstTag(checkXml, "CHECKHEAD");
-  const body = extractFirstTag(checkXml, "CHECKBODY");
+  // RAW (не декодовано) — контейнери, по вмісту яких далі ганяються
+  // leaf/ROW-регекси. Декодування відбувається ЛИШЕ на leaf-рівні нижче
+  // (`extractFirstTag`) — див. `extractFirstTagRaw` docstring.
+  const head = extractFirstTagRaw(checkXml, "CHECKHEAD");
+  const body = extractFirstTagRaw(checkXml, "CHECKBODY");
   if (head == null || body == null) return null;
 
   const store = extractFirstTag(head, "ORGNM");
@@ -227,7 +311,13 @@ export function parseDpsCheckXml(xml: string): ParsedDpsCheck | null {
     if (!name) continue; // пропускаємо нерозбірливий рядок, не валимо весь чек
 
     const qtyRaw = extractFirstTag(block.content, "AMOUNT");
-    const qty = qtyRaw != null ? Number(qtyRaw.replace(",", ".")) : 1;
+    const qtyParsed = qtyRaw != null ? Number(qtyRaw.replace(",", ".")) : 1;
+    // Нечитабельна/нульова/від'ємна кількість → 1 (безпечний дефолт, той
+    // самий підхід, що ORDATE/ORTIME/ROWNUM fallback-и вище) — 0/від'ємне
+    // AMOUNT для звичайного рядка товару найімовірніше зламаний парсинг,
+    // не легітимний домен-кейс (на відміну від рядка знижки, який кодує
+    // від'ємність через PRICE/COST, не AMOUNT).
+    const qty = Number.isFinite(qtyParsed) && qtyParsed > 0 ? qtyParsed : 1;
     const priceKopiykas =
       parseMoneyKopiykas(extractFirstTag(block.content, "PRICE")) ?? 0;
     const costKopiykas = parseMoneyKopiykas(
@@ -238,11 +328,15 @@ export function parseDpsCheckXml(xml: string): ParsedDpsCheck | null {
     items.push({
       position: Number.isFinite(rowNum) && rowNum > 0 ? rowNum : i + 1,
       name,
-      qty: Number.isFinite(qty) ? qty : 1,
+      qty,
       priceKopiykas,
-      sumKopiykas:
-        costKopiykas ??
-        priceKopiykas * Math.round(Number.isFinite(qty) ? qty : 1),
+      // COST з ДПС має пріоритет (структуровані дані джерела, не наш
+      // добуток). Фолбек — округлений ДОБУТОК price*qty, НЕ
+      // price*round(qty): останнє спотворює вагові рядки (0.850 кг ×
+      // 8235 копійок/кг раніше округлював qty ДО множення —
+      // Math.round(0.85)=1 → 8235×1=8235 — замість Math.round(8235×0.85)
+      // = 7000).
+      sumKopiykas: costKopiykas ?? Math.round(priceKopiykas * qty),
     });
   }
 
