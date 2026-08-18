@@ -18,6 +18,9 @@
  * магазин/сума/категорія на компактному рядку, `BulkReceiptsProgress`) —
  * докладне редагування позицій лишається на одиночному v1-флоу
  * (`ReceiptScanSheet`). Задокументоване спрощення обсягу.
+ *
+ * Точка входу з бета-фідбеку №2 (2026-08-18) — `ReceiptScanSheet`
+ * (пікер `multiple`, 2+ фото → стадія `batch`), НЕ `BulkImportSheet`.
  */
 import { useCallback, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
@@ -27,6 +30,7 @@ import { formatReceiptError } from "../lib/receiptErrors";
 import { readReceiptImageFile } from "../lib/receiptImage";
 import { parseDpsReceiptQrUrl } from "../lib/receiptQr";
 import { decodeQrFromImageFile } from "./useReceiptQrScanner";
+import { DPS_QR_SCAN_ENABLED } from "../components/receiptScan/dpsQrGate";
 import { DEFAULT_CATEGORY } from "../components/manualExpenseCategories";
 import { useReceiptSave, type ReceiptSaveStorageSlice } from "./useReceiptSave";
 
@@ -66,16 +70,21 @@ async function fetchDraftForFile(
     mime_type: string;
   }) => Promise<{ draft: ReceiptDraft }>,
 ): Promise<ReceiptDraft> {
-  const qrText = await decodeQrFromImageFile(file).catch(() => null);
-  const lookupReq = qrText ? parseDpsReceiptQrUrl(qrText) : null;
-  if (lookupReq) {
-    try {
-      const { draft } = await lookup(lookupReq);
-      return draft;
-    } catch {
-      // ДПС не відповіла навіть з QR у фото — пробуємо vision на тому
-      // самому фото (той самий "не питай юзера вдруге" принцип, що
-      // одиночний флоу `ReceiptScanSheet`).
+  // QR-lookup лише коли ДПС-гілка жива (`dpsQrGate.ts`) — інакше це
+  // гарантована відмова + зайва латентність на КОЖНЕ фото пачки (той
+  // самий гейт, що в одиночному `ReceiptScanSheet.handleFileSelected`).
+  if (DPS_QR_SCAN_ENABLED) {
+    const qrText = await decodeQrFromImageFile(file).catch(() => null);
+    const lookupReq = qrText ? parseDpsReceiptQrUrl(qrText) : null;
+    if (lookupReq) {
+      try {
+        const { draft } = await lookup(lookupReq);
+        return draft;
+      } catch {
+        // ДПС не відповіла навіть з QR у фото — пробуємо vision на тому
+        // самому фото (той самий "не питай юзера вдруге" принцип, що
+        // одиночний флоу `ReceiptScanSheet`).
+      }
     }
   }
   const imageResult = await readReceiptImageFile(file);

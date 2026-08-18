@@ -18,6 +18,12 @@
  * без спроби QR-lookup (вона гарантовано впиралась би у відмову і лише
  * додавала латентність). Камера-стейдж і QR-обробники лишаються в коді —
  * оживуть фліпом гейта.
+ *
+ * «Чеки пачкою» (спека § Фаза 2а) живуть ТУТ, а не в «Додати документи»
+ * (бета-фідбек №2, 2026-08-18): фото чеків — це про чеки, тож пікер
+ * приймає кілька фото одразу (`multiple`); 1 файл → одиничний review-флоу,
+ * 2+ → стадія `batch` (`useBulkReceiptsImport` + `BulkReceiptsProgress`).
+ * `BulkImportSheet` лишився банківським докам (скрін/CSV).
  */
 import {
   useEffect,
@@ -48,6 +54,11 @@ import {
   useReceiptSave,
   type ReceiptSaveStorageSlice,
 } from "../../hooks/useReceiptSave";
+import {
+  useBulkReceiptsImport,
+  BATCH_RECEIPTS_MAX_FILES,
+} from "../../hooks/useBulkReceiptsImport";
+import { BulkReceiptsProgress } from "../bulkImport/BulkReceiptsProgress";
 import { DPS_QR_SCAN_ENABLED } from "./dpsQrGate";
 import { ReceiptScanCameraView } from "./ReceiptScanCameraView";
 import { ReceiptReviewForm } from "./ReceiptReviewForm";
@@ -59,7 +70,7 @@ function looksUnrecognized(draft: ReceiptDraft): boolean {
   return draft.items.length === 0 && draft.totalKopiykas === 0 && !draft.store;
 }
 
-type Stage = "choose" | "camera" | "processing" | "review";
+type Stage = "choose" | "camera" | "processing" | "review" | "batch";
 
 export interface ReceiptScanSheetProps {
   open: boolean;
@@ -89,8 +100,10 @@ export function ReceiptScanSheet({
   // cleanest way to "resume scanning" after an invalid (non-DPS) QR hit,
   // since `useReceiptQrScanner` always stops the camera on ANY detection.
   const [cameraKey, setCameraKey] = useState(0);
+  const [batchCapNote, setBatchCapNote] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const armPinchZoomReset = useResetPinchZoomAfterCameraCapture();
+  const bulkReceipts = useBulkReceiptsImport({ storage, onReceiptLinked });
 
   const lookupMutation = useMutation({
     mutationFn: (req: ReceiptLookupRequest) =>
@@ -117,8 +130,11 @@ export function ReceiptScanSheet({
       setDraft(null);
       setCategory(DEFAULT_CATEGORY);
       setFlowError(null);
+      setBatchCapNote(null);
       resetSave();
+      bulkReceipts.reset();
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset-on-close only; `bulkReceipts` — новий об'єкт щорендера (той самий патерн, що в BulkImportSheet до переносу).
   }, [open, resetSave]);
 
   const openReview = (nextDraft: ReceiptDraft) => {
@@ -188,6 +204,20 @@ export function ReceiptScanSheet({
     }
   };
 
+  const handleBatchSelected = (files: File[]) => {
+    setFlowError(null);
+    // Кап застосовує `startFiles` (slice до BATCH_RECEIPTS_MAX_FILES) — але
+    // МОВЧКИ: без примітки людина, що вибрала 15 фото, дізналась би про
+    // відкинуті 5 лише перерахувавши список (бета-фідбек 2026-08-18).
+    setBatchCapNote(
+      files.length > BATCH_RECEIPTS_MAX_FILES
+        ? `Взято перші ${BATCH_RECEIPTS_MAX_FILES} фото з ${files.length} — решту докинь наступною пачкою після збереження цієї.`
+        : null,
+    );
+    setStage("batch");
+    void bulkReceipts.startFiles(files);
+  };
+
   const handleSave = async () => {
     if (!draft) return;
     try {
@@ -207,7 +237,13 @@ export function ReceiptScanSheet({
     <Sheet
       open={open}
       onClose={onClose}
-      title={stage === "review" ? "Перевір чек" : "Сканувати чек"}
+      title={
+        stage === "review"
+          ? "Перевір чек"
+          : stage === "batch"
+            ? "Чеки пачкою"
+            : "Сканувати чек"
+      }
       panelClassName="finyk-sheet"
       bodyClassName="space-y-4"
       footer={
@@ -225,7 +261,7 @@ export function ReceiptScanSheet({
                 onClick={onClose}
                 disabled={isSaving}
               >
-                Скасуй
+                Скасувати
               </Button>
               <Button
                 className="flex-1"
@@ -244,14 +280,18 @@ export function ReceiptScanSheet({
         ref={fileInputRef}
         type="file"
         accept="image/*"
+        multiple
         onClick={armPinchZoomReset}
         onChange={(e) => {
-          const file = e.target.files?.[0];
+          const files = Array.from(e.target.files ?? []);
           e.target.value = "";
-          if (file) void handleFileSelected(file);
+          const first = files[0];
+          if (!first) return;
+          if (files.length === 1) void handleFileSelected(first);
+          else handleBatchSelected(files);
         }}
         className="sr-only"
-        aria-label="Завантажити фото чека"
+        aria-label="Завантажити фото чеків"
       />
 
       {stage === "choose" && (
@@ -283,7 +323,33 @@ export function ReceiptScanSheet({
             <Icon name="camera" size={16} aria-hidden />
             Завантажити фото
           </Button>
+          <p className="text-style-caption text-subtle">
+            Можна вибрати одразу кілька фото — до {BATCH_RECEIPTS_MAX_FILES}{" "}
+            чеків за раз, кожен збережеться окремою витратою.
+          </p>
         </div>
+      )}
+
+      {stage === "batch" && (
+        <>
+          {batchCapNote && (
+            <p
+              role="status"
+              className="rounded-xl border border-line bg-panelHi/60 p-2.5 text-style-caption text-text"
+            >
+              {batchCapNote}
+            </p>
+          )}
+          <BulkReceiptsProgress
+            items={bulkReceipts.items}
+            isProcessing={bulkReceipts.isProcessing}
+            isSaving={bulkReceipts.isSaving}
+            onSetCategory={bulkReceipts.setItemCategory}
+            onToggleIncluded={bulkReceipts.toggleItemIncluded}
+            onSaveAll={() => void bulkReceipts.saveAll()}
+            customCategories={customCategories}
+          />
+        </>
       )}
 
       {stage === "camera" && (
