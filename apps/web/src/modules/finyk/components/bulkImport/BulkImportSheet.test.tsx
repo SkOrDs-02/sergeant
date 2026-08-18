@@ -99,6 +99,23 @@ beforeEach(() => {
   saveReceiptMock.mockReset();
 });
 
+describe("BulkImportSheet — cap на батч фото", () => {
+  it("вибір понад 10 фото показує чесну примітку «взято перші 10 з N»", async () => {
+    renderSheet();
+    const files = Array.from(
+      { length: 11 },
+      (_, i) =>
+        new File([new Uint8Array(10)], `r${i}.jpg`, { type: "image/jpeg" }),
+    );
+
+    await act(async () => {
+      fireEvent.change(fileInputFor(/фото чеків/i), { target: { files } });
+    });
+
+    expect(screen.getByText(/Взято перші 10 фото з 11/)).toBeInTheDocument();
+  });
+});
+
 describe("BulkImportSheet — choose stage", () => {
   it("renders all three entry actions", () => {
     renderSheet();

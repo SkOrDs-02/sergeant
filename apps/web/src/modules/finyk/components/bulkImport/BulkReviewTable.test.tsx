@@ -82,6 +82,26 @@ describe("BulkReviewTable", () => {
       />,
     );
     expect(screen.getAllByText("схоже на переказ")).toHaveLength(1);
+    // Пояснення механіки «підтвердити/спростувати» — видиме лише коли
+    // такі рядки взагалі є (бета-фідбек 2026-08-18).
+    expect(
+      screen.getByText(/за замовчуванням не імпортуються/),
+    ).toBeInTheDocument();
+  });
+
+  it("не показує transfer-підказку, коли transferLikely-рядків немає", () => {
+    render(
+      <BulkReviewTable
+        rows={rows()}
+        onToggleRow={vi.fn()}
+        onToggleAll={vi.fn()}
+        onBulkCategory={vi.fn()}
+        onEditRow={vi.fn()}
+      />,
+    );
+    expect(
+      screen.queryByText(/за замовчуванням не імпортуються/),
+    ).not.toBeInTheDocument();
   });
 
   it("calls onToggleRow with the row id when its checkbox is tapped", () => {
