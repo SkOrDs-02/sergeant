@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "current": "4.0.2",
+  "current": "4.0.3",
   "versions": {
     "0.1.0": {
       "releasedAt": "2026-06-29",
@@ -289,6 +289,14 @@
       "releasedAt": "2026-08-16",
       "changes": [
         "bump from 4.0.1 -> 4.0.2: apps/web AGENTS.md — keyboard-aware overlay gotcha extended (compensation pairs with keyboard geometry; wired overlays enumerated)"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "4.0.3": {
+      "releasedAt": "2026-08-18",
+      "changes": [
+        "bump from 4.0.2 -> 4.0.3: typo / link / freshness-only change"
       ],
       "agentsTestedWith": [],
       "passRateBaseline": null

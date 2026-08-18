@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-08-16
+ * Last validated: 2026-08-18
  * Status: Active
  *
  * Тримає `position: fixed` оверлей (bottom sheet) на місці, поки iOS
@@ -61,6 +61,42 @@
  * клавіатурного transition-у вщухли — по фінальній геометрії. Це не
  * покадровий слухач (таймер згорає раз на відкриття), H1-джитер не
  * повертається.
+ *
+ * # Четвертий симптом: аркуш дрижить
+ *
+ * Бета-фідбек №5 (2026-08-18, відео тестерки): категорія тепер
+ * доступна, але «дрижить екран на одному моменті». Покадровий розбір
+ * запису (30 fps, вікно 4.2–4.6 s): клавіатура на місці — жоден її
+ * піксель не рухається, — а весь аркуш разом зі скримом їздить
+ * ЖОРСТКО, тобто однаково у верхній, середній і нижній смузі:
+ * +7, +3, −11, +15, 0, −9, +12, +1, −7, +12 px кадр у кадр, ~15 Гц,
+ * із сумарним дрейфом ~35 px угору. Ані скрол-контейнер, ані верстка
+ * при цьому не змінюються (похибка збігу профілів ≈ 0 — чиста
+ * трансляція).
+ *
+ * Це підпис зворотного зв'язку, а не одноразового промаху. WebKit
+ * бачить сфокусоване поле впритул до accessory-бару, панує viewport
+ * на кілька пікселів, щоб дати йому просвіт; ми той пан скасовуємо
+ * трансформом — на кадр пізніше й рівно на ту саму величину, тож на
+ * екрані просвіт не з'являється; WebKit панує ще раз. Петля крутиться,
+ * поки він не здасться, і кожен її оберт видно як тремтіння.
+ *
+ * Лікування — не воювати з причиною пану, а знімати її. Пан для нас
+ * тепер СИГНАЛ «поле затиснуте»: перший пан серії ми, як і раніше,
+ * компенсуємо, але одразу ж скролимо поле в центр ВЛАСНОГО
+ * контейнера — те, що WebKit приймає. Просвіт з'являється, `offsetTop`
+ * повертається в нуль, петля обривається на першому оберті. Реванш
+ * рівно один на серію (пере-озброюється лише коли пан упав до нуля),
+ * тож замінити тремтіння на скрол-шторм він не може.
+ *
+ * Виняток — поле, яке користувач сам відкрутив геть із видимої зони:
+ * тягнути його назад означало б повернути перший симптом («не можу
+ * проскролити нижче, щоб обрати категорію»). Тому в цьому випадку
+ * навпаки — клавіатура відступає: на скрол ПАЛЬЦЕМ, після якого від
+ * поля не лишилось нічого видимого, ми його розфокусовуємо. WebKit
+ * втрачає що відкривати, пан зникає разом із причиною, а тестерка
+ * отримує аркуш цілком — рівно те, чого й хотіла, коли крутила його
+ * вниз.
  */
 import { useEffect, type RefObject } from "react";
 
@@ -81,6 +117,46 @@ const NO_ZOOM_SCALE_MAX = 1.01;
  * доскролом: iOS сипле кілька `resize`-ів за ~200 ms відкриття, чекаємо
  * тиші, щоб скролити рівно один раз і по фінальній геометрії. */
 const SETTLE_SCROLL_DELAY_MS = 150;
+
+/**
+ * Скільки пікселів поля має лишитись у видимій зоні, щоб воно ще
+ * вважалось «на екрані». Нижче цього — користувач відкрутив його геть,
+ * і жодна наша спроба підтягнути поле назад не буде тим, чого він
+ * хотів (§ четвертий симптом у шапці).
+ */
+const FIELD_VISIBLE_MIN_PX = 8;
+
+/**
+ * Вікно, протягом якого скрол-подія вважається НЕ жестом користувача:
+ * це або наш власний `scrollIntoView`, або клац верстки під час
+ * клавіатурного transition-у. Розфокусовувати поле в ці моменти не
+ * можна — інакше клавіатура закривалась би одразу після відкриття.
+ */
+const NON_GESTURE_SCROLL_MS = 350;
+
+/**
+ * Скільки після останнього дотику скрол ще вважаємо жестом: iOS домотує
+ * інерцію вже без пальця на склі, і саме на цьому хвості поле зазвичай
+ * і залишає екран.
+ */
+const TOUCH_MOMENTUM_MS = 1500;
+
+/**
+ * Скільки пікселів поля видно зараз, або `NaN`, якщо геометрії немає
+ * (jsdom, `display: none`) — тоді жодних висновків не робимо.
+ *
+ * Вимірюємо у координатах layout viewport, у яких живе і `offsetTop`:
+ * `getBoundingClientRect` уже враховує наш компенсуючий трансформ, а
+ * `vv.height` на iOS не включає клавіатуру, тож нижня межа смуги — це
+ * рівно її верхній край.
+ */
+function visibleFieldPx(el: HTMLElement, vv: VisualViewport): number {
+  const rect = el.getBoundingClientRect();
+  if (rect.height === 0) return Number.NaN;
+  const visibleTop = vv.offsetTop;
+  const visibleBottom = vv.offsetTop + vv.height;
+  return Math.min(rect.bottom, visibleBottom) - Math.max(rect.top, visibleTop);
+}
 
 /**
  * Спільний гейт для обох втручань хука. Зумленого користувача не
@@ -112,6 +188,31 @@ export function useKeyboardAwareOverlay(
     const overlay = overlayRef.current;
     if (!vv || !overlay) return;
 
+    // Мітка часу, до якої скрол всередині оверлея — не жест людини, а
+    // наш власний `scrollIntoView` або клац верстки під клавіатурний
+    // transition. Спільна для обох джерел: наслідок один і той самий.
+    let nonGestureScrollUntil = 0;
+    let lastTouchAt = 0;
+
+    /** Єдина точка, з якої ми самі рухаємо скрол-контейнер. */
+    const revealField = (el: HTMLElement) => {
+      nonGestureScrollUntil = Date.now() + NON_GESTURE_SCROLL_MS;
+      // `?.` — jsdom не реалізує `scrollIntoView`.
+      el.scrollIntoView?.({ block: "center" });
+    };
+
+    /** Сфокусоване поле всередині цього оверлея, якщо воно там є. */
+    const focusedFieldInOverlay = (): HTMLElement | null => {
+      const el = overlayRef.current;
+      const focused = document.activeElement;
+      if (!el || !isTextEntryElement(focused)) return null;
+      return el.contains(focused) ? focused : null;
+    };
+
+    // Реванш на пан: рівно один на серію. Пере-озброюється лише коли
+    // пан упав до нуля, тобто коли петля справді обірвалась.
+    let panRevealArmed = true;
+
     // Пишемо `transform` прямо в стиль вузла, а не через React-стан:
     // pan триває ~200 ms і сипле подіями покадрово, тож рендер-цикл на
     // кожну з них — це той самий джитер, тільки з іншого боку.
@@ -121,6 +222,40 @@ export function useKeyboardAwareOverlay(
       const offsetTop = Math.round(vv.offsetTop);
       const anchored = offsetTop > 0 && shouldHandleKeyboard(vv);
       el.style.transform = anchored ? `translate3d(0, ${offsetTop}px, 0)` : "";
+      if (!anchored) {
+        panRevealArmed = true;
+        return;
+      }
+      if (!panRevealArmed) return;
+      // Пан = WebKit просить просвіт для затиснутого поля. Даємо цей
+      // просвіт власним скролом, інакше він проситиме його знову і
+      // знову — по разу на кадр (§ четвертий симптом у шапці).
+      const focused = focusedFieldInOverlay();
+      if (!focused) return;
+      const visiblePx = visibleFieldPx(focused, vv);
+      // Поля не видно взагалі — його відкрутив користувач, і тягнути
+      // назад не можна. Цим займається `handleOverlayScroll`.
+      if (Number.isNaN(visiblePx) || visiblePx <= FIELD_VISIBLE_MIN_PX) return;
+      panRevealArmed = false;
+      revealField(focused);
+    };
+
+    // Скрол пальцем, після якого від поля не лишилось нічого видимого:
+    // клавіатура відступає замість того, щоб тягнути людину назад.
+    const handleOverlayScroll = () => {
+      const now = Date.now();
+      if (now < nonGestureScrollUntil) return;
+      if (now - lastTouchAt > TOUCH_MOMENTUM_MS) return;
+      if (!shouldHandleKeyboard(vv)) return;
+      const focused = focusedFieldInOverlay();
+      if (!focused) return;
+      const visiblePx = visibleFieldPx(focused, vv);
+      if (Number.isNaN(visiblePx) || visiblePx > FIELD_VISIBLE_MIN_PX) return;
+      focused.blur();
+    };
+
+    const handleTouchMove = () => {
+      lastTouchAt = Date.now();
     };
 
     const handleFocusIn = (event: FocusEvent) => {
@@ -133,8 +268,7 @@ export function useKeyboardAwareOverlay(
       // видимої зони, і будь-який подальший зсув геометрії ховає його
       // знову (§ третій симптом у шапці).
       if (!shouldHandleKeyboard(vv)) return;
-      // `?.` — jsdom не реалізує `scrollIntoView`.
-      (target as HTMLElement).scrollIntoView?.({ block: "center" });
+      revealField(target as HTMLElement);
     };
 
     // Доскрол по фінальній геометрії (§ третій симптом): коли `resize`-и
@@ -146,15 +280,16 @@ export function useKeyboardAwareOverlay(
       settleTimer = setTimeout(() => {
         settleTimer = undefined;
         if (!shouldHandleKeyboard(vv)) return;
-        const focused = document.activeElement;
-        const el = overlayRef.current;
-        if (!el || !isTextEntryElement(focused) || !el.contains(focused)) {
-          return;
-        }
-        (focused as HTMLElement).scrollIntoView?.({ block: "center" });
+        const focused = focusedFieldInOverlay();
+        if (!focused) return;
+        revealField(focused);
       }, SETTLE_SCROLL_DELAY_MS);
     };
     const handleResize = () => {
+      // Клавіатурний transition сам совгає скрол-контейнер; поки він
+      // триває, скрол-події — не жест, і розфокусовувати поле по них
+      // не можна.
+      nonGestureScrollUntil = Date.now() + NON_GESTURE_SCROLL_MS;
       applyAnchor();
       scheduleSettleScroll();
     };
@@ -162,6 +297,10 @@ export function useKeyboardAwareOverlay(
     vv.addEventListener("scroll", applyAnchor);
     vv.addEventListener("resize", handleResize);
     overlay.addEventListener("focusin", handleFocusIn);
+    overlay.addEventListener("touchmove", handleTouchMove, { passive: true });
+    // `scroll` не спливає — ловимо на фазі занурення, інакше скрол тіла
+    // аркуша до нас не дійде.
+    overlay.addEventListener("scroll", handleOverlayScroll, true);
     applyAnchor();
 
     return () => {
@@ -169,6 +308,8 @@ export function useKeyboardAwareOverlay(
       vv.removeEventListener("scroll", applyAnchor);
       vv.removeEventListener("resize", handleResize);
       overlay.removeEventListener("focusin", handleFocusIn);
+      overlay.removeEventListener("touchmove", handleTouchMove);
+      overlay.removeEventListener("scroll", handleOverlayScroll, true);
       overlay.style.transform = "";
     };
   }, [active, overlayRef]);

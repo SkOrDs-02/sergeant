@@ -295,6 +295,181 @@ describe("useKeyboardAwareOverlay", () => {
     expect(overlay.style.transform).toBe("");
   });
 
+  describe("петля «пан ↔ компенсація» (бета-фідбек №5)", () => {
+    /** Оверлей зі скрол-контейнером усередині — як у `Sheet`. */
+    function mountSheetLike(): {
+      overlay: HTMLDivElement;
+      body: HTMLDivElement;
+      input: HTMLInputElement;
+    } {
+      const overlay = document.createElement("div");
+      const body = document.createElement("div");
+      const input = document.createElement("input");
+      body.appendChild(input);
+      overlay.appendChild(body);
+      document.body.appendChild(overlay);
+      return { overlay, body, input };
+    }
+
+    /** jsdom не рахує layout — підставляємо геометрію поля самі. */
+    function setRect(el: HTMLElement, top: number, height: number): void {
+      el.getBoundingClientRect = () =>
+        ({
+          top,
+          bottom: top + height,
+          height,
+          left: 0,
+          right: 320,
+          width: 320,
+          x: 0,
+          y: top,
+          toJSON: () => ({}),
+        }) as DOMRect;
+    }
+
+    it("на пан дає полю просвіт скролом контейнера — рівно раз на серію", () => {
+      const { overlay, input } = mountSheetLike();
+      const vv = installVisualViewport(500); // гап 300 → клавіатура
+      input.focus();
+      setRect(input, 430, 44); // поле видно, але притиснуте до низу
+      renderHook(() => useKeyboardAwareOverlay(true, { current: overlay }));
+
+      const scrollIntoView = vi.mocked(Element.prototype.scrollIntoView);
+      scrollIntoView.mockClear();
+
+      act(() => {
+        vv.offsetTop = 12; // WebKit просить просвіт
+        vv._fire("scroll");
+      });
+      expect(overlay.style.transform).toBe("translate3d(0, 12px, 0)");
+      expect(scrollIntoView).toHaveBeenCalledTimes(1);
+      expect(scrollIntoView).toHaveBeenCalledWith({ block: "center" });
+
+      // Наступні кадри тієї ж серії реваншу не повторюють — інакше
+      // тремтіння просто змінилось би на скрол-шторм.
+      act(() => {
+        vv.offsetTop = 24;
+        vv._fire("scroll");
+      });
+      expect(scrollIntoView).toHaveBeenCalledTimes(1);
+
+      // Пан упав до нуля — петля обірвалась, реванш знову озброєний.
+      act(() => {
+        vv.offsetTop = 0;
+        vv._fire("scroll");
+      });
+      act(() => {
+        vv.offsetTop = 16;
+        vv._fire("scroll");
+      });
+      expect(scrollIntoView).toHaveBeenCalledTimes(2);
+    });
+
+    it("не тягне назад поле, яке користувач відкрутив із видимої зони", () => {
+      // Це перший симптом зі звіту тестерки — «не можу проскролити
+      // нижче, щоб обрати категорію». Компенсацію пану лишаємо, скрол — ні.
+      const { overlay, input } = mountSheetLike();
+      const vv = installVisualViewport(500);
+      input.focus();
+      setRect(input, 620, 44); // повністю під клавіатурою
+      renderHook(() => useKeyboardAwareOverlay(true, { current: overlay }));
+
+      const scrollIntoView = vi.mocked(Element.prototype.scrollIntoView);
+      scrollIntoView.mockClear();
+      act(() => {
+        vv.offsetTop = 12;
+        vv._fire("scroll");
+      });
+      expect(overlay.style.transform).toBe("translate3d(0, 12px, 0)");
+      expect(scrollIntoView).not.toHaveBeenCalled();
+    });
+
+    it("скрол пальцем, що ховає поле, відпускає клавіатуру", () => {
+      const { overlay, body, input } = mountSheetLike();
+      installVisualViewport(500);
+      input.focus();
+      setRect(input, 620, 44); // від'їхало під клавіатуру
+      renderHook(() => useKeyboardAwareOverlay(true, { current: overlay }));
+      const blur = vi.spyOn(input, "blur");
+
+      act(() => {
+        overlay.dispatchEvent(new Event("touchmove"));
+        body.dispatchEvent(new Event("scroll")); // `scroll` не спливає
+      });
+      expect(blur).toHaveBeenCalled();
+    });
+
+    it("не чіпає фокус, поки поле ще видно", () => {
+      const { overlay, body, input } = mountSheetLike();
+      installVisualViewport(500);
+      input.focus();
+      setRect(input, 430, 44);
+      renderHook(() => useKeyboardAwareOverlay(true, { current: overlay }));
+      const blur = vi.spyOn(input, "blur");
+
+      act(() => {
+        overlay.dispatchEvent(new Event("touchmove"));
+        body.dispatchEvent(new Event("scroll"));
+      });
+      expect(blur).not.toHaveBeenCalled();
+    });
+
+    it("не відпускає клавіатуру на скролі без дотику (клац верстки)", () => {
+      // Стискання панелі під клавіатуру саме совгає скрол-контейнер;
+      // якби ми рахували це жестом, клавіатура закривалась би одразу
+      // після відкриття.
+      const { overlay, body, input } = mountSheetLike();
+      installVisualViewport(500);
+      input.focus();
+      setRect(input, 620, 44);
+      renderHook(() => useKeyboardAwareOverlay(true, { current: overlay }));
+      const blur = vi.spyOn(input, "blur");
+
+      act(() => {
+        body.dispatchEvent(new Event("scroll"));
+      });
+      expect(blur).not.toHaveBeenCalled();
+    });
+
+    it("не відпускає клавіатуру на власному доскролі", () => {
+      // `focusin` → наш `scrollIntoView` → скрол-подія від нього ж.
+      // Приймати її за жест не можна: поле щойно перевели у фокус.
+      const { overlay, body, input } = mountSheetLike();
+      const second = document.createElement("input");
+      body.appendChild(second);
+      installVisualViewport(500);
+      input.focus();
+      renderHook(() => useKeyboardAwareOverlay(true, { current: overlay }));
+      const blur = vi.spyOn(second, "blur");
+
+      act(() => {
+        overlay.dispatchEvent(new Event("touchmove"));
+        second.focus();
+        setRect(second, 620, 44); // ще не доскролилось
+        body.dispatchEvent(new Event("scroll"));
+      });
+      expect(blur).not.toHaveBeenCalled();
+    });
+
+    it("знімає слухачі скролу й дотику при розмонтуванні", () => {
+      const { overlay, body, input } = mountSheetLike();
+      installVisualViewport(500);
+      input.focus();
+      setRect(input, 620, 44);
+      const { unmount } = renderHook(() =>
+        useKeyboardAwareOverlay(true, { current: overlay }),
+      );
+      const blur = vi.spyOn(input, "blur");
+      unmount();
+
+      act(() => {
+        overlay.dispatchEvent(new Event("touchmove"));
+        body.dispatchEvent(new Event("scroll"));
+      });
+      expect(blur).not.toHaveBeenCalled();
+    });
+  });
+
   it("є no-op без visualViewport", () => {
     const { overlay } = mountOverlay();
     Object.defineProperty(window, "visualViewport", {
