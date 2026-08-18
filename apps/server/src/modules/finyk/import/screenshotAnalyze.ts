@@ -226,11 +226,9 @@ export default async function screenshotAnalyzeHandler(
       ? await markDuplicateLikely(pool, userId, draft.rows)
       : draft.rows;
 
-  res
-    .status(200)
-    .json(
-      ImportScreenshotAnalyzeResponseSchema.parse({
-        draft: { ...draft, rows },
-      }),
-    );
+  res.status(200).json(
+    ImportScreenshotAnalyzeResponseSchema.parse({
+      draft: { ...draft, rows },
+    }),
+  );
 }
