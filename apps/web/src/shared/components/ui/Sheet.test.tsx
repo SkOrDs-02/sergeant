@@ -137,6 +137,28 @@ describe("Sheet", () => {
     expect(dialog.style.maxHeight).toContain("100dvh - 320px");
   });
 
+  it("резервує у скрол-контейнері запас на висоту клавіатури", () => {
+    // Бета-фідбек №5 (2026-08-18): без запасу поле в кінці списку нікуди
+    // підняти — під ним просто нема контенту, і скрол упирається в межу
+    // (§ докстрінг `useKeyboardAwareOverlay`, четвертий симптом).
+    const { getByText, rerender } = render(
+      <Sheet open onClose={() => {}} title="T" kbInsetPx={320}>
+        body
+      </Sheet>,
+    );
+    const scrollBody = getByText("body");
+    expect(scrollBody.style.paddingBottom).toContain("320px");
+
+    // Клавіатура зникла — запас теж, інакше під списком назавжди
+    // лишалась би порожня діра.
+    rerender(
+      <Sheet open onClose={() => {}} title="T" kbInsetPx={0}>
+        body
+      </Sheet>,
+    );
+    expect(getByText("body").style.paddingBottom).toBe("");
+  });
+
   it("closes on browser Back without changing the route", () => {
     const onClose = vi.fn();
     const pathBefore = window.location.pathname;

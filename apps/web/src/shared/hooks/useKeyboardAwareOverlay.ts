@@ -61,6 +61,27 @@
  * клавіатурного transition-у вщухли — по фінальній геометрії. Це не
  * покадровий слухач (таймер згорає раз на відкриття), H1-джитер не
  * повертається.
+ *
+ * # Четвертий симптом: нижні поля списку лишались під клавіатурою
+ *
+ * Бета-фідбек №5 (2026-08-18): «верхні та посередині наче норм, а внизу
+ * екрану не видно». Асиметрія вказує на природу дефекту: `scrollIntoView`
+ * уміє рівно стільки, скільки дозволяє `scrollHeight` контейнера. Для
+ * поля в кінці списку контенту під ним майже нема, скрол упирається в
+ * межу — і центрування, яке рятує середину, для останніх рядків просто
+ * недосяжне. Далі поле лишається там, де було, тобто під клавіатурою.
+ *
+ * Тому дві половини:
+ *   1. `Sheet` тримає у скрол-контейнері запас унизу на висоту
+ *      клавіатури, поки вона відкрита — щоб останній рядок ФІЗИЧНО мав
+ *      куди піднятись (без цього пункт 2 нікуди не доскролить);
+ *   2. після скролу звіряємо ФАКТ по `visualViewport` — чи поле справді
+ *      у видимій зоні — і дотягуємо рівно на дефіцит. Контейнерний
+ *      `scrollIntoView` цього не гарантує: він оперує геометрією свого
+ *      скрол-предка, а не тим, що реально видно на екрані.
+ *
+ * Перевірка факту — один вимір на подію фокуса чи на осідання
+ * клавіатури, не покадрово; H1-джитер тут так само неможливий.
  */
 import { useEffect, type RefObject } from "react";
 
@@ -93,6 +114,56 @@ const SETTLE_SCROLL_DELAY_MS = 150;
  */
 function shouldHandleKeyboard(vv: VisualViewport): boolean {
   return vv.scale <= NO_ZOOM_SCALE_MAX && softKeyboardGapPx(vv) > 0;
+}
+
+/** Мінімальний просвіт між низом поля і верхом клавіатури. Нуль тут
+ * означав би «впритул», а впритул на iOS з'їдає рамка фокуса. */
+const REVEAL_GAP_PX = 16;
+
+/**
+ * Найближчий предок, який реально може прокрутитись по вертикалі. Саме
+ * «реально»: `overflow-y: auto` без переповнення нікуди не скролить, і
+ * зупинятись на такому вузлі означало б мовчки не зробити нічого.
+ */
+function nearestScrollableAncestor(el: HTMLElement): HTMLElement | null {
+  let node = el.parentElement;
+  while (node) {
+    const overflowY = getComputedStyle(node).overflowY;
+    if (
+      (overflowY === "auto" ||
+        overflowY === "scroll" ||
+        overflowY === "overlay") &&
+      node.scrollHeight > node.clientHeight
+    ) {
+      return node;
+    }
+    node = node.parentElement;
+  }
+  return null;
+}
+
+/**
+ * Ставить поле у видиму зону і ПЕРЕВІРЯЄ, що воно там опинилось.
+ *
+ * `getBoundingClientRect` рахується від layout viewport, `vv.offsetTop`
+ * — це зсув visual viewport усередині нього, тож видима зона в тих
+ * самих координатах це `[offsetTop, offsetTop + height]`. Компенсуючий
+ * трансформ оверлея вже враховано: він рухає сам вузол, а отже і його
+ * rect. Усе, що нижче за `offsetTop + height`, — під клавіатурою.
+ */
+function revealField(el: HTMLElement, vv: VisualViewport): void {
+  // `?.` — jsdom не реалізує `scrollIntoView`.
+  el.scrollIntoView?.({ block: "center" });
+
+  const rect = el.getBoundingClientRect?.();
+  if (!rect) return;
+  const hiddenBy = rect.bottom + REVEAL_GAP_PX - (vv.offsetTop + vv.height);
+  if (hiddenBy <= 0) return;
+
+  // Дотягуємо рівно на дефіцит: скрол на більше підняв би поле вище, ніж
+  // потрібно, і забрав би з очей рядки, повз які людина щойно йшла.
+  const scroller = nearestScrollableAncestor(el);
+  if (scroller) scroller.scrollTop += hiddenBy;
 }
 
 /**
@@ -133,8 +204,7 @@ export function useKeyboardAwareOverlay(
       // видимої зони, і будь-який подальший зсув геометрії ховає його
       // знову (§ третій симптом у шапці).
       if (!shouldHandleKeyboard(vv)) return;
-      // `?.` — jsdom не реалізує `scrollIntoView`.
-      (target as HTMLElement).scrollIntoView?.({ block: "center" });
+      revealField(target as HTMLElement, vv);
     };
 
     // Доскрол по фінальній геометрії (§ третій симптом): коли `resize`-и
@@ -151,7 +221,7 @@ export function useKeyboardAwareOverlay(
         if (!el || !isTextEntryElement(focused) || !el.contains(focused)) {
           return;
         }
-        (focused as HTMLElement).scrollIntoView?.({ block: "center" });
+        revealField(focused, vv);
       }, SETTLE_SCROLL_DELAY_MS);
     };
     const handleResize = () => {
