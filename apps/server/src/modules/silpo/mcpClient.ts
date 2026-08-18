@@ -12,14 +12,16 @@ import { elapsedMs, isAbortError, sleep } from "../../lib/timing.js";
  * `initialize` → `tools/call` handshake instead of pulling in
  * `@modelcontextprotocol/sdk`.
  *
- * PROVISIONAL (spike §0 not run yet): the exact response envelope —
- * whether `mcp.silpo.ua` replies `application/json` or `text/event-stream`,
- * whether a session survives across requests via `Mcp-Session-Id`, the
- * real tool result shapes — is unverified. Every zod schema passed in by a
- * caller MUST use `.passthrough()` / treat unknown fields as fine (spec
- * § "Дрейф схеми tools — контрактний пояс"): a missing required field
- * degrades to a typed {@link McpError} for the caller to turn into a
- * staleness banner, never an unhandled throw in the core sync flow.
+ * Звірено живим спайком §0 (2026-08-18, `silpo-mcp-service 1.108.0`):
+ * сервер відповідає `application/json` (не SSE), `Mcp-Session-Id` не
+ * повертає (stateless per-call; SSE-гілка нижче лишається як захист від
+ * майбутньої зміни транспорту), протокол `2025-06-18` приймає, tool-результати
+ * несуть `structuredContent` (+ дублюючий `content[0].text`). Every zod
+ * schema passed in by a caller MUST use `.passthrough()` / treat unknown
+ * fields as fine (spec § "Дрейф схеми tools — контрактний пояс"): a missing
+ * required field degrades to a typed {@link McpError} for the caller to
+ * turn into a staleness banner, never an unhandled throw in the core sync
+ * flow.
  */
 
 // ─────────────────────────── JSON-RPC envelope ────────────────────────────

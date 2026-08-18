@@ -11,21 +11,22 @@ import { elapsedMs } from "../../lib/timing.js";
  * Рішення дизайну ("OAuth за mono-патерном, не через Better Auth social" —
  * this is authorization to a third-party API, not a Sergeant login).
  *
- * PROVISIONAL — spike §0 not run. Metadata discovery
- * (`/.well-known/oauth-authorization-server`) was checked once against the
- * live host on 2026-07-31 per the spec's Контекст section, but the exact
- * token-response shape and scope names are unverified; every zod schema
- * here is `.passthrough()`.
+ * Звірено живим спайком §0 (2026-08-18): metadata discovery повертає всі
+ * три endpoints (`/authorize`, `/token`, `/register`), S256 підтримано,
+ * `token_endpoint_auth_methods_supported` містить `none` (public client),
+ * DCR приймає localhost-redirect і повертає `client_id` без secret;
+ * повний OAuth-флоу з PKCE пройдено, access-токен живе ~30 днів.
+ * `scopes_supported` сервер НЕ декларує — {@link SILPO_OAUTH_SCOPE} нижче
+ * сервер мовчки приймає. Every zod schema here stays `.passthrough()`.
  */
 
 const PENDING_STATE_TTL_MS = 10 * 60 * 1000; // 10 minutes — enough for a human OAuth round-trip
 const OAUTH_HTTP_TIMEOUT_MS = 15_000;
 
 /**
- * Scope requested at authorize-time. Provisional guess (order history +
- * profile) — corrected once the spike enumerates Silpo's actual scope
- * names; an over-broad or unknown scope string is the authorization
- * server's problem to reject, not ours to guess perfectly up front.
+ * Scope requested at authorize-time. Сервер не публікує `scopes_supported`
+ * і мовчки приймає цей рядок (спайк §0, 2026-08-18) — фактичну авторизацію
+ * визначає сам грант, живий флоу дав доступ до всіх потрібних tools.
  */
 const SILPO_OAUTH_SCOPE = "orders profile";
 

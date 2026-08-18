@@ -15,6 +15,7 @@ import {
   RateLimitError,
 } from "../../obs/errors.js";
 import { callMcpTool, type McpError, type McpResult } from "./mcpClient.js";
+import { resolveBranchContext } from "./branchContext.js";
 import {
   callWithFreshAccessToken,
   type QueryFn,
@@ -28,62 +29,73 @@ import {
  * `docs/90-work/planning/specs/silpo-mcp-integration.md` § Рішення дизайну
  * ("Збагачення, а не створення витрат" / "Unmatched-чеки — першокласний стан").
  *
- * PROVISIONAL parsing (spike §0 not run): field names below are best
- * guesses at the real `silpo_get_my_*_orders` tool output. Every raw schema
- * is `.passthrough()`; a receipt/item that doesn't parse is DROPPED with a
- * `logger.warn` (never crashes the sync). Re-derive once the spike runs.
+ * Форми звірені живим спайком §0 (2026-08-18, `serverInfo.version 1.108.0`):
+ *
+ * - `silpo_get_my_offline_orders` вимагає `branchId`/`deliveryType`/
+ *   `timeslot*` (див. `branchContext.ts`); порожні timeslot-и приймаються.
+ *   Order: `{filId, filialName, cityName, createdAt, sumReg, sumDiscount,
+ *   accruedBalaBonusesSum, receiptUrl, chequeMagicName, rewards, products}`.
+ *   `products[]`: `{lagerId, name, unit, quantity, price}` — `price` це ЦІНА
+ *   ЗА ОДИНИЦЮ (Σ price×quantity ≈ sumReg, звірено на живих чеках), `unit` —
+ *   фасування ("шт", "кг", "870г", "пачка"...). Власного `id` чек НЕ має —
+ *   стабільний ідентифікатор деривуємо з токена `receiptUrl`
+ *   (`https://receipt.silpo.elkasa.com.ua/<token>`).
+ * - `silpo_get_my_online_orders` — всі аргументи опційні. Order: `{orderId,
+ *   number, status, createdAt, amount, discount, delivery, address,
+ *   products}`; `products[]`: `{id, name, price, quantity, subtotal,
+ *   removed}`. `amount` ≠ Σ subtotal (доставка/знижки) — беремо `amount`.
+ * - Дати: offline `createdAt` — НАЇВНИЙ Kyiv-local рядок без офсету
+ *   (`2026-08-09T20:12:24`); online — ISO з офсетом (`...+00:00`).
+ * - Суми — UAH decimal → ×100 у копійки. Баркодів/категорій у чеках немає.
+ *
+ * Every raw schema stays `.passthrough()`; a receipt/item that doesn't
+ * parse is DROPPED with a `logger.warn` (never crashes the sync).
  */
 
-// ─────────────────────────── Provisional raw shapes ─────────────────────────
+// ──────────────────────── Raw shapes (спайк §0, 2026-08-18) ─────────────────
 
 const RawItemSchema = z
   .object({
+    // offline
+    lagerId: z.number().optional(),
     name: z.string().optional(),
-    title: z.string().optional(),
-    qty: z.number().optional(),
-    quantity: z.number().optional(),
     unit: z.string().optional(),
-    price: z.number().optional(), // UAH, provisional — ×100 → kop
-    priceKop: z.number().optional(),
-    amount: z.number().optional(), // UAH line total, provisional
-    categorySlug: z.string().optional(),
-    category: z.string().optional(),
-    barcode: z.string().optional(),
+    quantity: z.number().optional(),
+    price: z.number().optional(), // UAH за одиницю
+    // online
+    id: z.union([z.string(), z.number()]).optional(),
+    subtotal: z.number().optional(), // UAH line total (online)
   })
   .passthrough();
 type RawItem = z.infer<typeof RawItemSchema>;
 
 const RawOrderSchema = z
   .object({
-    id: z.string().optional(),
-    orderId: z.string().optional(),
-    receiptId: z.string().optional(),
-    purchasedAt: z.string().optional(),
+    // offline
+    filId: z.number().optional(),
+    filialName: z.string().optional(),
     createdAt: z.string().optional(),
-    date: z.string().optional(),
-    storeId: z.string().optional(),
-    store: z.string().optional(),
-    paymentHint: z.string().optional(),
-    paymentMethod: z.string().optional(),
-    total: z.number().optional(), // UAH, provisional — ×100 → kop
-    totalKop: z.number().optional(),
-    amount: z.number().optional(), // UAH, provisional fallback
-    items: z.array(RawItemSchema).optional(),
+    sumReg: z.number().optional(), // UAH total
+    receiptUrl: z.string().nullable().optional(),
+    // online
+    orderId: z.string().optional(),
+    status: z.string().optional(),
+    amount: z.number().optional(), // UAH total
+    products: z.array(z.unknown()).optional(),
   })
   .passthrough();
 type RawOrder = z.infer<typeof RawOrderSchema>;
 
 /**
- * Envelope-level schema handed to `callMcpTool` — `z.unknown()` per
- * element, NOT `RawOrderSchema`. `schema.safeParse` there is all-or-nothing
- * over the whole payload, so validating every order with `RawOrderSchema`
- * at THAT layer would fail the entire array (→ `schema_drift` 502) on one
- * malformed order — contradicting the documented degradation ("кривий чек
- * DROP-ається з `logger.warn`", spec § "Дрейф схеми tools — контрактний
- * пояс"). `fetchOrderList()` below does the real per-order
- * `RawOrderSchema.safeParse` once the envelope array itself parsed fine.
+ * Envelope: живий сервер віддає `structuredContent` як обʼєкт
+ * `{success, summary, orders: [...], meta}` — НЕ голий масив. Елементи
+ * лишаються `z.unknown()`: per-order `RawOrderSchema.safeParse` нижче, щоб
+ * один кривий чек DROP-ався з `logger.warn`, а не валив увесь sync як
+ * `schema_drift` (spec § "Дрейф схеми tools — контрактний пояс").
  */
-const RawOrdersEnvelopeSchema = z.array(z.unknown());
+const RawOrdersEnvelopeSchema = z
+  .object({ orders: z.array(z.unknown()).optional() })
+  .passthrough();
 
 // ─────────────────────────── Normalization (provisional) ────────────────────
 
@@ -119,22 +131,48 @@ function uahToKop(uah: number | undefined): number | undefined {
   return uah === undefined ? undefined : Math.round(uah * 100);
 }
 
+/**
+ * Offline `createdAt` — наївний Kyiv-local рядок без офсету (спайк §0).
+ * `Date.parse` трактував би його в TZ процесу — на UTC-сервері це зсув
+ * на 2–3 год і потенційно інша доба для matcher-а. Парсимо явно як
+ * Europe/Kyiv через Intl-офсет на цю мить.
+ */
+// ponytail: у годину переходу на зимовий час офсет неоднозначний ±1h —
+// для day-вікна matcher-а несуттєво.
+function kyivNaiveToMs(naive: string): number {
+  const utcGuess = Date.parse(`${naive}Z`);
+  if (!Number.isFinite(utcGuess)) return NaN;
+  const offsetPart = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Europe/Kyiv",
+    timeZoneName: "longOffset",
+  })
+    .formatToParts(new Date(utcGuess))
+    .find((p) => p.type === "timeZoneName")?.value;
+  const m = /GMT([+-])(\d{2}):(\d{2})/.exec(offsetPart ?? "");
+  if (!m) return utcGuess;
+  const offsetMs =
+    (m[1] === "-" ? -1 : 1) * (Number(m[2]) * 60 + Number(m[3])) * 60_000;
+  return utcGuess - offsetMs;
+}
+
+/** `https://receipt.silpo.elkasa.com.ua/<token>` → `<token>` (стабільний id чека). */
+function receiptIdFromUrl(receiptUrl: string): string | undefined {
+  const token = receiptUrl.split("/").filter(Boolean).pop();
+  return token && token.length > 0 ? token : undefined;
+}
+
 function normalizeRawItem(raw: RawItem): ParsedItem | null {
-  const name = firstDefined(raw.name, raw.title);
+  const name = raw.name;
   if (!name) return null;
-  const priceKop = firstDefined(
-    raw.priceKop,
-    uahToKop(raw.price),
-    uahToKop(raw.amount),
-  );
+  const priceKop = uahToKop(raw.price);
   if (priceKop === undefined) return null;
   return {
     name,
-    qty: firstDefined(raw.qty, raw.quantity) ?? null,
+    qty: raw.quantity ?? null,
     unit: raw.unit ?? null,
     priceKop,
-    categorySlug: firstDefined(raw.categorySlug, raw.category) ?? null,
-    barcode: raw.barcode ?? null,
+    categorySlug: null, // чеки Сільпо не містять категорій (спайк §0)
+    barcode: null, // ані EAN — лише внутрішній lagerId (лишається в raw JSONB)
   };
 }
 
@@ -142,35 +180,46 @@ function normalizeRawOrder(
   raw: RawOrder,
   channel: "online" | "offline",
 ): ParsedReceipt | null {
-  const receiptId = firstDefined(raw.id, raw.orderId, raw.receiptId);
+  const receiptId =
+    channel === "online"
+      ? raw.orderId
+      : firstDefined(
+          raw.receiptUrl ? receiptIdFromUrl(raw.receiptUrl) : undefined,
+          // Fallback без receiptUrl: детермінований складений ключ.
+          raw.filId !== undefined && raw.createdAt !== undefined
+            ? `offline_${raw.filId}_${raw.createdAt}`
+            : undefined,
+        );
   if (!receiptId) {
     logger.warn({ msg: "silpo_receipt_missing_id", channel });
     return null;
   }
-  const purchasedRaw = firstDefined(raw.purchasedAt, raw.createdAt, raw.date);
-  const purchasedAtMs = purchasedRaw ? Date.parse(purchasedRaw) : NaN;
+  const purchasedAtMs = raw.createdAt
+    ? channel === "offline"
+      ? kyivNaiveToMs(raw.createdAt)
+      : Date.parse(raw.createdAt)
+    : NaN;
   if (!Number.isFinite(purchasedAtMs)) {
     logger.warn({ msg: "silpo_receipt_missing_date", channel, receiptId });
     return null;
   }
-  const totalKop = firstDefined(
-    raw.totalKop,
-    uahToKop(raw.total),
-    uahToKop(raw.amount),
-  );
+  const totalKop = uahToKop(channel === "offline" ? raw.sumReg : raw.amount);
   if (totalKop === undefined) {
     logger.warn({ msg: "silpo_receipt_missing_total", channel, receiptId });
     return null;
   }
-  const items = (raw.items ?? [])
-    .map(normalizeRawItem)
+  const items = (raw.products ?? [])
+    .map((p) => {
+      const parsed = RawItemSchema.safeParse(p);
+      return parsed.success ? normalizeRawItem(parsed.data) : null;
+    })
     .filter((i): i is ParsedItem => i !== null);
 
   return {
     receiptId,
     purchasedAtMs,
-    storeId: firstDefined(raw.storeId, raw.store) ?? null,
-    paymentHint: firstDefined(raw.paymentHint, raw.paymentMethod) ?? null,
+    storeId: raw.filId !== undefined ? String(raw.filId) : null,
+    paymentHint: null, // способу оплати в жодному з order-tools немає (спайк §0)
     totalKop,
     items,
     raw,
@@ -178,6 +227,10 @@ function normalizeRawOrder(
 }
 
 // ─────────────────────────────── MCP fetch step ─────────────────────────────
+
+// Ліміти з живих input schemas (спайк §0): offline max 10, online max 100.
+const OFFLINE_ORDERS_LIMIT = 10;
+const ONLINE_ORDERS_LIMIT = 100;
 
 /**
  * Fetches one order list and parses it **per order**: an MCP-level failure
@@ -188,17 +241,18 @@ function normalizeRawOrder(
 async function fetchOrderList(
   accessToken: string,
   toolName: "silpo_get_my_offline_orders" | "silpo_get_my_online_orders",
+  args: Record<string, unknown>,
 ): Promise<McpResult<RawOrder[]>> {
   const result = await callMcpTool({
     accessToken,
     toolName,
-    args: {},
+    args,
     schema: RawOrdersEnvelopeSchema,
   });
   if (!result.ok) return result;
 
   const orders: RawOrder[] = [];
-  result.data.forEach((raw, index) => {
+  (result.data.orders ?? []).forEach((raw, index) => {
     const parsed = RawOrderSchema.safeParse(raw);
     if (!parsed.success) {
       logger.warn({
@@ -223,20 +277,52 @@ interface BothOrderLists {
   online: RawOrder[];
 }
 
-async function fetchBothOrderLists(
-  accessToken: string,
-): Promise<McpResult<BothOrderLists>> {
-  const offline = await fetchOrderList(
-    accessToken,
-    "silpo_get_my_offline_orders",
-  );
-  if (!offline.ok) return { ok: false, error: offline.error };
-  const online = await fetchOrderList(
-    accessToken,
-    "silpo_get_my_online_orders",
-  );
-  if (!online.ok) return { ok: false, error: online.error };
-  return { ok: true, data: { offline: offline.data, online: online.data } };
+/**
+ * Offline-tool вимагає контекст філії (спайк §0). Якщо контекст добути не
+ * вдалося — offline-канал деградує до порожнього списку з `logger.warn`
+ * (best-effort принцип спеки), online синкається завжди.
+ */
+function makeFetchBothOrderLists(
+  userId: string,
+): (accessToken: string) => Promise<McpResult<BothOrderLists>> {
+  return async (accessToken) => {
+    let offline: RawOrder[] = [];
+    const ctx = await resolveBranchContext(userId, accessToken);
+    if (ctx.ok) {
+      const offlineResult = await fetchOrderList(
+        accessToken,
+        "silpo_get_my_offline_orders",
+        {
+          branchId: ctx.data.branchId,
+          deliveryType: ctx.data.deliveryType,
+          timeslotStart: ctx.data.timeslotStart,
+          timeslotEnd: ctx.data.timeslotEnd,
+          limit: OFFLINE_ORDERS_LIMIT,
+        },
+      );
+      if (!offlineResult.ok) {
+        // auth_required має спливти нагору — callWithFreshAccessToken
+        // зробить refresh і повторить; решта — деградація каналу.
+        if (offlineResult.error.kind === "auth_required") return offlineResult;
+        logger.warn({
+          msg: "silpo_offline_orders_skipped",
+          kind: offlineResult.error.kind,
+        });
+      } else {
+        offline = offlineResult.data;
+      }
+    } else {
+      logger.warn({ msg: "silpo_offline_orders_skipped_no_branch_context" });
+    }
+
+    const online = await fetchOrderList(
+      accessToken,
+      "silpo_get_my_online_orders",
+      { limit: ONLINE_ORDERS_LIMIT },
+    );
+    if (!online.ok) return { ok: false, error: online.error };
+    return { ok: true, data: { offline, online: online.data } };
+  };
 }
 
 // ─────────────────────────────── DB upsert step ─────────────────────────────
@@ -544,9 +630,11 @@ export async function pullAndSyncReceipts(
   const queryFn = deps.query ?? defaultQuery;
   const withTransaction = deps.withTransaction ?? defaultWithTransaction;
 
-  const call = await callWithFreshAccessToken(userId, fetchBothOrderLists, {
-    query: queryFn,
-  });
+  const call = await callWithFreshAccessToken(
+    userId,
+    makeFetchBothOrderLists(userId),
+    { query: queryFn },
+  );
   if (!call.ok) throw silpoErrorToAppError(call.error);
 
   const offlineParsed = call.data.offline

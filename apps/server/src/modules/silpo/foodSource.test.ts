@@ -4,6 +4,7 @@ const mocks = vi.hoisted(() => ({
   env: { SILPO_ENABLED: true },
   callWithFreshAccessToken: vi.fn(),
   callMcpTool: vi.fn(),
+  resolveBranchContext: vi.fn(),
   dbQuery: vi.fn(),
   loggerWarn: vi.fn(),
 }));
@@ -16,6 +17,10 @@ vi.mock("./tokenStore.js", () => ({
 
 vi.mock("./mcpClient.js", () => ({
   callMcpTool: mocks.callMcpTool,
+}));
+
+vi.mock("./branchContext.js", () => ({
+  resolveBranchContext: mocks.resolveBranchContext,
 }));
 
 vi.mock("../../db.js", () => ({
@@ -39,12 +44,16 @@ const {
   normalizeRawProduct,
   toSearchProduct,
   toBarcodeProduct,
+  attrNumber,
+  parseKcal,
+  parseDisplayRatio,
 } = __test__;
 
 beforeEach(() => {
   mocks.env.SILPO_ENABLED = true;
   mocks.callWithFreshAccessToken.mockReset();
   mocks.callMcpTool.mockReset();
+  mocks.resolveBranchContext.mockReset();
   mocks.dbQuery.mockReset();
   mocks.loggerWarn.mockReset();
 });
@@ -64,6 +73,16 @@ function connectedRow() {
 function notConnectedRow() {
   mocks.dbQuery.mockResolvedValue({ rows: [] });
 }
+
+const BRANCH_CTX = {
+  ok: true as const,
+  data: {
+    branchId: "branch-uuid-1",
+    deliveryType: "DeliveryHome",
+    timeslotStart: "",
+    timeslotEnd: "",
+  },
+};
 
 // ─────────────────────────────── toServingGrams ─────────────────────────────
 
@@ -96,102 +115,86 @@ describe("toServingGrams (mass-units-only conversion)", () => {
   });
 });
 
+// ──────────────── attributes-парсери (живі форми, спайк §0) ─────────────────
+
+describe("attrNumber / parseKcal / parseDisplayRatio", () => {
+  it("attrNumber: number as-is, рядок з комою → число, сміття → undefined", () => {
+    expect(attrNumber(2.9)).toBe(2.9);
+    expect(attrNumber("4,3")).toBe(4.3);
+    expect(attrNumber("10")).toBe(10);
+    expect(attrNumber("н/д")).toBeUndefined();
+    expect(attrNumber(undefined)).toBeUndefined();
+  });
+
+  it('parseKcal: "119/492" (кКал/кДЖ) → 119; number as-is', () => {
+    expect(parseKcal("119/492")).toBe(119);
+    expect(parseKcal("60,5/253")).toBe(60.5);
+    expect(parseKcal(220)).toBe(220);
+    expect(parseKcal(undefined)).toBeUndefined();
+  });
+
+  it('parseDisplayRatio: "500г" / "10 шт" / "1,5л" → {amount, unit}', () => {
+    expect(parseDisplayRatio("500г")).toEqual({ amount: 500, unit: "г" });
+    expect(parseDisplayRatio("10 шт")).toEqual({ amount: 10, unit: "шт" });
+    expect(parseDisplayRatio("1,5л")).toEqual({ amount: 1.5, unit: "л" });
+    expect(parseDisplayRatio(null)).toBeNull();
+    expect(parseDisplayRatio("шт")).toBeNull();
+  });
+});
+
 // ─────────────────────────────── normalizeRawProduct ────────────────────────
 
-describe("normalizeRawProduct (provisional field-alias mapping)", () => {
-  it("maps the primary field names + all four macro aliases", () => {
+describe("normalizeRawProduct (details-форма зі спайку §0)", () => {
+  it("мапить attributes з українськими ключами у макро-поля", () => {
     const parsed = normalizeRawProduct({
-      name: "Молоко Галичина 2.5%",
-      brand: "Галичина",
-      barcode: "4820000000017",
-      kcal100g: 60,
-      protein100g: 3.2,
-      fat100g: 2.5,
-      carbs100g: 4.8,
-      weight: 900,
-      weightUnit: "мл",
+      name: "Тестові вершки 10%",
+      displayRatio: "500г",
+      attributes: {
+        Країна: "Україна",
+        "Торгова марка": "ТестБренд",
+        "Енергетична цінність (кКал/кДЖ)": "119/492",
+        "Білки (г)": 2.9,
+        "Жири (г)": 10,
+        "Вуглеводи (г)": 4.3,
+      },
     });
     expect(parsed).toEqual({
-      name: "Молоко Галичина 2.5%",
-      brand: "Галичина",
-      barcode: "4820000000017",
-      kcal_100g: 60,
-      protein_100g: 3.2,
-      fat_100g: 2.5,
-      carbs_100g: 4.8,
-      servingAmount: 900,
-      // "мл" is not a mass unit — the raw 900 must NOT leak into grams.
-      servingGrams: null,
-      servingUnit: "мл",
-      hasMacro: true,
-    });
-  });
-
-  it("converts кг to grams but keeps the raw unit for display", () => {
-    const parsed = normalizeRawProduct({
-      name: "Борошно",
-      weight: 1,
-      weightUnit: "кг",
-    });
-    expect(parsed).toMatchObject({
-      servingAmount: 1,
-      servingGrams: 1000,
-      servingUnit: "кг",
-    });
-  });
-
-  it("treats a bare weight without any unit as grams", () => {
-    const parsed = normalizeRawProduct({ name: "Сир", weight: 200 });
-    expect(parsed).toMatchObject({
-      servingAmount: 200,
-      servingGrams: 200,
-      servingUnit: null,
-    });
-  });
-
-  it("yields null grams for count units (шт) while keeping the raw unit", () => {
-    const parsed = normalizeRawProduct({
-      name: "Яйця",
-      weight: 10,
-      unit: "шт",
-    });
-    expect(parsed).toMatchObject({
-      servingAmount: 10,
-      servingGrams: null,
-      servingUnit: "шт",
-    });
-  });
-
-  it("falls back through the secondary alias set (title/brandName/ean/energyKcal100g/proteins100g/...)", () => {
-    const parsed = normalizeRawProduct({
-      title: "Хліб Український",
-      brandName: "Київхліб",
-      ean: "4820000000024",
-      energyKcal100g: 220,
-      proteins100g: 7.6,
-      fats100g: 1.2,
-      carbohydrates100g: 45,
-      unit: "г",
-    });
-    expect(parsed).toMatchObject({
-      name: "Хліб Український",
-      brand: "Київхліб",
-      barcode: "4820000000024",
-      kcal_100g: 220,
-      protein_100g: 7.6,
-      fat_100g: 1.2,
-      carbs_100g: 45,
+      name: "Тестові вершки 10%",
+      brand: "ТестБренд",
+      barcode: null, // EAN відсутній у контракті Silpo MCP
+      kcal_100g: 119,
+      protein_100g: 2.9,
+      fat_100g: 10,
+      carbs_100g: 4.3,
+      servingAmount: 500,
+      servingGrams: 500,
       servingUnit: "г",
       hasMacro: true,
     });
   });
 
-  it("drops a product with no usable name (never throws)", () => {
-    expect(normalizeRawProduct({ brand: "Х", kcal100g: 100 })).toBeNull();
+  it('обʼємні юніти displayRatio ("1,5л") не течуть у грами', () => {
+    const parsed = normalizeRawProduct({
+      name: "Тестова вода",
+      displayRatio: "1,5л",
+      attributes: { "Енергетична цінність (кКал/кДЖ)": "0/0" },
+    });
+    expect(parsed).toMatchObject({
+      servingAmount: 1.5,
+      servingGrams: null,
+      servingUnit: "л",
+    });
   });
 
-  it("normalizes fine with zero macro fields present — hasMacro: false, no crash", () => {
-    const parsed = normalizeRawProduct({ name: "Товар без КБЖВ" });
+  it("drops a product with no usable name (never throws)", () => {
+    expect(normalizeRawProduct({ attributes: { "Білки (г)": 1 } })).toBeNull();
+  });
+
+  it("normalizes fine with zero macro attributes — hasMacro: false, no crash", () => {
+    const parsed = normalizeRawProduct({
+      name: "Товар без КБЖВ",
+      attributes: { Країна: "Україна" },
+    });
     expect(parsed).toMatchObject({
       name: "Товар без КБЖВ",
       hasMacro: false,
@@ -201,14 +204,22 @@ describe("normalizeRawProduct (provisional field-alias mapping)", () => {
       carbs_100g: null,
     });
   });
+
+  it("normalizes fine with attributes absent entirely", () => {
+    expect(normalizeRawProduct({ name: "Голий товар" })).toMatchObject({
+      name: "Голий товар",
+      hasMacro: false,
+      brand: null,
+    });
+  });
 });
 
 describe("toSearchProduct", () => {
   it("emits a real per100 block when macros are present", () => {
     const product = toSearchProduct({
       name: "Сир кисломолочний",
-      brand: "Галичина",
-      barcode: "4820000000017",
+      brand: "ТестБренд",
+      barcode: null,
       kcal_100g: 101,
       protein_100g: 16.7,
       fat_100g: 2,
@@ -219,20 +230,20 @@ describe("toSearchProduct", () => {
       hasMacro: true,
     });
     expect(product).toEqual({
-      id: "silpo_4820000000017",
+      id: expect.stringMatching(/^silpo_/),
       name: "Сир кисломолочний",
-      brand: "Галичина",
+      brand: "ТестБренд",
       source: "silpo",
       per100: { kcal: 101, protein_g: 16.7, fat_g: 2, carbs_g: 3.4 },
       defaultGrams: 350,
     });
   });
 
-  it("falls back to defaultGrams: 100 when the serving is non-mass (мл → servingGrams null)", () => {
+  it("falls back to defaultGrams: 100 when the serving is non-mass (л → servingGrams null)", () => {
     const product = toSearchProduct({
       name: "Молоко",
-      brand: "Галичина",
-      barcode: "4820000000017",
+      brand: null,
+      barcode: null,
       kcal_100g: 60,
       protein_100g: 3.2,
       fat_100g: 2.5,
@@ -287,11 +298,13 @@ describe("toSearchProduct", () => {
 });
 
 describe("toBarcodeProduct", () => {
+  // Функція лишається для дня, коли Сільпо додасть EAN-lookup —
+  // `lookupSilpoBarcode` зараз завжди `null` (див. тести нижче).
   it("returns `partial: true` + null macros when no macro is present (mirrors UPCitemdb)", () => {
     const product = toBarcodeProduct({
       name: "Товар без КБЖВ",
       brand: "Бренд",
-      barcode: "4820000000017",
+      barcode: null,
       kcal_100g: null,
       protein_100g: null,
       fat_100g: null,
@@ -313,25 +326,6 @@ describe("toBarcodeProduct", () => {
       source: "silpo",
       partial: true,
     });
-  });
-
-  it("omits `partial` and returns real macros when present; мл serving keeps the display string but null grams", () => {
-    const product = toBarcodeProduct({
-      name: "Молоко",
-      brand: "Галичина",
-      barcode: "4820000000017",
-      kcal_100g: 60,
-      protein_100g: 3.2,
-      fat_100g: 2.5,
-      carbs_100g: 4.8,
-      servingAmount: 900,
-      servingGrams: null,
-      servingUnit: "мл",
-      hasMacro: true,
-    });
-    expect(product.partial).toBeUndefined();
-    expect(product.servingSize).toBe("900 мл");
-    expect(product.servingGrams).toBeNull();
   });
 });
 
@@ -384,6 +378,57 @@ describe("hasSilpoConnection", () => {
 
 // ─────────────────────────────── searchSilpoProducts ─────────────────────────
 
+/** Хіт batch-каталогу + details з КБЖВ — вигадані дані у живих формах. */
+function mockTwoPhaseSearch() {
+  mocks.resolveBranchContext.mockResolvedValue(BRANCH_CTX);
+  mocks.callMcpTool.mockImplementation(
+    async ({ toolName }: { toolName: string }) => {
+      if (toolName === "silpo_find_products_batch") {
+        return {
+          ok: true,
+          data: {
+            queries: [
+              {
+                query: "молоко",
+                totalFound: 1,
+                products: [
+                  {
+                    id: "cat-uuid-1",
+                    name: "Тестове молоко 2.5%",
+                    slug: "testove-moloko-2-5-111111",
+                    price: 45.5,
+                    displayRatio: "900г",
+                    externalProductId: 111111,
+                  },
+                ],
+              },
+            ],
+          },
+        };
+      }
+      if (toolName === "silpo_get_product_details") {
+        return {
+          ok: true,
+          data: {
+            product: {
+              name: "Тестове молоко 2.5%",
+              displayRatio: "900г",
+              attributes: {
+                "Торгова марка": "ТестБренд",
+                "Енергетична цінність (кКал/кДЖ)": "60/251",
+                "Білки (г)": 3.2,
+                "Жири (г)": 2.5,
+                "Вуглеводи (г)": 4.8,
+              },
+            },
+          },
+        };
+      }
+      throw new Error(`unexpected tool: ${toolName}`);
+    },
+  );
+}
+
 describe("searchSilpoProducts", () => {
   it("silently skips (empty array, no MCP call) for a non-connected user — guard #4", async () => {
     notConnectedRow();
@@ -399,61 +444,69 @@ describe("searchSilpoProducts", () => {
     expect(mocks.callWithFreshAccessToken).not.toHaveBeenCalled();
   });
 
-  it("happy path: normalizes a raw product array from the (provisional) envelope", async () => {
+  it("happy path: двофазний batch → details, макро з attributes", async () => {
     connectedRow();
     passThroughAccessToken();
-    mocks.callMcpTool.mockResolvedValue({
-      ok: true,
-      data: {
-        products: [
-          {
-            name: "Молоко Галичина 2.5%",
-            brand: "Галичина",
-            kcal100g: 60,
-            protein100g: 3.2,
-            fat100g: 2.5,
-            carbs100g: 4.8,
-          },
-        ],
-      },
-    });
+    mockTwoPhaseSearch();
 
     const products = await searchSilpoProducts("user-1", "молоко");
 
     expect(products).toEqual([
       {
         id: expect.stringMatching(/^silpo_/),
-        name: "Молоко Галичина 2.5%",
-        brand: "Галичина",
+        name: "Тестове молоко 2.5%",
+        brand: "ТестБренд",
         source: "silpo",
         per100: { kcal: 60, protein_g: 3.2, fat_g: 2.5, carbs_g: 4.8 },
-        defaultGrams: 100,
+        defaultGrams: 900,
       },
     ]);
     expect(mocks.callMcpTool).toHaveBeenCalledWith(
       expect.objectContaining({
         toolName: "silpo_find_products_batch",
-        args: { queries: ["молоко"] },
+        args: expect.objectContaining({
+          branchId: "branch-uuid-1",
+          deliveryType: "DeliveryHome",
+          products: ["молоко"],
+        }),
+      }),
+    );
+    expect(mocks.callMcpTool).toHaveBeenCalledWith(
+      expect.objectContaining({
+        toolName: "silpo_get_product_details",
+        args: expect.objectContaining({
+          slug: "testove-moloko-2-5-111111",
+        }),
       }),
     );
   });
 
-  it("drops a malformed element (never fails the whole search) and logs a warn", async () => {
+  it("drops a malformed batch element (never fails the whole search) and logs a warn", async () => {
     connectedRow();
     passThroughAccessToken();
-    mocks.callMcpTool.mockResolvedValue({
-      ok: true,
-      data: [
-        { name: "Хліб", kcal100g: 220 },
-        // Malformed: `name` must be a string per `RawProductSchema`.
-        { name: 12345, kcal100g: 100 },
-      ],
-    });
+    mocks.resolveBranchContext.mockResolvedValue(BRANCH_CTX);
+    mocks.callMcpTool.mockImplementation(
+      async ({ toolName }: { toolName: string }) => {
+        if (toolName === "silpo_find_products_batch") {
+          return {
+            ok: true,
+            data: {
+              queries: [
+                {
+                  products: [
+                    // Malformed: `name` must be a string.
+                    { name: 12345, slug: "x" },
+                  ],
+                },
+              ],
+            },
+          };
+        }
+        throw new Error(`unexpected tool: ${toolName}`);
+      },
+    );
 
-    const products = await searchSilpoProducts("user-1", "хліб");
-
-    expect(products).toHaveLength(1);
-    expect(products[0]?.name).toBe("Хліб");
+    expect(await searchSilpoProducts("user-1", "хліб")).toEqual([]);
     expect(mocks.loggerWarn).toHaveBeenCalledWith(
       expect.objectContaining({
         msg: "silpo_food_search_raw_product_unparseable",
@@ -461,15 +514,47 @@ describe("searchSilpoProducts", () => {
     );
   });
 
-  it("drops a well-formed hit with no macro data instead of zero-filling it", async () => {
+  it("drops a hit whose details have no macro attributes instead of zero-filling it", async () => {
     connectedRow();
     passThroughAccessToken();
-    mocks.callMcpTool.mockResolvedValue({
-      ok: true,
-      data: [{ name: "Товар без КБЖВ" }],
-    });
+    mocks.resolveBranchContext.mockResolvedValue(BRANCH_CTX);
+    mocks.callMcpTool.mockImplementation(
+      async ({ toolName }: { toolName: string }) => {
+        if (toolName === "silpo_find_products_batch") {
+          return {
+            ok: true,
+            data: {
+              queries: [
+                { products: [{ name: "Товар без КБЖВ", slug: "tovar-1" }] },
+              ],
+            },
+          };
+        }
+        return {
+          ok: true,
+          data: { product: { name: "Товар без КБЖВ", attributes: {} } },
+        };
+      },
+    );
 
     expect(await searchSilpoProducts("user-1", "товар")).toEqual([]);
+  });
+
+  it("порожній результат без жодного details-виклику, коли контекст філії недоступний", async () => {
+    connectedRow();
+    passThroughAccessToken();
+    mocks.resolveBranchContext.mockResolvedValue({
+      ok: false,
+      error: { kind: "schema_drift", message: "no branch context" },
+    });
+
+    const products = await searchSilpoProducts("user-1", "молоко");
+
+    expect(products).toEqual([]);
+    expect(mocks.callMcpTool).not.toHaveBeenCalled();
+    expect(mocks.loggerWarn).toHaveBeenCalledWith(
+      expect.objectContaining({ msg: "silpo_food_search_source_skipped" }),
+    );
   });
 
   it("never breaks the cascade on an MCP-layer error — quiet skip + warn", async () => {
@@ -500,98 +585,15 @@ describe("searchSilpoProducts", () => {
 
 // ─────────────────────────────── lookupSilpoBarcode ──────────────────────────
 
-describe("lookupSilpoBarcode", () => {
-  it("silently skips (null, no MCP call) for a non-connected user — guard #4", async () => {
-    notConnectedRow();
-    const product = await lookupSilpoBarcode("user-1", "4820000000017");
-    expect(product).toBeNull();
-    expect(mocks.callWithFreshAccessToken).not.toHaveBeenCalled();
-  });
-
-  it("happy path: normalizes a single raw product with real macros", async () => {
-    connectedRow();
-    passThroughAccessToken();
-    mocks.callMcpTool.mockResolvedValue({
-      ok: true,
-      data: {
-        product: {
-          name: "Молоко Галичина 2.5%",
-          brand: "Галичина",
-          kcal100g: 60,
-          protein100g: 3.2,
-          fat100g: 2.5,
-          carbs100g: 4.8,
-          weight: 900,
-          weightUnit: "мл",
-        },
-      },
-    });
-
-    const product = await lookupSilpoBarcode("user-1", "4820000000017");
-
-    expect(product).toEqual({
-      name: "Молоко Галичина 2.5%",
-      brand: "Галичина",
-      kcal_100g: 60,
-      protein_100g: 3.2,
-      fat_100g: 2.5,
-      carbs_100g: 4.8,
-      servingSize: "900 мл",
-      // "мл" is not a mass unit — display string keeps it, grams stay null.
-      servingGrams: null,
-      source: "silpo",
-    });
-    expect(mocks.callMcpTool).toHaveBeenCalledWith(
-      expect.objectContaining({
-        toolName: "silpo_get_product_details",
-        args: { barcode: "4820000000017" },
-      }),
-    );
-  });
-
-  it("returns `partial: true` (never null) when the product has a name but no macros", async () => {
-    connectedRow();
-    passThroughAccessToken();
-    mocks.callMcpTool.mockResolvedValue({
-      ok: true,
-      data: { product: { name: "Товар без КБЖВ" } },
-    });
-
-    const product = await lookupSilpoBarcode("user-1", "4820000000017");
-    expect(product).toMatchObject({ name: "Товар без КБЖВ", partial: true });
-  });
-
-  it("drops an unparseable single result and logs a warn instead of throwing", async () => {
-    connectedRow();
-    passThroughAccessToken();
-    mocks.callMcpTool.mockResolvedValue({
-      ok: true,
-      data: { product: { name: 12345 } },
-    });
-
+describe("lookupSilpoBarcode (EAN не підтримується Silpo MCP — спайк §0)", () => {
+  it("always resolves null without touching DB or MCP", async () => {
     expect(await lookupSilpoBarcode("user-1", "4820000000017")).toBeNull();
-    expect(mocks.loggerWarn).toHaveBeenCalledWith(
-      expect.objectContaining({
-        msg: "silpo_barcode_raw_product_unparseable",
-      }),
-    );
+    expect(mocks.dbQuery).not.toHaveBeenCalled();
+    expect(mocks.callWithFreshAccessToken).not.toHaveBeenCalled();
+    expect(mocks.callMcpTool).not.toHaveBeenCalled();
   });
 
-  it("never breaks the cascade on an MCP-layer error — quiet skip + warn", async () => {
-    connectedRow();
-    mocks.callWithFreshAccessToken.mockResolvedValue({
-      ok: false,
-      error: { kind: "reauth_required", message: "needs reconnect" },
-    });
-
-    const product = await lookupSilpoBarcode("user-1", "4820000000017");
-
-    expect(product).toBeNull();
-    expect(mocks.loggerWarn).toHaveBeenCalledWith(
-      expect.objectContaining({
-        msg: "silpo_barcode_source_skipped",
-        kind: "reauth_required",
-      }),
-    );
+  it("null навіть для nullish userId — сигнатура каскаду незмінна", async () => {
+    expect(await lookupSilpoBarcode(null, "4820000000017")).toBeNull();
   });
 });

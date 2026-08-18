@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   callWithFreshAccessToken: vi.fn(),
   callMcpTool: vi.fn(),
+  resolveBranchContext: vi.fn(),
   poolConnect: vi.fn(),
   dbQuery: vi.fn(),
 }));
@@ -16,6 +17,10 @@ vi.mock("./tokenStore.js", () => ({
 // `callWithFreshAccessToken` that never reaches `callMcpTool`.
 vi.mock("./mcpClient.js", () => ({
   callMcpTool: mocks.callMcpTool,
+}));
+
+vi.mock("./branchContext.js", () => ({
+  resolveBranchContext: mocks.resolveBranchContext,
 }));
 
 // Only needed for the real-transaction (`defaultWithTransaction`) test
@@ -40,28 +45,31 @@ const { normalizeRawOrder } = __test__;
 beforeEach(() => {
   mocks.callWithFreshAccessToken.mockReset();
   mocks.callMcpTool.mockReset();
+  mocks.resolveBranchContext.mockReset();
   mocks.poolConnect.mockReset();
   mocks.dbQuery.mockReset();
 });
 
-// ─────────────────────────── normalizeRawOrder (provisional) ────────────────
+// ─────────────── normalizeRawOrder (форми зі спайку §0, 2026-08-18) ─────────
+// Усі назви/суми/ID у фікстурах вигадані — реальні дані покупок у git не
+// потрапляють (форми полів звірені з живим капчуром, значення — ні).
 
-describe("normalizeRawOrder (provisional field-alias mapping)", () => {
-  it("parses a fully-populated offline order via the primary field names", () => {
+describe("normalizeRawOrder (живі форми Silpo MCP)", () => {
+  it("offline: id з receiptUrl-токена, наївна Kyiv-дата, sumReg→kop, unit-price items", () => {
     const parsed = normalizeRawOrder(
       {
-        id: "r1",
-        purchasedAt: "2026-08-10T12:00:00.000Z",
-        storeId: "store-9",
-        paymentHint: "card *1234",
-        totalKop: 12345,
-        items: [
+        filId: 999,
+        filialName: "Сільпо, м. Тестове",
+        createdAt: "2026-08-10T15:00:00", // наївний Kyiv-local (без офсету)
+        sumReg: 123.45,
+        receiptUrl: "https://receipt.silpo.elkasa.com.ua/AbCdTest01",
+        products: [
           {
-            name: "Молоко",
-            qty: 1,
+            lagerId: 111111,
+            name: "Тестове молоко 2.6% 900г",
             unit: "шт",
-            priceKop: 4500,
-            categorySlug: "dairy",
+            quantity: 2,
+            price: 45.5, // UAH за одиницю
           },
         ],
       },
@@ -69,58 +77,103 @@ describe("normalizeRawOrder (provisional field-alias mapping)", () => {
     );
 
     expect(parsed).toMatchObject({
-      receiptId: "r1",
-      storeId: "store-9",
-      paymentHint: "card *1234",
+      receiptId: "AbCdTest01",
+      storeId: "999",
+      paymentHint: null,
       totalKop: 12345,
     });
+    // Серпень → Kyiv = UTC+3: 15:00 Kyiv = 12:00Z, незалежно від TZ процесу.
+    expect(parsed?.purchasedAtMs).toBe(Date.parse("2026-08-10T15:00:00+03:00"));
     expect(parsed?.items).toEqual([
       {
-        name: "Молоко",
-        qty: 1,
+        name: "Тестове молоко 2.6% 900г",
+        qty: 2,
         unit: "шт",
-        priceKop: 4500,
-        categorySlug: "dairy",
+        priceKop: 4550,
+        categorySlug: null,
         barcode: null,
       },
     ]);
   });
 
-  it("falls back through id/date/total aliases and UAH→kop conversion", () => {
+  it("offline без receiptUrl: детермінований fallback-id filId+createdAt", () => {
     const parsed = normalizeRawOrder(
       {
-        orderId: "r2",
-        createdAt: "2026-08-11T08:00:00.000Z",
-        store: "Сільпо на Хрещатику",
-        total: 99.5, // UAH — should become 9950 kop
+        filId: 42,
+        createdAt: "2026-01-15T10:00:00",
+        sumReg: 10,
+        receiptUrl: null,
+      },
+      "offline",
+    );
+    expect(parsed?.receiptId).toBe("offline_42_2026-01-15T10:00:00");
+    // Січень → Kyiv = UTC+2.
+    expect(parsed?.purchasedAtMs).toBe(Date.parse("2026-01-15T10:00:00+02:00"));
+  });
+
+  it("online: orderId, ISO-дата з офсетом, amount→kop, items з products", () => {
+    const parsed = normalizeRawOrder(
+      {
+        orderId: "test-uuid-1",
+        status: "received",
+        createdAt: "2026-08-11T08:00:00+00:00",
+        amount: 99.5, // UAH → 9950 kop
+        products: [
+          {
+            id: "cat-uuid-1",
+            name: "Тестовий хліб",
+            price: 40,
+            quantity: 1,
+            subtotal: 40,
+          },
+        ],
       },
       "online",
     );
 
     expect(parsed).toMatchObject({
-      receiptId: "r2",
-      storeId: "Сільпо на Хрещатику",
+      receiptId: "test-uuid-1",
+      storeId: null,
       totalKop: 9950,
     });
+    expect(parsed?.purchasedAtMs).toBe(Date.parse("2026-08-11T08:00:00+00:00"));
+    expect(parsed?.items).toEqual([
+      {
+        name: "Тестовий хліб",
+        qty: 1,
+        unit: null,
+        priceKop: 4000,
+        categorySlug: null,
+        barcode: null,
+      },
+    ]);
   });
 
   it("drops a receipt with no usable id (never throws)", () => {
     expect(
       normalizeRawOrder(
-        { purchasedAt: "2026-08-10T12:00:00.000Z", total: 10 },
+        { createdAt: "2026-08-10T12:00:00", sumReg: 10 },
         "offline",
       ),
     ).toBeNull();
   });
 
   it("drops a receipt with no usable date", () => {
-    expect(normalizeRawOrder({ id: "r3", total: 10 }, "offline")).toBeNull();
+    expect(
+      normalizeRawOrder(
+        { receiptUrl: "https://receipt.silpo.elkasa.com.ua/x1", sumReg: 10 },
+        "offline",
+      ),
+    ).toBeNull();
   });
 
   it("drops a receipt with no usable total", () => {
     expect(
       normalizeRawOrder(
-        { id: "r4", purchasedAt: "2026-08-10T12:00:00.000Z" },
+        {
+          receiptUrl: "https://receipt.silpo.elkasa.com.ua/x2",
+          createdAt: "2026-08-10T12:00:00",
+        },
         "offline",
       ),
     ).toBeNull();
@@ -129,12 +182,12 @@ describe("normalizeRawOrder (provisional field-alias mapping)", () => {
   it("drops individual items that have no name, but keeps the receipt", () => {
     const parsed = normalizeRawOrder(
       {
-        id: "r5",
-        purchasedAt: "2026-08-10T12:00:00.000Z",
-        total: 10,
-        items: [
-          { qty: 1, priceKop: 100 },
-          { name: "Хліб", priceKop: 2000 },
+        receiptUrl: "https://receipt.silpo.elkasa.com.ua/x3",
+        createdAt: "2026-08-10T12:00:00",
+        sumReg: 10,
+        products: [
+          { quantity: 1, price: 1 },
+          { name: "Хліб", price: 20 },
         ],
       },
       "offline",
@@ -293,15 +346,19 @@ function makeFakeDb(seed: { monoTransactions?: FakeMonoTx[] } = {}) {
   return { query, withTransaction, receipts, items, links };
 }
 
+// Вигадані дані у формі живого silpo_get_my_offline_orders (спайк §0).
 const OFFLINE_ORDER = {
-  id: "r1",
-  purchasedAt: "2026-08-10T12:00:00.000Z",
-  totalKop: 5000,
-  items: [
-    { name: "Хліб", priceKop: 3000 },
-    { name: "Молоко", priceKop: 2000 },
+  filId: 777,
+  filialName: "Сільпо, м. Тестове",
+  createdAt: "2026-08-10T15:00:00", // Kyiv-local = 12:00Z у серпні
+  sumReg: 50,
+  receiptUrl: "https://receipt.silpo.elkasa.com.ua/r1token",
+  products: [
+    { lagerId: 1, name: "Хліб", unit: "шт", quantity: 1, price: 30 },
+    { lagerId: 2, name: "Молоко", unit: "шт", quantity: 1, price: 20 },
   ],
 };
+const OFFLINE_ORDER_RECEIPT_ID = "r1token";
 
 describe("pullAndSyncReceipts", () => {
   it("upserts receipts + items and links an unambiguous mono transaction match", async () => {
@@ -335,9 +392,11 @@ describe("pullAndSyncReceipts", () => {
       ambiguous: 0,
       unmatched: 0,
     });
-    expect(db.receipts.has("r1")).toBe(true);
+    expect(db.receipts.has(OFFLINE_ORDER_RECEIPT_ID)).toBe(true);
     expect(db.items).toHaveLength(2);
-    expect(db.links).toEqual([{ transactionId: "mono-1", receiptId: "r1" }]);
+    expect(db.links).toEqual([
+      { transactionId: "mono-1", receiptId: OFFLINE_ORDER_RECEIPT_ID },
+    ]);
   });
 
   it("is idempotent — a second sync with the same data inserts nothing new", async () => {
@@ -392,41 +451,56 @@ describe("pullAndSyncReceipts", () => {
 // ─────────────── Finding #1: per-order parsing, not array-level ─────────────
 
 describe("fetchOrderList (per-order parsing via callMcpTool envelope)", () => {
-  it("drops one unparseable order (numeric id) and keeps syncing the rest of the list instead of failing the whole sync", async () => {
+  const BRANCH_CTX = {
+    ok: true as const,
+    data: {
+      branchId: "branch-uuid-1",
+      deliveryType: "SelfPickup",
+      timeslotStart: "",
+      timeslotEnd: "",
+    },
+  };
+
+  it("drops one unparseable order and keeps syncing the rest of the list instead of failing the whole sync", async () => {
     const db = makeFakeDb();
     // `callWithFreshAccessToken` actually invokes the passed `fn`
-    // (`fetchBothOrderLists`) here — unlike the other `pullAndSyncReceipts`
-    // tests above, which mock the whole token/MCP round-trip away, THIS
-    // test needs the real `fetchOrderList` → `callMcpTool` path to exercise
-    // the per-order `safeParse` fix.
+    // (`makeFetchBothOrderLists`) here — unlike the other
+    // `pullAndSyncReceipts` tests above, which mock the whole token/MCP
+    // round-trip away, THIS test needs the real `fetchOrderList` →
+    // `callMcpTool` path to exercise the per-order `safeParse` fix.
     mocks.callWithFreshAccessToken.mockImplementation(
       async (_userId: string, fn: (token: string) => Promise<unknown>) =>
         fn("fake-access-token"),
     );
+    mocks.resolveBranchContext.mockResolvedValue(BRANCH_CTX);
     mocks.callMcpTool.mockImplementation(
-      async ({ toolName }: { toolName: string }) => {
+      async ({
+        toolName,
+        args,
+      }: {
+        toolName: string;
+        args: Record<string, unknown>;
+      }) => {
         if (toolName === "silpo_get_my_offline_orders") {
+          // Контекст філії має долітати до самого tool-виклику.
+          expect(args["branchId"]).toBe("branch-uuid-1");
+          expect(args["deliveryType"]).toBe("SelfPickup");
           return {
             ok: true,
-            data: [
-              {
-                id: "r1",
-                purchasedAt: "2026-08-10T12:00:00.000Z",
-                totalKop: 5000,
-              },
-              // Malformed: `id` must be a string per `RawOrderSchema` — a
-              // real Silpo drift (numeric order id) would have failed the
-              // WHOLE array under the old `z.array(RawOrderSchema)`
-              // envelope. Now it's dropped + `logger.warn`-ed instead.
-              {
-                id: 12345,
-                purchasedAt: "2026-08-10T12:00:00.000Z",
-                totalKop: 5000,
-              },
-            ],
+            data: {
+              success: true,
+              orders: [
+                OFFLINE_ORDER,
+                // Malformed: `createdAt` мусить бути рядком per
+                // `RawOrderSchema` — реальний дрейф Сільпо валив би ВЕСЬ
+                // масив під старим array-level envelope. Тепер він
+                // DROP-ається + `logger.warn`-иться.
+                { ...OFFLINE_ORDER, receiptUrl: null, createdAt: 12345 },
+              ],
+            },
           };
         }
-        return { ok: true, data: [] };
+        return { ok: true, data: { success: true, orders: [] } };
       },
     );
 
@@ -441,8 +515,50 @@ describe("fetchOrderList (per-order parsing via callMcpTool envelope)", () => {
       onlinePulled: 0,
       receiptsInserted: 1,
     });
-    expect(db.receipts.has("r1")).toBe(true);
+    expect(db.receipts.has(OFFLINE_ORDER_RECEIPT_ID)).toBe(true);
     expect(mocks.callMcpTool).toHaveBeenCalledTimes(2); // offline + online
+  });
+
+  it("деградує offline-канал (порожній список + warn), коли контекст філії недоступний — online синкається далі", async () => {
+    const db = makeFakeDb();
+    mocks.callWithFreshAccessToken.mockImplementation(
+      async (_userId: string, fn: (token: string) => Promise<unknown>) =>
+        fn("fake-access-token"),
+    );
+    mocks.resolveBranchContext.mockResolvedValue({
+      ok: false,
+      error: { kind: "schema_drift", message: "no branch context" },
+    });
+    mocks.callMcpTool.mockImplementation(
+      async ({ toolName }: { toolName: string }) => {
+        expect(toolName).toBe("silpo_get_my_online_orders");
+        return {
+          ok: true,
+          data: {
+            success: true,
+            orders: [
+              {
+                orderId: "online-1",
+                createdAt: "2026-08-11T08:00:00+00:00",
+                amount: 10,
+              },
+            ],
+          },
+        };
+      },
+    );
+
+    const result = await pullAndSyncReceipts("user-1", {
+      query: db.query,
+      withTransaction: db.withTransaction,
+    });
+
+    expect(result).toMatchObject({
+      offlinePulled: 0,
+      onlinePulled: 1,
+      receiptsInserted: 1,
+    });
+    expect(mocks.callMcpTool).toHaveBeenCalledTimes(1); // лише online
   });
 });
 

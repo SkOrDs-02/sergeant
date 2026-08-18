@@ -4,6 +4,10 @@ import { query as defaultQuery } from "../../db.js";
 import { logger } from "../../obs/logger.js";
 import { callMcpTool, type McpResult } from "./mcpClient.js";
 import { callWithFreshAccessToken, type QueryFn } from "./tokenStore.js";
+import {
+  resolveBranchContext,
+  type SilpoBranchContext,
+} from "./branchContext.js";
 
 /**
  * Silpo as the FOURTH source in the food-search / barcode cascades (spec
@@ -25,16 +29,26 @@ import { callWithFreshAccessToken, type QueryFn } from "./tokenStore.js";
  * bonus source, never an authoritative one — its failure must NEVER surface
  * as a cascade-level error (unlike OFF/USDA/UPCitemdb `upstreamThrew`).
  *
- * PROVISIONAL (spike §0 not run yet, same caveat as `receipts.ts` /
- * `mcpClient.ts`): tool names (`silpo_find_products_batch`,
- * `silpo_get_product_details`) and field names below are best guesses.
+ * Форми звірені живим спайком §0 (2026-08-18):
+ *
+ * - `silpo_find_products_batch` вимагає контекст філії (`branchContext.ts`),
+ *   параметр зветься `products` (масив запитів), відповідь —
+ *   `{queries: [{query, totalFound, products: [...]}]}`. Хіти каталогу НЕ
+ *   містять КБЖВ — лише `{id, name, slug, price, displayRatio,
+ *   externalProductId, ...}`.
+ * - КБЖВ живе ТІЛЬКИ в `silpo_get_product_details` → `product.attributes`
+ *   з українськими ключами: `"Білки (г)": 2.9`, `"Жири (г)"`,
+ *   `"Вуглеводи (г)"` (numbers) і `"Енергетична цінність (кКал/кДЖ)":
+ *   "119/492"` (рядок — kcal до слеша). Тому пошук — двофазний: batch →
+ *   details для топ-{@link SEARCH_DETAILS_LIMIT} хітів.
+ * - EAN/штрихкода немає НІДЕ (ні в чеках, ні в каталозі, ні в details;
+ *   `silpo_get_product_details` приймає лише `slug`) — barcode-каскад через
+ *   Сільпо неможливий, `lookupSilpoBarcode` чесно повертає `null`.
+ *
  * Every raw schema is `.passthrough()`; a product that doesn't parse is
- * DROPPED with a `logger.warn` (search: per-element; barcode: the single
- * result), mirroring `receipts.ts`'s per-order parsing. If the spike shows
- * no KBJU fields exist at all, every product still normalizes fine — macro
- * fields are optional/nullable throughout and a search hit with zero macros
- * is simply filtered out (see `toSearchProduct`), matching the OFF/USDA
- * search normalizers' existing `hasSomeMacro` convention.
+ * DROPPED with a `logger.warn`, mirroring `receipts.ts`'s per-order
+ * parsing. A search hit with zero macros is filtered out (see
+ * `toSearchProduct`), matching the OFF/USDA `hasSomeMacro` convention.
  *
  * Metrics: `callMcpTool` → `mcpRpcCall` already calls
  * `recordExternalHttp("silpo", outcome, ms)` for every real HTTP attempt
@@ -90,73 +104,78 @@ export async function isSilpoConnectedUser(
   }
 }
 
-// ─────────────────────────── Provisional raw shapes ─────────────────────────
+// ──────────────────────── Raw shapes (спайк §0, 2026-08-18) ─────────────────
 
-const RawProductSchema = z
+/** Хіт `silpo_find_products_batch` → `queries[].products[]` — без КБЖВ. */
+const RawCatalogHitSchema = z
   .object({
-    id: z.union([z.string(), z.number()]).optional(),
-    sku: z.union([z.string(), z.number()]).optional(),
     name: z.string().optional(),
-    title: z.string().optional(),
-    brand: z.string().optional(),
-    brandName: z.string().optional(),
-    barcode: z.string().optional(),
-    ean: z.string().optional(),
-    gtin: z.string().optional(),
-    kcal100g: z.number().optional(),
-    kcalPer100g: z.number().optional(),
-    energyKcal100g: z.number().optional(),
-    calories100g: z.number().optional(),
-    protein100g: z.number().optional(),
-    proteins100g: z.number().optional(),
-    fat100g: z.number().optional(),
-    fats100g: z.number().optional(),
-    carbs100g: z.number().optional(),
-    carbohydrates100g: z.number().optional(),
-    weight: z.number().optional(),
-    weightUnit: z.string().optional(),
-    unit: z.string().optional(),
+    slug: z.string().optional(),
+    displayRatio: z.string().nullable().optional(), // "500г", "10 шт", "1,5л"
   })
   .passthrough();
-type RawProduct = z.infer<typeof RawProductSchema>;
+type RawCatalogHit = z.infer<typeof RawCatalogHitSchema>;
 
-function firstDefined<T>(
-  ...values: Array<T | undefined | null>
-): T | undefined {
-  for (const v of values) {
-    if (v !== undefined && v !== null) return v;
+const BatchEnvelopeSchema = z
+  .object({
+    queries: z
+      .array(
+        z.object({ products: z.array(z.unknown()).optional() }).passthrough(),
+      )
+      .optional(),
+  })
+  .passthrough();
+
+/** `silpo_get_product_details` → `product` — КБЖВ в `attributes`. */
+const RawProductDetailsSchema = z
+  .object({
+    name: z.string().optional(),
+    displayRatio: z.string().nullable().optional(),
+    attributes: z.record(z.string(), z.unknown()).optional(),
+  })
+  .passthrough();
+
+const DetailsEnvelopeSchema = z
+  .object({ product: z.unknown().optional() })
+  .passthrough();
+
+// ─────────────── Attributes → macros (українські ключі, спайк §0) ───────────
+
+function attrNumber(v: unknown): number | undefined {
+  if (typeof v === "number") return Number.isFinite(v) ? v : undefined;
+  if (typeof v === "string") {
+    const n = Number.parseFloat(v.replace(",", "."));
+    return Number.isFinite(n) ? n : undefined;
   }
   return undefined;
 }
 
-/**
- * Envelope shape is unverified (spike §0), so `callMcpTool` is handed
- * `z.unknown()` and this module extracts + validates per element itself —
- * same rationale as `receipts.ts`'s `RawOrdersEnvelopeSchema` comment: a
- * schema-level failure on ONE malformed product must not fail the whole
- * `tools/call` result as `schema_drift`.
- */
-function extractRawProductArray(payload: unknown): unknown[] {
-  if (Array.isArray(payload)) return payload;
-  if (payload && typeof payload === "object") {
-    const obj = payload as Record<string, unknown>;
-    for (const key of ["products", "results", "items"]) {
-      const v = obj[key];
-      if (Array.isArray(v)) return v;
-    }
-  }
-  return [];
+function findAttr(
+  attributes: Record<string, unknown>,
+  prefix: string,
+): unknown {
+  const key = Object.keys(attributes).find((k) => k.startsWith(prefix));
+  return key === undefined ? undefined : attributes[key];
 }
 
-function extractRawProduct(payload: unknown): unknown {
-  if (payload && typeof payload === "object" && !Array.isArray(payload)) {
-    const obj = payload as Record<string, unknown>;
-    for (const key of ["product", "item", "data"]) {
-      const v = obj[key];
-      if (v && typeof v === "object") return v;
-    }
-  }
-  return payload;
+/** `"Енергетична цінність (кКал/кДЖ)": "119/492"` → 119. */
+function parseKcal(v: unknown): number | undefined {
+  if (typeof v === "number") return Number.isFinite(v) ? v : undefined;
+  if (typeof v !== "string") return undefined;
+  const firstPart = v.split("/")[0] ?? "";
+  return attrNumber(firstPart);
+}
+
+/** `"500г"` / `"10 шт"` / `"1,5л"` → `{amount, unit}`. */
+function parseDisplayRatio(
+  displayRatio: string | null | undefined,
+): { amount: number; unit: string } | null {
+  if (!displayRatio) return null;
+  const m = /^([\d.,]+)\s*(.*)$/.exec(displayRatio.trim());
+  if (!m || !m[1]) return null;
+  const amount = Number.parseFloat(m[1].replace(",", "."));
+  if (!Number.isFinite(amount)) return null;
+  return { amount, unit: (m[2] ?? "").trim() };
 }
 
 // ─────────────────────────── Normalization (provisional) ────────────────────
@@ -202,32 +221,36 @@ interface NormalizedSilpoProduct {
   hasMacro: boolean;
 }
 
-function normalizeRawProduct(raw: RawProduct): NormalizedSilpoProduct | null {
-  const name = firstDefined(raw.name, raw.title);
+/**
+ * Нормалізує `product` з `silpo_get_product_details`. Макро — з
+ * `attributes` за українськими ключами-префіксами (спайк §0); значення на
+ * упаковці Сільпо — стандартні per-100g. Порція — з `displayRatio`.
+ */
+function normalizeRawProduct(
+  raw: z.infer<typeof RawProductDetailsSchema>,
+): NormalizedSilpoProduct | null {
+  const name = raw.name;
   if (!name) return null;
 
-  const kcal = firstDefined(
-    raw.kcal100g,
-    raw.kcalPer100g,
-    raw.energyKcal100g,
-    raw.calories100g,
-  );
-  const protein = firstDefined(raw.protein100g, raw.proteins100g);
-  const fat = firstDefined(raw.fat100g, raw.fats100g);
-  const carbs = firstDefined(raw.carbs100g, raw.carbohydrates100g);
-  const unit = firstDefined(raw.weightUnit, raw.unit);
+  const attributes = raw.attributes ?? {};
+  const kcal = parseKcal(findAttr(attributes, "Енергетична цінність"));
+  const protein = attrNumber(findAttr(attributes, "Білки"));
+  const fat = attrNumber(findAttr(attributes, "Жири"));
+  const carbs = attrNumber(findAttr(attributes, "Вуглеводи"));
+  const brandAttr = findAttr(attributes, "Торгова марка");
+  const ratio = parseDisplayRatio(raw.displayRatio);
 
   return {
     name,
-    brand: firstDefined(raw.brand, raw.brandName) ?? null,
-    barcode: firstDefined(raw.barcode, raw.ean, raw.gtin) ?? null,
+    brand: typeof brandAttr === "string" ? brandAttr : null,
+    barcode: null, // EAN відсутній у контракті Silpo MCP (спайк §0)
     kcal_100g: kcal ?? null,
     protein_100g: protein ?? null,
     fat_100g: fat ?? null,
     carbs_100g: carbs ?? null,
-    servingAmount: raw.weight ?? null,
-    servingGrams: toServingGrams(raw.weight, unit),
-    servingUnit: unit ?? null,
+    servingAmount: ratio?.amount ?? null,
+    servingGrams: toServingGrams(ratio?.amount, ratio?.unit),
+    servingUnit: ratio?.unit ?? null,
     hasMacro:
       kcal !== undefined ||
       protein !== undefined ||
@@ -342,69 +365,109 @@ function toBarcodeProduct(p: NormalizedSilpoProduct): SilpoBarcodeProduct {
 
 // ─────────────────────────────── MCP fetch step ─────────────────────────────
 
-async function fetchSilpoSearch(
+/**
+ * КБЖВ немає в batch-хітах — лише в details (спайк §0), тому пошук
+ * двофазний і details-збагачення обмежене топ-N хітів, щоб тримати
+ * латентність typeahead у межах розумного (кожен `callMcpTool` — це
+ * initialize + tools/call).
+ */
+const SEARCH_BATCH_LIMIT = 5;
+const SEARCH_DETAILS_LIMIT = 3;
+
+async function fetchProductDetails(
   accessToken: string,
-  query: string,
-): Promise<McpResult<SilpoSearchProduct[]>> {
-  const result = await callMcpTool({
-    accessToken,
-    toolName: "silpo_find_products_batch",
-    args: { queries: [query] },
-    schema: z.unknown(),
-  });
-  if (!result.ok) return result;
-
-  const products: SilpoSearchProduct[] = [];
-  extractRawProductArray(result.data).forEach((raw, index) => {
-    const parsed = RawProductSchema.safeParse(raw);
-    if (!parsed.success) {
-      logger.warn({
-        msg: "silpo_food_search_raw_product_unparseable",
-        index,
-        issues: parsed.error.issues.map((i) => ({
-          path: i.path.join("."),
-          code: i.code,
-        })),
-      });
-      return;
-    }
-    const normalized = normalizeRawProduct(parsed.data);
-    const product = normalized ? toSearchProduct(normalized) : null;
-    if (product) products.push(product);
-  });
-
-  return { ok: true, data: products };
-}
-
-async function fetchSilpoBarcode(
-  accessToken: string,
-  barcode: string,
-): Promise<McpResult<SilpoBarcodeProduct | null>> {
+  ctx: SilpoBranchContext,
+  slug: string,
+): Promise<NormalizedSilpoProduct | null> {
   const result = await callMcpTool({
     accessToken,
     toolName: "silpo_get_product_details",
-    args: { barcode },
-    schema: z.unknown(),
+    args: {
+      branchId: ctx.branchId,
+      slug,
+      deliveryType: ctx.deliveryType,
+      timeslotStart: ctx.timeslotStart,
+      timeslotEnd: ctx.timeslotEnd,
+    },
+    schema: DetailsEnvelopeSchema,
   });
-  if (!result.ok) return result;
-
-  const raw = extractRawProduct(result.data);
-  if (raw === undefined || raw === null) return { ok: true, data: null };
-
-  const parsed = RawProductSchema.safeParse(raw);
+  if (!result.ok) {
+    logger.warn({
+      msg: "silpo_food_search_details_skipped",
+      kind: result.error.kind,
+    });
+    return null;
+  }
+  const parsed = RawProductDetailsSchema.safeParse(result.data.product);
   if (!parsed.success) {
     logger.warn({
-      msg: "silpo_barcode_raw_product_unparseable",
+      msg: "silpo_food_search_details_unparseable",
       issues: parsed.error.issues.map((i) => ({
         path: i.path.join("."),
         code: i.code,
       })),
     });
-    return { ok: true, data: null };
+    return null;
   }
+  return normalizeRawProduct(parsed.data);
+}
 
-  const normalized = normalizeRawProduct(parsed.data);
-  return { ok: true, data: normalized ? toBarcodeProduct(normalized) : null };
+function makeFetchSilpoSearch(
+  userId: string,
+  query: string,
+): (accessToken: string) => Promise<McpResult<SilpoSearchProduct[]>> {
+  return async (accessToken) => {
+    const ctx = await resolveBranchContext(userId, accessToken);
+    if (!ctx.ok) return ctx;
+
+    const batch = await callMcpTool({
+      accessToken,
+      toolName: "silpo_find_products_batch",
+      args: {
+        branchId: ctx.data.branchId,
+        deliveryType: ctx.data.deliveryType,
+        timeslotStart: ctx.data.timeslotStart,
+        timeslotEnd: ctx.data.timeslotEnd,
+        products: [query],
+        limit: SEARCH_BATCH_LIMIT,
+      },
+      schema: BatchEnvelopeSchema,
+    });
+    if (!batch.ok) return batch;
+
+    const hits: RawCatalogHit[] = [];
+    (batch.data.queries?.[0]?.products ?? []).forEach((raw, index) => {
+      const parsed = RawCatalogHitSchema.safeParse(raw);
+      if (!parsed.success) {
+        logger.warn({
+          msg: "silpo_food_search_raw_product_unparseable",
+          index,
+          issues: parsed.error.issues.map((i) => ({
+            path: i.path.join("."),
+            code: i.code,
+          })),
+        });
+        return;
+      }
+      hits.push(parsed.data);
+    });
+
+    const withSlug = hits.filter((h): h is RawCatalogHit & { slug: string } =>
+      Boolean(h.slug),
+    );
+    const detailed = await Promise.all(
+      withSlug
+        .slice(0, SEARCH_DETAILS_LIMIT)
+        .map((h) => fetchProductDetails(accessToken, ctx.data, h.slug)),
+    );
+
+    const products = detailed
+      .filter((p): p is NormalizedSilpoProduct => p !== null)
+      .map(toSearchProduct)
+      .filter((p): p is SilpoSearchProduct => p !== null);
+
+    return { ok: true, data: products };
+  };
 }
 
 // ────────────────────────────────── Orchestration ────────────────────────────
@@ -427,7 +490,7 @@ export async function searchSilpoProducts(
 
     const call = await callWithFreshAccessToken(
       userId,
-      (accessToken) => fetchSilpoSearch(accessToken, query),
+      makeFetchSilpoSearch(userId, query),
       { query: deps.query ?? defaultQuery },
     );
     if (!call.ok) {
@@ -448,44 +511,20 @@ export async function searchSilpoProducts(
 }
 
 /**
- * `GET /api/barcode` — Silpo as the last cascade step (after OFF → USDA →
- * UPCitemdb), ONLY for a connected `userId`. Never throws — `null` covers
- * BOTH "not connected/disabled" and "connected but genuinely not found",
- * which is fine: the caller (`modules/nutrition/barcode.ts`) treats them
- * identically (fall through / 404), and Silpo failures must NEVER flip the
- * cascade's `upstreamThrew` flag (that's reserved for the three
- * authoritative sources — Silpo is a best-effort bonus for connected
- * users only).
+ * `GET /api/barcode` — СВІДОМО завжди `null`. Спайк §0 (2026-08-18)
+ * показав, що Silpo MCP ніде не оперує EAN: `silpo_get_product_details`
+ * приймає лише `slug`, а числовий пошук у `silpo_find_products_batch`
+ * матчить внутрішні артикули (`externalProductId`/`lagerId`), не штрихкоди.
+ * Сигнатура збережена, щоб каскад `modules/nutrition/barcode.ts` не
+ * перебудовувався: Silpo просто ніколи не контрибʼютить у barcode-шлях.
+ * Якщо Сільпо колись додасть EAN-lookup — реалізувати тут, каскад готовий.
  */
 export async function lookupSilpoBarcode(
-  userId: string | null | undefined,
-  barcode: string,
-  deps: { query?: QueryFn } = {},
+  _userId: string | null | undefined,
+  _barcode: string,
+  _deps: { query?: QueryFn } = {},
 ): Promise<SilpoBarcodeProduct | null> {
-  try {
-    if (!userId) return null;
-    if (!(await isSilpoConnectedUser(userId, deps))) return null;
-
-    const call = await callWithFreshAccessToken(
-      userId,
-      (accessToken) => fetchSilpoBarcode(accessToken, barcode),
-      { query: deps.query ?? defaultQuery },
-    );
-    if (!call.ok) {
-      logger.warn({
-        msg: "silpo_barcode_source_skipped",
-        kind: call.error.kind,
-      });
-      return null;
-    }
-    return call.data;
-  } catch (err) {
-    logger.warn({
-      msg: "silpo_barcode_source_failed",
-      err: err instanceof Error ? err.message : String(err),
-    });
-    return null;
-  }
+  return null;
 }
 
 // Re-exported for tests exercising internals without a live MCP call.
@@ -494,6 +533,7 @@ export const __test__ = {
   normalizeRawProduct,
   toSearchProduct,
   toBarcodeProduct,
-  extractRawProductArray,
-  extractRawProduct,
+  attrNumber,
+  parseKcal,
+  parseDisplayRatio,
 };
