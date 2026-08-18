@@ -43,7 +43,6 @@ import { apiClient } from "@shared/api";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { Sheet } from "@shared/components/ui/Sheet";
-import { Spinner } from "@shared/components/ui/Spinner";
 import { useResetPinchZoomAfterCameraCapture } from "@shared/hooks/useResetPinchZoomOnResume";
 import type {
   ReceiptAnalyzeRequest,
@@ -66,11 +65,28 @@ import {
   BATCH_RECEIPTS_MAX_FILES,
 } from "../../hooks/useBulkReceiptsImport";
 import { BulkReceiptsProgress } from "../bulkImport/BulkReceiptsProgress";
+import { ScanStatus, type ScanStatusState } from "../ScanStatus";
 import { DPS_QR_SCAN_ENABLED } from "./dpsQrGate";
 import { ReceiptScanCameraView } from "./ReceiptScanCameraView";
 import { ReceiptReviewForm } from "./ReceiptReviewForm";
 
 type Stage = "choose" | "camera" | "processing" | "review" | "batch";
+
+/** Стадія `processing` тривала до 20 секунд під одним незмінним «Шукаю
+ * чек…» — рівно те, що тестерка описала як «фрозен скрін» (бета-фідбек
+ * №5, 2026-08-18). Тепер кожна реальна фаза має свій рядок. */
+const PREPARING: ScanStatusState = {
+  label: "Готую фото…",
+  hint: "Ще працюю. Що більше позицій у чеку, то довше розпізнавання.",
+};
+const RECOGNIZING: ScanStatusState = {
+  label: "Розпізнаю чек…",
+  hint: PREPARING.hint,
+};
+const DPS_LOOKUP: ScanStatusState = {
+  label: "Шукаю чек у ДПС…",
+  hint: "Ще чекаю на відповідь ДПС.",
+};
 
 export interface ReceiptScanSheetProps {
   open: boolean;
@@ -102,6 +118,7 @@ export function ReceiptScanSheet({
   const [cameraKey, setCameraKey] = useState(0);
   const [batchCapNote, setBatchCapNote] = useState<string | null>(null);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [processing, setProcessing] = useState<ScanStatusState>(RECOGNIZING);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const armPinchZoomReset = useResetPinchZoomAfterCameraCapture();
   const bulkReceipts = useBulkReceiptsImport({ storage, onReceiptLinked });
@@ -156,6 +173,7 @@ export function ReceiptScanSheet({
       return;
     }
     setFlowError(null);
+    setProcessing(DPS_LOOKUP);
     setStage("processing");
     try {
       const { draft: nextDraft } = await lookupMutation.mutateAsync(req);
@@ -169,6 +187,9 @@ export function ReceiptScanSheet({
 
   const handleFileSelected = async (file: File) => {
     setFlowError(null);
+    // Спінер до першого `await`: QR-декод і стиснення фото самі по собі
+    // помітна пауза, і саме вона першою читається як зависання.
+    setProcessing(PREPARING);
     setStage("processing");
 
     // QR-lookup лише коли ДПС-гілка жива (`dpsQrGate.ts`) — інакше це
@@ -177,6 +198,7 @@ export function ReceiptScanSheet({
       const qrText = await decodeQrFromImageFile(file).catch(() => null);
       const lookupReq = qrText ? parseDpsReceiptQrUrl(qrText) : null;
       if (lookupReq) {
+        setProcessing(DPS_LOOKUP);
         try {
           const { draft: nextDraft } =
             await lookupMutation.mutateAsync(lookupReq);
@@ -195,6 +217,7 @@ export function ReceiptScanSheet({
       setStage("choose");
       return;
     }
+    setProcessing(RECOGNIZING);
     try {
       const { draft: nextDraft } = await analyzeMutation.mutateAsync(
         imageResult.payload,
@@ -430,14 +453,7 @@ export function ReceiptScanSheet({
       )}
 
       {stage === "processing" && (
-        <div
-          role="status"
-          aria-live="polite"
-          className="flex flex-col items-center gap-2 py-10"
-        >
-          <Spinner size="md" />
-          <p className="text-style-caption text-muted">Шукаю чек…</p>
-        </div>
+        <ScanStatus label={processing.label} slowHint={processing.hint} />
       )}
 
       {stage === "review" && draft && (
