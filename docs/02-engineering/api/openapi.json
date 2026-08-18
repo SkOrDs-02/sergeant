@@ -2257,6 +2257,7 @@
           }
         ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
@@ -2344,6 +2345,7 @@
           }
         ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
@@ -2432,6 +2434,7 @@
           }
         ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
@@ -2559,6 +2562,7 @@
           }
         ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
@@ -2647,6 +2651,7 @@
           }
         ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
@@ -2704,6 +2709,7 @@
           }
         ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
@@ -5851,7 +5857,7 @@
               "properties": {
                 "position": {
                   "type": "integer",
-                  "minimum": 0,
+                  "minimum": 1,
                   "maximum": 10000
                 },
                 "name": {
@@ -7331,7 +7337,7 @@
                   "properties": {
                     "position": {
                       "type": "integer",
-                      "minimum": 0,
+                      "minimum": 1,
                       "maximum": 10000
                     },
                     "name": {

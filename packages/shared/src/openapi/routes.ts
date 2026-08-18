@@ -875,6 +875,7 @@ export const paths: ZodOpenApiPathsObject = {
       tags: ["finyk"],
       security: cookieOrBearer,
       requestBody: {
+        required: true,
         content: {
           "application/json": { schema: namedSchemas.ReceiptLookupRequest },
         },
@@ -910,6 +911,7 @@ export const paths: ZodOpenApiPathsObject = {
       tags: ["finyk"],
       security: cookieOrBearer,
       requestBody: {
+        required: true,
         content: {
           "application/json": { schema: namedSchemas.ReceiptAnalyzeRequest },
         },
@@ -952,6 +954,7 @@ export const paths: ZodOpenApiPathsObject = {
       tags: ["finyk"],
       security: cookieOrBearer,
       requestBody: {
+        required: true,
         content: {
           "application/json": { schema: namedSchemas.ReceiptSaveRequest },
         },
@@ -1012,6 +1015,7 @@ export const paths: ZodOpenApiPathsObject = {
       tags: ["finyk"],
       security: cookieOrBearer,
       requestBody: {
+        required: true,
         content: {
           "application/json": {
             schema: namedSchemas.ImportScreenshotAnalyzeRequest,
@@ -1057,6 +1061,7 @@ export const paths: ZodOpenApiPathsObject = {
       tags: ["finyk"],
       security: cookieOrBearer,
       requestBody: {
+        required: true,
         content: {
           "application/json": {
             schema: namedSchemas.ImportStatementPreviewRequest,
@@ -1084,6 +1089,7 @@ export const paths: ZodOpenApiPathsObject = {
       tags: ["finyk"],
       security: cookieOrBearer,
       requestBody: {
+        required: true,
         content: {
           "application/json": { schema: namedSchemas.ImportCommitRequest },
         },

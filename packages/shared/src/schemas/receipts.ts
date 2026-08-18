@@ -63,8 +63,10 @@ export const RECEIPT_ITEM_POSITION_MAX = 10_000;
 export const RECEIPT_DRAFT_ITEMS_MAX = 200;
 
 export const ReceiptDraftItemSchema = z.object({
-  /** Порядок рядка в чеку, як його віддав парсер ДПС/vision (1-based). */
-  position: z.number().int().min(0).max(RECEIPT_ITEM_POSITION_MAX),
+  /** Порядок рядка в чеку, як його віддав парсер ДПС/vision (1-based —
+   * `.min(1)` замість `.min(0)`, раунд 5 ревʼю: обидва продюсери
+   * (dpsXml ROWNUM/i+1-фолбек, analyze idx+1) нумерують з одиниці). */
+  position: z.number().int().min(1).max(RECEIPT_ITEM_POSITION_MAX),
   name: z.string().min(1).max(RECEIPT_ITEM_NAME_MAX_LEN),
   qty: receiptItemQtySchema,
   priceKopiykas: receiptItemMoneySchema,
