@@ -210,6 +210,12 @@ export function SilpoPantryReplenishSheet({
             <h3 className="text-style-caption text-subtle mb-2">
               {COPY.itemsHeading}
             </h3>
+            {/* Нагадування приватності перед поповненням комори — повний
+                текст обіцянки живе на картці Сільпо в Налаштуваннях
+                (`SilpoPrivacyPromise`). */}
+            <p className="text-style-caption text-subtle mb-2">
+              {COPY.privacyReminder}
+            </p>
             {detailLoading ? (
               <p className="text-style-caption text-subtle">{COPY.loading}</p>
             ) : rows.length === 0 ? (

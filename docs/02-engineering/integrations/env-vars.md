@@ -682,7 +682,7 @@ Full rollout playbook: [`docs/04-governance/security/api-internal-hmac.md`](../.
 
 ## 24. Інтеграція Silpo MCP (walking-skeleton експеримент, 2026-08-17)
 
-Спека: [`docs/90-work/planning/specs/silpo-mcp-integration.md`](../../90-work/planning/specs/silpo-mcp-integration.md) § Експеримент. Точна парність із трійкою `MONO_TOKEN_ENC_KEY*` / `MONO_WEBHOOK_ENABLED` у § 16 — той самий `KeyRing`-хелпер, та сама форма валідації. **Гейт оферти/ToS досі відкритий** (спека § Відкриті гейти) — не вмикай `SILPO_ENABLED=true` у продакшні, доки він не знятий.
+Спека: [`docs/90-work/planning/specs/silpo-mcp-integration.md`](../../90-work/planning/specs/silpo-mcp-integration.md) § Експеримент. Точна парність із трійкою `MONO_TOKEN_ENC_KEY*` / `MONO_WEBHOOK_ENABLED` у § 16 — той самий `KeyRing`-хелпер, та сама форма валідації. **Обидва продуктові гейти знято 2026-08-18** (оферта — прийнята як операційний ризик; текст приватності — затверджено). Перед `SILPO_ENABLED=true` у проді лишається один ops-крок: **DCR з продовим `redirect_uri`** — `client_id` зі спайку зареєстрований на `localhost` і в проді не спрацює (спека § Ризики).
 
 ### `SILPO_ENABLED` _(опційна, дефолт `false`)_
 

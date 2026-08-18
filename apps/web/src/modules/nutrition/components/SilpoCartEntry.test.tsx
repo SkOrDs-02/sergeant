@@ -171,6 +171,19 @@ describe("SilpoCartEntry", () => {
     ).toBeChecked();
   });
 
+  it("shows the privacy reminder once matched rows are loaded (gate #2)", async () => {
+    syncStateMock.mockReturnValue({ status: "connected" });
+    cartPreviewMock.mockResolvedValue(previewResponse());
+    const user = userEvent.setup();
+
+    renderWithClient(<SilpoCartEntry shoppingList={SHOPPING_LIST} />);
+    await user.click(screen.getByRole("button", { name: /У кошик Сільпо/i }));
+
+    expect(
+      await screen.findByText("У Сільпо піде лише те, що ти підтвердиш нижче."),
+    ).toBeInTheDocument();
+  });
+
   it("the quantity stepper changes the row's quantity", async () => {
     syncStateMock.mockReturnValue({ status: "connected" });
     cartPreviewMock.mockResolvedValue(previewResponse());

@@ -26,6 +26,7 @@ import {
 } from "@finyk/hooks/useSilpoMutations";
 import { useSilpoSyncState } from "@finyk/hooks/useSilpoSyncState";
 import { SettingsSubGroup } from "./SettingsPrimitives";
+import { SilpoPrivacyPromise } from "./SilpoPrivacyPromise";
 import {
   SilpoUnmatchedReceipts,
   type ManualExpenseDraft,
@@ -43,6 +44,16 @@ interface SilpoIntegrationSectionProps {
 const COPY = {
   title: "Сільпо (чеки)",
   help: "Зв'яжи акаунт Сільпо, щоб покупки з чеків збагачували транзакції Monobank позиціями товарів. Дані обробляються на сервері — токен у браузер не потрапляє.",
+  // Обіцянка приватності Silpo-інтеграції — затверджена founder-ом
+  // дослівно (гейт №2, спека silpo-mcp-integration.md § Відкриті гейти).
+  // НЕ переписуй і не скорочуй суть, дозволене лише розбиття на абзаци.
+  // Рендериться через `SilpoPrivacyPromise` в обох станах картки — не
+  // копіюй рядки нижче в інше місце, це єдине джерело тексту.
+  privacyPromiseParagraph1:
+    "Чеки з Сільпо зберігаються у твоїй базі Sergeant і працюють лише на тебе: розбивка витрат за категоріями, поповнення комори, підказки їжі.",
+  privacyPromiseParagraph2:
+    "Назви куплених товарів ніколи не потрапляють в аналітику чи телеметрію. AI бачить їх лише тоді, коли ти сам просиш його попрацювати з чеком — і лише через захищений канал з маскуванням. Видалити всі дані Сільпо можна одним натисканням у налаштуваннях — назавжди.",
+  privacyPromiseDetailsSummary: "Що ми робимо з даними чеків",
   disabledTitle: "Інтеграція ще не увімкнена",
   disabledBody:
     "Зв'язка з Сільпо поки недоступна в цьому середовищі — спробуй пізніше.",
@@ -261,6 +272,9 @@ export function SilpoIntegrationSection({
                 {COPY.disconnect}
               </Button>
             </div>
+            {/* Той самий текст, що в disconnected-стані, але згорнутий —
+                щоденно не муляє, лишається на відстані одного тапу. */}
+            <SilpoPrivacyPromise copy={COPY} variant="details" />
             <SilpoUnmatchedReceipts
               enabled={status === "connected"}
               addManualExpense={addManualExpense}
@@ -292,14 +306,19 @@ export function SilpoIntegrationSection({
             </Button>
           </div>
         ) : (
-          <Button
-            variant="secondary"
-            className="w-full h-11"
-            onClick={goToSilpoConnect}
-          >
-            <Icon name="shopping-cart" size={16} aria-hidden />
-            {COPY.connect}
-          </Button>
+          <div className="space-y-3">
+            {/* Обіцянка приватності — ПЕРЕД рішенням підключити, не після
+                (гейт №2 спеки). */}
+            <SilpoPrivacyPromise copy={COPY} variant="inline" />
+            <Button
+              variant="secondary"
+              className="w-full h-11"
+              onClick={goToSilpoConnect}
+            >
+              <Icon name="shopping-cart" size={16} aria-hidden />
+              {COPY.connect}
+            </Button>
+          </div>
         )}
       </SettingsSubGroup>
 

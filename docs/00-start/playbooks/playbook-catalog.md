@@ -1,6 +1,6 @@
 # Playbook Catalog
 
-> **Last touched:** 2026-08-08 by @claude. **Next review:** 2026-11-10.
+> **Last touched:** 2026-08-18 by @claude. **Next review:** 2026-12-09.
 > **Status:** Active
 
 Scenario catalog: which playbook to open, which skill governs the work, and whether the document is primarily for humans, agents, or both.
@@ -55,6 +55,7 @@ Curated table вище лишається швидким роутером для
 | [`dependency-sweeper.md`](./dependency-sweeper.md)                                 | запланований періодичний прогін / «що застаріло» / CVE sweep / safe bump batch поверх Renovate.                                                                                                                             |
 | [`cleanup-dead-code.md`](./cleanup-dead-code.md)                                   | «Видали X і всі його використання» / видалення застарілого модуля, компонента, утиліти або feature flag.                                                                                                                    |
 | [`cleanup-codex-branch-after-pr.md`](./cleanup-codex-branch-after-pr.md)           | PR merged / "онови main" / "видали гілку" / "поверни local dirty files" після Codex-гілки.                                                                                                                                  |
+| [`enable-silpo-integration.md`](./enable-silpo-integration.md)                     | Вмикаємо `SILPO_ENABLED` у проді вперше / Сільпо «відвалилось» у всіх одразу / 429 чи дрейф схеми MCP / треба вимкнути інтеграцію негайно.                                                                                  |
 | [`debug-chat-tool.md`](./debug-chat-tool.md)                                       | «Асистент каже що зробив, але нічого не сталось» / «Натиснув кнопку quick action — нема ефекту» / tool call повернувся текстом замість дії / `Невідома дія: …` у відповіді.                                                 |
 | [`deep-module-audit.md`](./deep-module-audit.md)                                   | «Проведи глибоке дослідження модуля X» / «Передивись, чи працюють усі елементи, кнопки, логіка» / наскрізна перевірка одного модуля перед бетою або після скарги власника.                                                  |
 | [`embedding-provider-migration.md`](./embedding-provider-migration.md)             | «Перемкнути embedding-провайдер або модель» / «Змінити embedding vendor» / «re-embed ai_memories на нову модель» / виявлено нову embedding-модель з кращою якістю або меншою вартістю.                                      |

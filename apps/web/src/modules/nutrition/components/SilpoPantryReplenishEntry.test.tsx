@@ -142,6 +142,26 @@ describe("SilpoPantryReplenishEntry", () => {
     ]);
   });
 
+  it("shows the privacy reminder next to receipt items (gate #2)", async () => {
+    syncStateMock.mockReturnValue({ status: "connected" });
+    const user = userEvent.setup();
+
+    render(
+      <SilpoPantryReplenishEntry
+        pantryItems={[]}
+        upsertItem={vi.fn()}
+        busy={false}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: /З покупок Сільпо/i }));
+
+    expect(
+      await screen.findByText(
+        "Позиції з чека лишаються у твоїй базі — в аналітику вони не йдуть.",
+      ),
+    ).toBeInTheDocument();
+  });
+
   it("disables the confirm CTA when nothing is checked", async () => {
     syncStateMock.mockReturnValue({ status: "connected" });
     receiptDetailMock.mockReturnValue({

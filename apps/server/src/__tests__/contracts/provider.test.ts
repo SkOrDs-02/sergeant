@@ -241,10 +241,10 @@ afterAll(() => {
 const pact = loadPact();
 
 describe("Pact provider replay — consumer=sergeant-api-client, provider=sergeant-server", () => {
-  it("pact file has 51 expected consumer interactions across 35 routes", () => {
+  it("pact file has 56 expected consumer interactions across 38 routes", () => {
     expect(pact.consumer.name).toBe("sergeant-api-client");
     expect(pact.provider.name).toBe("sergeant-server");
-    expect(pact.interactions).toHaveLength(51);
+    expect(pact.interactions).toHaveLength(56);
     const expectedRoutes = new Set([
       // PR-42 baseline (5)
       "GET /api/v1/me",
@@ -293,6 +293,12 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
       "POST /api/v1/silpo/disconnect",
       "POST /api/v1/silpo/sync",
       "POST /api/v1/silpo/wipe",
+      // silpo кошик, трек G (PR #819): 5 інтеракцій / 3 маршрути
+      // (preview має matched- і unmatched-інтеракцію, cart — звичайний,
+      // порожній і schema-drift варіанти; 51 → 56).
+      "GET /api/v1/silpo/cart",
+      "POST /api/v1/silpo/cart/preview",
+      "POST /api/v1/silpo/cart/apply",
     ]);
     const actualRoutes = new Set(
       pact.interactions.map((i) => `${i.request.method} ${i.request.path}`),

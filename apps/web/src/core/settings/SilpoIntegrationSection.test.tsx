@@ -103,6 +103,35 @@ describe("SilpoIntegrationSection", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("shows the privacy-promise text before the connect CTA when disconnected (gate #2)", async () => {
+    mockedSyncState.mockResolvedValue({
+      status: "disconnected",
+      accessTokenExpiresAt: null,
+      lastSyncAt: null,
+      receiptsCount: 0,
+    });
+
+    renderSection();
+
+    // Дослівний затверджений текст (§ Відкриті гейти, гейт №2) —
+    // видимий одразу, не за "показати більше".
+    expect(
+      await screen.findByText(
+        /Чеки з Сільпо зберігаються у твоїй базі Sergeant/,
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Назви куплених товарів ніколи не потрапляють/),
+    ).toBeInTheDocument();
+    // Обіцянка стоїть ПЕРЕД кнопкою рішення, не після — саме над "Зв'язати
+    // Сільпо" в DOM-порядку картки (не окремий `<details>`, як у
+    // connected-стані).
+    expect(
+      screen.queryByText("Що ми робимо з даними чеків"),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText("Зв'язати Сільпо")).toBeInTheDocument();
+  });
+
   it("keeps the wipe action reachable after disconnect when receipts remain", async () => {
     mockedSyncState.mockResolvedValue({
       status: "disconnected",
@@ -136,6 +165,26 @@ describe("SilpoIntegrationSection", () => {
     expect(screen.getByText(/5 чеків/)).toBeInTheDocument();
     expect(screen.getByText("Оновити чеки")).toBeInTheDocument();
     expect(screen.getByText("Видалити всі дані Сільпо")).toBeInTheDocument();
+  });
+
+  it("keeps the privacy-promise text reachable via a collapsed details when connected (gate #2)", async () => {
+    mockedSyncState.mockResolvedValue({
+      status: "connected",
+      accessTokenExpiresAt: "2026-08-24T10:00:00.000Z",
+      lastSyncAt: "2026-08-17T09:15:00.000Z",
+      receiptsCount: 5,
+    });
+
+    renderSection();
+
+    expect(await screen.findByText("Сільпо зв'язано")).toBeInTheDocument();
+    const summary = screen.getByText("Що ми робимо з даними чеків");
+    expect(summary.closest("details")).not.toBeNull();
+    expect(summary.closest("details")).not.toHaveAttribute("open");
+    // Той самий i18n-текст, що в disconnected-стані — не дубль рядка.
+    expect(
+      screen.getByText(/Чеки з Сільпо зберігаються у твоїй базі Sergeant/),
+    ).toBeInTheDocument();
   });
 
   it("shows the reauth banner and reconnect CTA when reauth_required", async () => {

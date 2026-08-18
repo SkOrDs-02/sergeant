@@ -401,6 +401,12 @@ export function SilpoCartSheet({ open, onClose, items }: SilpoCartSheetProps) {
                 <span>{COPY.totalLabel}</span>
                 <Money amount={totalKop / 100} kopecks />
               </div>
+              {/* Нагадування приватності перед записом у зовнішній кошик —
+                  повний текст обіцянки живе на картці Сільпо в
+                  Налаштуваннях (`SilpoPrivacyPromise`). */}
+              <p className="text-style-caption text-subtle">
+                {COPY.privacyReminder}
+              </p>
               {applyErrorKind && (
                 <ErrorBanner kind={applyErrorKind} onRetry={apply} />
               )}
