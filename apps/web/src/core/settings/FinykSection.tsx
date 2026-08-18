@@ -26,18 +26,32 @@ interface CustomCategory {
   label: string;
 }
 
+interface ManualExpenseDraft {
+  id?: string;
+  description: string;
+  amount: number;
+  category: string;
+  date: string;
+  kind: "income" | "expense";
+}
+
 interface FinykStorageShape {
   customCategories: CustomCategory[];
   addCustomCategory: (label: string) => void;
   removeCustomCategory: (id: string) => void;
+  addManualExpense: (expense: ManualExpenseDraft) => void;
 }
 
 export function FinykSection() {
   // Відкладаємо Monobank-запит і poller backfill, доки секція вперше не
   // потрапить у viewport. Після першого входження useInView лишається true.
   const [sectionRef, inView] = useInView();
-  const { customCategories, addCustomCategory, removeCustomCategory } =
-    useFinykStorage({}) as FinykStorageShape;
+  const {
+    customCategories,
+    addCustomCategory,
+    removeCustomCategory,
+    addManualExpense,
+  } = useFinykStorage({}) as FinykStorageShape;
   const [newCategoryLabel, setNewCategoryLabel] = useState("");
 
   const addCategory = () => {
@@ -119,7 +133,10 @@ export function FinykSection() {
         </SettingsSubGroup>
 
         <FinykWebhookServiceSection inView={inView} />
-        <SilpoIntegrationSection inView={inView} />
+        <SilpoIntegrationSection
+          inView={inView}
+          addManualExpense={addManualExpense}
+        />
         <FinykPrivatBankSection enabled={PRIVAT_ENABLED} />
       </SettingsGroup>
     </div>

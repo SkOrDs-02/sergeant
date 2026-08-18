@@ -1,14 +1,16 @@
 /**
- * Last validated: 2026-08-17
- * Status: Active — walking-skeleton experiment (Silpo MCP integration,
- * track A). See `docs/90-work/planning/specs/silpo-mcp-integration.md`.
+ * Last validated: 2026-08-18
+ * Status: Active — Silpo MCP integration, tracks A + B. See
+ * `docs/90-work/planning/specs/silpo-mcp-integration.md`.
  *
  * Settings card for the Silpo receipts integration — mono-pattern
  * disconnect (tokens only, receipts survive) + a separate, explicitly
- * confirmed "Видалити всі дані Сільпо" wipe action. `SILPO_ENABLED`
- * defaults to `false` server-side (503 `SILPO_DISABLED`); this card must
- * degrade to a quiet "не увімкнена" state, never an error banner —
- * `useSilpoSyncState` already turns that 503 into `status: "disabled"`.
+ * confirmed "Видалити всі дані Сільпо" wipe action, plus the "Чеки без
+ * транзакції" unmatched-receipts list (track B, § Рішення дизайну
+ * «Unmatched-чеки — першокласний стан»). `SILPO_ENABLED` defaults to
+ * `false` server-side (503 `SILPO_DISABLED`); this card must degrade to a
+ * quiet "не увімкнена" state, never an error banner — `useSilpoSyncState`
+ * already turns that 503 into `status: "disabled"`.
  */
 import { useState } from "react";
 import { silpoConnectUrl } from "@shared/api";
@@ -24,9 +26,18 @@ import {
 } from "@finyk/hooks/useSilpoMutations";
 import { useSilpoSyncState } from "@finyk/hooks/useSilpoSyncState";
 import { SettingsSubGroup } from "./SettingsPrimitives";
+import {
+  SilpoUnmatchedReceipts,
+  type ManualExpenseDraft,
+} from "./SilpoUnmatchedReceipts";
 
 interface SilpoIntegrationSectionProps {
   inView: boolean;
+  /** `useFinykStorage({}).addManualExpense` — threaded down from
+   * `FinykSection` (already the owner of the finyk storage hook for this
+   * settings page) so the unmatched-receipt CTA writes through the same
+   * manual-expense path as the rest of finyk, not a parallel one. */
+  addManualExpense: (expense: ManualExpenseDraft) => void;
 }
 
 const COPY = {
@@ -77,6 +88,7 @@ function formatKyivDateTime(iso: string): string {
 
 export function SilpoIntegrationSection({
   inView,
+  addManualExpense,
 }: SilpoIntegrationSectionProps) {
   const toast = useToast();
   const [confirmKind, setConfirmKind] = useState<ConfirmKind>(null);
@@ -249,6 +261,10 @@ export function SilpoIntegrationSection({
                 {COPY.disconnect}
               </Button>
             </div>
+            <SilpoUnmatchedReceipts
+              enabled={status === "connected"}
+              addManualExpense={addManualExpense}
+            />
           </div>
         ) : status === "reauth_required" ? (
           <div className="space-y-3">

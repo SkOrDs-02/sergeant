@@ -99,6 +99,17 @@ interface ManualExpenseSheetProps {
   initialCategory?: string | null;
   initialDescription?: string | null;
   /**
+   * Прив'язана сума в гривнях для нового (не edit-mode) запису — напр.
+   * «Створити витрату» з чека Сільпо без транзакції. Ігнорується в
+   * edit-mode (`initialExpense.amount` лишається джерелом правди для
+   * редагування). Число, не рядок: викликач знає суму з БД/API, а не з
+   * форми.
+   */
+  initialAmount?: number | null;
+  /** Дата ("YYYY-MM-DD") для того самого prefill-сценарію, що й
+   * `initialAmount`. */
+  initialDate?: string | null;
+  /**
    * Категорії, які користувач завів сам. Вбудований набір
    * (`CATEGORY_SLUGS`) про них не знає, тож без цього пропа щойно
    * створена категорія просто не з'являлась у пікері — спіймано
@@ -122,6 +133,8 @@ export function ManualExpenseSheet({
   frequentMerchants = [],
   initialCategory,
   initialDescription,
+  initialAmount,
+  initialDate,
   customCategories = [],
 }: ManualExpenseSheetProps) {
   const formId = useId();
@@ -271,6 +284,8 @@ export function ManualExpenseSheet({
             initialExpense?.id ?? "new",
             initialCategory ?? "",
             initialDescription ?? "",
+            initialAmount ?? "",
+            initialDate ?? "",
             frequentCategories.map((c) => c.id).join(","),
           ].join("|")
         : "",
@@ -279,6 +294,8 @@ export function ManualExpenseSheet({
       initialExpense,
       initialCategory,
       initialDescription,
+      initialAmount,
+      initialDate,
       frequentCategories,
     ],
   );
@@ -358,9 +375,9 @@ export function ManualExpenseSheet({
         reset({
           description:
             typeof initialDescription === "string" ? initialDescription : "",
-          amount: "",
+          amount: initialAmount != null ? String(initialAmount) : "",
           category: startCategory,
-          date: toLocalISODate(),
+          date: initialDate || toLocalISODate(),
         });
       }
       setDescFocused(false);
@@ -374,6 +391,8 @@ export function ManualExpenseSheet({
     initialExpense,
     initialCategory,
     initialDescription,
+    initialAmount,
+    initialDate,
     frequentCategories,
     // Гвардія `openInitKey === prevOpenInitKey` вище робить цю залежність
     // безкоштовною: зміна набору власних категорій перезапустить ефект,

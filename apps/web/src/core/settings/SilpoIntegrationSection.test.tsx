@@ -42,14 +42,15 @@ const mockedSyncState = silpoApi.syncState as unknown as ReturnType<
   typeof vi.fn
 >;
 const mockedWipe = silpoApi.wipe as unknown as ReturnType<typeof vi.fn>;
+const mockedReceipts = silpoApi.receipts as unknown as ReturnType<typeof vi.fn>;
 
-function renderSection() {
+function renderSection(addManualExpense = vi.fn()) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
   return render(
     <QueryClientProvider client={client}>
-      <SilpoIntegrationSection inView />
+      <SilpoIntegrationSection inView addManualExpense={addManualExpense} />
     </QueryClientProvider>,
   );
 }
@@ -57,6 +58,11 @@ function renderSection() {
 describe("SilpoIntegrationSection", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // "Чеки без транзакції" (track B) fetches `silpoApi.receipts` whenever
+    // status is "connected" — default to an empty page so the existing
+    // track-A assertions below aren't coupled to the unmatched-receipts
+    // feature. Tests that care about it override this per-case.
+    mockedReceipts.mockResolvedValue({ data: [], nextCursor: null });
   });
   afterEach(cleanup);
 

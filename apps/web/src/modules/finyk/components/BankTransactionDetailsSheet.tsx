@@ -291,7 +291,14 @@ export function BankTransactionDetailsSheet({
           </section>
         )}
 
-        {!isIncome && <SilpoReceiptSection transactionId={transaction.id} />}
+        {!isIncome && (
+          <SilpoReceiptSection
+            transactionId={transaction.id}
+            onSplitChange={onSplitChange}
+            customCategories={customCategories}
+            existingSplitsCount={existingSplits.length}
+          />
+        )}
 
         <section className="space-y-2 rounded-2xl border border-line bg-panel p-3">
           <Switch
