@@ -165,14 +165,26 @@ describe("useKeyboardAwareOverlay", () => {
       const scrollIntoView = vi.mocked(Element.prototype.scrollIntoView);
       scrollIntoView.mockClear();
       act(() => {
-        vv.height = 500; // клавіатура доїхала — гап 300
+        vv.height = 520; // transition почався
         vv._fire("resize");
       });
-      // До вичерпання таймера тиші — жодного скролу.
+      act(() => {
+        vi.advanceTimersByTime(100); // менше за таймер тиші (150)
+        vv.height = 500; // другий resize того ж transition-у
+        vv._fire("resize");
+      });
+      // Другий resize СКИНУВ таймер першого: на t=200 від першого (тобто
+      // 100 від другого) скролу ще немає — якби скидання не було, перший
+      // таймер уже згорів би на t=150.
+      act(() => {
+        vi.advanceTimersByTime(100);
+      });
       expect(scrollIntoView).not.toHaveBeenCalled();
       act(() => {
-        vi.runAllTimers();
+        vi.advanceTimersByTime(60); // 160 від другого — тиша настала
       });
+      // Рівно ОДИН доскрол на весь transition, не по одному на resize.
+      expect(scrollIntoView).toHaveBeenCalledTimes(1);
       expect(scrollIntoView).toHaveBeenCalledWith({ block: "center" });
     } finally {
       vi.useRealTimers();
