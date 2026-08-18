@@ -22,9 +22,10 @@
   read-after-write reads.
 - `DATABASE_URL_POOL` — pgBouncer перед primary. Runtime app-pool ходить
   туди (див. [pgBouncer runbook](./database-connection-pooling.md)).
-- `DATABASE_URL_REPLICA` — **новий** опційний URL до streaming-replication
-  read-replica. Opt-in caller-и (`growth_*` / `seo_*` analytics SELECT-и)
-  ходять через `apps/server/src/dbReplica.ts` → `queryReplica()`.
+- `DATABASE_URL_REPLICA` — опційний URL до streaming-replication
+  read-replica. Інфраструктура (`apps/server/src/dbReplica.ts` →
+  `queryReplica()`) wired і готова, але **активних продакшн-споживачів
+  наразі нуль** — див. § «Які запити сидять на replica».
 - Empty / unset → `queryReplica()` прозоро fallback-ить на primary pool.
   Single-URL deploy-и (Replit, dev, docker-compose) працюють без змін.
 
