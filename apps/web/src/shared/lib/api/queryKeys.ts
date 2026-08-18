@@ -127,6 +127,25 @@ export const silpoKeys = {
     ] as const,
   receiptDetail: (receiptId: string) =>
     ["silpo", "receipts", "detail", receiptId] as const,
+
+  // ── Cart (Track G — «У кошик Сільпо» зі списку покупок) ────────────────
+  /**
+   * `GET /api/silpo/cart` — поточний стан зовнішнього кошика Сільпо.
+   * Інвалідується після успішного `cartApply()`, щоб наступне читання (якщо
+   * колись з'явиться в'ювер поточного кошика) не показувало стейл дані.
+   */
+  cart: () => ["silpo", "cart"] as const,
+  /**
+   * `POST /api/silpo/cart/preview` — ключ за ВМІСТОМ запиту (масив
+   * `{name, quantity?}`), той самий idiom, що `nutritionKeys.dayHint`:
+   * preview — чиста функція від набору позицій, тож інший набір позицій
+   * мусить бути іншим кеш-рядком, а той самий набір (повторне відкриття
+   * шіта з тим самим unchecked-списком) — тим самим. React Query серіалізує
+   * ключі детерміновано (`hashKey` сортує поля), тож масив об'єктів як
+   * останній елемент — безпечний.
+   */
+  cartPreview: (items: { name: string; quantity?: number | undefined }[]) =>
+    ["silpo", "cart", "preview", items] as const,
 };
 
 // ─── Push notifications ───────────────────────────────────────────────────

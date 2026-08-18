@@ -128,4 +128,36 @@ export const nutritionPageMessages = {
     cancelCta: "Скасувати",
     loading: "Завантажую…",
   },
+
+  /**
+   * «У кошик Сільпо» зі списку покупок (Silpo integration трек G, спека
+   * `docs/90-work/planning/specs/silpo-mcp-integration.md` §
+   * «Cart (MCP write path)»). Позиції пишуться в зовнішній кошик ЛИШЕ
+   * після явного тапу «Додати в кошик Сільпо» — до того будь-яка кількість
+   * тапів по чекбоксах/степеру нікуди не записується.
+   */
+  silpoCart: {
+    entryCta: "У кошик Сільпо",
+    sheetTitle: "У кошик Сільпо",
+    sheetDescription: "Обери позиції та підтверди — додам їх у твій кошик.",
+    loading: "Шукаю позиції в каталозі…",
+    emptyList: "У списку покупок немає невідмічених позицій.",
+    unmatched: "Не знайшлось у Сільпо",
+    altPickerLabel: "Інший варіант",
+    totalLabel: "Разом",
+    applyCta: "Додати в кошик Сільпо",
+    applying: "Додаю…",
+    cancelCta: "Скасувати",
+    decreaseQty: "Зменшити кількість",
+    increaseQty: "Збільшити кількість",
+    successTitle: "Додано в кошик Сільпо",
+    successCartLink: "Відкрити кошик у Сільпо",
+    closeCta: "Готово",
+    errorNotConnected: "Сільпо не звʼязано. Звʼяжи акаунт у Налаштуваннях.",
+    errorReauthRequired:
+      "Сільпо просить повторну авторизацію. Підключи заново в Налаштуваннях.",
+    errorUnavailable: "Сільпо зараз недоступне, спробуй пізніше.",
+    errorUnknown: "Щось пішло не так. Спробуй ще раз.",
+    retryCta: "Спробувати ще раз",
+  },
 };

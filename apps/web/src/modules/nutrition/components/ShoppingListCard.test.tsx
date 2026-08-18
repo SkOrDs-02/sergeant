@@ -5,11 +5,23 @@
  * Unit tests for `ShoppingListCard`.
  */
 import { fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const openHubModule = vi.fn();
 vi.mock("@shared/lib/modules/hubNav", () => ({
   openHubModule: (...a: unknown[]) => openHubModule(...a),
+}));
+
+// `SilpoCartEntry` (embedded in the header row) gates on
+// `useSilpoSyncState` — mocked at the `@finyk/hooks` boundary here so these
+// unrelated ShoppingListCard tests don't need a real QueryClientProvider.
+// Default "disconnected" makes `SilpoCartEntry` a no-op render (returns
+// `null` before it ever mounts `SilpoCartSheet`, which is the component
+// that actually touches React Query) — end-to-end "У кошик Сільпо" flow is
+// covered by `SilpoCartEntry.test.tsx`.
+const syncStateMock = vi.fn(() => ({ status: "disconnected" }));
+vi.mock("@finyk/hooks/useSilpoSyncState", () => ({
+  useSilpoSyncState: () => syncStateMock(),
 }));
 
 import { ShoppingListCard } from "./ShoppingListCard";
@@ -43,6 +55,7 @@ function baseProps(overrides: Record<string, unknown> = {}) {
   };
 }
 
+beforeEach(() => syncStateMock.mockReturnValue({ status: "disconnected" }));
 afterEach(() => vi.clearAllMocks());
 
 describe("ShoppingListCard", () => {

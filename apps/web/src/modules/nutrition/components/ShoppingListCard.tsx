@@ -9,6 +9,7 @@ import { Button } from "@shared/components/ui/Button";
 import { cn } from "@shared/lib/ui/cn";
 import { openHubModule } from "@shared/lib/modules/hubNav";
 import { getTotalCount } from "../lib/shoppingListStorage";
+import { SilpoCartEntry } from "./SilpoCartEntry";
 import type {
   PantryItem,
   ShoppingCategory,
@@ -157,7 +158,8 @@ export function ShoppingListCard({
               <div className="text-style-label text-text">
                 Список ({checked}/{total})
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2 justify-end">
+                <SilpoCartEntry shoppingList={shoppingList} />
                 {checkedItems.length > 0 && (
                   <Button
                     type="button"
