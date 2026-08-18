@@ -1,5 +1,23 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Request, Response as ExpressResponse } from "express";
+
+const silpoMocks = vi.hoisted(() => ({
+  getSessionUser: vi.fn(),
+  isSilpoConnectedUser: vi.fn(),
+  searchSilpoProducts: vi.fn(),
+}));
+
+// `food-search.ts` only imports `getSessionUser` from `../../auth.js` — the
+// mock factory only needs to cover that one export.
+vi.mock("../../auth.js", () => ({
+  getSessionUser: silpoMocks.getSessionUser,
+}));
+
+vi.mock("../silpo/foodSource.js", () => ({
+  isSilpoConnectedUser: silpoMocks.isSilpoConnectedUser,
+  searchSilpoProducts: silpoMocks.searchSilpoProducts,
+}));
+
 import {
   stableId,
   hasErrorName,
@@ -12,20 +30,27 @@ import { FoodSearchSuccessSchema } from "@sergeant/shared/schemas";
 interface TestRes {
   statusCode: number;
   body: unknown;
+  headers: Record<string, string>;
   status(code: number): TestRes;
   json(payload: unknown): TestRes;
+  setHeader(name: string, value: string): TestRes;
 }
 
 function mockRes(): TestRes & ExpressResponse {
   const res: TestRes = {
     statusCode: 200,
     body: undefined,
+    headers: {},
     status(code) {
       this.statusCode = code;
       return this;
     },
     json(payload) {
       this.body = payload;
+      return this;
+    },
+    setHeader(name, value) {
+      this.headers[name] = value;
       return this;
     },
   };
@@ -57,6 +82,12 @@ const originalFetch = global.fetch;
 beforeEach(() => {
   global.fetch = vi.fn();
   vi.unstubAllEnvs();
+  // Default: anonymous caller, no Silpo connection — matches every existing
+  // test below (none of them set up a session). `restoreAllMocks()` in
+  // `afterEach` clears these between tests, so they're re-armed here.
+  silpoMocks.getSessionUser.mockReset().mockResolvedValue(null);
+  silpoMocks.isSilpoConnectedUser.mockReset().mockResolvedValue(false);
+  silpoMocks.searchSilpoProducts.mockReset().mockResolvedValue([]);
 });
 
 afterEach(() => {
@@ -584,5 +615,72 @@ describe("food-search handler", () => {
     const urls = fetchMock.mock.calls.map((call) => String(call[0]));
     expect(urls[1]).toContain("search_terms=egg");
     expect(urls[2]).toContain("query=egg");
+  });
+});
+
+describe("food-search handler > Silpo as fourth source", () => {
+  it("does not call searchSilpoProducts / touch Cache-Control for an unconnected caller (default)", async () => {
+    const fetchMock = vi.mocked(global.fetch);
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse(true, { products: [] }))
+      .mockResolvedValueOnce(jsonResponse(true, { products: [] }))
+      .mockResolvedValueOnce(jsonResponse(true, { foods: [] }));
+
+    const res = mockRes();
+    await handler(asReq({ q: "молоко", limit: "5" }), res);
+
+    expect(silpoMocks.searchSilpoProducts).not.toHaveBeenCalled();
+    expect(res.headers["Cache-Control"]).toBeUndefined();
+  });
+
+  it("includes a Silpo hit in the merged cascade and downgrades Cache-Control to private for a connected caller", async () => {
+    silpoMocks.getSessionUser.mockResolvedValue({ id: "user-1" });
+    silpoMocks.isSilpoConnectedUser.mockResolvedValue(true);
+    silpoMocks.searchSilpoProducts.mockResolvedValue([
+      {
+        id: "silpo_123",
+        name: "Молоко Сільпо 2.5%",
+        brand: "Сільпо",
+        source: "silpo",
+        per100: { kcal: 60, protein_g: 3, fat_g: 2.5, carbs_g: 4.7 },
+        defaultGrams: 900,
+      },
+    ]);
+    const fetchMock = vi.mocked(global.fetch);
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse(true, { products: [] }))
+      .mockResolvedValueOnce(jsonResponse(true, { products: [] }))
+      .mockResolvedValueOnce(jsonResponse(true, { foods: [] }));
+
+    const res = mockRes();
+    await handler(asReq({ q: "молоко", limit: "5" }), res);
+
+    expect(silpoMocks.searchSilpoProducts).toHaveBeenCalledWith(
+      "user-1",
+      "молоко",
+    );
+    expect(products(res.body).map((p) => p["source"])).toEqual(["silpo"]);
+    // A Silpo-augmented response reflects one user's linked account — it
+    // must never be reused for a different caller via the router's shared
+    // `stale-while-revalidate, public` header (PERF-007).
+    expect(res.headers["Cache-Control"]).toBe(
+      "private, no-store, no-cache, must-revalidate",
+    );
+  });
+
+  it("still returns OFF/USDA results (and skips Silpo) when isSilpoConnectedUser resolves false, even with a session present", async () => {
+    silpoMocks.getSessionUser.mockResolvedValue({ id: "user-1" });
+    silpoMocks.isSilpoConnectedUser.mockResolvedValue(false);
+    const fetchMock = vi.mocked(global.fetch);
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse(true, { products: [] }))
+      .mockResolvedValueOnce(jsonResponse(true, { products: [] }))
+      .mockResolvedValueOnce(jsonResponse(true, { foods: [] }));
+
+    const res = mockRes();
+    await handler(asReq({ q: "молоко", limit: "5" }), res);
+
+    expect(silpoMocks.searchSilpoProducts).not.toHaveBeenCalled();
+    expect(res.headers["Cache-Control"]).toBeUndefined();
   });
 });

@@ -5,6 +5,7 @@ import {
 } from "@sergeant/shared/schemas";
 import { FoodSearchQuerySchema } from "../../http/schemas.js";
 import { parseQuery } from "../../http/validate.js";
+import { getSessionUser } from "../../auth.js";
 import {
   normalizeOFFSearch,
   normalizeUSDASearch,
@@ -12,7 +13,28 @@ import {
   type OFFSearchProduct,
   type USDASearchFood,
 } from "../../lib/normalizers/index.js";
+import {
+  isSilpoConnectedUser,
+  searchSilpoProducts,
+  type SilpoSearchProduct,
+} from "../silpo/foodSource.js";
 import { NUTRITION_AI_TIMEOUTS_MS } from "./timeouts.js";
+
+/**
+ * Best-effort session peek. `/api/food-search` is deliberately session-less
+ * (open, cached, PERF-007 typeahead) — this must NEVER turn it into an
+ * auth-gated route. `getSessionUser` throws on a lookup failure (see its
+ * docstring in `auth.ts`); catching here keeps that failure mode identical
+ * to "no session" instead of a 500 on an endpoint that never required auth.
+ */
+async function resolveOptionalUserId(req: Request): Promise<string | null> {
+  try {
+    const user = await getSessionUser(req);
+    return user?.id ?? null;
+  } catch {
+    return null;
+  }
+}
 
 const OFF_SEARCH = "https://world.openfoodfacts.org/api/v2/search";
 const OFF_FIELDS =
@@ -108,8 +130,9 @@ async function fetchUSDA(
 }
 
 /**
- * GET /api/food-search?q=… — каскадний пошук через Open Food Facts + USDA.
- * CORS і rate-limit виставляє роутер.
+ * GET /api/food-search?q=… — каскадний пошук через Open Food Facts + USDA
+ * (+ Silpo як четверте джерело, лише для юзера зі зв'язаним акаунтом —
+ * `modules/silpo/foodSource.ts`). CORS і rate-limit виставляє роутер.
  */
 export default async function handler(
   req: Request,
@@ -121,8 +144,16 @@ export default async function handler(
 
   try {
     const enTerm = translateFirstToken(query);
+    // Cheap guard (single indexed SELECT, zero cost for the anonymous
+    // majority) decides both whether to fan the Silpo source into the
+    // cascade below AND whether this response may hit the shared public
+    // cache (see the `Cache-Control` override near the end of this
+    // handler) — a Silpo-augmented response is per-user and must never be
+    // served from a CDN/browser cache to a different caller.
+    const userId = await resolveOptionalUserId(req);
+    const silpoConnected = await isSilpoConnectedUser(userId);
 
-    const [ukOff, enOff, usdaRaw] = await Promise.all([
+    const [ukOff, enOff, usdaRaw, silpoProducts] = await Promise.all([
       fetchOFF(query, "uk", signal).catch((): OFFSearchProduct[] => []),
       enTerm
         ? fetchOFF(enTerm, "en", signal).catch((): OFFSearchProduct[] => [])
@@ -130,6 +161,15 @@ export default async function handler(
       enTerm
         ? fetchUSDA(enTerm, signal).catch((): USDASearchFood[] => [])
         : Promise.resolve<USDASearchFood[]>([]),
+      // Uses the original (Ukrainian) query, not `enTerm` — Silpo's catalog
+      // is a Ukrainian retailer, mirroring the OFF `uk` branch above.
+      // `searchSilpoProducts` never throws (see its docstring); `.catch` is
+      // defense-in-depth so a bug there can never break this cascade.
+      silpoConnected
+        ? searchSilpoProducts(userId, query).catch(
+            (): SilpoSearchProduct[] => [],
+          )
+        : Promise.resolve<SilpoSearchProduct[]>([]),
     ]);
 
     const offProducts = [...ukOff, ...enOff]
@@ -140,10 +180,13 @@ export default async function handler(
       .map((p) => normalizeUSDAProduct(p))
       .filter((p): p is NormalizedSearchProduct => p != null);
 
-    // OFF (з українськими назвами) йде першим, USDA — як fallback
+    // OFF (з українськими назвами) йде першим, USDA — fallback, Silpo —
+    // останнє (четверте) джерело каскаду, вже нормалізоване у
+    // `searchSilpoProducts` (структурно == `FoodSearchProduct`).
     const allProducts: NormalizedSearchProduct[] = [
       ...offProducts,
       ...usdaProducts,
+      ...silpoProducts,
     ];
 
     const qTokens = query
@@ -165,6 +208,16 @@ export default async function handler(
       })
       .slice(0, limit);
 
+    if (silpoConnected) {
+      // Overrides the router's `stale-while-revalidate, public` header
+      // (PERF-007) — a Silpo-augmented response reflects THIS user's
+      // linked account and must not be reused for anyone else's identical
+      // query via a shared/CDN cache.
+      res.setHeader(
+        "Cache-Control",
+        "private, no-store, no-cache, must-revalidate",
+      );
+    }
     res.status(200).json(FoodSearchSuccessSchema.parse({ products }));
   } catch (e: unknown) {
     if (hasErrorName(e, "TimeoutError") || hasErrorName(e, "AbortError")) {
