@@ -280,6 +280,30 @@ const SilpoReceiptsQuery = silpoSchemas.SilpoReceiptsQuerySchema.meta({
   id: "SilpoReceiptsQuery",
   description: "Query для GET /api/silpo/receipts — limit (coerced) + cursor.",
 });
+// ── Silpo cart (Track G — MCP write path) ─────────────────────────────────
+const SilpoCartPreviewRequest = silpoSchemas.SilpoCartPreviewRequestSchema.meta(
+  {
+    id: "SilpoCartPreviewRequest",
+    description:
+      "Тіло POST /api/silpo/cart/preview — `{items: [{name, quantity?}]}` (1..100).",
+  },
+);
+const SilpoCartPreviewResponse =
+  silpoSchemas.SilpoCartPreviewResponseSchema.meta({
+    id: "SilpoCartPreviewResponse",
+    description:
+      "Відповідь POST /api/silpo/cart/preview — по одному result на запитаний рядок, у порядку запиту.",
+  });
+const SilpoCartApplyRequest = silpoSchemas.SilpoCartApplyRequestSchema.meta({
+  id: "SilpoCartApplyRequest",
+  description:
+    "Тіло POST /api/silpo/cart/apply — `{selections: [{lagerId, quantity}]}` (1..100); `lagerId` — опаковий токен з preview.",
+});
+const SilpoCartDto = silpoSchemas.SilpoCartDtoSchema.meta({
+  id: "SilpoCartDto",
+  description:
+    "Відповідь GET /api/silpo/cart і POST /api/silpo/cart/apply — поточний стан кошика Сільпо.",
+});
 
 const Pagination = schemas.PaginationSchema.meta({
   id: "Pagination",
@@ -447,6 +471,10 @@ export const namedSchemas = {
   SilpoReceiptDetailDto,
   SilpoReceiptsPage,
   SilpoReceiptsQuery,
+  SilpoCartPreviewRequest,
+  SilpoCartPreviewResponse,
+  SilpoCartApplyRequest,
+  SilpoCartDto,
   Pagination,
   WaitlistSubmit,
   WaitlistSubmitResponse,

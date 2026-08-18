@@ -4,7 +4,8 @@
 // (finyk persona, walking-skeleton experiment — spec
 // `docs/90-work/planning/specs/silpo-mcp-integration.md`). Covers every
 // `HttpClient`-exercisable route from `apps/server/src/routes/silpo.ts`:
-// disconnect, wipe, sync-state, sync, receipts list, receipt detail.
+// disconnect, wipe, sync-state, sync, receipts list, receipt detail, and
+// (Track G) cart preview/apply/get.
 // `GET /api/silpo/connect` and `GET /api/silpo/callback` are 302
 // browser-redirect endpoints — navigation-only, never called through
 // `HttpClient`/`fetch`, so they are intentionally NOT part of this file
@@ -15,15 +16,20 @@
 // `lib/normalizers/silpo.ts`) — exactly the bigint-as-string leak class
 // Hard Rule #1 guards. We assert `typeof === "number"` on both, not just
 // presence, so a regression in the normalizer fails this test instead of
-// shipping a `"123"` total to the UI.
+// shipping a `"123"` total to the UI. Same class of assertion covers the
+// Track G cart DTOs below (`priceKop`/`subtotalKop`/`totalKop`) — those are
+// derived from the same catalog/cart price fields, not DB bigints, but the
+// coerced-`number` contract with the client is identical.
 //
 // Schemas live in `@sergeant/shared/schemas` (`packages/shared/src/schemas/silpo.ts`)
 // — `SilpoDisconnectResponseSchema`, `SilpoWipeResponseSchema`,
 // `SilpoSyncStateSchema`, `SilpoSyncResultSchema`, `SilpoReceiptsPageSchema`,
-// `SilpoReceiptDetailDtoSchema` — re-exported verbatim by
+// `SilpoReceiptDetailDtoSchema`, `SilpoCartPreviewResponseSchema`,
+// `SilpoCartDtoSchema` — re-exported verbatim by
 // `packages/api-client/src/endpoints/silpo.ts` (no hand-redeclared shapes).
 // Server serializers verified read-only against
-// `apps/server/src/routes/silpo.ts` + `apps/server/src/lib/normalizers/silpo.ts`.
+// `apps/server/src/routes/silpo.ts` + `apps/server/src/lib/normalizers/silpo.ts`
+// + `apps/server/src/modules/silpo/cart.ts` + `cartNormalize.ts`.
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { PactV4 } from "@pact-foundation/pact";
@@ -367,3 +373,262 @@ describe(
     });
   },
 );
+
+// ──────────────────────────────── Cart (Track G) ────────────────────────────
+
+describe(
+  "contract @ POST /api/v1/silpo/cart/preview",
+  CONTRACT_SUITE_OPTIONS,
+  () => {
+    let pact: PactV4;
+    beforeAll(() => {
+      pact = createPact();
+    });
+    afterAll(() => {});
+
+    it("returns one result per request item, incl. a matched and an unmatched line", async () => {
+      await pact
+        .addInteraction()
+        .given("user-pact-001 has a connected Silpo account")
+        .uponReceiving(
+          "a POST /api/v1/silpo/cart/preview request with 2 shopping-list lines",
+        )
+        .withRequest("POST", "/api/v1/silpo/cart/preview", (req) => {
+          req.headers({
+            accept: "application/json",
+            "content-type": "application/json",
+          });
+          req.jsonBody({
+            items: [
+              { name: "Молоко 2.5%", quantity: 2 },
+              { name: "асдфasdf000" },
+            ],
+          });
+        })
+        .willRespondWith(200, (res) => {
+          res.headers({ "content-type": "application/json" });
+          // Shape matches `SilpoCartPreviewResponseSchema` —
+          // `normalizeCartMatch` output (`apps/server/src/modules/silpo/cartNormalize.ts`)
+          // AFTER catalog-price → kopiykas conversion (Hard Rule #1 sibling).
+          res.jsonBody({
+            results: [
+              {
+                query: "Молоко 2.5%",
+                matches: [
+                  {
+                    lagerId: "eyJwcm9kdWN0SWQiOiJwLTEifQ==",
+                    name: "Молоко Селянське 2.5% 900г",
+                    priceKop: 4500,
+                    unit: "шт",
+                    displayRatio: null,
+                  },
+                  {
+                    lagerId: "eyJwcm9kdWN0SWQiOiJwLTIifQ==",
+                    name: "Молоко Яготинське 2.5% 1л",
+                    priceKop: 5200,
+                    unit: "кг",
+                    displayRatio: "0.9 кг",
+                  },
+                ],
+                unmatched: false,
+              },
+              {
+                query: "асдфasdf000",
+                matches: [],
+                unmatched: true,
+              },
+            ],
+          });
+        })
+        .executeTest(async (mockServer) => {
+          const http = createHttpClient({ baseUrl: mockServer.url });
+          const silpo = createSilpoEndpoints(http);
+          const out = await silpo.cartPreview([
+            { name: "Молоко 2.5%", quantity: 2 },
+            { name: "асдфasdf000" },
+          ]);
+          expect(out.results).toHaveLength(2);
+          const matched = out.results[0]!;
+          expect(matched.query).toBe("Молоко 2.5%");
+          expect(matched.unmatched).toBe(false);
+          expect(matched.matches).toHaveLength(2);
+          const top = matched.matches[0]!;
+          // Hard Rule #1 sibling — catalog price must already be `number`
+          // kopiykas on the wire, never a string.
+          expect(typeof top.priceKop).toBe("number");
+          expect(top.priceKop).toBe(4500);
+          expect(top.lagerId).toBe("eyJwcm9kdWN0SWQiOiJwLTEifQ==");
+          const alt = matched.matches[1]!;
+          expect(alt.displayRatio).toBe("0.9 кг");
+          const unmatched = out.results[1]!;
+          expect(unmatched.unmatched).toBe(true);
+          expect(unmatched.matches).toHaveLength(0);
+        });
+    });
+  },
+);
+
+describe(
+  "contract @ POST /api/v1/silpo/cart/apply",
+  CONTRACT_SUITE_OPTIONS,
+  () => {
+    let pact: PactV4;
+    beforeAll(() => {
+      pact = createPact();
+    });
+    afterAll(() => {});
+
+    it("adds the selections and returns the post-write cart state", async () => {
+      await pact
+        .addInteraction()
+        .given("user-pact-001 has a connected Silpo account")
+        .uponReceiving(
+          "a POST /api/v1/silpo/cart/apply request with 1 selection",
+        )
+        .withRequest("POST", "/api/v1/silpo/cart/apply", (req) => {
+          req.headers({
+            accept: "application/json",
+            "content-type": "application/json",
+          });
+          req.jsonBody({
+            selections: [
+              { lagerId: "eyJwcm9kdWN0SWQiOiJwLTEifQ==", quantity: 2 },
+            ],
+          });
+        })
+        .willRespondWith(200, (res) => {
+          res.headers({ "content-type": "application/json" });
+          // Shape matches `SilpoCartDtoSchema` — post-write state from
+          // `normalizeCartDetail` (`apps/server/src/modules/silpo/cartNormalize.ts`).
+          res.jsonBody({
+            items: [
+              {
+                name: "Молоко Селянське 2.5% 900г",
+                quantity: 2,
+                priceKop: 4500,
+                subtotalKop: 9000,
+              },
+            ],
+            totalKop: 9000,
+            cartUrl: "https://silpo.ua/cart/checkout/abc123",
+          });
+        })
+        .executeTest(async (mockServer) => {
+          const http = createHttpClient({ baseUrl: mockServer.url });
+          const silpo = createSilpoEndpoints(http);
+          const cart = await silpo.cartApply([
+            { lagerId: "eyJwcm9kdWN0SWQiOiJwLTEifQ==", quantity: 2 },
+          ]);
+          expect(cart.items).toHaveLength(1);
+          const item = cart.items[0]!;
+          // Hard Rule #1 sibling — every money field must be `number`.
+          expect(typeof item.priceKop).toBe("number");
+          expect(typeof item.subtotalKop).toBe("number");
+          expect(item.subtotalKop).toBe(9000);
+          expect(typeof cart.totalKop).toBe("number");
+          expect(cart.totalKop).toBe(9000);
+          expect(cart.cartUrl).toBe("https://silpo.ua/cart/checkout/abc123");
+        });
+    });
+  },
+);
+
+describe("contract @ GET /api/v1/silpo/cart", CONTRACT_SUITE_OPTIONS, () => {
+  let pact: PactV4;
+  beforeAll(() => {
+    pact = createPact();
+  });
+  afterAll(() => {});
+
+  it("returns the current cart state with coerced number fields", async () => {
+    await pact
+      .addInteraction()
+      .given("user-pact-001 has 1 item in the Silpo cart")
+      .uponReceiving("a GET /api/v1/silpo/cart request")
+      .withRequest("GET", "/api/v1/silpo/cart", (req) => {
+        req.headers({ accept: "application/json" });
+      })
+      .willRespondWith(200, (res) => {
+        res.headers({ "content-type": "application/json" });
+        res.jsonBody({
+          items: [
+            {
+              name: "Хліб житній",
+              quantity: 1,
+              priceKop: 3500,
+              subtotalKop: 3500,
+            },
+          ],
+          totalKop: 3500,
+          cartUrl: "https://silpo.ua/cart/checkout/def456",
+        });
+      })
+      .executeTest(async (mockServer) => {
+        const http = createHttpClient({ baseUrl: mockServer.url });
+        const silpo = createSilpoEndpoints(http);
+        const cart = await silpo.cartGet();
+        expect(cart.items).toHaveLength(1);
+        expect(typeof cart.items[0]!.priceKop).toBe("number");
+        expect(typeof cart.totalKop).toBe("number");
+        expect(cart.totalKop).toBe(3500);
+      });
+  });
+
+  it("degrades to an empty cart (null totalKop/cartUrl semantics never violated on an empty cart)", async () => {
+    await pact
+      .addInteraction()
+      .given("user-pact-002 has no Silpo cart yet")
+      .uponReceiving("a GET /api/v1/silpo/cart request (empty cart)")
+      .withRequest("GET", "/api/v1/silpo/cart", (req) => {
+        req.headers({ accept: "application/json" });
+      })
+      .willRespondWith(200, (res) => {
+        res.headers({ "content-type": "application/json" });
+        // `getCart()` degrades a missing `shoppingCartId` to this exact
+        // shape (`apps/server/src/modules/silpo/cart.ts`), never an error.
+        res.jsonBody({ items: [], totalKop: 0, cartUrl: null });
+      })
+      .executeTest(async (mockServer) => {
+        const http = createHttpClient({ baseUrl: mockServer.url });
+        const silpo = createSilpoEndpoints(http);
+        const cart = await silpo.cartGet();
+        expect(cart.items).toHaveLength(0);
+        expect(typeof cart.totalKop).toBe("number");
+        expect(cart.totalKop).toBe(0);
+        expect(cart.cartUrl).toBeNull();
+      });
+  });
+
+  it("accepts a null totalKop degrade (Silpo response missing both calculation fields)", async () => {
+    await pact
+      .addInteraction()
+      .given("user-pact-003 has a Silpo cart with a calculation schema drift")
+      .uponReceiving("a GET /api/v1/silpo/cart request (totalKop null degrade)")
+      .withRequest("GET", "/api/v1/silpo/cart", (req) => {
+        req.headers({ accept: "application/json" });
+      })
+      .willRespondWith(200, (res) => {
+        res.headers({ "content-type": "application/json" });
+        res.jsonBody({
+          items: [
+            {
+              name: "Яйця С1 10шт",
+              quantity: 1,
+              priceKop: 6900,
+              subtotalKop: 6900,
+            },
+          ],
+          totalKop: null,
+          cartUrl: null,
+        });
+      })
+      .executeTest(async (mockServer) => {
+        const http = createHttpClient({ baseUrl: mockServer.url });
+        const silpo = createSilpoEndpoints(http);
+        const cart = await silpo.cartGet();
+        expect(cart.totalKop).toBeNull();
+        expect(cart.cartUrl).toBeNull();
+        expect(typeof cart.items[0]!.subtotalKop).toBe("number");
+      });
+  });
+});

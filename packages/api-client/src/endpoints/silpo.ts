@@ -1,4 +1,11 @@
 import type {
+  SilpoCartApplyRequest as SharedSilpoCartApplyRequest,
+  SilpoCartDto as SharedSilpoCartDto,
+  SilpoCartItemDto as SharedSilpoCartItemDto,
+  SilpoCartMatchDto as SharedSilpoCartMatchDto,
+  SilpoCartPreviewQueryDto as SharedSilpoCartPreviewQueryDto,
+  SilpoCartPreviewRequest as SharedSilpoCartPreviewRequest,
+  SilpoCartPreviewResponse as SharedSilpoCartPreviewResponse,
   SilpoConnectionStatus as SharedSilpoConnectionStatus,
   SilpoDisconnectResponse as SharedSilpoDisconnectResponse,
   SilpoReceiptChannel as SharedSilpoReceiptChannel,
@@ -15,6 +22,10 @@ import type {
 // у apps/web вказує на файл `src/index.ts`, тож субшлях `/schemas` для
 // value-імпортів не резолвиться (type-імпорти стираються до бандлінгу).
 import {
+  SilpoCartApplyRequestSchema,
+  SilpoCartDtoSchema,
+  SilpoCartPreviewRequestSchema,
+  SilpoCartPreviewResponseSchema,
   SilpoDisconnectResponseSchema,
   SilpoReceiptDetailDtoSchema,
   SilpoReceiptsPageSchema,
@@ -53,6 +64,14 @@ import type { RequestOptions } from "../types";
  *   - `GET  /api/silpo/receipts`    → `receipts()`
  *   - `GET  /api/silpo/receipts/:id`→ `receiptDetail()` — 404 (`NOT_FOUND`)
  *     surfaces as `ApiError` with `status: 404`, not a `null` return.
+ *   - `POST /api/silpo/cart/preview`→ `cartPreview()` — search-only, ніколи
+ *     не пише в кошик. `results[]` — по одному на request-item, у порядку
+ *     запиту.
+ *   - `POST /api/silpo/cart/apply`  → `cartApply()` — confirm-before-write;
+ *     зіпсований `lagerId` → 400 `VALIDATION` ДО будь-якого мережевого
+ *     виклику (декодиться на сервері перш ніж торкнутись MCP).
+ *   - `GET  /api/silpo/cart`        → `cartGet()` — порожній кошик
+ *     деградує до `{items: [], totalKop: 0, cartUrl: null}`, не помилки.
  */
 
 export type SilpoConnectionStatus = SharedSilpoConnectionStatus;
@@ -66,6 +85,21 @@ export type SilpoReceiptSummaryDto = SharedSilpoReceiptSummaryDto;
 export type SilpoReceiptDetailDto = SharedSilpoReceiptDetailDto;
 export type SilpoReceiptsPage = SharedSilpoReceiptsPage;
 export type SilpoReceiptsQuery = SharedSilpoReceiptsQuery;
+
+// ── Cart (Track G — MCP write path) ─────────────────────────────────────
+export type SilpoCartPreviewRequest = SharedSilpoCartPreviewRequest;
+/** Один рядок запиту `cartPreview()` — `{name, quantity?}`. */
+export type SilpoCartPreviewItem =
+  SharedSilpoCartPreviewRequest["items"][number];
+export type SilpoCartMatchDto = SharedSilpoCartMatchDto;
+export type SilpoCartPreviewQueryDto = SharedSilpoCartPreviewQueryDto;
+export type SilpoCartPreviewResponse = SharedSilpoCartPreviewResponse;
+export type SilpoCartApplyRequest = SharedSilpoCartApplyRequest;
+/** Один рядок запиту `cartApply()` — `{lagerId, quantity}`. `lagerId` — опаковий токен з `cartPreview()`, ніколи не парситься клієнтом. */
+export type SilpoCartSelection =
+  SharedSilpoCartApplyRequest["selections"][number];
+export type SilpoCartItemDto = SharedSilpoCartItemDto;
+export type SilpoCartDto = SharedSilpoCartDto;
 
 export interface SilpoReceiptsListParams {
   limit?: number;
@@ -113,6 +147,32 @@ export interface SilpoEndpoints {
     receiptId: string,
     opts?: Pick<RequestOptions, "signal">,
   ) => Promise<SilpoReceiptDetailDto>;
+  /**
+   * `POST /api/silpo/cart/preview` — search-only, ніколи не пише в кошик.
+   * `items` — 1..100 рядків списку покупок. Помилки: `ApiError` (409
+   * `SILPO_NOT_CONNECTED`/`SILPO_REAUTH_REQUIRED`, 429 `SILPO_RATE_LIMITED`,
+   * 502 `SILPO_UPSTREAM_ERROR`/`SILPO_SCHEMA_DRIFT`, 503 `SILPO_DISABLED`/
+   * `SILPO_CONFIG_MISSING`, 400 `VALIDATION`).
+   */
+  cartPreview: (
+    items: SilpoCartPreviewItem[],
+    opts?: Pick<RequestOptions, "signal">,
+  ) => Promise<SilpoCartPreviewResponse>;
+  /**
+   * `POST /api/silpo/cart/apply` — confirm-before-write; `selections` — 1..100
+   * `{lagerId, quantity}` пар з `cartPreview()`. Зіпсований `lagerId` → 400
+   * `VALIDATION` ДО будь-якого мережевого виклику. Повертає пост-write стан
+   * кошика (форма `cartGet()`).
+   */
+  cartApply: (
+    selections: SilpoCartSelection[],
+    opts?: Pick<RequestOptions, "signal">,
+  ) => Promise<SilpoCartDto>;
+  /**
+   * `GET /api/silpo/cart` — поточний стан кошика. Порожній кошик →
+   * `{items: [], totalKop: 0, cartUrl: null}`, не помилка.
+   */
+  cartGet: (opts?: Pick<RequestOptions, "signal">) => Promise<SilpoCartDto>;
 }
 
 export function createSilpoEndpoints(http: HttpClient): SilpoEndpoints {
@@ -152,6 +212,24 @@ export function createSilpoEndpoints(http: HttpClient): SilpoEndpoints {
         { signal },
       );
       return SilpoReceiptDetailDtoSchema.parse(raw);
+    },
+    cartPreview: async (items, { signal } = {}) => {
+      const body = SilpoCartPreviewRequestSchema.parse({ items });
+      const raw = await http.post<unknown>("/api/silpo/cart/preview", body, {
+        signal,
+      });
+      return SilpoCartPreviewResponseSchema.parse(raw);
+    },
+    cartApply: async (selections, { signal } = {}) => {
+      const body = SilpoCartApplyRequestSchema.parse({ selections });
+      const raw = await http.post<unknown>("/api/silpo/cart/apply", body, {
+        signal,
+      });
+      return SilpoCartDtoSchema.parse(raw);
+    },
+    cartGet: async ({ signal } = {}) => {
+      const raw = await http.get<unknown>("/api/silpo/cart", { signal });
+      return SilpoCartDtoSchema.parse(raw);
     },
   };
 }

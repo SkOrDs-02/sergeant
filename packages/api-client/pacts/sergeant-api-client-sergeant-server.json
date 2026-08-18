@@ -849,6 +849,101 @@
       }
     },
     {
+      "description": "a GET /api/v1/silpo/cart request",
+      "providerStates": [
+        {
+          "name": "user-pact-001 has 1 item in the Silpo cart"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/silpo/cart"
+      },
+      "response": {
+        "body": {
+          "cartUrl": "https://silpo.ua/cart/checkout/def456",
+          "items": [
+            {
+              "name": "Хліб житній",
+              "priceKop": 3500,
+              "quantity": 1,
+              "subtotalKop": 3500
+            }
+          ],
+          "totalKop": 3500
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/silpo/cart request (empty cart)",
+      "providerStates": [
+        {
+          "name": "user-pact-002 has no Silpo cart yet"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/silpo/cart"
+      },
+      "response": {
+        "body": {
+          "cartUrl": null,
+          "items": [],
+          "totalKop": 0
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/silpo/cart request (totalKop null degrade)",
+      "providerStates": [
+        {
+          "name": "user-pact-003 has a Silpo cart with a calculation schema drift"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/silpo/cart"
+      },
+      "response": {
+        "body": {
+          "cartUrl": null,
+          "items": [
+            {
+              "name": "Яйця С1 10шт",
+              "priceKop": 6900,
+              "quantity": 1,
+              "subtotalKop": 6900
+            }
+          ],
+          "totalKop": null
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
       "description": "a GET /api/v1/silpo/receipts request with limit=2",
       "providerStates": [
         {
@@ -1676,6 +1771,114 @@
         "body": {
           "ok": true,
           "platform": "web"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/v1/silpo/cart/apply request with 1 selection",
+      "providerStates": [
+        {
+          "name": "user-pact-001 has a connected Silpo account"
+        }
+      ],
+      "request": {
+        "body": {
+          "selections": [
+            {
+              "lagerId": "eyJwcm9kdWN0SWQiOiJwLTEifQ==",
+              "quantity": 2
+            }
+          ]
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/silpo/cart/apply"
+      },
+      "response": {
+        "body": {
+          "cartUrl": "https://silpo.ua/cart/checkout/abc123",
+          "items": [
+            {
+              "name": "Молоко Селянське 2.5% 900г",
+              "priceKop": 4500,
+              "quantity": 2,
+              "subtotalKop": 9000
+            }
+          ],
+          "totalKop": 9000
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/v1/silpo/cart/preview request with 2 shopping-list lines",
+      "providerStates": [
+        {
+          "name": "user-pact-001 has a connected Silpo account"
+        }
+      ],
+      "request": {
+        "body": {
+          "items": [
+            {
+              "name": "Молоко 2.5%",
+              "quantity": 2
+            },
+            {
+              "name": "асдфasdf000"
+            }
+          ]
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/silpo/cart/preview"
+      },
+      "response": {
+        "body": {
+          "results": [
+            {
+              "matches": [
+                {
+                  "displayRatio": null,
+                  "lagerId": "eyJwcm9kdWN0SWQiOiJwLTEifQ==",
+                  "name": "Молоко Селянське 2.5% 900г",
+                  "priceKop": 4500,
+                  "unit": "шт"
+                },
+                {
+                  "displayRatio": "0.9 кг",
+                  "lagerId": "eyJwcm9kdWN0SWQiOiJwLTIifQ==",
+                  "name": "Молоко Яготинське 2.5% 1л",
+                  "priceKop": 5200,
+                  "unit": "кг"
+                }
+              ],
+              "query": "Молоко 2.5%",
+              "unmatched": false
+            },
+            {
+              "matches": [],
+              "query": "асдфasdf000",
+              "unmatched": true
+            }
+          ]
         },
         "headers": {
           "Content-Type": "application/json",

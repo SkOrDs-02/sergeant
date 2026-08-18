@@ -2718,6 +2718,283 @@
         }
       }
     },
+    "/api/silpo/cart/preview": {
+      "post": {
+        "summary": "Пошук товарів для кошика (search-only, не пише в кошик)",
+        "description": "Один result на кожен request-item, у порядку запиту (matched back по точному тексту `query`, не по індексу). `matches` — top candidate + до 2 альтернатив; `unmatched: true` — нуль придатних кандидатів. `lagerId` — опаковий токен, клієнт лише зберігає й повертає його в `/cart/apply`, ніколи не парсить.",
+        "tags": [
+          "silpo"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SilpoCartPreviewRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "`results[]` — по одному на request-item.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SilpoCartPreviewResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "SILPO_NOT_CONNECTED або SILPO_REAUTH_REQUIRED.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "SILPO_RATE_LIMITED — забагато preview-запитів поспіль.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "SILPO_UPSTREAM_ERROR або SILPO_SCHEMA_DRIFT.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SILPO_DISABLED (kill switch) або SILPO_CONFIG_MISSING.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/silpo/cart/apply": {
+      "post": {
+        "summary": "Додати вибрані товари в кошик Сільпо (confirm-before-write)",
+        "description": "Кожен `lagerId` декодується ДО будь-якого мережевого виклику — зіпсований токен дає 400 VALIDATION, ніколи не 502/503. Пише EXACTLY передані позиції (`addQuantity: false` — replace, не accumulate), відповідь = пост-write стан кошика (форма GET /api/silpo/cart).",
+        "tags": [
+          "silpo"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SilpoCartApplyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Пост-write стан кошика.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SilpoCartDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "SILPO_NOT_CONNECTED або SILPO_REAUTH_REQUIRED.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "SILPO_RATE_LIMITED — забагато apply-запитів поспіль.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "SILPO_UPSTREAM_ERROR або SILPO_SCHEMA_DRIFT.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SILPO_DISABLED (kill switch) або SILPO_CONFIG_MISSING.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/silpo/cart": {
+      "get": {
+        "summary": "Поточний стан кошика Сільпо",
+        "description": "Порожній кошик (немає попереднього пошуку/замовлення) деградує до `{items: [], totalKop: 0, cartUrl: null}`, не помилки.",
+        "tags": [
+          "silpo"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Поточний кошик.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SilpoCartDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "SILPO_NOT_CONNECTED або SILPO_REAUTH_REQUIRED.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "SILPO_RATE_LIMITED.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "SILPO_UPSTREAM_ERROR або SILPO_SCHEMA_DRIFT.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SILPO_DISABLED (kill switch) або SILPO_CONFIG_MISSING.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/waitlist": {
       "post": {
         "summary": "Sign-up на waitlist для майбутнього Pro-тіру (анонімний)",
@@ -5584,6 +5861,67 @@
         ],
         "description": "POST /api/push/test."
       },
+      "SilpoCartPreviewRequest": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "minItems": 1,
+            "maxItems": 100,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "quantity": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                }
+              },
+              "required": [
+                "name"
+              ]
+            }
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "description": "Тіло POST /api/silpo/cart/preview — `{items: [{name, quantity?}]}` (1..100)."
+      },
+      "SilpoCartApplyRequest": {
+        "type": "object",
+        "properties": {
+          "selections": {
+            "minItems": 1,
+            "maxItems": 100,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "lagerId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "quantity": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                }
+              },
+              "required": [
+                "lagerId",
+                "quantity"
+              ]
+            }
+          }
+        },
+        "required": [
+          "selections"
+        ],
+        "description": "Тіло POST /api/silpo/cart/apply — `{selections: [{lagerId, quantity}]}` (1..100); `lagerId` — опаковий токен з preview."
+      },
       "WaitlistSubmit": {
         "type": "object",
         "properties": {
@@ -7163,6 +7501,145 @@
         ],
         "additionalProperties": false,
         "description": "SilpoReceiptSummaryDto + масив SilpoReceiptItemDto."
+      },
+      "SilpoCartPreviewResponse": {
+        "type": "object",
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "query": {
+                  "type": "string"
+                },
+                "matches": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "lagerId": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "name": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "priceKop": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "unit": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "displayRatio": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "lagerId",
+                      "name",
+                      "priceKop",
+                      "unit",
+                      "displayRatio"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "unmatched": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "query",
+                "matches",
+                "unmatched"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "results"
+        ],
+        "additionalProperties": false,
+        "description": "Відповідь POST /api/silpo/cart/preview — по одному result на запитаний рядок, у порядку запиту."
+      },
+      "SilpoCartDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "quantity": {
+                  "type": "number"
+                },
+                "priceKop": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "subtotalKop": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "name",
+                "quantity",
+                "priceKop",
+                "subtotalKop"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "totalKop": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cartUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "totalKop",
+          "cartUrl"
+        ],
+        "additionalProperties": false,
+        "description": "Відповідь GET /api/silpo/cart і POST /api/silpo/cart/apply — поточний стан кошика Сільпо."
       },
       "WaitlistSubmitResponse": {
         "type": "object",
