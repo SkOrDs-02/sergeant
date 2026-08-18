@@ -126,7 +126,10 @@ test.describe("@critical deep module CRUD browser loop", () => {
     await page.goto("/finyk/transactions", { waitUntil: "domcontentloaded" });
     await waitForInitialSqliteRefresh(page, "finyk");
 
-    await page.getByRole("button", { name: "Додати витрату" }).click();
+    // FAB — фан-меню з трьох дій (PR #818, чек-скан): головна кнопка
+    // «Додати», дія «Додати витрату» — menuitem усередині фану.
+    await page.getByRole("button", { name: "Додати", exact: true }).click();
+    await page.getByRole("menuitem", { name: "Додати витрату" }).click();
     const createDialog = page.getByRole("dialog", { name: "Додати витрату" });
     await expect(createDialog).toBeVisible();
     await page.getByLabel("Сума ₴").fill("123");
