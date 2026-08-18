@@ -16,7 +16,14 @@
  * `packages/shared/src/schemas/receipts.ts`) — цей клієнтський гейт лише
  * рятує від зайвого upload-у явно завеликого файлу, не заміняє серверну
  * перевірку.
+ *
+ * Перед перевіркою розміру файл проходить `compressImageFile`
+ * (`@shared/lib/media/compressImage`): фото з сучасних телефонів
+ * (4–6 МБ, часто HEIC) стискаються в JPEG ≤2048px і ліміту більше не
+ * торкаються; помилка «Фото завелике» лишається тільки для випадків,
+ * коли стиснути не вдалося взагалі.
  */
+import { compressImageFile } from "@shared/lib/media/compressImage";
 
 export const RECEIPT_IMAGE_MAX_FILE_BYTES = 5 * 1024 * 1024;
 
@@ -53,20 +60,27 @@ export async function readReceiptImageFile(
   if (!/^image\//.test(file.type || "")) {
     return { ok: false, error: "Обери файл зображення (jpg, png, heic)." };
   }
-  if (file.size > RECEIPT_IMAGE_MAX_FILE_BYTES) {
+  // `null` = лишай оригінал (skip або graceful failure декодера) — далі
+  // спрацює наявна валідація розміру, як і до появи стиснення.
+  const compressed = await compressImageFile(file).catch(() => null);
+  const effective = compressed ?? file;
+  if (effective.size > RECEIPT_IMAGE_MAX_FILE_BYTES) {
     return {
       ok: false,
       error: "Фото завелике (максимум 5 МБ). Стисни або обери інше.",
     };
   }
   try {
-    const base64 = await fileToBase64(file);
+    const base64 = await fileToBase64(effective);
     if (!base64) {
       return { ok: false, error: "Не вдалося прочитати фото. Спробуй ще раз." };
     }
     return {
       ok: true,
-      payload: { image_base64: base64, mime_type: file.type || "image/jpeg" },
+      payload: {
+        image_base64: base64,
+        mime_type: effective.type || "image/jpeg",
+      },
     };
   } catch {
     return { ok: false, error: "Не вдалося прочитати фото. Спробуй ще раз." };

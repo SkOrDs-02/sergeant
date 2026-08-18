@@ -1,5 +1,16 @@
 // @vitest-environment jsdom
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+// Дефолт `null` = «лишай оригінал» — рівно те, що реальний хелпер робить
+// у jsdom (немає декодера/canvas), тож решта тестів бачить стару
+// поведінку readReceiptImageFile без змін.
+const compressImageFileMock = vi.hoisted(() =>
+  vi.fn((_file: File): Promise<File | null> => Promise.resolve(null)),
+);
+vi.mock("@shared/lib/media/compressImage", () => ({
+  compressImageFile: compressImageFileMock,
+}));
+
 import {
   RECEIPT_IMAGE_MAX_FILE_BYTES,
   fileToBase64,
@@ -56,5 +67,29 @@ describe("readReceiptImageFile", () => {
     // defaulted; assert the rejection path here.
     const result = await readReceiptImageFile(file);
     expect(result.ok).toBe(false);
+  });
+
+  it("пропускає завеликий оригінал, коли стиснення дало малий JPEG, і шле саме його", async () => {
+    const big = makeFile(
+      RECEIPT_IMAGE_MAX_FILE_BYTES + 1,
+      "image/heic",
+      "a.heic",
+    );
+    const small = makeFile(1000, "image/jpeg", "a.jpg");
+    compressImageFileMock.mockResolvedValueOnce(small);
+
+    const result = await readReceiptImageFile(big);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.payload.mime_type).toBe("image/jpeg");
+      expect(result.payload.image_base64.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("зламане стиснення (reject) не ламає флоу — падає назад на оригінал", async () => {
+    compressImageFileMock.mockRejectedValueOnce(new Error("decode boom"));
+    const file = makeFile(10, "image/png");
+    const result = await readReceiptImageFile(file);
+    expect(result.ok).toBe(true);
   });
 });
