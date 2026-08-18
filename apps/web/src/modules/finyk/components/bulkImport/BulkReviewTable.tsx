@@ -237,8 +237,10 @@ export function BulkReviewTable({
                       // `text-style-body!` (важливий, ~15px на вузькому
                       // екрані) інакше переміг би 16px-floor базового
                       // інпута, і iOS-зум повернувся б саме в bulk-таблиці.
+                      // `pointer-coarse:min-h-11!` — щоб важливий `h-9!`
+                      // не перебивав 44px touch-target floor на тачі.
                       // eslint-disable-next-line sergeant-design/no-raw-type-size -- анти-зум ІНВАРІАНТ контрола вводу (iOS: input <16px → авто-зум), не типографічна шкала.
-                      className="h-9! text-left! text-style-body! pointer-coarse:text-base!"
+                      className="h-9! text-left! text-style-body! pointer-coarse:min-h-11! pointer-coarse:text-base!"
                     />
                     <Select
                       size="sm"
