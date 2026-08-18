@@ -166,6 +166,15 @@ interface PactFile {
   interactions: PactInteraction[];
 }
 
+/**
+ * AI-CONTEXT: consumer-тести @sergeant/api-client ПЕРЕЗАПИСУЮТЬ той самий
+ * PACT_FILE під час свого прогону (PactV4 пише не-атомарно). Паралельний
+ * turbo-запуск (`--concurrency=2`) зрідка читав файл посеред запису —
+ * «SyntaxError: Unexpected end of JSON input» (CI-флейк, уперше зловлений
+ * на PR #820 з web-only діфом). Структурний фікс — turbo.json:
+ * `@sergeant/server#test` тепер dependsOn `@sergeant/api-client#test`,
+ * тож provider-верифікація стартує лише ПІСЛЯ завершення consumer-запису.
+ */
 function loadPact(): PactFile {
   if (!fs.existsSync(PACT_FILE)) {
     throw new Error(

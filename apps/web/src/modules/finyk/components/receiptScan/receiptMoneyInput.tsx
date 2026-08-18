@@ -69,8 +69,10 @@ export function ReceiptMoneyInput({
         // fine-pointer лишається caption — там зум-поведінки немає.
         // Семантичні ролі тут не рятують: навіть text-style-body на
         // вузькому екрані ~15px (<16) і все одно зумить.
+        // `pointer-coarse:min-h-11` — 44px touch-target floor (WCAG 2.5.5)
+        // на тачі; на десктопі лишається компактний h-9.
         // eslint-disable-next-line sergeant-design/no-raw-type-size -- анти-зум ІНВАРІАНТ контрола вводу (iOS: input <16px → авто-зум), не типографічна шкала.
-        "input-focus-finyk h-9 min-w-0 rounded-xl border border-line bg-panelHi px-2 text-right text-style-caption text-text tabular-nums pointer-coarse:text-base",
+        "input-focus-finyk h-9 min-w-0 rounded-xl border border-line bg-panelHi px-2 text-right text-style-caption text-text tabular-nums pointer-coarse:min-h-11 pointer-coarse:text-base",
         className,
       )}
     />
