@@ -1,6 +1,6 @@
 # Postgres read replica — runbook (PR #047)
 
-> **Last touched:** 2026-05-13 by Devin. **Next review:** 2026-08-17.
+> **Last touched:** 2026-08-18 by @claude (ре-валідація без змін змісту: warning-банер про історичність Railway-кроків чинний, runtime-контракт `DATABASE_URL_REPLICA`/`queryReplica()` без змін; Coolify-топологія replica досі не обрана). **Next review:** 2026-11-18.
 > **Status:** Active
 
 > **⚠️ Рецепт деплою неактуальний:** production переїхав на Hetzner/Coolify ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md)). Runtime-контракт `DATABASE_URL_REPLICA` і правила routing лишаються чинними, але Railway-кроки provisioning/DNS/monitoring нижче історичні — їх не можна виконувати. У репо зараз немає підтвердженої Coolify-топології replica; її треба окремо обрати й задокументувати до rollout.
