@@ -67,21 +67,15 @@ function makeStorage(): ManualExpenseWriteThroughStorage & {
 function renderSheet() {
   const storage = makeStorage();
   const onClose = vi.fn();
-  const onReceiptLinked = vi.fn();
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
   render(
     <QueryClientProvider client={client}>
-      <BulkImportSheet
-        open
-        onClose={onClose}
-        storage={storage}
-        onReceiptLinked={onReceiptLinked}
-      />
+      <BulkImportSheet open onClose={onClose} storage={storage} />
     </QueryClientProvider>,
   );
-  return { storage, onClose, onReceiptLinked };
+  return { storage, onClose };
 }
 
 function fileInputFor(label: RegExp): HTMLInputElement {
@@ -99,95 +93,20 @@ beforeEach(() => {
   saveReceiptMock.mockReset();
 });
 
-describe("BulkImportSheet — cap на батч фото", () => {
-  function elevenFiles(): File[] {
-    return Array.from(
-      { length: 11 },
-      (_, i) =>
-        new File([new Uint8Array(10)], `r${i}.jpg`, { type: "image/jpeg" }),
-    );
-  }
-
-  it("вибір понад 10 фото показує примітку і реально обробляє РІВНО 10", async () => {
-    analyzeReceiptMock.mockResolvedValue({
-      draft: {
-        source: "vision",
-        fiscalNum: null,
-        store: "",
-        storeTaxId: null,
-        purchasedAt: "2026-08-17T10:00:00.000Z",
-        totalKopiykas: 1000,
-        items: [],
-        confidence: 0.9,
-        rawPayload: {},
-      },
-    });
-    renderSheet();
-
-    await act(async () => {
-      fireEvent.change(fileInputFor(/фото чеків/i), {
-        target: { files: elevenFiles() },
-      });
-    });
-
-    expect(screen.getByText(/Взято перші 10 фото з 11/)).toBeInTheDocument();
-    // 11-й файл (r10.jpg) НЕ обробляється: рядок прогресу не рендериться,
-    // analyze викликано рівно 10 разів (slice у startFiles).
-    await waitFor(() => expect(analyzeReceiptMock).toHaveBeenCalledTimes(10));
-    expect(screen.queryByText("r10.jpg")).not.toBeInTheDocument();
-  });
-
-  it("примітка про кап зникає після закриття і повторного відкриття шита", async () => {
-    const storage = makeStorage();
-    const client = new QueryClient({
-      defaultOptions: {
-        queries: { retry: false },
-        mutations: { retry: false },
-      },
-    });
-    const sheet = (open: boolean) => (
-      <QueryClientProvider client={client}>
-        <BulkImportSheet
-          open={open}
-          onClose={vi.fn()}
-          storage={storage}
-          onReceiptLinked={vi.fn()}
-        />
-      </QueryClientProvider>
-    );
-    const { rerender } = render(sheet(true));
-
-    await act(async () => {
-      fireEvent.change(fileInputFor(/фото чеків/i), {
-        target: { files: elevenFiles() },
-      });
-    });
-    expect(screen.getByText(/Взято перші 10 фото з 11/)).toBeInTheDocument();
-
-    rerender(sheet(false));
-    // Reset-on-close — відкладений мікротаск (див. ефект у компоненті).
-    await act(async () => {
-      await Promise.resolve();
-    });
-    rerender(sheet(true));
-    expect(
-      screen.queryByText(/Взято перші 10 фото з 11/),
-    ).not.toBeInTheDocument();
-  });
-});
-
 describe("BulkImportSheet — choose stage", () => {
-  it("renders all three entry actions", () => {
+  it("рендерить дві банківські дії; фото-батч переїхав у «Сканувати чек»", () => {
     renderSheet();
-    expect(
-      screen.getByRole("button", { name: /Кілька фото чеків/ }),
-    ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /Скрін банкінгу/ }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /CSV-виписка/ }),
     ).toBeInTheDocument();
+    // Бета-фідбек №2 (2026-08-18): «Кілька фото чеків» більше не тут —
+    // батч живе в `ReceiptScanSheet` (multiple-пікер).
+    expect(
+      screen.queryByRole("button", { name: /Кілька фото чеків/ }),
+    ).not.toBeInTheDocument();
   });
 });
 
@@ -552,36 +471,5 @@ describe("BulkImportSheet — commit + undo", () => {
       screen.queryByRole("button", { name: "Скасувати імпорт" }),
     ).not.toBeInTheDocument();
     expect(screen.getByText(/вже є в mono/)).toBeInTheDocument();
-  });
-});
-
-describe("BulkImportSheet — batch receipts path", () => {
-  it("selecting multiple photos routes to the receipts-progress stage", async () => {
-    analyzeReceiptMock.mockResolvedValue({
-      draft: {
-        source: "vision",
-        fiscalNum: null,
-        store: "Сільпо",
-        storeTaxId: null,
-        purchasedAt: "2026-08-17T10:00:00.000Z",
-        totalKopiykas: 1000,
-        items: [],
-        confidence: 0.9,
-        rawPayload: {},
-      },
-    });
-    renderSheet();
-
-    await act(async () => {
-      fireEvent.change(fileInputFor(/фото чеків/i), {
-        target: {
-          files: [
-            new File([new Uint8Array(10)], "a.jpg", { type: "image/jpeg" }),
-          ],
-        },
-      });
-    });
-
-    await waitFor(() => expect(screen.getByText("Сільпо")).toBeInTheDocument());
   });
 });

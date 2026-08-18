@@ -202,7 +202,10 @@ export function BulkReviewTable({
                     >
                       {row.direction === "income" ? "дохід" : "витрата"}
                     </Badge>
-                    {row.transferLikely && (
+                    {/* Бейдж — підозра, а не вирок: щойно людина сама
+                        поставила галочку «імпортувати», підозра знята, і
+                        бейдж ховається (бета-фідбек №2, 2026-08-18). */}
+                    {row.transferLikely && !row.selected && (
                       <Badge variant="warning" tone="soft" size="xs">
                         схоже на переказ
                       </Badge>

@@ -319,6 +319,105 @@ describe("ReceiptScanSheet — photo upload path", () => {
   });
 });
 
+describe("ReceiptScanSheet — чеки пачкою (multiple-пікер)", () => {
+  // Батч переїхав сюди з BulkImportSheet (бета-фідбек №2, 2026-08-18):
+  // 1 файл → одиничний review-флоу, 2+ → стадія `batch` з
+  // BulkReceiptsProgress; кап 10 фото — у `useBulkReceiptsImport`.
+  function nFiles(n: number): File[] {
+    return Array.from(
+      { length: n },
+      (_, i) =>
+        new File([new Uint8Array(10)], `r${i}.jpg`, { type: "image/jpeg" }),
+    );
+  }
+
+  function selectFiles(files: File[]) {
+    const input = document.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement;
+    fireEvent.change(input, { target: { files } });
+  }
+
+  it("2 фото відкривають стадію «Чеки пачкою» з обома рядками, без кап-примітки", async () => {
+    decodeQrFromImageFileMock.mockResolvedValue(null);
+    analyzeReceiptMock.mockResolvedValue({
+      draft: draft({ source: "vision", fiscalNum: null, store: "Сільпо" }),
+    });
+    renderSheet();
+
+    await act(async () => {
+      selectFiles(nFiles(2));
+    });
+
+    expect(screen.getByText("Чеки пачкою")).toBeInTheDocument();
+    await waitFor(() => expect(analyzeReceiptMock).toHaveBeenCalledTimes(2));
+    expect(screen.queryByText(/Взято перші/)).not.toBeInTheDocument();
+    if (!DPS_QR_SCAN_ENABLED) {
+      // Гейт діє і в батчі: жодної спроби QR-декоду на файл.
+      expect(decodeQrFromImageFileMock).not.toHaveBeenCalled();
+    }
+  });
+
+  it("вибір понад 10 фото показує примітку і реально обробляє РІВНО 10", async () => {
+    decodeQrFromImageFileMock.mockResolvedValue(null);
+    analyzeReceiptMock.mockResolvedValue({
+      draft: draft({ source: "vision", fiscalNum: null, store: "" }),
+    });
+    renderSheet();
+
+    await act(async () => {
+      selectFiles(nFiles(11));
+    });
+
+    expect(screen.getByText(/Взято перші 10 фото з 11/)).toBeInTheDocument();
+    // 11-й файл (r10.jpg) НЕ обробляється: analyze викликано рівно 10
+    // разів (slice у startFiles), рядок прогресу для нього не рендериться.
+    await waitFor(() => expect(analyzeReceiptMock).toHaveBeenCalledTimes(10));
+    expect(screen.queryByText("r10.jpg")).not.toBeInTheDocument();
+  });
+
+  it("примітка про кап зникає після закриття і повторного відкриття шита", async () => {
+    decodeQrFromImageFileMock.mockResolvedValue(null);
+    analyzeReceiptMock.mockResolvedValue({
+      draft: draft({ source: "vision", fiscalNum: null, store: "" }),
+    });
+    const storage = makeStorage();
+    const client = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+    const sheet = (open: boolean) => (
+      <QueryClientProvider client={client}>
+        <ReceiptScanSheet
+          open={open}
+          onClose={vi.fn()}
+          storage={storage}
+          onReceiptLinked={vi.fn()}
+          onSaved={vi.fn()}
+        />
+      </QueryClientProvider>
+    );
+    const { rerender } = render(sheet(true));
+
+    await act(async () => {
+      selectFiles(nFiles(11));
+    });
+    expect(screen.getByText(/Взято перші 10 фото з 11/)).toBeInTheDocument();
+
+    rerender(sheet(false));
+    // Reset-on-close — відкладений мікротаск (див. ефект у компоненті).
+    await act(async () => {
+      await Promise.resolve();
+    });
+    rerender(sheet(true));
+    expect(
+      screen.queryByText(/Взято перші 10 фото з 11/),
+    ).not.toBeInTheDocument();
+  });
+});
+
 describe("ReceiptScanSheet — save (alreadyExists handling)", () => {
   // Через фото+vision, а не камеру: QR-шлях за гейтом (`dpsQrGate.ts`)
   // недосяжний, а save-механіка від входу не залежить.

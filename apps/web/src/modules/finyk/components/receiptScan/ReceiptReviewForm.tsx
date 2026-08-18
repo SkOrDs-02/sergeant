@@ -128,7 +128,7 @@ export function ReceiptReviewForm({
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <div>
+        <div className="min-w-0">
           <Label htmlFor={dateId}>Дата</Label>
           <Input
             id={dateId}
@@ -141,9 +141,14 @@ export function ReceiptReviewForm({
                 setDraft((d) => updateDraftDate(d, e.target.value));
             }}
             disabled={disabled}
+            // `appearance-none min-w-0` — нативний date-інпут iOS має
+            // intrinsic-ширину від UA-стилів і не стискається під вузьку
+            // grid-колонку, тому візуально налазив на сусіднє поле «Сума»
+            // (бета-фідбек №2, 2026-08-18).
+            className="appearance-none min-w-0"
           />
         </div>
-        <div>
+        <div className="min-w-0">
           <Label htmlFor={totalId}>Сума</Label>
           <ReceiptMoneyInput
             id={totalId}
@@ -153,7 +158,13 @@ export function ReceiptReviewForm({
             }
             ariaLabel="Сума чека"
             disabled={disabled}
-            className="h-11! w-full text-style-body!"
+            // `pointer-coarse:text-base!` мусить бути поруч із важливим
+            // `text-style-body!` (≈15px на вузькому екрані), інакше той
+            // б'є неважливий 16px-floor бази і iOS знову зумить екран на
+            // фокусі саме цього поля (бета-фідбек №2, 2026-08-18 — «клік
+            // по сумі все ще зумить»; той самий патерн, що BulkReviewTable).
+            // eslint-disable-next-line sergeant-design/no-raw-type-size -- анти-зум ІНВАРІАНТ контрола вводу (iOS: input <16px → авто-зум), не типографічна шкала.
+            className="h-11! w-full text-style-body! pointer-coarse:text-base!"
           />
         </div>
       </div>
