@@ -376,6 +376,102 @@ describe("ReceiptScanSheet — чеки пачкою (multiple-пікер)", () 
     expect(screen.queryByText("r10.jpg")).not.toBeInTheDocument();
   });
 
+  it("порожні драфти позначаються «схоже, не чек» і авто-виключаються зі збереження", async () => {
+    decodeQrFromImageFileMock.mockResolvedValue(null);
+    analyzeReceiptMock.mockResolvedValue({
+      draft: draft({
+        source: "vision",
+        fiscalNum: null,
+        store: "",
+        totalKopiykas: 0,
+        items: [],
+        confidence: 0,
+      }),
+    });
+    renderSheet();
+
+    await act(async () => {
+      selectFiles(nFiles(2));
+    });
+    await waitFor(() => expect(analyzeReceiptMock).toHaveBeenCalledTimes(2));
+
+    // Бета-фідбек №3: у батчі той самий «чесний фідбек», що в одиночному
+    // флоу — бейдж на рядку + нуль у «Зберегти вибрані».
+    expect(screen.getAllByText("схоже, не чек")).toHaveLength(2);
+    expect(
+      screen.getByRole("button", { name: "Зберегти вибрані (0)" }),
+    ).toBeInTheDocument();
+  });
+
+  it("«Редагувати» відкриває повний review чека, правки лягають у рядок, «Готово» повертає в список", async () => {
+    decodeQrFromImageFileMock.mockResolvedValue(null);
+    analyzeReceiptMock.mockResolvedValue({
+      draft: draft({ source: "vision", fiscalNum: null, store: "Сільпо" }),
+    });
+    renderSheet();
+
+    await act(async () => {
+      selectFiles(nFiles(2));
+    });
+    await waitFor(() => expect(analyzeReceiptMock).toHaveBeenCalledTimes(2));
+
+    fireEvent.click(
+      screen.getAllByRole("button", { name: "Редагувати" })[0] as HTMLElement,
+    );
+    // Повний review-екран того самого `ReceiptReviewForm`, що і в
+    // одиночному флоу: поле «Магазин» доступне і редаговане.
+    expect(screen.getByLabelText("Магазин")).toHaveValue("Сільпо");
+    fireEvent.change(screen.getByLabelText("Магазин"), {
+      target: { value: "АТБ" },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Готово" }));
+    // Назад у список: перший рядок перейменований, другий незмінний,
+    // обидва досі вибрані.
+    expect(screen.getByText("АТБ")).toBeInTheDocument();
+    expect(screen.getByText("Сільпо")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Зберегти вибрані (2)" }),
+    ).toBeInTheDocument();
+  });
+
+  it("заповнення полів у review порожнього чека повертає його у вибрані", async () => {
+    decodeQrFromImageFileMock.mockResolvedValue(null);
+    analyzeReceiptMock.mockResolvedValue({
+      draft: draft({
+        source: "vision",
+        fiscalNum: null,
+        store: "",
+        totalKopiykas: 0,
+        items: [],
+        confidence: 0,
+      }),
+    });
+    renderSheet();
+
+    await act(async () => {
+      selectFiles(nFiles(2));
+    });
+    await waitFor(() => expect(analyzeReceiptMock).toHaveBeenCalledTimes(2));
+    expect(
+      screen.getByRole("button", { name: "Зберегти вибрані (0)" }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getAllByRole("button", { name: "Редагувати" })[0] as HTMLElement,
+    );
+    fireEvent.change(screen.getByLabelText("Магазин"), {
+      target: { value: "Кіоск" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Готово" }));
+
+    // Авто-повернення у вибрані (`updateItemDraft`): заповнені поля =
+    // людина підтвердила, що це таки чек.
+    expect(
+      screen.getByRole("button", { name: "Зберегти вибрані (1)" }),
+    ).toBeInTheDocument();
+  });
+
   it("примітка про кап зникає після закриття і повторного відкриття шита", async () => {
     decodeQrFromImageFileMock.mockResolvedValue(null);
     analyzeReceiptMock.mockResolvedValue({
