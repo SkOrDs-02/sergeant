@@ -3,6 +3,7 @@ import {
   extractAnthropicText,
 } from "../../../lib/anthropic.js";
 import { makeAiProviderError } from "../../../obs/errors.js";
+import { kyivDateString } from "../receipts/kyivClock.js";
 import { env } from "../../../env.js";
 import {
   receiptVisionModel,
@@ -99,7 +100,12 @@ export async function callImportScreenshotVision(
               data: input.base64,
             },
           },
-          { type: "text", text: buildImportScreenshotUserPrompt() },
+          {
+            type: "text",
+            // Якір дати — київський «сьогодні» (ADR-0078: серверні флоу —
+            // Kyiv), без нього моделі галюцинують рік (див. prompts.ts).
+            text: buildImportScreenshotUserPrompt(kyivDateString(new Date())),
+          },
         ],
       },
     ],

@@ -18,7 +18,10 @@ import { anthropicMessages as _anthropicMessages } from "../../../lib/anthropic.
 import screenshotAnalyzeHandler, {
   normalizeImportScreenshotResult,
 } from "./screenshotAnalyze.js";
-import { IMPORT_SCREENSHOT_VISION_SYSTEM_PROMPT } from "./prompts.js";
+import {
+  IMPORT_SCREENSHOT_VISION_SYSTEM_PROMPT,
+  buildImportScreenshotUserPrompt,
+} from "./prompts.js";
 
 const anthropicMessages = _anthropicMessages as unknown as Mock;
 
@@ -289,8 +292,27 @@ describe("IMPORT_SCREENSHOT_VISION_SYSTEM_PROMPT", () => {
     expect(IMPORT_SCREENSHOT_VISION_SYSTEM_PROMPT).toMatch(/ліміт/i);
   });
 
-  it("вимагає використати ПОТОЧНИЙ рік, коли рік не читається зі скріна", () => {
-    expect(IMPORT_SCREENSHOT_VISION_SYSTEM_PROMPT).toMatch(/ПОТОЧНИЙ рік/);
+  it("вимагає виводити рік від якоря «сьогодні», не пізніше за нього (live-бенч 2026-08-18: без якоря моделі галюцинували 2023/2024)", () => {
+    expect(IMPORT_SCREENSHOT_VISION_SYSTEM_PROMPT).toMatch(
+      /сьогоднішню дату з повідомлення користувача/,
+    );
+    expect(IMPORT_SCREENSHOT_VISION_SYSTEM_PROMPT).toMatch(
+      /НЕ пізніший за сьогодні/,
+    );
+    // Сам якір — в user-промпті, з параметром київського дня.
+    expect(buildImportScreenshotUserPrompt("2026-08-18")).toMatch(
+      /Сьогодні 2026-08-18/,
+    );
+  });
+
+  it("виключає невдалі операції і рекламні підписи (live-бенч: failed Moneyveo йшли у витрати)", () => {
+    expect(IMPORT_SCREENSHOT_VISION_SYSTEM_PROMPT).toMatch(
+      /Недостатньо коштів/,
+    );
+    expect(IMPORT_SCREENSHOT_VISION_SYSTEM_PROMPT).toMatch(/НЕВДАЛІ операції/);
+    expect(IMPORT_SCREENSHOT_VISION_SYSTEM_PROMPT).toMatch(
+      /рекламні чи жартівливі підписи/,
+    );
   });
 
   it("вимагає цілі копійки (не гривні/дробові)", () => {

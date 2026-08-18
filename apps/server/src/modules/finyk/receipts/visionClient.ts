@@ -57,7 +57,13 @@ export async function callReceiptVision(
   const apiKey = env.ANTHROPIC_API_KEY;
   const payload = {
     model: receiptVisionModel(),
-    max_tokens: 900,
+    // 2000, НЕ 900 (live-бенч 2026-08-18 на реальних чеках): відповідь по
+    // 18-позиційному господарському чеку обрізалась на ~900 токенах
+    // посеред JSON — extractJsonFromText давав null, і draft приходив
+    // порожнім. 4-позиційний чек уміщався в ~640 символів; 2000 токенів
+    // покривають ~40+ позицій із запасом (той самий ліміт, що вже стоїть
+    // у import/visionClient.ts для скрінів).
+    max_tokens: 2000,
     temperature: 0.1,
     system: RECEIPT_VISION_SYSTEM_PROMPT,
     messages: [
