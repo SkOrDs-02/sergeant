@@ -32,6 +32,46 @@ export type ReceiptSummaryRow = {
   transactionId: string | null;
 };
 
+/**
+ * Курсор — opaque base64url над JSON-масивом `[purchasedAtIso, receiptId]`:
+ * `receipt_id` — зовнішній ключ Сільпо без гарантій формату, тож будь-який
+ * текстовий роздільник міг би колізувати з самим id; JSON-масив знімає
+ * проблему роздільника як клас. Клієнт курсор не розбирає (opaque
+ * pass-through), тому кодування — вільна зміна формату.
+ */
+function encodeCursor(purchasedAtIso: string, receiptId: string): string {
+  return Buffer.from(
+    JSON.stringify([purchasedAtIso, receiptId]),
+    "utf8",
+  ).toString("base64url");
+}
+
+function decodeCursor(cursor: string): {
+  purchasedAt: string;
+  receiptId: string;
+} {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(Buffer.from(cursor, "base64url").toString("utf8"));
+  } catch {
+    parsed = null;
+  }
+  if (
+    !Array.isArray(parsed) ||
+    parsed.length !== 2 ||
+    typeof parsed[0] !== "string" ||
+    typeof parsed[1] !== "string" ||
+    parsed[0].length === 0 ||
+    parsed[1].length === 0
+  ) {
+    throw new AppError("Invalid cursor format", {
+      status: 400,
+      code: "VALIDATION",
+    });
+  }
+  return { purchasedAt: parsed[0], receiptId: parsed[1] };
+}
+
 /** `GET /api/silpo/receipts` — cursor-paginated, newest first. */
 export async function listReceipts(
   userId: string,
@@ -43,15 +83,8 @@ export async function listReceipts(
   let paramIdx = 2;
 
   if (opts.cursor) {
-    const lastColon = opts.cursor.lastIndexOf(":");
-    if (lastColon <= 0) {
-      throw new AppError("Invalid cursor format", {
-        status: 400,
-        code: "VALIDATION",
-      });
-    }
-    const cursorPurchasedAt = opts.cursor.slice(0, lastColon);
-    const cursorReceiptId = opts.cursor.slice(lastColon + 1);
+    const { purchasedAt: cursorPurchasedAt, receiptId: cursorReceiptId } =
+      decodeCursor(opts.cursor);
     conditions.push(
       `(r.purchased_at < $${paramIdx} OR (r.purchased_at = $${paramIdx} AND r.receipt_id < $${paramIdx + 1}))`,
     );
@@ -84,7 +117,10 @@ export async function listReceipts(
   const last = items[items.length - 1];
   const nextCursor =
     hasMore && last
-      ? `${normalizeSilpoReceiptSummary(last).purchasedAt}:${last.receiptId}`
+      ? encodeCursor(
+          normalizeSilpoReceiptSummary(last).purchasedAt,
+          last.receiptId,
+        )
       : null;
 
   return { data, nextCursor };

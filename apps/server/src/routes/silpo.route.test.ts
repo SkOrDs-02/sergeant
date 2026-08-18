@@ -284,7 +284,7 @@ describe("GET /api/silpo/sync-state", () => {
     mocks.queryMock
       .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // connection
       .mockResolvedValueOnce({
-        rows: [{ count: "0", last_sync_at: null }],
+        rows: [{ count: "0" }],
         rowCount: 1,
       }); // receipts count
 
@@ -308,12 +308,13 @@ describe("GET /api/silpo/sync-state", () => {
           {
             status: "connected",
             access_token_expires_at: "2026-08-17T10:00:00.000Z",
+            last_sync_at: "2026-08-17T09:00:00.000Z",
           },
         ],
         rowCount: 1,
       })
       .mockResolvedValueOnce({
-        rows: [{ count: "5", last_sync_at: "2026-08-17T09:00:00.000Z" }],
+        rows: [{ count: "5" }],
         rowCount: 1,
       });
 

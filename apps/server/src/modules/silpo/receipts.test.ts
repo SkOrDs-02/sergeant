@@ -264,6 +264,10 @@ function makeFakeDb(seed: { monoTransactions?: FakeMonoTx[] } = {}) {
       }
       return { rows: [], rowCount: 1 };
     }
+    if (text.includes("UPDATE silpo_connection")) {
+      // last_sync_at touch наприкінці успішного pullAndSyncReceipts.
+      return { rows: [], rowCount: 1 };
+    }
     throw new Error(`fake db: unhandled query: ${text}`);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   }) as any as QueryFn;
@@ -539,5 +543,45 @@ describe("listReceipts", () => {
     await expect(
       listReceipts("user-1", { limit: 10, cursor: "no-colon-here" }, db.query),
     ).rejects.toMatchObject({ status: 400 });
+  });
+
+  it("nextCursor — opaque base64url, декодований назад приймається без 400", async () => {
+    const summaryRow = (n: number) => ({
+      receiptId: `r:${n}`, // receipt_id із двокрапкою — саме та колізія, від якої рятує base64url
+      purchasedAt: new Date("2026-08-10T12:00:00.000Z"),
+      storeId: null,
+      channel: "offline" as const,
+      paymentHint: null,
+      totalKop: 1000,
+      transactionId: null,
+    });
+    const capturedParams: unknown[][] = [];
+    const query = (async (_text: string, values: unknown[] = []) => {
+      capturedParams.push(values);
+      return { rows: [summaryRow(1), summaryRow(2)], rowCount: 2 };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    }) as any as QueryFn;
+
+    const page1 = await listReceipts("user-1", { limit: 1 }, query);
+    expect(page1.nextCursor).not.toBeNull();
+    expect(page1.nextCursor).not.toContain(":"); // opaque, не сирий формат
+
+    const decoded = Buffer.from(page1.nextCursor ?? "", "base64url").toString(
+      "utf8",
+    );
+    expect(JSON.parse(decoded)).toEqual(["2026-08-10T12:00:00.000Z", "r:1"]);
+
+    await listReceipts(
+      "user-1",
+      { limit: 1, cursor: page1.nextCursor ?? undefined },
+      query,
+    );
+    // Декодований курсор розібрано за ОСТАННЬОЮ двокрапкою: receipt_id "r:1" цілий.
+    expect(capturedParams[1]).toEqual([
+      "user-1",
+      "2026-08-10T12:00:00.000Z",
+      "r:1",
+      2,
+    ]);
   });
 });

@@ -247,8 +247,9 @@ export async function wipeHandler(req: Request, res: Response): Promise<void> {
 type SyncStateConnRow = {
   status: "connected" | "reauth_required";
   access_token_expires_at: Date | string | null;
+  last_sync_at: Date | string | null;
 };
-type SyncStateCountRow = { count: string; last_sync_at: Date | string | null };
+type SyncStateCountRow = { count: string };
 
 function toIsoOrNull(v: Date | string | null): string | null {
   if (v == null) return null;
@@ -265,12 +266,14 @@ export async function syncStateHandler(
 
   const [connResult, countResult] = await Promise.all([
     query<SyncStateConnRow>(
-      "SELECT status, access_token_expires_at FROM silpo_connection WHERE user_id = $1",
+      // last_sync_at — персистований момент успішного pullAndSyncReceipts
+      // (не MAX(created_at) по чеках: sync без нових чеків теж «оновлення»).
+      "SELECT status, access_token_expires_at, last_sync_at FROM silpo_connection WHERE user_id = $1",
       [userId],
       { op: "silpo_sync_state_connection" },
     ),
     query<SyncStateCountRow>(
-      `SELECT COUNT(*)::text AS count, MAX(created_at) AS last_sync_at
+      `SELECT COUNT(*)::text AS count
          FROM silpo_receipts WHERE user_id = $1`,
       [userId],
       { op: "silpo_sync_state_receipts" },
@@ -284,7 +287,7 @@ export async function syncStateHandler(
     SilpoSyncStateSchema.parse({
       status: conn?.status ?? "disconnected",
       accessTokenExpiresAt: toIsoOrNull(conn?.access_token_expires_at ?? null),
-      lastSyncAt: toIsoOrNull(counts?.last_sync_at ?? null),
+      lastSyncAt: toIsoOrNull(conn?.last_sync_at ?? null),
       receiptsCount: Number(counts?.count ?? 0),
     }),
   );

@@ -73,6 +73,7 @@ CREATE TABLE IF NOT EXISTS silpo_connection (
   refresh_token_tag          BYTEA NOT NULL,
   token_key_version          SMALLINT,
   access_token_expires_at    TIMESTAMPTZ,
+  last_sync_at               TIMESTAMPTZ,
   status                     TEXT NOT NULL DEFAULT 'connected',
   created_at                 TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at                 TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -143,6 +144,9 @@ CREATE INDEX IF NOT EXISTS finyk_tx_receipt_links_user_receipt_idx
 
 COMMENT ON TABLE silpo_connection IS
   'OAuth 2.1 token store for a user Silpo MCP connection — mirrors mono_connection, but carries TWO independent AES-256-GCM triples (access + refresh) under one shared token_key_version. status: connected | reauth_required (refresh-flow exhausted, needs user re-auth). disconnect deletes only this row; receipts/items/links survive (see POST /api/silpo/wipe for full erasure).';
+
+COMMENT ON COLUMN silpo_connection.last_sync_at IS
+  'Timestamp of the last SUCCESSFUL pull-and-sync completion (set by pullAndSyncReceipts). NULL = never synced. Persisted here rather than derived from MAX(silpo_receipts.created_at): a sync that pulls zero new receipts still refreshes it, and a wipe does not reset it.';
 
 COMMENT ON COLUMN silpo_connection.token_key_version IS
   'KeyRing key version that encrypted BOTH token triples (access + refresh always re-encrypt together). NULL = legacy/unversioned fallback (read as v1) — kept nullable only to share the mono/privat reader code path (parseKeyRing), not because this new table ever writes unversioned rows.';

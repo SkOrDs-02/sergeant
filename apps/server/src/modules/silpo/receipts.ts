@@ -359,6 +359,16 @@ type MonoTxCandidateRow = {
   receiptId: string | null;
 };
 
+/**
+ * Вікно matcher-а обмежене: чеки старші 90 днів майже напевно не мають
+ * незматченої Mono-транзакції-кандидата (та й `loadCandidateTransactions`
+ * будує вікно з min/max purchased_at — один давній чек розтягував би його
+ * на місяці), а LIMIT страхує від необмеженого скану після масового
+ * імпорту історії. Хвіст доганяється наступними синками.
+ */
+const MATCH_WINDOW_DAYS = 90;
+const MATCH_BATCH_LIMIT = 500;
+
 async function loadUnresolvedReceipts(
   userId: string,
   queryFn: QueryFn,
@@ -371,11 +381,14 @@ async function loadUnresolvedReceipts(
     `SELECT r.receipt_id, r.total_kop, r.purchased_at
        FROM silpo_receipts r
        WHERE r.user_id = $1
+         AND r.purchased_at >= NOW() - ($2 || ' days')::interval
          AND NOT EXISTS (
            SELECT 1 FROM finyk_tx_receipt_links l
             WHERE l.user_id = r.user_id AND l.receipt_id = r.receipt_id
-         )`,
-    [userId],
+         )
+       ORDER BY r.purchased_at DESC
+       LIMIT $3`,
+    [userId, String(MATCH_WINDOW_DAYS), MATCH_BATCH_LIMIT],
     { op: "silpo_unresolved_receipts_select" },
   );
   return rows.map((r) => ({
@@ -557,6 +570,16 @@ export async function pullAndSyncReceipts(
   }
 
   const { matched, ambiguous, unmatched } = await matchAndLink(userId, queryFn);
+
+  // Персистимо факт УСПІШНОГО завершення: sync без нових чеків теж оновлює
+  // «Останнє оновлення» в UI (MAX(created_at) по чеках цього не вміє).
+  await queryFn(
+    `UPDATE silpo_connection
+        SET last_sync_at = NOW(), updated_at = NOW()
+      WHERE user_id = $1`,
+    [userId],
+    { op: "silpo_connection_touch_last_sync" },
+  );
 
   logger.info({
     msg: "silpo.sync.completed",

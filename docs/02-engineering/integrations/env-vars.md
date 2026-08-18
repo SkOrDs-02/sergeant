@@ -1,6 +1,6 @@
 # Environment variables — повний reference
 
-> **Last touched:** 2026-08-17 by @claude. **Next review:** 2026-11-27.
+> **Last touched:** 2026-08-18 by @claude. **Next review:** 2026-11-28.
 > **Status:** Active
 
 Цей документ — канонічний reference усіх змінних оточення Sergeant. Мінімальний `.env` (12 змінних, потрібних для `pnpm dev:web` + `pnpm dev:server`) лежить у [`/.env.example`](../../../.env.example) у корені репо. Сюди винесено: повний опис, формати, default-и, наслідки незаповненості, перехресні посилання на код / ADR / hardening-ноти.
@@ -698,7 +698,12 @@ Streamable-HTTP JSON-RPC endpoint MCP-сервера Сільпо (`apps/server/
 
 ### `SILPO_TOKEN_ENC_KEY` / `SILPO_TOKEN_ENC_KEYS` / `SILPO_TOKEN_ENC_KEY_CURRENT_VERSION` _(обовʼязкові якщо `SILPO_ENABLED=true`)_
 
-AES-256-GCM `KeyRing` для шифрування ОБОХ токен-трійок (access + refresh) у `silpo_connection` — формат і механіка ротації ті самі, що в `MONO_TOKEN_ENC_KEY*` (§ 16): `SILPO_TOKEN_ENC_KEYS=v1:<64-hex>,v2:<64-hex>` + `SILPO_TOKEN_ENC_KEY_CURRENT_VERSION=v2`, або legacy-фолбек з одним ключем `SILPO_TOKEN_ENC_KEY=<64-hex>`. Згенерувати ключ: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`.
+AES-256-GCM `KeyRing` для шифрування ОБОХ токен-трійок (access + refresh) у `silpo_connection` — формат і механіка ротації ті самі, що в `MONO_TOKEN_ENC_KEY*` (§ 16). Це **дві взаємовиключні конфігурації** — задається рівно одна з двох:
+
+1. **Versioned ring (канонічна):** `SILPO_TOKEN_ENC_KEYS=v1:<64-hex>,v2:<64-hex>`, опційно + `SILPO_TOKEN_ENC_KEY_CURRENT_VERSION=v2` (без нього current = найвища версія з ringʼа; вказана версія, якої немає в `..._KEYS`, — помилка старту). Підтримує ротацію (lazy re-encrypt при refresh).
+2. **Legacy-фолбек:** один ключ `SILPO_TOKEN_ENC_KEY=<64-hex>` (читається як v1). Без ротації — для дев/першого запуску.
+
+Коли задано обидві, `..._KEYS` виграє, а legacy-ключ ігнорується (`parseKeyRing`, `apps/server/src/lib/keyRing.ts`) — тож ефективна конфігурація завжди рівно одна. Згенерувати ключ: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`.
 
 ---
 
