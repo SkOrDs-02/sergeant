@@ -81,11 +81,18 @@ function sourceLabel(source: string): string {
 }
 
 /**
- * Службові джерела: текст пише не людина і не асистент про людину, а
- * телеметрія. Такі групи завжди згорнуті й завжди в кінці списку — але
- * лишаються видимими й видаляються поштучно, бо це теж памʼять про тебе.
+ * Службові джерела: рядок пише не людина про себе, а система — телеметрія
+ * (`product`) або згенерований тижневий звіт (`digest`). Такі групи завжди
+ * згорнуті й завжди в кінці списку, але лишаються видимими й видаляються
+ * поштучно, бо це теж памʼять про тебе.
+ *
+ * Рішення власника 2026-08-18 (двома заходами: спершу `product`, потім
+ * `digest`). Критерій, за яким сюди додають нове джерело: чи міг би
+ * користувач сам вимовити цей рядок як факт про себе. «Алергія на горіхи» —
+ * так; «2026-05-13: first action completed у модулі finyk» і «Тижневий звіт
+ * 3 серп. — 9 серп.» — ні.
  */
-const TECHNICAL_SOURCES: ReadonlySet<string> = new Set(["product"]);
+const TECHNICAL_SOURCES: ReadonlySet<string> = new Set(["product", "digest"]);
 
 function formatDay(iso: string): string {
   // Europe/Kyiv — доменний інваріант: дата факту має читатись у часовому
@@ -209,6 +216,7 @@ function MemoryGroupSection({
   // Службова група ігнорує `defaultOpen`: навіть у крихітній памʼяті вона
   // не має розкриватись сама — її вміст людині нічого не каже.
   const [open, setOpen] = useState(defaultOpen && !group.technical);
+  const hint = group.technical ? m.technicalGroupHints[group.source] : null;
 
   return (
     <section>
@@ -241,9 +249,9 @@ function MemoryGroupSection({
         />
       </button>
 
-      {open && group.technical && (
+      {open && hint && (
         <p className="px-3 pt-2 text-style-caption text-subtle leading-relaxed">
-          {m.technicalGroupHint}
+          {hint}
         </p>
       )}
 
