@@ -47,6 +47,20 @@
  * того, як WebKit вирішить панувати viewport. Побачивши поле вже у
  * видимій зоні, він зазвичай не панує взагалі — компенсація вище
  * лишається страховкою, а не основним механізмом.
+ *
+ * # Третій симптом: перший скрол їде по СТАРІЙ геометрії
+ *
+ * Бета-фідбек №4 (2026-08-18, довга bulk-review таблиця): тап у поле
+ * опису, клавіатура відкривається, «на екрані видимі мої витрати, які
+ * були вище» — поле під фолдом. Причина: і H2-фолбек, і `focusin`-скрол
+ * відпрацьовують ДО того, як панель аркуша стиснеться під клавіатуру
+ * (transition ~200 ms), тож поле, щойно поставлене у видиму зону,
+ * з'їжджає під неї разом зі стисканням. Два лікування разом:
+ * `block: "center"` замість `"nearest"` (запас з обох боків) і
+ * одноразовий ДОСКРОЛ активного поля після того, як `resize`-и
+ * клавіатурного transition-у вщухли — по фінальній геометрії. Це не
+ * покадровий слухач (таймер згорає раз на відкриття), H1-джитер не
+ * повертається.
  */
 import { useEffect, type RefObject } from "react";
 
@@ -62,6 +76,11 @@ import {
  * непанованим. Рухаємось лише під клавіатуру, на масштабі 1.
  */
 const NO_ZOOM_SCALE_MAX = 1.01;
+
+/** Пауза після останнього `resize` клавіатурного transition-у перед
+ * доскролом: iOS сипле кілька `resize`-ів за ~200 ms відкриття, чекаємо
+ * тиші, щоб скролити рівно один раз і по фінальній геометрії. */
+const SETTLE_SCROLL_DELAY_MS = 150;
 
 /**
  * Спільний гейт для обох втручань хука. Зумленого користувача не
@@ -109,20 +128,46 @@ export function useKeyboardAwareOverlay(
       if (!isTextEntryElement(target as Element | null)) return;
       // Перехід «клавіатури не було → з'явилась» уже покритий H2-фолбеком
       // в адаптері інсету; тут нас цікавить рівно перескок фокуса між
-      // полями при вже відкритій клавіатурі.
+      // полями при вже відкритій клавіатурі. `center`, не `nearest`:
+      // «мінімально необхідний» скрол ставить поле впритул до краю
+      // видимої зони, і будь-який подальший зсув геометрії ховає його
+      // знову (§ третій симптом у шапці).
       if (!shouldHandleKeyboard(vv)) return;
       // `?.` — jsdom не реалізує `scrollIntoView`.
-      (target as HTMLElement).scrollIntoView?.({ block: "nearest" });
+      (target as HTMLElement).scrollIntoView?.({ block: "center" });
+    };
+
+    // Доскрол по фінальній геометрії (§ третій симптом): коли `resize`-и
+    // клавіатурного transition-у вщухли, ще раз підтягуємо АКТИВНЕ поле
+    // всередині оверлея. Один таймер на відкриття, не покадрово.
+    let settleTimer: ReturnType<typeof setTimeout> | undefined;
+    const scheduleSettleScroll = () => {
+      if (settleTimer !== undefined) clearTimeout(settleTimer);
+      settleTimer = setTimeout(() => {
+        settleTimer = undefined;
+        if (!shouldHandleKeyboard(vv)) return;
+        const focused = document.activeElement;
+        const el = overlayRef.current;
+        if (!el || !isTextEntryElement(focused) || !el.contains(focused)) {
+          return;
+        }
+        (focused as HTMLElement).scrollIntoView?.({ block: "center" });
+      }, SETTLE_SCROLL_DELAY_MS);
+    };
+    const handleResize = () => {
+      applyAnchor();
+      scheduleSettleScroll();
     };
 
     vv.addEventListener("scroll", applyAnchor);
-    vv.addEventListener("resize", applyAnchor);
+    vv.addEventListener("resize", handleResize);
     overlay.addEventListener("focusin", handleFocusIn);
     applyAnchor();
 
     return () => {
+      if (settleTimer !== undefined) clearTimeout(settleTimer);
       vv.removeEventListener("scroll", applyAnchor);
-      vv.removeEventListener("resize", applyAnchor);
+      vv.removeEventListener("resize", handleResize);
       overlay.removeEventListener("focusin", handleFocusIn);
       overlay.style.transform = "";
     };

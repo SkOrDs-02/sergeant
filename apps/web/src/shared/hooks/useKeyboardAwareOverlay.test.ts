@@ -146,7 +146,58 @@ describe("useKeyboardAwareOverlay", () => {
     act(() => {
       second.focus();
     });
-    expect(scrollIntoView).toHaveBeenCalledWith({ block: "nearest" });
+    // `center`, не `nearest` — запас з обох боків, щоб дожимання
+    // геометрії не ховало поле знову (бета-фідбек №4).
+    expect(scrollIntoView).toHaveBeenCalledWith({ block: "center" });
+  });
+
+  it("доскролює активне поле після того, як resize-и клавіатури вщухли", () => {
+    // Бета-фідбек №4: перший скрол їде по геометрії ще ДО стискання
+    // панелі — доскрол по фінальній геометрії робить таймер тиші після
+    // останнього `resize`.
+    vi.useFakeTimers();
+    try {
+      const { overlay, input } = mountOverlay();
+      const vv = installVisualViewport(800); // клавіатури ще немає
+      input.focus();
+      renderHook(() => useKeyboardAwareOverlay(true, { current: overlay }));
+
+      const scrollIntoView = vi.mocked(Element.prototype.scrollIntoView);
+      scrollIntoView.mockClear();
+      act(() => {
+        vv.height = 500; // клавіатура доїхала — гап 300
+        vv._fire("resize");
+      });
+      // До вичерпання таймера тиші — жодного скролу.
+      expect(scrollIntoView).not.toHaveBeenCalled();
+      act(() => {
+        vi.runAllTimers();
+      });
+      expect(scrollIntoView).toHaveBeenCalledWith({ block: "center" });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("НЕ доскролює після resize, якщо клавіатура закрилась (гап 0)", () => {
+    vi.useFakeTimers();
+    try {
+      const { overlay, input } = mountOverlay();
+      const vv = installVisualViewport(500); // клавіатура відкрита
+      input.focus();
+      renderHook(() => useKeyboardAwareOverlay(true, { current: overlay }));
+
+      const scrollIntoView = vi.mocked(Element.prototype.scrollIntoView);
+      scrollIntoView.mockClear();
+      act(() => {
+        vv.height = 800; // клавіатура зникла — гап 0
+        vv._fire("resize");
+        vi.runAllTimers();
+      });
+      expect(scrollIntoView).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("не скролить поле під pinch-zoom — гап висот там неоднозначний", () => {
