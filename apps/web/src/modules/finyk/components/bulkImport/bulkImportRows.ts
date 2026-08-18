@@ -6,15 +6,14 @@
  * спека § Bulk-review UI) + чисті редактори (вибір / масова категорія /
  * inline-edit). Без React — testable окремо від таблиці.
  *
- * ВІДХИЛЕННЯ ВІД СПЕКИ (задокументовано в звіті web-agent-а PR #818):
- * `BulkReviewRow` НЕ несе tier-1/2 дедуп-статусу («= mono-транзакція» /
- * «вже імпортовано») ДО коміту — жоден з дев'яти ендпоінтів контракту не
- * дає pre-commit dedup-preview (mono-matcher і between-imports row-key
- * рахуються ВИКЛЮЧНО всередині `commitImport`, як побічний ефект самого
- * запису). Статус-бейджі рядка в спеці («нова»/«лінк»/«пропущено») —
- * пост-фактум, у `ImportCommitResponse.skipped` (агреговані числа) — не
- * per-row. Bulk-review таблиця тому показує лише direction-бейдж і
- * vision-confidence (обидва є у відповіді), без dedup-статусу.
+ * Дедуп-статус ДО коміту (звужене відхилення від спеки, історію див.
+ * git): mono-matcher і between-imports row-key досі рахуються лише
+ * всередині `commitImport`, але «сітка 2» (бета-фідбек №4, 2026-08-18)
+ * додала pre-commit мітку `duplicateLikely` — сервер на прев'ю звіряє
+ * рядок з уже збереженими витратами за трійкою дата+сума+напрям
+ * (`duplicateDetect.ts`, опис свідомо ігнорується — vision читає його
+ * недетерміновано). Мітка поводиться як `transferLikely`: бейдж + знята
+ * галочка, рішення за людиною.
  */
 import type {
   ImportCommitRow,
@@ -37,6 +36,11 @@ export interface BulkReviewRow {
    * («Поповнення «банка»», «Часткове зняття банки» — transferDetect.ts):
    * знятий з вибору за замовчуванням, але видимий і вмикабельний. */
   transferLikely: boolean;
+  /** Сервер знайшов серед уже збережених витрат запис із тією ж
+   * трійкою дата+сума+напрям (duplicateDetect.ts, «сітка 2»): найпевніше
+   * цей документ (чи період) уже імпортували — знятий з вибору за
+   * замовчуванням, але видимий і вмикабельний. */
+  duplicateLikely: boolean;
   selected: boolean;
 }
 
@@ -44,13 +48,16 @@ export interface BulkReviewRow {
  * Надходження зняті з вибору за замовчуванням (ратифіковано founder-ом
  * 2026-08-18, питання №2 спеки). Те саме — рядки з `transferLikely`
  * (follow-up тієї ж ратифікації): переказ на власну банку — не витрата,
- * галочку користувач ставить свідомо.
+ * галочку користувач ставить свідомо. І `duplicateLikely` («сітка 2»,
+ * бета-фідбек №4): схожий запис уже збережено — повторний імпорт має
+ * бути свідомим кліком, не дефолтом.
  */
 function defaultSelected(
   direction: ImportDirection,
   transferLikely: boolean,
+  duplicateLikely: boolean,
 ): boolean {
-  return direction === "expense" && !transferLikely;
+  return direction === "expense" && !transferLikely && !duplicateLikely;
 }
 
 export function screenshotRowsToBulkReviewRows(
@@ -59,6 +66,7 @@ export function screenshotRowsToBulkReviewRows(
 ): BulkReviewRow[] {
   return rows.map((row, i) => {
     const transferLikely = row.transferLikely === true;
+    const duplicateLikely = row.duplicateLikely === true;
     return {
       id: `screenshot-${i}`,
       date: row.date,
@@ -68,7 +76,8 @@ export function screenshotRowsToBulkReviewRows(
       category: defaultCategoryFor(row.direction),
       confidence: row.confidence,
       transferLikely,
-      selected: defaultSelected(row.direction, transferLikely),
+      duplicateLikely,
+      selected: defaultSelected(row.direction, transferLikely, duplicateLikely),
     };
   });
 }
@@ -79,6 +88,7 @@ export function statementRowsToBulkReviewRows(
 ): BulkReviewRow[] {
   return rows.map((row, i) => {
     const transferLikely = row.transferLikely === true;
+    const duplicateLikely = row.duplicateLikely === true;
     return {
       id: `statement-${i}`,
       date: row.date,
@@ -88,7 +98,8 @@ export function statementRowsToBulkReviewRows(
       category: defaultCategoryFor(row.direction),
       confidence: null,
       transferLikely,
-      selected: defaultSelected(row.direction, transferLikely),
+      duplicateLikely,
+      selected: defaultSelected(row.direction, transferLikely, duplicateLikely),
     };
   });
 }

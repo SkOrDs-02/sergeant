@@ -87,6 +87,7 @@ export function BulkReviewTable({
   const selectedCount = selectedRowCount(rows);
 
   const hasTransferLikelyRows = rows.some((r) => r.transferLikely);
+  const hasDuplicateLikelyRows = rows.some((r) => r.duplicateLikely);
 
   const customExpenseCategories = customCategories.filter(
     (c): c is CustomCategoryInput =>
@@ -163,6 +164,14 @@ export function BulkReviewTable({
         </p>
       )}
 
+      {hasDuplicateLikelyRows && (
+        <p className="text-style-caption text-subtle">
+          Рядки «схоже, вже є» збігаються датою і сумою з уже збереженими
+          витратами (наприклад, цей документ уже імпортували) — постав галочку,
+          якщо це справді окрема операція.
+        </p>
+      )}
+
       <ul className="divide-y divide-line rounded-2xl border border-line">
         {rows.map((row) => {
           const options = categoryOptionsFor(row.direction, expenseOptions);
@@ -202,12 +211,17 @@ export function BulkReviewTable({
                     >
                       {row.direction === "income" ? "дохід" : "витрата"}
                     </Badge>
-                    {/* Бейдж — підозра, а не вирок: щойно людина сама
+                    {/* Бейджі — підозра, а не вирок: щойно людина сама
                         поставила галочку «імпортувати», підозра знята, і
                         бейдж ховається (бета-фідбек №2, 2026-08-18). */}
                     {row.transferLikely && !row.selected && (
                       <Badge variant="warning" tone="soft" size="xs">
                         схоже на переказ
+                      </Badge>
+                    )}
+                    {row.duplicateLikely && !row.selected && (
+                      <Badge variant="warning" tone="soft" size="xs">
+                        схоже, вже є
                       </Badge>
                     )}
                     {row.confidence != null && lowConfidence && (

@@ -91,8 +91,13 @@ export const useWebVisualKeyboardInset: VisualKeyboardInsetAdapter = (
       // Keyboard just opened — make sure the focused field is actually
       // visible above it. Safe no-op when iOS already scrolled it into
       // view; only acts on the field the user is actively typing into.
+      // `center`, not `nearest`: this runs against the PRE-shrink sheet
+      // geometry, and a field parked flush at the visible edge slides
+      // back under the keyboard once the panel finishes shrinking
+      // (beta feedback #4, 2026-08-18 — `useKeyboardAwareOverlay` adds
+      // the post-transition settle re-scroll as the second half).
       if (isTextEntryElement(document.activeElement)) {
-        document.activeElement.scrollIntoView({ block: "nearest" });
+        document.activeElement.scrollIntoView({ block: "center" });
       }
     } else if (!isOpen && wasOpen) {
       // Keyboard just closed. This app never intentionally scrolls

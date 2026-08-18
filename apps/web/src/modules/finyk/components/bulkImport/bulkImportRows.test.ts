@@ -127,6 +127,50 @@ describe("screenshotRowsToBulkReviewRows / statementRowsToBulkReviewRows", () =>
     );
     expect(rows[0]).toMatchObject({ transferLikely: true, selected: false });
   });
+
+  it("duplicateLikely-витрата знята з вибору за замовчуванням («сітка 2»: схожий запис уже збережено)", () => {
+    const rows = statementRowsToBulkReviewRows(
+      [
+        {
+          date: "2026-08-17",
+          amountKopiykas: 84750,
+          direction: "expense",
+          description: "Сільпо",
+          duplicateLikely: true,
+        },
+        {
+          date: "2026-08-18",
+          amountKopiykas: 12000,
+          direction: "expense",
+          description: "АТБ-Маркет",
+        },
+      ],
+      defaultCategoryFor,
+    );
+    expect(rows[0]).toMatchObject({ duplicateLikely: true, selected: false });
+    expect(rows[1]).toMatchObject({ duplicateLikely: false, selected: true });
+    // Як і transferLikely: рядок видимий, вмикається одним тапом.
+    const next = toggleRowSelected(rows, rows[0]!.id);
+    expect(next[0]?.selected).toBe(true);
+  });
+
+  it("duplicateLikely працює і для скрін-рядків (головний споживач — повторний скрін)", () => {
+    const rows = screenshotRowsToBulkReviewRows(
+      [
+        {
+          date: "2026-08-17",
+          time: "10:00",
+          amountKopiykas: 9500,
+          direction: "expense",
+          description: "Кава",
+          confidence: 0.9,
+          duplicateLikely: true,
+        },
+      ],
+      defaultCategoryFor,
+    );
+    expect(rows[0]).toMatchObject({ duplicateLikely: true, selected: false });
+  });
 });
 
 describe("toggleRowSelected / setAllSelected", () => {

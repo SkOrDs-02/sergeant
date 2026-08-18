@@ -940,7 +940,7 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
     "POST /api/v1/finyk/import/screenshot/analyze — replay against real handler (requires vision LLM stub)",
   );
   it.todo(
-    "POST /api/v1/finyk/import/statement/preview — replay against real handler (pure CSV parsing, no DB)",
+    "POST /api/v1/finyk/import/statement/preview — replay against real handler (CSV parsing + «сітка 2» duplicateLikely-запит у БД, duplicateDetect.ts)",
   );
   it.todo(
     "POST /api/v1/finyk/import/commit — replay against real handler (transactional commit + dedup tiers)",

@@ -208,7 +208,10 @@ describe("useWebVisualKeyboardInset", () => {
       vv._fire("resize");
     });
 
-    expect(input.scrollIntoView).toHaveBeenCalledWith({ block: "nearest" });
+    // `center`, не `nearest` — H2-скрол їде по ще-не-стиснутій геометрії
+    // панелі, і поле «впритул до краю» з'їхало б під клавіатуру знову
+    // (бета-фідбек №4, 2026-08-18).
+    expect(input.scrollIntoView).toHaveBeenCalledWith({ block: "center" });
     document.body.removeChild(input);
   });
 

@@ -370,8 +370,13 @@ export function BulkImportSheet({
       )}
 
       {stage === "commit-summary" && commitResult && (
-        <div className="space-y-1.5 rounded-2xl border border-line bg-panelHi/40 p-3 text-style-body text-text">
-          <p>Створено: {commitResult.created}</p>
+        // Success-тон карткою (бета-фідбек №4: «Створено на зеленому
+        // фоні, як Витрата») — той самий фінік-акцент, що й активний чип
+        // «Витрата» у ManualExpenseSheet, а не сірий panelHi.
+        <div className="space-y-1.5 rounded-2xl border border-finyk/30 bg-finyk/15 p-3 text-style-body text-text">
+          <p className="font-semibold text-finyk-strong dark:text-finyk">
+            Створено: {commitResult.created}
+          </p>
           {commitResult.skipped.monoMatched > 0 && (
             <p className="text-style-caption text-muted">
               {commitResult.skipped.monoMatched} пропущено — вже є в mono.
