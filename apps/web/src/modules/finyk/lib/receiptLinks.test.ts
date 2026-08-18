@@ -41,6 +41,14 @@ describe("receiptLinks", () => {
     expect(readReceiptLinks()).toEqual({});
   });
 
+  it("does not write an invalid (non-positive-int) receiptId", () => {
+    writeReceiptLink("mono-tx-1", 42);
+    writeReceiptLink("mono-tx-2", -1);
+    writeReceiptLink("mono-tx-3", 1.5);
+    writeReceiptLink("mono-tx-4", 0);
+    expect(readReceiptLinks()).toEqual({ "mono-tx-1": 42 });
+  });
+
   it("caps the map at 500 entries, dropping the oldest insertions first", () => {
     for (let i = 0; i < 501; i++) {
       writeReceiptLink(`tx-${i}`, i + 1);

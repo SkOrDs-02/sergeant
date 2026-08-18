@@ -154,6 +154,38 @@ describe("applyBulkCategory", () => {
     const next = applyBulkCategory(withOneUnselected, "groceries", false);
     expect(next.every((r) => r.category === "groceries")).toBe(true);
   });
+
+  it("never overwrites an income row's category, even when selected and onlySelected=false", () => {
+    const mixed = [
+      ...rows,
+      ...screenshotRowsToBulkReviewRows(
+        [
+          {
+            date: "2026-08-02",
+            time: null,
+            amountKopiykas: 500000,
+            direction: "income",
+            description: "salary",
+            confidence: 1,
+          },
+        ],
+        defaultCategoryFor,
+      ),
+    ];
+    // Force the income row selected too — the guard must hold regardless of
+    // selection state, not just because it's normally deselected by default.
+    const allSelected = mixed.map((r) => ({ ...r, selected: true }));
+
+    const next = applyBulkCategory(allSelected, "groceries", false);
+
+    const incomeRow = next.find((r) => r.direction === "income");
+    expect(incomeRow?.category).toBe("salary"); // untouched
+    expect(
+      next
+        .filter((r) => r.direction === "expense")
+        .every((r) => r.category === "groceries"),
+    ).toBe(true);
+  });
 });
 
 describe("updateRowField", () => {

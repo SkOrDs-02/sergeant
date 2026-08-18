@@ -14,11 +14,20 @@
  * непорожній рядок ≤64 символів з `[\w.-]` — той самий вайтліст тут ЗАРАНІШЕ
  * відсіює QR, що не є чеком ДПС (інший сайт, порожні/сміттєві query-параметри),
  * не чекаючи 400 від сервера.
+ *
+ * Origin-перевірка ДО читання query (CodeRabbit round 5, PR #818): без неї
+ * будь-який URL із пʼятьма полями, що проходять вайтліст, парсився б як
+ * «чек» — QR стороннього сайту з випадково-схожими query-параметрами тихо
+ * пішов би в `POST /api/finyk/receipts/lookup` замість чесного «не читається,
+ * сфотографуй чек». Перевіряємо `https:` + host `cabinet.tax.gov.ua` + path
+ * `/cashregs/check` РАНІШЕ, ніж читаємо `searchParams`.
  */
 import type { ReceiptLookupRequest } from "@sergeant/api-client";
 
 const DPS_QR_FIELD_PATTERN = /^[\w.-]+$/;
 const DPS_QR_FIELD_MAX_LEN = 64;
+const DPS_QR_HOST = "cabinet.tax.gov.ua";
+const DPS_QR_PATHNAME = "/cashregs/check";
 
 function normalizeField(raw: string | null): string | null {
   if (raw == null) return null;
@@ -31,7 +40,8 @@ function normalizeField(raw: string | null): string | null {
 /**
  * Розпарсити сирий текст QR-коду в тіло `POST /api/finyk/receipts/lookup`.
  *
- * Повертає `null`, якщо рядок — не валідний URL, або хоч одне з полів
+ * Повертає `null`, якщо рядок — не валідний URL, не з очікуваного ДПС-origin
+ * (`https://cabinet.tax.gov.ua/cashregs/check`), або хоч одне з полів
  * `fn`/`id`/`date`/`time`/`sm` відсутнє/порожнє/не проходить вайтліст —
  * викликач тоді пропонує фото (спека: «QR нема / не читається»).
  */
@@ -42,6 +52,14 @@ export function parseDpsReceiptQrUrl(raw: string): ReceiptLookupRequest | null {
   try {
     url = new URL(raw.trim());
   } catch {
+    return null;
+  }
+
+  if (
+    url.protocol !== "https:" ||
+    url.hostname !== DPS_QR_HOST ||
+    url.pathname !== DPS_QR_PATHNAME
+  ) {
     return null;
   }
 

@@ -23,7 +23,10 @@
  */
 import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 
-const RECEIPT_LINKS_KEY = "finyk_receipt_links_v1";
+/** Exported for `useFinykReceiptLinks.test.tsx` — lets the test read/write
+ * through the same storage wrapper this module uses, instead of a
+ * hand-duplicated key literal poking `localStorage` directly. */
+export const RECEIPT_LINKS_KEY = "finyk_receipt_links_v1";
 
 /** М'який кап розміру кешу — best-effort UI affordance, не canonical
  * дані, тож при переповненні просто ріжемо найстаріші (за порядком
@@ -50,14 +53,27 @@ export function readReceiptLinks(): ReceiptLinkMap {
 /**
  * Записує один лінк і повертає оновлену карту (для синхронного React
  * `setState` викликачем — без другого читання).
+ *
+ * Невалідний `receiptId` (не додатне ціле) НЕ записується — раніше писався
+ * і мовчки губився на наступному `readReceiptLinks()` (`isPositiveInt`
+ * guard там же), тож викликач бачив "запис ніби пройшов", а мапа тихо не
+ * росла.
  */
 export function writeReceiptLink(
   txRef: string,
   receiptId: number,
 ): ReceiptLinkMap {
-  const current = { ...readReceiptLinks() };
+  const existing = readReceiptLinks();
+  if (!isPositiveInt(receiptId)) return existing;
+  const current = { ...existing };
   current[txRef] = receiptId;
   const keys = Object.keys(current);
+  // Прунимо найстаріші за `Object.keys()`-порядком вставки — навмисно БЕЗ
+  // перебудови на точний LRU (див. докстрінг капу вище). Це коректно ЛИШЕ
+  // тому, що `txRef` ніколи не виглядає як ціле число (mono-id формату
+  // `mono:...` чи `crypto.randomUUID()`): рушії JS (спека ES2015+) віддають
+  // integer-index-подібні ключі ("0", "1", …) ПЕРШИМИ, порушуючи порядок
+  // вставки — саме той порядок, на який спирається зріз нижче.
   if (keys.length > RECEIPT_LINKS_MAX_ENTRIES) {
     for (const staleKey of keys.slice(
       0,

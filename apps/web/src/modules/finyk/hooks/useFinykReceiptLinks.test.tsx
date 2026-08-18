@@ -1,10 +1,18 @@
 // @vitest-environment jsdom
 import { act, renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
+import { safeRemoveLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { useFinykReceiptLinks } from "./useFinykReceiptLinks";
+import { RECEIPT_LINKS_KEY } from "../lib/receiptLinks";
 
+// Goes through the same storage wrapper `receiptLinks.ts` itself uses
+// (CodeRabbit round 5, PR #818) instead of poking `localStorage` directly —
+// the production code resolves reads/writes through `webKVStore`'s
+// SQLite-warm-cache-first ladder, and a raw `localStorage.*` call in the
+// test silently depends on that ladder happening to fall back to LS in the
+// Vitest environment. Also drops the hand-duplicated key literal.
 beforeEach(() => {
-  localStorage.clear();
+  safeRemoveLS(RECEIPT_LINKS_KEY);
 });
 
 describe("useFinykReceiptLinks", () => {
@@ -15,10 +23,7 @@ describe("useFinykReceiptLinks", () => {
   });
 
   it("hydrates from a previously persisted link", () => {
-    localStorage.setItem(
-      "finyk_receipt_links_v1",
-      JSON.stringify({ "tx-1": 7 }),
-    );
+    safeWriteLS(RECEIPT_LINKS_KEY, { "tx-1": 7 });
     const { result } = renderHook(() => useFinykReceiptLinks());
     expect(result.current.hasReceipt("tx-1")).toBe(true);
     expect(result.current.getReceiptId("tx-1")).toBe(7);

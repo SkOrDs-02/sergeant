@@ -1,14 +1,17 @@
 /**
- * Last validated: 2026-08-17
+ * Last validated: 2026-08-18
  * Status: Active
  *
  * Читання CSV-файлу виписки для `POST /api/finyk/import/statement/preview`
  * (спека § API-контракт Фази 2: `csv_text` рядком у JSON, кап 5MB —
  * `IMPORT_STATEMENT_MAX_CSV_BYTES`, `packages/shared/src/schemas/import.ts`).
- * Клієнтський гейт лише рятує від зайвого upload-у явно завеликого файлу.
+ * Клієнтський гейт лише рятує від зайвого upload-у явно завеликого файлу;
+ * re-експортує серверну межу замість дублювання літерала (CodeRabbit round
+ * 5, PR #818) — один кап на дві межі контракту.
  */
+import { IMPORT_STATEMENT_MAX_CSV_BYTES } from "@sergeant/shared";
 
-export const IMPORT_CSV_MAX_FILE_BYTES = 5 * 1024 * 1024;
+export const IMPORT_CSV_MAX_FILE_BYTES = IMPORT_STATEMENT_MAX_CSV_BYTES;
 
 export type ReadCsvResult =
   { ok: true; text: string } | { ok: false; error: string };

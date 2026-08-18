@@ -98,7 +98,7 @@ export function AuthErrorBanner({
             <button
               type="button"
               onClick={onBackToHub}
-              className="focus-ring rounded-xl text-style-caption text-primary mt-2 hover:underline"
+              className="touch-target focus-ring rounded-xl text-style-caption text-primary mt-2 hover:underline"
             >
               Оновити токен у Налаштуваннях Hub
             </button>
@@ -107,7 +107,7 @@ export function AuthErrorBanner({
         <button
           type="button"
           onClick={() => setAuthError("")}
-          className="focus-ring rounded-xl text-muted hover:text-text transition-colors shrink-0"
+          className="touch-target focus-ring rounded-xl text-muted hover:text-text transition-colors shrink-0"
           aria-label="Закрити"
         >
           <Icon name="close" size={16} aria-hidden />

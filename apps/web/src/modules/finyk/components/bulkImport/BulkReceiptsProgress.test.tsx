@@ -32,6 +32,18 @@ function item(overrides: Partial<BatchReceiptItem> = {}): BatchReceiptItem {
   };
 }
 
+// 15075 kopiykas renders as "150,75" + a narrow no-break space (codepoint
+// 0x202F, `NARROW_NBSP` in `Money`) + the currency symbol. Built via
+// `String.fromCharCode` (not a literal special character pasted into the
+// source, which `eslint no-irregular-whitespace` rightly flags outside
+// string literals) so the exact codepoint is unambiguous. The
+// amount/separator/symbol render as sibling DOM nodes inside `Money`, so
+// match on full `textContent` via a matcher function rather than a
+// single-node `getByText` string (same pattern as
+// `TxRow.coverage.test.tsx` / `DebtCard.test.tsx`).
+const NARROW_NBSP_CHAR = String.fromCharCode(0x202f);
+const EXPECTED_TOTAL_TEXT = `150,75${NARROW_NBSP_CHAR}₴`;
+
 describe("BulkReceiptsProgress", () => {
   it("shows the store name and total for a drafted item", () => {
     render(
@@ -45,6 +57,16 @@ describe("BulkReceiptsProgress", () => {
       />,
     );
     expect(screen.getByText("Сільпо")).toBeInTheDocument();
+    // `Money`'s wrapping `<span>` here has no sibling — its own span and
+    // the caption wrapper around it end up with IDENTICAL aggregated
+    // `textContent`, so `getByText` (singular) throws "multiple elements
+    // found". `getAllByText` sidesteps that ambiguity: the assertion only
+    // cares that the formatted total renders somewhere, not which of the
+    // two nested wrapper nodes technically "owns" it.
+    expect(
+      screen.getAllByText((_, el) => el?.textContent === EXPECTED_TOTAL_TEXT)
+        .length,
+    ).toBeGreaterThan(0);
   });
 
   it("shows the file name and error text for a fetch-error item", () => {

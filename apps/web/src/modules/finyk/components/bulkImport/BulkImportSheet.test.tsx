@@ -284,6 +284,58 @@ describe("BulkImportSheet — CSV path", () => {
       }),
     });
   });
+
+  it("keeps the mapper mounted (and its column picks intact) when the re-preview submit fails", async () => {
+    previewImportStatementMock
+      .mockResolvedValueOnce({
+        profile: null,
+        needsMapping: true,
+        headers: ["A", "B", "C"],
+        sampleRows: [["x", "y", "z"]],
+        rows: [],
+        skipped: [],
+      })
+      // Not an `Error`/`ApiError`/string shape — `formatApiError` falls all
+      // the way through to the caller's `fallback` text (see
+      // `apiErrorFormat.ts`), which is what this test asserts on below.
+      .mockRejectedValueOnce({});
+    renderSheet();
+
+    await act(async () => {
+      fireEvent.change(fileInputFor(/CSV-виписку/i), {
+        target: {
+          files: [new File(["a,b,c"], "unknown.csv", { type: "text/csv" })],
+        },
+      });
+    });
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Продовжити" }),
+      ).toBeInTheDocument(),
+    );
+
+    // Pick a NON-default column — the bug this guards against remounted the
+    // mapper with fresh `useState` defaults on a failed re-preview, silently
+    // discarding whatever the user had just chosen.
+    fireEvent.change(screen.getByLabelText("Колонка дати"), {
+      target: { value: "C" },
+    });
+    expect(screen.getByLabelText("Колонка дати")).toHaveValue("C");
+
+    fireEvent.click(screen.getByRole("button", { name: "Продовжити" }));
+
+    await waitFor(() =>
+      expect(
+        screen.getByText(/Не вдалось прочитати виписку/),
+      ).toBeInTheDocument(),
+    );
+    // Still on the mapper stage, and the user's pick survived the failed
+    // round-trip — proof the component never unmounted.
+    expect(
+      screen.getByRole("button", { name: "Продовжити" }),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Колонка дати")).toHaveValue("C");
+  });
 });
 
 describe("BulkImportSheet — commit + undo", () => {

@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import type { CustomCategoryInput } from "@sergeant/finyk-domain";
 import { BulkReviewTable } from "./BulkReviewTable";
 import type { BulkReviewRow } from "./bulkImportRows";
 
@@ -28,6 +29,10 @@ function rows(): BulkReviewRow[] {
     },
   ];
 }
+
+const CUSTOM_CATEGORIES: CustomCategoryInput[] = [
+  { id: "custom-hobby", label: "Хобі" },
+];
 
 describe("BulkReviewTable", () => {
   it("shows the selected-count summary and direction badges", () => {
@@ -108,11 +113,104 @@ describe("BulkReviewTable", () => {
     // "food" — an active (non-legacy) picker slug; "groceries" is a
     // legacy resolve-only alias no longer offered by `CATEGORY_SLUGS`
     // (`MANUAL_EXPENSE_PICKER` excludes `legacy: true` entries).
-    fireEvent.change(screen.getByLabelText("Категорія для вибраних"), {
+    fireEvent.change(screen.getByLabelText("Категорія для вибраних витрат"), {
       target: { value: "food" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Застосувати" }));
     expect(onBulkCategory).toHaveBeenCalledWith("food");
+  });
+
+  it("disables the bulk-category action when only income rows are selected", () => {
+    const incomeOnlySelected = rows().map((r) => ({
+      ...r,
+      selected: r.direction === "income",
+    }));
+    render(
+      <BulkReviewTable
+        rows={incomeOnlySelected}
+        onToggleRow={vi.fn()}
+        onToggleAll={vi.fn()}
+        onBulkCategory={vi.fn()}
+        onEditRow={vi.fn()}
+      />,
+    );
+    expect(
+      screen.getByLabelText("Категорія для вибраних витрат"),
+    ).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Застосувати" })).toBeDisabled();
+  });
+
+  it("enables the bulk-category action once at least one expense row is selected", () => {
+    render(
+      <BulkReviewTable
+        rows={rows()} // r1 (expense) selected, r2 (income) not
+        onToggleRow={vi.fn()}
+        onToggleAll={vi.fn()}
+        onBulkCategory={vi.fn()}
+        onEditRow={vi.fn()}
+      />,
+    );
+    expect(
+      screen.getByLabelText("Категорія для вибраних витрат"),
+    ).not.toBeDisabled();
+  });
+
+  it("merges customCategories into the per-row expense category picker", () => {
+    render(
+      <BulkReviewTable
+        rows={rows()}
+        onToggleRow={vi.fn()}
+        onToggleAll={vi.fn()}
+        onBulkCategory={vi.fn()}
+        onEditRow={vi.fn()}
+        customCategories={CUSTOM_CATEGORIES}
+      />,
+    );
+    // r1 is an expense row — its per-row picker gets the custom option.
+    const expenseRowPicker = screen.getAllByLabelText("Категорія")[0]!;
+    expect(
+      Array.from(expenseRowPicker.querySelectorAll("option")).map(
+        (o) => o.textContent,
+      ),
+    ).toContain("Хобі");
+  });
+
+  it("does NOT offer a custom (expense-only) category on the income row's per-row picker", () => {
+    render(
+      <BulkReviewTable
+        rows={rows()}
+        onToggleRow={vi.fn()}
+        onToggleAll={vi.fn()}
+        onBulkCategory={vi.fn()}
+        onEditRow={vi.fn()}
+        customCategories={CUSTOM_CATEGORIES}
+      />,
+    );
+    const incomeRowPicker = screen.getAllByLabelText("Категорія")[1]!;
+    expect(
+      Array.from(incomeRowPicker.querySelectorAll("option")).map(
+        (o) => o.textContent,
+      ),
+    ).not.toContain("Хобі");
+  });
+
+  it("merges customCategories into the bulk-category picker", () => {
+    render(
+      <BulkReviewTable
+        rows={rows()}
+        onToggleRow={vi.fn()}
+        onToggleAll={vi.fn()}
+        onBulkCategory={vi.fn()}
+        onEditRow={vi.fn()}
+        customCategories={CUSTOM_CATEGORIES}
+      />,
+    );
+    const bulkPicker = screen.getByLabelText("Категорія для вибраних витрат");
+    expect(
+      Array.from(bulkPicker.querySelectorAll("option")).map(
+        (o) => o.textContent,
+      ),
+    ).toContain("Хобі");
   });
 
   it("toggling select-all calls onToggleAll with the opposite of the current all-selected state", () => {

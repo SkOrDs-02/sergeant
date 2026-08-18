@@ -123,7 +123,11 @@ export function TxRowMetaChips({
           className="shrink-0 inline-flex items-center text-muted"
           title="Є прикріплений чек — відкрий транзакцію, щоб побачити позиції"
         >
-          <Icon name="file-text" size={12} aria-hidden />
+          <Icon
+            name="file-text"
+            size={12}
+            title="Є прикріплений чек — відкрий транзакцію, щоб побачити позиції"
+          />
         </span>
       )}
       {note && (

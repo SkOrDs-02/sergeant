@@ -16,7 +16,6 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { Sheet } from "@shared/components/ui/Sheet";
-import { Spinner } from "@shared/components/ui/Spinner";
 import { useResetPinchZoomAfterCameraCapture } from "@shared/hooks/useResetPinchZoomOnResume";
 import type { ImportSkippedRow, ImportSource } from "@sergeant/api-client";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain";
@@ -385,23 +384,21 @@ export function BulkImportSheet({
         />
       )}
 
-      {stage === "csv-mapper" &&
-        (statementPreview.isPending ? (
-          <div
-            role="status"
-            aria-live="polite"
-            className="flex flex-col items-center gap-2 py-10"
-          >
-            <Spinner size="md" />
-          </div>
-        ) : (
-          <ColumnMapper
-            headers={mapperHeaders}
-            sampleRows={mapperSampleRows}
-            onSubmit={(mapping) => void handleMapperSubmit(mapping)}
-            isSubmitting={statementPreview.isPending}
-          />
-        ))}
+      {stage === "csv-mapper" && (
+        // Stays mounted through a re-preview submit (CodeRabbit round 5,
+        // PR #818): swapping it for a Spinner while `statementPreview` is
+        // pending unmounted this component's own `useState` column picks,
+        // so a FAILED re-preview remounted the mapper with default columns
+        // instead of what the user actually chose — and `isSubmitting` was
+        // dead code (never true at the only moment this branch rendered).
+        // `ColumnMapper`'s own submit button now shows the pending state.
+        <ColumnMapper
+          headers={mapperHeaders}
+          sampleRows={mapperSampleRows}
+          onSubmit={(mapping) => void handleMapperSubmit(mapping)}
+          isSubmitting={statementPreview.isPending}
+        />
+      )}
 
       {stage === "bulk-review" && (
         <div className="space-y-3">

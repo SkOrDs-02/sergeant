@@ -71,6 +71,38 @@ describe("parseDpsReceiptQrUrl", () => {
     expect(parseDpsReceiptQrUrl("https://example.com/foo")).toBeNull();
   });
 
+  it("returns null for a non-DPS host even when all five fields are otherwise valid", () => {
+    expect(
+      parseDpsReceiptQrUrl(
+        "https://evil.example.com/cashregs/check?id=1&date=17082026&time=1530&fn=2&sm=3",
+      ),
+    ).toBeNull();
+  });
+
+  it("returns null for the DPS host on the wrong path", () => {
+    expect(
+      parseDpsReceiptQrUrl(
+        "https://cabinet.tax.gov.ua/other/path?id=1&date=17082026&time=1530&fn=2&sm=3",
+      ),
+    ).toBeNull();
+  });
+
+  it("returns null for the DPS host over plain http", () => {
+    expect(
+      parseDpsReceiptQrUrl(
+        "http://cabinet.tax.gov.ua/cashregs/check?id=1&date=17082026&time=1530&fn=2&sm=3",
+      ),
+    ).toBeNull();
+  });
+
+  it("returns null for a look-alike host with the DPS host only as a subdomain suffix", () => {
+    expect(
+      parseDpsReceiptQrUrl(
+        "https://cabinet.tax.gov.ua.evil.com/cashregs/check?id=1&date=17082026&time=1530&fn=2&sm=3",
+      ),
+    ).toBeNull();
+  });
+
   it("accepts dots/dashes/underscores inside field values", () => {
     expect(
       parseDpsReceiptQrUrl(

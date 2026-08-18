@@ -8,6 +8,15 @@
  * напряму/vision-confidence. Без dedup-статусу (tier1/2) — жодного
  * pre-commit ендпоінта для нього немає, див. `bulkImportRows.ts`
  * докстрінг.
+ *
+ * Власні категорії (CodeRabbit round 5, PR #818): `customCategories`
+ * проп раніше оголошувався, але не деструктурувався — власні категорії
+ * користувача просто ніде не з'являлись у bulk-review, хоча
+ * `ReceiptReviewForm`/`ManualExpenseSheet` їх уже показують. Мержимо їх у
+ * ОБИДВА пікери (per-row і масовий), той самий патерн, що
+ * `ManualExpenseSheet.tsx` (`customExpenseCategories`/`customCategoryDisplay`):
+ * лише для витрат — надходження мають фіксовану 5-слагову таксономію
+ * (`INCOME_CATEGORY_SLUGS`) і не знають про власні категорії.
  */
 import { useState } from "react";
 import { AnimatedCheckbox } from "@shared/components/ui/AnimatedCheckbox";
@@ -41,13 +50,18 @@ export interface BulkReviewTableProps {
   disabled?: boolean | undefined;
 }
 
-function categoryOptionsFor(direction: "expense" | "income"): {
-  slugs: string[];
+type CategoryOptions = {
+  slugs: readonly string[];
   display: Readonly<Record<string, { label: string }>>;
-} {
+};
+
+function categoryOptionsFor(
+  direction: "expense" | "income",
+  expenseOptions: CategoryOptions,
+): CategoryOptions {
   return direction === "income"
     ? { slugs: INCOME_CATEGORY_SLUGS, display: INCOME_CATEGORY_DISPLAY }
-    : { slugs: CATEGORY_SLUGS, display: CATEGORY_DISPLAY };
+    : expenseOptions;
 }
 
 export function BulkReviewTable({
@@ -56,11 +70,42 @@ export function BulkReviewTable({
   onToggleAll,
   onBulkCategory,
   onEditRow,
+  customCategories = [],
   disabled = false,
 }: BulkReviewTableProps) {
   const [bulkCategory, setBulkCategory] = useState("");
   const allSelected = rows.length > 0 && rows.every((r) => r.selected);
+  // Item-2 fix (CodeRabbit round 5): the bulk action is expense-only (income
+  // has its own 5-slug taxonomy the bulk picker never offers), so its count
+  // and enabled-state must track expense selections only — counting every
+  // selected row (income included) let the button apply while an
+  // income-only selection had nothing valid it could touch.
+  const selectedExpenseCount = rows.reduce(
+    (n, r) => n + (r.selected && r.direction === "expense" ? 1 : 0),
+    0,
+  );
   const selectedCount = selectedRowCount(rows);
+
+  const customExpenseCategories = customCategories.filter(
+    (c): c is CustomCategoryInput =>
+      typeof c?.id === "string" && c.id.trim() !== "",
+  );
+  const expenseCategoryDisplay: Readonly<Record<string, { label: string }>> = {
+    ...CATEGORY_DISPLAY,
+    ...Object.fromEntries(
+      customExpenseCategories
+        .filter((c) => c.label)
+        .map((c) => [c.id, { label: c.label ?? "" }]),
+    ),
+  };
+  const expenseCategorySlugs: readonly string[] = [
+    ...CATEGORY_SLUGS,
+    ...customExpenseCategories.map((c) => c.id),
+  ];
+  const expenseOptions: CategoryOptions = {
+    slugs: expenseCategorySlugs,
+    display: expenseCategoryDisplay,
+  };
 
   return (
     <div className="space-y-3">
@@ -82,15 +127,15 @@ export function BulkReviewTable({
         <div className="ml-auto flex items-center gap-1.5">
           <Select
             size="sm"
-            aria-label="Категорія для вибраних"
+            aria-label="Категорія для вибраних витрат"
             value={bulkCategory}
-            disabled={disabled || selectedCount === 0}
+            disabled={disabled || selectedExpenseCount === 0}
             onChange={(e) => setBulkCategory(e.target.value)}
           >
-            <option value="">Категорія для вибраних…</option>
-            {CATEGORY_SLUGS.map((slug) => (
+            <option value="">Категорія для вибраних витрат…</option>
+            {expenseCategorySlugs.map((slug) => (
               <option key={slug} value={slug}>
-                {CATEGORY_DISPLAY[slug]?.label ?? slug}
+                {expenseCategoryDisplay[slug]?.label ?? slug}
               </option>
             ))}
           </Select>
@@ -98,7 +143,7 @@ export function BulkReviewTable({
             type="button"
             variant="secondary"
             size="sm"
-            disabled={disabled || !bulkCategory || selectedCount === 0}
+            disabled={disabled || !bulkCategory || selectedExpenseCount === 0}
             onClick={() => {
               onBulkCategory(bulkCategory);
               setBulkCategory("");
@@ -111,7 +156,7 @@ export function BulkReviewTable({
 
       <ul className="divide-y divide-line rounded-2xl border border-line">
         {rows.map((row) => {
-          const options = categoryOptionsFor(row.direction);
+          const options = categoryOptionsFor(row.direction, expenseOptions);
           const lowConfidence =
             row.confidence != null &&
             row.confidence < CONFIDENCE_WARN_THRESHOLD;

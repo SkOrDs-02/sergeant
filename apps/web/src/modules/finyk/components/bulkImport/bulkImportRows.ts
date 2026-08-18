@@ -90,16 +90,29 @@ export function setAllSelected(
   return rows.map((r) => ({ ...r, selected }));
 }
 
-/** Масове призначення категорії — лише вибраним рядкам за замовчуванням
+/**
+ * Масове призначення категорії — лише вибраним рядкам за замовчуванням
  * (`onlySelected = true`), щоб зміна категорії не зачепила рядки, які
- * користувач свідомо зняв з вибору. */
+ * користувач свідомо зняв з вибору.
+ *
+ * ЗАВЖДИ пропускає `direction === "income"` рядки, незалежно від
+ * `onlySelected` (CodeRabbit round 5, PR #818): масовий пікер у
+ * `BulkReviewTable` листить лише витратні слаги (`CATEGORY_SLUGS` +
+ * власні категорії — надходження мають окрему фіксовану таксономію,
+ * `INCOME_CATEGORY_SLUGS`). Без цього guard-а надходження, що потрапило у
+ * вибір поруч із витратами, отримало б витратний слаг, якого немає в його
+ * власному per-row `<Select>` (`INCOME_CATEGORY_SLUGS`) — і
+ * `toCommitRows` відправило б цей слаг з `direction: "income"` на сервер.
+ */
 export function applyBulkCategory(
   rows: readonly BulkReviewRow[],
   category: string,
   onlySelected = true,
 ): BulkReviewRow[] {
   return rows.map((r) =>
-    !onlySelected || r.selected ? { ...r, category } : r,
+    r.direction !== "income" && (!onlySelected || r.selected)
+      ? { ...r, category }
+      : r,
   );
 }
 

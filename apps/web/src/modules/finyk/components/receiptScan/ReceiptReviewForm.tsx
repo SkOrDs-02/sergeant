@@ -8,6 +8,7 @@
  * vision-джерела. Save/Cancel живуть у `Sheet.footer` викликача
  * (`ReceiptScanSheet`) — цей компонент лише редагує поля.
  */
+import { useId } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { Badge } from "@shared/components/ui/Badge";
 import { Button } from "@shared/components/ui/Button";
@@ -60,6 +61,16 @@ export function ReceiptReviewForm({
   customCategories = [],
   disabled = false,
 }: ReceiptReviewFormProps) {
+  // Unique per mounted form instance (React.useId) — a hardcoded literal id
+  // ("receipt-store" etc.) collides if this form is ever mounted twice at
+  // once, silently breaking `<Label htmlFor>` pairing for one of the two
+  // (CodeRabbit round 5, PR #818).
+  const formId = useId();
+  const storeId = `${formId}-store`;
+  const dateId = `${formId}-date`;
+  const totalId = `${formId}-total`;
+  const categoryId = `${formId}-category`;
+
   const customIds = new Set(
     customCategories
       .filter(
@@ -104,9 +115,9 @@ export function ReceiptReviewForm({
       )}
 
       <div>
-        <Label htmlFor="receipt-store">Магазин</Label>
+        <Label htmlFor={storeId}>Магазин</Label>
         <Input
-          id="receipt-store"
+          id={storeId}
           value={draft.store}
           onChange={(e) =>
             setDraft((d) => updateDraftStore(d, e.target.value.slice(0, 300)))
@@ -118,9 +129,9 @@ export function ReceiptReviewForm({
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <Label htmlFor="receipt-date">Дата</Label>
+          <Label htmlFor={dateId}>Дата</Label>
           <Input
-            id="receipt-date"
+            id={dateId}
             type="date"
             min={HARD_MIN_DAY_KEY}
             max={HARD_MAX_DAY_KEY}
@@ -133,8 +144,9 @@ export function ReceiptReviewForm({
           />
         </div>
         <div>
-          <Label htmlFor="receipt-total">Сума</Label>
+          <Label htmlFor={totalId}>Сума</Label>
           <ReceiptMoneyInput
+            id={totalId}
             kopiykas={draft.totalKopiykas}
             onCommitKopiykas={(k) =>
               setDraft((d) => updateDraftTotalKopiykas(d, k))
@@ -147,9 +159,9 @@ export function ReceiptReviewForm({
       </div>
 
       <div>
-        <Label htmlFor="receipt-category">Категорія</Label>
+        <Label htmlFor={categoryId}>Категорія</Label>
         <Select
-          id="receipt-category"
+          id={categoryId}
           value={categorySlug}
           disabled={disabled}
           onChange={(e) => setCategory(e.target.value)}
