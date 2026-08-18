@@ -24,6 +24,12 @@
  * приймає кілька фото одразу (`multiple`); 1 файл → одиничний review-флоу,
  * 2+ → стадія `batch` (`useBulkReceiptsImport` + `BulkReceiptsProgress`).
  * `BulkImportSheet` лишився банківським докам (скрін/CSV).
+ *
+ * Глибина пачки (бета-фідбек №3, 2026-08-18): «Редагувати» на рядку
+ * відкриває ПОВНИЙ `ReceiptReviewForm` того чека (позиції включно) —
+ * `editingItemId` + `bulkReceipts.updateItemDraft`; «Готово» повертає
+ * в список. Порожній драфт («схоже, не чек») приходить авто-виключеним
+ * і повертається у вибрані сам, щойно людина заповнила поля.
  */
 import {
   useEffect,
@@ -46,6 +52,7 @@ import type {
 } from "@sergeant/api-client";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain";
 import { DEFAULT_CATEGORY } from "../manualExpenseCategories";
+import { draftLooksUnrecognized } from "../receiptDraftEdit";
 import { formatReceiptError } from "../../lib/receiptErrors";
 import { readReceiptImageFile } from "../../lib/receiptImage";
 import { parseDpsReceiptQrUrl } from "../../lib/receiptQr";
@@ -62,13 +69,6 @@ import { BulkReceiptsProgress } from "../bulkImport/BulkReceiptsProgress";
 import { DPS_QR_SCAN_ENABLED } from "./dpsQrGate";
 import { ReceiptScanCameraView } from "./ReceiptScanCameraView";
 import { ReceiptReviewForm } from "./ReceiptReviewForm";
-
-/** Порожній vision-драфт (жодного розпізнаного поля) — найімовірніше на
- * фото взагалі не чек (бета-фідбек 2026-08-18: фото кавуна давало мовчазні
- * порожні поля). Реальний чек завжди має хоч щось із трійки. */
-function looksUnrecognized(draft: ReceiptDraft): boolean {
-  return draft.items.length === 0 && draft.totalKopiykas === 0 && !draft.store;
-}
 
 type Stage = "choose" | "camera" | "processing" | "review" | "batch";
 
@@ -101,6 +101,7 @@ export function ReceiptScanSheet({
   // since `useReceiptQrScanner` always stops the camera on ANY detection.
   const [cameraKey, setCameraKey] = useState(0);
   const [batchCapNote, setBatchCapNote] = useState<string | null>(null);
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const armPinchZoomReset = useResetPinchZoomAfterCameraCapture();
   const bulkReceipts = useBulkReceiptsImport({ storage, onReceiptLinked });
@@ -131,6 +132,7 @@ export function ReceiptScanSheet({
       setCategory(DEFAULT_CATEGORY);
       setFlowError(null);
       setBatchCapNote(null);
+      setEditingItemId(null);
       resetSave();
       bulkReceipts.reset();
     });
@@ -214,9 +216,19 @@ export function ReceiptScanSheet({
         ? `Взято перші ${BATCH_RECEIPTS_MAX_FILES} фото з ${files.length} — решту докинь наступною пачкою після збереження цієї.`
         : null,
     );
+    setEditingItemId(null);
     setStage("batch");
     void bulkReceipts.startFiles(files);
   };
+
+  // Повний review одного чека пачки: живий лише поки item існує і ще
+  // редагований (drafted) — після save/помилки повертаємось у список.
+  const editingItem =
+    stage === "batch" && editingItemId
+      ? (bulkReceipts.items.find(
+          (i) => i.id === editingItemId && i.status === "drafted" && i.draft,
+        ) ?? null)
+      : null;
 
   const handleSave = async () => {
     if (!draft) return;
@@ -238,7 +250,7 @@ export function ReceiptScanSheet({
       open={open}
       onClose={onClose}
       title={
-        stage === "review"
+        stage === "review" || editingItem
           ? "Перевір чек"
           : stage === "batch"
             ? "Чеки пачкою"
@@ -273,6 +285,14 @@ export function ReceiptScanSheet({
               </Button>
             </div>
           </div>
+        ) : editingItem ? (
+          <Button
+            className="w-full"
+            module="finyk"
+            onClick={() => setEditingItemId(null)}
+          >
+            Готово
+          </Button>
         ) : undefined
       }
     >
@@ -330,27 +350,62 @@ export function ReceiptScanSheet({
         </div>
       )}
 
-      {stage === "batch" && (
-        <>
-          {batchCapNote && (
-            <p
-              role="status"
-              className="rounded-xl border border-line bg-panelHi/60 p-2.5 text-style-caption text-text"
+      {stage === "batch" &&
+        (editingItem && editingItem.draft ? (
+          <>
+            <Button
+              type="button"
+              variant="ghost"
+              tone="finyk"
+              size="xs"
+              onClick={() => setEditingItemId(null)}
             >
-              {batchCapNote}
-            </p>
-          )}
-          <BulkReceiptsProgress
-            items={bulkReceipts.items}
-            isProcessing={bulkReceipts.isProcessing}
-            isSaving={bulkReceipts.isSaving}
-            onSetCategory={bulkReceipts.setItemCategory}
-            onToggleIncluded={bulkReceipts.toggleItemIncluded}
-            onSaveAll={() => void bulkReceipts.saveAll()}
-            customCategories={customCategories}
-          />
-        </>
-      )}
+              ← До списку чеків
+            </Button>
+            {draftLooksUnrecognized(editingItem.draft) && (
+              <p
+                role="status"
+                className="rounded-xl border border-line bg-panelHi/60 p-2.5 text-style-caption text-text"
+              >
+                Схоже, на фото не чек — розпізнати нічого не вдалося. Заповни
+                поля вручну, і чек повернеться у вибрані.
+              </p>
+            )}
+            <ReceiptReviewForm
+              draft={editingItem.draft}
+              setDraft={(action) =>
+                bulkReceipts.updateItemDraft(editingItem.id, action)
+              }
+              category={editingItem.category}
+              setCategory={(c) =>
+                bulkReceipts.setItemCategory(editingItem.id, c)
+              }
+              customCategories={customCategories}
+              disabled={bulkReceipts.isSaving}
+            />
+          </>
+        ) : (
+          <>
+            {batchCapNote && (
+              <p
+                role="status"
+                className="rounded-xl border border-line bg-panelHi/60 p-2.5 text-style-caption text-text"
+              >
+                {batchCapNote}
+              </p>
+            )}
+            <BulkReceiptsProgress
+              items={bulkReceipts.items}
+              isProcessing={bulkReceipts.isProcessing}
+              isSaving={bulkReceipts.isSaving}
+              onSetCategory={bulkReceipts.setItemCategory}
+              onToggleIncluded={bulkReceipts.toggleItemIncluded}
+              onEditItem={setEditingItemId}
+              onSaveAll={() => void bulkReceipts.saveAll()}
+              customCategories={customCategories}
+            />
+          </>
+        ))}
 
       {stage === "camera" && (
         <div className="space-y-3">
@@ -387,7 +442,7 @@ export function ReceiptScanSheet({
 
       {stage === "review" && draft && (
         <>
-          {looksUnrecognized(draft) && (
+          {draftLooksUnrecognized(draft) && (
             <p
               role="status"
               className="rounded-xl border border-line bg-panelHi/60 p-2.5 text-style-caption text-text"
