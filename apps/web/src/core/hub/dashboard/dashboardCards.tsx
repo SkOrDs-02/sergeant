@@ -13,11 +13,11 @@ import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { StreakBadge } from "@shared/components/ui/StreakFlame";
 import { safeReadLS, safeReadStringLS } from "@shared/lib/storage/storage";
-import { STORAGE_KEYS, countRealEntries } from "@sergeant/shared";
+import { STORAGE_KEYS } from "@sergeant/shared";
+import { countRealEntries } from "../../onboarding/firstRealEntry";
 import { ANALYTICS_EVENTS, trackEvent } from "../../observability/analytics";
 import { getWeekRange } from "../../insights/useWeeklyDigest";
 import { MODULE_CONFIGS, type ModuleId } from "./moduleConfigs";
-import { localStorageStore } from "./dashboardStore";
 import { useHubStorageBump } from "../useHubStorageBump";
 
 const STREAK_MILESTONES = [7, 14, 21, 30, 60, 90, 100, 365] as const;
@@ -242,7 +242,7 @@ export function MotivationalFooter() {
 
   const entryCount = useMemo(() => {
     void bump; // storage-write tick — forces re-count of cross-module entries
-    return countRealEntries(localStorageStore);
+    return countRealEntries();
   }, [bump]);
 
   if (entryCount === 0) return null;

@@ -42,7 +42,24 @@ import { getSqliteDb } from "../../../core/db/sqlite.js";
 import { isDemoActive } from "../../../core/onboarding/onboardingGate.js";
 import { migrateNutrition } from "./clientMigrate.js";
 import { importNutritionDemoSeed } from "./demoSeedImport.js";
-import { refreshNutritionSqliteState } from "./sqliteReader.js";
+import { registerRealEntryCounter } from "../../../core/onboarding/realEntryProbe.js";
+import {
+  getCachedNutritionSqliteState,
+  refreshNutritionSqliteState,
+} from "./sqliteReader.js";
+
+// AI-CONTEXT: FTUX-детекція «чи є справжні записи» читає канонічний
+// warm-cache через реєстр (`core/onboarding/realEntryProbe`), а не
+// tombstone-нутий LS-ключ `nutrition_log_v1`. Реєструємось на module-scope:
+// цей файл вантажиться лише у складі лінивого boot-кластера модуля,
+// тож хабовий eager-чанк нових ребер не отримує.
+registerRealEntryCounter("nutrition", () => {
+  let meals = 0;
+  for (const day of Object.values(getCachedNutritionSqliteState().log)) {
+    meals += day.meals.length;
+  }
+  return meals;
+});
 
 let booted = false;
 
