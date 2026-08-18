@@ -420,9 +420,11 @@ export default async function handler(
   // Cheap guard (single indexed SELECT, zero cost for the anonymous
   // majority) — decides whether to try Silpo as the last cascade step AND
   // whether a Silpo-sourced hit below must skip the shared cache / public
-  // `Cache-Control`.
-  const userId = await resolveOptionalUserId(req);
-  const silpoConnected = await isSilpoConnectedUser(userId);
+  // `Cache-Control`. Gated on the kill switch FIRST: with `SILPO_ENABLED`
+  // off (the default) this session-less endpoint must not pay a per-request
+  // session lookup for a source that can never activate.
+  const userId = env.SILPO_ENABLED ? await resolveOptionalUserId(req) : null;
+  const silpoConnected = userId ? await isSilpoConnectedUser(userId) : false;
 
   try {
     // Cascade: OFF → USDA → UPCitemdb → Silpo

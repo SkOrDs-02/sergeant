@@ -3,6 +3,7 @@ import {
   FoodSearchSuccessSchema,
   type FoodSearchProduct,
 } from "@sergeant/shared/schemas";
+import { env } from "../../env.js";
 import { FoodSearchQuerySchema } from "../../http/schemas.js";
 import { parseQuery } from "../../http/validate.js";
 import { getSessionUser } from "../../auth.js";
@@ -149,9 +150,12 @@ export default async function handler(
     // cascade below AND whether this response may hit the shared public
     // cache (see the `Cache-Control` override near the end of this
     // handler) — a Silpo-augmented response is per-user and must never be
-    // served from a CDN/browser cache to a different caller.
-    const userId = await resolveOptionalUserId(req);
-    const silpoConnected = await isSilpoConnectedUser(userId);
+    // served from a CDN/browser cache to a different caller. Gated on the
+    // kill switch FIRST: with `SILPO_ENABLED` off (the default) this
+    // session-less endpoint must not pay a per-request session lookup for a
+    // source that can never activate.
+    const userId = env.SILPO_ENABLED ? await resolveOptionalUserId(req) : null;
+    const silpoConnected = userId ? await isSilpoConnectedUser(userId) : false;
 
     const [ukOff, enOff, usdaRaw, silpoProducts] = await Promise.all([
       fetchOFF(query, "uk", signal).catch((): OFFSearchProduct[] => []),

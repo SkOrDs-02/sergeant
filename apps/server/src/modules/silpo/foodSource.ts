@@ -161,6 +161,31 @@ function extractRawProduct(payload: unknown): unknown {
 
 // ─────────────────────────── Normalization (provisional) ────────────────────
 
+const MASS_GRAM_UNITS = new Set(["г", "g", "гр", "грам", "грами", "грамів"]);
+const MASS_KG_UNITS = new Set(["кг", "kg"]);
+
+/**
+ * `weight` можна трактувати як грами ЛИШЕ для масових юнітів. Silpo-каталог
+ * повертає й обʼємні/штучні юніти ("мл", "л", "шт") — для них щільність
+ * невідома, і пропустити `weight` у `servingGrams`/`defaultGrams` означало б
+ * хибну масу порції в усіх макро-розрахунках (900 «мл» ≠ 900 г). Тому:
+ * г-подібні юніти — як є; кг/kg — ×1000; відсутній юніт — оптимістично
+ * трактуємо число як грами (найчастіший кейс фасованих продуктів); будь-який
+ * інший юніт — `null`. Сирий `servingUnit` при цьому зберігається окремо для
+ * дисплейного `servingSize`.
+ */
+function toServingGrams(
+  weight: number | undefined,
+  unit: string | undefined,
+): number | null {
+  if (weight === undefined || !Number.isFinite(weight)) return null;
+  if (unit === undefined) return weight;
+  const u = unit.trim().toLowerCase().replace(/\.$/, "");
+  if (u === "" || MASS_GRAM_UNITS.has(u)) return weight;
+  if (MASS_KG_UNITS.has(u)) return weight * 1000;
+  return null;
+}
+
 interface NormalizedSilpoProduct {
   name: string;
   brand: string | null;
@@ -169,6 +194,9 @@ interface NormalizedSilpoProduct {
   protein_100g: number | null;
   fat_100g: number | null;
   carbs_100g: number | null;
+  /** Сире число з упаковки (без конверсії) — лише для дисплейного `servingSize`. */
+  servingAmount: number | null;
+  /** Маса порції в грамах, або `null` коли юніт не масовий (див. `toServingGrams`). */
   servingGrams: number | null;
   servingUnit: string | null;
   hasMacro: boolean;
@@ -187,6 +215,7 @@ function normalizeRawProduct(raw: RawProduct): NormalizedSilpoProduct | null {
   const protein = firstDefined(raw.protein100g, raw.proteins100g);
   const fat = firstDefined(raw.fat100g, raw.fats100g);
   const carbs = firstDefined(raw.carbs100g, raw.carbohydrates100g);
+  const unit = firstDefined(raw.weightUnit, raw.unit);
 
   return {
     name,
@@ -196,8 +225,9 @@ function normalizeRawProduct(raw: RawProduct): NormalizedSilpoProduct | null {
     protein_100g: protein ?? null,
     fat_100g: fat ?? null,
     carbs_100g: carbs ?? null,
-    servingGrams: raw.weight ?? null,
-    servingUnit: firstDefined(raw.weightUnit, raw.unit) ?? null,
+    servingAmount: raw.weight ?? null,
+    servingGrams: toServingGrams(raw.weight, unit),
+    servingUnit: unit ?? null,
     hasMacro:
       kcal !== undefined ||
       protein !== undefined ||
@@ -250,11 +280,18 @@ export interface SilpoBarcodeProduct {
 }
 
 /**
- * A search hit without ANY macro is dropped, not zero-filled — matches
+ * A search hit without ANY macro is dropped — matches
  * `normalizeOFFSearch`/`normalizeUSDASearch`'s `hasSomeMacro` gate
  * (`apps/server/src/lib/normalizers/{off,usda}.ts`). `FoodSearchProductSchema`
- * has no `partial` escape hatch (unlike barcode), so a macro-less hit here
- * would otherwise lie as "0 kcal".
+ * has no `partial` escape hatch (unlike barcode), so a fully macro-less hit
+ * here would otherwise lie as "0 kcal" across the board.
+ *
+ * A PARTIAL hit (at least one macro present) IS emitted, with the missing
+ * macro fields zero-filled (`?? 0`) — the same convention the OFF/USDA search
+ * normalizers apply after their `hasSomeMacro` gate, and the only shape
+ * `FoodSearchMacrosSchema` allows (`per100` is numeric-only, no nulls). So a
+ * kcal-only product legitimately shows `protein/fat/carbs = 0` here, exactly
+ * like it would coming from OFF or USDA.
  */
 function toSearchProduct(p: NormalizedSilpoProduct): SilpoSearchProduct | null {
   if (!p.hasMacro) return null;
@@ -283,9 +320,11 @@ function toSearchProduct(p: NormalizedSilpoProduct): SilpoSearchProduct | null {
  * name/brand we DO have and let the client prompt for macros.
  */
 function toBarcodeProduct(p: NormalizedSilpoProduct): SilpoBarcodeProduct {
+  // Display string keeps the RAW amount + unit ("900 мл", "1 кг") — only the
+  // numeric `servingGrams` field is unit-converted (see `toServingGrams`).
   const servingSize =
-    p.servingGrams != null
-      ? `${p.servingGrams}${p.servingUnit ? ` ${p.servingUnit}` : " г"}`
+    p.servingAmount != null
+      ? `${p.servingAmount}${p.servingUnit ? ` ${p.servingUnit}` : " г"}`
       : null;
   return {
     name: p.name,
@@ -451,6 +490,7 @@ export async function lookupSilpoBarcode(
 
 // Re-exported for tests exercising internals without a live MCP call.
 export const __test__ = {
+  toServingGrams,
   normalizeRawProduct,
   toSearchProduct,
   toBarcodeProduct,

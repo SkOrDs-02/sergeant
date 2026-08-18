@@ -5,6 +5,10 @@ const silpoMocks = vi.hoisted(() => ({
   getSessionUser: vi.fn(),
   isSilpoConnectedUser: vi.fn(),
   searchSilpoProducts: vi.fn(),
+  // Mutable env override: `SILPO_ENABLED=true` by default so the existing
+  // Silpo-cascade tests exercise the session-peek path; the kill-switch test
+  // flips it to false per-test.
+  envOverrides: { SILPO_ENABLED: true },
 }));
 
 // `food-search.ts` only imports `getSessionUser` from `../../auth.js` — the
@@ -12,6 +16,21 @@ const silpoMocks = vi.hoisted(() => ({
 vi.mock("../../auth.js", () => ({
   getSessionUser: silpoMocks.getSessionUser,
 }));
+
+// Partial env mock: everything real except `SILPO_ENABLED`, which is
+// redirected to the mutable override above.
+vi.mock("../../env.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../env.js")>();
+  return {
+    ...actual,
+    env: new Proxy(actual.env, {
+      get: (target, prop) =>
+        prop === "SILPO_ENABLED"
+          ? silpoMocks.envOverrides.SILPO_ENABLED
+          : Reflect.get(target, prop),
+    }),
+  };
+});
 
 vi.mock("../silpo/foodSource.js", () => ({
   isSilpoConnectedUser: silpoMocks.isSilpoConnectedUser,
@@ -88,6 +107,7 @@ beforeEach(() => {
   silpoMocks.getSessionUser.mockReset().mockResolvedValue(null);
   silpoMocks.isSilpoConnectedUser.mockReset().mockResolvedValue(false);
   silpoMocks.searchSilpoProducts.mockReset().mockResolvedValue([]);
+  silpoMocks.envOverrides.SILPO_ENABLED = true;
 });
 
 afterEach(() => {
@@ -619,6 +639,24 @@ describe("food-search handler", () => {
 });
 
 describe("food-search handler > Silpo as fourth source", () => {
+  it("skips the session lookup entirely when SILPO_ENABLED=false — default path pays zero session cost", async () => {
+    silpoMocks.envOverrides.SILPO_ENABLED = false;
+    const fetchMock = vi.mocked(global.fetch);
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse(true, { products: [] }))
+      .mockResolvedValueOnce(jsonResponse(true, { products: [] }))
+      .mockResolvedValueOnce(jsonResponse(true, { foods: [] }));
+
+    const res = mockRes();
+    await handler(asReq({ q: "молоко", limit: "5" }), res);
+
+    expect(res.statusCode).toBe(200);
+    expect(silpoMocks.getSessionUser).not.toHaveBeenCalled();
+    expect(silpoMocks.isSilpoConnectedUser).not.toHaveBeenCalled();
+    expect(silpoMocks.searchSilpoProducts).not.toHaveBeenCalled();
+    expect(res.headers["Cache-Control"]).toBeUndefined();
+  });
+
   it("does not call searchSilpoProducts / touch Cache-Control for an unconnected caller (default)", async () => {
     const fetchMock = vi.mocked(global.fetch);
     fetchMock

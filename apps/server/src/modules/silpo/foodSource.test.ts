@@ -34,7 +34,12 @@ import {
   __test__,
 } from "./foodSource.js";
 
-const { normalizeRawProduct, toSearchProduct, toBarcodeProduct } = __test__;
+const {
+  toServingGrams,
+  normalizeRawProduct,
+  toSearchProduct,
+  toBarcodeProduct,
+} = __test__;
 
 beforeEach(() => {
   mocks.env.SILPO_ENABLED = true;
@@ -60,6 +65,37 @@ function notConnectedRow() {
   mocks.dbQuery.mockResolvedValue({ rows: [] });
 }
 
+// ─────────────────────────────── toServingGrams ─────────────────────────────
+
+describe("toServingGrams (mass-units-only conversion)", () => {
+  it("passes gram-like units through as-is (г/g/гр/грам, trim + case + trailing dot)", () => {
+    expect(toServingGrams(250, "г")).toBe(250);
+    expect(toServingGrams(250, "g")).toBe(250);
+    expect(toServingGrams(250, "гр.")).toBe(250);
+    expect(toServingGrams(250, " Грам ")).toBe(250);
+  });
+
+  it("converts кг/kg to grams (×1000)", () => {
+    expect(toServingGrams(1, "кг")).toBe(1000);
+    expect(toServingGrams(0.5, "kg")).toBe(500);
+  });
+
+  it("returns null for volume/count units — мл, л, шт are NOT grams", () => {
+    expect(toServingGrams(900, "мл")).toBeNull();
+    expect(toServingGrams(1, "л")).toBeNull();
+    expect(toServingGrams(10, "шт")).toBeNull();
+  });
+
+  it("treats a missing unit as grams (packaged-goods default)", () => {
+    expect(toServingGrams(900, undefined)).toBe(900);
+  });
+
+  it("returns null when weight itself is absent or non-finite", () => {
+    expect(toServingGrams(undefined, "г")).toBeNull();
+    expect(toServingGrams(Number.NaN, "г")).toBeNull();
+  });
+});
+
 // ─────────────────────────────── normalizeRawProduct ────────────────────────
 
 describe("normalizeRawProduct (provisional field-alias mapping)", () => {
@@ -83,9 +119,46 @@ describe("normalizeRawProduct (provisional field-alias mapping)", () => {
       protein_100g: 3.2,
       fat_100g: 2.5,
       carbs_100g: 4.8,
-      servingGrams: 900,
+      servingAmount: 900,
+      // "мл" is not a mass unit — the raw 900 must NOT leak into grams.
+      servingGrams: null,
       servingUnit: "мл",
       hasMacro: true,
+    });
+  });
+
+  it("converts кг to grams but keeps the raw unit for display", () => {
+    const parsed = normalizeRawProduct({
+      name: "Борошно",
+      weight: 1,
+      weightUnit: "кг",
+    });
+    expect(parsed).toMatchObject({
+      servingAmount: 1,
+      servingGrams: 1000,
+      servingUnit: "кг",
+    });
+  });
+
+  it("treats a bare weight without any unit as grams", () => {
+    const parsed = normalizeRawProduct({ name: "Сир", weight: 200 });
+    expect(parsed).toMatchObject({
+      servingAmount: 200,
+      servingGrams: 200,
+      servingUnit: null,
+    });
+  });
+
+  it("yields null grams for count units (шт) while keeping the raw unit", () => {
+    const parsed = normalizeRawProduct({
+      name: "Яйця",
+      weight: 10,
+      unit: "шт",
+    });
+    expect(parsed).toMatchObject({
+      servingAmount: 10,
+      servingGrams: null,
+      servingUnit: "шт",
     });
   });
 
@@ -133,6 +206,30 @@ describe("normalizeRawProduct (provisional field-alias mapping)", () => {
 describe("toSearchProduct", () => {
   it("emits a real per100 block when macros are present", () => {
     const product = toSearchProduct({
+      name: "Сир кисломолочний",
+      brand: "Галичина",
+      barcode: "4820000000017",
+      kcal_100g: 101,
+      protein_100g: 16.7,
+      fat_100g: 2,
+      carbs_100g: 3.4,
+      servingAmount: 350,
+      servingGrams: 350,
+      servingUnit: "г",
+      hasMacro: true,
+    });
+    expect(product).toEqual({
+      id: "silpo_4820000000017",
+      name: "Сир кисломолочний",
+      brand: "Галичина",
+      source: "silpo",
+      per100: { kcal: 101, protein_g: 16.7, fat_g: 2, carbs_g: 3.4 },
+      defaultGrams: 350,
+    });
+  });
+
+  it("falls back to defaultGrams: 100 when the serving is non-mass (мл → servingGrams null)", () => {
+    const product = toSearchProduct({
       name: "Молоко",
       brand: "Галичина",
       barcode: "4820000000017",
@@ -140,17 +237,33 @@ describe("toSearchProduct", () => {
       protein_100g: 3.2,
       fat_100g: 2.5,
       carbs_100g: 4.8,
-      servingGrams: 900,
+      servingAmount: 900,
+      servingGrams: null,
       servingUnit: "мл",
       hasMacro: true,
     });
-    expect(product).toEqual({
-      id: "silpo_4820000000017",
-      name: "Молоко",
-      brand: "Галичина",
-      source: "silpo",
-      per100: { kcal: 60, protein_g: 3.2, fat_g: 2.5, carbs_g: 4.8 },
-      defaultGrams: 900,
+    expect(product?.defaultGrams).toBe(100);
+  });
+
+  it("zero-fills MISSING macros on a partial hit (kcal-only) — same `?? 0` convention as OFF/USDA search normalizers", () => {
+    const product = toSearchProduct({
+      name: "Хліб",
+      brand: null,
+      barcode: null,
+      kcal_100g: 220,
+      protein_100g: null,
+      fat_100g: null,
+      carbs_100g: null,
+      servingAmount: null,
+      servingGrams: null,
+      servingUnit: null,
+      hasMacro: true,
+    });
+    expect(product?.per100).toEqual({
+      kcal: 220,
+      protein_g: 0,
+      fat_g: 0,
+      carbs_g: 0,
     });
   });
 
@@ -164,6 +277,7 @@ describe("toSearchProduct", () => {
         protein_100g: null,
         fat_100g: null,
         carbs_100g: null,
+        servingAmount: null,
         servingGrams: null,
         servingUnit: null,
         hasMacro: false,
@@ -182,6 +296,7 @@ describe("toBarcodeProduct", () => {
       protein_100g: null,
       fat_100g: null,
       carbs_100g: null,
+      servingAmount: null,
       servingGrams: null,
       servingUnit: null,
       hasMacro: false,
@@ -200,7 +315,7 @@ describe("toBarcodeProduct", () => {
     });
   });
 
-  it("omits `partial` and returns real macros when present", () => {
+  it("omits `partial` and returns real macros when present; мл serving keeps the display string but null grams", () => {
     const product = toBarcodeProduct({
       name: "Молоко",
       brand: "Галичина",
@@ -209,12 +324,14 @@ describe("toBarcodeProduct", () => {
       protein_100g: 3.2,
       fat_100g: 2.5,
       carbs_100g: 4.8,
-      servingGrams: 900,
+      servingAmount: 900,
+      servingGrams: null,
       servingUnit: "мл",
       hasMacro: true,
     });
     expect(product.partial).toBeUndefined();
     expect(product.servingSize).toBe("900 мл");
+    expect(product.servingGrams).toBeNull();
   });
 });
 
@@ -420,7 +537,8 @@ describe("lookupSilpoBarcode", () => {
       fat_100g: 2.5,
       carbs_100g: 4.8,
       servingSize: "900 мл",
-      servingGrams: 900,
+      // "мл" is not a mass unit — display string keeps it, grams stay null.
+      servingGrams: null,
       source: "silpo",
     });
     expect(mocks.callMcpTool).toHaveBeenCalledWith(

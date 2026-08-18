@@ -5,6 +5,10 @@ const silpoMocks = vi.hoisted(() => ({
   getSessionUser: vi.fn(),
   isSilpoConnectedUser: vi.fn(),
   lookupSilpoBarcode: vi.fn(),
+  // Mutable env override: `SILPO_ENABLED=true` by default so the existing
+  // Silpo-cascade tests exercise the session-peek path; the kill-switch test
+  // flips it to false per-test.
+  envOverrides: { SILPO_ENABLED: true },
 }));
 
 // `barcode.ts` only imports `getSessionUser` from `../../auth.js` — the mock
@@ -12,6 +16,28 @@ const silpoMocks = vi.hoisted(() => ({
 vi.mock("../../auth.js", () => ({
   getSessionUser: silpoMocks.getSessionUser,
 }));
+
+// Partial env mock: everything real except `SILPO_ENABLED` (redirected to
+// the mutable override above) and `UPCITEMDB_BASE_URL` (read live from
+// `process.env` — the parsed `actual.env` snapshot is cached across
+// `vi.resetModules()`, which would defeat the re-import test below; the
+// test's guarantee is intact because the handler still has to go through
+// `env.UPCITEMDB_BASE_URL` rather than a hardcoded URL to see the value).
+vi.mock("../../env.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../env.js")>();
+  return {
+    ...actual,
+    env: new Proxy(actual.env, {
+      get: (target, prop) => {
+        if (prop === "SILPO_ENABLED")
+          return silpoMocks.envOverrides.SILPO_ENABLED;
+        if (prop === "UPCITEMDB_BASE_URL" && process.env["UPCITEMDB_BASE_URL"])
+          return process.env["UPCITEMDB_BASE_URL"];
+        return Reflect.get(target, prop);
+      },
+    }),
+  };
+});
 
 vi.mock("../silpo/foodSource.js", () => ({
   isSilpoConnectedUser: silpoMocks.isSilpoConnectedUser,
@@ -141,6 +167,7 @@ describe("barcode handler", () => {
     silpoMocks.getSessionUser.mockReset().mockResolvedValue(null);
     silpoMocks.isSilpoConnectedUser.mockReset().mockResolvedValue(false);
     silpoMocks.lookupSilpoBarcode.mockReset().mockResolvedValue(null);
+    silpoMocks.envOverrides.SILPO_ENABLED = true;
   });
 
   afterEach(() => {
@@ -649,6 +676,19 @@ describe("barcode handler", () => {
   });
 
   describe("Silpo as fourth source", () => {
+    it("skips the session lookup entirely when SILPO_ENABLED=false — default path pays zero session cost", async () => {
+      silpoMocks.envOverrides.SILPO_ENABLED = false;
+      global.fetch = vi.fn().mockResolvedValueOnce(OFF_HIT);
+
+      const res = mockRes();
+      await handler(asReq({ barcode: "4820000000017" }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(silpoMocks.getSessionUser).not.toHaveBeenCalled();
+      expect(silpoMocks.isSilpoConnectedUser).not.toHaveBeenCalled();
+      expect(silpoMocks.lookupSilpoBarcode).not.toHaveBeenCalled();
+    });
+
     it("does not call lookupSilpoBarcode for an unconnected caller (default) — cascade behaves exactly as before", async () => {
       global.fetch = vi
         .fn()
