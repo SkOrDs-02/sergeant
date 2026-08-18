@@ -14,8 +14,10 @@ import { validateImageBase64 } from "../../../lib/imageMagic.js";
 import { extractJsonFromText } from "../../../http/jsonSafe.js";
 import { ExternalServiceError } from "../../../obs/errors.js";
 import { env } from "../../../env.js";
+import pool from "../../../db.js";
 import { callImportScreenshotVision } from "./visionClient.js";
 import { isLikelyOwnTransfer } from "./transferDetect.js";
+import { markDuplicateLikely } from "./duplicateDetect.js";
 import { receiptVisionViaOpenRouter } from "../receipts/visionTransport.js";
 
 type WithSessionUser = Request & { user?: { id: string } };
@@ -216,6 +218,19 @@ export default async function screenshotAnalyzeHandler(
 
   const parsed = extractJsonFromText(text);
   const draft = normalizeImportScreenshotResult(parsed);
+  // «Сітка 2» дедуп-превʼю (duplicateDetect.ts) — головний споживач саме
+  // цей шлях: повторний прогін vision на тому самому скріні дає інші
+  // описи, тож тір-2 хеш його не ловить; трійка дата+сума+напрям — ловить.
+  const rows =
+    userId && draft.rows.length > 0
+      ? await markDuplicateLikely(pool, userId, draft.rows)
+      : draft.rows;
 
-  res.status(200).json(ImportScreenshotAnalyzeResponseSchema.parse({ draft }));
+  res
+    .status(200)
+    .json(
+      ImportScreenshotAnalyzeResponseSchema.parse({
+        draft: { ...draft, rows },
+      }),
+    );
 }

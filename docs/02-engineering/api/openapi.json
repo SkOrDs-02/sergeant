@@ -7799,6 +7799,9 @@
                     },
                     "transferLikely": {
                       "type": "boolean"
+                    },
+                    "duplicateLikely": {
+                      "type": "boolean"
                     }
                   },
                   "required": [
@@ -7896,6 +7899,9 @@
                   "maxLength": 300
                 },
                 "transferLikely": {
+                  "type": "boolean"
+                },
+                "duplicateLikely": {
                   "type": "boolean"
                 }
               },
