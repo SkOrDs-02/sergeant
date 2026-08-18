@@ -1,6 +1,12 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 vi.mock("@shared/api", async () => {
@@ -114,26 +120,36 @@ function renderSection(
     <QueryClientProvider client={client}>
       <SilpoReceiptSection
         transactionId="bank-1"
+        transactionAmountKop={39_000}
         onSplitChange={onSplitChange}
         {...overrides}
       />
     </QueryClientProvider>,
   );
-  return { ...utils, onSplitChange };
+  return { ...utils, client, onSplitChange };
 }
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.clearAllMocks();
+});
 
 describe("SilpoReceiptSection", () => {
-  it("renders nothing when Silpo isn't connected", () => {
+  it("renders nothing when Silpo isn't connected and never requests receipts", async () => {
     mockedSyncState.mockResolvedValue({
       status: "disconnected",
       accessTokenExpiresAt: null,
       lastSyncAt: null,
       receiptsCount: 0,
     });
-    const { container } = renderSection();
+    const { container, client } = renderSection();
+    // Первинний рендер — теж `null`, тож синхронний assert проходив би
+    // незалежно від статусу. Чекаємо, поки запит статусу реально
+    // відпрацює й усі запити устаканяться.
+    await waitFor(() => expect(mockedSyncState).toHaveBeenCalled());
+    await waitFor(() => expect(client.isFetching()).toBe(0));
     expect(container).toBeEmptyDOMElement();
+    expect(mockedReceipts).not.toHaveBeenCalled();
   });
 
   it("proposes a multi-category split from receipt items and confirms it via onSplitChange", async () => {
@@ -215,6 +231,37 @@ describe("SilpoReceiptSection", () => {
   });
 
   it("disables the split CTA and shows a caption when every item lands in one category", async () => {
+    // Summary і detail описують ОДИН і той самий чек (однаковий
+    // `totalKop`) — розбіжність тут була б артефактом фікстури, а не
+    // сценарієм.
+    const singleCategorySummary = { ...RECEIPT_SUMMARY, totalKop: 3_000 };
+    mockedSyncState.mockResolvedValue({
+      status: "connected",
+      accessTokenExpiresAt: "2026-08-24T10:00:00.000Z",
+      lastSyncAt: "2026-08-18T09:00:00.000Z",
+      receiptsCount: 1,
+    });
+    mockedReceipts.mockResolvedValue({
+      data: [singleCategorySummary],
+      nextCursor: null,
+    });
+    mockedReceiptDetail.mockResolvedValue({
+      ...singleCategorySummary,
+      items: SINGLE_CATEGORY_ITEMS,
+    });
+
+    renderSection({ transactionAmountKop: 3_000 });
+
+    const splitCta = await screen.findByRole("button", {
+      name: /Розбити за чеком/,
+    });
+    expect(splitCta).toBeDisabled();
+    expect(
+      screen.getByText("Усе — продукти, спліт не потрібен."),
+    ).toBeInTheDocument();
+  });
+
+  it("sums the splits to the TRANSACTION amount when it differs from the receipt total", async () => {
     mockedSyncState.mockResolvedValue({
       status: "connected",
       accessTokenExpiresAt: "2026-08-24T10:00:00.000Z",
@@ -227,18 +274,132 @@ describe("SilpoReceiptSection", () => {
     });
     mockedReceiptDetail.mockResolvedValue({
       ...RECEIPT_SUMMARY,
-      totalKop: 3_000,
-      items: SINGLE_CATEGORY_ITEMS,
+      items: MULTI_CATEGORY_ITEMS,
     });
 
-    renderSection();
+    // Чек — 39 000 коп., але з картки реально списалось 40 000 коп.
+    // (matcher лінкує за `receipt_id`, суми можуть розійтись). Авторитет —
+    // транзакція: недобір 1 000 коп. падає у «Продукти».
+    const { onSplitChange } = renderSection({ transactionAmountKop: 40_000 });
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: /Розбити за чеком/ }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Підтвердити спліт" }));
+
+    expect(onSplitChange).toHaveBeenCalledTimes(1);
+    const [, splits] = onSplitChange.mock.calls[0] as [
+      string,
+      Array<{ categoryId: string; amount: number }>,
+    ];
+    expect(splits).toEqual(
+      expect.arrayContaining([
+        { categoryId: "shopping", amount: 200 },
+        { categoryId: "food", amount: 150 },
+        { categoryId: "health", amount: 50 },
+      ]),
+    );
+    const totalUah = splits.reduce((sum, s) => sum + s.amount, 0);
+    expect(totalUah).toBe(400);
+  });
+
+  it("scales the buckets down (nothing dropped) when receipt items exceed the transaction amount", async () => {
+    mockedSyncState.mockResolvedValue({
+      status: "connected",
+      accessTokenExpiresAt: "2026-08-24T10:00:00.000Z",
+      lastSyncAt: "2026-08-18T09:00:00.000Z",
+      receiptsCount: 1,
+    });
+    mockedReceipts.mockResolvedValue({
+      data: [RECEIPT_SUMMARY],
+      nextCursor: null,
+    });
+    mockedReceiptDetail.mockResolvedValue({
+      ...RECEIPT_SUMMARY,
+      items: MULTI_CATEGORY_ITEMS,
+    });
+
+    // Позиції чека (39 000 коп.) > списання (19 500 коп.) — знижка «на
+    // касі». Раніше від'ємний remainder з'їдав food-бакет і сума сплітів
+    // перевищувала total; тепер бакети пропорційно масштабуються.
+    const { onSplitChange } = renderSection({ transactionAmountKop: 19_500 });
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: /Розбити за чеком/ }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Підтвердити спліт" }));
+
+    expect(onSplitChange).toHaveBeenCalledTimes(1);
+    const [, splits] = onSplitChange.mock.calls[0] as [
+      string,
+      Array<{ categoryId: string; amount: number }>,
+    ];
+    // Жодну категорію не викинуто, кожна частка додатна…
+    expect(splits.map((s) => s.categoryId).sort()).toEqual([
+      "food",
+      "health",
+      "shopping",
+    ]);
+    for (const split of splits) expect(split.amount).toBeGreaterThan(0);
+    // …і сума РІВНО дорівнює сумі транзакції.
+    const totalUah = splits.reduce((sum, s) => sum + s.amount, 0);
+    expect(totalUah).toBe(195);
+  });
+
+  it("keeps the CTA disabled and never calls onSplitChange when reconciliation leaves fewer than 2 splits", async () => {
+    mockedSyncState.mockResolvedValue({
+      status: "connected",
+      accessTokenExpiresAt: "2026-08-24T10:00:00.000Z",
+      lastSyncAt: "2026-08-18T09:00:00.000Z",
+      receiptsCount: 1,
+    });
+    const tinySummary = { ...RECEIPT_SUMMARY, totalKop: 20_010 };
+    mockedReceipts.mockResolvedValue({
+      data: [tinySummary],
+      nextCursor: null,
+    });
+    // Дві категорії (`singleCategory === false`), але транзакція на 30
+    // коп.: після масштабування groceries-бакет (10 коп.) падає в 0 і
+    // відфільтровується — лишається ОДНА частка. Старий гейт
+    // (`!suggestion.singleCategory`) вмикав CTA, а `confirmSplit`
+    // передавав `null` = «видалити ручний спліт користувача».
+    mockedReceiptDetail.mockResolvedValue({
+      ...tinySummary,
+      items: [
+        {
+          id: 1,
+          name: "Хліб",
+          qty: 1,
+          unit: null,
+          priceKop: 10,
+          categorySlug: null,
+          barcode: null,
+        },
+        {
+          id: 2,
+          name: "Пральний порошок Persil",
+          qty: 1,
+          unit: null,
+          priceKop: 20_000,
+          categorySlug: null,
+          barcode: null,
+        },
+      ],
+    });
+
+    const { onSplitChange } = renderSection({
+      transactionAmountKop: 30,
+      existingSplitsCount: 2,
+    });
 
     const splitCta = await screen.findByRole("button", {
       name: /Розбити за чеком/,
     });
     expect(splitCta).toBeDisabled();
+    fireEvent.click(splitCta);
     expect(
-      screen.getByText("Усе — продукти, спліт не потрібен."),
-    ).toBeInTheDocument();
+      screen.queryByRole("button", { name: "Підтвердити спліт" }),
+    ).not.toBeInTheDocument();
+    expect(onSplitChange).not.toHaveBeenCalled();
   });
 });

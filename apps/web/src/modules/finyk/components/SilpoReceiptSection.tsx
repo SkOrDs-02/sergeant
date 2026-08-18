@@ -40,6 +40,12 @@ import { CATEGORY_ICON_MAP, stripLeadingEmoji } from "./txRowHelpers";
 
 export interface SilpoReceiptSectionProps {
   transactionId: string;
+  /** Сума зматченої банківської транзакції в копійках (ціле, додатне —
+   * модуль). Авторитетний total для сплітів: matcher лінкує чек за
+   * `receipt_id`, тож `totalKop` чека може розійтися з фактичним
+   * списанням (знижки, часткова оплата) — сплити мають сумуватись у те,
+   * що реально списалось з картки, а не в номінал чека. */
+  transactionAmountKop: number;
   /** Той самий сетер, що `TxRowSplitEditor` (`onSplitChange` пропа
    * `BankTransactionDetailsSheet` → `setSplitTx`). */
   onSplitChange: (id: string, splits: TxSplit[] | null) => void;
@@ -58,7 +64,8 @@ function formatQty(
 }
 
 /**
- * Копійки чека → готовий `TxSplit[]` у гривнях.
+ * Копійки чека → готовий `TxSplit[]` у гривнях, звірений із сумою
+ * зматченої транзакції.
  *
  * Канонізація id (`groceries` → `food`): мапер навмисно лягає в
  * `manualTaxonomy` (детальний ручний слаг), а категорії, якими живуть
@@ -68,14 +75,22 @@ function formatQty(
  * списку категорій витрат — сума мовчки зникала з аналітики (той самий
  * фікс, що вже стоїть у `useWeeklyDigest.ts` для агрегації категорій).
  *
- * Залишок між сумою позицій і `totalKop` чека (знижки, позиції без
- * цінника) йде в «Продукти» — той самий дефолт, що й у самого мапера для
- * нерозпізнаних позицій.
+ * Reconciliation проти `totalKop` (= сума ТРАНЗАКЦІЇ, не номінал чека):
+ *  - недобір (знижки, позиції без цінника) йде в «Продукти» — той самий
+ *    дефолт, що й у самого мапера для нерозпізнаних позицій;
+ *  - перебір (позиції чека > списання — знижка «на касі», часткова
+ *    оплата) пропорційно масштабує бакети до `totalKop` у цілих
+ *    копійках, а пост-раундинговий залишок детерміновано віддає
+ *    найбільшому бакету. Раніше перебір фолдився у food-бакет,
+ *    робив його від'ємним, фільтр позитивних його викидав — і сума
+ *    сплітів ПЕРЕВИЩУВАЛА total. Тепер фінальні позитивні сплити
+ *    сумуються РІВНО в `totalKop`.
  */
 function buildFinalSplits(
   suggestion: ReturnType<typeof suggestSplitsFromReceiptItems>,
   totalKop: number,
 ): TxSplit[] {
+  if (!Number.isFinite(totalKop) || totalKop <= 0) return [];
   const byCanonical = new Map<string, number>();
   for (const split of suggestion.splits) {
     const canonicalId = canonicalManualCategoryId(split.categoryId);
@@ -84,26 +99,48 @@ function buildFinalSplits(
       (byCanonical.get(canonicalId) ?? 0) + split.amountKop,
     );
   }
-  const splitTotalKop = [...byCanonical.values()].reduce((a, b) => a + b, 0);
+  const buckets = [...byCanonical.entries()]
+    .filter(([, amountKop]) => amountKop > 0)
+    .map(([categoryId, amountKop]) => ({ categoryId, amountKop }));
+  const splitTotalKop = buckets.reduce((sum, b) => sum + b.amountKop, 0);
   const remainderKop = totalKop - splitTotalKop;
-  if (remainderKop !== 0) {
+  if (remainderKop > 0) {
     const groceriesCanonical = canonicalManualCategoryId("groceries");
-    byCanonical.set(
-      groceriesCanonical,
-      (byCanonical.get(groceriesCanonical) ?? 0) + remainderKop,
-    );
+    const grocery = buckets.find((b) => b.categoryId === groceriesCanonical);
+    if (grocery) grocery.amountKop += remainderKop;
+    else
+      buckets.push({ categoryId: groceriesCanonical, amountKop: remainderKop });
+  } else if (remainderKop < 0 && splitTotalKop > 0) {
+    const [firstBucket] = buckets;
+    if (firstBucket) {
+      const largest = buckets.reduce(
+        (max, b) => (b.amountKop > max.amountKop ? b : max),
+        firstBucket,
+      );
+      let scaledSum = 0;
+      for (const bucket of buckets) {
+        bucket.amountKop = Math.floor(
+          (bucket.amountKop * totalKop) / splitTotalKop,
+        );
+        scaledSum += bucket.amountKop;
+      }
+      largest.amountKop += totalKop - scaledSum;
+    }
   }
-  return [...byCanonical.entries()]
-    .map(([categoryId, amountKop]) => ({
+  return buckets
+    .map(({ categoryId, amountKop }) => ({
       categoryId,
-      amount: Math.round(amountKop) / 100,
+      amount: amountKop / 100,
     }))
     .filter((split) => split.amount > 0)
-    .sort((a, b) => b.amount - a.amount);
+    .sort(
+      (a, b) => b.amount - a.amount || a.categoryId.localeCompare(b.categoryId),
+    );
 }
 
 export function SilpoReceiptSection({
   transactionId,
+  transactionAmountKop,
   onSplitChange,
   customCategories = [],
   existingSplitsCount = 0,
@@ -130,16 +167,23 @@ export function SilpoReceiptSection({
     [items],
   );
   const finalSplits = useMemo(
-    () =>
-      buildFinalSplits(suggestion, summary?.totalKop ?? suggestion.totalKop),
-    [suggestion, summary],
+    () => buildFinalSplits(suggestion, transactionAmountKop),
+    [suggestion, transactionAmountKop],
   );
-  const canPropose = items.length > 0 && !suggestion.singleCategory;
+  // Гейт на ПОСТ-канонізованих фінальних частках, не на сирій пропозиції:
+  // після злиття `groceries`→`food` і reconciliation частка може лишитись
+  // одна навіть при `singleCategory === false` — тоді спліт не потрібен і
+  // CTA вимкнено. `suggestion.singleCategory` лишається лише для caption
+  // `singleCategoryHint` нижче.
+  const canPropose = finalSplits.length >= 2;
 
   if (status !== "connected" || isLoading || !summary) return null;
 
   const confirmSplit = () => {
-    onSplitChange(transactionId, finalSplits.length >= 2 ? finalSplits : null);
+    // `null` у `onSplitChange` означає «видалити спліт» — підтвердження
+    // пропозиції НІКОЛИ не стирає наявний ручний спліт користувача.
+    if (finalSplits.length < 2) return;
+    onSplitChange(transactionId, finalSplits);
     setProposalOpen(false);
   };
 

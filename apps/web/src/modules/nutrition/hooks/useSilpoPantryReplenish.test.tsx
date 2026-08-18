@@ -211,10 +211,24 @@ describe("useSilpoPantryReplenish", () => {
       }),
     );
 
-    act(() => result.current.toggleItem(2, false));
+    act(() => result.current.toggleItem(2));
     const byId = new Map(result.current.rows.map((r) => [r.item.id, r]));
     expect(byId.get(1)?.checked).toBe(true);
     expect(byId.get(2)?.checked).toBe(true);
+
+    // Другий toggle повертає до дефолту — поточне значення обчислюється
+    // всередині updater-а (не приходить stale-аргументом із рендера).
+    act(() => result.current.toggleItem(2));
+    const byIdAfter = new Map(result.current.rows.map((r) => [r.item.id, r]));
+    expect(byIdAfter.get(2)?.checked).toBe(false);
+
+    // Той самий інваріант для дефолтно-увімкненого (groceries) рядка, ще
+    // не присутнього в `checkedState`: перший toggle одразу вимикає.
+    act(() => result.current.toggleItem(1));
+    const byIdGroceries = new Map(
+      result.current.rows.map((r) => [r.item.id, r]),
+    );
+    expect(byIdGroceries.get(1)?.checked).toBe(false);
   });
 
   it("confirm() writes checked items through the existing upsertItem mechanism, unchecked items are skipped", () => {

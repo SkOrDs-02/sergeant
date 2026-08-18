@@ -51,18 +51,18 @@ function ReceiptItemRow({
   onToggle,
 }: {
   row: SilpoReplenishRow;
-  onToggle: (itemId: number, currentChecked: boolean) => void;
+  onToggle: (itemId: number) => void;
 }) {
   const qtyLabel = formatQty(row.item.qty, row.item.unit);
   return (
     <li>
       {/* Native label+checkbox — той самий touch-target-патерн, що вже
           несе `PantryParsePreview` (input min 20px усередині 44px label). */}
-      <label className="flex items-center gap-2.5 px-1 min-h-[44px] rounded-xl hover:bg-panelHi/50 transition-colors cursor-pointer">
+      <label className="flex items-center gap-2.5 px-1 touch-target rounded-xl hover:bg-panelHi/50 transition-colors cursor-pointer">
         <input
           type="checkbox"
           checked={row.checked}
-          onChange={() => onToggle(row.item.id, row.checked)}
+          onChange={() => onToggle(row.item.id)}
           className="shrink-0 w-5 h-5 accent-nutrition"
         />
         <span className="min-w-0 flex-1 grid">
@@ -139,7 +139,7 @@ export function SilpoPantryReplenishSheet({
           <Button
             type="button"
             variant="secondary"
-            className="flex-1 h-12 min-h-[44px]"
+            className="flex-1 h-12"
             onClick={onClose}
             disabled={busy}
           >
@@ -148,7 +148,7 @@ export function SilpoPantryReplenishSheet({
           <Button
             type="button"
             variant="nutrition"
-            className="flex-1 h-12 min-h-[44px] shadow-none hover:shadow-none dark:shadow-none"
+            className="flex-1 h-12 shadow-none hover:shadow-none dark:shadow-none"
             disabled={busy || checkedCount === 0}
             onClick={handleConfirm}
           >
@@ -183,13 +183,17 @@ export function SilpoPantryReplenishSheet({
                     type="button"
                     onClick={() => selectReceipt(r.receiptId)}
                     className={cn(
-                      "w-full flex items-center justify-between gap-3 px-4 min-h-[44px] py-2.5 border-b border-line last:border-0 hover:bg-panelHi transition-colors text-left",
+                      "w-full flex items-center justify-between gap-3 px-4 touch-target py-2.5 border-b border-line last:border-0 hover:bg-panelHi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-nutrition/60 transition-colors text-left",
                       active && "bg-nutrition/10",
                     )}
                     aria-pressed={active}
                   >
                     <span className="min-w-0 text-style-label text-text truncate">
-                      {new Date(r.purchasedAt).toLocaleDateString("uk-UA")}
+                      {/* Фінансовий запис → Kyiv-час (domain invariants):
+                          день чека не має плавати за TZ пристрою. */}
+                      {new Date(r.purchasedAt).toLocaleDateString("uk-UA", {
+                        timeZone: "Europe/Kyiv",
+                      })}
                     </span>
                     <span className="shrink-0 tabular-nums text-style-caption text-subtle">
                       <Money amount={r.totalKop / 100} kopecks />

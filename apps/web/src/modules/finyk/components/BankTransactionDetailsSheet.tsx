@@ -294,6 +294,10 @@ export function BankTransactionDetailsSheet({
         {!isIncome && (
           <SilpoReceiptSection
             transactionId={transaction.id}
+            // `Transaction.amount` — signed копійки (ціле); сплітам потрібен
+            // додатний total у копійках. `Math.round` — лише страховка від
+            // не-цілого значення з legacy-блобів.
+            transactionAmountKop={Math.round(Math.abs(transaction.amount))}
             onSplitChange={onSplitChange}
             customCategories={customCategories}
             existingSplitsCount={existingSplits.length}

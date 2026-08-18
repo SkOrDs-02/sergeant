@@ -130,8 +130,18 @@ export function useSilpoPantryReplenish({
     setSelectedReceiptId(receiptId);
   }
 
-  function toggleItem(itemId: number, currentChecked: boolean) {
-    setCheckedState((cur) => ({ ...cur, [itemId]: !currentChecked }));
+  function toggleItem(itemId: number) {
+    // Поточне значення обчислюється всередині updater-а, а не приходить
+    // аргументом із рендера: значення з JSX може застаріти між reseed-ом
+    // (зміна вибраного чека) і кліком. Fallback — той самий дефолт, що й
+    // у seed-а та `rows`: їстівне (`groceries`) — увімкнено.
+    setCheckedState((cur) => {
+      const item = items.find((it) => it.id === itemId);
+      const current =
+        cur[itemId] ??
+        (item != null && mapReceiptItemToCategory(item) === "groceries");
+      return { ...cur, [itemId]: !current };
+    });
   }
 
   /** Пише `replenish` для кожної підтвердженої позиції. Повертає скільки додано (0 — нема що писати, викликач нічого не робить). */
