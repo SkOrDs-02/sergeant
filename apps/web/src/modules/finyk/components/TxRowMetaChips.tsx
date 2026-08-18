@@ -27,6 +27,11 @@ interface TxRowMetaChipsProps {
   accountName: string | null;
   /** Власні категорії — джерело стабільного відтінку для кастомних чипів. */
   customCategories?: readonly { id: string }[] | undefined;
+  /** Чи знає ЦЕЙ пристрій про чек, привʼязаний до цієї транзакції
+   * (`useFinykReceiptLinks`, device-local — див. `lib/receiptLinks.ts`).
+   * Розгортка позицій живе в `BankTransactionDetailsSheet`/
+   * `ManualExpenseSheet` (спека § Розгортка); тут — лише індикатор. */
+  hasReceipt?: boolean | undefined;
   /** User's own free-text annotation — rendered last, truncates first. */
   note?: string | undefined;
 }
@@ -41,6 +46,7 @@ export function TxRowMetaChips({
   isCreditCard,
   account,
   accountName,
+  hasReceipt = false,
   note,
   customCategories = [],
 }: TxRowMetaChipsProps) {
@@ -110,6 +116,14 @@ export function TxRowMetaChips({
       {existingSplitsCount > 0 && (
         <span className="shrink-0 text-style-caption bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-semibold">
           ⅔ спліт
+        </span>
+      )}
+      {hasReceipt && (
+        <span
+          className="shrink-0 inline-flex items-center text-muted"
+          title="Є прикріплений чек — відкрий транзакцію, щоб побачити позиції"
+        >
+          <Icon name="file-text" size={12} aria-hidden />
         </span>
       )}
       {note && (

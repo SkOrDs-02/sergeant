@@ -20,6 +20,8 @@ interface TxListItemProps {
   accounts: readonly MonoAccount[];
   hideAmount: boolean;
   customCategories?: readonly CustomCategoryInput[] | undefined;
+  /** Threaded straight to `TxRow` — see its docstring. */
+  hasReceipt?: boolean | undefined;
   onToggleSelect: (id: string) => void;
   onSwipeHideTx?: ((id: string) => void) | undefined;
   onSwipeDeleteManual?: ((tx: TxRowTx) => void) | undefined;
@@ -39,6 +41,7 @@ function TxListItemImpl({
   accounts,
   hideAmount,
   customCategories,
+  hasReceipt = false,
   onToggleSelect,
   onSwipeHideTx,
   onSwipeDeleteManual,
@@ -117,6 +120,7 @@ function TxListItemImpl({
             txSplits={txSplits}
             note={isManual ? undefined : note}
             customCategories={customCategories}
+            hasReceipt={hasReceipt}
             divider={false}
           />
         </SwipeToAction>

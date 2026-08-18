@@ -37,6 +37,9 @@ interface TxRowProps {
   hideAmount?: boolean | undefined;
   txSplits?: TxSplitsMap | undefined;
   customCategories?: readonly CustomCategoryInput[] | undefined;
+  /** Чи знає цей пристрій про привʼязаний чек — індикатор розгортки
+   * (спека § Розгортка, `useFinykReceiptLinks`). */
+  hasReceipt?: boolean | undefined;
   /**
    * Draw the built-in bottom hairline. Defaults to `true` for the Assets
    * pickers that stack rows directly. The transaction list (#13) sets this
@@ -57,6 +60,7 @@ function TxRowImpl({
   hideAmount = false,
   txSplits,
   customCategories = [],
+  hasReceipt = false,
   divider = true,
 }: TxRowProps) {
   const isIncome = tx.amount > 0;
@@ -149,6 +153,7 @@ function TxRowImpl({
           isCreditCard={isCreditCard}
           account={account}
           accountName={accountName}
+          hasReceipt={hasReceipt}
           note={note}
         />
       </div>
