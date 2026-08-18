@@ -10,6 +10,7 @@ import { PantryCard } from "../components/PantryCard";
 import { ShoppingListCard } from "../components/ShoppingListCard";
 import { SubTabs } from "../components/SubTabs";
 import { BarcodeLookupNotice } from "../components/BarcodeLookupNotice";
+import { SilpoPantryReplenishEntry } from "../components/SilpoPantryReplenishEntry";
 import type {
   NutritionRecipe,
   NutritionWeekPlan,
@@ -80,6 +81,13 @@ export function NutritionPantryPage({
         />
         {pantrySubTab === "items" ? (
           <>
+            <div className="flex justify-end">
+              <SilpoPantryReplenishEntry
+                pantryItems={pantry.pantryItems}
+                upsertItem={pantry.upsertItem}
+                busy={busy}
+              />
+            </div>
             <PantryCard
               busy={busy}
               parsePantry={pantry.parsePantry}

@@ -96,4 +96,36 @@ export const nutritionPageMessages = {
     pantryIgnored:
       "AI генерує персоналізований план прийомів їжі з урахуванням твоїх цілей. Комору зараз не враховує.",
   },
+
+  /**
+   * Мінімальний low-stock бейдж на позиції комори (Silpo integration трек
+   * C). Статична порогова евристика — межі й обґрунтування дивись у
+   * `../modules/nutrition/lib/pantryLowStock.ts`.
+   */
+  pantryLowStock: {
+    badge: "Закінчується",
+  },
+
+  /**
+   * «Поповнити комору з покупок Сільпо» — екран підтвердження перед
+   * записом `replenish`-подій (Silpo integration трек C, спека
+   * `docs/90-work/planning/specs/silpo-mcp-integration.md`
+   * § «Комора — через готовий ledger»). Позиції чека НІКОЛИ не пишуться
+   * мовчки — людина явно підтверджує кожну позицію чекбоксом.
+   */
+  pantryReplenish: {
+    entryCta: "З покупок Сільпо",
+    sheetTitle: "Поповнити з чека Сільпо",
+    sheetDescription: "Обери чек і підтверди, що додати в комору.",
+    receiptsHeading: "Останні чеки",
+    receiptsEmptyTitle: "Ще немає завантажених чеків",
+    receiptsEmptyHint: "Онови чеки в Налаштуваннях → Сільпо.",
+    itemsHeading: "Товари з чека",
+    itemsEmpty: "У цьому чеку немає позицій.",
+    matchedPrefix: "Уже є:",
+    newPosition: "Нова позиція",
+    confirmCta: "Додати в комору",
+    cancelCta: "Скасувати",
+    loading: "Завантажую…",
+  },
 };
