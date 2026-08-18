@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-07-25
+ * Last validated: 2026-08-18
  * Status: Active
  *
  * «Що ШІ про мене памʼятає» — список збережених фактів із точковим
@@ -11,8 +11,17 @@
  * причина — у `apps/server/src/modules/ai-memory/listRoute.ts`). Копія має
  * це казати прямо; якщо колись поміняється серверна семантика, текст
  * «Це назавжди» треба міняти тим самим PR-ом.
+ *
+ * AI-CONTEXT (2026-08-18): плаский список тут не масштабувався. Після
+ * дзеркалення фактів профілю (міграція 118) і появи тижневих підсумків із
+ * дайджесту — а це абзаци на кілька рядків кожен — сторінка з 20 фактів
+ * читалась як суцільне полотно, у якому нічого не знайти. Тому два рівні
+ * згортання: факти згруповані за джерелом (кожна група розкривається
+ * окремо), а довгий текст факту обрізаний до трьох рядків із розгортанням.
+ * Обидва дефолти залежать від обсягу: маленька памʼять (≤5 фактів)
+ * лишається розгорнутою, бо там ховати нічого.
  */
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   useInfiniteQuery,
   useMutation,
@@ -24,6 +33,7 @@ import { EmptyState } from "@shared/components/ui/EmptyState";
 import { meApi } from "@shared/api";
 import { messages } from "@shared/i18n/uk";
 import { aiMemoryKeys } from "@shared/lib/api/queryKeys";
+import { cn } from "@shared/lib/ui/cn";
 import type { AiMemoryListItem } from "@sergeant/api-client";
 
 // V-8 (аудит 2026-08-08): переїзд із локального `ConfirmModal` на канонічний
@@ -34,6 +44,15 @@ import { Icon } from "@shared/components/ui/Icon";
 const m = messages.privacy.aiMemory;
 
 const PAGE_SIZE = 20;
+
+/**
+ * До цієї кількості завантажених фактів групи стоять розгорнутими: ховати
+ * три рядки за клік — це ускладнення без виграшу.
+ */
+const AUTO_OPEN_MAX_ITEMS = 5;
+
+/** Довші за це факти обрізаються до трьох рядків із кнопкою розгортання. */
+const CLAMP_CHARS = 160;
 
 /** Людські назви джерел. Ключі — `ALLOWED_MEMORY_SOURCES` на сервері. */
 const SOURCE_LABEL: Record<string, string> = {
@@ -52,6 +71,10 @@ const SOURCE_LABEL: Record<string, string> = {
   profile: "Профіль",
 };
 
+function sourceLabel(source: string): string {
+  return SOURCE_LABEL[source] ?? source;
+}
+
 function formatDay(iso: string): string {
   // Europe/Kyiv — доменний інваріант: дата факту має читатись у часовому
   // поясі юзера, а не у UTC, інакше вечірні записи «переїжджають» на
@@ -61,6 +84,157 @@ function formatDay(iso: string): string {
     month: "long",
     timeZone: "Europe/Kyiv",
   }).format(new Date(iso));
+}
+
+interface MemoryGroup {
+  source: string;
+  label: string;
+  items: AiMemoryListItem[];
+}
+
+/**
+ * Групує факти за джерелом, зберігаючи порядок першої появи. Сервер віддає
+ * список від найновішого, тож зверху опиняється джерело, яке писало
+ * останнім — той самий порядок, що й у плоскому списку до цієї зміни.
+ */
+function groupBySource(items: AiMemoryListItem[]): MemoryGroup[] {
+  const bySource = new Map<string, MemoryGroup>();
+  for (const item of items) {
+    const existing = bySource.get(item.source);
+    if (existing) {
+      existing.items.push(item);
+      continue;
+    }
+    bySource.set(item.source, {
+      source: item.source,
+      label: sourceLabel(item.source),
+      items: [item],
+    });
+  }
+  return [...bySource.values()];
+}
+
+function MemoryFact({
+  item,
+  onDelete,
+  deleteDisabled,
+}: {
+  item: AiMemoryListItem;
+  onDelete: (item: AiMemoryListItem) => void;
+  deleteDisabled: boolean;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const clampable = item.content.length > CLAMP_CHARS;
+
+  return (
+    <li className="flex items-start gap-2 rounded-xl border border-line bg-panel p-3">
+      <div className="min-w-0 flex-1">
+        <p
+          className={cn(
+            "text-style-body text-text break-words",
+            clampable && !expanded && "line-clamp-3",
+          )}
+        >
+          {item.content}
+        </p>
+        {clampable && (
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            aria-expanded={expanded}
+            className={cn(
+              "mt-1 text-style-caption text-brand-strong dark:text-brand",
+              "hover:text-brand-600 transition-colors",
+              "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/60 rounded-lg",
+            )}
+          >
+            {expanded ? m.collapseFact : m.expandFact}
+          </button>
+        )}
+        {/* Джерело більше не дублюється на кожному рядку — його несе
+            заголовок групи, під яким факт і лежить. Лишається дата. */}
+        <p className="mt-1 text-style-caption text-subtle">
+          {formatDay(item.createdAt)}
+        </p>
+      </div>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        aria-label={`${m.deleteAria}: ${item.content}`}
+        disabled={deleteDisabled}
+        className="text-danger-strong"
+        onClick={() => onDelete(item)}
+      >
+        <Icon name="close" size={14} aria-hidden />
+      </Button>
+    </li>
+  );
+}
+
+function MemoryGroupSection({
+  group,
+  defaultOpen,
+  onDelete,
+  deleteDisabled,
+}: {
+  group: MemoryGroup;
+  defaultOpen: boolean;
+  onDelete: (item: AiMemoryListItem) => void;
+  deleteDisabled: boolean;
+}) {
+  // Стан живе в компоненті групи, а не в мапі на рівні списку: після
+  // видалення факту `invalidateQueries` перечитує весь infinite-кеш, і мапа
+  // «джерело → відкрито», зібрана з попередніх сторінок, розʼїхалася б із
+  // новим набором груп. Ключ `group.source` у батька тримає цей стан
+  // стабільним через рефетчі.
+  const [open, setOpen] = useState(defaultOpen);
+
+  return (
+    <section>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-label={`${m.groupToggleAria}: ${group.label}`}
+        className={cn(
+          "w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl touch-target",
+          "border border-line bg-panel hover:bg-panelHi transition-colors",
+          "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/60",
+        )}
+      >
+        <span className="flex items-center gap-2 text-style-label font-semibold text-text">
+          {group.label}
+          <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-panelHi text-style-caption font-bold text-muted">
+            {group.items.length}
+          </span>
+        </span>
+        <Icon
+          name="chevron-right"
+          size={15}
+          strokeWidth={2.5}
+          className={cn(
+            "text-muted transition-transform duration-base",
+            open && "rotate-90",
+          )}
+          aria-hidden
+        />
+      </button>
+
+      {open && (
+        <ul className="space-y-2 pt-2">
+          {group.items.map((item) => (
+            <MemoryFact
+              key={item.id}
+              item={item}
+              onDelete={onDelete}
+              deleteDisabled={deleteDisabled}
+            />
+          ))}
+        </ul>
+      )}
+    </section>
+  );
 }
 
 export function AiMemoryList() {
@@ -93,7 +267,11 @@ export function AiMemoryList() {
     onError: () => setError(m.deleteError),
   });
 
-  const items = query.data?.pages.flatMap((p) => p.items) ?? [];
+  const items = useMemo(
+    () => query.data?.pages.flatMap((p) => p.items) ?? [],
+    [query.data],
+  );
+  const groups = useMemo(() => groupBySource(items), [items]);
 
   if (query.isPending) {
     return (
@@ -119,37 +297,21 @@ export function AiMemoryList() {
     return <EmptyState size="sm" description={m.empty} />;
   }
 
+  const groupsDefaultOpen = items.length <= AUTO_OPEN_MAX_ITEMS;
+
   return (
     <div className="space-y-2">
-      <ul className="space-y-2">
-        {items.map((item) => (
-          <li
-            key={item.id}
-            className="flex items-start gap-2 rounded-xl border border-line bg-panel p-3"
-          >
-            <div className="min-w-0 flex-1">
-              <p className="text-style-body text-text break-words">
-                {item.content}
-              </p>
-              <p className="mt-1 text-style-caption text-subtle">
-                {SOURCE_LABEL[item.source] ?? item.source} ·{" "}
-                {formatDay(item.createdAt)}
-              </p>
-            </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              aria-label={`${m.deleteAria}: ${item.content}`}
-              disabled={remove.isPending}
-              className="text-danger-strong"
-              onClick={() => setPending(item)}
-            >
-              <Icon name="close" size={14} aria-hidden />
-            </Button>
-          </li>
+      <div className="space-y-2">
+        {groups.map((group) => (
+          <MemoryGroupSection
+            key={group.source}
+            group={group}
+            defaultOpen={groupsDefaultOpen}
+            onDelete={setPending}
+            deleteDisabled={remove.isPending}
+          />
         ))}
-      </ul>
+      </div>
 
       {query.hasNextPage ? (
         <Button

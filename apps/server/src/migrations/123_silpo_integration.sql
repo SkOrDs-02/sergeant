@@ -47,7 +47,7 @@
 -- FK `(user_id, receipt_id)` на `silpo_receipts` ON DELETE CASCADE — вайп
 -- чека прибирає всі його позиції одним запитом (`POST /api/silpo/wipe`).
 --
--- ─── finyk_tx_receipt_links — Mono-транзакція ↔ Сільпо-чек ─────────────────
+-- ─── silpo_tx_receipt_links — Mono-транзакція ↔ Сільпо-чек ─────────────────
 --
 -- Link-патерн ідентичний `finyk_mono_debt_links` (039_finyk_tables.sql):
 -- композитний PK `(user_id, transaction_id)`, природний зовнішній ключ —
@@ -126,8 +126,8 @@ CREATE TABLE IF NOT EXISTS silpo_receipt_items (
 CREATE INDEX IF NOT EXISTS silpo_receipt_items_user_receipt_idx
   ON silpo_receipt_items (user_id, receipt_id);
 
--- ─── finyk_tx_receipt_links ─────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS finyk_tx_receipt_links (
+-- ─── silpo_tx_receipt_links ─────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS silpo_tx_receipt_links (
   user_id         TEXT NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
   transaction_id  TEXT NOT NULL,
   receipt_id      TEXT NOT NULL,
@@ -139,8 +139,8 @@ CREATE TABLE IF NOT EXISTS finyk_tx_receipt_links (
 
 -- Зворотний lookup: «чи є лінк для цього чека» (напр. приховати чек зі
 -- списку «Чеки без транзакції», коли matcher вже його прив'язав).
-CREATE INDEX IF NOT EXISTS finyk_tx_receipt_links_user_receipt_idx
-  ON finyk_tx_receipt_links (user_id, receipt_id);
+CREATE INDEX IF NOT EXISTS silpo_tx_receipt_links_user_receipt_idx
+  ON silpo_tx_receipt_links (user_id, receipt_id);
 
 COMMENT ON TABLE silpo_connection IS
   'OAuth 2.1 token store for a user Silpo MCP connection — mirrors mono_connection, but carries TWO independent AES-256-GCM triples (access + refresh) under one shared token_key_version. status: connected | reauth_required (refresh-flow exhausted, needs user re-auth). disconnect deletes only this row; receipts/items/links survive (see POST /api/silpo/wipe for full erasure).';
@@ -163,5 +163,5 @@ COMMENT ON COLUMN silpo_receipts.payment_hint IS
 COMMENT ON TABLE silpo_receipt_items IS
   'Line items of a Silpo receipt. FK (user_id, receipt_id) ON DELETE CASCADE — wiping a receipt (POST /api/silpo/wipe) removes its items in the same statement. price_kop is BIGINT minor units (Hard Rule #1 — coerce to number in serializers). category_slug is the Silpo category-tree leaf, mapped deterministically to finyk categories / FOOD_CATEGORIES by packages/finyk-domain.';
 
-COMMENT ON TABLE finyk_tx_receipt_links IS
+COMMENT ON TABLE silpo_tx_receipt_links IS
   'Maps a Mono transaction to the Silpo receipt the deterministic matcher (packages/finyk-domain/receiptMatching.ts) attached to it. Same link shape as finyk_mono_debt_links (composite PK on (user_id, transaction_id)), but this table is server-write-only — NOT part of the client op-log dual-write path (OP_LOG_TABLE_REGISTRY does not carry it); the client only reads it via REST. FK (user_id, receipt_id) ON DELETE CASCADE — wiping the receipt removes the link, but the resulting finyk_tx_splits the user confirmed from it are NOT cascaded (user-created data survives a Silpo wipe, per the design decision in the spec).';

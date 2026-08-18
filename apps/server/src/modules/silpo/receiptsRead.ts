@@ -102,7 +102,7 @@ export async function listReceipts(
             r.total_kop AS "totalKop",
             l.transaction_id AS "transactionId"
        FROM silpo_receipts r
-       LEFT JOIN finyk_tx_receipt_links l
+       LEFT JOIN silpo_tx_receipt_links l
               ON l.user_id = r.user_id AND l.receipt_id = r.receipt_id
       WHERE ${conditions.join(" AND ")}
       ORDER BY r.purchased_at DESC, r.receipt_id DESC
@@ -141,7 +141,7 @@ export async function getReceiptDetail(
             r.total_kop AS "totalKop",
             l.transaction_id AS "transactionId"
        FROM silpo_receipts r
-       LEFT JOIN finyk_tx_receipt_links l
+       LEFT JOIN silpo_tx_receipt_links l
               ON l.user_id = r.user_id AND l.receipt_id = r.receipt_id
       WHERE r.user_id = $1 AND r.receipt_id = $2`,
     [userId, receiptId],

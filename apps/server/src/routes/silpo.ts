@@ -230,7 +230,7 @@ export async function disconnectHandler(
   res.status(200).json(SilpoDisconnectResponseSchema.parse({ ok: true }));
 }
 
-/** Full erasure: `silpo_receipts` cascades to items + `finyk_tx_receipt_links`. User-confirmed `finyk_tx_splits` / pantry-events are NEVER touched. */
+/** Full erasure: `silpo_receipts` cascades to items + `silpo_tx_receipt_links`. User-confirmed `finyk_tx_splits` / pantry-events are NEVER touched. */
 export async function wipeHandler(req: Request, res: Response): Promise<void> {
   if (!assertSilpoEnabled(res)) return;
   const userId = getUserId(req as AuthedRequest, res);

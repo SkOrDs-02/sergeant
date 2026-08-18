@@ -2,7 +2,7 @@
 --
 -- Local-only rollback (Hard Rule #4) — прод ніколи не запускає `.down.sql`.
 -- Дропаємо у зворотному порядку створення: спершу таблиці, що FK-ять на
--- silpo_receipts (finyk_tx_receipt_links, silpo_receipt_items), потім сам
+-- silpo_receipts (silpo_tx_receipt_links, silpo_receipt_items), потім сам
 -- silpo_receipts, і насамкінець незалежну silpo_connection.
 --
 -- Втрачається: збережені OAuth-токени Сільпо (користувач перепідключає
@@ -12,7 +12,7 @@
 -- залежать від цих таблиць (FK тут нема, за дизайном спеки: створені
 -- користувачем сутності лишаються навіть при wipe Сільпо-даних).
 
-DROP TABLE IF EXISTS finyk_tx_receipt_links;
+DROP TABLE IF EXISTS silpo_tx_receipt_links;
 DROP TABLE IF EXISTS silpo_receipt_items;
 DROP TABLE IF EXISTS silpo_receipts;
 DROP TABLE IF EXISTS silpo_connection;

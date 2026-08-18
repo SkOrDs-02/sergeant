@@ -314,7 +314,7 @@ function makeFakeDb(seed: { monoTransactions?: FakeMonoTx[] } = {}) {
         }));
       return { rows, rowCount: rows.length };
     }
-    if (text.includes("INSERT INTO finyk_tx_receipt_links")) {
+    if (text.includes("INSERT INTO silpo_tx_receipt_links")) {
       const [, transactionId, receiptId] = values as [string, string, string];
       if (!links.some((l) => l.transactionId === transactionId)) {
         links.push({ transactionId, receiptId });

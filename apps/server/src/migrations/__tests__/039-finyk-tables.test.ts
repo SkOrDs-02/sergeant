@@ -14,6 +14,12 @@
 //      `apps/server/src/migrations/039_finyk_tables.sql`,
 //   2. running `039_finyk_tables.down.sql` drops them all (and
 //      removes the explicit indexes),
+//
+// SCOPE: пізніші міграції створюють ВЛАСНІ finyk_*-таблиці поза 039
+// (перша — `finyk_tx_receipt_links`, 121_receipts.sql), тому хелпери
+// нижче скоуплять запити до явного списку FINYK_TABLES, а не до
+// `LIKE 'finyk_%'` — інакше кожна нова finyk-таблиця з чужої міграції
+// хибно валила б цей раунд-тріп (саме так упав CI на PR #818).
 //   3. the down migration is idempotent (rule #4 invariant),
 //   4. down → re-up restores the schema fingerprint byte-for-byte.
 
@@ -132,27 +138,25 @@ async function resetSchema(p: pg.Pool): Promise<void> {
   await p.query(`GRANT ALL ON SCHEMA public TO public;`);
 }
 
-// `finyk_tx_receipt_links` ділить finyk_-префікс, але належить міграції 121
-// (Silpo-інтеграція), а не 039 — виключаємо з namespace-асертів цього тесту,
-// інакше up-перелік і down-дриль 039 хибно червоніють на чужій таблиці.
-const FOREIGN_FINYK_PREFIX = "finyk_tx_receipt_links";
-
 async function listTables(p: pg.Pool): Promise<string[]> {
   const r = await p.query<{ tablename: string }>(
     `SELECT tablename FROM pg_tables
-     WHERE schemaname = 'public' AND tablename LIKE 'finyk_%'
-       AND tablename NOT LIKE '${FOREIGN_FINYK_PREFIX}%'
+     WHERE schemaname = 'public' AND tablename = ANY($1::text[])
      ORDER BY tablename`,
+    [[...FINYK_TABLES]],
   );
   return r.rows.map((row) => row.tablename);
 }
 
 async function listFinykIndexes(p: pg.Pool): Promise<string[]> {
+  // Скоуп по tablename (не indexname LIKE 'finyk_%'): ловимо всі індекси
+  // саме 039-таблиць і не чіпляємо індекси finyk-таблиць пізніших міграцій
+  // (finyk_tx_receipt_links_tx_idx з 121 тощо).
   const r = await p.query<{ indexname: string }>(
     `SELECT indexname FROM pg_indexes
-     WHERE schemaname = 'public' AND indexname LIKE 'finyk_%'
-       AND indexname NOT LIKE '${FOREIGN_FINYK_PREFIX}%'
+     WHERE schemaname = 'public' AND tablename = ANY($1::text[])
      ORDER BY indexname`,
+    [[...FINYK_TABLES]],
   );
   return r.rows.map((row) => row.indexname);
 }
@@ -379,7 +383,7 @@ describe("039_finyk_tables migration", () => {
   );
 
   it(
-    "039_finyk_tables.down.sql drops every finyk_* table",
+    "039_finyk_tables.down.sql drops every 039-owned finyk table",
     async (ctx) => {
       if (!dockerAvailable || !pool) {
         ctx.skip();

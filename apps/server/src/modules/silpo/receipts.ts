@@ -470,7 +470,7 @@ async function loadUnresolvedReceipts(
        WHERE r.user_id = $1
          AND r.purchased_at >= NOW() - ($2 || ' days')::interval
          AND NOT EXISTS (
-           SELECT 1 FROM finyk_tx_receipt_links l
+           SELECT 1 FROM silpo_tx_receipt_links l
             WHERE l.user_id = r.user_id AND l.receipt_id = r.receipt_id
          )
        ORDER BY r.purchased_at DESC
@@ -504,7 +504,7 @@ async function loadCandidateTransactions(
         AND t.time >= $2
         AND t.time <= $3
         AND NOT EXISTS (
-          SELECT 1 FROM finyk_tx_receipt_links l
+          SELECT 1 FROM silpo_tx_receipt_links l
            WHERE l.user_id = t.user_id AND l.transaction_id = t.mono_tx_id
         )`,
     [userId, new Date(windowStartMs), new Date(windowEndMs)],
@@ -543,7 +543,7 @@ async function matchAndLink(
 
   for (const m of result.matches) {
     await queryFn(
-      `INSERT INTO finyk_tx_receipt_links (user_id, transaction_id, receipt_id)
+      `INSERT INTO silpo_tx_receipt_links (user_id, transaction_id, receipt_id)
        VALUES ($1, $2, $3)
        ON CONFLICT (user_id, transaction_id) DO NOTHING`,
       [userId, m.transactionId, m.receiptId],
@@ -656,7 +656,7 @@ export function silpoErrorToAppError(
  * `POST /api/silpo/sync` ("Оновити чеки") entry point. Pulls both order
  * lists, upserts new receipts/items (existing ones are immutable — never
  * re-fetched/re-written), then runs the deterministic matcher over
- * receipts that don't already have a `finyk_tx_receipt_links` row.
+ * receipts that don't already have a `silpo_tx_receipt_links` row.
  *
  * Throws a mapped {@link AppError} (via {@link silpoErrorToAppError}) on
  * connection/upstream failure — explicit user-triggered action, so a clean

@@ -742,12 +742,22 @@ const SQL_ONLY_TABLES = [
   // контур, що й `mono_connection` / `plata_card_token`: секрет читає лише
   // серверний банк-проксі, у Drizzle його свідомо немає.
   "privat_connection",
+  // Чек-скан v1 + Фаза 2 масового ведення (docs/90-work/planning/specs/
+  // receipt-scan.md, міграції 121/122). Читає й пише лише серверний
+  // finyk/receipts + finyk/import модуль (raw pg, той самий контур, що
+  // mono_*/apple_iap_receipts) — matcher, lookup/analyze/save,
+  // bulk-import commit/undo. Клієнт бачить лише серіалізовані
+  // API-відповіді (kopiykas як number, Hard Rule #1), не Drizzle-читання.
+  "receipts",
+  "receipt_items",
+  "finyk_tx_receipt_links",
+  "import_batches",
   // Silpo MCP integration (міграція 121, spec silpo-mcp-integration.md,
   // Track A walking skeleton). Той самий контур, що й mono_connection /
   // privat_connection: OAuth-токени читає лише серверний modules/silpo/
   // шар. silpo_receipts / silpo_receipt_items — сирий снапшот чеків,
   // клієнт бачить їх виключно через REST (`/api/silpo/receipts*`), не
-  // через Drizzle ORM — так само, як mono_transaction. finyk_tx_receipt_links
+  // через Drizzle ORM — так само, як mono_transaction. silpo_tx_receipt_links
   // виглядає структурно як finyk_mono_debt_links (яка ЗМОДЕЛЬОВАНА в
   // Drizzle), але навмисно лишається SQL-only: на відміну від
   // finyk_mono_debt_links вона НЕ в клієнтському op-log dual-write шляху
@@ -756,7 +766,7 @@ const SQL_ONLY_TABLES = [
   "silpo_connection",
   "silpo_receipts",
   "silpo_receipt_items",
-  "finyk_tx_receipt_links",
+  "silpo_tx_receipt_links",
   // Integration webhooks / failure journals (n8n + generic) — server-only журнали.
   "n8n_failure_events",
   "n8n_webhook_events",

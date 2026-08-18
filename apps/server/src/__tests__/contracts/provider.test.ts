@@ -15,14 +15,16 @@
 // either side was refactored without updating the other), this test
 // fails before the PR can merge.
 //
-// **Coverage:** the pact file has 44 consumer interactions across 29
+// **Coverage:** the pact file has 70 consumer interactions across 47
 // unique routes, including the chat-usage extension, the
 // billing/privat/finyk consumer expansion (2026-08-04), the
 // preferences/profile consumer expansion (2026-08-04, pre-beta
 // schema-debt audit: `healthDataConsent` + write-through `/api/me/profile`),
-// and the `activeModules` three-state expansion (2026-08-05, browser-audit
+// the `activeModules` three-state expansion (2026-08-05, browser-audit
 // finding B2 / migration 116 — three extra `/api/v1/me/preferences`
-// interactions: `null` / `[]` / ordered array).
+// interactions: `null` / `[]` / ordered array), and the receipt-scan +
+// bulk-import consumer expansion (2026-08-17 — 14 interactions across 9
+// new `/api/v1/finyk/{receipts,import}/*` routes).
 // Of those, 11 routes are fully-verified here via supertest replay against
 // `createApp()`:
 //
@@ -38,7 +40,7 @@
 //   - POST /api/v1/push/register             (fizruk persona, ios sibling)
 //   - POST /api/v1/nutrition/day-plan        (nutrition persona, Anthropic-stubbed)
 //
-// The remaining 7 routes (`/api/v1/chat`, `/api/v1/chat/usage`,
+// The remaining 7 pre-existing routes (`/api/v1/chat`, `/api/v1/chat/usage`,
 // `/api/v1/nutrition/analyze-photo`, `/api/v1/food-search`, `/api/v2/sync/pull`,
 // `/api/v2/sync/push`, `/api/v1/nutrition/parse-pantry`) are covered by the consumer pact but
 // skipped on the provider side here because their handler chains require
@@ -48,6 +50,18 @@
 // `apps/server/src/modules/nutrition/*.test.ts`, and
 // `apps/server/src/modules/sync/*.test.ts`. See
 // `docs/architecture/api-contracts.md § Extending coverage`.
+//
+// The 9 new receipt-scan/bulk-import routes are likewise `it.todo`
+// gap-marked below (§ "Finyk receipt-scan + bulk-import — explicit gap
+// markers"): 5 of the 9 handlers run multi-statement Postgres
+// transactions (some with `SAVEPOINT`) and/or call an external service
+// (DPS `chkAll`, the vision LLM) — replaying them here would duplicate
+// the mock chains already exercised, against the SAME real handlers and
+// SAME `.parse()` calls against the SAME `@sergeant/shared` schemas, by
+// `apps/server/src/modules/finyk/{receipts,import}/*.test.ts` (every one
+// of those tests calls the handler directly and inspects `res.body`/
+// `res.statusCode` — i.e. the "real serializer" runtime proof already
+// exists there, just not replayed via this pact file).
 
 import fs from "node:fs";
 import path from "node:path";
@@ -152,6 +166,15 @@ interface PactFile {
   interactions: PactInteraction[];
 }
 
+/**
+ * AI-CONTEXT: consumer-тести @sergeant/api-client ПЕРЕЗАПИСУЮТЬ той самий
+ * PACT_FILE під час свого прогону (PactV4 пише не-атомарно). Паралельний
+ * turbo-запуск (`--concurrency=2`) зрідка читав файл посеред запису —
+ * «SyntaxError: Unexpected end of JSON input» (CI-флейк, уперше зловлений
+ * на PR #820 з web-only діфом). Структурний фікс — turbo.json:
+ * `@sergeant/server#test` тепер dependsOn `@sergeant/api-client#test`,
+ * тож provider-верифікація стартує лише ПІСЛЯ завершення consumer-запису.
+ */
 function loadPact(): PactFile {
   if (!fs.existsSync(PACT_FILE)) {
     throw new Error(
@@ -241,10 +264,10 @@ afterAll(() => {
 const pact = loadPact();
 
 describe("Pact provider replay — consumer=sergeant-api-client, provider=sergeant-server", () => {
-  it("pact file has 56 expected consumer interactions across 38 routes", () => {
+  it("pact file has 70 expected consumer interactions across 47 routes", () => {
     expect(pact.consumer.name).toBe("sergeant-api-client");
     expect(pact.provider.name).toBe("sergeant-server");
-    expect(pact.interactions).toHaveLength(56);
+    expect(pact.interactions).toHaveLength(70);
     const expectedRoutes = new Set([
       // PR-42 baseline (5)
       "GET /api/v1/me",
@@ -285,6 +308,21 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
       // 2026-08-05) додала 3 інтеракції на вже наявний
       // `GET /api/v1/me/preferences` — маршрут той самий, тож набір
       // маршрутів не змінився, змінилась лише їх кількість (41 → 44).
+      //
+      // Receipt-scan + bulk-import consumer expansion (9 new routes, 14
+      // interactions — 2026-08-17): receipt-scan v1
+      // (`packages/api-client/src/__tests__/contracts/
+      // finyk-receipts.contract.test.ts`) + Фаза 2 масового ведення
+      // (`.../finyk-import.contract.test.ts`).
+      "POST /api/v1/finyk/receipts/lookup",
+      "POST /api/v1/finyk/receipts/analyze",
+      "POST /api/v1/finyk/receipts",
+      "GET /api/v1/finyk/receipts/501",
+      "POST /api/v1/finyk/import/screenshot/analyze",
+      "POST /api/v1/finyk/import/statement/preview",
+      "POST /api/v1/finyk/import/commit",
+      "GET /api/v1/finyk/import/batches/88",
+      "DELETE /api/v1/finyk/import/batches/88",
       // silpo walking-skeleton (PR #819): 7 інтеракцій / 6 маршрутів
       // (sync-state має і success-, і disabled-інтеракцію; 44 → 51).
       "GET /api/v1/silpo/receipts",
@@ -874,5 +912,57 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
   );
   it.todo(
     "POST /api/v1/nutrition/analyze-photo — replay against real handler (requires vision Anthropic stub)",
+  );
+
+  // ── Finyk receipt-scan + bulk-import — explicit gap markers ────────────────
+  //
+  // 9 new routes (14 interactions) added by the receipt-scan v1 +
+  // "Масове ведення" consumer expansion. Each handler either calls an
+  // external service (DPS `chkAll` XML lookup, the vision LLM) or runs a
+  // multi-statement Postgres transaction (some with `SAVEPOINT` — the
+  // mono-vs-manual-expense link decision in `save.ts`, the mono/dedup
+  // tiers in `commit.ts`). Replaying them here would duplicate the mock
+  // chains already exercised — against the SAME real handler code and
+  // the SAME `.parse()` calls against the `@sergeant/shared` receipts/
+  // import zod schemas — by the dedicated handler-level tests below
+  // (every one of them calls the exported handler directly and asserts
+  // `res.body`/`res.statusCode`, so the "real serializer" runtime proof
+  // Hard Rule #3 asks for already exists, just not replayed via this
+  // pact file):
+  //   - `apps/server/src/modules/finyk/receipts/lookup.test.ts`
+  //   - `apps/server/src/modules/finyk/receipts/analyze.test.ts`
+  //   - `apps/server/src/modules/finyk/receipts/save.test.ts`
+  //   - `apps/server/src/modules/finyk/receipts/get.test.ts`
+  //   - `apps/server/src/modules/finyk/import/screenshotAnalyze.test.ts`
+  //   - `apps/server/src/modules/finyk/import/statementPreview.test.ts`
+  //   - `apps/server/src/modules/finyk/import/commit.test.ts`
+  //   - `apps/server/src/modules/finyk/import/batches.test.ts`
+  //   - `apps/server/src/routes/finyk.route.test.ts` (auth-guard + wiring)
+  it.todo(
+    "POST /api/v1/finyk/receipts/lookup — replay against real handler (requires DPS chkAll HTTP stub)",
+  );
+  it.todo(
+    "POST /api/v1/finyk/receipts/analyze — replay against real handler (requires vision LLM stub)",
+  );
+  it.todo(
+    "POST /api/v1/finyk/receipts — replay against real handler (transactional save + mono matcher)",
+  );
+  it.todo(
+    "GET /api/v1/finyk/receipts/{id} — replay against real handler (multi-query SELECT)",
+  );
+  it.todo(
+    "POST /api/v1/finyk/import/screenshot/analyze — replay against real handler (requires vision LLM stub)",
+  );
+  it.todo(
+    "POST /api/v1/finyk/import/statement/preview — replay against real handler (CSV parsing + «сітка 2» duplicateLikely-запит у БД, duplicateDetect.ts)",
+  );
+  it.todo(
+    "POST /api/v1/finyk/import/commit — replay against real handler (transactional commit + dedup tiers)",
+  );
+  it.todo(
+    "GET /api/v1/finyk/import/batches/{id} — replay against real handler (single SELECT)",
+  );
+  it.todo(
+    "DELETE /api/v1/finyk/import/batches/{id} — replay against real handler (transactional undo/tombstone)",
   );
 });

@@ -178,7 +178,10 @@ export async function addExpense(
   amount: string,
 ): Promise<void> {
   await goto(page, "/finyk/transactions");
-  await page.getByRole("button", { name: "Додати витрату" }).first().click();
+  // FAB — фан-меню з трьох дій (PR #818, чек-скан): головна кнопка
+  // «Додати», дія «Додати витрату» — menuitem усередині фану.
+  await page.getByRole("button", { name: "Додати", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Додати витрату" }).click();
   await page.getByPlaceholder("0").first().fill(amount);
   await page.getByPlaceholder(/Кава, продукти, таксі/).fill(title);
   await page

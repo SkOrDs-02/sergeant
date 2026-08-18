@@ -43,7 +43,10 @@ test("@critical finyk: empty transactions → add-expense CTA opens sheet", asyn
     timeout: 10_000,
   });
 
-  await page.getByRole("button", { name: "Додати витрату" }).click();
+  // FAB — фан-меню з трьох дій (PR #818, чек-скан): головна кнопка тепер
+  // «Додати», а «Додати витрату» — role="menuitem" усередині фану.
+  await page.getByRole("button", { name: "Додати", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Додати витрату" }).click();
   await expect(
     page.getByRole("dialog", { name: "Додати витрату" }),
   ).toBeVisible();

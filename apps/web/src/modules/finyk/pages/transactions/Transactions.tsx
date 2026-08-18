@@ -11,6 +11,7 @@ import { TransactionSyncPill } from "./TransactionSyncPill";
 import { useTransactionFilters } from "./useTransactionFilters";
 import { useTransactionSelection } from "./useTransactionSelection";
 import { BankTransactionDetailsSheet } from "../../components/BankTransactionDetailsSheet";
+import type { UseFinykReceiptLinksResult } from "../../hooks/useFinykReceiptLinks";
 import { Button } from "@shared/components/ui/Button";
 import { TransferSuggestionCard } from "./TransferSuggestionCard";
 import {
@@ -133,6 +134,9 @@ export interface TransactionsProps {
   onEditManualExpense?: (id: string) => void;
   dayFilter?: string | null;
   onClearDayFilter?: () => void;
+  /** Device-local чек↔транзакція лінки (спека § Розгортка) — optional so
+   * existing test call-sites without receipt-scan context keep compiling. */
+  receiptLinks?: UseFinykReceiptLinksResult;
 }
 
 /**
@@ -159,6 +163,7 @@ export function Transactions({
   onEditManualExpense,
   dayFilter,
   onClearDayFilter,
+  receiptLinks,
 }: TransactionsProps) {
   const toast = useToast();
   const [editingBankTransaction, setEditingBankTransaction] =
@@ -324,6 +329,7 @@ export function Transactions({
         txNotes={txNotes}
         accounts={accounts}
         customCategories={customCategories}
+        hasReceipt={receiptLinks?.hasReceipt}
         onToggleSelect={selection.toggleSelect}
         onSwipeHideTx={selection.stableSwipeHideTx}
         onSwipeDeleteManual={selection.stableSwipeDeleteManual}
@@ -444,6 +450,9 @@ export function Transactions({
           note={txNotes[editingBankTransaction.id]}
           txSplits={txSplits}
           customCategories={customCategories}
+          receiptId={
+            receiptLinks?.getReceiptId(editingBankTransaction.id) ?? null
+          }
           hideAmount={!showBalance}
           onCategoryChange={selection.stableOverrideCategory}
           onNoteChange={selection.stableSetTxNote}

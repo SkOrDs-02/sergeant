@@ -288,17 +288,38 @@ vi.mock("./components/FinykLoginScreen", () => ({
 }));
 
 vi.mock("@shared/components/ui/FloatingActionButton", () => ({
+  // `FinykScanEntryPoints` (receipt-scan/PR #818) replaced the single
+  // `onClick` FAB with a 3-action fan-menu (`actions`) — the stub renders
+  // one button per action (plus the legacy bare `onClick` button, unused
+  // by the real call site now but kept for shape-compat with any other
+  // FAB usage this file's tests might exercise) so existing specs can
+  // target the specific action they mean instead of assuming a single
+  // FAB tap opens the expense sheet.
   FloatingActionButton: ({
     onClick,
+    actions,
   }: {
-    onClick: () => void;
+    onClick?: () => void;
+    actions?: Array<{ id: string; label: string; onClick: () => void }>;
     variant?: string;
     icon?: string;
     "aria-label"?: string;
   }) => (
-    <button type="button" data-testid="fab" onClick={onClick}>
-      FAB
-    </button>
+    <div>
+      <button type="button" data-testid="fab" onClick={onClick}>
+        FAB
+      </button>
+      {actions?.map((action) => (
+        <button
+          key={action.id}
+          type="button"
+          data-testid={`fab-action-${action.id}`}
+          onClick={action.onClick}
+        >
+          {action.label}
+        </button>
+      ))}
+    </div>
   ),
 }));
 
@@ -343,7 +364,7 @@ describe("FinykApp (extra) — FAB opens expense sheet", () => {
   it("clicking FAB opens ManualExpenseSheet", () => {
     render(<FinykApp />);
     expect(screen.queryByTestId("expense-sheet")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByTestId("fab"));
+    fireEvent.click(screen.getByTestId("fab-action-expense"));
     expect(screen.getByTestId("expense-sheet")).toBeInTheDocument();
   });
 
@@ -361,7 +382,7 @@ describe("FinykApp (extra) — FAB opens expense sheet", () => {
 
   it("closing ManualExpenseSheet hides it", () => {
     render(<FinykApp />);
-    fireEvent.click(screen.getByTestId("fab"));
+    fireEvent.click(screen.getByTestId("fab-action-expense"));
     expect(screen.getByTestId("expense-sheet")).toBeInTheDocument();
     fireEvent.click(screen.getByTestId("close-sheet"));
     expect(screen.queryByTestId("expense-sheet")).not.toBeInTheDocument();
@@ -373,7 +394,7 @@ describe("FinykApp (extra) — FAB opens expense sheet", () => {
 describe("FinykApp (extra) — ManualExpenseSheet onSave", () => {
   it("onSave without id calls addManualExpense + success toast 'Витрату додано'", () => {
     render(<FinykApp />);
-    fireEvent.click(screen.getByTestId("fab"));
+    fireEvent.click(screen.getByTestId("fab-action-expense"));
     fireEvent.click(screen.getByTestId("save-add"));
     expect(storageMock.addManualExpense).toHaveBeenCalled();
     expect(toastMock.success).toHaveBeenCalledWith("Витрату додано.");
@@ -381,7 +402,7 @@ describe("FinykApp (extra) — ManualExpenseSheet onSave", () => {
 
   it("onSave with id calls editManualExpense + success toast 'Витрату оновлено'", () => {
     render(<FinykApp />);
-    fireEvent.click(screen.getByTestId("fab"));
+    fireEvent.click(screen.getByTestId("fab-action-expense"));
     fireEvent.click(screen.getByTestId("save-edit"));
     expect(storageMock.editManualExpense).toHaveBeenCalledWith(
       "exp-1",
@@ -392,7 +413,7 @@ describe("FinykApp (extra) — ManualExpenseSheet onSave", () => {
 
   it("onSave with category='cafe' triggers restaurant cross-module prompt", () => {
     render(<FinykApp />);
-    fireEvent.click(screen.getByTestId("fab"));
+    fireEvent.click(screen.getByTestId("fab-action-expense"));
     fireEvent.click(screen.getByTestId("save-cafe"));
     expect(tryShowCrossModulePrompt).toHaveBeenCalledWith(
       toastMock,
@@ -402,7 +423,7 @@ describe("FinykApp (extra) — ManualExpenseSheet onSave", () => {
 
   it("onSave with category='food' triggers food cross-module prompt", () => {
     render(<FinykApp />);
-    fireEvent.click(screen.getByTestId("fab"));
+    fireEvent.click(screen.getByTestId("fab-action-expense"));
     fireEvent.click(screen.getByTestId("save-food"));
     expect(tryShowCrossModulePrompt).toHaveBeenCalledWith(
       toastMock,
@@ -417,7 +438,7 @@ describe("FinykApp (extra) — ManualExpenseSheet onDelete", () => {
   it("onDelete without snapshot calls toast.success directly", () => {
     storageMock.manualExpenses = [];
     render(<FinykApp />);
-    fireEvent.click(screen.getByTestId("fab"));
+    fireEvent.click(screen.getByTestId("fab-action-expense"));
     fireEvent.click(screen.getByTestId("delete-exp"));
     expect(storageMock.removeManualExpense).toHaveBeenCalledWith("exp-1");
     expect(toastMock.success).toHaveBeenCalledWith("Видалив витрату");
@@ -427,7 +448,7 @@ describe("FinykApp (extra) — ManualExpenseSheet onDelete", () => {
   it("onDelete with snapshot calls showUndoToast", () => {
     storageMock.manualExpenses = [{ id: "exp-1", category: "food" }];
     render(<FinykApp />);
-    fireEvent.click(screen.getByTestId("fab"));
+    fireEvent.click(screen.getByTestId("fab-action-expense"));
     fireEvent.click(screen.getByTestId("delete-exp"));
     expect(storageMock.removeManualExpense).toHaveBeenCalledWith("exp-1");
     expect(showUndoToast).toHaveBeenCalledWith(

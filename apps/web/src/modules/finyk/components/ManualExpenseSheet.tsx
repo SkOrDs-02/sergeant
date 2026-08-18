@@ -58,6 +58,7 @@ import {
 import { ManualExpenseAmountSection } from "./ManualExpenseAmountSection";
 import { ManualExpenseDescriptionSection } from "./ManualExpenseDescriptionSection";
 import { ManualExpenseCategorySection } from "./ManualExpenseCategorySection";
+import { ReceiptItemsSection } from "./ReceiptItemsSection";
 
 // Re-exported for backward-compat with existing importers / tests.
 export {
@@ -121,6 +122,11 @@ interface ManualExpenseSheetProps {
    * категорії тільки з витратними.
    */
   customCategories?: readonly CustomCategoryInput[];
+  /** Device-local чек, привʼязаний до цієї ручної витрати (спека §
+   * Розгортка) — `null`/`undefined`, коли пристрій про чек не знає, або
+   * коли аркуш відкрито для НОВОГО запису (нова витрата не може мати
+   * чек). Джерело: `useFinykReceiptLinks`. */
+  receiptId?: number | null | undefined;
 }
 
 export function ManualExpenseSheet({
@@ -136,6 +142,7 @@ export function ManualExpenseSheet({
   initialAmount,
   initialDate,
   customCategories = [],
+  receiptId = null,
 }: ManualExpenseSheetProps) {
   const formId = useId();
   const descId = `${formId}-desc`;
@@ -639,6 +646,10 @@ export function ManualExpenseSheet({
             Надходження
           </button>
         </div>
+
+        {isEditing && receiptId != null && (
+          <ReceiptItemsSection receiptId={receiptId} />
+        )}
 
         {/* S15: amount is the only «must-fill» field — it used to live
             under the name input, so new users had to scroll past an

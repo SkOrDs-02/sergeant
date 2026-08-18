@@ -105,6 +105,17 @@ export const finykKeys = {
     ["finyk", "privat", "accounts", idHash] as const,
   privatStatement: (idHash: string, accId: string, from: string, to: string) =>
     ["finyk", "privat", "statement", idHash, accId, from, to] as const,
+
+  // Receipt scan (docs/90-work/planning/specs/receipt-scan.md § Web UI).
+  // `lookupReceipt`/`analyzeReceipt`/`saveReceipt` are mutations (no cache
+  // key needed) — only the by-id GET used for the transaction drill-down
+  // is cached here.
+  receipt: (id: number) => ["finyk", "receipt", id] as const,
+
+  // Bulk import batches (spec § Фаза 2 — Масове ведення). `commitImport`/
+  // `analyzeImportScreenshot`/`previewImportStatement` are mutations;
+  // `getImportBatch` (undo-summary re-read) is the only cached GET.
+  importBatch: (id: number) => ["finyk", "import-batch", id] as const,
 };
 
 // ─── Silpo (MCP receipts integration, walking-skeleton experiment) ────────

@@ -4,6 +4,46 @@
   },
   "interactions": [
     {
+      "description": "a DELETE /api/v1/finyk/import/batches/88 request",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001 owns import batch 88 (completed, 2 created rows)"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "DELETE",
+        "path": "/api/v1/finyk/import/batches/88"
+      },
+      "response": {
+        "body": {
+          "batch": {
+            "createdAt": "2026-01-16T10:00:00.000Z",
+            "createdRowIds": [
+              "imp88:abc",
+              "imp88:def"
+            ],
+            "id": 88,
+            "rowsCreated": 2,
+            "rowsLinked": 0,
+            "rowsSkipped": 1,
+            "rowsTotal": 3,
+            "source": "bank_statement",
+            "status": "undone",
+            "updatedAt": "2026-01-16T10:05:00.000Z"
+          },
+          "tombstoned": 2
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
       "description": "a GET /api/food-search?q=broccoli request (upstream timeout)",
       "providerStates": [
         {
@@ -336,6 +376,95 @@
             ]
           },
           "ok": true
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/finyk/import/batches/88 request",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001 owns import batch 88"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/finyk/import/batches/88"
+      },
+      "response": {
+        "body": {
+          "batch": {
+            "createdAt": "2026-01-16T10:00:00.000Z",
+            "createdRowIds": [
+              "imp88:abc",
+              "imp88:def"
+            ],
+            "id": 88,
+            "rowsCreated": 2,
+            "rowsLinked": 0,
+            "rowsSkipped": 1,
+            "rowsTotal": 3,
+            "source": "bank_statement",
+            "status": "completed",
+            "updatedAt": "2026-01-16T10:00:00.000Z"
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/finyk/receipts/501 request",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001 owns receipt 501"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/finyk/receipts/501"
+      },
+      "response": {
+        "body": {
+          "receipt": {
+            "createdAt": "2026-01-15T12:35:00.000Z",
+            "fiscalNum": "4000123456",
+            "id": 501,
+            "items": [
+              {
+                "id": 9001,
+                "name": "Молоко",
+                "position": 1,
+                "priceKopiykas": 3200,
+                "qty": 1,
+                "receiptId": 501,
+                "sumKopiykas": 3200
+              }
+            ],
+            "link": {
+              "txKind": "mono",
+              "txRef": "mono-tx-777"
+            },
+            "purchasedAt": "2026-01-15T12:32:10.000Z",
+            "source": "dps",
+            "store": "Сільпо",
+            "storeTaxId": "30363252",
+            "totalKopiykas": 15000,
+            "updatedAt": "2026-01-15T12:35:00.000Z"
+          }
         },
         "headers": {
           "Content-Type": "application/json",
@@ -1487,6 +1616,266 @@
       }
     },
     {
+      "description": "a POST /api/v1/finyk/import/commit request",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001; 3 rows submitted, 1 matches an existing mono transaction"
+        }
+      ],
+      "request": {
+        "body": {
+          "rows": [
+            {
+              "amountKopiykas": 84750,
+              "category": "food",
+              "date": "2026-01-15",
+              "description": "Сільпо",
+              "direction": "expense"
+            },
+            {
+              "amountKopiykas": 1500000,
+              "category": "salary",
+              "date": "2026-01-16",
+              "description": "Зарплата",
+              "direction": "income"
+            },
+            {
+              "amountKopiykas": 20000,
+              "category": "transport",
+              "date": "2026-01-16",
+              "description": "АЗС",
+              "direction": "expense"
+            }
+          ],
+          "source": "bank_statement"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/finyk/import/commit"
+      },
+      "response": {
+        "body": {
+          "batchId": 88,
+          "created": 2,
+          "linked": 0,
+          "skipped": {
+            "duplicate": 0,
+            "monoMatched": 1
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 201
+      }
+    },
+    {
+      "description": "a POST /api/v1/finyk/import/screenshot/analyze request",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001; vision provider recognises a monobank screenshot"
+        }
+      ],
+      "request": {
+        "body": {
+          "image_base64": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "mime_type": "image/png"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/finyk/import/screenshot/analyze"
+      },
+      "response": {
+        "body": {
+          "draft": {
+            "bank": "monobank",
+            "docType": "bank_screenshot",
+            "rows": [
+              {
+                "amountKopiykas": 15000,
+                "confidence": 0.9,
+                "date": "2026-01-15",
+                "description": "Сільпо",
+                "direction": "expense",
+                "time": "14:32"
+              },
+              {
+                "amountKopiykas": 500000,
+                "confidence": 0.75,
+                "date": "2026-01-16",
+                "description": "Зарплата",
+                "direction": "income",
+                "time": null
+              },
+              {
+                "amountKopiykas": 35000,
+                "confidence": 0.85,
+                "date": "2026-01-16",
+                "description": "Часткове зняття банки «просто»",
+                "direction": "income",
+                "time": "18:05",
+                "transferLikely": true
+              },
+              {
+                "amountKopiykas": 8500,
+                "confidence": 0.8,
+                "date": "2026-01-17",
+                "description": "Кава",
+                "direction": "expense",
+                "duplicateLikely": true,
+                "time": "09:10"
+              }
+            ]
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/v1/finyk/import/screenshot/analyze request (payload too large)",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001; uploaded image decodes to more than 5MB"
+        }
+      ],
+      "request": {
+        "body": {
+          "image_base64": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "mime_type": "image/png"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/finyk/import/screenshot/analyze"
+      },
+      "response": {
+        "body": {
+          "code": "TOO_LARGE",
+          "detail": "Decoded image is 6000000 bytes; max allowed 5242880"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 413
+      }
+    },
+    {
+      "description": "a POST /api/v1/finyk/import/statement/preview request (mono autoprofile)",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001; CSV header matches the mono export format"
+        }
+      ],
+      "request": {
+        "body": {
+          "csv_text": "Дата i час операції,Деталі операції,МСС,Сума в валюті картки (UAH),Сума в валюті операції,Валюта операції,Курс обміну,Сума комісій (UAH),Сума кешбеку (UAH),Залишок після операції\n15.01.2026 14:32:10,Сільпо,5411,-847.50,-847.50,UAH,1,0.00,8.47,5000.00\n16.01.2026 10:00:00,Поповнення «просто»,4829,-5000.00,-5000.00,UAH,1,0.00,0.00,0.00\n17.01.2026 12:00:00,АТБ,5411,-120.00,-120.00,UAH,1,0.00,0.00,4880.00"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/finyk/import/statement/preview"
+      },
+      "response": {
+        "body": {
+          "needsMapping": false,
+          "profile": "mono",
+          "rows": [
+            {
+              "amountKopiykas": 84750,
+              "date": "2026-01-15",
+              "description": "Сільпо",
+              "direction": "expense"
+            },
+            {
+              "amountKopiykas": 500000,
+              "date": "2026-01-16",
+              "description": "Поповнення «просто»",
+              "direction": "expense",
+              "transferLikely": true
+            },
+            {
+              "amountKopiykas": 12000,
+              "date": "2026-01-17",
+              "description": "АТБ",
+              "direction": "expense",
+              "duplicateLikely": true
+            }
+          ],
+          "skipped": []
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/v1/finyk/import/statement/preview request (unrecognised format)",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001; CSV header matches no known bank profile"
+        }
+      ],
+      "request": {
+        "body": {
+          "csv_text": "Custom Date,Custom Amount,Custom Note\n2026-01-15,-100.00,Test"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/finyk/import/statement/preview"
+      },
+      "response": {
+        "body": {
+          "headers": [
+            "Custom Date",
+            "Custom Amount",
+            "Custom Note"
+          ],
+          "needsMapping": true,
+          "profile": null,
+          "rows": [],
+          "sampleRows": [
+            [
+              "2026-01-15",
+              "-100.00",
+              "Test"
+            ]
+          ],
+          "skipped": []
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
       "description": "a POST /api/v1/finyk/manual-expenses request (12000 kopiykas, food)",
       "providerStates": [
         {
@@ -1526,6 +1915,342 @@
           "content-type": "application/json"
         },
         "status": 201
+      }
+    },
+    {
+      "description": "a POST /api/v1/finyk/receipts request (new DPS receipt, matches mono)",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001; no receipt yet for fiscalNum 4000123456; a matching mono transaction exists"
+        }
+      ],
+      "request": {
+        "body": {
+          "category": "food",
+          "confidence": null,
+          "fiscalNum": "4000123456",
+          "items": [
+            {
+              "name": "Молоко",
+              "position": 1,
+              "priceKopiykas": 3200,
+              "qty": 1,
+              "sumKopiykas": 3200
+            }
+          ],
+          "purchasedAt": "2026-01-15T12:32:10.000Z",
+          "rawPayload": {
+            "xml": "<CHECK><NAME>Сільпо</NAME></CHECK>"
+          },
+          "source": "dps",
+          "store": "Сільпо",
+          "storeTaxId": "30363252",
+          "totalKopiykas": 15000
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/finyk/receipts"
+      },
+      "response": {
+        "body": {
+          "alreadyExists": false,
+          "receipt": {
+            "createdAt": "2026-01-15T12:35:00.000Z",
+            "fiscalNum": "4000123456",
+            "id": 501,
+            "items": [
+              {
+                "id": 9001,
+                "name": "Молоко",
+                "position": 1,
+                "priceKopiykas": 3200,
+                "qty": 1,
+                "receiptId": 501,
+                "sumKopiykas": 3200
+              }
+            ],
+            "link": {
+              "txKind": "mono",
+              "txRef": "mono-tx-777"
+            },
+            "purchasedAt": "2026-01-15T12:32:10.000Z",
+            "source": "dps",
+            "store": "Сільпо",
+            "storeTaxId": "30363252",
+            "totalKopiykas": 15000,
+            "updatedAt": "2026-01-15T12:35:00.000Z"
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 201
+      }
+    },
+    {
+      "description": "a POST /api/v1/finyk/receipts request (retry of a vision save via clientScanId)",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001; a vision receipt with this clientScanId already exists (unmatched, manual expense link)"
+        }
+      ],
+      "request": {
+        "body": {
+          "category": "food",
+          "clientScanId": "9f2b6b9e-6c0a-4e6a-8f0e-1a2b3c4d5e6f",
+          "confidence": 0.82,
+          "fiscalNum": null,
+          "items": [
+            {
+              "name": "Хліб",
+              "position": 1,
+              "priceKopiykas": 2500,
+              "qty": 1,
+              "sumKopiykas": 2500
+            }
+          ],
+          "purchasedAt": "2026-01-15T09:10:00.000Z",
+          "rawPayload": {
+            "store": "АТБ",
+            "total_kopiykas": 8900
+          },
+          "source": "vision",
+          "store": "АТБ",
+          "storeTaxId": null,
+          "totalKopiykas": 8900
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/finyk/receipts"
+      },
+      "response": {
+        "body": {
+          "alreadyExists": true,
+          "receipt": {
+            "createdAt": "2026-01-15T09:12:00.000Z",
+            "fiscalNum": null,
+            "id": 502,
+            "items": [
+              {
+                "id": 9002,
+                "name": "Хліб",
+                "position": 1,
+                "priceKopiykas": 2500,
+                "qty": 1,
+                "receiptId": 502,
+                "sumKopiykas": 2500
+              }
+            ],
+            "link": {
+              "txKind": "manual",
+              "txRef": "6f5e4d3c-2b1a-4444-8888-abcdefabcdef"
+            },
+            "purchasedAt": "2026-01-15T09:10:00.000Z",
+            "source": "vision",
+            "store": "АТБ",
+            "storeTaxId": null,
+            "totalKopiykas": 8900,
+            "updatedAt": "2026-01-15T09:12:00.000Z"
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/v1/finyk/receipts/analyze request",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001; vision provider recognises the photo"
+        }
+      ],
+      "request": {
+        "body": {
+          "image_base64": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "mime_type": "image/png"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/finyk/receipts/analyze"
+      },
+      "response": {
+        "body": {
+          "draft": {
+            "confidence": 0.82,
+            "fiscalNum": null,
+            "items": [
+              {
+                "name": "Хліб",
+                "position": 1,
+                "priceKopiykas": 2500,
+                "qty": 1,
+                "sumKopiykas": 2500
+              },
+              {
+                "name": "Молоко",
+                "position": 2,
+                "priceKopiykas": 3200,
+                "qty": 2,
+                "sumKopiykas": 6400
+              }
+            ],
+            "purchasedAt": "2026-01-15T09:10:00.000Z",
+            "rawPayload": {
+              "store": "АТБ",
+              "total_kopiykas": 8900
+            },
+            "source": "vision",
+            "store": "АТБ",
+            "storeTaxId": null,
+            "totalKopiykas": 8900
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/v1/finyk/receipts/analyze request (magic-byte mismatch)",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001; uploaded bytes are a GIF, not an allowed image type"
+        }
+      ],
+      "request": {
+        "body": {
+          "image_base64": "R0lGODlhR0lGODlhR0lGODlhR0lGODlhR0lGODlhR0lGODlhR0lGODlhR0lGODlhR0lGODlhR0lGODlhR0lGODlhR0lGODlhR0lGODlhR0lGODlhR0lGODlhR0lGODlhR0lGODlhR0lGODlhR0lGODlhR0lGODlh",
+          "mime_type": "image/gif"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/finyk/receipts/analyze"
+      },
+      "response": {
+        "body": {
+          "code": "MAGIC_MISMATCH",
+          "declared_mime": "image/gif",
+          "detail": "Detected image/gif, but only image/jpeg, image/png, image/webp, image/heic are allowed",
+          "detected_mime": "image/gif"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 415
+      }
+    },
+    {
+      "description": "a POST /api/v1/finyk/receipts/lookup request",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001; DPS chkAll has the fiscal receipt for {fn,id,date,time,sm}"
+        }
+      ],
+      "request": {
+        "body": {
+          "date": "15012026",
+          "fn": "4000123456",
+          "id": "abc123XYZ",
+          "sm": "150.00",
+          "time": "123210"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/finyk/receipts/lookup"
+      },
+      "response": {
+        "body": {
+          "draft": {
+            "confidence": null,
+            "fiscalNum": "4000123456",
+            "items": [
+              {
+                "name": "Молоко",
+                "position": 1,
+                "priceKopiykas": 3200,
+                "qty": 1,
+                "sumKopiykas": 3200
+              }
+            ],
+            "purchasedAt": "2026-01-15T12:32:10.000Z",
+            "rawPayload": {
+              "xml": "<CHECK><NAME>Сільпо</NAME></CHECK>"
+            },
+            "source": "dps",
+            "store": "Сільпо",
+            "storeTaxId": "30363252",
+            "totalKopiykas": 15000
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/v1/finyk/receipts/lookup request (not yet indexed)",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001; DPS chkAll has no record yet for {fn,id,date,time,sm} (appearance lag)"
+        }
+      ],
+      "request": {
+        "body": {
+          "date": "15012026",
+          "fn": "4000999999",
+          "id": "notyet001",
+          "sm": "50.00",
+          "time": "090000"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/finyk/receipts/lookup"
+      },
+      "response": {
+        "body": {
+          "code": "DPS_RECEIPT_NOT_FOUND",
+          "error": "Чек ще не з'явився в реєстрі ДПС — спробуй за кілька хвилин або сфотографуй чек.",
+          "message": "Чек ще не з'явився в реєстрі ДПС — спробуй за кілька хвилин або сфотографуй чек.",
+          "requestId": "req-pact-receipts-lookup-404"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 404
       }
     },
     {

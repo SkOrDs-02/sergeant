@@ -2,6 +2,8 @@ import { createDocument } from "zod-openapi";
 import { z } from "zod";
 
 import * as schemas from "../schemas/api";
+import * as receiptSchemas from "../schemas/receipts";
+import * as importSchemas from "../schemas/import";
 import * as silpoSchemas from "../schemas/silpo";
 
 /**
@@ -375,6 +377,85 @@ const WebVitalsPayload = schemas.WebVitalsPayloadSchema.meta({
     "POST /api/metrics/web-vitals — батч Core Web Vitals (LCP/INP/FCP/TTFB/CLS).",
 });
 
+// ────────────────────── Чек-скан v1 (/api/finyk/receipts/*) ───────────────
+const ReceiptLookupRequest = receiptSchemas.ReceiptLookupRequestSchema.meta({
+  id: "ReceiptLookupRequest",
+  description:
+    "POST /api/finyk/receipts/lookup — опакові поля QR фіскального чека ДПС.",
+});
+const ReceiptAnalyzeRequest = receiptSchemas.ReceiptAnalyzeRequestSchema.meta({
+  id: "ReceiptAnalyzeRequest",
+  description:
+    "POST /api/finyk/receipts/analyze — base64 фото чека (vision fallback).",
+});
+const ReceiptDraftResponse = receiptSchemas.ReceiptDraftResponseSchema.meta({
+  id: "ReceiptDraftResponse",
+  description:
+    "Відповідь lookup/analyze — чернетка чека БЕЗ запису в БД (`source: 'dps'|'vision'`).",
+});
+const ReceiptSaveRequest = receiptSchemas.ReceiptSaveRequestSchema.meta({
+  id: "ReceiptSaveRequest",
+  description:
+    "POST /api/finyk/receipts — відредагований draft + category. Опційний " +
+    "`clientScanId` (uuid) — ідемпотентність retry для vision-чеків без fiscalNum.",
+});
+const ReceiptSaveResponse = receiptSchemas.ReceiptSaveResponseSchema.meta({
+  id: "ReceiptSaveResponse",
+  description:
+    "Відповідь save — 201 (новий) або 200 + alreadyExists:true (ідемпотентний повтор).",
+});
+const ReceiptGetResponse = receiptSchemas.ReceiptGetResponseSchema.meta({
+  id: "ReceiptGetResponse",
+  description: "Відповідь GET /api/finyk/receipts/{id}.",
+});
+
+// ────────────────────── Масове ведення (/api/finyk/import/*) ──────────────
+const ImportScreenshotAnalyzeRequest =
+  importSchemas.ImportScreenshotAnalyzeRequestSchema.meta({
+    id: "ImportScreenshotAnalyzeRequest",
+    description:
+      "POST /api/finyk/import/screenshot/analyze — base64 скрін банкінгу.",
+  });
+const ImportScreenshotAnalyzeResponse =
+  importSchemas.ImportScreenshotAnalyzeResponseSchema.meta({
+    id: "ImportScreenshotAnalyzeResponse",
+    description: "Відповідь screenshot/analyze — draft rows[] БЕЗ запису в БД.",
+  });
+const ImportStatementPreviewRequest =
+  importSchemas.ImportStatementPreviewRequestSchema.meta({
+    id: "ImportStatementPreviewRequest",
+    description:
+      "POST /api/finyk/import/statement/preview — csv_text + опційний column mapping.",
+  });
+const ImportStatementPreviewResponse =
+  importSchemas.ImportStatementPreviewResponseSchema.meta({
+    id: "ImportStatementPreviewResponse",
+    description:
+      "Відповідь statement/preview — discriminated за needsMapping " +
+      "(profile+rows+skipped, АБО headers+sampleRows для ручного column-mapper).",
+  });
+const ImportCommitRequest = importSchemas.ImportCommitRequestSchema.meta({
+  id: "ImportCommitRequest",
+  description:
+    "POST /api/finyk/import/commit — вибрані/відредаговані rows (1..5000).",
+});
+const ImportCommitResponse = importSchemas.ImportCommitResponseSchema.meta({
+  id: "ImportCommitResponse",
+  description:
+    "Відповідь commit — batchId + created/linked + skipped{monoMatched,duplicate}.",
+});
+const ImportBatchGetResponse = importSchemas.ImportBatchGetResponseSchema.meta({
+  id: "ImportBatchGetResponse",
+  description: "Відповідь GET /api/finyk/import/batches/{id}.",
+});
+const ImportBatchUndoResponse =
+  importSchemas.ImportBatchUndoResponseSchema.meta({
+    id: "ImportBatchUndoResponse",
+    description:
+      "Відповідь DELETE /api/finyk/import/batches/{id} — undo, " +
+      "ідемпотентний (tombstoned:0 на повторний виклик).",
+  });
+
 /**
  * Канонічний shape body-помилки, який віддає `apps/server/src/http/errorHandler.ts`
  * на всі 4xx/5xx відповіді через `AppError`-ієрархію (parseBody/parseQuery, auth,
@@ -489,6 +570,20 @@ export const namedSchemas = {
   TranscribeQuery,
   TranscribeResponse,
   WebVitalsPayload,
+  ReceiptLookupRequest,
+  ReceiptAnalyzeRequest,
+  ReceiptDraftResponse,
+  ReceiptSaveRequest,
+  ReceiptSaveResponse,
+  ReceiptGetResponse,
+  ImportScreenshotAnalyzeRequest,
+  ImportScreenshotAnalyzeResponse,
+  ImportStatementPreviewRequest,
+  ImportStatementPreviewResponse,
+  ImportCommitRequest,
+  ImportCommitResponse,
+  ImportBatchGetResponse,
+  ImportBatchUndoResponse,
   ApiError,
 } as const;
 

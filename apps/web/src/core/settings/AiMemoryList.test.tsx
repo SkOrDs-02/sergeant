@@ -172,6 +172,78 @@ describe("AiMemoryList", () => {
     ).toBeNull();
   });
 
+  it("великий список приходить згорнутим у групи за джерелом", async () => {
+    // Скарга власника 2026-08-18: список читався як суцільне полотно на
+    // кілька екранів. Понад `AUTO_OPEN_MAX_ITEMS` фактів → видно тільки
+    // джерела з лічильниками, самі факти — за кліком.
+    listAiMemory.mockResolvedValue(
+      page([
+        { id: 1, content: "Факт чату 1", source: "chat" },
+        { id: 2, content: "Факт чату 2", source: "chat" },
+        { id: 3, content: "Факт чату 3", source: "chat" },
+        { id: 4, content: "Факт чату 4", source: "chat" },
+        { id: 5, content: "Тижневий підсумок", source: "digest" },
+        { id: 6, content: "Алергія на горіхи", source: "nutrition" },
+      ]),
+    );
+    renderList();
+
+    const chatGroup = await screen.findByRole("button", {
+      name: /Показати факти джерела: Чат/,
+    });
+    expect(chatGroup.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByText("Факт чату 1")).toBeNull();
+    expect(screen.queryByText("Алергія на горіхи")).toBeNull();
+    // Джерела лишаються видимими — це і є згорнутий зміст памʼяті.
+    expect(
+      screen.getByRole("button", {
+        name: /Показати факти джерела: Харчування/,
+      }),
+    ).toBeTruthy();
+
+    fireEvent.click(chatGroup);
+    expect(screen.getByText("Факт чату 1")).toBeTruthy();
+    // Розгортання однієї групи не розгортає сусідні.
+    expect(screen.queryByText("Алергія на горіхи")).toBeNull();
+  });
+
+  it("маленька памʼять лишається розгорнутою — ховати нічого", async () => {
+    listAiMemory.mockResolvedValue(
+      page([
+        { id: 1, content: "Перший", source: "chat" },
+        { id: 2, content: "Другий", source: "chat" },
+      ]),
+    );
+    renderList();
+    expect(await screen.findByText("Перший")).toBeTruthy();
+    expect(screen.getByText("Другий")).toBeTruthy();
+  });
+
+  it("довгий факт обрізається, поки його не розгорнути", async () => {
+    // Факти з дайджесту — це абзаци на кілька рядків; саме вони роздували
+    // список. Кнопка зʼявляється лише для довгого тексту.
+    const long = "Тижневий звіт: ".padEnd(400, "деталі витрат і тренувань ");
+    listAiMemory.mockResolvedValue(
+      page([
+        { id: 1, content: long, source: "digest" },
+        { id: 2, content: "Короткий факт", source: "chat" },
+      ]),
+    );
+    renderList();
+
+    const toggle = await screen.findByRole("button", {
+      name: "Показати повністю",
+    });
+    expect(screen.getByText(long).className).toContain("line-clamp-3");
+    fireEvent.click(toggle);
+    expect(screen.getByText(long).className).not.toContain("line-clamp-3");
+    expect(screen.getByRole("button", { name: "Згорнути" })).toBeTruthy();
+    // Короткий факт не отримує зайвого важеля.
+    expect(
+      screen.queryAllByRole("button", { name: "Показати повністю" }),
+    ).toHaveLength(0);
+  });
+
   it("помилка видалення → повідомлення, факт лишається у списку", async () => {
     deleteAiMemory.mockRejectedValue(new Error("500"));
     listAiMemory.mockResolvedValue(page([{ id: 7, content: "Факт" }]));

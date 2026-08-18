@@ -110,7 +110,7 @@ circuit breaker відкритий (він глобальний, per-client — 
 | `silpo_schema_drift` / zod-помилки | логи сервера (`logger.warn`)                     | Сільпо мовчки змінили контракт — треба оновити схеми |
 | сплеск 429                         | `recordExternalHttp("silpo", …)` метрики         | ліміт спільного client_id; див. ACTION B             |
 | breaker відкритий                  | ті самі метрики + `upstream_unavailable` у логах | MCP лежить; деградація вже автоматична               |
-| частка чеків без mono-пари         | `finyk_tx_receipt_links` vs `silpo_receipts`     | калібрування matcher-а (спека § Ризики)              |
+| частка чеків без mono-пари         | `silpo_tx_receipt_links` vs `silpo_receipts`     | калібрування matcher-а (спека § Ризики)              |
 
 ---
 

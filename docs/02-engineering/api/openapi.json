@@ -2242,115 +2242,11 @@
         }
       }
     },
-    "/api/silpo/connect": {
-      "get": {
-        "summary": "Розпочати OAuth-підключення до Silpo (302 redirect)",
-        "description": "NAVIGATION-ONLY — браузер редіректиться на Silpo consent screen. Не для fetch/XHR-виклику; `@sergeant/api-client` дає `silpoConnectUrl()` для `window.location.href`.",
-        "tags": [
-          "silpo"
-        ],
-        "security": [
-          {
-            "cookieAuth": []
-          },
-          {
-            "bearerAuth": []
-          }
-        ],
-        "responses": {
-          "302": {
-            "description": "Redirect до Silpo OAuth authorization URL."
-          },
-          "401": {
-            "description": "Unauthorized — потрібна активна сесія.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Rate-limit перевищено (rateLimitExpress).",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "502": {
-            "description": "SILPO_UPSTREAM_ERROR — не вдалося побудувати authorization URL (metadata discovery впав).",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "SILPO_DISABLED (kill switch) або SILPO_CONFIG_MISSING (redirect URI не сконфігуровано).",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/silpo/callback": {
-      "get": {
-        "summary": "OAuth callback від Silpo (302 redirect на /settings)",
-        "description": "Server-only — браузер потрапляє сюди після Silpo consent screen, жоден клієнт не викликає цей шлях напряму.",
-        "tags": [
-          "silpo"
-        ],
-        "security": [
-          {
-            "cookieAuth": []
-          },
-          {
-            "bearerAuth": []
-          }
-        ],
-        "responses": {
-          "302": {
-            "description": "Redirect на `/settings?silpo=connected|error` (+ `reason` при помилці)."
-          },
-          "401": {
-            "description": "Unauthorized — потрібна активна сесія.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "SILPO_DISABLED (kill switch).",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/silpo/disconnect": {
+    "/api/finyk/receipts/lookup": {
       "post": {
-        "summary": "Відключити Silpo (mono-патерн — чеки/items survive)",
+        "summary": "QR/ДПС lookup чека — draft БЕЗ запису в БД",
         "tags": [
-          "silpo"
+          "finyk"
         ],
         "security": [
           {
@@ -2360,257 +2256,23 @@
             "bearerAuth": []
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReceiptLookupRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
-            "description": "`silpo_connection` видалено.",
+            "description": "Чернетка чека, розпізнана ДПС XML.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SilpoDisconnectResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized — потрібна активна сесія.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "SILPO_DISABLED (kill switch).",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/silpo/wipe": {
-      "post": {
-        "summary": "Повне видалення Silpo-даних (чеки → items → finyk_tx_receipt_links)",
-        "description": "Підтверджені `finyk_tx_splits` та pantry-events НІКОЛИ не чіпаються.",
-        "tags": [
-          "silpo"
-        ],
-        "security": [
-          {
-            "cookieAuth": []
-          },
-          {
-            "bearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Видалено; `deletedReceipts` — лічильник.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SilpoWipeResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized — потрібна активна сесія.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "SILPO_DISABLED (kill switch).",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/silpo/sync-state": {
-      "get": {
-        "summary": "Статус Silpo-інтеграції + лічильники (Settings-картка)",
-        "tags": [
-          "silpo"
-        ],
-        "security": [
-          {
-            "cookieAuth": []
-          },
-          {
-            "bearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "`status: 'disconnected'` — синтетичний стан (немає рядка `silpo_connection`).",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SilpoSyncState"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized — потрібна активна сесія.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "SILPO_DISABLED (kill switch).",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/silpo/sync": {
-      "post": {
-        "summary": "«Оновити чеки» — pull + normalize + match до транзакцій",
-        "description": "`status` у відповіді — стан ПІСЛЯ спроби синку (може стати `reauth_required`, якщо lazy-refresh відвалився посеред синку).",
-        "tags": [
-          "silpo"
-        ],
-        "security": [
-          {
-            "cookieAuth": []
-          },
-          {
-            "bearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Діагностичні лічильники pull/insert/match.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SilpoSyncResult"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized — потрібна активна сесія.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "SILPO_NOT_CONNECTED або SILPO_REAUTH_REQUIRED.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "SILPO_RATE_LIMITED — забагато синків поспіль.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "502": {
-            "description": "SILPO_UPSTREAM_ERROR або SILPO_SCHEMA_DRIFT.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "SILPO_DISABLED (kill switch).",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/silpo/receipts": {
-      "get": {
-        "summary": "Cursor-paginated список чеків Silpo",
-        "tags": [
-          "silpo"
-        ],
-        "security": [
-          {
-            "cookieAuth": []
-          },
-          {
-            "bearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "in": "query",
-            "name": "limit",
-            "schema": {
-              "default": 50,
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 200
-            }
-          },
-          {
-            "in": "query",
-            "name": "cursor",
-            "schema": {
-              "type": "string",
-              "minLength": 3
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Сторінка `SilpoReceiptSummaryDto[]` + nextCursor.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SilpoReceiptsPage"
+                  "$ref": "#/components/schemas/ReceiptDraftResponse"
                 }
               }
             }
@@ -2621,66 +2283,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized — потрібна активна сесія.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "SILPO_DISABLED (kill switch).",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/silpo/receipts/{id}": {
-      "get": {
-        "summary": "Один чек Silpo — summary + line items",
-        "tags": [
-          "silpo"
-        ],
-        "security": [
-          {
-            "cookieAuth": []
-          },
-          {
-            "bearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "in": "path",
-            "name": "id",
-            "schema": {
-              "type": "string",
-              "description": "`silpo_receipts.receipt_id`."
-            },
-            "required": true,
-            "description": "`silpo_receipts.receipt_id`."
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Summary + масив items.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SilpoReceiptDetailDto"
                 }
               }
             }
@@ -2696,7 +2298,17 @@
             }
           },
           "404": {
-            "description": "Чек не знайдено (не існує або належить іншому юзеру).",
+            "description": "DPS_RECEIPT_NOT_FOUND — чек ще не з'явився в реєстрі ДПС.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "DPS_UPSTREAM_ERROR | DPS_PARSE_ERROR.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2706,7 +2318,7 @@
             }
           },
           "503": {
-            "description": "SILPO_DISABLED (kill switch).",
+            "description": "DPS_TOKEN_MISSING | DPS_AUTH_ERROR.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2718,12 +2330,11 @@
         }
       }
     },
-    "/api/silpo/cart/preview": {
+    "/api/finyk/receipts/analyze": {
       "post": {
-        "summary": "Пошук товарів для кошика (search-only, не пише в кошик)",
-        "description": "Один result на кожен request-item, у порядку запиту (matched back по точному тексту `query`, не по індексу). `matches` — top candidate + до 2 альтернатив; `unmatched: true` — нуль придатних кандидатів. `lagerId` — опаковий токен, клієнт лише зберігає й повертає його в `/cart/apply`, ніколи не парсить.",
+        "summary": "Vision-fallback аналіз фото чека — draft БЕЗ запису в БД",
         "tags": [
-          "silpo"
+          "finyk"
         ],
         "security": [
           {
@@ -2738,18 +2349,18 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SilpoCartPreviewRequest"
+                "$ref": "#/components/schemas/ReceiptAnalyzeRequest"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "`results[]` — по одному на request-item.",
+            "description": "Чернетка чека (source:'vision', fiscalNum:null, confidence 0..1).",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SilpoCartPreviewResponse"
+                  "$ref": "#/components/schemas/ReceiptDraftResponse"
                 }
               }
             }
@@ -2774,8 +2385,8 @@
               }
             }
           },
-          "409": {
-            "description": "SILPO_NOT_CONNECTED або SILPO_REAUTH_REQUIRED.",
+          "413": {
+            "description": "TOO_LARGE — НЕ канонічний ApiError envelope, див. коментар вище.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2784,18 +2395,8 @@
               }
             }
           },
-          "429": {
-            "description": "SILPO_RATE_LIMITED — забагато preview-запитів поспіль.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "502": {
-            "description": "SILPO_UPSTREAM_ERROR або SILPO_SCHEMA_DRIFT.",
+          "415": {
+            "description": "INVALID_BASE64 | TRUNCATED | MAGIC_MISMATCH — НЕ канонічний ApiError envelope, див. коментар вище.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2805,7 +2406,7 @@
             }
           },
           "503": {
-            "description": "SILPO_DISABLED (kill switch) або SILPO_CONFIG_MISSING.",
+            "description": "RECEIPT_VISION_UNAVAILABLE — жоден vision-провайдер не сконфігурований.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2817,12 +2418,12 @@
         }
       }
     },
-    "/api/silpo/cart/apply": {
+    "/api/finyk/receipts": {
       "post": {
-        "summary": "Додати вибрані товари в кошик Сільпо (confirm-before-write)",
-        "description": "Кожен `lagerId` декодується ДО будь-якого мережевого виклику — зіпсований токен дає 400 VALIDATION, ніколи не 502/503. Пише EXACTLY передані позиції (`addQuantity: false` — replace, не accumulate), відповідь = пост-write стан кошика (форма GET /api/silpo/cart).",
+        "summary": "Зберегти чек (draft + category)",
+        "description": "Ідемпотентний: `201` — новий чек, `200` + `alreadyExists:true` — повторний скан (той самий fiscal_num, або той самий `clientScanId` для vision-чеків без fiscal_num).",
         "tags": [
-          "silpo"
+          "finyk"
         ],
         "security": [
           {
@@ -2837,18 +2438,28 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SilpoCartApplyRequest"
+                "$ref": "#/components/schemas/ReceiptSaveRequest"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Пост-write стан кошика.",
+            "description": "alreadyExists:true — ідемпотентний повторний скан.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SilpoCartDto"
+                  "$ref": "#/components/schemas/ReceiptSaveResponse"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Новий чек створено.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReceiptSaveResponse"
                 }
               }
             }
@@ -2872,56 +2483,15 @@
                 }
               }
             }
-          },
-          "409": {
-            "description": "SILPO_NOT_CONNECTED або SILPO_REAUTH_REQUIRED.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "SILPO_RATE_LIMITED — забагато apply-запитів поспіль.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "502": {
-            "description": "SILPO_UPSTREAM_ERROR або SILPO_SCHEMA_DRIFT.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "SILPO_DISABLED (kill switch) або SILPO_CONFIG_MISSING.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
           }
         }
       }
     },
-    "/api/silpo/cart": {
+    "/api/finyk/receipts/{id}": {
       "get": {
-        "summary": "Поточний стан кошика Сільпо",
-        "description": "Порожній кошик (немає попереднього пошуку/замовлення) деградує до `{items: [], totalKop: 0, cartUrl: null}`, не помилки.",
+        "summary": "Чек з позиціями для розгортки транзакції",
         "tags": [
-          "silpo"
+          "finyk"
         ],
         "security": [
           {
@@ -2931,13 +2501,25 @@
             "bearerAuth": []
           }
         ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "`receipts.id`."
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Поточний кошик.",
+            "description": "Чек з items[] + link (mono|manual|null).",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SilpoCartDto"
+                  "$ref": "#/components/schemas/ReceiptGetResponse"
                 }
               }
             }
@@ -2952,8 +2534,56 @@
               }
             }
           },
-          "409": {
-            "description": "SILPO_NOT_CONNECTED або SILPO_REAUTH_REQUIRED.",
+          "404": {
+            "description": "Чужий чек АБО неіснуючий id (сервер не розрізняє).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finyk/import/screenshot/analyze": {
+      "post": {
+        "summary": "Vision-розпізнавання скріна банкінгу — draft БЕЗ запису в БД",
+        "tags": [
+          "finyk"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportScreenshotAnalyzeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "docType 'bank_screenshot'|'receipt'|'other' + rows[] (rows:[] для receipt/other).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportScreenshotAnalyzeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2962,8 +2592,8 @@
               }
             }
           },
-          "429": {
-            "description": "SILPO_RATE_LIMITED.",
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2972,8 +2602,18 @@
               }
             }
           },
-          "502": {
-            "description": "SILPO_UPSTREAM_ERROR або SILPO_SCHEMA_DRIFT.",
+          "413": {
+            "description": "TOO_LARGE — НЕ канонічний ApiError envelope (той самий guard, що receipts/analyze).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "INVALID_BASE64 | TRUNCATED | MAGIC_MISMATCH — НЕ канонічний ApiError envelope.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2983,7 +2623,243 @@
             }
           },
           "503": {
-            "description": "SILPO_DISABLED (kill switch) або SILPO_CONFIG_MISSING.",
+            "description": "IMPORT_VISION_UNAVAILABLE — жоден vision-провайдер не сконфігурований.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finyk/import/statement/preview": {
+      "post": {
+        "summary": "CSV-only парсинг банківської виписки — БЕЗ запису в БД",
+        "description": "Discriminated за `needsMapping`: `false` → `profile`+`rows`+`skipped`; `true` → `headers`+`sampleRows` для ручного column-mapper.",
+        "tags": [
+          "finyk"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportStatementPreviewRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Автопрофіль (mono/privat24/custom) або needsMapping:true.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportStatementPreviewResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finyk/import/commit": {
+      "post": {
+        "summary": "Commit вибраних rows → журнал import_batches + manual expenses",
+        "tags": [
+          "finyk"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportCommitRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "batchId + created/linked + skipped{monoMatched,duplicate}.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportCommitResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finyk/import/batches/{id}": {
+      "get": {
+        "summary": "Статус/підсумок батчу імпорту",
+        "tags": [
+          "finyk"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "`import_batches.id`."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Batch зі статусом completed|undone + лічильники.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportBatchGetResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Чужий батч АБО неіснуючий id (сервер не розрізняє).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Undo батчу — tombstone кожного created row",
+        "description": "Ідемпотентний: повторний виклик повертає `tombstoned:0`, той самий `200`.",
+        "tags": [
+          "finyk"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "`import_batches.id`."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Batch зі статусом 'undone' + tombstoned (0 на повторний виклик).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportBatchUndoResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Чужий батч АБО неіснуючий id (сервер не розрізняє).",
             "content": {
               "application/json": {
                 "schema": {
@@ -3918,6 +3794,759 @@
               "text/plain": {
                 "schema": {
                   "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/silpo/connect": {
+      "get": {
+        "summary": "Розпочати OAuth-підключення до Silpo (302 redirect)",
+        "description": "NAVIGATION-ONLY — браузер редіректиться на Silpo consent screen. Не для fetch/XHR-виклику; `@sergeant/api-client` дає `silpoConnectUrl()` для `window.location.href`.",
+        "tags": [
+          "silpo"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirect до Silpo OAuth authorization URL."
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate-limit перевищено (rateLimitExpress).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "SILPO_UPSTREAM_ERROR — не вдалося побудувати authorization URL (metadata discovery впав).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SILPO_DISABLED (kill switch) або SILPO_CONFIG_MISSING (redirect URI не сконфігуровано).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/silpo/callback": {
+      "get": {
+        "summary": "OAuth callback від Silpo (302 redirect на /settings)",
+        "description": "Server-only — браузер потрапляє сюди після Silpo consent screen, жоден клієнт не викликає цей шлях напряму.",
+        "tags": [
+          "silpo"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirect на `/settings?silpo=connected|error` (+ `reason` при помилці)."
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SILPO_DISABLED (kill switch).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/silpo/disconnect": {
+      "post": {
+        "summary": "Відключити Silpo (mono-патерн — чеки/items survive)",
+        "tags": [
+          "silpo"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`silpo_connection` видалено.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SilpoDisconnectResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SILPO_DISABLED (kill switch).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/silpo/wipe": {
+      "post": {
+        "summary": "Повне видалення Silpo-даних (чеки → items → finyk_tx_receipt_links)",
+        "description": "Підтверджені `finyk_tx_splits` та pantry-events НІКОЛИ не чіпаються.",
+        "tags": [
+          "silpo"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Видалено; `deletedReceipts` — лічильник.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SilpoWipeResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SILPO_DISABLED (kill switch).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/silpo/sync-state": {
+      "get": {
+        "summary": "Статус Silpo-інтеграції + лічильники (Settings-картка)",
+        "tags": [
+          "silpo"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`status: 'disconnected'` — синтетичний стан (немає рядка `silpo_connection`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SilpoSyncState"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SILPO_DISABLED (kill switch).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/silpo/sync": {
+      "post": {
+        "summary": "«Оновити чеки» — pull + normalize + match до транзакцій",
+        "description": "`status` у відповіді — стан ПІСЛЯ спроби синку (може стати `reauth_required`, якщо lazy-refresh відвалився посеред синку).",
+        "tags": [
+          "silpo"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Діагностичні лічильники pull/insert/match.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SilpoSyncResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "SILPO_NOT_CONNECTED або SILPO_REAUTH_REQUIRED.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "SILPO_RATE_LIMITED — забагато синків поспіль.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "SILPO_UPSTREAM_ERROR або SILPO_SCHEMA_DRIFT.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SILPO_DISABLED (kill switch).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/silpo/receipts": {
+      "get": {
+        "summary": "Cursor-paginated список чеків Silpo",
+        "tags": [
+          "silpo"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 50,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "type": "string",
+              "minLength": 3
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Сторінка `SilpoReceiptSummaryDto[]` + nextCursor.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SilpoReceiptsPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SILPO_DISABLED (kill switch).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/silpo/receipts/{id}": {
+      "get": {
+        "summary": "Один чек Silpo — summary + line items",
+        "tags": [
+          "silpo"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": {
+              "type": "string",
+              "description": "`silpo_receipts.receipt_id`."
+            },
+            "required": true,
+            "description": "`silpo_receipts.receipt_id`."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Summary + масив items.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SilpoReceiptDetailDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Чек не знайдено (не існує або належить іншому юзеру).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SILPO_DISABLED (kill switch).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/silpo/cart/preview": {
+      "post": {
+        "summary": "Пошук товарів для кошика (search-only, не пише в кошик)",
+        "description": "Один result на кожен request-item, у порядку запиту (matched back по точному тексту `query`, не по індексу). `matches` — top candidate + до 2 альтернатив; `unmatched: true` — нуль придатних кандидатів. `lagerId` — опаковий токен, клієнт лише зберігає й повертає його в `/cart/apply`, ніколи не парсить.",
+        "tags": [
+          "silpo"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SilpoCartPreviewRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "`results[]` — по одному на request-item.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SilpoCartPreviewResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "SILPO_NOT_CONNECTED або SILPO_REAUTH_REQUIRED.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "SILPO_RATE_LIMITED — забагато preview-запитів поспіль.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "SILPO_UPSTREAM_ERROR або SILPO_SCHEMA_DRIFT.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SILPO_DISABLED (kill switch) або SILPO_CONFIG_MISSING.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/silpo/cart/apply": {
+      "post": {
+        "summary": "Додати вибрані товари в кошик Сільпо (confirm-before-write)",
+        "description": "Кожен `lagerId` декодується ДО будь-якого мережевого виклику — зіпсований токен дає 400 VALIDATION, ніколи не 502/503. Пише EXACTLY передані позиції (`addQuantity: false` — replace, не accumulate), відповідь = пост-write стан кошика (форма GET /api/silpo/cart).",
+        "tags": [
+          "silpo"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SilpoCartApplyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Пост-write стан кошика.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SilpoCartDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "SILPO_NOT_CONNECTED або SILPO_REAUTH_REQUIRED.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "SILPO_RATE_LIMITED — забагато apply-запитів поспіль.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "SILPO_UPSTREAM_ERROR або SILPO_SCHEMA_DRIFT.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SILPO_DISABLED (kill switch) або SILPO_CONFIG_MISSING.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/silpo/cart": {
+      "get": {
+        "summary": "Поточний стан кошика Сільпо",
+        "description": "Порожній кошик (немає попереднього пошуку/замовлення) деградує до `{items: [], totalKop: 0, cartUrl: null}`, не помилки.",
+        "tags": [
+          "silpo"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Поточний кошик.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SilpoCartDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "SILPO_NOT_CONNECTED або SILPO_REAUTH_REQUIRED.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "SILPO_RATE_LIMITED.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "SILPO_UPSTREAM_ERROR або SILPO_SCHEMA_DRIFT.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SILPO_DISABLED (kill switch) або SILPO_CONFIG_MISSING.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             }
@@ -5861,66 +6490,334 @@
         ],
         "description": "POST /api/push/test."
       },
-      "SilpoCartPreviewRequest": {
+      "ReceiptLookupRequest": {
         "type": "object",
         "properties": {
+          "fn": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "pattern": "^[\\w.-]+$"
+          },
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "pattern": "^[\\w.-]+$"
+          },
+          "date": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "pattern": "^[\\w.-]+$"
+          },
+          "time": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "pattern": "^[\\w.-]+$"
+          },
+          "sm": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "pattern": "^[\\w.-]+$"
+          }
+        },
+        "required": [
+          "fn",
+          "id",
+          "date",
+          "time",
+          "sm"
+        ],
+        "additionalProperties": false,
+        "description": "POST /api/finyk/receipts/lookup — опакові поля QR фіскального чека ДПС."
+      },
+      "ReceiptAnalyzeRequest": {
+        "type": "object",
+        "properties": {
+          "image_base64": {
+            "type": "string",
+            "minLength": 100,
+            "maxLength": 7000000
+          },
+          "mime_type": {
+            "type": "string",
+            "maxLength": 64,
+            "pattern": "^image\\/[a-z+.-]+$"
+          }
+        },
+        "required": [
+          "image_base64"
+        ],
+        "additionalProperties": false,
+        "description": "POST /api/finyk/receipts/analyze — base64 фото чека (vision fallback)."
+      },
+      "ReceiptSaveRequest": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": [
+              "dps",
+              "vision"
+            ]
+          },
+          "fiscalNum": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "store": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "storeTaxId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 32
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "purchasedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          "totalKopiykas": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000000
+          },
           "items": {
-            "minItems": 1,
-            "maxItems": 100,
+            "maxItems": 200,
             "type": "array",
             "items": {
               "type": "object",
               "properties": {
+                "position": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 10000
+                },
                 "name": {
                   "type": "string",
-                  "minLength": 1
+                  "minLength": 1,
+                  "maxLength": 300
                 },
-                "quantity": {
+                "qty": {
                   "type": "number",
-                  "exclusiveMinimum": 0
+                  "minimum": -1000000,
+                  "maximum": 1000000
+                },
+                "priceKopiykas": {
+                  "type": "integer",
+                  "minimum": -1000000000,
+                  "maximum": 1000000000
+                },
+                "sumKopiykas": {
+                  "type": "integer",
+                  "minimum": -1000000000,
+                  "maximum": 1000000000
                 }
               },
               "required": [
-                "name"
+                "position",
+                "name",
+                "qty",
+                "priceKopiykas",
+                "sumKopiykas"
               ]
             }
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "rawPayload": {},
+          "clientScanId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "category": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
           }
         },
         "required": [
-          "items"
+          "source",
+          "fiscalNum",
+          "store",
+          "storeTaxId",
+          "purchasedAt",
+          "totalKopiykas",
+          "items",
+          "rawPayload",
+          "category"
         ],
-        "description": "Тіло POST /api/silpo/cart/preview — `{items: [{name, quantity?}]}` (1..100)."
+        "additionalProperties": false,
+        "description": "POST /api/finyk/receipts — відредагований draft + category. Опційний `clientScanId` (uuid) — ідемпотентність retry для vision-чеків без fiscalNum."
       },
-      "SilpoCartApplyRequest": {
+      "ImportScreenshotAnalyzeRequest": {
         "type": "object",
         "properties": {
-          "selections": {
+          "image_base64": {
+            "type": "string",
+            "minLength": 100,
+            "maxLength": 7000000
+          },
+          "mime_type": {
+            "type": "string",
+            "maxLength": 64,
+            "pattern": "^image\\/[a-z+.-]+$"
+          }
+        },
+        "required": [
+          "image_base64"
+        ],
+        "additionalProperties": false,
+        "description": "POST /api/finyk/import/screenshot/analyze — base64 скрін банкінгу."
+      },
+      "ImportStatementPreviewRequest": {
+        "type": "object",
+        "properties": {
+          "csv_text": {
+            "type": "string",
+            "minLength": 1
+          },
+          "mapping": {
+            "type": "object",
+            "properties": {
+              "dateCol": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "amountCol": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "descriptionCol": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "dateFormat": {
+                "type": "string",
+                "enum": [
+                  "DD.MM.YYYY",
+                  "YYYY-MM-DD"
+                ]
+              },
+              "decimalComma": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "dateCol",
+              "amountCol",
+              "descriptionCol"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "csv_text"
+        ],
+        "additionalProperties": false,
+        "description": "POST /api/finyk/import/statement/preview — csv_text + опційний column mapping."
+      },
+      "ImportCommitRequest": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": [
+              "bank_screenshot",
+              "bank_statement"
+            ]
+          },
+          "rows": {
             "minItems": 1,
-            "maxItems": 100,
+            "maxItems": 1000,
             "type": "array",
             "items": {
               "type": "object",
               "properties": {
-                "lagerId": {
+                "date": {
                   "type": "string",
-                  "minLength": 1
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
                 },
-                "quantity": {
-                  "type": "number",
-                  "exclusiveMinimum": 0
+                "amountKopiykas": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1000000000
+                },
+                "direction": {
+                  "type": "string",
+                  "enum": [
+                    "expense",
+                    "income"
+                  ]
+                },
+                "description": {
+                  "type": "string",
+                  "maxLength": 300
+                },
+                "category": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
                 }
               },
               "required": [
-                "lagerId",
-                "quantity"
-              ]
+                "date",
+                "amountKopiykas",
+                "direction",
+                "description",
+                "category"
+              ],
+              "additionalProperties": false
             }
           }
         },
         "required": [
-          "selections"
+          "source",
+          "rows"
         ],
-        "description": "Тіло POST /api/silpo/cart/apply — `{selections: [{lagerId, quantity}]}` (1..100); `lagerId` — опаковий токен з preview."
+        "additionalProperties": false,
+        "description": "POST /api/finyk/import/commit — вибрані/відредаговані rows (1..5000)."
       },
       "WaitlistSubmit": {
         "type": "object",
@@ -6094,6 +6991,67 @@
           "metrics"
         ],
         "description": "POST /api/metrics/web-vitals — батч Core Web Vitals (LCP/INP/FCP/TTFB/CLS)."
+      },
+      "SilpoCartPreviewRequest": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "minItems": 1,
+            "maxItems": 100,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "quantity": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                }
+              },
+              "required": [
+                "name"
+              ]
+            }
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "description": "Тіло POST /api/silpo/cart/preview — `{items: [{name, quantity?}]}` (1..100)."
+      },
+      "SilpoCartApplyRequest": {
+        "type": "object",
+        "properties": {
+          "selections": {
+            "minItems": 1,
+            "maxItems": 100,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "lagerId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "quantity": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                }
+              },
+              "required": [
+                "lagerId",
+                "quantity"
+              ]
+            }
+          }
+        },
+        "required": [
+          "selections"
+        ],
+        "description": "Тіло POST /api/silpo/cart/apply — `{selections: [{lagerId, quantity}]}` (1..100); `lagerId` — опаковий токен з preview."
       },
       "MeResponse": {
         "type": "object",
@@ -7134,6 +8092,1126 @@
         "additionalProperties": false,
         "description": "Відповідь GET /api/mono/backfill-progress — поточний стан per-user backfill job."
       },
+      "ReceiptDraftResponse": {
+        "type": "object",
+        "properties": {
+          "draft": {
+            "type": "object",
+            "properties": {
+              "source": {
+                "type": "string",
+                "enum": [
+                  "dps",
+                  "vision"
+                ]
+              },
+              "fiscalNum": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "store": {
+                "type": "string",
+                "maxLength": 300
+              },
+              "storeTaxId": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 32
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "purchasedAt": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+              },
+              "totalKopiykas": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000000000
+              },
+              "items": {
+                "maxItems": 200,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "position": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 10000
+                    },
+                    "name": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 300
+                    },
+                    "qty": {
+                      "type": "number",
+                      "minimum": -1000000,
+                      "maximum": 1000000
+                    },
+                    "priceKopiykas": {
+                      "type": "integer",
+                      "minimum": -1000000000,
+                      "maximum": 1000000000
+                    },
+                    "sumKopiykas": {
+                      "type": "integer",
+                      "minimum": -1000000000,
+                      "maximum": 1000000000
+                    }
+                  },
+                  "required": [
+                    "position",
+                    "name",
+                    "qty",
+                    "priceKopiykas",
+                    "sumKopiykas"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "confidence": {
+                "anyOf": [
+                  {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "rawPayload": {},
+              "clientScanId": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "source",
+              "fiscalNum",
+              "store",
+              "storeTaxId",
+              "purchasedAt",
+              "totalKopiykas",
+              "items",
+              "rawPayload"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "draft"
+        ],
+        "additionalProperties": false,
+        "description": "Відповідь lookup/analyze — чернетка чека БЕЗ запису в БД (`source: 'dps'|'vision'`)."
+      },
+      "ReceiptSaveResponse": {
+        "type": "object",
+        "properties": {
+          "receipt": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              "source": {
+                "type": "string",
+                "enum": [
+                  "dps",
+                  "vision",
+                  "silpo"
+                ]
+              },
+              "fiscalNum": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "store": {
+                "type": "string"
+              },
+              "storeTaxId": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "purchasedAt": {
+                "type": "string"
+              },
+              "totalKopiykas": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "receiptId": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "position": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "qty": {
+                      "type": "number"
+                    },
+                    "priceKopiykas": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "sumKopiykas": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "receiptId",
+                    "position",
+                    "name",
+                    "qty",
+                    "priceKopiykas",
+                    "sumKopiykas"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "link": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "txKind": {
+                        "type": "string",
+                        "enum": [
+                          "mono",
+                          "manual"
+                        ]
+                      },
+                      "txRef": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "txKind",
+                      "txRef"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "createdAt": {
+                "type": "string"
+              },
+              "updatedAt": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "source",
+              "fiscalNum",
+              "store",
+              "storeTaxId",
+              "purchasedAt",
+              "totalKopiykas",
+              "items",
+              "link",
+              "createdAt",
+              "updatedAt"
+            ],
+            "additionalProperties": false
+          },
+          "alreadyExists": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "receipt",
+          "alreadyExists"
+        ],
+        "additionalProperties": false,
+        "description": "Відповідь save — 201 (новий) або 200 + alreadyExists:true (ідемпотентний повтор)."
+      },
+      "ReceiptGetResponse": {
+        "type": "object",
+        "properties": {
+          "receipt": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              "source": {
+                "type": "string",
+                "enum": [
+                  "dps",
+                  "vision",
+                  "silpo"
+                ]
+              },
+              "fiscalNum": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "store": {
+                "type": "string"
+              },
+              "storeTaxId": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "purchasedAt": {
+                "type": "string"
+              },
+              "totalKopiykas": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "receiptId": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "position": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "qty": {
+                      "type": "number"
+                    },
+                    "priceKopiykas": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "sumKopiykas": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "receiptId",
+                    "position",
+                    "name",
+                    "qty",
+                    "priceKopiykas",
+                    "sumKopiykas"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "link": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "txKind": {
+                        "type": "string",
+                        "enum": [
+                          "mono",
+                          "manual"
+                        ]
+                      },
+                      "txRef": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "txKind",
+                      "txRef"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "createdAt": {
+                "type": "string"
+              },
+              "updatedAt": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "source",
+              "fiscalNum",
+              "store",
+              "storeTaxId",
+              "purchasedAt",
+              "totalKopiykas",
+              "items",
+              "link",
+              "createdAt",
+              "updatedAt"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "receipt"
+        ],
+        "additionalProperties": false,
+        "description": "Відповідь GET /api/finyk/receipts/{id}."
+      },
+      "ImportScreenshotAnalyzeResponse": {
+        "type": "object",
+        "properties": {
+          "draft": {
+            "type": "object",
+            "properties": {
+              "docType": {
+                "type": "string",
+                "enum": [
+                  "bank_screenshot",
+                  "receipt",
+                  "other"
+                ]
+              },
+              "bank": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 120
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "rows": {
+                "maxItems": 200,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "date": {
+                      "type": "string",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                    },
+                    "time": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "amountKopiykas": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 1000000000
+                    },
+                    "direction": {
+                      "type": "string",
+                      "enum": [
+                        "expense",
+                        "income"
+                      ]
+                    },
+                    "description": {
+                      "type": "string",
+                      "maxLength": 300
+                    },
+                    "confidence": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "transferLikely": {
+                      "type": "boolean"
+                    },
+                    "duplicateLikely": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "date",
+                    "time",
+                    "amountKopiykas",
+                    "direction",
+                    "description",
+                    "confidence"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "docType",
+              "bank",
+              "rows"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "draft"
+        ],
+        "additionalProperties": false,
+        "description": "Відповідь screenshot/analyze — draft rows[] БЕЗ запису в БД."
+      },
+      "ImportStatementPreviewResponse": {
+        "type": "object",
+        "properties": {
+          "profile": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "mono",
+                      "privat24"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "const": "custom"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "needsMapping": {
+            "type": "boolean"
+          },
+          "headers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "sampleRows": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "amountKopiykas": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1000000000
+                },
+                "direction": {
+                  "type": "string",
+                  "enum": [
+                    "expense",
+                    "income"
+                  ]
+                },
+                "description": {
+                  "type": "string",
+                  "maxLength": 300
+                },
+                "transferLikely": {
+                  "type": "boolean"
+                },
+                "duplicateLikely": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "date",
+                "amountKopiykas",
+                "direction",
+                "description"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "skipped": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                },
+                "reason": {
+                  "type": "string",
+                  "enum": [
+                    "not_uah",
+                    "unparsed_date",
+                    "unparsed_amount",
+                    "empty"
+                  ]
+                }
+              },
+              "required": [
+                "line",
+                "reason"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "profile",
+          "needsMapping",
+          "rows",
+          "skipped"
+        ],
+        "additionalProperties": false,
+        "description": "Відповідь statement/preview — discriminated за needsMapping (profile+rows+skipped, АБО headers+sampleRows для ручного column-mapper)."
+      },
+      "ImportCommitResponse": {
+        "type": "object",
+        "properties": {
+          "batchId": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "created": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "linked": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "skipped": {
+            "type": "object",
+            "properties": {
+              "monoMatched": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "duplicate": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "monoMatched",
+              "duplicate"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "batchId",
+          "created",
+          "linked",
+          "skipped"
+        ],
+        "additionalProperties": false,
+        "description": "Відповідь commit — batchId + created/linked + skipped{monoMatched,duplicate}."
+      },
+      "ImportBatchGetResponse": {
+        "type": "object",
+        "properties": {
+          "batch": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              "source": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "completed",
+                  "undone"
+                ]
+              },
+              "rowsTotal": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "rowsCreated": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "rowsLinked": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "rowsSkipped": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "createdRowIds": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+              },
+              "updatedAt": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+              }
+            },
+            "required": [
+              "id",
+              "source",
+              "status",
+              "rowsTotal",
+              "rowsCreated",
+              "rowsLinked",
+              "rowsSkipped",
+              "createdRowIds",
+              "createdAt",
+              "updatedAt"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "batch"
+        ],
+        "additionalProperties": false,
+        "description": "Відповідь GET /api/finyk/import/batches/{id}."
+      },
+      "ImportBatchUndoResponse": {
+        "type": "object",
+        "properties": {
+          "batch": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              "source": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "completed",
+                  "undone"
+                ]
+              },
+              "rowsTotal": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "rowsCreated": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "rowsLinked": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "rowsSkipped": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "createdRowIds": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+              },
+              "updatedAt": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+              }
+            },
+            "required": [
+              "id",
+              "source",
+              "status",
+              "rowsTotal",
+              "rowsCreated",
+              "rowsLinked",
+              "rowsSkipped",
+              "createdRowIds",
+              "createdAt",
+              "updatedAt"
+            ],
+            "additionalProperties": false
+          },
+          "tombstoned": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "batch",
+          "tombstoned"
+        ],
+        "additionalProperties": false,
+        "description": "Відповідь DELETE /api/finyk/import/batches/{id} — undo, ідемпотентний (tombstoned:0 на повторний виклик)."
+      },
+      "WaitlistSubmitResponse": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "const": true
+          },
+          "created": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ok",
+          "created"
+        ],
+        "additionalProperties": false,
+        "description": "Відповідь на POST /api/v1/waitlist — `created` розрізняє новий запис vs duplicate."
+      },
+      "FeedbackSubmitResponse": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "const": true
+          },
+          "id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "ok",
+          "id"
+        ],
+        "additionalProperties": false,
+        "description": "Відповідь на POST /api/v1/feedback — `id` рядка у feedback_entries (bigint скоерсено в number)."
+      },
+      "BillingCheckoutResponse": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "const": true
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "test",
+              "live"
+            ]
+          },
+          "sessionId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "required": [
+          "ok",
+          "mode",
+          "sessionId",
+          "url"
+        ],
+        "additionalProperties": false,
+        "description": "Відповідь Stripe Checkout MVP: session id, redirect URL, test/live mode."
+      },
+      "BillingStatusResponse": {
+        "type": "object",
+        "properties": {
+          "subscription": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "provider": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "stripe",
+                      "liqpay",
+                      "plata",
+                      "manual"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "plan": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "plus",
+                      "pro"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "status": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "active": {
+                "type": "boolean"
+              },
+              "currentPeriodEnd": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "provider",
+              "plan",
+              "status",
+              "active",
+              "currentPeriodEnd"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "subscription"
+        ],
+        "additionalProperties": false,
+        "description": "Поточний subscription state користувача, серіалізований з subscriptions (m056)."
+      },
+      "BillingPortalResponse": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "const": true
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "required": [
+          "ok",
+          "url"
+        ],
+        "additionalProperties": false,
+        "description": "Відповідь POST /api/billing/portal: short-lived redirect URL у Stripe Customer Portal."
+      },
+      "BillingProvidersResponse": {
+        "type": "object",
+        "properties": {
+          "providers": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "stripe",
+                "liqpay",
+                "plata"
+              ]
+            }
+          }
+        },
+        "required": [
+          "providers"
+        ],
+        "additionalProperties": false,
+        "description": "GET /api/billing/providers — payment-провайдери, доступні юзеру (UA → liqpay/plata; інші → stripe)."
+      },
+      "BillingCancelResponse": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "const": true
+          }
+        },
+        "required": [
+          "ok"
+        ],
+        "additionalProperties": false,
+        "description": "Відповідь POST /api/billing/cancel — власне скасування Pro (LiqPay/Plata не мають Customer Portal)."
+      },
+      "TranscribeResponse": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string"
+          },
+          "durationSec": {
+            "type": "number",
+            "minimum": 0
+          },
+          "model": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "text",
+          "durationSec",
+          "model"
+        ],
+        "additionalProperties": false,
+        "description": "Відповідь на POST /api/transcribe — розпізнаний текст + тривалість аудіо."
+      },
       "SilpoDisconnectResponse": {
         "type": "object",
         "properties": {
@@ -7640,241 +9718,6 @@
         ],
         "additionalProperties": false,
         "description": "Відповідь GET /api/silpo/cart і POST /api/silpo/cart/apply — поточний стан кошика Сільпо."
-      },
-      "WaitlistSubmitResponse": {
-        "type": "object",
-        "properties": {
-          "ok": {
-            "type": "boolean",
-            "const": true
-          },
-          "created": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "ok",
-          "created"
-        ],
-        "additionalProperties": false,
-        "description": "Відповідь на POST /api/v1/waitlist — `created` розрізняє новий запис vs duplicate."
-      },
-      "FeedbackSubmitResponse": {
-        "type": "object",
-        "properties": {
-          "ok": {
-            "type": "boolean",
-            "const": true
-          },
-          "id": {
-            "type": "integer",
-            "exclusiveMinimum": 0,
-            "maximum": 9007199254740991
-          }
-        },
-        "required": [
-          "ok",
-          "id"
-        ],
-        "additionalProperties": false,
-        "description": "Відповідь на POST /api/v1/feedback — `id` рядка у feedback_entries (bigint скоерсено в number)."
-      },
-      "BillingCheckoutResponse": {
-        "type": "object",
-        "properties": {
-          "ok": {
-            "type": "boolean",
-            "const": true
-          },
-          "mode": {
-            "type": "string",
-            "enum": [
-              "test",
-              "live"
-            ]
-          },
-          "sessionId": {
-            "type": "string",
-            "minLength": 1
-          },
-          "url": {
-            "type": "string",
-            "format": "uri"
-          }
-        },
-        "required": [
-          "ok",
-          "mode",
-          "sessionId",
-          "url"
-        ],
-        "additionalProperties": false,
-        "description": "Відповідь Stripe Checkout MVP: session id, redirect URL, test/live mode."
-      },
-      "BillingStatusResponse": {
-        "type": "object",
-        "properties": {
-          "subscription": {
-            "type": "object",
-            "properties": {
-              "id": {
-                "anyOf": [
-                  {
-                    "type": "integer",
-                    "exclusiveMinimum": 0,
-                    "maximum": 9007199254740991
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
-              },
-              "provider": {
-                "anyOf": [
-                  {
-                    "type": "string",
-                    "enum": [
-                      "stripe",
-                      "liqpay",
-                      "plata",
-                      "manual"
-                    ]
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
-              },
-              "plan": {
-                "anyOf": [
-                  {
-                    "type": "string",
-                    "enum": [
-                      "plus",
-                      "pro"
-                    ]
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
-              },
-              "status": {
-                "anyOf": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
-              },
-              "active": {
-                "type": "boolean"
-              },
-              "currentPeriodEnd": {
-                "anyOf": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
-              }
-            },
-            "required": [
-              "id",
-              "provider",
-              "plan",
-              "status",
-              "active",
-              "currentPeriodEnd"
-            ],
-            "additionalProperties": false
-          }
-        },
-        "required": [
-          "subscription"
-        ],
-        "additionalProperties": false,
-        "description": "Поточний subscription state користувача, серіалізований з subscriptions (m056)."
-      },
-      "BillingPortalResponse": {
-        "type": "object",
-        "properties": {
-          "ok": {
-            "type": "boolean",
-            "const": true
-          },
-          "url": {
-            "type": "string",
-            "format": "uri"
-          }
-        },
-        "required": [
-          "ok",
-          "url"
-        ],
-        "additionalProperties": false,
-        "description": "Відповідь POST /api/billing/portal: short-lived redirect URL у Stripe Customer Portal."
-      },
-      "BillingProvidersResponse": {
-        "type": "object",
-        "properties": {
-          "providers": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "enum": [
-                "stripe",
-                "liqpay",
-                "plata"
-              ]
-            }
-          }
-        },
-        "required": [
-          "providers"
-        ],
-        "additionalProperties": false,
-        "description": "GET /api/billing/providers — payment-провайдери, доступні юзеру (UA → liqpay/plata; інші → stripe)."
-      },
-      "BillingCancelResponse": {
-        "type": "object",
-        "properties": {
-          "ok": {
-            "type": "boolean",
-            "const": true
-          }
-        },
-        "required": [
-          "ok"
-        ],
-        "additionalProperties": false,
-        "description": "Відповідь POST /api/billing/cancel — власне скасування Pro (LiqPay/Plata не мають Customer Portal)."
-      },
-      "TranscribeResponse": {
-        "type": "object",
-        "properties": {
-          "text": {
-            "type": "string"
-          },
-          "durationSec": {
-            "type": "number",
-            "minimum": 0
-          },
-          "model": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "text",
-          "durationSec",
-          "model"
-        ],
-        "additionalProperties": false,
-        "description": "Відповідь на POST /api/transcribe — розпізнаний текст + тривалість аудіо."
       }
     },
     "securitySchemes": {

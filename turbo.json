@@ -17,6 +17,10 @@
       "dependsOn": ["^build"],
       "outputs": []
     },
+    "@sergeant/server#test": {
+      "dependsOn": ["^build", "@sergeant/api-client#test"],
+      "outputs": []
+    },
     "test:coverage": {
       "dependsOn": ["^build"],
       "outputs": ["coverage/**"]

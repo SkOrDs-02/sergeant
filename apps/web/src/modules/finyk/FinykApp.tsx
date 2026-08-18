@@ -8,7 +8,6 @@ import { readRaw } from "./lib/finykStorage";
 import { FINYK_MANUAL_ONLY_KEY, enableFinykManualOnly } from "./lib/demoData";
 import { ModuleBottomNav } from "@shared/components/ui/ModuleBottomNav";
 import { messages } from "@shared/i18n/uk";
-import { FloatingActionButton } from "@shared/components/ui/FloatingActionButton";
 import {
   MeshBackground,
   ModuleAccentProvider,
@@ -21,7 +20,6 @@ import {
 import { NoBankBanner } from "./components/NoBankBanner";
 import { FinykManualExpenseConflictBanner } from "./components/FinykManualExpenseConflictBanner";
 import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
-import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
@@ -41,20 +39,27 @@ import {
 
 import { ManualExpenseSheet } from "./components/ManualExpenseSheet";
 import { FinykLoginScreen } from "./components/FinykLoginScreen";
+import { FinykScanEntryPoints } from "./components/FinykScanEntryPoints";
 import { NAV_ICONS, NAV_IDS, NAV_ITEMS } from "./components/finykNav";
 import { useFinykRoute, useFinykQueryParam } from "./hooks/useFinykRoute";
 import { useUnifiedFinanceData } from "./hooks/useUnifiedFinanceData";
 import { useFinykQuickStatsWriter } from "./hooks/useFinykQuickStatsWriter";
 import { useFinykPersonalization } from "./hooks/useFinykPersonalization";
+import { useFinykReceiptLinks } from "./hooks/useFinykReceiptLinks";
 import { useMonoTokenMigration } from "./hooks/useMonoTokenMigration";
 import { consumePresetPrefill } from "../../core/onboarding/presetPrefill";
 import { useModuleFirstRun } from "../../core/onboarding/useModuleFirstRun";
 import {
   getSyncTone,
-  type SyncTone,
   SwipeProgressBar,
   SWIPE_THRESHOLD_PX,
 } from "./components/SyncIndicator";
+import {
+  AuthErrorBanner,
+  FinykHeaderIcon,
+  SyncPill,
+  getSwipeStyle,
+} from "./FinykAppChrome";
 
 const PRIVAT_ENABLED = false;
 
@@ -78,6 +83,10 @@ export default function App({
   useMonoTokenMigration(true);
   const toast = useToast();
   const storage = useStorage({ toast });
+  // Device-local чек↔транзакція лінки (спека § Розгортка) — одне джерело
+  // для індикатора в списку транзакцій І для write-through записувача
+  // ReceiptScanSheet/BulkImportSheet (`FinykScanEntryPoints`).
+  const receiptLinks = useFinykReceiptLinks();
   const [page, navigate] = useFinykRoute();
   const focusLimitCategoryId = useFinykQueryParam("cat");
   const focusAssetSection = useFinykQueryParam("section");
@@ -260,6 +269,7 @@ export default function App({
             mono={mergedMono}
             storage={storage}
             showBalance={showBalance}
+            receiptLinks={receiptLinks}
             categoryFilter={categoryFilter}
             onClearCategoryFilter={() => setCategoryFilter(null)}
             dayFilter={focusTransactionDate}
@@ -442,14 +452,14 @@ export default function App({
         </div>
 
         {!showLoginOverlay && (
-          <FloatingActionButton
-            variant="v2-finyk"
-            icon="plus"
-            onClick={() => {
+          <FinykScanEntryPoints
+            onAddExpense={() => {
               setEditingManualExpenseId(null);
               setShowExpenseSheet(true);
             }}
-            aria-label="Додати витрату"
+            storage={storage}
+            onReceiptLinked={receiptLinks.recordReceiptLink}
+            customCategories={storage.customCategories}
           />
         )}
 
@@ -478,6 +488,11 @@ export default function App({
           }
           initialCategory={quickAddCategory}
           initialDescription={quickAddDescription}
+          receiptId={
+            editingManualExpenseId
+              ? receiptLinks.getReceiptId(editingManualExpenseId)
+              : null
+          }
           frequentCategories={frequentCategories}
           frequentMerchants={frequentMerchants}
           customCategories={storage.customCategories}
@@ -548,132 +563,5 @@ export default function App({
   );
 }
 
-// Extracted components for module accent containment (Rule #12)
-
-function FinykHeaderIcon(): React.ReactElement {
-  return (
-    <div
-      className="shrink-0 w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center text-success-strong dark:text-success border border-success/15"
-      aria-hidden
-    >
-      <svg
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <rect x="2" y="5" width="20" height="14" rx="2" />
-        <line x1="2" y1="10" x2="22" y2="10" />
-      </svg>
-    </div>
-  );
-}
-
-interface SyncPillProps {
-  syncTone: SyncTone;
-}
-
-function SyncPill({ syncTone }: SyncPillProps): React.ReactElement {
-  return (
-    <div
-      className={cn(
-        // На вузьких екранах здоровий «ок»-стан ховаємо повністю: header-рядок
-        // фіксованої ширини (Назад + Хаб + око + асистент + налаштування) не
-        // лишає місця, і pill виштовхував/перекривав заголовок модуля. Стани,
-        // що вимагають уваги, лишаються видимими скрізь — див. `needsAttention`
-        // у `SyncIndicator.getSyncTone`.
-        syncTone.needsAttention ? "flex" : "hidden sm:flex",
-        "items-center gap-1.5 select-none shrink-0",
-        "text-style-caption px-1.5 sm:px-2 py-0.5 rounded-full border",
-        "transition-colors duration-base",
-        syncTone.pill,
-      )}
-      role="status"
-      aria-label={`Стан синхронізації: ${syncTone.text}`}
-    >
-      {/* Іконка — другий, не-кольоровий канал стану: сама крапка одна на
-          вузьких екранах (текст ховається `hidden sm:inline`) не дає зрячим
-          людям розрізнити 5 станів без кольору. */}
-      <Icon name={syncTone.icon} size="xs" className="shrink-0" />
-      <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", syncTone.dot)} />
-      <span className="hidden sm:inline">{syncTone.text}</span>
-    </div>
-  );
-}
-
-interface AuthErrorBannerProps {
-  authError: string;
-  onBackToHub?: (() => void) | undefined;
-  setAuthError: (msg: string) => void;
-}
-
-function AuthErrorBanner({
-  authError,
-  onBackToHub,
-  setAuthError,
-}: AuthErrorBannerProps): React.ReactElement {
-  // Offset clears the in-flow ModuleHeader stack: safe-area-pt + 68px title
-  // row (min-h-[68px], ModuleHeader.tsx) + ~40px ModuleSwitcher row.
-  return (
-    <div
-      role="alert"
-      className="fixed top-[calc(108px+env(safe-area-inset-top,0)+8px)] left-4 right-4 z-50 max-w-lg mx-auto"
-    >
-      <div className="bg-warning/15 border border-warning/40 rounded-2xl px-4 py-3 flex items-start gap-3 shadow-card">
-        <Icon
-          name="alert-triangle"
-          size={18}
-          className="shrink-0 mt-0.5 text-warning-strong dark:text-warning"
-          aria-hidden
-        />
-        <div className="flex-1 min-w-0">
-          <p className="text-style-label text-text">Токен потребує оновлення</p>
-          <p className="text-style-caption text-muted mt-0.5">{authError}</p>
-          {onBackToHub && (
-            <button
-              type="button"
-              onClick={onBackToHub}
-              className="focus-ring rounded-xl text-style-caption text-primary mt-2 hover:underline"
-            >
-              Оновити токен у Налаштуваннях Hub
-            </button>
-          )}
-        </div>
-        <button
-          type="button"
-          onClick={() => setAuthError("")}
-          className="focus-ring rounded-xl text-muted hover:text-text transition-colors shrink-0"
-          aria-label="Закрити"
-        >
-          <Icon name="close" size={16} aria-hidden />
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// Swipe transform style helper
-function getSwipeStyle(swipeDx: number): React.CSSProperties {
-  if (swipeDx !== 0) {
-    return {
-      transform: `translate3d(${swipeDx * 0.45}px, 0, 0)`,
-      transition: "none",
-      willChange: "transform",
-    };
-  }
-  // AI-CONTEXT: `transform: none` (not `translate3d(0,0,0)`) at rest —
-  // any non-"none" transform on an ancestor makes it the containing
-  // block for `position: fixed` descendants (CSS Transforms spec). With
-  // the old identity-transform idle value, `TransactionsBatchToolbar`'s
-  // `fixed bottom-0` toolbar was pinned to *this* wrapper's box instead
-  // of the viewport, so it floated mid-screen instead of sitting above
-  // the nav bar (A6/B4 root cause).
-  return {
-    transform: "none",
-    transition: "transform 200ms cubic-bezier(0.32, 0.72, 0, 1)",
-  };
-}
+// FinykHeaderIcon / SyncPill / AuthErrorBanner / getSwipeStyle extracted to
+// `./FinykAppChrome` (Hard Rule #18 headroom — see that file's docstring).

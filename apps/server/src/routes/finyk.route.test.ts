@@ -218,3 +218,50 @@ describe("finyk routes — POST /manual-expenses validation", () => {
     expect(res.status).toBe(400);
   });
 });
+
+/**
+ * Чек-скан v1 (`docs/90-work/planning/specs/receipt-scan.md`) —
+ * route-рівень: guard-ланцюг (setModule → rateLimit → requireSession) +
+ * повний-стек ДПС-503-без-токена. Глибша бізнес-логіка (matcher,
+ * XML-парсинг, vision-нормалізація, ідемпотентність, серіалізація) уже
+ * покрита handler-unit-тестами в `modules/finyk/receipts/*.test.ts` — тут
+ * лише підтвердження, що роутер реально монтує ці handler-и під
+ * правильними guard-ами.
+ */
+describe("finyk routes — чек-скан v1 auth guard", () => {
+  it.each([
+    ["POST", "/api/v1/finyk/receipts/lookup"],
+    ["POST", "/api/v1/finyk/receipts/analyze"],
+    ["POST", "/api/v1/finyk/receipts"],
+    ["GET", "/api/v1/finyk/receipts/1"],
+  ])("%s %s → 401 без сесії", async (method, path) => {
+    const createApp = await loadCreateApp();
+    const app = createApp();
+    const res = await request(app)
+      [method.toLowerCase() as "get" | "post"](path)
+      .set("X-Requested-With", "XMLHttpRequest")
+      .send({});
+    expect(res.status).toBe(401);
+  });
+});
+
+describe("finyk routes — POST /receipts/lookup без DPS_API_TOKEN", () => {
+  it("503 DPS_TOKEN_MISSING на весь стек (роутер → guard → handler → env)", async () => {
+    getSessionUserMock.mockResolvedValue({ id: "u1" });
+    vi.stubEnv("DPS_API_TOKEN", "");
+    const createApp = await loadCreateApp();
+    const app = createApp();
+    const res = await request(app)
+      .post("/api/v1/finyk/receipts/lookup")
+      .set("X-Requested-With", "XMLHttpRequest")
+      .send({
+        fn: "4000123456",
+        id: "RRO001",
+        date: "20260115",
+        time: "143210",
+        sm: "150.00",
+      });
+    expect(res.status).toBe(503);
+    expect(res.body.code).toBe("DPS_TOKEN_MISSING");
+  });
+});

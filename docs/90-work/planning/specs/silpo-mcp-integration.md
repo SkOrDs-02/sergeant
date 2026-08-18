@@ -201,7 +201,7 @@ E/F — сателіти відповідних треків після нако
   «Відключити Сільпо» видаляє лише `silpo_connection` (mono-патерн);
   окрема дія «Видалити всі дані Сільпо» (`POST /api/silpo/wipe`, з
   confirm-діалогом) видаляє `silpo_receipts`, `silpo_receipt_items`,
-  `finyk_tx_receipt_links`. Створені користувачем сутності — `TxSplit`-и,
+  `silpo_tx_receipt_links`. Створені користувачем сутності — `TxSplit`-и,
   pantry-events, manual expenses — **лишаються**: вони підтверджені юзером
   і є його даними, а не даними Сільпо. Аналіз оферти 2026-08-18 вимог
   видалення при відкликанні доступу не виявив (тема не врегульована);
@@ -271,7 +271,7 @@ E/F — сателіти відповідних треків після нако
 
 ## Поверхня змін (Phase 1 = трек A, Phase 2+ = трек B)
 
-- `apps/server/src/migrations/121_silpo_integration.sql` (+ `.down.sql`;
+- `apps/server/src/migrations/123_silpo_integration.sql` (+ `.down.sql`;
   номер звірити з main на момент PR — Hard Rule #4, генератор `pnpm gen` →
   migration, гейт `pnpm lint:migrations`) —
   `silpo_connection` (дзеркало mono), `silpo_receipts`
@@ -279,7 +279,7 @@ E/F — сателіти відповідних треків після нако
 online|offline`, `payment_hint` (спайк §0: MCP способу оплати не віддає —
   завжди NULL), `total_kop BIGINT`, `raw JSONB`), `silpo_receipt_items`
   (позиції: name, qty, unit, `price_kop`, category_slug, barcode?),
-  `finyk_tx_receipt_links` (PK `(user_id, transaction_id)` → receipt_id) —
+  `silpo_tx_receipt_links` (PK `(user_id, transaction_id)` → receipt_id) —
   link-патерн як `finyk_mono_debt_links`. Hard Rule #4. `mono_connection`
   живе лише в raw SQL (без drizzle-моделі) — для silpo-таблиць так само
   достатньо SQL + типів у `db-schema` за фактичним патерном сусідніх таблиць.
@@ -359,7 +359,7 @@ wipe|sync-state|receipts|receipts/:id` + реєстрація в `routes/index.t
 Гілка `claude/msp-silpo-spec-experiment-vipt1a` — **walking skeleton треку A**
 для оцінки обсягу й вартості інтеграції до спайку §0. Що входить:
 
-- міграція `121_silpo_integration.sql` (+down) — усі чотири таблиці;
+- міграція `123_silpo_integration.sql` (+down) — усі чотири таблиці;
 - `apps/server/src/modules/silpo/` — mcpClient (JSON-RPC), oauth (PKCE+DCR),
   tokenStore (реюз key ring), receipts pull/upsert;
 - `apps/server/src/routes/silpo.ts` — повний REST-контур за спекою;
@@ -407,6 +407,34 @@ Checkout/оплата — завжди за людиною (tool у MCP відс
 кошика на реальному акаунті — після merge (превʼю/запис верифіковані
 моками за живими формами зі спайку §0). Трек H (тижневий агент
 закупівлі) не стартував — окреме рішення founder-а після тестування G.
+
+### Колізія з receipt-scan при злитті з main (2026-08-18)
+
+Поки гілка жила окремо, у main приїхало **сканування чеків** (PR #818,
+#822–#825) — і воно зайняло **той самий номер міграції 121** та створило
+**однойменну таблицю `finyk_tx_receipt_links`** з іншою схемою
+(`receipt_id BIGINT PK → receipts(id)`, `tx_kind`, `tx_ref` проти нашої
+`(user_id, transaction_id) → silpo_receipts`). Обидві — через
+`CREATE TABLE IF NOT EXISTS`, тож у проді виграла б та, що накотиться
+першою, а друга фіча мовчки впала б на «column does not exist» у
+рантаймі — без жодної помилки на деплої.
+
+Розвʼязано на боці цієї гілки (main — трунк, адаптується гілка):
+
+- міграція перенумерована `121_silpo_integration` → **`123_silpo_integration`**
+  (main зайняв 121 і 122);
+- наша лінк-таблиця перейменована `finyk_tx_receipt_links` →
+  **`silpo_tx_receipt_links`** у міграції, `receipts.ts`, `receiptsRead.ts`,
+  роутах, тестах, `check-schema-drift.mjs` і цій спеці. Імʼя тепер несе
+  префікс модуля — так само, як решта silpo-таблиць, і колізія
+  структурно неможлива;
+- тест `039-finyk-tables` більше не потребує нашого костура
+  `FOREIGN_FINYK_PREFIX`: main вирішив ту саму проблему явним списком
+  таблиць, наша таблиця під `finyk_%` більше не підпадає.
+
+**Урок на майбутнє:** довгоживуча гілка з міграцією — це заявка на номер,
+якої ніхто, крім неї, не бачить. Перед мерджем звіряй і номер, і **імена
+створених таблиць** з `origin/main`, а не лише текстові конфлікти git.
 
 ### Спайк §0 — ПРОЙДЕНО (2026-08-18, живий акаунт founder-а)
 
