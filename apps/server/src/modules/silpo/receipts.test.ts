@@ -31,10 +31,14 @@ vi.mock("../../db.js", () => ({
   pool: { connect: mocks.poolConnect },
 }));
 
+vi.mock("@sentry/node", () => ({ captureException: vi.fn() }));
+
+import * as Sentry from "@sentry/node";
 import {
   listReceipts,
   pullAndSyncReceipts,
   silpoErrorToAppError,
+  __resetSilpoSchemaDriftAlert,
   __test__,
   type SilpoTransactionRunner,
 } from "./receipts.js";
@@ -699,5 +703,48 @@ describe("listReceipts", () => {
       "r:1",
       2,
     ]);
+  });
+});
+
+// ─── Sentry-алерт на дрейф схеми ────────────────────────────────────────────
+//
+// Дрейф контракту Сільпо — єдина відмова, про яку ніхто не дізнається сам:
+// версіонування в них немає, а `errorHandler` шле в Sentry лише
+// НЕ-operational 5xx (наш `SILPO_SCHEMA_DRIFT` — operational `AppError`).
+// Тому capture викликається явно в мапері; тут перевіряємо і сам виклик,
+// і дедуп-вікно (дрейф — стан, а не подія: без вікна кожен тап «Оновити
+// чеки» кожного юзера створював би окрему подію).
+describe("silpoErrorToAppError → Sentry на schema_drift", () => {
+  beforeEach(() => {
+    __resetSilpoSchemaDriftAlert();
+    vi.clearAllMocks();
+  });
+
+  it("шле подію в Sentry на дрейф схеми", () => {
+    const err = silpoErrorToAppError({
+      kind: "schema_drift",
+      message: "orders[0].createdAt відсутнє",
+    });
+    expect(err.code).toBe("SILPO_SCHEMA_DRIFT");
+    expect(Sentry.captureException).toHaveBeenCalledTimes(1);
+    const [captured, opts] = vi.mocked(Sentry.captureException).mock.calls[0]!;
+    expect((captured as Error).message).toContain("orders[0].createdAt");
+    expect(opts).toMatchObject({
+      tags: { integration: "silpo", kind: "schema_drift" },
+    });
+  });
+
+  it("дедупає повторний дрейф у межах вікна", () => {
+    silpoErrorToAppError({ kind: "schema_drift", message: "перший" });
+    silpoErrorToAppError({ kind: "schema_drift", message: "другий" });
+    silpoErrorToAppError({ kind: "schema_drift", message: "третій" });
+    expect(Sentry.captureException).toHaveBeenCalledTimes(1);
+  });
+
+  it("не шле подію на інші види помилок", () => {
+    silpoErrorToAppError({ kind: "rate_limited", message: "429" });
+    silpoErrorToAppError({ kind: "upstream_unavailable", message: "503" });
+    silpoErrorToAppError({ kind: "not_connected", message: "no row" });
+    expect(Sentry.captureException).not.toHaveBeenCalled();
   });
 });

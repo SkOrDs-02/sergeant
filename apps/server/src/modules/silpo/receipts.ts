@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { PoolClient } from "pg";
+import * as Sentry from "@sentry/node";
 // Субшлях замість кореневого барела: барел тягне categories.ts → design-tokens,
 // якого нема в server-бандлі (esbuild резолвить усі імпорти до tree-shaking).
 import {
@@ -570,6 +571,38 @@ export interface SilpoSyncResult {
   unmatched: number;
 }
 
+/**
+ * Дедуп-вікно для Sentry-алерту про дрейф схеми. Дрейф — стан, не подія:
+ * якщо Сільпо змінили формат, ЖОДЕН наступний виклик не пройде, і без вікна
+ * кожен тап «Оновити чеки» кожного користувача став би окремою подією.
+ * Одна подія на 15 хв достатня, щоб побачити проблему, і не заливає квоту.
+ */
+const SCHEMA_DRIFT_ALERT_WINDOW_MS = 15 * 60_000;
+let lastSchemaDriftAlertAt = 0;
+
+/** Test-only: скидає вікно дедупу між тестами. */
+export function __resetSilpoSchemaDriftAlert(): void {
+  lastSchemaDriftAlertAt = 0;
+}
+
+function captureSilpoSchemaDrift(message: string): void {
+  logger.error({ msg: "silpo_schema_drift", detail: message });
+  const now = Date.now();
+  if (now - lastSchemaDriftAlertAt < SCHEMA_DRIFT_ALERT_WINDOW_MS) return;
+  lastSchemaDriftAlertAt = now;
+  try {
+    Sentry.captureException(
+      new Error(`Silpo MCP schema drift: ${message}`), // NOSONAR — навмисно синтетична помилка як носій алерту
+      {
+        level: "warning",
+        tags: { integration: "silpo", kind: "schema_drift" },
+      },
+    );
+  } catch {
+    /* Sentry ніколи не має ламати обробку помилки */
+  }
+}
+
 /** Maps a token/MCP-layer error to the HTTP-facing `AppError` the route should throw. */
 export function silpoErrorToAppError(
   error: McpError | { kind: SilpoAuthedCallErrorKind; message: string },
@@ -599,6 +632,13 @@ export function silpoErrorToAppError(
         },
       );
     case "schema_drift":
+      // Єдиний детектор того, що Сільпо мовчки змінили контракт: версіонування
+      // в них немає, зламатись може будь-коли (спека § Дрейф схеми tools).
+      // `errorHandler` сюди НЕ докричиться до Sentry: він шле лише
+      // НЕ-operational 5xx, а це `AppError` (operational) — тож без явного
+      // capture дрейф лишався б самим лише warn-рядком у логах, який ніхто
+      // не читає. Звідси прямий виклик тут.
+      captureSilpoSchemaDrift(error.message);
       return new ExternalServiceError(
         "Сільпо змінили формат відповіді — оновлення тимчасово недоступне",
         { code: "SILPO_SCHEMA_DRIFT" },
