@@ -45,6 +45,17 @@ import { isApiError } from "../../ApiError";
 import { isImageValidationErrorBody } from "../../endpoints/imageValidationError";
 import { CONTRACT_SUITE_OPTIONS, createPact } from "./_pact";
 
+/**
+ * Стаб «завеликого» зображення для 413-інтеракції. НЕ реальні 6.9M
+ * символів (раунд 5 ревʼю PR #818): точний литерал записувався в
+ * згенерований pact-файл і роздував його до ~7MB У РЕПО. Pact-мок
+ * декларативний — 413-конверт відтворюється без реального розміру тіла;
+ * реальний поріг validateImageBase64 покритий юніт-тестами server-а
+ * (analyze.test.ts / screenshotAnalyze), а provider-реплей цієї
+ * інтеракції — свідомий it.todo-gap у provider.test.ts.
+ */
+const OVERSIZED_IMAGE_STUB = "c".repeat(200);
+
 describe(
   "contract @ POST /api/v1/finyk/import/screenshot/analyze",
   CONTRACT_SUITE_OPTIONS,
@@ -139,7 +150,7 @@ describe(
               "content-type": "application/json",
             });
             req.jsonBody({
-              image_base64: "c".repeat(6_900_000),
+              image_base64: OVERSIZED_IMAGE_STUB,
               mime_type: "image/png",
             });
           },
@@ -158,7 +169,7 @@ describe(
           let caught: unknown;
           try {
             await imports.analyzeImportScreenshot({
-              image_base64: "c".repeat(6_900_000),
+              image_base64: OVERSIZED_IMAGE_STUB,
               mime_type: "image/png",
             });
           } catch (err) {
