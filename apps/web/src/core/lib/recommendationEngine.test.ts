@@ -350,9 +350,14 @@ describe("generateRecommendations", () => {
     expect(recs.find((r) => r.id === "fizruk_long_break")).toBeUndefined();
   });
 
-  it("визначає мʼязові групи за назвою вправи (regex)", () => {
+  it("визначає мʼязові групи за назвою вправи (regex) і згортає їх в ОДНУ картку", () => {
+    // Свіже тренування (2 дні тому) тримає `fizruk_long_break` мовчазним,
+    // тож м'язовий баланс має право говорити; груди й ноги стали
+    // несвіжими 12 днів тому.
     const old = new Date();
     old.setDate(old.getDate() - 12);
+    const recent = new Date();
+    recent.setDate(recent.getDate() - 2);
     setLS("fizruk_workouts_v1", [
       {
         id: "w1",
@@ -360,21 +365,56 @@ describe("generateRecommendations", () => {
         endedAt: new Date(old.getTime() + 3600000).toISOString(),
         items: [{ nameUk: "Жим лежачи" }, { nameUk: "Присідання зі штангою" }],
       },
+      {
+        id: "w2",
+        startedAt: recent.toISOString(),
+        endedAt: new Date(recent.getTime() + 3600000).toISOString(),
+        items: [{ nameUk: "Підйом на біцепс" }],
+      },
     ]);
 
     const recs = generateRecommendations();
-    // 12 days ≥ STALE_DAYS(8) → muscle recs for chest and legs
-    const chestRec = recs.find((r) => r.id === "fizruk_muscle_chest");
-    const legsRec = recs.find((r) => r.id === "fizruk_muscle_legs");
-    expect(chestRec).toBeDefined();
-    expect(chestRec!.title).toContain("Груди");
-    expect(legsRec).toBeDefined();
-    expect(legsRec!.title).toContain("Ноги");
+    const muscleRecs = recs.filter((r) => r.id.startsWith("fizruk_muscle"));
+    expect(muscleRecs).toHaveLength(1);
+    const rec = muscleRecs[0]!;
+    expect(rec.id).toBe("fizruk_muscle_balance");
+    expect(rec.title).toContain("2 групи м'язів");
+    expect(rec.body).toContain("Груди");
+    expect(rec.body).toContain("Квадрицепс");
+  });
+
+  it("одна несвіжа група → картка називає саме її", () => {
+    const old = new Date();
+    old.setDate(old.getDate() - 12);
+    const recent = new Date();
+    recent.setDate(recent.getDate() - 2);
+    setLS("fizruk_workouts_v1", [
+      {
+        id: "w1",
+        startedAt: old.toISOString(),
+        endedAt: new Date(old.getTime() + 3600000).toISOString(),
+        items: [{ nameUk: "Жим лежачи" }],
+      },
+      {
+        id: "w2",
+        startedAt: recent.toISOString(),
+        endedAt: new Date(recent.getTime() + 3600000).toISOString(),
+        items: [{ nameUk: "Підйом на біцепс" }],
+      },
+    ]);
+
+    const rec = generateRecommendations().find(
+      (r) => r.id === "fizruk_muscle_balance",
+    );
+    expect(rec).toBeDefined();
+    expect(rec!.title).toBe("Груди не тренували 12 днів");
   });
 
   it("визначає мʼязи через muscleGroups поле вправи", () => {
     const old = new Date();
     old.setDate(old.getDate() - 10);
+    const recent = new Date();
+    recent.setDate(recent.getDate() - 1);
     setLS("fizruk_workouts_v1", [
       {
         id: "w1",
@@ -388,11 +428,115 @@ describe("generateRecommendations", () => {
           },
         ],
       },
+      {
+        id: "w2",
+        startedAt: recent.toISOString(),
+        endedAt: new Date(recent.getTime() + 3600000).toISOString(),
+        items: [{ nameUk: "Підйом на біцепс" }],
+      },
+    ]);
+
+    const rec = generateRecommendations().find(
+      (r) => r.id === "fizruk_muscle_balance",
+    );
+    expect(rec).toBeDefined();
+    expect(rec!.body).toContain("Сідниці");
+    expect(rec!.body).toContain("Задня поверхня стегна");
+  });
+
+  it("жодної англійської назви мʼяза в тексті картки — навіть для дрібної анатомії з каталогу", () => {
+    // Регресія 2026-08-18: `musclesPrimary` каталогу несе доменні id
+    // (`rhomboids`, `erector_spinae`, `rectus_abdominis`), а рушій мав
+    // власну табличку на 10 рядків. Усе поза нею витікало в UI сирим
+    // англійським id — по картці на кожен м'яз.
+    const old = new Date();
+    old.setDate(old.getDate() - 10);
+    const recent = new Date();
+    recent.setDate(recent.getDate() - 1);
+    setLS("fizruk_workouts_v1", [
+      {
+        id: "w1",
+        startedAt: old.toISOString(),
+        endedAt: new Date(old.getTime() + 3600000).toISOString(),
+        items: [
+          {
+            nameUk: "Тяга в нахилі",
+            musclesPrimary: ["rhomboids", "upper_back", "erector_spinae"],
+            musclesSecondary: ["rectus_abdominis", "obliques"],
+          },
+        ],
+      },
+      {
+        id: "w2",
+        startedAt: recent.toISOString(),
+        endedAt: new Date(recent.getTime() + 3600000).toISOString(),
+        items: [{ nameUk: "Підйом на біцепс" }],
+      },
     ]);
 
     const recs = generateRecommendations();
-    expect(recs.find((r) => r.id === "fizruk_muscle_glutes")).toBeDefined();
-    expect(recs.find((r) => r.id === "fizruk_muscle_hamstrings")).toBeDefined();
+    expect(recs.filter((r) => r.id.startsWith("fizruk_muscle"))).toHaveLength(
+      1,
+    );
+    const text = recs
+      .filter((r) => r.module === "fizruk")
+      .map((r) => `${r.title} ${r.body ?? ""}`)
+      .join(" ");
+    expect(text).not.toMatch(/[a-z]+_[a-z]+/);
+    expect(text).not.toContain("rhomboids");
+    // `rhomboids` + `upper_back` — одна атласна група, тож і один пункт.
+    expect(text).toContain("Верх спини");
+  });
+
+  it("під час довгої паузи мовчить про мʼязи — це вже сказала картка про паузу", () => {
+    // Скріншот 2026-08-18: 10 днів без залу → «10 днів без тренування»
+    // ПЛЮС по картці на кожну з 18 груп. Другий блок нічого не додає.
+    const old = new Date();
+    old.setDate(old.getDate() - 10);
+    setLS("fizruk_workouts_v1", [
+      {
+        id: "w1",
+        startedAt: old.toISOString(),
+        endedAt: new Date(old.getTime() + 3600000).toISOString(),
+        items: [
+          {
+            nameUk: "Тяга в нахилі",
+            musclesPrimary: ["rhomboids", "upper_back"],
+            musclesSecondary: ["biceps"],
+          },
+        ],
+      },
+    ]);
+
+    const recs = generateRecommendations();
+    expect(recs.find((r) => r.id === "fizruk_long_break")).toBeDefined();
+    expect(recs.filter((r) => r.id.startsWith("fizruk_muscle"))).toHaveLength(
+      0,
+    );
+  });
+
+  it("група, забута довше за вікно спостереження, не тримає картку вічно", () => {
+    const ancient = new Date();
+    ancient.setDate(ancient.getDate() - 120);
+    const recent = new Date();
+    recent.setDate(recent.getDate() - 1);
+    setLS("fizruk_workouts_v1", [
+      {
+        id: "w1",
+        startedAt: ancient.toISOString(),
+        endedAt: new Date(ancient.getTime() + 3600000).toISOString(),
+        items: [{ nameUk: "Жим лежачи" }],
+      },
+      {
+        id: "w2",
+        startedAt: recent.toISOString(),
+        endedAt: new Date(recent.getTime() + 3600000).toISOString(),
+        items: [{ nameUk: "Підйом на біцепс" }],
+      },
+    ]);
+
+    const recs = generateRecommendations();
+    expect(recs.find((r) => r.id === "fizruk_muscle_balance")).toBeUndefined();
   });
 
   it("не генерує мʼязові рекомендації для нещодавно тренованих мʼязів", () => {
@@ -409,7 +553,7 @@ describe("generateRecommendations", () => {
 
     const recs = generateRecommendations();
     // 3 days < STALE_DAYS(8) → no muscle stale rec
-    expect(recs.find((r) => r.id === "fizruk_muscle_chest")).toBeUndefined();
+    expect(recs.find((r) => r.id === "fizruk_muscle_balance")).toBeUndefined();
   });
 
   it("генерує fizruk_no_week_workout у середині тижня без тренувань", () => {
@@ -1176,6 +1320,8 @@ describe("generateRecommendations", () => {
   it("мʼязові рекомендації використовують українські назви", () => {
     const oldW = new Date();
     oldW.setDate(oldW.getDate() - 12);
+    const recent = new Date();
+    recent.setDate(recent.getDate() - 1);
     setLS("fizruk_workouts_v1", [
       {
         id: "w1",
@@ -1189,15 +1335,21 @@ describe("generateRecommendations", () => {
           { nameUk: "Розведення гантелей на плечей" },
         ],
       },
+      {
+        // Свіже тренування тримає `fizruk_long_break` мовчазним — інакше
+        // м'язовий баланс навмисно не говорить (див. тест про паузу).
+        id: "w2",
+        startedAt: recent.toISOString(),
+        endedAt: new Date(recent.getTime() + 3600000).toISOString(),
+        items: [{ nameUk: "Присідання зі штангою" }],
+      },
     ]);
 
-    const recs = generateRecommendations();
-    const labels = recs
-      .filter((r) => r.id.startsWith("fizruk_muscle_"))
-      .map((r) => r.title);
-
-    // Verify Ukrainian labels are used
-    const allLabels = labels.join(" ");
-    expect(allLabels).toMatch(/Спина|Біцепс|Триципс|Прес|Плечі/);
+    const rec = generateRecommendations().find(
+      (r) => r.id === "fizruk_muscle_balance",
+    );
+    expect(rec).toBeDefined();
+    const text = `${rec!.title} ${rec!.body ?? ""}`;
+    expect(text).toMatch(/Верх спини|Біцепс|Трицепс|Прес|Передні дельти/);
   });
 });
