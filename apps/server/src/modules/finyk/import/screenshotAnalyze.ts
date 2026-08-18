@@ -96,6 +96,22 @@ export function normalizeImportScreenshotResult(
   for (const r of rawRows) {
     if (rows.length >= MAX_SCREENSHOT_ROWS) break;
     const row = isRecord(r) ? r : {};
+    // Невдалі операції (LLM-контракт `failed: true` — live-бенч
+    // 2026-08-18: інструкція «не включай» ігнорувалась моделлю стабільно,
+    // а РОЗМІТИТИ рядок вона вміє) — гроші не рухались, у драфт не йдуть.
+    if (row["failed"] === true) continue;
+    // Не-UAH рядки (той самий бенч-урок, що failed: модель ігнорує
+    // «пропусти», але чесно ставить розмітку) — Фаза 2 працює лише з
+    // гривнею (узгоджено з CSV-шляхом: isUahCurrencyValue). Відсутнє
+    // поле трактуємо як UAH — не валимо скріни без валютних позначок.
+    const currencyRaw = row["currency"];
+    if (
+      typeof currencyRaw === "string" &&
+      currencyRaw.trim() &&
+      currencyRaw.trim().toUpperCase() !== "UAH"
+    ) {
+      continue;
+    }
     const date = isValidDayKey(row["date"]) ? (row["date"] as string) : null;
     const amountKopiykas = toSafePositiveIntKopiykas(row["amount_kopiykas"]);
     // Рядок без розпізнаваної дати чи додатної суми — непридатний для

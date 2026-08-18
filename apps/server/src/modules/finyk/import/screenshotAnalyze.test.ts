@@ -150,6 +150,61 @@ describe("normalizeImportScreenshotResult", () => {
     expect(draft.rows).toEqual([]);
   });
 
+  it("відкидає рядок з failed: true (невдала операція — гроші не рухались)", () => {
+    const draft = normalizeImportScreenshotResult({
+      doc_type: "bank_screenshot",
+      rows: [
+        {
+          date: "2026-08-17",
+          amount_kopiykas: 219900,
+          direction: "expense",
+          description: "Rozetka",
+          failed: true,
+          confidence: 0.9,
+        },
+        {
+          date: "2026-08-17",
+          amount_kopiykas: 51240,
+          direction: "expense",
+          description: "Сільпо",
+          failed: false,
+          confidence: 0.9,
+        },
+      ],
+    });
+    expect(draft.rows).toHaveLength(1);
+    expect(draft.rows[0]?.description).toBe("Сільпо");
+  });
+
+  it("відкидає не-UAH рядок за currency; відсутнє поле трактує як UAH", () => {
+    const draft = normalizeImportScreenshotResult({
+      doc_type: "bank_screenshot",
+      rows: [
+        {
+          date: "2026-08-16",
+          amount_kopiykas: 599,
+          direction: "expense",
+          description: "Spotify AB",
+          currency: "EUR",
+        },
+        {
+          date: "2026-08-16",
+          amount_kopiykas: 51240,
+          direction: "expense",
+          description: "Сільпо",
+          currency: "UAH",
+        },
+        {
+          date: "2026-08-16",
+          amount_kopiykas: 23000,
+          direction: "expense",
+          description: "Uklon",
+        },
+      ],
+    });
+    expect(draft.rows.map((r) => r.description)).toEqual(["Сільпо", "Uklon"]);
+  });
+
   it("відкидає рядок з нульовою/відсутньою сумою", () => {
     const draft = normalizeImportScreenshotResult({
       doc_type: "bank_screenshot",
@@ -310,9 +365,17 @@ describe("IMPORT_SCREENSHOT_VISION_SYSTEM_PROMPT", () => {
       /Недостатньо коштів/,
     );
     expect(IMPORT_SCREENSHOT_VISION_SYSTEM_PROMPT).toMatch(/НЕВДАЛІ операції/);
+    expect(IMPORT_SCREENSHOT_VISION_SYSTEM_PROMPT).toMatch(/"failed": boolean/);
     expect(IMPORT_SCREENSHOT_VISION_SYSTEM_PROMPT).toMatch(
       /рекламні чи жартівливі підписи/,
     );
+  });
+
+  it("вимагає розмітку валюти для не-UAH рядків (live-бенч: €5.99 ішов як 599 «копійок»)", () => {
+    expect(IMPORT_SCREENSHOT_VISION_SYSTEM_PROMPT).toMatch(
+      /"currency": string/,
+    );
+    expect(IMPORT_SCREENSHOT_VISION_SYSTEM_PROMPT).toMatch(/лише з UAH/);
   });
 
   it("вимагає цілі копійки (не гривні/дробові)", () => {
