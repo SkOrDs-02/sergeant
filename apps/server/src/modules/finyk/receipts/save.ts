@@ -82,15 +82,18 @@ function withClientScanId(
  * самого save (мережевий таймаут / подвійний тап). Без нової
  * колонки/міграції — значення живе всередині `raw_payload`
  * (`withClientScanId` вище гарантує його там незалежно від клієнта).
- * `purchased_at = $2` звужує сканування до
- * (user_id, purchased_at)-індексу (`receipts_user_purchased_at_idx`,
- * міграція 121) замість повного проходу по чеках користувача — retry
- * шле byte-identical draft, тож `purchasedAt` завжди збігається.
+ *
+ * Предикати WHERE ДЗЕРКАЛЯТЬ `receipts_user_client_scan_idx` (міграція
+ * 121) і НІЧОГО понад них — ревʼю PR #818 (раунд 5): фільтр за
+ * `purchased_at` тут промахувався б повз існуючий рядок, коли retry
+ * несе той самий clientScanId, але ВІДРЕДАГОВАНУ дату (користувач
+ * поправив draft після невдалого save і тапнув знову) — INSERT далі
+ * ловив би 23505 від індексу, а reload не знаходив би нічого → 500.
+ * Ключ ідемпотентності — лише (user_id, clientScanId).
  */
 async function findExistingVisionReceiptByClientScanId(
   client: PoolClient,
   userId: string,
-  purchasedAt: Date,
   clientScanId: string,
 ): Promise<ReceiptRow | undefined> {
   const { rows } = await client.query<ReceiptRow>(
@@ -99,11 +102,11 @@ async function findExistingVisionReceiptByClientScanId(
        FROM receipts
       WHERE user_id = $1
         AND source = 'vision'
-        AND purchased_at = $2
-        AND raw_payload ->> 'clientScanId' = $3
+        AND fiscal_num IS NULL
+        AND raw_payload ->> 'clientScanId' = $2
       ORDER BY created_at DESC
       LIMIT 1`,
-    [userId, purchasedAt.toISOString(), clientScanId],
+    [userId, clientScanId],
   );
   return rows[0];
 }
@@ -303,7 +306,6 @@ export default async function saveReceiptHandler(
         ? await findExistingVisionReceiptByClientScanId(
             client,
             userId,
-            purchasedAt,
             effectiveClientScanId,
           )
         : undefined;
@@ -361,7 +363,6 @@ export default async function saveReceiptHandler(
           receiptRow = await findExistingVisionReceiptByClientScanId(
             client,
             userId,
-            purchasedAt,
             effectiveClientScanId,
           );
           isNew = false;

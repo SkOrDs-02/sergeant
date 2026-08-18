@@ -53,13 +53,23 @@ export interface ParsedDpsCheck {
 }
 
 /** Декодує ОДНУ числову character reference (`&#123;` чи `&#x7B;`, код-поінт
- * уже розпарсений) — `null`, якщо код-поінт поза `[0, 0x10FFFF]` (замість
- * кидати чи мовчки псувати рядок). `fromCodePoint`, НЕ `fromCharCode` —
- * останній обрізає код-поінти понад `0xFFFF` (астральна площина, напр.
- * емодзі чи рідкісні кирилichні розширення) до нижніх 16 біт замість
- * правильної UTF-16 сурогатної пари. */
+ * уже розпарсений) — `null`, якщо код-поінт не є валідним XML-символом
+ * (замість кидати чи мовчки псувати рядок). Межі — продукція `Char` зі
+ * специфікації XML 1.0 (ревʼю PR #818, раунд 5): вона виключає сурогатні
+ * код-поінти (`String.fromCodePoint(0xD800)` НЕ кидає, а повертає
+ * самотній UTF-16 сурогат — биті дані в тексті чека) і заборонені
+ * контрольні символи. `fromCodePoint`, НЕ `fromCharCode` — останній
+ * обрізає код-поінти понад `0xFFFF` (астральна площина, напр. емодзі)
+ * до нижніх 16 біт замість правильної сурогатної пари. */
 function decodeNumericEntity(code: number): string | null {
-  if (!Number.isInteger(code) || code < 0 || code > MAX_CODE_POINT) {
+  const isValidXmlChar =
+    code === 0x9 ||
+    code === 0xa ||
+    code === 0xd ||
+    (code >= 0x20 && code <= 0xd7ff) ||
+    (code >= 0xe000 && code <= 0xfffd) ||
+    (code >= 0x10000 && code <= MAX_CODE_POINT);
+  if (!Number.isInteger(code) || !isValidXmlChar) {
     return null;
   }
   try {

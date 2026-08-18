@@ -224,6 +224,12 @@ describe("parseDpsCheckXml — числові character references (Trivial фі
     expect(parsed?.items[0]?.name).toBe("Чек \u{1F600}");
   });
 
+  it("сурогатний код-поінт (&#xD800;) лишається буквальним текстом — fromCodePoint дав би самотній сурогат", () => {
+    const xml = `<CHECK><CHECKHEAD><ORGNM>Тест &#xD800; магазин</ORGNM><ORDATE>20260115</ORDATE><ORTIME>120000</ORTIME><SUM>100</SUM></CHECKHEAD><CHECKBODY><ROW><NAME>Товар</NAME><PRICE>100</PRICE><COST>100</COST></ROW></CHECKBODY></CHECK>`;
+    const parsed = parseDpsCheckXml(xml);
+    expect(parsed?.store).toBe("Тест &#xD800; магазин");
+  });
+
   it("невалідний код-поінт (поза 0..0x10FFFF) лишається буквальним текстом, не кидає", () => {
     const xml = `<CHECK><CHECKHEAD><ORGNM>Тест</ORGNM><ORDATE>20260115</ORDATE><ORTIME>120000</ORTIME><SUM>100</SUM></CHECKHEAD><CHECKBODY><ROW ROWNUM="1"><NAME>x&#99999999;y</NAME><AMOUNT>1</AMOUNT><PRICE>100</PRICE><COST>100</COST></ROW></CHECKBODY></CHECK>`;
     const parsed = parseDpsCheckXml(xml);

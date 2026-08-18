@@ -138,15 +138,26 @@ export default async function statementPreviewHandler(
     firstNewlineIdx === -1 ? csv_text : csv_text.slice(0, firstNewlineIdx);
   const delimiter = detectDelimiter(headerLine);
 
+  // Дешевий pre-check ДО токенізації (раунд 5 ревʼю): токенізованих
+  // рядків не може бути більше, ніж `\n`+1, тож свідомо завеликий вхід
+  // відкидається без оплати повного парсингу 5MB. NB: closing-quote
+  // переноси всередині полів роблять цю оцінку ВЕРХНЬОЮ межею — фінальна
+  // перевірка по dataRows.length нижче лишається авторитетною.
+  let newlineCount = 0;
+  for (let i = 0; i < csv_text.length; i += 1) {
+    if (csv_text.charCodeAt(i) === 10) newlineCount += 1;
+  }
+  if (newlineCount > MAX_PREVIEW_DATA_ROWS) {
+    throw new ValidationError(
+      `Виписка завелика: понад ${MAX_PREVIEW_DATA_ROWS} рядків. Розбий файл на менші періоди.`,
+    );
+  }
+
   const allRows = tokenizeCsv(csv_text, delimiter);
   const headerRow = allRows[0] ?? [];
   const dataRows = allRows.slice(1);
   const headers = headerRow.map((h) => h.trim());
 
-  // Кап на кількість рядків (ревʼю PR #818): 5MB-ліміт байтів сам по собі
-  // не обмежує КІЛЬКІСТЬ рядків (мільйон однобайтових), а відповідь несе
-  // по обʼєкту на кожен — людське 400 замість роздутого JSON. Реальні
-  // річні виписки — тисячі рядків, межа з запасом.
   if (dataRows.length > MAX_PREVIEW_DATA_ROWS) {
     throw new ValidationError(
       `Виписка завелика: ${dataRows.length} рядків (максимум ${MAX_PREVIEW_DATA_ROWS}). Розбий файл на менші періоди.`,

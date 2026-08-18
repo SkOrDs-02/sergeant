@@ -448,16 +448,14 @@ describe("saveReceiptHandler — vision retry-дедуп через clientScanId
       ),
     ).toBe(false);
 
-    // Дедуп-SELECT бив саме по clientScanId + purchased_at (звужує до
-    // (user_id, purchased_at)-індексу, review-коментар).
+    // Дедуп-SELECT бʼє РІВНО по (user_id, clientScanId) — жодного
+    // purchased_at (раунд 5 ревʼю: retry з відредагованою датою мусить
+    // знаходити той самий чек; предикати дзеркалять
+    // receipts_user_client_scan_idx).
     const dedupCall = client.calls.find((c) =>
       c.sql.includes("raw_payload ->> 'clientScanId'"),
     );
-    expect(dedupCall?.params).toEqual([
-      "u1",
-      "2026-01-15T12:32:10.000Z",
-      CLIENT_SCAN_ID,
-    ]);
+    expect(dedupCall?.params).toEqual(["u1", CLIENT_SCAN_ID]);
     expect(client.calls.some((c) => c.sql.trim() === "COMMIT")).toBe(true);
   });
 
@@ -655,7 +653,7 @@ describe("saveReceiptHandler — vision retry-дедуп через clientScanId
     const dedupCall = client.calls.find((c) =>
       c.sql.includes("raw_payload ->> 'clientScanId'"),
     );
-    expect(dedupCall?.params?.[2]).toBe(CLIENT_SCAN_ID);
+    expect(dedupCall?.params?.[1]).toBe(CLIENT_SCAN_ID);
     expect(
       client.calls.some((c) => c.sql.includes("INSERT INTO receipts")),
     ).toBe(false);
