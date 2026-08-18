@@ -130,6 +130,24 @@ export const nutritionPageMessages = {
   },
 
   /**
+   * «Рівень 1» списку покупок (детермінований розрахунок поверх AI-списку —
+   * `@sergeant/nutrition-domain/shoppingListPantryMath.ts`, рішення
+   * founder-а 2026-08-18 «роби рівень 1 потім»). Канон nutrition §5.1: UI
+   * розрізняє джерело числа, тому кожен скоригований підпис має власний
+   * текст, а не тихо підміняє AI-кількість.
+   */
+  shoppingListPantryMath: {
+    toggleLabel: "Враховувати комору",
+    athomeSectionLabel: "Вже вдома",
+    athomeSectionHint: "Достатньо в коморі — купувати не треба, лише звір.",
+    // Той самий бейдж-текст, що і `pantryLowStock.badge` на позиції комори —
+    // одна фраза на все, свідомо коротша за назву fallback-категорії
+    // `LOW_STOCK_CATEGORY_NAME` («Закінчується вдома»), щоб бейдж на
+    // позиції не дублював слово в слово заголовок її ж категорії.
+    lowStockBadge: "Закінчується",
+  },
+
+  /**
    * «У кошик Сільпо» зі списку покупок (Silpo integration трек G, спека
    * `docs/90-work/planning/specs/silpo-mcp-integration.md` §
    * «Cart (MCP write path)»). Позиції пишуться в зовнішній кошик ЛИШЕ
