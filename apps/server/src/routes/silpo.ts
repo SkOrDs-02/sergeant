@@ -42,8 +42,11 @@ import { parseBody } from "../http/validate.js";
  *
  * Every handler is gated by `requireSession()` (registered on the router
  * below) AND `assertSilpoEnabled` (kill switch — spec § Рішення дизайну,
- * "`SILPO_ENABLED` як kill switch"). `SILPO_ENABLED=false` is the default
- * for this walking-skeleton experiment (offer/ToS gate still open).
+ * "`SILPO_ENABLED` як kill switch"). `SILPO_ENABLED=false` лишається
+ * дефолтом: обидва продуктові гейти знято 2026-08-18 (оферта — як
+ * операційний ризик, приватність — текст затверджено), але вмикання в
+ * проді — окремий ops-крок із власним DCR-клієнтом
+ * (`docs/00-start/playbooks/enable-silpo-integration.md`).
  *
  * Every route also carries its own `rateLimitExpress` bucket (CodeQL
  * "missing rate limiting" finding, review round) — unlike `finyk`/
