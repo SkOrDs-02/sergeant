@@ -66,10 +66,17 @@ describe("BulkReviewTable", () => {
     expect(screen.getAllByText("перевір суму")).toHaveLength(1);
   });
 
-  it("shows the transfer badge only on transferLikely rows", () => {
+  it("shows the transfer badge only on UNSELECTED transferLikely rows", () => {
     const withTransfer = rows().map((r) =>
       r.id === "r1"
-        ? { ...r, description: "Поповнення «просто»", transferLikely: true }
+        ? {
+            ...r,
+            description: "Поповнення «просто»",
+            transferLikely: true,
+            // transferLikely-рядки і в продукті приходять невибраними
+            // (`defaultSelected`) — бейдж живе рівно доки нема галочки.
+            selected: false,
+          }
         : r,
     );
     render(
@@ -84,6 +91,31 @@ describe("BulkReviewTable", () => {
     expect(screen.getAllByText("схоже на переказ")).toHaveLength(1);
     // Пояснення механіки «підтвердити/спростувати» — видиме лише коли
     // такі рядки взагалі є (бета-фідбек 2026-08-18).
+    expect(
+      screen.getByText(/за замовчуванням не імпортуються/),
+    ).toBeInTheDocument();
+  });
+
+  it("бейдж «схоже на переказ» зникає, щойно рядок вибрано для імпорту", () => {
+    // Бета-фідбек №2 (2026-08-18): галочка = людина спростувала підозру,
+    // тримати бейдж далі — суперечити її рішенню.
+    const withSelectedTransfer = rows().map((r) =>
+      r.id === "r1"
+        ? { ...r, description: "Поповнення «просто»", transferLikely: true }
+        : r,
+    );
+    render(
+      <BulkReviewTable
+        rows={withSelectedTransfer}
+        onToggleRow={vi.fn()}
+        onToggleAll={vi.fn()}
+        onBulkCategory={vi.fn()}
+        onEditRow={vi.fn()}
+      />,
+    );
+    // r1 у фікстурі selected: true → бейджа нема, але загальна підказка
+    // лишається (transferLikely-рядки в таблиці все ще є).
+    expect(screen.queryByText("схоже на переказ")).not.toBeInTheDocument();
     expect(
       screen.getByText(/за замовчуванням не імпортуються/),
     ).toBeInTheDocument();
