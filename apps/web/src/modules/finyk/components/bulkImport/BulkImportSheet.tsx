@@ -101,6 +101,7 @@ export function BulkImportSheet({
   const [commitResult, setCommitResult] = useState<ImportCommitResult | null>(
     null,
   );
+  const [photosCapNote, setPhotosCapNote] = useState<string | null>(null);
 
   const photosInputRef = useRef<HTMLInputElement>(null);
   const screenshotInputRef = useRef<HTMLInputElement>(null);
@@ -128,6 +129,7 @@ export function BulkImportSheet({
       setMapperHeaders([]);
       setMapperSampleRows([]);
       setCommitResult(null);
+      setPhotosCapNote(null);
       bulkReceipts.reset();
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reset-on-close only; including `bulkReceipts` would re-run every render (new object each render).
@@ -136,6 +138,15 @@ export function BulkImportSheet({
   const handlePhotosSelected = (files: File[]) => {
     if (files.length === 0) return;
     setFlowError(null);
+    // Кап застосовує `startFiles` (slice до BATCH_RECEIPTS_MAX_FILES) —
+    // але МОВЧКИ: без цієї примітки людина, що вибрала 15 фото, дізналась
+    // би про відкинуті 5 лише перерахувавши список (бета-фідбек
+    // 2026-08-18 «щоб не вносила фото задарма»).
+    setPhotosCapNote(
+      files.length > BATCH_RECEIPTS_MAX_FILES
+        ? `Взято перші ${BATCH_RECEIPTS_MAX_FILES} фото з ${files.length} — решту докинь наступною пачкою після збереження цієї.`
+        : null,
+    );
     setStage("receipts");
     void bulkReceipts.startFiles(files);
   };
@@ -373,15 +384,25 @@ export function BulkImportSheet({
       )}
 
       {stage === "receipts" && (
-        <BulkReceiptsProgress
-          items={bulkReceipts.items}
-          isProcessing={bulkReceipts.isProcessing}
-          isSaving={bulkReceipts.isSaving}
-          onSetCategory={bulkReceipts.setItemCategory}
-          onToggleIncluded={bulkReceipts.toggleItemIncluded}
-          onSaveAll={() => void bulkReceipts.saveAll()}
-          customCategories={customCategories}
-        />
+        <>
+          {photosCapNote && (
+            <p
+              role="status"
+              className="rounded-xl border border-line bg-panelHi/60 p-2.5 text-style-caption text-text"
+            >
+              {photosCapNote}
+            </p>
+          )}
+          <BulkReceiptsProgress
+            items={bulkReceipts.items}
+            isProcessing={bulkReceipts.isProcessing}
+            isSaving={bulkReceipts.isSaving}
+            onSetCategory={bulkReceipts.setItemCategory}
+            onToggleIncluded={bulkReceipts.toggleItemIncluded}
+            onSaveAll={() => void bulkReceipts.saveAll()}
+            customCategories={customCategories}
+          />
+        </>
       )}
 
       {stage === "csv-mapper" && (

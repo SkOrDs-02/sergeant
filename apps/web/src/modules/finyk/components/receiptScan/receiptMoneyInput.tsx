@@ -63,7 +63,14 @@ export function ReceiptMoneyInput({
       aria-label={ariaLabel}
       placeholder="0"
       className={cn(
-        "input-focus-finyk h-9 min-w-0 rounded-xl border border-line bg-panelHi px-2 text-right text-style-caption text-text tabular-nums",
+        // `pointer-coarse:text-base` — 16px floor на тачі: менший шрифт у
+        // полі вводу змушує iOS Safari авто-зумити екран при фокусі
+        // (бета-фідбек 2026-08-18 «клік на суму збільшує екран»). На
+        // fine-pointer лишається caption — там зум-поведінки немає.
+        // Семантичні ролі тут не рятують: навіть text-style-body на
+        // вузькому екрані ~15px (<16) і все одно зумить.
+        // eslint-disable-next-line sergeant-design/no-raw-type-size -- анти-зум ІНВАРІАНТ контрола вводу (iOS: input <16px → авто-зум), не типографічна шкала.
+        "input-focus-finyk h-9 min-w-0 rounded-xl border border-line bg-panelHi px-2 text-right text-style-caption text-text tabular-nums pointer-coarse:text-base",
         className,
       )}
     />

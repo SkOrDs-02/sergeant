@@ -12,6 +12,12 @@
  * нема/не читається/ДПС не знайшла чек. Це той самий "chекі пачкою"
  * порядок, що описаний у спеці § Фаза 2а — тут застосований до
  * одиничного скану.
+ *
+ * ПОКИ `DPS_QR_SCAN_ENABLED === false` (реєстр ДПС закритий на воєнний
+ * стан — `dpsQrGate.ts`): кнопки QR-скану нема, фото йде ОДРАЗУ у vision
+ * без спроби QR-lookup (вона гарантовано впиралась би у відмову і лише
+ * додавала латентність). Камера-стейдж і QR-обробники лишаються в коді —
+ * оживуть фліпом гейта.
  */
 import {
   useEffect,
@@ -42,8 +48,16 @@ import {
   useReceiptSave,
   type ReceiptSaveStorageSlice,
 } from "../../hooks/useReceiptSave";
+import { DPS_QR_SCAN_ENABLED } from "./dpsQrGate";
 import { ReceiptScanCameraView } from "./ReceiptScanCameraView";
 import { ReceiptReviewForm } from "./ReceiptReviewForm";
+
+/** Порожній vision-драфт (жодного розпізнаного поля) — найімовірніше на
+ * фото взагалі не чек (бета-фідбек 2026-08-18: фото кавуна давало мовчазні
+ * порожні поля). Реальний чек завжди має хоч щось із трійки. */
+function looksUnrecognized(draft: ReceiptDraft): boolean {
+  return draft.items.length === 0 && draft.totalKopiykas === 0 && !draft.store;
+}
 
 type Stage = "choose" | "camera" | "processing" | "review";
 
@@ -139,17 +153,21 @@ export function ReceiptScanSheet({
     setFlowError(null);
     setStage("processing");
 
-    const qrText = await decodeQrFromImageFile(file).catch(() => null);
-    const lookupReq = qrText ? parseDpsReceiptQrUrl(qrText) : null;
-    if (lookupReq) {
-      try {
-        const { draft: nextDraft } =
-          await lookupMutation.mutateAsync(lookupReq);
-        openReview(nextDraft);
-        return;
-      } catch {
-        // ДПС не відповіла навіть з QR у фото — пробуємо vision на ТОМУ Ж
-        // фото замість повторного запиту дії від користувача (§ докстрінг).
+    // QR-lookup лише коли ДПС-гілка жива (`dpsQrGate.ts`) — інакше це
+    // гарантована відмова + зайва латентність перед vision.
+    if (DPS_QR_SCAN_ENABLED) {
+      const qrText = await decodeQrFromImageFile(file).catch(() => null);
+      const lookupReq = qrText ? parseDpsReceiptQrUrl(qrText) : null;
+      if (lookupReq) {
+        try {
+          const { draft: nextDraft } =
+            await lookupMutation.mutateAsync(lookupReq);
+          openReview(nextDraft);
+          return;
+        } catch {
+          // ДПС не відповіла навіть з QR у фото — пробуємо vision на ТОМУ Ж
+          // фото замість повторного запиту дії від користувача (§ докстрінг).
+        }
       }
     }
 
@@ -243,19 +261,22 @@ export function ReceiptScanSheet({
               {flowError}
             </p>
           )}
+          {DPS_QR_SCAN_ENABLED && (
+            <Button
+              className="w-full"
+              module="finyk"
+              onClick={() => {
+                setFlowError(null);
+                setStage("camera");
+              }}
+            >
+              <Icon name="scanner" size={16} aria-hidden />
+              Скан QR камерою
+            </Button>
+          )}
           <Button
-            className="w-full"
-            module="finyk"
-            onClick={() => {
-              setFlowError(null);
-              setStage("camera");
-            }}
-          >
-            <Icon name="scanner" size={16} aria-hidden />
-            Скан QR камерою
-          </Button>
-          <Button
-            variant="secondary"
+            variant={DPS_QR_SCAN_ENABLED ? "secondary" : "primary"}
+            module={DPS_QR_SCAN_ENABLED ? undefined : "finyk"}
             className="w-full"
             onClick={() => fileInputRef.current?.click()}
           >
@@ -299,14 +320,25 @@ export function ReceiptScanSheet({
       )}
 
       {stage === "review" && draft && (
-        <ReceiptReviewForm
-          draft={draft}
-          setDraft={setDraft as Dispatch<SetStateAction<ReceiptDraft>>}
-          category={category}
-          setCategory={setCategory}
-          customCategories={customCategories}
-          disabled={isSaving}
-        />
+        <>
+          {looksUnrecognized(draft) && (
+            <p
+              role="status"
+              className="rounded-xl border border-line bg-panelHi/60 p-2.5 text-style-caption text-text"
+            >
+              Схоже, на фото не чек — розпізнати нічого не вдалося. Спробуй
+              чіткіше фото чека або заповни поля вручну.
+            </p>
+          )}
+          <ReceiptReviewForm
+            draft={draft}
+            setDraft={setDraft as Dispatch<SetStateAction<ReceiptDraft>>}
+            category={category}
+            setCategory={setCategory}
+            customCategories={customCategories}
+            disabled={isSaving}
+          />
+        </>
       )}
     </Sheet>
   );

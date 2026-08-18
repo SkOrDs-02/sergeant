@@ -50,6 +50,7 @@ vi.mock("../../hooks/useReceiptQrScanner", () => ({
 }));
 
 import { ReceiptScanSheet } from "./ReceiptScanSheet";
+import { DPS_QR_SCAN_ENABLED } from "./dpsQrGate";
 import type { ReceiptSaveStorageSlice } from "../../hooks/useReceiptSave";
 
 function draft(overrides: Partial<ReceiptDraft> = {}): ReceiptDraft {
@@ -114,76 +115,85 @@ function renderSheet(
 }
 
 describe("ReceiptScanSheet — choose stage", () => {
-  it("renders both entry actions", () => {
+  it("рендерить фото-кнопку; QR-кнопка лише коли ДПС-гейт увімкнено", () => {
     renderSheet();
-    expect(
-      screen.getByRole("button", { name: /Скан QR камерою/ }),
-    ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /Завантажити фото/ }),
     ).toBeInTheDocument();
+    // Гейт `dpsQrGate.ts`: поки реєстр ДПС закритий на воєнний стан,
+    // QR-кнопки НЕМАЄ (бета-фідбек 2026-08-18); фліп гейта поверне її і
+    // оживить skipIf-тести нижче.
+    const qrButton = screen.queryByRole("button", { name: /Скан QR камерою/ });
+    if (DPS_QR_SCAN_ENABLED) {
+      expect(qrButton).toBeInTheDocument();
+    } else {
+      expect(qrButton).not.toBeInTheDocument();
+    }
   });
 });
 
-describe("ReceiptScanSheet — camera QR path", () => {
-  it("a valid DPS QR triggers lookup and opens the review screen", async () => {
-    lookupReceiptMock.mockResolvedValue({ draft: draft() });
-    renderSheet();
+describe.skipIf(!DPS_QR_SCAN_ENABLED)(
+  "ReceiptScanSheet — camera QR path",
+  () => {
+    it("a valid DPS QR triggers lookup and opens the review screen", async () => {
+      lookupReceiptMock.mockResolvedValue({ draft: draft() });
+      renderSheet();
 
-    fireEvent.click(screen.getByRole("button", { name: /Скан QR камерою/ }));
-    await act(async () => {
-      onDetectedRef.current?.(DPS_URL);
+      fireEvent.click(screen.getByRole("button", { name: /Скан QR камерою/ }));
+      await act(async () => {
+        onDetectedRef.current?.(DPS_URL);
+      });
+
+      await waitFor(() =>
+        expect(screen.getByDisplayValue("АТБ")).toBeInTheDocument(),
+      );
+      expect(lookupReceiptMock).toHaveBeenCalledWith({
+        fn: "4000123456",
+        id: "1",
+        date: "17082026",
+        time: "1000",
+        sm: "5000",
+      });
     });
 
-    await waitFor(() =>
-      expect(screen.getByDisplayValue("АТБ")).toBeInTheDocument(),
-    );
-    expect(lookupReceiptMock).toHaveBeenCalledWith({
-      fn: "4000123456",
-      id: "1",
-      date: "17082026",
-      time: "1000",
-      sm: "5000",
-    });
-  });
+    it("an unrelated QR shows an inline error and stays on the camera stage", async () => {
+      renderSheet();
+      fireEvent.click(screen.getByRole("button", { name: /Скан QR камерою/ }));
+      await act(async () => {
+        onDetectedRef.current?.("https://example.com/not-a-receipt");
+      });
 
-  it("an unrelated QR shows an inline error and stays on the camera stage", async () => {
-    renderSheet();
-    fireEvent.click(screen.getByRole("button", { name: /Скан QR камерою/ }));
-    await act(async () => {
-      onDetectedRef.current?.("https://example.com/not-a-receipt");
+      expect(lookupReceiptMock).not.toHaveBeenCalled();
+      expect(screen.getByText(/не схожий на чек ДПС/)).toBeInTheDocument();
     });
 
-    expect(lookupReceiptMock).not.toHaveBeenCalled();
-    expect(screen.getByText(/не схожий на чек ДПС/)).toBeInTheDocument();
-  });
+    it("surfaces the server's human message when the DPS lookup fails (e.g. not found)", async () => {
+      lookupReceiptMock.mockRejectedValue(
+        new ApiError({
+          kind: "http",
+          status: 404,
+          message: "HTTP 404",
+          url: "https://api.test/finyk/receipts/lookup",
+          body: {
+            error:
+              "Чек ще не з'явився в реєстрі ДПС — спробуй за кілька хвилин або сфотографуй чек.",
+          },
+        }),
+      );
+      renderSheet();
+      fireEvent.click(screen.getByRole("button", { name: /Скан QR камерою/ }));
+      await act(async () => {
+        onDetectedRef.current?.(DPS_URL);
+      });
 
-  it("surfaces the server's human message when the DPS lookup fails (e.g. not found)", async () => {
-    lookupReceiptMock.mockRejectedValue(
-      new ApiError({
-        kind: "http",
-        status: 404,
-        message: "HTTP 404",
-        url: "https://api.test/finyk/receipts/lookup",
-        body: {
-          error:
-            "Чек ще не з'явився в реєстрі ДПС — спробуй за кілька хвилин або сфотографуй чек.",
-        },
-      }),
-    );
-    renderSheet();
-    fireEvent.click(screen.getByRole("button", { name: /Скан QR камерою/ }));
-    await act(async () => {
-      onDetectedRef.current?.(DPS_URL);
+      await waitFor(() =>
+        expect(
+          screen.getByText(/ще не з'явився в реєстрі ДПС/),
+        ).toBeInTheDocument(),
+      );
     });
-
-    await waitFor(() =>
-      expect(
-        screen.getByText(/ще не з'явився в реєстрі ДПС/),
-      ).toBeInTheDocument(),
-    );
-  });
-});
+  },
+);
 
 describe("ReceiptScanSheet — photo upload path", () => {
   function selectPhoto(file: File) {
@@ -194,21 +204,69 @@ describe("ReceiptScanSheet — photo upload path", () => {
     fireEvent.change(input, { target: { files: [file] } });
   }
 
-  it("uses the QR-in-photo lookup path when zxing finds a DPS QR in the image", async () => {
-    decodeQrFromImageFileMock.mockResolvedValue(DPS_URL);
-    lookupReceiptMock.mockResolvedValue({ draft: draft() });
+  it.skipIf(!DPS_QR_SCAN_ENABLED)(
+    "uses the QR-in-photo lookup path when zxing finds a DPS QR in the image",
+    async () => {
+      decodeQrFromImageFileMock.mockResolvedValue(DPS_URL);
+      lookupReceiptMock.mockResolvedValue({ draft: draft() });
+      renderSheet();
+
+      await act(async () => {
+        selectPhoto(
+          new File([new Uint8Array(10)], "chek.jpg", { type: "image/jpeg" }),
+        );
+      });
+
+      await waitFor(() => expect(lookupReceiptMock).toHaveBeenCalled());
+      expect(analyzeReceiptMock).not.toHaveBeenCalled();
+      await waitFor(() =>
+        expect(screen.getByDisplayValue("АТБ")).toBeInTheDocument(),
+      );
+    },
+  );
+
+  it.skipIf(DPS_QR_SCAN_ENABLED)(
+    "з вимкненим ДПС-гейтом фото йде ОДРАЗУ у vision — QR-декод навіть не викликається",
+    async () => {
+      analyzeReceiptMock.mockResolvedValue({
+        draft: draft({ source: "vision", fiscalNum: null, store: "Сільпо" }),
+      });
+      renderSheet();
+
+      await act(async () => {
+        selectPhoto(
+          new File([new Uint8Array(10)], "chek.jpg", { type: "image/jpeg" }),
+        );
+      });
+
+      await waitFor(() => expect(analyzeReceiptMock).toHaveBeenCalled());
+      expect(decodeQrFromImageFileMock).not.toHaveBeenCalled();
+      expect(lookupReceiptMock).not.toHaveBeenCalled();
+    },
+  );
+
+  it("порожній vision-драфт (фото не чека) показує чесний банер над формою", async () => {
+    decodeQrFromImageFileMock.mockResolvedValue(null);
+    analyzeReceiptMock.mockResolvedValue({
+      draft: draft({
+        source: "vision",
+        fiscalNum: null,
+        store: "",
+        totalKopiykas: 0,
+        items: [],
+        confidence: 0,
+      }),
+    });
     renderSheet();
 
     await act(async () => {
       selectPhoto(
-        new File([new Uint8Array(10)], "chek.jpg", { type: "image/jpeg" }),
+        new File([new Uint8Array(10)], "kavun.jpg", { type: "image/jpeg" }),
       );
     });
 
-    await waitFor(() => expect(lookupReceiptMock).toHaveBeenCalled());
-    expect(analyzeReceiptMock).not.toHaveBeenCalled();
     await waitFor(() =>
-      expect(screen.getByDisplayValue("АТБ")).toBeInTheDocument(),
+      expect(screen.getByText(/на фото не чек/)).toBeInTheDocument(),
     );
   });
 
@@ -262,12 +320,24 @@ describe("ReceiptScanSheet — photo upload path", () => {
 });
 
 describe("ReceiptScanSheet — save (alreadyExists handling)", () => {
+  // Через фото+vision, а не камеру: QR-шлях за гейтом (`dpsQrGate.ts`)
+  // недосяжний, а save-механіка від входу не залежить.
   async function openReview() {
-    lookupReceiptMock.mockResolvedValue({ draft: draft() });
+    decodeQrFromImageFileMock.mockResolvedValue(null);
+    analyzeReceiptMock.mockResolvedValue({ draft: draft() });
     const helpers = renderSheet();
-    fireEvent.click(screen.getByRole("button", { name: /Скан QR камерою/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Завантажити фото/ }));
+    const input = document.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement;
     await act(async () => {
-      onDetectedRef.current?.(DPS_URL);
+      fireEvent.change(input, {
+        target: {
+          files: [
+            new File([new Uint8Array(10)], "chek.jpg", { type: "image/jpeg" }),
+          ],
+        },
+      });
     });
     await waitFor(() =>
       expect(screen.getByDisplayValue("АТБ")).toBeInTheDocument(),

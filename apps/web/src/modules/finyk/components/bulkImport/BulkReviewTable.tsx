@@ -86,6 +86,8 @@ export function BulkReviewTable({
   );
   const selectedCount = selectedRowCount(rows);
 
+  const hasTransferLikelyRows = rows.some((r) => r.transferLikely);
+
   const customExpenseCategories = customCategories.filter(
     (c): c is CustomCategoryInput =>
       typeof c?.id === "string" && c.id.trim() !== "",
@@ -153,6 +155,13 @@ export function BulkReviewTable({
           </Button>
         </div>
       </div>
+
+      {hasTransferLikelyRows && (
+        <p className="text-style-caption text-subtle">
+          Рядки «схоже на переказ» (рух між власними рахунками) за замовчуванням
+          не імпортуються — постав галочку, якщо це насправді витрата чи дохід.
+        </p>
+      )}
 
       <ul className="divide-y divide-line rounded-2xl border border-line">
         {rows.map((row) => {
@@ -224,7 +233,12 @@ export function BulkReviewTable({
                       }
                       ariaLabel="Сума"
                       disabled={disabled}
-                      className="h-9! text-left! text-style-body!"
+                      // `pointer-coarse:text-base!` мусить бути і тут:
+                      // `text-style-body!` (важливий, ~15px на вузькому
+                      // екрані) інакше переміг би 16px-floor базового
+                      // інпута, і iOS-зум повернувся б саме в bulk-таблиці.
+                      // eslint-disable-next-line sergeant-design/no-raw-type-size -- анти-зум ІНВАРІАНТ контрола вводу (iOS: input <16px → авто-зум), не типографічна шкала.
+                      className="h-9! text-left! text-style-body! pointer-coarse:text-base!"
                     />
                     <Select
                       size="sm"
