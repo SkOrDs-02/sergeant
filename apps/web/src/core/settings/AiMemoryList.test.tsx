@@ -244,6 +244,41 @@ describe("AiMemoryList", () => {
     ).toHaveLength(0);
   });
 
+  it("службові події застосунку — окремою групою, завжди згорнутою і в кінці", async () => {
+    // Рішення власника 2026-08-18. `source='product'` — це 4 мілстоуни
+    // телеметрії напів-англійським текстом (див. `eventSync.ts`), а не
+    // факт про людину: не розкриваємо їх навіть у крихітній памʼяті і не
+    // пускаємо вперед справжніх фактів.
+    listAiMemory.mockResolvedValue(
+      page([
+        {
+          id: 1,
+          content: "2026-05-13: first action completed у модулі finyk.",
+          source: "product",
+        },
+        { id: 2, content: "Алергія на горіхи", source: "nutrition" },
+      ]),
+    );
+    renderList();
+
+    // Справжній факт видно одразу (памʼять маленька), службовий — ні.
+    expect(await screen.findByText("Алергія на горіхи")).toBeTruthy();
+    expect(screen.queryByText(/first action completed/)).toBeNull();
+
+    const groups = screen.getAllByRole("button", {
+      name: /Показати факти джерела/,
+    });
+    // Службова група — остання, попри свіжіший id.
+    expect(groups.at(-1)?.textContent).toContain("Події застосунку");
+    expect(groups.at(-1)?.getAttribute("aria-expanded")).toBe("false");
+    // Сире `product` в UI не світиться.
+    expect(screen.queryByText(/\bПродукт\b/)).toBeNull();
+
+    fireEvent.click(groups.at(-1)!);
+    expect(screen.getByText(/first action completed/)).toBeTruthy();
+    expect(screen.getByText(/Службові позначки застосунку/)).toBeTruthy();
+  });
+
   it("помилка видалення → повідомлення, факт лишається у списку", async () => {
     deleteAiMemory.mockRejectedValue(new Error("500"));
     listAiMemory.mockResolvedValue(page([{ id: 7, content: "Факт" }]));
