@@ -122,6 +122,18 @@ describe(
                   // the two rows above lock the absent branch of the union.
                   transferLikely: true,
                 },
+                {
+                  date: "2026-01-17",
+                  time: "09:10",
+                  amountKopiykas: 8500,
+                  direction: "expense",
+                  description: "Кава",
+                  confidence: 0.8,
+                  // Optional marker (duplicateDetect.ts, «сітка 2»):
+                  // present-and-true only when an already-saved expense
+                  // shares the same date+amount+direction; ABSENT elsewhere.
+                  duplicateLikely: true,
+                },
               ],
             },
           });
@@ -136,13 +148,15 @@ describe(
 
           expect(out.draft.docType).toBe("bank_screenshot");
           expect(out.draft.bank).toBe("monobank");
-          expect(out.draft.rows).toHaveLength(3);
+          expect(out.draft.rows).toHaveLength(4);
           expect(out.draft.rows[1]!.time).toBeNull();
           // Hard Rule #1 sibling: money fields are `number`.
           expect(typeof out.draft.rows[0]!.amountKopiykas).toBe("number");
           expect(out.draft.rows[0]!.amountKopiykas).toBe(15000);
           expect(out.draft.rows[0]!.transferLikely).toBeUndefined();
           expect(out.draft.rows[2]!.transferLikely).toBe(true);
+          expect(out.draft.rows[0]!.duplicateLikely).toBeUndefined();
+          expect(out.draft.rows[3]!.duplicateLikely).toBe(true);
         });
     });
 
@@ -223,6 +237,10 @@ describe(
         "Дата i час операції,Деталі операції,МСС,Сума в валюті картки (UAH),Сума в валюті операції,Валюта операції,Курс обміну,Сума комісій (UAH),Сума кешбеку (UAH),Залишок після операції",
         "15.01.2026 14:32:10,Сільпо,5411,-847.50,-847.50,UAH,1,0.00,8.47,5000.00",
         "16.01.2026 10:00:00,Поповнення «просто»,4829,-5000.00,-5000.00,UAH,1,0.00,0.00,0.00",
+        // Третій рядок існує і у відповіді нижче з duplicateLikely: true —
+        // provider-стан «already-saved expense with same date+amount+
+        // direction exists» (duplicateDetect.ts, «сітка 2»).
+        "17.01.2026 12:00:00,АТБ,5411,-120.00,-120.00,UAH,1,0.00,0.00,4880.00",
       ].join("\n");
 
       await pact
@@ -265,6 +283,16 @@ describe(
                 // own-jar/own-account transfers, absent on the row above.
                 transferLikely: true,
               },
+              {
+                date: "2026-01-17",
+                amountKopiykas: 12000,
+                direction: "expense",
+                description: "АТБ",
+                // Optional marker (duplicateDetect.ts, «сітка 2») — true
+                // only when an already-saved expense shares the same
+                // date+amount+direction; absent on the rows above.
+                duplicateLikely: true,
+              },
             ],
             skipped: [],
           });
@@ -279,11 +307,13 @@ describe(
           expect(out.profile).toBe("mono");
           expect(out.needsMapping).toBe(false);
           expect(out.headers).toBeUndefined();
-          expect(out.rows).toHaveLength(2);
+          expect(out.rows).toHaveLength(3);
           expect(typeof out.rows[0]!.amountKopiykas).toBe("number");
           expect(out.rows[0]!.direction).toBe("expense");
           expect(out.rows[0]!.transferLikely).toBeUndefined();
           expect(out.rows[1]!.transferLikely).toBe(true);
+          expect(out.rows[0]!.duplicateLikely).toBeUndefined();
+          expect(out.rows[2]!.duplicateLikely).toBe(true);
         });
     });
 

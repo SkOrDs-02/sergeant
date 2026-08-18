@@ -4,9 +4,11 @@
  *
  * "Чеки пачкою" — прогрес по файлах + компактний review (магазин/сума/
  * категорія на рядок) + «Зберегти вибрані» (спека § Фаза 2а).
- * Деталізоване редагування позицій НЕ тут — воно лишається на
- * одиночному v1 review-екрані (`ReceiptReviewForm`), задокументоване
- * спрощення обсягу (`useBulkReceiptsImport.ts` докстрінг).
+ * Деталізоване редагування позицій НЕ тут: «Редагувати» (`onEditItem`)
+ * відкриває повний `ReceiptReviewForm` того чека у викликачі
+ * (`ReceiptScanSheet`, стадія batch-edit) — бета-фідбек №3, 2026-08-18.
+ * Порожній драфт («схоже, не чек») позначається бейджем і приходить
+ * авто-виключеним (`useBulkReceiptsImport.startFiles`).
  */
 import { AnimatedCheckbox } from "@shared/components/ui/AnimatedCheckbox";
 import { Badge } from "@shared/components/ui/Badge";
@@ -17,6 +19,7 @@ import { Spinner } from "@shared/components/ui/Spinner";
 import { Money } from "@shared/components/ui/Money";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain";
 import { CATEGORY_DISPLAY, CATEGORY_SLUGS } from "../manualExpenseCategories";
+import { draftLooksUnrecognized } from "../receiptDraftEdit";
 import type {
   BatchReceiptItem,
   BatchReceiptStatus,
@@ -28,6 +31,9 @@ export interface BulkReceiptsProgressProps {
   isSaving: boolean;
   onSetCategory: (id: string, category: string) => void;
   onToggleIncluded: (id: string) => void;
+  /** Відкрити повний review-екран чека (бета-фідбек №3) — опційний, бо
+   * компонент сам по собі про список, а глибина живе у викликачі. */
+  onEditItem?: ((id: string) => void) | undefined;
   onSaveAll: () => void;
   customCategories?: readonly CustomCategoryInput[] | undefined;
 }
@@ -57,14 +63,18 @@ function ItemRow({
   item,
   onSetCategory,
   onToggleIncluded,
+  onEditItem,
   disabled,
 }: {
   item: BatchReceiptItem;
   onSetCategory: (id: string, category: string) => void;
   onToggleIncluded: (id: string) => void;
+  onEditItem?: ((id: string) => void) | undefined;
   disabled: boolean;
 }) {
   const canEdit = item.status === "drafted";
+  const unrecognized =
+    canEdit && item.draft ? draftLooksUnrecognized(item.draft) : false;
   const isDone = item.status === "saved" || item.status === "already-exists";
   const isError = item.status === "fetch-error" || item.status === "save-error";
 
@@ -130,10 +140,28 @@ function ItemRow({
                   </option>
                 ))}
               </Select>
-              {item.draft.source === "vision" && (
+              {unrecognized ? (
                 <Badge variant="warning" tone="soft" size="xs">
-                  з фото
+                  схоже, не чек
                 </Badge>
+              ) : (
+                item.draft.source === "vision" && (
+                  <Badge variant="warning" tone="soft" size="xs">
+                    з фото
+                  </Badge>
+                )
+              )}
+              {onEditItem && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  tone="finyk"
+                  size="xs"
+                  disabled={disabled}
+                  onClick={() => onEditItem(item.id)}
+                >
+                  Редагувати
+                </Button>
               )}
             </div>
           ) : (
@@ -159,6 +187,7 @@ export function BulkReceiptsProgress({
   isSaving,
   onSetCategory,
   onToggleIncluded,
+  onEditItem,
   onSaveAll,
 }: BulkReceiptsProgressProps) {
   const readyCount = items.filter(
@@ -184,6 +213,7 @@ export function BulkReceiptsProgress({
             item={item}
             onSetCategory={onSetCategory}
             onToggleIncluded={onToggleIncluded}
+            onEditItem={onEditItem}
             disabled={isProcessing || isSaving}
           />
         ))}

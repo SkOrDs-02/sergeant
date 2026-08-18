@@ -13,6 +13,13 @@ const envMock = vi.hoisted(() => ({
 }));
 vi.mock("../../../env.js", () => ({ env: envMock }));
 vi.mock("../../../lib/anthropic.js", () => createAnthropicMockHandle());
+// «Сітка 2» дедуп-превʼю (duplicateDetect.ts): хендлер тепер ходить у БД
+// за наявними витратами — у юнітах збігів немає (порожній результат);
+// сама логіка маркування покрита duplicateDetect.test.ts і
+// statementPreview.test.ts.
+vi.mock("../../../db.js", () => ({
+  default: { query: vi.fn().mockResolvedValue({ rows: [] }) },
+}));
 
 import { anthropicMessages as _anthropicMessages } from "../../../lib/anthropic.js";
 import screenshotAnalyzeHandler, {

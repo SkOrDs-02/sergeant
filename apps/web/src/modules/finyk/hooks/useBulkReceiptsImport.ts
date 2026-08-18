@@ -14,15 +14,15 @@
  * порядок величини часу для типового батчу (≤10 файлів, спека § Відкриті
  * питання Фази 2 п.1).
  *
- * Позиції чека в batch-режимі НЕ редагуються по одному пункту (лише
- * магазин/сума/категорія на компактному рядку, `BulkReceiptsProgress`) —
- * докладне редагування позицій лишається на одиночному v1-флоу
- * (`ReceiptScanSheet`). Задокументоване спрощення обсягу.
+ * Компактний рядок (`BulkReceiptsProgress`) — швидкий шлях: магазин/сума/
+ * категорія/галочка. Повне редагування чека пачки (позиції включно) —
+ * через `updateItemDraft`: «Редагувати» на рядку відкриває той самий
+ * `ReceiptReviewForm`, що й одиночний флоу (бета-фідбек №3, 2026-08-18).
  *
  * Точка входу з бета-фідбеку №2 (2026-08-18) — `ReceiptScanSheet`
  * (пікер `multiple`, 2+ фото → стадія `batch`), НЕ `BulkImportSheet`.
  */
-import { useCallback, useState } from "react";
+import { useCallback, useState, type SetStateAction } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { apiClient } from "@shared/api";
 import type { ReceiptDraft, ReceiptLookupRequest } from "@sergeant/api-client";
@@ -32,6 +32,7 @@ import { parseDpsReceiptQrUrl } from "../lib/receiptQr";
 import { decodeQrFromImageFile } from "./useReceiptQrScanner";
 import { DPS_QR_SCAN_ENABLED } from "../components/receiptScan/dpsQrGate";
 import { DEFAULT_CATEGORY } from "../components/manualExpenseCategories";
+import { draftLooksUnrecognized } from "../components/receiptDraftEdit";
 import { useReceiptSave, type ReceiptSaveStorageSlice } from "./useReceiptSave";
 
 /** Спека § Відкриті питання Фази 2, п.1 — рекомендація founder-а. */
@@ -145,7 +146,15 @@ export function useBulkReceiptsImport({
             (req) => lookupMutation.mutateAsync(req),
             (payload) => analyzeMutation.mutateAsync(payload),
           );
-          patchItem(item.id, { status: "drafted", draft });
+          // Порожній драфт («схоже, не чек» — бета-фідбек №3) не має чого
+          // зберігати: авто-виключаємо з галочки, бейдж пояснює чому;
+          // людина може відкрити повний review, заповнити поля — і чек
+          // повернеться у вибрані сам (`updateItemDraft` нижче).
+          patchItem(item.id, {
+            status: "drafted",
+            draft,
+            included: !draftLooksUnrecognized(draft),
+          });
         } catch (err) {
           patchItem(item.id, {
             status: "fetch-error",
@@ -162,6 +171,32 @@ export function useBulkReceiptsImport({
   const setItemCategory = useCallback(
     (id: string, category: string) => patchItem(id, { category }),
     [patchItem],
+  );
+  // Повний review-екран одного чека пачки (бета-фідбек №3): форма редагує
+  // draft прямо в `items` — сигнатура сумісна з
+  // `Dispatch<SetStateAction<ReceiptDraft>>`, тож `ReceiptReviewForm`
+  // працює без адаптерів. Якщо чек був авто-виключений як «схоже, не чек»
+  // і після редагування перестав бути порожнім — включаємо назад:
+  // заповнені поля = людина підтвердила, що це таки чек.
+  const updateItemDraft = useCallback(
+    (id: string, action: SetStateAction<ReceiptDraft>) => {
+      setItems((prev) =>
+        prev.map((x) => {
+          if (x.id !== id || !x.draft) return x;
+          const nextDraft =
+            typeof action === "function" ? action(x.draft) : action;
+          const autoReinclude =
+            draftLooksUnrecognized(x.draft) &&
+            !draftLooksUnrecognized(nextDraft);
+          return {
+            ...x,
+            draft: nextDraft,
+            included: autoReinclude ? true : x.included,
+          };
+        }),
+      );
+    },
+    [],
   );
   const toggleItemIncluded = useCallback(
     (id: string) =>
@@ -214,6 +249,7 @@ export function useBulkReceiptsImport({
     startFiles,
     setItemCategory,
     toggleItemIncluded,
+    updateItemDraft,
     saveAll,
     reset,
   };
