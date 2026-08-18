@@ -193,6 +193,11 @@ export function BulkReviewTable({
                     >
                       {row.direction === "income" ? "дохід" : "витрата"}
                     </Badge>
+                    {row.transferLikely && (
+                      <Badge variant="warning" tone="soft" size="xs">
+                        схоже на переказ
+                      </Badge>
+                    )}
                     {row.confidence != null && lowConfidence && (
                       <Badge variant="warning" tone="soft" size="xs">
                         перевір суму

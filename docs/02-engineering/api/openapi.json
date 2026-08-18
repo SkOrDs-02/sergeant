@@ -7796,6 +7796,9 @@
                       "type": "number",
                       "minimum": 0,
                       "maximum": 1
+                    },
+                    "transferLikely": {
+                      "type": "boolean"
                     }
                   },
                   "required": [
@@ -7891,6 +7894,9 @@
                 "description": {
                   "type": "string",
                   "maxLength": 300
+                },
+                "transferLikely": {
+                  "type": "boolean"
                 }
               },
               "required": [

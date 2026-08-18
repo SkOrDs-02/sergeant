@@ -82,6 +82,51 @@ describe("screenshotRowsToBulkReviewRows / statementRowsToBulkReviewRows", () =>
     );
     expect(new Set(rows.map((r) => r.id)).size).toBe(2);
   });
+
+  it("transferLikely-витрата знята з вибору за замовчуванням (переказ на власну банку — не витрата)", () => {
+    const rows = statementRowsToBulkReviewRows(
+      [
+        {
+          date: "2026-08-12",
+          amountKopiykas: 500000,
+          direction: "expense",
+          description: "Поповнення «просто»",
+          transferLikely: true,
+        },
+        {
+          date: "2026-08-14",
+          amountKopiykas: 12000,
+          direction: "expense",
+          description: "АТБ-Маркет",
+        },
+      ],
+      defaultCategoryFor,
+    );
+    expect(rows[0]).toMatchObject({ transferLikely: true, selected: false });
+    expect(rows[1]).toMatchObject({ transferLikely: false, selected: true });
+    // Рядок видимий і вмикається одним тапом — детектор лише знімає
+    // галочку, нічого не ховає.
+    const next = toggleRowSelected(rows, rows[0]!.id);
+    expect(next[0]?.selected).toBe(true);
+  });
+
+  it("transferLikely працює і для скрін-рядків (спільна серверна розмітка)", () => {
+    const rows = screenshotRowsToBulkReviewRows(
+      [
+        {
+          date: "2026-08-13",
+          time: null,
+          amountKopiykas: 35000,
+          direction: "expense",
+          description: "Поповнення «просто»",
+          confidence: 0.9,
+          transferLikely: true,
+        },
+      ],
+      defaultCategoryFor,
+    );
+    expect(rows[0]).toMatchObject({ transferLikely: true, selected: false });
+  });
 });
 
 describe("toggleRowSelected / setAllSelected", () => {

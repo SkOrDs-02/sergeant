@@ -15,6 +15,7 @@ import { extractJsonFromText } from "../../../http/jsonSafe.js";
 import { ExternalServiceError } from "../../../obs/errors.js";
 import { env } from "../../../env.js";
 import { callImportScreenshotVision } from "./visionClient.js";
+import { isLikelyOwnTransfer } from "./transferDetect.js";
 import { receiptVisionViaOpenRouter } from "../receipts/visionTransport.js";
 
 type WithSessionUser = Request & { user?: { id: string } };
@@ -135,6 +136,9 @@ export function normalizeImportScreenshotResult(
       direction,
       description,
       confidence,
+      // Лише true, без false — поле опційне у схемі, відсутність = «не
+      // схожий на переказ» (спільний детектор із CSV-шляхом).
+      ...(isLikelyOwnTransfer(description) ? { transferLikely: true } : {}),
     });
   }
 

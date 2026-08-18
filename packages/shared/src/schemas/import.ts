@@ -70,6 +70,15 @@ export const IMPORT_SCREENSHOT_DOC_TYPES = [
 export type ImportScreenshotDocType =
   (typeof IMPORT_SCREENSHOT_DOC_TYPES)[number];
 
+/** `true` — опис рядка схожий на переказ між власними рахунками (mono-банка:
+ * «Поповнення «X»» без « від », «Часткове зняття банки», «переказ на свою
+ * картку»): гроші не покинули кишеню користувача, у витрати/доходи такому
+ * рядку за замовчуванням не можна. Сервер ставить ЛИШЕ `true` (відсутнє
+ * поле = не схожий) — детектор `transferDetect.ts`; клієнт знімає рядок з
+ * вибору за замовчуванням, лишаючи його видимим і вмикабельним
+ * (рішення founder-а 2026-08-18 за реальною mono-випискою). */
+const transferLikelySchema = z.boolean().optional();
+
 export const ImportScreenshotRowSchema = z.object({
   date: boundedDayKeySchema,
   /** `HH:MM`, 24-годинний. `null` — нечитабельно/відсутнє на скріні
@@ -82,6 +91,7 @@ export const ImportScreenshotRowSchema = z.object({
   direction: ImportDirectionSchema,
   description: z.string().max(300),
   confidence: z.number().min(0).max(1),
+  transferLikely: transferLikelySchema,
 });
 export type ImportScreenshotRow = z.infer<typeof ImportScreenshotRowSchema>;
 
@@ -153,6 +163,7 @@ export const ImportStatementRowSchema = z.object({
   amountKopiykas: importAmountKopiykasSchema,
   direction: ImportDirectionSchema,
   description: z.string().max(300),
+  transferLikely: transferLikelySchema,
 });
 export type ImportStatementRow = z.infer<typeof ImportStatementRowSchema>;
 

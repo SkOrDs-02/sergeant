@@ -98,6 +98,46 @@ describe("normalizeImportScreenshotResult", () => {
     ]);
   });
 
+  it("маркує переказ на власну банку transferLikely (спільний детектор із CSV)", () => {
+    const draft = normalizeImportScreenshotResult({
+      doc_type: "bank_screenshot",
+      bank: "monobank",
+      rows: [
+        {
+          date: "2026-08-13",
+          time: "10:00",
+          amount_kopiykas: 500000,
+          direction: "expense",
+          description: "Поповнення «просто»",
+          confidence: 0.9,
+        },
+        {
+          date: "2026-08-13",
+          time: null,
+          amount_kopiykas: 35000,
+          direction: "income",
+          description: "Часткове зняття банки «просто»",
+          confidence: 0.9,
+        },
+        {
+          date: "2026-08-14",
+          time: "09:00",
+          amount_kopiykas: 12000,
+          direction: "expense",
+          description: "АТБ-Маркет",
+          confidence: 0.9,
+        },
+      ],
+    });
+    expect(
+      draft.rows.map((r) => [r.description, r.transferLikely ?? false]),
+    ).toEqual([
+      ["Поповнення «просто»", true],
+      ["Часткове зняття банки «просто»", true],
+      ["АТБ-Маркет", false],
+    ]);
+  });
+
   it("doc_type='receipt' → порожні rows, не помилка (UI підказка піти v1-шляхом)", () => {
     const draft = normalizeImportScreenshotResult({
       doc_type: "receipt",

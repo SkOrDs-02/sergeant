@@ -15,6 +15,7 @@ function rows(): BulkReviewRow[] {
       direction: "expense",
       category: "other",
       confidence: 0.9,
+      transferLikely: false,
       selected: true,
     },
     {
@@ -25,6 +26,7 @@ function rows(): BulkReviewRow[] {
       direction: "income",
       category: "salary",
       confidence: 0.4,
+      transferLikely: false,
       selected: false,
     },
   ];
@@ -62,6 +64,24 @@ describe("BulkReviewTable", () => {
     );
     // Only the income row (confidence 0.4 < 0.7) gets the warning badge.
     expect(screen.getAllByText("перевір суму")).toHaveLength(1);
+  });
+
+  it("shows the transfer badge only on transferLikely rows", () => {
+    const withTransfer = rows().map((r) =>
+      r.id === "r1"
+        ? { ...r, description: "Поповнення «просто»", transferLikely: true }
+        : r,
+    );
+    render(
+      <BulkReviewTable
+        rows={withTransfer}
+        onToggleRow={vi.fn()}
+        onToggleAll={vi.fn()}
+        onBulkCategory={vi.fn()}
+        onEditRow={vi.fn()}
+      />,
+    );
+    expect(screen.getAllByText("схоже на переказ")).toHaveLength(1);
   });
 
   it("calls onToggleRow with the row id when its checkbox is tapped", () => {

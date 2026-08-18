@@ -33,47 +33,64 @@ export interface BulkReviewRow {
   category: string;
   /** `null` for CSV rows (no vision signal); `0..1` for screenshot rows. */
   confidence: number | null;
+  /** Сервер розмітив рядок як схожий на переказ між власними рахунками
+   * («Поповнення «банка»», «Часткове зняття банки» — transferDetect.ts):
+   * знятий з вибору за замовчуванням, але видимий і вмикабельний. */
+  transferLikely: boolean;
   selected: boolean;
 }
 
 /**
- * Надходження зняті з вибору за замовчуванням (спека § Рішення дизайну
- * Фази 2, реком. founder-а — ВІДКРИТЕ питання №2, чекає ратифікації).
+ * Надходження зняті з вибору за замовчуванням (ратифіковано founder-ом
+ * 2026-08-18, питання №2 спеки). Те саме — рядки з `transferLikely`
+ * (follow-up тієї ж ратифікації): переказ на власну банку — не витрата,
+ * галочку користувач ставить свідомо.
  */
-function defaultSelected(direction: ImportDirection): boolean {
-  return direction === "expense";
+function defaultSelected(
+  direction: ImportDirection,
+  transferLikely: boolean,
+): boolean {
+  return direction === "expense" && !transferLikely;
 }
 
 export function screenshotRowsToBulkReviewRows(
   rows: readonly ImportScreenshotRow[],
   defaultCategoryFor: (direction: ImportDirection) => string,
 ): BulkReviewRow[] {
-  return rows.map((row, i) => ({
-    id: `screenshot-${i}`,
-    date: row.date,
-    description: row.description,
-    amountKopiykas: row.amountKopiykas,
-    direction: row.direction,
-    category: defaultCategoryFor(row.direction),
-    confidence: row.confidence,
-    selected: defaultSelected(row.direction),
-  }));
+  return rows.map((row, i) => {
+    const transferLikely = row.transferLikely === true;
+    return {
+      id: `screenshot-${i}`,
+      date: row.date,
+      description: row.description,
+      amountKopiykas: row.amountKopiykas,
+      direction: row.direction,
+      category: defaultCategoryFor(row.direction),
+      confidence: row.confidence,
+      transferLikely,
+      selected: defaultSelected(row.direction, transferLikely),
+    };
+  });
 }
 
 export function statementRowsToBulkReviewRows(
   rows: readonly ImportStatementRow[],
   defaultCategoryFor: (direction: ImportDirection) => string,
 ): BulkReviewRow[] {
-  return rows.map((row, i) => ({
-    id: `statement-${i}`,
-    date: row.date,
-    description: row.description,
-    amountKopiykas: row.amountKopiykas,
-    direction: row.direction,
-    category: defaultCategoryFor(row.direction),
-    confidence: null,
-    selected: defaultSelected(row.direction),
-  }));
+  return rows.map((row, i) => {
+    const transferLikely = row.transferLikely === true;
+    return {
+      id: `statement-${i}`,
+      date: row.date,
+      description: row.description,
+      amountKopiykas: row.amountKopiykas,
+      direction: row.direction,
+      category: defaultCategoryFor(row.direction),
+      confidence: null,
+      transferLikely,
+      selected: defaultSelected(row.direction, transferLikely),
+    };
+  });
 }
 
 export function toggleRowSelected(

@@ -6,6 +6,7 @@ import {
   ImportStatementPreviewResponseSchema,
 } from "@sergeant/shared";
 import type { ImportSkippedRow, ImportStatementRow } from "@sergeant/shared";
+import { isLikelyOwnTransfer } from "./transferDetect.js";
 import {
   detectDelimiter,
   isBlankRow,
@@ -88,11 +89,15 @@ function classifyRows(
       return;
     }
 
+    const description = descriptionRaw.trim();
     rows.push({
       date,
       amountKopiykas: Math.abs(signed),
       direction: signed < 0 ? "expense" : "income",
-      description: descriptionRaw.trim(),
+      description,
+      // Лише true, без false — поле опційне у схемі, відсутність = «не
+      // схожий на переказ» (див. transferLikelySchema у @sergeant/shared).
+      ...(isLikelyOwnTransfer(description) ? { transferLikely: true } : {}),
     });
   });
 
