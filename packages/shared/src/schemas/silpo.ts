@@ -157,3 +157,113 @@ export const SilpoReceiptsQuerySchema = z.object({
   cursor: z.string().min(3).optional(),
 });
 export type SilpoReceiptsQuery = z.infer<typeof SilpoReceiptsQuerySchema>;
+
+// ─────────────────────────── Cart (Track G — MCP write path) ────────────────
+
+/**
+ * `POST /api/silpo/cart/preview` request — one entry per shopping-list line.
+ * `name` is trimmed server-side (a whitespace-only name is rejected, not
+ * silently dropped, so the client sees exactly which line failed). Personal
+ * `quantity` hint is optional and NOT sent to Silpo at preview time — it only
+ * round-trips for the client's own UI bookkeeping (spec: preview never
+ * writes, so there is nothing here for Silpo to quantify yet).
+ */
+export const SilpoCartPreviewItemSchema = z.object({
+  name: z.string().trim().min(1),
+  quantity: z.number().positive().optional(),
+});
+export const SilpoCartPreviewRequestSchema = z.object({
+  items: z.array(SilpoCartPreviewItemSchema).min(1).max(100),
+});
+export type SilpoCartPreviewRequest = z.infer<
+  typeof SilpoCartPreviewRequestSchema
+>;
+
+/**
+ * One catalog candidate for a shopping-list line. `lagerId` is an OPAQUE
+ * selection token minted by the server (base64url JSON of `{productId,
+ * companyId, branchId}` — the triplet `silpo_add_or_update_cart_products`
+ * requires) — clients MUST treat it as a black box and echo it back
+ * unmodified in `SilpoCartApplyRequestSchema`, never parse or construct one.
+ * `priceKop` is the UAH catalog price × 100 (Hard Rule #1 — money as
+ * `number` minor units). `unit` is derived from `displayRatio`'s suffix
+ * (falls back to `"кг"`/`"шт"` from the `weighted` flag when `displayRatio`
+ * is absent) — see `lib/normalizers` (server) for the exact derivation.
+ */
+export const SilpoCartMatchDtoSchema = z.object({
+  lagerId: z.string().min(1),
+  name: z.string().min(1),
+  priceKop: z.number().int().nonnegative(),
+  unit: z.string().min(1),
+  displayRatio: z.string().nullable(),
+});
+export type SilpoCartMatchDto = z.infer<typeof SilpoCartMatchDtoSchema>;
+
+/**
+ * Response of `POST /api/silpo/cart/preview` — one entry per REQUEST item,
+ * in request order (matched back to the raw Silpo `queries[]` entry by exact
+ * `query` text, not by array index, since a same-named duplicate line or a
+ * provider-side reorder must not silently swap results across two different
+ * shopping-list lines). `matches` holds the top candidate plus up to 2
+ * alternatives; `unmatched: true` means zero usable candidates (either Silpo
+ * found nothing, or every hit was missing a field the cart-write path needs
+ * — see `normalizeCartMatch`).
+ */
+export const SilpoCartPreviewQueryDtoSchema = z.object({
+  query: z.string(),
+  matches: z.array(SilpoCartMatchDtoSchema),
+  unmatched: z.boolean(),
+});
+export type SilpoCartPreviewQueryDto = z.infer<
+  typeof SilpoCartPreviewQueryDtoSchema
+>;
+
+export const SilpoCartPreviewResponseSchema = z.object({
+  results: z.array(SilpoCartPreviewQueryDtoSchema),
+});
+export type SilpoCartPreviewResponse = z.infer<
+  typeof SilpoCartPreviewResponseSchema
+>;
+
+/**
+ * `POST /api/silpo/cart/apply` request. This is the confirm-before-write
+ * step (spec § "Confirm-before-write") — the server adds EXACTLY these
+ * `{lagerId, quantity}` pairs to the cart via `addQuantity: false` (replace,
+ * not accumulate) and nothing else; it never re-derives quantities or adds
+ * extra items on its own.
+ */
+export const SilpoCartSelectionSchema = z.object({
+  lagerId: z.string().min(1),
+  quantity: z.number().positive(),
+});
+export const SilpoCartApplyRequestSchema = z.object({
+  selections: z.array(SilpoCartSelectionSchema).min(1).max(100),
+});
+export type SilpoCartApplyRequest = z.infer<typeof SilpoCartApplyRequestSchema>;
+
+/** One cart line as returned by `GET /api/silpo/cart` / `POST …/cart/apply`. */
+export const SilpoCartItemDtoSchema = z.object({
+  name: z.string().min(1),
+  quantity: z.number(),
+  priceKop: z.number().int().nonnegative(),
+  subtotalKop: z.number().int().nonnegative(),
+});
+export type SilpoCartItemDto = z.infer<typeof SilpoCartItemDtoSchema>;
+
+/**
+ * Response of `GET /api/silpo/cart` AND `POST /api/silpo/cart/apply` (same
+ * shape — apply returns the post-write cart state, mirroring
+ * `silpo_add_or_update_cart_products`'s own "verify immediately after
+ * writing" contract). `totalKop` is `cart.calculation.totalAfterDiscounts`
+ * (the amount the user actually pays) × 100, falling back to `.total` when
+ * discounts are absent, or `null` when Silpo's response has neither
+ * (schema-drift degrade, never a thrown error). `cartUrl` is
+ * `checkoutWebLink` from the tool response, or `null` for an empty/erroring
+ * cart (Silpo only emits it for a non-empty, error-free cart).
+ */
+export const SilpoCartDtoSchema = z.object({
+  items: z.array(SilpoCartItemDtoSchema),
+  totalKop: z.number().int().nonnegative().nullable(),
+  cartUrl: z.string().nullable(),
+});
+export type SilpoCartDto = z.infer<typeof SilpoCartDtoSchema>;

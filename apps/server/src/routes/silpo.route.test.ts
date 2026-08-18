@@ -28,6 +28,14 @@ const mocks = vi.hoisted(() => ({
   listReceipts: vi.fn(),
   getReceiptDetail: vi.fn(),
   getWebAppOrigin: vi.fn(),
+  previewCart: vi.fn(),
+  applyCart: vi.fn(),
+  getCart: vi.fn(),
+  rateLimitExpress: vi.fn(
+    (_opts: { key: string; limit: number; windowMs: number }) =>
+      (_req: unknown, _res: unknown, next: () => void) =>
+        next(),
+  ),
 }));
 
 vi.mock("../db.js", () => ({ query: mocks.queryMock }));
@@ -55,6 +63,12 @@ vi.mock("../modules/silpo/receipts.js", () => ({
   getReceiptDetail: mocks.getReceiptDetail,
 }));
 
+vi.mock("../modules/silpo/cart.js", () => ({
+  previewCart: mocks.previewCart,
+  applyCart: mocks.applyCart,
+  getCart: mocks.getCart,
+}));
+
 // Deliberately NOT `vi.importActual` here: the real `http/index.js` barrel
 // re-exports `requireSession` from `./requireSession.js`, which imports
 // `../auth.js` → the Better Auth Drizzle adapter → `db.js`'s default pool
@@ -63,8 +77,7 @@ vi.mock("../modules/silpo/receipts.js", () => ({
 // `routes/silpo.ts` only imports these three names from the barrel, so a
 // fully-standalone mock is both simpler and correctly scoped.
 vi.mock("../http/index.js", () => ({
-  rateLimitExpress: () => (_req: unknown, _res: unknown, next: () => void) =>
-    next(),
+  rateLimitExpress: mocks.rateLimitExpress,
   setModule: () => (_req: unknown, _res: unknown, next: () => void) => next(),
   requireSession:
     () =>
@@ -132,6 +145,9 @@ describe("SILPO_ENABLED kill switch", () => {
     ["post", "/api/silpo/sync"],
     ["get", "/api/silpo/receipts"],
     ["get", "/api/silpo/receipts/r1"],
+    ["post", "/api/silpo/cart/preview"],
+    ["post", "/api/silpo/cart/apply"],
+    ["get", "/api/silpo/cart"],
   ] as const)(
     "returns 503 SILPO_DISABLED for %s %s when disabled",
     async (method, path) => {
@@ -143,6 +159,38 @@ describe("SILPO_ENABLED kill switch", () => {
       expect(res.body).toMatchObject({ code: "SILPO_DISABLED" });
     },
   );
+});
+
+describe("rate-limit keys", () => {
+  it("registers a distinct bucket per cart route (CodeQL 'missing rate limiting' pattern)", () => {
+    appWith(); // createSilpoRouter() registers every route synchronously
+    const keys = mocks.rateLimitExpress.mock.calls.map(([opts]) => opts.key);
+    expect(keys).toEqual(
+      expect.arrayContaining([
+        "api:silpo:cart-preview",
+        "api:silpo:cart-apply",
+        "api:silpo:cart-get",
+      ]),
+    );
+    expect(new Set(keys).size).toBe(keys.length); // every key unique
+
+    const byKey = new Map(
+      mocks.rateLimitExpress.mock.calls.map(([opts]) => [opts.key, opts]),
+    );
+    expect(byKey.get("api:silpo:cart-preview")).toMatchObject({
+      limit: 10,
+      windowMs: 60_000,
+    });
+    // Apply writes to an external system — the tightest bucket.
+    expect(byKey.get("api:silpo:cart-apply")).toMatchObject({
+      limit: 5,
+      windowMs: 60_000,
+    });
+    expect(byKey.get("api:silpo:cart-get")).toMatchObject({
+      limit: 30,
+      windowMs: 60_000,
+    });
+  });
 });
 
 describe("session guard", () => {
@@ -445,5 +493,204 @@ describe("GET /api/silpo/receipts/:id", () => {
     expect(res.status).toBe(200);
     expect(res.body.items).toHaveLength(1);
     expect(res.body.items[0]).toMatchObject({ id: 1, priceKop: 500 });
+  });
+});
+
+// ────────────────────────────────── Cart (Track G) ──────────────────────────
+
+describe("POST /api/silpo/cart/preview", () => {
+  it("returns the search results on a happy path", async () => {
+    mocks.previewCart.mockResolvedValue([
+      {
+        query: "молоко",
+        matches: [
+          {
+            lagerId: "opaque-token-1",
+            name: "Молоко 2.5%",
+            priceKop: 4500,
+            unit: "мл",
+            displayRatio: "900мл",
+          },
+        ],
+        unmatched: false,
+      },
+    ]);
+
+    const res = await request(appWith())
+      .post("/api/silpo/cart/preview")
+      .set("x-test-user-id", "user-1")
+      .send({ items: [{ name: "молоко" }] });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      results: [
+        {
+          query: "молоко",
+          matches: [
+            {
+              lagerId: "opaque-token-1",
+              name: "Молоко 2.5%",
+              priceKop: 4500,
+              unit: "мл",
+              displayRatio: "900мл",
+            },
+          ],
+          unmatched: false,
+        },
+      ],
+    });
+    expect(mocks.previewCart).toHaveBeenCalledWith("user-1", [
+      { name: "молоко" },
+    ]);
+  });
+
+  it("400s on an empty items array", async () => {
+    const res = await request(appWith())
+      .post("/api/silpo/cart/preview")
+      .set("x-test-user-id", "user-1")
+      .send({ items: [] });
+
+    expect(res.status).toBe(400);
+    expect(mocks.previewCart).not.toHaveBeenCalled();
+  });
+
+  it("400s on a whitespace-only item name", async () => {
+    const res = await request(appWith())
+      .post("/api/silpo/cart/preview")
+      .set("x-test-user-id", "user-1")
+      .send({ items: [{ name: "   " }] });
+
+    expect(res.status).toBe(400);
+    expect(mocks.previewCart).not.toHaveBeenCalled();
+  });
+
+  it("400s past 100 items", async () => {
+    const items = Array.from({ length: 101 }, (_, i) => ({
+      name: `товар-${i}`,
+    }));
+    const res = await request(appWith())
+      .post("/api/silpo/cart/preview")
+      .set("x-test-user-id", "user-1")
+      .send({ items });
+
+    expect(res.status).toBe(400);
+    expect(mocks.previewCart).not.toHaveBeenCalled();
+  });
+
+  it("propagates a thrown AppError's status/code to the client", async () => {
+    mocks.previewCart.mockRejectedValue(
+      Object.assign(new Error("Сільпо не підключено"), {
+        status: 409,
+        code: "SILPO_NOT_CONNECTED",
+      }),
+    );
+
+    const res = await request(appWith())
+      .post("/api/silpo/cart/preview")
+      .set("x-test-user-id", "user-1")
+      .send({ items: [{ name: "молоко" }] });
+
+    expect(res.status).toBe(409);
+    expect(res.body).toMatchObject({ code: "SILPO_NOT_CONNECTED" });
+  });
+});
+
+describe("POST /api/silpo/cart/apply", () => {
+  it("adds exactly the passed selections and returns the post-write cart", async () => {
+    mocks.applyCart.mockResolvedValue({
+      items: [
+        { name: "Молоко", quantity: 2, priceKop: 4500, subtotalKop: 9000 },
+      ],
+      totalKop: 9000,
+      cartUrl: "https://silpo.ua/checkout/1",
+    });
+
+    const res = await request(appWith())
+      .post("/api/silpo/cart/apply")
+      .set("x-test-user-id", "user-1")
+      .send({ selections: [{ lagerId: "opaque-token-1", quantity: 2 }] });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      items: [
+        { name: "Молоко", quantity: 2, priceKop: 4500, subtotalKop: 9000 },
+      ],
+      totalKop: 9000,
+      cartUrl: "https://silpo.ua/checkout/1",
+    });
+    expect(mocks.applyCart).toHaveBeenCalledWith("user-1", [
+      { lagerId: "opaque-token-1", quantity: 2 },
+    ]);
+  });
+
+  it("400s on an empty selections array — never calls applyCart", async () => {
+    const res = await request(appWith())
+      .post("/api/silpo/cart/apply")
+      .set("x-test-user-id", "user-1")
+      .send({ selections: [] });
+
+    expect(res.status).toBe(400);
+    expect(mocks.applyCart).not.toHaveBeenCalled();
+  });
+
+  it("400s on a non-positive quantity", async () => {
+    const res = await request(appWith())
+      .post("/api/silpo/cart/apply")
+      .set("x-test-user-id", "user-1")
+      .send({ selections: [{ lagerId: "opaque-token-1", quantity: 0 }] });
+
+    expect(res.status).toBe(400);
+    expect(mocks.applyCart).not.toHaveBeenCalled();
+  });
+
+  it("propagates a mapped 400 ValidationError for a malformed lagerId", async () => {
+    mocks.applyCart.mockRejectedValue(
+      Object.assign(new Error("Некоректний ідентифікатор товару Сільпо"), {
+        status: 400,
+        code: "VALIDATION",
+      }),
+    );
+
+    const res = await request(appWith())
+      .post("/api/silpo/cart/apply")
+      .set("x-test-user-id", "user-1")
+      .send({ selections: [{ lagerId: "garbage", quantity: 1 }] });
+
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({ code: "VALIDATION" });
+  });
+});
+
+describe("GET /api/silpo/cart", () => {
+  it("returns the current cart state", async () => {
+    mocks.getCart.mockResolvedValue({
+      items: [],
+      totalKop: 0,
+      cartUrl: null,
+    });
+
+    const res = await request(appWith())
+      .get("/api/silpo/cart")
+      .set("x-test-user-id", "user-1");
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ items: [], totalKop: 0, cartUrl: null });
+    expect(mocks.getCart).toHaveBeenCalledWith("user-1");
+  });
+
+  it("propagates a mapped upstream-unavailable AppError as 502", async () => {
+    mocks.getCart.mockRejectedValue(
+      Object.assign(new Error("Сільпо тимчасово недоступний"), {
+        status: 502,
+        code: "SILPO_UPSTREAM_ERROR",
+      }),
+    );
+
+    const res = await request(appWith())
+      .get("/api/silpo/cart")
+      .set("x-test-user-id", "user-1");
+
+    expect(res.status).toBe(502);
+    expect(res.body).toMatchObject({ code: "SILPO_UPSTREAM_ERROR" });
   });
 });

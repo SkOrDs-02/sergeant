@@ -7,6 +7,10 @@ import { rateLimitExpress, requireSession, setModule } from "../http/index.js";
 import { parseQuery } from "../http/validate.js";
 import { getWebAppOrigin } from "../auth/verificationMail.js";
 import {
+  SilpoCartApplyRequestSchema,
+  SilpoCartDtoSchema,
+  SilpoCartPreviewRequestSchema,
+  SilpoCartPreviewResponseSchema,
   SilpoDisconnectResponseSchema,
   SilpoReceiptDetailDtoSchema,
   SilpoReceiptsPageSchema,
@@ -26,6 +30,8 @@ import {
   listReceipts,
   pullAndSyncReceipts,
 } from "../modules/silpo/receipts.js";
+import { applyCart, getCart, previewCart } from "../modules/silpo/cart.js";
+import { parseBody } from "../http/validate.js";
 
 /**
  * `GET /api/silpo/connect|callback`, `POST /api/silpo/disconnect|wipe|sync`,
@@ -341,6 +347,58 @@ export async function receiptDetailHandler(
   res.status(200).json(SilpoReceiptDetailDtoSchema.parse(detail));
 }
 
+// ──────────────────────────────────── Cart (Track G) ────────────────────────
+
+/**
+ * `POST /api/silpo/cart/preview` — search-only, never writes. Body:
+ * `{items: [{name, quantity?}]}` (1..100, names trimmed/non-empty — Zod
+ * rejects a whitespace-only name with 400 before the handler runs).
+ */
+export async function cartPreviewHandler(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  if (!assertSilpoEnabled(res)) return;
+  const userId = getUserId(req as AuthedRequest, res);
+  if (!userId) return;
+
+  const { items } = parseBody(SilpoCartPreviewRequestSchema, req);
+  const results = await previewCart(userId, items);
+  res.status(200).json(SilpoCartPreviewResponseSchema.parse({ results }));
+}
+
+/**
+ * `POST /api/silpo/cart/apply` — confirm-before-write. Body:
+ * `{selections: [{lagerId, quantity}]}` (1..100). Adds EXACTLY the passed
+ * positions (`applyCart` uses `addQuantity: false`), then returns the
+ * post-write cart state.
+ */
+export async function cartApplyHandler(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  if (!assertSilpoEnabled(res)) return;
+  const userId = getUserId(req as AuthedRequest, res);
+  if (!userId) return;
+
+  const { selections } = parseBody(SilpoCartApplyRequestSchema, req);
+  const cart = await applyCart(userId, selections);
+  res.status(200).json(SilpoCartDtoSchema.parse(cart));
+}
+
+/** `GET /api/silpo/cart` — current cart state. */
+export async function cartGetHandler(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  if (!assertSilpoEnabled(res)) return;
+  const userId = getUserId(req as AuthedRequest, res);
+  if (!userId) return;
+
+  const cart = await getCart(userId);
+  res.status(200).json(SilpoCartDtoSchema.parse(cart));
+}
+
 // ──────────────────────────────────── Router ────────────────────────────────
 
 export function createSilpoRouter(): Router {
@@ -415,6 +473,35 @@ export function createSilpoRouter(): Router {
       windowMs: 60_000,
     }),
     receiptDetailHandler,
+  );
+  r.post(
+    "/api/silpo/cart/preview",
+    rateLimitExpress({
+      key: "api:silpo:cart-preview",
+      limit: 10,
+      windowMs: 60_000,
+    }),
+    cartPreviewHandler,
+  );
+  r.post(
+    "/api/silpo/cart/apply",
+    // Writes to an external system (Track G confirm-before-write) — tightest
+    // bucket in this router, same order of magnitude as `sync`/`wipe`.
+    rateLimitExpress({
+      key: "api:silpo:cart-apply",
+      limit: 5,
+      windowMs: 60_000,
+    }),
+    cartApplyHandler,
+  );
+  r.get(
+    "/api/silpo/cart",
+    rateLimitExpress({
+      key: "api:silpo:cart-get",
+      limit: 30,
+      windowMs: 60_000,
+    }),
+    cartGetHandler,
   );
 
   return r;
