@@ -1,6 +1,6 @@
 # Postgres read replica — runbook (PR #047)
 
-> **Last touched:** 2026-05-13 by Devin. **Next review:** 2026-08-17.
+> **Last touched:** 2026-08-18 by @claude (freshness-review: звірено runtime-контракт із кодом; секцію «Які запити сидять на replica» приведено до факту — продакшн-викликів `queryReplica` наразі нуль). **Next review:** 2026-11-18.
 > **Status:** Active
 
 > **⚠️ Рецепт деплою неактуальний:** production переїхав на Hetzner/Coolify ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md)). Runtime-контракт `DATABASE_URL_REPLICA` і правила routing лишаються чинними, але Railway-кроки provisioning/DNS/monitoring нижче історичні — їх не можна виконувати. У репо зараз немає підтвердженої Coolify-топології replica; її треба окремо обрати й задокументувати до rollout.
@@ -22,9 +22,10 @@
   read-after-write reads.
 - `DATABASE_URL_POOL` — pgBouncer перед primary. Runtime app-pool ходить
   туди (див. [pgBouncer runbook](./database-connection-pooling.md)).
-- `DATABASE_URL_REPLICA` — **новий** опційний URL до streaming-replication
-  read-replica. Opt-in caller-и (`growth_*` / `seo_*` analytics SELECT-и)
-  ходять через `apps/server/src/dbReplica.ts` → `queryReplica()`.
+- `DATABASE_URL_REPLICA` — опційний URL до streaming-replication
+  read-replica. Інфраструктура (`apps/server/src/dbReplica.ts` →
+  `queryReplica()`) wired і готова, але **активних продакшн-споживачів
+  наразі нуль** — див. § «Які запити сидять на replica».
 - Empty / unset → `queryReplica()` прозоро fallback-ить на primary pool.
   Single-URL deploy-и (Replit, dev, docker-compose) працюють без змін.
 
@@ -70,15 +71,19 @@ replica повинні бути толерантні до stale reads ≤ 10s.
 
 ## Які запити сидять на replica
 
-Сьогодні (PR #047): `GET /api/internal/seo/keywords` (active keyword
-list — analytics-style read, толерує лаг).
+Сьогодні: **жодного продакшн-виклику `queryReplica()`** — первинний
+споживач PR #047 (`GET /api/internal/seo/keywords`) виведений разом із
+seo-модулем. Інфраструктура лишається wired і готова до нових
+споживачів: `apps/server/src/dbReplica.ts` (експортує `queryReplica`,
+`withReplicaClient`, `REPLICA_ENABLED`, `getReplicaPoolStats`), а
+`apps/server/src/index.ts` викликає `drainReplicaPool()` у graceful
+shutdown (перевірено 2026-08-18).
 
-Майбутнє розширення (з низьким рівнем ризику):
+Кандидати на майбутнє розширення (з низьким рівнем ризику):
 
-- Решта `GET /api/internal/seo/*` lookup-и (snapshot listing, ranks-by-day).
 - Analytics digest endpoint-и для `growth_events` / `growth_metrics_daily`.
 - Будь-який endpoint з префіксом `/api/insights/*`, який повертає
-  агрегати з `seo_*` / `growth_*` без read-after-write вимог.
+  агрегати без read-after-write вимог.
 
 Як додати новий endpoint у replica:
 

@@ -32,6 +32,7 @@ import {
 } from "../utils";
 import { TxRowCategoryPicker } from "./TxRowCategoryPicker";
 import { TxRowSplitEditor } from "./TxRowSplitEditor";
+import { ReceiptItemsSection } from "./ReceiptItemsSection";
 
 interface BankTransactionAccount {
   id?: string | undefined;
@@ -48,6 +49,9 @@ export interface BankTransactionDetailsSheetProps {
   note?: string | undefined;
   txSplits: TxSplitsMap;
   customCategories?: readonly CustomCategoryInput[] | undefined;
+  /** Device-local чек, привʼязаний до цієї транзакції (спека § Розгортка)
+   * — `null` коли цей пристрій про чек не знає (`useFinykReceiptLinks`). */
+  receiptId?: number | null | undefined;
   hideAmount?: boolean | undefined;
   onCategoryChange: (id: string, categoryId: string | null) => void;
   onNoteChange: (id: string, note: string | null) => void;
@@ -93,6 +97,7 @@ export function BankTransactionDetailsSheet({
   note,
   txSplits,
   customCategories = [],
+  receiptId = null,
   hideAmount = false,
   onCategoryChange,
   onNoteChange,
@@ -222,6 +227,8 @@ export function BankTransactionDetailsSheet({
             </div>
           </section>
         </div>
+
+        {receiptId != null && <ReceiptItemsSection receiptId={receiptId} />}
 
         <section aria-labelledby="bank-transaction-category-title">
           <h3

@@ -2242,6 +2242,635 @@
         }
       }
     },
+    "/api/finyk/receipts/lookup": {
+      "post": {
+        "summary": "QR/ДПС lookup чека — draft БЕЗ запису в БД",
+        "tags": [
+          "finyk"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReceiptLookupRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Чернетка чека, розпізнана ДПС XML.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReceiptDraftResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "DPS_RECEIPT_NOT_FOUND — чек ще не з'явився в реєстрі ДПС.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "DPS_UPSTREAM_ERROR | DPS_PARSE_ERROR.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "DPS_TOKEN_MISSING | DPS_AUTH_ERROR.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finyk/receipts/analyze": {
+      "post": {
+        "summary": "Vision-fallback аналіз фото чека — draft БЕЗ запису в БД",
+        "tags": [
+          "finyk"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReceiptAnalyzeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Чернетка чека (source:'vision', fiscalNum:null, confidence 0..1).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReceiptDraftResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "TOO_LARGE — НЕ канонічний ApiError envelope, див. коментар вище.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "INVALID_BASE64 | TRUNCATED | MAGIC_MISMATCH — НЕ канонічний ApiError envelope, див. коментар вище.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "RECEIPT_VISION_UNAVAILABLE — жоден vision-провайдер не сконфігурований.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finyk/receipts": {
+      "post": {
+        "summary": "Зберегти чек (draft + category)",
+        "description": "Ідемпотентний: `201` — новий чек, `200` + `alreadyExists:true` — повторний скан (той самий fiscal_num, або той самий `clientScanId` для vision-чеків без fiscal_num).",
+        "tags": [
+          "finyk"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReceiptSaveRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "alreadyExists:true — ідемпотентний повторний скан.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReceiptSaveResponse"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Новий чек створено.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReceiptSaveResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finyk/receipts/{id}": {
+      "get": {
+        "summary": "Чек з позиціями для розгортки транзакції",
+        "tags": [
+          "finyk"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "`receipts.id`."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Чек з items[] + link (mono|manual|null).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReceiptGetResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Чужий чек АБО неіснуючий id (сервер не розрізняє).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finyk/import/screenshot/analyze": {
+      "post": {
+        "summary": "Vision-розпізнавання скріна банкінгу — draft БЕЗ запису в БД",
+        "tags": [
+          "finyk"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportScreenshotAnalyzeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "docType 'bank_screenshot'|'receipt'|'other' + rows[] (rows:[] для receipt/other).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportScreenshotAnalyzeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "TOO_LARGE — НЕ канонічний ApiError envelope (той самий guard, що receipts/analyze).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "INVALID_BASE64 | TRUNCATED | MAGIC_MISMATCH — НЕ канонічний ApiError envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "IMPORT_VISION_UNAVAILABLE — жоден vision-провайдер не сконфігурований.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finyk/import/statement/preview": {
+      "post": {
+        "summary": "CSV-only парсинг банківської виписки — БЕЗ запису в БД",
+        "description": "Discriminated за `needsMapping`: `false` → `profile`+`rows`+`skipped`; `true` → `headers`+`sampleRows` для ручного column-mapper.",
+        "tags": [
+          "finyk"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportStatementPreviewRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Автопрофіль (mono/privat24/custom) або needsMapping:true.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportStatementPreviewResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finyk/import/commit": {
+      "post": {
+        "summary": "Commit вибраних rows → журнал import_batches + manual expenses",
+        "tags": [
+          "finyk"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportCommitRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "batchId + created/linked + skipped{monoMatched,duplicate}.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportCommitResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finyk/import/batches/{id}": {
+      "get": {
+        "summary": "Статус/підсумок батчу імпорту",
+        "tags": [
+          "finyk"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "`import_batches.id`."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Batch зі статусом completed|undone + лічильники.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportBatchGetResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Чужий батч АБО неіснуючий id (сервер не розрізняє).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Undo батчу — tombstone кожного created row",
+        "description": "Ідемпотентний: повторний виклик повертає `tombstoned:0`, той самий `200`.",
+        "tags": [
+          "finyk"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "`import_batches.id`."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Batch зі статусом 'undone' + tombstoned (0 на повторний виклик).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportBatchUndoResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Чужий батч АБО неіснуючий id (сервер не розрізняє).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/waitlist": {
       "post": {
         "summary": "Sign-up на waitlist для майбутнього Pro-тіру (анонімний)",
@@ -5108,6 +5737,335 @@
         ],
         "description": "POST /api/push/test."
       },
+      "ReceiptLookupRequest": {
+        "type": "object",
+        "properties": {
+          "fn": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "pattern": "^[\\w.-]+$"
+          },
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "pattern": "^[\\w.-]+$"
+          },
+          "date": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "pattern": "^[\\w.-]+$"
+          },
+          "time": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "pattern": "^[\\w.-]+$"
+          },
+          "sm": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "pattern": "^[\\w.-]+$"
+          }
+        },
+        "required": [
+          "fn",
+          "id",
+          "date",
+          "time",
+          "sm"
+        ],
+        "additionalProperties": false,
+        "description": "POST /api/finyk/receipts/lookup — опакові поля QR фіскального чека ДПС."
+      },
+      "ReceiptAnalyzeRequest": {
+        "type": "object",
+        "properties": {
+          "image_base64": {
+            "type": "string",
+            "minLength": 100,
+            "maxLength": 7000000
+          },
+          "mime_type": {
+            "type": "string",
+            "maxLength": 64,
+            "pattern": "^image\\/[a-z+.-]+$"
+          }
+        },
+        "required": [
+          "image_base64"
+        ],
+        "additionalProperties": false,
+        "description": "POST /api/finyk/receipts/analyze — base64 фото чека (vision fallback)."
+      },
+      "ReceiptSaveRequest": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": [
+              "dps",
+              "vision"
+            ]
+          },
+          "fiscalNum": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "store": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "storeTaxId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 32
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "purchasedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          "totalKopiykas": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000000
+          },
+          "items": {
+            "maxItems": 200,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "position": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 10000
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 300
+                },
+                "qty": {
+                  "type": "number",
+                  "minimum": -1000000,
+                  "maximum": 1000000
+                },
+                "priceKopiykas": {
+                  "type": "integer",
+                  "minimum": -1000000000,
+                  "maximum": 1000000000
+                },
+                "sumKopiykas": {
+                  "type": "integer",
+                  "minimum": -1000000000,
+                  "maximum": 1000000000
+                }
+              },
+              "required": [
+                "position",
+                "name",
+                "qty",
+                "priceKopiykas",
+                "sumKopiykas"
+              ]
+            }
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "rawPayload": {},
+          "clientScanId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "category": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          }
+        },
+        "required": [
+          "source",
+          "fiscalNum",
+          "store",
+          "storeTaxId",
+          "purchasedAt",
+          "totalKopiykas",
+          "items",
+          "rawPayload",
+          "category"
+        ],
+        "additionalProperties": false,
+        "description": "POST /api/finyk/receipts — відредагований draft + category. Опційний `clientScanId` (uuid) — ідемпотентність retry для vision-чеків без fiscalNum."
+      },
+      "ImportScreenshotAnalyzeRequest": {
+        "type": "object",
+        "properties": {
+          "image_base64": {
+            "type": "string",
+            "minLength": 100,
+            "maxLength": 7000000
+          },
+          "mime_type": {
+            "type": "string",
+            "maxLength": 64,
+            "pattern": "^image\\/[a-z+.-]+$"
+          }
+        },
+        "required": [
+          "image_base64"
+        ],
+        "additionalProperties": false,
+        "description": "POST /api/finyk/import/screenshot/analyze — base64 скрін банкінгу."
+      },
+      "ImportStatementPreviewRequest": {
+        "type": "object",
+        "properties": {
+          "csv_text": {
+            "type": "string",
+            "minLength": 1
+          },
+          "mapping": {
+            "type": "object",
+            "properties": {
+              "dateCol": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "amountCol": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "descriptionCol": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "dateFormat": {
+                "type": "string",
+                "enum": [
+                  "DD.MM.YYYY",
+                  "YYYY-MM-DD"
+                ]
+              },
+              "decimalComma": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "dateCol",
+              "amountCol",
+              "descriptionCol"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "csv_text"
+        ],
+        "additionalProperties": false,
+        "description": "POST /api/finyk/import/statement/preview — csv_text + опційний column mapping."
+      },
+      "ImportCommitRequest": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": [
+              "bank_screenshot",
+              "bank_statement"
+            ]
+          },
+          "rows": {
+            "minItems": 1,
+            "maxItems": 1000,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "amountKopiykas": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1000000000
+                },
+                "direction": {
+                  "type": "string",
+                  "enum": [
+                    "expense",
+                    "income"
+                  ]
+                },
+                "description": {
+                  "type": "string",
+                  "maxLength": 300
+                },
+                "category": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
+                }
+              },
+              "required": [
+                "date",
+                "amountKopiykas",
+                "direction",
+                "description",
+                "category"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "source",
+          "rows"
+        ],
+        "additionalProperties": false,
+        "description": "POST /api/finyk/import/commit — вибрані/відредаговані rows (1..5000)."
+      },
       "WaitlistSubmit": {
         "type": "object",
         "properties": {
@@ -6319,6 +7277,885 @@
         ],
         "additionalProperties": false,
         "description": "Відповідь GET /api/mono/backfill-progress — поточний стан per-user backfill job."
+      },
+      "ReceiptDraftResponse": {
+        "type": "object",
+        "properties": {
+          "draft": {
+            "type": "object",
+            "properties": {
+              "source": {
+                "type": "string",
+                "enum": [
+                  "dps",
+                  "vision"
+                ]
+              },
+              "fiscalNum": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "store": {
+                "type": "string",
+                "maxLength": 300
+              },
+              "storeTaxId": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 32
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "purchasedAt": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+              },
+              "totalKopiykas": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000000000
+              },
+              "items": {
+                "maxItems": 200,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "position": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 10000
+                    },
+                    "name": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 300
+                    },
+                    "qty": {
+                      "type": "number",
+                      "minimum": -1000000,
+                      "maximum": 1000000
+                    },
+                    "priceKopiykas": {
+                      "type": "integer",
+                      "minimum": -1000000000,
+                      "maximum": 1000000000
+                    },
+                    "sumKopiykas": {
+                      "type": "integer",
+                      "minimum": -1000000000,
+                      "maximum": 1000000000
+                    }
+                  },
+                  "required": [
+                    "position",
+                    "name",
+                    "qty",
+                    "priceKopiykas",
+                    "sumKopiykas"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "confidence": {
+                "anyOf": [
+                  {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "rawPayload": {},
+              "clientScanId": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "source",
+              "fiscalNum",
+              "store",
+              "storeTaxId",
+              "purchasedAt",
+              "totalKopiykas",
+              "items",
+              "rawPayload"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "draft"
+        ],
+        "additionalProperties": false,
+        "description": "Відповідь lookup/analyze — чернетка чека БЕЗ запису в БД (`source: 'dps'|'vision'`)."
+      },
+      "ReceiptSaveResponse": {
+        "type": "object",
+        "properties": {
+          "receipt": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              "source": {
+                "type": "string",
+                "enum": [
+                  "dps",
+                  "vision",
+                  "silpo"
+                ]
+              },
+              "fiscalNum": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "store": {
+                "type": "string"
+              },
+              "storeTaxId": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "purchasedAt": {
+                "type": "string"
+              },
+              "totalKopiykas": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "receiptId": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "position": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "qty": {
+                      "type": "number"
+                    },
+                    "priceKopiykas": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "sumKopiykas": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "receiptId",
+                    "position",
+                    "name",
+                    "qty",
+                    "priceKopiykas",
+                    "sumKopiykas"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "link": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "txKind": {
+                        "type": "string",
+                        "enum": [
+                          "mono",
+                          "manual"
+                        ]
+                      },
+                      "txRef": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "txKind",
+                      "txRef"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "createdAt": {
+                "type": "string"
+              },
+              "updatedAt": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "source",
+              "fiscalNum",
+              "store",
+              "storeTaxId",
+              "purchasedAt",
+              "totalKopiykas",
+              "items",
+              "link",
+              "createdAt",
+              "updatedAt"
+            ],
+            "additionalProperties": false
+          },
+          "alreadyExists": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "receipt",
+          "alreadyExists"
+        ],
+        "additionalProperties": false,
+        "description": "Відповідь save — 201 (новий) або 200 + alreadyExists:true (ідемпотентний повтор)."
+      },
+      "ReceiptGetResponse": {
+        "type": "object",
+        "properties": {
+          "receipt": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              "source": {
+                "type": "string",
+                "enum": [
+                  "dps",
+                  "vision",
+                  "silpo"
+                ]
+              },
+              "fiscalNum": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "store": {
+                "type": "string"
+              },
+              "storeTaxId": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "purchasedAt": {
+                "type": "string"
+              },
+              "totalKopiykas": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "receiptId": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "position": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "qty": {
+                      "type": "number"
+                    },
+                    "priceKopiykas": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "sumKopiykas": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "receiptId",
+                    "position",
+                    "name",
+                    "qty",
+                    "priceKopiykas",
+                    "sumKopiykas"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "link": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "txKind": {
+                        "type": "string",
+                        "enum": [
+                          "mono",
+                          "manual"
+                        ]
+                      },
+                      "txRef": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "txKind",
+                      "txRef"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "createdAt": {
+                "type": "string"
+              },
+              "updatedAt": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "source",
+              "fiscalNum",
+              "store",
+              "storeTaxId",
+              "purchasedAt",
+              "totalKopiykas",
+              "items",
+              "link",
+              "createdAt",
+              "updatedAt"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "receipt"
+        ],
+        "additionalProperties": false,
+        "description": "Відповідь GET /api/finyk/receipts/{id}."
+      },
+      "ImportScreenshotAnalyzeResponse": {
+        "type": "object",
+        "properties": {
+          "draft": {
+            "type": "object",
+            "properties": {
+              "docType": {
+                "type": "string",
+                "enum": [
+                  "bank_screenshot",
+                  "receipt",
+                  "other"
+                ]
+              },
+              "bank": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 120
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "rows": {
+                "maxItems": 200,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "date": {
+                      "type": "string",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                    },
+                    "time": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "amountKopiykas": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 1000000000
+                    },
+                    "direction": {
+                      "type": "string",
+                      "enum": [
+                        "expense",
+                        "income"
+                      ]
+                    },
+                    "description": {
+                      "type": "string",
+                      "maxLength": 300
+                    },
+                    "confidence": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "transferLikely": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "date",
+                    "time",
+                    "amountKopiykas",
+                    "direction",
+                    "description",
+                    "confidence"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "docType",
+              "bank",
+              "rows"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "draft"
+        ],
+        "additionalProperties": false,
+        "description": "Відповідь screenshot/analyze — draft rows[] БЕЗ запису в БД."
+      },
+      "ImportStatementPreviewResponse": {
+        "type": "object",
+        "properties": {
+          "profile": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "mono",
+                      "privat24"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "const": "custom"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "needsMapping": {
+            "type": "boolean"
+          },
+          "headers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "sampleRows": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "amountKopiykas": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1000000000
+                },
+                "direction": {
+                  "type": "string",
+                  "enum": [
+                    "expense",
+                    "income"
+                  ]
+                },
+                "description": {
+                  "type": "string",
+                  "maxLength": 300
+                },
+                "transferLikely": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "date",
+                "amountKopiykas",
+                "direction",
+                "description"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "skipped": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                },
+                "reason": {
+                  "type": "string",
+                  "enum": [
+                    "not_uah",
+                    "unparsed_date",
+                    "unparsed_amount",
+                    "empty"
+                  ]
+                }
+              },
+              "required": [
+                "line",
+                "reason"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "profile",
+          "needsMapping",
+          "rows",
+          "skipped"
+        ],
+        "additionalProperties": false,
+        "description": "Відповідь statement/preview — discriminated за needsMapping (profile+rows+skipped, АБО headers+sampleRows для ручного column-mapper)."
+      },
+      "ImportCommitResponse": {
+        "type": "object",
+        "properties": {
+          "batchId": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "created": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "linked": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "skipped": {
+            "type": "object",
+            "properties": {
+              "monoMatched": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "duplicate": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "monoMatched",
+              "duplicate"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "batchId",
+          "created",
+          "linked",
+          "skipped"
+        ],
+        "additionalProperties": false,
+        "description": "Відповідь commit — batchId + created/linked + skipped{monoMatched,duplicate}."
+      },
+      "ImportBatchGetResponse": {
+        "type": "object",
+        "properties": {
+          "batch": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              "source": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "completed",
+                  "undone"
+                ]
+              },
+              "rowsTotal": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "rowsCreated": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "rowsLinked": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "rowsSkipped": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "createdRowIds": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+              },
+              "updatedAt": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+              }
+            },
+            "required": [
+              "id",
+              "source",
+              "status",
+              "rowsTotal",
+              "rowsCreated",
+              "rowsLinked",
+              "rowsSkipped",
+              "createdRowIds",
+              "createdAt",
+              "updatedAt"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "batch"
+        ],
+        "additionalProperties": false,
+        "description": "Відповідь GET /api/finyk/import/batches/{id}."
+      },
+      "ImportBatchUndoResponse": {
+        "type": "object",
+        "properties": {
+          "batch": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              "source": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "completed",
+                  "undone"
+                ]
+              },
+              "rowsTotal": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "rowsCreated": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "rowsLinked": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "rowsSkipped": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "createdRowIds": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+              },
+              "updatedAt": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+              }
+            },
+            "required": [
+              "id",
+              "source",
+              "status",
+              "rowsTotal",
+              "rowsCreated",
+              "rowsLinked",
+              "rowsSkipped",
+              "createdRowIds",
+              "createdAt",
+              "updatedAt"
+            ],
+            "additionalProperties": false
+          },
+          "tombstoned": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "batch",
+          "tombstoned"
+        ],
+        "additionalProperties": false,
+        "description": "Відповідь DELETE /api/finyk/import/batches/{id} — undo, ідемпотентний (tombstoned:0 на повторний виклик)."
       },
       "WaitlistSubmitResponse": {
         "type": "object",

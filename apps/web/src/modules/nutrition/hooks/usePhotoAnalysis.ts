@@ -12,6 +12,7 @@ import {
 } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { nutritionApi, type NutritionPhotoResult } from "@shared/api";
+import { compressImageFile } from "@shared/lib/media/compressImage";
 import { fileToBase64 } from "../lib/fileToBase64";
 import { formatNutritionError } from "../lib/nutritionErrors";
 
@@ -72,6 +73,10 @@ export function usePhotoAnalysis({
   setStatusText,
 }: UsePhotoAnalysisParams): UsePhotoAnalysisResult {
   const fileRef = useRef<HTMLInputElement | null>(null);
+  /** Стиснута копія обраного фото (`compressImageFile`) — analyze бере її
+   * замість оригіналу з input-а. Скидається на КОЖЕН новий вибір ДО
+   * валідації, щоб стара стиснута копія не пережила заміну файлу. */
+  const compressedFileRef = useRef<File | null>(null);
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState("");
   const [photoResult, setPhotoResult] = useState<NutritionPhotoResult | null>(
     null,
@@ -139,6 +144,7 @@ export function usePhotoAnalysis({
   const onPickPhoto = async (file: File | null | undefined) => {
     setErr("");
     setPhotoResult(null);
+    compressedFileRef.current = null;
     if (!file) {
       if (photoPreviewUrl) {
         try {
@@ -155,7 +161,14 @@ export function usePhotoAnalysis({
       setErr("Обери файл зображення (jpg/png/heic).");
       return;
     }
-    if (file.size > 4.5 * 1024 * 1024) {
+    // Стиснення ДО перевірки розміру: телефонні 4–6 МБ фото після
+    // canvas-downscale проходять ліміт самі; `null` = лишай оригінал
+    // (skip або декодер не впорався) — тоді спрацює гейт нижче, як і до
+    // появи стиснення.
+    const compressed = await compressImageFile(file).catch(() => null);
+    compressedFileRef.current = compressed;
+    const effective = compressed ?? file;
+    if (effective.size > 4.5 * 1024 * 1024) {
       setErr(
         "Фото завелике для швидкого аналізу. Обріж або стисни (≈ до 4 МБ).",
       );
@@ -169,7 +182,7 @@ export function usePhotoAnalysis({
           /* ignore */
         }
       }
-      const url = URL.createObjectURL(file);
+      const url = URL.createObjectURL(effective);
       setPhotoPreviewUrl(url);
     } catch {
       /* ignore */
@@ -179,8 +192,11 @@ export function usePhotoAnalysis({
   // ─── Analyze photo ──────────────────────────────────────────────────────
   const analyzeMutation = useMutation({
     mutationFn: async () => {
-      const file = fileRef.current?.files?.[0];
-      if (!file) throw new Error("Спочатку обери фото.");
+      const original = fileRef.current?.files?.[0];
+      if (!original) throw new Error("Спочатку обери фото.");
+      // Стиснута копія з onPickPhoto; оригінал — лише fallback (напр.
+      // декодер не впорався і compressImageFile віддав null).
+      const file = compressedFileRef.current ?? original;
       const b64 = await fileToBase64(file);
       const payload: PhotoAnalysisPayload = {
         image_base64: b64,

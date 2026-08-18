@@ -173,6 +173,10 @@ export interface TransactionListProps {
   txNotes?: Record<string, string | undefined> | undefined;
   accounts: ReadonlyArray<TxAccount> | undefined;
   customCategories: CustomCategoryInput[] | undefined;
+  /** `useFinykReceiptLinks().hasReceipt` — device-local drill-down
+   * indicator (спека § Розгортка). Optional so existing test call-sites
+   * that don't care about receipts keep compiling. */
+  hasReceipt?: ((txId: string) => boolean) | undefined;
   onToggleSelect: (id: string) => void;
   onSwipeHideTx: (id: string) => void;
   onSwipeDeleteManual: (tx: Transaction) => void;
@@ -227,6 +231,7 @@ export function TransactionList({
   txNotes = {},
   accounts,
   customCategories,
+  hasReceipt,
   onToggleSelect,
   onSwipeHideTx,
   onSwipeDeleteManual,
@@ -448,6 +453,7 @@ export function TransactionList({
                       accounts={accounts ?? []}
                       hideAmount={!showBalance}
                       customCategories={customCategories}
+                      hasReceipt={hasReceipt?.(t.id) ?? false}
                       onToggleSelect={onToggleSelect}
                       onSwipeHideTx={onSwipeHideTx}
                       onSwipeDeleteManual={() => onSwipeDeleteManual(t)}

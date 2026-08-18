@@ -742,6 +742,16 @@ const SQL_ONLY_TABLES = [
   // контур, що й `mono_connection` / `plata_card_token`: секрет читає лише
   // серверний банк-проксі, у Drizzle його свідомо немає.
   "privat_connection",
+  // Чек-скан v1 + Фаза 2 масового ведення (docs/90-work/planning/specs/
+  // receipt-scan.md, міграції 121/122). Читає й пише лише серверний
+  // finyk/receipts + finyk/import модуль (raw pg, той самий контур, що
+  // mono_*/apple_iap_receipts) — matcher, lookup/analyze/save,
+  // bulk-import commit/undo. Клієнт бачить лише серіалізовані
+  // API-відповіді (kopiykas як number, Hard Rule #1), не Drizzle-читання.
+  "receipts",
+  "receipt_items",
+  "finyk_tx_receipt_links",
+  "import_batches",
   // Integration webhooks / failure journals (n8n + generic) — server-only журнали.
   "n8n_failure_events",
   "n8n_webhook_events",

@@ -858,6 +858,317 @@ export const paths: ZodOpenApiPathsObject = {
     },
   },
 
+  // ────────────────────── Чек-скан v1 (/api/finyk/receipts/*) ───────────────
+  // Спека: `docs/90-work/planning/specs/receipt-scan.md` § API-контракт.
+  // 413/415 на `/analyze` — НЕ канонічний `ApiError`-envelope (жодного
+  // `error`/`message`/`requestId`) — сервер віддає
+  // `{code, detail, declared_mime?, detected_mime?}` напряму з
+  // `validateImageBase64()` (`apps/server/src/lib/imageMagic.ts`), без
+  // `.parse()` проти shared-схеми. Документуємо як `ApiError` (той самий
+  // placeholder, що вже прийнятий для `/api/transcribe` 413/415, теж
+  // image/audio-magic-byte guard) — точна форма живе в
+  // `@sergeant/api-client` (`ImageValidationErrorBody`, hand-written, не
+  // з shared, саме тому що сервер тут нічого не `.parse()`-ить).
+  "/api/finyk/receipts/lookup": {
+    post: {
+      summary: "QR/ДПС lookup чека — draft БЕЗ запису в БД",
+      tags: ["finyk"],
+      security: cookieOrBearer,
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": { schema: namedSchemas.ReceiptLookupRequest },
+        },
+      },
+      responses: {
+        "200": {
+          description: "Чернетка чека, розпізнана ДПС XML.",
+          content: {
+            "application/json": { schema: namedSchemas.ReceiptDraftResponse },
+          },
+        },
+        "400": validationError,
+        "401": unauthorized,
+        "404": {
+          description:
+            "DPS_RECEIPT_NOT_FOUND — чек ще не з'явився в реєстрі ДПС.",
+          content: { "application/json": { schema: namedSchemas.ApiError } },
+        },
+        "502": {
+          description: "DPS_UPSTREAM_ERROR | DPS_PARSE_ERROR.",
+          content: { "application/json": { schema: namedSchemas.ApiError } },
+        },
+        "503": {
+          description: "DPS_TOKEN_MISSING | DPS_AUTH_ERROR.",
+          content: { "application/json": { schema: namedSchemas.ApiError } },
+        },
+      },
+    },
+  },
+  "/api/finyk/receipts/analyze": {
+    post: {
+      summary: "Vision-fallback аналіз фото чека — draft БЕЗ запису в БД",
+      tags: ["finyk"],
+      security: cookieOrBearer,
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": { schema: namedSchemas.ReceiptAnalyzeRequest },
+        },
+      },
+      responses: {
+        "200": {
+          description:
+            "Чернетка чека (source:'vision', fiscalNum:null, confidence 0..1).",
+          content: {
+            "application/json": { schema: namedSchemas.ReceiptDraftResponse },
+          },
+        },
+        "400": validationError,
+        "401": unauthorized,
+        "413": {
+          description:
+            "TOO_LARGE — НЕ канонічний ApiError envelope, див. коментар вище.",
+          content: { "application/json": { schema: namedSchemas.ApiError } },
+        },
+        "415": {
+          description:
+            "INVALID_BASE64 | TRUNCATED | MAGIC_MISMATCH — НЕ канонічний ApiError envelope, див. коментар вище.",
+          content: { "application/json": { schema: namedSchemas.ApiError } },
+        },
+        "503": {
+          description:
+            "RECEIPT_VISION_UNAVAILABLE — жоден vision-провайдер не сконфігурований.",
+          content: { "application/json": { schema: namedSchemas.ApiError } },
+        },
+      },
+    },
+  },
+  "/api/finyk/receipts": {
+    post: {
+      summary: "Зберегти чек (draft + category)",
+      description:
+        "Ідемпотентний: `201` — новий чек, `200` + `alreadyExists:true` — " +
+        "повторний скан (той самий fiscal_num, або той самий `clientScanId` " +
+        "для vision-чеків без fiscal_num).",
+      tags: ["finyk"],
+      security: cookieOrBearer,
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": { schema: namedSchemas.ReceiptSaveRequest },
+        },
+      },
+      responses: {
+        "200": {
+          description: "alreadyExists:true — ідемпотентний повторний скан.",
+          content: {
+            "application/json": { schema: namedSchemas.ReceiptSaveResponse },
+          },
+        },
+        "201": {
+          description: "Новий чек створено.",
+          content: {
+            "application/json": { schema: namedSchemas.ReceiptSaveResponse },
+          },
+        },
+        "400": validationError,
+        "401": unauthorized,
+      },
+    },
+  },
+  "/api/finyk/receipts/{id}": {
+    get: {
+      summary: "Чек з позиціями для розгортки транзакції",
+      tags: ["finyk"],
+      security: cookieOrBearer,
+      parameters: [
+        {
+          name: "id",
+          in: "path",
+          required: true,
+          schema: { type: "integer", minimum: 1 },
+          description: "`receipts.id`.",
+        },
+      ],
+      responses: {
+        "200": {
+          description: "Чек з items[] + link (mono|manual|null).",
+          content: {
+            "application/json": { schema: namedSchemas.ReceiptGetResponse },
+          },
+        },
+        "401": unauthorized,
+        "404": {
+          description: "Чужий чек АБО неіснуючий id (сервер не розрізняє).",
+          content: { "application/json": { schema: namedSchemas.ApiError } },
+        },
+      },
+    },
+  },
+
+  // ────────────────────── Масове ведення (/api/finyk/import/*) ──────────────
+  // Спека: `docs/90-work/planning/specs/receipt-scan.md` § Фаза 2.
+  "/api/finyk/import/screenshot/analyze": {
+    post: {
+      summary: "Vision-розпізнавання скріна банкінгу — draft БЕЗ запису в БД",
+      tags: ["finyk"],
+      security: cookieOrBearer,
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": {
+            schema: namedSchemas.ImportScreenshotAnalyzeRequest,
+          },
+        },
+      },
+      responses: {
+        "200": {
+          description:
+            "docType 'bank_screenshot'|'receipt'|'other' + rows[] (rows:[] для receipt/other).",
+          content: {
+            "application/json": {
+              schema: namedSchemas.ImportScreenshotAnalyzeResponse,
+            },
+          },
+        },
+        "400": validationError,
+        "401": unauthorized,
+        "413": {
+          description:
+            "TOO_LARGE — НЕ канонічний ApiError envelope (той самий guard, що receipts/analyze).",
+          content: { "application/json": { schema: namedSchemas.ApiError } },
+        },
+        "415": {
+          description:
+            "INVALID_BASE64 | TRUNCATED | MAGIC_MISMATCH — НЕ канонічний ApiError envelope.",
+          content: { "application/json": { schema: namedSchemas.ApiError } },
+        },
+        "503": {
+          description:
+            "IMPORT_VISION_UNAVAILABLE — жоден vision-провайдер не сконфігурований.",
+          content: { "application/json": { schema: namedSchemas.ApiError } },
+        },
+      },
+    },
+  },
+  "/api/finyk/import/statement/preview": {
+    post: {
+      summary: "CSV-only парсинг банківської виписки — БЕЗ запису в БД",
+      description:
+        "Discriminated за `needsMapping`: `false` → `profile`+`rows`+`skipped`; " +
+        "`true` → `headers`+`sampleRows` для ручного column-mapper.",
+      tags: ["finyk"],
+      security: cookieOrBearer,
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": {
+            schema: namedSchemas.ImportStatementPreviewRequest,
+          },
+        },
+      },
+      responses: {
+        "200": {
+          description:
+            "Автопрофіль (mono/privat24/custom) або needsMapping:true.",
+          content: {
+            "application/json": {
+              schema: namedSchemas.ImportStatementPreviewResponse,
+            },
+          },
+        },
+        "400": validationError,
+        "401": unauthorized,
+      },
+    },
+  },
+  "/api/finyk/import/commit": {
+    post: {
+      summary: "Commit вибраних rows → журнал import_batches + manual expenses",
+      tags: ["finyk"],
+      security: cookieOrBearer,
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": { schema: namedSchemas.ImportCommitRequest },
+        },
+      },
+      responses: {
+        "201": {
+          description:
+            "batchId + created/linked + skipped{monoMatched,duplicate}.",
+          content: {
+            "application/json": { schema: namedSchemas.ImportCommitResponse },
+          },
+        },
+        "400": validationError,
+        "401": unauthorized,
+      },
+    },
+  },
+  "/api/finyk/import/batches/{id}": {
+    get: {
+      summary: "Статус/підсумок батчу імпорту",
+      tags: ["finyk"],
+      security: cookieOrBearer,
+      parameters: [
+        {
+          name: "id",
+          in: "path",
+          required: true,
+          schema: { type: "integer", minimum: 1 },
+          description: "`import_batches.id`.",
+        },
+      ],
+      responses: {
+        "200": {
+          description: "Batch зі статусом completed|undone + лічильники.",
+          content: {
+            "application/json": { schema: namedSchemas.ImportBatchGetResponse },
+          },
+        },
+        "401": unauthorized,
+        "404": {
+          description: "Чужий батч АБО неіснуючий id (сервер не розрізняє).",
+          content: { "application/json": { schema: namedSchemas.ApiError } },
+        },
+      },
+    },
+    delete: {
+      summary: "Undo батчу — tombstone кожного created row",
+      description:
+        "Ідемпотентний: повторний виклик повертає `tombstoned:0`, той самий `200`.",
+      tags: ["finyk"],
+      security: cookieOrBearer,
+      parameters: [
+        {
+          name: "id",
+          in: "path",
+          required: true,
+          schema: { type: "integer", minimum: 1 },
+          description: "`import_batches.id`.",
+        },
+      ],
+      responses: {
+        "200": {
+          description:
+            "Batch зі статусом 'undone' + tombstoned (0 на повторний виклик).",
+          content: {
+            "application/json": {
+              schema: namedSchemas.ImportBatchUndoResponse,
+            },
+          },
+        },
+        "401": unauthorized,
+        "404": {
+          description: "Чужий батч АБО неіснуючий id (сервер не розрізняє).",
+          content: { "application/json": { schema: namedSchemas.ApiError } },
+        },
+      },
+    },
+  },
+
   // ────────────────────── Waitlist (Phase 0 monetization) ───────────────────
   // Сервер монтує обидва префікси (`/api/waitlist` + `/api/v1/waitlist`), щоб
   // pricing-page CTA працював незалежно від стадії API-versioning shim-у.

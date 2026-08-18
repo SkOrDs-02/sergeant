@@ -51,6 +51,15 @@ const KNOWN_EXITS: Record<string, string> = {
     "неможливо — фото; замість маски попередження в UI",
   "modules/nutrition/refine-photo.ts":
     "неможливо — фото; замість маски попередження в UI",
+  "modules/finyk/receipts/visionClient.ts":
+    "неможливо — фото чека (receipts/analyze); замість маски бейдж «розпізнано з фото — перевір суми» на review-екрані (той самий патерн, що nutrition analyze-photo.ts)",
+  "modules/finyk/import/visionClient.ts":
+    "неможливо — фото скріна банкінгу (import/screenshot/analyze, масове ведення Фаза 2а); замість маски той самий бейдж «розпізнано з фото — перевір суми» на bulk-review, що receipts/visionClient.ts",
+  // Не вихід, а докстрінг-згадка `anthropicMessages({allowOpenRouter:true})`
+  // для контексту (LLM_RECEIPT_PROVIDER). Той самий випадок, що
+  // lib/mcc/batchPrompt.ts вище — лишаємо в реєстрі свідомо.
+  "env/aiRoutingEnv.ts":
+    "не викликає нічого; docstring-згадка anthropicMessages()",
 };
 
 function walk(dir: string, out: string[] = []): string[] {

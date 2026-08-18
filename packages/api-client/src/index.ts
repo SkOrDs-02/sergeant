@@ -259,6 +259,77 @@ export {
   type ManualExpenseCreateResponse,
 } from "./endpoints/finyk";
 
+// Чек-скан v1 (`POST/GET /api/finyk/receipts/*`) — types re-exported here
+// too (not just via the composed `FinykEndpoints` above) so callers can
+// import `ReceiptDraft`/`Receipt`/etc. directly.
+export {
+  createFinykReceiptsEndpoints,
+  ReceiptAnalyzeRequestBodySchema,
+  ReceiptDraftResponseBodySchema,
+  ReceiptGetResponseBodySchema,
+  ReceiptLookupRequestBodySchema,
+  ReceiptSaveRequestBodySchema,
+  ReceiptSaveResponseBodySchema,
+  type FinykReceiptsEndpoints,
+  type Receipt,
+  type ReceiptAnalyzeRequest,
+  type ReceiptDraft,
+  type ReceiptDraftItem,
+  type ReceiptDraftResponse,
+  type ReceiptDraftSource,
+  type ReceiptGetResponse,
+  type ReceiptItem,
+  type ReceiptLink,
+  type ReceiptLookupRequest,
+  type ReceiptSaveRequest,
+  type ReceiptSaveResponse,
+} from "./endpoints/finykReceipts";
+
+// Масове ведення (`POST/GET/DELETE /api/finyk/import/*`).
+export {
+  createFinykImportEndpoints,
+  ImportBatchGetResponseBodySchema,
+  ImportBatchUndoResponseBodySchema,
+  ImportCommitRequestBodySchema,
+  ImportCommitResponseBodySchema,
+  ImportScreenshotAnalyzeRequestBodySchema,
+  ImportScreenshotAnalyzeResponseBodySchema,
+  ImportStatementPreviewRequestBodySchema,
+  ImportStatementPreviewResponseBodySchema,
+  type FinykImportEndpoints,
+  type ImportBatch,
+  type ImportBatchGetResponse,
+  type ImportBatchStatus,
+  type ImportBatchUndoResponse,
+  type ImportColumnMapping,
+  type ImportCommitRequest,
+  type ImportCommitResponse,
+  type ImportCommitRow,
+  type ImportDateFormat,
+  type ImportDirection,
+  type ImportScreenshotAnalyzeRequest,
+  type ImportScreenshotAnalyzeResponse,
+  type ImportScreenshotDocType,
+  type ImportScreenshotDraft,
+  type ImportScreenshotRow,
+  type ImportSkipReason,
+  type ImportSkippedRow,
+  type ImportSource,
+  type ImportStatementPreviewRequest,
+  type ImportStatementPreviewResponse,
+  type ImportStatementProfile,
+  type ImportStatementRow,
+} from "./endpoints/finykImport";
+
+// Non-standard 413/415 image-validation error envelope shared by
+// `analyzeReceipt` and `analyzeImportScreenshot` — NOT the standard
+// `{error, message, code, requestId}` shape (see module docstring).
+export {
+  isImageValidationErrorBody,
+  type ImageValidationErrorBody,
+  type ImageValidationErrorCode,
+} from "./endpoints/imageValidationError";
+
 export {
   createWeeklyDigestEndpoints,
   type WeeklyDigestEndpoints,

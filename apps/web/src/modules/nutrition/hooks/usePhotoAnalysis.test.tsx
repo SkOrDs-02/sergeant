@@ -18,9 +18,18 @@ vi.mock("@shared/api", async () => {
 vi.mock("../lib/fileToBase64.js", () => ({
   fileToBase64: vi.fn(() => Promise.resolve("BASE64")),
 }));
+// Дефолт `null` = «лишай оригінал» — те саме, що реальний хелпер робить у
+// jsdom (немає декодера/canvas): решта тестів бачить стару поведінку.
+const compressImageFileMock = vi.hoisted(() =>
+  vi.fn((_file: File): Promise<File | null> => Promise.resolve(null)),
+);
+vi.mock("@shared/lib/media/compressImage", () => ({
+  compressImageFile: compressImageFileMock,
+}));
 
 import { PHOTO_NOTE_QUESTION, usePhotoAnalysis } from "./usePhotoAnalysis";
 import { nutritionApi } from "@shared/api";
+import { fileToBase64 } from "../lib/fileToBase64.js";
 const apiAnalyzePhoto = nutritionApi.analyzePhoto as unknown as ReturnType<
   typeof vi.fn
 >;
@@ -405,6 +414,33 @@ describe("usePhotoAnalysis", () => {
       });
       expect(setErr).toHaveBeenCalledWith(
         "Фото завелике для швидкого аналізу. Обріж або стисни (≈ до 4 МБ).",
+      );
+    });
+
+    it("приймає завелике фото, коли стиснення дало малий JPEG, і analyze шле саме його", async () => {
+      const small = new File([new Uint8Array(1000)], "big.jpg", {
+        type: "image/jpeg",
+      });
+      compressImageFileMock.mockResolvedValueOnce(small);
+      const { result, setErr } = renderUsePhotoAnalysis();
+      const big = new File([new Uint8Array(5 * 1024 * 1024)], "big.heic", {
+        type: "image/heic",
+      });
+
+      await act(async () => {
+        await result.current.onPickPhoto(big);
+      });
+      expect(setErr).not.toHaveBeenCalledWith(
+        "Фото завелике для швидкого аналізу. Обріж або стисни (≈ до 4 МБ).",
+      );
+
+      // analyze читає оригінал з input-а, але шле стиснуту копію.
+      attachFile(result, big);
+      await act(async () => {
+        result.current.analyzePhoto();
+      });
+      await waitFor(() =>
+        expect(vi.mocked(fileToBase64)).toHaveBeenCalledWith(small),
       );
     });
   });
