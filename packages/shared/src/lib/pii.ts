@@ -99,9 +99,12 @@ export const REDACT_KEY_NAMES: readonly string[] = [
   "groqKey",
   "anthropicKey",
   "voyageKey",
+  "silpoToken",
   // Class B — personal identifiers (GDPR PII).
   "email",
   "phone",
+  "loyaltyCard",
+  "loyaltyCardNumber",
 ];
 
 const REDACT_KEY_SET: ReadonlySet<string> = new Set(

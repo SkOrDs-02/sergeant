@@ -9,6 +9,7 @@ import {
   strategicKeys,
   syncKeys,
   billingKeys,
+  silpoKeys,
   hashToken,
 } from "./queryKeys";
 
@@ -180,6 +181,35 @@ describe("billingKeys", () => {
   it("status key contains 'billing' and 'status'", () => {
     expect(billingKeys.status[0]).toBe("billing");
     expect(billingKeys.status).toContain("status");
+  });
+});
+
+describe("silpoKeys", () => {
+  it("all key starts with 'silpo'", () => {
+    expect(silpoKeys.all[0]).toBe("silpo");
+  });
+
+  it("syncState is scoped under silpo", () => {
+    expect(silpoKeys.syncState).toEqual(["silpo", "sync-state"]);
+  });
+
+  it("receipts() with no params differs from receipts() with params", () => {
+    const k1 = silpoKeys.receipts();
+    const k2 = silpoKeys.receipts({ limit: 20, cursor: "abc" });
+    expect(JSON.stringify(k1)).not.toBe(JSON.stringify(k2));
+    expect(k1[0]).toBe("silpo");
+  });
+
+  it("receipts() distinguishes different limit/cursor combos", () => {
+    const k1 = silpoKeys.receipts({ limit: 20 });
+    const k2 = silpoKeys.receipts({ limit: 50 });
+    expect(JSON.stringify(k1)).not.toBe(JSON.stringify(k2));
+  });
+
+  it("receiptDetail includes the receiptId", () => {
+    const key = silpoKeys.receiptDetail("rcpt-001");
+    expect(key).toContain("rcpt-001");
+    expect(key[0]).toBe("silpo");
   });
 });
 

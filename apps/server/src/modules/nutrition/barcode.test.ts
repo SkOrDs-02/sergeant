@@ -1,24 +1,75 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { Request, Response } from "express";
+
+const silpoMocks = vi.hoisted(() => ({
+  getSessionUser: vi.fn(),
+  isSilpoConnectedUser: vi.fn(),
+  lookupSilpoBarcode: vi.fn(),
+  // Mutable env override: `SILPO_ENABLED=true` by default so the existing
+  // Silpo-cascade tests exercise the session-peek path; the kill-switch test
+  // flips it to false per-test.
+  envOverrides: { SILPO_ENABLED: true },
+}));
+
+// `barcode.ts` only imports `getSessionUser` from `../../auth.js` — the mock
+// factory only needs to cover that one export.
+vi.mock("../../auth.js", () => ({
+  getSessionUser: silpoMocks.getSessionUser,
+}));
+
+// Partial env mock: everything real except `SILPO_ENABLED` (redirected to
+// the mutable override above) and `UPCITEMDB_BASE_URL` (read live from
+// `process.env` — the parsed `actual.env` snapshot is cached across
+// `vi.resetModules()`, which would defeat the re-import test below; the
+// test's guarantee is intact because the handler still has to go through
+// `env.UPCITEMDB_BASE_URL` rather than a hardcoded URL to see the value).
+vi.mock("../../env.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../env.js")>();
+  return {
+    ...actual,
+    env: new Proxy(actual.env, {
+      get: (target, prop) => {
+        if (prop === "SILPO_ENABLED")
+          return silpoMocks.envOverrides.SILPO_ENABLED;
+        if (prop === "UPCITEMDB_BASE_URL" && process.env["UPCITEMDB_BASE_URL"])
+          return process.env["UPCITEMDB_BASE_URL"];
+        return Reflect.get(target, prop);
+      },
+    }),
+  };
+});
+
+vi.mock("../silpo/foodSource.js", () => ({
+  isSilpoConnectedUser: silpoMocks.isSilpoConnectedUser,
+  lookupSilpoBarcode: silpoMocks.lookupSilpoBarcode,
+}));
+
 import handler, { __barcodeTestHooks } from "./barcode.js";
 
 interface TestRes {
   statusCode: number;
   body: unknown;
+  headers: Record<string, string>;
   status(code: number): TestRes;
   json(payload: unknown): TestRes;
+  setHeader(name: string, value: string): TestRes;
 }
 
 function mockRes(): TestRes & Response {
   const res: TestRes = {
     statusCode: 200,
     body: undefined,
+    headers: {},
     status(code) {
       this.statusCode = code;
       return this;
     },
     json(payload) {
       this.body = payload;
+      return this;
+    },
+    setHeader(name, value) {
+      this.headers[name] = value;
       return this;
     },
   };
@@ -109,6 +160,14 @@ describe("barcode handler", () => {
   beforeEach(() => {
     __barcodeTestHooks().reset();
     global.fetch = vi.fn();
+    // Default: anonymous caller, no Silpo connection — matches every
+    // existing test below (none of them set up a session).
+    // `restoreAllMocks()` in `afterEach` clears these between tests, so
+    // they're re-armed here.
+    silpoMocks.getSessionUser.mockReset().mockResolvedValue(null);
+    silpoMocks.isSilpoConnectedUser.mockReset().mockResolvedValue(false);
+    silpoMocks.lookupSilpoBarcode.mockReset().mockResolvedValue(null);
+    silpoMocks.envOverrides.SILPO_ENABLED = true;
   });
 
   afterEach(() => {
@@ -613,6 +672,106 @@ describe("barcode handler", () => {
         else process.env["BARCODE_CACHE_HIT_TTL_MS"] = prev;
         __barcodeTestHooks().reset();
       }
+    });
+  });
+
+  describe("Silpo as fourth source", () => {
+    it("skips the session lookup entirely when SILPO_ENABLED=false — default path pays zero session cost", async () => {
+      silpoMocks.envOverrides.SILPO_ENABLED = false;
+      global.fetch = vi.fn().mockResolvedValueOnce(OFF_HIT);
+
+      const res = mockRes();
+      await handler(asReq({ barcode: "4820000000017" }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(silpoMocks.getSessionUser).not.toHaveBeenCalled();
+      expect(silpoMocks.isSilpoConnectedUser).not.toHaveBeenCalled();
+      expect(silpoMocks.lookupSilpoBarcode).not.toHaveBeenCalled();
+    });
+
+    it("does not call lookupSilpoBarcode for an unconnected caller (default) — cascade behaves exactly as before", async () => {
+      global.fetch = vi
+        .fn()
+        .mockResolvedValueOnce(OFF_MISS)
+        .mockResolvedValueOnce(USDA_MISS)
+        .mockResolvedValueOnce(UPCITEMDB_MISS);
+      const res = mockRes();
+      await handler(asReq({ barcode: "4820000000017" }), res);
+
+      expect(res.statusCode).toBe(404);
+      expect(silpoMocks.lookupSilpoBarcode).not.toHaveBeenCalled();
+      expect(res.headers["Cache-Control"]).toBeUndefined();
+    });
+
+    it("falls through to Silpo when OFF/USDA/UPCitemdb all miss, for a connected caller — and never caches or shares the hit", async () => {
+      silpoMocks.getSessionUser.mockResolvedValue({ id: "user-1" });
+      silpoMocks.isSilpoConnectedUser.mockResolvedValue(true);
+      silpoMocks.lookupSilpoBarcode.mockResolvedValue({
+        name: "Молоко Сільпо 2.5%",
+        brand: "Сільпо",
+        kcal_100g: 60,
+        protein_100g: 3,
+        fat_100g: 2.5,
+        carbs_100g: 4.7,
+        servingSize: "900 мл",
+        servingGrams: 900,
+        source: "silpo",
+      });
+      global.fetch = vi
+        .fn()
+        .mockResolvedValueOnce(OFF_MISS)
+        .mockResolvedValueOnce(USDA_MISS)
+        .mockResolvedValueOnce(UPCITEMDB_MISS);
+
+      const res = mockRes();
+      await handler(asReq({ barcode: "4820000000017" }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(silpoMocks.lookupSilpoBarcode).toHaveBeenCalledWith(
+        "user-1",
+        "4820000000017",
+      );
+      const body = res.body as { product: { source: string } };
+      expect(body.product.source).toBe("silpo");
+      // Never shared: overrides the router's public Cache-Control, AND
+      // (implicitly, via the next assertion) never lands in the in-process
+      // cache the OFF/USDA/UPCitemdb path uses.
+      expect(res.headers["Cache-Control"]).toBe(
+        "private, no-store, no-cache, must-revalidate",
+      );
+
+      // A second identical request must NOT be served from cache — it
+      // re-runs the whole cascade (proving the Silpo hit was never
+      // `cacheSet`).
+      global.fetch = vi
+        .fn()
+        .mockResolvedValueOnce(OFF_MISS)
+        .mockResolvedValueOnce(USDA_MISS)
+        .mockResolvedValueOnce(UPCITEMDB_MISS);
+      const res2 = mockRes();
+      await handler(asReq({ barcode: "4820000000017" }), res2);
+      expect(global.fetch).toHaveBeenCalledTimes(3);
+      expect(silpoMocks.lookupSilpoBarcode).toHaveBeenCalledTimes(2);
+    });
+
+    it("an OFF/USDA/UPCitemdb hit is unaffected by (and cached normally despite) a connected caller", async () => {
+      silpoMocks.getSessionUser.mockResolvedValue({ id: "user-1" });
+      silpoMocks.isSilpoConnectedUser.mockResolvedValue(true);
+      global.fetch = vi.fn().mockResolvedValueOnce(OFF_HIT);
+
+      const res = mockRes();
+      await handler(asReq({ barcode: "4820000000017" }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(silpoMocks.lookupSilpoBarcode).not.toHaveBeenCalled();
+      expect(res.headers["Cache-Control"]).toBeUndefined();
+
+      // Cached normally — a second request never re-hits `fetch`.
+      global.fetch = vi.fn();
+      const res2 = mockRes();
+      await handler(asReq({ barcode: "4820000000017" }), res2);
+      expect(res2.statusCode).toBe(200);
+      expect(global.fetch).not.toHaveBeenCalled();
     });
   });
 });

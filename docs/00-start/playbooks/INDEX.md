@@ -1,6 +1,6 @@
 # Playbooks — Trigger Index
 
-> **Last validated:** 2026-08-08 by @devin-ai. **Next review:** 2026-11-06.
+> **Last validated:** 2026-08-18 by @devin-ai. **Next review:** 2026-11-16.
 > **Status:** Active
 
 <!-- AUTO-GENERATED FILE. Do not edit by hand. Regenerate via `pnpm docs:gen-playbook-index`. -->
@@ -36,6 +36,7 @@ Lookup table for agents and humans: find the playbook that matches a user reques
 | [`deploy-config-change.md`](./deploy-config-change.md)                             | Зміна deploy-конфігу (vercel / Dockerfile / Coolify)      | PR має non-comment зміни у deploy-config файлах (`vercel.json`, `Dockerfile*`, `apps/server/build.mjs`) — CI-job `Deploy-config staging gate` падає без verification-лейбла.                                                               |
 | [`embedding-provider-migration.md`](./embedding-provider-migration.md)             | Embedding Provider Migration                              | «Перемкнути embedding-провайдер або модель» / «Змінити embedding vendor» / «re-embed ai_memories на нову модель» / виявлено нову embedding-модель з кращою якістю або меншою вартістю.                                                     |
 | [`enable-prompt-caching.md`](./enable-prompt-caching.md)                           | Enable Anthropic Prompt Caching                           | «Зменшити cost Anthropic» / «Anthropic API занадто дорогий» / `aiTokensTotal{kind="prompt"}` росте лінійно з трафіком, бо стабільні `SYSTEM_PREFIX` і `TOOLS` повторюються на кожному запиті.                                              |
+| [`enable-silpo-integration.md`](./enable-silpo-integration.md)                     | Enable / Operate Silpo Integration                        | вмикаємо `SILPO_ENABLED` у проді вперше · користувачі скаржаться,                                                                                                                                                                          |
 | [`execute-planning-batch.md`](./execute-planning-batch.md)                         | Виконання батчу planning-тасків (parallel fan-out)        | «Прожени N тасків з планінгу» / «виконай батч PR-карток з `docs/90-work/planning/*`» / «закрий пачку planning-тасків і онови трекери» — коли робота охоплює кілька PR-карток одночасно й потребує паралельних агентів.                     |
 | [`fix-exhaustive-deps.md`](./fix-exhaustive-deps.md)                               | Fix Exhaustive Deps Warnings                              | "Виправити exhaustive-deps warnings" / ESLint `react-hooks/exhaustive-deps` violations / стале закриття з `apps-web-exhaustive-deps.md`.                                                                                                   |
 | [`fix-failing-ci.md`](./fix-failing-ci.md)                                         | Fix Failing CI on a PR                                    | один або кілька CI checks червоні на PR: `commitlint`, `lint`, `typecheck`, `test`, `build`, docs/04-governance/governance gates, bundle або mobile jobs.                                                                                  |

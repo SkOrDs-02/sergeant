@@ -752,6 +752,25 @@ const SQL_ONLY_TABLES = [
   "receipt_items",
   "finyk_tx_receipt_links",
   "import_batches",
+  // Silpo MCP integration (міграції 123–124, spec silpo-mcp-integration.md,
+  // Track A walking skeleton). Той самий контур, що й mono_connection /
+  // privat_connection: OAuth-токени читає лише серверний modules/silpo/
+  // шар. silpo_receipts / silpo_receipt_items — сирий снапшот чеків,
+  // клієнт бачить їх виключно через REST (`/api/silpo/receipts*`), не
+  // через Drizzle ORM — так само, як mono_transaction. silpo_tx_receipt_links
+  // виглядає структурно як finyk_mono_debt_links (яка ЗМОДЕЛЬОВАНА в
+  // Drizzle), але навмисно лишається SQL-only: на відміну від
+  // finyk_mono_debt_links вона НЕ в клієнтському op-log dual-write шляху
+  // (`OP_LOG_TABLE_REGISTRY` її не знає) — пише лише серверний
+  // детермінований matcher, клієнт лише читає через REST.
+  "silpo_connection",
+  "silpo_receipts",
+  "silpo_receipt_items",
+  "silpo_tx_receipt_links",
+  // silpo_oauth_state (міграція 124) — короткоживучий стан OAuth-редіректу
+  // (state → code_verifier). Живе хвилини, згорає одноразовим
+  // `DELETE ... RETURNING`; клієнт про нього не знає взагалі.
+  "silpo_oauth_state",
   // Integration webhooks / failure journals (n8n + generic) — server-only журнали.
   "n8n_failure_events",
   "n8n_webhook_events",

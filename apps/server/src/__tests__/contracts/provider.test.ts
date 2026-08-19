@@ -15,7 +15,7 @@
 // either side was refactored without updating the other), this test
 // fails before the PR can merge.
 //
-// **Coverage:** the pact file has 58 consumer interactions across 38
+// **Coverage:** the pact file has 71 consumer interactions across 47
 // unique routes, including the chat-usage extension, the
 // billing/privat/finyk consumer expansion (2026-08-04), the
 // preferences/profile consumer expansion (2026-08-04, pre-beta
@@ -264,10 +264,10 @@ afterAll(() => {
 const pact = loadPact();
 
 describe("Pact provider replay — consumer=sergeant-api-client, provider=sergeant-server", () => {
-  it("pact file has 58 expected consumer interactions across 38 routes", () => {
+  it("pact file has 71 expected consumer interactions across 47 routes", () => {
     expect(pact.consumer.name).toBe("sergeant-api-client");
     expect(pact.provider.name).toBe("sergeant-server");
-    expect(pact.interactions).toHaveLength(58);
+    expect(pact.interactions).toHaveLength(71);
     const expectedRoutes = new Set([
       // PR-42 baseline (5)
       "GET /api/v1/me",
@@ -323,6 +323,24 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
       "POST /api/v1/finyk/import/commit",
       "GET /api/v1/finyk/import/batches/88",
       "DELETE /api/v1/finyk/import/batches/88",
+      // silpo walking-skeleton (PR #819): 7 інтеракцій / 6 маршрутів
+      // (sync-state має і success-, і disabled-інтеракцію; 44 → 51).
+      "GET /api/v1/silpo/receipts",
+      "GET /api/v1/silpo/receipts/rcpt-pact-0001",
+      "GET /api/v1/silpo/sync-state",
+      "POST /api/v1/silpo/disconnect",
+      "POST /api/v1/silpo/sync",
+      "POST /api/v1/silpo/wipe",
+      // silpo кошик, трек G (PR #819): 5 інтеракцій / 3 маршрути
+      // (preview має matched- і unmatched-інтеракцію, cart — звичайний,
+      // порожній і schema-drift варіанти; 51 → 56).
+      //
+      // +1 інтеракція на вже наявний `GET /api/v1/silpo/receipts`
+      // (фільтр `?transactionId=`, раунд-4 ревʼю) — маршрут той самий,
+      // тож набір маршрутів не змінився, лише кількість інтеракцій.
+      "GET /api/v1/silpo/cart",
+      "POST /api/v1/silpo/cart/preview",
+      "POST /api/v1/silpo/cart/apply",
     ]);
     const actualRoutes = new Set(
       pact.interactions.map((i) => `${i.request.method} ${i.request.path}`),

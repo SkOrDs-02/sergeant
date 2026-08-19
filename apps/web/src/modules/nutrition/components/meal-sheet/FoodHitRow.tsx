@@ -18,15 +18,21 @@ interface FoodHitRowProduct {
 interface FoodHitRowProps {
   p: FoodHitRowProduct;
   /**
-   * Позначка «продукт із зовнішньої бази Open Food Facts». Раніше сюди
-   * передавали emoji-рядок «🌍»; тепер це прапорець, а гліф малює `Icon`,
-   * тож він тематизується й не залежить від системного emoji-шрифту.
+   * Підпис зовнішньої бази («Open Food Facts», «USDA», «Сільпо») — коли
+   * заданий, рядок несе `Icon`-позначку зовнішнього джерела з цим
+   * `title`. Раніше це був boolean `externalSource` із зашитим
+   * OFF-підписом, але `FoodSearchProduct.source` тепер трьохзначний
+   * (`off | usda | silpo`) — підпис приходить від викликача.
    */
-  externalSource?: boolean;
+  externalSourceLabel?: string | undefined;
   onPick: () => void;
 }
 
-export function FoodHitRow({ p, externalSource, onPick }: FoodHitRowProps) {
+export function FoodHitRow({
+  p,
+  externalSourceLabel,
+  onPick,
+}: FoodHitRowProps) {
   return (
     <li>
       <button
@@ -37,12 +43,12 @@ export function FoodHitRow({ p, externalSource, onPick }: FoodHitRowProps) {
         <div className="flex items-center justify-between gap-2">
           <div className="text-style-label text-text truncate">
             {[p.name, p.brand].filter(Boolean).join(" · ")}
-            {externalSource && (
+            {externalSourceLabel && (
               <Icon
                 name="link"
                 size="xs"
                 className="ml-1 inline-block align-baseline text-subtle"
-                title="Open Food Facts"
+                title={externalSourceLabel}
               />
             )}
           </div>

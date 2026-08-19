@@ -22,8 +22,12 @@ import { z } from "zod";
  */
 
 /**
- * A single normalised product row returned by any of the three barcode
- * upstreams (Open Food Facts / USDA Branded Foods / UPCitemdb). Every
+ * A single normalised product row returned by any of the FOUR barcode
+ * upstreams (Open Food Facts / USDA Branded Foods / UPCitemdb / Silpo MCP —
+ * `"silpo"` added per `docs/90-work/planning/specs/silpo-mcp-integration.md`
+ * § "Продуктові дані — четверте джерело каскаду"; Silpo only ever appears
+ * for the requesting user's own linked account, never as a shared/service
+ * source — see `apps/server/src/modules/silpo/foodSource.ts`). Every
  * non-enum field is explicitly nullable — normalisers must not leave
  * `undefined` lurking (consumers rely on `null` as the "absent" sentinel).
  */
@@ -36,7 +40,7 @@ export const BarcodeProductSchema = z.object({
   carbs_100g: z.number().nullable(),
   servingSize: z.string().nullable(),
   servingGrams: z.number().nullable(),
-  source: z.enum(["off", "usda", "upcitemdb"]),
+  source: z.enum(["off", "usda", "upcitemdb", "silpo"]),
   // `partial` is only set by UPCitemdb today (macros missing, serving
   // present); keep optional (not nullable) to avoid forcing other sources
   // to emit it explicitly.
@@ -102,7 +106,12 @@ export const FoodSearchProductSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
   brand: z.string().nullable(),
-  source: z.enum(["off", "usda"]),
+  // `"silpo"` — fourth source, connected-user-only (see
+  // `apps/server/src/modules/silpo/foodSource.ts`). A Silpo hit without any
+  // macro data is dropped upstream rather than emitted here with fake zeros
+  // (this schema, unlike `BarcodeProductSchema`, has no `partial` escape
+  // hatch — `per100` is always meant to be real).
+  source: z.enum(["off", "usda", "silpo"]),
   per100: FoodSearchMacrosSchema,
   defaultGrams: z.number(),
 });

@@ -30,6 +30,7 @@ import {
   getExpenseCategoryForTransaction,
   getIncomeCategoryForTransaction,
 } from "../utils";
+import { SilpoReceiptSection } from "./SilpoReceiptSection";
 import { TxRowCategoryPicker } from "./TxRowCategoryPicker";
 import { TxRowSplitEditor } from "./TxRowSplitEditor";
 import { ReceiptItemsSection } from "./ReceiptItemsSection";
@@ -295,6 +296,19 @@ export function BankTransactionDetailsSheet({
               </div>
             )}
           </section>
+        )}
+
+        {!isIncome && (
+          <SilpoReceiptSection
+            transactionId={transaction.id}
+            // `Transaction.amount` — signed копійки (ціле); сплітам потрібен
+            // додатний total у копійках. `Math.round` — лише страховка від
+            // не-цілого значення з legacy-блобів.
+            transactionAmountKop={Math.round(Math.abs(transaction.amount))}
+            onSplitChange={onSplitChange}
+            customCategories={customCategories}
+            existingSplitsCount={existingSplits.length}
+          />
         )}
 
         <section className="space-y-2 rounded-2xl border border-line bg-panel p-3">

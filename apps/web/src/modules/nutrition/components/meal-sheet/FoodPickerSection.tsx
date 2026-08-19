@@ -2,7 +2,7 @@
  * Last validated: 2026-05-14
  * Status: Active
  */
-import { useCallback, useEffect, useMemo } from "react";
+import { Fragment, useCallback, useEffect, useMemo } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { Icon } from "@shared/components/ui/Icon";
 import { Measure } from "@shared/components/ui/Measure";
@@ -23,6 +23,25 @@ import { SaveAsFood } from "./SaveAsFood";
 
 /** 10 кг однієї порції — межа проти зайвого нуля, не дієтологія. */
 const MAX_PORTION_GRAMS = 10_000;
+
+/**
+ * Підписи зовнішніх джерел пошуку (`FoodSearchProduct.source`, енум
+ * `off | usda | silpo` у `packages/shared/src/schemas/nutrition.ts`).
+ * Раніше всі зовнішні хіти підписувались «Open Food Facts» — silpo/usda
+ * хіт не має маскуватись під OFF. Невідоме джерело падає в OFF-підпис
+ * (історичний дефолт для зовнішніх хітів).
+ */
+const EXTERNAL_SOURCE_LABELS: Record<string, string> = {
+  off: "Open Food Facts",
+  usda: "USDA",
+  silpo: "Сільпо",
+};
+
+function externalSourceLabel(source: string | undefined): string {
+  return (
+    (source ? EXTERNAL_SOURCE_LABELS[source] : undefined) ?? "Open Food Facts"
+  );
+}
 
 export interface PickedFood {
   id?: string | number;
@@ -81,6 +100,25 @@ export function FoodPickerSection({
   const gramsDraft = useDecimalDraft(pickedGrams, MAX_PORTION_GRAMS, (value) =>
     setPickedGrams(value == null ? "" : String(value)),
   );
+  // Зовнішні хіти згруповані за джерелом (сервер віддає їх упереміш):
+  // кожна група несе власний заголовок-роздільник і підпис для іконки
+  // рядка.
+  const offHitGroups = useMemo(() => {
+    const groups: { label: string; hits: FoodSearchProduct[] }[] = [];
+    for (const p of offHits) {
+      const label = externalSourceLabel(p.source);
+      const last = groups[groups.length - 1];
+      if (last && last.label === label) last.hits.push(p);
+      else groups.push({ label, hits: [p] });
+    }
+    return groups;
+  }, [offHits]);
+  // Позначка джерела на картці вибраного продукту — теж source-aware
+  // (silpo/usda-хіт не підписується як OFF); локальний продукт без
+  // відомого зовнішнього джерела позначки не має.
+  const pickedExternalLabel = pickedFood?.source
+    ? EXTERNAL_SOURCE_LABELS[pickedFood.source]
+    : undefined;
   const gramValues = useMemo(() => {
     const base: number[] = [];
     for (let g = 5; g <= 1000; g += 5) base.push(g);
@@ -168,18 +206,21 @@ export function FoodPickerSection({
                     }}
                   />
                 ))}
-                {offHits.length > 0 && (
-                  <>
-                    {foodHits.length > 0 && (
+                {offHitGroups.map((group, groupIndex) => (
+                  <Fragment key={`${group.label}-${groupIndex}`}>
+                    {/* Роздільник потрібен, коли є з чим розділяти:
+                        локальні хіти вище або більше ніж одне зовнішнє
+                        джерело. */}
+                    {(foodHits.length > 0 || offHitGroups.length > 1) && (
                       <li className="px-3 py-1.5 text-style-caption text-subtle bg-panelHi/50 font-semibold">
-                        Open Food Facts
+                        {group.label}
                       </li>
                     )}
-                    {offHits.map((p) => (
+                    {group.hits.map((p) => (
                       <FoodHitRow
                         key={p.id}
                         p={p}
-                        externalSource
+                        externalSourceLabel={group.label}
                         onPick={() => {
                           setPickedFood(p as PickedFood);
                           const grams = Number(p.defaultGrams) || 100;
@@ -188,8 +229,8 @@ export function FoodPickerSection({
                         }}
                       />
                     ))}
-                  </>
-                )}
+                  </Fragment>
+                ))}
               </ul>
             </div>
           )}
@@ -210,12 +251,12 @@ export function FoodPickerSection({
                 {[pickedFood.name, pickedFood.brand]
                   .filter(Boolean)
                   .join(" · ")}
-                {pickedFood.source === "off" && (
+                {pickedExternalLabel && (
                   <Icon
                     name="link"
                     size="xs"
                     className="ml-1 inline-block align-baseline text-subtle"
-                    title="Open Food Facts"
+                    title={pickedExternalLabel}
                   />
                 )}
               </div>

@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
 
@@ -7,6 +8,32 @@ vi.mock("../../../core/observability/analytics", () => ({
   trackEvent: vi.fn(),
   ANALYTICS_EVENTS: { FINYK_TX_CATEGORIZED: "finyk_tx_categorized" },
 }));
+
+// `SilpoReceiptSection` (rendered for every non-income transaction) reads
+// `useSilpoSyncState` via `@tanstack/react-query` — mock the API so this
+// suite (which has nothing to do with the Silpo experiment) doesn't hit a
+// real, unmocked `httpClient` fetch. Status stays "disconnected", so the
+// section renders nothing and every existing assertion here is unaffected.
+vi.mock("@shared/api", async () => {
+  const actual =
+    await vi.importActual<typeof import("@shared/api")>("@shared/api");
+  return {
+    ...actual,
+    silpoApi: {
+      syncState: vi.fn().mockResolvedValue({
+        status: "disconnected",
+        accessTokenExpiresAt: null,
+        lastSyncAt: null,
+        receiptsCount: 0,
+      }),
+      sync: vi.fn(),
+      disconnect: vi.fn(),
+      wipe: vi.fn(),
+      receipts: vi.fn(),
+      receiptDetail: vi.fn(),
+    },
+  };
+});
 
 import { BankTransactionDetailsSheet } from "./BankTransactionDetailsSheet";
 
@@ -38,16 +65,21 @@ function renderSheet(
     onToggleExcludedFromStats: vi.fn(),
     onClose: vi.fn(),
   };
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
   render(
-    <BankTransactionDetailsSheet
-      transaction={TRANSACTION}
-      accounts={[{ id: "account-1", type: "black" }]}
-      hidden={false}
-      excludedFromStats={false}
-      txSplits={{}}
-      {...handlers}
-      {...overrides}
-    />,
+    <QueryClientProvider client={client}>
+      <BankTransactionDetailsSheet
+        transaction={TRANSACTION}
+        accounts={[{ id: "account-1", type: "black" }]}
+        hidden={false}
+        excludedFromStats={false}
+        txSplits={{}}
+        {...handlers}
+        {...overrides}
+      />
+    </QueryClientProvider>,
   );
   return handlers;
 }

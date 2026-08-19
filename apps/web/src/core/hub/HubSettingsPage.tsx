@@ -15,7 +15,9 @@ import { Tabs } from "@shared/components/ui/Tabs";
 import { motionScrollBehavior } from "@shared/lib/ui/motion";
 import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
 import { useToast } from "@shared/hooks/useToast";
-import { billingKeys } from "@shared/lib/api/queryKeys";
+import { silpoConnectUrl } from "@shared/api";
+import { apiUrl, getApiPrefix } from "@shared/lib/api/apiUrl";
+import { billingKeys, silpoKeys } from "@shared/lib/api/queryKeys";
 import { announceSettingsHashChange } from "@shared/lib/modules/hubNav";
 import { useBrowserLocation } from "../hooks/useBrowserLocation";
 import ChunkErrorBoundary from "./ChunkErrorBoundary";
@@ -462,6 +464,108 @@ export function HubSettingsPage({ scrollContainer }: HubSettingsPageProps) {
     setTab,
     toast,
   ]);
+
+  // Silpo OAuth callback (walking-skeleton experiment, track A) returns to
+  // `/settings?silpo=connected|error&reason=…` — `route.tsx` forwards every
+  // query param verbatim onto `/?tab=settings&silpo=…`. Mirrors the
+  // billing-return effect above: land on «Фінік» (owner of the Silpo card),
+  // toast the outcome, refetch `silpoKeys` so the card shows the
+  // server-verified state immediately, and strip the param so a reload
+  // doesn't repeat either.
+  //
+  // «Фінік» lives under the "modules" group, not the default "general" one
+  // billing's "plan" target uses — that difference matters TWICE here:
+  //
+  // 1. `setTab()` (unlike the raw `setTabRaw` setter) ALSO fires its own
+  //    `navigate()` via `writeSettingsGroupParam`, deferred into the
+  //    microtask below so it would run AFTER this effect's synchronous
+  //    cleanup `navigate()` — reading `locationRef.current` (one render
+  //    behind, still carrying the un-stripped `silpo=…` search). For
+  //    "general" (billing) that second navigate is a no-op (nothing to
+  //    add), so the race was invisible there; for "modules" it would
+  //    resurrect the stripped param. `setTabRaw` updates the same `tab`
+  //    state WITHOUT the side-effecting navigate, so this effect's own
+  //    `navigate()` below (which already folds in the right `group` param)
+  //    stays the only word from THIS effect.
+  //
+  // 2. Unlike `announceSettingsHashChange()` in the billing effect, this
+  //    effect must NOT call it. `PlanSection`/`PrivacySection` (billing's
+  //    "general" targets) are already mounted when their effect runs —
+  //    dispatching a synthetic "hashchange" reaches their `SettingsGroup`
+  //    directly. «Фінік» is NOT mounted yet at this point (`tab` is still
+  //    whatever it was on load, «modules» hasn't rendered) — the SAME
+  //    dispatched event is instead caught by the unrelated `syncHash`
+  //    listener below, which calls the side-effecting `setTab()` from
+  //    point 1 and reproduces the exact corruption that switching to
+  //    `setTabRaw` was meant to avoid. Once `setTabRaw("modules")` commits
+  //    and `FinykSection`'s `SettingsGroup anchorId="settings-finyk"`
+  //    actually mounts, its OWN mount-time `matchesHash()` check picks up
+  //    `window.location.hash` (already correct from this effect's single
+  //    `navigate()` call above) without needing the event at all.
+  const silpoReturnHandledRef = useRef(false);
+  useEffect(() => {
+    if (silpoReturnHandledRef.current) return;
+    const params = new URLSearchParams(location.search);
+    const silpo = params.get("silpo");
+    if (silpo !== "connected" && silpo !== "error") return;
+    silpoReturnHandledRef.current = true;
+
+    const targetSectionId = "finyk";
+    const group = groupForSection(targetSectionId, GROUPS);
+
+    queueMicrotask(() => {
+      setQuery("");
+      if (group) setTabRaw(group.id);
+      setHashSectionId(targetSectionId);
+    });
+
+    void queryClient.invalidateQueries({ queryKey: silpoKeys.all });
+    if (silpo === "connected") {
+      toast.success(
+        "Сільпо зв'язано. Натисни «Оновити чеки», щоб підтягнути покупки.",
+      );
+    } else {
+      const reason = params.get("reason");
+      toast.error(
+        reason
+          ? `Не вдалося зв'язати Сільпо: ${reason}`
+          : "Не вдалося зв'язати Сільпо.",
+        undefined,
+        {
+          label: "Спробувати ще раз",
+          onClick: () => {
+            window.location.href = silpoConnectUrl({
+              baseUrl: apiUrl(""),
+              apiPrefix: getApiPrefix(),
+            });
+          },
+        },
+      );
+    }
+
+    const cleanParams = new URLSearchParams(location.search);
+    cleanParams.delete("silpo");
+    cleanParams.delete("reason");
+    cleanParams.set("tab", "settings");
+    // Mirrors `writeSettingsGroupParam`'s own convention (drop `group` for
+    // the default tab, set it otherwise) — this replaces that helper's
+    // navigate call for this effect (see the comment above), so the
+    // convention has to be re-applied here too.
+    if (group && group.id !== "general") {
+      cleanParams.set("group", group.id);
+    } else {
+      cleanParams.delete("group");
+    }
+    const qs = cleanParams.toString();
+    navigate(
+      {
+        pathname: location.pathname,
+        search: qs ? `?${qs}` : "",
+        hash: `#settings-${targetSectionId}`,
+      },
+      { replace: true },
+    );
+  }, [location.pathname, location.search, navigate, queryClient, toast]);
 
   useEffect(() => {
     if (!hashSectionId) return;

@@ -37,6 +37,23 @@ vi.mock("@shared/api", async () => {
       transactions: vi.fn(),
     },
     privatApi: { balanceFinal: vi.fn() },
+    // Silpo card renders alongside Monobank in the same "Фінік" group —
+    // without this mock `useSilpoSyncState` would hit the real (unmocked)
+    // `httpClient` fetch in jsdom.
+    silpoApi: {
+      syncState: vi.fn().mockResolvedValue({
+        status: "disconnected",
+        accessTokenExpiresAt: null,
+        lastSyncAt: null,
+        receiptsCount: 0,
+      }),
+      sync: vi.fn(),
+      disconnect: vi.fn(),
+      wipe: vi.fn(),
+      receipts: vi.fn(),
+      receiptDetail: vi.fn(),
+    },
+    silpoConnectUrl: () => "https://example.test/api/v1/silpo/connect",
     isApiError: (e: unknown): boolean =>
       typeof e === "object" && e !== null && "kind" in e,
   };
@@ -47,6 +64,22 @@ vi.mock("@finyk/hooks/useStorage", () => ({
     customCategories: [],
     addCustomCategory: vi.fn(),
     removeCustomCategory: vi.fn(),
+  }),
+}));
+
+// `SilpoIntegrationSection` calls `useToast()` (sync/disconnect/wipe result
+// toasts) — this suite has no `<ToastProvider>` in its render tree, so
+// stub the hook directly rather than adding an unrelated provider.
+vi.mock("@shared/hooks/useToast", () => ({
+  useToast: () => ({
+    show: vi.fn(),
+    success: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    warning: vi.fn(),
+    dismiss: vi.fn(),
+    pause: vi.fn(),
+    resume: vi.fn(),
   }),
 }));
 
