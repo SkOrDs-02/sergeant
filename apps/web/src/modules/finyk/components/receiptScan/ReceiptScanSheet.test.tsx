@@ -245,6 +245,42 @@ describe("ReceiptScanSheet — photo upload path", () => {
     },
   );
 
+  it("показує «Розпізнаю чек…», поки vision у польоті", async () => {
+    // Бета-фідбек №5 (2026-08-18): статус має називати ФАЗУ, а не стояти
+    // одним рядком усі 20 секунд — інакше екран читається як завислий.
+    decodeQrFromImageFileMock.mockResolvedValue(null);
+    let resolveAnalyze: (value: unknown) => void = () => {};
+    analyzeReceiptMock.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveAnalyze = resolve;
+        }),
+    );
+    renderSheet();
+
+    await act(async () => {
+      selectPhoto(
+        new File([new Uint8Array(10)], "chek.jpg", { type: "image/jpeg" }),
+      );
+    });
+
+    // Стиснення фото — теж очікування, і воно починається до мережі.
+    expect(screen.getByRole("status")).toHaveTextContent("Готую фото…");
+
+    await waitFor(() => expect(analyzeReceiptMock).toHaveBeenCalled());
+    expect(screen.getByRole("status")).toHaveTextContent("Розпізнаю чек…");
+
+    await act(async () => {
+      resolveAnalyze({
+        draft: draft({ source: "vision", fiscalNum: null, store: "Сільпо" }),
+      });
+    });
+
+    await waitFor(() =>
+      expect(screen.getByDisplayValue("Сільпо")).toBeInTheDocument(),
+    );
+  });
+
   it("порожній vision-драфт (фото не чека) показує чесний банер над формою", async () => {
     decodeQrFromImageFileMock.mockResolvedValue(null);
     analyzeReceiptMock.mockResolvedValue({
