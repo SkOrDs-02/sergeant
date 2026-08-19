@@ -40,10 +40,22 @@ import { isDemoActive } from "../../../core/onboarding/onboardingGate.js";
 
 import { migrateRoutine } from "./clientMigrate.js";
 import { importRoutineDemoSeed } from "./demoSeedImport.js";
+import { registerRealEntryCounter } from "../../../core/onboarding/realEntryProbe.js";
 import {
+  getCachedSqliteRoutineState,
   refreshSqliteCompletions,
   refreshSqliteRoutineState,
 } from "./sqliteReader.js";
+
+// AI-CONTEXT: FTUX-детекція «чи є справжні записи» читає канонічний
+// warm-cache через реєстр (`core/onboarding/realEntryProbe`), а не
+// tombstone-нутий LS-ключ `hub_routine_v1`. Реєструємось на module-scope:
+// цей файл вантажиться лише у складі лінивого boot-кластера модуля,
+// тож хабовий eager-чанк нових ребер не отримує.
+registerRealEntryCounter(
+  "routine",
+  () => getCachedSqliteRoutineState().habits.length,
+);
 
 let booted = false;
 

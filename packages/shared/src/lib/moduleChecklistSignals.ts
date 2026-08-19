@@ -21,9 +21,14 @@
  * module-internal SQLite readers would be more precise, but importing
  * them from the Hub would drag `drizzle-orm` onto the eager critical
  * path and blow the 280 kB budget (see AGENTS.md § Performance budgets).
+ * The canonical counts still reach this module — as an injected
+ * {@link ModuleEntryCountProbe}, which carries no import edge.
  */
 
-import { moduleHasRealEntry } from "./firstRealEntry";
+import {
+  moduleHasRealEntry,
+  type ModuleEntryCountProbe,
+} from "./firstRealEntry";
 import type { ChecklistSignals } from "./moduleChecklist";
 import { parseQuickStatsJson } from "./quickStats";
 import { STORAGE_KEYS } from "./storageKeys";
@@ -66,9 +71,10 @@ function num(
 export function deriveChecklistSignals(
   store: KVStore,
   moduleId: DashboardModuleId,
+  probe?: ModuleEntryCountProbe,
 ): ChecklistSignals {
   const stats = readQuickStats(store, moduleId);
-  const hasEntry = moduleHasRealEntry(store, moduleId);
+  const hasEntry = moduleHasRealEntry(store, moduleId, probe);
 
   switch (moduleId) {
     case "finyk": {

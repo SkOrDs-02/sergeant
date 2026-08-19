@@ -11,7 +11,6 @@ import {
   DASHBOARD_DENSITY_EVENT,
   DEFAULT_DASHBOARD_DENSITY,
   STORAGE_KEYS,
-  countRealEntries,
   getActiveModules,
   getActiveNudge,
   getHideInactiveModules,
@@ -33,6 +32,7 @@ import { useDashboardFocus } from "../insights/TodayFocusCard";
 import { hasLiveWeeklyDigest } from "../insights/WeeklyDigestCard";
 import { useCoachInsight } from "../insights/useCoachInsight";
 import {
+  countRealEntries,
   detectFirstActionCompletedPerModule,
   detectFirstRealEntry,
   getFirstRealEntryModule,
@@ -47,6 +47,7 @@ import { useFirstEntryCelebration } from "../onboarding/useFirstEntryCelebration
 import { hasAnyValueBar } from "./ValueProgressBar";
 import { webKVStore } from "@shared/lib/storage/storage";
 import { useAnnounce } from "@shared/components/ui/ScreenReaderAnnouncer";
+import { useHubStorageBump } from "./useHubStorageBump";
 import { DASHBOARD_MODULE_LABELS as SHARED_DASHBOARD_MODULE_LABELS } from "@sergeant/shared";
 import {
   loadDashboardOrder,
@@ -203,6 +204,14 @@ export function useHubDashboardState(props: {
   const density = useDashboardDensity();
   useMondayAutoDigest();
 
+  // AI-CONTEXT: `bump` тут не декоративний. Докази «юзер уже не новий»
+  // живуть у SQLite warm-caches, які теплішають АСИНХРОННО після
+  // boot-кластерів — на першому (холодному) рендері хаба їх ще нема. Без
+  // ре-читання по `storageUpdated` детекція лишалася б назавжди на
+  // холодному знімку: `detectFirstRealEntry` не флипнувся б, FTUX-герой
+  // не зник, а `countRealEntries` показав би 0 записів активному юзеру.
+  const storageBump = useHubStorageBump();
+  void storageBump;
   const hasRealEntry = detectFirstRealEntry();
   // Fire `first_action_completed { module }` once per module that just got its
   // first non-demo entry — must run alongside detectFirstRealEntry on the render
@@ -210,7 +219,11 @@ export function useHubDashboardState(props: {
   detectFirstActionCompletedPerModule();
   const celebration = useFirstEntryCelebration(hasRealEntry);
   const [sessionDays] = useState(() => recordSessionDay() || getSessionDays());
-  const entryCount = useMemo(() => countRealEntries(localStorageStore), []);
+  const entryCount = useMemo(
+    () => countRealEntries(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- storage-write tick
+    [storageBump],
+  );
 
   const [reengagement, setReengagement] = useState(() =>
     shouldShowReengagement(localStorageStore),
