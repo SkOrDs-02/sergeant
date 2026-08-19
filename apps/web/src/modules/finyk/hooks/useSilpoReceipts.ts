@@ -69,19 +69,24 @@ export function useSilpoReceiptDetail(receiptId: string | null | undefined) {
 /**
  * Finds the receipt (if any) linked to a given mono transaction, and loads
  * its line items. Two-step lookup because `SilpoReceiptSummaryDto.
- * transactionId` lives only on the list endpoint — there's no
- * `GET /api/silpo/receipts?transactionId=` filter in this experiment's
- * REST surface (see spec § Поверхня змін), so the summary page is fetched
- * once (cached under `silpoKeys.receipts({ limit: 100 })`, shared across
- * every open transaction sheet) and matched client-side.
+ * transactionId` lives only on the list endpoint.
+ *
+ * Раніше цей хук тягнув першу сторінку (`limit: 100`) і шукав збіг у
+ * клієнті — і мовчки не знаходив нічого, щойно потрібний чек виїжджав за
+ * межі сторінки (людина з довгою історією покупок бачила транзакцію без
+ * секції «Чек», хоча лінк у базі є). Тепер фільтрує сервер:
+ * `?transactionId=` звужує вибірку по `silpo_tx_receipt_links`, і розмір
+ * історії більше ні на що не впливає.
  */
 export function useSilpoReceiptForTransaction(
   transactionId: string,
   { enabled = true }: { enabled?: boolean } = {},
 ) {
-  const list = useSilpoReceipts({ limit: 100 }, { enabled });
-  const summary =
-    list.receipts.find((r) => r.transactionId === transactionId) ?? null;
+  const list = useSilpoReceipts(
+    { transactionId, limit: 1 },
+    { enabled: enabled && Boolean(transactionId) },
+  );
+  const summary = list.receipts[0] ?? null;
   const detail = useSilpoReceiptDetail(
     enabled ? (summary?.receiptId ?? null) : null,
   );

@@ -322,8 +322,11 @@ export async function receiptsListHandler(
   const userId = getUserId(req as AuthedRequest, res);
   if (!userId) return;
 
-  const { limit, cursor } = parseQuery(SilpoReceiptsQuerySchema, req);
-  const page = await listReceipts(userId, { limit, cursor });
+  const { limit, cursor, transactionId } = parseQuery(
+    SilpoReceiptsQuerySchema,
+    req,
+  );
+  const page = await listReceipts(userId, { limit, cursor, transactionId });
   res.status(200).json(SilpoReceiptsPageSchema.parse(page));
 }
 

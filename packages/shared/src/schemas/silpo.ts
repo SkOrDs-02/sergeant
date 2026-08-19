@@ -151,10 +151,19 @@ export const SilpoReceiptsPageSchema = z.object({
 });
 export type SilpoReceiptsPage = z.infer<typeof SilpoReceiptsPageSchema>;
 
-/** Query params for `GET /api/silpo/receipts`. */
+/**
+ * Query params for `GET /api/silpo/receipts`.
+ *
+ * `transactionId` — точковий пошук «який чек привʼязаний до ЦІЄЇ
+ * mono-транзакції». Без нього картка транзакції мусила б тягнути сторінку
+ * чеків і шукати збіг у клієнті — і мовчки не знаходила б нічого, щойно
+ * потрібний чек виїде за межі першої сторінки (людина з довгою історією
+ * покупок). Фільтр звужує вибірку на боці БД по `silpo_tx_receipt_links`.
+ */
 export const SilpoReceiptsQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(200).default(50),
   cursor: z.string().min(3).optional(),
+  transactionId: z.string().min(1).optional(),
 });
 export type SilpoReceiptsQuery = z.infer<typeof SilpoReceiptsQuerySchema>;
 

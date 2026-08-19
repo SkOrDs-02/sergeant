@@ -75,12 +75,25 @@ function decodeCursor(cursor: string): {
 /** `GET /api/silpo/receipts` — cursor-paginated, newest first. */
 export async function listReceipts(
   userId: string,
-  opts: { limit: number; cursor?: string | undefined },
+  opts: {
+    limit: number;
+    cursor?: string | undefined;
+    transactionId?: string | undefined;
+  },
   queryFn: QueryFn = defaultQuery,
 ): Promise<ReceiptsPage> {
   const conditions = ["r.user_id = $1"];
   const params: unknown[] = [userId];
   let paramIdx = 2;
+
+  if (opts.transactionId) {
+    // Точковий пошук «чек цієї транзакції»: фільтр по лінку, а не вибірка
+    // сторінки з наступним матчингом у клієнті (той мовчки промахувався,
+    // щойно потрібний чек виїжджав за першу сторінку).
+    conditions.push(`l.transaction_id = $${paramIdx}`);
+    params.push(opts.transactionId);
+    paramIdx += 1;
+  }
 
   if (opts.cursor) {
     const { purchasedAt: cursorPurchasedAt, receiptId: cursorReceiptId } =

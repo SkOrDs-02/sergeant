@@ -4161,6 +4161,14 @@
               "type": "string",
               "minLength": 3
             }
+          },
+          {
+            "in": "query",
+            "name": "transactionId",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
           }
         ],
         "responses": {

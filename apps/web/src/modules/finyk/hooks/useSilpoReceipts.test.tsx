@@ -54,12 +54,6 @@ const SUMMARY_MATCHED = {
   transactionId: "tx-1",
 };
 
-const SUMMARY_UNMATCHED = {
-  ...SUMMARY_MATCHED,
-  receiptId: "rcpt-2",
-  transactionId: null,
-};
-
 describe("useSilpoReceipts", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -149,9 +143,13 @@ describe("useSilpoReceiptForTransaction", () => {
     vi.clearAllMocks();
   });
 
-  it("finds the summary matching transactionId and loads its detail", async () => {
+  it("asks the server for the receipt of this transaction, not a page to scan", async () => {
+    // Регресія: раніше хук тягнув першу сторінку (limit: 100) і шукав збіг
+    // у клієнті — чек, що виїхав за межі сторінки, ставав невидимим, хоча
+    // лінк у базі є. Тепер фільтр робить сервер, і довжина історії
+    // покупок ні на що не впливає.
     mockedReceipts.mockResolvedValue({
-      data: [SUMMARY_UNMATCHED, SUMMARY_MATCHED],
+      data: [SUMMARY_MATCHED],
       nextCursor: null,
     });
     mockedReceiptDetail.mockResolvedValue({
@@ -174,6 +172,10 @@ describe("useSilpoReceiptForTransaction", () => {
     });
 
     await waitFor(() => expect(result.current.summary).not.toBeNull());
+    expect(mockedReceipts).toHaveBeenCalledWith(
+      { transactionId: "tx-1", limit: 1 },
+      expect.anything(),
+    );
     expect(result.current.summary?.receiptId).toBe("rcpt-1");
     await waitFor(() => expect(result.current.detail).not.toBeNull());
     expect(mockedReceiptDetail).toHaveBeenCalledWith(
@@ -183,10 +185,7 @@ describe("useSilpoReceiptForTransaction", () => {
   });
 
   it("returns null summary when no receipt links to the transaction", async () => {
-    mockedReceipts.mockResolvedValue({
-      data: [SUMMARY_UNMATCHED],
-      nextCursor: null,
-    });
+    mockedReceipts.mockResolvedValue({ data: [], nextCursor: null });
 
     const { result } = renderHook(
       () => useSilpoReceiptForTransaction("tx-does-not-exist"),

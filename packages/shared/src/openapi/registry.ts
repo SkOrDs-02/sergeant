@@ -280,7 +280,8 @@ const SilpoReceiptsPage = silpoSchemas.SilpoReceiptsPageSchema.meta({
 });
 const SilpoReceiptsQuery = silpoSchemas.SilpoReceiptsQuerySchema.meta({
   id: "SilpoReceiptsQuery",
-  description: "Query для GET /api/silpo/receipts — limit (coerced) + cursor.",
+  description:
+    "Query для GET /api/silpo/receipts — limit (coerced), cursor, опційний transactionId для точкового пошуку привʼязаного чека.",
 });
 // ── Silpo cart (Track G — MCP write path) ─────────────────────────────────
 const SilpoCartPreviewRequest = silpoSchemas.SilpoCartPreviewRequestSchema.meta(

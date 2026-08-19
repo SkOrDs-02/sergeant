@@ -704,6 +704,24 @@ describe("listReceipts", () => {
       2,
     ]);
   });
+
+  it("filters by transactionId on the link table instead of returning a page", async () => {
+    // Регресія: клієнт шукав збіг по першій сторінці, тож чек транзакції з
+    // довгої історії ставав невидимим. Фільтр має бути в SQL.
+    let capturedSql = "";
+    let capturedParams: unknown[] = [];
+    const query = (async (text: string, values: unknown[] = []) => {
+      capturedSql = text;
+      capturedParams = values;
+      return { rows: [], rowCount: 0 };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    }) as any as QueryFn;
+
+    await listReceipts("user-1", { limit: 1, transactionId: "tx-42" }, query);
+
+    expect(capturedSql).toContain("l.transaction_id = $2");
+    expect(capturedParams).toEqual(["user-1", "tx-42", 2]);
+  });
 });
 
 // ─── Sentry-алерт на дрейф схеми ────────────────────────────────────────────

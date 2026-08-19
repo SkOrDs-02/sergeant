@@ -104,6 +104,12 @@ export type SilpoCartDto = SharedSilpoCartDto;
 export interface SilpoReceiptsListParams {
   limit?: number;
   cursor?: string;
+  /**
+   * Точковий пошук чека, привʼязаного до конкретної mono-транзакції.
+   * Фільтрує на сервері по `silpo_tx_receipt_links`, тож картка транзакції
+   * не залежить від того, на якій сторінці лежить її чек.
+   */
+  transactionId?: string;
 }
 
 export interface SilpoEndpoints {
@@ -133,7 +139,8 @@ export interface SilpoEndpoints {
   sync: (opts?: Pick<RequestOptions, "signal">) => Promise<SilpoSyncResult>;
   /**
    * `GET /api/silpo/receipts` — cursor-paginated список чеків
-   * (`purchasedAt DESC, receiptId DESC`).
+   * (`purchasedAt DESC, receiptId DESC`). `params.transactionId` звужує
+   * вибірку до чека саме цієї транзакції (серверний фільтр по лінку).
    */
   receipts: (
     params?: SilpoReceiptsListParams,
@@ -201,7 +208,11 @@ export function createSilpoEndpoints(http: HttpClient): SilpoEndpoints {
     },
     receipts: async (params, { signal } = {}) => {
       const raw = await http.get<unknown>("/api/silpo/receipts", {
-        query: { limit: params?.limit, cursor: params?.cursor },
+        query: {
+          limit: params?.limit,
+          cursor: params?.cursor,
+          transactionId: params?.transactionId,
+        },
         signal,
       });
       return SilpoReceiptsPageSchema.parse(raw);

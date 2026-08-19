@@ -295,6 +295,50 @@ describe(
           );
         });
     });
+
+    it("narrows to the receipt linked to one transaction via ?transactionId=", async () => {
+      // Точковий пошук для картки транзакції. Без нього клієнт тягнув
+      // сторінку і матчив у себе — і промахувався, щойно потрібний чек
+      // виїжджав за межі сторінки.
+      await pact
+        .addInteraction()
+        .given("user-pact-001 has a receipt linked to tx-pact-0099")
+        .uponReceiving(
+          "a GET /api/v1/silpo/receipts request filtered by transactionId",
+        )
+        .withRequest("GET", "/api/v1/silpo/receipts", (req) => {
+          req.headers({ accept: "application/json" });
+          req.query({ limit: "1", transactionId: "tx-pact-0099" });
+        })
+        .willRespondWith(200, (res) => {
+          res.headers({ "content-type": "application/json" });
+          res.jsonBody({
+            data: [
+              {
+                receiptId: "rcpt-pact-0002",
+                purchasedAt: "2026-08-16T18:20:00.000Z",
+                storeId: "store-042",
+                channel: "offline",
+                paymentHint: "card",
+                totalKop: 45690,
+                transactionId: "tx-pact-0099",
+              },
+            ],
+            nextCursor: null,
+          });
+        })
+        .executeTest(async (mockServer) => {
+          const http = createHttpClient({ baseUrl: mockServer.url });
+          const silpo = createSilpoEndpoints(http);
+          const page = await silpo.receipts({
+            limit: 1,
+            transactionId: "tx-pact-0099",
+          });
+          expect(page.data).toHaveLength(1);
+          expect(page.data[0]!.transactionId).toBe("tx-pact-0099");
+          expect(page.nextCursor).toBeNull();
+        });
+    });
   },
 );
 

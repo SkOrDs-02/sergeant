@@ -129,12 +129,17 @@ export const silpoKeys = {
   syncState: ["silpo", "sync-state"] as const,
   /** Cursor-paginated `GET /api/silpo/receipts` list, keyed by params so
    *  distinct pages/limits don't collide in cache. */
-  receipts: (params?: { limit?: number; cursor?: string }) =>
+  receipts: (params?: {
+    limit?: number;
+    cursor?: string;
+    transactionId?: string;
+  }) =>
     [
       "silpo",
       "receipts",
       params?.limit ?? null,
       params?.cursor ?? null,
+      params?.transactionId ?? null,
     ] as const,
   receiptDetail: (receiptId: string) =>
     ["silpo", "receipts", "detail", receiptId] as const,

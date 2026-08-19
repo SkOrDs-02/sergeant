@@ -449,6 +449,22 @@ describe("GET /api/silpo/receipts", () => {
     expect(mocks.listReceipts).toHaveBeenCalledWith("user-1", {
       limit: 50,
       cursor: undefined,
+      transactionId: undefined,
+    });
+  });
+
+  it("passes transactionId through to the read layer", async () => {
+    mocks.listReceipts.mockResolvedValue({ data: [], nextCursor: null });
+
+    const res = await request(appWith())
+      .get("/api/silpo/receipts?transactionId=tx-42&limit=1")
+      .set("x-test-user-id", "user-1");
+
+    expect(res.status).toBe(200);
+    expect(mocks.listReceipts).toHaveBeenCalledWith("user-1", {
+      limit: 1,
+      cursor: undefined,
+      transactionId: "tx-42",
     });
   });
 });
