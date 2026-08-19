@@ -14,7 +14,9 @@
  * would be more precise, but those pull `drizzle-orm` onto the Hub's
  * eager chunk and the critical-path budget is 280 kB (AGENTS.md
  * § Performance budgets). Quick-stats snapshots carry the same facts and
- * the Hub already reads them.
+ * the Hub already reads them. The one fact quick-stats cannot supply —
+ * «чи взагалі є запис» — arrives through `webRealEntryProbe`, a registry
+ * of counters the modules publish themselves, so it stays import-free too.
  */
 
 import { useMemo } from "react";
@@ -28,6 +30,7 @@ import { monoWebhookApi, type MonoSyncState } from "@shared/api";
 import { webKVStore } from "@shared/lib/storage/storage";
 import { finykKeys } from "@shared/lib/api/queryKeys";
 import { useHubStorageBump } from "../hub/useHubStorageBump";
+import { webRealEntryProbe } from "./realEntryProbe";
 
 /** Matches `useModuleRouteLoader`'s prefetch so the two calls dedupe. */
 const STALE_TIME_MS = 30_000;
@@ -70,7 +73,7 @@ export function useChecklistSignals(
     // consumers (`useHubStorageBump`).
     void bump;
     const signals: Record<string, boolean | undefined> = {
-      ...deriveChecklistSignals(webKVStore, moduleId),
+      ...deriveChecklistSignals(webKVStore, moduleId, webRealEntryProbe),
     };
     if (moduleId === "finyk" && monoConnected) {
       signals["connect_bank"] = true;

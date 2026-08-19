@@ -177,6 +177,18 @@ export function Sheet({
           marginBottom:
             "calc(var(--bottom-nav-height, 0px) + env(safe-area-inset-bottom, 0px))",
         };
+  // Запас прокрутки під останніми полями, поки клавіатура відкрита
+  // (бета-фідбек №5, 2026-08-18: «внизу екрану не видно»). Скрол уміє
+  // рівно стільки, скільки дозволяє `scrollHeight`: для поля в кінці
+  // списку контенту під ним майже нема, тож підняти його над
+  // клавіатурою нічим — центрування, яке рятує середину списку, для
+  // останніх рядків недосяжне в принципі. Резервуємо саме висоту
+  // клавіатури: це найгірший випадок того, наскільки поле може виявитись
+  // під нею. Порожнє місце живе рівно доки відкрита клавіатура.
+  const bodyStyle: CSSProperties | undefined =
+    resolvedKbInsetPx > 0
+      ? { paddingBottom: `calc(1rem + ${resolvedKbInsetPx}px)` }
+      : undefined;
   const panelStyle: CSSProperties = swipe.dragging
     ? {
         ...baseStyle,
@@ -301,6 +313,7 @@ export function Sheet({
           </div>
         )}
         <div
+          style={bodyStyle}
           className={cn(
             // `overscroll-none` (not `-contain`) — `contain` still lets the
             // browser paint its own rubber-band/glow effect at this

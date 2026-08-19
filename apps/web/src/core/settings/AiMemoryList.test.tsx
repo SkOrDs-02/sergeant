@@ -220,12 +220,14 @@ describe("AiMemoryList", () => {
   });
 
   it("довгий факт обрізається, поки його не розгорнути", async () => {
-    // Факти з дайджесту — це абзаци на кілька рядків; саме вони роздували
-    // список. Кнопка зʼявляється лише для довгого тексту.
-    const long = "Тижневий звіт: ".padEnd(400, "деталі витрат і тренувань ");
+    // Довгим буває й справжній факт із чату — не лише службовий звіт
+    // (`digest` тепер згорнутий за замовчуванням, тож важіль розгортання
+    // перевіряємо на джерелі, яке видно одразу). Кнопка зʼявляється лише
+    // для довгого тексту.
+    const long = "Розповідав у чаті: ".padEnd(400, "довга передісторія ");
     listAiMemory.mockResolvedValue(
       page([
-        { id: 1, content: long, source: "digest" },
+        { id: 1, content: long, source: "chat" },
         { id: 2, content: "Короткий факт", source: "chat" },
       ]),
     );
@@ -242,6 +244,71 @@ describe("AiMemoryList", () => {
     expect(
       screen.queryAllByRole("button", { name: "Показати повністю" }),
     ).toHaveLength(0);
+  });
+
+  it("службові події застосунку — окремою групою, завжди згорнутою і в кінці", async () => {
+    // Рішення власника 2026-08-18. `source='product'` — це 4 мілстоуни
+    // телеметрії напів-англійським текстом (див. `eventSync.ts`), а не
+    // факт про людину: не розкриваємо їх навіть у крихітній памʼяті і не
+    // пускаємо вперед справжніх фактів.
+    listAiMemory.mockResolvedValue(
+      page([
+        {
+          id: 1,
+          content: "2026-05-13: first action completed у модулі finyk.",
+          source: "product",
+        },
+        { id: 2, content: "Алергія на горіхи", source: "nutrition" },
+      ]),
+    );
+    renderList();
+
+    // Справжній факт видно одразу (памʼять маленька), службовий — ні.
+    expect(await screen.findByText("Алергія на горіхи")).toBeTruthy();
+    expect(screen.queryByText(/first action completed/)).toBeNull();
+
+    const groups = screen.getAllByRole("button", {
+      name: /Показати факти джерела/,
+    });
+    // Службова група — остання, попри свіжіший id.
+    expect(groups.at(-1)?.textContent).toContain("Події застосунку");
+    expect(groups.at(-1)?.getAttribute("aria-expanded")).toBe("false");
+    // Сире `product` в UI не світиться.
+    expect(screen.queryByText(/\bПродукт\b/)).toBeNull();
+
+    fireEvent.click(groups.at(-1)!);
+    expect(screen.getByText(/first action completed/)).toBeTruthy();
+    expect(screen.getByText(/Службові позначки застосунку/)).toBeTruthy();
+  });
+
+  it("тижневі звіти — теж службові: згорнуті, в кінці, зі своїм поясненням", async () => {
+    // Рішення власника 2026-08-18. Дайджест — не факт, який людина
+    // розповіла, а згенерований звіт абзацом; саме він роздував список.
+    listAiMemory.mockResolvedValue(
+      page([
+        {
+          id: 1,
+          content: "Тижневий звіт 3 серп. — 9 серп. Витрати склали 75769 грн…",
+          source: "digest",
+        },
+        { id: 2, content: "Алергія на горіхи", source: "nutrition" },
+      ]),
+    );
+    renderList();
+
+    expect(await screen.findByText("Алергія на горіхи")).toBeTruthy();
+    expect(screen.queryByText(/Тижневий звіт/)).toBeNull();
+
+    const groups = screen.getAllByRole("button", {
+      name: /Показати факти джерела/,
+    });
+    expect(groups.at(-1)?.textContent).toContain("Підсумок тижня");
+    expect(groups.at(-1)?.getAttribute("aria-expanded")).toBe("false");
+
+    fireEvent.click(groups.at(-1)!);
+    // Пояснення своє, не спільне з телеметрією.
+    expect(screen.getByText(/склав сам із твоїх модулів/)).toBeTruthy();
+    expect(screen.queryByText(/Службові позначки застосунку/)).toBeNull();
   });
 
   it("помилка видалення → повідомлення, факт лишається у списку", async () => {
