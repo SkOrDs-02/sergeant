@@ -43,7 +43,7 @@ Teammates автоматично завантажують CLAUDE.md і project c
 
 Ці 4 лінзи покривають **коректність, безпеку і governance диффа** — не продуктивність і не поведінку в браузері:
 
-- **Bundle-бюджети і Lighthouse** (JS ≤1.35 MB, CSS ≤40 kB, eager ≤450 kB, LCP ≤3000 ms) — механічні CI-гейти: `size-limit`, `scripts/ci/check-eager-bundle.mjs`, workflow `Lighthouse CI`. Вони блокують мерж самі; reviewer-агент їх не дублює.
+- **Bundle-бюджети і Lighthouse** (JS ≤1.38 MB, CSS ≤40 kB, eager ≤280 kB, LCP ≤3000 ms) — механічні CI-гейти: `size-limit`, `scripts/ci/check-eager-bundle.mjs`, workflow `Lighthouse CI`. Вони блокують мерж самі; reviewer-агент їх не дублює.
 - **E2E / Playwright** — окрема поверхня, `sergeant-e2e-testing`.
 - **Зелені тести** — `sergeant-qa-squad`, далі `sergeant-verify-before-done`.
 
