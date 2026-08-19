@@ -16,6 +16,7 @@ import {
 } from "@nutrition/lib/nutritionStorage";
 import { calcFinykPeriodAggregate } from "@sergeant/finyk-domain/lib/spending";
 import { readFinykStatsContext } from "@finyk/lib/lsStats";
+import { pluralDays, pluralUa } from "@sergeant/shared";
 import {
   BODY_ATLAS_MUSCLE_LABELS_UK,
   mapDomainMuscleToAtlas,
@@ -76,19 +77,6 @@ const LOOSE_MUSCLE_ALIASES: Record<string, string> = {
   glutes: "gluteus_maximus",
   traps: "trapezius",
 };
-
-/** Ukrainian grammatical number (1 день / 2 дні / 5 днів). */
-function pluralUk(n: number, one: string, few: string, many: string): string {
-  const mod10 = n % 10;
-  const mod100 = n % 100;
-  if (mod10 === 1 && mod100 !== 11) return one;
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return few;
-  return many;
-}
-
-function daysWordUk(n: number): string {
-  return pluralUk(n, "день", "дні", "днів");
-}
 
 /** Fold any muscle key onto the canonical atlas keyspace (or drop it). */
 function toAtlasMuscle(raw: unknown): BodyAtlasMuscleId | null {
@@ -186,6 +174,11 @@ const STALE_DAYS = 8;
 const STALE_LOOKBACK_DAYS = 45;
 /** Скільки груп перелічуємо в тілі агрегованої картки. */
 const STALE_MUSCLES_IN_BODY = 3;
+const MUSCLE_GROUP_FORMS = {
+  one: "група",
+  few: "групи",
+  many: "груп",
+} as const;
 
 function buildFizrukRecs(): Rec[] {
   const recs: Rec[] = [];
@@ -246,8 +239,8 @@ function buildFizrukRecs(): Rec[] {
         priority: Math.min(55 + maxDays, 84),
         icon: "dumbbell",
         title: single
-          ? `${labels[0]} не тренували ${maxDays} ${daysWordUk(maxDays)}`
-          : `${stale.length} ${pluralUk(stale.length, "група", "групи", "груп")} м'язів без навантаження ${maxDays}+ ${daysWordUk(maxDays)}`,
+          ? `${labels[0]} не тренували ${maxDays} ${pluralDays(maxDays)}`
+          : `${stale.length} ${pluralUa(stale.length, MUSCLE_GROUP_FORMS)} м'язів без навантаження ${maxDays}+ ${pluralDays(maxDays)}`,
         body: single
           ? "Включи вправи на ці м'язи в наступне тренування."
           : `Найдовше без роботи: ${shown.join(", ")}${

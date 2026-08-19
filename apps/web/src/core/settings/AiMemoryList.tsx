@@ -64,7 +64,12 @@ const SOURCE_LABEL: Record<string, string> = {
   journal: "Щоденник",
   digest: "Підсумок тижня",
   cofounder: "Співзасновник",
-  product: "Продукт",
+  // Рішення власника 2026-08-18: «Продукт» нічого не пояснювало. Ці рядки —
+  // не факти про людину, а 4 мілстоуни телеметрії (`PRODUCT_MEMORY_EVENTS`
+  // у `apps/server/src/modules/ai-memory/eventSync.ts`): signup, onboarding,
+  // перша дія в модулі, підписка. Пишуться напів-англійським текстом під
+  // founder-ський `/recall`, тому називаємо їх тим, чим вони є.
+  product: "Події застосунку",
   // Міграція 118 / L-8 (аудит 2026-08-08): факти, які людина заявила про
   // себе сама — через інтервʼю з асистентом або вручну в банку памʼяті.
   // Без цього рядка fallback `?? item.source` показав би сире «profile».
@@ -74,6 +79,20 @@ const SOURCE_LABEL: Record<string, string> = {
 function sourceLabel(source: string): string {
   return SOURCE_LABEL[source] ?? source;
 }
+
+/**
+ * Службові джерела: рядок пише не людина про себе, а система — телеметрія
+ * (`product`) або згенерований тижневий звіт (`digest`). Такі групи завжди
+ * згорнуті й завжди в кінці списку, але лишаються видимими й видаляються
+ * поштучно, бо це теж памʼять про тебе.
+ *
+ * Рішення власника 2026-08-18 (двома заходами: спершу `product`, потім
+ * `digest`). Критерій, за яким сюди додають нове джерело: чи міг би
+ * користувач сам вимовити цей рядок як факт про себе. «Алергія на горіхи» —
+ * так; «2026-05-13: first action completed у модулі finyk» і «Тижневий звіт
+ * 3 серп. — 9 серп.» — ні.
+ */
+const TECHNICAL_SOURCES: ReadonlySet<string> = new Set(["product", "digest"]);
 
 function formatDay(iso: string): string {
   // Europe/Kyiv — доменний інваріант: дата факту має читатись у часовому
@@ -89,6 +108,7 @@ function formatDay(iso: string): string {
 interface MemoryGroup {
   source: string;
   label: string;
+  technical: boolean;
   items: AiMemoryListItem[];
 }
 
@@ -108,10 +128,15 @@ function groupBySource(items: AiMemoryListItem[]): MemoryGroup[] {
     bySource.set(item.source, {
       source: item.source,
       label: sourceLabel(item.source),
+      technical: TECHNICAL_SOURCES.has(item.source),
       items: [item],
     });
   }
-  return [...bySource.values()];
+  // Службові групи — вниз. `sort` у JS стабільний, тож усередині кожної
+  // половини порядок першої появи (тобто свіжості) зберігається.
+  return [...bySource.values()].sort(
+    (a, b) => Number(a.technical) - Number(b.technical),
+  );
 }
 
 function MemoryFact({
@@ -188,7 +213,10 @@ function MemoryGroupSection({
   // «джерело → відкрито», зібрана з попередніх сторінок, розʼїхалася б із
   // новим набором груп. Ключ `group.source` у батька тримає цей стан
   // стабільним через рефетчі.
-  const [open, setOpen] = useState(defaultOpen);
+  // Службова група ігнорує `defaultOpen`: навіть у крихітній памʼяті вона
+  // не має розкриватись сама — її вміст людині нічого не каже.
+  const [open, setOpen] = useState(defaultOpen && !group.technical);
+  const hint = group.technical ? m.technicalGroupHints[group.source] : null;
 
   return (
     <section>
@@ -220,6 +248,12 @@ function MemoryGroupSection({
           aria-hidden
         />
       </button>
+
+      {open && hint && (
+        <p className="px-3 pt-2 text-style-caption text-subtle leading-relaxed">
+          {hint}
+        </p>
+      )}
 
       {open && (
         <ul className="space-y-2 pt-2">
