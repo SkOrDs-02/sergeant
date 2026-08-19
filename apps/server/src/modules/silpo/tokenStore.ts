@@ -13,13 +13,13 @@ import { refreshTokens as oauthRefreshTokens } from "./oauth.js";
 import type { McpError, McpResult } from "./mcpClient.js";
 
 /**
- * Read/write/refresh path for `silpo_connection` (migration 121). Reuses
+ * Read/write/refresh path for `silpo_connection` (migration 123). Reuses
  * the generic AES-256-GCM + KeyRing helpers from `modules/mono/crypto.js`
  * (they operate on arbitrary plaintext, nothing Monobank-specific) instead
  * of duplicating them — spec § Поверхня змін: "tokenStore.ts + reuse
  * mono/crypto.ts → спільний lib/". Two independent ciphertext triples
  * (access + refresh) live in one row, encrypted under ONE shared
- * `token_key_version` (see migration 121 comment) — every write/re-encrypt
+ * `token_key_version` (see migration 123 comment) — every write/re-encrypt
  * touches both together.
  *
  * Never log raw tokens / decrypted values (Hard Rule #21).
@@ -314,6 +314,140 @@ export async function markReauthRequired(
   logger.info({ msg: "silpo.connection.reauth_required" });
 }
 
+// ───────────────────── Single-flight refresh coordination ───────────────────
+
+/**
+ * Refresh grants are ONE-TIME: Silpo rotates `refresh_token` on every
+ * successful exchange, so two concurrent `auth_required` responses for the
+ * same user (receipts sync + cart preview + food search all fire from one
+ * screen) used to race — both read the same refresh token, both POSTed it,
+ * the loser got `invalid_grant` and flipped a perfectly healthy connection
+ * to `reauth_required`. The user saw «Перепідключіть Сільпо» for no reason.
+ *
+ * Two layers guard that now, and BOTH are needed:
+ *
+ *   1. **In-process coalescing** (`inFlightRefresh`) — concurrent callers in
+ *      the same process share one exchange and one result. Covers the whole
+ *      single-instance deployment (ADR-0074), i.e. every real race today.
+ *   2. **Race-aware failure handling** (`rereadAfterFailedRefresh`) — before
+ *      condemning the connection we re-read the row. If its stored refresh
+ *      token is no longer the one we tried, somebody else (another replica,
+ *      or an exchange that finished after we had already read) rotated it
+ *      successfully: our `invalid_grant` means "stale copy", not "dead
+ *      connection", so we continue with the freshly persisted access token.
+ *
+ * A session-level `pg_advisory_lock` was the obvious alternative and is
+ * wrong here: `query()` runs on a shared pool (and, when
+ * `DATABASE_URL_POOL` is set, through pgBouncer in transaction mode), so a
+ * session lock can be taken on one backend and released on another — i.e.
+ * never released. `pg_advisory_xact_lock` would need a checked-out client
+ * and an explicit transaction spanning an outbound HTTP call, which is
+ * worse than the race it fixes.
+ */
+type RefreshOutcome = { ok: true; accessToken: string } | { ok: false };
+
+const inFlightRefresh = new Map<string, Promise<RefreshOutcome>>();
+
+/** Test-only: drop pending single-flight entries between cases. */
+export function __resetSilpoRefreshCoalescing(): void {
+  inFlightRefresh.clear();
+}
+
+/**
+ * Re-reads the connection after a failed refresh. Returns the current
+ * access token when the row has MOVED ON (its refresh token differs from
+ * the one we just burned) — that means a concurrent exchange succeeded and
+ * our failure is meaningless. Returns `null` in every other case,
+ * including any error: a re-read that itself fails must not mask a real
+ * dead connection. Never throws.
+ */
+async function rereadAfterFailedRefresh(
+  userId: string,
+  ring: KeyRing,
+  queryFn: QueryFn,
+  burnedRefreshToken: string,
+): Promise<string | null> {
+  try {
+    const reread = await readAndDecrypt(userId, ring, queryFn);
+    if (reread.kind !== "connected") return null;
+    if (reread.connection.status !== "connected") return null;
+    if (reread.connection.refreshToken === burnedRefreshToken) return null;
+    return reread.connection.accessToken;
+  } catch {
+    return null;
+  }
+}
+
+/** Performs the actual exchange + persist. Never throws. */
+async function performRefresh(
+  userId: string,
+  ring: KeyRing,
+  queryFn: QueryFn,
+  staleRefreshToken: string,
+): Promise<RefreshOutcome> {
+  try {
+    const refreshed = await oauthRefreshTokens(staleRefreshToken);
+    await persistTokens(
+      userId,
+      ring,
+      {
+        accessToken: refreshed.access_token,
+        // Refresh grants MAY omit a new refresh_token — reuse the prior one.
+        refreshToken: refreshed.refresh_token ?? staleRefreshToken,
+        expiresAtMs: refreshed.expires_in
+          ? Date.now() + refreshed.expires_in * 1000
+          : null,
+      },
+      queryFn,
+    );
+    return { ok: true, accessToken: refreshed.access_token };
+  } catch (err) {
+    const rotatedElsewhere = await rereadAfterFailedRefresh(
+      userId,
+      ring,
+      queryFn,
+      staleRefreshToken,
+    );
+    if (rotatedElsewhere) {
+      logger.info({ msg: "silpo.token.refresh_raced" });
+      return { ok: true, accessToken: rotatedElsewhere };
+    }
+    await markReauthRequired(userId, queryFn);
+    logger.warn({
+      msg: "silpo_token_refresh_failed",
+      err: err instanceof Error ? err.message : String(err),
+    });
+    return { ok: false };
+  }
+}
+
+/**
+ * Single-flight wrapper: at most ONE refresh per user is in flight in this
+ * process; everyone else awaits its result.
+ */
+async function refreshAccessTokenOnce(
+  userId: string,
+  ring: KeyRing,
+  queryFn: QueryFn,
+  staleRefreshToken: string,
+): Promise<RefreshOutcome> {
+  const existing = inFlightRefresh.get(userId);
+  if (existing) {
+    logger.info({ msg: "silpo.token.refresh_coalesced" });
+    return existing;
+  }
+  const pending = performRefresh(
+    userId,
+    ring,
+    queryFn,
+    staleRefreshToken,
+  ).finally(() => {
+    inFlightRefresh.delete(userId);
+  });
+  inFlightRefresh.set(userId, pending);
+  return pending;
+}
+
 // ───────────────────────── Authenticated-call coordinator ───────────────────
 
 export type SilpoAuthedCallErrorKind =
@@ -333,8 +467,9 @@ export type SilpoAuthedCallResult<T> =
  *
  *   1. No connection at all → `not_connected` (caller should prompt Connect).
  *   2. Row already `reauth_required` → short-circuits without calling `fn`.
- *   3. `fn` returns `auth_required` (HTTP 401 from MCP) → refresh once,
- *      persist the new tokens, retry `fn` ONE more time.
+ *   3. `fn` returns `auth_required` (HTTP 401 from MCP) → refresh once
+ *      (single-flight per user — see `refreshAccessTokenOnce`), persist the
+ *      new tokens, retry `fn` ONE more time.
  *   4. Still `auth_required` after the retry → `markReauthRequired` and
  *      return `reauth_required` — never a silent third attempt/loop.
  *
@@ -389,29 +524,13 @@ export async function callWithFreshAccessToken<T>(
   const first = await fn(connection.accessToken);
   if (first.ok || first.error.kind !== "auth_required") return first;
 
-  let refreshedAccessToken: string;
-  try {
-    const refreshed = await oauthRefreshTokens(connection.refreshToken);
-    await persistTokens(
-      userId,
-      ring,
-      {
-        accessToken: refreshed.access_token,
-        // Refresh grants MAY omit a new refresh_token — reuse the prior one.
-        refreshToken: refreshed.refresh_token ?? connection.refreshToken,
-        expiresAtMs: refreshed.expires_in
-          ? Date.now() + refreshed.expires_in * 1000
-          : null,
-      },
-      queryFn,
-    );
-    refreshedAccessToken = refreshed.access_token;
-  } catch (err) {
-    await markReauthRequired(userId, queryFn);
-    logger.warn({
-      msg: "silpo_token_refresh_failed",
-      err: err instanceof Error ? err.message : String(err),
-    });
+  const refreshOutcome = await refreshAccessTokenOnce(
+    userId,
+    ring,
+    queryFn,
+    connection.refreshToken,
+  );
+  if (!refreshOutcome.ok) {
     return {
       ok: false,
       error: {
@@ -421,7 +540,7 @@ export async function callWithFreshAccessToken<T>(
     };
   }
 
-  const second = await fn(refreshedAccessToken);
+  const second = await fn(refreshOutcome.accessToken);
   if (second.ok) return second;
   if (second.error.kind === "auth_required") {
     await markReauthRequired(userId, queryFn);

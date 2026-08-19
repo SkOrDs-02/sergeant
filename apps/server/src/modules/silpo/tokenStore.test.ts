@@ -10,6 +10,7 @@ vi.mock("./oauth.js", () => ({
 }));
 
 import {
+  __resetSilpoRefreshCoalescing,
   callWithFreshAccessToken,
   markReauthRequired,
   persistTokens,
@@ -134,7 +135,15 @@ function makeFakeDb(): {
 
 beforeEach(() => {
   mocks.refreshTokens.mockReset();
+  __resetSilpoRefreshCoalescing();
 });
+
+/** Lets every queued microtask + timer callback drain before continuing. */
+async function drainTasks(): Promise<void> {
+  for (let i = 0; i < 3; i++) {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+}
 
 describe("persistTokens / readAndDecrypt — round trip", () => {
   it("round-trips both token triples under one key version", async () => {
@@ -417,6 +426,112 @@ describe("callWithFreshAccessToken", () => {
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error.kind).toBe("reauth_required");
     expect(fn).toHaveBeenCalledTimes(1);
+    expect(db.getRow()!.status).toBe("reauth_required");
+  });
+
+  it("coalesces concurrent refreshes into a single token exchange", async () => {
+    // Регресія: два паралельні виклики (синк чеків + превʼю кошика з одного
+    // екрана) обидва бачили 401, обидва слали ОДИН І ТОЙ САМИЙ одноразовий
+    // refresh — переможений отримував invalid_grant і перекидав живий
+    // звʼязок у reauth_required.
+    const db = makeFakeDb();
+    await persistTokens(
+      "user-1",
+      ringV1Only(),
+      { accessToken: "at-stale", refreshToken: "rt-1", expiresAtMs: null },
+      db.query,
+    );
+    let releaseRefresh: () => void = () => {};
+    mocks.refreshTokens.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          releaseRefresh = () =>
+            resolve({
+              access_token: "at-fresh",
+              refresh_token: "rt-2",
+              expires_in: 3600,
+            });
+        }),
+    );
+    const fnA = vi
+      .fn()
+      .mockResolvedValueOnce(authRequired())
+      .mockResolvedValueOnce(okResult({ who: "a" }));
+    const fnB = vi
+      .fn()
+      .mockResolvedValueOnce(authRequired())
+      .mockResolvedValueOnce(okResult({ who: "b" }));
+
+    const deps = { ring: ringV1Only(), query: db.query };
+    const pA = callWithFreshAccessToken("user-1", fnA, deps);
+    const pB = callWithFreshAccessToken("user-1", fnB, deps);
+
+    // Обидва вже дійшли до refresh і чекають на ту саму обіцянку.
+    await drainTasks();
+    releaseRefresh();
+    const [resA, resB] = await Promise.all([pA, pB]);
+
+    expect(resA).toEqual({ ok: true, data: { who: "a" } });
+    expect(resB).toEqual({ ok: true, data: { who: "b" } });
+    expect(mocks.refreshTokens).toHaveBeenCalledTimes(1);
+    expect(fnA).toHaveBeenNthCalledWith(2, "at-fresh");
+    expect(fnB).toHaveBeenNthCalledWith(2, "at-fresh");
+    expect(db.getRow()!.status).toBe("connected");
+  });
+
+  it("keeps the connection alive when another exchange already rotated the token", async () => {
+    // Крос-процесний випадок (друга репліка / обмін, що завершився вже після
+    // нашого читання): наш refresh валиться invalid_grant, але в рядку вже
+    // лежить новий токен — це «наша копія протухла», а не «звʼязок мертвий».
+    const db = makeFakeDb();
+    await persistTokens(
+      "user-1",
+      ringV1Only(),
+      { accessToken: "at-stale", refreshToken: "rt-1", expiresAtMs: null },
+      db.query,
+    );
+    mocks.refreshTokens.mockImplementation(async () => {
+      await persistTokens(
+        "user-1",
+        ringV1Only(),
+        { accessToken: "at-other", refreshToken: "rt-2", expiresAtMs: null },
+        db.query,
+      );
+      throw new Error("invalid_grant");
+    });
+    const fn = vi
+      .fn()
+      .mockResolvedValueOnce(authRequired())
+      .mockResolvedValueOnce(okResult({ receipts: [2] }));
+
+    const result = await callWithFreshAccessToken("user-1", fn, {
+      ring: ringV1Only(),
+      query: db.query,
+    });
+
+    expect(result).toEqual({ ok: true, data: { receipts: [2] } });
+    expect(fn).toHaveBeenNthCalledWith(2, "at-other");
+    expect(db.getRow()!.status).toBe("connected");
+  });
+
+  it("still marks reauth_required when the re-read shows the same refresh token", async () => {
+    const db = makeFakeDb();
+    await persistTokens(
+      "user-1",
+      ringV1Only(),
+      { accessToken: "at-stale", refreshToken: "rt-1", expiresAtMs: null },
+      db.query,
+    );
+    mocks.refreshTokens.mockRejectedValue(new Error("invalid_grant"));
+    const fn = vi.fn().mockResolvedValueOnce(authRequired());
+
+    const result = await callWithFreshAccessToken("user-1", fn, {
+      ring: ringV1Only(),
+      query: db.query,
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.kind).toBe("reauth_required");
     expect(db.getRow()!.status).toBe("reauth_required");
   });
 });
