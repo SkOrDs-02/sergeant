@@ -1,8 +1,17 @@
 {
   "$schema": "../governance/schemas/pr-ledger.schema.json",
   "version": 1,
-  "generated_at": "2026-08-07",
+  "generated_at": "2026-08-19",
   "prs": [
+    {
+      "number": 826,
+      "title": "fix(web): згорнути мʼязовий спам у хабі й памʼять ШІ в групи",
+      "merged_at": "2026-08-19T15:10:40Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": [
+        "docs/90-work/initiatives/0024-ai-memory-source-coverage.md"
+      ]
+    },
     {
       "number": 689,
       "title": "fix(ci): governance-sync відрізняє живе посилання від навмисно мертвого",
