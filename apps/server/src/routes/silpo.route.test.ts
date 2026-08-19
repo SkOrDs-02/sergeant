@@ -234,7 +234,7 @@ describe("GET /api/silpo/connect", () => {
 
 describe("GET /api/silpo/callback", () => {
   it("redirects to Settings with ?silpo=connected on a full happy path", async () => {
-    mocks.consumeAuthorizationState.mockReturnValue({
+    mocks.consumeAuthorizationState.mockResolvedValue({
       userId: "user-1",
       codeVerifier: "verifier",
       redirectUri: "https://api.example.com/api/silpo/callback",
@@ -262,7 +262,7 @@ describe("GET /api/silpo/callback", () => {
   });
 
   it("redirects with ?silpo=error&reason=invalid_state when state is unknown/replayed", async () => {
-    mocks.consumeAuthorizationState.mockReturnValue(null);
+    mocks.consumeAuthorizationState.mockResolvedValue(null);
 
     const res = await request(appWith())
       .get("/api/silpo/callback?code=abc&state=bogus")
@@ -276,7 +276,7 @@ describe("GET /api/silpo/callback", () => {
   });
 
   it("rejects a state issued for a different user", async () => {
-    mocks.consumeAuthorizationState.mockReturnValue({
+    mocks.consumeAuthorizationState.mockResolvedValue({
       userId: "someone-else",
       codeVerifier: "verifier",
       redirectUri: "https://api.example.com/api/silpo/callback",

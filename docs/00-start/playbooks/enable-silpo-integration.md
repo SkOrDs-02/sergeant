@@ -1,6 +1,6 @@
 # Playbook: Enable / Operate Silpo Integration
 
-> **Last validated:** 2026-08-18 by @claude. **Next review:** 2026-11-18.
+> **Last touched:** 2026-08-19 by @claude. **Next review:** 2026-12-11.
 > **Status:** Active
 
 **Trigger:** вмикаємо `SILPO_ENABLED` у проді вперше · користувачі скаржаться,
@@ -53,7 +53,7 @@ Silpo (`assertStartupEnv` кидає на старті, не деградує).
    `apps/server/src/modules/silpo/oauth.ts`; `redirect_uri` має бути рівно
    `${PUBLIC_API_BASE_URL}/api/silpo/callback`. Отриманий `client_id` →
    `SILPO_OAUTH_CLIENT_ID`.
-4. **Постав `SILPO_ENABLED=true`** і передеплой. Міграція 121 накотиться
+4. **Постав `SILPO_ENABLED=true`** і передеплой. Міграції 123–124 накотяться
    pre-deploy (`node dist-server/migrate.js`).
 5. **Димова перевірка на своєму акаунті:** Налаштування → Фінік → «Зв'язати
    Сільпо» → OAuth → повернення зі статусом connected → «Оновити чеки» →

@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import { z } from "zod";
 import { env } from "../../env/env.js";
+import { query as defaultQuery } from "../../db.js";
 import { logger } from "../../obs/logger.js";
 import { recordExternalHttp } from "../../lib/externalHttp.js";
 import { elapsedMs } from "../../lib/timing.js";
@@ -102,14 +103,10 @@ export async function discoverOAuthMetadata(
 /** Test-only: clear the in-process metadata cache between unit tests. */
 export function __silpoOAuthTestHooks(): {
   clearMetadataCache(): void;
-  clearPendingStates(): void;
 } {
   return {
     clearMetadataCache(): void {
       cachedMetadata = null;
-    },
-    clearPendingStates(): void {
-      pendingStates.clear();
     },
   };
 }
@@ -138,34 +135,54 @@ export function generatePkcePair(): PkcePair {
   return { codeVerifier, codeChallenge };
 }
 
-// ─────────────────────── In-process pending-state store ────────────────────
+// ───────────────────────── Durable pending-state store ─────────────────────
 //
 // The OAuth round-trip is a browser top-level redirect through Silpo's
-// authorization server and back — `code_verifier` must survive that hop.
-// Better Auth's own social-login flow solves this with a signed cookie;
-// this integration avoids adding a cookie-signing dependency for a single
-// provisional flow and instead keeps the (state → verifier) mapping
-// server-side, keyed by the one-time `state` nonce. Known limitation
-// (documented, not silently swallowed): this is IN-MEMORY, so it does not
-// survive a server restart or route to a different replica mid-flow. For
-// the current single-Coolify-instance deployment (ADR-0074) that is a
-// non-issue; if the API ever scales to >1 replica behind a
-// non-sticky load balancer, this must move to Redis/Postgres before
-// Silpo Connect can be relied on there.
+// authorization server and back — `code_verifier` must survive that hop,
+// which is minutes of wall-clock with a human in the loop. Better Auth's
+// own social-login flow solves this with a signed cookie; a cookie can't
+// give us one-time consumption, and one-time consumption is the whole
+// point of `state` (replay protection on the callback). So the mapping
+// lives in Postgres (`silpo_oauth_state`, migration 124), consumed with a
+// single atomic `DELETE ... RETURNING`.
+//
+// This used to be an in-process `Map`. It cost a restart-shaped bug: any
+// redeploy inside the authorization window stranded the user on
+// `invalid_state`, and the API could never run more than one replica
+// behind a non-sticky balancer. Migration 124's comment carries the full
+// rationale, including why `code_verifier` is stored in plaintext.
 
-interface PendingState {
+export interface PendingState {
   userId: string;
   codeVerifier: string;
   redirectUri: string;
-  createdAt: number;
 }
-const pendingStates = new Map<string, PendingState>();
 
-function sweepExpiredStates(): void {
-  const now = Date.now();
-  for (const [state, entry] of pendingStates) {
-    if (now - entry.createdAt > PENDING_STATE_TTL_MS)
-      pendingStates.delete(state);
+type PendingStateRow = {
+  user_id: string;
+  code_verifier: string;
+  redirect_uri: string;
+};
+
+/** Injectable for unit tests; defaults to the shared pool query. */
+export type OAuthQueryFn = typeof defaultQuery;
+
+/** Best-effort GC of rows nobody will ever consume. Never throws. */
+async function sweepExpiredStates(queryFn: OAuthQueryFn): Promise<void> {
+  try {
+    await queryFn(
+      `DELETE FROM silpo_oauth_state
+        WHERE created_at < NOW() - ($1::bigint * INTERVAL '1 millisecond')`,
+      [PENDING_STATE_TTL_MS],
+      { op: "silpo_oauth_state_sweep" },
+    );
+  } catch (err) {
+    // Прибирання — не частина контракту `connect`: протухлий рядок і так
+    // ніколи не спрацює (TTL-фільтр стоїть у самому consume).
+    logger.warn({
+      msg: "silpo_oauth_state_sweep_failed",
+      err: err instanceof Error ? err.message : String(err),
+    });
   }
 }
 
@@ -176,30 +193,35 @@ export interface AuthorizationUrlResult {
 
 /**
  * Builds the `authorization_endpoint` redirect URL for `GET /api/silpo/
- * connect` and stashes `{userId, codeVerifier}` server-side under a fresh
- * `state` nonce for `consumeAuthorizationState` to retrieve at `/callback`.
+ * connect` and stashes `{userId, codeVerifier}` under a fresh `state`
+ * nonce for `consumeAuthorizationState` to retrieve at `/callback`.
  */
 export async function buildAuthorizationUrl(opts: {
   userId: string;
   redirectUri: string;
+  query?: OAuthQueryFn;
 }): Promise<AuthorizationUrlResult> {
-  sweepExpiredStates();
+  const queryFn = opts.query ?? defaultQuery;
+  await sweepExpiredStates(queryFn);
   const metadata = await discoverOAuthMetadata();
   const { codeVerifier, codeChallenge } = generatePkcePair();
   const state = base64url(crypto.randomBytes(24));
-
-  pendingStates.set(state, {
-    userId: opts.userId,
-    codeVerifier,
-    redirectUri: opts.redirectUri,
-    createdAt: Date.now(),
-  });
 
   if (!env.SILPO_OAUTH_CLIENT_ID) {
     throw new Error(
       "SILPO_OAUTH_CLIENT_ID is not configured — cannot build the Silpo authorization URL",
     );
   }
+
+  // Пишемо стан ПЕРЕД тим, як віддати редірект: якщо INSERT упав, краще
+  // показати помилку зараз, ніж відпустити людину в OAuth, з якого вона
+  // гарантовано повернеться в `invalid_state`.
+  await queryFn(
+    `INSERT INTO silpo_oauth_state (state, user_id, code_verifier, redirect_uri)
+     VALUES ($1, $2, $3, $4)`,
+    [state, opts.userId, codeVerifier, opts.redirectUri],
+    { op: "silpo_oauth_state_insert" },
+  );
 
   const url = new URL(metadata.authorization_endpoint);
   url.searchParams.set("response_type", "code");
@@ -214,17 +236,32 @@ export async function buildAuthorizationUrl(opts: {
 }
 
 /**
- * One-time lookup+delete of a pending `state`. Returns `null` when the
- * state is unknown/expired/already consumed — callers (routes/silpo.ts)
- * MUST treat that as a hard failure (invalid/replayed callback), never a
- * silent no-op.
+ * One-time lookup+delete of a pending `state`. Lookup, TTL check and
+ * consumption are ONE statement, so two callbacks racing on the same
+ * `state` can never both succeed. Returns `null` when the state is
+ * unknown/expired/already consumed — callers (routes/silpo.ts) MUST treat
+ * that as a hard failure (invalid/replayed callback), never a silent
+ * no-op.
  */
-export function consumeAuthorizationState(state: string): PendingState | null {
-  sweepExpiredStates();
-  const entry = pendingStates.get(state);
-  if (!entry) return null;
-  pendingStates.delete(state);
-  return entry;
+export async function consumeAuthorizationState(
+  state: string,
+  queryFn: OAuthQueryFn = defaultQuery,
+): Promise<PendingState | null> {
+  const { rows } = await queryFn<PendingStateRow>(
+    `DELETE FROM silpo_oauth_state
+      WHERE state = $1
+        AND created_at >= NOW() - ($2::bigint * INTERVAL '1 millisecond')
+      RETURNING user_id, code_verifier, redirect_uri`,
+    [state, PENDING_STATE_TTL_MS],
+    { op: "silpo_oauth_state_consume" },
+  );
+  const row = rows[0];
+  if (!row) return null;
+  return {
+    userId: row.user_id,
+    codeVerifier: row.code_verifier,
+    redirectUri: row.redirect_uri,
+  };
 }
 
 // ────────────────────────────── Token exchange ──────────────────────────────

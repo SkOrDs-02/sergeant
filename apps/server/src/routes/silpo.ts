@@ -169,7 +169,7 @@ export async function callbackHandler(
     return;
   }
 
-  const pending = consumeAuthorizationState(state);
+  const pending = await consumeAuthorizationState(state);
   if (!pending || pending.userId !== userId) {
     // Unknown/expired/replayed state, or a state issued for a different
     // session — never trust it, even though `state` itself is a
@@ -191,7 +191,7 @@ export async function callbackHandler(
       redirectUri: pending.redirectUri,
     });
     if (!tokens.refresh_token) {
-      // Migration 121 has NOT NULL refresh_token_* columns — a code
+      // Migration 123 has NOT NULL refresh_token_* columns — a code
       // exchange without one is unusable and must not be persisted.
       logger.warn({ msg: "silpo_callback_missing_refresh_token" });
       redirectToSettings(res, "error", "missing_refresh_token");

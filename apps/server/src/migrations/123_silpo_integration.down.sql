@@ -1,4 +1,4 @@
--- Down для 121_silpo_integration.sql.
+-- Down для 123_silpo_integration.sql.
 --
 -- Local-only rollback (Hard Rule #4) — прод ніколи не запускає `.down.sql`.
 -- Дропаємо у зворотному порядку створення: спершу таблиці, що FK-ять на

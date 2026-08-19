@@ -1,4 +1,4 @@
--- 121: Silpo MCP integration — Track A (Connect infra) walking skeleton.
+-- 123: Silpo MCP integration — Track A (Connect infra) walking skeleton.
 -- Spec: docs/90-work/planning/specs/silpo-mcp-integration.md
 --
 -- Контекст. Сільпо (Fozzy Group) відкрили публічний MCP-сервер
