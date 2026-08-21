@@ -68,7 +68,7 @@ export function useDemoCommands(): void {
       {
         id: "nav.hub",
         title: "Перейти на головну",
-        description: "Hub — стрічка модулів і центральний дашборд",
+        description: "Hub: стрічка модулів і центральний дашборд",
         group: "Навігація",
         keywords: ["hub", "home", "головна", "дашборд"],
         run: () => navigate("/"),

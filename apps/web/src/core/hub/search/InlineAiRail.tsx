@@ -198,7 +198,7 @@ export function InlineAiRail({
               )}
               {state.truncated && !state.hasToolCalls && (
                 <span className="text-style-caption text-muted">
-                  Повна відповідь — у чаті
+                  Повна відповідь у чаті
                 </span>
               )}
               <button
@@ -215,7 +215,7 @@ export function InlineAiRail({
         {state.status === "aborted" && (
           <div className="flex items-center justify-between gap-3">
             <p className="text-style-body text-muted">
-              Запит скасовано — натисни «Запитати знову», щоб спробувати ще раз.
+              Запит скасовано, натисни «Запитати знову», щоб спробувати ще раз.
             </p>
             <button
               type="button"

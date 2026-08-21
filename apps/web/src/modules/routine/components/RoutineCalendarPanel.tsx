@@ -249,7 +249,7 @@ export function RoutineCalendarPanel({
           Показувати у стрічці
         </SectionHeading>
         <p className="text-style-caption text-subtle">
-          Фільтр списку нижче. Підсумки — на вкладці «Статистика».
+          Фільтр списку нижче. Підсумки на вкладці «Статистика».
         </p>
 
         <Segmented
@@ -302,7 +302,7 @@ export function RoutineCalendarPanel({
         />
         {timeMode === "day" && (
           <p className="mt-2 text-center text-style-caption text-subtle">
-            Обрано один день — натисни «Сьогодні» або «Тиждень», щоб повернути
+            Обрано один день, натисни «Сьогодні» або «Тиждень», щоб повернути
             зріз
           </p>
         )}
@@ -368,7 +368,7 @@ export function RoutineCalendarPanel({
           <EmptyState
             className={C.emptyStateWarm}
             title="Почни з однієї звички"
-            description="Потім вона зʼявиться тут і в календарі — з відмітками по днях."
+            description="Потім вона зʼявиться тут і в календарі, з відмітками по днях."
             action={
               <Button
                 type="button"

@@ -93,7 +93,7 @@ export function MenusSection() {
   const { open: openPalette } = useCommandPaletteControls();
   return (
     <Sec id="menus" title="Menus та командна палітра">
-      <Group label="DropdownMenu — базовий" row>
+      <Group label="DropdownMenu: базовий" row>
         <DropdownMenu
           ariaLabel="Дії з елементом"
           items={basicItems}
@@ -116,7 +116,7 @@ export function MenusSection() {
         />
       </Group>
 
-      <Group label="DropdownMenu — підменю та disabled" row>
+      <Group label="DropdownMenu: підменю та disabled" row>
         <DropdownMenu
           ariaLabel="Опції сортування"
           items={submenuItems}
@@ -151,7 +151,7 @@ export function MenusSection() {
               Ctrl K
             </kbd>{" "}
             на Windows / Linux), щоб відкрити палітру з пошуком і клавіатурною
-            навігацією. Або кнопка нижче — обхідний шлях для тач-пристроїв.
+            навігацією. Або кнопка нижче, обхідний шлях для тач-пристроїв.
           </p>
           <Button onClick={openPalette}>Відкрити палітру</Button>
         </div>

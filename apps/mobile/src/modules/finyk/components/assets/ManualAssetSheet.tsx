@@ -213,7 +213,7 @@ export function ManualAssetSheet({
           </View>
           {draft.currency !== "UAH" && (
             <Text className="text-xs text-warning-strong mt-1">
-              Збережу актив, але поки не враховую його в загальному капіталі —
+              Збережу актив, але поки не враховую його в загальному капіталі,
               рахую лише активи в гривні.
             </Text>
           )}

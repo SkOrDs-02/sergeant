@@ -112,7 +112,7 @@ export const CATEGORY_META: Record<string, { label: string; icon: IconName }> =
  *      користувача — і в `hub_chat_history`, і в бекапі.
  */
 export const MEMORY_ONBOARDING_PROMPT =
-  "Заповни мій профіль у памʼяті ШІ — постав мені кілька питань.";
+  "Заповни мій профіль у памʼяті ШІ, постав мені кілька питань.";
 
 export const MEMORY_ADD_INFO_PROMPT = "Хочу додати щось про себе.";
 

@@ -21,7 +21,7 @@ describe("WorkoutItemTypeSwitcher", () => {
         onChange={onChange}
       />,
     );
-    fireEvent.click(screen.getByRole("tab", { name: "Час — секунди" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Час: секунди" }));
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({ type: "time" }),
     );
@@ -37,7 +37,7 @@ describe("WorkoutItemTypeSwitcher", () => {
       />,
     );
     fireEvent.click(
-      screen.getByRole("tab", { name: "Дистанція — метри та час" }),
+      screen.getByRole("tab", { name: "Дистанція: метри та час" }),
     );
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -58,7 +58,7 @@ describe("WorkoutItemTypeSwitcher", () => {
       />,
     );
     fireEvent.click(
-      screen.getByRole("tab", { name: "Силова — кг × повтори × підходи" }),
+      screen.getByRole("tab", { name: "Силова: кг × повтори × підходи" }),
     );
     expect(onChange).toHaveBeenCalledWith({
       type: "strength",
@@ -75,9 +75,9 @@ describe("WorkoutItemTypeSwitcher", () => {
         onChange={onChange}
       />,
     );
-    const timeTab = screen.getByRole("tab", { name: "Час — секунди" });
+    const timeTab = screen.getByRole("tab", { name: "Час: секунди" });
     const activeTab = screen.getByRole("tab", {
-      name: "Силова — кг × повтори × підходи",
+      name: "Силова: кг × повтори × підходи",
     });
 
     fireEvent.click(timeTab);
@@ -100,7 +100,7 @@ describe("WorkoutItemTypeSwitcher", () => {
       />,
     );
     expect(
-      screen.getByRole("tab", { name: "Силова — кг × повтори × підходи" }),
+      screen.getByRole("tab", { name: "Силова: кг × повтори × підходи" }),
     ).toHaveAttribute("tabindex", "0");
   });
 });

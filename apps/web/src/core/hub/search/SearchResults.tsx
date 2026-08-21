@@ -145,7 +145,7 @@ export const SearchResults = forwardRef<HTMLDivElement, SearchResultsProps>(
           <EmptyState
             icon={<Icon name="search" size={22} strokeWidth={1.6} />}
             title="Глобальний пошук"
-            description={`Транзакції, тренування, звички, їжа — все в одному місці. ${modK}, щоб відкрити звідусіль.`}
+            description={`Транзакції, тренування, звички, їжа. Все в одному місці. ${modK}, щоб відкрити звідусіль.`}
           />
         )}
 
@@ -191,7 +191,7 @@ export const SearchResults = forwardRef<HTMLDivElement, SearchResultsProps>(
                   className="text-style-caption mt-1.5 w-full flex items-center justify-between px-3 py-2 rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
                 >
                   <span>
-                    Показано {group.items.length} — відкрити {group.label}
+                    Показано {group.items.length} · відкрити {group.label}
                   </span>
                   <svg
                     width="12"

@@ -40,7 +40,7 @@ export function ItemEditSheet({
       open={!!itemEdit.open}
       onClose={onClose}
       title={itemEdit.name}
-      description="Кількість і одиниці (порожньо — прибрати)"
+      description="Кількість і одиниці (порожньо: прибрати)"
       panelClassName="nutrition-sheet"
       zIndex={120}
     >

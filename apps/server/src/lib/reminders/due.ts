@@ -139,7 +139,7 @@ export function fizrukDueNow(
       userId: row.userId,
       module: "fizruk",
       dedupKey: `fizruk_notify_${dayKey}`,
-      title: "Фізрук — тренування",
+      title: "Фізрук: тренування",
       body: "Заплановане тренування на сьогодні.",
       url: "/?module=fizruk",
     });

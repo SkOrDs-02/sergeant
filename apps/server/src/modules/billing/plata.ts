@@ -219,7 +219,7 @@ export const plataProvider: BillingProvider = {
       ccy: CCY_UAH,
       merchantPaymInfo: {
         reference: input.user.id, // мапимо юзера у webhook
-        destination: "Sergeant Pro — місячна підписка",
+        destination: "Sergeant Pro: місячна підписка",
       },
       redirectUrl: `${baseUrl}/pricing?checkout=success`,
       webHookUrl: `${serverBaseUrl()}/api/billing/plata-webhook`,

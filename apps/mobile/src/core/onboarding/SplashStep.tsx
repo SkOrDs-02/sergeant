@@ -37,7 +37,7 @@ export function SplashStep({ picks, togglePick, onContinue }: SplashStepProps) {
       </View>
       <View className="items-center">
         <Text className="text-center text-2xl font-bold text-fg">
-          Твоє життя — один екран.
+          Твоє життя це один екран.
         </Text>
         <Text className="mt-2 text-center text-sm leading-relaxed text-fg-muted">
           Гроші, тіло, звички, їжа. Офлайн. ~5 секунд на перший запис.
@@ -56,12 +56,12 @@ export function SplashStep({ picks, togglePick, onContinue }: SplashStepProps) {
         </Button>
         {!hasPicks ? (
           <Text className="text-center text-[11px] text-fg-muted">
-            Без вибору — всі 4 модулі. Налаштуєш потім.
+            Без вибору: всі 4 модулі. Налаштуєш потім.
           </Text>
         ) : null}
       </View>
       <Text className="text-center text-[11px] leading-relaxed text-fg-subtle">
-        Усе локально. Синхрон — коли сам захочеш.
+        Усе локально. Синхрон, коли сам захочеш.
       </Text>
     </View>
   );

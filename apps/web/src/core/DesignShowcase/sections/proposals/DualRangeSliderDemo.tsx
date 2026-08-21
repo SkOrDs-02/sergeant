@@ -42,7 +42,7 @@ export function DualRangeSliderDemo() {
     <ProposalCard
       id="R2-UI-16"
       title="Range-slider з двома ручками"
-      intent="Зараз одиночний слайдер задає лише мін або макс; у пропозиції — діапазон одним контролом. Тягни ручки праворуч."
+      intent="Зараз одиночний слайдер задає лише мін або макс; у пропозиції діапазон одним контролом. Тягни ручки праворуч."
     >
       <ComparePair
         before={
@@ -83,7 +83,7 @@ export function DualRangeSliderDemo() {
                 />
               </div>
               <p className="text-style-caption text-muted text-center mt-6">
-                Лише верхня межа — нижню не задати
+                Лише верхня межа, нижню не задати
               </p>
             </div>
           </MiniPhone>

@@ -11,12 +11,12 @@ describe("formatReceiptError", () => {
       url: "https://api.test/finyk/receipts/lookup",
       body: {
         error:
-          "Пошук чека за QR тимчасово недоступний — спробуй сфотографувати чек.",
+          "Пошук чека за QR тимчасово недоступний, спробуй сфотографувати чек.",
         code: "DPS_TOKEN_MISSING",
       },
     });
     expect(formatReceiptError(err, "fallback")).toBe(
-      "Пошук чека за QR тимчасово недоступний — спробуй сфотографувати чек.",
+      "Пошук чека за QR тимчасово недоступний, спробуй сфотографувати чек.",
     );
   });
 
@@ -28,7 +28,7 @@ describe("formatReceiptError", () => {
       url: "https://api.test/finyk/receipts/lookup",
       body: {
         error:
-          "Чек ще не з'явився в реєстрі ДПС — спробуй за кілька хвилин або сфотографуй чек.",
+          "Чек ще не з'явився в реєстрі ДПС, спробуй за кілька хвилин або сфотографуй чек.",
         code: "DPS_RECEIPT_NOT_FOUND",
       },
     });

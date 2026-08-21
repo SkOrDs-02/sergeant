@@ -230,7 +230,7 @@ function LastIncidentRow({
     >
       {messages.publicStatus.lastIncidentPrefix}{" "}
       <span className="text-text">{formatRelativeUk(lastIncident.at)}</span>
-      {" — "}
+      {", "}
       <span className="text-text">
         {COMPONENT_NAME[lastIncident.component]}
       </span>

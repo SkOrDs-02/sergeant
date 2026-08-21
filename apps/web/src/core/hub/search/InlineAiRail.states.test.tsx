@@ -67,13 +67,13 @@ describe("InlineAiRail — success state", () => {
     ).toBeInTheDocument();
     // Truncated hint is suppressed while a tool call is pending.
     expect(
-      screen.queryByText("Повна відповідь — у чаті"),
+      screen.queryByText("Повна відповідь у чаті"),
     ).not.toBeInTheDocument();
   });
 
   it("shows the truncated hint only when truncated and no tool calls", () => {
     renderRail({ ...base, truncated: true });
-    expect(screen.getByText("Повна відповідь — у чаті")).toBeInTheDocument();
+    expect(screen.getByText("Повна відповідь у чаті")).toBeInTheDocument();
   });
 });
 

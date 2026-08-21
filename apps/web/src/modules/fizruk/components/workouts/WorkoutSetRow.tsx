@@ -133,7 +133,7 @@ export function WorkoutSetRow({
       <button
         type="button"
         disabled={isReadOnly || !done}
-        aria-label={`${sr.numberAriaPrefix} ${setNumber} — ${done ? sr.doneAriaLabel : sr.notDoneAriaLabel}`}
+        aria-label={`${sr.numberAriaPrefix} ${setNumber}: ${done ? sr.doneAriaLabel : sr.notDoneAriaLabel}`}
         className={cn(
           "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] transition-colors",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",

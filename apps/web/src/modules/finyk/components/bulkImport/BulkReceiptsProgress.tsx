@@ -128,7 +128,7 @@ function ItemRow({
               </span>
               <Select
                 size="sm"
-                aria-label={`Категорія — ${item.draft.store || item.fileName}`}
+                aria-label={`Категорія: ${item.draft.store || item.fileName}`}
                 value={item.category}
                 disabled={disabled}
                 onChange={(e) => onSetCategory(item.id, e.target.value)}

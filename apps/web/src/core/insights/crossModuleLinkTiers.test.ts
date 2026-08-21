@@ -72,12 +72,12 @@ describe("gradeCrossModuleLink", () => {
 });
 
 describe("nextDaysThreshold", () => {
-  it("до порога мовчання ціль — MIN_N", () => {
+  it("до порога мовчання ціль: MIN_N", () => {
     expect(nextDaysThreshold(0)).toBe(MIN_N);
     expect(nextDaysThreshold(MIN_N - 1)).toBe(MIN_N);
   });
 
-  it("між MIN_N і STABLE_N ціль — STABLE_N", () => {
+  it("між MIN_N і STABLE_N ціль: STABLE_N", () => {
     expect(nextDaysThreshold(MIN_N)).toBe(STABLE_N);
     expect(nextDaysThreshold(STABLE_N - 1)).toBe(STABLE_N);
   });

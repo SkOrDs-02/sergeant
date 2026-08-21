@@ -132,7 +132,7 @@ export function RecurringSuggestions({
               </span>
             </div>
             <div className="text-style-caption text-muted mt-0.5">
-              Повторювані витрати — можна додати як підписки
+              Повторювані витрати, можна додати як підписки
             </div>
           </div>
         </div>

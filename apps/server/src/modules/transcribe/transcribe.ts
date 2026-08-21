@@ -101,7 +101,7 @@ export default async function transcribeHandler(
   if (!mimeType) {
     res.status(415).json({
       error:
-        "Непідтримуваний Content-Type — очікую audio/webm, audio/mp4, audio/ogg тощо",
+        "Непідтримуваний Content-Type, очікую audio/webm, audio/mp4, audio/ogg тощо",
       code: "UNSUPPORTED_MEDIA_TYPE",
     });
     return;
@@ -111,7 +111,7 @@ export default async function transcribeHandler(
   const body = req.body as unknown;
   if (!Buffer.isBuffer(body) || body.length === 0) {
     res.status(400).json({
-      error: "Порожнє тіло запиту — очікую аудіо-блоб",
+      error: "Порожнє тіло запиту, очікую аудіо-блоб",
       code: "EMPTY_BODY",
     });
     return;

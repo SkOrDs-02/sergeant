@@ -32,7 +32,7 @@ interface StorageErrorEventDetail {
 }
 
 const DEFAULT_FORMAT = (reason: string) =>
-  `Не вдалося зберегти дані (${reason}). Можливо, браузер переповнив сховище — експортуй бекап або звільни місце.`;
+  `Не вдалося зберегти дані (${reason}). Можливо, браузер переповнив сховище, експортуй бекап або звільни місце.`;
 
 export function StorageErrorBanner({
   eventName,

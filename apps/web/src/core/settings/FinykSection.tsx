@@ -107,7 +107,7 @@ export function FinykSection() {
               module="finyk"
               icon={<Icon name="tag" size={20} />}
               title="Поки немає власних категорій"
-              description="Додай першу категорію вище — вона зʼявиться у списку транзакцій, сплітів і лімітів."
+              description="Додай першу категорію вище, вона зʼявиться у списку транзакцій, сплітів і лімітів."
             />
           )}
         </SettingsSubGroup>

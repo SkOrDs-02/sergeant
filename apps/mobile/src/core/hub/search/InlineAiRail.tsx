@@ -144,7 +144,7 @@ export function InlineAiRail({
               )}
               {state.truncated && !state.hasToolCalls && (
                 <Text className="text-xs text-fg-muted">
-                  Повна відповідь — у чаті
+                  Повна відповідь у чаті
                 </Text>
               )}
               <Pressable
@@ -164,7 +164,7 @@ export function InlineAiRail({
         {state.status === "aborted" && (
           <View className="flex-row items-center justify-between gap-3">
             <Text className="text-sm text-fg-muted flex-1">
-              Запит скасовано — спробуй ще раз.
+              Запит скасовано, спробуй ще раз.
             </Text>
             <Pressable
               onPress={() => onRetry(state.question)}

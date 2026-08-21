@@ -86,7 +86,7 @@ export const BackfillProgressPill = memo(function BackfillProgressPill({
       className={cn("rounded-xl border px-3 py-2.5 space-y-2", tone, className)}
       role={isRunning ? "status" : undefined}
       aria-live={isRunning ? "polite" : undefined}
-      aria-label={`${headline} — ${detail}`}
+      aria-label={`${headline}: ${detail}`}
     >
       <div className="flex items-center gap-2 text-style-caption">
         <span

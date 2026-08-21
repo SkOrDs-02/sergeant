@@ -267,7 +267,7 @@ function buildFizrukRecs(): Rec[] {
       priority: 70,
       icon: "calendar",
       title: "Цього тижня ще немає тренувань",
-      body: "Тиждень вже в розпалі — час запланувати тренування!",
+      body: "Тиждень вже в розпалі, час запланувати тренування!",
       action: "fizruk",
       pwaAction: "start_workout",
     });
@@ -329,7 +329,7 @@ function buildRoutineRecs(): Rec[] {
       priority: 65,
       icon: "check",
       title: `${remaining} звичок ще не виконано сьогодні`,
-      body: "Вечір — ще не пізно закрити всі звички.",
+      body: "Вечір, ще не пізно закрити всі звички.",
       action: "routine",
     });
   }
@@ -343,7 +343,7 @@ function buildRoutineRecs(): Rec[] {
       priority: 95,
       icon: "alert",
       title: `Серія ${streak} днів під загрозою!`,
-      body: `Залишилось ${remaining} ${remaining === 1 ? "звичка" : "звичок"} — не дай рекорду згоріти.`,
+      body: `Залишилось ${remaining} ${remaining === 1 ? "звичка" : "звичок"}, не дай рекорду згоріти.`,
       action: "routine",
     });
   }
@@ -429,7 +429,7 @@ function buildNutritionRecs(): Rec[] {
         priority: 68,
         icon: "utensils",
         title: `Лише ${Math.round(protein)}г білка з ${targetProtein}г`,
-        body: "Додай протеїновий прийом їжі — це важливо для м'язів.",
+        body: "Додай протеїновий прийом їжі, це важливо для м'язів.",
         action: "nutrition",
         pwaAction: "add_meal",
       });
@@ -450,7 +450,7 @@ function buildNutritionRecs(): Rec[] {
           module: "nutrition",
           priority: 88,
           icon: "award",
-          title: "Після тренування — час поповнити білок!",
+          title: "Після тренування, час поповнити білок!",
           body: "У тебе є ~30 хвилин на протеїновий прийом для кращого відновлення.",
           action: "nutrition",
           pwaAction: "add_meal",

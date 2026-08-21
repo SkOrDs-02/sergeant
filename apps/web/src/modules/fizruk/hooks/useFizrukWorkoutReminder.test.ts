@@ -105,7 +105,7 @@ describe("useFizrukWorkoutReminder — Kyiv-time bug fix", () => {
 
     expect(showNotificationMock).toHaveBeenCalledTimes(1);
     const [title] = showNotificationMock.mock.calls[0]!;
-    expect(title).toBe("Фізрук — тренування");
+    expect(title).toBe("Фізрук: тренування");
   });
 
   it("does NOT fire when Kyiv HH:MM does not match the configured time", async () => {

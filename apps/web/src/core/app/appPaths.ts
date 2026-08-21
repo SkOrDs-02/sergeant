@@ -12,23 +12,23 @@ import { HUB_MODULE_IDS } from "@shared/lib/modules/hubNav";
 // PWA manifest `name` (vite.config.js). Some sub-routes were observed losing
 // the static title (browser falling back to the URL), so `RootLayout` keeps
 // it pinned to this value on every navigation.
-export const APP_TITLE = "Sergeant — Твій персональний хаб життя";
+export const APP_TITLE = "Sergeant · Твій персональний хаб життя";
 
 // Per-route document titles. `RootLayout` resolves the active pathname against
 // this map on every navigation and falls back to `APP_TITLE` for anything not
 // listed. Standalone surfaces (`/status`, `/chat`) get a specific title so the
 // browser tab / history entry reads meaningfully instead of the generic hub
-// name. Format mirrors `APP_TITLE`: `Sergeant — <surface>`.
+// name. Format mirrors `APP_TITLE`: `Sergeant · <surface>`.
 export const ROUTE_TITLES: Readonly<Record<string, string>> = {
-  "/status": "Sergeant — Статус системи",
-  "/chat": "Sergeant — Асистент",
-  "/assistant": "Sergeant — Що вміє Сержант",
-  "/capabilities": "Sergeant — Що вміє додаток",
-  "/pricing": "Sergeant — Тарифи",
-  "/sign-in": "Sergeant — Вхід",
-  "/reset-password": "Sergeant — Скидання пароля",
-  "/verify-email": "Sergeant — Підтвердження email",
-  "/welcome": "Sergeant — Ласкаво просимо",
+  "/status": "Sergeant · Статус системи",
+  "/chat": "Sergeant · Асистент",
+  "/assistant": "Sergeant · Що вміє Сержант",
+  "/capabilities": "Sergeant · Що вміє додаток",
+  "/pricing": "Sergeant · Тарифи",
+  "/sign-in": "Sergeant · Вхід",
+  "/reset-password": "Sergeant · Скидання пароля",
+  "/verify-email": "Sergeant · Підтвердження email",
+  "/welcome": "Sergeant · Ласкаво просимо",
   // Немає запису для "/settings" (L-1, 2026-08-08): цей pathname більше
   // ніколи не є ОСІЛОЮ локацією — `core/settings/route.tsx` редиректить
   // з нього синхронно в ефекті одразу після монтування, тож
@@ -45,12 +45,12 @@ export const ROUTE_TITLES: Readonly<Record<string, string>> = {
   // вкладку хаба (`/?tab=reports`), тож цей pathname більше ніколи не є
   // ОСІЛОЮ локацією. Хаб-вкладки власного title не мають — усі чотири
   // ділять `APP_TITLE`.
-  "/legal/privacy": "Sergeant — Політика приватності",
-  "/legal/terms": "Sergeant — Умови використання",
-  "/legal/cookies": "Sergeant — Політика cookies",
-  "/legal/offer": "Sergeant — Публічна оферта",
-  "/offline": "Sergeant — Немає зʼєднання",
-  "/500": "Sergeant — Помилка сервера",
+  "/legal/privacy": "Sergeant · Політика приватності",
+  "/legal/terms": "Sergeant · Умови використання",
+  "/legal/cookies": "Sergeant · Політика cookies",
+  "/legal/offer": "Sergeant · Публічна оферта",
+  "/offline": "Sergeant · Немає зʼєднання",
+  "/500": "Sergeant · Помилка сервера",
 };
 
 // Path-based module surfaces (`/finyk/...`, `/fizruk/...`) resolve their
@@ -77,7 +77,7 @@ export function titleForPath(pathname: string): string {
     ? (pathname.slice(1).split("/", 1)[0] ?? "")
     : "";
   const moduleTitle = MODULE_TITLES[firstSegment];
-  if (moduleTitle) return `Sergeant — ${moduleTitle}`;
+  if (moduleTitle) return `Sergeant · ${moduleTitle}`;
   return APP_TITLE;
 }
 

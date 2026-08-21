@@ -108,7 +108,7 @@ describe("LogPastWorkoutSheet", () => {
     fireEvent.change(field("Дата"), { target: { value: PAST_DAY } });
     fireEvent.change(field("Початок"), { target: { value: "23:40" } });
     fireEvent.change(field("Завершення"), { target: { value: "00:20" } });
-    expect(screen.getByText("Завершення — наступного дня.")).toBeVisible();
+    expect(screen.getByText("Завершення: наступного дня.")).toBeVisible();
   });
 
   it("не показує попередження для звичайної денної сесії", () => {
@@ -116,7 +116,7 @@ describe("LogPastWorkoutSheet", () => {
     fireEvent.change(field("Дата"), { target: { value: PAST_DAY } });
     fireEvent.change(field("Початок"), { target: { value: "10:00" } });
     fireEvent.change(field("Завершення"), { target: { value: "11:00" } });
-    expect(screen.queryByText("Завершення — наступного дня.")).toBeNull();
+    expect(screen.queryByText("Завершення: наступного дня.")).toBeNull();
   });
 
   it("не пускає майбутню дату, навіть якщо `max` обійшли", () => {
@@ -151,7 +151,7 @@ describe("LogPastWorkoutSheet", () => {
     fireEvent.change(field("Початок"), { target: { value: "23:00" } });
     fireEvent.change(field("Завершення"), { target: { value: "00:30" } });
     expect(screen.getByText(/Завершення ще не настало/)).toBeVisible();
-    expect(screen.queryByText("Завершення — наступного дня.")).toBeNull();
+    expect(screen.queryByText("Завершення: наступного дня.")).toBeNull();
   });
 
   it("описку в часі називає опискою, а не «ще не настало»", () => {

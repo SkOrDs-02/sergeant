@@ -23,7 +23,7 @@ export function PrimitivesSection() {
   return (
     <Sec id="primitives" title="Tooltip & Popover">
       {/* ── Tooltip ───────────────────────────────────────────── */}
-      <Group label="Tooltip — розміщення" row>
+      <Group label="Tooltip: розміщення" row>
         <Tooltip content="top-start" placement="top-start">
           <Button variant="secondary" size="sm">
             top-start
@@ -66,7 +66,7 @@ export function PrimitivesSection() {
         </Tooltip>
       </Group>
 
-      <Group label="Tooltip — розміри" row>
+      <Group label="Tooltip: розміри" row>
         <Tooltip content="Зберегти зміни (Ctrl+S)" size="sm">
           <Button variant="ghost" size="sm">
             size=sm
@@ -83,7 +83,7 @@ export function PrimitivesSection() {
       </Group>
 
       {/* ── Popover · menu ────────────────────────────────────── */}
-      <Group label="Popover — меню дій" row>
+      <Group label="Popover: меню дій" row>
         <Popover
           trigger={
             <Button variant="secondary" size="sm">
@@ -101,7 +101,7 @@ export function PrimitivesSection() {
       </Group>
 
       {/* ── Popover · info card ────────────────────────────────── */}
-      <Group label="Popover — info card">
+      <Group label="Popover: info card">
         <Popover
           placement="bottom-start"
           trigger={
@@ -113,7 +113,7 @@ export function PrimitivesSection() {
           label="Як рахується ліміт"
         >
           <p className="px-2 py-2 text-style-body text-muted max-w-xs">
-            Ліміт — це сума, яку ти готовий витратити цього місяця. Перевищення
+            Ліміт це сума, яку ти готовий витратити цього місяця. Перевищення
             підсвічується червоним і триггерить m-of-m попередження за 3 дні до
             перевищення тренду.
           </p>
@@ -121,7 +121,7 @@ export function PrimitivesSection() {
       </Group>
 
       {/* ── Popover · form in popover ─────────────────────────── */}
-      <Group label="Popover — форма-в-попапі">
+      <Group label="Popover: форма-в-попапі">
         <Popover
           open={filtersOpen}
           onOpenChange={setFiltersOpen}

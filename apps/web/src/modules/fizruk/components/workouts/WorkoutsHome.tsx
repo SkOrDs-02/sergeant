@@ -120,8 +120,7 @@ export function WorkoutsHome({
             Немає активного тренування
           </div>
           <div className="text-style-caption text-subtle mt-1">
-            Почни порожнє тренування, обери шаблон — або внеси те, що вже
-            провів.
+            Почни порожнє тренування, обери шаблон, або внеси те, що вже провів.
           </div>
           <div
             role="group"

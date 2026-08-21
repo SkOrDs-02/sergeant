@@ -135,7 +135,7 @@ export default defineConfig(({ mode }) => {
             // shortcut, share target) as the same installed app rather than
             // minting separate instances.
             id: "/",
-            name: "Sergeant — Твій персональний хаб життя",
+            name: "Sergeant · Твій персональний хаб життя",
             short_name: "Sergeant",
             description:
               "Персональний хаб: фінанси, спорт, звички та харчування",

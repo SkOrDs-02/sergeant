@@ -162,7 +162,7 @@ export const CompactNoAction: Story = {
   args: {
     icon: <Icon name="dumbbell" />,
     title: "Поки немає шаблонів",
-    description: "Створи свій перший — кнопка вище.",
+    description: "Створи свій перший, кнопка вище.",
     compact: true,
     module: "fizruk",
   },
@@ -193,7 +193,7 @@ export const ModuleFizruk: Story = {
   args: {
     illustration: <ModuleEmptyIllustration module="fizruk" size={120} />,
     title: "Як прогресують мої тренування?",
-    description: "Запиши перше тренування — і побачиш ріст у цифрах.",
+    description: "Запиши перше тренування, і побачиш ріст у цифрах.",
     action: (
       <Button variant="fizruk" size="md">
         Почати тренування
@@ -210,7 +210,7 @@ export const ModuleRoutine: Story = {
   args: {
     illustration: <ModuleEmptyIllustration module="routine" size={120} />,
     title: "Що насправді стало звичкою?",
-    description: "Відстежуй щоденні дії — серія днів покаже правду.",
+    description: "Відстежуй щоденні дії, серія днів покаже правду.",
     action: (
       <Button variant="routine" size="md">
         Створити звичку
@@ -250,7 +250,7 @@ export const WithHintAndExample: Story = {
     icon: <Icon name="lightbulb" />,
     title: "Готовий до першої цілі?",
     description:
-      "Додай ціль — і Sergeant порахує крок-за-кроком, як її досягти.",
+      "Додай ціль: і Sergeant порахує крок-за-кроком, як її досягти.",
     hint: "Ціль = сума + дата. Наприклад, «зекономити 50 000 грн до 31.12».",
     examplePreview: (
       <div className="text-sm text-text">

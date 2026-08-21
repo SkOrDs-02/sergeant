@@ -32,9 +32,7 @@ describe("amountStringSchema", () => {
     const r = schema.safeParse("99999999");
     expect(r.success).toBe(false);
     if (!r.success) {
-      expect(r.error.issues[0]?.message).toBe(
-        "Максимальна сума — 10 000 000 ₴",
-      );
+      expect(r.error.issues[0]?.message).toBe("Максимальна сума: 10 000 000 ₴");
     }
   });
 

@@ -315,7 +315,7 @@ export function Workouts({ testID = "fizruk-workouts" }: WorkoutsProps) {
     ? `Активне · ${activeItems.length} вправ`
     : finishedCount > 0
       ? `Завершено: ${finishedCount}`
-      : "Перше тренування — попереду";
+      : "Перше тренування попереду";
 
   return (
     <SafeAreaView
@@ -449,7 +449,7 @@ export function Workouts({ testID = "fizruk-workouts" }: WorkoutsProps) {
                         <Text className="text-[11px] text-fg-muted mt-0.5">
                           {templates.length > 0
                             ? `${templates.length} ${templates.length === 1 ? "шаблон" : "шаблонів"} · запусти одним дотиком`
-                            : "Збережи послідовність вправ — запускай в один дотик"}
+                            : "Збережи послідовність вправ, запускай в один дотик"}
                         </Text>
                       </View>
                       <Text className="text-fg-subtle text-lg">›</Text>

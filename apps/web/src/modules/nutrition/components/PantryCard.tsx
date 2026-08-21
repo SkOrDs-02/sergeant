@@ -194,9 +194,9 @@ function InventoryCard({
           description={messages.nutrition.pantryEmpty.description}
           examplePreview={
             <div className="grid gap-1 text-style-caption text-subtle">
-              <span>курка — 500 г</span>
-              <span>яйце — 10 шт</span>
-              <span>огірок — 4 шт</span>
+              <span>курка 500 г</span>
+              <span>яйце 10 шт</span>
+              <span>огірок 4 шт</span>
             </div>
           }
           hint={messages.nutrition.pantryEmpty.hint}

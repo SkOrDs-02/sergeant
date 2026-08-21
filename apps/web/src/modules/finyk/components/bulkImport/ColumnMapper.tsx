@@ -45,7 +45,7 @@ export function ColumnMapper({
   return (
     <div className="space-y-4">
       <p className="text-style-caption text-muted">
-        Не впізнав формат виписки — вкажи, яка колонка за що відповідає.
+        Не впізнав формат виписки, вкажи, яка колонка за що відповідає.
       </p>
 
       {sampleRows.length > 0 && (

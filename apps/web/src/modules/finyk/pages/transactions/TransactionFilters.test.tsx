@@ -106,7 +106,7 @@ describe("TransactionFilters — toolbar a11y (F13)", () => {
     // Доступна назва мусить містити дію — інакше скрінрідер оголосить
     // саму лише назву категорії, і незрозуміло, що кнопка знімає фільтр.
     expect(
-      screen.getByRole("button", { name: /прибрати фільтр за категорією/ }),
+      screen.getByRole("button", { name: /Прибрати фільтр за категорією/ }),
     ).toBeInTheDocument();
   });
 

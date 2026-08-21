@@ -48,7 +48,7 @@ describe("QuickAddChips", () => {
     render(<QuickAddChips chips={[CHIP]} onTap={onTap} />);
     fireEvent.click(
       screen.getByRole("button", {
-        name: "Додати Гречка — 200 грамів",
+        name: "Додати Гречка 200 грамів",
       }),
     );
     expect(onTap).toHaveBeenCalledWith(CHIP);

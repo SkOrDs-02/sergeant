@@ -27,7 +27,7 @@ function makeConfig(
     description: "Звички та щоденні цілі",
     hasGoal: true,
     emptyLabel: "Почни тут →",
-    emptyPromise: "Тут зʼявиться прогрес дня — напр.",
+    emptyPromise: "Тут зʼявиться прогрес дня, напр.",
     emptyExample: "3/5",
     getPreview: () => preview,
     ...overrides,
@@ -85,11 +85,11 @@ describe("BentoCard", () => {
 
     expect(
       screen.getByRole("button", {
-        name: "Рутина — неактивний модуль. Увімкнути в налаштуваннях Hub.",
+        name: "Рутина: неактивний модуль. Увімкнути в налаштуваннях Hub.",
       }),
     ).toHaveAttribute("data-inactive", "true");
     expect(
-      screen.getByText("Неактивний — увімкнути в налаштуваннях"),
+      screen.getByText("Неактивний: увімкнути в налаштуваннях"),
     ).toBeInTheDocument();
     expect(screen.queryByText("Серія: 3 дні")).not.toBeInTheDocument();
   });

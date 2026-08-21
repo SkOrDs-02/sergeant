@@ -48,7 +48,7 @@ export function TodaySessionCard({
             Активуй програму, щоб побачити план на сьогодні
           </Text>
           <Text className="text-sm text-fg-muted leading-snug">
-            Обери програму нижче — її сесії автоматично з&apos;являтимуться тут
+            Обери програму нижче, її сесії автоматично з&apos;являтимуться тут
             за днем тижня.
           </Text>
         </View>
@@ -67,10 +67,10 @@ export function TodaySessionCard({
             className="text-base font-semibold text-fg"
             testID={`${testID}-rest`}
           >
-            Сьогодні — вихідний
+            Сьогодні: вихідний
           </Text>
           <Text className="text-sm text-fg-muted leading-snug">
-            Наступна сесія — згідно графіка програми. Відпочинок — частина
+            Наступна сесія згідно графіка програми. Відпочинок це частина
             прогресу.
           </Text>
         </View>

@@ -117,7 +117,7 @@ export const MODULE_CONFIGS: Record<ModuleId, ModuleConfig> = {
     description: "Сьогодні витрачено",
     hasGoal: false,
     emptyLabel: "Почни тут \u2192",
-    emptyPromise: "Тут зʼявиться баланс — напр.",
+    emptyPromise: "Тут зʼявиться баланс, напр.",
     emptyExample: "450 ₴",
     // #10 — ghost sparkline: gentle rising curve (net-worth trend shape)
     ghostPath: "M0,22 L8,18 L16,20 L24,14 L32,16 L40,10 L48,12",
@@ -159,7 +159,7 @@ export const MODULE_CONFIGS: Record<ModuleId, ModuleConfig> = {
     description: "Тренування та прогрес",
     hasGoal: false,
     emptyLabel: "Почни тут \u2192",
-    emptyPromise: "Тут зʼявиться серія — напр.",
+    emptyPromise: "Тут зʼявиться серія, напр.",
     emptyExample: "5 трен.",
     // #10 — ghost sparkline: volume bars (weekly workout volume shape)
     ghostPath:
@@ -202,7 +202,7 @@ export const MODULE_CONFIGS: Record<ModuleId, ModuleConfig> = {
     description: "Звички та щоденні цілі",
     hasGoal: true,
     emptyLabel: "Почни тут \u2192",
-    emptyPromise: "Тут зʼявиться прогрес дня — напр.",
+    emptyPromise: "Тут зʼявиться прогрес дня, напр.",
     emptyExample: "3/5",
     // #10 — ghost ring at ~60 % fill to preview the daily-progress ring
     ghostRingPct: 60,
@@ -245,7 +245,7 @@ export const MODULE_CONFIGS: Record<ModuleId, ModuleConfig> = {
     description: "КБЖВ та раціон",
     hasGoal: true,
     emptyLabel: "Почни тут \u2192",
-    emptyPromise: "Тут зʼявиться КБЖВ — напр.",
+    emptyPromise: "Тут зʼявиться КБЖВ, напр.",
     emptyExample: "1250 ккал",
     // #10 — ghost ring at ~45 % fill to preview the calorie-target ring
     ghostRingPct: 45,

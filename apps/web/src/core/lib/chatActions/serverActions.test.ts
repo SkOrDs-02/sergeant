@@ -16,7 +16,7 @@ import type { ChatAction } from "./types";
  *   - 401 → авторизаційне попередження;
  *   - 503 → різні тексти за `code` (вимкнено vs провайдер лежить);
  *   - інший 5xx → загальна HTTP помилка;
- *   - timeout (AbortError) → "Recall таймаут — спробуй простіший запит";
+ *   - timeout (AbortError) → "Recall таймаут, спробуй простіший запит";
  *   - network error → "Не вдалося звʼязатися з сервером для recall.";
  *   - body normalization: top_k, sources фільтр, trim;
  *   - empty query → не дзвонимо мережу.

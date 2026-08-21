@@ -32,7 +32,7 @@ export const AMOUNT_ERROR_MESSAGE: Record<AmountParseError, string> = {
   empty: "Вкажи суму",
   "not-a-number": "Сума має бути числом",
   "too-small": "Сума має бути більше 0",
-  "too-large": "Максимальна сума — 10 000 000 ₴",
+  "too-large": "Максимальна сума: 10 000 000 ₴",
 };
 
 // Every space-ish separator a UA keyboard or a paste from a bank

@@ -173,7 +173,7 @@ export function NutritionSection() {
       <SettingsSubGroup title="Підстановка з комори">
         <p className="text-style-caption text-subtle leading-snug">
           У діалозі «Додати прийом їжі» поряд з пошуком і штрихкодом показуються
-          продукти з активної комори — їх можна вибрати одним тапом.
+          продукти з активної комори, їх можна вибрати одним тапом.
         </p>
         <label className="flex items-center gap-3 min-h-[44px]">
           <span className="text-style-label text-text flex-1 min-w-0">
@@ -199,7 +199,7 @@ export function NutritionSection() {
           </select>
         </label>
         <p className="text-style-caption text-subtle">
-          Деталі продуктів і перейменування комор — у менеджері комори всередині
+          Деталі продуктів і перейменування комор у менеджері комори всередині
           модуля Їжі.
         </p>
         <Button

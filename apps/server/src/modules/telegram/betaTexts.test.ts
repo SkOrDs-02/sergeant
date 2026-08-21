@@ -132,9 +132,9 @@ describe("helpReply", () => {
 
 describe("тексти опитування", () => {
   it("питання називає полюси шкали, а кнопки лишає короткими", () => {
-    expect(WEEKLY_PULSE_SURVEY.question).toMatch(/1 —/);
-    expect(WEEKLY_PULSE_SURVEY.question).toMatch(/5 —/);
-    // Довгий підпис Telegram ріже, і «1 — не за» виглядало б обірваним.
+    expect(WEEKLY_PULSE_SURVEY.question).toMatch(/1:/);
+    expect(WEEKLY_PULSE_SURVEY.question).toMatch(/5:/);
+    // Довгий підпис Telegram ріже, і «1: не за» виглядало б обірваним.
     for (const option of WEEKLY_PULSE_SURVEY.options) {
       expect(option.label.length).toBeLessThanOrEqual(2);
     }

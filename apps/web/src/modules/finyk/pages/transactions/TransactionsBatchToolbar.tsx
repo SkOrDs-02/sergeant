@@ -79,12 +79,12 @@ export function TransactionsBatchToolbar({
             </div>
             <div className="mt-2 rounded-xl border border-line bg-panelHi px-3 py-2 text-style-caption text-muted">
               <p>
-                <strong className="text-text">Приховати</strong> — прибере
+                <strong className="text-text">Приховати</strong>: прибере
                 операції зі звичайного списку, але їх можна повернути в
                 «Прихованих».
               </p>
               <p className="mt-1">
-                <strong className="text-text">Не враховувати</strong> — залишить
+                <strong className="text-text">Не враховувати</strong>: залишить
                 операції у списку, але не включатиме їх у підсумки та графіки.
               </p>
             </div>

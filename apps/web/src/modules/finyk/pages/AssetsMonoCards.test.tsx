@@ -35,7 +35,7 @@ describe("AssetsMonoCards", () => {
       />,
     );
     fireEvent.click(
-      screen.getByRole("button", { name: /Чорна картка — налаштування/ }),
+      screen.getByRole("button", { name: /Чорна картка: налаштування/ }),
     );
     const toggleInput = screen.getByRole("switch", {
       name: /Враховувати картку/,
@@ -72,7 +72,7 @@ describe("AssetsMonoCards", () => {
         />,
       );
       const row = screen.getByRole("button", {
-        name: /Кредитна картка — налаштування/,
+        name: /Кредитна картка: налаштування/,
       });
       // Обидва числа в одному рядку: 0 власних коштів і 12 000 боргу.
       // Пробіли-роздільники в `Money` — нерозривні, тож нормалізуємо.

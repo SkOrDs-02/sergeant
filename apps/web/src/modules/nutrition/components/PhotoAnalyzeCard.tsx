@@ -64,7 +64,7 @@ function PhotoPrivacyNotice({ onAck }: { onAck?: (() => void) | undefined }) {
     <div className="mb-3 rounded-2xl border border-line bg-panelHi p-3">
       <div className="text-style-label text-text">Куди їде фото</div>
       <p className="mt-1 text-style-caption text-muted leading-relaxed">
-        Щоб визначити КБЖВ, фото відправляється на розпізнавання до Anthropic —
+        Щоб визначити КБЖВ, фото відправляється на розпізнавання до Anthropic,
         це зовнішній сервіс. На відміну від тексту, фото ми не можемо частково
         приховати: їде весь кадр. Перевір, що в нього не потрапило зайве.
       </p>
@@ -126,17 +126,17 @@ const NOT_FOOD_COPY: Record<
     title: "Це не страва, а тваринка",
     unnamed: "На фото тваринка, а не їжа.",
     action:
-      "Краще погладь і пригости смаколиком — а для журналу зроби фото їжі.",
+      "Краще погладь і пригости смаколиком, а для журналу зроби фото їжі.",
   },
   person: {
     title: "Це людина, а не страва",
     unnamed: "На фото людина, а не їжа.",
-    action: "Наведи камеру на тарілку — або додай прийом їжі вручну.",
+    action: "Наведи камеру на тарілку, або додай прийом їжі вручну.",
   },
   other: {
     title: "Не бачу тут страви",
     unnamed: "На фото немає їжі, для якої можна порахувати КБЖВ.",
-    action: "Обери інше фото вище — або додай прийом їжі вручну.",
+    action: "Обери інше фото вище, або додай прийом їжі вручну.",
   },
 };
 
@@ -154,7 +154,7 @@ function NotFoodNotice({
       <div className="text-style-label text-text">{copy.title}</div>
       <p className="mt-1 text-style-caption text-muted leading-relaxed">
         {what
-          ? `На фото схоже на «${what}» — порахувати КБЖВ немає з чого.`
+          ? `На фото схоже на «${what}», порахувати КБЖВ немає з чого.`
           : copy.unnamed}{" "}
         {copy.action}
       </p>
@@ -417,8 +417,8 @@ export function PhotoAnalyzeCard({
                 Зберегти в журнал
               </button>
               <p className="text-style-caption text-muted text-center">
-                Сам аналіз у журнал не потрапляє — збережи, щоб він порахувався
-                в дні.
+                Сам аналіз у журнал не потрапляє, збережи, щоб він порахувався в
+                дні.
               </p>
             </div>
           )}
@@ -485,7 +485,7 @@ export function PhotoAnalyzeCard({
                 rows={2}
                 maxLength={PHOTO_NOTE_MAX_LENGTH}
                 aria-label="Що не так? Опиши своїми словами"
-                placeholder="напр. третє — не булочка, а сирник"
+                placeholder="напр. третє: не булочка, а сирник"
                 disabled={busy}
               />
             </div>
@@ -506,7 +506,7 @@ export function PhotoAnalyzeCard({
                 моделі по всьому кадру, а не точкова правка. Те, що вона
                 вгадала правильно, теж може змінитись. */}
             <p className="text-style-caption text-muted">
-              Перерахунок оновлює весь результат, а не лише те, що ти згадаєш —
+              Перерахунок оновлює весь результат, а не лише те, що ти згадаєш,
               уже правильні страви теж можуть змінитися.
             </p>
             {refining && (

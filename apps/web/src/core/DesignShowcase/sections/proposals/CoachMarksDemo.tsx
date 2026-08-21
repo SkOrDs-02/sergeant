@@ -16,8 +16,8 @@ import { ComparePair, MiniPhone } from "./_Compare";
 
 const STEPS = [
   { top: "18%", left: "8%", text: "Тут додаєш новий запис одним тапом." },
-  { top: "44%", left: "42%", text: "Свайп по картках — швидкий огляд метрик." },
-  { top: "70%", left: "20%", text: "А тут — звіти й тренди за період." },
+  { top: "44%", left: "42%", text: "Свайп по картках: швидкий огляд метрик." },
+  { top: "70%", left: "20%", text: "А тут звіти й тренди за період." },
 ] as const;
 
 export function CoachMarksDemo() {

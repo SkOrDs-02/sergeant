@@ -161,11 +161,11 @@ export function useBarcodeLookup({
       // partial = UPCitemdb found name/brand but has no nutrition data
       if (p.partial) {
         setBarcodeStatus(
-          `Знайдено: ${[p.name, p.brand].filter(Boolean).join(" — ")} — введи КБЖВ вручну.`,
+          `Знайдено: ${[p.name, p.brand].filter(Boolean).join(" · ")}, введи КБЖВ вручну.`,
         );
       } else {
         setBarcodeStatus(
-          `Знайдено: ${[p.name, p.brand].filter(Boolean).join(" — ")}`,
+          `Знайдено: ${[p.name, p.brand].filter(Boolean).join(" · ")}`,
         );
       }
     },

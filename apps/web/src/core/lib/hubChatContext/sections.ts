@@ -222,7 +222,7 @@ export function appendAiSignalLines(lines: string[]): void {
     if (recs.length > 0) {
       lines.push("[Активні рекомендації]");
       recs.forEach((r) => {
-        lines.push(`  ${r.icon} ${r.title} — ${r.body} (модуль: ${r.module})`);
+        lines.push(`  ${r.icon} ${r.title}: ${r.body} (модуль: ${r.module})`);
       });
     }
   } catch {}
@@ -232,7 +232,7 @@ export function appendAiSignalLines(lines: string[]): void {
     if (insights.length > 0) {
       lines.push("[Аналітичні інсайти]");
       insights.forEach((i) => {
-        lines.push(`  ${i.title} (${i.stat}) — ${i.detail}`);
+        lines.push(`  ${i.title} (${i.stat}): ${i.detail}`);
       });
     }
   } catch {}

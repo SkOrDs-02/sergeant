@@ -46,7 +46,7 @@ export function NoBankBanner({
               підписаний через `role="region"` + `aria-label` вище. */}
           <p className="text-style-label text-text">Без банку?</p>
           <p className="text-style-caption text-muted mt-1 leading-snug">
-            Записуй витрати вручну — або підключи Monobank, щоб транзакції
+            Записуй витрати вручну, або підключи Monobank, щоб транзакції
             підтягувались автоматично. Підключити можна пізніше з Налаштувань.
           </p>
         </div>
@@ -69,7 +69,7 @@ export function NoBankBanner({
           className="flex-1 min-h-[40px]"
           onClick={onContinueManually}
         >
-          Без банку — продовжити
+          Без банку продовжити
         </Button>
       </div>
     </Card>

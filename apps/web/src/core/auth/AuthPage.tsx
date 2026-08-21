@@ -120,7 +120,7 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
               <p className="text-style-label text-subtle mt-2">
                 {mode === "login"
                   ? "Email і пароль, Google або Apple"
-                  : "Email і пароль — мінімум 10 символів"}
+                  : "Email і пароль: мінімум 10 символів"}
               </p>
             </div>
 

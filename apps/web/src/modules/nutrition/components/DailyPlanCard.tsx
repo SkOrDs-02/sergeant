@@ -124,8 +124,8 @@ export function DailyPlanCard({
         {firstRunHint && (
           <FirstRunHintBanner
             variant="nutrition"
-            title="Це попередня ціль — потім сам поправиш"
-            description="Постав ккал/Б/Ж/В нижче або обери пресет як підказку. Цілі живуть отут ж — повертайся на цю сторінку, коли захочеш змінити."
+            title="Це попередня ціль, потім сам поправиш"
+            description="Постав ккал/Б/Ж/В нижче або обери пресет як підказку. Цілі живуть отут ж, повертайся на цю сторінку, коли захочеш змінити."
             onDismiss={onDismissFirstRunHint ?? (() => {})}
           />
         )}
@@ -332,7 +332,7 @@ export function DailyPlanCard({
 
         {pantryItems?.length === 0 && !pantryIgnored && (
           <div className="text-style-caption text-muted text-center -mt-2">
-            Додай продукти в комору — AI врахує їх у плані
+            Додай продукти в комору, AI врахує їх у плані
           </div>
         )}
 

@@ -45,7 +45,7 @@ describe("useNutritionPwaAction", () => {
   });
 
   it("handles add_meal_photo: routes to log and opens the sheet at the photo step", () => {
-    // Фото — крок AddMealSheet: шорткат більше не навігує на «Огляд» і не
+    // Фото це крок AddMealSheet: шорткат більше не навігує на «Огляд» і не
     // клікає file input синтетично — це робить сам крок при монтуванні.
     const args = makeArgs({ pwaAction: "add_meal_photo" });
     renderHook(() => useNutritionPwaAction(args));

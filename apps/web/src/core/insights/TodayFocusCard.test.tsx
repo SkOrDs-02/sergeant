@@ -351,7 +351,7 @@ describe("TodayFocusCard", () => {
       id: "routine_evening_reminder",
       module: "routine" as const,
       title: "2 звичок ще не виконано",
-      body: "Вечір — ще не пізно",
+      body: "Вечір, ще не пізно",
       icon: "✅",
       action: "routine",
     };

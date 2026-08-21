@@ -87,7 +87,7 @@ const MonthPulseCardImpl = function MonthPulseCard({
           <div className="mt-0.5 flex items-center gap-1 text-style-label text-muted">
             <span>Витрати</span>
             <Tooltip
-              content="Огляд, категорії та бюджети — у гривні (UAH). Інші валюти рахунків у загальному балансі не конвертуються автоматично."
+              content="Огляд, категорії та бюджети у гривні (UAH). Інші валюти рахунків у загальному балансі не конвертуються автоматично."
               placement="bottom-center"
             >
               <button

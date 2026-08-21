@@ -153,7 +153,7 @@ describe("PhotoAnalyzeCard", () => {
 
     expect(screen.getByText("Уточнення")).toBeInTheDocument();
     expect(
-      screen.getByPlaceholderText("напр. третє — не булочка, а сирник"),
+      screen.getByPlaceholderText("напр. третє: не булочка, а сирник"),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", {

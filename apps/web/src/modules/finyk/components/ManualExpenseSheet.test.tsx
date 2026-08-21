@@ -433,7 +433,7 @@ describe("ManualExpenseSheet — межові значення (beta-input-bound
 
     await waitFor(() => {
       expect(
-        screen.getByText("Максимальна сума — 10 000 000 ₴"),
+        screen.getByText("Максимальна сума: 10 000 000 ₴"),
       ).toBeInTheDocument();
     });
     expect(onSave).not.toHaveBeenCalled();
@@ -468,7 +468,7 @@ describe("ManualExpenseSheet — межові значення (beta-input-bound
 
     await waitFor(() => {
       expect(
-        screen.getByText("Незвична дата — перевір, чи не помилка в році"),
+        screen.getByText("Незвична дата, перевір, чи не помилка в році"),
       ).toBeInTheDocument();
     });
     fireEvent.click(screen.getByRole("button", { name: "Додати витрату" }));

@@ -346,7 +346,7 @@ export function HabitForm({
             <p className="text-style-caption text-subtle leading-snug">
               {habitDraft.recurrence === "once"
                 ? "Подія зʼявиться лише в день «Початок». Кінець можна залишити порожнім."
-                : "Орієнтир — день місяця з «Початок». У коротких місяцях (наприклад 31 → лютий) — останній день місяця."}
+                : "Орієнтир це день місяця з «Початок». У коротких місяцях (наприклад 31 → лютий): останній день місяця."}
             </p>
           )}
 
@@ -409,7 +409,7 @@ export function HabitForm({
                   setHabitDraft((d) => ({ ...d, categoryId: id || null }));
                 }}
               >
-                <option value="">— без категорії —</option>
+                <option value="">Без категорії</option>
                 {routine.categories.map((c) => (
                   // Нативний `<option>` малює лише текст — SVG-іконка туди
                   // не поміститься, тож у селекті лишається сама назва.

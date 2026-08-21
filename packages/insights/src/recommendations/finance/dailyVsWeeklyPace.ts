@@ -67,7 +67,7 @@ export const dailyVsWeeklyPaceRule: Rule<FinanceContext> = {
         module: "finyk" as const,
         priority: 72,
         icon: "⏱️",
-        title: `Сьогодні ${Math.round(todaySpend).toLocaleString("uk-UA")} ₴ — на ${pctMore}% вище середнього`,
+        title: `Сьогодні ${Math.round(todaySpend).toLocaleString("uk-UA")} ₴, на ${pctMore}% вище середнього`,
         body: `7-денна середня: ${Math.round(avgDaily).toLocaleString("uk-UA")} ₴/день. Зафіксуй поточні витрати, поки памʼятаєш.`,
         action: "finyk",
         pwaAction: "add_expense",

@@ -450,7 +450,7 @@ export function comparePeriods(action: ComparePeriodsAction): ChatActionResult {
         ? "Дохід"
         : "Витрати";
   const sign = (n: number): string => (n >= 0 ? "+" : "");
-  return `${metricTitle}: A (${aFrom} — ${aTo}) = ${a} ${unit}; B (${bFrom} — ${bTo}) = ${b} ${unit}. Різниця (A − B): ${sign(delta)}${delta} ${unit} (${sign(pct)}${pct.toFixed(1)}%).`;
+  return `${metricTitle}: A (${aFrom} – ${aTo}) = ${a} ${unit}; B (${bFrom} – ${bTo}) = ${b} ${unit}. Різниця (A − B): ${sign(delta)}${delta} ${unit} (${sign(pct)}${pct.toFixed(1)}%).`;
 }
 
 /**

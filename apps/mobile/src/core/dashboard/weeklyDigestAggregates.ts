@@ -38,7 +38,7 @@ export function getWeekRange(d = new Date()): string {
   sunday.setDate(monday.getDate() + 6);
   const fmt = (dt: Date) =>
     dt.toLocaleDateString("uk-UA", { day: "numeric", month: "short" });
-  return `${fmt(monday)} — ${fmt(sunday)}`;
+  return `${fmt(monday)} – ${fmt(sunday)}`;
 }
 
 function localDateKey(d = new Date()): string {

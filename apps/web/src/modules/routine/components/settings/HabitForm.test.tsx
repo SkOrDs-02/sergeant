@@ -194,7 +194,7 @@ describe("HabitForm – advanced options disclosure", () => {
 
   it("shows explanatory text for 'monthly' recurrence in advanced section", () => {
     render(<Harness editingId="h1" initialDraft={{ recurrence: "monthly" }} />);
-    expect(screen.getByText(/Орієнтир — день місяця/)).toBeInTheDocument();
+    expect(screen.getByText(/Орієнтир це день місяця/)).toBeInTheDocument();
   });
 
   it("renders multi-select tag chips when routine has tags (in advanced section)", () => {

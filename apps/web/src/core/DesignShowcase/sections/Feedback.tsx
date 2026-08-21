@@ -14,7 +14,7 @@ import {
   Sec,
 } from "../_shared/primitives";
 
-const SAMPLE_USAGE = `// Status pills — semantic variants, never raw colors
+const SAMPLE_USAGE = `// Status pills: semantic variants, never raw colors
 <Badge variant="success">Done</Badge>
 <Badge variant="warning">Pending</Badge>
 
@@ -29,12 +29,12 @@ export function FeedbackSection() {
       intro={
         <>
           Badge, Spinner, Skeleton, Avatar, ProgressRing, Tooltip. Анімації
-          обгорнуті в <code>motion-safe:</code>; статуси завжди через variants —
+          обгорнуті в <code>motion-safe:</code>; статуси завжди через variants,
           ніяких сирих <code>bg-green-500</code>.
         </>
       }
     >
-      <Group label="Badge — варіанти">
+      <Group label="Badge: варіанти">
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="neutral">Neutral</Badge>
           <Badge variant="accent">Accent</Badge>
@@ -45,7 +45,7 @@ export function FeedbackSection() {
         </div>
       </Group>
 
-      <Group label="Badge — модулі">
+      <Group label="Badge: модулі">
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="finyk">Finyk</Badge>
           <Badge variant="fizruk">Fizruk</Badge>
@@ -54,7 +54,7 @@ export function FeedbackSection() {
         </div>
       </Group>
 
-      <Group label="Spinner — розміри">
+      <Group label="Spinner: розміри">
         <div className="flex items-center gap-4">
           <Spinner size="xs" className="text-muted" />
           <Spinner size="sm" className="text-muted" />
@@ -71,7 +71,7 @@ export function FeedbackSection() {
         </div>
       </Group>
 
-      <Group label="Avatar — розміри + status dot">
+      <Group label="Avatar: розміри + status dot">
         <div className="flex items-center gap-4 flex-wrap">
           {(["xs", "sm", "md", "lg", "xl"] as const).map((size) => (
             <Avatar key={size} size={size} name={size.toUpperCase()} />
@@ -82,7 +82,7 @@ export function FeedbackSection() {
         </div>
       </Group>
 
-      <Group label="ProgressRing — модулі">
+      <Group label="ProgressRing: модулі">
         <div className="flex items-center gap-6 flex-wrap">
           <ProgressRing value={25} size="md" />
           <ProgressRing value={50} size="md" variant="finyk" />

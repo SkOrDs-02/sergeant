@@ -76,10 +76,10 @@ describe("formatDayRangeUk", () => {
   it("через межу місяця — обидві дати повністю", () => {
     expect(
       formatDayRangeUk("2026-07-28", "2026-08-06", { todayKey: TODAY }),
-    ).toBe("28 лип — 6 серп");
+    ).toBe("28 лип – 6 серп");
   });
 
   it("нерозпізнаний вхід лишає сирий діапазон", () => {
-    expect(formatDayRangeUk("abc", "2026-08-06")).toBe("abc — 2026-08-06");
+    expect(formatDayRangeUk("abc", "2026-08-06")).toBe("abc – 2026-08-06");
   });
 });

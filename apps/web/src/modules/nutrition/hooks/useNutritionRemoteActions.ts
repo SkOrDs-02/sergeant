@@ -371,7 +371,7 @@ export function useNutritionRemoteActions({
         // Return a synthetic payload so `onSuccess` can render the "empty day"
         // message without triggering an actual API call.
         return Promise.resolve({
-          hint: "День порожній. Додай прийом їжі — і я зможу дати підказку.",
+          hint: "День порожній. Додай прийом їжі, і я зможу дати підказку.",
           _synthetic: true,
         });
       }

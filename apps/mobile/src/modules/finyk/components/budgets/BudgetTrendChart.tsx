@@ -38,7 +38,7 @@ function BudgetTrendChartImpl({
           className="text-xs text-fg-muted text-center"
           testID={testID ? `${testID}-empty` : undefined}
         >
-          Замало даних для прогнозу — повертайся за кілька днів.
+          Замало даних для прогнозу, повертайся за кілька днів.
         </Text>
       </View>
     );

@@ -55,7 +55,7 @@ export function BreathingMeshDemo() {
               </p>
               <p className="text-lg font-semibold text-text">Доброго ранку</p>
               <p className="text-style-caption text-muted mt-1">
-                {reduced ? "Reduced motion — статично" : "Idle-дихання ~14s"}
+                {reduced ? "Reduced motion: статично" : "Idle-дихання ~14s"}
               </p>
             </div>
           </div>

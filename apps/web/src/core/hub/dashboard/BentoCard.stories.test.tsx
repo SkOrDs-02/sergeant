@@ -52,11 +52,11 @@ describe("BentoCard stories — drift guard against BentoCard.tsx", () => {
     render(<BentoCard {...composeArgs(stories.Inactive)} />);
     expect(
       screen.getByRole("button", {
-        name: "Фінік — неактивний модуль. Увімкнути в налаштуваннях Hub.",
+        name: "Фінік: неактивний модуль. Увімкнути в налаштуваннях Hub.",
       }),
     ).toHaveAttribute("data-inactive", "true");
     expect(
-      screen.getByText("Неактивний — увімкнути в налаштуваннях"),
+      screen.getByText("Неактивний: увімкнути в налаштуваннях"),
     ).toBeInTheDocument();
     // Inactive suppresses the description line entirely.
     expect(screen.queryByText("Сьогодні витрачено")).not.toBeInTheDocument();

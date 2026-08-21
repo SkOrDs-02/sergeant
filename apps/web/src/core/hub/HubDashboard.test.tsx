@@ -309,7 +309,7 @@ describe("HubDashboard", () => {
     // S6.1 / B-1 (`packages/shared/src/lib/activeModules.ts`): empty
     // vibe picks + `isOnboardingDone == false` now returns `[]`, so every
     // bento card renders in the `inactive` state and the preview slots
-    // are replaced by «Неактивний — увімкнути в налаштуваннях». Mark all
+    // are replaced by «Неактивний: увімкнути в налаштуваннях». Mark all
     // four modules as active so the preview rendering path is the one
     // actually exercised by this test.
     localStorage.setItem(

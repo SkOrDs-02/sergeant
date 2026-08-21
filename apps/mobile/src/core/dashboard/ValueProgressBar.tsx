@@ -56,7 +56,7 @@ export function ValueProgressBar({
           className="flex-row items-center gap-3 px-1"
           accessibilityRole="progressbar"
           accessibilityValue={{ now: bar.percent, min: 0, max: 100 }}
-          accessibilityLabel={`${bar.label} — ${bar.current}`}
+          accessibilityLabel={`${bar.label} · ${bar.current}`}
         >
           <View className="h-1.5 flex-1 overflow-hidden rounded-full bg-cream-200">
             <View

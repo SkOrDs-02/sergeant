@@ -18,7 +18,7 @@ describe("EmptyState — a11y", () => {
     const { container, getByText } = render(
       <EmptyState
         title="Поки немає шаблонів"
-        description="Створи свій перший — кнопка вище."
+        description="Створи свій перший, кнопка вище."
       />,
     );
     const status = container.querySelector('[role="status"]');
@@ -28,7 +28,7 @@ describe("EmptyState — a11y", () => {
     // title + description видимі і живуть всередині live-region.
     expect(status!.contains(getByText("Поки немає шаблонів"))).toBe(true);
     expect(
-      status!.contains(getByText("Створи свій перший — кнопка вище.")),
+      status!.contains(getByText("Створи свій перший, кнопка вище.")),
     ).toBe(true);
   });
 
@@ -156,7 +156,7 @@ describe("ModuleEmptyState — dismiss button a11y", () => {
         routineFirstHabit: null,
         nutritionGoal: null,
       },
-      /Встанови бюджет 12\s000₴ — додай першу витрату\./,
+      /Встанови бюджет 12\s000₴, додай першу витрату\./,
     ],
     [
       "fizruk",
@@ -166,7 +166,7 @@ describe("ModuleEmptyState — dismiss button a11y", () => {
         routineFirstHabit: null,
         nutritionGoal: null,
       },
-      "3× на тиждень — починай із першого тренування.",
+      "3× на тиждень, починай із першого тренування.",
     ],
     [
       "routine",
@@ -176,7 +176,7 @@ describe("ModuleEmptyState — dismiss button a11y", () => {
         routineFirstHabit: "reading",
         nutritionGoal: null,
       },
-      "Відстеж «Читання» — серія днів покаже правду.",
+      "Відстеж «Читання», серія днів покаже правду.",
     ],
     [
       "nutrition",
@@ -186,7 +186,7 @@ describe("ModuleEmptyState — dismiss button a11y", () => {
         routineFirstHabit: null,
         nutritionGoal: "gain",
       },
-      "Ціль «набрати масу» — залогай перший прийом їжі.",
+      "Ціль «набрати масу», залогай перший прийом їжі.",
     ],
   ] as const)(
     "personalises %s empty-state copy from onboarding goals",
@@ -213,7 +213,7 @@ describe("ModuleEmptyState — dismiss button a11y", () => {
     );
 
     expect(
-      getByText("Відстеж свою звичку — серія днів покаже правду."),
+      getByText("Відстеж свою звичку, серія днів покаже правду."),
     ).toBeInTheDocument();
   });
 });

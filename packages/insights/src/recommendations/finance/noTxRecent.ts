@@ -43,7 +43,7 @@ export const noTxRecentRule: Rule<FinanceContext> = {
         priority: 68,
         icon: "📝",
         title: `${days} ${pluralDays(days)} без запису витрат`,
-        body: "Зафіксуй найсвіжіші витрати — картина місяця буде точнішою.",
+        body: "Зафіксуй найсвіжіші витрати, картина місяця буде точнішою.",
         action: "finyk",
         pwaAction: "add_expense",
       },

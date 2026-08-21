@@ -382,7 +382,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
         {hasCardio && (
           <Card radius="lg">
             <SectionHeading as="h2" size="xs" className="mb-3" variant="fizruk">
-              Темп (хв/км) — кардіо
+              Темп (хв/км): кардіо
             </SectionHeading>
             <ExerciseProgressChart
               points={cardioData.pacePoints}
@@ -391,7 +391,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
               color={chartStatusSeries.warning}
             />
             <div className="text-style-caption text-subtle mt-1">
-              Менше — краще (швидший темп)
+              Менше краще (швидший темп)
             </div>
           </Card>
         )}
@@ -399,7 +399,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
         {hasCardio && (
           <Card radius="lg">
             <SectionHeading as="h2" size="xs" className="mb-3" variant="fizruk">
-              Дистанція (км) — кардіо
+              Дистанція (км): кардіо
             </SectionHeading>
             <ExerciseProgressChart
               points={cardioData.distPoints}
@@ -430,7 +430,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
             <EmptyState
               compact
               title="Поки немає записів"
-              description="Заверши хоча б один підхід — історія зʼявиться тут."
+              description="Заверши хоча б один підхід, історія зʼявиться тут."
             />
           ) : (
             <div className="space-y-2">

@@ -74,7 +74,7 @@ describe("computePulseStyle — without expense plan (dayBudget mode)", () => {
     });
     expect(s.color).toBe("text-warning");
     expect(s.accentLeft).toBe("border-l-warning");
-    expect(s.statusText).toBe("Обережно — майже вичерпано");
+    expect(s.statusText).toBe("Обережно: майже вичерпано");
   });
 
   it("returns danger when dayBudget < 0 (overspent)", () => {

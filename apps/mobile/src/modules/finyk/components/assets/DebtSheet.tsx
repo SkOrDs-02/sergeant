@@ -109,7 +109,7 @@ export function DebtSheet({
       open={open}
       onClose={onClose}
       title={isEditing ? "Редагувати борг" : "Новий борг"}
-      description="Скільки ти винен — повна сума."
+      description="Скільки ти винен, повна сума."
       footer={
         <View className="flex-row gap-2">
           {isEditing && onDelete ? (

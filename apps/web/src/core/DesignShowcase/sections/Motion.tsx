@@ -31,11 +31,11 @@ const SAMPLE_USAGE = `// motion-safe gates the animation under prefers-reduced-m
 
 function AmbientTier() {
   return (
-    <Group label="Tier 1 — Ambient (фонові стани)">
+    <Group label="Tier 1: Ambient (фонові стани)">
       <div className="space-y-4">
         <div>
           <p className="text-style-caption text-muted mb-2">
-            Skeleton pulse — <code>motion-safe:animate-pulse</code>
+            Skeleton pulse: <code>motion-safe:animate-pulse</code>
           </p>
           <div className="space-y-2 max-w-xs">
             <Skeleton className="h-5 w-3/4" />
@@ -45,7 +45,7 @@ function AmbientTier() {
         </div>
         <div>
           <p className="text-style-caption text-muted mb-2">
-            Spinner — <code>motion-safe:animate-spin</code>
+            Spinner: <code>motion-safe:animate-spin</code>
           </p>
           <div className="flex items-center gap-4">
             <Spinner size="xs" className="text-muted" />
@@ -72,7 +72,7 @@ function ResponseTier() {
   }
 
   return (
-    <Group label="Tier 2 — Response (реакція на дію)">
+    <Group label="Tier 2: Response (реакція на дію)">
       <div className="space-y-4">
         <div className="flex flex-wrap gap-2 mb-3">
           <Button size="sm" variant="secondary" onClick={replay}>
@@ -117,7 +117,7 @@ function ShakeDemo() {
   return (
     <div>
       <p className="text-style-caption text-muted mb-2">
-        Shake (помилка валідації) — <code>animate-shake</code>
+        Shake (помилка валідації): <code>animate-shake</code>
       </p>
       <div className="flex items-center gap-3">
         <input
@@ -142,11 +142,11 @@ function CelebrateTier() {
   const [amount, setAmount] = useState(0);
 
   return (
-    <Group label="Tier 3 — Celebrate (досягнення)">
+    <Group label="Tier 3: Celebrate (досягнення)">
       <div className="space-y-6">
         <div>
           <p className="text-style-caption text-muted mb-3">
-            StreakFlame — <code>animate-streak-glow</code>
+            StreakFlame: <code>animate-streak-glow</code>
           </p>
           <div className="flex items-end gap-4 flex-wrap">
             {[1, 7, 14, 30, 90].map((n) => (
@@ -160,7 +160,7 @@ function CelebrateTier() {
 
         <div>
           <p className="text-style-caption text-muted mb-3">
-            AnimatedCheckbox — <code>animate-check-bounce</code>
+            AnimatedCheckbox: <code>animate-check-bounce</code>
           </p>
           <div className="flex items-center gap-4 flex-wrap">
             {(
@@ -172,7 +172,7 @@ function CelebrateTier() {
                   onChange={setChecked}
                   variant={variant}
                   size="lg"
-                  aria-label={`Чекбокс — варіант ${variant}`}
+                  aria-label={`Чекбокс: варіант ${variant}`}
                 />
                 <span className="text-style-caption text-muted">{variant}</span>
               </div>
@@ -190,7 +190,7 @@ function CelebrateTier() {
 
         <div>
           <p className="text-style-caption text-muted mb-3">
-            AnimatedNumber — <code>animate-tick-up / tick-down</code>
+            AnimatedNumber: <code>animate-tick-up / tick-down</code>
           </p>
           <div className="flex items-end gap-6 flex-wrap">
             <div className="text-center">
@@ -243,10 +243,10 @@ export function MotionSection() {
       title="Motion"
       intro={
         <>
-          Бюджет — макс. 1 ambient + 1 response одночасно (конвенція,
-          review-only після ADR-0081). Кожна анімація обгорнута в{" "}
-          <code>motion-safe:</code> щоб поважати OS pref
-          <code>prefers-reduced-motion: reduce</code>. Celebrate — тільки на
+          Бюджет: макс. 1 ambient + 1 response одночасно (конвенція, review-only
+          після ADR-0081). Кожна анімація обгорнута в <code>motion-safe:</code>{" "}
+          щоб поважати OS pref
+          <code>prefers-reduced-motion: reduce</code>. Celebrate, тільки на
           milestone-моментах (7 / 30 / 100 / 365 днів).
         </>
       }

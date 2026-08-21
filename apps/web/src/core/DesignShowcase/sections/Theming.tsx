@@ -8,7 +8,7 @@ import {
 } from "../_shared/primitives";
 import { useShowcaseSettings } from "../_shared/context";
 
-const SAMPLE_USAGE = `// Toggle theme via classList — tokens cascade for free
+const SAMPLE_USAGE = `// Toggle theme via classList: tokens cascade for free
 document.documentElement.classList.toggle("dark");
 
 // In Tailwind classes, use semantic tokens — they swap automatically
@@ -37,7 +37,7 @@ const THEME_MATRIX = [
   },
   {
     label: "High contrast",
-    tone: "Toggle in showcase top-bar — bumps text + line contrast",
+    tone: "Toggle in showcase top-bar: bumps text + line contrast",
     swatches: [
       { label: "bg-bg", className: "bg-bg" },
       { label: "bg-panel", className: "bg-panel" },
@@ -54,11 +54,11 @@ export function ThemingSection() {
       title="Theming"
       intro={
         <>
-          Світла / темна / high-contrast — всі живуть на одному tokenset.
+          Світла / темна / high-contrast, всі живуть на одному tokenset.
           Перемикач у топ-барі змінює клас на <code>documentElement</code>.
-          Парні <code>dark:bg-stone-900</code> заборонено — конвенція
-          review-only (ADR-0081); механічно гейтиться лише сирий hex у className
-          (<code>check-design-conventions</code>).
+          Парні <code>dark:bg-stone-900</code> заборонено, конвенція review-only
+          (ADR-0081); механічно гейтиться лише сирий hex у className (
+          <code>check-design-conventions</code>).
         </>
       }
     >
@@ -101,15 +101,15 @@ export function ThemingSection() {
       <Group label="Schedule modes (useDarkMode)">
         <div className="space-y-2 text-style-caption text-muted">
           <p>
-            <code className="text-text">manual</code> — вручну через{" "}
+            <code className="text-text">manual</code>: вручну через{" "}
             <code>toggle()</code>. localStorage: <code>hub_dark_mode_v1</code>.
           </p>
           <p>
-            <code className="text-text">system</code> — слухаємо{" "}
+            <code className="text-text">system</code>: слухаємо{" "}
             <code>prefers-color-scheme</code>.
           </p>
           <p>
-            <code className="text-text">sunset</code> — Kyiv-широта (~50N),
+            <code className="text-text">sunset</code>: Kyiv-широта (~50N),
             apparent sunrise / sunset з cosine-апроксимацією.
           </p>
         </div>
@@ -146,7 +146,7 @@ export function ThemingSection() {
         lintRules={[
           {
             label: "check-design-conventions",
-            hint: "raw hex у className — кольори лише через токени",
+            hint: "raw hex у className, кольори лише через токени",
           },
         ]}
       />
