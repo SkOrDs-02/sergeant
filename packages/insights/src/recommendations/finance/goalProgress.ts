@@ -49,7 +49,7 @@ export const goalProgressRule: Rule<FinanceContext> = {
         id: `goal_almost_${g.id || g.name || "unnamed"}`,
         module: "finyk" as const,
         priority: 65,
-        icon: "🎯",
+        icon: "target",
         title: `Ціль "${g.name ?? ""}" майже досягнута`,
         body: `Залишилось ${Math.round(remaining).toLocaleString("uk-UA")} ₴ (${Math.round(p * 100)}%)`,
         action: "finyk",

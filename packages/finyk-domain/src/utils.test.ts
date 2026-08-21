@@ -91,7 +91,7 @@ describe("getCategory (expense)", () => {
         categoryId: "cafe",
         source: "manual",
       }).label,
-    ).toBe("☕ Кафе та ресторани");
+    ).toBe("Кафе та ресторани");
   });
 
   it("ручний `food` і legacy `groceries` дають один підпис — канонічний", () => {
@@ -102,16 +102,19 @@ describe("getCategory (expense)", () => {
         categoryId,
         source: "manual",
       }).label;
-    expect(label("food")).toBe("🛒 Продукти");
+    expect(label("food")).toBe("Продукти");
     // `groceries` більше не в пікері, але вже лежить у сховищі — має
     // резолвитись, а не ставати «Інше».
-    expect(label("groceries")).toBe("🛒 Продукти");
+    expect(label("groceries")).toBe("Продукти");
   });
 
   // Знайдено браузерною перевіркою 2026-08-13: запис Ери 1–2 малювався
   // в стрічці як «Інше», хоча форма редагування того ж запису показувала
   // правильну категорію — `upgradeCategory` жила лише у формі, а рядок
   // ходив через цей резолвер.
+  // Вхідні рядки лишаються з емодзі навмисно: саме в такій формі Ера 2
+  // лежить у сховищі, і `stripCategoryEmoji` мусить її розібрати. Емодзі
+  // прибрано з ВИХОДУ (підписів), не зі старих даних.
   it("піднімає підписи Ер 1–2 до слага замість падіння в «Інше»", () => {
     const label = (categoryId: string) =>
       getExpenseCategoryForTransaction({
@@ -120,11 +123,11 @@ describe("getCategory (expense)", () => {
         categoryId,
         source: "manual",
       }).label;
-    expect(label("🍴 їжа")).toBe("🛒 Продукти");
-    expect(label("їжа")).toBe("🛒 Продукти");
-    expect(label("продукти")).toBe("🛒 Продукти");
-    expect(label("🚗 транспорт")).toBe("🚗 Транспорт");
-    expect(label("одяг")).toBe("🛍 Покупки");
+    expect(label("🍴 їжа")).toBe("Продукти");
+    expect(label("їжа")).toBe("Продукти");
+    expect(label("продукти")).toBe("Продукти");
+    expect(label("🚗 транспорт")).toBe("Транспорт");
+    expect(label("одяг")).toBe("Покупки");
   });
 
   // Порядок усередині резолвера: кастомні ПЕРЕД легасі-мапою. Інакше

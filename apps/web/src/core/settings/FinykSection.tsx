@@ -56,8 +56,8 @@ export function FinykSection() {
       <SettingsGroup title="Фінік" icon="credit-card" module="finyk">
         <SettingsSubGroup title="Власні категорії витрат">
           <p className="text-style-caption text-subtle leading-snug">
-            Додаються до списку категорій у транзакціях, сплітах і лімітах
-            (можна вказати емодзі на початку назви).
+            Додаються до списку категорій у транзакціях, сплітах і лімітах.
+            Іконку підбираємо автоматично — емодзі в назві не потрібне.
           </p>
           <div className="flex gap-2">
             <input

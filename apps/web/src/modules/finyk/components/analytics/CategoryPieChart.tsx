@@ -3,6 +3,7 @@ import { chartHex } from "@sergeant/design-tokens/tokens";
 import { cn } from "@shared/lib/ui/cn";
 import { Money } from "@shared/components/ui/Money";
 import { Icon } from "@shared/components/ui/Icon";
+import { stripLeadingEmoji } from "../txRowHelpers";
 
 // Convert a polar angle (0° = 12 o'clock, clockwise) to cartesian coordinates.
 function polarToXY(cx: number, cy: number, r: number, angleDeg: number) {
@@ -268,7 +269,7 @@ function CategoryPieChartComponent({
                 style={{ background: arc.color }}
               />
               <span className="text-text truncate flex-1 min-w-0 text-style-caption">
-                {arc.label}
+                {stripLeadingEmoji(arc.label)}
               </span>
               {(() => {
                 // `arc.pct` is the fraction of `total` (0..1), not a
@@ -300,7 +301,8 @@ function CategoryPieChartComponent({
             const pctInt = Math.round(arc.pct * 100);
             return (
               <li key={arc.categoryId}>
-                {arc.label}: {arc.spent.toLocaleString("uk-UA")} ₴ (
+                {stripLeadingEmoji(arc.label)}:{" "}
+                {arc.spent.toLocaleString("uk-UA")} ₴ (
                 {pctInt < 1 ? "менше 1" : pctInt}%)
               </li>
             );
