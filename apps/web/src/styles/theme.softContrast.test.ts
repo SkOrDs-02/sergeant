@@ -87,6 +87,54 @@ const MODULE_FAMILIES = [
   "nutrition",
 ] as const;
 
+describe("статуси як ТЕКСТ (--c-{status}-ink) на поверхнях ≥ 4.5:1", () => {
+  // AI-CONTEXT (2026-08-21): `text-{status}-strong` резолвиться в
+  // `--c-{status}-ink`, а не в літерал пресету. До цієї зміни текстовий тир
+  // був спільний зі світлою заливкою (red-800), і в темній темі помилка
+  // форми виходила 1.9:1 — темно-червоне по темному. Ручні `dark:`-пари в
+  // className, якими це лікували раніше, гейта не мали й мовчки пропустили
+  // третину місць; змінна має гейт — оцей.
+  for (const [theme, variables] of Object.entries(THEMES)) {
+    for (const status of ["success", "warning", "danger", "info"] as const) {
+      for (const surface of ["c-bg", "c-panel", "c-panel-hi"] as const) {
+        it(`${theme}: c-${status}-ink on ${surface} is at least 4.5:1`, () => {
+          const foreground = variables[`c-${status}-ink`];
+          const background = variables[surface];
+          expect(foreground).toBeDefined();
+          expect(background).toBeDefined();
+          expect(contrast(foreground!, background!)).toBeGreaterThanOrEqual(
+            4.5,
+          );
+        });
+      }
+    }
+  }
+});
+
+describe("нейтральна драбина тексту на поверхнях ≥ 4.5:1 (light + dark)", () => {
+  // AI-DANGER: `c-subtle` тут МУСИТЬ триматися 4.5, а не 3:1. Токен носить
+  // 12px-підписи, а послаблення WCAG до 3:1 діє від 18.66px bold / 24px
+  // regular. На старому темному значенні (#5f6b64, 3.22 на картці) axe
+  // давав `[serious] color-contrast` на `/settings [dark]`, і полагоджено
+  // було точково — доки борг лишався системним. Не опускай поріг.
+  for (const theme of ["light", "dark"] as const) {
+    const variables = THEMES[theme];
+    for (const role of ["c-text", "c-muted", "c-subtle"] as const) {
+      for (const surface of ["c-bg", "c-panel", "c-panel-hi"] as const) {
+        it(`${theme}: ${role} on ${surface} is at least 4.5:1`, () => {
+          const foreground = variables[role];
+          const background = variables[surface];
+          expect(foreground).toBeDefined();
+          expect(background).toBeDefined();
+          expect(contrast(foreground!, background!)).toBeGreaterThanOrEqual(
+            4.5,
+          );
+        });
+      }
+    }
+  }
+});
+
 describe("HC text hierarchy vs surfaces is at least 7:1 (AAA contract)", () => {
   for (const scope of ["hc", "darkHc"] as const) {
     const variables = THEMES[scope];
