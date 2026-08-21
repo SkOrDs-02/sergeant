@@ -175,12 +175,12 @@ PR, але той самий клас.
 
 `DEFAULT_SUBSCRIPTIONS[].emoji` (7 гліфів у `finyk-domain/constants.ts`) сюди
 **не** належить, хоч на перший погляд і виглядає мертвим: у вебі імпортерів
-справді нема, але `apps/mobile/.../budgetsStore.ts:154` сідає з нього, а
+справді нема, але `apps/mobile/src/modules/finyk/lib/budgetsStore.ts:154` сідає з нього, а
 `SubscriptionRow` цей гліф малює. Тобто це жива частина §5.1, не смітник.
 
 ### 5.5 Дубль таблиці підписів рахунку
 
-`apps/web/.../lib/accountVisual.ts` існував тому, що `getAccountLabel` домену
+`apps/web/src/modules/finyk/lib/accountVisual.ts` існував тому, що `getAccountLabel` домену
 ніс емодзі. Тепер обидві таблиці чисті, тож дубль лишився без причини —
 зведення в одну варте окремого PR.
 
