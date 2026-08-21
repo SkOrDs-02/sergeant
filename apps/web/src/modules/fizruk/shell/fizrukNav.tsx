@@ -102,3 +102,11 @@ export const FIZRUK_NAV: readonly FizrukNavItem[] = [
     ),
   },
 ] as const;
+
+/**
+ * Порядок вкладок для горизонтального свайпу (`SwipePages`) — той самий, що
+ * й у нижній навігації, тож жест і смужка табів рухаються в один бік.
+ */
+export const SWIPE_PAGE_IDS: readonly FizrukNavItem["id"][] = FIZRUK_NAV.map(
+  (item) => item.id,
+);

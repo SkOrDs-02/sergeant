@@ -121,8 +121,6 @@ vi.mock("./components/SyncIndicator", () => ({
     text: "не підключено",
     pill: "bg-panelHi text-muted border-line",
   })),
-  SwipeProgressBar: () => null,
-  SWIPE_THRESHOLD_PX: 80,
 }));
 
 const swipeState = vi.hoisted(() => ({
@@ -133,6 +131,7 @@ const swipeState = vi.hoisted(() => ({
   },
 }));
 vi.mock("@shared/hooks/useSwipeNavigation", () => ({
+  SWIPE_DEAD_ZONE_PX: 12,
   useSwipeNavigation: vi.fn(
     (opts: { onSwipeLeft?: () => void; onSwipeRight?: () => void }) => {
       swipeState.handlers = opts;
@@ -668,19 +667,18 @@ describe("FinykApp (extra) — EyeClosedIcon when showBalance=false", () => {
   });
 });
 
-// ── getSwipeStyle: non-zero swipeDx ──────────────────────────────────────────
+// ── Мід-жест рендер: сторінка лишається на місці ─────────────────────────────
 
-describe("FinykApp (extra) — getSwipeStyle with non-zero dragDx", () => {
+describe("FinykApp (extra) — mid-drag render", () => {
   afterEach(() => {
     swipeState.dragDx = 0;
   });
 
-  it("applies translate3d transform when swipeDx != 0", () => {
+  it("keeps rendering the page while a drag offset is live", () => {
     swipeState.dragDx = 60;
-    // Re-render with non-zero dragDx → getSwipeStyle returns translate style
     render(<FinykApp />);
-    // The component renders without crashing; the style is applied inline.
-    // Verify the page content still renders.
+    // `SwipePages` кладе інлайн-transform на обгортку; вміст модуля від цього
+    // не зникає. Сама трансформація перевіряється в `SwipePages.test.tsx`.
     expect(screen.getByTestId("finyk-overview")).toBeInTheDocument();
   });
 });

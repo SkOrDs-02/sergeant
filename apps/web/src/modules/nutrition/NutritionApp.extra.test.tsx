@@ -415,6 +415,9 @@ vi.mock("@shared/components/layout", () => ({
   ModuleAccentProvider: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="module-accent-provider">{children}</div>
   ),
+  SwipePages: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="swipe-pages">{children}</div>
+  ),
 }));
 
 // PullToRefresh exposes onRefresh and onError

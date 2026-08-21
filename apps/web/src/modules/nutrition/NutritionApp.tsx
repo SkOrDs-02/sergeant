@@ -25,6 +25,7 @@ import { FloatingActionButton } from "@shared/components/ui/FloatingActionButton
 import {
   MeshBackground,
   ModuleAccentProvider,
+  SwipePages,
 } from "@shared/components/layout";
 import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
 import { requestCloudPull } from "@shared/lib/modules/cloudPullRequest";
@@ -39,6 +40,7 @@ import { useNutritionSqliteReadTick } from "./lib/sqliteReadGate";
 import { useShoppingList } from "./hooks/useShoppingList";
 import { useNutritionUiState } from "./hooks/useNutritionUiState";
 import { useNutritionRoute } from "./hooks/useNutritionRoute";
+import { NUTRITION_PAGE_IDS } from "./lib/nutritionRouter";
 import type {
   NutritionPage,
   PantrySubTab,
@@ -449,125 +451,133 @@ export default function NutritionApp({
           onOpenSettings={onOpenSettings}
         />
 
-        <PullToRefresh
-          onRefresh={handlePullRefresh}
-          onError={handlePullRefreshError}
-          variant="nutrition"
-          enabled={!cloudPullPending}
+        <SwipePages
+          ids={NUTRITION_PAGE_IDS}
+          activeId={activePage}
+          onChange={setActivePageAndHash}
         >
-          <div className="max-w-2xl mx-auto px-4 pt-4 pb-6 w-full min-w-0 overflow-x-hidden">
-            <NutritionPantrySelector pantry={pantry} busy={busy} />
+          <PullToRefresh
+            onRefresh={handlePullRefresh}
+            onError={handlePullRefreshError}
+            variant="nutrition"
+            enabled={!cloudPullPending}
+          >
+            <div className="max-w-2xl mx-auto px-4 pt-4 pb-6 w-full min-w-0 overflow-x-hidden">
+              <NutritionPantrySelector pantry={pantry} busy={busy} />
 
-            {/* Photo analyze/refine status renders inline inside the
+              {/* Photo analyze/refine status renders inline inside the
                 AddMealSheet photo step (`PhotoStep` owns its own busy/err
                 state), so this banner only carries the flows without an
                 in-place anchor: pantry list parsing, recipe/day-plan
                 fetches, … */}
-            {statusText && <Banner className="mb-4">{statusText}</Banner>}
-            {err && (
-              <Banner
-                variant="danger"
-                className="mb-4 flex items-start justify-between gap-3"
-                role="alert"
-              >
-                <span>{err}</span>
-                <button
-                  type="button"
-                  onClick={() => setErr("")}
-                  aria-label="Закрити повідомлення про помилку"
-                  className="min-h-11 min-w-11 shrink-0 rounded-xl text-lg leading-none hover:bg-danger/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+              {statusText && <Banner className="mb-4">{statusText}</Banner>}
+              {err && (
+                <Banner
+                  variant="danger"
+                  className="mb-4 flex items-start justify-between gap-3"
+                  role="alert"
                 >
-                  ×
-                </button>
-              </Banner>
-            )}
-            {storageBanner && (
-              <Banner variant="warning" className="mb-4">
-                {storageBanner}
-              </Banner>
-            )}
-
-            <div className="grid gap-4 min-w-0">
-              {activePage === "start" && (
-                <NutritionStartPage
-                  log={log}
-                  prefs={prefs}
-                  setActivePageAndHash={setActivePageAndHash}
-                  fetchDayHint={fetchDayHint}
-                  dayHintText={dayHintText}
-                  dayHintBusy={dayHintBusy}
-                  onRequestAddMeal={handleRequestAddMeal}
-                />
+                  <span>{err}</span>
+                  <button
+                    type="button"
+                    onClick={() => setErr("")}
+                    aria-label="Закрити повідомлення про помилку"
+                    className="min-h-11 min-w-11 shrink-0 rounded-xl text-lg leading-none hover:bg-danger/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+                  >
+                    ×
+                  </button>
+                </Banner>
+              )}
+              {storageBanner && (
+                <Banner variant="warning" className="mb-4">
+                  {storageBanner}
+                </Banner>
               )}
 
-              {activePage === "pantry" && (
-                <NutritionPantryPage
-                  pantry={pantry}
-                  shopping={shopping}
-                  recipes={recipes}
-                  weekPlan={weekPlan}
-                  shoppingBusy={shoppingBusy}
-                  busy={busy}
-                  pantrySubTab={pantrySubTab}
-                  setPantrySubTab={(id) => setPantrySubTab(id as PantrySubTab)}
-                  pantryScanStatus={pantryScanStatus}
-                  setPantryScanStatus={setPantryScanStatus}
-                  setPantryScannerOpen={setPantryScannerOpen}
-                  pantryBarcodeNotice={pantryBarcodeNotice}
-                  onRetryPantryBarcode={retryPantryBarcodeLookup}
-                  onDismissPantryBarcodeNotice={dismissPantryBarcodeNotice}
-                  toast={toast}
-                  generateShoppingList={generateShoppingList}
-                  addCheckedItemsToPantry={addCheckedItemsToPantry}
-                />
-              )}
+              <div className="grid gap-4 min-w-0">
+                {activePage === "start" && (
+                  <NutritionStartPage
+                    log={log}
+                    prefs={prefs}
+                    setActivePageAndHash={setActivePageAndHash}
+                    fetchDayHint={fetchDayHint}
+                    dayHintText={dayHintText}
+                    dayHintBusy={dayHintBusy}
+                    onRequestAddMeal={handleRequestAddMeal}
+                  />
+                )}
 
-              {activePage === "log" && (
-                <NutritionLogPage
-                  log={log}
-                  toast={toast}
-                  setEditingMeal={setEditingMeal}
-                  onOpenAddMeal={handleOpenAddMeal}
-                />
-              )}
+                {activePage === "pantry" && (
+                  <NutritionPantryPage
+                    pantry={pantry}
+                    shopping={shopping}
+                    recipes={recipes}
+                    weekPlan={weekPlan}
+                    shoppingBusy={shoppingBusy}
+                    busy={busy}
+                    pantrySubTab={pantrySubTab}
+                    setPantrySubTab={(id) =>
+                      setPantrySubTab(id as PantrySubTab)
+                    }
+                    pantryScanStatus={pantryScanStatus}
+                    setPantryScanStatus={setPantryScanStatus}
+                    setPantryScannerOpen={setPantryScannerOpen}
+                    pantryBarcodeNotice={pantryBarcodeNotice}
+                    onRetryPantryBarcode={retryPantryBarcodeLookup}
+                    onDismissPantryBarcodeNotice={dismissPantryBarcodeNotice}
+                    toast={toast}
+                    generateShoppingList={generateShoppingList}
+                    addCheckedItemsToPantry={addCheckedItemsToPantry}
+                  />
+                )}
 
-              {activePage === "menu" && (
-                <NutritionMenuPage
-                  menuSubTab={menuSubTab}
-                  setMenuSubTab={(id) => setMenuSubTab(id as MenuSubTab)}
-                  pantry={pantry}
-                  prefs={prefs}
-                  setPrefs={setPrefs}
-                  busy={busy}
-                  err={err}
-                  dayPlan={dayPlan}
-                  dayPlanBusy={dayPlanBusy}
-                  dayPlanQuery={dayPlanQuery}
-                  dayPlanSavedAt={dayPlanSavedAt}
-                  dayPlanLoadingSkeleton={dayPlanLoadingSkeleton}
-                  fetchDayPlan={fetchDayPlan}
-                  addMealFromPlan={addMealFromPlan}
-                  weekPlan={weekPlan}
-                  weekPlanRaw={weekPlanRaw}
-                  weekPlanBusy={weekPlanBusy}
-                  fetchWeekPlan={fetchWeekPlan}
-                  firstRunHint={firstRunNutritionActive}
-                  onDismissFirstRunHint={() => {
-                    markNutritionSeen();
-                    setFirstRunNutritionSurface(false);
-                  }}
-                  recommendRecipes={recommendRecipes}
-                  recipes={recipes}
-                  recipesTried={recipesTried}
-                  recipesRaw={recipesRaw}
-                  recipeCacheEntry={recipeCacheEntry}
-                  wrappedSaveMeal={wrappedSaveMeal}
-                  selectedDate={log.selectedDate}
-                />
-              )}
+                {activePage === "log" && (
+                  <NutritionLogPage
+                    log={log}
+                    toast={toast}
+                    setEditingMeal={setEditingMeal}
+                    onOpenAddMeal={handleOpenAddMeal}
+                  />
+                )}
+
+                {activePage === "menu" && (
+                  <NutritionMenuPage
+                    menuSubTab={menuSubTab}
+                    setMenuSubTab={(id) => setMenuSubTab(id as MenuSubTab)}
+                    pantry={pantry}
+                    prefs={prefs}
+                    setPrefs={setPrefs}
+                    busy={busy}
+                    err={err}
+                    dayPlan={dayPlan}
+                    dayPlanBusy={dayPlanBusy}
+                    dayPlanQuery={dayPlanQuery}
+                    dayPlanSavedAt={dayPlanSavedAt}
+                    dayPlanLoadingSkeleton={dayPlanLoadingSkeleton}
+                    fetchDayPlan={fetchDayPlan}
+                    addMealFromPlan={addMealFromPlan}
+                    weekPlan={weekPlan}
+                    weekPlanRaw={weekPlanRaw}
+                    weekPlanBusy={weekPlanBusy}
+                    fetchWeekPlan={fetchWeekPlan}
+                    firstRunHint={firstRunNutritionActive}
+                    onDismissFirstRunHint={() => {
+                      markNutritionSeen();
+                      setFirstRunNutritionSurface(false);
+                    }}
+                    recommendRecipes={recommendRecipes}
+                    recipes={recipes}
+                    recipesTried={recipesTried}
+                    recipesRaw={recipesRaw}
+                    recipeCacheEntry={recipeCacheEntry}
+                    wrappedSaveMeal={wrappedSaveMeal}
+                    selectedDate={log.selectedDate}
+                  />
+                )}
+              </div>
             </div>
-          </div>
-        </PullToRefresh>
+          </PullToRefresh>
+        </SwipePages>
 
         {(activePage === "start" || activePage === "log") && (
           <FloatingActionButton

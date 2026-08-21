@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, Suspense } from "react";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
-import { useSwipeNavigation } from "@shared/hooks/useSwipeNavigation";
 import { useMonobank } from "./hooks/useMonobank";
 import { usePrivatbank } from "./hooks/usePrivatbank";
 import { useStorage } from "./hooks/useStorage";
@@ -16,6 +15,7 @@ import {
   ModuleHeaderBackButton,
   ModuleHeaderHubButton,
   ModuleHeaderSettingsButton,
+  SwipePages,
 } from "@shared/components/layout";
 import { NoBankBanner } from "./components/NoBankBanner";
 import { FinykManualExpenseConflictBanner } from "./components/FinykManualExpenseConflictBanner";
@@ -49,17 +49,8 @@ import { useFinykReceiptLinks } from "./hooks/useFinykReceiptLinks";
 import { useMonoTokenMigration } from "./hooks/useMonoTokenMigration";
 import { consumePresetPrefill } from "../../core/onboarding/presetPrefill";
 import { useModuleFirstRun } from "../../core/onboarding/useModuleFirstRun";
-import {
-  getSyncTone,
-  SwipeProgressBar,
-  SWIPE_THRESHOLD_PX,
-} from "./components/SyncIndicator";
-import {
-  AuthErrorBanner,
-  FinykHeaderIcon,
-  SyncPill,
-  getSwipeStyle,
-} from "./FinykAppChrome";
+import { getSyncTone } from "./components/SyncIndicator";
+import { AuthErrorBanner, FinykHeaderIcon, SyncPill } from "./FinykAppChrome";
 
 const PRIVAT_ENABLED = false;
 
@@ -213,27 +204,6 @@ export default function App({
   // has ever been linked — clientInfo is null until the first successful sync.
   const syncTone = getSyncTone(mergedMono?.syncState, hasConnectedProvider);
   const showSyncPill = hasConnectedProvider;
-
-  // Swipe navigation
-  const curPageIdx = NAV_IDS.indexOf(page);
-  const swipe = useSwipeNavigation({
-    onSwipeLeft: () => {
-      const next = NAV_IDS[curPageIdx + 1];
-      if (next === undefined) return;
-      preloadFinykPage(next);
-      navigate(next);
-    },
-    onSwipeRight: () => {
-      const next = NAV_IDS[curPageIdx - 1];
-      if (next === undefined) return;
-      preloadFinykPage(next);
-      navigate(next);
-    },
-    threshold: SWIPE_THRESHOLD_PX,
-    atStart: curPageIdx === 0,
-    atEnd: curPageIdx === NAV_IDS.length - 1,
-  });
-  const swipeDx = swipe.dragDx;
 
   // Auto-close login overlay on successful connect
   if (clientInfo && showLoginOverlay) {
@@ -433,23 +403,18 @@ export default function App({
 
         <FinykManualExpenseConflictBanner />
 
-        <div
-          className="flex-1 overflow-hidden flex flex-col min-h-0 touch-pan-y relative"
-          onTouchStart={swipe.onTouchStart}
-          onTouchMove={swipe.onTouchMove}
-          onTouchEnd={swipe.onTouchEnd}
+        <SwipePages
+          ids={NAV_IDS}
+          activeId={page}
+          onChange={(next) => {
+            preloadFinykPage(next);
+            navigate(next);
+          }}
         >
-          <SwipeProgressBar swipeDx={swipeDx} threshold={SWIPE_THRESHOLD_PX} />
-          <div
-            key={`page-${page}`}
-            className="flex-1 overflow-hidden flex flex-col min-h-0 motion-safe:animate-fade-in"
-            style={getSwipeStyle(swipeDx)}
-          >
-            <Suspense fallback={<ModulePageLoader module="finyk" />}>
-              {renderPage()}
-            </Suspense>
-          </div>
-        </div>
+          <Suspense fallback={<ModulePageLoader module="finyk" />}>
+            {renderPage()}
+          </Suspense>
+        </SwipePages>
 
         {!showLoginOverlay && (
           <FinykScanEntryPoints
@@ -563,5 +528,5 @@ export default function App({
   );
 }
 
-// FinykHeaderIcon / SyncPill / AuthErrorBanner / getSwipeStyle extracted to
+// FinykHeaderIcon / SyncPill / AuthErrorBanner extracted to
 // `./FinykAppChrome` (Hard Rule #18 headroom — see that file's docstring).
