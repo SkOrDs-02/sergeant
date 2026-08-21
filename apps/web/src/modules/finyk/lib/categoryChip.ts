@@ -16,6 +16,23 @@ import type { CSSProperties } from "react";
 import { resolveCatTiers } from "@sergeant/finyk-domain/domain/categories";
 
 /**
+ * Звуження `unknown` до мінімуму, який потрібен `catChipVars`.
+ *
+ * Частина викликачів тримає список категорій у широкій формі
+ * (`readonly unknown[]` — так його приймає
+ * `mergeExpenseCategoryDefinitions`), тож без цього предиката чип довелось
+ * би приводити кастом-кастом-ом на місці. Форма та сама, що в
+ * `isCustomCategoryInput` домену.
+ */
+export function isCategoryIdLike(value: unknown): value is { id: string } {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof (value as { id?: unknown }).id === "string"
+  );
+}
+
+/**
  * Змінні одного чипа.
  *
  * `customCategories` потрібен лише кастомним категоріям — вбудовані

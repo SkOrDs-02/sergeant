@@ -5,7 +5,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
-import { Icon } from "@shared/components/ui/Icon";
+import { Icon, type IconName } from "@shared/components/ui/Icon";
 import { Button } from "@shared/components/ui/Button";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { Tooltip } from "@shared/components/ui/Tooltip";
@@ -99,7 +99,7 @@ function ItemRow({
 }
 
 interface CategorySectionProps {
-  cat: Pick<FoodCategory, "id" | "emoji" | "label">;
+  cat: Pick<FoodCategory, "id" | "iconName" | "label">;
   items: Array<{ item: PantryItemView; idx: number }>;
   editItemAt: (idx: number) => void;
   removeItemAtOrByName: (idx: number, name?: string) => void;
@@ -126,9 +126,12 @@ function CategorySection({
       >
         <span className="flex items-center gap-2 min-w-0">
           <ChevronIcon open={open} />
-          <span className="text-sm" aria-hidden>
-            {cat.emoji}
-          </span>
+          <Icon
+            name={cat.iconName as IconName}
+            size={16}
+            className="text-nutrition shrink-0"
+            aria-hidden
+          />
           <span className="text-style-label text-text truncate">
             {cat.label}
           </span>

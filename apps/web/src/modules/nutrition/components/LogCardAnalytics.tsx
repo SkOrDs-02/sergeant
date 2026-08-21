@@ -15,6 +15,7 @@ import {
   topMeals,
 } from "../lib/nutritionStats";
 import { MEAL_ORDER, MEAL_META } from "../lib/mealTypes";
+import { Icon, type IconName } from "@shared/components/ui/Icon";
 import type { NutritionLog } from "@sergeant/nutrition-domain";
 
 interface LogCardAnalyticsProps {
@@ -170,8 +171,16 @@ export function LogCardAnalytics({ log, selectedDate }: LogCardAnalyticsProps) {
                     key={t}
                     className="flex items-baseline justify-between gap-2"
                   >
-                    <span className="text-style-caption text-text">
-                      {MEAL_META[t]?.emoji} {MEAL_META[t]?.label || t}
+                    <span className="text-style-caption text-text inline-flex items-center gap-1.5">
+                      {MEAL_META[t] && (
+                        <Icon
+                          name={MEAL_META[t].iconName as IconName}
+                          size={14}
+                          className="text-muted"
+                          aria-hidden
+                        />
+                      )}
+                      {MEAL_META[t]?.label || t}
                     </span>
                     <span className="text-style-caption text-muted shrink-0">
                       <Measure value={s.count} unit="" />× ·{" "}

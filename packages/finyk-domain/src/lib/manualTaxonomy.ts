@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-08-13
+ * Last validated: 2026-08-21
  * Status: Active
  *
  * Таксономія категорій РУЧНОЇ операції Фініка — одна таблиця на весь
@@ -19,24 +19,35 @@
  * Розходились вони по-різному й непомітно: `utilities` мала колір, але
  * не мала іконки; `cafe` мала колір, але в бюджетах лишалась окремою
  * категорією замість `restaurant`. Тому тут ОДИН рядок на категорію
- * несе всі чотири факти, а кожен споживач бере свою колонку.
+ * несе всі факти, а кожен споживач бере свою колонку.
+ *
+ * AI-CONTEXT (2026-08-21): до цієї дати рядок мав ще й колонку `emoji`,
+ * а `taxonomyLabel()` клеїла її перед підписом — резолвери віддавали
+ * `"🛒 Продукти"`. Гліф малювався системним емодзі-шрифтом, тобто
+ * по-різному на кожній ОС, не брав `currentColor` і не мав теми; ті
+ * поверхні, що вже малювали іконку, зрізали його рядком
+ * (`stripLeadingEmoji`), а ті, що не знали про це, показували емодзі як
+ * «іконку». Звідси репорт тестувальника: у картці ліміту емодзі було, у
+ * рядку транзакції — справжня іконка. Тепер `label` завжди чистий, а
+ * гліф бере `iconName`. Той самий крок Рутина зробила 2026-08-03
+ * (`packages/routine-domain/src/glyphs.ts`).
  *
  * Правити тут — не в похідних мапах.
  */
 
+import type { CategoryIconName } from "./categoryIcons.js";
+
 export interface ManualCategoryDef {
   /** Id, що лягає у сховище (Era 3 slug). */
   readonly id: string;
-  /** Підпис без емодзі — те, що бачить людина в чипі. */
+  /** Підпис, який бачить людина в чипі. Ніколи не містить емодзі. */
   readonly label: string;
   /**
-   * Емодзі-префікс для legacy-форми підпису (`"🛒 Продукти"`), яку віддають
-   * `getCategory`-подібні резолвери. UI-и, що малюють іконку, зрізають
-   * його — див. `stripLeadingEmoji`.
+   * Slug гліфа із закритого набору `CATEGORY_ICON_SLUGS`
+   * (`./categoryIcons.ts`). Тип — лише на рівні типів, тож рантайм-циклу
+   * між модулями немає.
    */
-  readonly emoji: string;
-  /** Ім'я іконки зі спільного набору (`@shared/components/ui/Icon`). */
-  readonly iconName: string;
+  readonly iconName: CategoryIconName;
   /**
    * Канонічна категорія MCC-каталогу, у яку ця ручна категорія
    * агрегується в бюджетах, аналітиці й палітрі. Дорівнює `id` для
@@ -56,7 +67,6 @@ export const MANUAL_EXPENSE_TAXONOMY: readonly ManualCategoryDef[] = [
   {
     id: "food",
     label: "Продукти",
-    emoji: "🛒",
     iconName: "shopping-cart",
     canonicalId: "food",
   },
@@ -68,7 +78,6 @@ export const MANUAL_EXPENSE_TAXONOMY: readonly ManualCategoryDef[] = [
     // з резолву означало б перетворити старі записи на «Інше».
     id: "groceries",
     label: "Продукти",
-    emoji: "🛒",
     iconName: "shopping-cart",
     canonicalId: "food",
     legacy: true,
@@ -76,77 +85,66 @@ export const MANUAL_EXPENSE_TAXONOMY: readonly ManualCategoryDef[] = [
   {
     id: "cafe",
     label: "Кафе та ресторани",
-    emoji: "☕",
     iconName: "coffee",
     canonicalId: "restaurant",
   },
   {
     id: "transport",
     label: "Транспорт",
-    emoji: "🚗",
     iconName: "truck",
     canonicalId: "transport",
   },
   {
     id: "entertainment",
     label: "Розваги",
-    emoji: "🎮",
     iconName: "sparkles",
     canonicalId: "entertainment",
   },
   {
     id: "health",
     label: "Здоров'я",
-    emoji: "💊",
     iconName: "heart",
     canonicalId: "health",
   },
   {
     id: "shopping",
     label: "Покупки",
-    emoji: "🛍",
     iconName: "tag",
     canonicalId: "shopping",
   },
   {
     id: "utilities",
     label: "Комунальні",
-    emoji: "🏠",
     iconName: "home",
     canonicalId: "utilities",
   },
   {
     id: "tech",
     label: "Техніка",
-    emoji: "🖥",
     iconName: "monitor",
     canonicalId: "shopping",
   },
   {
     id: "subscriptions",
     label: "Підписки",
-    emoji: "🎵",
     iconName: "repeat",
     canonicalId: "subscriptions",
   },
   {
     id: "education",
     label: "Навчання",
-    emoji: "📚",
     iconName: "book",
     canonicalId: "education",
   },
   {
     id: "travel",
     label: "Подорожі",
-    emoji: "✈️",
     iconName: "compass",
     canonicalId: "travel",
   },
   {
     id: "other",
     label: "Інше",
-    emoji: "💳",
     iconName: "tag",
     canonicalId: "other",
   },
@@ -167,35 +165,30 @@ export const MANUAL_INCOME_TAXONOMY: readonly ManualCategoryDef[] = [
   {
     id: "salary",
     label: "Зарплата",
-    emoji: "",
     iconName: "briefcase",
     canonicalId: "income",
   },
   {
     id: "freelance",
     label: "Фріланс",
-    emoji: "",
     iconName: "monitor",
     canonicalId: "income",
   },
   {
     id: "gift",
     label: "Подарунок",
-    emoji: "",
     iconName: "package",
     canonicalId: "income",
   },
   {
     id: "refund",
     label: "Повернення",
-    emoji: "",
     iconName: "refresh-cw",
     canonicalId: "income",
   },
   {
     id: "other-income",
     label: "Інше",
-    emoji: "",
     iconName: "tag",
     canonicalId: "income",
   },
@@ -222,11 +215,6 @@ export const LEGACY_INCOME_IDS: readonly string[] = [
  */
 export const MANUAL_EXPENSE_PICKER: readonly ManualCategoryDef[] =
   MANUAL_EXPENSE_TAXONOMY.filter((d) => !d.legacy);
-
-/** Підпис у legacy-формі з емодзі-префіксом (`"🛒 Продукти"`). */
-export function taxonomyLabel(def: ManualCategoryDef): string {
-  return def.emoji ? `${def.emoji} ${def.label}` : def.label;
-}
 
 /**
  * Зрізає провідні емодзі й пробіл: `"🍴 їжа"` → `"їжа"`.

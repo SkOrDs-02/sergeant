@@ -5,7 +5,7 @@ export const INTERNAL_TRANSFER_ID = "internal_transfer";
 export const MCC_CATEGORIES = [
   {
     id: "food",
-    label: "🛒 Продукти",
+    label: "Продукти",
     mccs: [5411, 5412, 5422, 5441, 5451, 5462, 5499],
     keywords: [
       "сільпо",
@@ -26,7 +26,7 @@ export const MCC_CATEGORIES = [
   },
   {
     id: "restaurant",
-    label: "🍔 Кафе та ресторани",
+    label: "Кафе та ресторани",
     mccs: [5812, 5813, 5814],
     keywords: [
       "макдональд",
@@ -45,7 +45,7 @@ export const MCC_CATEGORIES = [
   },
   {
     id: "transport",
-    label: "🚗 Транспорт",
+    label: "Транспорт",
     mccs: [4111, 4121, 4131, 5541, 5542, 5172],
     keywords: [
       "uber",
@@ -61,7 +61,7 @@ export const MCC_CATEGORIES = [
   },
   {
     id: "subscriptions",
-    label: "🎵 Підписки",
+    label: "Підписки",
     mccs: [4899, 5735, 7372],
     keywords: [
       "spotify",
@@ -77,37 +77,37 @@ export const MCC_CATEGORIES = [
   },
   {
     id: "health",
-    label: "💊 Здоров'я",
+    label: "Здоров'я",
     mccs: [5122, 5912, 8011, 8021, 8049, 8099],
     keywords: ["аптека", "лікар", "pharmacy", "клінік", "стоматолог"],
   },
   {
     id: "shopping",
-    label: "🛍 Покупки",
+    label: "Покупки",
     mccs: [5311, 5331, 5651, 5661, 5699, 5732, 5734, 5945],
     keywords: ["rozetka", "amazon", "zara", "h&m", "reserved", "allo"],
   },
   {
     id: "entertainment",
-    label: "🎮 Розваги",
+    label: "Розваги",
     mccs: [7832, 7922, 7993, 7996, 7999],
     keywords: ["кіно", "cinema", "multiplex"],
   },
   {
     id: "sport",
-    label: "🏋️ Спорт",
+    label: "Спорт",
     mccs: [5941, 7941, 7997],
     keywords: ["спортмастер", "decathlon", "фітнес", "gym"],
   },
   {
     id: "beauty",
-    label: "💅 Краса",
+    label: "Краса",
     mccs: [5977, 7230, 7297],
     keywords: ["салон", "перукар", "барбер", "манікюр"],
   },
   {
     id: "smoking",
-    label: "🚬 Цигарки",
+    label: "Цигарки",
     mccs: [5993],
     keywords: [
       "iqos",
@@ -123,19 +123,19 @@ export const MCC_CATEGORIES = [
   },
   {
     id: "education",
-    label: "📚 Навчання",
+    label: "Навчання",
     mccs: [5942, 8220, 8299],
     keywords: ["книг", "курс", "udemy", "coursera"],
   },
   {
     id: "travel",
-    label: "✈️ Подорожі",
+    label: "Подорожі",
     mccs: [3000, 4411, 4511, 7011, 7012],
     keywords: ["готель", "hotel", "airbnb", "booking", "aviasales", "авіа"],
   },
   {
     id: "debt",
-    label: "🏦 Борги та кредити",
+    label: "Борги та кредити",
     mccs: [6012, 6051, 6099],
     keywords: [
       "погашення",
@@ -150,7 +150,7 @@ export const MCC_CATEGORIES = [
   },
   {
     id: "charity",
-    label: "💛 Благодійність",
+    label: "Благодійність",
     mccs: [8398, 8399],
     keywords: [
       "благодійн",
@@ -168,7 +168,7 @@ export const MCC_CATEGORIES = [
   },
   {
     id: INTERNAL_TRANSFER_ID,
-    label: "↔️ Внутрішній переказ",
+    label: "Внутрішній переказ",
     mccs: [],
     keywords: [],
   },
@@ -290,11 +290,11 @@ export const DEFAULT_SUBSCRIPTIONS = [
 ];
 
 export const PAGES = [
-  { id: "overview", label: "🏠 Огляд" },
-  { id: "transactions", label: "📋 Транзакції" },
-  { id: "budgets", label: "📅 Планування" },
-  { id: "analytics", label: "📊 Аналітика" },
-  { id: "assets", label: "🏦 Активи та пасиви" },
+  { id: "overview", label: "Огляд" },
+  { id: "transactions", label: "Транзакції" },
+  { id: "budgets", label: "Планування" },
+  { id: "analytics", label: "Аналітика" },
+  { id: "assets", label: "Активи та пасиви" },
 ];
 
 export const CURRENCY = {

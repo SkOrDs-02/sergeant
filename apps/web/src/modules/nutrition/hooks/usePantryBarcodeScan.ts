@@ -102,10 +102,10 @@ export function usePantryBarcodeScan({
       pantry.upsertItem(label);
       if (p.partial) {
         setPantryScanStatus(
-          `Знайдено: ${label}. КБЖВ відсутнє в базі — за потреби додай вручну. ✔`,
+          `Знайдено: ${label}. КБЖВ відсутнє в базі — за потреби додай вручну.`,
         );
       } else {
-        setPantryScanStatus(`Додано: ${label} ✔`);
+        setPantryScanStatus(`Додано: ${label}`);
       }
       setTimeout(() => setPantryScanStatus(""), STATUS_AUTO_HIDE_MS);
     },

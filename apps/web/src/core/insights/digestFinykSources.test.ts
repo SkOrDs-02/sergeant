@@ -99,7 +99,7 @@ describe("aggregateFinyk читає канонічний SQLite-стан, а н�
     const out = aggregateFinyk(WEEK_KEY);
 
     expect(out.topCategories.map((c) => c.name)).not.toContain("MCC 4829");
-    expect(out.topCategories).toContainEqual({ name: "💳 Інше", amount: 100 });
+    expect(out.topCategories).toContainEqual({ name: "Інше", amount: 100 });
   });
 
   it("поважає оверрайд категорії з SQLite", () => {
@@ -108,7 +108,7 @@ describe("aggregateFinyk читає канонічний SQLite-стан, а н�
     // `t-food` має MCC продуктового (5411), але користувач переклав його
     // у «Кафе та ресторани» — дайджест мусить показувати рішення користувача.
     expect(out.topCategories).toContainEqual({
-      name: "🍔 Кафе та ресторани",
+      name: "Кафе та ресторани",
       amount: 300,
     });
   });

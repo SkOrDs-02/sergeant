@@ -224,23 +224,21 @@ export function TodayFocusCard({
         </div>
 
         <h2 className="text-style-title font-bold text-text leading-snug text-balance">
-          {focus.icon &&
-            (ICON_NAMES.includes(focus.icon) ? (
-              // Recommendation `icon` is dual-convention: either a registered
-              // glyph name (e.g. "utensils", "wallet") → render the SVG, or a
-              // raw emoji (e.g. "📌", "🥗") → render as text. Feeding an emoji
-              // into <Icon> warns ("[Icon] unknown name") and renders nothing.
-              <Icon
-                name={focus.icon}
-                size={16}
-                className="inline-block mr-1.5 align-middle text-muted"
-                aria-hidden
-              />
-            ) : (
-              <span className="mr-1.5 align-middle" aria-hidden>
-                {focus.icon}
-              </span>
-            ))}
+          {/* `icon` рекомендації — імʼя гліфа з каталогу `Icon`. До
+              2026-08-21 конвенція була подвійною: незареєстроване значення
+              малювалось як ТЕКСТ, і саме через цю гілку сюди потрапляли
+              емодзі фінансових правил (`📌`, `🎯`, `👏`). Правила
+              переведено на імена, тож текстової гілки більше немає —
+              незнайоме імʼя тепер нічого не малює, а не підсовує
+              випадковий гліф системним шрифтом. */}
+          {focus.icon && ICON_NAMES.includes(focus.icon) && (
+            <Icon
+              name={focus.icon}
+              size={16}
+              className="inline-block mr-1.5 align-middle text-muted"
+              aria-hidden
+            />
+          )}
           {focus.title}
         </h2>
 
