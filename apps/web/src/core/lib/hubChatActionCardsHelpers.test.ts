@@ -198,9 +198,9 @@ describe("titleFor", () => {
 
   it("appends failed suffix", () => {
     expect(titleFor("create_transaction", "failed")).toBe(
-      "Транзакцію записано — не вийшло",
+      "Транзакцію записано, не вийшло",
     );
-    expect(titleFor("log_set", "failed")).toBe("Підхід записано — не вийшло");
+    expect(titleFor("log_set", "failed")).toBe("Підхід записано, не вийшло");
   });
 
   it("covers cross-module, utility, memory, query titles", () => {
@@ -302,7 +302,7 @@ describe("titleFor", () => {
       const completed = titleFor(t, "completed");
       const failed = titleFor(t, "failed");
       expect(completed.length).toBeGreaterThan(0);
-      expect(failed).toContain("— не вийшло");
+      expect(failed).toContain(", не вийшло");
     }
   });
 });

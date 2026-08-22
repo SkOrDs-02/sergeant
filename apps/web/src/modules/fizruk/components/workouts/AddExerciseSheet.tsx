@@ -276,7 +276,7 @@ export function AddExerciseSheet({
             const nameUk = (form.nameUk || "").trim();
             if (!nameUk) {
               setNameError(
-                "Вкажи назву українською — без неї вправу не збережемо.",
+                "Вкажи назву українською, без неї вправу не збережемо.",
               );
               return;
             }

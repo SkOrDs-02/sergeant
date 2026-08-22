@@ -52,7 +52,7 @@ export function exportReport(action: ExportReportAction): ChatActionResult {
   const fromStr = dayFmt.format(fromDate);
   const toStr = dayFmt.format(toDate);
   return [
-    `Звіт за ${fromStr} — ${toStr}:`,
+    `Звіт за ${fromStr} – ${toStr}:`,
     `Дохід: ${Math.round(totalIncome)} грн`,
     `Витрати: ${Math.round(totalExpense)} грн`,
     `Баланс: ${Math.round(totalIncome - totalExpense)} грн`,

@@ -231,7 +231,7 @@ test.describe.serial("BT1 — анонім із Telegram-групи", () => {
   test("BT1: PDF-експорт загейчено paywall-ом, а не помилкою", async () => {
     await goto(page, "/insights");
     await page.getByRole("button", { name: /Експортувати PDF/ }).click();
-    await expect(page.getByText("PDF-звіти — у Premium")).toBeVisible();
+    await expect(page.getByText("PDF-звіти у Premium")).toBeVisible();
   });
 
   test("BT1: Сержант відповідає або чемно просить увійти", async () => {
@@ -324,7 +324,7 @@ test.describe.serial("BT2 — щойно зареєстрований, ще бе
     await expect(visibleText(page, "Зараз ваш план")).toBeVisible();
     await goto(page, "/insights");
     await page.getByRole("button", { name: /Експортувати PDF/ }).click();
-    await expect(page.getByText("PDF-звіти — у Premium")).toBeVisible();
+    await expect(page.getByText("PDF-звіти у Premium")).toBeVisible();
   });
 
   test("BT2: секція звʼязків мовчить чесно, не падає", async () => {
@@ -382,7 +382,7 @@ test.describe.serial("BT3 — канонічний бета-тестер (Pro tr
   test("BT3: trialing знімає PDF-гейт", async () => {
     await gotoSticky(page, "/insights");
     await page.getByRole("button", { name: /Експортувати PDF/ }).click();
-    await expect(page.getByText("PDF-звіти — у Premium")).toBeHidden();
+    await expect(page.getByText("PDF-звіти у Premium")).toBeHidden();
   });
 
   test("BT3: Сержант відповідає Pro-користувачу", async () => {

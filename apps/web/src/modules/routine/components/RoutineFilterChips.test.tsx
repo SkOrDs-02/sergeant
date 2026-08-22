@@ -53,7 +53,7 @@ describe("RoutineFilterChips — стеля чипів", () => {
   it("знімний чип пояснює дію, а не лише називає тег", () => {
     renderChips({ tagFilter: "Вечір", tagChips: ["Ранок"] });
     expect(
-      screen.getByRole("button", { name: /прибрати фільтр за тегом/ }),
+      screen.getByRole("button", { name: /Прибрати фільтр за тегом/ }),
     ).toBeInTheDocument();
   });
 

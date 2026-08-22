@@ -87,14 +87,14 @@ describe("MonthOutflowComb", () => {
       screen.getByText(/Найбільше списань 8-го числа/),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/Найдовший проміжок без списань — 23 дні,/),
+      screen.getByText(/Найдовший проміжок без списань: 23 дні,/),
     ).toBeInTheDocument();
   });
 
   it("shows the gap as a visible line too, not only for screen readers", () => {
     render(<MonthOutflowComb entries={enough} daysInMonth={31} />);
     expect(
-      screen.getByText(/23 дні поспіль без списань — з 9-го по 31-е/),
+      screen.getByText(/23 дні поспіль без списань: з 9-го по 31-е/),
     ).toBeInTheDocument();
   });
 
@@ -112,7 +112,7 @@ describe("MonthOutflowComb", () => {
       />,
     );
     expect(
-      screen.getByText(/5 днів поспіль без списань — з 11-го по 15-е/),
+      screen.getByText(/5 днів поспіль без списань: з 11-го по 15-е/),
     ).toBeInTheDocument();
   });
 
@@ -156,7 +156,7 @@ describe("MonthOutflowComb", () => {
     );
     // Відсортовано за зростанням, незалежно від порядку на вході.
     expect(
-      screen.getByText(/Регулярні надходження — 2, 17 числа/),
+      screen.getByText(/Регулярні надходження: 2, 17 числа/),
     ).toBeInTheDocument();
   });
 

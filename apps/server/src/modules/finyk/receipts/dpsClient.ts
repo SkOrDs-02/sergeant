@@ -174,7 +174,7 @@ export async function fetchDpsCheckXml(
     }
     if (/воєнного стану|обмежено доступ/i.test(description)) {
       throw new ExternalServiceError(
-        "Реєстр чеків ДПС тимчасово не віддає дані — сфотографуй чек.",
+        "Реєстр чеків ДПС тимчасово не віддає дані, сфотографуй чек.",
         {
           status: 503,
           code: "DPS_ACCESS_RESTRICTED",
@@ -183,7 +183,7 @@ export async function fetchDpsCheckXml(
       );
     }
     throw new ExternalServiceError(
-      "Не вдалося знайти чек за QR — сфотографуй чек.",
+      "Не вдалося знайти чек за QR, сфотографуй чек.",
       {
         status: 502,
         code: "DPS_UPSTREAM_ERROR",
@@ -204,7 +204,7 @@ export async function fetchDpsCheckXml(
     // Hard Rule #21 — НЕ логуй body/token тут, той самий контракт, що
     // генеральна 5xx-гілка нижче.
     throw new ExternalServiceError(
-      "Пошук чека за QR тимчасово недоступний — спробуй сфотографувати чек.",
+      "Пошук чека за QR тимчасово недоступний, спробуй сфотографувати чек.",
       {
         status: 503,
         code: "DPS_AUTH_ERROR",

@@ -289,7 +289,7 @@ export function AddMealSheet({
     if (kcal != null && kcal > MAX_KCAL_PER_MEAL) {
       setForm((s) => ({
         ...s,
-        err: `Забагато калорій — максимум ${MAX_KCAL_PER_MEAL} ккал на прийом.`,
+        err: `Забагато калорій: максимум ${MAX_KCAL_PER_MEAL} ккал на прийом.`,
       }));
       return;
     }
@@ -298,7 +298,7 @@ export function AddMealSheet({
     ) {
       setForm((s) => ({
         ...s,
-        err: `Забагато БЖВ — максимум ${MAX_MACRO_GRAMS} г на прийом.`,
+        err: `Забагато БЖВ: максимум ${MAX_MACRO_GRAMS} г на прийом.`,
       }));
       return;
     }
@@ -652,7 +652,7 @@ export function AddMealSheet({
       <ConfirmDialog
         open={pendingMeal != null}
         title="Зберегти без калорійності?"
-        description="КБЖВ порожні — запис не вплине на денну статистику. Зберегти як є?"
+        description="КБЖВ порожні, запис не вплине на денну статистику. Зберегти як є?"
         confirmLabel="Зберегти"
         cancelLabel="Повернутись"
         danger={false}

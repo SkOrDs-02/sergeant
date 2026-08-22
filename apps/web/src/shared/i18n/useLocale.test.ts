@@ -37,7 +37,7 @@ describe("useLocale", () => {
       Record<string, string>
     >;
     expect(paywall["ai-photo-analysis"]?.["title"]).toBe(
-      "AI photo analysis — Premium",
+      "AI photo analysis: Premium",
     );
   });
 

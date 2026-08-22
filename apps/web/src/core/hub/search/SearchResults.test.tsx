@@ -138,7 +138,7 @@ describe("SearchResults", () => {
       flat: results,
     });
     const footer = screen.getByRole("button", {
-      name: /Показано 10 — відкрити Фінанси/,
+      name: /Показано 10 · відкрити Фінанси/,
     });
     fireEvent.click(footer);
     expect(hapticTap).toHaveBeenCalledTimes(1);

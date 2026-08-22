@@ -304,7 +304,7 @@ function ActiveState({
   const meta =
     state.itemsCount != null && state.itemsCount > 0
       ? `${state.itemsCount} ${pluralExercises(state.itemsCount)} у сесії`
-      : "Сесія відкрита — підходи й таймер чекають";
+      : "Сесія відкрита, підходи й таймер чекають";
   return (
     <HeroShell ariaLabel="Активне тренування" cornerSlot={cornerSlot}>
       <HeroKicker greeting={greeting} today={today} />
@@ -470,7 +470,7 @@ function EmptyState({
       </h2>
       <p className="mt-2 text-style-caption text-hero-ink">
         {state.hasTemplates
-          ? "Нічого не заплановано — запусти готовий шаблон або відкрий програми."
+          ? "Нічого не заплановано, запусти готовий шаблон або відкрий програми."
           : "У тебе ще немає шаблонів. Створи свій перший або обери програму."}
       </p>
       <div className="mt-6 flex flex-col gap-3">

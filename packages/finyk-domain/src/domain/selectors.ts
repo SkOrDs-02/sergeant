@@ -432,12 +432,12 @@ export function formatComparisonSummary(
     if (!currentSpent) {
       return {
         direction: "no_prev",
-        text: "Витрат ще немає — повернемось, коли зʼявляться дані.",
+        text: "Витрат ще немає, повернемось, коли зʼявляться дані.",
       };
     }
     return {
       direction: "no_prev",
-      text: `У ${prevLabel} витрат не було — порівнювати поки немає з чим.`,
+      text: `У ${prevLabel} витрат не було, порівнювати поки немає з чим.`,
     };
   }
   if (diff === 0) {

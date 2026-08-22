@@ -30,7 +30,7 @@ const FirstInsightBannerImpl = function FirstInsightBanner({
           Ось куди йдуть твої гроші
         </Text>
         <Text className="text-xs text-fg-muted mt-0.5">
-          Хочеш поставити бюджет — і бачити, коли починаєш виходити за рамки?
+          Хочеш поставити бюджет, і бачити, коли починаєш виходити за рамки?
         </Text>
         <View className="flex-row gap-2 mt-3">
           <Pressable

@@ -55,12 +55,12 @@ type ChatMessage = HubChatSession["messages"][number];
  */
 const FREE_DAILY_AI_CHAT_LIMIT = 5;
 const DAILY_CHAT_COUNT_KEY = "sergeant:ai-chat:daily-count:v1";
-const CANCELLED_BY_USER_TEXT = "Скасовано — нічого не змінено.";
+const CANCELLED_BY_USER_TEXT = "Скасовано, нічого не змінено.";
 const AUTO_TTS_ENABLED_KEY = "sergeant:hub-chat:auto-tts:v1";
 const HUB_CHAT_HELP_TEXT = [
   "Ось коротка довідка по командам:",
   "",
-  "• /help — показати цю довідку.",
+  "• /help: показати цю довідку.",
   "• Напиши дію звичайними словами: «додай витрату 120 грн на каву», «запиши тренування», «що було цього тижня?»",
   "• Кнопка з ? біля поля вводу теж відкриває цю довідку.",
 ].join("\n");
@@ -309,7 +309,7 @@ export function useChatSend({
           ...m,
           makeUserMsg(msg),
           makeAssistantMsg(
-            "Немає підключення. Асистент працює лише онлайн — спробуй ще раз, коли з'явиться інтернет.",
+            "Немає підключення. Асистент працює лише онлайн, спробуй ще раз, коли з'явиться інтернет.",
           ),
         ]);
         setInput("");

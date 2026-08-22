@@ -183,7 +183,7 @@ export function FinykSection() {
       <SettingsSubGroup title="Рахунки">
         <DeferredNotice>
           Приховування рахунків з балансу та нетворсу тягне `finyk_info_cache` з
-          Monobank-флоу — підключиться разом із портом модуля Фінік.
+          Monobank-флоу, підключиться разом із портом модуля Фінік.
         </DeferredNotice>
       </SettingsSubGroup>
     </SettingsGroup>

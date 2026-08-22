@@ -106,7 +106,7 @@ export function buildValueProgressBars(
       ROUTINE_HABIT_LABELS[goals.routineFirstHabit] ?? "Своя звичка";
     bars.push({
       testId: "value-progress-bar-routine",
-      label: `«${habitLabel}» — через ${ROUTINE_TARGET_DAYS} днів автоматично`,
+      label: `«${habitLabel}» через ${ROUTINE_TARGET_DAYS} днів автоматично`,
       current: `Зараз: 0/${ROUTINE_TARGET_DAYS}`,
       percent: 0,
     });

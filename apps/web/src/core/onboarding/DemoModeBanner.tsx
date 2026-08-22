@@ -142,7 +142,7 @@ export function DemoModeBanner() {
               розривав heading-order (axe moderate, design-audit P3). */}
           <h2 className="text-style-label text-text">Це приклад</h2>
           <p className="text-style-body text-muted mt-1 leading-snug">
-            Цифри й категорії — для демонстрації. Натисни «Створити свій», щоб
+            Цифри й категорії – для демонстрації. Натисни «Створити свій», щоб
             почати з чистого аркуша.
           </p>
         </div>

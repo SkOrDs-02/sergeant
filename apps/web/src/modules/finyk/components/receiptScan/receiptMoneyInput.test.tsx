@@ -21,7 +21,7 @@ function Harness({ initialKopiykas }: { initialKopiykas: number }) {
   );
 }
 
-describe("ReceiptMoneyInput — clear/0 round-trip", () => {
+describe("ReceiptMoneyInput: clear/0 round-trip", () => {
   it("shows the hryvnia value derived from the initial kopiykas prop", () => {
     render(<Harness initialKopiykas={15075} />);
     expect(screen.getByLabelText("Сума")).toHaveValue("150.75");

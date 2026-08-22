@@ -459,7 +459,7 @@ export function AddMealSheet({
                 Уточнення AI
               </Text>
               <Text className="text-xs text-fg-muted mb-2">
-                Можна вказати вагу порції та відповіді на питання — перерахунок
+                Можна вказати вагу порції та відповіді на питання, перерахунок
                 КБЖВ через сервер.
               </Text>
               <Text className="text-xs text-fg-muted mb-0.5">Порція, г</Text>

@@ -152,7 +152,7 @@ describe("WaitlistForm — submit flow", () => {
     });
     expect(
       (
-        screen.getByLabelText(/Premium — AI-чат/, {
+        screen.getByLabelText(/Premium · AI-чат/, {
           selector: "label",
         }) as HTMLLabelElement
       ).className,
@@ -170,7 +170,7 @@ describe("WaitlistForm — submit flow", () => {
 
     await waitFor(() => {
       expect(toastInfoMock).toHaveBeenCalledWith(
-        "Ми вже памʼятаємо твій інтерес — жодних дублікатів.",
+        "Ми вже памʼятаємо твій інтерес, жодних дублікатів.",
       );
     });
     expect(toastSuccessMock).not.toHaveBeenCalled();

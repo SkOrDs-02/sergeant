@@ -82,7 +82,7 @@ export function computePulseStyle({
     statusText: pulseBad
       ? "Перевитрата"
       : pulseWarn
-        ? "Обережно — майже вичерпано"
+        ? "Обережно: майже вичерпано"
         : "В нормі",
   };
 }

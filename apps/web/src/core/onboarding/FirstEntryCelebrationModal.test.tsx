@@ -61,7 +61,7 @@ function renderOpenModal(
   return { onClose, ...view };
 }
 
-describe("FirstEntryCelebrationModal — celebration_shown payload (PR-A)", () => {
+describe("FirstEntryCelebrationModal: celebration_shown payload (PR-A)", () => {
   afterEach(() => {
     cleanup();
     vi.useRealTimers();
@@ -131,7 +131,7 @@ describe("FirstEntryCelebrationModal — celebration_shown payload (PR-A)", () =
   });
 });
 
-describe("FirstEntryCelebrationModal — interaction branches", () => {
+describe("FirstEntryCelebrationModal: interaction branches", () => {
   afterEach(() => {
     cleanup();
     vi.useRealTimers();

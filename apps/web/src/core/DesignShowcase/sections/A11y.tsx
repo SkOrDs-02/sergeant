@@ -7,7 +7,7 @@ import {
   Sec,
 } from "../_shared/primitives";
 
-const SAMPLE_USAGE = `// Visible focus ring on keyboard nav only — "focus:" is gated by check-design-conventions
+const SAMPLE_USAGE = `// Visible focus ring on keyboard nav only, "focus:" is gated by check-design-conventions
 <button className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60">
   Submit
 </button>
@@ -62,15 +62,15 @@ export function A11ySection() {
         <>
           Чотири стовпи: видимий фокус, tap-targets ≥44×44 px, WCAG AA контраст,
           повага до <code>prefers-reduced-motion: reduce</code>.{" "}
-          <code>focus:</code> заборонено — використовуй{" "}
+          <code>focus:</code> заборонено, використовуй{" "}
           <code>focus-visible:</code> (гейт{" "}
           <code>check-design-conventions</code>). 44px-floor гейтить лейн{" "}
-          <code>Mobile UI audit</code> у CI; контраст і reduced-motion —
+          <code>Mobile UI audit</code> у CI; контраст і reduced-motion:
           review-only (ADR-0081).
         </>
       }
     >
-      <Group label="Focus rings — focus-visible only">
+      <Group label="Focus rings: focus-visible only">
         <div className="flex flex-wrap gap-3 items-center">
           <Button variant="primary">Primary</Button>
           <Button variant="secondary">Secondary</Button>
@@ -90,7 +90,7 @@ export function A11ySection() {
           <kbd className="px-1.5 py-0.5 rounded border border-line bg-panelHi text-style-code">
             Tab
           </kbd>{" "}
-          щоб побачити focus-ring (тільки клавіатура — не миша).
+          щоб побачити focus-ring (тільки клавіатура, не миша).
         </p>
       </Group>
 
@@ -112,7 +112,7 @@ export function A11ySection() {
         </p>
       </Group>
 
-      <Group label="Контраст — WCAG AA">
+      <Group label="Контраст: WCAG AA">
         <div className="overflow-x-auto rounded-2xl border border-line">
           <table className="w-full text-style-body">
             <thead className="bg-panelHi">
@@ -213,7 +213,7 @@ export function A11ySection() {
         lintRules={[
           {
             label: "check-design-conventions",
-            hint: "`focus:` заборонено — лише focus-visible: / focus-within:",
+            hint: "`focus:` заборонено, лише focus-visible: / focus-within:",
           },
         ]}
       />

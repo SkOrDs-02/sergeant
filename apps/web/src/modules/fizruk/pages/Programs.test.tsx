@@ -155,7 +155,7 @@ describe("Programs page", () => {
     expect(screen.getByText("Розклад та вправи")).toBeInTheDocument();
     expect(
       screen.getAllByText(
-        "Вправи з програми відсутні в каталозі — додай вправи з відповідними ID вручну.",
+        "Вправи з програми відсутні в каталозі, додай вправи з відповідними ID вручну.",
       ).length,
     ).toBeGreaterThan(0);
   });
@@ -172,7 +172,7 @@ describe("Programs page", () => {
     fireEvent.click(screen.getAllByRole("button", { name: "Деталі" })[0]!);
     expect(
       screen.getAllByText(
-        "Вправи з програми відсутні в каталозі — додай вправи з відповідними ID вручну.",
+        "Вправи з програми відсутні в каталозі, додай вправи з відповідними ID вручну.",
       ).length,
     ).toBeGreaterThan(0);
   });

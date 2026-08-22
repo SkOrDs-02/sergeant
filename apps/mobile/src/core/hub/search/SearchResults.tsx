@@ -152,7 +152,7 @@ export function SearchResults({
           <EmptyState
             icon={Search}
             title="Глобальний пошук"
-            description="Транзакції, тренування, звички, їжа — все в одному місці."
+            description="Транзакції, тренування, звички, їжа. Все в одному місці."
           />
         ) : null
       }
@@ -181,7 +181,7 @@ export function SearchResults({
               className="mt-1.5 flex-row items-center justify-between rounded-xl px-3 py-2"
             >
               <Text className="text-xs text-fg-muted">
-                Показано {item.count} — відкрити {item.label}
+                Показано {item.count} · відкрити {item.label}
               </Text>
             </Pressable>
           );

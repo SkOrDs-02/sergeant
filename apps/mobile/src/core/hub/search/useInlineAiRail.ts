@@ -55,7 +55,7 @@ function friendlyApiError(
   if (serverMessage) return serverMessage;
   if (status === 401 || status === 403)
     return "Потрібно увійти, щоб запитати асистента.";
-  if (status === 429) return "Забагато запитів — спробуй за хвилину.";
+  if (status === 429) return "Забагато запитів, спробуй за хвилину.";
   if (status >= 500) return "Сервер тимчасово недоступний. Спробуй пізніше.";
   return `Помилка ${status}.`;
 }
@@ -119,7 +119,7 @@ export function useInlineAiRail(): UseInlineAiRailResult {
         const baseAnswer = reply
           ? reply
           : hasToolCalls
-            ? "Знайшов дію — для виконання потрібен повноцінний чат."
+            ? "Знайшов дію, для виконання потрібен повноцінний чат."
             : "Немає відповіді.";
         const truncated = baseAnswer.length > MAX_INLINE_REPLY_LEN;
         const answer = truncated

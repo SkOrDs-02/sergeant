@@ -110,7 +110,7 @@ export function ReceiptReviewForm({
           className="inline-flex items-center gap-1.5"
         >
           <Icon name="camera" size={12} aria-hidden />
-          розпізнано з фото — перевір суми
+          розпізнано з фото, перевір суми
         </Badge>
       )}
 
@@ -220,7 +220,7 @@ export function ReceiptReviewForm({
           </ul>
         ) : (
           <p className="mt-1 text-style-caption text-muted">
-            Позиції не розпізнано — лише сума й магазин.
+            Позиції не розпізнано, лише сума й магазин.
           </p>
         )}
       </div>

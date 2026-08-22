@@ -95,7 +95,7 @@ export function MeasurementEntryForm({
       open={open}
       onClose={onClose}
       title={isEditing ? "Редагувати замір" : "Новий замір"}
-      description="Запиши будь-які з цих значень — порожні поля пропустяться."
+      description="Запиши будь-які з цих значень, порожні поля пропустяться."
       footer={
         <View className="flex-row gap-3">
           <Button

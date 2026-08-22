@@ -68,7 +68,7 @@ export const NUDGE_TITLE = "Сержант";
  * Копія для випадку, коли свіжого тексту немає. Свідомо без цифр і без
  * тверджень про конкретний період — вона має бути правдивою й через тиждень.
  */
-export const NUDGE_NEUTRAL_BODY = "Заглянь — я подивлюся на твій тиждень";
+export const NUDGE_NEUTRAL_BODY = "Заглянь, я подивлюся на твій тиждень";
 
 const KYIV_HOUR_FORMATTER = new Intl.DateTimeFormat("en-GB", {
   timeZone: "Europe/Kyiv",

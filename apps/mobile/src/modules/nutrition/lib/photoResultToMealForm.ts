@@ -77,7 +77,7 @@ export function mapPhotoResultToMealForm(
     Array.isArray(result.questions) && result.questions.length > 0;
   const err =
     lowConf || hasQuestions
-      ? "AI оцінив приблизно. Перевір назву та КБЖВ (можливі уточнення в веб-версії — refine)."
+      ? "AI оцінив приблизно. Перевір назву та КБЖВ (можливі уточнення в веб-версії: refine)."
       : "";
 
   return {

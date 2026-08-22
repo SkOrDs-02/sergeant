@@ -80,10 +80,9 @@ export function useHints({
             shownThisMount.current = retentionId;
             recordHintShown(store, retentionId);
             const msg = {
-              retention_day_1:
-                "Перший день — вже здобуток! Поверніться завтра.",
-              retention_day_3: "3 дні поспіль — серія пішла!",
-              retention_day_7: "Тиждень — серйозна заявка! 7 днів поспіль.",
+              retention_day_1: "Перший день, вже здобуток! Поверніться завтра.",
+              retention_day_3: "3 дні поспіль, серія пішла!",
+              retention_day_7: "Тиждень, серйозна заявка! 7 днів поспіль.",
             }[retentionId];
             if (msg) {
               toast.info(msg, 6000);
@@ -113,13 +112,13 @@ export function useHints({
         case "ftux_open_chat":
           return "Порада: в чаті спитай «Що мені важливо сьогодні?»";
         case "ftux_switch_modules":
-          return "Перемикай модулі внизу — це один хаб.";
+          return "Перемикай модулі внизу, це один хаб.";
         case "ftux_reports_unlock":
           return "Звіти з’являться після першого запису.";
         case "ftux_quick_add":
-          return "Швидке додавання — найкоротший шлях до результату.";
+          return "Швидке додавання – найкоротший шлях до результату.";
         case "module_first_entry":
-          return "Після першого запису спробуй «Звіти» — там найшвидше видно прогрес.";
+          return "Після першого запису спробуй «Звіти», там найшвидше видно прогрес.";
         case "hub_reorder_modules":
           return "Можна переставити модулі в Налаштуваннях → Загальні.";
         case "ftux_swipe_to_delete":

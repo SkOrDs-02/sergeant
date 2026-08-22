@@ -15,7 +15,7 @@ afterEach(cleanup);
  * and the RAF animation path runs — we drive it with fake timers + a stubbed
  * `requestAnimationFrame`.
  */
-describe("AnimatedNumber — formatting", () => {
+describe("AnimatedNumber: formatting", () => {
   it("immediate mode renders the final value without animation", () => {
     const { container } = render(
       <AnimatedNumber value={1234} immediate decimals={0} />,
@@ -60,7 +60,7 @@ describe("AnimatedNumber — formatting", () => {
   });
 });
 
-describe("AnimatedNumber — animation", () => {
+describe("AnimatedNumber: animation", () => {
   beforeEach(() => {
     vi.useFakeTimers();
   });
@@ -107,7 +107,7 @@ describe("AnimatedNumber — animation", () => {
   });
 });
 
-describe("AnimatedNumber — reduced motion", () => {
+describe("AnimatedNumber: reduced motion", () => {
   afterEach(() => {
     vi.restoreAllMocks();
   });
@@ -130,7 +130,7 @@ describe("AnimatedNumber — reduced motion", () => {
   });
 });
 
-describe("AnimatedNumber — odometer mode (R2-V-11)", () => {
+describe("AnimatedNumber: odometer mode (R2-V-11)", () => {
   afterEach(() => {
     vi.restoreAllMocks();
   });

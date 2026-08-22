@@ -112,7 +112,7 @@ describe("HabitPauseSection", () => {
     );
 
     expect(
-      screen.getByText("На паузі 01.08.2026 — 09.08.2026"),
+      screen.getByText("На паузі 01.08.2026 – 09.08.2026"),
     ).toBeInTheDocument();
     fireEvent.click(
       screen.getByRole("button", { name: "Повернутись сьогодні" }),
@@ -135,7 +135,7 @@ describe("HabitPauseSection", () => {
       />,
     );
     expect(
-      screen.getByText("Заплановано: 01.09.2026 — 07.09.2026"),
+      screen.getByText("Заплановано: 01.09.2026 – 07.09.2026"),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Поставити паузу" }),

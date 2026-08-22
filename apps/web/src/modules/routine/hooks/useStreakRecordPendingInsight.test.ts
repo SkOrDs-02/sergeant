@@ -68,7 +68,7 @@ describe("useStreakRecordPendingInsight", () => {
       id: "routine-streak-record-pending",
       module: "routine",
       title: "Серія: 6 днів",
-      subtitle: "Ще один — і рекорд 7",
+      subtitle: "Ще один, і рекорд 7",
       action: { type: "navigate", path: "/routine/today" },
       showOn: "both",
     });
@@ -87,6 +87,6 @@ describe("useStreakRecordPendingInsight", () => {
     const { result } = renderHook(() => useStreakRecordPendingInsight(state));
     // longestStreak should be 3 (from active-habit), not 99 — so
     // currentStreak=2 === longestStreak-1=2 fires the insight.
-    expect(result.current?.subtitle).toBe("Ще один — і рекорд 3");
+    expect(result.current?.subtitle).toBe("Ще один, і рекорд 3");
   });
 });

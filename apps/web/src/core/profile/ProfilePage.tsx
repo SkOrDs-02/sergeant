@@ -114,7 +114,7 @@ export function ProfilePage() {
         <div className="flex items-center gap-2 rounded-xl bg-warning/10 border border-warning/30 px-4 py-3">
           <Icon name="wifi-off" size={16} className="text-warning shrink-0" />
           <p className="text-style-label text-warning-strong dark:text-warning">
-            Ви офлайн — редагування профілю тимчасово недоступне
+            Ви офлайн, редагування профілю тимчасово недоступне
           </p>
         </div>
       )}
@@ -165,7 +165,7 @@ export function ProfilePage() {
         defaultOpen={false}
         headingSize="md"
         collapsedIcon="activity"
-        collapsedSubtitle="Зріст, вага, активність — для розрахунку калорій"
+        collapsedSubtitle="Зріст, вага, активність – для розрахунку калорій"
       >
         <BiometricsSection online={online} />
       </CollapsibleSection>
@@ -237,7 +237,7 @@ export function ProfilePage() {
               ? "1 запис ще не збережено на сервері."
               : `${unsyncedPrompt?.pending ?? 0} записів ще не збережено на сервері.`}{" "}
             Якщо вийти зараз, вони зникнуть назавжди. Підключися до мережі й
-            зачекай кілька секунд — або виходь, якщо ці записи не потрібні.
+            зачекай кілька секунд, або виходь, якщо ці записи не потрібні.
           </>
         }
         confirmLabel="Все одно вийти"

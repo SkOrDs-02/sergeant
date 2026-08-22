@@ -17,7 +17,7 @@ const EMPTY: CoachSnapshot = {
     weekDayUk: "пʼятниця",
     dayOfWeekIso: 5,
     daysIntoWeek: 5,
-    weekRange: "27 лип — 2 сер",
+    weekRange: "27 лип – 2 сер",
   },
   finyk: { totalSpent: 0, totalIncome: 0, txCount: 0, topCategories: [] },
   fizruk: null,

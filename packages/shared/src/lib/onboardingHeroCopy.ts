@@ -97,10 +97,10 @@ export function getOnboardingHeroCopy(
  * no collision with Zoom™. "cloud-у" replaced with "хмари" — native UA.
  */
 const OUTCOME_COPY: OnboardingHeroCopy = {
-  title: "Один запис — і побачиш, куди йде твоє життя.",
-  subtitle: "Бюджет, тренування, звички, їжа — за 30 секунд, без реєстрації.",
+  title: "Один запис, і побачиш, куди йде твоє життя.",
+  subtitle: "Бюджет, тренування, звички, їжа, за 30 секунд, без реєстрації.",
   badges: ["Без реєстрації", "Без хмари", "Без реклами"],
-  primaryCta: "Розпочати — 30 секунд",
+  primaryCta: "Розпочати · 30 секунд",
   secondaryCta: "Подивитись приклад",
 };
 
@@ -115,7 +115,7 @@ const SAFE_COPY: OnboardingHeroCopy = {
   title: "Один екран замість шести застосунків.",
   subtitle: "Гроші, тренування, звички, їжа. Без акаунта. Без хмари.",
   badges: ["Без реєстрації", "Без хмари", "Без реклами"],
-  primaryCta: "Розпочати — 30 секунд",
+  primaryCta: "Розпочати · 30 секунд",
   secondaryCta: "Подивитись приклад",
 };
 
@@ -129,10 +129,9 @@ const SAFE_COPY: OnboardingHeroCopy = {
  */
 const BOLD_COPY: OnboardingHeroCopy = {
   title: "Не для всіх. Для тих, хто втомився забувати.",
-  subtitle:
-    "Записуй один раз — Sergeant пам'ятає за тебе. Офлайн, без акаунта.",
+  subtitle: "Записуй один раз, Sergeant пам'ятає за тебе. Офлайн, без акаунта.",
   badges: ["Без реєстрації", "Без хмари", "Без реклами"],
-  primaryCta: "Спробувати — 30 секунд",
+  primaryCta: "Спробувати · 30 секунд",
   secondaryCta: "Подивитись приклад",
 };
 
@@ -152,6 +151,6 @@ const DISCIPLINED_COPY: OnboardingHeroCopy = {
   subtitle:
     "Один екран для грошей, тіла, звичок і їжі. Без акаунта. Без хмари.",
   badges: ["Без реєстрації", "Без хмари", "Без реклами"],
-  primaryCta: "Розпочати — 30 секунд",
+  primaryCta: "Розпочати · 30 секунд",
   secondaryCta: "Подивитись приклад",
 };

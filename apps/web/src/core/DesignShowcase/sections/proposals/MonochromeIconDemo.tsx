@@ -23,7 +23,7 @@ export function MonochromeIconDemo() {
             <IconChip label="maskable" bg="bg-accent" fg="text-bg" masked />
           </div>
           <p className="text-style-caption text-muted">
-            Немає monochrome — themed-icon режим показує стандартну плитку
+            Немає monochrome: themed-icon режим показує стандартну плитку
           </p>
         </CompareTile>
       }

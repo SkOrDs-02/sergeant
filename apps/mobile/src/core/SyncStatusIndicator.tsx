@@ -230,7 +230,7 @@ export function SyncStatusIndicator({
       >
         <View className="h-2 w-2 rounded-full bg-amber-500" />
         <Text className="text-xs font-semibold text-amber-900">
-          {pending > 0 ? `Офлайн — ${pendingLabel(pending)}` : "Офлайн"}
+          {pending > 0 ? `Офлайн: ${pendingLabel(pending)}` : "Офлайн"}
         </Text>
       </View>
     );

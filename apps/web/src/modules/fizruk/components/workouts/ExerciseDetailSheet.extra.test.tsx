@@ -350,7 +350,7 @@ describe("ExerciseDetailSheet – item type switcher (2026-08 redesign, item 5)"
       />,
     );
 
-    fireEvent.click(screen.getByRole("tab", { name: "Час — секунди" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Час: секунди" }));
     expect(updateItem).toHaveBeenCalledWith(
       "w1",
       "item-1",
@@ -386,7 +386,7 @@ describe("ExerciseDetailSheet – item type switcher (2026-08 redesign, item 5)"
         activeWorkout={activeWorkout}
       />,
     );
-    expect(screen.queryByRole("tab", { name: "Час — секунди" })).toBeNull();
+    expect(screen.queryByRole("tab", { name: "Час: секунди" })).toBeNull();
   });
 
   it("does not render the type switcher when the exercise isn't logged in the active workout yet", () => {
@@ -408,7 +408,7 @@ describe("ExerciseDetailSheet – item type switcher (2026-08 redesign, item 5)"
         updateItem={updateItem}
       />,
     );
-    expect(screen.queryByRole("tab", { name: "Час — секунди" })).toBeNull();
+    expect(screen.queryByRole("tab", { name: "Час: секунди" })).toBeNull();
   });
 });
 

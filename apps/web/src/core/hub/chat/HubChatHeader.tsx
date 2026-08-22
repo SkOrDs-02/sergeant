@@ -124,7 +124,7 @@ export function HubChatHeader({
           </div>
           {!hasData && (
             <div className="px-2.5 py-2 bg-warning/10 border border-warning/30 rounded-xl text-style-caption text-warning-strong dark:text-warning leading-snug">
-              Mono не підключено — фінансовий контекст обмежений.
+              Mono не підключено, фінансовий контекст обмежений.
             </div>
           )}
           <p className="text-style-caption text-subtle leading-snug">

@@ -514,7 +514,7 @@ describe("pause_habit", () => {
       name: "pause_habit",
       input: { habit_id: "h1", from: "2026-08-10", to: "2026-08-17" },
     });
-    expect(out).toContain("2026-08-10 — 2026-08-17");
+    expect(out).toContain("2026-08-10 – 2026-08-17");
     const habit = loadRoutineState().habits.find((h) => h.id === "h1");
     expect(habit?.pauseIntervals).toEqual([
       { from: "2026-08-10", to: "2026-08-17" },

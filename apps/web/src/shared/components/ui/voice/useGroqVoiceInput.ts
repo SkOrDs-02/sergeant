@@ -124,7 +124,7 @@ export function useGroqVoiceInput({
           case "provider_unavailable":
             onProviderUnavailable?.();
             onError?.(
-              "Голосовий сервер тимчасово недоступний — перемикаюсь на браузерне розпізнавання.",
+              "Голосовий сервер тимчасово недоступний, перемикаюсь на браузерне розпізнавання.",
             );
             return;
           case "unauthorized":
@@ -133,7 +133,7 @@ export function useGroqVoiceInput({
             );
             return;
           case "rate_limited":
-            onError?.("Забагато голосових запитів — спробуйте за хвилину.");
+            onError?.("Забагато голосових запитів, спробуйте за хвилину.");
             return;
           case "payload_too_large":
             onError?.("Запис задовгий. Зроби коротшим і повтори.");
@@ -213,7 +213,7 @@ export function useGroqVoiceInput({
       if (chunks.length === 0) return;
       if (duration < GROQ_MIN_DURATION_MS) {
         onError?.(
-          "Запис занадто короткий — затисніть і говоріть кілька секунд.",
+          "Запис занадто короткий, затисніть і говоріть кілька секунд.",
         );
         return;
       }

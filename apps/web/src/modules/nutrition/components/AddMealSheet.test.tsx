@@ -330,7 +330,7 @@ describe("AddMealSheet — source step (with templates)", () => {
     expect(screen.getByText("Нещодавні прийоми")).toBeInTheDocument();
     fireEvent.click(
       screen.getByRole("button", {
-        name: "Додати Сирна запіканка — 250 грамів",
+        name: "Додати Сирна запіканка 250 грамів",
       }),
     );
     expect(onQuickAddMeal).toHaveBeenCalledTimes(1);

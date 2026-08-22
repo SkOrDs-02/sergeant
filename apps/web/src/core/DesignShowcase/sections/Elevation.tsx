@@ -7,7 +7,7 @@ import {
   Sec,
 } from "../_shared/primitives";
 
-const SAMPLE_USAGE = `// Сontrol → Card → Hero — elevation rhythm
+const SAMPLE_USAGE = `// Сontrol → Card → Hero: elevation rhythm
 <Card variant="elevated" padding="md" radius="xl">…</Card>
 
 // Z-layer scale: sticky < dropdown < modal < toast
@@ -57,7 +57,7 @@ export function ElevationSection() {
       title="Elevation"
       intro={
         <>
-          Три рівні тіней — sticky{" "}
+          Три рівні тіней: sticky{" "}
           <code>shadow-soft → shadow-card → shadow-float</code>. Висота не
           передає «значущість», вона передає «тут активне взаємодіє». Не
           використовуй <code>shadow-2xl</code> або сирі drop-shadow
@@ -83,7 +83,7 @@ export function ElevationSection() {
         </div>
       </Group>
 
-      <Group label="Card prominence — варіанти">
+      <Group label="Card prominence: варіанти">
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           {CARD_VARIANTS.map((variant) => (
             <Card key={variant} variant={variant} padding="md" radius="xl">
@@ -169,7 +169,7 @@ export function ElevationSection() {
         lintRules={[
           {
             label: "check-design-conventions",
-            hint: "raw hex у className — кольори лише через токени",
+            hint: "raw hex у className, кольори лише через токени",
           },
         ]}
       />

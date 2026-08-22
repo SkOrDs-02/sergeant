@@ -139,7 +139,7 @@ export function NutritionBarcodeScanScreen() {
         </Text>
         {!canPrompt && (
           <Text className="text-fg-muted text-center">
-            Дозвіл було відхилено. Система більше не покаже діалог — відкрий
+            Дозвіл було відхилено. Система більше не покаже діалог, відкрий
             налаштування, щоб увімкнути камеру.
           </Text>
         )}
@@ -176,7 +176,7 @@ export function NutritionBarcodeScanScreen() {
         </Text>
         {productPreview.p.partial ? (
           <Text className="text-xs text-amber-700 text-center">
-            Дані часткові — уточни КБЖВ вручну після додавання.
+            Дані часткові, уточни КБЖВ вручну після додавання.
           </Text>
         ) : null}
         <Text className="text-sm text-fg-muted text-center">

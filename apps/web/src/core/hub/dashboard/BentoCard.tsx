@@ -189,7 +189,7 @@ export const BentoCard = memo(function BentoCard({
         {...primaryProps}
         aria-label={
           inactive
-            ? `${config.label} — неактивний модуль. Увімкнути в налаштуваннях Hub.`
+            ? `${config.label}: неактивний модуль. Увімкнути в налаштуваннях Hub.`
             : hasData
               ? `${config.label}: ${preview.main}${preview.sub ? `, ${preview.sub}` : ""}`
               : `${config.label}: ${config.emptyLabel}`
@@ -289,7 +289,7 @@ export const BentoCard = memo(function BentoCard({
 
         {inactive ? (
           <span className="text-style-caption text-muted mt-1 leading-snug">
-            Неактивний — увімкнути в налаштуваннях
+            Неактивний: увімкнути в налаштуваннях
           </span>
         ) : hasData ? (
           <>

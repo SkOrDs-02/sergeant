@@ -92,7 +92,7 @@ describe("normalizeVisionResult", () => {
     expect(draft.purchasedAt).toBe("2026-01-15T12:32:00.000Z");
   });
 
-  it("не падає на сміттєвий/нетиповий JSON — дає безпечні дефолти", () => {
+  it("не падає на сміттєвий/нетиповий JSON: дає безпечні дефолти", () => {
     const draft = normalizeVisionResult("не JSON, а рядок");
     expect(draft.store).toBe("");
     expect(draft.items).toEqual([]);

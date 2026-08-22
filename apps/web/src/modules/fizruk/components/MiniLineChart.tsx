@@ -215,7 +215,7 @@ export function MiniLineChart({
         viewBox={`0 0 ${w} ${h}`}
         className="w-full h-auto max-h-[160px] max-w-[512px] mx-auto overflow-visible touch-pan-y cursor-crosshair"
         role="img"
-        aria-label={`Графік тренду — ${metricLabel}`}
+        aria-label={`Графік тренду: ${metricLabel}`}
         aria-describedby={summaryId}
         {...bind}
       >

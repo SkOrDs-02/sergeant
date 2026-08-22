@@ -32,7 +32,7 @@ export function VibeChipRow({ picks, togglePick }: VibeChipRowProps) {
   return (
     <View className="w-full gap-2">
       <Text className="text-center text-[11px] text-fg-muted">
-        Зніми зайве — решту легко додати потім.
+        Зніми зайве, решту легко додати потім.
       </Text>
       <View className="flex-row flex-wrap gap-2">
         {ONBOARDING_VIBE_CHIP_ORDER.map((id) => {

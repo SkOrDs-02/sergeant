@@ -7,7 +7,7 @@ import {
   Sec,
 } from "../_shared/primitives";
 
-const SAMPLE_USAGE = `// Semantic style — preferred (12px floor gated by check-design-conventions)
+const SAMPLE_USAGE = `// Semantic style: preferred (12px floor gated by check-design-conventions)
 <h2 className="text-style-title text-text">…</h2>
 
 // Eyebrow / overline label
@@ -50,7 +50,7 @@ export function TypographySection() {
       title="Типографіка"
       intro={
         <>
-          Семантичні <code>text-style-*</code> утиліті — переважно; сира пара{" "}
+          Семантичні <code>text-style-*</code> утиліті, переважно; сира пара{" "}
           <code>text-sm font-medium</code> лишається на review (ADR-0081).
           Механічно блокується рівно 12px-floor: <code>text-2xs</code> і{" "}
           <code>text-[Npx]</code> з N &lt; 12 валять{" "}
@@ -58,7 +58,7 @@ export function TypographySection() {
         </>
       }
     >
-      <Group label="Tier-1 — `text-*` шкала">
+      <Group label="Tier-1: `text-*` шкала">
         <div className="space-y-1.5">
           {TEXT_SIZES.map((row) =>
             row.exempt ? (
@@ -84,7 +84,7 @@ export function TypographySection() {
         </div>
       </Group>
 
-      <Group label="Tier-0 — семантичні `text-style-*`">
+      <Group label="Tier-0: семантичні `text-style-*`">
         <div className="space-y-2">
           {SEMANTIC_STYLES.map((row) => (
             <div key={row.cls} className="flex items-baseline gap-4">
@@ -95,10 +95,10 @@ export function TypographySection() {
         </div>
       </Group>
 
-      <Group label="SectionHeading — варіанти">
+      <Group label="SectionHeading: варіанти">
         <div className="space-y-2">
-          <SectionHeading size="xs">SectionHeading xs — eyebrow</SectionHeading>
-          <SectionHeading size="xs">SectionHeading sm — eyebrow</SectionHeading>
+          <SectionHeading size="xs">SectionHeading xs: eyebrow</SectionHeading>
+          <SectionHeading size="xs">SectionHeading sm: eyebrow</SectionHeading>
           <SectionHeading size="md">SectionHeading md</SectionHeading>
           <SectionHeading size="lg">SectionHeading lg</SectionHeading>
           <SectionHeading size="xl">SectionHeading xl</SectionHeading>
@@ -157,7 +157,7 @@ export function TypographySection() {
         lintRules={[
           {
             label: "check-design-conventions",
-            hint: "12px floor — text-2xs і text-[<12px] поза allowlist",
+            hint: "12px floor: text-2xs і text-[<12px] поза allowlist",
           },
         ]}
       />

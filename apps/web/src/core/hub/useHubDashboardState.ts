@@ -397,9 +397,7 @@ export function useHubDashboardState(props: {
     ({ activeId }: { activeId: string }) => {
       const id = activeId as ModuleId;
       const label = SHARED_DASHBOARD_MODULE_LABELS[id] ?? activeId;
-      announce(
-        `Підняли ${label}. Стрілками обери позицію, Enter — зафіксувати.`,
-      );
+      announce(`Підняли ${label}. Стрілками обери позицію, Enter фіксує.`);
     },
     [announce],
   );

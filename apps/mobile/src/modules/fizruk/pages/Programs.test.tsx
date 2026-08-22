@@ -13,7 +13,7 @@
  *    slot back to the empty hero state (in-memory only — no MMKV
  *    writes after Stage 12.5).
  *  - Hero "Сьогоднішня сесія" renders when today's weekday is in the
- *    active program's schedule; falls back to "Сьогодні — вихідний"
+ *    active program's schedule; falls back to "Сьогодні: вихідний"
  *    on a rest day.
  *  - Pressing "Почати" writes a program-* id into the shared active
  *    workout MMKV slot (`FIZRUK_ACTIVE_WORKOUT`).

@@ -170,7 +170,7 @@ for (const profile of PROFILES) {
     test(`${profile.id}: PDF-експорт відповідає тарифу`, async () => {
       await goto(page, "/insights");
       await page.getByRole("button", { name: /Експортувати PDF/ }).click();
-      const paywall = page.getByText("PDF-звіти — у Premium");
+      const paywall = page.getByText("PDF-звіти у Premium");
       if (profile.plan === "pro") {
         await expect(paywall).toBeHidden();
       } else {

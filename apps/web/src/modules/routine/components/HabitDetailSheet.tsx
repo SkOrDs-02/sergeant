@@ -601,7 +601,7 @@ export function HabitDetailSheet({
       <ConfirmDialog
         open={confirmDelete}
         title={`Видалити звичку «${habitName}»?`}
-        description="Відмітки по днях теж зникнуть. Дію не можна відмінити — хіба що одразу через «Скасувати» в підказці. Замість видалення можна відправити звичку в архів через Налаштування."
+        description="Відмітки по днях теж зникнуть. Дію не можна відмінити, хіба що одразу через «Скасувати» в підказці. Замість видалення можна відправити звичку в архів через Налаштування."
         confirmLabel={messages.actions.delete}
         onConfirm={handleConfirmDelete}
         onCancel={() => setConfirmDelete(false)}

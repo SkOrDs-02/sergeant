@@ -224,7 +224,7 @@ export function iconFor(name: string): string | undefined {
 }
 
 export function titleFor(name: string, status: "completed" | "failed"): string {
-  const failedSuffix = status === "failed" ? " — не вийшло" : "";
+  const failedSuffix = status === "failed" ? ", не вийшло" : "";
   switch (name) {
     // Finyk
     case "create_transaction":

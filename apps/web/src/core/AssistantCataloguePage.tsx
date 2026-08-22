@@ -200,7 +200,7 @@ export function AssistantCataloguePage({
             {...searchFieldProps("capabilities-search")}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Пошук — наприклад, «витрата», «звичка», «1RM»…"
+            placeholder="Пошук, наприклад, «витрата», «звичка», «1RM»…"
             className="w-full bg-panel border border-line rounded-2xl pl-9 pr-3 py-3 text-style-body text-text placeholder:text-subtle focus:outline-none focus-visible:border-brand-500/50 focus-visible:ring-2 focus-visible:ring-focus/30 shadow-card"
             aria-label="Пошук можливостей"
           />
@@ -409,7 +409,7 @@ function CapabilityRow({ capability, onActivate }: CapabilityRowProps) {
               tone="warning"
               icon="alert-triangle"
               label="Ризик"
-              title="Критична дія — скасувати не можна"
+              title="Критична дія: скасувати не можна"
             />
           )}
         </span>

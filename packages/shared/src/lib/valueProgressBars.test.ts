@@ -38,7 +38,7 @@ describe("buildValueProgressBars (S3.3 shared)", () => {
     expect(bars).toHaveLength(1);
     expect(bars[0]).toEqual({
       testId: "value-progress-bar-routine",
-      label: "«Пити воду» — через 30 днів автоматично",
+      label: "«Пити воду» через 30 днів автоматично",
       current: "Зараз: 0/30",
       percent: 0,
     });
@@ -50,7 +50,7 @@ describe("buildValueProgressBars (S3.3 shared)", () => {
       goals: { ...EMPTY_GOALS, routineFirstHabit: "custom" },
     });
     expect(bars).toHaveLength(1);
-    expect(bars[0]!.label).toBe("«Своя звичка» — через 30 днів автоматично");
+    expect(bars[0]!.label).toBe("«Своя звичка» через 30 днів автоматично");
   });
 
   it("formats the finyk budget in thousands with the wizard separator", () => {

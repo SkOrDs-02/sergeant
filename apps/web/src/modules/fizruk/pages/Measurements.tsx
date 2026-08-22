@@ -318,7 +318,7 @@ export function Measurements() {
                     <SectionHeading as="div" size="xs" variant="fizruk">
                       {f.label}
                     </SectionHeading>
-                    {/* eslint-disable-next-line sergeant-design/no-raw-type-size -- пре-існуючий рядок; типографіку показників не чіпаємо в PR про розкриття полів форми. */}
+                    {}
                     <div className="text-lg font-extrabold tabular-nums text-text mt-1">
                       {Number.isFinite(Number(latest[f.id]))
                         ? Number(latest[f.id]).toLocaleString("uk-UA")
@@ -407,8 +407,8 @@ export function Measurements() {
                       aria-expanded={isRowExpanded}
                       aria-label={
                         isRowExpanded
-                          ? `${messages.fizruk.measurements.collapseFieldsLabel} — ${messages.fizruk.measurements.showAllFieldsAriaSuffix} ${dateLabel}`
-                          : `+${hiddenCount} ${messages.fizruk.measurements.moreFieldsSuffix} — ${messages.fizruk.measurements.showAllFieldsAriaSuffix} ${dateLabel}`
+                          ? `${messages.fizruk.measurements.collapseFieldsLabel}: ${messages.fizruk.measurements.showAllFieldsAriaSuffix} ${dateLabel}`
+                          : `+${hiddenCount} ${messages.fizruk.measurements.moreFieldsSuffix}: ${messages.fizruk.measurements.showAllFieldsAriaSuffix} ${dateLabel}`
                       }
                       onClick={() => toggleHistoryRow(e.id)}
                     >

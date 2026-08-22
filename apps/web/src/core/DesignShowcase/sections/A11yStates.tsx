@@ -57,13 +57,13 @@ export function A11yStatesSection() {
     <Sec id="a11y-states" title="A11y / States">
       <p className="text-style-body text-muted">
         Семантичні токени для focus, selection, scrollbar, caret і дільників.
-        Працюють однаково у світлій і темній темах — клас не повторюємо через{" "}
+        Працюють однаково у світлій і темній темах, клас не повторюємо через{" "}
         {`dark:`}. Tab-нись по контролах нижче, виділи будь-який текст, проскрол
         всередині картки.
       </p>
 
       {/* Focus rings — Tab/Shift+Tab keyboard demo */}
-      <Group label="Focus rings (Tab/Shift+Tab — keyboard only)">
+      <Group label="Focus rings (Tab/Shift+Tab, keyboard only)">
         <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-3">
             <Button variant="primary">Primary</Button>
@@ -96,7 +96,7 @@ export function A11yStatesSection() {
       </Group>
 
       {/* ::selection — text selection demo */}
-      <Group label="::selection — виділення тексту">
+      <Group label="Виділення тексту (::selection)">
         <p className="text-style-body text-text">
           Виділи цей абзац мишкою або {`⌘/Ctrl+A`}, щоб побачити м&apos;який
           емералд-фон і темно-зелений текст із токенів{" "}
@@ -114,7 +114,7 @@ export function A11yStatesSection() {
       </Group>
 
       {/* Caret — text-caret demo */}
-      <Group label="Caret — текстовий курсор">
+      <Group label="Caret: текстовий курсор">
         <div className="space-y-2">
           <Input
             placeholder="Клацни сюди, побач емералд-курсор"
@@ -129,28 +129,28 @@ export function A11yStatesSection() {
       </Group>
 
       {/* Scrollbar — global + custom-scrollbar demo */}
-      <Group label="Scrollbar — тонкі рейки через --c-scrollbar-*">
+      <Group label="Scrollbar: тонкі рейки через --c-scrollbar-*">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div
             className="h-40 overflow-auto rounded-2xl border border-divider bg-panel p-3 text-style-body text-text"
-            aria-label="Скролл-демо — глобальний scrollbar"
+            aria-label="Скролл-демо: глобальний scrollbar"
           >
             <p className="text-style-label mb-2">Глобальний scrollbar</p>
             {Array.from({ length: 16 }).map((_, i) => (
               <p key={i} className="text-muted">
-                Рядок {i + 1} — наведи курсор на трек, побач hover-фарбу на
+                Рядок {i + 1}, наведи курсор на трек, побач hover-фарбу на
                 thumb-і.
               </p>
             ))}
           </div>
           <div
             className="h-40 overflow-auto rounded-2xl border border-divider bg-panel p-3 text-style-body text-text custom-scrollbar"
-            aria-label="Скролл-демо — custom-scrollbar utility"
+            aria-label="Скролл-демо: custom-scrollbar utility"
           >
             <p className="text-style-label mb-2">.custom-scrollbar</p>
             {Array.from({ length: 16 }).map((_, i) => (
               <p key={i} className="text-muted">
-                Рядок {i + 1} — тонший варіант для popover / picker list.
+                Рядок {i + 1}, тонший варіант для popover / picker list.
               </p>
             ))}
           </div>
@@ -158,29 +158,29 @@ export function A11yStatesSection() {
       </Group>
 
       {/* Divider trio demo */}
-      <Group label="Divider trio — weak / default / strong">
+      <Group label="Divider trio: weak / default / strong">
         <div className="rounded-2xl border border-divider bg-panel">
           <div className="px-4 py-3 border-b border-divider-weak">
             <p className="text-style-body text-text">
-              <code className="text-style-code">border-divider-weak</code> —
+              <code className="text-style-code">border-divider-weak</code>:
               feather hairline між рядками у списку.
             </p>
           </div>
           <div className="px-4 py-3 border-b border-divider">
             <p className="text-style-body text-text">
-              <code className="text-style-code">border-divider</code> —
+              <code className="text-style-code">border-divider</code>:
               стандартний дільник між елементами картки.
             </p>
           </div>
           <div className="px-4 py-3 border-b border-divider-strong">
             <p className="text-style-body text-text">
-              <code className="text-style-code">border-divider-strong</code> —
+              <code className="text-style-code">border-divider-strong</code>:
               між великими секціями (header → content).
             </p>
           </div>
           <div className="px-4 py-3">
             <p className="text-style-body text-text">
-              Останній рядок без дільника — Tailwind
+              Останній рядок без дільника: Tailwind
               <code className="text-style-code"> last:border-b-0</code>.
             </p>
           </div>

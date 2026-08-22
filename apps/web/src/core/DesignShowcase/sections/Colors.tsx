@@ -7,7 +7,7 @@ import {
   Swatch,
 } from "../_shared/primitives";
 
-const SAMPLE_USAGE = `// Tokens — light / dark / hc cascade for free
+const SAMPLE_USAGE = `// Tokens: light / dark / hc cascade for free
 <div className="bg-panel text-text border border-line">…</div>
 
 // Saturated brand fill behind text-white needs the -strong companion
@@ -21,14 +21,14 @@ export function ColorsSection() {
       intro={
         <>
           Семантичні токени з <code>:root</code> та <code>.dark</code>. Hex у
-          класах заборонено — це гейтить <code>check-design-conventions</code>.
+          класах заборонено, це гейтить <code>check-design-conventions</code>.
           Парні light/dark literal, opacity-шкала і <code>-strong</code>{" "}
           компаньйон під <code>text-white</code> лишаються обовʼязковими, але
           review-only (ADR-0081).
         </>
       }
     >
-      <Group label="Semantic — поверхні">
+      <Group label="Semantic: поверхні">
         <div className="flex flex-wrap gap-4">
           <Swatch label="bg-bg" className="bg-bg" />
           <Swatch label="bg-panel" className="bg-panel" />
@@ -37,7 +37,7 @@ export function ColorsSection() {
         </div>
       </Group>
 
-      <Group label="Semantic — текст">
+      <Group label="Semantic: текст">
         <div className="flex gap-8 items-baseline">
           <div className="flex flex-col gap-1.5">
             <span className="text-style-body font-semibold text-text">
@@ -69,7 +69,7 @@ export function ColorsSection() {
         label="-strong tier (WCAG AA на сатурованих заливках)"
         description={
           <>
-            Якщо ставиш <code>text-white</code> на бренд-fill — використовуй
+            Якщо ставиш <code>text-white</code> на бренд-fill, використовуй
             <code>-strong</code> companion. Контраст перевіряється у Storybook і
             design-review.
           </>
@@ -77,10 +77,10 @@ export function ColorsSection() {
       >
         <div className="flex flex-wrap gap-3">
           <div className="bg-brand text-white rounded-xl px-3 py-2 text-style-code">
-            bg-brand · text-white (~2.7:1 — fail)
+            bg-brand · text-white (~2.7:1, fail)
           </div>
           <div className="bg-brand-strong text-white rounded-xl px-3 py-2 text-style-code">
-            bg-brand-strong · text-white (WCAG AA — recommended)
+            bg-brand-strong · text-white (WCAG AA, recommended)
           </div>
         </div>
       </Group>
@@ -116,7 +116,7 @@ export function ColorsSection() {
         lintRules={[
           {
             label: "check-design-conventions",
-            hint: "raw hex у className — кольори лише через токени",
+            hint: "raw hex у className, кольори лише через токени",
           },
         ]}
       />

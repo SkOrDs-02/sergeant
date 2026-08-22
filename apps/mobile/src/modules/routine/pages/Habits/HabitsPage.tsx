@@ -151,7 +151,7 @@ export function HabitsPage({ testID }: HabitsPageProps) {
       </View>
       <Text className="px-4 text-sm text-fg-muted leading-snug mb-2">
         Додавай, редагуй і архівуй звички. Порядок у списку = порядок у
-        календарі — використай ↑ / ↓ для зміни.
+        календарі, використай ↑ / ↓ для зміни.
       </Text>
 
       <ScrollView

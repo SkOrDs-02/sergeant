@@ -115,7 +115,7 @@ const SUMMARY_REGISTRY: Record<string, SummaryFn> = {
     // відповісти на єдине питання, яке тут важить, — «на скільки?».
     const from = stringField(input, "from");
     const to = stringField(input, "to");
-    const range = from && to ? `${from} — ${to}` : from ? `з ${from}` : "пауза";
+    const range = from && to ? `${from} – ${to}` : from ? `з ${from}` : "пауза";
     return habit ? `${habit} · ${range}` : range;
   },
 

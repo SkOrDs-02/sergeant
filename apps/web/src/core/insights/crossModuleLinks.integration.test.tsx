@@ -309,7 +309,7 @@ describe("крос-модульні зв'язки — синтетичний к�
     const mood = find("habit_rate", "wellbeing");
     expect(mood, "пара «звички × самопочуття» має бути помічена").toBeDefined();
     expect(mood!.pearson).toBeGreaterThan(NOTABLE_R);
-    expect(mood!.phrase).toBe("коли тримаєш звички — почуваєшся краще");
+    expect(mood!.phrase).toBe("коли тримаєш звички, почуваєшся краще");
   });
 
   it("мовчить про пару, якої в даних немає (контрольна група)", () => {

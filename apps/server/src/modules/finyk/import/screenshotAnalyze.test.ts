@@ -169,7 +169,7 @@ describe("normalizeImportScreenshotResult", () => {
     expect(draft.docType).toBe("other");
   });
 
-  it("не падає на сміттєвий/нетиповий JSON — дає безпечні дефолти", () => {
+  it("не падає на сміттєвий/нетиповий JSON: дає безпечні дефолти", () => {
     const draft = normalizeImportScreenshotResult("не JSON, а рядок");
     expect(draft.docType).toBe("other");
     expect(draft.bank).toBeNull();

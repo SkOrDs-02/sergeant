@@ -97,7 +97,7 @@ export function DashboardSection() {
       <SettingsSubGroup title="Вигляд">
         <ToggleRow
           label="Чистий режим"
-          description="Ховає підказки, інсайти й мотиваційні блоки — лишає на головній лише модулі."
+          description="Ховає підказки, інсайти й мотиваційні блоки, лишає на головній лише модулі."
           checked={calmMode === true}
           onChange={setCalmMode}
         />
@@ -114,7 +114,7 @@ export function DashboardSection() {
          * міграції. */}
         <ToggleRow
           label="Адаптивний порядок"
-          description="Піднімає в топ модуль, актуальний зараз — за часом дня та сигналами. Ваш порядок зберігається."
+          description="Піднімає в топ модуль, актуальний зараз, за часом дня та сигналами. Ваш порядок зберігається."
           checked={adaptiveBento !== false}
           onChange={setAdaptiveBento}
         />
@@ -180,7 +180,7 @@ export function DashboardSection() {
          * dashboard-side equivalent. */}
         <p className="text-style-caption text-subtle leading-snug">
           Які розділи показувати на головній. Неактивні розділи виглядають
-          приглушено — без кнопки швидкого додавання. Принаймні один має
+          приглушено, без кнопки швидкого додавання. Принаймні один має
           залишатися активним. Порядок змінюється на головній через кнопку
           «Налаштувати» поруч із заголовком «Розділи».
         </p>

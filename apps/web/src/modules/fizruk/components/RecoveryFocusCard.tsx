@@ -93,7 +93,7 @@ export function RecoveryFocusCard({
                 Відновлення й фокус
               </span>
               <p className="text-style-caption text-muted mt-1 leading-snug">
-                Колір на силуеті — готовність груп; чіпи — пріоритет після
+                Колір на силуеті – готовність груп; чіпи – пріоритет після
                 відпочинку.
               </p>
             </div>
@@ -147,8 +147,8 @@ export function RecoveryFocusCard({
               />
               <p className="text-style-caption text-warning-strong dark:text-warning leading-snug">
                 {rec.wellbeingMult >= 1.3
-                  ? "Поганий сон або дуже низька енергія — відновлення значно сповільнене."
-                  : "Недостатній сон або низька енергія — відновлення сповільнене."}{" "}
+                  ? "Поганий сон або дуже низька енергія, відновлення значно сповільнене."
+                  : "Недостатній сон або низька енергія, відновлення сповільнене."}{" "}
                 М{"'"}язи потребують більше часу перед наступним навантаженням.
               </p>
             </div>
@@ -181,7 +181,7 @@ export function RecoveryFocusCard({
               ))}
               {focus.length === 0 && (
                 <span className="text-style-caption text-muted">
-                  Додай завершені тренування — зʼявиться пріоритет груп.
+                  Додай завершені тренування, зʼявиться пріоритет груп.
                 </span>
               )}
             </div>

@@ -92,7 +92,7 @@ describe("Input type-aware defaults", () => {
   });
 });
 
-describe("Input — лічильник символів", () => {
+describe("Input: лічильник символів", () => {
   it("зʼявляється автоматично при maxLength", () => {
     const { getByText } = render(
       <Input maxLength={200} value="кава" readOnly />,

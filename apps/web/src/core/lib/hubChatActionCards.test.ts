@@ -201,7 +201,7 @@ describe("buildActionCard", () => {
     const card = buildActionCard({
       name: "set_habit_schedule",
       input: { habit_id: "h1", days: ["mon", "wed", "fri"] },
-      result: 'Розклад звички "Тренування" — Пн, Ср, Пт',
+      result: 'Розклад звички "Тренування": Пн, Ср, Пт',
     });
     expect(card?.module).toBe("routine");
     expect(card?.icon).toBe("calendar");
@@ -251,7 +251,7 @@ describe("buildActionCard", () => {
       input: { habit_id: "h1", from: "2026-08-10", to: "2026-08-17" },
       result: "ok",
     });
-    expect(card?.summary).toContain("2026-08-10 — 2026-08-17");
+    expect(card?.summary).toContain("2026-08-10 – 2026-08-17");
   });
 
   it("pause_habit failed — статус failed і суфікс у title", () => {
@@ -312,7 +312,7 @@ describe("buildActionCard", () => {
         result: "Помилка виконання: timeout",
       });
       expect(failed?.status).toBe("failed");
-      expect(failed?.title).toBe("Порівняння тижнів — не вийшло");
+      expect(failed?.title).toBe("Порівняння тижнів, не вийшло");
     });
   });
 });

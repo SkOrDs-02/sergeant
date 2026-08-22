@@ -25,7 +25,7 @@ interface QuickAddChipsProps {
 // bare JSX Literal nodes, not a referenced MemberExpression like this one.
 const LABELS = {
   group: "Нещодавні прийоми їжі",
-  chip: (label: string, grams: number) => `Додати ${label} — ${grams} грамів`,
+  chip: (label: string, grams: number) => `Додати ${label} ${grams} грамів`,
 };
 
 export function QuickAddChips({ chips, onTap }: QuickAddChipsProps) {

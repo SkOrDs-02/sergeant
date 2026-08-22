@@ -113,7 +113,7 @@ export function PermissionsStep({
     <View className="items-center gap-4">
       <View className="items-center gap-1">
         <Text className="text-center text-xl font-bold text-fg">
-          Дозволи — лише потрібні
+          Дозволи: лише потрібні
         </Text>
         <Text className="text-center text-xs text-fg-muted">
           Проси можна пізніше. Нічого не обов’язкове.
