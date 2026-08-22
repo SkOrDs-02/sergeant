@@ -96,6 +96,11 @@ export function PickedFoodCard({
 
   // Live-перерахунок при зміні кількості грамів.
   useEffect(() => {
+    // Порожнє поле — це «людина стирає, щоб набрати інше», а не «нуль».
+    // Без цього виходу `applyPickedFood` відкочується на `defaultGrams`
+    // і плашки внизу показують КБЖВ на 100 г, поки поле порожнє. Останні
+    // пораховані значення чесніші за таку підстановку.
+    if (pickedGrams.trim() === "") return;
     applyPickedFood(pickedFood, pickedGrams);
   }, [pickedGrams, pickedFood, applyPickedFood]);
 
@@ -199,7 +204,14 @@ export function PickedFoodCard({
               aria-label="Збільшити"
               onClick={() => {
                 const cur = Number(pickedGrams) || 100;
-                setPickedGrams(String(cur + (cur >= 50 ? 10 : 5)));
+                // Та сама стеля, що й для набраного вручну: інакше
+                // `MAX_PORTION_GRAMS` тримає лише один із двох шляхів
+                // вводу, і межа проти зайвого нуля обходиться кнопкою.
+                setPickedGrams(
+                  String(
+                    Math.min(MAX_PORTION_GRAMS, cur + (cur >= 50 ? 10 : 5)),
+                  ),
+                );
               }}
               className="text-style-title w-8 h-8 pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] rounded-full bg-panelHi text-text hover:bg-line transition-colors flex items-center justify-center"
             >
@@ -216,6 +228,10 @@ export function PickedFoodCard({
               onClick={() => setPickedGrams(String(g))}
               className={cn(
                 "px-2 py-0.5 rounded-xl text-style-caption border transition-[background-color,border-color,color,opacity]",
+                // На coarse pointer степер підмінює `WheelPicker`, а ці
+                // чіпи лишаються — тобто стають найдрібнішим тапабельним
+                // контролом картки. 44×44 тут не опційні.
+                "pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] inline-flex items-center justify-center",
                 Number(pickedGrams) === g
                   ? "bg-nutrition-strong text-white border-nutrition"
                   : "bg-panelHi text-subtle border-line hover:border-nutrition/40",

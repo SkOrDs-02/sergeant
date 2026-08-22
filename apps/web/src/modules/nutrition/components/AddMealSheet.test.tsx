@@ -72,7 +72,26 @@ vi.mock("./meal-sheet/MealTemplatesRow", () => ({
 }));
 
 vi.mock("./meal-sheet/MealTypePicker", () => ({
-  MealTypePicker: () => <div data-testid="meal-type-picker" />,
+  // Керований мок: тести мусять бачити тип прийому у формі, щоб ловити
+  // його мовчазне скидання при відмові від джерела.
+  MealTypePicker: ({
+    mealType,
+    setForm,
+  }: {
+    mealType: string;
+    setForm: (updater: (s: Record<string, unknown>) => unknown) => void;
+  }) => (
+    <div data-testid="meal-type-picker">
+      <span data-testid="meal-type-value">{mealType}</span>
+      <button
+        type="button"
+        data-testid="set-meal-type-dinner"
+        onClick={() => setForm((s) => ({ ...s, mealType: "dinner" }))}
+      >
+        Вечеря
+      </button>
+    </div>
+  ),
 }));
 
 vi.mock("./meal-sheet/NameTimeRow", () => ({
@@ -468,6 +487,42 @@ describe("AddMealSheet — source step (with templates)", () => {
     expect(screen.getByTestId("picked-grams")).toHaveTextContent("250");
   });
 
+  // Контракт збереження, а не лише навігація: режим «з упаковки» мусить
+  // лягти в журнал як productDb + foodId + вага порції, інакше зміна в
+  // `handleSave` тихо переверне походження даних.
+  it("зберігає прийом з упаковки як productDb із вагою порції", () => {
+    const onSave = vi.fn();
+    renderSheet({ mealTemplates: [], onSave });
+    fireEvent.click(screen.getByRole("button", { name: /З упаковки/ }));
+    fireEvent.click(screen.getByTestId("create-package-food"));
+    fireEvent.change(screen.getByTestId("name-input"), {
+      target: { value: "Равіолі" },
+    });
+    fireEvent.change(screen.getByTestId("kcal-input"), {
+      target: { value: "625" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Додати прийом" }));
+
+    expect(onSave).toHaveBeenCalledTimes(1);
+    expect(onSave.mock.calls[0]?.[0]).toMatchObject({
+      macroSource: "productDb",
+      foodId: "food-9",
+      amount_g: 250,
+    });
+  });
+
+  // Тип прийому й час — вибір людини, а не джерела: відмова від продукту
+  // не має відкочувати їх на «зараз».
+  it("зберігає обраний тип прийому при зміні продукту", () => {
+    renderSheet({ mealTemplates: [] });
+    fireEvent.click(screen.getByRole("button", { name: /З упаковки/ }));
+    fireEvent.click(screen.getByTestId("create-package-food"));
+    fireEvent.click(screen.getByTestId("set-meal-type-dinner"));
+    fireEvent.click(screen.getByTestId("change-product"));
+    fireEvent.click(screen.getByRole("button", { name: /Готова страва/ }));
+    expect(screen.getByTestId("meal-type-value")).toHaveTextContent("dinner");
+  });
+
   it("«Готова страва» підписує одиницю і дає перехід до режиму етикетки", () => {
     renderSheet({ mealTemplates: [] });
     fireEvent.click(screen.getByRole("button", { name: /Готова страва/ }));
@@ -690,8 +745,12 @@ describe("AddMealSheet — photo step", () => {
   it("backtracking from fill after a photo apply drops photoAI semantics", async () => {
     // Користувач застосував фото, повернувся на «Звідки страва?» і ввів
     // вручну — страва не має зберегти macroSource: photoAI, а форма не має
-    // тягти AI-засіяні значення (emptyForm тут замокано, тож перевіряємо
-    // сам скидальний виклик emptyForm(null) на backtrack-і).
+    // тягти AI-засіяні значення.
+    //
+    // Скидання перевіряємо ПО СТАНУ поля назви, а не по виклику
+    // `emptyForm(null)`: скидання більше не перебудовує весь стан форми
+    // (це затирало б обраний людиною тип прийому й час), а чистить рівно
+    // засіяні джерелом поля.
     const onSave = vi.fn();
     const { emptyForm } = await import("./meal-sheet/mealFormUtils");
     renderSheet({ onSave, initialStep: "photo", mealTemplates: [] });
@@ -702,8 +761,8 @@ describe("AddMealSheet — photo step", () => {
     fireEvent.click(
       screen.getByRole("button", { name: "Назад до вибору джерела" }),
     );
-    expect(vi.mocked(emptyForm)).toHaveBeenLastCalledWith(null);
     fireEvent.click(screen.getByRole("button", { name: /Готова страва/ }));
+    expect(screen.getByTestId("name-input")).toHaveValue("");
     fireEvent.change(screen.getByTestId("name-input"), {
       target: { value: "Суп" },
     });

@@ -53,6 +53,9 @@ export function PackageEntryStep({ onCreated }: PackageEntryStepProps) {
   };
 
   async function handleSubmit() {
+    // `disabled={busy}` ловить подвійний тап, але не програмний повтор —
+    // а тут ціна помилки це ДВА продукти в базі замість одного.
+    if (busy) return;
     const name = draft.name.trim();
     if (!name) {
       setErr("Введи назву продукту.");

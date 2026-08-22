@@ -6,7 +6,7 @@
  * на кроці «fill».
  */
 import { fireEvent, render, screen } from "@testing-library/react";
-import type { ReactElement } from "react";
+import type { ComponentProps } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("./MacroChip", () => ({
@@ -35,9 +35,7 @@ function form(overrides: Partial<MealFormState> = {}): MealFormState {
   };
 }
 
-const Card = PickedFoodCard as unknown as (
-  p: Record<string, unknown>,
-) => ReactElement;
+type CardProps = ComponentProps<typeof PickedFoodCard>;
 
 const picked: PickedFood = {
   id: "f1",
@@ -47,7 +45,7 @@ const picked: PickedFood = {
   per100: { kcal: 110, protein_g: 23, fat_g: 2, carbs_g: 0 },
 };
 
-function baseProps(overrides: Record<string, unknown> = {}) {
+function baseProps(overrides: Partial<CardProps> = {}): CardProps {
   return {
     form: form(),
     setForm: vi.fn(),
@@ -63,7 +61,7 @@ afterEach(() => vi.clearAllMocks());
 
 describe("PickedFoodCard", () => {
   it("renders the picked-food card with per-100 macros", () => {
-    render(<Card {...baseProps({ form: form({ kcal: "110" }) })} />);
+    render(<PickedFoodCard {...baseProps({ form: form({ kcal: "110" }) })} />);
     expect(screen.getByText(/Курка · Наша Ряба/)).toBeInTheDocument();
     expect(screen.getByText(/\/ 100 г/)).toBeInTheDocument();
     expect(screen.getAllByTestId("macro-chip").length).toBe(4);
@@ -72,7 +70,7 @@ describe("PickedFoodCard", () => {
   it("recalculates form macros from picked food and comma grams", () => {
     const setForm = vi.fn();
     render(
-      <Card
+      <PickedFoodCard
         {...baseProps({
           pickedFood: {
             ...picked,
@@ -99,7 +97,9 @@ describe("PickedFoodCard", () => {
 
   it("renders the OFF badge for a picked Open Food Facts product", () => {
     render(
-      <Card {...baseProps({ pickedFood: { ...picked, source: "off" } })} />,
+      <PickedFoodCard
+        {...baseProps({ pickedFood: { ...picked, source: "off" } })}
+      />,
     );
     // Позначка «Open Food Facts» — тепер `<Icon title="…">`, а не emoji.
     expect(screen.getByTitle("Open Food Facts")).toBeInTheDocument();
@@ -107,7 +107,7 @@ describe("PickedFoodCard", () => {
 
   it("increments and decrements the gram portion", () => {
     const setPickedGrams = vi.fn();
-    render(<Card {...baseProps({ setPickedGrams })} />);
+    render(<PickedFoodCard {...baseProps({ setPickedGrams })} />);
     fireEvent.click(screen.getByLabelText("Збільшити"));
     expect(setPickedGrams).toHaveBeenCalledWith("110");
     fireEvent.click(screen.getByLabelText("Зменшити"));
@@ -116,7 +116,9 @@ describe("PickedFoodCard", () => {
 
   it("uses smaller portion steps below 50 grams", () => {
     const setPickedGrams = vi.fn();
-    render(<Card {...baseProps({ pickedGrams: "25", setPickedGrams })} />);
+    render(
+      <PickedFoodCard {...baseProps({ pickedGrams: "25", setPickedGrams })} />,
+    );
     fireEvent.click(screen.getByLabelText("Збільшити"));
     expect(setPickedGrams).toHaveBeenCalledWith("30");
     fireEvent.click(screen.getByLabelText("Зменшити"));
@@ -125,14 +127,33 @@ describe("PickedFoodCard", () => {
 
   it("applies a quick-portion preset", () => {
     const setPickedGrams = vi.fn();
-    render(<Card {...baseProps({ setPickedGrams })} />);
+    render(<PickedFoodCard {...baseProps({ setPickedGrams })} />);
     fireEvent.click(screen.getByText("200"));
     expect(setPickedGrams).toHaveBeenCalledWith("200");
   });
 
+  it("не перераховує КБЖВ, поки поле ваги порожнє", () => {
+    const setForm = vi.fn();
+    render(<PickedFoodCard {...baseProps({ pickedGrams: "", setForm })} />);
+    // Порожнє поле не має підставляти `defaultGrams`: плашки внизу
+    // інакше показували б КБЖВ на 100 г під порожнім інпутом.
+    expect(setForm).not.toHaveBeenCalled();
+  });
+
+  it("тримає стелю ваги і на кнопці «+», не лише на набраному вручну", () => {
+    const setPickedGrams = vi.fn();
+    render(
+      <PickedFoodCard
+        {...baseProps({ pickedGrams: "10000", setPickedGrams })}
+      />,
+    );
+    fireEvent.click(screen.getByLabelText("Збільшити"));
+    expect(setPickedGrams).toHaveBeenCalledWith("10000");
+  });
+
   it("hands 'обрати інший продукт' back to the host", () => {
     const onChangeProduct = vi.fn();
-    render(<Card {...baseProps({ onChangeProduct })} />);
+    render(<PickedFoodCard {...baseProps({ onChangeProduct })} />);
     fireEvent.click(screen.getByLabelText("Обрати інший продукт"));
     expect(onChangeProduct).toHaveBeenCalled();
   });

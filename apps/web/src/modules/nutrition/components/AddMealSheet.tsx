@@ -61,6 +61,7 @@ import {
 } from "./meal-sheet/FoodPickerSection";
 import { PickedFoodCard } from "./meal-sheet/PickedFoodCard";
 import { PackageEntryStep } from "./meal-sheet/PackageEntryStep";
+import { ManualEntryChooser } from "./meal-sheet/ManualEntryChooser";
 import { BarcodeSection } from "./meal-sheet/BarcodeSection";
 import { MacrosEditor } from "./meal-sheet/MacrosEditor";
 import { SaveAsTemplate } from "./meal-sheet/SaveAsTemplate";
@@ -447,7 +448,22 @@ export function AddMealSheet({
     const seeded = Boolean(appliedPhoto || pickedFood);
     setPickedFood(null);
     setAppliedPhoto(null);
-    if (seeded) setForm(emptyForm(null));
+    // Чистимо РІВНО те, що засіяло джерело: назву й КБЖВ. Тип прийому та
+    // час обирає людина, і `emptyForm(null)` їх мовчки перезаписував би
+    // на `mealTypeByNow()` / `currentTime()` — хто поставив «Вечеря» о
+    // 15:00 і потім змінив продукт, отримував назад «Обід» і поточну
+    // годину.
+    if (seeded) {
+      setForm((s) => ({
+        ...s,
+        name: "",
+        kcal: "",
+        protein_g: "",
+        fat_g: "",
+        carbs_g: "",
+        err: "",
+      }));
+    }
   }
 
   // «Маю етикетку на 100 г» з ручного кроку — переводимо в режим
@@ -606,40 +622,10 @@ export function AddMealSheet({
               </Button>
             </div>
 
-            <div className="mt-5 flex items-center gap-3 text-style-caption text-muted">
-              <span className="flex-1 h-px bg-line" />
-              або ввести вручну
-              <span className="flex-1 h-px bg-line" />
-            </div>
-            {/* Дві кнопки, а не одна: вибір тут — це не «як вводити», а
-                «які числа в мене на руках». Від нього залежить одиниця
-                КБЖВ, і саме її раніше ніде не було підписано. */}
-            <div className="mt-3 grid gap-2">
-              <Button
-                type="button"
-                variant="secondary"
-                className="w-full min-h-[44px] flex-col items-start gap-0.5 py-3 text-left"
-                onClick={() => setStep("package")}
-              >
-                <span className="text-style-label text-text">З упаковки</span>
-                <span className="text-style-caption text-muted font-normal">
-                  КБЖВ на 100 г з етикетки + скільки з’їв
-                </span>
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                className="w-full min-h-[44px] flex-col items-start gap-0.5 py-3 text-left"
-                onClick={() => setStep("fill")}
-              >
-                <span className="text-style-label text-text">
-                  Готова страва
-                </span>
-                <span className="text-style-caption text-muted font-normal">
-                  КБЖВ одразу за всю порцію
-                </span>
-              </Button>
-            </div>
+            <ManualEntryChooser
+              onPackage={() => setStep("package")}
+              onWholeMeal={() => setStep("fill")}
+            />
           </>
         ) : step === "photo" ? (
           <PhotoStep onApply={handlePhotoApply} />
