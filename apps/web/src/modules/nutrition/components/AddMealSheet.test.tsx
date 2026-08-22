@@ -76,10 +76,19 @@ vi.mock("./meal-sheet/MealTypePicker", () => ({
 }));
 
 vi.mock("./meal-sheet/NameTimeRow", () => ({
-  NameTimeRow: ({ field }: { field: (key: string) => (v: string) => void }) => (
+  // Контрольований інпут: тести мусять бачити, що саме лежить у формі —
+  // зокрема після скидання значень, засіяних джерелом.
+  NameTimeRow: ({
+    form,
+    field,
+  }: {
+    form: { name: string };
+    field: (key: string) => (v: string) => void;
+  }) => (
     <input
       data-testid="name-input"
       placeholder="Назва страви"
+      value={form.name}
       onChange={(e) => field("name")(e.target.value)}
     />
   ),
@@ -186,8 +195,55 @@ vi.mock("./meal-sheet/MacrosEditor", () => ({
   ),
 }));
 
-vi.mock("./meal-sheet/SaveAsFood", () => ({
-  SaveAsFood: () => <div data-testid="save-as-food" />,
+vi.mock("./meal-sheet/PackageEntryStep", () => ({
+  PackageEntryStep: ({
+    onCreated,
+  }: {
+    onCreated: (
+      product: { id: string; name: string; per100?: unknown },
+      grams: string,
+    ) => void;
+  }) => (
+    <div data-testid="package-step">
+      <button
+        type="button"
+        data-testid="create-package-food"
+        onClick={() =>
+          onCreated(
+            {
+              id: "food-9",
+              name: "Равіолі",
+              per100: { kcal: 250, protein_g: 9, fat_g: 6, carbs_g: 40 },
+            },
+            "250",
+          )
+        }
+      >
+        Далі
+      </button>
+    </div>
+  ),
+}));
+
+vi.mock("./meal-sheet/PickedFoodCard", () => ({
+  PickedFoodCard: ({
+    pickedGrams,
+    onChangeProduct,
+  }: {
+    pickedGrams: string;
+    onChangeProduct: () => void;
+  }) => (
+    <div data-testid="picked-food-card">
+      <span data-testid="picked-grams">{pickedGrams}</span>
+      <button
+        type="button"
+        data-testid="change-product"
+        onClick={onChangeProduct}
+      >
+        Обрати інший продукт
+      </button>
+    </div>
+  ),
 }));
 
 vi.mock("./meal-sheet/SaveAsTemplate", () => ({
@@ -291,7 +347,7 @@ function renderManualSheet(
   props: Partial<React.ComponentProps<typeof AddMealSheet>> = {},
 ) {
   const view = renderSheet(props);
-  fireEvent.click(screen.getByRole("button", { name: "Ввести вручну" }));
+  fireEvent.click(screen.getByRole("button", { name: /Готова страва/ }));
   return view;
 }
 
@@ -366,7 +422,7 @@ describe("AddMealSheet — source step (with templates)", () => {
     expect(screen.getByTestId("barcode-section")).toBeInTheDocument();
   });
 
-  it("clicking 'Ввести вручну' advances to fill step", () => {
+  it("clicking 'Готова страва' advances to fill step", () => {
     renderSheet({
       mealTemplates: [
         {
@@ -377,10 +433,106 @@ describe("AddMealSheet — source step (with templates)", () => {
         },
       ],
     });
-    expect(screen.getAllByText("Ввести вручну")).toHaveLength(1);
-    fireEvent.click(screen.getByText("Ввести вручну"));
+    expect(screen.getAllByText("Готова страва")).toHaveLength(1);
+    fireEvent.click(screen.getByText("Готова страва"));
     expect(screen.getByTestId("macros-editor")).toBeInTheDocument();
     expect(screen.getByText("Додати прийом їжі")).toBeInTheDocument();
+  });
+
+  // Регресія на дефект, який знайшла тестерка 2026-08-22: у ручному вводі
+  // ніде не було сказано, в якій одиниці КБЖВ, і людина з упаковкою в
+  // руках вводила значення з етикетки (на 100 г) у поля «за всю порцію».
+  // Тепер це два явні режими, і кожен підписаний своєю одиницею.
+  it("пропонує два ручні режими з різними одиницями КБЖВ", () => {
+    renderSheet({ mealTemplates: [] });
+    expect(
+      screen.getByText("КБЖВ на 100 г з етикетки + скільки з’їв"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("КБЖВ одразу за всю порцію")).toBeInTheDocument();
+  });
+
+  it("«З упаковки» веде на крок продукту, а не одразу на fill", () => {
+    renderSheet({ mealTemplates: [] });
+    fireEvent.click(screen.getByRole("button", { name: /З упаковки/ }));
+    expect(screen.getByTestId("package-step")).toBeInTheDocument();
+    expect(screen.getByText("Продукт з упаковки")).toBeInTheDocument();
+    expect(screen.queryByTestId("macros-editor")).not.toBeInTheDocument();
+  });
+
+  it("створений з упаковки продукт приходить на fill із вагою порції", () => {
+    renderSheet({ mealTemplates: [] });
+    fireEvent.click(screen.getByRole("button", { name: /З упаковки/ }));
+    fireEvent.click(screen.getByTestId("create-package-food"));
+    expect(screen.getByTestId("macros-editor")).toBeInTheDocument();
+    expect(screen.getByTestId("picked-food-card")).toBeInTheDocument();
+    expect(screen.getByTestId("picked-grams")).toHaveTextContent("250");
+  });
+
+  it("«Готова страва» підписує одиницю і дає перехід до режиму етикетки", () => {
+    renderSheet({ mealTemplates: [] });
+    fireEvent.click(screen.getByRole("button", { name: /Готова страва/ }));
+    expect(
+      screen.getByText(/Значення — за всю порцію, як з’їв, а не на 100 г/),
+    ).toBeInTheDocument();
+    expect(screen.queryByTestId("picked-food-card")).not.toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Маю етикетку на 100 г" }),
+    );
+    expect(screen.getByTestId("package-step")).toBeInTheDocument();
+  });
+
+  // Раніше картка ваги жила у `FoodPickerSection` на кроці «source», а
+  // аркуш перемикається на «fill» у тому ж рендері, у якому з'являється
+  // `pickedFood` — тож вона розмонтовувалась, не встигнувши показатись,
+  // і порція назавжди лишалась типовою.
+  it("показує вагу порції на fill після вибору продукту з пошуку", () => {
+    renderSheet({ mealTemplates: [] });
+    fireEvent.click(screen.getByTestId("pick-food"));
+    expect(screen.getByTestId("picked-food-card")).toBeInTheDocument();
+  });
+
+  it("«обрати інший продукт» повертає на крок джерела без зв'язку", () => {
+    renderSheet({ mealTemplates: [] });
+    fireEvent.click(screen.getByTestId("pick-food"));
+    fireEvent.click(screen.getByTestId("change-product"));
+    expect(screen.getByText("Звідки страва?")).toBeInTheDocument();
+    expect(screen.queryByTestId("picked-food-card")).not.toBeInTheDocument();
+  });
+
+  // Числа, засіяні продуктом (на 100 г × вага), не мають дожити до
+  // «Готової страви», де ті самі поля означають «за всю порцію».
+  it("скидає засіяні продуктом КБЖВ при поверненні до вибору джерела", () => {
+    renderSheet({ mealTemplates: [] });
+    fireEvent.click(screen.getByRole("button", { name: /З упаковки/ }));
+    fireEvent.click(screen.getByTestId("create-package-food"));
+    // Реальна `PickedFoodCard` засіває назву й КБЖВ із картки продукту —
+    // тут вона змокана, тож те саме робимо руками.
+    fireEvent.change(screen.getByTestId("name-input"), {
+      target: { value: "Равіолі" },
+    });
+    expect(screen.getByTestId("name-input")).toHaveValue("Равіолі");
+
+    fireEvent.click(screen.getByLabelText("Назад до вибору джерела"));
+    fireEvent.click(screen.getByRole("button", { name: /Готова страва/ }));
+    expect(screen.getByTestId("name-input")).toHaveValue("");
+  });
+
+  it("не показує підказку про одиницю при редагуванні наявного прийому", () => {
+    renderSheet({
+      mealTemplates: [],
+      initialMeal: {
+        id: "m1",
+        name: "Суп",
+        mealType: "lunch",
+        time: "13:00",
+        macros: { kcal: 300, protein_g: 10, fat_g: 5, carbs_g: 40 },
+      },
+    });
+    expect(screen.getByTestId("macros-editor")).toBeInTheDocument();
+    expect(screen.queryByText(/Значення — за всю порцію/)).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Маю етикетку на 100 г" }),
+    ).toBeNull();
   });
 
   it("selecting a template via MealTemplatesRow advances to fill step", () => {
@@ -403,7 +555,7 @@ describe("AddMealSheet — fill step (no templates/photoResult/initialMeal)", ()
   it("starts at source step even when there are no templates or recent meals", () => {
     renderSheet({ mealTemplates: [] });
     expect(screen.getByText("Звідки страва?")).toBeInTheDocument();
-    expect(screen.getByText("Ввести вручну")).toBeInTheDocument();
+    expect(screen.getByText("Готова страва")).toBeInTheDocument();
     expect(screen.queryByTestId("macros-editor")).not.toBeInTheDocument();
   });
 
@@ -551,7 +703,7 @@ describe("AddMealSheet — photo step", () => {
       screen.getByRole("button", { name: "Назад до вибору джерела" }),
     );
     expect(vi.mocked(emptyForm)).toHaveBeenLastCalledWith(null);
-    fireEvent.click(screen.getByRole("button", { name: "Ввести вручну" }));
+    fireEvent.click(screen.getByRole("button", { name: /Готова страва/ }));
     fireEvent.change(screen.getByTestId("name-input"), {
       target: { value: "Суп" },
     });
@@ -758,7 +910,7 @@ describe("AddMealSheet — source step branches", () => {
 
   it("shows back arrow after manual forward navigation from source", () => {
     renderSheet({ mealTemplates: [template] });
-    fireEvent.click(screen.getByText("Ввести вручну"));
+    fireEvent.click(screen.getByText("Готова страва"));
     expect(
       screen.getByLabelText("Назад до вибору джерела"),
     ).toBeInTheDocument();
@@ -766,7 +918,7 @@ describe("AddMealSheet — source step branches", () => {
 
   it("back arrow returns to source step", () => {
     renderSheet({ mealTemplates: [template] });
-    fireEvent.click(screen.getByText("Ввести вручну"));
+    fireEvent.click(screen.getByText("Готова страва"));
     fireEvent.click(screen.getByLabelText("Назад до вибору джерела"));
     expect(screen.getByText("Звідки страва?")).toBeInTheDocument();
   });
