@@ -9,6 +9,20 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import type { ComponentProps } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+// Колесо рендериться лише на coarse pointer, а jsdom — fine. Мокаємо і
+// вказівник, і саме колесо, щоб перевірити діапазон його значень.
+const coarse = vi.hoisted(() => ({ value: false }));
+vi.mock("@shared/hooks/useCoarsePointer", () => ({
+  useCoarsePointer: () => coarse.value,
+}));
+const wheelValues = vi.hoisted(() => ({ current: [] as number[] }));
+vi.mock("@shared/components/ui/WheelPicker", () => ({
+  WheelPicker: ({ values }: { values: number[] }) => {
+    wheelValues.current = values;
+    return <div data-testid="wheel" />;
+  },
+}));
+
 vi.mock("./MacroChip", () => ({
   MacroChip: ({ label, value }: { label: string; value: number | null }) => (
     <div data-testid="macro-chip">
@@ -183,6 +197,32 @@ describe("PickedFoodCard", () => {
     expect(updater(form())).toMatchObject({ kcal: "14" });
     // jsdom — fine pointer, тож рендериться степер, а не колесо.
     expect(screen.getByLabelText("Грами")).toHaveValue("12.5");
+  });
+
+  it("не перераховує КБЖВ під нульову вагу", () => {
+    // «0» набирається так само легко, як порожнє поле, і доти відкочував
+    // розрахунок на `defaultGrams`: у полі 0, а плашки — на 100 г.
+    const setForm = vi.fn();
+    render(<PickedFoodCard {...baseProps({ pickedGrams: "0", setForm })} />);
+    expect(setForm).not.toHaveBeenCalled();
+  });
+
+  it("колесо покриває всю дозволену межу, а не лише до 1000 г", () => {
+    // На тачі колесо ПІДМІНЯЄ текстове поле, тож вага понад 1000 г була
+    // недосяжна взагалі, хоча стеля — 10 000 г.
+    coarse.value = true;
+    try {
+      render(<PickedFoodCard {...baseProps({ pickedGrams: "2000" })} />);
+      expect(screen.getByTestId("wheel")).toBeInTheDocument();
+      const vals = wheelValues.current;
+      expect(vals).toContain(2000);
+      expect(vals).toContain(5000);
+      expect(vals[vals.length - 1]).toBe(10000);
+      // Дрібний крок там, де живуть реальні порції.
+      expect(vals).toContain(125);
+    } finally {
+      coarse.value = false;
+    }
   });
 
   it("hands 'обрати інший продукт' back to the host", () => {

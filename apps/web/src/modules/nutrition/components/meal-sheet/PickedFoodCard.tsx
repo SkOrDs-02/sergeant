@@ -59,6 +59,12 @@ export function PickedFoodCard({
   const gramValues = useMemo(() => {
     const base: number[] = [];
     for (let g = 5; g <= 1000; g += 5) base.push(g);
+    // Вище 1000 г крок навмисно грубішає. На coarse pointer колесо
+    // ПІДМІНЯЄ текстове поле, тож із кроком 5 до самої стелі вага
+    // 1005–9995 г була недосяжна взагалі; а рівний крок 5 до 10 кг дав
+    // би ~2000 позицій. Реальні порції живуть нижче 1 кг, тому дрібний
+    // крок лишається там, а хвіст існує, щоб межа була досяжна.
+    for (let g = 1050; g <= MAX_PORTION_GRAMS; g += 50) base.push(g);
     // Keep an adopted free-form value (e.g. 33 g from a barcode) exactly
     // representable so the wheel highlights it without silently snapping.
     // БЕЗ `Math.round`: крок «з упаковки» приймає дробові грами, і 12.5
@@ -100,11 +106,13 @@ export function PickedFoodCard({
 
   // Live-перерахунок при зміні кількості грамів.
   useEffect(() => {
-    // Порожнє поле — це «людина стирає, щоб набрати інше», а не «нуль».
-    // Без цього виходу `applyPickedFood` відкочується на `defaultGrams`
-    // і плашки внизу показують КБЖВ на 100 г, поки поле порожнє. Останні
-    // пораховані значення чесніші за таку підстановку.
-    if (pickedGrams.trim() === "") return;
+    // Перераховуємо ЛИШЕ під додатну вагу. Порожнє поле — це «людина
+    // стирає, щоб набрати інше», а «0» набирається так само легко; в
+    // обох випадках `applyPickedFood` відкотився б на `defaultGrams`, і
+    // плашки внизу показували б КБЖВ на 100 г, поки в полі стоїть 0.
+    // Останні пораховані значення чесніші за таку підстановку.
+    const grams = Number(String(pickedGrams).trim().replace(",", "."));
+    if (!Number.isFinite(grams) || grams <= 0) return;
     applyPickedFood(pickedFood, pickedGrams);
   }, [pickedGrams, pickedFood, applyPickedFood]);
 
