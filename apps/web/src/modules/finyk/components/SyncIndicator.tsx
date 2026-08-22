@@ -1,4 +1,3 @@
-import { cn } from "@shared/lib/ui/cn";
 import type { IconName } from "@shared/components/ui/Icon";
 
 // Tolerant shape: `useUnifiedFinanceData` merges mono/privat sync
@@ -84,38 +83,6 @@ export function getSyncTone(
   };
 }
 
-interface SwipeProgressProps {
-  swipeDx: number;
-  threshold: number;
-}
-
-/**
- * Swipe progress bar component for tab swipe gestures.
- */
-export function SwipeProgressBar({
-  swipeDx,
-  threshold,
-}: SwipeProgressProps): React.ReactElement | null {
-  if (swipeDx === 0) return null;
-
-  return (
-    <div
-      aria-hidden
-      className="pointer-events-none absolute top-0 inset-x-0 h-0.5 z-20 overflow-hidden"
-    >
-      <div
-        className={cn(
-          "h-full",
-          Math.abs(swipeDx) >= threshold ? "bg-finyk" : "bg-finyk/40",
-        )}
-        style={{
-          width: `${Math.min(100, (Math.abs(swipeDx) / threshold) * 100)}%`,
-          marginLeft: swipeDx < 0 ? "auto" : 0,
-          transition: "background-color 120ms linear",
-        }}
-      />
-    </div>
-  );
-}
-
-export const SWIPE_THRESHOLD_PX = 60 as const;
+// SwipeProgressBar / SWIPE_THRESHOLD_PX переїхали у
+// `@shared/components/layout/SwipePages` — смуга прогресу тепер спільна для
+// всіх модулів і фарбується акцентом модуля, а не жорстко `bg-finyk`.

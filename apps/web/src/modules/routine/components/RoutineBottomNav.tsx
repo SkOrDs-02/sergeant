@@ -89,6 +89,14 @@ const NAV: readonly RoutineNavItem[] = [
   },
 ];
 
+/**
+ * Порядок вкладок для нижньої навігації та горизонтального свайпу
+ * (`SwipePages`) — один список, щоб жест і смужка табів рухались в один бік.
+ */
+export const ROUTINE_TAB_IDS: readonly RoutineMainTab[] = NAV.map(
+  (item) => item.id,
+);
+
 export interface RoutineBottomNavProps {
   mainTab: RoutineMainTab;
   onSelectTab: (tab: RoutineMainTab) => void;

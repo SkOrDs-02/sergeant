@@ -95,7 +95,7 @@
 targets)` у `ci.yml`; сам status check у branch protection вмикається
 >    поза репо.
 > 8. **Mobile теми (high).** mobile.js — статична dark-only палітра при
->    light+dark апці (23 споживачі); нема hc-режиму (web 4-mode, mobile
+>    light+dark апці (23 споживачі); нема hc-режиму (web 3-mode, mobile
 >    3-mode); типографіка без семантичної шкали (140 sub-12px arbitrary,
 >    469 text-xs); mobile-shell: статус-бар темізується один раз на init,
 >    Android-сплеш без values-night; ProgressRing.tsx — третя off-brand
