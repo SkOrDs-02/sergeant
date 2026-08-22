@@ -198,7 +198,7 @@ export function InlineAiRail({
               )}
               {state.truncated && !state.hasToolCalls && (
                 <span className="text-style-caption text-muted">
-                  Повна відповідь у чаті
+                  Повна відповідь – у чаті
                 </span>
               )}
               <button

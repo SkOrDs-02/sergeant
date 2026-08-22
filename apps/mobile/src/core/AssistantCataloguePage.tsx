@@ -162,7 +162,7 @@ export function AssistantCataloguePage({
       >
         <Text className="text-sm text-fg-muted mb-3 leading-snug">
           Усе, що вміє Сержант. Тапни картку, побачиш приклади команд та опис.
-          Запуск сценаріїв у HubChat (наразі веб-версія).
+          Запуск сценаріїв – у HubChat (наразі веб-версія).
         </Text>
 
         <CapabilityLegend />

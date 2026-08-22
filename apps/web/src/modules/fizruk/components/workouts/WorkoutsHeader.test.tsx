@@ -35,7 +35,7 @@ describe("WorkoutsHeader", () => {
     expect(
       screen.queryByRole("button", { name: "Повернутись до тренувань" }),
     ).not.toBeInTheDocument();
-    expect(screen.getByText("Перше тренування попереду")).toBeInTheDocument();
+    expect(screen.getByText("Перше тренування – попереду")).toBeInTheDocument();
   });
 
   it("shows the 'Завершено: N' subtitle on home when finishedCount > 0 and no active workout", () => {

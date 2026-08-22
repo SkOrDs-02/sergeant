@@ -165,7 +165,7 @@ export function ProfilePage() {
         defaultOpen={false}
         headingSize="md"
         collapsedIcon="activity"
-        collapsedSubtitle="Зріст, вага, активність для розрахунку калорій"
+        collapsedSubtitle="Зріст, вага, активність – для розрахунку калорій"
       >
         <BiometricsSection online={online} />
       </CollapsibleSection>

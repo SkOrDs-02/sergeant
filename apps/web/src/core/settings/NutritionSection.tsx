@@ -199,7 +199,7 @@ export function NutritionSection() {
           </select>
         </label>
         <p className="text-style-caption text-subtle">
-          Деталі продуктів і перейменування комор у менеджері комори всередині
+          Деталі продуктів і перейменування комор – у менеджері комори всередині
           модуля Їжі.
         </p>
         <Button

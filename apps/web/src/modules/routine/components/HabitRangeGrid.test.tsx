@@ -77,7 +77,7 @@ describe("HabitRangeGrid", () => {
     });
     expect(
       screen.getByRole("img", {
-        name: "Спортзал: 0 з 7 виконано, 1 не зміг · останні 7 днів",
+        name: "Спортзал: 0 з 7 виконано, 1 – не зміг · останні 7 днів",
       }),
     ).toBeInTheDocument();
   });

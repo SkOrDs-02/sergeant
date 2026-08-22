@@ -83,7 +83,7 @@ export function Progress({ data }: ProgressProps = {}) {
             <View testID="fizruk-progress-phase-hint" className="pt-1">
               <Text className="text-[10px] text-fg-subtle text-center">
                 {
-                  "Фаза 6 · PR-D: графіки (victory-native). Фотопрогрес і бекап у PR-E."
+                  "Фаза 6 · PR-D: графіки (victory-native). Фотопрогрес і бекап – у PR-E."
                 }
               </Text>
             </View>

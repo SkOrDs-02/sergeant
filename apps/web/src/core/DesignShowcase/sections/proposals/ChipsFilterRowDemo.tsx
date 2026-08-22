@@ -55,7 +55,7 @@ export function ChipsFilterRowDemo() {
         className="mb-4 rounded-xl border border-danger/30 bg-danger/8 px-4 py-3 text-style-caption text-text"
       >
         <p className="font-medium text-danger-strong">
-          Відхилено: chip-scroller-фільтр без верхньої межі це атрактор №7
+          Відхилено: chip-scroller-фільтр без верхньої межі – атрактор №7
         </p>
         <p className="mt-1 text-muted">
           Патерн суперечить анти-слоп атрактору №7 (chip-scroller-и як дефолтний

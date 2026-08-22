@@ -70,7 +70,7 @@ export function TodaySessionCard({
             Сьогодні: вихідний
           </Text>
           <Text className="text-sm text-fg-muted leading-snug">
-            Наступна сесія згідно графіка програми. Відпочинок це частина
+            Наступна сесія – згідно графіка програми. Відпочинок – частина
             прогресу.
           </Text>
         </View>

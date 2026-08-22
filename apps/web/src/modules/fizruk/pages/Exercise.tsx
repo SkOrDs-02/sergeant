@@ -391,7 +391,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
               color={chartStatusSeries.warning}
             />
             <div className="text-style-caption text-subtle mt-1">
-              Менше краще (швидший темп)
+              Менше – краще (швидший темп)
             </div>
           </Card>
         )}

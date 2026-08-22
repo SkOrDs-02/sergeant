@@ -144,7 +144,7 @@ export function InlineAiRail({
               )}
               {state.truncated && !state.hasToolCalls && (
                 <Text className="text-xs text-fg-muted">
-                  Повна відповідь у чаті
+                  Повна відповідь – у чаті
                 </Text>
               )}
               <Pressable

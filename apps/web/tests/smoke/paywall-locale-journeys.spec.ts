@@ -27,7 +27,7 @@ test("@critical paywall: free-user PDF export opens paywall and leads to pricing
   await expect(paywall).toBeVisible();
   await expect(
     paywall.getByText(
-      "Розширені звіти між модулями та експорт PDF у Premium підписці.",
+      "Розширені звіти між модулями та експорт PDF – у Premium підписці.",
     ),
   ).toBeVisible();
 

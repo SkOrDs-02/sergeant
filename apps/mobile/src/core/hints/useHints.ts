@@ -116,7 +116,7 @@ export function useHints({
         case "ftux_reports_unlock":
           return "Звіти з’являться після першого запису.";
         case "ftux_quick_add":
-          return "Швидке додавання це найкоротший шлях до результату.";
+          return "Швидке додавання – найкоротший шлях до результату.";
         case "module_first_entry":
           return "Після першого запису спробуй «Звіти», там найшвидше видно прогрес.";
         case "hub_reorder_modules":

@@ -315,7 +315,7 @@ export function Workouts({ testID = "fizruk-workouts" }: WorkoutsProps) {
     ? `Активне · ${activeItems.length} вправ`
     : finishedCount > 0
       ? `Завершено: ${finishedCount}`
-      : "Перше тренування попереду";
+      : "Перше тренування – попереду";
 
   return (
     <SafeAreaView

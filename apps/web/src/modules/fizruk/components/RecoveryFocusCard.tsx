@@ -93,7 +93,7 @@ export function RecoveryFocusCard({
                 Відновлення й фокус
               </span>
               <p className="text-style-caption text-muted mt-1 leading-snug">
-                Колір на силуеті це готовність груп; чіпи це пріоритет після
+                Колір на силуеті – готовність груп; чіпи – пріоритет після
                 відпочинку.
               </p>
             </div>

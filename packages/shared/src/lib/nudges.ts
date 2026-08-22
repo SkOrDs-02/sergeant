@@ -60,7 +60,7 @@ const NUDGE_CATALOG: readonly NudgeDefinition[] = [
   {
     id: "day2_routine",
     day: 2,
-    message: "Вчора ти зробив перший запис. Сьогодні створи звичку?",
+    message: "Вчора ти зробив перший запис. Сьогодні – створи звичку?",
     conditionModule: "routine",
     conditionEmpty: true,
   },

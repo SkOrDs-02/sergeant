@@ -315,7 +315,7 @@ export function Exercise({
               testIDPrefix={`${testID}-trend-pace`}
             />
             <Text className="text-[10px] text-fg-subtle mt-1">
-              Менше краще (швидший темп)
+              Менше – краще (швидший темп)
             </Text>
           </Card>
         ) : null}

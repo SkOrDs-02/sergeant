@@ -106,7 +106,7 @@ export const routinePageMessages = {
     // Підсумок рядка для скрінрідера; плейсхолдери склеюються на місці
     // виклику (`MessageCatalog` тримає лише plain-strings).
     rowSummary: "{name}: {done} з {total} виконано",
-    rowSkippedSuffix: ", {skipped} не зміг",
+    rowSkippedSuffix: ", {skipped} – не зміг",
     legendLabel: "Легенда станів",
     stateDone: "виконано",
     stateSkipped: "не зміг",

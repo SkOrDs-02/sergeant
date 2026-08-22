@@ -37,7 +37,7 @@ export function SplashStep({ picks, togglePick, onContinue }: SplashStepProps) {
       </View>
       <View className="items-center">
         <Text className="text-center text-2xl font-bold text-fg">
-          Твоє життя це один екран.
+          Твоє життя – один екран.
         </Text>
         <Text className="mt-2 text-center text-sm leading-relaxed text-fg-muted">
           Гроші, тіло, звички, їжа. Офлайн. ~5 секунд на перший запис.

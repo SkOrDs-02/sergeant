@@ -249,7 +249,7 @@ export function RoutineCalendarPanel({
           Показувати у стрічці
         </SectionHeading>
         <p className="text-style-caption text-subtle">
-          Фільтр списку нижче. Підсумки на вкладці «Статистика».
+          Фільтр списку нижче. Підсумки – на вкладці «Статистика».
         </p>
 
         <Segmented

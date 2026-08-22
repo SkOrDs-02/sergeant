@@ -53,7 +53,7 @@ export function ProposalsVisualSection() {
     <Sec
       id="proposals-visual"
       title="Proposals · Visual (зараз → може бути)"
-      intro="Мокапи візуальних ідей у форматі порівняння: ліворуч поточний вигляд, праворуч пропозиція. Прототипи без привʼязки до реальних даних; тему перемикай у шапці. V-8 (полумʼя серії) прибрано, вже реалізовано."
+      intro="Мокапи візуальних ідей у форматі порівняння: ліворуч – поточний вигляд, праворуч – пропозиція. Прототипи без привʼязки до реальних даних; тему перемикай у шапці. V-8 (полумʼя серії) прибрано, вже реалізовано."
     >
       <div className="flex flex-col gap-6">
         <ProposalCompareCard
@@ -123,7 +123,7 @@ export function ProposalsVisualSection() {
         <ProposalCompareCard
           id="V-20"
           title="Focus-ring у кольорі модуля"
-          intent="Зараз :focus-visible нейтральний ring-focus скрізь. Пропозиція: тінтувати ring акцентом модуля (--module-accent-rgb уже існує), зберігаючи контраст і розмір."
+          intent="Зараз :focus-visible – нейтральний ring-focus скрізь. Пропозиція: тінтувати ring акцентом модуля (--module-accent-rgb уже існує), зберігаючи контраст і розмір."
         >
           <FocusGlowDemo />
         </ProposalCompareCard>
@@ -144,7 +144,7 @@ export function ProposalsVisualSection() {
           <span className="h-px flex-1 bg-line" />
         </div>
         <p className="text-style-caption leading-relaxed text-muted">
-          Кожен мокап це пара «Зараз ↔ Може бути». R2-V-10/16/18 зі списку рев’ю
+          Кожен мокап – пара «Зараз ↔ Може бути». R2-V-10/16/18 зі списку рев’ю
           прибрано як уже реалізовані вище (DynamicThemeColor · EmptyStateIdle ·
           BottomNavGlow). Анімовані демо поважають prefers-reduced-motion.
         </p>
@@ -152,7 +152,7 @@ export function ProposalsVisualSection() {
         <ProposalCompareCard
           id="R2-V-1"
           title="View Transitions API"
-          intent="Зараз переходи модуль↔хаб це кастомний PageTransition. Пропозиція: нативний startViewTransition з крос-фейдом/слайдом."
+          intent="Зараз переходи модуль↔хаб – кастомний PageTransition. Пропозиція: нативний startViewTransition з крос-фейдом/слайдом."
         >
           <ViewTransitionDemo />
         </ProposalCompareCard>
@@ -160,7 +160,7 @@ export function ProposalsVisualSection() {
         <ProposalCompareCard
           id="R2-V-2"
           title="Shared-element morph"
-          intent="Зараз іконка модуля і хедер це окремі елементи, поява різка. Пропозиція: іконка «перелітає» в акцент-хедер спільним елементом переходу."
+          intent="Зараз іконка модуля і хедер – окремі елементи, поява різка. Пропозиція: іконка «перелітає» в акцент-хедер спільним елементом переходу."
         >
           <SharedElementMorphDemo />
         </ProposalCompareCard>
@@ -224,7 +224,7 @@ export function ProposalsVisualSection() {
         <ProposalCompareCard
           id="R2-V-11"
           title="Одометр великих тоталів"
-          intent="Зараз AnimatedNumber просто тікає. Пропозиція: кожна цифра це окремий барабан, що прокручується (натяк на лічильник)."
+          intent="Зараз AnimatedNumber просто тікає. Пропозиція: кожна цифра – окремий барабан, що прокручується (натяк на лічильник)."
         >
           <OdometerRollupDemo />
         </ProposalCompareCard>

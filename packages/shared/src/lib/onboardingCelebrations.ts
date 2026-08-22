@@ -52,7 +52,8 @@ export const FIRST_ENTRY_CELEBRATIONS: Record<
 > = {
   finyk: {
     headline: "Перша витрата записана",
-    subtext: "Тепер бюджет твій. Ще кілька записів, і Sergeant покаже тренди.",
+    subtext:
+      "Тепер бюджет – твій. Ще кілька записів, і Sergeant покаже тренди.",
     nextStepTip:
       "Додай ще 2-3 витрати, Sergeant покаже категорії, де гроші тікають швидше.",
     primaryCtaLabel: "Записати ще витрату",
