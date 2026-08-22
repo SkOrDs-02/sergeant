@@ -21,6 +21,17 @@ import {
 } from "./tokens.js";
 
 /**
+ * `"#rrggbb"` → `"R G B"` — форма, яку потребує `rgb(var(--x, R G B))`.
+ *
+ * AI-CONTEXT: fallback у `var()` тут не косметика. Пресет споживають дві
+ * платформи, і мобільний `global.css` визначає лише частину змінних; без
+ * другого аргументу невизначена змінна віддала б `rgb( / 1)`, тобто
+ * прозорий текст. Fallback лишає значення тим самим, що й до змінних.
+ */
+const hexToRgbTriple = (hex) =>
+  [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(" ");
+
+/**
  * Маска відривної перфорації — спільна для `.edge-perf` і `.edge-stub`.
  *
  * AI-CONTEXT: винесена в константу навмисно. Дві копії того самого
@@ -230,10 +241,17 @@ const preset = {
         // companion (text-on-cream / fill-with-white) that clears WCAG AA
         // at body sizes. See docs/design/brand-palette-wcag-aa-proposal.md.
         // ═══════════════════════════════════════════════════════════════════
-        success: statusColors.success,
-        danger: statusColors.danger,
-        warning: statusColors.warning,
-        info: statusColors.info,
+        // AI-CONTEXT (2026-08-21): чотири базові статуси читаються через
+        // `--c-{status}`, а не як літерал. Змінні існували в theme.css від
+        // початку (і `html.hc` навіть перекидав їх на тир -800), але жодна
+        // з них НЕ доїжджала в утиліту — пресет віддавав статичний -500 у
+        // будь-якій темі. Тобто режим високого контрасту мовчки не діяв на
+        // `text-danger`, а темна тема не мала способу підняти тир узагалі.
+        // Fallback лишає -500 там, де змінних немає (мобільний preset).
+        success: `rgb(var(--c-success, ${hexToRgbTriple(statusColors.success)}) / <alpha-value>)`,
+        danger: `rgb(var(--c-danger, ${hexToRgbTriple(statusColors.danger)}) / <alpha-value>)`,
+        warning: `rgb(var(--c-warning, ${hexToRgbTriple(statusColors.warning)}) / <alpha-value>)`,
+        info: `rgb(var(--c-info, ${hexToRgbTriple(statusColors.info)}) / <alpha-value>)`,
         "success-soft": "rgb(var(--c-success-soft) / <alpha-value>)",
         "warning-soft": "rgb(var(--c-warning-soft) / <alpha-value>)",
         "danger-soft": "rgb(var(--c-danger-soft) / <alpha-value>)",
@@ -262,11 +280,16 @@ const preset = {
         // `-soft-fg` contract: deep ink on the pale light/HC surface, bright
         // accent on the deep dark surface. Backed by `--c-brand-soft-fg`.
         "brand-soft-fg": "rgb(var(--c-brand-soft-fg) / <alpha-value>)",
-        // WCAG-AA companions: `text-{c}-strong` on the page background /
-        // soft surfaces, `bg-{c}-strong text-white` on solid fills
+        // WCAG-AA companions: `bg-{c}-strong text-white` on solid fills
         // (Buttons, Badges, Tabs). Значення — з `statusStrongHex`, а не
         // літералами тут: літерали не мали гейта й розійшлися з фактом
         // (див. AI-CONTEXT біля мапи в `tokens.js`).
+        //
+        // AI-DANGER: 2026-08-21 — це ЗАЛИВКА, і вона однакова в обох
+        // темах. Текстовий бік `-strong` живе окремо, у `textColor` нижче,
+        // і в темній темі віддає інший тир. Не «зводь» їх назад в одне
+        // значення: заливці під `text-white` потрібна люмінантність ≤0.183,
+        // тексту на чорнилі — ≥0.20, і спільного числа між ними не існує.
         "success-strong": statusStrongHex.success, // #065f46 — 6.44:1 на #ecebe7 / 7.68:1 на білому
         "warning-strong": statusStrongHex.warning, // #92400e — 5.94:1 на #ecebe7 / 7.09:1 на білому
         "danger-strong": statusStrongHex.danger, // #991b1b — 6.97:1 на #ecebe7 / 8.31:1 на білому
@@ -515,6 +538,39 @@ const preset = {
         "surface-line": "var(--surface-line)",
         "line-v2": "var(--line-v2)",
         "line-strong-v2": "var(--line-strong-v2)",
+      },
+
+      // ═══════════════════════════════════════════════════════════════════
+      // TEXT COLOR — тема-залежний чорнильний тир для `text-{status}-strong`
+      // ═══════════════════════════════════════════════════════════════════
+      // AI-CONTEXT (2026-08-21, репорт тестера «червоні літери в темній
+      // темі погано видно»): `-strong` несе ДВІ ролі — заливку під
+      // `text-white` і текст на поверхні сторінки. У світлій темі одне
+      // значення (тир -800) обслуговує обидві. У «Чорнилі» — ні: та сама
+      // red-800 на картці #1b1613 дає 1.9:1, тобто текст помилки форми
+      // практично невидимий.
+      //
+      // Tailwind дозволяє розвести ролі без жодної правки в call-site-ах:
+      // `colors` лишається джерелом для `bg-`/`border-`, а цей блок
+      // перекриває РІВНО утиліту `text-`. Тому всі 376 місць
+      // `text-{status}-strong` стають тема-залежними, а ~20 заливок
+      // `bg-{status}-strong text-white` лишаються з вивіреним тиром -800.
+      //
+      // Чому не ручні `dark:`-пари: саме вони й були механізмом раніше —
+      // і мовчки пропустили третину місць (125 із 175 `text-danger-strong`
+      // мали пару, решта малювала темно-червоне по темному). Пара в
+      // className не має гейта; змінна має — `theme.softContrast.test.ts`.
+      //
+      // Самі значення тира живуть у `statusInkHex` (tokens.js) і
+      // дзеркаляться в `--c-{status}-ink` у `apps/web/src/styles/theme.css`
+      // — так само, як `inkTheme` дзеркалиться в `--c-bg`/`--c-text`.
+      // Тут лишається fallback на світлий тир: платформа без цих змінних
+      // (мобільний `global.css`) рендерить рівно те, що й раніше.
+      textColor: {
+        "success-strong": `rgb(var(--c-success-ink, ${hexToRgbTriple(statusStrongHex.success)}) / <alpha-value>)`,
+        "warning-strong": `rgb(var(--c-warning-ink, ${hexToRgbTriple(statusStrongHex.warning)}) / <alpha-value>)`,
+        "danger-strong": `rgb(var(--c-danger-ink, ${hexToRgbTriple(statusStrongHex.danger)}) / <alpha-value>)`,
+        "info-strong": `rgb(var(--c-info-ink, ${hexToRgbTriple(statusStrongHex.info)}) / <alpha-value>)`,
       },
 
       // ═══════════════════════════════════════════════════════════════════

@@ -1,6 +1,6 @@
 # Sergeant Brandbook & Design-система
 
-> **Last touched:** 2026-08-08 by @claude. **Next review:** 2027-03-18.
+> **Last touched:** 2026-08-21 by @claude. **Next review:** 2026-12-16.
 > **Status:** Active
 
 Дизайн-філософія Sergeant — **Soft & Organic** на теплій крем-базі.
@@ -122,17 +122,43 @@ Info:     #0ea5e9 (Sky 500)
 
 Насичені відтінки вище коректні для **бренд-ідентичності** (лого, marketing-asset-и, dark-mode-рендер, App Store-скріншоти, solid-module-surface-и), але **не** проходять WCAG 2.1 AA 4.5 : 1 на фоні сторінки `bg-bg` (`#ecebe7`) чи чисто білому `bg-panel` (`#ffffff`) на body-розмірах. Кожен насичений brand-колір має `-strong`-companion-а. **Використовуй тір strong, коли колір рендериться як текст або як fill під `text-white`.**
 
-| Family    | Saturated (DEFAULT) | Strong (Tailwind utility)                                  | Hex       | vs `bg-bg` `#ecebe7` | vs `text-white` |
-| --------- | ------------------- | ---------------------------------------------------------- | --------- | -------------------- | --------------- |
-| brand     | `#44403c`           | `bg-brand-strong` / `text-brand-strong` (= stone-800)      | `#292524` | 12.72 : 1            | 15.17 : 1       |
-| success   | `#10b981`           | `bg-success-strong` / `text-success-strong` (emerald-800)  | `#065f46` | 6.44 : 1             | 7.68 : 1        |
-| warning   | `#f59e0b`           | `bg-warning-strong` / `text-warning-strong` (amber-800)    | `#92400e` | 5.94 : 1             | 7.09 : 1        |
-| danger    | `#ef4444`           | `bg-danger-strong` / `text-danger-strong` (red-800)        | `#991b1b` | 6.97 : 1             | 8.31 : 1        |
-| info      | `#0ea5e9`           | `bg-info-strong` / `text-info-strong` (sky-800)            | `#075985` | 6.34 : 1             | 7.56 : 1        |
-| finyk     | `#0f766e`           | `bg-finyk-strong` / `text-finyk-strong` (teal-800)         | `#115e59` | 6.36 : 1             | 7.58 : 1        |
-| fizruk    | `#0e7490`           | `bg-fizruk-strong` / `text-fizruk-strong` (cyan-800)       | `#155e75` | 6.09 : 1             | 7.27 : 1        |
-| routine   | `#eb7691`           | `bg-routine-strong` / `text-routine-strong` (rose-800)     | `#8d4256` | 5.78 : 1             | 6.89 : 1        |
-| nutrition | `#92cc17`           | `bg-nutrition-strong` / `text-nutrition-strong` (lime-800) | `#466212` | 5.84 : 1             | 6.96 : 1        |
+| Family  | Saturated (DEFAULT) | Strong (Tailwind utility)                                 | Hex       | vs `bg-bg` `#ecebe7` | vs `text-white` |
+| ------- | ------------------- | --------------------------------------------------------- | --------- | -------------------- | --------------- |
+| brand   | `#44403c`           | `bg-brand-strong` / `text-brand-strong` (= stone-800)     | `#292524` | 12.72 : 1            | 15.17 : 1       |
+| success | `#10b981`           | `bg-success-strong` / `text-success-strong` (emerald-800) | `#065f46` | 6.44 : 1             | 7.68 : 1        |
+| warning | `#f59e0b`           | `bg-warning-strong` / `text-warning-strong` (amber-800)   | `#92400e` | 5.94 : 1             | 7.09 : 1        |
+| danger  | `#ef4444`           | `bg-danger-strong` / `text-danger-strong` (red-800)       | `#991b1b` | 6.97 : 1             | 8.31 : 1        |
+| info    | `#0ea5e9`           | `bg-info-strong` / `text-info-strong` (sky-800)           | `#075985` | 6.34 : 1             | 7.56 : 1        |
+
+| finyk | `#0f766e` | `bg-finyk-strong` / `text-finyk-strong` (teal-800) | `#115e59` | 6.36 : 1 | 7.58 : 1 |
+| fizruk | `#0e7490` | `bg-fizruk-strong` / `text-fizruk-strong` (cyan-800) | `#155e75` | 6.09 : 1 | 7.27 : 1 |
+| routine | `#eb7691` | `bg-routine-strong` / `text-routine-strong` (rose-800) | `#8d4256` | 5.78 : 1 | 6.89 : 1 |
+| nutrition | `#92cc17` | `bg-nutrition-strong` / `text-nutrition-strong` (lime-800) | `#466212` | 5.84 : 1 | 6.96 : 1 |
+
+> **Темна тема: `text-{status}-strong` більше НЕ дорівнює колонці «Hex».**
+> Таблиця вище описує **світлий** тир. У «Чорнилі» той самий red-800 на
+> картці `#1b1613` дає **1.9 : 1** — тобто текст помилки форми був там
+> практично невидимий, і саме це приніс тестер 2026-08-21 («червоні літери
+> погано видно»). Дефект був системний: `text-{status}-strong` стоїть у 376
+> місцях, і лише дві третини мали ручну пару `dark:text-{status}`.
+>
+> Тому роль `-strong` розведено на дві, кожна зі своїм джерелом:
+>
+> | Роль                                 | Утиліта                          | Джерело                               | Світла тема | «Чорнило» |
+> | ------------------------------------ | -------------------------------- | ------------------------------------- | ----------- | --------- |
+> | Заливка під `text-white`, рамка      | `bg-{status}-strong`, `border-…` | `statusStrongHex` (пресет, статичний) | тир -800    | тир -800  |
+> | Текст на поверхні сторінки чи картки | `text-{status}-strong`           | `--c-{status}-ink` (theme.css)        | тир -800    | тир -400  |
+>
+> Спільного значення між ролями не існує: тексту на чорнилі потрібна
+> люмінантність ≥0.20, заливці під білим — ≤0.183. Чорнильний тир (-400):
+> success `#34d399` · warning `#fbbf24` · danger `#f87171` · info `#38bdf8`
+> — 6.09…11.33 : 1 на ink-поверхнях. Гейти: `contrast.test.js` і
+> `apps/web/src/styles/theme.softContrast.test.ts`.
+>
+> **Модульні `-strong` цього розведення ще НЕ мають** — `text-finyk-strong`
+> і три його брати лишаються статичним тиром -800 і в темній темі так само
+> темні. Механіка та сама, тож фікс механічний; борг записаний у
+> [`frontend.md`](../../90-work/tech-debt/frontend.md).
 
 > **Числа переміряно 2026-08-07 — попередні були не тим, чим підписані.**
 > Колонка називалася «Contrast vs `bg-bg`», але кожне число в ній збігалося

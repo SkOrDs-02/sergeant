@@ -1,6 +1,6 @@
 # DESIGN.md — Sergeant
 
-> **Last touched:** 2026-08-13 by @claude. **Next review:** 2026-11-21.
+> **Last touched:** 2026-08-21 by @claude. **Next review:** 2026-12-12.
 > **Status:** Active. **Призначення:** портативний конфіг візуальної системи для AI-агентів (Hallmark, frontend-design, Superdesign, будь-який SKILL.md-сумісний тул). Агент читає цей файл ПЕРЕД стилізацією і НЕ вигадує власну систему.
 > **Джерело правди:** `packages/design-tokens/tokens.js` + `tailwind-preset.js`. Цей файл — дзеркало для агентів; при розбіжності перемагають токени. Механічний enforcement: `eslint-plugin-sergeant-design` — лише runtime-, security-, storage-, API- і domain-інваріанти. Естетичні AST-правила retired [ADR-0081](./docs/04-governance/adr/0081-repository-simplification.md); візуальні конвенції тримають design tokens, Storybook і design-review.
 
@@ -63,7 +63,9 @@
 
 Одна глибока **тепло-вугільна** поверхня, глибина з tint + accent border + glow, НЕ з тіні вниз:
 bg `#14100e` · surface `#1b1613` · surfaceHi `#221c18` · hairline `rgba(255,255,255,.06)`.
-Текст: strong `#f2f6f2` (17.3:1) · body `#e7f0ea` · muted `#8a968e` · subtle `#5f6b64` (лише ≥12px).
+Текст: strong `#f2f6f2` (17.3:1) · body `#e7f0ea` · muted `#a3aea6` (7.8:1) · subtle `#8a968e` (5.8:1).
+Обидва приглушені тири підняті 2026-08-21: старий `subtle #5f6b64` давав 3.2:1 і був підписаний «лише ≥12px», але послаблення WCAG до 3:1 діє від 18.66px bold / 24px regular — на 12px діє звичайні 4.5:1.
+**Статус як текст у темній темі — тир -400, не -800:** `text-{status}-strong` резолвиться через `--c-{status}-ink` (success `#34d399` · warning `#fbbf24` · danger `#f87171` · info `#38bdf8`), тоді як заливка `bg-{status}-strong` лишається на -800. Спільного значення в цих двох ролей немає.
 Акценти — tier-400 модуля (teal/cyan/rose/lime-400); текст поверх акцент-філу — завжди ink `#14100e`, ніколи білий.
 
 Ніколи `dark:shadow-*` і raw light/dark пари в className (дизайн-конвенція) — тема через CSS-змінні.
