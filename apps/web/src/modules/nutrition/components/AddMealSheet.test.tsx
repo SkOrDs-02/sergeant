@@ -72,14 +72,42 @@ vi.mock("./meal-sheet/MealTemplatesRow", () => ({
 }));
 
 vi.mock("./meal-sheet/MealTypePicker", () => ({
-  MealTypePicker: () => <div data-testid="meal-type-picker" />,
+  // Керований мок: тести мусять бачити тип прийому у формі, щоб ловити
+  // його мовчазне скидання при відмові від джерела.
+  MealTypePicker: ({
+    mealType,
+    setForm,
+  }: {
+    mealType: string;
+    setForm: (updater: (s: Record<string, unknown>) => unknown) => void;
+  }) => (
+    <div data-testid="meal-type-picker">
+      <span data-testid="meal-type-value">{mealType}</span>
+      <button
+        type="button"
+        data-testid="set-meal-type-dinner"
+        onClick={() => setForm((s) => ({ ...s, mealType: "dinner" }))}
+      >
+        Вечеря
+      </button>
+    </div>
+  ),
 }));
 
 vi.mock("./meal-sheet/NameTimeRow", () => ({
-  NameTimeRow: ({ field }: { field: (key: string) => (v: string) => void }) => (
+  // Контрольований інпут: тести мусять бачити, що саме лежить у формі —
+  // зокрема після скидання значень, засіяних джерелом.
+  NameTimeRow: ({
+    form,
+    field,
+  }: {
+    form: { name: string };
+    field: (key: string) => (v: string) => void;
+  }) => (
     <input
       data-testid="name-input"
       placeholder="Назва страви"
+      value={form.name}
       onChange={(e) => field("name")(e.target.value)}
     />
   ),
@@ -88,14 +116,20 @@ vi.mock("./meal-sheet/NameTimeRow", () => ({
 vi.mock("./meal-sheet/FromPantryRow", () => ({
   FromPantryRow: ({
     setFromPantryItem,
+    setForm,
   }: {
     setFromPantryItem: (v: string | null) => void;
+    setForm: (updater: (s: Record<string, unknown>) => unknown) => void;
   }) => (
     <div data-testid="from-pantry-row">
       <button
         type="button"
         data-testid="pick-pantry"
-        onClick={() => setFromPantryItem("Молоко")}
+        onClick={() => {
+          setFromPantryItem("Молоко");
+          // Дзеркалить реальний `FromPantryRow`: він сіє назву у форму.
+          setForm((s) => ({ ...s, name: "Молоко", err: "" }));
+        }}
       >
         З комори
       </button>
@@ -186,8 +220,75 @@ vi.mock("./meal-sheet/MacrosEditor", () => ({
   ),
 }));
 
-vi.mock("./meal-sheet/SaveAsFood", () => ({
-  SaveAsFood: () => <div data-testid="save-as-food" />,
+vi.mock("./meal-sheet/PackageEntryStep", () => ({
+  PackageEntryStep: ({
+    onCreated,
+  }: {
+    onCreated: (
+      product: { id: string; name: string; per100?: unknown },
+      grams: string,
+    ) => void;
+  }) => (
+    <div data-testid="package-step">
+      <button
+        type="button"
+        data-testid="create-package-food"
+        onClick={() =>
+          onCreated(
+            {
+              id: "food-9",
+              name: "Равіолі",
+              per100: { kcal: 250, protein_g: 9, fat_g: 6, carbs_g: 40 },
+            },
+            "250",
+          )
+        }
+      >
+        Далі
+      </button>
+    </div>
+  ),
+}));
+
+vi.mock("./meal-sheet/PickedFoodCard", () => ({
+  PickedFoodCard: ({
+    pickedGrams,
+    setPickedGrams,
+    onChangeProduct,
+  }: {
+    pickedGrams: string;
+    setPickedGrams: (v: string) => void;
+    onChangeProduct: () => void;
+  }) => (
+    <div data-testid="picked-food-card">
+      <span data-testid="picked-grams">{pickedGrams}</span>
+      {/* Справжня картка дає стерти й обнулити вагу (текстове поле на
+          fine-pointer). Без цих кнопок мок показував вагу, але не давав
+          її змінити — і шлях «нульова вага → збереження» був невидимий
+          для тестів. */}
+      <button
+        type="button"
+        data-testid="clear-grams"
+        onClick={() => setPickedGrams("")}
+      >
+        Стерти вагу
+      </button>
+      <button
+        type="button"
+        data-testid="zero-grams"
+        onClick={() => setPickedGrams("0")}
+      >
+        Нульова вага
+      </button>
+      <button
+        type="button"
+        data-testid="change-product"
+        onClick={onChangeProduct}
+      >
+        Обрати інший продукт
+      </button>
+    </div>
+  ),
 }));
 
 vi.mock("./meal-sheet/SaveAsTemplate", () => ({
@@ -291,7 +392,7 @@ function renderManualSheet(
   props: Partial<React.ComponentProps<typeof AddMealSheet>> = {},
 ) {
   const view = renderSheet(props);
-  fireEvent.click(screen.getByRole("button", { name: "Ввести вручну" }));
+  fireEvent.click(screen.getByRole("button", { name: /Готова страва/ }));
   return view;
 }
 
@@ -366,7 +467,7 @@ describe("AddMealSheet — source step (with templates)", () => {
     expect(screen.getByTestId("barcode-section")).toBeInTheDocument();
   });
 
-  it("clicking 'Ввести вручну' advances to fill step", () => {
+  it("clicking 'Готова страва' advances to fill step", () => {
     renderSheet({
       mealTemplates: [
         {
@@ -377,10 +478,218 @@ describe("AddMealSheet — source step (with templates)", () => {
         },
       ],
     });
-    expect(screen.getAllByText("Ввести вручну")).toHaveLength(1);
-    fireEvent.click(screen.getByText("Ввести вручну"));
+    expect(screen.getAllByText("Готова страва")).toHaveLength(1);
+    fireEvent.click(screen.getByText("Готова страва"));
     expect(screen.getByTestId("macros-editor")).toBeInTheDocument();
     expect(screen.getByText("Додати прийом їжі")).toBeInTheDocument();
+  });
+
+  // Регресія на дефект, який знайшла тестерка 2026-08-22: у ручному вводі
+  // ніде не було сказано, в якій одиниці КБЖВ, і людина з упаковкою в
+  // руках вводила значення з етикетки (на 100 г) у поля «за всю порцію».
+  // Тепер це два явні режими, і кожен підписаний своєю одиницею.
+  it("пропонує два ручні режими з різними одиницями КБЖВ", () => {
+    renderSheet({ mealTemplates: [] });
+    expect(
+      screen.getByText("КБЖВ на 100 г з етикетки + скільки з’їв"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("КБЖВ одразу за всю порцію")).toBeInTheDocument();
+  });
+
+  it("«З упаковки» веде на крок продукту, а не одразу на fill", () => {
+    renderSheet({ mealTemplates: [] });
+    fireEvent.click(screen.getByRole("button", { name: /З упаковки/ }));
+    expect(screen.getByTestId("package-step")).toBeInTheDocument();
+    expect(screen.getByText("Продукт з упаковки")).toBeInTheDocument();
+    expect(screen.queryByTestId("macros-editor")).not.toBeInTheDocument();
+  });
+
+  it("створений з упаковки продукт приходить на fill із вагою порції", () => {
+    renderSheet({ mealTemplates: [] });
+    fireEvent.click(screen.getByRole("button", { name: /З упаковки/ }));
+    fireEvent.click(screen.getByTestId("create-package-food"));
+    expect(screen.getByTestId("macros-editor")).toBeInTheDocument();
+    expect(screen.getByTestId("picked-food-card")).toBeInTheDocument();
+    expect(screen.getByTestId("picked-grams")).toHaveTextContent("250");
+  });
+
+  // Контракт збереження, а не лише навігація: режим «з упаковки» мусить
+  // лягти в журнал як productDb + foodId + вага порції, інакше зміна в
+  // `handleSave` тихо переверне походження даних.
+  it("зберігає прийом з упаковки як productDb із вагою порції", () => {
+    const onSave = vi.fn();
+    renderSheet({ mealTemplates: [], onSave });
+    fireEvent.click(screen.getByRole("button", { name: /З упаковки/ }));
+    fireEvent.click(screen.getByTestId("create-package-food"));
+    fireEvent.change(screen.getByTestId("name-input"), {
+      target: { value: "Равіолі" },
+    });
+    fireEvent.change(screen.getByTestId("kcal-input"), {
+      target: { value: "625" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Додати прийом" }));
+
+    expect(onSave).toHaveBeenCalledTimes(1);
+    expect(onSave.mock.calls[0]?.[0]).toMatchObject({
+      macroSource: "productDb",
+      foodId: "food-9",
+      amount_g: 250,
+    });
+  });
+
+  // Регресія: `gramsOrDefault` підставляє 100 для нуля й порожнього поля,
+  // а `PickedFoodCard` навмисно не перераховує КБЖВ під нульову вагу —
+  // разом це давало запис «100 г» із числами, порахованими під 250 г.
+  it.each([
+    ["стерту", "clear-grams"],
+    ["нульову", "zero-grams"],
+  ])("не зберігає прийом під %s вагу порції", (_label, testId) => {
+    const onSave = vi.fn();
+    renderSheet({ mealTemplates: [], onSave });
+    fireEvent.click(screen.getByRole("button", { name: /З упаковки/ }));
+    fireEvent.click(screen.getByTestId("create-package-food"));
+    fireEvent.change(screen.getByTestId("name-input"), {
+      target: { value: "Равіолі" },
+    });
+    fireEvent.change(screen.getByTestId("kcal-input"), {
+      target: { value: "625" },
+    });
+    fireEvent.click(screen.getByTestId(testId));
+    fireEvent.click(screen.getByRole("button", { name: "Додати прийом" }));
+
+    expect(onSave).not.toHaveBeenCalled();
+  });
+
+  // Тип прийому й час — вибір людини, а не джерела: відмова від продукту
+  // не має відкочувати їх на «зараз».
+  it("зберігає обраний тип прийому при зміні продукту", () => {
+    renderSheet({ mealTemplates: [] });
+    fireEvent.click(screen.getByRole("button", { name: /З упаковки/ }));
+    fireEvent.click(screen.getByTestId("create-package-food"));
+    fireEvent.click(screen.getByTestId("set-meal-type-dinner"));
+    fireEvent.click(screen.getByTestId("change-product"));
+    fireEvent.click(screen.getByRole("button", { name: /Готова страва/ }));
+    expect(screen.getByTestId("meal-type-value")).toHaveTextContent("dinner");
+  });
+
+  // Комора сіє `form.name`; відмова від неї не має лишати чужу назву на
+  // ручному записі.
+  it("скидає назву, засіяну коморою, при поверненні до вибору джерела", () => {
+    renderSheet({
+      mealTemplates: [],
+      pantryItems: [{ name: "Молоко", qty: 1, unit: "л", notes: null }],
+    });
+    fireEvent.click(screen.getByTestId("pick-pantry"));
+    fireEvent.click(screen.getByLabelText("Назад до вибору джерела"));
+    fireEvent.click(screen.getByRole("button", { name: /Готова страва/ }));
+    expect(screen.getByTestId("name-input")).toHaveValue("");
+  });
+
+  // Те саме правило, що й для комори: своє не чіпаємо. Продукт сіє назву
+  // через `PickedFoodCard`, тож у моці робимо це руками.
+  it("лишає назву, яку людина переписала після продукту", () => {
+    renderSheet({ mealTemplates: [] });
+    fireEvent.click(screen.getByRole("button", { name: /З упаковки/ }));
+    fireEvent.click(screen.getByTestId("create-package-food"));
+    fireEvent.change(screen.getByTestId("name-input"), {
+      target: { value: "Мій обід" },
+    });
+    fireEvent.click(screen.getByTestId("change-product"));
+    fireEvent.click(screen.getByRole("button", { name: /Готова страва/ }));
+    expect(screen.getByTestId("name-input")).toHaveValue("Мій обід");
+  });
+
+  it("чистить назву, засіяну продуктом, якщо людина її не міняла", () => {
+    renderSheet({ mealTemplates: [] });
+    fireEvent.click(screen.getByRole("button", { name: /З упаковки/ }));
+    fireEvent.click(screen.getByTestId("create-package-food"));
+    fireEvent.change(screen.getByTestId("name-input"), {
+      target: { value: "Равіолі" },
+    });
+    fireEvent.click(screen.getByTestId("change-product"));
+    fireEvent.click(screen.getByRole("button", { name: /Готова страва/ }));
+    expect(screen.getByTestId("name-input")).toHaveValue("");
+  });
+
+  it("лишає назву, яку людина переписала після комори", () => {
+    renderSheet({
+      mealTemplates: [],
+      pantryItems: [{ name: "Молоко", qty: 1, unit: "л", notes: null }],
+    });
+    fireEvent.click(screen.getByTestId("pick-pantry"));
+    fireEvent.change(screen.getByTestId("name-input"), {
+      target: { value: "Молочний коктейль" },
+    });
+    fireEvent.click(screen.getByLabelText("Назад до вибору джерела"));
+    fireEvent.click(screen.getByRole("button", { name: /Готова страва/ }));
+    expect(screen.getByTestId("name-input")).toHaveValue("Молочний коктейль");
+  });
+
+  it("«Готова страва» підписує одиницю і дає перехід до режиму етикетки", () => {
+    renderSheet({ mealTemplates: [] });
+    fireEvent.click(screen.getByRole("button", { name: /Готова страва/ }));
+    expect(
+      screen.getByText(/Значення — за всю порцію, як з’їв, а не на 100 г/),
+    ).toBeInTheDocument();
+    expect(screen.queryByTestId("picked-food-card")).not.toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Маю етикетку на 100 г" }),
+    );
+    expect(screen.getByTestId("package-step")).toBeInTheDocument();
+  });
+
+  // Раніше картка ваги жила у `FoodPickerSection` на кроці «source», а
+  // аркуш перемикається на «fill» у тому ж рендері, у якому з'являється
+  // `pickedFood` — тож вона розмонтовувалась, не встигнувши показатись,
+  // і порція назавжди лишалась типовою.
+  it("показує вагу порції на fill після вибору продукту з пошуку", () => {
+    renderSheet({ mealTemplates: [] });
+    fireEvent.click(screen.getByTestId("pick-food"));
+    expect(screen.getByTestId("picked-food-card")).toBeInTheDocument();
+  });
+
+  it("«обрати інший продукт» повертає на крок джерела без зв'язку", () => {
+    renderSheet({ mealTemplates: [] });
+    fireEvent.click(screen.getByTestId("pick-food"));
+    fireEvent.click(screen.getByTestId("change-product"));
+    expect(screen.getByText("Звідки страва?")).toBeInTheDocument();
+    expect(screen.queryByTestId("picked-food-card")).not.toBeInTheDocument();
+  });
+
+  // Числа, засіяні продуктом (на 100 г × вага), не мають дожити до
+  // «Готової страви», де ті самі поля означають «за всю порцію».
+  it("скидає засіяні продуктом КБЖВ при поверненні до вибору джерела", () => {
+    renderSheet({ mealTemplates: [] });
+    fireEvent.click(screen.getByRole("button", { name: /З упаковки/ }));
+    fireEvent.click(screen.getByTestId("create-package-food"));
+    // Реальна `PickedFoodCard` засіває назву й КБЖВ із картки продукту —
+    // тут вона змокана, тож те саме робимо руками.
+    fireEvent.change(screen.getByTestId("name-input"), {
+      target: { value: "Равіолі" },
+    });
+    expect(screen.getByTestId("name-input")).toHaveValue("Равіолі");
+
+    fireEvent.click(screen.getByLabelText("Назад до вибору джерела"));
+    fireEvent.click(screen.getByRole("button", { name: /Готова страва/ }));
+    expect(screen.getByTestId("name-input")).toHaveValue("");
+  });
+
+  it("не показує підказку про одиницю при редагуванні наявного прийому", () => {
+    renderSheet({
+      mealTemplates: [],
+      initialMeal: {
+        id: "m1",
+        name: "Суп",
+        mealType: "lunch",
+        time: "13:00",
+        macros: { kcal: 300, protein_g: 10, fat_g: 5, carbs_g: 40 },
+      },
+    });
+    expect(screen.getByTestId("macros-editor")).toBeInTheDocument();
+    expect(screen.queryByText(/Значення — за всю порцію/)).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Маю етикетку на 100 г" }),
+    ).toBeNull();
   });
 
   it("selecting a template via MealTemplatesRow advances to fill step", () => {
@@ -403,7 +712,7 @@ describe("AddMealSheet — fill step (no templates/photoResult/initialMeal)", ()
   it("starts at source step even when there are no templates or recent meals", () => {
     renderSheet({ mealTemplates: [] });
     expect(screen.getByText("Звідки страва?")).toBeInTheDocument();
-    expect(screen.getByText("Ввести вручну")).toBeInTheDocument();
+    expect(screen.getByText("Готова страва")).toBeInTheDocument();
     expect(screen.queryByTestId("macros-editor")).not.toBeInTheDocument();
   });
 
@@ -538,8 +847,12 @@ describe("AddMealSheet — photo step", () => {
   it("backtracking from fill after a photo apply drops photoAI semantics", async () => {
     // Користувач застосував фото, повернувся на «Звідки страва?» і ввів
     // вручну — страва не має зберегти macroSource: photoAI, а форма не має
-    // тягти AI-засіяні значення (emptyForm тут замокано, тож перевіряємо
-    // сам скидальний виклик emptyForm(null) на backtrack-і).
+    // тягти AI-засіяні значення.
+    //
+    // Скидання перевіряємо ПО СТАНУ поля назви, а не по виклику
+    // `emptyForm(null)`: скидання більше не перебудовує весь стан форми
+    // (це затирало б обраний людиною тип прийому й час), а чистить рівно
+    // засіяні джерелом поля.
     const onSave = vi.fn();
     const { emptyForm } = await import("./meal-sheet/mealFormUtils");
     renderSheet({ onSave, initialStep: "photo", mealTemplates: [] });
@@ -550,8 +863,8 @@ describe("AddMealSheet — photo step", () => {
     fireEvent.click(
       screen.getByRole("button", { name: "Назад до вибору джерела" }),
     );
-    expect(vi.mocked(emptyForm)).toHaveBeenLastCalledWith(null);
-    fireEvent.click(screen.getByRole("button", { name: "Ввести вручну" }));
+    fireEvent.click(screen.getByRole("button", { name: /Готова страва/ }));
+    expect(screen.getByTestId("name-input")).toHaveValue("");
     fireEvent.change(screen.getByTestId("name-input"), {
       target: { value: "Суп" },
     });
@@ -758,7 +1071,7 @@ describe("AddMealSheet — source step branches", () => {
 
   it("shows back arrow after manual forward navigation from source", () => {
     renderSheet({ mealTemplates: [template] });
-    fireEvent.click(screen.getByText("Ввести вручну"));
+    fireEvent.click(screen.getByText("Готова страва"));
     expect(
       screen.getByLabelText("Назад до вибору джерела"),
     ).toBeInTheDocument();
@@ -766,7 +1079,7 @@ describe("AddMealSheet — source step branches", () => {
 
   it("back arrow returns to source step", () => {
     renderSheet({ mealTemplates: [template] });
-    fireEvent.click(screen.getByText("Ввести вручну"));
+    fireEvent.click(screen.getByText("Готова страва"));
     fireEvent.click(screen.getByLabelText("Назад до вибору джерела"));
     expect(screen.getByText("Звідки страва?")).toBeInTheDocument();
   });

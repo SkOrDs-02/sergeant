@@ -45,7 +45,7 @@ function InlineAnalysisStatus({ text }: { text: string }) {
  * Попередження одноразове навмисно: постійний банер над кожним фото
  * перестають читати за тиждень, і тоді він захищає не людину, а нас.
  *
- * Ack — це ще й гейт авто-аналізу (рішення founder-а 2026-08-13):
+ * Ack — це ще й гейт автоаналізу (рішення founder-а 2026-08-13):
  * до підтвердження аналіз стартує лише явним тапом, після — сам при
  * виборі/заміні фото. Тому `PhotoStep` читає той самий ключ і слухає
  * `onPrivacyAck`.
@@ -179,6 +179,15 @@ interface PhotoAnalyzeCardProps {
   note: string;
   setNote: Dispatch<SetStateAction<string>>;
   onSaveToLog?: (() => void | Promise<void>) | undefined;
+  /**
+   * Підпис кнопки аналізу, або `null` — сховати її зовсім.
+   *
+   * AI-CONTEXT: автоаналіз (`PhotoStep`) накриває щасливий шлях, тож
+   * кнопка тут — НЕ основний спосіб запустити аналіз, а запасний вихід:
+   * retry після помилки й вхід у paywall для Free. Показувати її завжди
+   * означало пропонувати дію, яку система вже зробила сама.
+   */
+  analyzeLabel?: string | null;
   /** `photo.isAnalyzing` — drives the inline status line next to «Аналізувати». */
   analyzing?: boolean | undefined;
   /** `photo.isRefining` — drives the inline status line next to «Перерахувати». */
@@ -190,6 +199,7 @@ interface PhotoAnalyzeCardProps {
 export function PhotoAnalyzeCard({
   busy,
   analyzePhoto,
+  analyzeLabel = "Аналізувати",
   fileRef,
   onPickPhoto,
   photoPreviewUrl,
@@ -221,17 +231,19 @@ export function PhotoAnalyzeCard({
             ШІ визначить КБЖВ і запропонує уточнення
           </div>
         </div>
-        <button
-          type="button"
-          onClick={analyzePhoto}
-          disabled={busy}
-          className={cn(
-            "text-style-label shrink-0 px-5 h-10 rounded-xl",
-            "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors",
-          )}
-        >
-          {busy ? "…" : "Аналізувати"}
-        </button>
+        {analyzeLabel !== null && (
+          <button
+            type="button"
+            onClick={analyzePhoto}
+            disabled={busy}
+            className={cn(
+              "text-style-label shrink-0 px-5 h-10 rounded-xl",
+              "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors",
+            )}
+          >
+            {busy ? "…" : analyzeLabel}
+          </button>
+        )}
       </div>
 
       {analyzing && <InlineAnalysisStatus text="Аналізую фото…" />}

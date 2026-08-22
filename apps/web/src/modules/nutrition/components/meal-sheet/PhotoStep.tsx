@@ -56,16 +56,16 @@ export function PhotoStep({ onApply }: PhotoStepProps) {
     void photo.analyzePhoto();
   };
 
-  // Авто-аналіз після вибору/заміни фото (рішення founder-а 2026-08-13).
+  // Автоаналіз після вибору/заміни фото (рішення founder-а 2026-08-13).
   // Три гейти — кожен навмисний:
   //  · privacy-ack: до «Зрозуміло» кадр НЕ їде сам — нотіс просить
   //    перевірити, що в кадр не потрапило зайве, і ця перевірка має
   //    відбутись до відправлення (founder 2026-07-26);
-  //  · Pro: для Free авто-запуск означав би paywall одразу після вибору
+  //  · Pro: для Free автозапуск означав би paywall одразу після вибору
   //    файлу — paywall лишається на явний тап «Аналізувати»;
   //  · один запуск на кадр (ref по blob-URL): «Замінити фото» дає новий
   //    URL і перезапускає аналіз, а ре-рендери/ack без нового кадру — ні.
-  // Кнопка «Аналізувати» лишається як retry після помилки і вхід для Free.
+  // Кнопка «Аналізувати» лишається як retry після помилки й вхід для Free.
   const [privacyAcked, setPrivacyAcked] = useState(
     () => safeReadLS<boolean>(PHOTO_PRIVACY_ACK_KEY, false) === true,
   );
@@ -103,9 +103,29 @@ export function PhotoStep({ onApply }: PhotoStepProps) {
         pickerRafRef.current = null;
       }
     };
-    // Mount-only: авто-відкриття піккера — одноразовий жест входу в крок.
+    // Mount-only: автовідкриття піккера — одноразовий жест входу в крок.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Кнопка «Аналізувати» — запасний вихід, не основний шлях. Авто-ефект
+  // вище вже запускає аналіз сам, тож показувати її на щасливому шляху
+  // означало б пропонувати дію, яку система щойно зробила: людина тисне,
+  // і нічого видимо не змінюється. Лишаємо рівно два випадки, де авто-
+  // запуск не спрацює:
+  //  · помилка — тоді це retry, і підпис має казати саме це;
+  //  · Free — автозапуск для них навмисно вимкнений (інакше paywall
+  //    вискакував би одразу після вибору файлу), тож кнопка лишається
+  //    входом у paywall.
+  // Pro без privacy-ack теж лишається без кнопки — навмисно: гейт згоди
+  // знімає «Зрозуміло» в нотісі, а `gatedAnalyzePhoto` перевіряє лише
+  // тариф, тож видима тут кнопка була б обходом privacy-гейта.
+  const analyzeLabel = !previewUrl
+    ? null
+    : photoErr
+      ? "Спробувати ще раз"
+      : photoGate.canAccess
+        ? null
+        : "Аналізувати";
 
   const handleApply = () => {
     const result = photo.photoResult;
@@ -120,6 +140,7 @@ export function PhotoStep({ onApply }: PhotoStepProps) {
       <PhotoAnalyzeCard
         busy={photoBusy}
         analyzePhoto={gatedAnalyzePhoto}
+        analyzeLabel={analyzeLabel}
         fileRef={photo.fileRef as Ref<HTMLInputElement>}
         onPickPhoto={photo.onPickPhoto}
         photoPreviewUrl={photo.photoPreviewUrl}
