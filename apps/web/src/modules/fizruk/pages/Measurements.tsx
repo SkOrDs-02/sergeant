@@ -408,8 +408,8 @@ export function Measurements() {
                       aria-expanded={isRowExpanded}
                       aria-label={
                         isRowExpanded
-                          ? `${messages.fizruk.measurements.collapseFieldsLabel} — ${messages.fizruk.measurements.showAllFieldsAriaSuffix} ${dateLabel}`
-                          : `+${hiddenCount} ${messages.fizruk.measurements.moreFieldsSuffix} — ${messages.fizruk.measurements.showAllFieldsAriaSuffix} ${dateLabel}`
+                          ? `${messages.fizruk.measurements.collapseFieldsLabel}: ${messages.fizruk.measurements.showAllFieldsAriaSuffix} ${dateLabel}`
+                          : `+${hiddenCount} ${messages.fizruk.measurements.moreFieldsSuffix}: ${messages.fizruk.measurements.showAllFieldsAriaSuffix} ${dateLabel}`
                       }
                       onClick={() => toggleHistoryRow(e.id)}
                     >

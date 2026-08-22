@@ -64,7 +64,7 @@ type Story = StoryObj<typeof ModuleBottomNav>;
  *  + ink icon (dark «Чорнило»), активна вкладка «Головна». */
 export const Finyk: Story = {};
 
-/** Фізрук — cyan outline (light) / solid cyan-400 fill (dark), «Бюджети». */
+/** Фізрук: cyan outline (light) / solid cyan-400 fill (dark), «Бюджети». */
 export const Fizruk: Story = {
   args: {
     module: "fizruk",

@@ -48,7 +48,7 @@ describe("OnboardingWizard — opt-in module selection (S6.1)", () => {
   it("starts with no module pre-selected and disables the primary CTA", () => {
     render(<OnboardingWizard onDone={() => {}} />);
 
-    // Primary CTA («Розпочати — 30 секунд» on the outcome arm) is
+    // Primary CTA («Розпочати · 30 секунд» on the outcome arm) is
     // disabled until the user picks ≥1 module.
     const cta = screen.getByRole("button", { name: /Розпочати/i });
     expect(cta).toBeDisabled();
@@ -109,10 +109,10 @@ describe("S6.1 audit-guard", () => {
     // pins this copy. Drift here would silently downgrade the
     // commitment-affordance the audit hypothesis depends on.
     expect(screen.getByText("Обери хоч один розділ")).toBeInTheDocument();
-    // Block resurrection of the pre-S6.1 «Без вибору — всі 4 модулі»
+    // Block resurrection of the pre-S6.1 «Без вибору: всі 4 модулі»
     // copy that effectively told the user "you can skip this".
     expect(
-      screen.queryByText(/Без вибору — всі 4 модулі/i),
+      screen.queryByText(/Без вибору: всі 4 модулі/i),
     ).not.toBeInTheDocument();
   });
 });

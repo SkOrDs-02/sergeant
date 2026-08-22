@@ -116,7 +116,7 @@ export function PersonalInfoSection({
       toast.success(
         user.emailVerified
           ? "Лист підтвердження надіслано на поточну адресу"
-          : "Адресу змінено — перевір нову скриньку",
+          : "Адресу змінено, перевір нову скриньку",
       );
       setEditingEmail(false);
       await onRefresh();
@@ -358,7 +358,7 @@ export function PersonalInfoSection({
           <div className="px-4 py-3 flex items-center gap-3 bg-warning/5">
             <Icon name="alert" size={15} className="text-warning shrink-0" />
             <p className="text-style-caption text-warning-strong dark:text-warning flex-1">
-              Email не підтверджено — перевір свою поштову скриньку
+              Email не підтверджено, перевір свою поштову скриньку
             </p>
             <Button
               variant="ghost"

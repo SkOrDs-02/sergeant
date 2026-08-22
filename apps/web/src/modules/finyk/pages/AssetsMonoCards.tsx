@@ -90,7 +90,7 @@ export function AssetsMonoCards({
             type="button"
             disabled={id === ""}
             onClick={() => setOpenId(id)}
-            aria-label={`${visual.name} — ${t.settingsAriaSuffix}`}
+            aria-label={`${visual.name}: ${t.settingsAriaSuffix}`}
             className={cn(
               "touch-target flex w-full items-center justify-between gap-3 rounded-xl border border-line bg-panel/60 p-3 text-left transition-colors",
               "hover:bg-panelHi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",

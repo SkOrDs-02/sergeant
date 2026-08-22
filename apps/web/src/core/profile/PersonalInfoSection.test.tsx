@@ -203,7 +203,7 @@ describe("PersonalInfoSection — email change", () => {
 
     await waitFor(() => {
       expect(toastSuccessMock).toHaveBeenCalledWith(
-        "Адресу змінено — перевір нову скриньку",
+        "Адресу змінено, перевір нову скриньку",
       );
     });
     // This branch is the only one where the address really changed on the

@@ -125,7 +125,7 @@ export function ChatInput({
         placeholder={
           online
             ? "Запитай або попроси змінити щось…"
-            : "Немає зʼєднання — асистент офлайн"
+            : "Немає зʼєднання, асистент офлайн"
         }
         value={input}
         onChange={(e) => setInput(e.target.value)}
@@ -196,7 +196,7 @@ export function ChatInput({
         disabled={loading || !input.trim() || !online}
         className="w-11 h-11 rounded-full bg-primary text-bg flex items-center justify-center shrink-0 hover:brightness-110 transition-[filter,opacity] disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel"
         aria-label={online ? "Надіслати" : "Надсилання недоступне офлайн"}
-        title={online ? "Надіслати" : "Немає інтернету — асистент офлайн"}
+        title={online ? "Надіслати" : "Немає інтернету, асистент офлайн"}
       >
         <svg
           width="18"

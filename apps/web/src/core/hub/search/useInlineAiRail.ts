@@ -94,7 +94,7 @@ export function useInlineAiRail(): UseInlineAiRailResult {
       const baseAnswer = reply
         ? reply
         : hasToolCalls
-          ? "Знайшов дію — для виконання потрібен повноцінний чат."
+          ? "Знайшов дію, для виконання потрібен повноцінний чат."
           : "Немає відповіді.";
       const truncated = baseAnswer.length > MAX_INLINE_REPLY_LEN;
       const answer = truncated

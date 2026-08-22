@@ -67,7 +67,7 @@ describe("HabitStreakCanvas", () => {
         todayKey={TODAY}
       />,
     );
-    const cell = screen.getByLabelText("24 лип.: не зміг — Не було часу");
+    const cell = screen.getByLabelText("24 лип.: не зміг, Не було часу");
     expect(cell).toBeInTheDocument();
     // Контур, не філ: без bg-routine/bg-transparent з border.
     expect(cell.className).toContain("border-2");
@@ -174,7 +174,7 @@ describe("HabitStreakCanvas", () => {
       />,
     );
     expect(screen.getByText("Виконано")).toBeInTheDocument();
-    expect(screen.getByText("Не зміг — із причиною")).toBeInTheDocument();
+    expect(screen.getByText("Не зміг, із причиною")).toBeInTheDocument();
     expect(
       screen.getByText("Мовчазний пропуск, прощений заморозкою"),
     ).toBeInTheDocument();

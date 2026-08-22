@@ -135,7 +135,7 @@ export function PantryPage({ testID }: { testID?: string }) {
         ) : null}
 
         <Text className="text-xs text-fg-muted">
-          Додавай рядок як на веб: «2 л молока», «яйця 10 шт» — парсер
+          Додавай рядок як на веб: «2 л молока», «яйця 10 шт», парсер
           `parseLoosePantryText` зведе в структуровані позиції.
         </Text>
 
@@ -144,8 +144,8 @@ export function PantryPage({ testID }: { testID?: string }) {
             AI-розбір списку
           </Text>
           <Text className="text-xs text-fg-muted mb-2">
-            Великий список мовою природи — на сервері Claude розкладе в позиції
-            й додасть у цей склад (злиття, як на web). Потрібен Anthropic key на
+            Великий список мовою природи, на сервері Claude розкладе в позиції й
+            додасть у цей склад (злиття, як на web). Потрібен Anthropic key на
             бекенді та авторизована сесія.
           </Text>
           <TextInput

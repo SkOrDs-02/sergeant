@@ -81,10 +81,10 @@ export function ChatEmpty({ onPickSuggestion }: ChatEmptyProps) {
         <MessageCircle size={22} color={MODULE_ACCENT.finyk} />
       </View>
       <Text className="text-base font-semibold text-fg">
-        Запитай щось — я допоможу
+        Запитай щось, я допоможу
       </Text>
       <Text className="max-w-xs text-center text-sm leading-relaxed text-fg-muted">
-        Тапни на підказку — текст вставиться у поле, і ти зможеш відредагувати
+        Тапни на підказку, текст вставиться у поле, і ти зможеш відредагувати
         його перед відправкою.
       </Text>
       <View className="w-full max-w-md gap-2">

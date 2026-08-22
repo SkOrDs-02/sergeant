@@ -182,7 +182,7 @@ export function HubReports() {
 
     setPreviewHtml(
       generatePDFReport({
-        title: "Sergeant — звіт",
+        title: "Sergeant · звіт",
         subtitle: label,
         sections: [
           {

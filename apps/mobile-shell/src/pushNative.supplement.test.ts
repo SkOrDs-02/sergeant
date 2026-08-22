@@ -101,7 +101,7 @@ function fireRegistrationError(message: string): void {
   for (const fn of listeners.registrationError) fn({ error: message });
 }
 
-describe("subscribeNativePush — permission contract", () => {
+describe("subscribeNativePush: permission contract", () => {
   it("повертає 'push-permission-denied' коли receive='prompt' (не-granted трактується як відмова)", async () => {
     // `permission.receive !== "granted"` — будь-яке значення, крім "granted",
     // ламає flow. `"prompt"` є валідним iOS-статусом після першого запиту
@@ -120,7 +120,7 @@ describe("subscribeNativePush — permission contract", () => {
   });
 });
 
-describe("subscribeNativePush — registrationError з порожнім error-рядком", () => {
+describe("subscribeNativePush: registrationError з порожнім error-рядком", () => {
   it("використовує fallback 'push-registration-error' коли error='' (e.error || fallback)", async () => {
     // Деякі Android-девайси передають порожній рядок замість null у
     // RegistrationError. Код: `new Error(e.error || "push-registration-error")`

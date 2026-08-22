@@ -29,7 +29,7 @@ export function ClipboardActionDemo() {
             </div>
             <div className="mt-3 rounded-xl border border-dashed border-line px-3 py-6 text-center">
               <span className="text-style-caption text-muted">
-                Порожня форма — вводь вручну
+                Порожня форма, вводь вручну
               </span>
             </div>
           </div>

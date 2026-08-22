@@ -65,7 +65,7 @@ export function BatchEntryDemo() {
               </div>
             </div>
             <p className="text-style-caption text-muted text-center px-4 pt-2">
-              Шторка закриється — відкривай знову для наступної
+              Шторка закриється, відкривай знову для наступної
             </p>
           </SheetShell>
         </MiniPhone>

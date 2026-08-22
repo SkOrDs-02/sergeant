@@ -463,7 +463,7 @@ export function HabitForm({
                           : "text-xs font-medium text-fg"
                       }
                     >
-                      — без тегу —
+                      Без тегу
                     </Text>
                   </Pressable>
                   {routine.tags.map((t) => {
@@ -527,7 +527,7 @@ export function HabitForm({
                           : "text-xs font-medium text-fg"
                       }
                     >
-                      — без категорії —
+                      Без категорії
                     </Text>
                   </Pressable>
                   {routine.categories.map((c) => {

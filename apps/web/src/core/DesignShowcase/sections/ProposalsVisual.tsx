@@ -53,7 +53,7 @@ export function ProposalsVisualSection() {
     <Sec
       id="proposals-visual"
       title="Proposals · Visual (зараз → може бути)"
-      intro="Мокапи візуальних ідей у форматі порівняння: ліворуч — поточний вигляд, праворуч — пропозиція. Прототипи без привʼязки до реальних даних; тему перемикай у шапці. V-8 (полумʼя серії) прибрано — вже реалізовано."
+      intro="Мокапи візуальних ідей у форматі порівняння: ліворуч – поточний вигляд, праворуч – пропозиція. Прототипи без привʼязки до реальних даних; тему перемикай у шапці. V-8 (полумʼя серії) прибрано, вже реалізовано."
     >
       <div className="flex flex-col gap-6">
         <ProposalCompareCard
@@ -75,7 +75,7 @@ export function ProposalsVisualSection() {
         <ProposalCompareCard
           id="V-10"
           title="Градуйовані кільця макросів"
-          intent="Зараз макроси — три горизонтальні смуги (DailyPlanMacros). Пропозиція: концентричні кільця прогресу — щільніший glanceable-підсумок на тих самих токенах."
+          intent="Зараз макроси показані трьома горизонтальними смугами (DailyPlanMacros). Пропозиція: концентричні кільця прогресу, щільніший glanceable-підсумок на тих самих токенах."
         >
           <MacroRingDemo />
         </ProposalCompareCard>
@@ -83,7 +83,7 @@ export function ProposalsVisualSection() {
         <ProposalCompareCard
           id="V-11"
           title="Тактильна глибина натискання"
-          intent="Зараз картки лише масштабуються (active:scale). Пропозиція: додати легку inset-тінь на press — картку «вдавлює», а не просто зменшує."
+          intent="Зараз картки лише масштабуються (active:scale). Пропозиція: додати легку inset-тінь на press, картку «вдавлює», а не просто зменшує."
         >
           <PressDepthDemo />
         </ProposalCompareCard>
@@ -107,7 +107,7 @@ export function ProposalsVisualSection() {
         <ProposalCompareCard
           id="V-18"
           title="Плавні переходи чартів"
-          intent="Зараз зміна періоду ремаунтить чарт (стовпці блимають). Пропозиція: tween значень між періодами — дані «перетікають», а не перезавантажуються."
+          intent="Зараз зміна періоду ремаунтить чарт (стовпці блимають). Пропозиція: tween значень між періодами, дані «перетікають», а не перезавантажуються."
         >
           <ChartTransitionDemo />
         </ProposalCompareCard>
@@ -123,7 +123,7 @@ export function ProposalsVisualSection() {
         <ProposalCompareCard
           id="V-20"
           title="Focus-ring у кольорі модуля"
-          intent="Зараз :focus-visible — нейтральний ring-focus скрізь. Пропозиція: тінтувати ring акцентом модуля (--module-accent-rgb уже існує), зберігаючи контраст і розмір."
+          intent="Зараз :focus-visible – нейтральний ring-focus скрізь. Пропозиція: тінтувати ring акцентом модуля (--module-accent-rgb уже існує), зберігаючи контраст і розмір."
         >
           <FocusGlowDemo />
         </ProposalCompareCard>
@@ -131,7 +131,7 @@ export function ProposalsVisualSection() {
         <ProposalCompareCard
           id="V-4"
           title="Морфінг акценту при навігації"
-          intent="Система акцентів модулів уже є ([data-module-accent]), але акцент міняється миттєво. Пропозиція: плавний crossfade акценту між модулями — одна суцільна поверхня, що перетінюється."
+          intent="Система акцентів модулів уже є ([data-module-accent]), але акцент міняється миттєво. Пропозиція: плавний crossfade акценту між модулями, одна суцільна поверхня, що перетінюється."
         >
           <AccentMorphDemo />
         </ProposalCompareCard>
@@ -144,7 +144,7 @@ export function ProposalsVisualSection() {
           <span className="h-px flex-1 bg-line" />
         </div>
         <p className="text-style-caption leading-relaxed text-muted">
-          Кожен мокап — пара «Зараз ↔ Може бути». R2-V-10/16/18 зі списку рев’ю
+          Кожен мокап – пара «Зараз ↔ Може бути». R2-V-10/16/18 зі списку рев’ю
           прибрано як уже реалізовані вище (DynamicThemeColor · EmptyStateIdle ·
           BottomNavGlow). Анімовані демо поважають prefers-reduced-motion.
         </p>
@@ -152,7 +152,7 @@ export function ProposalsVisualSection() {
         <ProposalCompareCard
           id="R2-V-1"
           title="View Transitions API"
-          intent="Зараз переходи модуль↔хаб — кастомний PageTransition. Пропозиція: нативний startViewTransition з крос-фейдом/слайдом."
+          intent="Зараз переходи модуль↔хаб – кастомний PageTransition. Пропозиція: нативний startViewTransition з крос-фейдом/слайдом."
         >
           <ViewTransitionDemo />
         </ProposalCompareCard>
@@ -160,7 +160,7 @@ export function ProposalsVisualSection() {
         <ProposalCompareCard
           id="R2-V-2"
           title="Shared-element morph"
-          intent="Зараз іконка модуля і хедер — окремі елементи, поява різка. Пропозиція: іконка «перелітає» в акцент-хедер спільним елементом переходу."
+          intent="Зараз іконка модуля і хедер – окремі елементи, поява різка. Пропозиція: іконка «перелітає» в акцент-хедер спільним елементом переходу."
         >
           <SharedElementMorphDemo />
         </ProposalCompareCard>
@@ -168,7 +168,7 @@ export function ProposalsVisualSection() {
         <ProposalCompareCard
           id="R2-V-3"
           title="prefers-contrast: more"
-          intent="Зараз один набір токенів для всіх. Пропозиція: high-contrast варіант — жирніші межі, темніший текст, чіткіші поверхні."
+          intent="Зараз один набір токенів для всіх. Пропозиція: high-contrast варіант, жирніші межі, темніший текст, чіткіші поверхні."
         >
           <ContrastMoreDemo />
         </ProposalCompareCard>
@@ -176,7 +176,7 @@ export function ProposalsVisualSection() {
         <ProposalCompareCard
           id="R2-V-4"
           title="prefers-reduced-transparency"
-          intent="Зараз mesh/blur-шари завжди активні. Пропозиція: за системним прапорцем — суцільні поверхні без втрати ієрархії."
+          intent="Зараз mesh/blur-шари завжди активні. Пропозиція: за системним прапорцем, суцільні поверхні без втрати ієрархії."
         >
           <ReducedTransparencyDemo />
         </ProposalCompareCard>
@@ -184,7 +184,7 @@ export function ProposalsVisualSection() {
         <ProposalCompareCard
           id="R2-V-5"
           title="forced-colors (Windows HC)"
-          intent="Зараз у forced-colors режимі кольори «злипаються». Пропозиція: мапінг на системні кольори — межі й фокус лишаються читабельними."
+          intent="Зараз у forced-colors режимі кольори «злипаються». Пропозиція: мапінг на системні кольори, межі й фокус лишаються читабельними."
         >
           <ForcedColorsDemo />
         </ProposalCompareCard>
@@ -224,7 +224,7 @@ export function ProposalsVisualSection() {
         <ProposalCompareCard
           id="R2-V-11"
           title="Одометр великих тоталів"
-          intent="Зараз AnimatedNumber просто тікає. Пропозиція: кожна цифра — окремий барабан, що прокручується (натяк на лічильник)."
+          intent="Зараз AnimatedNumber просто тікає. Пропозиція: кожна цифра – окремий барабан, що прокручується (натяк на лічильник)."
         >
           <OdometerRollupDemo />
         </ProposalCompareCard>

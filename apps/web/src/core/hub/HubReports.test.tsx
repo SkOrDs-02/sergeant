@@ -197,7 +197,7 @@ describe("HubReports — render smoke (F23)", () => {
 
     expect(generatePDFReport).toHaveBeenCalledWith(
       expect.objectContaining({
-        title: "Sergeant — звіт",
+        title: "Sergeant · звіт",
         sections: expect.arrayContaining([
           expect.objectContaining({ title: "Період" }),
           expect.objectContaining({ title: "Закономірності за весь час (0)" }),

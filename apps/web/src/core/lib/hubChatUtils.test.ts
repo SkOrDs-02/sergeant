@@ -59,7 +59,7 @@ describe("friendlyApiError", () => {
     // екземплярі — мапер не має права її переписати на «спробуй завтра»,
     // бо аноніму чекати нема сенсу.
     const serverCopy =
-      "Безкоштовна проба на сьогодні вичерпана. Увійди — 5 запитів на добу, без карти.";
+      "Безкоштовна проба на сьогодні вичерпана. Увійди: 5 запитів на добу, без карти.";
     expect(friendlyApiError(429, serverCopy, "AI_QUOTA_ANON")).toBe(serverCopy);
   });
   it("delegates to base mapper otherwise", () => {

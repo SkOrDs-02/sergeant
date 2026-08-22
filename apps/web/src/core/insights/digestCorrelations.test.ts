@@ -109,7 +109,7 @@ describe("correlationsFromSeries", () => {
       ),
     );
     expect(out).toHaveLength(1);
-    expect(out[0]).toContain("коли тримаєш звички — почуваєшся краще");
+    expect(out[0]).toContain("коли тримаєш звички, почуваєшся краще");
   });
 
   it("skips the expanded workouts↔habit_rate pair below the threshold", () => {

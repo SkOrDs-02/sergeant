@@ -69,7 +69,7 @@ function ActionCardRow({ card }: { card: ChatActionCard }) {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${card.title}${card.summary ? ` — ${card.summary}` : ""}`}
+      accessibilityLabel={`${card.title}${card.summary ? `: ${card.summary}` : ""}`}
       accessibilityHint={href ? "Перейти на відповідний модуль" : undefined}
       onPress={() => {
         if (href) router.push(href);

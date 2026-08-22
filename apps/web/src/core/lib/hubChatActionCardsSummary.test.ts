@@ -115,7 +115,7 @@ describe("summaryFor", () => {
         { habit_id: "h1", from: "2026-08-10", to: "2026-08-17" },
         "r",
       ),
-    ).toBe("h1 · 2026-08-10 — 2026-08-17");
+    ).toBe("h1 · 2026-08-10 – 2026-08-17");
     expect(
       summaryFor("pause_habit", { habit_id: "h1", from: "2026-08-10" }, "r"),
     ).toBe("h1 · з 2026-08-10");

@@ -33,7 +33,7 @@ export function BankActionsSheet({
       title="Дії над транзакцією"
       description={
         tx?.description
-          ? `«${tx.description}» — банківська транзакція не редагується напряму.`
+          ? `«${tx.description}»: банківська транзакція не редагується напряму.`
           : undefined
       }
     >

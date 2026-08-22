@@ -80,7 +80,7 @@ describe("PushNotificationToggle", () => {
     render(<PushNotificationToggle />);
 
     expect(
-      screen.getByText("Увімкнено — звички, тренування, бюджет"),
+      screen.getByText("Увімкнено: звички, тренування, бюджет"),
     ).toBeInTheDocument();
 
     await user.click(

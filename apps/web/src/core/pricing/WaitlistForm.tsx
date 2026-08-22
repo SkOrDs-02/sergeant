@@ -141,7 +141,7 @@ export function WaitlistForm({
       if (res.created) {
         toast.success("Дякуємо! Повідомимо, щойно Premium буде готовий.");
       } else {
-        toast.info("Ми вже памʼятаємо твій інтерес — жодних дублікатів.");
+        toast.info("Ми вже памʼятаємо твій інтерес, жодних дублікатів.");
       }
       reset({ email: "", tier_interest: values.tier_interest });
       onSuccess?.(res.created);
@@ -227,7 +227,7 @@ export function WaitlistForm({
                 <label
                   key={opt.value}
                   htmlFor={inputId}
-                  aria-label={`${opt.label} — ${opt.hint}`}
+                  aria-label={`${opt.label} · ${opt.hint}`}
                   className={
                     "flex min-h-[56px] items-start gap-3 rounded-2xl border p-3 cursor-pointer transition-colors " +
                     (checked

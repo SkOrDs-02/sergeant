@@ -5,7 +5,7 @@ import { AnimatedCheckbox, HabitCheckbox } from "./AnimatedCheckbox";
 
 afterEach(cleanup);
 
-describe("AnimatedCheckbox — interactive", () => {
+describe("AnimatedCheckbox: interactive", () => {
   it("renders a checkbox role reflecting the checked state", () => {
     render(<AnimatedCheckbox checked={false} aria-label="Готово" />);
     const cb = screen.getByRole("checkbox", { name: "Готово" });
@@ -68,7 +68,7 @@ describe("AnimatedCheckbox — interactive", () => {
   });
 });
 
-describe("AnimatedCheckbox — decorative", () => {
+describe("AnimatedCheckbox: decorative", () => {
   it("renders without a checkbox role and is aria-hidden", () => {
     const { container } = render(<AnimatedCheckbox checked decorative />);
     expect(screen.queryByRole("checkbox")).toBeNull();

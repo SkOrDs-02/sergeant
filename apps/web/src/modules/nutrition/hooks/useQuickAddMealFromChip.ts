@@ -68,7 +68,7 @@ export function useQuickAddMealFromChip({
       const dateForLog = log.selectedDate;
       log.handleAddMeal(meal);
       toast.success(
-        `${chip.label} додано — ${chip.macros.kcal} ккал`,
+        `${chip.label} додано · ${chip.macros.kcal} ккал`,
         undefined,
         {
           label: "Скасувати",

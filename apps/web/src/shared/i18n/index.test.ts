@@ -34,7 +34,7 @@ describe("i18n resolver", () => {
       // paywall is fully translated in en.ts → en wins
       const paywall = result.paywall as Record<string, Record<string, string>>;
       expect(paywall["ai-photo-analysis"]?.["title"]).toBe(
-        "AI photo analysis — Premium",
+        "AI photo analysis: Premium",
       );
       expect(paywall["multi-currency"]?.["name"]).toBe("Multi-currency assets");
     });

@@ -109,7 +109,7 @@ export function KpiRow({
         value={streakLabel}
         hint={
           kpis.streakDays === 0
-            ? "Сьогодні чи вчора — потрібне тренування"
+            ? "Сьогодні чи вчора: потрібне тренування"
             : "підряд"
         }
         testID={`${testID}-streak`}

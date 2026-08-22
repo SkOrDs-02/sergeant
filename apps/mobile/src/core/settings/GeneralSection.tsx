@@ -353,8 +353,8 @@ export function GeneralSection() {
       </SettingsSubGroup>
       <SettingsSubGroup title="Онбординг">
         <Text className="text-xs text-fg-muted leading-snug">
-          Подивитись tour — побачити вітальний екран ще раз без скидання твого
-          стану. Перезапуск не видаляє твої дані — лише повертає вітальний екран
+          Подивитись tour, побачити вітальний екран ще раз без скидання твого
+          стану. Перезапуск не видаляє твої дані, лише повертає вітальний екран
           та підказки першого запуску.
         </Text>
         <Button
@@ -379,7 +379,7 @@ export function GeneralSection() {
       </SettingsSubGroup>
       <SettingsSubGroup title="Активні модулі">
         <Text className="text-xs text-fg-muted leading-snug">
-          Неактивні розділи виглядають приглушено на головній — без кнопки
+          Неактивні розділи виглядають приглушено на головній, без кнопки
           швидкого додавання. Принаймні один має залишатися активним.
         </Text>
         <View className="overflow-hidden rounded-xl border border-cream-300">
@@ -470,7 +470,7 @@ export function GeneralSection() {
       <View className="gap-1">
         <Text className="text-[11px] text-fg-subtle leading-snug">
           Решта опцій цього блоку (push/pull хмари) портується разом із
-          відповідними інфраструктурними кроками — див. примітки вище.
+          відповідними інфраструктурними кроками, див. примітки вище.
         </Text>
       </View>
       {tourOpen ? (

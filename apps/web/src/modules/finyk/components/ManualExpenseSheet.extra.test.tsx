@@ -94,7 +94,7 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
     const group = screen.getByRole("group", { name: "Швидкі суми" });
     // Сільпо avg = 1600/8 = 200 → personal chip labelled as a часта сума
     expect(
-      within(group).getByLabelText("200 ₴ — часта сума"),
+      within(group).getByLabelText("200 ₴ · часта сума"),
     ).toBeInTheDocument();
   });
 

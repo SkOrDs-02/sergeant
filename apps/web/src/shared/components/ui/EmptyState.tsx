@@ -461,7 +461,7 @@ const MODULE_EMPTY_CONFIG: Record<
   fizruk: {
     icon: "dumbbell",
     title: "Як прогресують мої тренування?",
-    description: "Запиши перше тренування — і побачиш ріст у цифрах.",
+    description: "Запиши перше тренування, і побачиш ріст у цифрах.",
     hint: "Порада: Почни з 10-хвилинної розминки",
     actionLabel: "Почати тренування",
     accent: "text-fizruk bg-fizruk-soft dark:bg-fizruk/10",
@@ -471,7 +471,7 @@ const MODULE_EMPTY_CONFIG: Record<
   routine: {
     icon: "check-circle",
     title: "Що насправді стало звичкою?",
-    description: "Відстежуй щоденні дії — серія днів покаже правду.",
+    description: "Відстежуй щоденні дії, серія днів покаже правду.",
     hint: "Порада: Почни з однієї звички, яку точно виконаєш",
     actionLabel: "Створити звичку",
     accent: "text-routine bg-routine-surface dark:bg-routine/10",
@@ -482,7 +482,7 @@ const MODULE_EMPTY_CONFIG: Record<
     icon: "utensils",
     title: "Що ти їси насправді?",
     description: "Залогай перший прийом їжі й отримай чесну картину.",
-    hint: "Порада: Сфоткай страву — AI порахує калорії",
+    hint: "Порада: Сфоткай страву, AI порахує калорії",
     actionLabel: "Додати їжу",
     accent: "text-nutrition bg-nutrition-soft dark:bg-nutrition/10",
     exampleLine1: "Сніданок",
@@ -503,10 +503,10 @@ function resolveGoalAwareDesc(
   goals: OnboardingGoals,
 ): string {
   if (moduleId === "finyk" && goals.finykBudget) {
-    return `Встанови бюджет ${formatNumberUk(goals.finykBudget)}₴ — додай першу витрату.`;
+    return `Встанови бюджет ${formatNumberUk(goals.finykBudget)}₴, додай першу витрату.`;
   }
   if (moduleId === "fizruk" && goals.fizrukWeeklyGoal) {
-    return `${goals.fizrukWeeklyGoal}× на тиждень — починай із першого тренування.`;
+    return `${goals.fizrukWeeklyGoal}× на тиждень, починай із першого тренування.`;
   }
   if (moduleId === "routine" && goals.routineFirstHabit) {
     const habitLabels: Record<string, string> = {
@@ -515,7 +515,7 @@ function resolveGoalAwareDesc(
       reading: "«Читання»",
     };
     const label = habitLabels[goals.routineFirstHabit] ?? "свою звичку";
-    return `Відстеж ${label} — серія днів покаже правду.`;
+    return `Відстеж ${label}, серія днів покаже правду.`;
   }
   if (moduleId === "nutrition" && goals.nutritionGoal) {
     const goalLabels: Record<string, string> = {
@@ -524,7 +524,7 @@ function resolveGoalAwareDesc(
       maintain: "підтримувати вагу",
     };
     const goalLabel = goalLabels[goals.nutritionGoal] ?? goals.nutritionGoal;
-    return `Ціль «${goalLabel}» — залогай перший прийом їжі.`;
+    return `Ціль «${goalLabel}», залогай перший прийом їжі.`;
   }
   return fallback;
 }

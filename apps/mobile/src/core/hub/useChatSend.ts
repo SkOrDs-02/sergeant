@@ -137,7 +137,7 @@ export function useChatSend({
           ...m,
           makeUserMsg(msg),
           makeAssistantMsg(
-            "⚠️ Немає підключення. Сержант працює лише онлайн — спробуй ще раз, коли з'явиться інтернет.",
+            "⚠️ Немає підключення. Сержант працює лише онлайн, спробуй ще раз, коли з'явиться інтернет.",
           ),
         ]);
         setInput("");
@@ -239,7 +239,7 @@ export function useChatSend({
           // турн. Користувач все одно побачить картку для кожного
           // tool-call-у.
           const stubResultText =
-            "(tool execution не підтримана на мобільному клієнті — дія виконається у web)";
+            "(tool execution не підтримана на мобільному клієнті, дія виконається у web)";
           const toolResults = toolCalls.map((tc) => ({
             tool_use_id: tc.id,
             content: stubResultText,

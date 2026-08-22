@@ -20,7 +20,7 @@ import {
 // with the db-schema source, otherwise the assignability checks below
 // fail at compile time, and the runtime asserts fail in CI.
 
-describe("mapSyncV2IncrementOpToOutboxInput — happy path", () => {
+describe("mapSyncV2IncrementOpToOutboxInput: happy path", () => {
   it("flattens snake_case → camelCase byte-aligned (table, row, client_ts, idempotency_key)", () => {
     const built = buildSyncV2IncrementOp({
       table: "routine_streaks",
@@ -124,7 +124,7 @@ describe("mapSyncV2IncrementOpToOutboxInput — happy path", () => {
   });
 });
 
-describe("mapSyncV2IncrementOpToOutboxInput — runtime assertion", () => {
+describe("mapSyncV2IncrementOpToOutboxInput: runtime assertion", () => {
   it("throws when op.op !== 'increment' (defence against unsafe casts)", () => {
     const lwwOp: SyncV2PushOp = {
       table: "routine_streaks",

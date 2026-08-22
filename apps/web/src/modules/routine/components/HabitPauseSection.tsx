@@ -34,7 +34,7 @@ function formatUk(dateKey: string): string {
 function rangeLabel(iv: { from: string; to: string | null }): string {
   return iv.to === null
     ? `${messages.routinePause.fromShort} ${formatUk(iv.from)}`
-    : `${formatUk(iv.from)} — ${formatUk(iv.to)}`;
+    : `${formatUk(iv.from)} – ${formatUk(iv.to)}`;
 }
 
 export function HabitPauseSection({
@@ -64,7 +64,7 @@ export function HabitPauseSection({
   const activeLabel = active
     ? active.to === null
       ? `${t.activeOpenPrefix} ${formatUk(active.from)}`
-      : `${t.activePrefix} ${formatUk(active.from)} — ${formatUk(active.to)}`
+      : `${t.activePrefix} ${formatUk(active.from)} – ${formatUk(active.to)}`
     : "";
 
   return (

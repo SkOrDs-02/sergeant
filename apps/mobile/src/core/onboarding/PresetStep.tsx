@@ -71,7 +71,7 @@ type PresetCatalog = Record<ModuleId, PresetModuleConfig>;
 const PRESETS: PresetCatalog = {
   routine: {
     title: "Яку звичку почнемо?",
-    desc: "Одне натискання — і вона у твоєму списку сьогодні.",
+    desc: "Одне натискання, і вона у твоєму списку сьогодні.",
     accentChip: "bg-rose-50 border border-rose-300/60",
     fallback: { action: "add_habit", label: "Своя звичка" },
     items: [
@@ -100,7 +100,7 @@ const PRESETS: PresetCatalog = {
   },
   finyk: {
     title: "На що витратив?",
-    desc: "Тицяй — відкриється форма з назвою. Суму введеш сам.",
+    desc: "Тицяй, відкриється форма з назвою. Суму введеш сам.",
     accentChip: "bg-brand-50 border border-brand-200/60",
     fallback: { action: "add_expense", label: "Своя витрата" },
     action: "add_expense",
@@ -109,7 +109,7 @@ const PRESETS: PresetCatalog = {
         id: "coffee",
         emoji: "coffee",
         title: "Кава",
-        desc: "ранкова звичка — введи свою суму",
+        desc: "ранкова звичка, введи свою суму",
         data: { description: "Кава", category: "їжа" },
       },
       {
@@ -123,14 +123,14 @@ const PRESETS: PresetCatalog = {
         id: "lunch",
         emoji: "utensils",
         title: "Обід",
-        desc: "що з'їв — і за скільки",
+        desc: "що з'їв, і за скільки",
         data: { description: "Обід", category: "їжа" },
       },
     ],
   },
   nutrition: {
     title: "Що з'їв зараз?",
-    desc: "Відкрию форму добавляння страви — калорії підтвердиш у модулі.",
+    desc: "Відкрию форму добавляння страви, калорії підтвердиш у модулі.",
     accentChip: "bg-lime-50 border border-lime-200/60",
     fallback: { action: "add_meal", label: "Додати страву" },
     action: "add_meal",
@@ -138,7 +138,7 @@ const PRESETS: PresetCatalog = {
   },
   fizruk: {
     title: "Швидкий старт",
-    desc: "Відкрию старт тренування — тривалість вкажеш на фініші.",
+    desc: "Відкрию старт тренування, тривалість вкажеш на фініші.",
     accentChip: "bg-teal-50 border border-teal-200/60",
     fallback: { action: "start_workout", label: "Почати тренування" },
     action: "start_workout",

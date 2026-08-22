@@ -339,7 +339,7 @@ export function BudgetsPage({ seed, now, testID }: BudgetsPageProps) {
                 className="text-sm text-fg-muted text-center"
                 testID="finyk-budgets-limits-empty"
               >
-                Ще немає лімітів. Додай перший — і Finyk покаже, скільки
+                Ще немає лімітів. Додай перший, і Finyk покаже, скільки
                 залишилось до кінця місяця.
               </Text>
             </View>
@@ -406,7 +406,7 @@ export function BudgetsPage({ seed, now, testID }: BudgetsPageProps) {
                 className="text-sm text-fg-muted text-center"
                 testID="finyk-budgets-goals-empty"
               >
-                Ще немає цілей. Додай ціль — і відстежуй прогрес місяць за
+                Ще немає цілей. Додай ціль, і відстежуй прогрес місяць за
                 місяцем.
               </Text>
             </View>

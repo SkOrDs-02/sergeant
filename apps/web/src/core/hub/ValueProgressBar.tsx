@@ -63,7 +63,7 @@ export function ValueProgressBar({
             max={100}
             size="sm"
             className="flex-1"
-            aria-label={`${bar.label} — ${bar.current}`}
+            aria-label={`${bar.label} · ${bar.current}`}
           />
           <span className="text-style-caption text-muted whitespace-nowrap">
             <span className="font-medium text-text">{bar.label}</span>

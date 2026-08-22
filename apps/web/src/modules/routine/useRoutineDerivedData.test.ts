@@ -342,7 +342,7 @@ describe("useRoutineDerivedData", () => {
       );
       expect(result.current.headlineDate).toContain("1 червня");
       expect(result.current.headlineDate).toContain("30 червня");
-      expect(result.current.headlineDate).toContain("—");
+      expect(result.current.headlineDate).toContain("–");
     });
 
     it("'month' і 'today' більше не читаються однаково", () => {
@@ -381,7 +381,7 @@ describe("useRoutineDerivedData", () => {
         ),
       );
       expect(result.current.headlineDate).toContain("4 червня");
-      expect(result.current.headlineDate).not.toContain("—");
+      expect(result.current.headlineDate).not.toContain("–");
     });
   });
 

@@ -92,7 +92,7 @@ describe("HeroCard · active state", () => {
       itemsCount: 0,
     });
     expect(
-      screen.getByText(/Сесія відкрита — підходи й таймер чекають/i),
+      screen.getByText(/Сесія відкрита, підходи й таймер чекають/i),
     ).toBeInTheDocument();
   });
 

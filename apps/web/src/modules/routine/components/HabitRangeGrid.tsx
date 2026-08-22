@@ -178,7 +178,7 @@ export function HabitRangeGrid({
                       <span
                         key={cell.dateKey}
                         aria-hidden="true"
-                        title={`${cell.dateKey} — ${CELL_LABEL[cell.state]}`}
+                        title={`${cell.dateKey}: ${CELL_LABEL[cell.state]}`}
                         className={cn(
                           // `max-w-5` + `mx-auto`: колонки — `1fr`, тож на
                           // тижневому зрізі клітинка інакше роздувалась би до

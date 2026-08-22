@@ -228,7 +228,7 @@ function MonthlyPlanCardImpl({
         </>
       ) : (
         <Text className="text-sm text-fg-muted">
-          Постав план — і побачиш скільки безпечно витрачати на день.
+          Постав план, і побачиш скільки безпечно витрачати на день.
         </Text>
       )}
     </Pressable>

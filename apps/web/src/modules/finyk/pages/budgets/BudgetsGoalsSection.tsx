@@ -130,7 +130,7 @@ export function BudgetsGoalsSection({
             </svg>
           }
           title="Поки немає цілей"
-          description="Постав ціль накопичення і відстежуй прогрес — кнопка нижче."
+          description="Постав ціль накопичення і відстежуй прогрес, кнопка нижче."
         />
       )}
       {goalsOpen &&

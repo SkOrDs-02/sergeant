@@ -127,9 +127,9 @@ export function FizrukSection() {
       <SettingsSubGroup title="Резервні копії та дані">
         <DeferredNotice>
           Експорт та імпорт тренувань чекають реального mobile-адаптера
-          downloadJson (expo-file-system + expo-sharing) та expo-document-picker
-          — сьогодні у коді є лише warn-only заглушка. Підключиться з портом
-          модуля Фізрук (Phase 6).
+          downloadJson (expo-file-system + expo-sharing) та
+          expo-document-picker, сьогодні у коді є лише warn-only заглушка.
+          Підключиться з портом модуля Фізрук (Phase 6).
         </DeferredNotice>
       </SettingsSubGroup>
     </SettingsGroup>

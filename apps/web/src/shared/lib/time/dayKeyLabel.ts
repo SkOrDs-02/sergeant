@@ -112,7 +112,7 @@ export function formatDayRangeUk(
 
   const a = parseDayKey(from);
   const b = parseDayKey(to);
-  if (!a || !b) return `${from} — ${to}`;
+  if (!a || !b) return `${from} – ${to}`;
 
   // Той самий місяць і рік — місяць пишемо один раз: «1–6 серп».
   if (a.year === b.year && a.month === b.month) {
@@ -121,5 +121,5 @@ export function formatDayRangeUk(
   }
   const left = formatDayKeyUk(from, { ...options, relative: false });
   const right = formatDayKeyUk(to, { ...options, relative: false });
-  return `${left} — ${right}`;
+  return `${left} – ${right}`;
 }

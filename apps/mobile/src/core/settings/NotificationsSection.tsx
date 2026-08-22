@@ -239,7 +239,7 @@ export function NotificationsSection() {
       <SettingsSubGroup title="Рутина (звички)">
         <ToggleRow
           label="Нагадування про звички"
-          description="Спрацьовує у встановлений в кожній звичці час. Повноцінне планування нагадувань підключиться з портом модуля Рутина (Phase 5) — зараз значення зберігається і буде підхоплено автоматично."
+          description="Спрацьовує у встановлений в кожній звичці час. Повноцінне планування нагадувань підключиться з портом модуля Рутина (Phase 5), зараз значення зберігається і буде підхоплено автоматично."
           checked={routineEnabled}
           onChange={(next) =>
             updateRoutinePrefs({ routineRemindersEnabled: next })

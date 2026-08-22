@@ -107,7 +107,7 @@ function TxListItemImpl({
           // anywhere in the app.
           showHint={canSwipeLeft && rowIndex === 0}
           hintText={
-            isManual ? "Свайпни вліво — видалити" : "Свайпни вліво — приховати"
+            isManual ? "Свайпни вліво: видалити" : "Свайпни вліво: приховати"
           }
         >
           <TxRow

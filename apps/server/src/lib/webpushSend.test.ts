@@ -48,7 +48,7 @@ beforeEach(() => {
   sendNotificationMock.mockReset();
 });
 
-describe("sendWebPush — happy path", () => {
+describe("sendWebPush: happy path", () => {
   it("returns outcome='ok' when sendNotification resolves", async () => {
     sendNotificationMock.mockResolvedValueOnce({ statusCode: 201, body: "" });
     const r = await sendWebPush(sub(), "payload");
@@ -74,7 +74,7 @@ describe("sendWebPush — happy path", () => {
   });
 });
 
-describe("sendWebPush — classification", () => {
+describe("sendWebPush: classification", () => {
   it("404 → invalid_endpoint and does not retry", async () => {
     sendNotificationMock.mockRejectedValueOnce(
       new WebPushErrorMock("gone", 404),
@@ -115,7 +115,7 @@ describe("sendWebPush — classification", () => {
   });
 });
 
-describe("sendWebPush — retry behavior", () => {
+describe("sendWebPush: retry behavior", () => {
   it("5xx is retried once, then reported as error on final failure", async () => {
     sendNotificationMock.mockRejectedValueOnce(
       new WebPushErrorMock("server error", 503),
@@ -141,7 +141,7 @@ describe("sendWebPush — retry behavior", () => {
   });
 });
 
-describe("sendWebPush — timeout", () => {
+describe("sendWebPush: timeout", () => {
   it("reports timeout after timeoutMs and counts as breaker failure", async () => {
     // Hang forever to force the timeout race to win.
     sendNotificationMock.mockImplementation(() => new Promise(() => {}));
@@ -153,7 +153,7 @@ describe("sendWebPush — timeout", () => {
   });
 });
 
-describe("sendWebPush — circuit breaker", () => {
+describe("sendWebPush: circuit breaker", () => {
   it("opens after breakerFailThreshold failures and fast-fails next call", async () => {
     hooks.configure({
       retryDelaysMs: [0],

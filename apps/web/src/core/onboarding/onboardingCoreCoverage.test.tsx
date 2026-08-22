@@ -161,7 +161,7 @@ describe("FirstActionHeroCard extended coverage", () => {
 
     expect(screen.getByText("Запиши перший прийом їжі")).toBeInTheDocument();
     expect(
-      screen.getByText("Схуднути — залогай перший прийом їжі."),
+      screen.getByText("Схуднути, залогай перший прийом їжі."),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("group", { name: "Інший модуль" }),

@@ -73,7 +73,7 @@ export function SmartSuggestDemo() {
                 ))}
               </div>
               <p className="text-style-caption text-muted mt-3">
-                Тап — і сума з категорією вже в формі.
+                Тап, і сума з категорією вже в формі.
               </p>
             </div>
           </MiniPhone>

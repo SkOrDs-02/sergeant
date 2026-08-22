@@ -96,7 +96,7 @@ export function handleRoutineAction(
       // `id:`-prefixed value) must not silently write a phantom completion
       // key and then claim success (QA D-005).
       if (!habit) {
-        return `Не знайшов звичку "${habitId || String(rawHabitId ?? "")}" — перевір список звичок.`;
+        return `Не знайшов звичку "${habitId || String(rawHabitId ?? "")}", перевір список звичок.`;
       }
       const completions: Record<string, string[]> = {
         ...routineState.completions,
@@ -443,7 +443,7 @@ export function handleRoutineAction(
       };
       saveRoutineState({ ...state, habits });
       const labels = normalized.map((n) => WEEKDAY_LABEL_UK[n]).join(", ");
-      return `Розклад звички "${habit.name || id}" — ${labels}`;
+      return `Розклад звички "${habit.name || id}": ${labels}`;
     }
     case "pause_habit": {
       // Хвиля 4: тул пише ДАТОВАНИЙ інтервал, а не недатований прапор
@@ -478,8 +478,8 @@ export function handleRoutineAction(
       }
       saveRoutineState(next);
       return toKey === null
-        ? `Звичку "${habitName}" поставлено на паузу з ${fromKey}. Ці дні не рахуються — серія їх не помітить.`
-        : `Звичку "${habitName}" поставлено на паузу ${fromKey} — ${toKey}. Ці дні не рахуються — серія їх не помітить.`;
+        ? `Звичку "${habitName}" поставлено на паузу з ${fromKey}. Ці дні не рахуються, серія їх не помітить.`
+        : `Звичку "${habitName}" поставлено на паузу ${fromKey} – ${toKey}. Ці дні не рахуються, серія їх не помітить.`;
     }
     case "reorder_habits": {
       const { habit_ids } = (action as ReorderHabitsAction).input;

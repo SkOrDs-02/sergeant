@@ -23,11 +23,11 @@ test("@critical paywall: free-user PDF export opens paywall and leads to pricing
   await expect(exportButton).toBeVisible({ timeout: 15_000 });
   await exportButton.click();
 
-  const paywall = page.getByRole("dialog", { name: "PDF-звіти — у Premium" });
+  const paywall = page.getByRole("dialog", { name: "PDF-звіти – у Premium" });
   await expect(paywall).toBeVisible();
   await expect(
     paywall.getByText(
-      "Розширені звіти між модулями та експорт PDF — у Premium підписці.",
+      "Розширені звіти між модулями та експорт PDF – у Premium підписці.",
     ),
   ).toBeVisible();
 
@@ -46,7 +46,7 @@ test("@critical locale: English pricing link renders the English conversion funn
   });
   await expect(
     page.getByRole("heading", {
-      name: "Sergeant is free for everyday use. Premium — when you need everything at once.",
+      name: "Sergeant is free for everyday use. Premium, when you need everything at once.",
     }),
   ).toBeVisible();
   await expect(page.getByRole("button", { name: "Try Premium" })).toBeVisible();

@@ -109,10 +109,10 @@ function rankPrimary(picks: string[]): FirstActionRanking {
 function getGoalAwareDesc(moduleId: string, fallback: string): string {
   const goals = getOnboardingGoals(webKVStore);
   if (moduleId === "finyk" && goals.finykBudget) {
-    return `Встанови бюджет ${formatNumberUk(goals.finykBudget)}₴ — додай першу витрату.`;
+    return `Встанови бюджет ${formatNumberUk(goals.finykBudget)}₴, додай першу витрату.`;
   }
   if (moduleId === "fizruk" && goals.fizrukWeeklyGoal) {
-    return `${goals.fizrukWeeklyGoal}× на тиждень — починай із розминки.`;
+    return `${goals.fizrukWeeklyGoal}× на тиждень, починай із розминки.`;
   }
   if (moduleId === "routine" && goals.routineFirstHabit) {
     const habitLabels: Record<string, string> = {
@@ -121,7 +121,7 @@ function getGoalAwareDesc(moduleId: string, fallback: string): string {
       reading: "«Читання»",
     };
     const label = habitLabels[goals.routineFirstHabit] ?? "свою звичку";
-    return `Створи ${label} — і починається серія днів.`;
+    return `Створи ${label}, і починається серія днів.`;
   }
   if (moduleId === "nutrition" && goals.nutritionGoal) {
     const goalLabels: Record<string, string> = {
@@ -129,7 +129,7 @@ function getGoalAwareDesc(moduleId: string, fallback: string): string {
       gain: "Набрати масу",
       maintain: "Підтримка",
     };
-    return `${goalLabels[goals.nutritionGoal]} — залогай перший прийом їжі.`;
+    return `${goalLabels[goals.nutritionGoal]}, залогай перший прийом їжі.`;
   }
   return fallback;
 }
@@ -318,8 +318,8 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
                 З чого хочеш почати?
               </h2>
               <p className="text-style-caption text-muted mt-0.5 leading-snug">
-                Ти обрав кілька модулів — кожен може бути першим, без
-                прихованого пріоритету.
+                Ти обрав кілька модулів, кожен може бути першим, без прихованого
+                пріоритету.
               </p>
             </div>
             <Button

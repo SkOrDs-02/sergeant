@@ -60,7 +60,7 @@ export function GeneratorCard({
         &quot;не хочу&quot;.
         {(recipeCacheEntry?.recipes?.length ?? 0) > 0 && (
           <span className="ml-1 text-nutrition-strong dark:text-nutrition">
-            (є кеш сеансу — натисни «Запропонувати» для оновлення)
+            (є кеш сеансу, натисни «Запропонувати» для оновлення)
           </span>
         )}
       </div>

@@ -183,9 +183,9 @@ export function WorkoutTemplatesSection({
   return (
     <div className="space-y-3">
       <div className="text-style-caption text-muted leading-relaxed">
-        Шаблони — лише твої: додай назву й послідовність вправ з каталогу. План
+        Шаблони – лише твої: додай назву й послідовність вправ з каталогу. План
         на головній будується з цих шаблонів. Щоб стартувати тренування зі
-        списку нижче — натисни «Почати» біля шаблону (відкриється журнал з
+        списку нижче, натисни «Почати» біля шаблону (відкриється журнал з
         активним тренуванням).
       </div>
 
@@ -204,7 +204,7 @@ export function WorkoutTemplatesSection({
           <Label htmlFor={nameId}>Назва шаблону</Label>
           <Input
             id={nameId}
-            placeholder="Напр. Push day, Ноги (без назви — «Мій шаблон»)"
+            placeholder="Напр. Push day, Ноги (без назви: «Мій шаблон»)"
             value={name}
             onChange={(e) => setName(e.target.value)}
             aria-label="Назва шаблону"
@@ -437,7 +437,7 @@ export function WorkoutTemplatesSection({
             module="fizruk"
             icon={<Icon name="dumbbell" size={20} />}
             title="Поки немає шаблонів"
-            description="Створи свій перший — кнопка вище."
+            description="Створи свій перший, кнопка вище."
           />
         ) : (
           (templates || []).map((t) => (

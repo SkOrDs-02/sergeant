@@ -200,7 +200,7 @@ export function useRoutineDerivedData({
     if (timeMode === "week" || timeMode === "month") {
       const a = fmtUk(range.startKey);
       const b = fmtUk(range.endKey);
-      return range.startKey === range.endKey ? a : `${a} — ${b}`;
+      return range.startKey === range.endKey ? a : `${a} – ${b}`;
     }
     return fmtUk(tk);
   }, [timeMode, selectedDay, range.startKey, range.endKey]);

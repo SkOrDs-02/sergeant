@@ -37,7 +37,7 @@ describe("ValueProgressBar (mobile, S3.3 parity)", () => {
     // 30000 → "30 000 ₴" (NBSP between thousands; matches the wizard
     // slider label).
     expect(bar.props.accessibilityLabel).toMatch(
-      /Бюджет 30[ \u00a0]000 ₴ — Записано 0 ₴/,
+      /Бюджет 30[ \u00a0]000 ₴ · Записано 0 ₴/,
     );
     expect(bar.props.accessibilityValue).toEqual({
       now: 0,
@@ -56,7 +56,7 @@ describe("ValueProgressBar (mobile, S3.3 parity)", () => {
 
     const bar = getByTestId("value-progress-bar-routine");
     expect(bar.props.accessibilityLabel).toBe(
-      "«Пити воду» — через 30 днів автоматично — Зараз: 0/30",
+      "«Пити воду» через 30 днів автоматично · Зараз: 0/30",
     );
   });
 
@@ -73,9 +73,9 @@ describe("ValueProgressBar (mobile, S3.3 parity)", () => {
     );
     expect(
       getByTestId("value-progress-bar-nutrition").props.accessibilityLabel,
-    ).toBe("Підтримка ваги — 0 страв сьогодні");
+    ).toBe("Підтримка ваги · 0 страв сьогодні");
     expect(
       getByTestId("value-progress-bar-fizruk").props.accessibilityLabel,
-    ).toBe("3×/тиждень — 0 з 3");
+    ).toBe("3×/тиждень · 0 з 3");
   });
 });

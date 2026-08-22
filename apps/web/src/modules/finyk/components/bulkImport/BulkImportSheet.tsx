@@ -76,7 +76,7 @@ function summarizeSkipped(skipped: ImportSkippedRow[]): string | null {
   for (const s of skipped)
     counts.set(s.reason, (counts.get(s.reason) ?? 0) + 1);
   const parts = Array.from(counts.entries()).map(
-    ([reason, n]) => `${n} — ${SKIP_REASON_LABEL[reason] ?? reason}`,
+    ([reason, n]) => `${n}: ${SKIP_REASON_LABEL[reason] ?? reason}`,
   );
   return `Пропущено з файлу: ${parts.join(", ")}.`;
 }
@@ -165,7 +165,7 @@ export function BulkImportSheet({
       );
       if (draft.docType === "receipt") {
         failBackToChoose(
-          "Це схоже на чек, не скрін банкінгу. Використай «Сканувати чек» — там можна і кілька фото одразу.",
+          "Це схоже на чек, не скрін банкінгу. Використай «Сканувати чек», там можна і кілька фото одразу.",
         );
         return;
       }

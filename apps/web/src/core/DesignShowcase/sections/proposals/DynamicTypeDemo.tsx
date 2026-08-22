@@ -53,7 +53,7 @@ export function DynamicTypeDemo() {
                 Додати витрату
               </button>
               <p className="text-style-caption text-muted">
-                Фіксований 16px — за XL текст обрізається.
+                Фіксований 16px, за XL текст обрізається.
               </p>
             </div>
           </MiniPhone>

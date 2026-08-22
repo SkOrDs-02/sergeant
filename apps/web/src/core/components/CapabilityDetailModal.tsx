@@ -67,7 +67,7 @@ export function CapabilityDetailModal({
             <div className="flex items-start gap-2 bg-warning/10 border border-warning/40 rounded-2xl px-3 py-2 text-style-caption text-warning-strong dark:text-warning">
               <Icon name="alert-triangle" size={14} aria-hidden />
               <span>
-                Критична дія. Перевір дані перед відправкою — деякі зміни
+                Критична дія. Перевір дані перед відправкою, деякі зміни
                 скасувати не можна.
               </span>
             </div>
@@ -90,7 +90,7 @@ export function CapabilityDetailModal({
           </div>
 
           <p className="text-style-caption text-subtle">
-            Кнопка нижче відкриє чат і вставить заготовку у поле вводу — допиши
+            Кнопка нижче відкриє чат і вставить заготовку у поле вводу, допиши
             деталі і натисни Enter.
           </p>
         </div>

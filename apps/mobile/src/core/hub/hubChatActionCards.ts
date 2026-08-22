@@ -109,7 +109,7 @@ function iconFor(name: string): string | undefined {
 }
 
 function titleFor(name: string, status: ChatActionCardStatus): string {
-  const failedSuffix = status === "failed" ? " — не вийшло" : "";
+  const failedSuffix = status === "failed" ? ", не вийшло" : "";
   switch (name) {
     case "create_transaction":
       return `Транзакцію записано${failedSuffix}`;

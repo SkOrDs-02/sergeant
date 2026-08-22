@@ -112,7 +112,7 @@ test("@critical fizruk: start → set → refresh → resume → finish", async 
   // з побічного ефекту в `onChange` поля повторень — його запускає явний тап
   // по ✓ «підхід зроблено». Саме та стара магія й плодила порожні 0×0-сети,
   // тож цей крок описував поведінку, яку ми свідомо прибрали.
-  await page.getByRole("button", { name: /Підхід 1 — зроблено/ }).click();
+  await page.getByRole("button", { name: /Підхід 1: зроблено/ }).click();
   await expect(page.getByTestId("rest-timer")).toBeVisible();
   // Скоуп саме на пігулку таймера, а не на `role="timer"`: цей role
   // описує лише циферблат із цифрами (кнопки ±15/±30 і «Пропустити» —

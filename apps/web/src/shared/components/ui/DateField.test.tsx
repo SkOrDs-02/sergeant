@@ -69,7 +69,7 @@ describe("DateField — межі календаря (beta-input-boundaries)", ()
       <DateField value="2019-01-01" readOnly />,
     );
     expect(
-      getByText("Незвична дата — перевір, чи не помилка в році"),
+      getByText("Незвична дата, перевір, чи не помилка в році"),
     ).toBeInTheDocument();
     expect(
       container.querySelector("input")!.getAttribute("aria-invalid"),
@@ -98,7 +98,7 @@ describe("DateField — межі календаря (beta-input-boundaries)", ()
     );
     expect(getByText("Дата початку підписки")).toBeInTheDocument();
     expect(
-      queryByText("Незвична дата — перевір, чи не помилка в році"),
+      queryByText("Незвична дата, перевір, чи не помилка в році"),
     ).toBeNull();
   });
 

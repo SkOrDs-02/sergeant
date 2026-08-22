@@ -61,7 +61,7 @@ export const StatusRow = memo(function StatusRow({
       accessibilityRole="button"
       accessibilityLabel={
         inactive
-          ? `${config.label} — неактивний. Увімкнути в налаштуваннях.`
+          ? `${config.label}: неактивний. Увімкнути в налаштуваннях.`
           : `${config.label}: ${config.description}`
       }
       accessibilityHint="Двічі торкнись, щоб відкрити модуль. Утримай і потягни, щоб змінити порядок."
@@ -100,7 +100,7 @@ export const StatusRow = memo(function StatusRow({
             numberOfLines={1}
           >
             {inactive
-              ? "Неактивний — увімкнути в налаштуваннях"
+              ? "Неактивний: увімкнути в налаштуваннях"
               : config.description}
           </Text>
           {showProgress ? (

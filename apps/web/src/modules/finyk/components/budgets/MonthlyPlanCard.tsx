@@ -310,7 +310,7 @@ function MonthlyPlanCardComponent({
             </div>
           ) : (
             <div className="text-style-label text-subtle">
-              Постав план — і побачиш скільки безпечно витрачати на день.
+              Постав план, і побачиш скільки безпечно витрачати на день.
             </div>
           )}
 
@@ -366,7 +366,7 @@ function MonthlyPlanCardComponent({
               {firstRunHint && (
                 <FirstRunHintBanner
                   variant="finyk"
-                  title="Орієнтовний фінплан — постав і поправиш"
+                  title="Орієнтовний фінплан, постав і поправиш"
                   description="Це чорновик: вкажи орієнтовний дохід, витрати і накопичення на місяць. Сюди ти зможеш повернутись будь-коли, щоб перерахувати."
                   onDismiss={onDismissFirstRunHint ?? (() => {})}
                 />

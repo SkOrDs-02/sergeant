@@ -98,7 +98,7 @@ export function ManualExpenseAmountSection({
                 }
                 aria-label={
                   personal
-                    ? `${formatMoney(value)} — часта сума`
+                    ? `${formatMoney(value)} · часта сума`
                     : `${formatMoney(value)}`
                 }
               >

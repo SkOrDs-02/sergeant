@@ -49,7 +49,7 @@ export function useStreakRecordPendingInsight(
       id: "routine-streak-record-pending",
       module: "routine",
       title: `Серія: ${currentStreak} ${pluralDays(currentStreak)}`,
-      subtitle: `Ще один — і рекорд ${longestStreak}`,
+      subtitle: `Ще один, і рекорд ${longestStreak}`,
       action: { type: "navigate", path: "/routine/today" },
       showOn: "both",
     };

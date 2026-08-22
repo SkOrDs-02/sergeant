@@ -354,7 +354,7 @@ export function PrivacySection() {
               description={
                 savingPreference === "healthDataConsent"
                   ? "Зберігаю…"
-                  : "Явна згода на обробку тренувань, самопочуття й харчування — без неї ця інформація не використовується."
+                  : "Явна згода на обробку тренувань, самопочуття й харчування, без неї ця інформація не використовується."
               }
               checked={preferences.healthDataConsent}
               onChange={(checked) =>
@@ -478,7 +478,7 @@ export function PrivacySection() {
       <ConfirmDialog
         open={clearMemoryConfirmOpen}
         title="Очистити памʼять ШІ?"
-        description="Зникнуть усі факти — і локальні, і на сервері. Відновити не вийде."
+        description="Зникнуть усі факти, і локальні, і на сервері. Відновити не вийде."
         confirmLabel="Очистити назавжди"
         danger
         onConfirm={() => void handleClearMemoryConfirm()}

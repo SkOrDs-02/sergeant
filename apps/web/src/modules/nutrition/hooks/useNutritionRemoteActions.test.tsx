@@ -296,7 +296,7 @@ describe("useNutritionRemoteActions", () => {
       });
       await waitFor(() =>
         expect(spies.setDayHintText).toHaveBeenCalledWith(
-          "День порожній. Додай прийом їжі — і я зможу дати підказку.",
+          "День порожній. Додай прийом їжі, і я зможу дати підказку.",
         ),
       );
       expect(apiFetchDayHint).not.toHaveBeenCalled();
