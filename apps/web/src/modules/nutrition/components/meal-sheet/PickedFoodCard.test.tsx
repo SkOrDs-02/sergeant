@@ -85,7 +85,11 @@ describe("PickedFoodCard", () => {
     const updater = setForm.mock.calls[0]?.[0] as (
       state: MealFormState,
     ) => MealFormState;
-    expect(updater(form({ name: "Стара назва" }))).toMatchObject({
+    // Назва тут порожня навмисно: цей тест про перерахунок макросів.
+    // Поведінку назви (своя виживає, порожня засівається) перевіряє
+    // окремий тест нижче — доти вона тут перевірялась «навпаки» й
+    // фіксувала баг: продукт затирав перейменовану страву.
+    expect(updater(form({ name: "" }))).toMatchObject({
       name: "Курка Наша Ряба",
       kcal: "61",
       protein_g: "10",
@@ -130,6 +134,22 @@ describe("PickedFoodCard", () => {
     render(<PickedFoodCard {...baseProps({ setPickedGrams })} />);
     fireEvent.click(screen.getByText("200"));
     expect(setPickedGrams).toHaveBeenCalledWith("200");
+  });
+
+  it("не затирає назву, яку людина вже переписала", () => {
+    const setForm = vi.fn();
+    render(<PickedFoodCard {...baseProps({ pickedGrams: "150", setForm })} />);
+    const updater = setForm.mock.calls[0]?.[0] as (
+      state: MealFormState,
+    ) => MealFormState;
+    // Ефект перезапускається на кожну зміну ваги — своя назва має вижити.
+    expect(updater(form({ name: "Мій обід" }))).toMatchObject({
+      name: "Мій обід",
+    });
+    // А в порожнє поле назва продукту сіється, як і раніше.
+    expect(updater(form({ name: "" }))).toMatchObject({
+      name: "Курка Наша Ряба",
+    });
   });
 
   it("не перераховує КБЖВ, поки поле ваги порожнє", () => {

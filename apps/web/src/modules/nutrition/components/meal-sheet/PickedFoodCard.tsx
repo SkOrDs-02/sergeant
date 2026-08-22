@@ -83,7 +83,11 @@ export function PickedFoodCard({
       const mac = macrosForGrams(p.per100, grams);
       setForm((s) => ({
         ...s,
-        name: [p.name, p.brand].filter(Boolean).join(" ").trim() || s.name,
+        // Назва продукту сіється ЛИШЕ в порожнє поле. Ефект перезапускає
+        // цей апдейтер на кожну зміну ваги, тож зворотний порядок
+        // (`продукт || s.name`) затирав уже перейменовану людиною страву
+        // щоразу, коли вона крутила порцію.
+        name: s.name || [p.name, p.brand].filter(Boolean).join(" ").trim(),
         kcal: String(Math.round(Number(mac.kcal) || 0)),
         protein_g: String(Math.round(Number(mac.protein_g) || 0)),
         fat_g: String(Math.round(Number(mac.fat_g) || 0)),
