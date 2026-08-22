@@ -53,6 +53,50 @@ function mountOverlay(): { overlay: HTMLDivElement; input: HTMLInputElement } {
   return { overlay, input };
 }
 
+/**
+ * Оверлей зі справжнім скрол-контейнером усередині — копія структури
+ * `Sheet` (панель → `overflow-y-auto` тіло → поля). jsdom не рахує
+ * layout, тож геометрію задаємо руками: без неї перевіряти нічого.
+ */
+function mountScrollableOverlay(bottom: number): {
+  overlay: HTMLDivElement;
+  scroller: HTMLDivElement;
+  first: HTMLInputElement;
+  target: HTMLInputElement;
+} {
+  const overlay = document.createElement("div");
+  const scroller = document.createElement("div");
+  scroller.style.overflowY = "auto";
+  const first = document.createElement("input");
+  const target = document.createElement("input");
+  scroller.append(first, target);
+  overlay.appendChild(scroller);
+  document.body.appendChild(overlay);
+
+  Object.defineProperty(scroller, "scrollHeight", {
+    configurable: true,
+    value: 2000,
+  });
+  Object.defineProperty(scroller, "clientHeight", {
+    configurable: true,
+    value: 300,
+  });
+  // jsdom тримає `scrollTop` у нулі (немає боксів) — підміняємо на
+  // звичайне поле, щоб побачити САМ факт доскролу.
+  let scrollTop = 0;
+  Object.defineProperty(scroller, "scrollTop", {
+    configurable: true,
+    get: () => scrollTop,
+    set: (v: number) => {
+      scrollTop = v;
+    },
+  });
+  target.getBoundingClientRect = () =>
+    ({ bottom, top: bottom - 40, height: 40 }) as DOMRect;
+
+  return { overlay, scroller, first, target };
+}
+
 describe("useKeyboardAwareOverlay", () => {
   beforeEach(() => {
     Object.defineProperty(window, "innerHeight", {
@@ -146,7 +190,115 @@ describe("useKeyboardAwareOverlay", () => {
     act(() => {
       second.focus();
     });
-    expect(scrollIntoView).toHaveBeenCalledWith({ block: "nearest" });
+    // `center`, не `nearest` — запас з обох боків, щоб дожимання
+    // геометрії не ховало поле знову (бета-фідбек №4).
+    expect(scrollIntoView).toHaveBeenCalledWith({ block: "center" });
+  });
+
+  it("дотягує поле, яке після scrollIntoView лишилось під клавіатурою", () => {
+    // Бета-фідбек №5: у кінці списку `scrollIntoView` упирається в межу
+    // `scrollHeight` і центрування недосяжне — поле лишається під
+    // клавіатурою. Звіряємо ФАКТ по visualViewport і дотягуємо на дефіцит.
+    const { overlay, scroller, first, target } = mountScrollableOverlay(560);
+    installVisualViewport(500); // видима зона [0, 500], клавіатура нижче
+    first.focus(); // клавіатура вже відкрита
+    renderHook(() => useKeyboardAwareOverlay(true, { current: overlay }));
+
+    act(() => {
+      target.focus();
+    });
+    // 560 (низ поля) + 16 (просвіт) − 500 (низ видимої зони) = 76.
+    expect(scroller.scrollTop).toBe(76);
+  });
+
+  it("враховує пан viewport-у, рахуючи низ видимої зони", () => {
+    // Під паном видима зона зсунута всередині layout viewport, і той
+    // самий rect означає вже інший дефіцит.
+    const { overlay, scroller, first, target } = mountScrollableOverlay(560);
+    const vv = installVisualViewport(500);
+    vv.offsetTop = 52; // видима зона [52, 552]
+    first.focus();
+    renderHook(() => useKeyboardAwareOverlay(true, { current: overlay }));
+
+    act(() => {
+      target.focus();
+    });
+    expect(scroller.scrollTop).toBe(24); // 560 + 16 − 552
+  });
+
+  it("не чіпає скрол, коли поле і так у видимій зоні", () => {
+    // Дотягування «про всяк випадок» смикало б список під людиною там,
+    // де нічого не зламано.
+    const { overlay, scroller, first, target } = mountScrollableOverlay(400);
+    installVisualViewport(500);
+    first.focus();
+    renderHook(() => useKeyboardAwareOverlay(true, { current: overlay }));
+
+    act(() => {
+      target.focus();
+    });
+    expect(scroller.scrollTop).toBe(0);
+  });
+
+  it("доскролює активне поле після того, як resize-и клавіатури вщухли", () => {
+    // Бета-фідбек №4: перший скрол їде по геометрії ще ДО стискання
+    // панелі — доскрол по фінальній геометрії робить таймер тиші після
+    // останнього `resize`.
+    vi.useFakeTimers();
+    try {
+      const { overlay, input } = mountOverlay();
+      const vv = installVisualViewport(800); // клавіатури ще немає
+      input.focus();
+      renderHook(() => useKeyboardAwareOverlay(true, { current: overlay }));
+
+      const scrollIntoView = vi.mocked(Element.prototype.scrollIntoView);
+      scrollIntoView.mockClear();
+      act(() => {
+        vv.height = 520; // transition почався
+        vv._fire("resize");
+      });
+      act(() => {
+        vi.advanceTimersByTime(100); // менше за таймер тиші (150)
+        vv.height = 500; // другий resize того ж transition-у
+        vv._fire("resize");
+      });
+      // Другий resize СКИНУВ таймер першого: на t=200 від першого (тобто
+      // 100 від другого) скролу ще немає — якби скидання не було, перший
+      // таймер уже згорів би на t=150.
+      act(() => {
+        vi.advanceTimersByTime(100);
+      });
+      expect(scrollIntoView).not.toHaveBeenCalled();
+      act(() => {
+        vi.advanceTimersByTime(60); // 160 від другого — тиша настала
+      });
+      // Рівно ОДИН доскрол на весь transition, не по одному на resize.
+      expect(scrollIntoView).toHaveBeenCalledTimes(1);
+      expect(scrollIntoView).toHaveBeenCalledWith({ block: "center" });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("НЕ доскролює після resize, якщо клавіатура закрилась (гап 0)", () => {
+    vi.useFakeTimers();
+    try {
+      const { overlay, input } = mountOverlay();
+      const vv = installVisualViewport(500); // клавіатура відкрита
+      input.focus();
+      renderHook(() => useKeyboardAwareOverlay(true, { current: overlay }));
+
+      const scrollIntoView = vi.mocked(Element.prototype.scrollIntoView);
+      scrollIntoView.mockClear();
+      act(() => {
+        vv.height = 800; // клавіатура зникла — гап 0
+        vv._fire("resize");
+        vi.runAllTimers();
+      });
+      expect(scrollIntoView).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("не скролить поле під pinch-zoom — гап висот там неоднозначний", () => {

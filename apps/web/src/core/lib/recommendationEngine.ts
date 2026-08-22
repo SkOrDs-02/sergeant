@@ -16,6 +16,12 @@ import {
 } from "@nutrition/lib/nutritionStorage";
 import { calcFinykPeriodAggregate } from "@sergeant/finyk-domain/lib/spending";
 import { readFinykStatsContext } from "@finyk/lib/lsStats";
+import { pluralDays, pluralUa } from "@sergeant/shared";
+import {
+  BODY_ATLAS_MUSCLE_LABELS_UK,
+  mapDomainMuscleToAtlas,
+  type BodyAtlasMuscleId,
+} from "@sergeant/fizruk-domain/data/bodyAtlas";
 
 const { FINANCE_RULES, runRules } = Recommendations;
 export type Rec = Recommendations.Rec;
@@ -44,18 +50,42 @@ function daysBetween(isoA: string, isoB: string): number {
   return Math.round(Math.abs(b.getTime() - a.getTime()) / 86_400_000);
 }
 
-const MUSCLE_LABELS_UK: Record<string, string> = {
-  chest: "Груди",
-  back: "Спина",
-  legs: "Ноги",
-  shoulders: "Плечі",
-  biceps: "Біцепс",
-  triceps: "Триципс",
-  core: "Прес",
-  glutes: "Сідниці",
-  hamstrings: "Задня поверхня стегна",
-  calves: "Литки",
+/**
+ * Loose muscle keys → canonical `@sergeant/fizruk-domain` muscle ids.
+ *
+ * AI-CONTEXT: два джерела м'язів сходяться в одну купу. `getExerciseMuscles`
+ * дає грубі ключі з regex по назві вправи (`chest`, `legs`, …), а
+ * `musclesPrimary`/`musclesSecondary` з каталогу — доменні id
+ * (`pectoralis_major`, `rhomboids`, …). Раніше рушій підписував їх власною
+ * табличкою на 10 рядків, тож усе поза нею витікало в UI сирим англійським
+ * id («rhomboids не тренували 10 днів» — скріншот 2026-08-18). Тепер обидва
+ * простори нормалізуються в доменний id, а звідти —
+ * `mapDomainMuscleToAtlas` в атласний keyspace, де UA-підпис є для КОЖНОГО
+ * ключа. Що не мапиться — не показуємо взагалі, англійський fallback більше
+ * не існує.
+ */
+const LOOSE_MUSCLE_ALIASES: Record<string, string> = {
+  chest: "pectoralis_major",
+  back: "upper_back",
+  lats: "latissimus_dorsi",
+  legs: "quadriceps",
+  quads: "quadriceps",
+  shoulders: "front_deltoid",
+  delts: "front_deltoid",
+  core: "rectus_abdominis",
+  abs: "rectus_abdominis",
+  glutes: "gluteus_maximus",
+  traps: "trapezius",
 };
+
+/** Fold any muscle key onto the canonical atlas keyspace (or drop it). */
+function toAtlasMuscle(raw: unknown): BodyAtlasMuscleId | null {
+  const key = String(raw ?? "")
+    .trim()
+    .toLowerCase();
+  if (!key) return null;
+  return mapDomainMuscleToAtlas(LOOSE_MUSCLE_ALIASES[key] ?? key);
+}
 
 function parseFizrukWorkouts(): Workout[] {
   // `fizruk_workouts_v1` is tombstoned — read the canonical SQLite warm cache
@@ -98,14 +128,21 @@ function getExerciseMuscles(exercise: Exercise | null | undefined): string[] {
   return [...new Set(muscles)];
 }
 
-function buildMuscleLastTrained(workouts: Workout[]): Record<string, string> {
-  const last: Record<string, string> = {};
+function buildMuscleLastTrained(
+  workouts: Workout[],
+): Partial<Record<BodyAtlasMuscleId, string>> {
+  const last: Partial<Record<BodyAtlasMuscleId, string>> = {};
   const completed = workouts.filter((w) => w.endedAt);
   for (const w of completed) {
     for (const item of w.items || []) {
-      const muscles = getExerciseMuscles(item);
-      for (const m of muscles) {
-        if (!last[m] || w.startedAt > last[m]) {
+      for (const raw of getExerciseMuscles(item)) {
+        // Кілька доменних м'язів (rhomboids + upper_back + latissimus_dorsi)
+        // згортаються в одну атласну групу — саме тому «спина» лишається
+        // однією карткою, а не трьома.
+        const m = toAtlasMuscle(raw);
+        if (!m) continue;
+        const prev = last[m];
+        if (!prev || w.startedAt > prev) {
           last[m] = w.startedAt;
         }
       }
@@ -129,6 +166,20 @@ function buildFinanceRecs(): Rec[] {
   return runRules(FINANCE_RULES, ctx);
 }
 
+/** Днів без жодного тренування, після яких говорить `fizruk_long_break`. */
+const LONG_BREAK_DAYS = 5;
+/** Днів без конкретної м'язової групи, після яких вона вважається несвіжою. */
+const STALE_DAYS = 8;
+/** Далі цієї межі група випадає з нагадування (див. коментар у місці фільтра). */
+const STALE_LOOKBACK_DAYS = 45;
+/** Скільки груп перелічуємо в тілі агрегованої картки. */
+const STALE_MUSCLES_IN_BODY = 3;
+const MUSCLE_GROUP_FORMS = {
+  one: "група",
+  few: "групи",
+  many: "груп",
+} as const;
+
 function buildFizrukRecs(): Rec[] {
   const recs: Rec[] = [];
   const workouts = parseFizrukWorkouts();
@@ -144,7 +195,7 @@ function buildFizrukRecs(): Rec[] {
   const hoursAgo = (now.getTime() - lastMs) / 3_600_000;
   const daysSinceWorkout = hoursAgo / 24;
 
-  if (daysSinceWorkout > 5) {
+  if (daysSinceWorkout > LONG_BREAK_DAYS) {
     recs.push({
       id: "fizruk_long_break",
       module: "fizruk",
@@ -157,19 +208,46 @@ function buildFizrukRecs(): Rec[] {
     });
   }
 
-  const muscleLastTrained = buildMuscleLastTrained(completed);
-  const STALE_DAYS = 8;
-  for (const [muscle, lastIso] of Object.entries(muscleLastTrained)) {
-    const days = daysBetween(lastIso, now.toISOString());
-    if (days >= STALE_DAYS) {
-      const label = MUSCLE_LABELS_UK[muscle] || muscle;
+  // М'язовий баланс. ОДНА картка на весь дисбаланс, а не картка на групу:
+  // після паузи стають несвіжими всі групи одразу, і старий цикл висипав у
+  // «Що зараз важливо» до 18 однакових рядків (скріншот 2026-08-18).
+  //
+  // Так само мовчимо, поки діє `fizruk_long_break`: «10 днів без тренування»
+  // вже сказало те саме, а перелік груп після нього — лише шум.
+  if (daysSinceWorkout <= LONG_BREAK_DAYS) {
+    const muscleLastTrained = buildMuscleLastTrained(completed);
+    const stale = Object.entries(muscleLastTrained)
+      .map(([muscle, lastIso]) => ({
+        muscle: muscle as BodyAtlasMuscleId,
+        days: daysBetween(lastIso as string, now.toISOString()),
+      }))
+      // Верхня межа: група, забута на місяці, — це вже не дисбаланс поточного
+      // циклу, а слід старої історії. Нагадувати про неї щодня немає сенсу.
+      .filter((s) => s.days >= STALE_DAYS && s.days <= STALE_LOOKBACK_DAYS)
+      .sort((a, b) => b.days - a.days);
+
+    if (stale.length > 0) {
+      const labels = stale.map((s) => BODY_ATLAS_MUSCLE_LABELS_UK[s.muscle]);
+      const maxDays = stale[0]!.days;
+      const single = stale.length === 1;
+      const shown = labels.slice(0, STALE_MUSCLES_IN_BODY);
       recs.push({
-        id: `fizruk_muscle_${muscle}`,
+        id: "fizruk_muscle_balance",
         module: "fizruk",
-        priority: 55 + days,
+        // Пріоритет тримається під `fizruk_long_break` (85): пауза в залі —
+        // сильніший сигнал, ніж перекіс усередині активного циклу.
+        priority: Math.min(55 + maxDays, 84),
         icon: "dumbbell",
-        title: `${label} не тренували ${days} днів`,
-        body: "Включи вправи на ці м'язи в наступне тренування.",
+        title: single
+          ? `${labels[0]} не тренували ${maxDays} ${pluralDays(maxDays)}`
+          : `${stale.length} ${pluralUa(stale.length, MUSCLE_GROUP_FORMS)} м'язів без навантаження ${maxDays}+ ${pluralDays(maxDays)}`,
+        body: single
+          ? "Включи вправи на ці м'язи в наступне тренування."
+          : `Найдовше без роботи: ${shown.join(", ")}${
+              labels.length > shown.length
+                ? ` і ще ${labels.length - shown.length}`
+                : ""
+            }. Додай їх у наступне тренування.`,
         action: "fizruk",
         pwaAction: "start_workout",
       });

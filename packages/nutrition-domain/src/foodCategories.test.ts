@@ -1,7 +1,7 @@
 // Pure-helpers food-category classification: keyword-substring match через
 // `categorizeFood` + bucketing у `groupItemsByCategory`. Тести зосереджені
 // на (а) контракті каталогу `FOOD_CATEGORIES` (унікальні id, наявність
-// emoji/label, обовʼязковий keyword), (б) поведінці класифікатора:
+// iconName/label, обовʼязковий keyword), (б) поведінці класифікатора:
 // порожній/негодящий input → "other", trim+lowercase, перший cat-match wins,
 // (в) bucket-агрегатор зберігає порядок категорій + filter порожніх.
 import { describe, expect, it } from "vitest";
@@ -22,11 +22,23 @@ describe("FOOD_CATEGORIES catalog", () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it("кожна категорія має label, emoji і хоча б один keyword", () => {
+  it("кожна категорія має label, iconName і хоча б один keyword", () => {
     for (const cat of FOOD_CATEGORIES) {
       expect(cat.label.length).toBeGreaterThan(0);
-      expect(cat.emoji.length).toBeGreaterThan(0);
+      expect(cat.iconName.length).toBeGreaterThan(0);
       expect(cat.keywords.length).toBeGreaterThan(0);
+    }
+  });
+
+  // Регресія на репорт тестувальника 2026-08-21: гліфи категорій були
+  // емодзі, тож малювались системним шрифтом — по-різному на кожній ОС,
+  // без кольору й теми. Тепер це імена іконок дизайн-системи.
+  it("жодна категорія не несе емодзі", () => {
+    for (const cat of FOOD_CATEGORIES) {
+      expect(/\p{Extended_Pictographic}/u.test(cat.label), cat.id).toBe(false);
+      expect(/\p{Extended_Pictographic}/u.test(cat.iconName), cat.id).toBe(
+        false,
+      );
     }
   });
 
@@ -54,7 +66,7 @@ describe("categorizeFood", () => {
     const cat = categorizeFood(raw);
     expect(cat.id).toBe("other");
     expect(cat.label).toBe("Інше");
-    expect(cat.emoji).toBe("📦");
+    expect(cat.iconName).toBe("package");
   });
 
   it.each([

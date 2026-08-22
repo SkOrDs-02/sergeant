@@ -79,6 +79,16 @@ export type ImportScreenshotDocType =
  * (рішення founder-а 2026-08-18 за реальною mono-випискою). */
 const transferLikelySchema = z.boolean().optional();
 
+/** «Сітка 2» дедуп-превʼю (бета-фідбек №4, 2026-08-18: той самий скрін,
+ * кинутий двічі, задвоїв рядки — vision читає описи недетерміновано, тож
+ * тір-2 хеш `rowKey.ts` їх не ловить). Сервер на прев'ю звіряє рядок з уже
+ * збереженими витратами за трійкою дата+сума+напрям (ОПИС свідомо
+ * ігнорується — саме він і плаває між прогонами) і ставить ЛИШЕ `true`
+ * (відсутнє поле = збігів немає) — детектор `duplicateDetect.ts`; клієнт
+ * знімає рядок з вибору за замовчуванням, лишаючи його видимим і
+ * вмикабельним — той самий UX-патерн, що `transferLikely`. */
+const duplicateLikelySchema = z.boolean().optional();
+
 export const ImportScreenshotRowSchema = z.object({
   date: boundedDayKeySchema,
   /** `HH:MM`, 24-годинний. `null` — нечитабельно/відсутнє на скріні
@@ -92,6 +102,7 @@ export const ImportScreenshotRowSchema = z.object({
   description: z.string().max(300),
   confidence: z.number().min(0).max(1),
   transferLikely: transferLikelySchema,
+  duplicateLikely: duplicateLikelySchema,
 });
 export type ImportScreenshotRow = z.infer<typeof ImportScreenshotRowSchema>;
 
@@ -164,6 +175,7 @@ export const ImportStatementRowSchema = z.object({
   direction: ImportDirectionSchema,
   description: z.string().max(300),
   transferLikely: transferLikelySchema,
+  duplicateLikely: duplicateLikelySchema,
 });
 export type ImportStatementRow = z.infer<typeof ImportStatementRowSchema>;
 

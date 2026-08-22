@@ -2,11 +2,17 @@
  * Thin web adapter over `@sergeant/shared/lib/firstRealEntry`. The
  * shared module scans storage for non-demo entries and owns the
  * analytics dispatch contract; this file just wires it to
- * `localStorage` (via the `./vibePicks` adapter) and to the web
- * analytics sink.
+ * `localStorage` (via the `./vibePicks` adapter), to the canonical
+ * per-module counters (`./realEntryProbe`) and to the web analytics sink.
+ *
+ * AI-DANGER: кожен виклик у shared МУСИТЬ нести `webRealEntryProbe`. Без
+ * нього детекція бачить лише tombstone-нуті LS-ключі, `hasRealEntry`
+ * не флипається ніколи — і FTUX-герой висить у активного юзера вічно
+ * (розбір — у докблоці `./realEntryProbe`).
  */
 
 import {
+  countRealEntries as sharedCountRealEntries,
   detectFirstActionCompletedPerModule as sharedDetectFirstActionCompletedPerModule,
   detectFirstRealEntry as sharedDetectFirstRealEntry,
   getFirstRealEntryModule as sharedGetFirstRealEntryModule,
@@ -15,6 +21,7 @@ import {
 } from "@sergeant/shared";
 import { webKVStore } from "@shared/lib/storage/storage";
 import { trackEvent } from "../observability/analytics";
+import { webRealEntryProbe } from "./realEntryProbe";
 
 /**
  * Returns true if the user has at least one non-demo entry anywhere.
@@ -24,7 +31,15 @@ import { trackEvent } from "../observability/analytics";
  * true — an empty reports view is worse than no tab at all.
  */
 export function hasAnyRealEntry(): boolean {
-  return sharedHasAnyRealEntry(webKVStore);
+  return sharedHasAnyRealEntry(webKVStore, webRealEntryProbe);
+}
+
+/**
+ * Total non-demo entries across all modules — the «У тебе N записів»
+ * number on `SoftAuthPromptCard` and the hub streak card.
+ */
+export function countRealEntries(): number {
+  return sharedCountRealEntries(webKVStore, webRealEntryProbe);
 }
 
 /**
@@ -33,7 +48,10 @@ export function hasAnyRealEntry(): boolean {
  * flag so this becomes a no-op for all future renders.
  */
 export function detectFirstRealEntry(): boolean {
-  return sharedDetectFirstRealEntry(webKVStore, { trackEvent });
+  return sharedDetectFirstRealEntry(webKVStore, {
+    trackEvent,
+    probe: webRealEntryProbe,
+  });
 }
 
 /**
@@ -45,7 +63,10 @@ export function detectFirstRealEntry(): boolean {
  * usually empty after the first activation in each module).
  */
 export function detectFirstActionCompletedPerModule(): DashboardModuleId[] {
-  return sharedDetectFirstActionCompletedPerModule(webKVStore, { trackEvent });
+  return sharedDetectFirstActionCompletedPerModule(webKVStore, {
+    trackEvent,
+    probe: webRealEntryProbe,
+  });
 }
 
 /**
@@ -55,5 +76,5 @@ export function detectFirstActionCompletedPerModule(): DashboardModuleId[] {
  * exists yet, or in the rare race where a payload races the read.
  */
 export function getFirstRealEntryModule(): DashboardModuleId | null {
-  return sharedGetFirstRealEntryModule(webKVStore);
+  return sharedGetFirstRealEntryModule(webKVStore, webRealEntryProbe);
 }

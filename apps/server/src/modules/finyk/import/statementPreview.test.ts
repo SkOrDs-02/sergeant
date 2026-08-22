@@ -1,5 +1,12 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Request, Response } from "express";
+
+// «Сітка 2» дедуп-превʼю ходить у БД одним GROUP BY-запитом
+// (duplicateDetect.ts) — дефолт «збігів немає», окремий тест підкладає
+// наявні витрати.
+const dbMocks = vi.hoisted(() => ({ query: vi.fn() }));
+vi.mock("../../../db.js", () => ({ default: { query: dbMocks.query } }));
+
 import statementPreviewHandler from "./statementPreview.js";
 
 interface TestRes {
@@ -26,8 +33,14 @@ function makeRes(): TestRes & Response {
 }
 
 function makeReq(body: unknown): Request {
-  return { body } as unknown as Request;
+  // `user` — router-рівнева auth (той самий контракт, що commit.ts).
+  return { user: { id: "u1" }, body } as unknown as Request;
 }
+
+beforeEach(() => {
+  dbMocks.query.mockReset();
+  dbMocks.query.mockResolvedValue({ rows: [] });
+});
 
 // Mono-заголовки звірені з реальною випискою (live-прогін 2026-08-18:
 // 255/255 рядків, 0 skip, валютні операції в UAH-еквіваленті пройшли) —
@@ -266,5 +279,30 @@ describe("statementPreviewHandler — зламані рядки", () => {
     );
     const body = res.body as { rows: Array<{ amountKopiykas: number }> };
     expect(body.rows[0]?.amountKopiykas).toBe(1000);
+  });
+});
+
+describe("statementPreviewHandler — «сітка 2» дедуп-превʼю (duplicateLikely)", () => {
+  it("рядок зі збігом дата+сума+напрям серед збережених витрат отримує duplicateLikely", async () => {
+    // Наявна витрата: Сільпо 15.01 на 847.50 грн (blob зберігає ГРИВНІ й
+    // kind — duplicateDetect.ts конвертує в копійки/напрям сам).
+    dbMocks.query.mockResolvedValue({
+      rows: [
+        { date: "2026-01-15", amount: "847.5", kind: "expense", count: "1" },
+      ],
+    });
+    const res = makeRes();
+    await statementPreviewHandler(makeReq({ csv_text: MONO_CSV }), res);
+
+    const body = res.body as {
+      rows: Array<{ description: string; duplicateLikely?: boolean }>;
+    };
+    expect(body.rows[0]?.description).toBe("Сільпо");
+    expect(body.rows[0]?.duplicateLikely).toBe(true);
+    // Зарплата (income, інший бакет) — без мітки: поле взагалі відсутнє.
+    expect(body.rows[1]?.duplicateLikely).toBeUndefined();
+    // Один GROUP BY-запит на весь превʼю, з user-скоупом.
+    expect(dbMocks.query).toHaveBeenCalledTimes(1);
+    expect(dbMocks.query.mock.calls[0]?.[1]?.[0]).toBe("u1");
   });
 });

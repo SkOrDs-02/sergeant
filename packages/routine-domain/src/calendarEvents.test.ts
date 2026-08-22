@@ -178,6 +178,9 @@ describe("routine-domain/calendarEvents", () => {
     const events = buildFinykSubscriptionEvents(
       { startKey: "2026-02-01", endKey: "2026-03-31" },
       [
+        // `emoji` лишається в фікстурі навмисно: з 2026-08-21 заголовок
+        // події його ІГНОРУЄ (поле не редагується користувачем, тож у
+        // ньому завжди лежав засіяний дефолт «📱»). Тест фіксує саме це.
         { id: "ok", name: "Music", emoji: "M", billingDay: 31 },
         { id: "bad-low", billingDay: 0 },
         { id: "bad-high", billingDay: 32 },
@@ -196,7 +199,7 @@ describe("routine-domain/calendarEvents", () => {
     ]);
     expect(events[0]).toMatchObject({
       id: "finyk_sub_ok_2026-02-28",
-      title: "M Music",
+      title: "Music",
       tagLabels: [FINYK_SUB_GROUP_LABEL],
       finykSub: true,
       sourceKind: "finyk_sub",

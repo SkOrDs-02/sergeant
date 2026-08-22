@@ -257,7 +257,7 @@ export function useChatSend({
 
           const assistantId = newMsgId();
           const prefix =
-            toolCalls.map((tc) => `✅ ${tc.name}`).join("\n") + "\n\n";
+            toolCalls.map((tc) => `✓ ${tc.name}`).join("\n") + "\n\n";
           setMessages((m) => [
             ...m,
             {
@@ -344,10 +344,10 @@ export function useChatSend({
         if (isAbort && timedOut) {
           setMessages((m) => [
             ...m,
-            makeAssistantMsg("⏱ Час очікування вичерпано. Спробуй ще раз."),
+            makeAssistantMsg("Час очікування вичерпано. Спробуй ще раз."),
           ]);
         } else if (isAbort) {
-          setMessages((m) => [...m, makeAssistantMsg("⏹ Запит скасовано.")]);
+          setMessages((m) => [...m, makeAssistantMsg("Запит скасовано.")]);
         } else {
           setMessages((m) => [...m, makeAssistantMsg(friendlyChatError(e))]);
         }

@@ -35,7 +35,26 @@ import { getSqliteDb } from "../../../core/db/sqlite.js";
 import { isDemoActive } from "../../../core/onboarding/onboardingGate.js";
 import { migrateFinyk } from "./clientMigrate.js";
 import { importFinykDemoSeed } from "./demoSeedImport.js";
-import { refreshFinykSqliteState } from "./sqliteReader.js";
+import { registerRealEntryCounter } from "../../../core/onboarding/realEntryProbe.js";
+import { getVisibleFinykMonoMirrorState } from "./monoMirrorReader.js";
+import {
+  getCachedFinykSqliteState,
+  refreshFinykSqliteState,
+} from "./sqliteReader.js";
+
+// AI-CONTEXT: FTUX-детекція «чи є справжні записи» читає канонічний
+// warm-cache через реєстр (`core/onboarding/realEntryProbe`), а не
+// tombstone-нуті LS-ключі `finyk_manual_expenses_v1` / `finyk_tx_cache`.
+// Реєструємось на module-scope: цей файл вантажиться лише у складі
+// лінивого boot-кластера модуля, тож хабовий eager-чанк нових ребер не
+// отримує. Рахуємо обидва джерела — ручні витрати і дзеркало Mono:
+// підключений банк без жодної ручної витрати — це так само «не новий».
+registerRealEntryCounter(
+  "finyk",
+  () =>
+    getCachedFinykSqliteState().manualExpenses.length +
+    getVisibleFinykMonoMirrorState().transactions.length,
+);
 
 let booted = false;
 

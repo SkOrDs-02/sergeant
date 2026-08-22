@@ -2,15 +2,21 @@
  * Last validated: 2026-08-17
  * Status: Active
  *
- * "Додати документи" (спека § Фаза 2 — Масове ведення). Три шляхи з
- * однієї точки входу:
- *   (а) кілька фото чеків    → `BulkReceiptsProgress` (N × v1-флоу)
- *   (б) скрін банкінгу       → `analyzeImportScreenshot` → bulk-review
- *   (в) CSV-виписка          → `previewImportStatement` → (мапер?) → bulk-review
+ * "Додати документи" (спека § Фаза 2 — Масове ведення). Два шляхи з
+ * однієї точки входу — банківські документи:
+ *   (а) скрін банкінгу  → `analyzeImportScreenshot` → bulk-review
+ *   (б) CSV-виписка     → `previewImportStatement` → (мапер?) → bulk-review
  *
- * (б)/(в) сходяться на спільному `BulkReviewTable` + `commitImport`.
- * (а) НЕ проходить через `import_batches`/commit — кожен чек ідемпотентний
- * сам по собі (v1 `receipts.*`), окремого журналу/undo для нього нема.
+ * Обидва сходяться на спільному `BulkReviewTable` + `commitImport`.
+ * «Кілька фото чеків» (Фаза 2а) переїхали у `ReceiptScanSheet` — фото
+ * чеків це про чеки, не про документи (бета-фідбек №2, 2026-08-18); там
+ * пікер `multiple`, 2+ фото → стадія `batch`.
+ *
+ * Стадія `processing` (бета-фідбек №5, 2026-08-18) вмикається СИНХРОННО
+ * з вибором файлу — до стиснення фото, не після. До неї аркуш лишався на
+ * кнопках усі 5–20 секунд vision-виклику, і тестерка читала це як
+ * завислий екран. Кожна реальна фаза міняє `label` (`ScanStatus` § шар
+ * 2), тож рух видно ще до відповіді сервера.
  */
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@shared/components/ui/Button";
@@ -24,10 +30,6 @@ import { DEFAULT_INCOME_CATEGORY } from "../manualIncomeCategories";
 import { formatReceiptError } from "../../lib/receiptErrors";
 import { readReceiptImageFile } from "../../lib/receiptImage";
 import { readCsvTextFile } from "../../lib/importCsv";
-import {
-  useBulkReceiptsImport,
-  BATCH_RECEIPTS_MAX_FILES,
-} from "../../hooks/useBulkReceiptsImport";
 import {
   useImportBatchUndo,
   useImportCommit,
@@ -46,12 +48,16 @@ import {
   updateRowField,
   type BulkReviewRow,
 } from "./bulkImportRows";
-import { BulkReceiptsProgress } from "./BulkReceiptsProgress";
+import { ScanStatus, type ScanStatusState } from "../ScanStatus";
 import { ColumnMapper } from "./ColumnMapper";
 import { BulkReviewTable } from "./BulkReviewTable";
 
 type Stage =
-  "choose" | "receipts" | "csv-mapper" | "bulk-review" | "commit-summary";
+  "choose" | "processing" | "csv-mapper" | "bulk-review" | "commit-summary";
+
+const SCREENSHOT_SLOW_HINT =
+  "Ще працюю. Що більше рядків на скріні, то довше розпізнавання.";
+const CSV_SLOW_HINT = "Ще працюю. Велика виписка читається довше.";
 
 const SKIP_REASON_LABEL: Record<string, string> = {
   not_uah: "не гривня",
@@ -79,7 +85,6 @@ export interface BulkImportSheetProps {
   open: boolean;
   onClose: () => void;
   storage: ManualExpenseWriteThroughStorage;
-  onReceiptLinked: (txRef: string, receiptId: number) => void;
   customCategories?: readonly CustomCategoryInput[] | undefined;
 }
 
@@ -87,7 +92,6 @@ export function BulkImportSheet({
   open,
   onClose,
   storage,
-  onReceiptLinked,
   customCategories,
 }: BulkImportSheetProps) {
   const [stage, setStage] = useState<Stage>("choose");
@@ -101,14 +105,12 @@ export function BulkImportSheet({
   const [commitResult, setCommitResult] = useState<ImportCommitResult | null>(
     null,
   );
-  const [photosCapNote, setPhotosCapNote] = useState<string | null>(null);
+  const [processing, setProcessing] = useState<ScanStatusState | null>(null);
 
-  const photosInputRef = useRef<HTMLInputElement>(null);
   const screenshotInputRef = useRef<HTMLInputElement>(null);
   const csvInputRef = useRef<HTMLInputElement>(null);
   const armPinchZoomReset = useResetPinchZoomAfterCameraCapture();
 
-  const bulkReceipts = useBulkReceiptsImport({ storage, onReceiptLinked });
   const screenshotAnalyze = useImportScreenshotAnalyze();
   const statementPreview = useImportStatementPreview();
   const commit = useImportCommit({ storage });
@@ -129,47 +131,46 @@ export function BulkImportSheet({
       setMapperHeaders([]);
       setMapperSampleRows([]);
       setCommitResult(null);
-      setPhotosCapNote(null);
-      bulkReceipts.reset();
+      setProcessing(null);
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset-on-close only; including `bulkReceipts` would re-run every render (new object each render).
   }, [open]);
 
-  const handlePhotosSelected = (files: File[]) => {
-    if (files.length === 0) return;
-    setFlowError(null);
-    // Кап застосовує `startFiles` (slice до BATCH_RECEIPTS_MAX_FILES) —
-    // але МОВЧКИ: без цієї примітки людина, що вибрала 15 фото, дізналась
-    // би про відкинуті 5 лише перерахувавши список (бета-фідбек
-    // 2026-08-18 «щоб не вносила фото задарма»).
-    setPhotosCapNote(
-      files.length > BATCH_RECEIPTS_MAX_FILES
-        ? `Взято перші ${BATCH_RECEIPTS_MAX_FILES} фото з ${files.length} — решту докинь наступною пачкою після збереження цієї.`
-        : null,
-    );
-    setStage("receipts");
-    void bulkReceipts.startFiles(files);
+  /** Повертає з `processing` на вибір файлу з поясненням, що пішло не так.
+   * Будь-який вихід із розпізнавання проходить через неї — інакше аркуш
+   * лишався б зі спінером, який уже нічого не чекає. */
+  const failBackToChoose = (message: string) => {
+    setFlowError(message);
+    setProcessing(null);
+    setStage("choose");
   };
 
   const handleScreenshotSelected = async (file: File) => {
     setFlowError(null);
+    // Спінер до `await`: стиснення великого фото саме по собі помітна
+    // пауза, і саме вона першою читалась як зависання.
+    setProcessing({ label: "Готую фото…", hint: SCREENSHOT_SLOW_HINT });
+    setStage("processing");
     const imageResult = await readReceiptImageFile(file);
     if (!imageResult.ok) {
-      setFlowError(imageResult.error);
+      failBackToChoose(imageResult.error);
       return;
     }
+    setProcessing({
+      label: "Розпізнаю транзакції…",
+      hint: SCREENSHOT_SLOW_HINT,
+    });
     try {
       const { draft } = await screenshotAnalyze.mutateAsync(
         imageResult.payload,
       );
       if (draft.docType === "receipt") {
-        setFlowError(
-          "Це схоже на чек, не скрін банкінгу. Використай «Сканувати чек» для одного чека.",
+        failBackToChoose(
+          "Це схоже на чек, не скрін банкінгу. Використай «Сканувати чек» — там можна і кілька фото одразу.",
         );
         return;
       }
       if (draft.docType === "other" || draft.rows.length === 0) {
-        setFlowError("Не вдалось розпізнати транзакції на скріні.");
+        failBackToChoose("Не вдалось розпізнати транзакції на скріні.");
         return;
       }
       setImportSource("bank_screenshot");
@@ -177,9 +178,10 @@ export function BulkImportSheet({
         screenshotRowsToBulkReviewRows(draft.rows, defaultCategoryFor),
       );
       setSkippedNote(null);
+      setProcessing(null);
       setStage("bulk-review");
     } catch (err) {
-      setFlowError(formatReceiptError(err, "Не вдалось розпізнати скрін."));
+      failBackToChoose(formatReceiptError(err, "Не вдалось розпізнати скрін."));
     }
   };
 
@@ -187,6 +189,7 @@ export function BulkImportSheet({
     response: Awaited<ReturnType<typeof statementPreview.mutateAsync>>,
     csvText: string,
   ) => {
+    setProcessing(null);
     if (response.needsMapping) {
       setPendingCsvText(csvText);
       setMapperHeaders(response.headers ?? []);
@@ -204,9 +207,11 @@ export function BulkImportSheet({
 
   const handleCsvSelected = async (file: File) => {
     setFlowError(null);
+    setProcessing({ label: "Читаю виписку…", hint: CSV_SLOW_HINT });
+    setStage("processing");
     const csvResult = await readCsvTextFile(file);
     if (!csvResult.ok) {
-      setFlowError(csvResult.error);
+      failBackToChoose(csvResult.error);
       return;
     }
     try {
@@ -215,7 +220,9 @@ export function BulkImportSheet({
       });
       applyStatementPreview(response, csvResult.text);
     } catch (err) {
-      setFlowError(formatReceiptError(err, "Не вдалось прочитати виписку."));
+      failBackToChoose(
+        formatReceiptError(err, "Не вдалось прочитати виписку."),
+      );
     }
   };
 
@@ -224,6 +231,10 @@ export function BulkImportSheet({
   ) => {
     if (!pendingCsvText) return;
     setFlowError(null);
+    // Тут стадію НЕ міняємо: мапер лишається змонтованим навмисно (його
+    // власні колонки живуть у `useState`, і підміна на спінер губила б
+    // вибір людини при невдалому re-preview — CodeRabbit round 5, #818).
+    // Очікування показує кнопка самого `ColumnMapper` (`isSubmitting`).
     try {
       const response = await statementPreview.mutateAsync({
         csv_text: pendingCsvText,
@@ -265,7 +276,10 @@ export function BulkImportSheet({
 
   const stageTitle: Record<Stage, string> = {
     choose: "Додати документи",
-    receipts: "Чеки пачкою",
+    // Заголовок навмисно той самий, що на виборі файлу: миготіння шапки
+    // на секунду-дві саме по собі читається як збій. Про роботу говорить
+    // `ScanStatus` у тілі аркуша.
+    processing: "Додати документи",
     "csv-mapper": "Налаштуй колонки",
     "bulk-review": "Перевір рядки",
     "commit-summary": "Готово",
@@ -305,20 +319,6 @@ export function BulkImportSheet({
       }
     >
       <input
-        ref={photosInputRef}
-        type="file"
-        accept="image/*"
-        multiple
-        onClick={armPinchZoomReset}
-        onChange={(e) => {
-          const files = Array.from(e.target.files ?? []);
-          e.target.value = "";
-          handlePhotosSelected(files);
-        }}
-        className="sr-only"
-        aria-label="Завантажити фото чеків"
-      />
-      <input
         ref={screenshotInputRef}
         type="file"
         accept="image/*"
@@ -355,14 +355,6 @@ export function BulkImportSheet({
           <Button
             className="w-full"
             module="finyk"
-            onClick={() => photosInputRef.current?.click()}
-          >
-            <Icon name="camera" size={16} aria-hidden />
-            Кілька фото чеків
-          </Button>
-          <Button
-            variant="secondary"
-            className="w-full"
             onClick={() => screenshotInputRef.current?.click()}
           >
             <Icon name="upload" size={16} aria-hidden />
@@ -377,32 +369,14 @@ export function BulkImportSheet({
             CSV-виписка
           </Button>
           <p className="text-style-caption text-subtle">
-            До {BATCH_RECEIPTS_MAX_FILES} фото за раз для чеків; для решти —
-            один файл.
+            Один файл за раз. Фото чеків — через «Сканувати чек», там можна
+            кілька одразу.
           </p>
         </div>
       )}
 
-      {stage === "receipts" && (
-        <>
-          {photosCapNote && (
-            <p
-              role="status"
-              className="rounded-xl border border-line bg-panelHi/60 p-2.5 text-style-caption text-text"
-            >
-              {photosCapNote}
-            </p>
-          )}
-          <BulkReceiptsProgress
-            items={bulkReceipts.items}
-            isProcessing={bulkReceipts.isProcessing}
-            isSaving={bulkReceipts.isSaving}
-            onSetCategory={bulkReceipts.setItemCategory}
-            onToggleIncluded={bulkReceipts.toggleItemIncluded}
-            onSaveAll={() => void bulkReceipts.saveAll()}
-            customCategories={customCategories}
-          />
-        </>
+      {stage === "processing" && processing && (
+        <ScanStatus label={processing.label} slowHint={processing.hint} />
       )}
 
       {stage === "csv-mapper" && (
@@ -445,8 +419,13 @@ export function BulkImportSheet({
       )}
 
       {stage === "commit-summary" && commitResult && (
-        <div className="space-y-1.5 rounded-2xl border border-line bg-panelHi/40 p-3 text-style-body text-text">
-          <p>Створено: {commitResult.created}</p>
+        // Success-тон карткою (бета-фідбек №4: «Створено на зеленому
+        // фоні, як Витрата») — той самий фінік-акцент, що й активний чип
+        // «Витрата» у ManualExpenseSheet, а не сірий panelHi.
+        <div className="space-y-1.5 rounded-2xl border border-finyk/30 bg-finyk/15 p-3 text-style-body text-text">
+          <p className="font-semibold text-finyk-strong dark:text-finyk">
+            Створено: {commitResult.created}
+          </p>
           {commitResult.skipped.monoMatched > 0 && (
             <p className="text-style-caption text-muted">
               {commitResult.skipped.monoMatched} пропущено — вже є в mono.

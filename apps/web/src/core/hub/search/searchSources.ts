@@ -210,7 +210,13 @@ function searchRoutine(tokens: string[]): Hit[] {
   // `hub_routine_v1` is tombstoned — read the canonical SQLite warm cache.
   const habits = loadRoutineState().habits;
   for (const h of habits) {
-    const title = `${h.emoji || ""} ${h.name || "Звичка"}`.trim();
+    // AI-CONTEXT (2026-08-21): тут стояло `${h.emoji || ""} ${h.name}`.
+    // Після переходу Рутини на icon-slug-и (2026-08-03) поле `emoji`
+    // містить НЕ емодзі, а імʼя гліфа, тож рядок пошуку показував
+    // «droplet Пити воду»; на легасі-записах лишалось сире емодзі. Гліф
+    // малює `HabitGlyph` там, де він доречний, — у заголовок результату
+    // він не потрапляє взагалі.
+    const title = (h.name || "Звичка").trim();
     const stop = pushScored(
       results,
       {

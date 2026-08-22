@@ -8,7 +8,6 @@ import {
   canonicalManualCategoryId,
   legacyManualCategoryId,
   stripCategoryEmoji,
-  taxonomyLabel,
 } from "./manualTaxonomy";
 
 describe("manualTaxonomy — цілісність таблиці", () => {
@@ -84,15 +83,18 @@ describe("canonicalManualCategoryId", () => {
   });
 });
 
-describe("taxonomyLabel", () => {
-  it("склеює емодзі з підписом, коли емодзі є", () => {
-    const food = MANUAL_TAXONOMY_BY_ID.get("food")!;
-    expect(taxonomyLabel(food)).toBe(`${food.emoji} ${food.label}`);
-  });
-
-  it("надходження лишаються без емодзі-префікса", () => {
-    const salary = MANUAL_TAXONOMY_BY_ID.get("salary")!;
-    expect(taxonomyLabel(salary)).toBe("Зарплата");
+describe("підписи таксономії", () => {
+  // Регресія на репорт тестувальника 2026-08-21: у картці ліміту стояло
+  // емодзі, у рядку транзакції — іконка, бо резолвер віддавав
+  // `"🛒 Продукти"`, а зрізали префікс лише ті поверхні, які про нього
+  // знали. Емодзі більше не існує в даних, тож розійтись немає чому.
+  it("жоден підпис не містить емодзі", () => {
+    for (const d of [...MANUAL_EXPENSE_TAXONOMY, ...MANUAL_INCOME_TAXONOMY]) {
+      expect(d.label, `"${d.id}"`).toBe(stripCategoryEmoji(d.label));
+      expect(/\p{Extended_Pictographic}/u.test(d.label), `"${d.id}"`).toBe(
+        false,
+      );
+    }
   });
 });
 

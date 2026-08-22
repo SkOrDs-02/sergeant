@@ -49,7 +49,10 @@ function QtyInput({
       disabled={disabled}
       aria-label="Кількість"
       placeholder="1"
-      className="input-focus-finyk h-9 min-w-0 rounded-xl border border-line bg-panelHi px-2 text-style-caption text-text tabular-nums"
+      // Той самий анти-зум/тач-floor, що в `receiptMoneyInput.tsx`: 16px
+      // шрифт і ≥44px висота лише під `pointer: coarse` (бета-фідбек №2).
+      // eslint-disable-next-line sergeant-design/no-raw-type-size -- анти-зум ІНВАРІАНТ контрола вводу (iOS: input <16px → авто-зум), не типографічна шкала.
+      className="input-focus-finyk h-9 min-w-0 rounded-xl border border-line bg-panelHi px-2 text-style-caption text-text tabular-nums pointer-coarse:min-h-11 pointer-coarse:text-base"
     />
   );
 }

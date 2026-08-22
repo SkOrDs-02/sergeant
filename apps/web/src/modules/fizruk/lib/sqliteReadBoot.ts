@@ -43,7 +43,21 @@ import { isDemoActive } from "../../../core/onboarding/onboardingGate.js";
 import { bootstrapBodyWeightFromBiometrics } from "./bodyWeightBootstrap.js";
 import { migrateFizruk } from "./clientMigrate.js";
 import { importFizrukDemoSeed } from "./demoSeedImport.js";
-import { refreshFizrukSqliteState } from "./sqliteReader.js";
+import { registerRealEntryCounter } from "../../../core/onboarding/realEntryProbe.js";
+import {
+  getCachedFizrukSqliteState,
+  refreshFizrukSqliteState,
+} from "./sqliteReader.js";
+
+// AI-CONTEXT: FTUX-детекція «чи є справжні записи» читає канонічний
+// warm-cache через реєстр (`core/onboarding/realEntryProbe`), а не
+// tombstone-нутий LS-ключ `fizruk_workouts_v1`. Реєструємось на module-scope:
+// цей файл вантажиться лише у складі лінивого boot-кластера модуля,
+// тож хабовий eager-чанк нових ребер не отримує.
+registerRealEntryCounter(
+  "fizruk",
+  () => getCachedFizrukSqliteState().workouts.length,
+);
 
 let booted = false;
 

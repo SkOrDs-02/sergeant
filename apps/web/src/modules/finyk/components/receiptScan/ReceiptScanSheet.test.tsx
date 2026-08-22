@@ -245,6 +245,42 @@ describe("ReceiptScanSheet — photo upload path", () => {
     },
   );
 
+  it("показує «Розпізнаю чек…», поки vision у польоті", async () => {
+    // Бета-фідбек №5 (2026-08-18): статус має називати ФАЗУ, а не стояти
+    // одним рядком усі 20 секунд — інакше екран читається як завислий.
+    decodeQrFromImageFileMock.mockResolvedValue(null);
+    let resolveAnalyze: (value: unknown) => void = () => {};
+    analyzeReceiptMock.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveAnalyze = resolve;
+        }),
+    );
+    renderSheet();
+
+    await act(async () => {
+      selectPhoto(
+        new File([new Uint8Array(10)], "chek.jpg", { type: "image/jpeg" }),
+      );
+    });
+
+    // Стиснення фото — теж очікування, і воно починається до мережі.
+    expect(screen.getByRole("status")).toHaveTextContent("Готую фото…");
+
+    await waitFor(() => expect(analyzeReceiptMock).toHaveBeenCalled());
+    expect(screen.getByRole("status")).toHaveTextContent("Розпізнаю чек…");
+
+    await act(async () => {
+      resolveAnalyze({
+        draft: draft({ source: "vision", fiscalNum: null, store: "Сільпо" }),
+      });
+    });
+
+    await waitFor(() =>
+      expect(screen.getByDisplayValue("Сільпо")).toBeInTheDocument(),
+    );
+  });
+
   it("порожній vision-драфт (фото не чека) показує чесний банер над формою", async () => {
     decodeQrFromImageFileMock.mockResolvedValue(null);
     analyzeReceiptMock.mockResolvedValue({
@@ -316,6 +352,201 @@ describe("ReceiptScanSheet — photo upload path", () => {
     await waitFor(() =>
       expect(screen.getByText(/Фото завелике/)).toBeInTheDocument(),
     );
+  });
+});
+
+describe("ReceiptScanSheet — чеки пачкою (multiple-пікер)", () => {
+  // Батч переїхав сюди з BulkImportSheet (бета-фідбек №2, 2026-08-18):
+  // 1 файл → одиничний review-флоу, 2+ → стадія `batch` з
+  // BulkReceiptsProgress; кап 10 фото — у `useBulkReceiptsImport`.
+  function nFiles(n: number): File[] {
+    return Array.from(
+      { length: n },
+      (_, i) =>
+        new File([new Uint8Array(10)], `r${i}.jpg`, { type: "image/jpeg" }),
+    );
+  }
+
+  function selectFiles(files: File[]) {
+    const input = document.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement;
+    fireEvent.change(input, { target: { files } });
+  }
+
+  it("2 фото відкривають стадію «Чеки пачкою» з обома рядками, без кап-примітки", async () => {
+    decodeQrFromImageFileMock.mockResolvedValue(null);
+    analyzeReceiptMock.mockResolvedValue({
+      draft: draft({ source: "vision", fiscalNum: null, store: "Сільпо" }),
+    });
+    renderSheet();
+
+    await act(async () => {
+      selectFiles(nFiles(2));
+    });
+
+    expect(screen.getByText("Чеки пачкою")).toBeInTheDocument();
+    await waitFor(() => expect(analyzeReceiptMock).toHaveBeenCalledTimes(2));
+    expect(screen.queryByText(/Взято перші/)).not.toBeInTheDocument();
+    if (!DPS_QR_SCAN_ENABLED) {
+      // Гейт діє і в батчі: жодної спроби QR-декоду на файл.
+      expect(decodeQrFromImageFileMock).not.toHaveBeenCalled();
+    }
+  });
+
+  it("вибір понад 10 фото показує примітку і реально обробляє РІВНО 10", async () => {
+    decodeQrFromImageFileMock.mockResolvedValue(null);
+    analyzeReceiptMock.mockResolvedValue({
+      draft: draft({ source: "vision", fiscalNum: null, store: "" }),
+    });
+    renderSheet();
+
+    await act(async () => {
+      selectFiles(nFiles(11));
+    });
+
+    expect(screen.getByText(/Взято перші 10 фото з 11/)).toBeInTheDocument();
+    // 11-й файл (r10.jpg) НЕ обробляється: analyze викликано рівно 10
+    // разів (slice у startFiles), рядок прогресу для нього не рендериться.
+    await waitFor(() => expect(analyzeReceiptMock).toHaveBeenCalledTimes(10));
+    expect(screen.queryByText("r10.jpg")).not.toBeInTheDocument();
+  });
+
+  it("порожні драфти позначаються «схоже, не чек» і авто-виключаються зі збереження", async () => {
+    decodeQrFromImageFileMock.mockResolvedValue(null);
+    analyzeReceiptMock.mockResolvedValue({
+      draft: draft({
+        source: "vision",
+        fiscalNum: null,
+        store: "",
+        totalKopiykas: 0,
+        items: [],
+        confidence: 0,
+      }),
+    });
+    renderSheet();
+
+    await act(async () => {
+      selectFiles(nFiles(2));
+    });
+    await waitFor(() => expect(analyzeReceiptMock).toHaveBeenCalledTimes(2));
+
+    // Бета-фідбек №3: у батчі той самий «чесний фідбек», що в одиночному
+    // флоу — бейдж на рядку + нуль у «Зберегти вибрані».
+    expect(screen.getAllByText("схоже, не чек")).toHaveLength(2);
+    expect(
+      screen.getByRole("button", { name: "Зберегти вибрані (0)" }),
+    ).toBeInTheDocument();
+  });
+
+  it("«Редагувати» відкриває повний review чека, правки лягають у рядок, «Готово» повертає в список", async () => {
+    decodeQrFromImageFileMock.mockResolvedValue(null);
+    analyzeReceiptMock.mockResolvedValue({
+      draft: draft({ source: "vision", fiscalNum: null, store: "Сільпо" }),
+    });
+    renderSheet();
+
+    await act(async () => {
+      selectFiles(nFiles(2));
+    });
+    await waitFor(() => expect(analyzeReceiptMock).toHaveBeenCalledTimes(2));
+
+    fireEvent.click(
+      screen.getAllByRole("button", { name: "Редагувати" })[0] as HTMLElement,
+    );
+    // Повний review-екран того самого `ReceiptReviewForm`, що і в
+    // одиночному флоу: поле «Магазин» доступне і редаговане.
+    expect(screen.getByLabelText("Магазин")).toHaveValue("Сільпо");
+    fireEvent.change(screen.getByLabelText("Магазин"), {
+      target: { value: "АТБ" },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Готово" }));
+    // Назад у список: перший рядок перейменований, другий незмінний,
+    // обидва досі вибрані.
+    expect(screen.getByText("АТБ")).toBeInTheDocument();
+    expect(screen.getByText("Сільпо")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Зберегти вибрані (2)" }),
+    ).toBeInTheDocument();
+  });
+
+  it("заповнення полів у review порожнього чека повертає його у вибрані", async () => {
+    decodeQrFromImageFileMock.mockResolvedValue(null);
+    analyzeReceiptMock.mockResolvedValue({
+      draft: draft({
+        source: "vision",
+        fiscalNum: null,
+        store: "",
+        totalKopiykas: 0,
+        items: [],
+        confidence: 0,
+      }),
+    });
+    renderSheet();
+
+    await act(async () => {
+      selectFiles(nFiles(2));
+    });
+    await waitFor(() => expect(analyzeReceiptMock).toHaveBeenCalledTimes(2));
+    expect(
+      screen.getByRole("button", { name: "Зберегти вибрані (0)" }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getAllByRole("button", { name: "Редагувати" })[0] as HTMLElement,
+    );
+    fireEvent.change(screen.getByLabelText("Магазин"), {
+      target: { value: "Кіоск" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Готово" }));
+
+    // Авто-повернення у вибрані (`updateItemDraft`): заповнені поля =
+    // людина підтвердила, що це таки чек.
+    expect(
+      screen.getByRole("button", { name: "Зберегти вибрані (1)" }),
+    ).toBeInTheDocument();
+  });
+
+  it("примітка про кап зникає після закриття і повторного відкриття шита", async () => {
+    decodeQrFromImageFileMock.mockResolvedValue(null);
+    analyzeReceiptMock.mockResolvedValue({
+      draft: draft({ source: "vision", fiscalNum: null, store: "" }),
+    });
+    const storage = makeStorage();
+    const client = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+    const sheet = (open: boolean) => (
+      <QueryClientProvider client={client}>
+        <ReceiptScanSheet
+          open={open}
+          onClose={vi.fn()}
+          storage={storage}
+          onReceiptLinked={vi.fn()}
+          onSaved={vi.fn()}
+        />
+      </QueryClientProvider>
+    );
+    const { rerender } = render(sheet(true));
+
+    await act(async () => {
+      selectFiles(nFiles(11));
+    });
+    expect(screen.getByText(/Взято перші 10 фото з 11/)).toBeInTheDocument();
+
+    rerender(sheet(false));
+    // Reset-on-close — відкладений мікротаск (див. ефект у компоненті).
+    await act(async () => {
+      await Promise.resolve();
+    });
+    rerender(sheet(true));
+    expect(
+      screen.queryByText(/Взято перші 10 фото з 11/),
+    ).not.toBeInTheDocument();
   });
 });
 

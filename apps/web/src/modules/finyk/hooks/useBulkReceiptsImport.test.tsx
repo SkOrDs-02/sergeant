@@ -35,6 +35,7 @@ import {
   BATCH_RECEIPTS_MAX_FILES,
   useBulkReceiptsImport,
 } from "./useBulkReceiptsImport";
+import { DPS_QR_SCAN_ENABLED } from "../components/receiptScan/dpsQrGate";
 import type { ManualExpenseWriteThroughStorage } from "./manualExpenseWriteThrough";
 
 function makeWrapper() {
@@ -87,34 +88,64 @@ beforeEach(() => {
 });
 
 describe("useBulkReceiptsImport — startFiles (drafting)", () => {
-  it("uses the QR lookup path when a QR is found in the photo and parses as a DPS receipt", async () => {
-    decodeQrFromImageFileMock.mockResolvedValue(
-      "https://cabinet.tax.gov.ua/cashregs/check?id=1&date=17082026&time=1000&fn=2&sm=3",
-    );
-    lookupReceiptMock.mockResolvedValue({
-      draft: draft({ source: "dps", fiscalNum: "2" }),
-    });
+  // QR-шлях за гейтом `dpsQrGate.ts` (реєстр ДПС закритий на воєнний
+  // стан) — оживе фліпом DPS_QR_SCAN_ENABLED, як skipIf-тести
+  // `ReceiptScanSheet.test.tsx`.
+  it.skipIf(!DPS_QR_SCAN_ENABLED)(
+    "uses the QR lookup path when a QR is found in the photo and parses as a DPS receipt",
+    async () => {
+      decodeQrFromImageFileMock.mockResolvedValue(
+        "https://cabinet.tax.gov.ua/cashregs/check?id=1&date=17082026&time=1000&fn=2&sm=3",
+      );
+      lookupReceiptMock.mockResolvedValue({
+        draft: draft({ source: "dps", fiscalNum: "2" }),
+      });
 
-    const storage = makeStorage();
-    const { result } = renderHook(
-      () => useBulkReceiptsImport({ storage, onReceiptLinked: vi.fn() }),
-      { wrapper: makeWrapper() },
-    );
+      const storage = makeStorage();
+      const { result } = renderHook(
+        () => useBulkReceiptsImport({ storage, onReceiptLinked: vi.fn() }),
+        { wrapper: makeWrapper() },
+      );
 
-    await act(async () => {
-      await result.current.startFiles([makeFile("a.jpg")]);
-    });
+      await act(async () => {
+        await result.current.startFiles([makeFile("a.jpg")]);
+      });
 
-    expect(lookupReceiptMock).toHaveBeenCalledWith({
-      fn: "2",
-      id: "1",
-      date: "17082026",
-      time: "1000",
-      sm: "3",
-    });
-    expect(analyzeReceiptMock).not.toHaveBeenCalled();
-    expect(result.current.items[0]).toMatchObject({ status: "drafted" });
-  });
+      expect(lookupReceiptMock).toHaveBeenCalledWith({
+        fn: "2",
+        id: "1",
+        date: "17082026",
+        time: "1000",
+        sm: "3",
+      });
+      expect(analyzeReceiptMock).not.toHaveBeenCalled();
+      expect(result.current.items[0]).toMatchObject({ status: "drafted" });
+    },
+  );
+
+  it.skipIf(DPS_QR_SCAN_ENABLED)(
+    "з вимкненим ДПС-гейтом батч іде одразу у vision — QR-декод не викликається",
+    async () => {
+      analyzeReceiptMock.mockResolvedValue({ draft: draft() });
+
+      const storage = makeStorage();
+      const { result } = renderHook(
+        () => useBulkReceiptsImport({ storage, onReceiptLinked: vi.fn() }),
+        { wrapper: makeWrapper() },
+      );
+
+      await act(async () => {
+        await result.current.startFiles([makeFile("a.jpg")]);
+      });
+
+      expect(decodeQrFromImageFileMock).not.toHaveBeenCalled();
+      expect(lookupReceiptMock).not.toHaveBeenCalled();
+      expect(result.current.items[0]).toMatchObject({
+        status: "drafted",
+        included: true,
+      });
+    },
+  );
 
   it("falls back to vision analyze when no QR is found in the photo", async () => {
     decodeQrFromImageFileMock.mockResolvedValue(null);

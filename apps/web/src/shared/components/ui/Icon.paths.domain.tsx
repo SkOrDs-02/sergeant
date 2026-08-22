@@ -197,6 +197,43 @@ export const DOMAIN_PATHS: Record<string, ReactNode> = {
   ),
   // `egg` — nutrition: dairy/protein category.
   egg: <path d="M12 3c-4 0-7 6-7 11a7 7 0 0 0 14 0c0-5-3-11-7-11z" />,
+  // Чотири гліфи нижче додано 2026-08-21 разом зі зняттям емодзі з
+  // `@sergeant/nutrition-domain`: категорії комори й типи прийомів їжі
+  // мали 🥕/🍎/🍗/🌾, і без цих іконок їх довелося б звести до
+  // однакового generic-гліфа, тобто втратити розрізнення.
+  // `apple` — nutrition: fruits & berries category, snack meal type.
+  apple: (
+    <>
+      <path d="M12 8c-1.5-1.5-3-2-4.5-1.5C5.5 7.2 4 9.4 4 12.5 4 16.6 7 21 9.5 21c1 0 1.7-.5 2.5-.5s1.5.5 2.5.5c2.5 0 5.5-4.4 5.5-8.5 0-3.1-1.5-5.3-3.5-6-1.5-.5-3 0-4.5 1.5z" />
+      <path d="M12 8V5a3 3 0 0 1 3-3" />
+    </>
+  ),
+  // `carrot` — nutrition: vegetables category.
+  carrot: (
+    <>
+      <path d="M3 21c4.5-.8 9-4 12-8L11 9C7 12 3.8 16.5 3 21z" />
+      <path d="M15 13a4 4 0 0 0 5-5 4 4 0 0 0-5 5z" />
+      <path d="M13 7a3 3 0 0 1 3-4" />
+    </>
+  ),
+  // `fish` — nutrition: meat & fish category.
+  fish: (
+    <>
+      <path d="M2 12c3-4 7-6 11-6s7 2 9 6c-2 4-5 6-9 6s-8-2-11-6z" />
+      <path d="M18 12h.01" />
+      <path d="M22 8l-4 4 4 4" />
+    </>
+  ),
+  // `wheat` — nutrition: grains & bread category.
+  wheat: (
+    <>
+      <path d="M12 22V9" />
+      <path d="M12 9c0-2.5 1.5-4 3.5-4.5C15 7 13.8 8.6 12 9z" />
+      <path d="M12 9c0-2.5-1.5-4-3.5-4.5C9 7 10.2 8.6 12 9z" />
+      <path d="M12 15c0-2.5 1.5-4 3.5-4.5C15 13 13.8 14.6 12 15z" />
+      <path d="M12 15c0-2.5-1.5-4-3.5-4.5C9 13 10.2 14.6 12 15z" />
+    </>
+  ),
   // `barcode` — product barcode scan action (Nutrition module).
   barcode: (
     <>

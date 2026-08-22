@@ -1,6 +1,6 @@
 # Agents in Sergeant
 
-> **Last touched:** 2026-08-10 by @claude. **Next review:** 2026-11-26.
+> **Last touched:** 2026-08-22 by @Skords-01. **Next review:** 2026-12-14.
 > **Status:** Active
 
 > **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load one owner skill for the primary touched surface. Load extra workflow/squad/helper skills only when `docs/00-start/agents/agent-workflows.md` or the routing catalog explicitly says to. The routing catalog lives in `docs/00-start/agents/agent-skills-catalog.md`.
@@ -165,7 +165,7 @@ CI gates fail on regression. Numbers come from `apps/web/package.json` → `"siz
 
 | Metric                                           | Budget                              | Where enforced                                                                                                                                                                                                                |
 | ------------------------------------------------ | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `apps/web` JS total (brotli)                     | **≤ 1.35 MB**                       | `pnpm --filter @sergeant/web exec size-limit` in CI                                                                                                                                                                           |
+| `apps/web` JS total (brotli)                     | **≤ 1.38 MB**                       | `pnpm --filter @sergeant/web exec size-limit` in CI                                                                                                                                                                           |
 | `apps/web` CSS (brotli)                          | **≤ 40 kB**                         | same                                                                                                                                                                                                                          |
 | `apps/web` **eager** JS (критичний шлях, brotli) | **≤ 280 kB**                        | `node scripts/ci/check-eager-bundle.mjs` (CI job `check`); локально `pnpm --filter @sergeant/web size:eager`                                                                                                                  |
 | `apps/web` LCP (median, 4 LHCI routes)           | **≤ 3000 ms** (`error` — fail-stop) | `apps/web/lighthouserc.json` + `.github/workflows/lighthouse-ci.yml` (status `Lighthouse CI`); local: `pnpm --filter @sergeant/web lighthouse`                                                                                |
@@ -173,6 +173,10 @@ CI gates fail on regression. Numbers come from `apps/web/package.json` → `"siz
 | `apps/web` TBT (median, 4 LHCI routes)           | **≤ 200 ms** (warn)                 | same                                                                                                                                                                                                                          |
 | Backend `/health` p95                            | < 100 ms                            | Formalized in [`docs/03-operations/observability/SLO.md §2.1`](./docs/03-operations/observability/SLO.md#21-health-endpoint-p95); alert-правило `BackendHealthP95High` — design-only, не wired (див. SLO.md § Статус wiring). |
 | Anthropic `/api/chat` p95 first token            | < 1.5 s                             | (informal; will move to PostHog/Sentry once wired)                                                                                                                                                                            |
+
+**Ратчет 2026-08-18 (JS 1.35 → 1.38 MB) — і урок про мовчазний гейт.** Заміряно локально на `origin/main` (`59b8e164`): **1 351.4 kB**, тобто ліміт пробито на 1.4 kB ще ДО правки, яка це виявила (її власний внесок — 296 B). Виріс бандл на Фазі 2 чек-скану: нові аркуші імпорту, bulk-review, дедуп-превʼю. Нове число дає ~2% запасу над фактом — навмисно тісніше за 5% попереднього ратчету, бо тут не новий важкий vendor, а накопичення.
+
+Головне не число, а чому його не побачили вчасно. `size-limit` — це КРОК усередині джоби `check`, і він стоїть ПІСЛЯ кроку «Format, lint, test, build». Коли той крок падає, GitHub Actions пропускає всі наступні, тож бандл-гейт просто не виконується — і в логах це виглядає не як «бюджет перевищено», а як тиша. Кілька мержів поспіль (#823, #825, #827) пішли в `main` до завершення CI, `format:check` там був червоний, і гейт мовчав, поки борг ріс. **Висновок на майбутнє: гейт, що стоїть у кроках після потенційно червоного кроку, не є гейтом.** Або виносити в окрему джобу, або лікувати причину — не мерджити до завершення `check`.
 
 **Ратчет 2026-08-07 (eager 430 → 280 kB) — другий за день.** `vendor-sqlite` пішов з критичного шляху: **411.7 → 264.6 kB**, preload-чанків 111 → 73. Разом із виносом `posthog-js` того ж дня це **−207.7 kB** від 472.3.
 

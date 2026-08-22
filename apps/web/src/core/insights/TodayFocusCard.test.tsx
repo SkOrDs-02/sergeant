@@ -374,7 +374,7 @@ describe("TodayFocusCard", () => {
 
   it("рендерить fizruk рекомендацію з правильним module accent", () => {
     const focus = {
-      id: "fizruk_muscle_chest",
+      id: "fizruk_muscle_balance",
       module: "fizruk" as const,
       title: "Груди не тренували 12 днів",
       body: "Включи вправи на ці мʼязи",

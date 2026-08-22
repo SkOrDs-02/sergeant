@@ -18,6 +18,18 @@
  * без спроби QR-lookup (вона гарантовано впиралась би у відмову і лише
  * додавала латентність). Камера-стейдж і QR-обробники лишаються в коді —
  * оживуть фліпом гейта.
+ *
+ * «Чеки пачкою» (спека § Фаза 2а) живуть ТУТ, а не в «Додати документи»
+ * (бета-фідбек №2, 2026-08-18): фото чеків — це про чеки, тож пікер
+ * приймає кілька фото одразу (`multiple`); 1 файл → одиничний review-флоу,
+ * 2+ → стадія `batch` (`useBulkReceiptsImport` + `BulkReceiptsProgress`).
+ * `BulkImportSheet` лишився банківським докам (скрін/CSV).
+ *
+ * Глибина пачки (бета-фідбек №3, 2026-08-18): «Редагувати» на рядку
+ * відкриває ПОВНИЙ `ReceiptReviewForm` того чека (позиції включно) —
+ * `editingItemId` + `bulkReceipts.updateItemDraft`; «Готово» повертає
+ * в список. Порожній драфт («схоже, не чек») приходить авто-виключеним
+ * і повертається у вибрані сам, щойно людина заповнила поля.
  */
 import {
   useEffect,
@@ -31,7 +43,6 @@ import { apiClient } from "@shared/api";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { Sheet } from "@shared/components/ui/Sheet";
-import { Spinner } from "@shared/components/ui/Spinner";
 import { useResetPinchZoomAfterCameraCapture } from "@shared/hooks/useResetPinchZoomOnResume";
 import type {
   ReceiptAnalyzeRequest,
@@ -40,6 +51,7 @@ import type {
 } from "@sergeant/api-client";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain";
 import { DEFAULT_CATEGORY } from "../manualExpenseCategories";
+import { draftLooksUnrecognized } from "../receiptDraftEdit";
 import { formatReceiptError } from "../../lib/receiptErrors";
 import { readReceiptImageFile } from "../../lib/receiptImage";
 import { parseDpsReceiptQrUrl } from "../../lib/receiptQr";
@@ -48,18 +60,33 @@ import {
   useReceiptSave,
   type ReceiptSaveStorageSlice,
 } from "../../hooks/useReceiptSave";
+import {
+  useBulkReceiptsImport,
+  BATCH_RECEIPTS_MAX_FILES,
+} from "../../hooks/useBulkReceiptsImport";
+import { BulkReceiptsProgress } from "../bulkImport/BulkReceiptsProgress";
+import { ScanStatus, type ScanStatusState } from "../ScanStatus";
 import { DPS_QR_SCAN_ENABLED } from "./dpsQrGate";
 import { ReceiptScanCameraView } from "./ReceiptScanCameraView";
 import { ReceiptReviewForm } from "./ReceiptReviewForm";
 
-/** Порожній vision-драфт (жодного розпізнаного поля) — найімовірніше на
- * фото взагалі не чек (бета-фідбек 2026-08-18: фото кавуна давало мовчазні
- * порожні поля). Реальний чек завжди має хоч щось із трійки. */
-function looksUnrecognized(draft: ReceiptDraft): boolean {
-  return draft.items.length === 0 && draft.totalKopiykas === 0 && !draft.store;
-}
+type Stage = "choose" | "camera" | "processing" | "review" | "batch";
 
-type Stage = "choose" | "camera" | "processing" | "review";
+/** Стадія `processing` тривала до 20 секунд під одним незмінним «Шукаю
+ * чек…» — рівно те, що тестерка описала як «фрозен скрін» (бета-фідбек
+ * №5, 2026-08-18). Тепер кожна реальна фаза має свій рядок. */
+const PREPARING: ScanStatusState = {
+  label: "Готую фото…",
+  hint: "Ще працюю. Що більше позицій у чеку, то довше розпізнавання.",
+};
+const RECOGNIZING: ScanStatusState = {
+  label: "Розпізнаю чек…",
+  hint: PREPARING.hint,
+};
+const DPS_LOOKUP: ScanStatusState = {
+  label: "Шукаю чек у ДПС…",
+  hint: "Ще чекаю на відповідь ДПС.",
+};
 
 export interface ReceiptScanSheetProps {
   open: boolean;
@@ -89,8 +116,12 @@ export function ReceiptScanSheet({
   // cleanest way to "resume scanning" after an invalid (non-DPS) QR hit,
   // since `useReceiptQrScanner` always stops the camera on ANY detection.
   const [cameraKey, setCameraKey] = useState(0);
+  const [batchCapNote, setBatchCapNote] = useState<string | null>(null);
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [processing, setProcessing] = useState<ScanStatusState>(RECOGNIZING);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const armPinchZoomReset = useResetPinchZoomAfterCameraCapture();
+  const bulkReceipts = useBulkReceiptsImport({ storage, onReceiptLinked });
 
   const lookupMutation = useMutation({
     mutationFn: (req: ReceiptLookupRequest) =>
@@ -117,8 +148,12 @@ export function ReceiptScanSheet({
       setDraft(null);
       setCategory(DEFAULT_CATEGORY);
       setFlowError(null);
+      setBatchCapNote(null);
+      setEditingItemId(null);
       resetSave();
+      bulkReceipts.reset();
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset-on-close only; `bulkReceipts` — новий об'єкт щорендера (той самий патерн, що в BulkImportSheet до переносу).
   }, [open, resetSave]);
 
   const openReview = (nextDraft: ReceiptDraft) => {
@@ -138,6 +173,7 @@ export function ReceiptScanSheet({
       return;
     }
     setFlowError(null);
+    setProcessing(DPS_LOOKUP);
     setStage("processing");
     try {
       const { draft: nextDraft } = await lookupMutation.mutateAsync(req);
@@ -151,6 +187,9 @@ export function ReceiptScanSheet({
 
   const handleFileSelected = async (file: File) => {
     setFlowError(null);
+    // Спінер до першого `await`: QR-декод і стиснення фото самі по собі
+    // помітна пауза, і саме вона першою читається як зависання.
+    setProcessing(PREPARING);
     setStage("processing");
 
     // QR-lookup лише коли ДПС-гілка жива (`dpsQrGate.ts`) — інакше це
@@ -159,6 +198,7 @@ export function ReceiptScanSheet({
       const qrText = await decodeQrFromImageFile(file).catch(() => null);
       const lookupReq = qrText ? parseDpsReceiptQrUrl(qrText) : null;
       if (lookupReq) {
+        setProcessing(DPS_LOOKUP);
         try {
           const { draft: nextDraft } =
             await lookupMutation.mutateAsync(lookupReq);
@@ -177,6 +217,7 @@ export function ReceiptScanSheet({
       setStage("choose");
       return;
     }
+    setProcessing(RECOGNIZING);
     try {
       const { draft: nextDraft } = await analyzeMutation.mutateAsync(
         imageResult.payload,
@@ -187,6 +228,30 @@ export function ReceiptScanSheet({
       setStage("choose");
     }
   };
+
+  const handleBatchSelected = (files: File[]) => {
+    setFlowError(null);
+    // Кап застосовує `startFiles` (slice до BATCH_RECEIPTS_MAX_FILES) — але
+    // МОВЧКИ: без примітки людина, що вибрала 15 фото, дізналась би про
+    // відкинуті 5 лише перерахувавши список (бета-фідбек 2026-08-18).
+    setBatchCapNote(
+      files.length > BATCH_RECEIPTS_MAX_FILES
+        ? `Взято перші ${BATCH_RECEIPTS_MAX_FILES} фото з ${files.length} — решту докинь наступною пачкою після збереження цієї.`
+        : null,
+    );
+    setEditingItemId(null);
+    setStage("batch");
+    void bulkReceipts.startFiles(files);
+  };
+
+  // Повний review одного чека пачки: живий лише поки item існує і ще
+  // редагований (drafted) — після save/помилки повертаємось у список.
+  const editingItem =
+    stage === "batch" && editingItemId
+      ? (bulkReceipts.items.find(
+          (i) => i.id === editingItemId && i.status === "drafted" && i.draft,
+        ) ?? null)
+      : null;
 
   const handleSave = async () => {
     if (!draft) return;
@@ -207,7 +272,13 @@ export function ReceiptScanSheet({
     <Sheet
       open={open}
       onClose={onClose}
-      title={stage === "review" ? "Перевір чек" : "Сканувати чек"}
+      title={
+        stage === "review" || editingItem
+          ? "Перевір чек"
+          : stage === "batch"
+            ? "Чеки пачкою"
+            : "Сканувати чек"
+      }
       panelClassName="finyk-sheet"
       bodyClassName="space-y-4"
       footer={
@@ -225,7 +296,7 @@ export function ReceiptScanSheet({
                 onClick={onClose}
                 disabled={isSaving}
               >
-                Скасуй
+                Скасувати
               </Button>
               <Button
                 className="flex-1"
@@ -237,6 +308,14 @@ export function ReceiptScanSheet({
               </Button>
             </div>
           </div>
+        ) : editingItem ? (
+          <Button
+            className="w-full"
+            module="finyk"
+            onClick={() => setEditingItemId(null)}
+          >
+            Готово
+          </Button>
         ) : undefined
       }
     >
@@ -244,14 +323,18 @@ export function ReceiptScanSheet({
         ref={fileInputRef}
         type="file"
         accept="image/*"
+        multiple
         onClick={armPinchZoomReset}
         onChange={(e) => {
-          const file = e.target.files?.[0];
+          const files = Array.from(e.target.files ?? []);
           e.target.value = "";
-          if (file) void handleFileSelected(file);
+          const first = files[0];
+          if (!first) return;
+          if (files.length === 1) void handleFileSelected(first);
+          else handleBatchSelected(files);
         }}
         className="sr-only"
-        aria-label="Завантажити фото чека"
+        aria-label="Завантажити фото чеків"
       />
 
       {stage === "choose" && (
@@ -283,8 +366,69 @@ export function ReceiptScanSheet({
             <Icon name="camera" size={16} aria-hidden />
             Завантажити фото
           </Button>
+          <p className="text-style-caption text-subtle">
+            Можна вибрати одразу кілька фото — до {BATCH_RECEIPTS_MAX_FILES}{" "}
+            чеків за раз, кожен збережеться окремою витратою.
+          </p>
         </div>
       )}
+
+      {stage === "batch" &&
+        (editingItem && editingItem.draft ? (
+          <>
+            <Button
+              type="button"
+              variant="ghost"
+              tone="finyk"
+              size="xs"
+              onClick={() => setEditingItemId(null)}
+            >
+              ← До списку чеків
+            </Button>
+            {draftLooksUnrecognized(editingItem.draft) && (
+              <p
+                role="status"
+                className="rounded-xl border border-line bg-panelHi/60 p-2.5 text-style-caption text-text"
+              >
+                Схоже, на фото не чек — розпізнати нічого не вдалося. Заповни
+                поля вручну, і чек повернеться у вибрані.
+              </p>
+            )}
+            <ReceiptReviewForm
+              draft={editingItem.draft}
+              setDraft={(action) =>
+                bulkReceipts.updateItemDraft(editingItem.id, action)
+              }
+              category={editingItem.category}
+              setCategory={(c) =>
+                bulkReceipts.setItemCategory(editingItem.id, c)
+              }
+              customCategories={customCategories}
+              disabled={bulkReceipts.isSaving}
+            />
+          </>
+        ) : (
+          <>
+            {batchCapNote && (
+              <p
+                role="status"
+                className="rounded-xl border border-line bg-panelHi/60 p-2.5 text-style-caption text-text"
+              >
+                {batchCapNote}
+              </p>
+            )}
+            <BulkReceiptsProgress
+              items={bulkReceipts.items}
+              isProcessing={bulkReceipts.isProcessing}
+              isSaving={bulkReceipts.isSaving}
+              onSetCategory={bulkReceipts.setItemCategory}
+              onToggleIncluded={bulkReceipts.toggleItemIncluded}
+              onEditItem={setEditingItemId}
+              onSaveAll={() => void bulkReceipts.saveAll()}
+              customCategories={customCategories}
+            />
+          </>
+        ))}
 
       {stage === "camera" && (
         <div className="space-y-3">
@@ -309,19 +453,12 @@ export function ReceiptScanSheet({
       )}
 
       {stage === "processing" && (
-        <div
-          role="status"
-          aria-live="polite"
-          className="flex flex-col items-center gap-2 py-10"
-        >
-          <Spinner size="md" />
-          <p className="text-style-caption text-muted">Шукаю чек…</p>
-        </div>
+        <ScanStatus label={processing.label} slowHint={processing.hint} />
       )}
 
       {stage === "review" && draft && (
         <>
-          {looksUnrecognized(draft) && (
+          {draftLooksUnrecognized(draft) && (
             <p
               role="status"
               className="rounded-xl border border-line bg-panelHi/60 p-2.5 text-style-caption text-text"

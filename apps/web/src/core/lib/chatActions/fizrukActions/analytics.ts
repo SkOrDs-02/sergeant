@@ -1,5 +1,9 @@
 import { readFizrukDailyLog, readFizrukWorkouts } from "./shared";
 import type { Workout, WorkoutItem } from "@sergeant/fizruk-domain";
+import {
+  BODY_ATLAS_MUSCLE_LABELS_UK,
+  mapDomainMuscleToAtlas,
+} from "@sergeant/fizruk-domain/data/bodyAtlas";
 import type {
   SuggestWorkoutAction,
   CompareProgressAction,
@@ -32,7 +36,22 @@ export function suggestWorkout(action: SuggestWorkoutAction): ChatActionResult {
       daysAgo: Math.round((now - ts) / 86400000),
     }))
     .sort((a, b) => b.daysAgo - a.daysAgo);
-  const neglected = sorted.filter((s) => s.daysAgo >= 3).slice(0, 5);
+  // Підпис, а не сирий доменний id: без цього в українську відповідь
+  // асистента протікали `rhomboids` / `erector_spinae`. Кілька доменних
+  // м'язів згортаються в одну атласну групу, тому дедуплікуємо по підпису
+  // і лишаємо найдавніший запис групи (масив уже відсортований за спаданням).
+  const seenLabels = new Set<string>();
+  const neglected: Array<{ label: string; daysAgo: number }> = [];
+  for (const s of sorted) {
+    if (s.daysAgo < 3) continue;
+    const atlas = mapDomainMuscleToAtlas(s.muscle);
+    if (!atlas) continue;
+    const label = BODY_ATLAS_MUSCLE_LABELS_UK[atlas];
+    if (seenLabels.has(label)) continue;
+    seenLabels.add(label);
+    neglected.push({ label, daysAgo: s.daysAgo });
+    if (neglected.length >= 5) break;
+  }
   const lastW = completed.sort(
     (a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime(),
   )[0];
@@ -42,7 +61,7 @@ export function suggestWorkout(action: SuggestWorkoutAction): ChatActionResult {
   const parts: string[] = [];
   if (neglected.length > 0) {
     parts.push(
-      `М'язи, які найдовше не тренували: ${neglected.map((n) => `${n.muscle} (${n.daysAgo}д)`).join(", ")}`,
+      `М'язи, які найдовше не тренували: ${neglected.map((n) => `${n.label} (${n.daysAgo}д)`).join(", ")}`,
     );
   }
   if (lastExercises) {

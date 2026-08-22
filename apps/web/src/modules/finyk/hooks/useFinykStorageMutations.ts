@@ -1,6 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { notifyFinykRoutineCalendarSync } from "../hubRoutineSync";
 import { hubKeys } from "@shared/lib/api/queryKeys";
+import { stripCategoryEmoji } from "@sergeant/finyk-domain/lib/manualTaxonomy";
 import {
   trackEvent,
   ANALYTICS_EVENTS,
@@ -355,7 +356,14 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
       parentId,
     }: { color?: string; icon?: string; parentId?: string } = {},
   ) => {
-    const trimmed = String(label || "").trim();
+    // AI-CONTEXT (2026-08-21): підпис нормалізується на ЗАПИСІ, а не на
+    // кожному рендері. Вбудовані категорії втратили емодзі-префікси того
+    // ж дня, тож власна категорія лишалась єдиним джерелом гліфа в
+    // списку — і поверхні розходились: пікер зрізав префікс
+    // (`stripLeadingEmoji`), картка ліміту показувала як є. Зріз на
+    // вході робить це неможливим для НОВИХ записів; уже збережені
+    // нормалізуються на рендері.
+    const trimmed = stripCategoryEmoji(String(label || "").trim());
     if (!trimmed || trimmed.length > 80) return;
     setCustomCategories((prev) => {
       if (prev.length >= 80) return prev;
@@ -382,7 +390,8 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
         if (c.id !== id) return c;
         const next = { ...c };
         if (patch.label != null)
-          next.label = String(patch.label).trim() || c.label;
+          next.label =
+            stripCategoryEmoji(String(patch.label).trim()) || c.label;
         if (patch.color !== undefined) next.color = patch.color || undefined;
         if (patch.icon !== undefined) next.icon = patch.icon || undefined;
         if (patch.parentId !== undefined)

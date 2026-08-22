@@ -83,3 +83,13 @@ export function addBlankDraftItem(draft: ReceiptDraft): ReceiptDraft {
   };
   return { ...draft, items: [...draft.items, item] };
 }
+
+/** Порожній vision-драфт (жодного розпізнаного поля) — найімовірніше на
+ * фото взагалі не чек (бета-фідбек 2026-08-18: фото кавуна давало мовчазні
+ * порожні поля). Реальний чек завжди має хоч щось із трійки. Спільний
+ * предикат для банера одиночного флоу (`ReceiptScanSheet`) і бейджа/
+ * авто-виключення рядка пачки (`useBulkReceiptsImport` +
+ * `BulkReceiptsProgress`) — бета-фідбек №3. */
+export function draftLooksUnrecognized(draft: ReceiptDraft): boolean {
+  return draft.items.length === 0 && draft.totalKopiykas === 0 && !draft.store;
+}

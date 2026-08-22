@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import pool from "../../../db.js";
 import { parseBody } from "../../../http/validate.js";
 import { ValidationError } from "../../../obs/errors.js";
 import {
@@ -7,6 +8,7 @@ import {
 } from "@sergeant/shared";
 import type { ImportSkippedRow, ImportStatementRow } from "@sergeant/shared";
 import { isLikelyOwnTransfer } from "./transferDetect.js";
+import { markDuplicateLikely } from "./duplicateDetect.js";
 import {
   detectDelimiter,
   isBlankRow,
@@ -129,10 +131,13 @@ function classifyRows(
  */
 const MAX_PREVIEW_DATA_ROWS = 10_000;
 
+type WithSessionUser = Request & { user?: { id: string } };
+
 export default async function statementPreviewHandler(
   req: Request,
   res: Response,
 ): Promise<void> {
+  const userId = (req as WithSessionUser).user!.id;
   const { csv_text, mapping } = parseBody(
     ImportStatementPreviewRequestSchema,
     req,
@@ -176,7 +181,10 @@ export default async function statementPreviewHandler(
       ImportStatementPreviewResponseSchema.parse({
         profile: autodetected.profile,
         needsMapping: false,
-        rows,
+        // «Сітка 2» дедуп-превʼю (duplicateDetect.ts): м'яка мітка
+        // «схоже, вже є» за трійкою дата+сума+напрям проти вже збережених
+        // витрат — до того, як людина побачить галочки.
+        rows: await markDuplicateLikely(pool, userId, rows),
         skipped,
       }),
     );
@@ -191,7 +199,7 @@ export default async function statementPreviewHandler(
         ImportStatementPreviewResponseSchema.parse({
           profile: "custom",
           needsMapping: false,
-          rows,
+          rows: await markDuplicateLikely(pool, userId, rows),
           skipped,
         }),
       );
