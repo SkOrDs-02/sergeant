@@ -107,6 +107,26 @@ export function PhotoStep({ onApply }: PhotoStepProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Кнопка «Аналізувати» — запасний вихід, не основний шлях. Авто-ефект
+  // вище вже запускає аналіз сам, тож показувати її на щасливому шляху
+  // означало б пропонувати дію, яку система щойно зробила: людина тисне,
+  // і нічого видимо не змінюється. Лишаємо рівно два випадки, де авто-
+  // запуск не спрацює:
+  //  · помилка — тоді це retry, і підпис має казати саме це;
+  //  · Free — авто-запуск для них навмисно вимкнений (інакше paywall
+  //    вискакував би одразу після вибору файлу), тож кнопка лишається
+  //    входом у paywall.
+  // Pro без privacy-ack теж лишається без кнопки — навмисно: гейт згоди
+  // знімає «Зрозуміло» в нотісі, а `gatedAnalyzePhoto` перевіряє лише
+  // тариф, тож видима тут кнопка була б обходом privacy-гейта.
+  const analyzeLabel = !previewUrl
+    ? null
+    : photoErr
+      ? "Спробувати ще раз"
+      : photoGate.canAccess
+        ? null
+        : "Аналізувати";
+
   const handleApply = () => {
     const result = photo.photoResult;
     // Джерело правди про «збережуване» — серверний `isFood`; не-їжа не
@@ -120,6 +140,7 @@ export function PhotoStep({ onApply }: PhotoStepProps) {
       <PhotoAnalyzeCard
         busy={photoBusy}
         analyzePhoto={gatedAnalyzePhoto}
+        analyzeLabel={analyzeLabel}
         fileRef={photo.fileRef as Ref<HTMLInputElement>}
         onPickPhoto={photo.onPickPhoto}
         photoPreviewUrl={photo.photoPreviewUrl}
