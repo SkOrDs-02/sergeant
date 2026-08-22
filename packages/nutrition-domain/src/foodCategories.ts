@@ -1,12 +1,16 @@
 export interface FoodCategory {
   id: string;
   label: string;
-  emoji: string;
+  /**
+   * Імʼя гліфа дизайн-системи. До 2026-08-21 тут стояло емодзі
+   * (`"🥕"`, `"🍎"`, …) — див. `mealTypes.ts` про причину заміни.
+   */
+  iconName: string;
   keywords: readonly string[];
 }
 
 export interface GroupedCategoryBucket<T = unknown> {
-  cat: { id: string; label: string; emoji: string };
+  cat: { id: string; label: string; iconName: string };
   items: Array<{ item: T; idx: number }>;
 }
 
@@ -14,7 +18,7 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
   {
     id: "vegetables",
     label: "Овочі",
-    emoji: "🥕",
+    iconName: "carrot",
     keywords: [
       "огірок",
       "помідор",
@@ -45,7 +49,7 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
   {
     id: "fruits",
     label: "Фрукти та ягоди",
-    emoji: "🍎",
+    iconName: "apple",
     keywords: [
       "яблук",
       "груш",
@@ -74,7 +78,7 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
   {
     id: "meat_fish",
     label: "Мʼясо та риба",
-    emoji: "🍗",
+    iconName: "fish",
     keywords: [
       "курк",
       "курч",
@@ -108,7 +112,7 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
   {
     id: "dairy_eggs",
     label: "Молочні та яйця",
-    emoji: "🥛",
+    iconName: "egg",
     keywords: [
       "молок",
       "кефір",
@@ -129,7 +133,7 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
   {
     id: "grains",
     label: "Крупи та хліб",
-    emoji: "🌾",
+    iconName: "wheat",
     keywords: [
       "рис",
       "гречк",
@@ -156,7 +160,7 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
   {
     id: "pantry",
     label: "Олії, спеції та бакалія",
-    emoji: "🧂",
+    iconName: "droplet",
     keywords: [
       "олі",
       "олія",
@@ -185,7 +189,7 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
 const OTHER: FoodCategory = {
   id: "other",
   label: "Інше",
-  emoji: "📦",
+  iconName: "package",
   keywords: [],
 };
 

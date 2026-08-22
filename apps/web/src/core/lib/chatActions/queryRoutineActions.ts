@@ -143,9 +143,16 @@ function lastDayKeys(days: number): string[] {
   return keys;
 }
 
+/**
+ * Підпис звички для тексту в чаті.
+ *
+ * До 2026-08-21 сюди клеївся `h.emoji`. Після переходу Рутини на
+ * icon-slug-и (2026-08-03) це поле несе імʼя гліфа, а не емодзі, тож
+ * асистент писав «droplet Пити воду». Гліф у текст не клеїться взагалі —
+ * у чаті його нема чим намалювати.
+ */
 function habitLabel(h: RoutineHabit): string {
-  const name = (h.name || h.id).trim();
-  return h.emoji ? `${h.emoji} ${name}` : name;
+  return (h.name || h.id).trim();
 }
 
 /** Human scope label: single habit by name, else an active-habit count. */

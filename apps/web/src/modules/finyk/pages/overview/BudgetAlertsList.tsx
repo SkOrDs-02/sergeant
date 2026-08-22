@@ -2,6 +2,8 @@ import { memo } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { messages } from "@shared/i18n/uk";
+import { CategoryIconChip } from "../../components/CategoryIconChip";
+import { stripLeadingEmoji } from "../../components/txRowHelpers";
 import { calcCategorySpent, resolveExpenseCategoryMeta } from "../../utils";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain/constants";
 import type {
@@ -45,12 +47,17 @@ const BudgetAlertsListImpl = function BudgetAlertsList({
           customCategories,
         );
         const pct = b.limit > 0 ? Math.round((s / b.limit) * 100) : 0;
+        // Вбудовані підписи чисті від емодзі з 2026-08-21; зріз лишається
+        // рівно для назви КАСТОМНОЇ категорії, яку набирає людина.
+        const catLabel = cat?.label
+          ? stripLeadingEmoji(cat.label)
+          : b.categoryId;
         return (
           <button
             type="button"
             key={b.id}
             onClick={() => onOpenLimit(b.categoryId)}
-            aria-label={`${cat?.label || b.categoryId}: ${pct}%. Відкрити ліміт у плануванні`}
+            aria-label={`${catLabel}: ${pct}%. Відкрити ліміт у плануванні`}
             className={cn(
               "w-full rounded-2xl px-4 py-3 flex items-center justify-between border text-left",
               "transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/60",
@@ -59,8 +66,13 @@ const BudgetAlertsListImpl = function BudgetAlertsList({
                 : "bg-warning/8 border-warning/20 hover:bg-warning/10",
             )}
           >
-            <span className="text-style-label">
-              {cat?.label || b.categoryId}
+            <span className="flex items-center gap-2 min-w-0">
+              <CategoryIconChip
+                categoryId={b.categoryId}
+                customCategories={customCategories}
+                size={24}
+              />
+              <span className="text-style-label truncate">{catLabel}</span>
             </span>
             <span
               className={cn(

@@ -1,6 +1,6 @@
 # Design System — Spacing, Elevation та Theming
 
-> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2027-02-15.
+> **Last touched:** 2026-08-22 by @Skords-01. **Next review:** 2026-12-14.
 > **Status:** Active (v2 redesign foundation merged 2026-05)
 
 Цей документ охоплює spacing scale, радіуси, тіні, мобільні брейкпоінти та темну тему / High Contrast.
@@ -123,17 +123,19 @@ shadow до e4 — бери `z-modal`. Їх розсинхронізація = p
 
 ## 8. Темна тема + High Contrast
 
-### 8.1 4-режимний state-machine (`useTheme`)
+### 8.1 3-режимний state-machine (`useTheme`)
 
 З Track 9 (Design-System polish, PR-#057) у нас один уніфікований
 контролер теми — `apps/web/src/shared/hooks/useTheme.ts`. Стан:
 
-| Choice   | Що робить                                                                                                                 |
-| -------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `light`  | Жодного theme-класу на `<html>` (дефолт).                                                                                 |
-| `dark`   | `<html class="dark">` — повна dark-палітра.                                                                               |
-| `system` | Клас `dark` реактивно слідує за `window.matchMedia('(prefers-color-scheme: dark)')`. OS-level зміна підхоплюється в live. |
-| `hc`     | `<html class="hc">` (+ `dark` якщо OS — dark). HC-режим залишається світлим/темним за системою, але токени бампають AAA.  |
+| Choice  | Що робить                                                                                                                |
+| ------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `light` | Жодного theme-класу на `<html>`.                                                                                         |
+| `dark`  | `<html class="dark">` — повна dark-палітра.                                                                              |
+| `hc`    | `<html class="hc">` (+ `dark` якщо OS — dark). HC-режим залишається світлим/темним за системою, але токени бампають AAA. |
+
+Авто-режим (`system`), що live-слідував за `prefers-color-scheme`, прибрано
+на прохання власника (2026-08-18): три явні теми замість чотирьох.
 
 Контракт-точки:
 
@@ -143,14 +145,20 @@ shadow до e4 — бери `z-modal`. Їх розсинхронізація = p
   читає тих самий hook).
 - **Persistence** — вибір зберігається в `hub_theme_v2` (`localStorage`,
   через `@shared/storage`). Старі ключі (`hub_dark_mode_v1`,
-  `hub_dark_mode_schedule_v1`) мігруються автоматично — fall-back на
-  `system` коли запис відсутній.
+  `hub_dark_mode_schedule_v1`) і ретайрнутий `system` мігруються
+  автоматично.
 - **Cross-tab sync** — `webKVStore.onChange(hub_theme_v2)` ловить DOM
   `storage`-event (LS-fallback) АБО `BroadcastChannel("kv-store")`
   (SQLite-warm-cache). Зміна теми в одній вкладці прокидається в інші
   у живому часі.
-- **`prefers-color-scheme`** — підписка на media-query робить `system` і
-  `hc` справді живими. OS-level toggle відбивається без перезавантаження.
+- **Системні преференції — рівно один раз.** Коли валідного запису нема,
+  `readInitialChoice()` бере старт із OS: `prefers-contrast: more` /
+  `forced-colors: active` → `hc`, інакше `prefers-color-scheme: dark` →
+  `dark`. Так слабкозорий користувач приходить у AAA-набір, не шукаючи
+  перемикач. Після першого ж явного вибору OS уже нічого не перевизначає.
+- **`prefers-color-scheme` у рантаймі** — підписка на media-query лишається,
+  але її споживає ЛИШЕ `hc`: він обирає світлу/темну основу, поверх якої
+  лягають AAA-токени.
 
 ### 8.2 High-Contrast контракт
 
@@ -193,22 +201,20 @@ shadow до e4 — бери `z-modal`. Їх розсинхронізація = p
 ```tsx
 import { ThemeSwitcher } from "@shared/components/ui";
 
-// Compact — header chrome, dense rows. 4 IconButton-и (sun/moon/monitor/contrast)
-// згруповані як radiogroup.
+// Єдина поверхня — компактний segmented control у header-меню «⋯».
+// 3 кнопки (sun/moon/contrast) з підписами, згруповані як radiogroup.
 <ThemeSwitcher />;
-
-// Dropdown — Settings, DesignShowcase, verbose surfaces. Триггер-кнопка
-// + меню з лейблами та описом кожного режиму.
-<ThemeSwitcher variant="dropdown" />;
 ```
+
+Варіанта `variant="dropdown"` більше немає: він мав нуль продакшн-викликів
+(рендерився лише власними тестами та стóрі) і був видалений у round-2 UI
+audit X4 — деталі в докстрингу `ThemeSwitcher.tsx`.
 
 - Token-only стилізація (дизайн-конвенція — tokens + review, ex-Hard
   Rules #11/#13, retired ADR-0081). Жодного `bg-[#...]` —
   все через `bg-panel`, `bg-brand-soft`, `border-line`.
 - `focus-visible:ring-2 ring-brand-500/45` (дизайн-конвенція).
 - Кожен radio-item має `aria-label` (Ukrainian) + `aria-checked`.
-- Dropdown — `role="menu"` + `aria-haspopup="menu"`, ESC закриває,
-  фокус повертається на тригер.
 
 ### 8.4 Не пиши `dark:` пар
 

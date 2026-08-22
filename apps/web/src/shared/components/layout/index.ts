@@ -33,6 +33,9 @@ export type {
 export { ModuleSettingsDrawer } from "./ModuleSettingsDrawer";
 export type { ModuleSettingsDrawerProps } from "./ModuleSettingsDrawer";
 
+export { SwipePages, SWIPE_THRESHOLD_PX } from "./SwipePages";
+export type { SwipePagesProps } from "./SwipePages";
+
 export { StorageErrorBanner } from "./StorageErrorBanner";
 export type { StorageErrorBannerProps } from "./StorageErrorBanner";
 

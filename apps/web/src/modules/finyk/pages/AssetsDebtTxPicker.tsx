@@ -238,8 +238,16 @@ export function AssetsDebtTxPicker({
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad">
           <Card variant="flat" radius="md" className="mb-4">
-            <div className="text-style-caption text-subtle">
-              {item.emoji} {item.name}
+            <div className="text-style-caption text-subtle inline-flex items-center gap-1.5">
+              {/* До 2026-08-21 тут стояв `item.emoji` — засіяний дефолт
+                  («💸» для боргу, «👤» для дебіторки), який форма не дає
+                  редагувати. Тобто хардкод емодзі, а не вибір людини. */}
+              <Icon
+                name={isDebt ? "credit-card" : "user"}
+                size={14}
+                aria-hidden
+              />
+              {item.name}
             </div>
             <p className="text-style-caption text-subtle mt-2 leading-relaxed">
               {copy.intro}

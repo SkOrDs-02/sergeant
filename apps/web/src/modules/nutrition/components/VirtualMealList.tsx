@@ -5,10 +5,10 @@
 import { useMemo } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { SwipeToAction } from "@shared/components/ui/SwipeToAction";
-import { Icon } from "@shared/components/ui/Icon";
 import { VirtualList } from "@shared/components/ui/VirtualList";
 import { type Meal, type MealTypeId } from "@sergeant/nutrition-domain";
 import { MEAL_ORDER, MEAL_META } from "../lib/mealTypes";
+import { Icon, type IconName } from "@shared/components/ui/Icon";
 import { MealRow } from "./MealRow";
 
 const MEAL_ROW_HEIGHT = 68;
@@ -73,7 +73,12 @@ export function VirtualMealList({
           const meta = MEAL_META[item.type];
           return (
             <div className="flex items-center gap-2 pt-2 pb-1">
-              <span className="text-base">{meta.emoji}</span>
+              <Icon
+                name={meta.iconName as IconName}
+                size={16}
+                className="text-nutrition"
+                aria-hidden
+              />
               <SectionHeading as="span" size="xs" variant="nutrition">
                 {meta.label}
               </SectionHeading>

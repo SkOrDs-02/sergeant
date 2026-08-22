@@ -1,18 +1,22 @@
 /**
- * useTheme — uniform 4-mode theme controller.
+ * useTheme — uniform 3-mode theme controller.
  *
- * State machine: `light` | `dark` | `system` | `hc`.
+ * State machine: `light` | `dark` | `hc`.
  *
  * Class-on-html contract (single source of truth for the theme.css vars):
  *   - `light`  → `<html>` має жодного theme-класу (`dark` off, `hc` off).
  *   - `dark`   → `<html class="dark">`.
- *   - `system` → клас `dark` слідує за `matchMedia('(prefers-color-scheme: dark)')`,
- *                клас `hc` — за `(prefers-contrast: more)` / `(forced-colors: active)`.
- *                Тобто слабкозорий користувач із системним high-contrast отримує
- *                AAA-набір одразу, не шукаючи перемикач у меню «⋯».
  *   - `hc`     → `<html class="hc [dark]">`. HC залишається light/dark
  *                відповідно до системної переваги, але семантичні токени
  *                переключаються на AAA-leaning набір через `html.hc { ... }`.
+ *
+ * Авто-режим (`system`), що live-слідував за `prefers-color-scheme`, прибрано
+ * на прохання власника (2026-08-18): три явні теми замість чотирьох. Системні
+ * переваги тепер читаються РІВНО ОДИН РАЗ — на першому завантаженні, коли
+ * вибору ще нема (`readInitialChoice`): OS з high-contrast дає `hc`, темна OS
+ * дає `dark`. Так слабкозорий користувач і далі приходить у AAA-набір, не
+ * шукаючи перемикач, але після першого ж явного вибору система вже нічого не
+ * перевизначає. Збережений legacy-`system` мігрується тим самим правилом.
  *
  * Persistence: вибір зберігається в `hub_theme_v2` (рядок). Зміни в
  * іншій вкладці прилітають через `webKVStore.onChange` (DOM `storage`-
@@ -33,18 +37,15 @@ import {
   webKVStore,
 } from "@shared/lib/storage/storage";
 
-export type ThemeChoice = "light" | "dark" | "system" | "hc";
+export type ThemeChoice = "light" | "dark" | "hc";
 
 const STORAGE_KEY = "hub_theme_v2";
 const LEGACY_DARK_KEY = "hub_dark_mode_v1";
 const LEGACY_SCHEDULE_KEY = "hub_dark_mode_schedule_v1";
+/** Retired 4th mode — kept only to migrate an already-persisted value. */
+const RETIRED_SYSTEM_CHOICE = "system";
 
-const VALID_CHOICES: readonly ThemeChoice[] = [
-  "light",
-  "dark",
-  "system",
-  "hc",
-] as const;
+const VALID_CHOICES: readonly ThemeChoice[] = ["light", "dark", "hc"] as const;
 
 function isThemeChoice(value: unknown): value is ThemeChoice {
   return (
@@ -65,10 +66,22 @@ function readSystemPrefersContrast(): boolean {
   return window.matchMedia(CONTRAST_QUERY).matches;
 }
 
+/**
+ * Первинний вибір із системних переваг — єдине місце, де OS диктує тему.
+ * Викликається лише коли в сховищі нема валідного вибору (або лежить
+ * legacy-`system`).
+ */
+function choiceFromSystem(): ThemeChoice {
+  if (readSystemPrefersContrast()) return "hc";
+  return readSystemPrefersDark() ? "dark" : "light";
+}
+
 function migrateLegacyChoice(): ThemeChoice | null {
-  // Legacy schedule "system" → `system` mode wins over the boolean.
+  // Legacy schedule "system" → тепер це разовий знімок OS, а не режим.
   const schedule = safeReadStringLS(LEGACY_SCHEDULE_KEY);
-  if (schedule && schedule.includes('"mode":"system"')) return "system";
+  if (schedule && schedule.includes(`"mode":"${RETIRED_SYSTEM_CHOICE}"`)) {
+    return choiceFromSystem();
+  }
   // Older string-encoded boolean ("0"/"1" or "true"/"false").
   const dark = safeReadStringLS(LEGACY_DARK_KEY);
   if (dark === "1" || dark === "true") return "dark";
@@ -79,14 +92,15 @@ function migrateLegacyChoice(): ThemeChoice | null {
 function readInitialChoice(): ThemeChoice {
   // `…Durable` prefers the synchronous localStorage mirror so a choice whose
   // fire-and-forget SQLite write-back was lost to a reload race is still
-  // recovered — without it, the lost write silently degraded to the `system`
+  // recovered — without it, the lost write silently degraded to the OS
   // fallback below, flipping `<html>` to `.dark` on a dark-OS device and
   // turning the chosen light/HC theme invisible (text-text → near-white over
   // light surfaces). See storage.ts § Boot-critical durable helpers.
   const raw = safeReadStringLSDurable(STORAGE_KEY);
   if (isThemeChoice(raw)) return raw;
+  if (raw === RETIRED_SYSTEM_CHOICE) return choiceFromSystem();
   const legacy = migrateLegacyChoice();
-  return legacy ?? "system";
+  return legacy ?? choiceFromSystem();
 }
 
 function writeChoice(choice: ThemeChoice): void {
@@ -107,21 +121,12 @@ interface ResolvedTheme {
 function resolveTheme(
   choice: ThemeChoice,
   systemPrefersDark: boolean,
-  systemPrefersContrast = false,
 ): ResolvedTheme {
   // HC follows the system color-scheme so AAA-leaning users on a dark
   // OS get HC-dark and vice versa. The hc class is additive — it does
   // NOT replace `dark`, only layers AAA-leaning token overrides on top.
   if (choice === "hc") {
     return { isDark: systemPrefersDark, isHighContrast: true };
-  }
-  // `system` follows the OS on BOTH axes. A low-vision user who turned on
-  // "Increase Contrast" (iOS) / high-contrast text (Android) / Windows HC
-  // arrives with the AAA token set already applied — without having to
-  // discover the manual switch buried in the header "⋯" menu. An explicit
-  // light/dark choice is a deliberate opt-out and is never overridden.
-  if (choice === "system") {
-    return { isDark: systemPrefersDark, isHighContrast: systemPrefersContrast };
   }
   return { isDark: choice === "dark", isHighContrast: false };
 }
@@ -173,32 +178,23 @@ export interface UseThemeReturn {
 }
 
 /**
- * Theming hook for light/dark/system + high-contrast modes.
+ * Theming hook for light/dark + high-contrast modes.
  *
  * Owns the `dark` and `hc` classes on `<html>`. Subscribes to the system
- * color-scheme media query (for `system` and `hc`) and to cross-tab
- * storage events so the UI stays in sync when the choice changes in
- * another tab.
+ * color-scheme media query (HC picks its light/dark base from it) and to
+ * cross-tab storage events so the UI stays in sync when the choice changes
+ * in another tab.
  */
 export function useTheme(): UseThemeReturn {
   const [choice, setChoiceState] = useState<ThemeChoice>(() => {
     const initial = readInitialChoice();
     // Apply synchronously so the first paint already matches the persisted
     // choice (avoids a flash of light theme when reload-ing into dark).
-    applyResolvedTheme(
-      resolveTheme(
-        initial,
-        readSystemPrefersDark(),
-        readSystemPrefersContrast(),
-      ),
-    );
+    applyResolvedTheme(resolveTheme(initial, readSystemPrefersDark()));
     return initial;
   });
   const [systemPrefersDark, setSystemPrefersDark] = useState<boolean>(
     readSystemPrefersDark,
-  );
-  const [systemPrefersContrast, setSystemPrefersContrast] = useState<boolean>(
-    readSystemPrefersContrast,
   );
 
   // Keep an up-to-date snapshot for callbacks that mustn't re-create on
@@ -210,8 +206,8 @@ export function useTheme(): UseThemeReturn {
   }, [choice]);
 
   const resolved = useMemo(
-    () => resolveTheme(choice, systemPrefersDark, systemPrefersContrast),
-    [choice, systemPrefersDark, systemPrefersContrast],
+    () => resolveTheme(choice, systemPrefersDark),
+    [choice, systemPrefersDark],
   );
 
   // Reactively apply classes whenever the resolution changes.
@@ -230,12 +226,10 @@ export function useTheme(): UseThemeReturn {
     const restore = () => {
       const persisted = readInitialChoice();
       const prefersDark = readSystemPrefersDark();
-      const prefersContrast = readSystemPrefersContrast();
       choiceRef.current = persisted;
       setChoiceState(persisted);
       setSystemPrefersDark(prefersDark);
-      setSystemPrefersContrast(prefersContrast);
-      applyResolvedTheme(resolveTheme(persisted, prefersDark, prefersContrast));
+      applyResolvedTheme(resolveTheme(persisted, prefersDark));
     };
     const onVisibility = () => {
       if (document.visibilityState === "visible") restore();
@@ -248,8 +242,8 @@ export function useTheme(): UseThemeReturn {
     };
   }, []);
 
-  // System color-scheme: subscribe once. Used for `system` and `hc`
-  // modes (HC follows OS-level light/dark preference).
+  // System color-scheme: subscribe once. Consumed only by the `hc` choice,
+  // which layers AAA tokens over the OS-level light/dark preference.
   useEffect(() => {
     if (typeof window === "undefined" || !window.matchMedia) return;
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
@@ -266,31 +260,15 @@ export function useTheme(): UseThemeReturn {
     return () => mq.removeListener(handler);
   }, []);
 
-  // System contrast: `prefers-contrast: more` (iOS "Increase Contrast",
-  // Android high-contrast text) or `forced-colors: active` (Windows HC).
-  // Only consumed by the `system` choice — see `resolveTheme`.
-  useEffect(() => {
-    if (typeof window === "undefined" || !window.matchMedia) return;
-    const mq = window.matchMedia(CONTRAST_QUERY);
-    const handler = (event: MediaQueryListEvent) => {
-      setSystemPrefersContrast(event.matches);
-    };
-    if (typeof mq.addEventListener === "function") {
-      mq.addEventListener("change", handler);
-      return () => mq.removeEventListener("change", handler);
-    }
-    mq.addListener(handler);
-    return () => mq.removeListener(handler);
-  }, []);
-
   // Cross-tab sync: `webKVStore.onChange` rides on the DOM `storage` event
   // for the LS fallback and on `BroadcastChannel("kv-store")` for the
   // SQLite-warm-cache backend (`storage.ts`).
   useEffect(() => {
     const unsubscribe = webKVStore.onChange(STORAGE_KEY, (next) => {
       if (next === null) {
-        // Storage cleared — fall back to the default.
-        if (choiceRef.current !== "system") setChoiceState("system");
+        // Storage cleared — fall back to the system-derived default.
+        const fallback = choiceFromSystem();
+        if (choiceRef.current !== fallback) setChoiceState(fallback);
         return;
       }
       if (isThemeChoice(next) && next !== choiceRef.current) {
@@ -324,7 +302,6 @@ export function useTheme(): UseThemeReturn {
 export const THEME_CHOICE_LABELS: Record<ThemeChoice, string> = {
   light: "Світла",
   dark: "Темна",
-  system: "Системна",
   hc: "Висока контрастність",
 };
 
@@ -334,17 +311,15 @@ export const THEME_CHOICE_LABELS: Record<ThemeChoice, string> = {
 export const THEME_CHOICE_SHORT_LABELS: Record<ThemeChoice, string> = {
   light: "Світла",
   dark: "Темна",
-  system: "Авто",
   hc: "Контраст",
 };
 
 export const THEME_CHOICE_ICONS: Record<
   ThemeChoice,
-  "sun" | "moon" | "monitor" | "contrast"
+  "sun" | "moon" | "contrast"
 > = {
   light: "sun",
   dark: "moon",
-  system: "monitor",
   hc: "contrast",
 };
 

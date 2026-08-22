@@ -228,6 +228,18 @@
     --c-danger: 239 68 68; /* red-500       — statusColors.danger  */
     --c-info: 14 165 233; /* sky-500        — statusColors.info    */
 
+    /* Чорнильний (текстовий) тир статусів — те, у що резолвиться
+       `text-{status}-strong`. Заливка `bg-{status}-strong` НЕ читає ці
+       змінні: вона лишається на `statusStrongHex` у пресеті, бо тир, що
+       читається як текст на чорнилі, під `text-white` уже не працює
+       (розбір — AI-DANGER біля `-strong` у `tailwind-preset.js`).
+       У світлій темі значення збігаються зі `statusStrongHex`, тож вигляд
+       не змінюється — рухається лише темна тема й HC. */
+    --c-success-ink: 6 95 70; /* emerald-800 — 6.44:1 на #ecebe7 / 7.68:1 на білому */
+    --c-warning-ink: 146 64 14; /* amber-800   — 5.94:1 на #ecebe7 / 7.09:1 на білому */
+    --c-danger-ink: 153 27 27; /* red-800     — 6.97:1 на #ecebe7 / 8.31:1 на білому */
+    --c-info-ink: 7 89 133; /* sky-800      — 6.34:1 на #ecebe7 / 7.56:1 на білому */
+
     /* Semantic border tokens — alias `line` for back-compat, add a stronger
        divider for inputs/separators that need extra weight. */
     --c-border: var(--c-line);
@@ -568,9 +580,19 @@
     --c-line: 31 42 37; /* #1f2a25 — ink hairline (≈ white/6%) */
 
     /* Text hierarchy — ink tiers (spec § 1). */
-    --c-text: 242 246 242; /* #f2f6f2 — display / headings, 14.9:1 on bg */
-    --c-muted: 138 150 142; /* #8a968e — meta, AA 5.6:1 on surface */
-    --c-subtle: 95 107 100; /* #5f6b64 — labels ≥12px only */
+    --c-text: 242 246 242; /* #f2f6f2 — display / headings, 17.33:1 on bg */
+    /* AI-CONTEXT (2026-08-21): обидва приглушені тири підняті на щабель.
+       Старий `subtle` #5f6b64 давав 3.22:1 на картці — і це не «поріг для
+       великого тексту», бо послаблення WCAG до 3:1 діє від 18.66px bold /
+       24px regular, а `text-subtle` стоїть на 12px-підписах. axe ловив це
+       як `[serious] color-contrast` на `/settings [dark]`, і полагоджено
+       було точково (ToggleRow → `text-muted`), поки борг лишався
+       системним. Розвилку «підняти значення vs звузити роль» закрив
+       власник (репорт тестера: «сірі літери погано видно»). `muted`
+       піднято слідом, щоб драбина лишилась із трьома щаблями.
+       Значення дзеркалять `inkTheme.text` у tokens.js. */
+    --c-muted: 163 174 166; /* #a3aea6 — meta, 7.83:1 on surface (було #8a968e, 5.84) */
+    --c-subtle: 138 150 142; /* #8a968e — hints, 5.84:1 on surface (було #5f6b64, 3.22) */
     --c-primary: 242 246 242; /* reversed */
 
     /* «Чорнило» module accents — dark tier-400 (luminescent), the
@@ -669,6 +691,25 @@
     --c-warning-soft: 146 64 14; /* slightly brighter amber-900 */
     --c-danger-soft: 153 27 27; /* red-800 — brighter than red-900 */
     --c-info-soft: 7 89 133; /* sky-800 — brighter than sky-900 */
+
+    /* Статуси в темній темі — тир -400, той самий щабель, що вже несуть
+       модульні акценти й `--c-chart-{status}` нижче. Один тир на тему, а
+       не мішанка: саме на мішаних тирах у цій системі виростали сироти
+       (див. AI-CONTEXT біля `statusStrongHex` у tokens.js).
+
+       AI-CONTEXT (2026-08-21): до цього дня `.dark` не мав ЖОДНОГО
+       статусного override-у, а `text-danger` віддавав світлий red-500
+       (4.77:1 на картці) — тобто «темний» варіант ніколи не існував.
+       Гірший бік — `text-{status}-strong` без ручної `dark:`-пари: red-800
+       на #1b1613 = 1.9:1. Обидва боки тепер ідуть звідси. */
+    --c-success: 52 211 153; /* emerald-400 — 9.33:1 на картці */
+    --c-warning: 251 191 36; /* amber-400   — 10.74:1 на картці */
+    --c-danger: 248 113 113; /* red-400     — 6.48:1 на картці */
+    --c-info: 56 189 248; /* sky-400      — 8.37:1 на картці */
+    --c-success-ink: 52 211 153; /* = statusInkHex.success */
+    --c-warning-ink: 251 191 36; /* = statusInkHex.warning */
+    --c-danger-ink: 248 113 113; /* = statusInkHex.danger  */
+    --c-info-ink: 56 189 248; /* = statusInkHex.info    */
 
     /* Dark-theme overrides for the soft brand/module tints (Wave 1b).
        Values are deliberately deep (`-900` family) so tinted surfaces
@@ -824,8 +865,8 @@
     --c-panel-hi: 34 28 24; /* #221c18 */
     --c-line: 31 42 37; /* #1f2a25 */
     --c-text: 242 246 242; /* #f2f6f2 */
-    --c-muted: 138 150 142; /* #8a968e */
-    --c-subtle: 95 107 100; /* #5f6b64 */
+    --c-muted: 163 174 166; /* #a3aea6 */
+    --c-subtle: 138 150 142; /* #8a968e */
     --c-primary: 242 246 242;
     --c-border: var(--c-line);
     --c-border-strong: 74 84 78; /* #4a544e */
@@ -908,7 +949,9 @@
     /* Accent + status base tokens — per this file's own HC contract
        ("any new semantic token MUST get an HC override before shipping"),
        bumped to the `-strong`/-700 tier so `text-accent`/`bg-accent` and
-       the (currently unwired) `--c-{status}` triplets clear HC contrast
+       the `--c-{status}` triplets (wired into the Tailwind utilities
+       2026-08-21 — до того вони існували, але пресет віддавав -500
+       незалежно від теми) clear HC contrast
        instead of sitting at the `:root` -500/-700 default
        (2026-08 design-audit T7). `-strong` values reused from the
        existing `-soft-fg` / Tailwind `{status}-strong` companions below —
@@ -925,6 +968,14 @@
     --c-warning: 146 64 14; /* #92400e — amber-800,   5.94:1 vs bg */
     --c-danger: 153 27 27; /* #991b1b — red-800,     6.97:1 vs bg */
     --c-info: 7 89 133; /* #075985 — sky-800,     6.34:1 vs bg */
+
+    /* Чорнильний (текстовий) тир статусів — HC бере щабель -900, а не
+       -800: контракт цього блоку ≥7:1, а amber-800 давав 6.63 на
+       `panel-hi`. Значення ті самі, що вже стоять у `-soft-fg` нижче. */
+    --c-success-ink: 6 78 59; /* emerald-900 — 9.09…9.72:1 */
+    --c-warning-ink: 120 53 15; /* amber-900   — 8.48…9.07:1 */
+    --c-danger-ink: 127 29 29; /* red-900     — 9.37…10.02:1 */
+    --c-info-ink: 12 74 110; /* sky-900      — 8.85…9.46:1 */
 
     /* Status soft surfaces flip to full-strength fills so banners /
        badges keep WCAG AAA contrast for their text inside HC. */
@@ -1016,8 +1067,18 @@
     --c-accent: 94 234 212; /* teal-300 — matches `chart-finyk` HC-dark tier */
     --c-success: 110 231 183; /* emerald-300 */
     --c-warning: 252 211 77; /* amber-300 */
-    --c-danger: 254 202 202; /* red-200 — closest registered tier; tokens.js has no red-300/-400 */
+    --c-danger: 254 202 202; /* red-200 — навмисно на щабель світліше за решту: HC-dark контракт ≥7:1 і на `panel-hi` */
     --c-info: 125 211 252; /* sky-300 */
+
+    /* Чорнильний (текстовий) тир статусів — HC-dark щабель -300 (danger
+       лишається на -200 у парі з базою вище). Усі ≥7:1 навіть проти
+       найсвітлішої HC-dark поверхні — #302a25 із прев'ю-блоку
+       (`html.hc.dark` власного `--c-panel-hi` не має й успадковує
+       темніший `.dark`-варіант, тож там запас іще більший). */
+    --c-success-ink: 110 231 183; /* emerald-300 — 9.29…12.03:1 */
+    --c-warning-ink: 252 211 77; /* amber-300   — 9.82…12.72:1 */
+    --c-danger-ink: 252 165 165; /* red-300     — 7.46…9.66:1 */
+    --c-info-ink: 125 211 252; /* sky-300      — 8.49…11.00:1 */
 
     /* Soft status surfaces flip to deeper, less-translucent dark fills
        so the soft-banner contract still reads against the dark bg. */
@@ -1226,8 +1287,8 @@
     /* Ink text scale (spec § 1). */
     --c-ink: 231 240 234; /* #e7f0ea — body */
     --c-ink-strong: 242 246 242; /* #f2f6f2 — display / headings */
-    --c-muted-v2: 138 150 142; /* #8a968e — meta */
-    --c-subtle-v2: 95 107 100; /* #5f6b64 — hints */
+    --c-muted-v2: 163 174 166; /* #a3aea6 — meta (дзеркало --c-muted) */
+    --c-subtle-v2: 138 150 142; /* #8a968e — hints (дзеркало --c-subtle) */
 
     /* Glass → solid ink surface. `--surface-glass*` and `backdrop-blur` are
        deprecated under «Чорнило» (spec § Рішення): depth is surface tint +

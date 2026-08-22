@@ -155,11 +155,21 @@ export declare const statusColors: Readonly<Record<StatusColor, string>>;
 export declare const statusHex: Readonly<Record<StatusColor, string>>;
 
 /**
- * WCAG-AA `-strong` companions to `statusColors` — what `text-{c}-strong`
- * and `bg-{c}-strong text-white` resolve to. All four sit on `-800`, the
- * same tier as the four module accents; `contrast.test.js` pins that.
+ * WCAG-AA `-strong` companions to `statusColors` — the LIGHT-theme tier:
+ * what `text-{c}-strong` resolves to on cream/white and what
+ * `bg-{c}-strong text-white` fills with in both themes. All four sit on
+ * `-800`, the same tier as the four module accents; `contrast.test.js`
+ * pins that.
  */
 export declare const statusStrongHex: Readonly<Record<StatusColor, string>>;
+
+/**
+ * «Чорнило» companions to `statusStrongHex` — the DARK-theme ink tier that
+ * `text-{c}-strong` resolves to (via `--c-{c}-ink`). All four sit on
+ * `-400`, the same tier as the dark module accents; `contrast.test.js`
+ * pins them against the ink surfaces.
+ */
+export declare const statusInkHex: Readonly<Record<StatusColor, string>>;
 
 /** Semantic chart colour identifiers (macro scale + structural). */
 export type ChartHexKey = "limit" | "neutral" | "protein" | "fat" | "carbs";

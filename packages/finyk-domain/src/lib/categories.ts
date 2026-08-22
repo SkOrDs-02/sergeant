@@ -3,7 +3,6 @@ import {
   legacyManualCategoryId,
   MANUAL_EXPENSE_TAXONOMY,
   MANUAL_INCOME_TAXONOMY,
-  taxonomyLabel,
 } from "./manualTaxonomy.js";
 
 /**
@@ -47,10 +46,10 @@ type CategoryLikeInput = readonly unknown[];
 // або перейменовувати міграцією під час читання. Джерело правди —
 // `manualTaxonomy.ts`; тут лише проєкція «id + підпис».
 const MANUAL_EXPENSE_CATEGORIES: readonly CategoryLike[] =
-  MANUAL_EXPENSE_TAXONOMY.map((d) => ({ id: d.id, label: taxonomyLabel(d) }));
+  MANUAL_EXPENSE_TAXONOMY.map((d) => ({ id: d.id, label: d.label }));
 
 const MANUAL_INCOME_CATEGORIES: readonly CategoryLike[] =
-  MANUAL_INCOME_TAXONOMY.map((d) => ({ id: d.id, label: taxonomyLabel(d) }));
+  MANUAL_INCOME_TAXONOMY.map((d) => ({ id: d.id, label: d.label }));
 
 function isCategoryLike(v: unknown): v is CategoryLike {
   return (
@@ -128,7 +127,7 @@ export function getCategory(
     )
       return cat;
   }
-  return { id: "other", label: "💳 Інше", mccs: [], keywords: [] };
+  return { id: "other", label: "Інше", mccs: [], keywords: [] };
 }
 
 export function getExpenseCategoryForTransaction(
