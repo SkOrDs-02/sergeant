@@ -692,14 +692,14 @@ export function useChatSend({
         if (isAbort && timedOut) {
           setMessages((m) => [
             ...m,
-            makeAssistantMsg("⏱ Час очікування вичерпано. Спробуй ще раз."),
+            makeAssistantMsg("Час очікування вичерпано. Спробуй ще раз."),
           ]);
           trackEvent(ANALYTICS_EVENTS.HUBCHAT_ERROR, { kind: "aborted" });
         } else if (isAbort) {
           // Explicit cancel (cancel button or chat close). Події НЕ шлемо:
           // користувач передумав — це не збій асистента. Такі спроби видно
           // як розрив `message_sent − (response_received + error)`.
-          setMessages((m) => [...m, makeAssistantMsg("⏹ Запит скасовано.")]);
+          setMessages((m) => [...m, makeAssistantMsg("Запит скасовано.")]);
         } else {
           setMessages((m) => [...m, makeAssistantMsg(friendlyChatError(e))]);
           const kind = isApiError(e) ? e.kind : "unknown";

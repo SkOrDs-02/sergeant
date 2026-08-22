@@ -26,8 +26,14 @@
  * inside `useMonobankWebhook` never fire either (both gate on a real
  * user id) — no further sqlite mocking needed.
  */
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, within, waitFor } from "@testing-library/react";
+import { describe, it, expect, vi, beforeAll, beforeEach } from "vitest";
+import {
+  configure,
+  render,
+  screen,
+  within,
+  waitFor,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
@@ -68,6 +74,41 @@ function disconnectedSyncStateHandler() {
     }),
   );
 }
+
+/**
+ * Resolve the four lazy page chunks once, before any test navigates.
+ *
+ * react-router v7 runs navigation inside `startTransition`, which deliberately
+ * keeps the current screen mounted instead of revealing the `<Suspense>`
+ * fallback — so while a cold chunk loads the DOM does not change at all and
+ * `findBy*` has nothing to observe. Under vitest that first `import()` costs
+ * *seconds*: Vite transforms each page's whole module graph on demand
+ * (measured ≈5 s per page here). In the browser `useWarmFinykPages` hides
+ * this; its jsdom branch is a 1500 ms `setTimeout` that fires mid-test if at
+ * all, and the chunks it starts keep resolving in the background across the
+ * following tests — which is why *which* of the routing tests failed changed
+ * from run to run. Warming here makes every tab click commit against an
+ * already-resolved module.
+ */
+beforeAll(async () => {
+  await Promise.all([
+    import("./pages/budgets/Budgets"),
+    import("./pages/transactions/Transactions"),
+    import("./pages/Analytics"),
+    import("./pages/Assets"),
+  ]);
+}, 120_000);
+
+// Even against warm chunks a tab click needs 0.5–1.7 s to commit here
+// (measured across the whole `src/modules/finyk` run: Transactions 467 ms,
+// Assets 814 ms, Budgets 1042 ms, Analytics 1661 ms) — mounting a real page
+// under jsdom while sibling suites saturate the worker pool. `findBy*`'s
+// 1000 ms default lands in the middle of that band, so each navigation
+// assertion was a coin flip; a solo run of this file stays under it, which is
+// why the same test passed with `-t` and failed in the file. Same reasoning as
+// the raised `testTimeout` in `vitest.config.js`: give slow-runner timing
+// enough room that only a real hang goes red.
+configure({ asyncUtilTimeout: 5000 });
 
 /** Default handlers every test needs — `useMonobank` always fires the
  * sync-state query and `AuthProvider` always fires `/me`, regardless of

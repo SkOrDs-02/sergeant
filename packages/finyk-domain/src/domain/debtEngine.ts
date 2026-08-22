@@ -127,20 +127,27 @@ function sumByRole(
 
 export function getDebtTxRole(tx: Pick<Tx, "amount">): TxRole {
   return tx.amount > 0
-    ? { kind: "origin", label: "📥 Виникнення боргу" }
-    : { kind: "payment", label: "✅ Сплата боргу" };
+    ? { kind: "origin", label: "Виникнення боргу" }
+    : { kind: "payment", label: "Сплата боргу" };
 }
 
 export function getReceivableTxRole(tx: Pick<Tx, "amount">): TxRole {
   return tx.amount < 0
-    ? { kind: "origin", label: "📤 Виникнення боргу" }
-    : { kind: "payment", label: "✅ Погашення боргу" };
+    ? { kind: "origin", label: "Виникнення боргу" }
+    : { kind: "payment", label: "Погашення боргу" };
 }
 
 /**
  * Людські підписи ролей для пікера й карток. `debt` і `receivable`
- * різняться лише формулюванням origin-ролей: пасив виникає, коли гроші
- * прийшли, актив — коли пішли.
+ * різняться лише формулюванням payment-ролі: пасив сплачують, актив
+ * погашають.
+ *
+ * До 2026-08-21 гілка `origin` теж була парною — «📥 Виникнення боргу»
+ * проти «📤 Виникнення боргу». Різнились рівно емодзі: текст в обох був
+ * однаковий, а напрямок руху грошей ніс гліф, тобто інформація жила в
+ * символі, який на різних ОС малювався по-різному й не мав ані кольору,
+ * ані теми. Разом з емодзі зникла і різниця, тож розгалуження прибрано.
+ * Напрямок читається зі знаку суми поруч.
  */
 export function describeLinkedTxRole(
   role: LinkedTxRole,
@@ -149,16 +156,13 @@ export function describeLinkedTxRole(
   if (role === "payment") {
     return {
       kind: "payment",
-      label: kind === "debt" ? "✅ Сплата боргу" : "✅ Погашення боргу",
+      label: kind === "debt" ? "Сплата боргу" : "Погашення боргу",
     };
   }
   if (role === "increase") {
-    return { kind: "origin", label: "➕ Збільшення боргу" };
+    return { kind: "origin", label: "Збільшення боргу" };
   }
-  return {
-    kind: "origin",
-    label: kind === "debt" ? "📥 Виникнення боргу" : "📤 Виникнення боргу",
-  };
+  return { kind: "origin", label: "Виникнення боргу" };
 }
 
 export function getDebtPaid(

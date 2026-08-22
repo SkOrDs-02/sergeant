@@ -1,5 +1,8 @@
 import { Sheet } from "@shared/components/ui/Sheet";
 import { mergeExpenseCategoryDefinitions } from "../../constants";
+import { CategoryIconChip } from "../../components/CategoryIconChip";
+import { isCategoryIdLike } from "../../lib/categoryChip";
+import { stripLeadingEmoji } from "../../components/txRowHelpers";
 
 export interface TransactionsBatchToolbarProps {
   selectMode: boolean;
@@ -118,9 +121,17 @@ export function TransactionsBatchToolbar({
                 (finyk-domain/constants.ts), тож поле `emoji` втрачається на
                 мерджі, а каст приховував це від типів. Тобто рендерився
                 порожній flex-елемент, який через `gap-3` давав кожному рядку
-                12px відступу зліва ні за що.
+                12px відступу зліва ні за що. З 2026-08-21 слот заповнює
+                той самий чип, що й у рядку транзакції.
               */}
-              <span className="text-style-label text-text">{cat.label}</span>
+              <CategoryIconChip
+                categoryId={cat.id}
+                customCategories={customCategories?.filter(isCategoryIdLike)}
+                size={24}
+              />
+              <span className="text-style-label text-text">
+                {stripLeadingEmoji(cat.label)}
+              </span>
             </button>
           ))}
       </Sheet>

@@ -300,7 +300,7 @@ export function getGoalMonthlyLabel(
 ) {
   if (!progress) return null;
   const { monthly } = progress;
-  if (monthly?.isAchieved) return "Ціль досягнута 🎉";
+  if (monthly?.isAchieved) return "Ціль досягнута";
   if (monthly?.isOverdue) return "Термін минув";
   if (monthly?.monthlyNeeded != null) {
     return `Потрібно відкладати: ${monthly.monthlyNeeded.toLocaleString("uk-UA")} ₴/міс.`;

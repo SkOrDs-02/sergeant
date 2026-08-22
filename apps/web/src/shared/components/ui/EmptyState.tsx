@@ -384,8 +384,11 @@ export function EmptyState({
         <p
           className={cn(
             // text-muted, НЕ text-subtle: hint — 12px normal-weight (не "large
-            // text"), тож потрібен контраст 4.5:1; dark --c-subtle #5f6b64 дає
-            // лише 3.33:1 на panel-фоні (axe color-contrast, a11y-гейт).
+            // text"), тож потрібен контраст 4.5:1. Обрано тоді, коли темний
+            // `--c-subtle` був #5f6b64 і давав 3.33:1 на panel (axe
+            // color-contrast). 2026-08-21 тир піднято до #8a968e (5.84), тож
+            // формально `text-subtle` тут уже пройшов би — лишаємо `muted`
+            // навмисно: підказка з іконкою читається як дія, не як зноска.
             "flex items-center gap-1.5 text-style-caption text-muted mt-2",
             !disableAnimation &&
               "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-slow motion-safe:delay-200",

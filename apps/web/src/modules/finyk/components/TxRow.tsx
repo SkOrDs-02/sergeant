@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-07-20
+ * Last validated: 2026-08-21
  * Status: Active
  */
 import { memo, useMemo } from "react";
@@ -12,13 +12,9 @@ import type { CustomCategoryInput } from "@sergeant/finyk-domain/constants";
 import type { MonoAccount } from "@sergeant/finyk-domain/lib/accounts";
 import type { TxSplitsMap } from "@sergeant/finyk-domain/domain/types";
 import { cn } from "@shared/lib/ui/cn";
-import { Icon, type IconName } from "@shared/components/ui/Icon";
-import { catChipVars } from "../lib/categoryChip";
-import {
-  CATEGORY_ICON_MAP,
-  getAccountShortName,
-  type TxRowTx,
-} from "./txRowHelpers";
+import { Icon } from "@shared/components/ui/Icon";
+import { CategoryIconChip } from "./CategoryIconChip";
+import { getAccountShortName, type TxRowTx } from "./txRowHelpers";
 import { TxRowMetaChips } from "./TxRowMetaChips";
 import { MaskedAmount } from "@shared/components/ui/MaskedAmount";
 import { Money } from "@shared/components/ui/Money";
@@ -98,9 +94,6 @@ function TxRowImpl({
     () => txSplits?.[tx.id] ?? [],
     [txSplits, tx.id],
   );
-  // Resolve the icon name for the category pill (Phase 6.1).
-  const pillIconName: IconName = CATEGORY_ICON_MAP[cat.id] ?? "tag";
-
   const mainRowInner = (
     <>
       {highlighted ? (
@@ -108,25 +101,12 @@ function TxRowImpl({
           <Icon name="check-circle" size={22} title="Вибрана транзакція" />
         </span>
       ) : (
-        // 28px tinted circle — decorative, non-interactive (aria-hidden).
-        //
-        // Колір кола — власний колір КАТЕГОРІЇ, не акцент модуля. До
-        // 2026-08-11 тут стояв `bg-finyk/10 + text-finyk-strong`: одна
-        // й та сама бірюза на кожному рядку, тобто колір був, а
-        // інформації в ньому не було. Тепер іконка, чип із назвою і
-        // обраний чип у пікері тримають один відтінок — око чіпляється
-        // за колір, а не перечитує підпис.
-        <span
-          aria-hidden="true"
-          style={catChipVars(cat.id, customCategories)}
-          className={cn(
-            "shrink-0 inline-flex items-center justify-center rounded-full",
-            "w-7 h-7",
-            "cat-chip",
-          )}
-        >
-          <Icon name={pillIconName} size={16} strokeWidth={1.75} />
-        </span>
+        // Спільний чип — та сама іконка й той самий відтінок, що в
+        // картці ліміту й алертах бюджету (`CategoryIconChip`).
+        <CategoryIconChip
+          categoryId={cat.id}
+          customCategories={customCategories}
+        />
       )}
       <div className="min-w-0">
         <div

@@ -23,6 +23,7 @@ import { Card } from "@/components/ui/Card";
 import { useToast } from "@/components/ui/Toast";
 import { showUndoToast } from "@/lib/showUndoToast";
 
+import { NutritionIcon } from "../components/NutritionIcon";
 import { useNutritionPantries } from "../hooks/useNutritionPantries";
 
 function formatPantryApiError(e: unknown): string {
@@ -202,9 +203,12 @@ export function PantryPage({ testID }: { testID?: string }) {
         ) : (
           grouped.map((bucket) => (
             <View key={bucket.cat.id} className="gap-1">
-              <Text className="text-xs font-semibold text-fg-muted">
-                {bucket.cat.emoji} {bucket.cat.label}
-              </Text>
+              <View className="flex-row items-center gap-1.5">
+                <NutritionIcon name={bucket.cat.iconName} size={14} />
+                <Text className="text-xs font-semibold text-fg-muted">
+                  {bucket.cat.label}
+                </Text>
+              </View>
               {bucket.items.map(({ item, idx }) => {
                 const it: PantryItem = item;
                 return (

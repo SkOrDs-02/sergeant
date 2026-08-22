@@ -47,7 +47,7 @@ export const frequentNoBudgetRule: Rule<FinanceContext> = {
         id: `finyk_frequent_no_budget_${best.id}`,
         module: "finyk" as const,
         priority: 55,
-        icon: "📌",
+        icon: "bookmark",
         title: `"${label}" – твоя найчастіша категорія без ліміту`,
         body: spendHint,
         action: "finyk",

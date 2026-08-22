@@ -172,7 +172,7 @@ function buildCategoryList(
     .map(([categoryId, rawSpent]) => {
       const meta = resolveExpenseCategoryMeta(categoryId, customCategories) || {
         id: categoryId,
-        label: "💳 Інше",
+        label: "Інше",
       };
       return {
         categoryId,

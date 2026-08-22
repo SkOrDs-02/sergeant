@@ -128,7 +128,7 @@ describe("appendFinanceLines", () => {
     expect(out).toContain("[Витрати місяця] 250 грн");
     // Категорійна розбивка ріжеться тим самим вікном — інакше сума категорій
     // суперечила б підсумку в тому ж промпт-блоці.
-    expect(out).toContain("[Категорії витрат] 🛒 Продукти: 250 грн");
+    expect(out).toContain("[Категорії витрат] Продукти: 250 грн");
   });
 
   it("excludes internal_transfer from the [Категорії витрат] breakdown", () => {
@@ -162,7 +162,7 @@ describe("appendFinanceLines", () => {
     const categoryLine = out
       .split("\n")
       .find((l) => l.startsWith("[Категорії витрат]"));
-    expect(categoryLine).toBe("[Категорії витрат] 🛒 Продукти: 250 грн");
+    expect(categoryLine).toBe("[Категорії витрат] Продукти: 250 грн");
     // Recent-ops listing is a separate, unfiltered surface (transfer tx
     // still shows its own category label there) — only the spend-category
     // breakdown line is asserted to exclude internal_transfer.

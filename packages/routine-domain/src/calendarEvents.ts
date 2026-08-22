@@ -211,7 +211,10 @@ export function buildFinykSubscriptionEvents(
     const bd = Number(sub.billingDay);
     if (!Number.isFinite(bd) || bd < 1 || bd > 31) continue;
     const { amount, currency } = getAmount(sub);
-    const subTitle = `${sub.emoji || "📱"} ${sub.name || "Підписка"}`;
+    // До 2026-08-21 сюди клеївся `sub.emoji` (з дефолтом «📱»). Поле не
+    // редагується користувачем — форма підписки не має для нього вводу, —
+    // тож це був хардкод емодзі в даних. Назви достатньо.
+    const subTitle = sub.name || "Підписка";
     for (const date of days) {
       if (!isBillingDateKey(date, bd)) continue;
       const amtStr =

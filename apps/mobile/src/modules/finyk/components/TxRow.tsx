@@ -12,7 +12,9 @@
  *
  * Parity notes with the web component:
  * - Same row layout: category glyph → description + metadata pill row
- *   → amount block.
+ *   → amount block. З 2026-08-21 гліф — та сама іконка дизайн-системи,
+ *   що й у вебі (`CategoryIcon` → `@sergeant/finyk-domain/lib/categoryIcons`),
+ *   а не емодзі-префікс підпису.
  * - Same metadata pills: "не в статистиці" (internal transfer),
  *   "змін." (override), "⅔ спліт", "💳 <account>" (credit card),
  *   "П24" (PrivatBank source), plus the date.
@@ -34,6 +36,9 @@
 
 import { memo, useMemo } from "react";
 import { Pressable, Text, View } from "react-native";
+import { CheckCircle2 } from "lucide-react-native";
+
+import { CategoryIcon } from "./CategoryIcon";
 
 import {
   CURRENCY,
@@ -89,15 +94,6 @@ export interface TxRowProps {
   testID?: string;
 }
 
-const INCOME_ICONS: Record<string, string> = {
-  in_salary: "💰",
-  in_freelance: "💻",
-  [INTERNAL_TRANSFER_ID]: "↔️",
-  in_cashback: "🎁",
-  in_pension: "🏛️",
-  in_other: "📥",
-};
-
 const ACCOUNT_TYPE_LABEL: Record<string, string> = {
   black: "Чорна",
   white: "Біла",
@@ -146,12 +142,11 @@ function TxRowImpl({
     [isIncome, tx, overrideCatId, customCategories],
   );
 
-  const catIcon = isIncome
-    ? (INCOME_ICONS[cat.id] ?? "📥")
-    : cat.label.split(" ")[0];
-  const catName = isIncome
-    ? cat.label
-    : cat.label.slice(cat.label.indexOf(" ") + 1);
+  // До 2026-08-21 «іконкою» тут був перший токен підпису, бо резолвер
+  // клеїв емодзі перед назвою (`"🛒 Продукти"`), а назвою — решта рядка.
+  // Підписи домену чисті, тож гліф приходить із спільної мапи, а назва
+  // береться як є.
+  const catName = cat.label;
 
   const account = accounts?.find((a) => a.id === tx._accountId);
   const isCreditCard = (account?.creditLimit ?? 0) > 0;
@@ -170,9 +165,13 @@ function TxRowImpl({
       testID={onPress ? undefined : testID}
     >
       <View className="flex-row items-center flex-1 min-w-0 pr-3">
-        <Text className="text-xl mr-3" accessibilityElementsHidden>
-          {highlighted ? "✅" : catIcon}
-        </Text>
+        <View className="mr-3" accessibilityElementsHidden>
+          {highlighted ? (
+            <CheckCircle2 size={20} color="#16A34A" />
+          ) : (
+            <CategoryIcon categoryId={cat.id} />
+          )}
+        </View>
         <View className="flex-1 min-w-0">
           <Text
             numberOfLines={1}

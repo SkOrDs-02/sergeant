@@ -1,5 +1,6 @@
 import { memo } from "react";
 import { cn } from "@shared/lib/ui/cn";
+import { stripLeadingEmoji } from "./txRowHelpers";
 
 interface CategoryOption {
   id: string;
@@ -36,7 +37,11 @@ function CategorySelectorComponent({
       <option value="">{placeholder}</option>
       {categories.map((c) => (
         <option key={c.id} value={c.id}>
-          {c.label}
+          {/* Нативний `<option>` малює лише текст, іконку сюди не
+              вставити. Вбудовані підписи чисті від емодзі з 2026-08-21;
+              зріз лишається для назв кастомних категорій, щоб список не
+              був наполовину з гліфами, наполовину без. */}
+          {c.label ? stripLeadingEmoji(c.label) : c.label}
         </option>
       ))}
     </select>

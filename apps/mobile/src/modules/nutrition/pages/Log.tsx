@@ -34,6 +34,7 @@ import {
   type InitialMeal,
   type MealSavePayload,
 } from "../components/AddMealSheet";
+import { NutritionIcon } from "../components/NutritionIcon";
 import { useNutritionLog } from "../hooks/useNutritionLog";
 
 function formatIsoDate(iso: string): string {
@@ -64,7 +65,7 @@ function formatIsoDate(iso: string): string {
 
 interface MealRow {
   meal: Meal;
-  emoji: string;
+  iconName: string;
   typeLabel: string;
 }
 
@@ -80,7 +81,7 @@ function getRowsForDate(log: NutritionLog, date: string): MealRow[] {
   });
   return copy.map((meal) => ({
     meal,
-    emoji: MEAL_META[meal.mealType]?.emoji ?? "🍽️",
+    iconName: MEAL_META[meal.mealType]?.iconName ?? "utensils",
     typeLabel: labelForMealType(meal.mealType),
   }));
 }
@@ -285,7 +286,7 @@ export function Log({ testID, onMealAdded }: LogProps) {
             >
               <Card testID={`nutrition-log-meal-${item.meal.id}`}>
                 <View className="flex-row items-start gap-3">
-                  <Text className="text-2xl leading-none">{item.emoji}</Text>
+                  <NutritionIcon name={item.iconName} size={22} />
                   <View className="flex-1">
                     <Text className="text-[10px] font-bold uppercase text-fg-muted leading-none">
                       {item.typeLabel}

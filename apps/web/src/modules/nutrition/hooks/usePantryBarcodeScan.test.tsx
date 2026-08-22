@@ -70,7 +70,7 @@ describe("usePantryBarcodeScan", () => {
     const { scan, upsertItem, setPantryScanStatus } = setup();
     await scan("4820000000001");
     expect(upsertItem).toHaveBeenCalledWith("Молоко Бренд");
-    expect(setPantryScanStatus).toHaveBeenCalledWith("Додано: Молоко Бренд ✔");
+    expect(setPantryScanStatus).toHaveBeenCalledWith("Додано: Молоко Бренд");
   });
 
   it("flags a partial product (no КБЖВ)", async () => {

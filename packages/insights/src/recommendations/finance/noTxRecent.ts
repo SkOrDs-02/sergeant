@@ -41,7 +41,7 @@ export const noTxRecentRule: Rule<FinanceContext> = {
         id: "finyk_no_tx_recent",
         module: "finyk" as const,
         priority: 68,
-        icon: "📝",
+        icon: "pen",
         title: `${days} ${pluralDays(days)} без запису витрат`,
         body: "Зафіксуй найсвіжіші витрати, картина місяця буде точнішою.",
         action: "finyk",
