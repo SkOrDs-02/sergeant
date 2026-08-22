@@ -23,7 +23,7 @@ test("@critical paywall: free-user PDF export opens paywall and leads to pricing
   await expect(exportButton).toBeVisible({ timeout: 15_000 });
   await exportButton.click();
 
-  const paywall = page.getByRole("dialog", { name: "PDF-звіти у Premium" });
+  const paywall = page.getByRole("dialog", { name: "PDF-звіти – у Premium" });
   await expect(paywall).toBeVisible();
   await expect(
     paywall.getByText(
