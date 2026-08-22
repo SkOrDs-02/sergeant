@@ -3,7 +3,7 @@
  * Last validated: 2026-08-13
  * Status: Active
  *
- * PhotoStep — гейти авто-аналізу (рішення founder-а 2026-08-13):
+ * PhotoStep — гейти автоаналізу (рішення founder-а 2026-08-13):
  * аналіз стартує сам після вибору/заміни фото, але ТІЛЬКИ коли
  * privacy-нотіс підтверджено і користувач Pro; один запуск на кадр.
  */
@@ -116,14 +116,14 @@ describe("PhotoStep — auto-analyze gating", () => {
     photoState.photoPreviewUrl = "blob:photo-1";
     const { rerender } = render(<PhotoStep onApply={vi.fn()} />);
     expect(photoState.analyzePhoto).toHaveBeenCalledTimes(1);
-    // «Замінити фото» → новий blob-URL → авто-перезапуск (founder 2026-08-13).
+    // «Замінити фото» → новий blob-URL → автоперезапуск (founder 2026-08-13).
     photoState.photoPreviewUrl = "blob:photo-2";
     rerender(<PhotoStep onApply={vi.fn()} />);
     expect(photoState.analyzePhoto).toHaveBeenCalledTimes(2);
   });
 
   it("does NOT auto-run before the privacy notice is acknowledged", () => {
-    // Нотіс просить перевірити кадр ДО відправлення — авто-запуск до
+    // Нотіс просить перевірити кадр ДО відправлення — автозапуск до
     // «Зрозуміло» зробив би цю перевірку фікцією.
     photoState.photoPreviewUrl = "blob:photo-1";
     render(<PhotoStep onApply={vi.fn()} />);
@@ -159,7 +159,7 @@ describe("PhotoStep — auto-analyze gating", () => {
 });
 
 describe("PhotoStep — коли кнопка «Аналізувати» взагалі потрібна", () => {
-  // Кнопка — запасний вихід, а не основний шлях: авто-аналіз уже
+  // Кнопка — запасний вихід, а не основний шлях: автоаналіз уже
   // запускає розбір сам. Показана на щасливому шляху, вона пропонує
   // дію, яку система щойно зробила.
   it("ховає кнопку, поки фото ще не обрано", () => {
@@ -191,7 +191,7 @@ describe("PhotoStep — коли кнопка «Аналізувати» вза�
     expect(photoState.analyzePhoto).toHaveBeenCalledTimes(2);
   });
 
-  it("лишає кнопку для Free — для них авто-запуск навмисно вимкнено", () => {
+  it("лишає кнопку для Free — для них автозапуск навмисно вимкнено", () => {
     storageState.privacyAcked = true;
     gateState.canAccess = false;
     photoState.photoPreviewUrl = "blob:photo-1";
