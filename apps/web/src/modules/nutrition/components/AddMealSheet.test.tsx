@@ -253,13 +253,33 @@ vi.mock("./meal-sheet/PackageEntryStep", () => ({
 vi.mock("./meal-sheet/PickedFoodCard", () => ({
   PickedFoodCard: ({
     pickedGrams,
+    setPickedGrams,
     onChangeProduct,
   }: {
     pickedGrams: string;
+    setPickedGrams: (v: string) => void;
     onChangeProduct: () => void;
   }) => (
     <div data-testid="picked-food-card">
       <span data-testid="picked-grams">{pickedGrams}</span>
+      {/* Справжня картка дає стерти й обнулити вагу (текстове поле на
+          fine-pointer). Без цих кнопок мок показував вагу, але не давав
+          її змінити — і шлях «нульова вага → збереження» був невидимий
+          для тестів. */}
+      <button
+        type="button"
+        data-testid="clear-grams"
+        onClick={() => setPickedGrams("")}
+      >
+        Стерти вагу
+      </button>
+      <button
+        type="button"
+        data-testid="zero-grams"
+        onClick={() => setPickedGrams("0")}
+      >
+        Нульова вага
+      </button>
       <button
         type="button"
         data-testid="change-product"
@@ -515,6 +535,29 @@ describe("AddMealSheet — source step (with templates)", () => {
       foodId: "food-9",
       amount_g: 250,
     });
+  });
+
+  // Регресія: `gramsOrDefault` підставляє 100 для нуля й порожнього поля,
+  // а `PickedFoodCard` навмисно не перераховує КБЖВ під нульову вагу —
+  // разом це давало запис «100 г» із числами, порахованими під 250 г.
+  it.each([
+    ["стерту", "clear-grams"],
+    ["нульову", "zero-grams"],
+  ])("не зберігає прийом під %s вагу порції", (_label, testId) => {
+    const onSave = vi.fn();
+    renderSheet({ mealTemplates: [], onSave });
+    fireEvent.click(screen.getByRole("button", { name: /З упаковки/ }));
+    fireEvent.click(screen.getByTestId("create-package-food"));
+    fireEvent.change(screen.getByTestId("name-input"), {
+      target: { value: "Равіолі" },
+    });
+    fireEvent.change(screen.getByTestId("kcal-input"), {
+      target: { value: "625" },
+    });
+    fireEvent.click(screen.getByTestId(testId));
+    fireEvent.click(screen.getByRole("button", { name: "Додати прийом" }));
+
+    expect(onSave).not.toHaveBeenCalled();
   });
 
   // Тип прийому й час — вибір людини, а не джерела: відмова від продукту

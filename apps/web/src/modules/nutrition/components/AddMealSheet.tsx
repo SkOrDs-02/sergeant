@@ -324,6 +324,20 @@ export function AddMealSheet({
     // скидається в null при відкритті схита.
     const effectiveFoodId = pickedFood?.id ?? initialMeal?.foodId ?? null;
     const hasAmount = pickedFood || initialMeal?.amount_g != null;
+    // Нульова (чи стерта) вага при обраному продукті — не «не вказано», а
+    // мовчазна розсинхронізація: `gramsOrDefault` підставив би 100, тоді як
+    // у полях КБЖВ лишились числа, пораховані під попередню вагу. Ефект у
+    // `PickedFoodCard` навмисно НЕ перераховує макроси під нуль (інакше під
+    // порожнім полем світились би числа за 100 г), тож зловити це можна
+    // рівно тут. Записати 100 г із КБЖВ від 250 г — саме та підміна
+    // одиниці, проти якої цей екран і переробляли.
+    if (hasAmount) {
+      const grams = parseDecimalInput(pickedGrams);
+      if (!grams.ok || grams.value <= 0) {
+        setForm((s) => ({ ...s, err: "Вкажи вагу порції." }));
+        return;
+      }
+    }
     const macroSource = appliedPhoto
       ? "photoAI"
       : pickedFood
