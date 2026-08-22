@@ -1,4 +1,5 @@
 import { CURRENCY, CURRENCY_SYMBOL } from "../constants";
+import { formatNumberUk } from "@sergeant/shared";
 
 export function fmtAmt(
   amount: number,
@@ -6,7 +7,7 @@ export function fmtAmt(
 ): string {
   const v = amount / 100;
   const sym = CURRENCY_SYMBOL[cc] ?? "₴";
-  return `${v > 0 ? "+" : ""}${v.toLocaleString("uk-UA", { minimumFractionDigits: 2 })}${sym}`;
+  return `${v > 0 ? "+" : ""}${formatNumberUk(v, { minimumFractionDigits: 2 })}${sym}`;
 }
 
 export function fmtDate(ts: number): string {

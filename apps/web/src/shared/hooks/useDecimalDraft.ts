@@ -32,9 +32,21 @@
  * - Зовнішня зміна значення (скидання форми, підвантажені дані) переписує
  *   чернетку; власне відлуння — ні, інакше кома гасилася б на кожному
  *   натисканні.
+ *
+ * # Групування розрядів (`{ group: true }`)
+ *
+ * Опційне і вимкнене за замовчуванням, бо доречне лише для грошей: «1 200 г»
+ * і «102,5 кг» від роздільників не виграють, а от «80 000 ₴» — так. Коли
+ * увімкнене, чернетка тримає вже згрупований текст, а назовні як і раніше
+ * їде число: роздільники знімає `normalizeDecimalInput`. Механіка й корекція
+ * каретки — у `format/digitGrouping.ts`.
  */
 import { useCallback, useState } from "react";
 import type { ChangeEvent } from "react";
+import {
+  applyDigitGrouping,
+  groupIntegerDigits,
+} from "../lib/format/digitGrouping";
 import {
   clampNumericInput,
   normalizeDecimalInput,
@@ -64,8 +76,18 @@ function toNumberOrNull(
   return Number.isFinite(value) ? value : null;
 }
 
-function toText(value: number | null): string {
-  return value == null ? "" : String(value);
+function toText(value: number | null, group: boolean): string {
+  if (value == null) return "";
+  const text = String(value);
+  return group ? groupIntegerDigits(text) : text;
+}
+
+export interface DecimalDraftOptions {
+  /**
+   * Групувати розряди прямо в полі («80000» → «80 000»). Вмикати для
+   * грошових полів; для грамів, ваги й кількостей — ні.
+   */
+  group?: boolean | undefined;
 }
 
 /**
@@ -78,8 +100,12 @@ export function useDecimalDraft(
   committed: number | string | null | undefined,
   max: number,
   onCommit: (value: number | null) => void,
+  options?: DecimalDraftOptions,
 ): DecimalDraft {
-  const [text, setText] = useState(() => toText(toNumberOrNull(committed)));
+  const group = options?.group ?? false;
+  const [text, setText] = useState(() =>
+    toText(toNumberOrNull(committed), group),
+  );
   // Попереднє значення тримає СТАН, а не ref: React-патерн «adjusting state
   // when props change» саме такий, і `react-hooks/refs` справедливо
   // забороняє читати чи писати ref у фазі рендера.
@@ -91,29 +117,35 @@ export function useDecimalDraft(
   if (lastCommitted !== committed) {
     setLastCommitted(committed);
     const external = toNumberOrNull(committed);
-    if (external !== toNumberOrNull(text)) setText(toText(external));
+    if (external !== toNumberOrNull(text)) setText(toText(external, group));
   }
 
   const onChange = useCallback(
     (event: ChangeEvent<HTMLInputElement>) => {
       const raw = event.target.value;
       if (!DECIMAL_DRAFT_ALLOWED.test(raw)) return;
-      if (normalizeDecimalInput(raw) === "") {
-        setText(raw);
+      // Групування йде ПІСЛЯ фільтра (форматувати сміття нема сенсу) і ДО
+      // клемпу: далі всі рішення приймаються за тим самим текстом, який уже
+      // стоїть у полі, інакше стан і DOM розійшлися б на один роздільник.
+      const next = group ? applyDigitGrouping(event.target, text) : raw;
+      if (normalizeDecimalInput(next) === "") {
+        setText(next);
         onCommit(null);
         return;
       }
-      const clamped = clampNumericInput(raw, max);
-      const parsed = Number(normalizeDecimalInput(raw));
+      const clamped = clampNumericInput(next, max);
+      const parsed = Number(normalizeDecimalInput(next));
       // Показуємо стелю, тільки якщо вона справді спрацювала. У решті
       // випадків у полі лишається те, що надрукував користувач, — разом із
       // незавершеною комою.
       setText(
-        Number.isFinite(parsed) && parsed !== clamped ? toText(clamped) : raw,
+        Number.isFinite(parsed) && parsed !== clamped
+          ? toText(clamped, group)
+          : next,
       );
       onCommit(clamped);
     },
-    [max, onCommit],
+    [group, max, onCommit, text],
   );
 
   return { value: text, onChange };

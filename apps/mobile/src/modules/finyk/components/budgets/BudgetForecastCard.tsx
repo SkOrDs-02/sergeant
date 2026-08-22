@@ -4,6 +4,7 @@ import { Text, View } from "react-native";
 import { Card } from "@/components/ui/Card";
 
 import { BudgetTrendChart, type ForecastDailyPoint } from "./BudgetTrendChart";
+import { formatNumberUk } from "@sergeant/shared";
 
 export interface BudgetForecastCardProps {
   categoryLabel: string;
@@ -17,7 +18,7 @@ export interface BudgetForecastCardProps {
 }
 
 function fmt(n: number): string {
-  return n.toLocaleString("uk-UA", { maximumFractionDigits: 0 });
+  return formatNumberUk(n, { maximumFractionDigits: 0 });
 }
 
 function BudgetForecastCardImpl({

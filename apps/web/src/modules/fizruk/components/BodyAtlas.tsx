@@ -23,6 +23,7 @@ import { messages } from "@shared/i18n/uk";
 import { useAnnounce } from "@shared/components/ui/ScreenReaderAnnouncer";
 import type { AtlasData, AtlasMuscleDatum } from "../lib/atlasData";
 import { BodyAtlasSegGroup } from "./BodyAtlasSegGroup";
+import { formatNumberUk } from "@sergeant/shared";
 
 const t = messages.fizruk.atlas;
 
@@ -561,7 +562,7 @@ function SelectedCard({
                 : `${datum.daysSince} дн.`
           }
         />
-        <Stat label="Обʼєм 7д" value={datum.load7d.toLocaleString("uk-UA")} />
+        <Stat label="Обʼєм 7д" value={formatNumberUk(datum.load7d)} />
         <Stat label="Втома" value={`${Math.round(datum.fatigue * 100)}%`} />
       </div>
 

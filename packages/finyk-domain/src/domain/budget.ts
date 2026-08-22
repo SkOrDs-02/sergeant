@@ -6,6 +6,7 @@ import {
   kyivDayStartMs,
   kyivMondayStartMs,
   toLocalISODate,
+  formatNumberUk,
 } from "@sergeant/shared";
 import { getTxStatAmount, calcMonthlyNeeded } from "../utils";
 import type {
@@ -303,7 +304,7 @@ export function getGoalMonthlyLabel(
   if (monthly?.isAchieved) return "Ціль досягнута 🎉";
   if (monthly?.isOverdue) return "Термін минув";
   if (monthly?.monthlyNeeded != null) {
-    return `Потрібно відкладати: ${monthly.monthlyNeeded.toLocaleString("uk-UA")} ₴/міс.`;
+    return `Потрібно відкладати: ${formatNumberUk(monthly.monthlyNeeded)} ₴/міс.`;
   }
   return null;
 }

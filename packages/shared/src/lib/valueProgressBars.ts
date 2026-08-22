@@ -31,6 +31,7 @@
  */
 
 import type { OnboardingGoals } from "./onboardingGoals";
+import { formatNumberUk } from "./formatNumber";
 
 const ROUTINE_TARGET_DAYS = 30;
 
@@ -55,7 +56,7 @@ const NUTRITION_GOAL_LABELS: Record<"lose" | "gain" | "maintain", string> = {
 
 function formatThousand(uah: number): string {
   // 30000 → "30 000 ₴" — matches the slider label in the goals step.
-  return `${uah.toLocaleString("uk-UA").replace(/,/g, " ")} ₴`;
+  return `${formatNumberUk(uah).replace(/,/g, " ")} ₴`;
 }
 
 export interface ValueProgressBarData {

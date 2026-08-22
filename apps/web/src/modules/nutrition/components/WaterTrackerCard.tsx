@@ -10,6 +10,7 @@ import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
 import { WaterHistorySheet } from "./WaterHistorySheet";
 import { messages } from "@shared/i18n/uk";
+import { formatNumberUk } from "@sergeant/shared";
 
 const QUICK_ML = [200, 300, 500, 750];
 
@@ -19,7 +20,7 @@ const QUICK_ML = [200, 300, 500, 750];
 // нулі, щоб рівні значення лишались короткими: 2000 → «2 л», 2350 → «2,35 л».
 export function fmt(ml: number) {
   if (ml < 1000) return `${ml} мл`;
-  const litres = (ml / 1000).toLocaleString("uk-UA", {
+  const litres = formatNumberUk(ml / 1000, {
     maximumFractionDigits: 2,
   });
   return `${litres} л`;

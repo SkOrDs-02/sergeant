@@ -16,7 +16,7 @@ import {
 } from "@nutrition/lib/nutritionStorage";
 import { calcFinykPeriodAggregate } from "@sergeant/finyk-domain/lib/spending";
 import { readFinykStatsContext } from "@finyk/lib/lsStats";
-import { pluralDays, pluralUa } from "@sergeant/shared";
+import { formatNumberUk, pluralDays, pluralUa } from "@sergeant/shared";
 import {
   BODY_ATLAS_MUSCLE_LABELS_UK,
   mapDomainMuscleToAtlas,
@@ -529,9 +529,7 @@ function buildWeeklyDigestRecs(): Rec[] {
   if (workoutsLastWeek > 0) parts.push(`${workoutsLastWeek} трен.`);
   if (habitPctText) parts.push(habitPctText);
   if (spendLastWeek > 0)
-    parts.push(
-      `витрати ${Math.round(spendLastWeek).toLocaleString("uk-UA")} ₴`,
-    );
+    parts.push(`витрати ${formatNumberUk(Math.round(spendLastWeek))} ₴`);
 
   if (parts.length === 0) return [];
 

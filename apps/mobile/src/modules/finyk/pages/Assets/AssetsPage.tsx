@@ -51,6 +51,7 @@ import {
   ManualAssetRow,
   ReceivableRow,
 } from "@/modules/finyk/components/assets/rows";
+import { formatNumberUk } from "@sergeant/shared";
 
 type SheetState =
   | { kind: "closed" }
@@ -61,7 +62,7 @@ type SheetState =
 const CLOSED: SheetState = { kind: "closed" };
 
 function fmt(uah: number): string {
-  return uah.toLocaleString("uk-UA", { maximumFractionDigits: 0 });
+  return formatNumberUk(uah, { maximumFractionDigits: 0 });
 }
 
 // Ukrainian pluralisation — mirrors

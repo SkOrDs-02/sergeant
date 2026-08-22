@@ -203,6 +203,7 @@ export function normalizeStoredMessages(raw: unknown): ChatMessage[] {
 // Callers import `ls`/`lsSet` for backward-compat; new code should prefer
 // `safeReadLS`/`safeWriteLS` from `@shared/lib/storage` directly.
 import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
+import { formatNumberUk } from "@sergeant/shared";
 
 export function ls<T>(key: string, fallback: T): T {
   return (safeReadLS<T>(key) as T | null) ?? fallback;
@@ -213,7 +214,7 @@ export function lsSet(key: string, value: unknown): void {
 }
 
 export function fmt(n: number): string {
-  return Math.round(n).toLocaleString("uk-UA");
+  return formatNumberUk(Math.round(n));
 }
 
 // IdleHandle can be either requestIdleCallback id (number) or setTimeout id (ReturnType<typeof setTimeout>)

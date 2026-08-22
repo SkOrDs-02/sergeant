@@ -27,6 +27,7 @@ import {
 } from "@sergeant/finyk-domain/domain/debtEngine";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain/constants";
 import { messages } from "@shared/i18n/uk";
+import { formatNumberUk } from "@sergeant/shared";
 
 const copy = messages.finyk.debtTxLink;
 
@@ -107,7 +108,7 @@ function RoleSheet({
       title={copy.roleSheetTitle}
       description={
         tx
-          ? `${tx.description || copy.noDescription} · ${amount.toLocaleString("uk-UA")} ₴`
+          ? `${tx.description || copy.noDescription} · ${formatNumberUk(amount)} ₴`
           : undefined
       }
     >

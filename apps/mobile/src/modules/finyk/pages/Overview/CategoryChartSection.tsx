@@ -19,6 +19,7 @@ import { Pressable, Text, View } from "react-native";
 import { chartPaletteList } from "@sergeant/design-tokens/tokens";
 
 import { Card } from "../../../../components/ui/Card";
+import { formatNumberUk } from "@sergeant/shared";
 
 export interface CategorySpend {
   id: string;
@@ -35,7 +36,7 @@ export interface CategoryChartSectionProps {
 const COLORS: readonly string[] = chartPaletteList;
 
 function fmt(n: number): string {
-  return n.toLocaleString("uk-UA");
+  return formatNumberUk(n);
 }
 
 const CategoryChartSectionImpl = function CategoryChartSection({

@@ -11,6 +11,7 @@ import { memo } from "react";
 import { Text, View } from "react-native";
 
 import type { TrendComparison } from "@sergeant/finyk-domain/domain";
+import { formatNumberUk } from "@sergeant/shared";
 
 export type ComparisonKind = "expense" | "income";
 
@@ -22,7 +23,7 @@ interface ComparisonRowProps {
 }
 
 function fmt(uah: number): string {
-  return uah.toLocaleString("uk-UA");
+  return formatNumberUk(uah);
 }
 
 function ComparisonRow({

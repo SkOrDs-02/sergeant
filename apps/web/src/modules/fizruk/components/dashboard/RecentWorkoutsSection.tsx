@@ -19,6 +19,7 @@ import { Card } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import type { DashboardRecentWorkout } from "@sergeant/fizruk-domain/domain";
+import { formatNumberUk } from "@sergeant/shared";
 
 export interface RecentWorkoutsSectionProps {
   readonly recent: readonly DashboardRecentWorkout[];
@@ -56,7 +57,7 @@ function formatTonnage(kg: number): string {
       thousands >= 10 ? Math.round(thousands) : Math.round(thousands * 10) / 10;
     // Кома, а не крапка: `${rounded}` дає «1.5 т» посеред українського
     // набору. Рядок тут лишається рядком свідомо — див. `StatusStrip`.
-    return `${rounded.toLocaleString("uk-UA")} т`;
+    return `${formatNumberUk(rounded)} т`;
   }
   return `${Math.round(kg)} кг`;
 }

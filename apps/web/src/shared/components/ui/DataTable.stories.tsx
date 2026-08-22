@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { DataTable, type DataTableColumn } from "./DataTable";
 import { EmptyState } from "./EmptyState";
+import { formatNumberUk } from "@sergeant/shared";
 
 /**
  * `DataTable` — єдиний табличний примітив, що замінює module-local
@@ -33,7 +34,7 @@ const merchantColumns: readonly DataTableColumn<Merchant>[] = [
     id: "total",
     header: "Сума, ₴",
     numeric: true,
-    cell: (r) => r.total.toLocaleString("uk-UA"),
+    cell: (r) => formatNumberUk(r.total),
   },
 ];
 

@@ -24,6 +24,7 @@ import type {
   TxSplitsMap,
 } from "./types";
 import { getCatColor } from "./categories";
+import { formatNumberUk } from "@sergeant/shared";
 
 type MonthPredicate = (tx: Transaction | null | undefined) => boolean;
 
@@ -446,7 +447,7 @@ export function formatComparisonSummary(
       text: `Витрати такі самі, як у ${prevLabel}.`,
     };
   }
-  const absDiff = Math.abs(diff).toLocaleString("uk-UA", {
+  const absDiff = formatNumberUk(Math.abs(diff), {
     maximumFractionDigits: 0,
   });
   const pctPart =

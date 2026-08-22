@@ -9,7 +9,7 @@ import { useMemo } from "react";
 import { Text, View } from "react-native";
 
 import { safeReadLS } from "@/lib/storage";
-import { STORAGE_KEYS } from "@sergeant/shared";
+import { formatNumberUk, STORAGE_KEYS } from "@sergeant/shared";
 
 import {
   aggregateKcal,
@@ -41,8 +41,8 @@ export default function NutritionCard({ period, offset }: NutritionCardProps) {
     };
   }, [period, offset]);
 
-  const formattedAvg = cur.avg.toLocaleString("uk-UA");
-  const formattedPrevAvg = prev.avg.toLocaleString("uk-UA");
+  const formattedAvg = formatNumberUk(cur.avg);
+  const formattedPrevAvg = formatNumberUk(prev.avg);
 
   return (
     <ReportCardShell

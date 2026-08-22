@@ -9,7 +9,7 @@ import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { Card } from "@shared/components/ui/Card";
 import { Money } from "@shared/components/ui/Money";
-import { Input } from "@shared/components/ui/Input";
+import { MoneyInput } from "@shared/components/ui/MoneyInput";
 import { Label } from "@shared/components/ui/FormField";
 import { Tooltip } from "@shared/components/ui/Tooltip";
 
@@ -92,13 +92,12 @@ function LimitBudgetCardComponent({
           </div>
           <div>
             <Label htmlFor={limitId}>Ліміт</Label>
-            <Input
+            <MoneyInput
               id={limitId}
               size="sm"
-              type="number"
-              placeholder="Напр. 5000 ₴"
+              placeholder="Напр. 5 000 ₴"
               value={budget.limit}
-              onChange={(e) => onChangeLimit?.(Number(e.target.value))}
+              onValueChange={(next) => onChangeLimit?.(next ?? 0)}
             />
           </div>
           <Label htmlFor={periodId}>Період</Label>

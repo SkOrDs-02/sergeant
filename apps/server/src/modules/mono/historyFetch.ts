@@ -16,6 +16,7 @@ import { logger } from "../../obs/logger.js";
 import { categorizeMcc } from "./mccCategories.js";
 import type { KeyRing } from "../../lib/keyRing.js";
 import { decryptAndLazyReencrypt, type MonoTokenRow } from "./tokenStore.js";
+import { formatNumberUk } from "@sergeant/shared";
 
 const MONO_API_TIMEOUT_MS = 15_000;
 /** Monobank personal statement rate limit: 1 req / 60 s per token. */
@@ -41,7 +42,7 @@ export function buildMemoryContent(
   const symbol = CURRENCY_SYMBOL[item.currencyCode] ?? "";
   const major = Math.abs(item.amount / 100);
   const sign = isExpense ? "−" : "+";
-  const formatted = major.toLocaleString("uk-UA", {
+  const formatted = formatNumberUk(major, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });

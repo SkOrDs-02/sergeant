@@ -12,7 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { flatMatch } from "@shared/testing/numberText";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { STORAGE_KEYS } from "@sergeant/shared";
+import { formatNumberUk, STORAGE_KEYS } from "@sergeant/shared";
 import {
   defaultNutritionPrefs,
   type NutritionPrefs,
@@ -120,7 +120,7 @@ describe("DailyPlanCard «Підказати з пресету»", () => {
       );
       // Число на екрані згруповане за розрядами (`2 450`, не `2450`) —
       // будуємо очікування тим самим форматом, а не сирим числом.
-      const grouped = targets.kcal.toLocaleString("uk-UA").replace(/\s/g, " ");
+      const grouped = formatNumberUk(targets.kcal).replace(/\s/g, " ");
       const items = screen.getAllByText(flatMatch(`${grouped} ккал`));
       expect(items.length).toBeGreaterThanOrEqual(1);
     }

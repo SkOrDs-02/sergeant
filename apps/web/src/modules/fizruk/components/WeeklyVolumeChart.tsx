@@ -10,6 +10,7 @@ import { Skeleton } from "@shared/components/ui/Skeleton";
 import { chartGradients, chartGrid, chartTick } from "@shared/charts";
 import { useChartScrub } from "@shared/hooks";
 import { ChartScrubOverlay, ChartGoalLine } from "@shared/components/charts";
+import { formatNumberUk } from "@sergeant/shared";
 
 const LABELS_UK = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"];
 
@@ -281,13 +282,13 @@ export function WeeklyVolumeChart({
       </svg>
       <div id={summaryId} className="sr-only">
         <p>
-          Тижневий обʼєм тренувань. Сума за тиждень:{" "}
-          {totalVol.toLocaleString("uk-UA")} кг×повт.
+          Тижневий обʼєм тренувань. Сума за тиждень: {formatNumberUk(totalVol)}{" "}
+          кг×повт.
         </p>
         <ul>
           {LABELS_UK.map((lab, i) => (
             <li key={lab}>
-              {lab}: {(Number(vals[i]) || 0).toLocaleString("uk-UA")} кг×повт
+              {lab}: {formatNumberUk(Number(vals[i]) || 0)} кг×повт
             </li>
           ))}
         </ul>

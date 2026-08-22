@@ -6,6 +6,7 @@ import { memo, useEffect, useId, useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
+import { MoneyInput } from "@shared/components/ui/MoneyInput";
 import { Label } from "@shared/components/ui/FormField";
 import { DateField } from "@shared/components/ui/DateField";
 import { Icon } from "@shared/components/ui/Icon";
@@ -158,13 +159,12 @@ function GoalBudgetCardComponent({
             </div>
             <div>
               <Label htmlFor={targetId}>Сума цілі</Label>
-              <Input
+              <MoneyInput
                 id={targetId}
                 size="sm"
-                type="number"
-                placeholder="Напр. 20000 ₴"
+                placeholder="Напр. 20 000 ₴"
                 value={budget.targetAmount || ""}
-                onChange={(e) => onChangeTarget?.(Number(e.target.value))}
+                onValueChange={(next) => onChangeTarget?.(next ?? 0)}
               />
             </div>
             {jars.length > 0 && (
@@ -278,13 +278,14 @@ function GoalBudgetCardComponent({
               <div className="mt-2 space-y-2 p-3 rounded-xl bg-bg border border-line">
                 <div>
                   <Label htmlFor={contribAmountId}>Сума поповнення</Label>
-                  <Input
+                  <MoneyInput
                     id={contribAmountId}
                     size="sm"
-                    type="number"
                     placeholder="Напр. 500 ₴"
                     value={contribAmount}
-                    onChange={(e) => setContribAmount(e.target.value)}
+                    onValueChange={(next) =>
+                      setContribAmount(next == null ? "" : String(next))
+                    }
                   />
                 </div>
                 <div>
