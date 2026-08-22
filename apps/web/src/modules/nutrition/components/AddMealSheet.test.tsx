@@ -542,6 +542,32 @@ describe("AddMealSheet — source step (with templates)", () => {
     expect(screen.getByTestId("name-input")).toHaveValue("");
   });
 
+  // Те саме правило, що й для комори: своє не чіпаємо. Продукт сіє назву
+  // через `PickedFoodCard`, тож у моці робимо це руками.
+  it("лишає назву, яку людина переписала після продукту", () => {
+    renderSheet({ mealTemplates: [] });
+    fireEvent.click(screen.getByRole("button", { name: /З упаковки/ }));
+    fireEvent.click(screen.getByTestId("create-package-food"));
+    fireEvent.change(screen.getByTestId("name-input"), {
+      target: { value: "Мій обід" },
+    });
+    fireEvent.click(screen.getByTestId("change-product"));
+    fireEvent.click(screen.getByRole("button", { name: /Готова страва/ }));
+    expect(screen.getByTestId("name-input")).toHaveValue("Мій обід");
+  });
+
+  it("чистить назву, засіяну продуктом, якщо людина її не міняла", () => {
+    renderSheet({ mealTemplates: [] });
+    fireEvent.click(screen.getByRole("button", { name: /З упаковки/ }));
+    fireEvent.click(screen.getByTestId("create-package-food"));
+    fireEvent.change(screen.getByTestId("name-input"), {
+      target: { value: "Равіолі" },
+    });
+    fireEvent.click(screen.getByTestId("change-product"));
+    fireEvent.click(screen.getByRole("button", { name: /Готова страва/ }));
+    expect(screen.getByTestId("name-input")).toHaveValue("");
+  });
+
   it("лишає назву, яку людина переписала після комори", () => {
     renderSheet({
       mealTemplates: [],

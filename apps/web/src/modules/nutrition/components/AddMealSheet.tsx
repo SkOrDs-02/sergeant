@@ -449,7 +449,17 @@ export function AddMealSheet({
     // Поки її не було в цій умові, відмова від комори лишала ту назву у
     // формі, і ручний запис зберігався під чужим іменем.
     const seeded = Boolean(appliedPhoto || pickedFood || fromPantryItem);
-    const pantryName = fromPantryItem;
+    // Рівно той рядок, який у поле назви записало джерело — по ньому й
+    // відрізняємо засіяне від набраного людиною. Три джерела сіють назву
+    // по-різному, але правило одне: збігається — наше, отже чистимо;
+    // відрізняється — своє, отже не чіпаємо.
+    const seededName = pickedFood
+      ? [pickedFood.name, pickedFood.brand].filter(Boolean).join(" ").trim()
+      : fromPantryItem !== null
+        ? fromPantryItem
+        : appliedPhoto
+          ? (appliedPhoto.result.dishName || "").trim()
+          : null;
     setPickedFood(null);
     setAppliedPhoto(null);
     setFromPantryItem(null);
@@ -461,9 +471,7 @@ export function AddMealSheet({
     if (seeded) {
       setForm((s) => ({
         ...s,
-        // Назву чистимо завжди, КРІМ випадку, коли людина вже переписала
-        // засіяну коморою — свій текст не наш, щоб його викидати.
-        name: pantryName != null && s.name !== pantryName ? s.name : "",
+        name: seededName !== null && s.name !== seededName ? s.name : "",
         kcal: "",
         protein_g: "",
         fat_g: "",
