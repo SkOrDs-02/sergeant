@@ -73,19 +73,21 @@ test("@critical nutrition: photo preview stays inside a 390px viewport", async (
   await page.goto("/nutrition", { waitUntil: "domcontentloaded" });
   await waitForInitialSqliteRefresh(page, "nutrition");
 
-  // Photo analysis lives inside AddMealSheet's photo step, and since the
-  // Start-page CTA card was removed (2026-08-17, duplicate entry point) the
-  // in-module path is the only one: FAB → «Звідки страва?» → «Фото».
+  // Аналіз фото живе ВКЛАДКОЮ кроку джерела (не окремим кроком), і оскільки
+  // CTA-картку зі стартової прибрано (2026-08-17, дубль входу), шлях у
+  // модулі один: FAB → «Звідки страва?» → вкладка «Фото».
+  //
+  // Заголовок аркуша тут лишається «Звідки страва?» — саме тому, що крок не
+  // покидається; перевіряти його як ознаку фото більше не можна. Ознака —
+  // сам підпис картки аналізу.
   await page
     .getByRole("button", { name: /Додати прийом їжі/ })
     .first()
     .click();
   const photoSheet = page.getByRole("dialog");
   await expect(photoSheet).toBeVisible({ timeout: 10_000 });
-  await photoSheet
-    .getByRole("button", { name: "Додати страву з фото" })
-    .click();
-  await expect(photoSheet).toContainText("Аналіз фото страви");
+  await photoSheet.getByRole("tab", { name: /Фото/ }).click();
+  await expect(photoSheet).toContainText("ШІ визначить КБЖВ");
 
   await photoSheet
     .locator('input[type="file"]')
