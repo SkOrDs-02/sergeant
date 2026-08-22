@@ -26,6 +26,7 @@ import { parseDecimalInput } from "@shared/lib/format/numberInput";
 import { NAME_MAX_LEN } from "@shared/lib/text/limits";
 import { upsertFood } from "../../lib/foodDb/foodDb";
 import type { PickedFood } from "./FoodPickerSection";
+import { MAX_PORTION_GRAMS } from "./mealFormUtils";
 
 interface PackageEntryStepProps {
   /** Обраний продукт — аркуш авто-переходить на крок «fill». */
@@ -74,6 +75,12 @@ export function PackageEntryStep({ onCreated }: PackageEntryStepProps) {
       serving.value <= 0
     ) {
       setErr("Введи невід’ємні КБЖВ на 100 г і додатну вагу порції.");
+      return;
+    }
+    // Верхня межа мусить стояти і тут: далі вага їде прямо в `pickedGrams`
+    // і в `amount_g`, а клемп у картці ловить лише набране в ній самій.
+    if (serving.value > MAX_PORTION_GRAMS) {
+      setErr(`Забагато: максимум ${MAX_PORTION_GRAMS} г на порцію.`);
       return;
     }
     const [kcal, protein_g, fat_g, carbs_g] = macros.map((macro) =>

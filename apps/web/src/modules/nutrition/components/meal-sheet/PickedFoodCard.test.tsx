@@ -151,6 +151,20 @@ describe("PickedFoodCard", () => {
     expect(setPickedGrams).toHaveBeenCalledWith("10000");
   });
 
+  it("тримає дробову вагу точною, а не округлює під колесо", () => {
+    // 12.5 г округлювалось у колесі до 13, поки макроси рахувались із
+    // 12.5 — екран показував не ту вагу, за якою рахував.
+    const setForm = vi.fn();
+    render(<PickedFoodCard {...baseProps({ pickedGrams: "12.5", setForm })} />);
+    const updater = setForm.mock.calls[0]?.[0] as (
+      state: MealFormState,
+    ) => MealFormState;
+    // 110 ккал / 100 г × 12.5 г = 13.75 → 14
+    expect(updater(form())).toMatchObject({ kcal: "14" });
+    // jsdom — fine pointer, тож рендериться степер, а не колесо.
+    expect(screen.getByLabelText("Грами")).toHaveValue("12.5");
+  });
+
   it("hands 'обрати інший продукт' back to the host", () => {
     const onChangeProduct = vi.fn();
     render(<PickedFoodCard {...baseProps({ onChangeProduct })} />);

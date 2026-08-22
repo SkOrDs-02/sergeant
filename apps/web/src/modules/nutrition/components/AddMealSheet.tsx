@@ -445,9 +445,14 @@ export function AddMealSheet({
   // порахованих на 100 г, під підписом «за всю порцію» — рівно та тиха
   // підміна одиниці, заради якої цей екран узагалі переробляли.
   function dropSeededMacros() {
-    const seeded = Boolean(appliedPhoto || pickedFood);
+    // Комора теж джерело: `FromPantryRow` сіє `form.name` назвою продукту.
+    // Поки її не було в цій умові, відмова від комори лишала ту назву у
+    // формі, і ручний запис зберігався під чужим іменем.
+    const seeded = Boolean(appliedPhoto || pickedFood || fromPantryItem);
+    const pantryName = fromPantryItem;
     setPickedFood(null);
     setAppliedPhoto(null);
+    setFromPantryItem(null);
     // Чистимо РІВНО те, що засіяло джерело: назву й КБЖВ. Тип прийому та
     // час обирає людина, і `emptyForm(null)` їх мовчки перезаписував би
     // на `mealTypeByNow()` / `currentTime()` — хто поставив «Вечеря» о
@@ -456,7 +461,9 @@ export function AddMealSheet({
     if (seeded) {
       setForm((s) => ({
         ...s,
-        name: "",
+        // Назву чистимо завжди, КРІМ випадку, коли людина вже переписала
+        // засіяну коморою — свій текст не наш, щоб його викидати.
+        name: pantryName != null && s.name !== pantryName ? s.name : "",
         kcal: "",
         protein_g: "",
         fat_g: "",
@@ -480,7 +487,6 @@ export function AddMealSheet({
   function handleBacktrack() {
     // Clear any picked source to prevent the auto-advance effect from
     // immediately pushing back to "fill" when we return to "source".
-    setFromPantryItem(null);
     // Відмова від джерела мусить прибрати і засіяні ним значення: інакше
     // AI-оцінка КБЖВ (чи перерахунок продукту під вагу) пережила б
     // backtrack і збереглась би під `macroSource: manual` — підміна

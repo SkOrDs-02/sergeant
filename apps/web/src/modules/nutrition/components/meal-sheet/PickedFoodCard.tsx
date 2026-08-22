@@ -25,11 +25,8 @@ import { useDecimalDraft } from "@shared/hooks/useDecimalDraft";
 import { cn } from "@shared/lib/ui/cn";
 import { MacroChip } from "./MacroChip";
 import { macrosForGrams } from "../../lib/foodDb/foodDb";
-import type { MealFormState } from "./mealFormUtils";
+import { MAX_PORTION_GRAMS, type MealFormState } from "./mealFormUtils";
 import type { PickedFood } from "./FoodPickerSection";
-
-/** 10 кг однієї порції — межа проти зайвого нуля, не дієтологія. */
-const MAX_PORTION_GRAMS = 10_000;
 
 interface PickedFoodCardProps {
   form: MealFormState;
@@ -64,8 +61,11 @@ export function PickedFoodCard({
     for (let g = 5; g <= 1000; g += 5) base.push(g);
     // Keep an adopted free-form value (e.g. 33 g from a barcode) exactly
     // representable so the wheel highlights it without silently snapping.
-    const cur = Math.round(Number(pickedGrams));
-    if (cur > 0 && !base.includes(cur)) {
+    // БЕЗ `Math.round`: крок «з упаковки» приймає дробові грами, і 12.5
+    // округлювалось у колесі до 13, поки макроси рахувались із 12.5 —
+    // тобто екран показував не ту вагу, за якою рахував.
+    const cur = Number(pickedGrams);
+    if (Number.isFinite(cur) && cur > 0 && !base.includes(cur)) {
       base.push(cur);
       base.sort((a, b) => a - b);
     }
@@ -161,7 +161,7 @@ export function PickedFoodCard({
         {coarsePointer ? (
           <WheelPicker
             values={gramValues}
-            value={Math.round(Number(pickedGrams)) || 100}
+            value={Number(pickedGrams) || 100}
             onChange={(g) => setPickedGrams(String(g))}
             aria-label="Грами"
             formatValue={(g) => `${g} г`}

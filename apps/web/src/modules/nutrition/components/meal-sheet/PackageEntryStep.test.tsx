@@ -86,6 +86,20 @@ describe("PackageEntryStep", () => {
     expect(upsertFood).not.toHaveBeenCalled();
   });
 
+  it("не пропускає вагу порції понад стелю", () => {
+    const onCreated = renderStep();
+    fillValidProduct();
+    fireEvent.change(screen.getByLabelText("Скільки з’їв, г"), {
+      target: { value: "10001" },
+    });
+    submit();
+    expect(
+      screen.getByText("Забагато: максимум 10000 г на порцію."),
+    ).toBeInTheDocument();
+    expect(upsertFood).not.toHaveBeenCalled();
+    expect(onCreated).not.toHaveBeenCalled();
+  });
+
   it("зберігає КБЖВ на 100 г і віддає порцію наверх", async () => {
     upsertFood.mockResolvedValue({
       ok: true,

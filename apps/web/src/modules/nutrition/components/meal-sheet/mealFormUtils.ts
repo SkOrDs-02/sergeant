@@ -2,6 +2,17 @@ import { mealTypeByNow, type MealTypeId } from "../../lib/mealTypes";
 import type { NullableMacros } from "@sergeant/shared";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 
+/**
+ * 10 кг однієї порції — межа проти зайвого нуля, не дієтологія.
+ *
+ * AI-CONTEXT: живе тут, а не в компоненті, бо вагу порції задають ДВА
+ * незалежні шляхи — крок «з упаковки» і картка обраного продукту. Поки
+ * константа була приватною в картці, `useDecimalDraft` клампив лише
+ * набране в ній самій, а значення, що прийшло ззовні готовим, проходило
+ * повз межу і могло лягти в `amount_g`.
+ */
+export const MAX_PORTION_GRAMS = 10_000;
+
 export function currentTime(): string {
   // Domain invariant: усі "коли це сталось" мітки — за Europe/Kyiv, не за
   // годинником пристрою (див. domain-invariants.md).

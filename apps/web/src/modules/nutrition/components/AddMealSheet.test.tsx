@@ -116,14 +116,20 @@ vi.mock("./meal-sheet/NameTimeRow", () => ({
 vi.mock("./meal-sheet/FromPantryRow", () => ({
   FromPantryRow: ({
     setFromPantryItem,
+    setForm,
   }: {
     setFromPantryItem: (v: string | null) => void;
+    setForm: (updater: (s: Record<string, unknown>) => unknown) => void;
   }) => (
     <div data-testid="from-pantry-row">
       <button
         type="button"
         data-testid="pick-pantry"
-        onClick={() => setFromPantryItem("Молоко")}
+        onClick={() => {
+          setFromPantryItem("Молоко");
+          // Дзеркалить реальний `FromPantryRow`: він сіє назву у форму.
+          setForm((s) => ({ ...s, name: "Молоко", err: "" }));
+        }}
       >
         З комори
       </button>
@@ -521,6 +527,33 @@ describe("AddMealSheet — source step (with templates)", () => {
     fireEvent.click(screen.getByTestId("change-product"));
     fireEvent.click(screen.getByRole("button", { name: /Готова страва/ }));
     expect(screen.getByTestId("meal-type-value")).toHaveTextContent("dinner");
+  });
+
+  // Комора сіє `form.name`; відмова від неї не має лишати чужу назву на
+  // ручному записі.
+  it("скидає назву, засіяну коморою, при поверненні до вибору джерела", () => {
+    renderSheet({
+      mealTemplates: [],
+      pantryItems: [{ name: "Молоко", qty: 1, unit: "л", notes: null }],
+    });
+    fireEvent.click(screen.getByTestId("pick-pantry"));
+    fireEvent.click(screen.getByLabelText("Назад до вибору джерела"));
+    fireEvent.click(screen.getByRole("button", { name: /Готова страва/ }));
+    expect(screen.getByTestId("name-input")).toHaveValue("");
+  });
+
+  it("лишає назву, яку людина переписала після комори", () => {
+    renderSheet({
+      mealTemplates: [],
+      pantryItems: [{ name: "Молоко", qty: 1, unit: "л", notes: null }],
+    });
+    fireEvent.click(screen.getByTestId("pick-pantry"));
+    fireEvent.change(screen.getByTestId("name-input"), {
+      target: { value: "Молочний коктейль" },
+    });
+    fireEvent.click(screen.getByLabelText("Назад до вибору джерела"));
+    fireEvent.click(screen.getByRole("button", { name: /Готова страва/ }));
+    expect(screen.getByTestId("name-input")).toHaveValue("Молочний коктейль");
   });
 
   it("«Готова страва» підписує одиницю і дає перехід до режиму етикетки", () => {
