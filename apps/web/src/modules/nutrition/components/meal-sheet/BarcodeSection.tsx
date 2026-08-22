@@ -8,6 +8,8 @@ import { Icon } from "@shared/components/ui/Icon";
 import { BarcodeLookupNotice } from "../BarcodeLookupNotice";
 import type { BarcodeLookupNotice as BarcodeLookupNoticeState } from "./useBarcodeLookup";
 
+const DEFAULT_ACTION_LABEL = "Сканувати";
+
 interface BarcodeSectionProps {
   barcodeStatus: string;
   setBarcodeStatus: Dispatch<SetStateAction<string>>;
@@ -34,8 +36,15 @@ export function BarcodeSection({
   onRetryBarcodeLookup,
   onUsePhotoForBarcode,
   setScannerOpen,
-  actionLabel = "Сканувати",
+  actionLabel = DEFAULT_ACTION_LABEL,
 }: BarcodeSectionProps) {
+  // WCAG 2.5.3 Label in Name: доступна назва мусить МІСТИТИ видимий
+  // підпис, інакше голосове керування не викличе кнопку тим, що людина
+  // бачить. Типовий підпис короткий («Сканувати»), тож для нього лишаємо
+  // розгорнуту назву з контекстом; будь-який інший підпис стає назвою
+  // сам — «Сканувати штрихкод» його вже не містить.
+  const ariaLabel =
+    actionLabel === DEFAULT_ACTION_LABEL ? "Сканувати штрихкод" : actionLabel;
   return (
     <div className="min-w-0">
       <Button
@@ -47,7 +56,7 @@ export function BarcodeSection({
           onDismissBarcodeNotice?.();
           setScannerOpen(true);
         }}
-        aria-label="Сканувати штрихкод"
+        aria-label={ariaLabel}
       >
         <Icon
           name="barcode"

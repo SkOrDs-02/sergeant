@@ -57,8 +57,13 @@ describe("BarcodeSection", () => {
         actionLabel="Сканувати ще раз"
       />,
     );
+    // WCAG 2.5.3: голосове керування викликає кнопку тим, що видно, тож
+    // доступна назва мусить містити видимий підпис, а не лишатись сталою.
     expect(
-      screen.getByRole("button", { name: "Сканувати штрихкод" }),
+      screen.queryByRole("button", { name: "Сканувати штрихкод" }),
+    ).toBeNull();
+    expect(
+      screen.getByRole("button", { name: "Сканувати ще раз" }),
     ).toHaveTextContent("Сканувати ще раз");
   });
 });

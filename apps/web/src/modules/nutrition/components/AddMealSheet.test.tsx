@@ -1203,6 +1203,30 @@ describe("AddMealSheet — вкладка «Скан» сама відкрива
     expect(countOpens()).toBe(opens);
   });
 
+  it("повторне відкриття аркуша не кидає в камеру після вкладки «Скан»", () => {
+    // Стан аркуша переживає закриття, тож без скидання вкладки людина,
+    // яка минулого разу вийшла зі «Скану», при наступному відкритті
+    // одразу опинялась би в камері — без жодного жесту з її боку.
+    const props = {
+      onClose: vi.fn(),
+      onSave: vi.fn(),
+      mealTemplates: [],
+    };
+    const view = render(<AddMealSheet {...props} open />);
+    fireEvent.click(screen.getByRole("tab", { name: /Скан/ }));
+    expect(stableBarcodeLookup.setScannerOpen).toHaveBeenCalledWith(true);
+
+    view.rerender(<AddMealSheet {...props} open={false} />);
+    stableBarcodeLookup.setScannerOpen.mockClear();
+    view.rerender(<AddMealSheet {...props} open />);
+
+    expect(screen.getByRole("tab", { name: /Пошук/ })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    expect(stableBarcodeLookup.setScannerOpen).not.toHaveBeenCalledWith(true);
+  });
+
   it("відкриває сканер знову після повернення на вкладку", () => {
     renderSheet({ mealTemplates: [] });
     fireEvent.click(screen.getByRole("tab", { name: /Скан/ }));
