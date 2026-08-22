@@ -16,6 +16,14 @@ interface BarcodeSectionProps {
   onRetryBarcodeLookup?: (() => void) | undefined;
   onUsePhotoForBarcode?: (() => void) | undefined;
   setScannerOpen: Dispatch<SetStateAction<boolean>>;
+  /**
+   * Підпис кнопки. Під вкладкою «Скан» сканер відкривається сам, тож там
+   * кнопка — це повтор, а не основна дія, і підпис має казати саме це.
+   * Пропонувати «Сканувати» людині, яка вже обрала «Скан» і дивиться в
+   * відкритий сканер, — та сама зайва дія, що й «Аналізувати» під уже
+   * запущеним автоаналізом фото.
+   */
+  actionLabel?: string;
 }
 
 export function BarcodeSection({
@@ -26,6 +34,7 @@ export function BarcodeSection({
   onRetryBarcodeLookup,
   onUsePhotoForBarcode,
   setScannerOpen,
+  actionLabel = "Сканувати",
 }: BarcodeSectionProps) {
   return (
     <div className="min-w-0">
@@ -46,7 +55,7 @@ export function BarcodeSection({
           aria-hidden
           data-testid="barcode-action-icon"
         />
-        <span>Сканувати</span>
+        <span>{actionLabel}</span>
       </Button>
       {barcodeStatus && !barcodeNotice && (
         <div className="text-style-caption text-subtle mt-1">

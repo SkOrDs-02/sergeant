@@ -25,7 +25,7 @@
  *
  * @last-validated 2026-08-13
  */
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Icon } from "@shared/components/ui/Icon";
 import type { Dispatch, SetStateAction } from "react";
 import { Button } from "@shared/components/ui/Button";
@@ -50,24 +50,20 @@ import {
   type MealFormPhotoResult,
   type MealFormState,
 } from "./meal-sheet/mealFormUtils";
-import { MealTemplatesRow } from "./meal-sheet/MealTemplatesRow";
 import { PhotoStep } from "./meal-sheet/PhotoStep";
 import { MealTypePicker } from "./meal-sheet/MealTypePicker";
 import { NameTimeRow } from "./meal-sheet/NameTimeRow";
-import { FromPantryRow } from "./meal-sheet/FromPantryRow";
-import {
-  FoodPickerSection,
-  type PickedFood,
-} from "./meal-sheet/FoodPickerSection";
+import type { PickedFood } from "./meal-sheet/FoodPickerSection";
 import { PickedFoodCard } from "./meal-sheet/PickedFoodCard";
 import { PackageEntryStep } from "./meal-sheet/PackageEntryStep";
-import { ManualEntryChooser } from "./meal-sheet/ManualEntryChooser";
+import { ManualEntryTab } from "./meal-sheet/ManualEntryTab";
+import { SearchTabPanel } from "./meal-sheet/SearchTabPanel";
+import { SourceTabs, type SourceTabId } from "./meal-sheet/SourceTabs";
 import { BarcodeSection } from "./meal-sheet/BarcodeSection";
 import { MacrosEditor } from "./meal-sheet/MacrosEditor";
 import { SaveAsTemplate } from "./meal-sheet/SaveAsTemplate";
 import { useFoodSearch } from "./meal-sheet/useFoodSearch";
 import { useBarcodeLookup } from "./meal-sheet/useBarcodeLookup";
-import { QuickAddChips } from "./QuickAddChips";
 import type { QuickChip } from "../hooks/useNutritionQuickChips";
 
 /**
@@ -148,6 +144,7 @@ export function AddMealSheet({
   const [foodQuery, setFoodQuery] = useState("");
   const [pickedFood, setPickedFood] = useState<PickedFood | null>(null);
   const [pickedGrams, setPickedGrams] = useState("100");
+  const [sourceTab, setSourceTab] = useState<SourceTabId>("search");
   const [fromPantryItem, setFromPantryItem] = useState<string | null>(null);
   // Four-step flow: "source" (pick a source — template / pantry / food
   // search / barcode / photo / manual), "photo" (AI analysis inside the
@@ -267,6 +264,27 @@ export function AddMealSheet({
   if (step === "source" && (pickedFood || fromPantryItem)) {
     setStep("fill");
   }
+
+  // Вхід у вкладку «Скан» — це вже жест «хочу сканувати», тож сканер
+  // відкривається сам. Той самий принцип, що й у кроці фото, який сам
+  // відкриває піккер: обрана вкладка — це вже намір, і просити ще один
+  // тап означає пропонувати дію, яку людина щойно зробила. Кнопка в
+  // секції лишається, але як «Сканувати ще раз» — повтор після невдалого
+  // кадру, а не основний шлях.
+  //
+  // Ref, а не стан: один запуск на активацію вкладки. Без нього закритий
+  // сканер відкривався б назад на кожному ре-рендері, і вийти з вкладки
+  // стало б неможливо.
+  const scanAutoOpenedRef = useRef(false);
+  useEffect(() => {
+    if (!open || step !== "source" || sourceTab !== "scan") {
+      scanAutoOpenedRef.current = false;
+      return;
+    }
+    if (scanAutoOpenedRef.current) return;
+    scanAutoOpenedRef.current = true;
+    setScannerOpen(true);
+  }, [open, step, sourceTab, setScannerOpen]);
 
   function handleSave() {
     // Fall back to the picked source's name when the user emptied the name
@@ -563,97 +581,82 @@ export function AddMealSheet({
       >
         {step === "source" ? (
           <>
-            <p className="mb-3 text-style-caption text-muted">
-              Оберіть джерело нижче. Макроси, назву й час відредагуєте на
-              наступному кроці.
-            </p>
+            <SourceTabs active={sourceTab} onChange={setSourceTab} />
 
-            {/* Templates / pantry rows disappear when empty so a
-                  first-time user sees search + barcode as the whole step
-                  (no half-broken UI). They come back automatically once
-                  the user saves a template or stocks the pantry. */}
-            {mealTemplates.length > 0 && (
-              <MealTemplatesRow
-                mealTemplates={mealTemplates}
-                setForm={setForm}
-                setPrefs={setPrefs}
-                onSelected={() => setStep("fill")}
-                onEditTemplate={(t) => setEditingTemplateId(t.id)}
-              />
-            )}
-
-            {onQuickAddMeal && quickChips.length > 0 && (
-              <section
-                className="mb-4 min-w-0"
-                aria-labelledby="recent-meals-heading"
+            {sourceTab === "search" && (
+              <div
+                role="tabpanel"
+                id="source-panel-search"
+                aria-labelledby="source-tab-search"
               >
-                <h3
-                  id="recent-meals-heading"
-                  className="mb-2 text-style-label text-text"
-                >
-                  Нещодавні прийоми
-                </h3>
-                <QuickAddChips
-                  chips={quickChips}
-                  onTap={(chip) => {
-                    onQuickAddMeal(chip);
-                    onClose();
+                <SearchTabPanel
+                  mealTemplates={mealTemplates}
+                  setForm={setForm}
+                  setPrefs={setPrefs}
+                  onTemplateSelected={() => setStep("fill")}
+                  onEditTemplate={(t) => setEditingTemplateId(t.id)}
+                  quickChips={quickChips}
+                  onQuickAddMeal={onQuickAddMeal}
+                  onQuickAdded={onClose}
+                  pantryItems={pantryItems}
+                  fromPantryItem={fromPantryItem}
+                  setFromPantryItem={setFromPantryItem}
+                  picker={{
+                    foodQuery,
+                    setFoodQuery,
+                    foodHits,
+                    offHits,
+                    foodBusy,
+                    offBusy,
+                    foodErr,
+                    setPickedFood,
+                    setPickedGrams,
                   }}
                 />
-              </section>
+              </div>
             )}
 
-            {pantryItems.length > 0 && (
-              <FromPantryRow
-                pantryItems={pantryItems}
-                fromPantryItem={fromPantryItem}
-                setFromPantryItem={setFromPantryItem}
-                setForm={setForm}
-                setFoodQuery={setFoodQuery}
-              />
-            )}
-
-            <FoodPickerSection
-              foodQuery={foodQuery}
-              setFoodQuery={setFoodQuery}
-              foodHits={foodHits}
-              offHits={offHits}
-              foodBusy={foodBusy}
-              offBusy={offBusy}
-              foodErr={foodErr}
-              setPickedFood={setPickedFood}
-              setPickedGrams={setPickedGrams}
-            />
-
-            <div className="mt-4 grid gap-3 grid-cols-2">
-              <BarcodeSection
-                barcodeStatus={barcodeStatus}
-                setBarcodeStatus={setBarcodeStatus}
-                barcodeNotice={barcodeNotice}
-                onDismissBarcodeNotice={() => setBarcodeNotice(null)}
-                onRetryBarcodeLookup={() => void handleBarcodeLookup(barcode)}
-                onUsePhotoForBarcode={() => setStep("photo")}
-                setScannerOpen={setScannerOpen}
-              />
-
-              <Button
-                type="button"
-                variant="secondary"
-                className="w-full h-12 min-h-[44px] flex items-center justify-center gap-2"
-                // Photo analysis is an in-sheet step now — no detour
-                // through the Start page and its force-open disclosure.
-                onClick={() => setStep("photo")}
-                aria-label="Додати страву з фото"
+            {sourceTab === "scan" && (
+              <div
+                role="tabpanel"
+                id="source-panel-scan"
+                aria-labelledby="source-tab-scan"
               >
-                <Icon name="camera" size="sm" aria-hidden />
-                <span>Фото</span>
-              </Button>
-            </div>
+                <BarcodeSection
+                  barcodeStatus={barcodeStatus}
+                  setBarcodeStatus={setBarcodeStatus}
+                  barcodeNotice={barcodeNotice}
+                  onDismissBarcodeNotice={() => setBarcodeNotice(null)}
+                  onRetryBarcodeLookup={() => void handleBarcodeLookup(barcode)}
+                  onUsePhotoForBarcode={() => setSourceTab("photo")}
+                  setScannerOpen={setScannerOpen}
+                  actionLabel="Сканувати ще раз"
+                />
+              </div>
+            )}
 
-            <ManualEntryChooser
-              onPackage={() => setStep("package")}
-              onWholeMeal={() => setStep("fill")}
-            />
+            {sourceTab === "photo" && (
+              <div
+                role="tabpanel"
+                id="source-panel-photo"
+                aria-labelledby="source-tab-photo"
+              >
+                <PhotoStep onApply={handlePhotoApply} />
+              </div>
+            )}
+
+            {sourceTab === "manual" && (
+              <div
+                role="tabpanel"
+                id="source-panel-manual"
+                aria-labelledby="source-tab-manual"
+              >
+                <ManualEntryTab
+                  onCreated={handlePackageCreated}
+                  onWholeMeal={() => setStep("fill")}
+                />
+              </div>
+            )}
           </>
         ) : step === "photo" ? (
           <PhotoStep onApply={handlePhotoApply} />
