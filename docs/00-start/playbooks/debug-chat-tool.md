@@ -1,6 +1,6 @@
 # Playbook: Debug HubChat Tool
 
-> **Last touched:** 2026-08-22 by @claude. **Next review:** 2026-11-22.
+> **Last touched:** 2026-08-22 by @github-actions[bot]. **Next review:** 2026-11-22.
 > **Status:** Active
 
 **Trigger:** «Асистент каже що зробив, але нічого не сталось» / «Натиснув кнопку quick action — нема ефекту» / tool call повернувся текстом замість дії / `Невідома дія: …` у відповіді.
@@ -204,3 +204,14 @@ Response **другого** `/api/chat` запиту повертає `{ type: "
 - [AGENTS.md](../../../AGENTS.md) — секції _Architecture: AI tool execution path_, _max_tokens budget per request_, anti-pattern #6 про `localStorage.setItem`
 - `apps/web/src/core/lib/hubChatActions.ts` — `executeAction` entry point
 - `apps/server/src/modules/chat/chat.ts` — `/api/chat` handler і continuation logic
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                              | Merged     |
+| ------------------------------------------------------ | ------------------------------------------------------------------ | ---------- |
+| [#837](https://github.com/Skords-01/Sergeant/pull/837) | feat(web): крок джерела прийому їжі — вкладки замість стосу секцій | 2026-08-22 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
