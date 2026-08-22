@@ -116,25 +116,3 @@ export function AuthErrorBanner({
     </div>
   );
 }
-
-// Swipe transform style helper
-export function getSwipeStyle(swipeDx: number): React.CSSProperties {
-  if (swipeDx !== 0) {
-    return {
-      transform: `translate3d(${swipeDx * 0.45}px, 0, 0)`,
-      transition: "none",
-      willChange: "transform",
-    };
-  }
-  // AI-CONTEXT: `transform: none` (not `translate3d(0,0,0)`) at rest —
-  // any non-"none" transform on an ancestor makes it the containing
-  // block for `position: fixed` descendants (CSS Transforms spec). With
-  // the old identity-transform idle value, `TransactionsBatchToolbar`'s
-  // `fixed bottom-0` toolbar was pinned to *this* wrapper's box instead
-  // of the viewport, so it floated mid-screen instead of sitting above
-  // the nav bar (A6/B4 root cause).
-  return {
-    transform: "none",
-    transition: "transform 200ms cubic-bezier(0.32, 0.72, 0, 1)",
-  };
-}

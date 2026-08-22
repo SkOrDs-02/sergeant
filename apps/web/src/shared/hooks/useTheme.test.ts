@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * Tests for `useTheme` — 4-mode theme controller that owns the `dark`
+ * Tests for `useTheme` — 3-mode theme controller that owns the `dark`
  * and `hc` classes on `<html>` and persists the choice via the storage
  * wrapper.
  */
@@ -68,9 +68,9 @@ describe("useTheme", () => {
       .forEach((meta) => meta.remove());
   });
 
-  it("defaults to system when no stored choice", () => {
+  it("defaults to light when no stored choice and a light OS", () => {
     const { result } = renderHook(() => useTheme());
-    expect(result.current.choice).toBe("system");
+    expect(result.current.choice).toBe("light");
   });
 
   it("applies the dark class for an explicit dark choice", () => {
@@ -99,21 +99,41 @@ describe("useTheme", () => {
     expect(document.documentElement.classList.contains("dark")).toBe(true);
   });
 
-  it("system mode follows the prefers-color-scheme media query", () => {
+  it("seeds the first-boot choice from a dark OS", () => {
     setSystemMedia(true);
     const { result } = renderHook(() => useTheme());
-    // initial readInitialChoice → system; resolved dark from media query
-    expect(result.current.choice).toBe("system");
+    expect(result.current.choice).toBe("dark");
     expect(result.current.systemPrefersDark).toBe(true);
     expect(result.current.isDark).toBe(true);
   });
 
-  it("system mode turns on hc when the OS asks for more contrast", () => {
+  it("seeds the first-boot choice to hc when the OS asks for more contrast", () => {
     setSystemMedia(false, true);
     const { result } = renderHook(() => useTheme());
-    expect(result.current.choice).toBe("system");
+    expect(result.current.choice).toBe("hc");
     expect(result.current.isHighContrast).toBe(true);
     expect(document.documentElement.classList.contains("hc")).toBe(true);
+  });
+
+  // Авто-режим прибрано: збережений `system` більше не валідний вибір і
+  // має розгорнутись у конкретну тему, а не впасти назад у нього ж.
+  it("migrates a persisted `system` choice into an explicit theme", () => {
+    localStorage.setItem("hub_theme_v2", "system");
+    setSystemMedia(true);
+    const { result } = renderHook(() => useTheme());
+    expect(result.current.choice).toBe("dark");
+  });
+
+  // Після явного вибору система вже нічого не перевизначає — навіть коли
+  // OS перемикається на темну.
+  it("keeps an explicit light choice on a dark OS", () => {
+    setSystemMedia(true);
+    const { result, unmount } = renderHook(() => useTheme());
+    act(() => result.current.setChoice("light"));
+    unmount();
+    const { result: result2 } = renderHook(() => useTheme());
+    expect(result2.current.choice).toBe("light");
+    expect(result2.current.isDark).toBe(false);
   });
 
   it("does not force hc over an explicit light choice", () => {
@@ -138,13 +158,14 @@ describe("useTheme", () => {
     expect(result.current.choice).toBe("dark");
   });
 
-  it("migrates a legacy schedule:system key", () => {
+  it("migrates a legacy schedule:system key into an explicit theme", () => {
     localStorage.setItem(
       "hub_dark_mode_schedule_v1",
       JSON.stringify({ mode: "system" }),
     );
+    setSystemMedia(true);
     const { result } = renderHook(() => useTheme());
-    expect(result.current.choice).toBe("system");
+    expect(result.current.choice).toBe("dark");
   });
 
   // C7 web-audit: `applyResolvedTheme` now keeps the OS status-bar /

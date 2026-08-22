@@ -2,8 +2,8 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { ThemeSwitcher } from "./ThemeSwitcher";
 
 /**
- * `ThemeSwitcher` — uniform UI control for the 4-mode theme contract
- * (`useTheme`): light · dark · system · HC. Compact segmented control
+ * `ThemeSwitcher` — uniform UI control for the 3-mode theme contract
+ * (`useTheme`): light · dark · HC. Compact segmented control
  * with an icon + short caption per choice (round-2 UI audit X4).
  *
  * Storybook NOTE: the component invokes `useTheme()` internally, which

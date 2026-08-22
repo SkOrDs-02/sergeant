@@ -49,14 +49,14 @@ describe("ThemeSwitcher — segmented (default)", () => {
     const group = screen.getByRole("radiogroup", { name: "Тема" });
     expect(group).toBeInTheDocument();
     const radios = screen.getAllByRole("radio");
-    expect(radios).toHaveLength(4); // light / dark / system / hc
+    expect(radios).toHaveLength(3); // light / dark / hc
   });
 
   it("marks the active choice with aria-checked", () => {
     render(<ThemeSwitcher />);
-    // default choice = system
-    const sys = screen.getByRole("radio", { name: "Системна" });
-    expect(sys).toHaveAttribute("aria-checked", "true");
+    // no stored choice + light OS → seeded to «Світла»
+    const light = screen.getByRole("radio", { name: "Світла" });
+    expect(light).toHaveAttribute("aria-checked", "true");
   });
 
   it("switches theme on radio click and applies the dark class", () => {
@@ -73,7 +73,6 @@ describe("ThemeSwitcher — segmented (default)", () => {
     render(<ThemeSwitcher />);
     expect(screen.getByText("Світла")).toBeInTheDocument();
     expect(screen.getByText("Темна")).toBeInTheDocument();
-    expect(screen.getByText("Авто")).toBeInTheDocument();
     expect(screen.getByText("Контраст")).toBeInTheDocument();
   });
 
