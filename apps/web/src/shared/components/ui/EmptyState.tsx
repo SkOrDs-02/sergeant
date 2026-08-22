@@ -57,6 +57,7 @@ import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "./Icon";
 import { Button } from "./Button";
 import { ModuleEmptyIllustration } from "./EmptyStateIllustrations";
+import { formatNumberUk } from "@sergeant/shared";
 
 export type EmptyStateSize = "sm" | "md" | "lg";
 
@@ -502,7 +503,7 @@ function resolveGoalAwareDesc(
   goals: OnboardingGoals,
 ): string {
   if (moduleId === "finyk" && goals.finykBudget) {
-    return `Встанови бюджет ${goals.finykBudget.toLocaleString("uk-UA")}₴, додай першу витрату.`;
+    return `Встанови бюджет ${formatNumberUk(goals.finykBudget)}₴, додай першу витрату.`;
   }
   if (moduleId === "fizruk" && goals.fizrukWeeklyGoal) {
     return `${goals.fizrukWeeklyGoal}× на тиждень, починай із першого тренування.`;

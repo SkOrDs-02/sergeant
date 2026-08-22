@@ -11,6 +11,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { TrendingUp } from "lucide-react-native";
 
 import { cn } from "./cn";
+import { formatNumberUk } from "@sergeant/shared";
 
 export interface HeroCardProps {
   networth: number;
@@ -25,7 +26,7 @@ export interface HeroCardProps {
 }
 
 function format(value: number): string {
-  return value.toLocaleString("uk-UA", { maximumFractionDigits: 0 });
+  return formatNumberUk(value, { maximumFractionDigits: 0 });
 }
 
 const HeroCardImpl = function HeroCard({

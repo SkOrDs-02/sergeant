@@ -19,6 +19,7 @@ import {
   type Period,
 } from "./hubReports.aggregation";
 import { useHubStorageBump } from "./useHubStorageBump";
+import { formatNumberUk } from "@sergeant/shared";
 
 // ── Local sub-components (shared pattern, duplicated per card to keep
 //    each card's chunk self-contained — no cross-card coupling) ───────
@@ -70,7 +71,7 @@ function BarChart({
     const parts = getKyivDateParts(parseKyivDate(dateStr) ?? new Date(dateStr));
     const day = String(parts.day).padStart(2, "0");
     const month = String(parts.month).padStart(2, "0");
-    return `${day}.${month}: ${value.toLocaleString("uk-UA")}${unit}`;
+    return `${day}.${month}: ${formatNumberUk(value)}${unit}`;
   }
 
   return (
@@ -235,8 +236,8 @@ export default function FitnessCard({ period, offset }: FitnessCardProps) {
     };
   }, [period, offset, bump]);
 
-  const formattedCurrent = cur.count.toLocaleString("uk-UA");
-  const formattedPrev = prev.count.toLocaleString("uk-UA");
+  const formattedCurrent = formatNumberUk(cur.count);
+  const formattedPrev = formatNumberUk(prev.count);
 
   return (
     <ReportSheet collapsed={collapsed}>

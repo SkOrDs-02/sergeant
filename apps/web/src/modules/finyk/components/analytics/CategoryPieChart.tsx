@@ -3,6 +3,7 @@ import { chartHex } from "@sergeant/design-tokens/tokens";
 import { cn } from "@shared/lib/ui/cn";
 import { Money } from "@shared/components/ui/Money";
 import { Icon } from "@shared/components/ui/Icon";
+import { formatNumberUk } from "@sergeant/shared";
 import { stripLeadingEmoji } from "../txRowHelpers";
 
 // Convert a polar angle (0° = 12 o'clock, clockwise) to cartesian coordinates.
@@ -242,7 +243,7 @@ function CategoryPieChartComponent({
             fontWeight="600"
             className="fill-text"
           >
-            {displayTotal.toLocaleString("uk-UA")} ₴
+            {formatNumberUk(displayTotal)} ₴
           </text>
         </svg>
 
@@ -293,16 +294,15 @@ function CategoryPieChartComponent({
       </div>
       <div id={summaryId} className="sr-only">
         <p>
-          Розподіл витрат за категоріями. Всього{" "}
-          {displayTotal.toLocaleString("uk-UA")} ₴.
+          Розподіл витрат за категоріями. Всього {formatNumberUk(displayTotal)}{" "}
+          ₴.
         </p>
         <ul>
           {arcs.map((arc) => {
             const pctInt = Math.round(arc.pct * 100);
             return (
               <li key={arc.categoryId}>
-                {stripLeadingEmoji(arc.label)}:{" "}
-                {arc.spent.toLocaleString("uk-UA")} ₴ (
+                {stripLeadingEmoji(arc.label)}: {formatNumberUk(arc.spent)} ₴ (
                 {pctInt < 1 ? "менше 1" : pctInt}%)
               </li>
             );

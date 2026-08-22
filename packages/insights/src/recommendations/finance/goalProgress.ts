@@ -3,6 +3,7 @@
 
 import type { Rec, Rule } from "../types.js";
 import type { FinanceContext } from "../financeContext.js";
+import { formatNumberUk } from "@sergeant/shared";
 
 interface GoalContribution {
   amountUah?: number;
@@ -51,7 +52,7 @@ export const goalProgressRule: Rule<FinanceContext> = {
         priority: 65,
         icon: "target",
         title: `Ціль "${g.name ?? ""}" майже досягнута`,
-        body: `Залишилось ${Math.round(remaining).toLocaleString("uk-UA")} ₴ (${Math.round(p * 100)}%)`,
+        body: `Залишилось ${formatNumberUk(Math.round(remaining))} ₴ (${Math.round(p * 100)}%)`,
         action: "finyk",
       });
     }

@@ -1,10 +1,14 @@
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
+import { MoneyInput } from "@shared/components/ui/MoneyInput";
 import { DateField } from "@shared/components/ui/DateField";
 import { Label } from "@shared/components/ui/FormField";
 import { VoiceMicButton } from "@shared/components/ui/VoiceMicButton";
-import { parseExpenseSpeech as parseExpenseVoice } from "@sergeant/shared";
+import {
+  formatNumberUk,
+  parseExpenseSpeech as parseExpenseVoice,
+} from "@sergeant/shared";
 import { notifyFinykRoutineCalendarSync } from "../hubRoutineSync";
 import type {
   Debt,
@@ -90,7 +94,7 @@ export function SubscriptionForm({
       {newSub.keyword.trim() && (
         <p className="text-style-caption text-subtle" role="status">
           {keywordMatch
-            ? `Знайдено: ${keywordMatch.description || "Транзакція"} · ${Math.abs(keywordMatch.amount / 100).toLocaleString("uk-UA")} ₴`
+            ? `Знайдено: ${keywordMatch.description || "Транзакція"} · ${formatNumberUk(Math.abs(keywordMatch.amount / 100))} ₴`
             : "Збігів не знайдено"}
         </p>
       )}
@@ -205,12 +209,16 @@ export function ReceivableForm({
         value={newRecv.name}
         onChange={(e) => setNewRecv((a) => ({ ...a, name: e.target.value }))}
       />
-      <Input
+      <MoneyInput
         aria-label="Сума у гривнях"
         placeholder="Сума ₴"
-        type="number"
         value={newRecv.amount}
-        onChange={(e) => setNewRecv((a) => ({ ...a, amount: e.target.value }))}
+        onValueChange={(next) =>
+          setNewRecv((a) => ({
+            ...a,
+            amount: next == null ? "" : String(next),
+          }))
+        }
       />
       <Input
         aria-label="Нотатка (необов'язково)"
@@ -337,13 +345,15 @@ export function AssetForm({
           value={newAsset.name}
           onChange={(e) => setNewAsset((a) => ({ ...a, name: e.target.value }))}
         />
-        <Input
+        <MoneyInput
           aria-label="Сума активу"
           placeholder="Сума"
-          type="number"
           value={newAsset.amount}
-          onChange={(e) =>
-            setNewAsset((a) => ({ ...a, amount: e.target.value }))
+          onValueChange={(next) =>
+            setNewAsset((a) => ({
+              ...a,
+              amount: next == null ? "" : String(next),
+            }))
           }
         />
         <div className="rounded-2xl border border-line bg-panelHi px-4 py-3">
@@ -491,13 +501,15 @@ export function DebtForm({
           }}
         />
       </div>
-      <Input
+      <MoneyInput
         aria-label="Загальна сума у гривнях"
         placeholder="Загальна сума ₴"
-        type="number"
         value={newDebt.totalAmount}
-        onChange={(e) =>
-          setNewDebt((a) => ({ ...a, totalAmount: e.target.value }))
+        onValueChange={(next) =>
+          setNewDebt((a) => ({
+            ...a,
+            totalAmount: next == null ? "" : String(next),
+          }))
         }
       />
       <div className="space-y-1.5">

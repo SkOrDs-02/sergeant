@@ -13,6 +13,7 @@ import { Pressable, Text, View } from "react-native";
 import { TrendingDown, TrendingUp } from "lucide-react-native";
 
 import { localDateKey } from "./hubReports.aggregation";
+import { formatNumberUk } from "@sergeant/shared";
 
 const DAY_NAMES_UK = ["Нд", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"] as const;
 
@@ -32,7 +33,7 @@ function formatTooltip(dateStr: string, value: number, unit: string): string {
   const d = new Date(dateStr + "T00:00:00");
   const day = String(d.getDate()).padStart(2, "0");
   const month = String(d.getMonth() + 1).padStart(2, "0");
-  return `${day}.${month}: ${value.toLocaleString("uk-UA")}${unit}`;
+  return `${day}.${month}: ${formatNumberUk(value)}${unit}`;
 }
 
 export interface ReportBarChartProps {

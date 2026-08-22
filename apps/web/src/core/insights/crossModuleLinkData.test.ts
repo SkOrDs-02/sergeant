@@ -14,6 +14,7 @@ import {
   closestCrossModulePair,
   silentPoles,
 } from "./crossModuleLinkData";
+import { formatNumberUk } from "@sergeant/shared";
 
 function series(
   raw: Partial<Record<DailyMetric, (number | undefined)[]>>,
@@ -84,8 +85,8 @@ describe("pairwiseDays", () => {
       "2026-01-01",
     ]);
     expect(out[0]).toMatchObject({
-      valueA: (300).toLocaleString("uk-UA"),
-      valueB: (30).toLocaleString("uk-UA"),
+      valueA: formatNumberUk(300),
+      valueB: formatNumberUk(30),
     });
   });
 
@@ -156,7 +157,7 @@ describe("linkFromPair", () => {
       messages.crossModuleLink.metricUnit.workout_volume,
     );
     expect(link.poleB.module).toBe("finyk");
-    expect(link.poleB.value).toBe((300).toLocaleString("uk-UA"));
+    expect(link.poleB.value).toBe(formatNumberUk(300));
     expect(link.observations).toBe(5);
     expect(link.strength).toBeCloseTo(1, 5);
   });
@@ -218,8 +219,8 @@ describe("linkFromPair", () => {
     const link = linkFromPair(s, pair!)!;
     const values = [link.poleA.value, link.poleB.value];
     // 21/5 = 4.2 — ціле «4» стерло б різницю між «стабільно добре» і «так собі».
-    expect(values).toContain((4.2).toLocaleString("uk-UA"));
-    expect(values).toContain((2080).toLocaleString("uk-UA"));
+    expect(values).toContain(formatNumberUk(4.2));
+    expect(values).toContain(formatNumberUk(2080));
   });
 });
 

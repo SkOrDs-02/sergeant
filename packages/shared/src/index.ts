@@ -126,6 +126,7 @@ export * from "./lib/quickStats";
 // amounts across the web app and shared package. See `formatMoney.ts`
 // for conventions; `fmtAmt` (in `@sergeant/finyk-domain`) remains the
 // transaction-row formatter and is intentionally separate.
+export * from "./lib/formatNumber";
 export * from "./lib/formatMoney";
 
 // Hub weekly-digest helpers — week key / storage key / digest freshness.

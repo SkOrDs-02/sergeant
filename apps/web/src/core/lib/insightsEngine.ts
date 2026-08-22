@@ -11,7 +11,7 @@
  * Last validated: 2026-05-19
  */
 
-import { STORAGE_KEYS } from "@sergeant/shared";
+import { formatNumberUk, STORAGE_KEYS } from "@sergeant/shared";
 import { getTxStatAmount } from "../../modules/finyk/utils";
 import { INTERNAL_TRANSFER_ID } from "@finyk/constants";
 import { safeReadLS } from "@shared/lib/storage/storage";
@@ -203,7 +203,7 @@ function activeWeeksSpendingInsight(): Insight | null {
       iconName: "lightbulb",
       title: `У тижні з 3+ тренуваннями ти витрачаєш на ${diffPct}% менше`,
       stat: `−${diffPct}%`,
-      detail: `${Math.round(avgActive).toLocaleString("uk-UA")} ₴ vs ${Math.round(avgRest).toLocaleString("uk-UA")} ₴ витрат/тиж.`,
+      detail: `${formatNumberUk(Math.round(avgActive))} ₴ vs ${formatNumberUk(Math.round(avgRest))} ₴ витрат/тиж.`,
     };
   }
 
@@ -213,7 +213,7 @@ function activeWeeksSpendingInsight(): Insight | null {
     iconName: "lightbulb",
     title: `У активні тижні ти витрачаєш на ${morePct}% більше`,
     stat: `+${morePct}%`,
-    detail: `${Math.round(avgActive).toLocaleString("uk-UA")} ₴ vs ${Math.round(avgRest).toLocaleString("uk-UA")} ₴ витрат/тиж.`,
+    detail: `${formatNumberUk(Math.round(avgActive))} ₴ vs ${formatNumberUk(Math.round(avgRest))} ₴ витрат/тиж.`,
   };
 }
 
@@ -322,10 +322,10 @@ function workoutKcalInsight(): Insight | null {
     iconName: "leaf",
     title:
       diff > 0
-        ? `У дні тренувань ти їси на ${diff.toLocaleString("uk-UA")} ккал більше`
-        : `У дні тренувань ти їси на ${Math.abs(diff).toLocaleString("uk-UA")} ккал менше`,
-    stat: `${sign}${diff.toLocaleString("uk-UA")} ккал`,
-    detail: `${avgWorkout.toLocaleString("uk-UA")} vs ${avgRest.toLocaleString("uk-UA")} ккал/день`,
+        ? `У дні тренувань ти їси на ${formatNumberUk(diff)} ккал більше`
+        : `У дні тренувань ти їси на ${formatNumberUk(Math.abs(diff))} ккал менше`,
+    stat: `${sign}${formatNumberUk(diff)} ккал`,
+    detail: `${formatNumberUk(avgWorkout)} vs ${formatNumberUk(avgRest)} ккал/день`,
   };
 }
 
@@ -405,10 +405,10 @@ function habitWeeksKcalInsight(): Insight | null {
     iconName: "activity",
     title:
       diff > 0
-        ? `У тижні з 70%+ звичок ти їси на ${Math.abs(diff).toLocaleString("uk-UA")} ккал більше`
-        : `У тижні з 70%+ звичок ти їси на ${Math.abs(diff).toLocaleString("uk-UA")} ккал менше`,
-    stat: `${sign}${diff.toLocaleString("uk-UA")} ккал`,
-    detail: `${avgKcalHigh.toLocaleString("uk-UA")} vs ${avgKcalLow.toLocaleString("uk-UA")} ккал/день`,
+        ? `У тижні з 70%+ звичок ти їси на ${formatNumberUk(Math.abs(diff))} ккал більше`
+        : `У тижні з 70%+ звичок ти їси на ${formatNumberUk(Math.abs(diff))} ккал менше`,
+    stat: `${sign}${formatNumberUk(diff)} ккал`,
+    detail: `${formatNumberUk(avgKcalHigh)} vs ${formatNumberUk(avgKcalLow)} ккал/день`,
   };
 }
 

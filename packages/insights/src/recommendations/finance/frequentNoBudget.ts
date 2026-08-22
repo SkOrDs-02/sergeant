@@ -4,6 +4,7 @@
 
 import type { Rule } from "../types.js";
 import type { FinanceContext } from "../financeContext.js";
+import { formatNumberUk } from "@sergeant/shared";
 
 const BUILTIN: Record<string, string> = {
   food: "Продукти",
@@ -39,7 +40,7 @@ export const frequentNoBudgetRule: Rule<FinanceContext> = {
     );
     const spendHint =
       thisMonthSpend > 0
-        ? `Цього місяця вже ${thisMonthSpend.toLocaleString("uk-UA")} ₴, постав ліміт, щоб тримати руку на пульсі.`
+        ? `Цього місяця вже ${formatNumberUk(thisMonthSpend)} ₴, постав ліміт, щоб тримати руку на пульсі.`
         : `Використано ${best.count} разів, встанови ліміт, щоб тримати все під контролем.`;
 
     return [

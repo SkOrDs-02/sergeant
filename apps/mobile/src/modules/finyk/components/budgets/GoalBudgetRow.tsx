@@ -4,6 +4,7 @@ import { Pressable, Text, View } from "react-native";
 import type { GoalBudget } from "@sergeant/finyk-domain/domain";
 
 import { Sparkline } from "./Sparkline";
+import { formatNumberUk } from "@sergeant/shared";
 
 export interface GoalBudgetRowProps {
   budget: GoalBudget;
@@ -26,7 +27,7 @@ function progressTrend(pct: number): number[] {
 }
 
 function fmt(n: number): string {
-  return n.toLocaleString("uk-UA", { maximumFractionDigits: 0 });
+  return formatNumberUk(n, { maximumFractionDigits: 0 });
 }
 
 function GoalBudgetRowImpl({

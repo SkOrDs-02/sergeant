@@ -34,6 +34,7 @@ import type {
   CrossModuleLinkModule,
   CrossModuleLinkPole,
 } from "./CrossModuleLinkCard";
+import { formatNumberUk } from "@sergeant/shared";
 
 /**
  * Метрика → модуль, якому вона належить. Тримає module-accent containment:
@@ -72,8 +73,8 @@ const METRIC_MODULE: Record<DailyMetric, CrossModuleLinkModule> = {
 function formatPoleValue(mean: number): string {
   if (!Number.isFinite(mean)) return "—";
   const abs = Math.abs(mean);
-  if (abs >= 10) return Math.round(mean).toLocaleString("uk-UA");
-  return (Math.round(mean * 10) / 10).toLocaleString("uk-UA");
+  if (abs >= 10) return formatNumberUk(Math.round(mean));
+  return formatNumberUk(Math.round(mean * 10) / 10);
 }
 
 /**

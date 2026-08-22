@@ -12,6 +12,7 @@ import {
   getOnboardingGoals,
   rankFirstActionCandidates,
   type FirstActionRanking,
+  formatNumberUk,
 } from "@sergeant/shared";
 import { webKVStore } from "@shared/lib/storage/storage";
 
@@ -108,7 +109,7 @@ function rankPrimary(picks: string[]): FirstActionRanking {
 function getGoalAwareDesc(moduleId: string, fallback: string): string {
   const goals = getOnboardingGoals(webKVStore);
   if (moduleId === "finyk" && goals.finykBudget) {
-    return `Встанови бюджет ${goals.finykBudget.toLocaleString("uk-UA")}₴, додай першу витрату.`;
+    return `Встанови бюджет ${formatNumberUk(goals.finykBudget)}₴, додай першу витрату.`;
   }
   if (moduleId === "fizruk" && goals.fizrukWeeklyGoal) {
     return `${goals.fizrukWeeklyGoal}× на тиждень, починай із розминки.`;

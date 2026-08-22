@@ -25,6 +25,7 @@ import {
 
 import { Analytics } from "./Analytics";
 import type { FinykAnalyticsData } from "./types";
+import { formatNumberUk } from "@sergeant/shared";
 
 function emptyData(): FinykAnalyticsData {
   return {
@@ -130,12 +131,10 @@ describe("Analytics screen (mobile)", () => {
       // a merchant's total equals the spend sum); assert at least one
       // match exists rather than uniqueness.
       expect(
-        screen.getAllByText(`${summary.spent.toLocaleString("uk-UA")} ₴`)
-          .length,
+        screen.getAllByText(`${formatNumberUk(summary.spent)} ₴`).length,
       ).toBeGreaterThan(0);
       expect(
-        screen.getAllByText(`${summary.income.toLocaleString("uk-UA")} ₴`)
-          .length,
+        screen.getAllByText(`${formatNumberUk(summary.income)} ₴`).length,
       ).toBeGreaterThan(0);
     });
 

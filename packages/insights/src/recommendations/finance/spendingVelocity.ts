@@ -4,6 +4,7 @@
 
 import type { Rule } from "../types.js";
 import { txTimestamp, type FinanceContext } from "../financeContext.js";
+import { formatNumberUk } from "@sergeant/shared";
 
 function startOfWeek(d: Date): Date {
   const x = new Date(d);
@@ -61,7 +62,7 @@ export const spendingVelocityRule: Rule<FinanceContext> = {
           priority: 75,
           icon: "trending-up",
           title: `Витрати на ${pctMore}% вище ніж минулого тижня`,
-          body: `За такий же проміжок: ${Math.round(thisSpend).toLocaleString("uk-UA")} ₴ vs ${Math.round(prevSpend).toLocaleString("uk-UA")} ₴`,
+          body: `За такий же проміжок: ${formatNumberUk(Math.round(thisSpend))} ₴ vs ${formatNumberUk(Math.round(prevSpend))} ₴`,
           action: "finyk",
         },
       ];
@@ -75,7 +76,7 @@ export const spendingVelocityRule: Rule<FinanceContext> = {
           priority: 45,
           icon: "award",
           title: `Витрати на ${pctLess}% нижче ніж минулого тижня`,
-          body: `Чудовий темп: ${Math.round(thisSpend).toLocaleString("uk-UA")} ₴ vs ${Math.round(prevSpend).toLocaleString("uk-UA")} ₴`,
+          body: `Чудовий темп: ${formatNumberUk(Math.round(thisSpend))} ₴ vs ${formatNumberUk(Math.round(prevSpend))} ₴`,
           action: "finyk",
         },
       ];

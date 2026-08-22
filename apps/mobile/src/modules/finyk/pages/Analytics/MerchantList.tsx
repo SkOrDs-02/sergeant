@@ -10,6 +10,7 @@ import { memo } from "react";
 import { Text, View } from "react-native";
 
 import type { MerchantStat } from "@sergeant/finyk-domain/domain";
+import { formatNumberUk } from "@sergeant/shared";
 
 export interface MerchantListProps {
   merchants: readonly MerchantStat[];
@@ -38,7 +39,7 @@ function MerchantListComponent({ merchants }: MerchantListProps) {
                   {m.name}
                 </Text>
                 <Text className="text-sm font-semibold tabular-nums text-fg">
-                  {m.total.toLocaleString("uk-UA")} ₴
+                  {formatNumberUk(m.total)} ₴
                 </Text>
               </View>
               <View className="flex-row items-center gap-2">

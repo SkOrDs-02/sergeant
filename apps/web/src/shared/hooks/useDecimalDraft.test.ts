@@ -123,3 +123,74 @@ describe("useDecimalDraft", () => {
     expect(result.current.value).toBe("82,");
   });
 });
+
+describe("useDecimalDraft — { group: true }", () => {
+  const GROUP_MAX = 10_000_000;
+
+  /**
+   * Групування працює з реальним елементом: воно править `value` і каретку
+   * на місці, тож фейкового `{ target: { value } }` тут замало.
+   */
+  function typeInto(
+    result: { current: ReturnType<typeof useDecimalDraft> },
+    el: HTMLInputElement,
+    input: string,
+  ): void {
+    for (const char of input) {
+      el.value += char;
+      el.setSelectionRange(el.value.length, el.value.length);
+      act(() => {
+        result.current.onChange({
+          target: el,
+          currentTarget: el,
+        } as unknown as React.ChangeEvent<HTMLInputElement>);
+      });
+    }
+  }
+
+  it("розставляє роздільники під час набору, а число комітить без них", () => {
+    const onCommit = vi.fn();
+    const el = document.createElement("input");
+    const { result } = renderHook(() =>
+      useDecimalDraft("", GROUP_MAX, onCommit, { group: true }),
+    );
+
+    typeInto(result, el, "80000");
+
+    expect(result.current.value).toBe("80\u00a0000");
+    expect(el.value).toBe("80\u00a0000");
+    expect(onCommit).toHaveBeenLastCalledWith(80000);
+  });
+
+  it("не ламає незавершену кому — той самий інваріант, що й без групування", () => {
+    const onCommit = vi.fn();
+    const el = document.createElement("input");
+    const { result } = renderHook(() =>
+      useDecimalDraft("", GROUP_MAX, onCommit, { group: true }),
+    );
+
+    typeInto(result, el, "1200,");
+
+    expect(result.current.value).toBe("1\u00a0200,");
+    expect(onCommit).toHaveBeenLastCalledWith(1200);
+  });
+
+  it("підвантажене ззовні значення показується вже згрупованим", () => {
+    const { result } = renderHook(() =>
+      useDecimalDraft(1234567, GROUP_MAX, vi.fn(), { group: true }),
+    );
+
+    expect(result.current.value).toBe("1\u00a0234\u00a0567");
+  });
+
+  it("без опції поведінка лишається старою — грами й вага не групуються", () => {
+    const onCommit = vi.fn();
+    const { result } = renderHook(() =>
+      useDecimalDraft("", GROUP_MAX, onCommit),
+    );
+
+    type(result, "1200");
+
+    expect(result.current.value).toBe("1200");
+  });
+});

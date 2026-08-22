@@ -40,8 +40,11 @@ function SplitAmountInput({
   amount: number;
   onCommit: (amount: number) => void;
 }) {
-  const draft = useDecimalDraft(amount || "", MAX_AMOUNT_HRYVNIA, (next) =>
-    onCommit(next ?? 0),
+  const draft = useDecimalDraft(
+    amount || "",
+    MAX_AMOUNT_HRYVNIA,
+    (next) => onCommit(next ?? 0),
+    { group: true },
   );
   return (
     <input

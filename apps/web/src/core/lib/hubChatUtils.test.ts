@@ -16,6 +16,7 @@ import {
   cancelIdle,
   isHelpCommand,
 } from "./hubChatUtils";
+import { formatNumberUk } from "@sergeant/shared";
 
 function setHash(hash: string): void {
   window.location.hash = hash;
@@ -188,7 +189,7 @@ describe("ls / lsSet", () => {
 
 describe("fmt", () => {
   it("rounds and localizes", () => {
-    expect(fmt(1234.6)).toBe((1235).toLocaleString("uk-UA"));
+    expect(fmt(1234.6)).toBe(formatNumberUk(1235));
     expect(fmt(0)).toBe("0");
   });
 });

@@ -7,6 +7,7 @@ import { cn } from "@shared/lib/ui/cn";
 import { ProgressBar } from "@shared/components/ui";
 
 import type { MonoBackfillProgress } from "@shared/api";
+import { formatNumberUk } from "@sergeant/shared";
 
 interface BackfillProgressPillProps {
   progress: MonoBackfillProgress | null;
@@ -76,9 +77,9 @@ export const BackfillProgressPill = memo(function BackfillProgressPill({
       : "Помилка backfill";
 
   const detail = isRunning
-    ? `${progress.transactionsProcessed.toLocaleString("uk-UA")} тр.`
+    ? `${formatNumberUk(progress.transactionsProcessed)} тр.`
     : isCompleted
-      ? `${progress.transactionsProcessed.toLocaleString("uk-UA")} транзакцій`
+      ? `${formatNumberUk(progress.transactionsProcessed)} транзакцій`
       : (progress.lastError ?? "невідома помилка");
 
   return (

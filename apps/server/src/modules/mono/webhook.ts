@@ -13,6 +13,7 @@ import { categorizeMcc } from "./mccCategories.js";
 import { webhookSecretHash } from "./crypto.js";
 import { emitSecurityEvent } from "../../obs/securityEvents.js";
 import { elapsedMs } from "../../lib/timing.js";
+import { formatNumberUk } from "@sergeant/shared";
 
 /**
  * POST /api/mono/webhook/:secret? — public Monobank delivery endpoint.
@@ -112,7 +113,7 @@ function formatMonoMoney(amountMinor: number, currencyCode: number): string {
   const symbol = CURRENCY_SYMBOL_BY_CODE[currencyCode] ?? "";
   const major = amountMinor / 100;
   const sign = major < 0 ? "−" : "+";
-  const abs = Math.abs(major).toLocaleString("uk-UA", {
+  const abs = formatNumberUk(Math.abs(major), {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });

@@ -9,6 +9,7 @@
 
 import type { Rec, Rule } from "../types.js";
 import type { FinanceContext } from "../financeContext.js";
+import { formatNumberUk } from "@sergeant/shared";
 
 const BUILTIN_LABELS: Record<string, string> = {
   food: "Продукти",
@@ -62,7 +63,7 @@ export const budgetLimitsRule: Rule<FinanceContext> = {
           severity: "danger" as const,
           icon: "flag",
           title: `Бюджет "${catLabel}" перевищено на ${Math.round((pct - 1) * 100)}%`,
-          body: `Витрачено ${Math.round(spent).toLocaleString("uk-UA")} ₴ з ${Math.round(limit.limit).toLocaleString("uk-UA")} ₴`,
+          body: `Витрачено ${formatNumberUk(Math.round(spent))} ₴ з ${formatNumberUk(Math.round(limit.limit))} ₴`,
           action: "finyk",
           actionHash,
           // Ліміт уже пробито — часто це означає, що є ще незафіксовані

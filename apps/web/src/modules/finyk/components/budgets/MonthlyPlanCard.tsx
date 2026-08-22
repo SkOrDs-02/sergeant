@@ -6,11 +6,9 @@ import { memo, useId, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
-import { Input } from "@shared/components/ui/Input";
+import { MoneyInput } from "@shared/components/ui/MoneyInput";
 import { Label } from "@shared/components/ui/FormField";
 import { Money } from "@shared/components/ui/Money";
-import { MAX_AMOUNT_HRYVNIA } from "@shared/lib/format/amount";
-import { useDecimalDraft } from "@shared/hooks/useDecimalDraft";
 import { FirstRunHintBanner } from "../../../../core/onboarding/FirstRunHintBanner";
 
 // Mirrors `useStorage`'s MonthlyPlan: required income/expense/savings,
@@ -20,12 +18,12 @@ import { FirstRunHintBanner } from "../../../../core/onboarding/FirstRunHintBann
 // module.
 
 /**
- * Одне з трьох полів плану. Окремий компонент, бо `useDecimalDraft` — хук:
- * три поля означають три виклики, а не цикл.
+ * Одне з трьох полів плану.
  *
  * Кома тут обовʼязкова так само, як у КБЖВ: «40 000,50» під `type="number"`
  * доїжджало обробнику порожнім рядком. Порожнє поле лишається порожнім
- * рядком, а не нулем, інакше план неможливо очистити.
+ * рядком, а не нулем, інакше план неможливо очистити. Розряди групує
+ * `MoneyInput` — саме на цьому екрані тестер і попросив пробіли.
  */
 function PlanAmountField({
   id,
@@ -40,19 +38,14 @@ function PlanAmountField({
   value: number | string;
   onCommit: (next: string) => void;
 }) {
-  const draft = useDecimalDraft(value, MAX_AMOUNT_HRYVNIA, (next) =>
-    onCommit(next == null ? "" : String(next)),
-  );
   return (
     <div>
       <Label htmlFor={id}>{label}</Label>
-      <Input
+      <MoneyInput
         id={id}
-        type="text"
-        inputMode="decimal"
         placeholder={placeholder}
-        value={draft.value}
-        onChange={draft.onChange}
+        value={value}
+        onValueChange={(next) => onCommit(next == null ? "" : String(next))}
       />
     </div>
   );
@@ -381,7 +374,7 @@ function MonthlyPlanCardComponent({
               <PlanAmountField
                 id={incomeId}
                 label="План доходу"
-                placeholder="Напр. 40000 ₴"
+                placeholder="Напр. 40 000 ₴"
                 value={monthlyPlan?.income ?? ""}
                 onCommit={(income) =>
                   onChangeMonthlyPlan((p) => ({ ...p, income }))
@@ -390,7 +383,7 @@ function MonthlyPlanCardComponent({
               <PlanAmountField
                 id={expenseId}
                 label="План витрат"
-                placeholder="Напр. 25000 ₴"
+                placeholder="Напр. 25 000 ₴"
                 value={monthlyPlan?.expense ?? ""}
                 onCommit={(expense) =>
                   onChangeMonthlyPlan((p) => ({ ...p, expense }))
@@ -399,7 +392,7 @@ function MonthlyPlanCardComponent({
               <PlanAmountField
                 id={savingsId}
                 label="План накопичень"
-                placeholder="Напр. 10000 ₴"
+                placeholder="Напр. 10 000 ₴"
                 value={monthlyPlan?.savings ?? ""}
                 onCommit={(savings) =>
                   onChangeMonthlyPlan((p) => ({ ...p, savings }))

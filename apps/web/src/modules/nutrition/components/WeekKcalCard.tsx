@@ -29,6 +29,7 @@ import {
   computeWeekKcalChart,
   type MacrosRow,
 } from "@sergeant/nutrition-domain";
+import { formatNumberUk } from "@sergeant/shared";
 
 const t = messages.nutrition.weekKcal;
 
@@ -38,7 +39,7 @@ const PLOT_HEIGHT = 48;
 const MIN_BAR_HEIGHT = 3;
 
 function fmtKcal(n: number): string {
-  return Math.round(n).toLocaleString("uk-UA");
+  return formatNumberUk(Math.round(n));
 }
 
 function dayLabel(dateIso: string): string {

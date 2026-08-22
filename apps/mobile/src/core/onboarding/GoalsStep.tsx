@@ -6,6 +6,7 @@ import {
   hapticTap,
   type DashboardModuleId,
   type OnboardingGoals,
+  formatNumberUk,
 } from "@sergeant/shared";
 
 import { Button } from "@/components/ui/Button";
@@ -123,7 +124,7 @@ export function GoalsStep({
                         )}
                       >
                         <Text className="text-sm font-medium text-fg">
-                          {preset.toLocaleString("uk-UA")}
+                          {formatNumberUk(preset)}
                           {s.unit ? ` ${s.unit}` : ""}
                         </Text>
                       </Pressable>
