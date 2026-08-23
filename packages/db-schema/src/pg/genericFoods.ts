@@ -89,5 +89,32 @@ export const genericFoods = pgTable(
       "generic_foods_name_norm_check",
       sql`length(btrim(${table.nameNorm})) > 0`,
     ),
+
+    /**
+     * AI-DANGER: `check-schema-drift.mjs` звіряє таблиці й колонки, але НЕ
+     * CHECK-обмеження — розбіжність між цим дзеркалом і міграцією 124 не
+     * помітить жоден гейт. Додаєш обмеження в SQL — додавай і сюди.
+     *
+     * Макроси тут NOT NULL, на відміну від каталогу: курований корпус без
+     * КБЖВ безглуздий, а зовнішнє джерело має право не знати. Тому й
+     * діапазони без `IS NULL OR` — крім `fiber` і `alcohol_g`, які
+     * необовʼязкові.
+     */
+    check(
+      "generic_foods_kcal_range_check",
+      sql`${table.kcal100g} >= 0 AND ${table.kcal100g} <= 1000`,
+    ),
+    check(
+      "generic_foods_macro_range_check",
+      sql`${table.protein100g} BETWEEN 0 AND 100
+      AND ${table.fat100g} BETWEEN 0 AND 100
+      AND ${table.carbs100g} BETWEEN 0 AND 100
+      AND (${table.fiber100g} IS NULL OR ${table.fiber100g} BETWEEN 0 AND 100)
+      AND (${table.alcoholG} IS NULL OR ${table.alcoholG} BETWEEN 0 AND 100)`,
+    ),
+    check(
+      "generic_foods_default_grams_check",
+      sql`${table.defaultGrams} > 0 AND ${table.defaultGrams} <= 10000`,
+    ),
   ],
 );
