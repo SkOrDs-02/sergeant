@@ -19,6 +19,17 @@ vi.mock("./productCatalog.js", () => ({
   upsertIntoCatalog: vi.fn(async () => undefined),
 }));
 
+/** Базова їжа без штрихкоду — те саме, окремим джерелом. */
+const searchGenericFoodsMock = vi.hoisted(() =>
+  vi.fn<(q: string, limit: number) => Promise<FoodSearchProduct[]>>(
+    async () => [],
+  ),
+);
+vi.mock("./genericFoods.js", () => ({
+  searchGenericFoods: searchGenericFoodsMock,
+  seedGenericFoods: vi.fn(async () => 0),
+}));
+
 import {
   stableId,
   hasErrorName,
@@ -769,5 +780,148 @@ describe("food-search — Tier-1 (власний каталог)", () => {
     const milk = products.filter((p) => p.name === "Молоко");
     expect(milk).toHaveLength(1);
     expect(milk[0]?.id).toBe("cat_off_4820000000001");
+  });
+});
+
+describe("food-search — базова їжа без штрихкоду", () => {
+  const origFetch = global.fetch;
+
+  const cucumber: FoodSearchProduct = {
+    id: "gen_ohirok",
+    name: "Огірок",
+    brand: null,
+    source: "usda",
+    per100: { kcal: 15, protein_g: 0.7, fat_g: 0.1, carbs_g: 3.6 },
+    defaultGrams: 100,
+  };
+
+  beforeEach(() => {
+    searchCatalogMock.mockReset();
+    searchCatalogMock.mockResolvedValue([]);
+    searchGenericFoodsMock.mockReset();
+    searchGenericFoodsMock.mockResolvedValue([]);
+    global.fetch = vi.fn();
+  });
+
+  afterEach(() => {
+    global.fetch = origFetch;
+    vi.restoreAllMocks();
+  });
+
+  function req(q: string, limit?: number): Request {
+    return {
+      query: limit == null ? { q } : { q, limit: String(limit) },
+    } as unknown as Request;
+  }
+
+  it("базова їжа йде ПЕРЕД брендованою карткою", async () => {
+    // На запит «огірок» людина хоче овоч, а не «Огірки консервовані
+    // Верес». Брендована картка релевантна тоді, коли шукають бренд —
+    // і тоді вона й так підніметься.
+    searchGenericFoodsMock.mockResolvedValue([cucumber]);
+    searchCatalogMock.mockResolvedValue([
+      {
+        id: "cat_off_482",
+        name: "Огірки консервовані",
+        brand: "Верес",
+        source: "off",
+        per100: { kcal: 11, protein_g: 0.8, fat_g: 0.1, carbs_g: 1.7 },
+        defaultGrams: 100,
+      },
+    ]);
+
+    const res = mockRes();
+    await handler(req("огірок", 2), res);
+
+    const found = (res.body as { products: FoodSearchProduct[] }).products;
+    expect(found[0]?.id).toBe("gen_ohirok");
+  });
+
+  it("власних результатів на повний ліміт достатньо — назовні не йдемо", async () => {
+    const fetchSpy = vi.spyOn(global, "fetch");
+    searchGenericFoodsMock.mockResolvedValue([cucumber]);
+    searchCatalogMock.mockResolvedValue([]);
+
+    const res = mockRes();
+    await handler(req("огірок", 1), res);
+
+    expect(res.statusCode).toBe(200);
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("два власні джерела питаються паралельно, не послідовно", async () => {
+    // Обидва локальні й незалежні; послідовний виклик подвоював би
+    // затримку пошуку ні за що.
+    let genericStarted = 0;
+    let catalogStarted = 0;
+    let order = 0;
+    searchGenericFoodsMock.mockImplementation(async () => {
+      genericStarted = ++order;
+      return [];
+    });
+    searchCatalogMock.mockImplementation(async () => {
+      catalogStarted = ++order;
+      return [];
+    });
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ products: [] }),
+    });
+
+    await handler(req("огірок", 10), mockRes());
+
+    // Обидва стартували до того, як бодай один завершився.
+    expect(genericStarted).toBeGreaterThan(0);
+    expect(catalogStarted).toBeGreaterThan(0);
+    expect(Math.abs(genericStarted - catalogStarted)).toBe(1);
+  });
+
+  it("падіння базової їжі не ламає пошук", async () => {
+    searchGenericFoodsMock.mockRejectedValue(new Error("relation missing"));
+    searchCatalogMock.mockResolvedValue([]);
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        products: [
+          {
+            code: "444",
+            product_name: "Огірок",
+            brands: null,
+            nutriments: {
+              "energy-kcal_100g": 15,
+              proteins_100g: 0.7,
+              fat_100g: 0.1,
+              carbohydrates_100g: 3.6,
+            },
+          },
+        ],
+      }),
+    });
+
+    const res = mockRes();
+    await handler(req("огірок", 10), res);
+
+    expect(res.statusCode).toBe(200);
+    expect(
+      (res.body as { products: unknown[] }).products.length,
+    ).toBeGreaterThan(0);
+  });
+
+  it("дубль між базовою їжею і каталогом не потрапляє двічі", async () => {
+    searchGenericFoodsMock.mockResolvedValue([cucumber]);
+    searchCatalogMock.mockResolvedValue([{ ...cucumber, id: "cat_off_999" }]);
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ products: [] }),
+    });
+
+    const res = mockRes();
+    await handler(req("огірок", 10), res);
+
+    const found = (res.body as { products: FoodSearchProduct[] }).products;
+    expect(found.filter((p) => p.name === "Огірок")).toHaveLength(1);
   });
 });

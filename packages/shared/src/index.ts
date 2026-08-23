@@ -7,6 +7,10 @@ export * from "./utils";
 // Pure types (currently empty barrel for future expansion)
 export * from "./types";
 
+// Курований корпус базової їжі без штрихкоду — спільне джерело правди
+// для серверного `generic_foods` і клієнтського офлайн-посіву.
+export * from "./data/genericFoods";
+
 // Shared, DOM-free constants (storage keys, etc.)
 export * from "./lib/storageKeys";
 export * from "./lib/nutritionPantryMode";
