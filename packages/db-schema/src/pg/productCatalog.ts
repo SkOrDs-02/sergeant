@@ -150,5 +150,37 @@ export const productCatalog = pgTable(
       "product_catalog_name_norm_check",
       sql`length(btrim(${table.nameNorm})) > 0`,
     ),
+
+    /**
+     * AI-DANGER: `check-schema-drift.mjs` звіряє таблиці й колонки, але НЕ
+     * CHECK-обмеження — тож розбіжність між цим дзеркалом і міграцією 123
+     * жоден гейт не побачить. Ціна мовчазної діри реальна: з дзеркала
+     * генерують DDL, і згенерована таблиця приймала б те, що жива база
+     * відхиляє. Додаєш обмеження в SQL — додавай і сюди, тим самим виразом.
+     *
+     * Ролі рознесені навмисно: CHECK — фізична неможливість (рядок не
+     * існує), `atwater_delta_kcal` — можливе-але-несходиме (рядок живе з
+     * позначкою). Стеля 1000 при фізичному максимумі 900 — запас на
+     * округлення джерелом; повне обґрунтування в шапці міграції.
+     */
+    check(
+      "product_catalog_kcal_range_check",
+      sql`${table.kcal100g} IS NULL OR (${table.kcal100g} >= 0 AND ${table.kcal100g} <= 1000)`,
+    ),
+    check(
+      "product_catalog_macro_range_check",
+      sql`(${table.protein100g} IS NULL OR (${table.protein100g} >= 0 AND ${table.protein100g} <= 100))
+      AND (${table.fat100g} IS NULL OR (${table.fat100g} >= 0 AND ${table.fat100g} <= 100))
+      AND (${table.carbs100g} IS NULL OR (${table.carbs100g} >= 0 AND ${table.carbs100g} <= 100))
+      AND (${table.fiber100g} IS NULL OR (${table.fiber100g} >= 0 AND ${table.fiber100g} <= 100))
+      AND (${table.sugars100g} IS NULL OR (${table.sugars100g} >= 0 AND ${table.sugars100g} <= 100))
+      AND (${table.saturatedFat100g} IS NULL OR (${table.saturatedFat100g} >= 0 AND ${table.saturatedFat100g} <= 100))
+      AND (${table.salt100g} IS NULL OR (${table.salt100g} >= 0 AND ${table.salt100g} <= 100))
+      AND (${table.alcohol100g} IS NULL OR (${table.alcohol100g} >= 0 AND ${table.alcohol100g} <= 100))`,
+    ),
+    check(
+      "product_catalog_serving_grams_check",
+      sql`${table.servingGrams} IS NULL OR (${table.servingGrams} > 0 AND ${table.servingGrams} <= 10000)`,
+    ),
   ],
 );

@@ -129,9 +129,26 @@ const num = (v) => {
   return Number.isFinite(n) ? n : null;
 };
 
-/** Сума за коефіцієнтами Атвотера — 4/9/4 ккал на грам. */
-const atwaterOf = (p, f, c) =>
-  p == null || f == null || c == null ? null : 4 * p + 9 * f + 4 * c;
+/**
+ * Сума за коефіцієнтами Атвотера — 4/9/4 ккал на грам плюс 7 за спирт.
+ *
+ * AI-DANGER: формула мусить збігатися з обчислюваною колонкою
+ * `atwater_delta_kcal` у міграції 123. Розбіжність не впаде ні тестом, ні
+ * лінтом — вона проявиться як зіпсовані дані: `repairKcal` нижче ділить
+ * калорійність на 4.184, коли та вчетверо більша за цю суму, тож
+ * занижений знаменник змушує ремонт спрацювати там, де ламати нема чого.
+ * Найгірше саме на алкоголі, де спирт дає більшу частину калорій:
+ * «10 ккал з макросів + 5 г спирту» — це 45 ккал, і джерело, яке чесно
+ * написало 45, отримало б 10.8 замість них.
+ *
+ * Спирт `null` рахуємо нулем — так само, як `COALESCE(alcohol_100g, 0)`
+ * у SQL: «спирту не вказали» для харчового продукту означає його
+ * відсутність, а не невідомість.
+ */
+const atwaterOf = (p, f, c, alcohol) =>
+  p == null || f == null || c == null
+    ? null
+    : 4 * p + 9 * f + 4 * c + 7 * (alcohol ?? 0);
 
 /**
  * Полагодити калорійність, у полі якої лежать кілоджоулі.
@@ -173,6 +190,7 @@ function toRow(r) {
   const protein = inRange(num(r.proteins_100g), 100);
   const fat = inRange(num(r.fat_100g), 100);
   const carbs = inRange(num(r.carbohydrates_100g), 100);
+  const alcohol = inRange(num(r.alcohol_100g), 100);
 
   // OFF тримає кілоджоулі в `energy_100g`; беремо їх, коли ккал не дали.
   let kcal = num(r["energy-kcal_100g"]);
@@ -181,7 +199,7 @@ function toRow(r) {
     if (kj != null) kcal = Math.round((kj / 4.184) * 10) / 10;
   }
 
-  const atwater = atwaterOf(protein, fat, carbs);
+  const atwater = atwaterOf(protein, fat, carbs, alcohol);
   const fixed = repairKcal(kcal, atwater);
   kcal = inRange(fixed.kcal, 1000);
 
@@ -202,7 +220,7 @@ function toRow(r) {
       inRange(num(r.sugars_100g), 100),
       inRange(num(r["saturated-fat_100g"]), 100),
       inRange(num(r.salt_100g), 100),
-      inRange(num(r.alcohol_100g), 100),
+      alcohol,
       String(r.serving_size || "").trim() || null,
       (() => {
         const g = num(r.serving_quantity);
