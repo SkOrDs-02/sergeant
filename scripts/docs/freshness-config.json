@@ -1,6 +1,7 @@
 {
   "$schema": "./freshness-config.schema.json",
   "_comment": "See scripts/docs/freshness-config.mjs for semantics. cadenceOverrides accepts exact paths AND globs; exact wins, then the longest matching glob, then defaultCadenceDays. Tiers exist because a flat cadence over ~400 docs is a review load nobody can carry — see docs/04-governance/governance/doc-freshness.md § Каденція.",
+  "_comment_excludes": "docs/today.md, docs/open-work.md і docs/STATUS.md — три артефакти ОДНОГО генератора (`pnpm docs:gen-daily`). Їхній заголовок штампує сам генератор, тож людині там нема чого валідувати. today.md висів у трекінгу до 2026-08-23 і давав вічний issue: генератор ставить `Next review` +7 днів, а `docs-daily-brief.yml` втратив `schedule:` 2026-07-09 (dca267eeb) — отже файл протухав через тиждень після кожного ручного прогону. Це й був issue #305.",
   "defaultCadenceDays": 90,
   "cadenceOverrides": {
     "docs/03-operations/observability/runbook.md": 60,
@@ -40,6 +41,7 @@
     "docs/90-work/initiatives/follow-ups.md",
     "docs/open-work.md",
     "docs/STATUS.md",
+    "docs/today.md",
     "docs/90-work/planning/model-eval-*.md",
     "docs/90-work/planning/vision-eval-*.md",
     "scripts/__tests__/fixtures/**",
