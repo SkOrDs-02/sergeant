@@ -65,6 +65,14 @@ export const productCatalog = pgTable(
     saturatedFat100g: real("saturated_fat_100g"),
     salt100g: real("salt_100g"),
 
+    /**
+     * Спирт, г/100 г. Існує заради воріт якості нижче, а не заради
+     * показу: етанол дає ~7 ккал/г і не є ні білком, ні жиром, ні
+     * вуглеводом, тож без нього формула Атвотера оголошує битим КОЖЕН
+     * алкогольний напій.
+     */
+    alcohol100g: real("alcohol_100g"),
+
     servingSize: text("serving_size"),
     servingGrams: real("serving_grams"),
 
@@ -100,7 +108,8 @@ export const productCatalog = pgTable(
       sql`kcal_100g::double precision
     - (4 * protein_100g::double precision
        + 9 * fat_100g::double precision
-       + 4 * carbs_100g::double precision)`,
+       + 4 * carbs_100g::double precision
+       + 7 * COALESCE(alcohol_100g, 0)::double precision)`,
     ),
 
     createdAt: timestamp("created_at", { withTimezone: true })
