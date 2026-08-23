@@ -1,6 +1,33 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { Request, Response } from "express";
-import handler, { __barcodeTestHooks } from "./barcode.js";
+import type { BarcodeProduct } from "@sergeant/shared/schemas";
+
+/**
+ * Каталог (Tier-1) мокається на рівні модуля: ці тести перевіряють
+ * КАСКАД, а не доступ до Postgres. Без мока кожен виклик хендлера
+ * ходив би у справжній `pg` і падав на відсутньому з'єднанні —
+ * тести лишались би зеленими (хендлер коректно деградує), але прогін
+ * тонув би в логах db_error і залежав від оточення.
+ *
+ * Дефолт — `null`, тобто «в каталозі нічого немає»: рівно те, що було
+ * до появи Tier-1, тож усі наявні сценарії каскаду читаються без змін.
+ */
+const lookupInCatalogMock = vi.hoisted(() =>
+  vi.fn<(barcode: string) => Promise<BarcodeProduct | null>>(async () => null),
+);
+const upsertIntoCatalogMock = vi.hoisted(() =>
+  vi.fn<(barcode: string, product: BarcodeProduct) => Promise<void>>(
+    async () => undefined,
+  ),
+);
+vi.mock("./productCatalog.js", () => ({
+  lookupInCatalog: lookupInCatalogMock,
+  upsertIntoCatalog: upsertIntoCatalogMock,
+}));
+
+const handlerModule = await import("./barcode.js");
+const handler = handlerModule.default;
+const { __barcodeTestHooks } = handlerModule;
 
 interface TestRes {
   statusCode: number;
@@ -614,5 +641,114 @@ describe("barcode handler", () => {
         __barcodeTestHooks().reset();
       }
     });
+  });
+});
+
+describe("barcode handler — Tier-1 (власний каталог)", () => {
+  beforeEach(() => {
+    __barcodeTestHooks().reset();
+    lookupInCatalogMock.mockReset();
+    lookupInCatalogMock.mockResolvedValue(null);
+    upsertIntoCatalogMock.mockReset();
+    upsertIntoCatalogMock.mockResolvedValue(undefined);
+    vi.restoreAllMocks();
+  });
+
+  const CATALOG_PRODUCT = {
+    name: "Молоко 2,6% Яготинське",
+    brand: "Яготинське",
+    kcal_100g: 53,
+    protein_100g: 2.8,
+    fat_100g: 2.6,
+    carbs_100g: 4.7,
+    servingSize: null,
+    servingGrams: null,
+    source: "off" as const,
+  };
+
+  it("hit у каталозі віддає продукт і НЕ чіпає жодного upstream", async () => {
+    // Головний сенс ярусу: квота USDA/UPCitemdb витрачається лише на
+    // товари, яких ми ще не знаємо.
+    const fetchSpy = vi.spyOn(global, "fetch");
+    lookupInCatalogMock.mockResolvedValue(CATALOG_PRODUCT);
+
+    const res = mockRes();
+    await handler(asReq({ barcode: "4823005203865" }), res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toEqual({ product: CATALOG_PRODUCT });
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("miss у каталозі пропускає запит далі в каскад", async () => {
+    lookupInCatalogMock.mockResolvedValue(null);
+    vi.spyOn(global, "fetch").mockResolvedValue(OFF_HIT as never);
+
+    const res = mockRes();
+    await handler(asReq({ barcode: "4820000000017" }), res);
+
+    expect(lookupInCatalogMock).toHaveBeenCalledWith("4820000000017");
+    expect(res.statusCode).toBe(200);
+  });
+
+  it("недоступний каталог НЕ ламає скан — деградуємо в upstream", async () => {
+    // Каталог — прискорювач, а не єдине джерело істини. Падіння Postgres
+    // має коштувати квоти, а не працездатності сканера.
+    lookupInCatalogMock.mockRejectedValue(new Error("connection refused"));
+    vi.spyOn(global, "fetch").mockResolvedValue(OFF_HIT as never);
+
+    const res = mockRes();
+    await handler(asReq({ barcode: "4820000000024" }), res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toHaveProperty("product");
+  });
+
+  it("hit від upstream пишеться назад у каталог", async () => {
+    lookupInCatalogMock.mockResolvedValue(null);
+    vi.spyOn(global, "fetch").mockResolvedValue(OFF_HIT as never);
+
+    const res = mockRes();
+    await handler(asReq({ barcode: "4820000000031" }), res);
+
+    expect(res.statusCode).toBe(200);
+    expect(upsertIntoCatalogMock).toHaveBeenCalledOnce();
+    expect(upsertIntoCatalogMock.mock.calls[0]?.[0]).toBe("4820000000031");
+  });
+
+  it("miss усіх джерел НЕ пише нічого в каталог", async () => {
+    lookupInCatalogMock.mockResolvedValue(null);
+    vi.spyOn(global, "fetch").mockResolvedValue(
+      mockFetchResponse({ body: { status: 0 } }) as never,
+    );
+
+    const res = mockRes();
+    await handler(asReq({ barcode: "4820000000048" }), res);
+
+    expect(res.statusCode).toBe(404);
+    expect(upsertIntoCatalogMock).not.toHaveBeenCalled();
+  });
+
+  it("in-memory кеш стоїть ПЕРЕД каталогом — другий скан не чіпає БД", async () => {
+    // Порядок ярусів: пам'ять → каталог → upstream. Інакше кожен
+    // повторний скан того самого товару давав би зайвий запит у Postgres.
+    lookupInCatalogMock.mockResolvedValue(CATALOG_PRODUCT);
+
+    await handler(asReq({ barcode: "4823005203865" }), mockRes());
+    expect(lookupInCatalogMock).toHaveBeenCalledOnce();
+
+    const res2 = mockRes();
+    await handler(asReq({ barcode: "4823005203865" }), res2);
+
+    expect(lookupInCatalogMock).toHaveBeenCalledOnce();
+    expect(res2.statusCode).toBe(200);
+  });
+
+  it("невалідний штрихкод відсікається до каталогу", async () => {
+    const res = mockRes();
+    await handler(asReq({ barcode: "abc" }), res);
+
+    expect(res.statusCode).toBe(400);
+    expect(lookupInCatalogMock).not.toHaveBeenCalled();
   });
 });
