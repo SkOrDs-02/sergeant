@@ -315,7 +315,17 @@ histogram_quantile(0.95, sum by (le, workflow_id) (rate(n8n_webhook_replay_durat
 | ----------------------- | ------- | -------------------- | ---------------------------------------------------------------------------- |
 | `barcode_lookups_total` | Counter | `source` · `outcome` | [barcode.ts:153](../../../apps/server/src/modules/nutrition/barcode.ts#L153) |
 
-`source`: `off` · `usda` · `upcitemdb`. `outcome`: `hit` · `miss` · `error`. Свідоме дублювання з `external_http_requests_total`. **Кардинальність**: **9**.
+`source`: `catalog` · `off` · `usda` · `upcitemdb`. `outcome`: `hit` · `miss` · `error`. Свідоме дублювання з `external_http_requests_total` — **окрім `catalog`**. **Кардинальність**: **12**.
+
+`catalog` — це власний `product_catalog` (Tier-1, міграція 123), а не зовнішній API, тому він навмисно **не** дублюється в `external_http_requests_total`: та метрика описує виходи за периметр до третіх сторін, і запит до власного Postgres зіпсував би і її сенс, і кардинальність.
+
+Саме цей ярус дає **hit-rate по ярусах**, який [дослідження баз штрихкодів](../../90-work/planning/barcode-database-research.md) § 4 називає метрикою для рішення «чи потрібен платний API»: скільки сканів закриває власна база, скільки — безкоштовний OFF, і скільки лишається непокритими.
+
+```promql
+# Частка сканів, яку закриває власний каталог (не витрачає квоту upstream-ів).
+sum(rate(barcode_lookups_total{source="catalog",outcome="hit"}[1h]))
+  / sum(rate(barcode_lookups_total{source="catalog"}[1h]))
+```
 
 ```promql
 sum by (source) (rate(barcode_lookups_total{outcome="hit"}[5m])) / sum by (source) (rate(barcode_lookups_total[5m]))
