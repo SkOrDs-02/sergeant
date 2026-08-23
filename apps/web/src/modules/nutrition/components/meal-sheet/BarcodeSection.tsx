@@ -8,6 +8,8 @@ import { Icon } from "@shared/components/ui/Icon";
 import { BarcodeLookupNotice } from "../BarcodeLookupNotice";
 import type { BarcodeLookupNotice as BarcodeLookupNoticeState } from "./useBarcodeLookup";
 
+const DEFAULT_ACTION_LABEL = "Сканувати";
+
 interface BarcodeSectionProps {
   barcodeStatus: string;
   setBarcodeStatus: Dispatch<SetStateAction<string>>;
@@ -16,6 +18,14 @@ interface BarcodeSectionProps {
   onRetryBarcodeLookup?: (() => void) | undefined;
   onUsePhotoForBarcode?: (() => void) | undefined;
   setScannerOpen: Dispatch<SetStateAction<boolean>>;
+  /**
+   * Підпис кнопки. Під вкладкою «Скан» сканер відкривається сам, тож там
+   * кнопка — це повтор, а не основна дія, і підпис має казати саме це.
+   * Пропонувати «Сканувати» людині, яка вже обрала «Скан» і дивиться в
+   * відкритий сканер, — та сама зайва дія, що й «Аналізувати» під уже
+   * запущеним автоаналізом фото.
+   */
+  actionLabel?: string;
 }
 
 export function BarcodeSection({
@@ -26,7 +36,15 @@ export function BarcodeSection({
   onRetryBarcodeLookup,
   onUsePhotoForBarcode,
   setScannerOpen,
+  actionLabel = DEFAULT_ACTION_LABEL,
 }: BarcodeSectionProps) {
+  // WCAG 2.5.3 Label in Name: доступна назва мусить МІСТИТИ видимий
+  // підпис, інакше голосове керування не викличе кнопку тим, що людина
+  // бачить. Типовий підпис короткий («Сканувати»), тож для нього лишаємо
+  // розгорнуту назву з контекстом; будь-який інший підпис стає назвою
+  // сам — «Сканувати штрихкод» його вже не містить.
+  const ariaLabel =
+    actionLabel === DEFAULT_ACTION_LABEL ? "Сканувати штрихкод" : actionLabel;
   return (
     <div className="min-w-0">
       <Button
@@ -38,7 +56,7 @@ export function BarcodeSection({
           onDismissBarcodeNotice?.();
           setScannerOpen(true);
         }}
-        aria-label="Сканувати штрихкод"
+        aria-label={ariaLabel}
       >
         <Icon
           name="barcode"
@@ -46,7 +64,7 @@ export function BarcodeSection({
           aria-hidden
           data-testid="barcode-action-icon"
         />
-        <span>Сканувати</span>
+        <span>{actionLabel}</span>
       </Button>
       {barcodeStatus && !barcodeNotice && (
         <div className="text-style-caption text-subtle mt-1">

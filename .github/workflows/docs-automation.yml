@@ -240,14 +240,38 @@ jobs:
         # the drift class where a doc accumulates multiple Last validated rows.
         run: node scripts/docs/check-freshness-single-marker.mjs
 
-      - name: Check tracked docs are within freshness cadence
-        # Network-free CI twin of the nightly freshness issue creator.
-        run: node scripts/docs/check-freshness.mjs --check-cadence
-
       - name: Check docs/04-governance/governance/freshness-dashboard.html is up to date
         # Committed dashboard ignores daily relative counters in --check mode,
         # but catches changed row membership and freshness header values.
         run: node scripts/docs/generate-freshness-dashboard.mjs --check
+
+  freshness-cadence:
+    # Окрема джоба навмисно. Доти цей крок стояв усередині `pnpm lint` і
+    # всередині джоби «Markdown link checker», а прострочений каденс —
+    # стан датовий і накопичувальний: він червонів сам по собі, без
+    # жодної зміни в коді, і глушив усе, що йшло ПІСЛЯ нього. У `check`
+    # це були typecheck, test, build і бандл-гейт `size-limit`, тобто
+    # найцінніші перевірки не виконувались взагалі; у docs-automation —
+    # перевірка дашборда свіжості.
+    #
+    # AGENTS.md § Performance budgets формулює це прямо: «гейт, що стоїть
+    # у кроках після потенційно червоного кроку, не є гейтом». Окрема
+    # джоба лишає каденсу всю його силу (він і далі блокує мердж), але
+    # забирає здатність приховувати чужі результати.
+    name: Docs freshness cadence
+    runs-on: ubuntu-latest
+    steps:
+      # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      # actions/setup-node v6.4.0 (SHA-pinned for supply-chain hardening)
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: "22"
+
+      - name: Check tracked docs are within freshness cadence
+        # Network-free CI twin of the nightly freshness issue creator.
+        run: node scripts/docs/check-freshness.mjs --check-cadence
 
   pr-body-validator:
     name: PR body validator
