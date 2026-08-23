@@ -199,6 +199,7 @@ function toRow(r) {
       inRange(num(r.sugars_100g), 100),
       inRange(num(r["saturated-fat_100g"]), 100),
       inRange(num(r.salt_100g), 100),
+      inRange(num(r.alcohol_100g), 100),
       String(r.serving_size || "").trim() || null,
       (() => {
         const g = num(r.serving_quantity);
@@ -232,6 +233,7 @@ const COLUMNS = [
   "sugars_100g",
   "saturated_fat_100g",
   "salt_100g",
+  "alcohol_100g",
   "serving_size",
   "serving_grams",
   "ingredients",
