@@ -32,4 +32,38 @@ describe("BarcodeSection", () => {
     expect(setBarcodeStatus).toHaveBeenCalledWith("");
     expect(setScannerOpen).toHaveBeenCalledWith(true);
   });
+
+  it("типовий підпис кнопки — «Сканувати»", () => {
+    render(
+      <BarcodeSection
+        barcodeStatus=""
+        setBarcodeStatus={vi.fn()}
+        setScannerOpen={vi.fn()}
+      />,
+    );
+    expect(
+      screen.getByRole("button", { name: "Сканувати штрихкод" }),
+    ).toHaveTextContent("Сканувати");
+  });
+
+  it("під вкладкою «Скан» кнопка стає повтором", () => {
+    // Там сканер відкривається сам, тож кнопка — запасний вихід після
+    // невдалого кадру, і підпис має казати саме це.
+    render(
+      <BarcodeSection
+        barcodeStatus=""
+        setBarcodeStatus={vi.fn()}
+        setScannerOpen={vi.fn()}
+        actionLabel="Сканувати ще раз"
+      />,
+    );
+    // WCAG 2.5.3: голосове керування викликає кнопку тим, що видно, тож
+    // доступна назва мусить містити видимий підпис, а не лишатись сталою.
+    expect(
+      screen.queryByRole("button", { name: "Сканувати штрихкод" }),
+    ).toBeNull();
+    expect(
+      screen.getByRole("button", { name: "Сканувати ще раз" }),
+    ).toHaveTextContent("Сканувати ще раз");
+  });
 });

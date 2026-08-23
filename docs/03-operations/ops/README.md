@@ -1,6 +1,6 @@
 # Ops
 
-> **Last touched:** 2026-05-13 by Devin. **Next review:** 2026-08-19.
+> **Last touched:** 2026-08-22 by @claude. **Next review:** 2026-11-22.
 > **Status:** Active
 
 Operational maintainer-runbook-и для recurring-чергових процесів (dependency
@@ -9,9 +9,10 @@ hygiene, scheduled scans, weekly housekeeping). Доповнюють incident-fl
 
 ## Документи
 
-| Документ                       | Призначення                                                                                      |
-| ------------------------------ | ------------------------------------------------------------------------------------------------ |
-| [`renovate.md`](./renovate.md) | Понеділкова рутина review-у Renovate-PR-ів, monthly hygiene, Mend downtime escalation. ADR-0044. |
+| Документ                                             | Призначення                                                                                         |
+| ---------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| [`renovate.md`](./renovate.md)                       | Понеділкова рутина review-у Renovate-PR-ів, monthly hygiene, Mend downtime escalation. ADR-0044.    |
+| [`docker-image-policy.md`](./docker-image-policy.md) | Політика runtime-образу Hub API (`Dockerfile.api`): distroless-база, CVE-бюджет Trivy, healthcheck. |
 
 ## Ops vs runbooks vs playbooks
 
