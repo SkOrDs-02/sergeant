@@ -58,3 +58,4 @@ export {
   finykNetworthHistory,
   finykPrefs,
 } from "./finyk.js";
+export { productCatalog } from "./productCatalog.js";
