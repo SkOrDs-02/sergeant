@@ -11,8 +11,11 @@
  *
  * Схема і обґрунтування колонок — `apps/server/src/migrations/123_product_catalog.sql`.
  */
-import type { BarcodeProduct } from "@sergeant/shared/schemas";
-import { buildProductSearchKey } from "@sergeant/shared";
+import type {
+  BarcodeProduct,
+  FoodSearchProduct,
+} from "@sergeant/shared/schemas";
+import { buildProductSearchKey, normalizeProductText } from "@sergeant/shared";
 import { query } from "../../db.js";
 import { logger } from "../../obs/logger.js";
 
@@ -126,6 +129,141 @@ export async function lookupInCatalog(
     // контрактну трійцю (Hard Rule #3) заради нічого.
     source: row.source as BarcodeProduct["source"],
   };
+}
+
+// ── Пошук їжі текстом ───────────────────────────────────────────────────────
+
+/**
+ * Джерела, придатні для текстового пошуку.
+ *
+ * `upcitemdb` свідомо відсутній, і це не обмеження контракту, а суть
+ * джерела: воно віддає назву й бренд без нутрієнтів (`partial: true`).
+ * У видачі пошуку така картка марна — людина обирає їжу, щоб її
+ * залогувати, а без КБЖВ логувати нема чого. Заразом це рівно ті два
+ * значення, які приймає `FoodSearchProductSchema.source`, тож розширювати
+ * контракт не доводиться.
+ */
+const SEARCHABLE_SOURCES: readonly FoodSearchProduct["source"][] = [
+  "off",
+  "usda",
+];
+
+/** Скільки взяти з каталогу понад запитаний ліміт — запас на дедуп із upstream. */
+const CATALOG_SEARCH_OVERFETCH = 5;
+
+/**
+ * Екранувати спецсимволи `LIKE` у користувацькому вводі.
+ *
+ * Без цього запит «100%» перетворював би `%` на вайлдкард і повертав
+ * половину каталогу, а `_` матчив би будь-який символ. `ESCAPE '\'` у
+ * самому запиті замикає домовленість.
+ */
+function escapeLike(s: string): string {
+  return s.replace(/[\\%_]/g, (m) => `\\${m}`);
+}
+
+interface CatalogSearchRow {
+  barcode: string;
+  source: string;
+  name: string;
+  brand: string | null;
+  kcal_100g: number;
+  protein_100g: number;
+  fat_100g: number;
+  carbs_100g: number;
+  serving_grams: number | null;
+}
+
+/**
+ * Знайти товари в каталозі за текстом.
+ *
+ * Двоканальний матч, обидва канали йдуть через той самий GIN-trigram
+ * індекс на `name_norm`:
+ *
+ *   * підрядок (`LIKE '%…%'`) — те, чого людина очікує від пошукового
+ *     поля: «молоко» має знайти «Молоко 2,6% Яготинське»;
+ *   * схожість слова (`<%`) — рятує від друкарських помилок, які підрядок
+ *     не пробачає.
+ *
+ * Точні входження ранжуються вище за схожі — інакше «молоко» віддавало б
+ * спершу «молочний коктейль» із високою схожістю, а сам продукт нижче.
+ *
+ * AI-CONTEXT: саме `<%` (`word_similarity`), а не `%` (`similarity`).
+ * `similarity` рахує схожість по ЦІЛОМУ рядку, тож короткий запит тоне у
+ * довгій назві товару. Заміряно на живих даних:
+ *
+ *     similarity('малоко', 'молоко 2.5% ультрапастеризоване бурьонка') = 0.093
+ *     word_similarity(те саме)                                        = 0.429
+ *
+ * `word_similarity` шукає найкращий збіг серед СЛІВ рядка — рівно та
+ * семантика, яка потрібна пошуковому полю.
+ *
+ * Поріг лишається дефолтним (0.6) НАВМИСНО. Знизити його можна лише через
+ * `SET pg_trgm.word_similarity_threshold`, а це сесійна змінна: під
+ * пулером у transaction-режимі вона протекла б на чужі запити тієї самої
+ * фізичної конекції. Практичний наслідок: легкі помилки каталог ловить
+ * («яготінське» → «Яготинський», «сметанна» → «Сметана»), а сильно
+ * покручений запит дає мало результатів і природно провалюється в
+ * upstream — тобто в задуманий запобіжник, а не в порожній екран.
+ *
+ * Повертає лише рядки з ПОВНИМИ макросами: картка без КБЖВ у видачі
+ * пошуку не має сенсу, бо її нема чим залогувати. Той самий Atwater-гейт,
+ * що й у `lookupInCatalog` — биту картку не показуємо й тут.
+ */
+export async function searchCatalog(
+  rawQuery: string,
+  limit: number,
+): Promise<FoodSearchProduct[]> {
+  const norm = normalizeProductText(rawQuery);
+  if (norm.length < 2) return [];
+
+  const { rows } = await query<CatalogSearchRow>(
+    `SELECT barcode, source, name, brand,
+            kcal_100g, protein_100g, fat_100g, carbs_100g, serving_grams
+       FROM product_catalog
+      WHERE source = ANY($2::text[])
+        AND kcal_100g IS NOT NULL
+        AND protein_100g IS NOT NULL
+        AND fat_100g IS NOT NULL
+        AND carbs_100g IS NOT NULL
+        AND abs(atwater_delta_kcal) <= GREATEST(
+              $3::double precision,
+              $4::double precision * abs(kcal_100g - atwater_delta_kcal)
+            )
+        AND (name_norm LIKE $5 ESCAPE '\\' OR $1 <% name_norm)
+      ORDER BY (name_norm LIKE $5 ESCAPE '\\') DESC,
+               word_similarity($1, name_norm) DESC,
+               length(name_norm)
+      LIMIT $6`,
+    [
+      norm,
+      [...SEARCHABLE_SOURCES],
+      ATWATER_ABS_TOLERANCE_KCAL,
+      ATWATER_REL_TOLERANCE,
+      `%${escapeLike(norm)}%`,
+      limit + CATALOG_SEARCH_OVERFETCH,
+    ],
+    { op: "product_catalog.search" },
+  );
+
+  return rows.map((row) => ({
+    // Стабільний id: та сама картка дає той самий ключ між запитами, тож
+    // React не перебудовує список і клієнтський дедуп працює.
+    id: `cat_${row.source}_${row.barcode}`,
+    name: row.name,
+    brand: row.brand,
+    source: row.source as FoodSearchProduct["source"],
+    per100: {
+      kcal: row.kcal_100g,
+      protein_g: row.protein_100g,
+      fat_g: row.fat_100g,
+      carbs_g: row.carbs_100g,
+    },
+    // 100 г — той самий дефолт, що й у нормалізаторів upstream-ів:
+    // макроси зберігаються на 100 г, тож без явної порції це нейтральний
+    // вибір, який не спотворює перерахунок.
+    defaultGrams: row.serving_grams ?? 100,
+  }));
 }
 
 /** Значення поза фізичними межами БД відкидаємо ПОЛЕМ, не рядком. */

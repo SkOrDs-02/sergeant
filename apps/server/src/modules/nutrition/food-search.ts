@@ -13,6 +13,8 @@ import {
   type USDASearchFood,
 } from "../../lib/normalizers/index.js";
 import { NUTRITION_AI_TIMEOUTS_MS } from "./timeouts.js";
+import { logger } from "../../obs/logger.js";
+import { searchCatalog } from "./productCatalog.js";
 
 const OFF_SEARCH = "https://world.openfoodfacts.org/api/v2/search";
 const OFF_FIELDS =
@@ -119,6 +121,36 @@ export default async function handler(
 
   const signal = AbortSignal.timeout(NUTRITION_AI_TIMEOUTS_MS.foodSearch);
 
+  // ── Tier-1: власний каталог ───────────────────────────────────────────────
+  //
+  // Той самий ярус, що й у lookup-у штрихкодів, з однією відмінністю: тут
+  // hit НЕ завжди зупиняє каскад. Скан штрихкоду має рівно одну правильну
+  // відповідь, а пошук — тим кращий, чим більше релевантних варіантів.
+  // Тому назовні не йдемо лише тоді, коли каталог сам набрав повний ліміт:
+  // це і є найчастіший випадок («молоко», «хліб», «яйця»), і саме там
+  // економія квоти має значення.
+  //
+  // Помилка БД не фатальна, як і в штрихкодах: каталог прискорює, а не
+  // замінює зовнішні джерела.
+  let catalogProducts: NormalizedSearchProduct[] = [];
+  try {
+    catalogProducts = await searchCatalog(query, limit);
+  } catch (e) {
+    logger.warn(
+      { err: e instanceof Error ? e.message : String(e) },
+      "product_catalog search failed, falling through to upstreams",
+    );
+  }
+
+  if (catalogProducts.length >= limit) {
+    res.status(200).json(
+      FoodSearchSuccessSchema.parse({
+        products: catalogProducts.slice(0, limit),
+      }),
+    );
+    return;
+  }
+
   try {
     const enTerm = translateFirstToken(query);
 
@@ -140,8 +172,8 @@ export default async function handler(
       .map((p) => normalizeUSDAProduct(p))
       .filter((p): p is NormalizedSearchProduct => p != null);
 
-    // OFF (з українськими назвами) йде першим, USDA — як fallback
-    const allProducts: NormalizedSearchProduct[] = [
+    // OFF (з українськими назвами) йде першим, USDA — як fallback.
+    const upstreamProducts: NormalizedSearchProduct[] = [
       ...offProducts,
       ...usdaProducts,
     ];
@@ -154,16 +186,34 @@ export default async function handler(
     const allTokens = [...qTokens, ...enTokens];
 
     const seen = new Set<string>();
-    const products = allProducts
-      .filter((p) => {
-        const key = `${(p.name || "").toLowerCase()}|${(p.brand || "").toLowerCase()}`;
-        if (seen.has(key)) return false;
-        seen.add(key);
-        if (!allTokens.length) return true;
-        const n = (p.name || "").toLowerCase();
-        return allTokens.some((t) => n.includes(t));
-      })
-      .slice(0, limit);
+    const keyOf = (p: NormalizedSearchProduct) =>
+      `${(p.name || "").toLowerCase()}|${(p.brand || "").toLowerCase()}`;
+
+    // AI-CONTEXT: токен-фільтр застосовується ЛИШЕ до upstream-результатів.
+    // Каталог уже відібрав релевантне в самій БД, причому двома каналами —
+    // підрядком і trigram-схожістю. Прогнати його через `includes(token)`
+    // означало б викинути саме те, заради чого схожість і потрібна: на
+    // запит «малоко» каталог знаходить «Молоко…», але буквального токена
+    // «малоко» в назві немає, і фільтр мовчки з'їв би влучний результат.
+    const catalogFirst = catalogProducts.filter((p) => {
+      const key = keyOf(p);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    const upstreamFiltered = upstreamProducts.filter((p) => {
+      const key = keyOf(p);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      if (!allTokens.length) return true;
+      const n = (p.name || "").toLowerCase();
+      return allTokens.some((t) => n.includes(t));
+    });
+
+    // Каталог попереду: це вже перевірені воротами Атвотера картки, тоді
+    // як upstream віддає сире.
+    const products = [...catalogFirst, ...upstreamFiltered].slice(0, limit);
 
     res.status(200).json(FoodSearchSuccessSchema.parse({ products }));
   } catch (e: unknown) {

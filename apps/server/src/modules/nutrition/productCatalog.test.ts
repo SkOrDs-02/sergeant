@@ -8,7 +8,7 @@ vi.mock("../../obs/logger.js", () => ({
   logger: { warn: warnMock, info: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }));
 
-const { lookupInCatalog, upsertIntoCatalog } =
+const { lookupInCatalog, upsertIntoCatalog, searchCatalog } =
   await import("./productCatalog.js");
 
 function catalogRow(over: Record<string, unknown> = {}) {
@@ -183,6 +183,130 @@ describe("upsertIntoCatalog", () => {
 
   it("не пише продукт без назви", async () => {
     await upsertIntoCatalog("4823005203865", { ...product, name: "   " });
+    expect(queryMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("searchCatalog", () => {
+  function searchRow(over: Record<string, unknown> = {}) {
+    return {
+      barcode: "4823005203865",
+      source: "off",
+      name: "Молоко 2,6% Яготинське",
+      brand: "Яготинське",
+      kcal_100g: 53,
+      protein_100g: 2.8,
+      fat_100g: 2.6,
+      carbs_100g: 4.7,
+      serving_grams: null,
+      ...over,
+    };
+  }
+
+  it("віддає результат у формі FoodSearchProduct", async () => {
+    queryMock.mockResolvedValue({ rows: [searchRow()] });
+
+    const found = await searchCatalog("молоко", 10);
+
+    expect(found).toEqual([
+      {
+        id: "cat_off_4823005203865",
+        name: "Молоко 2,6% Яготинське",
+        brand: "Яготинське",
+        source: "off",
+        per100: { kcal: 53, protein_g: 2.8, fat_g: 2.6, carbs_g: 4.7 },
+        defaultGrams: 100,
+      },
+    ]);
+  });
+
+  it("id стабільний між запитами — інакше React перебудовує список", async () => {
+    queryMock.mockResolvedValue({ rows: [searchRow()] });
+    const first = await searchCatalog("молоко", 10);
+    queryMock.mockResolvedValue({ rows: [searchRow()] });
+    const second = await searchCatalog("молоко", 10);
+
+    expect(first[0]?.id).toBe(second[0]?.id);
+  });
+
+  it("порція з джерела перемагає дефолт у 100 г", async () => {
+    queryMock.mockResolvedValue({ rows: [searchRow({ serving_grams: 250 })] });
+    const found = await searchCatalog("молоко", 10);
+    expect(found[0]?.defaultGrams).toBe(250);
+  });
+
+  it("нормалізує запит тим самим ключем, що й запис", async () => {
+    // Інакше пошук шукав би «Молоко» у полі, де лежить «молоко».
+    queryMock.mockResolvedValue({ rows: [] });
+    await searchCatalog("  МОЛОКО   Яготинське ", 10);
+
+    const params = queryMock.mock.calls[0]?.[1] as unknown[];
+    expect(params[0]).toBe("молоко яготинське");
+  });
+
+  it("екранує спецсимволи LIKE у вводі користувача", async () => {
+    // Без цього запит «100%» став би вайлдкардом: на живих даних це 43
+    // рядки замість 21, тобто вдвічі більше сміття у видачі.
+    queryMock.mockResolvedValue({ rows: [] });
+    await searchCatalog("100% сік_", 10);
+
+    const params = queryMock.mock.calls[0]?.[1] as unknown[];
+    expect(params[4]).toBe("%100\\% сік\\_%");
+  });
+
+  it("бере із запасом понад ліміт — на дедуп із upstream", async () => {
+    queryMock.mockResolvedValue({ rows: [] });
+    await searchCatalog("молоко", 10);
+
+    const params = queryMock.mock.calls[0]?.[1] as unknown[];
+    expect(params[5]).toBeGreaterThan(10);
+  });
+
+  it("шукає лише серед джерел із нутрієнтами", async () => {
+    // upcitemdb віддає назву без КБЖВ — у видачі пошуку така картка марна.
+    queryMock.mockResolvedValue({ rows: [] });
+    await searchCatalog("молоко", 10);
+
+    const params = queryMock.mock.calls[0]?.[1] as unknown[];
+    expect(params[1]).toEqual(["off", "usda"]);
+  });
+
+  it("вимагає повних макросів і застосовує ворота Атвотера", async () => {
+    queryMock.mockResolvedValue({ rows: [] });
+    await searchCatalog("пепсі", 10);
+
+    const sql = String(queryMock.mock.calls[0]?.[0]);
+    expect(sql).toContain("kcal_100g IS NOT NULL");
+    expect(sql).toContain("carbs_100g IS NOT NULL");
+    expect(sql).toContain("atwater_delta_kcal");
+  });
+
+  it("матчить двома каналами: підрядком і схожістю слова", async () => {
+    queryMock.mockResolvedValue({ rows: [] });
+    await searchCatalog("молоко", 10);
+
+    const sql = String(queryMock.mock.calls[0]?.[0]);
+    expect(sql).toContain("LIKE $5 ESCAPE");
+    expect(sql).toContain("$1 <% name_norm");
+    // word_similarity, а не similarity: короткий запит тоне у довгій назві
+    // (заміряно: 0.093 проти 0.429 на тому самому рядку).
+    expect(sql).toContain("word_similarity($1, name_norm)");
+  });
+
+  it("точні входження ранжуються вище за схожі", async () => {
+    queryMock.mockResolvedValue({ rows: [] });
+    await searchCatalog("молоко", 10);
+
+    const sql = String(queryMock.mock.calls[0]?.[0]);
+    const orderBy = sql.slice(sql.indexOf("ORDER BY"));
+    expect(orderBy.indexOf("LIKE")).toBeLessThan(
+      orderBy.indexOf("word_similarity"),
+    );
+  });
+
+  it("надто короткий запит не йде в БД взагалі", async () => {
+    expect(await searchCatalog("м", 10)).toEqual([]);
+    expect(await searchCatalog("  ", 10)).toEqual([]);
     expect(queryMock).not.toHaveBeenCalled();
   });
 });
