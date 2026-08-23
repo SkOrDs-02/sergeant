@@ -7,16 +7,17 @@
  * генерує касовий термінал конкретної мережі, тож у глобальних базах
  * його немає й ніколи не буде. Єдиний шлях — знайти базову їжу НАЗВОЮ.
  *
- * Дані — `GENERIC_FOODS` із `@sergeant/shared`: одне джерело правди на
- * сервер і клієнт. Схема — міграція 124.
+ * Дані — `GENERIC_FOODS` із `@sergeant/shared/data/genericFoods`: одне
+ * джерело правди на сервер і клієнт. Схема — міграція 124.
  */
 import type { FoodSearchProduct } from "@sergeant/shared/schemas";
+import { buildProductSearchKey, normalizeProductText } from "@sergeant/shared";
+// Підпаточний імпорт, не барель: корпус навмисно не реекспортується з
+// `@sergeant/shared` — див. AI-DANGER у `packages/shared/src/index.ts`.
 import {
   GENERIC_FOODS,
-  buildProductSearchKey,
-  normalizeProductText,
   type GenericFood,
-} from "@sergeant/shared";
+} from "@sergeant/shared/data/genericFoods";
 import { query } from "../../db.js";
 import { logger } from "../../obs/logger.js";
 

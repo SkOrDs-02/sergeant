@@ -7,9 +7,13 @@ export * from "./utils";
 // Pure types (currently empty barrel for future expansion)
 export * from "./types";
 
-// Курований корпус базової їжі без штрихкоду — спільне джерело правди
-// для серверного `generic_foods` і клієнтського офлайн-посіву.
-export * from "./data/genericFoods";
+// AI-DANGER: корпус базової їжі (`GENERIC_FOODS`, ~390 позицій) свідомо
+// НЕ реекспортується з цього барелю, хоча місце для нього тут напрошується.
+// `apps/web` імпортує `@sergeant/shared` у десятках місць на критичному
+// шляху, тож реекспорт масивних даних звідси затягує їх в eager-чанк — а
+// той гейтиться жорстко (≤ 280 kB brotli, блокуючий крок CI). Споживачі
+// беруть корпус підпаточним імпортом `@sergeant/shared/data/genericFoods`:
+// він лишається окремим модулем і не тягне за собою решту барелю.
 
 // Shared, DOM-free constants (storage keys, etc.)
 export * from "./lib/storageKeys";
