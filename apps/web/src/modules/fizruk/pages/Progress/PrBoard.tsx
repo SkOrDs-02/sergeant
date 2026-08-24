@@ -9,6 +9,7 @@ import { EmptyState } from "@shared/components/ui/EmptyState";
 import { messages } from "@shared/i18n/uk";
 import { Icon } from "@shared/components/ui/Icon";
 import { ReturnScale } from "./ReturnScale";
+import { fmtLoose } from "../../lib/numberFmt";
 
 export interface PrEntry {
   id: string;
@@ -46,7 +47,18 @@ interface PrBoardProps {
   prs: readonly PrEntry[];
   prFilter: string;
   onPrFilterChange: (next: string) => void;
-  musclesUk: Record<string, string> | undefined;
+  /**
+   * Українські назви PRIMARY-ГРУП (`FizrukData.PRIMARY_GROUPS_UK`), не
+   * окремих мʼязів.
+   *
+   * AI-DANGER: до 2026-08-24 сюди приходив `musclesUk`, і збігалось воно
+   * лише випадково — `quadriceps`/`biceps`/`calves` є в обох мапах, а
+   * `chest`/`back`/`shoulders`/`core`/`glutes` — тільки в груповій. Тому
+   * поруч із локалізованим «Квадрицепс» на фільтрі стояв сирий `chest`
+   * (браузерне QA 2026-08-23). Пропс перейменовано навмисно: щоб наступний
+   * виклик не міг тихо підставити не ту мапу.
+   */
+  primaryGroupsUk: Record<string, string> | undefined;
   onSelect: (id: string) => void;
 }
 
@@ -59,7 +71,7 @@ export function PrBoard({
   prs,
   prFilter,
   onPrFilterChange,
-  musclesUk,
+  primaryGroupsUk,
   onSelect,
 }: PrBoardProps) {
   const muscleGroups = [
@@ -112,7 +124,7 @@ export function PrBoard({
                   : "bg-panel border-line text-subtle hover:text-text",
               )}
             >
-              {musclesUk?.[g] || g}
+              {primaryGroupsUk?.[g] || g}
             </button>
           ))}
         </div>
@@ -170,7 +182,8 @@ export function PrBoard({
                 */}
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-0.5 min-w-0">
                   <span className="text-style-caption text-muted tabular-nums">
-                    {p.weightKg ?? 0} {messages.fizruk.kgUnit} × {p.reps ?? 0}
+                    {fmtLoose(p.weightKg ?? 0)} {messages.fizruk.kgUnit} ×{" "}
+                    {p.reps ?? 0}
                   </span>
                   {p.at && (
                     <span className="text-style-caption text-muted">

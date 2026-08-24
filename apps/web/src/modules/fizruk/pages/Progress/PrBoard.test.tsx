@@ -45,7 +45,7 @@ describe("PrBoard", () => {
         prs={PRS}
         prFilter="all"
         onPrFilterChange={vi.fn()}
-        musclesUk={{ chest: "Груди", legs: "Ноги" }}
+        primaryGroupsUk={{ chest: "Груди", legs: "Ноги" }}
         onSelect={vi.fn()}
       />,
     );
@@ -60,7 +60,7 @@ describe("PrBoard", () => {
         prs={PRS}
         prFilter="chest"
         onPrFilterChange={vi.fn()}
-        musclesUk={{ chest: "Груди", legs: "Ноги" }}
+        primaryGroupsUk={{ chest: "Груди", legs: "Ноги" }}
         onSelect={vi.fn()}
       />,
     );
@@ -74,7 +74,7 @@ describe("PrBoard", () => {
         prs={PRS}
         prFilter="all"
         onPrFilterChange={vi.fn()}
-        musclesUk={{ chest: "Груди", legs: "Ноги" }}
+        primaryGroupsUk={{ chest: "Груди", legs: "Ноги" }}
         onSelect={vi.fn()}
       />,
     );
@@ -90,7 +90,7 @@ describe("PrBoard", () => {
         prs={PRS}
         prFilter="all"
         onPrFilterChange={onPrFilterChange}
-        musclesUk={{ chest: "Груди", legs: "Ноги" }}
+        primaryGroupsUk={{ chest: "Груди", legs: "Ноги" }}
         onSelect={vi.fn()}
       />,
     );
@@ -105,7 +105,7 @@ describe("PrBoard", () => {
         prs={PRS}
         prFilter="all"
         onPrFilterChange={vi.fn()}
-        musclesUk={{}}
+        primaryGroupsUk={{}}
         onSelect={onSelect}
       />,
     );
@@ -119,7 +119,7 @@ describe("PrBoard", () => {
         prs={[]}
         prFilter="all"
         onPrFilterChange={vi.fn()}
-        musclesUk={{}}
+        primaryGroupsUk={{}}
         onSelect={vi.fn()}
       />,
     );
@@ -132,7 +132,7 @@ describe("PrBoard", () => {
         prs={PRS}
         prFilter="back"
         onPrFilterChange={vi.fn()}
-        musclesUk={{ chest: "Груди", legs: "Ноги" }}
+        primaryGroupsUk={{ chest: "Груди", legs: "Ноги" }}
         onSelect={vi.fn()}
       />,
     );
@@ -156,7 +156,7 @@ describe("PrBoard — регрес і застарілий рекорд (кан�
         ]}
         prFilter="all"
         onPrFilterChange={vi.fn()}
-        musclesUk={{}}
+        primaryGroupsUk={{}}
         onSelect={vi.fn()}
       />,
     );
@@ -170,7 +170,7 @@ describe("PrBoard — регрес і застарілий рекорд (кан�
         prs={[PRS[0]!]}
         prFilter="all"
         onPrFilterChange={vi.fn()}
-        musclesUk={{}}
+        primaryGroupsUk={{}}
         onSelect={vi.fn()}
       />,
     );

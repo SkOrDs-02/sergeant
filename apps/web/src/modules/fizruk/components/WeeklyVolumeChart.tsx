@@ -297,8 +297,15 @@ export function WeeklyVolumeChart({
   );
 }
 
+/**
+ * Підпис осі Y. Англійське «2.0k» (і крапка, і латинська «k») стояло
+ * посеред україномовного екрана — браузерне QA 2026-08-23. Скорочення
+ * українське, роздільник — із єдиного форматера продукту.
+ */
 function formatYAxis(kg: number) {
   const n = Number(kg) || 0;
-  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
-  return String(Math.round(n));
+  if (n >= 1000) {
+    return `${formatNumberUk(n / 1000, { maximumFractionDigits: 1 })} тис.`;
+  }
+  return formatNumberUk(Math.round(n));
 }

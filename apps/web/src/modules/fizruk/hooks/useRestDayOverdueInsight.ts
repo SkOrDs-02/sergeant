@@ -12,6 +12,7 @@
 
 import { useMemo } from "react";
 import { pluralDays } from "@sergeant/shared";
+import { wholeDaysSince } from "@shared/lib/time/wholeDaysSince";
 import type { Workout } from "@sergeant/fizruk-domain/domain";
 import type { Insight } from "@shared/lib/insights/types";
 
@@ -19,11 +20,15 @@ import type { Insight } from "@shared/lib/insights/types";
 const REST_DAY_THRESHOLD = 3;
 
 /**
- * Returns the number of whole calendar days between the most-recent
- * completed workout's `endedAt` timestamp and now. Computed using local
- * time so the day boundary follows the device clock (Europe/Kyiv for
- * most users — satisfies the Hard Rule on day boundaries for client-only
- * detection; server-authoritative streaks use a dedicated domain fn).
+ * Скільки ЦІЛИХ календарних діб минуло від останнього завершеного
+ * тренування.
+ *
+ * AI-CONTEXT: власна копія цієї арифметики вже розійшлась із рушієм
+ * рекомендацій — на одному екрані стояли «15 днів» і «16 днів» для тієї
+ * самої паузи (browser QA 2026-08-23). Тому обчислення живе в спільному
+ * `wholeDaysSince`, а тут лишається тільки вибір моменту: найпізніший
+ * `endedAt`. Межа доби — годинник ПРИСТРОЮ (ADR-0078): це клієнтська
+ * re-engagement-евристика, не серверний період.
  */
 function daysSinceLastWorkout(workouts: readonly Workout[]): number {
   let latestMs = -Infinity;
@@ -33,19 +38,7 @@ function daysSinceLastWorkout(workouts: readonly Workout[]): number {
     if (Number.isFinite(ms) && ms > latestMs) latestMs = ms;
   }
   if (!Number.isFinite(latestMs)) return Infinity;
-
-  // Truncate both sides to local-midnight so partial days don't inflate
-  // the count (e.g. finished at 23:55 → next day at 00:05 ≠ 1 full day).
-  // Intentionally the device-local instant: this is a client-only
-  // re-engagement heuristic whose day boundary should follow the user's
-  // own clock (see the function docblock), not the Kyiv server anchor.
-  // eslint-disable-next-line no-restricted-syntax -- device-local day boundary by design
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
-  const lastStart = new Date(latestMs);
-  lastStart.setHours(0, 0, 0, 0);
-  const diffMs = todayStart.getTime() - lastStart.getTime();
-  return Math.floor(diffMs / (24 * 60 * 60 * 1000));
+  return wholeDaysSince(latestMs);
 }
 
 export function useRestDayOverdueInsight(

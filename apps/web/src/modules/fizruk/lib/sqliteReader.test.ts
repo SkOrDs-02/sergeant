@@ -97,6 +97,62 @@ describe("refreshFizrukSqliteState", () => {
     ]);
   });
 
+  // Браузерне QA 2026-08-23: «енергія / настрій» з аркуша фінішу
+  // зберігались у `fizruk_workouts.wellbeing_json`, але читач їх не мапив,
+  // тож на збереженому тренуванні саммарі не показувало самопочуття взагалі.
+  it("hydrates the post-workout wellbeing snapshot", async () => {
+    const ops: FizrukDualWriteOp[] = [
+      {
+        kind: "workout-upsert",
+        workout: {
+          id: "w-wb",
+          startedAt: "2026-05-01T10:00:00Z",
+          endedAt: "2026-05-01T11:00:00Z",
+          items: [],
+          groups: [],
+          warmup: null,
+          cooldown: null,
+          note: "",
+          wellbeing: { energy: 4, mood: 3 },
+        },
+      },
+    ];
+    await applyFizrukDualWriteOps(handle.client, ops, {
+      userId: UID,
+      clientTs: TS,
+      logger: silentLogger,
+    });
+
+    const cache = await refreshFizrukSqliteState(handle.client, UID);
+    expect(cache.workouts[0]?.wellbeing).toEqual({ energy: 4, mood: 3 });
+  });
+
+  it("leaves wellbeing null when the workout has none", async () => {
+    const ops: FizrukDualWriteOp[] = [
+      {
+        kind: "workout-upsert",
+        workout: {
+          id: "w-no-wb",
+          startedAt: "2026-05-01T10:00:00Z",
+          endedAt: null,
+          items: [],
+          groups: [],
+          warmup: null,
+          cooldown: null,
+          note: "",
+        },
+      },
+    ];
+    await applyFizrukDualWriteOps(handle.client, ops, {
+      userId: UID,
+      clientTs: TS,
+      logger: silentLogger,
+    });
+
+    const cache = await refreshFizrukSqliteState(handle.client, UID);
+    expect(cache.workouts[0]?.wellbeing ?? null).toBeNull();
+  });
+
   it("filters out other users' rows", async () => {
     const otherOps: FizrukDualWriteOp[] = [
       {

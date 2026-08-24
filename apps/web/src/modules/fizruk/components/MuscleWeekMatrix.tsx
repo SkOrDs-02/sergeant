@@ -18,6 +18,7 @@ import {
   MIN_WEEKS_WITH_DATA,
   type MuscleWeekMatrix,
 } from "../lib/muscleWeekMatrix";
+import { fmt } from "../lib/numberFmt";
 
 /**
  * Мінімальна видима висота НЕНУЛЬОВОГО стовпчика.
@@ -63,7 +64,7 @@ function LatestWeekBars({ matrix }: MuscleVolumeBlockProps) {
               {row.label}
             </div>
             <div className="text-style-caption text-subtle tabular-nums">
-              {row.latest.toFixed(1)}
+              {fmt(row.latest, 1)}
             </div>
           </div>
           <div className="h-2 overflow-hidden rounded-full border border-line bg-bg">
@@ -90,9 +91,9 @@ function WeekMatrix({ matrix }: MuscleVolumeBlockProps) {
         const spoken = fillVars(copy.muscleVolumeRowSpoken, {
           label: row.label,
           values: row.weekly
-            .map((v) => (v > 0 ? v.toFixed(1) : copy.muscleVolumeRestWeek))
+            .map((v) => (v > 0 ? fmt(v, 1) : copy.muscleVolumeRestWeek))
             .join(", "),
-          latest: row.latest.toFixed(1),
+          latest: fmt(row.latest, 1),
         });
         return (
           <div key={row.id} className="space-y-1">
@@ -101,7 +102,7 @@ function WeekMatrix({ matrix }: MuscleVolumeBlockProps) {
                 {row.label}
               </div>
               <div className="text-style-caption text-subtle tabular-nums">
-                {row.latest.toFixed(1)}
+                {fmt(row.latest, 1)}
               </div>
             </div>
             {/* Стовпчики сховані від скрінрідера — замість них іде речення

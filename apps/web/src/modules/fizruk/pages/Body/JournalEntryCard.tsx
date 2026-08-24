@@ -8,6 +8,7 @@ import {
   writePersistedOpen,
 } from "./storage";
 import type { JournalEntry } from "./storage";
+import { fmtLoose } from "../../lib/numberFmt";
 
 export function JournalEntryCard({
   entry,
@@ -41,7 +42,8 @@ export function JournalEntryCard({
   // in the expanded state, so surfacing them here doubled the same values
   // on screen at once.
   const summaryParts: string[] = [];
-  if (entry.weightKg != null) summaryParts.push(`${entry.weightKg} кг`);
+  if (entry.weightKg != null)
+    summaryParts.push(`${fmtLoose(entry.weightKg)} кг`);
   if (entry.sleepHours != null) summaryParts.push(`${entry.sleepHours} год`);
   const summary = summaryParts.join(" · ");
 
@@ -120,7 +122,7 @@ export function JournalEntryCard({
                   {messages.fizruk.journal.weightLabel}
                 </span>{" "}
                 <span className="font-semibold">
-                  {entry.weightKg} {messages.fizruk.kgUnit}
+                  {fmtLoose(entry.weightKg)} {messages.fizruk.kgUnit}
                 </span>
               </span>
             )}

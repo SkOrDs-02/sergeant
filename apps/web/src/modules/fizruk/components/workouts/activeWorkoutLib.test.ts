@@ -50,14 +50,14 @@ describe("activeWorkoutLib", () => {
     const metrics = calcCardioMetrics(5_000, 1_500);
 
     expect(metrics?.pace).toMatch(/^5:00 /);
-    expect(metrics?.speed).toMatch(/^12\.0 /);
+    expect(metrics?.speed).toMatch(/^12,0 /);
   });
 
   it("rounds pace seconds that overflow into the next minute", () => {
     const metrics = calcCardioMetrics(1_000, 359.9);
 
     expect(metrics?.pace).toMatch(/^6:00 /);
-    expect(metrics?.speed).toMatch(/^10\.0 /);
+    expect(metrics?.speed).toMatch(/^10,0 /);
   });
 
   it("returns null when cardio inputs cannot produce metrics", () => {
