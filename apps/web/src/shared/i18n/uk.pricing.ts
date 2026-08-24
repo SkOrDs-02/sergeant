@@ -26,8 +26,7 @@ export const pricingMessages = {
     freeName: "Free",
     freePrice: "0 ₴",
     freeCadence: "назавжди",
-    freeTagline:
-      "Усі модулі, ручний трекінг без лімітів. AI: 5 повідомлень/день.",
+    freeTagline: "Усі модулі, ручний трекінг без лімітів. AI: 5 запитів/день.",
     premiumName: "Premium",
     // B4: конкретна ціна («199 ₴ / місяць») знята до запуску — вона
     // суперечила waitlist-у «Один лист, коли Premium стартує».
@@ -68,6 +67,9 @@ export const pricingMessages = {
     openingPortal: "Відкриваємо керування…",
     switchToFree: "Перейти на Free",
     currentPlan: "Зараз ваш план",
+    // Гість: «Зараз ваш план» — неправда, поки акаунта немає. Free-CTA
+    // для нього стає входом (browser QA 2026-08-23).
+    signInToStart: "Увійти й почати",
   },
   status: {
     // Renders як «Сесію оплати створено (test mode).» — caller appends `(${mode} mode).`.

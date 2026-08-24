@@ -405,10 +405,14 @@ export const messages = {
     // rendered in `HubChatHeader`). Hidden for Pro (unlimited). Numbers are
     // interpolated at the call-site as `${used}/${limit} ${chatUsageUnit}`
     // (no Cyrillic-string placeholders needed for plain digits).
-    chatUsageUnit: "повідомлень",
+    // Одиниця — ЗАПИТ до AI, не повідомлення: сервер (`assertAiQuota`)
+    // списує квоту за виклик моделі, а один хід із tool-round-trip коштує
+    // 2+. Копія «5 повідомлень» обіцяла людині більше, ніж дає ліміт
+    // (browser QA 2026-08-23), тож клієнт говорить тією ж мовою, що сервер.
+    chatUsageUnit: "запитів",
     chatUsageAriaPrefix: "Використано",
-    chatUsageAriaSuffix: "повідомлень на сьогодні",
-    chatUsageExhausted: "Ліміт повідомлень на сьогодні. Подивись плани",
+    chatUsageAriaSuffix: "запитів до AI на сьогодні",
+    chatUsageExhausted: "Ліміт запитів до AI на сьогодні. Подивись плани",
   },
 
   onboarding: {

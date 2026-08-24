@@ -46,6 +46,69 @@ describe("parseSqliteUtc", () => {
   });
 });
 
+/**
+ * Клієнт із крихітною імітацією таблиці `sync_op_cursor`: `LIKE 'pull_since:%'`
+ * емулюємо через `startsWith`, бо саме форма ключа й була дефектом.
+ */
+function clientWithCursorRows(
+  rows: Array<{ key: string; updated_at: string }>,
+  pending = 0,
+) {
+  return {
+    all: vi.fn(async (sql: string, params?: unknown[]) => {
+      if (sql.includes("sync_op_cursor")) {
+        const pattern = String(params?.[0] ?? "");
+        const prefix = pattern.endsWith("%") ? pattern.slice(0, -1) : pattern;
+        return rows
+          .filter((r) =>
+            pattern.endsWith("%") ? r.key.startsWith(prefix) : r.key === prefix,
+          )
+          .sort((a, b) => b.updated_at.localeCompare(a.updated_at))
+          .slice(0, 1)
+          .map((r) => ({ updated_at: r.updated_at }));
+      }
+      return [{ n: pending }];
+    }),
+  } as never;
+}
+
+describe("readReplicaFreshness — ключ курсора", () => {
+  it("бачить namespaced-курсор `pull_since:<userId>`", async () => {
+    // До фіксу читалось точне `key = 'pull_since'`, якого з 2026-08-06 ніхто
+    // не пише, — і модуль вічно казав «Синхронізації ще не було».
+    const out = await readReplicaFreshness(
+      clientWithCursorRows([
+        { key: "pull_since:user-1", updated_at: sqliteStamp(HOUR) },
+      ]),
+      NOW,
+    );
+    expect(out.lastPullAt).toBe(new Date(NOW - HOUR).toISOString());
+    expect(out.complete).toBe(true);
+  });
+
+  it("бере найновіший курсор, якщо на пристрої кілька акаунтів", async () => {
+    const out = await readReplicaFreshness(
+      clientWithCursorRows([
+        { key: "pull_since:user-1", updated_at: sqliteStamp(50 * HOUR) },
+        { key: "pull_since:user-2", updated_at: sqliteStamp(HOUR) },
+      ]),
+      NOW,
+    );
+    expect(out.lastPullAt).toBe(new Date(NOW - HOUR).toISOString());
+  });
+
+  it("голий легасі-ключ не рахується за пул", async () => {
+    // Рядок від старої схеми брехав би про свіжий пул.
+    const out = await readReplicaFreshness(
+      clientWithCursorRows([
+        { key: "pull_since", updated_at: sqliteStamp(HOUR) },
+      ]),
+      NOW,
+    );
+    expect(out.lastPullAt).toBeNull();
+  });
+});
+
 describe("readReplicaFreshness", () => {
   it("свіжий синк без черги — репліка повна", async () => {
     const out = await readReplicaFreshness(client(sqliteStamp(HOUR), 0), NOW);
