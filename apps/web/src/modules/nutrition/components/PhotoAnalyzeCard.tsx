@@ -52,7 +52,18 @@ function InlineAnalysisStatus({ text }: { text: string }) {
  */
 export const PHOTO_PRIVACY_ACK_KEY = "sergeant.nutrition.photoPrivacyAck.v1";
 
-function PhotoPrivacyNotice({ onAck }: { onAck?: (() => void) | undefined }) {
+function PhotoPrivacyNotice({
+  onAck,
+  blockingAnalysis,
+}: {
+  onAck?: (() => void) | undefined;
+  /**
+   * Кадр уже обраний, тариф дозволяє аналіз — і єдине, що його стримує,
+   * це непідтверджений нотіс. Тоді нотіс мусить сам сказати, що він і є
+   * та кнопка, якої людина шукає.
+   */
+  blockingAnalysis?: boolean | undefined;
+}) {
   const [acked, setAcked] = useState(
     // Пара read/write мусить бути узгоджена: `safeWriteLS` кладе JSON,
     // тому й читаємо через `safeReadLS`. Рядковий читач повернув би
@@ -64,10 +75,15 @@ function PhotoPrivacyNotice({ onAck }: { onAck?: (() => void) | undefined }) {
     <div className="mb-3 rounded-2xl border border-line bg-panelHi p-3">
       <div className="text-style-label text-text">Куди їде фото</div>
       <p className="mt-1 text-style-caption text-muted leading-relaxed">
-        Щоб визначити КБЖВ, фото відправляється на розпізнавання до Anthropic,
-        це зовнішній сервіс. На відміну від тексту, фото ми не можемо частково
-        приховати: їде весь кадр. Перевір, що в нього не потрапило зайве.
+        Щоб визначити КБЖВ, фото відправляється на розпізнавання до зовнішнього
+        AI-сервісу. На відміну від тексту, фото ми не можемо частково приховати:
+        їде весь кадр. Перевір, що в нього не потрапило зайве.
       </p>
+      {blockingAnalysis && (
+        <p className="mt-2 text-style-caption text-text leading-relaxed">
+          Аналіз почнеться, щойно підтвердиш це — доти кадр нікуди не їде.
+        </p>
+      )}
       <button
         type="button"
         onClick={() => {
@@ -77,7 +93,7 @@ function PhotoPrivacyNotice({ onAck }: { onAck?: (() => void) | undefined }) {
         }}
         className="mt-2 min-h-11 px-3 text-style-caption text-nutrition-strong dark:text-nutrition hover:underline"
       >
-        Зрозуміло
+        {blockingAnalysis ? "Зрозуміло, аналізувати" : "Зрозуміло"}
       </button>
     </div>
   );
@@ -194,6 +210,13 @@ interface PhotoAnalyzeCardProps {
   refining?: boolean | undefined;
   /** Fired once when the user confirms the privacy notice («Зрозуміло»). */
   onPrivacyAck?: (() => void) | undefined;
+  /**
+   * Кадр обраний, тариф дозволяє — аналіз стримує ЛИШЕ непідтверджений
+   * нотіс. Тоді нотіс називає себе наступним кроком (див. AI-CONTEXT біля
+   * `analyzeLabel`: кнопки «Аналізувати» в цьому стані навмисно немає,
+   * і без підказки екран виглядав мертвим).
+   */
+  analysisAwaitingPrivacyAck?: boolean | undefined;
 }
 
 export function PhotoAnalyzeCard({
@@ -216,6 +239,7 @@ export function PhotoAnalyzeCard({
   analyzing,
   refining,
   onPrivacyAck,
+  analysisAwaitingPrivacyAck,
 }: PhotoAnalyzeCardProps) {
   const armPinchZoomReset = useResetPinchZoomAfterCameraCapture();
   return (
@@ -248,7 +272,10 @@ export function PhotoAnalyzeCard({
 
       {analyzing && <InlineAnalysisStatus text="Аналізую фото…" />}
 
-      <PhotoPrivacyNotice onAck={onPrivacyAck} />
+      <PhotoPrivacyNotice
+        onAck={onPrivacyAck}
+        blockingAnalysis={analysisAwaitingPrivacyAck}
+      />
 
       {/* Drop-zone */}
       <label

@@ -15,6 +15,7 @@ vi.mock("@sergeant/db-schema/sqlite", () => ({
 }));
 import { enqueueOutboxUpsert } from "../../../../../core/syncEngine/enqueueOutboxUpsert.js";
 import { enqueueOutboxIncrement } from "@sergeant/db-schema/sqlite";
+import { ROUTINE_DAY_ANCHOR } from "../../dayAnchor.js";
 
 import {
   __clearRoutineDualWriteContextForTests,
@@ -187,7 +188,11 @@ describe("dualWriteRoutineState orchestrator", () => {
       habit_id: "h1",
       date_key: "2026-05-01",
       state: "done",
-      day_anchor: "device-local",
+      // Не літерал: анкер приходить із того самого модуля, що продукує
+      // «сьогодні» для UI (`lib/dayAnchor.ts`). Раніше тут стояв
+      // захардкоджений `device-local` поруч із київським `date_key` —
+      // саме та розбіжність, через яку колонка брехала.
+      day_anchor: ROUTINE_DAY_ANCHOR,
       source: "ui",
     });
     const rows = await listEntries(handle.client);

@@ -134,8 +134,58 @@ describe("PhotoStep — auto-analyze gating", () => {
     photoState.photoPreviewUrl = "blob:photo-1";
     render(<PhotoStep onApply={vi.fn()} />);
     expect(photoState.analyzePhoto).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: "Зрозуміло" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Зрозуміло, аналізувати" }),
+    );
     expect(photoState.analyzePhoto).toHaveBeenCalledTimes(1);
+  });
+
+  /**
+   * Глухий кут: Pro без ack обирає файл — автоаналіз мовчить (privacy-гейт),
+   * кнопки «Аналізувати» нема (навмисно, щоб не обходити гейт), і ніщо не
+   * каже, що розблоковує саме нотіс. Гейт лишається, підказка зʼявляється.
+   */
+  it("Pro без ack: нотіс сам називає себе наступним кроком", () => {
+    photoState.photoPreviewUrl = "blob:photo-1";
+    render(<PhotoStep onApply={vi.fn()} />);
+
+    expect(photoState.analyzePhoto).not.toHaveBeenCalled();
+    // Обхідної кнопки як не було, так і немає — гейт не послаблено.
+    expect(screen.queryByRole("button", { name: "Аналізувати" })).toBeNull();
+    expect(
+      screen.getByText(/Аналіз почнеться, щойно підтвердиш це/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Зрозуміло, аналізувати" }),
+    ).toBeInTheDocument();
+  });
+
+  it("без кадру нотіс лишається звичайним — нічого не блокується", () => {
+    render(<PhotoStep onApply={vi.fn()} />);
+    expect(
+      screen.getByRole("button", { name: "Зрозуміло" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Аналіз почнеться/)).toBeNull();
+  });
+
+  it("Free без ack: підказка не потрібна — у них є явна кнопка", () => {
+    gateState.canAccess = false;
+    photoState.photoPreviewUrl = "blob:photo-1";
+    render(<PhotoStep onApply={vi.fn()} />);
+    expect(
+      screen.getByRole("button", { name: "Аналізувати" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Аналіз почнеться/)).toBeNull();
+  });
+
+  it("копія нотіса не називає вендора — маршрут залежить від деплою", () => {
+    photoState.photoPreviewUrl = "blob:photo-1";
+    render(<PhotoStep onApply={vi.fn()} />);
+    // `VISION_VIA_OPENROUTER` за замовчуванням true, тож кадр іде через
+    // OpenRouter, а не напряму до Anthropic — назва вендора в копії була
+    // просто неправдою для дефолтного деплою.
+    expect(screen.queryByText(/Anthropic/)).toBeNull();
+    expect(screen.getByText(/до зовнішнього\s+AI-сервісу/)).toBeInTheDocument();
   });
 
   it("does NOT auto-run for a Free user — the paywall stays on the explicit tap", () => {
@@ -207,7 +257,11 @@ describe("PhotoStep — коли кнопка «Аналізувати» вза�
     photoState.photoPreviewUrl = "blob:photo-1";
     render(<PhotoStep onApply={vi.fn()} />);
     expect(screen.queryByRole("button", { name: "Аналізувати" })).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Зрозуміло" }));
+    // Підпис нотіса в цьому стані — «Зрозуміло, аналізувати»: гейт той
+    // самий, просто перестав бути невидимим (див. тест про глухий кут).
+    fireEvent.click(
+      screen.getByRole("button", { name: "Зрозуміло, аналізувати" }),
+    );
     expect(photoState.analyzePhoto).toHaveBeenCalledTimes(1);
   });
 });

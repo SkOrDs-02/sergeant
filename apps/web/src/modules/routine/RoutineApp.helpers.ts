@@ -8,7 +8,7 @@
  * mounting a component tree.
  */
 
-import { getKyivDateParts } from "@shared/lib/time/kyivTime";
+import { anchoredTodayDate } from "./lib/dayAnchor";
 import {
   dateKeyFromDate,
   FIZRUK_GROUP_LABEL,
@@ -37,13 +37,10 @@ export const GROUP_ORDER = [
 ];
 
 export function todayDate(): Date {
-  // Returns a `Date` whose **local** year/month/day match Kyiv's, set at
-  // local noon to keep `dateKeyFromDate()` (which uses local-TZ getters
-  // by routine-domain contract) anchored on the correct calendar day for
-  // users whose host clock is not in Europe/Kyiv (consolidated page-audit
-  // § Theme 1 — 09 F3).
-  const { year, month, day } = getKyivDateParts();
-  return new Date(year, month - 1, day, 12, 0, 0, 0);
+  // Делегат: анкер доби web-routine живе в одному місці разом зі своєю
+  // міткою `ROUTINE_DAY_ANCHOR` (`lib/dayAnchor.ts`) — інакше журнал
+  // відміток знову почне звітувати не той анкер, яким порахований ключ.
+  return anchoredTodayDate();
 }
 
 export function monthBounds(y: number, m0: number): DateRange {

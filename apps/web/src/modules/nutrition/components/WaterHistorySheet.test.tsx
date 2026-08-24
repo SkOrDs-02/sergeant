@@ -24,6 +24,29 @@ describe("WaterHistorySheet", () => {
     expect(screen.getByText("Поки немає історії")).toBeInTheDocument();
   });
 
+  /**
+   * Регресія: вода, залита раніше за 14-денне вікно, не показувалась
+   * ніде — ані в списку, ані в графіку, — а порожній стан ще й
+   * стверджував, що історії немає. 15 л за 2026-08-07 при «сьогодні»
+   * 2026-08-24 — рівно той випадок із QA.
+   */
+  it("показує день поза 14-денним вікном замість порожнього стану", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(Date.UTC(2026, 7, 24, 9, 0, 0));
+    render(
+      <WaterHistorySheet
+        open
+        onClose={() => {}}
+        log={{ "2026-08-07": 15000 }}
+        goalMl={2000}
+      />,
+    );
+    expect(screen.queryByText("Поки немає історії")).not.toBeInTheDocument();
+    expect(screen.getByText("Раніше")).toBeInTheDocument();
+    expect(screen.getByText("7 серп.")).toBeInTheDocument();
+    expect(screen.getByText(/15 л/)).toBeInTheDocument();
+  });
+
   it("renders averages, streak and the day list when data exists", () => {
     vi.useFakeTimers();
     vi.setSystemTime(FIXED_NOW);
