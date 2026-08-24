@@ -16,7 +16,7 @@
       "latencyBudgetMs": 800,
       "auth": "none",
       "tier": "critical",
-      "shape": { "ok": "boolean" }
+      "expectedBodyContains": "ok"
     },
     {
       "name": "liveness:health-liveness-nested",
@@ -26,7 +26,7 @@
       "latencyBudgetMs": 800,
       "auth": "none",
       "tier": "critical",
-      "shape": { "ok": "boolean" }
+      "expectedBodyContains": "ok"
     },
     {
       "name": "readiness:readyz",
@@ -36,7 +36,7 @@
       "latencyBudgetMs": 1500,
       "auth": "none",
       "tier": "critical",
-      "shape": { "ok": "boolean" }
+      "expectedBodyContains": "ok"
     },
     {
       "name": "readiness:health-alias",
@@ -46,7 +46,7 @@
       "latencyBudgetMs": 1500,
       "auth": "none",
       "tier": "critical",
-      "shape": { "ok": "boolean" }
+      "expectedBodyContains": "ok"
     },
     {
       "name": "startup:startupz",
@@ -56,7 +56,7 @@
       "latencyBudgetMs": 800,
       "auth": "none",
       "tier": "critical",
-      "shape": { "ok": "boolean" }
+      "expectedBodyContains": "ok"
     },
     {
       "name": "diag:healthz",
@@ -66,7 +66,11 @@
       "latencyBudgetMs": 2500,
       "auth": "none",
       "tier": "critical",
-      "shape": { "ok": "boolean", "db": "object" }
+      "shape": {
+        "status": "string",
+        "timestamp": "string",
+        "checks": "object"
+      }
     },
     {
       "name": "diag:health-workers",
@@ -76,7 +80,11 @@
       "latencyBudgetMs": 2500,
       "auth": "none",
       "tier": "extended",
-      "shape": { "ok": "boolean" }
+      "shape": {
+        "status": "string",
+        "timestamp": "string",
+        "workers": "object"
+      }
     },
     {
       "name": "diag:api-status",
@@ -86,7 +94,11 @@
       "latencyBudgetMs": 2500,
       "auth": "none",
       "tier": "critical",
-      "shape": { "ok": "boolean" }
+      "shape": {
+        "status": "string",
+        "timestamp": "string",
+        "components": "array"
+      }
     },
     {
       "name": "push:vapid-public",
@@ -96,7 +108,9 @@
       "latencyBudgetMs": 1500,
       "auth": "none",
       "tier": "critical",
-      "shape": { "publicKey": "string" }
+      "shape": {
+        "publicKey": "string"
+      }
     },
     {
       "name": "push:vapid-public-v1",
@@ -106,7 +120,9 @@
       "latencyBudgetMs": 1500,
       "auth": "none",
       "tier": "extended",
-      "shape": { "publicKey": "string" }
+      "shape": {
+        "publicKey": "string"
+      }
     },
     {
       "name": "obs:metrics",
@@ -136,7 +152,12 @@
       "latencyBudgetMs": 2500,
       "auth": "session",
       "tier": "critical",
-      "shape": { "user": { "id": "string", "email": "string" } }
+      "shape": {
+        "user": {
+          "id": "string",
+          "email": "string"
+        }
+      }
     },
     {
       "name": "barcode:public-lookup",
@@ -146,7 +167,9 @@
       "latencyBudgetMs": 4000,
       "auth": "session",
       "tier": "extended",
-      "shape": { "product": "object" }
+      "shape": {
+        "product": "object"
+      }
     },
     {
       "name": "coach:memory-empty",
@@ -156,7 +179,9 @@
       "latencyBudgetMs": 2500,
       "auth": "session",
       "tier": "extended",
-      "shape": { "facts": "array" }
+      "shape": {
+        "facts": "array"
+      }
     }
   ]
 }
