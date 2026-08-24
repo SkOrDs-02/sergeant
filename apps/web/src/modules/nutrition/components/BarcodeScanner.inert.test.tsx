@@ -109,15 +109,15 @@ describe("BarcodeScanner поверх відкритого Sheet", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  it("Escape закриває сканер", () => {
-    // Слухач Escape у `useDialogFocusTrap` висить на `document`, тож його
-    // отримують УСІ відкриті діалоги — аркуш під сканером закриється теж.
-    // Це властивість спільного хука (той самий ефект у ConfirmDialog над
-    // Sheet), а не сканера, тому тут пінимо лише те, за що відповідає
-    // сканер: він на Escape реагує, чого доти не вмів узагалі.
+  it("Escape закриває сканер і НЕ чіпає аркуш під ним", () => {
+    // Слухач Escape у `useDialogFocusTrap` висить на `document`, тож доти
+    // його отримували обидва діалоги і закривались разом. Тепер клавіші
+    // належать верхньому діалогу стосу — див. `useDialogFocusTrap.test.ts`
+    // § «стос діалогів».
     const onCloseScanner = vi.fn();
+    const onCloseSheet = vi.fn();
     render(
-      <Sheet open onClose={vi.fn()} title="Звідки страва?" zIndex={120}>
+      <Sheet open onClose={onCloseSheet} title="Звідки страва?" zIndex={120}>
         <div>вміст аркуша</div>
       </Sheet>,
     );
@@ -127,6 +127,7 @@ describe("BarcodeScanner поверх відкритого Sheet", () => {
 
     fireEvent.keyDown(document, { key: "Escape" });
     expect(onCloseScanner).toHaveBeenCalledTimes(1);
+    expect(onCloseSheet).not.toHaveBeenCalled();
   });
 });
 
