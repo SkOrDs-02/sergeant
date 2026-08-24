@@ -36,6 +36,9 @@ import { Stat } from "@shared/components/ui/Stat";
 import { PrBoard } from "./Progress/PrBoard";
 import { MuscleVolumeBlock } from "../components/MuscleWeekMatrix";
 import { buildMuscleWeekMatrix } from "../lib/muscleWeekMatrix";
+// Одна локаль на модуль: «Тіло» друкувало «82,5 кг», а «Прогрес» —
+// «82.5 кг» для того самого зважування (браузерне QA 2026-08-23).
+import { fmt, fmtLoose } from "../lib/numberFmt";
 
 interface ProgressProps {
   onNavigate: (target: FizrukPage | string) => void;
@@ -54,7 +57,7 @@ export function Progress({ onNavigate }: ProgressProps) {
   // W1-WEIGHT-SOT стадія 1: «Тренд ваги» читав тільки `fizruk_measurements`,
   // тому зважування з екрана «Тіло» (daily_log) сюди не потрапляли.
   const { entries: dailyLogEntries } = useDailyLog();
-  const { exercises, musclesUk } = useExerciseCatalog();
+  const { exercises, musclesUk, primaryGroupsUk } = useExerciseCatalog();
   const { stats: pushupStats, hasData: hasPushupData } = usePushupActivity();
 
   const meas = useMemo(() => {
@@ -177,7 +180,16 @@ export function Progress({ onNavigate }: ProgressProps) {
           id,
           name: labelById.get(id) || v.nameUk || id,
           muscleGroup: group,
-          muscleGroupLabel: group ? musclesUk?.[group] || null : null,
+          // AI-DANGER: `group` — це PRIMARY-ГРУПА вправи (`chest`,
+          // `quadriceps`), а не окремий мʼяз. Лейбл раніше шукався в
+          // `musclesUk`, де є лише ті ідентифікатори, що випадково
+          // збігаються з назвами мʼязів (`quadriceps`, `biceps`,
+          // `calves`…). Для `chest`/`back`/`shoulders`/`core`/`glutes`/
+          // `cardio`/`full_body` там нема нічого — і на «Прогресі» поруч
+          // із «Квадрицепс» стояв сирий слаг `chest`, а бейдж групи на
+          // картці зникав зовсім (браузерне QA 2026-08-23). Мапа груп —
+          // `primaryGroupsUk`.
+          muscleGroupLabel: group ? primaryGroupsUk?.[group] || null : null,
           isStale: aging.isStale,
           // `aging` рахувався тут і раніше — з нього брали лише
           // `isStale`, а `reference1rm` викидали в тому ж виразі. Шкала
@@ -196,7 +208,7 @@ export function Progress({ onNavigate }: ProgressProps) {
         };
       })
       .sort((a, b) => b.best1rm - a.best1rm);
-  }, [workouts, exercises, musclesUk]);
+  }, [workouts, exercises, primaryGroupsUk]);
 
   const quickStats = useMemo(() => {
     const done = (workouts || []).filter((w) => w.endedAt);
@@ -436,7 +448,7 @@ export function Progress({ onNavigate }: ProgressProps) {
                           label={messages.fizruk.progress.weight}
                           value={
                             weightStat.latest != null
-                              ? `${weightStat.latest} ${messages.fizruk.kgUnit}`
+                              ? `${fmtLoose(weightStat.latest)} ${messages.fizruk.kgUnit}`
                               : "—"
                           }
                           sublabel={
@@ -452,8 +464,7 @@ export function Progress({ onNavigate }: ProgressProps) {
                                 )}
                               >
                                 {weightDelta > 0 ? "+" : ""}
-                                {weightDelta.toFixed(1)}{" "}
-                                {messages.fizruk.kgUnit}
+                                {fmt(weightDelta, 1)} {messages.fizruk.kgUnit}
                               </span>
                             )
                           }
@@ -464,7 +475,7 @@ export function Progress({ onNavigate }: ProgressProps) {
                           label={messages.fizruk.progress.bodyFat}
                           value={
                             meas.latest?.["bodyFatPct"] != null
-                              ? `${meas.latest["bodyFatPct"]}%`
+                              ? `${fmtLoose(Number(meas.latest["bodyFatPct"]))}%`
                               : "—"
                           }
                           sublabel={
@@ -480,7 +491,7 @@ export function Progress({ onNavigate }: ProgressProps) {
                                 )}
                               >
                                 {fatDelta > 0 ? "+" : ""}
-                                {fatDelta.toFixed(1)}%
+                                {fmt(fatDelta, 1)}%
                               </span>
                             )
                           }
@@ -565,7 +576,7 @@ export function Progress({ onNavigate }: ProgressProps) {
                   prs={prs}
                   prFilter={prFilter}
                   onPrFilterChange={setPrFilter}
-                  musclesUk={musclesUk}
+                  primaryGroupsUk={primaryGroupsUk}
                   onSelect={(id) => onNavigate(`exercise/${id}`)}
                 />
               </>

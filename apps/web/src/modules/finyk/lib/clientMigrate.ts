@@ -16,6 +16,15 @@ import {
  * (dual-write); PR #035 itself only ships the runner so PR #036 has
  * the same shape as the nutrition dual-write entry-point.
  */
+/**
+ * Раннер клієнтських міграцій Фініка.
+ *
+ * Серіалізацію паралельних викликів робить сама фабрика
+ * (`@shared/lib/db/clientMigrator`) — там же й розбір гонки, через яку
+ * boot-гілки тихо не виконувались (`SQLITE_CONSTRAINT_UNIQUE` на журналі,
+ * нулі в Аналітиці до релоуду). Тримати другу чергу ще й тут означало б
+ * два механізми на один інваріант.
+ */
 export const migrateFinyk = createClientMigrator(
   FINYK_CLIENT_MIGRATIONS,
   FINYK_MIGRATIONS_TABLE,

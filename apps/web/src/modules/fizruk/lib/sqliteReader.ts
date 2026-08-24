@@ -20,6 +20,7 @@ import type {
   Workout,
   WorkoutItem,
   WorkoutGroup,
+  WorkoutWellbeing,
 } from "@sergeant/fizruk-domain/domain";
 import type { FizrukData } from "@sergeant/fizruk-domain";
 import type { MeasurementEntry } from "../hooks/useMeasurements";
@@ -211,6 +212,15 @@ function rowToWorkout(
       : null,
     cooldown: row.cooldown_json
       ? safeParseJson<ChecklistItem[]>(row.cooldown_json, [])
+      : null,
+    // AI-DANGER: `wellbeing_json` читалось у SELECT і писалось адаптером,
+    // але сюди НЕ доїжджало — тобто «енергія 4 / настрій 4» з аркуша
+    // фінішу зникали, щойно сторінка перечитувала тренування з SQLite, і
+    // збережене заняття показувало саммарі без самопочуття (браузерне QA
+    // 2026-08-23). Поле опційне в `Workout`, тож мовчазна втрата не
+    // ламала ані типи, ані тести — лише продукт.
+    wellbeing: row.wellbeing_json
+      ? safeParseJson<WorkoutWellbeing | null>(row.wellbeing_json, null)
       : null,
     items: itemsByWorkout.get(row.id) ?? [],
   };

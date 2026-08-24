@@ -17,6 +17,7 @@ import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { AddMeasurementForm } from "./Measurements/AddMeasurementForm";
 import { formatNumberUk } from "@sergeant/shared";
+import { fmt } from "../lib/numberFmt";
 
 // Programmatic-focus target for the guide view's `<h2>` — see the
 // scroll/focus-management effect below.
@@ -338,7 +339,7 @@ export function Measurements() {
                           )}
                         >
                           {delta > 0 ? "+" : ""}
-                          {delta.toFixed(1)} {f.unit}
+                          {fmt(delta, 1)} {f.unit}
                         </div>
                       ) : null;
                     })()}

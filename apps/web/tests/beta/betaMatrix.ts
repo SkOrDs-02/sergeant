@@ -243,7 +243,7 @@ export const BETA_JOURNEY: readonly BetaJourneyStep[] = [
     id: "sergeant-anon-quota",
     route: "/chat",
     intent:
-      "BT1: вичерпання AI_DAILY_ANON_LIMIT дає підказку увійти (AI_QUOTA_ANON), не глухий кут; перевіряємо поведінку, не число",
+      "BT1: відмова аноніму (401 — `/api/chat` під requireSession) дає запрошення увійти, не глухий кут; анонімної квоти немає з 2026-08-24",
     lane: "ai",
     automation: "auto",
   },

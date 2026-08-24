@@ -20,6 +20,7 @@ import { EmptyState } from "@shared/components/ui/EmptyState";
 import { Money, Delta } from "@shared/components/ui/Money";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import { filterToKyivMonth } from "../lib/monthWindow";
+import { isMonoNotConnectedError } from "../lib/monoBankErrors";
 import { useAnalytics } from "../hooks/useAnalytics";
 import { CategoryPieChart } from "../components/charts/lazy";
 import { ChartFallback } from "../components/charts/ChartFallback";
@@ -199,14 +200,33 @@ export function Analytics({ mono, storage, onSelectCategory }: AnalyticsProps) {
     {},
   );
   const [loading, setLoading] = useState(false);
-  const [fetchError, setFetchError] = useState<string | null>(null);
+  // Помилки читання ПО МІСЯЦЯХ, а не одна на сторінку. Дві причини.
+  //
+  // 1) Реєстр упалих місяців розриває нескінченний цикл: `mono` приходить
+  //    новим обʼєктом на КОЖЕН рендер (`useMonobankWebhook` повертає
+  //    літерал, `useUnifiedFinanceData` його перепаковує), тож `ensureMonth`
+  //    міняв ідентичність, ефекти нижче перезапускались, місяця в кеші не
+  //    було — і fetch стартував знову: реджект → `setFetchError` → рендер →
+  //    новий fetch → реджект. Саме через цей цикл кнопка «Повторити»
+  //    виглядала мертвою: вона таки перезапускала читання, але плашка
+  //    поверталась за мілісекунди від наступної спроби.
+  // 2) Ключ = місяць, тож провал ФОНОВОГО fetch-у попереднього місяця
+  //    (його тягнуть лише заради секції «Порівняння») більше не малює
+  //    червону плашку над місяцем, який завантажився нормально.
+  const [fetchErrors, setFetchErrors] = useState<Record<string, string>>({});
   const fetchingRef = useRef(new Set<string>());
 
   const monthKey = `${year}-${String(month).padStart(2, "0")}`;
+  const fetchError = fetchErrors[monthKey] ?? null;
 
   const prevYear = month === 1 ? year - 1 : year;
   const prevMonth = month === 1 ? 12 : month - 1;
   const prevKey = `${prevYear}-${String(prevMonth).padStart(2, "0")}`;
+
+  // `fetchMonth` — стабільний `useCallback` усередині `useMonobankWebhook`,
+  // на відміну від обгортки `mono`. Тримаємось за саму функцію, щоб
+  // ідентичність `ensureMonth` мінялась лише від реальних змін.
+  const fetchMonth = mono.fetchMonth;
 
   // Fetch a month from the server (via mono.fetchMonth → React Query)
   // and store the result in the in-memory cache.
@@ -214,22 +234,41 @@ export function Analytics({ mono, storage, onSelectCategory }: AnalyticsProps) {
     (y: number, m1: number, key: string) => {
       if (fetchingRef.current.has(key)) return;
       if (monthCache[key]) return;
+      // Місяць уже впав — не перезапускаємо самі. Перезапуск робить
+      // «Повторити», і лише він (див. цикл в описі `fetchErrors`).
+      if (fetchErrors[key]) return;
       fetchingRef.current.add(key);
       void Promise.resolve().then(() => {
         setLoading(true);
-        setFetchError(null);
       });
-      mono
-        .fetchMonth(y, m1 - 1)
+      fetchMonth(y, m1 - 1)
         .then((txs) => {
           setMonthCache((prev) => ({ ...prev, [key]: txs }));
+          // Успіх гасить плашку саме цього місяця — доти вона лишалась на
+          // екрані навіть після того, як дані приїхали.
+          setFetchErrors((prev) => {
+            if (!(key in prev)) return prev;
+            const next = { ...prev };
+            delete next[key];
+            return next;
+          });
         })
-        .catch(() => {
-          // Don't poison the cache with an empty array — a transient or
-          // disconnected fetch should remain refetchable on the next
-          // navigation. Leaving the key absent keeps `comparison`/UI in
-          // a "no data yet" state instead of a misleading "0 ₴" state.
-          setFetchError("Не вдалось завантажити транзакції");
+        .catch((err: unknown) => {
+          if (isMonoNotConnectedError(err)) {
+            // Банку просто немає — це порожній місяць, а не збій. Кладемо
+            // порожній зріз у кеш, щоб секції показали empty-state, а не
+            // червону плашку (у людини з самими ручними витратами вона
+            // висіла назавжди й не зникала після «Повторити»).
+            setMonthCache((prev) => ({ ...prev, [key]: [] }));
+            return;
+          }
+          // Не отруюємо кеш порожнім масивом — тимчасовий збій має
+          // лишатись перезапускним. Порожній ключ у кеші виглядав би як
+          // чесний «0 ₴».
+          setFetchErrors((prev) => ({
+            ...prev,
+            [key]: "Не вдалось завантажити транзакції",
+          }));
         })
         .finally(() => {
           fetchingRef.current.delete(key);
@@ -239,17 +278,29 @@ export function Analytics({ mono, storage, onSelectCategory }: AnalyticsProps) {
           setLoading(fetchingRef.current.size > 0);
         });
     },
-    [mono, monthCache],
+    [fetchMonth, monthCache, fetchErrors],
   );
 
+  // «Повторити» = зняти позначку провалу і викинути кеш обраного місяця
+  // (та попереднього, який живить «Порівняння»). Обидва `set*` віддають
+  // НОВІ обʼєкти, тож `ensureMonth` міняє ідентичність і ефекти нижче
+  // перезапускають читання — це і є справжній ретрай, а не лише ховання
+  // плашки.
   const retryCurrentMonth = useCallback(() => {
+    setFetchErrors((prev) => {
+      if (!(monthKey in prev) && !(prevKey in prev)) return { ...prev };
+      const next = { ...prev };
+      delete next[monthKey];
+      delete next[prevKey];
+      return next;
+    });
     setMonthCache((prev) => {
       const next = { ...prev };
       delete next[monthKey];
+      delete next[prevKey];
       return next;
     });
-    setFetchError(null);
-  }, [monthKey]);
+  }, [monthKey, prevKey]);
 
   useEffect(() => {
     if (!isCurrentMonth) ensureMonth(year, month, monthKey);

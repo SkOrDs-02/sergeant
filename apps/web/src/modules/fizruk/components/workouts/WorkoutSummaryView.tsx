@@ -30,6 +30,7 @@ import {
 } from "@sergeant/fizruk-domain/domain";
 import { messages } from "@shared/i18n/uk";
 import { WorkoutStatTile } from "./WorkoutStatTile";
+import { fmtLoose } from "../../lib/numberFmt";
 
 export interface WorkoutSummaryViewProps {
   workout: Workout;
@@ -42,7 +43,9 @@ function formatItemDetail(item: WorkoutItem): string {
   if (item.type === "strength") {
     const sets = item.sets || [];
     if (sets.length === 0) return "—";
-    return sets.map((s) => `${s.weightKg ?? 0}×${s.reps ?? 0}`).join(", ");
+    return sets
+      .map((s) => `${fmtLoose(s.weightKg ?? 0)}×${s.reps ?? 0}`)
+      .join(", ");
   }
   if (item.type === "distance") {
     const distM = Number(item.distanceM) || 0;

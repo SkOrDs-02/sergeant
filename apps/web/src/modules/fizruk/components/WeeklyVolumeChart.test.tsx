@@ -36,8 +36,10 @@ describe("WeeklyVolumeChart", () => {
 
   it("formats large y-axis values with a k suffix", () => {
     render(<WeeklyVolumeChart volumeKg={[2000, 0, 0, 0, 0, 0, 0]} />);
-    // max = 2000 → top tick formatted as "2.0k"
-    expect(screen.getByText("2.0k")).toBeInTheDocument();
+    // max = 2000 → верхня поділка українською, не англійське «2.0k»
+    // (браузерне QA 2026-08-23).
+    expect(screen.getByText("2 тис.")).toBeInTheDocument();
+    expect(screen.queryByText("2.0k")).toBeNull();
   });
 
   // П1 — cold-start regression: `volumeKg={[0,...]}` is indistinguishable

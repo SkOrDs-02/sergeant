@@ -130,3 +130,30 @@ describe("renderStandaloneRoute() — /welcome returning-user redirect", () => {
     expect(result).not.toBeNull();
   });
 });
+
+// Regression (browser QA 2026-08-23): `/sign-in` не мав скролу на коротких
+// в'юпортах — на 1280×720 футер із легальними лінками був недосяжним, на
+// 1280×633 кнопка «Зареєструватися» лежала нижче фолду й тихо не клікалась.
+// Причина — проміжний `page-enter`-блок без висоти: `h-app-dvh` (=100%)
+// усередині `MeshBackground` резолвився в `auto`, шел ріс під контент, а
+// `body{overflow:hidden}` зрізав низ. Тут пінимо саме той токен висоти;
+// другу половину (детермінований overflow-y) пінить `MeshBackground.test`.
+describe("auth-shell scroll contract", () => {
+  function wrapperClassName(pathname: string): string {
+    const el = callRouteArgs({ pathname }) as {
+      props: { children: { props: { className?: string } } };
+    } | null;
+    expect(el).not.toBeNull();
+    return el!.props.children.props.className ?? "";
+  }
+
+  it.each(["/sign-in", "/reset-password", "/verify-email"])(
+    "gives the %s page-enter wrapper a definite height so the shell can scroll",
+    (pathname) => {
+      const className = wrapperClassName(pathname);
+      expect(className).toContain("page-enter");
+      expect(className).toContain("h-app-dvh");
+      expect(className).toContain("min-h-0");
+    },
+  );
+});

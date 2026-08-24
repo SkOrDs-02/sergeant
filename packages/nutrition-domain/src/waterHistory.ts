@@ -47,6 +47,23 @@ export function getWaterLastNDays(
   return keys.map((dayKey) => ({ dayKey, ml: normalized[dayKey] ?? 0 }));
 }
 
+/**
+ * УСІ дні з ненульовим записом води, найновіший першим.
+ *
+ * AI-CONTEXT: `getWaterLastNDays` дивиться лише у фіксоване вікно від
+ * «сьогодні», тож вода, залита давніше за це вікно, не потрапляла ні в
+ * список, ні навіть у перевірку «чи є взагалі дані» — аркуш історії
+ * малював порожній стан людині, у якої в журналі лежали літри. Ця
+ * вибірка не залежить від «сьогодні» взагалі: що записано — те видно.
+ */
+export function getWaterLoggedDays(log: unknown): WaterHistoryDay[] {
+  const normalized = normalizeWaterLog(log);
+  return Object.entries(normalized)
+    .filter(([, ml]) => ml > 0)
+    .map(([dayKey, ml]) => ({ dayKey, ml }))
+    .sort((a, b) => (a.dayKey < b.dayKey ? 1 : a.dayKey > b.dayKey ? -1 : 0));
+}
+
 /** Середнє мл/день за останні `days` днів пристрою (дні без запису рахуються як 0). */
 export function getWaterAverageMl(
   log: unknown,

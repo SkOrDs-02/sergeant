@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import {
   getWaterLastNDays,
   getWaterAverageMl,
+  getWaterLoggedDays,
   getWaterStreak,
 } from "./waterHistory.js";
 
@@ -94,5 +95,25 @@ describe("getWaterStreak", () => {
 
   it("порожній log → 0", () => {
     expect(getWaterStreak({}, 2000, REF_MS)).toBe(0);
+  });
+});
+
+describe("getWaterLoggedDays", () => {
+  it("віддає всі непорожні дні, найновіший першим — без вікна від «сьогодні»", () => {
+    // Саме цей випадок був невидимий: запис давніший за 14-денне вікно
+    // аркуша історії не потрапляв ні в список, ні в перевірку «чи є дані».
+    const log = {
+      "2026-08-07": 15000,
+      "2026-08-20": 1000,
+      "2026-08-09": 0,
+    };
+    expect(getWaterLoggedDays(log)).toEqual([
+      { dayKey: "2026-08-20", ml: 1000 },
+      { dayKey: "2026-08-07", ml: 15000 },
+    ]);
+  });
+
+  it("порожній log → порожній список", () => {
+    expect(getWaterLoggedDays({})).toEqual([]);
   });
 });

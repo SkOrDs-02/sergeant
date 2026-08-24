@@ -1,6 +1,6 @@
 # Environment variables — повний reference
 
-> **Last touched:** 2026-08-16 by @claude. **Next review:** 2026-11-26.
+> **Last touched:** 2026-08-24 by @claude. **Next review:** 2026-12-04.
 > **Status:** Active
 
 Цей документ — канонічний reference усіх змінних оточення Sergeant. Мінімальний `.env` (12 змінних, потрібних для `pnpm dev:web` + `pnpm dev:server`) лежить у [`/.env.example`](../../../.env.example) у корені репо. Сюди винесено: повний опис, формати, default-и, наслідки незаповненості, перехресні посилання на код / ADR / hardening-ноти.
@@ -107,12 +107,13 @@ Origin веб-застосунку — куди повертається кор�
 
 ## 3. Anthropic AI — квоти, circuit breaker, tool-budget
 
-### `AI_DAILY_USER_LIMIT`, `AI_DAILY_ANON_LIMIT` _(optional)_
+### `AI_DAILY_USER_LIMIT` _(optional)_
 
-Денні ліміти викликів AI (таблиця `ai_usage_daily` у Postgres).
+Денний ліміт викликів AI (таблиця `ai_usage_daily` у Postgres).
 
-- `AI_DAILY_USER_LIMIT=120` (default) — для залогінених користувачів.
-- `AI_DAILY_ANON_LIMIT=40` (default) — без сесії, ключ — IP.
+- `AI_DAILY_USER_LIMIT=120` (default) — для залогінених користувачів. **Обережно: сьогодні змінна лише лежить у схемі й нічого не рухає.** Денний ліміт автентифікованого резолвиться за планом у `userDailyLimit()` → `billing/effectiveLimits.ts` (Free — 5 на добу, ADR-0085; Pro — `null`), і `AI_DAILY_USER_LIMIT` там не читається. Це передував ADR-0086 і ним не створене — але виставляти її в Coolify, очікуючи ефекту, марно.
+
+> **`AI_DAILY_ANON_LIMIT` прибрано 2026-08-24** ([ADR-0086](../../04-governance/adr/0086-no-anonymous-ai-sign-in-required.md)). Поля більше немає у схемі `env.ts` — виставляти його в Coolify не має ефекту. Причина: усі AI-роути (`/api/chat`, `/api/coach/insight`, `/api/weekly-digest`, `/api/nutrition/**`) стоять за `requireSession()` (аудит A1), тож без сесії приходить **401 раніше** за квоту — анонімна гілка `assertAiQuota` була недосяжним кодом і прибрана разом зі змінною.
 
 ### `AI_QUOTA_DISABLED` _(optional, dev/test only)_
 

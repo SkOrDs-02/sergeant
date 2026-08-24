@@ -1,10 +1,11 @@
 import {
-  createHabit as routineCreateHabit,
   loadRoutineState,
   saveRoutineState,
 } from "../../../modules/routine/lib/routineStorage";
+import { persistRoutineState } from "./routinePersistence";
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import {
+  applyCreateHabit,
   applyPauseHabitBetween,
   applyResumeHabitFrom,
   resolveHabitGlyph,
@@ -108,15 +109,16 @@ export function handleRoutineAction(
       const alreadyDone = prevArr.includes(targetDate);
       const arr = alreadyDone ? prevArr : [...prevArr, targetDate];
       completions[habitId] = arr;
-      saveRoutineState({ ...routineState, completions });
+      const confirm = persistRoutineState({ ...routineState, completions });
       const result = `Звичку "${habit.name || habitId}" відмічено як виконану (${targetDate})`;
       // Якщо звичка вже була в completions до виклику — undo нічого не
       // робить (no-op); інакше прибираємо `targetDate` зі списку.
       if (alreadyDone) {
-        return result;
+        return { result, confirm };
       }
       return {
         result,
+        confirm,
         undo: () => {
           const cur = loadRoutineState();
           const curCompletions = { ...cur.completions };
@@ -163,7 +165,7 @@ export function handleRoutineAction(
           ? String(timeOfDay).trim().padStart(5, "0")
           : "";
       const stateBefore = loadRoutineState();
-      const nextState = routineCreateHabit(stateBefore, {
+      const nextState = applyCreateHabit(stateBefore, {
         name: trimmed,
         // `emoji` з tool-call може бути й emoji, і slug — reducer
         // нормалізує обидва (`@sergeant/routine-domain` → `glyphs.ts`).
@@ -172,6 +174,7 @@ export function handleRoutineAction(
         weekdays: wdays && wdays.length ? wdays : undefined,
         timeOfDay: tod,
       });
+      const confirm = persistRoutineState(nextState);
       const created = nextState.habits[nextState.habits.length - 1];
       const createdId = created?.id;
       const recLabelMap: Record<string, string> = {
@@ -182,12 +185,13 @@ export function handleRoutineAction(
         once: "разово",
       };
       const result = `Звичку "${trimmed}" створено (${recLabelMap[rec] || rec}, id:${createdId || "?"})`;
-      if (!createdId) return result;
+      if (!createdId) return { result, confirm };
       // Undo тримає id (а не повний snapshot), щоб не переписувати
       // інші зміни, які можуть статися між створенням і undo
       // (інша звичка створена, completions додані, etc.).
       return {
         result,
+        confirm,
         undo: () => {
           const cur = loadRoutineState();
           const habits = Array.isArray(cur.habits)
@@ -226,10 +230,11 @@ export function handleRoutineAction(
       reminders.push(normTime);
       reminders.sort();
       habits[hIdx] = { ...habit, reminderTimes: reminders };
-      saveRoutineState({ ...state, habits });
+      const confirm = persistRoutineState({ ...state, habits });
       const habitName = habit.name || id;
       return {
         result: `Нагадування ${normTime} додано до "${habitName}"`,
+        confirm,
         undo: () => {
           const cur = loadRoutineState();
           const curHabits = cur.habits.slice();
@@ -280,14 +285,15 @@ export function handleRoutineAction(
         }
       }
       completions[id] = cur.sort();
-      saveRoutineState({ ...state, completions });
+      const confirm = persistRoutineState({ ...state, completions });
       const result = `Звичку "${habit.name || id}" ${doComplete ? "відмічено" : "знято з позначки"} на ${d}`;
-      if (!mutated) return result;
+      if (!mutated) return { result, confirm };
       // Undo відновлює лише свою зміну (додав d → видаляє d;
       // видалив d → возвращає d), а не переписує повний snapshot —
       // інакше паралельні mark/unmark інших дат втратяться.
       return {
         result,
+        confirm,
         undo: () => {
           const c = loadRoutineState();
           const cc = { ...c.completions };
@@ -320,7 +326,7 @@ export function handleRoutineAction(
         return `Звичку "${habit.name || id}" вже ${doArchive ? "заархівовано" : "активна"}.`;
       }
       habits[idx] = { ...habit, archived: doArchive };
-      saveRoutineState({ ...state, habits });
+      const confirm = persistRoutineState({ ...state, habits });
       // Рішення founder-а #8: оборотні дії виконуються одразу, але з
       // кнопкою «скасувати». Архівація оборотна за визначенням (той самий
       // інструмент приймає `archived: false`), тож підтвердження їй не
@@ -330,6 +336,7 @@ export function handleRoutineAction(
       const previous = !!habit.archived;
       return {
         result: `Звичку "${habit.name || id}" ${doArchive ? "заархівовано" : "повернуто з архіву"}`,
+        confirm,
         undo: () => {
           const current = loadRoutineState();
           const list = current.habits.slice();
@@ -355,7 +362,7 @@ export function handleRoutineAction(
           ? String(time).trim().padStart(5, "0")
           : "";
       const state = loadRoutineState();
-      const nextState = routineCreateHabit(state, {
+      const nextState = applyCreateHabit(state, {
         name: evName,
         emoji: upgradeHabitGlyph(emoji) ?? "calendar-check",
         recurrence: "once",
@@ -363,8 +370,12 @@ export function handleRoutineAction(
         endDate: d,
         timeOfDay: tod,
       });
+      const confirm = persistRoutineState(nextState);
       const created = nextState.habits[nextState.habits.length - 1];
-      return `Подію "${evName}" додано на ${d}${tod ? ` о ${tod}` : ""} (id:${created?.id || "?"})`;
+      return {
+        result: `Подію "${evName}" додано на ${d}${tod ? ` о ${tod}` : ""} (id:${created?.id || "?"})`,
+        confirm,
+      };
     }
     case "edit_habit": {
       const { habit_id, name, emoji, recurrence, weekdays } = (
@@ -405,8 +416,11 @@ export function handleRoutineAction(
       }
       if (changes.length === 0) return "Немає змін для оновлення.";
       habits[hIdx] = updated;
-      saveRoutineState({ ...state, habits });
-      return `Звичку "${updated.name || id}" оновлено: ${changes.join(", ")}`;
+      const confirm = persistRoutineState({ ...state, habits });
+      return {
+        result: `Звичку "${updated.name || id}" оновлено: ${changes.join(", ")}`,
+        confirm,
+      };
     }
     case "set_habit_schedule": {
       const { habit_id, days } = (action as SetHabitScheduleAction).input;
@@ -441,9 +455,12 @@ export function handleRoutineAction(
         recurrence: "weekly",
         weekdays: normalized,
       };
-      saveRoutineState({ ...state, habits });
+      const confirm = persistRoutineState({ ...state, habits });
       const labels = normalized.map((n) => WEEKDAY_LABEL_UK[n]).join(", ");
-      return `Розклад звички "${habit.name || id}": ${labels}`;
+      return {
+        result: `Розклад звички "${habit.name || id}": ${labels}`,
+        confirm,
+      };
     }
     case "pause_habit": {
       // Хвиля 4: тул пише ДАТОВАНИЙ інтервал, а не недатований прапор
@@ -463,8 +480,10 @@ export function handleRoutineAction(
       if (!target) {
         const next = applyResumeHabitFrom(state, id, todayKey);
         if (next === state) return `Звичка "${habitName}" вже активна.`;
-        saveRoutineState(next);
-        return `Звичку "${habitName}" повернуто з паузи від сьогодні.`;
+        return {
+          result: `Звичку "${habitName}" повернуто з паузи від сьогодні.`,
+          confirm: persistRoutineState(next),
+        };
       }
 
       const fromKey = isDateKey(from) ? from : todayKey;
@@ -476,10 +495,14 @@ export function handleRoutineAction(
       if (next === state) {
         return `Звичка "${habitName}" уже на паузі в цьому діапазоні.`;
       }
-      saveRoutineState(next);
-      return toKey === null
-        ? `Звичку "${habitName}" поставлено на паузу з ${fromKey}. Ці дні не рахуються, серія їх не помітить.`
-        : `Звичку "${habitName}" поставлено на паузу ${fromKey} – ${toKey}. Ці дні не рахуються, серія їх не помітить.`;
+      const confirm = persistRoutineState(next);
+      return {
+        result:
+          toKey === null
+            ? `Звичку "${habitName}" поставлено на паузу з ${fromKey}. Ці дні не рахуються, серія їх не помітить.`
+            : `Звичку "${habitName}" поставлено на паузу ${fromKey} – ${toKey}. Ці дні не рахуються, серія їх не помітить.`,
+        confirm,
+      };
     }
     case "reorder_habits": {
       const { habit_ids } = (action as ReorderHabitsAction).input;
@@ -493,11 +516,14 @@ export function handleRoutineAction(
         .filter((h): h is (typeof habits)[0] => h != null);
       const idSet = new Set(habit_ids);
       const remaining = habits.filter((h) => !idSet.has(h.id));
-      saveRoutineState({
+      const confirm = persistRoutineState({
         ...state,
         habits: [...reordered, ...remaining],
       });
-      return `Порядок звичок оновлено (${reordered.length} переміщено)`;
+      return {
+        result: `Порядок звичок оновлено (${reordered.length} переміщено)`,
+        confirm,
+      };
     }
     case "habit_stats": {
       const { habit_id, period_days } = (action as HabitStatsAction).input;

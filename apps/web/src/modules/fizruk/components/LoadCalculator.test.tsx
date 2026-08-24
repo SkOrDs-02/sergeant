@@ -24,6 +24,14 @@ describe("LoadCalculator", () => {
     expect(screen.getAllByText("95%").length).toBeGreaterThan(0);
   });
 
+  // QA 2026-08-23: калькулятор друкував «92.5 / 87.5» англійською крапкою
+  // поруч із «102,5 кг» на тій самій сторінці.
+  it("prints fractional loads with the Ukrainian decimal comma", () => {
+    render(<LoadCalculator oneRM={97.5} />);
+    expect(screen.getByText("92,5")).toBeInTheDocument();
+    expect(screen.queryByText("92.5")).toBeNull();
+  });
+
   it("renders dashes for zero loads when 1RM is 0", () => {
     render(<LoadCalculator oneRM={0} />);
     expect(screen.getAllByText("—").length).toBeGreaterThan(0);

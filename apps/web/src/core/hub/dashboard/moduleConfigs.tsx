@@ -80,6 +80,59 @@ export interface ModuleConfig {
 export type ModuleId = ModuleAccent;
 
 /**
+ * Копія стану «історія є, але за поточний період порожньо».
+ *
+ * FTUX-обіцянка (`emptyPromise` + `emptyLabel: "Почни тут →"`) обіцяє
+ * перший крок — і це брехня людині, яка залогувала 84 прийоми їжі за
+ * місяць, просто нічого не внесла СЬОГОДНІ (browser QA 2026-08-23).
+ * Тому «порожньо» розщеплено надвоє: `emptyLabel` лишається за тими, у
+ * кого записів не було ніколи, а тут живе чесний текст затишшя.
+ *
+ * Період названо буквально по тому, що рахує знімок quick-stats:
+ * Фізрук — тиждень (`weekWorkouts`), решта — день.
+ */
+export const MODULE_DORMANT_COPY: Record<
+  ModuleId,
+  { readonly label: string; readonly hint: string }
+> = {
+  finyk: {
+    label: "Сьогодні ще порожньо",
+    hint: "Записи на місці — відкрий, щоб додати",
+  },
+  fizruk: {
+    label: "Цього тижня ще порожньо",
+    hint: "Тренування на місці — відкрий, щоб додати",
+  },
+  routine: {
+    label: "Сьогодні ще порожньо",
+    hint: "Звички на місці — відкрий, щоб відмітити",
+  },
+  nutrition: {
+    label: "Сьогодні ще порожньо",
+    hint: "Записи на місці — відкрий, щоб додати",
+  },
+};
+
+const DEFAULT_DORMANT_COPY = MODULE_DORMANT_COPY.finyk;
+
+/**
+ * Копія затишшя за `ModuleConfig["module"]` (він типізований як `string`,
+ * бо той самий рядок їде у навігацію). Невідомий id падає на нейтральний
+ * денний варіант — плитка радше скаже «сьогодні ще порожньо», ніж
+ * порушить контракт рендера.
+ */
+export function dormantCopyFor(module: string): {
+  readonly label: string;
+  readonly hint: string;
+} {
+  return (
+    (MODULE_DORMANT_COPY as Record<string, { label: string; hint: string }>)[
+      module
+    ] ?? DEFAULT_DORMANT_COPY
+  );
+}
+
+/**
  * Per-module bento-card configuration: icon glyph, label/description,
  * Tailwind palette tokens, goal-progress flag, and a `getPreview()` reader
  * that pulls the latest "quick stats" snapshot from localStorage and

@@ -99,6 +99,14 @@ vi.mock("./observability/analytics", async () => {
   };
 });
 
+// Гість vs залогінений: сторінка читає лише `status` з `useAuthOptional`.
+let mockAuthStatus: "loading" | "authenticated" | "unauthenticated" | null =
+  "authenticated";
+vi.mock("./auth/AuthContext", () => ({
+  useAuthOptional: () =>
+    mockAuthStatus === null ? null : { status: mockAuthStatus, user: null },
+}));
+
 import { PricingPage } from "./PricingPage";
 import { ANALYTICS_EVENTS } from "@sergeant/shared";
 
@@ -129,6 +137,7 @@ describe("PricingPage (Phase 7 D3 — Free + Premium)", () => {
     toastErrorMock.mockClear();
     toastInfoMock.mockClear();
     trackEventMock.mockClear();
+    mockAuthStatus = "authenticated";
     statusMock.mockResolvedValue({
       subscription: {
         active: false,
@@ -464,6 +473,53 @@ describe("PricingPage (Phase 7 D3 — Free + Premium)", () => {
       fireEvent.click(portalBtn);
       const alert = await screen.findByRole("alert");
       expect(alert.textContent).toMatch(/платіжний профіль/i);
+    });
+  });
+  // Regression (browser QA 2026-08-23): анонімний відвідувач бачив на Free
+  // бейдж «Зараз ваш план» і однойменну disabled-кнопку, хоча жодного
+  // акаунта немає. «Поточний план» — твердження про сесію, не про дефолт.
+  describe("anonymous visitor", () => {
+    it("claims no current plan and offers signing in instead", async () => {
+      mockAuthStatus = "unauthenticated";
+      renderPricing();
+
+      await waitFor(() =>
+        expect(screen.queryAllByTestId("current-plan-badge")).toHaveLength(0),
+      );
+      expect(screen.queryByText("Зараз ваш план")).toBeNull();
+
+      const signIn = screen.getByRole("button", { name: "Увійти й почати" });
+      expect(signIn).not.toBeDisabled();
+      fireEvent.click(signIn);
+      expect(trackEventMock).toHaveBeenCalledWith(
+        ANALYTICS_EVENTS.PRICING_CTA_CLICKED,
+        expect.objectContaining({ cta: "sign_in" }),
+      );
+    });
+
+    it("keeps the current-plan marker for a signed-in free user", async () => {
+      mockAuthStatus = "authenticated";
+      renderPricing();
+
+      const badges = await screen.findAllByTestId("current-plan-badge");
+      expect(badges).toHaveLength(1);
+      expect(
+        screen.queryByRole("button", { name: "Увійти й почати" }),
+      ).toBeNull();
+    });
+
+    // Гола сторінка без `AuthProvider` (так її монтують інші юніти):
+    // `useAuthOptional()` віддає `null`, і сторінка НЕ має читати це як
+    // «вийшов» — відсутність контексту не є твердженням про сесію.
+    it("does not claim a signed-out visitor when there is no auth context", async () => {
+      mockAuthStatus = null;
+      renderPricing();
+
+      const badges = await screen.findAllByTestId("current-plan-badge");
+      expect(badges).toHaveLength(1);
+      expect(
+        screen.queryByRole("button", { name: "Увійти й почати" }),
+      ).toBeNull();
     });
   });
 });

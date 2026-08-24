@@ -120,9 +120,10 @@ describe("PresetSheet", () => {
       <PresetSheet open moduleId="finyk" onClose={onClose} onPick={onPick} />,
     );
     fireEvent.click(screen.getByText("Кава"));
+    // Слаг `cafe`, не legacy-мітка «їжа» (та мапиться в `food` — «Продукти»).
     expect(writePresetPrefill).toHaveBeenCalledWith("finyk", {
       description: "Кава",
-      category: "їжа",
+      category: "cafe",
     });
     expect(openHubModuleWithAction).toHaveBeenCalledWith(
       "finyk",

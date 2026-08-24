@@ -3,6 +3,7 @@
  * Status: Active
  */
 import { cn } from "@shared/lib/ui/cn";
+import { fmtLoose } from "../lib/numberFmt";
 import { Measure } from "@shared/components/ui/Measure";
 import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
@@ -91,7 +92,9 @@ export function LoadCalculator({
                       {pct}%
                     </div>
                     <div className="text-style-label text-text tabular-nums leading-tight">
-                      {kg > 0 ? `${kg}` : "—"}
+                      {/* Сирий `${kg}` друкував «92.5» англійською крапкою поруч із
+                          «102,5 кг» у сусідньому блоці (QA 2026-08-23). */}
+                      {kg > 0 ? fmtLoose(kg) : "—"}
                     </div>
                     <div className="text-style-caption text-muted leading-none">
                       кг
@@ -104,7 +107,7 @@ export function LoadCalculator({
         ))}
       </div>
       <p className="text-style-caption text-muted mt-2 text-center">
-        Ваги округлені до найближчих 2.5 кг
+        Ваги округлені до найближчих 2,5 кг
       </p>
     </Card>
   );

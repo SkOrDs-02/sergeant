@@ -82,18 +82,32 @@ export function useExerciseCatalog() {
         const aliases = (ex?.aliases || []).map(norm).join(" ");
         const desc = norm(ex?.description);
         const group = norm(ex?.primaryGroup);
-        const groupUk = norm(ex?.primaryGroupUk);
+        // AI-DANGER: `primaryGroupUk` у вбудованому каталозі НЕ заповнене
+        // (0 із 119 вправ) — українська назва групи живе лише в мапі
+        // `labels.primaryGroupsUk`. Поки шукали тільки по полю запису,
+        // «спина» не знаходила жодної з 13 вправ спини, хоча плейсхолдер
+        // поля пошуку рекламує саме цей запит (браузерне QA 2026-08-23).
+        // Тому лейбл резолвиться через мапу, а не читається з вправи.
+        const groupUk = norm(ex?.primaryGroupUk || primaryGroupsUk[group]);
+        // Мʼязи теж шукані: «спина» має ловити і «Найширший мʼяз спини».
+        const muscles = [
+          ...(ex?.muscles?.primary || []),
+          ...(ex?.muscles?.secondary || []),
+        ]
+          .map((id) => `${norm(id)} ${norm(musclesUk[id])}`)
+          .join(" ");
         return (
           nameUk.includes(q) ||
           nameEn.includes(q) ||
           aliases.includes(q) ||
           desc.includes(q) ||
           group.includes(q) ||
-          groupUk.includes(q)
+          groupUk.includes(q) ||
+          muscles.includes(q)
         );
       });
     },
-    [exercises],
+    [exercises, primaryGroupsUk, musclesUk],
   );
 
   const addExercise = useCallback(

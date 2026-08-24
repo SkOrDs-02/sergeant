@@ -334,6 +334,33 @@ describe("generateRecommendations", () => {
     expect(fitnessRec!.title).toContain("днів без тренування");
   });
 
+  // Regression (browser QA 2026-08-23): «Що зараз важливо» показувало 15 днів
+  // там, де блок інсайтів показував 16 — рушій ділив години на 24 і округляв,
+  // тож вечірнє тренування «з'їдало» цілий календарний день. Обидві поверхні
+  // тепер міряють `wholeDaysSince` від `endedAt`.
+  it("рахує паузу календарними днями, а не 24-годинними інтервалами", () => {
+    vi.useFakeTimers();
+    // Ранок 2026-04-27, останнє тренування завершилось увечері 2026-04-11:
+    // 16 календарних днів, але лише ~15.5 доби реального часу.
+    vi.setSystemTime(localClock(2026, 4, 27, 9));
+
+    const started = localClock(2026, 4, 11, 21);
+    setLS("fizruk_workouts_v1", [
+      {
+        id: "w1",
+        startedAt: started.toISOString(),
+        endedAt: new Date(started.getTime() + 3600000).toISOString(),
+        items: [],
+      },
+    ]);
+
+    const rec = generateRecommendations().find(
+      (r) => r.id === "fizruk_long_break",
+    );
+    expect(rec).toBeDefined();
+    expect(rec!.title).toBe("16 днів без тренування");
+  });
+
   it("не показує fizruk_long_break якщо тренувались менше 5 днів тому", () => {
     const recent = new Date();
     recent.setDate(recent.getDate() - 2);

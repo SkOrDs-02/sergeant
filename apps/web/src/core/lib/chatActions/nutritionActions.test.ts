@@ -708,7 +708,7 @@ describe("log_meal · undo", () => {
     expect(out.result).toContain("Сніданок");
     expect(dayMeals("2026-04-22")).toHaveLength(1);
 
-    out.undo();
+    out.undo?.();
 
     // Day is removed entirely коли meals = 0 (cleanup empty days).
     expect(mem.log["2026-04-22"]).toBeUndefined();
@@ -743,7 +743,7 @@ describe("log_meal · undo", () => {
     if (typeof out === "string" || out == null)
       throw new Error("expected object");
 
-    out.undo();
+    out.undo?.();
     expect(() => out.undo!()).not.toThrow();
   });
 });
@@ -762,7 +762,7 @@ describe("log_water · undo", () => {
 
     expect(mem.water["2025-04-29"]).toBe(250);
 
-    out.undo();
+    out.undo?.();
     expect(mem.water["2025-04-29"]).toBeUndefined();
   });
 
@@ -776,7 +776,7 @@ describe("log_water · undo", () => {
       throw new Error("expected object");
     expect(mem.water["2025-04-29"]).toBe(700);
 
-    out.undo();
+    out.undo?.();
     expect(mem.water["2025-04-29"]).toBe(500);
   });
 });
@@ -793,7 +793,7 @@ describe("add_to_shopping_list · undo", () => {
     if (typeof out === "string" || out == null)
       throw new Error("expected object");
 
-    out.undo();
+    out.undo?.();
     const cur = mem.shopping as { categories?: unknown[] } | null;
     expect(cur?.categories ?? []).toHaveLength(0);
   });

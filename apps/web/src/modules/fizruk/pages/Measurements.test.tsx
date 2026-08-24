@@ -195,7 +195,7 @@ describe("Measurements page", () => {
     ];
     render(<Measurements />);
     // +3.0 kg delta surfaced in the "Останній замір" card.
-    expect(screen.getByText(/\+3\.0/)).toBeInTheDocument();
+    expect(screen.getByText(/\+3,0/)).toBeInTheDocument();
   });
 
   it("delete button exposes an accessible name and touch-target sizing (F8)", () => {

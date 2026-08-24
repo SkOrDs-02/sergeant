@@ -365,8 +365,10 @@ export function useRoutineAppState({
       trackEvent(ANALYTICS_EVENTS.ROUTINE_HABIT_CHECKED, {
         state: outcome.done ? "done" : "undone",
         source: "ui",
-        // День ПРИСТРОЮ (ADR-0078): `dateKey` — це той самий ключ, яким
-        // домен адресує відмітку, тобто вже device-local, ніякого UTC.
+        // Той самий ключ, яким домен адресує відмітку — тобто анкер із
+        // `lib/dayAnchor.ts` (`ROUTINE_DAY_ANCHOR`), не UTC. Наразі це
+        // київське «сьогодні»; ADR-0078 цілиться в device-local, і коли
+        // routine туди переїде, це поле поїде разом із генератором ключа.
         day_key: dateKey,
         // Показаний стрік — `derived.streakMax`, максимум по ВСІХ звичках,
         // а чекін per-habit. Без цього поля аналіз збрехав би, нібито
