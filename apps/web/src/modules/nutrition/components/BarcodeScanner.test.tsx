@@ -90,7 +90,7 @@ describe("BarcodeScanner — web variant", () => {
 
   it("shows hint text when status is empty", () => {
     render(<BarcodeScanner onDetected={vi.fn()} onClose={vi.fn()} />);
-    expect(screen.getByText(/Наведи камеру на штрих-код/)).toBeInTheDocument();
+    expect(screen.getByText(/Наведи камеру на штрихкод/)).toBeInTheDocument();
   });
 
   it("deactivates web scanning and reports the detected code", () => {
@@ -188,7 +188,7 @@ describe("BarcodeScanner — native variant", () => {
     });
 
     expect(toastErrorMock).toHaveBeenCalledWith(
-      "Сканер недоступний. Введи код вручну.",
+      "Сканер недоступний. Додай страву вручну.",
     );
     expect(onClose).toHaveBeenCalledTimes(1);
   });

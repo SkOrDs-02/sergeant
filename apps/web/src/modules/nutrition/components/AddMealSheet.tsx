@@ -575,6 +575,10 @@ export function AddMealSheet({
             await handleBarcodeLookup(raw);
           }}
           onClose={() => setScannerOpen(false)}
+          onManualEntry={() => {
+            setScannerOpen(false);
+            setSourceTab("manual");
+          }}
         />
       )}
       <Sheet
