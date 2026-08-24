@@ -80,6 +80,7 @@ vi.mock("@shared/hooks/useToast", () => ({
 }));
 
 import { useChatSend } from "./useChatSend";
+import { chatKeys } from "@shared/lib/api/queryKeys";
 import type { ChatMessage } from "../../lib/hubChatUtils";
 
 function makeWrapper() {
@@ -450,5 +451,45 @@ describe("useChatSend — підтвердження незворотних ді
     });
 
     expect(executeActionsMock).not.toHaveBeenCalled();
+  });
+  // Regression (browser QA 2026-08-23): пігулка «0/5» жила лише на монтуванні
+  // `ChatUsageCounter`, тож лічильник не рухався всю сесію — навіть поруч із
+  // 429 про вичерпаний ліміт. Правда з'являлась лише після перезавантаження.
+  it("refetches the AI-usage counter after every turn, успішного і збійного", async () => {
+    const client = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+    const invalidateSpy = vi.spyOn(client, "invalidateQueries");
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    );
+    const invalidatedUsage = () =>
+      invalidateSpy.mock.calls.some(
+        ([arg]) =>
+          JSON.stringify(
+            (arg as { queryKey?: unknown } | undefined)?.queryKey,
+          ) === JSON.stringify(chatKeys.usage),
+      );
+
+    sendMock.mockResolvedValue({ text: "ок" });
+    const { result } = renderHook(
+      () => useChatSend({ messages: [], setMessages: vi.fn() }),
+      { wrapper },
+    );
+
+    await act(async () => {
+      await result.current.send("привіт");
+    });
+    expect(invalidatedUsage()).toBe(true);
+
+    invalidateSpy.mockClear();
+    sendMock.mockRejectedValue(new Error("quota"));
+    await act(async () => {
+      await result.current.send("ще раз");
+    });
+    expect(invalidatedUsage()).toBe(true);
   });
 });

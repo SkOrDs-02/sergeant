@@ -17,6 +17,7 @@ import {
 import { calcFinykPeriodAggregate } from "@sergeant/finyk-domain/lib/spending";
 import { readFinykStatsContext } from "@finyk/lib/lsStats";
 import { formatNumberUk, pluralDays, pluralUa } from "@sergeant/shared";
+import { wholeDaysSince } from "@shared/lib/time/wholeDaysSince";
 import {
   BODY_ATLAS_MUSCLE_LABELS_UK,
   mapDomainMuscleToAtlas,
@@ -186,22 +187,31 @@ function buildFizrukRecs(): Rec[] {
   const completed = workouts.filter((w) => w.endedAt);
   if (!completed.length) return recs;
 
-  const sorted = [...completed].sort(
-    (a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime(),
+  const now = new Date();
+  // AI-CONTEXT: одна пауза — одне число. Тут ділили ГОДИНИ на 24 і
+  // округляли, а `useRestDayOverdueInsight` (fizruk) рахував календарні
+  // доби від `endedAt`, тож хаб одночасно показував «15 днів» у картці
+  // «Що зараз важливо» і «16 днів» в інсайтах (browser QA 2026-08-23).
+  // Обидва тепер міряють `wholeDaysSince` від ОСТАННЬОГО завершення.
+  let lastEndedMs = -Infinity;
+  for (const w of completed) {
+    const ms = Date.parse(w.endedAt as string);
+    if (Number.isFinite(ms) && ms > lastEndedMs) lastEndedMs = ms;
+  }
+  const daysSinceWorkout = wholeDaysSince(
+    lastEndedMs === -Infinity ? null : lastEndedMs,
+    now,
   );
 
-  const now = new Date();
-  const lastMs = new Date(sorted[0]!.startedAt).getTime();
-  const hoursAgo = (now.getTime() - lastMs) / 3_600_000;
-  const daysSinceWorkout = hoursAgo / 24;
-
-  if (daysSinceWorkout > LONG_BREAK_DAYS) {
+  // Нескінченність = жодного парсабельного `endedAt`. Тоді мовчимо обидві
+  // гілки: «Infinity днів без тренування» — не повідомлення, а баг напоказ.
+  if (Number.isFinite(daysSinceWorkout) && daysSinceWorkout > LONG_BREAK_DAYS) {
     recs.push({
       id: "fizruk_long_break",
       module: "fizruk",
       priority: 85,
       icon: "dumbbell",
-      title: `${Math.round(daysSinceWorkout)} днів без тренування`,
+      title: `${daysSinceWorkout} ${pluralDays(daysSinceWorkout)} без тренування`,
       body: "Пора відновити активність! Навіть легке тренування краще, ніж нічого.",
       action: "fizruk",
       pwaAction: "start_workout",

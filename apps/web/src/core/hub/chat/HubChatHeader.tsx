@@ -48,7 +48,11 @@ export function HubChatHeader({
         placement="bottom-start"
         open={detailsOpen}
         onOpenChange={onDetailsOpenChange}
-        wrapperClassName="min-w-0 flex-1"
+        // Без `min-w-0`: у flex-рядку це повертає елементу `min-width: auto`
+        // (= min-content), тож заголовок диктує свою мінімальну ширину, а
+        // дефіцит іде правому кластеру. Саме `min-w-0` і дозволяв шапці
+        // тиснути «Асистент» до «Ас…».
+        wrapperClassName="flex-1"
         className="min-w-[280px]! p-1.5"
         trigger={
           <span
@@ -78,10 +82,14 @@ export function HubChatHeader({
                 aria-hidden
               />
             </span>
-            <span className="flex items-center gap-1 min-w-0">
+            {/* Назва не стискається. На 393px шапка пакувала лічильник,
+                «Нова» і «×» проти заголовка, і той обрізався до «Ас…»
+                (scrollWidth 85 vs clientWidth 43 — browser QA 2026-08-23).
+                Дефіцит тепер віддається праворуч, де є що вкоротити. */}
+            <span className="flex items-center gap-1 shrink-0">
               <span
                 id="hub-chat-title"
-                className="text-style-title font-bold text-text leading-snug truncate"
+                className="text-style-title font-bold text-text leading-snug whitespace-nowrap"
               >
                 Асистент
               </span>
@@ -147,13 +155,16 @@ export function HubChatHeader({
           Усі бесіди ({sessionsCount})
         </PopoverItem>
       </Popover>
-      <div className="flex items-center gap-1 shrink-0">
+      {/* `min-w-0` (а не `shrink-0`): переповнення поглинає пігулка
+          лічильника, а кнопки лишаються цілими — вони інтерактивні й мають
+          тримати 44px floor. */}
+      <div className="flex items-center gap-1 min-w-0">
         <ChatUsageCounter />
         <Tooltip content="Почати нову бесіду" placement="bottom-center">
           <button
             type="button"
             onClick={onClearChat}
-            className="h-9 min-h-[44px] min-w-[44px] px-3 flex items-center gap-1.5 rounded-xl bg-brand-soft text-brand-strong dark:text-brand border border-brand-soft-border/50 hover:bg-brand-soft-hover transition-colors text-style-label font-semibold outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+            className="h-9 min-h-[44px] min-w-[44px] shrink-0 px-3 flex items-center gap-1.5 rounded-xl bg-brand-soft text-brand-strong dark:text-brand border border-brand-soft-border/50 hover:bg-brand-soft-hover transition-colors text-style-label font-semibold outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
             aria-label="Нова бесіда"
           >
             <Icon name="plus" size={14} />
@@ -163,7 +174,7 @@ export function HubChatHeader({
         <button
           type="button"
           onClick={onClose}
-          className="w-9 h-9 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors"
+          className="w-9 h-9 min-h-[44px] min-w-[44px] shrink-0 flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors"
           aria-label="Закрити асистента"
         >
           <Icon name="close" size={16} />

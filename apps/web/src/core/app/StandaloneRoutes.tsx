@@ -200,7 +200,14 @@ const STANDALONE_ROUTES: ReadonlyArray<StandaloneRoute> = [
       }
       return (
         <Suspense fallback={<PageLoader />}>
-          <div className="page-enter">
+          {/* AI-DANGER: `page-enter` — проміжний блок між `#root` і `MeshBackground`.
+              Без явної висоти він auto, тож `h-app-dvh` (=`height:100%`) усередині
+              резолвиться в `auto`, шел росте під контент, а `body{overflow:hidden}`
+              просто зрізає низ — власний `overflow-y-auto` шела при цьому не має
+              чого скролити. Саме так на 1280×720 ставав недосяжним футер із
+              легальними лінками, а на 1280×633 — кнопка «Зареєструватися»
+              (browser QA 2026-08-23). Той самий токен уже стоїть на `/legal/*`. */}
+          <div className="page-enter h-app-dvh min-h-0">
             <AuthPage onContinueWithoutAccount={onLeaveAuth} />
           </div>
         </Suspense>
@@ -224,7 +231,9 @@ const STANDALONE_ROUTES: ReadonlyArray<StandaloneRoute> = [
     paths: [RESET_PASSWORD_PATH],
     render: () => (
       <Suspense fallback={<PageLoader />}>
-        <div className="page-enter">
+        {/* Висота — з тієї ж причини, що на `/sign-in`: цей екран теж стоїть
+            на `MeshBackground` з власним `overflow-y-auto`. */}
+        <div className="page-enter h-app-dvh min-h-0">
           <ResetPasswordPage />
         </div>
       </Suspense>
@@ -240,7 +249,8 @@ const STANDALONE_ROUTES: ReadonlyArray<StandaloneRoute> = [
     paths: [VERIFY_EMAIL_PATH],
     render: () => (
       <Suspense fallback={<PageLoader />}>
-        <div className="page-enter">
+        {/* Див. коментар на `/sign-in` — той самий скрол-контракт. */}
+        <div className="page-enter h-app-dvh min-h-0">
           <VerifyEmailPage />
         </div>
       </Suspense>
