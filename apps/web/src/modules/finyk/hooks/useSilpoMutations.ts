@@ -13,6 +13,7 @@ import {
   silpoApi,
   type SilpoDisconnectResponse,
   type SilpoSyncResult,
+  type SilpoUnlinkResponse,
   type SilpoWipeResponse,
 } from "@shared/api";
 import { finykKeys, hubKeys, silpoKeys } from "@shared/lib/api/queryKeys";
@@ -64,6 +65,26 @@ export function useSilpoWipe() {
       // Wipe deletes receipts/items/links — every cached page and detail
       // under the `silpo` prefix is now wrong; the sync-state's
       // `receiptsCount` also drops to 0.
+      void queryClient.invalidateQueries({ queryKey: silpoKeys.all });
+    },
+  });
+}
+
+/**
+ * «Це не той чек» — знімає хибну пару «транзакція ↔ чек», яку поставив
+ * детермінований matcher (збіг суми у вікні ±1 доба). Пара запамʼятовується
+ * на сервері як відхилена, тож найближчий sync її не відновить.
+ *
+ * Інвалідовуємо весь `silpoKeys.all`, а не лише сторінку цієї транзакції:
+ * чек повертається в «Чеки без транзакції» на картці налаштувань, а та
+ * читає інший ключ.
+ */
+export function useSilpoUnlinkReceipt() {
+  const queryClient = useQueryClient();
+  return useMutation<SilpoUnlinkResponse, unknown, string>({
+    mutationFn: (transactionId: string) =>
+      silpoApi.unlinkReceipt(transactionId),
+    onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: silpoKeys.all });
     },
   });

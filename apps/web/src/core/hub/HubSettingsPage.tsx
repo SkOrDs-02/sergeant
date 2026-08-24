@@ -241,6 +241,23 @@ export const GROUPS = [
   },
 ] as const;
 
+// Human copy for `?silpo=error&reason=…` codes sent by
+// `apps/server/src/routes/silpo.ts` (`redirectToSettings`). Unmapped/absent
+// reasons fall back to the generic message below (do not remove that
+// fallback — new server-side reasons must degrade gracefully, not dump the
+// machine code into the toast).
+const SILPO_ERROR_REASON_MESSAGES: Readonly<Record<string, string>> = {
+  denied: "Ти відмовив у доступі до Сільпо.",
+  invalid_request: "Сільпо не передав потрібні дані. Спробуй ще раз.",
+  invalid_state: "Забагато часу минуло з переходу в Сільпо. Спробуй ще раз.",
+  config_missing:
+    "Зв'язування тимчасово недоступне на сервері. Спробуй пізніше.",
+  missing_refresh_token: "Сільпо не надав потрібний доступ. Спробуй ще раз.",
+  exchange_failed: "Не вдалося завершити зв'язування з Сільпо. Спробуй ще раз.",
+  session_expired:
+    "Сесія Sergeant завершилась, поки ти був на сторінці Сільпо. Спробуй ще раз.",
+};
+
 function readSettingsSectionHash(hash: string): string | null {
   const raw = hash.replace(/^#/, "");
   if (!raw.startsWith("settings-")) return null;
@@ -527,9 +544,8 @@ export function HubSettingsPage({ scrollContainer }: HubSettingsPageProps) {
     } else {
       const reason = params.get("reason");
       toast.error(
-        reason
-          ? `Не вдалося зв'язати Сільпо: ${reason}`
-          : "Не вдалося зв'язати Сільпо.",
+        (reason && SILPO_ERROR_REASON_MESSAGES[reason]) ??
+          "Не вдалося зв'язати Сільпо.",
         undefined,
         {
           label: "Спробувати ще раз",

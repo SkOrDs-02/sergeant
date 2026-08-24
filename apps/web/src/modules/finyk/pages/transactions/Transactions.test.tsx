@@ -3,6 +3,7 @@ import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MemoryRouter } from "react-router-dom";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
 
 // The transaction-details sheet renders a "Чек" section
@@ -188,13 +189,17 @@ function renderTransactions(
     defaultOptions: { queries: { retry: false } },
   });
   return render(
-    <QueryClientProvider client={client}>
-      <Transactions
-        mono={buildMono(mono)}
-        storage={buildStorage(storage)}
-        {...rest}
-      />
-    </QueryClientProvider>,
+    // Деталі транзакції відкривають `SilpoReceiptSection`, а той ходить у
+    // `useNavigate` (CTA «Зв'язати Сільпо») — хук кидає без роутер-контексту.
+    <MemoryRouter>
+      <QueryClientProvider client={client}>
+        <Transactions
+          mono={buildMono(mono)}
+          storage={buildStorage(storage)}
+          {...rest}
+        />
+      </QueryClientProvider>
+    </MemoryRouter>,
   );
 }
 

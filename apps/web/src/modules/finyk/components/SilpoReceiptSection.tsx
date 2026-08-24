@@ -25,6 +25,7 @@
  * silent either.
  */
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { Money } from "@shared/components/ui/Money";
@@ -35,11 +36,22 @@ import { resolveExpenseCategoryMeta } from "@sergeant/finyk-domain/domain/catego
 import type { TxSplit } from "@sergeant/finyk-domain/domain/types";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain/constants";
 import { useSilpoReceiptForTransaction } from "@finyk/hooks/useSilpoReceipts";
+import { useSilpoUnlinkReceipt } from "@finyk/hooks/useSilpoMutations";
 import { useSilpoSyncState } from "@finyk/hooks/useSilpoSyncState";
 import { CATEGORY_ICON_MAP, stripLeadingEmoji } from "./txRowHelpers";
 
+// Discoverability CTA (§ audit finding): a not-yet-connected user opening a
+// Silpo-looking transaction saw nothing — the section only ever rendered
+// for `status === "connected"`. Matches both Cyrillic and Latin spelling
+// since bank-fed descriptions aren't normalized.
+const SILPO_MERCHANT_RE = /сільпо|silpo/i;
+
 export interface SilpoReceiptSectionProps {
   transactionId: string;
+  /** Raw bank description/merchant of the transaction, used only to decide
+   * whether to show the "connect Сільпо" discoverability CTA when not yet
+   * connected. */
+  transactionDescription?: string | undefined;
   /** Сума зматченої банківської транзакції в копійках (ціле, додатне —
    * модуль). Авторитетний total для сплітів: matcher лінкує чек за
    * `receipt_id`, тож `totalKop` чека може розійтися з фактичним
@@ -140,12 +152,20 @@ function buildFinalSplits(
 
 export function SilpoReceiptSection({
   transactionId,
+  transactionDescription,
   transactionAmountKop,
   onSplitChange,
   customCategories = [],
   existingSplitsCount = 0,
 }: SilpoReceiptSectionProps) {
   const copy = messages.finyk.silpoReceipt;
+  const navigate = useNavigate();
+  // Свідомо БЕЗ `useToast`: ця секція рендериться в деталях кожної
+  // витратної транзакції, а `ToastProvider` є не в кожному з тих дерев —
+  // контекстний хук тут поклав би весь sheet замість того, щоб показати
+  // повідомлення. Успіх видно й так (чек зникає після інвалідації), а
+  // помилку показуємо рядком поруч із кнопкою.
+  const unlinkMutation = useSilpoUnlinkReceipt();
   const { status } = useSilpoSyncState();
   const { summary, detail, isLoading } = useSilpoReceiptForTransaction(
     transactionId,
@@ -177,7 +197,52 @@ export function SilpoReceiptSection({
   // `singleCategoryHint` нижче.
   const canPropose = finalSplits.length >= 2;
 
-  if (status !== "connected" || isLoading || !summary) return null;
+  if (isLoading) return null;
+
+  // Рівно `disconnected`, а НЕ будь-що крім `connected`. `SilpoIntegrationStatus`
+  // має п'ять значень, і три з них кликати до дії не можна:
+  //   • `disabled` — `SILPO_ENABLED=false` на сервері, тобто зв'язати
+  //     НЕМОЖЛИВО. Це дефолт і поточний стан проду, тож ширша умова
+  //     показала б банер геть усім, а кнопка вела б у налаштування, де
+  //     написано «Інтеграція ще не увімкнена» — глухий кут замість запрошення.
+  //   • `unknown` — перевірка стану не вдалася; ми не знаємо, чи людина вже
+  //     підключена, і пропонувати підключитись наосліп — обман.
+  //   • `reauth_required` — зв'язок Є, просто протух; про це вже кричить
+  //     власний банер на картці в налаштуваннях, дублювати не треба.
+  if (status === "disconnected") {
+    const looksLikeSilpo =
+      transactionDescription && SILPO_MERCHANT_RE.test(transactionDescription);
+    if (!looksLikeSilpo) return null;
+    return (
+      <section className="rounded-2xl border border-line bg-panel p-3">
+        <div className="flex items-center gap-2">
+          <Icon
+            name="shopping-cart"
+            size={16}
+            className="text-muted shrink-0"
+            aria-hidden
+          />
+          <h3 className="text-style-label text-text">
+            {copy.connectPromptTitle}
+          </h3>
+        </div>
+        <p className="mt-1 text-style-caption text-muted">
+          {copy.connectPromptHint}
+        </p>
+        <Button
+          variant="secondary"
+          module="finyk"
+          size="sm"
+          className="mt-2"
+          onClick={() => navigate("/settings?group=modules#settings-finyk")}
+        >
+          {copy.connectPromptCta}
+        </Button>
+      </section>
+    );
+  }
+
+  if (!summary) return null;
 
   const confirmSplit = () => {
     // `null` у `onSplitChange` означає «видалити спліт» — підтвердження
@@ -306,6 +371,26 @@ export function SilpoReceiptSection({
           {copy.itemsPending}
         </p>
       )}
+
+      {/* «Це не той чек» — matcher звʼязує за збігом суми у вікні ±1 доба,
+          тож покупка іншої людини на ту саму суму дає хибну пару. Дія тиха
+          і текстова, не кнопка-акцент: помилковий матч — рідкісний випадок,
+          а сусідній «Розбити за чеком» лишається головним. */}
+      <div className="mt-3 flex items-center justify-end gap-2 border-t border-line pt-2">
+        {unlinkMutation.isError && (
+          <p role="alert" className="text-style-caption text-danger">
+            {copy.unlinkFailed}
+          </p>
+        )}
+        <button
+          type="button"
+          disabled={unlinkMutation.isPending}
+          onClick={() => unlinkMutation.mutate(transactionId)}
+          className="touch-target rounded-xl px-3 text-style-caption text-subtle transition-colors hover:text-text disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-finyk"
+        >
+          {unlinkMutation.isPending ? copy.unlinkPending : copy.unlinkCta}
+        </button>
+      </div>
     </section>
   );
 }

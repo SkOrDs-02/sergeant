@@ -118,6 +118,12 @@ export const finykPageMessages = {
     proposalCancel: "Скасувати",
     overwriteWarning:
       "У транзакції вже є ручний спліт — підтвердження замінить його.",
+    connectPromptTitle: "Це схоже на покупку в Сільпо",
+    connectPromptHint: "Зв'яжи Сільпо, щоб бачити позиції чека тут.",
+    connectPromptCta: "Зв'язати Сільпо",
+    unlinkCta: "Це не той чек",
+    unlinkPending: "Відвʼязую…",
+    unlinkFailed: "Не вдалося відвʼязати. Спробуй ще раз.",
   },
   // «Чеки без транзакції» — картка Сільпо в налаштуваннях (unmatched-стан,
   // спека § Рішення дизайну «Unmatched-чеки — першокласний стан»).

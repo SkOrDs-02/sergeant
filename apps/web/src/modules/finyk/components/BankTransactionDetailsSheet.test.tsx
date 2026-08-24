@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
 
@@ -69,17 +70,23 @@ function renderSheet(
     defaultOptions: { queries: { retry: false } },
   });
   render(
-    <QueryClientProvider client={client}>
-      <BankTransactionDetailsSheet
-        transaction={TRANSACTION}
-        accounts={[{ id: "account-1", type: "black" }]}
-        hidden={false}
-        excludedFromStats={false}
-        txSplits={{}}
-        {...handlers}
-        {...overrides}
-      />
-    </QueryClientProvider>,
+    // `SilpoReceiptSection` усередині ходить у `useNavigate` (CTA «Зв'язати
+    // Сільпо» на транзакціях, що виглядають як покупка в Сільпо), а хук
+    // кидає без роутер-контексту — той самий патерн, що вже вимагає
+    // `MemoryRouter` у тестах `FinykInsightsBlock` і `useFinykBackupSync`.
+    <MemoryRouter>
+      <QueryClientProvider client={client}>
+        <BankTransactionDetailsSheet
+          transaction={TRANSACTION}
+          accounts={[{ id: "account-1", type: "black" }]}
+          hidden={false}
+          excludedFromStats={false}
+          txSplits={{}}
+          {...handlers}
+          {...overrides}
+        />
+      </QueryClientProvider>
+    </MemoryRouter>,
   );
   return handlers;
 }

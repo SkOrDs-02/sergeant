@@ -658,24 +658,58 @@ describe("HubSettingsPage", () => {
     expect(window.location.hash).toBe("#settings-finyk");
   });
 
-  it("reads ?silpo=error&reason=…: shows the failure toast with a retry action and strips both params", async () => {
+  it("reads ?silpo=error&reason=denied: shows a human message (no raw code), retry action, strips both params", async () => {
     window.history.replaceState(
       null,
       "",
-      "/?tab=settings&silpo=error&reason=access_denied",
+      "/?tab=settings&silpo=error&reason=denied",
     );
     const queryClient = createTestQueryClient();
 
     renderWithBrowserToast(<HubSettingsPage />, queryClient);
 
     expect(
-      await screen.findByText(/Не вдалося зв'язати Сільпо: access_denied/),
+      await screen.findByText(/Ти відмовив у доступі до Сільпо/),
     ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/Не вдалося зв'язати Сільпо: denied/),
+    ).not.toBeInTheDocument();
     await waitFor(() => {
       expect(window.location.search).not.toContain("silpo");
       expect(window.location.search).not.toContain("reason");
     });
     expect(window.location.hash).toBe("#settings-finyk");
+  });
+
+  it("reads ?silpo=error&reason=session_expired: shows the session-expiry message", async () => {
+    window.history.replaceState(
+      null,
+      "",
+      "/?tab=settings&silpo=error&reason=session_expired",
+    );
+    const queryClient = createTestQueryClient();
+
+    renderWithBrowserToast(<HubSettingsPage />, queryClient);
+
+    expect(
+      await screen.findByText(/Сесія Sergeant завершилась/),
+    ).toBeInTheDocument();
+  });
+
+  it("reads ?silpo=error&reason=<unmapped>: falls back to the generic message instead of the raw code", async () => {
+    window.history.replaceState(
+      null,
+      "",
+      "/?tab=settings&silpo=error&reason=some_new_server_code",
+    );
+    const queryClient = createTestQueryClient();
+
+    renderWithBrowserToast(<HubSettingsPage />, queryClient);
+
+    expect(
+      await screen.findByText("Не вдалося зв'язати Сільпо."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/some_new_server_code/)).not.toBeInTheDocument();
   });
 
   // Audit finding #13 (2026-08-08): `SETTINGS_GROUP_PANEL_ID` used to be a

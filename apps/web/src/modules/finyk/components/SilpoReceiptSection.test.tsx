@@ -8,6 +8,7 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MemoryRouter } from "react-router-dom";
 
 vi.mock("@shared/api", async () => {
   const actual =
@@ -21,10 +22,12 @@ vi.mock("@shared/api", async () => {
       wipe: vi.fn(),
       receipts: vi.fn(),
       receiptDetail: vi.fn(),
+      unlinkReceipt: vi.fn(),
     },
   };
 });
 
+import { ApiError } from "@sergeant/api-client";
 import { silpoApi } from "@shared/api";
 import { SilpoReceiptSection } from "./SilpoReceiptSection";
 
@@ -33,6 +36,9 @@ const mockedSyncState = silpoApi.syncState as unknown as ReturnType<
 >;
 const mockedReceipts = silpoApi.receipts as unknown as ReturnType<typeof vi.fn>;
 const mockedReceiptDetail = silpoApi.receiptDetail as unknown as ReturnType<
+  typeof vi.fn
+>;
+const mockedUnlink = silpoApi.unlinkReceipt as unknown as ReturnType<
   typeof vi.fn
 >;
 
@@ -117,14 +123,16 @@ function renderSection(
   });
   const onSplitChange = vi.fn();
   const utils = render(
-    <QueryClientProvider client={client}>
-      <SilpoReceiptSection
-        transactionId="bank-1"
-        transactionAmountKop={39_000}
-        onSplitChange={onSplitChange}
-        {...overrides}
-      />
-    </QueryClientProvider>,
+    <MemoryRouter>
+      <QueryClientProvider client={client}>
+        <SilpoReceiptSection
+          transactionId="bank-1"
+          transactionAmountKop={39_000}
+          onSplitChange={onSplitChange}
+          {...overrides}
+        />
+      </QueryClientProvider>
+    </MemoryRouter>,
   );
   return { ...utils, client, onSplitChange };
 }
@@ -401,5 +409,142 @@ describe("SilpoReceiptSection", () => {
       screen.queryByRole("button", { name: "Підтвердити спліт" }),
     ).not.toBeInTheDocument();
     expect(onSplitChange).not.toHaveBeenCalled();
+  });
+
+  describe("«Це не той чек» — розлінк хибної пари", () => {
+    async function renderConnectedWithReceipt() {
+      mockedSyncState.mockResolvedValue({
+        status: "connected",
+        accessTokenExpiresAt: "2026-08-24T10:00:00.000Z",
+        lastSyncAt: "2026-08-18T09:00:00.000Z",
+        receiptsCount: 1,
+      });
+      mockedReceipts.mockResolvedValue({
+        data: [RECEIPT_SUMMARY],
+        nextCursor: null,
+      });
+      mockedReceiptDetail.mockResolvedValue({
+        ...RECEIPT_SUMMARY,
+        items: [
+          {
+            id: 1,
+            name: "Молоко",
+            qty: 1,
+            unit: "шт",
+            priceKop: 39_000,
+            categorySlug: null,
+            barcode: null,
+          },
+        ],
+      });
+      const utils = renderSection();
+      await screen.findByText("Чек із Сільпо");
+      return utils;
+    }
+
+    it("шле id транзакції на сервер", async () => {
+      mockedUnlink.mockResolvedValue({ ok: true });
+      await renderConnectedWithReceipt();
+
+      fireEvent.click(screen.getByRole("button", { name: "Це не той чек" }));
+
+      await waitFor(() => expect(mockedUnlink).toHaveBeenCalledWith("bank-1"));
+    });
+
+    it("не ламає секцію, коли сервер відмовив", async () => {
+      // Наприклад 404 — звʼязок уже зняли з іншої вкладки. Кнопка має
+      // лишитись живою, а не залипнути в «Відвʼязую…».
+      mockedUnlink.mockRejectedValue(new Error("nope"));
+      await renderConnectedWithReceipt();
+
+      fireEvent.click(screen.getByRole("button", { name: "Це не той чек" }));
+
+      await waitFor(() => expect(mockedUnlink).toHaveBeenCalled());
+      expect(
+        await screen.findByRole("button", { name: "Це не той чек" }),
+      ).toBeEnabled();
+    });
+  });
+
+  describe("discoverability CTA for not-yet-connected users", () => {
+    it("shows a connect banner when not connected and the description looks like Сільпо", async () => {
+      mockedSyncState.mockResolvedValue({
+        status: "disconnected",
+        accessTokenExpiresAt: null,
+        lastSyncAt: null,
+        receiptsCount: 0,
+      });
+      renderSection({ transactionDescription: "СІЛЬПО №42" });
+
+      expect(
+        await screen.findByRole("button", { name: /Зв'язати Сільпо/ }),
+      ).toBeInTheDocument();
+      expect(mockedReceipts).not.toHaveBeenCalled();
+    });
+
+    it("renders nothing when not connected and the description doesn't match Сільпо", async () => {
+      mockedSyncState.mockResolvedValue({
+        status: "disconnected",
+        accessTokenExpiresAt: null,
+        lastSyncAt: null,
+        receiptsCount: 0,
+      });
+      const { container, client } = renderSection({
+        transactionDescription: "АТБ маркет",
+      });
+
+      await waitFor(() => expect(mockedSyncState).toHaveBeenCalled());
+      await waitFor(() => expect(client.isFetching()).toBe(0));
+      expect(container).toBeEmptyDOMElement();
+    });
+
+    it("renders the normal receipt section (not the banner) once connected", async () => {
+      mockedSyncState.mockResolvedValue({
+        status: "connected",
+        accessTokenExpiresAt: "2026-08-24T10:00:00.000Z",
+        lastSyncAt: "2026-08-18T09:00:00.000Z",
+        receiptsCount: 1,
+      });
+      mockedReceipts.mockResolvedValue({
+        data: [RECEIPT_SUMMARY],
+        nextCursor: null,
+      });
+      mockedReceiptDetail.mockResolvedValue({
+        ...RECEIPT_SUMMARY,
+        items: MULTI_CATEGORY_ITEMS,
+      });
+
+      renderSection({ transactionDescription: "SILPO 123" });
+
+      expect(
+        await screen.findByRole("button", { name: /Розбити за чеком/ }),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: /Зв'язати Сільпо/ }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("мовчить, коли інтеграція вимкнена на сервері (503 SILPO_DISABLED)", async () => {
+      // Регресія: `SILPO_ENABLED=false` — дефолт і поточний стан проду.
+      // Умова «будь-що крім connected» показала б цей банер геть усім, а
+      // кнопка вела б у налаштування, де написано «Інтеграція ще не
+      // увімкнена». Зв'язати в цьому стані НЕМОЖЛИВО — отже й кликати нема куди.
+      mockedSyncState.mockRejectedValue(
+        new ApiError({
+          kind: "http",
+          message: "disabled",
+          status: 503,
+          body: { code: "SILPO_DISABLED" },
+          url: "/api/silpo/sync-state",
+        }),
+      );
+      const { container, client } = renderSection({
+        transactionDescription: "СІЛЬПО №42",
+      });
+
+      await waitFor(() => expect(mockedSyncState).toHaveBeenCalled());
+      await waitFor(() => expect(client.isFetching()).toBe(0));
+      expect(container).toBeEmptyDOMElement();
+    });
   });
 });
