@@ -16,6 +16,8 @@ import {
   issueTitle,
   issueBody,
   evaluateFreshnessCadence,
+  markerPath,
+  selectResolvedIssues,
 } from "../check-freshness.mjs";
 import { nextReviewFor } from "../freshness-config.mjs";
 
@@ -269,6 +271,72 @@ describe("evaluateFreshnessCadence", () => {
         ["docs/overdue.md", "overdue", "2026-02-01"],
         ["docs/legacy.md", "overdue", legacyDue],
       ],
+    );
+  });
+});
+
+describe("markerPath", () => {
+  it("витягує шлях із marker-коментаря", () => {
+    assert.equal(
+      markerPath("<!-- doc-freshness:docs/today.md -->\n\n**File:** …"),
+      "docs/today.md",
+    );
+  });
+
+  it("толерантний до пробілів усередині коментаря", () => {
+    assert.equal(
+      markerPath("<!--   doc-freshness:docs/a/b.md   -->"),
+      "docs/a/b.md",
+    );
+  });
+
+  it("повертає null для тіла без marker-а", () => {
+    assert.equal(markerPath("написано людиною, без marker-а"), null);
+    assert.equal(markerPath(null), null);
+    assert.equal(markerPath(undefined), null);
+  });
+});
+
+describe("selectResolvedIssues", () => {
+  const issues = [
+    { number: 1, body: freshnessMarker("docs/still-overdue.md") },
+    { number: 2, body: freshnessMarker("docs/now-fresh.md") },
+    { number: 3, body: freshnessMarker("docs/deleted.md") },
+    { number: 4, body: "заведено руками, marker-а нема" },
+  ];
+
+  it("закриває доки, які більше не прострочені або зникли", () => {
+    const resolved = selectResolvedIssues({
+      issues,
+      overduePaths: new Set(["docs/still-overdue.md"]),
+    });
+    assert.deepEqual(
+      resolved.map((r) => r.number),
+      [2, 3],
+    );
+  });
+
+  it("не чіпає issue без marker-а — його міг завести живий автор", () => {
+    const resolved = selectResolvedIssues({ issues, overduePaths: new Set() });
+    assert.ok(!resolved.some((r) => r.number === 4));
+  });
+
+  it("лишає відкритим issue доку, який усе ще прострочений", () => {
+    const resolved = selectResolvedIssues({
+      issues,
+      overduePaths: new Set([
+        "docs/still-overdue.md",
+        "docs/now-fresh.md",
+        "docs/deleted.md",
+      ]),
+    });
+    assert.deepEqual(resolved, []);
+  });
+
+  it("порожній вхід не падає", () => {
+    assert.deepEqual(
+      selectResolvedIssues({ issues: [], overduePaths: new Set() }),
+      [],
     );
   });
 });
