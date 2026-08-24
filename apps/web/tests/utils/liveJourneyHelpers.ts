@@ -57,6 +57,22 @@ export function visibleText(page: Page, value: string | RegExp) {
   return page.getByText(value).filter({ visible: true }).first();
 }
 
+/**
+ * Запрошення увійти після відмови аноніму.
+ *
+ * Свідомо шукаємо ДІЮ (посилання/кнопку входу), а не конкретну копію: тест
+ * пінить контракт «відмова дає наступний крок», а не формулювання. Саме
+ * відсутність такого кроку була дефектом F-25 (браузерний QA 2026-08-24) —
+ * гість бачив голе «Доступ заборонено.» і не мав куди тиснути.
+ */
+export function signInInvite(page: Page) {
+  return page
+    .getByRole("link", { name: /увійти|вхід|зареєстр/i })
+    .or(page.getByRole("button", { name: /увійти|вхід|зареєстр/i }))
+    .filter({ visible: true })
+    .first();
+}
+
 export async function goto(page: Page, route: string): Promise<void> {
   try {
     await page.goto(route, { waitUntil: "domcontentloaded" });

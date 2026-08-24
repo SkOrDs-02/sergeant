@@ -1,14 +1,19 @@
 export const VOICE_KEYWORDS = /голосом|вголос|скажи|озвуч|прочитай/i;
 
 function cleanTextForSpeech(text: string): string {
-  return text
-    .replace(/✅/g, "")
-    .replace(/\[.*?\]/g, "")
-    .replace(/id:\S+/g, "")
-    .replace(/https?:\/\/\S+/g, "")
-    .replace(/[_*#~`|]/g, "")
-    .replace(/\s{2,}/g, " ")
-    .trim();
+  return (
+    text
+      // `✓` (U+2713) — статус-маркер tool-call-ів у транскрипті чату;
+      // TTS його не диктує. Раніше тут стояла emoji `✅`, яку 2026-08-21
+      // замінено на типографічний символ (див. `useChatSend`).
+      .replace(/[✓✔✅]/g, "")
+      .replace(/\[.*?\]/g, "")
+      .replace(/id:\S+/g, "")
+      .replace(/https?:\/\/\S+/g, "")
+      .replace(/[_*#~`|]/g, "")
+      .replace(/\s{2,}/g, " ")
+      .trim()
+  );
 }
 
 function getUkVoice(): SpeechSynthesisVoice | null {

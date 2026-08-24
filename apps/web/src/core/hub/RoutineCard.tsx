@@ -19,6 +19,7 @@ import {
   type Period,
 } from "./hubReports.aggregation";
 import { useHubStorageBump } from "./useHubStorageBump";
+import { formatNumberUk } from "@sergeant/shared";
 
 // ── Habit consistency heatmap ─────────────────────────────────────────
 //
@@ -200,8 +201,8 @@ export default function RoutineCard({ period, offset }: RoutineCardProps) {
     };
   }, [period, offset, bump]);
 
-  const formattedCurrent = cur.pct.toLocaleString("uk-UA");
-  const formattedPrev = prev.pct.toLocaleString("uk-UA");
+  const formattedCurrent = formatNumberUk(cur.pct);
+  const formattedPrev = formatNumberUk(prev.pct);
 
   return (
     <ReportSheet collapsed={collapsed}>

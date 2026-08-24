@@ -71,7 +71,7 @@ export function useFizrukWorkoutReminder({
       };
 
       showReminderNotification(
-        "Фізрук — тренування",
+        "Фізрук: тренування",
         "Заплановане тренування на сьогодні. Відкрий застосунок, щоб стартувати.",
         // Тег МУСИТЬ збігатися з `dedupKey` серверного sweep-у
         // (`fizrukDueNow` у `apps/server/src/lib/reminders/due.ts`): обидва

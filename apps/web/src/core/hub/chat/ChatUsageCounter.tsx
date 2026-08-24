@@ -37,7 +37,10 @@ export function ChatUsageCounter() {
       aria-label={ariaLabel}
       data-testid="chat-usage-counter"
       className={cn(
-        "shrink-0 px-2 py-1 rounded-full text-style-caption font-semibold whitespace-nowrap",
+        // `min-w-0 truncate` замість `shrink-0 whitespace-nowrap`: на 393px
+        // саме ця пігулка з'їдала ширину заголовка шапки. Вона — підказка,
+        // тож віддає простір першою (aria-label несе повне значення).
+        "min-w-0 truncate px-2 py-1 rounded-full text-style-caption font-semibold",
         exhausted
           ? "bg-warning-soft text-warning-strong dark:text-warning"
           : "bg-panelHi text-muted",

@@ -26,6 +26,7 @@ import { apiQueryKeys } from "@sergeant/api-client/react";
 import type { MeResponse } from "@sergeant/api-client";
 import { getSqliteDb } from "../../../core/db/sqlite";
 import { migrateFinyk } from "../lib/clientMigrate";
+import { MonoNotConnectedError } from "../lib/monoBankErrors";
 import {
   writeMonoTransactions,
   writeMonoAccounts,
@@ -331,7 +332,7 @@ export function useMonobankWebhook({
       // distinguish a missing-data state from a genuinely empty month.
       // Resolving to `[]` here would let consumers cache an empty array
       // for a month that simply hasn't been fetched yet.
-      if (!isConnected) throw new Error("monobank not connected");
+      if (!isConnected) throw new MonoNotConnectedError();
       setLoadingHistory(true);
       try {
         // Kyiv-anchored month boundaries (consistent with the current-month

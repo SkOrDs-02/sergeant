@@ -25,6 +25,7 @@ import { Pressable, Text, View } from "react-native";
 import Svg, { Path, Text as SvgText } from "react-native-svg";
 
 import type { TopCategory } from "@sergeant/finyk-domain/domain";
+import { formatNumberUk } from "@sergeant/shared";
 
 export interface CategoryDonutProps {
   data: readonly TopCategory[];
@@ -191,7 +192,7 @@ function CategoryDonutComponent({ data, size = 160 }: CategoryDonutProps) {
             fontWeight="600"
             fill="#1c1917"
           >
-            {`${total.toLocaleString("uk-UA")} ₴`}
+            {`${formatNumberUk(total)} ₴`}
           </SvgText>
         </Svg>
 
@@ -216,7 +217,7 @@ function CategoryDonutComponent({ data, size = 160 }: CategoryDonutProps) {
                 {arc.pct < 1 && arc.pct > 0 ? "<1" : arc.pct}%
               </Text>
               <Text className="text-xs font-medium text-fg tabular-nums">
-                {arc.spent.toLocaleString("uk-UA")} ₴
+                {formatNumberUk(arc.spent)} ₴
               </Text>
             </View>
           ))}

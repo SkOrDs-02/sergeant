@@ -209,6 +209,79 @@ describe("BodyAtlas · muscle a11y (fizruk audit wave 2)", () => {
   });
 });
 
+describe("BodyAtlas · over-trained muscle (QA 2026-08-23)", () => {
+  /**
+   * `fatigue` — накопичувальний бал, не частка: після двох грудних вправ
+   * за день картка показувала «Втома 160%», а градієнт отримував
+   * `color-mix(in oklab, … 219%, …)`. Відсоток понад 100 невалідний, тож
+   * `stop-color` мовчки падав у ЧОРНИЙ і група ставала чорною плямою.
+   */
+  const OVERTRAINED = {
+    ...DATA,
+    chest: {
+      fatigue: 1.6,
+      daysSince: 0,
+      load7d: 9000,
+      status: "red",
+      exercises: ["Жим лежачи"],
+    },
+  } as Record<string, AtlasMuscleDatum>;
+
+  it("keeps every gradient stop colour a valid CSS colour", () => {
+    const { container } = render(
+      <ScreenReaderAnnouncerProvider>
+        <BodyAtlas data={OVERTRAINED} />
+      </ScreenReaderAnnouncerProvider>,
+    );
+
+    const stops = Array.from(container.querySelectorAll("stop"));
+    expect(stops.length).toBeGreaterThan(0);
+    for (const stop of stops) {
+      const color = stop.getAttribute("stop-color") ?? "";
+      expect(color).not.toBe("");
+      expect(color).not.toContain("NaN");
+      for (const match of color.matchAll(/(-?\d+(?:\.\d+)?)%/g)) {
+        const pct = Number(match[1]);
+        expect(pct, color).toBeGreaterThanOrEqual(0);
+        expect(pct, color).toBeLessThanOrEqual(100);
+      }
+    }
+  });
+
+  it("saturates the fatigue readout at 100% instead of printing 160%", () => {
+    render(
+      <ScreenReaderAnnouncerProvider>
+        <BodyAtlas data={OVERTRAINED} />
+      </ScreenReaderAnnouncerProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Груди" }));
+    expect(screen.getByText("100%")).toBeInTheDocument();
+    expect(screen.queryByText("160%")).toBeNull();
+  });
+});
+
+describe("BodyAtlas · hit targets (QA 2026-08-23)", () => {
+  it("gives every muscle button a transparent widened hit layer", () => {
+    renderAtlas();
+    const chest = screen.getByRole("button", { name: "Груди" });
+    const hitPaths = Array.from(chest.querySelectorAll("path"));
+    expect(hitPaths.length).toBeGreaterThan(0);
+    for (const path of hitPaths) {
+      expect(path.getAttribute("pointer-events")).toBe("all");
+      expect(path.getAttribute("stroke")).toBe("transparent");
+      // Половини грудей розділені ≈2.8 одиниці viewBox — штрих мусить
+      // перекрити проміжок, інакше тап у центр групи падає у голий <svg>.
+      expect(Number(path.getAttribute("stroke-width"))).toBeGreaterThan(2.8);
+    }
+  });
+
+  it("keeps the painted muscle layer clickable and hidden from AT", () => {
+    const { container } = renderAtlas();
+    const painted = container.querySelectorAll('g[aria-hidden="true"] title');
+    expect(painted.length).toBeGreaterThan(0);
+  });
+});
+
 describe("BodyAtlas · legend", () => {
   it("renders the mode legend captions", () => {
     renderAtlas();

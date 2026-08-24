@@ -6,21 +6,21 @@ export const pricingEn: MessageCatalog["pricing"] = {
   plansAriaLabel: "Pricing plans",
   hero: {
     headlineLine1: "Sergeant is free for everyday use.",
-    headlineLine2: "Premium — when you need everything at once.",
+    headlineLine2: "Premium, when you need everything at once.",
     subtitle: "One paid plan. No tiers, no lifetime deal, no trial timer.",
   },
   tiers: {
     freeName: "Free",
     freePrice: "₴0",
     freeCadence: "forever",
-    freeTagline: "All modules, unlimited manual tracking. AI — 5 messages/day.",
+    freeTagline: "All modules, unlimited manual tracking. AI: 5 messages/day.",
     premiumName: "Premium",
     premiumPrice: "Soon",
     premiumCadence: "Price announced at launch",
-    premiumTagline: "Everything unlocked. One plan — no tiers, no add-ons.",
+    premiumTagline: "Everything unlocked. One plan, no tiers, no add-ons.",
   },
   features: {
-    allModules: "All 4 modules — full access",
+    allModules: "All 4 modules: full access",
     manualTracking: "Manual tracking with no numeric limits",
     aiChat: "AI chat",
     cloudSync2Devices: "Cloud sync on 2 devices",
@@ -48,6 +48,7 @@ export const pricingEn: MessageCatalog["pricing"] = {
     openingPortal: "Opening management…",
     switchToFree: "Switch to Free",
     currentPlan: "Your current plan",
+    signInToStart: "Sign in to start",
   },
   status: {
     checkoutCreatedPrefix: "Payment session created",
@@ -56,14 +57,14 @@ export const pricingEn: MessageCatalog["pricing"] = {
     checkoutUnavailable:
       "Payment is temporarily unavailable. Leave your email below and we'll follow up when you can pay.",
     portalNoBillingCustomer:
-      "No billing profile found. Reach out to support — we'll set it up manually.",
+      "No billing profile found. Reach out to support, we'll set it up manually.",
     portalUnavailable:
       "Subscription management is temporarily unavailable. Try again later.",
     portalGeneric:
       "Couldn't open subscription management. Check your connection and try again.",
   },
   toast: {
-    subscriptionActive: "Subscription active — welcome to Premium!",
+    subscriptionActive: "Subscription active, welcome to Premium!",
     subscriptionActiveCta: "Go to settings",
     paymentCanceled: "Payment canceled. No subscription was created.",
   },

@@ -32,13 +32,13 @@ export default async function lookupReceiptHandler(
 
   if (result.status === "no_token") {
     throw new ExternalServiceError(
-      "Пошук чека за QR тимчасово недоступний — спробуй сфотографувати чек.",
+      "Пошук чека за QR тимчасово недоступний, спробуй сфотографувати чек.",
       { status: 503, code: "DPS_TOKEN_MISSING" },
     );
   }
   if (result.status === "not_found") {
     throw new NotFoundError(
-      "Чек ще не з'явився в реєстрі ДПС — спробуй за кілька хвилин або сфотографуй чек.",
+      "Чек ще не з'явився в реєстрі ДПС, спробуй за кілька хвилин або сфотографуй чек.",
       { code: "DPS_RECEIPT_NOT_FOUND" },
     );
   }
@@ -46,7 +46,7 @@ export default async function lookupReceiptHandler(
   const parsed = parseDpsCheckXml(result.xml);
   if (!parsed) {
     throw new ExternalServiceError(
-      "Не вдалося розпізнати відповідь реєстру ДПС — спробуй сфотографувати чек.",
+      "Не вдалося розпізнати відповідь реєстру ДПС, спробуй сфотографувати чек.",
       { status: 502, code: "DPS_PARSE_ERROR" },
     );
   }

@@ -77,7 +77,7 @@ const CODE_TO_UA_COPY: Readonly<Record<string, string>> = {
   VERIFICATION_EMAIL_NOT_ENABLED:
     "Надсилання листів підтвердження тимчасово недоступне.",
   CREDENTIAL_ACCOUNT_NOT_FOUND:
-    "Для цього акаунту немає пароля — увійди через соцмережу.",
+    "Для цього акаунту немає пароля, увійди через соцмережу.",
   SESSION_EXPIRED: "Сесія завершилась. Увійди ще раз.",
   SESSION_NOT_FRESH: "Для цієї дії потрібен свіжий вхід. Увійди ще раз.",
   INVALID_TOKEN: "Посилання недійсне або застаріле.",

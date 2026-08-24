@@ -56,7 +56,7 @@ function shownPayload(index = 0): Record<string, unknown> {
   return call[1] as Record<string, unknown>;
 }
 
-describe("RoutineCalendarHero — експозиція стріку", () => {
+describe("RoutineCalendarHero: експозиція стріку", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     resetStreakExposure();

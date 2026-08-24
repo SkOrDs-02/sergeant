@@ -14,6 +14,7 @@ import { computePulseStyle } from "@sergeant/finyk-domain/domain";
 
 import { Card } from "../../../../components/ui/Card";
 import { cn } from "./cn";
+import { formatNumberUk } from "@sergeant/shared";
 
 export interface MonthPulseCardProps {
   dateLabel: string;
@@ -38,7 +39,7 @@ export interface MonthPulseCardProps {
 }
 
 function fmt(n: number): string {
-  return n.toLocaleString("uk-UA", { maximumFractionDigits: 0 });
+  return formatNumberUk(n, { maximumFractionDigits: 0 });
 }
 
 const MonthPulseCardImpl = function MonthPulseCard({

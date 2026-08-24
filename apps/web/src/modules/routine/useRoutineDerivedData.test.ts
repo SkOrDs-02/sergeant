@@ -342,7 +342,7 @@ describe("useRoutineDerivedData", () => {
       );
       expect(result.current.headlineDate).toContain("1 червня");
       expect(result.current.headlineDate).toContain("30 червня");
-      expect(result.current.headlineDate).toContain("—");
+      expect(result.current.headlineDate).toContain("–");
     });
 
     it("'month' і 'today' більше не читаються однаково", () => {
@@ -381,7 +381,93 @@ describe("useRoutineDerivedData", () => {
         ),
       );
       expect(result.current.headlineDate).toContain("4 червня");
-      expect(result.current.headlineDate).not.toContain("—");
+      expect(result.current.headlineDate).not.toContain("–");
+    });
+  });
+
+  /**
+   * Регресія: лічильник дня в герої був жорстко прив'язаний до
+   * `todayKey`, тож на вкладці «Завтра» під завтрашнім заголовком і
+   * завтрашнім списком стояли СЬОГОДНІШНІ цифри.
+   */
+  describe("dayProgress — рахує показуваний день", () => {
+    const routine = mkRoutine({
+      habits: [
+        // Разова подія рівно на завтра — сьогодні вона не запланована.
+        {
+          id: "once",
+          name: "Разова подія",
+          recurrence: "once",
+          startDate: "2026-06-05",
+        },
+        // Щоденна: є в обох днях, сьогодні вже відмічена.
+        { id: "daily", name: "Щоденна", recurrence: "daily" },
+      ],
+      completions: { daily: ["2026-06-04"] },
+    });
+
+    it("today: 1 з 1 (разова подія не рахується)", () => {
+      const { result } = renderHook(() =>
+        useRoutineDerivedData(
+          buildParams({
+            routine,
+            timeState: mkTimeState({ timeMode: "today" }),
+          }),
+        ),
+      );
+      expect(result.current.dayProgress).toMatchObject({
+        completed: 1,
+        scheduled: 1,
+      });
+    });
+
+    it("tomorrow: 0 з 2 — цифри завтрашнього дня, не сьогоднішнього", () => {
+      const { result } = renderHook(() =>
+        useRoutineDerivedData(
+          buildParams({
+            routine,
+            timeState: mkTimeState({ timeMode: "tomorrow" }),
+          }),
+        ),
+      );
+      expect(result.current.range.startKey).toBe("2026-06-05");
+      expect(result.current.dayProgress).toMatchObject({
+        completed: 0,
+        scheduled: 2,
+      });
+    });
+
+    it("day: слідує за довільним обраним днем", () => {
+      const { result } = renderHook(() =>
+        useRoutineDerivedData(
+          buildParams({
+            routine,
+            timeState: mkTimeState({
+              timeMode: "day",
+              selectedDay: "2026-06-05",
+            }),
+          }),
+        ),
+      );
+      expect(result.current.dayProgress).toMatchObject({
+        completed: 0,
+        scheduled: 2,
+      });
+    });
+
+    it("week: діапазон не однодневний → лишається сьогодні", () => {
+      const { result } = renderHook(() =>
+        useRoutineDerivedData(
+          buildParams({
+            routine,
+            timeState: mkTimeState({ timeMode: "week" }),
+          }),
+        ),
+      );
+      expect(result.current.dayProgress).toMatchObject({
+        completed: 1,
+        scheduled: 1,
+      });
     });
   });
 

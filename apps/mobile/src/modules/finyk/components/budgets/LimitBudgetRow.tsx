@@ -4,6 +4,7 @@ import { Pressable, Text, View } from "react-native";
 import type { LimitBudget } from "@sergeant/finyk-domain/domain";
 
 import { Sparkline } from "./Sparkline";
+import { formatNumberUk } from "@sergeant/shared";
 
 export interface LimitBudgetRowProps {
   budget: LimitBudget;
@@ -21,7 +22,7 @@ export interface LimitBudgetRowProps {
 }
 
 function fmt(n: number): string {
-  return n.toLocaleString("uk-UA", { maximumFractionDigits: 0 });
+  return formatNumberUk(n, { maximumFractionDigits: 0 });
 }
 
 function LimitBudgetRowImpl({

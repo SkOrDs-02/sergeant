@@ -13,13 +13,13 @@ import { refreshTokens as oauthRefreshTokens } from "./oauth.js";
 import type { McpError, McpResult } from "./mcpClient.js";
 
 /**
- * Read/write/refresh path for `silpo_connection` (migration 123). Reuses
+ * Read/write/refresh path for `silpo_connection` (migration 125). Reuses
  * the generic AES-256-GCM + KeyRing helpers from `modules/mono/crypto.js`
  * (they operate on arbitrary plaintext, nothing Monobank-specific) instead
  * of duplicating them — spec § Поверхня змін: "tokenStore.ts + reuse
  * mono/crypto.ts → спільний lib/". Two independent ciphertext triples
  * (access + refresh) live in one row, encrypted under ONE shared
- * `token_key_version` (see migration 123 comment) — every write/re-encrypt
+ * `token_key_version` (see migration 125 comment) — every write/re-encrypt
  * touches both together.
  *
  * Never log raw tokens / decrypted values (Hard Rule #21).

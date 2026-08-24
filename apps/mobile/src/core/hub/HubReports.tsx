@@ -165,7 +165,7 @@ export function HubReports({ onClose }: HubReportsProps) {
       return;
     }
     setExporting(true);
-    void exportReport({ title: "Sergeant — звіт", subtitle: label }).finally(
+    void exportReport({ title: "Sergeant · звіт", subtitle: label }).finally(
       () => setExporting(false),
     );
   }, [exportEnabled, label]);

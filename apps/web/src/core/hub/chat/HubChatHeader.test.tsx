@@ -131,4 +131,26 @@ describe("HubChatHeader", () => {
 
     expect(screen.getByRole("status")).toHaveTextContent("Очікую");
   });
+  // Regression (browser QA 2026-08-23): на 393px шапка тиснула заголовок до
+  // «Ас…» (scrollWidth 85 vs clientWidth 43). jsdom не має layout-у, тож
+  // пінимо контракт, який до цього привів: назва не стискається, дефіцит
+  // ширини поглинає правий кластер, а кнопки лишаються цілими.
+  it("keeps the title unshrinkable so 393px cannot clip it to «Ас…»", () => {
+    renderHeader(makeProps());
+
+    const title = screen.getByText("Асистент");
+    expect(title.className).toContain("whitespace-nowrap");
+    expect(title.className).not.toContain("truncate");
+    // Група «назва + шеврон» не віддає ширину.
+    expect(title.parentElement!.className).toContain("shrink-0");
+
+    // Праворуч — навпаки: кластер стискається, кнопки ні.
+    const newChat = screen.getByRole("button", { name: "Нова бесіда" });
+    const closeBtn = screen.getByRole("button", { name: "Закрити асистента" });
+    expect(newChat.className).toContain("shrink-0");
+    expect(closeBtn.className).toContain("shrink-0");
+    const cluster = newChat.parentElement!;
+    expect(cluster.className).toContain("min-w-0");
+    expect(cluster.className).not.toContain("shrink-0");
+  });
 });

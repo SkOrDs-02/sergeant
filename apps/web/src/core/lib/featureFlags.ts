@@ -49,7 +49,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     id: "hub_command_palette",
     label: "Швидкі команди (Ctrl / ⌘ + K)",
     description:
-      "Глобальний пошук і швидкі дії прямо з клавіатури. Рання функція — подекуди може працювати нестабільно.",
+      "Глобальний пошук і швидкі дії прямо з клавіатури. Рання функція, подекуди може працювати нестабільно.",
     defaultValue: false,
     experimental: true,
   },

@@ -107,7 +107,7 @@ describe("WorkoutItemCard — strength", () => {
     expect(screen.getByLabelText("Кількість повторень")).toBeInTheDocument();
     expect(
       screen.getByRole("button", {
-        name: "Підхід 1 — зроблено, почати відпочинок",
+        name: "Підхід 1: зроблено, почати відпочинок",
       }),
     ).toBeInTheDocument();
   });
@@ -167,7 +167,7 @@ describe("WorkoutItemCard — strength", () => {
     renderCard();
     fireEvent.click(
       screen.getByRole("button", {
-        name: "Підхід 1 — зроблено, почати відпочинок",
+        name: "Підхід 1: зроблено, почати відпочинок",
       }),
     );
     expect(setRestTimer).toHaveBeenCalledWith({ remaining: 90, total: 90 });
@@ -176,7 +176,7 @@ describe("WorkoutItemCard — strength", () => {
   it("the done ✓ control is disabled while the row is incomplete and does not start the timer", () => {
     renderCard({ it: makeItem({ sets: [{ weightKg: 0, reps: 0 }] }) });
     const doneButton = screen.getByRole("button", {
-      name: "Підхід 1 — ще не заповнено",
+      name: "Підхід 1: ще не заповнено",
     });
     expect(doneButton).toBeDisabled();
     fireEvent.click(doneButton);
@@ -190,7 +190,7 @@ describe("WorkoutItemCard — strength", () => {
     // «Власна вага», тобто цей клас вправ — не крайній випадок.
     renderCard({ it: makeItem({ sets: [{ weightKg: 0, reps: 12 }] }) });
     const doneButton = screen.getByRole("button", {
-      name: "Підхід 1 — зроблено, почати відпочинок",
+      name: "Підхід 1: зроблено, почати відпочинок",
     });
     expect(doneButton).not.toBeDisabled();
     fireEvent.click(doneButton);
@@ -265,7 +265,7 @@ describe("WorkoutItemCard — strength", () => {
 describe("WorkoutItemCard — compact type switcher", () => {
   it("switches the item to time type, seeding durationSec", () => {
     renderCard();
-    fireEvent.click(screen.getByRole("tab", { name: "Час — секунди" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Час: секунди" }));
     expect(updateItem).toHaveBeenCalledWith("w1", "it-1", {
       type: "time",
       durationSec: 0,
@@ -294,7 +294,7 @@ describe("WorkoutItemCard — rest timer guards on the done ✓ control", () => 
     });
     fireEvent.click(
       screen.getByRole("button", {
-        name: "Підхід 1 — зроблено, почати відпочинок",
+        name: "Підхід 1: зроблено, почати відпочинок",
       }),
     );
     expect(setRestTimer).not.toHaveBeenCalled();
@@ -305,7 +305,7 @@ describe("WorkoutItemCard — rest timer guards on the done ✓ control", () => 
     renderCard({ group, groupMemberPosition: 1 });
     fireEvent.click(
       screen.getByRole("button", {
-        name: "Підхід 1 — зроблено, почати відпочинок",
+        name: "Підхід 1: зроблено, почати відпочинок",
       }),
     );
     expect(setRestTimer).not.toHaveBeenCalled();
@@ -316,7 +316,7 @@ describe("WorkoutItemCard — groups", () => {
   it("renders the group-select checkbox with an accessible name + state and toggles it", () => {
     renderCard({ groupSelectMode: true, isSelected: false });
     const checkbox = screen.getByRole("checkbox", {
-      name: "Жим лежачи — вибрати для об'єднання в суперсет",
+      name: "Жим лежачи: вибрати для об'єднання в суперсет",
     });
     expect(checkbox).toHaveAttribute("aria-checked", "false");
     fireEvent.click(checkbox);
@@ -327,7 +327,7 @@ describe("WorkoutItemCard — groups", () => {
     renderCard({ groupSelectMode: true, isSelected: true });
     expect(
       screen.getByRole("checkbox", {
-        name: "Жим лежачи — вибрати для об'єднання в суперсет",
+        name: "Жим лежачи: вибрати для об'єднання в суперсет",
       }),
     ).toHaveAttribute("aria-checked", "true");
   });
@@ -416,7 +416,7 @@ describe("WorkoutItemCard — time + distance + read-only", () => {
     ).toBeDisabled();
     expect(
       screen.getByRole("button", {
-        name: "Підхід 1 — зроблено, почати відпочинок",
+        name: "Підхід 1: зроблено, почати відпочинок",
       }),
     ).toBeDisabled();
   });

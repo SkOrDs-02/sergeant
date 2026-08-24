@@ -87,12 +87,12 @@ describe("MiniLineChart", () => {
 
   it("shows a positive delta with a + sign", () => {
     render(<MiniLineChart data={points([80, 85])} unit="кг" color="#00f" />);
-    expect(screen.getAllByText(/\+5\.0 кг/).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/\+5,0 кг/).length).toBeGreaterThanOrEqual(1);
   });
 
   it("shows a negative delta", () => {
     render(<MiniLineChart data={points([85, 80])} unit="кг" color="#00f" />);
-    expect(screen.getAllByText(/-5\.0 кг/).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/-5,0 кг/).length).toBeGreaterThanOrEqual(1);
   });
 
   describe("deltaDirection", () => {
@@ -101,13 +101,13 @@ describe("MiniLineChart", () => {
     // positive delta.
     it("defaults to down-is-good: positive delta renders warning", () => {
       render(<MiniLineChart data={points([80, 85])} unit="кг" color="#00f" />);
-      const label = screen.getByText((_c, el) => el?.textContent === "+5.0 кг");
+      const label = screen.getByText((_c, el) => el?.textContent === "+5,0 кг");
       expect(label.className).toContain("text-warning-strong");
     });
 
     it("defaults to down-is-good: negative delta renders success", () => {
       render(<MiniLineChart data={points([85, 80])} unit="кг" color="#00f" />);
-      const label = screen.getByText((_c, el) => el?.textContent === "-5.0 кг");
+      const label = screen.getByText((_c, el) => el?.textContent === "-5,0 кг");
       expect(label.className).toContain("text-success-strong");
     });
 
@@ -121,7 +121,7 @@ describe("MiniLineChart", () => {
         />,
       );
       const label = screen.getByText(
-        (_c, el) => el?.textContent === "+2.0 год",
+        (_c, el) => el?.textContent === "+2,0 год",
       );
       expect(label.className).toContain("text-success-strong");
       expect(label.className).not.toContain("text-warning-strong");
@@ -137,7 +137,7 @@ describe("MiniLineChart", () => {
         />,
       );
       const label = screen.getByText(
-        (_c, el) => el?.textContent === "-2.0 год",
+        (_c, el) => el?.textContent === "-2,0 год",
       );
       expect(label.className).toContain("text-warning-strong");
       expect(label.className).not.toContain("text-success-strong");
@@ -152,7 +152,7 @@ describe("MiniLineChart", () => {
           deltaDirection="neutral"
         />,
       );
-      const label = screen.getByText((_c, el) => el?.textContent === "+5.0 кг");
+      const label = screen.getByText((_c, el) => el?.textContent === "+5,0 кг");
       expect(label.className).not.toContain("text-success-strong");
       expect(label.className).not.toContain("text-warning-strong");
       expect(label.className).toContain("text-subtle");
@@ -223,7 +223,7 @@ describe("MiniLineChart", () => {
       // point once a valid index resolves — assert at least one match
       // rather than pinning the exact count of duplicate text nodes.
       expect(
-        screen.getAllByText((_c, el) => el?.textContent === "82.0 кг").length,
+        screen.getAllByText((_c, el) => el?.textContent === "82,0 кг").length,
       ).toBeGreaterThanOrEqual(1);
     });
   });

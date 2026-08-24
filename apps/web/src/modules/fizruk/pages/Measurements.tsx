@@ -16,6 +16,8 @@ import { Stat } from "@shared/components/ui/Stat";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { AddMeasurementForm } from "./Measurements/AddMeasurementForm";
+import { formatNumberUk } from "@sergeant/shared";
+import { fmt } from "../lib/numberFmt";
 
 // Programmatic-focus target for the guide view's `<h2>` — see the
 // scroll/focus-management effect below.
@@ -318,10 +320,10 @@ export function Measurements() {
                     <SectionHeading as="div" size="xs" variant="fizruk">
                       {f.label}
                     </SectionHeading>
-                    {/* eslint-disable-next-line sergeant-design/no-raw-type-size -- пре-існуючий рядок; типографіку показників не чіпаємо в PR про розкриття полів форми. */}
+                    {}
                     <div className="text-lg font-extrabold tabular-nums text-text mt-1">
                       {Number.isFinite(Number(latest[f.id]))
-                        ? Number(latest[f.id]).toLocaleString("uk-UA")
+                        ? formatNumberUk(Number(latest[f.id]))
                         : "—"}{" "}
                       {f.unit}
                     </div>
@@ -337,7 +339,7 @@ export function Measurements() {
                           )}
                         >
                           {delta > 0 ? "+" : ""}
-                          {delta.toFixed(1)} {f.unit}
+                          {fmt(delta, 1)} {f.unit}
                         </div>
                       ) : null;
                     })()}
@@ -397,7 +399,7 @@ export function Measurements() {
                   {visibleFields
                     .map(
                       (f) =>
-                        `${f.label}: ${Number(e[f.id]).toLocaleString("uk-UA")} ${f.unit}`,
+                        `${f.label}: ${formatNumberUk(Number(e[f.id]))} ${f.unit}`,
                     )
                     .join(" · ") || "—"}
                   {hasOverflow && (
@@ -407,8 +409,8 @@ export function Measurements() {
                       aria-expanded={isRowExpanded}
                       aria-label={
                         isRowExpanded
-                          ? `${messages.fizruk.measurements.collapseFieldsLabel} — ${messages.fizruk.measurements.showAllFieldsAriaSuffix} ${dateLabel}`
-                          : `+${hiddenCount} ${messages.fizruk.measurements.moreFieldsSuffix} — ${messages.fizruk.measurements.showAllFieldsAriaSuffix} ${dateLabel}`
+                          ? `${messages.fizruk.measurements.collapseFieldsLabel}: ${messages.fizruk.measurements.showAllFieldsAriaSuffix} ${dateLabel}`
+                          : `+${hiddenCount} ${messages.fizruk.measurements.moreFieldsSuffix}: ${messages.fizruk.measurements.showAllFieldsAriaSuffix} ${dateLabel}`
                       }
                       onClick={() => toggleHistoryRow(e.id)}
                     >

@@ -17,6 +17,7 @@ import { useMemo } from "react";
 import { detectRecurring } from "@sergeant/finyk-domain/lib/recurringDetect";
 import type { Insight } from "@shared/lib/insights/types";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
+import { formatNumberUk } from "@sergeant/shared";
 
 // Tunable — export so tests can override.
 /** Minimum number of detections before the insight fires. */
@@ -66,7 +67,7 @@ export function useRecurringDetectedInsight({
     if (!top || top.occurrences < RECURRING_MIN_OCCURRENCES) return null;
 
     const merchantName = top.displayName || top.key;
-    const amountDisplay = top.avgAmount.toLocaleString("uk-UA", {
+    const amountDisplay = formatNumberUk(top.avgAmount, {
       maximumFractionDigits: 0,
     });
     const symbol = top.currency === "USD" ? "$" : "₴";

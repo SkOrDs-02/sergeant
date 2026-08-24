@@ -263,7 +263,9 @@ describe("AddBudgetForm — useApiForm + zod (Item #8 round-13)", () => {
     fireEvent.change(screen.getByLabelText("Банка Monobank"), {
       target: { value: "jar-1" },
     });
-    expect(screen.getByLabelText("Сума цілі")).toHaveValue(2000);
+    // Поле грошове, тож значення — рядок із роздільником розрядів, а не
+    // число: `type="number"` тут більше не стоїть (див. `MoneyInput`).
+    expect(screen.getByLabelText("Сума цілі")).toHaveValue("2\u00a0000");
   });
 
   it("does not overwrite a target amount the user already typed", () => {
@@ -288,7 +290,7 @@ describe("AddBudgetForm — useApiForm + zod (Item #8 round-13)", () => {
     fireEvent.change(screen.getByLabelText("Банка Monobank"), {
       target: { value: "jar-1" },
     });
-    expect(screen.getByLabelText("Сума цілі")).toHaveValue(9999);
+    expect(screen.getByLabelText("Сума цілі")).toHaveValue("9\u00a0999");
   });
 
   it("blocks goal submit when name is whitespace-only via .trim().min(1)", async () => {

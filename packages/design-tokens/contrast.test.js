@@ -17,6 +17,7 @@ import {
   moduleColors,
   inkTheme,
   moduleAccentRgb,
+  statusInkHex,
   statusStrongHex,
 } from "./tokens.js";
 
@@ -199,9 +200,57 @@ describe("@sergeant/design-tokens — «Чорнило» ink contrast", () => {
   it("muted on surface ≥ 4.5:1 (AA)", () => {
     expect(contrastRatio(muted, surface)).toBeGreaterThanOrEqual(4.5);
   });
-  it("subtle on surface ≥ 3:1 (AA large / ≥12px labels)", () => {
-    expect(contrastRatio(subtle, surface)).toBeGreaterThanOrEqual(3);
+  // AI-DANGER: 2026-08-21 — поріг тут був 3:1 із підписом «AA large /
+  // ≥12px labels». Такого послаблення не існує: 3:1 діє від 18.66px bold /
+  // 24px regular, а `text-subtle` носить 12px-підписи. Через це тест був
+  // зелений на значенні, яке axe ловив як `[serious] color-contrast` на
+  // `/settings [dark]`. Не повертай 3:1 — якщо новий тон його не тримає,
+  // це тон треба піднімати, а не поріг опускати.
+  it("subtle on surface ≥ 4.5:1 (AA normal text — 12px це звичайний текст)", () => {
+    expect(contrastRatio(subtle, surface)).toBeGreaterThanOrEqual(4.5);
   });
+  it("драбина з трьох помітних щаблів: strong > muted > subtle", () => {
+    expect(contrastRatio(strong, surface)).toBeGreaterThan(
+      contrastRatio(muted, surface),
+    );
+    expect(contrastRatio(muted, surface)).toBeGreaterThan(
+      contrastRatio(subtle, surface),
+    );
+  });
+});
+
+describe("@sergeant/design-tokens — статуси як ТЕКСТ у «Чорнилі»", () => {
+  // AI-CONTEXT (2026-08-21): `statusStrongHex` — світлий тир, і як текст на
+  // чорнилі він не працює (red-800 на картці = 1.9:1). До цього дня це
+  // ніде не було зафіксовано, тож `text-{status}-strong` без ручної
+  // `dark:`-пари малював темно-червоне по темному в третині місць.
+  // Пари нижче тримають обидва боки контракту: чорнильний тир проходить
+  // AA на всіх трьох ink-поверхнях, а світлий — задокументовано НЕ
+  // проходить, щоб його не «повернули назад» як спільне значення.
+  const { bg, surface, surfaceHi } = inkTheme.surface;
+  const surfaces = { bg, surface, surfaceHi };
+
+  for (const [status, hex] of Object.entries(statusInkHex)) {
+    for (const [surfaceName, surfaceHex] of Object.entries(surfaces)) {
+      it(`${status}-ink ≥ 4.5:1 на ink ${surfaceName}`, () => {
+        expect(contrastRatio(hex, surfaceHex)).toBeGreaterThanOrEqual(4.5);
+      });
+    }
+    it(`${status}-strong (світлий тир) < 4.5:1 на ink surface — задокументований фейл`, () => {
+      expect(contrastRatio(statusStrongHex[status], surface)).toBeLessThan(4.5);
+    });
+  }
+
+  // Заливка й текст мусять лишатися РІЗНИМИ значеннями: спільного числа
+  // між «≥4.5 як текст на чорнилі» і «≥4.5 під `text-white`» не існує.
+  for (const [status, hex] of Object.entries(statusInkHex)) {
+    it(`${status}: чорнильний тир не годиться під text-white (тому заливка лишається на -strong)`, () => {
+      expect(contrastRatio("#ffffff", hex)).toBeLessThan(4.5);
+      expect(
+        contrastRatio("#ffffff", statusStrongHex[status]),
+      ).toBeGreaterThanOrEqual(4.5);
+    });
+  }
 });
 
 describe("@sergeant/design-tokens — «Чорнило» light pair (spec § 5)", () => {

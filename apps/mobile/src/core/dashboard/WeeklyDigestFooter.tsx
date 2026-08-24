@@ -61,7 +61,7 @@ export const WeeklyDigestFooter = memo(function WeeklyDigestFooter({
         accessibilityRole="link"
         accessibilityLabel={
           fresh
-            ? "Відкрити тижневий дайджест — свіжий"
+            ? "Відкрити тижневий дайджест, свіжий"
             : "Відкрити тижневий дайджест"
         }
         onPress={handleOpen}

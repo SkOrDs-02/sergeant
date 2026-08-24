@@ -10,6 +10,7 @@
     "./schemas": "./src/schemas/index.ts",
     "./utils": "./src/utils/index.ts",
     "./types": "./src/types/index.ts",
+    "./data/genericFoods": "./src/data/genericFoods.ts",
     "./openapi": "./src/openapi/index.ts",
     "./test-utils": "./src/test-utils.ts",
     "./lib/pii": "./src/lib/pii.ts"

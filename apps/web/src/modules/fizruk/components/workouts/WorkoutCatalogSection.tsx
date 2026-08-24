@@ -15,6 +15,7 @@ import { EmptyState } from "@shared/components/ui/EmptyState";
 import { FizrukEmptyIllustration } from "@shared/components/ui/EmptyStateIllustrations";
 import { cn } from "@shared/lib/ui/cn";
 import { Card } from "@shared/components/ui/Card";
+import { fmt } from "../../lib/numberFmt";
 
 type RecExerciseFn = typeof recoveryConflictsForExerciseFn;
 type RecoveryByMap = Parameters<RecExerciseFn>[1];
@@ -64,6 +65,9 @@ export function WorkoutCatalogSection({
   rec,
   musclesUk,
 }: WorkoutCatalogSectionProps) {
+  /** Список звужений людиною — запитом або фільтром обладнання. */
+  const hasQuery = q.trim().length > 0 || (equipmentFilter || []).length > 0;
+
   return (
     <>
       <div className="relative mb-3">
@@ -138,19 +142,51 @@ export function WorkoutCatalogSection({
 
       {mode === "log" && (
         <p className="text-style-caption text-muted mb-2 leading-relaxed">
-          Розкрий групу й тапни по вправі — додасться в активне тренування.
-          Кнопка «Інфо» праворуч — опис і фото без додавання.
+          Розкрий групу й тапни по вправі, додасться в активне тренування.
+          Кнопка «Інфо» праворуч: мʼязи й обладнання без додавання.
         </p>
       )}
 
       <Card radius="lg" padding="none" className="overflow-hidden">
         {grouped.length === 0 ? (
-          <EmptyState
-            illustration={<FizrukEmptyIllustration size={96} />}
-            title="Поки немає вправ"
-            description="Додай першу через кнопку «+ Додати»."
-            module="fizruk"
-          />
+          /*
+            Порожній каталог і порожній РЕЗУЛЬТАТ ПОШУКУ — різні стани, і
+            плутати їх не можна: у каталозі 119 вправ, а на запит без збігів
+            екран радив «Додай першу через кнопку «+ Додати»» (браузерне QA
+            2026-08-23). Друга гілка називає причину й пропонує дію, яка
+            справді допоможе, — скинути запит/фільтр.
+          */
+          hasQuery ? (
+            <EmptyState
+              illustration={<FizrukEmptyIllustration size={96} />}
+              title="Нічого не знайшлось"
+              description={
+                q
+                  ? `За запитом «${q}» вправ немає. Спробуй іншу назву, групу мʼязів або скинь пошук.`
+                  : "Під вибране обладнання вправ немає. Скинь фільтр або обери інше."
+              }
+              module="fizruk"
+              action={
+                <button
+                  type="button"
+                  onClick={() => {
+                    setQ("");
+                    setEquipmentFilter([]);
+                  }}
+                  className="focus-ring min-h-[44px] rounded-full border border-line px-4 text-style-caption text-text transition-colors hover:bg-panelHi"
+                >
+                  Скинути пошук
+                </button>
+              }
+            />
+          ) : (
+            <EmptyState
+              illustration={<FizrukEmptyIllustration size={96} />}
+              title="Поки немає вправ"
+              description="Додай першу через кнопку «+ Додати»."
+              module="fizruk"
+            />
+          )
         ) : (
           grouped.map((g) => {
             const isOpen = open[g.id] ?? false;
@@ -215,7 +251,7 @@ export function WorkoutCatalogSection({
                               </div>
                               <div className="shrink-0 text-style-caption text-muted tabular-nums">
                                 {typeof ex["rating"] === "number"
-                                  ? ex["rating"].toFixed(1)
+                                  ? fmt(ex["rating"], 1)
                                   : ""}
                               </div>
                             </div>
@@ -225,7 +261,7 @@ export function WorkoutCatalogSection({
                             <button
                               type="button"
                               className="shrink-0 w-12 min-h-[48px] flex items-center justify-center border-l border-line text-muted hover:text-text hover:bg-panelHi transition-colors"
-                              aria-label="Опис і фото вправи"
+                              aria-label="Деталі вправи"
                               onClick={() => setSelected(ex)}
                             >
                               <Icon name="info" size="lg" />

@@ -123,6 +123,60 @@ describe("HabitQuickCreateDialog", () => {
     expect(screen.getByDisplayValue("Пити воду")).toBeInTheDocument();
   });
 
+  /**
+   * Регресія: `prevOpenKey` не скидався на закритті, тож повторне
+   * відкриття для ТІЄЇ САМОЇ звички з тим самим `focusTick`
+   * (`HabitDetailSheet` його взагалі не передає) не переcіювало
+   * чернетку — форма показувала старий драфт, а не поточні поля звички.
+   */
+  it("перевідкриття для тієї самої звички перечитує її поточні поля", () => {
+    const habit = makeHabit("h1", "Пити воду");
+    const initial: RoutineState = {
+      ...defaultRoutineState(),
+      habits: [habit],
+    };
+
+    function ReopenHarness({
+      routine,
+      open,
+    }: {
+      routine: RoutineState;
+      open: boolean;
+    }) {
+      return (
+        <ToastProvider>
+          <HabitQuickCreateDialog
+            open={open}
+            routine={routine}
+            setRoutine={vi.fn()}
+            onClose={vi.fn()}
+            editingId="h1"
+          />
+        </ToastProvider>
+      );
+    }
+
+    const { rerender } = render(<ReopenHarness routine={initial} open />);
+    expect(screen.getByDisplayValue("Пити воду")).toBeInTheDocument();
+
+    // Людина щось набрала і закрила аркуш, не зберігаючи.
+    fireEvent.change(screen.getByDisplayValue("Пити воду"), {
+      target: { value: "Чернетка, яку не зберегли" },
+    });
+    rerender(<ReopenHarness routine={initial} open={false} />);
+
+    // Тим часом звичка змінилась деінде — дату переставили на завтра.
+    const updated: RoutineState = {
+      ...defaultRoutineState(),
+      habits: [{ ...habit, startDate: "2026-08-25" }],
+    };
+    rerender(<ReopenHarness routine={updated} open />);
+
+    expect(screen.queryByDisplayValue("Чернетка, яку не зберегли")).toBeNull();
+    expect(screen.getByDisplayValue("Пити воду")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("2026-08-25")).toBeInTheDocument();
+  });
+
   it("blocks save with an empty name and surfaces a name error", async () => {
     render(<Harness />);
     fireEvent.click(screen.getByRole("button", { name: "Додати звичку" }));

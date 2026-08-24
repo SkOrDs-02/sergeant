@@ -1,9 +1,9 @@
 # 01. Монетизація і ціноутворення
 
-> **Last touched:** 2026-08-06 by @Skords-01. **Next review:** 2027-10-15.
+> **Last touched:** 2026-08-24 by @claude. **Next review:** 2026-12-02.
 > **Status:** Active
 >
-> **Update 2026-06-27:** pricing v4 зафіксовано в [ADR-0068](../../../04-governance/adr/0068-pricing-v4-uah-reverse-trial.md). **Активна модель: Free + Pro ₴199/міс / ₴1490/рік**, reverse trial 7 днів (автоматичний Pro → downgrade), Free AI **5 повідомлень/день** ([ADR-0085](../../../04-governance/adr/0085-free-ai-quota-five-per-day.md), 2026-08-06 — уточнює рядок «15» з ADR-0068; анонім — 1/день) + cloud-sync 2 пристрої. USD-ціни ($7/міс / $49/рік) із ADR-0051 — **Superseded by ADR-0068**. Класичний trial «7 днів без картки» із ADR-0051 — **Superseded by ADR-0068** (замінено на reverse trial).
+> **Update 2026-06-27:** pricing v4 зафіксовано в [ADR-0068](../../../04-governance/adr/0068-pricing-v4-uah-reverse-trial.md). **Активна модель: Free + Pro ₴199/міс / ₴1490/рік**, reverse trial 7 днів (автоматичний Pro → downgrade), Free AI **5 повідомлень/день** ([ADR-0085](../../../04-governance/adr/0085-free-ai-quota-five-per-day.md), 2026-08-06 — уточнює рядок «15» з ADR-0068) + cloud-sync 2 пристрої. **Анонім AI не отримує взагалі** ([ADR-0086](../../../04-governance/adr/0086-no-anonymous-ai-sign-in-required.md), 2026-08-24 — знімає рядок «анонім — 1/день» з ADR-0085): асистент за `requireSession()`, гість бачить 401 і запрошення увійти. USD-ціни ($7/міс / $49/рік) із ADR-0051 — **Superseded by ADR-0068**. Класичний trial «7 днів без картки» із ADR-0051 — **Superseded by ADR-0068** (замінено на reverse trial).
 >
 > **Update 2026-05-06:** pricing v3 зафіксовано в [ADR-0051](../../../04-governance/adr/0051-pricing-v3-single-tier.md) — **Superseded by ADR-0068**. Секції §2.2 (Plus tier з decoy), §2.3 (pay-per-feature) та альтернативна ціна ₴2999 Lifetime — не йдуть у код MVP (залишаються як historical context нижче).
 >
@@ -527,14 +527,14 @@ Breakeven subscribers    = ₴3 168 / ₴191 ≈ 17 Pro subscribers
 
 **Звідки числа** (усі перевірені в коді, не з пам'яті):
 
-| Джерело                         | Значення                                                                      |
-| ------------------------------- | ----------------------------------------------------------------------------- |
-| `lib/aiPricing.ts`              | Sonnet $3/$15 за Mtok (cacheRead $0.30); Haiku 4.5 $1/$5 (cacheRead $0.10)    |
-| `chat.ts:484` / `chat.ts:368`   | turn 1 — Haiku 4.5, `max_tokens` 1500; turn 2 — Sonnet 4.6, `max_tokens` 2500 |
-| `env.ts:597,603`                | Pro: 20 premium + 80 standard на добу; floor — без ліміту                     |
-| `billing/effectiveLimits.ts:10` | Free: 5 AI-запитів на добу (anon — 1, `AI_DAILY_ANON_LIMIT`) — ADR-0085       |
-| `aiQuota.ts`                    | виклик з інструментом коштує 3 одиниці квоти                                  |
-| `env.ts:949`                    | ₴199/міс ≈ $4.6                                                               |
+| Джерело                         | Значення                                                                                                                           |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `lib/aiPricing.ts`              | Sonnet $3/$15 за Mtok (cacheRead $0.30); Haiku 4.5 $1/$5 (cacheRead $0.10)                                                         |
+| `chat.ts:484` / `chat.ts:368`   | turn 1 — Haiku 4.5, `max_tokens` 1500; turn 2 — Sonnet 4.6, `max_tokens` 2500                                                      |
+| `env.ts:597,603`                | Pro: 20 premium + 80 standard на добу; floor — без ліміту                                                                          |
+| `billing/effectiveLimits.ts:10` | Free: 5 AI-запитів на добу — ADR-0085. Аноніма в цій моделі немає взагалі: AI-роути під `requireSession()`, гість — 401 (ADR-0086) |
+| `aiQuota.ts`                    | виклик з інструментом коштує 3 одиниці квоти                                                                                       |
+| `env.ts:949`                    | ₴199/міс ≈ $4.6                                                                                                                    |
 
 **Префікс ВИМІРЯНО 2026-07-25** (не оцінено): 77 інструментів, 43 КБ JSON,
 разом із `SYSTEM_PREFIX` — **14 400–21 200 токенів**. Докстрінг

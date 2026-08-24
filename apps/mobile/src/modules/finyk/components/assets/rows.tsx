@@ -21,6 +21,7 @@ import {
   type MonoAccount,
   type Transaction,
 } from "@sergeant/finyk-domain/domain";
+import { formatNumberUk } from "@sergeant/shared";
 
 // Mirrors `getAccountShortName` from `apps/web/src/modules/finyk/components/TxRow.tsx`.
 // The label is purely cosmetic — the domain layer treats accounts by id —
@@ -44,11 +45,11 @@ function getAccountLabel(account: MonoAccount): string {
 }
 
 function fmtMajor(uah: number): string {
-  return uah.toLocaleString("uk-UA", { maximumFractionDigits: 2 });
+  return formatNumberUk(uah, { maximumFractionDigits: 2 });
 }
 
 function fmtKop(amountKop: number): string {
-  return (amountKop / 100).toLocaleString("uk-UA", {
+  return formatNumberUk(amountKop / 100, {
     minimumFractionDigits: 2,
   });
 }

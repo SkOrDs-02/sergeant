@@ -10,6 +10,13 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { emitHubBus } from "@shared/lib/modules/hubBus";
 import { BentoCard } from "./BentoCard";
 import type { ModuleConfig } from "./moduleConfigs";
+import { moduleHasRealEntry } from "../../onboarding/firstRealEntry";
+
+vi.mock("../../onboarding/firstRealEntry", () => ({
+  moduleHasRealEntry: vi.fn(() => false),
+}));
+
+const hasRealEntryMock = vi.mocked(moduleHasRealEntry);
 
 function makeConfig(
   preview: ReturnType<ModuleConfig["getPreview"]>,
@@ -27,7 +34,7 @@ function makeConfig(
     description: "Звички та щоденні цілі",
     hasGoal: true,
     emptyLabel: "Почни тут →",
-    emptyPromise: "Тут зʼявиться прогрес дня — напр.",
+    emptyPromise: "Тут зʼявиться прогрес дня, напр.",
     emptyExample: "3/5",
     getPreview: () => preview,
     ...overrides,
@@ -35,7 +42,11 @@ function makeConfig(
 }
 
 describe("BentoCard", () => {
-  afterEach(() => cleanup());
+  afterEach(() => {
+    cleanup();
+    hasRealEntryMock.mockReset();
+    hasRealEntryMock.mockReturnValue(false);
+  });
 
   it("summarizes live preview data in the button label and caps progress width", () => {
     const onClick = vi.fn();
@@ -85,11 +96,11 @@ describe("BentoCard", () => {
 
     expect(
       screen.getByRole("button", {
-        name: "Рутина — неактивний модуль. Увімкнути в налаштуваннях Hub.",
+        name: "Рутина: неактивний модуль. Увімкнути в налаштуваннях Hub.",
       }),
     ).toHaveAttribute("data-inactive", "true");
     expect(
-      screen.getByText("Неактивний — увімкнути в налаштуваннях"),
+      screen.getByText("Неактивний: увімкнути в налаштуваннях"),
     ).toBeInTheDocument();
     expect(screen.queryByText("Серія: 3 дні")).not.toBeInTheDocument();
   });
@@ -115,6 +126,75 @@ describe("BentoCard", () => {
     expect(screen.getByText("ранкова кава")).toBeInTheDocument();
     expect(handleRef).toHaveBeenCalledWith(handle);
     expect(onPointerDown).toHaveBeenCalledTimes(1);
+  });
+
+  // Regression: половина знімка quick-stats може бути `null` (стрік є,
+  // тренувань цього тижня нема; ціль калорій задана, з'їдено нуль). Раніше
+  // це їхало в шаблон і озвучувалось як «Фізрук: null, Серія: 1 тиждень».
+  it.each([
+    {
+      name: "fizruk",
+      config: { label: "Фізрук", module: "fizruk" },
+      preview: { main: null, sub: "Серія: 1 тиждень" },
+      expected: "Фізрук: Серія: 1 тиждень",
+      forbidden: "Фізрук: null, Серія: 1 тиждень",
+    },
+    {
+      name: "nutrition",
+      config: { label: "Їжа", module: "nutrition" },
+      preview: { main: null, sub: "Ціль: 2000 ккал", progress: 0 },
+      expected: "Їжа: Ціль: 2000 ккал",
+      forbidden: "Їжа: null, Ціль: 2000 ккал",
+    },
+  ])(
+    "never leaks a literal null into the $name tile label",
+    ({ config, preview, expected, forbidden }) => {
+      render(
+        <BentoCard config={makeConfig(preview, config)} onClick={vi.fn()} />,
+      );
+
+      const card = screen.getByRole("button", { name: expected });
+      expect(card.getAttribute("aria-label")).not.toContain("null");
+      expect(screen.queryByRole("button", { name: forbidden })).toBeNull();
+    },
+  );
+
+  it("keeps the FTUX call-to-action for a module with no entries ever", () => {
+    hasRealEntryMock.mockReturnValue(false);
+
+    render(
+      <BentoCard
+        config={makeConfig({ main: null, sub: null, progress: 0 })}
+        onClick={vi.fn()}
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", { name: "Рутина: Почни тут →" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByTestId("bento-dormant")).toBeNull();
+  });
+
+  it("drops the FTUX call-to-action once the module has history", () => {
+    hasRealEntryMock.mockReturnValue(true);
+
+    render(
+      <BentoCard
+        config={makeConfig(
+          { main: null, sub: null, progress: 0 },
+          { label: "Їжа", module: "nutrition" },
+        )}
+        onClick={vi.fn()}
+      />,
+    );
+
+    expect(hasRealEntryMock).toHaveBeenCalledWith("nutrition");
+    expect(screen.getByTestId("bento-dormant")).toHaveTextContent(
+      "Сьогодні ще порожньо",
+    );
+    expect(screen.queryByText(/Почни тут/)).toBeNull();
+    const card = screen.getByRole("button", { name: /Сьогодні ще порожньо/ });
+    expect(card.getAttribute("aria-label")).not.toContain("Почни тут");
   });
 
   it("re-reads quick stats after a same-tab storage update", () => {

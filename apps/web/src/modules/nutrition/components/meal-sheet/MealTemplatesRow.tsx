@@ -135,7 +135,7 @@ export function MealTemplatesRow({
         title={messages.nutrition.deleteTemplateTitle}
         description={
           confirmTarget
-            ? `«${confirmTarget.name}» — натисни «Повернути» у тості, якщо це випадково.`
+            ? `«${confirmTarget.name}». Натисни «Повернути» у тості, якщо це випадково.`
             : undefined
         }
         onConfirm={() => {

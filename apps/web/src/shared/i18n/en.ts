@@ -36,7 +36,7 @@ export const messagesEn: Partial<MessageCatalog> = {
   },
 
   sync: {
-    errorNetwork: "Sync failed — check your connection.",
+    errorNetwork: "Sync failed, check your connection.",
     errorServerRetryable: "The server is temporarily unresponsive. Try again.",
     errorServerNonRetryable: "Sync error. Check your input.",
     errorGeneric: "Sync error.",
@@ -232,7 +232,7 @@ export const messagesEn: Partial<MessageCatalog> = {
       title: "If Sergeant ever shuts down",
       body: "We will warn you at least 30 days ahead, and export will keep working the whole time. Your data is yours: take it whenever you like, no permission and no explanation needed.",
       bankNote:
-        "One honest caveat: we do not duplicate bank transactions — they can always be pulled from the bank again. But if you no longer have access to the bank, nobody can restore that history.",
+        "One honest caveat: we do not duplicate bank transactions, they can always be pulled from the bank again. But if you no longer have access to the bank, nobody can restore that history.",
     },
   },
 
@@ -247,13 +247,13 @@ export const messagesEn: Partial<MessageCatalog> = {
     chatQuickActions: "Quick scenarios",
     valueProgressAria: "Progress toward your goals",
     crossModulePreviewAria: "What Sergeant will show next",
-    weeklyDigestTitle: "Weekly digest — stories",
+    weeklyDigestTitle: "Weekly digest: stories",
     chatOfflineNotice:
       "The assistant is unavailable without internet. Module data is visible offline, but\n          AI responses require a connection.",
 
-    chatEmptyTitle: "Ask me anything — I'm here to help",
+    chatEmptyTitle: "Ask me anything, I'm here to help",
     chatEmptyDescription:
-      "Tap a suggestion — it fills the input so you can edit it before sending.",
+      "Tap a suggestion, it fills the input so you can edit it before sending.",
     chatEmptyAriaLabel: "Chat starter suggestions",
     chatEmptySuggestionFinyk: "How much did I spend this week?",
     chatEmptySuggestionFizruk: "How are my workouts going?",
@@ -266,7 +266,7 @@ export const messagesEn: Partial<MessageCatalog> = {
   },
 
   onboarding: {
-    pickerAllOnHint: "Everything is on — switch off what you will not use.",
+    pickerAllOnHint: "Everything is on, switch off what you will not use.",
     hideChecklist: "Hide checklist",
 
     capabilitiesGroupTitle: "Capabilities",
@@ -276,7 +276,7 @@ export const messagesEn: Partial<MessageCatalog> = {
 
     goalFirstHeading: "What matters most to you right now?",
     goalFirstSubtitle:
-      "Choose your priority — Sergeant will suggest where to start.",
+      "Choose your priority, Sergeant will suggest where to start.",
     goalFirstSkipLabel: "See everything",
     goalFirstAriaLabel: "Onboarding goals",
   },
@@ -342,7 +342,7 @@ export const messagesEn: Partial<MessageCatalog> = {
     archive: "Archive",
     reportHeading: "Routine (habit completion)",
     firstRun: {
-      title: "Your first habit — a preview",
+      title: "Your first habit, a preview",
       description:
         "Add any habit to get started. You can edit it and add more from the same dialog.",
     },
@@ -357,7 +357,7 @@ export const messagesEn: Partial<MessageCatalog> = {
       tokenRejected:
         "Mono rejected the token. Check that you copied it correctly.",
       accountRequired:
-        "Sign in first — the Mono token is stored on the server, so connecting a bank needs an account. Nothing is wrong with your token.",
+        "Sign in first, the Mono token is stored on the server, so connecting a bank needs an account. Nothing is wrong with your token.",
       networkUnavailable: "Could not reach Mono. Check your connection.",
     },
   },
@@ -382,19 +382,19 @@ export const messagesEn: Partial<MessageCatalog> = {
     // V-7 (2026-08-08): mirrors the uk.ts rename — see that file's comment.
     title: "Experimental features",
     intro:
-      "These features are still being tested. Enable at your own risk — behavior may change in future versions.",
+      "These features are still being tested. Enable at your own risk, behavior may change in future versions.",
     warningBanner:
       "Experimental features may be unstable. Settings are saved on this device only.",
     optInLabel: "I understand this might break",
     optInHint:
-      "Check this box to unlock the toggles. You'll only be asked once — until you clear site data.",
+      "Check this box to unlock the toggles. You'll only be asked once, until you clear site data.",
   },
 
   privacy: {
     chip: "Only you",
-    chipTooltip: "All data is local — no cloud",
+    chipTooltip: "All data is local, no cloud",
     bannerTitle: "Protect Sergeant with a lock",
-    bannerHint: "PIN · Face ID — for your Mono token and health data",
+    bannerHint: "PIN · Face ID: for your Mono token and health data",
     bannerCta: "Set up",
 
     lock: {
@@ -430,19 +430,19 @@ export const messagesEn: Partial<MessageCatalog> = {
       // V-11 (2026-08-09): mirrors the uk.privacy.ts addition — see the
       // comment there for why this scope line exists.
       sectionScope:
-        "Everything the assistant has remembered — from chat, modules and your profile.",
+        "Everything the assistant has remembered: from chat, modules and your profile.",
       sectionHint:
         "Each fact can be deleted individually. Deleted facts are gone for good.",
       loading: "Loading memory…",
       loadError: "Could not load AI memory.",
       empty:
-        "The AI hasn't recorded anything about you yet. Facts appear when you mention something important in chat — an allergy, a goal, a constraint.",
+        "The AI hasn't recorded anything about you yet. Facts appear when you mention something important in chat: an allergy, a goal, a constraint.",
       loadMore: "Show more",
       loadingMore: "Loading…",
       deleteAria: "Delete fact",
       confirmTitle: "Delete this fact?",
       confirmBody:
-        "will be gone from the AI memory for good — there is no undo.",
+        "will be gone from the AI memory for good, there is no undo.",
       confirmButton: "Delete permanently",
       deleteError: "Could not delete the fact. Try again.",
     },
@@ -457,9 +457,9 @@ export const messagesEn: Partial<MessageCatalog> = {
     sexLabel: "Sex",
     sexMale: "Male",
     sexFemale: "Female",
-    sexPlaceholder: "— Select —",
+    sexPlaceholder: "Select",
     activityLabel: "Activity level",
-    activityPlaceholder: "— Select —",
+    activityPlaceholder: "Select",
     activitySedentaryLabel: "Sedentary",
     activitySedentaryHint: "Desk job, almost no exercise",
     activityLightLabel: "Light activity",
@@ -493,17 +493,17 @@ export const messagesEn: Partial<MessageCatalog> = {
   },
 
   nutritionGoalRange: {
-    kcalTooLow: "Under 800 kcal — not safe without medical supervision.",
-    kcalTooHigh: "Over 6 000 kcal — that's a lot even for athletes.",
-    proteinTooLow: "Under 30 g protein — risk of deficiency.",
-    proteinTooHigh: "Over 300 g protein — that's a lot even for athletes.",
-    fatTooLow: "Under 20 g fat — risk of essential fatty acid deficiency.",
-    fatTooHigh: "Over 250 g fat — that's high for a typical diet.",
-    carbsTooHigh: "Over 700 g carbs — that's a lot even for athletes.",
+    kcalTooLow: "Under 800 kcal, not safe without medical supervision.",
+    kcalTooHigh: "Over 6 000 kcal, that's a lot even for athletes.",
+    proteinTooLow: "Under 30 g protein, risk of deficiency.",
+    proteinTooHigh: "Over 300 g protein, that's a lot even for athletes.",
+    fatTooLow: "Under 20 g fat, risk of essential fatty acid deficiency.",
+    fatTooHigh: "Over 250 g fat, that's high for a typical diet.",
+    carbsTooHigh: "Over 700 g carbs, that's a lot even for athletes.",
   },
 
   publicStatus: {
-    pageTitle: "Sergeant — Status",
+    pageTitle: "Sergeant · Status",
     pollNote: "Current component status. Updated automatically every",
     pollNoteSuffix: "s.",
     loading: "Loading service status…",
@@ -527,7 +527,7 @@ export const messagesEn: Partial<MessageCatalog> = {
     linksNavAria: "Legal documents",
     homeLogoAria: "Sergeant home",
     reviewGateNotice:
-      "this is a working draft before public launch — not legal advice. Before open registration the founder or a lawyer must confirm the details, refunds, processors and applicable law.",
+      "this is a working draft before public launch, not legal advice. Before open registration the founder or a lawyer must confirm the details, refunds, processors and applicable law.",
     lastUpdatedPrefix: "Last updated:",
     goToPricing: "Go to pricing",
     signInOrCreate: "Sign in or create an account",
@@ -544,21 +544,20 @@ export const messagesEn: Partial<MessageCatalog> = {
   paywall: {
     "ai-photo-analysis": {
       name: "AI meal photo analysis",
-      title: "AI photo analysis — Premium",
+      title: "AI photo analysis: Premium",
       description:
         "AI estimates calories, protein, carbs and fat from a meal photo. Available on Premium.",
     },
     "multi-currency": {
       name: "Multi-currency assets",
-      title: "Multi-currency — Premium",
+      title: "Multi-currency: Premium",
       description:
-        "Hold assets in USD or EUR. I show them separately for now — I don't fold them into your UAH net worth.",
+        "Hold assets in USD or EUR. I show them separately for now, I don't fold them into your UAH net worth.",
     },
     "analytics-export-pdf": {
       name: "PDF export",
-      title: "PDF reports — Premium",
-      description:
-        "Cross-module reports and PDF export — available on Premium.",
+      title: "PDF reports: Premium",
+      description: "Cross-module reports and PDF export, available on Premium.",
     },
   },
 
@@ -572,13 +571,13 @@ export const messagesEn: Partial<MessageCatalog> = {
     signInAria: "Sign in to your account",
 
     // Hero section
-    heroAriaLabel: "Hero — introducing Sergeant",
+    heroAriaLabel: "Hero: introducing Sergeant",
     eyebrow: "Local-first · AI · In your language",
     heroHeadline:
       "One assistant for finances, workouts,\nnutrition and routines.",
     heroSubcopy:
-      "Sergeant combines four modules — Finyk, Fizruk, Nutrition, Routine" +
-      " — into one AI chat that remembers your goals and suggests the next step." +
+      "Sergeant combines four modules (Finyk, Fizruk, Nutrition, Routine)" +
+      " into one AI chat that remembers your goals and suggests the next step." +
       " No cloud by default. Full control over your data.",
     registerCta: "Create account",
     loginCta: "I already have an account",
@@ -589,13 +588,13 @@ export const messagesEn: Partial<MessageCatalog> = {
     features: {
       aiTitle: "AI assistant in your pocket",
       aiBody:
-        "A chat that knows your finances, workouts, nutrition and routines — and suggests what to do next.",
+        "A chat that knows your finances, workouts, nutrition and routines, and suggests what to do next.",
       localFirstTitle: "Local-first by default",
       localFirstBody:
         "Your data lives on your device. Cloud sync is optional (Premium) and never turns on without your confirmation.",
       noHiddenTitle: "No surprise charges",
       noHiddenBody:
-        "Free tier — forever. Premium — one paid plan, no surprise charges. Pricing will be announced at launch.",
+        "Free tier is forever. Premium is one paid plan, no surprise charges. Pricing will be announced at launch.",
     },
 
     // Waitlist section

@@ -386,7 +386,7 @@ describe("Transactions page shell", () => {
     expect(screen.getByText("Схоже на погашення кредитки")).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Погашення не рахується як витрата — витратами були покупки з кредитки",
+        "Погашення не рахується як витрата, витратами були покупки з кредитки",
       ),
     ).toBeInTheDocument();
     expect(

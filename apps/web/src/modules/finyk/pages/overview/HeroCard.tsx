@@ -160,7 +160,7 @@ const HeroCardImpl = function HeroCard({
               Скільки можна витрачати на день?
             </p>
             <p className="text-style-label text-hero-ink mt-1 leading-snug">
-              Задай місячний план витрат — і я рахуватиму денний бюджет із
+              Задай місячний план витрат, і я рахуватиму денний бюджет із
               урахуванням підписок і боргів.
             </p>
             {onSetPlan ? (

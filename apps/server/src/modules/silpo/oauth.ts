@@ -143,13 +143,13 @@ export function generatePkcePair(): PkcePair {
 // own social-login flow solves this with a signed cookie; a cookie can't
 // give us one-time consumption, and one-time consumption is the whole
 // point of `state` (replay protection on the callback). So the mapping
-// lives in Postgres (`silpo_oauth_state`, migration 124), consumed with a
+// lives in Postgres (`silpo_oauth_state`, migration 126), consumed with a
 // single atomic `DELETE ... RETURNING`.
 //
 // This used to be an in-process `Map`. It cost a restart-shaped bug: any
 // redeploy inside the authorization window stranded the user on
 // `invalid_state`, and the API could never run more than one replica
-// behind a non-sticky balancer. Migration 124's comment carries the full
+// behind a non-sticky balancer. Migration 126's comment carries the full
 // rationale, including why `code_verifier` is stored in plaintext.
 
 export interface PendingState {

@@ -1,15 +1,14 @@
 /**
- * Last validated: 2026-07-20
+ * Last validated: 2026-08-21
  * Status: Active
  *
  * Pure helpers + types for TxRow. Extracted so TxRow.tsx stays under the
  * Hard Rule #18 `max-lines: 600` ceiling.
  */
-import { INTERNAL_TRANSFER_ID } from "../constants";
 import {
-  MANUAL_EXPENSE_TAXONOMY,
-  MANUAL_INCOME_TAXONOMY,
-} from "@sergeant/finyk-domain/lib/manualTaxonomy";
+  CATEGORY_ICON_NAMES,
+  DEFAULT_CATEGORY_ICON,
+} from "@sergeant/finyk-domain/lib/categoryIcons";
 import type { IconName } from "@shared/components/ui/Icon";
 import type { MonoAccount } from "@sergeant/finyk-domain/lib/accounts";
 
@@ -17,48 +16,28 @@ export const SPLIT_INPUT_CLASS =
   "input-focus-finyk flex-1 text-xs h-9 rounded-xl border border-line bg-panelHi px-2 text-text";
 
 /**
- * Maps category IDs to Icon names for the tinted pill.
- * Falls back to "tag" for any unknown or custom category.
- * Phase 6.1 — Expensa-inspired category-tinted icon pill.
+ * `categoryId` → імʼя іконки для тонованого чипа категорії.
+ *
+ * Проєкція спільної мапи домену (`lib/categoryIcons.ts`) у web-тип
+ * `IconName`. До 2026-08-21 таблиця жила тут, тож знав про неї лише
+ * рядок транзакції — картка ліміту й алерти бюджету малювали замість
+ * іконки емодзі-префікс підпису. Звірка «кожне імʼя є в наборі» —
+ * `txRowHelpers.test.ts`.
  */
-export const CATEGORY_ICON_MAP: Record<string, IconName> = {
-  // Ручна таксономія йде ПЕРШОЮ, щоб MCC-записи нижче лишались
-  // сильнішими: збіжні id (`food`, `transport`, …) мають зберегти рівно
-  // ті іконки, що й до 2026-08-13, а з таблиці нам потрібні тільки ті,
-  // яких у MCC-каталозі немає — `groceries`, `cafe`, `tech`,
-  // `utilities`, `other` і всі надходження. Без них рядок ручної
-  // операції діставав правильний підпис і правильний колір, але
-  // generic-іконку «tag»: три факти про одну категорію бралися з трьох
-  // різних таблиць. Джерело — `manualTaxonomy.ts`.
-  ...Object.fromEntries(
-    [...MANUAL_EXPENSE_TAXONOMY, ...MANUAL_INCOME_TAXONOMY].map((d) => [
-      d.id,
-      d.iconName as IconName,
-    ]),
-  ),
-  food: "shopping-cart",
-  restaurant: "coffee",
-  transport: "truck",
-  subscriptions: "bell",
-  health: "droplet",
-  shopping: "tag",
-  entertainment: "play",
-  sport: "dumbbell",
-  beauty: "tag",
-  smoking: "tag",
-  education: "package",
-  travel: "trending-up",
-  debt: "credit-card",
-  charity: "hand-coins",
-  [INTERNAL_TRANSFER_ID]: "trending-down",
-  // income
-  in_salary: "briefcase",
-  in_freelance: "briefcase",
-  in_cashback: "tag",
-  in_pension: "briefcase",
-  in_other: "trending-up",
-};
+export const CATEGORY_ICON_MAP: Readonly<Record<string, IconName>> =
+  CATEGORY_ICON_NAMES satisfies Readonly<Record<string, IconName>>;
 
+/** Гліф для категорії без власного запису (зокрема кастомної). */
+export const DEFAULT_CATEGORY_ICON_NAME: IconName = DEFAULT_CATEGORY_ICON;
+
+/**
+ * Підпис категорії без провідного емодзі.
+ *
+ * Вбудовані підписи чисті від 2026-08-21, тож єдине джерело, що ще може
+ * принести гліф, — назва КАСТОМНОЇ категорії, яку людина набирає сама.
+ * Зрізаємо її на рендері, щоб список категорій лишався однорідним:
+ * дані не змінюються, змінюється лише показ.
+ */
 export function stripLeadingEmoji(label: string): string {
   const firstLetterOrDigit = [...label].findIndex((char) =>
     /[\p{L}\p{N}]/u.test(char),

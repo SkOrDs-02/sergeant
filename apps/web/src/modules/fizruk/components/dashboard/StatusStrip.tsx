@@ -20,7 +20,7 @@
  */
 
 import { Card } from "@shared/components/ui/Card";
-import { pluralUa } from "@sergeant/shared";
+import { formatNumberUk, pluralUa } from "@sergeant/shared";
 import { messages } from "@shared/i18n/uk";
 import type { DashboardKpis } from "@sergeant/fizruk-domain/domain";
 import type { MuscleState } from "@sergeant/fizruk-domain";
@@ -131,7 +131,7 @@ function formatWeightDelta(delta: number): {
     // це значення йде і в чип, і всередину `ariaLabel`-рядка, тобто
     // межа рядкового API (той самий виняток, що в таблиці `Money`).
     // Але локаль виправити можна й не змінюючи типу.
-    value: `${sign}${rounded.toLocaleString("uk-UA")} кг`,
+    value: `${sign}${formatNumberUk(rounded)} кг`,
     tone: delta < 0 ? "success" : "danger",
   };
 }

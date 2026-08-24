@@ -20,7 +20,9 @@
 import {
   MeshBackground,
   ModuleAccentProvider,
+  SwipePages,
 } from "@shared/components/layout";
+import { ROUTINE_TAB_IDS } from "./components/RoutineBottomNav";
 import { RoutineActions } from "./RoutineActions";
 import { RoutineHeader } from "./RoutineHeader";
 import { RoutineTimeline } from "./RoutineTimeline";
@@ -87,20 +89,26 @@ export default function RoutineApp({
           onOpenSettings={onOpenSettings}
         />
 
-        <RoutineTimeline
-          storageErrorMsg={storageErrorMsg}
-          setRoutine={setRoutine}
-          onOpenCalendarTab={() => setMainTab("calendar")}
-          onDismissStorageError={() => setStorageErrorMsg(null)}
-          calendarData={calendarData}
-          calendarActions={calendarActions}
-          isHabitPending={isHabitPending}
-          mainTab={mainTab}
-          routine={routine}
-          streakMax={streakMax}
-          onPullRefresh={handlePullRefresh}
-          onPullRefreshError={handlePullRefreshError}
-        />
+        <SwipePages
+          ids={ROUTINE_TAB_IDS}
+          activeId={mainTab}
+          onChange={setMainTab}
+        >
+          <RoutineTimeline
+            storageErrorMsg={storageErrorMsg}
+            setRoutine={setRoutine}
+            onOpenCalendarTab={() => setMainTab("calendar")}
+            onDismissStorageError={() => setStorageErrorMsg(null)}
+            calendarData={calendarData}
+            calendarActions={calendarActions}
+            isHabitPending={isHabitPending}
+            mainTab={mainTab}
+            routine={routine}
+            streakMax={streakMax}
+            onPullRefresh={handlePullRefresh}
+            onPullRefreshError={handlePullRefreshError}
+          />
+        </SwipePages>
 
         <RoutineActions
           mainTab={mainTab}

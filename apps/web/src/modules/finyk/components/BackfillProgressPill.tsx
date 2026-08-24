@@ -7,6 +7,7 @@ import { cn } from "@shared/lib/ui/cn";
 import { ProgressBar } from "@shared/components/ui";
 
 import type { MonoBackfillProgress } from "@shared/api";
+import { formatNumberUk } from "@sergeant/shared";
 
 interface BackfillProgressPillProps {
   progress: MonoBackfillProgress | null;
@@ -76,9 +77,9 @@ export const BackfillProgressPill = memo(function BackfillProgressPill({
       : "Помилка backfill";
 
   const detail = isRunning
-    ? `${progress.transactionsProcessed.toLocaleString("uk-UA")} тр.`
+    ? `${formatNumberUk(progress.transactionsProcessed)} тр.`
     : isCompleted
-      ? `${progress.transactionsProcessed.toLocaleString("uk-UA")} транзакцій`
+      ? `${formatNumberUk(progress.transactionsProcessed)} транзакцій`
       : (progress.lastError ?? "невідома помилка");
 
   return (
@@ -86,7 +87,7 @@ export const BackfillProgressPill = memo(function BackfillProgressPill({
       className={cn("rounded-xl border px-3 py-2.5 space-y-2", tone, className)}
       role={isRunning ? "status" : undefined}
       aria-live={isRunning ? "polite" : undefined}
-      aria-label={`${headline} — ${detail}`}
+      aria-label={`${headline}: ${detail}`}
     >
       <div className="flex items-center gap-2 text-style-caption">
         <span

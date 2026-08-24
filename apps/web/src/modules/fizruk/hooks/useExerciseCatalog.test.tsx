@@ -33,6 +33,41 @@ describe("useExerciseCatalog", () => {
     expect(filtered.length).toBeLessThanOrEqual(all.length);
   });
 
+  // Браузерне QA 2026-08-23: пошук «спина» повертав 0 результатів, хоча
+  // плейсхолдер поля рекламує саме цей запит, а в групі 13 вправ.
+  // Причина — індексувались лише НАЗВИ й порожнє поле `primaryGroupUk`.
+  it("search matches a muscle group by its Ukrainian label", () => {
+    const { result } = renderHook(() => useExerciseCatalog());
+    const back = result.current.search("спина");
+    const backIds = new Set(back.map((ex) => ex.id));
+    const wholeGroup = result.current.exercises.filter(
+      (ex) => ex.primaryGroup === "back",
+    );
+    expect(wholeGroup.length).toBeGreaterThan(0);
+    expect(wholeGroup.every((ex) => backIds.has(ex.id))).toBe(true);
+
+    const chest = result.current.search("груди");
+    expect(chest.length).toBeGreaterThan(0);
+    expect(chest.some((ex) => ex.primaryGroup === "chest")).toBe(true);
+  });
+
+  it("search still matches exercise names (жим, присід)", () => {
+    const { result } = renderHook(() => useExerciseCatalog());
+    const press = result.current.search("жим");
+    expect(press.length).toBeGreaterThan(0);
+    expect(
+      press.some((ex) => (ex.name?.uk ?? "").toLowerCase().includes("жим")),
+    ).toBe(true);
+
+    const squat = result.current.search("присід");
+    expect(squat.length).toBeGreaterThan(0);
+  });
+
+  it("search returns nothing for a query that matches no exercise", () => {
+    const { result } = renderHook(() => useExerciseCatalog());
+    expect(result.current.search("щось-чого-точно-немає")).toHaveLength(0);
+  });
+
   it("addExercise prepends a custom entry and removeExercise removes it", () => {
     const { result } = renderHook(() => useExerciseCatalog());
     act(() => {

@@ -17,6 +17,18 @@ import { sortHabitsByOrder } from "./habitOrder.js";
 import { completionNoteKey } from "./completionNoteKey.js";
 import type { CalendarRange, HubCalendarEvent, RoutineState } from "./types.js";
 
+/**
+ * Число з розрядами під uk-UA. Дублює `formatNumberUk` із `@sergeant/shared`
+ * (U+00A0 замість вузького U+202F, який Intl дає для цієї локалі й який майже
+ * не видно). Саме дублює, а не імпортує: цей пакет навмисно тримається без
+ * рантайм-залежностей, і одне форматування суми того не варте.
+ */
+function formatGroupedUk(value: number): string {
+  return value
+    .toLocaleString("uk-UA", { maximumFractionDigits: 2 })
+    .replace(/\u202f/g, "\u00a0");
+}
+
 export const FIZRUK_GROUP_LABEL = "Фізрук";
 export const FINYK_SUB_GROUP_LABEL = "Фінік · підписки";
 
@@ -211,12 +223,15 @@ export function buildFinykSubscriptionEvents(
     const bd = Number(sub.billingDay);
     if (!Number.isFinite(bd) || bd < 1 || bd > 31) continue;
     const { amount, currency } = getAmount(sub);
-    const subTitle = `${sub.emoji || "📱"} ${sub.name || "Підписка"}`;
+    // До 2026-08-21 сюди клеївся `sub.emoji` (з дефолтом «📱»). Поле не
+    // редагується користувачем — форма підписки не має для нього вводу, —
+    // тож це був хардкод емодзі в даних. Назви достатньо.
+    const subTitle = sub.name || "Підписка";
     for (const date of days) {
       if (!isBillingDateKey(date, bd)) continue;
       const amtStr =
         amount != null
-          ? `~${amount.toLocaleString("uk-UA", { maximumFractionDigits: 2 })} ${currency ?? ""}`.trim()
+          ? `~${formatGroupedUk(amount)} ${currency ?? ""}`.trim()
           : "сума з транзакції або вручну у Фініку";
       out.push({
         id: `finyk_sub_${sub.id}_${date}`,

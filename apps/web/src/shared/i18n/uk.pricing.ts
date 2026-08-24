@@ -15,7 +15,7 @@ export const pricingMessages = {
   plansAriaLabel: "Тарифні плани",
   hero: {
     headlineLine1: "Sergeant безкоштовний для базового користування.",
-    headlineLine2: "Premium — коли треба все одразу.",
+    headlineLine2: "Premium, коли треба все одразу.",
     // B4 (браузерний аудит 2026-08-05): прибрано обіцянку «натиснеш Premium —
     // відкриється оплата». Premium ще не запущений, оплати немає, а нижче на
     // тій самій сторінці стоїть waitlist — обіцянка суперечила формі.
@@ -26,17 +26,16 @@ export const pricingMessages = {
     freeName: "Free",
     freePrice: "0 ₴",
     freeCadence: "назавжди",
-    freeTagline:
-      "Усі модулі, ручний трекінг без лімітів. AI — 5 повідомлень/день.",
+    freeTagline: "Усі модулі, ручний трекінг без лімітів. AI: 5 запитів/день.",
     premiumName: "Premium",
     // B4: конкретна ціна («199 ₴ / місяць») знята до запуску — вона
     // суперечила waitlist-у «Один лист, коли Premium стартує».
     premiumPrice: "Скоро",
     premiumCadence: "Ціну оголошу на запуску",
-    premiumTagline: "Усе розблоковано. Один план — без рівнів і доплат.",
+    premiumTagline: "Усе розблоковано. Один план, без рівнів і доплат.",
   },
   features: {
-    allModules: "Усі 4 модулі — повний функціонал",
+    allModules: "Усі 4 модулі: повний функціонал",
     manualTracking: "Ручний трекінг без числових лімітів",
     aiChat: "AI-чат",
     cloudSync2Devices: "Cloud-sync на 2 пристрої",
@@ -68,6 +67,9 @@ export const pricingMessages = {
     openingPortal: "Відкриваємо керування…",
     switchToFree: "Перейти на Free",
     currentPlan: "Зараз ваш план",
+    // Гість: «Зараз ваш план» — неправда, поки акаунта немає. Free-CTA
+    // для нього стає входом (browser QA 2026-08-23).
+    signInToStart: "Увійти й почати",
   },
   status: {
     // Renders як «Сесію оплати створено (test mode).» — caller appends `(${mode} mode).`.
@@ -75,16 +77,16 @@ export const pricingMessages = {
   },
   errors: {
     checkoutUnavailable:
-      "Оплата тимчасово недоступна. Можеш залишити email нижче — напишемо, коли можна буде оплатити.",
+      "Оплата тимчасово недоступна. Можеш залишити email нижче, напишемо, коли можна буде оплатити.",
     portalNoBillingCustomer:
-      "Не знайдено платіжний профіль. Напиши у підтримку — підключимо вручну.",
+      "Не знайдено платіжний профіль. Напиши у підтримку, підключимо вручну.",
     portalUnavailable:
       "Керування підпискою тимчасово недоступне. Спробуй пізніше.",
     portalGeneric:
       "Не вдалося відкрити керування підпискою. Перевір зв'язок і спробуй ще раз.",
   },
   toast: {
-    subscriptionActive: "Підписку активовано — ласкаво просимо в Premium!",
+    subscriptionActive: "Підписку активовано, ласкаво просимо в Premium!",
     subscriptionActiveCta: "Перейти у налаштування",
     paymentCanceled: "Оплату скасовано. Підписка не оформлена.",
   },

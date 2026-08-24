@@ -1,5 +1,8 @@
 import { Sheet } from "@shared/components/ui/Sheet";
 import { mergeExpenseCategoryDefinitions } from "../../constants";
+import { CategoryIconChip } from "../../components/CategoryIconChip";
+import { isCategoryIdLike } from "../../lib/categoryChip";
+import { stripLeadingEmoji } from "../../components/txRowHelpers";
 
 export interface TransactionsBatchToolbarProps {
   selectMode: boolean;
@@ -79,12 +82,12 @@ export function TransactionsBatchToolbar({
             </div>
             <div className="mt-2 rounded-xl border border-line bg-panelHi px-3 py-2 text-style-caption text-muted">
               <p>
-                <strong className="text-text">Приховати</strong> — прибере
+                <strong className="text-text">Приховати</strong>: прибере
                 операції зі звичайного списку, але їх можна повернути в
                 «Прихованих».
               </p>
               <p className="mt-1">
-                <strong className="text-text">Не враховувати</strong> — залишить
+                <strong className="text-text">Не враховувати</strong>: залишить
                 операції у списку, але не включатиме їх у підсумки та графіки.
               </p>
             </div>
@@ -118,9 +121,17 @@ export function TransactionsBatchToolbar({
                 (finyk-domain/constants.ts), тож поле `emoji` втрачається на
                 мерджі, а каст приховував це від типів. Тобто рендерився
                 порожній flex-елемент, який через `gap-3` давав кожному рядку
-                12px відступу зліва ні за що.
+                12px відступу зліва ні за що. З 2026-08-21 слот заповнює
+                той самий чип, що й у рядку транзакції.
               */}
-              <span className="text-style-label text-text">{cat.label}</span>
+              <CategoryIconChip
+                categoryId={cat.id}
+                customCategories={customCategories?.filter(isCategoryIdLike)}
+                size={24}
+              />
+              <span className="text-style-label text-text">
+                {stripLeadingEmoji(cat.label)}
+              </span>
             </button>
           ))}
       </Sheet>

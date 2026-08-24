@@ -224,7 +224,7 @@ export function iconFor(name: string): string | undefined {
 }
 
 export function titleFor(name: string, status: "completed" | "failed"): string {
-  const failedSuffix = status === "failed" ? " — не вийшло" : "";
+  const failedSuffix = status === "failed" ? ", не вийшло" : "";
   switch (name) {
     // Finyk
     case "create_transaction":
@@ -304,6 +304,12 @@ export function titleFor(name: string, status: "completed" | "failed"): string {
       return `Порівняння прогресу${failedSuffix}`;
     // Routine
     case "mark_habit_done":
+      // Не «створено»: обидві дії ділили один заголовок, тож відмітка
+      // виконання рапортувала користувачу створення нової звички
+      // (браузерна реверифікація 2026-08-24). Картка дії — це звіт про те,
+      // ЩО сталось; помилковий дієслівний час тут коштує рівно стільки ж,
+      // скільки хибне «зроблено» в самій відповіді.
+      return `Звичку відмічено${failedSuffix}`;
     case "create_habit":
       return `Звичку створено${failedSuffix}`;
     case "set_habit_schedule":

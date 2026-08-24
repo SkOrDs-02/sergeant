@@ -20,6 +20,8 @@ import { Label } from "@shared/components/ui/FormField";
 import { VoiceMicButton } from "@shared/components/ui/VoiceMicButton";
 import { parseExpenseSpeech, formatMoney } from "@sergeant/shared";
 import { canonicalizeAmountInput } from "@shared/lib/format/amount";
+import { groupIntegerDigits } from "@shared/lib/format/digitGrouping";
+import { useGroupedAmountField } from "@shared/hooks/useGroupedAmountField";
 import type { ExpenseFormValues } from "./manualExpenseForm";
 
 interface AmountSuggestion {
@@ -67,7 +69,7 @@ export function ManualExpenseAmountSection({
   }, [focusRef]);
   // RHF owns the field ref; keep a local handle too so the batch-entry
   // re-focus callback above can drive the input directly.
-  const amountReg = register("amount");
+  const amountReg = useGroupedAmountField(register("amount"));
 
   return (
     <div className="flex gap-2 items-end">
@@ -84,7 +86,7 @@ export function ManualExpenseAmountSection({
                 key={`${personal ? "f" : "q"}-${value}`}
                 type="button"
                 onClick={() =>
-                  setValue("amount", String(value), {
+                  setValue("amount", groupIntegerDigits(String(value)), {
                     shouldDirty: true,
                     shouldValidate: Boolean(amountError),
                   })
@@ -96,7 +98,7 @@ export function ManualExpenseAmountSection({
                 }
                 aria-label={
                   personal
-                    ? `${formatMoney(value)} — часта сума`
+                    ? `${formatMoney(value)} · часта сума`
                     : `${formatMoney(value)}`
                 }
               >
@@ -148,7 +150,9 @@ export function ManualExpenseAmountSection({
             // UA-клавіатурі кома — норма, тож показуємо, як зрозуміли,
             // замість inline-помилки. Невалідний ввід лишаємо як є —
             // помилка валідації має пояснювати саме те, що набрали.
-            const canonical = canonicalizeAmountInput(e.target.value);
+            const canonical = groupIntegerDigits(
+              canonicalizeAmountInput(e.target.value),
+            );
             if (canonical !== e.target.value) {
               setValue("amount", canonical, {
                 shouldDirty: true,
@@ -183,10 +187,14 @@ export function ManualExpenseAmountSection({
             setValue("description", parsed.name, { shouldDirty: true });
           }
           if (parsed.amount != null) {
-            setValue("amount", String(Math.round(parsed.amount)), {
-              shouldDirty: true,
-              shouldValidate: Boolean(amountError),
-            });
+            setValue(
+              "amount",
+              groupIntegerDigits(String(Math.round(parsed.amount))),
+              {
+                shouldDirty: true,
+                shouldValidate: Boolean(amountError),
+              },
+            );
           }
         }}
       />

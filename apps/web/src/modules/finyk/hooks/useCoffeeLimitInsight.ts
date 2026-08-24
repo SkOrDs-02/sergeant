@@ -20,6 +20,7 @@ import type {
   Transaction,
   TxSplitsMap,
 } from "@sergeant/finyk-domain/domain/types";
+import { formatNumberUk } from "@sergeant/shared";
 
 // Tunable thresholds — export so tests can override.
 /** MoM growth ratio that triggers the insight (0.25 = 25%). */
@@ -134,7 +135,7 @@ export function useCoffeeLimitInsight({
       id: `finyk-coffee-limit-${month}`,
       module: "finyk",
       title: `Витрати на каву ↑ ${pct}%`,
-      subtitle: `Це ${amount.toLocaleString("uk-UA")} грн. Встановити ліміт?`,
+      subtitle: `Це ${formatNumberUk(amount)} грн. Встановити ліміт?`,
       action: {
         type: "navigate",
         path: `/finyk/budgets?cat=${COFFEE_CATEGORY_SLUG}`,

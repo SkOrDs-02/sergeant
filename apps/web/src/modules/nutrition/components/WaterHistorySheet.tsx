@@ -9,6 +9,7 @@
 import {
   getWaterLastNDays,
   getWaterAverageMl,
+  getWaterLoggedDays,
   getWaterStreak,
   getPreviousWaterDayKey,
   todayISODate,
@@ -22,6 +23,16 @@ import { messages } from "@shared/i18n/uk";
 import { fmt } from "./WaterTrackerCard";
 
 const WEEKDAYS_UK = ["Нд", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
+
+/**
+ * Заголовок секції зі старішими записами.
+ *
+ * AI-NOTE: літерал тут, а не в `messages.nutrition.waterHistory`, свідомо —
+ * правка тримається в межах модуля Харчування, спільний i18n-файл не
+ * чіпається. Переїде в `messages`, коли поруч зʼявиться друга причина його
+ * редагувати.
+ */
+const EARLIER_TITLE = "Раніше";
 
 function weekdayLabel(dayKey: string): string {
   const [y = 1970, m = 1, d = 1] = dayKey.split("-").map(Number);
@@ -59,7 +70,14 @@ export function WaterHistorySheet({
   const avg7 = getWaterAverageMl(log, 7);
   const avg30 = getWaterAverageMl(log, 30);
   const streak = getWaterStreak(log, goalMl);
-  const hasAnyData = week.some((d) => d.ml > 0) || last14.some((d) => d.ml > 0);
+  // Дефект: і графік, і список — фіксовані вікна від «сьогодні», тож
+  // 15 л, залиті три тижні тому, не показувались НІДЕ, а порожній стан
+  // ще й запевняв, що історії немає. Тому «чи є дані» рахуємо по всьому
+  // журналу, а дні поза 14-денним вікном виносимо окремою секцією.
+  const loggedDays = getWaterLoggedDays(log);
+  const recentKeys = new Set(last14.map((d) => d.dayKey));
+  const earlierDays = loggedDays.filter((d) => !recentKeys.has(d.dayKey));
+  const hasAnyData = loggedDays.length > 0;
 
   // ADR-0078: день пристрою, а не Kyiv — той самий ключ, під яким трекер
   // (useWaterTracker → nutrition-domain waterLog) реально пише "сьогодні".
@@ -170,6 +188,34 @@ export function WaterHistorySheet({
               })}
             </ul>
           </div>
+
+          {earlierDays.length > 0 && (
+            <div>
+              <div className="text-style-caption text-subtle mb-2">
+                {EARLIER_TITLE}
+              </div>
+              <ul className="flex flex-col divide-y divide-line/60">
+                {earlierDays.map((d) => {
+                  const pct =
+                    goalMl > 0 ? Math.round((d.ml / goalMl) * 100) : null;
+                  return (
+                    <li
+                      key={d.dayKey}
+                      className="flex items-center justify-between py-2 text-style-body"
+                    >
+                      <span className="text-text">
+                        {dayListLabel(d.dayKey, todayKey, yesterdayKey)}
+                      </span>
+                      <span className="tabular-nums text-subtle">
+                        {fmt(d.ml)}
+                        {pct !== null && ` · ${pct}${t.goalPctSuffix}`}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
         </div>
       )}
     </Sheet>

@@ -235,7 +235,7 @@ export function useNutritionLog() {
         parsed = JSON.parse(text);
       } catch {
         toast.error(
-          "Не вдалося завантажити лог харчування — невалідний формат JSON.",
+          "Не вдалося завантажити лог харчування, невалідний формат JSON.",
         );
         return false;
       }
@@ -264,7 +264,7 @@ export function useNutritionLog() {
         parsed = JSON.parse(text);
       } catch {
         toast.error(
-          "Не вдалося об'єднати лог харчування — невалідний формат JSON.",
+          "Не вдалося об'єднати лог харчування, невалідний формат JSON.",
         );
         return false;
       }

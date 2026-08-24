@@ -30,7 +30,8 @@
 //
 // Environment:
 //   GITHUB_TOKEN          — required (unless DRY_RUN / --check-coverage)
-//   GITHUB_REPOSITORY     — "owner/repo" (auto-set by Actions; defaults to Skords-01/Sergeant)
+//   GITHUB_REPOSITORY     — "owner/repo" (auto-set by Actions). Обов'язковий для
+//                           будь-якого запису в issue — див. writableRepoSlug().
 //   DRY_RUN               — if truthy, skip issue creation
 
 import { readFileSync } from "node:fs";
@@ -183,6 +184,26 @@ function repoSlug() {
   return process.env.GITHUB_REPOSITORY || "Skords-01/Sergeant";
 }
 
+/**
+ * Slug для операцій, що ПИШУТЬ у GitHub (створення й закриття issue).
+ *
+ * AI-DANGER: дефолт `repoSlug()` історичний (`Skords-01/Sergeant`) і не
+ * збігається з поточним remote (`SkOrDs-02/sergeant`). Поки скрипт лише
+ * читав і створював issue, промах був неприємним; відколи він ще й ЗАКРИВАЄ
+ * їх (2026-08-23), писати навмання не можна. В Actions `GITHUB_REPOSITORY`
+ * виставлений завжди — тож ця перевірка ловить рівно ручний запуск без env.
+ */
+function writableRepoSlug() {
+  const slug = process.env.GITHUB_REPOSITORY;
+  if (!slug) {
+    throw new Error(
+      "GITHUB_REPOSITORY is required for issue writes — refusing to guess the repo. " +
+        "Запусти з DRY_RUN=1 або виставте GITHUB_REPOSITORY=owner/repo.",
+    );
+  }
+  return slug;
+}
+
 async function githubFetch(path, opts = {}) {
   const token = process.env.GITHUB_TOKEN;
   if (!token) throw new Error("GITHUB_TOKEN is required");
@@ -216,7 +237,7 @@ export async function findExistingIssue(filePath) {
 
 /** Ensure labels exist (create if missing). */
 async function ensureLabels() {
-  const slug = repoSlug();
+  const slug = writableRepoSlug();
   for (const label of LABELS) {
     try {
       await githubFetch(`/repos/${slug}/labels/${encodeURIComponent(label)}`);
@@ -236,6 +257,81 @@ async function ensureLabels() {
   }
 }
 
+/**
+ * Витягнути шлях до доку з marker-коментаря в тілі issue.
+ *
+ * @param {string|null|undefined} body
+ * @returns {string|null}
+ */
+export function markerPath(body) {
+  const m = /<!--\s*doc-freshness:(.+?)\s*-->/.exec(body ?? "");
+  return m ? m[1].trim() : null;
+}
+
+/**
+ * Які з відкритих freshness-issue вже не мають підстав бути відкритими.
+ *
+ * Резолвнутим вважається issue, чий док (а) більше не прострочений, або
+ * (б) взагалі зник із репозиторію (видалений / переїхав в архів). Issue без
+ * розпізнаваного marker-а НЕ чіпаємо — його міг завести руками хтось живий.
+ *
+ * @param {object} args
+ * @param {{ number: number, body?: string|null }[]} args.issues
+ * @param {Set<string>} args.overduePaths шляхи, які цей прогін визнав простроченими
+ * @returns {{ number: number, path: string }[]}
+ */
+export function selectResolvedIssues({ issues, overduePaths }) {
+  const out = [];
+  for (const issue of issues ?? []) {
+    const path = markerPath(issue.body);
+    if (!path) continue;
+    if (overduePaths.has(path)) continue;
+    out.push({ number: issue.number, path });
+  }
+  return out;
+}
+
+/**
+ * Усі відкриті issue з лейблом freshness-overdue.
+ *
+ * Читання, але через `writableRepoSlug()` навмисно: результат живить
+ * закриття, і список із «не того» репо означав би спробу закрити чужі
+ * номери в цьому.
+ */
+export async function listOpenFreshnessIssues() {
+  const slug = writableRepoSlug();
+  const out = [];
+  // Пагінація: беклог freshness-issue легко переростає одну сторінку.
+  for (let page = 1; page <= 10; page += 1) {
+    const data = await githubFetch(
+      `/repos/${slug}/issues?state=open&labels=freshness-overdue&per_page=100&page=${page}`,
+    );
+    if (!Array.isArray(data) || data.length === 0) break;
+    // `/issues` віддає і pull request-и — вони мають поле `pull_request`.
+    out.push(...data.filter((i) => !i.pull_request));
+    if (data.length < 100) break;
+  }
+  return out;
+}
+
+/** Закрити resolved freshness-issue з поясненням. */
+export async function closeResolvedIssue(number, filePath) {
+  const slug = writableRepoSlug();
+  await githubFetch(`/repos/${slug}/issues/${number}/comments`, {
+    method: "POST",
+    body: JSON.stringify({
+      body:
+        `Закрито автоматично \`check-freshness.mjs\`: \`${filePath}\` більше не ` +
+        "прострочений (заголовок оновлено, файл видалено/заархівовано, або шлях " +
+        "виключено з трекінгу). Якщо док знову протухне — workflow заведе новий issue.",
+    }),
+  });
+  return githubFetch(`/repos/${slug}/issues/${number}`, {
+    method: "PATCH",
+    body: JSON.stringify({ state: "closed", state_reason: "completed" }),
+  });
+}
+
 /** Create a GitHub issue for an overdue doc. */
 export async function createIssue(
   filePath,
@@ -243,7 +339,7 @@ export async function createIssue(
   nextReview,
   daysOverdue,
 ) {
-  const slug = repoSlug();
+  const slug = writableRepoSlug();
   return githubFetch(`/repos/${slug}/issues`, {
     method: "POST",
     body: JSON.stringify({
@@ -338,7 +434,56 @@ export async function run() {
     });
   }
 
+  if (!dryRun) {
+    await reconcileResolvedIssues(results);
+  }
+
   return results;
+}
+
+/**
+ * Закрити freshness-issue, чиї доки вже не прострочені.
+ *
+ * AI-CONTEXT: до 2026-08-23 цей скрипт умів лише ВІДКРИВАТИ issue. Односторонній
+ * храповик: оновив заголовок — issue висить; видалив док — issue висить і
+ * вказує в нікуди. Так у беклозі накопичилось 9 відкритих freshness-issue,
+ * з яких 8 посилались на файли, яких у репо вже немає, а 9-й (`docs/today.md`)
+ * стосувався авто-генерованого артефакту. Жоден не ніс сигналу.
+ *
+ * Безпечно запускати лише поза `pull_request`: інакше PR, який оновлює
+ * заголовок, закрив би issue ще до мержу, і при відкоченому PR issue лишився б
+ * закритим. `docs-freshness.yml` уже викликає цей скрипт тільки на
+ * `github.event_name != 'pull_request'` — не послаблюй цю умову.
+ */
+async function reconcileResolvedIssues(results) {
+  const overduePaths = new Set(
+    results
+      .filter((r) => String(r.status).startsWith("overdue"))
+      .map((r) => r.path),
+  );
+
+  let open;
+  try {
+    open = await listOpenFreshnessIssues();
+  } catch (err) {
+    // Прибирання — не критичний шлях: не валимо прогін, який щойно коректно
+    // завів issue для реально прострочених доків.
+    console.warn(`[WARN] Could not list freshness issues: ${err.message}`);
+    return;
+  }
+
+  const resolved = selectResolvedIssues({ issues: open, overduePaths });
+  for (const { number, path } of resolved) {
+    try {
+      await closeResolvedIssue(number, path);
+      console.log(`  ↳ Closed resolved issue #${number} (${path})`);
+    } catch (err) {
+      console.warn(`[WARN] Could not close issue #${number}: ${err.message}`);
+    }
+  }
+  if (resolved.length === 0) {
+    console.log("No resolved freshness issues to close.");
+  }
 }
 
 /**

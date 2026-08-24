@@ -57,7 +57,7 @@ type PresetCatalog = Record<ModuleId, PresetModuleConfig>;
 const PRESETS: PresetCatalog = {
   routine: {
     title: "Яку звичку почнемо?",
-    desc: "Одне натискання — і вона у твоєму списку сьогодні.",
+    desc: "Одне натискання, і вона у твоєму списку сьогодні.",
     accent: "text-routine-soft-fg bg-routine-soft",
     moduleIcon: "check",
     fallback: { action: "add_habit", label: "Своя звичка", icon: "plus" },
@@ -87,7 +87,7 @@ const PRESETS: PresetCatalog = {
   },
   finyk: {
     title: "На що витратив?",
-    desc: "Тицяй — відкриється форма з назвою. Суму введеш сам.",
+    desc: "Тицяй, відкриється форма з назвою. Суму введеш сам.",
     accent: "text-finyk-soft-fg bg-finyk-soft",
     moduleIcon: "credit-card",
     fallback: { action: "add_expense", label: "Своя витрата", icon: "plus" },
@@ -105,8 +105,12 @@ const PRESETS: PresetCatalog = {
         id: "coffee",
         icon: "coffee",
         title: "Кава",
-        desc: "ранкова звичка — введи свою суму",
-        data: { description: "Кава", category: "їжа" },
+        desc: "ранкова звичка, введи свою суму",
+        // `cafe` («Кафе та ресторани»), не «їжа»: остання — Era-1 legacy-мітка,
+        // яку `legacyManualCategoryId()` зводить до слага `food` («Продукти»),
+        // тож ранкова кава падала в продуктовий кошик і не рахувалась проти
+        // ліміту на кафе (репорт finyk-агента 2026-08-23).
+        data: { description: "Кава", category: "cafe" },
       },
       {
         id: "ride",
@@ -119,14 +123,14 @@ const PRESETS: PresetCatalog = {
         id: "lunch",
         icon: "utensils",
         title: "Обід",
-        desc: "що з'їв — і за скільки",
+        desc: "що з'їв, і за скільки",
         data: { description: "Обід", category: "їжа" },
       },
     ],
   },
   nutrition: {
     title: "Що з'їв зараз?",
-    desc: "Відкрию форму добавляння страви — калорії підтвердиш у модулі.",
+    desc: "Відкрию форму добавляння страви, калорії підтвердиш у модулі.",
     accent: "text-nutrition-soft-fg bg-nutrition-soft",
     moduleIcon: "utensils",
     fallback: { action: "add_meal", label: "Додати страву", icon: "plus" },
@@ -141,7 +145,7 @@ const PRESETS: PresetCatalog = {
   },
   fizruk: {
     title: "Швидкий старт",
-    desc: "Відкрию старт тренування — тривалість вкажеш на фініші.",
+    desc: "Відкрию старт тренування, тривалість вкажеш на фініші.",
     accent: "text-fizruk-soft-fg bg-fizruk-soft",
     moduleIcon: "dumbbell",
     fallback: {

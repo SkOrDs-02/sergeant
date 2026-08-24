@@ -4,7 +4,7 @@ import { ApiError, chatApi, isApiError } from "@shared/api";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { useOnlineStatus } from "@shared/hooks/useOnlineStatus";
-import { hubKeys } from "@shared/lib/api/queryKeys";
+import { chatKeys, hubKeys } from "@shared/lib/api/queryKeys";
 import { perfMark, perfEnd } from "@shared/lib/ui/perf";
 import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
@@ -55,12 +55,12 @@ type ChatMessage = HubChatSession["messages"][number];
  */
 const FREE_DAILY_AI_CHAT_LIMIT = 5;
 const DAILY_CHAT_COUNT_KEY = "sergeant:ai-chat:daily-count:v1";
-const CANCELLED_BY_USER_TEXT = "Скасовано — нічого не змінено.";
+const CANCELLED_BY_USER_TEXT = "Скасовано, нічого не змінено.";
 const AUTO_TTS_ENABLED_KEY = "sergeant:hub-chat:auto-tts:v1";
 const HUB_CHAT_HELP_TEXT = [
   "Ось коротка довідка по командам:",
   "",
-  "• /help — показати цю довідку.",
+  "• /help: показати цю довідку.",
   "• Напиши дію звичайними словами: «додай витрату 120 грн на каву», «запиши тренування», «що було цього тижня?»",
   "• Кнопка з ? біля поля вводу теж відкриває цю довідку.",
 ].join("\n");
@@ -309,7 +309,7 @@ export function useChatSend({
           ...m,
           makeUserMsg(msg),
           makeAssistantMsg(
-            "Немає підключення. Асистент працює лише онлайн — спробуй ще раз, коли з'явиться інтернет.",
+            "Немає підключення. Асистент працює лише онлайн, спробуй ще раз, коли з'явиться інтернет.",
           ),
         ]);
         setInput("");
@@ -692,14 +692,14 @@ export function useChatSend({
         if (isAbort && timedOut) {
           setMessages((m) => [
             ...m,
-            makeAssistantMsg("⏱ Час очікування вичерпано. Спробуй ще раз."),
+            makeAssistantMsg("Час очікування вичерпано. Спробуй ще раз."),
           ]);
           trackEvent(ANALYTICS_EVENTS.HUBCHAT_ERROR, { kind: "aborted" });
         } else if (isAbort) {
           // Explicit cancel (cancel button or chat close). Події НЕ шлемо:
           // користувач передумав — це не збій асистента. Такі спроби видно
           // як розрив `message_sent − (response_received + error)`.
-          setMessages((m) => [...m, makeAssistantMsg("⏹ Запит скасовано.")]);
+          setMessages((m) => [...m, makeAssistantMsg("Запит скасовано.")]);
         } else {
           setMessages((m) => [...m, makeAssistantMsg(friendlyChatError(e))]);
           const kind = isApiError(e) ? e.kind : "unknown";
@@ -715,6 +715,13 @@ export function useChatSend({
         if (abortRef.current === ac) abortRef.current = null;
         setLoading(false);
         setHubStreaming(false);
+        // Лічильник квоти (`GET /api/chat/usage`) читався лише на монтуванні
+        // `ChatUsageCounter`, тож пігулка все життя сесії показувала «0/5» —
+        // навіть поруч із 429-помилкою про вичерпаний ліміт; правда
+        // з'являлась тільки після перезавантаження сторінки (browser QA
+        // 2026-08-23). Інвалідовуємо ПІСЛЯ кожного ходу, включно з невдалим:
+        // сервер списує запит і тоді, коли відповідь була помилкою.
+        queryClient.invalidateQueries({ queryKey: chatKeys.usage });
       }
     },
     [

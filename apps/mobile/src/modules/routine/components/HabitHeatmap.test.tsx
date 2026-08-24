@@ -18,26 +18,28 @@ import {
   type RoutineState,
 } from "@sergeant/routine-domain";
 
-import { chartColors } from "../../../theme";
 import { HabitHeatmap } from "./HabitHeatmap";
 
 // Fixed "today" so date-key assertions are stable. 2025-01-15 is a Wed.
 const TODAY = new Date(2025, 0, 15, 12, 0, 0, 0);
 
-// Кольори беремо з тих самих токенів, що й компонент, а не хардкодом.
-// Раніше тут лежали hex коралової епохи (`#ffd4cb`/`#ff8c78`/`#f97066`);
-// після переходу палітри на rose-рампу вони протухли, і тест червонів на
-// `l1` (очікував `#ffd4cb`, отримував `#fed3db` = rose-200) — при цілком
-// справному компоненті. Прив'язка до `chartColors` робить таке протухання
-// структурно неможливим: змінюється токен — змінюється й очікування, а
-// сенс асертів (рівень інтенсивності → СВІЙ колір, рівні різні між собою)
-// зберігається.
+/**
+ * Очікувані заливки. Значення навмисно вписані літералами, а не взяті з
+ * `chartColors.routine`: інакше тест звіряв би джерело саме з собою і
+ * пропустив би перестановку відтінків між рівнями. Ціна такого пінa —
+ * ручна синхронізація, тому поруч стоїть точний токен-джерело.
+ *
+ * Три рожеві рівні тут були прострочені (`#ffd4cb` / `#ff8c78` /
+ * `#f97066` — шкала до її перетюнінгу). Компонент читає токени, тож
+ * помилявся саме фікстур; побачити це CI не міг, бо джоба `check`
+ * вмирала раніше, на гейті каденсу свіжості.
+ */
 const INTENSITY_FILL_HEX = {
-  future: chartColors.routine.future,
-  empty: chartColors.routine.empty,
-  l1: chartColors.routine.l1,
-  l2: chartColors.routine.l2,
-  l3: chartColors.routine.l3,
+  future: "#f5ead8", // brandColors.cream[300]
+  empty: "#faf3e8", // brandColors.cream[200]
+  l1: "#fed3db", // brandColors.rose[200]
+  l2: "#f68da4", // brandColors.rose[400]
+  l3: "#eb7691", // brandColors.rose[500]
 } as const;
 
 /**

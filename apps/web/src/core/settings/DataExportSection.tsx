@@ -75,7 +75,7 @@ export function DataExportSection() {
   return (
     <SettingsGroup title="Експорт/імпорт JSON" icon="download">
       <p className="text-style-caption text-subtle leading-snug">
-        Збережи всі свої локальні дані у файл — його потім можна імпортувати
+        Збережи всі свої локальні дані у файл, його потім можна імпортувати
         назад. Для залогінених користувачів нижче є окремий експорт із серверних
         даних акаунта.
       </p>
@@ -93,7 +93,7 @@ export function DataExportSection() {
         <SettingsSubGroup title="Права на дані">
           <p className="text-style-caption text-subtle leading-relaxed">
             Серверний експорт не включає сирі секрети й токени. Видалити акаунт
-            можна у профілі — там зібрані всі дії керування акаунтом.
+            можна у профілі, там зібрані всі дії керування акаунтом.
           </p>
           <div className="flex flex-wrap gap-2">
             <Button

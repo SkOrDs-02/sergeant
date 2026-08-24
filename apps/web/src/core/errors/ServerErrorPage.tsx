@@ -38,7 +38,7 @@ export function ServerErrorPage({ onReset }: ServerErrorPageProps) {
         aria-atomic="true"
         className="sr-only"
       >
-        Помилка сервера. Щось пішло не так — спробуй оновити сторінку.
+        Помилка сервера. Щось пішло не так, спробуй оновити сторінку.
       </p>
       <EmptyState
         size="lg"
@@ -46,14 +46,14 @@ export function ServerErrorPage({ onReset }: ServerErrorPageProps) {
         eyebrow="500"
         illustration={<ServerErrorIllustration size={200} />}
         title="Щось пішло не так"
-        description="Сервер тимчасово не зміг обробити запит. Спробуй оновити сторінку — зазвичай це допомагає."
+        description="Сервер тимчасово не зміг обробити запит. Спробуй оновити сторінку, зазвичай це допомагає."
         primaryAction={
           <Button type="button" variant="primary" size="lg" onClick={reload}>
             <Icon name="refresh-cw" size={16} />
             Оновити сторінку
           </Button>
         }
-        hint="Якщо помилка повторюється — напиши нам, ми вже працюємо над цим."
+        hint="Якщо помилка повторюється, напиши нам, ми вже працюємо над цим."
       />
     </main>
   );

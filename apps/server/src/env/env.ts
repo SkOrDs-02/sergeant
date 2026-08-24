@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { aiRoutingEnvShape } from "./aiRoutingEnv.js";
-import { defaultChatModel } from "./chatModels.js";
+import { CHAT_VIA_OPENROUTER_DEFAULT, defaultChatModel } from "./chatModels.js";
 import { parseKeyRing } from "../lib/keyRing.js";
 // Хелпери винесені в `./envHelpers.js` цією гілкою; main паралельно
 // забрав LLM_*-ключі у `aiRoutingEnvShape` (PR #634), тож
@@ -135,7 +135,11 @@ const envSchema = z.object({
   // Транспорт чату: `true` (дефолт з 2026-08-05) — шлюз OpenRouter, `false` —
   // прямий Anthropic. Лише `/api/chat`. Виміри й умова відкату — в
   // `env/chatModels.ts`; без `OPENROUTER_API_KEY` прапорець не діє.
-  CHAT_VIA_OPENROUTER: boolFromEnv(true),
+  //
+  // Дефолт береться з `CHAT_VIA_OPENROUTER_DEFAULT`, а не з літерала: цю ж
+  // константу читає ран-таймний `chatViaOpenRouter()`, і коли число стояло
+  // тут окремо, воно розійшлося з ран-таймом (схема ON, ран-тайм OFF).
+  CHAT_VIA_OPENROUTER: boolFromEnv(CHAT_VIA_OPENROUTER_DEFAULT),
 
   CHAT_STRICT_TOOLS: boolFromEnv(true),
 
@@ -190,7 +194,11 @@ const envSchema = z.object({
 
   AI_DAILY_USER_LIMIT: coerceInt.nonnegative().optional(),
 
-  AI_DAILY_ANON_LIMIT: coerceInt.nonnegative().optional(),
+  // `AI_DAILY_ANON_LIMIT` прибрано: анонімної гілки квоти більше немає —
+  // `/api/chat` та решта AI-роутів стоять за `requireSession()` (A1,
+  // `docs/90-work/audits/ai-abuse-2026-08-05.md`), тож дожити до квоти без
+  // сесії неможливо. Схема не `.strict()`, тому змінна, що ще лишилась в
+  // ops-конфігу, просто ігнорується.
 
   AI_QUOTA_TOOL_COST: coerceInt.nonnegative().optional(),
 

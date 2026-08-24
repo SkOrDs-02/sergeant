@@ -224,7 +224,7 @@ describe("mapApiErrorToUserCopy", () => {
         code: "CREDENTIAL_ACCOUNT_NOT_FOUND",
         status: 400,
       }),
-    ).toBe("Для цього акаунту немає пароля — увійди через соцмережу.");
+    ).toBe("Для цього акаунту немає пароля, увійди через соцмережу.");
   });
 
   it("мапить SESSION_NOT_FRESH у людську копію", () => {

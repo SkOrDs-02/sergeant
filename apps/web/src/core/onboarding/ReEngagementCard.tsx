@@ -45,7 +45,7 @@ export function ReEngagementCard({
           <h3 className="text-style-title text-text">Давно не бачились!</h3>
           <p className="text-style-body text-muted leading-relaxed max-w-xs">
             Тебе не було {daysInactive} {pluralDays(daysInactive)}. Все
-            збережено — продовжуй звідки зупинився.
+            збережено, продовжуй звідки зупинився.
           </p>
         </div>
         <div className="flex items-center gap-2">

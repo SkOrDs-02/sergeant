@@ -44,7 +44,7 @@ export function AIDigestSection() {
         <p className="text-style-caption text-subtle leading-snug">
           Тижневий AI-аналіз прогресу по всіх модулях: фінанси, тренування,
           харчування та звички. Згенерувати звіт можна на сторінці «
-          {messages.nav.reports}» — у режимі «Тиждень», або на головній у блоці
+          {messages.nav.reports}», у режимі «Тиждень», або на головній у блоці
           інсайтів («Звіт тижня»).
         </p>
         <div className="p-3 rounded-xl bg-bg border border-line">
@@ -58,7 +58,7 @@ export function AIDigestSection() {
         </div>
         <ToggleRow
           label="Автогенерація щопонеділка"
-          description="Якщо ввімкнено, ранкова сесія в понеділок запускає звіт у фоні. Вимкнуто за замовчуванням — інакше AI-виклик зʼїдається без твого запиту."
+          description="Якщо ввімкнено, ранкова сесія в понеділок запускає звіт у фоні. Вимкнуто за замовчуванням, інакше AI-виклик зʼїдається без твого запиту."
           checked={mondayAuto}
           onChange={handleToggleMondayAuto}
         />

@@ -40,7 +40,7 @@ export function NotFoundPage({ homePath = "/" }: NotFoundPageProps) {
         // The empty state is the entire 404 surface, so it has to carry the
         // page heading — otherwise this route ships with no heading at all.
         titleAs="h1"
-        description="Здається, ця адреса вже не існує. Перевір посилання або повернись на головну — звідти можна знайти потрібний модуль."
+        description="Здається, ця адреса вже не існує. Перевір посилання або повернись на головну, звідти можна знайти потрібний модуль."
         primaryAction={
           <Button
             type="button"
@@ -67,7 +67,7 @@ export function NotFoundPage({ homePath = "/" }: NotFoundPageProps) {
             Назад
           </Button>
         }
-        hint="Якщо ти перейшов сюди із зовнішнього посилання — напиши нам, ми його полагодимо."
+        hint="Якщо ти перейшов сюди із зовнішнього посилання, напиши нам, ми його полагодимо."
       />
     </main>
   );

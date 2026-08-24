@@ -22,6 +22,7 @@
 import { messages } from "@shared/i18n/uk";
 import { Badge } from "@shared/components/ui/Badge";
 import type { PrLatest } from "../../hooks/usePrLatest";
+import { fmtLoose } from "../../lib/numberFmt";
 
 /**
  * Past which the badge is hidden — see file-level note. 14 days is a
@@ -68,7 +69,7 @@ export function PrBadge({ pr }: PrBadgeProps) {
   // a trailing ".0". Kopiykas-style: kg are the user-facing unit, the
   // decimal exists only when meaningful.
   const weightLabel = Number.isInteger(pr.weightKg)
-    ? `${pr.weightKg}`
+    ? fmtLoose(pr.weightKg)
     : `${Math.round(pr.weightKg * 10) / 10}`;
 
   return (

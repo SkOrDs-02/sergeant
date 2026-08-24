@@ -82,6 +82,22 @@ describe("beta surface gates (default: hidden)", () => {
 });
 
 describe("hidden routes answer 404", () => {
+  /**
+   * Перший рендер платить за ліниві чанки, решта — ні.
+   *
+   * AI-CONTEXT: гейт `/pricing` віддає `<Suspense><NotFoundPage/></Suspense>`,
+   * а `NotFoundPage` тягне барель `@shared/components/ui` і
+   * `@assets/illustrations`. Після `vi.resetModules()` Vitest трансформує весь
+   * цей граф наново, і ПЕРША ітерація циклу осідає ~1.5 с (виміряно
+   * 2026-08-23: 1493 мс на `/pricing`, далі 31 і 22 мс — граф уже теплий).
+   * Дефолт `findBy*` — 1000 мс, тобто спека роками стояла на півтора бюджету
+   * і зеленіла лише тоді, коли кеш трансформів встигав нагрітися від сусідньої
+   * спеки в тому ж воркері. Це таймінг харнеса, а не поведінка роуту: сам
+   * 404 рендериться справно (перевірено окремим прогоном із довгим чеканням).
+   * Тому явний запас тут, а не `waitFor` навколо кожного асерту.
+   */
+  const FIRST_LAZY_SETTLE_MS = 10_000;
+
   it("serves the 404 page for /pricing and every /legal/* path", async () => {
     vi.resetModules();
     const { renderStandaloneRoute } = await import("../app/StandaloneRoutes");
@@ -106,10 +122,14 @@ describe("hidden routes answer 404", () => {
       expect(node, `${pathname} must still own a route entry`).not.toBeNull();
       render(<MemoryRouter>{node}</MemoryRouter>);
       expect(
-        await screen.findByRole("heading", { name: "Сторінку не знайдено" }),
+        await screen.findByRole(
+          "heading",
+          { name: "Сторінку не знайдено" },
+          { timeout: FIRST_LAZY_SETTLE_MS },
+        ),
         `${pathname} must render the 404 page`,
       ).toBeInTheDocument();
       cleanup();
     }
-  });
+  }, 30_000);
 });

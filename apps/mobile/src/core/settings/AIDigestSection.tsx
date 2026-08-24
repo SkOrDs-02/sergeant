@@ -44,7 +44,7 @@ export function getWeekRange(date: Date = new Date()): string {
   sunday.setDate(monday.getDate() + 6);
   const fmt = (dt: Date): string =>
     dt.toLocaleDateString("uk-UA", { day: "numeric", month: "short" });
-  return `${fmt(monday)} — ${fmt(sunday)}`;
+  return `${fmt(monday)} – ${fmt(sunday)}`;
 }
 
 export function AIDigestSection() {
@@ -98,7 +98,7 @@ export function AIDigestSection() {
       <View className="pt-1">
         <ToggleRow
           label="Автогенерація щопонеділка"
-          description="Якщо ввімкнено, ранкова сесія в понеділок запускає звіт у фоні. Вимкнуто за замовчуванням — інакше AI-виклик зʼїдається без твого запиту."
+          description="Якщо ввімкнено, ранкова сесія в понеділок запускає звіт у фоні. Вимкнуто за замовчуванням, інакше AI-виклик зʼїдається без твого запиту."
           checked={mondayAuto}
           onChange={(next) => setMondayAutoRaw(next ? "1" : "0")}
           testID="aidigest-monday-auto-toggle"

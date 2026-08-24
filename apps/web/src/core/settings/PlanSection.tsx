@@ -111,7 +111,7 @@ export function PlanSection() {
             <span className="text-style-label block">Пробний період</span>
             <p className="text-style-body text-text leading-snug">
               Закінчується {periodEnd}. Після цього підписка стане платною за
-              тарифом з чекауту — скасуй до цієї дати, якщо передумаєш.
+              тарифом з чекауту, скасуй до цієї дати, якщо передумаєш.
             </p>
           </div>
         )}

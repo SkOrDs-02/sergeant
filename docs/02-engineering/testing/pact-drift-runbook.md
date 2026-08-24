@@ -1,6 +1,6 @@
 # Pact contract drift — runbook
 
-> **Last touched:** 2026-08-05 by @claude. **Next review:** 2027-02-22.
+> **Last touched:** 2026-08-24 by @claude. **Next review:** 2026-12-06.
 > **Status:** Active
 
 > **Статус автоматизації:** [`.github/workflows/pact-drift.yml`](../../../.github/workflows/pact-drift.yml) закомічений — cron 06:00 UTC + `workflow_dispatch`. Локально/ad-hoc — CLI [`scripts/pact-drift-check.mjs`](../../../scripts/pact-drift-check.mjs). § Workflow YAML — дзеркало для review у docs.
@@ -22,6 +22,18 @@
 - Скрипт: [`scripts/pact-drift-check.mjs`](../../../scripts/pact-drift-check.mjs).
 - Контракти: `packages/api-client/pacts/*.json` (зараз — один файл `sergeant-api-client-sergeant-server.json` з 37 інтеракціями).
 - Idempotent issue logic: один open issue `[Pact drift] …` із label `contract-drift`. Наступні детекції → comment у той самий issue, а не дубльований issue. Mirrors `db-backup-verify.yml`.
+- **Issue заводиться лише на `drift_exit == 1`** (реальний drift). Код `2` = чекер не зміг запуститись; він валить workflow, але issue з лейблом `contract-drift` НЕ створює — див. § Exit-коди нижче.
+- **Чистий прогін закриває** відкритий `[Pact drift]`-issue з коментарем. Руками закривати не треба.
+
+### Exit-коди і чому це важливо (2026-08-23)
+
+| Код | Значення                                                    | Наслідок                                                  |
+| --- | ----------------------------------------------------------- | --------------------------------------------------------- |
+| `0` | Контракти збігаються                                        | Закриває відкритий `contract-drift`-issue                 |
+| `1` | Реальний schema-drift проти live staging                    | Створює / оновлює `contract-drift`-issue, валить workflow |
+| `2` | Чекер не запустився (немає `STAGING_BASE_URL`, впав скрипт) | Валить workflow **без** issue                             |
+
+Доти гейт стояв на `steps.drift.outcome == 'failure'`, який зливає `1` і `2` в одне «failure». Саме через це issue [#416](https://github.com/SkOrDs-02/sergeant/issues/416) (2026-07-22) поїхав у беклог як «Daily contract drift detected» з тілом `_No report artifact: ENOENT … dist/pact-drift-report.md_`: секрет `STAGING_BASE_URL` не був налаштований, крок вийшов із кодом `2` ще до `mkdir -p dist`, звіту не існувало — а issue про неіснуючий drift усе одно створився. Помилка конфігурації тепер валить workflow (це видно в Actions), але не засмічує лейбл `contract-drift`.
 
 ### Як читається verdict
 
@@ -128,7 +140,7 @@ Workflow YAML (дзеркало [`.github/workflows/pact-drift.yml`](../../../.g
 ```yaml
 name: Pact contract drift (daily cron)
 
-# Owner: @SkOrDs-02 (solo maintainer per .github/CODEOWNERS).
+# Owner: @SkOrDs-02 (solo maintainer).
 # Triage: false-positive runs → close the auto-created `contract-drift` issue
 #         з коментарем; reopen якщо повторюється > 2x за тиждень. Full runbook:
 #         `docs/02-engineering/testing/pact-drift-runbook.md`.
@@ -250,7 +262,18 @@ jobs:
           retention-days: 30
 
       - name: Create / refresh contract-drift issue on failure
-        if: steps.drift.outcome == 'failure' && github.event_name == 'schedule'
+        # AI-CONTEXT: гейт саме по `drift_exit == 1`, а НЕ по
+        # `steps.drift.outcome == 'failure'`. Скрипт розрізняє 1 = реальний
+        # drift і 2 = помилка конфігурації (немає `STAGING_BASE_URL`, впав
+        # сам чекер) — але `outcome` їх зливає в одне «failure».
+        #
+        # Саме через це issue #416 (2026-07-22) поїхав у бек-лог як
+        # «contract drift» з тілом `_No report artifact: ENOENT …
+        # dist/pact-drift-report.md_`: секрет не був налаштований, крок вийшов
+        # з кодом 2 ще до `mkdir -p dist`, звіту не існувало — а issue про
+        # неіснуючий drift усе одно створився. Помилка конфігурації має
+        # валити workflow (нижче), а не засмічувати лейбл `contract-drift`.
+        if: steps.drift.outputs.drift_exit == '1' && github.event_name == 'schedule'
         # actions/github-script v8.0.0 (SHA-pinned for supply-chain hardening)
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
         with:
@@ -340,10 +363,56 @@ jobs:
               core.info(`Created new issue #${created.data.number}.`);
             }
 
-      - name: Fail the job on drift
+      - name: Close the contract-drift issue when staging is clean
+        # Друга половина храповика: до 2026-08-23 workflow вмів лише
+        # відкривати issue. Чистий прогін тепер закриває відкритий
+        # `contract-drift` — інакше issue висить і після того, як drift
+        # полагодили, і читач не відрізняє «болить» від «боліло».
+        if: steps.drift.outputs.drift_exit == '0' && github.event_name == 'schedule'
+        # actions/github-script v8.0.0 (SHA-pinned for supply-chain hardening)
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'contract-drift',
+              per_page: 10,
+            });
+            for (const issue of issues.filter((i) => i.title.startsWith('[Pact drift]'))) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: [
+                  `### Recovered — ${new Date().toISOString().slice(0, 10)}`,
+                  '',
+                  `Щоденний \`pact-drift\` пройшов чисто: ${runUrl}`,
+                  '',
+                  'Закрито автоматично. Якщо drift повернеться, workflow відкриє новий issue.',
+                ].join('\n'),
+              });
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                state: 'closed',
+                state_reason: 'completed',
+              });
+              core.info(`Closed issue #${issue.number}`);
+            }
+
+      - name: Fail the job on drift or checker error
         if: steps.drift.outcome == 'failure'
         run: |
-          echo "::error::Pact drift detected. See dist/pact-drift-report.md."
+          if [ "${{ steps.drift.outputs.drift_exit }}" = "1" ]; then
+            echo "::error::Pact drift detected. See dist/pact-drift-report.md."
+          else
+            echo "::error::pact-drift checker could not run (exit '${{ steps.drift.outputs.drift_exit }}'). Це помилка конфігурації, не drift — див. docs/02-engineering/testing/pact-drift-runbook.md § Setup."
+          fi
           exit 1
 ```
 

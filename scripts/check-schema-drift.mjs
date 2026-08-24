@@ -752,7 +752,7 @@ const SQL_ONLY_TABLES = [
   "receipt_items",
   "finyk_tx_receipt_links",
   "import_batches",
-  // Silpo MCP integration (міграції 123–124, spec silpo-mcp-integration.md,
+  // Silpo MCP integration (міграції 125–126, spec silpo-mcp-integration.md,
   // Track A walking skeleton). Той самий контур, що й mono_connection /
   // privat_connection: OAuth-токени читає лише серверний modules/silpo/
   // шар. silpo_receipts / silpo_receipt_items — сирий снапшот чеків,
@@ -767,11 +767,11 @@ const SQL_ONLY_TABLES = [
   "silpo_receipts",
   "silpo_receipt_items",
   "silpo_tx_receipt_links",
-  // silpo_oauth_state (міграція 124) — короткоживучий стан OAuth-редіректу
+  // silpo_oauth_state (міграція 126) — короткоживучий стан OAuth-редіректу
   // (state → code_verifier). Живе хвилини, згорає одноразовим
   // `DELETE ... RETURNING`; клієнт про нього не знає взагалі.
   "silpo_oauth_state",
-  // silpo_tx_receipt_link_rejections (міграція 125) — памʼять про пари
+  // silpo_tx_receipt_link_rejections (міграція 127) — памʼять про пари
   // «транзакція ↔ чек», які користувач розлінкував руками. Той самий
   // контур, що й silpo_tx_receipt_links: пише і читає лише сервер
   // (DELETE /api/silpo/receipts/link/:transactionId і негативний фільтр у

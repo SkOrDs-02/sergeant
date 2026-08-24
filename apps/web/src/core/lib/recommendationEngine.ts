@@ -16,7 +16,8 @@ import {
 } from "@nutrition/lib/nutritionStorage";
 import { calcFinykPeriodAggregate } from "@sergeant/finyk-domain/lib/spending";
 import { readFinykStatsContext } from "@finyk/lib/lsStats";
-import { pluralDays, pluralUa } from "@sergeant/shared";
+import { formatNumberUk, pluralDays, pluralUa } from "@sergeant/shared";
+import { wholeDaysSince } from "@shared/lib/time/wholeDaysSince";
 import {
   BODY_ATLAS_MUSCLE_LABELS_UK,
   mapDomainMuscleToAtlas,
@@ -186,22 +187,31 @@ function buildFizrukRecs(): Rec[] {
   const completed = workouts.filter((w) => w.endedAt);
   if (!completed.length) return recs;
 
-  const sorted = [...completed].sort(
-    (a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime(),
+  const now = new Date();
+  // AI-CONTEXT: одна пауза — одне число. Тут ділили ГОДИНИ на 24 і
+  // округляли, а `useRestDayOverdueInsight` (fizruk) рахував календарні
+  // доби від `endedAt`, тож хаб одночасно показував «15 днів» у картці
+  // «Що зараз важливо» і «16 днів» в інсайтах (browser QA 2026-08-23).
+  // Обидва тепер міряють `wholeDaysSince` від ОСТАННЬОГО завершення.
+  let lastEndedMs = -Infinity;
+  for (const w of completed) {
+    const ms = Date.parse(w.endedAt as string);
+    if (Number.isFinite(ms) && ms > lastEndedMs) lastEndedMs = ms;
+  }
+  const daysSinceWorkout = wholeDaysSince(
+    lastEndedMs === -Infinity ? null : lastEndedMs,
+    now,
   );
 
-  const now = new Date();
-  const lastMs = new Date(sorted[0]!.startedAt).getTime();
-  const hoursAgo = (now.getTime() - lastMs) / 3_600_000;
-  const daysSinceWorkout = hoursAgo / 24;
-
-  if (daysSinceWorkout > LONG_BREAK_DAYS) {
+  // Нескінченність = жодного парсабельного `endedAt`. Тоді мовчимо обидві
+  // гілки: «Infinity днів без тренування» — не повідомлення, а баг напоказ.
+  if (Number.isFinite(daysSinceWorkout) && daysSinceWorkout > LONG_BREAK_DAYS) {
     recs.push({
       id: "fizruk_long_break",
       module: "fizruk",
       priority: 85,
       icon: "dumbbell",
-      title: `${Math.round(daysSinceWorkout)} днів без тренування`,
+      title: `${daysSinceWorkout} ${pluralDays(daysSinceWorkout)} без тренування`,
       body: "Пора відновити активність! Навіть легке тренування краще, ніж нічого.",
       action: "fizruk",
       pwaAction: "start_workout",
@@ -267,7 +277,7 @@ function buildFizrukRecs(): Rec[] {
       priority: 70,
       icon: "calendar",
       title: "Цього тижня ще немає тренувань",
-      body: "Тиждень вже в розпалі — час запланувати тренування!",
+      body: "Тиждень вже в розпалі, час запланувати тренування!",
       action: "fizruk",
       pwaAction: "start_workout",
     });
@@ -329,7 +339,7 @@ function buildRoutineRecs(): Rec[] {
       priority: 65,
       icon: "check",
       title: `${remaining} звичок ще не виконано сьогодні`,
-      body: "Вечір — ще не пізно закрити всі звички.",
+      body: "Вечір, ще не пізно закрити всі звички.",
       action: "routine",
     });
   }
@@ -343,7 +353,7 @@ function buildRoutineRecs(): Rec[] {
       priority: 95,
       icon: "alert",
       title: `Серія ${streak} днів під загрозою!`,
-      body: `Залишилось ${remaining} ${remaining === 1 ? "звичка" : "звичок"} — не дай рекорду згоріти.`,
+      body: `Залишилось ${remaining} ${remaining === 1 ? "звичка" : "звичок"}, не дай рекорду згоріти.`,
       action: "routine",
     });
   }
@@ -429,7 +439,7 @@ function buildNutritionRecs(): Rec[] {
         priority: 68,
         icon: "utensils",
         title: `Лише ${Math.round(protein)}г білка з ${targetProtein}г`,
-        body: "Додай протеїновий прийом їжі — це важливо для м'язів.",
+        body: "Додай протеїновий прийом їжі, це важливо для м'язів.",
         action: "nutrition",
         pwaAction: "add_meal",
       });
@@ -450,7 +460,7 @@ function buildNutritionRecs(): Rec[] {
           module: "nutrition",
           priority: 88,
           icon: "award",
-          title: "Після тренування — час поповнити білок!",
+          title: "Після тренування, час поповнити білок!",
           body: "У тебе є ~30 хвилин на протеїновий прийом для кращого відновлення.",
           action: "nutrition",
           pwaAction: "add_meal",
@@ -529,9 +539,7 @@ function buildWeeklyDigestRecs(): Rec[] {
   if (workoutsLastWeek > 0) parts.push(`${workoutsLastWeek} трен.`);
   if (habitPctText) parts.push(habitPctText);
   if (spendLastWeek > 0)
-    parts.push(
-      `витрати ${Math.round(spendLastWeek).toLocaleString("uk-UA")} ₴`,
-    );
+    parts.push(`витрати ${formatNumberUk(Math.round(spendLastWeek))} ₴`);
 
   if (parts.length === 0) return [];
 

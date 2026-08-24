@@ -487,7 +487,7 @@ export async function countWaitlistStats(pool: Pool): Promise<WaitlistStats> {
 
 export function formatStatsReply(s: WaitlistStats): string {
   if (s.total === 0) {
-    return "Вейтліст порожній — ще ніхто не натиснув Start.";
+    return "Вейтліст порожній, ще ніхто не натиснув Start.";
   }
 
   const lines = [

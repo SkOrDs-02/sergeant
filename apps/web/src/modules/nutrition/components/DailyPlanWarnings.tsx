@@ -56,14 +56,14 @@ export function MacroKcalWarning({
         <p className="text-text leading-snug">
           {overshoot ? (
             <>
-              Сума макро виходить на <strong>{calc} ккал</strong> — це на{" "}
+              Сума макро виходить на <strong>{calc} ккал</strong>, це на{" "}
               <strong>{absDiff} ккал</strong> більше за ціль{" "}
               <strong>{target} ккал</strong>. 1 г білка = 4 ккал, 1 г жиру = 9
               ккал, 1 г вуглеводів = 4 ккал.
             </>
           ) : (
             <>
-              Сума макро дає лише <strong>{calc} ккал</strong> — це на{" "}
+              Сума макро дає лише <strong>{calc} ккал</strong>, це на{" "}
               <strong>{absDiff} ккал</strong> менше за ціль{" "}
               <strong>{target} ккал</strong>.
             </>
@@ -164,7 +164,7 @@ export function MissingMacrosHint({
         />
         <p className="text-text leading-snug">
           Задано лише <strong>{kcal} ккал</strong>, але без макро AI не зрозуміє
-          що тобі важливо — білок, жир чи вуглеводи. Підстав середні стартові
+          що тобі важливо: білок, жир чи вуглеводи. Підстав середні стартові
           значення й відредагуй під себе.
         </p>
       </div>

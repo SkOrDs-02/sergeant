@@ -9,7 +9,9 @@
  *
  * Conventions:
  *  - Locale is `uk-UA` so thousand separators match the rest of the
- *    Ukrainian-language UI (NBSP between groups, comma decimal).
+ *    Ukrainian-language UI (NBSP between groups, comma decimal). The
+ *    separator is normalised to U+00A0 by `formatNumberUk` — Intl's own
+ *    U+202F is too narrow to read at our type sizes.
  *  - The currency symbol is appended with a regular space (`"1 250 ₴"`)
  *    — this matches the TxRow/HubSearch convention and is the format
  *    `Intl.NumberFormat("uk-UA", { style: "currency" })` produces too.
@@ -27,6 +29,8 @@
  * alone here so existing transaction visuals don't shift; new sites
  * should prefer `formatMoney` for non-transaction sums.
  */
+
+import { formatNumberUk } from "./formatNumber";
 
 export interface FormatMoneyOptions {
   /**
@@ -55,16 +59,12 @@ export interface FormatMoneyOptions {
 }
 
 function formatNumberUkUA(value: number, min: number, max: number): string {
-  try {
-    return value.toLocaleString("uk-UA", {
-      minimumFractionDigits: min,
-      maximumFractionDigits: max,
-    });
-  } catch {
-    // Older runtimes without full Intl support — fall back to a plain
-    // `toFixed`, accepting the loss of thousand separators.
-    return value.toFixed(max);
-  }
+  // Роздільник розрядів приходить із `formatNumberUk` — один на весь
+  // продукт (U+00A0, не вузький U+202F від Intl). Деталі — у `formatNumber.ts`.
+  return formatNumberUk(value, {
+    minimumFractionDigits: min,
+    maximumFractionDigits: max,
+  });
 }
 
 /**

@@ -111,5 +111,5 @@ export function markDebtPaid(action: MarkDebtPaidAction): ChatActionResult {
     debts[idx] = debt;
   }
   finykChatWrite("finyk_debts", debts);
-  return `Погашено ${payAmount} грн з "${debt.name}"${closed ? " — борг закрито" : ""} (tx:${txId})`;
+  return `Погашено ${payAmount} грн з "${debt.name}"${closed ? ", борг закрито" : ""} (tx:${txId})`;
 }

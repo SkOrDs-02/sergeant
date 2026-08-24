@@ -3,9 +3,11 @@
 // чистою проєкцією вхідних даних. Усі UI/хуки мають викликати саме ці
 // функції, а не дублювати формули.
 import {
+  kyivDayEndMs,
   kyivDayStartMs,
   kyivMondayStartMs,
   toLocalISODate,
+  formatNumberUk,
 } from "@sergeant/shared";
 import { getTxStatAmount, calcMonthlyNeeded } from "../utils";
 import type {
@@ -57,9 +59,19 @@ export function getLimitPeriodRange(
   now: Date = new Date(),
 ): { startMs: number; endMs: number } {
   const period = budget.period ?? "month";
-  const nowMs = now.getTime();
+  // Верхня межа — КІНЕЦЬ поточної київської доби, а не `now`.
+  //
+  // AI-DANGER: ручний запис не має реального інстанта — форма штампує день
+  // о 12:00 UTC (`toExpenseInstant`, `manualExpenseForm.ts`), тобто 15:00 за
+  // Києвом. З межею на `now` витрата, додана сьогодні вранці, лежала В
+  // МАЙБУТНЬОМУ відносно вікна і випадала з власного ліміту до 15:00 —
+  // бюджет показував нуль там, де людина щойно записала витрату
+  // (знахідка суміжного фіксу до F-19, браузерний QA 2026-08-24).
+  // Кінець доби лишає в силі початковий намір «не рахувати майбутнє»:
+  // записи завтрашнім і пізнішим днем так само за межею.
+  const endMs = kyivDayEndMs(toLocalISODate(now));
   if (period === "week") {
-    return { startMs: kyivMondayStartMs(now), endMs: nowMs };
+    return { startMs: kyivMondayStartMs(now), endMs };
   }
   if (period === "one_time") {
     const parsed = budget.createdAt ? Date.parse(budget.createdAt) : NaN;
@@ -67,11 +79,11 @@ export function getLimitPeriodRange(
       startMs: Number.isFinite(parsed)
         ? parsed
         : kyivDayStartMs(toLocalISODate(now)),
-      endMs: nowMs,
+      endMs,
     };
   }
   const monthKey = `${toLocalISODate(now).slice(0, 7)}-01`;
-  return { startMs: kyivDayStartMs(monthKey), endMs: nowMs };
+  return { startMs: kyivDayStartMs(monthKey), endMs };
 }
 
 export function filterTransactionsForLimitPeriod<
@@ -300,10 +312,10 @@ export function getGoalMonthlyLabel(
 ) {
   if (!progress) return null;
   const { monthly } = progress;
-  if (monthly?.isAchieved) return "Ціль досягнута 🎉";
+  if (monthly?.isAchieved) return "Ціль досягнута";
   if (monthly?.isOverdue) return "Термін минув";
   if (monthly?.monthlyNeeded != null) {
-    return `Потрібно відкладати: ${monthly.monthlyNeeded.toLocaleString("uk-UA")} ₴/міс.`;
+    return `Потрібно відкладати: ${formatNumberUk(monthly.monthlyNeeded)} ₴/міс.`;
   }
   return null;
 }

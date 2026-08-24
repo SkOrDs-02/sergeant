@@ -112,7 +112,7 @@ async function callRecallApi(
       return {
         error:
           code === "AI_MEMORY_DISABLED"
-            ? "Памʼять ШІ вимкнена на сервері — це не збій, фічу ще не активовано. Чекати марно."
+            ? "Памʼять ШІ вимкнена на сервері, це не збій, фічу ще не активовано. Чекати марно."
             : "Памʼять ШІ тимчасово недоступна: провайдер ембеддингів не відповідає. Спробуй за кілька хвилин.",
       };
     }
@@ -125,7 +125,7 @@ async function callRecallApi(
     return (await res.json()) as RecallMemoryResponse;
   } catch (err) {
     if (err instanceof Error && err.name === "AbortError") {
-      return { error: "Recall таймаут — спробуй простіший запит." };
+      return { error: "Recall таймаут, спробуй простіший запит." };
     }
     return { error: "Не вдалося звʼязатися з сервером для recall." };
   } finally {
@@ -232,7 +232,7 @@ async function handleCreateTransaction(
   } catch {
     // Мережа/401/5xx — не губимо запис: пишемо локально зі старим undo-шляхом.
     const local = createTransactionLocal(action);
-    const suffix = " (сервер недоступний — записано лише локально)";
+    const suffix = " (сервер недоступний, записано лише локально)";
     if (typeof local === "string") return local + suffix;
     return { ...local, result: local.result + suffix };
   }

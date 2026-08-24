@@ -13,6 +13,7 @@ import type {
   LimitBudget,
 } from "@sergeant/finyk-domain/domain/types";
 import { LimitBudgetCard } from "../../components/budgets/LimitBudgetCard";
+import { stripLeadingEmoji } from "../../components/txRowHelpers";
 import { resolveExpenseCategoryMeta } from "../../utils";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
 import type { useToast } from "@shared/hooks/useToast";
@@ -123,7 +124,7 @@ export function BudgetsLimitsSection({
             </svg>
           }
           title="Поки немає лімітів"
-          description="Встанови ліміт витрат на категорію, щоб не виходити за межі бюджету — кнопка нижче."
+          description="Встанови ліміт витрат на категорію, щоб не виходити за межі бюджету, кнопка нижче."
         />
       )}
       {limitsOpen &&
@@ -138,7 +139,10 @@ export function BudgetsLimitsSection({
           const globalIdx = budgets.findIndex((budget) => budget.id === b.id);
           const showAdvice = shouldShowProactiveAdvice(usage, null);
           const isEditing = editIdx === globalIdx;
-          const catLabel = cat?.label || "—";
+          // `stripLeadingEmoji` лишається рівно для КАСТОМНИХ категорій:
+          // вбудовані підписи чисті від емодзі з 2026-08-21, а назву
+          // власної категорії людина набирає сама.
+          const catLabel = cat?.label ? stripLeadingEmoji(cat.label) : "—";
           const isHighlighted = highlightedCategoryId === categoryId;
           const adviceText = proactiveAdvice[categoryId];
           const monthKey =
@@ -173,6 +177,7 @@ export function BudgetsLimitsSection({
                   ...(b.createdAt ? { createdAt: b.createdAt } : {}),
                 }}
                 categoryLabel={catLabel}
+                customCategories={customCategories ?? []}
                 spent={usage.spent}
                 pctRaw={usage.pctRaw}
                 pctRounded={usage.pctRounded}

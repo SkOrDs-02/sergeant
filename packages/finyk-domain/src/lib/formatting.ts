@@ -1,4 +1,5 @@
 import { CURRENCY, CURRENCY_SYMBOL } from "../constants";
+import { formatNumberUk } from "@sergeant/shared";
 
 export function fmtAmt(
   amount: number,
@@ -6,7 +7,7 @@ export function fmtAmt(
 ): string {
   const v = amount / 100;
   const sym = CURRENCY_SYMBOL[cc] ?? "₴";
-  return `${v > 0 ? "+" : ""}${v.toLocaleString("uk-UA", { minimumFractionDigits: 2 })}${sym}`;
+  return `${v > 0 ? "+" : ""}${formatNumberUk(v, { minimumFractionDigits: 2 })}${sym}`;
 }
 
 export function fmtDate(ts: number): string {
@@ -31,15 +32,23 @@ interface Account {
   creditLimit?: number | undefined;
 }
 
+/**
+ * Підпис рахунку. До 2026-08-21 кожна гілка несла емодзі-префікс
+ * («🖤 Чорна картка»), тож поверхні, які малювали справжню іконку, мали
+ * власний емодзі-вільний дублікат цієї таблиці
+ * (`apps/web/.../lib/accountVisual.ts`), а ті, що не знали про нього,
+ * показували системний гліф. Тут лишається лише текст; іконку бере
+ * `getAccountVisual`.
+ */
 export function getAccountLabel(acc: Account): string {
-  if (acc.type === "eAid") return "💳 Єпідтримка";
+  if (acc.type === "eAid") return "Єпідтримка";
   if (acc.creditLimit && acc.creditLimit > 0 && acc.type === "black")
-    return "🖤 Кредитна картка";
-  if (acc.creditLimit && acc.creditLimit > 0) return "💳 Кредит";
-  if (acc.type === "black") return "🖤 Чорна картка";
-  if (acc.type === "white") return "⬜ Біла картка";
-  if (acc.type === "platinum") return "💎 Платинова";
-  if (acc.type === "iron") return "🔩 Залізна";
-  if (acc.type === "fop") return "🏢 ФОП";
-  return "💳 Картка";
+    return "Кредитна картка";
+  if (acc.creditLimit && acc.creditLimit > 0) return "Кредит";
+  if (acc.type === "black") return "Чорна картка";
+  if (acc.type === "white") return "Біла картка";
+  if (acc.type === "platinum") return "Платинова";
+  if (acc.type === "iron") return "Залізна";
+  if (acc.type === "fop") return "ФОП";
+  return "Картка";
 }

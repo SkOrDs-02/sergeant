@@ -38,12 +38,12 @@ export function OverlaysSection() {
       intro={
         <>
           Modal / Sheet / ConfirmDialog портують у <code>document.body</code>{" "}
-          (PR #2227) — щоб не страждати від transformed-ancestor контейнерів.
+          (PR #2227), щоб не страждати від transformed-ancestor контейнерів.
           Контракт фокусу: focus-trap + Esc + click-outside-to-dismiss.
         </>
       }
     >
-      <Group label="Modal — розміри" row>
+      <Group label="Modal: розміри" row>
         {(["sm", "md", "lg"] as const).map((size) => (
           <Button
             key={size}
@@ -97,7 +97,7 @@ export function OverlaysSection() {
         open={sheetOpen}
         onClose={() => setSheetOpen(false)}
         title="Приклад Sheet"
-        description="Bottom sheet — основний паттерн для мобільних форм і детальних панелей."
+        description="Bottom sheet: основний паттерн для мобільних форм і детальних панелей."
         footer={
           <div className="flex gap-2">
             <Button
@@ -160,7 +160,7 @@ export function OverlaysSection() {
         lintRules={[
           {
             label: "check-design-conventions",
-            hint: "`focus:` заборонено — лише focus-visible: / focus-within:",
+            hint: "`focus:` заборонено, лише focus-visible: / focus-within:",
           },
         ]}
       />

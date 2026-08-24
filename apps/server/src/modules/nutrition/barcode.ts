@@ -10,6 +10,8 @@ import { BarcodeQuerySchema } from "../../http/schemas.js";
 import { parseQuery } from "../../http/validate.js";
 import { getSessionUser } from "../../auth.js";
 import { barcodeLookupsTotal } from "../../obs/metrics.js";
+import { logger } from "../../obs/logger.js";
+import { lookupInCatalog, upsertIntoCatalog } from "./productCatalog.js";
 import {
   normalizeOFFBarcode,
   normalizeUPCitemdb,
@@ -191,6 +193,24 @@ function recordLookup(source: string, outcome: string, ms: number): void {
     /* ignore */
   }
   recordExternalHttp(source, outcome, ms);
+}
+
+/**
+ * Те саме для власного каталогу — але БЕЗ `recordExternalHttp`.
+ *
+ * `external_http_requests_total` описує виходи за периметр до третіх
+ * сторін; запит до власного Postgres туди не належить і зіпсував би і
+ * сенс метрики, і її кардинальність. Домену ж `barcode_lookups_total`
+ * джерело `catalog` потрібне — саме воно дає hit-rate по ярусах, який
+ * дослідження назвало метрикою для рішення «чи потрібен платний API»
+ * (docs/90-work/planning/barcode-database-research.md § 4).
+ */
+function recordCatalogLookup(outcome: "hit" | "miss" | "error"): void {
+  try {
+    barcodeLookupsTotal.inc({ source: "catalog", outcome });
+  } catch {
+    /* ignore */
+  }
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -417,12 +437,52 @@ export default async function handler(
     return;
   }
 
+  // ── Tier-1: власний каталог (міграція 123) ────────────────────────────────
+  //
+  // Стоїть ПЕРЕД зовнішніми джерелами. Сенс не в латентності, а в квотах:
+  // USDA на DEMO_KEY дає 40 запитів/год НА ВЕСЬ ПРОДУКТ, UPCitemdb trial —
+  // 100/добу. Каталог перетворює це з «ліміт на кожен скан» на «ліміт на
+  // кожен НОВИЙ товар».
+  //
+  // Помилка БД тут НЕ фатальна: каталог — прискорювач, а не єдине джерело
+  // істини. Якщо Postgres недоступний, скан має працювати через upstream-и
+  // рівно як до цієї зміни, а не падати.
+  try {
+    const fromCatalog = await lookupInCatalog(barcode);
+    if (fromCatalog) {
+      // Валідація СТРОГО перед кешуванням. Якщо в каталозі колись
+      // опиниться рядок, що не лягає в контракт (напр. джерело, ще не
+      // заведене в `BarcodeProductSchema.source`), `parse` кидає — і ми
+      // мусимо піти в upstream, а не покласти биту відповідь у кеш.
+      // Зворотний порядок був би підступним: сам запит віддав би 200, а
+      // НАСТУПНИЙ ліг би на тій самій валідації вже в cache-hit-гілці, де
+      // її ніхто не ловить, тобто 500 на ровному місці.
+      const payload = BarcodeLookupSuccessSchema.parse({
+        product: fromCatalog,
+      });
+      recordCatalogLookup("hit");
+      cacheSet(barcode, fromCatalog);
+      res.status(200).json(payload);
+      return;
+    }
+    recordCatalogLookup("miss");
+  } catch (e) {
+    recordCatalogLookup("error");
+    logger.warn(
+      { err: e instanceof Error ? e.message : String(e), barcode },
+      "product_catalog lookup failed, falling through to upstreams",
+    );
+  }
+
   // Cheap guard (single indexed SELECT, zero cost for the anonymous
   // majority) — decides whether to try Silpo as the last cascade step AND
   // whether a Silpo-sourced hit below must skip the shared cache / public
   // `Cache-Control`. Gated on the kill switch FIRST: with `SILPO_ENABLED`
   // off (the default) this session-less endpoint must not pay a per-request
   // session lookup for a source that can never activate.
+  //
+  // Стоїть ПІСЛЯ каталогу навмисно: хіт у власному каталозі повертається
+  // одразу, тож найдешевший шлях узагалі не платить за резолв сесії.
   const userId = env.SILPO_ENABLED ? await resolveOptionalUserId(req) : null;
   const silpoConnected = userId ? await isSilpoConnectedUser(userId) : false;
 
@@ -473,7 +533,7 @@ export default async function handler(
         // таймаутом, піднятим ПОЗА per-source try/catch.)
         res.status(503).json({
           error:
-            "Бази продуктів зараз не відповідають — це не означає, що продукту немає. Спробуй ще раз за хвилину або введи вручну.",
+            "Бази продуктів зараз не відповідають, це не означає, що продукту немає. Спробуй ще раз за хвилину або введи вручну.",
         });
         return;
       }
@@ -497,6 +557,11 @@ export default async function handler(
       cacheSet(barcode, product);
     }
     res.status(200).json(BarcodeLookupSuccessSchema.parse({ product }));
+
+    // Write-through ПІСЛЯ відповіді: користувач не має чекати на наш запис.
+    // `upsertIntoCatalog` сам ковтає власні помилки, тож `void` тут не ховає
+    // необроблений reject — він лише знімає await.
+    void upsertIntoCatalog(barcode, product);
   } catch (e: unknown) {
     if (hasErrorName(e, "TimeoutError") || hasErrorName(e, "AbortError")) {
       res

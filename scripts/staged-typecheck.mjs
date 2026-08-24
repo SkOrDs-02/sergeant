@@ -126,6 +126,20 @@ const SKIP_PREFIXES_BY_TSCONFIG = {
   // canonical `pnpm typecheck` never sees it. `tsc-files` force-adding it to
   // the `files` list trips TS6059 ("not under rootDir") — skip it to mirror
   // the canonical scope.
+  // `apps/server/tsconfig.json` має `include: ["src/**/*", "migrate.mjs"]`, тож
+  // кореневі vitest-конфіги в програму не входять і канонічний `pnpm typecheck`
+  // їх не бачить. `tsc-files` же форс-додає застейджений конфіг у `files`, а він
+  // тягне `vitest/config` → `lib.dom.d.ts`. DOM-івський `BodyInit` не приймає
+  // `Buffer`, і сусідній серверний файл падає з TS2769 на звичайному
+  // `fetch(url, { body: gzippedBody })` — при тому, що повний `tsc -p` на ньому
+  // зелений. Знайдено 2026-08-24, коли мердж main застейджив
+  // `vitest.integration.config.ts` і заблокував коміт через
+  // `src/modules/logRetention/gcsUpload.ts`.
+  "apps/server/tsconfig.json": [
+    "vitest.config.ts",
+    "vitest.integration.config.ts",
+    "vitest.mutation.normalizers.config.ts",
+  ],
   "packages/api-client/tsconfig.json": ["vitest.config.ts"],
   "packages/db-schema/tsconfig.json": ["vitest.config.ts"],
   "packages/dualwrite-core/tsconfig.json": ["vitest.config.ts"],

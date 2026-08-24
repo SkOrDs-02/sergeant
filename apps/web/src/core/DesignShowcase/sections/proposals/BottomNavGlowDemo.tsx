@@ -34,7 +34,7 @@ export function BottomNavGlowDemo() {
         <CompareTile dim className="dark justify-end bg-bg">
           <MockNav active={active} onSelect={setActive} glow={false} />
           <p className="text-style-caption text-muted">
-            Пласка тінь — активний таб рівний
+            Пласка тінь, активний таб рівний
           </p>
         </CompareTile>
       }

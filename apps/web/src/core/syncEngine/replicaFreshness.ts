@@ -100,9 +100,22 @@ export async function readReplicaFreshness(
 ): Promise<ReplicaFreshness> {
   try {
     const [cursorRows, pendingRows] = await Promise.all([
+      // AI-DANGER: ключ курсора namespaced по користувачу
+      // (`pull_since:<userId>`, `syncOpCursor.ts` — мультиакаунтний фікс
+      // 2026-08-06). Точне порівняння з голим `pull_since` перестало
+      // збігатись із чим-небудь того ж дня, тож `lastPullAt` назавжди
+      // лишався `null`: модуль вічно писав «Синхронізації ще не було»
+      // попри успішні пули, а `complete: false` глушив банер упевненості
+      // поради (браузерний QA 2026-08-24). Голий легасі-ключ навмисно
+      // НЕ підпадає під шаблон: рядок від старої схеми брехав би про
+      // свіжий пул. Беремо найновіший — питання тут «коли ми востаннє
+      // тягнули», а не «чий це курсор».
       client.all<{ updated_at: string }>(
-        `SELECT updated_at FROM sync_op_cursor WHERE key = ?`,
-        [SYNC_OP_CURSOR_PULL_SINCE],
+        `SELECT updated_at FROM sync_op_cursor
+          WHERE key LIKE ? ESCAPE '\\'
+          ORDER BY updated_at DESC
+          LIMIT 1`,
+        [`${SYNC_OP_CURSOR_PULL_SINCE}:%`],
       ),
       client.all<{ n: number }>(
         `SELECT COUNT(*) AS n FROM sync_op_outbox WHERE status = 'pending'`,

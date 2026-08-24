@@ -7,7 +7,7 @@ import {
   Sec,
 } from "../_shared/primitives";
 
-const SAMPLE_USAGE = `// All four module tokens — used in cross-module surfaces (core/**, shared/**)
+const SAMPLE_USAGE = `// All four module tokens: used in cross-module surfaces (core/**, shared/**)
 <ModuleAccentProvider module="finyk">
   <Card module="finyk" prominence="hero">…</Card>
 </ModuleAccentProvider>

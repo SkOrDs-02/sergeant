@@ -3,8 +3,8 @@
  * Status: Active
  */
 /**
- * ThemeSwitcher — uniform UI control for the 4-mode theme contract
- * (`useTheme`): light · dark · system · HC.
+ * ThemeSwitcher — uniform UI control for the 3-mode theme contract
+ * (`useTheme`): light · dark · HC.
  *
  * Compact segmented control (icon + short label per choice) — the one
  * surface used app-wide (header "⋯" menu). A verbose `dropdown` variant
@@ -41,14 +41,14 @@ export interface ThemeSwitcherProps {
 
 /**
  * Under-icon captions (round-2 UI audit X4 — owner decision: name every
- * theme, not just show icons). Distinct from `THEME_CHOICE_SHORT_LABELS`
- * (used elsewhere for a single-line trigger): "Системна" reads clearer
- * than "Авто" once it's sitting under an icon rather than next to one.
+ * theme, not just show icons). Авто-режим прибрано на прохання власника
+ * (2026-08-18) — лишились три явні теми, тож підписи збігаються з
+ * `THEME_CHOICE_SHORT_LABELS`, але живуть окремо: під іконкою є місце
+ * рівно на одне коротке слово.
  */
 const SEGMENTED_CAPTIONS: Record<ThemeChoice, string> = {
   light: "Світла",
   dark: "Темна",
-  system: "Авто",
   hc: "Контраст",
 };
 

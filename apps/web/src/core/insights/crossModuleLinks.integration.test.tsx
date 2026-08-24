@@ -41,6 +41,7 @@ import {
 } from "./crossModuleLinkData";
 import { gradeCrossModuleLink, STABLE_N } from "./crossModuleLinkTiers";
 import CrossModuleLinksSection from "./CrossModuleLinksSection";
+import { formatNumberUk } from "@sergeant/shared";
 
 // Полудень UTC = той самий київський день і влітку, і взимку.
 const TODAY = "2026-08-05";
@@ -309,7 +310,7 @@ describe("крос-модульні зв'язки — синтетичний к�
     const mood = find("habit_rate", "wellbeing");
     expect(mood, "пара «звички × самопочуття» має бути помічена").toBeDefined();
     expect(mood!.pearson).toBeGreaterThan(NOTABLE_R);
-    expect(mood!.phrase).toBe("коли тримаєш звички — почуваєшся краще");
+    expect(mood!.phrase).toBe("коли тримаєш звички, почуваєшся краще");
   });
 
   it("мовчить про пару, якої в даних немає (контрольна група)", () => {
@@ -383,7 +384,7 @@ describe("крос-модульні зв'язки — синтетичний к�
     expect(days[0]!.key).toBe(TODAY);
 
     const today = plan.at(-1)!;
-    expect(days[0]!.valueB).toBe(today.spending.toLocaleString("uk-UA"));
+    expect(days[0]!.valueB).toBe(formatNumberUk(today.spending));
     // Сьогодні (2026-08-05) — середа, тобто тренувальний день.
     expect(today.workedOut).toBe(true);
     expect(days[0]!.valueA).not.toBe("0");

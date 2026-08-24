@@ -16,6 +16,8 @@ import type { BillingCheckoutResponse } from "@sergeant/api-client";
 import { ANALYTICS_EVENTS, trackEvent } from "./observability/analytics";
 import { captureException } from "./observability/sentry";
 import { usePlan } from "./billing";
+import { useAuthOptional } from "./auth/AuthContext";
+import { SIGN_IN_PATH } from "./app/appPaths";
 import { WaitlistForm } from "./pricing/WaitlistForm";
 import { LegalLinks } from "./legal/LegalLinks";
 
@@ -159,6 +161,14 @@ export function PricingPage() {
   const [portalLoading, setPortalLoading] = useState(false);
   const [portalError, setPortalError] = useState<string | null>(null);
   const { isPro: isPremiumActive } = usePlan();
+  // «Зараз ваш план» — твердження про СЕСІЮ, а не про дефолт тарифу. Без
+  // цієї перевірки анонімний відвідувач бачив бейдж і disabled-кнопку
+  // «Зараз ваш план» на Free-картці, хоча жодного акаунта не існує
+  // (browser QA 2026-08-23). `useAuthOptional`: у застосунку `AuthProvider`
+  // стоїть над роутом завжди, контексту немає лише у юніт-тестах, що
+  // монтують сторінку голою — там лишаємо попередню поведінку.
+  const auth = useAuthOptional();
+  const signedOut = auth?.status === "unauthenticated";
   // Payment-провайдери, доступні юзеру (UA → liqpay/plata). Джерело кнопок
   // checkout-у. 401 → fall through до порожнього списку (default-flow).
   const providersQuery = useQuery({
@@ -281,6 +291,15 @@ export function PricingPage() {
     // Free-тір вже доступний за замовчуванням — нікуди не ведемо.
   }
 
+  /** Гостьова гілка Free-CTA: єдина осмислена дія тут — завести акаунт. */
+  function handleSignInCta(): void {
+    trackEvent(ANALYTICS_EVENTS.PRICING_CTA_CLICKED, {
+      tier: "free",
+      cta: "sign_in",
+    });
+    navigate(SIGN_IN_PATH);
+  }
+
   // Manage subscription — initiative 0010 Phase 4.2 residual. Активний
   // subscriber бачить "Керувати підпискою" замість "Спробувати Premium":
   // POST /api/billing/portal → URL → redirect.
@@ -383,8 +402,9 @@ export function PricingPage() {
             {tiers.map((tier, idx) => {
               const isPremium = tier.id === "premium";
               const isCurrent =
-                (isPremium && isPremiumActive) ||
-                (!isPremium && !isPremiumActive);
+                !signedOut &&
+                ((isPremium && isPremiumActive) ||
+                  (!isPremium && !isPremiumActive));
               const checkoutLoading = checkoutPlan === tier.id;
               // Для активного Premium-юзера Premium-CTA веде у manage-flow
               // (Stripe Portal або in-app Settings для LiqPay/Plata) —
@@ -398,17 +418,20 @@ export function PricingPage() {
                   : checkoutLoading
                     ? t.cta.openingCheckout
                     : t.cta.tryPremium
-                : isPremiumActive
-                  ? t.cta.switchToFree
-                  : t.cta.currentPlan;
+                : signedOut
+                  ? t.cta.signInToStart
+                  : isPremiumActive
+                    ? t.cta.switchToFree
+                    : t.cta.currentPlan;
               const ctaDisabled = isPremium
                 ? isPremiumActive
                   ? portalLoading
                   : checkoutLoading
                 : // Free CTA: disabled both для активного Free-юзера
                   // (вже ваш план) і для Premium-юзера (downgrade /
-                  // cancel живе у Settings, не тут).
-                  true;
+                  // cancel живе у Settings, не тут). Для гостя вона,
+                  // навпаки, єдина дія на екрані — вхід.
+                  !signedOut;
               // NB: handlePremiumCta приймає optional `provider` — не можна
               // передавати його прямо в onClick (MouseEvent став би provider).
               const onPremiumClick = isPremiumActive
@@ -554,7 +577,13 @@ export function PricingPage() {
                     <Button
                       variant={isPremium ? "primary" : "secondary"}
                       size="md"
-                      onClick={isPremium ? onPremiumClick : handleFreeCta}
+                      onClick={
+                        isPremium
+                          ? onPremiumClick
+                          : signedOut
+                            ? handleSignInCta
+                            : handleFreeCta
+                      }
                       disabled={ctaDisabled}
                     >
                       {ctaLabel}

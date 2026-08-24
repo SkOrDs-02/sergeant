@@ -287,7 +287,7 @@ export function FinykLoginScreen({
             Почати без банку
           </Button>
           <p className="mt-2 text-center text-style-caption text-subtle">
-            Ручні витрати, бюджети та аналітика — без API-токена. Monobank можна
+            Ручні витрати, бюджети та аналітика – без API-токена. Monobank можна
             підключити пізніше.
           </p>
           {typeof onBackToHub === "function" && (

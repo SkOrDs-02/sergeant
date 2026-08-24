@@ -345,8 +345,8 @@ export function TransactionList({
             // "За", where Ukrainian accusative matches the nominative form for
             // masculine inanimate nouns, so no declension juggling is needed.
             monthLabel
-              ? `За ${monthLabel} операцій поки немає. Попередні місяці на місці — гортай назад або додай запис вручну.`
-              : "Операцій за цей місяць поки немає. Попередні місяці на місці — гортай назад або додай запис вручну."
+              ? `За ${monthLabel} операцій поки немає. Попередні місяці на місці, гортай назад або додай запис вручну.`
+              : "Операцій за цей місяць поки немає. Попередні місяці на місці, гортай назад або додай запис вручну."
           }
           module="finyk"
           action={

@@ -81,7 +81,12 @@
   --color-ink-surface: #1b1613;
   --color-ink-line: rgba(255, 255, 255, 0.1);
   --color-ink-text: #f2f6f2;
-  --color-ink-muted: #8a968e;
+  /* 2026-08-21: inkTheme підняв нейтральні тири на щабель — `muted`
+     пішов з #8a968e (5.84:1) на #a3aea6 (7.83:1) після репорту, що
+     сірі літери погано видно. Лендінг тоді не оновили, і drift-тест
+     цього не показав: джоба `check` вмирала раніше, на гейті каденсу
+     свіжості. #8a968e тепер — `subtle`, а не `muted`. */
+  --color-ink-muted: #a3aea6;
 
   /* Акценти модулів у їхній ink-ролі — brandColors.*[400]. */
   --color-finyk-glow: #2dd4bf;

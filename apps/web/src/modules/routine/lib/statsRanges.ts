@@ -84,7 +84,7 @@ export const ROUTINE_STATS_RANGES: readonly RoutineStatsRange[] = [
     heatmapWeeks: 13,
     heatmapFutureWeeks: 1,
     heatmapHistoryLabel: "3 місяці",
-    heatmapCaption: "Уся історія за 3 місяці на екрані — сьогодні праворуч.",
+    heatmapCaption: "Уся історія за 3 місяці на екрані, сьогодні праворуч.",
   },
   {
     id: "year",

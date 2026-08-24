@@ -23,6 +23,8 @@ import { messages } from "@shared/i18n/uk";
 import { useAnnounce } from "@shared/components/ui/ScreenReaderAnnouncer";
 import type { AtlasData, AtlasMuscleDatum } from "../lib/atlasData";
 import { BodyAtlasSegGroup } from "./BodyAtlasSegGroup";
+import { atlasHitStroke, fatiguePercent, heatColor } from "../lib/atlasHeat";
+import { formatNumberUk } from "@sergeant/shared";
 
 const t = messages.fizruk.atlas;
 
@@ -115,35 +117,13 @@ function smoothPath(points: string): string {
 }
 
 /**
- * Heat ramp endpoints — var-backed (`--c-chart-{success,warning,danger}`
- * from `theme.css`), NOT static hex. `THEME_HEX` (a fixed hex mirror of
- * `statusColors`) was JS-interpolated here previously, which froze the
- * whole heat surface to its light-mode colours forever — a hex computed
- * once at module-eval time can't react to `.dark`/`html.hc` (design-audit
- * TH1/TH7). `color-mix()` lets the browser do the interpolation instead,
- * so the ramp re-resolves per theme like every other chart primitive in
- * this app.
+ * Intensity for the active mode: fatigue / recency / normalised volume.
+ *
+ * AI-DANGER: `fatigue` приходить із `recoveryCompute` НЕ як частка 0..1, а
+ * як накопичувальний бал і може перевищити одиницю. Насичення шкали живе в
+ * `heatColor` (`../lib/atlasHeat`) — не «спрощуй» його назад до сирого
+ * множення, інакше повернеться чорний мʼяз із QA 2026-08-23.
  */
-const HEAT_LOW = "rgb(var(--c-chart-success))";
-const HEAT_MID = "rgb(var(--c-chart-warning))";
-const HEAT_HIGH = "rgb(var(--c-chart-danger))";
-
-/**
- * Map an intensity 0..1 to a heat colour (success → warning → danger) as a
- * CSS `color-mix()` expression over the var-backed endpoints above.
- * Returns `null` below a small floor so "cold" muscles keep the neutral
- * silhouette fill instead of a washed-out brand tint.
- */
-function heatColor(t: number): string | null {
-  if (t <= 0.02) return null;
-  const from = t < 0.5 ? HEAT_LOW : HEAT_MID;
-  const to = t < 0.5 ? HEAT_MID : HEAT_HIGH;
-  const k = t < 0.5 ? t / 0.5 : (t - 0.5) / 0.5;
-  const pct = Math.round(k * 100);
-  return `color-mix(in oklab, ${to} ${pct}%, ${from})`;
-}
-
-/** Intensity for the active mode: fatigue / recency / normalised volume. */
 function metricFor(
   d: AtlasMuscleDatum,
   mode: AtlasMode,
@@ -160,17 +140,17 @@ const LEGEND_COPY: Record<
   { label: string; left: string; right: string }
 > = {
   recovery: {
-    label: "Втома: бірюзовий — відновлено, кораловий — потребує відпочинку",
+    label: "Втома: бірюзовий – відновлено, кораловий – потребує відпочинку",
     left: "відновлено",
     right: "втомлено",
   },
   last: {
-    label: "Давність: яскравіше — тренувалось нещодавно",
+    label: "Давність: яскравіше – тренувалось нещодавно",
     left: "давно",
     right: "сьогодні",
   },
   volume: {
-    label: "Обʼєм за 7 днів: яскравіше — більше навантаження",
+    label: "Обʼєм за 7 днів: яскравіше – більше навантаження",
     left: "0",
     right: "макс",
   },
@@ -395,36 +375,81 @@ export function BodyAtlas({
                 />
               ))}
 
+              {/*
+                ШАР ТАП-ЗОН (нижній). Кожна група отримує копію свого
+                контуру з ПРОЗОРИМ широким штрихом і `pointer-events: all`.
+                Це і є носій `role="button"`: його `getBoundingClientRect()`
+                дорівнює контуру ПЛЮС штрих, тож група дотягується до
+                підлоги 44×44 під `pointer: coarse`, а проміжок між
+                половинами грудей (клік у центр bounding-box групи падав у
+                голий `<svg>` і не робив нічого — браузерне QA 2026-08-23)
+                перекривається розширенням.
+
+                AI-DANGER: шар навмисно стоїть НИЖЧЕ видимих мʼязів, а не
+                всередині них. Розширені зони сусідів перетинаються, і в SVG
+                перекриття вирішує лише порядок малювання: якби ця копія
+                лежала зверху, штрих групи, намальованої пізніше, забирав би
+                кліки з ВИДИМОГО тіла сусіда (front-deltoids проти chest,
+                abs проти obliques). Знизу вона ловить рівно промахи.
+                Ширина штриха — `atlasHitStroke`: великі групи отримують
+                лише слоп, малі — рівно стільки, скільки бракує до 28
+                одиниць viewBox.
+              */}
+              {!compact &&
+                geometry.muscles.map((m) => (
+                  <g
+                    key={`hit-${m.id}`}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={BODY_ATLAS_MUSCLE_LABELS_UK[m.id]}
+                    aria-pressed={selected === m.id}
+                    className={cn(
+                      "cursor-pointer",
+                      // Kill the browser default SVG focus outline (renders as a
+                      // black bounding-box rect on the <g> when clicked); keep a
+                      // tidy keyboard focus-visible cue by overriding the muscle
+                      // edge stroke — на hit-контурі це дає рівно ту саму
+                      // тонку обводку по силуету мʼяза, що й раніше.
+                      "focus:outline-none",
+                      "[&:focus-visible>path]:[stroke:rgb(var(--c-fg))]",
+                      "[&:focus-visible>path]:[stroke-width:1px]",
+                    )}
+                    onClick={() => selectMuscle(m.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        selectMuscle(m.id);
+                      }
+                    }}
+                  >
+                    <title>{BODY_ATLAS_MUSCLE_LABELS_UK[m.id]}</title>
+                    {m.polygons.map((p, i) => (
+                      <path
+                        key={i}
+                        d={smoothPath(p)}
+                        fill="none"
+                        stroke="transparent"
+                        strokeWidth={atlasHitStroke(m.polygons)}
+                        strokeLinejoin="round"
+                        pointerEvents="all"
+                      />
+                    ))}
+                  </g>
+                ))}
+
               {geometry.muscles.map((m) => {
                 const isSel = selected === m.id;
                 const edge = glossStops(fillFor(m.id)).stroke;
                 return (
                   <g
                     key={m.id}
-                    role={compact ? undefined : "button"}
-                    tabIndex={compact ? undefined : 0}
-                    aria-label={
-                      compact ? undefined : BODY_ATLAS_MUSCLE_LABELS_UK[m.id]
-                    }
-                    aria-pressed={compact ? undefined : isSel}
-                    className={cn(
-                      !compact && "cursor-pointer",
-                      // Kill the browser default SVG focus outline (renders as a
-                      // black bounding-box rect on the <g> when clicked); keep a
-                      // tidy keyboard focus-visible cue by overriding the muscle
-                      // edge stroke (driven by --atlas-edge so this can win).
-                      "focus:outline-none",
-                      "[&:focus-visible>path]:[stroke:rgb(var(--c-fg))]",
-                      "[&:focus-visible>path]:[stroke-width:1px]",
-                    )}
+                    // Видимий шар — суто картинка для AT (ім'я, стан і
+                    // клавіатура живуть на hit-шарі вище), але кліки він
+                    // ловить сам: прямий тап по тілу мʼяза не має права
+                    // дістатись розширеної зони сусіда під ним.
+                    aria-hidden="true"
+                    className={cn(!compact && "cursor-pointer")}
                     onClick={compact ? undefined : () => selectMuscle(m.id)}
-                    onKeyDown={(e) => {
-                      if (compact) return;
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        selectMuscle(m.id);
-                      }
-                    }}
                   >
                     <title>{BODY_ATLAS_MUSCLE_LABELS_UK[m.id]}</title>
                     {m.polygons.map((p, i) => (
@@ -561,8 +586,11 @@ function SelectedCard({
                 : `${datum.daysSince} дн.`
           }
         />
-        <Stat label="Обʼєм 7д" value={datum.load7d.toLocaleString("uk-UA")} />
-        <Stat label="Втома" value={`${Math.round(datum.fatigue * 100)}%`} />
+        <Stat label="Обʼєм 7д" value={formatNumberUk(datum.load7d)} />
+        {/* Втома — накопичувальний бал, не частка: без насичення картка
+            показувала «Втома 160%» (QA 2026-08-23). Стеля шкали одна і та
+            сама для числа й для кольору — `fatiguePercent`/`heatColor`. */}
+        <Stat label="Втома" value={`${fatiguePercent(datum.fatigue)}%`} />
       </div>
 
       {datum.exercises.length > 0 && (

@@ -185,7 +185,7 @@ export function MemoryBankSection() {
     if (pendingImport.newEntries.length === 0) {
       // Не помилка: файл валідний, просто всі записи вже є. `info` без
       // дії — користувачу нема що «повторювати» чи виправляти.
-      toast.info("Немає нових записів — усі вже в памʼяті");
+      toast.info("Немає нових записів, усі вже в памʼяті");
       return;
     }
     saveEntries([...entries, ...pendingImport.newEntries]);

@@ -43,7 +43,7 @@ export function WorkoutsHeader({
         )}`
       : finishedCount > 0
         ? `Завершено: ${finishedCount}`
-        : "Перше тренування — попереду";
+        : "Перше тренування – попереду";
 
   return (
     <div className="flex items-center gap-3 mb-3">

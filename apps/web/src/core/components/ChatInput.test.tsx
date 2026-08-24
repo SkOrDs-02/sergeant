@@ -221,7 +221,7 @@ describe("ChatInput", () => {
     });
     expect(input).toHaveAttribute(
       "placeholder",
-      "Немає зʼєднання — асистент офлайн",
+      "Немає зʼєднання, асистент офлайн",
     );
   });
 });

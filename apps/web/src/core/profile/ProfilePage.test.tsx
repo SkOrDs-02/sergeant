@@ -225,9 +225,7 @@ describe("ProfilePage", () => {
       useOnlineStatusMock.mockReturnValue(false);
       renderPage();
       expect(
-        screen.getByText(
-          "Ви офлайн — редагування профілю тимчасово недоступне",
-        ),
+        screen.getByText("Ви офлайн, редагування профілю тимчасово недоступне"),
       ).toBeInTheDocument();
     });
 
@@ -236,7 +234,7 @@ describe("ProfilePage", () => {
       renderPage();
       expect(
         screen.queryByText(
-          "Ви офлайн — редагування профілю тимчасово недоступне",
+          "Ви офлайн, редагування профілю тимчасово недоступне",
         ),
       ).not.toBeInTheDocument();
     });

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import { renderHook } from "@testing-library/react";
 import { createRef } from "react";
 import {
@@ -449,5 +449,90 @@ describe("useDialogFocusTrap — background inert", () => {
 
     confirmHook.unmount();
     sheetHook.unmount();
+  });
+});
+
+/**
+ * Spec: Escape належить ВЕРХНЬОМУ діалогу.
+ *
+ * Слухач висить на `document`, тож доти кожен відкритий діалог отримував
+ * Escape і закривався — усі одразу. У житті це виглядало так: сканер
+ * штрихкоду поверх аркуша додавання, Escape — і зникає не лише сканер, а
+ * й аркуш під ним (знахідка рев'ю на PR #845). Те саме стосується Tab:
+ * пастка нижнього діалогу бачила фокус «поза своєю панеллю» і смикала
+ * його назад до себе, тобто Tab у верхньому діалозі кидав людину в
+ * нижній.
+ */
+describe("useDialogFocusTrap — стос діалогів", () => {
+  afterEach(() => {
+    __resetDialogInertForTests();
+    document.body.innerHTML = "";
+  });
+
+  const mountTrap = (onEscape: () => void) => {
+    const panel = document.createElement("div");
+    const inner = document.createElement("button");
+    panel.appendChild(inner);
+    document.body.appendChild(panel);
+    const ref = createRef<HTMLDivElement>();
+    Object.defineProperty(ref, "current", { value: panel, writable: true });
+    const handle = renderHook(() =>
+      useDialogFocusTrap(true, ref, { onEscape }),
+    );
+    return { panel, inner, handle };
+  };
+
+  const pressEscape = () => {
+    document.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+    );
+  };
+
+  it("Escape закриває лише той діалог, що відкрився останнім", () => {
+    const outer = vi.fn();
+    const inner = vi.fn();
+    mountTrap(outer);
+    mountTrap(inner);
+
+    pressEscape();
+
+    expect(inner).toHaveBeenCalledTimes(1);
+    expect(outer).not.toHaveBeenCalled();
+  });
+
+  it("після закриття верхнього Escape повертається до нижнього", () => {
+    const outer = vi.fn();
+    const inner = vi.fn();
+    mountTrap(outer);
+    const top = mountTrap(inner);
+
+    top.handle.unmount();
+    pressEscape();
+
+    expect(outer).toHaveBeenCalledTimes(1);
+    expect(inner).not.toHaveBeenCalled();
+  });
+
+  it("Tab у верхньому діалозі не смикає фокус у нижній", () => {
+    const bottom = mountTrap(vi.fn());
+    const top = mountTrap(vi.fn());
+
+    top.inner.focus();
+    expect(document.activeElement).toBe(top.inner);
+
+    // Перевіряти кінцевий `activeElement` тут марно: обидві пастки
+    // смикають фокус по черзі, і верхня забирає його назад останньою —
+    // тест був би зеленим за випадковим збігом порядку слухачів. Тому
+    // ловимо сам ФАКТ, що фокус побував у нижній панелі.
+    const stolen = vi.fn();
+    bottom.panel.addEventListener("focusin", stolen);
+
+    document.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "Tab", bubbles: true }),
+    );
+
+    // Пастка нижнього діалогу мусить мовчати: фокус поза її панеллю —
+    // це нормальний стан, коли зверху відкритий інший діалог.
+    expect(stolen).not.toHaveBeenCalled();
   });
 });

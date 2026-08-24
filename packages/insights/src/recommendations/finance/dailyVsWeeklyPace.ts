@@ -12,6 +12,7 @@
 
 import type { Rule } from "../types.js";
 import { txTimestamp, type FinanceContext } from "../financeContext.js";
+import { formatNumberUk } from "@sergeant/shared";
 
 const MIN_PREV7_SUM = 700;
 const MIN_TODAY_SUM = 200;
@@ -66,9 +67,9 @@ export const dailyVsWeeklyPaceRule: Rule<FinanceContext> = {
         id: "finyk_daily_vs_weekly_pace",
         module: "finyk" as const,
         priority: 72,
-        icon: "⏱️",
-        title: `Сьогодні ${Math.round(todaySpend).toLocaleString("uk-UA")} ₴ — на ${pctMore}% вище середнього`,
-        body: `7-денна середня: ${Math.round(avgDaily).toLocaleString("uk-UA")} ₴/день. Зафіксуй поточні витрати, поки памʼятаєш.`,
+        icon: "clock",
+        title: `Сьогодні ${formatNumberUk(Math.round(todaySpend))} ₴, на ${pctMore}% вище середнього`,
+        body: `7-денна середня: ${formatNumberUk(Math.round(avgDaily))} ₴/день. Зафіксуй поточні витрати, поки памʼятаєш.`,
         action: "finyk",
         pwaAction: "add_expense",
       },

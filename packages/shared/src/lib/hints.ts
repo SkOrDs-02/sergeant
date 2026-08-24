@@ -97,8 +97,8 @@ export const HINT_DEFINITIONS: Readonly<Record<HintId, HintDefinition>> =
     },
     ftux_switch_modules: {
       id: "ftux_switch_modules",
-      title: "Перемикай модулі зверху — це один хаб",
-      body: "Фінік/Фізрук/Рутина/Їжа — все в одному місці.",
+      title: "Перемикай модулі зверху, це один хаб",
+      body: "Фінік/Фізрук/Рутина/Їжа: все в одному місці.",
       maxShowsTotal: 2,
       cooldownHours: 24,
       dismissCooldownDays: 14,
@@ -107,7 +107,7 @@ export const HINT_DEFINITIONS: Readonly<Record<HintId, HintDefinition>> =
     ftux_reports_unlock: {
       id: "ftux_reports_unlock",
       title: "Звіти з’являться після першого запису",
-      body: "Додай будь-що — і побачиш аналітику там, де вона доречна.",
+      body: "Додай будь-що, і побачиш аналітику там, де вона доречна.",
       maxShowsTotal: 2,
       cooldownHours: 48,
       dismissCooldownDays: 30,
@@ -115,7 +115,7 @@ export const HINT_DEFINITIONS: Readonly<Record<HintId, HintDefinition>> =
     },
     ftux_quick_add: {
       id: "ftux_quick_add",
-      title: "Швидке додавання — найкоротший шлях",
+      title: "Швидке додавання – найкоротший шлях",
       body: "Після першого запису підказки зникнуть самі.",
       maxShowsTotal: 2,
       cooldownHours: 24,
@@ -171,7 +171,7 @@ export const HINT_DEFINITIONS: Readonly<Record<HintId, HintDefinition>> =
     ftux_swipe_to_delete: {
       id: "ftux_swipe_to_delete",
       title: "Потягни вліво, щоб видалити",
-      body: "Свайп вправо — для дій архівування або редагування.",
+      body: "Свайп вправо – для дій архівування або редагування.",
       maxShowsTotal: 1,
       cooldownHours: 9999,
       dismissCooldownDays: 365,
@@ -180,8 +180,8 @@ export const HINT_DEFINITIONS: Readonly<Record<HintId, HintDefinition>> =
     // ─── Retention hooks ─────────────────────────────────────────────────
     retention_day_1: {
       id: "retention_day_1",
-      title: "Перший день — вже здобуток!",
-      body: "Поверніться завтра — звичка формується з трьох повторень.",
+      title: "Перший день, вже здобуток!",
+      body: "Поверніться завтра, звичка формується з трьох повторень.",
       maxShowsTotal: 1,
       cooldownHours: 9999,
       dismissCooldownDays: 365,
@@ -189,7 +189,7 @@ export const HINT_DEFINITIONS: Readonly<Record<HintId, HintDefinition>> =
     },
     retention_day_3: {
       id: "retention_day_3",
-      title: "3 дні поспіль — серія пішла",
+      title: "3 дні поспіль, серія пішла",
       body: "Ще кілька днів і мозок зафіксує нову звичку.",
       maxShowsTotal: 1,
       cooldownHours: 9999,
@@ -198,7 +198,7 @@ export const HINT_DEFINITIONS: Readonly<Record<HintId, HintDefinition>> =
     },
     retention_day_7: {
       id: "retention_day_7",
-      title: "Тиждень — серйозна заявка!",
+      title: "Тиждень, серйозна заявка!",
       body: "7 днів поспіль доведено підвищують шанс закріпити звичку.",
       maxShowsTotal: 1,
       cooldownHours: 9999,

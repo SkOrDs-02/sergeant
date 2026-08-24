@@ -54,13 +54,13 @@ const NUDGE_CATALOG: readonly NudgeDefinition[] = [
     id: "day2_cross_module",
     day: 2,
     message:
-      "Один напрямок ти вже ведеш. Додай другий — Sergeant покаже, як вони впливають один на одного.",
+      "Один напрямок ти вже ведеш. Додай другий, Sergeant покаже, як вони впливають один на одного.",
     conditionExactlyOneModule: true,
   },
   {
     id: "day2_routine",
     day: 2,
-    message: "Вчора ти зробив перший запис. Сьогодні — створи звичку?",
+    message: "Вчора ти зробив перший запис. Сьогодні – створи звичку?",
     conditionModule: "routine",
     conditionEmpty: true,
   },

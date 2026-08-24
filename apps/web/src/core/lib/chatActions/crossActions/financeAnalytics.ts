@@ -172,7 +172,7 @@ export function detectAnomalies(action: DetectAnomaliesAction): string {
       ? new Date(tx.time * 1000).toLocaleDateString("uk-UA")
       : "?";
     parts.push(
-      `  ${d}: ${Math.round(getTxStatAmount(tx, anomalySplits))} грн — ${tx.description || "(без опису)"}`,
+      `  ${d}: ${Math.round(getTxStatAmount(tx, anomalySplits))} грн: ${tx.description || "(без опису)"}`,
     );
   }
   return parts.join("\n");

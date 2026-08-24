@@ -3,7 +3,11 @@
  * Status: Active
  */
 import { useEffect, useState } from "react";
-import { ModuleShell, StorageErrorBanner } from "@shared/components/layout";
+import {
+  ModuleShell,
+  StorageErrorBanner,
+  SwipePages,
+} from "@shared/components/layout";
 import { ModuleBottomNav } from "@shared/components/ui/ModuleBottomNav";
 import { FloatingActionButton } from "@shared/components/ui/FloatingActionButton";
 import { Modal } from "@shared/components/ui/Modal";
@@ -25,7 +29,11 @@ import {
   useWorkouts,
 } from "./hooks/useWorkouts";
 import { useFizrukQuickStatsWriter } from "./hooks/useFizrukQuickStatsWriter";
-import { FIZRUK_NAV, fizrukNavActiveId } from "./shell/fizrukNav";
+import {
+  FIZRUK_NAV,
+  fizrukNavActiveId,
+  SWIPE_PAGE_IDS,
+} from "./shell/fizrukNav";
 import { FizrukHeader } from "./shell/FizrukHeader";
 import { FizrukRouter } from "./shell/FizrukRouter";
 import { type FizrukPage } from "./shell/fizrukRoute";
@@ -193,7 +201,7 @@ export default function FizrukApp({
           <StorageErrorBanner
             eventName={FIZRUK_WORKOUTS_STORAGE_ERROR}
             formatMessage={(reason) =>
-              `Не вдалося зберегти тренування (${reason}). Можливо, браузер переповнив сховище — експортуй бекап або звільни місце.`
+              `Не вдалося зберегти тренування (${reason}). Можливо, браузер переповнив сховище, експортуй бекап або звільни місце.`
             }
           />
         }
@@ -207,21 +215,32 @@ export default function FizrukApp({
           />
         }
       >
-        <FizrukRouter
-          page={page}
-          exerciseId={exerciseId}
-          workoutId={workoutId}
-          activeProgramId={activeProgramId}
-          activeProgram={activeProgram}
-          activateProgram={activateProgram}
-          deactivateProgram={deactivateProgram}
-          todaySession={todaySession}
-          onNavigate={(target) => navigate(target)}
-          onStartProgramWorkout={(session) =>
-            handleStartProgramWorkout(session)
-          }
-          onOpenModule={onOpenModule}
-        />
+        {/* Свайп між чотирма вкладками нижньої навігації. `activeId={page}`
+            навмисно передає сиру сторінку, а не `fizrukNavActiveId(page)`:
+            на детальних екранах («Вправа», «Тренування», «Атлас», «Заміри»)
+            її нема в `SWIPE_PAGE_IDS`, і `SwipePages` вимикає жест сам —
+            свайпати «наступну вкладку» з відкритої вправи безглуздо. */}
+        <SwipePages
+          ids={SWIPE_PAGE_IDS}
+          activeId={page}
+          onChange={(next) => navigate(next)}
+        >
+          <FizrukRouter
+            page={page}
+            exerciseId={exerciseId}
+            workoutId={workoutId}
+            activeProgramId={activeProgramId}
+            activeProgram={activeProgram}
+            activateProgram={activateProgram}
+            deactivateProgram={deactivateProgram}
+            todaySession={todaySession}
+            onNavigate={(target) => navigate(target)}
+            onStartProgramWorkout={(session) =>
+              handleStartProgramWorkout(session)
+            }
+            onOpenModule={onOpenModule}
+          />
+        </SwipePages>
         <Modal
           open={pendingProgramStart !== null}
           onClose={() => setPendingProgramStart(null)}

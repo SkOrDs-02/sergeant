@@ -20,8 +20,7 @@ export const HARD_MAX_DAY_KEY = "2100-01-01";
 export const SOFT_PAST_YEARS = 5;
 export const SOFT_FUTURE_YEARS = 1;
 
-export const DATE_WARN_MESSAGE =
-  "Незвична дата — перевір, чи не помилка в році";
+export const DATE_WARN_MESSAGE = "Незвична дата, перевір, чи не помилка в році";
 export const DATE_INVALID_MESSAGE = "Дата поза допустимим діапазоном";
 
 function shiftYears(dayKey: string, years: number): string {

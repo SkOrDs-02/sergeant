@@ -57,6 +57,7 @@ import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "./Icon";
 import { Button } from "./Button";
 import { ModuleEmptyIllustration } from "./EmptyStateIllustrations";
+import { formatNumberUk } from "@sergeant/shared";
 
 export type EmptyStateSize = "sm" | "md" | "lg";
 
@@ -384,8 +385,11 @@ export function EmptyState({
         <p
           className={cn(
             // text-muted, НЕ text-subtle: hint — 12px normal-weight (не "large
-            // text"), тож потрібен контраст 4.5:1; dark --c-subtle #5f6b64 дає
-            // лише 3.33:1 на panel-фоні (axe color-contrast, a11y-гейт).
+            // text"), тож потрібен контраст 4.5:1. Обрано тоді, коли темний
+            // `--c-subtle` був #5f6b64 і давав 3.33:1 на panel (axe
+            // color-contrast). 2026-08-21 тир піднято до #8a968e (5.84), тож
+            // формально `text-subtle` тут уже пройшов би — лишаємо `muted`
+            // навмисно: підказка з іконкою читається як дія, не як зноска.
             "flex items-center gap-1.5 text-style-caption text-muted mt-2",
             !disableAnimation &&
               "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-slow motion-safe:delay-200",
@@ -457,7 +461,7 @@ const MODULE_EMPTY_CONFIG: Record<
   fizruk: {
     icon: "dumbbell",
     title: "Як прогресують мої тренування?",
-    description: "Запиши перше тренування — і побачиш ріст у цифрах.",
+    description: "Запиши перше тренування, і побачиш ріст у цифрах.",
     hint: "Порада: Почни з 10-хвилинної розминки",
     actionLabel: "Почати тренування",
     accent: "text-fizruk bg-fizruk-soft dark:bg-fizruk/10",
@@ -467,7 +471,7 @@ const MODULE_EMPTY_CONFIG: Record<
   routine: {
     icon: "check-circle",
     title: "Що насправді стало звичкою?",
-    description: "Відстежуй щоденні дії — серія днів покаже правду.",
+    description: "Відстежуй щоденні дії, серія днів покаже правду.",
     hint: "Порада: Почни з однієї звички, яку точно виконаєш",
     actionLabel: "Створити звичку",
     accent: "text-routine bg-routine-surface dark:bg-routine/10",
@@ -478,7 +482,7 @@ const MODULE_EMPTY_CONFIG: Record<
     icon: "utensils",
     title: "Що ти їси насправді?",
     description: "Залогай перший прийом їжі й отримай чесну картину.",
-    hint: "Порада: Сфоткай страву — AI порахує калорії",
+    hint: "Порада: Сфоткай страву, AI порахує калорії",
     actionLabel: "Додати їжу",
     accent: "text-nutrition bg-nutrition-soft dark:bg-nutrition/10",
     exampleLine1: "Сніданок",
@@ -499,10 +503,10 @@ function resolveGoalAwareDesc(
   goals: OnboardingGoals,
 ): string {
   if (moduleId === "finyk" && goals.finykBudget) {
-    return `Встанови бюджет ${goals.finykBudget.toLocaleString("uk-UA")}₴ — додай першу витрату.`;
+    return `Встанови бюджет ${formatNumberUk(goals.finykBudget)}₴, додай першу витрату.`;
   }
   if (moduleId === "fizruk" && goals.fizrukWeeklyGoal) {
-    return `${goals.fizrukWeeklyGoal}× на тиждень — починай із першого тренування.`;
+    return `${goals.fizrukWeeklyGoal}× на тиждень, починай із першого тренування.`;
   }
   if (moduleId === "routine" && goals.routineFirstHabit) {
     const habitLabels: Record<string, string> = {
@@ -511,7 +515,7 @@ function resolveGoalAwareDesc(
       reading: "«Читання»",
     };
     const label = habitLabels[goals.routineFirstHabit] ?? "свою звичку";
-    return `Відстеж ${label} — серія днів покаже правду.`;
+    return `Відстеж ${label}, серія днів покаже правду.`;
   }
   if (moduleId === "nutrition" && goals.nutritionGoal) {
     const goalLabels: Record<string, string> = {
@@ -520,7 +524,7 @@ function resolveGoalAwareDesc(
       maintain: "підтримувати вагу",
     };
     const goalLabel = goalLabels[goals.nutritionGoal] ?? goals.nutritionGoal;
-    return `Ціль «${goalLabel}» — залогай перший прийом їжі.`;
+    return `Ціль «${goalLabel}», залогай перший прийом їжі.`;
   }
   return fallback;
 }

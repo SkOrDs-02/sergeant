@@ -12,6 +12,7 @@ import {
   type KeyboardEvent,
   type PointerEvent,
 } from "react";
+import type { DashboardModuleId } from "@sergeant/shared";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { hapticTap } from "@shared/lib/adapters/haptic";
@@ -25,9 +26,11 @@ import {
 } from "../../lib/intentPrefetch";
 import {
   MODULE_CONFIGS,
+  dormantCopyFor,
   type ModuleConfig,
   type ModuleId,
 } from "./moduleConfigs";
+import { moduleHasRealEntry } from "../../onboarding/firstRealEntry";
 import {
   beginNativeSortablePointerDrag,
   handleNativeSortableKeyDown,
@@ -168,7 +171,21 @@ export const BentoCard = memo(function BentoCard({
     config.hasGoal &&
     preview.progress !== undefined &&
     preview.progress > 0;
-  const hasData = !!(preview.main || preview.sub);
+  // Відсутнє значення — це `null`, а не порожній рядок. Раніше воно їхало
+  // прямо в шаблон aria-label, тож знімок із однією половиною (стрік є,
+  // тренувань цього тижня нема) озвучувався як «Фізрук: null, Серія:
+  // 1 тиждень» (browser QA 2026-08-23). Збираємо лише наявні частини.
+  const previewParts = [preview.main, preview.sub].filter(
+    (part): part is string => typeof part === "string" && part.length > 0,
+  );
+  const hasData = previewParts.length > 0;
+  // «Порожньо» ≠ «нічого не було». Модуль із історією, але без записів за
+  // поточний період, більше не отримує FTUX-заклик `emptyLabel`.
+  const dormant =
+    !inactive &&
+    !hasData &&
+    moduleHasRealEntry(config.module as DashboardModuleId);
+  const dormantCopy = dormantCopyFor(config.module);
   const showHandle = !!editMode;
 
   return (
@@ -189,10 +206,12 @@ export const BentoCard = memo(function BentoCard({
         {...primaryProps}
         aria-label={
           inactive
-            ? `${config.label} — неактивний модуль. Увімкнути в налаштуваннях Hub.`
+            ? `${config.label}: неактивний модуль. Увімкнути в налаштуваннях Hub.`
             : hasData
-              ? `${config.label}: ${preview.main}${preview.sub ? `, ${preview.sub}` : ""}`
-              : `${config.label}: ${config.emptyLabel}`
+              ? `${config.label}: ${previewParts.join(", ")}`
+              : dormant
+                ? `${config.label}: ${dormantCopy.label}. ${dormantCopy.hint}`
+                : `${config.label}: ${config.emptyLabel}`
         }
         data-inactive={inactive ? "true" : undefined}
         className={cn(
@@ -289,7 +308,7 @@ export const BentoCard = memo(function BentoCard({
 
         {inactive ? (
           <span className="text-style-caption text-muted mt-1 leading-snug">
-            Неактивний — увімкнути в налаштуваннях
+            Неактивний: увімкнути в налаштуваннях
           </span>
         ) : hasData ? (
           <>
@@ -343,6 +362,23 @@ export const BentoCard = memo(function BentoCard({
                   {Math.abs(Math.round(config.trendDelta * 100))}%
                 </span>
               )}
+          </>
+        ) : dormant ? (
+          <>
+            {/* Затишшя, не перший запуск. Людині з місяцем історії FTUX-обіцянка
+                («Тут зʼявиться КБЖВ, напр. 1250 ккал») бреше про її ж дані —
+                тому тут інший текст, без прикладу-заглушки й без «Почни тут →».
+                Кільце/спарклайн-привид теж не рендеримо: показувати силует того,
+                що вже існує, немає сенсу. */}
+            <span
+              className="text-style-caption text-muted mt-1 leading-snug"
+              data-testid="bento-dormant"
+            >
+              {dormantCopy.label}
+            </span>
+            <span className="text-style-caption text-subtle mt-0.5 leading-snug">
+              {dormantCopy.hint}
+            </span>
           </>
         ) : (
           <>

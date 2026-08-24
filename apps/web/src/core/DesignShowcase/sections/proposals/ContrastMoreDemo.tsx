@@ -44,7 +44,7 @@ function Card({ high }: { high: boolean }) {
             high ? "text-text font-medium" : "text-muted",
           )}
         >
-          Вторинний підпис — {high ? "посилений контраст" : "стандартний тон"}
+          Вторинний підпис: {high ? "посилений контраст" : "стандартний тон"}
         </p>
         <button
           type="button"

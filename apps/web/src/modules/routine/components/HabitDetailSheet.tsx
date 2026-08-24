@@ -22,6 +22,7 @@ import {
   habitScheduledOnDate,
 } from "../lib/hubCalendarAggregate";
 import { completionNoteKey } from "../lib/completionNoteKey";
+import { anchoredTodayKey } from "../lib/dayAnchor";
 import { flexibleStreakBreakdown, maxStreakAllTime } from "../lib/streaks";
 import {
   deleteHabit,
@@ -42,12 +43,10 @@ import { HabitGlyph } from "./HabitGlyph";
 import { fillName } from "../lib/fillName";
 
 function todayKey(): string {
-  // Kyiv-anchored "today" so completion stats don't shift around the
-  // user's host TZ (consolidated page-audit § Theme 1 — 09 F3). `dateKeyFromDate`
-  // reads local-TZ getters, so the constructed Date uses Kyiv parts at
-  // local noon to make those getters return Kyiv values regardless of host.
-  const { year, month, day } = getKyivDateParts();
-  return dateKeyFromDate(new Date(year, month - 1, day, 12, 0, 0, 0));
+  // Делегат на `lib/dayAnchor` — анкер доби routine і його мітка
+  // `ROUTINE_DAY_ANCHOR` (яку журнал відміток пише в `day_anchor`)
+  // мусять жити в одному файлі, інакше вони знову розійдуться.
+  return anchoredTodayKey();
 }
 
 /* eslint-disable sergeant-design/prefer-kyiv-time -- calendar matrix for an arbitrary (y, m): days-in-month and weekday-of-the-1st are pure date arithmetic on locally constructed Date objects, not a host-local "now" read, so the Kyiv-time invariant doesn't apply */
@@ -601,7 +600,7 @@ export function HabitDetailSheet({
       <ConfirmDialog
         open={confirmDelete}
         title={`Видалити звичку «${habitName}»?`}
-        description="Відмітки по днях теж зникнуть. Дію не можна відмінити — хіба що одразу через «Скасувати» в підказці. Замість видалення можна відправити звичку в архів через Налаштування."
+        description="Відмітки по днях теж зникнуть. Дію не можна відмінити, хіба що одразу через «Скасувати» в підказці. Замість видалення можна відправити звичку в архів через Налаштування."
         confirmLabel={messages.actions.delete}
         onConfirm={handleConfirmDelete}
         onCancel={() => setConfirmDelete(false)}

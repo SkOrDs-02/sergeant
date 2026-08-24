@@ -98,7 +98,7 @@ export function Shopping({ testID }: { testID?: string }) {
       setGeneratedList(categories);
       hapticTap();
       if (categories.length === 0) {
-        toast.info("Все вже є в коморі — список покупок порожній.");
+        toast.info("Все вже є в коморі, список покупок порожній.");
       } else {
         toast.success("Список покупок згенеровано.");
       }

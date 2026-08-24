@@ -30,10 +30,10 @@ export function FormsSection() {
       title="Форми"
       intro={
         <>
-          Кнопки + Input / Textarea / Select / Switch. Контракт фокусу —{" "}
+          Кнопки + Input / Textarea / Select / Switch. Контракт фокусу:{" "}
           <code>focus-visible:</code>, і це гейтить{" "}
           <code>check-design-conventions</code>. Цілі ≥44×44 px під{" "}
-          <code>pointer: coarse</code> — Playwright-лейн{" "}
+          <code>pointer: coarse</code>, Playwright-лейн{" "}
           <code>Mobile UI audit</code> у CI.
         </>
       }
@@ -42,7 +42,7 @@ export function FormsSection() {
         <ButtonsMatrix />
       </Group>
 
-      <Group label="Input — variants × sizes">
+      <Group label="Input: variants × sizes">
         <div className="space-y-3">
           {(["default", "filled", "ghost"] as const).map((variant) => (
             <div key={variant} className="grid grid-cols-3 gap-2">
@@ -60,7 +60,7 @@ export function FormsSection() {
         </div>
       </Group>
 
-      <Group label="Input — стан error / success">
+      <Group label="Input: стан error / success">
         <div className="grid grid-cols-2 gap-2 max-w-sm">
           <Input variant="default" size="md" error placeholder="error" />
           <Input variant="default" size="md" success placeholder="success" />
@@ -89,7 +89,7 @@ export function FormsSection() {
         </div>
       </Group>
 
-      <Group label="Switch — стани">
+      <Group label="Switch: стани">
         <SwitchDemo />
       </Group>
 
@@ -126,7 +126,7 @@ export function FormsSection() {
         lintRules={[
           {
             label: "check-design-conventions",
-            hint: "`focus:` заборонено — лише focus-visible: / focus-within:",
+            hint: "`focus:` заборонено, лише focus-visible: / focus-within:",
           },
         ]}
       />

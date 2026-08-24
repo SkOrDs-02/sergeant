@@ -11,6 +11,7 @@ import {
   handleAsyncChatAction,
   ASYNC_CHAT_ACTION_NAMES,
 } from "./chatActions/serverActions";
+import { captureRoutineWrites } from "./chatActions/routinePersistence";
 import type { ChatActionResult } from "./chatActions/types";
 
 export type { ChatAction, ChatActionResult } from "./chatActions/types";
@@ -25,12 +26,63 @@ type ChatAction = import("./chatActions/types").ChatAction;
 interface ExecutedAction {
   result: string;
   undo?: () => void;
+  /** Див. `ChatActionUndoableResult.confirm` — підтвердження довговічності. */
+  confirm?: Promise<boolean>;
 }
 
 function normalize(out: ChatActionResult | undefined): ExecutedAction | null {
   if (out == null) return null;
   if (typeof out === "string") return { result: out };
-  return { result: out.result, undo: out.undo };
+  // `exactOptionalPropertyTypes` — опційні поля або є, або їх нема; явний
+  // `undefined` не присвоюється.
+  return {
+    result: out.result,
+    ...(out.undo ? { undo: out.undo } : {}),
+    ...(out.confirm ? { confirm: out.confirm } : {}),
+  };
+}
+
+/**
+ * Текст, який їде моделі замість «зроблено», коли запис не долетів до
+ * локальної бази. Формулювання навмисно каже, ЩО робити далі: модель
+ * переказує його користувачу дослівно, і «сталася помилка» без наступного
+ * кроку тут гірше за мовчання.
+ */
+const WRITE_NOT_PERSISTED =
+  "Не вдалося зберегти зміну: локальна база ще не готова. " +
+  "Скажи про це користувачу й попроси повторити за кілька секунд — " +
+  "НЕ стверджуй, що дію виконано.";
+
+/**
+ * Дочекатися підтвердження довговічності й повернути чесний результат.
+ *
+ * AI-DANGER: без цього кроку tool-шлях рапортує успіх на факті «передав у
+ * dual-write». Коли boot-кластер модуля ще не змонтувався, dual-write —
+ * гарантований no-op, і асистент повідомляє про дію, якої не сталося
+ * (браузерний QA 2026-08-24, F-12: «Зробив це — відмітив Медитацію», а
+ * лічильник дня лишився 0/3 і в sync-лозі порожньо).
+ */
+async function settle(
+  name: string,
+  out: ExecutedAction,
+): Promise<{ name: string; result: string; undo?: () => void }> {
+  if (!out.confirm) {
+    return {
+      name,
+      result: out.result,
+      ...(out.undo ? { undo: out.undo } : {}),
+    };
+  }
+  let persisted = false;
+  try {
+    persisted = await out.confirm;
+  } catch {
+    persisted = false;
+  }
+  // Undo прибираємо разом із результатом: реверсити нема чого, а кнопка
+  // «скасувати» під відмовою читалась би як «дію все-таки виконано».
+  if (!persisted) return { name, result: WRITE_NOT_PERSISTED };
+  return { name, result: out.result, ...(out.undo ? { undo: out.undo } : {}) };
 }
 
 function dispatch(action: ChatAction): ExecutedAction {
@@ -72,7 +124,7 @@ function dispatch(action: ChatAction): ExecutedAction {
  */
 export function executeAction(action: ChatAction): string {
   if (ASYNC_CHAT_ACTION_NAMES.has(action.name)) {
-    return `Tool ${action.name} вимагає async виконання — викличте executeActions().`;
+    return `Tool ${action.name} вимагає async виконання, викличте executeActions().`;
   }
   return dispatch(action).result;
 }
@@ -110,7 +162,7 @@ export async function executeActions(
             return {
               name: action.name,
               result: result.result,
-              undo: result.undo,
+              ...(result.undo ? { undo: result.undo } : {}),
             };
           }
           return { name: action.name, result: `Невідома дія: ${action.name}` };
@@ -121,8 +173,8 @@ export async function executeActions(
           };
         }
       }
-      const out = dispatch(action);
-      return { name: action.name, ...out };
+      const { value: out } = captureRoutineWrites(() => dispatch(action));
+      return settle(action.name, out);
     }),
   );
 }

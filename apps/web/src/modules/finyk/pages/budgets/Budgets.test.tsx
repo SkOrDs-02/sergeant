@@ -270,4 +270,78 @@ describe("Budgets page", () => {
     const flatText = (container.textContent ?? "").replace(/\s/g, "");
     expect(flatText).toContain("4321");
   });
+
+  // Regression (browser QA 2026-08-23): a freshly created limit showed
+  // «0 / 2000» while the same month already held matching spending. The
+  // spend existed BEFORE the budget — hence the seeding order here — and the
+  // mismatch came from two category dictionaries: the limit picker offers MCC
+  // ids, the manual expense sheet writes manual-taxonomy slugs whose
+  // `canonicalId` differs (`cafe → restaurant`, `groceries → food`).
+  it("counts spending that predates the limit, including manual-only slugs", () => {
+    const manualExpenses = [
+      // Seeded first — the limit below is "created" after these exist.
+      {
+        id: "e1",
+        date: "2026-06-05",
+        description: "Сільпо",
+        amount: 1600,
+        category: "food",
+      },
+      {
+        id: "e2",
+        // Legacy alias of «Продукти» — same bucket, different slug.
+        date: "2026-06-08",
+        description: "АТБ",
+        amount: 1000,
+        category: "groceries",
+      },
+    ];
+    const budgets: Budget[] = [
+      {
+        id: "b1",
+        type: "limit",
+        categoryId: "food",
+        limit: 2000,
+        period: "month",
+        // Created "now", i.e. after every expense above.
+        createdAt: KYIV.toISOString(),
+      } as unknown as Budget,
+    ];
+    act(() => {
+      renderBudgets({
+        storage: buildStorage({ budgets, manualExpenses }),
+        focusLimitCategoryId: "food",
+      });
+    });
+    expect(screen.getByText(/2600\s*\/\s*2000/)).toBeInTheDocument();
+  });
+
+  it("counts a manual `cafe` expense against a «Кафе та ресторани» limit", () => {
+    const manualExpenses = [
+      {
+        id: "e1",
+        date: "2026-06-05",
+        description: "Кава",
+        amount: 850,
+        category: "cafe",
+      },
+    ];
+    const budgets: Budget[] = [
+      {
+        id: "b1",
+        type: "limit",
+        categoryId: "restaurant",
+        limit: 1000,
+        period: "month",
+        createdAt: KYIV.toISOString(),
+      } as unknown as Budget,
+    ];
+    act(() => {
+      renderBudgets({
+        storage: buildStorage({ budgets, manualExpenses }),
+        focusLimitCategoryId: "restaurant",
+      });
+    });
+    expect(screen.getByText(/850\s*\/\s*1000/)).toBeInTheDocument();
+  });
 });

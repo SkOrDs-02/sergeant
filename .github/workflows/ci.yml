@@ -84,6 +84,18 @@ jobs:
       # always block — there is no ledger escape for them. High/moderate
       # advisories pass only with a dated, non-expired ledger entry.
       # See scripts/ci/audit-exceptions.mjs.
+      # Обидва ledger-гейти мають юніт-тести, але до 2026-08-23 їх не
+      # запускав жоден workflow — політика «critical не waive-иться»,
+      # «прострочений виняток знову блокує» і severity-фільтр OSV трималися
+      # на чесному слові. Тести дешеві (мілісекунди) і стоять ПЕРЕД самими
+      # гейтами: зламаний парсер ledger-а має падати як тест, а не як
+      # загадковий зелений аудит.
+      - name: Unit-test the ledger gates
+        run: |
+          node --test \
+            scripts/ci/__tests__/audit-exceptions.test.mjs \
+            scripts/ci/__tests__/osv-gate.test.mjs
+
       - name: Audit (production, ledger-gated)
         run: node scripts/ci/audit-exceptions.mjs --prod
 

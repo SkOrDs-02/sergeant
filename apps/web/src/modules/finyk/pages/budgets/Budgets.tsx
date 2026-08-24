@@ -8,6 +8,7 @@ import {
   type DataStateQueryLike,
 } from "@shared/components/ui/DataState";
 import { calcCategorySpent } from "../../utils";
+import { calcLimitCategorySpent } from "./limitCategorySpend";
 import {
   currentKyivMonthPrefix,
   filterToKyivMonth,
@@ -212,16 +213,29 @@ export function Budgets({
   // their own period window (see `allStatTx`), and goal budgets accumulate
   // across the whole history — neither is a "цього місяця" number.
   const calcSpent = useCallback(
-    (budget: Budget) =>
-      calcCategorySpent(
-        budget.type === "limit"
-          ? filterTransactionsForLimitPeriod(allStatTx, budget, now)
-          : allStatTx,
-        budget.type === "limit" ? budget.categoryId : "",
+    (budget: Budget) => {
+      if (budget.type !== "limit") {
+        return calcCategorySpent(
+          allStatTx,
+          "",
+          txCategories,
+          txSplits,
+          customCategories,
+        );
+      }
+      // `calcLimitCategorySpent`, а не `calcCategorySpent`: ліміт живе в
+      // словнику MCC, а ручна витрата — у детальнішій ручній таксономії,
+      // і кілька її слагів (`groceries`, `cafe`, `tech`) мають ІНШИЙ
+      // канонічний id. Буквальне порівняння id давало нуль у ліміті при
+      // видимих витратах в Аналітиці — див. `./limitCategorySpend.ts`.
+      return calcLimitCategorySpent(
+        filterTransactionsForLimitPeriod(allStatTx, budget, now),
+        budget.categoryId,
         txCategories,
         txSplits,
         customCategories,
-      ),
+      );
+    },
     [customCategories, now, allStatTx, txCategories, txSplits],
   );
   const limitBudgets = useMemo(() => getLimitBudgets(budgets), [budgets]);

@@ -3,12 +3,19 @@ export type MealTypeId = "breakfast" | "lunch" | "dinner" | "snack";
 export interface MealType {
   id: MealTypeId;
   label: string;
-  emoji: string;
+  /**
+   * Імʼя гліфа дизайн-системи. До 2026-08-21 тут стояло емодзі
+   * (`"🌅"`, `"☀️"`, `"🌙"`, `"🍎"`) — воно малювалось системним
+   * emoji-шрифтом, тобто по-різному на кожній ОС, не брало
+   * `currentColor` і не мало теми. Веб бере `Icon`, мобільний —
+   * `lucide-react-native`.
+   */
+  iconName: string;
 }
 
 export interface MealMeta {
   label: string;
-  emoji: string;
+  iconName: string;
 }
 
 export const MEAL_ORDER: readonly MealTypeId[] = [
@@ -19,14 +26,14 @@ export const MEAL_ORDER: readonly MealTypeId[] = [
 ];
 
 export const MEAL_TYPES: readonly MealType[] = [
-  { id: "breakfast", label: "Сніданок", emoji: "🌅" },
-  { id: "lunch", label: "Обід", emoji: "☀️" },
-  { id: "dinner", label: "Вечеря", emoji: "🌙" },
-  { id: "snack", label: "Перекус", emoji: "🍎" },
+  { id: "breakfast", label: "Сніданок", iconName: "coffee" },
+  { id: "lunch", label: "Обід", iconName: "utensils" },
+  { id: "dinner", label: "Вечеря", iconName: "moon" },
+  { id: "snack", label: "Перекус", iconName: "apple" },
 ];
 
 export const MEAL_META: Record<MealTypeId, MealMeta> = Object.fromEntries(
-  MEAL_TYPES.map((t) => [t.id, { label: t.label, emoji: t.emoji }]),
+  MEAL_TYPES.map((t) => [t.id, { label: t.label, iconName: t.iconName }]),
 ) as Record<MealTypeId, MealMeta>;
 
 const MEAL_TYPE_SET = new Set<string>(MEAL_ORDER);

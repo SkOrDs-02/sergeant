@@ -10,6 +10,7 @@ import { Skeleton } from "@shared/components/ui/Skeleton";
 import { chartGradients, chartGrid, chartTick } from "@shared/charts";
 import { useChartScrub } from "@shared/hooks";
 import { ChartScrubOverlay, ChartGoalLine } from "@shared/components/charts";
+import { formatNumberUk } from "@sergeant/shared";
 
 const LABELS_UK = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"];
 
@@ -107,7 +108,7 @@ export function WeeklyVolumeChart({
           compact
           className="rounded-2xl border border-dashed border-line bg-panelHi/50"
           title="Поки без обʼєму за тиждень"
-          description="Заверши тренування з силовими підходами — тут зʼявиться сумарний обʼєм (кг×повторення) по днях."
+          description="Заверши тренування з силовими підходами, тут зʼявиться сумарний обʼєм (кг×повторення) по днях."
         />
       </div>
     );
@@ -281,13 +282,13 @@ export function WeeklyVolumeChart({
       </svg>
       <div id={summaryId} className="sr-only">
         <p>
-          Тижневий обʼєм тренувань. Сума за тиждень:{" "}
-          {totalVol.toLocaleString("uk-UA")} кг×повт.
+          Тижневий обʼєм тренувань. Сума за тиждень: {formatNumberUk(totalVol)}{" "}
+          кг×повт.
         </p>
         <ul>
           {LABELS_UK.map((lab, i) => (
             <li key={lab}>
-              {lab}: {(Number(vals[i]) || 0).toLocaleString("uk-UA")} кг×повт
+              {lab}: {formatNumberUk(Number(vals[i]) || 0)} кг×повт
             </li>
           ))}
         </ul>
@@ -296,8 +297,15 @@ export function WeeklyVolumeChart({
   );
 }
 
+/**
+ * Підпис осі Y. Англійське «2.0k» (і крапка, і латинська «k») стояло
+ * посеред україномовного екрана — браузерне QA 2026-08-23. Скорочення
+ * українське, роздільник — із єдиного форматера продукту.
+ */
 function formatYAxis(kg: number) {
   const n = Number(kg) || 0;
-  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
-  return String(Math.round(n));
+  if (n >= 1000) {
+    return `${formatNumberUk(n / 1000, { maximumFractionDigits: 1 })} тис.`;
+  }
+  return formatNumberUk(Math.round(n));
 }

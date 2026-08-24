@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-05-14
+ * Last validated: 2026-08-21
  * Status: Active
  */
 import { memo, useId, useState } from "react";
@@ -9,9 +9,10 @@ import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { Card } from "@shared/components/ui/Card";
 import { Money } from "@shared/components/ui/Money";
-import { Input } from "@shared/components/ui/Input";
+import { MoneyInput } from "@shared/components/ui/MoneyInput";
 import { Label } from "@shared/components/ui/FormField";
 import { Tooltip } from "@shared/components/ui/Tooltip";
+import { CategoryIconChip } from "../CategoryIconChip";
 
 interface LimitBudgetInput {
   id: string;
@@ -26,6 +27,14 @@ interface LimitBudgetInput {
 interface LimitBudgetCardProps {
   budget: LimitBudgetInput;
   categoryLabel?: string | null | undefined;
+  /**
+   * Потрібен для іконки й відтінку чипа. До 2026-08-21 картка малювала
+   * лише підпис — а підпис резолвера ніс емодзі-префікс («🛒 Продукти»),
+   * тож «іконкою» тут був системний емодзі-гліф, тоді як рядок
+   * транзакції показував SVG дизайн-системи. Репорт тестувальника про
+   * «в лімітах є іконки, а у витратах немає» — саме про цю розбіжність.
+   */
+  customCategories?: readonly { id: string }[] | undefined;
   spent: number;
   pctRaw: number;
   pctRounded: number;
@@ -48,6 +57,7 @@ interface LimitBudgetCardProps {
 function LimitBudgetCardComponent({
   budget,
   categoryLabel,
+  customCategories = [],
   spent,
   pctRaw,
   pctRounded,
@@ -75,11 +85,10 @@ function LimitBudgetCardComponent({
       {isEditing ? (
         <div className="space-y-2">
           <div className="flex items-center gap-2 pb-1">
-            <Icon
-              name="calendar"
-              size={16}
-              className="text-finyk"
-              aria-hidden
+            <CategoryIconChip
+              categoryId={budget.categoryId ?? ""}
+              customCategories={customCategories}
+              size={24}
             />
             <div>
               <p className="text-style-caption text-muted">
@@ -92,13 +101,12 @@ function LimitBudgetCardComponent({
           </div>
           <div>
             <Label htmlFor={limitId}>Ліміт</Label>
-            <Input
+            <MoneyInput
               id={limitId}
               size="sm"
-              type="number"
-              placeholder="Напр. 5000 ₴"
+              placeholder="Напр. 5 000 ₴"
               value={budget.limit}
-              onChange={(e) => onChangeLimit?.(Number(e.target.value))}
+              onValueChange={(next) => onChangeLimit?.(next ?? 0)}
             />
           </div>
           <Label htmlFor={periodId}>Період</Label>
@@ -133,14 +141,20 @@ function LimitBudgetCardComponent({
       ) : (
         <>
           <div className="flex justify-between items-center mb-2">
-            <div>
-              <span className="text-style-label">{categoryLabel || "—"}</span>
-              <div className="text-style-caption text-subtle mt-0.5">
-                {budget.period === "week"
-                  ? "Щотижня"
-                  : budget.period === "one_time"
-                    ? "Одноразовий"
-                    : "Щомісяця"}
+            <div className="flex items-center gap-2 min-w-0">
+              <CategoryIconChip
+                categoryId={budget.categoryId ?? ""}
+                customCategories={customCategories}
+              />
+              <div className="min-w-0">
+                <span className="text-style-label">{categoryLabel || "—"}</span>
+                <div className="text-style-caption text-subtle mt-0.5">
+                  {budget.period === "week"
+                    ? "Щотижня"
+                    : budget.period === "one_time"
+                      ? "Одноразовий"
+                      : "Щомісяця"}
+                </div>
               </div>
             </div>
             <div className="flex items-center gap-2">

@@ -44,7 +44,7 @@ export function ReceiptItemsSection({ receiptId }: ReceiptItemsSectionProps) {
         </h3>
         {query.data?.receipt.source === "vision" && (
           <Badge variant="warning" tone="soft" size="xs">
-            з фото — перевір суми
+            з фото, перевір суми
           </Badge>
         )}
       </div>
@@ -95,7 +95,7 @@ export function ReceiptItemsSection({ receiptId }: ReceiptItemsSectionProps) {
         </ul>
       ) : query.data ? (
         <p className="py-2 text-style-caption text-muted">
-          Позиції не розпізнано — лише сума й магазин.
+          Позиції не розпізнано, лише сума й магазин.
         </p>
       ) : null}
     </section>

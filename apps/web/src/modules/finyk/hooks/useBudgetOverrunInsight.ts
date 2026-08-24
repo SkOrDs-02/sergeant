@@ -31,6 +31,7 @@ import type {
   TxSplitsMap,
 } from "@sergeant/finyk-domain/domain/types";
 import type { Budget } from "@sergeant/finyk-domain/domain/types";
+import { formatNumberUk } from "@sergeant/shared";
 
 // Tunable threshold — export so tests can override.
 /** Ratio above which the insight fires (1.10 = 110% of budget). */
@@ -106,7 +107,7 @@ export function useBudgetOverrunInsight({
       id: `finyk-budget-overrun-${budget.categoryId}`,
       module: "finyk",
       title: `${catLabel}: використано ${pct}% ліміту`,
-      subtitle: `+${overage.toLocaleString("uk-UA")} грн. Залишилось ${daysLeft} дн. Подивитись?`,
+      subtitle: `+${formatNumberUk(overage)} грн. Залишилось ${daysLeft} дн. Подивитись?`,
       action: {
         type: "navigate",
         path: `/finyk/budgets?cat=${budget.categoryId}`,

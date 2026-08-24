@@ -79,7 +79,7 @@ export function useFoodSearch(foodQuery: string): UseFoodSearchResult {
   });
 
   // `foodErr` is not owned by the search queries — it's used by
-  // `SaveAsFood` to report "save food" errors into the shared UI area.
+  // the picker to report search errors into the shared UI area.
   // Keep it local state here so the public API of this hook stays stable
   // and consumers don't have to track where it lives.
   const [foodErr, setFoodErr] = useState("");

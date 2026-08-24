@@ -51,6 +51,7 @@ export function ReceiptMoneyInput({
     (hryvnia) => {
       onCommitKopiykas(Math.round((hryvnia ?? 0) * 100));
     },
+    { group: true },
   );
   return (
     <input

@@ -38,7 +38,7 @@ export const AI_PROCESSORS: ReadonlyArray<LegalProcessor> = [
   },
   {
     name: "OpenRouter",
-    role: "Маршрутизація частини AI-запитів (поради коуча, тижневий дайджест, планування харчування, категоризація транзакцій Monobank) до сторонніх моделей — зокрема Google Gemini",
+    role: "Маршрутизація частини AI-запитів (поради коуча, тижневий дайджест, планування харчування, категоризація транзакцій Monobank) до сторонніх моделей, зокрема Google Gemini",
     region: "США; upstream-модель може працювати в іншій юрисдикції",
   },
   {
@@ -120,18 +120,18 @@ export const INFRA_PROCESSORS: ReadonlyArray<LegalProcessor> = [
   {
     name: "Grafana Cloud (Loki) та Google Cloud Storage",
     role: "Архів серверних логів, коли архівування ввімкнене",
-    region: "ЄС / США — залежно від регіону інстансу",
+    region: "ЄС / США, залежно від регіону інстансу",
   },
 ] as const;
 
 export const REFERENCE_PROCESSORS: ReadonlyArray<LegalProcessor> = [
   {
     name: "USDA FoodData Central, UPCitemdb",
-    role: "Довідники продуктів і штрихкодів. Отримують лише пошуковий запит або штрихкод — без даних акаунта",
+    role: "Довідники продуктів і штрихкодів. Отримують лише пошуковий запит або штрихкод, без даних акаунта",
     region: "США",
   },
 ] as const;
 
 export function formatProcessor(processor: LegalProcessor): string {
-  return `• ${processor.name} — ${processor.role}. Регіон обробки: ${processor.region}.`;
+  return `• ${processor.name}: ${processor.role}. Регіон обробки: ${processor.region}.`;
 }

@@ -66,6 +66,7 @@ import { MonthlyPlanCard } from "@/modules/finyk/components/budgets/MonthlyPlanC
 import { PlanEditSheet } from "@/modules/finyk/components/budgets/PlanEditSheet";
 import { SubscriptionEditSheet } from "@/modules/finyk/components/budgets/SubscriptionEditSheet";
 import { SubscriptionRow } from "@/modules/finyk/components/budgets/SubscriptionRow";
+import { formatNumberUk } from "@sergeant/shared";
 
 type BudgetsSheet =
   | { kind: "closed" }
@@ -338,7 +339,7 @@ export function BudgetsPage({ seed, now, testID }: BudgetsPageProps) {
                 className="text-sm text-fg-muted text-center"
                 testID="finyk-budgets-limits-empty"
               >
-                Ще немає лімітів. Додай перший — і Finyk покаже, скільки
+                Ще немає лімітів. Додай перший, і Finyk покаже, скільки
                 залишилось до кінця місяця.
               </Text>
             </View>
@@ -405,7 +406,7 @@ export function BudgetsPage({ seed, now, testID }: BudgetsPageProps) {
                 className="text-sm text-fg-muted text-center"
                 testID="finyk-budgets-goals-empty"
               >
-                Ще немає цілей. Додай ціль — і відстежуй прогрес місяць за
+                Ще немає цілей. Додай ціль, і відстежуй прогрес місяць за
                 місяцем.
               </Text>
             </View>
@@ -461,11 +462,11 @@ export function BudgetsPage({ seed, now, testID }: BudgetsPageProps) {
                 const meta = getSubscriptionAmountMeta(s, txStore.realTx ?? []);
                 const explicit =
                   s.monthlyCost != null && Number.isFinite(s.monthlyCost)
-                    ? `${s.monthlyCost.toLocaleString("uk-UA")} ${meta.currency}`
+                    ? `${formatNumberUk(s.monthlyCost)} ${meta.currency}`
                     : null;
                 const fromTx =
                   meta.amount != null
-                    ? `${meta.amount.toLocaleString("uk-UA", { maximumFractionDigits: 0 })} ${meta.currency}`
+                    ? `${formatNumberUk(meta.amount, { maximumFractionDigits: 0 })} ${meta.currency}`
                     : null;
                 const nextDate = nextBillingDate(s.billingDay);
                 const nextChargeLabel = nextDate.toLocaleDateString("uk-UA", {

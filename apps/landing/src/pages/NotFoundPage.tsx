@@ -37,7 +37,7 @@ export default function NotFoundPage() {
           Такої сторінки немає
         </h1>
         <p className="mt-4 max-w-md leading-relaxed text-pretty text-muted">
-          Можливо, посилання застаріло. Головна на місці — там же й форма
+          Можливо, посилання застаріло. Головна на місці, там же й форма
           вейтліста.
         </p>
         <a

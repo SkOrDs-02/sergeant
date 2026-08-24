@@ -96,13 +96,19 @@ describe("HubInsightsPanel", () => {
     expect(screen.getByText("Глиф")).toBeInTheDocument();
   });
 
-  it("renders a raw emoji icon as text", () => {
+  // До 2026-08-21 конвенція `icon` була подвійною: незареєстроване
+  // значення малювалось ТЕКСТОМ, і саме через цю гілку в панель
+  // потрапляли емодзі фінансових правил. Правила переведено на імена
+  // гліфів, тож текстової гілки більше немає — незнайоме значення тепер
+  // не малює нічого, а не підсовує системний emoji-гліф.
+  it("не рендерить незареєстроване значення `icon` як текст", () => {
     render(
       <HubInsightsPanel
         items={[rec({ id: "a", title: "Емодзі", icon: "🔥" })]}
         onOpenModule={vi.fn()}
       />,
     );
-    expect(screen.getByText("🔥")).toBeInTheDocument();
+    expect(screen.queryByText("🔥")).not.toBeInTheDocument();
+    expect(screen.getByText("Емодзі")).toBeInTheDocument();
   });
 });

@@ -184,7 +184,7 @@ export function WorkoutItemCard({
                 type="button"
                 role="checkbox"
                 aria-checked={isSelected}
-                aria-label={`${it.nameUk} — вибрати для об'єднання в суперсет`}
+                aria-label={`${it.nameUk}: вибрати для об'єднання в суперсет`}
                 className={`w-5 h-5 rounded-xl border flex items-center justify-center shrink-0 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg ${isSelected ? "bg-success-strong border-success-strong text-white" : "border-line bg-bg"}`}
                 onClick={() => onToggleGroupSelect(it.id)}
               >
@@ -219,8 +219,9 @@ export function WorkoutItemCard({
             М{"'"}язи:{" "}
             {/* Типографіка тексту, правило 3: ієрархію несе ВАГА, не третій
                 відтінок. Тут стояв `text-muted` поверх батьківського
-                `text-subtle` — і тони суперечили вазі: `muted #8a968e`
-                СВІТЛІШИЙ за `subtle #5f6b64`, тобто напівжирне «важливіше»
+                `text-subtle` — і тони суперечили вазі: `muted` (#a3aea6,
+                до 2026-08-21 #8a968e) СВІТЛІШИЙ за `subtle` (#8a968e, було
+                #5f6b64), тобто напівжирне «важливіше»
                 фарбувалось у «менш важливе». Тон успадковується, виділяє
                 лише вага. */}
             <span className="font-semibold">

@@ -52,7 +52,7 @@ export function BatchSelectDemo() {
               </div>
             ))}
             <p className="text-style-caption text-muted pt-1">
-              Видалення — по одному запису.
+              Видалення – по одному запису.
             </p>
           </div>
         </MiniPhone>

@@ -23,6 +23,7 @@ import { Card } from "@/components/ui/Card";
 import { useToast } from "@/components/ui/Toast";
 import { showUndoToast } from "@/lib/showUndoToast";
 
+import { NutritionIcon } from "../components/NutritionIcon";
 import { useNutritionPantries } from "../hooks/useNutritionPantries";
 
 function formatPantryApiError(e: unknown): string {
@@ -134,7 +135,7 @@ export function PantryPage({ testID }: { testID?: string }) {
         ) : null}
 
         <Text className="text-xs text-fg-muted">
-          Додавай рядок як на веб: «2 л молока», «яйця 10 шт» — парсер
+          Додавай рядок як на веб: «2 л молока», «яйця 10 шт», парсер
           `parseLoosePantryText` зведе в структуровані позиції.
         </Text>
 
@@ -143,8 +144,8 @@ export function PantryPage({ testID }: { testID?: string }) {
             AI-розбір списку
           </Text>
           <Text className="text-xs text-fg-muted mb-2">
-            Великий список мовою природи — на сервері Claude розкладе в позиції
-            й додасть у цей склад (злиття, як на web). Потрібен Anthropic key на
+            Великий список мовою природи, на сервері Claude розкладе в позиції й
+            додасть у цей склад (злиття, як на web). Потрібен Anthropic key на
             бекенді та авторизована сесія.
           </Text>
           <TextInput
@@ -202,9 +203,12 @@ export function PantryPage({ testID }: { testID?: string }) {
         ) : (
           grouped.map((bucket) => (
             <View key={bucket.cat.id} className="gap-1">
-              <Text className="text-xs font-semibold text-fg-muted">
-                {bucket.cat.emoji} {bucket.cat.label}
-              </Text>
+              <View className="flex-row items-center gap-1.5">
+                <NutritionIcon name={bucket.cat.iconName} size={14} />
+                <Text className="text-xs font-semibold text-fg-muted">
+                  {bucket.cat.label}
+                </Text>
+              </View>
               {bucket.items.map(({ item, idx }) => {
                 const it: PantryItem = item;
                 return (

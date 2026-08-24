@@ -6,7 +6,7 @@ import { DataResultCard } from "./DataResultCard";
 describe("DataResultCard (talk-to-your-data PR4)", () => {
   it("рендерить headline + breakdown-бари для aggregate_spending", () => {
     const result =
-      "Витрати за 2026-05-01 — 2026-05-31: 3540 грн усього (59 транзакц.). " +
+      "Витрати за 2026-05-01 – 2026-05-31: 3540 грн усього (59 транзакц.). " +
       "Розбивка за категоріями: Кафе: 2340 грн (47); Транспорт: 1200 грн (12)";
     render(
       <DataResultCard
@@ -54,8 +54,8 @@ describe("DataResultCard (talk-to-your-data PR4)", () => {
 
   it("рендерить compare_periods як headline без breakdown", () => {
     const result =
-      "Витрати: A (2026-04-01 — 2026-04-30) = 5000 грн; " +
-      "B (2026-03-01 — 2026-03-31) = 4200 грн. Різниця (A − B): +800 грн (+19.0%).";
+      "Витрати: A (2026-04-01 – 2026-04-30) = 5000 грн; " +
+      "B (2026-03-01 – 2026-03-31) = 4200 грн. Різниця (A − B): +800 грн (+19.0%).";
     render(
       <DataResultCard
         toolName="compare_periods"
@@ -95,7 +95,7 @@ describe("DataResultCard (talk-to-your-data PR4)", () => {
       <DataResultCard
         toolName="query_habits"
         result="Помилка: немає звичок"
-        title="Статистика звичок — не вийшло"
+        title="Статистика звичок, не вийшло"
         failed
       />,
     );

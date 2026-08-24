@@ -44,7 +44,7 @@ describe("ExerciseProgressChart", () => {
     expect(document.getElementById("fizruk-exercise-progress-Жим")).toHaveClass(
       "sr-only",
     );
-    expect(screen.getAllByText(/\+10\.0 кг/).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/\+10,0 кг/).length).toBeGreaterThanOrEqual(1);
   });
 
   it("renders a negative delta", () => {
@@ -56,7 +56,7 @@ describe("ExerciseProgressChart", () => {
         color="#00f"
       />,
     );
-    const deltas = screen.getAllByText(/-10\.0 кг/);
+    const deltas = screen.getAllByText(/-10,0 кг/);
     expect(deltas.length).toBeGreaterThanOrEqual(1);
   });
 

@@ -101,7 +101,7 @@ export function Measurements({
         </Text>
       </View>
       <Text className="px-4 text-sm text-fg-muted leading-snug mb-3">
-        Вага, обхвати та самопочуття — все в одному місці. Записи зберігаються
+        Вага, обхвати та самопочуття. Все в одному місці. Записи зберігаються
         локально й синхронізуються через CloudSync.
       </Text>
 

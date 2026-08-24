@@ -296,7 +296,7 @@ export function RecipeRecommender({ testID, onClose }: RecipeRecommenderProps) {
 
         {fromCache && recipes.length > 0 ? (
           <Text className="text-xs text-nutrition-strong text-center">
-            Показано кеш сеансу — натисни «Запропонувати» для оновлення.
+            Показано кеш сеансу, натисни «Запропонувати» для оновлення.
           </Text>
         ) : null}
 

@@ -139,7 +139,11 @@ jobs:
           retention-days: 14
 
       - name: Create / refresh smoke-test-fail issue
-        if: steps.smoke.outcome == 'failure' && github.event_name != 'workflow_dispatch'
+        # AI-CONTEXT: гейт по `smoke_exit == 1` (реальні падіння), а не по
+        # `outcome == 'failure'`, який зливає їх із кодом 2 = чекер не зміг
+        # запуститись (немає TARGET_BASE_URL). Помилка конфігурації має
+        # валити workflow, а не з'являтись у беклозі як liveness-регресія.
+        if: steps.smoke.outputs.smoke_exit == '1' && github.event_name != 'workflow_dispatch'
         # actions/github-script v8.0.0 (SHA-pinned for supply-chain hardening)
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
         with:
@@ -231,8 +235,54 @@ jobs:
               core.info(`Created new issue #${created.data.number}.`);
             }
 
-      - name: Fail the job on smoke failure
+      - name: Close the smoke-test-fail issue when the deploy is healthy
+        # Друга половина храповика — див. той самий крок у pact-drift.yml.
+        if: steps.smoke.outputs.smoke_exit == '0' && github.event_name != 'workflow_dispatch'
+        # actions/github-script v8.0.0 (SHA-pinned for supply-chain hardening)
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const env =
+              context.payload?.deployment_status?.environment ?? 'staging';
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'smoke-test-fail',
+              per_page: 10,
+            });
+            for (const issue of issues.filter((i) => i.title.startsWith('[Smoke]'))) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: [
+                  `### Recovered — ${new Date().toISOString().slice(0, 10)} (${env})`,
+                  '',
+                  `Post-deploy smoke пройшов чисто: ${runUrl}`,
+                  '',
+                  'Закрито автоматично. Якщо liveness-регресія повернеться,',
+                  'workflow відкриє новий issue.',
+                ].join('\n'),
+              });
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                state: 'closed',
+                state_reason: 'completed',
+              });
+              core.info(`Closed issue #${issue.number}`);
+            }
+
+      - name: Fail the job on smoke failure or checker error
         if: steps.smoke.outcome == 'failure'
         run: |
-          echo "::error::Post-deploy smoke detected ≥1 failure. See dist/smoke-report.md."
+          if [ "${{ steps.smoke.outputs.smoke_exit }}" = "1" ]; then
+            echo "::error::Post-deploy smoke detected ≥1 failure. See dist/smoke-report.md."
+          else
+            echo "::error::post-deploy-smoke checker could not run (exit '${{ steps.smoke.outputs.smoke_exit }}'). Це помилка конфігурації, не liveness-регресія — див. docs/02-engineering/testing/smoke-tests.md § Setup."
+          fi
           exit 1

@@ -53,7 +53,7 @@ Silpo (`assertStartupEnv` кидає на старті, не деградує).
    `apps/server/src/modules/silpo/oauth.ts`; `redirect_uri` має бути рівно
    `${PUBLIC_API_BASE_URL}/api/silpo/callback`. Отриманий `client_id` →
    `SILPO_OAUTH_CLIENT_ID`.
-4. **Постав `SILPO_ENABLED=true`** і передеплой. Міграції 123–124 накотяться
+4. **Постав `SILPO_ENABLED=true`** і передеплой. Міграції 125–127 накотяться
    pre-deploy (`node dist-server/migrate.js`).
 5. **Димова перевірка на своєму акаунті:** Налаштування → Фінік → «Зв'язати
    Сільпо» → OAuth → повернення зі статусом connected → «Оновити чеки» →

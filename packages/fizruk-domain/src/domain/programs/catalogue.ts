@@ -20,12 +20,12 @@ export const PROGRAM_CATALOGUE: readonly TrainingProgramDef[] = [
     days: 6,
     durationWeeks: 8,
     schedule: [
-      { day: 1, sessionKey: "push", name: "Push — Груди, плечі, трицепс" },
-      { day: 2, sessionKey: "pull", name: "Pull — Спина, біцепс" },
-      { day: 3, sessionKey: "legs", name: "Legs — Ноги, сідниці" },
-      { day: 4, sessionKey: "push", name: "Push — Груди, плечі, трицепс" },
-      { day: 5, sessionKey: "pull", name: "Pull — Спина, біцепс" },
-      { day: 6, sessionKey: "legs", name: "Legs — Ноги, сідниці" },
+      { day: 1, sessionKey: "push", name: "Push: Груди, плечі, трицепс" },
+      { day: 2, sessionKey: "pull", name: "Pull: Спина, біцепс" },
+      { day: 3, sessionKey: "legs", name: "Legs: Ноги, сідниці" },
+      { day: 4, sessionKey: "push", name: "Push: Груди, плечі, трицепс" },
+      { day: 5, sessionKey: "pull", name: "Pull: Спина, біцепс" },
+      { day: 6, sessionKey: "legs", name: "Legs: Ноги, сідниці" },
     ],
     sessions: {
       push: {
@@ -77,10 +77,10 @@ export const PROGRAM_CATALOGUE: readonly TrainingProgramDef[] = [
     days: 4,
     durationWeeks: 8,
     schedule: [
-      { day: 1, sessionKey: "upper_a", name: "Upper A — Верх тіла (сила)" },
-      { day: 2, sessionKey: "lower_a", name: "Lower A — Низ тіла (сила)" },
-      { day: 4, sessionKey: "upper_b", name: "Upper B — Верх тіла (об'єм)" },
-      { day: 5, sessionKey: "lower_b", name: "Lower B — Низ тіла (об'єм)" },
+      { day: 1, sessionKey: "upper_a", name: "Upper A: Верх тіла (сила)" },
+      { day: 2, sessionKey: "lower_a", name: "Lower A: Низ тіла (сила)" },
+      { day: 4, sessionKey: "upper_b", name: "Upper B: Верх тіла (об'єм)" },
+      { day: 5, sessionKey: "lower_b", name: "Lower B: Низ тіла (об'єм)" },
     ],
     sessions: {
       upper_a: {
@@ -178,7 +178,7 @@ export const PROGRAM_CATALOGUE: readonly TrainingProgramDef[] = [
     id: "starting_strength",
     name: "Лінійна прогресія",
     description:
-      "3-денна програма на основі базових багатосуглобових рухів. Щотренування +2.5 кг на штанзі. Найкраще для новачків — швидкий набір сили.",
+      "3-денна програма на основі базових багатосуглобових рухів. Щотренування +2.5 кг на штанзі. Найкраще для новачків: швидкий набір сили.",
     days: 3,
     durationWeeks: 12,
     schedule: [

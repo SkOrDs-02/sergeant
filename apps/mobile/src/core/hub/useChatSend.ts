@@ -137,7 +137,7 @@ export function useChatSend({
           ...m,
           makeUserMsg(msg),
           makeAssistantMsg(
-            "⚠️ Немає підключення. Сержант працює лише онлайн — спробуй ще раз, коли з'явиться інтернет.",
+            "⚠️ Немає підключення. Сержант працює лише онлайн, спробуй ще раз, коли з'явиться інтернет.",
           ),
         ]);
         setInput("");
@@ -239,7 +239,7 @@ export function useChatSend({
           // турн. Користувач все одно побачить картку для кожного
           // tool-call-у.
           const stubResultText =
-            "(tool execution не підтримана на мобільному клієнті — дія виконається у web)";
+            "(tool execution не підтримана на мобільному клієнті, дія виконається у web)";
           const toolResults = toolCalls.map((tc) => ({
             tool_use_id: tc.id,
             content: stubResultText,
@@ -257,7 +257,7 @@ export function useChatSend({
 
           const assistantId = newMsgId();
           const prefix =
-            toolCalls.map((tc) => `✅ ${tc.name}`).join("\n") + "\n\n";
+            toolCalls.map((tc) => `✓ ${tc.name}`).join("\n") + "\n\n";
           setMessages((m) => [
             ...m,
             {
@@ -344,10 +344,10 @@ export function useChatSend({
         if (isAbort && timedOut) {
           setMessages((m) => [
             ...m,
-            makeAssistantMsg("⏱ Час очікування вичерпано. Спробуй ще раз."),
+            makeAssistantMsg("Час очікування вичерпано. Спробуй ще раз."),
           ]);
         } else if (isAbort) {
-          setMessages((m) => [...m, makeAssistantMsg("⏹ Запит скасовано.")]);
+          setMessages((m) => [...m, makeAssistantMsg("Запит скасовано.")]);
         } else {
           setMessages((m) => [...m, makeAssistantMsg(friendlyChatError(e))]);
         }

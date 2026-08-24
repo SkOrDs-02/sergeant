@@ -27,11 +27,11 @@ export function useDemoCommands(): void {
   const navigate = useNavigate();
   const toast = useToast();
   const { logout } = useAuth();
-  // `useDarkMode` was retired in PR #2660 in favour of the 4-mode
-  // `useTheme` (`light` / `dark` / `system` / `hc`). The Command
-  // Palette's binary toggle keeps its old UX semantics by flipping
-  // between explicit `light` and `dark` (`system` and `hc` are
-  // surfaced via the dedicated `<ThemeSwitcher />` in HubHeader).
+  // `useDarkMode` was retired in PR #2660 in favour of the 3-mode
+  // `useTheme` (`light` / `dark` / `hc`). The Command Palette's binary
+  // toggle keeps its old UX semantics by flipping between explicit
+  // `light` and `dark` (`hc` is surfaced via the dedicated
+  // `<ThemeSwitcher />` in HubHeader).
   const { isDark, setChoice } = useTheme();
   const toggleDark = useCallback(
     () => setChoice(isDark ? "light" : "dark"),
@@ -68,7 +68,7 @@ export function useDemoCommands(): void {
       {
         id: "nav.hub",
         title: "Перейти на головну",
-        description: "Hub — стрічка модулів і центральний дашборд",
+        description: "Hub: стрічка модулів і центральний дашборд",
         group: "Навігація",
         keywords: ["hub", "home", "головна", "дашборд"],
         run: () => navigate("/"),

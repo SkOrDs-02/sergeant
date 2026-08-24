@@ -1,12 +1,26 @@
 import { mealTypeByNow, type MealTypeId } from "../../lib/mealTypes";
 import type { NullableMacros } from "@sergeant/shared";
-import { getKyivDateParts } from "@shared/lib/time/kyivTime";
+import { deviceTimeOfDay } from "@sergeant/nutrition-domain";
+
+/**
+ * 10 кг однієї порції — межа проти зайвого нуля, не дієтологія.
+ *
+ * AI-CONTEXT: живе тут, а не в компоненті, бо вагу порції задають ДВА
+ * незалежні шляхи — крок «з упаковки» і картка обраного продукту. Поки
+ * константа була приватною в картці, `useDecimalDraft` клампив лише
+ * набране в ній самій, а значення, що прийшло ззовні готовим, проходило
+ * повз межу і могло лягти в `amount_g`.
+ */
+export const MAX_PORTION_GRAMS = 10_000;
 
 export function currentTime(): string {
-  // Domain invariant: усі "коли це сталось" мітки — за Europe/Kyiv, не за
-  // годинником пристрою (див. domain-invariants.md).
-  const { hour, minute } = getKyivDateParts();
-  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+  // ADR-0078: день-ключ запису — за годинником ПРИСТРОЮ, тож і час доби
+  // поруч із ним мусить бути девайсовий. Київський час тут давав пару
+  // «девайсовий день + київський настінний час», з якої `composeEatenAt`
+  // складав момент, якого не існувало (о 23:53 UTC 23-го числа виходило
+  // «23-тє 02:53»). `mealTypeByNow()` нижче вже рахує за `getHours()` —
+  // тепер обидва дефолти читають один годинник.
+  return deviceTimeOfDay();
 }
 
 export interface MealFormPhotoResult {

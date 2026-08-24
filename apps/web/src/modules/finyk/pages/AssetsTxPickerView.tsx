@@ -312,7 +312,7 @@ export function AssetsTxPickerView({
             </Card>
             <p className="text-style-caption text-subtle mb-3 px-1">
               Тапни транзакцію щоб прив&apos;язати як погашення. Виділені
-              зеленим — автоматично виявлені поповнення картки.
+              зеленим: автоматично виявлені поповнення картки.
             </p>
             {pickerControls}
             {transactions.map((t, i) => {

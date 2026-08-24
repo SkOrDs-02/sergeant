@@ -74,7 +74,7 @@ export function KpiCarouselDemo() {
     <ProposalCard
       id="R2-UI-1"
       title="KPI-карусель на Хабі (scroll-snap)"
-      intent="Замість однієї цифри — свайпабельна стрічка ключових метрик зі snap-центруванням. Свайпни стрічку праворуч або тапни крапку."
+      intent="Замість однієї цифри – свайпабельна стрічка ключових метрик зі snap-центруванням. Свайпни стрічку праворуч або тапни крапку."
     >
       <ComparePair
         before={
@@ -197,7 +197,7 @@ export function KpiCarouselDemo() {
                 ))}
               </div>
               <p className="text-style-caption text-muted text-center px-4 pb-2 pt-3">
-                4 метрики — один флик пальцем
+                4 метрики: один флик пальцем
               </p>
             </div>
           </MiniPhone>

@@ -850,7 +850,7 @@ describe("syncV2Push / syncV2Pull integration", () => {
 // зелений, а події до сервера не доїдуть. Мультидевайсна збіжність журналу
 // потребує окремої ЖИВОЇ перевірки, а не лише цього лейну.
 // ---------------------------------------------------------------------
-describe("syncV2Push — routine_completion_events (W1-ROUTINE-APPEND стадія 1)", () => {
+describe("syncV2Push: routine_completion_events (W1-ROUTINE-APPEND стадія 1)", () => {
   const EVENT_ID = "hab_x1|2026-07-20|2026-07-20T09:00:00.000Z|done|device-A";
 
   function clientShapedRow(
@@ -1077,7 +1077,7 @@ describe("syncV2Push — routine_completion_events (W1-ROUTINE-APPEND стаді
 // користувача. Це станеться лише коли (а) стадія 2 навчить клієнт
 // емітити події і (б) drain outbox буде підтверджено живим.
 // ---------------------------------------------------------------------
-describe("syncV2Push — nutrition_pantry_events (W1-PANTRY-APPEND стадія 1)", () => {
+describe("syncV2Push: nutrition_pantry_events (W1-PANTRY-APPEND стадія 1)", () => {
   // Клієнтські id, а не UUID — саме вони ламають стару таблицю комори.
   const PANTRY_ID = "home";
   const ITEM_ID = "home::0::молоко";
@@ -1448,7 +1448,7 @@ describe("syncV2Push — nutrition_pantry_events (W1-PANTRY-APPEND стадія 
 // shape — UUID PK, user-ownership, LWW, soft-delete — тому окремі
 // e2e не потрібні: при регресії `fizruk_workouts` тести впадуть першими.
 // ---------------------------------------------------------------------
-describe("syncV2Push — fizruk apply-функції (PR #029)", () => {
+describe("syncV2Push: fizruk apply-функції (PR #029)", () => {
   it(
     "fizruk_workouts: insert → update (новіший client_ts перезаписує)",
     async (ctx) => {
@@ -1813,7 +1813,7 @@ describe("syncV2Push — fizruk apply-функції (PR #029)", () => {
 //   4. nutrition_prefs: singleton upsert, delete rejected.
 //   5. nutrition_recipes: insert → soft-delete.
 // ---------------------------------------------------------------------
-describe("syncV2Push — nutrition apply-функції (PR #031)", () => {
+describe("syncV2Push: nutrition apply-функції (PR #031)", () => {
   it(
     "nutrition_meals: insert → update (новіший client_ts перезаписує)",
     async (ctx) => {
@@ -2577,7 +2577,7 @@ describe("syncV2Push — nutrition apply-функції (PR #031)", () => {
 // повторюванні стандартної LWW-перевірки (її вже покривають nutrition
 // інтеграційні тести вище — apply-фн поділяє ту саму інфраструктуру).
 // ---------------------------------------------------------------------
-describe("syncV2Push — finyk apply-функції (PR #035)", () => {
+describe("syncV2Push: finyk apply-функції (PR #035)", () => {
   it(
     "finyk_hidden_accounts: insert → soft-delete (composite-PK tombstone shape)",
     async (ctx) => {
@@ -3022,7 +3022,7 @@ describe("syncV2Push — finyk apply-функції (PR #035)", () => {
 // самий рядок і мусить його воскресити. Перший тест нижче кодифікує
 // саме цю (протилежну) семантику.
 // ---------------------------------------------------------------------
-describe("syncV2Push — tombstone resurrection guard (Stage 5)", () => {
+describe("syncV2Push: tombstone resurrection guard (Stage 5)", () => {
   it(
     "routine_entries: update після soft-delete із новішим client_ts воскрешає рядок",
     async (ctx) => {
@@ -3743,7 +3743,7 @@ describe("syncV2Push — tombstone resurrection guard (Stage 5)", () => {
 // `client_ts` відхиляється з `reason='tombstoned'`. `op='delete'`
 // лишається ідемпотентним (re-stamp).
 // ---------------------------------------------------------------------
-describe("syncV2Push — nutrition + finyk tombstone resurrection guard (Stage 5)", () => {
+describe("syncV2Push: nutrition + finyk tombstone resurrection guard (Stage 5)", () => {
   it(
     "nutrition_pantries: update після soft-delete із новішим client_ts відхилено як tombstoned",
     async (ctx) => {
@@ -4416,7 +4416,7 @@ describe("syncV2Push — nutrition + finyk tombstone resurrection guard (Stage 5
   );
 });
 
-describe("syncV2Push — op='increment' engine-level gate (PR #042a)", () => {
+describe("syncV2Push: op='increment' engine-level gate (PR #042a)", () => {
   // Stage 5 / PR #042a: engine-level gate відхиляє `op='increment'` для
   // таблиць поза `INCREMENT_OP_SUPPORTED_TABLES` із
   // `reason='op_not_supported'` ще до apply-fn-у. PR #042b опт-інив
@@ -4563,7 +4563,7 @@ describe("syncV2Push — op='increment' engine-level gate (PR #042a)", () => {
   );
 });
 
-describe("syncV2Push — routine_streaks PN-counter apply-fn (PR #042b)", () => {
+describe("syncV2Push: routine_streaks PN-counter apply-fn (PR #042b)", () => {
   // Stage 5 / PR #042b: `routine_streaks` опт-іниться у
   // `INCREMENT_OP_SUPPORTED_TABLES`, apply-fn консумує `delta`-payload
   // через атомарний `INSERT … ON CONFLICT DO UPDATE SET current_streak
@@ -5237,7 +5237,7 @@ describe("cross-user isolation — PR-T07", () => {
 // SQLite і читає звідти, серверна таблиця — дзеркало для крос-девайсу і
 // бекапу, а цілі на екранах і далі беруться з `nutrition_prefs`.
 // ---------------------------------------------------------------------
-describe("syncV2Push — nutrition_goal_periods (W1-KBJU-APPEND стадія 1)", () => {
+describe("syncV2Push: nutrition_goal_periods (W1-KBJU-APPEND стадія 1)", () => {
   // Детермінований клієнтський id — не UUID. Саме він робить повторну
   // доставку no-op-ом замість другої сходинки з тими самими числами.
   const PERIOD_ID = "gp::2026-07-25::1800:140:55:180:2500::device-A";

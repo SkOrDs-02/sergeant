@@ -31,7 +31,7 @@ const DEMO_COMMANDS: PaletteCommand[] = [
   {
     id: "nav.hub",
     title: "Перейти на головну",
-    description: "Hub — стрічка модулів",
+    description: "Hub: стрічка модулів",
     group: "Навігація",
     icon: <Icon name="home" />,
     run: () => console.log("[story] hub"),

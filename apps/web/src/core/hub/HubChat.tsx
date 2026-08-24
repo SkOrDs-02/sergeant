@@ -8,6 +8,8 @@ import { useHubChatStorageBoot } from "./chat/useHubChatStorageBoot";
 import { HubChatHeader } from "./chat/HubChatHeader";
 import { HubChatBody } from "./chat/HubChatBody";
 import { HubChatComposer } from "./chat/HubChatComposer";
+import { ChatAuthGate } from "./chat/ChatAuthGate";
+import { useAuthOptional } from "../auth/AuthContext";
 import { PaywallModal } from "../billing/PaywallModal";
 import { DestructiveConfirmModal } from "./chat/DestructiveConfirmModal";
 
@@ -76,6 +78,14 @@ function HubChat({
     openedFiredRef.current = true;
     trackEvent(ANALYTICS_EVENTS.HUBCHAT_OPENED, { source });
   }, [source]);
+
+  // Гейт входу. `useAuthOptional`, а не `useAuth`: чат монтується поза
+  // `AuthProvider` у частині юніт-тестів, і там «контексту немає» означає
+  // «не знаю» — тоді нічого не гейтимо й лишаємо composer, як було.
+  // Гейт спрацьовує лише на РОЗВ'ЯЗАНОМУ `unauthenticated`, тож на буті
+  // (`loading`) поле вводу не блимає.
+  const auth = useAuthOptional();
+  const signedOut = auth?.status === "unauthenticated";
 
   const sessionsState = useChatSessions();
   const {
@@ -164,23 +174,27 @@ function HubChat({
         }}
       />
 
-      <HubChatComposer
-        activeModule={activeModule}
-        loading={loading}
-        online={online}
-        speaking={speaking}
-        setSpeaking={setSpeaking}
-        input={input}
-        setInput={setInput}
-        onSend={(prompt) => {
-          void send(prompt);
-        }}
-        onHelp={() => {
-          void send("/help");
-        }}
-        sendRef={sendRef}
-        focusInputRef={focusInputRef}
-      />
+      {signedOut ? (
+        <ChatAuthGate />
+      ) : (
+        <HubChatComposer
+          activeModule={activeModule}
+          loading={loading}
+          online={online}
+          speaking={speaking}
+          setSpeaking={setSpeaking}
+          input={input}
+          setInput={setInput}
+          onSend={(prompt) => {
+            void send(prompt);
+          }}
+          onHelp={() => {
+            void send("/help");
+          }}
+          sendRef={sendRef}
+          focusInputRef={focusInputRef}
+        />
+      )}
 
       <HubChatHistoryDrawer
         open={historyOpen}
@@ -204,7 +218,7 @@ function HubChat({
         onClose={closePaywall}
         surface="ai_chat_limit"
         title="Безлімітний AI-чат у Pro"
-        description="Free-тариф має 5 AI-повідомлень на день. Pro відкриває безлімітний чат, авто-Mono sync і CloudSync."
+        description="Free-тариф має 5 запитів до AI на день (хід з дією може коштувати кілька). Pro відкриває безлімітний чат, авто-Mono sync і CloudSync."
       />
       {/* eslint-enable sergeant-design/no-cyrillic-jsx-literal */}
     </div>

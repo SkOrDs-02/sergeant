@@ -5,6 +5,8 @@ import {
   amountStringToHryvnia,
 } from "@shared/lib/format/amountSchema";
 import { parseAmountToMinor } from "@shared/lib/format/amount";
+import { groupIntegerDigits } from "@shared/lib/format/digitGrouping";
+import { useGroupedAmountField } from "@shared/hooks/useGroupedAmountField";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
@@ -227,6 +229,13 @@ function AddBudgetFormComponent({
   const goalNameError = goalForm.formState.errors.name?.message;
   const goalAmountError = goalForm.formState.errors.targetAmount?.message;
 
+  // Грошові поля лишаються `register`-полями (значення живе в DOM), тож
+  // групування розрядів вішається декоратором на `onChange`.
+  const limitAmountField = useGroupedAmountField(limitForm.register("limit"));
+  const goalAmountField = useGroupedAmountField(
+    goalForm.register("targetAmount"),
+  );
+
   const goalEmoji = goalForm.watch("emoji");
   const goalTargetDate = goalForm.watch("targetDate");
   const limitCategoryId = limitForm.watch("categoryId");
@@ -252,9 +261,11 @@ function AddBudgetFormComponent({
     goalForm.setValue("linkedJarId", jarId, { shouldDirty: true });
     const jar = jars.find((j) => j.monoJarId === jarId);
     if (jar?.goal != null && !goalForm.getValues("targetAmount").trim()) {
-      goalForm.setValue("targetAmount", String(Math.round(jar.goal / 100)), {
-        shouldDirty: true,
-      });
+      goalForm.setValue(
+        "targetAmount",
+        groupIntegerDigits(String(Math.round(jar.goal / 100))),
+        { shouldDirty: true },
+      );
     }
   };
 
@@ -340,11 +351,13 @@ function AddBudgetFormComponent({
             <Label htmlFor={limitAmountId}>Ліміт</Label>
             <Input
               id={limitAmountId}
-              placeholder="Напр. 5000 ₴"
-              type="number"
+              placeholder="Напр. 5 000 ₴"
+              type="text"
+              inputMode="decimal"
+              autoComplete="off"
               aria-invalid={limitAmountError ? true : undefined}
               disabled={isSubmitting}
-              {...limitForm.register("limit")}
+              {...limitAmountField}
             />
             {limitAmountError && (
               <p
@@ -440,11 +453,13 @@ function AddBudgetFormComponent({
             <Label htmlFor={goalAmountId}>Сума цілі</Label>
             <Input
               id={goalAmountId}
-              placeholder="Напр. 20000 ₴"
-              type="number"
+              placeholder="Напр. 20 000 ₴"
+              type="text"
+              inputMode="decimal"
+              autoComplete="off"
               aria-invalid={goalAmountError ? true : undefined}
               disabled={isSubmitting}
-              {...goalForm.register("targetAmount")}
+              {...goalAmountField}
             />
             {goalAmountError && (
               <p

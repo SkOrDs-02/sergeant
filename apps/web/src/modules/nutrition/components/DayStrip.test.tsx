@@ -69,7 +69,7 @@ describe("DayStrip", () => {
         ]}
       />,
     );
-    expect(screen.getByText(/оцінка з фото — 40%/)).toBeInTheDocument();
+    expect(screen.getByText(/оцінка з фото: 40%/)).toBeInTheDocument();
   });
 
   /**
@@ -95,7 +95,7 @@ describe("DayStrip", () => {
         ]}
       />,
     );
-    expect(screen.getByText(/оцінка з фото — 1%/)).toBeInTheDocument();
+    expect(screen.getByText(/оцінка з фото: 1%/)).toBeInTheDocument();
     expect(screen.queryByText(/усе з бази або зважене/)).toBeNull();
   });
 
@@ -126,7 +126,7 @@ describe("DayStrip", () => {
         ]}
       />,
     );
-    expect(screen.getByText(/оцінка з фото — 82%/)).toBeInTheDocument();
+    expect(screen.getByText(/оцінка з фото: 82%/)).toBeInTheDocument();
     expect(screen.getByText(/без часу: 1/)).toBeInTheDocument();
   });
 

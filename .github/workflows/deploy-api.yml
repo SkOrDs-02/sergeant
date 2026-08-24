@@ -101,22 +101,67 @@ jobs:
           cache-to: type=gha,mode=max,scope=deploy-api
 
       - name: Trigger Coolify deploy
-        # No-op, поки секрет не заданий (до підняття VPS). Coolify deploy
-        # webhook: повний URL у COOLIFY_DEPLOY_WEBHOOK, опційний Bearer у
-        # COOLIFY_DEPLOY_TOKEN. Не фейлимо деплой образу, якщо hook відпав —
-        # образ уже в registry, Coolify можна дернути вручну.
-        continue-on-error: true
+        # Coolify deploy webhook: повний URL у COOLIFY_DEPLOY_WEBHOOK,
+        # опційний Bearer у COOLIFY_DEPLOY_TOKEN.
+        #
+        # AI-DANGER: крок НАВМИСНО фейлить джобу, коли hook відповів
+        # помилкою, і `continue-on-error` сюди повертати НЕ можна. Раніше
+        # він тут стояв із міркування «образ уже в registry, Coolify
+        # дернемо вручну» — і рівно це коштувало п'яти днів мовчазного
+        # простою: hook віддавав 401 на кожен мерж від 18-08 до 23-08,
+        # джоба світилася зеленою, а на VPS крутився контейнер тижневої
+        # давності. Помилка в логах, якої ніхто не читає, — це не сигнал.
+        #
+        # Образ на цей момент уже запушено, тож червона джоба нічого не
+        # руйнує: вона повідомляє рівно один факт — «деплой НЕ замовлено».
         env:
           HOOK: ${{ secrets.COOLIFY_DEPLOY_WEBHOOK }}
           TOKEN: ${{ secrets.COOLIFY_DEPLOY_TOKEN }}
         run: |
+          set -uo pipefail
+
           if [ -z "$HOOK" ]; then
-            echo "COOLIFY_DEPLOY_WEBHOOK not set — skipping (image is pushed; deploy manually)."
+            echo "::warning::COOLIFY_DEPLOY_WEBHOOK не заданий — деплой не замовлено. Образ у registry, викочувати вручну."
+            echo "⚠️ Coolify deploy **не замовлено**: секрет \`COOLIFY_DEPLOY_WEBHOOK\` не заданий." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
-          # Coolify /api/v1/deploy is a GET endpoint (uuid in query string).
+
+          # Coolify /api/v1/deploy — GET, uuid у query string. `--retry` б'є
+          # лише по мережевих збоях і 5xx; 401/403 не ретраяться, і це
+          # правильно: протухлий токен від повтору не полагодиться.
+          AUTH=()
           if [ -n "$TOKEN" ]; then
-            curl -fsSL "$HOOK" -H "Authorization: Bearer $TOKEN"
-          else
-            curl -fsSL "$HOOK"
+            AUTH=(-H "Authorization: Bearer $TOKEN")
           fi
+
+          # URL і токен НЕ друкуємо: `-sS` глушить прогрес, лишаючи текст
+          # помилки, а `-o` відводить тіло у файл, щоб воно не змішалось
+          # зі статусом. Маскування секретів у логах GitHub — остання
+          # лінія, а не перша.
+          HTTP_CODE=$(curl -sS -o /tmp/coolify-response.txt -w '%{http_code}' \
+            --retry 2 --retry-connrefused --max-time 30 \
+            "${AUTH[@]}" "$HOOK") || HTTP_CODE="000"
+
+          # `case`, а не числове порівняння: якщо curl віддасть щось поза
+          # форматом (порожньо, текст), `[ -ge ]` кинув би помилку тесту
+          # замість того, щоб чесно піти в гілку відмови.
+          case "$HTTP_CODE" in
+            2??)
+              echo "Coolify deploy requested (HTTP $HTTP_CODE)."
+              echo "✅ Coolify deploy замовлено (HTTP $HTTP_CODE)." >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+              ;;
+          esac
+
+          echo "::error::Coolify deploy hook відповів HTTP ${HTTP_CODE} — деплой НЕ замовлено. Образ у registry; перевір COOLIFY_DEPLOY_WEBHOOK / COOLIFY_DEPLOY_TOKEN і викоти вручну."
+          {
+            echo "❌ **Coolify deploy НЕ замовлено** — hook відповів \`HTTP ${HTTP_CODE}\`."
+            echo ""
+            echo "Образ запушено в registry, але на VPS він не поїде сам."
+            echo ""
+            echo "- \`401\`/\`403\` — протух \`COOLIFY_DEPLOY_TOKEN\` або змінився \`COOLIFY_DEPLOY_WEBHOOK\`."
+            echo "- \`000\` — hook недосяжний (мережа або VPS)."
+            echo ""
+            echo "Поки не полагоджено — викочувати вручну в Coolify."
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 1

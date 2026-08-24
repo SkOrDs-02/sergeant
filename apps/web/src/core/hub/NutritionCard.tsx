@@ -19,6 +19,7 @@ import {
   type Period,
 } from "./hubReports.aggregation";
 import { useHubStorageBump } from "./useHubStorageBump";
+import { formatNumberUk } from "@sergeant/shared";
 
 // ── Local sub-components ──────────────────────────────────────────────
 
@@ -72,7 +73,7 @@ function BarChart({
     const parts = getKyivDateParts(parseKyivDate(dateStr) ?? new Date(dateStr));
     const day = String(parts.day).padStart(2, "0");
     const month = String(parts.month).padStart(2, "0");
-    return `${day}.${month}: ${value.toLocaleString("uk-UA")}${unit}`;
+    return `${day}.${month}: ${formatNumberUk(value)}${unit}`;
   }
 
   const selectedDate = selected !== null ? dates[selected] : undefined;
@@ -246,8 +247,8 @@ export default function NutritionCard({ period, offset }: NutritionCardProps) {
     };
   }, [period, offset, bump]);
 
-  const formattedCurrent = cur.avg.toLocaleString("uk-UA");
-  const formattedPrev = prev.avg.toLocaleString("uk-UA");
+  const formattedCurrent = formatNumberUk(cur.avg);
+  const formattedPrev = formatNumberUk(prev.avg);
 
   return (
     <ReportSheet collapsed={collapsed}>

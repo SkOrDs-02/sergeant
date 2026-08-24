@@ -45,14 +45,25 @@ function InlineAnalysisStatus({ text }: { text: string }) {
  * Попередження одноразове навмисно: постійний банер над кожним фото
  * перестають читати за тиждень, і тоді він захищає не людину, а нас.
  *
- * Ack — це ще й гейт авто-аналізу (рішення founder-а 2026-08-13):
+ * Ack — це ще й гейт автоаналізу (рішення founder-а 2026-08-13):
  * до підтвердження аналіз стартує лише явним тапом, після — сам при
  * виборі/заміні фото. Тому `PhotoStep` читає той самий ключ і слухає
  * `onPrivacyAck`.
  */
 export const PHOTO_PRIVACY_ACK_KEY = "sergeant.nutrition.photoPrivacyAck.v1";
 
-function PhotoPrivacyNotice({ onAck }: { onAck?: (() => void) | undefined }) {
+function PhotoPrivacyNotice({
+  onAck,
+  blockingAnalysis,
+}: {
+  onAck?: (() => void) | undefined;
+  /**
+   * Кадр уже обраний, тариф дозволяє аналіз — і єдине, що його стримує,
+   * це непідтверджений нотіс. Тоді нотіс мусить сам сказати, що він і є
+   * та кнопка, якої людина шукає.
+   */
+  blockingAnalysis?: boolean | undefined;
+}) {
   const [acked, setAcked] = useState(
     // Пара read/write мусить бути узгоджена: `safeWriteLS` кладе JSON,
     // тому й читаємо через `safeReadLS`. Рядковий читач повернув би
@@ -64,10 +75,15 @@ function PhotoPrivacyNotice({ onAck }: { onAck?: (() => void) | undefined }) {
     <div className="mb-3 rounded-2xl border border-line bg-panelHi p-3">
       <div className="text-style-label text-text">Куди їде фото</div>
       <p className="mt-1 text-style-caption text-muted leading-relaxed">
-        Щоб визначити КБЖВ, фото відправляється на розпізнавання до Anthropic —
-        це зовнішній сервіс. На відміну від тексту, фото ми не можемо частково
-        приховати: їде весь кадр. Перевір, що в нього не потрапило зайве.
+        Щоб визначити КБЖВ, фото відправляється на розпізнавання до зовнішнього
+        AI-сервісу. На відміну від тексту, фото ми не можемо частково приховати:
+        їде весь кадр. Перевір, що в нього не потрапило зайве.
       </p>
+      {blockingAnalysis && (
+        <p className="mt-2 text-style-caption text-text leading-relaxed">
+          Аналіз почнеться, щойно підтвердиш це — доти кадр нікуди не їде.
+        </p>
+      )}
       <button
         type="button"
         onClick={() => {
@@ -77,7 +93,7 @@ function PhotoPrivacyNotice({ onAck }: { onAck?: (() => void) | undefined }) {
         }}
         className="mt-2 min-h-11 px-3 text-style-caption text-nutrition-strong dark:text-nutrition hover:underline"
       >
-        Зрозуміло
+        {blockingAnalysis ? "Зрозуміло, аналізувати" : "Зрозуміло"}
       </button>
     </div>
   );
@@ -126,17 +142,17 @@ const NOT_FOOD_COPY: Record<
     title: "Це не страва, а тваринка",
     unnamed: "На фото тваринка, а не їжа.",
     action:
-      "Краще погладь і пригости смаколиком — а для журналу зроби фото їжі.",
+      "Краще погладь і пригости смаколиком, а для журналу зроби фото їжі.",
   },
   person: {
     title: "Це людина, а не страва",
     unnamed: "На фото людина, а не їжа.",
-    action: "Наведи камеру на тарілку — або додай прийом їжі вручну.",
+    action: "Наведи камеру на тарілку, або додай прийом їжі вручну.",
   },
   other: {
     title: "Не бачу тут страви",
     unnamed: "На фото немає їжі, для якої можна порахувати КБЖВ.",
-    action: "Обери інше фото вище — або додай прийом їжі вручну.",
+    action: "Обери інше фото вище, або додай прийом їжі вручну.",
   },
 };
 
@@ -154,7 +170,7 @@ function NotFoodNotice({
       <div className="text-style-label text-text">{copy.title}</div>
       <p className="mt-1 text-style-caption text-muted leading-relaxed">
         {what
-          ? `На фото схоже на «${what}» — порахувати КБЖВ немає з чого.`
+          ? `На фото схоже на «${what}», порахувати КБЖВ немає з чого.`
           : copy.unnamed}{" "}
         {copy.action}
       </p>
@@ -179,17 +195,34 @@ interface PhotoAnalyzeCardProps {
   note: string;
   setNote: Dispatch<SetStateAction<string>>;
   onSaveToLog?: (() => void | Promise<void>) | undefined;
+  /**
+   * Підпис кнопки аналізу, або `null` — сховати її зовсім.
+   *
+   * AI-CONTEXT: автоаналіз (`PhotoStep`) накриває щасливий шлях, тож
+   * кнопка тут — НЕ основний спосіб запустити аналіз, а запасний вихід:
+   * retry після помилки й вхід у paywall для Free. Показувати її завжди
+   * означало пропонувати дію, яку система вже зробила сама.
+   */
+  analyzeLabel?: string | null;
   /** `photo.isAnalyzing` — drives the inline status line next to «Аналізувати». */
   analyzing?: boolean | undefined;
   /** `photo.isRefining` — drives the inline status line next to «Перерахувати». */
   refining?: boolean | undefined;
   /** Fired once when the user confirms the privacy notice («Зрозуміло»). */
   onPrivacyAck?: (() => void) | undefined;
+  /**
+   * Кадр обраний, тариф дозволяє — аналіз стримує ЛИШЕ непідтверджений
+   * нотіс. Тоді нотіс називає себе наступним кроком (див. AI-CONTEXT біля
+   * `analyzeLabel`: кнопки «Аналізувати» в цьому стані навмисно немає,
+   * і без підказки екран виглядав мертвим).
+   */
+  analysisAwaitingPrivacyAck?: boolean | undefined;
 }
 
 export function PhotoAnalyzeCard({
   busy,
   analyzePhoto,
+  analyzeLabel = "Аналізувати",
   fileRef,
   onPickPhoto,
   photoPreviewUrl,
@@ -206,6 +239,7 @@ export function PhotoAnalyzeCard({
   analyzing,
   refining,
   onPrivacyAck,
+  analysisAwaitingPrivacyAck,
 }: PhotoAnalyzeCardProps) {
   const armPinchZoomReset = useResetPinchZoomAfterCameraCapture();
   return (
@@ -221,22 +255,27 @@ export function PhotoAnalyzeCard({
             ШІ визначить КБЖВ і запропонує уточнення
           </div>
         </div>
-        <button
-          type="button"
-          onClick={analyzePhoto}
-          disabled={busy}
-          className={cn(
-            "text-style-label shrink-0 px-5 h-10 rounded-xl",
-            "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors",
-          )}
-        >
-          {busy ? "…" : "Аналізувати"}
-        </button>
+        {analyzeLabel !== null && (
+          <button
+            type="button"
+            onClick={analyzePhoto}
+            disabled={busy}
+            className={cn(
+              "text-style-label shrink-0 px-5 h-10 rounded-xl",
+              "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors",
+            )}
+          >
+            {busy ? "…" : analyzeLabel}
+          </button>
+        )}
       </div>
 
       {analyzing && <InlineAnalysisStatus text="Аналізую фото…" />}
 
-      <PhotoPrivacyNotice onAck={onPrivacyAck} />
+      <PhotoPrivacyNotice
+        onAck={onPrivacyAck}
+        blockingAnalysis={analysisAwaitingPrivacyAck}
+      />
 
       {/* Drop-zone */}
       <label
@@ -417,8 +456,8 @@ export function PhotoAnalyzeCard({
                 Зберегти в журнал
               </button>
               <p className="text-style-caption text-muted text-center">
-                Сам аналіз у журнал не потрапляє — збережи, щоб він порахувався
-                в дні.
+                Сам аналіз у журнал не потрапляє, збережи, щоб він порахувався в
+                дні.
               </p>
             </div>
           )}
@@ -485,7 +524,7 @@ export function PhotoAnalyzeCard({
                 rows={2}
                 maxLength={PHOTO_NOTE_MAX_LENGTH}
                 aria-label="Що не так? Опиши своїми словами"
-                placeholder="напр. третє — не булочка, а сирник"
+                placeholder="напр. третє: не булочка, а сирник"
                 disabled={busy}
               />
             </div>
@@ -506,7 +545,7 @@ export function PhotoAnalyzeCard({
                 моделі по всьому кадру, а не точкова правка. Те, що вона
                 вгадала правильно, теж може змінитись. */}
             <p className="text-style-caption text-muted">
-              Перерахунок оновлює весь результат, а не лише те, що ти згадаєш —
+              Перерахунок оновлює весь результат, а не лише те, що ти згадаєш,
               уже правильні страви теж можуть змінитися.
             </p>
             {refining && (

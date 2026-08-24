@@ -236,7 +236,7 @@ export function ReceiptScanSheet({
     // відкинуті 5 лише перерахувавши список (бета-фідбек 2026-08-18).
     setBatchCapNote(
       files.length > BATCH_RECEIPTS_MAX_FILES
-        ? `Взято перші ${BATCH_RECEIPTS_MAX_FILES} фото з ${files.length} — решту докинь наступною пачкою після збереження цієї.`
+        ? `Взято перші ${BATCH_RECEIPTS_MAX_FILES} фото з ${files.length}, решту докинь наступною пачкою після збереження цієї.`
         : null,
     );
     setEditingItemId(null);

@@ -176,7 +176,7 @@ export function buildDebtOutFlows(
       );
       return {
         id: `debt-${d.id}`,
-        title: `${d.emoji || "💸"} ${d.name}`,
+        title: d.name ?? "Борг",
         amount: d.remaining,
         sign: "-" as FlowSign,
         color: OVERVIEW_FLOW_COLOR.danger,
@@ -210,7 +210,7 @@ export function buildReceivableInFlows(
       );
       return {
         id: `recv-${r.id}`,
-        title: `${r.emoji || "💰"} ${r.name}`,
+        title: r.name ?? "Дебіторка",
         amount: r.remaining,
         sign: "+" as FlowSign,
         color: OVERVIEW_FLOW_COLOR.success,
@@ -342,7 +342,7 @@ export function computePulseStyle({
     statusText: pulseBad
       ? "Перевитрата"
       : pulseWarn
-        ? "Обережно — майже вичерпано"
+        ? "Обережно: майже вичерпано"
         : "В нормі",
   };
 }

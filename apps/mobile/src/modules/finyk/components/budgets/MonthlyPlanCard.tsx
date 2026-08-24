@@ -2,6 +2,7 @@ import { memo } from "react";
 import { Pressable, Text, View } from "react-native";
 
 import type { MonthlyPlanInput } from "@/modules/finyk/lib/budgetsStore";
+import { formatNumberUk } from "@sergeant/shared";
 
 export interface MonthlyPlanCardProps {
   monthlyPlan: MonthlyPlanInput;
@@ -18,7 +19,7 @@ export interface MonthlyPlanCardProps {
 }
 
 function fmt(uah: number): string {
-  return uah.toLocaleString("uk-UA", { maximumFractionDigits: 0 });
+  return formatNumberUk(uah, { maximumFractionDigits: 0 });
 }
 
 function fmtSigned(uah: number): string {
@@ -227,7 +228,7 @@ function MonthlyPlanCardImpl({
         </>
       ) : (
         <Text className="text-sm text-fg-muted">
-          Постав план — і побачиш скільки безпечно витрачати на день.
+          Постав план, і побачиш скільки безпечно витрачати на день.
         </Text>
       )}
     </Pressable>

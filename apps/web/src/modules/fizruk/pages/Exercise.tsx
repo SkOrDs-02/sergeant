@@ -26,6 +26,7 @@ import {
 import { Card } from "@shared/components/ui/Card";
 import { messages } from "@shared/i18n/uk";
 import { LoadCalculator } from "../components/LoadCalculator";
+import { fmt, fmtLoose } from "../lib/numberFmt";
 import { ReturnProtocolNotice } from "../components/exercise/ReturnProtocolNotice";
 import {
   ExerciseProgressChart,
@@ -382,7 +383,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
         {hasCardio && (
           <Card radius="lg">
             <SectionHeading as="h2" size="xs" className="mb-3" variant="fizruk">
-              Темп (хв/км) — кардіо
+              Темп (хв/км): кардіо
             </SectionHeading>
             <ExerciseProgressChart
               points={cardioData.pacePoints}
@@ -391,7 +392,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
               color={chartStatusSeries.warning}
             />
             <div className="text-style-caption text-subtle mt-1">
-              Менше — краще (швидший темп)
+              Менше – краще (швидший темп)
             </div>
           </Card>
         )}
@@ -399,7 +400,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
         {hasCardio && (
           <Card radius="lg">
             <SectionHeading as="h2" size="xs" className="mb-3" variant="fizruk">
-              Дистанція (км) — кардіо
+              Дистанція (км): кардіо
             </SectionHeading>
             <ExerciseProgressChart
               points={cardioData.distPoints}
@@ -430,7 +431,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
             <EmptyState
               compact
               title="Поки немає записів"
-              description="Заверши хоча б один підхід — історія зʼявиться тут."
+              description="Заверши хоча б один підхід, історія зʼявиться тут."
             />
           ) : (
             <div className="space-y-2">
@@ -458,7 +459,10 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
                     <div className="text-sm text-text mt-2">
                       {item.type === "strength"
                         ? (item.sets || [])
-                            .map((s) => `${s.weightKg ?? 0}×${s.reps ?? 0}`)
+                            .map(
+                              (s) =>
+                                `${fmtLoose(s.weightKg ?? 0)}×${s.reps ?? 0}`,
+                            )
                             .join(", ") || "—"
                         : item.type === "distance"
                           ? (() => {
@@ -474,9 +478,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
                                   pm += 1;
                                   ps = 0;
                                 }
-                                const speed = (distKm / (dur / 3600)).toFixed(
-                                  1,
-                                );
+                                const speed = fmt(distKm / (dur / 3600), 1);
                                 return `${base} · ${pm}:${String(ps).padStart(2, "0")} хв/км · ${speed} км/год`;
                               }
                               return base;

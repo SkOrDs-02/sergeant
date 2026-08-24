@@ -215,7 +215,7 @@ export const liqpayProvider: BillingProvider = {
       action: "subscribe",
       amount: proAmountUah(),
       currency: "UAH",
-      description: "Sergeant Pro — місячна підписка",
+      description: "Sergeant Pro: місячна підписка",
       order_id: orderId,
       subscribe: 1,
       subscribe_date_start: liqpayDateStart(new Date()),

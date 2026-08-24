@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Icon, type IconName } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
+import { formatNumberUk } from "@sergeant/shared";
 
 const TONE_TEXT: Record<"success" | "danger" | "muted" | "finyk", string> = {
   success: "text-success",
@@ -69,10 +70,10 @@ export function AssetsLiabilitiesBar({
       <div id={summaryId} className="sr-only">
         <p>
           Співвідношення активів і пасивів. Активи:{" "}
-          {assets.toLocaleString("uk-UA", { maximumFractionDigits: 0 })} ₴ (
-          {assetsPct}%). Пасиви:{" "}
-          {liabilities.toLocaleString("uk-UA", { maximumFractionDigits: 0 })} ₴
-          ({liabilitiesPct}%).
+          {formatNumberUk(assets, { maximumFractionDigits: 0 })} ₴ ({assetsPct}
+          %). Пасиви:{" "}
+          {formatNumberUk(liabilities, { maximumFractionDigits: 0 })} ₴ (
+          {liabilitiesPct}%).
         </p>
       </div>
     </div>

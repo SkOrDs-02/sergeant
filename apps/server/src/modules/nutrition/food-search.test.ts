@@ -37,6 +37,36 @@ vi.mock("../silpo/foodSource.js", () => ({
   searchSilpoProducts: silpoMocks.searchSilpoProducts,
 }));
 
+import type { FoodSearchProduct } from "@sergeant/shared/schemas";
+
+/**
+ * Каталог (Tier-1) мокається на рівні модуля: ці тести перевіряють
+ * ПОШУКОВИЙ каскад, а не доступ до Postgres. Дефолт — порожньо, тобто
+ * рівно та поведінка, що була до появи ярусу, тож наявні сценарії
+ * читаються без змін.
+ */
+const searchCatalogMock = vi.hoisted(() =>
+  vi.fn<(q: string, limit: number) => Promise<FoodSearchProduct[]>>(
+    async () => [],
+  ),
+);
+vi.mock("./productCatalog.js", () => ({
+  searchCatalog: searchCatalogMock,
+  lookupInCatalog: vi.fn(async () => null),
+  upsertIntoCatalog: vi.fn(async () => undefined),
+}));
+
+/** Базова їжа без штрихкоду — те саме, окремим джерелом. */
+const searchGenericFoodsMock = vi.hoisted(() =>
+  vi.fn<(q: string, limit: number) => Promise<FoodSearchProduct[]>>(
+    async () => [],
+  ),
+);
+vi.mock("./genericFoods.js", () => ({
+  searchGenericFoods: searchGenericFoodsMock,
+  seedGenericFoods: vi.fn(async () => 0),
+}));
+
 import {
   stableId,
   hasErrorName,
@@ -720,5 +750,324 @@ describe("food-search handler > Silpo as fourth source", () => {
 
     expect(silpoMocks.searchSilpoProducts).not.toHaveBeenCalled();
     expect(res.headers["Cache-Control"]).toBeUndefined();
+  });
+});
+
+describe("food-search — Tier-1 (власний каталог)", () => {
+  const origFetch = global.fetch;
+
+  function catalogProduct(n: number): FoodSearchProduct {
+    return {
+      id: `cat_off_482000000000${n}`,
+      name: `Молоко варіант ${n}`,
+      brand: "Яготинське",
+      source: "off",
+      per100: { kcal: 53, protein_g: 2.8, fat_g: 2.6, carbs_g: 4.7 },
+      defaultGrams: 100,
+    };
+  }
+
+  beforeEach(() => {
+    searchCatalogMock.mockReset();
+    searchCatalogMock.mockResolvedValue([]);
+    global.fetch = vi.fn();
+  });
+
+  afterEach(() => {
+    global.fetch = origFetch;
+    vi.restoreAllMocks();
+  });
+
+  function req(q: string, limit?: number): Request {
+    return {
+      query: limit == null ? { q } : { q, limit: String(limit) },
+    } as unknown as Request;
+  }
+
+  it("повний ліміт із каталогу зупиняє каскад — жодного виходу назовні", async () => {
+    // Найчастіший випадок («молоко», «хліб», «яйця») і саме той, де
+    // економія квоти upstream-ів має значення.
+    const fetchSpy = vi.spyOn(global, "fetch");
+    searchCatalogMock.mockResolvedValue(
+      Array.from({ length: 5 }, (_, i) => catalogProduct(i)),
+    );
+
+    const res = mockRes();
+    await handler(req("молоко", 5), res);
+
+    expect(res.statusCode).toBe(200);
+    expect((res.body as { products: unknown[] }).products).toHaveLength(5);
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("неповна видача каталогу добирається з upstream", async () => {
+    searchCatalogMock.mockResolvedValue([catalogProduct(1)]);
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        products: [
+          {
+            code: "111",
+            product_name: "Молоко з OFF",
+            brands: "Галичина",
+            nutriments: {
+              "energy-kcal_100g": 60,
+              proteins_100g: 3,
+              fat_100g: 2.5,
+              carbohydrates_100g: 4.8,
+            },
+          },
+        ],
+      }),
+    });
+
+    const res = mockRes();
+    await handler(req("молоко", 10), res);
+
+    expect(res.statusCode).toBe(200);
+    expect(global.fetch).toHaveBeenCalled();
+    const products = (res.body as { products: FoodSearchProduct[] }).products;
+    // Каталог попереду: це вже перевірені воротами Атвотера картки.
+    expect(products[0]?.id).toBe("cat_off_4820000000001");
+    expect(products.length).toBeGreaterThan(1);
+  });
+
+  it("результат каталогу НЕ проходить токен-фільтр upstream-у", async () => {
+    // Каталог знаходить і за схожістю слова, тож буквального токена
+    // запиту в назві може не бути. Прогнати його через `includes(token)`
+    // означало б викинути саме влучні результати з друкарською помилкою.
+    searchCatalogMock.mockResolvedValue([
+      { ...catalogProduct(1), name: "Молоко Яготинське" },
+    ]);
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ products: [] }),
+    });
+
+    const res = mockRes();
+    await handler(req("малоко", 10), res);
+
+    const products = (res.body as { products: FoodSearchProduct[] }).products;
+    expect(products).toHaveLength(1);
+    expect(products[0]?.name).toBe("Молоко Яготинське");
+  });
+
+  it("недоступний каталог не ламає пошук", async () => {
+    searchCatalogMock.mockRejectedValue(new Error("connection refused"));
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        products: [
+          {
+            code: "222",
+            product_name: "Молоко",
+            brands: null,
+            nutriments: {
+              "energy-kcal_100g": 60,
+              proteins_100g: 3,
+              fat_100g: 2.5,
+              carbohydrates_100g: 4.8,
+            },
+          },
+        ],
+      }),
+    });
+
+    const res = mockRes();
+    await handler(req("молоко", 10), res);
+
+    expect(res.statusCode).toBe(200);
+    expect(
+      (res.body as { products: unknown[] }).products.length,
+    ).toBeGreaterThan(0);
+  });
+
+  it("дублікат між каталогом і upstream не потрапляє двічі", async () => {
+    searchCatalogMock.mockResolvedValue([
+      { ...catalogProduct(1), name: "Молоко", brand: "Галичина" },
+    ]);
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        products: [
+          {
+            code: "333",
+            product_name: "Молоко",
+            brands: "Галичина",
+            nutriments: {
+              "energy-kcal_100g": 60,
+              proteins_100g: 3,
+              fat_100g: 2.5,
+              carbohydrates_100g: 4.8,
+            },
+          },
+        ],
+      }),
+    });
+
+    const res = mockRes();
+    await handler(req("молоко", 10), res);
+
+    const products = (res.body as { products: FoodSearchProduct[] }).products;
+    const milk = products.filter((p) => p.name === "Молоко");
+    expect(milk).toHaveLength(1);
+    expect(milk[0]?.id).toBe("cat_off_4820000000001");
+  });
+});
+
+describe("food-search — базова їжа без штрихкоду", () => {
+  const origFetch = global.fetch;
+
+  const cucumber: FoodSearchProduct = {
+    id: "gen_ohirok",
+    name: "Огірок",
+    brand: null,
+    source: "usda",
+    per100: { kcal: 15, protein_g: 0.7, fat_g: 0.1, carbs_g: 3.6 },
+    defaultGrams: 100,
+  };
+
+  beforeEach(() => {
+    searchCatalogMock.mockReset();
+    searchCatalogMock.mockResolvedValue([]);
+    searchGenericFoodsMock.mockReset();
+    searchGenericFoodsMock.mockResolvedValue([]);
+    global.fetch = vi.fn();
+  });
+
+  afterEach(() => {
+    global.fetch = origFetch;
+    vi.restoreAllMocks();
+  });
+
+  function req(q: string, limit?: number): Request {
+    return {
+      query: limit == null ? { q } : { q, limit: String(limit) },
+    } as unknown as Request;
+  }
+
+  it("базова їжа йде ПЕРЕД брендованою карткою", async () => {
+    // На запит «огірок» людина хоче овоч, а не «Огірки консервовані
+    // Верес». Брендована картка релевантна тоді, коли шукають бренд —
+    // і тоді вона й так підніметься.
+    searchGenericFoodsMock.mockResolvedValue([cucumber]);
+    searchCatalogMock.mockResolvedValue([
+      {
+        id: "cat_off_482",
+        name: "Огірки консервовані",
+        brand: "Верес",
+        source: "off",
+        per100: { kcal: 11, protein_g: 0.8, fat_g: 0.1, carbs_g: 1.7 },
+        defaultGrams: 100,
+      },
+    ]);
+
+    const res = mockRes();
+    await handler(req("огірок", 2), res);
+
+    const found = (res.body as { products: FoodSearchProduct[] }).products;
+    expect(found[0]?.id).toBe("gen_ohirok");
+  });
+
+  it("власних результатів на повний ліміт достатньо — назовні не йдемо", async () => {
+    const fetchSpy = vi.spyOn(global, "fetch");
+    searchGenericFoodsMock.mockResolvedValue([cucumber]);
+    searchCatalogMock.mockResolvedValue([]);
+
+    const res = mockRes();
+    await handler(req("огірок", 1), res);
+
+    expect(res.statusCode).toBe(200);
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("два власні джерела питаються паралельно, не послідовно", async () => {
+    // Обидва локальні й незалежні; послідовний виклик подвоював би
+    // затримку пошуку ні за що.
+    //
+    // AI-DANGER: перевіряти ПОРЯДОК СТАРТУ тут марно — послідовна
+    // реалізація дає рівно ті самі «перший, другий», і такий тест
+    // зеленіє на обох. Розрізняє лише те, що нижче: базова їжа
+    // блокується на воротах і НЕ завершується, і саме в цей момент
+    // каталог має бути вже викликаний. Послідовний `await` до другого
+    // виклику просто не дійшов би — тест завис би на `pending`.
+    let releaseGeneric!: () => void;
+    let markGenericStarted!: () => void;
+    const genericStarted = new Promise<void>((resolve) => {
+      markGenericStarted = resolve;
+    });
+    const genericGate = new Promise<void>((resolve) => {
+      releaseGeneric = resolve;
+    });
+    searchGenericFoodsMock.mockImplementation(async () => {
+      markGenericStarted();
+      await genericGate;
+      return [];
+    });
+    searchCatalogMock.mockResolvedValue([]);
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ products: [] }),
+    });
+
+    const pending = handler(req("огірок", 10), mockRes());
+    await genericStarted;
+    expect(searchCatalogMock).toHaveBeenCalledWith("огірок", 10);
+
+    releaseGeneric();
+    await pending;
+  });
+
+  it("падіння базової їжі не ламає пошук", async () => {
+    searchGenericFoodsMock.mockRejectedValue(new Error("relation missing"));
+    searchCatalogMock.mockResolvedValue([]);
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        products: [
+          {
+            code: "444",
+            product_name: "Огірок",
+            brands: null,
+            nutriments: {
+              "energy-kcal_100g": 15,
+              proteins_100g: 0.7,
+              fat_100g: 0.1,
+              carbohydrates_100g: 3.6,
+            },
+          },
+        ],
+      }),
+    });
+
+    const res = mockRes();
+    await handler(req("огірок", 10), res);
+
+    expect(res.statusCode).toBe(200);
+    expect(
+      (res.body as { products: unknown[] }).products.length,
+    ).toBeGreaterThan(0);
+  });
+
+  it("дубль між базовою їжею і каталогом не потрапляє двічі", async () => {
+    searchGenericFoodsMock.mockResolvedValue([cucumber]);
+    searchCatalogMock.mockResolvedValue([{ ...cucumber, id: "cat_off_999" }]);
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ products: [] }),
+    });
+
+    const res = mockRes();
+    await handler(req("огірок", 10), res);
+
+    const found = (res.body as { products: FoodSearchProduct[] }).products;
+    expect(found.filter((p) => p.name === "Огірок")).toHaveLength(1);
   });
 });

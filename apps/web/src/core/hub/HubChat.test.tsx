@@ -16,6 +16,12 @@ const sendMock = vi.fn<(_: string) => Promise<void>>(() => Promise.resolve());
 const cancelInFlightMock = vi.fn();
 const closePaywallMock = vi.fn();
 const focusInputMock = vi.fn();
+let authStatus: "loading" | "authenticated" | "unauthenticated" =
+  "authenticated";
+
+vi.mock("../auth/AuthContext", () => ({
+  useAuthOptional: () => ({ status: authStatus, user: null }),
+}));
 
 vi.mock("./chat/useHubChatStorageBoot", () => ({
   useHubChatStorageBoot: () => storageBootMock(),
@@ -212,6 +218,7 @@ vi.mock("../billing/PaywallModal", () => ({
 describe("HubChat", () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    authStatus = "authenticated";
   });
 
   afterEach(() => {
@@ -241,7 +248,9 @@ describe("HubChat", () => {
     expect(screen.getByTestId("paywall-description")).toHaveTextContent(
       // Ліміт зрізали 15 → 5 у PR #464 (сервер), але ця копія лишилась
       // на 15 і почала брехати. Тест зробив свою роботу — спіймав правку.
-      "Free-тариф має 5 AI-повідомлень на день",
+      // 2026-08-23: одиниця виправлена на «запити» — сервер списує квоту
+      // за виклик моделі, і хід з дією коштує кілька.
+      "Free-тариф має 5 запитів до AI на день",
     );
 
     fireEvent.click(screen.getByText("details"));
@@ -279,5 +288,31 @@ describe("HubChat", () => {
     expect(selectSessionMock).toHaveBeenCalledWith("s2");
     expect(deleteSessionMock).toHaveBeenCalledWith("s1");
     expect(closePaywallMock).toHaveBeenCalledTimes(1);
+  });
+  // Regression (browser QA 2026-08-23): хаб запрошував незалогіненого гостя
+  // «Відкрити AI-асистента», давав набрати питання — і відповідав
+  // «Помилка: Доступ заборонено.». `/api/chat` за `requireSession()` лишається
+  // як є; змінюється те, що бачить гість ДО того, як щось вкладе.
+  it("замінює поле вводу на вхід в акаунт для незалогіненого гостя", () => {
+    authStatus = "unauthenticated";
+    render(<HubChat onClose={vi.fn()} />);
+
+    expect(screen.queryByTestId("chat-composer")).toBeNull();
+    const gate = screen.getByTestId("chat-auth-gate");
+    expect(gate).toHaveTextContent("Асистент працює після входу");
+    expect(screen.getByTestId("chat-auth-gate-signin")).toHaveAttribute(
+      "href",
+      "/sign-in",
+    );
+    // Історія лишається читабельною — гейт відбирає ввід, не читання.
+    expect(screen.getByTestId("chat-body")).toBeInTheDocument();
+  });
+
+  it("не блимає гейтом, поки сесія ще резолвиться", () => {
+    authStatus = "loading";
+    render(<HubChat onClose={vi.fn()} />);
+
+    expect(screen.getByTestId("chat-composer")).toBeInTheDocument();
+    expect(screen.queryByTestId("chat-auth-gate")).toBeNull();
   });
 });

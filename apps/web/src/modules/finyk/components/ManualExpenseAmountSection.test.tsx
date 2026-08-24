@@ -85,7 +85,7 @@ describe("ManualExpenseAmountSection", () => {
 
     const quickAmounts = screen.getByRole("group", { name: "Швидкі суми" });
     expect(within(quickAmounts).getByText("200 ₴")).toBeInTheDocument();
-    fireEvent.click(within(quickAmounts).getByLabelText("200 ₴ — часта сума"));
+    fireEvent.click(within(quickAmounts).getByLabelText("200 ₴ · часта сума"));
 
     expect(setValue).toHaveBeenCalledWith("amount", "200", {
       shouldDirty: true,

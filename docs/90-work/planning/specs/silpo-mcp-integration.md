@@ -271,7 +271,7 @@ E/F — сателіти відповідних треків після нако
 
 ## Поверхня змін (Phase 1 = трек A, Phase 2+ = трек B)
 
-- `apps/server/src/migrations/123_silpo_integration.sql` (+ `.down.sql`;
+- `apps/server/src/migrations/125_silpo_integration.sql` (+ `.down.sql`;
   номер звірити з main на момент PR — Hard Rule #4, генератор `pnpm gen` →
   migration, гейт `pnpm lint:migrations`) —
   `silpo_connection` (дзеркало mono), `silpo_receipts`
@@ -283,7 +283,7 @@ online|offline`, `payment_hint` (спайк §0: MCP способу оплати
   link-патерн як `finyk_mono_debt_links`. Hard Rule #4. `mono_connection`
   живе лише в raw SQL (без drizzle-моделі) — для silpo-таблиць так само
   достатньо SQL + типів у `db-schema` за фактичним патерном сусідніх таблиць.
-- `apps/server/src/migrations/124_silpo_oauth_state.sql` (+ `.down.sql`) —
+- `apps/server/src/migrations/126_silpo_oauth_state.sql` (+ `.down.sql`) —
   `silpo_oauth_state` (`state` PK → `user_id`, `code_verifier`,
   `redirect_uri`, `created_at`): довговічний стан OAuth-редіректу замість
   мапи в памʼяті процесу. Згорає одноразовим `DELETE ... RETURNING` з
@@ -364,7 +364,7 @@ wipe|sync-state|receipts|receipts/:id` + реєстрація в `routes/index.t
 Гілка `claude/msp-silpo-spec-experiment-vipt1a` — **walking skeleton треку A**
 для оцінки обсягу й вартості інтеграції до спайку §0. Що входить:
 
-- міграції `123_silpo_integration.sql` і `124_silpo_oauth_state.sql` (+down)
+- міграції `125_silpo_integration.sql` і `126_silpo_oauth_state.sql` (+down)
   — чотири таблиці інтеграції плюс довговічний стан OAuth-редіректу;
 - `apps/server/src/modules/silpo/` — mcpClient (JSON-RPC), oauth (PKCE+DCR),
   tokenStore (реюз key ring), receipts pull/upsert;
@@ -427,8 +427,11 @@ Checkout/оплата — завжди за людиною (tool у MCP відс
 
 Розвʼязано на боці цієї гілки (main — трунк, адаптується гілка):
 
-- міграція перенумерована `121_silpo_integration` → **`123_silpo_integration`**
-  (main зайняв 121 і 122);
+- міграція перенумерована `121_silpo_integration` → `123_silpo_integration`
+  (main зайняв 121 і 122); при злитті 2026-08-25 довелось посунути ще раз —
+  → **`125_silpo_integration`**, бо main тим часом зайняв і 123
+  (`product_catalog`), і 124 (`generic_foods`). Довгоживуча гілка з
+  міграцією платить цю ціну на кожному злитті;
 - наша лінк-таблиця перейменована `finyk_tx_receipt_links` →
   **`silpo_tx_receipt_links`** у міграції, `receipts.ts`, `receiptsRead.ts`,
   роутах, тестах, `check-schema-drift.mjs` і цій спеці. Імʼя тепер несе
@@ -474,7 +477,7 @@ HTTP-виклик, — це гірше за гонку, яку лікує.
 стирав її, і людина, повернувшись від Сільпо, отримувала `invalid_state`
 без підказки. Це ж було жорстким блокером на другу репліку.
 
-Переїхало в PG — міграція `124_silpo_oauth_state.sql`. Куку свідомо не
+Переїхало в PG — міграція `126_silpo_oauth_state.sql`. Куку свідомо не
 брали: `state` мусить згорати рівно один раз (захист від replay), а це
 властивість сховища, не транспорту; `DELETE ... RETURNING` робить пошук,
 перевірку TTL і згорання одним атомарним запитом. `code_verifier` лежить

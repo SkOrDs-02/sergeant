@@ -4,6 +4,7 @@
 
 import type { Rule } from "../types.js";
 import type { FinanceContext } from "../financeContext.js";
+import { formatNumberUk } from "@sergeant/shared";
 
 const BUILTIN: Record<string, string> = {
   food: "Продукти",
@@ -39,16 +40,16 @@ export const frequentNoBudgetRule: Rule<FinanceContext> = {
     );
     const spendHint =
       thisMonthSpend > 0
-        ? `Цього місяця вже ${thisMonthSpend.toLocaleString("uk-UA")} ₴ — постав ліміт, щоб тримати руку на пульсі.`
-        : `Використано ${best.count} разів — встанови ліміт, щоб тримати все під контролем.`;
+        ? `Цього місяця вже ${formatNumberUk(thisMonthSpend)} ₴, постав ліміт, щоб тримати руку на пульсі.`
+        : `Використано ${best.count} разів, встанови ліміт, щоб тримати все під контролем.`;
 
     return [
       {
         id: `finyk_frequent_no_budget_${best.id}`,
         module: "finyk" as const,
         priority: 55,
-        icon: "📌",
-        title: `"${label}" — твоя найчастіша категорія без ліміту`,
+        icon: "bookmark",
+        title: `"${label}" – твоя найчастіша категорія без ліміту`,
         body: spendHint,
         action: "finyk",
       },

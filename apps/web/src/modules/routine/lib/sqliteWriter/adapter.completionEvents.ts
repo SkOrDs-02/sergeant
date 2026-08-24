@@ -5,6 +5,7 @@ import { resolveOriginDeviceId } from "@sergeant/shared";
 import { webKVStore } from "@shared/lib/storage/storage";
 
 import { fireSyncOutboxUpsert } from "../../../../core/syncEngine/fireSyncOutboxUpsert.js";
+import { ROUTINE_DAY_ANCHOR } from "../dayAnchor.js";
 import { COMPLETION_EVENT_INSERT_SQL } from "./adapter.sql.js";
 import type { CompletionEventAppendOp } from "./diff.js";
 
@@ -24,12 +25,17 @@ import type { CompletionEventAppendOp } from "./diff.js";
  *   - жодного `routine_streaks`-інкремента. Лічильник кліків — власність
  *     старого шляху (`addCompletion`/`removeCompletion` в `adapter.ts`);
  *     дублювати його з журналу означало б рахувати кожен toggle двічі.
- *   - `dayAnchor = 'device-local'`: `dateKey` рахує `dateKeyFromDate`
- *     (`packages/routine-domain/src/dateKeys.ts`) з локального часу
- *     пристрою. Це ЧЕСНА фіксація поточної поведінки, а не схвалення
- *     доктрини — рішення Kyiv vs device-local (W1-TIME-DOCTRINE) ще не
- *     ухвалене, і з сирих `occurred_at` + `tz_offset_min` ключ можна
- *     буде перерахувати.
+ *   - `dayAnchor` — НЕ літерал. Значення приходить із
+ *     `ROUTINE_DAY_ANCHOR` (`../dayAnchor.ts`), тобто з того самого
+ *     файлу, що продукує «сьогодні» для UI. Доти, доки тут стояв
+ *     захардкоджений `'device-local'`, колонка брехала: `date_key`
+ *     приходив із київського «сьогодні» (`RoutineApp.helpers.todayDate`
+ *     / `HabitDetailSheet.todayKey`, обидва через `getKyivDateParts`), а
+ *     метадані заявляли девайсовий анкер — тобто будь-яка майбутня
+ *     міграція чи аналітика, що довіриться колонці, класифікує ці рядки
+ *     не туди. Сирі `occurred_at` + `tz_offset_min` лишаються поруч, тож
+ *     ключ і далі можна перерахувати, коли доктрина ADR-0078 доїде до
+ *     всього routine-у (W1-TIME-DOCTRINE).
  */
 export async function appendCompletionEvent(
   client: SqliteMigrationClient,
@@ -53,7 +59,7 @@ export async function appendCompletionEvent(
     op.state,
     clientTs,
     tzOffsetMin,
-    "device-local",
+    ROUTINE_DAY_ANCHOR,
     "ui",
     deviceId,
     clientTs,
@@ -72,7 +78,7 @@ export async function appendCompletionEvent(
       state: op.state,
       occurred_at: clientTs,
       tz_offset_min: tzOffsetMin,
-      day_anchor: "device-local",
+      day_anchor: ROUTINE_DAY_ANCHOR,
       source: "ui",
       device_id: deviceId,
       created_at: clientTs,

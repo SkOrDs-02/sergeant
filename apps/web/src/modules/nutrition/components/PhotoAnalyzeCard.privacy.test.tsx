@@ -41,8 +41,12 @@ describe("попередження про фото", () => {
   it("показується, поки людина його не підтвердила", () => {
     renderCard();
     expect(screen.getByText(NOTICE)).toBeTruthy();
-    // Не просто заголовок: суть попередження — куди саме їде кадр.
-    expect(screen.getByText(/Anthropic/)).toBeTruthy();
+    // Не просто заголовок: суть попередження — що кадр іде за периметр.
+    // Вендора навмисно не називаємо: за дефолтного `VISION_VIA_OPENROUTER`
+    // кадр іде через OpenRouter, а не напряму до Anthropic, тож будь-яке
+    // імʼя в копії було б правдою лише для частини деплоїв.
+    expect(screen.queryByText(/Anthropic/)).toBeNull();
+    expect(screen.getByText(/до зовнішнього\s+AI-сервісу/)).toBeTruthy();
   });
 
   it("зникає після «Зрозуміло» і не повертається при наступному відкритті", () => {

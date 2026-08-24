@@ -8,7 +8,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
-import { hapticTap } from "@sergeant/shared";
+import { formatNumberUk, hapticTap } from "@sergeant/shared";
 
 import { Card } from "@/components/ui/Card";
 
@@ -20,7 +20,7 @@ const QUICK_ML = [200, 300, 500, 750] as const;
 // до мілілітра (2350 мл → «2.4 л»).
 function fmt(ml: number): string {
   if (ml < 1000) return `${ml} мл`;
-  const litres = (ml / 1000).toLocaleString("uk-UA", {
+  const litres = formatNumberUk(ml / 1000, {
     maximumFractionDigits: 2,
   });
   return `${litres} л`;

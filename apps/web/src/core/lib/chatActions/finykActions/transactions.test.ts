@@ -214,7 +214,7 @@ describe("createTransaction", () => {
         { id: newId, amount: 100 },
         { id: "m_other", amount: 50 },
       ]);
-      out.undo();
+      out.undo?.();
 
       const afterUndo = mockWrite.mock.calls[0]![1] as Array<{ id: string }>;
       expect(afterUndo).toHaveLength(1);
@@ -232,7 +232,7 @@ describe("createTransaction", () => {
 
       vi.clearAllMocks();
       mockLs.mockReturnValue([]); // already removed elsewhere
-      out.undo();
+      out.undo?.();
 
       expect(mockWrite).not.toHaveBeenCalled();
       // The SQLite mirror soft-delete still fires — idempotent by design.

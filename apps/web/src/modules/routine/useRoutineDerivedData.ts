@@ -200,7 +200,7 @@ export function useRoutineDerivedData({
     if (timeMode === "week" || timeMode === "month") {
       const a = fmtUk(range.startKey);
       const b = fmtUk(range.endKey);
-      return range.startKey === range.endKey ? a : `${a} — ${b}`;
+      return range.startKey === range.endKey ? a : `${a} – ${b}`;
     }
     return fmtUk(tk);
   }, [timeMode, selectedDay, range.startKey, range.endKey]);
@@ -248,19 +248,35 @@ export function useRoutineDerivedData({
     ],
   );
 
-  // Zero-delta: діапазон — рівно сьогодні, а `dateKey >= pausedFrom` відсіює
-  // сьогоднішній день так само, як недатована пауза. Параметр стоїть заради
-  // однієї семантики на всіх викликах, а не заради зміни числа.
+  // Лічильник дня мусить рахувати ТОЙ день, який на екрані.
+  //
+  // AI-CONTEXT: раніше тут стояв жорсткий `todayKey..todayKey`, тож на
+  // вкладці «Завтра» (і на будь-якому обраному дні) герой показував
+  // сьогоднішні цифри поруч із завтрашнім заголовком і завтрашнім
+  // списком — «0 з 3» під днем, у якому заплановано зовсім інше. Беремо
+  // однодневний діапазон, коли він однодневний; для тижня/місяця
+  // «прогрес дня» не визначений, тож лишається сьогодні.
+  //
+  // `pausedFrom: todayKey` не рухаємо: це заморозка минулого (ADR-0079
+  // §2), вона прив'язана до «сьогодні», а не до показуваного дня.
+  const progressDayKey =
+    range.startKey === range.endKey ? range.startKey : todayKey;
   const dayProgress = useMemo(
     () =>
       completionRateForRange(
         routine.habits,
         routine.completions,
-        todayKey,
-        todayKey,
+        progressDayKey,
+        progressDayKey,
         { pausedFrom: todayKey, skips: routine.skips ?? {} },
       ),
-    [routine.habits, routine.completions, routine.skips, todayKey],
+    [
+      routine.habits,
+      routine.completions,
+      routine.skips,
+      progressDayKey,
+      todayKey,
+    ],
   );
 
   const canBulkMark = useMemo(() => {

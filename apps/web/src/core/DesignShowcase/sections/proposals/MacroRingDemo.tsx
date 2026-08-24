@@ -45,7 +45,7 @@ export function MacroRingDemo() {
             ))}
           </div>
           <p className="text-style-caption text-muted">
-            Три-чотири смуги — вертикально
+            Три-чотири смуги, вертикально
           </p>
         </CompareTile>
       }

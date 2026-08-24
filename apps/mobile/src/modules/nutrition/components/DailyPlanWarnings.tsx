@@ -24,20 +24,20 @@ const GOAL_RANGE_MESSAGES: Record<
   Record<GoalRangeIssue["kind"], string>
 > = {
   kcal: {
-    low: "Менше 800 ккал — небезпечно без нагляду лікаря.",
-    high: "Більше 6000 ккал — це дуже багато навіть для атлетів.",
+    low: "Менше 800 ккал, небезпечно без нагляду лікаря.",
+    high: "Більше 6000 ккал, це дуже багато навіть для атлетів.",
   },
   protein_g: {
-    low: "Менше 30 г білка — ризик дефіциту.",
-    high: "Більше 300 г білка — це дуже багато навіть для атлетів.",
+    low: "Менше 30 г білка, ризик дефіциту.",
+    high: "Більше 300 г білка, це дуже багато навіть для атлетів.",
   },
   fat_g: {
-    low: "Менше 20 г жиру — ризик дефіциту незамінних жирних кислот.",
-    high: "Більше 250 г жиру — це дуже багато для типового раціону.",
+    low: "Менше 20 г жиру, ризик дефіциту незамінних жирних кислот.",
+    high: "Більше 250 г жиру, це дуже багато для типового раціону.",
   },
   carbs_g: {
     low: "",
-    high: "Більше 700 г вуглеводів — це дуже багато навіть для атлетів.",
+    high: "Більше 700 г вуглеводів, це дуже багато навіть для атлетів.",
   },
 };
 
@@ -82,15 +82,15 @@ export function MacroKcalWarning({
           {overshoot ? (
             <>
               Сума макро виходить на{" "}
-              <Text className="font-bold">{calc} ккал</Text> — це на{" "}
+              <Text className="font-bold">{calc} ккал</Text>, це на{" "}
               <Text className="font-bold">{absDiff} ккал</Text> більше за ціль{" "}
               <Text className="font-bold">{target} ккал</Text>. 1 г білка = 4
               ккал, 1 г жиру = 9 ккал, 1 г вуглеводів = 4 ккал.
             </>
           ) : (
             <>
-              Сума макро дає лише <Text className="font-bold">{calc} ккал</Text>{" "}
-              — це на <Text className="font-bold">{absDiff} ккал</Text> менше за
+              Сума макро дає лише <Text className="font-bold">{calc} ккал</Text>
+              , це на <Text className="font-bold">{absDiff} ккал</Text> менше за
               ціль <Text className="font-bold">{target} ккал</Text>.
             </>
           )}
@@ -172,8 +172,8 @@ export function MissingMacrosHint({
         </Text>
         <Text className="flex-1 text-xs leading-5 text-fg">
           Задано лише <Text className="font-bold">{kcal} ккал</Text>, але без
-          макро AI не зрозуміє що тобі важливо — білок, жир чи вуглеводи.
-          Підстав середні стартові значення й відредагуй під себе.
+          макро AI не зрозуміє що тобі важливо: білок, жир чи вуглеводи. Підстав
+          середні стартові значення й відредагуй під себе.
         </Text>
       </View>
       <View className="flex-row flex-wrap pl-5" style={{ gap: 8 }}>

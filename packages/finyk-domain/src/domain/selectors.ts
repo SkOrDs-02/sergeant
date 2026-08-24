@@ -24,6 +24,7 @@ import type {
   TxSplitsMap,
 } from "./types";
 import { getCatColor } from "./categories";
+import { formatNumberUk } from "@sergeant/shared";
 
 type MonthPredicate = (tx: Transaction | null | undefined) => boolean;
 
@@ -172,7 +173,7 @@ function buildCategoryList(
     .map(([categoryId, rawSpent]) => {
       const meta = resolveExpenseCategoryMeta(categoryId, customCategories) || {
         id: categoryId,
-        label: "💳 Інше",
+        label: "Інше",
       };
       return {
         categoryId,
@@ -432,12 +433,12 @@ export function formatComparisonSummary(
     if (!currentSpent) {
       return {
         direction: "no_prev",
-        text: "Витрат ще немає — повернемось, коли зʼявляться дані.",
+        text: "Витрат ще немає, повернемось, коли зʼявляться дані.",
       };
     }
     return {
       direction: "no_prev",
-      text: `У ${prevLabel} витрат не було — порівнювати поки немає з чим.`,
+      text: `У ${prevLabel} витрат не було, порівнювати поки немає з чим.`,
     };
   }
   if (diff === 0) {
@@ -446,7 +447,7 @@ export function formatComparisonSummary(
       text: `Витрати такі самі, як у ${prevLabel}.`,
     };
   }
-  const absDiff = Math.abs(diff).toLocaleString("uk-UA", {
+  const absDiff = formatNumberUk(Math.abs(diff), {
     maximumFractionDigits: 0,
   });
   const pctPart =

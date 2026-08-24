@@ -65,7 +65,7 @@ export function ExerciseProgressChart({
 
   const yTicks = [0, 0.5, 1].map((fr) => ({
     y: padT + innerH * (1 - fr),
-    lab: (minVal + fr * range).toFixed(0),
+    lab: fmt(minVal + fr * range),
   }));
 
   const labelSet = new Set([0, n - 1]);
@@ -156,7 +156,7 @@ export function ExerciseProgressChart({
         <p>
           Прогрес {label}. Поточне значення: {fmt(lastVal, 1)} {unit}.
           {delta !== 0 && Number.isFinite(delta)
-            ? ` Зміна від першого запису: ${delta > 0 ? "+" : ""}${delta.toFixed(1)} ${unit}.`
+            ? ` Зміна від першого запису: ${delta > 0 ? "+" : ""}${fmt(delta, 1)} ${unit}.`
             : ""}
         </p>
         <ul>
@@ -181,7 +181,7 @@ export function ExerciseProgressChart({
             )}
           >
             {delta > 0 ? "+" : ""}
-            {delta.toFixed(1)} {unit}
+            {fmt(delta, 1)} {unit}
           </span>
         )}
       </div>

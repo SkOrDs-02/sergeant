@@ -513,7 +513,7 @@ export function formatDailySeries(
 ): string {
   const { days, metrics, raw } = series;
   const lines: string[] = [
-    `Ряди метрик ${series.from} — ${series.to} (${days.length} днів; одиниці: ${metrics
+    `Ряди метрик ${series.from} – ${series.to} (${days.length} днів; одиниці: ${metrics
       .map((m) => `${m}=${METRIC_UNIT[m]}`)
       .join(", ")})`,
   ];
@@ -528,7 +528,7 @@ export function formatDailySeries(
       lines.push("Кореляції (Pearson r; на спільних днях):");
       for (const c of correlations) {
         lines.push(
-          `  ${c.a} ↔ ${c.b}: r=${c.pearson.toFixed(2)} (Spearman ${c.spearman.toFixed(2)}, n=${c.n}) — ${strength(c.pearson)}`,
+          `  ${c.a} ↔ ${c.b}: r=${c.pearson.toFixed(2)} (Spearman ${c.spearman.toFixed(2)}, n=${c.n}): ${strength(c.pearson)}`,
         );
       }
     }

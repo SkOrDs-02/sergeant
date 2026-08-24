@@ -2,12 +2,22 @@
  * AddMealSheet — three-step bottom sheet for logging a meal.
  *
  * Step flow:
- *   "source" → user picks where the meal comes from (template, pantry,
- *              food-search, barcode, photo, or manual entry).
- *   "photo"  → AI photo analysis (PhotoStep owns the usePhotoAnalysis
- *              controller and the Premium gate); applying the result
- *              seeds the fill form and advances.
- *   "fill"   → user edits name, time, macros and saves.
+ *   "source"  → user picks where the meal comes from (template, pantry,
+ *               food-search, barcode, photo, or one of the two manual
+ *               modes below).
+ *   "photo"   → AI photo analysis (PhotoStep owns the usePhotoAnalysis
+ *               controller and the Premium gate); applying the result
+ *               seeds the fill form and advances.
+ *   "package" → manual entry from a label: КБЖВ per 100 g + portion
+ *               weight; creates a food and advances linked to it.
+ *   "fill"    → user edits name, time, macros and saves.
+ *
+ * AI-CONTEXT: manual entry is deliberately TWO modes, because the unit
+ * differs. "package" takes the numbers off a label (always per 100 g) and
+ * scales them by the eaten weight; "fill" reached straight from "source"
+ * takes КБЖВ for the whole portion and carries no weight at all. Merging
+ * them back into one unlabelled "Ввести вручну" button is what made users
+ * type per-100 g values into per-portion fields with nothing to catch it.
  *
  * Editing an existing meal skips straight to "fill". `initialStep="photo"`
  * opens directly at the photo step (PWA shortcut `add_meal_photo`, hub
@@ -15,8 +25,7 @@
  *
  * @last-validated 2026-08-13
  */
-import { useState } from "react";
-import { Icon } from "@shared/components/ui/Icon";
+import { useEffect, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
@@ -40,21 +49,21 @@ import {
   type MealFormPhotoResult,
   type MealFormState,
 } from "./meal-sheet/mealFormUtils";
-import { MealTemplatesRow } from "./meal-sheet/MealTemplatesRow";
 import { PhotoStep } from "./meal-sheet/PhotoStep";
 import { MealTypePicker } from "./meal-sheet/MealTypePicker";
 import { NameTimeRow } from "./meal-sheet/NameTimeRow";
-import { FromPantryRow } from "./meal-sheet/FromPantryRow";
-import {
-  FoodPickerSection,
-  type PickedFood,
-} from "./meal-sheet/FoodPickerSection";
+import type { PickedFood } from "./meal-sheet/FoodPickerSection";
+import { PickedFoodCard } from "./meal-sheet/PickedFoodCard";
+import { PackageEntryStep } from "./meal-sheet/PackageEntryStep";
+import { ManualEntryTab } from "./meal-sheet/ManualEntryTab";
+import { SearchTabPanel } from "./meal-sheet/SearchTabPanel";
+import { SourceTabs, type SourceTabId } from "./meal-sheet/SourceTabs";
 import { BarcodeSection } from "./meal-sheet/BarcodeSection";
+import { AddMealSheetTitle } from "./meal-sheet/AddMealSheetTitle";
 import { MacrosEditor } from "./meal-sheet/MacrosEditor";
 import { SaveAsTemplate } from "./meal-sheet/SaveAsTemplate";
 import { useFoodSearch } from "./meal-sheet/useFoodSearch";
 import { useBarcodeLookup } from "./meal-sheet/useBarcodeLookup";
-import { QuickAddChips } from "./QuickAddChips";
 import type { QuickChip } from "../hooks/useNutritionQuickChips";
 
 /**
@@ -135,11 +144,13 @@ export function AddMealSheet({
   const [foodQuery, setFoodQuery] = useState("");
   const [pickedFood, setPickedFood] = useState<PickedFood | null>(null);
   const [pickedGrams, setPickedGrams] = useState("100");
+  const [sourceTab, setSourceTab] = useState<SourceTabId>("search");
   const [fromPantryItem, setFromPantryItem] = useState<string | null>(null);
-  // Three-step flow: "source" (pick a source — template / pantry / food
+  // Four-step flow: "source" (pick a source — template / pantry / food
   // search / barcode / photo / manual), "photo" (AI analysis inside the
-  // sheet) and "fill" (name, time, macros, save). Editing an existing
-  // meal skips straight to "fill" since the source is already decided.
+  // sheet), "package" (manual per-100 g entry from a label) and "fill"
+  // (name, time, macros, save). Editing an existing meal skips straight
+  // to "fill" since the source is already decided.
   const [step, setStep] = useState("source");
   // Set on the photo → fill transition; drives `source`/`macroSource` and
   // the meal-thumbnail save. Cleared on backtrack so a user who returns
@@ -220,6 +231,11 @@ export function AddMealSheet({
         : "100",
     );
     setFoodErr("");
+    // Вкладку теж скидаємо, і це не косметика: ефект нижче відкриває
+    // сканер при активній вкладці «Скан», тож аркуш, закритий на ній,
+    // при наступному відкритті кидав би людину одразу в камеру — без
+    // жодного жесту з її боку.
+    setSourceTab("search");
     setBarcode("");
     setBarcodeStatus("");
     setBarcodeNotice(null);
@@ -253,6 +269,27 @@ export function AddMealSheet({
   if (step === "source" && (pickedFood || fromPantryItem)) {
     setStep("fill");
   }
+
+  // Вхід у вкладку «Скан» — це вже жест «хочу сканувати», тож сканер
+  // відкривається сам. Той самий принцип, що й у кроці фото, який сам
+  // відкриває піккер: обрана вкладка — це вже намір, і просити ще один
+  // тап означає пропонувати дію, яку людина щойно зробила. Кнопка в
+  // секції лишається, але як «Сканувати ще раз» — повтор після невдалого
+  // кадру, а не основний шлях.
+  //
+  // Ref, а не стан: один запуск на активацію вкладки. Без нього закритий
+  // сканер відкривався б назад на кожному ре-рендері, і вийти з вкладки
+  // стало б неможливо.
+  const scanAutoOpenedRef = useRef(false);
+  useEffect(() => {
+    if (!open || step !== "source" || sourceTab !== "scan") {
+      scanAutoOpenedRef.current = false;
+      return;
+    }
+    if (scanAutoOpenedRef.current) return;
+    scanAutoOpenedRef.current = true;
+    setScannerOpen(true);
+  }, [open, step, sourceTab, setScannerOpen]);
 
   function handleSave() {
     // Fall back to the picked source's name when the user emptied the name
@@ -289,7 +326,7 @@ export function AddMealSheet({
     if (kcal != null && kcal > MAX_KCAL_PER_MEAL) {
       setForm((s) => ({
         ...s,
-        err: `Забагато калорій — максимум ${MAX_KCAL_PER_MEAL} ккал на прийом.`,
+        err: `Забагато калорій: максимум ${MAX_KCAL_PER_MEAL} ккал на прийом.`,
       }));
       return;
     }
@@ -298,7 +335,7 @@ export function AddMealSheet({
     ) {
       setForm((s) => ({
         ...s,
-        err: `Забагато БЖВ — максимум ${MAX_MACRO_GRAMS} г на прийом.`,
+        err: `Забагато БЖВ: максимум ${MAX_MACRO_GRAMS} г на прийом.`,
       }));
       return;
     }
@@ -310,6 +347,20 @@ export function AddMealSheet({
     // скидається в null при відкритті схита.
     const effectiveFoodId = pickedFood?.id ?? initialMeal?.foodId ?? null;
     const hasAmount = pickedFood || initialMeal?.amount_g != null;
+    // Нульова (чи стерта) вага при обраному продукті — не «не вказано», а
+    // мовчазна розсинхронізація: `gramsOrDefault` підставив би 100, тоді як
+    // у полях КБЖВ лишились числа, пораховані під попередню вагу. Ефект у
+    // `PickedFoodCard` навмисно НЕ перераховує макроси під нуль (інакше під
+    // порожнім полем світились би числа за 100 г), тож зловити це можна
+    // рівно тут. Записати 100 г із КБЖВ від 250 г — саме та підміна
+    // одиниці, проти якої цей екран і переробляли.
+    if (hasAmount) {
+      const grams = parseDecimalInput(pickedGrams);
+      if (!grams.ok || grams.value <= 0) {
+        setForm((s) => ({ ...s, err: "Вкажи вагу порції." }));
+        return;
+      }
+    }
     const macroSource = appliedPhoto
       ? "photoAI"
       : pickedFood
@@ -404,43 +455,98 @@ export function AddMealSheet({
     setStep("fill");
   }
 
+  // Крок «з упаковки» → «fill»: продукт уже збережено в локальну базу,
+  // лишається зв'язати його з прийомом. Макроси форми не чіпаємо тут —
+  // їх порахує `PickedFoodCard` під вагу порції.
+  function handlePackageCreated(product: PickedFood, grams: string) {
+    setAppliedPhoto(null);
+    setFromPantryItem(null);
+    setPickedFood(product);
+    setPickedGrams(grams);
+    setFoodQuery("");
+    setStep("fill");
+  }
+
+  // «Обрати інший продукт» з картки на кроці «fill». Скидаємо зв'язок
+  // ПЕРЕД поверненням, інакше авто-перехід нижче миттєво штовхне назад.
+  function handleChangeProduct() {
+    dropSeededMacros();
+    setPickedGrams("100");
+    setFoodQuery("");
+    setStep("source");
+  }
+
+  // Значення, засіяні джерелом (продукт на 100 г × вага, або оцінка AI з
+  // фото), не мають переживати відмову від цього джерела. Інакше людина,
+  // що з продукту повернулась у «Готову страву», побачить у полях числа,
+  // порахованих на 100 г, під підписом «за всю порцію» — рівно та тиха
+  // підміна одиниці, заради якої цей екран узагалі переробляли.
+  function dropSeededMacros() {
+    // Комора теж джерело: `FromPantryRow` сіє `form.name` назвою продукту.
+    // Поки її не було в цій умові, відмова від комори лишала ту назву у
+    // формі, і ручний запис зберігався під чужим іменем.
+    const seeded = Boolean(appliedPhoto || pickedFood || fromPantryItem);
+    // Рівно той рядок, який у поле назви записало джерело — по ньому й
+    // відрізняємо засіяне від набраного людиною. Три джерела сіють назву
+    // по-різному, але правило одне: збігається — наше, отже чистимо;
+    // відрізняється — своє, отже не чіпаємо.
+    const seededName = pickedFood
+      ? [pickedFood.name, pickedFood.brand].filter(Boolean).join(" ").trim()
+      : fromPantryItem !== null
+        ? fromPantryItem
+        : appliedPhoto
+          ? (appliedPhoto.result.dishName || "").trim()
+          : null;
+    setPickedFood(null);
+    setAppliedPhoto(null);
+    setFromPantryItem(null);
+    // Чистимо РІВНО те, що засіяло джерело: назву й КБЖВ. Тип прийому та
+    // час обирає людина, і `emptyForm(null)` їх мовчки перезаписував би
+    // на `mealTypeByNow()` / `currentTime()` — хто поставив «Вечеря» о
+    // 15:00 і потім змінив продукт, отримував назад «Обід» і поточну
+    // годину.
+    if (seeded) {
+      setForm((s) => ({
+        ...s,
+        name: seededName !== null && s.name !== seededName ? s.name : "",
+        kcal: "",
+        protein_g: "",
+        fat_g: "",
+        carbs_g: "",
+        err: "",
+      }));
+    }
+  }
+
+  // «Маю етикетку на 100 г» з ручного кроку — переводимо в режим
+  // упаковки, а не назад до вибору джерела: користувач уже знає, чого
+  // хоче, зайвий екран тут лише відкидає назад.
+  function handleSwitchToPackage() {
+    dropSeededMacros();
+    setPickedGrams("100");
+    setFoodQuery("");
+    setStep("package");
+  }
+
   const canBacktrack = step !== "source" && !initialMeal?.id;
   function handleBacktrack() {
     // Clear any picked source to prevent the auto-advance effect from
     // immediately pushing back to "fill" when we return to "source".
-    setPickedFood(null);
-    setFromPantryItem(null);
-    // Відмова від фото-джерела мусить прибрати і засіяні ним значення:
-    // інакше AI-оцінка КБЖВ пережила б backtrack і збереглась би під
-    // `macroSource: manual` — підміна походження даних (канон: «скільки
-    // логів через AI» має лишатись чесним питанням).
-    if (appliedPhoto) {
-      setAppliedPhoto(null);
-      setForm(emptyForm(null));
-    }
+    // Відмова від джерела мусить прибрати і засіяні ним значення: інакше
+    // AI-оцінка КБЖВ (чи перерахунок продукту під вагу) пережила б
+    // backtrack і збереглась би під `macroSource: manual` — підміна
+    // походження даних (канон: «скільки логів через AI» має лишатись
+    // чесним питанням).
+    dropSeededMacros();
     setStep("source");
   }
 
   const title = (
-    <div className="flex items-center gap-2 min-w-0">
-      {canBacktrack && (
-        <button
-          type="button"
-          onClick={handleBacktrack}
-          className="w-9 h-9 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full bg-panelHi text-muted hover:text-text transition-colors"
-          aria-label="Назад до вибору джерела"
-        >
-          <Icon name="chevron-left" size="lg" />
-        </button>
-      )}
-      <span className="truncate">
-        {step === "source"
-          ? "Звідки страва?"
-          : step === "photo"
-            ? "Аналіз фото страви"
-            : "Додати прийом їжі"}
-      </span>
-    </div>
+    <AddMealSheetTitle
+      step={step}
+      canBacktrack={canBacktrack}
+      onBacktrack={handleBacktrack}
+    />
   );
 
   return (
@@ -453,6 +559,10 @@ export function AddMealSheet({
             await handleBarcodeLookup(raw);
           }}
           onClose={() => setScannerOpen(false)}
+          onManualEntry={() => {
+            setScannerOpen(false);
+            setSourceTab("manual");
+          }}
         />
       )}
       <Sheet
@@ -464,119 +574,126 @@ export function AddMealSheet({
       >
         {step === "source" ? (
           <>
-            <p className="mb-3 text-style-caption text-muted">
-              Оберіть джерело нижче. Макроси, назву й час відредагуєте на
-              наступному кроці.
-            </p>
+            <SourceTabs active={sourceTab} onChange={setSourceTab} />
 
-            {/* Templates / pantry rows disappear when empty so a
-                  first-time user sees search + barcode as the whole step
-                  (no half-broken UI). They come back automatically once
-                  the user saves a template or stocks the pantry. */}
-            {mealTemplates.length > 0 && (
-              <MealTemplatesRow
-                mealTemplates={mealTemplates}
-                setForm={setForm}
-                setPrefs={setPrefs}
-                onSelected={() => setStep("fill")}
-                onEditTemplate={(t) => setEditingTemplateId(t.id)}
-              />
-            )}
-
-            {onQuickAddMeal && quickChips.length > 0 && (
-              <section
-                className="mb-4 min-w-0"
-                aria-labelledby="recent-meals-heading"
+            {sourceTab === "search" && (
+              <div
+                role="tabpanel"
+                id="source-panel-search"
+                aria-labelledby="source-tab-search"
               >
-                <h3
-                  id="recent-meals-heading"
-                  className="mb-2 text-style-label text-text"
-                >
-                  Нещодавні прийоми
-                </h3>
-                <QuickAddChips
-                  chips={quickChips}
-                  onTap={(chip) => {
-                    onQuickAddMeal(chip);
-                    onClose();
+                <SearchTabPanel
+                  mealTemplates={mealTemplates}
+                  setForm={setForm}
+                  setPrefs={setPrefs}
+                  onTemplateSelected={() => setStep("fill")}
+                  onEditTemplate={(t) => setEditingTemplateId(t.id)}
+                  quickChips={quickChips}
+                  onQuickAddMeal={onQuickAddMeal}
+                  onQuickAdded={onClose}
+                  pantryItems={pantryItems}
+                  fromPantryItem={fromPantryItem}
+                  setFromPantryItem={setFromPantryItem}
+                  picker={{
+                    foodQuery,
+                    setFoodQuery,
+                    foodHits,
+                    offHits,
+                    foodBusy,
+                    offBusy,
+                    foodErr,
+                    setPickedFood,
+                    setPickedGrams,
                   }}
                 />
-              </section>
+              </div>
             )}
 
-            {pantryItems.length > 0 && (
-              <FromPantryRow
-                pantryItems={pantryItems}
-                fromPantryItem={fromPantryItem}
-                setFromPantryItem={setFromPantryItem}
-                setForm={setForm}
-                setFoodQuery={setFoodQuery}
-              />
-            )}
-
-            <FoodPickerSection
-              form={form}
-              setForm={setForm}
-              foodQuery={foodQuery}
-              setFoodQuery={setFoodQuery}
-              foodHits={foodHits}
-              offHits={offHits}
-              foodBusy={foodBusy}
-              offBusy={offBusy}
-              foodErr={foodErr}
-              setFoodErr={setFoodErr}
-              pickedFood={pickedFood}
-              setPickedFood={setPickedFood}
-              pickedGrams={pickedGrams}
-              setPickedGrams={setPickedGrams}
-            />
-
-            <div className="mt-4 grid gap-3 grid-cols-2">
-              <BarcodeSection
-                barcodeStatus={barcodeStatus}
-                setBarcodeStatus={setBarcodeStatus}
-                barcodeNotice={barcodeNotice}
-                onDismissBarcodeNotice={() => setBarcodeNotice(null)}
-                onRetryBarcodeLookup={() => void handleBarcodeLookup(barcode)}
-                onUsePhotoForBarcode={() => setStep("photo")}
-                setScannerOpen={setScannerOpen}
-              />
-
-              <Button
-                type="button"
-                variant="secondary"
-                className="w-full h-12 min-h-[44px] flex items-center justify-center gap-2"
-                // Photo analysis is an in-sheet step now — no detour
-                // through the Start page and its force-open disclosure.
-                onClick={() => setStep("photo")}
-                aria-label="Додати страву з фото"
+            {sourceTab === "scan" && (
+              <div
+                role="tabpanel"
+                id="source-panel-scan"
+                aria-labelledby="source-tab-scan"
               >
-                <Icon name="camera" size="sm" aria-hidden />
-                <span>Фото</span>
-              </Button>
-            </div>
+                <BarcodeSection
+                  barcodeStatus={barcodeStatus}
+                  setBarcodeStatus={setBarcodeStatus}
+                  barcodeNotice={barcodeNotice}
+                  onDismissBarcodeNotice={() => setBarcodeNotice(null)}
+                  onRetryBarcodeLookup={() => void handleBarcodeLookup(barcode)}
+                  onUsePhotoForBarcode={() => setSourceTab("photo")}
+                  setScannerOpen={setScannerOpen}
+                  actionLabel="Сканувати ще раз"
+                />
+              </div>
+            )}
 
-            <div className="mt-5 flex items-center gap-3 text-style-caption text-muted">
-              <span className="flex-1 h-px bg-line" />
-              або
-              <span className="flex-1 h-px bg-line" />
-            </div>
-            <Button
-              type="button"
-              variant="secondary"
-              className="mt-3 w-full h-12 min-h-[44px]"
-              onClick={() => setStep("fill")}
-            >
-              Ввести вручну
-            </Button>
+            {sourceTab === "photo" && (
+              <div
+                role="tabpanel"
+                id="source-panel-photo"
+                aria-labelledby="source-tab-photo"
+              >
+                <PhotoStep onApply={handlePhotoApply} />
+              </div>
+            )}
+
+            {sourceTab === "manual" && (
+              <div
+                role="tabpanel"
+                id="source-panel-manual"
+                aria-labelledby="source-tab-manual"
+              >
+                <ManualEntryTab
+                  onCreated={handlePackageCreated}
+                  onWholeMeal={() => setStep("fill")}
+                />
+              </div>
+            )}
           </>
         ) : step === "photo" ? (
           <PhotoStep onApply={handlePhotoApply} />
+        ) : step === "package" ? (
+          <PackageEntryStep onCreated={handlePackageCreated} />
         ) : (
           <>
             <MealTypePicker mealType={form.mealType} setForm={setForm} />
 
             <NameTimeRow form={form} field={field} setForm={setForm} />
+
+            {pickedFood ? (
+              <PickedFoodCard
+                form={form}
+                setForm={setForm}
+                pickedFood={pickedFood}
+                pickedGrams={pickedGrams}
+                setPickedGrams={setPickedGrams}
+                onChangeProduct={handleChangeProduct}
+              />
+            ) : (
+              // Редагування наявного прийому джерела не обирає, тож
+              // підказка там зайва — а перехід «маю етикетку» ще й веде на
+              // крок без стрілки «назад» (`canBacktrack` вимкнено при
+              // редагуванні), тобто в глухий кут.
+              !appliedPhoto &&
+              !initialMeal?.id && (
+                // Одиниця мусить бути підписана. Без продукту й без фото
+                // ці поля означають «за всю порцію», а людина з упаковкою
+                // в руках за замовчуванням читає етикетку — тобто на 100 г.
+                <div className="mb-3 rounded-2xl border border-line bg-panelHi px-3 py-2">
+                  <p className="text-style-caption text-muted">
+                    Значення — за всю порцію, як з’їв, а не на 100 г.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleSwitchToPackage}
+                    className="min-h-11 text-style-caption text-nutrition-strong dark:text-nutrition underline underline-offset-2"
+                  >
+                    Маю етикетку на 100 г
+                  </button>
+                </div>
+              )
+            )}
 
             <MacrosEditor
               form={form}
@@ -652,7 +769,7 @@ export function AddMealSheet({
       <ConfirmDialog
         open={pendingMeal != null}
         title="Зберегти без калорійності?"
-        description="КБЖВ порожні — запис не вплине на денну статистику. Зберегти як є?"
+        description="КБЖВ порожні, запис не вплине на денну статистику. Зберегти як є?"
         confirmLabel="Зберегти"
         cancelLabel="Повернутись"
         danger={false}

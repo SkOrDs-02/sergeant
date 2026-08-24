@@ -80,6 +80,59 @@ export interface ModuleConfig {
 export type ModuleId = ModuleAccent;
 
 /**
+ * Копія стану «історія є, але за поточний період порожньо».
+ *
+ * FTUX-обіцянка (`emptyPromise` + `emptyLabel: "Почни тут →"`) обіцяє
+ * перший крок — і це брехня людині, яка залогувала 84 прийоми їжі за
+ * місяць, просто нічого не внесла СЬОГОДНІ (browser QA 2026-08-23).
+ * Тому «порожньо» розщеплено надвоє: `emptyLabel` лишається за тими, у
+ * кого записів не було ніколи, а тут живе чесний текст затишшя.
+ *
+ * Період названо буквально по тому, що рахує знімок quick-stats:
+ * Фізрук — тиждень (`weekWorkouts`), решта — день.
+ */
+export const MODULE_DORMANT_COPY: Record<
+  ModuleId,
+  { readonly label: string; readonly hint: string }
+> = {
+  finyk: {
+    label: "Сьогодні ще порожньо",
+    hint: "Записи на місці — відкрий, щоб додати",
+  },
+  fizruk: {
+    label: "Цього тижня ще порожньо",
+    hint: "Тренування на місці — відкрий, щоб додати",
+  },
+  routine: {
+    label: "Сьогодні ще порожньо",
+    hint: "Звички на місці — відкрий, щоб відмітити",
+  },
+  nutrition: {
+    label: "Сьогодні ще порожньо",
+    hint: "Записи на місці — відкрий, щоб додати",
+  },
+};
+
+const DEFAULT_DORMANT_COPY = MODULE_DORMANT_COPY.finyk;
+
+/**
+ * Копія затишшя за `ModuleConfig["module"]` (він типізований як `string`,
+ * бо той самий рядок їде у навігацію). Невідомий id падає на нейтральний
+ * денний варіант — плитка радше скаже «сьогодні ще порожньо», ніж
+ * порушить контракт рендера.
+ */
+export function dormantCopyFor(module: string): {
+  readonly label: string;
+  readonly hint: string;
+} {
+  return (
+    (MODULE_DORMANT_COPY as Record<string, { label: string; hint: string }>)[
+      module
+    ] ?? DEFAULT_DORMANT_COPY
+  );
+}
+
+/**
  * Per-module bento-card configuration: icon glyph, label/description,
  * Tailwind palette tokens, goal-progress flag, and a `getPreview()` reader
  * that pulls the latest "quick stats" snapshot from localStorage and
@@ -117,7 +170,7 @@ export const MODULE_CONFIGS: Record<ModuleId, ModuleConfig> = {
     description: "Сьогодні витрачено",
     hasGoal: false,
     emptyLabel: "Почни тут \u2192",
-    emptyPromise: "Тут зʼявиться баланс — напр.",
+    emptyPromise: "Тут зʼявиться баланс, напр.",
     emptyExample: "450 ₴",
     // #10 — ghost sparkline: gentle rising curve (net-worth trend shape)
     ghostPath: "M0,22 L8,18 L16,20 L24,14 L32,16 L40,10 L48,12",
@@ -159,7 +212,7 @@ export const MODULE_CONFIGS: Record<ModuleId, ModuleConfig> = {
     description: "Тренування та прогрес",
     hasGoal: false,
     emptyLabel: "Почни тут \u2192",
-    emptyPromise: "Тут зʼявиться серія — напр.",
+    emptyPromise: "Тут зʼявиться серія, напр.",
     emptyExample: "5 трен.",
     // #10 — ghost sparkline: volume bars (weekly workout volume shape)
     ghostPath:
@@ -202,7 +255,7 @@ export const MODULE_CONFIGS: Record<ModuleId, ModuleConfig> = {
     description: "Звички та щоденні цілі",
     hasGoal: true,
     emptyLabel: "Почни тут \u2192",
-    emptyPromise: "Тут зʼявиться прогрес дня — напр.",
+    emptyPromise: "Тут зʼявиться прогрес дня, напр.",
     emptyExample: "3/5",
     // #10 — ghost ring at ~60 % fill to preview the daily-progress ring
     ghostRingPct: 60,
@@ -245,7 +298,7 @@ export const MODULE_CONFIGS: Record<ModuleId, ModuleConfig> = {
     description: "КБЖВ та раціон",
     hasGoal: true,
     emptyLabel: "Почни тут \u2192",
-    emptyPromise: "Тут зʼявиться КБЖВ — напр.",
+    emptyPromise: "Тут зʼявиться КБЖВ, напр.",
     emptyExample: "1250 ккал",
     // #10 — ghost ring at ~45 % fill to preview the calorie-target ring
     ghostRingPct: 45,

@@ -2,6 +2,9 @@ import { useRef, useMemo } from "react";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { useChartScrub } from "@shared/hooks";
 import { ChartScrubOverlay, ChartGoalLine } from "@shared/components/charts";
+// Один форматер на модуль — інакше «Тіло» друкує «82,5 кг», а «Прогрес»
+// «82.5 кг» для того самого зважування (браузерне QA 2026-08-23).
+import { fmt, fmtLoose } from "../lib/numberFmt";
 
 export interface MiniLineChartDataPoint {
   value: number | null | undefined;
@@ -215,7 +218,7 @@ export function MiniLineChart({
         viewBox={`0 0 ${w} ${h}`}
         className="w-full h-auto max-h-[160px] max-w-[512px] mx-auto overflow-visible touch-pan-y cursor-crosshair"
         role="img"
-        aria-label={`Графік тренду — ${metricLabel}`}
+        aria-label={`Графік тренду: ${metricLabel}`}
         aria-describedby={summaryId}
         {...bind}
       >
@@ -321,7 +324,7 @@ export function MiniLineChart({
               bottom={padT + innerH}
               dotY={activeDotY}
               dotColor={color}
-              label={`${activeVal.toFixed(1)} ${unit}`}
+              label={`${fmt(activeVal, 1)} ${unit}`}
               subLabel={activePoint.label}
               viewBoxWidth={w}
               flipNearEdge={true}
@@ -331,15 +334,16 @@ export function MiniLineChart({
 
       <div id={summaryId} className="sr-only">
         <p>
-          Тренд {metricLabel}. Поточне значення: {lastValid.value} {unit}.
+          Тренд {metricLabel}. Поточне значення: {fmtLoose(lastValid.value)}{" "}
+          {unit}.
           {delta !== 0
-            ? ` Зміна від першого запису: ${delta > 0 ? "+" : ""}${delta.toFixed(1)} ${unit}.`
+            ? ` Зміна від першого запису: ${delta > 0 ? "+" : ""}${fmt(delta, 1)} ${unit}.`
             : ""}
         </p>
         <ul>
           {valid.map((d, i) => (
             <li key={i}>
-              {d.label}: {d.value} {unit}
+              {d.label}: {fmtLoose(d.value)} {unit}
             </li>
           ))}
         </ul>
@@ -348,13 +352,13 @@ export function MiniLineChart({
       <div className="flex items-baseline gap-2 mt-1">
         <span className="text-xl font-extrabold tabular-nums text-text">
           {activeVal !== null && activeVal !== undefined
-            ? `${activeVal.toFixed(1)} ${unit}`
-            : `${lastValid.value} ${unit}`}
+            ? `${fmt(activeVal, 1)} ${unit}`
+            : `${fmtLoose(lastValid.value)} ${unit}`}
         </span>
         {delta !== 0 && activeIndex === null && (
           <span className={`text-style-caption ${deltaClass}`}>
             {delta > 0 ? "+" : ""}
-            {delta.toFixed(1)} {unit}
+            {fmt(delta, 1)} {unit}
           </span>
         )}
       </div>
@@ -364,6 +368,6 @@ export function MiniLineChart({
 
 function formatVal(v: number, unit: string): string {
   const n = Number(v) || 0;
-  if (unit === "%" || Math.abs(n) < 100) return n.toFixed(1);
-  return String(Math.round(n));
+  if (unit === "%" || Math.abs(n) < 100) return fmt(n, 1);
+  return fmt(Math.round(n));
 }

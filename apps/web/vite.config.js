@@ -135,7 +135,7 @@ export default defineConfig(({ mode }) => {
             // shortcut, share target) as the same installed app rather than
             // minting separate instances.
             id: "/",
-            name: "Sergeant — Твій персональний хаб життя",
+            name: "Sergeant · Твій персональний хаб життя",
             short_name: "Sergeant",
             description:
               "Персональний хаб: фінанси, спорт, звички та харчування",
@@ -424,6 +424,20 @@ export default defineConfig(({ mode }) => {
       // workspace, щоб і роутер, і застосунок ділили один runtime.
       dedupe: ["react", "react-dom", "react/jsx-runtime"],
       alias: {
+        // ПЕРЕД загальним аліасом `@sergeant/shared`: Vite резолвить
+        // аліаси за порядком і префіксним збігом, а не через exports-мапу
+        // пакета. Без цього рядка підпаточний імпорт перетворюється на
+        // `…/src/index.ts/data/genericFoods` і білд падає з
+        // «Not a directory».
+        //
+        // Підпаточний імпорт тут не примха: корпус базової їжі (~390
+        // позицій) свідомо не реекспортується з барелю `@sergeant/shared`,
+        // бо той тягнеться на критичному шляху і затягнув би дані в
+        // eager-чанк повз гейт ≤ 280 kB.
+        "@sergeant/shared/data/genericFoods": resolve(
+          __dirname,
+          "../../packages/shared/src/data/genericFoods.ts",
+        ),
         "@sergeant/shared": resolve(
           __dirname,
           "../../packages/shared/src/index.ts",
