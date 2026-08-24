@@ -430,9 +430,20 @@ describe("contract: Tier-1 (product_catalog) не дрейфує від форм
 
   it("невалідний рядок каталогу НЕ осідає в in-memory кеші", async () => {
     // Порядок «валідувати → кешувати» тримається саме цим тестом.
-    // Якби кеш заповнювався до валідації, перший запит віддав би 200 з
-    // upstream, а другий ліг би на валідації вже в cache-hit-гілці, де її
-    // ніхто не ловить — 500 на ровному місці.
+    //
+    // AI-DANGER: сценарій підібраний рівно так, щоб РОЗРІЗНЯТИ порядок, і
+    // будь-яке його спрощення тест знеструмлює. Ключове — upstream мусить
+    // ПАДАТИ, а не «не знайти». При падінні каскад віддає 503 і НІЧОГО не
+    // кешує (`upstreamThrew` — свідомо неавторитетна відповідь), тож бита
+    // картка, якби її поклали до валідації, дожила б до другого запиту.
+    // Якщо ж дати upstream-у відповісти — байдуже, знахідкою чи міссом, —
+    // каскад завершиться власним `cacheSet` і ПЕРЕЗАПИШЕ биту картку. Тоді
+    // обидва порядки дають однаковий результат, і тест перестає щось
+    // перевіряти, лишаючись зеленим.
+    //
+    // Очікування: обидва запити 503. При зворотному порядку другий запит
+    // впав би на `parse` у cache-hit-гілці, де її ніхто не ловить, — тобто
+    // `handler` не повернувся б, а кинув.
     lookupInCatalogMock.mockResolvedValue({
       name: "Товар із майбутнього джерела",
       brand: null,
@@ -444,20 +455,19 @@ describe("contract: Tier-1 (product_catalog) не дрейфує від форм
       servingGrams: null,
       source: "listex" as never,
     });
-    globalThis.fetch = (async () => ({
-      ok: true,
-      status: 200,
-      json: async () => offUpstreamHit(),
-    })) as unknown as typeof fetch;
+    globalThis.fetch = (async () => {
+      throw new Error("upstream unavailable");
+    }) as unknown as typeof fetch;
 
-    await handler(makeReq("4823005203867"), makeRes());
+    const first = makeRes();
+    await handler(makeReq("4823005203867"), first);
+    expect(first.statusCode).toBe(503);
 
     const second = makeRes();
-    await handler(makeReq("4823005203867"), second);
+    await expect(
+      handler(makeReq("4823005203867"), second),
+    ).resolves.toBeUndefined();
 
-    expect(second.statusCode).toBe(200);
-    expect(BarcodeLookupSuccessSchema.safeParse(second.body).success).toBe(
-      true,
-    );
+    expect(second.statusCode).toBe(503);
   });
 });

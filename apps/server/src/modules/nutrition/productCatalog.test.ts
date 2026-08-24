@@ -88,6 +88,26 @@ describe("lookupInCatalog", () => {
     expect(params[3]).toEqual(["off", "usda", "upcitemdb"]);
   });
 
+  it("відсіює рядок без ЖОДНОГО макроса — інакше він перекрив би каскад назавжди", async () => {
+    // Ворота Атвотера такий рядок пропускають: при NULL-макросах `delta`
+    // теж NULL. Без окремої умови картка «назва + бренд, нутрієнтів нема»
+    // (типово `upcitemdb`, а ще ~⅔ посіву OFF) ставала б Tier-1 відповіддю
+    // назавжди — каскад коротшав би на ній, OFF більше не питався, а
+    // джоби оновлення тут нема. Умова мусить бути в SQL: інакше рядок
+    // все одно виграє `LIMIT 1` у справного сусіда з тим самим штрихкодом.
+    queryMock.mockResolvedValue({ rows: [] });
+    await lookupInCatalog("4823005203865");
+
+    const sql = String(queryMock.mock.calls[0]?.[0]);
+    const macroGate =
+      /kcal_100g IS NOT NULL\s+OR protein_100g IS NOT NULL\s+OR fat_100g IS NOT NULL\s+OR carbs_100g IS NOT NULL/;
+    expect(sql).toMatch(macroGate);
+    // Саме ПЕРЕД воротами Атвотера й до `LIMIT`, тобто у відборі рядків.
+    expect(sql.indexOf("kcal_100g IS NOT NULL")).toBeLessThan(
+      sql.indexOf("atwater_delta_kcal"),
+    );
+  });
+
   it("порядок джерел іде параметром, а не склеюванням у SQL", async () => {
     // Інтерпольований `CASE` працював би так само, але кожен такий рядок
     // у запиті доводиться потім перечитувати очима на предмет ін'єкції.
@@ -179,6 +199,34 @@ describe("upsertIntoCatalog", () => {
     const sql = String(queryMock.mock.calls[0]?.[0]);
     expect(sql).toContain("ON CONFLICT (barcode, source) DO UPDATE");
     expect(sql).toContain("fetched_at = NOW()");
+  });
+
+  it("НЕ пише картку без жодного макроса", async () => {
+    // Пара до воріт у `lookupInCatalog`: читач такий рядок однаково не
+    // віддасть, тож запис лише засмічував би таблицю й видачу
+    // `searchCatalog` картками, які не можна залогувати. Постачальник —
+    // `upcitemdb`: назва й бренд є, нутрієнтів нема взагалі.
+    await upsertIntoCatalog("4823005203865", {
+      ...product,
+      kcal_100g: null,
+      protein_100g: null,
+      fat_100g: null,
+      carbs_100g: null,
+    });
+    expect(queryMock).not.toHaveBeenCalled();
+  });
+
+  it("пише картку, де є хоч один макрос", async () => {
+    // Межа саме тут, а не на «повних КБЖВ»: сама лише калорійність уже
+    // дозволяє залогувати їжу, тож викидати такий рядок було б втратою.
+    queryMock.mockResolvedValue({ rows: [] });
+    await upsertIntoCatalog("4823005203865", {
+      ...product,
+      protein_100g: null,
+      fat_100g: null,
+      carbs_100g: null,
+    });
+    expect(queryMock).toHaveBeenCalledTimes(1);
   });
 
   it("не пише продукт без назви", async () => {
