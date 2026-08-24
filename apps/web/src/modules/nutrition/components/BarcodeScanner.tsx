@@ -2,8 +2,9 @@
  * Last validated: 2026-06-15
  * Status: Active
  */
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useToast } from "@shared/hooks/useToast";
+import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import {
   scanBarcodeNative,
   useBarcodeScanner,
@@ -11,6 +12,7 @@ import {
   type BarcodeResult,
 } from "../hooks/useBarcodeScanner";
 import { Icon } from "@shared/components/ui/Icon";
+import { Button } from "@shared/components/ui/Button";
 
 interface BarcodeScannerProps {
   /**
@@ -21,7 +23,25 @@ interface BarcodeScannerProps {
    */
   onDetected: (raw: string) => void;
   onClose: () => void;
+  /**
+   * Вихід для випадку «камера код не бере». Коли переданий, сканер через
+   * `NO_READ_HINT_MS` мовчання пропонує піти вводити руками; коли ні —
+   * лишає саму підказку без кнопки (у комори свій маршрут).
+   */
+  onManualEntry?: (() => void) | undefined;
 }
+
+/**
+ * Скільки чекати, доки визнати, що код не читається.
+ *
+ * AI-CONTEXT: сканер не має стану «не вдалося» — zxing просто крутить
+ * кадри вічно. Доти єдиною порадою був підпис «введи код вручну», який
+ * вів у нікуди: поля для коду в аркуші немає й ніколи не було, сканування
+ * лише камерою (звіт тестера 2026-08-23). 15 с — приблизно вдвічі більше
+ * за типовий успішний скан, тож підказка не вискакує тим, хто просто
+ * наводить камеру повільно.
+ */
+const NO_READ_HINT_MS = 15_000;
 
 function NativeBarcodeScanner({ onDetected, onClose }: BarcodeScannerProps) {
   const toast = useToast();
@@ -63,7 +83,7 @@ function NativeBarcodeScanner({ onDetected, onClose }: BarcodeScannerProps) {
             "Потрібен дозвіл на камеру. Увімкни його в налаштуваннях додатку.",
           );
         } else {
-          toastRef.current.error("Сканер недоступний. Введи код вручну.");
+          toastRef.current.error("Сканер недоступний. Додай страву вручну.");
         }
         onCloseRef.current();
       }
@@ -83,8 +103,14 @@ function NativeBarcodeScanner({ onDetected, onClose }: BarcodeScannerProps) {
   );
 }
 
-function WebBarcodeScanner({ onDetected, onClose }: BarcodeScannerProps) {
+function WebBarcodeScanner({
+  onDetected,
+  onClose,
+  onManualEntry,
+}: BarcodeScannerProps) {
   const [active, setActive] = useState(true);
+  const [noRead, setNoRead] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   const { videoRef, status } = useWebScanner({
     active,
@@ -94,10 +120,44 @@ function WebBarcodeScanner({ onDetected, onClose }: BarcodeScannerProps) {
     },
   });
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setActive(false);
     onClose();
-  };
+  }, [onClose]);
+
+  // AI-DANGER: без цієї реєстрації сканер живий лише на вигляд.
+  //
+  // `Sheet` вмикає `inertBackground`, і background-inert manager ставить
+  // `inert` + `aria-hidden` на все, що не веде до відкритого діалогу.
+  // Аркуш іде порталом у `<body>`, а сканер — ні: `AddMealSheet` рендерить
+  // його там, де стоїть сам, тобто всередині `#root`. Тож аркуш робив
+  // інертним `#root` РАЗОМ зі сканером у ньому: сканер малювався зверху
+  // (`z-130` проти `z-120`), але хрестик і затемнення не отримували подій,
+  // а тапи провалювались на кнопки аркуша під ним (звіт тестера
+  // 2026-08-23, підтверджено `elementsFromPoint` на прев'ю-білді).
+  //
+  // Реєстрація як діалогу — і є лікування: менеджер знімає `inert` з
+  // гілки, що веде сюди, і переносить його на аркуш. Це той самий випадок
+  // «ConfirmDialog поверх Sheet», який описано в `useDialogFocusTrap`.
+  // Не заміняй це на підняття `z-index` чи `pointer-events` — стек тут
+  // ніколи не був проблемою.
+  useDialogFocusTrap(true, panelRef, {
+    onEscape: handleClose,
+    inertBackground: true,
+  });
+
+  // Таймер лише зводить прапорець угору; «опустити» його не треба —
+  // помилка камери має пріоритет у розмітці нижче. Скидати стан прямо в
+  // тілі ефекту не можна (`react-hooks/set-state-in-effect`), та й нема
+  // за чим: `status` перекриває підказку сам.
+  useEffect(() => {
+    // Помилка камери має власний текст і власний сенс — не перекривай її
+    // підказкою «не читається»: причина там інша (немає дозволу / немає
+    // камери), і порада «піднеси ближче» була б брехнею.
+    if (!active || status) return;
+    const timer = setTimeout(() => setNoRead(true), NO_READ_HINT_MS);
+    return () => clearTimeout(timer);
+  }, [active, status]);
 
   return (
     <div className="fixed inset-0 z-130 flex items-end" role="presentation">
@@ -108,6 +168,7 @@ function WebBarcodeScanner({ onDetected, onClose }: BarcodeScannerProps) {
         onClick={handleClose}
       />
       <div
+        ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="barcode-scanner-title"
@@ -149,9 +210,29 @@ function WebBarcodeScanner({ onDetected, onClose }: BarcodeScannerProps) {
             <p className="text-style-caption text-danger-strong dark:text-danger">
               {status}
             </p>
+          ) : noRead ? (
+            <div role="status" className="space-y-2">
+              <p className="text-style-caption text-muted text-center">
+                Не зчитується? Пом’ятий або затертий код камера не візьме.
+                Знайди продукт за назвою або введи КБЖВ сам.
+              </p>
+              {onManualEntry && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="w-full min-h-[44px]"
+                  onClick={() => {
+                    setActive(false);
+                    onManualEntry();
+                  }}
+                >
+                  Ввести вручну
+                </Button>
+              )}
+            </div>
           ) : (
             <p className="text-style-caption text-subtle text-center">
-              Наведи камеру на штрих-код. Якщо не зчитує, введи код вручну.
+              Наведи камеру на штрихкод — зчитається сам.
             </p>
           )}
         </div>

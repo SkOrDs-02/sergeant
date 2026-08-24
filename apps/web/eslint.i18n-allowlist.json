@@ -252,6 +252,7 @@
   "apps/web/src/modules/nutrition/components/ShoppingListCard.tsx",
   "apps/web/src/modules/nutrition/components/VirtualMealList.tsx",
   "apps/web/src/modules/nutrition/components/WaterTrackerCard.tsx",
+  "apps/web/src/modules/nutrition/components/meal-sheet/AddMealSheetTitle.tsx",
   "apps/web/src/modules/nutrition/components/meal-sheet/BarcodeSection.tsx",
   "apps/web/src/modules/nutrition/components/meal-sheet/FoodHitRow.tsx",
   "apps/web/src/modules/nutrition/components/meal-sheet/FoodPickerSection.tsx",

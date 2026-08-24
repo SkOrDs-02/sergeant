@@ -14,6 +14,13 @@ export interface DialogFocusTrapOptions {
 }
 
 /**
+ * Стос відкритих пасток у порядку відкриття. Верхній елемент — єдиний,
+ * хто обробляє Escape і Tab. Живе на рівні модуля, бо слухачі висять на
+ * спільному `document`; скидається `__resetDialogInertForTests()`.
+ */
+const keyboardStack: symbol[] = [];
+
+/**
  * Tab циклічно лишається в межах контейнера; Escape викликає onEscape.
  *
  * On open, focus is moved into the panel (first focusable, or the panel
@@ -70,6 +77,12 @@ export function useDialogFocusTrap(
     const panel = containerRef.current;
     if (!panel) return;
 
+    // Унікальна мітка цієї пастки в стосі клавіатури (див. коментар
+    // біля `keyboardStack.push` нижче). Символ, а не сам `panel`: одна
+    // й та сама панель може змонтуватись повторно, і порівняння за
+    // вузлом переплутало б старий запис із новим.
+    const trapToken = Symbol("dialog-focus-trap");
+
     // Snapshot the currently-focused element so we can restore focus
     // after the dialog closes. Skip body itself — restoring focus to
     // <body> is identical to losing focus entirely.
@@ -119,7 +132,26 @@ export function useDialogFocusTrap(
         : null;
     if (inertRoot) registerInertRoot(inertRoot);
 
+    // Клавіатура належить ВЕРХНЬОМУ діалогу.
+    //
+    // AI-CONTEXT: слухач висить на `document`, тож без цієї перевірки
+    // кожна відкрита пастка обробляла кожне натискання. Escape закривав
+    // усі діалоги стосу разом (сканер штрихкоду + аркуш під ним, рев'ю
+    // PR #845), а Tab був іще підступніший: нижня пастка бачила фокус
+    // «поза своєю панеллю» — цілком нормальний стан, коли зверху інший
+    // діалог, — і смикала його назад до себе, тобто Tab у верхньому
+    // діалозі викидав людину в нижній.
+    //
+    // Порядок стосу — це порядок ВІДКРИТТЯ, не вкладеність DOM: сканер
+    // живе в `#root`, а аркуш під ним — у порталі `<body>`, тож жоден із
+    // них не є предком іншого, і визначити верхній по дереву неможливо.
+    // Якщо колись два діалоги змонтуються в ОДНОМУ коміті, верхнім стане
+    // той, чий ефект відпрацював пізніше, — тобто пізніший у JSX. Це
+    // єдина крихка точка; сьогодні такого випадку в коді немає.
+    keyboardStack.push(trapToken);
+
     const onKeyDown = (e: KeyboardEvent) => {
+      if (keyboardStack[keyboardStack.length - 1] !== trapToken) return;
       if (e.key === "Escape") {
         const cb = onEscapeRef.current;
         if (cb) {
@@ -156,6 +188,11 @@ export function useDialogFocusTrap(
     document.addEventListener("keydown", onKeyDown);
     return () => {
       document.removeEventListener("keydown", onKeyDown);
+      // Знімаємо саме СВІЙ запис, а не верхній: діалоги закриваються не
+      // лише в порядку LIFO (кнопка «назад» у нижньому аркуші може
+      // прибрати обидва одразу).
+      const at = keyboardStack.indexOf(trapToken);
+      if (at !== -1) keyboardStack.splice(at, 1);
       // Un-inert the background BEFORE restoring focus: the restore
       // target lives in the subtree we just inerted, and `.focus()` is a
       // no-op on an element inside an `inert` subtree.
@@ -328,4 +365,5 @@ export function __resetDialogInertForTests(): void {
   }
   managedEls.clear();
   inertRoots.clear();
+  keyboardStack.length = 0;
 }

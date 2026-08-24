@@ -26,7 +26,6 @@
  * @last-validated 2026-08-13
  */
 import { useEffect, useRef, useState } from "react";
-import { Icon } from "@shared/components/ui/Icon";
 import type { Dispatch, SetStateAction } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
@@ -60,6 +59,7 @@ import { ManualEntryTab } from "./meal-sheet/ManualEntryTab";
 import { SearchTabPanel } from "./meal-sheet/SearchTabPanel";
 import { SourceTabs, type SourceTabId } from "./meal-sheet/SourceTabs";
 import { BarcodeSection } from "./meal-sheet/BarcodeSection";
+import { AddMealSheetTitle } from "./meal-sheet/AddMealSheetTitle";
 import { MacrosEditor } from "./meal-sheet/MacrosEditor";
 import { SaveAsTemplate } from "./meal-sheet/SaveAsTemplate";
 import { useFoodSearch } from "./meal-sheet/useFoodSearch";
@@ -542,27 +542,11 @@ export function AddMealSheet({
   }
 
   const title = (
-    <div className="flex items-center gap-2 min-w-0">
-      {canBacktrack && (
-        <button
-          type="button"
-          onClick={handleBacktrack}
-          className="w-9 h-9 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full bg-panelHi text-muted hover:text-text transition-colors"
-          aria-label="Назад до вибору джерела"
-        >
-          <Icon name="chevron-left" size="lg" />
-        </button>
-      )}
-      <span className="truncate">
-        {step === "source"
-          ? "Звідки страва?"
-          : step === "photo"
-            ? "Аналіз фото страви"
-            : step === "package"
-              ? "Продукт з упаковки"
-              : "Додати прийом їжі"}
-      </span>
-    </div>
+    <AddMealSheetTitle
+      step={step}
+      canBacktrack={canBacktrack}
+      onBacktrack={handleBacktrack}
+    />
   );
 
   return (
@@ -575,6 +559,10 @@ export function AddMealSheet({
             await handleBarcodeLookup(raw);
           }}
           onClose={() => setScannerOpen(false)}
+          onManualEntry={() => {
+            setScannerOpen(false);
+            setSourceTab("manual");
+          }}
         />
       )}
       <Sheet
