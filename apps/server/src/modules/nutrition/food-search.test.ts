@@ -852,29 +852,39 @@ describe("food-search — базова їжа без штрихкоду", () => 
   it("два власні джерела питаються паралельно, не послідовно", async () => {
     // Обидва локальні й незалежні; послідовний виклик подвоював би
     // затримку пошуку ні за що.
-    let genericStarted = 0;
-    let catalogStarted = 0;
-    let order = 0;
+    //
+    // AI-DANGER: перевіряти ПОРЯДОК СТАРТУ тут марно — послідовна
+    // реалізація дає рівно ті самі «перший, другий», і такий тест
+    // зеленіє на обох. Розрізняє лише те, що нижче: базова їжа
+    // блокується на воротах і НЕ завершується, і саме в цей момент
+    // каталог має бути вже викликаний. Послідовний `await` до другого
+    // виклику просто не дійшов би — тест завис би на `pending`.
+    let releaseGeneric!: () => void;
+    let markGenericStarted!: () => void;
+    const genericStarted = new Promise<void>((resolve) => {
+      markGenericStarted = resolve;
+    });
+    const genericGate = new Promise<void>((resolve) => {
+      releaseGeneric = resolve;
+    });
     searchGenericFoodsMock.mockImplementation(async () => {
-      genericStarted = ++order;
+      markGenericStarted();
+      await genericGate;
       return [];
     });
-    searchCatalogMock.mockImplementation(async () => {
-      catalogStarted = ++order;
-      return [];
-    });
+    searchCatalogMock.mockResolvedValue([]);
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
       json: async () => ({ products: [] }),
     });
 
-    await handler(req("огірок", 10), mockRes());
+    const pending = handler(req("огірок", 10), mockRes());
+    await genericStarted;
+    expect(searchCatalogMock).toHaveBeenCalledWith("огірок", 10);
 
-    // Обидва стартували до того, як бодай один завершився.
-    expect(genericStarted).toBeGreaterThan(0);
-    expect(catalogStarted).toBeGreaterThan(0);
-    expect(Math.abs(genericStarted - catalogStarted)).toBe(1);
+    releaseGeneric();
+    await pending;
   });
 
   it("падіння базової їжі не ламає пошук", async () => {

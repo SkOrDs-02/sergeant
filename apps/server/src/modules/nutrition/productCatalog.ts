@@ -81,6 +81,18 @@ interface CatalogRow {
  * «Happy flakes» з 0 ккал при 447 за макросами. Наслідок — такий товар
  * щоразу йде в upstream; це свідома ціна (2.4% рядків із макросами) за
  * те, щоб каталог не був джерелом брехні.
+ *
+ * AI-DANGER: другі ворота — рядок БЕЗ ЖОДНОГО макроса теж не віддається,
+ * і це не косметика. Ворота Атвотера його пропускають (`delta` при NULL-ах
+ * сама NULL), тож без цієї умови картка «назва + бренд, нутрієнтів нема»
+ * ставала б Tier-1 відповіддю НАЗАВЖДИ: каскад коротшає на ній, OFF/USDA
+ * більше не питаються, а джоби оновлення `fetched_at` тут нема. Людина
+ * діставала б картку, яку неможливо залогувати, і жодна її дія цього не
+ * виправила б. До цієї зміни кожен скан питав OFF першим, тож продукт,
+ * доданий в OFF пізніше, починав віддавати макроси — саме цю властивість
+ * умова й зберігає. Джерел таких рядків два: `upcitemdb` (віддає лише
+ * назву й бренд) і масовий посів OFF, де повні КБЖВ мали 2 054 рядки з
+ * 7 576. Прибереш умову — тихо зламаєш обидва випадки.
  */
 export async function lookupInCatalog(
   barcode: string,
@@ -90,6 +102,12 @@ export async function lookupInCatalog(
             serving_size, serving_grams, source
        FROM product_catalog
       WHERE barcode = $1
+        AND (
+          kcal_100g IS NOT NULL
+          OR protein_100g IS NOT NULL
+          OR fat_100g IS NOT NULL
+          OR carbs_100g IS NOT NULL
+        )
         AND (
           atwater_delta_kcal IS NULL
           OR abs(atwater_delta_kcal) <= GREATEST(
@@ -298,6 +316,18 @@ export async function upsertIntoCatalog(
 
   const nameNorm = buildProductSearchKey(name, product.brand);
   if (!nameNorm) return;
+
+  // Пара до воріт у `lookupInCatalog`: рядок без жодного макроса читач
+  // однаково не віддасть, тож писати його — це лише засмічувати таблицю
+  // й видачу `searchCatalog` картками, які не можна залогувати. Типовий
+  // постачальник таких карток — `upcitemdb`: він знає назву й бренд, але
+  // нутрієнтів не має взагалі.
+  const hasAnyMacro =
+    inRange(product.kcal_100g, 1000) != null ||
+    inRange(product.protein_100g, 100) != null ||
+    inRange(product.fat_100g, 100) != null ||
+    inRange(product.carbs_100g, 100) != null;
+  if (!hasAnyMacro) return;
 
   try {
     await query(
