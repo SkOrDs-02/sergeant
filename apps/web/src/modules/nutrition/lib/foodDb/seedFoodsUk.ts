@@ -1,49 +1,43 @@
 /**
- * Last validated: 2026-06-15
+ * Last validated: 2026-08-23
  * Status: Active
+ *
+ * Клієнтський посів базової їжі — ПОХІДНЕ від спільного корпусу.
+ *
+ * Доти тут лежали 19 власних файлів із 390 позиціями, а серверний
+ * `generic_foods` мав ті самі дані окремо. Дві копії розійшлись би першою
+ * ж правкою, і той самий продукт мав би різні числа онлайн і офлайн —
+ * розбіжність, яку користувач побачив би як «застосунок бреше», причому
+ * без жодного падіння чи логу.
+ *
+ * Тепер джерело правди одне: `@sergeant/shared/data/genericFoods`. Тут
+ * лишається тільки адаптер до локальної форми `SeedFood`.
+ *
+ * AI-DANGER: імпорт саме ПІДПАТОЧНИЙ, не з барелю `@sergeant/shared`.
+ * Барель тягнеться в десятках місць на критичному шляху, і корпус із
+ * нього поїхав би в eager-чанк повз гейт ≤ 280 kB. Модуль лишається
+ * lazy: `foodDb.ts` вантажить його через `await import()`.
  */
-import type { SeedFood } from "./seeds/types";
+import { GENERIC_FOODS } from "@sergeant/shared/data/genericFoods";
+import type { Macros } from "../macros";
 
-export type { SeedFood };
+export interface SeedFood {
+  name: string;
+  per100: Macros;
+}
 
-import { MEAT_AND_POULTRY } from "./seeds/meatAndPoultry";
-import { FISH_AND_SEAFOOD } from "./seeds/fishAndSeafood";
-import { EGGS } from "./seeds/eggs";
-import { DAIRY } from "./seeds/dairy";
-import { GRAINS } from "./seeds/grains";
-import { BAKERY } from "./seeds/bakery";
-import { LEGUMES } from "./seeds/legumes";
-import { VEGETABLES } from "./seeds/vegetables";
-import { FRUITS } from "./seeds/fruits";
-import { NUTS_AND_SEEDS } from "./seeds/nutsAndSeeds";
-import { OILS_AND_FATS } from "./seeds/oilsAndFats";
-import { SAUCES_AND_SPICES } from "./seeds/saucesAndSpices";
-import { SWEETS } from "./seeds/sweets";
-import { BEVERAGES } from "./seeds/beverages";
-import { SPORTS_NUTRITION } from "./seeds/sportsNutrition";
-import { READY_MEALS } from "./seeds/readyMeals";
-import { UKRAINIAN_CUISINE } from "./seeds/ukrainianCuisine";
-import { SALADS } from "./seeds/salads";
-import { FROZEN_SNACKS } from "./seeds/frozenSnacks";
-
-export const SEED_FOODS_UK: SeedFood[] = [
-  ...MEAT_AND_POULTRY,
-  ...FISH_AND_SEAFOOD,
-  ...EGGS,
-  ...DAIRY,
-  ...GRAINS,
-  ...BAKERY,
-  ...LEGUMES,
-  ...VEGETABLES,
-  ...FRUITS,
-  ...NUTS_AND_SEEDS,
-  ...OILS_AND_FATS,
-  ...SAUCES_AND_SPICES,
-  ...SWEETS,
-  ...BEVERAGES,
-  ...SPORTS_NUTRITION,
-  ...READY_MEALS,
-  ...UKRAINIAN_CUISINE,
-  ...SALADS,
-  ...FROZEN_SNACKS,
-];
+/**
+ * Локальна форма: клієнтській базі потрібні лише назва й макроси.
+ * `slug`, `category`, `aliases` і `alcohol_g` — серверні поля; на клієнті
+ * пошук іде по `norm`, який `foodDb` рахує сам тим самим
+ * `buildProductSearchKey`, що й сервер.
+ */
+export const SEED_FOODS_UK: SeedFood[] = GENERIC_FOODS.map((food) => ({
+  name: food.name,
+  per100: {
+    kcal: food.per100.kcal,
+    protein_g: food.per100.protein_g,
+    fat_g: food.per100.fat_g,
+    carbs_g: food.per100.carbs_g,
+  },
+}));

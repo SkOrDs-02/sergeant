@@ -1,6 +1,6 @@
 # Post-deploy smoke tests — runbook
 
-> **Last touched:** 2026-07-29 by @Skords-01. **Next review:** 2027-03-07.
+> **Last touched:** 2026-08-24 by @claude. **Next review:** 2026-12-06.
 > **Status:** Active
 
 > **Статус автоматизації:** [`.github/workflows/post-deploy-smoke.yml`](../../../.github/workflows/post-deploy-smoke.yml) закомічений — `deployment_status` + cron 06:30 UTC + `workflow_dispatch`. Локально — CLI [`scripts/post-deploy-smoke.mjs`](../../../scripts/post-deploy-smoke.mjs) + [`scripts/smoke-tests.json`](../../../scripts/smoke-tests.json).
@@ -45,6 +45,18 @@ Sister-сторінки:
 | ⚠️ `warn` | Status + shape OK, але latency `budget < latency ≤ 2×budget`.                                                                                                                   | Не блокує merge (без `--strict`). Сигнал «backend deps повільні». Часто dep-driven (Mono Open API throttle, Anthropic queue).                |
 | ❌ `fail` | Status mismatch **або** latency > 2×budget **або** shape mismatch (missing field, type mismatch, null замість string) **або** fetch-error (connection refused / DNS / timeout). | Real liveness regression. Створюється issue `smoke-test-fail`. На `deployment_status` тригері — кандидат на rollback (якщо `critical` tier). |
 | ⏭️ `skip` | Зарезервовано (наразі не використовується — конфіг включає всі тести; `--skip` flag-ом можна виключити named tests).                                                            | —                                                                                                                                            |
+
+### Exit-коди і життєвий цикл issue (2026-08-23)
+
+| Код | Значення                                           | Наслідок                                                   |
+| --- | -------------------------------------------------- | ---------------------------------------------------------- |
+| `0` | Усі критичні ендпоінти живі й у межах SLO          | Закриває відкритий `[Smoke]`-issue з коментарем            |
+| `1` | ≥1 реальне падіння                                 | Створює / оновлює `smoke-test-fail`-issue, валить workflow |
+| `2` | Чекер не запустився (немає `TARGET_BASE_URL` тощо) | Валить workflow **без** issue                              |
+
+Доти гейт стояв на `steps.smoke.outcome == 'failure'`, який зливає `1` і `2`, а закривати issue workflow не вмів узагалі.
+
+Історичний приклад, чому це коштує довіри до сигналу: issue [#378](https://github.com/SkOrDs-02/sergeant/issues/378) (2026-07-21) відрапортував «1 pass / 14 fail» на Preview-оточенні, де **всі** 14 падінь — HTTP 401 із тілом `Protected deployment`. Це Vercel SSO на preview-деплої, а не liveness-регресія. Той конкретний клас хибних спрацювань уже закритий гейтом `vars.SMOKE_ALLOWED_BASE_URL` на рівні `job.if` (див. § Як працює workflow), але issue лишався відкритим ще місяць після фіксу — бо закривати його не було кому.
 
 ## Setup
 
@@ -167,7 +179,7 @@ Workflow YAML (дзеркало [`.github/workflows/post-deploy-smoke.yml`](../.
 ```yaml
 name: Post-deploy smoke
 
-# Owner: @SkOrDs-02 (solo maintainer per .github/CODEOWNERS).
+# Owner: @SkOrDs-02 (solo maintainer).
 # Triage: if this job fails, an issue tagged `smoke-test-fail` is auto-opened
 #         (idempotent — same pattern as pact-drift / db-backup-verify). Runbook:
 #         `docs/02-engineering/testing/smoke-tests.md`.
@@ -218,16 +230,29 @@ jobs:
     name: Run post-deploy smoke tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    # Only run on successful deployments or manual triggers / scheduled runs.
+    # `environment_url` приходить із payload-у `deployment_status`, який
+    # пише будь-хто з правом на deployments — тож пускаємо лише успішний
+    # деплой, чий URL починається з дозволеного префікса
+    # `vars.SMOKE_ALLOWED_BASE_URL` (порожня змінна = не пускаємо нікого;
+    # `secrets` у `jobs.<job_id>.if` заборонені й ламають увесь файл).
+    # Vercel preview цей гейт і так не проходить: він закритий ще до
+    # роутингу і віддає самі 401.
     if: |
       github.event_name != 'deployment_status' ||
-      github.event.deployment_status.state == 'success'
+      (github.event.deployment_status.state == 'success' &&
+      vars.SMOKE_ALLOWED_BASE_URL != '' &&
+      startsWith(github.event.deployment_status.environment_url,
+      vars.SMOKE_ALLOWED_BASE_URL))
     env:
       TARGET_BASE_URL: >-
         ${{ github.event.inputs.base_url
             || github.event.deployment_status.environment_url
             || secrets.STAGING_BASE_URL }}
       STAGING_SESSION_COOKIE: ${{ secrets.STAGING_SESSION_COOKIE }}
+      # Другий, незалежний від payload-у бар'єр: скрипт відмовиться слати
+      # сесійну куку на хост поза цим списком.
+      SMOKE_ALLOWED_HOSTS: >-
+        ${{ vars.SMOKE_ALLOWED_BASE_URL || secrets.STAGING_BASE_URL }}
 
     steps:
       # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
@@ -293,7 +318,11 @@ jobs:
           retention-days: 14
 
       - name: Create / refresh smoke-test-fail issue
-        if: steps.smoke.outcome == 'failure' && github.event_name != 'workflow_dispatch'
+        # AI-CONTEXT: гейт по `smoke_exit == 1` (реальні падіння), а не по
+        # `outcome == 'failure'`, який зливає їх із кодом 2 = чекер не зміг
+        # запуститись (немає TARGET_BASE_URL). Помилка конфігурації має
+        # валити workflow, а не з'являтись у беклозі як liveness-регресія.
+        if: steps.smoke.outputs.smoke_exit == '1' && github.event_name != 'workflow_dispatch'
         # actions/github-script v8.0.0 (SHA-pinned for supply-chain hardening)
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
         with:
@@ -385,9 +414,55 @@ jobs:
               core.info(`Created new issue #${created.data.number}.`);
             }
 
-      - name: Fail the job on smoke failure
+      - name: Close the smoke-test-fail issue when the deploy is healthy
+        # Друга половина храповика — див. той самий крок у pact-drift.yml.
+        if: steps.smoke.outputs.smoke_exit == '0' && github.event_name != 'workflow_dispatch'
+        # actions/github-script v8.0.0 (SHA-pinned for supply-chain hardening)
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const env =
+              context.payload?.deployment_status?.environment ?? 'staging';
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'smoke-test-fail',
+              per_page: 10,
+            });
+            for (const issue of issues.filter((i) => i.title.startsWith('[Smoke]'))) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: [
+                  `### Recovered — ${new Date().toISOString().slice(0, 10)} (${env})`,
+                  '',
+                  `Post-deploy smoke пройшов чисто: ${runUrl}`,
+                  '',
+                  'Закрито автоматично. Якщо liveness-регресія повернеться,',
+                  'workflow відкриє новий issue.',
+                ].join('\n'),
+              });
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                state: 'closed',
+                state_reason: 'completed',
+              });
+              core.info(`Closed issue #${issue.number}`);
+            }
+
+      - name: Fail the job on smoke failure or checker error
         if: steps.smoke.outcome == 'failure'
         run: |
-          echo "::error::Post-deploy smoke detected ≥1 failure. See dist/smoke-report.md."
+          if [ "${{ steps.smoke.outputs.smoke_exit }}" = "1" ]; then
+            echo "::error::Post-deploy smoke detected ≥1 failure. See dist/smoke-report.md."
+          else
+            echo "::error::post-deploy-smoke checker could not run (exit '${{ steps.smoke.outputs.smoke_exit }}'). Це помилка конфігурації, не liveness-регресія — див. docs/02-engineering/testing/smoke-tests.md § Setup."
+          fi
           exit 1
 ```

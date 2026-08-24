@@ -1,6 +1,6 @@
 # Nightly-audit — потік triage
 
-> **Last touched:** 2026-08-05 by @claude. **Next review:** 2027-08-17.
+> **Last touched:** 2026-08-24 by @claude. **Next review:** 2026-12-05.
 > **Status:** Active
 
 ## Огляд
@@ -9,12 +9,13 @@ Workflow `.github/workflows/nightly-audit.yml` запускається щоно
 
 ### Job-и
 
-| Job                       | Що робить                                                                                                     | Коли fail                             |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
-| **pnpm-audit-full**       | `pnpm audit --json` (повний звіт, включно з low/medium) + ledger-gate через `scripts/ci/audit-exceptions.mjs` | critical або high без чинного винятку |
-| **osv-scanner**           | OSV-Scanner v2.3.5: сканує lockfile + всі package.json рекурсивно. SARIF → GitHub code-scanning               | critical/high (SARIF level=error)     |
-| **snyk** _(опціональний)_ | Тільки якщо є `SNYK_TOKEN` secret. `snyk test --all-projects --severity-threshold=high`                       | high+ знайдено                        |
-| **notify-failure**        | При failure будь-якого з вищих: створює/оновлює GitHub issue з labels `nightly-audit-failed` + `security`     | —                                     |
+| Job                       | Що робить                                                                                                                                     | Коли fail                             |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| **pnpm-audit-full**       | `pnpm audit --json` (повний звіт, включно з low/medium) + ledger-gate через `scripts/ci/audit-exceptions.mjs`                                 | critical або high без чинного винятку |
+| **osv-scanner**           | OSV-Scanner v2.3.5: сканує lockfile + всі package.json рекурсивно. SARIF → GitHub code-scanning + ledger-gate через `scripts/ci/osv-gate.mjs` | critical/high без чинного винятку     |
+| **snyk** _(опціональний)_ | Тільки якщо є `SNYK_TOKEN` secret. `snyk test --all-projects --severity-threshold=high`                                                       | high+ знайдено                        |
+| **notify-failure**        | При failure будь-якого з вищих: створює/оновлює GitHub issue з labels `nightly-audit-failed` + `security`; тіло називає, який саме лейн упав  | —                                     |
+| **notify-recovered**      | Коли всі три лейни зелені — **закриває** відкритий issue з коментарем                                                                         | —                                     |
 
 ### Артефакти (retention 30 днів)
 
@@ -42,14 +43,46 @@ Workflow автоматично створює/оновлює issue з title "Ni
 
 ### 4. Якщо фікс неможливий зараз
 
-1. Задокументуй виняток у [docs/04-governance/security/audit-exceptions.md](./audit-exceptions.md).
-2. Якщо це transitive dependency без патчу — додай до osv-scanner config (`.osv-scanner.toml`) з обгрунтуванням.
-3. Закрий nightly issue з коментарем-поясненням.
+1. Задокументуй виняток у [docs/04-governance/security/audit-exceptions.md](./audit-exceptions.md) — з `Due date`.
+2. Обидва лейни (`pnpm audit` і OSV) читають **той самий** ledger, тож окремий `.osv-scanner.toml` більше не потрібен.
+3. Issue закриється **сам** наступним зеленим прогоном — руками закривати не треба.
 
 ### 5. Перевір тренди
 
 - **GitHub Security tab** → Code Scanning: фільтр по tool `osv-scanner` показує тренд вразливостей.
 - **Артефакти** (30 днів): завантаж `pnpm-audit.json` з різних runs для порівняння.
+
+## Чому обидва лейни ledger-aware (2026-08-23)
+
+До 2026-08-23 крок «Check for vulnerabilities» валив джобу `osv-scanner` за
+**будь-якого** ненульового коду виходу сканера — тобто за будь-якої вразливості
+будь-якої severity, включно з давно задокументованими в `audit-exceptions.md`.
+У репо стабільно 7 відомих advisory (4 high — усі з чинними винятками, 1
+moderate, 2 low), тож джоба падала щоночі, а `notify-failure` щоночі оновлював
+той самий issue. За місяць він жодного разу не змінив стану — і перестав
+означати «щось НОВЕ зламалось».
+
+Це рівно той стан «червоний завжди = вимкнений», що описаний в
+[AGENTS.md § Performance budgets](../../../AGENTS.md#performance-budgets) на
+прикладі мовчазного size-limit. Гейт, який світиться червоним незалежно від
+змін, не ловить нову вразливість — вона тоне серед старих.
+
+Тепер OSV-лейн проходить через `scripts/ci/osv-gate.mjs` із тією самою
+політикою, що й pnpm-лейн:
+
+- severity береться з `pnpm audit --json` (SARIF від osv-scanner емітить усі
+  results рівнем `warning`, тож його `level` для гейта непридатний);
+- блокують лише `critical`/`high` — `moderate`/`low` трекаються, але збірку не
+  валять;
+- `high` проходить лише за наявності **непростроченого** запису в ledger-і;
+- advisory, невідомий `pnpm audit` (нова вразливість чи інша екосистема),
+  блокує: невідоме ≠ безпечне;
+- «critical ніколи не waive-иться» лишається на `audit-exceptions.mjs` — саме
+  він має надійну severity.
+
+Практичний наслідок: найближче червоне — 2026-09-01, коли спливе виняток на
+`react-router` (GHSA-QWWW-VCR4-C8H2, `Due date` 2026-08-31). Це вже реальний
+сигнал, а не фон.
 
 ## Відмінності від PR-audit (ci.yml)
 

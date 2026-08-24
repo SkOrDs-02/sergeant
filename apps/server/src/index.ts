@@ -28,6 +28,7 @@ import {
   markSchemaDriftCheckStarted,
   reportSchemaDriftAtBoot,
 } from "./lib/schemaDrift.js";
+import { seedGenericFoods } from "./modules/nutrition/genericFoods.js";
 import {
   startAuthMailWorker,
   type StartedAuthMailWorker,
@@ -541,4 +542,16 @@ httpServer = app.listen(config.port, "0.0.0.0", () => {
       extra: { ...report },
     });
   });
+
+  // Довідник базової їжі без штрихкоду (міграція 124). Засівається на
+  // старті, а не окремим скриптом: ці дані мусять бути в КОЖНОМУ
+  // середовищі — прод, стейдж, машина розробника, CI з Testcontainers.
+  // Скрипт, який треба не забути запустити, рано чи пізно не запустять, і
+  // різниця вилізе як «у мене пошук знаходить огірок, а на стейджі ні».
+  //
+  // Не в `await` і не блокує readiness з тієї самої причини, що й
+  // drift-звірка вище: недоступна на цю мить база не має затримувати
+  // старт. Сама функція ковтає свої помилки — непосіяний довідник це
+  // гірший пошук, а не зламаний сервер.
+  void seedGenericFoods();
 });

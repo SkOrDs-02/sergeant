@@ -38,6 +38,28 @@ import {
   type BarcodeSuccessFixtureCase,
   type BarcodeErrorFixtureCase,
 } from "@sergeant/shared";
+import type { BarcodeProduct } from "@sergeant/shared/schemas";
+
+/**
+ * Tier-1 (власний каталог, міграція 123) мокається: цей тест фіксує ФОРМУ
+ * відповіді, а не доступ до Postgres. Дефолт — «у каталозі нічого немає»,
+ * тож усі наявні сценарії проходять через той самий upstream-каскад, що й
+ * до появи ярусу. Окремий кейс нижче перевіряє, що відповідь, зібрана з
+ * каталогу, дає рівно ту саму форму — інакше Tier-1 тихо порушив би
+ * Hard Rule #3 в обхід контрактної трійці.
+ */
+const lookupInCatalogMock = vi.hoisted(() =>
+  vi.fn<(barcode: string) => Promise<BarcodeProduct | null>>(async () => null),
+);
+const upsertIntoCatalogMock = vi.hoisted(() =>
+  vi.fn<(barcode: string, product: BarcodeProduct) => Promise<void>>(
+    async () => undefined,
+  ),
+);
+vi.mock("../modules/nutrition/productCatalog.js", () => ({
+  lookupInCatalog: lookupInCatalogMock,
+  upsertIntoCatalog: upsertIntoCatalogMock,
+}));
 
 // ────────────────────────────────────────────────────────────────────────────────
 // Dynamic import to pick up __barcodeTestHooks for cache reset.
@@ -336,5 +358,116 @@ describe("contract: /api/barcode producer ↔ consumer shape invariants", () => 
     };
     const result = BarcodeLookupSuccessSchema.safeParse(broken);
     expect(result.success).toBe(false);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────────
+// Tier-1: відповідь із власного каталогу мусить давати ТУ САМУ форму
+// ────────────────────────────────────────────────────────────────────────────────
+
+describe("contract: Tier-1 (product_catalog) не дрейфує від форми контракту", () => {
+  beforeEach(() => {
+    __barcodeTestHooks().reset();
+    lookupInCatalogMock.mockReset();
+    lookupInCatalogMock.mockResolvedValue(null);
+    upsertIntoCatalogMock.mockReset();
+    upsertIntoCatalogMock.mockResolvedValue(undefined);
+  });
+
+  it("продукт, зібраний із каталогу, парситься BarcodeLookupSuccessSchema", async () => {
+    lookupInCatalogMock.mockResolvedValue({
+      name: "Молоко 2,6% Яготинське",
+      brand: "Яготинське",
+      kcal_100g: 53,
+      protein_100g: 2.8,
+      fat_100g: 2.6,
+      carbs_100g: 4.7,
+      servingSize: null,
+      servingGrams: null,
+      source: "off",
+    });
+
+    const res = makeRes();
+    await handler(
+      { query: { barcode: "4823005203865" } } as unknown as Request,
+      res,
+    );
+
+    expect(res.statusCode).toBe(200);
+    expect(() => BarcodeLookupSuccessSchema.parse(res.body)).not.toThrow();
+  });
+
+  it("рядок каталогу поза контрактом не їде клієнту — деградуємо в upstream", async () => {
+    // `source` у контракті — enum ('off'|'usda'|'upcitemdb'). Якщо в БД
+    // колись опиниться рядок із джерелом поза enum-ом (напр. 'listex' до
+    // того, як його заведуть у схему), він не має ані поїхати клієнту,
+    // ані зламати скан: валідація кидає, ми логуємо і йдемо в upstream.
+    lookupInCatalogMock.mockResolvedValue({
+      name: "Товар із майбутнього джерела",
+      brand: null,
+      kcal_100g: 100,
+      protein_100g: 1,
+      fat_100g: 1,
+      carbs_100g: 1,
+      servingSize: null,
+      servingGrams: null,
+      source: "listex" as never,
+    });
+    globalThis.fetch = (async () => ({
+      ok: true,
+      status: 200,
+      json: async () => offUpstreamHit(),
+    })) as unknown as typeof fetch;
+
+    const res = makeRes();
+    await handler(makeReq("4823005203866"), res);
+
+    expect(res.statusCode).toBe(200);
+    const parsed = BarcodeLookupSuccessSchema.safeParse(res.body);
+    expect(parsed.success).toBe(true);
+    expect(parsed.success && parsed.data.product.source).toBe("off");
+  });
+
+  it("невалідний рядок каталогу НЕ осідає в in-memory кеші", async () => {
+    // Порядок «валідувати → кешувати» тримається саме цим тестом.
+    //
+    // AI-DANGER: сценарій підібраний рівно так, щоб РОЗРІЗНЯТИ порядок, і
+    // будь-яке його спрощення тест знеструмлює. Ключове — upstream мусить
+    // ПАДАТИ, а не «не знайти». При падінні каскад віддає 503 і НІЧОГО не
+    // кешує (`upstreamThrew` — свідомо неавторитетна відповідь), тож бита
+    // картка, якби її поклали до валідації, дожила б до другого запиту.
+    // Якщо ж дати upstream-у відповісти — байдуже, знахідкою чи міссом, —
+    // каскад завершиться власним `cacheSet` і ПЕРЕЗАПИШЕ биту картку. Тоді
+    // обидва порядки дають однаковий результат, і тест перестає щось
+    // перевіряти, лишаючись зеленим.
+    //
+    // Очікування: обидва запити 503. При зворотному порядку другий запит
+    // впав би на `parse` у cache-hit-гілці, де її ніхто не ловить, — тобто
+    // `handler` не повернувся б, а кинув.
+    lookupInCatalogMock.mockResolvedValue({
+      name: "Товар із майбутнього джерела",
+      brand: null,
+      kcal_100g: 100,
+      protein_100g: 1,
+      fat_100g: 1,
+      carbs_100g: 1,
+      servingSize: null,
+      servingGrams: null,
+      source: "listex" as never,
+    });
+    globalThis.fetch = (async () => {
+      throw new Error("upstream unavailable");
+    }) as unknown as typeof fetch;
+
+    const first = makeRes();
+    await handler(makeReq("4823005203867"), first);
+    expect(first.statusCode).toBe(503);
+
+    const second = makeRes();
+    await expect(
+      handler(makeReq("4823005203867"), second),
+    ).resolves.toBeUndefined();
+
+    expect(second.statusCode).toBe(503);
   });
 });

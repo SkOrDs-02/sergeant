@@ -59,3 +59,4 @@ export {
   finykPrefs,
 } from "./finyk.js";
 export { productCatalog } from "./productCatalog.js";
+export { genericFoods } from "./genericFoods.js";
