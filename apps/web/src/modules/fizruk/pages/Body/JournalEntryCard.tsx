@@ -44,7 +44,8 @@ export function JournalEntryCard({
   const summaryParts: string[] = [];
   if (entry.weightKg != null)
     summaryParts.push(`${fmtLoose(entry.weightKg)} кг`);
-  if (entry.sleepHours != null) summaryParts.push(`${entry.sleepHours} год`);
+  if (entry.sleepHours != null)
+    summaryParts.push(`${fmtLoose(entry.sleepHours)} год`);
   const summary = summaryParts.join(" · ");
 
   return (
@@ -132,7 +133,7 @@ export function JournalEntryCard({
                   {messages.fizruk.journal.sleepLabel}
                 </span>{" "}
                 <span className="font-semibold">
-                  {entry.sleepHours} {messages.fizruk.hoursUnit}
+                  {fmtLoose(entry.sleepHours)} {messages.fizruk.hoursUnit}
                 </span>
               </span>
             )}

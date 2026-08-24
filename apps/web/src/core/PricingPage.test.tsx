@@ -507,5 +507,19 @@ describe("PricingPage (Phase 7 D3 — Free + Premium)", () => {
         screen.queryByRole("button", { name: "Увійти й почати" }),
       ).toBeNull();
     });
+
+    // Гола сторінка без `AuthProvider` (так її монтують інші юніти):
+    // `useAuthOptional()` віддає `null`, і сторінка НЕ має читати це як
+    // «вийшов» — відсутність контексту не є твердженням про сесію.
+    it("does not claim a signed-out visitor when there is no auth context", async () => {
+      mockAuthStatus = null;
+      renderPricing();
+
+      const badges = await screen.findAllByTestId("current-plan-badge");
+      expect(badges).toHaveLength(1);
+      expect(
+        screen.queryByRole("button", { name: "Увійти й почати" }),
+      ).toBeNull();
+    });
   });
 });
