@@ -612,7 +612,7 @@ describe("log_wellbeing · undo", () => {
     );
     expect(before).toHaveLength(1);
 
-    out.undo();
+    out.undo?.();
     const after = JSON.parse(
       localStorage.getItem("fizruk_daily_log_v1") || "[]",
     );

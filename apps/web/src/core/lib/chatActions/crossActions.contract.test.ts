@@ -623,7 +623,7 @@ describe("save_note · undo", () => {
     const before = JSON.parse(localStorage.getItem("hub_notes_v1") || "[]");
     expect(before).toHaveLength(1);
 
-    out.undo();
+    out.undo?.();
     const after = JSON.parse(localStorage.getItem("hub_notes_v1") || "[]");
     expect(after).toHaveLength(0);
   });
@@ -640,7 +640,7 @@ describe("save_note · undo", () => {
     if (second == null || typeof second === "string") {
       throw new Error("expected undoable result");
     }
-    second.undo();
+    second.undo?.();
 
     const after = JSON.parse(localStorage.getItem("hub_notes_v1") || "[]");
     expect(after).toHaveLength(1);
@@ -661,7 +661,7 @@ describe("remember · undo", () => {
       throw new Error(`expected undoable result, got ${typeof out}`);
     }
 
-    out.undo();
+    out.undo?.();
     // After undo, the entry should be gone
     const profile = handleCrossAction({
       name: "my_profile",
@@ -686,7 +686,7 @@ describe("remember · undo", () => {
     }
     expect(out.result).toContain("Оновив");
 
-    out.undo();
+    out.undo?.();
     // Should still have the entry (we restored prev version)
     const profile = handleCrossAction({
       name: "my_profile",

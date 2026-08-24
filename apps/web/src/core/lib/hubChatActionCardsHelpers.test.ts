@@ -193,7 +193,8 @@ describe("titleFor", () => {
     expect(titleFor("start_workout", "completed")).toBe(
       "Тренування стартувало",
     );
-    expect(titleFor("mark_habit_done", "completed")).toBe("Звичку створено");
+    expect(titleFor("mark_habit_done", "completed")).toBe("Звичку відмічено");
+    expect(titleFor("create_habit", "completed")).toBe("Звичку створено");
   });
 
   it("appends failed suffix", () => {
