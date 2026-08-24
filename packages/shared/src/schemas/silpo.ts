@@ -62,6 +62,16 @@ export type SilpoDisconnectResponse = z.infer<
 >;
 
 /**
+ * Response of `DELETE /api/silpo/receipts/link/:transactionId` — знімає
+ * хибний звʼязок «транзакція ↔ чек», який поставив детермінований matcher,
+ * і памʼятає цю пару як відхилену (міграція 125), щоб найближчий sync її
+ * не відновив. Сам чек НЕ видаляється: він лишається в списку «Чеки без
+ * транзакції» і може бути привʼязаний до іншої транзакції.
+ */
+export const SilpoUnlinkResponseSchema = z.object({ ok: z.literal(true) });
+export type SilpoUnlinkResponse = z.infer<typeof SilpoUnlinkResponseSchema>;
+
+/**
  * Response of `POST /api/silpo/wipe`. Full erasure of Silpo-sourced data
  * (`silpo_receipts` cascade → items + `finyk_tx_receipt_links`); user-
  * confirmed `finyk_tx_splits` / pantry-events are NEVER touched here.

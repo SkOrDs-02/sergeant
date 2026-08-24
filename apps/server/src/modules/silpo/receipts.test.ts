@@ -244,11 +244,18 @@ interface FakeMonoTx {
   receiptId?: string | null;
 }
 
-function makeFakeDb(seed: { monoTransactions?: FakeMonoTx[] } = {}) {
+function makeFakeDb(
+  seed: {
+    monoTransactions?: FakeMonoTx[];
+    /** Пари, які користувач уже розлінкував (`silpo_tx_receipt_link_rejections`). */
+    rejections?: Array<{ transactionId: string; receiptId: string }>;
+  } = {},
+) {
   const receipts = new Map<string, FakeReceiptRow>();
   const items: Array<{ receiptId: string; name: string; priceKop: number }> =
     [];
   const links: Array<{ transactionId: string; receiptId: string }> = [];
+  const rejections = seed.rejections ?? [];
   const monoTx = seed.monoTransactions ?? [];
 
   const query = (async (text: string, values: unknown[] = []) => {
@@ -312,6 +319,15 @@ function makeFakeDb(seed: { monoTransactions?: FakeMonoTx[] } = {}) {
           description: t.description ?? null,
           receiptId: t.receiptId ?? null,
         }));
+      return { rows, rowCount: rows.length };
+    }
+    if (text.includes("FROM silpo_tx_receipt_link_rejections")) {
+      // Пари, які користувач зняв руками (міграція 125) — негативний
+      // фільтр matcher-а.
+      const rows = rejections.map((r) => ({
+        transaction_id: r.transactionId,
+        receipt_id: r.receiptId,
+      }));
       return { rows, rowCount: rows.length };
     }
     if (text.includes("INSERT INTO silpo_tx_receipt_links")) {
@@ -401,6 +417,41 @@ describe("pullAndSyncReceipts", () => {
     expect(db.links).toEqual([
       { transactionId: "mono-1", receiptId: OFFLINE_ORDER_RECEIPT_ID },
     ]);
+  });
+
+  it("НЕ відновлює пару, яку користувач розлінкував руками", async () => {
+    // Головний тест міграції 125. Без негативного фільтра розлінк був би
+    // косметикою: matcher детермінований, тож той самий чек і та сама
+    // транзакція дали б рівно той самий матч, і найближчий sync (ручний
+    // або крон WF-11) мовчки повернув би те, що людина щойно прибрала.
+    const db = makeFakeDb({
+      monoTransactions: [
+        {
+          id: "mono-1",
+          amountKop: -5000,
+          time: new Date("2026-08-10T12:05:00.000Z"),
+          mcc: 5411,
+        },
+      ],
+      rejections: [
+        { transactionId: "mono-1", receiptId: OFFLINE_ORDER_RECEIPT_ID },
+      ],
+    });
+    mocks.callWithFreshAccessToken.mockResolvedValue({
+      ok: true,
+      data: { offline: [OFFLINE_ORDER], online: [] },
+    });
+
+    const result = await pullAndSyncReceipts("user-1", {
+      query: db.query,
+      withTransaction: db.withTransaction,
+    });
+
+    // Чек зберігається як завжди — відхилено ПАРУ, а не сам чек.
+    expect(db.receipts.has(OFFLINE_ORDER_RECEIPT_ID)).toBe(true);
+    expect(db.links).toEqual([]);
+    // І в звітності це «без пари», а не «зматчено».
+    expect(result).toMatchObject({ matched: 0, unmatched: 1 });
   });
 
   it("is idempotent — a second sync with the same data inserts nothing new", async () => {

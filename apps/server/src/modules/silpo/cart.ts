@@ -64,21 +64,35 @@ function makeFetchPreviewQueries(
     const ctx = await resolveBranchContext(userId, accessToken);
     if (!ctx.ok) return ctx;
 
+    // Чанки йдуть паралельно, не послідовно: список на 100 позицій — це 4
+    // виклики по 30, і послідовно вони складались у чотири RTT підряд перед
+    // тим, як людина побачить превʼю. Порядок результатів зберігає
+    // `Promise.all`, а `buildPreviewResults` усе одно матчить за текстом
+    // запиту, не за індексом. Стеля паралелізму — сам розмір списку (роут
+    // ріже його на 100 позиціях = максимум 4 одночасні виклики), тож
+    // окремий семафор тут був би зайвою деталлю.
+    const batches = await Promise.all(
+      chunk(names, BATCH_CHUNK_SIZE).map((group) =>
+        callMcpTool({
+          accessToken,
+          toolName: "silpo_find_products_batch",
+          args: {
+            branchId: ctx.data.branchId,
+            deliveryType: ctx.data.deliveryType,
+            timeslotStart: ctx.data.timeslotStart,
+            timeslotEnd: ctx.data.timeslotEnd,
+            products: group,
+            limit: MATCHES_PER_QUERY,
+          },
+          schema: BatchEnvelopeSchema,
+        }),
+      ),
+    );
+
     const allQueries: RawBatchQuery[] = [];
-    for (const group of chunk(names, BATCH_CHUNK_SIZE)) {
-      const batch = await callMcpTool({
-        accessToken,
-        toolName: "silpo_find_products_batch",
-        args: {
-          branchId: ctx.data.branchId,
-          deliveryType: ctx.data.deliveryType,
-          timeslotStart: ctx.data.timeslotStart,
-          timeslotEnd: ctx.data.timeslotEnd,
-          products: group,
-          limit: MATCHES_PER_QUERY,
-        },
-        schema: BatchEnvelopeSchema,
-      });
+    for (const batch of batches) {
+      // Перша ж невдача — загальна: превʼю з дірою гірше за чесну помилку,
+      // бо людина підтверджує запис у кошик саме за цим списком.
       if (!batch.ok) return batch;
       allQueries.push(...(batch.data.queries ?? []));
     }

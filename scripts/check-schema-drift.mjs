@@ -771,6 +771,12 @@ const SQL_ONLY_TABLES = [
   // (state → code_verifier). Живе хвилини, згорає одноразовим
   // `DELETE ... RETURNING`; клієнт про нього не знає взагалі.
   "silpo_oauth_state",
+  // silpo_tx_receipt_link_rejections (міграція 125) — памʼять про пари
+  // «транзакція ↔ чек», які користувач розлінкував руками. Той самий
+  // контур, що й silpo_tx_receipt_links: пише і читає лише сервер
+  // (DELETE /api/silpo/receipts/link/:transactionId і негативний фільтр у
+  // matchAndLink), клієнт про таблицю не знає — лише тисне кнопку.
+  "silpo_tx_receipt_link_rejections",
   // Integration webhooks / failure journals (n8n + generic) — server-only журнали.
   "n8n_failure_events",
   "n8n_webhook_events",

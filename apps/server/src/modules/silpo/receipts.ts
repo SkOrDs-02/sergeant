@@ -522,6 +522,29 @@ async function loadCandidateTransactions(
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+/**
+ * Пари «транзакція ↔ чек», які користувач зняв через
+ * `DELETE /api/silpo/receipts/link/:transactionId`. Ключ — `"<txId> <receiptId>"`;
+ * пробіл безпечний як роздільник, бо обидва ідентифікатори приходять
+ * зовнішніми системами без пробілів (Mono tx id, Silpo receipt id).
+ */
+async function loadLinkRejections(
+  userId: string,
+  queryFn: QueryFn,
+): Promise<Set<string>> {
+  const { rows } = await queryFn<{
+    transaction_id: string;
+    receipt_id: string;
+  }>(
+    `SELECT transaction_id, receipt_id
+       FROM silpo_tx_receipt_link_rejections
+      WHERE user_id = $1`,
+    [userId],
+    { op: "silpo_link_rejections_select" },
+  );
+  return new Set(rows.map((r) => `${r.transaction_id} ${r.receipt_id}`));
+}
+
 async function matchAndLink(
   userId: string,
   queryFn: QueryFn,
@@ -541,7 +564,18 @@ async function matchAndLink(
 
   const result = matchReceiptsToTransactions(receipts, transactions);
 
-  for (const m of result.matches) {
+  // Пари, які користувач уже розлінкував руками (міграція 125). Фільтр
+  // стоїть ТУТ, а не в `loadUnresolvedReceipts`: відхилено конкретну ПАРУ,
+  // а не чек — той самий чек має лишатись кандидатом на іншу транзакцію.
+  // Без цього кроку розлінк був би косметикою: matcher детермінований, тож
+  // найближчий sync побачив би чек знову без лінка й відновив рівно те, що
+  // людина щойно зняла.
+  const rejected = await loadLinkRejections(userId, queryFn);
+  const accepted = result.matches.filter(
+    (m) => !rejected.has(`${m.transactionId} ${m.receiptId}`),
+  );
+
+  for (const m of accepted) {
     await queryFn(
       `INSERT INTO silpo_tx_receipt_links (user_id, transaction_id, receipt_id)
        VALUES ($1, $2, $3)
@@ -551,10 +585,14 @@ async function matchAndLink(
     );
   }
 
+  // Відхилений матч рахується як `unmatched`, а не `matched`: у звітності
+  // чек лишився без пари, і саме це має бачити людина в лозі синку.
+  const rejectedCount = result.matches.length - accepted.length;
+
   return {
-    matched: result.matches.length,
+    matched: accepted.length,
     ambiguous: result.ambiguousReceiptIds.length,
-    unmatched: result.unmatchedReceiptIds.length,
+    unmatched: result.unmatchedReceiptIds.length + rejectedCount,
   };
 }
 
@@ -736,6 +774,7 @@ export async function pullAndSyncReceipts(
 export {
   listReceipts,
   getReceiptDetail,
+  unlinkReceiptFromTransaction,
   type ReceiptsPage,
   type ReceiptSummaryRow,
 } from "./receiptsRead.js";

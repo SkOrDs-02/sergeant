@@ -44,6 +44,31 @@
       }
     },
     {
+      "description": "a DELETE /api/v1/silpo/receipts/link/mono-tx-1 request (no body)",
+      "providerStates": [
+        {
+          "name": "user-pact-001 has a silpo_tx_receipt_links row for mono-tx-1"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "DELETE",
+        "path": "/api/v1/silpo/receipts/link/mono-tx-1"
+      },
+      "response": {
+        "body": {
+          "ok": true
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
       "description": "a GET /api/food-search?q=broccoli request (upstream timeout)",
       "providerStates": [
         {

@@ -146,6 +146,17 @@
       ],
       "notes": "Weekly AI digest; token usage must be monitored before production activation. Post-ADR-0038 W3 §3.2 (O9) also writes idempotent tg_alert_acks row (topic=digest, P2) + renders 3-button ack-keyboard."
     },
+    "11-silpo-receipts-sync.json": {
+      "owner": "finyk",
+      "status": "experimental",
+      "riskTier": "P2",
+      "telegramTopic": "—",
+      "audienceTier": "P2",
+      "hmacSigned": false,
+      "requiredEnv": ["PUBLIC_API_BASE_URL", "INTERNAL_API_KEY"],
+      "requiredCredentials": [],
+      "notes": "Фоновий синк чеків Сільпо — cron 07:30 Kyiv → POST /api/internal/silpo/sync-all (limit=100, delayMs=250). До нього чеки підтягувались ЛИШЕ при ручному натисканні «Оновити чеки» в налаштуваннях, тож обіцянка «покупки збагачують транзакції» не працювала для тих, хто туди не заходить. Сервер обходить silpo_connection зі status='connected' послідовно (спільний DCR client_id — паралельний обхід відкрив би спільний circuit breaker). Віддає 503 SILPO_DISABLED, поки SILPO_ENABLED=false — активувати ПІСЛЯ вмикання інтеграції у проді (docs/00-start/playbooks/enable-silpo-integration.md ACTION A)."
+    },
     "09-habit-streak-alert.json": {
       "owner": "product",
       "status": "experimental",

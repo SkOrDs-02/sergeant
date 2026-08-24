@@ -183,3 +183,56 @@ export async function getReceiptDetail(
 
   return normalizeSilpoReceiptDetail(receiptRow, itemRows);
 }
+
+/**
+ * Знімає звʼязок «транзакція ↔ чек», який детермінований matcher поставив
+ * помилково (збіг суми з чужою покупкою у вікні ±1 доба — див. спеку
+ * § Ризики, «Платник ≠ покупець»), і запамʼятовує саме цю ПАРУ як
+ * відхилену, щоб найближчий sync її не відновив.
+ *
+ * Порядок кроків — не косметика, а вибір безпечного боку на збої. Спершу
+ * записуємо відхилення, і лише потім знімаємо лінк: якщо між ними впаде
+ * процес, лишиться відхилення без знятого лінка — тобто рівно поточний
+ * стан, який людина просто повторить кнопкою. Зворотний порядок
+ * (`DELETE ... RETURNING` → `INSERT`) при тому ж збої дав би знятий лінк
+ * без памʼяті про відмову, і найближчий sync мовчки відновив би саме те,
+ * що користувач щойно прибрав. Транзакція теж закрила б питання, але
+ * `withTransaction` живе в `receipts.ts`, який реекспортує цей модуль —
+ * імпорт назад замкнув би цикл заради двох ідемпотентних стейтментів.
+ *
+ * Повертає `false`, коли лінка не було: розлінк того, чого немає, — це
+ * 404 для користувача, а не мовчазний успіх (інакше кнопка «відвʼязати»
+ * рапортувала б перемогу над чужим/уже знятим звʼязком).
+ */
+export async function unlinkReceiptFromTransaction(
+  userId: string,
+  transactionId: string,
+  queryFn: QueryFn = defaultQuery,
+): Promise<boolean> {
+  const { rows } = await queryFn<{ receipt_id: string }>(
+    `SELECT receipt_id
+       FROM silpo_tx_receipt_links
+      WHERE user_id = $1 AND transaction_id = $2`,
+    [userId, transactionId],
+    { op: "silpo_tx_receipt_link_select_for_unlink" },
+  );
+  const existing = rows[0];
+  if (!existing) return false;
+
+  await queryFn(
+    `INSERT INTO silpo_tx_receipt_link_rejections
+       (user_id, transaction_id, receipt_id)
+     VALUES ($1, $2, $3)
+     ON CONFLICT (user_id, transaction_id, receipt_id) DO NOTHING`,
+    [userId, transactionId, existing.receipt_id],
+    { op: "silpo_link_rejection_insert" },
+  );
+
+  const { rowCount } = await queryFn(
+    `DELETE FROM silpo_tx_receipt_links
+      WHERE user_id = $1 AND transaction_id = $2`,
+    [userId, transactionId],
+    { op: "silpo_tx_receipt_link_delete" },
+  );
+  return (rowCount ?? 0) > 0;
+}

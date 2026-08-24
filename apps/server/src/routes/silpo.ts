@@ -17,6 +17,7 @@ import {
   SilpoReceiptsQuerySchema,
   SilpoSyncResultSchema,
   SilpoSyncStateSchema,
+  SilpoUnlinkResponseSchema,
   SilpoWipeResponseSchema,
 } from "../http/schemas.js";
 import {
@@ -29,6 +30,7 @@ import {
   getReceiptDetail,
   listReceipts,
   pullAndSyncReceipts,
+  unlinkReceiptFromTransaction,
 } from "../modules/silpo/receipts.js";
 import { applyCart, getCart, previewCart } from "../modules/silpo/cart.js";
 import { parseBody } from "../http/validate.js";
@@ -142,8 +144,16 @@ export async function callbackHandler(
   res: Response,
 ): Promise<void> {
   if (!assertSilpoEnabled(res)) return;
-  const userId = getUserId(req as AuthedRequest, res);
-  if (!userId) return;
+  // НЕ `getUserId` (як решта роутів): це top-level навігація браузера з
+  // auth.silpo.ua, а не fetch. Сесія Sergeant могла протухнути, поки людина
+  // була на екрані згоди — тоді 401-JSON віддавався б їй прямо у вкладку
+  // сирим тілом. Усі інші відмови цього хендлера йдуть редіректом на
+  // налаштування, ця має поводитись так само.
+  const userId = (req as AuthedRequest).user?.id;
+  if (!userId) {
+    redirectToSettings(res, "error", "session_expired");
+    return;
+  }
 
   const {
     code,
@@ -353,6 +363,43 @@ export async function receiptDetailHandler(
   res.status(200).json(SilpoReceiptDetailDtoSchema.parse(detail));
 }
 
+/**
+ * `DELETE /api/silpo/receipts/link/:transactionId` — знімає хибну пару
+ * «транзакція ↔ чек». Matcher детермінований (збіг суми в межах ±1 доба),
+ * тож чужа покупка на ту саму суму дає хибний лінк, і до цього ендпоїнта
+ * єдиним способом його прибрати був `POST /api/silpo/wipe` — знесення ВСІХ
+ * чеків заради однієї помилки.
+ *
+ * `404`, коли лінка не було: мовчазний успіх зробив би кнопку «відвʼязати»
+ * брехливою (рапортувала б перемогу над уже знятим чи чужим звʼязком).
+ */
+export async function receiptUnlinkHandler(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  if (!assertSilpoEnabled(res)) return;
+  const userId = getUserId(req as AuthedRequest, res);
+  if (!userId) return;
+
+  const transactionIdParam = req.params["transactionId"];
+  const transactionId =
+    typeof transactionIdParam === "string" ? transactionIdParam : undefined;
+  if (!transactionId) {
+    res
+      .status(400)
+      .json({ error: "Missing transaction id", code: "VALIDATION" });
+    return;
+  }
+
+  const removed = await unlinkReceiptFromTransaction(userId, transactionId);
+  if (!removed) {
+    res.status(404).json({ error: "Звʼязок не знайдено", code: "NOT_FOUND" });
+    return;
+  }
+  logger.info({ msg: "silpo.receipt.unlinked" });
+  res.status(200).json(SilpoUnlinkResponseSchema.parse({ ok: true }));
+}
+
 // ──────────────────────────────────── Cart (Track G) ────────────────────────
 
 /**
@@ -479,6 +526,17 @@ export function createSilpoRouter(): Router {
       windowMs: 60_000,
     }),
     receiptDetailHandler,
+  );
+  r.delete(
+    "/api/silpo/receipts/link/:transactionId",
+    // Пише два рядки (відхилення + зняття лінка) і впливає на майбутні
+    // синки — відро як у `disconnect`, не як у читальних роутів.
+    rateLimitExpress({
+      key: "api:silpo:receipt-unlink",
+      limit: 10,
+      windowMs: 60_000,
+    }),
+    receiptUnlinkHandler,
   );
   r.post(
     "/api/silpo/cart/preview",

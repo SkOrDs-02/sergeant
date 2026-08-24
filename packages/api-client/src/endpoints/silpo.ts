@@ -16,6 +16,7 @@ import type {
   SilpoReceiptSummaryDto as SharedSilpoReceiptSummaryDto,
   SilpoSyncResult as SharedSilpoSyncResult,
   SilpoSyncState as SharedSilpoSyncState,
+  SilpoUnlinkResponse as SharedSilpoUnlinkResponse,
   SilpoWipeResponse as SharedSilpoWipeResponse,
 } from "@sergeant/shared/schemas";
 // Рантайм-імпорт — лише з кореневого барела: Vite-аліас `@sergeant/shared`
@@ -31,6 +32,7 @@ import {
   SilpoReceiptsPageSchema,
   SilpoSyncResultSchema,
   SilpoSyncStateSchema,
+  SilpoUnlinkResponseSchema,
   SilpoWipeResponseSchema,
 } from "@sergeant/shared";
 import { applyApiPrefix, DEFAULT_API_PREFIX } from "../httpClient";
@@ -57,6 +59,7 @@ import type { RequestOptions } from "../types";
  *     the Silpo redirect. Not wrapped here.
  *   - `POST /api/silpo/disconnect`  → `disconnect()`
  *   - `POST /api/silpo/wipe`        → `wipe()`
+ *   - `DELETE /api/silpo/receipts/link/:transactionId` → `unlinkReceipt()`
  *   - `GET  /api/silpo/sync-state`  → `syncState()`
  *   - `POST /api/silpo/sync`        → `sync()` — errors surface as
  *     `ApiError` (409 `SILPO_NOT_CONNECTED`/`SILPO_REAUTH_REQUIRED`, 429
@@ -78,6 +81,7 @@ export type SilpoConnectionStatus = SharedSilpoConnectionStatus;
 export type SilpoSyncState = SharedSilpoSyncState;
 export type SilpoDisconnectResponse = SharedSilpoDisconnectResponse;
 export type SilpoWipeResponse = SharedSilpoWipeResponse;
+export type SilpoUnlinkResponse = SharedSilpoUnlinkResponse;
 export type SilpoSyncResult = SharedSilpoSyncResult;
 export type SilpoReceiptChannel = SharedSilpoReceiptChannel;
 export type SilpoReceiptItemDto = SharedSilpoReceiptItemDto;
@@ -126,6 +130,18 @@ export interface SilpoEndpoints {
    * `finyk_tx_splits` не чіпаються.
    */
   wipe: (opts?: Pick<RequestOptions, "signal">) => Promise<SilpoWipeResponse>;
+  /**
+   * `DELETE /api/silpo/receipts/link/:transactionId` — знімає хибний
+   * звʼязок «транзакція ↔ чек» (matcher лінкує за збігом суми у вікні
+   * ±1 доба, тож чужа покупка на ту саму суму дає хибну пару). Пара
+   * запамʼятовується як відхилена, тому наступний sync її НЕ відновить.
+   * Чек не видаляється — він повертається в «Чеки без транзакції».
+   * `404`, якщо звʼязку не було.
+   */
+  unlinkReceipt: (
+    transactionId: string,
+    opts?: Pick<RequestOptions, "signal">,
+  ) => Promise<SilpoUnlinkResponse>;
   /**
    * `GET /api/silpo/sync-state` — стан інтеграції для Settings-картки
    * (connect / connected / reauth-банер).
@@ -195,6 +211,14 @@ export function createSilpoEndpoints(http: HttpClient): SilpoEndpoints {
         signal,
       });
       return SilpoWipeResponseSchema.parse(raw);
+    },
+    unlinkReceipt: async (transactionId, { signal } = {}) => {
+      const raw = await http.del<unknown>(
+        `/api/silpo/receipts/link/${encodeURIComponent(transactionId)}`,
+        undefined,
+        { signal },
+      );
+      return SilpoUnlinkResponseSchema.parse(raw);
     },
     syncState: async ({ signal } = {}) => {
       const raw = await http.get<unknown>("/api/silpo/sync-state", { signal });

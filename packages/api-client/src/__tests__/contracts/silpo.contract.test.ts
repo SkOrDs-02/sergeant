@@ -70,6 +70,44 @@ describe(
   },
 );
 
+describe(
+  "contract @ DELETE /api/v1/silpo/receipts/link/:transactionId",
+  CONTRACT_SUITE_OPTIONS,
+  () => {
+    let pact: PactV4;
+    beforeAll(() => {
+      pact = createPact();
+    });
+    afterAll(() => {});
+
+    it("знімає хибну пару «транзакція ↔ чек»", async () => {
+      await pact
+        .addInteraction()
+        .given("user-pact-001 has a silpo_tx_receipt_links row for mono-tx-1")
+        .uponReceiving(
+          "a DELETE /api/v1/silpo/receipts/link/mono-tx-1 request (no body)",
+        )
+        .withRequest(
+          "DELETE",
+          "/api/v1/silpo/receipts/link/mono-tx-1",
+          (req) => {
+            req.headers({ accept: "application/json" });
+          },
+        )
+        .willRespondWith(200, (res) => {
+          res.headers({ "content-type": "application/json" });
+          res.jsonBody({ ok: true });
+        })
+        .executeTest(async (mockServer) => {
+          const http = createHttpClient({ baseUrl: mockServer.url });
+          const silpo = createSilpoEndpoints(http);
+          const out = await silpo.unlinkReceipt("mono-tx-1");
+          expect(out.ok).toBe(true);
+        });
+    });
+  },
+);
+
 describe("contract @ POST /api/v1/silpo/wipe", CONTRACT_SUITE_OPTIONS, () => {
   let pact: PactV4;
   beforeAll(() => {
