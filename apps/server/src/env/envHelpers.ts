@@ -43,6 +43,28 @@ export const boolFromEnv = (defaultValue: boolean) =>
       return defaultValue;
     });
 
+/**
+ * Ран-тайм-двійник `boolFromEnv` для модулів, які свідомо читають
+ * `process.env` напряму (щоб тест міг перемкнути прапорець без ре-імпорту
+ * модуля, а ops — без редеплою).
+ *
+ * Семантика мусить збігатися з `boolFromEnv` рядок-у-рядок: інакше та сама
+ * змінна означає різне у схемі й у ран-таймі. Саме такий розкол тримав
+ * `CHAT_VIA_OPENROUTER` у двох станах одночасно — схема казала «ON за
+ * замовчуванням», а ран-тайм читав відсутнє значення як OFF.
+ */
+export const boolFromProcessEnv = (
+  name: string,
+  defaultValue: boolean,
+): boolean => {
+  const v = process.env[name];
+  if (v === undefined) return defaultValue;
+  const lower = v.toLowerCase();
+  if (lower === "true" || lower === "1") return true;
+  if (lower === "false" || lower === "0") return false;
+  return defaultValue;
+};
+
 export const stringWithDefault = (defaultValue: string) =>
   z
     .string()

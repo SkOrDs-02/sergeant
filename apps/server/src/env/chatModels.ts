@@ -1,3 +1,15 @@
+import { boolFromProcessEnv } from "./envHelpers.js";
+
+/**
+ * Дефолт прапорця `CHAT_VIA_OPENROUTER` — ЄДИНЕ джерело істини.
+ *
+ * Той самий константний вираз читають обидві сторони: zod-поле
+ * `envSchema.CHAT_VIA_OPENROUTER` (`boolFromEnv(...)` у `env.ts`) і
+ * ран-таймний `chatViaOpenRouter()` нижче. Доти, доки число стояло у двох
+ * місцях, воно там і розійшлося (див. докстрінг функції).
+ */
+export const CHAT_VIA_OPENROUTER_DEFAULT = true;
+
 /**
  * Чи ходить `/api/chat` через Anthropic-сумісний Messages API OpenRouter-а.
  *
@@ -5,11 +17,24 @@
  * залежать ДЕФОЛТИ інших полів цієї ж схеми — на момент їх обчислення
  * `env` ще не існує. Це також дає `aiQuota.ts` спільне джерело істини:
  * той модуль свідомо читає `process.env`, щоб тести перемикали тиринг у
- * ран-таймі без ре-імпорту.
+ * ран-таймі без ре-імпорту. Ця властивість збережена — `boolFromProcessEnv`
+ * читає змінну на КОЖНОМУ виклику, як і раніше.
+ *
+ * ЩО ЗМІНИЛОСЬ (і чому). Тут стояло `if (v !== "true" && v !== "1") return
+ * false` — тобто ВІДСУТНЯ змінна читалась як OFF, тоді як схема оголошує
+ * `boolFromEnv(true)`, а `assertStartupEnv()` друкує попередження, написане
+ * з припущення «прапорець типово ON». Два джерела істини про один прапорець
+ * розходились мовчки: з виставленим `OPENROUTER_API_KEY` і без явного
+ * `CHAT_VIA_OPENROUTER` чат тихо йшов на прямий Anthropic — з
+ * OpenRouter-івськими дефолтами моделей — і кожен запит падав
+ * `anthropic upstream 401`. Тепер відсутнє значення резолвиться у
+ * `CHAT_VIA_OPENROUTER_DEFAULT`, тобто рівно в те, що каже схема; явні
+ * `true|1|false|0` працюють як і працювали.
  */
 export function chatViaOpenRouter(): boolean {
-  const v = process.env["CHAT_VIA_OPENROUTER"]?.toLowerCase();
-  if (v !== "true" && v !== "1") return false;
+  if (!boolFromProcessEnv("CHAT_VIA_OPENROUTER", CHAT_VIA_OPENROUTER_DEFAULT)) {
+    return false;
+  }
   // Ключ — частина умови, а не окрема перевірка. Інакше відкат половинчастий:
   // `pickTransport` без ключа тихо повертається на Anthropic, а
   // дефолти моделей лишаються OpenRouter-івськими — і кожен чат-запит
