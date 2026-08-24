@@ -13,6 +13,7 @@ import {
   uncaughtOnly,
   waitForSyncQuiet,
   visibleText,
+  signInInvite,
   type Recorder,
 } from "../utils/liveJourneyHelpers";
 import { seedFTUX } from "../utils/seedFTUX";
@@ -241,39 +242,23 @@ test.describe.serial("BT1 — анонім із Telegram-групи", () => {
       page,
       "Відповідай одним коротким реченням українською: beta QA ping.",
     );
-    if (status === 200) {
-      await expect(assistantReplies(page)).toHaveCount(1, { timeout: 90_000 });
-    } else {
-      // Анонімна квота (AI_DAILY_ANON_LIMIT, IP-ключ) могла бути вибрана
-      // попереднім прогоном цього ж дня — тоді одразу 429 з підказкою.
-      expect(status, "POST /api/chat для аноніма").toBe(429);
-      await expect(
-        visibleText(page, /Безкоштовна проба на сьогодні вичерпана/),
-      ).toBeVisible();
-    }
+    // Анонімної квоти НЕМА: `/api/chat` під `requireSession()` (аудит A1),
+    // тож гість отримує 401 на ПЕРШОМУ ж повідомленні. Гілку 429
+    // (`AI_QUOTA_ANON`) прибрано разом із мертвим кодом сервера
+    // 2026-08-24 — раніше цей тест пінив копію, недосяжну в рантаймі.
+    expect(status, "POST /api/chat для аноніма").toBe(401);
+    await expect(signInInvite(page)).toBeVisible();
   });
 
-  test("BT1: вичерпання анонімної квоти — підказка увійти, не глухий кут", async () => {
+  test("BT1: відмова аноніму — запрошення увійти, не глухий кут", async () => {
     test.skip(!LIVE_AI, "PW_BETA_LIVE_AI не заданий — живий AI не палимо");
-    // Ліміт задається env-ом (дефолт коду 1); перевіряємо ПОВЕДІНКУ на
-    // вичерпанні, тому шлемо ще до 3 повідомлень, поки не впремось у 429.
-    let saw429 = false;
-    for (let i = 0; i < 3 && !saw429; i += 1) {
-      if (!takeAiBudget()) break;
-      const { status } = await sendChatMessage(page, `beta QA ping ${i + 2}`);
-      saw429 = status === 429;
-    }
-    if (!saw429) {
-      test.info().annotations.push({
-        type: "warning",
-        description:
-          "AI_DAILY_ANON_LIMIT вище за витрачений бюджет прогону — вичерпання не спостережено; перевір manual-кроком",
-      });
-      return;
-    }
-    await expect(
-      visibleText(page, /Безкоштовна проба на сьогодні вичерпана/),
-    ).toBeVisible();
+    test.skip(!takeAiBudget(), "Бюджет AI-повідомлень прогону вичерпано");
+    // Головне тут — НЕ код статусу, а те, що відмова дає наступний крок.
+    // Браузерний QA 2026-08-24 (F-25) застав рівно протилежне: гість
+    // отримував голе «Помилка: Доступ заборонено.» без жодного CTA.
+    const { status } = await sendChatMessage(page, "beta QA ping 2");
+    expect(status, "POST /api/chat для аноніма").toBe(401);
+    await expect(signInInvite(page)).toBeVisible();
   });
 
   test("BT1: без неперехоплених винятків", async () => {

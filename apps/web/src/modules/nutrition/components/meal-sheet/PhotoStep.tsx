@@ -118,7 +118,14 @@ export function PhotoStep({ onApply }: PhotoStepProps) {
   //    входом у paywall.
   // Pro без privacy-ack теж лишається без кнопки — навмисно: гейт згоди
   // знімає «Зрозуміло» в нотісі, а `gatedAnalyzePhoto` перевіряє лише
-  // тариф, тож видима тут кнопка була б обходом privacy-гейта.
+  // тариф, тож видима тут кнопка була б обходом privacy-гейта. Але два
+  // «навмисно» разом давали глухий кут: Pro обирає файл, автоаналіз
+  // мовчить через ack, кнопки нема — і ніщо не каже, що розблоковує саме
+  // «Зрозуміло». Тому нотіс отримує прапорець і сам називає себе
+  // наступним кроком (гейт лишається на місці — просто перестає бути
+  // невидимим).
+  const analysisAwaitingPrivacyAck =
+    Boolean(previewUrl) && photoGate.canAccess && !privacyAcked;
   const analyzeLabel = !previewUrl
     ? null
     : photoErr
@@ -163,6 +170,7 @@ export function PhotoStep({ onApply }: PhotoStepProps) {
         // «Зрозуміло» на першому фото = і згода, і намір: якщо кадр уже
         // обраний — аналіз стартує одразу (ефект вище зловить зміну гейта).
         onPrivacyAck={() => setPrivacyAcked(true)}
+        analysisAwaitingPrivacyAck={analysisAwaitingPrivacyAck}
       />
       {photoErr && (
         <div

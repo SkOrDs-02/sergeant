@@ -70,7 +70,13 @@ export function MeshBackground({
         // `<div className="h-dvh bg-bg flex flex-col">` wrappers this
         // replaces; `h-app-dvh` (not `h-dvh`) so the shell tracks the
         // real visible height on iOS (see utilities.css).
-        "h-app-dvh flex flex-col overflow-hidden",
+        // Осі окремо, не шорткат `overflow-hidden`: `cn`/tailwind-merge
+        // зводить конфлікти ПО ГРУПАХ, і шорткат із групи `overflow` не
+        // витісняється переданим `overflow-y-auto` (група `overflow-y`) —
+        // обидва класи виживають, і хто переможе, вирішує порядок правил у
+        // згенерованому CSS, а не намір викликача. З осями пере-визначення
+        // з `className` детерміноване (auth-екрани саме так вмикають скрол).
+        "h-app-dvh flex flex-col overflow-x-hidden overflow-y-hidden",
         // `.bg-mesh` utility class — defined in
         // `apps/web/src/styles/theme.css` § MESH BACKGROUND UTILITY.
         // Composites the three ink glows + sets background-attachment:

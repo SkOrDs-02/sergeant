@@ -1,6 +1,6 @@
 # 03. Сервіси та тулстек
 
-> **Last touched:** 2026-07-29 by @Skords-01. **Next review:** 2027-11-08.
+> **Last touched:** 2026-08-24 by @claude. **Next review:** 2026-12-01.
 > **Status:** Active
 
 > Повний аудит зовнішніх сервісів, інфраструктури, dev-інструментів: що є, що додати, що змінити.
@@ -377,7 +377,8 @@ ALLOWED_ORIGINS=                 # Vercel domain(s)
 # AI
 ANTHROPIC_API_KEY=               # Claude API
 AI_DAILY_USER_LIMIT=120          # Стане динамічним (plan-based)
-AI_DAILY_ANON_LIMIT=40           # Стане динамічним
+# AI_DAILY_ANON_LIMIT — прибрано 2026-08-24 (ADR-0086): анонімного AI немає,
+# усі AI-роути під requireSession(), змінна більше не читається
 
 # AI memory (pgvector + Voyage)
 AI_MEMORY_ENABLED=               # майстер-вимикач RAG-pipeline

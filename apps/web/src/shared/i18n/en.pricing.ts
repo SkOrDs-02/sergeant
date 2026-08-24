@@ -48,6 +48,7 @@ export const pricingEn: MessageCatalog["pricing"] = {
     openingPortal: "Opening management…",
     switchToFree: "Switch to Free",
     currentPlan: "Your current plan",
+    signInToStart: "Sign in to start",
   },
   status: {
     checkoutCreatedPrefix: "Payment session created",

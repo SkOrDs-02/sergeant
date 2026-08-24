@@ -68,6 +68,19 @@ describe("JournalSection", () => {
     expect(screen.getByText(/7.5 год/)).toBeInTheDocument();
   });
 
+  // Регресія (CI 2026-08-24): згорнуте резюме друкує числа українським
+  // роздільником (`fmtLoose`), а не `82.5`. Решта тестів тут матчить
+  // нескранованою крапкою — вона підходить і під кому, тож розходження
+  // ловилось лише в smoke-і. Тут тримаємо саме кому.
+  it("prints the collapsed summary with the Ukrainian decimal separator", () => {
+    renderJournal();
+
+    const toggle = screen.getByRole("button", { name: /82,5 кг · 7,5 год/ });
+    expect(toggle).toBeInTheDocument();
+    expect(screen.queryByText(/82\.5 кг/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/7\.5 год/)).not.toBeInTheDocument();
+  });
+
   it("collapses the whole section and persists the section state", () => {
     renderJournal();
 

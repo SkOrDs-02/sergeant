@@ -62,6 +62,7 @@ function setHooks(opts: {
   entries?: unknown[];
   exercises?: unknown[];
   musclesUk?: Record<string, string>;
+  primaryGroupsUk?: Record<string, string>;
   pushup?: { stats: unknown; hasData: boolean };
   dailyLog?: unknown[];
   /** Defaults to `true` — most tests exercise the post-cache-warm page. */
@@ -76,6 +77,9 @@ function setHooks(opts: {
   useExerciseCatalog.mockReturnValue({
     exercises: opts.exercises ?? [],
     musclesUk: opts.musclesUk ?? {},
+    // Мапа ГРУП (`chest` → «Груди») — окрема від мапи мʼязів; PR-борд і
+    // бейдж групи читають саме її (QA 2026-08-23).
+    primaryGroupsUk: opts.primaryGroupsUk ?? opts.musclesUk ?? {},
   });
   usePushupActivity.mockReturnValue(
     opts.pushup ?? {
@@ -149,7 +153,7 @@ describe("Progress page", () => {
     });
     render(<Progress onNavigate={onNavigate} />);
     expect(screen.getByText("79 кг")).toBeInTheDocument();
-    expect(screen.getByText("-2.0 кг")).toBeInTheDocument();
+    expect(screen.getByText("-2,0 кг")).toBeInTheDocument();
   });
 
   it("об'єднує вагу з обох сховищ в один ряд (W1-WEIGHT-SOT)", () => {
@@ -179,7 +183,7 @@ describe("Progress page", () => {
     });
     render(<Progress onNavigate={onNavigate} />);
     // latest 83 − prev 80 = +3.0 kg
-    expect(screen.getByText(/\+3\.0 кг/)).toBeInTheDocument();
+    expect(screen.getByText(/\+3,0 кг/)).toBeInTheDocument();
   });
 
   it("derives a strength PR from completed sets and renders it in the board", () => {

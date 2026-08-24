@@ -14,8 +14,11 @@
  */
 import { useCallback } from "react";
 import type { Meal } from "@sergeant/nutrition-domain";
-import { MEAL_TYPES, mealTypeByHour } from "@sergeant/nutrition-domain";
-import { getKyivDateParts } from "@shared/lib/time/kyivTime";
+import {
+  MEAL_TYPES,
+  deviceTimeOfDay,
+  mealTypeByHour,
+} from "@sergeant/nutrition-domain";
 import type { ToastApi } from "@shared/hooks/useToast";
 import { newMealId } from "../lib/mealId";
 import type { QuickChip } from "./useNutritionQuickChips";
@@ -36,18 +39,19 @@ export function useQuickAddMealFromChip({
 }): (chip: QuickChip) => void {
   return useCallback(
     (chip: QuickChip) => {
-      // Both mealType and time are Kyiv-anchored from the same parts so the
-      // saved meal metadata stays internally consistent for non-Kyiv devices
-      // (domain-invariant: day/meal boundaries live in Europe/Kyiv). cubic.
-      const { hour, minute } = getKyivDateParts();
-      const mealTypeId = mealTypeByHour(hour);
+      // ADR-0078: і `mealType`, і `time` беремо з годинника ПРИСТРОЮ — з
+      // того самого, що дав `log.selectedDate`. Київська пара поруч із
+      // девайсовим день-ключем робила `eaten_at` неіснуючим моментом.
+      const now = new Date();
+      // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- ADR-0078: тип прийому їжі й час доби належать ОСОБИСТОМУ дню, а він за пристроєм — тим самим годинником, що дав `log.selectedDate`
+      const mealTypeId = mealTypeByHour(now.getHours());
       const mealLabel =
         MEAL_TYPES.find((m) => m.id === mealTypeId)?.label || "Прийом їжі";
       const id = newMealId();
       const meal: Meal = {
         id,
         name: chip.label,
-        time: `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`,
+        time: deviceTimeOfDay(now),
         mealType: mealTypeId,
         label: mealLabel,
         macros: {

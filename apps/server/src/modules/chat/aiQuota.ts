@@ -138,25 +138,6 @@ export function isAiQuotaDisabled(): boolean {
   return v === "1" || v === "true";
 }
 
-// Anonymous callers get exactly one message a day: enough to see what the
-// assistant does, not enough to use it as a product. Lower than the
-// authenticated free-user cap (`FREE_LIMITS.aiRequestsPerDay` in
-// `billing/effectiveLimits.ts` — 5/day) on purpose: an IP-keyed caller is the
-// cheapest identity to spin up, so it gets the tightest budget, and the 429 it
-// hits is a sign-in prompt (`AI_QUOTA_ANON` below), not a "try tomorrow" dead
-// end. Both numbers are decided by ADR-0085 (which refines the single Free
-// AI-chat row of ADR-0068 after the unit-economics measurement) — moving
-// either one needs a new ADR, not an edit here.
-//
-// The deployed value comes from env `AI_DAILY_ANON_LIMIT` — changing this
-// constant alone does NOT move production while that variable is set.
-const DEFAULT_ANON_LIMIT = 1;
-
-/** Daily AI-message cap for an anonymous (IP-keyed) caller — env-tunable. */
-function anonDailyLimit(): number | null {
-  return parseLimit("AI_DAILY_ANON_LIMIT", DEFAULT_ANON_LIMIT);
-}
-
 /**
  * Founder / internal-team Better-Auth user IDs that bypass the AI daily quota
  * entirely — unlimited, plan-agnostic. Comma-separated in env
@@ -308,9 +289,21 @@ export async function assertAiQuota(
   const sessionUser = await safeSessionUser(req);
   // Founder / internal-team users are never quota-blocked (plan-agnostic).
   if (sessionUser && isFounderUser(sessionUser.id)) return true;
+  // Анонімного трафіку тут не буває. КОЖЕН роут, що монтує цю квоту, стоїть
+  // за `requireSession()`: `routes/chat.ts`, `routes/coach.ts`,
+  // `routes/weekly-digest.ts` і `r.use("/api/nutrition", requireSession())` —
+  // рішення A1 з `docs/90-work/audits/ai-abuse-2026-08-05.md`, і послаблювати
+  // його не можна (без сесії ключем квоти був би `ip:<addr>`, а IPv6-клієнт
+  // має під підпискою цілу /64).
+  //
+  // Тож `sessionUser === null` тут означає не аноніма, а збій ПОВТОРНОГО
+  // session-lookup усередині запиту, який `requireSession()` уже пропустив
+  // (`safeSessionUser` ковтає виняток). Даємо Free-стелю — та сама
+  // monetization-safe відповідь, що і в `userDailyLimit` на помилку плану:
+  // ніколи не роздаємо безліміт мовчки.
   const planLimit = sessionUser
     ? await userDailyLimit(sessionUser.id)
-    : anonDailyLimit();
+    : planLimits("free").aiRequestsPerDay;
 
   // Unlimited (Pro) виходить ДО резолву preset-відра: безлімітному юзеру
   // окремий бюджет нічого не додає, а зайве відро тільки шумить у метриках.
@@ -371,13 +364,18 @@ export async function assertAiQuota(
       } catch {
         /* ignore */
       }
-      // Анонім, Free і сценарний preset вичерпують РІЗНІ ліміти, тож і
-      // виходи в них різні. Free справді лишається чекати доби. Аноніму
-      // чекати нема сенсу — вхід піднімає його ліміт негайно. Preset має
-      // тижневе вікно, і «спробуй завтра» там просто неправда: вихід —
-      // ручне заповнення, яке взагалі не витрачає AI.
+      // Денна квота і сценарний preset вичерпують РІЗНІ ліміти, тож і виходи
+      // в них різні. Денна справді лишається чекати доби. Preset має тижневе
+      // вікно, і «спробуй завтра» там просто неправда: вихід — ручне
+      // заповнення, яке взагалі не витрачає AI.
       // Клієнт розрізняє випадки за `code` (див. `friendlyApiError` у
       // `apps/web/src/core/lib/hubChatUtils.ts`), не за текстом.
+      //
+      // «ЗАПИТІВ», а не «повідомлень». Лічильник інкрементиться раз на
+      // HTTP-запит до AI-роута, а одне повідомлення в чаті може коштувати
+      // кілька: після tool_use клієнт шле наступний POST /api/chat із
+      // tool_results, і той теж проходить сюди. Копія «5 повідомлень» лишала
+      // юзера з 4 відповідями і 429 на п'ятій — обіцяли не те, що метрять.
       res.status(429).json(
         isPresetBudget
           ? {
@@ -386,18 +384,12 @@ export async function assertAiQuota(
               code: "AI_QUOTA_PRESET",
               limit: result.limit,
             }
-          : sessionUser
-            ? {
-                error: "Денний ліміт AI вичерпано. Спробуй завтра.",
-                code: "AI_QUOTA",
-                limit: result.limit,
-              }
-            : {
-                error:
-                  "Безкоштовна проба на сьогодні вичерпана. Увійди: 5 запитів на добу, без карти.",
-                code: "AI_QUOTA_ANON",
-                limit: result.limit,
-              },
+          : {
+              error:
+                "Денний ліміт AI-запитів вичерпано (одне повідомлення інколи коштує кілька). Спробуй завтра.",
+              code: "AI_QUOTA",
+              limit: result.limit,
+            },
       );
       return false;
     }
@@ -663,7 +655,9 @@ export async function resolveProTier(
     };
   }
 
-  // Anon (no session) — gated by count via assertAiQuota; модель — standard.
+  // Сесії немає. На практиці це не анонім (усі роути під `requireSession()` —
+  // див. коментар у `assertAiQuota`), а збій session-lookup. Модель — standard,
+  // тобто той самий тир, що й Free: не деградуємо нижче й не даруємо premium.
   if (!sessionUser) return unpaid();
 
   let plan: "free" | "pro" = "free";

@@ -703,7 +703,7 @@ describe("create_habit · undo", () => {
     expect(before.habits).toHaveLength(1);
     const createdId = before.habits[0]!.id;
 
-    out.undo();
+    out.undo?.();
 
     const after = loadRoutineState();
     expect(
@@ -730,7 +730,7 @@ describe("create_habit · undo", () => {
       },
     });
 
-    out.undo();
+    out.undo?.();
 
     const after = loadRoutineState();
     expect(after.completions[createdId]).toBeUndefined();
@@ -761,13 +761,13 @@ describe("mark_habit_done · undo", () => {
     const before = loadRoutineState();
     expect(before.completions["h1"]).toContain("2024-06-15");
 
-    out.undo();
+    out.undo?.();
 
     const after = loadRoutineState();
     expect(after.completions["h1"] ?? []).not.toContain("2024-06-15");
   });
 
-  it("якщо дата вже була виконана — повертає string без undo (no-op)", () => {
+  it("якщо дата вже була виконана — повертає результат БЕЗ undo (no-op)", () => {
     seedHabit("h1", "Вода");
     // Перший виклик — вставляємо completion
     const first = handleRoutineAction({
@@ -781,7 +781,9 @@ describe("mark_habit_done · undo", () => {
       name: "mark_habit_done",
       input: { habit_id: "h1", date: "2024-06-15" },
     });
-    expect(typeof second).toBe("string");
+    // Форма змінилась разом із F-12: no-op теж несе `confirm`, але undo
+    // лишається відсутнім — реверсити нема чого.
+    expect(typeof second === "string" || second?.undo === undefined).toBe(true);
   });
 
   it("undo не зачіпає інші дати того ж habit-а", () => {
@@ -797,7 +799,7 @@ describe("mark_habit_done · undo", () => {
     if (typeof out === "string" || out == null)
       throw new Error("expected object");
 
-    out.undo();
+    out.undo?.();
 
     const after = loadRoutineState();
     expect(after.completions["h1"]).toContain("2024-06-13");
@@ -821,7 +823,7 @@ describe("create_reminder · undo", () => {
     const before = loadRoutineState();
     expect(before.habits[0]!.reminderTimes).toEqual(["08:00"]);
 
-    out.undo();
+    out.undo?.();
     const after = loadRoutineState();
     expect(after.habits[0]!.reminderTimes).toEqual([]);
   });
@@ -854,12 +856,12 @@ describe("complete_habit_for_date · undo", () => {
     if (typeof out === "string" || out == null)
       throw new Error("expected object");
 
-    out.undo();
+    out.undo?.();
     const after = loadRoutineState();
     expect(after.completions["h1"]).toEqual(["2025-01-01"]);
   });
 
-  it("повторне виставлення дати: вже виконано → return string без undo", () => {
+  it("повторне виставлення дати: вже виконано → результат без undo", () => {
     seedHabit("h1", "H");
     const seeded = loadRoutineState();
     saveRoutineState({
@@ -870,7 +872,7 @@ describe("complete_habit_for_date · undo", () => {
       name: "complete_habit_for_date",
       input: { habit_id: "h1", date: "2025-01-02" },
     });
-    expect(typeof out).toBe("string");
+    expect(typeof out === "string" || out?.undo === undefined).toBe(true);
   });
 
   it("undo на uncheck (completed:false) повертає дату назад", () => {
@@ -887,7 +889,7 @@ describe("complete_habit_for_date · undo", () => {
     if (typeof out === "string" || out == null)
       throw new Error("expected object");
 
-    out.undo();
+    out.undo?.();
     const after = loadRoutineState();
     expect(after.completions["h1"]).toContain("2025-01-02");
   });
@@ -909,7 +911,7 @@ describe("archive_habit — undo", () => {
     expect(loadRoutineState().habits.find((h) => h.id === "h1")?.archived).toBe(
       true,
     );
-    out.undo();
+    out.undo?.();
     expect(loadRoutineState().habits.find((h) => h.id === "h1")?.archived).toBe(
       false,
     );
@@ -934,7 +936,7 @@ describe("archive_habit — undo", () => {
       ),
     });
 
-    out.undo();
+    out.undo?.();
     const after = loadRoutineState();
     expect(after.habits.find((h) => h.id === "h1")?.archived).toBe(false);
     expect(after.habits.find((h) => h.id === "h2")?.name).toBe("Вода 2л");
@@ -948,6 +950,6 @@ describe("archive_habit — undo", () => {
     } as ChatAction) as { result: string; undo: () => void };
     const st = loadRoutineState();
     saveRoutineState({ ...st, habits: [] });
-    expect(() => out.undo()).not.toThrow();
+    expect(() => out.undo?.()).not.toThrow();
   });
 });

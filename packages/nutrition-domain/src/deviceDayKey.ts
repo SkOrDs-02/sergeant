@@ -33,3 +33,58 @@ export function previousDeviceDayKey(key: string): string {
   const [y, m, d] = key.split("-").map(Number);
   return deviceDayKey(new Date(y ?? 1970, (m ?? 1) - 1, (d ?? 1) - 1));
 }
+
+/**
+ * Час доби за годинником ПРИСТРОЮ, `HH:MM`.
+ *
+ * AI-CONTEXT: пара до `deviceDayKey`. День-ключ запису — за пристроєм
+ * (ADR-0078), тож і час доби, який лягає поруч із ним, мусить бути з ТОГО
+ * САМОГО годинника. Київський час поруч із девайсовим днем дає пару, якої
+ * не існувало в реальності: о 23:53 UTC день = 23-тє, а київський
+ * годинник показує 02:53 — момент «23-тє 02:53» на 21 годину раніше за
+ * фактичний. Саме таку пару писав `currentTime()` до 2026-08-24.
+ * Europe/Kyiv лишається для ВІДОБРАЖЕННЯ часу серверних звітів, не для
+ * штампа особистого запису.
+ */
+export function deviceTimeOfDay(d: Date | number = new Date()): string {
+  const date = typeof d === "number" ? new Date(d) : d;
+  const hh = String(date.getHours()).padStart(2, "0");
+  const mm = String(date.getMinutes()).padStart(2, "0");
+  return `${hh}:${mm}`;
+}
+
+/** `+03:00` / `-05:30` / `Z` — зсув пристрою на момент `date`. */
+function deviceUtcOffset(date: Date): string {
+  // `getTimezoneOffset()` — хвилини, які треба ДОДАТИ до локального часу,
+  // щоб отримати UTC; знак у ISO-8601 протилежний.
+  const minutes = -date.getTimezoneOffset();
+  if (minutes === 0) return "Z";
+  const sign = minutes < 0 ? "-" : "+";
+  const abs = Math.abs(minutes);
+  const hh = String(Math.floor(abs / 60)).padStart(2, "0");
+  const mm = String(abs % 60).padStart(2, "0");
+  return `${sign}${hh}:${mm}`;
+}
+
+/**
+ * Скласти РЕАЛЬНИЙ момент із device-local пари «день-ключ + час доби».
+ *
+ * AI-DANGER: `${dateKey}T${time}:00.000Z` — саме той наївний склад, що
+ * породжував неіснуючі моменти: локальний настінний час штампувався як
+ * UTC, тож будь-яка аналітика «о котрій людина їсть» зчитувалась зі
+ * зсувом на цілий часовий пояс. Тут ми лишаємо настінний час як є (щоб
+ * `eaten_at.slice(0,10)` і далі давав девайсовий день-ключ, а
+ * `slice(11,16)` — той час, що людина бачила в аркуші), але дописуємо
+ * фактичний зсув пристрою — і момент стає справжнім.
+ */
+export function deviceWallClockToInstant(
+  dateKey: string,
+  time: string,
+): string {
+  const safeDate = /^\d{4}-\d{2}-\d{2}$/.test(dateKey) ? dateKey : "1970-01-01";
+  const safeTime = /^\d{2}:\d{2}$/.test(time) ? time : "00:00";
+  const [y, m, d] = safeDate.split("-").map(Number);
+  const [hh, mm] = safeTime.split(":").map(Number);
+  const local = new Date(y ?? 1970, (m ?? 1) - 1, d ?? 1, hh ?? 0, mm ?? 0);
+  return `${safeDate}T${safeTime}:00.000${deviceUtcOffset(local)}`;
+}

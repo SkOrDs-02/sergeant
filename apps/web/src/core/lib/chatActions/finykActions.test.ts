@@ -762,7 +762,7 @@ describe("create_transaction · undo", () => {
     );
     expect(before).toHaveLength(1);
 
-    out.undo();
+    out.undo?.();
 
     const after = JSON.parse(
       localStorage.getItem("finyk_manual_expenses_v1") || "[]",
@@ -784,7 +784,7 @@ describe("create_transaction · undo", () => {
       input: { amount: 100, description: "друга" },
     });
 
-    first.undo();
+    first.undo?.();
 
     const after = JSON.parse(
       localStorage.getItem("finyk_manual_expenses_v1") || "[]",
@@ -801,8 +801,8 @@ describe("create_transaction · undo", () => {
     if (typeof out === "string" || out == null)
       throw new Error("expected object");
 
-    out.undo();
-    expect(() => out.undo()).not.toThrow();
+    out.undo?.();
+    expect(() => out.undo?.()).not.toThrow();
     const after = JSON.parse(
       localStorage.getItem("finyk_manual_expenses_v1") || "[]",
     );
@@ -833,7 +833,7 @@ describe("create_debt · undo", () => {
     const before = JSON.parse(localStorage.getItem("finyk_debts") || "[]");
     expect(before).toHaveLength(1);
 
-    out.undo();
+    out.undo?.();
     const after = JSON.parse(localStorage.getItem("finyk_debts") || "[]");
     expect(after).toHaveLength(0);
   });
@@ -851,7 +851,7 @@ describe("create_receivable · undo", () => {
     if (typeof out === "string" || out == null)
       throw new Error("expected object");
 
-    out.undo();
+    out.undo?.();
     const after = JSON.parse(localStorage.getItem("finyk_recv") || "[]");
     expect(after).toHaveLength(0);
   });
@@ -872,7 +872,7 @@ describe("add_asset · undo", () => {
     const before = JSON.parse(localStorage.getItem("finyk_assets") || "[]");
     expect(before).toHaveLength(1);
 
-    out.undo();
+    out.undo?.();
     const after = JSON.parse(localStorage.getItem("finyk_assets") || "[]");
     expect(after).toHaveLength(0);
   });
@@ -889,7 +889,7 @@ describe("add_asset · undo", () => {
     if (typeof second === "string" || second == null)
       throw new Error("expected object");
 
-    second.undo();
+    second.undo?.();
 
     const after = JSON.parse(localStorage.getItem("finyk_assets") || "[]");
     expect(after).toHaveLength(1);

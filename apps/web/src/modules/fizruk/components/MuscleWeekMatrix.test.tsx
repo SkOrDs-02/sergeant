@@ -54,7 +54,7 @@ describe("MuscleVolumeBlock", () => {
     );
     const spoken = container.querySelector(".sr-only");
     expect(spoken?.textContent).toContain("нуль");
-    expect(spoken?.textContent).toContain("Цього тижня: 4.0");
+    expect(spoken?.textContent).toContain("Цього тижня: 4,0");
   });
 
   it("порожній тиждень має нульову висоту, а не мінімальну", () => {

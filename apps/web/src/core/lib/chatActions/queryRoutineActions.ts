@@ -9,6 +9,8 @@ import { formatDayKeyUk } from "@shared/lib/time/dayKeyLabel";
 import { ls } from "../hubChatUtils";
 import { readFizrukWorkouts } from "./fizrukActions/shared";
 import { getVisibleFinykMonoMirrorState } from "../../../modules/finyk/lib/monoMirrorReader";
+import { getCachedFinykSqliteState } from "../../../modules/finyk/lib/sqliteReader";
+import { buildFinykSpendingUniverse } from "@sergeant/finyk-domain";
 import type { ChatAction, ChatActionResult } from "./types";
 
 /**
@@ -242,16 +244,32 @@ function normalizeMetric(value: unknown): CorrelationMetric {
 
 /** Per-Kyiv-day expense total (грн) from the Mono mirror cache. */
 function spendingByDay(days: number): Map<string, number> {
-  const mirrorTxs = getVisibleFinykMonoMirrorState().transactions as Array<{
+  // Всесвіт витрат — банк + РУЧНІ записи, як вимагає канон finyk §5
+  // («банк і ручний світ рівні»).
+  //
+  // AI-DANGER: до 2026-08-24 тут читалось лише Mono-дзеркало, і для
+  // користувача без підключеного банку `habit_correlation` завжди бачив
+  // нуль витрат в ОБОХ групах днів. Тул не мовчав — він упевнено відповідав
+  // «0 грн/день зі звичкою проти 0 грн/день без неї», модель переказувала це
+  // як «зв'язку немає», хоча курований графік на тих самих даних показував
+  // r=-0.99 (браузерний QA 2026-08-24, F-10/F-11). Той самий баг уже ловили
+  // у `crossActions/dailySeries.ts` (F7 репетиції бета-прогону 2026-08-07) —
+  // цей виконавець тоді лишився зі старим всесвітом.
+  const txs = buildFinykSpendingUniverse({
+    bankTxs: getVisibleFinykMonoMirrorState().transactions,
+    manualExpenses: getCachedFinykSqliteState().manualExpenses,
+  }).transactions as Array<{
     id: string;
     amount: number;
     time?: number;
   }>;
+  const hidden = getCachedFinykSqliteState().hiddenTransactions;
   // eslint-disable-next-line sergeant-design/no-raw-storage-key -- tx splits are a per-tx user annotation; no SQLite canon yet.
   const txSplits = ls<Record<string, unknown>>("finyk_tx_splits", {});
   const byDay = new Map<string, number>();
   const cutoffTs = (Date.now() - days * DAY_MS) / 1000;
-  for (const t of mirrorTxs) {
+  for (const t of txs) {
+    if (hidden.includes(t.id || "")) continue;
     if ((t.time || 0) < cutoffTs) continue;
     if (t.amount >= 0) continue; // expenses only (negative amounts)
     const dk = getKyivDayKey((t.time || 0) * 1000);
@@ -319,6 +337,14 @@ export function habitCorrelation(
   }
   if (withoutCount === 0) {
     return `Звичка виконувалась усі ${days} днів, нема днів без неї для порівняння.`;
+  }
+
+  // Порожній всесвіт метрики — це «нема даних», а не «різниці нема». Без
+  // цієї гілки тул повертав «0 грн/день проти 0 грн/день, різниця 0%», і
+  // модель переказувала це як упевнене «зв'язку немає» (QA F-10).
+  if (withSum === 0 && withoutSum === 0) {
+    const what = metric === "workouts" ? "тренування" : "витрати";
+    return `Немає даних про ${what} за останні ${days} днів — порівнювати нема що.`;
   }
 
   const withAvg = withSum / withCount;

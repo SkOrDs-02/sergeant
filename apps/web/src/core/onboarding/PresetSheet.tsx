@@ -106,7 +106,11 @@ const PRESETS: PresetCatalog = {
         icon: "coffee",
         title: "Кава",
         desc: "ранкова звичка, введи свою суму",
-        data: { description: "Кава", category: "їжа" },
+        // `cafe` («Кафе та ресторани»), не «їжа»: остання — Era-1 legacy-мітка,
+        // яку `legacyManualCategoryId()` зводить до слага `food` («Продукти»),
+        // тож ранкова кава падала в продуктовий кошик і не рахувалась проти
+        // ліміту на кафе (репорт finyk-агента 2026-08-23).
+        data: { description: "Кава", category: "cafe" },
       },
       {
         id: "ride",

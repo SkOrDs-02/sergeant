@@ -7,8 +7,7 @@ import {
   generatePrefixedId,
   pantryModeAvailabilityError,
 } from "@sergeant/shared";
-import { deviceDayKey } from "@sergeant/nutrition-domain";
-import { getKyivDateParts } from "@shared/lib/time/kyivTime";
+import { deviceDayKey, deviceTimeOfDay } from "@sergeant/nutrition-domain";
 import type {
   NutritionDayMeal,
   NutritionDayPlan as ApiNutritionDayPlan,
@@ -564,13 +563,10 @@ export function useNutritionRemoteActions({
       // written under (useNutritionLog) — comparing against a Kyiv key here
       // would desync this check the moment device tz != Kyiv.
       const isToday = log.selectedDate === deviceDayKey(now);
-      // Stamp the meal time in Europe/Kyiv (domain-invariant) rather than
-      // host-local — prefer-kyiv-time. Same-tz for Kyiv users, correct for
-      // travellers. (Time-of-day label only — not the day key above.)
-      const { hour, minute } = getKyivDateParts(now);
-      const time = isToday
-        ? `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`
-        : "";
+      // ADR-0078: час доби беремо з того самого годинника, що й день-ключ
+      // вище (`deviceDayKey`). Київський настінний час поруч із девайсовим
+      // днем дає пару, з якої `composeEatenAt` складав неіснуючий момент.
+      const time = isToday ? deviceTimeOfDay(now) : "";
       log.handleAddMeal({
         id,
         time,

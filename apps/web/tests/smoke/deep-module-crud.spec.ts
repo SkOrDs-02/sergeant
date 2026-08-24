@@ -437,7 +437,9 @@ test.describe("@critical deep module CRUD browser loop", () => {
     await page.goto("/fizruk/body", { waitUntil: "domcontentloaded" });
     await waitForInitialSqliteRefresh(page, "fizruk");
     const journalEntry = page.getByRole("button", {
-      name: /81\.2 кг.*7\.5 год/,
+      // Фізрук друкує числа українським роздільником (`fmtLoose` →
+      // `formatNumberUk`), тож у назві кнопки саме «81,2 кг · 7,5 год».
+      name: /81,2 кг.*7,5 год/,
     });
     await expect(journalEntry).toBeVisible();
     await journalEntry.click();
@@ -451,7 +453,9 @@ test.describe("@critical deep module CRUD browser loop", () => {
     // журналу ре-рендериться згорнутою — нотатка видима лише в
     // розгорнутому стані, тож спершу розгортаємо відновлений запис.
     const restoredEntry = page.getByRole("button", {
-      name: /81\.2 кг.*7\.5 год/,
+      // Фізрук друкує числа українським роздільником (`fmtLoose` →
+      // `formatNumberUk`), тож у назві кнопки саме «81,2 кг · 7,5 год».
+      name: /81,2 кг.*7,5 год/,
     });
     await expect(restoredEntry).toBeVisible();
     await restoredEntry.click();

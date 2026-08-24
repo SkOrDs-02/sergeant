@@ -4,7 +4,7 @@ import { ApiError, chatApi, isApiError } from "@shared/api";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { useOnlineStatus } from "@shared/hooks/useOnlineStatus";
-import { hubKeys } from "@shared/lib/api/queryKeys";
+import { chatKeys, hubKeys } from "@shared/lib/api/queryKeys";
 import { perfMark, perfEnd } from "@shared/lib/ui/perf";
 import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
@@ -715,6 +715,13 @@ export function useChatSend({
         if (abortRef.current === ac) abortRef.current = null;
         setLoading(false);
         setHubStreaming(false);
+        // Лічильник квоти (`GET /api/chat/usage`) читався лише на монтуванні
+        // `ChatUsageCounter`, тож пігулка все життя сесії показувала «0/5» —
+        // навіть поруч із 429-помилкою про вичерпаний ліміт; правда
+        // з'являлась тільки після перезавантаження сторінки (browser QA
+        // 2026-08-23). Інвалідовуємо ПІСЛЯ кожного ходу, включно з невдалим:
+        // сервер списує запит і тоді, коли відповідь була помилкою.
+        queryClient.invalidateQueries({ queryKey: chatKeys.usage });
       }
     },
     [

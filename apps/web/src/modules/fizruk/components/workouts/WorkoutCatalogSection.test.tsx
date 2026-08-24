@@ -153,6 +153,41 @@ describe("WorkoutCatalogSection — empty state", () => {
     render(<WorkoutCatalogSection {...baseProps({ grouped: [] })} />);
     expect(screen.getByText("Поки немає вправ")).toBeInTheDocument();
   });
+
+  // Браузерне QA 2026-08-23: запит без збігів показував копію порожнього
+  // КАТАЛОГУ («Додай першу через кнопку «+ Додати»»), хоча в каталозі 119
+  // вправ — тобто екран радив не те, що треба зробити.
+  it("distinguishes 'no matches' from 'catalogue is empty'", () => {
+    render(
+      <WorkoutCatalogSection {...baseProps({ grouped: [], q: "спина" })} />,
+    );
+    expect(screen.getByText("Нічого не знайшлось")).toBeInTheDocument();
+    expect(screen.getByText(/«спина»/)).toBeInTheDocument();
+    expect(screen.queryByText("Поки немає вправ")).not.toBeInTheDocument();
+  });
+
+  it("offers to clear the query from the no-matches state", () => {
+    const setQ = vi.fn();
+    const setEquipmentFilter = vi.fn();
+    render(
+      <WorkoutCatalogSection
+        {...baseProps({ grouped: [], q: "спина", setQ, setEquipmentFilter })}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Скинути пошук" }));
+    expect(setQ).toHaveBeenCalledWith("");
+    expect(setEquipmentFilter).toHaveBeenCalledWith([]);
+  });
+
+  it("names the equipment filter when it is the only narrowing", () => {
+    render(
+      <WorkoutCatalogSection
+        {...baseProps({ grouped: [], q: "", equipmentFilter: ["barbell"] })}
+      />,
+    );
+    expect(screen.getByText("Нічого не знайшлось")).toBeInTheDocument();
+    expect(screen.getByText(/обладнання/)).toBeInTheDocument();
+  });
 });
 
 describe("WorkoutCatalogSection — group accordion", () => {
@@ -213,7 +248,7 @@ describe("WorkoutCatalogSection — group accordion", () => {
         })}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Опис і фото вправи" }));
+    fireEvent.click(screen.getByRole("button", { name: "Деталі вправи" }));
     expect(setSelected).toHaveBeenCalledWith(ex);
   });
 
@@ -225,7 +260,7 @@ describe("WorkoutCatalogSection — group accordion", () => {
       />,
     );
     expect(
-      screen.queryByRole("button", { name: "Опис і фото вправи" }),
+      screen.queryByRole("button", { name: "Деталі вправи" }),
     ).not.toBeInTheDocument();
   });
 

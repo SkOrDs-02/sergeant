@@ -156,7 +156,61 @@ describe("Analytics page", () => {
     ).toBeGreaterThanOrEqual(7);
   });
 
-  it("shows a fetch error and retries on click", async () => {
+  it("keeps a failed background fetch of the prior month off the page", async () => {
+    // The prior month is fetched only to feed the «Порівняння» section. Its
+    // failure used to paint a page-wide «Не вдалось завантажити транзакції»
+    // over a current month that had loaded perfectly (browser QA 2026-08-23).
+    const fetchMonth = vi.fn().mockRejectedValue(new Error("net"));
+    await act(async () => {
+      render(
+        <Analytics mono={buildMono({ fetchMonth })} storage={buildStorage()} />,
+      );
+    });
+    await waitFor(() => expect(fetchMonth).toHaveBeenCalled());
+    expect(
+      screen.queryByText("Не вдалось завантажити транзакції"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows a fetch error for the selected month and stops retrying by itself", async () => {
+    const fetchMonth = vi.fn().mockRejectedValue(new Error("net"));
+    // Regression: in the app `mono` is a FRESH object on every render
+    // (`useMonobankWebhook` returns an object literal, `useUnifiedFinanceData`
+    // repackages it), so a fetch effect keyed on `mono` re-fired on every
+    // state update: reject → setState → render → reject… The banner never
+    // settled and «Повторити» looked dead because a new failing attempt
+    // landed milliseconds later. Re-rendering with a new `mono` here models
+    // exactly that; the failed month must not be re-fetched on its own.
+    let rerender!: ReturnType<typeof render>["rerender"];
+    await act(async () => {
+      ({ rerender } = render(
+        <Analytics mono={buildMono({ fetchMonth })} storage={buildStorage()} />,
+      ));
+    });
+    // Navigate to May — now the failing month IS the selected one.
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText("Попередній місяць"));
+    });
+    await waitFor(() => {
+      expect(
+        screen.getByText("Не вдалось завантажити транзакції"),
+      ).toBeInTheDocument();
+    });
+    const callsAfterFailure = fetchMonth.mock.calls.length;
+    for (let i = 0; i < 5; i++) {
+      await act(async () => {
+        rerender(
+          <Analytics
+            mono={buildMono({ fetchMonth })}
+            storage={buildStorage()}
+          />,
+        );
+      });
+    }
+    expect(fetchMonth.mock.calls.length).toBe(callsAfterFailure);
+  });
+
+  it("re-runs the failed read on retry and clears the error on success", async () => {
     const fetchMonth = vi
       .fn()
       .mockRejectedValueOnce(new Error("net"))
@@ -166,22 +220,51 @@ describe("Analytics page", () => {
         <Analytics mono={buildMono({ fetchMonth })} storage={buildStorage()} />,
       );
     });
-    // Mount fires the prior-month fetch which rejects → error banner shows
-    // (activeTx is empty on the current month with no realTx).
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText("Попередній місяць"));
+    });
     await waitFor(() => {
       expect(
         screen.getByText("Не вдалось завантажити транзакції"),
       ).toBeInTheDocument();
     });
+    const before = fetchMonth.mock.calls.length;
     await act(async () => {
       fireEvent.click(screen.getByText("Повторити"));
     });
-    // retry clears the error banner
+    // The button must actually re-run the read, not just hide the banner.
+    await waitFor(() =>
+      expect(fetchMonth.mock.calls.length).toBeGreaterThan(before),
+    );
     await waitFor(() => {
       expect(
         screen.queryByText("Не вдалось завантажити транзакції"),
       ).not.toBeInTheDocument();
     });
+  });
+
+  it("renders the empty state (not an error) when no bank is connected", async () => {
+    // `fetchMonth` rejects with this exact message for a user who never
+    // linked a bank. Treating it as a load failure left a permanent red
+    // banner on a manual-expenses-only account, and «Повторити» could never
+    // clear it because every retry failed the same way.
+    const fetchMonth = vi
+      .fn()
+      .mockRejectedValue(new Error("monobank not connected"));
+    await act(async () => {
+      render(
+        <Analytics mono={buildMono({ fetchMonth })} storage={buildStorage()} />,
+      );
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText("Попередній місяць"));
+    });
+    await waitFor(() => expect(fetchMonth).toHaveBeenCalled());
+    expect(
+      screen.queryByText("Не вдалось завантажити транзакції"),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText("Поки немає витрат")).toBeInTheDocument();
+    expect(screen.getByText("Поки немає продавців")).toBeInTheDocument();
   });
 
   it("clamps the bank slice to the selected month (mirror-overlay leak)", async () => {

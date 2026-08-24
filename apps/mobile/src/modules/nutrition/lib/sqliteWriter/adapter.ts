@@ -11,6 +11,7 @@ import {
   type DualWriteRuntime,
   type TableSpec,
 } from "@sergeant/dualwrite-core";
+import { deviceWallClockToInstant } from "@sergeant/nutrition-domain";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
 import { enqueueOutboxUpsert } from "@/core/syncEngine/enqueueOutboxUpsert";
@@ -282,11 +283,20 @@ const PANTRY_ITEMS_CASCADE_SQL = buildReconcileChildren(
 // Meals
 // -----------------------------------------------------------------------
 
-/** Compose the `eaten_at` timestamp from `${dateKey}T${time}:00.000Z`. */
+/**
+ * Compose the `eaten_at` timestamp from the device-local `(dateKey, time)`
+ * pair the meal is stored under.
+ *
+ * AI-CONTEXT: раніше тут стояв наївний `${dateKey}T${time}:00.000Z` —
+ * настінний час пристрою штампувався як UTC, тож `eaten_at` вказував на
+ * момент, якого не існувало (для Києва — на 3 години раніше за фактичний).
+ * Двійник цього ж дефекту у web виправлено 2026-08-24; спільний
+ * `deviceWallClockToInstant` лишає настінну частину недоторканою (день-ключ
+ * і показаний час читаються назад без змін) і дописує фактичний зсув
+ * пристрою.
+ */
 function composeEatenAt(dateKey: string, time: string): string {
-  const safeDate = /^\d{4}-\d{2}-\d{2}$/.test(dateKey) ? dateKey : "1970-01-01";
-  const safeTime = /^\d{2}:\d{2}$/.test(time) ? time : "00:00";
-  return `${safeDate}T${safeTime}:00.000Z`;
+  return deviceWallClockToInstant(dateKey, time);
 }
 
 async function upsertMeal(

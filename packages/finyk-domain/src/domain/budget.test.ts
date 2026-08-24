@@ -68,6 +68,33 @@ describe("budget: limit periods", () => {
     ).toBe(Date.parse("2026-07-10T12:00:00.000Z"));
   });
 
+  it("рахує сьогоднішній ручний запис, доданий до 15:00 за Києвом", () => {
+    // Ручна витрата не має реального інстанта: форма штампує день о 12:00
+    // UTC. З межею вікна на `now` така витрата лежала в майбутньому і
+    // випадала з власного ліміту цілий ранок.
+    const today = [{ id: "manual-today", date: "2026-07-16T12:00:00.000Z" }];
+    expect(
+      filterTransactionsForLimitPeriod(
+        today,
+        { period: "month" },
+        new Date("2026-07-16T06:00:00Z"),
+      ).map((item) => item.id),
+    ).toEqual(["manual-today"]);
+  });
+
+  it("не рахує записи завтрашнім днем", () => {
+    const tomorrow = [
+      { id: "manual-tomorrow", date: "2026-07-17T12:00:00.000Z" },
+    ];
+    expect(
+      filterTransactionsForLimitPeriod(
+        tomorrow,
+        { period: "month" },
+        new Date("2026-07-16T06:00:00Z"),
+      ),
+    ).toEqual([]);
+  });
+
   it("filters transactions to the selected limit period", () => {
     const tx = [
       { id: "old", time: Date.parse("2026-07-12T20:59:59Z") / 1000 },

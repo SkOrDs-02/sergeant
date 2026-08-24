@@ -1,6 +1,6 @@
 # AI quota kill-switch policy
 
-> **Last validated:** 2026-08-05 by @claude. **Next review:** 2027-10-25.
+> **Last touched:** 2026-08-24 by @claude. **Next review:** 2026-12-05.
 > **Status:** Active
 
 ## TL;DR
@@ -17,12 +17,21 @@ without burning real user quota.
 Nightly Playwright e2e suites (`.github/workflows/extended-e2e.yml`,
 `visual-regression.yml`, `ci.yml`) talk to the real Anthropic API to
 exercise the full chat / coach / nutrition flows end-to-end. Counting
-those calls against the per-IP `AI_DAILY_ANON_LIMIT=40` would either:
+those calls against the per-user daily limit would either:
 
 1. Make the tests flaky (they would 429 themselves after a few runs in
    the same window), or
 2. Force the tests to share a real user account whose quota would be
    trivially exhausted by repeated CI runs.
+
+> **Update 2026-08-24 ([ADR-0086](../adr/0086-no-anonymous-ai-sign-in-required.md)).**
+> This section used to name a per-IP `AI_DAILY_ANON_LIMIT=40` as the limit the
+> suites would hit. There is no anonymous quota any more — and there never was
+> one at runtime: every AI route sits behind `requireSession()` (audit A1), so
+> an anonymous caller is rejected with 401 before `assertAiQuota` runs. The env
+> field and the whole anonymous branch were removed as dead code. The e2e
+> pressure is therefore entirely on the **authenticated** cap, which is exactly
+> what the kill-switch relieves.
 
 The simplest fix is to wholesale disable the quota subsystem when the
 env reports `NODE_ENV=test`. The runtime check
@@ -33,7 +42,7 @@ the tests can hammer Anthropic without hitting any per-day cap.
 ## Why production is hard-blocked
 
 `AI_QUOTA_DISABLED` in production is a fail-open kill-switch on billing.
-Once it's true, `effectiveLimits()` returns `{ user: null, anon: null }`,
+Once it's true, every resolved daily limit becomes `null`,
 `assertAiQuota()` returns `true` unconditionally, no `ai_usage_daily`
 row gets touched, and there is **no other gate** between an authenticated
 user and Anthropic.

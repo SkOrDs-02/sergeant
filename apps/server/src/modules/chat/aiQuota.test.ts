@@ -64,7 +64,6 @@ function makeReq(headers: Record<string, string> = {}): Request {
 const ENV_VARS = [
   "AI_QUOTA_DISABLED",
   "AI_DAILY_USER_LIMIT",
-  "AI_DAILY_ANON_LIMIT",
   "AI_QUOTA_TOOL_COST",
   "AI_QUOTA_TOOL_LIMITS",
   "AI_QUOTA_TOOL_DEFAULT_LIMIT",
@@ -209,22 +208,25 @@ describe("assertAiQuota (default bucket)", () => {
     expect(res.headers["X-AI-Quota-Remaining"]).toBe("unknown");
   });
 
-  it("returns 429 with the sign-in code when an anonymous caller is capped", async () => {
+  // Замінює колишній тест «429 із sign-in кодом для аноніма». Анонімна гілка
+  // (`AI_QUOTA_ANON` + `AI_DAILY_ANON_LIMIT`) прибрана як недосяжна: усі
+  // роути, що монтують цю квоту, стоять за `requireSession()`, тож без сесії
+  // запит уже віддав 401 задовго до квоти. `sessionUser === null` тут лишився
+  // означати лише збій session-lookup — і мусить давати Free-стелю, а не
+  // окремий анонімний ліміт і не безліміт.
+  it("session-lookup вернув null → Free-стеля, не безліміт і не анон-ліміт", async () => {
     process.env["DATABASE_URL"] = "postgres://ignored";
     process.env["AI_QUOTA_DISABLED"] = "0";
-    process.env["AI_DAILY_ANON_LIMIT"] = "2";
     getSessionUser.mockResolvedValue(null);
-    // Емулюємо: поточний count=2, cost=1 → WHERE 2+1<=2 false → 0 рядків.
-    pool.query.mockResolvedValue({ rows: [], rowCount: 0 });
+    pool.query.mockResolvedValue({ rows: [{ request_count: 1 }], rowCount: 1 });
     const res = makeRes();
     const ok = await assertAiQuota(makeReq(), res);
-    expect(ok).toBe(false);
-    expect(res.statusCode).toBe(429);
-    const body = res.body as { code?: string; error?: string } | undefined;
-    // Аноніму чекати доби нема сенсу — вхід піднімає ліміт негайно, і копія
-    // мусить вести саме туди. Клієнт розрізняє випадки за `code`.
-    expect(body?.code).toBe("AI_QUOTA_ANON");
-    expect(body?.error).toMatch(/Увійди/);
+    expect(ok).toBe(true);
+    // Ліміт, переданий в UPSERT — саме FREE_LIMITS.aiRequestsPerDay (5).
+    const [, values] = pool.query.mock.calls[0]!;
+    expect((values as unknown[])[5]).toBe(5);
+    // Плану не питали: без userId `getUserPlan` немає до чого звертатись.
+    expect(pool.query).toHaveBeenCalledOnce();
   });
 
   it("returns 429 with the plain quota code for a signed-in caller", async () => {
@@ -239,19 +241,24 @@ describe("assertAiQuota (default bucket)", () => {
     const body = res.body as { code?: string; error?: string } | undefined;
     expect(body?.code).toBe("AI_QUOTA");
     expect(body?.error).toMatch(/завтра/);
+    // Копія називає ОДИНИЦЮ, яку насправді метрять: запит, не повідомлення.
+    // Один чат-меседж із tool-раундом коштує кілька запитів (наступний POST
+    // із tool_results проходить ту саму квоту), і копія «5 повідомлень»
+    // давала 429 після чотирьох відповідей.
+    expect(body?.error).toMatch(/запит/i);
+    expect(body?.error).not.toMatch(/^Денний ліміт AI вичерпано/);
   });
 
   it("returns true and sets remaining header on success", async () => {
     process.env["DATABASE_URL"] = "postgres://ignored";
     process.env["AI_QUOTA_DISABLED"] = "0";
-    process.env["AI_DAILY_ANON_LIMIT"] = "10";
     getSessionUser.mockResolvedValue(null);
     pool.query.mockResolvedValue({ rows: [{ request_count: 4 }], rowCount: 1 });
     const res = makeRes();
     const ok = await assertAiQuota(makeReq(), res);
     expect(ok).toBe(true);
     expect(res.statusCode).toBe(200);
-    expect(res.headers["X-AI-Quota-Remaining"]).toBe("6");
+    expect(res.headers["X-AI-Quota-Remaining"]).toBe("1"); // 5 - 4
     // Перевіряємо, що це ATOMIC UPSERT, а не BEGIN/SELECT FOR UPDATE/UPDATE/COMMIT.
     expect(pool.query).toHaveBeenCalledOnce();
     const [sql, values] = pool.query.mock.calls[0]!;
@@ -263,7 +270,7 @@ describe("assertAiQuota (default bucket)", () => {
     expect(values[2]).toBe("default");
     expect(values[3]).toBe(__aiQuotaTestHooks.AI_QUOTA_ENDPOINT);
     expect(values[4]).toBe(1); // cost for plain chat
-    expect(values[5]).toBe(10); // limit
+    expect(values[5]).toBe(5); // limit — FREE_LIMITS.aiRequestsPerDay
   });
 
   it("fails closed with 503 when the quota circuit breaker is open", async () => {
@@ -287,7 +294,6 @@ describe("assertAiQuota (default bucket)", () => {
   it("attaches an idempotent refund that decrements consumed quota once", async () => {
     process.env["DATABASE_URL"] = "postgres://ignored";
     process.env["AI_QUOTA_DISABLED"] = "0";
-    process.env["AI_DAILY_ANON_LIMIT"] = "10";
     getSessionUser.mockResolvedValue(null);
     pool.query.mockResolvedValue({ rows: [{ request_count: 1 }], rowCount: 1 });
     const req = makeReq() as Request & {
@@ -320,7 +326,6 @@ describe("assertAiQuota (default bucket)", () => {
     try {
       process.env["DATABASE_URL"] = "postgres://ignored";
       process.env["AI_QUOTA_DISABLED"] = "0";
-      process.env["AI_DAILY_ANON_LIMIT"] = "10";
       getSessionUser.mockResolvedValue(null);
       pool.query.mockResolvedValue({
         rows: [{ request_count: 1 }],

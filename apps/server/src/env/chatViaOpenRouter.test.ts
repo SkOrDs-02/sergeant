@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { chatViaOpenRouter, defaultChatModel } from "./chatModels.js";
+import {
+  CHAT_VIA_OPENROUTER_DEFAULT,
+  chatViaOpenRouter,
+  defaultChatModel,
+} from "./chatModels.js";
 
 // Прапорець `CHAT_VIA_OPENROUTER` керує ДВОМА рішеннями одночасно: куди йде
 // HTTP-запит (`pickTransport` у `lib/anthropic.ts`) і які model-id підставити
@@ -29,11 +33,44 @@ describe("env: CHAT_VIA_OPENROUTER — транспорт і model-id перем
     else process.env["OPENROUTER_API_KEY"] = saved.key;
   });
 
-  it("без прапорця — Anthropic-моделі", () => {
+  it("без прапорця й без ключа — Anthropic-моделі", () => {
     expect(chatViaOpenRouter()).toBe(false);
     expect(defaultChatModel("firstTurn")).toBe("claude-haiku-4-5-20251001");
     expect(defaultChatModel("synthesis")).toBe("claude-sonnet-4-6");
     expect(defaultChatModel("standard")).toBe("claude-haiku-4-5-20251001");
+  });
+
+  // Регресія на split-brain: `env.ts` оголошує `boolFromEnv(true)`, а тут
+  // стояло `v !== "true" && v !== "1" → false`, тож НЕВИСТАВЛЕНА змінна
+  // означала OFF у ран-таймі й ON у схемі. З ключем і без прапорця чат тихо
+  // йшов на прямий Anthropic і кожен запит падав `anthropic upstream 401`.
+  it("без прапорця, але з ключем — шлюз (відсутнє = дефолт схеми, ON)", () => {
+    process.env["OPENROUTER_API_KEY"] = "sk-or-test";
+    expect(chatViaOpenRouter()).toBe(true);
+    expect(defaultChatModel("firstTurn")).toBe("deepseek/deepseek-v4-flash");
+    expect(defaultChatModel("synthesis")).toBe("z-ai/glm-5.2");
+  });
+
+  it("дефолт ран-тайму збігається з дефолтом схеми", () => {
+    expect(CHAT_VIA_OPENROUTER_DEFAULT).toBe(true);
+  });
+
+  it.each(["false", "0", "FALSE"])(
+    "явний %s вимикає шлюз навіть із ключем",
+    (value) => {
+      process.env["CHAT_VIA_OPENROUTER"] = value;
+      process.env["OPENROUTER_API_KEY"] = "sk-or-test";
+      expect(chatViaOpenRouter()).toBe(false);
+      expect(defaultChatModel("synthesis")).toBe("claude-sonnet-4-6");
+    },
+  );
+
+  // Сміттєве значення не має тихо вимикати шлюз — воно падає на той самий
+  // дефолт, що й відсутнє (поведінка `boolFromEnv` у схемі).
+  it("нерозпізнане значення падає на дефолт схеми", () => {
+    process.env["CHAT_VIA_OPENROUTER"] = "maybe";
+    process.env["OPENROUTER_API_KEY"] = "sk-or-test";
+    expect(chatViaOpenRouter()).toBe(true);
   });
 
   it("прапорець + ключ — OpenRouter-моделі", () => {

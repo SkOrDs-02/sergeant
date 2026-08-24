@@ -15,6 +15,7 @@ import {
   requestIdle,
   cancelIdle,
   isHelpCommand,
+  CHAT_AUTH_REQUIRED_TEXT,
 } from "./hubChatUtils";
 import { formatNumberUk } from "@sergeant/shared";
 
@@ -54,13 +55,32 @@ describe("friendlyApiError", () => {
     );
     expect(friendlyApiError(429, "ліміт AI")).toContain("Денний ліміт AI");
   });
-  it("passes the server copy through for an anonymous quota block", () => {
+  it("passes the server copy through for a preset weekly quota block", () => {
     // Копія цього випадку живе на сервері (`assertAiQuota`) в одному
     // екземплярі — мапер не має права її переписати на «спробуй завтра»,
-    // бо аноніму чекати нема сенсу.
+    // бо у сценарного пресета відро ТИЖНЕВЕ, і вихід інший.
     const serverCopy =
-      "Безкоштовна проба на сьогодні вичерпана. Увійди: 5 запитів на добу, без карти.";
-    expect(friendlyApiError(429, serverCopy, "AI_QUOTA_ANON")).toBe(serverCopy);
+      "Сценарій на цей тиждень вичерпано. Заповни профіль вручну в налаштуваннях.";
+    expect(friendlyApiError(429, serverCopy, "AI_QUOTA_PRESET")).toBe(
+      serverCopy,
+    );
+  });
+  // Гілки `AI_QUOTA_ANON` більше немає: сервер прибрав анонімне квотне відро,
+  // `/api/chat` session-gated, тож анонім упирається в 401, а не 429. Код
+  // проходить повз спецкейс і мапиться загальним правилом 429.
+  it("no longer special-cases the retired AI_QUOTA_ANON code", () => {
+    expect(friendlyApiError(429, "будь-що", "AI_QUOTA_ANON")).toBe(
+      "Забагато запитів. Спробуй через хвилину.",
+    );
+  });
+  // Regression (browser QA 2026-08-23): `/api/chat` за `requireSession()`
+  // віддавав аноніму 401, загальний мапер робив із цього «Доступ заборонено.»,
+  // а `friendlyChatError` — «Помилка: Доступ заборонено.». Жодного натяку на
+  // вхід. Гейт лишається, змінюється тільки те, що продукт про нього каже.
+  it("names the way out on 401/403 instead of a bare «access denied»", () => {
+    expect(friendlyApiError(401, "Unauthorized")).toBe(CHAT_AUTH_REQUIRED_TEXT);
+    expect(friendlyApiError(403, "Forbidden")).toBe(CHAT_AUTH_REQUIRED_TEXT);
+    expect(CHAT_AUTH_REQUIRED_TEXT).toContain("увійди");
   });
   it("delegates to base mapper otherwise", () => {
     const out = friendlyApiError(404, "not found");
@@ -75,6 +95,20 @@ describe("friendlyChatError", () => {
       "Немає з'єднання з мережею або сервер недоступний.",
     );
     expect(friendlyChatError(new Error("network down"))).toContain("мережею");
+  });
+  it("keeps the auth hint after the API mapper already rewrote the message", () => {
+    // Саме цей шлях і давав «Помилка: Доступ заборонено.»: `useChatSend`
+    // перезаписує `message` через `friendlyApiError` ДО того, як помилка
+    // дійде сюди, тож стара гілка по «Потрібна автентифікація» була мертва.
+    expect(friendlyChatError(new Error(CHAT_AUTH_REQUIRED_TEXT))).toBe(
+      CHAT_AUTH_REQUIRED_TEXT,
+    );
+    expect(friendlyChatError(new Error("Доступ заборонено."))).toBe(
+      CHAT_AUTH_REQUIRED_TEXT,
+    );
+    expect(friendlyChatError(new Error("Потрібна автентифікація"))).toBe(
+      CHAT_AUTH_REQUIRED_TEXT,
+    );
   });
   it("wraps other errors", () => {
     expect(friendlyChatError(new Error("boom"))).toBe("Помилка: boom");

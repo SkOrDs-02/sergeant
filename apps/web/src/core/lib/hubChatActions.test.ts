@@ -9,6 +9,27 @@ import {
   clearSqliteCompletionsCache,
   clearSqliteRoutineStateCache,
 } from "../../modules/routine/lib/sqliteReader";
+// F-12: `executeActions` тепер дочікується підтвердження довговічності і
+// підміняє текст, коли запис не ліг у SQLite. У jsdom SQLite нема, тож без
+// цього моку КОЖЕН routine-write тут рапортував би чесну відмову — а ці
+// специфікації про ПОРЯДОК і ІЗОЛЯЦІЮ результатів, не про персистенцію.
+// Сам контракт чесності пінить `hubChatActions.durability.test.ts`.
+vi.mock("./chatActions/routinePersistence", async (orig) => {
+  const actual =
+    await orig<typeof import("./chatActions/routinePersistence")>();
+  const storage = await import("../../modules/routine/lib/routineStorage");
+  return {
+    ...actual,
+    // Тепла копія пишеться синхронно, як у проді; підтвердження — успішне.
+    persistRoutineState: vi.fn(
+      (next: Parameters<typeof storage.saveRoutineState>[0]) => {
+        storage.saveRoutineState(next);
+        return Promise.resolve(true);
+      },
+    ),
+  };
+});
+
 import { executeAction, executeActions } from "./hubChatActions";
 import type { Workout as FizrukWorkout } from "@sergeant/fizruk-domain";
 

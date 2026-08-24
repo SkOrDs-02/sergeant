@@ -1,6 +1,6 @@
 # Observability-runbook
 
-> **Last touched:** 2026-08-06 by @claude. **Next review:** 2026-10-18.
+> **Last touched:** 2026-08-24 by @claude. **Next review:** 2026-12-08.
 > **Status:** Active
 
 > **Update 2026-07-21:** API/server logs — **Coolify** ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md)). Посилання на «n8n Railway env» нижче — legacy n8n hosting (migrate TBD). OpenClaw WF-103 env — historical ([ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md)).
@@ -280,9 +280,15 @@ session-check чекає слот.
    - `db_error` → Postgres down/unreachable/table missing. Глянь
      `db_errors_total{code}` і Pino `msg=ai_quota_store_unavailable`
      (там є `err.code`).
-2. Поки fix не виїхав — **тимчасово заборони AI-фічі** через
-   `AI_QUOTA_DISABLED=0` і `AI_DAILY_ANON_LIMIT=0` / `AI_DAILY_USER_LIMIT=0`,
-   щоб `assertAiQuota` повертав 429 замість fail-open.
+2. Поки fix не виїхав — **тимчасово заборони AI-фічі**: `AI_QUOTA_DISABLED=0`
+   (кілсвіч має лишатись вимкненим, інакше квота — no-op) плюс зріз ліміту
+   тіру. `AI_DAILY_ANON_LIMIT` для цього більше не існує — анонімного трафіку
+   в AI-роутах немає, вони всі за `requireSession()`
+   ([ADR-0086](../../04-governance/adr/0086-no-anonymous-ai-sign-in-required.md)).
+   ⚠️ **Перевір перед інцидентом, а не під час:** `AI_DAILY_USER_LIMIT` лежить
+   у схемі env, але `userDailyLimit()` його не читає — ліміт іде з
+   `billing/effectiveLimits.ts` за планом. Тобто цей крок сьогодні працює лише
+   через правку `FREE_LIMITS`/`PRO_LIMITS` і деплой, не через env.
 3. Перевір міграцію `ai_usage_daily`: `SELECT to_regclass('ai_usage_daily')`.
    Якщо null — запусти міграції.
 4. Після відновлення — дивись Anthropic-dashboard, чи не було сплеску

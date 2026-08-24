@@ -17,6 +17,7 @@ import {
   detectFirstRealEntry as sharedDetectFirstRealEntry,
   getFirstRealEntryModule as sharedGetFirstRealEntryModule,
   hasAnyRealEntry as sharedHasAnyRealEntry,
+  moduleHasRealEntry as sharedModuleHasRealEntry,
   type DashboardModuleId,
 } from "@sergeant/shared";
 import { webKVStore } from "@shared/lib/storage/storage";
@@ -32,6 +33,21 @@ import { webRealEntryProbe } from "./realEntryProbe";
  */
 export function hasAnyRealEntry(): boolean {
   return sharedHasAnyRealEntry(webKVStore, webRealEntryProbe);
+}
+
+/**
+ * Чи має КОНКРЕТНИЙ модуль бодай один не-демо запис (будь-коли, не
+ * «сьогодні»). Потрібно бенто-плитці, щоб відрізнити справжній FTUX
+ * («записів не було ніколи») від затишшя («історія є, але за поточний
+ * період нуль») — інакше людина з місяцем логів бачить «Почни тут →».
+ *
+ * Той самий доказовий контур, що й `hasAnyRealEntry`: канонічний
+ * SQLite-лічильник модуля (якщо його boot-кластер уже зареєструвався)
+ * АБО legacy-LS-слот. Незареєстрований модуль дає `false` — це «немає
+ * доказу», тож плитка деградує до FTUX, а не вигадує історію.
+ */
+export function moduleHasRealEntry(moduleId: DashboardModuleId): boolean {
+  return sharedModuleHasRealEntry(webKVStore, moduleId, webRealEntryProbe);
 }
 
 /**
