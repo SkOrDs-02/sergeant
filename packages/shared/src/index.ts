@@ -48,6 +48,11 @@ export * from "./lib/toolRisk";
 // docstring for rationale (audit gap #2, 2026-08).
 export * from "./hubchat/toolNames";
 
+// Канонічні межі числових полів заміру тіла (Фізрук) — єдине джерело
+// правди для доменного реєстру полів і серверного sync-апплаєра.
+// Див. docstring `./fizruk/measurementBounds.ts` (аудит 2026-08-04).
+export * from "./fizruk/measurementBounds";
+
 // Провенанс метрик — версія методики підрахунку (ADR-0079 §3-§4).
 export * from "./lib/metricsVersion";
 export * from "./lib/exportCsv";

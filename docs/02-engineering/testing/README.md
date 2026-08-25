@@ -25,16 +25,116 @@ Meta-документація на тестову стратегію Sergeant �
 | Unit              | `apps/{web,server,mobile}/src/**/*.test.ts(x)?`                                                                                                                   | Vitest                                       |
 | Integration       | `apps/server/src/**/*.integration.test.ts`                                                                                                                        | Vitest + testcontainers                      |
 | E2E (web)         | `apps/web/tests/{a11y,ledger,mobile,smoke}/`                                                                                                                      | Playwright (по конфігу на сюїту)             |
-| E2E (mobile)      | `apps/mobile/e2e/`                                                                                                                                                | Detox                                        |
+| Route-ledger      | `apps/web/tests/ledger/` + `playwright.ledger.config.ts`                                                                                                          | Playwright (nightly 01:00 UTC)               |
+| E2E (mobile)      | `apps/mobile/e2e/` — ⛔ **заморожено**, див. нижче                                                                                                                | Detox                                        |
 | Critical-flow CI  | `apps/web/tests/smoke/` + `playwright.smoke.config.ts`                                                                                                            | Playwright (canary on every PR)              |
 | Visual regression | `apps/web/tests/a11y/` + `playwright.visual.config.ts`                                                                                                            | Playwright (лише локально — див. нижче)      |
 | Property-based    | `packages/shared/src/utils/*.property.test.ts`                                                                                                                    | Vitest (seeded PRNG; fast-check pending dep) |
 | Mutation          | `stryker.*.conf.json`: `packages/shared` (tier-1 utils), `apps/server` (tier-1 normalizers), `packages/finyk-domain` (tier-2 core), `apps/web` (tier-2 kyiv time) | Stryker + vitest-runner                      |
+| Mutation ratchet  | `mutation-ratchet.json` + `scripts/ci/mutation-ratchet.mjs`                                                                                                       | Node (джоба `mutation-ratchet`)              |
+| Over-mock cap     | `vi-mock-baseline.json` + `scripts/ci/check-vi-mock-cap.mjs`                                                                                                      | Node (у складі `pnpm lint`)                  |
 | Performance       | `apps/web/lighthouserc.json` + `.github/workflows/lighthouse-ci.yml`                                                                                              | Lighthouse CI, web-vitals                    |
 
 > **Visual regression запускається лише локально** — `pnpm --filter @sergeant/web test:visual`.
 > Воркфлоу `.github/workflows/visual-regression.yml` (і Argos-інтеграцію) прибрано рішенням
 > [ADR-0082](../../04-governance/adr/0082-private-storage-repo-posture.md) §4, тож у CI цей шар не проганяється.
+
+## ⛔ Mobile quality gates — заморожено (web-first)
+
+Detox E2E (13 сьютів), coverage-floor `apps/mobile` і parity-тести mobile
+sqliteWriter **свідомо не є активними гейтами** з 2026-08-25: мобільні
+застосунки запускаємо лише якщо web доведе потребу в продукті. Це продуктове
+рішення, а не забутий борг — повний обсяг, причини і **порядок розморозки** живуть
+у [`docs/90-work/tech-debt/mobile.md`](../../90-work/tech-debt/mobile.md), блок
+«Оновлено 2026-08-25». Сьюти в `apps/mobile/e2e/` не видаляємо: вони актив на
+момент розморозки. Не заводь PR на «полагодити Detox», доки заморозку не знято.
+
+## Route-ledger lane (nightly)
+
+[`.github/workflows/web-route-ledger.yml`](../../../.github/workflows/web-route-ledger.yml)
+— щоночі о 01:00 UTC ганяє `apps/web/tests/ledger/user-story-ledger.spec.ts`:
+49 web-маршрутів, `/api/**` замокано, для кожного маршруту перевіряється видимий
+корінь і **відсутність** `pageerror` / fatal console-помилок. Локально —
+`pnpm --filter @sergeant/web e2e:ledger`.
+
+**Що саме він ловить і чому це не дублює `@critical` smoke.** Critical-flow
+перевіряє, що кілька ключових сценаріїв працюють наскрізь проти реального
+сервера; route-ledger — що **жоден із 49 маршрутів не падає в білий екран на
+буті**. Це різні класи: white-screen-регресія проходить повз typecheck, юніти і
+навіть повз smoke, якщо ламає маршрут поза happy-path-ом. Прецедент
+задокументовано в [`apps/web/AGENTS.md`](../../../apps/web/AGENTS.md) — розділ про
+`AuthContext × @sergeant/shared`, де runtime-import перекроював eager-чанки і
+застосунок не рендерився взагалі.
+
+**Знахідка 2026-08-25 — очікування було майже порожнім.** До цієї дати спека
+чекала на `main, [role='main'], [data-a11y-root], #root > *`. Але `AppShell`
+([`RootLayout.tsx:150`](../../../apps/web/src/core/app/RootLayout.tsx)) першим
+прямим нащадком `#root` рендерить `<SkipLink />`, а його клас `sr-only` навмисно
+**не** `display: none` (елемент має лишатись у a11y-дереві) — тобто має
+ненульовий 1×1 бокс і для Playwright **видимий**. Union-локатор резолвиться в
+порядку документа, тож `.first()` завжди чіплявся за skip-link: очікування
+завершувалось у мить монтування шелу, ще до рендеру `<Outlet/>`, і маршрут, який
+не відрендерив нічого, гейт проходив. Виправлено на
+`#root > *:not(.sr-only)`. **Урок:** `sr-only` ≠ невидимий для браузерного
+драйвера; будуючи «сторінка щось відрендерила»-асерт, виключай візуально
+приховані службові елементи явно.
+
+## Mutation ratchet
+
+`thresholds.break: 70` у кожному `stryker.*.conf.json` — це підлога, а не
+храповик: score міг просісти з 95 до 71 без жодного червоного прогону. Тому
+джоба `mutation-ratchet` у
+[`.github/workflows/mutation-testing.yml`](../../../.github/workflows/mutation-testing.yml)
+після всіх чотирьох таргетів рахує score з їхніх Stryker-JSON і звіряє з
+[`mutation-ratchet.json`](../../../mutation-ratchet.json) — за тією ж логікою, що
+й coverage-ratchet: просідання понад `epsilonPp` = червоно, сіра зона = pass,
+зростання = кандидат на bump.
+
+Формула канонічна Stryker: `(Killed + Timeout) / (Killed + Timeout + Survived + NoCoverage) × 100`;
+`Ignored` і `CompileError` у знаменник не входять, порожній знаменник → `score: null`.
+
+Три свідомі рішення: (1) baseline-и стартують як `null` — «ще не виміряно»: гейт
+друкує число і проходить, поки власник не внесе його руками або через `--bump`
+(прогнати Stryker при написанні гейта було нічим); (2) **немає автокоміту**
+baseline-у з крона — weekly-прогін ходить по `main`, і автоматичний запис у
+`main` нам не потрібен; (3) гейт **fail-closed**: відсутній або непарсабельний
+звіт = `exit 1`, бо падіння самого Stryker не має тихо ставати зеленим гейтом.
+Просідання score підхоплює наявна джоба `report-red-run` і кладе в ту саму
+ідемпотентну issue з label `mutation-testing`.
+
+## Over-mock cap (`vi.mock` baseline)
+
+Аудит 2026-08-04 зафіксував over-mocking у web page-тестах: файли, де все
+застаблено до `<div data-testid>`, асерти зводяться до «монтується без краху», а
+контракт props сторінка↔дитина не захищений. Механічного стримування не було,
+тож борг міг лише рости. [`scripts/ci/check-vi-mock-cap.mjs`](../../../scripts/ci/check-vi-mock-cap.mjs)
+(у складі `pnpm lint`) тримає храповик: cap — 5 моків на файл, наявні порушники
+записані у [`vi-mock-baseline.json`](../../../vi-mock-baseline.json) з поточними
+числами і можуть лише **зменшуватись**, новий файл понад cap = червоно.
+
+**Фактичні числа (замір 2026-08-25, 1977 просканованих тестових файлів):** 69
+файлів понад cap — 61 у `apps/web/src`, 8 у `apps/server/src`; `packages/**` і
+`apps/mobile-shell` дають нуль порушень, `apps/mobile` працює на `jest.mock` і в
+скоуп не потрапляє. Хвіст плаский: 30 із 69 записів — це рівно 6–7 моків, тобто
+щойно за порогом. Топ-5: `NutritionApp.extra.test.tsx` 36,
+`FinykApp.extra.test.tsx` 26, `server/src/index.test.ts` 25,
+`AddMealSheet.test.tsx` 21, `cross-domain-routes.contract.test.ts` 20.
+
+> **Поправка до аудиту.** Аудит називав рекордсменами `NutritionApp.test.tsx`
+> (37), `FinykApp.test.tsx` (26) і `RootLayout.test.tsx` (26). Ці файли
+> існують, але важкі моки лежать не в них: `NutritionApp.test.tsx` має **2**
+> моки, а 36 — у сусідньому `NutritionApp.extra.test.tsx`; те саме з
+> `FinykApp` (1 проти 26). `RootLayout.test.tsx` має **12**, а не 26. Тобто
+> числа аудиту правильні за величиною, але приписані не тим іменам — імовірно,
+> зріз робився до розщеплення файлів на `.extra`-сіблінги. **Baseline
+> згенеровано з реального прогону, а не з чисел аудиту** — саме тому цифра 69,
+> а не 62.
+
+Це навмисно **не** правило в `eslint-plugin-sergeant-design`: зміна ESLint
+design-правил тягне bump harness-версії і governance-синхронізацію, а тут
+потрібен простий baseline-храповик. Правильна реакція на червоний гейт — не
+«додати файл у baseline», а замінити моки на MSW-інтеграційний тест (інфра вже
+є в репо).
 
 ## Flaky-test quarantine
 

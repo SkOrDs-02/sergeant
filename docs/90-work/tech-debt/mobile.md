@@ -3,6 +3,8 @@
 > **Last validated:** 2026-07-20 by @cursoragent (full reconcile vs HEAD). **Next review:** 2026-11-08.
 > **Status:** Active
 
+> **Оновлено 2026-08-25 (mobile quality gates — ЗАМОРОЖЕНО, web-first).** Продуктове рішення власника: мобільні застосунки запускаємо **лише** якщо web доведе, що продукт потрібен. До цього моменту весь mobile-контур свідомо тримається на паузі — і це стосується тестових гейтів теж. **Що саме заморожено:** (1) Detox E2E — 13 сьютів у `apps/mobile/e2e/*.e2e.ts` лишаються в репо, але не є блокуючим гейтом: Android-лейн soft-pass-ить app-readiness/runtime фейли (`detox-android.yml`), iOS завершується `exit 0` (`detox-ios.yml:145`), nightly `schedule:` прибрано; (2) coverage floor `apps/mobile` = **30** без CI-виміру — `test:coverage:ci` виключає `@sergeant/mobile` (`--filter=!@sergeant/mobile`), а `scripts/ci/coverage-ratchet.mjs` тримає його в `FLOOR_SKIPPED_WORKSPACES`; (3) parity-тести LS↔SQLite для mobile sqliteWriter (web має по 4–5 файлів на модуль, mobile — лише SQL-снапшот). **Це НЕ забутий борг, а рішення.** Аудит покриття 2026-08-04 ранжував «декоративний Detox» як діру №1 — під web-first фокусом ця рекомендація свідомо **не виконується**, щоб кожен наступний аудит і кожен агент не витрачали увагу на повторне «відкриття» тієї самої знахідки. **Чому не видаляємо сьюти:** 13 Detox-сьютів (`routine-full.e2e.ts` — зразковий) — актив на момент розморозки; переписувати їх з нуля дорожче, ніж тримати. **Maestro** як альтернативний E2E-фреймворк розглянутий і відхилений: його єдина перевага була саме в mobile-ніші (обхід instrumentation через black-box YAML-flow), під заморозкою питання знімається; чинним лишається рішення Q8 у [`react-native-migration.md`](../../02-engineering/mobile/react-native-migration.md). **Умова розморозки** (виконувати В ЦЬОМУ порядку, коли web підтвердить продукт): прибрати `continue-on-error`/`exit 0` з обох Detox-workflow → повернути nightly `schedule:` → під'єднати `@sergeant/mobile` до coverage-лейна → ратчетити floor 30 вгору до факту → додати parity-тести sqliteWriter.
+>
 > **Оновлено 2026-08-07 (tech-debt reconcile).** **Головна знахідка: `pnpm check` на `main` був червоний, і жоден реєстр цього не фіксував.** `@sergeant/mobile#test` давав 3 fail з 1201 — обидва не регресії коду, а тести, що кодували вже виправлені баги: (1) `adapter.snapshot.test.ts` очікував event id з таймстемпом, хоча `occurredAt` прибрано з ключа навмисно (`buildCompletionEventId`, аудит W1-ROUTINE-APPEND — інакше кожен холодний старт плодив дублі, яких `INSERT OR IGNORE` не ловить); web-двійник снапшоту оновили тоді ж, mobile пропустили. (2) `Calendar.test.tsx` шукав `«💧 Випити воду»`, хоча з 2026-08-03 у полі `emoji` лежить icon-slug, і склейку з назвою прибрали (аудит 2026-08-04, знахідка 12). Виправлено; сюїт зелений — 182 suites / 1201 tests / 6 snapshots. **Урок для процесу:** mobile-jest не входить у CI-lane покриття (`--filter=!@sergeant/mobile`), а `pnpm check` локально ганяють рідко — тому mobile-регресії живуть довше за web-івські. Це той самий корінь, що й TC-03 нижче.
 >
 > Новий запис: **типографіка mobile не має семантичної шкали, і це блокує механічний гейт.** Замір на HEAD — `apps/mobile/src` містить **156** порушень 12px-floor (17 `text-2xs` + 139 `text-[NNpx]` з NN < 12) при **нулі** вживань `.text-style-*`. Web-гейт [`scripts/check-design-conventions.mjs`](../../../scripts/check-design-conventions.mjs) цим проходом розширено на `apps/web/src` + `apps/landing/src` + `apps/mobile-shell/src`; `apps/mobile/src` свідомо лишився поза скоупом — не тому, що порушень багато, а тому, що **мігрувати немає куди**: у NativeWind-пресеті немає ролей, еквівалентних `.text-style-{display,headline,title,body,label,caption,overline,code}`. Порядок робіт: (1) шкала для mobile — owner-decision щодо ролей і розмірів, (2) burndown 156 сайтів, (3) `apps/mobile/src` у `SCAN_DIRS`. Пов'язаний пункт — `frontend.md` п.8 «Mobile теми». Правило `focusVariant` для mobile не застосовне (немає клавіатурного фокуса). **Окремо:** `test:coverage:ci` виключає `@sergeant/mobile` (`--filter=!@sergeant/mobile`), тож coverage floor **30** нижче не має жодного CI-виміру — ратчет TC-03 упирається спершу в під'єднання mobile до coverage-лейна, а не в headroom.
@@ -226,8 +228,16 @@ Phase 12 scaffold уже готовий.
 
 ## Tests — coverage & flakiness
 
+> **⛔ ЗАМОРОЖЕНО (web-first, 2026-08-25).** Усе нижче в цій секції лишається
+> описом фактичного стану, але **не є активним боргом**: mobile quality gates
+> свідомо на паузі до продуктового рішення запускати мобільні застосунки.
+> Повний обсяг заморозки, причини і порядок розморозки — у шапці цього файлу
+> (блок «Оновлено 2026-08-25»). Не заводь PR на «полагодити Detox» чи
+> «підняти mobile coverage», доки заморозку не знято.
+
 - **148 test-файлів** у `apps/mobile` (Jest 29 + `jest-expo` preset; re-audit 2026-07-20).
-- **Coverage floor:** lines **30** (`coverage-thresholds.json`).
+- **Coverage floor:** lines **30** (`coverage-thresholds.json`) — **без CI-виміру**: `test:coverage:ci` виключає `@sergeant/mobile`, тому floor не гейтить нічого (заморожено, див. шапку).
+- **Detox E2E:** 13 сьютів, лейни non-blocking (заморожено, див. шапку).
 - **Skipped tests:** 0.
 - **`AI-LEGACY:` у тестах:** 0.
 
