@@ -87,6 +87,7 @@ export const CATEGORY_ICON_NAMES: Readonly<Record<string, CategoryIconName>> = {
   sport: "dumbbell",
   beauty: "tag",
   smoking: "tag",
+  alcohol: "tag",
   education: "package",
   travel: "trending-up",
   debt: "credit-card",

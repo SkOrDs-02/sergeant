@@ -247,6 +247,12 @@ interface FakeMonoTx {
 function makeFakeDb(
   seed: {
     monoTransactions?: FakeMonoTx[];
+    /**
+     * Ручні витрати (`finyk_manual_expenses`) — той самий кандидатний
+     * запит, друга гілка UNION. Окремим полем, бо форма інша: суми в
+     * гривнях і додатні, час — лише дата.
+     */
+    manualExpenses?: FakeMonoTx[];
     /** Пари, які користувач уже розлінкував (`silpo_tx_receipt_link_rejections`). */
     rejections?: Array<{ transactionId: string; receiptId: string }>;
   } = {},
@@ -257,6 +263,7 @@ function makeFakeDb(
   const links: Array<{ transactionId: string; receiptId: string }> = [];
   const rejections = seed.rejections ?? [];
   const monoTx = seed.monoTransactions ?? [];
+  const manualTx = seed.manualExpenses ?? [];
 
   const query = (async (text: string, values: unknown[] = []) => {
     if (text.includes("INSERT INTO silpo_receipts")) {
@@ -303,8 +310,14 @@ function makeFakeDb(
       return { rows, rowCount: rows.length };
     }
     if (text.includes("FROM mono_transaction t")) {
+      // ОДИН запит на два джерела: `mono_transaction UNION ALL
+      // finyk_manual_expenses`. Фейк повертає обидві добірки разом — інакше
+      // тест «бачить» лише банківські кандидати, і зникнення UNION-у з SQL
+      // пройшло б непоміченим (саме так manual-витрати й лишались невидимі
+      // для matcher-а до 2026-08-25).
+      expect(text).toContain("finyk_manual_expenses");
       const [, windowStart, windowEnd] = values as [string, Date, Date];
-      const rows = monoTx
+      const rows = [...monoTx, ...manualTx]
         .filter(
           (t) =>
             !links.some((l) => l.transactionId === t.id) &&
@@ -416,6 +429,39 @@ describe("pullAndSyncReceipts", () => {
     expect(db.items).toHaveLength(2);
     expect(db.links).toEqual([
       { transactionId: "mono-1", receiptId: OFFLINE_ORDER_RECEIPT_ID },
+    ]);
+  });
+
+  it("матчить і РУЧНУ витрату, не лише mono", async () => {
+    // Репорт founder-а 2026-08-25: витрата, залита скріном банкінгу вже
+    // після звʼязки Сільпо, живе у `finyk_manual_expenses`, а не в
+    // `mono_transaction` — і matcher її просто не бачив. У стрічці Фініка
+    // обидві виглядають однаково, тож «чек без транзакції» на очевидній
+    // покупці читався як баг, яким і був.
+    const db = makeFakeDb({
+      manualExpenses: [
+        {
+          id: "manual-1",
+          amountKop: -5000,
+          // Ручна витрата має лише дату — SQL бере полудень.
+          time: new Date("2026-08-10T12:00:00.000Z"),
+          description: "Сільпо",
+        },
+      ],
+    });
+    mocks.callWithFreshAccessToken.mockResolvedValue({
+      ok: true,
+      data: { offline: [OFFLINE_ORDER], online: [] },
+    });
+
+    const result = await pullAndSyncReceipts("user-1", {
+      query: db.query,
+      withTransaction: db.withTransaction,
+    });
+
+    expect(result).toMatchObject({ matched: 1, unmatched: 0 });
+    expect(db.links).toEqual([
+      { transactionId: "manual-1", receiptId: OFFLINE_ORDER_RECEIPT_ID },
     ]);
   });
 

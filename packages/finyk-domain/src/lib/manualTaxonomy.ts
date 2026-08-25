@@ -113,6 +113,22 @@ export const MANUAL_EXPENSE_TAXONOMY: readonly ManualCategoryDef[] = [
     canonicalId: "shopping",
   },
   {
+    // Обидві категорії вже жили в MCC-каталозі (`smoking`) або зʼявились
+    // разом із ним (`alcohol`), але в ручному пікері їх не було — тож
+    // спліт за чеком Сільпо не мав куди покласти цигарки й алкоголь і
+    // зсипав їх у «Продукти» (репорт founder-а, 2026-08-25).
+    id: "smoking",
+    label: "Цигарки",
+    iconName: "tag",
+    canonicalId: "smoking",
+  },
+  {
+    id: "alcohol",
+    label: "Алкоголь",
+    iconName: "tag",
+    canonicalId: "alcohol",
+  },
+  {
     id: "utilities",
     label: "Комунальні",
     iconName: "home",

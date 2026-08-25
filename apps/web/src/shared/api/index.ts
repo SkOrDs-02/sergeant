@@ -160,6 +160,7 @@ export type {
   SilpoReceiptSummaryDto,
   SilpoSyncResult,
   SilpoSyncState,
+  SilpoRelinkResponse,
   SilpoUnlinkResponse,
   SilpoWipeResponse,
 } from "@sergeant/api-client";

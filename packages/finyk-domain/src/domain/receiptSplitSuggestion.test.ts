@@ -14,6 +14,55 @@ describe("mapReceiptItemToCategory", () => {
     expect(mapReceiptItemToCategory(item())).toBe("groceries");
   });
 
+  // Репорт founder-а 2026-08-25: у чеку були цигарки, а спліт сказав
+  // «все їжа». Обидва кошики додані рішенням «цигарки та алкоголь —
+  // різні категорії».
+  it.each([
+    "Цигарки Marlboro Gold",
+    "СИГАРЕТИ Winston XS",
+    "Тютюн для кальяну",
+    "Стіки HEETS Amber",
+    "IQOS Iluma картридж",
+  ])("«%s» → smoking", (name) => {
+    expect(mapReceiptItemToCategory(item({ name }))).toBe("smoking");
+  });
+
+  it.each([
+    "Вино Шабо червоне сухе 0,75л",
+    "Пиво Львівське світле 0,5л",
+    "Напій слабоалкогольний Лонгер",
+    "Вино ігристе брют",
+    "Віскі Jameson 0,7л",
+    "Горілка Хортиця 0,5л",
+  ])("«%s» → alcohol", (name) => {
+    expect(mapReceiptItemToCategory(item({ name }))).toBe("alcohol");
+  });
+
+  // Межа слова на `\p{L}`, а не ``: під `u` кирилиця не входить у
+  // `\w`, тож наївний `вино` не збігся б узагалі, а голе «ром»
+  // ловило б half чека.
+  it.each([
+    "Чай ромашковий",
+    "Джинси дитячі",
+    "Півонія зрізана",
+    "Виноград кишмиш",
+  ])("«%s» НЕ алкоголь", (name) => {
+    expect(mapReceiptItemToCategory(item({ name }))).not.toBe("alcohol");
+  });
+
+  it("голий «Пакет» на касі → shopping, не їжа", () => {
+    expect(mapReceiptItemToCategory(item({ name: "Пакет" }))).toBe("shopping");
+    expect(mapReceiptItemToCategory(item({ name: "Пакет-майка Сільпо" }))).toBe(
+      "shopping",
+    );
+  });
+
+  it("«пакет» усередині назви продукту лишається їжею", () => {
+    expect(mapReceiptItemToCategory(item({ name: "Молоко в пакеті 1л" }))).toBe(
+      "groceries",
+    );
+  });
+
   it("гігієна/аптека за назвою → health", () => {
     expect(
       mapReceiptItemToCategory(item({ name: "Зубна паста Sensodyne 75мл" })),
@@ -48,10 +97,10 @@ describe("mapReceiptItemToCategory", () => {
     ).toBe("shopping");
   });
 
-  it("алкоголь свідомо лишається groceries (окремої категорії немає)", () => {
+  it("алкоголь більше НЕ groceries — власний кошик із 2026-08-25", () => {
     expect(
       mapReceiptItemToCategory(item({ name: "Вино Shabo Каберне 0.75л" })),
-    ).toBe("groceries");
+    ).toBe("alcohol");
   });
 });
 

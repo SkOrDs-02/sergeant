@@ -96,12 +96,37 @@ describe(
         )
         .willRespondWith(200, (res) => {
           res.headers({ "content-type": "application/json" });
-          res.jsonBody({ ok: true });
+          // `receiptId` — не косметика у відповіді: рівно з нього
+          // збирається «Повернути», інакше скасовувати було б нічим.
+          res.jsonBody({ ok: true, receiptId: "silpo-r-1" });
         })
         .executeTest(async (mockServer) => {
           const http = createHttpClient({ baseUrl: mockServer.url });
           const silpo = createSilpoEndpoints(http);
           const out = await silpo.unlinkReceipt("mono-tx-1");
+          expect(out).toEqual({ ok: true, receiptId: "silpo-r-1" });
+        });
+    });
+
+    it("«Повернути» ставить пару назад", async () => {
+      await pact
+        .addInteraction()
+        .given("user-pact-001 rejected silpo-r-1 for mono-tx-1")
+        .uponReceiving(
+          "a POST /api/v1/silpo/receipts/link/mono-tx-1 request with a receiptId",
+        )
+        .withRequest("POST", "/api/v1/silpo/receipts/link/mono-tx-1", (req) => {
+          req.headers({ accept: "application/json" });
+          req.jsonBody({ receiptId: "silpo-r-1" });
+        })
+        .willRespondWith(200, (res) => {
+          res.headers({ "content-type": "application/json" });
+          res.jsonBody({ ok: true });
+        })
+        .executeTest(async (mockServer) => {
+          const http = createHttpClient({ baseUrl: mockServer.url });
+          const silpo = createSilpoEndpoints(http);
+          const out = await silpo.relinkReceipt("mono-tx-1", "silpo-r-1");
           expect(out.ok).toBe(true);
         });
     });

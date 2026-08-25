@@ -54,6 +54,7 @@ export type CategoryColorKey =
   | "utilities"
   | "smoking"
   | "charity"
+  | "alcohol"
   | "sport"
   | "food"
   | "entertainment"

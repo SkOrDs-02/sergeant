@@ -17,6 +17,8 @@ import {
   SilpoReceiptsQuerySchema,
   SilpoSyncResultSchema,
   SilpoSyncStateSchema,
+  SilpoRelinkRequestSchema,
+  SilpoRelinkResponseSchema,
   SilpoUnlinkResponseSchema,
   SilpoWipeResponseSchema,
 } from "../http/schemas.js";
@@ -30,6 +32,7 @@ import {
   getReceiptDetail,
   listReceipts,
   pullAndSyncReceipts,
+  relinkReceiptToTransaction,
   unlinkReceiptFromTransaction,
 } from "../modules/silpo/receipts.js";
 import { applyCart, getCart, previewCart } from "../modules/silpo/cart.js";
@@ -410,13 +413,62 @@ export async function receiptUnlinkHandler(
     return;
   }
 
-  const removed = await unlinkReceiptFromTransaction(userId, transactionId);
-  if (!removed) {
+  const receiptId = await unlinkReceiptFromTransaction(userId, transactionId);
+  if (!receiptId) {
     res.status(404).json({ error: "Звʼязок не знайдено", code: "NOT_FOUND" });
     return;
   }
   logger.info({ msg: "silpo.receipt.unlinked" });
-  res.status(200).json(SilpoUnlinkResponseSchema.parse({ ok: true }));
+  res
+    .status(200)
+    .json(SilpoUnlinkResponseSchema.parse({ ok: true, receiptId }));
+}
+
+/**
+ * `POST /api/silpo/receipts/link/:transactionId` — «Повернути» після
+ * «Це не той чек».
+ *
+ * Без цього ендпоїнта відчеплення було безповоротним: відхилення лягало в
+ * `silpo_tx_receipt_link_rejections` назавжди, і навіть повторний sync пару
+ * вже не відновлював. Промах по кнопці коштував чека (репорт founder-а,
+ * 2026-08-25).
+ *
+ * `404`, коли чек не належить користувачу, — з тієї ж причини, що й в
+ * unlink: мовчазний успіх зробив би кнопку брехливою.
+ */
+export async function receiptRelinkHandler(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  if (!assertSilpoEnabled(res)) return;
+  const userId = getUserId(req as AuthedRequest, res);
+  if (!userId) return;
+
+  const transactionIdParam = req.params["transactionId"];
+  const transactionId =
+    typeof transactionIdParam === "string" ? transactionIdParam : undefined;
+  if (!transactionId) {
+    res
+      .status(400)
+      .json({ error: "Missing transaction id", code: "VALIDATION" });
+    return;
+  }
+
+  // Кидає `ValidationError` — errorHandler віддає 400; окремої гілки тут
+  // не треба (той самий патерн, що й `cartApplyHandler` нижче).
+  const body = parseBody(SilpoRelinkRequestSchema, req);
+
+  const linked = await relinkReceiptToTransaction(
+    userId,
+    transactionId,
+    body.receiptId,
+  );
+  if (!linked) {
+    res.status(404).json({ error: "Чек не знайдено", code: "NOT_FOUND" });
+    return;
+  }
+  logger.info({ msg: "silpo.receipt.relinked" });
+  res.status(200).json(SilpoRelinkResponseSchema.parse({ ok: true }));
 }
 
 // ──────────────────────────────────── Cart (Track G) ────────────────────────
@@ -558,6 +610,18 @@ export function createSilpoRouter(): Router {
       windowMs: 60_000,
     }),
     receiptUnlinkHandler,
+  );
+  r.post(
+    "/api/silpo/receipts/link/:transactionId",
+    // Те саме відро за формою, що й unlink: пара кнопок «відчепити ↔
+    // повернути» має однакову ціну, інакше швидкий undo впирався б у
+    // ліміт, якого сама дія не мала.
+    rateLimitExpress({
+      key: "api:silpo:receipt-relink",
+      limit: 10,
+      windowMs: 60_000,
+    }),
+    receiptRelinkHandler,
   );
   r.post(
     "/api/silpo/cart/preview",

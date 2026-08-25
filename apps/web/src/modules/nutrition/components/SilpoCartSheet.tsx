@@ -205,17 +205,20 @@ function CartRow({
             onChange={() => onToggle(index)}
             className="shrink-0 w-5 h-5 accent-nutrition"
           />
+          {/* `min-w-0` на кожній дитині grid — трек інакше має
+              `min-width: auto` і `truncate` не спрацьовує (та сама пастка,
+              що лагоджена в `SilpoPantryReplenishSheet`). */}
           <span className="min-w-0 flex-1 grid">
             <span
               className={cn(
-                "text-style-label text-text truncate",
+                "min-w-0 text-style-label text-text truncate",
                 !row.checked && "opacity-50",
               )}
             >
               {selected?.name ?? row.query}
             </span>
             {selected && (
-              <span className="text-style-caption text-subtle truncate">
+              <span className="min-w-0 text-style-caption text-subtle truncate">
                 <Money amount={selected.priceKop / 100} kopecks />
                 {" / "}
                 {selected.displayRatio ?? selected.unit}

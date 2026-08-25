@@ -23,6 +23,7 @@ vi.mock("@shared/api", async () => {
       receipts: vi.fn(),
       receiptDetail: vi.fn(),
       unlinkReceipt: vi.fn(),
+      relinkReceipt: vi.fn(),
     },
   };
 });
@@ -39,6 +40,9 @@ const mockedReceiptDetail = silpoApi.receiptDetail as unknown as ReturnType<
   typeof vi.fn
 >;
 const mockedUnlink = silpoApi.unlinkReceipt as unknown as ReturnType<
+  typeof vi.fn
+>;
+const mockedRelink = silpoApi.relinkReceipt as unknown as ReturnType<
   typeof vi.fn
 >;
 
@@ -443,7 +447,7 @@ describe("SilpoReceiptSection", () => {
     }
 
     it("шле id транзакції на сервер", async () => {
-      mockedUnlink.mockResolvedValue({ ok: true });
+      mockedUnlink.mockResolvedValue({ ok: true, receiptId: "r1" });
       await renderConnectedWithReceipt();
 
       fireEvent.click(screen.getByRole("button", { name: "Це не той чек" }));
@@ -463,6 +467,28 @@ describe("SilpoReceiptSection", () => {
       expect(
         await screen.findByRole("button", { name: "Це не той чек" }),
       ).toBeEnabled();
+    });
+
+    it("після відчеплення пропонує «Повернути» і ставить пару назад", async () => {
+      // Головне тут — що афорданс переживає зникнення чека: після
+      // інвалідації `summary` порожній, і без локального стану секція
+      // просто зникла б разом із можливістю скасувати.
+      mockedUnlink.mockResolvedValue({ ok: true, receiptId: "r1" });
+      mockedRelink.mockResolvedValue({ ok: true });
+      await renderConnectedWithReceipt();
+      // Після інвалідації сервер уже не віддасть цей чек для транзакції —
+      // саме той стан, у якому афорданс має вижити.
+      mockedReceipts.mockResolvedValue({ data: [], nextCursor: null });
+
+      fireEvent.click(screen.getByRole("button", { name: "Це не той чек" }));
+      await waitFor(() => expect(mockedUnlink).toHaveBeenCalled());
+
+      const undo = await screen.findByRole("button", { name: "Повернути" });
+      fireEvent.click(undo);
+
+      await waitFor(() =>
+        expect(mockedRelink).toHaveBeenCalledWith("bank-1", "r1"),
+      );
     });
   });
 

@@ -200,15 +200,17 @@ export async function getReceiptDetail(
  * `withTransaction` живе в `receipts.ts`, який реекспортує цей модуль —
  * імпорт назад замкнув би цикл заради двох ідемпотентних стейтментів.
  *
- * Повертає `false`, коли лінка не було: розлінк того, чого немає, — це
+ * Повертає `null`, коли лінка не було: розлінк того, чого немає, — це
  * 404 для користувача, а не мовчазний успіх (інакше кнопка «відвʼязати»
- * рапортувала б перемогу над чужим/уже знятим звʼязком).
+ * рапортувала б перемогу над чужим/уже знятим звʼязком). Інакше —
+ * `receipt_id` щойно відчепленого чека, щоб клієнт мав що повертати
+ * кнопкою «Повернути» (див. `relinkReceiptToTransaction`).
  */
 export async function unlinkReceiptFromTransaction(
   userId: string,
   transactionId: string,
   queryFn: QueryFn = defaultQuery,
-): Promise<boolean> {
+): Promise<string | null> {
   const { rows } = await queryFn<{ receipt_id: string }>(
     `SELECT receipt_id
        FROM silpo_tx_receipt_links
@@ -217,7 +219,7 @@ export async function unlinkReceiptFromTransaction(
     { op: "silpo_tx_receipt_link_select_for_unlink" },
   );
   const existing = rows[0];
-  if (!existing) return false;
+  if (!existing) return null;
 
   await queryFn(
     `INSERT INTO silpo_tx_receipt_link_rejections
@@ -233,6 +235,49 @@ export async function unlinkReceiptFromTransaction(
       WHERE user_id = $1 AND transaction_id = $2`,
     [userId, transactionId],
     { op: "silpo_tx_receipt_link_delete" },
+  );
+  return (rowCount ?? 0) > 0 ? existing.receipt_id : null;
+}
+
+/**
+ * Зворотна дія до `unlinkReceiptFromTransaction` — «Повернути».
+ *
+ * Порядок дзеркальний і теж обраний за безпечним боком: спершу знімаємо
+ * ВІДХИЛЕННЯ, потім ставимо лінк. Якщо процес впаде між кроками, sync сам
+ * відновить пару детермінованим матчем — тобто збій приводить туди ж, куди
+ * вела дія. Зворотний порядок лишив би лінк, помічений як відхилений:
+ * найближчий sync його знову зніс би, і «Повернути» виглядало б зламаним.
+ *
+ * Чек беремо лише той, що належить користувачу (`EXISTS` нижче) — інакше
+ * ендпоїнт дозволяв би підсунути чужий `receipt_id` у власну транзакцію.
+ * `ON CONFLICT DO NOTHING` тримає ідемпотентність подвійного тапу.
+ *
+ * Повертає `false`, коли такого чека в користувача немає.
+ */
+export async function relinkReceiptToTransaction(
+  userId: string,
+  transactionId: string,
+  receiptId: string,
+  queryFn: QueryFn = defaultQuery,
+): Promise<boolean> {
+  await queryFn(
+    `DELETE FROM silpo_tx_receipt_link_rejections
+      WHERE user_id = $1 AND transaction_id = $2 AND receipt_id = $3`,
+    [userId, transactionId, receiptId],
+    { op: "silpo_link_rejection_delete" },
+  );
+
+  const { rowCount } = await queryFn(
+    `INSERT INTO silpo_tx_receipt_links (user_id, transaction_id, receipt_id)
+     SELECT $1, $2, $3
+      WHERE EXISTS (
+        SELECT 1 FROM silpo_receipts
+         WHERE user_id = $1 AND receipt_id = $3
+      )
+     ON CONFLICT (user_id, transaction_id) DO UPDATE
+        SET receipt_id = EXCLUDED.receipt_id`,
+    [userId, transactionId, receiptId],
+    { op: "silpo_tx_receipt_link_relink" },
   );
   return (rowCount ?? 0) > 0;
 }

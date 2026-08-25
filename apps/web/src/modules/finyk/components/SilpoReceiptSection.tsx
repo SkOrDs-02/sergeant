@@ -30,13 +30,17 @@ import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { Money } from "@shared/components/ui/Money";
 import { messages } from "@shared/i18n/uk";
+import { formatReceiptQty } from "@shared/lib/format/receiptQty";
 import { suggestSplitsFromReceiptItems } from "@sergeant/finyk-domain/domain/receiptSplitSuggestion";
 import { canonicalManualCategoryId } from "@sergeant/finyk-domain/lib/manualTaxonomy";
 import { resolveExpenseCategoryMeta } from "@sergeant/finyk-domain/domain/categories";
 import type { TxSplit } from "@sergeant/finyk-domain/domain/types";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain/constants";
 import { useSilpoReceiptForTransaction } from "@finyk/hooks/useSilpoReceipts";
-import { useSilpoUnlinkReceipt } from "@finyk/hooks/useSilpoMutations";
+import {
+  useSilpoRelinkReceipt,
+  useSilpoUnlinkReceipt,
+} from "@finyk/hooks/useSilpoMutations";
 import { useSilpoSyncState } from "@finyk/hooks/useSilpoSyncState";
 import { CATEGORY_ICON_MAP, stripLeadingEmoji } from "./txRowHelpers";
 
@@ -65,14 +69,6 @@ export interface SilpoReceiptSectionProps {
   /** Кількість наявних часток ручного спліту — якщо >0, підтвердження
    * пропозиції його замінить, і про це варто попередити. */
   existingSplitsCount?: number;
-}
-
-function formatQty(
-  qty: number | null | undefined,
-  unit: string | null | undefined,
-): string | null {
-  if (qty == null) return unit ?? null;
-  return unit ? `${qty} ${unit}` : String(qty);
 }
 
 /**
@@ -166,6 +162,11 @@ export function SilpoReceiptSection({
   // повідомлення. Успіх видно й так (чек зникає після інвалідації), а
   // помилку показуємо рядком поруч із кнопкою.
   const unlinkMutation = useSilpoUnlinkReceipt();
+  const relinkMutation = useSilpoRelinkReceipt();
+  // Чек, який щойно відчепили. Тримаємо ЛОКАЛЬНО, бо після інвалідації
+  // `summary` стає порожнім і секція зникла б разом із можливістю
+  // скасувати — а саме безповоротність і була скаргою.
+  const [undoneReceiptId, setUndoneReceiptId] = useState<string | null>(null);
   const { status } = useSilpoSyncState();
   const { summary, detail, isLoading } = useSilpoReceiptForTransaction(
     transactionId,
@@ -238,6 +239,39 @@ export function SilpoReceiptSection({
         >
           {copy.connectPromptCta}
         </Button>
+      </section>
+    );
+  }
+
+  // Відчеплено — але поки в цьому екрані, пропонуємо повернути. Живе
+  // рівно до закриття деталей транзакції: undo без дедлайну вимагав би
+  // серверного журналу дій, а тут вистачає життя компонента.
+  if (!summary && undoneReceiptId) {
+    return (
+      <section className="rounded-2xl border border-line bg-panel p-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-style-caption text-muted">{copy.unlinkDone}</p>
+          <button
+            type="button"
+            disabled={relinkMutation.isPending}
+            onClick={() =>
+              relinkMutation.mutate(
+                { transactionId, receiptId: undoneReceiptId },
+                { onSuccess: () => setUndoneReceiptId(null) },
+              )
+            }
+            className="touch-target rounded-xl px-3 text-style-label text-finyk transition-colors hover:text-text disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-finyk"
+          >
+            {relinkMutation.isPending
+              ? copy.unlinkUndoPending
+              : copy.unlinkUndo}
+          </button>
+        </div>
+        {relinkMutation.isError && (
+          <p role="alert" className="mt-1 text-style-caption text-danger">
+            {copy.unlinkUndoFailed}
+          </p>
+        )}
       </section>
     );
   }
@@ -347,7 +381,7 @@ export function SilpoReceiptSection({
       {items.length > 0 ? (
         <ul className="mt-3 space-y-2">
           {items.map((item) => {
-            const qtyLabel = formatQty(item.qty, item.unit);
+            const qtyLabel = formatReceiptQty(item.qty, item.unit);
             return (
               <li
                 key={item.id}
@@ -385,7 +419,11 @@ export function SilpoReceiptSection({
         <button
           type="button"
           disabled={unlinkMutation.isPending}
-          onClick={() => unlinkMutation.mutate(transactionId)}
+          onClick={() =>
+            unlinkMutation.mutate(transactionId, {
+              onSuccess: ({ receiptId }) => setUndoneReceiptId(receiptId),
+            })
+          }
           className="touch-target rounded-xl px-3 text-style-caption text-subtle transition-colors hover:text-text disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-finyk"
         >
           {unlinkMutation.isPending ? copy.unlinkPending : copy.unlinkCta}
