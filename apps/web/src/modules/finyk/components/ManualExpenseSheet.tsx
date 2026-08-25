@@ -34,6 +34,7 @@ import {
   type ManualExpenseKind,
 } from "@sergeant/finyk-domain/domain/transactions";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain";
+import type { TxSplit, TxSplitsMap } from "@sergeant/finyk-domain/domain/types";
 import {
   CATEGORY_DISPLAY,
   CATEGORY_SLUGS,
@@ -55,6 +56,7 @@ import {
   toExpenseInstant,
   type ExpenseFormValues,
 } from "./manualExpenseForm";
+import { SilpoReceiptSection } from "./SilpoReceiptSection";
 import { ManualExpenseAmountSection } from "./ManualExpenseAmountSection";
 import { ManualExpenseDescriptionSection } from "./ManualExpenseDescriptionSection";
 import { ManualExpenseCategorySection } from "./ManualExpenseCategorySection";
@@ -127,6 +129,15 @@ interface ManualExpenseSheetProps {
    * коли аркуш відкрито для НОВОГО запису (нова витрата не може мати
    * чек). Джерело: `useFinykReceiptLinks`. */
   receiptId?: number | null | undefined;
+  /**
+   * Спліти всіх операцій — потрібні лише секції чека Сільпо: вона
+   * пропонує розбивку і має попередити, що підтвердження замінить уже
+   * наявну ручну.
+   */
+  txSplits?: TxSplitsMap | undefined;
+  /** Той самий сетер, що й у деталях банківської операції. Без нього
+   * секція чека не рендериться. */
+  onSplitChange?: ((id: string, splits: TxSplit[] | null) => void) | undefined;
 }
 
 export function ManualExpenseSheet({
@@ -143,6 +154,8 @@ export function ManualExpenseSheet({
   initialDate,
   customCategories = [],
   receiptId = null,
+  txSplits,
+  onSplitChange,
 }: ManualExpenseSheetProps) {
   const formId = useId();
   const descId = `${formId}-desc`;
@@ -150,6 +163,8 @@ export function ManualExpenseSheet({
   const dateId = `${formId}-date`;
   const catLabelId = `${formId}-cat-label`;
   const isEditing = !!initialExpense?.id;
+  /** Id збереженого запису — він же transactionId для звʼязки з чеком. */
+  const expenseId = initialExpense?.id ? String(initialExpense.id) : null;
   const [kind, setKind] = useState<ManualExpenseKind>("expense");
 
   // Власні категорії — лише витратні (див. проп). Тримаємо їх окремим
@@ -649,6 +664,29 @@ export function ManualExpenseSheet({
 
         {isEditing && receiptId != null && (
           <ReceiptItemsSection receiptId={receiptId} />
+        )}
+
+        {/* Чек Сільпо для РУЧНОЇ витрати. Та сама секція, що в деталях
+            банківської операції: витрати, залиті скріном банкінгу, живуть
+            у `finyk_manual_expenses`, і для людини вони така сама покупка
+            в Сільпо — без цього блоку чек привʼязувався б, але ніде не
+            показувався (репорт founder-а 2026-08-25).
+
+            Сума й опис беруться з ЗБЕРЕЖЕНОГО запису, не з полів форми:
+            чек звірявся саме з тим, що лежить у сховищі, і показувати
+            його поруч із недописаною правкою було б брехнею. */}
+        {isEditing && expenseId && onSplitChange && (
+          <SilpoReceiptSection
+            transactionId={expenseId}
+            transactionDescription={initialExpense?.description}
+            transactionAmountKop={Math.round(
+              Math.abs(initialExpense?.amount ?? 0) * 100,
+            )}
+            transactionDateIso={initialExpense?.date ?? ""}
+            onSplitChange={onSplitChange}
+            customCategories={customCategories}
+            existingSplitsCount={(txSplits?.[expenseId] ?? []).length}
+          />
         )}
 
         {/* S15: amount is the only «must-fill» field — it used to live
