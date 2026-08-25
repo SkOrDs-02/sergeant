@@ -20,8 +20,19 @@ export interface BarcodeLookupNoticeProps {
   onUsePhoto?: (() => void) | undefined;
   /** "Джерела не відповіли" — можна повторити той самий код без нового скану. */
   onRetry?: (() => void) | undefined;
-  /** Закриває картку й лишає людину на ручному введенні, яке вже видно нижче. */
+  /** Закриває картку. Без `onManualEntry` це і є дія кнопки «Ввести вручну». */
   onDismiss: () => void;
+  /**
+   * Перехід на ручний ввід — там, де його НЕ видно поруч із карткою.
+   *
+   * AI-CONTEXT: колись кнопка «Ввести вручну» лише закривала картку, і це
+   * було чесно: крок джерела був вертикальним стосом, ручний ввід лежав
+   * одразу під нею. Вкладки цю передумову скасували — на «Скані» лишилась
+   * сама кнопка сканування, і закриття картки кидало людину в порожній
+   * екран (звіт власника 2026-08-24). Там, де ручний ввід поруч (комора),
+   * проп не передають, і кнопка й далі просто закриває.
+   */
+  onManualEntry?: (() => void) | undefined;
 }
 
 const COPY: Record<
@@ -45,6 +56,7 @@ export function BarcodeLookupNotice({
   onUsePhoto,
   onRetry,
   onDismiss,
+  onManualEntry,
 }: BarcodeLookupNoticeProps) {
   const copy = COPY[kind];
   return (
@@ -81,7 +93,12 @@ export function BarcodeLookupNotice({
             <span>{messages.nutrition.barcodeNoticeUsePhoto}</span>
           </Button>
         )}
-        <Button type="button" variant="ghost" size="sm" onClick={onDismiss}>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={onManualEntry ?? onDismiss}
+        >
           {messages.nutrition.barcodeNoticeManual}
         </Button>
       </div>

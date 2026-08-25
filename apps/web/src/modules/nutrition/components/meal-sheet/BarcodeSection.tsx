@@ -17,6 +17,8 @@ interface BarcodeSectionProps {
   onDismissBarcodeNotice?: (() => void) | undefined;
   onRetryBarcodeLookup?: (() => void) | undefined;
   onUsePhotoForBarcode?: (() => void) | undefined;
+  /** Вихід на вкладку «Своє» — симетрично до «Сфотографувати страву». */
+  onManualEntryForBarcode?: (() => void) | undefined;
   setScannerOpen: Dispatch<SetStateAction<boolean>>;
   /**
    * Підпис кнопки. Під вкладкою «Скан» сканер відкривається сам, тож там
@@ -35,6 +37,7 @@ export function BarcodeSection({
   onDismissBarcodeNotice,
   onRetryBarcodeLookup,
   onUsePhotoForBarcode,
+  onManualEntryForBarcode,
   setScannerOpen,
   actionLabel = DEFAULT_ACTION_LABEL,
 }: BarcodeSectionProps) {
@@ -77,6 +80,7 @@ export function BarcodeSection({
           onDismiss={onDismissBarcodeNotice}
           onRetry={onRetryBarcodeLookup}
           onUsePhoto={onUsePhotoForBarcode}
+          onManualEntry={onManualEntryForBarcode}
         />
       )}
     </div>

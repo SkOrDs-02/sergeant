@@ -622,6 +622,10 @@ export function AddMealSheet({
                   onDismissBarcodeNotice={() => setBarcodeNotice(null)}
                   onRetryBarcodeLookup={() => void handleBarcodeLookup(barcode)}
                   onUsePhotoForBarcode={() => setSourceTab("photo")}
+                  onManualEntryForBarcode={() => {
+                    setBarcodeNotice(null);
+                    setSourceTab("manual");
+                  }}
                   setScannerOpen={setScannerOpen}
                   actionLabel="Сканувати ще раз"
                 />
