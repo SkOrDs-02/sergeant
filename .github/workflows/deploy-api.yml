@@ -152,6 +152,7 @@ jobs:
           # зі статусом. Маскування секретів у логах GitHub — остання
           # лінія, а не перша.
           HTTP_CODE=$(curl -sS -o /tmp/coolify-response.txt -w '%{http_code}' \
+            -D /tmp/coolify-headers.txt \
             --retry 2 --retry-connrefused --max-time 30 \
             "${AUTH[@]}" "$HOOK") || HTTP_CODE="000"
 
@@ -235,4 +236,37 @@ jobs:
             echo ""
             echo "Поки не полагоджено — викочувати вручну в Coolify."
           } >> "$GITHUB_STEP_SUMMARY"
+
+          # ГОЛОВНЕ, і цього тут бракувало від початку: сервер САМ пише, що
+          # не так, а крок відводив тіло у файл і мовчки його викидав. Через
+          # це причину доводилось вгадувати за одним лише кодом — на 302,
+          # 401, 403 і 405 поспіль. Laravel на 405 віддає `Allow` зі списком
+          # методів, на 403 — текст про бракуючий scope; це діагностика, а не
+          # секрет. Ріжемо до 300 символів, щоб довга HTML-сторінка входу не
+          # залила лог, і друкуємо лише `Allow` з заголовків — решта може
+          # містити cookie.
+          ALLOW=$(grep -i '^allow:' /tmp/coolify-headers.txt 2>/dev/null | tr -d '\r' || true)
+          BODY=$(head -c 300 /tmp/coolify-response.txt 2>/dev/null || true)
+          {
+            echo ""
+            echo "<details><summary>Що відповів сервер</summary>"
+            echo ""
+            if [ -n "$ALLOW" ]; then
+              echo "\`\`\`"
+              echo "$ALLOW"
+              echo "\`\`\`"
+            fi
+            if [ -n "$BODY" ]; then
+              echo "\`\`\`"
+              echo "$BODY"
+              echo "\`\`\`"
+            else
+              echo "_Тіло відповіді порожнє._"
+            fi
+            echo ""
+            echo "</details>"
+          } >> "$GITHUB_STEP_SUMMARY"
+          [ -n "$ALLOW" ] && echo "Coolify $ALLOW"
+          [ -n "$BODY" ] && echo "Coolify response: $BODY"
+
           exit 1
