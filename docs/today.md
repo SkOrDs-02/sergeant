@@ -1,6 +1,6 @@
 # Сьогодні в роботі
 
-> **Last touched:** 2026-08-17 by docs:gen-today. **Next review:** 2026-08-24.
+> **Last touched:** 2026-08-25 by docs:gen-today. **Next review:** 2026-09-01.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED FILE. Do not edit by hand. Regenerate via `pnpm docs:gen-today`. -->
@@ -11,6 +11,7 @@ Daily brief — згенеровано з [`open-work.md`](./open-work.md) + fre
 
 Sorted: `blocked` items first, далі явні `agent-ready`, потім за `mtime` desc (свіже = warm context).
 
+- [`90-work/initiatives/0025-posthog-ai-observability.md`](./90-work/initiatives/0025-posthog-ai-observability.md) — 0025 — PostHog AI Observability для AI-шару (traces + evals) → **agent-ready** _(Ініціативи)_
 - [`90-work/planning/specs/anonymous-local-first-persistence.md`](./90-work/planning/specs/anonymous-local-first-persistence.md) — Спека: персистентність даних незалогіненого користувача → **agent-ready** _(Планування)_
 
 ## Прострочений review (0)
