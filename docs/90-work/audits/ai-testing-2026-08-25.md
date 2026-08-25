@@ -152,16 +152,16 @@ tool-а (`useDestructiveConfirm.ts:27-30`) — користувач затвер
 
 ## Телеметрія: що зламано або не існує
 
-| Що                                    | Стан                                                                                                                                             | Де                                                |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------- |
-| TTFT «p95 first token < 1.5 s»        | **задекларовано, не міряється ніде** — `ai_request_duration_ms` фіксується на кінці стріму; єдиний вимір TTFT — офлайн `scripts/stream-check.ts` | `apps/server/AGENTS.md:42`, SLO.md                |
-| Sentry-семплінг vision                | правило `/api/photo/analyze` **мертве** — реальний роут `/api/nutrition/analyze-photo`; падає у 0.05 fallback                                    | `sentry.ts:70-74`                                 |
-| Sentry-семплінг chat/coach/digest     | правил немає — найдорожчі роути на generic fallback                                                                                              | `sentry.ts:37-90`                                 |
-| Помилки Anthropic/OpenRouter у Sentry | **не долітають взагалі**: `ExternalServiceError` operational → `errorHandler` не капчить. Аутедж провайдера видно лише в Prometheus/логах        | `obs/errors.ts:88-110`, `http/errorHandler.ts:96` |
-| `hubchat_tool_invoked`                | оголошений у контракті, задокументований, затверджений тестом — **немає жодного emitter-а**                                                      | `analyticsEvents.ts:163`                          |
-| Loki                                  | порожній 29 днів, причина невідома — прод-діагностика по логах сліпа                                                                             | SLO.md § «Зламано»                                |
-| Мобільна AI-телеметрія                | нуль подій (чат/коуч/фото)                                                                                                                       | `apps/mobile/src/lib/analytics.ts`                |
-| Anthropic budget-алерти               | обходять Prometheus (in-process loop + Sentry), Voyage — через нормальне правило; асиметрія                                                      | `anthropicBudgetGuard.ts:55-61`                   |
+| Що                                    | Стан                                                                                                                                                         | Де                                                |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------- |
+| TTFT «p95 first token < 1.5 s»        | **задекларовано, не міряється ніде** — `ai_request_duration_ms` фіксується на кінці стріму; єдиний вимір TTFT — офлайн `apps/server/scripts/stream-check.ts` | `apps/server/AGENTS.md:42`, SLO.md                |
+| Sentry-семплінг vision                | правило `/api/photo/analyze` **мертве** — реальний роут `/api/nutrition/analyze-photo`; падає у 0.05 fallback                                                | `sentry.ts:70-74`                                 |
+| Sentry-семплінг chat/coach/digest     | правил немає — найдорожчі роути на generic fallback                                                                                                          | `sentry.ts:37-90`                                 |
+| Помилки Anthropic/OpenRouter у Sentry | **не долітають взагалі**: `ExternalServiceError` operational → `errorHandler` не капчить. Аутедж провайдера видно лише в Prometheus/логах                    | `obs/errors.ts:88-110`, `http/errorHandler.ts:96` |
+| `hubchat_tool_invoked`                | оголошений у контракті, задокументований, затверджений тестом — **немає жодного emitter-а**                                                                  | `analyticsEvents.ts:163`                          |
+| Loki                                  | порожній 29 днів, причина невідома — прод-діагностика по логах сліпа                                                                                         | SLO.md § «Зламано»                                |
+| Мобільна AI-телеметрія                | нуль подій (чат/коуч/фото)                                                                                                                                   | `apps/mobile/src/lib/analytics.ts`                |
+| Anthropic budget-алерти               | обходять Prometheus (in-process loop + Sentry), Voyage — через нормальне правило; асиметрія                                                                  | `anthropicBudgetGuard.ts:55-61`                   |
 
 Добре: `ai_requests_total` / `ai_tokens_total` / `ai_cost_estimate_usd_total` +
 денний ledger `ai_usage_daily` (з `actual_cost_usd` від шлюзу) + Grafana
@@ -215,7 +215,7 @@ vision fail-close). Але:
 
 **Не чіпати (детермінізм правильний і навмисний):**
 
-- Матчер чеків Сільпо (`packages/finyk-domain/receiptMatching.ts`) — точність
+- Матчер чеків Сільпо (`packages/finyk-domain/src/domain/receiptMatching.ts`) — точність
   до копійки + часове вікно; AI тут додає лише недетермінізм у грошах.
 - Правило переваги MCC/детермінованих правил над AI-категоризацією
   (ADR-0027): AI заповнює прогалини, не переписує.
