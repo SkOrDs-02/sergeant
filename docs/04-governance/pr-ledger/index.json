@@ -1,8 +1,15 @@
 {
   "$schema": "../governance/schemas/pr-ledger.schema.json",
   "version": 1,
-  "generated_at": "2026-08-07",
+  "generated_at": "2026-08-25",
   "prs": [
+    {
+      "number": 849,
+      "title": "fix(server): колбек Сільпо не вимагає сесії — власника дає state",
+      "merged_at": "2026-08-25T01:54:52Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": ["docs/00-start/playbooks/enable-silpo-integration.md"]
+    },
     {
       "number": 689,
       "title": "fix(ci): governance-sync відрізняє живе посилання від навмисно мертвого",
