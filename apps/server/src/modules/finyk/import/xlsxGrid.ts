@@ -60,7 +60,8 @@ export function decodeXmlEntities(s: string): string {
  * (`r`, `t`, `s`, `numFmtId`), але динамічний конструктор регекспа все
  * одно тягне попередження `security/detect-non-literal-regexp`, а
  * пре-коміт ганяє eslint із `--max-warnings=0`. Пошук іде по межі слова
- * (`<` або пробіл перед іменем), щоб `r` не збігся з хвостом `numFmtId`.
+ * (`<` або XML-пробіл перед іменем), щоб `r` не збігся з хвостом
+ * `numFmtId`.
  * Значення читається і в подвійних, і в одинарних лапках.
  */
 function attr(tag: string, name: string): string | undefined {
@@ -70,7 +71,12 @@ function attr(tag: string, name: string): string | undefined {
     const at = tag.indexOf(needle, from);
     if (at === -1) return undefined;
     const before = at === 0 ? "<" : tag[at - 1]!;
-    if (before === " " || before === "<") {
+    // Будь-який XML-пробіл, не лише U+0020: атрибути легально
+    // розділяються табом і переносом рядка, і генератори цим
+    // користуються (`<c\n  r="A1"\n  t="s">`). Приймаючи лише пробіл, ми
+    // на такому аркуші не бачили б `r` — тобто мовчазний зсув колонок у
+    // фінансових даних.
+    if (before === "<" || /\s/.test(before)) {
       const quote = tag[at + needle.length];
       // XML дозволяє обидві лапки, і генератори ними користуються:
       // `<c r='A1' t='inlineStr'>` — валідний XLSX. Читаючи лише
