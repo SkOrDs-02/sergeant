@@ -89,6 +89,20 @@ const transferLikelySchema = z.boolean().optional();
  * вмикабельним — той самий UX-патерн, що `transferLikely`. */
 const duplicateLikelySchema = z.boolean().optional();
 
+/**
+ * Категорія, яку сервер ЗДОГАДАВСЯ поставити рядку — з власної колонки
+ * категорії банку, з MCC або з ключових слів опису
+ * (`import/categoryHint.ts`). Значення — id чипа з пікера finyk
+ * (`MANUAL_EXPENSE_TAXONOMY` / `MANUAL_INCOME_TAXONOMY`).
+ *
+ * Поле ОПЦІЙНЕ і відсутнє = «доказів немає»: клієнт тоді підставляє
+ * власний дефолт. Свідомо не шлемо «other»/«salary» — інакше здогадку
+ * неможливо відрізнити від дефолту, і UI не міг би показати різницю.
+ * Рядок усе одно редагується в bulk-review, тож підказка нічого не
+ * вирішує остаточно.
+ */
+const categoryHintSchema = z.string().min(1).max(120).optional();
+
 export const ImportScreenshotRowSchema = z.object({
   date: boundedDayKeySchema,
   /** `HH:MM`, 24-годинний. `null` — нечитабельно/відсутнє на скріні
@@ -103,6 +117,7 @@ export const ImportScreenshotRowSchema = z.object({
   confidence: z.number().min(0).max(1),
   transferLikely: transferLikelySchema,
   duplicateLikely: duplicateLikelySchema,
+  categoryHint: categoryHintSchema,
 });
 export type ImportScreenshotRow = z.infer<typeof ImportScreenshotRowSchema>;
 
@@ -231,6 +246,7 @@ export const ImportStatementRowSchema = z.object({
   description: z.string().max(300),
   transferLikely: transferLikelySchema,
   duplicateLikely: duplicateLikelySchema,
+  categoryHint: categoryHintSchema,
 });
 export type ImportStatementRow = z.infer<typeof ImportStatementRowSchema>;
 

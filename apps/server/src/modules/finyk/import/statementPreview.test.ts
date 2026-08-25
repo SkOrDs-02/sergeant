@@ -86,12 +86,14 @@ describe("statementPreviewHandler — mono autoprofile", () => {
         amountKopiykas: 84750,
         direction: "expense",
         description: "Сільпо",
+        categoryHint: "food",
       },
       {
         date: "2026-01-16",
         amountKopiykas: 1500000,
         direction: "income",
         description: "Зарплата",
+        categoryHint: "salary",
       },
     ]);
     // Рядок 4 несе непорожній опис ("Баланс не транзакція") і валідну
@@ -144,6 +146,7 @@ describe("statementPreviewHandler — privat24 autoprofile", () => {
         amountKopiykas: 50000,
         direction: "expense",
         description: "АТБ",
+        categoryHint: "food",
       },
     ]);
     // Другий рядок — USD-рахунок ("Валюта рахунку" != UAH) → not_uah.
@@ -221,6 +224,7 @@ describe("statementPreviewHandler — невідомий формат", () => {
       amountKopiykas: 5025,
       direction: "income",
       description: "Повернення",
+      categoryHint: "refund",
     });
   });
 
@@ -385,12 +389,14 @@ describe("statement/preview — файл замість тексту", () => {
         amountKopiykas: 12345,
         direction: "expense",
         description: "АТБ-Маркет",
+        categoryHint: "food",
       },
       {
         date: "2026-08-17",
         amountKopiykas: 2_000_000,
         direction: "income",
         description: "Зарплата",
+        categoryHint: "salary",
       },
     ]);
     // EUR-рядок відсіює currency-колонка профілю; номер рядка — фізичний
@@ -609,18 +615,24 @@ describe("statement/preview — Privat24 за реальними заголов�
         amountKopiykas: 74784,
         direction: "expense",
         description: "Сільпо",
+        // Категорія з ВЛАСНОЇ колонки банку («Супермаркети та продукти»)
+        // — найнадійніший шар `categoryHint.ts`.
+        categoryHint: "food",
       },
       {
         date: "2026-08-17",
         amountKopiykas: 136682,
         direction: "expense",
         description: "Apple",
+        categoryHint: "subscriptions",
       },
       {
         date: "2026-08-18",
         amountKopiykas: 2_000_000,
         direction: "income",
         description: "від DMYTRO STAKHOV",
+        // «Зарахування переказу» осмисленого чипа доходу не має —
+        // сервер мовчить, клієнт лишає свій дефолт.
       },
       {
         date: "2026-08-19",
@@ -631,6 +643,33 @@ describe("statement/preview — Privat24 за реальними заголов�
         // галочки за замовчуванням.
         transferLikely: true,
       },
+    ]);
+  });
+});
+
+describe("statement/preview — категорія без колонки категорії", () => {
+  it("бере підказку з MCC (mono) і з опису мерчанта", async () => {
+    // mono власної категорії не друкує, зате друкує МСС; а для рядка без
+    // придатного МСС лишається третій шар — ключові слова опису.
+    const csv = [
+      "Дата i час операції,Деталі операції,МСС,Сума в валюті картки (UAH),Сума в валюті операції,Валюта операції",
+      "15.01.2026 14:32:10,Невідомий мерчант,5411,-100.00,-100.00,UAH",
+      "15.01.2026 15:00:00,McDonald’s,0,-200.00,-200.00,UAH",
+      "15.01.2026 16:00:00,FLAMPIC,0,-300.00,-300.00,UAH",
+    ].join("\n");
+
+    const res = makeRes();
+    await statementPreviewHandler(makeReq({ csv_text: csv }), res);
+
+    const body = res.body as {
+      profile: string;
+      rows: Array<{ description: string; categoryHint?: string }>;
+    };
+    expect(body.profile).toBe("mono");
+    expect(body.rows.map((r) => r.categoryHint)).toEqual([
+      "food", // з МСС 5411, попри нерозпізнаваний опис
+      "cafe", // МСС нульовий → ключове слово опису
+      undefined, // жоден шар не спрацював — клієнт лишає дефолт
     ]);
   });
 });

@@ -21,6 +21,7 @@ import {
   withAutodetectedFormats,
   type ResolvedColumnMapping,
 } from "./csvProfiles.js";
+import { resolveCategoryHint } from "./categoryHint.js";
 import {
   gridFromCsvText,
   gridFromStatementFile,
@@ -101,14 +102,29 @@ function classifyRows(
     }
 
     const description = descriptionRaw.trim();
+    const direction = signed < 0 ? "expense" : "income";
+    // Категорія-підказка: власна колонка банку → MCC → ключові слова
+    // опису (`categoryHint.ts`). `null` = доказів немає, поле не йде в
+    // відповідь узагалі, і клієнт підставляє свій дефолт.
+    const categoryHint = resolveCategoryHint({
+      direction,
+      ...(mapping.categoryColIndex !== null
+        ? { bankCategory: row[mapping.categoryColIndex] ?? "" }
+        : {}),
+      ...(mapping.mccColIndex !== null
+        ? { mcc: row[mapping.mccColIndex] ?? "" }
+        : {}),
+      description,
+    });
     rows.push({
       date,
       amountKopiykas: Math.abs(signed),
-      direction: signed < 0 ? "expense" : "income",
+      direction,
       description,
       // Лише true, без false — поле опційне у схемі, відсутність = «не
       // схожий на переказ» (див. transferLikelySchema у @sergeant/shared).
       ...(isLikelyOwnTransfer(description) ? { transferLikely: true } : {}),
+      ...(categoryHint ? { categoryHint } : {}),
     });
   });
 

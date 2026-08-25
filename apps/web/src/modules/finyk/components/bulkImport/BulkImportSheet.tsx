@@ -23,7 +23,7 @@
  * завислий екран. Кожна реальна фаза міняє `label` (`ScanStatus` § шар
  * 2), тож рух видно ще до відповіді сервера.
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { Sheet } from "@shared/components/ui/Sheet";
@@ -34,8 +34,11 @@ import type {
   ImportSource,
 } from "@sergeant/api-client";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain";
-import { DEFAULT_CATEGORY } from "../manualExpenseCategories";
-import { DEFAULT_INCOME_CATEGORY } from "../manualIncomeCategories";
+import { DEFAULT_CATEGORY, isCategorySlug } from "../manualExpenseCategories";
+import {
+  DEFAULT_INCOME_CATEGORY,
+  isIncomeCategorySlug,
+} from "../manualIncomeCategories";
 import { formatReceiptError } from "../../lib/receiptErrors";
 import { readReceiptImageFile } from "../../lib/receiptImage";
 import {
@@ -121,6 +124,18 @@ function defaultCategoryFor(direction: "expense" | "income"): string {
   return direction === "income" ? DEFAULT_INCOME_CATEGORY : DEFAULT_CATEGORY;
 }
 
+/**
+ * Чи намалює пікер такий чип. Перевіряє КЛІЄНТ, а не сервер: власні
+ * категорії користувача живуть лише тут, а вбудовані набори витрат і
+ * надходжень різні — витратний слаг у рядку доходу дав би порожній чип.
+ */
+function makeIsKnownCategory(customIds: ReadonlySet<string>) {
+  return (slug: string, direction: "expense" | "income"): boolean =>
+    direction === "income"
+      ? isIncomeCategorySlug(slug)
+      : isCategorySlug(slug) || customIds.has(slug);
+}
+
 function summarizeSkipped(skipped: ImportSkippedRow[]): string | null {
   if (skipped.length === 0) return null;
   const counts = new Map<string, number>();
@@ -158,6 +173,18 @@ export function BulkImportSheet({
     null,
   );
   const [processing, setProcessing] = useState<ScanStatusState | null>(null);
+
+  // Підказку категорії від сервера приймаємо лише коли пікер справді має
+  // такий чип — інакше тихо падаємо на дефолт (`bulkImportRows.ts`).
+  const rowOptions = useMemo(
+    () => ({
+      defaultCategoryFor,
+      isKnownCategory: makeIsKnownCategory(
+        new Set((customCategories ?? []).map((c) => c.id)),
+      ),
+    }),
+    [customCategories],
+  );
 
   const screenshotInputRef = useRef<HTMLInputElement>(null);
   const csvInputRef = useRef<HTMLInputElement>(null);
@@ -226,9 +253,7 @@ export function BulkImportSheet({
         return;
       }
       setImportSource("bank_screenshot");
-      setReviewRows(
-        screenshotRowsToBulkReviewRows(draft.rows, defaultCategoryFor),
-      );
+      setReviewRows(screenshotRowsToBulkReviewRows(draft.rows, rowOptions));
       setSkippedNote(null);
       setProcessing(null);
       setStage("bulk-review");
@@ -250,9 +275,7 @@ export function BulkImportSheet({
       return;
     }
     setImportSource("bank_statement");
-    setReviewRows(
-      statementRowsToBulkReviewRows(response.rows, defaultCategoryFor),
-    );
+    setReviewRows(statementRowsToBulkReviewRows(response.rows, rowOptions));
     setSkippedNote(summarizeSkipped(response.skipped));
     setStage("bulk-review");
   };

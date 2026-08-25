@@ -96,6 +96,9 @@ describe("normalizeImportScreenshotResult", () => {
     expect(draft.bank).toBe("monobank");
     expect(draft.rows).toEqual([
       {
+        // «Сільпо» — у каталозі мерчантів домену, тож навіть скрін без
+        // колонки категорії отримує підказку з опису (`categoryHint.ts`).
+        categoryHint: "food",
         date: "2026-01-15",
         time: "14:32",
         amountKopiykas: 15000,

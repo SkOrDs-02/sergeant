@@ -152,6 +152,10 @@ describe("resolveCustomMapping", () => {
       amountColIndex: 1,
       descriptionColIndex: 2,
       currencyColIndex: null,
+      // Довільний CSV колонками категорії/MCC не розмічений — підказка
+      // категорії для нього лишається на ключових словах опису.
+      categoryColIndex: null,
+      mccColIndex: null,
       dateFormat: undefined,
       // `undefined`, а НЕ `false`: без явного вибору користувача форсована
       // крапка читала б українську кому як роздільник тисяч ("12,50" →

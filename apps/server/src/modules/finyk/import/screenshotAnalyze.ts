@@ -19,6 +19,7 @@ import { callImportScreenshotVision } from "./visionClient.js";
 import { isLikelyOwnTransfer } from "./transferDetect.js";
 import { markDuplicateLikely } from "./duplicateDetect.js";
 import { receiptVisionViaOpenRouter } from "../receipts/visionTransport.js";
+import { resolveCategoryHint } from "./categoryHint.js";
 
 type WithSessionUser = Request & { user?: { id: string } };
 
@@ -143,6 +144,11 @@ export function normalizeImportScreenshotResult(
         ? Math.min(1, Math.max(0, confidenceRaw))
         : 0;
 
+    // Скрін банкінгу не несе ні колонки категорії, ні MCC — лишається
+    // третій шар `categoryHint.ts` (ключові слова опису). Той самий
+    // резолвер, що й на шляху виписки, щоб «Сільпо» отримало «Продукти»
+    // незалежно від того, звідки рядок приїхав.
+    const categoryHint = resolveCategoryHint({ direction, description });
     rows.push({
       date,
       time: normalizeTime(row["time"]),
@@ -153,6 +159,7 @@ export function normalizeImportScreenshotResult(
       // Лише true, без false — поле опційне у схемі, відсутність = «не
       // схожий на переказ» (спільний детектор із CSV-шляхом).
       ...(isLikelyOwnTransfer(description) ? { transferLikely: true } : {}),
+      ...(categoryHint ? { categoryHint } : {}),
     });
   }
 

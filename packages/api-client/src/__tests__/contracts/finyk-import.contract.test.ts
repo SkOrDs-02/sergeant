@@ -101,6 +101,9 @@ describe(
                   direction: "expense",
                   description: "Сільпо",
                   confidence: 0.9,
+                  // A screenshot carries no category column, so the hint
+                  // comes from the merchant keyword layer only.
+                  categoryHint: "food",
                 },
                 {
                   date: "2026-01-16",
@@ -157,6 +160,8 @@ describe(
           expect(out.draft.rows[2]!.transferLikely).toBe(true);
           expect(out.draft.rows[0]!.duplicateLikely).toBeUndefined();
           expect(out.draft.rows[3]!.duplicateLikely).toBe(true);
+          expect(out.draft.rows[0]!.categoryHint).toBe("food");
+          expect(out.draft.rows[1]!.categoryHint).toBeUndefined();
           // `dropped`/`truncated` навмисно ВІДСУТНІ у тілі вище: web і
           // server деплояться окремо, тож клієнт мусить пережити
           // відповідь ще не оновленого сервера. Zod `.default()` дає
@@ -337,6 +342,12 @@ describe(
                 amountKopiykas: 84750,
                 direction: "expense",
                 description: "Сільпо",
+                // Optional server-side category guess (import/categoryHint.ts)
+                // — an id from the finyk picker, present only when the bank's
+                // own category column, an MCC, or a merchant keyword actually
+                // matched. ABSENT on the rows below: that is "no evidence",
+                // NOT "other" — the client then applies its own default.
+                categoryHint: "food",
               },
               {
                 date: "2026-01-16",
@@ -378,6 +389,10 @@ describe(
           expect(out.rows[1]!.transferLikely).toBe(true);
           expect(out.rows[0]!.duplicateLikely).toBeUndefined();
           expect(out.rows[2]!.duplicateLikely).toBe(true);
+          expect(out.rows[0]!.categoryHint).toBe("food");
+          // Both branches of the optional field are locked by this one
+          // interaction — absent means "no evidence", not "other".
+          expect(out.rows[1]!.categoryHint).toBeUndefined();
         });
     });
 
@@ -476,6 +491,9 @@ describe(
                 amountKopiykas: 12345,
                 direction: "expense",
                 description: "АТБ-Маркет",
+                // Privat24 ships its own «Категорія» column, so a
+                // spreadsheet row arrives already categorised.
+                categoryHint: "food",
               },
             ],
             // `line` is the PHYSICAL row in the file: a spreadsheet
@@ -495,6 +513,7 @@ describe(
           expect(out.needsMapping).toBe(false);
           expect(out.rows).toHaveLength(1);
           expect(typeof out.rows[0]!.amountKopiykas).toBe("number");
+          expect(out.rows[0]!.categoryHint).toBe("food");
           expect(out.skipped[0]!.line).toBe(6);
         });
     });

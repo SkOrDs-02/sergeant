@@ -100,6 +100,10 @@ export interface FinykImportEndpoints {
    * model answer hit its token cap. Both carry neutral defaults when an
    * older server omits them, so the UI can read them unconditionally.
    *
+   * Rows carry the same optional `categoryHint` as `previewImportStatement`
+   * — here it can only come from the merchant-keyword layer, since a
+   * screenshot has no category column and no MCC.
+   *
    * `413`/`415` responses use the SAME non-standard envelope as
    * `analyzeReceipt` — see `ImageValidationErrorBody` /
    * `isImageValidationErrorBody` in `./imageValidationError`. `503
@@ -121,6 +125,13 @@ export interface FinykImportEndpoints {
    * device, and a spreadsheet has no text form at all. PDF and binary
    * Excel-97 statements are refused with an actionable message rather
    * than parsed into zero rows.
+   *
+   * Rows may carry an optional `categoryHint` — a finyk picker category id
+   * the server guessed from the bank's own category column, an MCC, or a
+   * merchant keyword. It is ABSENT when nothing matched, which means "no
+   * evidence" rather than "other": the UI applies its own default then, and
+   * should ignore a hint its picker does not know (custom categories live
+   * client-side, and expense/income chip sets are separate).
    *
    * Discriminated by `needsMapping`:
    *   - `false` — `profile` (`"mono" | "privat24" | "custom"`) +

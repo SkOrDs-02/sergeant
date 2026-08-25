@@ -41,6 +41,13 @@ export interface ResolvedColumnMapping {
    * `unparsed_date` (знайдено на тесті: жорсткий дефолт "DD.MM.YYYY" тут
    * раніше глушив авто-детект `parseCalendarDateKey`, коли клієнт узагалі
    * не передав `dateFormat`). */
+  /** Колонка з ВЛАСНОЮ категорією банку (Privat24 «Категорія»), якщо
+   * профіль її знає. `null` — банк категорію не друкує. Живить
+   * `categoryHint.ts`; на розбір суми/дати не впливає. */
+  categoryColIndex: number | null;
+  /** Колонка MCC (ISO 18245) — є в mono («МСС»). Другий за надійністю
+   * доказ категорії після власної розмітки банку. */
+  mccColIndex: number | null;
   dateFormat: ImportDateFormat | undefined;
   /** `undefined` — автодетект десяткового роздільника на кожне значення
    * окремо. Так само, як `dateFormat` вище: жорстка підказка описує
@@ -83,6 +90,16 @@ function findColumnIndex(
 /** Перший фрагмент зі списку, який знайшовся — за пріоритетом у списку, а
  * не за порядком колонок у файлі: виписка може нести обидва варіанти
  * підпису, і треба саме той, що заміряний на живому файлі. */
+/** `findColumnIndex`, але `null` замість `-1` — для опційних колонок,
+ * відсутність яких не є помилкою профілю. */
+function findColumnIndexOrNull(
+  normalizedHeaders: string[],
+  fragment: string,
+): number | null {
+  const idx = findColumnIndex(normalizedHeaders, fragment);
+  return idx === -1 ? null : idx;
+}
+
 function findFirstColumnIndex(
   normalizedHeaders: string[],
   fragments: readonly string[],
@@ -129,6 +146,10 @@ function detectMonoProfile(
     amountColIndex,
     descriptionColIndex,
     currencyColIndex: null,
+    // mono власної категорії не друкує, але друкує MCC — і це той самий
+    // каталог, яким категоризується mono-вебхук у проді.
+    categoryColIndex: null,
+    mccColIndex: findColumnIndexOrNull(normalizedHeaders, "мсс"),
     dateFormat: "DD.MM.YYYY",
     decimalComma: false,
   };
@@ -190,6 +211,10 @@ function detectPrivat24Profile(
     amountColIndex,
     descriptionColIndex,
     currencyColIndex: currencyColIndex === -1 ? null : currencyColIndex,
+    // «Категорія» — власна розмітка банку, найнадійніший доказ категорії
+    // (`categoryHint.ts`). У живому XLSX 2026-08-25 вона є в кожному рядку.
+    categoryColIndex: findColumnIndexOrNull(normalizedHeaders, "категорія"),
+    mccColIndex: null,
     dateFormat: "DD.MM.YYYY",
     // `undefined` = автодетект, свідомо (див. п.3 у докблоці вище).
     decimalComma: undefined,
@@ -250,6 +275,11 @@ export function resolveCustomMapping(
     amountColIndex,
     descriptionColIndex,
     currencyColIndex: null,
+    // Контракт `ImportColumnMapping` колонок категорії/MCC не має —
+    // довільний CSV ними не розмічений. Підказка для таких файлів
+    // лишається на третьому шарі `categoryHint.ts` (ключові слова опису).
+    categoryColIndex: null,
+    mccColIndex: null,
     // НЕ дефолтити на "DD.MM.YYYY" — без явного `mapping.dateFormat`
     // лишаємо `undefined`, щоб `parseCalendarDateKey` автодетектив формат
     // на кожен рядок окремо (див. docstring `ResolvedColumnMapping.dateFormat`).

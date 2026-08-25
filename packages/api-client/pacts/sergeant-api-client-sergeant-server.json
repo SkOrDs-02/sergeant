@@ -1772,6 +1772,7 @@
             "rows": [
               {
                 "amountKopiykas": 15000,
+                "categoryHint": "food",
                 "confidence": 0.9,
                 "date": "2026-01-15",
                 "description": "Сільпо",
@@ -1913,6 +1914,7 @@
           "rows": [
             {
               "amountKopiykas": 84750,
+              "categoryHint": "food",
               "date": "2026-01-15",
               "description": "Сільпо",
               "direction": "expense"
@@ -1968,6 +1970,7 @@
           "rows": [
             {
               "amountKopiykas": 12345,
+              "categoryHint": "food",
               "date": "2026-08-16",
               "description": "АТБ-Маркет",
               "direction": "expense"
