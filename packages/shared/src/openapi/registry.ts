@@ -426,7 +426,7 @@ const ImportStatementPreviewRequest =
   importSchemas.ImportStatementPreviewRequestSchema.meta({
     id: "ImportStatementPreviewRequest",
     description:
-      "POST /api/finyk/import/statement/preview — csv_text + опційний column mapping.",
+      "POST /api/finyk/import/statement/preview — рівно одне з csv_text (готовий текст) чи file_base64 (сам файл: XLSX, HTML-таблиця під іменем .xls, CSV у будь-якому кодуванні) + опційний column mapping.",
   });
 const ImportStatementPreviewResponse =
   importSchemas.ImportStatementPreviewResponseSchema.meta({

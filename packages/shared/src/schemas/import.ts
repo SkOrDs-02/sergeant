@@ -89,6 +89,20 @@ const transferLikelySchema = z.boolean().optional();
  * вмикабельним — той самий UX-патерн, що `transferLikely`. */
 const duplicateLikelySchema = z.boolean().optional();
 
+/**
+ * Категорія, яку сервер ЗДОГАДАВСЯ поставити рядку — з власної колонки
+ * категорії банку, з MCC або з ключових слів опису
+ * (`import/categoryHint.ts`). Значення — id чипа з пікера finyk
+ * (`MANUAL_EXPENSE_TAXONOMY` / `MANUAL_INCOME_TAXONOMY`).
+ *
+ * Поле ОПЦІЙНЕ і відсутнє = «доказів немає»: клієнт тоді підставляє
+ * власний дефолт. Свідомо не шлемо «other»/«salary» — інакше здогадку
+ * неможливо відрізнити від дефолту, і UI не міг би показати різницю.
+ * Рядок усе одно редагується в bulk-review, тож підказка нічого не
+ * вирішує остаточно.
+ */
+const categoryHintSchema = z.string().min(1).max(120).optional();
+
 export const ImportScreenshotRowSchema = z.object({
   date: boundedDayKeySchema,
   /** `HH:MM`, 24-годинний. `null` — нечитабельно/відсутнє на скріні
@@ -103,8 +117,31 @@ export const ImportScreenshotRowSchema = z.object({
   confidence: z.number().min(0).max(1),
   transferLikely: transferLikelySchema,
   duplicateLikely: duplicateLikelySchema,
+  categoryHint: categoryHintSchema,
 });
 export type ImportScreenshotRow = z.infer<typeof ImportScreenshotRowSchema>;
+
+/**
+ * Скільки рядків модель ПОВЕРНУЛА, але сервер прибрав, і чому. Потрібне
+ * рівно для одного: коли `rows` порожні, UI мусить сказати ЩО САМЕ пішло
+ * не так, а не «не вдалось розпізнати транзакції» на всі випадки одразу.
+ * Бета-фідбек 2026-08-25: «ші написав, що не може знайти транзакції на
+ * скріншоті» — і жодного способу дізнатись, чи він їх не побачив, чи
+ * побачив і відкинув як не-гривневі.
+ */
+export const ImportScreenshotDroppedSchema = z.object({
+  /** Позначені моделлю як невдалі («Недостатньо коштів», «Відхилено»). */
+  failed: z.number().int().min(0),
+  /** Сума не в гривні — Фаза 2 працює лише з UAH. */
+  nonUah: z.number().int().min(0),
+  /** Без читабельної дати чи додатної суми — картку показати нема з чого. */
+  unreadable: z.number().int().min(0),
+});
+export type ImportScreenshotDropped = z.infer<
+  typeof ImportScreenshotDroppedSchema
+>;
+
+const EMPTY_DROPPED = { failed: 0, nonUah: 0, unreadable: 0 } as const;
 
 export const ImportScreenshotDraftSchema = z.object({
   docType: z.enum(IMPORT_SCREENSHOT_DOC_TYPES),
@@ -112,6 +149,15 @@ export const ImportScreenshotDraftSchema = z.object({
    * невідомо/не банківський скрін. */
   bank: z.string().max(120).nullable(),
   rows: z.array(ImportScreenshotRowSchema).max(200),
+  /** `.default()`, а не обовʼязкове поле: web і server деплояться окремо
+   * (Vercel / Coolify), тож новий клієнт мусить пережити відповідь ще не
+   * оновленого сервера — інакше `.parse()` на api-client перетворив би
+   * робочий імпорт на помилку під час розкатки. */
+  dropped: ImportScreenshotDroppedSchema.default(EMPTY_DROPPED),
+  /** `true` — відповідь моделі обірвалась на ліміті токенів, тобто JSON
+   * прийшов неповним і частину рядків фізично не відновити. Довгий список
+   * транзакцій на одному скріні — головна причина «нуль рядків». */
+  truncated: z.boolean().default(false),
 });
 export type ImportScreenshotDraft = z.infer<typeof ImportScreenshotDraftSchema>;
 
@@ -159,12 +205,36 @@ const csvTextSchema = z
     },
   );
 
+/** Base64 самого файлу виписки — XLSX, HTML-таблиця під виглядом `.xls`
+ * або текстовий CSV у будь-якому кодуванні. Кап у СИМВОЛАХ base64 з
+ * запасом над 5 МБ сирих байтів (base64 ×4/3): декодовані байти сервер
+ * ще раз міряє точно (`STATEMENT_MAX_FILE_BYTES`, `statementFile.ts`).
+ *
+ * WHY окреме поле, а не заміна `csv_text`: текстова гілка лишається
+ * робочою для клієнтів/тестів, які вже шлють готовий рядок; файлова
+ * додає те, чого текстова дати не може — типізовані клітинки XLSX і
+ * детект кодування (`file.text()` у браузері завжди читає як UTF-8 і
+ * псує windows-1251-виписку ще до відправки). */
+const fileBase64Schema = z
+  .string()
+  .min(1, "Порожній файл")
+  .max(7_000_000, "Файл завеликий");
+
 export const ImportStatementPreviewRequestSchema = z
   .object({
-    csv_text: csvTextSchema,
+    csv_text: csvTextSchema.optional(),
+    file_base64: fileBase64Schema.optional(),
+    /** Лише для діагностики/логів UI — рішення про формат сервер ухвалює
+     * за magic-байтами, не за розширенням (банки регулярно віддають
+     * HTML-таблицю з іменем `*.xls`). */
+    file_name: z.string().max(255).optional(),
     mapping: ImportColumnMappingSchema.optional(),
   })
-  .strict();
+  .strict()
+  .refine((v) => Boolean(v.csv_text) !== Boolean(v.file_base64), {
+    message: "Треба рівно одне з csv_text або file_base64",
+    path: ["csv_text"],
+  });
 export type ImportStatementPreviewRequest = z.infer<
   typeof ImportStatementPreviewRequestSchema
 >;
@@ -176,6 +246,7 @@ export const ImportStatementRowSchema = z.object({
   description: z.string().max(300),
   transferLikely: transferLikelySchema,
   duplicateLikely: duplicateLikelySchema,
+  categoryHint: categoryHintSchema,
 });
 export type ImportStatementRow = z.infer<typeof ImportStatementRowSchema>;
 

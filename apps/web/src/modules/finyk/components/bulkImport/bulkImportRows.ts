@@ -60,9 +60,36 @@ function defaultSelected(
   return direction === "expense" && !transferLikely && !duplicateLikely;
 }
 
+/**
+ * Категорія рядка: підказка сервера, якщо він її дав, інакше — дефолт.
+ *
+ * `categoryHint` сервер ставить лише за реальним доказом — власна
+ * колонка категорії банку, MCC або ключові слова опису
+ * (`import/categoryHint.ts`); відсутнє поле означає «доказів немає», а
+ * не «Інше». Валідність слага перевіряє САМ клієнт: пікер знає, які
+ * чипи існують, а сервер про власні категорії користувача не знає
+ * взагалі — невідомий слаг намалював би порожній чип, тож у такому разі
+ * тихо падаємо на дефолт.
+ */
+function categoryFor(
+  hint: string | undefined,
+  direction: ImportDirection,
+  defaultCategoryFor: (direction: ImportDirection) => string,
+  isKnownCategory: (slug: string, direction: ImportDirection) => boolean,
+): string {
+  if (hint && isKnownCategory(hint, direction)) return hint;
+  return defaultCategoryFor(direction);
+}
+
+export interface BulkReviewRowOptions {
+  defaultCategoryFor: (direction: ImportDirection) => string;
+  /** Чи знає пікер такий слаг для цього напряму. */
+  isKnownCategory: (slug: string, direction: ImportDirection) => boolean;
+}
+
 export function screenshotRowsToBulkReviewRows(
   rows: readonly ImportScreenshotRow[],
-  defaultCategoryFor: (direction: ImportDirection) => string,
+  options: BulkReviewRowOptions,
 ): BulkReviewRow[] {
   return rows.map((row, i) => {
     const transferLikely = row.transferLikely === true;
@@ -73,7 +100,12 @@ export function screenshotRowsToBulkReviewRows(
       description: row.description,
       amountKopiykas: row.amountKopiykas,
       direction: row.direction,
-      category: defaultCategoryFor(row.direction),
+      category: categoryFor(
+        row.categoryHint,
+        row.direction,
+        options.defaultCategoryFor,
+        options.isKnownCategory,
+      ),
       confidence: row.confidence,
       transferLikely,
       duplicateLikely,
@@ -84,7 +116,7 @@ export function screenshotRowsToBulkReviewRows(
 
 export function statementRowsToBulkReviewRows(
   rows: readonly ImportStatementRow[],
-  defaultCategoryFor: (direction: ImportDirection) => string,
+  options: BulkReviewRowOptions,
 ): BulkReviewRow[] {
   return rows.map((row, i) => {
     const transferLikely = row.transferLikely === true;
@@ -95,7 +127,12 @@ export function statementRowsToBulkReviewRows(
       description: row.description,
       amountKopiykas: row.amountKopiykas,
       direction: row.direction,
-      category: defaultCategoryFor(row.direction),
+      category: categoryFor(
+        row.categoryHint,
+        row.direction,
+        options.defaultCategoryFor,
+        options.isKnownCategory,
+      ),
       confidence: null,
       transferLikely,
       duplicateLikely,

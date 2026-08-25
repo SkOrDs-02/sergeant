@@ -5,10 +5,12 @@ import {
   resolveCustomMapping,
 } from "./csvProfiles.js";
 
-// AI-DANGER: заголовки нижче — обґрунтована реконструкція формату
-// mono/Privat24 CSV-виписок (немає реальних фікстур, див. коментар у
-// csvProfiles.ts). Фікстури тут перевіряють ВЛАСНІ припущення модуля
-// самоузгоджено — вони НЕ підтверджують точність проти живого банку.
+// Заголовки нижче — з РЕАЛЬНИХ експортів (mono: live-прогін 2026-08-18;
+// Privat24: XLSX «Історія операцій за період», 2026-08-25). Самі виписки
+// в репо не лежать — тут лише рядок заголовків, без фінансових даних.
+// `PRIVAT24_ACCOUNT_HEADERS` — навпаки, ДОСІ припущення: виписки по
+// рахунку (а не по картці) живого зразка ще не бачили, тому фрагмент
+// «рахунку» лишається запасним варіантом у профілі.
 
 const MONO_HEADERS = [
   "Дата i час операції",
@@ -28,11 +30,20 @@ const PRIVAT24_HEADERS = [
   "Категорія",
   "Картка",
   "Опис операції",
+  "Сума в валюті картки",
+  "Валюта картки",
+  "Сума в валюті транзакції",
+  "Валюта транзакції",
+  "Залишок на кінець періоду",
+  "Валюта залишку",
+];
+
+const PRIVAT24_ACCOUNT_HEADERS = [
+  "Дата",
+  "Категорія",
+  "Опис операції",
   "Сума в валюті рахунку",
   "Валюта рахунку",
-  "Сума в валюті операції",
-  "Валюта операції",
-  "Залишок на рахунку",
 ];
 
 describe("detectCsvProfile — mono", () => {
@@ -80,9 +91,36 @@ describe("detectCsvProfile — privat24", () => {
     expect(detected?.mapping.currencyColIndex).toBe(5);
   });
 
-  it("decimalComma=true (укр. excel-конвенція)", () => {
+  it("decimalComma лишається автодетектом", () => {
+    // Живий XLSX друкує КРАПКУ (`-1366.82`) попри український локаль, а
+    // доказів про CSV-експорт того ж банку немає — тому не форсуємо
+    // жодного роздільника. Раніше тут стояло `true` (припущення про
+    // укр. excel-конвенцію), і на реальному файлі воно зробило б
+    // із `-1366.82` суму в 100 разів більшу.
     const detected = detectCsvProfile(PRIVAT24_HEADERS);
-    expect(detected?.mapping.decimalComma).toBe(true);
+    expect(detected?.mapping.decimalComma).toBeUndefined();
+  });
+
+  it("валютний фільтр дивиться на КАРТКУ, не на транзакцію", () => {
+    // Індекс 5 — «Валюта картки». Індекс 7 («Валюта транзакції») на
+    // реальному файлі несе USD для покупок Apple гривневою карткою, і
+    // фільтр по ньому викидав би їх як `not_uah`.
+    const detected = detectCsvProfile(PRIVAT24_HEADERS);
+    expect(detected?.mapping.currencyColIndex).toBe(5);
+  });
+
+  it("розуміє і виписку по рахунку — запасні фрагменти «рахунку»", () => {
+    const detected = detectCsvProfile(PRIVAT24_ACCOUNT_HEADERS);
+    expect(detected?.profile).toBe("privat24");
+    expect(detected?.mapping.amountColIndex).toBe(3);
+    expect(detected?.mapping.currencyColIndex).toBe(4);
+  });
+
+  it("mono не перехоплює Privat24, попри спільний підпис суми", () => {
+    // Обидва банки підписують суму «Сума в валюті картки» — розрізняє їх
+    // колонка опису («Деталі операції» проти «Опис операції»).
+    expect(detectCsvProfile(PRIVAT24_HEADERS)?.profile).toBe("privat24");
+    expect(detectCsvProfile(MONO_HEADERS)?.profile).toBe("mono");
   });
 });
 
@@ -103,7 +141,7 @@ describe("detectCsvProfile — невідомий формат", () => {
 });
 
 describe("resolveCustomMapping", () => {
-  it("резолвить mapping на точні заголовки; dateFormat:undefined без хінта (автодетект per-рядок)", () => {
+  it("резолвить mapping на точні заголовки; dateFormat/decimalComma:undefined без хінта (автодетект per-рядок)", () => {
     const resolved = resolveCustomMapping(["Date", "Amount", "Note"], {
       dateCol: "Date",
       amountCol: "Amount",
@@ -114,8 +152,16 @@ describe("resolveCustomMapping", () => {
       amountColIndex: 1,
       descriptionColIndex: 2,
       currencyColIndex: null,
+      // Довільний CSV колонками категорії/MCC не розмічений — підказка
+      // категорії для нього лишається на ключових словах опису.
+      categoryColIndex: null,
+      mccColIndex: null,
       dateFormat: undefined,
-      decimalComma: false,
+      // `undefined`, а НЕ `false`: без явного вибору користувача форсована
+      // крапка читала б українську кому як роздільник тисяч ("12,50" →
+      // 1250 грн). Автодетект розбирає обидві конвенції правильно — та
+      // сама логіка, що вже діяла для `dateFormat`.
+      decimalComma: undefined,
     });
   });
 

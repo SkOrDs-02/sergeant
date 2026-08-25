@@ -17,6 +17,16 @@ import {
 const defaultCategoryFor = (direction: "expense" | "income") =>
   direction === "income" ? "salary" : "other";
 
+/** Той самий контракт, що й у `BulkImportSheet`: підказка сервера
+ * приймається лише коли пікер справді має такий чип. */
+const KNOWN_EXPENSE = new Set(["food", "cafe", "transport", "other"]);
+const KNOWN_INCOME = new Set(["salary", "refund", "other-income"]);
+const rowOptions = {
+  defaultCategoryFor,
+  isKnownCategory: (slug: string, direction: "expense" | "income") =>
+    direction === "income" ? KNOWN_INCOME.has(slug) : KNOWN_EXPENSE.has(slug),
+};
+
 describe("screenshotRowsToBulkReviewRows / statementRowsToBulkReviewRows", () => {
   const screenshotRows: ImportScreenshotRow[] = [
     {
@@ -38,10 +48,7 @@ describe("screenshotRowsToBulkReviewRows / statementRowsToBulkReviewRows", () =>
   ];
 
   it("maps screenshot rows and defaults income rows to unselected (expense stays selected)", () => {
-    const rows = screenshotRowsToBulkReviewRows(
-      screenshotRows,
-      defaultCategoryFor,
-    );
+    const rows = screenshotRowsToBulkReviewRows(screenshotRows, rowOptions);
     expect(rows).toHaveLength(2);
     expect(rows[0]).toMatchObject({
       date: "2026-08-01",
@@ -68,18 +75,12 @@ describe("screenshotRowsToBulkReviewRows / statementRowsToBulkReviewRows", () =>
         description: "АТБ",
       },
     ];
-    const rows = statementRowsToBulkReviewRows(
-      statementRows,
-      defaultCategoryFor,
-    );
+    const rows = statementRowsToBulkReviewRows(statementRows, rowOptions);
     expect(rows[0]).toMatchObject({ confidence: null, selected: true });
   });
 
   it("assigns stable, distinct ids per row", () => {
-    const rows = screenshotRowsToBulkReviewRows(
-      screenshotRows,
-      defaultCategoryFor,
-    );
+    const rows = screenshotRowsToBulkReviewRows(screenshotRows, rowOptions);
     expect(new Set(rows.map((r) => r.id)).size).toBe(2);
   });
 
@@ -100,7 +101,7 @@ describe("screenshotRowsToBulkReviewRows / statementRowsToBulkReviewRows", () =>
           description: "АТБ-Маркет",
         },
       ],
-      defaultCategoryFor,
+      rowOptions,
     );
     expect(rows[0]).toMatchObject({ transferLikely: true, selected: false });
     expect(rows[1]).toMatchObject({ transferLikely: false, selected: true });
@@ -123,7 +124,7 @@ describe("screenshotRowsToBulkReviewRows / statementRowsToBulkReviewRows", () =>
           transferLikely: true,
         },
       ],
-      defaultCategoryFor,
+      rowOptions,
     );
     expect(rows[0]).toMatchObject({ transferLikely: true, selected: false });
   });
@@ -145,7 +146,7 @@ describe("screenshotRowsToBulkReviewRows / statementRowsToBulkReviewRows", () =>
           description: "АТБ-Маркет",
         },
       ],
-      defaultCategoryFor,
+      rowOptions,
     );
     expect(rows[0]).toMatchObject({ duplicateLikely: true, selected: false });
     expect(rows[1]).toMatchObject({ duplicateLikely: false, selected: true });
@@ -167,7 +168,7 @@ describe("screenshotRowsToBulkReviewRows / statementRowsToBulkReviewRows", () =>
           duplicateLikely: true,
         },
       ],
-      defaultCategoryFor,
+      rowOptions,
     );
     expect(rows[0]).toMatchObject({ duplicateLikely: true, selected: false });
   });
@@ -193,7 +194,7 @@ describe("toggleRowSelected / setAllSelected", () => {
         confidence: 1,
       },
     ],
-    defaultCategoryFor,
+    rowOptions,
   );
 
   it("toggles exactly the targeted row", () => {
@@ -228,7 +229,7 @@ describe("applyBulkCategory", () => {
         confidence: 1,
       },
     ],
-    defaultCategoryFor,
+    rowOptions,
   );
 
   it("applies the category only to SELECTED rows by default", () => {
@@ -258,7 +259,7 @@ describe("applyBulkCategory", () => {
             confidence: 1,
           },
         ],
-        defaultCategoryFor,
+        rowOptions,
       ),
     ];
     // Force the income row selected too — the guard must hold regardless of
@@ -290,7 +291,7 @@ describe("updateRowField", () => {
           confidence: 1,
         },
       ],
-      defaultCategoryFor,
+      rowOptions,
     );
     const next = updateRowField(rows, rows[0]!.id, {
       description: "виправлено",
@@ -323,7 +324,7 @@ describe("selectedRowCount / toCommitRows", () => {
         confidence: 1,
       },
     ],
-    defaultCategoryFor,
+    rowOptions,
   );
 
   it("counts only selected rows", () => {
@@ -346,5 +347,64 @@ describe("selectedRowCount / toCommitRows", () => {
   it("toCommitRows includes an income row once it's selected", () => {
     const withIncomeSelected = toggleRowSelected(rows, rows[1]!.id);
     expect(toCommitRows(withIncomeSelected)).toHaveLength(2);
+  });
+});
+
+describe("categoryHint — підказка категорії від сервера", () => {
+  const base = {
+    date: "2026-08-16",
+    amountKopiykas: 1000,
+    description: "Сільпо",
+  } as const;
+
+  it("бере підказку замість дефолту", () => {
+    const [row] = statementRowsToBulkReviewRows(
+      [{ ...base, direction: "expense", categoryHint: "food" }],
+      rowOptions,
+    );
+    expect(row?.category).toBe("food");
+  });
+
+  it("без підказки лишається дефолт", () => {
+    const [row] = statementRowsToBulkReviewRows(
+      [{ ...base, direction: "expense" }],
+      rowOptions,
+    );
+    expect(row?.category).toBe("other");
+  });
+
+  it("ігнорує слаг, якого пікер не знає", () => {
+    // Сервер не знає ні про власні категорії користувача, ні про те, що
+    // набори чипів витрат і надходжень різні. Невідомий слаг намалював
+    // би порожній чип — тож тихо падаємо на дефолт.
+    const [row] = statementRowsToBulkReviewRows(
+      [{ ...base, direction: "expense", categoryHint: "нема-такого" }],
+      rowOptions,
+    );
+    expect(row?.category).toBe("other");
+  });
+
+  it("ігнорує витратний слаг у рядку надходження", () => {
+    const [row] = statementRowsToBulkReviewRows(
+      [{ ...base, direction: "income", categoryHint: "food" }],
+      rowOptions,
+    );
+    expect(row?.category).toBe("salary");
+  });
+
+  it("той самий контракт для рядків скріна", () => {
+    const [row] = screenshotRowsToBulkReviewRows(
+      [
+        {
+          ...base,
+          direction: "expense",
+          time: null,
+          confidence: 0.9,
+          categoryHint: "cafe",
+        },
+      ],
+      rowOptions,
+    );
+    expect(row?.category).toBe("cafe");
   });
 });

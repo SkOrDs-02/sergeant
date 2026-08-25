@@ -53,6 +53,15 @@ const STUB_IMPORT_SCREENSHOT_VISION_TEXT = JSON.stringify({
   ],
 });
 
+export interface ImportScreenshotVisionResult {
+  text: string;
+  /** `true` — модель уперлась у `max_tokens` і JSON обірвано на півслові.
+   * Головна причина «нуль рядків» на довгому списку транзакцій: обірваний
+   * JSON не парситься взагалі, тож без цього прапорця відповідь
+   * неможливо відрізнити від «нічого не побачив». */
+  truncated: boolean;
+}
+
 export interface ImportScreenshotVisionInput {
   base64: string;
   mediaType: string;
@@ -72,20 +81,24 @@ export interface ImportScreenshotVisionInput {
  */
 export async function callImportScreenshotVision(
   input: ImportScreenshotVisionInput,
-): Promise<string> {
+): Promise<ImportScreenshotVisionResult> {
   if (env.LLM_RECEIPT_PROVIDER === "stub") {
-    return STUB_IMPORT_SCREENSHOT_VISION_TEXT;
+    return { text: STUB_IMPORT_SCREENSHOT_VISION_TEXT, truncated: false };
   }
 
   const apiKey = env.ANTHROPIC_API_KEY;
   const payload = {
     model: receiptVisionModel(),
-    // 2000 — трохи вище за чекові 900 (receipts/visionClient.ts): скрін
-    // банкінгу несе per-row `time`/`direction`/`confidence` понад чекові
-    // `qty`/`price`/`sum`, а реалістичний скрін (5-15 рядків, обмежено
-    // видимою висотою екрана) не наближається до Zod-максимуму 200 rows —
-    // той ліміт захисний, не очікуваний розмір відповіді.
-    max_tokens: 2000,
+    // 8000, не 2000 (бета-фідбек 2026-08-25 «не може знайти транзакції на
+    // скріншоті»). Рядок цієї схеми — це 8 полів, серед них кириличний
+    // `description`, який токенізується по 2-3 токени на слово: реально
+    // виходить ~90-130 токенів на рядок, тобто 2000 вистачало приблизно на
+    // 15. Скрін довгого списку (а на телефоні в екран влазить 20-30
+    // операцій) обривався на `max_tokens`, обірваний JSON не парсився
+    // ВЗАГАЛІ — і користувач бачив не «розпізнав частину», а «не можу
+    // знайти транзакції». Оцінка 8000 бере стелю Zod-схеми не повністю
+    // (200 рядків), але з великим запасом над будь-яким реальним скріном.
+    max_tokens: 8000,
     temperature: 0.1,
     system: IMPORT_SCREENSHOT_VISION_SYSTEM_PROMPT,
     messages: [
@@ -112,7 +125,11 @@ export async function callImportScreenshotVision(
   };
 
   const { response, data } = await anthropicMessages(apiKey, payload, {
-    timeoutMs: 20_000,
+    // 45s, не 20s: разом із підйомом `max_tokens` до 8000 довга відповідь
+    // (20-30 рядків) фізично довше генерується, і старий бюджет обривав би
+    // саме ті скріни, заради яких ліміт і піднімали. UI на цей час показує
+    // `ScanStatus` зі slow-хінтом, тож очікування видиме, не «зависло».
+    timeoutMs: 45_000,
     endpoint: "finyk-import-screenshot-analyze",
     allowOpenRouter: receiptVisionViaOpenRouter(),
     ...(input.userId ? { userId: input.userId } : {}),
@@ -124,5 +141,12 @@ export async function callImportScreenshotVision(
       status: response?.status,
     });
   }
-  return extractAnthropicText(data);
+  // OpenRouter під `/api/v1/messages` віддає Anthropic-сумісне тіло, тож
+  // `stop_reason` читається однаково на обох транспортах.
+  const stopReason = (data as { stop_reason?: unknown } | undefined)
+    ?.stop_reason;
+  return {
+    text: extractAnthropicText(data),
+    truncated: stopReason === "max_tokens",
+  };
 }
