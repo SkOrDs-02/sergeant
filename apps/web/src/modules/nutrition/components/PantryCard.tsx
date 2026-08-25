@@ -17,6 +17,7 @@ import type { PantryParsePreview as PantryParsePreviewData } from "../hooks/useN
 import { groupItemsByCategory } from "../lib/foodCategories";
 import type { FoodCategory } from "../lib/foodCategories";
 import type { PantryItem } from "../lib/pantryTextParser";
+import { isPantryItemLowStock } from "../lib/pantryLowStock";
 
 /**
  * Мінімальний "view-shape" елемента комори для `ItemRow`. Runtime-потік
@@ -79,6 +80,12 @@ function ItemRow({
               : item?.qty != null
                 ? `${item.qty}`
                 : item?.unit || ""}
+          </span>
+        )}
+        {isPantryItemLowStock(item) && (
+          <span className="inline-flex items-center gap-1 text-style-caption text-warning-strong dark:text-warning shrink-0">
+            <Icon name="trending-down" size={12} aria-hidden />
+            {messages.nutrition.pantryLowStock.badge}
           </span>
         )}
       </button>

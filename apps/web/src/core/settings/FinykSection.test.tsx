@@ -31,6 +31,19 @@ vi.mock("@shared/api", async () => {
       createCheckout: vi.fn(),
       createPortal: vi.fn(),
     },
+    // Silpo card lives alongside the Mono webhook section in the same
+    // "Фінік" group — without this mock `useSilpoSyncState` would hit the
+    // real `httpClient` fetch in jsdom and every test in this file would
+    // hang/reject on the unmocked network call.
+    silpoApi: {
+      syncState: vi.fn(),
+      sync: vi.fn(),
+      disconnect: vi.fn(),
+      wipe: vi.fn(),
+      receipts: vi.fn(),
+      receiptDetail: vi.fn(),
+    },
+    silpoConnectUrl: () => "https://example.test/api/v1/silpo/connect",
     isApiError: actual.isApiError,
   };
 });
@@ -45,11 +58,27 @@ vi.mock("@finyk/hooks/useStorage", () => ({
   }),
 }));
 
+// `SilpoIntegrationSection` calls `useToast()` (sync/disconnect/wipe result
+// toasts) — this suite has no `<ToastProvider>` in its render tree, so
+// stub the hook directly rather than adding an unrelated provider.
+vi.mock("@shared/hooks/useToast", () => ({
+  useToast: () => ({
+    show: vi.fn(),
+    success: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    warning: vi.fn(),
+    dismiss: vi.fn(),
+    pause: vi.fn(),
+    resume: vi.fn(),
+  }),
+}));
+
 vi.mock("../../modules/finyk/utils", () => ({
   getAccountLabel: (acc: { id: string }) => `Account ${acc.id}`,
 }));
 
-import { billingApi, monoWebhookApi } from "@shared/api";
+import { billingApi, monoWebhookApi, silpoApi } from "@shared/api";
 import { FinykSection } from "./FinykSection";
 
 const mockedSyncState = monoWebhookApi.syncState as unknown as ReturnType<
@@ -59,6 +88,9 @@ const mockedConnect = monoWebhookApi.connect as unknown as ReturnType<
   typeof vi.fn
 >;
 const mockedBillingStatus = billingApi.status as unknown as ReturnType<
+  typeof vi.fn
+>;
+const mockedSilpoSyncState = silpoApi.syncState as unknown as ReturnType<
   typeof vi.fn
 >;
 
@@ -87,6 +119,12 @@ describe("FinykSection", () => {
         active: true,
         currentPeriodEnd: "2026-06-01T10:00:00.000Z",
       },
+    });
+    mockedSilpoSyncState.mockResolvedValue({
+      status: "disconnected",
+      accessTokenExpiresAt: null,
+      lastSyncAt: null,
+      receiptsCount: 0,
     });
     localStorage.clear();
     sessionStorage.clear();

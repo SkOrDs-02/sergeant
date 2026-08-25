@@ -5,11 +5,23 @@
  * Unit tests for `ShoppingListCard`.
  */
 import { fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const openHubModule = vi.fn();
 vi.mock("@shared/lib/modules/hubNav", () => ({
   openHubModule: (...a: unknown[]) => openHubModule(...a),
+}));
+
+// `SilpoCartEntry` (embedded in the header row) gates on
+// `useSilpoSyncState` — mocked at the `@finyk/hooks` boundary here so these
+// unrelated ShoppingListCard tests don't need a real QueryClientProvider.
+// Default "disconnected" makes `SilpoCartEntry` a no-op render (returns
+// `null` before it ever mounts `SilpoCartSheet`, which is the component
+// that actually touches React Query) — end-to-end "У кошик Сільпо" flow is
+// covered by `SilpoCartEntry.test.tsx`.
+const syncStateMock = vi.fn(() => ({ status: "disconnected" }));
+vi.mock("@finyk/hooks/useSilpoSyncState", () => ({
+  useSilpoSyncState: () => syncStateMock(),
 }));
 
 import { ShoppingListCard } from "./ShoppingListCard";
@@ -21,6 +33,23 @@ const listWithItems = {
       items: [
         { id: "i1", name: "Молоко", checked: false },
         { id: "i2", name: "Сир", checked: true },
+      ],
+    },
+  ],
+} as never;
+
+const listForPantryMath = {
+  categories: [
+    {
+      name: "Молочні продукти",
+      items: [
+        {
+          id: "i1",
+          name: "Молоко",
+          quantity: "700 г",
+          note: "",
+          checked: false,
+        },
       ],
     },
   ],
@@ -43,6 +72,10 @@ function baseProps(overrides: Record<string, unknown> = {}) {
   };
 }
 
+beforeEach(() => {
+  syncStateMock.mockReturnValue({ status: "disconnected" });
+  localStorage.clear();
+});
 afterEach(() => vi.clearAllMocks());
 
 describe("ShoppingListCard", () => {
@@ -121,5 +154,70 @@ describe("ShoppingListCard", () => {
     render(<ShoppingListCard {...baseProps()} />);
     fireEvent.click(screen.getByText(/Скільки витратив/));
     expect(openHubModule).toHaveBeenCalledWith("finyk", "/analytics");
+  });
+});
+
+describe("ShoppingListCard — pantry math (рівень 1)", () => {
+  it("reduces a partially-covered item's quantity and shows the calcNote", () => {
+    render(
+      <ShoppingListCard
+        {...baseProps({
+          shoppingList: listForPantryMath,
+          pantryItems: [{ name: "молоко", qty: 400, unit: "г", notes: null }],
+        })}
+      />,
+    );
+    expect(screen.getByText("300 г")).toBeInTheDocument();
+    expect(screen.getByText("700 г − 400 г у коморі")).toBeInTheDocument();
+  });
+
+  it("moves a fully-covered item into the collapsed «Вже вдома» section", () => {
+    render(
+      <ShoppingListCard
+        {...baseProps({
+          shoppingList: listForPantryMath,
+          pantryItems: [{ name: "молоко", qty: 900, unit: "г", notes: null }],
+        })}
+      />,
+    );
+    // Не видно в активному списку — воно в «Вже вдома», згорнутому за замовчуванням.
+    expect(screen.queryByText("700 г")).not.toBeInTheDocument();
+    const athomeToggle = screen.getByText("Вже вдома");
+    fireEvent.click(athomeToggle);
+    expect(screen.getByText("700 г")).toBeInTheDocument();
+    expect(screen.getAllByText("Молоко").length).toBeGreaterThan(0);
+  });
+
+  it("merges a low-stock pantry item not already in the list, with the badge", () => {
+    render(
+      <ShoppingListCard
+        {...baseProps({
+          shoppingList: { categories: [] } as never,
+          pantryItems: [{ name: "сіль", qty: 50, unit: "г", notes: null }],
+        })}
+      />,
+    );
+    expect(screen.getByText("сіль")).toBeInTheDocument();
+    expect(screen.getByText("Закінчується")).toBeInTheDocument();
+  });
+
+  it("toggle off shows the raw list without pantry adjustments", () => {
+    render(
+      <ShoppingListCard
+        {...baseProps({
+          shoppingList: listForPantryMath,
+          pantryItems: [{ name: "молоко", qty: 400, unit: "г", notes: null }],
+        })}
+      />,
+    );
+    // Тумблер за замовчуванням увімкнено — кількість вже скоригована.
+    expect(screen.getByText("300 г")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Враховувати комору/ }));
+    // Вимкнено — сирий список, без розрахунку.
+    expect(screen.queryByText("300 г")).not.toBeInTheDocument();
+    expect(screen.getByText("700 г")).toBeInTheDocument();
+    expect(
+      screen.queryByText("700 г − 400 г у коморі"),
+    ).not.toBeInTheDocument();
   });
 });

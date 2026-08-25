@@ -10,4 +10,6 @@ export * from "./overview.js";
 export * from "./monoStaleness.js";
 export * from "./balanceReconciliation.js";
 export * from "./transferMatching.js";
+export * from "./receiptMatching.js";
+export * from "./receiptSplitSuggestion.js";
 export * from "./assets/index.js";

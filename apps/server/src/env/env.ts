@@ -321,6 +321,24 @@ const envSchema = z.object({
 
   PUBLIC_API_BASE_URL: z.string().optional(),
 
+  // ─── Silpo MCP integration (walking-skeleton experiment, 2026-08-17) ────
+  // Spec: docs/90-work/planning/specs/silpo-mcp-integration.md § Експеримент.
+  // Exact parity with the MONO_TOKEN_ENC_KEY* triplet above — same KeyRing
+  // helper (`parseKeyRing`), same validation shape below. Default `false`:
+  // merging this experiment must never turn the integration on by itself
+  // (offer/ToS gate is still open — see spec § Відкриті гейти).
+  SILPO_ENABLED: boolFromEnv(false),
+
+  SILPO_MCP_URL: stringWithDefault("https://mcp.silpo.ua/mcp"),
+
+  SILPO_OAUTH_CLIENT_ID: z.string().optional(),
+
+  SILPO_TOKEN_ENC_KEY: z.string().optional(),
+
+  SILPO_TOKEN_ENC_KEYS: z.string().optional(),
+
+  SILPO_TOKEN_ENC_KEY_CURRENT_VERSION: z.string().optional(),
+
   STRIPE_SECRET_KEY: z
     .string()
     .regex(
@@ -869,6 +887,35 @@ export function assertStartupEnv(): void {
     if (!env.PUBLIC_API_BASE_URL) {
       throw new Error(
         "PUBLIC_API_BASE_URL is required when MONO_WEBHOOK_ENABLED=true.",
+      );
+    }
+  }
+
+  if (env.SILPO_ENABLED) {
+    if (!env.SILPO_TOKEN_ENC_KEYS && !env.SILPO_TOKEN_ENC_KEY) {
+      throw new Error(
+        "SILPO_TOKEN_ENC_KEY (or SILPO_TOKEN_ENC_KEYS) is required when SILPO_ENABLED=true. Must be 32-byte hex (64 chars).",
+      );
+    }
+    try {
+      parseKeyRing({
+        keysCsv: env.SILPO_TOKEN_ENC_KEYS,
+        currentVersion: env.SILPO_TOKEN_ENC_KEY_CURRENT_VERSION,
+        legacyKey: env.SILPO_TOKEN_ENC_KEY,
+        envName: "SILPO_TOKEN_ENC_KEY",
+      });
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
+      throw new Error(`SILPO_TOKEN_ENC_KEY[S] is invalid: ${detail}`);
+    }
+    if (!env.SILPO_OAUTH_CLIENT_ID) {
+      throw new Error(
+        "SILPO_OAUTH_CLIENT_ID is required when SILPO_ENABLED=true (one-time Dynamic Client Registration output — see docs/02-engineering/integrations/env-vars.md § Silpo MCP).",
+      );
+    }
+    if (!env.PUBLIC_API_BASE_URL) {
+      throw new Error(
+        "PUBLIC_API_BASE_URL is required when SILPO_ENABLED=true (OAuth callback URL).",
       );
     }
   }

@@ -1590,4 +1590,389 @@ export const paths: ZodOpenApiPathsObject = {
       },
     },
   },
+  // ────────────────────── Silpo MCP integration (walking-skeleton) ──────────
+  // Spec: `docs/90-work/planning/specs/silpo-mcp-integration.md`. All routes
+  // gated by `requireSession()` + `SILPO_ENABLED` kill switch (503
+  // `SILPO_DISABLED` when off — shared across every path below).
+  "/api/silpo/connect": {
+    get: {
+      summary: "Розпочати OAuth-підключення до Silpo (302 redirect)",
+      description:
+        "NAVIGATION-ONLY — браузер редіректиться на Silpo consent screen. " +
+        "Не для fetch/XHR-виклику; `@sergeant/api-client` дає " +
+        "`silpoConnectUrl()` для `window.location.href`.",
+      tags: ["silpo"],
+      security: cookieOrBearer,
+      responses: {
+        "302": { description: "Redirect до Silpo OAuth authorization URL." },
+        "401": unauthorized,
+        "429": {
+          description: "Rate-limit перевищено (rateLimitExpress).",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+        "502": {
+          description:
+            "SILPO_UPSTREAM_ERROR — не вдалося побудувати authorization URL (metadata discovery впав).",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+        "503": {
+          description:
+            "SILPO_DISABLED (kill switch) або SILPO_CONFIG_MISSING (redirect URI не сконфігуровано).",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+      },
+    },
+  },
+  "/api/silpo/callback": {
+    get: {
+      summary: "OAuth callback від Silpo (302 redirect на /settings)",
+      description:
+        "Server-only — браузер потрапляє сюди після Silpo consent screen, " +
+        "жоден клієнт не викликає цей шлях напряму.",
+      tags: ["silpo"],
+      security: cookieOrBearer,
+      responses: {
+        "302": {
+          description:
+            "Redirect на `/settings?silpo=connected|error` (+ `reason` при помилці).",
+        },
+        "401": unauthorized,
+        "503": {
+          description: "SILPO_DISABLED (kill switch).",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+      },
+    },
+  },
+  "/api/silpo/disconnect": {
+    post: {
+      summary: "Відключити Silpo (mono-патерн — чеки/items survive)",
+      tags: ["silpo"],
+      security: cookieOrBearer,
+      responses: {
+        "200": {
+          description: "`silpo_connection` видалено.",
+          content: {
+            "application/json": {
+              schema: namedSchemas.SilpoDisconnectResponse,
+            },
+          },
+        },
+        "401": unauthorized,
+        "503": {
+          description: "SILPO_DISABLED (kill switch).",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+      },
+    },
+  },
+  "/api/silpo/wipe": {
+    post: {
+      summary:
+        "Повне видалення Silpo-даних (чеки → items → finyk_tx_receipt_links)",
+      description:
+        "Підтверджені `finyk_tx_splits` та pantry-events НІКОЛИ не чіпаються.",
+      tags: ["silpo"],
+      security: cookieOrBearer,
+      responses: {
+        "200": {
+          description: "Видалено; `deletedReceipts` — лічильник.",
+          content: {
+            "application/json": { schema: namedSchemas.SilpoWipeResponse },
+          },
+        },
+        "401": unauthorized,
+        "503": {
+          description: "SILPO_DISABLED (kill switch).",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+      },
+    },
+  },
+  "/api/silpo/sync-state": {
+    get: {
+      summary: "Статус Silpo-інтеграції + лічильники (Settings-картка)",
+      tags: ["silpo"],
+      security: cookieOrBearer,
+      responses: {
+        "200": {
+          description:
+            "`status: 'disconnected'` — синтетичний стан (немає рядка `silpo_connection`).",
+          content: {
+            "application/json": { schema: namedSchemas.SilpoSyncState },
+          },
+        },
+        "401": unauthorized,
+        "503": {
+          description: "SILPO_DISABLED (kill switch).",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+      },
+    },
+  },
+  "/api/silpo/sync": {
+    post: {
+      summary: "«Оновити чеки» — pull + normalize + match до транзакцій",
+      description:
+        "`status` у відповіді — стан ПІСЛЯ спроби синку (може стати " +
+        "`reauth_required`, якщо lazy-refresh відвалився посеред синку).",
+      tags: ["silpo"],
+      security: cookieOrBearer,
+      responses: {
+        "200": {
+          description: "Діагностичні лічильники pull/insert/match.",
+          content: {
+            "application/json": { schema: namedSchemas.SilpoSyncResult },
+          },
+        },
+        "401": unauthorized,
+        "409": {
+          description: "SILPO_NOT_CONNECTED або SILPO_REAUTH_REQUIRED.",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+        "429": {
+          description: "SILPO_RATE_LIMITED — забагато синків поспіль.",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+        "502": {
+          description: "SILPO_UPSTREAM_ERROR або SILPO_SCHEMA_DRIFT.",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+        "503": {
+          description: "SILPO_DISABLED (kill switch).",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+      },
+    },
+  },
+  "/api/silpo/receipts": {
+    get: {
+      summary: "Cursor-paginated список чеків Silpo",
+      tags: ["silpo"],
+      security: cookieOrBearer,
+      requestParams: { query: namedSchemas.SilpoReceiptsQuery },
+      responses: {
+        "200": {
+          description: "Сторінка `SilpoReceiptSummaryDto[]` + nextCursor.",
+          content: {
+            "application/json": { schema: namedSchemas.SilpoReceiptsPage },
+          },
+        },
+        "400": validationError,
+        "401": unauthorized,
+        "503": {
+          description: "SILPO_DISABLED (kill switch).",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+      },
+    },
+  },
+  "/api/silpo/receipts/{id}": {
+    get: {
+      summary: "Один чек Silpo — summary + line items",
+      tags: ["silpo"],
+      security: cookieOrBearer,
+      requestParams: {
+        path: z.object({
+          id: z.string().describe("`silpo_receipts.receipt_id`."),
+        }),
+      },
+      responses: {
+        "200": {
+          description: "Summary + масив items.",
+          content: {
+            "application/json": { schema: namedSchemas.SilpoReceiptDetailDto },
+          },
+        },
+        "401": unauthorized,
+        "404": {
+          description: "Чек не знайдено (не існує або належить іншому юзеру).",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+        "503": {
+          description: "SILPO_DISABLED (kill switch).",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+      },
+    },
+  },
+  "/api/silpo/cart/preview": {
+    post: {
+      summary: "Пошук товарів для кошика (search-only, не пише в кошик)",
+      description:
+        "Один result на кожен request-item, у порядку запиту (matched " +
+        "back по точному тексту `query`, не по індексу). `matches` — top " +
+        "candidate + до 2 альтернатив; `unmatched: true` — нуль придатних " +
+        "кандидатів. `lagerId` — опаковий токен, клієнт лише зберігає й " +
+        "повертає його в `/cart/apply`, ніколи не парсить.",
+      tags: ["silpo"],
+      security: cookieOrBearer,
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": { schema: namedSchemas.SilpoCartPreviewRequest },
+        },
+      },
+      responses: {
+        "200": {
+          description: "`results[]` — по одному на request-item.",
+          content: {
+            "application/json": {
+              schema: namedSchemas.SilpoCartPreviewResponse,
+            },
+          },
+        },
+        "400": validationError,
+        "401": unauthorized,
+        "409": {
+          description: "SILPO_NOT_CONNECTED або SILPO_REAUTH_REQUIRED.",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+        "429": {
+          description: "SILPO_RATE_LIMITED — забагато preview-запитів поспіль.",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+        "502": {
+          description: "SILPO_UPSTREAM_ERROR або SILPO_SCHEMA_DRIFT.",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+        "503": {
+          description: "SILPO_DISABLED (kill switch) або SILPO_CONFIG_MISSING.",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+      },
+    },
+  },
+  "/api/silpo/cart/apply": {
+    post: {
+      summary: "Додати вибрані товари в кошик Сільпо (confirm-before-write)",
+      description:
+        "Кожен `lagerId` декодується ДО будь-якого мережевого виклику — " +
+        "зіпсований токен дає 400 VALIDATION, ніколи не 502/503. Пише " +
+        "EXACTLY передані позиції (`addQuantity: false` — replace, не " +
+        "accumulate), відповідь = пост-write стан кошика (форма GET " +
+        "/api/silpo/cart).",
+      tags: ["silpo"],
+      security: cookieOrBearer,
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": { schema: namedSchemas.SilpoCartApplyRequest },
+        },
+      },
+      responses: {
+        "200": {
+          description: "Пост-write стан кошика.",
+          content: {
+            "application/json": { schema: namedSchemas.SilpoCartDto },
+          },
+        },
+        "400": validationError,
+        "401": unauthorized,
+        "409": {
+          description: "SILPO_NOT_CONNECTED або SILPO_REAUTH_REQUIRED.",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+        "429": {
+          description: "SILPO_RATE_LIMITED — забагато apply-запитів поспіль.",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+        "502": {
+          description: "SILPO_UPSTREAM_ERROR або SILPO_SCHEMA_DRIFT.",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+        "503": {
+          description: "SILPO_DISABLED (kill switch) або SILPO_CONFIG_MISSING.",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+      },
+    },
+  },
+  "/api/silpo/cart": {
+    get: {
+      summary: "Поточний стан кошика Сільпо",
+      description:
+        "Порожній кошик (немає попереднього пошуку/замовлення) деградує до " +
+        "`{items: [], totalKop: 0, cartUrl: null}`, не помилки.",
+      tags: ["silpo"],
+      security: cookieOrBearer,
+      responses: {
+        "200": {
+          description: "Поточний кошик.",
+          content: {
+            "application/json": { schema: namedSchemas.SilpoCartDto },
+          },
+        },
+        "401": unauthorized,
+        "409": {
+          description: "SILPO_NOT_CONNECTED або SILPO_REAUTH_REQUIRED.",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+        "429": {
+          description: "SILPO_RATE_LIMITED.",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+        "502": {
+          description: "SILPO_UPSTREAM_ERROR або SILPO_SCHEMA_DRIFT.",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+        "503": {
+          description: "SILPO_DISABLED (kill switch) або SILPO_CONFIG_MISSING.",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+      },
+    },
+  },
 };

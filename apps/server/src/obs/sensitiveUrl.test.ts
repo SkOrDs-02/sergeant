@@ -92,3 +92,33 @@ describe("redactSensitiveUrl", () => {
     );
   });
 });
+
+describe("redactSensitiveUrl → чутливі query-ключі (OAuth-колбек Сільпо)", () => {
+  it("маскує code і state, лишаючи решту query читабельною", () => {
+    expect(
+      redactSensitiveUrl(
+        "/api/silpo/callback?code=abc123def&state=nonce456&foo=bar",
+      ),
+    ).toBe("/api/silpo/callback?code=[redacted]&state=[redacted]&foo=bar");
+  });
+
+  it("маскує у повному URL, як його бачить Sentry", () => {
+    const url =
+      "https://api.example.com/api/silpo/callback?state=nonce456&code=abc123def";
+    expect(redactSensitiveUrl(url)).not.toContain("abc123def");
+    expect(redactSensitiveUrl(url)).not.toContain("nonce456");
+  });
+
+  it("не чіпає ключі, що лише ЗАКІНЧУЮТЬСЯ на code/state", () => {
+    // `[?&]` перед ключем — саме заради цього випадку.
+    expect(redactSensitiveUrl("/x?substate=keep&code_challenge=keep2")).toBe(
+      "/x?substate=keep&code_challenge=keep2",
+    );
+  });
+
+  it("працює разом із path-редакцією mono-webhook", () => {
+    expect(redactSensitiveUrl("/api/mono/webhook/sec1?code=abc")).toBe(
+      "/api/mono/webhook/[redacted]?code=[redacted]",
+    );
+  });
+});

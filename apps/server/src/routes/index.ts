@@ -18,6 +18,7 @@ import { createMeRouter } from "./me.js";
 import { createFeedbackRouter } from "./feedback.js";
 import { createNutritionRouter } from "./nutrition.js";
 import { createPushRouter } from "./push.js";
+import { createSilpoRouter } from "./silpo.js";
 import { createStatusRouter } from "./status.js";
 import { createSyncRouter } from "./sync.js";
 import { createTelegramWebhookRouter } from "./telegram-webhook.js";
@@ -49,6 +50,7 @@ export function registerRoutes(app: Express, { pool }: { pool: Pool }): void {
   app.use(createChatRouter());
   app.use(createMonoWebhookRouter());
   app.use(createBanksRouter());
+  app.use(createSilpoRouter());
   app.use(createBarcodeRouter());
   app.use(createNutritionRouter({ pool }));
   app.use(createFinykRouter());

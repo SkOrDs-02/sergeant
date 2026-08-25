@@ -8,6 +8,7 @@ import { recordExternalHttp } from "../../lib/externalHttp.js";
 import { elapsedMs } from "../../lib/timing.js";
 import { BarcodeQuerySchema } from "../../http/schemas.js";
 import { parseQuery } from "../../http/validate.js";
+import { getSessionUser } from "../../auth.js";
 import { barcodeLookupsTotal } from "../../obs/metrics.js";
 import { logger } from "../../obs/logger.js";
 import { lookupInCatalog, upsertIntoCatalog } from "./productCatalog.js";
@@ -19,6 +20,26 @@ import {
   type UPCitemdbResponse,
   type USDAFood,
 } from "../../lib/normalizers/index.js";
+import {
+  isSilpoConnectedUser,
+  lookupSilpoBarcode,
+} from "../silpo/foodSource.js";
+
+/**
+ * Best-effort session peek. `/api/barcode` is deliberately session-less
+ * (open, cached, PERF-007 scan flow) — this must NEVER turn it into an
+ * auth-gated route. `getSessionUser` throws on a lookup failure (see its
+ * docstring in `auth.ts`); catching here keeps that failure mode identical
+ * to "no session" instead of a 500 on an endpoint that never required auth.
+ */
+async function resolveOptionalUserId(req: Request): Promise<string | null> {
+  try {
+    const user = await getSessionUser(req);
+    return user?.id ?? null;
+  } catch {
+    return null;
+  }
+}
 
 // SSOT for the barcode response shape lives in `@sergeant/shared/schemas`
 // (AGENTS.md Hard Rule #3). The server derives its internal type via
@@ -363,14 +384,27 @@ async function lookupUPCitemdb(
 // Handler
 // ──────────────────────────────────────────────────────────────────────────────
 /**
- * GET /api/barcode?barcode=... — каскадний lookup через OFF → USDA → UPCitemdb.
- * Middleware-и роутера (`setModule`, `rateLimitExpress`) забезпечують
- * module-tag і rate-limit; тут лише бізнес-логіка.
+ * GET /api/barcode?barcode=... — каскадний lookup через OFF → USDA →
+ * UPCitemdb → Silpo (четверте джерело, лише для юзера зі зв'язаним акаунтом
+ * — `modules/silpo/foodSource.ts`). Middleware-и роутера (`setModule`,
+ * `rateLimitExpress`) забезпечують module-tag і rate-limit; тут лише
+ * бізнес-логіка.
  *
  * Кроки послідовні (не паралельні) навмисно — hit на ранньому джерелі не
  * повинен витрачати квоту наступних (особливо UPCitemdb: 100 req/day trial).
  * Тому per-source timeout тримаємо невеликим (4с/4с/3с = 11с worst-case),
- * а не 7с/7с/6с — повний miss-cascade інакше тягнеться до ~20с.
+ * а не 7с/7с/6с — повний miss-cascade інакше тягнеться до ~20с. Silpo не має
+ * per-source HTTP-timeout тут — `mcpClient.ts` вже несе власний
+ * `SILPO_MCP_TIMEOUT_MS` + retry/backoff.
+ *
+ * KNOWN LIMITATION (acceptable for the narrowed, experimental track D): a
+ * miss-sentinel cached by an EARLIER, non-connected caller (OFF/USDA/
+ * UPCitemdb all missed) short-circuits below WITHOUT ever trying Silpo for
+ * a LATER connected caller on the same barcode, until the 30-min miss TTL
+ * expires. Fixing this would require bypassing the shared cache whenever
+ * `silpoConnected`, which adds meaningful complexity for a walking-skeleton
+ * source — deferred, not a correctness/security issue (worst case: a
+ * connected user occasionally sees "not found" for up to 30 minutes).
  */
 export default async function handler(
   req: Request,
@@ -386,7 +420,11 @@ export default async function handler(
   }
 
   // Cache hit short-circuits the cascade entirely. Miss-sentinel returns the
-  // same 404 без чергового round-trip-у на upstream-и.
+  // same 404 без чергового round-trip-у на upstream-и. Safe regardless of
+  // Silpo connection status — Silpo-sourced hits are NEVER written to this
+  // shared cache (see the `product.source === "silpo"` guard around
+  // `cacheSet` below), so anything found here is public OFF/USDA/UPCitemdb
+  // data, not scoped to any one user.
   const cached = cacheGet(barcode);
   if (cached) {
     if (cached.product) {
@@ -436,8 +474,20 @@ export default async function handler(
     );
   }
 
+  // Cheap guard (single indexed SELECT, zero cost for the anonymous
+  // majority) — decides whether to try Silpo as the last cascade step AND
+  // whether a Silpo-sourced hit below must skip the shared cache / public
+  // `Cache-Control`. Gated on the kill switch FIRST: with `SILPO_ENABLED`
+  // off (the default) this session-less endpoint must not pay a per-request
+  // session lookup for a source that can never activate.
+  //
+  // Стоїть ПІСЛЯ каталогу навмисно: хіт у власному каталозі повертається
+  // одразу, тож найдешевший шлях узагалі не платить за резолв сесії.
+  const userId = env.SILPO_ENABLED ? await resolveOptionalUserId(req) : null;
+  const silpoConnected = userId ? await isSilpoConnectedUser(userId) : false;
+
   try {
-    // Cascade: OFF → USDA → UPCitemdb
+    // Cascade: OFF → USDA → UPCitemdb → Silpo
     let product: NormalizedProduct | null = null;
     let upstreamThrew = false;
 
@@ -459,6 +509,14 @@ export default async function handler(
       } catch {
         upstreamThrew = true;
       }
+    }
+    if (!product && silpoConnected) {
+      // `lookupSilpoBarcode` never throws (see its docstring) — Silpo is a
+      // best-effort bonus source, so its failure must NEVER set
+      // `upstreamThrew` (that flag exists to distinguish "genuinely not in
+      // any database" from "an authoritative source didn't respond", and
+      // Silpo is neither authoritative nor required).
+      product = await lookupSilpoBarcode(userId, barcode);
     }
 
     if (!product) {
@@ -486,7 +544,18 @@ export default async function handler(
       return;
     }
 
-    cacheSet(barcode, product);
+    if (product.source === "silpo") {
+      // Never share a Silpo-sourced hit — it was resolved via THIS user's
+      // linked account, not a global public catalog lookup all callers are
+      // equally entitled to. Skip the shared in-process cache AND override
+      // the router's public `Cache-Control` (PERF-007) for this response.
+      res.setHeader(
+        "Cache-Control",
+        "private, no-store, no-cache, must-revalidate",
+      );
+    } else {
+      cacheSet(barcode, product);
+    }
     res.status(200).json(BarcodeLookupSuccessSchema.parse({ product }));
 
     // Write-through ПІСЛЯ відповіді: користувач не має чекати на наш запис.

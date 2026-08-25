@@ -527,7 +527,11 @@ jobs:
     # No `needs:` — runs in parallel with other jobs so a lint/test failure in
     # `check` never causes this job to be skipped.  Previously `needs: check`
     # was the root cause of the job being skipped on most PRs.
-    timeout-minutes: 8
+    # 8 → 15 (2026-08-18): на деградованих ранерах сам setup (install+build)
+    # займав 7м45с, і job зрізало по таймауту, коли 14/48 тестів уже пройшли
+    # зеленими за ~50с (двічі поспіль, run 32145270416). Ліміт має страхувати
+    # від зависання тестів, а не карати за повільний ранер.
+    timeout-minutes: 15
 
     services:
       # pgvector/pgvector:pg17 — Postgres 17 + the `vector` extension
