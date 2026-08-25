@@ -1,0 +1,13 @@
+# Golden-set мапера позицій чека Сільпо. Три колонки через TAB:
+#   назва позиції <TAB> category_slug (може бути порожнім) <TAB> правильна категорія
+#
+# Третя колонка — розмітка людиною. Порожня = «ще не розмічено»: такий
+# рядок іде у звіт, а не валить тест.
+#
+# Дозволені категорії: food, groceries, cafe, transport, entertainment,
+# health, shopping, smoking, alcohol, utilities, tech, subscriptions,
+# education, travel, other.
+#
+# Як наповнити і чому саме так — докстрінг у
+# `receiptSplitSuggestion.golden.test.ts`. Частоти сюди НЕ клади: репо
+# публічне, і вони перетворюють словник товарів на журнал покупок.
