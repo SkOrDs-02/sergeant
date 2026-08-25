@@ -512,12 +512,70 @@ describe("applyFizrukMeasurements", () => {
     expect(insert.params[10]).toBeNull();
   });
 
-  it("passes negative/out-of-range measurement values through unbounded (documents current behavior)", async () => {
-    // applyFizrukMeasurements читає ці поля через parseOptionalNumber /
-    // parseOptionalInt — жоден із них не має верхньої/нижньої межі (на
-    // відміну від parseOptionalBoundedNumber, яким користуються kcal-поля
-    // після pre-beta input-boundaries audit). Цей тест фіксує ІСНУЮЧУ
-    // поведінку, а не бажану — див. звіт агента щодо цієї межі.
+  it("rejects out-of-range measurement values instead of storing them", async () => {
+    // Регресійний якір на побічну знахідку аудиту 2026-08-04: до фіксу ці
+    // поля читались НЕобмеженими parseOptionalNumber / parseOptionalInt,
+    // тож у базу проходили `weight_kg: -500` і `sleep_hours: 999`. Тепер
+    // діють канонічні межі MEASUREMENT_BOUNDS з @sergeant/shared — ті самі,
+    // що і в клієнтському реєстрі полів.
+    const fake = new FakeClient();
+
+    await expect(
+      applyFizrukMeasurements(
+        asClient(fake),
+        syncOp("fizruk_measurements", "insert", validRow({ weight_kg: -500 })),
+        "user-1",
+        clientTs,
+      ),
+    ).resolves.toEqual({ status: "rejected", reason: "invalid_weight_kg" });
+
+    // Відхилення має статись ДО будь-якого запису.
+    expect(
+      fake.queries.some((q) => /INSERT INTO fizruk_measurements/.test(q.sql)),
+    ).toBe(false);
+  });
+
+  it.each([
+    ["weight_kg", 19, "invalid_weight_kg"],
+    ["weight_kg", 401, "invalid_weight_kg"],
+    ["waist_cm", 29, "invalid_waist_cm"],
+    ["chest_cm", 301, "invalid_chest_cm"],
+    ["hips_cm", 0, "invalid_hips_cm"],
+    ["bicep_cm", 101, "invalid_bicep_cm"],
+    ["sleep_hours", -1, "invalid_sleep_hours"],
+    ["sleep_hours", 25, "invalid_sleep_hours"],
+    ["energy_level", 0, "invalid_energy_level"],
+    ["energy_level", 6, "invalid_energy_level"],
+    ["mood", 0, "invalid_mood"],
+    ["mood", 7, "invalid_mood"],
+  ])(
+    "rejects %s = %s as out of canonical bounds",
+    async (field, value, reason) => {
+      const fake = new FakeClient();
+
+      await expect(
+        applyFizrukMeasurements(
+          asClient(fake),
+          syncOp(
+            "fizruk_measurements",
+            "insert",
+            validRow({ [field as string]: value }),
+          ),
+          "user-1",
+          clientTs,
+        ),
+      ).resolves.toEqual({ status: "rejected", reason });
+    },
+  );
+
+  it.each([
+    ["weight_kg", 20],
+    ["weight_kg", 400],
+    ["sleep_hours", 0],
+    ["sleep_hours", 24],
+    ["energy_level", 1],
+    ["mood", 5],
+  ])("accepts %s = %s — межі включні", async (field, value) => {
     const fake = new FakeClient();
 
     await expect(
@@ -526,16 +584,34 @@ describe("applyFizrukMeasurements", () => {
         syncOp(
           "fizruk_measurements",
           "insert",
-          validRow({ weight_kg: -500, sleep_hours: 999 }),
+          validRow({ [field as string]: value }),
+        ),
+        "user-1",
+        clientTs,
+      ),
+    ).resolves.toEqual({ status: "applied" });
+  });
+
+  it("floors a fractional wellbeing score before the bounds check", async () => {
+    // Порядок операцій у parseOptionalBoundedInt: спершу floor, потім межі.
+    // Клієнт, що прислав 5.4, і далі отримує 5 — інакше фікс зламав би
+    // тих, хто раніше працював.
+    const fake = new FakeClient();
+
+    await expect(
+      applyFizrukMeasurements(
+        asClient(fake),
+        syncOp(
+          "fizruk_measurements",
+          "insert",
+          validRow({ energy_level: 5.4 }),
         ),
         "user-1",
         clientTs,
       ),
     ).resolves.toEqual({ status: "applied" });
 
-    const insert = lastQuery(fake);
-    expect(insert.params[3]).toBe(-500);
-    expect(insert.params[8]).toBe(999);
+    expect(lastQuery(fake).params[9]).toBe(5);
   });
 
   it("inserts a new measurement with the full param set in order", async () => {

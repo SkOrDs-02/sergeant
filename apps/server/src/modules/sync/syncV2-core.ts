@@ -243,6 +243,28 @@ export function parseOptionalBoundedNumber(
 }
 
 /**
+ * Ціла версія {@link parseOptionalBoundedNumber} для шкал 1–5
+ * (`energy_level`, `mood`).
+ *
+ * Порядок операцій навмисний: спершу floor, потім перевірка меж. Так
+ * зберігається наявна поблажливість `parseOptionalInt` до дробових
+ * (клієнт, що прислав `4.7`, і далі отримає `4`, а не відмову), але
+ * значення поза шкалою — `0`, `7`, `-3` — тепер відхиляються. Якби
+ * межі перевірялись до floor, `5.4` став би `invalid`, і ми б зламали
+ * клієнтів, які раніше працювали.
+ */
+export function parseOptionalBoundedInt(
+  value: unknown,
+  bounds: { min?: number; max: number },
+): number | null | "invalid" {
+  const n = parseOptionalInt(value);
+  if (n === "invalid" || n === null) return n;
+  const min = bounds.min ?? 0;
+  if (n < min || n > bounds.max) return "invalid";
+  return n;
+}
+
+/**
  * Serialize a JSONB-bound value before binding to a `pg` parameter.
  *
  * Why an explicit helper: `pg` will silently coerce a JS object to its
