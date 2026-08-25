@@ -36,30 +36,30 @@ MCP-клієнт** (JSON-RPC поверх streamable HTTP, без нових з�
 
 ## 2. Що вже інтегровано (щоб не пропонувати зроблене)
 
-| Інтеграція                     | Стан                                                                      |
-| ------------------------------ | ------------------------------------------------------------------------- |
-| Monobank open API              | Живе: webhook + backfill (`modules/mono/`)                                |
-| Silpo MCP                      | Живе: чеки, комора, продуктові дані, кошик (`modules/silpo/`)             |
-| ДПС е-чек (`/cashregs` chkAll) | Живе: QR будь-якого фіскального чека → позиції (`finyk/receipts/dpsClient.ts`) + vision-fallback |
-| OFF → USDA → Silpo             | Живе: каскад food-search/barcode                                          |
-| Telegram                       | Живе (`modules/telegram/`)                                                |
+| Інтеграція                     | Стан                                                                                                                             |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| Monobank open API              | Живе: webhook + backfill (`modules/mono/`)                                                                                       |
+| Silpo MCP                      | Живе: чеки, комора, продуктові дані, кошик (`modules/silpo/`)                                                                    |
+| ДПС е-чек (`/cashregs` chkAll) | Живе: QR будь-якого фіскального чека → позиції (`finyk/receipts/dpsClient.ts`) + vision-fallback                                 |
+| OFF → USDA → Silpo             | Живе: каскад food-search/barcode                                                                                                 |
+| Telegram                       | Живе (`modules/telegram/`)                                                                                                       |
 | Privatbank                     | Стек готовий, `PRIVAT_ENABLED=false` — «чекає зовнішнього фактора» ([finyk-канон](../../01-product/model/finyk.md) § Privatbank) |
-| CSV-імпорт трекерів            | Ініціатива 0022 — Proposed, файловий шлях (не API)                        |
+| CSV-імпорт трекерів            | Ініціатива 0022 — Proposed, файловий шлях (не API)                                                                               |
 
 Тобто «чеки будь-якого магазину» — вже НЕ ідея, а зроблена фіча
 (ДПС-реєстр покриває АТБ/Novus/аптеки без жодного їхнього API).
 
 ## 3. Кандидати
 
-| #   | Кандидат                                | Модуль    | Цінність | Складність | Тип             |
-| --- | --------------------------------------- | --------- | -------- | ---------- | --------------- |
-| 1   | **Strava — офіційний MCP + API v3**     | fizruk    | ★★★      | S–M        | офіційний MCP   |
-| 2   | **HealthKit / Health Connect**          | fizruk    | ★★★      | M–L        | нативний шар    |
-| 3   | **Відкритий банкінг НБУ (мультибанк)**  | finyk     | ★★★      | L          | регульований API|
-| 4   | **Sergeant як власний MCP-сервер**      | усі       | ★★☆      | M          | наш MCP         |
-| 5   | **Нова Пошта API 2.0**                  | hub/finyk | ★★☆      | S          | відкритий API   |
-| 6   | **Погода (Open-Meteo)**                 | hub-coach | ★★☆      | S          | відкритий API   |
-| 7   | Google Calendar                         | routine   | ★☆☆      | M          | OAuth API       |
+| #   | Кандидат                               | Модуль    | Цінність | Складність | Тип              |
+| --- | -------------------------------------- | --------- | -------- | ---------- | ---------------- |
+| 1   | **Strava — офіційний MCP + API v3**    | fizruk    | ★★★      | S–M        | офіційний MCP    |
+| 2   | **HealthKit / Health Connect**         | fizruk    | ★★★      | M–L        | нативний шар     |
+| 3   | **Відкритий банкінг НБУ (мультибанк)** | finyk     | ★★★      | L          | регульований API |
+| 4   | **Sergeant як власний MCP-сервер**     | усі       | ★★☆      | M          | наш MCP          |
+| 5   | **Нова Пошта API 2.0**                 | hub/finyk | ★★☆      | S          | відкритий API    |
+| 6   | **Погода (Open-Meteo)**                | hub-coach | ★★☆      | S          | відкритий API    |
+| 7   | Google Calendar                        | routine   | ★☆☆      | M          | OAuth API        |
 
 ### 3.1 Strava — перший «другий MCP» (fizruk)
 
@@ -202,12 +202,13 @@ MCP-клієнт** (JSON-RPC поверх streamable HTTP, без нових з�
 ## 6. Спільні інваріанти для будь-якої нової інтеграції (уроки Silpo)
 
 Плейбук [`onboard-external-api.md`](../../00-start/playbooks/onboard-external-api.md)
-+ перевірене спекою Silpo: kill-switch env-прапорець з першого дня;
-токени — AES-GCM + key ring (`tokenStore`-патерн, single-flight refresh);
-снапшот даних у власному PG; деградація до staleness-банера, ніколи до
-помилки в core-флоу; snapshot-тест зовнішнього контракту в CI;
-privacy-текст затверджується ДО rollout-у за межі founder-акаунта;
-глобальний rate-budget, якщо client_id спільний на всю базу.
+
+- перевірене спекою Silpo: kill-switch env-прапорець з першого дня;
+  токени — AES-GCM + key ring (`tokenStore`-патерн, single-flight refresh);
+  снапшот даних у власному PG; деградація до staleness-банера, ніколи до
+  помилки в core-флоу; snapshot-тест зовнішнього контракту в CI;
+  privacy-текст затверджується ДО rollout-у за межі founder-акаунта;
+  глобальний rate-budget, якщо client_id спільний на всю базу.
 
 ## Джерела
 
