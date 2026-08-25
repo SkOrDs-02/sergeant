@@ -1,8 +1,17 @@
 {
   "$schema": "../governance/schemas/pr-ledger.schema.json",
   "version": 1,
-  "generated_at": "2026-08-07",
+  "generated_at": "2026-08-25",
   "prs": [
+    {
+      "number": 855,
+      "title": "feat(server): виписки XLS/XLSX інших банків + звірений профіль Privat24",
+      "merged_at": "2026-08-25T22:08:24Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": [
+        "docs/90-work/initiatives/0022-import-from-external-trackers.md"
+      ]
+    },
     {
       "number": 689,
       "title": "fix(ci): governance-sync відрізняє живе посилання від навмисно мертвого",
