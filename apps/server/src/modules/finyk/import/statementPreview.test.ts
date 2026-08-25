@@ -481,3 +481,156 @@ describe("statement/preview — файл замість тексту", () => {
     ).rejects.toThrow(/PDF/);
   });
 });
+
+// ───────────── Privat24: справжні заголовки живого експорту ─────────────
+// Заголовки нижче ДОСЛІВНО з реального XLSX «Історія операцій за період»
+// (мобільний Privat24, 2026-08-25) — на ньому й виявилось, що попередній
+// профіль вгадував колонки неправильно («сума в валюті рахунку» замість
+// «картки»). Рядки даних синтетичні: репо публічне, реальна фінансова
+// топологія в нього не комітиться (той самий підхід, що з mono вище).
+
+describe("statement/preview — Privat24 за реальними заголовками", () => {
+  const SERIAL = 46250; // 2026-08-16
+  const HEADERS = [
+    "Дата",
+    "Категорія",
+    "Картка",
+    "Опис операції",
+    "Сума в валюті картки",
+    "Валюта картки",
+    "Сума в валюті транзакції",
+    "Валюта транзакції",
+    "Залишок на кінець періоду",
+    "Валюта залишку",
+  ];
+
+  const realShapeXlsx = makeXlsx({
+    sharedStrings: [
+      "Історія операцій за період 25.07.2026 - 25.08.2026",
+      ...HEADERS,
+      "Супермаркети та продукти",
+      "5168 **** **** 1898",
+      "Сільпо",
+      "UAH",
+      "Цифрові товари",
+      "Apple",
+      "USD",
+      "Зарахування переказу",
+      "від DMYTRO STAKHOV",
+      "Зарахування зі своєї картки",
+      "Зі своєї картки *1524",
+    ],
+    rows: [
+      [{ kind: "shared", index: 0 }],
+      HEADERS.map((_, i) => ({ kind: "shared", index: i + 1 }) as const),
+      [
+        { kind: "date", serial: SERIAL },
+        { kind: "shared", index: 11 },
+        { kind: "shared", index: 12 },
+        { kind: "shared", index: 13 },
+        { kind: "number", value: -747.84 },
+        { kind: "shared", index: 14 },
+        { kind: "number", value: 747.84 },
+        { kind: "shared", index: 14 },
+        { kind: "number", value: 15362.05 },
+        { kind: "shared", index: 14 },
+      ],
+      // Покупка в USD ГРИВНЕВОЮ карткою: «Валюта транзакції» = USD, але
+      // «Валюта картки» = UAH. Фільтр по валюті транзакції викинув би цей
+      // рядок як `not_uah` — саме тому профіль дивиться на картку.
+      [
+        { kind: "date", serial: SERIAL + 1 },
+        { kind: "shared", index: 15 },
+        { kind: "shared", index: 12 },
+        { kind: "shared", index: 16 },
+        { kind: "number", value: -1366.82 },
+        { kind: "shared", index: 14 },
+        { kind: "number", value: 30.48 },
+        { kind: "shared", index: 17 },
+        { kind: "number", value: 20322.8 },
+        { kind: "shared", index: 14 },
+      ],
+      // Дохід: «Сума в валюті картки» несе знак, «в валюті транзакції» —
+      // модуль, тож напрям відновлюється лише з першої.
+      [
+        { kind: "date", serial: SERIAL + 2 },
+        { kind: "shared", index: 18 },
+        { kind: "shared", index: 12 },
+        { kind: "shared", index: 19 },
+        { kind: "number", value: 20000 },
+        { kind: "shared", index: 14 },
+        { kind: "number", value: 20000 },
+        { kind: "shared", index: 14 },
+        { kind: "number", value: 21689.62 },
+        { kind: "shared", index: 14 },
+      ],
+      // Переказ між ВЛАСНИМИ картками: опис слова «переказ» не містить.
+      [
+        { kind: "date", serial: SERIAL + 3 },
+        { kind: "shared", index: 20 },
+        { kind: "shared", index: 12 },
+        { kind: "shared", index: 21 },
+        { kind: "number", value: 6508 },
+        { kind: "shared", index: 14 },
+        { kind: "number", value: 6508 },
+        { kind: "shared", index: 14 },
+        { kind: "number", value: 6518.08 },
+        { kind: "shared", index: 14 },
+      ],
+    ],
+  });
+
+  it("впізнає профіль і читає всі рядки без пропусків", async () => {
+    const res = makeRes();
+    await statementPreviewHandler(
+      makeReq({ file_base64: realShapeXlsx.toString("base64") }),
+      res,
+    );
+
+    const body = res.body as {
+      profile: string;
+      needsMapping: boolean;
+      rows: Array<{
+        date: string;
+        amountKopiykas: number;
+        direction: string;
+        description: string;
+        transferLikely?: boolean;
+      }>;
+      skipped: unknown[];
+    };
+
+    expect(body.profile).toBe("privat24");
+    expect(body.needsMapping).toBe(false);
+    expect(body.skipped).toEqual([]);
+    expect(body.rows).toEqual([
+      {
+        date: "2026-08-16",
+        amountKopiykas: 74784,
+        direction: "expense",
+        description: "Сільпо",
+      },
+      {
+        date: "2026-08-17",
+        amountKopiykas: 136682,
+        direction: "expense",
+        description: "Apple",
+      },
+      {
+        date: "2026-08-18",
+        amountKopiykas: 2_000_000,
+        direction: "income",
+        description: "від DMYTRO STAKHOV",
+      },
+      {
+        date: "2026-08-19",
+        amountKopiykas: 650_800,
+        direction: "income",
+        description: "Зі своєї картки *1524",
+        // Гроші не покидали кишеню — рядок лишається видимим, але без
+        // галочки за замовчуванням.
+        transferLikely: true,
+      },
+    ]);
+  });
+});
