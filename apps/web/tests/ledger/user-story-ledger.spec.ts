@@ -204,8 +204,19 @@ test.describe("user-story ledger browser smoke", () => {
       await mockApi(page, story.auth ?? "user");
       await seedLocalStorage(page, story.storage ?? WARM_STORAGE);
       await page.goto(story.path, { waitUntil: "domcontentloaded" });
+      // `#root > *:not(.sr-only)`, а не `#root > *`: перший прямий нащадок
+      // кореня — це візуально прихований `<SkipLink />` з `AppShell`
+      // (`src/core/app/RootLayout.tsx`), який Playwright вважає ВИДИМИМ
+      // (`sr-only` дає бокс 1×1, а не `display:none` — інакше лінк випав би
+      // з accessibility tree). Локатор-union резолвиться в document order, і
+      // `.first()` чекав саме на нього — тобто чекання завершувалось, щойно
+      // змонтувалась оболонка, ще до того, як маршрут щось відрендерив.
+      // Виняток на `.sr-only` зсуває очікування на реальний вміст маршруту
+      // (`<Outlet/>` рендериться після невидимих гейтів, які віддають `null`).
       await page
-        .locator("main, [role='main'], [data-a11y-root], #root > *")
+        .locator(
+          "main, [role='main'], [data-a11y-root], #root > *:not(.sr-only)",
+        )
         .first()
         .waitFor({ state: "visible", timeout: 15_000 });
 

@@ -1,10 +1,12 @@
 import type { PoolClient } from "pg";
 import type { SyncV2Op } from "../../../http/schemas.js";
+import { MEASUREMENT_BOUNDS } from "@sergeant/shared";
+
 import {
   parseOptionalDate,
   parseRequiredDate,
-  parseOptionalNumber,
-  parseOptionalInt,
+  parseOptionalBoundedNumber,
+  parseOptionalBoundedInt,
   toJsonbParam,
 } from "../syncV2-core.js";
 import type { AppliedStatus } from "../syncV2-types.js";
@@ -153,35 +155,56 @@ export async function applyFizrukMeasurements(
   if (measuredAt === "invalid") {
     return { status: "rejected", reason: "invalid_measured_at" };
   }
-  const weightKg = parseOptionalNumber(row["weight_kg"]);
+  const weightKg = parseOptionalBoundedNumber(
+    row["weight_kg"],
+    MEASUREMENT_BOUNDS.weightKg,
+  );
   if (weightKg === "invalid") {
     return { status: "rejected", reason: "invalid_weight_kg" };
   }
-  const waistCm = parseOptionalNumber(row["waist_cm"]);
+  const waistCm = parseOptionalBoundedNumber(
+    row["waist_cm"],
+    MEASUREMENT_BOUNDS.waistCm,
+  );
   if (waistCm === "invalid") {
     return { status: "rejected", reason: "invalid_waist_cm" };
   }
-  const chestCm = parseOptionalNumber(row["chest_cm"]);
+  const chestCm = parseOptionalBoundedNumber(
+    row["chest_cm"],
+    MEASUREMENT_BOUNDS.chestCm,
+  );
   if (chestCm === "invalid") {
     return { status: "rejected", reason: "invalid_chest_cm" };
   }
-  const hipsCm = parseOptionalNumber(row["hips_cm"]);
+  const hipsCm = parseOptionalBoundedNumber(
+    row["hips_cm"],
+    MEASUREMENT_BOUNDS.hipsCm,
+  );
   if (hipsCm === "invalid") {
     return { status: "rejected", reason: "invalid_hips_cm" };
   }
-  const bicepCm = parseOptionalNumber(row["bicep_cm"]);
+  const bicepCm = parseOptionalBoundedNumber(
+    row["bicep_cm"],
+    MEASUREMENT_BOUNDS.bicepCm,
+  );
   if (bicepCm === "invalid") {
     return { status: "rejected", reason: "invalid_bicep_cm" };
   }
-  const sleepHours = parseOptionalNumber(row["sleep_hours"]);
+  const sleepHours = parseOptionalBoundedNumber(
+    row["sleep_hours"],
+    MEASUREMENT_BOUNDS.sleepHours,
+  );
   if (sleepHours === "invalid") {
     return { status: "rejected", reason: "invalid_sleep_hours" };
   }
-  const energyLevel = parseOptionalInt(row["energy_level"]);
+  const energyLevel = parseOptionalBoundedInt(
+    row["energy_level"],
+    MEASUREMENT_BOUNDS.energyLevel,
+  );
   if (energyLevel === "invalid") {
     return { status: "rejected", reason: "invalid_energy_level" };
   }
-  const mood = parseOptionalInt(row["mood"]);
+  const mood = parseOptionalBoundedInt(row["mood"], MEASUREMENT_BOUNDS.mood);
   if (mood === "invalid") {
     return { status: "rejected", reason: "invalid_mood" };
   }
