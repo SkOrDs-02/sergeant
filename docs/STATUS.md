@@ -1,6 +1,6 @@
 # Sergeant — Панель керування
 
-> **Last touched:** 2026-08-21 by docs:gen-status. **Next review:** 2026-08-28.
+> **Last touched:** 2026-08-25 by docs:gen-status. **Next review:** 2026-09-01.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED, ОКРІМ блоку FOCUS. Редагуй лише між `<!-- FOCUS:START -->` / `<!-- FOCUS:END -->`; решту регенеруй через `pnpm docs:gen-status`. -->
@@ -30,12 +30,12 @@
 - [#3610](https://github.com/Skords-01/Sergeant/pull/3610) — chore(config): per-package eslint configs — PR-31 Phase 2b _(2026-06-16)_
 - [#3611](https://github.com/Skords-01/Sergeant/pull/3611) — fix(web): clear a11y gate _(2026-06-16)_
 
-## 🔵 В роботі — 59 відкритих
+## 🔵 В роботі — 60 відкритих
 
 | Трекер                           | Відкрито |
 | -------------------------------- | -------- |
 | Ініціативи                       | 5        |
-| Планування                       | 19       |
+| Планування                       | 20       |
 | Launch / запуск                  | 12       |
 | Аудити й прожарки                | 18       |
 | Security hardening               | 1        |
