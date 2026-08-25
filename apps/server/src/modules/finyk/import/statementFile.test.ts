@@ -8,7 +8,11 @@ import {
   STATEMENT_MAX_FILE_BYTES,
 } from "./statementFile.js";
 import { makeXlsx, makeZip } from "./__fixtures__/makeXlsx.js";
-import { htmlTableToGrid, looksLikeHtmlTable } from "./htmlTableGrid.js";
+import {
+  HtmlFormatError,
+  htmlTableToGrid,
+  looksLikeHtmlTable,
+} from "./htmlTableGrid.js";
 import { ValidationError } from "../../../obs/errors.js";
 
 /** 2026-08-16 у serial-нумерації Excel (епоха 1899-12-30). */
@@ -178,6 +182,18 @@ describe("gridFromStatementFile — інші формати", () => {
     expect(grid.rows[2]).toEqual(["16.08.2026", "АТБ Маркет", "-1 234,56"]);
   });
 
+  it("HTML, який не піддається чистці, стає зрозумілою відмовою", () => {
+    const html =
+      "<table><tr><td>" +
+      "<sc".repeat(12) +
+      "<script>a</script>" +
+      "ript>x</script>".repeat(12) +
+      "</td></tr></table>";
+    expect(() => gridFromStatementFile(Buffer.from(html, "utf8"))).toThrow(
+      /Не вдалось прочитати таблицю/,
+    );
+  });
+
   it("бінарний .xls (Excel 97) — відмова з інструкцією", () => {
     const ole2 = Buffer.concat([
       Buffer.from([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]),
@@ -294,6 +310,21 @@ describe("htmlTableToGrid — санітизація та colspan", () => {
       `<table><tr><td>справжній</td></tr><tr></tr></table>`,
     );
     expect(grid).toEqual([["справжній"]]);
+  });
+
+  it("вкладеність, що не сходиться за стелю проходів, — відмова", () => {
+    // Кожен прохід відкриває рівно один наступний `<script>`: вирізаний
+    // блок склеює `<sc` з `ript>…</script>`. Сім рівнів чистка ще
+    // добиває, вісім — уже ні, і тоді це відмова, а не квадратичний CPU
+    // на 5-мегабайтному вході.
+    const nest = (n: number) =>
+      "<table><tr><td>" +
+      "<sc".repeat(n) +
+      "<script>a</script>" +
+      "ript>x</script>".repeat(n) +
+      "</td></tr></table>";
+    expect(htmlTableToGrid(nest(7))[0]).toEqual([""]);
+    expect(() => htmlTableToGrid(nest(12))).toThrow(HtmlFormatError);
   });
 
   it("документ без таблиці дає порожню сітку", () => {

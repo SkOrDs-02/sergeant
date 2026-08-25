@@ -27,9 +27,21 @@ export function looksLikeHtmlTable(text: string): boolean {
   return /<table\b/i.test(text.slice(0, 64 * 1024));
 }
 
+/** Скільки разів поспіль дозволено чистити рядок до нерухомої точки.
+ * Реальний банківський експорт стабілізується на ПЕРШОМУ проході; більше
+ * одного треба лише вкладеним тегам, тобто рівно тому випадку, заради
+ * якого цикл і існує. Стеля тут не косметична: без неї скрафчений файл на
+ * 5 МБ (стеля `STATEMENT_MAX_FILE_BYTES`), у якому кожен прохід відкриває
+ * наступний `<script>`, дає квадратичний CPU на серверному запиті
+ * імпорту. */
+const MAX_SANITIZE_PASSES = 8;
+
+/** Вхід не вдалось безпечно розібрати як HTML-таблицю. */
+export class HtmlFormatError extends Error {}
+
 /**
  * Прибирає підрядки за патерном ДО НЕРУХОМОЇ ТОЧКИ — поки рядок не
- * перестане мінятись.
+ * перестане мінятись, але не більше ніж `MAX_SANITIZE_PASSES` разів.
  *
  * Один прохід тут недостатній, і це не теорія: `<scr<script>ipt>` після
  * однієї заміни лишає `<script>`, бо вирізаний шматок склеює краї.
@@ -40,20 +52,26 @@ export function looksLikeHtmlTable(text: string): boolean {
  * колонки. Тож фікс потрібен і для коректності, не лише щоб заспокоїти
  * сканер.
  *
- * Цикл завершується завжди: кожна ітерація або коротшає рядок, або
- * лишає його незмінним (тоді ми виходимо).
+ * Перевищення стелі — це відмова, а не «віддамо що вийшло»: рядок, який
+ * після восьми проходів усе ще містить теги, не є банківською випискою.
  */
 function stripUntilStable(input: string, pattern: RegExp): string {
-  let previous = input;
   let current = input.replace(pattern, "");
-  while (current !== previous) {
-    previous = current;
-    current = current.replace(pattern, "");
+  for (let pass = 1; ; pass += 1) {
+    const next = current.replace(pattern, "");
+    if (next === current) return current;
+    if (pass >= MAX_SANITIZE_PASSES) {
+      throw new HtmlFormatError("HTML: розмітка не піддається чистці");
+    }
+    current = next;
   }
-  return current;
 }
 
 function cellToText(html: string): string {
+  // Тут нерухома точка настає вже на першому проході (`[^>]*` не
+  // переступає через `>`, тож `<`, який пережив заміну, не має жодного
+  // `>` праворуч), але цикл лишається спільним — і як гарантія для
+  // сканера, і щоб дві чистки не розʼїхались.
   const withoutTags = stripUntilStable(html.replace(BR_RE, " "), /<[^>]*>/g);
   return decodeXmlEntities(
     // NBSP з `&nbsp;` вже розгорнутий у пробіл; лишається літеральний
@@ -68,6 +86,9 @@ function cellToText(html: string): string {
  * Витягує всі `<tr>` документа в порядку появи. `colspan` розгортається
  * порожніми клітинками — інакше колонки праворуч від об'єднаної шапки
  * з'їхали б відносно рядків даних.
+ *
+ * Кидає `HtmlFormatError`, якщо чистка розмітки не сходиться за
+ * `MAX_SANITIZE_PASSES` проходів.
  */
 export function htmlTableToGrid(html: string): string[][] {
   // Так само до нерухомої точки: вкладений `<script>` усередині

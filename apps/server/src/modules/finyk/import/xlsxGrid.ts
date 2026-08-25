@@ -61,6 +61,7 @@ export function decodeXmlEntities(s: string): string {
  * одно тягне попередження `security/detect-non-literal-regexp`, а
  * пре-коміт ганяє eslint із `--max-warnings=0`. Пошук іде по межі слова
  * (`<` або пробіл перед іменем), щоб `r` не збігся з хвостом `numFmtId`.
+ * Значення читається і в подвійних, і в одинарних лапках.
  */
 function attr(tag: string, name: string): string | undefined {
   const needle = `${name}=`;
@@ -71,9 +72,13 @@ function attr(tag: string, name: string): string | undefined {
     const before = at === 0 ? "<" : tag[at - 1]!;
     if (before === " " || before === "<") {
       const quote = tag[at + needle.length];
-      if (quote === '"') {
+      // XML дозволяє обидві лапки, і генератори ними користуються:
+      // `<c r='A1' t='inlineStr'>` — валідний XLSX. Читаючи лише
+      // подвійні, ми не бачили б ні `r`, ні `t`, і всі комірки такого
+      // аркуша поїхали б у позиції «наступна вільна».
+      if (quote === '"' || quote === "'") {
         const start = at + needle.length + 1;
-        const end = tag.indexOf('"', start);
+        const end = tag.indexOf(quote, start);
         if (end === -1) return undefined;
         return decodeXmlEntities(tag.slice(start, end));
       }

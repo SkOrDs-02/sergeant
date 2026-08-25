@@ -1,6 +1,10 @@
 import { ValidationError } from "../../../obs/errors.js";
 import { isBlankRow, tokenizeCsv, type CsvDelimiter } from "./csvParser.js";
-import { htmlTableToGrid, looksLikeHtmlTable } from "./htmlTableGrid.js";
+import {
+  HtmlFormatError,
+  htmlTableToGrid,
+  looksLikeHtmlTable,
+} from "./htmlTableGrid.js";
 import { looksLikeZip } from "./zipReader.js";
 import { XlsxFormatError, xlsxToGrid } from "./xlsxGrid.js";
 
@@ -256,7 +260,19 @@ export function gridFromStatementFile(bytes: Buffer): StatementGrid {
   if (!text.trim()) throw new ValidationError("Порожній файл.");
 
   if (looksLikeHtmlTable(text)) {
-    const rows = htmlTableToGrid(text);
+    let rows: string[][];
+    try {
+      rows = htmlTableToGrid(text);
+    } catch (err) {
+      // Єдина причина — чистка розмітки не зійшлась за стелю проходів
+      // (`HtmlFormatError`). Для користувача це той самий випадок «файл
+      // не читається», а не окрема хвороба.
+      throw new ValidationError(
+        err instanceof HtmlFormatError
+          ? "Не вдалось прочитати таблицю у файлі. Завантаж виписку у форматі XLSX або CSV."
+          : "Не вдалось прочитати файл виписки.",
+      );
+    }
     if (rows.length === 0) {
       throw new ValidationError(
         "У файлі немає таблиці з операціями. Завантаж виписку у форматі XLSX або CSV.",
