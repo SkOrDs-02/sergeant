@@ -492,6 +492,83 @@ describe("SilpoReceiptSection", () => {
     });
   });
 
+  describe("«Прикріпити чек» — ручне привʼязування", () => {
+    async function renderConnectedWithoutReceipt() {
+      mockedSyncState.mockResolvedValue({
+        status: "connected",
+        accessTokenExpiresAt: "2026-08-26T10:00:00.000Z",
+        lastSyncAt: "2026-08-25T09:00:00.000Z",
+        receiptsCount: 3,
+      });
+      // Немає чека для цієї транзакції, але є два без пари — рівно стан,
+      // у якому matcher чесно здався.
+      mockedReceipts.mockImplementation((params?: { transactionId?: string }) =>
+        Promise.resolve(
+          params?.transactionId
+            ? { data: [], nextCursor: null }
+            : {
+                data: [
+                  {
+                    ...RECEIPT_SUMMARY,
+                    receiptId: "far",
+                    totalKop: 11_100,
+                    purchasedAt: "2026-07-01T10:00:00.000Z",
+                    transactionId: null,
+                  },
+                  {
+                    ...RECEIPT_SUMMARY,
+                    receiptId: "near",
+                    totalKop: 39_000,
+                    purchasedAt: "2026-08-21T10:00:00.000Z",
+                    transactionId: null,
+                  },
+                ],
+                nextCursor: null,
+              },
+        ),
+      );
+      return renderSection({
+        transactionDescription: "Сільпо",
+        transactionDateIso: "2026-08-21T13:07:00.000Z",
+      });
+    }
+
+    it("не показує CTA на операції, що не схожа на Сільпо", async () => {
+      // Інакше «Прикріпити чек» висіло б у деталях кожної витрати.
+      mockedSyncState.mockResolvedValue({
+        status: "connected",
+        accessTokenExpiresAt: null,
+        lastSyncAt: null,
+        receiptsCount: 3,
+      });
+      mockedReceipts.mockResolvedValue({ data: [], nextCursor: null });
+      renderSection({ transactionDescription: "АЗС WOG" });
+
+      await waitFor(() => expect(mockedSyncState).toHaveBeenCalled());
+      expect(
+        screen.queryByRole("button", { name: "Прикріпити чек" }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("привʼязує обраний чек до операції", async () => {
+      mockedRelink.mockResolvedValue({ ok: true });
+      await renderConnectedWithoutReceipt();
+
+      fireEvent.click(
+        await screen.findByRole("button", { name: "Прикріпити чек" }),
+      );
+
+      // Найближчий за датою — зверху, і в нього ж збігається сума.
+      const options = await screen.findAllByText(/сума збігається/);
+      expect(options.length).toBe(1);
+      fireEvent.click(options[0]!.closest("button")!);
+
+      await waitFor(() =>
+        expect(mockedRelink).toHaveBeenCalledWith("bank-1", "near"),
+      );
+    });
+  });
+
   describe("discoverability CTA for not-yet-connected users", () => {
     it("shows a connect banner when not connected and the description looks like Сільпо", async () => {
       mockedSyncState.mockResolvedValue({

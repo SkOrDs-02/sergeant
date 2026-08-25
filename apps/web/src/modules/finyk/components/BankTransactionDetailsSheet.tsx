@@ -83,6 +83,19 @@ function formatTransactionDate(transaction: Transaction): string {
   return transaction.date || "Дата не вказана";
 }
 
+/**
+ * Дата операції в ISO для пікера «Прикріпити чек» — він сортує чеки за
+ * близькістю до неї. `time` (epoch-секунди) точніший, `date` — запасний
+ * варіант для legacy-блобів, які часу не мають.
+ */
+function transactionIso(transaction: Transaction): string {
+  const milliseconds = Number(transaction.time) * 1000;
+  if (Number.isFinite(milliseconds) && milliseconds > 0) {
+    return new Date(milliseconds).toISOString();
+  }
+  return transaction.date || "";
+}
+
 function getSourceLabel(source: string | undefined): string {
   if (source === "privatbank") return "ПриватБанк";
   if (source === "mono" || source === "monobank") return "Monobank";
@@ -306,6 +319,7 @@ export function BankTransactionDetailsSheet({
             // додатний total у копійках. `Math.round` — лише страховка від
             // не-цілого значення з legacy-блобів.
             transactionAmountKop={Math.round(Math.abs(transaction.amount))}
+            transactionDateIso={transactionIso(transaction)}
             onSplitChange={onSplitChange}
             customCategories={customCategories}
             existingSplitsCount={existingSplits.length}
