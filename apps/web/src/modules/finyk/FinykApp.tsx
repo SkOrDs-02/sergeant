@@ -458,6 +458,8 @@ export default function App({
               ? receiptLinks.getReceiptId(editingManualExpenseId)
               : null
           }
+          txSplits={storage.txSplits}
+          onSplitChange={storage.setSplitTx}
           frequentCategories={frequentCategories}
           frequentMerchants={frequentMerchants}
           customCategories={storage.customCategories}
