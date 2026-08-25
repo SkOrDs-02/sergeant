@@ -145,7 +145,7 @@ export function isBlankRow(row: string[]): boolean {
  */
 export function parseSignedAmountKopiykas(
   raw: string,
-  opts: { decimalComma?: boolean } = {},
+  opts: { decimalComma?: boolean | undefined } = {},
 ): number | null {
   let s = raw.trim();
   if (!s) return null;

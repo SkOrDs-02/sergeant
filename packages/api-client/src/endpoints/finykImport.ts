@@ -77,6 +77,7 @@ export type {
   ImportDirection,
   ImportScreenshotDocType,
   ImportScreenshotDraft,
+  ImportScreenshotDropped,
   ImportScreenshotRow,
   ImportSkipReason,
   ImportSkippedRow,
@@ -93,6 +94,16 @@ export interface FinykImportEndpoints {
    * fall back to `finyk.analyzeReceipt` (v1 single-receipt flow);
    * `"other"` is a 200 with empty `rows`.
    *
+   * When `rows` comes back empty, `draft.dropped` and `draft.truncated`
+   * say WHY — rows the model returned but the server filtered (failed
+   * operations, non-UAH amounts, unreadable date/amount) and whether the
+   * model answer hit its token cap. Both carry neutral defaults when an
+   * older server omits them, so the UI can read them unconditionally.
+   *
+   * Rows carry the same optional `categoryHint` as `previewImportStatement`
+   * — here it can only come from the merchant-keyword layer, since a
+   * screenshot has no category column and no MCC.
+   *
    * `413`/`415` responses use the SAME non-standard envelope as
    * `analyzeReceipt` — see `ImageValidationErrorBody` /
    * `isImageValidationErrorBody` in `./imageValidationError`. `503
@@ -104,9 +115,25 @@ export interface FinykImportEndpoints {
     opts?: Pick<RequestOptions, "signal">,
   ) => Promise<ImportScreenshotAnalyzeResponse>;
   /**
-   * `POST /api/finyk/import/statement/preview` — CSV-only bank-statement
-   * parsing, WITHOUT persisting anything. Discriminated by
-   * `needsMapping`:
+   * `POST /api/finyk/import/statement/preview` — bank-statement parsing,
+   * WITHOUT persisting anything. The body carries EITHER `csv_text`
+   * (already-decoded text) OR `file_base64` (the raw file: XLSX, an
+   * HTML table saved as `.xls`, or a CSV in any encoding — the server
+   * picks the format by magic bytes, so `file_name` is diagnostics only).
+   * Prefer `file_base64`: `File.text()` in the browser always assumes
+   * UTF-8 and mangles a windows-1251 statement before it even leaves the
+   * device, and a spreadsheet has no text form at all. PDF and binary
+   * Excel-97 statements are refused with an actionable message rather
+   * than parsed into zero rows.
+   *
+   * Rows may carry an optional `categoryHint` — a finyk picker category id
+   * the server guessed from the bank's own category column, an MCC, or a
+   * merchant keyword. It is ABSENT when nothing matched, which means "no
+   * evidence" rather than "other": the UI applies its own default then, and
+   * should ignore a hint its picker does not know (custom categories live
+   * client-side, and expense/income chip sets are separate).
+   *
+   * Discriminated by `needsMapping`:
    *   - `false` — `profile` (`"mono" | "privat24" | "custom"`) +
    *     `rows`/`skipped` are populated; `headers`/`sampleRows` are absent.
    *   - `true` — the inverse: `profile: null`, `rows`/`skipped` empty,

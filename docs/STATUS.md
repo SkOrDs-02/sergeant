@@ -30,12 +30,12 @@
 - [#3610](https://github.com/Skords-01/Sergeant/pull/3610) — chore(config): per-package eslint configs — PR-31 Phase 2b _(2026-06-16)_
 - [#3611](https://github.com/Skords-01/Sergeant/pull/3611) — fix(web): clear a11y gate _(2026-06-16)_
 
-## 🔵 В роботі — 60 відкритих
+## 🔵 В роботі — 61 відкритих
 
 | Трекер                           | Відкрито |
 | -------------------------------- | -------- |
 | Ініціативи                       | 6        |
-| Планування                       | 19       |
+| Планування                       | 20       |
 | Launch / запуск                  | 12       |
 | Аудити й прожарки                | 18       |
 | Security hardening               | 1        |

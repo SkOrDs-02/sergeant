@@ -100,7 +100,7 @@ describe("BulkImportSheet — choose stage", () => {
       screen.getByRole("button", { name: /Скрін банкінгу/ }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /CSV-виписка/ }),
+      screen.getByRole("button", { name: /Виписка файлом/ }),
     ).toBeInTheDocument();
     // Бета-фідбек №2 (2026-08-18): «Кілька фото чеків» більше не тут —
     // батч живе в `ReceiptScanSheet` (multiple-пікер).
@@ -262,9 +262,73 @@ describe("BulkImportSheet — screenshot path", () => {
     );
   });
 
+  // Порожній результат мав ОДИН текст на всі причини — саме про це
+  // бета-фідбек 2026-08-25 «ші написав, що не може знайти транзакції».
+  // Три тести нижче фіксують, що кожна причина має власну дію.
+  it("обірвана відповідь моделі радить розбити скрін на частини", async () => {
+    analyzeImportScreenshotMock.mockResolvedValue({
+      draft: {
+        docType: "bank_screenshot",
+        bank: "monobank",
+        rows: [],
+        dropped: { failed: 0, nonUah: 0, unreadable: 0 },
+        truncated: true,
+      },
+    });
+    renderSheet();
+
+    await act(async () => {
+      fireEvent.change(fileInputFor(/скрін банкінгу/i), {
+        target: {
+          files: [
+            new File([new Uint8Array(10)], "s.png", { type: "image/png" }),
+          ],
+        },
+      });
+    });
+
+    await waitFor(() =>
+      expect(screen.getByText(/забагато операцій/i)).toBeInTheDocument(),
+    );
+  });
+
+  it("не-гривневі рядки пояснюються валютою, а не «не бачу транзакцій»", async () => {
+    analyzeImportScreenshotMock.mockResolvedValue({
+      draft: {
+        docType: "bank_screenshot",
+        bank: "monobank",
+        rows: [],
+        dropped: { failed: 0, nonUah: 3, unreadable: 0 },
+        truncated: false,
+      },
+    });
+    renderSheet();
+
+    await act(async () => {
+      fireEvent.change(fileInputFor(/скрін банкінгу/i), {
+        target: {
+          files: [
+            new File([new Uint8Array(10)], "s.png", { type: "image/png" }),
+          ],
+        },
+      });
+    });
+
+    await waitFor(() =>
+      expect(screen.getByText(/не в гривні/i)).toBeInTheDocument(),
+    );
+    expect(screen.getByText(/3 операції/)).toBeInTheDocument();
+  });
+
   it("docType: other shows an unrecognised-screen error", async () => {
     analyzeImportScreenshotMock.mockResolvedValue({
-      draft: { docType: "other", bank: null, rows: [] },
+      draft: {
+        docType: "other",
+        bank: null,
+        rows: [],
+        dropped: { failed: 0, nonUah: 0, unreadable: 0 },
+        truncated: false,
+      },
     });
     renderSheet();
 
@@ -280,7 +344,7 @@ describe("BulkImportSheet — screenshot path", () => {
 
     await waitFor(() =>
       expect(
-        screen.getByText(/Не вдалось розпізнати транзакції/),
+        screen.getByText(/не схоже на екран банківського застосунку/i),
       ).toBeInTheDocument(),
     );
     // Відмова = знову вибір файлу: помилка без шляху далі лишала б людину
@@ -309,7 +373,7 @@ describe("BulkImportSheet — CSV path", () => {
     renderSheet();
 
     await act(async () => {
-      fireEvent.change(fileInputFor(/CSV-виписку/i), {
+      fireEvent.change(fileInputFor(/виписку файлом/i), {
         target: {
           files: [
             new File(["date,amount\n2026-08-01,-250"], "mono.csv", {
@@ -337,7 +401,7 @@ describe("BulkImportSheet — CSV path", () => {
     renderSheet();
 
     await act(async () => {
-      fireEvent.change(fileInputFor(/CSV-виписку/i), {
+      fireEvent.change(fileInputFor(/виписку файлом/i), {
         target: {
           files: [new File(["a,b"], "mono.csv", { type: "text/csv" })],
         },
@@ -393,7 +457,7 @@ describe("BulkImportSheet — CSV path", () => {
     renderSheet();
 
     await act(async () => {
-      fireEvent.change(fileInputFor(/CSV-виписку/i), {
+      fireEvent.change(fileInputFor(/виписку файлом/i), {
         target: {
           files: [new File(["a,b,c"], "unknown.csv", { type: "text/csv" })],
         },
@@ -437,7 +501,7 @@ describe("BulkImportSheet — CSV path", () => {
     renderSheet();
 
     await act(async () => {
-      fireEvent.change(fileInputFor(/CSV-виписку/i), {
+      fireEvent.change(fileInputFor(/виписку файлом/i), {
         target: {
           files: [new File(["a,b,c"], "unknown.csv", { type: "text/csv" })],
         },
@@ -490,7 +554,7 @@ describe("BulkImportSheet — commit + undo", () => {
     });
     const helpers = renderSheet();
     await act(async () => {
-      fireEvent.change(fileInputFor(/CSV-виписку/i), {
+      fireEvent.change(fileInputFor(/виписку файлом/i), {
         target: { files: [new File(["x"], "mono.csv", { type: "text/csv" })] },
       });
     });

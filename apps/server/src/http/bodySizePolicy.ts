@@ -105,9 +105,9 @@ export const BODY_SIZE_POLICY: ReadonlyArray<BodySizeRule> = [
   {
     pathPrefix: "/api/finyk/import/statement/preview",
     kind: "json",
-    limit: "6mb",
+    limit: "10mb",
     reason:
-      "csv_text до 5MB (IMPORT_STATEMENT_MAX_CSV_BYTES) + JSON-конверт; дефолтні 128KB різали б реальні виписки до схеми (ревʼю PR #818)",
+      "csv_text до 5MB (IMPORT_STATEMENT_MAX_CSV_BYTES) АБО file_base64 — той самий 5MB-файл у base64 (×1.37) + JSON-конверт; 6mb різало б XLSX-виписку на межі ліміту ще в bodyParser",
   },
   {
     pathPrefix: "/api/finyk/import/commit",

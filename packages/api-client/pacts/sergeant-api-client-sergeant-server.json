@@ -1772,6 +1772,7 @@
             "rows": [
               {
                 "amountKopiykas": 15000,
+                "categoryHint": "food",
                 "confidence": 0.9,
                 "date": "2026-01-15",
                 "description": "Сільпо",
@@ -1847,6 +1848,47 @@
       }
     },
     {
+      "description": "a POST /api/v1/finyk/import/screenshot/analyze request (truncated model answer)",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001; vision answer hit the model token cap"
+        }
+      ],
+      "request": {
+        "body": {
+          "image_base64": "tttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt",
+          "mime_type": "image/png"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/finyk/import/screenshot/analyze"
+      },
+      "response": {
+        "body": {
+          "draft": {
+            "bank": "monobank",
+            "docType": "bank_screenshot",
+            "dropped": {
+              "failed": 0,
+              "nonUah": 2,
+              "unreadable": 1
+            },
+            "rows": [],
+            "truncated": true
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
       "description": "a POST /api/v1/finyk/import/statement/preview request (mono autoprofile)",
       "providerStates": [
         {
@@ -1872,6 +1914,7 @@
           "rows": [
             {
               "amountKopiykas": 84750,
+              "categoryHint": "food",
               "date": "2026-01-15",
               "description": "Сільпо",
               "direction": "expense"
@@ -1892,6 +1935,53 @@
             }
           ],
           "skipped": []
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/v1/finyk/import/statement/preview request (raw XLSX file)",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001; uploaded XLSX matches the privat24 profile"
+        }
+      ],
+      "request": {
+        "body": {
+          "file_base64": "UEsDBBQAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "file_name": "vypyska.xlsx"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/finyk/import/statement/preview"
+      },
+      "response": {
+        "body": {
+          "needsMapping": false,
+          "profile": "privat24",
+          "rows": [
+            {
+              "amountKopiykas": 12345,
+              "categoryHint": "food",
+              "date": "2026-08-16",
+              "description": "АТБ-Маркет",
+              "direction": "expense"
+            }
+          ],
+          "skipped": [
+            {
+              "line": 6,
+              "reason": "not_uah"
+            }
+          ]
         },
         "headers": {
           "Content-Type": "application/json",
