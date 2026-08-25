@@ -33,3 +33,24 @@ describe("isLikelyOwnTransfer", () => {
     expect(isLikelyOwnTransfer(d)).toBe(false);
   });
 });
+
+describe("Privat24 — власний переказ без слова «переказ»", () => {
+  // Звірено з реальним XLSX 2026-08-25: опис несе лише напрям і маску
+  // картки, а «Зарахування зі своєї картки» живе в окремій колонці
+  // «Категорія», якої детектор не бачить.
+  it("ловить «Зі своєї картки *1524»", () => {
+    expect(isLikelyOwnTransfer("Зі своєї картки *1524")).toBe(true);
+  });
+
+  it("ловить зворотний бік «На свою картку *1524»", () => {
+    expect(isLikelyOwnTransfer("На свою картку *1524")).toBe(true);
+  });
+
+  it("НЕ чіпає переказ від іншої людини", () => {
+    expect(isLikelyOwnTransfer("від DMYTRO STAKHOV")).toBe(false);
+  });
+
+  it("НЕ чіпає покупку зі словом «картка» в описі", () => {
+    expect(isLikelyOwnTransfer("Оплата картки лояльності Сільпо")).toBe(false);
+  });
+});

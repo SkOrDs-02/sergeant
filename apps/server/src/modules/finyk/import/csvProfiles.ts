@@ -1,22 +1,20 @@
 import type { ImportColumnMapping, ImportDateFormat } from "@sergeant/shared";
 
 /**
- * Автопрофілі відомих банківських CSV-виписок (mono, Privat24) +
- * резолюція клієнтського `mapping` для невідомих форматів.
+ * Автопрофілі відомих банківських виписок (mono, Privat24) + резолюція
+ * клієнтського `mapping` для невідомих форматів.
  *
- * AI-DANGER: РЕАЛЬНИХ фікстур цих експортів немає (research не підтвердив
- * точну структуру — той самий гейт, що `docs/90-work/initiatives/
- * 0022-import-from-external-trackers.md` § План змін → Фаза 3: "Privat24 —
- * формат виписки звірити окремо"). Заголовки нижче — обґрунтована
- * реконструкція за загальновідомим форматом експорту (mono: "Виписка" з
- * мобільного/веб-кабінету; Privat24: "Виписка" з особистого кабінету), НЕ
- * підтверджена реальним файлом — той самий підхід, що
- * `receipts/dpsXml.ts` для ДПС XML. Детекція навмисно зроблена ТОЛЕРАНТНОЮ
- * (підрядок, не точний збіг усього заголовка) — стійкіша до дрейфу
- * форматулювання банку, ніж крихкий exact-match. Якщо перший реальний
- * файл розійдеться — правити ЛИШЕ `HEADER_FRAGMENTS` нижче, решта
- * (tokenizer, amount/date-парсинг) від конкретних назв колонок не
- * залежить.
+ * Обидва профілі ЗВІРЕНІ з реальними файлами: mono — live-прогін
+ * 2026-08-18 (255/255 рядків, 0 skip), Privat24 — XLSX «Історія операцій
+ * за період» з мобільного застосунку, 2026-08-25. Самі виписки в репо НЕ
+ * лежать (реальні фінансові дані, репо публічне) — у тестах синтетичні
+ * рядки під СПРАВЖНІМИ заголовками.
+ *
+ * Детекція навмисно ТОЛЕРАНТНА (підрядок, не точний збіг усього
+ * заголовка) — стійкіша до дрейфу форматулювання банку, ніж крихкий
+ * exact-match. Якщо новий експорт розійдеться — правити ЛИШЕ фрагменти
+ * заголовків нижче: решта (tokenizer, XLSX-ридер, amount/date-парсинг)
+ * від конкретних назв колонок не залежить.
  */
 
 export type CsvProfileId = "mono" | "privat24";
@@ -43,8 +41,34 @@ export interface ResolvedColumnMapping {
    * `unparsed_date` (знайдено на тесті: жорсткий дефолт "DD.MM.YYYY" тут
    * раніше глушив авто-детект `parseCalendarDateKey`, коли клієнт узагалі
    * не передав `dateFormat`). */
+  /** Колонка з ВЛАСНОЮ категорією банку (Privat24 «Категорія»), якщо
+   * профіль її знає. `null` — банк категорію не друкує. Живить
+   * `categoryHint.ts`; на розбір суми/дати не впливає. */
+  categoryColIndex: number | null;
+  /** Колонка MCC (ISO 18245) — є в mono («МСС»). Другий за надійністю
+   * доказ категорії після власної розмітки банку. */
+  mccColIndex: number | null;
   dateFormat: ImportDateFormat | undefined;
-  decimalComma: boolean;
+  /** `undefined` — автодетект десяткового роздільника на кожне значення
+   * окремо. Так само, як `dateFormat` вище: жорстка підказка описує
+   * ДРУКОВАНИЙ формат банку і на канонічних числах з типізованих клітинок
+   * XLSX (`-1234.56`) дала б протилежний результат, тому
+   * `statementPreview.ts` знімає її для сіток `sourceKind: "sheet"`. */
+  decimalComma: boolean | undefined;
+}
+
+/**
+ * Знімає з мапи жорсткі підказки формату дати й десяткового роздільника,
+ * лишаючи автодетект. Викликається для сіток, які прийшли з ТИПІЗОВАНИХ
+ * клітинок (XLSX): там дата й сума вже канонічні (`2026-08-16`,
+ * `-1234.56`), і підказка «Privat24 друкує DD.MM.YYYY і кому» зробила б із
+ * валідного рядка `unparsed_date` та зіпсувала б суму в 100 разів.
+ * Див. `statementFile.ts` § `StatementSourceKind`.
+ */
+export function withAutodetectedFormats(
+  mapping: ResolvedColumnMapping,
+): ResolvedColumnMapping {
+  return { ...mapping, dateFormat: undefined, decimalComma: undefined };
 }
 
 export interface DetectedProfile {
@@ -61,6 +85,30 @@ function findColumnIndex(
   fragment: string,
 ): number {
   return normalizedHeaders.findIndex((h) => h.includes(fragment));
+}
+
+/** Перший фрагмент зі списку, який знайшовся — за пріоритетом у списку, а
+ * не за порядком колонок у файлі: виписка може нести обидва варіанти
+ * підпису, і треба саме той, що заміряний на живому файлі. */
+/** `findColumnIndex`, але `null` замість `-1` — для опційних колонок,
+ * відсутність яких не є помилкою профілю. */
+function findColumnIndexOrNull(
+  normalizedHeaders: string[],
+  fragment: string,
+): number | null {
+  const idx = findColumnIndex(normalizedHeaders, fragment);
+  return idx === -1 ? null : idx;
+}
+
+function findFirstColumnIndex(
+  normalizedHeaders: string[],
+  fragments: readonly string[],
+): number {
+  for (const fragment of fragments) {
+    const idx = findColumnIndex(normalizedHeaders, fragment);
+    if (idx !== -1) return idx;
+  }
+  return -1;
 }
 
 /**
@@ -98,28 +146,51 @@ function detectMonoProfile(
     amountColIndex,
     descriptionColIndex,
     currencyColIndex: null,
+    // mono власної категорії не друкує, але друкує MCC — і це той самий
+    // каталог, яким категоризується mono-вебхук у проді.
+    categoryColIndex: null,
+    mccColIndex: findColumnIndexOrNull(normalizedHeaders, "мсс"),
     dateFormat: "DD.MM.YYYY",
     decimalComma: false,
   };
 }
 
 /**
- * Privat24: "Виписка" з особистого кабінету — semicolon-delimited (типово
- * для excel-орієнтованого укр. локалю), дата `DD.MM.YYYY`, сума в
- * УКРАЇНСЬКІЙ excel-конвенції (кома-десятковий). "Сума в валюті рахунку" —
- * колонка суми РАХУНКУ (не операції), тому саме вона годиться як
- * amount-джерело для мультивалютних клієнтів; поруч є "Валюта рахунку" —
- * єдина колонка, де перевірка на UAH семантично коректна (рахунок сам по
- * собі може бути відкритий у USD/EUR, на відміну від mono-картки вище).
+ * Privat24 — «Історія операцій за період» (звірено з реальним XLSX,
+ * 2026-08-25). Фактичні колонки:
+ *
+ *   Дата | Категорія | Картка | Опис операції | Сума в валюті картки |
+ *   Валюта картки | Сума в валюті транзакції | Валюта транзакції |
+ *   Залишок на кінець періоду | Валюта залишку
+ *
+ * Три речі, які видно лише на живому файлі і які визначають вибір колонок:
+ *
+ * 1. **Сума береться з «валюті КАРТКИ», не «валюті транзакції».** Лише
+ *    перша несе ЗНАК (`-141.4` витрата, `20000` дохід); друга — модуль
+ *    (`141.4`), тобто напрям із неї не відновити взагалі.
+ * 2. **Валютний фільтр — теж по КАРТЦІ.** У виписці є рядки Apple з
+ *    «Валюта транзакції = USD» при «Валюта картки = UAH»: це звичайні
+ *    покупки гривневою карткою, і фільтр по валюті ТРАНЗАКЦІЇ викинув би
+ *    їх як `not_uah`. Колонка валюти картки лишається осмисленою, бо сама
+ *    картка може бути відкрита в USD/EUR.
+ * 3. **Десятковий роздільник — крапка, не кома** (`-1366.82`), попри
+ *    український локаль файлу. Але жорстко його НЕ форсуємо: заміряний
+ *    формат — XLSX, а який роздільник у CSV-експорті того ж банку,
+ *    доказів немає. Автодетект `parseSignedAmountKopiykas` однаково
+ *    правильно читає і `-141.4`, і `-141,4`.
+ *
+ * Фрагмент «рахунку» лишений запасним варіантом: виписка по РАХУНКУ (не
+ * картці) в кабінеті підписує колонки саме так, і живого файлу такого
+ * типу поки не бачили.
  */
 function detectPrivat24Profile(
   normalizedHeaders: string[],
 ): ResolvedColumnMapping | null {
   const dateColIndex = findColumnIndex(normalizedHeaders, "дата");
-  const amountColIndex = findColumnIndex(
-    normalizedHeaders,
+  const amountColIndex = findFirstColumnIndex(normalizedHeaders, [
+    "сума в валюті картки",
     "сума в валюті рахунку",
-  );
+  ]);
   const descriptionColIndex = findColumnIndex(
     normalizedHeaders,
     "опис операції",
@@ -131,22 +202,31 @@ function detectPrivat24Profile(
   ) {
     return null;
   }
-  const currencyColIndex = findColumnIndex(normalizedHeaders, "валюта рахунку");
+  const currencyColIndex = findFirstColumnIndex(normalizedHeaders, [
+    "валюта картки",
+    "валюта рахунку",
+  ]);
   return {
     dateColIndex,
     amountColIndex,
     descriptionColIndex,
     currencyColIndex: currencyColIndex === -1 ? null : currencyColIndex,
+    // «Категорія» — власна розмітка банку, найнадійніший доказ категорії
+    // (`categoryHint.ts`). У живому XLSX 2026-08-25 вона є в кожному рядку.
+    categoryColIndex: findColumnIndexOrNull(normalizedHeaders, "категорія"),
+    mccColIndex: null,
     dateFormat: "DD.MM.YYYY",
-    decimalComma: true,
+    // `undefined` = автодетект, свідомо (див. п.3 у докблоці вище).
+    decimalComma: undefined,
   };
 }
 
 /**
- * Пробує mono, потім Privat24 (порядок нейтральний — сигнатури не
- * перетинаються: mono вимагає "сума в валюті картки", Privat24 — "сума в
- * валюті рахунку", жоден заголовок не задовольняє обидва фрагменти
- * одночасно).
+ * Пробує mono, потім Privat24. Розрізняє їх колонка ОПИСУ, а не суми:
+ * після звірки з реальним Privat24-XLSX (2026-08-25) виявилось, що обидва
+ * банки підписують суму «Сума в валюті картки». Але mono вимагає «Деталі
+ * операції», Privat24 — «Опис операції», і жоден із двох файлів не несе
+ * обидва підписи одночасно, тож сигнатури лишаються неперетинними.
  */
 export function detectCsvProfile(headers: string[]): DetectedProfile | null {
   const normalized = headers.map(normalizeHeader);
@@ -195,11 +275,20 @@ export function resolveCustomMapping(
     amountColIndex,
     descriptionColIndex,
     currencyColIndex: null,
+    // Контракт `ImportColumnMapping` колонок категорії/MCC не має —
+    // довільний CSV ними не розмічений. Підказка для таких файлів
+    // лишається на третьому шарі `categoryHint.ts` (ключові слова опису).
+    categoryColIndex: null,
+    mccColIndex: null,
     // НЕ дефолтити на "DD.MM.YYYY" — без явного `mapping.dateFormat`
     // лишаємо `undefined`, щоб `parseCalendarDateKey` автодетектив формат
     // на кожен рядок окремо (див. docstring `ResolvedColumnMapping.dateFormat`).
     dateFormat: mapping.dateFormat,
-    decimalComma: mapping.decimalComma ?? false,
+    // Так само НЕ дефолтимо на `false`: без явного вибору користувача
+    // автодетект `parseSignedAmountKopiykas` читає і "1 234,56", і
+    // "-1234.56" правильно, а форсована крапка мовчки перетворювала
+    // українську кому на роздільник тисяч ("12,50" → 1250 грн).
+    decimalComma: mapping.decimalComma,
   };
 }
 

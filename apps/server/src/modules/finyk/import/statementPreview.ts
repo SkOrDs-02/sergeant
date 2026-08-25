@@ -10,18 +10,23 @@ import type { ImportSkippedRow, ImportStatementRow } from "@sergeant/shared";
 import { isLikelyOwnTransfer } from "./transferDetect.js";
 import { markDuplicateLikely } from "./duplicateDetect.js";
 import {
-  detectDelimiter,
   isBlankRow,
   parseCalendarDateKey,
   parseSignedAmountKopiykas,
-  tokenizeCsv,
 } from "./csvParser.js";
 import {
   detectCsvProfile,
   isUahCurrencyValue,
   resolveCustomMapping,
+  withAutodetectedFormats,
   type ResolvedColumnMapping,
 } from "./csvProfiles.js";
+import { resolveCategoryHint } from "./categoryHint.js";
+import {
+  gridFromCsvText,
+  gridFromStatementFile,
+  type StatementGrid,
+} from "./statementFile.js";
 
 /** Spec § Фаза 2 «Автопрофілі + column-mapper»: "preview перших 5 рядків". */
 const SAMPLE_ROWS_LIMIT = 5;
@@ -41,12 +46,17 @@ interface ClassifiedRows {
 function classifyRows(
   dataRows: string[][],
   mapping: ResolvedColumnMapping,
+  headerRowIndex = 0,
 ): ClassifiedRows {
   const rows: ImportStatementRow[] = [];
   const skipped: ImportSkippedRow[] = [];
 
   dataRows.forEach((row, idx) => {
-    const line = idx + 2; // 1-based; рядок 1 — заголовок (spec: line = токенізований номер рядка).
+    // 1-based номер у ФАЙЛІ, а не в зрізі даних: заголовок таблиці не
+    // завжди перший рядок (преамбула «Виписка за період…» у XLSX/HTML —
+    // `statementFile.ts#locateHeaderRow`), і без цього зсуву «пропущено
+    // рядок 4» вказувало б людині не туди.
+    const line = headerRowIndex + idx + 2;
 
     if (isBlankRow(row)) {
       skipped.push({ line, reason: "empty" });
@@ -92,14 +102,29 @@ function classifyRows(
     }
 
     const description = descriptionRaw.trim();
+    const direction = signed < 0 ? "expense" : "income";
+    // Категорія-підказка: власна колонка банку → MCC → ключові слова
+    // опису (`categoryHint.ts`). `null` = доказів немає, поле не йде в
+    // відповідь узагалі, і клієнт підставляє свій дефолт.
+    const categoryHint = resolveCategoryHint({
+      direction,
+      ...(mapping.categoryColIndex !== null
+        ? { bankCategory: row[mapping.categoryColIndex] ?? "" }
+        : {}),
+      ...(mapping.mccColIndex !== null
+        ? { mcc: row[mapping.mccColIndex] ?? "" }
+        : {}),
+      description,
+    });
     rows.push({
       date,
       amountKopiykas: Math.abs(signed),
-      direction: signed < 0 ? "expense" : "income",
+      direction,
       description,
       // Лише true, без false — поле опційне у схемі, відсутність = «не
       // схожий на переказ» (див. transferLikelySchema у @sergeant/shared).
       ...(isLikelyOwnTransfer(description) ? { transferLikely: true } : {}),
+      ...(categoryHint ? { categoryHint } : {}),
     });
   });
 
@@ -107,14 +132,70 @@ function classifyRows(
 }
 
 /**
- * POST /api/finyk/import/statement/preview — CSV-only (XLS/XLSX/PDF
- * відкладено, спека § Фаза 2б/2в) парсинг банківської виписки. БЕЗ запису
- * в БД — commit відбувається окремим `POST /api/finyk/import/commit`.
+ * Кап на кількість data-рядків preview (ревʼю PR #818): байтовий ліміт
+ * входу не обмежує кількість рядків, а відповідь несе обʼєкт на кожен.
+ * Річна виписка — тисячі рядків; 10k — межа з запасом, далі просимо
+ * розбити файл.
+ */
+const MAX_PREVIEW_DATA_ROWS = 10_000;
+
+type WithSessionUser = Request & { user?: { id: string } };
+
+/**
+ * Base64 → байти. `Buffer.from(..., "base64")` мовчки ковтає сміття
+ * (невалідні символи просто ігноруються), тож валідність перевіряємо
+ * round-trip-ом довжини — інакше «файл» із випадкового тексту дійшов би
+ * до парсера і зламався б там уже незрозумілою помилкою.
+ */
+function decodeBase64File(b64: string): Buffer {
+  const cleaned = b64.replace(/\s+/g, "");
+  if (!/^[A-Za-z0-9+/]*={0,2}$/.test(cleaned) || cleaned.length % 4 !== 0) {
+    throw new ValidationError("Не вдалося прочитати файл.");
+  }
+  return Buffer.from(cleaned, "base64");
+}
+
+/** Сітка + її межі: спільний вхід для обох гілок контракту запиту. */
+function buildGrid(input: {
+  csvText: string | undefined;
+  fileBase64: string | undefined;
+}): StatementGrid {
+  if (input.fileBase64 !== undefined) {
+    return gridFromStatementFile(decodeBase64File(input.fileBase64));
+  }
+  const text = input.csvText ?? "";
+  // Дешевий pre-check ДО токенізації (раунд 5 ревʼю): токенізованих
+  // рядків не може бути більше, ніж `\n`+1, тож свідомо завеликий вхід
+  // відкидається без оплати повного парсингу 5MB. NB: closing-quote
+  // переноси всередині полів роблять цю оцінку ВЕРХНЬОЮ межею — фінальна
+  // перевірка по dataRows.length нижче лишається авторитетною.
+  let newlineCount = 0;
+  for (let i = 0; i < text.length; i += 1) {
+    if (text.charCodeAt(i) === 10) newlineCount += 1;
+  }
+  if (newlineCount > MAX_PREVIEW_DATA_ROWS) {
+    throw new ValidationError(
+      `Виписка завелика: понад ${MAX_PREVIEW_DATA_ROWS} рядків. Розбий файл на менші періоди.`,
+    );
+  }
+  return gridFromCsvText(text);
+}
+
+/**
+ * POST /api/finyk/import/statement/preview — парсинг банківської виписки
+ * БЕЗ запису в БД (commit — окремий `POST /api/finyk/import/commit`).
  *
- * Потік: детект розділювача → токенізація → автопрофіль (mono/Privat24)
- * за заголовком; якщо не збігся — клієнтський `mapping` (якщо даний і
- * резолвиться на реальні заголовки) → `profile: 'custom'`; інакше —
- * `needsMapping: true` + `headers`/`sampleRows` для ручного column-mapper.
+ * Приймає або готовий текст (`csv_text`), або сам файл (`file_base64`):
+ * XLSX, HTML-таблицю під виглядом `.xls` і текстовий CSV у будь-якому
+ * кодуванні — детект за magic-байтами в `statementFile.ts`, не за
+ * розширенням. PDF і бінарний Excel 97 віддають зрозумілу відмову з
+ * інструкцією, а не порожній результат.
+ *
+ * Потік: файл/текст → сітка + рядок-заголовок → автопрофіль
+ * (mono/Privat24) за заголовком; якщо не збігся — клієнтський `mapping`
+ * (якщо даний і резолвиться на реальні заголовки) → `profile: 'custom'`;
+ * інакше — `needsMapping: true` + `headers`/`sampleRows` для ручного
+ * column-mapper.
  *
  * Автопрофіль МАЄ пріоритет над клієнтським `mapping`, коли обидва
  * присутні: якщо заголовки одного разу впізнані як mono/Privat24, довіра
@@ -123,49 +204,19 @@ function classifyRows(
  * попередньому виклику — це defensive-порядок для повторного виклику з
  * застарілим тілом, не очікуваний UX-шлях).
  */
-/**
- * Кап на кількість data-рядків preview (ревʼю PR #818): байтовий ліміт
- * csv_text не обмежує кількість рядків, а відповідь несе обʼєкт на кожен.
- * Річна виписка — тисячі рядків; 10k — межа з запасом, далі просимо
- * розбити файл.
- */
-const MAX_PREVIEW_DATA_ROWS = 10_000;
-
-type WithSessionUser = Request & { user?: { id: string } };
-
 export default async function statementPreviewHandler(
   req: Request,
   res: Response,
 ): Promise<void> {
   const userId = (req as WithSessionUser).user!.id;
-  const { csv_text, mapping } = parseBody(
+  const { csv_text, file_base64, mapping } = parseBody(
     ImportStatementPreviewRequestSchema,
     req,
   );
 
-  const firstNewlineIdx = csv_text.indexOf("\n");
-  const headerLine =
-    firstNewlineIdx === -1 ? csv_text : csv_text.slice(0, firstNewlineIdx);
-  const delimiter = detectDelimiter(headerLine);
-
-  // Дешевий pre-check ДО токенізації (раунд 5 ревʼю): токенізованих
-  // рядків не може бути більше, ніж `\n`+1, тож свідомо завеликий вхід
-  // відкидається без оплати повного парсингу 5MB. NB: closing-quote
-  // переноси всередині полів роблять цю оцінку ВЕРХНЬОЮ межею — фінальна
-  // перевірка по dataRows.length нижче лишається авторитетною.
-  let newlineCount = 0;
-  for (let i = 0; i < csv_text.length; i += 1) {
-    if (csv_text.charCodeAt(i) === 10) newlineCount += 1;
-  }
-  if (newlineCount > MAX_PREVIEW_DATA_ROWS) {
-    throw new ValidationError(
-      `Виписка завелика: понад ${MAX_PREVIEW_DATA_ROWS} рядків. Розбий файл на менші періоди.`,
-    );
-  }
-
-  const allRows = tokenizeCsv(csv_text, delimiter);
-  const headerRow = allRows[0] ?? [];
-  const dataRows = allRows.slice(1);
+  const grid = buildGrid({ csvText: csv_text, fileBase64: file_base64 });
+  const headerRow = grid.rows[grid.headerRowIndex] ?? [];
+  const dataRows = grid.rows.slice(grid.headerRowIndex + 1);
   const headers = headerRow.map((h) => h.trim());
 
   if (dataRows.length > MAX_PREVIEW_DATA_ROWS) {
@@ -176,7 +227,18 @@ export default async function statementPreviewHandler(
 
   const autodetected = detectCsvProfile(headers);
   if (autodetected) {
-    const { rows, skipped } = classifyRows(dataRows, autodetected.mapping);
+    // Сітка з ТИПІЗОВАНИХ клітинок XLSX уже несе канонічні дату й суму,
+    // тож друковані підказки профілю тут шкодять, а не допомагають
+    // (`csvProfiles.ts#withAutodetectedFormats`).
+    const profileMapping =
+      grid.sourceKind === "sheet"
+        ? withAutodetectedFormats(autodetected.mapping)
+        : autodetected.mapping;
+    const { rows, skipped } = classifyRows(
+      dataRows,
+      profileMapping,
+      grid.headerRowIndex,
+    );
     res.status(200).json(
       ImportStatementPreviewResponseSchema.parse({
         profile: autodetected.profile,
@@ -194,7 +256,11 @@ export default async function statementPreviewHandler(
   if (mapping) {
     const resolved = resolveCustomMapping(headers, mapping);
     if (resolved) {
-      const { rows, skipped } = classifyRows(dataRows, resolved);
+      const { rows, skipped } = classifyRows(
+        dataRows,
+        resolved,
+        grid.headerRowIndex,
+      );
       res.status(200).json(
         ImportStatementPreviewResponseSchema.parse({
           profile: "custom",

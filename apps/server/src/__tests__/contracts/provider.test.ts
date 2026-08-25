@@ -24,7 +24,11 @@
 // finding B2 / migration 116 — three extra `/api/v1/me/preferences`
 // interactions: `null` / `[]` / ordered array), and the receipt-scan +
 // bulk-import consumer expansion (2026-08-17 — 14 interactions across 9
-// new `/api/v1/finyk/{receipts,import}/*` routes).
+// new `/api/v1/finyk/{receipts,import}/*` routes), plus the
+// other-bank-statement expansion (2026-08-25 — 2 interactions on ALREADY
+// covered routes, no new route: `statement/preview` accepting the raw
+// file (`file_base64`, XLSX/HTML-as-`.xls`/CSV in any encoding) and
+// `screenshot/analyze` explaining an EMPTY draft via `dropped`/`truncated`).
 // Of those, 11 routes are fully-verified here via supertest replay against
 // `createApp()`:
 //
@@ -264,10 +268,13 @@ afterAll(() => {
 const pact = loadPact();
 
 describe("Pact provider replay — consumer=sergeant-api-client, provider=sergeant-server", () => {
-  it("pact file has 73 expected consumer interactions across 49 routes", () => {
+  it("pact file has 75 expected consumer interactions across 49 routes", () => {
     expect(pact.consumer.name).toBe("sergeant-api-client");
     expect(pact.provider.name).toBe("sergeant-server");
-    expect(pact.interactions).toHaveLength(73);
+    // 75, не 73: +2 інтеракції 2026-08-25 на ВЖЕ покритих маршрутах
+    // (файлова гілка `statement/preview` і порожній draft
+    // `screenshot/analyze` із причиною) — `expectedRoutes` нижче не росте.
+    expect(pact.interactions).toHaveLength(75);
     const expectedRoutes = new Set([
       // PR-42 baseline (5)
       "GET /api/v1/me",

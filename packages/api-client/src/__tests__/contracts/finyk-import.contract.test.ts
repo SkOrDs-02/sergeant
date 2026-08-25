@@ -101,6 +101,9 @@ describe(
                   direction: "expense",
                   description: "Сільпо",
                   confidence: 0.9,
+                  // A screenshot carries no category column, so the hint
+                  // comes from the merchant keyword layer only.
+                  categoryHint: "food",
                 },
                 {
                   date: "2026-01-16",
@@ -157,6 +160,72 @@ describe(
           expect(out.draft.rows[2]!.transferLikely).toBe(true);
           expect(out.draft.rows[0]!.duplicateLikely).toBeUndefined();
           expect(out.draft.rows[3]!.duplicateLikely).toBe(true);
+          expect(out.draft.rows[0]!.categoryHint).toBe("food");
+          expect(out.draft.rows[1]!.categoryHint).toBeUndefined();
+          // `dropped`/`truncated` навмисно ВІДСУТНІ у тілі вище: web і
+          // server деплояться окремо, тож клієнт мусить пережити
+          // відповідь ще не оновленого сервера. Zod `.default()` дає
+          // нейтральні значення замість помилки розбору.
+          expect(out.draft.dropped).toEqual({
+            failed: 0,
+            nonUah: 0,
+            unreadable: 0,
+          });
+          expect(out.draft.truncated).toBe(false);
+        });
+    });
+
+    it("returns an empty draft with the reason when the model answer was truncated", async () => {
+      await pact
+        .addInteraction()
+        .given(
+          "authenticated user-pact-001; vision answer hit the model token cap",
+        )
+        .uponReceiving(
+          "a POST /api/v1/finyk/import/screenshot/analyze request (truncated model answer)",
+        )
+        .withRequest(
+          "POST",
+          "/api/v1/finyk/import/screenshot/analyze",
+          (req) => {
+            req.headers({
+              accept: "application/json",
+              "content-type": "application/json",
+            });
+            req.jsonBody({
+              image_base64: "t".repeat(200),
+              mime_type: "image/png",
+            });
+          },
+        )
+        .willRespondWith(200, (res) => {
+          res.headers({ "content-type": "application/json" });
+          res.jsonBody({
+            draft: {
+              docType: "bank_screenshot",
+              bank: "monobank",
+              rows: [],
+              // Разом ці два поля відповідають на питання, на яке
+              // порожній `rows` сам по собі відповісти не міг: чому
+              // порожньо. UI показує різний текст для «обірвалось»,
+              // «усі рядки не в гривні» і «нічого не побачив».
+              dropped: { failed: 0, nonUah: 2, unreadable: 1 },
+              truncated: true,
+            },
+          });
+        })
+        .executeTest(async (mockServer) => {
+          const http = createHttpClient({ baseUrl: mockServer.url });
+          const imports = createFinykImportEndpoints(http);
+          const out = await imports.analyzeImportScreenshot({
+            image_base64: "t".repeat(200),
+            mime_type: "image/png",
+          });
+
+          expect(out.draft.rows).toEqual([]);
+          expect(out.draft.truncated).toBe(true);
+          expect(out.draft.dropped.nonUah).toBe(2);
+          expect(out.draft.dropped.unreadable).toBe(1);
         });
     });
 
@@ -273,6 +342,12 @@ describe(
                 amountKopiykas: 84750,
                 direction: "expense",
                 description: "Сільпо",
+                // Optional server-side category guess (import/categoryHint.ts)
+                // — an id from the finyk picker, present only when the bank's
+                // own category column, an MCC, or a merchant keyword actually
+                // matched. ABSENT on the rows below: that is "no evidence",
+                // NOT "other" — the client then applies its own default.
+                categoryHint: "food",
               },
               {
                 date: "2026-01-16",
@@ -314,6 +389,10 @@ describe(
           expect(out.rows[1]!.transferLikely).toBe(true);
           expect(out.rows[0]!.duplicateLikely).toBeUndefined();
           expect(out.rows[2]!.duplicateLikely).toBe(true);
+          expect(out.rows[0]!.categoryHint).toBe("food");
+          // Both branches of the optional field are locked by this one
+          // interaction — absent means "no evidence", not "other".
+          expect(out.rows[1]!.categoryHint).toBeUndefined();
         });
     });
 
@@ -369,6 +448,86 @@ describe(
           ]);
           expect(out.sampleRows).toEqual([["2026-01-15", "-100.00", "Test"]]);
           expect(out.rows).toEqual([]);
+        });
+    });
+
+    it("accepts the raw file (XLSX) instead of pre-read text", async () => {
+      // Privat24 hands out the statement as a spreadsheet, so the
+      // text-only branch of this endpoint could never serve it. The
+      // request carries the file verbatim — the server decides the format
+      // by magic bytes, so `file_name` is diagnostics only.
+      //
+      // A STUB payload, not a real workbook — the same deliberate choice
+      // as `OVERSIZED_IMAGE_STUB` above and for the same reason: a Pact
+      // mock is declarative, it never parses the body, and inlining a
+      // real ~2 kB XLSX would bake those bytes into the committed pact
+      // artifact for zero verification value. What this interaction locks
+      // is the REQUEST SHAPE (`file_base64` + `file_name` instead of
+      // `csv_text`) and the response contract. Real XLSX parsing —
+      // ZIP -> sharedStrings -> styles -> serial dates -> profile — is
+      // verified against an actual byte stream in the server unit tests
+      // (`apps/server/src/modules/finyk/import/{xlsxGrid,statementFile,
+      // statementPreview}.test.ts`, fixture `__fixtures__/makeXlsx.ts`).
+      // Padded to a valid base64 length so the body stays decodable.
+      const fileBase64 = `UEsDBBQAAAAIA${"A".repeat(51)}`;
+
+      await pact
+        .addInteraction()
+        .given(
+          "authenticated user-pact-001; uploaded XLSX matches the privat24 profile",
+        )
+        .uponReceiving(
+          "a POST /api/v1/finyk/import/statement/preview request (raw XLSX file)",
+        )
+        .withRequest(
+          "POST",
+          "/api/v1/finyk/import/statement/preview",
+          (req) => {
+            req.headers({
+              accept: "application/json",
+              "content-type": "application/json",
+            });
+            req.jsonBody({
+              file_base64: fileBase64,
+              file_name: "vypyska.xlsx",
+            });
+          },
+        )
+        .willRespondWith(200, (res) => {
+          res.headers({ "content-type": "application/json" });
+          res.jsonBody({
+            profile: "privat24",
+            needsMapping: false,
+            rows: [
+              {
+                date: "2026-08-16",
+                amountKopiykas: 12345,
+                direction: "expense",
+                description: "АТБ-Маркет",
+                // Privat24 ships its own «Категорія» column, so a
+                // spreadsheet row arrives already categorised.
+                categoryHint: "food",
+              },
+            ],
+            // `line` is the PHYSICAL row in the file: a spreadsheet
+            // statement starts with a preamble, so the header is not row 1.
+            skipped: [{ line: 6, reason: "not_uah" }],
+          });
+        })
+        .executeTest(async (mockServer) => {
+          const http = createHttpClient({ baseUrl: mockServer.url });
+          const imports = createFinykImportEndpoints(http);
+          const out = await imports.previewImportStatement({
+            file_base64: fileBase64,
+            file_name: "vypyska.xlsx",
+          });
+
+          expect(out.profile).toBe("privat24");
+          expect(out.needsMapping).toBe(false);
+          expect(out.rows).toHaveLength(1);
+          expect(typeof out.rows[0]!.amountKopiykas).toBe("number");
+          expect(out.rows[0]!.categoryHint).toBe("food");
+          expect(out.skipped[0]!.line).toBe(6);
         });
     });
   },
