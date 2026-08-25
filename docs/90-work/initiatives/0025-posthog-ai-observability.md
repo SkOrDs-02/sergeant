@@ -8,7 +8,7 @@
 > **ETA:** Фаза 1 ≈ 0.5 спринту; Фаза 2 ≈ 0.5 спринту; Фаза 3 — після рішень власника
 > **Sources:**
 >
-> - Розвідка екосистеми 2026-08-25 (ця сесія): PostHog переіменував LLM Analytics на AI Observability, додав evals на live-трафіку (LLM-as-a-judge / Hog / sentiment), anomaly alerts і кластеризацію трейсів; перші 100k AI-івентів/міс безкоштовні, окремий білінг від product analytics.
+> - Розвідка екосистеми 2026-08-25 (ця сесія): PostHog перейменував LLM Analytics на AI Observability, додав evals на live-трафіку (LLM-as-a-judge / Hog / sentiment), anomaly alerts і кластеризацію трейсів; перші 100k AI-івентів/міс безкоштовні, окремий білінг від product analytics.
 > - Доки: [AI Observability](https://posthog.com/docs/ai-observability), [manual capture](https://posthog.com/docs/ai-observability/installation/manual-capture), [privacy mode](https://posthog.com/docs/ai-observability/privacy-mode), [AI Evals](https://posthog.com/docs/ai-evals).
 > - Код: [`apps/server/src/lib/anthropic.ts`](../../../apps/server/src/lib/anthropic.ts) (центральний fetch-клієнт, `recordUsage`/`recordStreamUsage`), [`apps/server/src/lib/anthropicUsageStore.ts`](../../../apps/server/src/lib/anthropicUsageStore.ts) (DB-ledger `ai_usage_daily`, ініціатива 0019), [`apps/server/src/lib/llm/provider.ts`](../../../apps/server/src/lib/llm/provider.ts), [`apps/server/src/modules/chat/chatStream.ts`](../../../apps/server/src/modules/chat/chatStream.ts).
 
