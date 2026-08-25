@@ -103,23 +103,24 @@ async function loadCandidateTransactions(
            WHERE l.user_id = t.user_id AND l.transaction_id = t.mono_tx_id
         )
       UNION ALL
-     SELECT m.data_json->>id AS "id",
-            (-ROUND((m.data_json->>amount)::numeric * 100))::bigint AS "amountKop",
+     SELECT m.data_json->>'id' AS "id",
+            (-ROUND((m.data_json->>'amount')::numeric * 100))::bigint AS "amountKop",
             -- Дата без часу: беремо полудень, щоб добове вікно matcher-а не
             -- залежало від того, в який бік зсуває північ UTC↔Kyiv.
-            EXTRACT(EPOCH FROM ((m.data_json->>date)::date + TIME 12:00))::bigint AS "timeSeconds",
+            EXTRACT(EPOCH FROM ((m.data_json->>'date')::date + TIME '12:00'))::bigint AS "timeSeconds",
             NULL::int AS "mcc",
-            m.data_json->>description AS "description",
+            m.data_json->>'description' AS "description",
             NULL::text AS "receiptId"
        FROM finyk_manual_expenses m
       WHERE m.user_id = $1
-        AND COALESCE(m.data_json->>kind, expense) = expense
-        AND (m.data_json->>date)::date >= ($2::timestamptz)::date
-        AND (m.data_json->>date)::date <= ($3::timestamptz)::date
+        AND m.deleted_at IS NULL
+        AND COALESCE(m.data_json->>'kind', 'expense') = 'expense'
+        AND (m.data_json->>'date')::date >= ($2::timestamptz)::date
+        AND (m.data_json->>'date')::date <= ($3::timestamptz)::date
         AND NOT EXISTS (
           SELECT 1 FROM silpo_tx_receipt_links l
            WHERE l.user_id = m.user_id
-             AND l.transaction_id = m.data_json->>id
+             AND l.transaction_id = m.data_json->>'id'
         )`,
     [userId, new Date(windowStartMs), new Date(windowEndMs)],
     { op: "silpo_candidate_transactions_select" },
