@@ -33,12 +33,17 @@
 `2026-07-21-design-audit.md` і стадії циклу 6 лишаються в корені, доки stage 3 не
 закрито.
 
-Станом на 2026-08-05 в активній зоні Active-аудити: `2026-07-31-legal-docs-beta-readiness.md`,
+Станом на 2026-08-25 в активній зоні Active-аудити: `2026-07-31-legal-docs-beta-readiness.md`,
 `web-qa-pre-beta.md`, `security-comprehensive-2026-08-04.md`, `ai-abuse-2026-08-05.md`,
+`ai-pipeline-2026-08-05.md`, `ai-testing-2026-08-25.md`,
 `2026-08-04-global-qa-findings.md`, `2026-08-04-test-coverage-depth-audit.md`,
 `2026-08-05-orphaned-code-audit.md`, `2026-08-05-lost-commits-audit.md`,
 `2026-08-05-external-critique-surface.md`; решта — довідкові
 артефакти, а виконувані залишки дедупліковані в planning backlog.
+
+> Єдине джерело істини щодо статусів — таблиця вище і [`docs/open-work.md`](../../open-work.md)
+> (генерується `pnpm docs:gen-open-work`). Цей абзац — навігаційне зведення;
+> якщо він розійшовся з таблицею, права таблиця.
 
 ## Архів (зведення)
 
