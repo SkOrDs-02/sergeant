@@ -9,7 +9,7 @@ Daily brief — згенеровано з [`open-work.md`](./open-work.md) + fre
 
 ## Топ-7 на сьогодні
 
-Sorted: `blocked` items first, далі явні `agent-ready`, потім за `mtime` desc (свіже = warm context).
+Sorted: `blocked` items first, далі явні `agent-ready`, всередині bucket-а — за шляхом (детерміновано для CI `--check`).
 
 - [`90-work/initiatives/0025-posthog-ai-observability.md`](./90-work/initiatives/0025-posthog-ai-observability.md) — 0025 — PostHog AI Observability для AI-шару (traces + evals) → **agent-ready** _(Ініціативи)_
 - [`90-work/planning/specs/anonymous-local-first-persistence.md`](./90-work/planning/specs/anonymous-local-first-persistence.md) — Спека: персистентність даних незалогіненого користувача → **agent-ready** _(Планування)_

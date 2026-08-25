@@ -9,7 +9,7 @@
 // Sections of `today.md`:
 //   1. Top items — up to N actionable documents with `Agent-ready: yes` or a
 //      `Phase X next` / `Stage X pending` / `Phase X blocked` marker, sorted
-//      by readiness and file mtime descending.
+//      by readiness, then by path (deterministic — see pickPriorityItems).
 //   2. Overdue review — documents whose `Next review:` date is in the past.
 //   3. WIP warnings — per-tracker count vs limits, surfaced only when at
 //      least one tracker is at soft or hard.
@@ -90,7 +90,7 @@ export function extractNextPhase(status) {
  * For a list of open-work entries (already produced by `collectOpenWork`),
  * pull the ones that carry a `Phase/Stage X next/pending/...` marker or an
  * explicit `Agent-ready: yes` header.
- * Each kept entry is decorated with `{ priorityPhase, priorityKind, mtimeMs }`
+ * Each kept entry is decorated with `{ priorityPhase, priorityKind }`
  * for downstream sorting.
  */
 export function pickPriorityItems(report, repoRoot = REPO_ROOT) {
@@ -99,9 +99,8 @@ export function pickPriorityItems(report, repoRoot = REPO_ROOT) {
     for (const e of entries) {
       const sig = extractNextPhase(e.rawStatus);
       if (!sig && e.agentReady !== "yes") continue;
-      let mtimeMs = 0;
       try {
-        mtimeMs = statSync(resolve(repoRoot, e.relPath)).mtimeMs;
+        statSync(resolve(repoRoot, e.relPath));
       } catch {
         // file vanished between collect and stat — skip silently
         continue;
@@ -111,19 +110,20 @@ export function pickPriorityItems(report, repoRoot = REPO_ROOT) {
         ...e,
         priorityPhase: sig?.phase ?? null,
         priorityKind: sig?.kind ?? "agent-ready",
-        mtimeMs,
       });
     }
   }
   // `blocked` sorts above `next/pending/in progress` because unblocking
-  // is usually the constraint. Within the same kind bucket, freshest
-  // file mtime wins (recently touched = warm context).
+  // is usually the constraint. Within the same kind bucket, sort by path:
+  // fs mtime (the previous key) is checkout-time in CI, so `--check` went
+  // red whenever a bucket held 2+ items — the committed order (local
+  // mtimes) never matched the CI regeneration (PR #857).
   const kindRank = { blocked: 0, "agent-ready": 1 };
   out.sort((a, b) => {
     const ka = kindRank[a.priorityKind] ?? 2;
     const kb = kindRank[b.priorityKind] ?? 2;
     if (ka !== kb) return ka - kb;
-    return b.mtimeMs - a.mtimeMs;
+    return a.relPath < b.relPath ? -1 : a.relPath > b.relPath ? 1 : 0;
   });
   return out.slice(0, TOP_N);
 }
@@ -223,7 +223,7 @@ function render({ priority, overdue, wipRows }) {
     );
   } else {
     lines.push(
-      "Sorted: `blocked` items first, далі явні `agent-ready`, потім за `mtime` desc (свіже = warm context).",
+      "Sorted: `blocked` items first, далі явні `agent-ready`, всередині bucket-а — за шляхом (детерміновано для CI `--check`).",
     );
     lines.push("");
     for (const item of priority) lines.push(fmtPriorityItem(item));
