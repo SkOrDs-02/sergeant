@@ -1952,7 +1952,7 @@
       ],
       "request": {
         "body": {
-          "file_base64": "UEsDBBQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "file_base64": "UEsDBBQAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
           "file_name": "vypyska.xlsx"
         },
         "headers": {

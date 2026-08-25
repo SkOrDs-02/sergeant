@@ -456,7 +456,20 @@ describe(
       // text-only branch of this endpoint could never serve it. The
       // request carries the file verbatim — the server decides the format
       // by magic bytes, so `file_name` is diagnostics only.
-      const fileBase64 = "UEsDBBQ" + "A".repeat(64);
+      //
+      // A STUB payload, not a real workbook — the same deliberate choice
+      // as `OVERSIZED_IMAGE_STUB` above and for the same reason: a Pact
+      // mock is declarative, it never parses the body, and inlining a
+      // real ~2 kB XLSX would bake those bytes into the committed pact
+      // artifact for zero verification value. What this interaction locks
+      // is the REQUEST SHAPE (`file_base64` + `file_name` instead of
+      // `csv_text`) and the response contract. Real XLSX parsing —
+      // ZIP -> sharedStrings -> styles -> serial dates -> profile — is
+      // verified against an actual byte stream in the server unit tests
+      // (`apps/server/src/modules/finyk/import/{xlsxGrid,statementFile,
+      // statementPreview}.test.ts`, fixture `__fixtures__/makeXlsx.ts`).
+      // Padded to a valid base64 length so the body stays decodable.
+      const fileBase64 = `UEsDBBQAAAAIA${"A".repeat(51)}`;
 
       await pact
         .addInteraction()

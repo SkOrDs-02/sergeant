@@ -5,8 +5,10 @@ import {
   gridFromCsvText,
   gridFromStatementFile,
   locateHeaderRow,
+  STATEMENT_MAX_FILE_BYTES,
 } from "./statementFile.js";
 import { makeXlsx, makeZip } from "./__fixtures__/makeXlsx.js";
+import { htmlTableToGrid, looksLikeHtmlTable } from "./htmlTableGrid.js";
 import { ValidationError } from "../../../obs/errors.js";
 
 /** 2026-08-16 у serial-нумерації Excel (епоха 1899-12-30). */
@@ -231,5 +233,107 @@ describe("gridFromCsvText", () => {
     const grid = gridFromCsvText("Дата,Сума,Опис\n16.08.2026,-10.00,АТБ\n");
     expect(grid).toMatchObject({ sourceKind: "csv", headerRowIndex: 0 });
     expect(grid.rows).toHaveLength(2);
+  });
+});
+
+// ─────────── HTML-таблиця: очищення тегів і зсув колонок ────────────────
+
+describe("htmlTableToGrid — санітизація та colspan", () => {
+  it("вкладений <script> не переживає чистку", () => {
+    // Один прохід `<script>…</script>` з лінивим тілом зупиняється на
+    // ПЕРШОМУ `</script>` і лишає зовнішній тег — саме про це CodeQL
+    // «Incomplete multi-character sanitization». Чистка до нерухомої
+    // точки прибирає обидва рівні.
+    const grid = htmlTableToGrid(
+      `<table><tr><td>Сільпо<script><script>alert(1)</script></script></td></tr></table>`,
+    );
+    expect(grid[0]?.[0]).not.toContain("script");
+    expect(grid[0]?.[0]).toBe("Сільпо");
+  });
+
+  it("розірваний тег не лишає по собі «<script»", () => {
+    const grid = htmlTableToGrid(
+      `<table><tr><td>АТБ<scr<script>ipt>alert(1)</script></td></tr></table>`,
+    );
+    // Хвіст `<scr` лишається як звичайний текст — це не тег і розбору
+    // колонок не псує; важливо, що працездатного `<script` немає.
+    expect(grid[0]?.[0]).not.toContain("<script");
+  });
+
+  it("прибирає вміст <script>/<style> цілком", () => {
+    const html =
+      `<table><style>td{color:red}</style><tr><td>Сільпо</td>` +
+      `<td><script>var x=1</script>-100</td></tr></table>`;
+    expect(htmlTableToGrid(html)[0]).toEqual(["Сільпо", "-100"]);
+  });
+
+  it("розгортає colspan у подвійних, одинарних лапках і без лапок", () => {
+    const grid = htmlTableToGrid(
+      `<table>` +
+        `<tr><td colspan="2">A</td><td>B</td></tr>` +
+        `<tr><td colspan='2'>C</td><td>D</td></tr>` +
+        `<tr><td colspan=2>E</td><td>F</td></tr>` +
+        `</table>`,
+    );
+    // Без підтримки одинарних лапок другий рядок з'їхав би на колонку.
+    expect(grid).toEqual([
+      ["A", "", "B"],
+      ["C", "", "D"],
+      ["E", "", "F"],
+    ]);
+  });
+
+  it("<br> стає пробілом, а не склеює слова", () => {
+    expect(
+      htmlTableToGrid(`<table><tr><td>АТБ<br/>Маркет</td></tr></table>`)[0],
+    ).toEqual(["АТБ Маркет"]);
+  });
+
+  it("рядок без власних клітинок у сітку не потрапляє", () => {
+    const grid = htmlTableToGrid(
+      `<table><tr><td>справжній</td></tr><tr></tr></table>`,
+    );
+    expect(grid).toEqual([["справжній"]]);
+  });
+
+  it("документ без таблиці дає порожню сітку", () => {
+    expect(htmlTableToGrid("<html><body><p>нічого</p></body></html>")).toEqual(
+      [],
+    );
+  });
+});
+
+describe("looksLikeHtmlTable", () => {
+  it("шукає <table> лише в початку файлу", () => {
+    expect(looksLikeHtmlTable("<html><table>")).toBe(true);
+    expect(looksLikeHtmlTable("Дата;Сума\n01.01.2026;-10")).toBe(false);
+  });
+});
+
+describe("gridFromStatementFile — межі входу", () => {
+  it("порожній буфер", () => {
+    expect(() => gridFromStatementFile(Buffer.alloc(0))).toThrow(
+      /Порожній файл/,
+    );
+  });
+
+  it("файл понад 5 МБ відкидається до розбору", () => {
+    expect(() =>
+      gridFromStatementFile(Buffer.alloc(STATEMENT_MAX_FILE_BYTES + 1)),
+    ).toThrow(/завеликий/);
+  });
+
+  it("файл з самих пробілів — теж порожній", () => {
+    expect(() =>
+      gridFromStatementFile(Buffer.from("   \n\t ", "utf8")),
+    ).toThrow(/Порожній файл/);
+  });
+
+  it("HTML без жодного рядка таблиці — зрозуміла відмова", () => {
+    expect(() =>
+      gridFromStatementFile(
+        Buffer.from("<html><table></table></html>", "utf8"),
+      ),
+    ).toThrow(/немає таблиці з операціями/);
   });
 });

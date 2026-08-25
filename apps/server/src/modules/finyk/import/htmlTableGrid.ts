@@ -27,14 +27,38 @@ export function looksLikeHtmlTable(text: string): boolean {
   return /<table\b/i.test(text.slice(0, 64 * 1024));
 }
 
+/**
+ * Прибирає підрядки за патерном ДО НЕРУХОМОЇ ТОЧКИ — поки рядок не
+ * перестане мінятись.
+ *
+ * Один прохід тут недостатній, і це не теорія: `<scr<script>ipt>` після
+ * однієї заміни лишає `<script>`, бо вирізаний шматок склеює краї.
+ * Саме на це вказує CodeQL «Incomplete multi-character sanitization»
+ * (2 high на цьому файлі, PR #855). У нашому випадку витягнутий текст
+ * ніколи не рендериться — він іде в комірку сітки, — але тег, що пережив
+ * чистку, псує РОЗБІР: залишковий `<td>` всередині значення зсуває
+ * колонки. Тож фікс потрібен і для коректності, не лише щоб заспокоїти
+ * сканер.
+ *
+ * Цикл завершується завжди: кожна ітерація або коротшає рядок, або
+ * лишає його незмінним (тоді ми виходимо).
+ */
+function stripUntilStable(input: string, pattern: RegExp): string {
+  let previous = input;
+  let current = input.replace(pattern, "");
+  while (current !== previous) {
+    previous = current;
+    current = current.replace(pattern, "");
+  }
+  return current;
+}
+
 function cellToText(html: string): string {
+  const withoutTags = stripUntilStable(html.replace(BR_RE, " "), /<[^>]*>/g);
   return decodeXmlEntities(
-    html
-      .replace(BR_RE, " ")
-      .replace(/<[^>]*>/g, "")
-      // NBSP з `&nbsp;` вже розгорнутий у пробіл; лишається літеральний
-      // U+00A0, яким банки розділяють тисячі.
-      .replace(/\u00A0/g, " "),
+    // NBSP з `&nbsp;` вже розгорнутий у пробіл; лишається літеральний
+    // U+00A0, яким банки розділяють тисячі.
+    withoutTags.replace(/\u00A0/g, " "),
   )
     .replace(/\s+/g, " ")
     .trim();
@@ -46,7 +70,9 @@ function cellToText(html: string): string {
  * з'їхали б відносно рядків даних.
  */
 export function htmlTableToGrid(html: string): string[][] {
-  const cleaned = html.replace(SCRIPT_STYLE_RE, "");
+  // Так само до нерухомої точки: вкладений `<script>` усередині
+  // `<script>` пережив би один прохід (див. `stripUntilStable`).
+  const cleaned = stripUntilStable(html, SCRIPT_STYLE_RE);
   const rows: string[][] = [];
   let trMatch: RegExpExecArray | null;
   TR_RE.lastIndex = 0;
@@ -59,7 +85,13 @@ export function htmlTableToGrid(html: string): string[][] {
     while ((cellMatch = CELL_RE.exec(body)) !== null) {
       const attrs = cellMatch[2] ?? "";
       cells.push(cellToText(cellMatch[3] ?? ""));
-      const span = Number(/\bcolspan\s*=\s*"?(\d+)"?/i.exec(attrs)?.[1] ?? "1");
+      // HTML дозволяє і подвійні, і одинарні лапки, і зовсім без них
+      // (`colspan='3'` трапляється в експортах). Без одинарних лапок
+      // атрибут не читався, порожні клітинки не додавались — і всі
+      // колонки праворуч від об'єднаної шапки з'їжджали.
+      const span = Number(
+        /\bcolspan\s*=\s*["']?(\d+)["']?/i.exec(attrs)?.[1] ?? "1",
+      );
       for (let i = 1; i < span && i < 64; i += 1) cells.push("");
     }
     // Рядок-обгортка вкладеної таблиці не має власних `<td>` на своєму

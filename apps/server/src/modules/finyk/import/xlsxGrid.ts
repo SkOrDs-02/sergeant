@@ -145,7 +145,12 @@ function parseDateStyleFlags(zip: ZipEntries): boolean[] {
   const xml = bytes.toString("utf8");
 
   const customDateIds = new Set<number>();
-  const numFmtRe = /<numFmt\s[^>]*\/>/g;
+  // І самозакривний `<numFmt .../>`, і парний `<numFmt ...></numFmt>`:
+  // Excel і перевірений Privat24-експорт пишуть перший варіант, але інший
+  // генератор із другим лишив би `customDateIds` порожнім — і датові
+  // клітинки з КАСТОМНИМ форматом приїхали б Excel-серіалом, який
+  // `statementPreview` класифікує як `unparsed_date`.
+  const numFmtRe = /<numFmt\s[^>]*?(?:\/>|>[\s\S]*?<\/numFmt>)/g;
   let m: RegExpExecArray | null;
   while ((m = numFmtRe.exec(xml)) !== null) {
     const id = Number(attr(m[0], "numFmtId"));
@@ -263,19 +268,26 @@ function cellText(
 
 function parseSheet(xml: string, ctx: SheetReadContext): string[][] {
   const rows: string[][] = [];
-  const rowRe = /<row(?:\s[^>]*)?>([\s\S]*?)<\/row>|<row\s[^>]*\/>/g;
+  // САМОЗАКРИВНА альтернатива йде ПЕРШОЮ, і це не косметика: у
+  // `<row r="1"/><row r="2">…</row>` парна альтернатива вміє з'їсти
+  // `/` через `[^>]*` і проковтнути обидва рядки як один. Регексп
+  // пробує альтернативи зліва направо, тож порядок і є фіксом.
+  const rowRe = /<row(?:\s[^>]*)?\/>|<row(?:\s[^>]*)?>([\s\S]*?)<\/row>/g;
   let rowMatch: RegExpExecArray | null;
 
   while ((rowMatch = rowRe.exec(xml)) !== null) {
     const body = rowMatch[1] ?? "";
     const cells: string[] = [];
-    const cellRe = /<c(\s[^>]*)?>([\s\S]*?)<\/c>|<c(\s[^>]*)?\/>/g;
+    // Той самий порядок альтернатив, що й для `<row>` вище: інакше
+    // `<c r="A1"/><c r="B1">…</c>` читається як ОДНА клітинка, і всі
+    // наступні колонки рядка зсуваються вліво (знайдено юніт-тестом).
+    const cellRe = /<c(\s[^>]*)?\/>|<c(\s[^>]*)?>([\s\S]*?)<\/c>/g;
     let cellMatch: RegExpExecArray | null;
     let autoIndex = 0;
 
     while ((cellMatch = cellRe.exec(body)) !== null) {
-      const tagAttrs = cellMatch[1] ?? cellMatch[3] ?? "";
-      const inner = cellMatch[2] ?? "";
+      const tagAttrs = cellMatch[1] ?? cellMatch[2] ?? "";
+      const inner = cellMatch[3] ?? "";
       const ref = attr(`<c${tagAttrs}>`, "r");
       // `<c>` без `r` легальний — тоді колонка йде по порядку. З `r`
       // порожні клітинки в файлі просто відсутні, і без цього зсуву
