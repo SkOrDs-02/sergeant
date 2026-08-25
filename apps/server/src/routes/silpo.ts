@@ -42,13 +42,17 @@ import { parseBody } from "../http/validate.js";
  * where the flow allows — OAuth redirect handshake is new here (Monobank
  * uses a static personal token, no browser round-trip).
  *
- * Every handler is gated by `requireSession()` (registered on the router
- * below) AND `assertSilpoEnabled` (kill switch — spec § Рішення дизайну,
+ * Every handler is gated by `assertSilpoEnabled` (kill switch — spec § Рішення дизайну,
  * "`SILPO_ENABLED` як kill switch"). `SILPO_ENABLED=false` лишається
  * дефолтом: обидва продуктові гейти знято 2026-08-18 (оферта — як
  * операційний ризик, приватність — текст затверджено), але вмикання в
  * проді — окремий ops-крок із власним DCR-клієнтом
  * (`docs/00-start/playbooks/enable-silpo-integration.md`).
+ *
+ * Сесію вимагають УСІ роути, крім `GET /api/silpo/callback`: він
+ * реєструється до router-level `requireSession()`, бо приземляється на
+ * PUBLIC_API_BASE_URL, де куки сесії (домен BETTER_AUTH_URL) немає ні в
+ * кого. Контекст користувача там приходить зі `state`.
  *
  * Every route also carries its own `rateLimitExpress` bucket (CodeQL
  * "missing rate limiting" finding, review round) — unlike `finyk`/
@@ -144,16 +148,6 @@ export async function callbackHandler(
   res: Response,
 ): Promise<void> {
   if (!assertSilpoEnabled(res)) return;
-  // НЕ `getUserId` (як решта роутів): це top-level навігація браузера з
-  // auth.silpo.ua, а не fetch. Сесія Sergeant могла протухнути, поки людина
-  // була на екрані згоди — тоді 401-JSON віддавався б їй прямо у вкладку
-  // сирим тілом. Усі інші відмови цього хендлера йдуть редіректом на
-  // налаштування, ця має поводитись так само.
-  const userId = (req as AuthedRequest).user?.id;
-  if (!userId) {
-    redirectToSettings(res, "error", "session_expired");
-    return;
-  }
 
   const {
     code,
@@ -180,13 +174,38 @@ export async function callbackHandler(
   }
 
   const pending = await consumeAuthorizationState(state);
-  if (!pending || pending.userId !== userId) {
-    // Unknown/expired/replayed state, or a state issued for a different
-    // session — never trust it, even though `state` itself is a
-    // high-entropy nonce (defense in depth against a stolen callback URL).
+  if (!pending) {
+    // Unknown, expired or already-consumed state — the only hard gate here.
     redirectToSettings(res, "error", "invalid_state");
     return;
   }
+
+  // `state` — НОСІЙ контексту, не просто nonce: `user_id` лежить у
+  // `silpo_oauth_state` (міграція 126), записаний на `/connect`, де сесія
+  // ще була. Саме тому цей роут навмисно НЕ під `requireSession()`.
+  //
+  // Причина не в тому, що сесія «може протухнути за 10 хвилин». Колбек
+  // приземляється на PUBLIC_API_BASE_URL (api.167-233-98-92.sslip.io), а
+  // сесія Better Auth живе у контексті BETTER_AUTH_URL
+  // (sergeant.vercel.app) — це РІЗНІ сайти, і Vercel не проксіює /api/*
+  // на бекенд. Тобто на колбеку сесії немає НІКОЛИ й ні в кого: вимога
+  // `requireSession()` тут робила фічу непрацездатною для всіх, віддаючи
+  // 401-JSON у вкладку замість екрана налаштувань.
+  //
+  // Безпеку тримає сам `state`: 24 байти ентропії, TTL 10 хвилин,
+  // згорає одним атомарним `DELETE ... RETURNING` (тобто replay
+  // неможливий), і приходить він лише на наш redirect_uri по TLS.
+  // Звірки з `req.user` тут свідомо НЕМАЄ — і не тому, що «лінь». Роут
+  // стоїть до `requireSession()`, тож `req.user` не заповнюється ніколи, і
+  // будь-яка така умова була б мертвим кодом, що вдає захист.
+  //
+  // Класична вимога «state має бути привʼязаний до сесії» захищає від
+  // account-linking CSRF: зловмисник підсовує жертві СВІЙ `code`, щоб його
+  // акаунт провайдера прилип до її профілю. Тут ця атака не працює за
+  // побудовою: власника визначає `state`, а не браузер, який приніс запит.
+  // Підсунутий чужий `state` привʼяже токени до акаунта того, хто цей
+  // `state` замовив, — тобто до самого зловмисника, а не до жертви.
+  const userId = pending.userId;
 
   const ring = silpoKeyRing();
   if (!ring) {
@@ -457,27 +476,29 @@ export async function cartGetHandler(
 export function createSilpoRouter(): Router {
   const r = Router();
   r.use("/api/silpo", setModule("finyk"));
-  r.use("/api/silpo", requireSession());
-
-  r.get(
-    "/api/silpo/connect",
-    rateLimitExpress({ key: "api:silpo:connect", limit: 10, windowMs: 60_000 }),
-    connectHandler,
-  );
+  // `/callback` реєструється ДО router-level `requireSession()` — порядок
+  // тут і є механізмом: Express виконує middleware у порядку реєстрації,
+  // тож усе нижче `r.use(requireSession())` вимагає сесію, а цей роут — ні
+  // (чому саме — розписано в `callbackHandler`).
+  //
+  // Той самий bucket/limit, що й у `connect`: це ДРУГА половина одного
+  // authorization_code round-trip, частіше за `connect` він не викликається.
   r.get(
     "/api/silpo/callback",
-    // Same bucket/limit as `connect` — this is the OTHER half of the same
-    // authorization_code round-trip, so it should never be hit more often
-    // than `connect` redirects the browser here. Reading `code`/`state`
-    // from `req.query` inside `callbackHandler` is inherent to the OAuth
-    // redirect flow (that's how every authorization_code callback receives
-    // them) and is out of scope here — tracked separately.
     rateLimitExpress({
       key: "api:silpo:callback",
       limit: 10,
       windowMs: 60_000,
     }),
     callbackHandler,
+  );
+
+  r.use("/api/silpo", requireSession());
+
+  r.get(
+    "/api/silpo/connect",
+    rateLimitExpress({ key: "api:silpo:connect", limit: 10, windowMs: 60_000 }),
+    connectHandler,
   );
   r.post(
     "/api/silpo/disconnect",

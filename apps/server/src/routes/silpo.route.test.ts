@@ -278,21 +278,89 @@ describe("GET /api/silpo/callback", () => {
     expect(mocks.exchangeCode).not.toHaveBeenCalled();
   });
 
-  it("rejects a state issued for a different user", async () => {
+  it("ПРАЦЮЄ БЕЗ СЕСІЇ — контекст приходить зі state, не з куки", async () => {
+    // Регресія на прод-інцидент 2026-08-25. Колбек приземляється на
+    // PUBLIC_API_BASE_URL (api.…sslip.io), а кука сесії живе в контексті
+    // BETTER_AUTH_URL (sergeant.vercel.app) — різні сайти, і Vercel не
+    // проксіює /api/* на бекенд. Тобто сесії тут немає НІ В КОГО, і поки
+    // роут стояв під router-level requireSession(), кожен тестер отримував
+    // 401-JSON у вкладку замість екрана налаштувань.
+    //
+    // Тест НАВМИСНО не шле x-test-user-id: рівно так поводиться браузер,
+    // що повертається з auth.silpo.ua. Усі попередні тести цього файлу
+    // заголовок ставили — саме тому баг прожив до продакшену.
     mocks.consumeAuthorizationState.mockResolvedValue({
-      userId: "someone-else",
+      userId: "user-1",
       codeVerifier: "verifier",
       redirectUri: "https://api.example.com/api/silpo/callback",
+    });
+    mocks.silpoKeyRing.mockReturnValue({ current: { version: 1 } });
+    mocks.exchangeCode.mockResolvedValue({
+      access_token: "at",
+      refresh_token: "rt",
+      expires_in: 3600,
+    });
+
+    const res = await request(appWith()).get(
+      "/api/silpo/callback?code=abc&state=xyz",
+    );
+
+    expect(res.status).toBe(302);
+    expect(res.headers["location"]).toBe(
+      "https://app.example.com/settings?silpo=connected",
+    );
+    // Токени зберігаються на власника state, не на «нікого».
+    expect(mocks.persistTokens).toHaveBeenCalledWith(
+      "user-1",
+      { current: { version: 1 } },
+      expect.objectContaining({ accessToken: "at", refreshToken: "rt" }),
+    );
+  });
+
+  it("решта роутів сесію ВИМАГАЄ — виняток лише для callback", async () => {
+    // Гарантія, що перенесення callback вище requireSession() не відкрило
+    // діру в сусідніх роутах.
+    const res = await request(appWith()).get("/api/silpo/sync-state");
+    expect(res.status).toBe(401);
+    expect(res.body).toMatchObject({ code: "UNAUTHORIZED" });
+  });
+
+  it("власника визначає state, а не браузер, який приніс запит", async () => {
+    // Раніше тут очікувався invalid_state при розбіжності state ↔ сесія.
+    // Та перевірка знята: роут стоїть до requireSession(), тож req.user не
+    // заповнюється, і умова була б мертвим кодом, що вдає захист.
+    //
+    // Account-linking CSRF це не відкриває: підсунутий жертві чужий state
+    // привʼяже токени до акаунта ЗАМОВНИКА цього state (тобто самого
+    // зловмисника), а не до профілю жертви. Нижче — саме цей інваріант.
+    mocks.consumeAuthorizationState.mockResolvedValue({
+      userId: "state-owner",
+      codeVerifier: "verifier",
+      redirectUri: "https://api.example.com/api/silpo/callback",
+    });
+    mocks.silpoKeyRing.mockReturnValue({ current: { version: 1 } });
+    mocks.exchangeCode.mockResolvedValue({
+      access_token: "at",
+      refresh_token: "rt",
+      expires_in: 3600,
     });
 
     const res = await request(appWith())
       .get("/api/silpo/callback?code=abc&state=xyz")
-      .set("x-test-user-id", "user-1");
+      .set("x-test-user-id", "someone-else");
 
-    expect(res.headers["location"]).toBe(
-      "https://app.example.com/settings?silpo=error&reason=invalid_state",
+    expect(res.status).toBe(302);
+    expect(mocks.persistTokens).toHaveBeenCalledWith(
+      "state-owner",
+      expect.anything(),
+      expect.anything(),
     );
-    expect(mocks.exchangeCode).not.toHaveBeenCalled();
+    // Найважливіше: НЕ на того, чий заголовок сесії прийшов із запитом.
+    expect(mocks.persistTokens).not.toHaveBeenCalledWith(
+      "someone-else",
+      expect.anything(),
+      expect.anything(),
+    );
   });
 });
 
