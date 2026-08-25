@@ -22,9 +22,9 @@
  * 1. Вивантаж назви (запит — у § нижче), поклади сюди дві перші колонки.
  * 2. `GOLDEN_SEED=1 pnpm --filter @sergeant/finyk-domain exec vitest run \
  *      src/domain/receiptSplitSuggestion.golden.test.ts`
- *    надрукує готовий TSV, де третю колонку вже заповнено ВІДПОВІДДЮ
- *    МАПЕРА. Перенаправ у файл і виправ руками те, що мапер вгадав
- *    неправильно, — це швидше, ніж розмічати з нуля.
+ *    допише третю колонку ВІДПОВІДДЮ МАПЕРА прямо у файл. Далі виправ
+ *    руками те, що він вгадав неправильно, — це швидше, ніж розмічати
+ *    з нуля. Повторний прогін уже розмічені рядки не чіпає.
  * 3. Далі тест просто рахує точність і тримає поріг знизу.
  *
  * SQL для кроку 1 (підстав свій `user_id`; частота — щоб розмічати
@@ -43,7 +43,7 @@
  * > Самі назви — це продуктовий словник; сум, дат і кількостей тут немає
  * > свідомо.
  */
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -142,11 +142,32 @@ describe("мапер позицій чека — точність на живи�
   );
 
   it.skipIf(!process.env["GOLDEN_SEED"])(
-    "GOLDEN_SEED=1 — друкує TSV із відповідями мапера для ручної правки",
+    "GOLDEN_SEED=1 — дописує у фікстуру відповіді мапера для ручної правки",
     () => {
-      for (const row of rows) {
-        console.info(`${row.name}\t${row.slug}\t${actualFor(row)}`);
-      }
+      // Єдиний тест у репо, який пише на диск, і це свідомо: збирати
+      // TSV із stdout означало б грепати вивід vitest-а, а один зайвий
+      // рядок логу зіпсував би файл. Env-прапорець тут — не «режим», а
+      // явна команда людини.
+      //
+      // Уже розмічені рядки НЕ чіпаються: інакше повторний прогін
+      // затирав би ручні виправлення, заради яких усе й затіяно.
+      const header = readFileSync(FIXTURE, "utf8")
+        .split("\n")
+        .filter((line) => line.startsWith("#") || !line.trim())
+        .join("\n")
+        .replace(/\n+$/, "");
+      const body = rows
+        .map(
+          (row) =>
+            `${row.name}\t${row.slug}\t${row.expected || actualFor(row)}`,
+        )
+        .join("\n");
+      writeFileSync(FIXTURE, `${header}\n${body}\n`, "utf8");
+
+      const seeded = rows.filter((r) => !r.expected).length;
+      console.info(
+        `[golden] заповнено ${seeded} рядків, збережено ${rows.length} — тепер виправ промахи руками`,
+      );
       expect(rows.length).toBeGreaterThan(0);
     },
   );
