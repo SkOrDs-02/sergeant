@@ -18,11 +18,13 @@
  */
 
 import { useMemo } from "react";
-import { calcCategorySpent } from "@sergeant/finyk-domain/domain/categories";
 import {
   getLimitBudgets,
   getCurrentMonthContext,
+  formatLimitBudgetLabel,
+  limitBudgetCategoryIds,
 } from "@sergeant/finyk-domain/domain/budget";
+import { calcLimitCategorySpent } from "@sergeant/finyk-domain/lib/limitCategorySpend";
 import { currentKyivMonthPrefix, filterToKyivMonth } from "../lib/monthWindow";
 import { resolveExpenseCategoryMeta } from "@sergeant/finyk-domain/domain/categories";
 import type { Insight } from "@shared/lib/insights/types";
@@ -78,9 +80,11 @@ export function useBudgetOverrunInsight({
       const categoryId = b.categoryId;
       if (!categoryId || !(Number(b.limit) > 0)) continue;
       const limit = Number(b.limit);
-      const spent = calcCategorySpent(
+      // Bucket-агрегація + всі категорії комбо-ліміту — той самий рахунок,
+      // що й на картці ліміту та в Overview-алертах.
+      const spent = calcLimitCategorySpent(
         monthTx,
-        b.categoryId,
+        limitBudgetCategoryIds(b),
         txCategories,
         txSplits,
         customCategories,
@@ -100,8 +104,11 @@ export function useBudgetOverrunInsight({
     // side, so a shared base is what keeps them from reading as a data bug.
     const pct = Math.round(ratio * 100);
     const overage = Math.round(spent - limit);
-    const catMeta = resolveExpenseCategoryMeta(categoryId, customCategories);
-    const catLabel = catMeta?.label ?? categoryId;
+    const catLabel =
+      formatLimitBudgetLabel(
+        budget,
+        (id) => resolveExpenseCategoryMeta(id, customCategories)?.label,
+      ) || categoryId;
 
     return {
       id: `finyk-budget-overrun-${budget.categoryId}`,

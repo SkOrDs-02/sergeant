@@ -76,6 +76,29 @@ describe("budgetLimitsRule", () => {
     expect(recs[0]?.title).toContain("18%");
   });
 
+  it("мульти-категорійний ліміт: сумує spend по набору і ключує rec набором", () => {
+    const ctx = baseCtx({
+      limits: [
+        {
+          id: "b",
+          type: "limit",
+          categoryId: "food",
+          categoryIds: ["food", "restaurant"],
+          label: "Їжа",
+          limit: 1000,
+        },
+      ],
+      canonicalMonthSpend: new Map([
+        ["food", 700],
+        ["restaurant", 400],
+      ]),
+    });
+    const recs = budgetLimitsRule.evaluate(ctx);
+    // 700 + 400 = 1100 > 1000 → over по всьому набору, з власною назвою.
+    expect(recs[0]?.id).toBe("budget_over_food+restaurant");
+    expect(recs[0]?.title).toContain('"Їжа"');
+  });
+
   it("показує кастомний label у бюджетному ліміті", () => {
     const ctx = baseCtx({
       limits: [{ id: "b", type: "limit", categoryId: "pets", limit: 100 }],

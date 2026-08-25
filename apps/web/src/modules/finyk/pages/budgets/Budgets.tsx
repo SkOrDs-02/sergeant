@@ -8,7 +8,10 @@ import {
   type DataStateQueryLike,
 } from "@shared/components/ui/DataState";
 import { calcCategorySpent } from "../../utils";
-import { calcLimitCategorySpent } from "./limitCategorySpend";
+import {
+  calcLimitCategoryBreakdown,
+  calcLimitCategorySpent,
+} from "./limitCategorySpend";
 import {
   currentKyivMonthPrefix,
   filterToKyivMonth,
@@ -21,6 +24,7 @@ import {
   getMonthlyPlanUsage,
   calculateTotalExpenseFact,
   filterTransactionsForLimitPeriod,
+  limitBudgetCategoryIds,
 } from "@sergeant/finyk-domain/domain/budget";
 import {
   filterStatTransactions,
@@ -44,6 +48,7 @@ import type { NewBudgetDraft } from "../../components/budgets/AddBudgetForm";
 import type {
   Budget,
   Category,
+  LimitBudget,
   Transaction,
   TxCategoriesMap,
   TxSplitsMap,
@@ -230,12 +235,25 @@ export function Budgets({
       // видимих витратах в Аналітиці — див. `./limitCategorySpend.ts`.
       return calcLimitCategorySpent(
         filterTransactionsForLimitPeriod(allStatTx, budget, now),
-        budget.categoryId,
+        limitBudgetCategoryIds(budget),
         txCategories,
         txSplits,
         customCategories,
       );
     },
+    [customCategories, now, allStatTx, txCategories, txSplits],
+  );
+  // Розбивка факту комбо-ліміту по категоріях — те саме period-вікно, що й
+  // calcSpent; секція викликає її лише для лімітів із 2+ категоріями.
+  const calcLimitBreakdown = useCallback(
+    (budget: LimitBudget) =>
+      calcLimitCategoryBreakdown(
+        filterTransactionsForLimitPeriod(allStatTx, budget, now),
+        limitBudgetCategoryIds(budget),
+        txCategories,
+        txSplits,
+        customCategories,
+      ),
     [customCategories, now, allStatTx, txCategories, txSplits],
   );
   const limitBudgets = useMemo(() => getLimitBudgets(budgets), [budgets]);
@@ -316,11 +334,11 @@ export function Budgets({
     setGoalsOpen((v) => !v);
   }, [setGoalsOpen]);
   const dismissAdvice = useCallback(
-    (categoryId: string, monthKey: string, text: string) => {
+    (categoryKey: string, monthKey: string, text: string) => {
       if (!text) return;
       setDismissedAdvice((prev) => ({
         ...prev,
-        [`${monthKey}_${categoryId}`]: text,
+        [`${monthKey}_${categoryKey}`]: text,
       }));
     },
     [setDismissedAdvice],
@@ -360,7 +378,11 @@ export function Budgets({
       // нової події і без ренейму наявної.
       trackEvent(ANALYTICS_EVENTS.BUDGET_SET, {
         ...(draft.type === "limit"
-          ? { type: "limit", categoryId: draft.categoryId }
+          ? {
+              type: "limit",
+              categoryId: draft.categoryId,
+              categoryCount: draft.categoryIds.length,
+            }
           : { type: "goal" }),
         ...readSignalContext("finyk"),
       });
@@ -453,6 +475,7 @@ export function Budgets({
               setEditIdx={setEditIdx}
               customCategories={customCategories}
               calcSpent={calcSpent}
+              calcBreakdown={calcLimitBreakdown}
               proactiveItems={proactiveItems}
               proactiveAdvice={proactiveAdvice}
               proactiveLoading={proactiveLoading}

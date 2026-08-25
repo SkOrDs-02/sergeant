@@ -101,6 +101,7 @@ function buildProps(
     setEditIdx: vi.fn(),
     customCategories: [],
     calcSpent: () => 1200,
+    calcBreakdown: () => [],
     proactiveItems: [],
     proactiveAdvice: {},
     proactiveLoading: {},
@@ -114,10 +115,10 @@ function buildProps(
 }
 
 function makeProactiveItem(
-  categoryId: string,
+  categoryKey: string,
 ): import("./budgetsLib").ProactiveItem {
   return {
-    categoryId,
+    categoryKey,
     monthKey: "2026-06",
     catLabel: "Продукти",
     spent: 1200,

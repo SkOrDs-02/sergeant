@@ -9,6 +9,7 @@
 
 import type { Rec, Rule } from "../types.js";
 import type { FinanceContext } from "../financeContext.js";
+import { budgetCategoryIds } from "../financeContext.js";
 import { formatNumberUk } from "@sergeant/shared";
 
 const BUILTIN_LABELS: Record<string, string> = {
@@ -39,25 +40,36 @@ export const budgetLimitsRule: Rule<FinanceContext> = {
   evaluate(ctx) {
     const recs: Rec[] = [];
     for (const limit of ctx.limits) {
-      const catId = limit.categoryId;
+      const catIds = budgetCategoryIds(limit);
+      const catId = catIds[0];
       if (!catId) continue;
       if (!limit.limit || limit.limit <= 0) continue;
 
-      const canonicalSpent = ctx.canonicalMonthSpend.get(catId);
-      const spent =
-        typeof canonicalSpent === "number"
-          ? canonicalSpent
-          : ctx.categorySpend[catId] || 0;
+      // Мульти-категорійний ліміт: факт — сума по всіх категоріях набору.
+      // Кожна категорія резолвиться в один canonical id, тож сума дискретна.
+      let spent = 0;
+      for (const id of catIds) {
+        const canonicalSpent = ctx.canonicalMonthSpend.get(id);
+        spent +=
+          typeof canonicalSpent === "number"
+            ? canonicalSpent
+            : ctx.categorySpend[id] || 0;
+      }
       const pct = spent / limit.limit;
-      const catLabel = resolveLabel(catId, ctx.customCategories);
-      // Глибокий лінк на сторінку Планування з підсвіткою саме цієї
-      // категорії — інсайт повинен вести до картки, про яку говорить,
-      // а не на дефолтний Огляд модуля.
+      const catLabel =
+        limit.label?.trim() ||
+        catIds.map((id) => resolveLabel(id, ctx.customCategories)).join(" + ");
+      // Глибокий лінк на сторінку Планування з підсвіткою картки, про яку
+      // говорить інсайт: комбо-картка зареєстрована під кожною своєю
+      // категорією, тож першої вистачає.
       const actionHash = `budgets?cat=${encodeURIComponent(catId)}`;
+      // Ключ рекомендації — весь набір, щоб два ліміти зі спільною першою
+      // категорією не злипались в один rec.
+      const catKey = catIds.join("+");
 
       if (pct >= 1.0) {
         recs.push({
-          id: `budget_over_${catId}`,
+          id: `budget_over_${catKey}`,
           module: "finyk" as const,
           priority: 90,
           severity: "danger" as const,
@@ -73,7 +85,7 @@ export const budgetLimitsRule: Rule<FinanceContext> = {
         });
       } else if (pct >= 0.9) {
         recs.push({
-          id: `budget_warn_${catId}`,
+          id: `budget_warn_${catKey}`,
           module: "finyk" as const,
           priority: 60,
           severity: "warning" as const,

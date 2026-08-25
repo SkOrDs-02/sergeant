@@ -18,18 +18,22 @@ import { readJSON, writeJSON } from "../../lib/finykStorage";
 const PROACTIVE_CACHE_PREFIX = "finyk_proactive_v1_";
 export const PROACTIVE_CACHE_TTL = 24 * 60 * 60 * 1000;
 
-export const proactiveCacheKey = (categoryId: string, monthKey: string) =>
-  `${PROACTIVE_CACHE_PREFIX}${categoryId}_${monthKey}`;
+// `categoryKey` — стабільний ключ НАБОРУ категорій ліміту
+// (`limitBudgetCategoryKey`): для одиночного ліміту це його categoryId, для
+// комбо — sorted join через "+". Зміна складу комбо міняє ключ, тож стара
+// порада не липне до нового набору.
+export const proactiveCacheKey = (categoryKey: string, monthKey: string) =>
+  `${PROACTIVE_CACHE_PREFIX}${categoryKey}_${monthKey}`;
 
 // Re-export from the centralized queryKeys module for callers that still
 // import this name from the Budgets page.
 export const proactiveAdviceQueryKey = finykKeys.proactiveAdvice;
 
 export function loadProactiveAdviceFromLS(
-  categoryId: string,
+  categoryKey: string,
   monthKey: string,
 ) {
-  const cached = readJSON(proactiveCacheKey(categoryId, monthKey), null) as {
+  const cached = readJSON(proactiveCacheKey(categoryKey, monthKey), null) as {
     text?: string;
     ts?: number;
   } | null;
@@ -40,19 +44,21 @@ export function loadProactiveAdviceFromLS(
 }
 
 export function saveProactiveAdviceToLS(
-  categoryId: string,
+  categoryKey: string,
   monthKey: string,
   text: string,
 ) {
-  writeJSON(proactiveCacheKey(categoryId, monthKey), {
+  writeJSON(proactiveCacheKey(categoryKey, monthKey), {
     text,
     ts: Date.now(),
   });
 }
 
 export interface ProactiveItem {
-  categoryId: string;
+  /** Стабільний ключ набору категорій ліміту (`limitBudgetCategoryKey`). */
+  categoryKey: string;
   monthKey: string;
+  /** Підпис ліміту (для комбо — власна назва або «A + B»). */
   catLabel: string;
   spent: number;
   limit: number;
@@ -62,7 +68,7 @@ export interface ProactiveItem {
 }
 
 export async function fetchProactiveAdvice({
-  categoryId,
+  categoryKey,
   monthKey,
   catLabel,
   spent,
@@ -83,6 +89,6 @@ export async function fetchProactiveAdvice({
     messages: [{ role: "user", content: prompt }],
   });
   const text = data.text || null;
-  if (text) saveProactiveAdviceToLS(categoryId, monthKey, text);
+  if (text) saveProactiveAdviceToLS(categoryKey, monthKey, text);
   return text;
 }

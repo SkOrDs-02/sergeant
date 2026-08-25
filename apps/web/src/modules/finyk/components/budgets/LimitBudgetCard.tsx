@@ -18,10 +18,19 @@ interface LimitBudgetInput {
   id: string;
   type?: "limit" | "goal";
   categoryId?: string;
+  /** Повний набір категорій мульти-категорійного ліміту (1+). */
+  categoryIds?: string[];
   limit: number;
   period?: "month" | "week" | "one_time";
   createdAt?: string;
   [extra: string]: unknown;
+}
+
+/** Рядок розбивки факту комбо-ліміту по категорії. */
+export interface LimitBreakdownRow {
+  categoryId: string;
+  label: string;
+  spent: number;
 }
 
 interface LimitBudgetCardProps {
@@ -35,6 +44,12 @@ interface LimitBudgetCardProps {
    * «в лімітах є іконки, а у витратах немає» — саме про цю розбіжність.
    */
   customCategories?: readonly { id: string }[] | undefined;
+  /**
+   * Розбивка факту по категоріях комбо-ліміту (рішення founder-а 2026-08-25:
+   * «сума + розбивка»). Рендериться лише коли рядків 2+; для одиночного
+   * ліміту проп не передається.
+   */
+  breakdown?: readonly LimitBreakdownRow[] | undefined;
   spent: number;
   pctRaw: number;
   pctRounded: number;
@@ -58,6 +73,7 @@ function LimitBudgetCardComponent({
   budget,
   categoryLabel,
   customCategories = [],
+  breakdown,
   spent,
   pctRaw,
   pctRounded,
@@ -79,6 +95,11 @@ function LimitBudgetCardComponent({
   const fieldId = useId();
   const limitId = `${fieldId}-limit`;
   const periodId = `${fieldId}-period`;
+  const categoryIds =
+    budget.categoryIds && budget.categoryIds.length > 0
+      ? budget.categoryIds
+      : [budget.categoryId ?? ""];
+  const isCombo = categoryIds.length > 1;
 
   return (
     <Card radius="lg" padding="lg">
@@ -142,10 +163,29 @@ function LimitBudgetCardComponent({
         <>
           <div className="flex justify-between items-center mb-2">
             <div className="flex items-center gap-2 min-w-0">
-              <CategoryIconChip
-                categoryId={budget.categoryId ?? ""}
-                customCategories={customCategories}
-              />
+              {isCombo ? (
+                // Комбо-ліміт: до трьох чипів категорій поруч, решта — «+N».
+                <span className="flex items-center gap-1 shrink-0">
+                  {categoryIds.slice(0, 3).map((id) => (
+                    <CategoryIconChip
+                      key={id}
+                      categoryId={id}
+                      customCategories={customCategories}
+                      size={24}
+                    />
+                  ))}
+                  {categoryIds.length > 3 && (
+                    <span className="text-style-caption text-muted">
+                      +{categoryIds.length - 3}
+                    </span>
+                  )}
+                </span>
+              ) : (
+                <CategoryIconChip
+                  categoryId={budget.categoryId ?? ""}
+                  customCategories={customCategories}
+                />
+              )}
               <div className="min-w-0">
                 <span className="text-style-label">{categoryLabel || "—"}</span>
                 <div className="text-style-caption text-subtle mt-0.5">
@@ -215,6 +255,31 @@ function LimitBudgetCardComponent({
               </>
             )}
           </div>
+
+          {breakdown && breakdown.length > 1 && (
+            // Розбивка факту комбо-ліміту: видно, ЩО саме з'їло бюджет.
+            // Без власних під-лімітів — лише факт по кожній категорії.
+            <ul className="mt-2 space-y-1" aria-label="Витрати по категоріях">
+              {breakdown.map((row) => (
+                <li
+                  key={row.categoryId}
+                  className="flex items-center justify-between gap-2 text-style-caption text-subtle"
+                >
+                  <span className="flex items-center gap-1.5 min-w-0">
+                    <CategoryIconChip
+                      categoryId={row.categoryId}
+                      customCategories={customCategories}
+                      size={24}
+                    />
+                    <span className="truncate">{row.label}</span>
+                  </span>
+                  <span className="tabular-nums shrink-0">
+                    <Money amount={row.spent} />
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
 
           {showProactiveAdvice &&
             (proactiveText || proactiveLoading !== false) && (

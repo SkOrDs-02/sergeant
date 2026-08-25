@@ -11,5 +11,6 @@ export * from "./spending.js";
 // ручних витрат). Споживачів поки немає за задумом — див. AI-CONTEXT у metrics.ts.
 export * from "./metrics.js";
 export * from "./quickStats.js";
+export * from "./limitCategorySpend.js";
 export * from "./recurringDetect.js";
 export * from "./forecastEngine.js";

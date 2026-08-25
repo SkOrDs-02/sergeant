@@ -13,6 +13,10 @@ import {
   calcCategorySpent,
   resolveExpenseCategoryMeta,
 } from "@sergeant/finyk-domain";
+import {
+  formatLimitBudgetLabel,
+  limitBudgetCategoryIds,
+} from "@sergeant/finyk-domain/domain";
 import type {
   Category,
   LimitBudget,
@@ -43,13 +47,24 @@ const BudgetAlertsListImpl = function BudgetAlertsList({
     <View className="gap-1.5">
       {budgetAlerts.map((b) => {
         const catId = b.categoryId ?? "";
-        const cat = resolveExpenseCategoryMeta(catId, customCategories);
-        const s = calcCategorySpent(
-          statTx,
-          catId,
-          txCategories,
-          txSplits,
-          customCategories,
+        const catLabel =
+          formatLimitBudgetLabel(
+            b,
+            (id) => resolveExpenseCategoryMeta(id, customCategories)?.label,
+          ) || catId;
+        // Комбо-ліміт: факт — сума по всіх категоріях набору (транзакція
+        // резолвиться в одну категорію, подвійного рахунку немає).
+        const s = limitBudgetCategoryIds(b).reduce(
+          (sum, id) =>
+            sum +
+            calcCategorySpent(
+              statTx,
+              id,
+              txCategories,
+              txSplits,
+              customCategories,
+            ),
+          0,
         );
         const limit = b.limit;
         const pct = limit > 0 ? Math.round((s / limit) * 100) : 0;
@@ -65,7 +80,7 @@ const BudgetAlertsListImpl = function BudgetAlertsList({
             )}
           >
             <Text className="text-sm font-medium text-fg flex-1 mr-2">
-              {cat?.label || catId}
+              {catLabel}
             </Text>
             <Text
               className={cn(
