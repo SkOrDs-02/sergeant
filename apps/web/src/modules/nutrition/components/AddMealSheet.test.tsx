@@ -163,8 +163,27 @@ vi.mock("./meal-sheet/FoodPickerSection", () => ({
   ),
 }));
 
+// Секція штрихкоду замокана вузько: назовні виводимо лише два виходи з
+// картки «Продукт не знайдено», бо саме їхня СИМЕТРІЯ і була дефектом —
+// «Сфотографувати страву» вела на вкладку, а «Ввести вручну» лише
+// закривала картку й лишала людину на порожньому «Скані».
 vi.mock("./meal-sheet/BarcodeSection", () => ({
-  BarcodeSection: () => <div data-testid="barcode-section" />,
+  BarcodeSection: ({
+    onUsePhotoForBarcode,
+    onManualEntryForBarcode,
+  }: {
+    onUsePhotoForBarcode?: () => void;
+    onManualEntryForBarcode?: () => void;
+  }) => (
+    <div data-testid="barcode-section">
+      <button type="button" onClick={() => onUsePhotoForBarcode?.()}>
+        notice-use-photo
+      </button>
+      <button type="button" onClick={() => onManualEntryForBarcode?.()}>
+        notice-manual-entry
+      </button>
+    </div>
+  ),
 }));
 
 // PhotoStep owns usePhotoAnalysis + the Premium gate + PaywallModal — its
@@ -1255,5 +1274,38 @@ describe("AddMealSheet — barcode scanner overlay", () => {
         "1234567890",
       );
     });
+  });
+});
+
+/**
+ * Регресія вкладок: обидва виходи з картки «Продукт не знайдено» мусять
+ * вести на вкладку, а не лише той, що про фото.
+ *
+ * «Сфотографувати страву» працювала від початку, «Ввести вручну» — ні:
+ * вона тільки закривала картку, і людина лишалась на «Скані» з самою
+ * кнопкою «Сканувати ще раз» (звіт власника 2026-08-24). Саме контраст
+ * між двома сусідніми кнопками й виказав дефект.
+ */
+describe("AddMealSheet — виходи з картки «Продукт не знайдено»", () => {
+  const selectedTab = () =>
+    screen
+      .getAllByRole("tab")
+      .filter((t) => t.getAttribute("aria-selected") === "true")
+      .map((t) => t.textContent?.trim())
+      .join("");
+
+  it("«Сфотографувати страву» веде на вкладку «Фото»", () => {
+    renderSheet({ mealTemplates: [] });
+    fireEvent.click(screen.getByRole("tab", { name: /Скан/ }));
+    fireEvent.click(screen.getByText("notice-use-photo"));
+    expect(selectedTab()).toMatch(/Фото/);
+  });
+
+  it("«Ввести вручну» веде на вкладку «Своє», а не в порожній «Скан»", () => {
+    renderSheet({ mealTemplates: [] });
+    fireEvent.click(screen.getByRole("tab", { name: /Скан/ }));
+    fireEvent.click(screen.getByText("notice-manual-entry"));
+    expect(selectedTab()).toMatch(/Своє/);
+    expect(selectedTab()).not.toMatch(/Скан/);
   });
 });
