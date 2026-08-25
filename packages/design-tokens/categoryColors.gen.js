@@ -123,6 +123,7 @@ export const CATEGORY_HUES = /** @type {const} */ ({
   beauty: [308, 1],
   health: [325, 1],
   debt: [342, 1],
+  alcohol: [350, 0.6],
   other: [74, 0.12],
   income: [162, 0.35],
 });

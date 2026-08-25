@@ -16,6 +16,7 @@ import type {
   SilpoReceiptSummaryDto as SharedSilpoReceiptSummaryDto,
   SilpoSyncResult as SharedSilpoSyncResult,
   SilpoSyncState as SharedSilpoSyncState,
+  SilpoRelinkResponse as SharedSilpoRelinkResponse,
   SilpoUnlinkResponse as SharedSilpoUnlinkResponse,
   SilpoWipeResponse as SharedSilpoWipeResponse,
 } from "@sergeant/shared/schemas";
@@ -32,6 +33,7 @@ import {
   SilpoReceiptsPageSchema,
   SilpoSyncResultSchema,
   SilpoSyncStateSchema,
+  SilpoRelinkResponseSchema,
   SilpoUnlinkResponseSchema,
   SilpoWipeResponseSchema,
 } from "@sergeant/shared";
@@ -60,6 +62,8 @@ import type { RequestOptions } from "../types";
  *   - `POST /api/silpo/disconnect`  → `disconnect()`
  *   - `POST /api/silpo/wipe`        → `wipe()`
  *   - `DELETE /api/silpo/receipts/link/:transactionId` → `unlinkReceipt()`
+ *   - `POST /api/silpo/receipts/link/:transactionId` → `relinkReceipt()` —
+ *     скасування попереднього; знімає відхилення й ставить пару назад.
  *   - `GET  /api/silpo/sync-state`  → `syncState()`
  *   - `POST /api/silpo/sync`        → `sync()` — errors surface as
  *     `ApiError` (409 `SILPO_NOT_CONNECTED`/`SILPO_REAUTH_REQUIRED`, 429
@@ -82,6 +86,7 @@ export type SilpoSyncState = SharedSilpoSyncState;
 export type SilpoDisconnectResponse = SharedSilpoDisconnectResponse;
 export type SilpoWipeResponse = SharedSilpoWipeResponse;
 export type SilpoUnlinkResponse = SharedSilpoUnlinkResponse;
+export type SilpoRelinkResponse = SharedSilpoRelinkResponse;
 export type SilpoSyncResult = SharedSilpoSyncResult;
 export type SilpoReceiptChannel = SharedSilpoReceiptChannel;
 export type SilpoReceiptItemDto = SharedSilpoReceiptItemDto;
@@ -142,6 +147,17 @@ export interface SilpoEndpoints {
     transactionId: string,
     opts?: Pick<RequestOptions, "signal">,
   ) => Promise<SilpoUnlinkResponse>;
+  /**
+   * `POST /api/silpo/receipts/link/:transactionId` — ставить пару назад і
+   * знімає відхилення, записане `unlinkReceipt()`. Це «Повернути» під
+   * кнопкою «Це не той чек»; той самий примітив пізніше понесе й ручне
+   * привʼязування. `404`, якщо чек не належить користувачу.
+   */
+  relinkReceipt: (
+    transactionId: string,
+    receiptId: string,
+    opts?: Pick<RequestOptions, "signal">,
+  ) => Promise<SilpoRelinkResponse>;
   /**
    * `GET /api/silpo/sync-state` — стан інтеграції для Settings-картки
    * (connect / connected / reauth-банер).
@@ -219,6 +235,14 @@ export function createSilpoEndpoints(http: HttpClient): SilpoEndpoints {
         { signal },
       );
       return SilpoUnlinkResponseSchema.parse(raw);
+    },
+    relinkReceipt: async (transactionId, receiptId, { signal } = {}) => {
+      const raw = await http.post<unknown>(
+        `/api/silpo/receipts/link/${encodeURIComponent(transactionId)}`,
+        { receiptId },
+        { signal },
+      );
+      return SilpoRelinkResponseSchema.parse(raw);
     },
     syncState: async ({ signal } = {}) => {
       const raw = await http.get<unknown>("/api/silpo/sync-state", { signal });

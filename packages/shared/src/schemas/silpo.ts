@@ -68,8 +68,33 @@ export type SilpoDisconnectResponse = z.infer<
  * не відновив. Сам чек НЕ видаляється: він лишається в списку «Чеки без
  * транзакції» і може бути привʼязаний до іншої транзакції.
  */
-export const SilpoUnlinkResponseSchema = z.object({ ok: z.literal(true) });
+export const SilpoUnlinkResponseSchema = z.object({
+  ok: z.literal(true),
+  /**
+   * Чек, який щойно відчепили. Віддається саме для «Повернути»: без нього
+   * клієнт мусив би перечитати транзакцію, з якої чек уже зник, тобто
+   * скасувати дію було б нічим.
+   */
+  receiptId: z.string().min(1),
+});
 export type SilpoUnlinkResponse = z.infer<typeof SilpoUnlinkResponseSchema>;
+
+/**
+ * Body of `POST /api/silpo/receipts/link/:transactionId` — «Повернути»
+ * після «Це не той чек». Знімає запис із `silpo_tx_receipt_link_rejections`
+ * і ставить пару назад, тож наступний sync її вже не обійде.
+ *
+ * Ендпоїнт свідомо приймає БУДЬ-ЯКИЙ чек користувача, не лише щойно
+ * відчеплений: це той самий примітив, на якому пізніше стане ручне
+ * привʼязування чека до транзакції.
+ */
+export const SilpoRelinkRequestSchema = z.object({
+  receiptId: z.string().min(1),
+});
+export type SilpoRelinkRequest = z.infer<typeof SilpoRelinkRequestSchema>;
+
+export const SilpoRelinkResponseSchema = z.object({ ok: z.literal(true) });
+export type SilpoRelinkResponse = z.infer<typeof SilpoRelinkResponseSchema>;
 
 /**
  * Response of `POST /api/silpo/wipe`. Full erasure of Silpo-sourced data

@@ -13,6 +13,7 @@ import {
   silpoApi,
   type SilpoDisconnectResponse,
   type SilpoSyncResult,
+  type SilpoRelinkResponse,
   type SilpoUnlinkResponse,
   type SilpoWipeResponse,
 } from "@shared/api";
@@ -84,6 +85,30 @@ export function useSilpoUnlinkReceipt() {
   return useMutation<SilpoUnlinkResponse, unknown, string>({
     mutationFn: (transactionId: string) =>
       silpoApi.unlinkReceipt(transactionId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: silpoKeys.all });
+    },
+  });
+}
+
+/**
+ * «Повернути» — скасування попередньої дії. Ставить пару назад і знімає
+ * серверне відхилення.
+ *
+ * Навіщо окрема мутація, а не прапорець у `useSilpoUnlinkReceipt`: обидві
+ * можуть бути в польоті одночасно (людина тисне «Повернути», поки перший
+ * запит ще не приземлився), і спільний `isPending` показував би стан не
+ * тієї кнопки.
+ */
+export function useSilpoRelinkReceipt() {
+  const queryClient = useQueryClient();
+  return useMutation<
+    SilpoRelinkResponse,
+    unknown,
+    { transactionId: string; receiptId: string }
+  >({
+    mutationFn: ({ transactionId, receiptId }) =>
+      silpoApi.relinkReceipt(transactionId, receiptId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: silpoKeys.all });
     },

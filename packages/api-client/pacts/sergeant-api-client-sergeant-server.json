@@ -59,7 +59,8 @@
       },
       "response": {
         "body": {
-          "ok": true
+          "ok": true,
+          "receiptId": "silpo-r-1"
         },
         "headers": {
           "Content-Type": "application/json",
@@ -2694,6 +2695,35 @@
         },
         "method": "POST",
         "path": "/api/v1/silpo/disconnect"
+      },
+      "response": {
+        "body": {
+          "ok": true
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/v1/silpo/receipts/link/mono-tx-1 request with a receiptId",
+      "providerStates": [
+        {
+          "name": "user-pact-001 rejected silpo-r-1 for mono-tx-1"
+        }
+      ],
+      "request": {
+        "body": {
+          "receiptId": "silpo-r-1"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/silpo/receipts/link/mono-tx-1"
       },
       "response": {
         "body": {

@@ -1,6 +1,6 @@
 # DESIGN.md — Sergeant
 
-> **Last touched:** 2026-08-22 by @Skords-01. **Next review:** 2026-11-30.
+> **Last touched:** 2026-08-25 by @Skords-01. **Next review:** 2026-12-19.
 > **Status:** Active. **Призначення:** портативний конфіг візуальної системи для AI-агентів (Hallmark, frontend-design, Superdesign, будь-який SKILL.md-сумісний тул). Агент читає цей файл ПЕРЕД стилізацією і НЕ вигадує власну систему.
 > **Джерело правди:** `packages/design-tokens/tokens.js` + `tailwind-preset.js`. Цей файл — дзеркало для агентів; при розбіжності перемагають токени. Механічний enforcement: `eslint-plugin-sergeant-design` — лише runtime-, security-, storage-, API- і domain-інваріанти. Естетичні AST-правила retired [ADR-0081](./docs/04-governance/adr/0081-repository-simplification.md); візуальні конвенції тримають design tokens, Storybook і design-review.
 
@@ -50,6 +50,7 @@
 | beauty        | `#f3e7ff`     | `#684685`        | `#9e6cc6`        | `#2e2139` | `#ddbff9` |
 | health        | `#fce4fd`     | `#754178`        | `#b066b4`        | `#332034` | `#ebbbed` |
 | debt          | `#ffe4f4`     | `#7e3e68`        | `#be619e`        | `#371e2e` | `#f5b8dd` |
+| alcohol       | `#fbe6ef`     | `#73495d`        | `#ad718d`        | `#322229` | `#e9c1d2` |
 | other         | `#efece9`     | `#5c5750`        | `#8c857b`        | `#292725` | `#d2cdc7` |
 | income        | `#e5f0ea`     | `#465f52`        | `#6c907d`        | `#212a25` | `#bdd4c8` |
 

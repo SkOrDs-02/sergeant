@@ -310,6 +310,14 @@ export const categoryColors = {
     tintDark: "#371e2e",
     inkDark: "#f5b8dd",
   }, // H 342
+  alcohol: {
+    tint: "#fbe6ef",
+    border: "#ebd1dc",
+    ink: "#73495d",
+    solid: "#ad718d",
+    tintDark: "#322229",
+    inkDark: "#e9c1d2",
+  }, // H 350, C×0.6
   other: {
     tint: "#efece9",
     border: "#dcd8d4",

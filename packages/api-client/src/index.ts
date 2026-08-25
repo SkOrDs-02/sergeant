@@ -243,6 +243,7 @@ export {
   type SilpoReceiptSummaryDto,
   type SilpoSyncResult,
   type SilpoSyncState,
+  type SilpoRelinkResponse,
   type SilpoUnlinkResponse,
   type SilpoWipeResponse,
 } from "./endpoints/silpo";

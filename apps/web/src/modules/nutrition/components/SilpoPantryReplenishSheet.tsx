@@ -22,6 +22,7 @@ import { Money } from "@shared/components/ui/Money";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
+import { formatReceiptQty } from "@shared/lib/format/receiptQty";
 import {
   useSilpoPantryReplenish,
   type SilpoReplenishRow,
@@ -36,14 +37,6 @@ export interface SilpoPantryReplenishSheetProps {
   busy: boolean;
 }
 
-function formatQty(
-  qty: number | null | undefined,
-  unit: string | null | undefined,
-): string | null {
-  if (qty == null) return unit ?? null;
-  return unit ? `${qty} ${unit}` : String(qty);
-}
-
 const COPY = messages.nutrition.pantryReplenish;
 
 function ReceiptItemRow({
@@ -53,7 +46,7 @@ function ReceiptItemRow({
   row: SilpoReplenishRow;
   onToggle: (itemId: number) => void;
 }) {
-  const qtyLabel = formatQty(row.item.qty, row.item.unit);
+  const qtyLabel = formatReceiptQty(row.item.qty, row.item.unit);
   return (
     <li>
       {/* Native label+checkbox — той самий touch-target-патерн, що вже
@@ -65,16 +58,21 @@ function ReceiptItemRow({
           onChange={() => onToggle(row.item.id)}
           className="shrink-0 w-5 h-5 accent-nutrition"
         />
+        {/* `min-w-0` потрібен і на СОБІ, і на кожній дитині: у grid трек
+            за замовчуванням `min-width: auto`, тож дитина не стискається
+            менше за свій текст і `truncate` мовчки не спрацьовує — рядок
+            розпирає лист. З рукописними назвами комори це непомітно, а
+            назви з чеків Сільпо («Молоко Яготинське 2,6% 900г») довгі. */}
         <span className="min-w-0 flex-1 grid">
           <span
             className={cn(
-              "text-style-label text-text truncate",
+              "min-w-0 text-style-label text-text truncate",
               !row.checked && "opacity-50",
             )}
           >
             {row.item.name}
           </span>
-          <span className="text-style-caption text-subtle truncate">
+          <span className="min-w-0 text-style-caption text-subtle truncate">
             {row.matchedName
               ? `${COPY.matchedPrefix} ${row.matchedName}`
               : COPY.newPosition}

@@ -28,6 +28,7 @@ const mocks = vi.hoisted(() => ({
   listReceipts: vi.fn(),
   getReceiptDetail: vi.fn(),
   unlinkReceiptFromTransaction: vi.fn(),
+  relinkReceiptToTransaction: vi.fn(),
   getWebAppOrigin: vi.fn(),
   previewCart: vi.fn(),
   applyCart: vi.fn(),
@@ -63,6 +64,7 @@ vi.mock("../modules/silpo/receipts.js", () => ({
   listReceipts: mocks.listReceipts,
   getReceiptDetail: mocks.getReceiptDetail,
   unlinkReceiptFromTransaction: mocks.unlinkReceiptFromTransaction,
+  relinkReceiptToTransaction: mocks.relinkReceiptToTransaction,
 }));
 
 vi.mock("../modules/silpo/cart.js", () => ({
@@ -148,6 +150,7 @@ describe("SILPO_ENABLED kill switch", () => {
     ["get", "/api/silpo/receipts"],
     ["get", "/api/silpo/receipts/r1"],
     ["delete", "/api/silpo/receipts/link/tx-1"],
+    ["post", "/api/silpo/receipts/link/tx-1"],
     ["post", "/api/silpo/cart/preview"],
     ["post", "/api/silpo/cart/apply"],
     ["get", "/api/silpo/cart"],
@@ -542,14 +545,16 @@ describe("GET /api/silpo/receipts", () => {
 
 describe("DELETE /api/silpo/receipts/link/:transactionId", () => {
   it("знімає звʼязок і віддає ok", async () => {
-    mocks.unlinkReceiptFromTransaction.mockResolvedValue(true);
+    mocks.unlinkReceiptFromTransaction.mockResolvedValue("r-1");
 
     const res = await request(appWith())
       .delete("/api/silpo/receipts/link/tx-1")
       .set("x-test-user-id", "user-1");
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ ok: true });
+    // `receiptId` у відповіді — не діагностика: із нього клієнт збирає
+    // «Повернути». Без нього скасувати дію було б нічим.
+    expect(res.body).toEqual({ ok: true, receiptId: "r-1" });
     expect(mocks.unlinkReceiptFromTransaction).toHaveBeenCalledWith(
       "user-1",
       "tx-1",
@@ -559,7 +564,7 @@ describe("DELETE /api/silpo/receipts/link/:transactionId", () => {
   it("404, коли звʼязку не було — не мовчазний успіх", async () => {
     // Інакше кнопка «відвʼязати» рапортувала б перемогу над уже знятим
     // або чужим звʼязком.
-    mocks.unlinkReceiptFromTransaction.mockResolvedValue(false);
+    mocks.unlinkReceiptFromTransaction.mockResolvedValue(null);
 
     const res = await request(appWith())
       .delete("/api/silpo/receipts/link/tx-missing")
@@ -570,7 +575,7 @@ describe("DELETE /api/silpo/receipts/link/:transactionId", () => {
   });
 
   it("передає ЛИШЕ id сесії, не довіряючи тілу запиту", async () => {
-    mocks.unlinkReceiptFromTransaction.mockResolvedValue(true);
+    mocks.unlinkReceiptFromTransaction.mockResolvedValue("r-1");
 
     await request(appWith())
       .delete("/api/silpo/receipts/link/tx-1")
@@ -580,6 +585,64 @@ describe("DELETE /api/silpo/receipts/link/:transactionId", () => {
     expect(mocks.unlinkReceiptFromTransaction).toHaveBeenCalledWith(
       "user-1",
       "tx-1",
+    );
+  });
+});
+
+describe("POST /api/silpo/receipts/link/:transactionId", () => {
+  it("повертає пару назад", async () => {
+    mocks.relinkReceiptToTransaction.mockResolvedValue(true);
+
+    const res = await request(appWith())
+      .post("/api/silpo/receipts/link/tx-1")
+      .set("x-test-user-id", "user-1")
+      .send({ receiptId: "r-1" });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ ok: true });
+    expect(mocks.relinkReceiptToTransaction).toHaveBeenCalledWith(
+      "user-1",
+      "tx-1",
+      "r-1",
+    );
+  });
+
+  it("404, коли чек не належить користувачу", async () => {
+    // Ендпоїнт приймає будь-який `receiptId`, тож перевірка власності —
+    // єдине, що стоїть між ним і привʼязкою чужого чека.
+    mocks.relinkReceiptToTransaction.mockResolvedValue(false);
+
+    const res = await request(appWith())
+      .post("/api/silpo/receipts/link/tx-1")
+      .set("x-test-user-id", "user-1")
+      .send({ receiptId: "not-mine" });
+
+    expect(res.status).toBe(404);
+    expect(res.body).toMatchObject({ code: "NOT_FOUND" });
+  });
+
+  it("400 без receiptId у тілі", async () => {
+    const res = await request(appWith())
+      .post("/api/silpo/receipts/link/tx-1")
+      .set("x-test-user-id", "user-1")
+      .send({});
+
+    expect(res.status).toBe(400);
+    expect(mocks.relinkReceiptToTransaction).not.toHaveBeenCalled();
+  });
+
+  it("бере власника з сесії, ігноруючи тіло запиту", async () => {
+    mocks.relinkReceiptToTransaction.mockResolvedValue(true);
+
+    await request(appWith())
+      .post("/api/silpo/receipts/link/tx-1")
+      .set("x-test-user-id", "user-1")
+      .send({ receiptId: "r-1", userId: "user-2" });
+
+    expect(mocks.relinkReceiptToTransaction).toHaveBeenCalledWith(
+      "user-1",
+      "tx-1",
+      "r-1",
     );
   });
 });

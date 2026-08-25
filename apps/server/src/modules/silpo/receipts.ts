@@ -1,13 +1,6 @@
 import { z } from "zod";
 import type { PoolClient } from "pg";
 import * as Sentry from "@sentry/node";
-// Субшлях замість кореневого барела: барел тягне categories.ts → design-tokens,
-// якого нема в server-бандлі (esbuild резолвить усі імпорти до tree-shaking).
-import {
-  matchReceiptsToTransactions,
-  type MonoTxForReceiptMatching,
-  type ReceiptForMatching,
-} from "@sergeant/finyk-domain/domain/receiptMatching";
 import { pool, query as defaultQuery } from "../../db.js";
 import { logger } from "../../obs/logger.js";
 import {
@@ -17,6 +10,7 @@ import {
 } from "../../obs/errors.js";
 import { callMcpTool, type McpError, type McpResult } from "./mcpClient.js";
 import { resolveBranchContext } from "./branchContext.js";
+import { matchAndLink } from "./receiptsMatch.js";
 import {
   callWithFreshAccessToken,
   type QueryFn,
@@ -435,167 +429,6 @@ async function upsertReceipt(
   });
 }
 
-// ─────────────────────────────── Matcher step ───────────────────────────────
-
-type MonoTxCandidateRow = {
-  id: string;
-  amountKop: number;
-  timeSeconds: number;
-  mcc: number | null;
-  description: string | null;
-  receiptId: string | null;
-};
-
-/**
- * Вікно matcher-а обмежене: чеки старші 90 днів майже напевно не мають
- * незматченої Mono-транзакції-кандидата (та й `loadCandidateTransactions`
- * будує вікно з min/max purchased_at — один давній чек розтягував би його
- * на місяці), а LIMIT страхує від необмеженого скану після масового
- * імпорту історії. Хвіст доганяється наступними синками.
- */
-const MATCH_WINDOW_DAYS = 90;
-const MATCH_BATCH_LIMIT = 500;
-
-async function loadUnresolvedReceipts(
-  userId: string,
-  queryFn: QueryFn,
-): Promise<ReceiptForMatching[]> {
-  const { rows } = await queryFn<{
-    receipt_id: string;
-    total_kop: number;
-    purchased_at: Date | string;
-  }>(
-    `SELECT r.receipt_id, r.total_kop, r.purchased_at
-       FROM silpo_receipts r
-       WHERE r.user_id = $1
-         AND r.purchased_at >= NOW() - ($2 || ' days')::interval
-         AND NOT EXISTS (
-           SELECT 1 FROM silpo_tx_receipt_links l
-            WHERE l.user_id = r.user_id AND l.receipt_id = r.receipt_id
-         )
-       ORDER BY r.purchased_at DESC
-       LIMIT $3`,
-    [userId, String(MATCH_WINDOW_DAYS), MATCH_BATCH_LIMIT],
-    { op: "silpo_unresolved_receipts_select" },
-  );
-  return rows.map((r) => ({
-    receiptId: r.receipt_id,
-    totalKop: Number(r.total_kop),
-    purchasedAtMs: new Date(r.purchased_at).getTime(),
-  }));
-}
-
-async function loadCandidateTransactions(
-  userId: string,
-  windowStartMs: number,
-  windowEndMs: number,
-  queryFn: QueryFn,
-): Promise<MonoTxForReceiptMatching[]> {
-  const { rows } = await queryFn<MonoTxCandidateRow>(
-    `SELECT t.mono_tx_id AS "id",
-            t.amount AS "amountKop",
-            EXTRACT(EPOCH FROM t.time)::bigint AS "timeSeconds",
-            t.mcc,
-            t.description,
-            t.receipt_id AS "receiptId"
-       FROM mono_transaction t
-      WHERE t.user_id = $1
-        AND t.amount < 0
-        AND t.time >= $2
-        AND t.time <= $3
-        AND NOT EXISTS (
-          SELECT 1 FROM silpo_tx_receipt_links l
-           WHERE l.user_id = t.user_id AND l.transaction_id = t.mono_tx_id
-        )`,
-    [userId, new Date(windowStartMs), new Date(windowEndMs)],
-    { op: "silpo_candidate_transactions_select" },
-  );
-  return rows.map((r) => ({
-    id: r.id,
-    amountKop: Number(r.amountKop),
-    timeSeconds: Number(r.timeSeconds),
-    mcc: r.mcc,
-    description: r.description,
-    receiptId: r.receiptId,
-  }));
-}
-
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-/**
- * Пари «транзакція ↔ чек», які користувач зняв через
- * `DELETE /api/silpo/receipts/link/:transactionId`. Ключ — `"<txId> <receiptId>"`;
- * пробіл безпечний як роздільник, бо обидва ідентифікатори приходять
- * зовнішніми системами без пробілів (Mono tx id, Silpo receipt id).
- */
-async function loadLinkRejections(
-  userId: string,
-  queryFn: QueryFn,
-): Promise<Set<string>> {
-  const { rows } = await queryFn<{
-    transaction_id: string;
-    receipt_id: string;
-  }>(
-    `SELECT transaction_id, receipt_id
-       FROM silpo_tx_receipt_link_rejections
-      WHERE user_id = $1`,
-    [userId],
-    { op: "silpo_link_rejections_select" },
-  );
-  return new Set(rows.map((r) => `${r.transaction_id} ${r.receipt_id}`));
-}
-
-async function matchAndLink(
-  userId: string,
-  queryFn: QueryFn,
-): Promise<{ matched: number; ambiguous: number; unmatched: number }> {
-  const receipts = await loadUnresolvedReceipts(userId, queryFn);
-  if (receipts.length === 0) return { matched: 0, ambiguous: 0, unmatched: 0 };
-
-  const purchasedTimes = receipts.map((r) => r.purchasedAtMs);
-  const windowStartMs = Math.min(...purchasedTimes) - DAY_MS;
-  const windowEndMs = Math.max(...purchasedTimes) + DAY_MS;
-  const transactions = await loadCandidateTransactions(
-    userId,
-    windowStartMs,
-    windowEndMs,
-    queryFn,
-  );
-
-  const result = matchReceiptsToTransactions(receipts, transactions);
-
-  // Пари, які користувач уже розлінкував руками (міграція 127). Фільтр
-  // стоїть ТУТ, а не в `loadUnresolvedReceipts`: відхилено конкретну ПАРУ,
-  // а не чек — той самий чек має лишатись кандидатом на іншу транзакцію.
-  // Без цього кроку розлінк був би косметикою: matcher детермінований, тож
-  // найближчий sync побачив би чек знову без лінка й відновив рівно те, що
-  // людина щойно зняла.
-  const rejected = await loadLinkRejections(userId, queryFn);
-  const accepted = result.matches.filter(
-    (m) => !rejected.has(`${m.transactionId} ${m.receiptId}`),
-  );
-
-  for (const m of accepted) {
-    await queryFn(
-      `INSERT INTO silpo_tx_receipt_links (user_id, transaction_id, receipt_id)
-       VALUES ($1, $2, $3)
-       ON CONFLICT (user_id, transaction_id) DO NOTHING`,
-      [userId, m.transactionId, m.receiptId],
-      { op: "silpo_tx_receipt_link_insert" },
-    );
-  }
-
-  // Відхилений матч рахується як `unmatched`, а не `matched`: у звітності
-  // чек лишився без пари, і саме це має бачити людина в лозі синку.
-  const rejectedCount = result.matches.length - accepted.length;
-
-  return {
-    matched: accepted.length,
-    ambiguous: result.ambiguousReceiptIds.length,
-    unmatched: result.unmatchedReceiptIds.length + rejectedCount,
-  };
-}
-
 // ────────────────────────────────── Orchestration ────────────────────────────
 
 export interface SilpoSyncResult {
@@ -775,6 +608,7 @@ export {
   listReceipts,
   getReceiptDetail,
   unlinkReceiptFromTransaction,
+  relinkReceiptToTransaction,
   type ReceiptsPage,
   type ReceiptSummaryRow,
 } from "./receiptsRead.js";
