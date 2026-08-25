@@ -1,6 +1,6 @@
 # Playbook: Enable / Operate Silpo Integration
 
-> **Last touched:** 2026-08-25 by @Skords-01. **Next review:** 2026-12-18.
+> **Last touched:** 2026-08-25 by @github-actions[bot]. **Next review:** 2026-12-18.
 > **Status:** Active
 
 **Trigger:** вмикаємо `SILPO_ENABLED` у проді вперше · користувачі скаржаться,
@@ -217,3 +217,14 @@ UI, або чесно звузити обіцянку фічі до «свої �
 - [`env-vars.md` §24](../../02-engineering/integrations/env-vars.md) — усі змінні
 - [Спека інтеграції](../../90-work/planning/specs/silpo-mcp-integration.md)
 - [`rotate-secrets.md`](./rotate-secrets.md) — ротація `SILPO_TOKEN_ENC_KEY*`
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                        | Merged     |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------- | ---------- |
+| [#850](https://github.com/Skords-01/Sergeant/pull/850) | feat(web): цигарки й алкоголь як окремі категорії + скасування розлінку чека | 2026-08-25 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
