@@ -245,8 +245,16 @@ jobs:
           # секрет. Ріжемо до 300 символів, щоб довга HTML-сторінка входу не
           # залила лог, і друкуємо лише `Allow` з заголовків — решта може
           # містити cookie.
-          ALLOW=$(grep -i '^allow:' /tmp/coolify-headers.txt 2>/dev/null | tr -d '\r' || true)
-          BODY=$(head -c 300 /tmp/coolify-response.txt 2>/dev/null || true)
+          # Тіло й заголовки — ВІДДАЛЕНИЙ вхід, тож перед друком знешкоджуємо.
+          # Рядок, що починається з `::`, Actions виконає як workflow-команду
+          # (`::error::`, `::add-mask::`), а рядок із трьома бектиками розірве
+          # markdown-огорожу в summary. Префікс `| ` на КОЖНОМУ рядку лікує
+          # обидва разом: після нього жоден рядок не починається ні з `::`,
+          # ні з огорожі, а текст лишається читабельним.
+          ALLOW=$(grep -i '^allow:' /tmp/coolify-headers.txt 2>/dev/null \
+            | tr -d '\r' | sed 's/^/| /' || true)
+          BODY=$(head -c 300 /tmp/coolify-response.txt 2>/dev/null \
+            | tr -d '\r' | sed 's/^/| /' || true)
           {
             echo ""
             echo "<details><summary>Що відповів сервер</summary>"
