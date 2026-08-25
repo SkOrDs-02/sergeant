@@ -10,6 +10,7 @@
  * Last validated: 2026-08-22
  * Status: Active
  */
+import { Fragment, useMemo } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Input } from "@shared/components/ui/Input";
@@ -18,6 +19,25 @@ import { FoodHitRow } from "./FoodHitRow";
 import type { FoodProduct } from "../../lib/foodDb/foodDb";
 import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
 import { NAME_MAX_LEN } from "@shared/lib/text/limits";
+
+/**
+ * Підписи зовнішніх джерел пошуку (`FoodSearchProduct.source`, енум
+ * `off | usda | silpo` у `packages/shared/src/schemas/nutrition.ts`).
+ * Раніше всі зовнішні хіти підписувались «Open Food Facts» — silpo/usda
+ * хіт не має маскуватись під OFF. Невідоме джерело падає в OFF-підпис
+ * (історичний дефолт для зовнішніх хітів).
+ */
+const EXTERNAL_SOURCE_LABELS: Record<string, string> = {
+  off: "Open Food Facts",
+  usda: "USDA",
+  silpo: "Сільпо",
+};
+
+function externalSourceLabel(source: string | undefined): string {
+  return (
+    (source ? EXTERNAL_SOURCE_LABELS[source] : undefined) ?? "Open Food Facts"
+  );
+}
 
 export interface PickedFood {
   id?: string | number;
@@ -56,6 +76,19 @@ export function FoodPickerSection({
   setPickedFood,
   setPickedGrams,
 }: FoodPickerSectionProps) {
+  // Зовнішні хіти згруповані за джерелом (сервер віддає їх упереміш):
+  // кожна група несе власний заголовок-роздільник і підпис для іконки рядка.
+  const offHitGroups = useMemo(() => {
+    const groups: { label: string; hits: FoodSearchProduct[] }[] = [];
+    for (const p of offHits) {
+      const label = externalSourceLabel(p.source);
+      const last = groups[groups.length - 1];
+      if (last && last.label === label) last.hits.push(p);
+      else groups.push({ label, hits: [p] });
+    }
+    return groups;
+  }, [offHits]);
+
   return (
     <div className="mb-4 space-y-2">
       <div className="flex items-center justify-between gap-2">
@@ -99,18 +132,20 @@ export function FoodPickerSection({
                 }}
               />
             ))}
-            {offHits.length > 0 && (
-              <>
-                {foodHits.length > 0 && (
+            {offHitGroups.map((group, groupIndex) => (
+              <Fragment key={`${group.label}-${groupIndex}`}>
+                {/* Роздільник потрібен, коли є з чим розділяти: локальні
+                    хіти вище або більше ніж одне зовнішнє джерело. */}
+                {(foodHits.length > 0 || offHitGroups.length > 1) && (
                   <li className="px-3 py-1.5 text-style-caption text-subtle bg-panelHi/50 font-semibold">
-                    Open Food Facts
+                    {group.label}
                   </li>
                 )}
-                {offHits.map((p) => (
+                {group.hits.map((p) => (
                   <FoodHitRow
                     key={p.id}
                     p={p}
-                    externalSource
+                    externalSourceLabel={group.label}
                     onPick={() => {
                       setPickedFood(p as PickedFood);
                       const grams = Number(p.defaultGrams) || 100;
@@ -119,8 +154,8 @@ export function FoodPickerSection({
                     }}
                   />
                 ))}
-              </>
-            )}
+              </Fragment>
+            ))}
           </ul>
         </div>
       )}

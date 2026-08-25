@@ -57,9 +57,15 @@ export const meApi = apiClient.me;
 export const weeklyDigestApi = apiClient.weeklyDigest;
 export const transcribeApi = apiClient.transcribe;
 export const webVitalsApi = apiClient.webVitals;
+export const silpoApi = apiClient.silpo;
 
 // Errors, types, HTTP primitives
-export { ApiError, isApiError, createHttpClient } from "@sergeant/api-client";
+export {
+  ApiError,
+  isApiError,
+  createHttpClient,
+  silpoConnectUrl,
+} from "@sergeant/api-client";
 export type {
   ApiClient,
   ApiClientConfig,
@@ -134,4 +140,26 @@ export type {
   UserPreferencesPatch,
   UserProfilePayload,
   UserProfileResponse,
+  SilpoCartApplyRequest,
+  SilpoCartDto,
+  SilpoCartItemDto,
+  SilpoCartMatchDto,
+  SilpoCartPreviewItem,
+  SilpoCartPreviewQueryDto,
+  SilpoCartPreviewRequest,
+  SilpoCartPreviewResponse,
+  SilpoCartSelection,
+  SilpoConnectionStatus,
+  SilpoDisconnectResponse,
+  SilpoEndpoints,
+  SilpoReceiptChannel,
+  SilpoReceiptDetailDto,
+  SilpoReceiptItemDto,
+  SilpoReceiptsListParams,
+  SilpoReceiptsPage,
+  SilpoReceiptSummaryDto,
+  SilpoSyncResult,
+  SilpoSyncState,
+  SilpoUnlinkResponse,
+  SilpoWipeResponse,
 } from "@sergeant/api-client";

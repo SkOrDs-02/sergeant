@@ -56,6 +56,7 @@ import {
   createWebVitalsEndpoints,
   type WebVitalsEndpoints,
 } from "./endpoints/webVitals";
+import { createSilpoEndpoints, type SilpoEndpoints } from "./endpoints/silpo";
 
 export type ApiClientConfig = HttpClientConfig;
 
@@ -63,7 +64,7 @@ export type ApiClientConfig = HttpClientConfig;
  * Типізований API-клієнт для всіх публічних ендпоінтів Sergeant. Повертає
  * об'єкт з `http` (низькорівневі методи) та набором модульних ендпоінтів
  * (`sync`, `coach`, `chat`, `push`, `nutrition`, `barcode`, `foodSearch`,
- * `monoWebhook`, `privat`, `weeklyDigest`, `transcribe`, `webVitals`).
+ * `monoWebhook`, `privat`, `weeklyDigest`, `transcribe`, `webVitals`, `silpo`).
  *
  * Веб-додаток створює один інстанс на старті (див.
  * `apps/web/src/shared/api/client.ts`). RN-додаток зможе створити свій
@@ -88,6 +89,7 @@ export interface ApiClient {
   weeklyDigest: WeeklyDigestEndpoints;
   transcribe: TranscribeEndpoints;
   webVitals: WebVitalsEndpoints;
+  silpo: SilpoEndpoints;
 }
 
 export function createApiClient(config: ApiClientConfig = {}): ApiClient {
@@ -111,5 +113,6 @@ export function createApiClient(config: ApiClientConfig = {}): ApiClient {
     weeklyDigest: createWeeklyDigestEndpoints(http),
     transcribe: createTranscribeEndpoints(http),
     webVitals: createWebVitalsEndpoints(http),
+    silpo: createSilpoEndpoints(http),
   };
 }

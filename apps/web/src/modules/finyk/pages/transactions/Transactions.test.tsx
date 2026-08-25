@@ -2,7 +2,37 @@
 import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MemoryRouter } from "react-router-dom";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
+
+// The transaction-details sheet renders a "Чек" section
+// (`SilpoReceiptSection`) that reads `useSilpoSyncState` via
+// `@tanstack/react-query` — mock the API so this suite (which predates the
+// Silpo experiment and has no `QueryClientProvider`-independent stubbing
+// story) doesn't hit a real, unmocked `httpClient` fetch. Status stays
+// "disconnected", so the section renders nothing and every existing
+// assertion here is unaffected.
+vi.mock("@shared/api", async () => {
+  const actual =
+    await vi.importActual<typeof import("@shared/api")>("@shared/api");
+  return {
+    ...actual,
+    silpoApi: {
+      syncState: vi.fn().mockResolvedValue({
+        status: "disconnected",
+        accessTokenExpiresAt: null,
+        lastSyncAt: null,
+        receiptsCount: 0,
+      }),
+      sync: vi.fn(),
+      disconnect: vi.fn(),
+      wipe: vi.fn(),
+      receipts: vi.fn(),
+      receiptDetail: vi.fn(),
+    },
+  };
+});
 
 const { mockRequestCloudPull, mockMonoRefresh, mockToast } = vi.hoisted(() => ({
   mockRequestCloudPull: vi.fn(() => Promise.resolve()),
@@ -155,12 +185,21 @@ function renderTransactions(
   > = {},
 ) {
   const { mono, storage, ...rest } = overrides;
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
   return render(
-    <Transactions
-      mono={buildMono(mono)}
-      storage={buildStorage(storage)}
-      {...rest}
-    />,
+    // Деталі транзакції відкривають `SilpoReceiptSection`, а той ходить у
+    // `useNavigate` (CTA «Зв'язати Сільпо») — хук кидає без роутер-контексту.
+    <MemoryRouter>
+      <QueryClientProvider client={client}>
+        <Transactions
+          mono={buildMono(mono)}
+          storage={buildStorage(storage)}
+          {...rest}
+        />
+      </QueryClientProvider>
+    </MemoryRouter>,
   );
 }
 

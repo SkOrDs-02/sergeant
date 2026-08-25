@@ -112,6 +112,22 @@ describe("FoodPickerSection — search mode", () => {
     expect(screen.getByText("hit:Lays")).toBeInTheDocument();
   });
 
+  it("labels external hit groups by source — silpo is «Сільпо», not OFF", () => {
+    render(
+      <Section
+        {...baseProps({
+          offHits: [
+            { id: "s1", name: "Хліб", defaultGrams: 100, source: "silpo" },
+            { id: "u1", name: "Chicken", defaultGrams: 100, source: "usda" },
+          ],
+        })}
+      />,
+    );
+    expect(screen.getByText("Сільпо")).toBeInTheDocument();
+    expect(screen.getByText("USDA")).toBeInTheDocument();
+    expect(screen.queryByText(/Open Food Facts/)).not.toBeInTheDocument();
+  });
+
   it("renders the food error message", () => {
     render(<Section {...baseProps({ foodErr: "Помилка пошуку" })} />);
     expect(screen.getByText("Помилка пошуку")).toBeInTheDocument();

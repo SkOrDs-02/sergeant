@@ -43,6 +43,16 @@ vi.mock("../components/ShoppingListCard", () => ({
   ShoppingListCard: () => <div data-testid="shopping-list-card">Shopping</div>,
 }));
 
+// SilpoPantryReplenishEntry pulls in `useSilpoSyncState` (React Query) —
+// out of scope for this page-wiring test (no QueryClientProvider here),
+// and its own coverage lives in SilpoPantryReplenishEntry.test.tsx /
+// useSilpoPantryReplenish.test.tsx.
+vi.mock("../components/SilpoPantryReplenishEntry", () => ({
+  SilpoPantryReplenishEntry: () => (
+    <div data-testid="silpo-pantry-replenish-entry" />
+  ),
+}));
+
 // SubTabs is small enough to keep real — it only renders buttons.
 
 // ---------------------------------------------------------------------------

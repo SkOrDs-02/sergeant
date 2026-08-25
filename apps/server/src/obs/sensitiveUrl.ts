@@ -19,8 +19,9 @@
  *   - вхід `null/undefined/""` → `""` (нормалізація для логів, які люблять
  *     fallback на пустий рядок);
  *   - URL з відомим секрет-prefix-ом → секрет замінюється на `[redacted]`,
- *     query-string зберігається;
+ *     query-string зберігається (крім чутливих ключів нижче);
  *   - Telegram-bot-токен у path вихідного URL → `[redacted]`;
+ *   - значення чутливих query-ключів (`code`, `state`) → `[redacted]`;
  *   - усі інші URL — повертаються as-is, без копіювання.
  */
 
@@ -53,6 +54,24 @@ const TELEGRAM_BOT_TOKEN_IN_PATH =
   /(\/\/api\.telegram\.org\/bot)\d{5,15}:[A-Za-z0-9_-]{30,45}/g;
 
 /**
+ * Чутливі QUERY-ключі. Наразі це OAuth-колбек Сільпо
+ * (`/api/silpo/callback?code=…&state=…`): `code` — одноразовий
+ * authorization code, `state` — nonce, під яким лежить `code_verifier`.
+ *
+ * Сам по собі витік у лог не дає зловмиснику доступу (PKCE: без
+ * `code_verifier` код марний, а `state` згорає при першому ж використанні),
+ * але обидва значення потрапляють у read-only-системи з тривалим
+ * retention — Sentry бере `event.request.url` з `req.originalUrl`, а
+ * `errorHandler` падає на нього ж, коли помилка сталась до роутингу і
+ * `req.route` ще порожній. Дешевше вирізати, ніж пояснювати кожному
+ * наступному аудитору, чому воно там лежить.
+ *
+ * `[?&]` перед ключем обов'язковий — інакше під редакцію потрапили б
+ * нешкідливі суфікси на кшталт `?substate=` чи `?code_challenge=`.
+ */
+const SENSITIVE_QUERY_VALUES = /([?&](?:code|state)=)[^&#]*/gi;
+
+/**
  * Замінює секрет у URL-path-і на `[redacted]`. Зберігає query-string і
  * fragment, якщо вони є.
  *
@@ -66,10 +85,9 @@ const TELEGRAM_BOT_TOKEN_IN_PATH =
 export function redactSensitiveUrl(url: string | undefined | null): string {
   if (!url) return "";
 
-  const safeUrl = url.replace(
-    TELEGRAM_BOT_TOKEN_IN_PATH,
-    `$1${REDACTED_PLACEHOLDER}`,
-  );
+  const safeUrl = url
+    .replace(TELEGRAM_BOT_TOKEN_IN_PATH, `$1${REDACTED_PLACEHOLDER}`)
+    .replace(SENSITIVE_QUERY_VALUES, `$1${REDACTED_PLACEHOLDER}`);
 
   // Розділяємо path і query/fragment один раз. Express зазвичай дає
   // `req.originalUrl` без фрагменту, але Sentry-payload може мати повний

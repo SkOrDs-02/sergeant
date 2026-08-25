@@ -40,4 +40,9 @@ export * from "./weekKcalChart.js";
 export * from "./waterLog.js";
 export * from "./waterHistory.js";
 export * from "./shoppingList.js";
+// «Рівень 1» списку покупок (детермінований, без AI): точне віднімання
+// залишків комори + авто-вливання low-stock позицій. Реюзить той самий
+// low-stock поріг, що і бейдж комори (`pantryLowStock.ts`).
+export * from "./pantryLowStock.js";
+export * from "./shoppingListPantryMath.js";
 export * from "./dailyPlanValidation.js";

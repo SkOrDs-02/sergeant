@@ -12,6 +12,7 @@ import { createUsersInternalRouter } from "./users.js";
 import { createAlertsInternalRouter } from "./alerts.js";
 import { createEvalRagInternalRouter } from "./eval-rag.js";
 import { createMonoInternalRouter } from "./mono.js";
+import { createSilpoInternalRouter } from "./silpo.js";
 import { createWebhookEventsInternalRouter } from "./webhook-events.js";
 import { createStrategicInternalRouter } from "./strategic.js";
 import { createAiMemoryInternalRouter } from "./ai-memory.js";
@@ -76,6 +77,7 @@ export function createInternalRouter({ pool }: { pool: Pool }): Router {
   router.use(createAlertsInternalRouter({ pool }));
   router.use(createEvalRagInternalRouter({ pool }));
   router.use(createMonoInternalRouter({ pool }));
+  router.use(createSilpoInternalRouter());
   router.use(createWebhookEventsInternalRouter({ pool }));
   router.use(createStrategicInternalRouter({ pool }));
   router.use(createAiMemoryInternalRouter({ pool }));

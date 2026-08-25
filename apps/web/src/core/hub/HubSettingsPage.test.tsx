@@ -12,7 +12,7 @@ import { BrowserRouter, MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ToastProvider } from "@shared/hooks/useToast";
 import { ToastContainer } from "@shared/components/ui/Toast";
-import { billingKeys } from "@shared/lib/api/queryKeys";
+import { billingKeys, silpoKeys } from "@shared/lib/api/queryKeys";
 import { GROUPS, HubSettingsPage, lazySectionMinH } from "./HubSettingsPage";
 import { SETTINGS_SECTIONS_CATALOG } from "./settingsSectionsCatalog";
 
@@ -81,9 +81,24 @@ vi.mock("../settings/CapabilitiesSection", () => ({
 vi.mock("../settings/ExperimentalSection", () => ({
   ExperimentalSection: () => <section>Experimental section</section>,
 }));
-vi.mock("../settings/FinykSection", () => ({
-  FinykSection: () => <section>Finyk section</section>,
-}));
+// Real `FinykSection` wraps itself in `<SettingsGroup anchorId=
+// "settings-finyk">` — re-create just that wiring (not the Mono/Silpo
+// hooks it pulls in) so the Silpo-return test below can assert on the
+// SAME accordion primitive the real component renders (mirrors the
+// `PlanSection`/`PrivacySection` mocks below for the billing/privacy
+// hash-open proofs).
+vi.mock("../settings/FinykSection", async () => {
+  const { SettingsGroup } = await vi.importActual<
+    typeof import("../settings/SettingsPrimitives")
+  >("../settings/SettingsPrimitives");
+  return {
+    FinykSection: () => (
+      <SettingsGroup title="Фінік" anchorId="settings-finyk">
+        Finyk section
+      </SettingsGroup>
+    ),
+  };
+});
 vi.mock("../settings/FizrukSection", () => ({
   FizrukSection: () => <section>Fizruk section</section>,
 }));
@@ -611,6 +626,90 @@ describe("HubSettingsPage", () => {
       expect(window.location.search).not.toContain("billing");
     });
     expect(window.location.hash).toBe("#settings-plan");
+  });
+
+  // Silpo MCP walking-skeleton experiment (track A) — the OAuth callback
+  // returns to `/settings?silpo=connected|error&reason=…`, forwarded
+  // verbatim by `route.tsx` onto `/?tab=settings&silpo=…`. Mirrors the
+  // billing-return proof above: land on «Фінік», toast the outcome,
+  // refetch `silpoKeys`, strip the param.
+  it("reads ?silpo=connected: opens Фінік, refetches silpoKeys, confirms, strips the param", async () => {
+    window.history.replaceState(null, "", "/?tab=settings&silpo=connected");
+    const queryClient = createTestQueryClient();
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+
+    renderWithBrowserToast(<HubSettingsPage />, queryClient);
+
+    await waitFor(() => {
+      expect(invalidateSpy).toHaveBeenCalledWith({
+        queryKey: silpoKeys.all,
+      });
+    });
+    expect(await screen.findByText(/Сільпо зв'язано/)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /Фінік/ })).toHaveAttribute(
+        "aria-expanded",
+        "true",
+      );
+    });
+    await waitFor(() => {
+      expect(window.location.search).not.toContain("silpo");
+    });
+    expect(window.location.hash).toBe("#settings-finyk");
+  });
+
+  it("reads ?silpo=error&reason=denied: shows a human message (no raw code), retry action, strips both params", async () => {
+    window.history.replaceState(
+      null,
+      "",
+      "/?tab=settings&silpo=error&reason=denied",
+    );
+    const queryClient = createTestQueryClient();
+
+    renderWithBrowserToast(<HubSettingsPage />, queryClient);
+
+    expect(
+      await screen.findByText(/Ти відмовив у доступі до Сільпо/),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/Не вдалося зв'язати Сільпо: denied/),
+    ).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(window.location.search).not.toContain("silpo");
+      expect(window.location.search).not.toContain("reason");
+    });
+    expect(window.location.hash).toBe("#settings-finyk");
+  });
+
+  it("reads ?silpo=error&reason=session_expired: shows the session-expiry message", async () => {
+    window.history.replaceState(
+      null,
+      "",
+      "/?tab=settings&silpo=error&reason=session_expired",
+    );
+    const queryClient = createTestQueryClient();
+
+    renderWithBrowserToast(<HubSettingsPage />, queryClient);
+
+    expect(
+      await screen.findByText(/Сесія Sergeant завершилась/),
+    ).toBeInTheDocument();
+  });
+
+  it("reads ?silpo=error&reason=<unmapped>: falls back to the generic message instead of the raw code", async () => {
+    window.history.replaceState(
+      null,
+      "",
+      "/?tab=settings&silpo=error&reason=some_new_server_code",
+    );
+    const queryClient = createTestQueryClient();
+
+    renderWithBrowserToast(<HubSettingsPage />, queryClient);
+
+    expect(
+      await screen.findByText("Не вдалося зв'язати Сільпо."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/some_new_server_code/)).not.toBeInTheDocument();
   });
 
   // Audit finding #13 (2026-08-08): `SETTINGS_GROUP_PANEL_ID` used to be a

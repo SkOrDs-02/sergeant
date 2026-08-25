@@ -106,6 +106,34 @@ export const finykPageMessages = {
     hideLabel: "Приховати зі списку",
     hideDescription: "Її можна повернути через показ прихованих операцій",
   },
+  // "Чек" — секція деталей транзакції для Silpo MCP інтеграції, трек B
+  // (докс `docs/90-work/planning/specs/silpo-mcp-integration.md`).
+  silpoReceipt: {
+    title: "Чек із Сільпо",
+    splitCta: "Розбити за чеком",
+    itemsPending: "Знайдено чек, але позиції ще не завантажились.",
+    singleCategoryHint: "Усе — продукти, спліт не потрібен.",
+    proposalTitle: "Категорії за чеком",
+    proposalConfirm: "Підтвердити спліт",
+    proposalCancel: "Скасувати",
+    overwriteWarning:
+      "У транзакції вже є ручний спліт — підтвердження замінить його.",
+    connectPromptTitle: "Це схоже на покупку в Сільпо",
+    connectPromptHint: "Зв'яжи Сільпо, щоб бачити позиції чека тут.",
+    connectPromptCta: "Зв'язати Сільпо",
+    unlinkCta: "Це не той чек",
+    unlinkPending: "Відвʼязую…",
+    unlinkFailed: "Не вдалося відвʼязати. Спробуй ще раз.",
+  },
+  // «Чеки без транзакції» — картка Сільпо в налаштуваннях (unmatched-стан,
+  // спека § Рішення дизайну «Unmatched-чеки — першокласний стан»).
+  silpoUnmatchedReceipts: {
+    title: "Чеки без транзакції",
+    hint: "Немає банківської транзакції — сімейна карта лояльності, готівка чи інший банк. Можна створити витрату вручну.",
+    countSuffix: "без транзакції",
+    createExpense: "Створити витрату",
+    manualExpenseDescriptionPrefix: "Чек Сільпо",
+  },
   nonUahAssetsExcluded: {
     one: "актив в іноземній валюті не враховую в нетворсі",
     few: "активи в іноземній валюті не враховую в нетворсі",

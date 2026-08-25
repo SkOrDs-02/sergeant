@@ -118,6 +118,52 @@ export const finykKeys = {
   importBatch: (id: number) => ["finyk", "import-batch", id] as const,
 };
 
+// ─── Silpo (MCP receipts integration, walking-skeleton experiment) ────────
+//
+// `SILPO_ENABLED` defaults to `false` server-side — `syncState`/`receipts`
+// then 503 with `{code: "SILPO_DISABLED"}`. Hooks surface that as a
+// synthetic client-side "disabled" state (never invalidated via these
+// keys — it's derived from the error, not cached data).
+export const silpoKeys = {
+  all: ["silpo"] as const,
+  syncState: ["silpo", "sync-state"] as const,
+  /** Cursor-paginated `GET /api/silpo/receipts` list, keyed by params so
+   *  distinct pages/limits don't collide in cache. */
+  receipts: (params?: {
+    limit?: number;
+    cursor?: string;
+    transactionId?: string;
+  }) =>
+    [
+      "silpo",
+      "receipts",
+      params?.limit ?? null,
+      params?.cursor ?? null,
+      params?.transactionId ?? null,
+    ] as const,
+  receiptDetail: (receiptId: string) =>
+    ["silpo", "receipts", "detail", receiptId] as const,
+
+  // ── Cart (Track G — «У кошик Сільпо» зі списку покупок) ────────────────
+  /**
+   * `GET /api/silpo/cart` — поточний стан зовнішнього кошика Сільпо.
+   * Інвалідується після успішного `cartApply()`, щоб наступне читання (якщо
+   * колись з'явиться в'ювер поточного кошика) не показувало стейл дані.
+   */
+  cart: () => ["silpo", "cart"] as const,
+  /**
+   * `POST /api/silpo/cart/preview` — ключ за ВМІСТОМ запиту (масив
+   * `{name, quantity?}`), той самий idiom, що `nutritionKeys.dayHint`:
+   * preview — чиста функція від набору позицій, тож інший набір позицій
+   * мусить бути іншим кеш-рядком, а той самий набір (повторне відкриття
+   * шіта з тим самим unchecked-списком) — тим самим. React Query серіалізує
+   * ключі детерміновано (`hashKey` сортує поля), тож масив об'єктів як
+   * останній елемент — безпечний.
+   */
+  cartPreview: (items: { name: string; quantity?: number | undefined }[]) =>
+    ["silpo", "cart", "preview", items] as const,
+};
+
 // ─── Push notifications ───────────────────────────────────────────────────
 export const pushKeys = {
   all: ["push"] as const,
