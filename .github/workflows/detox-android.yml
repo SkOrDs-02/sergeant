@@ -41,20 +41,25 @@ name: Detox (Android)
 #   See `docs/90-work/initiatives/archive/stack-pulse-2026-05/pr-18-detox-server-shape-trigger.md`.
 #
 # Web-focus phase (2026-07): `push` вимкнено — Detox не гониться на кожен
-# merge до `main`. Nightly schedule + `workflow_dispatch` лишаються. PR-тригер
-# лише на прямі зміни mobile-shell.
+# merge до `main`. PR-тригер лише на прямі зміни mobile-поверхонь.
+#
+# ⛔ ЗАМОРОЖЕНО (web-first, 2026-08-25). Mobile-застосунки запускаємо лише
+# якщо web доведе потребу в продукті, тож цей лейн свідомо тримається
+# non-blocking, а `schedule:` НЕ повертається до розморозки. Обсяг заморозки і
+# порядок розморозки — `docs/90-work/tech-debt/mobile.md`, блок
+# «Оновлено 2026-08-25». Сьюти в `apps/mobile/e2e/` НЕ видаляємо — вони актив
+# на момент розморозки.
+#
+# DOC-DRIFT FIX 2026-08-25: до цієї правки шапка стверджувала «Nightly schedule
+# + workflow_dispatch лишаються», а нижче стояв абзац про 03:15 UTC — хоча
+# `schedule:` тригера у файлі немає з web-focus фази (2026-07). Дрейф зафіксував
+# аудит покриття 2026-08-04; тепер коментар описує фактичний стан.
 on:
   pull_request:
     paths:
       - "apps/mobile/**"
       - "apps/mobile-shell/**"
       - ".github/workflows/detox-android.yml"
-  # Nightly run catches drift on transitive deps that wouldn't fire a
-  # `paths`-scoped trigger — Android SDK image refresh, AGP upgrade via
-  # Renovate, react-native patch bumps, etc. 03:15 UTC ≈ 05:15 Kyiv
-  # — picked to land before the working day and after most US-evening
-  # commit traffic so a flaky AVD boot doesn't fight other jobs for the
-  # `ubuntu-latest` queue.
   workflow_dispatch:
 
 permissions:

@@ -180,11 +180,104 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
+  mutation-ratchet:
+    name: Mutation ratchet (score не гірше минулого разу)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [shared-utils, server-normalizers, finyk-domain-core, web-kyiv-time]
+    # ЧОМУ ЦЕ ПОТРІБНО ДОДАТКОВО ДО `thresholds.break: 70` У STRYKER-КОНФІГАХ.
+    # `break` — статична підлога: таргет, що реально тримає 95%, може просісти
+    # до 71% (десятки нових вижилих мутантів у грошовій / часовій /
+    # normalizer-логіці) і жодна джоба вище не почервоніє. Плюс звіти живуть
+    # 30 днів артефактами — історії score немає, деградацію нема з чим
+    # порівняти. Ця джоба дає шару памʼять: тягне JSON-звіти всіх чотирьох
+    # таргетів і звіряє їх з baseline у кореневому mutation-ratchet.json.
+    #
+    # `always()`: джоба має відпрацювати і на червоному Stryker-і — тоді
+    # відсутній звіт стає внятним fail-closed повідомленням, а не тишею.
+    # Baseline у CI свідомо НЕ комітиться (weekly cron ходить по main —
+    # автокоміт у main з крона нам не потрібен): лише перевірка + вивід,
+    # а bump власник робить локально через `--bump`.
+    if: always()
+    steps:
+      - name: Checkout
+        # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      # pnpm тут не потрібен: гейт — чистий Node-скрипт без залежностей.
+      - name: Setup Node
+        # actions/setup-node v6.4.0 (SHA-pinned for supply-chain hardening)
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: 22
+
+      # Кожен артефакт розпаковується у власну теку. `continue-on-error`
+      # навмисний: якщо Stryker упав і артефакта немає, хай про це скаже
+      # сам гейт (fail-closed з назвою таргета), а не сирий провал download-у.
+      - name: Download shared utils report
+        continue-on-error: true
+        # actions/download-artifact v7.0.0 (SHA-pinned for supply-chain hardening)
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+        with:
+          name: mutation-tier-1-shared-utils-report
+          path: mutation-artifacts/utils
+
+      - name: Download server normalizers report
+        continue-on-error: true
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+        with:
+          name: mutation-tier-1-server-normalizers-report
+          path: mutation-artifacts/normalizers
+
+      - name: Download finyk-domain core report
+        continue-on-error: true
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+        with:
+          name: mutation-tier-2-finyk-domain-core-report
+          path: mutation-artifacts/core
+
+      - name: Download web kyiv time report
+        continue-on-error: true
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+        with:
+          name: mutation-tier-2-web-kyiv-time-report
+          path: mutation-artifacts/time
+
+      # Артефакт містить index.html + mutation-report.json; upload-artifact
+      # зрізає least-common-ancestor шляхів, тож обидва файли лежать у корені
+      # теки розпакування. Лістинг лишаємо для діагностики, а скрипт усе одно
+      # приймає теку і сам рекурсивно знаходить mutation-report.json — щоб
+      # зміна `path:` на upload-і не ламала гейт мовчки.
+      - name: Show downloaded layout
+        run: ls -R mutation-artifacts || true
+
+      # Pre-flight: зламаний helper має падати ДО того, як гейт почне
+      # вирішувати долю прогону (той самий патерн, що в job `coverage`).
+      - name: Unit-test the ratchet helpers
+        run: node --test scripts/ci/__tests__/mutation-ratchet.test.mjs
+
+      - name: Check mutation ratchet
+        run: |
+          node scripts/ci/mutation-ratchet.mjs --check-only \
+            --report utils=mutation-artifacts/utils \
+            --report normalizers=mutation-artifacts/normalizers \
+            --report core=mutation-artifacts/core \
+            --report time=mutation-artifacts/time
+
   report-red-run:
     name: Create / refresh issue on red run
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [shared-utils, server-normalizers, finyk-domain-core, web-kyiv-time]
+    # `mutation-ratchet` у needs — щоб просідання score (яке `thresholds.break`
+    # не ловить) створювало ту саму ідемпотентну issue, що й червоний Stryker.
+    needs:
+      [
+        shared-utils,
+        server-normalizers,
+        finyk-domain-core,
+        web-kyiv-time,
+        mutation-ratchet,
+      ]
     # Fires when ANY mutation job goes red on the weekly cron. Manual
     # `workflow_dispatch` runs are watched by a human, so they do not open
     # issues — mirrors the `github.event_name == 'schedule'` gate in
@@ -224,9 +317,12 @@ jobs:
               '',
               'A red job means the mutation score dropped below `thresholds.break`',
               '(surviving mutants = untested behaviour in money/time/normalizer',
-              'logic) — or the run itself broke (infra/timeout). Either way it',
-              'needs eyes: without this issue a red weekly cron is invisible',
-              'until the next manual look at the Actions tab.',
+              'logic) — or the run itself broke (infra/timeout). A red',
+              '`mutation-ratchet` job means something subtler: the score is still',
+              'above `thresholds.break`, but it slid below the baseline recorded in',
+              '`mutation-ratchet.json` (see that job\'s step summary for the exact',
+              'numbers). Either way it needs eyes: without this issue a red weekly',
+              'cron is invisible until the next manual look at the Actions tab.',
               '',
               'Triage:',
               '',

@@ -42,6 +42,7 @@ import {
   NAME_MAX_LEN,
   NOTE_MAX_LEN,
   parseOptionalBoundedNumber,
+  parseOptionalBoundedInt,
   parseOptionalDate,
   parseOptionalInt,
   parseOptionalNumber,
@@ -266,6 +267,45 @@ describe("parseOptionalBoundedNumber (pre-beta input-boundaries audit)", () => {
     expect(parseOptionalBoundedNumber("not a number", { max: 100 })).toBe(
       "invalid",
     );
+  });
+});
+
+describe("parseOptionalBoundedInt (заміри Фізрука, аудит 2026-08-04)", () => {
+  const SCALE = { min: 1, max: 5 } as const;
+
+  it("пропускає null/undefined як null — поле опційне", () => {
+    expect(parseOptionalBoundedInt(null, SCALE)).toBeNull();
+    expect(parseOptionalBoundedInt(undefined, SCALE)).toBeNull();
+  });
+
+  it("приймає обидві межі шкали включно", () => {
+    expect(parseOptionalBoundedInt(1, SCALE)).toBe(1);
+    expect(parseOptionalBoundedInt(5, SCALE)).toBe(5);
+    expect(parseOptionalBoundedInt(3, SCALE)).toBe(3);
+  });
+
+  it("відхиляє значення поза шкалою з обох боків", () => {
+    expect(parseOptionalBoundedInt(0, SCALE)).toBe("invalid");
+    expect(parseOptionalBoundedInt(6, SCALE)).toBe("invalid");
+    expect(parseOptionalBoundedInt(-3, SCALE)).toBe("invalid");
+  });
+
+  it("робить floor ДО перевірки меж — 5.4 лишається валідним 5", () => {
+    // Порядок операцій навмисний: якби межі перевірялись до floor, цей
+    // виклик став би "invalid" і фікс зламав би клієнтів, що раніше
+    // працювали через поблажливість parseOptionalInt.
+    expect(parseOptionalBoundedInt(5.4, SCALE)).toBe(5);
+    expect(parseOptionalBoundedInt(1.9, SCALE)).toBe(1);
+  });
+
+  it("floor не рятує значення, яке поза межами і після округлення", () => {
+    expect(parseOptionalBoundedInt(6.9, SCALE)).toBe("invalid");
+    expect(parseOptionalBoundedInt(0.4, SCALE)).toBe("invalid");
+  });
+
+  it("успадковує 'invalid' від parseOptionalNumber для нечислового входу", () => {
+    expect(parseOptionalBoundedInt("not a number", SCALE)).toBe("invalid");
+    expect(parseOptionalBoundedInt(Number.NaN, SCALE)).toBe("invalid");
   });
 });
 
