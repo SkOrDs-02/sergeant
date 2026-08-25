@@ -36,6 +36,13 @@ const DEFAULT_DELAY_MS = 250;
 export interface SyncAllOptions {
   limit?: number | undefined;
   delayMs?: number | undefined;
+  /**
+   * Брати лише тих, кого не синкали щонайменше стільки годин. `0` (дефолт)
+   * — усіх підряд: так поводиться ручний прогін через internal-роут, коли
+   * ops свідомо хоче «оновити зараз». Періодичний poller навпаки передає
+   * поріг, інакше кожен рестарт контейнера ганяв би синк заново.
+   */
+  minAgeHours?: number | undefined;
   query?: QueryFn | undefined;
   /** Інʼєкція для тестів — реальний виклик б'є в мережу. */
   syncOne?: ((userId: string) => Promise<unknown>) | undefined;
@@ -75,13 +82,17 @@ export async function syncAllConnectedUsers(
     opts.syncOne ?? ((userId: string) => pullAndSyncReceipts(userId));
   const sleep = opts.sleep ?? defaultSleep;
 
+  const minAgeHours = opts.minAgeHours ?? 0;
   const { rows } = await queryFn<{ user_id: string }>(
     `SELECT user_id
        FROM silpo_connection
       WHERE status = 'connected'
+        AND ($2::int = 0
+             OR last_sync_at IS NULL
+             OR last_sync_at < NOW() - ($2::int * INTERVAL '1 hour'))
       ORDER BY last_sync_at ASC NULLS FIRST
       LIMIT $1`,
-    [limit],
+    [limit, minAgeHours],
     { op: "silpo_sync_all_candidates" },
   );
 

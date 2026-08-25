@@ -93,7 +93,22 @@ describe("syncAllConnectedUsers", () => {
 
     expect(query).toHaveBeenCalledWith(
       expect.stringContaining("status = 'connected'"),
-      [7],
+      // `0` — дефолтний поріг віку: ручний прогін бере всіх підряд.
+      [7, 0],
+      expect.objectContaining({ op: "silpo_sync_all_candidates" }),
+    );
+  });
+
+  it("з `minAgeHours` бере лише тих, кого давно не синкали", async () => {
+    // Це те, що робить періодичний poller: без порогу кожен рестарт
+    // контейнера ганяв би синк усім заново.
+    const query = queryReturning([]);
+
+    await syncAllConnectedUsers({ query, minAgeHours: 20, sleep: noSleep });
+
+    expect(query).toHaveBeenCalledWith(
+      expect.stringContaining("last_sync_at <"),
+      [100, 20],
       expect.objectContaining({ op: "silpo_sync_all_candidates" }),
     );
   });

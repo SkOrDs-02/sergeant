@@ -77,6 +77,7 @@ import {
 import { LogArchivePoller } from "./modules/logRetention/archivePoller.js";
 import { WebhookEventsRetentionPoller } from "./modules/webhooks/retentionPoller.js";
 import { PlataRecurringPoller } from "./modules/billing/plataScheduler.js";
+import { SilpoSyncPoller } from "./modules/silpo/syncScheduler.js";
 import { Sentry } from "./sentry.js";
 
 const app = createApp({
@@ -229,6 +230,12 @@ logArchivePoller.start();
 // Tier-A in-process poller-патерн, idempotent start/stop.
 const plataRecurringPoller = new PlataRecurringPoller({ pool });
 plataRecurringPoller.start();
+
+// Фоновий синк чеків Сільпо — той самий Tier-A poller-патерн. Off, поки
+// `SILPO_ENABLED=false`. Без нього чеки підтягуються ЛИШЕ по кнопці
+// «Оновити чеки» в налаштуваннях, тобто для більшості — ніколи.
+const silpoSyncPoller = new SilpoSyncPoller();
+silpoSyncPoller.start();
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Graceful shutdown
@@ -383,6 +390,15 @@ async function shutdown(reason: string, exitCode: number): Promise<void> {
           err: serializeError(err, { includeStack: false }),
         });
       }
+    }
+
+    try {
+      await silpoSyncPoller.stop();
+    } catch (err) {
+      logger.warn({
+        msg: "silpo_sync_poller_stop_error",
+        err: serializeError(err, { includeStack: false }),
+      });
     }
 
     try {

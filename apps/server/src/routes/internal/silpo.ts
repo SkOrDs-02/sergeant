@@ -3,8 +3,9 @@
  * Наразі один: періодичний фоновий синк чеків для всіх підключених.
  *
  * Auth: bearer-гард у `routes/internal/index.ts` (`INTERNAL_API_KEY`).
- * Викликач — n8n-крон (`ops/n8n-workflows/11-silpo-receipts-sync.json`),
- * ніколи не кінцевий користувач.
+ * Це РУЧНИЙ ops-інструмент: «прогнати синк зараз», не чекаючи на
+ * періодичний poller (`modules/silpo/syncScheduler.ts`). Зовнішнього крона
+ * тут немає навмисно — n8n у проді на паузі. Ніколи не кінцевий користувач.
  */
 
 import { Router } from "express";
