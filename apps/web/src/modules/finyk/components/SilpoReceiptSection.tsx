@@ -43,6 +43,7 @@ import {
 } from "@finyk/hooks/useSilpoMutations";
 import { useSilpoSyncState } from "@finyk/hooks/useSilpoSyncState";
 import { CATEGORY_ICON_MAP, stripLeadingEmoji } from "./txRowHelpers";
+import { SilpoReceiptPickerSheet } from "./SilpoReceiptPickerSheet";
 
 // Discoverability CTA (§ audit finding): a not-yet-connected user opening a
 // Silpo-looking transaction saw nothing — the section only ever rendered
@@ -62,6 +63,10 @@ export interface SilpoReceiptSectionProps {
    * списанням (знижки, часткова оплата) — сплити мають сумуватись у те,
    * що реально списалось з картки, а не в номінал чека. */
   transactionAmountKop: number;
+  /** Дата операції в ISO. Потрібна лише пікеру «Прикріпити чек» — він
+   * сортує чеки за близькістю до неї. Без неї пікер лишається робочим,
+   * просто в хронологічному порядку. */
+  transactionDateIso?: string | undefined;
   /** Той самий сетер, що `TxRowSplitEditor` (`onSplitChange` пропа
    * `BankTransactionDetailsSheet` → `setSplitTx`). */
   onSplitChange: (id: string, splits: TxSplit[] | null) => void;
@@ -150,6 +155,7 @@ export function SilpoReceiptSection({
   transactionId,
   transactionDescription,
   transactionAmountKop,
+  transactionDateIso,
   onSplitChange,
   customCategories = [],
   existingSplitsCount = 0,
@@ -173,6 +179,7 @@ export function SilpoReceiptSection({
     { enabled: status === "connected" },
   );
   const [proposalOpen, setProposalOpen] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const items = useMemo(() => detail?.items ?? [], [detail]);
   const suggestion = useMemo(
@@ -210,9 +217,14 @@ export function SilpoReceiptSection({
   //     підключена, і пропонувати підключитись наосліп — обман.
   //   • `reauth_required` — зв'язок Є, просто протух; про це вже кричить
   //     власний банер на картці в налаштуваннях, дублювати не треба.
+  // Один прапорець на дві гілки нижче: і банер «Зв'язати Сільпо» для
+  // непідключеного, і «Прикріпити чек» для підключеного без пари мають
+  // зʼявлятись рівно на операціях Сільпо, а не на кожній витраті.
+  const looksLikeSilpo = Boolean(
+    transactionDescription && SILPO_MERCHANT_RE.test(transactionDescription),
+  );
+
   if (status === "disconnected") {
-    const looksLikeSilpo =
-      transactionDescription && SILPO_MERCHANT_RE.test(transactionDescription);
     if (!looksLikeSilpo) return null;
     return (
       <section className="rounded-2xl border border-line bg-panel p-3">
@@ -276,7 +288,36 @@ export function SilpoReceiptSection({
     );
   }
 
-  if (!summary) return null;
+  // Чека немає, але операція виглядає як Сільпо — пропонуємо прикріпити
+  // вручну. Це вихід для всього, що matcher чесно пропустив: родинна
+  // карта, готівка, покупка старіша за завантажену історію банку.
+  if (!summary) {
+    // Рівно `connected`, з тієї ж причини, що й банер вище: під
+    // `disabled` (SILPO_ENABLED=false, дефолт проду) прикріплювати
+    // нічого — усі роути віддають 503, і кнопка вела б у нікуди. Під
+    // `unknown` / `reauth_required` — так само не час пропонувати дію.
+    if (status !== "connected" || !looksLikeSilpo) return null;
+    return (
+      <>
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={() => setPickerOpen(true)}
+            className="touch-target rounded-xl px-3 text-style-caption text-subtle transition-colors hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-finyk"
+          >
+            {messages.finyk.silpoReceiptPicker.cta}
+          </button>
+        </div>
+        <SilpoReceiptPickerSheet
+          open={pickerOpen}
+          onClose={() => setPickerOpen(false)}
+          transactionId={transactionId}
+          transactionAmountKop={transactionAmountKop}
+          transactionDateIso={transactionDateIso ?? ""}
+        />
+      </>
+    );
+  }
 
   const confirmSplit = () => {
     // `null` у `onSplitChange` означає «видалити спліт» — підтвердження
