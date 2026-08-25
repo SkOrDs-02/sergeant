@@ -1,11 +1,16 @@
 /**
- * Last validated: 2026-08-17
+ * Last validated: 2026-08-25
  * Status: Active
  *
  * "Додати документи" (спека § Фаза 2 — Масове ведення). Два шляхи з
  * однієї точки входу — банківські документи:
  *   (а) скрін банкінгу  → `analyzeImportScreenshot` → bulk-review
- *   (б) CSV-виписка     → `previewImportStatement` → (мапер?) → bulk-review
+ *   (б) виписка файлом  → `previewImportStatement` → (мапер?) → bulk-review
+ *
+ * Виписка їде на сервер СИРИМ файлом (`readStatementFile` → base64), а не
+ * як `file.text()`: пікер приймає CSV, XLS і XLSX, бо Privat24 віддає
+ * саме таблицю, а український CSV часто у windows-1251 — і те, і те
+ * текстове читання в браузері нищило ще до відправки.
  *
  * Обидва сходяться на спільному `BulkReviewTable` + `commitImport`.
  * «Кілька фото чеків» (Фаза 2а) переїхали у `ReceiptScanSheet` — фото
@@ -23,13 +28,21 @@ import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { useResetPinchZoomAfterCameraCapture } from "@shared/hooks/useResetPinchZoomOnResume";
-import type { ImportSkippedRow, ImportSource } from "@sergeant/api-client";
+import type {
+  ImportScreenshotDraft,
+  ImportSkippedRow,
+  ImportSource,
+} from "@sergeant/api-client";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain";
 import { DEFAULT_CATEGORY } from "../manualExpenseCategories";
 import { DEFAULT_INCOME_CATEGORY } from "../manualIncomeCategories";
 import { formatReceiptError } from "../../lib/receiptErrors";
 import { readReceiptImageFile } from "../../lib/receiptImage";
-import { readCsvTextFile } from "../../lib/importCsv";
+import {
+  IMPORT_STATEMENT_FILE_ACCEPT,
+  readStatementFile,
+  type StatementFilePayload,
+} from "../../lib/importStatementFile";
 import {
   useImportBatchUndo,
   useImportCommit,
@@ -66,6 +79,44 @@ const SKIP_REASON_LABEL: Record<string, string> = {
   empty: "порожній рядок",
 };
 
+/**
+ * Чому на скріні не знайшлось жодного рядка. Одне спільне «не вдалось
+ * розпізнати транзакції» ховало три різні ситуації з трьома різними діями
+ * користувача — і бета-фідбек 2026-08-25 («ші написав, що не може знайти
+ * транзакції на скріншоті») був саме про це: текст не давав ЖОДНОЇ
+ * підказки, що робити далі. Сервер тепер каже, що саме він відкинув
+ * (`draft.dropped`) і чи обірвалась відповідь моделі (`draft.truncated`).
+ */
+function explainEmptyScreenshot(draft: ImportScreenshotDraft): string {
+  if (draft.truncated) {
+    return "На скріні забагато операцій — не встиг дочитати список. Зроби кілька скрінів по частинах.";
+  }
+  const { failed, nonUah, unreadable } = draft.dropped;
+  if (nonUah > 0 && failed === 0 && unreadable === 0) {
+    return `Знайшов ${nonUah} ${plural(nonUah, "операцію", "операції", "операцій")}, але не в гривні — імпорт поки працює лише з UAH.`;
+  }
+  if (failed > 0 && nonUah === 0 && unreadable === 0) {
+    return `Усі ${failed} ${plural(failed, "операція", "операції", "операцій")} на скріні позначені як невдалі — гроші за ними не рухались.`;
+  }
+  if (failed + nonUah + unreadable > 0) {
+    return "Бачу операції, але жодну не вдалось прочитати повністю. Спробуй скрін крупніше або без обрізаних країв.";
+  }
+  if (draft.docType === "other") {
+    return "Це не схоже на екран банківського застосунку. Відкрий список операцій у банку і зроби скрін звідти.";
+  }
+  return "Не знайшов операцій на скріні. Переконайся, що на ньому видно список транзакцій із сумами.";
+}
+
+/** Українська трійка форм для лічильника (1 / 2-4 / 5+). */
+function plural(n: number, one: string, few: string, many: string): string {
+  const mod100 = n % 100;
+  if (mod100 >= 11 && mod100 <= 14) return many;
+  const mod10 = n % 10;
+  if (mod10 === 1) return one;
+  if (mod10 >= 2 && mod10 <= 4) return few;
+  return many;
+}
+
 function defaultCategoryFor(direction: "expense" | "income"): string {
   return direction === "income" ? DEFAULT_INCOME_CATEGORY : DEFAULT_CATEGORY;
 }
@@ -99,7 +150,8 @@ export function BulkImportSheet({
   const [importSource, setImportSource] = useState<ImportSource | null>(null);
   const [reviewRows, setReviewRows] = useState<BulkReviewRow[]>([]);
   const [skippedNote, setSkippedNote] = useState<string | null>(null);
-  const [pendingCsvText, setPendingCsvText] = useState<string | null>(null);
+  const [pendingStatementFile, setPendingStatementFile] =
+    useState<StatementFilePayload | null>(null);
   const [mapperHeaders, setMapperHeaders] = useState<string[]>([]);
   const [mapperSampleRows, setMapperSampleRows] = useState<string[][]>([]);
   const [commitResult, setCommitResult] = useState<ImportCommitResult | null>(
@@ -127,7 +179,7 @@ export function BulkImportSheet({
       setImportSource(null);
       setReviewRows([]);
       setSkippedNote(null);
-      setPendingCsvText(null);
+      setPendingStatementFile(null);
       setMapperHeaders([]);
       setMapperSampleRows([]);
       setCommitResult(null);
@@ -170,7 +222,7 @@ export function BulkImportSheet({
         return;
       }
       if (draft.docType === "other" || draft.rows.length === 0) {
-        failBackToChoose("Не вдалось розпізнати транзакції на скріні.");
+        failBackToChoose(explainEmptyScreenshot(draft));
         return;
       }
       setImportSource("bank_screenshot");
@@ -187,11 +239,11 @@ export function BulkImportSheet({
 
   const applyStatementPreview = (
     response: Awaited<ReturnType<typeof statementPreview.mutateAsync>>,
-    csvText: string,
+    file: StatementFilePayload,
   ) => {
     setProcessing(null);
     if (response.needsMapping) {
-      setPendingCsvText(csvText);
+      setPendingStatementFile(file);
       setMapperHeaders(response.headers ?? []);
       setMapperSampleRows(response.sampleRows ?? []);
       setStage("csv-mapper");
@@ -205,20 +257,18 @@ export function BulkImportSheet({
     setStage("bulk-review");
   };
 
-  const handleCsvSelected = async (file: File) => {
+  const handleStatementSelected = async (file: File) => {
     setFlowError(null);
     setProcessing({ label: "Читаю виписку…", hint: CSV_SLOW_HINT });
     setStage("processing");
-    const csvResult = await readCsvTextFile(file);
-    if (!csvResult.ok) {
-      failBackToChoose(csvResult.error);
+    const fileResult = await readStatementFile(file);
+    if (!fileResult.ok) {
+      failBackToChoose(fileResult.error);
       return;
     }
     try {
-      const response = await statementPreview.mutateAsync({
-        csv_text: csvResult.text,
-      });
-      applyStatementPreview(response, csvResult.text);
+      const response = await statementPreview.mutateAsync(fileResult.payload);
+      applyStatementPreview(response, fileResult.payload);
     } catch (err) {
       failBackToChoose(
         formatReceiptError(err, "Не вдалось прочитати виписку."),
@@ -229,7 +279,7 @@ export function BulkImportSheet({
   const handleMapperSubmit = async (
     mapping: Parameters<typeof statementPreview.mutateAsync>[0]["mapping"],
   ) => {
-    if (!pendingCsvText) return;
+    if (!pendingStatementFile) return;
     setFlowError(null);
     // Тут стадію НЕ міняємо: мапер лишається змонтованим навмисно (його
     // власні колонки живуть у `useState`, і підміна на спінер губила б
@@ -237,10 +287,10 @@ export function BulkImportSheet({
     // Очікування показує кнопка самого `ColumnMapper` (`isSubmitting`).
     try {
       const response = await statementPreview.mutateAsync({
-        csv_text: pendingCsvText,
+        ...pendingStatementFile,
         mapping,
       });
-      applyStatementPreview(response, pendingCsvText);
+      applyStatementPreview(response, pendingStatementFile);
     } catch (err) {
       setFlowError(formatReceiptError(err, "Не вдалось прочитати виписку."));
     }
@@ -334,14 +384,14 @@ export function BulkImportSheet({
       <input
         ref={csvInputRef}
         type="file"
-        accept=".csv,text/csv"
+        accept={IMPORT_STATEMENT_FILE_ACCEPT}
         onChange={(e) => {
           const file = e.target.files?.[0];
           e.target.value = "";
-          if (file) void handleCsvSelected(file);
+          if (file) void handleStatementSelected(file);
         }}
         className="sr-only"
-        aria-label="Завантажити CSV-виписку"
+        aria-label="Завантажити виписку файлом"
       />
 
       {flowError && (
@@ -366,11 +416,11 @@ export function BulkImportSheet({
             onClick={() => csvInputRef.current?.click()}
           >
             <Icon name="file-text" size={16} aria-hidden />
-            CSV-виписка
+            Виписка файлом
           </Button>
           <p className="text-style-caption text-subtle">
-            Один файл за раз. Фото чеків — через «Сканувати чек», там можна
-            кілька одразу.
+            Виписка — CSV, XLS або XLSX, один файл за раз. Фото чеків — через
+            «Сканувати чек», там можна кілька одразу.
           </p>
         </div>
       )}
