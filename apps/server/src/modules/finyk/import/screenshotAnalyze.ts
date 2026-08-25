@@ -73,6 +73,7 @@ function normalizeTime(v: unknown): string | null {
  */
 export function normalizeImportScreenshotResult(
   raw: unknown,
+  opts: { truncated?: boolean } = {},
 ): ImportScreenshotDraft {
   const obj = isRecord(raw) ? raw : {};
 
@@ -93,6 +94,10 @@ export function normalizeImportScreenshotResult(
   // рев'ю цього PR (row N міг отримати `time` рядка N-k після того, як
   // k попередніх рядків відкинуло filter).
   const rows: ImportScreenshotRow[] = [];
+  // Лічильники відкинутого — щоб UI міг сказати ЧОМУ порожньо, а не
+  // однаковим «не вдалось розпізнати транзакції» на три різні причини
+  // (див. `ImportScreenshotDroppedSchema` у @sergeant/shared).
+  const dropped = { failed: 0, nonUah: 0, unreadable: 0 };
   // Кап — на ПРИДАТНІ рядки, не на вхідне вікно (ревʼю PR #818): slice до
   // фільтра дозволяв би пачці нечитабельних перших рядків виїсти бюджет і
   // викинути валідні пізніші.
@@ -102,7 +107,10 @@ export function normalizeImportScreenshotResult(
     // Невдалі операції (LLM-контракт `failed: true` — live-бенч
     // 2026-08-18: інструкція «не включай» ігнорувалась моделлю стабільно,
     // а РОЗМІТИТИ рядок вона вміє) — гроші не рухались, у драфт не йдуть.
-    if (row["failed"] === true) continue;
+    if (row["failed"] === true) {
+      dropped.failed += 1;
+      continue;
+    }
     // Не-UAH рядки (той самий бенч-урок, що failed: модель ігнорує
     // «пропусти», але чесно ставить розмітку) — Фаза 2 працює лише з
     // гривнею (узгоджено з CSV-шляхом: isUahCurrencyValue). Відсутнє
@@ -113,6 +121,7 @@ export function normalizeImportScreenshotResult(
       currencyRaw.trim() &&
       currencyRaw.trim().toUpperCase() !== "UAH"
     ) {
+      dropped.nonUah += 1;
       continue;
     }
     const date = isValidDayKey(row["date"]) ? (row["date"] as string) : null;
@@ -120,7 +129,10 @@ export function normalizeImportScreenshotResult(
     // Рядок без розпізнаваної дати чи додатної суми — непридатний для
     // bulk-review (не можна показати картку транзакції без цих двох
     // полів) — відкидаємо тут, а не пропускаємо биту форму на клієнта.
-    if (date === null || amountKopiykas <= 0) continue;
+    if (date === null || amountKopiykas <= 0) {
+      dropped.unreadable += 1;
+      continue;
+    }
 
     const direction = row["direction"] === "income" ? "income" : "expense";
     const description =
@@ -144,7 +156,70 @@ export function normalizeImportScreenshotResult(
     });
   }
 
-  return { docType, bank, rows };
+  return { docType, bank, rows, dropped, truncated: opts.truncated === true };
+}
+
+/**
+ * Витягує ПОВНІ обʼєкти рядків із обірваного JSON.
+ *
+ * WHY: коли модель уперлась у `max_tokens`, `extractJsonFromText` віддає
+ * `null` — незбалансовані дужки не парсяться, і 25 успішно розпізнаних
+ * рядків летять у смітник разом із 26-м недописаним. Для користувача це
+ * виглядало як «не бачу транзакцій» на цілком читабельному скріні.
+ * Тут ми знаходимо масив `"rows": [` і збираємо з нього кожен
+ * збалансований `{...}`, ігноруючи хвіст. Часткова відповідь усе одно
+ * проходить обовʼязковий bulk-review, тож ризику «тихо імпортував не те»
+ * немає — рівно та сама логіка, що вже виправдовує «найкращу здогадку» в
+ * `normalizeImportScreenshotResult`.
+ */
+export function salvageRowsFromTruncatedJson(text: string): unknown {
+  const rowsKey = /"rows"\s*:\s*\[/.exec(text);
+  if (!rowsKey) return null;
+
+  const rows: unknown[] = [];
+  let i = rowsKey.index + rowsKey[0].length;
+  while (i < text.length) {
+    const objStart = text.indexOf("{", i);
+    if (objStart === -1) break;
+    let depth = 0;
+    let inStr = false;
+    let esc = false;
+    let objEnd = -1;
+    for (let j = objStart; j < text.length; j += 1) {
+      const ch = text[j];
+      if (inStr) {
+        if (esc) esc = false;
+        else if (ch === "\\") esc = true;
+        else if (ch === '"') inStr = false;
+        continue;
+      }
+      if (ch === '"') inStr = true;
+      else if (ch === "{") depth += 1;
+      else if (ch === "}") {
+        depth -= 1;
+        if (depth === 0) {
+          objEnd = j;
+          break;
+        }
+      }
+    }
+    if (objEnd === -1) break; // недописаний хвіст — далі нічого корисного
+    try {
+      rows.push(JSON.parse(text.slice(objStart, objEnd + 1)));
+    } catch {
+      /* окремий битий рядок пропускаємо, решту лишаємо */
+    }
+    i = objEnd + 1;
+  }
+
+  if (rows.length === 0) return null;
+  const docType = /"doc_type"\s*:\s*"([a-z_]+)"/.exec(text)?.[1];
+  const bank = /"bank"\s*:\s*"((?:[^"\\]|\\.)*)"/.exec(text)?.[1];
+  return {
+    doc_type: docType ?? "bank_screenshot",
+    ...(bank ? { bank } : {}),
+    rows,
+  };
 }
 
 /**
@@ -210,14 +285,18 @@ export default async function screenshotAnalyzeHandler(
     return;
   }
 
-  const text = await callImportScreenshotVision({
+  const { text, truncated } = await callImportScreenshotVision({
     base64: b64,
     mediaType: validation.mimeType,
     ...(userId ? { userId } : {}),
   });
 
-  const parsed = extractJsonFromText(text);
-  const draft = normalizeImportScreenshotResult(parsed);
+  // Обірвана відповідь не парситься цілком — рятуємо повні рядки з хвоста
+  // (`salvageRowsFromTruncatedJson`), щоб довгий скрін давав ЧАСТИНУ
+  // транзакцій замість нуля.
+  const parsed =
+    extractJsonFromText(text) ?? salvageRowsFromTruncatedJson(text);
+  const draft = normalizeImportScreenshotResult(parsed, { truncated });
   // «Сітка 2» дедуп-превʼю (duplicateDetect.ts) — головний споживач саме
   // цей шлях: повторний прогін vision на тому самому скріні дає інші
   // описи, тож тір-2 хеш його не ловить; трійка дата+сума+напрям — ловить.

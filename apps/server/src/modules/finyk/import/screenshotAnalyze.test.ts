@@ -24,6 +24,7 @@ vi.mock("../../../db.js", () => ({
 import { anthropicMessages as _anthropicMessages } from "../../../lib/anthropic.js";
 import screenshotAnalyzeHandler, {
   normalizeImportScreenshotResult,
+  salvageRowsFromTruncatedJson,
 } from "./screenshotAnalyze.js";
 import {
   IMPORT_SCREENSHOT_VISION_SYSTEM_PROMPT,
@@ -500,5 +501,93 @@ describe("screenshotAnalyzeHandler", () => {
     };
     expect(body.draft.bank).toBe("privat24");
     expect(body.draft.rows[0]?.amountKopiykas).toBe(500);
+  });
+});
+
+// ───────── Обірвана відповідь і діагностика порожнього результату ────────
+// Бета-фідбек 2026-08-25: «ші написав, що не може знайти транзакції на
+// скріншоті». Причина була не в зорі моделі, а в `max_tokens`: довгий
+// список обривав JSON, `extractJsonFromText` віддавав `null`, і всі рядки
+// зникали разом із недописаним хвостом.
+
+describe("salvageRowsFromTruncatedJson", () => {
+  it("витягує повні рядки з обірваного на півслові JSON", () => {
+    const truncated =
+      '{"doc_type":"bank_screenshot","bank":"monobank","rows":[' +
+      '{"date":"2026-08-16","amount_kopiykas":12345,"direction":"expense","description":"АТБ","confidence":0.9},' +
+      '{"date":"2026-08-16","amount_kopiykas":5000,"direction":"expense","description":"Кава","confidence":0.9},' +
+      '{"date":"2026-08-15","amount_kopiykas":700,"direct';
+
+    const salvaged = salvageRowsFromTruncatedJson(truncated) as {
+      doc_type: string;
+      bank: string;
+      rows: unknown[];
+    };
+    expect(salvaged.doc_type).toBe("bank_screenshot");
+    expect(salvaged.bank).toBe("monobank");
+    expect(salvaged.rows).toHaveLength(2);
+  });
+
+  it("повертає null, коли рятувати нема чого", () => {
+    expect(salvageRowsFromTruncatedJson("Вибач, я не бачу транзакцій")).toBe(
+      null,
+    );
+  });
+});
+
+describe("draft-діагностика порожнього результату", () => {
+  it("рахує відкинуті рядки за причинами", () => {
+    const draft = normalizeImportScreenshotResult({
+      doc_type: "bank_screenshot",
+      rows: [
+        {
+          date: "2026-08-16",
+          amount_kopiykas: 100,
+          direction: "expense",
+          description: "Відхилено",
+          failed: true,
+        },
+        {
+          date: "2026-08-16",
+          amount_kopiykas: 100,
+          direction: "expense",
+          description: "Booking",
+          currency: "EUR",
+        },
+        { date: "не дата", amount_kopiykas: 0, description: "Сміття" },
+      ],
+    });
+    expect(draft.rows).toHaveLength(0);
+    expect(draft.dropped).toEqual({ failed: 1, nonUah: 1, unreadable: 1 });
+    expect(draft.truncated).toBe(false);
+  });
+
+  it("рятує частину рядків із відповіді, обірваної на max_tokens", async () => {
+    envMock.LLM_RECEIPT_PROVIDER = "openrouter";
+    envMock.OPENROUTER_API_KEY = "or-key";
+    anthropicMessages.mockResolvedValueOnce(
+      anthropicResponses.text(
+        '{"doc_type":"bank_screenshot","bank":"monobank","rows":[' +
+          '{"date":"2026-08-16","amount_kopiykas":12345,"direction":"expense","description":"АТБ","confidence":0.9},' +
+          '{"date":"2026-08-16","amount_kopiykas":50',
+        { stopReason: "max_tokens" },
+      ),
+    );
+
+    const res = makeRes();
+    await screenshotAnalyzeHandler(
+      makeReq({ image_base64: PNG_BASE64, mime_type: "image/png" }),
+      res,
+    );
+
+    expect(res.statusCode).toBe(200);
+    const body = res.body as {
+      draft: { rows: unknown[]; truncated: boolean; docType: string };
+    };
+    // Раніше тут було рівно нуль рядків і `docType: "other"` — саме це UI
+    // і показував як «не вдалось розпізнати транзакції».
+    expect(body.draft.docType).toBe("bank_screenshot");
+    expect(body.draft.rows).toHaveLength(1);
+    expect(body.draft.truncated).toBe(true);
   });
 });

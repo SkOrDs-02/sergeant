@@ -103,7 +103,7 @@ describe("detectCsvProfile — невідомий формат", () => {
 });
 
 describe("resolveCustomMapping", () => {
-  it("резолвить mapping на точні заголовки; dateFormat:undefined без хінта (автодетект per-рядок)", () => {
+  it("резолвить mapping на точні заголовки; dateFormat/decimalComma:undefined без хінта (автодетект per-рядок)", () => {
     const resolved = resolveCustomMapping(["Date", "Amount", "Note"], {
       dateCol: "Date",
       amountCol: "Amount",
@@ -115,7 +115,11 @@ describe("resolveCustomMapping", () => {
       descriptionColIndex: 2,
       currencyColIndex: null,
       dateFormat: undefined,
-      decimalComma: false,
+      // `undefined`, а НЕ `false`: без явного вибору користувача форсована
+      // крапка читала б українську кому як роздільник тисяч ("12,50" →
+      // 1250 грн). Автодетект розбирає обидві конвенції правильно — та
+      // сама логіка, що вже діяла для `dateFormat`.
+      decimalComma: undefined,
     });
   });
 

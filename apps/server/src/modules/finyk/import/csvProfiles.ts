@@ -44,7 +44,26 @@ export interface ResolvedColumnMapping {
    * раніше глушив авто-детект `parseCalendarDateKey`, коли клієнт узагалі
    * не передав `dateFormat`). */
   dateFormat: ImportDateFormat | undefined;
-  decimalComma: boolean;
+  /** `undefined` — автодетект десяткового роздільника на кожне значення
+   * окремо. Так само, як `dateFormat` вище: жорстка підказка описує
+   * ДРУКОВАНИЙ формат банку і на канонічних числах з типізованих клітинок
+   * XLSX (`-1234.56`) дала б протилежний результат, тому
+   * `statementPreview.ts` знімає її для сіток `sourceKind: "sheet"`. */
+  decimalComma: boolean | undefined;
+}
+
+/**
+ * Знімає з мапи жорсткі підказки формату дати й десяткового роздільника,
+ * лишаючи автодетект. Викликається для сіток, які прийшли з ТИПІЗОВАНИХ
+ * клітинок (XLSX): там дата й сума вже канонічні (`2026-08-16`,
+ * `-1234.56`), і підказка «Privat24 друкує DD.MM.YYYY і кому» зробила б із
+ * валідного рядка `unparsed_date` та зіпсувала б суму в 100 разів.
+ * Див. `statementFile.ts` § `StatementSourceKind`.
+ */
+export function withAutodetectedFormats(
+  mapping: ResolvedColumnMapping,
+): ResolvedColumnMapping {
+  return { ...mapping, dateFormat: undefined, decimalComma: undefined };
 }
 
 export interface DetectedProfile {
@@ -199,7 +218,11 @@ export function resolveCustomMapping(
     // лишаємо `undefined`, щоб `parseCalendarDateKey` автодетектив формат
     // на кожен рядок окремо (див. docstring `ResolvedColumnMapping.dateFormat`).
     dateFormat: mapping.dateFormat,
-    decimalComma: mapping.decimalComma ?? false,
+    // Так само НЕ дефолтимо на `false`: без явного вибору користувача
+    // автодетект `parseSignedAmountKopiykas` читає і "1 234,56", і
+    // "-1234.56" правильно, а форсована крапка мовчки перетворювала
+    // українську кому на роздільник тисяч ("12,50" → 1250 грн).
+    decimalComma: mapping.decimalComma,
   };
 }
 

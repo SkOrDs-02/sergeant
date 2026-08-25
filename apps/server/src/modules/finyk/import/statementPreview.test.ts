@@ -8,6 +8,7 @@ const dbMocks = vi.hoisted(() => ({ query: vi.fn() }));
 vi.mock("../../../db.js", () => ({ default: { query: dbMocks.query } }));
 
 import statementPreviewHandler from "./statementPreview.js";
+import { makeXlsx } from "./__fixtures__/makeXlsx.js";
 
 interface TestRes {
   statusCode: number;
@@ -304,5 +305,179 @@ describe("statementPreviewHandler — «сітка 2» дедуп-превʼю (
     // Один GROUP BY-запит на весь превʼю, з user-скоупом.
     expect(dbMocks.query).toHaveBeenCalledTimes(1);
     expect(dbMocks.query.mock.calls[0]?.[1]?.[0]).toBe("u1");
+  });
+});
+
+// ─────────────── Файлова гілка контракту (`file_base64`) ────────────────
+// Спека Фази 2 приймала лише `csv_text`, і Privat24 — банк, який віддає
+// виписку таблицею, — не імпортувався взагалі. Тести нижче ганяють ту саму
+// сітку через реальний XLSX-байтстрім, а не через текстову підміну.
+
+describe("statement/preview — файл замість тексту", () => {
+  /** 2026-08-16 у serial-нумерації Excel (епоха 1899-12-30). */
+  const SERIAL_2026_08_16 = 46250;
+
+  const privat24Xlsx = makeXlsx({
+    sharedStrings: [
+      "Виписка з рахунку за період 01.08.2026 — 25.08.2026",
+      "Дата",
+      "Опис операції",
+      "Сума в валюті рахунку",
+      "Валюта рахунку",
+      "АТБ-Маркет",
+      "UAH",
+      "Зарплата",
+      "Оплата в Booking.com",
+      "EUR",
+    ],
+    rows: [
+      [{ kind: "shared", index: 0 }],
+      [],
+      [
+        { kind: "shared", index: 1 },
+        { kind: "shared", index: 2 },
+        { kind: "shared", index: 3 },
+        { kind: "shared", index: 4 },
+      ],
+      [
+        { kind: "date", serial: SERIAL_2026_08_16 },
+        { kind: "shared", index: 5 },
+        { kind: "number", value: -123.45 },
+        { kind: "shared", index: 6 },
+      ],
+      [
+        { kind: "date", serial: SERIAL_2026_08_16 + 1 },
+        { kind: "shared", index: 7 },
+        { kind: "number", value: 20000 },
+        { kind: "shared", index: 6 },
+      ],
+      [
+        { kind: "date", serial: SERIAL_2026_08_16 + 2 },
+        { kind: "shared", index: 8 },
+        { kind: "number", value: -50 },
+        { kind: "shared", index: 9 },
+      ],
+    ],
+  });
+
+  it("XLSX-виписка Privat24 підхоплює автопрофіль і канонічні значення", async () => {
+    const res = makeRes();
+    await statementPreviewHandler(
+      makeReq({ file_base64: privat24Xlsx.toString("base64") }),
+      res,
+    );
+
+    const body = res.body as {
+      profile: string;
+      needsMapping: boolean;
+      rows: Array<{ date: string; amountKopiykas: number; direction: string }>;
+      skipped: Array<{ line: number; reason: string }>;
+    };
+    expect(body.profile).toBe("privat24");
+    expect(body.needsMapping).toBe(false);
+    // Дата з типізованої клітинки і сума з крапкою НЕ мусять постраждати
+    // від друкованих підказок профілю (`DD.MM.YYYY` + кома-десятковий):
+    // саме на цьому XLSX-шлях мовчки давав би `unparsed_date` і суму,
+    // помножену на 100.
+    expect(body.rows).toEqual([
+      {
+        date: "2026-08-16",
+        amountKopiykas: 12345,
+        direction: "expense",
+        description: "АТБ-Маркет",
+      },
+      {
+        date: "2026-08-17",
+        amountKopiykas: 2_000_000,
+        direction: "income",
+        description: "Зарплата",
+      },
+    ]);
+    // EUR-рядок відсіює currency-колонка профілю; номер рядка — фізичний
+    // у файлі (преамбула врахована), а не позиція в зрізі даних.
+    expect(body.skipped).toEqual([{ line: 6, reason: "not_uah" }]);
+  });
+
+  it("невідомий XLSX без збігу заголовків веде в ручний column-mapper", async () => {
+    const unknownXlsx = makeXlsx({
+      sharedStrings: ["When", "What", "How much", "Coffee"],
+      rows: [
+        [
+          { kind: "shared", index: 0 },
+          { kind: "shared", index: 1 },
+          { kind: "shared", index: 2 },
+        ],
+        [
+          { kind: "date", serial: SERIAL_2026_08_16 },
+          { kind: "shared", index: 3 },
+          { kind: "number", value: -75.5 },
+        ],
+      ],
+    });
+    const res = makeRes();
+    await statementPreviewHandler(
+      makeReq({ file_base64: unknownXlsx.toString("base64") }),
+      res,
+    );
+    const body = res.body as { needsMapping: boolean; headers: string[] };
+    expect(body.needsMapping).toBe(true);
+    expect(body.headers).toEqual(["When", "What", "How much"]);
+  });
+
+  it("mapping користувача на XLSX читає канонічні дату й суму", async () => {
+    const unknownXlsx = makeXlsx({
+      sharedStrings: ["When", "What", "How much", "Coffee"],
+      rows: [
+        [
+          { kind: "shared", index: 0 },
+          { kind: "shared", index: 1 },
+          { kind: "shared", index: 2 },
+        ],
+        [
+          { kind: "date", serial: SERIAL_2026_08_16 },
+          { kind: "shared", index: 3 },
+          { kind: "number", value: -75.5 },
+        ],
+      ],
+    });
+    const res = makeRes();
+    await statementPreviewHandler(
+      makeReq({
+        file_base64: unknownXlsx.toString("base64"),
+        mapping: {
+          dateCol: "When",
+          amountCol: "How much",
+          descriptionCol: "What",
+        },
+      }),
+      res,
+    );
+    const body = res.body as {
+      profile: string;
+      rows: Array<{ date: string; amountKopiykas: number }>;
+    };
+    expect(body.profile).toBe("custom");
+    expect(body.rows).toEqual([
+      {
+        date: "2026-08-16",
+        amountKopiykas: 7550,
+        direction: "expense",
+        description: "Coffee",
+      },
+    ]);
+  });
+
+  it("PDF відхиляється зрозумілою відмовою, а не порожнім результатом", async () => {
+    const res = makeRes();
+    await expect(
+      statementPreviewHandler(
+        makeReq({
+          file_base64: Buffer.from("%PDF-1.4\n%bin", "latin1").toString(
+            "base64",
+          ),
+        }),
+        res,
+      ),
+    ).rejects.toThrow(/PDF/);
   });
 });
