@@ -15,7 +15,7 @@
 // either side was refactored without updating the other), this test
 // fails before the PR can merge.
 //
-// **Coverage:** the pact file has 72 consumer interactions across 48
+// **Coverage:** the pact file has 73 consumer interactions across 49
 // unique routes, including the chat-usage extension, the
 // billing/privat/finyk consumer expansion (2026-08-04), the
 // preferences/profile consumer expansion (2026-08-04, pre-beta
@@ -264,10 +264,10 @@ afterAll(() => {
 const pact = loadPact();
 
 describe("Pact provider replay — consumer=sergeant-api-client, provider=sergeant-server", () => {
-  it("pact file has 72 expected consumer interactions across 48 routes", () => {
+  it("pact file has 73 expected consumer interactions across 49 routes", () => {
     expect(pact.consumer.name).toBe("sergeant-api-client");
     expect(pact.provider.name).toBe("sergeant-server");
-    expect(pact.interactions).toHaveLength(72);
+    expect(pact.interactions).toHaveLength(73);
     const expectedRoutes = new Set([
       // PR-42 baseline (5)
       "GET /api/v1/me",
@@ -325,6 +325,8 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
       "DELETE /api/v1/finyk/import/batches/88",
       // silpo розлінк хибної пари (аудит 2026-08-24): 1 інтеракція / 1 маршрут
       "DELETE /api/v1/silpo/receipts/link/mono-tx-1",
+      // silpo ручне привʼязування + «Повернути» (2026-08-25): 1 / 1
+      "POST /api/v1/silpo/receipts/link/mono-tx-1",
       // silpo walking-skeleton (PR #819): 7 інтеракцій / 6 маршрутів
       // (sync-state має і success-, і disabled-інтеракцію; 44 → 51).
       "GET /api/v1/silpo/receipts",

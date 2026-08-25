@@ -271,6 +271,14 @@ const EXEMPT_ROUTES: ReadonlySet<string> = new Set([
   "/api/sync/pull",
   "/api/sync/pull-all",
   "/api/sync/push-all",
+  // OAuth-колбек Сільпо — повернення від зовнішнього провайдера на
+  // api-домен, де куки сесії немає НІ В КОГО: `BETTER_AUTH_URL` живе на
+  // Vercel-домені, а `PUBLIC_API_BASE_URL` — окремий сайт (інцидент
+  // 2026-08-25, PR #849). Носій контексту тут — `state` із
+  // `silpo_oauth_state`, звірений і спалений у хендлері; сесія на цьому
+  // роуті не потрібна за жодної топології. Решта `/api/silpo/*` лишається
+  // за `requireSession()`.
+  "/api/silpo/callback",
   // Internal-only push fan-out — M14 hardening uses `requireInternalIp`
   // + `requireApiSecret("API_SECRET")` with constant-time compare. The
   // surface is not exposed to browsers (CGN range / loopback only), so
