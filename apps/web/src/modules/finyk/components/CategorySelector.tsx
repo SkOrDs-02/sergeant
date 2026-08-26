@@ -35,7 +35,10 @@ function CategorySelectorComponent({
 }: CategorySelectorProps) {
   return (
     <select
-      aria-label={ariaLabel ?? placeholder}
+      // `?? ` ловить лише null/undefined: порожній чи пробільний рядок від
+      // виклику лишив би поле безіменним — тобто рівно тим дефектом, який
+      // цей проп і закриває (рев'ю CodeRabbit 2026-08-26).
+      aria-label={ariaLabel?.trim() || placeholder}
       className={cn(
         "input-focus-finyk w-full h-10 pointer-coarse:min-h-[44px] rounded-xl border border-line bg-bg px-3 text-sm text-text",
         className,
