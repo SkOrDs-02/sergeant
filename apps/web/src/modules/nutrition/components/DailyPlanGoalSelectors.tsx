@@ -252,7 +252,11 @@ export function DailyPlanGoalSelectors({
                 <div className="text-text">{TDEE_COPY.triggerHint}</div>
                 <Link
                   to={PROFILE_PATH}
-                  className="mt-1 inline-block text-nutrition-strong dark:text-nutrition underline"
+                  // Тач-таргет: сам текст має 16px висоти, чого мало для
+                  // пальця (WCAG 2.5.5). `inline-flex` + px-флор під coarse
+                  // pointer — той самий прийом, що в `Button`/`Input`
+                  // (браузерний аудит 2026-08-26: було 108×16).
+                  className="mt-1 inline-flex items-center pointer-coarse:min-h-[44px] text-nutrition-strong dark:text-nutrition underline"
                   onClick={() => setMenuOpen(false)}
                 >
                   {TDEE_COPY.profileLink}

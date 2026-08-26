@@ -13,6 +13,13 @@ interface CategorySelectorProps {
   categories?: CategoryOption[];
   className?: string;
   placeholder?: string;
+  /**
+   * Доступна назва селекта. За замовчуванням — `placeholder`: видимого
+   * `<label>` тут немає за дизайном, а перший `<option>` НЕ стає іменем
+   * поля для скрінрідера (аудит доступності 2026-08-26 — поле лишалось
+   * безіменним, на відміну від сусіднього «Період» у тій самій формі).
+   */
+  ariaLabel?: string;
 }
 
 // Тонкий <select>-обгортач: рендер повністю залежить від пропсів,
@@ -24,11 +31,16 @@ function CategorySelectorComponent({
   className,
   // PR-31 / §C6 — узгоджено з `validation.categoryRequired`.
   placeholder = "Обери категорію",
+  ariaLabel,
 }: CategorySelectorProps) {
   return (
     <select
+      // `?? ` ловить лише null/undefined: порожній чи пробільний рядок від
+      // виклику лишив би поле безіменним — тобто рівно тим дефектом, який
+      // цей проп і закриває (рев'ю CodeRabbit 2026-08-26).
+      aria-label={ariaLabel?.trim() || placeholder}
       className={cn(
-        "input-focus-finyk w-full h-10 rounded-xl border border-line bg-bg px-3 text-sm text-text",
+        "input-focus-finyk w-full h-10 pointer-coarse:min-h-[44px] rounded-xl border border-line bg-bg px-3 text-sm text-text",
         className,
       )}
       value={value || ""}
