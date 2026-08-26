@@ -444,7 +444,7 @@ function AddBudgetFormComponent({
               placeholder={
                 limitCategoryIds.length === 0
                   ? "Обери категорію"
-                  : "Додай ще категорію (необов'язково)"
+                  : "Додай ще категорію"
               }
               categories={expenseCategoryList.filter(
                 (c) => c.id !== "income" && !limitCategoryIds.includes(c.id),

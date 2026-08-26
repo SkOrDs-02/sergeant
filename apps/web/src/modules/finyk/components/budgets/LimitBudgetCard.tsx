@@ -9,6 +9,7 @@ import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { Card } from "@shared/components/ui/Card";
 import { Money } from "@shared/components/ui/Money";
+import { formatNumberUk, NARROW_NBSP } from "@sergeant/shared";
 import { MoneyInput } from "@shared/components/ui/MoneyInput";
 import { Label } from "@shared/components/ui/FormField";
 import { Tooltip } from "@shared/components/ui/Tooltip";
@@ -208,7 +209,13 @@ function LimitBudgetCardComponent({
                       : "text-muted",
                 )}
               >
-                {spent} / {budget.limit} ₴
+                {/* Групування розрядів: без нього «3635 / 20000 ₴» у шапці
+                    розходилось із форматованими «Залишок 16 365 ₴» і рядками
+                    розбивки на тій самій картці. NARROW_NBSP перед ₴ — той самий
+                    відступ, що ставить <Money> у «Залишок» нижче (браузерний QA
+                    2026-08-25: шапка мала U+0020, решта картки U+202F). */}
+                {formatNumberUk(spent)} / {formatNumberUk(budget.limit)}
+                {NARROW_NBSP}₴
               </span>
               <Button
                 type="button"

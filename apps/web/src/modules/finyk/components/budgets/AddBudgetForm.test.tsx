@@ -180,9 +180,7 @@ describe("AddBudgetForm — useApiForm + zod (Item #8 round-13)", () => {
       target: { value: "food" },
     });
     // Після першого вибору селект скидається в плейсхолдер «додай ще».
-    const addMore = screen.getByDisplayValue(
-      "Додай ще категорію (необов'язково)",
-    );
+    const addMore = screen.getByDisplayValue("Додай ще категорію");
     expect(screen.queryByLabelText("Назва (необов'язково)")).toBeNull();
     fireEvent.change(addMore, { target: { value: "transport" } });
 
@@ -219,10 +217,9 @@ describe("AddBudgetForm — useApiForm + zod (Item #8 round-13)", () => {
     fireEvent.change(screen.getByDisplayValue("Обери категорію"), {
       target: { value: "food" },
     });
-    fireEvent.change(
-      screen.getByDisplayValue("Додай ще категорію (необов'язково)"),
-      { target: { value: "transport" } },
-    );
+    fireEvent.change(screen.getByDisplayValue("Додай ще категорію"), {
+      target: { value: "transport" },
+    });
     fireEvent.click(
       screen.getByRole("button", { name: "Прибрати категорію Їжа" }),
     );
@@ -259,10 +256,9 @@ describe("AddBudgetForm — useApiForm + zod (Item #8 round-13)", () => {
     expect(
       screen.getByText(/вже є в ліміті/, { exact: false }),
     ).toBeInTheDocument();
-    fireEvent.change(
-      screen.getByDisplayValue("Додай ще категорію (необов'язково)"),
-      { target: { value: "food" } },
-    );
+    fireEvent.change(screen.getByDisplayValue("Додай ще категорію"), {
+      target: { value: "food" },
+    });
     fireEvent.change(screen.getByLabelText("Ліміт"), {
       target: { value: "500" },
     });
