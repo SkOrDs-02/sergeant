@@ -62,9 +62,9 @@ export const pricingMessages = {
   },
   cta: {
     tryPremium: "Спробувати Premium",
-    openingCheckout: "Відкриваємо оплату…",
+    openingCheckout: "Відкриваю оплату…",
     manageSubscription: "Керувати підпискою",
-    openingPortal: "Відкриваємо керування…",
+    openingPortal: "Відкриваю керування…",
     switchToFree: "Перейти на Free",
     currentPlan: "Зараз ваш план",
     // Гість: «Зараз ваш план» — неправда, поки акаунта немає. Free-CTA

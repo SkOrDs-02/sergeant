@@ -277,7 +277,7 @@ export function EmptyState({
  */
 export function NoDataEmptyState({
   title = "Немає даних",
-  description = "Тут поки що порожньо. Додайте перший запис!",
+  description = "Тут поки що порожньо. Додай перший запис.",
   ...props
 }: Omit<EmptyStateProps, "title" | "description"> & {
   title?: string;
@@ -288,7 +288,7 @@ export function NoDataEmptyState({
 
 export function ErrorEmptyState({
   title = "Щось пішло не так",
-  description = "Спробуйте оновити сторінку або повторити пізніше.",
+  description = "Спробуй оновити сторінку або повторити пізніше.",
   onRetry,
   ...props
 }: Omit<EmptyStateProps, "title" | "description" | "action"> & {
@@ -321,8 +321,8 @@ export function SearchEmptyState({
       title="Нічого не знайдено"
       description={
         query
-          ? `За запитом "${query}" нічого не знайдено. Спробуйте інший запит.`
-          : "Спробуйте змінити параметри пошуку."
+          ? `За запитом "${query}" нічого не знайдено. Спробуй інший запит.`
+          : "Спробуй змінити параметри пошуку."
       }
       action={
         onClear

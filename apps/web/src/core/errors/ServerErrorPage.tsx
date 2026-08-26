@@ -53,6 +53,9 @@ export function ServerErrorPage({ onReset }: ServerErrorPageProps) {
             Оновити сторінку
           </Button>
         }
+        // §2: «ми» тут жива команда, яка вже полагоджує збій, а не голос
+        // застосунку (той самий випадок, що в `NotFoundPage`).
+        // eslint-disable-next-line sergeant-design/ukrainian-copy -- голос команди, не продукту
         hint="Якщо помилка повторюється, напиши нам, ми вже працюємо над цим."
       />
     </main>

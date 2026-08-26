@@ -344,7 +344,7 @@ export function habitCorrelation(
   // модель переказувала це як упевнене «зв'язку немає» (QA F-10).
   if (withSum === 0 && withoutSum === 0) {
     const what = metric === "workouts" ? "тренування" : "витрати";
-    return `Немає даних про ${what} за останні ${days} днів — порівнювати нема що.`;
+    return `Немає даних про ${what} за останні ${days} днів, порівнювати нема що.`;
   }
 
   const withAvg = withSum / withCount;

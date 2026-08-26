@@ -145,7 +145,7 @@ describe("useDemoCommands", () => {
     await vi.waitFor(() =>
       expect(navigateMock).toHaveBeenCalledWith("/sign-in", { replace: true }),
     );
-    expect(toastSuccessMock).toHaveBeenCalledWith("Ви вийшли з акаунта");
+    expect(toastSuccessMock).toHaveBeenCalledWith("Вихід виконано");
     expect(toastInfoMock).not.toHaveBeenCalled();
   });
 

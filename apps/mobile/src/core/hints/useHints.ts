@@ -80,7 +80,7 @@ export function useHints({
             shownThisMount.current = retentionId;
             recordHintShown(store, retentionId);
             const msg = {
-              retention_day_1: "Перший день, вже здобуток! Поверніться завтра.",
+              retention_day_1: "Перший день, вже здобуток. Повернись завтра.",
               retention_day_3: "3 дні поспіль, серія пішла!",
               retention_day_7: "Тиждень, серйозна заявка! 7 днів поспіль.",
             }[retentionId];

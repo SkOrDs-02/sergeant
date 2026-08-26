@@ -385,7 +385,7 @@ export function DailyPlanCard({
             <div className="flex items-center justify-between gap-2">
               <div className="min-w-0">
                 <div className="text-style-label text-text">
-                  {freshness.stale ? "Ваш план" : "Ваш план на сьогодні"}
+                  {freshness.stale ? "Твій план" : "Твій план на сьогодні"}
                 </div>
                 {freshness.label && (
                   <div className="text-style-caption text-muted">

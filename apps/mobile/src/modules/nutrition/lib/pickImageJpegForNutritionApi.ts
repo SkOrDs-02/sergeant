@@ -63,7 +63,7 @@ async function readUriAsJpegBase64(uri: string): Promise<PickImageJpegResult> {
     return {
       status: "error",
       message:
-        "Фото ще завелике після стиснення. Оберіть знімок меншої роздільної здатності.",
+        "Фото ще завелике після стиснення. Обери знімок меншої роздільної здатності.",
     };
   }
   return { status: "ok", base64: b64, mimeType: "image/jpeg" };

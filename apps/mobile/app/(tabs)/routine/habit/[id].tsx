@@ -19,7 +19,7 @@ export default function HabitDetailScreen() {
     <DeepLinkPlaceholder
       title="Звичка"
       detail={id ? `ID: ${id}` : undefined}
-      followUp="Повний екран звички (деталі, streak, історія, нотатки) — наступний PR фази Рутина."
+      followUp="Повний екран звички (деталі, streak, історія, нотатки): наступний PR фази Рутина."
       primaryAction={{ label: "До списку звичок", href: "/(tabs)/routine" }}
     />
   );

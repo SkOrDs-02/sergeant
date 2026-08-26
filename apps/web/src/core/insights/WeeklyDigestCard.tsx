@@ -62,9 +62,9 @@ function LoadingSpinner() {
       role="status"
       aria-busy="true"
       aria-live="polite"
-      aria-label="Генеруємо звіт тижня"
+      aria-label="Генерую звіт тижня"
     >
-      <span className="sr-only">Генеруємо звіт тижня…</span>
+      <span className="sr-only">Генерую звіт тижня…</span>
       {Array(4)
         .fill(0)
         .map((_, i) => (

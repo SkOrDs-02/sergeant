@@ -48,7 +48,7 @@ export function useDemoCommands(): void {
     async function attempt(): Promise<void> {
       try {
         await logout();
-        toast.success("Ви вийшли з акаунта");
+        toast.success("Вихід виконано");
         navigate(SIGN_IN_PATH, { replace: true });
       } catch {
         // Дзеркалить `ProfilePage.handleLogout`: вихід ідемпотентний, тож

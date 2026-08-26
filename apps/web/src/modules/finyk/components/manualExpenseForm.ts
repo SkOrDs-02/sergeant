@@ -71,7 +71,7 @@ export const expenseFormSchema = z.object({
   // Без власного повідомлення — канонічні тексти парсера вже точні
   // («Вкажи суму» для порожнього, «Сума має бути більше 0» для нуля).
   amount: amountStringSchema(),
-  category: z.string().min(1, "Оберіть категорію"),
+  category: z.string().min(1, "Обери категорію"),
   date: z
     .string()
     .refine(

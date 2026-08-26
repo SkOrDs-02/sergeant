@@ -93,7 +93,12 @@ function applyServerError<TValues extends FieldValues>(
 ): string | null {
   if (!(err instanceof ApiError)) {
     if (err instanceof Error) return err.message;
-    return typeof err === "string" ? err : "Невідома помилка";
+    // Канон §3: повідомлення закривається дією. «Невідома помилка» лишала
+    // людину без виходу — тут наступний крок є завжди, бо це fallback для
+    // непізнаної помилки, тобто ретрай — єдине, що взагалі можна зробити.
+    return typeof err === "string"
+      ? err
+      : "Не вдалося виконати запит. Спробуй ще раз.";
   }
   const body = (err.body ?? {}) as ServerErrorBody;
   const details = Array.isArray(body.details) ? body.details : [];

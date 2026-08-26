@@ -49,7 +49,7 @@ export const BACK_TO_EXIT_WINDOW_MS = 2000;
  * conflict with the React-Native `<Toast />` provider's z-index, and
  * remains visible during the 2 s window without re-rendering React.
  */
-const BACK_TO_EXIT_HINT_UK = "Натисніть «Назад» ще раз, щоб вийти";
+const BACK_TO_EXIT_HINT_UK = "Натисни «Назад» ще раз, щоб вийти";
 
 export function useBackToExit(): void {
   const router = useRouter();

@@ -24,11 +24,7 @@ import type { ProfileUser } from "./types";
 // ── Zod schemas ────────────────────────────────────────────────────────────
 
 const nameSchema = z.object({
-  name: z
-    .string()
-    .trim()
-    .min(1, "Введіть ім'я")
-    .max(80, "Максимум 80 символів"),
+  name: z.string().trim().min(1, "Введи ім'я").max(80, "Максимум 80 символів"),
 });
 type NameValues = z.infer<typeof nameSchema>;
 
@@ -36,7 +32,7 @@ const emailSchema = z.object({
   email: z
     .string()
     .trim()
-    .min(1, "Введіть email")
+    .min(1, "Введи email")
     .email("Некоректний email")
     .max(254, "Email задовгий"),
 });

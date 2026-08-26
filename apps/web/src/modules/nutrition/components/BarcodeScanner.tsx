@@ -232,7 +232,7 @@ function WebBarcodeScanner({
             </div>
           ) : (
             <p className="text-style-caption text-subtle text-center">
-              Наведи камеру на штрихкод — зчитається сам.
+              Наведи камеру на штрихкод, зчитається сам.
             </p>
           )}
         </div>

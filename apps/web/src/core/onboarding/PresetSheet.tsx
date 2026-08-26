@@ -56,7 +56,7 @@ type PresetCatalog = Record<ModuleId, PresetModuleConfig>;
  */
 const PRESETS: PresetCatalog = {
   routine: {
-    title: "Яку звичку почнемо?",
+    title: "З якої звички почати?",
     desc: "Одне натискання, і вона у твоєму списку сьогодні.",
     accent: "text-routine-soft-fg bg-routine-soft",
     moduleIcon: "check",

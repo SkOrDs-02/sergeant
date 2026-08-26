@@ -274,9 +274,7 @@ export function Tooltip({
         style={containerStyle}
         accessibilityRole="button"
         accessibilityHint={
-          tapToShow
-            ? "Натисніть для підказки"
-            : "Натисніть і тримайте для підказки"
+          tapToShow ? "Натисни для підказки" : "Натисни й тримай для підказки"
         }
       >
         {children}

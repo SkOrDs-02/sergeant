@@ -101,7 +101,7 @@ export function PlanSection() {
           </Badge>
           {isLoading && (
             <span className="text-style-caption text-subtle">
-              Завантажуємо…
+              Завантаження…
             </span>
           )}
         </div>
@@ -191,7 +191,7 @@ export function PlanSection() {
                       disabled={canceling}
                       data-testid="plan-cancel-confirm-button"
                     >
-                      {canceling ? "Скасовуємо…" : "Точно скасувати?"}
+                      {canceling ? "Скасовую…" : "Точно скасувати?"}
                     </Button>
                     <Button
                       variant="ghost"
