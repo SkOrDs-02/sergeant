@@ -101,6 +101,24 @@ function LimitBudgetCardComponent({
       ? budget.categoryIds
       : [budget.categoryId ?? ""];
   const isCombo = categoryIds.length > 1;
+  const periodLabel =
+    budget.period === "week"
+      ? "Щотижня"
+      : budget.period === "one_time"
+        ? "Одноразовий"
+        : "Щомісяця";
+  const amountTone = overLimit
+    ? "text-danger-strong dark:text-danger font-semibold"
+    : warnLimit
+      ? "text-warning-strong dark:text-warning"
+      : "text-muted";
+  // Сума «витрачено / ліміт» — один рядок, ніколи не рветься по «/».
+  const amountNode = (
+    <span className={cn("tabular-nums whitespace-nowrap", amountTone)}>
+      {formatNumberUk(spent)} / {formatNumberUk(budget.limit)}
+      {NARROW_NBSP}₴
+    </span>
+  );
 
   return (
     <Card radius="lg" padding="lg">
@@ -187,36 +205,38 @@ function LimitBudgetCardComponent({
                   customCategories={customCategories}
                 />
               )}
-              <div className="min-w-0">
-                <span className="text-style-label">{categoryLabel || "—"}</span>
-                <div className="text-style-caption text-subtle mt-0.5">
-                  {budget.period === "week"
-                    ? "Щотижня"
-                    : budget.period === "one_time"
-                      ? "Одноразовий"
-                      : "Щомісяця"}
+              <div className="min-w-0 flex-1">
+                {/* `truncate`, а не перенос: підпис комбо довший за
+                    одно-категорійний, і при переносі лишав у другому рядку
+                    самотнє «2» (браузерний QA 2026-08-26). Обрізати безпечно —
+                    повний склад набору стоїть нижче рядками розбивки. */}
+                <span className="text-style-label block truncate">
+                  {categoryLabel || "—"}
+                </span>
+                <div className="text-style-caption text-subtle mt-0.5 flex items-center gap-1.5">
+                  <span>{periodLabel}</span>
+                  {/* У комбо сума їде в цей рядок: чипи + сума + олівець на
+                      одній лінії лишали підпису ~94px при потрібних ~140, і
+                      «Продукти + ще 2» обрізалось трьома крапками ще на 390px.
+                      Одно-категорійна картка лишається з сумою праворуч —
+                      рівно як була. */}
+                  {isCombo ? (
+                    <>
+                      <span aria-hidden>·</span>
+                      {amountNode}
+                    </>
+                  ) : null}
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <span
-                className={cn(
-                  "text-style-caption tabular-nums",
-                  overLimit
-                    ? "text-danger-strong dark:text-danger font-semibold"
-                    : warnLimit
-                      ? "text-warning-strong dark:text-warning"
-                      : "text-muted",
-                )}
-              >
-                {/* Групування розрядів: без нього «3635 / 20000 ₴» у шапці
-                    розходилось із форматованими «Залишок 16 365 ₴» і рядками
-                    розбивки на тій самій картці. NARROW_NBSP перед ₴ — той самий
-                    відступ, що ставить <Money> у «Залишок» нижче (браузерний QA
-                    2026-08-25: шапка мала U+0020, решта картки U+202F). */}
-                {formatNumberUk(spent)} / {formatNumberUk(budget.limit)}
-                {NARROW_NBSP}₴
-              </span>
+            <div className="flex shrink-0 items-center gap-2">
+              {/* Групування розрядів: без нього «3635 / 20000 ₴» розходилось із
+                  форматованими «Залишок 16 365 ₴» і рядками розбивки на тій
+                  самій картці. NARROW_NBSP перед ₴ — той самий відступ, що
+                  ставить <Money> нижче (браузерний QA 2026-08-25). */}
+              {isCombo ? null : (
+                <span className="text-style-caption">{amountNode}</span>
+              )}
               <Button
                 type="button"
                 variant="ghost"
