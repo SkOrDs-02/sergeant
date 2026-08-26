@@ -1,6 +1,6 @@
 # Design specs
 
-> **Last touched:** 2026-07-29 by Codex. **Next review:** 2027-02-23.
+> **Last touched:** 2026-08-25 by Claude. **Next review:** 2027-02-23.
 > **Status:** Active
 
 Design-специ для нетривіальних product-side фіч (раніше `agents/specs/`).
@@ -31,6 +31,7 @@ Design-специ для нетривіальних product-side фіч (ран�
 | 2026-07-28 | [`2026-07-28-anonymous-profile-data-migration-design.md`](./2026-07-28-anonymous-profile-data-migration-design.md)                     | Shipped — implementation pending PR | —         |
 | 2026-07-28 | [`2026-07-28-finyk-transaction-details-design.md`](./2026-07-28-finyk-transaction-details-design.md)                                   | Active — implementation ready       | —         |
 | 2026-07-29 | [`2026-07-29-finyk-daily-pulse-and-transfer-suggestions-design.md`](./2026-07-29-finyk-daily-pulse-and-transfer-suggestions-design.md) | Active — implementation ready       | —         |
+| 2026-08-25 | [`2026-08-25-finyk-multi-category-limit-design.md`](./2026-08-25-finyk-multi-category-limit-design.md)                                 | Shipped                             | —         |
 
 ### Архів superseded спеків
 

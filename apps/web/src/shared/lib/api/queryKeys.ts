@@ -66,9 +66,10 @@ export const nutritionKeys = {
 export const finykKeys = {
   all: ["finyk"] as const,
 
-  // Proactive AI advice — month-bucketed per budget category
-  proactiveAdvice: (monthKey: string, categoryId: string) =>
-    ["finyk", "proactive-advice", monthKey, categoryId] as const,
+  // Proactive AI advice — month-bucketed per limit-budget category set
+  // (`limitBudgetCategoryKey`: одна категорія — її id, комбо — sorted join "+")
+  proactiveAdvice: (monthKey: string, categoryKey: string) =>
+    ["finyk", "proactive-advice", monthKey, categoryKey] as const,
 
   // Monobank read endpoints
   mono: ["finyk", "mono"] as const,

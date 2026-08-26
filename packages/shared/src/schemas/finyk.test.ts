@@ -50,6 +50,22 @@ describe("BudgetSchema", () => {
     expect(r.success).toBe(false);
   });
 
+  it("приймає мульти-категорійний ліміт і зберігає categoryIds", () => {
+    const r = BudgetSchema.safeParse({
+      id: "b4",
+      type: "limit",
+      limit: 20000,
+      categoryId: "food",
+      categoryIds: ["food", "restaurant"],
+      label: "Їжа",
+    });
+    expect(r.success).toBe(true);
+    if (r.success) {
+      expect(r.data.categoryIds).toEqual(["food", "restaurant"]);
+      expect(r.data.label).toBe("Їжа");
+    }
+  });
+
   it("масив: валідні goal + limit записи обидва проходять", () => {
     const r = BudgetsSchema.safeParse([
       { id: "g1", type: "goal", limit: "", target: 10000 },

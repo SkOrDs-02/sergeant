@@ -27,6 +27,9 @@ export const BudgetSchema = z
     type: BudgetTypeSchema.optional(),
     limit: optionalNumberSchema,
     categoryId: z.string().optional(),
+    // Мульти-категорійний ліміт (2026-08-25). Legacy-записи поля не мають;
+    // `categoryId` лишається першою категорією набору для старих читачів.
+    categoryIds: z.array(z.string()).optional(),
     label: z.string().optional(),
     target: optionalNumberSchema,
     current: optionalNumberSchema,
