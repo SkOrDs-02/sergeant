@@ -161,9 +161,17 @@ export function ModuleHeader({
                 </p>
               ) : null}
               {subtitle ? (
+                // AI-DANGER: `block` тут обовʼязковий. `truncate` — це
+                // `overflow:hidden` + `text-overflow:ellipsis`, а на ІНЛАЙН-боксі
+                // `overflow` не діє взагалі: підпис ігнорував `min-w-0 flex-1`
+                // батька, розтягувався на всю потрібну ширину і заповзав ПІД
+                // кнопки дій праворуч («Рух · сила · відновлення» під AI-кнопкою
+                // на 390px, «Фінанси» під «Приховати суми» на 320px — браузерний
+                // аудит 2026-08-26). Заголовок вище обрізається правильно лише
+                // тому, що він flex-item і його span блокифікується.
                 <span
                   className={cn(
-                    "text-style-caption font-medium truncate",
+                    "block text-style-caption font-medium truncate",
                     mt ? mt.subtitle : "text-subtle",
                   )}
                 >

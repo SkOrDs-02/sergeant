@@ -172,12 +172,23 @@ export function StatusStrip({
   // Канон §7: стрік тижневий, не щоденний — щоденна логіка карала за
   // правильний день відпочинку. `kpis.streakDays` лишається в payload-і
   // для мобілки (поза скоупом), але веб його більше не показує.
+  // V-4: на лице чипа йде рівно те, що переживе `truncate` (~67px на 320px),
+  // повне речення — в `ariaLabel`/`title`. «1 з 2 цього тижня» цього правила
+  // не тримало: потрібно 100px, різалось на 320 і 390px (браузерний аудит
+  // 2026-08-26). Обличчя скорочене до «1 з 2», зміст не втрачено.
+  const streakInProgress =
+    kpis.streakWeeks === 0 &&
+    kpis.currentWeekPending &&
+    kpis.currentWeekWorkouts > 0;
   const streakValue =
     kpis.streakWeeks > 0
       ? pluralWeeks(kpis.streakWeeks)
-      : kpis.currentWeekPending && kpis.currentWeekWorkouts > 0
-        ? `${kpis.currentWeekWorkouts} з ${kpis.streakTargetPerWeek} цього тижня`
+      : streakInProgress
+        ? `${kpis.currentWeekWorkouts} з ${kpis.streakTargetPerWeek}`
         : "0 тижнів";
+  const streakFull = streakInProgress
+    ? `${kpis.currentWeekWorkouts} з ${kpis.streakTargetPerWeek} цього тижня`
+    : streakValue;
   const streakTone: ChipTone = kpis.streakWeeks > 0 ? "success" : "default";
   const weeklyValue = pluralWorkouts(kpis.weeklyWorkoutsCount);
   const weeklyTone: ChipTone =
@@ -205,7 +216,7 @@ export function StatusStrip({
         value={streakValue}
         tone={streakTone}
         onClick={onOpenProgress}
-        ariaLabel={`Серія: ${streakValue}. Відкрити «Прогрес»`}
+        ariaLabel={`Серія: ${streakFull}. Відкрити «Прогрес»`}
       />
       <Chip
         label="Тиждень"

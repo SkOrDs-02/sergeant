@@ -51,10 +51,20 @@ const DEFAULT_INPUT_MODE: Partial<
 export type InputSize = SmallMediumLarge;
 export type InputVariant = FormVariant;
 
+/**
+ * AI-DANGER: `pointer-coarse:min-h-[44px]` — у ПІКСЕЛЯХ, не в rem, і це не
+ * дублювання `h-11`. На вузьких мобільних вьюпортах корінний шрифт падає до
+ * 15px (перевірено: 320px → 15px, 390px → 16px), тож `h-11` = 2.75rem дає
+ * 41.25px і тихо провалює 44px-флор WCAG 2.5.5 саме там, де палець
+ * найтовщий. `Button` цю ж пастку обходить тим самим px-флором
+ * (`Button.tsx`); `Input` його не мав — браузерний аудит 2026-08-26.
+ */
+const COARSE_TOUCH_FLOOR = "pointer-coarse:min-h-[44px]";
+
 const sizes: Record<InputSize, string> = {
-  sm: "h-9 px-3 text-style-body rounded-xl",
-  md: "h-11 px-4 text-style-body rounded-2xl",
-  lg: "h-12 px-5 text-style-body rounded-2xl",
+  sm: `h-9 px-3 text-style-body rounded-xl ${COARSE_TOUCH_FLOOR}`,
+  md: `h-11 px-4 text-style-body rounded-2xl ${COARSE_TOUCH_FLOOR}`,
+  lg: `h-12 px-5 text-style-body rounded-2xl ${COARSE_TOUCH_FLOOR}`,
 };
 
 /**
