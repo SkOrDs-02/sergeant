@@ -32,7 +32,7 @@
     "@sergeant/shared": "workspace:*",
     "@types/compression": "^1.8.1",
     "better-auth": "^1.6.23",
-    "bullmq": "^5.80.1",
+    "bullmq": "^5.80.2",
     "compression": "^1.8.1",
     "drizzle-orm": "^0.45.2",
     "express": "^5.2.1",
