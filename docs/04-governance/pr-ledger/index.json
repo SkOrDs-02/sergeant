@@ -1,8 +1,15 @@
 {
   "$schema": "../governance/schemas/pr-ledger.schema.json",
   "version": 1,
-  "generated_at": "2026-08-07",
+  "generated_at": "2026-08-26",
   "prs": [
+    {
+      "number": 867,
+      "title": "fix(server): відновити втрачений #863 + перший хід чату на gemini-3.7-flash",
+      "merged_at": "2026-08-26T23:03:53Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": ["docs/04-governance/adr/0087-model-tiering-measured.md"]
+    },
     {
       "number": 689,
       "title": "fix(ci): governance-sync відрізняє живе посилання від навмисно мертвого",
