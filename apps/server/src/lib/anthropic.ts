@@ -391,10 +391,17 @@ async function anthropicMessagesInner(
     }
 
     // Таймаут спроби не може виходити за сумарний бюджет.
-    const attemptTimeoutMs = Math.max(
-      MIN_USEFUL_ATTEMPT_MS,
-      Math.min(timeoutMs, maxTotalMs - elapsedMs()),
-    );
+    //
+    // Перевірка залишку СТОЇТЬ ОКРЕМО від `Math.min` навмисно. Перша версія
+    // писала `Math.max(MIN_USEFUL_ATTEMPT_MS, Math.min(timeoutMs, залишок))`
+    // — і цим РОЗТЯГУВАЛА вичерпаний бюджет: при залишку 1 мс спроба все
+    // одно стартувала з таймаутом 1000 мс, тобто `maxTotalMs` переставав
+    // бути стелею рівно там, де він потрібен (рев'ю CodeRabbit 2026-08-26).
+    // Гілка `break` вище ловила лише випадок зі сном, а перша спроба має
+    // `baseDelay === 0` і крізь неї проходила.
+    const remainingMs = maxTotalMs - elapsedMs();
+    if (remainingMs < MIN_USEFUL_ATTEMPT_MS) break;
+    const attemptTimeoutMs = Math.min(timeoutMs, remainingMs);
     const controller = new AbortController();
     const t = setTimeout(() => controller.abort(), attemptTimeoutMs);
     const signal = composeSignal(controller, externalSignal);

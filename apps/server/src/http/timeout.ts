@@ -26,8 +26,6 @@ export function requestTimeout(timeoutMs?: number) {
     let timedOut = false;
 
     const timer = setTimeout(() => {
-      timedOut = true;
-
       logger.warn({
         msg: "request_timeout",
         method: req.method,
@@ -63,6 +61,16 @@ export function requestTimeout(timeoutMs?: number) {
         });
         return;
       }
+
+      // `timedOut` ставимо ПІСЛЯ SSE-перевірки, а не на початку таймера.
+      // Він глушить обгорнуті `res.json/send/end` нижче, тож при ранньому
+      // return для стріму ми б лишили відповідь у стані «писати можна,
+      // закрити не можна»: `res.write()` не обгорнутий і працює далі, а
+      // `res.end()` стає no-op — клієнт висить до власного розриву.
+      // Тобто перша версія SSE-винятку рятувала з'єднання від обриву й
+      // одразу ж позбавляла його здатності завершитись (рев'ю CodeRabbit
+      // 2026-08-26). Для SSE таймер тепер лише пише в лог і не чіпає нічого.
+      timedOut = true;
 
       // Only send response if headers haven't been sent
       if (!res.headersSent) {

@@ -94,6 +94,40 @@ describe("requestTimeout — SSE-виняток", () => {
     expect(req.destroy).toHaveBeenCalledTimes(1);
   });
 
+  it("після спрацювання таймера SSE-відповідь ЩЕ МОЖЕ закритись через res.end()", () => {
+    // Регрес рев'ю CodeRabbit 2026-08-26. Перша версія винятку ставила
+    // `timedOut = true` на початку таймера й лише потім робила ранній
+    // return для стріму. Обгортки `res.json/send/end` глушаться саме цим
+    // прапорцем, тож стрім опинявся в стані «писати можна, закрити не
+    // можна»: `res.write()` не обгорнутий і працював, а `res.end()` ставав
+    // no-op — клієнт висів до власного розриву. Тобто виняток рятував
+    // з'єднання від обриву й одразу позбавляв його здатності завершитись.
+    const { req, res } = makeReqRes("text/event-stream");
+    const endSpy = res.end as unknown as ReturnType<typeof vi.fn>;
+    requestTimeout(1000)(req, res, (() => {}) as NextFunction);
+
+    vi.advanceTimersByTime(1500);
+    (res as unknown as { end: () => void }).end();
+
+    expect(req.destroy).not.toHaveBeenCalled();
+    expect(endSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("для НЕ-SSE пізні записи після таймауту глушаться, як і раніше", () => {
+    // Зворотний бік того самого прапорця: для звичайних відповідей
+    // подвійна відправка після 408 має лишатись заглушеною.
+    const { req, res } = makeReqRes("application/json");
+    (res as { headersSent: boolean }).headersSent = false;
+    const endSpy = res.end as unknown as ReturnType<typeof vi.fn>;
+    requestTimeout(1000)(req, res, (() => {}) as NextFunction);
+
+    vi.advanceTimersByTime(1500);
+    (res as unknown as { end: () => void }).end();
+
+    expect(req.destroy).toHaveBeenCalledTimes(1);
+    expect(endSpy).not.toHaveBeenCalled();
+  });
+
   it("матч по підрядку: `text/event-stream; charset=utf-8` теж виняток", () => {
     const { req, res } = makeReqRes("text/event-stream; charset=utf-8");
     requestTimeout(1000)(req, res, (() => {}) as NextFunction);
