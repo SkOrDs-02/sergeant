@@ -154,7 +154,16 @@ function HubBottomNavTab({
       {...prefetchProps}
       style={hiddenSlot ? { visibility: "hidden" } : undefined}
       className={cn(
-        "relative flex-1 flex items-center justify-center",
+        // AI-DANGER: активний таб — НЕ `flex-1`. Рівні слоти дають на 320-390px
+        // ~65-89px, тоді як активний піл (іконка + підпис до 96px + px-3)
+        // потребує ~146px. Раніше це лікували `max-w-full` на пілі — піл
+        // переставав вилазити, але ПІДПИС починав різатись («Налаштування»
+        // 87→42px, «Головна» 49→42px; браузерний аудит 2026-08-26).
+        // `flex-initial` = розмір за вмістом із правом стиснутись: активний
+        // бере скільки треба, неактивні ділять залишок. Той самий фікс, що в
+        // `ModuleBottomNav`.
+        "relative flex items-center justify-center min-w-0",
+        active ? "flex-initial" : "flex-1",
         "min-h-[48px] pointer-coarse:min-h-[52px]",
         "active:scale-[0.96]",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",

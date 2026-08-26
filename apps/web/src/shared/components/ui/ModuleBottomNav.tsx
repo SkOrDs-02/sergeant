@@ -258,7 +258,15 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
               onPointerDown={onPrefetch ? () => onPrefetch(item.id) : undefined}
               onClick={() => handleSelect(item.id)}
               className={cn(
-                "relative flex-1 flex items-center justify-center min-h-touch-target",
+                // AI-DANGER: активна вкладка НЕ `flex-1`. Рівні частки на 320px
+                // дають кожній ~60px, тоді як активна «пігулка» (іконка + підпис
+                // до 88px + px-3) потребує ~140px: вона вивалювалась за комірку,
+                // а остання вкладка — за правий край екрана («Активи» зрізано,
+                // браузерний аудит 2026-08-26), і підпис активної різало
+                // («Головна» 49→42px). `flex-initial` = розмір за вмістом із
+                // правом стиснутись; неактивні ділять залишок.
+                "relative flex items-center justify-center min-h-touch-target min-w-0",
+                active ? "flex-initial" : "flex-1",
                 "my-1.5 rounded-xl border border-transparent",
                 "transition-[color,transform,border-color] duration-base",
                 "active:scale-95",
