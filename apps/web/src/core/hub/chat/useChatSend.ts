@@ -25,7 +25,11 @@ import {
 import { buildContextMeasured } from "../../lib/hubChatContext";
 import { executeActions } from "../../lib/hubChatActions";
 import { logger } from "@shared/lib";
-import { ANALYTICS_EVENTS, type ChatPreset } from "@sergeant/shared";
+import {
+  ANALYTICS_EVENTS,
+  getToolModule,
+  type ChatPreset,
+} from "@sergeant/shared";
 import { trackEvent } from "../../observability/analytics";
 import { parseToolCalls } from "./toolCallSchema";
 import { keepReplayableToolBlocks } from "./replayableToolBlocks";
@@ -506,6 +510,28 @@ export function useChatSend({
           const handlerResults = await executeActions(
             toolCalls as Parameters<typeof executeActions>[0],
           );
+
+          // `hubchat_tool_invoked` — подія стояла в каталозі
+          // (`ANALYTICS_EVENTS`) із квітня, закріплена тестом, і НІХТО її не
+          // слав: панель tool-leaderboard у `hubchat.json` була порожня
+          // назавжди, а виглядала як «інструментами не користуються».
+          //
+          // Емітимо тут, а не в кожному хендлері: це єдина точка, крізь яку
+          // проходить кожен виконаний tool-call, тож розповзання на шість
+          // копій виключене — той самий аргумент, що для гейта підтверджень
+          // вище.
+          //
+          // `success` береться зі СТРУКТУРНОГО `ok`, а не з префікса тексту:
+          // рядок «Помилка виконання: …» — це копірайт, який колись
+          // перепишуть, і телеметрія тихо почала б рахувати провали успіхами.
+          for (const r of handlerResults) {
+            trackEvent(ANALYTICS_EVENTS.HUBCHAT_TOOL_INVOKED, {
+              tool: r.name,
+              module: getToolModule(r.name),
+              success: r.ok,
+              latency_ms: r.latencyMs,
+            });
+          }
           const toolResults = toolCalls.map((tc, idx) => ({
             tool_use_id: tc.id,
             content: handlerResults[idx]?.result ?? "",
