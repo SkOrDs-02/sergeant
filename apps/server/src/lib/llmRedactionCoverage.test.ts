@@ -60,6 +60,13 @@ const KNOWN_EXITS: Record<string, string> = {
   // lib/mcc/batchPrompt.ts вище — лишаємо в реєстрі свідомо.
   "env/aiRoutingEnv.ts":
     "не викликає нічого; docstring-згадка anthropicMessages()",
+  // Третій випадок того самого класу: middleware-гейт наявності ключа.
+  // Нічого нікуди не шле — `api.anthropic.com` згадано в докстрінгу
+  // `requireChatUpstreamKey()`, який пояснює, ЧОМУ під шлюзом
+  // Anthropic-ключ не потрібен. Рядок свідомий: послабити маркер, щоб
+  // не ловити докстрінги, означало б перестати ловити справжні виходи.
+  "http/requireAnthropicKey.ts":
+    "не викликає нічого; docstring-згадка api.anthropic.com у requireChatUpstreamKey()",
 };
 
 function walk(dir: string, out: string[] = []): string[] {

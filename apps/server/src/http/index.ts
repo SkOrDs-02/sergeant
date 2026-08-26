@@ -58,7 +58,10 @@ export { requireApiSecret } from "./requireApiSecret.js";
 export { requireCsrfHeader } from "./requireCsrfHeader.js";
 export type { RequireCsrfHeaderOptions } from "./requireCsrfHeader.js";
 export { safeStringEqual } from "./safeCompare.js";
-export { requireAnthropicKey } from "./requireAnthropicKey.js";
+export {
+  requireAnthropicKey,
+  requireChatUpstreamKey,
+} from "./requireAnthropicKey.js";
 export { requireGroqKey } from "./requireGroqKey.js";
 export { requireAiQuota } from "./requireAiQuota.js";
 export { requestTimeout } from "./timeout.js";

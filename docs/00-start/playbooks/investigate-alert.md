@@ -23,6 +23,15 @@
 - Початок у часі та тривалість порушення.
 - Severity, уражена поверхня (surface), контекст останнього deploy/config-змін.
 
+> **Якщо це AI-шлях — у Sentry буде порожньо, і це не означає «немає
+> проблеми».** Помилки Anthropic/OpenRouter приходять як `ExternalServiceError`
+> (502/503), тобто operational, а `errorHandler` капчить у Sentry лише
+> НЕ-operational 5xx. Тому аутедж провайдера не створює жодного issue. Дивись
+> натомість: `ai_requests_total{outcome="error"}`, `ai_first_token_ms` (TTFT) і
+> pino-лог `chat_stream_failed_empty`. Те саме застереження діє для пошуку в
+> логах: доставка в Loki зламана (див. `SLO.md § Зламано`), тож відсутність
+> рядків там нічого не доводить.
+
 ### 2. Відокрем signal від noise
 
 - Чи це одноразовий spike, чи стійка деградація.

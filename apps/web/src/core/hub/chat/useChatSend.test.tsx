@@ -326,11 +326,36 @@ describe("useChatSend — підтвердження незворотних ді
     });
 
     await waitFor(() =>
-      expect(result.current.confirmDestructive.pending?.toolNames).toEqual([
-        "delete_transaction",
-      ]),
+      expect(
+        result.current.confirmDestructive.pending?.items.map((i) => i.name),
+      ).toEqual(["delete_transaction"]),
     );
     expect(executeActionsMock).not.toHaveBeenCalled();
+
+    await act(async () => {
+      result.current.confirmDestructive.reject();
+      await sending;
+    });
+  });
+
+  it("несе короткий підсумок аргументів (B39) — не лише голу назву", async () => {
+    // До фіксу B39 діалог показував тільки назву інструмента; людина
+    // погоджувалась на «delete_transaction» не бачачи, яку саме
+    // транзакцію він видалить.
+    destructiveResponse();
+    const { result } = renderSend();
+
+    let sending!: Promise<void>;
+    await act(async () => {
+      sending = result.current.send("видали транзакцію m_42");
+      await Promise.resolve();
+    });
+
+    await waitFor(() =>
+      expect(result.current.confirmDestructive.pending?.items).toEqual([
+        { name: "delete_transaction", summary: "транзакція m_42" },
+      ]),
+    );
 
     await act(async () => {
       result.current.confirmDestructive.reject();
@@ -440,9 +465,9 @@ describe("useChatSend — підтвердження незворотних ді
       await Promise.resolve();
     });
     await waitFor(() =>
-      expect(result.current.confirmDestructive.pending?.toolNames).toEqual([
-        "delete_transaction",
-      ]),
+      expect(
+        result.current.confirmDestructive.pending?.items.map((i) => i.name),
+      ).toEqual(["delete_transaction"]),
     );
 
     await act(async () => {

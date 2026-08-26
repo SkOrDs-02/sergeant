@@ -130,13 +130,17 @@ describe("OpenRouterProvider — облік вартості", () => {
   it("невідома модель без cost — токени є, вартості немає", async () => {
     // Краще «невідомо», ніж «0$ — все добре»: нуль у лічильнику вартості
     // читався б як безкоштовний виклик і занижував би стелю.
+    //
+    // Модель нижче навмисно не з реального каталогу (`z-ai/glm-5.2` стояв
+    // тут раніше, доки B38 не додав йому pricing-entry в `aiPricing.ts` —
+    // тест почав фейлити, бо перестав бути "невідомою моделлю").
     vi.stubGlobal(
       "fetch",
       mockGateway({ prompt_tokens: 100, completion_tokens: 20 }),
     );
 
     await new OpenRouterProvider("k").generate({
-      model: "z-ai/glm-5.2",
+      model: "some-vendor/definitely-not-in-pricing-table",
       maxTokens: 100,
       messages: [{ role: "user", content: "x" }],
       endpoint: "week-plan",

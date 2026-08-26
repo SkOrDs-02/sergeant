@@ -151,6 +151,10 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     ],
     prompt: "Зміни категорію транзакції: ",
     requiresInput: true,
+    // Перезаписує категорію без підтвердження (рішення founder-а #8: режим
+    // `reversible` у toolRisk.ts) — виконавець повертає `undo`, що
+    // відновлює попередню категорію.
+    risky: true,
     requiresOnline: true,
   },
   {
@@ -275,6 +279,10 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     examples: ["встанови ліміт на їжу 3000 грн", "ліміт на розваги 1500"],
     prompt: "Постав ліміт: ",
     requiresInput: true,
+    // Перезаписує ліміт без підтвердження (рішення founder-а #8: режим
+    // `reversible` у toolRisk.ts) — виконавець повертає `undo`, що
+    // відновлює попереднє значення.
+    risky: true,
     requiresOnline: true,
   },
   {
@@ -289,6 +297,10 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     ],
     prompt: "Онови бюджет: ",
     requiresInput: true,
+    // Перезаписує ліміт/ціль без підтвердження (рішення founder-а #8:
+    // режим `reversible` у toolRisk.ts) — виконавець повертає `undo`, що
+    // відновлює попередній запис бюджету.
+    risky: true,
     requiresOnline: true,
     aiHint: "ліміт або ціль",
   },
@@ -304,6 +316,10 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     ],
     prompt: "Фінплан: ",
     requiresInput: true,
+    // Перезаписує фінплан без підтвердження (рішення founder-а #8: режим
+    // `reversible` у toolRisk.ts) — виконавець повертає `undo`, що
+    // відновлює попередній фінплан.
+    risky: true,
     requiresOnline: true,
   },
   {

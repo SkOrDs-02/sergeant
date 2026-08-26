@@ -85,6 +85,18 @@ export interface RunResult {
   trap: string;
   candidate: Candidate;
   ok: boolean;
+  /**
+   * Транспортна помилка (мережа, HTTP 401/429/timeout, відсутній ключ) — не
+   * судження про якість моделі: модель узагалі не відповіла.
+   *
+   * AI-CONTEXT (B47): до цього поля `passedJudge: false` для транспортного
+   * провалу й `passedJudge: false` для «модель відповіла неправильно»
+   * виглядали в звіті ОДНАКОВО — знаменник точності у `report.ts` рахував
+   * ВСІ рядки, тож 6 HTTP-401 рендерились як «модель провалила всі
+   * пастки». Звіт зобов'язаний рахувати й показувати ці два факти окремо —
+   * див. `report.ts::summarySection`.
+   */
+  transportFailed: boolean;
   passedJudge: boolean;
   /** Який предикат склáденого судді не зійшовся; `null` — судді нічого сказати. */
   judgeReason: string | null;
