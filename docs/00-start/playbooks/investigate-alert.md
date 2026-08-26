@@ -1,6 +1,6 @@
 # Playbook: Розслідування alert-у
 
-> **Last validated:** 2026-08-26 by @claude. **Next review:** 2026-11-26.
+> **Last touched:** 2026-08-26 by @github-actions[bot]. **Next review:** 2026-11-26.
 > **Status:** Active
 
 **Trigger:** спрацював Prometheus alert / росте Sentry issue / підозрілі 5xx, latency або деградація health-ендпоїнтів, але ще не очевидно, чи це інцидент, false positive або транзитний шум.
@@ -69,3 +69,14 @@
 - [hotfix-prod-regression.md](./hotfix-prod-regression.md)
 - [fix-failing-ci.md](./fix-failing-ci.md)
 - Skill: `sergeant-deploy-and-observability`
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                   | Merged     |
+| ------------------------------------------------------ | ----------------------------------------------------------------------- | ---------- |
+| [#861](https://github.com/Skords-01/Sergeant/pull/861) | fix(server): закрити знахідки AI-аудиту B31–B47 у чаті, стенді й обліку | 2026-08-26 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

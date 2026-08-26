@@ -1,8 +1,15 @@
 {
   "$schema": "../governance/schemas/pr-ledger.schema.json",
   "version": 1,
-  "generated_at": "2026-08-07",
+  "generated_at": "2026-08-26",
   "prs": [
+    {
+      "number": 861,
+      "title": "fix(server): закрити знахідки AI-аудиту B31–B47 у чаті, стенді й обліку",
+      "merged_at": "2026-08-26T21:24:45Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": ["docs/00-start/playbooks/investigate-alert.md"]
+    },
     {
       "number": 689,
       "title": "fix(ci): governance-sync відрізняє живе посилання від навмисно мертвого",
