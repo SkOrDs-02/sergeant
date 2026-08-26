@@ -224,7 +224,11 @@ describe("resolveProTier — bypass paths return premium without touching DB", (
     pool.query.mockResolvedValueOnce(full()).mockResolvedValueOnce(ok());
     const r = await resolveProTier(makeReq(), makeRes(), "coach");
     expect(r.tier).toBe("standard");
-    expect(r.model).toBe("google/gemini-2.5-flash-lite");
+    // Пін оновлено 2026-08-26 разом зі зміною дефолту (рішення власника,
+    // ADR-0087): `2.5-flash-lite` → `3.5-flash-lite`, 8/8 на коуч-стенді
+    // проти нуля порушень голосу. Пін лишається жорстким навмисно — це
+    // прод-модель, її зміна має вимагати свідомої правки тесту.
+    expect(r.model).toBe("google/gemini-3.5-flash-lite");
   });
 });
 
@@ -295,7 +299,9 @@ describe("resolveProTier — Pro cascade premium → standard → floor", () => 
     pool.query.mockResolvedValueOnce(full()).mockResolvedValueOnce(full());
     const r = await resolveProTier(makeReq(), makeRes(), "coach");
     expect(r.tier).toBe("floor");
-    expect(r.model).toBe("google/gemini-2.5-flash-lite");
+    // Див. коментар до standard-піна вище — обидва тири коуча переведено
+    // однією зміною 2026-08-26.
+    expect(r.model).toBe("google/gemini-3.5-flash-lite");
   });
 });
 

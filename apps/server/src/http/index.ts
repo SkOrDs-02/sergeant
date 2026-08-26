@@ -61,6 +61,7 @@ export { safeStringEqual } from "./safeCompare.js";
 export {
   requireAnthropicKey,
   requireChatUpstreamKey,
+  requireLlmUpstream,
 } from "./requireAnthropicKey.js";
 export { requireGroqKey } from "./requireGroqKey.js";
 export { requireAiQuota } from "./requireAiQuota.js";
