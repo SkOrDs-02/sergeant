@@ -17,7 +17,7 @@ import {
   sessionCostWithCache,
   splitPrefixTokens,
 } from "./cost.js";
-import type { Pipeline, RunResult } from "./types.js";
+import type { Candidate, Pipeline, RunResult } from "./types.js";
 
 function fmtCost(v: number | null): string {
   if (v == null) return "?";
@@ -312,10 +312,32 @@ function promptSection(pipelines: Pipeline[]): string[] {
   return lines;
 }
 
+/**
+ * Кандидати, відсіяні через `--skip-unavailable`.
+ *
+ * Друкуються ОКРЕМИМ блоком угорі звіту, а не мовчки зникають: саме мовчазне
+ * зникнення (у вигляді заглушки) і дало B44, коли «0/18» читалось як провал
+ * моделі, якої не викликали. Пропущений кандидат має бути видно.
+ */
+function skippedSection(skipped: Candidate[]): string[] {
+  if (skipped.length === 0) return [];
+  return [
+    "> **Відсіяно за `--skip-unavailable`.** Ці кандидати НЕ прогонялись —",
+    "> для їхнього провайдера немає ключа. Це не результат і не нуль:",
+    "> їх просто немає в таблицях нижче.",
+    ">",
+    ...skipped.map(
+      (c) => `> - \`${c.model}\` — ${c.label} (provider=${c.provider})`,
+    ),
+    "",
+  ];
+}
+
 export function toMarkdown(
   results: RunResult[],
   pipelines: Pipeline[],
   generatedAt: string,
+  skipped: Candidate[] = [],
 ): string {
   return [
     "<!-- AUTO-GENERATED FILE. Do not edit by hand. Generator: `pnpm --filter @sergeant/server eval:models` / `eval:vision` (apps/server/scripts/eval/report.ts). -->",
@@ -330,6 +352,7 @@ export function toMarkdown(
     "їм можна вірити) і евристичні (лише звужують, що читати очима).",
     "Рішення ухвалюється читанням секції «Повний текст», не колонкою «Суддя».",
     "",
+    ...skippedSection(skipped),
     ...summarySection(results),
     ...costSection(results, pipelines),
     ...detailSection(results),

@@ -13,6 +13,21 @@ function missingKeyEnvVar(provider: Candidate["provider"]): string {
   return provider === "anthropic" ? "ANTHROPIC_API_KEY" : "OPENROUTER_API_KEY";
 }
 
+/**
+ * Чи резолвиться кандидат у власного провайдера прямо зараз.
+ *
+ * Потрібно, щоб `--skip-unavailable` міг ВІДСІЯТИ кандидата ДО прогону, а не
+ * ловити виняток по кожному кейсу. Перевірка та сама, що в гейті нижче.
+ */
+export function candidateProviderAvailable(candidate: Candidate): boolean {
+  return (
+    getLLMProvider({
+      provider: candidate.provider,
+      disableFallback: true,
+    }).name === candidate.provider
+  );
+}
+
 export async function runOne(
   pipeline: Pipeline,
   goldenCase: GoldenCase,
@@ -39,7 +54,9 @@ export async function runOne(
       `eval stand: кандидат "${candidate.label}" (\`${candidate.model}\`) оголошений як provider="${candidate.provider}", ` +
         `але getLLMProvider() резолвнув "${provider.name}" — ключ ${missingKeyEnvVar(candidate.provider)} не заданий ` +
         `(або порожній), тож виклик мовчки пішов би у StubProvider замість оголошеної моделі. ` +
-        `Задай ${missingKeyEnvVar(candidate.provider)} або запусти з --dry-run.`,
+        `Задай ${missingKeyEnvVar(candidate.provider)}, запусти з --dry-run, ` +
+        `або з --skip-unavailable, щоб прогнати лише доступних кандидатів ` +
+        `(відсіяні будуть названі у звіті — на відміну від мовчазної заглушки).`,
     );
   }
   const system = goldenCase.system ?? pipeline.system;

@@ -120,6 +120,13 @@ export const ANTHROPIC_PRICING_USD_PER_MTOK: Record<
     cacheWrite: 0.125,
     cacheRead: 0.01,
   },
+  // Floor-тир чату з 2026-08-26 (див. `env/chatModels.ts::CHAT_MODEL_DEFAULTS`).
+  "google/gemini-3.7-flash": {
+    input: 0.38,
+    output: 1.88,
+    cacheWrite: 0.475,
+    cacheRead: 0.038,
+  },
   // ── Chat-дефолти під `CHAT_VIA_OPENROUTER=true` (2026-08-25, B38) ──────
   // `env/chatModels.ts::CHAT_MODEL_DEFAULTS` реально ганяє основний трафік
   // чату на ці два id (firstTurn/standard → deepseek, synthesis → glm-5.2),
