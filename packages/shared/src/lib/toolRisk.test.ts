@@ -72,6 +72,25 @@ describe("TOOL_RISK ↔ каталог здібностей", () => {
     expect(requiresConfirmation("archive_habit")).toBe(false);
   });
 
+  it("B39: overwrite-інструменти Фініка класифіковано reversible, не destructive", () => {
+    // `set_budget_limit`, `set_monthly_plan`, `update_budget`,
+    // `change_category` перезаписують значення без явної згоди людини —
+    // до фіксу B39 вони взагалі не мали запису в `TOOL_RISK`, тобто ні
+    // блокуючого підтвердження, ні undo. Founder уточнив межу: вони
+    // reversible (мають робочий `undo`), а не destructive — модал НЕ
+    // повинен їх блокувати.
+    for (const id of [
+      "set_budget_limit",
+      "set_monthly_plan",
+      "update_budget",
+      "change_category",
+    ]) {
+      expect(TOOL_RISK[id]).toBe("reversible");
+      expect(requiresConfirmation(id)).toBe(false);
+      expect(isRiskyTool(id)).toBe(true);
+    }
+  });
+
   it("нериковий інструмент не проходить жоден із гейтів", () => {
     expect(isRiskyTool("create_transaction")).toBe(false);
     expect(requiresConfirmation("create_transaction")).toBe(false);

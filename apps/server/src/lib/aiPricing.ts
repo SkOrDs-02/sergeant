@@ -120,6 +120,38 @@ export const ANTHROPIC_PRICING_USD_PER_MTOK: Record<
     cacheWrite: 0.125,
     cacheRead: 0.01,
   },
+  // ── Chat-дефолти під `CHAT_VIA_OPENROUTER=true` (2026-08-25, B38) ──────
+  // `env/chatModels.ts::CHAT_MODEL_DEFAULTS` реально ганяє основний трафік
+  // чату на ці два id (firstTurn/standard → deepseek, synthesis → glm-5.2),
+  // а таблиця вище про них не знала — `est_cost_usd` для основного трафіку
+  // мовчки виходив 0 (рятував лише `usage.cost` від шлюзу, якщо той його
+  // прислав). Ціни — каталог OpenRouter станом на 2026-08-25.
+  "deepseek/deepseek-v4-flash": {
+    input: 0.04,
+    output: 0.08,
+    cacheWrite: 0.05,
+    cacheRead: 0.004,
+  },
+  "z-ai/glm-5.2": {
+    input: 1.4,
+    output: 4.4,
+    cacheWrite: 1.75,
+    cacheRead: 0.14,
+  },
+  // `env/aiRoutingEnv.ts::OPENROUTER_COACH_MODEL` defaults to this
+  // vendor-prefixed OpenRouter id (fixed 2026-08-25, B37 — was the
+  // proven-broken `openai/gpt-5.1`), and `modules/chat/aiQuotaTierModels.ts`
+  // hardcodes the same id as `PRO_TIER_MODEL.premium.coach`'s fallback.
+  // Same underlying model as the bare `claude-sonnet-4` prefix above
+  // (identical $3/$15 pricing) — needs its own key because OpenRouter ids
+  // are vendor-prefixed (`anthropic/…`) and `startsWith` won't bridge the
+  // two id styles.
+  "anthropic/claude-sonnet-4": {
+    input: 3.0,
+    output: 15.0,
+    cacheWrite: 3.75,
+    cacheRead: 0.3,
+  },
 };
 
 /**

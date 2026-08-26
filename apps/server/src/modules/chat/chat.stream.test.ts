@@ -36,6 +36,7 @@ vi.mock("../../obs/metrics.js", () => ({
   anthropicPromptCacheHitTotal: { inc: vi.fn() },
   chatToolInvocationsTotal: { inc: vi.fn() },
   aiRequestDurationMs: { observe: vi.fn() },
+  aiFirstTokenMs: { observe: vi.fn() },
   aiRequestsTotal: { inc: vi.fn() },
   aiTokensTotal: { inc: vi.fn() },
   externalHttpDurationMs: { observe: vi.fn() },
@@ -188,7 +189,9 @@ function makeStreamReqBody(): Record<string, unknown> {
       {
         type: "tool_use",
         id: "toolu_x",
-        name: "noop",
+        // Реальне ім'я з реєстру (`tools.ts`) — B32 валідує `name` проти
+        // `TOOLS`, тож синтетичне "noop" більше не проходить.
+        name: "delete_transaction",
         input: {},
       },
     ],

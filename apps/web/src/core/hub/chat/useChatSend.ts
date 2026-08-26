@@ -28,10 +28,12 @@ import { logger } from "@shared/lib";
 import { ANALYTICS_EVENTS, type ChatPreset } from "@sergeant/shared";
 import { trackEvent } from "../../observability/analytics";
 import { parseToolCalls } from "./toolCallSchema";
+import { keepReplayableToolBlocks } from "./replayableToolBlocks";
 import {
   useDestructiveConfirm,
   type UseDestructiveConfirmResult,
 } from "./useDestructiveConfirm";
+import { summarizeDestructiveToolInput } from "./destructiveConfirmSummary";
 import { VOICE_KEYWORDS, speak } from "../../lib/hubChatSpeech";
 import { buildActionCard } from "../../lib/hubChatActionCards";
 import { setHubStreaming } from "../streamingStore";
@@ -469,7 +471,20 @@ export function useChatSend({
           );
           if (destructive.length > 0) {
             const approved = await requestDestructiveConfirm(
-              destructive.map((tc) => tc.name as string),
+              destructive.map((tc) => {
+                const toolName = tc.name as string;
+                // `exactOptionalPropertyTypes` — `summary?: string` means
+                // "present and a string, or absent", never "present and
+                // `undefined`". Omit the key entirely for tools without a
+                // summary instead of assigning `undefined` to it.
+                const summary = summarizeDestructiveToolInput(
+                  toolName,
+                  tc.input as Record<string, unknown>,
+                );
+                return summary
+                  ? { name: toolName, summary }
+                  : { name: toolName };
+              }),
             );
             if (!approved) {
               // Скасування — весь батч, а не лише деструктивна його
@@ -571,7 +586,18 @@ export function useChatSend({
                 context: contextRef.current.text || context,
                 messages: history,
                 tool_results: toolResults,
-                tool_calls_raw: data.tool_calls_raw,
+                // Сервер приймає в `tool_calls_raw` лише блоки
+                // `tool_use | server_tool_use | tool_search_tool_result`
+                // (B32: інакше клієнт може вписати довільний текст від імені
+                // асистента — єдиної ролі без огорожі). Модель же штатно
+                // повертає ще й `text`-преамбулу перед викликом інструмента,
+                // і досі ми відбивали `tool_calls_raw` назад ДОСЛІВНО.
+                //
+                // Тому фільтруємо тут, ТІЄЮ САМОЮ схемою, що валідує сервер —
+                // не власним списком типів, який мовчки розʼїхався б із
+                // серверним при наступній зміні. Преамбула не губиться для
+                // користувача: вона вже дострімлена в UI вище.
+                tool_calls_raw: keepReplayableToolBlocks(data.tool_calls_raw),
                 stream: true,
                 // Той самий preset і на турі синтезу: інструкція має діяти
                 // й після `remember`, і цей запит теж має списатись із

@@ -207,7 +207,7 @@ function HubChat({
       />
 
       <DestructiveConfirmModal
-        toolNames={confirmDestructive.pending?.toolNames ?? null}
+        items={confirmDestructive.pending?.items ?? null}
         onConfirm={confirmDestructive.accept}
         onCancel={confirmDestructive.reject}
       />

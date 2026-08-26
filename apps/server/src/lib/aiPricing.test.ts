@@ -1,9 +1,12 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { z } from "zod";
 import {
   pickAnthropicPricing,
   estimateAnthropicCostUsd,
   ANTHROPIC_PRICING_USD_PER_MTOK,
 } from "./aiPricing.js";
+import { defaultChatModel } from "../env/chatModels.js";
+import { aiRoutingEnvShape } from "../env/aiRoutingEnv.js";
 
 /**
  * PR-12 — unit-coverage для pricing-helper-ів. Перевіряємо:
@@ -209,5 +212,85 @@ describe("estimateAnthropicCostUsd — pricing math", () => {
         output_tokens: 1_000_000,
       }),
     ).toBeCloseTo(0.5, 6);
+  });
+});
+
+/**
+ * B38 regression — pricing coverage for every model id the running chat/coach
+ * paths can actually default to, walked straight from the two source-of-truth
+ * modules instead of hand-copied literals. This is the guard that should have
+ * existed before `deepseek/deepseek-v4-flash` and `z-ai/glm-5.2` (the real
+ * `CHAT_VIA_OPENROUTER=true` chat defaults — see `env/chatModels.ts`) shipped
+ * with `est_cost_usd` silently stuck at 0 for the bulk of chat traffic.
+ */
+describe("pricing coverage — model ids reachable from chatModels.ts / aiRoutingEnv.ts", () => {
+  const CHAT_SLOTS = ["firstTurn", "synthesis", "standard", "floor"] as const;
+
+  let savedChatViaOpenRouter: string | undefined;
+  let savedOpenRouterApiKey: string | undefined;
+
+  beforeEach(() => {
+    savedChatViaOpenRouter = process.env["CHAT_VIA_OPENROUTER"];
+    savedOpenRouterApiKey = process.env["OPENROUTER_API_KEY"];
+  });
+
+  afterEach(() => {
+    if (savedChatViaOpenRouter === undefined) {
+      delete process.env["CHAT_VIA_OPENROUTER"];
+    } else {
+      process.env["CHAT_VIA_OPENROUTER"] = savedChatViaOpenRouter;
+    }
+    if (savedOpenRouterApiKey === undefined) {
+      delete process.env["OPENROUTER_API_KEY"];
+    } else {
+      process.env["OPENROUTER_API_KEY"] = savedOpenRouterApiKey;
+    }
+  });
+
+  it.each(CHAT_SLOTS)(
+    "chatModels.ts — OpenRouter-gateway default for slot '%s' has pricing",
+    (slot) => {
+      process.env["CHAT_VIA_OPENROUTER"] = "true";
+      process.env["OPENROUTER_API_KEY"] = "test-key";
+      const model = defaultChatModel(slot);
+      expect(pickAnthropicPricing(model)).not.toBeNull();
+    },
+  );
+
+  it.each(CHAT_SLOTS)(
+    "chatModels.ts — Anthropic-direct default for slot '%s' has pricing",
+    (slot) => {
+      process.env["CHAT_VIA_OPENROUTER"] = "false";
+      delete process.env["OPENROUTER_API_KEY"];
+      const model = defaultChatModel(slot);
+      expect(pickAnthropicPricing(model)).not.toBeNull();
+    },
+  );
+
+  // `aiRoutingEnvShape` is the zod shape merged into the top-level `env`
+  // object (see `env/env.ts`) — parsing it against `{}` resolves every
+  // `OPENROUTER_*_MODEL` field to its real runtime default without
+  // hand-copying the string literals (which is exactly how this gap
+  // reappeared once already).
+  const parsedDefaults = z.object(aiRoutingEnvShape).parse({});
+  const modelKeys = Object.keys(aiRoutingEnvShape).filter(
+    (key): key is keyof typeof parsedDefaults =>
+      key.startsWith("OPENROUTER_") && key.endsWith("_MODEL"),
+  );
+
+  it("aiRoutingEnv.ts declares at least one *_MODEL default (sanity check for the walk below)", () => {
+    expect(modelKeys.length).toBeGreaterThan(0);
+  });
+
+  it.each(modelKeys)("aiRoutingEnv.ts — %s default has pricing", (key) => {
+    const model = parsedDefaults[key];
+    expect(typeof model).toBe("string");
+    if (model === "") {
+      // `OPENROUTER_MODEL` is the empty-by-design global override sentinel
+      // (empty string = "no override, use per-path default") — nothing to
+      // price until a deployment actually sets it.
+      return;
+    }
+    expect(pickAnthropicPricing(model as string)).not.toBeNull();
   });
 });

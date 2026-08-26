@@ -443,6 +443,12 @@ export async function runVisionOne(
     return {
       ...base,
       ok: false,
+      // Транспортна помилка (B47, напр. HTTP 401 без ключа) — модель не
+      // відповіла, це не вердикт судді. `report.ts` виключає такі рядки зі
+      // знаменника точності, інакше 401 рендериться як «модель провалила
+      // всі пастки» (закоміченy звіт `vision-eval-2026-08-25.md` саме так
+      // прочитався).
+      transportFailed: true,
       passedJudge: false,
       judgeReason: null,
       inputTokens: null,
@@ -456,6 +462,7 @@ export async function runVisionOne(
   return {
     ...base,
     ok: true,
+    transportFailed: false,
     passedJudge: verdict === true,
     judgeReason: typeof verdict === "string" ? verdict : null,
     inputTokens: raw.inputTokens,

@@ -31,8 +31,9 @@ import {
   setCachedChatResponse,
 } from "./chatResponseCache.js";
 import { prepareToolResults } from "./prepareToolResults.js";
+import { validateToolCallsRawProvenance } from "./validateToolCallsRaw.js";
 import { als } from "../../obs/requestContext.js";
-import { makeAiProviderError } from "../../obs/errors.js";
+import { makeAiProviderError, ValidationError } from "../../obs/errors.js";
 import { chatToolIterationCapHitTotal } from "../../obs/metrics.js";
 import { emitSecurityEvent } from "../../obs/securityEvents.js";
 import { getSessionUser } from "../../auth.js";
@@ -274,6 +275,26 @@ export default async function handler(
     preset,
   } = parseBody(ChatRequestSchema, req);
 
+  // B36 — `tool_results` і `tool_calls_raw` мусять приходити РАЗОМ або не
+  // приходити взагалі. Рядок нижче (304) перевіряє лише `tool_results &&
+  // tool_calls_raw`: запит з РІВНО ОДНИМ полем не потрапляв у ту гілку й
+  // мовчки падав у "перший тур" — round-trip виконаних інструментів губився
+  // без жодного сигналу клієнту (та без явного 400 у логах/Sentry).
+  // `!!x` нормалізує порожній масив (`[]`, truthy в JS) так само, як і
+  // непорожній — важлива лише присутність поля, не його довжина.
+  if (!!tool_results !== !!tool_calls_raw) {
+    throw new ValidationError(
+      "tool_results і tool_calls_raw мають надходити разом",
+      {
+        code: "CHAT_TOOL_ROUND_TRIP_INCOMPLETE",
+        cause: {
+          hasToolResults: !!tool_results,
+          hasToolCallsRaw: !!tool_calls_raw,
+        },
+      },
+    );
+  }
+
   // Резолвимо сесію один раз — для RAG-injection (перший тур) і для per-user
   // cost-ledger (`ai_usage_daily` рядок `u:<id>` поряд із global aggregate).
   // anon / lookup-error → null: cost тоді пишеться лише глобально.
@@ -321,6 +342,11 @@ export default async function handler(
       );
       return;
     }
+    // B32 — реєстр-allowlist на `name` + provenance-звʼязок кожного
+    // `tool_use.id` з `tool_results`. Так само ДО `recordToolExecutions`,
+    // щоб підроблений payload не отруював метрику раніше, ніж ми його
+    // відхилимо 400-кою.
+    validateToolCallsRawProvenance(tool_calls_raw, tool_results);
     recordToolExecutions(tool_results, tool_calls_raw);
     // Великі `tool_result`-блоби (брифінги, місячні digest-и) з'їдають
     // бюджет вхідних токенів і зривають continuation. Truncate на сервері,
@@ -589,11 +615,22 @@ function sanitizeMessages(messages: unknown): ClientChatMessage[] {
     )
     .slice(-12);
 
-  // Anthropic вимагає чергування user/assistant і початок з user
+  // Anthropic вимагає чергування user/assistant і початок з user.
+  //
+  // B35: на дублікаті ролі поспіль тримаємо НОВІШЕ повідомлення, не старіше.
+  // `cleaned` іде у хронологічному порядку (найстаріше → найновіше), тож
+  // коли два `user`-и опиняються поспіль (типовий сценарій: тур обірвався
+  // без асистентської репліки — мережевий збій, refresh посеред стріму),
+  // старе `continue` пропускало САМЕ НОВЕ повідомлення і модель відповідала
+  // на застаріле питання. Гілка tool-result вище (`lastUserMsg`,
+  // `.reverse().find(...)`) уже бере найновіше — цей цикл тепер узгоджений
+  // із тим самим інваріантом.
   const result: ClientChatMessage[] = [];
   for (const m of cleaned) {
-    if (result.length > 0 && result[result.length - 1]!.role === m.role)
+    if (result.length > 0 && result[result.length - 1]!.role === m.role) {
+      result[result.length - 1] = m;
       continue;
+    }
     result.push(m);
   }
   while (result.length > 0 && result[0]!.role !== "user") result.shift();
