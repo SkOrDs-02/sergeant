@@ -2,7 +2,7 @@ import { Router } from "express";
 import {
   rateLimitExpress,
   requireAiQuota,
-  requireAnthropicKey,
+  requireLlmUpstream,
   requireSession,
   setModule,
 } from "../http/index.js";
@@ -22,7 +22,9 @@ export function createWeeklyDigestRouter(): Router {
     // Anthropic-виклик. Сесія обов'язкова з тих самих причин, що в `chat.ts`
     // (знахідка A1, `docs/90-work/audits/ai-abuse-2026-08-05.md`).
     requireSession(),
-    requireAnthropicKey(),
+    // Той самий аргумент, що в `coach.ts`: `LLM_DIGEST_PROVIDER` типово
+    // `openrouter`. Див. докстрінг `requireLlmUpstream`.
+    requireLlmUpstream("digest"),
     requireAiQuota(),
     weeklyDigest,
   );

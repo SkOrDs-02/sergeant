@@ -67,6 +67,11 @@ const KNOWN_EXITS: Record<string, string> = {
   // не ловити докстрінги, означало б перестати ловити справжні виходи.
   "http/requireAnthropicKey.ts":
     "не викликає нічого; docstring-згадка api.anthropic.com у requireChatUpstreamKey()",
+  // Четвертий випадок того самого класу — і показовий: це РОУТЕР, який лише
+  // розставляє middleware. Згадка `anthropicMessages()` у коментарі пояснює,
+  // ЧОМУ зорові ендпоінти отримали інший гейт, ніж текстові.
+  "routes/nutrition.ts":
+    "не викликає нічого; docstring-згадка anthropicMessages() при поясненні розділення гейтів",
 };
 
 function walk(dir: string, out: string[] = []): string[] {
