@@ -7,6 +7,7 @@ import {
 } from "./aiPricing.js";
 import { defaultChatModel } from "../env/chatModels.js";
 import { aiRoutingEnvShape } from "../env/aiRoutingEnv.js";
+import { tierModel } from "../modules/chat/aiQuotaTierModels.js";
 
 /**
  * PR-12 — unit-coverage для pricing-helper-ів. Перевіряємо:
@@ -293,4 +294,35 @@ describe("pricing coverage — model ids reachable from chatModels.ts / aiRoutin
     }
     expect(pickAnthropicPricing(model as string)).not.toBeNull();
   });
+
+  /**
+   * Прогалина в самому гейті, знайдена 2026-08-26 при переведенні коуча на
+   * `gemini-3.5-flash-lite`.
+   *
+   * Обидва обходи вище дивляться в `chatModels.ts` і в `OPENROUTER_*_MODEL`.
+   * Але standard- і floor-моделі КОУЧА живуть у третьому місці —
+   * `aiQuotaTierModels.ts::PRO_TIER_MODEL` — і беруться з `AI_PRO_*_COACH_MODEL`,
+   * що під цей префікс не підпадає. Тобто гейт проти B38 покривав
+   * premium-коуча (він читає `OPENROUTER_COACH_MODEL`) і мовчки НЕ покривав
+   * два інші тири — рівно ті, куди новий id і ставили.
+   *
+   * Ходимо через публічний `tierModel()`, а не через приватну таблицю: так
+   * тест бачить те саме, що й ран-тайм, включно з `envStr`-фолбеками.
+   */
+  const TIERS = ["premium", "standard", "floor"] as const;
+  const ENDPOINTS = ["chat", "coach"] as const;
+  const TIER_COMBOS = TIERS.flatMap((tier) =>
+    ENDPOINTS.map((endpoint) => [tier, endpoint] as const),
+  );
+
+  it.each(TIER_COMBOS)(
+    "aiQuotaTierModels.ts — default for tier '%s' × endpoint '%s' has pricing",
+    (tier, endpoint) => {
+      process.env["CHAT_VIA_OPENROUTER"] = "true";
+      process.env["OPENROUTER_API_KEY"] = "test-key";
+      const model = tierModel(tier, endpoint);
+      expect(model).not.toBe("");
+      expect(pickAnthropicPricing(model)).not.toBeNull();
+    },
+  );
 });

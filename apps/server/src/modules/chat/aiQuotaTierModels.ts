@@ -108,13 +108,21 @@ const PRO_TIER_MODEL: Record<ProTier, Record<ProEndpoint, () => string>> = {
   standard: {
     chat: () =>
       envStr("AI_PRO_STANDARD_CHAT_MODEL", defaultChatModel("standard")),
+    // `gemini-3.5-flash-lite`, а не `gemini-2.5-flash-lite` (стояло тут до
+    // 2026-08-26). Рішення власника за виміром 2026-08-25: 8/8 на коуч-стенді,
+    // НУЛЬ порушень голосу, 987 мс. Свідомо приймається зростання ціни втричі
+    // за вхід і вшестеро за вихід ($0.16 → $0.64 на 1k викликів).
+    //
+    // AI-DANGER: НЕ став сюди `gemini-3.7-flash`, навіть попри те, що вона
+    // стоїть на floor-тирі ЧАТУ. На коуч-стенді вона дала лише 3/8 — це різні
+    // задачі, і «найкраща для чату» не означає «годиться для коуча».
     coach: () =>
-      envStr("AI_PRO_STANDARD_COACH_MODEL", "google/gemini-2.5-flash-lite"),
+      envStr("AI_PRO_STANDARD_COACH_MODEL", "google/gemini-3.5-flash-lite"),
   },
   floor: {
     chat: () => envStr("AI_PRO_FLOOR_CHAT_MODEL", defaultChatModel("floor")),
     coach: () =>
-      envStr("AI_PRO_FLOOR_COACH_MODEL", "google/gemini-2.5-flash-lite"),
+      envStr("AI_PRO_FLOOR_COACH_MODEL", "google/gemini-3.5-flash-lite"),
   },
 };
 
