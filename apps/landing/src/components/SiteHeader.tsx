@@ -11,6 +11,13 @@ export default function SiteHeader() {
       >
         Sergeant<span className="text-accent">.</span>
       </a>
+      {/*
+        Під `md` навігація ховається, і бургер-меню тут навмисно нема. У шапці
+        лишаються лого й CTA — єдина дія, заради якої сторінка існує. Розділів
+        п'ять, вони йдуть у порядку скролу, тож меню не відкрило б доступу до
+        нічого недосяжного, зате поставило б другий центр уваги поруч із
+        кнопкою.
+      */}
       <nav
         aria-label="Головна навігація"
         className="hidden items-center gap-6 text-sm text-muted md:flex"
@@ -23,7 +30,7 @@ export default function SiteHeader() {
         </a>
         <a
           href={anchor("modules")}
-          className="transition hover:text-foreground"
+          className="transition hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
           Модулі
         </a>
