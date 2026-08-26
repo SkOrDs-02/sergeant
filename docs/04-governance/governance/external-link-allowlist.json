@@ -257,6 +257,10 @@
     {
       "pattern": "^https?://www\\.designrush\\.com/",
       "reason": "Оглядова стаття про тренди AI-лендингів, цитована в docs/05-design/design/anti-slop-strategy.md. designrush.com віддає 403 на HEAD/GET від CI-агентів (Cloudflare bot-протекція) — у браузері сторінка відкривається. Той самий клас, що й gist-запис вище: посилання живе, недоступний лише чекер."
+    },
+    {
+      "pattern": "^https?://api\\.ukrainealarm\\.com(/|$)",
+      "reason": "Офіційний API повітряних тривог, цитований як джерело в docs/90-work/research/2026-08-26-integrations-second-pass.md. Це bare API-хост без публічної кореневої сторінки: віддає 403 і на HEAD, і на GET, з браузерним User-Agent і без нього (заміряно 2026-08-26). Документація живе за токеном, тож перевіряти лінк автоматично нічим."
     }
   ]
 }
