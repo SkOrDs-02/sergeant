@@ -136,7 +136,7 @@ describe("LimitBudgetCard", () => {
     expect(screen.getByText("—")).toBeInTheDocument();
     expect(screen.getByText("Одноразовий")).toBeInTheDocument();
     expect(screen.getByText(/Перевищено на/)).toBeInTheDocument();
-    expect(screen.getByText(/6\s?500 \/ 5000 ₴/)).toBeInTheDocument();
+    expect(screen.getByText(/6\s?500 \/ 5\s?000 ₴/)).toBeInTheDocument();
   });
 });
 

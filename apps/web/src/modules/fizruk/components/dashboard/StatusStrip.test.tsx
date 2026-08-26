@@ -180,7 +180,13 @@ describe("StatusStrip", () => {
         onOpenWorkouts={() => {}}
       />,
     );
-    expect(screen.getByText("1 з 2 цього тижня")).toBeDefined();
+    // V-4: на лиці чипа — короткий варіант, який переживе `truncate` на
+    // 320px; повне речення лишається доступним через aria-label/title.
+    expect(screen.getByText("1 з 2")).toBeDefined();
+    expect(screen.queryByText("1 з 2 цього тижня")).toBeNull();
+    expect(
+      screen.getByLabelText(/Серія: 1 з 2 цього тижня\. Відкрити «Прогрес»/),
+    ).toBeDefined();
   });
 
   it("щоденний `streakDays` на веб-поверхню більше не потрапляє", () => {

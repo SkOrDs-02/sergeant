@@ -38,6 +38,7 @@ import {
   getMonthlySummary,
   isBudgetAlert,
   filterStatTransactions,
+  limitBudgetCategoryIds,
 } from "@sergeant/finyk-domain/domain";
 
 import { FinykNavGrid } from "../../components/FinykNavGrid";
@@ -165,14 +166,21 @@ export function Overview({
 
   const budgetAlerts = useMemo(
     () =>
+      // Комбо-ліміт: факт — сума по всіх категоріях набору (транзакція
+      // резолвиться в одну категорію, подвійного рахунку немає).
       limitBudgets.filter((b) =>
         isBudgetAlert(
-          calcCategorySpent(
-            statTx,
-            b.categoryId,
-            txCategories,
-            txSplits,
-            customCategories,
+          limitBudgetCategoryIds(b).reduce(
+            (sum, id) =>
+              sum +
+              calcCategorySpent(
+                statTx,
+                id,
+                txCategories,
+                txSplits,
+                customCategories,
+              ),
+            0,
           ),
           b.limit,
         ),

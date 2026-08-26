@@ -5,6 +5,9 @@ import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import {
   calculateLimitUsage,
+  formatLimitBudgetLabel,
+  limitBudgetCategoryIds,
+  limitBudgetCategoryKey,
   shouldShowProactiveAdvice,
 } from "@sergeant/finyk-domain/domain/budget";
 import type {
@@ -30,11 +33,13 @@ export interface BudgetsLimitsSectionProps {
   setEditIdx: Dispatch<SetStateAction<number | null>>;
   customCategories: Category[] | undefined;
   calcSpent: (b: Budget) => number;
+  /** Розбивка факту по категоріях ліміту — для комбо-карток. */
+  calcBreakdown: (b: LimitBudget) => { categoryId: string; spent: number }[];
   proactiveItems: ProactiveItem[];
   proactiveAdvice: Record<string, string | null>;
   proactiveLoading: Record<string, boolean>;
   dismissedAdvice: Record<string, string>;
-  dismissAdvice: (categoryId: string, monthKey: string, text: string) => void;
+  dismissAdvice: (categoryKey: string, monthKey: string, text: string) => void;
   highlightedCategoryId: string | null;
   limitCardRefs: MutableRefObject<Map<string, HTMLDivElement | null>>;
   toast: ReturnType<typeof useToast>;
@@ -58,6 +63,7 @@ export function BudgetsLimitsSection({
   setEditIdx,
   customCategories,
   calcSpent,
+  calcBreakdown,
   proactiveItems,
   proactiveAdvice,
   proactiveLoading,
@@ -130,7 +136,8 @@ export function BudgetsLimitsSection({
       {limitsOpen &&
         limitBudgets.map((b, i) => {
           const categoryId = b.categoryId ?? "";
-          const cat = resolveExpenseCategoryMeta(categoryId, customCategories);
+          const categoryIds = limitBudgetCategoryIds(b);
+          const categoryKey = limitBudgetCategoryKey(b);
           const bspent = calcSpent(b);
           const usage = calculateLimitUsage(b, bspent);
           // `getLimitBudgets` normalizes limits into fresh objects, so
@@ -142,23 +149,43 @@ export function BudgetsLimitsSection({
           // `stripLeadingEmoji` лишається рівно для КАСТОМНИХ категорій:
           // вбудовані підписи чисті від емодзі з 2026-08-21, а назву
           // власної категорії людина набирає сама.
-          const catLabel = cat?.label ? stripLeadingEmoji(cat.label) : "—";
-          const isHighlighted = highlightedCategoryId === categoryId;
-          const adviceText = proactiveAdvice[categoryId];
+          const resolveCatLabel = (id: string) => {
+            const meta = resolveExpenseCategoryMeta(id, customCategories);
+            return meta?.label ? stripLeadingEmoji(meta.label) : null;
+          };
+          const catLabel = formatLimitBudgetLabel(b, resolveCatLabel) || "—";
+          // Розбивка потрібна лише комбо-картці — не ганяємо другий прохід
+          // по транзакціях для одиночних лімітів.
+          const breakdown =
+            categoryIds.length > 1
+              ? calcBreakdown(b).map((row) => ({
+                  ...row,
+                  label: resolveCatLabel(row.categoryId) || row.categoryId,
+                }))
+              : undefined;
+          const isHighlighted =
+            highlightedCategoryId != null &&
+            categoryIds.includes(highlightedCategoryId);
+          const adviceText = proactiveAdvice[categoryKey];
           const monthKey =
-            proactiveItems.find((it) => it.categoryId === categoryId)
+            proactiveItems.find((it) => it.categoryKey === categoryKey)
               ?.monthKey ?? "";
-          const dismissedKey = `${monthKey}_${categoryId}`;
+          const dismissedKey = `${monthKey}_${categoryKey}`;
           const isDismissed =
             adviceText && dismissedAdvice[dismissedKey] === adviceText;
           return (
             <div
               key={b.id || i}
               ref={(node) => {
-                if (node) {
-                  limitCardRefs.current.set(categoryId, node);
-                } else {
-                  limitCardRefs.current.delete(categoryId);
+                // Deep-link `?cat=…` адресує КАТЕГОРІЮ, тож комбо-картка
+                // реєструється під кожним своїм id — інсайт про «Кафе»
+                // доскролить і до комбо «Їжа», що його містить.
+                for (const id of categoryIds) {
+                  if (node) {
+                    limitCardRefs.current.set(id, node);
+                  } else {
+                    limitCardRefs.current.delete(id);
+                  }
                 }
               }}
               className={cn(
@@ -172,25 +199,27 @@ export function BudgetsLimitsSection({
                   id: b.id,
                   type: "limit" as const,
                   categoryId,
+                  categoryIds,
                   limit: b.limit,
                   period: b.period ?? "month",
                   ...(b.createdAt ? { createdAt: b.createdAt } : {}),
                 }}
                 categoryLabel={catLabel}
                 customCategories={customCategories ?? []}
+                breakdown={breakdown}
                 spent={usage.spent}
                 pctRaw={usage.pctRaw}
                 pctRounded={usage.pctRounded}
                 remaining={usage.remaining}
                 isEditing={isEditing}
                 showProactiveAdvice={showAdvice}
-                proactiveLoading={proactiveLoading[categoryId]}
+                proactiveLoading={proactiveLoading[categoryKey]}
                 proactiveText={isDismissed ? null : adviceText}
                 onDismissAdvice={
                   adviceText
                     ? () => {
                         if (monthKey) {
-                          dismissAdvice(categoryId, monthKey, adviceText);
+                          dismissAdvice(categoryKey, monthKey, adviceText);
                         }
                       }
                     : undefined

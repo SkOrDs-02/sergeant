@@ -363,7 +363,9 @@ export function PantryCard({
               }}
               disabled={busy || !newItemName.trim()}
               className={cn(
-                "text-style-label px-4 h-11 rounded-2xl shrink-0",
+                // `h-11` = 2.75rem, а на 320px корінний шрифт 15px → 41.25px і провал
+                // 44px-флору; px-флор під coarse pointer, як у `Button`/`Input`.
+                "text-style-label px-4 h-11 pointer-coarse:min-h-[44px] rounded-2xl shrink-0",
                 "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors",
               )}
             >
@@ -385,7 +387,10 @@ export function PantryCard({
               onClick={parsePantry}
               disabled={busy || !pantryText.trim()}
               className={cn(
-                "text-style-label shrink-0 px-4 h-11 rounded-2xl mt-0.5",
+                // Той самий 44px-флор, що й у «Додати» вище: `h-11` дає
+                // 41.25px на 320px, а це вже дві кнопки того самого блоку
+                // з тим самим дефектом (рев'ю CodeRabbit 2026-08-26).
+                "text-style-label shrink-0 px-4 h-11 pointer-coarse:min-h-[44px] rounded-2xl mt-0.5",
                 "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors",
               )}
             >

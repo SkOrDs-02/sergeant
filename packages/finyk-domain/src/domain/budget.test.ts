@@ -24,6 +24,11 @@ import {
   getLimitPeriodRange,
   normalizeLimitBudget,
   filterTransactionsForLimitPeriod,
+  findLimitCategoryOverlaps,
+  formatLimitBudgetLabel,
+  isSameLimitCategorySet,
+  limitBudgetCategoryIds,
+  limitBudgetCategoryKey,
 } from "./budget";
 
 describe("budget: split helpers", () => {
@@ -398,5 +403,163 @@ describe("budget: form validators", () => {
       targetAmount: 10000,
       savedAmount: 2000,
     });
+  });
+});
+
+describe("budget: multi-category limits", () => {
+  it("limitBudgetCategoryIds falls back to legacy categoryId and dedupes", () => {
+    expect(limitBudgetCategoryIds({ categoryId: "food" })).toEqual(["food"]);
+    expect(
+      limitBudgetCategoryIds({
+        categoryId: "food",
+        categoryIds: ["food", "restaurant", "food"],
+      }),
+    ).toEqual(["food", "restaurant"]);
+    expect(limitBudgetCategoryIds({ categoryId: "" })).toEqual([]);
+  });
+
+  it("normalizeLimitBudget keeps categoryId in sync with the first of categoryIds", () => {
+    const combo = normalizeLimitBudget({
+      id: "b1",
+      type: "limit",
+      categoryId: "stale",
+      categoryIds: ["food", "restaurant"],
+      limit: 20000,
+    });
+    expect(combo.categoryIds).toEqual(["food", "restaurant"]);
+    expect(combo.categoryId).toBe("food");
+
+    const legacy = normalizeLimitBudget({
+      id: "b2",
+      type: "limit",
+      categoryId: "transport",
+      limit: 3000,
+    });
+    expect(legacy.categoryIds).toEqual(["transport"]);
+    expect(legacy.categoryId).toBe("transport");
+  });
+
+  it("limitBudgetCategoryKey is order-insensitive", () => {
+    expect(
+      limitBudgetCategoryKey({
+        categoryId: "food",
+        categoryIds: ["restaurant", "food"],
+      }),
+    ).toBe("food+restaurant");
+    expect(limitBudgetCategoryKey({ categoryId: "food" })).toBe("food");
+  });
+
+  it("isSameLimitCategorySet compares sets, not order", () => {
+    expect(isSameLimitCategorySet(["a", "b"], ["b", "a"])).toBe(true);
+    expect(isSameLimitCategorySet(["a"], ["a", "b"])).toBe(false);
+    expect(isSameLimitCategorySet(["a", "c"], ["a", "b"])).toBe(false);
+  });
+
+  it("formatLimitBudgetLabel: custom label → single → «A + B» → «A + ще N»", () => {
+    const resolve = (id: string) =>
+      ({ food: "Продукти", restaurant: "Кафе", transport: "Транспорт" })[id];
+    expect(
+      formatLimitBudgetLabel(
+        {
+          label: "Їжа",
+          categoryId: "food",
+          categoryIds: ["food", "restaurant"],
+        },
+        resolve,
+      ),
+    ).toBe("Їжа");
+    expect(formatLimitBudgetLabel({ categoryId: "food" }, resolve)).toBe(
+      "Продукти",
+    );
+    expect(
+      formatLimitBudgetLabel(
+        { categoryId: "food", categoryIds: ["food", "restaurant"] },
+        resolve,
+      ),
+    ).toBe("Продукти + Кафе");
+    expect(
+      formatLimitBudgetLabel(
+        {
+          categoryId: "food",
+          categoryIds: ["food", "restaurant", "transport"],
+        },
+        resolve,
+      ),
+    ).toBe("Продукти + ще 2");
+    // Нерезолвнутий id деградує до самого id, а не в порожнечу.
+    expect(formatLimitBudgetLabel({ categoryId: "custom_x" }, resolve)).toBe(
+      "custom_x",
+    );
+  });
+
+  it("findLimitCategoryOverlaps returns shared ids per existing limit", () => {
+    const existing = [
+      { id: "b1", type: "limit", categoryId: "restaurant", limit: 12000 },
+      {
+        id: "b2",
+        type: "limit",
+        categoryId: "food",
+        categoryIds: ["food", "transport"],
+        limit: 9000,
+      },
+      { id: "g1", type: "goal", name: "Ціль", targetAmount: 1 },
+    ] as never;
+    const overlaps = findLimitCategoryOverlaps(
+      ["food", "restaurant"],
+      existing,
+    );
+    expect(overlaps).toHaveLength(2);
+    expect(overlaps[0]?.budget.id).toBe("b1");
+    expect(overlaps[0]?.categoryIds).toEqual(["restaurant"]);
+    expect(overlaps[1]?.budget.id).toBe("b2");
+    expect(overlaps[1]?.categoryIds).toEqual(["food"]);
+    // excludeBudgetId — для редагування власного ліміту.
+    expect(
+      findLimitCategoryOverlaps(["restaurant"], existing, {
+        excludeBudgetId: "b1",
+      }),
+    ).toEqual([]);
+  });
+
+  it("validateLimitBudgetForm blocks only the EXACT same category set", () => {
+    const existing = [
+      {
+        id: "b1",
+        type: "limit",
+        categoryId: "food",
+        categoryIds: ["food", "restaurant"],
+        limit: 20000,
+      },
+    ] as never;
+    // Точний збіг набору (в іншому порядку) — дублікат.
+    expect(
+      validateLimitBudgetForm(
+        { categoryIds: ["restaurant", "food"], limit: 500 },
+        existing,
+      ).error,
+    ).toBe("Ліміт для цього набору категорій вже існує");
+    // Частковий перетин — дозволено.
+    const partial = validateLimitBudgetForm(
+      { categoryIds: ["restaurant"], limit: 500 },
+      existing,
+    );
+    expect(partial.error).toBeNull();
+    expect(partial.normalized).toMatchObject({
+      categoryId: "restaurant",
+      categoryIds: ["restaurant"],
+    });
+    // Legacy-вхід із самим categoryId нормалізується в categoryIds.
+    const legacy = validateLimitBudgetForm({
+      categoryId: "transport",
+      limit: 100,
+    });
+    expect(legacy.normalized).toMatchObject({
+      categoryId: "transport",
+      categoryIds: ["transport"],
+    });
+    // Порожній набір — стара помилка.
+    expect(validateLimitBudgetForm({ categoryIds: [], limit: 100 }).error).toBe(
+      "Оберіть категорію",
+    );
   });
 });

@@ -215,7 +215,12 @@ export function Tabs<V extends string = string>({
           "focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-surface",
           VARIANT_RING[variant],
           SIZE[size],
-          fill && "flex-1 min-w-0",
+          // `flex-1` без `min-w-0`: таби розтягуються рівно, поки є місце, але
+          // НЕ стискаються вужче за власний підпис. `min-w-0` знімав нижню
+          // межу, тож на 320px «Додатково» різалось (66→57px), хоча контейнер
+          // у HubSettingsPage має `overflow-x-auto` і задуманий скролитись.
+          // Браузерний аудит 2026-08-26.
+          fill && "flex-1",
           item.disabled && "opacity-50 cursor-not-allowed",
         );
 
@@ -255,7 +260,12 @@ export function Tabs<V extends string = string>({
             className={cn(commonClasses, styleClasses, tabsClassName)}
           >
             {item.icon}
-            <span className="truncate">{item.label}</span>
+            {/* Без `truncate`: `overflow:hidden` обнуляє automatic minimum size
+                flex-елемента, тож таб стискався ВУЖЧЕ за власний підпис навіть
+                після зняття `min-w-0` («Додатково» 66→57px на 320px). Підписи
+                табів короткі; якщо ряд не влазить — його скролить
+                `overflow-x-auto` контейнера, як і задумано. */}
+            <span className="whitespace-nowrap">{item.label}</span>
             {item.badge}
           </button>
         );
