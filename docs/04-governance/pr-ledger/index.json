@@ -1,8 +1,15 @@
 {
   "$schema": "../governance/schemas/pr-ledger.schema.json",
   "version": 1,
-  "generated_at": "2026-08-07",
+  "generated_at": "2026-08-26",
   "prs": [
+    {
+      "number": 862,
+      "title": "fix(web): знахідки браузерного аудиту — шапка, навігація, контроли + розблокування CI",
+      "merged_at": "2026-08-26T06:34:50Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": ["docs/00-start/playbooks/investigate-alert.md"]
+    },
     {
       "number": 689,
       "title": "fix(ci): governance-sync відрізняє живе посилання від навмисно мертвого",
