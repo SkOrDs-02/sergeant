@@ -325,11 +325,15 @@ describe("resolveProTier — chat-тиринг під CHAT_VIA_OPENROUTER", () =
     expect(r.model).toBe("deepseek/deepseek-v4-flash");
   });
 
-  it("floor → google/gemini-2.5-flash-lite", async () => {
+  // Модель змінено 2026-08-26: `google/gemini-2.5-flash-lite` давала 9 зривів
+  // стріму з 12 на прод-формі виклику (stream + 78 інструментів), тобто три
+  // чверті відповідей floor-тиру були порожні. Обґрунтування й заміри —
+  // у докстрінгу `env/chatModels.ts::CHAT_MODEL_DEFAULTS.floor`.
+  it("floor → google/gemini-3.7-flash", async () => {
     pool.query.mockResolvedValueOnce(full()).mockResolvedValueOnce(full());
     const r = await resolveProTier(makeReq(), makeRes(), "chat");
     expect(r.tier).toBe("floor");
-    expect(r.model).toBe("google/gemini-2.5-flash-lite");
+    expect(r.model).toBe("google/gemini-3.7-flash");
   });
 
   it("явний env-override перекриває дефолт шлюзу", async () => {

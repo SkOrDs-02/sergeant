@@ -1,6 +1,7 @@
 import type { Request, RequestHandler } from "express";
 
 import { env } from "../env.js";
+import { chatViaOpenRouter } from "../env/chatModels.js";
 
 type WithAnthropicKey = Request & { anthropicKey?: string };
 
@@ -32,6 +33,46 @@ export function requireAnthropicKey(): RequestHandler {
       return;
     }
     (req as WithAnthropicKey).anthropicKey = key;
+    next();
+  };
+}
+
+/**
+ * Guard для `/api/chat` — вимагає ключ ТОГО транспорту, яким піде запит.
+ *
+ * Чому окремо від `requireAnthropicKey()`. Чат ходить сирим транспортом
+ * (`lib/anthropic.ts::anthropicMessagesStream`), а той обирає адресу в
+ * `pickTransport()`: при активному шлюзі — `OPENROUTER_URL` з
+ * `Bearer ${env.OPENROUTER_API_KEY}`, і переданий `apiKey` там **не
+ * використовується взагалі**. Ланцюжка фолбеку в сирому транспорті немає —
+ * `FallbackProvider` живе у `lib/llm/provider.ts`, яким чат не користується.
+ *
+ * Через це `requireAnthropicKey()` на чаті давав 503 `ANTHROPIC_KEY_MISSING`
+ * навіть у повністю OpenRouter-івській конфігурації (дефолтній:
+ * `CHAT_VIA_OPENROUTER=true`), тобто блокував чат через відсутність
+ * креденшела, якого той запит не торкнеться. Рівно те, що описує коментар
+ * у `chatModels.ts`: рішення про модель і про транспорт мають одне джерело
+ * істини — тепер і рішення про потрібний ключ теж.
+ *
+ * `chatViaOpenRouter()` уже включає перевірку наявності `OPENROUTER_API_KEY`
+ * у сам предикат, тож якщо він true — ключ шлюзу гарантовано є, і питати
+ * більше нема про що. Anthropic-ключ лишається потрібним рівно тоді, коли
+ * шлюз вимкнено (або його ключа немає) і `pickTransport` піде на
+ * `api.anthropic.com` з `x-api-key`.
+ *
+ * `req.anthropicKey` виставляємо в обох випадках: під шлюзом він порожній і
+ * ігнорується, а тримати одну форму запиту простіше, ніж дві.
+ */
+export function requireChatUpstreamKey(): RequestHandler {
+  return (req, res, next) => {
+    if (!chatViaOpenRouter() && !env.ANTHROPIC_API_KEY) {
+      res.status(503).json({
+        error: "AI-помічник тимчасово недоступний. Спробуй пізніше.",
+        code: "ANTHROPIC_KEY_MISSING",
+      });
+      return;
+    }
+    (req as WithAnthropicKey).anthropicKey = env.ANTHROPIC_API_KEY;
     next();
   };
 }

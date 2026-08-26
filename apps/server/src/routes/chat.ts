@@ -2,7 +2,7 @@ import { Router } from "express";
 import {
   rateLimitExpress,
   requireAiQuota,
-  requireAnthropicKey,
+  requireChatUpstreamKey,
   requireSession,
   setModule,
 } from "../http/index.js";
@@ -51,7 +51,10 @@ export function createChatRouter(): Router {
       windowMs: 60_000,
       cost: () => 10,
     }),
-    requireAnthropicKey(),
+    // Ключ ТОГО транспорту, яким піде запит: під шлюзом Anthropic-ключ не
+    // потрібен і не використовується (`pickTransport` бере
+    // `OPENROUTER_API_KEY`). Див. докстрінг `requireChatUpstreamKey`.
+    requireChatUpstreamKey(),
     requireAiQuota(),
     chatHandler,
   );
