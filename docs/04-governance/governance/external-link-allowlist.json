@@ -255,8 +255,8 @@
       "reason": "Стаття Muzli про AI-slop — одне з двох першоджерел діагнозу в docs/05-design/design/anti-slop-strategy.md (§1 і §додатки). Medium віддає 403 будь-якому небраузерному User-Agent; у браузері лінк живий. Лінк додано ще в #641 і від того часу валив `Markdown link checker` на КОЖНОМУ PR незалежно від змісту — типовий «червоний завжди = вимкнений». Pattern звужено рівно до цього URL, решта medium.muz.li лишається під перевіркою."
     },
     {
-      "pattern": "^https?://www\\.designrush\\.com/",
-      "reason": "Оглядова стаття про тренди AI-лендингів, цитована в docs/05-design/design/anti-slop-strategy.md. designrush.com віддає 403 на HEAD/GET від CI-агентів (Cloudflare bot-протекція) — у браузері сторінка відкривається. Той самий клас, що й gist-запис вище: посилання живе, недоступний лише чекер."
+      "pattern": "^https?://www\\.designrush\\.com/agency/website-design-development/trends/ai-startup-homepage-design",
+      "reason": "Оглядова стаття про тренди AI-лендингів, цитована в docs/05-design/design/anti-slop-strategy.md. designrush.com віддає 403 на HEAD/GET від CI-агентів (Cloudflare bot-протекція) — у браузері сторінка відкривається. Той самий клас, що й gist-запис вище: посилання живе, недоступний лише чекер. Pattern звужено рівно до цього URL (єдиного designrush-лінка в доках) — решта домену лишається під перевіркою, як і для medium.muz.li вище."
     },
     {
       "pattern": "^https?://api\\.ukrainealarm\\.com(/|$)",
