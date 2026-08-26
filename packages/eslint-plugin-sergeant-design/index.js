@@ -2912,11 +2912,18 @@ const RX_IMPERATIVE_PLURAL =
 const RX_FIRST_PERSON_PLURAL =
   /(^|[\s"'`>(«])(М|м)и\s+[а-яіїєґ]|[а-яіїєґ]{2}(аємо|уємо|юємо|имемо|немо|ємо)(\s|[.,!?»…:;)]|$)/;
 
-function ukrainianCopyViolations(text) {
+// Непробільний сентинел на місці інтерполяції: каже «тут вираз МОЖЕ
+// віддати текст». Потрібен лише перевірці тире, яка дивиться на сусідів
+// зліва й справа; решту патернів ним годувати не можна — вони мають
+// класи меж (`[\s"'`>(«]`, `[\s,.!?»…:;)]`), і чужий символ у них
+// зламав би збіг. Тому дві версії рядка, а не одна.
+const UA_EXPR_SENTINEL = "\u0001";
+
+function ukrainianCopyViolations(text, emDashText = text) {
   if (!RX_CYRILLIC.test(text)) return [];
   const out = [];
   // Плейсхолдер порожнього значення — символ, не копія.
-  if (text.trim() !== "—" && RX_EM_DASH_IN_COPY.test(text)) {
+  if (emDashText.trim() !== "—" && RX_EM_DASH_IN_COPY.test(emDashText)) {
     out.push({ messageId: "emDash", data: {} });
   }
   const pronoun = RX_FORMAL_PRONOUN.exec(text);
@@ -2984,8 +2991,8 @@ const ukrainianCopy = {
     ) {
       return {};
     }
-    const report = (node, text) => {
-      for (const v of ukrainianCopyViolations(text)) {
+    const report = (node, text, emDashText = text) => {
+      for (const v of ukrainianCopyViolations(text, emDashText)) {
         context.report({ node, messageId: v.messageId, data: v.data });
       }
     };
@@ -2996,18 +3003,24 @@ const ukrainianCopy = {
       JSXText(node) {
         report(node, node.value);
       },
-      // Літерал перевіряємо ЦІЛИМ, а не поквазі. У
-      // `` `Немає ${name} — перевір мережу` `` тире стоїть на межі
-      // інтерполяції: у квазі «Немає » його нема, а в квазі « — перевір
-      // мережу» перед ним лише початок рядка, тож `\S\s*—` не збігається
-      // й порушення проходило повз. Склеюємо квазі пробілом-роздільником
-      // (він не створює хибних збігів: усі патерни вимагають непробільний
-      // символ) і повідомляємо один раз.
+      // Літерал перевіряємо ЦІЛИМ, а не поквазі: тире часто стоїть саме
+      // на межі інтерполяції, і поквазі там не збігається нічого.
+      //
+      // Але одного склеювання мало, і це коштувало другого заходу
+      // (рев'ю CodeRabbit). Пробіл-роздільник рятує лише випадок, коли
+      // ліворуч від тире вже є текст у своєму квазі: `Немає ${n} — …`
+      // дає «Немає   — …», де `\S\s*—` збігається на «є». А коли квазі
+      // ПОРОЖНІЙ — `${name} — …` — квазі це ["", " — …"], склейка дає
+      // самі пробіли перед тире, і порушення знову проходить повз. Те
+      // саме між двома інтерполяціями: `${a} — ${b} грн`.
+      //
+      // Тому перевірці тире віддаємо версію із сентинелом на місці
+      // виразу (він і означає «тут може бути текст»), а решті патернів —
+      // версію з пробілом: їхні класи меж чужого символу не приймають.
+      // Повідомляємо один раз — обидві версії йдуть в один виклик.
       TemplateLiteral(node) {
-        report(
-          node,
-          node.quasis.map((q) => q.value.cooked ?? q.value.raw).join(" "),
-        );
+        const parts = node.quasis.map((q) => q.value.cooked ?? q.value.raw);
+        report(node, parts.join(" "), parts.join(UA_EXPR_SENTINEL));
       },
     };
   },

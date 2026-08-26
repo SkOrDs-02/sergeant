@@ -63,7 +63,10 @@ export function summarizeDestructiveToolInput(
       const rawTo = input["to"];
       const from = typeof rawFrom === "string" ? rawFrom.trim() : "";
       const to = typeof rawTo === "string" ? rawTo.trim() : "";
-      return from && to ? `період ${from} — ${to}` : undefined;
+      // Коротке «–», а не довге «—»: тут тире несе граматику діапазону,
+      // а не паузу в реченні (канон §9а). Довге лишалось би ШІ-тиром і
+      // тепер червонить `sergeant-design/ukrainian-copy`.
+      return from && to ? `період ${from} – ${to}` : undefined;
     }
     case "clear_pantry":
       return "усі позиції активної комори";
