@@ -208,3 +208,14 @@ grep -rn "kopiyk\|валют\|expense\|transaction" apps/server/src/modules/impo
 **Звички (відкладено):**
 
 - [Habitica & Loop Habit Tracker — Data Export](https://habitica.fandom.com/wiki/Data_Export) — `history.csv` / CSV-ZIP по звичці.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                     | Merged     |
+| ------------------------------------------------------ | ------------------------------------------------------------------------- | ---------- |
+| [#869](https://github.com/Skords-01/Sergeant/pull/869) | docs(docs): переопрацювати шість відкритих документів через spec-інтервʼю | 2026-08-26 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

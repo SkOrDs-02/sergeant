@@ -1,8 +1,19 @@
 {
   "$schema": "../governance/schemas/pr-ledger.schema.json",
   "version": 1,
-  "generated_at": "2026-08-07",
+  "generated_at": "2026-08-26",
   "prs": [
+    {
+      "number": 869,
+      "title": "docs(docs): переопрацювати шість відкритих документів через spec-інтервʼю",
+      "merged_at": "2026-08-26T23:47:52Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": [
+        "docs/90-work/initiatives/0022-import-from-external-trackers.md",
+        "docs/90-work/initiatives/0023-photo-analysis-multi-item.md",
+        "docs/90-work/initiatives/0024-ai-memory-source-coverage.md"
+      ]
+    },
     {
       "number": 689,
       "title": "fix(ci): governance-sync відрізняє живе посилання від навмисно мертвого",
