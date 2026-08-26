@@ -1,6 +1,10 @@
 # ADR-0087: Тиринг моделей AI-шару за виміряними числами
 
-- **Status:** Accepted
+- **Status:** Proposed
+  <!-- `adr/README.md` § Життєвий цикл: `Proposed` — поки PR відкритий,
+       `Accepted` — при мержі (крок 3 чек-ліста «Як створити новий ADR»).
+       Перевести в `Accepted` + дату під час мержу PR #863, разом із
+       рядком у таблиці «Поточні ADR». -->
 - **Last validated:** 2026-08-26 by @claude. **Next review:** 2026-11-26.
 - **Date:** 2026-08-26
 - **Deciders:** @Skords-02
