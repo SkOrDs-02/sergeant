@@ -4,7 +4,7 @@ const MAX_AVATAR_FILE_BYTES = 5 * 1024 * 1024;
 
 export function assertAvatarFile(file: File): void {
   if (!file.type.startsWith("image/")) {
-    throw new Error("Оберіть файл зображення");
+    throw new Error("Обери файл зображення");
   }
   if (file.size > MAX_AVATAR_FILE_BYTES) {
     throw new Error("Зображення завелике. Максимум 5 MB");

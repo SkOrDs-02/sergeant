@@ -90,8 +90,8 @@ function ErrorFallbackUI({
     // Announce error to screen readers
     AccessibilityInfo.announceForAccessibility(
       moduleName
-        ? `Помилка в модулі ${moduleName}. Спробуйте ще раз або поверніться до головної.`
-        : "Виникла помилка. Спробуйте ще раз або поверніться до головної.",
+        ? `Помилка в модулі ${moduleName}. Спробуй ще раз або повернись до головної.`
+        : "Виникла помилка. Спробуй ще раз або повернись до головної.",
     );
   }, [fadeAnim, scaleAnim, moduleName]);
 
@@ -140,8 +140,8 @@ function ErrorFallbackUI({
 
           {/* Description */}
           <Text className="text-sm text-fg-muted text-center mb-4 leading-relaxed">
-            Не хвилюйтесь, ваші дані в безпеці. Спробуйте оновити сторінку або
-            поверніться до головного екрану.
+            Дані в безпеці. Спробуй оновити сторінку або повернись до головного
+            екрана.
           </Text>
 
           {/* Error Details Collapsible */}

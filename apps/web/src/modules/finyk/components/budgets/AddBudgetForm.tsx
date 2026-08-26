@@ -489,7 +489,7 @@ function AddBudgetFormComponent({
                 {...limitForm.register("label")}
               />
               <p className="mt-1 text-style-caption text-subtle">
-                Порожньо — назвемо «{limitAutoLabel}».
+                Порожньо, назву «{limitAutoLabel}».
               </p>
             </div>
           )}

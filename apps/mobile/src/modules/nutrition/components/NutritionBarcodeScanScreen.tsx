@@ -40,7 +40,7 @@ export function NutritionBarcodeScanScreen() {
     async (raw: string) => {
       const code = normalizeBarcodeRaw(raw);
       if (!code) {
-        setIdleHint("Очікуємо EAN/UPC (8–14 цифр).");
+        setIdleHint("Очікування EAN/UPC (8–14 цифр).");
         return;
       }
       if (handledRef.current === code) return;
@@ -118,7 +118,7 @@ export function NutritionBarcodeScanScreen() {
   if (!permission) {
     return (
       <View className="flex-1 p-4 justify-center">
-        <Text className="text-fg-muted">Перевіряємо дозвіл на камеру…</Text>
+        <Text className="text-fg-muted">Перевірка дозволу на камеру…</Text>
       </View>
     );
   }

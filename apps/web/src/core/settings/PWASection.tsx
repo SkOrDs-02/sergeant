@@ -22,7 +22,7 @@ export function PWASection() {
     try {
       const res = await swClearCaches();
       logger.info("[sw] caches cleared", res);
-      toast.success("Кеш PWA скинуто. Перезавантажуємо…", 4000);
+      toast.success("Кеш PWA скинуто. Перезавантажую…", 4000);
       setTimeout(() => window.location.reload(), 300);
     } catch (err) {
       // Скидання кешу ідемпотентне — повторна спроба безпечна і це єдиний

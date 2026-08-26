@@ -672,7 +672,7 @@ describe("AddMealSheet — source step (with templates)", () => {
     renderSheet({ mealTemplates: [] });
     goToWholeMeal();
     expect(
-      screen.getByText(/Значення — за всю порцію, як з’їв, а не на 100 г/),
+      screen.getByText(/Значення – за всю порцію, як з’їв, а не на 100 г/),
     ).toBeInTheDocument();
     expect(screen.queryByTestId("picked-food-card")).not.toBeInTheDocument();
     fireEvent.click(
@@ -729,7 +729,7 @@ describe("AddMealSheet — source step (with templates)", () => {
       },
     });
     expect(screen.getByTestId("macros-editor")).toBeInTheDocument();
-    expect(screen.queryByText(/Значення — за всю порцію/)).toBeNull();
+    expect(screen.queryByText(/Значення – за всю порцію/)).toBeNull();
     expect(
       screen.queryByRole("button", { name: "Маю етикетку на 100 г" }),
     ).toBeNull();

@@ -178,7 +178,7 @@ export function ReceiptReviewForm({
           onChange={(e) => setCategory(e.target.value)}
         >
           <option value="" disabled>
-            Оберіть категорію
+            Обери категорію
           </option>
           {categorySlugs.map((slug) => (
             <option key={slug} value={slug}>

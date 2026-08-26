@@ -109,7 +109,7 @@ export function PackageEntryStep({ onCreated }: PackageEntryStepProps) {
   return (
     <div className="space-y-3">
       <p className="text-style-caption text-muted">
-        Візьми КБЖВ з етикетки — вони майже завжди наведені на 100 г. Скільки
+        Візьми КБЖВ з етикетки: вони майже завжди наведені на 100 г. Скільки
         саме ти з’їв, вкажи нижче: макроси перерахуються під цю вагу.
       </p>
       <label className="block" htmlFor="package-food-name">

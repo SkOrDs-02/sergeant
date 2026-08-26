@@ -127,7 +127,7 @@ describe("SilpoIntegrationSection", () => {
     // Сільпо" в DOM-порядку картки (не окремий `<details>`, як у
     // connected-стані).
     expect(
-      screen.queryByText("Що ми робимо з даними чеків"),
+      screen.queryByText("Що відбувається з даними чеків"),
     ).not.toBeInTheDocument();
     expect(screen.getByText("Зв'язати Сільпо")).toBeInTheDocument();
   });
@@ -178,7 +178,7 @@ describe("SilpoIntegrationSection", () => {
     renderSection();
 
     expect(await screen.findByText("Сільпо зв'язано")).toBeInTheDocument();
-    const summary = screen.getByText("Що ми робимо з даними чеків");
+    const summary = screen.getByText("Що відбувається з даними чеків");
     expect(summary.closest("details")).not.toBeNull();
     expect(summary.closest("details")).not.toHaveAttribute("open");
     // Той самий i18n-текст, що в disconnected-стані — не дубль рядка.

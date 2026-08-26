@@ -99,7 +99,7 @@ describe("PersonalInfoSection — name save", () => {
       expect(updateUserMock).toHaveBeenCalledWith({ name: "Олександр" });
     });
     await waitFor(() => {
-      expect(toastSuccessMock).toHaveBeenCalledWith("Ім'я оновлено");
+      expect(toastSuccessMock).toHaveBeenCalledWith("Ім&apos;я оновлено");
       expect(onRefresh).toHaveBeenCalled();
     });
   });

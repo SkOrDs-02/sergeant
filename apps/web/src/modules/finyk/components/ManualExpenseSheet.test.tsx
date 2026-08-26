@@ -213,7 +213,7 @@ describe("ManualExpenseSheet — kind segment switch", () => {
       (o) => o.textContent,
     );
     expect(optionLabels).toEqual([
-      "Оберіть категорію",
+      "Обери категорію",
       "Зарплата",
       "Фріланс",
       "Подарунок",
@@ -305,7 +305,7 @@ describe("ManualExpenseSheet — kind segment switch", () => {
     fireEvent.click(screen.getByRole("button", { name: "Зберегти" }));
 
     await waitFor(() => {
-      expect(screen.getByRole("alert")).toHaveTextContent("Оберіть категорію");
+      expect(screen.getByRole("alert")).toHaveTextContent("Обери категорію");
     });
     expect(onSave).not.toHaveBeenCalled();
 
@@ -358,7 +358,7 @@ describe("ManualExpenseSheet — kind segment switch", () => {
     fireEvent.click(screen.getByRole("button", { name: "Додати витрату" }));
 
     await waitFor(() => {
-      expect(screen.getByRole("alert")).toHaveTextContent("Оберіть категорію");
+      expect(screen.getByRole("alert")).toHaveTextContent("Обери категорію");
     });
     expect(onSave).not.toHaveBeenCalled();
   });
@@ -375,7 +375,7 @@ describe("ManualExpenseSheet — kind segment switch", () => {
     // Switching kind blanks the category → warning paints immediately.
     fireEvent.click(screen.getByRole("tab", { name: "Надходження" }));
     await waitFor(() => {
-      expect(screen.getByRole("alert")).toHaveTextContent("Оберіть категорію");
+      expect(screen.getByRole("alert")).toHaveTextContent("Обери категорію");
     });
 
     // Picking one must retire it without needing another submit.

@@ -28,7 +28,7 @@ const COPY = {
   storageNote:
     "Токен зберігається зашифрованим на сервері й привʼязаний до твого акаунта, у браузері він не лишається.",
   merchantId: "Merchant ID",
-  merchantIdPlaceholder: "Ваш Merchant ID",
+  merchantIdPlaceholder: "Твій Merchant ID",
   tokenLabel: "Токен / пароль",
   tokenPlaceholder: "Токен продавця",
   hide: "Приховати",

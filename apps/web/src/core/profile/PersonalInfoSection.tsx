@@ -27,7 +27,7 @@ const nameSchema = z.object({
   name: z
     .string()
     .trim()
-    .min(1, "Введіть ім'я")
+    .min(1, "Введи ім&apos;я")
     .max(80, "Максимум 80 символів"),
 });
 type NameValues = z.infer<typeof nameSchema>;
@@ -36,7 +36,7 @@ const emailSchema = z.object({
   email: z
     .string()
     .trim()
-    .min(1, "Введіть email")
+    .min(1, "Введи email")
     .email("Некоректний email")
     .max(254, "Email задовгий"),
 });
@@ -71,16 +71,16 @@ export function PersonalInfoSection({
       // Паралельний toast.error давав те саме речення двічі — у полі й у
       // куті екрана; сусідня email-форма ніколи так не робила.
       const res = await updateUser({ name: values.name }).catch(() => {
-        throw new Error("Не вдалося оновити ім'я");
+        throw new Error("Не вдалося оновити ім&apos;я");
       });
       if (res.error) {
         throw new Error(
-          mapApiErrorToUserCopy(res.error, "Не вдалося оновити ім'я"),
+          mapApiErrorToUserCopy(res.error, "Не вдалося оновити ім&apos;я"),
         );
       }
     },
     onSuccess: async () => {
-      toast.success("Ім'я оновлено");
+      toast.success("Ім&apos;я оновлено");
       await onRefresh();
     },
   });

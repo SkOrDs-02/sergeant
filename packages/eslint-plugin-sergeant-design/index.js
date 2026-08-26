@@ -2854,8 +2854,150 @@ const noRawTypeSize = {
   },
 };
 
+// ─────────────────────────────────────────────────────────────────────────
+// `ukrainian-copy` — гейт tone-of-voice для UA-копії
+// ─────────────────────────────────────────────────────────────────────────
+//
+// Канон: `docs/01-product/copy/style-guide.uk.md`. До 2026-08-26 він був
+// лише документом, і аудит копії показав, що без механічного гейта правила
+// дрейфують саме в найновішому коді: довге тире жило в чек-скані, bulk-
+// імпорті та Сільпо — тобто в тому, що писалося останнім.
+//
+// Три перевірки, усі — про рядки, які бачить людина:
+//   1. EM_DASH — довге тире «—» у копії. §1.9: воно читається як «це писала
+//      машина». Виняток — самотнє «—» як плейсхолдер порожнього значення,
+//      бо там це символ, а не текст.
+//   2. FORMAL_VY — «Ви/Вас/Вам/Ваш» та імператив множини («Спробуйте»).
+//      §1.1: звертання лише на «ти».
+//   3. FIRST_PERSON_PLURAL — «ми» у голосі продукту. §2.
+//
+// Що НЕ ловить: коментарі (ESLint не віддає їх як вузли), рядки без
+// кирилиці, тести й stories (там копія запінена навмисно).
+//
+// АПОСТРОФА ТУТ СВІДОМО НЕМА. Канон §1.10 фіксує `ʼ` (U+02BC) канонічним, і
+// спокуса догейтити його звідси велика — але ці рядки не завжди копія: у
+// `packages/**` і `apps/server` ті самі слова працюють КЛЮЧАМИ зіставлення
+// (`MANUAL_CATEGORY_ID_MAP` у finyk-domain, `aliases` у genericFoods,
+// `UA_NUMBER_WORDS` у speechParsers — останній ще й нормалізує вхід ДО ASCII
+// `'`, тож ключ із `ʼ` не збігся б ніколи). Спроба масової заміни 2026-08-26
+// зламала саме це і була відкочена. Правильна послідовність — спершу
+// нормалізація апострофа на межі порівняння, потім заміна у показі, і лише
+// тоді гейт. Деталі — §1.10 канону.
+
+const UKRAINIAN_COPY_MESSAGES = {
+  emDash:
+    "Довге тире «—» у копії читається як ШІ-текст (канон §1.9). " +
+    "Заміни на кому, двокрапку чи окреме речення; якщо тире несе граматику — коротке «–» (§9а).",
+  formalVy:
+    "Звертання до людини — на «ти» (канон §1.1). Знайдено формальне «{{found}}».",
+  firstPersonPlural:
+    "1-а особа множини заборонена (канон §2): «ми» створює дистанцію «команда проти користувача». " +
+    "Голос асистента — 1-а однини («не раджу»), опис системи — 3-я однини. Знайдено «{{found}}».",
+};
+
+const RX_EM_DASH_IN_COPY = /\S\s*—\s*\S/;
+const RX_FORMAL_PRONOUN =
+  /(^|[\s"'`>(«])(Ви|Вас|Вам|Ваш[а-яіїєґ]*)([\s,.!?»]|$)/;
+const RX_IMPERATIVE_PLURAL =
+  /(^|[\s"'`>(«])(с|С)проб(уй|ій)те|(п|П)еревірте|(в|В)ведіть|(н|Н)атисніть|(о|О)беріть|(в|В)иберіть|(д|Д)одайте|(с|С)творіть|(з|З)ачекайте|(о|О)новіть|(з|З)аповніть|(у|У)війдіть|(о|О)чистіть|(з|З)мініть|(в|В)идаліть|(з|З)бережіть|(п|П)очніть|(в|В)імкніть|(в|В)имкніть|(п|П)оверніться|(х|Х)вилюйтесь/;
+
+// «Ми» як займенник + характерні закінчення 1-ї особи множини теперішнього
+// й майбутнього часу. Коментарі сюди не потрапляють — правило ходить лише
+// по Literal / JSXText / TemplateElement, а розробницьке «ми» живе саме в
+// коментарях, тож шуму від нього нема.
+// `…` у класі завершальних символів обовʼязкове: найчастіша форма 1-ї
+// множини в цьому коді — саме спінер «Завантажуємо…», і без трикрапки
+// правило мовчало б рівно там, де порушення трапляється найчастіше
+// (знайдено юніт-тестом до цього правила, а не на кодовій базі).
+const RX_FIRST_PERSON_PLURAL =
+  /(^|[\s"'`>(«])(М|м)и\s+[а-яіїєґ]|[а-яіїєґ]{2}(аємо|уємо|юємо|имемо|немо|ємо)(\s|[.,!?»…:;)]|$)/;
+
+function ukrainianCopyViolations(text) {
+  if (!RX_CYRILLIC.test(text)) return [];
+  const out = [];
+  // Плейсхолдер порожнього значення — символ, не копія.
+  if (text.trim() !== "—" && RX_EM_DASH_IN_COPY.test(text)) {
+    out.push({ messageId: "emDash", data: {} });
+  }
+  const pronoun = RX_FORMAL_PRONOUN.exec(text);
+  if (pronoun) {
+    out.push({ messageId: "formalVy", data: { found: pronoun[2] } });
+  } else {
+    const verb = RX_IMPERATIVE_PLURAL.exec(text);
+    if (verb)
+      out.push({ messageId: "formalVy", data: { found: verb[0].trim() } });
+  }
+  const plural = RX_FIRST_PERSON_PLURAL.exec(text);
+  if (plural) {
+    out.push({
+      messageId: "firstPersonPlural",
+      data: { found: plural[0].trim() },
+    });
+  }
+  return out;
+}
+
+const ukrainianCopy = {
+  meta: {
+    type: "problem",
+    docs: {
+      description:
+        "Enforce UA copy tone-of-voice: no em-dash, informal «ти», no first-person plural.",
+    },
+    messages: UKRAINIAN_COPY_MESSAGES,
+    schema: [
+      {
+        type: "object",
+        properties: {
+          allowlist: {
+            type: "array",
+            items: { type: "string" },
+            description:
+              "Project-relative file paths (forward-slash) that are exempt.",
+          },
+        },
+        additionalProperties: false,
+      },
+    ],
+  },
+  create(context) {
+    const { allowlist = [] } = context.options[0] ?? {};
+    const filename = (context.filename ?? context.getFilename() ?? "").replace(
+      /\\/g,
+      "/",
+    );
+    if (
+      /\.(test|spec)\.[jt]sx?$/.test(filename) ||
+      filename.includes("/__tests__/") ||
+      /\.stories\.[jt]sx?$/.test(filename) ||
+      // Запис allowlist — або конкретний файл (`endsWith`), або каталог
+      // (`.../<p>/...`). Без другої гілки виняток на теку мовчки не діяв би.
+      allowlist.some((p) => filename.endsWith(p) || filename.includes(`${p}/`))
+    ) {
+      return {};
+    }
+    const report = (node, text) => {
+      for (const v of ukrainianCopyViolations(text)) {
+        context.report({ node, messageId: v.messageId, data: v.data });
+      }
+    };
+    return {
+      Literal(node) {
+        if (typeof node.value === "string") report(node, node.value);
+      },
+      JSXText(node) {
+        report(node, node.value);
+      },
+      TemplateElement(node) {
+        report(node, node.value.raw ?? "");
+      },
+    };
+  },
+};
+
 const plugin = {
   rules: {
+    "ukrainian-copy": ukrainianCopy,
     "no-opacity-on-text-token": noOpacityOnTextToken,
     "no-raw-type-size": noRawTypeSize,
     "no-raw-tracked-storage": noRawTrackedStorage,

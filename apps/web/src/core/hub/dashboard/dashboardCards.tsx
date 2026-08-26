@@ -249,7 +249,7 @@ export function MotivationalFooter() {
 
   const message =
     entryCount === 1
-      ? "Вже 1 запис \u2014 продовжуй!"
+      ? "Вже 1 запис, продовжуй!"
       : `Вже ${entryCount} записів \u2014 продовжуй!`;
 
   return (

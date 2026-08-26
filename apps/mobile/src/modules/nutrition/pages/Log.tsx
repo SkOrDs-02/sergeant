@@ -265,7 +265,7 @@ export function Log({ testID, onMealAdded }: LogProps) {
             Немає записів за цей день
           </Text>
           <Text className="text-xs text-fg-muted text-center mt-1">
-            Натисніть «+ Додати прийом», щоб записати їжу.
+            Натисни «+ Додати прийом», щоб записати їжу.
           </Text>
         </View>
       ) : (

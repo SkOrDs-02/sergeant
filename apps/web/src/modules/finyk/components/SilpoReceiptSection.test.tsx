@@ -237,7 +237,7 @@ describe("SilpoReceiptSection", () => {
 
     expect(
       screen.getByText(
-        "У транзакції вже є ручний спліт — підтвердження замінить його.",
+        "У транзакції вже є ручний спліт, підтвердження замінить його.",
       ),
     ).toBeInTheDocument();
   });
@@ -269,7 +269,7 @@ describe("SilpoReceiptSection", () => {
     });
     expect(splitCta).toBeDisabled();
     expect(
-      screen.getByText("Усе — продукти, спліт не потрібен."),
+      screen.getByText("Усе – продукти, спліт не потрібен."),
     ).toBeInTheDocument();
   });
 

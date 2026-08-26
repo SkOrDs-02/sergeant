@@ -62,13 +62,13 @@ export const messages = {
 
   sync: {
     anonymousMigrationProgress:
-      "Переносимо дані в профіль і зберігаємо на сервері…",
+      "Переношу дані в профіль і зберігаю на сервері…",
     anonymousMigrationFailure:
       "Не вдалося завершити перенесення. Дані на цьому пристрої не видалено й вони ще не захищені синхронізацією.",
     anonymousMigrationRetry: "Повторити",
     anonymousMigrationDefer: "Продовжити, перенесу пізніше",
     anonymousMigrationDeferredToast:
-      "Гаразд. Дані лишаються на цьому пристрої, спробуємо перенести їх при наступному запуску.",
+      "Гаразд. Дані лишаються на цьому пристрої, спробую перенести їх при наступному запуску.",
     anonymousMigrationDeferredNotice:
       "Дані ще не перенесено в профіль, вони лише на цьому пристрої.",
     anonymousMigrationDeferredRetry: "Спробувати зараз",
@@ -89,7 +89,7 @@ export const messages = {
     // ще живуть inline у `cloudSync/**`. Поточний baseline (round 14) —
     // above; no current renderer should revive CloudSync v1 toast plumbing.
     conflictResolved: "Конфлікт автоматично вирішено.",
-    pushFailed: "Не вдалося синхронізувати. Спробуємо ще раз.",
+    pushFailed: "Не вдалося синхронізувати. Спробую ще раз.",
     offlineQueueRecovered: "Відновлено з офлайн-черги.",
   },
 
@@ -449,7 +449,7 @@ export const messages = {
     // legacy module-checklist welcome.
     goalFirstHeading: "Що для тебе зараз важливо?",
     goalFirstSubtitle:
-      "Обери головне, Sergeant підбере розділ, з якого почнемо.",
+      "Обери головне, Sergeant підбере розділ, з якого почати.",
     goalFirstSkipLabel: "Подивитись усе",
     goalFirstAriaLabel: "Цілі онбордингу",
 
@@ -469,7 +469,7 @@ export const messages = {
   // surface. Taglines are kept short (~5-7 words each) so the cards stay
   // scannable at the 2-col mobile breakpoint without truncation.
   welcomeModulePicker: {
-    heading: "З чого почнемо?",
+    heading: "З чого почати?",
     // Копія мусить описувати ФАКТИЧНИЙ стан гріда: усі чотири модулі вже
     // ввімкнені (`WelcomeModulePicker` стартує з `[...ALL_MODULES]`). Стара
     // фраза «Обери модулі, з яких хочеш почати» читалася як «нічого не
@@ -590,7 +590,7 @@ export const messages = {
       fresh: "свіже",
       daysAgo: "дн. тому",
       daysWithoutWork: "дн. без роботи",
-      atFloor: "нижче не опускаємо",
+      atFloor: "нижче не опускаю",
       noHistory: "історії ще немає",
     },
     // Shared Fizruk unit suffixes (composed at call-site as `${n} ${unit}`).
@@ -755,15 +755,15 @@ export const messages = {
   biometrics: {
     sectionTitle: "Біометрія",
     statusReady: "Готово до розрахунку TDEE",
-    statusIncomplete: "Заповніть дані для розрахунку",
+    statusIncomplete: "Заповни дані для розрахунку",
     heightLabel: "Зріст (см)",
     birthDateLabel: "Дата народження",
     sexLabel: "Стать",
     sexMale: "Чоловік",
     sexFemale: "Жінка",
-    sexPlaceholder: "Оберіть",
+    sexPlaceholder: "Обери",
     activityLabel: "Рівень активності",
-    activityPlaceholder: "Оберіть",
+    activityPlaceholder: "Обери",
     activitySedentaryLabel: "Малорухливий",
     activitySedentaryHint: "Офісна робота, майже без тренувань",
     activityLightLabel: "Легка активність",
@@ -807,7 +807,7 @@ export const messages = {
   nutritionTdee: {
     triggerLabel: "Розрахувати з профілю",
     triggerHint:
-      "Заповни біометрію в профілі (стать, вік, зріст, вагу, рівень активності), і ми порахуємо твою денну норму ккал автоматично.",
+      "Заповни біометрію в профілі (стать, вік, зріст, вагу, рівень активності), і я порахую твою денну норму ккал автоматично.",
     profileLink: "Заповнити в профілі",
     goalCutting: "Схуднення (-500 ккал)",
     goalMaintenance: "Підтримка",
@@ -848,7 +848,7 @@ export const messages = {
     pageTitle: "Sergeant · Status",
     pollNote: "Поточний стан компонентів. Оновлюється автоматично кожні",
     pollNoteSuffix: "с.",
-    loading: "Завантажуємо стан сервісу…",
+    loading: "Завантаження стану сервісу…",
     overallOperational: "Усі сервіси працюють",
     overallDegraded: "Часткова деградація",
     overallDown: "Серйозна проблема",

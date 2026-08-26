@@ -251,7 +251,7 @@ describe("FinykSection interactions", () => {
     fireEvent.change(input, { target: { value: "tok" } });
     fireEvent.click(screen.getByText("Підключити Monobank"));
     expect(
-      await screen.findByText("Monobank API не відповідає. Спробуйте пізніше."),
+      await screen.findByText("Monobank API не відповідає. Спробуй пізніше."),
     ).toBeInTheDocument();
   });
 

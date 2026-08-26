@@ -225,7 +225,7 @@ describe("ProfilePage", () => {
       useOnlineStatusMock.mockReturnValue(false);
       renderPage();
       expect(
-        screen.getByText("Ви офлайн, редагування профілю тимчасово недоступне"),
+        screen.getByText("Офлайн, редагування профілю тимчасово недоступне"),
       ).toBeInTheDocument();
     });
 
@@ -233,9 +233,7 @@ describe("ProfilePage", () => {
       useOnlineStatusMock.mockReturnValue(true);
       renderPage();
       expect(
-        screen.queryByText(
-          "Ви офлайн, редагування профілю тимчасово недоступне",
-        ),
+        screen.queryByText("Офлайн, редагування профілю тимчасово недоступне"),
       ).not.toBeInTheDocument();
     });
 
@@ -329,7 +327,9 @@ describe("ProfilePage", () => {
       // Помилка форми лишається у формі (`useApiForm.serverError`), а не
       // дублюється тостом — див. коментар у `PersonalInfoSection`.
       await waitFor(() =>
-        expect(screen.getByText("Не вдалося оновити ім'я")).toBeInTheDocument(),
+        expect(
+          screen.getByText("Не вдалося оновити ім&apos;я"),
+        ).toBeInTheDocument(),
       );
       expect(toastErrorMock).not.toHaveBeenCalled();
       expect(saveBtn).not.toBeDisabled();
@@ -368,7 +368,7 @@ describe("ProfilePage", () => {
       fireEvent.click(logoutBtn);
       await waitFor(() => expect(logoutMock).toHaveBeenCalled());
       await waitFor(() =>
-        expect(toastSuccessMock).toHaveBeenCalledWith("Ви вийшли з акаунта"),
+        expect(toastSuccessMock).toHaveBeenCalledWith("Вихід виконано"),
       );
       // Redirect to the auth surface, not the hub root (browser-QA (a)).
       expect(navigateMock).toHaveBeenCalledWith("/sign-in", { replace: true });
@@ -425,7 +425,7 @@ describe("ProfilePage", () => {
       );
 
       await waitFor(() =>
-        expect(toastSuccessMock).toHaveBeenCalledWith("Ви вийшли з акаунта"),
+        expect(toastSuccessMock).toHaveBeenCalledWith("Вихід виконано"),
       );
       expect(navigateMock).toHaveBeenCalledWith("/sign-in", { replace: true });
       expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
@@ -458,7 +458,7 @@ describe("ProfilePage", () => {
       // Сесія лишається живою — жодного сигналу «ви вийшли», жодного
       // редиректу на екран входу. Це саме те, що мало б зламатись, якби
       // `cancelled` ігнорувався після `await logout(...)`.
-      expect(toastSuccessMock).not.toHaveBeenCalledWith("Ви вийшли з акаунта");
+      expect(toastSuccessMock).not.toHaveBeenCalledWith("Вихід виконано");
       expect(navigateMock).not.toHaveBeenCalledWith("/sign-in", {
         replace: true,
       });

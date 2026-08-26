@@ -8,7 +8,7 @@ import { useApiForm } from "@shared/forms";
 import { messages } from "@shared/i18n/uk";
 
 const tokenSchema = z.object({
-  token: z.string().trim().min(1, "Введіть токен Monobank API"),
+  token: z.string().trim().min(1, "Введи токен Monobank API"),
 });
 type TokenValues = z.infer<typeof tokenSchema>;
 
