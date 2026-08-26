@@ -83,6 +83,12 @@ const { mockPool, queryMock, getSessionUserMock, invokeLLMMock } = vi.hoisted(
     process.env["MONO_WEBHOOK_ENABLED"] = "true";
     process.env["ANTHROPIC_API_KEY"] = "sk-pact-replay";
     process.env["AI_QUOTA_DISABLED"] = "true";
+    // Провайдерний шар нижче замоканий у `{ name: "stub" }`, тож оголошуємо
+    // це і в конфізі. Доти конфіг казав `openrouter` (дефолт) без ключа
+    // шлюзу, а працювало воно лише тому, що `getLLMProvider()` fail-soft
+    // підмінював провайдера заглушкою — збіг, а не намір. Гейт
+    // `requireLlmUpstream("nutrition")` тепер читає саме цю змінну.
+    process.env["LLM_NUTRITION_PROVIDER"] = "stub";
 
     const queryMock = vi.fn().mockResolvedValue({ rows: [{ "?column?": 1 }] });
     const mockPool = {

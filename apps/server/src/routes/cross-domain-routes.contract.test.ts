@@ -212,6 +212,24 @@ vi.mock("../http/index.js", async () => {
         }
         next();
       },
+    // Гейт транспорту тепер параметризований шляхом (`vision` іде сирим
+    // `anthropicMessages`, решта — через `getLLMProvider`), тож мок мусить
+    // приймати аргумент. Сам wiring-тест перевіряє лише те, що гейт СТОЇТЬ
+    // у ланцюжку до хендлера, — реальний вибір провайдера покривається
+    // `requireLlmUpstream.test.ts`.
+    requireLlmUpstream:
+      (_path: string) =>
+      (
+        _req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        if (!process.env["ANTHROPIC_API_KEY"]) {
+          res.status(503).json({ ok: false, code: "ANTHROPIC_KEY_MISSING" });
+          return;
+        }
+        next();
+      },
     requireGroqKey:
       () =>
       (

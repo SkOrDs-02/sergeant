@@ -277,7 +277,8 @@ export function __resetToolsPayloadCache(): void {
  *
  * AI-CONTEXT (вимір 2026-08-06). Під шлюзом tool search недоступний: allowlist
  * у `toolSearch.ts` містить лише `claude-*`, а дефолтні chat-моделі там —
- * `deepseek/deepseek-v4-flash` і `z-ai/glm-5.2`. Тож `buildToolsPayload`
+ * `google/gemini-3.7-flash`, `deepseek/deepseek-v4-flash` і `z-ai/glm-5.2`
+ * (жодна не `claude-*`, тож висновок не змінився). Тож `buildToolsPayload`
  * тихо відкочується на legacy-масив, і в контекст їде ВЕСЬ реєстр: 77 схем,
  * ~18 000 токенів проти ~3 300 на Anthropic. Прompt-cache під шлюзом теж не
  * працює (виміряно: `cache_read` = 0), тож це оплачується повністю й щоразу —

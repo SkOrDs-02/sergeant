@@ -1271,6 +1271,25 @@ export function getCapabilityServerTool(c: AssistantCapability): string | null {
 }
 
 /**
+ * Модуль, до якого належить серверний tool, за іменем інструмента.
+ *
+ * Джерело — той самий `ASSISTANT_CAPABILITIES`, що вже синхронізується з
+ * `apps/server/src/modules/chat/toolDefs/`. Окрема мапа «tool → модуль» тут
+ * НЕ заводиться свідомо: другий список розійшовся б із першим при наступній
+ * зміні реєстру, і саме ця хвороба дала знахідки B37 і B38.
+ *
+ * Повертає `"unknown"` для невідомого імені: викликач — телеметрія, і
+ * зронити подію через незнайомий tool гірше, ніж записати її з чесною
+ * міткою. Той самий принцип, що в `safeName()` у `toolOutputWrapping.ts`.
+ */
+export function getToolModule(toolName: string): CapabilityModule | "unknown" {
+  const hit = ASSISTANT_CAPABILITIES.find(
+    (c) => getCapabilityServerTool(c) === toolName,
+  );
+  return hit?.module ?? "unknown";
+}
+
+/**
  * Capabilities surfaced as quick-action chips below the chat input.
  * Sorted by `quickActionPriority` ascending. Module-aware sorting (e.g. by
  * active module) is applied by the consumer.
