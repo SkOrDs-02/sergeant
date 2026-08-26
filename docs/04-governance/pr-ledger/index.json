@@ -1,8 +1,15 @@
 {
   "$schema": "../governance/schemas/pr-ledger.schema.json",
   "version": 1,
-  "generated_at": "2026-08-07",
+  "generated_at": "2026-08-26",
   "prs": [
+    {
+      "number": 863,
+      "title": "fix(server): дозакрити AI-аудит — гейт транспорту, B40–B43, телеметрія tool-ів і ADR тирингу",
+      "merged_at": "2026-08-26T21:25:24Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": ["docs/04-governance/adr/0087-model-tiering-measured.md"]
+    },
     {
       "number": 689,
       "title": "fix(ci): governance-sync відрізняє живе посилання від навмисно мертвого",
