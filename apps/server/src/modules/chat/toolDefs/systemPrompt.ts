@@ -180,11 +180,12 @@ const MODULE_PROMPT_LABEL: Record<CapabilityModule, string> = {
  *
  * Правило тут, а не в чат-промпті, бо `VOICE_RULE` ділять обидві поверхні
  * (`chat.ts` і `coach.ts`), а дефолтні моделі обох — не англомовні флагмани:
- * під `CHAT_VIA_OPENROUTER` перший тур і standard тримає
- * `deepseek/deepseek-v4-flash`, синтез — `z-ai/glm-5.2`, коуч на floor —
- * `google/gemini-2.5-flash-lite` (`env/chatModels.ts`). Стенди, за якими їх
- * обирали, міряли глибину аналізу й вигадані id — українську морфологію не
- * міряв жоден.
+ * під `CHAT_VIA_OPENROUTER` перший тур і floor тримає
+ * `google/gemini-3.7-flash`, standard — `deepseek/deepseek-v4-flash`, синтез —
+ * `z-ai/glm-5.2`, коуч на standard/floor — `google/gemini-3.5-flash-lite`
+ * (`env/chatModels.ts`, `modules/chat/aiQuotaTierModels.ts`). Стенди, за якими
+ * їх обирали, міряли глибину аналізу, вигадані id і затримку — українську
+ * морфологію не міряв жоден, окрім коуч-стенду (там 0 порушень голосу).
  *
  * Промпт — прохання, не контракт: він знижує частоту, але не прибирає
  * причину. Сильніший важіль — модель (env-перемикач `CHAT_VIA_OPENROUTER`
