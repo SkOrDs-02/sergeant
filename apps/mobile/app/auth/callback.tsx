@@ -46,7 +46,7 @@ export default function AuthCallbackScreen() {
       <Stack.Screen options={{ title: "Авторизація", headerShown: false }} />
       <View style={styles.container}>
         <ActivityIndicator color={colors.accent} />
-        <Text style={styles.title}>Завершуємо вхід…</Text>
+        <Text style={styles.title}>Завершую вхід…</Text>
         {token ? (
           <Text
             style={styles.hint}
