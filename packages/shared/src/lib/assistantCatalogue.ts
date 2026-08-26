@@ -16,6 +16,8 @@
 // Without an entry the capability is invisible to the user and absent
 // from /help, even though the model can still call it.
 
+import { foldApostrophes } from "../utils/ukApostrophe";
+
 export type CapabilityModule =
   | "finyk"
   | "fizruk"
@@ -1394,7 +1396,10 @@ export function groupCapabilitiesByModule(
 
 /** Plain-text search across label / shortLabel / description / examples / keywords. */
 export function searchCapabilities(query: string): AssistantCapability[] {
-  const q = query.trim().toLowerCase();
+  // Згортаємо апостроф з обох боків (канон §1.10): запит людина набирає
+  // тією клавіатурою, що має, а `keywords` тут канонічні. Без цього
+  // «об'єм» не знаходив би картку, підписану «обʼєм».
+  const q = foldApostrophes(query.trim().toLowerCase());
   if (!q) return [...ASSISTANT_CAPABILITIES];
   return ASSISTANT_CAPABILITIES.filter((c) => {
     const haystack = [
@@ -1407,6 +1412,6 @@ export function searchCapabilities(query: string): AssistantCapability[] {
     ]
       .join(" ")
       .toLowerCase();
-    return haystack.includes(q);
+    return foldApostrophes(haystack).includes(q);
   });
 }
