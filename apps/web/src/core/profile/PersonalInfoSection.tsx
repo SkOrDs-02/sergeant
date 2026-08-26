@@ -24,11 +24,7 @@ import type { ProfileUser } from "./types";
 // ── Zod schemas ────────────────────────────────────────────────────────────
 
 const nameSchema = z.object({
-  name: z
-    .string()
-    .trim()
-    .min(1, "Введи ім&apos;я")
-    .max(80, "Максимум 80 символів"),
+  name: z.string().trim().min(1, "Введи ім'я").max(80, "Максимум 80 символів"),
 });
 type NameValues = z.infer<typeof nameSchema>;
 
@@ -71,16 +67,16 @@ export function PersonalInfoSection({
       // Паралельний toast.error давав те саме речення двічі — у полі й у
       // куті екрана; сусідня email-форма ніколи так не робила.
       const res = await updateUser({ name: values.name }).catch(() => {
-        throw new Error("Не вдалося оновити ім&apos;я");
+        throw new Error("Не вдалося оновити ім'я");
       });
       if (res.error) {
         throw new Error(
-          mapApiErrorToUserCopy(res.error, "Не вдалося оновити ім&apos;я"),
+          mapApiErrorToUserCopy(res.error, "Не вдалося оновити ім'я"),
         );
       }
     },
     onSuccess: async () => {
-      toast.success("Ім&apos;я оновлено");
+      toast.success("Ім'я оновлено");
       await onRefresh();
     },
   });

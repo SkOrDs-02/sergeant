@@ -327,9 +327,7 @@ describe("ProfilePage", () => {
       // Помилка форми лишається у формі (`useApiForm.serverError`), а не
       // дублюється тостом — див. коментар у `PersonalInfoSection`.
       await waitFor(() =>
-        expect(
-          screen.getByText("Не вдалося оновити ім&apos;я"),
-        ).toBeInTheDocument(),
+        expect(screen.getByText("Не вдалося оновити ім'я")).toBeInTheDocument(),
       );
       expect(toastErrorMock).not.toHaveBeenCalled();
       expect(saveBtn).not.toBeDisabled();
