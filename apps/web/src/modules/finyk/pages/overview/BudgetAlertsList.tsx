@@ -4,7 +4,12 @@ import { Icon } from "@shared/components/ui/Icon";
 import { messages } from "@shared/i18n/uk";
 import { CategoryIconChip } from "../../components/CategoryIconChip";
 import { stripLeadingEmoji } from "../../components/txRowHelpers";
-import { calcCategorySpent, resolveExpenseCategoryMeta } from "../../utils";
+import { resolveExpenseCategoryMeta } from "../../utils";
+import {
+  formatLimitBudgetLabel,
+  limitBudgetCategoryIds,
+} from "@sergeant/finyk-domain/domain/budget";
+import { calcLimitCategorySpent } from "@sergeant/finyk-domain/lib/limitCategorySpend";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain/constants";
 import type {
   LimitBudget,
@@ -38,10 +43,12 @@ const BudgetAlertsListImpl = function BudgetAlertsList({
   return (
     <div className="space-y-1.5">
       {budgetAlerts.map((b) => {
-        const cat = resolveExpenseCategoryMeta(b.categoryId, customCategories);
-        const s = calcCategorySpent(
+        const categoryIds = limitBudgetCategoryIds(b);
+        // Той самий рахунок, що й у `useOverviewData.budgetAlerts` та на
+        // картці ліміту: bucket-агрегація + всі категорії комбо-ліміту.
+        const s = calcLimitCategorySpent(
           statTx,
-          b.categoryId,
+          categoryIds,
           txCategories,
           txSplits,
           customCategories,
@@ -49,9 +56,11 @@ const BudgetAlertsListImpl = function BudgetAlertsList({
         const pct = b.limit > 0 ? Math.round((s / b.limit) * 100) : 0;
         // Вбудовані підписи чисті від емодзі з 2026-08-21; зріз лишається
         // рівно для назви КАСТОМНОЇ категорії, яку набирає людина.
-        const catLabel = cat?.label
-          ? stripLeadingEmoji(cat.label)
-          : b.categoryId;
+        const catLabel =
+          formatLimitBudgetLabel(b, (id) => {
+            const meta = resolveExpenseCategoryMeta(id, customCategories);
+            return meta?.label ? stripLeadingEmoji(meta.label) : null;
+          }) || b.categoryId;
         return (
           <button
             type="button"

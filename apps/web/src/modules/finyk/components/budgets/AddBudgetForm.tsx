@@ -1,4 +1,4 @@
-import { memo, useId, useMemo, useState } from "react";
+import { memo, useCallback, useId, useMemo, useState } from "react";
 import { z } from "zod";
 import {
   amountStringSchema,
@@ -16,9 +16,17 @@ import { cn } from "@shared/lib/ui/cn";
 import { useApiForm } from "@shared/forms";
 import { messages } from "@shared/i18n/uk";
 import type { Budget } from "@sergeant/finyk-domain/domain/types";
+import {
+  findLimitCategoryOverlaps,
+  formatLimitBudgetLabel,
+  isSameLimitCategorySet,
+  limitBudgetCategoryIds,
+} from "@sergeant/finyk-domain/domain/budget";
 import type { MonoJarDto } from "@shared/api";
 import { CategorySelector } from "../CategorySelector";
+import { CategoryIconChip } from "../CategoryIconChip";
 import { JarSelector } from "../JarSelector";
+import { stripLeadingEmoji } from "../txRowHelpers";
 import { Icon, type IconName } from "@shared/components/ui/Icon";
 import { NAME_MAX_LEN } from "@shared/lib/text/limits";
 
@@ -31,7 +39,12 @@ export type BudgetFormType = "limit" | "goal";
 export type NewBudgetDraft =
   | {
       type: "limit";
+      /** Перша категорія набору — legacy-поле для старих читачів. */
       categoryId: string;
+      /** Повний набір категорій ліміту (1+). */
+      categoryIds: string[];
+      /** Власна назва комбо-ліміту; порожньо — авто з категорій. */
+      label?: string;
       limit: number;
       period: "month" | "week" | "one_time";
       createdAt: string;
@@ -110,7 +123,10 @@ const isValidAmountString = (value: string) => {
 
 type LimitFormValues = {
   type: "limit";
-  categoryId: string;
+  /** Набір категорій ліміту; порядок = порядок додавання у формі. */
+  categoryIds: string[];
+  /** Власна назва комбо-ліміту (показується лише при 2+ категоріях). */
+  label: string;
   limit: string;
   period: "month" | "week" | "one_time";
 };
@@ -140,7 +156,8 @@ const goalFormSchema = z.object({
 
 const LIMIT_DEFAULTS: LimitFormValues = {
   type: "limit",
-  categoryId: "",
+  categoryIds: [],
+  label: "",
   limit: "",
   period: "month",
 };
@@ -164,6 +181,7 @@ function AddBudgetFormComponent({
   const [formType, setFormType] = useState<BudgetFormType>("limit");
   const fieldId = useId();
   const limitAmountId = `${fieldId}-limit-amount`;
+  const limitNameId = `${fieldId}-limit-name`;
   const goalNameId = `${fieldId}-goal-name`;
   const goalAmountId = `${fieldId}-goal-amount`;
 
@@ -175,19 +193,33 @@ function AddBudgetFormComponent({
       z
         .object({
           type: z.literal("limit"),
-          categoryId: z.string().min(1, messages.validation.categoryRequired),
+          categoryIds: z
+            .array(z.string().min(1))
+            .min(1, messages.validation.categoryRequired),
+          label: z.string().trim().max(NAME_MAX_LEN),
           limit: positiveNumberString(messages.validation.limitAmountRequired),
           period: z.enum(["month", "week", "one_time"]),
         })
         .superRefine((data, ctx) => {
+          // Дублікат — лише ТОЧНО такий самий набір категорій; частковий
+          // перетин дозволений і супроводжується попередженням нижче
+          // (рішення founder-а 2026-08-25, multi-category limits).
           const dup = existingBudgets.some(
-            (b) => b?.type === "limit" && b.categoryId === data.categoryId,
+            (b) =>
+              b?.type === "limit" &&
+              isSameLimitCategorySet(
+                limitBudgetCategoryIds(b),
+                data.categoryIds,
+              ),
           );
           if (dup) {
             ctx.addIssue({
               code: z.ZodIssueCode.custom,
-              path: ["categoryId"],
-              message: "Ліміт для цієї категорії вже існує",
+              path: ["categoryIds"],
+              message:
+                data.categoryIds.length > 1
+                  ? "Ліміт для цього набору категорій вже існує"
+                  : "Ліміт для цієї категорії вже існує",
             });
           }
         }),
@@ -198,9 +230,12 @@ function AddBudgetFormComponent({
     schema: limitFormSchema,
     defaultValues: LIMIT_DEFAULTS,
     onSubmit: async (values) => {
+      const label = values.label.trim();
       onSubmit({
         type: "limit",
-        categoryId: values.categoryId,
+        categoryId: values.categoryIds[0] ?? "",
+        categoryIds: values.categoryIds,
+        ...(label ? { label } : {}),
         limit: amountStringToHryvnia(values.limit),
         period: values.period,
         // eslint-disable-next-line no-restricted-syntax -- UTC creation instant for one-time limit anchoring, not a Kyiv day key
@@ -224,7 +259,7 @@ function AddBudgetFormComponent({
     },
   });
 
-  const limitCategoryError = limitForm.formState.errors.categoryId?.message;
+  const limitCategoriesError = limitForm.formState.errors.categoryIds?.message;
   const limitAmountError = limitForm.formState.errors.limit?.message;
   const goalNameError = goalForm.formState.errors.name?.message;
   const goalAmountError = goalForm.formState.errors.targetAmount?.message;
@@ -238,7 +273,7 @@ function AddBudgetFormComponent({
 
   const goalEmoji = goalForm.watch("emoji");
   const goalTargetDate = goalForm.watch("targetDate");
-  const limitCategoryId = limitForm.watch("categoryId");
+  const limitCategoryIds = limitForm.watch("categoryIds");
   const limitAmount = limitForm.watch("limit");
   const limitPeriod = limitForm.watch("period");
   const goalName = goalForm.watch("name");
@@ -252,6 +287,55 @@ function AddBudgetFormComponent({
         label: j.title?.trim() || j.monoJarId,
       })),
     [jars],
+  );
+
+  const categoryLabelById = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const c of expenseCategoryList) {
+      m.set(c.id, c.label ? stripLeadingEmoji(c.label) : c.id);
+    }
+    return m;
+  }, [expenseCategoryList]);
+  const resolveCategoryLabel = useCallback(
+    (id: string) => categoryLabelById.get(id) ?? id,
+    [categoryLabelById],
+  );
+
+  const addLimitCategory = (id: string) => {
+    if (!id) return;
+    const current = limitForm.getValues("categoryIds");
+    if (current.includes(id)) return;
+    limitForm.setValue("categoryIds", [...current, id], {
+      shouldDirty: true,
+      shouldValidate: Boolean(limitCategoriesError),
+    });
+  };
+  const removeLimitCategory = (id: string) => {
+    limitForm.setValue(
+      "categoryIds",
+      limitForm.getValues("categoryIds").filter((x) => x !== id),
+      { shouldDirty: true, shouldValidate: Boolean(limitCategoriesError) },
+    );
+  };
+
+  // Перетин з наявними лімітами НЕ блокує (кожен ліміт — незалежний трекер),
+  // але людина має побачити, що витрата рахуватиметься в обох.
+  const limitOverlaps = useMemo(
+    () => findLimitCategoryOverlaps(limitCategoryIds, existingBudgets),
+    [limitCategoryIds, existingBudgets],
+  );
+
+  /** Прев'ю авто-назви для підказки під опціональним полем «Назва». */
+  const limitAutoLabel = useMemo(
+    () =>
+      formatLimitBudgetLabel(
+        {
+          categoryId: limitCategoryIds[0] ?? "",
+          categoryIds: limitCategoryIds,
+        },
+        resolveCategoryLabel,
+      ),
+    [limitCategoryIds, resolveCategoryLabel],
   );
 
   // Design decision #3: обираючи банку з власною ціллю (`jar.goal`),
@@ -270,7 +354,7 @@ function AddBudgetFormComponent({
   };
 
   const limitDraftValid =
-    Boolean(limitCategoryId) && isValidAmountString(limitAmount);
+    limitCategoryIds.length > 0 && isValidAmountString(limitAmount);
   const goalDraftValid =
     goalName.trim() !== "" && isValidAmountString(goalTargetAmount);
 
@@ -328,25 +412,87 @@ function AddBudgetFormComponent({
             </select>
           </div>
           <div>
+            {limitCategoryIds.length > 0 && (
+              <ul className="mb-2 space-y-1.5" aria-label="Обрані категорії">
+                {limitCategoryIds.map((id) => (
+                  <li
+                    key={id}
+                    className="flex items-center justify-between gap-2 rounded-xl border border-line bg-bg px-3 py-1.5"
+                  >
+                    <span className="flex items-center gap-2 min-w-0">
+                      <CategoryIconChip categoryId={id} size={24} />
+                      <span className="text-sm text-text truncate">
+                        {resolveCategoryLabel(id)}
+                      </span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => removeLimitCategory(id)}
+                      disabled={isSubmitting}
+                      aria-label={`Прибрати категорію ${resolveCategoryLabel(id)}`}
+                      className="touch-target flex items-center justify-center rounded-xl text-muted hover:text-text transition-colors"
+                    >
+                      <Icon name="x" size={16} aria-hidden />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
             <CategorySelector
-              value={limitCategoryId}
-              onChange={(val) =>
-                limitForm.setValue("categoryId", val, {
-                  shouldDirty: true,
-                  shouldValidate: Boolean(limitCategoryError),
-                })
+              value=""
+              onChange={addLimitCategory}
+              placeholder={
+                limitCategoryIds.length === 0
+                  ? "Обери категорію"
+                  : "Додай ще категорію"
               }
-              categories={expenseCategoryList.filter((c) => c.id !== "income")}
+              categories={expenseCategoryList.filter(
+                (c) => c.id !== "income" && !limitCategoryIds.includes(c.id),
+              )}
             />
-            {limitCategoryError && (
+            {limitCategoriesError && (
               <p
                 className="mt-1 text-style-caption text-danger-strong dark:text-danger bg-danger-soft rounded-xl px-3 py-2"
                 role="alert"
               >
-                {limitCategoryError}
+                {limitCategoriesError}
+              </p>
+            )}
+            {limitOverlaps.length > 0 && (
+              <p
+                className="mt-1 text-style-caption text-subtle bg-bg rounded-xl px-3 py-2"
+                role="status"
+              >
+                {limitOverlaps
+                  .map(
+                    (o) =>
+                      `${o.categoryIds
+                        .map((id) => `«${resolveCategoryLabel(id)}»`)
+                        .join(", ")} вже є в ліміті «${formatLimitBudgetLabel(
+                        o.budget,
+                        resolveCategoryLabel,
+                      )}»`,
+                  )
+                  .join("; ")}
+                {" — витрати рахуватимуться в обох лімітах."}
               </p>
             )}
           </div>
+          {limitCategoryIds.length > 1 && (
+            <div>
+              <Label htmlFor={limitNameId}>{"Назва (необов'язково)"}</Label>
+              <Input
+                id={limitNameId}
+                placeholder="Напр. Їжа"
+                maxLength={NAME_MAX_LEN}
+                disabled={isSubmitting}
+                {...limitForm.register("label")}
+              />
+              <p className="mt-1 text-style-caption text-subtle">
+                Порожньо — назвемо «{limitAutoLabel}».
+              </p>
+            </div>
+          )}
           <div>
             <Label htmlFor={limitAmountId}>Ліміт</Label>
             <Input

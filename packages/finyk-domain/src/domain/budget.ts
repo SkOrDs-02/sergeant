@@ -42,16 +42,108 @@ export function getLimitBudgets(
 
 export type LimitPeriod = "month" | "week" | "one_time";
 
+/**
+ * Повний набір категорій ліміту з дедупом і фолбеком на legacy `categoryId`.
+ * Єдина точка читання пари `categoryId`/`categoryIds` — щоб жоден екран не
+ * вигадував власного пріоритету полів.
+ */
+export function limitBudgetCategoryIds(
+  budget: Pick<LimitBudget, "categoryId" | "categoryIds">,
+): string[] {
+  const raw =
+    Array.isArray(budget.categoryIds) && budget.categoryIds.length > 0
+      ? budget.categoryIds
+      : [budget.categoryId];
+  const out: string[] = [];
+  for (const id of raw) {
+    if (typeof id === "string" && id && !out.includes(id)) out.push(id);
+  }
+  return out;
+}
+
 export function normalizeLimitBudget<T extends LimitBudget>(
   budget: T,
 ): T & {
   period: LimitPeriod;
+  categoryIds: string[];
 } {
   const period: LimitPeriod =
     budget.period === "week" || budget.period === "one_time"
       ? budget.period
       : "month";
-  return { ...budget, period };
+  // `categoryId` завжди = перша категорія набору: legacy-читачі (mobile,
+  // insights, старі бекапи) продовжують бачити валідний одно-категорійний
+  // запис без міграції даних.
+  const categoryIds = limitBudgetCategoryIds(budget);
+  return {
+    ...budget,
+    period,
+    categoryIds,
+    categoryId: categoryIds[0] ?? budget.categoryId ?? "",
+  };
+}
+
+/**
+ * Підпис картки ліміту. Пріоритет: власна назва → підпис єдиної категорії →
+ * «A + B» для двох → «A + ще N» для трьох і більше. `resolveCategoryLabel`
+ * приходить з поверхні (web/mobile мають різні резолвери мета-даних).
+ */
+export function formatLimitBudgetLabel(
+  budget: Pick<LimitBudget, "label" | "categoryId" | "categoryIds">,
+  resolveCategoryLabel: (categoryId: string) => string | null | undefined,
+): string {
+  const custom = budget.label?.trim();
+  if (custom) return custom;
+  const labels = limitBudgetCategoryIds(budget).map(
+    (id) => resolveCategoryLabel(id)?.trim() || id,
+  );
+  const first = labels[0];
+  if (!first) return "";
+  if (labels.length === 1) return first;
+  if (labels.length === 2) return `${first} + ${labels[1]}`;
+  return `${first} + ще ${labels.length - 1}`;
+}
+
+/**
+ * Наявні ліміти, що перетинаються з набором категорій (рішення «дозволити
+ * з попередженням»): перетин НЕ блокує створення, але форма показує підказку,
+ * що витрати цих категорій рахуватимуться в обох лімітах.
+ */
+export function findLimitCategoryOverlaps(
+  categoryIds: readonly string[],
+  existingBudgets: readonly Budget[] | null | undefined,
+  options: { excludeBudgetId?: string } = {},
+): { budget: LimitBudget; categoryIds: string[] }[] {
+  const wanted = new Set(categoryIds.filter(Boolean));
+  if (wanted.size === 0) return [];
+  const out: { budget: LimitBudget; categoryIds: string[] }[] = [];
+  for (const b of getLimitBudgets(existingBudgets)) {
+    if (options.excludeBudgetId && b.id === options.excludeBudgetId) continue;
+    const shared = limitBudgetCategoryIds(b).filter((id) => wanted.has(id));
+    if (shared.length > 0) out.push({ budget: b, categoryIds: shared });
+  }
+  return out;
+}
+
+/**
+ * Стабільний рядковий ключ набору категорій ліміту (sorted join). Ключ
+ * кешів/запитів проактивних порад: зміна складу комбо → інший ключ →
+ * свіжа порада, без ручної інвалідації.
+ */
+export function limitBudgetCategoryKey(
+  budget: Pick<LimitBudget, "categoryId" | "categoryIds">,
+): string {
+  return [...limitBudgetCategoryIds(budget)].sort().join("+");
+}
+
+/** Точний збіг наборів категорій (незалежно від порядку). */
+export function isSameLimitCategorySet(
+  a: readonly string[],
+  b: readonly string[],
+): boolean {
+  if (a.length !== b.length) return false;
+  const sortedB = [...b].sort();
+  return [...a].sort().every((id, i) => id === sortedB[i]);
 }
 
 export function getLimitPeriodRange(
@@ -395,6 +487,7 @@ export function getMonthlyPlanUsage(
 export interface LimitFormInput {
   type?: "limit";
   categoryId?: string;
+  categoryIds?: string[];
   limit?: number | string;
   period?: LimitPeriod;
   createdAt?: string;
@@ -403,6 +496,8 @@ export interface LimitFormInput {
 
 export interface LimitFormNormalized extends LimitFormInput {
   type: "limit";
+  categoryId: string;
+  categoryIds: string[];
   limit: number;
   period: LimitPeriod;
 }
@@ -416,24 +511,41 @@ export function validateLimitBudgetForm(
   form: LimitFormInput = {},
   existingBudgets: readonly Budget[] = [],
 ): LimitFormResult {
-  if (!form.categoryId) {
+  const categoryIds = limitBudgetCategoryIds({
+    categoryId: form.categoryId ?? "",
+    ...(form.categoryIds ? { categoryIds: form.categoryIds } : {}),
+  });
+  if (categoryIds.length === 0) {
     return { error: "Оберіть категорію", normalized: null };
   }
   const limitVal = Number(form.limit);
   if (!form.limit || Number.isNaN(limitVal) || limitVal <= 0) {
     return { error: "Вкажіть ліміт більше 0", normalized: null };
   }
+  // Дублікатом вважається лише ТОЧНО такий самий набір категорій; частковий
+  // перетин дозволений свідомо (окремий «Кафе» + комбо «Їжа» співіснують),
+  // форма супроводжує його попередженням через `findLimitCategoryOverlaps`.
   const dup = (existingBudgets || []).some(
-    (b) => b?.type === "limit" && b.categoryId === form.categoryId,
+    (b) =>
+      b?.type === "limit" &&
+      isSameLimitCategorySet(limitBudgetCategoryIds(b), categoryIds),
   );
   if (dup) {
-    return { error: "Ліміт для цієї категорії вже існує", normalized: null };
+    return {
+      error:
+        categoryIds.length > 1
+          ? "Ліміт для цього набору категорій вже існує"
+          : "Ліміт для цієї категорії вже існує",
+      normalized: null,
+    };
   }
   return {
     error: null,
     normalized: {
       ...form,
       type: "limit" as const,
+      categoryId: categoryIds[0] ?? "",
+      categoryIds,
       limit: limitVal,
       period: form.period ?? "month",
     },

@@ -9,6 +9,7 @@ import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { Card } from "@shared/components/ui/Card";
 import { Money } from "@shared/components/ui/Money";
+import { formatNumberUk, NARROW_NBSP } from "@sergeant/shared";
 import { MoneyInput } from "@shared/components/ui/MoneyInput";
 import { Label } from "@shared/components/ui/FormField";
 import { Tooltip } from "@shared/components/ui/Tooltip";
@@ -18,10 +19,19 @@ interface LimitBudgetInput {
   id: string;
   type?: "limit" | "goal";
   categoryId?: string;
+  /** Повний набір категорій мульти-категорійного ліміту (1+). */
+  categoryIds?: string[];
   limit: number;
   period?: "month" | "week" | "one_time";
   createdAt?: string;
   [extra: string]: unknown;
+}
+
+/** Рядок розбивки факту комбо-ліміту по категорії. */
+export interface LimitBreakdownRow {
+  categoryId: string;
+  label: string;
+  spent: number;
 }
 
 interface LimitBudgetCardProps {
@@ -35,6 +45,12 @@ interface LimitBudgetCardProps {
    * «в лімітах є іконки, а у витратах немає» — саме про цю розбіжність.
    */
   customCategories?: readonly { id: string }[] | undefined;
+  /**
+   * Розбивка факту по категоріях комбо-ліміту (рішення founder-а 2026-08-25:
+   * «сума + розбивка»). Рендериться лише коли рядків 2+; для одиночного
+   * ліміту проп не передається.
+   */
+  breakdown?: readonly LimitBreakdownRow[] | undefined;
   spent: number;
   pctRaw: number;
   pctRounded: number;
@@ -58,6 +74,7 @@ function LimitBudgetCardComponent({
   budget,
   categoryLabel,
   customCategories = [],
+  breakdown,
   spent,
   pctRaw,
   pctRounded,
@@ -79,6 +96,29 @@ function LimitBudgetCardComponent({
   const fieldId = useId();
   const limitId = `${fieldId}-limit`;
   const periodId = `${fieldId}-period`;
+  const categoryIds =
+    budget.categoryIds && budget.categoryIds.length > 0
+      ? budget.categoryIds
+      : [budget.categoryId ?? ""];
+  const isCombo = categoryIds.length > 1;
+  const periodLabel =
+    budget.period === "week"
+      ? "Щотижня"
+      : budget.period === "one_time"
+        ? "Одноразовий"
+        : "Щомісяця";
+  const amountTone = overLimit
+    ? "text-danger-strong dark:text-danger font-semibold"
+    : warnLimit
+      ? "text-warning-strong dark:text-warning"
+      : "text-muted";
+  // Сума «витрачено / ліміт» — один рядок, ніколи не рветься по «/».
+  const amountNode = (
+    <span className={cn("tabular-nums whitespace-nowrap", amountTone)}>
+      {formatNumberUk(spent)} / {formatNumberUk(budget.limit)}
+      {NARROW_NBSP}₴
+    </span>
+  );
 
   return (
     <Card radius="lg" padding="lg">
@@ -142,34 +182,61 @@ function LimitBudgetCardComponent({
         <>
           <div className="flex justify-between items-center mb-2">
             <div className="flex items-center gap-2 min-w-0">
-              <CategoryIconChip
-                categoryId={budget.categoryId ?? ""}
-                customCategories={customCategories}
-              />
-              <div className="min-w-0">
-                <span className="text-style-label">{categoryLabel || "—"}</span>
-                <div className="text-style-caption text-subtle mt-0.5">
-                  {budget.period === "week"
-                    ? "Щотижня"
-                    : budget.period === "one_time"
-                      ? "Одноразовий"
-                      : "Щомісяця"}
+              {isCombo ? (
+                // Комбо-ліміт: до трьох чипів категорій поруч, решта — «+N».
+                <span className="flex items-center gap-1 shrink-0">
+                  {categoryIds.slice(0, 3).map((id) => (
+                    <CategoryIconChip
+                      key={id}
+                      categoryId={id}
+                      customCategories={customCategories}
+                      size={24}
+                    />
+                  ))}
+                  {categoryIds.length > 3 && (
+                    <span className="text-style-caption text-muted">
+                      +{categoryIds.length - 3}
+                    </span>
+                  )}
+                </span>
+              ) : (
+                <CategoryIconChip
+                  categoryId={budget.categoryId ?? ""}
+                  customCategories={customCategories}
+                />
+              )}
+              <div className="min-w-0 flex-1">
+                {/* `truncate`, а не перенос: підпис комбо довший за
+                    одно-категорійний, і при переносі лишав у другому рядку
+                    самотнє «2» (браузерний QA 2026-08-26). Обрізати безпечно —
+                    повний склад набору стоїть нижче рядками розбивки. */}
+                <span className="text-style-label block truncate">
+                  {categoryLabel || "—"}
+                </span>
+                <div className="text-style-caption text-subtle mt-0.5 flex items-center gap-1.5">
+                  <span>{periodLabel}</span>
+                  {/* У комбо сума їде в цей рядок: чипи + сума + олівець на
+                      одній лінії лишали підпису ~94px при потрібних ~140, і
+                      «Продукти + ще 2» обрізалось трьома крапками ще на 390px.
+                      Одно-категорійна картка лишається з сумою праворуч —
+                      рівно як була. */}
+                  {isCombo ? (
+                    <>
+                      <span aria-hidden>·</span>
+                      {amountNode}
+                    </>
+                  ) : null}
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <span
-                className={cn(
-                  "text-style-caption tabular-nums",
-                  overLimit
-                    ? "text-danger-strong dark:text-danger font-semibold"
-                    : warnLimit
-                      ? "text-warning-strong dark:text-warning"
-                      : "text-muted",
-                )}
-              >
-                {spent} / {budget.limit} ₴
-              </span>
+            <div className="flex shrink-0 items-center gap-2">
+              {/* Групування розрядів: без нього «3635 / 20000 ₴» розходилось із
+                  форматованими «Залишок 16 365 ₴» і рядками розбивки на тій
+                  самій картці. NARROW_NBSP перед ₴ — той самий відступ, що
+                  ставить <Money> нижче (браузерний QA 2026-08-25). */}
+              {isCombo ? null : (
+                <span className="text-style-caption">{amountNode}</span>
+              )}
               <Button
                 type="button"
                 variant="ghost"
@@ -215,6 +282,31 @@ function LimitBudgetCardComponent({
               </>
             )}
           </div>
+
+          {breakdown && breakdown.length > 1 && (
+            // Розбивка факту комбо-ліміту: видно, ЩО саме з'їло бюджет.
+            // Без власних під-лімітів — лише факт по кожній категорії.
+            <ul className="mt-2 space-y-1" aria-label="Витрати по категоріях">
+              {breakdown.map((row) => (
+                <li
+                  key={row.categoryId}
+                  className="flex items-center justify-between gap-2 text-style-caption text-subtle"
+                >
+                  <span className="flex items-center gap-1.5 min-w-0">
+                    <CategoryIconChip
+                      categoryId={row.categoryId}
+                      customCategories={customCategories}
+                      size={24}
+                    />
+                    <span className="truncate">{row.label}</span>
+                  </span>
+                  <span className="tabular-nums shrink-0">
+                    <Money amount={row.spent} />
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
 
           {showProactiveAdvice &&
             (proactiveText || proactiveLoading !== false) && (
