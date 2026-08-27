@@ -256,10 +256,58 @@
       "path": ".agents/skills/sergeant-writing-skills/SKILL.md"
     },
     {
+      "id": "ai-owner",
+      "kind": "agent",
+      "role": "implementer",
+      "path": ".claude/agents/ai-owner.md"
+    },
+    {
       "id": "api-client-agent",
       "kind": "agent",
       "role": "implementer",
       "path": ".claude/agents/api-client-agent.md"
+    },
+    {
+      "id": "canon-drift-auditor",
+      "kind": "agent",
+      "role": "reviewer",
+      "path": ".claude/agents/canon-drift-auditor.md"
+    },
+    {
+      "id": "finyk-owner",
+      "kind": "agent",
+      "role": "implementer",
+      "path": ".claude/agents/finyk-owner.md"
+    },
+    {
+      "id": "fizruk-owner",
+      "kind": "agent",
+      "role": "implementer",
+      "path": ".claude/agents/fizruk-owner.md"
+    },
+    {
+      "id": "nutrition-owner",
+      "kind": "agent",
+      "role": "implementer",
+      "path": ".claude/agents/nutrition-owner.md"
+    },
+    {
+      "id": "product-historian",
+      "kind": "agent",
+      "role": "advisor",
+      "path": ".claude/agents/product-historian.md"
+    },
+    {
+      "id": "routine-owner",
+      "kind": "agent",
+      "role": "implementer",
+      "path": ".claude/agents/routine-owner.md"
+    },
+    {
+      "id": "spec-executor",
+      "kind": "agent",
+      "role": "implementer",
+      "path": ".claude/agents/spec-executor.md"
     },
     {
       "id": "contract-reviewer",
@@ -524,6 +572,36 @@
     {
       "from": "sergeant-tech-debt",
       "to": "docs-governance-auditor",
+      "rel": "dispatches"
+    },
+    {
+      "from": "sergeant-module-finyk",
+      "to": "finyk-owner",
+      "rel": "dispatches"
+    },
+    {
+      "from": "sergeant-module-nutrition",
+      "to": "nutrition-owner",
+      "rel": "dispatches"
+    },
+    {
+      "from": "sergeant-module-fizruk",
+      "to": "fizruk-owner",
+      "rel": "dispatches"
+    },
+    {
+      "from": "sergeant-module-routine",
+      "to": "routine-owner",
+      "rel": "dispatches"
+    },
+    {
+      "from": "sergeant-module-ai",
+      "to": "ai-owner",
+      "rel": "dispatches"
+    },
+    {
+      "from": "sergeant-feature-delivery",
+      "to": "spec-executor",
       "rel": "dispatches"
     },
     {
