@@ -28,7 +28,7 @@ export default function GuidesPage() {
       <SiteHeader />
 
       <main className="mx-auto w-full max-w-3xl px-5 pb-24 pt-12 sm:px-8 sm:pt-16">
-        <h1 className="font-display text-4xl font-bold tracking-tight text-foreground-strong sm:text-5xl">
+        <h1 className="font-display text-4xl font-extrabold uppercase tracking-tight text-foreground-strong sm:text-5xl">
           Гайди
         </h1>
         <p className="mt-5 max-w-xl leading-relaxed text-muted">
@@ -43,10 +43,10 @@ export default function GuidesPage() {
               href={guide.href}
               className="group block border-t border-cardline py-6 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
             >
-              <p className="text-xs font-semibold uppercase tracking-widest text-subtle">
+              <p className="font-display text-xs font-medium uppercase tracking-[0.12em] text-subtle">
                 {guide.category}
               </p>
-              <h2 className="mt-2 max-w-2xl font-display text-xl font-bold leading-snug text-balance text-foreground-strong group-hover:underline sm:text-2xl">
+              <h2 className="mt-2 max-w-2xl text-xl font-bold leading-snug text-balance text-foreground-strong group-hover:underline sm:text-2xl">
                 {guide.title}
               </h2>
               <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">

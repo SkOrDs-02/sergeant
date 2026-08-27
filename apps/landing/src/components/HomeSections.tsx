@@ -1,270 +1,288 @@
-import DashboardPreview from "./DashboardPreview";
 import TelegramCta from "./TelegramCta";
 
+/** Стрілка звʼязку між парою модулів. */
+function PairArrow() {
+  return (
+    <svg
+      width="26"
+      height="10"
+      viewBox="0 0 26 10"
+      fill="none"
+      aria-hidden="true"
+      className="stroke-subtle"
+      strokeWidth="1.6"
+    >
+      <path d="M1 5 h22 m-5 -4 5 4 -5 4" />
+    </svg>
+  );
+}
+
 /**
- * Модулі — рядки з живими фрагментами даних різної форми, а не сітка
- * карток, що різняться лише hue (анти-слоп: accent-swap ≠ ідентичність).
- * Кольори модуля живуть лише в його рядку (module-accent containment).
+ * Модулі — чотири кольорові блоки на повну ширину: акцент модуля тут
+ * не декор, а сама поверхня (module-accent containment: колір живе лише
+ * всередині свого блока). Кожен блок несе живий фрагмент даних різної
+ * форми, а не сітку однакових карток (анти-слоп: accent-swap ≠ ідентичність).
  */
 export function ModulesSection() {
-  const rowGrid =
-    "grid gap-4 border-t border-cardline py-6 sm:grid-cols-[180px_minmax(0,1fr)_300px] sm:items-center sm:gap-10";
+  const label = "font-display text-xs font-medium uppercase tracking-[0.12em]";
+  const title = "font-display text-2xl font-extrabold uppercase";
+  const body = "mt-1.5 text-sm leading-relaxed";
 
   return (
-    <section
-      id="modules"
-      className="mx-auto w-full max-w-6xl px-5 pb-20 pt-16 sm:px-8 sm:pb-24"
-    >
-      <h2 className="font-display text-3xl font-bold tracking-tight text-balance text-foreground-strong sm:text-4xl">
-        Чотири модулі, один простір
-      </h2>
-      <p className="mt-4 max-w-2xl leading-relaxed text-muted">
-        Кожен збирає сигнали без зайвого вводу: фінанси підтягуються з Monobank,
-        їжа – фото чи сканером, звичка – одним тапом.
-      </p>
+    <section id="modules" className="scroll-mt-16">
+      <div className="mx-auto w-full max-w-6xl px-5 pb-9 pt-16 sm:px-8">
+        <h2 className="font-display text-2xl font-extrabold uppercase tracking-tight text-balance text-foreground-strong sm:text-3xl">
+          Чотири модулі, один простір
+        </h2>
+        <p className="mt-4 max-w-2xl leading-relaxed text-muted">
+          Кожен збирає сигнали без зайвого вводу: фінанси з Monobank, їжа фото
+          чи сканером, звичка одним тапом.
+        </p>
+      </div>
 
-      <div className="mt-10 border-b border-cardline">
-        <div className={rowGrid}>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-subtle">
-              Гроші
-            </p>
-            <h3 className="mt-0.5 font-display text-2xl font-bold text-finyk">
-              Фінік
-            </h3>
-          </div>
-          <p className="text-sm leading-relaxed text-foreground">
-            Бюджети в гривні, синк із Monobank, категорії та борги без ручного
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4">
+        <div className="flex min-h-[280px] flex-col gap-1 bg-finyk px-6 py-7 text-ink-text">
+          <p className={label}>01 · Гроші</p>
+          <h3 className={title}>Фінік</h3>
+          <p className={`${body} text-ink-text/90`}>
+            Синк із Monobank. Бюджети в гривні. Борги під контролем. Без ручного
             вводу.
           </p>
-          <div aria-hidden="true" className="flex flex-col gap-2">
+          <div aria-hidden="true" className="mt-auto flex flex-col gap-2 pt-6">
             <div className="flex justify-between text-xs">
-              <span className="font-semibold text-foreground">
-                Кафе і доставка
-              </span>
-              <span className="text-muted">
+              <span className="font-semibold">Кафе і доставка</span>
+              <span className="tabular-nums">
                 1&nbsp;840 / 2&nbsp;500&#8239;₴
               </span>
             </div>
-            <div className="h-1.5 rounded-full bg-finyk-soft">
-              <div className="h-1.5 w-[74%] rounded-full bg-finyk" />
+            <div className="h-1.5 bg-ink-text/25">
+              <div className="h-1.5 w-[74%] bg-ink-text" />
             </div>
           </div>
         </div>
 
-        <div className={rowGrid}>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-subtle">
-              Тіло
-            </p>
-            <h3 className="mt-0.5 font-display text-2xl font-bold text-fizruk">
-              Фізрук
-            </h3>
-          </div>
-          <p className="text-sm leading-relaxed text-foreground">
+        <div className="flex min-h-[280px] flex-col gap-1 bg-fizruk px-6 py-7 text-ink-text">
+          <p className={label}>02 · Тіло</p>
+          <h3 className={title}>Фізрук</h3>
+          <p className={`${body} text-ink-text/90`}>
             Плани тренувань, прогрес силових і біометрія в одному місці.
           </p>
           <div
             aria-hidden="true"
-            className="flex items-baseline gap-2.5 tabular-nums"
+            className="mt-auto flex items-baseline gap-2.5 pt-6 tabular-nums"
           >
-            <span className="text-xs font-semibold text-foreground">
-              Присід
-            </span>
-            <span className="text-lg font-bold text-fizruk">80 → 85 кг</span>
-            <span className="text-xs text-muted">за 4 тижні</span>
+            <span className="text-xl font-bold">80 → 85 кг</span>
+            <span className="text-xs text-ink-text/85">присід · 4 тижні</span>
           </div>
         </div>
 
-        <div className={rowGrid}>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-subtle">
-              Звички
-            </p>
-            <h3 className="mt-0.5 font-display text-2xl font-bold text-routine">
-              Рутина
-            </h3>
-          </div>
-          <p className="text-sm leading-relaxed text-foreground">
-            Стріки й чек-іни з чесною статистикою. Пропуск – це подія з
-            причиною, а не обнулення.
+        <div className="flex min-h-[280px] flex-col gap-1 bg-routine px-6 py-7 text-ink">
+          <p className={label}>03 · Звички</p>
+          <h3 className={title}>Рутина</h3>
+          <p className={`${body} text-ink/90`}>
+            Стріки з чесною статистикою. Пропуск – подія з причиною, а не
+            обнулення.
           </p>
-          <div aria-hidden="true" className="flex items-center gap-2">
+          <div
+            aria-hidden="true"
+            className="mt-auto flex items-center gap-2 pt-6"
+          >
             {[0, 1, 2].map((i) => (
-              <span key={i} className="h-3.5 w-3.5 rounded-full bg-routine" />
+              <span key={i} className="h-3 w-3 rounded-full bg-ink" />
             ))}
-            <span className="h-3.5 w-3.5 rounded-full border-2 border-dashed border-routine" />
+            <span className="h-3 w-3 rounded-full border-2 border-dashed border-ink" />
             {[4, 5].map((i) => (
-              <span key={i} className="h-3.5 w-3.5 rounded-full bg-routine" />
+              <span key={i} className="h-3 w-3 rounded-full bg-ink" />
             ))}
-            <span className="ml-1 text-xs text-muted">
-              пауза з причиною – не зрив
-            </span>
           </div>
         </div>
 
-        <div className={rowGrid}>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-subtle">
-              Їжа
-            </p>
-            <h3 className="mt-0.5 font-display text-2xl font-bold text-nutrition">
-              Харчування
-            </h3>
-          </div>
-          <p className="text-sm leading-relaxed text-foreground">
+        <div className="flex min-h-[280px] flex-col gap-1 bg-nutrition-glow px-6 py-7 text-ink">
+          <p className={label}>04 · Їжа</p>
+          <h3 className={title}>Харчування</h3>
+          <p className={`${body} text-ink/90`}>
             КБЖУ, сканер штрих-кодів і українська база продуктів.
           </p>
           <div
             aria-hidden="true"
-            className="flex items-baseline gap-3 tabular-nums"
+            className="mt-auto flex items-baseline gap-3 pt-6 tabular-nums"
           >
-            <span className="text-xs text-muted">Сьогодні</span>
-            <span className="text-sm font-bold text-nutrition">Б 92</span>
-            <span className="text-sm font-bold text-nutrition">Ж 61</span>
-            <span className="text-sm font-bold text-nutrition">В 210</span>
-            <span className="text-xs text-muted">1&nbsp;780 ккал</span>
+            <span className="font-bold">Б 92</span>
+            <span className="font-bold">Ж 61</span>
+            <span className="font-bold">В 210</span>
+            <span className="text-xs">1&nbsp;780 ккал</span>
           </div>
         </div>
-      </div>
-    </section>
-  );
-}
-
-/** Довіра до даних — три обіцянки, за які продукт відповідає. */
-export function TrustSection() {
-  return (
-    <section
-      id="data"
-      className="mx-auto w-full max-w-6xl px-5 pb-20 sm:px-8 sm:pb-24"
-    >
-      <h2 className="font-display text-3xl font-bold tracking-tight text-balance text-foreground-strong sm:text-4xl">
-        Твої дані залишаються твоїми
-      </h2>
-      <div className="mt-8 max-w-4xl border-b border-cardline">
-        <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 border-t border-cardline py-5">
-          <p className="font-semibold text-foreground-strong">
-            Токен Monobank – лише читання. Рухати гроші він фізично не може.
-          </p>
-          <a
-            href="/guides/monobank"
-            className="text-sm text-foreground underline decoration-cardline-strong underline-offset-4 transition hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
-          >
-            Що саме бачить трекер →
-          </a>
-        </div>
-        <p className="border-t border-cardline py-5 font-semibold text-foreground-strong">
-          Експорт у стандартні формати – в один клік, без листів у підтримку.
-        </p>
-        <p className="border-t border-cardline py-5 font-semibold text-foreground-strong">
-          Я не продаю і не передаю твої дані нікому.
-        </p>
       </div>
     </section>
   );
 }
 
 /**
- * Чорнильна секція звʼязків. Кожен інсайт несе градацію впевненості —
- * включно з правом мовчати, коли закономірності немає: це і є чесність
- * продукту, показана формою.
+ * Звʼязки — «паперові» нотатки, ніби Sergeant лишив їх на столі. Третя
+ * нотатка навмисно порожня формою (пунктир, без тіні): право мовчати,
+ * коли закономірності немає — це чесність продукту, показана версткою.
  */
 export function ConnectionsSection() {
-  const links = [
+  return (
+    <section
+      id="connections"
+      className="mx-auto w-full max-w-6xl scroll-mt-16 px-5 pb-20 pt-16 sm:px-8"
+    >
+      <h2 className="font-display text-2xl font-extrabold uppercase tracking-tight text-foreground-strong sm:text-3xl">
+        Що він помічає
+      </h2>
+      <p className="mt-4 max-w-2xl leading-relaxed text-muted">
+        Окремі трекери показують цифри. Sergeant читає всі сфери разом і
+        показує, як вони впливають одна на одну.
+      </p>
+
+      <div className="mt-9 grid gap-6 lg:grid-cols-3">
+        <figure className="paper-shadow flex -rotate-1 flex-col gap-3.5 rounded-[var(--radius-card)] bg-note p-6">
+          <div
+            aria-hidden="true"
+            className="flex items-center gap-3 text-[13px] font-bold"
+          >
+            <span className="text-fizruk">Фізрук</span>
+            <PairArrow />
+            <span className="text-routine-strong">Рутина</span>
+          </div>
+          <blockquote className="font-serif text-lg italic leading-snug text-foreground">
+            «У дні, коли тренуєшся зранку, інші звички зриваються рідше»
+          </blockquote>
+          <figcaption className="mt-auto text-xs text-subtle">
+            тримається стабільно · 6 тижнів даних
+          </figcaption>
+        </figure>
+
+        <figure className="paper-shadow flex rotate-[0.8deg] flex-col gap-3.5 rounded-[var(--radius-card)] bg-note p-6">
+          <div
+            aria-hidden="true"
+            className="flex items-center gap-3 text-[13px] font-bold"
+          >
+            <span className="text-nutrition">Харчування</span>
+            <PairArrow />
+            <span className="text-routine-strong">Рутина</span>
+          </div>
+          <blockquote className="font-serif text-lg italic leading-snug text-foreground">
+            «Коли снідаєш удома, ранкова рутина тримається довше»
+          </blockquote>
+          <figcaption className="mt-auto text-xs text-subtle">
+            поки що збіг · 2 тижні даних
+          </figcaption>
+        </figure>
+
+        <figure className="flex -rotate-[0.5deg] flex-col gap-3.5 rounded-[var(--radius-card)] border-2 border-dashed border-cardline-strong p-6">
+          <div
+            aria-hidden="true"
+            className="flex items-center gap-3 text-[13px] font-bold"
+          >
+            <span className="text-finyk">Фінік</span>
+            <PairArrow />
+            <span className="text-fizruk">Фізрук</span>
+          </div>
+          <blockquote className="font-serif text-lg italic leading-snug text-subtle">
+            «Закономірностей не помічено. Ще збираю дані»
+          </blockquote>
+          <figcaption className="sr-only">
+            Звʼязок між Фініком і Фізруком ще не підтверджено
+          </figcaption>
+        </figure>
+      </div>
+
+      <p className="mt-7 max-w-2xl text-sm leading-relaxed text-subtle">
+        Перше спостереження – приблизно після 14 днів даних. Приклади
+        ілюстративні: Sergeant будує висновки на твоїх даних і показує лише ті,
+        в яких достатньо впевнений. Якщо впевненості нема, мовчить.
+      </p>
+    </section>
+  );
+}
+
+/** Статут — три правила, за які продукт відповідає. */
+export function StatuteSection() {
+  const rules = [
     {
-      a: { label: "Фізрук", color: "text-fizruk-glow" },
-      b: { label: "Рутина", color: "text-routine-glow" },
-      insight: "У дні, коли тренуєшся зранку, інші звички зриваються рідше.",
-      meta: "тримається стабільно · 6 тижнів даних",
-      quiet: false,
+      n: "01",
+      title: "Не карає за пропуск. Рахує",
+      text: "Стрік чесно перерветься, але історія і висновки нікуди не дінуться.",
+      link: null,
     },
     {
-      a: { label: "Харчування", color: "text-nutrition-glow" },
-      b: { label: "Рутина", color: "text-routine-glow" },
-      insight:
-        "Коли снідаєш удома, ранкова рутина тримається довше, а зриви трапляються рідше.",
-      meta: "поки що збіг · 2 тижні даних",
-      quiet: false,
+      n: "02",
+      title: "Мовчить, коли не впевнений",
+      text: "Показує лише звʼязки, в яких статистично впевнений. Замало даних – не вигадує.",
+      link: null,
     },
     {
-      a: { label: "Фінік", color: "text-finyk-glow" },
-      b: { label: "Фізрук", color: "text-fizruk-glow" },
-      insight: "Закономірностей не помічено. Ще збираю дані.",
-      meta: null,
-      quiet: true,
+      n: "03",
+      title: "Твої дані – твої",
+      text: "Токен Monobank – лише читання. Експорт у стандартні формати в один клік. Нікому не продаються.",
+      link: { href: "/guides/monobank", label: "Що саме бачить трекер →" },
     },
   ];
 
   return (
-    <section id="connections" className="bg-ink py-20 sm:py-24">
-      <div className="mx-auto w-full max-w-6xl px-5 sm:px-8">
-        <h2 className="max-w-3xl font-display text-3xl font-bold tracking-tight text-balance text-ink-text sm:text-4xl">
-          Окремі трекери показують цифри. Sergeant показує звʼязки
-        </h2>
-
-        <div className="mt-12 flex max-w-4xl flex-col">
-          {links.map((link) => (
-            <figure
-              key={link.insight}
-              className="border-t border-ink-line py-7 first:border-t-0"
-            >
-              <div
-                aria-hidden="true"
-                className="flex items-center gap-3.5 text-sm font-semibold"
-              >
-                <span className={link.a.color}>{link.a.label}</span>
-                <svg
-                  width="26"
-                  height="10"
-                  viewBox="0 0 26 10"
-                  fill="none"
-                  className="stroke-ink-muted"
-                  strokeWidth="1.6"
-                >
-                  <path d="M1 5 h22 m-5 -4 5 4 -5 4" />
-                </svg>
-                <span className={link.b.color}>{link.b.label}</span>
-              </div>
-              <blockquote
-                className={`mt-4 max-w-3xl font-display text-xl font-medium leading-snug text-balance sm:text-2xl ${
-                  link.quiet ? "text-ink-muted" : "text-ink-text"
-                }`}
-              >
-                {link.insight}
-              </blockquote>
-              {link.meta && (
-                <p className="mt-2.5 text-xs text-ink-muted">{link.meta}</p>
+    <section
+      id="statute"
+      className="mx-auto w-full max-w-6xl scroll-mt-16 px-5 pb-16 sm:px-8"
+    >
+      <h2 className="mb-2 font-display text-2xl font-extrabold uppercase tracking-tight text-foreground-strong sm:text-3xl">
+        Статут
+      </h2>
+      <div className="flex flex-col">
+        {rules.map((rule) => (
+          <div
+            key={rule.n}
+            className="grid gap-2 border-t-2 border-foreground-strong py-6 sm:grid-cols-[90px_minmax(0,1fr)] sm:gap-6 lg:grid-cols-[90px_minmax(0,1fr)_360px]"
+          >
+            <span className="font-display text-sm font-bold text-subtle">
+              {rule.n}
+            </span>
+            <h3 className="text-2xl font-bold leading-tight text-foreground-strong sm:text-[27px]">
+              {rule.title}
+            </h3>
+            <p className="text-sm leading-relaxed text-muted">
+              {rule.text}
+              {rule.link && (
+                <>
+                  {" "}
+                  <a
+                    href={rule.link.href}
+                    className="font-semibold text-foreground underline decoration-cardline-strong underline-offset-4 transition hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                  >
+                    {rule.link.label}
+                  </a>
+                </>
               )}
-              <figcaption className="sr-only">
-                Звʼязок між модулями {link.a.label} і {link.b.label}
-              </figcaption>
-            </figure>
-          ))}
-        </div>
-
-        <div className="mt-10 max-w-4xl">
-          <DashboardPreview />
-          <p className="mt-3 text-xs text-ink-muted">
-            Приклад тижневого підсумку в Sergeant
-          </p>
-        </div>
-
-        <div className="mt-12 max-w-xl border-t border-ink-line pt-7">
-          <p className="text-sm font-semibold text-ink-text">
-            Перше спостереження – приблизно після 14 днів даних.
-          </p>
-          <p className="mt-1.5 text-sm leading-relaxed text-ink-muted">
-            Приклади ілюстративні. Sergeant будує висновки на твоїх даних і
-            показує лише ті, в яких достатньо впевнений. Якщо впевненості нема,
-            мовчить.
-          </p>
-        </div>
+            </p>
+          </div>
+        ))}
       </div>
     </section>
   );
 }
 
-export function HonestSection() {
+/** Голос автора — місток довіри між статутом і станом розробки. */
+export function FounderSection() {
+  return (
+    <section className="mx-auto w-full max-w-3xl border-t border-cardline px-5 py-14 sm:px-8">
+      <h2 className="font-display text-xl font-extrabold uppercase tracking-tight text-foreground-strong sm:text-2xl">
+        Чому я це роблю
+      </h2>
+      <p className="mt-4 leading-relaxed text-foreground">
+        Я вів чотири застосунки паралельно: банк, тренування, звички, їжу. Кожен
+        показував свої цифри, і жоден не бачив цілої картини. Sergeant я роблю
+        для себе і таких, як я: один простір, чесна статистика і жодної торгівлі
+        даними.
+      </p>
+      <p className="mt-4 font-serif italic text-subtle">– автор Sergeant</p>
+    </section>
+  );
+}
+
+/** Доповідь про стан — чесний список працює/в розробці. */
+export function StatusSection() {
   const now = [
     "Автосинк фінансів через Monobank",
     "Логи їжі, тренувань і звичок",
@@ -279,34 +297,33 @@ export function HonestSection() {
   return (
     <section
       id="status"
-      className="mx-auto w-full max-w-6xl px-5 py-20 sm:px-8 sm:py-24"
+      className="mx-auto w-full max-w-6xl scroll-mt-16 px-5 py-16 sm:px-8"
     >
-      <h2 className="max-w-lg font-display text-3xl font-bold tracking-tight text-balance text-foreground-strong sm:text-4xl">
-        Що вже працює, а що ще ні
+      <h2 className="font-display text-2xl font-extrabold uppercase tracking-tight text-foreground-strong sm:text-3xl">
+        Доповідь про стан
       </h2>
       <p className="mt-4 max-w-xl leading-relaxed text-muted">
-        Sergeant не обіцяє магію. Він показує звʼязки з тією впевненістю, яку
-        реально має.
+        Sergeant не обіцяє магію. Ось що працює сьогодні і що в розробці.
       </p>
 
-      <div className="mt-12 grid gap-10 sm:grid-cols-2 sm:gap-14">
+      <div className="mt-9 grid gap-10 sm:grid-cols-2 sm:gap-14">
         <div>
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-foreground-strong">
+          <h3 className="border-b-2 border-foreground-strong pb-2.5 font-display text-xs font-bold uppercase tracking-[0.08em] text-foreground-strong">
             Вже працює
           </h3>
-          <ul className="mt-5 flex flex-col gap-4 border-t border-cardline pt-5">
+          <ul className="mt-4 flex flex-col gap-4">
             {now.map((item) => (
               <li
                 key={item}
-                className="flex items-baseline gap-2.5 text-sm font-semibold leading-relaxed text-foreground-strong"
+                className="flex items-baseline gap-2.5 text-[15px] font-semibold leading-relaxed text-foreground"
               >
                 <svg
-                  width="16"
-                  height="16"
+                  width="15"
+                  height="15"
                   viewBox="0 0 20 20"
                   fill="none"
                   aria-hidden="true"
-                  className="shrink-0 translate-y-0.5 stroke-ink"
+                  className="shrink-0 translate-y-0.5 stroke-accent"
                   strokeWidth="2.6"
                 >
                   <path d="M4 10.5 8.2 15 16 5.5" />
@@ -317,12 +334,12 @@ export function HonestSection() {
           </ul>
         </div>
         <div>
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-subtle">
+          <h3 className="border-b-2 border-cardline-strong pb-2.5 font-display text-xs font-bold uppercase tracking-[0.08em] text-subtle">
             У розробці
           </h3>
-          <ul className="mt-5 flex flex-col gap-4 border-t border-cardline pt-5">
+          <ul className="mt-4 flex flex-col gap-4">
             {soon.map((item) => (
-              <li key={item} className="text-sm leading-relaxed text-muted">
+              <li key={item} className="text-[15px] leading-relaxed text-muted">
                 {item}
               </li>
             ))}
@@ -369,18 +386,19 @@ export function FaqSection() {
   return (
     <section
       id="faq"
-      className="mx-auto grid w-full max-w-6xl gap-8 px-5 pb-20 sm:px-8 sm:pb-24 lg:grid-cols-[320px_minmax(0,1fr)] lg:gap-16"
+      className="mx-auto w-full max-w-6xl scroll-mt-16 px-5 pb-20 sm:px-8"
     >
-      <h2 className="font-display text-3xl font-bold tracking-tight text-foreground-strong sm:text-4xl">
-        Часті питання
+      <h2 className="font-display text-2xl font-extrabold uppercase tracking-tight text-foreground-strong sm:text-3xl">
+        Питання
       </h2>
-      <div className="border-b border-cardline">
+      <div className="mt-6 grid gap-x-12 sm:grid-cols-2">
         {FAQ_ITEMS.map((item) => (
-          <div key={item.q} className="border-t border-cardline py-5">
-            <h3 className="font-display text-lg font-bold text-foreground-strong">
-              {item.q}
-            </h3>
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
+          <div
+            key={item.q}
+            className="flex flex-col gap-2 border-t border-cardline py-5"
+          >
+            <h3 className="font-bold text-foreground-strong">{item.q}</h3>
+            <p className="max-w-2xl text-sm leading-relaxed text-muted">
               {item.a}
             </p>
           </div>
@@ -392,20 +410,24 @@ export function FaqSection() {
 
 export function ClosingCta() {
   return (
-    <section className="mx-auto w-full max-w-6xl border-t border-cardline px-5 pb-24 pt-16 sm:px-8">
-      <h2 className="font-display text-3xl font-bold leading-tight tracking-tight text-balance text-foreground-strong sm:text-4xl">
-        Бета відкривається хвилями
-      </h2>
-      <p className="mt-4 max-w-lg leading-relaxed text-pretty text-muted">
-        Стань у чергу, і я напишу одне повідомлення, коли відкриється твоя.
-      </p>
-      <div className="mt-8 flex flex-col gap-3">
-        <div>
-          <TelegramCta placement="footer" label="Стати в чергу" />
+    <section className="bg-ink text-ink-text">
+      <div className="mx-auto flex w-full max-w-6xl flex-col items-start justify-between gap-8 px-5 py-14 sm:px-8 lg:flex-row lg:items-center">
+        <div className="flex flex-col gap-3">
+          <h2 className="font-display text-2xl font-extrabold uppercase tracking-tight text-balance sm:text-3xl">
+            Бета відкривається хвилями
+          </h2>
+          <p className="max-w-lg leading-relaxed text-ink-muted">
+            Стань у чергу, і я напишу одне повідомлення, коли відкриється твоя.
+          </p>
+          <p className="text-sm text-ink-muted">
+            Ядро безкоштовне назавжди · Твої дані залишаються твоїми
+          </p>
         </div>
-        <p className="text-sm text-muted">
-          Ядро безкоштовне назавжди · Твої дані залишаються твоїми
-        </p>
+        <TelegramCta
+          placement="footer"
+          label="Стати в чергу"
+          variant="inverse"
+        />
       </div>
     </section>
   );

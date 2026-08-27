@@ -45,11 +45,11 @@ export default function BetaPage() {
 
       <main>
         <section className="mx-auto w-full max-w-6xl px-5 pb-14 pt-12 sm:px-8 sm:pt-16">
-          <p className="text-xs font-semibold uppercase tracking-widest text-foreground-strong">
-            Закрита бета
+          <p className="font-display text-xs font-medium uppercase tracking-[0.12em] text-subtle">
+            Закрита бета · місць небагато
           </p>
-          <h1 className="mt-4 max-w-2xl font-display text-4xl font-bold leading-[1.06] tracking-tight text-balance text-foreground-strong sm:text-5xl">
-            Бета відкривається хвилями. Місць небагато
+          <h1 className="mt-4 max-w-3xl font-display text-3xl font-extrabold uppercase leading-[1.08] tracking-tight text-balance text-foreground-strong sm:text-5xl">
+            Бета відкривається хвилями
           </h1>
           <p className="mt-6 max-w-xl text-lg leading-relaxed text-pretty text-muted">
             Sergeant вчиться на реальних даних, тому я відкриваю доступ
@@ -59,10 +59,10 @@ export default function BetaPage() {
 
         <section className="mx-auto grid w-full max-w-6xl gap-10 px-5 pb-16 sm:grid-cols-2 sm:gap-14 sm:px-8">
           <div>
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-foreground-strong">
+            <h2 className="border-b-2 border-foreground-strong pb-2.5 font-display text-xs font-bold uppercase tracking-[0.08em] text-foreground-strong">
               Що отримуєш
             </h2>
-            <ul className="mt-5 flex flex-col gap-4 border-t border-cardline pt-5">
+            <ul className="mt-4 flex flex-col gap-4">
               {GIVE.map((item) => (
                 <li
                   key={item}
@@ -74,7 +74,7 @@ export default function BetaPage() {
                     viewBox="0 0 20 20"
                     fill="none"
                     aria-hidden="true"
-                    className="shrink-0 translate-y-0.5 stroke-ink"
+                    className="shrink-0 translate-y-0.5 stroke-accent"
                     strokeWidth="2.6"
                   >
                     <path d="M4 10.5 8.2 15 16 5.5" />
@@ -85,10 +85,10 @@ export default function BetaPage() {
             </ul>
           </div>
           <div>
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-subtle">
+            <h2 className="border-b-2 border-cardline-strong pb-2.5 font-display text-xs font-bold uppercase tracking-[0.08em] text-subtle">
               Що прошу натомість
             </h2>
-            <ul className="mt-5 flex flex-col gap-4 border-t border-cardline pt-5">
+            <ul className="mt-4 flex flex-col gap-4">
               {ASK.map((item) => (
                 <li key={item} className="text-sm leading-relaxed text-muted">
                   {item}
@@ -100,7 +100,7 @@ export default function BetaPage() {
 
         <section className="bg-ink py-16 sm:py-20">
           <div className="mx-auto w-full max-w-6xl px-5 sm:px-8">
-            <h2 className="font-display text-3xl font-bold tracking-tight text-ink-text sm:text-4xl">
+            <h2 className="font-display text-2xl font-extrabold uppercase tracking-tight text-ink-text sm:text-3xl">
               Черга в бету
             </h2>
             <p className="mt-4 max-w-lg leading-relaxed text-ink-muted">
@@ -119,15 +119,13 @@ export default function BetaPage() {
         </section>
 
         <section className="mx-auto grid w-full max-w-6xl gap-8 px-5 py-16 sm:px-8 sm:py-20 lg:grid-cols-[320px_minmax(0,1fr)] lg:gap-16">
-          <h2 className="font-display text-3xl font-bold tracking-tight text-foreground-strong">
+          <h2 className="font-display text-2xl font-extrabold uppercase tracking-tight text-foreground-strong sm:text-3xl">
             Коротко про бету
           </h2>
           <div className="border-b border-cardline">
             {MINI_FAQ.map((item) => (
               <div key={item.q} className="border-t border-cardline py-5">
-                <h3 className="font-display text-lg font-bold text-foreground-strong">
-                  {item.q}
-                </h3>
+                <h3 className="font-bold text-foreground-strong">{item.q}</h3>
                 <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
                   {item.a ?? (
                     <>
@@ -136,7 +134,7 @@ export default function BetaPage() {
                         href="/#status"
                         className="text-foreground underline decoration-cardline-strong underline-offset-4 transition hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
                       >
-                        «Що вже працює, а що ще ні»
+                        «Доповідь про стан»
                       </a>{" "}
                       на головній. Він оновлюється.
                     </>

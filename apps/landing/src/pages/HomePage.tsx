@@ -1,23 +1,94 @@
 import SiteHeader from "../components/SiteHeader";
 import SiteFooter from "../components/SiteFooter";
 import TelegramCta from "../components/TelegramCta";
-import InsightChart from "../components/InsightChart";
 import {
   ModulesSection,
-  TrustSection,
   ConnectionsSection,
-  HonestSection,
+  StatuteSection,
+  FounderSection,
+  StatusSection,
   FaqSection,
   ClosingCta,
   FAQ_ITEMS,
 } from "../components/HomeSections";
 import { usePageMeta } from "../lib/pageMeta";
 
+/**
+ * Hero-колаж: картки даних, «розкидані на столі», і нотатка-інсайт, яку
+ * Sergeant ніби лишив поверх них. До lg — звичайна колонка з легкими
+ * нахилами, на lg — absolute-розкладка з пунктирними звʼязками.
+ */
+function HeroCollage() {
+  return (
+    <div className="relative mx-auto mt-4 flex w-full max-w-md flex-col gap-5 lg:mt-0 lg:h-[430px] lg:w-[480px] lg:max-w-none lg:shrink-0">
+      <svg
+        width="480"
+        height="430"
+        viewBox="0 0 480 430"
+        fill="none"
+        aria-hidden="true"
+        className="absolute left-0 top-0 hidden lg:block"
+      >
+        <path
+          d="M190,150 C 180,210 175,240 185,280"
+          className="stroke-cardline-strong"
+          strokeWidth="1.6"
+          strokeDasharray="5 6"
+        />
+        <path
+          d="M390,205 C 400,240 380,270 340,290"
+          className="stroke-cardline-strong"
+          strokeWidth="1.6"
+          strokeDasharray="5 6"
+        />
+      </svg>
+
+      <div
+        aria-hidden="true"
+        className="paper-shadow flex -rotate-3 flex-col gap-2.5 rounded-[var(--radius-card)] bg-card p-5 lg:absolute lg:left-10 lg:top-4 lg:w-[290px]"
+      >
+        <div className="flex justify-between text-[13px]">
+          <span className="font-bold text-foreground">Кафе і доставка</span>
+          <span className="tabular-nums text-muted">
+            1&nbsp;840 / 2&nbsp;500&#8239;₴
+          </span>
+        </div>
+        <div className="h-1.5 bg-finyk-soft">
+          <div className="h-1.5 w-[74%] bg-finyk" />
+        </div>
+        <p className="text-xs text-subtle">Фінік · синк із Monobank</p>
+      </div>
+
+      <div
+        aria-hidden="true"
+        className="paper-shadow flex rotate-2 flex-col gap-1.5 rounded-[var(--radius-card)] bg-card p-4.5 lg:absolute lg:right-0 lg:top-[118px] lg:w-[210px]"
+      >
+        <span className="text-[13px] font-bold text-foreground">
+          Тренування
+        </span>
+        <div className="flex items-baseline gap-2">
+          <span className="text-xl font-bold tabular-nums text-fizruk">3</span>
+          <span className="text-xs text-subtle">цього тижня</span>
+        </div>
+      </div>
+
+      <figure className="paper-shadow-lg flex rotate-[1.5deg] flex-col gap-2.5 rounded-[var(--radius-card)] bg-note px-7 py-6 lg:absolute lg:left-3 lg:top-[268px] lg:w-[400px]">
+        <blockquote className="font-serif text-lg italic leading-normal text-foreground sm:text-xl">
+          «У тижні, коли тренувань більше, замовлень доставки менше»
+        </blockquote>
+        <figcaption className="text-xs text-subtle">
+          записав Sergeant · впевненість висока · приклад
+        </figcaption>
+      </figure>
+    </div>
+  );
+}
+
 export default function HomePage() {
   usePageMeta({
-    title: "Sergeant: бачить звʼязки між усім, що важливо",
+    title: "Sergeant: порядок без крику",
     description:
-      "Гроші, тіло, звички й харчування в одному приватному просторі. Sergeant помічає звʼязки, які губляться в окремих трекерах.",
+      "Гроші, тіло, звички й харчування в одному приватному просторі. Sergeant бачить звʼязки між ними і каже головне.",
     jsonLd: {
       "@context": "https://schema.org",
       "@type": "FAQPage",
@@ -34,47 +105,34 @@ export default function HomePage() {
       <SiteHeader />
 
       <main>
-        <section className="hero-wash">
-          <div className="mx-auto w-full max-w-6xl px-5 py-12 sm:px-8 sm:py-16 lg:py-20">
-            <div className="max-w-2xl">
-              <h1 className="font-display text-4xl font-bold leading-[1.04] tracking-tight text-balance text-foreground-strong sm:text-5xl lg:text-[3.25rem]">
-                Бачить звʼязки між усім, що важливо
-              </h1>
-              <p className="mt-6 max-w-lg text-lg leading-relaxed text-pretty text-muted">
-                Гроші, тіло, звички й харчування в одному приватному просторі.
+        <section className="mx-auto flex w-full max-w-6xl flex-col items-start gap-10 px-5 py-12 sm:px-8 sm:py-16 lg:flex-row lg:items-center lg:justify-between lg:gap-12">
+          <div className="flex max-w-2xl flex-col items-start gap-6">
+            <h1 className="font-display text-[44px] font-extrabold uppercase leading-[1.05] tracking-tight text-foreground-strong sm:text-6xl lg:text-[62px]">
+              Порядок
+              <br />
+              без крику
+            </h1>
+            <p className="max-w-lg text-lg leading-relaxed text-pretty text-muted">
+              Сержант, який на твоєму боці. Рахує гроші, тренування, звички і
+              їжу, а потім каже головне. Не карає. Не мотивує цитатами. Просто
+              бачить звʼязки.
+            </p>
+            <div className="flex flex-col gap-2.5">
+              <TelegramCta placement="hero" label="Стати в чергу" />
+              <p className="text-sm text-subtle">
+                ядро безкоштовне назавжди · без карток
               </p>
-
-              <div className="mt-8 flex flex-wrap items-center gap-5">
-                <TelegramCta placement="hero" label="Стати в чергу" />
-                <a
-                  href="#data"
-                  className="text-sm text-muted underline decoration-cardline-strong underline-offset-4 transition hover:text-foreground hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
-                >
-                  Твої дані залишаються твоїми
-                </a>
-              </div>
-            </div>
-
-            <div className="mt-14 grid items-center gap-8 border-t border-cardline pt-9 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:gap-12">
-              <InsightChart />
-              <div>
-                <p className="max-w-md font-semibold leading-normal text-foreground-strong">
-                  У тижні, коли тренувань більше, замовлень доставки зазвичай
-                  менше.
-                </p>
-                <p className="mt-1.5 text-xs text-subtle">
-                  Приклад спостереження · Sergeant показує таке, лише коли
-                  впевнений
-                </p>
-              </div>
             </div>
           </div>
+
+          <HeroCollage />
         </section>
 
         <ModulesSection />
-        <TrustSection />
         <ConnectionsSection />
-        <HonestSection />
+        <StatuteSection />
+        <FounderSection />
+        <StatusSection />
         <FaqSection />
         <ClosingCta />
       </main>
