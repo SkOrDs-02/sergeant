@@ -33,7 +33,7 @@
       "id": "hubchat-tool-def-balance-read",
       "title": "Add HubChat tool definition and executor for balance read",
       "prompt": "Add a new HubChat tool definition and executor for reading the latest user balance, with prompt-cache headers on the tool block and typed executor output. Register it in the tool registry and write a debug test.",
-      "expectedSkills": ["sergeant-start-here", "sergeant-hubchat"],
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-ai"],
       "expectedPlaybook": "add-hubchat-tool.md",
       "surface": "server",
       "acceptance": "HubChat tool definition registered; executor typed; prompt-cache header present; debug test passes"

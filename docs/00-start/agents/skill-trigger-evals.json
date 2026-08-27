@@ -796,6 +796,171 @@
       "expectedSkills": ["sergeant-start-here", "sergeant-verify-before-done"],
       "forbiddenSkills": [],
       "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-module-finyk-trigger-budget-carryover",
+      "skill": "sergeant-module-finyk",
+      "kind": "trigger",
+      "prompt": "Change the unspent budget carryover rule in the finyk module and update the monthly analytics accordingly.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-finyk"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-finyk-trigger-cash-on-hand",
+      "skill": "sergeant-module-finyk",
+      "kind": "trigger",
+      "prompt": "Add a cash-on-hand adjustment flow to finyk transactions with receipt attachments and correct kopiyka totals.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-finyk"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-finyk-anti-nutrition-dashboard",
+      "skill": "sergeant-module-finyk",
+      "kind": "anti-trigger",
+      "prompt": "Improve the nutrition dashboard meal cards and pantry list without touching budgets, transactions, or money.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-nutrition"],
+      "forbiddenSkills": ["sergeant-module-finyk"]
+    },
+    {
+      "id": "sergeant-module-finyk-workflow-start-here",
+      "skill": "sergeant-module-finyk",
+      "kind": "workflow",
+      "prompt": "Before changing finyk budget behavior, load Sergeant startup rules and then exactly the finyk module owner skill.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-finyk"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-module-nutrition-trigger-pantry-derivation",
+      "skill": "sergeant-module-nutrition",
+      "kind": "trigger",
+      "prompt": "Update how the pantry stock balance is derived when a meal is logged in the nutrition module.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-nutrition"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-nutrition-trigger-food-log",
+      "skill": "sergeant-module-nutrition",
+      "kind": "trigger",
+      "prompt": "Add a recipe import flow to the nutrition food log with per-day calorie totals keyed by device-local day.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-nutrition"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-nutrition-anti-finyk-budget",
+      "skill": "sergeant-module-nutrition",
+      "kind": "anti-trigger",
+      "prompt": "Fix the finyk monthly budget percent denominator for frozen past months without touching food or meals.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-finyk"],
+      "forbiddenSkills": ["sergeant-module-nutrition"]
+    },
+    {
+      "id": "sergeant-module-nutrition-workflow-start-here",
+      "skill": "sergeant-module-nutrition",
+      "kind": "workflow",
+      "prompt": "For this pantry ledger change, start with repo rules and then load only the nutrition module owner skill.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-nutrition"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-module-fizruk-trigger-injury-recovery",
+      "skill": "sergeant-module-fizruk",
+      "kind": "trigger",
+      "prompt": "Adjust the fizruk recovery recommendation after an injury is logged for a muscle zone.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-fizruk"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-fizruk-trigger-body-weight",
+      "skill": "sergeant-module-fizruk",
+      "kind": "trigger",
+      "prompt": "Change how fizruk records body weight entries and shows the workout streak trend on the web surface.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-fizruk"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-fizruk-anti-routine-habits",
+      "skill": "sergeant-module-fizruk",
+      "kind": "anti-trigger",
+      "prompt": "Rework the routine habits skip model and daily check-in streak logic without touching workouts or recovery.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-routine"],
+      "forbiddenSkills": ["sergeant-module-fizruk"]
+    },
+    {
+      "id": "sergeant-module-fizruk-workflow-start-here",
+      "skill": "sergeant-module-fizruk",
+      "kind": "workflow",
+      "prompt": "Before editing fizruk injury zones, load Sergeant startup rules and then exactly the fizruk module owner skill.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-fizruk"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-module-routine-trigger-skip-model",
+      "skill": "sergeant-module-routine",
+      "kind": "trigger",
+      "prompt": "Change the routine module skip model so a planned pause day does not break the habit streak.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-routine"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-routine-trigger-reminders",
+      "skill": "sergeant-module-routine",
+      "kind": "trigger",
+      "prompt": "Add a reminder schedule editor for daily habit check-ins in the routine module.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-routine"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-routine-anti-fizruk-program",
+      "skill": "sergeant-module-routine",
+      "kind": "anti-trigger",
+      "prompt": "Tune the fizruk workout program progression and recovery advice without touching habits or check-ins.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-fizruk"],
+      "forbiddenSkills": ["sergeant-module-routine"]
+    },
+    {
+      "id": "sergeant-module-routine-workflow-start-here",
+      "skill": "sergeant-module-routine",
+      "kind": "workflow",
+      "prompt": "For this habit streak change, start with repo rules and then load only the routine module owner skill.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-routine"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-module-ai-trigger-hubchat-tool",
+      "skill": "sergeant-module-ai",
+      "kind": "trigger",
+      "prompt": "Add a new HubChat tool definition together with its client executor and action card rendering.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-ai"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-ai-trigger-digest-coach",
+      "skill": "sergeant-module-ai",
+      "kind": "trigger",
+      "prompt": "Change the weekly digest generation and the coach advice prompt assembly in the AI layer.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-ai"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-ai-anti-sql-migration",
+      "skill": "sergeant-module-ai",
+      "kind": "anti-trigger",
+      "prompt": "Add a Postgres column with a sequential SQL migration for the finyk transactions table.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-data-and-migrations"],
+      "forbiddenSkills": ["sergeant-module-ai"]
+    },
+    {
+      "id": "sergeant-module-ai-workflow-start-here",
+      "skill": "sergeant-module-ai",
+      "kind": "workflow",
+      "prompt": "Before changing HubChat prompt cache breakpoints, load startup rules and then exactly the AI module owner skill.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-ai"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
     }
   ]
 }

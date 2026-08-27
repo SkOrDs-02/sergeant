@@ -106,6 +106,36 @@
       "path": ".agents/skills/sergeant-mobile-expo/SKILL.md"
     },
     {
+      "id": "sergeant-module-ai",
+      "kind": "skill",
+      "role": "specialist",
+      "path": ".agents/skills/sergeant-module-ai/SKILL.md"
+    },
+    {
+      "id": "sergeant-module-finyk",
+      "kind": "skill",
+      "role": "specialist",
+      "path": ".agents/skills/sergeant-module-finyk/SKILL.md"
+    },
+    {
+      "id": "sergeant-module-fizruk",
+      "kind": "skill",
+      "role": "specialist",
+      "path": ".agents/skills/sergeant-module-fizruk/SKILL.md"
+    },
+    {
+      "id": "sergeant-module-nutrition",
+      "kind": "skill",
+      "role": "specialist",
+      "path": ".agents/skills/sergeant-module-nutrition/SKILL.md"
+    },
+    {
+      "id": "sergeant-module-routine",
+      "kind": "skill",
+      "role": "specialist",
+      "path": ".agents/skills/sergeant-module-routine/SKILL.md"
+    },
+    {
       "id": "sergeant-monorepo-boundaries",
       "kind": "skill",
       "role": "specialist",
@@ -530,7 +560,57 @@
     },
     {
       "from": "sergeant-server-api",
-      "to": "sergeant-hubchat",
+      "to": "sergeant-module-ai",
+      "rel": "escalates"
+    },
+    {
+      "from": "sergeant-module-finyk",
+      "to": "sergeant-web-ui",
+      "rel": "escalates"
+    },
+    {
+      "from": "sergeant-module-finyk",
+      "to": "sergeant-server-api",
+      "rel": "escalates"
+    },
+    {
+      "from": "sergeant-module-finyk",
+      "to": "sergeant-data-and-migrations",
+      "rel": "escalates"
+    },
+    {
+      "from": "sergeant-module-nutrition",
+      "to": "sergeant-web-ui",
+      "rel": "escalates"
+    },
+    {
+      "from": "sergeant-module-nutrition",
+      "to": "sergeant-server-api",
+      "rel": "escalates"
+    },
+    {
+      "from": "sergeant-module-nutrition",
+      "to": "sergeant-data-and-migrations",
+      "rel": "escalates"
+    },
+    {
+      "from": "sergeant-module-fizruk",
+      "to": "sergeant-web-ui",
+      "rel": "escalates"
+    },
+    {
+      "from": "sergeant-module-routine",
+      "to": "sergeant-web-ui",
+      "rel": "escalates"
+    },
+    {
+      "from": "sergeant-module-ai",
+      "to": "sergeant-server-api",
+      "rel": "escalates"
+    },
+    {
+      "from": "sergeant-module-ai",
+      "to": "sergeant-web-ui",
       "rel": "escalates"
     },
     {

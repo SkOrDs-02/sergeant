@@ -1,6 +1,6 @@
 # Agents in apps/server
 
-> **Last touched:** 2026-08-24 by @claude. **Next review:** 2026-11-24.
+> **Last touched:** 2026-08-27 by @Skords-01. **Next review:** 2026-12-23.
 > **Status:** Active
 
 > **Single source of truth → root [`AGENTS.md`](../../AGENTS.md).** Цей файл — sub-tree quick reference для агентів, що працюють у `apps/server/`. Не дублюй repo policy: hard rules і CI matrix живуть у корені.
@@ -57,4 +57,4 @@ pnpm api:check-openapi                                # freshness gate (CI-block
 - Domain invariants: [`docs/02-engineering/architecture/domain-invariants.md`](../../docs/02-engineering/architecture/domain-invariants.md)
 - Routing catalog: [`docs/00-start/agents/agent-skills-catalog.md`](../../docs/00-start/agents/agent-skills-catalog.md)
 - Better Auth wiring: [`.agents/skills/better-auth-best-practices/SKILL.md`](../../.agents/skills/better-auth-best-practices/SKILL.md)
-- HubChat tool/executor coordination: [`.agents/skills/sergeant-hubchat/SKILL.md`](../../.agents/skills/sergeant-hubchat/SKILL.md)
+- HubChat tool/executor coordination: [`.agents/skills/sergeant-module-ai/SKILL.md`](../../.agents/skills/sergeant-module-ai/SKILL.md)

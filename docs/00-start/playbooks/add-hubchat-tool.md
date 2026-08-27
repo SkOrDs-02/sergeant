@@ -1,6 +1,6 @@
 # Playbook: Додати HubChat Tool
 
-> **Last touched:** 2026-07-20 by @dimastahov16012003. **Next review:** 2026-11-06.
+> **Last touched:** 2026-08-27 by @Skords-01. **Next review:** 2026-12-17.
 > **Status:** Active
 
 **Trigger:** "Дай асистенту нову дію" / "Додай tool в HubChat" / зміна серверного tool definition, клієнтського executor-а або action card для HubChat orchestration.
@@ -8,11 +8,11 @@
 ## Owner surface
 
 - Primary surfaces: `apps/server/src/modules/chat/**`, `apps/web/src/core/lib/chatActions/**`
-- Governing skill: `sergeant-hubchat`
+- Governing skill: `sergeant-module-ai`
 
 ## Required context
 
-- Почни з `sergeant-start-here`, потім відкрий `sergeant-hubchat`.
+- Почни з `sergeant-start-here`, потім відкрий `sergeant-module-ai`.
 - Якщо tool торкає auth, сесію або життєвий цикл акаунта, додатково звір `better-auth-best-practices`.
 - Якщо tool робить запис у БД або викликає зовнішнє API, звір відповідний skill для тієї поверхні (`sergeant-server-api`, `sergeant-data-and-migrations`).
 
@@ -64,6 +64,6 @@
 
 ## Related playbooks and skills
 
-- Skill: `sergeant-hubchat`
+- Skill: `sergeant-module-ai`
 - Skill: `sergeant-web-ui`
 - Skill: `sergeant-server-api`

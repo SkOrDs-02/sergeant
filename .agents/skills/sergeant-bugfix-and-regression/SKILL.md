@@ -63,7 +63,7 @@ lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); t
 - регресія серіалізатора чи роута → `sergeant-server-api`
 - schema- або deploy-крах → `sergeant-data-and-migrations`
 - mobile-only поведінка → `sergeant-mobile-expo`
-- chat-tool fail → `sergeant-hubchat`
+- chat-tool fail → `sergeant-module-ai`
 
 ## Verification gate
 

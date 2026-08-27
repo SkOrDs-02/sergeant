@@ -47,8 +47,15 @@ The script is zero-dep and offline-safe (`[gh unavailable: ...]` for sections th
 
 ## Роутся одразу
 
+Роутинг двовимірний: задача в межах продуктового модуля вантажить **module-owner скіл** (канон, журнал рішень, мапа файлів) **плюс** surface-скіл поверхні.
+
 | Ситуація                                                         | Skill                              |
 | ---------------------------------------------------------------- | ---------------------------------- |
+| Задача згадує finyk / бюджети / транзакції / чеки / готівку      | `sergeant-module-finyk` + surface-скіл |
+| Задача згадує nutrition / їжу / калорії / комору / страви        | `sergeant-module-nutrition` + surface-скіл |
+| Задача згадує fizruk / тренування / відновлення / травми / вагу  | `sergeant-module-fizruk` + surface-скіл |
+| Задача згадує routine / звички / стріки / щоденні відмітки       | `sergeant-module-routine` + surface-скіл |
+| AI-шар: hub, HubChat tool/executor, coach, digest, ai-memory     | `sergeant-module-ai`               |
 | Нова фіча, новий екран, behavior-зміна                           | `sergeant-feature-delivery`        |
 | Баг, регресія, флакі-поведінка, hotfix                           | `sergeant-bugfix-and-regression`   |
 | Ревʼю PR, готовність до merge, pre-merge-перевірки               | `sergeant-review-and-merge`        |
@@ -58,7 +65,6 @@ The script is zero-dep and offline-safe (`[gh unavailable: ...]` for sections th
 | Backend-архітектура, CQRS, Temporal, Saga, service boundaries    | `sergeant-backend-architecture`    |
 | SQL, схема, дизайн запитів, міграції, prod DB rollout (Coolify), `db-schema/`, index audit | `sergeant-data-and-migrations`     |
 | Expo, React Native, mobile-shell, MMKV, deep-link-и, EAS         | `sergeant-mobile-expo`             |
-| HubChat tool-defs, executors, prompt cache, action cards         | `sergeant-hubchat`                 |
 | Незрозуміло, де саме код має жити в монорепо                     | `sergeant-monorepo-boundaries`     |
 | Деплой, env-vars, health checks, Sentry, Coolify/Vercel, n8n     | `sergeant-deploy-and-observability`|
 | Логін/сесія/кукі/account lifecycle                               | `better-auth-best-practices`       |

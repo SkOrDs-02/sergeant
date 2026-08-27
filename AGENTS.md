@@ -1,6 +1,6 @@
 # Agents in Sergeant
 
-> **Last touched:** 2026-08-22 by @Skords-01. **Next review:** 2026-12-14.
+> **Last touched:** 2026-08-27 by @Skords-01. **Next review:** 2026-12-10.
 > **Status:** Active
 
 > **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load one owner skill for the primary touched surface. Load extra workflow/squad/helper skills only when `docs/00-start/agents/agent-workflows.md` or the routing catalog explicitly says to. The routing catalog lives in `docs/00-start/agents/agent-skills-catalog.md`.
@@ -13,33 +13,37 @@ Sergeant is **tool-agnostic**. Any AI agent harness — Claude Code, Kilo Code, 
 - **Skills.** Load the skill for the touched surface — start with `.agents/skills/sergeant-start-here/SKILL.md`, then choose the primary owner skill from the table below. Catalog: `docs/00-start/agents/agent-skills-catalog.md`. Skills are plain SKILL.md files; each harness loads them through its own skill loader — prefer that loader over reading SKILL.md by hand when one exists.
 - **Specialists.** Sergeant owner skills cover product surfaces, cross-cutting disciplines, and explicit multi-agent workflows. Keep one primary owner in mind for a task; add a second skill only when the catalog/workflow says the handoff is intentional (for example feature delivery + web, auth + touched surface, or review-squad). Each harness ships its own agent definitions in its global config; the surface→specialist mapping is what they all share.
 
-**Routing (surface → specialist).** Pick the smallest specialist that owns the touched surface; escalate to `sergeant-review-and-merge` only at PR-boundary.
+**Routing (module × surface → specialist).** Роутинг двовимірний: задача в межах продуктового модуля вантажить **module-owner скіл** (продуктовий контекст: канон, журнал рішень, мапа файлів) **плюс** surface-скіл (технічні правила поверхні). Pick the smallest specialist that owns the touched surface; escalate to `sergeant-review-and-merge` only at PR-boundary.
 
-| Signal in the task                                                   | Load                                |
-| -------------------------------------------------------------------- | ----------------------------------- |
-| Touches `apps/web/**`, RQ keys, design tokens, a11y                  | `sergeant-web-ui`                   |
-| Touches `apps/server/**`, API contract, `api-client`, pino, OpenAPI  | `sergeant-server-api`               |
-| Touches `apps/mobile/**` or `apps/mobile-shell/**`, Expo, EAS        | `sergeant-mobile-expo`              |
-| Touches `db-schema/`, migrations, drill-down, index audit            | `sergeant-data-and-migrations`      |
-| Coolify / Vercel / Sentry / alerting/SLO / CI workflow change / n8n  | `sergeant-deploy-and-observability` |
-| HubChat module / HubChat reset / HubChat E2E                         | `sergeant-hubchat`                  |
-| Writing or running E2E (Playwright/Vitest browser)                   | `sergeant-e2e-testing`              |
-| Security review, vuln triage, secret scan, dependency CVE            | `sergeant-security-audit`           |
-| New feature, new screen, endpoint, workflow, behavior change         | `sergeant-feature-delivery`         |
-| Unsure where code belongs, shared extraction, package boundary       | `sergeant-monorepo-boundaries`      |
-| Backend architecture, CQRS, Temporal, Saga, service boundary design  | `sergeant-backend-architecture`     |
-| Auth/session/cookie/account lifecycle                                | `better-auth-best-practices`        |
-| Regression, hotfix, "this used to work"                              | `sergeant-bugfix-and-regression`    |
-| Refactor, dead code, Knip baseline, eslint baseline reduction        | `sergeant-tech-debt`                |
-| Creating or editing `.agents/skills/**/SKILL.md`                     | `sergeant-writing-skills`           |
-| Touches `tools/**`, `scripts/**`, ops tooling (snapshot, ci-скрипти) | `sergeant-tech-debt`                |
-| PR review, squash-merge, release-cut, changelog                      | `sergeant-review-and-merge`         |
-| Before claiming done/green/fixed — фінальна перевірка перед звітом   | `sergeant-verify-before-done`       |
-| PR review touching 3+ governed surfaces                              | `sergeant-review-squad`             |
-| Feature across 2+ surfaces with contract dependencies                | `sergeant-deliver-squad`            |
-| Full QA across all surfaces in parallel                              | `sergeant-qa-squad`                 |
-| Founder needs multi-perspective product/strategy/UX advice           | `sergeant-council`                  |
-| Execute a batch of planning tasks via parallel agents                | `sergeant-planning-batch`           |
+| Signal in the task                                                   | Load                                  |
+| -------------------------------------------------------------------- | ------------------------------------- |
+| Задача згадує finyk — бюджети, транзакції, чеки, готівку             | `sergeant-module-finyk` + surface     |
+| Задача згадує nutrition — їжу, калорії, комору, страви               | `sergeant-module-nutrition` + surface |
+| Задача згадує fizruk — тренування, відновлення, травми, вагу         | `sergeant-module-fizruk` + surface    |
+| Задача згадує routine — звички, стріки, щоденні відмітки             | `sergeant-module-routine` + surface   |
+| AI-шар: hub, HubChat (tools/executors), coach, digest, ai-memory     | `sergeant-module-ai`                  |
+| Touches `apps/web/**`, RQ keys, design tokens, a11y                  | `sergeant-web-ui`                     |
+| Touches `apps/server/**`, API contract, `api-client`, pino, OpenAPI  | `sergeant-server-api`                 |
+| Touches `apps/mobile/**` or `apps/mobile-shell/**`, Expo, EAS        | `sergeant-mobile-expo`                |
+| Touches `db-schema/`, migrations, drill-down, index audit            | `sergeant-data-and-migrations`        |
+| Coolify / Vercel / Sentry / alerting/SLO / CI workflow change / n8n  | `sergeant-deploy-and-observability`   |
+| Writing or running E2E (Playwright/Vitest browser)                   | `sergeant-e2e-testing`                |
+| Security review, vuln triage, secret scan, dependency CVE            | `sergeant-security-audit`             |
+| New feature, new screen, endpoint, workflow, behavior change         | `sergeant-feature-delivery`           |
+| Unsure where code belongs, shared extraction, package boundary       | `sergeant-monorepo-boundaries`        |
+| Backend architecture, CQRS, Temporal, Saga, service boundary design  | `sergeant-backend-architecture`       |
+| Auth/session/cookie/account lifecycle                                | `better-auth-best-practices`          |
+| Regression, hotfix, "this used to work"                              | `sergeant-bugfix-and-regression`      |
+| Refactor, dead code, Knip baseline, eslint baseline reduction        | `sergeant-tech-debt`                  |
+| Creating or editing `.agents/skills/**/SKILL.md`                     | `sergeant-writing-skills`             |
+| Touches `tools/**`, `scripts/**`, ops tooling (snapshot, ci-скрипти) | `sergeant-tech-debt`                  |
+| PR review, squash-merge, release-cut, changelog                      | `sergeant-review-and-merge`           |
+| Before claiming done/green/fixed — фінальна перевірка перед звітом   | `sergeant-verify-before-done`         |
+| PR review touching 3+ governed surfaces                              | `sergeant-review-squad`               |
+| Feature across 2+ surfaces with contract dependencies                | `sergeant-deliver-squad`              |
+| Full QA across all surfaces in parallel                              | `sergeant-qa-squad`                   |
+| Founder needs multi-perspective product/strategy/UX advice           | `sergeant-council`                    |
+| Execute a batch of planning tasks via parallel agents                | `sergeant-planning-batch`             |
 
 If two surfaces overlap (e.g. web + e2e), load the **owner** first; add the other only when the workflow requires it or when blocked. Full catalog: [`docs/00-start/agents/agent-skills-catalog.md`](./docs/00-start/agents/agent-skills-catalog.md).
 
