@@ -30,7 +30,7 @@ export interface ReceiptMoneyInputProps {
   kopiykas: number;
   onCommitKopiykas: (kopiykas: number) => void;
   ariaLabel: string;
-  /** Прив'язка до `<Label htmlFor>` — опційна: не кожен виклик має власний
+  /** Привʼязка до `<Label htmlFor>` — опційна: не кожен виклик має власний
    * лейбл (напр. `ReceiptReviewItemRow` покладається лише на `ariaLabel`). */
   id?: string | undefined;
   disabled?: boolean | undefined;

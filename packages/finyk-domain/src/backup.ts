@@ -69,21 +69,21 @@ function needObj(
 ): Record<string, unknown> | undefined {
   if (v === undefined || v === null) return undefined;
   if (typeof v !== "object" || Array.isArray(v))
-    throw new Error(`Поле «${name}» має бути об'єктом`);
+    throw new Error(`Поле «${name}» має бути обʼєктом`);
   return v as Record<string, unknown>;
 }
 
 /**
- * Перевіряє та нормалізує об'єкт бекапу для застосування в сховище.
+ * Перевіряє та нормалізує обʼєкт бекапу для застосування в сховище.
  * Підтримує version 1 (без категорій/сплітів) і 2 (повний набір).
  */
 export function normalizeFinykBackup(parsed: unknown): FinykBackup {
   if (parsed == null || typeof parsed !== "object" || Array.isArray(parsed)) {
-    throw new Error("Файл має містити JSON-об'єкт");
+    throw new Error("Файл має містити JSON-обʼєкт");
   }
   const obj = parsed as Record<string, unknown>;
   if (Object.keys(obj).length === 0) {
-    throw new Error("Порожній об'єкт у файлі");
+    throw new Error("Порожній обʼєкт у файлі");
   }
 
   const version = typeof obj["version"] === "number" ? obj["version"] : 1;
@@ -113,7 +113,7 @@ export function normalizeFinykBackup(parsed: unknown): FinykBackup {
       typeof obj["monthlyPlan"] !== "object" ||
       Array.isArray(obj["monthlyPlan"])
     ) {
-      throw new Error("Поле «monthlyPlan» має бути об'єктом");
+      throw new Error("Поле «monthlyPlan» має бути обʼєктом");
     }
     out.monthlyPlan = obj["monthlyPlan"] as Record<string, unknown>;
   }

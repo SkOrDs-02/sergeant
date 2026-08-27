@@ -131,7 +131,7 @@ describe("getCategory (expense)", () => {
   });
 
   // Порядок усередині резолвера: кастомні ПЕРЕД легасі-мапою. Інакше
-  // власна категорія з українським id була б з'їдена — та сама тиха
+  // власна категорія з українським id була б зʼїдена — та сама тиха
   // підміна даних, від якої застерігає `upgradeCategoryAllowingCustom`.
   it("власна категорія з легасі-подібним id лишається собою", () => {
     const cat = getExpenseCategoryForTransaction(
@@ -187,7 +187,7 @@ describe("fmtAmt", () => {
   it("форматує UAH з символом ₴", () => {
     expect(fmtAmt(15000, CURRENCY.UAH)).toContain("₴");
   });
-  it("додає + для позитивних і не додає для від'ємних", () => {
+  it("додає + для позитивних і не додає для відʼємних", () => {
     expect(fmtAmt(10000).startsWith("+")).toBe(true);
     expect(fmtAmt(-10000).startsWith("+")).toBe(false);
   });

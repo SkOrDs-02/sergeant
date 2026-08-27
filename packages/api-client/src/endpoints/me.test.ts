@@ -414,7 +414,7 @@ describe("createMeEndpoints", () => {
     expect(String(firstCall(fetchMock)[0])).toContain("limit=5&cursor=99");
   });
 
-  it("DELETE /api/ai-memory/{id} б'є в per-item шлях, а не в clear-all", async () => {
+  it("DELETE /api/ai-memory/{id} бʼє в per-item шлях, а не в clear-all", async () => {
     // Найдорожча помилка цього клієнта: промах у `/api/ai-memory` замість
     // `/api/ai-memory/7` стер би ВСЮ памʼять юзера, повернувши при цьому
     // цілком правдоподібний 200.

@@ -94,7 +94,7 @@ const shownOnce = new Set<string>();
 
 function todayKey(): string {
   // ADR-0078: день належить ПРИСТРОЮ, не Києву. Київський day-key тут дав би
-  // «учорашню» експозицію мандрівнику, який дивиться на полум'я о 20:00 за
+  // «учорашню» експозицію мандрівнику, який дивиться на полумʼя о 20:00 за
   // місцевим часом.
   // eslint-disable-next-line no-restricted-syntax -- див. коментар вище (ADR-0078)
   return dateKeyFromDate(new Date());

@@ -65,7 +65,7 @@ describe("serializeReceiptItem — bigint/numeric coercion (Hard Rule #1)", () =
     expect(out.qty).toBe(0.345);
   });
 
-  it("коерсить від'ємні bigint (рядок знижки)", () => {
+  it("коерсить відʼємні bigint (рядок знижки)", () => {
     const out = serializeReceiptItem(
       itemRow({ price_kopiykas: "-500", sum_kopiykas: "-500" }),
     );
@@ -171,7 +171,7 @@ describe("serializeReceipt", () => {
     expect(out.items).toEqual([]);
   });
 
-  it("Date-об'єкти timestamp-полів серіалізуються через toISOString", () => {
+  it("Date-обʼєкти timestamp-полів серіалізуються через toISOString", () => {
     const out = serializeReceipt(
       receiptRow({
         purchased_at: new Date("2026-01-15T12:32:10.000Z"),

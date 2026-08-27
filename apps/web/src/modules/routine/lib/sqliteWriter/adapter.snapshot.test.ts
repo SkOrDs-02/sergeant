@@ -170,7 +170,7 @@ const CANONICAL_OPS: RoutineDualWriteOp[] = [
   { kind: "tag-delete", tagId: "t2" },
   {
     kind: "category-upsert",
-    category: { id: "c1", name: "Здоров'я", emoji: "🏥" },
+    category: { id: "c1", name: "Здоровʼя", emoji: "🏥" },
   },
   { kind: "category-delete", categoryId: "c2" },
   {

@@ -76,8 +76,8 @@ export function FizrukSection() {
       <SettingsSubGroup title="Таймер відпочинку">
         <Text className="text-xs text-fg-muted leading-snug">
           Рекомендований час відпочинку підбирається автоматично за типом
-          вправи. Ці значення з&apos;являться як кнопка за замовчуванням у
-          кожній вправі.
+          вправи. Ці значення зʼявляться як кнопка за замовчуванням у кожній
+          вправі.
         </Text>
         <View className="gap-3">
           {categories.map(({ cat, label }) => (

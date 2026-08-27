@@ -258,7 +258,7 @@ export function useRoutineDerivedData({
   // «прогрес дня» не визначений, тож лишається сьогодні.
   //
   // `pausedFrom: todayKey` не рухаємо: це заморозка минулого (ADR-0079
-  // §2), вона прив'язана до «сьогодні», а не до показуваного дня.
+  // §2), вона привʼязана до «сьогодні», а не до показуваного дня.
   const progressDayKey =
     range.startKey === range.endKey ? range.startKey : todayKey;
   const dayProgress = useMemo(

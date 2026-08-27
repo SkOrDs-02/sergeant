@@ -90,7 +90,7 @@ export function InputDialog({
 
   // Діалог із єдиним полем вводу — клавіатура тут відкривається завжди
   // (див. автофокус нижче), тож обидві половини keyboard-геометрії
-  // обов'язкові. `kbInset` звужує бокс до видимої смуги, а хук гасить
+  // обовʼязкові. `kbInset` звужує бокс до видимої смуги, а хук гасить
   // пан visual viewport, яким iOS інакше зсуває весь `fixed` оверлей
   // угору — деталі у шапці `keyboardOverlay.ts`.
   const kbInsetPx = useVisualKeyboardInset(open);

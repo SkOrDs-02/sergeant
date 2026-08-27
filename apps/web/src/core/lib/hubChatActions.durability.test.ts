@@ -24,7 +24,7 @@ vi.mock("./chatActions/routinePersistence", async (orig) => {
   };
 });
 
-// Стан рутини тримаємо в пам'яті: тест про чесність рапорту, не про SQLite.
+// Стан рутини тримаємо в памʼяті: тест про чесність рапорту, не про SQLite.
 const state = vi.hoisted(() => ({
   value: {
     habits: [{ id: "hab-1", name: "Медитація" }],

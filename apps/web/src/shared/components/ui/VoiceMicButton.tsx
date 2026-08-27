@@ -105,7 +105,7 @@ export function VoiceMicButton({
 
   // `pending` — це останній transcript, що чекає на підтвердження.
   // Anchor-rect знімаємо разом з ним, бо чип позиціонується ВІДНОСНО
-  // кнопки, але рендериться у portal (фіксоване розташування у в'юпорті
+  // кнопки, але рендериться у portal (фіксоване розташування у вʼюпорті
   // живе своїм життям незалежно від overflow:hidden обгорток форм).
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const [pending, setPending] = useState<{
@@ -134,7 +134,7 @@ export function VoiceMicButton({
         buttonRef.current?.getBoundingClientRect() ??
         // Fallback — кнопка ще не змонтована (теоретично неможливо тут,
         // бо event прилетіти може лише після click). На всякий випадок —
-        // центр в'юпорта.
+        // центр вʼюпорта.
         new DOMRect(window.innerWidth / 2, window.innerHeight / 2, 0, 0);
       setPending({ text: trimmed, anchorRect: rect });
     },

@@ -48,7 +48,7 @@ import { TOOLS } from "./tools.js";
  *   - "system:" (надто загальне; може бути у легітимних system-логах,
  *     які приходять як tool_result).
  *
- * Покриваємо tightly-defined фрази, які майже ніколи не з'являються в
+ * Покриваємо tightly-defined фрази, які майже ніколи не зʼявляються в
  * легітимному контенті finance/fitness/routine/nutrition tools.
  */
 export const PROMPT_INJECTION_PATTERNS: ReadonlyArray<RegExp> = [
@@ -105,7 +105,7 @@ export interface NormalizedToolResult {
 }
 
 /**
- * Лейбл `tool` для ін'єкцій, знайдених не в tool-результаті, а в клієнтському
+ * Лейбл `tool` для інʼєкцій, знайдених не в tool-результаті, а в клієнтському
  * `context`. Константа, не довільний рядок — cardinality метрики лишається
  * обмеженою реєстром інструментів плюс цим одним значенням.
  */

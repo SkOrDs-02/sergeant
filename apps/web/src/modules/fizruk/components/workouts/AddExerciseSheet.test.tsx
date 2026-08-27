@@ -138,7 +138,7 @@ describe("AddExerciseSheet", () => {
     expect(screen.queryAllByRole("button", { name: "Найширші" })).toHaveLength(
       0,
     );
-    fireEvent.change(screen.getByLabelText("Основна група м'язів"), {
+    fireEvent.change(screen.getByLabelText("Основна група мʼязів"), {
       target: { value: "back" },
     });
     // back → "Найширші" appears (primary + secondary chip).

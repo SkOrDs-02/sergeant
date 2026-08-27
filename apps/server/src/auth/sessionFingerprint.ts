@@ -39,7 +39,7 @@ import { isIP } from "node:net";
  *   stored prefix vs. поточний IP, нормалізуючи обидві сторони).
  *
  * - Невалідні значення (порожня строка, не-IP) → `null`. Це означає
- *   "fingerprint недоступний", і `detectFingerprintDrift` тоді не б'є
+ *   "fingerprint недоступний", і `detectFingerprintDrift` тоді не бʼє
  *   тривогу — false-positive з невалідних X-Forwarded-For хедерів
  *   нікому не потрібен.
  */
@@ -102,7 +102,7 @@ export interface FingerprintDrift {
  *     порівнювати немає з чим, тривога була б false-positive);
  *   - не виявлено drift у жодній з двох осей.
  *
- * Інакше повертає об'єкт з прапорами `ua` / `ip` та обчисленими prefix-ами
+ * Інакше повертає обʼєкт з прапорами `ua` / `ip` та обчисленими prefix-ами
  * для логу (щоб Sentry-event і grep по логах одразу показували, що саме
  * змінилось).
  *

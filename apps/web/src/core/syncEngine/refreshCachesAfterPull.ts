@@ -55,7 +55,7 @@ const NUTRITION_PULL_TABLES = new Set([
   "nutrition_pantries",
   "nutrition_pantry_items",
   // W1-PANTRY-APPEND стадія 1. Читачів у журналу поки немає, але таблиця
-  // має бути в списку ДО того, як з'являться писарі (стадія 2) — інакше
+  // має бути в списку ДО того, як зʼявляться писарі (стадія 2) — інакше
   // перший же pull подій не інвалідує nutrition-кеш.
   "nutrition_pantry_events",
   // W1-KBJU-APPEND стадія 1. Писар уже є (дуал-райт при зміні dailyTarget*),

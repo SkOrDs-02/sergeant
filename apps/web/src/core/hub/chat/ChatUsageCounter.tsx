@@ -38,7 +38,7 @@ export function ChatUsageCounter() {
       data-testid="chat-usage-counter"
       className={cn(
         // `min-w-0 truncate` замість `shrink-0 whitespace-nowrap`: на 393px
-        // саме ця пігулка з'їдала ширину заголовка шапки. Вона — підказка,
+        // саме ця пігулка зʼїдала ширину заголовка шапки. Вона — підказка,
         // тож віддає простір першою (aria-label несе повне значення).
         "min-w-0 truncate px-2 py-1 rounded-full text-style-caption font-semibold",
         exhausted

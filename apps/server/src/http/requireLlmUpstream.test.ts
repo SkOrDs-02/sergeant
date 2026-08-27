@@ -121,7 +121,7 @@ describe("requireLlmUpstream — vision (сирий транспорт)", () => 
     expect(passed).toBe(true);
   });
 
-  it("шлюз вимкнено — Anthropic-ключ обов'язковий: фолбеку в сирому транспорті немає", async () => {
+  it("шлюз вимкнено — Anthropic-ключ обовʼязковий: фолбеку в сирому транспорті немає", async () => {
     vi.stubEnv("VISION_VIA_OPENROUTER", "false");
     vi.stubEnv("OPENROUTER_API_KEY", "or-key");
     vi.stubEnv("ANTHROPIC_API_KEY", "");

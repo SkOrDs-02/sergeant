@@ -48,7 +48,7 @@ function serializeEmbedding(vec: Float32Array): string {
 
 /**
  * Валідує `userId` перед SQL-параметризацією. Better Auth `user.id`
- * — ULID (26 chars, alphanumeric). Сторонні значення можуть з'явитись
+ * — ULID (26 chars, alphanumeric). Сторонні значення можуть зʼявитись
  * з тестів або кривих міграцій. Якщо userId порожній — ANN-запит
  * без partition-key крутить весь HNSW (тобто на ~1M рядках — катастрофа).
  */

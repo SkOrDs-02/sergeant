@@ -84,7 +84,7 @@ const ExerciseHistoryListImpl = function ExerciseHistoryList({
           Поки немає записів
         </Text>
         <Text className="text-xs text-fg-muted mt-1">
-          Заверши хоча б один підхід, історія з&apos;явиться тут.
+          Заверши хоча б один підхід, історія зʼявиться тут.
         </Text>
       </View>
     );

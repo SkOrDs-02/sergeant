@@ -6,7 +6,7 @@
  *
  * Чому окремий worker, а не модифікація `enrichmentWorker.ts`:
  *   * Per-row enrichment-worker (PR #1251) має короткий tick (~5s) і
- *     батчить 5 row-ів у пам'яті. Batch-worker — це інший цикл життя
+ *     батчить 5 row-ів у памʼяті. Batch-worker — це інший цикл життя
  *     (hourly), інший lock-domain (in-memory FIFO замість DB SKIP LOCKED).
  *   * Per-row worker лишається для MCC, які rule-based fast-path вирішує
  *     детерміністично (миттєвий write-back). Batch-worker — тільки для

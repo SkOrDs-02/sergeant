@@ -113,7 +113,7 @@ export const HubMainContent = memo(function HubMainContent({
 }: HubMainContentProps) {
   const queryClient = useQueryClient();
 
-  // Per-tab scroll persistence. Кожна hub-вкладка запам'ятовує свою
+  // Per-tab scroll persistence. Кожна hub-вкладка запамʼятовує свою
   // позицію скролу; при поверненні на вкладку її прокрутку відновлюємо
   // замість жорсткого скидання на верх (UX-пропозиція 2026-07: юзер, що
   // заходить у хаб десятки разів на день, повертається туди, де був).
@@ -129,7 +129,7 @@ export const HubMainContent = memo(function HubMainContent({
     null,
   );
   const prevHubViewRef = useRef<HubView | null>(null);
-  // Позиції скролу по кожній вкладці (best-effort, тримаємо в пам'яті на
+  // Позиції скролу по кожній вкладці (best-effort, тримаємо в памʼяті на
   // час маунту хаба — не персистимо у storage, щоб холодний старт завжди
   // відкривав дашборд згори).
   const scrollPositionsRef = useRef<Map<HubView, number>>(new Map());

@@ -24,7 +24,7 @@ import type { ProfileUser } from "./types";
 // ── Zod schemas ────────────────────────────────────────────────────────────
 
 const nameSchema = z.object({
-  name: z.string().trim().min(1, "Введи ім'я").max(80, "Максимум 80 символів"),
+  name: z.string().trim().min(1, "Введи імʼя").max(80, "Максимум 80 символів"),
 });
 type NameValues = z.infer<typeof nameSchema>;
 
@@ -67,16 +67,16 @@ export function PersonalInfoSection({
       // Паралельний toast.error давав те саме речення двічі — у полі й у
       // куті екрана; сусідня email-форма ніколи так не робила.
       const res = await updateUser({ name: values.name }).catch(() => {
-        throw new Error("Не вдалося оновити ім'я");
+        throw new Error("Не вдалося оновити імʼя");
       });
       if (res.error) {
         throw new Error(
-          mapApiErrorToUserCopy(res.error, "Не вдалося оновити ім'я"),
+          mapApiErrorToUserCopy(res.error, "Не вдалося оновити імʼя"),
         );
       }
     },
     onSuccess: async () => {
-      toast.success("Ім'я оновлено");
+      toast.success("Імʼя оновлено");
       await onRefresh();
     },
   });
@@ -374,13 +374,13 @@ export function PersonalInfoSection({
             htmlFor="profile-name"
             className="text-style-caption block text-muted"
           >
-            Ім&apos;я
+            Імʼя
           </label>
           <div className="flex gap-2">
             <Input
               id="profile-name"
               type="text"
-              placeholder="Твоє ім'я"
+              placeholder="Твоє імʼя"
               autoComplete="name"
               className="flex-1"
               disabled={nameForm.isSubmitting || !online}

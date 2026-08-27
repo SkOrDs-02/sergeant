@@ -44,14 +44,14 @@ describe("upgradeCategory — era detection", () => {
     expect(upgradeCategory("🚗 транспорт")).toBe("transport");
     expect(upgradeCategory("🏷 інше")).toBe("other");
     expect(upgradeCategory("🍔 кафе та ресторани")).toBe("cafe");
-    expect(upgradeCategory("💊 здоров'я")).toBe("health");
+    expect(upgradeCategory("💊 здоровʼя")).toBe("health");
   });
 
   it("Era 1: bare UA labels upgrade to slug", () => {
     expect(upgradeCategory("їжа")).toBe("food");
     expect(upgradeCategory("транспорт")).toBe("transport");
     expect(upgradeCategory("розваги")).toBe("entertainment");
-    expect(upgradeCategory("здоров'я")).toBe("health");
+    expect(upgradeCategory("здоровʼя")).toBe("health");
     expect(upgradeCategory("одяг")).toBe("shopping");
     expect(upgradeCategory("комунальні")).toBe("utilities");
     expect(upgradeCategory("техніка")).toBe("tech");
@@ -149,7 +149,7 @@ describe("ManualExpenseSheet — useApiForm + zod (Item #8 round-13)", () => {
       description: string;
       category: string;
     };
-    // Порожня необов'язкова назва не дублює категорію в заголовку операції.
+    // Порожня необовʼязкова назва не дублює категорію в заголовку операції.
     expect(call.description).toBe("");
     // Write path always emits slug.
     expect(call.category).toBe("food");
@@ -456,7 +456,7 @@ describe("ManualExpenseSheet — межові значення (beta-input-bound
     expect(desc).toHaveAttribute("maxlength", "200");
   });
 
-  it("попереджає про дату поза м'яким вікном, але дозволяє зберегти", async () => {
+  it("попереджає про дату поза мʼяким вікном, але дозволяє зберегти", async () => {
     const { onSave, amount } = await openSheet();
     fireEvent.change(amount, { target: { value: "50" } });
     fireEvent.click(
@@ -499,7 +499,7 @@ describe("ManualExpenseSheet — межові значення (beta-input-bound
  * Власні категорії користувача в пікері ручної витрати.
  *
  * Спіймано бета-тестером 2026-08-10: «додав власну категорію витрат, а у
- * пікері при додаванні витрат вона не з'явилася». Причина була не в
+ * пікері при додаванні витрат вона не зʼявилася». Причина була не в
  * сортуванні — `sortCategoriesByFrequency` повертає перестановку
  * `CATEGORY_SLUGS`, тобто виключно вбудований набір, і `customCategories`
  * у цей аркуш взагалі не передавались.
@@ -556,7 +556,7 @@ describe("ManualExpenseSheet — власні категорії", () => {
       description: string;
     };
     expect(call.category).toBe("custom_coffee_friends");
-    // Порожня необов'язкова назва не дублює категорію і не показує сирий id.
+    // Порожня необовʼязкова назва не дублює категорію і не показує сирий id.
     expect(call.description).toBe("");
   });
 

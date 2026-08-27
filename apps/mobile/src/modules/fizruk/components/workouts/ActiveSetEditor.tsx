@@ -283,7 +283,7 @@ export function ActiveSetEditor({
         {/* RPE */}
         <View className="gap-2">
           <Text className="text-xs font-semibold uppercase text-fg-muted">
-            RPE (Borg 1..10), необов&apos;язково
+            RPE (Borg 1..10), необовʼязково
           </Text>
           <View className="flex-row flex-wrap gap-1.5">
             {RPE_OPTIONS.map((value) => {

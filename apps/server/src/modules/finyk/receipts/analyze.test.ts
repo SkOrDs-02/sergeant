@@ -135,7 +135,7 @@ describe("normalizeVisionResult", () => {
   // `ReceiptDraftResponseSchema.parse()` у 500 замість редагованої
   // чернетки — кожен тест нижче перевіряє ОДНУ межу схеми.
   describe("клампінг до меж shared-схеми (review-фікс MAJOR)", () => {
-    it("клампить totalKopiykas знизу (LLM дав від'ємне число) до 0", () => {
+    it("клампить totalKopiykas знизу (LLM дав відʼємне число) до 0", () => {
       const draft = normalizeVisionResult({
         store: "x",
         total_kopiykas: -500,

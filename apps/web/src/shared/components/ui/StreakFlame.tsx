@@ -38,7 +38,7 @@ const sizeStyles: Record<
 
 /**
  * Драбина «жару» серії. Раніше це була ротація ЧУЖИХ hue —
- * yellow → amber → orange → red → pink → violet: п'ять родин, яких немає
+ * yellow → amber → orange → red → pink → violet: пʼять родин, яких немає
  * в палітрі Sergeant. Цикл 3 дизайн-аудиту замінив матеріал на бренд-rose,
  * цикл 4 витяг кольори з гілок цієї функції у ТОКЕНИ
  * `--c-streak-tier-{3,7,14,30,60,100}` з парами light/dark.

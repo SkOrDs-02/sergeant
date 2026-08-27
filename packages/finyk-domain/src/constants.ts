@@ -77,7 +77,7 @@ export const MCC_CATEGORIES = [
   },
   {
     id: "health",
-    label: "Здоров'я",
+    label: "Здоровʼя",
     mccs: [5122, 5912, 8011, 8021, 8049, 8099],
     keywords: ["аптека", "лікар", "pharmacy", "клінік", "стоматолог"],
   },

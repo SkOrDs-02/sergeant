@@ -71,8 +71,13 @@ describe("makeFoodProduct – extra branches", () => {
   });
 
   it("normalises apostrophes in name/brand for norm", () => {
+    // Ціль згортання тут — ASCII `\u0027`, а НЕ канонічний `ʼ`: `norm`
+    // персиститься як пошуковий ключ (`normalizeProductText`, див.
+    // коментар у модулі). Обидві сторони записані escape-ами навмисно —
+    // масова заміна апострофа 2026-08-26 переписала це очікування на
+    // канонічний символ і тест почав вимагати протилежного.
     const p = makeFoodProduct({ name: "м\u2019ясо", brand: "" });
-    expect(p.norm).toBe("м'ясо");
+    expect(p.norm).toBe("м\u0027ясо");
   });
 
   it("collapses repeated whitespace in norm tokens", () => {

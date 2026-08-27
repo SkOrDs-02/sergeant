@@ -25,7 +25,7 @@ export function FizrukSection() {
             Object.entries(REST_CATEGORY_LABELS) as [RestCategory, string][]
           ).map(([cat, label]) => (
             // Лейбл над рядком кнопок, а не поруч: у горизонтальному варіанті
-            // п'ять кнопок по 56px (296px) не вміщались поряд із текстом на
+            // пʼять кнопок по 56px (296px) не вміщались поряд із текстом на
             // мобільній ширині і `flex-wrap` рвав ряд навпіл (user report
             // «криві написи»). Кнопки тепер ділять ширину порівну.
             <div key={cat} className="space-y-1.5">

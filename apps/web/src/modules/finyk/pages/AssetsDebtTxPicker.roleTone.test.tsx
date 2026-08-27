@@ -29,7 +29,7 @@ const SOURCE = readFileSync(
   "utf8",
 );
 
-/** Тіло об'єкта `ROLE_TONE`. */
+/** Тіло обʼєкта `ROLE_TONE`. */
 function roleToneBody(): string {
   const start = SOURCE.indexOf("const ROLE_TONE");
   expect(start, "ROLE_TONE зник із пікера").toBeGreaterThan(-1);

@@ -28,11 +28,11 @@ describe("formatReceiptError", () => {
       url: "https://api.test/finyk/receipts/lookup",
       body: {
         error:
-          "Чек ще не з'явився в реєстрі ДПС, спробуй за кілька хвилин або сфотографуй чек.",
+          "Чек ще не зʼявився в реєстрі ДПС, спробуй за кілька хвилин або сфотографуй чек.",
         code: "DPS_RECEIPT_NOT_FOUND",
       },
     });
-    expect(formatReceiptError(err, "fallback")).toMatch(/ще не з'явився/);
+    expect(formatReceiptError(err, "fallback")).toMatch(/ще не зʼявився/);
   });
 
   it("maps TOO_LARGE image-validation 413 to the size instruction", () => {

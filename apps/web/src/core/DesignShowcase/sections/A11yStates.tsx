@@ -98,7 +98,7 @@ export function A11yStatesSection() {
       {/* ::selection — text selection demo */}
       <Group label="Виділення тексту (::selection)">
         <p className="text-style-body text-text">
-          Виділи цей абзац мишкою або {`⌘/Ctrl+A`}, щоб побачити м&apos;який
+          Виділи цей абзац мишкою або {`⌘/Ctrl+A`}, щоб побачити мʼякий
           емералд-фон і темно-зелений текст із токенів{" "}
           <code className="font-mono">--c-selection-bg</code> та{" "}
           <code className="font-mono">--c-selection-fg</code>. Однаково працює в

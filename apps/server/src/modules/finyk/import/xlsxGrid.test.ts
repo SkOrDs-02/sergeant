@@ -19,7 +19,7 @@ describe("decodeXmlEntities", () => {
     expect(decodeXmlEntities("&nbsp;")).toBe(" ");
   });
 
-  it("лишає невідому сутність як є, не з'їдаючи текст", () => {
+  it("лишає невідому сутність як є, не зʼїдаючи текст", () => {
     expect(decodeXmlEntities("&невідомо;")).toBe("&невідомо;");
     expect(decodeXmlEntities("&#x110000;")).toBe("&#x110000;");
   });

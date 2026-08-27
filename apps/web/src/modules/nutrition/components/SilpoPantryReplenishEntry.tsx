@@ -3,7 +3,7 @@
  * Status: Active
  *
  * Точка входу «Поповнити комору з покупок Сільпо» — видима лише коли
- * інтеграцію Сільпо зв'язано (Silpo integration трек C, спека
+ * інтеграцію Сільпо звʼязано (Silpo integration трек C, спека
  * `docs/90-work/planning/specs/silpo-mcp-integration.md`). Гейт-стан
  * реюзає `useSilpoSyncState` (`@finyk/hooks`, read-only) — той самий
  * хук, що вже гейтить секцію «Чек» у деталях транзакції finyk.

@@ -15,7 +15,7 @@ describe("UserSchema", () => {
       UserSchema.parse({
         id: "u-1",
         email: "x@y.com",
-        name: "Ім'я",
+        name: "Імʼя",
         image: null,
         emailVerified: true,
         createdAt: "2026-01-15T08:30:00.000Z",
@@ -23,7 +23,7 @@ describe("UserSchema", () => {
     ).toEqual({
       id: "u-1",
       email: "x@y.com",
-      name: "Ім'я",
+      name: "Імʼя",
       image: null,
       emailVerified: true,
       createdAt: "2026-01-15T08:30:00.000Z",
@@ -105,11 +105,11 @@ describe("MeResponseSchema", () => {
 });
 
 describe("UserProfilePayloadSchema — write-through profile blob", () => {
-  it("приймає порожній об'єкт", () => {
+  it("приймає порожній обʼєкт", () => {
     expect(UserProfilePayloadSchema.parse({})).toEqual({});
   });
 
-  it("приймає плаский об'єкт (глибина 1)", () => {
+  it("приймає плаский обʼєкт (глибина 1)", () => {
     const value = { name: "Ada", heightCm: 170 };
     expect(UserProfilePayloadSchema.parse(value)).toEqual(value);
   });
@@ -161,7 +161,7 @@ describe("UserProfilePayloadSchema — write-through profile blob", () => {
     expect(UserProfilePayloadSchema.safeParse(value).success).toBe(true);
   });
 
-  it("відхиляє масив на верхньому рівні (мусить бути об'єктом)", () => {
+  it("відхиляє масив на верхньому рівні (мусить бути обʼєктом)", () => {
     expect(UserProfilePayloadSchema.safeParse([1, 2, 3]).success).toBe(false);
   });
 

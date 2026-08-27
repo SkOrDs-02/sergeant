@@ -18,7 +18,7 @@ const BUILTIN_LABELS: Record<string, string> = {
   restaurant: "Кафе та ресторани",
   transport: "Транспорт",
   entertainment: "Розваги",
-  health: "Здоров'я",
+  health: "Здоровʼя",
   shopping: "Покупки",
   utilities: "Комунальні",
   subscriptions: "Підписки",
@@ -80,7 +80,7 @@ export const budgetLimitsRule: Rule<FinanceContext> = {
           actionHash,
           // Ліміт уже пробито — часто це означає, що є ще незафіксовані
           // витрати, які б затягнули картину ще гірше. Одним тапом відкриваємо
-          // sheet, щоб дописати їх, поки деталі свіжі в пам'яті.
+          // sheet, щоб дописати їх, поки деталі свіжі в памʼяті.
           pwaAction: "add_expense" as const,
         });
       } else if (pct >= 0.9) {

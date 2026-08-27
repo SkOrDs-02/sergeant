@@ -111,7 +111,7 @@ function SubCardComponent({
           onChange={(e) => setForm((f) => ({ ...f, keyword: e.target.value }))}
         />
         <p className="text-style-caption text-subtle">
-          Якщо немає ручної прив&apos;язки, для суми підписки знайдемо найновішу
+          Якщо немає ручної привʼязки, для суми підписки знайдемо найновішу
           витратну транзакцію, опис якої містить це слово.
         </p>
         <div className="flex gap-2">

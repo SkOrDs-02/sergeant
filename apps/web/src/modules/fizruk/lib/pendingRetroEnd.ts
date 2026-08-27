@@ -33,7 +33,7 @@ import {
 
 // Анотація нижче — інлайн, і саме тому: gitleaks зіставляє `gitleaks:allow`
 // з РЯДКОМ знахідки, тож той самий текст рядком вище не гасить нічого. Це
-// ім'я слота в sessionStorage; `generic-api-key` ловить його на ентропії
+// імʼя слота в sessionStorage; `generic-api-key` ловить його на ентропії
 // (3.78), як уже ловив `nutrition_week_plan_v1` і `fizruk_measurements_v1`.
 const KEY = "fizruk_pending_retro_end_v1"; // gitleaks:allow
 

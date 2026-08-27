@@ -74,7 +74,7 @@ describe("categoryBucketIds", () => {
 
 describe("calcLimitCategorySpent", () => {
   it("counts spending that existed before the limit was created", () => {
-    // Транзакції сіємо першими — «бюджет» з'являється лише в аргументі нижче.
+    // Транзакції сіємо першими — «бюджет» зʼявляється лише в аргументі нижче.
     const txs = [manual("m1", 1600, "food"), manual("m2", 1000, "food")];
     expect(calcLimitCategorySpent(txs, "food")).toBe(2600);
   });

@@ -44,7 +44,7 @@ describe("remember tool schema", () => {
   const remember = toolNamed("remember");
 
   // v18: до цього `category` була optional, і модель її здебільшого не
-  // передавала — усе осідало в «Інше», а групування секції «Пам'ять ШІ»
+  // передавала — усе осідало в «Інше», а групування секції «Памʼять ШІ»
   // фактично не працювало.
   it("вимагає і fact, і category", () => {
     expect(remember.input_schema["required"]).toEqual(["fact", "category"]);

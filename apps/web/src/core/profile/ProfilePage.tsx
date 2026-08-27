@@ -141,7 +141,7 @@ export function ProfilePage() {
           заголовка, дублю немає, інверсії немає. */}
       <CollapsibleSection
         storageKey="sergeant.profile.memory.open"
-        title="Пам'ять"
+        title="Памʼять"
         defaultOpen={false}
         headingSize="md"
         collapsedIcon="brain"

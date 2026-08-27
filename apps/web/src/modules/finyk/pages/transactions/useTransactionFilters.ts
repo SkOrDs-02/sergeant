@@ -189,7 +189,7 @@ export function useTransactionFilters({
       historyTx.length > 0 ||
       (manualExpenses?.length ?? 0) > 0);
 
-  // useCallback — `goMonth` підв'язаний до двох кнопок навігації місяцями;
+  // useCallback — `goMonth` підвʼязаний до двох кнопок навігації місяцями;
   // стабільний handler уникає створення нових замикань на кожен рендер.
   const goMonth = useCallback(
     (delta: number) => {

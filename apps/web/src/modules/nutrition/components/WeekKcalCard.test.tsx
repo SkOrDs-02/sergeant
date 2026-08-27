@@ -4,7 +4,7 @@
  * Status: Active
  *
  * Пін на регресію, яку знайшов тестер 2026-08-17: шкала без опори і
- * порожній день, що виглядає як «мало з'їв».
+ * порожній день, що виглядає як «мало зʼїв».
  */
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";

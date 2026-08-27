@@ -119,7 +119,7 @@ describe("webVitals.flush", () => {
   });
 
   it("drops metrics without a recognized rating to avoid server-side batch loss", async () => {
-    // Server validates `WebVitalsPayloadSchema` де `rating` обов'язковий.
+    // Server validates `WebVitalsPayloadSchema` де `rating` обовʼязковий.
     // Якщо відправити запис без рейтингу, ВЕСЬ батч буде відкинутий і
     // решта валідних метрик мовчки втратиться. Тому drop саме на клієнті,
     // ще до буфера.

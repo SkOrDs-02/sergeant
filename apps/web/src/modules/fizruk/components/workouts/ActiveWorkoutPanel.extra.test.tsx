@@ -152,8 +152,8 @@ describe("ActiveWorkoutPanel extended coverage", () => {
         <ActiveWorkoutPanel activeWorkout={makeWorkout()} {...baseProps()} />,
       ),
     );
-    // WorkoutGroupingControls renders "⊕ Об'єднати в суперсет" when not in select mode
-    expect(screen.getByText(/Об'єднати в суперсет/)).toBeInTheDocument();
+    // WorkoutGroupingControls renders "⊕ Обʼєднати в суперсет" when not in select mode
+    expect(screen.getByText(/Обʼєднати в суперсет/)).toBeInTheDocument();
   });
 
   it("enters group-select mode when the grouping button is clicked", () => {
@@ -162,7 +162,7 @@ describe("ActiveWorkoutPanel extended coverage", () => {
         <ActiveWorkoutPanel activeWorkout={makeWorkout()} {...baseProps()} />,
       ),
     );
-    fireEvent.click(screen.getByText(/Об'єднати в суперсет/));
+    fireEvent.click(screen.getByText(/Обʼєднати в суперсет/));
     // After entering select mode, Суперсет, Коло, and Скасувати buttons appear
     expect(screen.getByText("Скасувати")).toBeInTheDocument();
     expect(screen.getByText(/Суперсет/)).toBeInTheDocument();
@@ -174,9 +174,9 @@ describe("ActiveWorkoutPanel extended coverage", () => {
         <ActiveWorkoutPanel activeWorkout={makeWorkout()} {...baseProps()} />,
       ),
     );
-    fireEvent.click(screen.getByText(/Об'єднати в суперсет/));
+    fireEvent.click(screen.getByText(/Обʼєднати в суперсет/));
     fireEvent.click(screen.getByText("Скасувати"));
-    // After cancel, the "Об'єднати в суперсет" button should be back
-    expect(screen.getByText(/Об'єднати в суперсет/)).toBeInTheDocument();
+    // After cancel, the "Обʼєднати в суперсет" button should be back
+    expect(screen.getByText(/Обʼєднати в суперсет/)).toBeInTheDocument();
   });
 });

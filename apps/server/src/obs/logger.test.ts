@@ -39,7 +39,7 @@ function makeTestLogger(): {
 
 describe("logger", () => {
   describe("redactPaths", () => {
-    it("містить обов'язкові шляхи для секретів та PII", () => {
+    it("містить обовʼязкові шляхи для секретів та PII", () => {
       expect(redactPaths).toContain("req.headers.authorization");
       expect(redactPaths).toContain("req.headers.cookie");
       expect(redactPaths).toContain('req.headers["x-csrf-token"]');
@@ -257,7 +257,7 @@ describe("logger", () => {
         readRedacted: (p) => p["voyageKey"],
       },
       {
-        name: "groqKey всередині debug-об'єкта (1 рівень)",
+        name: "groqKey всередині debug-обʼєкта (1 рівень)",
         payload: { ctx: { groqKey: "gsk_live_xxx", model: "llama" } },
         readRedacted: (p) => (p["ctx"] as Record<string, unknown>)["groqKey"],
         readSafe: (p) => (p["ctx"] as Record<string, unknown>)["model"],
@@ -551,7 +551,7 @@ describe("logger", () => {
     });
 
     // S4 acceptance — 5-рівневий nesting: `password` на глибині 5 повинен
-    // бути замаскований; substring 'secret-xyz' НЕ повинен з'являтись у
+    // бути замаскований; substring 'secret-xyz' НЕ повинен зʼявлятись у
     // stringify-output (тест-контракт із docs/planning/pr-plan-security-obs-2026-05.md § S4).
     it("маскує password на 5 рівнів вглиб — substring 'secret-xyz' відсутній", () => {
       const { logger, chunks } = makeTestLogger();
@@ -638,7 +638,7 @@ describe("logger", () => {
   });
 
   describe("redactKeyNames (для Sentry-скрабера)", () => {
-    it("експортується з обов'язковими ключами", () => {
+    it("експортується з обовʼязковими ключами", () => {
       // Sentry beforeSend hook використовує цей список для рекурсивного
       // скрабу. Якщо переставив — оновити sentry.ts.
       expect(redactKeyNames).toContain("password");
@@ -794,7 +794,7 @@ describe("logger", () => {
       expect(serializeError(undefined)).toBeUndefined();
     });
 
-    it("обробляє не-об'єктні значення", () => {
+    it("обробляє не-обʼєктні значення", () => {
       const result = serializeError("string error");
       expect(result).toEqual({ message: "string error" });
     });

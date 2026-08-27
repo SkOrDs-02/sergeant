@@ -101,7 +101,7 @@ const SAVED_RECIPE: import("../lib/recipeBook").SavedRecipe = {
   timeMinutes: 10,
   servings: 2,
   ingredients: ["вівсяні пластівці", "молоко"],
-  steps: ["Закип'ятити молоко", "Додати пластівці"],
+  steps: ["Закипʼятити молоко", "Додати пластівці"],
   tips: ["Можна додати ягоди"],
   macros: { kcal: 350, protein_g: 12, fat_g: 8, carbs_g: 55 },
   createdAt: 1716000000000,
@@ -185,7 +185,7 @@ describe("RecipesCard — saved-recipes section", () => {
     fireEvent.click(screen.getByRole("button", { name: /Мої рецепти/i }));
     await waitFor(() =>
       expect(
-        screen.getByText(/Тут з'являться збережені рецепти/i),
+        screen.getByText(/Тут зʼявляться збережені рецепти/i),
       ).toBeTruthy(),
     );
   });

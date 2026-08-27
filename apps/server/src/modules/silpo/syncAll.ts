@@ -44,7 +44,7 @@ export interface SyncAllOptions {
    */
   minAgeHours?: number | undefined;
   query?: QueryFn | undefined;
-  /** Інʼєкція для тестів — реальний виклик б'є в мережу. */
+  /** Інʼєкція для тестів — реальний виклик бʼє в мережу. */
   syncOne?: ((userId: string) => Promise<unknown>) | undefined;
   sleep?: ((ms: number) => Promise<void>) | undefined;
 }

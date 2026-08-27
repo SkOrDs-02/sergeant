@@ -86,11 +86,11 @@ describe("buildToolSearchPayload", () => {
     expect(lastHot).toBeLessThan(firstDeferred);
   });
 
-  it("кожне ім'я з HOT_TOOL_NAMES існує в реєстрі", () => {
+  it("кожне імʼя з HOT_TOOL_NAMES існує в реєстрі", () => {
     // Дрейф: інструмент перейменували в `toolDefs/*`, а список забули. Тоді
     // гарячий набір мовчки порожніє, модель мусить шукати навіть `remember`
     // (який SYSTEM_PREFIX наказує викликати рефлекторно), і деградацію
-    // видно тільки як «асистент перестав запам'ятовувати».
+    // видно тільки як «асистент перестав запамʼятовувати».
     const registry = new Set(TOOLS.map((t) => t.name));
     const missing = HOT_TOOL_NAMES.filter((n) => !registry.has(n));
     expect(missing).toEqual([]);

@@ -10,7 +10,7 @@ import { integer, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
  * консьюмера).
  *
  * Schema highlights:
- * - PK = `user_id` (не `serial`-ний `id`) — завжди одна пам'ять на юзера.
+ * - PK = `user_id` (не `serial`-ний `id`) — завжди одна памʼять на юзера.
  * - `data` (JSONB, NOT NULL DEFAULT '{}') — структура у
  *   `apps/server/src/modules/chat/coach.ts` (`weeklyDigests[]`,
  *   `lastInsightDate`, `lastInsightText`).

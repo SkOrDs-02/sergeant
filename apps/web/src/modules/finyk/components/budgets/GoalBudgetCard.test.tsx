@@ -206,7 +206,7 @@ describe("GoalBudgetCard", () => {
     fireEvent.change(screen.getByLabelText("Сума поповнення"), {
       target: { value: "500" },
     });
-    fireEvent.change(screen.getByLabelText("Нотатка (необов'язково)"), {
+    fireEvent.change(screen.getByLabelText("Нотатка (необовʼязково)"), {
       target: { value: "Готівка" },
     });
     fireEvent.click(screen.getByText("Додати"));

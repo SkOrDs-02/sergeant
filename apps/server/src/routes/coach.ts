@@ -15,7 +15,7 @@ import {
 /**
  * `/api/coach/*` — розведено на окремі route-и з точним HTTP-методом і своїм
  * ланцюгом middleware:
- *   - `GET/POST /memory` — читання/запис пам'яті; тільки session.
+ *   - `GET/POST /memory` — читання/запис памʼяті; тільки session.
  *   - `POST /insight`   — генерація пораду через Anthropic; session + ключ + квота.
  */
 export function createCoachRouter(): Router {

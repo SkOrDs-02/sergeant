@@ -10,7 +10,7 @@ import { apiCorsMiddleware } from "./apiCors.js";
  * `Access-Control-Allow-Headers` entries.
  *
  * Особливо критичні headers:
- *   - `X-Requested-With` — обов'язковий для M10 CSRF guard. Browser не дає
+ *   - `X-Requested-With` — обовʼязковий для M10 CSRF guard. Browser не дає
  *     cross-origin сторінці виставити XRW без preflight; preflight зупиняється
  *     на CORS allowlist + allow-headers. Якщо XRW відсутній у allow-headers —
  *     preflight валиться, і всі state-changing browser fetch-и до `/api/*`

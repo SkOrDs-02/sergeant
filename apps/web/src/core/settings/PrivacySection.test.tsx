@@ -87,7 +87,7 @@ vi.mock("../legal/LegalLinks", () => ({
 // AiMemoryList ганяє власний React Query трафік (`/api/ai-memory/list`).
 // Цей набір — про per-user PIN scoping — монтування реального списку
 // змусило б додавати QueryClientProvider у КОЖЕН `render()` тут і
-// прив'язало б auth-audit regression-тест до непов'язаної мережевої
+// привʼязало б auth-audit regression-тест до неповʼязаної мережевої
 // поверхні. Власна поведінка списку покрита в `AiMemoryList.test.tsx`.
 vi.mock("./AiMemoryList", () => ({
   AiMemoryList: () => null,
@@ -145,7 +145,7 @@ describe("PrivacySection — audit F16 (per-user PIN scoping)", () => {
     const toggle = screen.getByRole("switch", { name: /Блокування додатку/i });
     fireEvent.click(toggle);
 
-    // hasPin() (прив'язаний до user?.id) визначає рішення про setup — і
+    // hasPin() (привʼязаний до user?.id) визначає рішення про setup — і
     // якщо PIN-а на диску нема, відкривається flow налаштування.
     await waitFor(() => expect(appLock.hasPin).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(appLock.startSetup).toHaveBeenCalledTimes(1));
@@ -467,7 +467,7 @@ describe("PrivacySection — preferences (analytics / aiMemory / pushNotificatio
     // ПРИЧИНА: незворотне видалення раніше підтверджувалось нативним
     // `window.confirm` — паттерн, заборонений дизайн-системою (не
     // стилізується, синхронно блокує event loop, немає focus-trap). Якщо
-    // хтось поверне window.confirm, клік по кнопці одразу зітре пам'ять
+    // хтось поверне window.confirm, клік по кнопці одразу зітре памʼять
     // БЕЗ проміжного діалогу — `meApi.clearAiMemory` буде викликано ДО
     // того, як тест встигне знайти кнопку підтвердження нижче.
     const confirmSpy = vi.spyOn(window, "confirm");
@@ -554,7 +554,7 @@ describe("PrivacySection — preferences (analytics / aiMemory / pushNotificatio
   // від повного успіху, і від повного провалу (сервер сам не чистив).
   it("shows a distinct partial-clear status (not the full-success text) and still invalidates the cache when the server clear succeeds but the local write fails", async () => {
     mockWriteMemoryEntries.mockImplementationOnce(() => {
-      throw new Error("Не вдалося зберегти пам'ять профілю");
+      throw new Error("Не вдалося зберегти памʼять профілю");
     });
     const { queryClient } = renderSection();
     const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
@@ -611,7 +611,7 @@ describe("PrivacySection — preferences (analytics / aiMemory / pushNotificatio
     // `finally` — тож на повільній мережі стирання вже відбулось, а
     // кнопка ще секунди тримала "Очищаю…". Мокаємо invalidateQueries
     // проміс, що НІКОЛИ не резолвиться: якби компонент досі чекав на
-    // нього, статус-текст і не з'явився б.
+    // нього, статус-текст і не зʼявився б.
     const { queryClient } = renderSection();
     vi.spyOn(queryClient, "invalidateQueries").mockReturnValue(
       new Promise(() => {

@@ -46,7 +46,7 @@ function ctx(overrides: Partial<FinanceContext> = {}): FinanceContext {
 }
 
 function spending(id: string, amountUah: number, time: number): Transaction {
-  // amount у копійках, від'ємне = витрата (узгоджено з Mono webhook payload).
+  // amount у копійках, відʼємне = витрата (узгоджено з Mono webhook payload).
   return { id, amount: -Math.round(amountUah * 100), time };
 }
 

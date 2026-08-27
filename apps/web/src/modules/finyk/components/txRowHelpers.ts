@@ -71,7 +71,7 @@ export function getAccountShortName(
  * реально читані поля. Typing-guard тут важливий не для uniqueness схеми,
  * а щоб запобігти "silent-new-field" регресіям — як тоді, коли
  * `tx._accountId` раптом перейменували у `.accountId` і рядок тихо
- * втрачав прив'язку до рахунку.
+ * втрачав привʼязку до рахунку.
  */
 export interface TxRowTx {
   id: string;

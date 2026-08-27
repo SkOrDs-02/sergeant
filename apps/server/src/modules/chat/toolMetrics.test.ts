@@ -104,7 +104,7 @@ describe("recordToolExecutions", () => {
     { type: "tool_use", id: "toolu_b", name: "start_workout", input: {} },
   ];
 
-  it("інкрементить executed-лічильник з ім'ям з мапи tool_calls_raw", () => {
+  it("інкрементить executed-лічильник з імʼям з мапи tool_calls_raw", () => {
     const inc = vi.fn();
     recordToolExecutions(
       [{ tool_use_id: "toolu_a" }, { tool_use_id: "toolu_b" }],

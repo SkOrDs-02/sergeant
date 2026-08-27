@@ -103,7 +103,7 @@ export function useBarcodeLookup({
           return;
         }
         setBarcodeStatus(
-          "Помилка пошуку. Перевір з'єднання і спробуй пізніше.",
+          "Помилка пошуку. Перевір зʼєднання і спробуй пізніше.",
         );
         return;
       }
@@ -186,7 +186,7 @@ export function useBarcodeLookup({
         return;
       }
       const ok = await bindBarcodeToFood(code, String(pickedFood.id));
-      setBarcodeStatus(ok ? "Прив'язано" : "Не вдалося прив'язати");
+      setBarcodeStatus(ok ? "Привʼязано" : "Не вдалося привʼязати");
     },
     [pickedFood],
   );

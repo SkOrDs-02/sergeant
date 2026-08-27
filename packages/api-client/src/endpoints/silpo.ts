@@ -124,7 +124,7 @@ export interface SilpoReceiptsListParams {
 export interface SilpoEndpoints {
   /**
    * `POST /api/silpo/disconnect` — видаляє лише `silpo_connection` (mono-
-   * патерн); чеки/items/зв'язки лишаються.
+   * патерн); чеки/items/звʼязки лишаються.
    */
   disconnect: (
     opts?: Pick<RequestOptions, "signal">,

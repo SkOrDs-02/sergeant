@@ -309,7 +309,7 @@ export class AnthropicBudgetGuard {
     // Monthly projection — окрема гілка (не залежить від soft/hard). Run-rate
     // `today × днів-у-місяці` ≥ envelope → 1 warning на місяць. Це краща за
     // фіксований денний поріг відповідь на «ліміт замалий на масштабі»: alert
-    // прив'язаний до фактичного run-rate, тож не false-fire-ить, поки місячна
+    // привʼязаний до фактичного run-rate, тож не false-fire-ить, поки місячна
     // проекція реально не загрожує envelope-у.
     const monthlyFired = await this.fireMonthlyProjectionIfNeeded(spendUsd);
 

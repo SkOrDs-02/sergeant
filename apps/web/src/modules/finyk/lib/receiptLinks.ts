@@ -28,7 +28,7 @@ import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
  * hand-duplicated key literal poking `localStorage` directly. */
 export const RECEIPT_LINKS_KEY = "finyk_receipt_links_v1";
 
-/** М'який кап розміру кешу — best-effort UI affordance, не canonical
+/** Мʼякий кап розміру кешу — best-effort UI affordance, не canonical
  * дані, тож при переповненні просто ріжемо найстаріші (за порядком
  * вставки) записи, а не намагаємось точний LRU. */
 const RECEIPT_LINKS_MAX_ENTRIES = 500;

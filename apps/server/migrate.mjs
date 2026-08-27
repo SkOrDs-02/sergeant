@@ -75,7 +75,7 @@ async function main() {
     );
     process.exitCode = 1;
   } finally {
-    // `pool.end()` обов'язковий: без нього процес Node триматиме pg-з'єднання
+    // `pool.end()` обовʼязковий: без нього процес Node триматиме pg-зʼєднання
     // відкритим і не вийде, а release-job зависне по timeout-у.
     try {
       await pool.end();

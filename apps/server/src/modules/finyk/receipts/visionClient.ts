@@ -42,7 +42,7 @@ export interface ReceiptVisionInput {
  * самий транспорт, retry/timeout/metrics/cost-ledger, що
  * `modules/nutrition/analyze-photo.ts`), з `allowOpenRouter` обчисленим
  * із `LLM_RECEIPT_PROVIDER`/`OPENROUTER_API_KEY` (`visionTransport.ts`).
- * Кидає (не повертає error-об'єкт) на upstream-невдачі — той самий
+ * Кидає (не повертає error-обʼєкт) на upstream-невдачі — той самий
  * контракт, що `anthropicMessages`-callers по всьому репо (nutrition,
  * chat): caller-у не треба розрізняти "throw" і "ok:false", `errorHandler`
  * мапить `ExternalServiceError` у клієнтський 502/503 сам.

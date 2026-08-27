@@ -55,7 +55,7 @@ describe("reconcileAccount", () => {
     expect(res.diffMinor).toBe(655);
   });
 
-  it("розходження в інший бік дає від'ємну різницю", () => {
+  it("розходження в інший бік дає відʼємну різницю", () => {
     const res = reconcileAccount({
       accountBalance: 12_000,
       transactions: [tx("t1", "2026-07-24T18:30:00Z", 12_345)],

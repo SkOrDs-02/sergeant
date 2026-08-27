@@ -321,7 +321,7 @@ describe("/api/v1/me data rights", () => {
       .set("X-Requested-With", "XMLHttpRequest")
       .set("Authorization", "Bearer x")
       // Дублікат навмисне: `CHECK` міграції 116 його НЕ ловить (вираз
-      // CHECK не може містити підзапит), тож дедуп — обов'язок Zod-схеми.
+      // CHECK не може містити підзапит), тож дедуп — обовʼязок Zod-схеми.
       .send({ activeModules: ["nutrition", "finyk", "nutrition"] });
 
     expect(res.status).toBe(200);
@@ -705,7 +705,7 @@ describe("H8: Cross-Origin-Resource-Policy per-route", () => {
  * AI-LEGACY: expires 2026-11-07 — бета-виняток. Email-верифікаційний гейт
  * на підключення банку тимчасово знято (`mono-webhook.ts`), поки не
  * налагоджено доставку верифікаційних листів: бета-юзер не міг би
- * підтвердити пошту й узагалі під'єднати Mono. Тому нижче більше НЕ
+ * підтвердити пошту й узагалі підʼєднати Mono. Тому нижче більше НЕ
  * очікуємо `403 EMAIL_VERIFICATION_REQUIRED` для неверифікованого — цей
  * тест разом із гейтом треба відновити (unverified → 403) щойно листи
  * запрацюють. `requireSession()` (401 для анонів) лишається чинним.

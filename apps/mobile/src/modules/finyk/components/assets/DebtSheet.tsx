@@ -178,7 +178,7 @@ export function DebtSheet({
         <View>
           <Text className="text-xs font-medium text-fg mb-1">Нотатка</Text>
           <Input
-            placeholder="Необов'язково"
+            placeholder="Необовʼязково"
             value={draft.note}
             onChangeText={(t) => setDraft((d) => ({ ...d, note: t }))}
             testID={testID ? `${testID}-note` : undefined}

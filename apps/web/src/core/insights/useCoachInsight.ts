@@ -119,7 +119,7 @@ const WEEKDAY_UK_FROM_ISO: Record<number, string> = {
   2: "вівторок",
   3: "середа",
   4: "четвер",
-  5: "п'ятниця",
+  5: "пʼятниця",
   6: "субота",
   7: "неділя",
 };
@@ -195,7 +195,7 @@ function aggregateCurrentSnapshot(): CoachSnapshot {
   try {
     // Канонічні тренування — SQLite warm cache (`fizruk_workouts_v1`
     // tombstoned). Холодний кеш (`refreshedAt === null`) = «немає даних».
-    // Тижневий об'єм рахуємо з domain `items[].sets[].weightKg × reps`.
+    // Тижневий обʼєм рахуємо з domain `items[].sets[].weightKg × reps`.
     const fizrukCache = getCachedFizrukSqliteState();
     if (fizrukCache.refreshedAt !== null) {
       const allWorkouts = fizrukCache.workouts;
@@ -321,7 +321,7 @@ export function coachSnapshotSignals(snapshot: CoachSnapshot): number {
  *
  * AI-CONTEXT (аудит hub-coach § G2): поріг існував ЛИШЕ для статистичних
  * кореляцій (`digestCorrelations.ts`: `MIN_N` спільних днів + `NOTABLE_R`
- * сила зв'язку — немає зв'язку, блок не друкується). Для текстових інсайтів
+ * сила звʼязку — немає звʼязку, блок не друкується). Для текстових інсайтів
  * порогу не було взагалі: снапшот їхав на модель навіть тоді, коли всі
  * чотири модулі порожні, і вона писала пораду з нічого. Тобто захищено було
  * найнадійнішу частину — ту, що рахує код, — і не захищено найризикованішу,
@@ -350,7 +350,7 @@ async function fetchCoachInsight(): Promise<string | null> {
     const memJson = await coachApi.getMemory();
     memory = (memJson as { memory?: string }).memory ?? null;
   } catch {
-    // Пам'ять не обов'язкова — інсайт будуємо й без неї.
+    // Памʼять не обовʼязкова — інсайт будуємо й без неї.
   }
 
   const insightJson = await coachApi.postInsight({ snapshot, memory });
@@ -496,7 +496,7 @@ export function useCoachInsight(): UseCoachInsightResult {
   // `ai_advice_shown`.
   //
   // Guard за посиланням на помилку, а не за булеаном: React Query лишає той
-  // самий об'єкт живим між рендерами й на час ретраю, тож без ref подія
+  // самий обʼєкт живим між рендерами й на час ретраю, тож без ref подія
   // летіла б щорендеру, поки картка на екрані.
   const failedErrRef = useRef<unknown>(null);
   useEffect(() => {

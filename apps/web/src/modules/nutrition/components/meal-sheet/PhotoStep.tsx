@@ -73,7 +73,7 @@ export function PhotoStep({ onApply }: PhotoStepProps) {
   // не косметика нотіса, а умова відправлення кадру (founder
   // 2026-07-26), тож ручний шлях мусить питати те саме, що авто-ефект
   // вище; інакше «Спробувати ще раз» після помилки піккера відправляло
-  // б фото Pro-користувача, який нотіс ще не підтвердив (рев'ю
+  // б фото Pro-користувача, який нотіс ще не підтвердив (ревʼю
   // CodeRabbit). Порядок навмисний: `requireAccess()` спершу, бо для
   // Free ця кнопка — вхід у paywall, і ack тут ні до чого.
   const gatedAnalyzePhoto = () => {
@@ -135,7 +135,7 @@ export function PhotoStep({ onApply }: PhotoStepProps) {
   //
   // Помилка НЕ скасовує цього: «Спробувати ще раз» без ack — мертва
   // кнопка (див. гейт у `gatedAnalyzePhoto`), а піккер уміє покласти
-  // помилку, лишивши прев'ю, тож стан «Pro + помилка + без ack»
+  // помилку, лишивши превʼю, тож стан «Pro + помилка + без ack»
   // досяжний. Виходом звідти лишається той самий нотіс.
   const analysisAwaitingPrivacyAck =
     Boolean(previewUrl) && photoGate.canAccess && !privacyAcked;

@@ -7,7 +7,7 @@
  *
  * Судді тут переважно СТРУКТУРНІ, і це не випадковість: усі ці ендпоінти
  * повертають JSON, який прод одразу проганяє через нормалізатор. «Модель
- * відповіла погано» тут має об'єктивне значення — прод віддав би клієнту
+ * відповіла погано» тут має обʼєктивне значення — прод віддав би клієнту
  * порожній масив і `rawText`, тобто екран без даних.
  */
 
@@ -246,7 +246,7 @@ const dayPlanPipeline: Pipeline = {
 
 const WEEK_PLAN_BASE: WeekPlanInput = {
   pantry: PANTRY,
-  preferences: { goal: "набір м'язової маси" },
+  preferences: { goal: "набір мʼязової маси" },
   locale: "uk-UA",
 };
 
@@ -351,7 +351,7 @@ const shoppingListPipeline: Pipeline = {
     },
     {
       name: "дублікат між рецептами",
-      trap: "НЕПРАВИЛЬНО: два окремі пункти «молоко». Воно є в двох рецептах, і промпт вимагає об'єднати в один із підсумованою кількістю.",
+      trap: "НЕПРАВИЛЬНО: два окремі пункти «молоко». Воно є в двох рецептах, і промпт вимагає обʼєднати в один із підсумованою кількістю.",
       user: buildShoppingListPrompt(SHOPPING_BASE).user,
       judge: (text) => {
         const milk = shoppingNames(text).filter((n) => n.includes("молок"));
@@ -387,7 +387,7 @@ const shoppingListPipeline: Pipeline = {
 const RECIPES_BASE: RecommendRecipesInput = {
   pantry: PANTRY,
   preferences: {
-    goal: "набір м'язової маси",
+    goal: "набір мʼязової маси",
     servings: 2,
     timeMinutes: 30,
     exclude: "гриби",
@@ -489,7 +489,7 @@ const parsePantryPipeline: Pipeline = {
   cases: [
     {
       name: "дублікати й одиниці",
-      trap: "НЕПРАВИЛЬНО: (а) лишити «молоко» і «йогурт» по два рази — промпт вимагає об'єднання; (б) для «дві банани» поставити unit ≠ «шт» або null. Дублікат у коморі мовчки ламає і список покупок, і план.",
+      trap: "НЕПРАВИЛЬНО: (а) лишити «молоко» і «йогурт» по два рази — промпт вимагає обʼєднання; (б) для «дві банани» поставити unit ≠ «шт» або null. Дублікат у коморі мовчки ламає і список покупок, і план.",
       user: buildParsePantryPrompt({ text: PANTRY_RAW, locale: "uk-UA" }).user,
       judge: (text) => {
         const items = pantryItems(text);

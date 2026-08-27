@@ -385,7 +385,7 @@ async function lookupUPCitemdb(
 // ──────────────────────────────────────────────────────────────────────────────
 /**
  * GET /api/barcode?barcode=... — каскадний lookup через OFF → USDA →
- * UPCitemdb → Silpo (четверте джерело, лише для юзера зі зв'язаним акаунтом
+ * UPCitemdb → Silpo (четверте джерело, лише для юзера зі звʼязаним акаунтом
  * — `modules/silpo/foodSource.ts`). Middleware-и роутера (`setModule`,
  * `rateLimitExpress`) забезпечують module-tag і rate-limit; тут лише
  * бізнес-логіка.

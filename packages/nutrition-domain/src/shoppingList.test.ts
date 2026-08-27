@@ -42,7 +42,7 @@ describe("normalizeShoppingList", () => {
     });
   });
 
-  it("пропускає категорії, що не є об'єктами", () => {
+  it("пропускає категорії, що не є обʼєктами", () => {
     const r = normalizeShoppingList({
       categories: [
         null,
@@ -62,7 +62,7 @@ describe("normalizeShoppingList", () => {
     expect(r.categories[0]!.name).toBe("Інше");
   });
 
-  it("trim-ить ім'я категорії; whitespace-only теж дає 'Інше'", () => {
+  it("trim-ить імʼя категорії; whitespace-only теж дає 'Інше'", () => {
     const r = normalizeShoppingList({
       categories: [
         { name: "   ", items: [{ name: "Сіль" }] },
@@ -195,7 +195,7 @@ describe("normalizeShoppingList", () => {
     expect(r.categories[0]!.items).toHaveLength(1);
   });
 
-  it("обʼєднує дублікати name з різних категорій з однаковим ім'ям", () => {
+  it("обʼєднує дублікати name з різних категорій з однаковим імʼям", () => {
     // Категорії з ідентичним name (з різним casing вони НЕ обʼєднуються —
     // дедуп тут case-sensitive). Тест перевіряє, що при exact-match назви
     // bucket reuse спрацьовує і items зливаються в одну категорію.

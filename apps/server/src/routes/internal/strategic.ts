@@ -158,7 +158,7 @@ export function createStrategicInternalRouter({
   /**
    * `/strategy list` Telegram-команда — листить goals founder-а через всі
    * тижні з опційним status- / persona-фільтром. Окремий route від
-   * `/goals/list`, бо там обов'язковий `weekStart`. Hard-cap 200 рядків.
+   * `/goals/list`, бо там обовʼязковий `weekStart`. Hard-cap 200 рядків.
    */
   r.post("/api/internal/strategic/list", async (req, res) => {
     const parsed = parseBody(ListBody, req);

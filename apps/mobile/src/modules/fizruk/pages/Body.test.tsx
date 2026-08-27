@@ -166,7 +166,7 @@ describe("Fizruk Body page (mobile)", () => {
     expect(screen.getByTestId("fizruk-body-trend-weightKg")).toBeTruthy();
   });
 
-  it("об'єднує вагу з обох сховищ в один ряд (W1-WEIGHT-SOT)", () => {
+  it("обʼєднує вагу з обох сховищ в один ряд (W1-WEIGHT-SOT)", () => {
     __setFizrukSqliteCacheForTests({
       measurements: [
         { id: "m-old", at: "2026-04-14T09:00:00Z", weightKg: 82 },

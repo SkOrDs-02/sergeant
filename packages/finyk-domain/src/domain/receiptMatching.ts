@@ -38,7 +38,7 @@ export interface ReceiptForMatching {
 
 export interface MonoTxForReceiptMatching {
   id: string;
-  /** Сума в копійках; витрата — від'ємна (mono minor units). */
+  /** Сума в копійках; витрата — відʼємна (mono minor units). */
   amountKop: number;
   /** Момент транзакції, epoch секунди (mono `time`). */
   timeSeconds: number;
@@ -95,7 +95,7 @@ function isOwnAccountTopup(tx: MonoTxForReceiptMatching): boolean {
   return OWN_ACCOUNT_TOPUP_RE.test(tx.description ?? "");
 }
 
-/** Схожа на супермаркетну витрату: від'ємна сума + MCC 5411 або «сільпо» в описі. */
+/** Схожа на супермаркетну витрату: відʼємна сума + MCC 5411 або «сільпо» в описі. */
 function isGroceryExpenseCandidate(tx: MonoTxForReceiptMatching): boolean {
   if (!(tx.amountKop < 0)) return false;
   if (isOwnAccountTopup(tx)) return false;

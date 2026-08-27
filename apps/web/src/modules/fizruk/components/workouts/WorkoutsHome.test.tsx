@@ -170,9 +170,7 @@ describe("WorkoutsHome", () => {
       />,
     );
 
-    expect(
-      screen.getByText(/тут з'являться останні|тут з&apos;являться останні/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/тут зʼявляться останні/)).toBeInTheDocument();
     expect(screen.queryByText("Всі →")).not.toBeInTheDocument();
   });
 

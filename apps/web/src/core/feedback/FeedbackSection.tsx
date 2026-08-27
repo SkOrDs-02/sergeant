@@ -17,7 +17,7 @@ import { FeedbackDialog } from "./FeedbackDialog";
 /**
  * Settings-секція feedback-віджета (GTM § 3.2). Entry point у самому
  * доступному глобальному місці — Settings → «Загальні» таб; окремий
- * floating-button свідомо не робимо, щоб не з'їдати екран на mobile
+ * floating-button свідомо не робимо, щоб не зʼїдати екран на mobile
  * (FAB вже зайнятий асистентом — див. `HubChatOverlay`).
  *
  * `feedback_widget_opened` — чисельник funnel-а

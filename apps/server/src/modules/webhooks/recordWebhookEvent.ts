@@ -27,7 +27,7 @@ import type { Pool } from "pg";
 /** Максимальний розмір payload-у (JSON-серіалізованого) у байтах. */
 export const MAX_PAYLOAD_BYTES = 256 * 1024;
 
-/** Максимальний розмір headers-об'єкта (JSON-серіалізованого) у байтах. */
+/** Максимальний розмір headers-обʼєкта (JSON-серіалізованого) у байтах. */
 export const MAX_HEADERS_BYTES = 8 * 1024;
 
 /**

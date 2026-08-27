@@ -25,7 +25,7 @@ export function loadFinykSubscriptionsFromStorage() {
 }
 
 /**
- * Транзакції з Mono mirror cache (для сум і прив'язок).
+ * Транзакції з Mono mirror cache (для сум і привʼязок).
  *
  * Uses the last-non-empty snapshot fallback so subscription-calendar
  * date data is preserved during cold-start / transitional empty refreshes

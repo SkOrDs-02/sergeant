@@ -5,7 +5,7 @@ import { parseDpsCheckXml } from "./dpsXml.js";
 // (CHECK/CHECKHEAD/CHECKBODY/ROW), НЕ знятий з реального `chkAll`
 // payload (токен ДПС ще не згенеровано — відкритий гейт спеки,
 // `docs/90-work/planning/specs/receipt-scan.md` § Ризики). Перший
-// smoke-тест на живому чеку — обов'язковий наступний крок.
+// smoke-тест на живому чеку — обовʼязковий наступний крок.
 
 // Варіант A: РРО, ROWNUM-атрибути, ціла сума в копійках, <CHECKS>-обгортка.
 const RRO_FIXTURE = `<CHECKS>
@@ -147,7 +147,7 @@ describe("parseDpsCheckXml — зламаний / неповний вхід", ()
 
 // Review-фікси (CRITICAL double-decode/injection + MAJOR sum-фолбек +
 // Trivial numeric entities) — фікстури нижче навмисно ІЗОЛЬОВАНІ від
-// RRO/PRRO-варіантів вище: кожна б'є РІВНО в один патч.
+// RRO/PRRO-варіантів вище: кожна бʼє РІВНО в один патч.
 
 describe("parseDpsCheckXml — sumKopiykas-фолбек (COST відсутній)", () => {
   it("округлює ДОБУТОК price*qty, не price*round(qty) — ваговий рядок (0.850 кг)", () => {
@@ -165,7 +165,7 @@ describe("parseDpsCheckXml — sumKopiykas-фолбек (COST відсутній
     });
   });
 
-  it("AMOUNT відсутній/нульовий/від'ємний → qty=1 фолбек (не 0, не від'ємне)", () => {
+  it("AMOUNT відсутній/нульовий/відʼємний → qty=1 фолбек (не 0, не відʼємне)", () => {
     const xml = `<CHECK><CHECKHEAD><ORGNM>Тест</ORGNM><ORDATE>20260115</ORDATE><ORTIME>120000</ORTIME><SUM>100</SUM></CHECKHEAD><CHECKBODY><ROW ROWNUM="1"><NAME>Товар А</NAME><AMOUNT>0</AMOUNT><PRICE>500</PRICE></ROW><ROW ROWNUM="2"><NAME>Товар Б</NAME><AMOUNT>-3</AMOUNT><PRICE>500</PRICE></ROW></CHECKBODY></CHECK>`;
     const parsed = parseDpsCheckXml(xml);
     expect(parsed?.items[0]).toMatchObject({ qty: 1, sumKopiykas: 500 });
@@ -269,7 +269,7 @@ describe("parseDpsCheckXml — safe-int та ±AMOUNT_MINOR_MAX межі гро�
     expect(parseDpsCheckXml(checkWith("2000000000", ROW_OK))).toBeNull();
   });
 
-  it("від'ємний загальний SUM → null (схема: totalKopiykas ≥ 0)", () => {
+  it("відʼємний загальний SUM → null (схема: totalKopiykas ≥ 0)", () => {
     expect(parseDpsCheckXml(checkWith("-100", ROW_OK))).toBeNull();
   });
 

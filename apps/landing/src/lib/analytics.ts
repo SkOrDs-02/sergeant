@@ -29,7 +29,7 @@ let started = false;
 
 /**
  * Ініціалізація PostHog. Без `VITE_POSTHOG_KEY` — повний no-op: dev-збірка і
- * прев'ю не шлють нічого, черга не росте, а `track()` тихо повертається.
+ * превʼю не шлють нічого, черга не росте, а `track()` тихо повертається.
  */
 export function initAnalytics(): void {
   const key = import.meta.env["VITE_POSTHOG_KEY"];

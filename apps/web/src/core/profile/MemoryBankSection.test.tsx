@@ -58,7 +58,7 @@ vi.mock("./memoryBank", () => ({
     entry: { id: "manual-1", fact, category: category ?? "other" },
     created: true,
   }),
-  CATEGORY_META: { health: { label: "Здоров'я", emoji: "🩺" } },
+  CATEGORY_META: { health: { label: "Здоровʼя", emoji: "🩺" } },
   MEMORY_ONBOARDING_PROMPT: "ONBOARDING_PROMPT",
   MEMORY_ADD_INFO_PROMPT: "ADD_INFO_PROMPT",
   MEMORY_MANUAL_STEPS: [
@@ -112,7 +112,7 @@ describe("MemoryBankSection — empty state", () => {
     storedEntries = [];
     render(<MemoryBankSection />);
 
-    expect(screen.getByText("Банк пам'яті порожній")).toBeTruthy();
+    expect(screen.getByText("Банк памʼяті порожній")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: /Заповнити профіль/ }));
 
     // Preset — головне тут: інструкція інтервʼю живе на сервері
@@ -151,7 +151,7 @@ describe("MemoryBankSection — populated", () => {
     render(<MemoryBankSection />);
 
     expect(screen.getByText("Алергія на арахіс")).toBeTruthy();
-    expect(screen.getByText("Здоров'я")).toBeTruthy();
+    expect(screen.getByText("Здоровʼя")).toBeTruthy();
   });
 
   it("delete removes the entry (writeMemoryEntries) and offers undo", () => {
@@ -185,10 +185,10 @@ describe("MemoryBankSection — populated", () => {
 
   /**
    * Регресія 2026-08-07: режим виводився з `entries.length`, тож перший же
-   * запис назавжди перемикав кнопку на `profile_add_info`. Повне інтерв'ю
+   * запис назавжди перемикав кнопку на `profile_add_info`. Повне інтервʼю
    * ставало недосяжним — щоб пройти його вдруге, треба було спорожнити банк.
    */
-  it("інтерв'ю доступне і з непорожнім банком", () => {
+  it("інтервʼю доступне і з непорожнім банком", () => {
     storedEntries = [ENTRY];
     render(<MemoryBankSection />);
 
@@ -215,7 +215,7 @@ describe("MemoryBankSection — export", () => {
       .mockImplementation(() => {});
 
     render(<MemoryBankSection />);
-    fireEvent.click(screen.getByRole("button", { name: "Експорт пам'яті" }));
+    fireEvent.click(screen.getByRole("button", { name: "Експорт памʼяті" }));
 
     expect(createObjectURL).toHaveBeenCalled();
     expect(clickSpy).toHaveBeenCalled();
@@ -325,7 +325,7 @@ describe("MemoryBankSection — порожні стани через спіль�
     render(<MemoryBankSection />);
 
     const status = screen.getByRole("status");
-    expect(status).toHaveTextContent("Банк пам'яті порожній");
+    expect(status).toHaveTextContent("Банк памʼяті порожній");
     expect(
       screen.getByRole("button", { name: /Заповнити профіль/ }),
     ).toBeTruthy();

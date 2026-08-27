@@ -46,7 +46,7 @@ const HTML_ESCAPES: Readonly<Record<string, string>> = {
 /**
  * Екранування для будь-якої позиції в HTML-тілі листа.
  *
- * AI-DANGER: єдиний бар'єр між користувацьким рядком (`newEmail`) і HTML,
+ * AI-DANGER: єдиний барʼєр між користувацьким рядком (`newEmail`) і HTML,
  * який ми надсилаємо поштою. Міняти тільки разом із тестами у
  * `verificationMail.test.ts` — і не звужувати набір символів.
  *

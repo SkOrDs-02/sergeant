@@ -26,7 +26,7 @@ import type { AppliedStatus } from "../syncV2-types.js";
  * AI-CONTEXT: `routine_entries` має ДЕТЕРМІНОВАНИЙ PK
  * `habitId:dateKey` (`apps/web/src/modules/routine/lib/sqliteWriter/diff.ts`
  * → `buildCompletionRowId`), тому повторний чекін тієї самої звички за той
- * самий день б'є в ТОЙ САМИЙ рядок. G-set-інваріант `nutrition_meals`
+ * самий день бʼє в ТОЙ САМИЙ рядок. G-set-інваріант `nutrition_meals`
  * (випадковий UUID на кожен запис, PR #043) тут НЕ застосовний: там
  * повторний insert створює новий рядок, тут — переписує tombstone.
  * Tombstone-resurrection guard, скопійований звідти, ріже легітимний

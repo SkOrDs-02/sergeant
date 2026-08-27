@@ -83,7 +83,7 @@ describe("RegisterForm", () => {
     registerMock.mockResolvedValue(true);
     render(<RegisterForm onAlreadyRegistered={vi.fn()} />);
 
-    fireEvent.change(screen.getByLabelText("Ім'я"), {
+    fireEvent.change(screen.getByLabelText("Імʼя"), {
       target: { value: "  Боб  " },
     });
     fireEvent.change(screen.getByLabelText("Email"), {

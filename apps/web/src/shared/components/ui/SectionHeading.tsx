@@ -84,7 +84,7 @@ export type SectionHeadingWeight =
 // Смужка — `before:`-псевдоелемент, а не вузол: так вона не потрапляє в
 // accessible name і не змінює `children`. `bg-current` бере колір варіанта,
 // тож смужка не може розійтися з текстом — вона і є текст, тільки геометрія.
-// `before:shrink-0` обов'язковий: у flex-контейнері 2px-елемент інакше
+// `before:shrink-0` обовʼязковий: у flex-контейнері 2px-елемент інакше
 // стискається до нуля, коли рядок довгий.
 const KICKER_BAR =
   "flex items-center gap-2 " +

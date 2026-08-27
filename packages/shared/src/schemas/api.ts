@@ -362,8 +362,8 @@ export type ToolCallsRawBlock = z.infer<typeof ToolCallsRawBlockSchema>;
  * Другий ефект — UX: інструкція більше не рендериться бульбашкою «від
  * користувача» і не сміттить в історії чату (`hub_chat_history`).
  *
- * - `profile_interview` — коротке інтерв'ю на порожньому банку пам'яті
- *   (кнопка «Заповнити профіль» у секції «Пам'ять ШІ»);
+ * - `profile_interview` — коротке інтервʼю на порожньому банку памʼяті
+ *   (кнопка «Заповнити профіль» у секції «Памʼять ШІ»);
  * - `profile_add_info` — доповнення вже непорожнього банку («Додати інфо»).
  */
 export const CHAT_PRESETS = ["profile_interview", "profile_add_info"] as const;
@@ -484,7 +484,7 @@ export const AiMemoryListQuerySchema = z.object({
 export type AiMemoryListQuery = z.infer<typeof AiMemoryListQuerySchema>;
 
 /**
- * Один факт AI-пам'яті у списку налаштувань.
+ * Один факт AI-памʼяті у списку налаштувань.
  *
  * `id` — `number`: у Postgres це `BIGSERIAL`, і pg-драйвер віддає його
  * стрінгою. Коерція живе в серверному серіалізаторі (Hard Rule #1) — тут
@@ -874,7 +874,7 @@ export const WeeklyDigestResponseSchema = z.union([
 ]);
 export type WeeklyDigestResponse = z.infer<typeof WeeklyDigestResponseSchema>;
 
-// AI-NOTE: `dateContext` обов'язковий для адекватного темпорального
+// AI-NOTE: `dateContext` обовʼязковий для адекватного темпорального
 // обрамлення інсайту (без нього модель імпровізує "середина тижня" в неділю).
 // Поля: `todayKey` — Kyiv-time `YYYY-MM-DD`; `weekDayUk` — день тижня
 // українською ("понеділок"…"неділя"); `dayOfWeekIso` — 1 (пн)…7 (нд);
@@ -903,7 +903,7 @@ const CoachSnapshotSchema = z
   })
   .partial();
 
-// Пам'ять coach-а зберігається сервером і повертається назад клієнтом —
+// Памʼять coach-а зберігається сервером і повертається назад клієнтом —
 // не валідуємо глибоко, лише обмежуємо кількість digest-ів.
 const CoachMemoryEchoSchema = z
   .object({
@@ -914,7 +914,7 @@ const CoachMemoryEchoSchema = z
   .partial();
 
 // `snapshot` і `memory` можуть надходити як `null` (нема даних / перший
-// сеанс без збереженої пам'яті), тому приймаємо `nullish`, а handler уже
+// сеанс без збереженої памʼяті), тому приймаємо `nullish`, а handler уже
 // коректно обробляє обидва випадки через `snapshot?.finyk` / `memory || null`.
 export const CoachInsightSchema = z.object({
   snapshot: CoachSnapshotSchema.nullish(),
@@ -983,7 +983,7 @@ const SyncV2OpKindEnum = z.enum(["insert", "update", "delete", "increment"]);
  * Один запис op-log-а. `row` — JSON-payload (PK + поля); серверний
  * apply-шлях знає shape per-table і не валідує тут. Розмір payload-а
  * обмежено окремим refine-ом (256 KB), щоб не платити за safeParse-инг
- * мегабайтних об'єктів.
+ * мегабайтних обʼєктів.
  *
  * `client_ts` приймається як ISO-8601 рядок з offset-ом; пізніше
  * сервер відхилить значення з clock skew > 1 година.
@@ -1078,7 +1078,7 @@ export const PushUnsubscribeSchema = z.object({
  * `/api/v1/push/register` — уніфікована реєстрація push-пристрою.
  *
  * `platform: "web"` — web-push: `token` несемо як endpoint URL, `keys`
- * обов'язкові (див. RFC 8030). `platform: "ios"|"android"` — native push:
+ * обовʼязкові (див. RFC 8030). `platform: "ios"|"android"` — native push:
  * `token` — opaque APNs/FCM device token, `endpoint`/`keys` відсутні.
  *
  * Валідатор нижче приймає обидва shape-и; handler сам маршрутизує у
@@ -1119,7 +1119,7 @@ export const PushUnregisterSchema = z.discriminatedUnion("platform", [
   }),
 ]);
 
-// `.nullable()` на необов'язкових полях — для back-compat із воркерами, які
+// `.nullable()` на необовʼязкових полях — для back-compat із воркерами, які
 // історично слали `null` замість відсутнього поля.
 export const PushSendSchema = z.object({
   userId: z.string().min(1).max(200),
@@ -1131,7 +1131,7 @@ export const PushSendSchema = z.object({
 
 /**
  * `POST /api/v1/push/test` — ручка для відправки тестового пуша на всі
- * зареєстровані пристрої поточного користувача. Auth обов'язкова; сервер
+ * зареєстровані пристрої поточного користувача. Auth обовʼязкова; сервер
  * пропускає body через `sendToUser` (див. `apps/server/src/push/send.ts`)
  * і повертає агрегований summary.
  *
@@ -1145,7 +1145,7 @@ export const PushTestRequestSchema = z.object({
   /**
    * Deep-link, що клієнт відкриє по тапу. Сервер прокине у `data.url` для
    * всіх трьох каналів; native/web handler читають з одного ключа.
-   * URL-валідацію навмисно робимо м'якою (`.url()` без `.startsWith`), щоб
+   * URL-валідацію навмисно робимо мʼякою (`.url()` без `.startsWith`), щоб
    * поза-HTTPS кастом-схеми (`sergeant://finyk/tx/123`) теж проходили.
    */
   url: z.string().trim().min(1).max(2048).optional(),

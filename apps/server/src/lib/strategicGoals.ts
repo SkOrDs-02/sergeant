@@ -15,7 +15,7 @@
  *   * Domain invariants (`docs/architecture/domain-invariants.md`):
  *       - `week_start` — DATE як `YYYY-MM-DD` у Kyiv local. Helper приймає
  *         або `Date` (тоді конверт-ить у `YYYY-MM-DD`), або вже-готовий
- *         string. Понеділок ISO-тижня — обов'язково.
+ *         string. Понеділок ISO-тижня — обовʼязково.
  *       - `founder_user_id` — Better Auth opaque string ID (НЕ UUID).
  *   * Fail-open: помилки БД логуються через pino і **НЕ** кидаються наверх.
  *     Caller отримує `null` (для create/update) або `[]` (для list-у).

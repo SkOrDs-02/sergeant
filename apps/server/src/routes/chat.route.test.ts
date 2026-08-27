@@ -154,7 +154,7 @@ afterEach(() => {
 describe("chat route — auth guard", () => {
   // Знахідка A1 (`docs/90-work/audits/ai-abuse-2026-08-05.md`): роут довго стояв
   // без `requireSession()`, і анонімна квота `ip:<addr>` не була межею — під
-  // IPv6-підпискою клієнт має цілу /64. Тест фіксує, що сесія обов'язкова і
+  // IPv6-підпискою клієнт має цілу /64. Тест фіксує, що сесія обовʼязкова і
   // перевіряється ДО ключа: без неї 401, а не 503.
   it("POST /api/chat → 401 без сесії", async () => {
     getSessionUserMock.mockResolvedValue(null);

@@ -170,7 +170,7 @@ interface VoyageEmbeddingResponse {
 }
 
 /**
- * Circuit breaker для Voyage. Окремий від Anthropic — embedд'инг і
+ * Circuit breaker для Voyage. Окремий від Anthropic — embedдʼинг і
  * chat — різні провайдери, breaker одного не має псувати breaker
  * іншого.
  */
@@ -229,13 +229,13 @@ export function createVoyageEmbeddings(
     if (texts.length === 0) return [];
 
     // Маскування перед Voyage (рішення founder-а #10). Voyage — другий
-    // сторонній обробник поряд з Anthropic, і текст факту пам'яті їде до
+    // сторонній обробник поряд з Anthropic, і текст факту памʼяті їде до
     // нього цілим.
     //
     // AI-DANGER: маска стоїть саме тут, бо `callVoyage` — спільна дорога
     // і для **запису** факту, і для **пошукового запиту**. Обидві сторони
     // мусять бачити однаково замаскований текст, інакше вектори перестають
-    // сходитись і пошук по пам'яті тихо деградує — без жодної помилки в
+    // сходитись і пошук по памʼяті тихо деградує — без жодної помилки в
     // логах. Перенесеш маску на один із двох шляхів — зламаєш recall.
     const safeTexts = texts.map((t) => maskMachineText(t));
 
