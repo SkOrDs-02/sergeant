@@ -71,10 +71,11 @@
 
 | PR                                                     | Title                                                                                                                   | Merged     |
 | ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- | ---------- |
+| [#891](https://github.com/Skords-01/Sergeant/pull/891) | feat(agents): скіли-дисципліни                                                                                          | 2026-08-27 |
 | [#890](https://github.com/Skords-01/Sergeant/pull/890) | feat(agents): інфра module-скіли і nested-роутинг                                                                       | 2026-08-27 |
 | [#889](https://github.com/Skords-01/Sergeant/pull/889) | feat(agents): продуктові module-owner скіли                                                                             | 2026-08-27 |
 | [#508](https://github.com/Skords-01/Sergeant/pull/508) | fix(docs): reconcile canonical docs with current repo                                                                   | 2026-07-29 |
 | [#334](https://github.com/Skords-01/Sergeant/pull/334) | docs(root): reconcile docs with code after 2026-07-20 audit (Railway->Coolify, CI gates, dual-write, domain invariants) | 2026-07-21 |
 
-_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 4 most recent PRs touching this file._
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 5 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->
