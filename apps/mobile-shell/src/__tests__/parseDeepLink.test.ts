@@ -117,6 +117,7 @@ describe("parseDeepLink — розширені edge-кейси", () => {
       expect(DEEP_LINK_HTTPS_HOSTS).toEqual([
         "sergeant.vercel.app",
         "sergeant.2dmanager.com.ua",
+        "app.sergeant.com.ua",
       ]);
     });
 
