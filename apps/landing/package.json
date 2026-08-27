@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "shots": "node scripts/shot-pages.mjs"
+    "shots": "node scripts/shot-pages.mjs",
+    "verify:browser": "node scripts/verify-browser.mjs"
   },
   "dependencies": {
     "@fontsource-variable/manrope": "^5.2.8",
