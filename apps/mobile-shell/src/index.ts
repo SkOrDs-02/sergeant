@@ -160,7 +160,8 @@ export function isSafeShellPath(path: string): boolean {
  *
  * Список синхронізований з `docs/mobile/overview.md` (секція CORS — «prod»-хости):
  *   - `sergeant.vercel.app` — Vercel-preview і прод-дефолт;
- *   - `sergeant.2dmanager.com.ua` — кастомний prod-домен.
+ *   - `sergeant.2dmanager.com.ua` — попередній кастомний домен;
+ *   - `app.sergeant.com.ua` — цільовий prod-домен.
  *
  * Кожен хост валідується строго (case-insensitive host match), без
  * suffix-wildcard, щоби `sergeant.vercel.app.evil.com` не проходив як
@@ -169,6 +170,7 @@ export function isSafeShellPath(path: string): boolean {
 export const DEEP_LINK_HTTPS_HOSTS: readonly string[] = Object.freeze([
   "sergeant.vercel.app",
   "sergeant.2dmanager.com.ua",
+  "app.sergeant.com.ua",
 ]);
 
 export interface InitNativeShellOptions {

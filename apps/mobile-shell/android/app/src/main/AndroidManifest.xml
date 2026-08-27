@@ -64,6 +64,7 @@
                 <data android:scheme="https" />
                 <data android:host="sergeant.vercel.app" />
                 <data android:host="sergeant.2dmanager.com.ua" />
+                <data android:host="app.sergeant.com.ua" />
             </intent-filter>
 
         </activity>

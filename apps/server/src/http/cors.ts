@@ -23,6 +23,7 @@ import { logger } from "../obs/logger.js";
 const PROD_ORIGINS = [
   "https://sergeant.vercel.app",
   "https://sergeant.2dmanager.com.ua",
+  "https://app.sergeant.com.ua",
 ];
 
 // Локальні dev-поверхні: Vite :5173, `vite preview` :4173, unified-mode
