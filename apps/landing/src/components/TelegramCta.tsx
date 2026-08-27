@@ -17,6 +17,8 @@ export type CtaPlacement = LandingPlacement;
 interface TelegramCtaProps {
   placement: CtaPlacement;
   label?: string;
+  /** `inverse` — для кнопки на чорнильному тлі (крем-заливка). */
+  variant?: "ink" | "inverse";
 }
 
 /**
@@ -35,8 +37,16 @@ interface TelegramCtaProps {
  * рендер: інакше `href` і подія могли б розійтись, якби React перемалював
  * кнопку між рендером і кліком.
  */
-export default function TelegramCta({ placement, label }: TelegramCtaProps) {
+export default function TelegramCta({
+  placement,
+  label,
+  variant = "ink",
+}: TelegramCtaProps) {
   const [ref] = useState(newLandingRef);
+  const palette =
+    variant === "inverse"
+      ? "bg-ink-text text-ink hover:bg-card focus-visible:outline-ink-text"
+      : "bg-ink text-ink-text hover:bg-ink-hi focus-visible:outline-ink";
 
   return (
     <a
@@ -50,7 +60,7 @@ export default function TelegramCta({ placement, label }: TelegramCtaProps) {
           ref,
         })
       }
-      className="inline-flex min-h-12 items-center justify-center rounded-full bg-accent px-7 py-3 text-base font-bold text-accent-ink shadow-sm transition hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+      className={`inline-flex min-h-12 items-center justify-center rounded-[10px] px-7 py-3 text-base font-bold shadow-sm transition focus-visible:outline-2 focus-visible:outline-offset-2 ${palette}`}
     >
       {label ?? "Приєднатися через Telegram"}
     </a>
