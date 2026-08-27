@@ -56,8 +56,17 @@ export default function App() {
   usePageview(pathname);
 
   useEffect(() => {
-    // Якірні переходи (/#faq) мають довезти до секції, а не лишити скрол угорі.
-    if (!window.location.hash) window.scrollTo(0, 0);
+    // Якірні переходи (/#faq) мають довезти до секції. Нативний скрол по хешу
+    // відбувається ДО маунта React-контенту і промахується, тож докручуємо
+    // самі після першого кадру.
+    const hash = window.location.hash.slice(1);
+    if (!hash) {
+      window.scrollTo(0, 0);
+      return;
+    }
+    requestAnimationFrame(() => {
+      document.getElementById(hash)?.scrollIntoView();
+    });
   }, []);
 
   const Page = ROUTES[pathname] ?? NotFoundPage;

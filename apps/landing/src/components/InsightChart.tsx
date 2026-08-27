@@ -19,6 +19,13 @@ const BAR_W = 18;
 export default function InsightChart() {
   return (
     <div className="flex flex-col gap-2.5">
+      {/*
+        Тижневі підписи (Т1…Т6) навмисно НЕ живуть у <text> всередині SVG:
+        viewBox масштабується по ширині контейнера, тож fontSize у SVG-units
+        стискався б разом із графікою і на 390px-екрані падав нижче 12px
+        (мобільний UX-прохід, серпень 2026). Окремий grid-рядок тримає
+        текст на стабільному CSS-розмірі незалежно від масштабу чарта.
+      */}
       <svg
         viewBox="0 0 620 150"
         fill="none"
@@ -57,19 +64,20 @@ export default function InsightChart() {
                   className="fill-finyk"
                 />
               ))}
-              <text
-                x={barX + 22}
-                y={BASE_Y + 18}
-                textAnchor="middle"
-                fontSize="12"
-                className="fill-subtle"
-              >
-                Т{i + 1}
-              </text>
             </g>
           );
         })}
       </svg>
+      <div
+        aria-hidden="true"
+        className="grid w-full max-w-[620px] grid-cols-6 text-xs text-subtle"
+      >
+        {WEEKS.map((_, i) => (
+          <span key={i} className="text-center">
+            Т{i + 1}
+          </span>
+        ))}
+      </div>
       <div className="flex items-center gap-5 text-xs text-subtle">
         <span className="inline-flex items-center gap-1.5">
           <span aria-hidden="true" className="h-2.5 w-2.5 bg-fizruk" />
