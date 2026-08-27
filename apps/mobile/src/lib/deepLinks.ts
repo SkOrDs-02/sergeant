@@ -32,6 +32,7 @@ export const SERGEANT_SCHEME = "sergeant://";
 export const UNIVERSAL_LINK_HOSTS: readonly string[] = Object.freeze([
   "sergeant.vercel.app",
   "sergeant.2dmanager.com.ua",
+  "app.sergeant.com.ua",
 ]);
 
 /**

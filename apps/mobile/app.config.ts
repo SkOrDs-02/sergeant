@@ -67,6 +67,7 @@ const ANDROID_PACKAGE = "com.sergeant.app";
 const UNIVERSAL_LINK_HOSTS = [
   "sergeant.vercel.app",
   "sergeant.2dmanager.com.ua",
+  "app.sergeant.com.ua",
 ] as const;
 
 /**
