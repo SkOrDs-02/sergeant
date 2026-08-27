@@ -1,6 +1,6 @@
 # Audit-винятки
 
-> **Last touched:** 2026-08-27 by Claude (знято виняток react-router — upstream бекпортнув патч у 7.18.2, підняли залежність; body-parser закрито override-ами). **Next review:** 2027-11-05.
+> **Last touched:** 2026-08-27 by Claude (знято виняток react-router — upstream бекпортнув патч у 7.18.2, підняли залежність). **Next review:** 2027-11-05.
 > **Status:** Active
 
 > Відстежені вразливості, які тимчасово допускаються через машинно-читаний
