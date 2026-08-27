@@ -61,6 +61,11 @@
       "sourceType": "local",
       "computedHash": "7cff37dde8af7048cde146f2f40404979269afee839d02c49146d81b14f58d9b"
     },
+    "sergeant-module-billing": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "a340019c3cead5d8f12a161702c36081473530e3eb79c576c763013761c80c06"
+    },
     "sergeant-module-finyk": {
       "source": "local",
       "sourceType": "local",
@@ -71,15 +76,30 @@
       "sourceType": "local",
       "computedHash": "bf3247d4cf975c961ebc4118f10f0d57c1c953730f5fb21805514a45fba54a7f"
     },
+    "sergeant-module-integrations": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "cb05365d871a97ea2c94ef9a6ac812caee3d3e068039f0a062c477795e0af57e"
+    },
     "sergeant-module-nutrition": {
       "source": "local",
       "sourceType": "local",
       "computedHash": "4c73bca5997a99f55a09ff72147548e7b18dd6b88aeb214b634063ae1b9dd308"
     },
+    "sergeant-module-push": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "48669851ef18124892ac091d7bc43a4e3436c8a745e8d6178698af0ec45a6e47"
+    },
     "sergeant-module-routine": {
       "source": "local",
       "sourceType": "local",
       "computedHash": "941a5e7bd01a7502bc93c4bfd712eaa888e5817c88e5cb4601f39f193fa06ad9"
+    },
+    "sergeant-module-sync": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "eb94388ed2466655f13c8aca02a7f6f9ef7a9568d8fac5c7598b173596164843"
     },
     "sergeant-monorepo-boundaries": {
       "source": "local",
@@ -119,7 +139,7 @@
     "sergeant-start-here": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "52d1363c92af49d2ca460b77bdfff149f48ddb82c406c9705970884f58d3f652"
+      "computedHash": "e1d167b5f7c7beed06e1d1b340edc69bdfecbcf114f5c4d04361c1409c32eb3f"
     },
     "sergeant-tech-debt": {
       "source": "local",

@@ -19,6 +19,7 @@
 
 Останні 10 PR, що торкнулися canonical-доків. Повна історія → [`pr-ledger/index.json`](./04-governance/pr-ledger/index.json).
 
+- [#889](https://github.com/Skords-01/Sergeant/pull/889) — feat(agents): продуктові module-owner скіли _(2026-08-27)_
 - [#689](https://github.com/Skords-01/Sergeant/pull/689) — fix(ci): governance-sync відрізняє живе посилання від навмисно мертвого _(2026-08-07)_
 - [#508](https://github.com/Skords-01/Sergeant/pull/508) — fix(docs): reconcile canonical docs with current repo _(2026-07-29)_
 - [#334](https://github.com/Skords-01/Sergeant/pull/334) — docs(root): reconcile docs with code after 2026-07-20 audit (Railway->Coolify, CI gates, dual-write, domain invariants) _(2026-07-21)_
@@ -28,7 +29,6 @@
 - [#3649](https://github.com/Skords-01/Sergeant/pull/3649) — chore(root): fizruk a11y/UX tidy + reconcile stale tracked-task docs _(2026-06-19)_
 - [#3640](https://github.com/Skords-01/Sergeant/pull/3640) — fix(docs): accept "Last touched" label + bot handles in playbook schema check _(2026-06-18)_
 - [#3610](https://github.com/Skords-01/Sergeant/pull/3610) — chore(config): per-package eslint configs — PR-31 Phase 2b _(2026-06-16)_
-- [#3611](https://github.com/Skords-01/Sergeant/pull/3611) — fix(web): clear a11y gate _(2026-06-16)_
 
 ## 🔵 В роботі — 59 відкритих
 
