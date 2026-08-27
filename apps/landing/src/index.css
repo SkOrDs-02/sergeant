@@ -21,7 +21,7 @@
     "Manrope Variable", "Manrope", ui-sans-serif, system-ui, sans-serif;
 
   /* Surfaces — cream */
-  --color-background: #fdf9f3;
+  --color-background: #ecebe7;
   --color-surface: #faf7f1;
   --color-surface-muted: #f5ead8;
   --color-card: #ffffff;
@@ -78,6 +78,7 @@
     `tokens.drift.test.ts`, бо спільного рантайму в лендінга з preset-ом нема.
   */
   --color-ink: #14100e;
+  --color-ink-hi: #221c18;
   --color-ink-surface: #1b1613;
   --color-ink-line: rgba(255, 255, 255, 0.1);
   --color-ink-text: #f2f6f2;

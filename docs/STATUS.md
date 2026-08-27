@@ -30,14 +30,14 @@
 - [#3610](https://github.com/Skords-01/Sergeant/pull/3610) — chore(config): per-package eslint configs — PR-31 Phase 2b _(2026-06-16)_
 - [#3611](https://github.com/Skords-01/Sergeant/pull/3611) — fix(web): clear a11y gate _(2026-06-16)_
 
-## 🔵 В роботі — 60 відкритих
+## 🔵 В роботі — 58 відкритих
 
 | Трекер                           | Відкрито |
 | -------------------------------- | -------- |
 | Ініціативи                       | 5        |
-| Планування                       | 20       |
+| Планування                       | 19       |
 | Launch / запуск                  | 12       |
-| Аудити й прожарки                | 18       |
+| Аудити й прожарки                | 17       |
 | Security hardening               | 1        |
 | Техборг                          | 4        |
 | Superpowers — плани впровадження | 0        |
@@ -50,8 +50,8 @@
 - [`90-work/tech-debt/mobile.md`](./90-work/tech-debt/mobile.md) — Mobile Tech Debt — Sergeant Mobile (Expo + Capacitor) — Active _(Техборг)_
 - [`90-work/initiatives/0010-revenue-first-launch.md`](./90-work/initiatives/0010-revenue-first-launch.md) — 0010 — Revenue-first launch: ship paid, focus wedge — In progress _(Ініціативи)_
 - [`01-product/launch/product-os/ftux-master-tracker.md`](./01-product/launch/product-os/ftux-master-tracker.md) — FTUX Master Tracker — стан, проблеми, план — Active — **single source of truth** для First-Time User Experience. _(Launch / запуск)_
-- [`90-work/planning/sprint-9-10-plan-2026.md`](./90-work/planning/sprint-9-10-plan-2026.md) — Sergeant — план Спринтів 9-10 (2026-07-07 – 2026-08-01) — Active — Sprint 9 code-side closed; Sprint 10 shipped S10-T2, S10-Q1, S10-X1, S10-T3 (JSON), S10-F2 and OG/Twitter slice _(Планування)_
 - [`01-product/launch/phases/02-capacitor-launch.md`](./01-product/launch/phases/02-capacitor-launch.md) — Phase 2 — Capacitor launch roadmap with users — Active — research deliverable for the parent launch program. _(Launch / запуск)_
+- [`90-work/audits/2026-08-05-orphaned-code-audit.md`](./90-work/audits/2026-08-05-orphaned-code-audit.md) — Аудит сиротілого коду, елементів і таблиць — 2026-08-05 — Active _(Аудити й прожарки)_
 
 ## ⏭️ Наступний крок / заблоковано
 

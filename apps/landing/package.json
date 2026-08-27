@@ -9,7 +9,8 @@
     "preview": "vite preview --port 3100",
     "lint": "eslint .",
     "test": "vitest run",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "shots": "node scripts/shot-pages.mjs"
   },
   "dependencies": {
     "@fontsource-variable/manrope": "^5.2.8",

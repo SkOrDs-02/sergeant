@@ -25,11 +25,14 @@ describe("newLandingRef", () => {
 });
 
 describe("formatLandingStartPayload / parseLandingStartPayload", () => {
-  it.each(["hero", "footer"] as const)("round-trip для %s", (placement) => {
-    const ref = newLandingRef();
-    const payload = formatLandingStartPayload(placement, ref);
-    expect(parseLandingStartPayload(payload)).toEqual({ placement, ref });
-  });
+  it.each(["hero", "footer", "beta"] as const)(
+    "round-trip для %s",
+    (placement) => {
+      const ref = newLandingRef();
+      const payload = formatLandingStartPayload(placement, ref);
+      expect(parseLandingStartPayload(payload)).toEqual({ placement, ref });
+    },
+  );
 
   // Telegram ріже payload на 64 символах і мовчки псує все поза
   // `[A-Za-z0-9_-]` — якщо не влізли, атрибуція зникає без жодної помилки.
