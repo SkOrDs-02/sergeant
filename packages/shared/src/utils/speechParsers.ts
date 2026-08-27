@@ -76,10 +76,38 @@ const UA_NUMBER_WORDS: Record<string, number> = {
 // (Combining marks like U+0301 are deliberately excluded — character-class
 // linters flag them, and Whisper does not emit them in this position.)
 
+// AI-CONTEXT: скан двома вказівниками, а не `/[…]+$/` — і це не стиль.
+// Ця функція їсть транскрипт Whisper, тобто НЕконтрольований рядок, а
+// привʼязаний до кінця клас `[…]+$` рушій пробує з КОЖНОЇ позиції:
+// "!!!!…!!!!" довжини n коштує O(n²) (CodeQL js/polynomial-redos,
+// alert #389). Розширення класу апострофами в §1.10 нічого не зламало,
+// але зробило рядок «зміненим» — і давню поліноміальну форму видно.
+// Тут же лінійно: два вказівники, жодного бектрекінгу.
+const EDGE_PUNCTUATION = new Set([
+  ".",
+  ",",
+  "!",
+  "?",
+  ";",
+  ":",
+  "(",
+  ")",
+  "«",
+  "»",
+  '"',
+  "'",
+  "‘",
+  "’",
+  "ʼ",
+  "`",
+]);
+
 function stripWordPunctuation(token: string): string {
-  return token
-    .replace(/[.,!?;:()«»"'‘’ʼ`]+$/g, "")
-    .replace(/^[.,!?;:()«»"'‘’ʼ`]+/g, "");
+  let start = 0;
+  let end = token.length;
+  while (start < end && EDGE_PUNCTUATION.has(token.charAt(start))) start += 1;
+  while (end > start && EDGE_PUNCTUATION.has(token.charAt(end - 1))) end -= 1;
+  return token.slice(start, end);
 }
 
 /**
