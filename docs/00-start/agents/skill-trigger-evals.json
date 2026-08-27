@@ -961,6 +961,138 @@
       "expectedSkills": ["sergeant-start-here", "sergeant-module-ai"],
       "forbiddenSkills": [],
       "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-module-sync-trigger-oplog",
+      "skill": "sergeant-module-sync",
+      "kind": "trigger",
+      "prompt": "Change how the sync op-log applies per-row LWW conflict resolution for habit check-ins.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-sync"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-sync-trigger-dualwrite",
+      "skill": "sergeant-module-sync",
+      "kind": "trigger",
+      "prompt": "Extend the dualwrite-core pipeline so a new entity type syncs across devices with cursor pulls.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-sync"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-sync-anti-billing-quota",
+      "skill": "sergeant-module-sync",
+      "kind": "anti-trigger",
+      "prompt": "Change the daily AI quota limits for the Pro plan in the billing module without touching sync.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-billing"],
+      "forbiddenSkills": ["sergeant-module-sync"]
+    },
+    {
+      "id": "sergeant-module-sync-workflow-start-here",
+      "skill": "sergeant-module-sync",
+      "kind": "workflow",
+      "prompt": "Before editing the sync conflict rules, load Sergeant startup rules and then exactly the sync module owner skill.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-sync"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-module-billing-trigger-plan-limits",
+      "skill": "sergeant-module-billing",
+      "kind": "trigger",
+      "prompt": "Update the effective limits computation for the Pro plan and its reverse-trial expiry behavior.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-billing"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-billing-trigger-liqpay",
+      "skill": "sergeant-module-billing",
+      "kind": "trigger",
+      "prompt": "Handle a failed LiqPay payment callback so the user plan downgrades cleanly at period end.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-billing"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-billing-anti-push-fanout",
+      "skill": "sergeant-module-billing",
+      "kind": "anti-trigger",
+      "prompt": "Fix the push notification fan-out so expired APNs subscriptions get deactivated without errors.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-push"],
+      "forbiddenSkills": ["sergeant-module-billing"]
+    },
+    {
+      "id": "sergeant-module-billing-workflow-start-here",
+      "skill": "sergeant-module-billing",
+      "kind": "workflow",
+      "prompt": "Before changing quota enforcement, load Sergeant startup rules and then exactly the billing module owner skill.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-billing"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-module-integrations-trigger-silpo",
+      "skill": "sergeant-module-integrations",
+      "kind": "trigger",
+      "prompt": "Fix the Silpo receipts import so a failed branch context lookup falls back without blocking the cart.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-integrations"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-integrations-trigger-webhook-replay",
+      "skill": "sergeant-module-integrations",
+      "kind": "trigger",
+      "prompt": "Add replay support for a new inbound webhook event type with idempotent record handling.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-integrations"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-integrations-anti-sync-lww",
+      "skill": "sergeant-module-integrations",
+      "kind": "anti-trigger",
+      "prompt": "Rework the per-row LWW conflict resolution in the sync module for multi-device habit data.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-sync"],
+      "forbiddenSkills": ["sergeant-module-integrations"]
+    },
+    {
+      "id": "sergeant-module-integrations-workflow-start-here",
+      "skill": "sergeant-module-integrations",
+      "kind": "workflow",
+      "prompt": "Before touching the Telegram waitlist bot, load Sergeant startup rules and then exactly the integrations module owner skill.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-integrations"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-module-push-trigger-fanout",
+      "skill": "sergeant-module-push",
+      "kind": "trigger",
+      "prompt": "Change the push notification fan-out so web, APNs and FCM channels retry independently.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-push"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-push-trigger-subscription",
+      "skill": "sergeant-module-push",
+      "kind": "trigger",
+      "prompt": "Deactivate expired push subscriptions during delivery audit instead of raising errors.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-push"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-push-anti-integrations-transcribe",
+      "skill": "sergeant-module-push",
+      "kind": "anti-trigger",
+      "prompt": "Raise the USD spending cap for the audio transcription integration after reviewing costs.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-integrations"],
+      "forbiddenSkills": ["sergeant-module-push"]
+    },
+    {
+      "id": "sergeant-module-push-workflow-start-here",
+      "skill": "sergeant-module-push",
+      "kind": "workflow",
+      "prompt": "Before editing notification delivery, load Sergeant startup rules and then exactly the push module owner skill.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-push"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
     }
   ]
 }

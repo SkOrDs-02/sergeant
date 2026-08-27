@@ -22,6 +22,10 @@ Sergeant is **tool-agnostic**. Any AI agent harness — Claude Code, Kilo Code, 
 | Задача згадує fizruk — тренування, відновлення, травми, вагу         | `sergeant-module-fizruk` + surface    |
 | Задача згадує routine — звички, стріки, щоденні відмітки             | `sergeant-module-routine` + surface   |
 | AI-шар: hub, HubChat (tools/executors), coach, digest, ai-memory     | `sergeant-module-ai`                  |
+| Sync, оп-лог, LWW-конфлікти, `dualwrite-core`                        | `sergeant-module-sync`                |
+| Billing: тарифи, квоти, LiqPay, pricing                              | `sergeant-module-billing`             |
+| Зовнішні інтеграції: silpo / telegram / transcribe / webhooks        | `sergeant-module-integrations`        |
+| Push-сповіщення: web push, APNs, FCM, fan-out                        | `sergeant-module-push`                |
 | Touches `apps/web/**`, RQ keys, design tokens, a11y                  | `sergeant-web-ui`                     |
 | Touches `apps/server/**`, API contract, `api-client`, pino, OpenAPI  | `sergeant-server-api`                 |
 | Touches `apps/mobile/**` or `apps/mobile-shell/**`, Expo, EAS        | `sergeant-mobile-expo`                |

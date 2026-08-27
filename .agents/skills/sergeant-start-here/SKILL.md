@@ -56,6 +56,10 @@ The script is zero-dep and offline-safe (`[gh unavailable: ...]` for sections th
 | Задача згадує fizruk / тренування / відновлення / травми / вагу  | `sergeant-module-fizruk` + surface-скіл |
 | Задача згадує routine / звички / стріки / щоденні відмітки       | `sergeant-module-routine` + surface-скіл |
 | AI-шар: hub, HubChat tool/executor, coach, digest, ai-memory     | `sergeant-module-ai`               |
+| Sync, оп-лог, LWW-конфлікти, dualwrite-core                      | `sergeant-module-sync`             |
+| Billing: тарифи, квоти, LiqPay, pricing                          | `sergeant-module-billing`          |
+| Зовнішні інтеграції: silpo / telegram / transcribe / webhooks    | `sergeant-module-integrations`     |
+| Push-сповіщення: web push, APNs, FCM, fan-out                    | `sergeant-module-push`             |
 | Нова фіча, новий екран, behavior-зміна                           | `sergeant-feature-delivery`        |
 | Баг, регресія, флакі-поведінка, hotfix                           | `sergeant-bugfix-and-regression`   |
 | Ревʼю PR, готовність до merge, pre-merge-перевірки               | `sergeant-review-and-merge`        |
