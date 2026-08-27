@@ -30,8 +30,8 @@ export function TransactionsEmptyState({
       </Text>
       <Text className="text-sm text-fg-muted text-center mb-4">
         {hasActiveFilter
-          ? "Спробуйте інший фільтр або очистіть пошук."
-          : "Додайте першу витрату, і вона з'явиться тут."}
+          ? "Спробуй інший фільтр або очисти пошук."
+          : "Додай першу витрату, і вона зʼявиться тут."}
       </Text>
       <Pressable
         onPress={onAdd}

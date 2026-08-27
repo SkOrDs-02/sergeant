@@ -184,7 +184,7 @@ export function Modal({
         aria-labelledby={title ? titleId : undefined}
         aria-describedby={description ? descriptionId : undefined}
         onPointerDown={(e) => e.stopPropagation()}
-        // Інлайн б'є `max-h-[…]` нижче саме тоді, коли клавіатура на
+        // Інлайн бʼє `max-h-[…]` нижче саме тоді, коли клавіатура на
         // екрані: `90vh`/`100dvh` її не враховують, тож без цього панель
         // лізла б під статус-бар. Скрол-регіон у тілі вже є.
         style={kbStyles.panel}

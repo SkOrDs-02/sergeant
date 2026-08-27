@@ -156,7 +156,7 @@ describe("Progress page", () => {
     expect(screen.getByText("-2,0 кг")).toBeInTheDocument();
   });
 
-  it("об'єднує вагу з обох сховищ в один ряд (W1-WEIGHT-SOT)", () => {
+  it("обʼєднує вагу з обох сховищ в один ряд (W1-WEIGHT-SOT)", () => {
     setHooks({
       entries: [{ id: "m1", at: "2026-05-07T08:00:00Z", weightKg: 81 }],
       dailyLog: [{ id: "dl1", at: "2026-05-14T08:00:00Z", weightKg: 79 }],

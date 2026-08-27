@@ -47,7 +47,7 @@ describe("env: CHAT_VIA_OPENROUTER — транспорт і model-id перем
   it("без прапорця, але з ключем — шлюз (відсутнє = дефолт схеми, ON)", () => {
     process.env["OPENROUTER_API_KEY"] = "sk-or-test";
     expect(chatViaOpenRouter()).toBe(true);
-    expect(defaultChatModel("firstTurn")).toBe("deepseek/deepseek-v4-flash");
+    expect(defaultChatModel("firstTurn")).toBe("google/gemini-3.7-flash");
     expect(defaultChatModel("synthesis")).toBe("z-ai/glm-5.2");
   });
 
@@ -77,10 +77,22 @@ describe("env: CHAT_VIA_OPENROUTER — транспорт і model-id перем
     process.env["CHAT_VIA_OPENROUTER"] = "true";
     process.env["OPENROUTER_API_KEY"] = "sk-or-test";
     expect(chatViaOpenRouter()).toBe(true);
-    expect(defaultChatModel("firstTurn")).toBe("deepseek/deepseek-v4-flash");
+    // FirstTurn більше не deepseek: за ТОЧНІСТЮ вони рівні (24/24 проти
+    // 11/12 — різниця в один спірний кейс), але максимум затримки 8,5 с
+    // проти 30,6 с. Замір `eval:tools` 2026-08-26, три серії на одному
+    // стенді; підстава — латентність, не якість (ADR-0087, п. 3).
+    //
+    // `standard` НАВМИСНО лишається deepseek: там затримка не критична,
+    // а ціна вдесятеро нижча.
+    expect(defaultChatModel("firstTurn")).toBe("google/gemini-3.7-flash");
     expect(defaultChatModel("synthesis")).toBe("z-ai/glm-5.2");
     expect(defaultChatModel("standard")).toBe("deepseek/deepseek-v4-flash");
-    expect(defaultChatModel("floor")).toBe("google/gemini-2.5-flash-lite");
+    // Floor більше не flash-lite: на стрімі з тулами він падав 9/12 у
+    // живому замірі 2026-08-25, тоді як чотири інші кандидати дали 0/8
+    // (знахідка B46, docs/90-work/audits/ai-testing-2026-08-25.md).
+    // Flash-lite лишається дефолтом НЕ-стрімових шляхів — тому міняти
+    // тут треба саме floor, а не всі згадки моделі.
+    expect(defaultChatModel("floor")).toBe("google/gemini-3.7-flash");
   });
 
   it("прапорець БЕЗ ключа — повний відкат, а не половинчастий", () => {

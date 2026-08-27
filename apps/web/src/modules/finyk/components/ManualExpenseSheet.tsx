@@ -102,7 +102,7 @@ interface ManualExpenseSheetProps {
   initialCategory?: string | null;
   initialDescription?: string | null;
   /**
-   * Прив'язана сума в гривнях для нового (не edit-mode) запису — напр.
+   * Привʼязана сума в гривнях для нового (не edit-mode) запису — напр.
    * «Створити витрату» з чека Сільпо без транзакції. Ігнорується в
    * edit-mode (`initialExpense.amount` лишається джерелом правди для
    * редагування). Число, не рядок: викликач знає суму з БД/API, а не з
@@ -115,7 +115,7 @@ interface ManualExpenseSheetProps {
   /**
    * Категорії, які користувач завів сам. Вбудований набір
    * (`CATEGORY_SLUGS`) про них не знає, тож без цього пропа щойно
-   * створена категорія просто не з'являлась у пікері — спіймано
+   * створена категорія просто не зʼявлялась у пікері — спіймано
    * бета-тестером 2026-08-10.
    *
    * Лише для витрат: надходження мають фіксовану таксономію з пʼяти
@@ -224,11 +224,11 @@ export function ManualExpenseSheet({
           description: trimmedDesc,
           // Локальний blob Фініка досі зберігає гривні (див.
           // domain-invariants.md § Money) — парсер лише гарантує, що сюди
-          // не доїде `1e9`, `12.345` чи від'ємне.
+          // не доїде `1e9`, `12.345` чи відʼємне.
           amount: expenseAmountHryvnia(values.amount),
           // Write path: always emit slug (Era 3).
           category: slug,
-          // "YYYY-MM-DD" як local date може з'їхати при toISOString() в UTC.
+          // "YYYY-MM-DD" як local date може зʼїхати при toISOString() в UTC.
           // Ставимо полудень, щоб стабільно зберігати правильний день.
           date: toExpenseInstant(values.date || toLocalISODate()),
           kind,
@@ -330,7 +330,7 @@ export function ManualExpenseSheet({
       // Скид `prevOpenInitKey` навмисно лишається в мікротаску (синхронний
       // `setState` тут ловить `react-hooks/set-state-in-effect`), але саме
       // через цю відкладеність він міг не встигнути до наступного відкриття:
-      // тоді `openInitKey === prevOpenInitKey`, ранній `return` нижче з'їдав
+      // тоді `openInitKey === prevOpenInitKey`, ранній `return` нижче зʼїдав
       // `reset()`, і аркуш відкривався з недобитою чернеткою — поле суми
       // лишалося заповненим, а новий ввід дописувався в кінець («50000» +
       // «50000» = «5000050000», browser QA 2026-08-04, F-009). `reset()` —
@@ -437,7 +437,7 @@ export function ManualExpenseSheet({
   // `openInitKey` ефекту ініціалізації правильно не дає йому
   // перезапуститись — він скинув би чернетку, — тож без окремої звірки
   // збереження записало б «Інше» замість власної категорії. Рівно та
-  // мовчазна підміна, проти якої цей аркуш і правили. Знайдено рев'ю #781.
+  // мовчазна підміна, проти якої цей аркуш і правили. Знайдено ревʼю #781.
   //
   // Звірка спрацьовує РІВНО ОДИН РАЗ на відкриття. Це не оптимізація, а
   // єдина працездатна семантика: `dirtyFields` тут не помічник, бо RHF
@@ -758,7 +758,7 @@ export function ManualExpenseSheet({
                 {...register("date")}
               />
             </details>
-            {/* М'яке вікно: зберігати дозволено, але рік варто перечитати. */}
+            {/* Мʼяке вікно: зберігати дозволено, але рік варто перечитати. */}
             {dateWarning ? (
               <p className="mt-2 text-style-caption text-warning-strong dark:text-warning">
                 {dateWarning}

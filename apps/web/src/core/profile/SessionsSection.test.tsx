@@ -213,7 +213,7 @@ describe("SessionsSection — «Цей пристрій» badge + last-seen (PR-
     "Mozilla/5.0 (X11; Linux x86_64; rv:122.0) Gecko/20100101 Firefox/122.0";
 
   function buildSessions() {
-    // Прив'язуємо `updatedAt` до реального часу замість fake-timers, бо
+    // Привʼязуємо `updatedAt` до реального часу замість fake-timers, бо
     // `vi.useFakeTimers()` ламає `Promise.all` всередині `load()`
     // (`microtaskQueueMicrotask` чекає на тики таймерів, які ніколи не
     // приходять, → тест таймаутиться). Інтервали достатньо великі, щоб

@@ -32,8 +32,8 @@ export const TTV_MS_KEY = "hub_ftux_ttv_ms_v1";
  *
  * Окремий per-module flag замість одного big-blob — мінімізує race-вікна
  * між модулями (одночасні виклики `markFirstActionCompletedForModule`
- * пишуть у різні KV-keys, тож на кінцевому стані не б'ються) і дозволяє
- * клієнтам читати один модуль без deserialize цілого об'єкта.
+ * пишуть у різні KV-keys, тож на кінцевому стані не бʼються) і дозволяє
+ * клієнтам читати один модуль без deserialize цілого обʼєкта.
  */
 export const FIRST_ACTION_COMPLETED_KEY_PREFIX =
   "hub_first_action_completed_v1:";

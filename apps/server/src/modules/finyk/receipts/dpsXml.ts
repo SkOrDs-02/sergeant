@@ -160,7 +160,7 @@ function extractAllTagBlocks(xml: string, tag: string): TagBlock[] {
   while ((m = re.exec(xml)) !== null) {
     out.push({ attrs: m[1] ?? "", content: m[2] ?? "" });
     // Захист від нескінченного циклу на нульовій довжині збігу — з цим
-    // патерном (обов'язковий `<tag...>...</tag>`) не повинно траплятись,
+    // патерном (обовʼязковий `<tag...>...</tag>`) не повинно траплятись,
     // але дешево перестрахуватись проти майбутньої зміни regex-у.
     if (m.index === re.lastIndex) re.lastIndex += 1;
   }
@@ -214,7 +214,7 @@ function toBoundedKopiykas(n: number): number | null {
  * Гроші (SUM/PRICE/COST) — або ціле число копійок ("15000"), або рядок з
  * десятковим роздільником як гривні ("150.00" / "150,00"), можливо із
  * тисячним групуванням ("1 500,00" / "1,500.00" — `normalizeGroupedMoney`
- * вище). Від'ємні значення (рядки знижок) зберігаються як є. Не-safe-int /
+ * вище). Відʼємні значення (рядки знижок) зберігаються як є. Не-safe-int /
  * позамежні значення → `null` (як нечитабельні), не Infinity/огром далі.
  */
 function parseMoneyKopiykas(raw: string | null): number | null {
@@ -329,7 +329,7 @@ export function parseDpsCheckXml(xml: string): ParsedDpsCheck | null {
   const timeParts = parseDpsTime(extractFirstTag(head, "ORTIME"));
   const purchasedAt = kyivWallClockToUtc({ ...dateParts, ...timeParts });
 
-  // Від'ємний загальний SUM — не легітимний чек (схема draft-у:
+  // Відʼємний загальний SUM — не легітимний чек (схема draft-у:
   // totalKopiykas ≥ 0; на відміну від рядків-знижок, де мінус легальний).
   const totalKopiykas = parseMoneyKopiykas(extractFirstTag(head, "SUM"));
   if (totalKopiykas == null || totalKopiykas < 0) return null;
@@ -349,11 +349,11 @@ export function parseDpsCheckXml(xml: string): ParsedDpsCheck | null {
 
     const qtyRaw = extractFirstTag(block.content, "AMOUNT");
     const qtyParsed = qtyRaw != null ? Number(qtyRaw.replace(",", ".")) : 1;
-    // Нечитабельна/нульова/від'ємна/позамежна кількість → 1 (безпечний
+    // Нечитабельна/нульова/відʼємна/позамежна кількість → 1 (безпечний
     // дефолт, той самий підхід, що ORDATE/ORTIME/ROWNUM fallback-и вище) —
-    // 0/від'ємне AMOUNT для звичайного рядка товару найімовірніше зламаний
+    // 0/відʼємне AMOUNT для звичайного рядка товару найімовірніше зламаний
     // парсинг, не легітимний домен-кейс (на відміну від рядка знижки, який
-    // кодує від'ємність через PRICE/COST, не AMOUNT); понад
+    // кодує відʼємність через PRICE/COST, не AMOUNT); понад
     // `RECEIPT_ITEM_QTY_ABS_MAX` — та сама категорія сміття, і схема
     // draft-у такий qty однаково не пропустить.
     const qty =

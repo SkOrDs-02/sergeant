@@ -123,7 +123,7 @@ export const Sizes: Story = {
 
 /** `disabled=true` — renders the trigger but no tooltip ever appears. */
 export const Disabled: Story = {
-  args: { disabled: true, content: "Цей tooltip не має з'являтись" },
+  args: { disabled: true, content: "Цей tooltip не має зʼявлятись" },
   render: (args) => (
     <Tooltip {...args}>
       <Button variant="ghost">Hover me — нічого не станеться</Button>

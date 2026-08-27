@@ -516,7 +516,7 @@ export function useWeeklyDigest(selectedWeekKey?: string) {
 
       try {
         // Кореляції рахуються кодом (не LLM) з локальних даних усіх модулів —
-        // коуч отримує «помічені зв'язки» без окремого виклику моделі (WP3).
+        // коуч отримує «помічені звʼязки» без окремого виклику моделі (WP3).
         const correlations = buildDigestCorrelations();
         coachApi
           .postMemory({
@@ -531,7 +531,7 @@ export function useWeeklyDigest(selectedWeekKey?: string) {
           .catch((err: unknown) => {
             // non-fatal, але без логу не було видно серверних збоїв у
             // персоналізованому coach-контексті — digest генерувався, а
-            // пам'ять мовчки не оновлювалася.
+            // памʼять мовчки не оновлювалася.
             logger.warn("[weeklyDigest] coachApi.postMemory failed", err);
           });
       } catch {

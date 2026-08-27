@@ -17,7 +17,7 @@ export default function FizrukWorkoutDetailScreen() {
     <DeepLinkPlaceholder
       title="Тренування"
       detail={id ? `ID: ${id}` : undefined}
-      followUp="Окремий екран тренування — наступний PR фази Фізрук."
+      followUp="Окремий екран тренування: наступний PR фази Фізрук."
       primaryAction={{
         label: "До списку тренувань",
         href: "/(tabs)/fizruk/workouts",

@@ -117,7 +117,7 @@ export function SavedRecipesListPage({ testID }: { testID?: string }) {
         <View className="px-4 py-6">
           <Text className="text-fg-muted text-sm">
             Порожньо. Додай рецепт вручну, імпортуй копію з web (експорт JSON)
-            або збережи згодом з AI, коли з’явиться на мобайлі.
+            або збережи згодом з AI, коли зʼявиться на мобайлі.
           </Text>
         </View>
       ) : (
@@ -145,7 +145,7 @@ export function SavedRecipesListPage({ testID }: { testID?: string }) {
             accessibilityViewIsModal
           >
             <Text className="text-fg font-medium mb-2">
-              Встав JSON (масив, об’єкт з recipes або один рецепт)
+              Встав JSON (масив, обʼєкт з recipes або один рецепт)
             </Text>
             <TextInput
               className="border border-cream-200 rounded-lg p-2 text-fg min-h-[160px] text-sm"

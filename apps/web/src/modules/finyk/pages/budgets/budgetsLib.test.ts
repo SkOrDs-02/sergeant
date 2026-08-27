@@ -150,7 +150,7 @@ describe("fetchProactiveAdvice", () => {
 
     await expect(
       fetchProactiveAdvice({
-        categoryId: "coffee",
+        categoryKey: "coffee",
         monthKey: "2026-07",
         catLabel: "Кава",
         spent: 1200,
@@ -181,7 +181,7 @@ describe("fetchProactiveAdvice", () => {
 
     await expect(
       fetchProactiveAdvice({
-        categoryId: "food",
+        categoryKey: "food",
         monthKey: "2026-07",
         catLabel: "Їжа",
         spent: 100,

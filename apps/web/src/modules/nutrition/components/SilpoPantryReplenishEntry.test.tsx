@@ -157,7 +157,7 @@ describe("SilpoPantryReplenishEntry", () => {
 
     expect(
       await screen.findByText(
-        "Позиції з чека лишаються у твоїй базі — в аналітику вони не йдуть.",
+        "Позиції з чека лишаються у твоїй базі, в аналітику вони не йдуть.",
       ),
     ).toBeInTheDocument();
   });

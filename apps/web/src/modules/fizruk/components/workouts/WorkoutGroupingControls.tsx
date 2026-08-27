@@ -40,7 +40,7 @@ export function WorkoutGroupingControls({
           onClick={onEnterSelectMode}
         >
           <Icon name="plus-circle" size="sm" />
-          Об{"'"}єднати в суперсет
+          Обʼєднати в суперсет
         </button>
       ) : (
         <>

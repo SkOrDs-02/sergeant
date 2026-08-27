@@ -119,7 +119,7 @@ afterEach(() => {
 describe("weekly-digest route — auth guard", () => {
   // Знахідка A1 (`docs/90-work/audits/ai-abuse-2026-08-05.md`) — роут витрачає
   // Anthropic-ключ власника і будує звіт про особисті дані, тож сесія
-  // обов'язкова і перевіряється до ключа.
+  // обовʼязкова і перевіряється до ключа.
   it("POST /api/weekly-digest → 401 без сесії", async () => {
     getSessionUserMock.mockResolvedValue(null);
     vi.stubEnv("ANTHROPIC_API_KEY", "test-key");
@@ -148,7 +148,14 @@ describe("weekly-digest route — key guard", () => {
 
 describe("weekly-digest route — validation", () => {
   it("POST /api/weekly-digest → 400 коли немає жодної секції", async () => {
+    // Валідація живе в хендлері, а гейт транспорту стоїть ПЕРЕД ним, тож щоб
+    // дійти до 400, треба спершу пройти гейт. Раніше для цього вистачало
+    // Anthropic-ключа; тепер `requireLlmUpstream("digest")` питає про ключ
+    // провайдера, який реально обере `getLLMProvider()` — а дефолт тут
+    // `openrouter`, ключа шлюзу в тестах немає. Оголошуємо stub явно, як і
+    // радить докстрінг цього файлу.
     vi.stubEnv("ANTHROPIC_API_KEY", "test-key");
+    vi.stubEnv("LLM_DIGEST_PROVIDER", "stub");
     const createApp = await loadCreateApp();
     const app = createApp();
     const res = await request(app)

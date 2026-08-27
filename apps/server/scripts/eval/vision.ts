@@ -78,14 +78,14 @@ const analyzePrompt = buildAnalyzePhotoPrompt({ locale: "uk-UA" });
 const ANALYZE_CASES: GoldenCase[] = [
   {
     name: "етикетка іноземною",
-    trap: "НЕПРАВИЛЬНО: не прочитати намальований текст і вигадати страву замість молока, або загубити об'єм 950 мл. Об'єктивна перевірка тут одна — чи доїхали числа з етикетки у відповідь.",
+    trap: "НЕПРАВИЛЬНО: не прочитати намальований текст і вигадати страву замість молока, або загубити обʼєм 950 мл. Обʼєктивна перевірка тут одна — чи доїхали числа з етикетки у відповідь.",
     user: analyzePrompt.user,
     image: image(LABEL_PNG_B64),
     judge: (text) => {
       const r = photoResult(text);
       if (!r) return "не розібрався прод-парсером";
       const missing = [
-        /950/.test(text) ? null : "об'єм 950",
+        /950/.test(text) ? null : "обʼєм 950",
         /молок|milch|milk/i.test(text) ? null : "молоко",
       ].filter((v): v is string => v !== null);
       return missing.length === 0 || `не прочитано: ${missing.join(", ")}`;
@@ -129,7 +129,7 @@ const ANALYZE_CASES: GoldenCase[] = [
   },
   {
     name: "не-їжа в кадрі",
-    trap: "НЕПРАВИЛЬНО: назвати предмет стравою або почати з'ясовувати його порцію. Саме цей режим відмови зловили на фото кота: «Кіт», впевненість 100%, нулі в КБЖВ і питання «Чи є на фото щось інше, окрім кота?» — з кнопкою «Зберегти в журнал» під ними.",
+    trap: "НЕПРАВИЛЬНО: назвати предмет стравою або почати зʼясовувати його порцію. Саме цей режим відмови зловили на фото кота: «Кіт», впевненість 100%, нулі в КБЖВ і питання «Чи є на фото щось інше, окрім кота?» — з кнопкою «Зберегти в журнал» під ними.",
     user: analyzePrompt.user,
     image: image(NON_FOOD_PNG_B64),
     judge: refusalJudge,
@@ -232,7 +232,7 @@ export interface ModalityFilter {
  * Відсіює кандидатів без підтримки зображень за `input_modalities` з живого
  * каталогу OpenRouter. Спека прямо називає це ризиком: без фільтра половина
  * прогону падає з помилкою провайдера, і в таблиці замість «модель не вміє
- * картинок» з'являється «модель провалила кейс» — різні висновки.
+ * картинок» зʼявляється «модель провалила кейс» — різні висновки.
  *
  * Anthropic-кандидати не фільтруємо: каталог тримає їх під іншими id
  * (`anthropic/claude-…` проти прямого `claude-…`), а всі поточні Claude
@@ -443,6 +443,12 @@ export async function runVisionOne(
     return {
       ...base,
       ok: false,
+      // Транспортна помилка (B47, напр. HTTP 401 без ключа) — модель не
+      // відповіла, це не вердикт судді. `report.ts` виключає такі рядки зі
+      // знаменника точності, інакше 401 рендериться як «модель провалила
+      // всі пастки» (закоміченy звіт `vision-eval-2026-08-25.md` саме так
+      // прочитався).
+      transportFailed: true,
       passedJudge: false,
       judgeReason: null,
       inputTokens: null,
@@ -456,6 +462,7 @@ export async function runVisionOne(
   return {
     ...base,
     ok: true,
+    transportFailed: false,
     passedJudge: verdict === true,
     judgeReason: typeof verdict === "string" ? verdict : null,
     inputTokens: raw.inputTokens,

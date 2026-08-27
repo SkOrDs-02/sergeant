@@ -336,7 +336,7 @@ describe("generateRecommendations", () => {
 
   // Regression (browser QA 2026-08-23): «Що зараз важливо» показувало 15 днів
   // там, де блок інсайтів показував 16 — рушій ділив години на 24 і округляв,
-  // тож вечірнє тренування «з'їдало» цілий календарний день. Обидві поверхні
+  // тож вечірнє тренування «зʼїдало» цілий календарний день. Обидві поверхні
   // тепер міряють `wholeDaysSince` від `endedAt`.
   it("рахує паузу календарними днями, а не 24-годинними інтервалами", () => {
     vi.useFakeTimers();
@@ -379,7 +379,7 @@ describe("generateRecommendations", () => {
 
   it("визначає мʼязові групи за назвою вправи (regex) і згортає їх в ОДНУ картку", () => {
     // Свіже тренування (2 дні тому) тримає `fizruk_long_break` мовчазним,
-    // тож м'язовий баланс має право говорити; груди й ноги стали
+    // тож мʼязовий баланс має право говорити; груди й ноги стали
     // несвіжими 12 днів тому.
     const old = new Date();
     old.setDate(old.getDate() - 12);
@@ -405,7 +405,7 @@ describe("generateRecommendations", () => {
     expect(muscleRecs).toHaveLength(1);
     const rec = muscleRecs[0]!;
     expect(rec.id).toBe("fizruk_muscle_balance");
-    expect(rec.title).toContain("2 групи м'язів");
+    expect(rec.title).toContain("2 групи мʼязів");
     expect(rec.body).toContain("Груди");
     expect(rec.body).toContain("Квадрицепс");
   });
@@ -475,7 +475,7 @@ describe("generateRecommendations", () => {
     // Регресія 2026-08-18: `musclesPrimary` каталогу несе доменні id
     // (`rhomboids`, `erector_spinae`, `rectus_abdominis`), а рушій мав
     // власну табличку на 10 рядків. Усе поза нею витікало в UI сирим
-    // англійським id — по картці на кожен м'яз.
+    // англійським id — по картці на кожен мʼяз.
     const old = new Date();
     old.setDate(old.getDate() - 10);
     const recent = new Date();
@@ -1276,7 +1276,7 @@ describe("generateRecommendations", () => {
     expect(budgetRecs).toHaveLength(0);
   });
 
-  it("обробляє finyk_tx_cache як масив напряму (не обгорнутий об'єкт)", () => {
+  it("обробляє finyk_tx_cache як масив напряму (не обгорнутий обʼєкт)", () => {
     const ts = Math.floor(Date.now() / 1000);
     // Direct array format
     setLS("finyk_tx_cache", [
@@ -1364,7 +1364,7 @@ describe("generateRecommendations", () => {
       },
       {
         // Свіже тренування тримає `fizruk_long_break` мовчазним — інакше
-        // м'язовий баланс навмисно не говорить (див. тест про паузу).
+        // мʼязовий баланс навмисно не говорить (див. тест про паузу).
         id: "w2",
         startedAt: recent.toISOString(),
         endedAt: new Date(recent.getTime() + 3600000).toISOString(),

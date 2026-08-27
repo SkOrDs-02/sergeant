@@ -30,7 +30,7 @@ type SpeechRecognitionCtor = new () => SpeechRecognitionLike;
 
 // Web Speech API не входить у lib.dom — типи держимо локально і
 // читаємо `window` через приватну window-shape без `declare global`,
-// щоб не нав'язувати єдину сигнатуру іншим call-сайтам (наприклад,
+// щоб не навʼязувати єдину сигнатуру іншим call-сайтам (наприклад,
 // `VoiceMicButton.tsx` має власну сумісну форму, ширшу для тестів).
 type WindowWithSpeech = typeof window & {
   SpeechRecognition?: SpeechRecognitionCtor;

@@ -174,6 +174,103 @@ describe("AddBudgetForm — useApiForm + zod (Item #8 round-13)", () => {
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
+  it("builds a multi-category limit: chips, optional name, combo payload", async () => {
+    const { onSubmit } = setup();
+    fireEvent.change(screen.getByDisplayValue("Обери категорію"), {
+      target: { value: "food" },
+    });
+    // Після першого вибору селект скидається в плейсхолдер «додай ще».
+    const addMore = screen.getByDisplayValue("Додай ще категорію");
+    expect(screen.queryByLabelText("Назва (необовʼязково)")).toBeNull();
+    fireEvent.change(addMore, { target: { value: "transport" } });
+
+    // Обидві категорії — у списку чипів, поле назви зʼявилось.
+    expect(
+      screen.getByRole("button", { name: "Прибрати категорію Їжа" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Прибрати категорію Транспорт" }),
+    ).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Назва (необовʼязково)"), {
+      target: { value: "Все на життя" },
+    });
+    fireEvent.change(screen.getByLabelText("Ліміт"), {
+      target: { value: "20000" },
+    });
+    fireEvent.submit(screen.getByRole("form", { name: "Новий ліміт бюджету" }));
+
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: "limit",
+          categoryId: "food",
+          categoryIds: ["food", "transport"],
+          label: "Все на життя",
+          limit: 20000,
+        }),
+      );
+    });
+  });
+
+  it("removing a chip drops the category from the draft", async () => {
+    const { onSubmit } = setup();
+    fireEvent.change(screen.getByDisplayValue("Обери категорію"), {
+      target: { value: "food" },
+    });
+    fireEvent.change(screen.getByDisplayValue("Додай ще категорію"), {
+      target: { value: "transport" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Прибрати категорію Їжа" }),
+    );
+    fireEvent.change(screen.getByLabelText("Ліміт"), {
+      target: { value: "500" },
+    });
+    fireEvent.submit(screen.getByRole("form", { name: "Новий ліміт бюджету" }));
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          categoryId: "transport",
+          categoryIds: ["transport"],
+        }),
+      );
+    });
+  });
+
+  it("rejects a duplicate category SET but allows partial overlap with a hint", async () => {
+    const existing: Budget[] = [
+      {
+        id: "b1",
+        type: "limit",
+        categoryId: "food",
+        categoryIds: ["food", "transport"],
+        limit: 1000,
+      } as Budget,
+    ];
+    const { onSubmit } = setup(existing);
+    fireEvent.change(screen.getByDisplayValue("Обери категорію"), {
+      target: { value: "transport" },
+    });
+    // Частковий перетин: transport уже в комбо-ліміті — форма показує
+    // попередження, але не блокує.
+    expect(
+      screen.getByText(/вже є в ліміті/, { exact: false }),
+    ).toBeInTheDocument();
+    fireEvent.change(screen.getByDisplayValue("Додай ще категорію"), {
+      target: { value: "food" },
+    });
+    fireEvent.change(screen.getByLabelText("Ліміт"), {
+      target: { value: "500" },
+    });
+    fireEvent.submit(screen.getByRole("form", { name: "Новий ліміт бюджету" }));
+    await waitFor(() => {
+      expect(
+        screen.getByText("Ліміт для цього набору категорій вже існує"),
+      ).toBeInTheDocument();
+    });
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
   it("submits a valid goal budget with trimmed name and number conversion (no more editable saved-amount field)", async () => {
     const { onSubmit } = setup();
     fireEvent.click(screen.getByRole("button", { name: /Ціль/ }));

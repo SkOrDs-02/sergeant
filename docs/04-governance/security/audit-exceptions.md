@@ -1,6 +1,6 @@
 # Audit-винятки
 
-> **Last touched:** 2026-08-07 by Claude (додано виняток image-size — патчу не існує; nanoid закрито override-ом, не винятком). **Next review:** 2027-11-05.
+> **Last touched:** 2026-08-27 by Claude (знято виняток react-router — upstream бекпортнув патч у 7.18.2, підняли залежність). **Next review:** 2027-11-05.
 > **Status:** Active
 
 > Відстежені вразливості, які тимчасово допускаються через машинно-читаний
@@ -69,18 +69,6 @@ $ # production --audit-level=high → exit 0 (нема high+ у prod tree)
 OSV-Scanner SARIF з найсвіжішого nightly run відображає цю саму
 вразливість як `warning` у Code Scanning:
 https://github.com/Skords-01/Sergeant/security/code-scanning/1
-
-### react-router RSC-mode CSRF bypass (GHSA-QWWW-VCR4-C8H2)
-
-| Field      | Value                                                                                                                                                                                                                                                                                                                                                                                                     |
-| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Advisory   | https://github.com/advisories/GHSA-qwww-vcr4-c8h2                                                                                                                                                                                                                                                                                                                                                         |
-| Package    | `react-router` (через прямий `react-router-dom@^7.18.1` у `apps/web`); вразливі `>=7.12.0 <8.3.0`, патч лише у `8.3.0`                                                                                                                                                                                                                                                                                    |
-| Severity   | high — обхід CSRF-захисту в **RSC-режимі**                                                                                                                                                                                                                                                                                                                                                                |
-| Reason     | Патч існує тільки в наступному **мажорі** (8.3.0). Це не bump, а міграція: `react-router-dom` — прямий залежник `apps/web` і несе весь роутинг застосунку. Підняти його тим самим PR, що розблоковує CI, означало б протягнути мажорну міграцію роутингу без регресійного прогону — саме те, від чого захищає цей гейт.                                                                                   |
-| Mitigation | **Sergeant не використовує RSC-режим react-router.** `apps/web` — це SPA на Vite з клієнтським `createBrowserRouter`; серверного рендеру React Server Components у продукті немає, а разом із ним немає й вразливої поверхні (RSC action-handler). Тобто вразливий код-шлях у бандлі не виконується. Плюс автентифікація йде через Better Auth cookie-сесії з власною CSRF-логікою, не через RSC-actions. |
-| Due date   | 2026-08-31 — окремим deps-PR із мажорною міграцією `react-router-dom` 7 → 8 і повним прогоном роутингу (`Critical-flow E2E` + a11y-лейн).                                                                                                                                                                                                                                                                 |
-| Owner      | @SkOrDs-02                                                                                                                                                                                                                                                                                                                                                                                                |
 
 ### image-size DoS через нескінченні цикли в ICNS / JXL / HEIF парсерах (GHSA-W3RX-R6R6-PGPR, GHSA-5P2G-FCMC-QVQQ)
 

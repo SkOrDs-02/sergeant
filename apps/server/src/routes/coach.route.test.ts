@@ -97,7 +97,7 @@ vi.mock("./../push/send.js", () => ({
 // handler (див. `apps/server/src/routes/coach.ts`). Це консьюмить перший
 // `queryMock.mockResolvedValueOnce` (rate-limit Postgres-фолбек), і в результаті
 // handler читає `{ rows: [{ "?column?": 1 }] }` за дефолтом, повертаючи
-// `memory: null` замість підставленого об'єкта. Цей файл тестує route-wiring
+// `memory: null` замість підставленого обʼєкта. Цей файл тестує route-wiring
 // + handler-shape; rate-limiter має власний `http/rateLimit.test.ts`. Mock-аємо
 // як passthrough.
 vi.mock("./../http/rateLimit.js", async () => {
@@ -172,10 +172,13 @@ describe("coach routes — auth guard (unauthenticated → 401)", () => {
 });
 
 describe("coach routes — key guard", () => {
-  it("POST /api/coach/insight → 503 з сесією але без ANTHROPIC_API_KEY", async () => {
+  it("POST /api/coach/insight → 503 з сесією, коли жоден провайдер недосяжний", async () => {
     getSessionUserMock.mockResolvedValue({ id: "u1" });
     // `beforeEach` already stubs `ANTHROPIC_API_KEY=""`; re-load app so the
-    // empty value lands in the freshly-parsed `env` module.
+    // empty value lands in the freshly-parsed `env` module. Ключа шлюзу в
+    // тестовому середовищі теж немає, тож `requireLlmUpstream("coach")`
+    // бачить недосяжним і дефолтний `openrouter`, і запасний `anthropic` —
+    // 503 замість 200 із тихою заглушкою.
     const createApp = await loadCreateApp();
     const app = createApp();
     const res = await request(app)
@@ -274,6 +277,12 @@ describe("coach routes — POST /insight", () => {
     // Stub the key BEFORE `loadCreateApp()` so the env module sees it on
     // re-parse.  `vi.unstubAllEnvs()` in `afterEach` rolls this back.
     vi.stubEnv("ANTHROPIC_API_KEY", "test-key");
+    // Явно оголошуємо провайдера-заглушку. Доти тест спирався на те, що
+    // `getLLMProvider()` fail-soft повертає `StubProvider`, коли
+    // `LLM_COACH_PROVIDER=openrouter` (дефолт), а ключа шлюзу в тестах немає
+    // — тобто зеленів на stub-тексті, ніде цього не заявляючи. Той самий
+    // клас мовчазної підміни, що й знахідка B44 у стенді. Тепер намір у коді.
+    vi.stubEnv("LLM_COACH_PROVIDER", "stub");
     // SELECT coach memory
     queryMock.mockResolvedValueOnce({ rows: [] });
     // SELECT ai_quota

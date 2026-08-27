@@ -13,7 +13,7 @@
 //   • в `idle` форма прихована;
 //   • у режимі `create` поряд зі «Створити» стоїть «Скасувати», а не
 //     «Видалити»;
-//   • небезпечна зона з'являється лише після натиску на роздільник
+//   • небезпечна зона зʼявляється лише після натиску на роздільник
 //     «Інше».
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";

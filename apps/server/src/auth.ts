@@ -128,7 +128,7 @@ interface SocialProvidersConfig {
 }
 
 /**
- * Збираємо `socialProviders` тільки коли всі обов'язкові env-и пари
+ * Збираємо `socialProviders` тільки коли всі обовʼязкові env-и пари
  * присутні. Якщо хоч одна порожня — провайдер не вмикаємо і фронтова кнопка
  * отримає `PROVIDER_NOT_FOUND` через стандартний `authError` (див.
  * `loginWithGoogle` у `apps/web/src/core/auth/AuthContext.tsx`), а сервер
@@ -341,7 +341,7 @@ export const auth = betterAuth({
      *     отримують верифікаційний лист (одразу мають канал верифікації).
      *   - `requireVerifiedEmail()` middleware гейтить `/api/mono/connect`
      *     unconditional — найпотужніша атака з картки (squat email →
-     *     підв'язати чужий банк) не чекає на глобальний flip.
+     *     підвʼязати чужий банк) не чекає на глобальний flip.
      */
     requireEmailVerification: env.REQUIRE_EMAIL_VERIFICATION,
     /**
@@ -722,7 +722,7 @@ export async function getSessionUser(
           });
         }
       }
-      // Ліниво прив'язуємо сесію до request-context і Sentry-scope. Завдяки
+      // Ліниво привʼязуємо сесію до request-context і Sentry-scope. Завдяки
       // цьому будь-який log/Sentry-івент далі в ланцюжку знає, хто саме
       // виконує запит. Безпечно без сесії — просто no-op.
       try {

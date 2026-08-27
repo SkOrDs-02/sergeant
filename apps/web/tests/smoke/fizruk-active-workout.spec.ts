@@ -13,7 +13,7 @@ import { collectPageErrors, waitForInitialSqliteRefresh } from "./smokeHelpers";
  *     відновлення сесії), і ще один прилітає сам собою: на першому візиті
  *     service worker робить `skipWaiting()` + `clients.claim()`, звідки
  *     `controllerchange` → `window.location.reload()` у `main.tsx`. Момент
- *     цього reload-у не детермінований — саме він з'їдав `fizruk_rest_timer_done`
+ *     цього reload-у не детермінований — саме він зʼїдав `fizruk_rest_timer_done`
  *     і робив тест червоним.
  *  2. LocalStorage-кільце (`hub_analytics_log_v1`) тут теж не рятує: у
  *     smoke-стеку `vite preview` віддає сторінку без COOP/COEP, sqlite-wasm

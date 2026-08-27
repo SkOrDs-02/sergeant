@@ -7,7 +7,7 @@ import { act, renderHook } from "@testing-library/react";
  *
  * Перевіряємо, що `usePwaInstall` емітить
  * `PWA_INSTALL_PROMPTED → PWA_INSTALL_{ACCEPTED|DISMISSED} → PWA_INSTALLED`
- * у правильних точках, а також що банер з'являється тільки після
+ * у правильних точках, а також що банер зʼявляється тільки після
  * 30-секундного gate-у + ≥ 2 сесій (як було до PR-07). Перевіряємо
  * `appinstalled` як термінальну подію funnel-у — стріляє НЕЗАЛЕЖНО від того,
  * чи юзер прийшов з банера, чи натиснув native browser-prompt.

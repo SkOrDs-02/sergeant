@@ -33,7 +33,7 @@ export type {
  *     update). Чисті по відношенню до React state — лише setters з slots.
  *   - `useFinykBackupSync` — експорт/імпорт JSON, sync-URL.
  *
- * Публічний контракт повертає об'єкт із плоскою формою — як до
+ * Публічний контракт повертає обʼєкт із плоскою формою — як до
  * декомпозиції — щоб `FinykApp.tsx` і `core/settings/FinykSection.tsx`
  * не змінювалися (initiative 0001 — module decomposition).
  */
@@ -120,7 +120,7 @@ export function useStorage({
     .filter(([, catId]) => catId === INTERNAL_TRANSFER_ID)
     .map(([txId]) => txId);
 
-  // ID транзакцій прив'язаних до пасивів — для відстеження погашення в Assets
+  // ID транзакцій привʼязаних до пасивів — для відстеження погашення в Assets
   // НЕ виключаємо зі статистики, щоб вони відображались у категорії "Борги та кредити"
   const debtLinkedTxIds = new Set<string>([
     ...manualDebts.flatMap((d) => d.linkedTxIds || []),

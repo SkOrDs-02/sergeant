@@ -1,6 +1,6 @@
 /**
  * Write-through sync for `hub_biometrics_v1` AND `hub_user_profile_v1`
- * (банк пам'яті ШІ) against `GET/PUT /api/me/profile` (migration 115).
+ * (банк памʼяті ШІ) against `GET/PUT /api/me/profile` (migration 115).
  * **NOT an oplog** — a SINGLE JSONB row per user, upserted wholesale on
  * every save and read wholesale on login. See the module comment in
  * `./biometrics.ts` for why biometrics had no server leg at all until this

@@ -5,7 +5,7 @@
  *  - shell renders the screen title and the search input;
  *  - all eight registry modules render their localised header
  *    (`Фінік`, `Фізрук`, `Рутина`, `Харчування`, `Кросмодульні`,
- *    `Аналітика`, `Утиліти`, `Пам'ять`);
+ *    `Аналітика`, `Утиліти`, `Памʼять`);
  *  - module headers carry the visible per-module count derived from
  *    `ASSISTANT_CAPABILITIES`;
  *  - a representative capability row (`create_transaction`) renders

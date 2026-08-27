@@ -1,6 +1,7 @@
 # Мінімальні Grafana-дашборди (Prometheus)
 
-> **Last validated:** 2026-05-13 by @Skords-01 / Devin.
+> **Last validated:** 2026-08-26 by @claude.
+> **Next review:** 2026-11-26.
 > **Status:** Active
 
 Це "starter pack" панелей, яких достатньо, щоб швидко зрозуміти: **що саме горить**
@@ -75,6 +76,19 @@
   - `sum by (reason) (rate(ai_quota_blocks_total[5m]))`
 - **AI quota fail-open (критично для білінгу)**:
   - `sum by (reason) (rate(ai_quota_fail_open_total[5m]))`
+- **TTFT чату — час до першого токена** (SLO `< 1.5 s` p95, `apps/server/AGENTS.md`):
+  - `histogram_quantile(0.95, sum by (le, model, endpoint) (rate(ai_first_token_ms_bucket[5m])))`
+  - Це НЕ `ai_request_duration_ms`: та міряє стрім цілком, а людина дивиться на
+    порожній екран рівно до першого фрагмента. Розрив між двома панелями —
+    нормальний і очікуваний; тривожить саме перша.
+- **зриви стріму чату** (порожня відповідь замість тексту):
+  - `sum by (model) (rate(ai_requests_total{endpoint=~"chat.*",outcome="error"}[5m]))`
+  - Панель зʼявилась не просто так: подія `type: "error"` приходить ПІСЛЯ
+    200-ки, і доки її не обробляли, такі зриви рахувались як успіх — у
+    метриці було чисто, а користувач бачив мовчання. Якщо ця панель росте
+    по конкретній моделі, дивись саме на модель, а не на інфраструктуру:
+    заміряно, що різні моделі на тій самій формі виклику поводяться
+    діаметрально по-різному.
 
 ## Cost monitoring (PR-33)
 
@@ -106,11 +120,14 @@
 
 | Файл                                                              | Скоуп                                                                                                                                                                                                              |
 | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [`ops-home.json`](./dashboards/ops-home.json)                     | Стартовий хаб (entry point): кнопки переходу в Sentry/PostHog/Coolify/Vercel + ключові live-KPI (scrape-targets, 5xx ratio, p95 non-AI, AI-витрати/24год, DB pool). ⭐ Star → Set as home                          |
+| [`ops-overview.json`](./dashboards/ops-overview.json)             | Оглядовий дашборд (24 панелі): n8n instance health/uptime/memory/event-loop-lag поряд із процес-ресурсами Sergeant-сервера                                                                                         |
 | [`http-red.json`](./dashboards/http-red.json)                     | HTTP RED (rate, errors, duration p50/p95/p99) з фільтром по module/path                                                                                                                                            |
 | [`db-use.json`](./dashboards/db-use.json)                         | Postgres pool USE, тривалість запитів, slow-запити, DB-помилки                                                                                                                                                     |
 | [`slo-burn-rate.json`](./dashboards/slo-burn-rate.json)           | Multi-window multi-burn-rate SLO-огляд (усі домени)                                                                                                                                                                |
 | [`sync.json`](./dashboards/sync.json)                             | Результати sync по op/module/outcome, p95 тривалості, p95 payload, conflict ratio, SLO burn-rate                                                                                                                   |
 | [`auth.json`](./dashboards/auth.json)                             | Результати auth, p95 session-lookup, rate-limit-hit-и, sign-in success-rate                                                                                                                                        |
+| [`cost-monitoring.json`](./dashboards/cost-monitoring.json)       | PR-33 — агреговані витрати з 6 провайдерів (Anthropic + Voyage + Hetzner + Vercel + PostHog + Sentry): пай-чарти, daily AI burn, run-rate vs budget-envelopes                                                      |
 | [`ai-cost.json`](./dashboards/ai-cost.json)                       | PR-13 — focused AI-cost (Anthropic + Voyage): 30d-стати, hourly burn, per-model daily breakdown, top-10 endpoints, run-rate vs `*_MONTHLY_BUDGET_USD`, projected EOM spend, cache-hit ratio, quota fail-open guard |
 | [`hubchat.json`](./dashboards/hubchat.json)                       | HubChat tool-invocation leaderboard, executed/proposed-співвідношення, unknown_tool, truncation-и                                                                                                                  |
 | [`frontend-cwv.json`](./dashboards/frontend-cwv.json)             | Core Web Vitals — LCP/INP/FCP/TTFB/CLS good/needs-improvement/poor-ratio + p75 (baseline-режим)                                                                                                                    |

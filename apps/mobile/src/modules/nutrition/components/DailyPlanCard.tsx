@@ -352,7 +352,7 @@ export function DailyPlanCard({
           <View style={{ gap: 8 }} testID="daily-plan-meals">
             <View className="flex-row justify-between items-center">
               <SectionHeading size="xs" variant="muted">
-                Ваш план на сьогодні
+                Твій план на сьогодні
               </SectionHeading>
               {dayPlan?.totalKcal != null ? (
                 <Text className="text-xs text-fg-muted">

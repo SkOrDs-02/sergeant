@@ -25,7 +25,7 @@ export const FIZRUK_TOOLS: AnthropicTool[] = [
         exercises: {
           type: "array",
           description:
-            "Список вправ. Кожна вправа: name (обов'язково), sets, reps, weight (опційно).",
+            "Список вправ. Кожна вправа: name (обовʼязково), sets, reps, weight (опційно).",
           items: {
             type: "object",
             properties: {
@@ -189,14 +189,14 @@ export const FIZRUK_TOOLS: AnthropicTool[] = [
   {
     name: "suggest_workout",
     description:
-      "Порадити тренування на основі історії: які м'язи давно не тренували, recovery atlas. Відповідай текстом-порадою (без запису), але якщо користувач скаже 'запиши' — використай plan_workout.",
+      "Порадити тренування на основі історії: які мʼязи давно не тренували, recovery atlas. Відповідай текстом-порадою (без запису), але якщо користувач скаже 'запиши' — використай plan_workout.",
     input_schema: {
       type: "object",
       properties: {
         focus: {
           type: "string",
           description:
-            "Бажаний фокус: 'upper', 'lower', 'full', 'push', 'pull', 'cardio' або група м'язів (опційно)",
+            "Бажаний фокус: 'upper', 'lower', 'full', 'push', 'pull', 'cardio' або група мʼязів (опційно)",
         },
       },
     },
@@ -224,7 +224,7 @@ export const FIZRUK_TOOLS: AnthropicTool[] = [
   {
     name: "compare_progress",
     description:
-      "Порівняти прогрес по вправі або м'язовій групі за період. Повертає текстовий аналіз з числами.",
+      "Порівняти прогрес по вправі або мʼязовій групі за період. Повертає текстовий аналіз з числами.",
     input_schema: {
       type: "object",
       properties: {
@@ -234,7 +234,7 @@ export const FIZRUK_TOOLS: AnthropicTool[] = [
         },
         muscle_group: {
           type: "string",
-          description: "Група м'язів (опційно, напр. 'chest', 'biceps')",
+          description: "Група мʼязів (опційно, напр. 'chest', 'biceps')",
         },
         period_days: {
           type: "number",

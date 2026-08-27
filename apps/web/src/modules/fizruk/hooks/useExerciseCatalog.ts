@@ -9,11 +9,14 @@ import {
 } from "../lib/fizrukDualWriteState";
 import { getCachedFizrukSqliteState } from "../lib/sqliteReader";
 import { useFizrukSqliteReadTick } from "../lib/sqliteReadGate";
+import { foldApostrophes } from "@sergeant/shared";
 
 type RawExerciseDef = FizrukData.RawExerciseDef;
 
 function norm(s: unknown) {
-  return (s || "").toString().trim().toLowerCase();
+  // Апостроф згортаємо (канон §1.10): «мʼяз» і «мʼяз» — те саме слово, і
+  // пошук не має залежати від того, яку форму дала клавіатура.
+  return foldApostrophes((s || "").toString().trim().toLowerCase());
 }
 
 /**

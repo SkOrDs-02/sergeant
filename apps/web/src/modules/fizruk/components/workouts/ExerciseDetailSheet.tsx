@@ -128,7 +128,7 @@ export function ExerciseDetailSheet({
         <div className="mb-4 rounded-2xl border border-warning/40 bg-warning/10 px-3 py-2.5 text-xs text-warning-strong dark:text-warning leading-snug">
           {cf.injury.blocked ? (
             <div className="font-semibold">
-              Ти позначив біль. Ми не радимо навантажувати цю групу.
+              Ти позначив біль. Навантажувати цю групу не раджу.
             </div>
           ) : null}
           {cf.red?.length ? (
@@ -182,7 +182,7 @@ export function ExerciseDetailSheet({
       */}
       {images.length === 0 && !selected.description && tips.length === 0 && (
         <p className="mb-4 text-style-caption text-subtle leading-relaxed">
-          Опису й фото для цієї вправи поки немає — нижче тільки мʼязи й
+          Опису й фото для цієї вправи поки немає, нижче тільки мʼязи й
           обладнання.
         </p>
       )}
@@ -284,7 +284,7 @@ export function ExerciseDetailSheet({
             }
             if (cf.injury.blocked) {
               toast?.warning?.(
-                "Ти позначив біль у цій групі. Ми не радимо її навантажувати.",
+                "Ти позначив біль у цій групі. Навантажувати її не раджу.",
               );
             }
             addExerciseToActive(selected);

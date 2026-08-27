@@ -416,11 +416,11 @@ describe("BiometricsSection — L-4 (значення поза діапазон�
     fireEvent.click(screen.getByRole("button", { name: "Зберегти" }));
 
     // Без фіксу: клік стирав heightCm -> isBiometricsCompleteForTdee(biometrics)
-    // -> false -> статус тихо перемикався на "Заповніть дані для розрахунку",
+    // -> false -> статус тихо перемикався на "Заповни дані для розрахунку",
     // і КБЖВ-розрахунок у Nutrition ламався без жодного видимого сигналу.
     expect(screen.getByText("Готово до розрахунку TDEE")).toBeInTheDocument();
     expect(
-      screen.queryByText("Заповніть дані для розрахунку"),
+      screen.queryByText("Заповни дані для розрахунку"),
     ).not.toBeInTheDocument();
   });
 });

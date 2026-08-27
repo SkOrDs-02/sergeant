@@ -588,7 +588,7 @@ describe("FallbackProvider", () => {
 });
 
 // ─── getLLMProvider fallback chain ───────────────────────────────────────
-// env об'єкт парситься при import, тому vi.stubEnv не впливає на нього.
+// env обʼєкт парситься при import, тому vi.stubEnv не впливає на нього.
 // Для тестів fallback chain мокаємо env-модуль через vi.mock.
 describe("getLLMProvider — fallback chain", () => {
   const originalEnv = { ...process.env };
@@ -669,7 +669,7 @@ describe("getLLMProvider — fallback chain", () => {
    * Регресія. `getLLMProvider` створював `FallbackProvider` без `log`, а
    * дефолт там — `() => undefined`. Підміна провайдера не лишала ані рядка
    * в логах, ані метрики: `invokeLLM` бачить лише фінальний `ok` і пише його
-   * з моделлю ФОЛБЕКА. Через це коуч дев'ять викликів із десяти йшов не тією
+   * з моделлю ФОЛБЕКА. Через це коуч девʼять викликів із десяти йшов не тією
    * моделлю, що в конфігу, і знайшлось це випадково — розкладом витрат по
    * моделях, а не сигналом.
    */

@@ -20,13 +20,33 @@
  * половини з проміжним станом. Await на промісі лишає послідовність
  * лінійною й читабельною — а це та функція, у якій помилка означає
  * несанкціоновану зміну даних.
+ *
+ * AI-CONTEXT (B39, 2026-08-25): `items` несе не лише імʼя інструмента, а й
+ * опційний `summary` — короткий людський опис аргументів САМЕ цього
+ * виклику (наприклад, патерн і ліміт для `batch_categorize`). До фіксу
+ * діалог показував тільки назву, тож людина погоджувалась на «масову
+ * категоризацію» не бачачи, який патерн і скільки транзакцій воно
+ * зачепить. Масив, а не `Record<name, summary>` — той самий інструмент
+ * може прийти в батчі двічі з різними аргументами (два `delete_transaction`
+ * з різними `tx_id`), і ключування по імені втратило б другий виклик.
  */
 import { useCallback, useRef, useState } from "react";
 
+/** Один інструмент батчу, що потребує згоди. */
+export interface DestructiveConfirmItem {
+  /** Імʼя інструмента (tool name). */
+  name: string;
+  /**
+   * Короткий опис аргументів САМЕ цього виклику. `undefined`, коли в
+   * інструмента немає аргументів, вартих показу в модалці (`clear_pantry`).
+   */
+  summary?: string;
+}
+
 /** Опис одного очікуваного підтвердження. */
 export interface PendingDestructiveConfirm {
-  /** Імена інструментів (tool name), які потребують згоди. */
-  toolNames: readonly string[];
+  /** Інструменти (+ короткий опис аргументів), які потребують згоди. */
+  items: readonly DestructiveConfirmItem[];
 }
 
 export interface UseDestructiveConfirmResult {
@@ -36,7 +56,7 @@ export interface UseDestructiveConfirmResult {
    * Просить згоди на перелічені інструменти. Резолвиться `true` (виконуємо)
    * або `false` (скасовано).
    */
-  request: (toolNames: readonly string[]) => Promise<boolean>;
+  request: (items: readonly DestructiveConfirmItem[]) => Promise<boolean>;
   /** Користувач підтвердив. */
   accept: () => void;
   /** Користувач відмовився — або закрив діалог, або натиснув Esc. */
@@ -63,7 +83,7 @@ export function useDestructiveConfirm(): UseDestructiveConfirmResult {
   }, []);
 
   const request = useCallback(
-    (toolNames: readonly string[]) =>
+    (items: readonly DestructiveConfirmItem[]) =>
       new Promise<boolean>((resolve) => {
         // Захист від накладання: якщо попередній діалог якимось чином
         // лишився невирішеним, закриваємо його ВІДМОВОЮ. Мовчазне
@@ -73,7 +93,7 @@ export function useDestructiveConfirm(): UseDestructiveConfirmResult {
         const stale = resolveRef.current;
         if (stale) stale(false);
         resolveRef.current = resolve;
-        setPending({ toolNames });
+        setPending({ items });
       }),
     [],
   );

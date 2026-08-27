@@ -70,7 +70,7 @@ function renderSheet(
     defaultOptions: { queries: { retry: false } },
   });
   render(
-    // `SilpoReceiptSection` усередині ходить у `useNavigate` (CTA «Зв'язати
+    // `SilpoReceiptSection` усередині ходить у `useNavigate` (CTA «Звʼязати
     // Сільпо» на транзакціях, що виглядають як покупка в Сільпо), а хук
     // кидає без роутер-контексту — той самий патерн, що вже вимагає
     // `MemoryRouter` у тестах `FinykInsightsBlock` і `useFinykBackupSync`.

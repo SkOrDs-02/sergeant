@@ -112,7 +112,7 @@ export function HabitForm({
   // "Більше опцій" disclosure. When editing an existing habit we open
   // the advanced block so the user doesn't lose track of values they
   // already set.
-  // М'яке вікно дат — попередження, не блокування (жорстке вікно ловить
+  // Мʼяке вікно дат — попередження, не блокування (жорстке вікно ловить
   // `HabitQuickCreateDialog.handleSave` як помилку валідації).
   const dateWarning = [habitDraft.startDate, habitDraft.endDate].some(
     (d) => d && classifyDateBound(d) === "warn",
@@ -334,7 +334,7 @@ export function HabitForm({
               }
             />
           </div>
-          {/* М'яке вікно: зберігати дозволено, попереджаємо про рік. */}
+          {/* Мʼяке вікно: зберігати дозволено, попереджаємо про рік. */}
           {dateWarning ? (
             <p className="text-style-caption text-warning-strong dark:text-warning">
               {dateWarning}

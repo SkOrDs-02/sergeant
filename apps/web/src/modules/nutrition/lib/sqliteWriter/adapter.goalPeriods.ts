@@ -28,7 +28,7 @@ import type { GoalPeriodInsertOp, NutritionGoalSnapshot } from "./diff.js";
  *   - **ДЕТЕРМІНОВАНИЙ `id`.** Це не мікрооптимізація. `crypto.randomUUID()`
  *     дав би на кожному ретраї другу сходинку з тими самими числами того
  *     самого дня — і журнал НАМІРУ перестав би бути журналом наміру.
- *     Складові id (`effective_from` + усі п'ять значень + device) дібрані
+ *     Складові id (`effective_from` + усі пʼять значень + device) дібрані
  *     так, що ретрай схлопується, а справжня друга зміна за той самий
  *     вечір — ні.
  *   - **жодного запису в `nutrition_prefs`.** Його вже зробив старий
@@ -84,7 +84,7 @@ export async function insertGoalPeriod(
       carbs_g: carbsG,
       water_ml: waterMl,
       // 'manual' — усе, що приходить із дуал-райту, є прямою дією юзера.
-      // 'preset' / 'tdee' з'являться, коли ціль почне рахувати калькулятор;
+      // 'preset' / 'tdee' зʼявляться, коли ціль почне рахувати калькулятор;
       // 'backfill' ставить ЛИШЕ серверна міграція 087 і ніхто інший.
       origin: "manual",
       tz_offset_min: tzOffsetMin,

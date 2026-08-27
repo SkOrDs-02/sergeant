@@ -208,7 +208,7 @@ describe("titleFor", () => {
     expect(titleFor("morning_briefing", "completed")).toBe("Ранковий брифінг");
     expect(titleFor("set_goal", "completed")).toBe("Ціль встановлено");
     expect(titleFor("calculate_1rm", "completed")).toBe("1RM розраховано");
-    expect(titleFor("remember", "completed")).toBe("Пам'ять оновлено");
+    expect(titleFor("remember", "completed")).toBe("Памʼять оновлено");
     expect(titleFor("query_transactions", "completed")).toBe(
       "Транзакції за запитом",
     );

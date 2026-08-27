@@ -83,7 +83,7 @@ describe("categorizeFood", () => {
     ["рис круглозернистий", "grains"],
     ["хліб бородинський", "grains"],
     ["олія соняшникова", "pantry"],
-    ["сіль кам'яна", "pantry"],
+    ["сіль камʼяна", "pantry"],
   ])("'%s' → %s", (input, expectedId) => {
     expect(categorizeFood(input).id).toBe(expectedId);
   });

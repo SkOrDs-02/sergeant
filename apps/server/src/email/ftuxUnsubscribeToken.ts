@@ -17,7 +17,7 @@ import { FTUX_DRIP_CAMPAIGN_FAMILY } from "./ftuxDripCopy.js";
  * Версія `v1` у payload-і дозволяє ввести нову схему без поломок старих
  * листів, які все ще можуть прилітати у inbox-и через 3-7 днів. Verifier
  * далі перевіряє лише поточну версію — старі токени просто перестануть
- * валідуватись (опційно: paint-grace-window майбутньою рев'ю).
+ * валідуватись (опційно: paint-grace-window майбутньою ревʼю).
  *
  * Чому окремо від `auth.ts` HMAC-патернів: secret той самий
  * (`BETTER_AUTH_SECRET`), але scope різний (auth-cookies vs

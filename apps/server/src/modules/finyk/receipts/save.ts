@@ -172,7 +172,7 @@ async function fetchReceiptLink(
  * blob-shape (`{id, date, description, amount, category}`, `amount` у
  * ГРИВНЯХ), той самий sync-sibling insert (id UUID PK + user_id +
  * data_json JSONB). НЕ виклик самої `manualExpenses.ts` — той handler
- * зв'язаний з Express req/res (власний `parseBody`/`res.json`) і з
+ * звʼязаний з Express req/res (власний `parseBody`/`res.json`) і з
  * top-level `pool`, а тут потрібен insert усередині ВЖЕ відкритої
  * транзакції `save.ts` (той самий `client`, щоб COMMIT/ROLLBACK
  * охоплював і чек, і фолбек-витрату атомарно).
@@ -251,7 +251,7 @@ export default async function saveReceiptHandler(
   // клієнт міг покласти в opaque blob самостійно. Дедуп-SELECT, guard
   // 23505-гонки нижче і предикат індексу (jsonb_typeof = 'string') мусять
   // дивитись на ОДНЕ значення — конфлікт, який індекс бачить, а код ні,
-  // давав би нез'ясовне 500 замість reload-у існуючого чека.
+  // давав би незʼясовне 500 замість reload-у існуючого чека.
   const effectiveClientScanId =
     isPlainRecord(rawPayloadWithScanId) &&
     typeof rawPayloadWithScanId["clientScanId"] === "string"

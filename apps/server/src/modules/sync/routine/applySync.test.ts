@@ -100,7 +100,7 @@ describe("applyRoutineEntries", () => {
   });
 
   // AI-CONTEXT: `routine_entries.id` детермінований (`habitId:dateKey`), тому
-  // toggle→untoggle→toggle б'є в ТОЙ САМИЙ PK. Воскресіння tombstone-у тут
+  // toggle→untoggle→toggle бʼє в ТОЙ САМИЙ PK. Воскресіння tombstone-у тут
   // легітимне — див. док-стрінг `applyRoutineEntries` і audit E-1.
   it("resurrects a tombstoned entry when clientTs is strictly newer", async () => {
     const t1 = new Date("2026-07-21T08:00:00.000Z");

@@ -57,7 +57,7 @@ describe("InjuryManager", () => {
 
   it("allows selecting several muscle groups", async () => {
     render(<InjuryManager />);
-    // М'язи згорнуті за замовчуванням (патерн фініш-фло, 2026-08-08) —
+    // Мʼязи згорнуті за замовчуванням (патерн фініш-фло, 2026-08-08) —
     // спершу розгорнути групу.
     fireEvent.click(screen.getByRole("button", { name: /Мʼязи/ }));
     fireEvent.click(screen.getByRole("button", { name: "Трицепс" }));
@@ -85,7 +85,7 @@ describe("InjuryManager", () => {
     render(<InjuryManager />);
     // Суглоби видно одразу…
     expect(screen.getByRole("button", { name: "Коліно" })).toBeInTheDocument();
-    // …а м'язові чипи — ні, лише тогл групи.
+    // …а мʼязові чипи — ні, лише тогл групи.
     expect(
       screen.queryByRole("button", { name: "Трицепс" }),
     ).not.toBeInTheDocument();

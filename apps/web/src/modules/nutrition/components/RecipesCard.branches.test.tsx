@@ -115,7 +115,7 @@ const SAVED_RECIPE: import("../lib/recipeBook").SavedRecipe = {
   timeMinutes: 10,
   servings: 2,
   ingredients: ["вівсяні пластівці", "молоко"],
-  steps: ["Закип'ятити молоко", "Додати пластівці"],
+  steps: ["Закипʼятити молоко", "Додати пластівці"],
   tips: ["Можна додати ягоди"],
   macros: { kcal: 350, protein_g: 12, fat_g: 8, carbs_g: 55 },
   createdAt: 1716000000000,

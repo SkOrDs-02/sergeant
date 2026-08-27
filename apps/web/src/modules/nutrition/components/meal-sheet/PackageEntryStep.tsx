@@ -1,6 +1,6 @@
 /**
  * PackageEntryStep — ручний ввід продукту «з упаковки»: КБЖВ на 100 г з
- * етикетки плюс вага з'їденої порції.
+ * етикетки плюс вага зʼїденої порції.
  *
  * AI-CONTEXT: це один із двох ручних режимів аркуша, і різниця між ними
  * — саме одиниця вводу. Тут числа читаються з етикетки й тому завжди на
@@ -74,7 +74,7 @@ export function PackageEntryStep({ onCreated }: PackageEntryStepProps) {
       !serving.ok ||
       serving.value <= 0
     ) {
-      setErr("Введи невід’ємні КБЖВ на 100 г і додатну вагу порції.");
+      setErr("Введи невідʼємні КБЖВ на 100 г і додатну вагу порції.");
       return;
     }
     // Верхня межа мусить стояти і тут: далі вага їде прямо в `pickedGrams`
@@ -109,8 +109,8 @@ export function PackageEntryStep({ onCreated }: PackageEntryStepProps) {
   return (
     <div className="space-y-3">
       <p className="text-style-caption text-muted">
-        Візьми КБЖВ з етикетки — вони майже завжди наведені на 100 г. Скільки
-        саме ти з’їв, вкажи нижче: макроси перерахуються під цю вагу.
+        Візьми КБЖВ з етикетки: вони майже завжди наведені на 100 г. Скільки
+        саме ти зʼїв, вкажи нижче: макроси перерахуються під цю вагу.
       </p>
       <label className="block" htmlFor="package-food-name">
         <span className="mb-1 block text-style-caption text-text">
@@ -151,7 +151,7 @@ export function PackageEntryStep({ onCreated }: PackageEntryStepProps) {
       </div>
       <label className="block" htmlFor="package-food-grams">
         <span className="mb-1 block text-style-caption text-text">
-          Скільки з’їв, г
+          Скільки зʼїв, г
         </span>
         <Input
           id="package-food-grams"

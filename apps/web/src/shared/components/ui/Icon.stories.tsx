@@ -27,7 +27,7 @@ type Story = StoryObj<typeof Icon>;
 /** Стандартний рендер — `chevron-right`, default size `lg` (20px). */
 export const Default: Story = {};
 
-/** Усі п'ять токенів розмірів у горизонтальному ряді. */
+/** Усі пʼять токенів розмірів у горизонтальному ряді. */
 export const Sizes: Story = {
   render: () => (
     <div className="flex items-center gap-3 text-text">

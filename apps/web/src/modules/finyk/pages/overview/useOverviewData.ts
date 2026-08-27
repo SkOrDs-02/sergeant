@@ -10,7 +10,6 @@ import {
 import {
   calcDebtRemaining,
   calcReceivableRemaining,
-  calcCategorySpent,
   calcFinykSpendingTotal,
 } from "../../utils";
 import type { useStorage } from "../../hooks/useStorage";
@@ -22,7 +21,9 @@ import {
   getLimitBudgets,
   isBudgetAlert,
   getCurrentMonthContext,
+  limitBudgetCategoryIds,
 } from "@sergeant/finyk-domain/domain/budget";
+import { calcLimitCategorySpent } from "@sergeant/finyk-domain/lib/limitCategorySpend";
 import {
   filterStatTransactions,
   manualExpenseToTransaction,
@@ -280,11 +281,14 @@ export function useOverviewData({
 
   const budgetAlerts = useMemo(
     () =>
+      // `calcLimitCategorySpent`, а не `calcCategorySpent`: та сама
+      // bucket-агрегація ручної таксономії, що й на картці ліміту, плюс
+      // сума по ВСІХ категоріях мульти-категорійного ліміту.
       limitBudgets.filter((b) =>
         isBudgetAlert(
-          calcCategorySpent(
+          calcLimitCategorySpent(
             statTx,
-            b.categoryId,
+            limitBudgetCategoryIds(b),
             txCategories,
             txSplits,
             customCategories,

@@ -70,8 +70,8 @@ export function SavedSection({
         <div className="mt-3">
           {saved.length === 0 ? (
             <div className="text-style-caption text-muted">
-              Тут з&apos;являться збережені рецепти. Згенеруй рецепти нижче й
-              натисни &quot;Зберегти&quot;.
+              Тут зʼявляться збережені рецепти. Згенеруй рецепти нижче й натисни
+              &quot;Зберегти&quot;.
             </div>
           ) : (
             <div className="grid gap-2">

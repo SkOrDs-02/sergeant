@@ -10,7 +10,7 @@ import type { ModuleAccent } from "@sergeant/design-tokens";
  *    `invalidateQueries({ queryKey: xxxKeys.all })` знижував усе дерево.
  *  - Секрети (токени) ніколи не вставляємо в ключ — хешуємо їх через
  *    `hashToken` (перші 8 символів SHA-256) перед використанням.
- *  - Усі keys-об'єкти експортуємо `as const`, щоб TypeScript виводив
+ *  - Усі keys-обʼєкти експортуємо `as const`, щоб TypeScript виводив
  *    літеральні тупли й `setQueryData`/`invalidateQueries` лишались типобезпечними.
  *
  * Якщо додаєш новий `useQuery`/`useMutation` — заведи ключ тут,
@@ -66,9 +66,10 @@ export const nutritionKeys = {
 export const finykKeys = {
   all: ["finyk"] as const,
 
-  // Proactive AI advice — month-bucketed per budget category
-  proactiveAdvice: (monthKey: string, categoryId: string) =>
-    ["finyk", "proactive-advice", monthKey, categoryId] as const,
+  // Proactive AI advice — month-bucketed per limit-budget category set
+  // (`limitBudgetCategoryKey`: одна категорія — її id, комбо — sorted join "+")
+  proactiveAdvice: (monthKey: string, categoryKey: string) =>
+    ["finyk", "proactive-advice", monthKey, categoryKey] as const,
 
   // Monobank read endpoints
   mono: ["finyk", "mono"] as const,
@@ -148,7 +149,7 @@ export const silpoKeys = {
   /**
    * `GET /api/silpo/cart` — поточний стан зовнішнього кошика Сільпо.
    * Інвалідується після успішного `cartApply()`, щоб наступне читання (якщо
-   * колись з'явиться в'ювер поточного кошика) не показувало стейл дані.
+   * колись зʼявиться вʼювер поточного кошика) не показувало стейл дані.
    */
   cart: () => ["silpo", "cart"] as const,
   /**
@@ -157,7 +158,7 @@ export const silpoKeys = {
    * preview — чиста функція від набору позицій, тож інший набір позицій
    * мусить бути іншим кеш-рядком, а той самий набір (повторне відкриття
    * шіта з тим самим unchecked-списком) — тим самим. React Query серіалізує
-   * ключі детерміновано (`hashKey` сортує поля), тож масив об'єктів як
+   * ключі детерміновано (`hashKey` сортує поля), тож масив обʼєктів як
    * останній елемент — безпечний.
    */
   cartPreview: (items: { name: string; quantity?: number | undefined }[]) =>
@@ -232,7 +233,7 @@ export const billingKeys = {
 
 // ─── AI memory ────────────────────────────────────────────────────────────
 //
-// Екран «Що ШІ про мене пам'ятає» (налаштування → Згода та дані).
+// Екран «Що ШІ про мене памʼятає» (налаштування → Згода та дані).
 // `list` — infinite-query по `GET /api/ai-memory/list`; сторінки
 // склеюються keyset-курсором, тож у ключ параметри пагінації НЕ входять:
 // інакше кожна сторінка мала б власний кеш-рядок і `invalidateQueries`

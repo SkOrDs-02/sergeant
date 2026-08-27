@@ -321,7 +321,7 @@ describe("HubSettingsPage", () => {
   // Дефект №3 (адверсарне ревʼю 2026-08-08): `SettingsGroupDefaultOpenContext`
   // раніше читався лише в `useState`-ініціалізаторі — перемикання вкладки
   // РЕМАУНТИТЬ секцію (вона зникає з `visible`, коли вкладка неактивна), і
-  // без пам'яті на рівні сторінки форсоване "перша секція вкладки відкрита"
+  // без памʼяті на рівні сторінки форсоване "перша секція вкладки відкрита"
   // (Варіант A) щоразу перевідкривало секцію, яку юзер щойно сам згорнув.
   it("remembers an explicit collapse of the first-of-tab section across a tab switch (дефект №3)", () => {
     renderWithBrowserToast(<HubSettingsPage />);
@@ -645,7 +645,7 @@ describe("HubSettingsPage", () => {
         queryKey: silpoKeys.all,
       });
     });
-    expect(await screen.findByText(/Сільпо зв'язано/)).toBeInTheDocument();
+    expect(await screen.findByText(/Сільпо звʼязано/)).toBeInTheDocument();
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /Фінік/ })).toHaveAttribute(
         "aria-expanded",
@@ -672,7 +672,7 @@ describe("HubSettingsPage", () => {
       await screen.findByText(/Ти відмовив у доступі до Сільпо/),
     ).toBeInTheDocument();
     expect(
-      screen.queryByText(/Не вдалося зв'язати Сільпо: denied/),
+      screen.queryByText(/Не вдалося звʼязати Сільпо: denied/),
     ).not.toBeInTheDocument();
     await waitFor(() => {
       expect(window.location.search).not.toContain("silpo");
@@ -707,7 +707,7 @@ describe("HubSettingsPage", () => {
     renderWithBrowserToast(<HubSettingsPage />, queryClient);
 
     expect(
-      await screen.findByText("Не вдалося зв'язати Сільпо."),
+      await screen.findByText("Не вдалося звʼязати Сільпо."),
     ).toBeInTheDocument();
     expect(screen.queryByText(/some_new_server_code/)).not.toBeInTheDocument();
   });

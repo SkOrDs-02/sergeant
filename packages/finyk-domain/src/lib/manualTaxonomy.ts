@@ -36,6 +36,7 @@
  */
 
 import type { CategoryIconName } from "./categoryIcons.js";
+import { foldApostrophes } from "@sergeant/shared";
 
 export interface ManualCategoryDef {
   /** Id, що лягає у сховище (Era 3 slug). */
@@ -102,7 +103,7 @@ export const MANUAL_EXPENSE_TAXONOMY: readonly ManualCategoryDef[] = [
   },
   {
     id: "health",
-    label: "Здоров'я",
+    label: "Здоровʼя",
     iconName: "heart",
     canonicalId: "health",
   },
@@ -264,7 +265,7 @@ export function stripCategoryEmoji(raw: string): string {
  */
 const LEGACY_LABEL_TO_ID: ReadonlyMap<string, string> = new Map([
   ...MANUAL_EXPENSE_TAXONOMY.filter((d) => !d.legacy).map(
-    (d) => [d.label.toLocaleLowerCase("uk-UA"), d.id] as const,
+    (d) => [foldApostrophes(d.label.toLocaleLowerCase("uk-UA")), d.id] as const,
   ),
   ["їжа", "food"],
   ["кафе", "cafe"],
@@ -283,7 +284,13 @@ export function legacyManualCategoryId(
   raw: string | null | undefined,
 ): string | undefined {
   if (!raw) return undefined;
-  const key = stripCategoryEmoji(raw.trim()).toLocaleLowerCase("uk-UA");
+  // AI-DANGER: згортання апострофа (канон §1.10) — не косметика. Підпис
+  // «Здоров'я» через ASCII `'` лежить у persisted-блобах, які писали
+  // попередні версії; ключ мапи канонічний (`ʼ`). Без згортання ці записи
+  // перестануть резолвитись і мовчки поїдуть у «Інше».
+  const key = foldApostrophes(
+    stripCategoryEmoji(raw.trim()).toLocaleLowerCase("uk-UA"),
+  );
   return LEGACY_LABEL_TO_ID.get(key);
 }
 

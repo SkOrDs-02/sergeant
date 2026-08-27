@@ -65,7 +65,7 @@ export function ProfilePage() {
       // Людина обрала «Залишитись» — сесія жива, нічого не стерто, тож ні
       // тосту про вихід, ні редіректу на екран входу бути не має.
       if (cancelled) return;
-      toast.success("Ви вийшли з акаунта");
+      toast.success("Вихід виконано");
       // Send the signed-out user to the auth surface, not the hub root —
       // `logout()` has already cleared the query cache so `user` is `null`,
       // and `/sign-in` renders `AuthPage` instead of a momentary guest hub.
@@ -114,7 +114,7 @@ export function ProfilePage() {
         <div className="flex items-center gap-2 rounded-xl bg-warning/10 border border-warning/30 px-4 py-3">
           <Icon name="wifi-off" size={16} className="text-warning shrink-0" />
           <p className="text-style-label text-warning-strong dark:text-warning">
-            Ви офлайн, редагування профілю тимчасово недоступне
+            Офлайн, редагування профілю тимчасово недоступне
           </p>
         </div>
       )}
@@ -141,7 +141,7 @@ export function ProfilePage() {
           заголовка, дублю немає, інверсії немає. */}
       <CollapsibleSection
         storageKey="sergeant.profile.memory.open"
-        title="Пам'ять"
+        title="Памʼять"
         defaultOpen={false}
         headingSize="md"
         collapsedIcon="brain"

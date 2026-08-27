@@ -20,7 +20,7 @@ describe("getLastTxForSubscription", () => {
     expect(getLastTxForSubscription({}, null as unknown as never[])).toBeNull();
   });
 
-  it("повертає прив'язану tx, якщо linkedTxId знайдено і вона витратна", () => {
+  it("повертає привʼязану tx, якщо linkedTxId знайдено і вона витратна", () => {
     const transactions = [
       { id: "t1", amount: -200_00, time: 1_700_000_000 },
       { id: "t2", amount: -100_00, time: 1_700_010_000 }, // новіша

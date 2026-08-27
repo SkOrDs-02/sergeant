@@ -25,13 +25,19 @@ import {
 import { buildContextMeasured } from "../../lib/hubChatContext";
 import { executeActions } from "../../lib/hubChatActions";
 import { logger } from "@shared/lib";
-import { ANALYTICS_EVENTS, type ChatPreset } from "@sergeant/shared";
+import {
+  ANALYTICS_EVENTS,
+  getToolModule,
+  type ChatPreset,
+} from "@sergeant/shared";
 import { trackEvent } from "../../observability/analytics";
 import { parseToolCalls } from "./toolCallSchema";
+import { keepReplayableToolBlocks } from "./replayableToolBlocks";
 import {
   useDestructiveConfirm,
   type UseDestructiveConfirmResult,
 } from "./useDestructiveConfirm";
+import { summarizeDestructiveToolInput } from "./destructiveConfirmSummary";
 import { VOICE_KEYWORDS, speak } from "../../lib/hubChatSpeech";
 import { buildActionCard } from "../../lib/hubChatActionCards";
 import { setHubStreaming } from "../streamingStore";
@@ -126,7 +132,7 @@ export interface UseChatSendOptions {
   initialMessage?: string | undefined;
   autoSendInitial?: boolean | undefined;
   onOpenCatalogue?: (() => void) | undefined;
-  /** Сценарний режим (кнопки секції «Пам'ять ШІ»). Див. `PRESET_TURNS`. */
+  /** Сценарний режим (кнопки секції «Памʼять ШІ»). Див. `PRESET_TURNS`. */
   preset?: ChatPreset | undefined;
 }
 
@@ -188,7 +194,7 @@ export function useChatSend({
   const [speaking, setSpeaking] = useState(false);
   const [paywallOpen, setPaywallOpen] = useState(false);
   const confirmDestructive = useDestructiveConfirm();
-  // Беремо саме `request` у залежності `send`: сам об'єкт хука
+  // Беремо саме `request` у залежності `send`: сам обʼєкт хука
   // перестворюється на кожну зміну `pending`, і залежність від нього
   // пересоздавала б `send` щоразу, коли відкривається/закривається діалог.
   // `request` стабільний (useCallback без залежностей).
@@ -309,7 +315,7 @@ export function useChatSend({
           ...m,
           makeUserMsg(msg),
           makeAssistantMsg(
-            "Немає підключення. Асистент працює лише онлайн, спробуй ще раз, коли з'явиться інтернет.",
+            "Немає підключення. Асистент працює лише онлайн, спробуй ще раз, коли зʼявиться інтернет.",
           ),
         ]);
         setInput("");
@@ -469,7 +475,20 @@ export function useChatSend({
           );
           if (destructive.length > 0) {
             const approved = await requestDestructiveConfirm(
-              destructive.map((tc) => tc.name as string),
+              destructive.map((tc) => {
+                const toolName = tc.name as string;
+                // `exactOptionalPropertyTypes` — `summary?: string` means
+                // "present and a string, or absent", never "present and
+                // `undefined`". Omit the key entirely for tools without a
+                // summary instead of assigning `undefined` to it.
+                const summary = summarizeDestructiveToolInput(
+                  toolName,
+                  tc.input as Record<string, unknown>,
+                );
+                return summary
+                  ? { name: toolName, summary }
+                  : { name: toolName };
+              }),
             );
             if (!approved) {
               // Скасування — весь батч, а не лише деструктивна його
@@ -491,6 +510,28 @@ export function useChatSend({
           const handlerResults = await executeActions(
             toolCalls as Parameters<typeof executeActions>[0],
           );
+
+          // `hubchat_tool_invoked` — подія стояла в каталозі
+          // (`ANALYTICS_EVENTS`) із квітня, закріплена тестом, і НІХТО її не
+          // слав: панель tool-leaderboard у `hubchat.json` була порожня
+          // назавжди, а виглядала як «інструментами не користуються».
+          //
+          // Емітимо тут, а не в кожному хендлері: це єдина точка, крізь яку
+          // проходить кожен виконаний tool-call, тож розповзання на шість
+          // копій виключене — той самий аргумент, що для гейта підтверджень
+          // вище.
+          //
+          // `success` береться зі СТРУКТУРНОГО `ok`, а не з префікса тексту:
+          // рядок «Помилка виконання: …» — це копірайт, який колись
+          // перепишуть, і телеметрія тихо почала б рахувати провали успіхами.
+          for (const r of handlerResults) {
+            trackEvent(ANALYTICS_EVENTS.HUBCHAT_TOOL_INVOKED, {
+              tool: r.name,
+              module: getToolModule(r.name),
+              success: r.ok,
+              latency_ms: r.latencyMs,
+            });
+          }
           const toolResults = toolCalls.map((tc, idx) => ({
             tool_use_id: tc.id,
             content: handlerResults[idx]?.result ?? "",
@@ -533,12 +574,12 @@ export function useChatSend({
            * AI-CONTEXT (2026-08-07): раніше він друкувався для кожного
            * виклику незалежно від картки, тобто дублював її слово в слово —
            * і разом із тим виносив у чат сирий результат виконавця. Для
-           * `remember` це означало UUID запису пам'яті
-           * (`✓ Запам'ятав: Звати Діма (Інше, id:5c47fa7f-…)`) просто над
+           * `remember` це означало UUID запису памʼяті
+           * (`✓ Запамʼятав: Звати Діма (Інше, id:5c47fa7f-…)`) просто над
            * карткою, яка каже те саме людськими словами. Виглядало як
            * переказ моделі, але клеїв рядок саме цей код.
            *
-           * Картка й рядок з'являються ОДНОЧАСНО (обидва летять у той самий
+           * Картка й рядок зʼявляються ОДНОЧАСНО (обидва летять у той самий
            * `setMessages`), тож там, де картка є, рядок не додає нічого.
            * Там, де її немає (невідомий tool), він лишається єдиним
            * підтвердженням — тому не викидаємо його зовсім.
@@ -571,7 +612,18 @@ export function useChatSend({
                 context: contextRef.current.text || context,
                 messages: history,
                 tool_results: toolResults,
-                tool_calls_raw: data.tool_calls_raw,
+                // Сервер приймає в `tool_calls_raw` лише блоки
+                // `tool_use | server_tool_use | tool_search_tool_result`
+                // (B32: інакше клієнт може вписати довільний текст від імені
+                // асистента — єдиної ролі без огорожі). Модель же штатно
+                // повертає ще й `text`-преамбулу перед викликом інструмента,
+                // і досі ми відбивали `tool_calls_raw` назад ДОСЛІВНО.
+                //
+                // Тому фільтруємо тут, ТІЄЮ САМОЮ схемою, що валідує сервер —
+                // не власним списком типів, який мовчки розʼїхався б із
+                // серверним при наступній зміні. Преамбула не губиться для
+                // користувача: вона вже дострімлена в UI вище.
+                tool_calls_raw: keepReplayableToolBlocks(data.tool_calls_raw),
                 stream: true,
                 // Той самий preset і на турі синтезу: інструкція має діяти
                 // й після `remember`, і цей запит теж має списатись із
@@ -650,7 +702,7 @@ export function useChatSend({
 
           if (shouldSpeak) {
             // Озвучуємо те, що людина бачить. Раніше фолбеком був сирий
-            // результат виконавця — тобто TTS диктував UUID запису пам'яті
+            // результат виконавця — тобто TTS диктував UUID запису памʼяті
             // вголос. Тепер: відповідь моделі → рядок без картки → короткі
             // підписи карток.
             const speakTarget =
@@ -718,7 +770,7 @@ export function useChatSend({
         // Лічильник квоти (`GET /api/chat/usage`) читався лише на монтуванні
         // `ChatUsageCounter`, тож пігулка все життя сесії показувала «0/5» —
         // навіть поруч із 429-помилкою про вичерпаний ліміт; правда
-        // з'являлась тільки після перезавантаження сторінки (browser QA
+        // зʼявлялась тільки після перезавантаження сторінки (browser QA
         // 2026-08-23). Інвалідовуємо ПІСЛЯ кожного ходу, включно з невдалим:
         // сервер списує запит і тоді, коли відповідь була помилкою.
         queryClient.invalidateQueries({ queryKey: chatKeys.usage });

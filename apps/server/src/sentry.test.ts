@@ -99,7 +99,7 @@ describe("scrubPII", () => {
     expect(ev["X-CSRF-Token"]).toBe("[redacted]");
   });
 
-  it("ходить рекурсивно у nested об'єкти (event.contexts/extra сценарій)", () => {
+  it("ходить рекурсивно у nested обʼєкти (event.contexts/extra сценарій)", () => {
     const ev = {
       contexts: {
         runtime: { name: "node", version: "20" },
@@ -156,7 +156,7 @@ describe("scrubPII", () => {
     expect(arr[1]!["keep"]).toBe("ok");
   });
 
-  it("маскує об'єктні значення на null (зберігає shape для Sentry UI)", () => {
+  it("маскує обʼєктні значення на null (зберігає shape для Sentry UI)", () => {
     const ev = {
       // У Sentry SDK може бути { authorization: { Bearer: "..." } }
       authorization: { Bearer: "xxx" },

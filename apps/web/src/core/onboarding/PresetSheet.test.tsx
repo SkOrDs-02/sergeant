@@ -38,7 +38,7 @@ describe("getPresetModule", () => {
   });
 
   it("returns catalog config for each supported module", () => {
-    expect(getPresetModule("routine")?.title).toBe("Яку звичку почнемо?");
+    expect(getPresetModule("routine")?.title).toBe("З якої звички почати?");
     expect(getPresetModule("finyk")?.fallback.label).toBe("Своя витрата");
     expect(getPresetModule("nutrition")?.items).toEqual([]);
     expect(getPresetModule("fizruk")?.fallback.action).toBe("start_workout");
@@ -163,7 +163,7 @@ describe("PresetSheet", () => {
 
   it("renders only the fallback row for nutrition (no preset tiles)", () => {
     render(<PresetSheet open moduleId="nutrition" onClose={onClose} />);
-    expect(screen.getByText("Що з'їв зараз?")).toBeInTheDocument();
+    expect(screen.getByText("Що зʼїв зараз?")).toBeInTheDocument();
     expect(screen.queryByText("Кава")).not.toBeInTheDocument();
     expect(screen.getByText("Додати страву")).toBeInTheDocument();
   });

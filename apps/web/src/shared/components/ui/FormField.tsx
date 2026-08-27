@@ -47,7 +47,7 @@ export interface LabelProps extends LabelHTMLAttributes<HTMLLabelElement> {
    * налаштуванням, воно не дефолт.
    */
   caps?: boolean;
-  /** Show a `· необов'язково` suffix for optional fields. */
+  /** Show a `· необовʼязково` suffix for optional fields. */
   optional?: boolean;
 }
 
@@ -75,7 +75,7 @@ export function Label({
       {optional && (
         <span className="text-subtle normal-case font-normal">
           {" "}
-          · необов&apos;язково
+          · необовʼязково
         </span>
       )}
     </label>

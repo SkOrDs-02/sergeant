@@ -19,7 +19,7 @@ import { accountAgeDays } from "../feedback/accountAge";
  *     обрав на старті. Якщо vibe-picks порожні — поле опускаємо.
  *   - `plan` — поточний tier підписки. Поки що Stripe/billing немає
  *     (див. `docs/01-product/launch/business/01-monetization-and-pricing.md`), тому всі
- *     ідентифіковані юзери `"free"`. Коли підписки з'являться, цей
+ *     ідентифіковані юзери `"free"`. Коли підписки зʼявляться, цей
  *     модуль буде єдине місце, де треба підставити реальне джерело.
  *   - `locale` — `navigator.language` без подальшої нормалізації,
  *     обрізаний до 16 символів (узгоджено з `Locale` schema в

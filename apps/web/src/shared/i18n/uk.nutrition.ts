@@ -42,7 +42,7 @@ export const nutritionPageMessages = {
     srKcal: "Калорії",
     srEstimated: "З них оцінка з фото",
   },
-  /** Пом'якшена копія `nutrition-protein-low` при високій частці photoAI. */
+  /** Помʼякшена копія `nutrition-protein-low` при високій частці photoAI. */
   proteinLowEstimated: {
     subtitle: "Схоже, білка малувато, але сьогодні багато цифр з фото-оцінки.",
   },
@@ -122,7 +122,7 @@ export const nutritionPageMessages = {
     // (`SilpoPrivacyPromise`), лише посилається на її суть у моменті
     // підтвердження.
     privacyReminder:
-      "Позиції з чека лишаються у твоїй базі — в аналітику вони не йдуть.",
+      "Позиції з чека лишаються у твоїй базі, в аналітику вони не йдуть.",
     receiptsHeading: "Останні чеки",
     receiptsEmptyTitle: "Ще немає завантажених чеків",
     receiptsEmptyHint: "Онови чеки в Налаштуваннях → Сільпо.",
@@ -145,7 +145,7 @@ export const nutritionPageMessages = {
   shoppingListPantryMath: {
     toggleLabel: "Враховувати комору",
     athomeSectionLabel: "Вже вдома",
-    athomeSectionHint: "Достатньо в коморі — купувати не треба, лише звір.",
+    athomeSectionHint: "Достатньо в коморі: купувати не треба, лише звір.",
     // Той самий бейдж-текст, що і `pantryLowStock.badge` на позиції комори —
     // одна фраза на все, свідомо коротша за назву fallback-категорії
     // `LOW_STOCK_CATEGORY_NAME` («Закінчується вдома»), щоб бейдж на
@@ -163,7 +163,7 @@ export const nutritionPageMessages = {
   silpoCart: {
     entryCta: "У кошик Сільпо",
     sheetTitle: "У кошик Сільпо",
-    sheetDescription: "Обери позиції та підтверди — додам їх у твій кошик.",
+    sheetDescription: "Обери позиції та підтверди, додам їх у твій кошик.",
     // Коротке нагадування (1 речення) перед записом у зовнішній кошик —
     // не дублює повну обіцянку приватності з картки Сільпо в
     // Налаштуваннях (`SilpoPrivacyPromise`), лише її суть у моменті

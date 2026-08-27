@@ -65,7 +65,7 @@ export const Units: Story = {
 
 /**
  * Чому це не `<Money symbol="кг">`. Копійка — сота частка гривні, тож у
- * `Money` вона приглушена. 0,5 кг — п'ята частина 2,5 кг: демотувати її
+ * `Money` вона приглушена. 0,5 кг — пʼята частина 2,5 кг: демотувати її
  * означало б збрехати про величину.
  */
 export const FractionRuleDiffers: Story = {
@@ -87,7 +87,7 @@ export const FractionRuleDiffers: Story = {
   ),
 };
 
-/** Знак: U+2212 однакової ширини з цифрою, тож стовпчик не з'їжджає. */
+/** Знак: U+2212 однакової ширини з цифрою, тож стовпчик не зʼїжджає. */
 export const SignedColumn: Story = {
   render: () => (
     <div className="text-style-headline text-text w-40 text-right space-y-1">

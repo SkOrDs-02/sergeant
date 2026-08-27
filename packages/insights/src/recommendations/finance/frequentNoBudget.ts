@@ -4,6 +4,7 @@
 
 import type { Rule } from "../types.js";
 import type { FinanceContext } from "../financeContext.js";
+import { budgetCategoryIds } from "../financeContext.js";
 import { formatNumberUk } from "@sergeant/shared";
 
 const BUILTIN: Record<string, string> = {
@@ -11,7 +12,7 @@ const BUILTIN: Record<string, string> = {
   restaurant: "Кафе та ресторани",
   transport: "Транспорт",
   entertainment: "Розваги",
-  health: "Здоров'я",
+  health: "Здоровʼя",
   shopping: "Покупки",
   utilities: "Комунальні",
   subscriptions: "Підписки",
@@ -22,9 +23,9 @@ export const frequentNoBudgetRule: Rule<FinanceContext> = {
   id: "finyk.frequent_no_budget",
   module: "finyk",
   evaluate(ctx) {
-    const limitIds = new Set(
-      ctx.limits.map((l) => l.categoryId).filter(Boolean) as string[],
-    );
+    // Категорія «покрита лімітом», якщо входить у БУДЬ-ЯКИЙ ліміт — зокрема
+    // як частина мульти-категорійного комбо.
+    const limitIds = new Set(ctx.limits.flatMap((l) => budgetCategoryIds(l)));
     let best: { id: string; count: number } | null = null;
     for (const [id, count] of ctx.canonicalTotalCount) {
       if (limitIds.has(id)) continue;

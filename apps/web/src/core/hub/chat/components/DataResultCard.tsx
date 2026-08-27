@@ -43,7 +43,7 @@ interface MetricRow {
 
 interface BreakdownRow {
   label: string;
-  /** Числове значення для масштабу mini-bar (грн / об'єм / ккал тощо). */
+  /** Числове значення для масштабу mini-bar (грн / обʼєм / ккал тощо). */
   amount: number;
   /** Готовий текст значення праворуч (з одиницями). */
   display: string;
@@ -158,7 +158,7 @@ const LIST_INTRO_BY_TOOL: Readonly<Record<string, string>> = {
   aggregate_spending: "Розбивка за ",
   // `Знайдено N транзакц. на суму X грн[ (показано …)]: m_1: …; …`
   query_transactions: " грн",
-  // `Тренувань за N днів: M, сумарний об'єм X кг×повт[ (…)]: 2026-…: …`
+  // `Тренувань за N днів: M, сумарний обʼєм X кг×повт[ (…)]: 2026-…: …`
   query_workouts: "кг×повт",
   // `Прийомів за from — to: N, разом X ккал (…)[ (…)]: 2026-…: …`
   query_nutrition: "г)",

@@ -15,7 +15,7 @@ export const aiTokensTotal = new client.Counter({
 // Cost-attribution gauge для AI-викликів. Counter (а не Gauge), бо ми
 // акумулюємо $-витрати по кожному endpoint × model. Per-endpoint breakdown
 // потрібен щоб у Grafana (і в weekly cost-аудиті) видно було, котрий endpoint
-// "з'їдає" бюджет — `chat` vs `coach` vs `analyze-photo`. Pricing-таблиця
+// "зʼїдає" бюджет — `chat` vs `coach` vs `analyze-photo`. Pricing-таблиця
 // у `lib/anthropic.ts::ANTHROPIC_PRICING_USD_PER_MTOK`. На unknown-моделі
 // counter не інкрементується (щоб не давати fake-нулі), тому сума `rate(...)`
 // у Prometheus = «впевнена нижня межа» витрат.
@@ -40,7 +40,7 @@ export const aiCostEstimateUsd = new client.Counter({
  *
  * Cardinality: 6 providers × ~7 plans = ~42 series (стабільно). Set один
  * раз на старті процесу (`obs/cost.ts::applyInfraMonthlyCosts()`) з env-
- * vars; невиставлене значення → не з'являється у `/metrics` зовсім (gauge
+ * vars; невиставлене значення → не зʼявляється у `/metrics` зовсім (gauge
  * не пре-allocate-имо нулі, бо це б змусило в PromQL фільтрувати).
  */
 export const infraMonthlyCostUsd = new client.Gauge({
@@ -85,14 +85,14 @@ export const anthropicPromptCacheHitTotal = new client.Counter({
 /**
  * Per-tool інвокейшнів-метрика (PR-12.C аудиту 2026-04-26).
  *
- * `tool` — ім'я Anthropic-tool-у (`delete_transaction`, `start_workout` тощо).
+ * `tool` — імʼя Anthropic-tool-у (`delete_transaction`, `start_workout` тощо).
  * `outcome` — стадія life-cycle:
  *   - `proposed` — модель повернула `tool_use`-блок у першому кроці (клієнт
  *     ще не виконав; може й не виконати, якщо юзер скасує).
  *   - `executed` — клієнт надіслав `tool_result` у другому кроці, і його
  *     корелювали з відповідним `tool_use_id` із `tool_calls_raw`.
  *   - `unknown_tool` — `tool_use_id` із `tool_results` не змапився на
- *     жодне ім'я в `tool_calls_raw` (порушення контракту клієнт↔сервер).
+ *     жодне імʼя в `tool_calls_raw` (порушення контракту клієнт↔сервер).
  *
  * SLO/dashboards: `proposed - executed` дає кількість запропонованих, але
  * не виконаних tool-call-ів (юзер скасував / клієнт впав посеред виконання).

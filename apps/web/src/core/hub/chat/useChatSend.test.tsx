@@ -298,7 +298,7 @@ describe("useChatSend (audit 03 F22 — SSE + tool-calls)", () => {
 // працює. Вони НЕ доводять, що він УВІМКНЕНИЙ у конвеєр — а це і є та
 // помилка, через яку контракт §8 роками існував лише на папері: класифікація
 // `RISKY_TOOLS` була, вона фарбувала картку, і всі вважали, що гейт є.
-// Тести нижче б'ють у сам `send()` і перевіряють `executeActions` —
+// Тести нижче бʼють у сам `send()` і перевіряють `executeActions` —
 // єдиний спостережний доказ того, що дані не змінились.
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -326,11 +326,36 @@ describe("useChatSend — підтвердження незворотних ді
     });
 
     await waitFor(() =>
-      expect(result.current.confirmDestructive.pending?.toolNames).toEqual([
-        "delete_transaction",
-      ]),
+      expect(
+        result.current.confirmDestructive.pending?.items.map((i) => i.name),
+      ).toEqual(["delete_transaction"]),
     );
     expect(executeActionsMock).not.toHaveBeenCalled();
+
+    await act(async () => {
+      result.current.confirmDestructive.reject();
+      await sending;
+    });
+  });
+
+  it("несе короткий підсумок аргументів (B39) — не лише голу назву", async () => {
+    // До фіксу B39 діалог показував тільки назву інструмента; людина
+    // погоджувалась на «delete_transaction» не бачачи, яку саме
+    // транзакцію він видалить.
+    destructiveResponse();
+    const { result } = renderSend();
+
+    let sending!: Promise<void>;
+    await act(async () => {
+      sending = result.current.send("видали транзакцію m_42");
+      await Promise.resolve();
+    });
+
+    await waitFor(() =>
+      expect(result.current.confirmDestructive.pending?.items).toEqual([
+        { name: "delete_transaction", summary: "транзакція m_42" },
+      ]),
+    );
 
     await act(async () => {
       result.current.confirmDestructive.reject();
@@ -440,9 +465,9 @@ describe("useChatSend — підтвердження незворотних ді
       await Promise.resolve();
     });
     await waitFor(() =>
-      expect(result.current.confirmDestructive.pending?.toolNames).toEqual([
-        "delete_transaction",
-      ]),
+      expect(
+        result.current.confirmDestructive.pending?.items.map((i) => i.name),
+      ).toEqual(["delete_transaction"]),
     );
 
     await act(async () => {
@@ -454,7 +479,7 @@ describe("useChatSend — підтвердження незворотних ді
   });
   // Regression (browser QA 2026-08-23): пігулка «0/5» жила лише на монтуванні
   // `ChatUsageCounter`, тож лічильник не рухався всю сесію — навіть поруч із
-  // 429 про вичерпаний ліміт. Правда з'являлась лише після перезавантаження.
+  // 429 про вичерпаний ліміт. Правда зʼявлялась лише після перезавантаження.
   it("refetches the AI-usage counter after every turn, успішного і збійного", async () => {
     const client = new QueryClient({
       defaultOptions: {

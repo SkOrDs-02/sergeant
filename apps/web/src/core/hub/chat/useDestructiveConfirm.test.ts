@@ -1,11 +1,11 @@
 /** @vitest-environment jsdom */
 /**
- * Last validated: 2026-07-25
+ * Last validated: 2026-08-25
  * Status: Active
  *
  * AI-CONTEXT: цей хук стоїть між моделлю і незворотною зміною даних, тому
  * асерти цілять у стани, де помилка означає **виконану без згоди дію** або
- * назавжди підвислий `send()`, а не в «хук повертає об'єкт».
+ * назавжди підвислий `send()`, а не в «хук повертає обʼєкт».
  */
 import { describe, expect, it, vi } from "vitest";
 import { act, renderHook } from "@testing-library/react";
@@ -25,9 +25,13 @@ describe("useDestructiveConfirm", () => {
     const { result } = renderHook(() => useDestructiveConfirm());
     const settled = vi.fn();
     act(() => {
-      void result.current.request(["delete_transaction"]).then(settled);
+      void result.current
+        .request([{ name: "delete_transaction" }])
+        .then(settled);
     });
-    expect(result.current.pending?.toolNames).toEqual(["delete_transaction"]);
+    expect(result.current.pending?.items).toEqual([
+      { name: "delete_transaction" },
+    ]);
     await Promise.resolve();
     expect(settled).not.toHaveBeenCalled();
   });
@@ -37,14 +41,14 @@ describe("useDestructiveConfirm", () => {
 
     let p!: Promise<boolean>;
     act(() => {
-      p = result.current.request(["forget"]);
+      p = result.current.request([{ name: "forget" }]);
     });
     act(() => result.current.accept());
     await expect(p).resolves.toBe(true);
     expect(result.current.pending).toBeNull();
 
     act(() => {
-      p = result.current.request(["forget"]);
+      p = result.current.request([{ name: "forget" }]);
     });
     act(() => result.current.reject());
     await expect(p).resolves.toBe(false);
@@ -58,7 +62,7 @@ describe("useDestructiveConfirm", () => {
     const { result } = renderHook(() => useDestructiveConfirm());
     const first = vi.fn();
     act(() => {
-      void result.current.request(["forget"]).then(first);
+      void result.current.request([{ name: "forget" }]).then(first);
     });
     act(() => result.current.accept());
     act(() => result.current.accept());
@@ -69,7 +73,9 @@ describe("useDestructiveConfirm", () => {
     // Наступний цикл має працювати з чистого аркуша.
     const second = vi.fn();
     act(() => {
-      void result.current.request(["delete_transaction"]).then(second);
+      void result.current
+        .request([{ name: "delete_transaction" }])
+        .then(second);
     });
     act(() => result.current.reject());
     await Promise.resolve();
@@ -84,14 +90,16 @@ describe("useDestructiveConfirm", () => {
     const { result } = renderHook(() => useDestructiveConfirm());
     const stale = vi.fn();
     act(() => {
-      void result.current.request(["forget"]).then(stale);
+      void result.current.request([{ name: "forget" }]).then(stale);
     });
     act(() => {
-      void result.current.request(["delete_transaction"]);
+      void result.current.request([{ name: "delete_transaction" }]);
     });
     await Promise.resolve();
     expect(stale).toHaveBeenCalledWith(false);
-    expect(result.current.pending?.toolNames).toEqual(["delete_transaction"]);
+    expect(result.current.pending?.items).toEqual([
+      { name: "delete_transaction" },
+    ]);
   });
 
   it("несе весь список інструментів батчу, не лише перший", () => {
@@ -100,11 +108,34 @@ describe("useDestructiveConfirm", () => {
     // категорії 50 інших.
     const { result } = renderHook(() => useDestructiveConfirm());
     act(() => {
-      void result.current.request(["delete_transaction", "batch_categorize"]);
+      void result.current.request([
+        { name: "delete_transaction" },
+        { name: "batch_categorize" },
+      ]);
     });
-    expect(result.current.pending?.toolNames).toEqual([
-      "delete_transaction",
-      "batch_categorize",
+    expect(result.current.pending?.items).toEqual([
+      { name: "delete_transaction" },
+      { name: "batch_categorize" },
+    ]);
+  });
+
+  it("несе опційний summary поряд з іменем інструмента (B39)", () => {
+    // Без цього діалог погоджує людину на «batch_categorize» не показуючи
+    // ні патерна, ні кількості транзакцій, які він зачепить.
+    const { result } = renderHook(() => useDestructiveConfirm());
+    act(() => {
+      void result.current.request([
+        {
+          name: "batch_categorize",
+          summary: "патерн «Сільпо», до 20 транзакцій",
+        },
+      ]);
+    });
+    expect(result.current.pending?.items).toEqual([
+      {
+        name: "batch_categorize",
+        summary: "патерн «Сільпо», до 20 транзакцій",
+      },
     ]);
   });
 });

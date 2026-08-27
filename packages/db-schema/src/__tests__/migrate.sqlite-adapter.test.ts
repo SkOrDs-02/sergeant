@@ -64,7 +64,7 @@ describe("createSqliteAdapter — серіалізація на спільном
   it("не вкладає BEGIN, коли два мігратори йдуть паралельно на одному клієнті", async () => {
     const fake = makeFakeSqlite();
     // Два адаптери, як два модульні мігратори — але клієнт один і той
-    // самий об'єкт, бо `migrationClient()` мемоізовано на хендлі.
+    // самий обʼєкт, бо `migrationClient()` мемоізовано на хендлі.
     const first = createSqliteAdapter(fake.client);
     const second = createSqliteAdapter(fake.client);
 
@@ -114,7 +114,7 @@ describe("createSqliteAdapter — серіалізація на спільном
     expect(fake.maxDepth).toBe(1);
   });
 
-  it("черга прив'язана до клієнта, а не до адаптера", async () => {
+  it("черга привʼязана до клієнта, а не до адаптера", async () => {
     // Два РІЗНІ клієнти — різні хендли, тож серіалізувати їх між собою
     // не треба й не можна: інакше бут одного користувача чекав би на
     // інший без причини.

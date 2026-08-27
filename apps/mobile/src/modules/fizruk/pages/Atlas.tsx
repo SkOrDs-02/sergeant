@@ -50,11 +50,11 @@ export function Atlas() {
       >
         <View>
           <Text className="text-[22px] font-bold text-fg">
-            {"Атлас м'язів"}
+            {"Атлас мʼязів"}
           </Text>
           <Text className="text-sm text-fg-muted leading-snug">
             {
-              "Інтерактивна карта груп м'язів. Тапни зону, отримаєш назву та статус відновлення."
+              "Інтерактивна карта груп мʼязів. Тапни зону, отримаєш назву та статус відновлення."
             }
           </Text>
         </View>
@@ -71,7 +71,7 @@ export function Atlas() {
                 ? `${BODY_ATLAS_MUSCLE_LABELS_UK[selected]} · ${selectedInfo.daysSince != null ? `${selectedInfo.daysSince}д тому` : "—"}`
                 : selected
                   ? `Обрано: ${BODY_ATLAS_MUSCLE_LABELS_UK[selected]}`
-                  : "Натисни на м'яз, щоб побачити деталі."}
+                  : "Натисни на мʼяз, щоб побачити деталі."}
             </Text>
           </View>
         </Card>

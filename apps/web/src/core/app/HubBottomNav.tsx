@@ -154,7 +154,16 @@ function HubBottomNavTab({
       {...prefetchProps}
       style={hiddenSlot ? { visibility: "hidden" } : undefined}
       className={cn(
-        "relative flex-1 flex items-center justify-center",
+        // AI-DANGER: активний таб — НЕ `flex-1`. Рівні слоти дають на 320-390px
+        // ~65-89px, тоді як активний піл (іконка + підпис до 96px + px-3)
+        // потребує ~146px. Раніше це лікували `max-w-full` на пілі — піл
+        // переставав вилазити, але ПІДПИС починав різатись («Налаштування»
+        // 87→42px, «Головна» 49→42px; браузерний аудит 2026-08-26).
+        // `flex-initial` = розмір за вмістом із правом стиснутись: активний
+        // бере скільки треба, неактивні ділять залишок. Той самий фікс, що в
+        // `ModuleBottomNav`.
+        "relative flex items-center justify-center min-w-0",
+        active ? "flex-initial" : "flex-1",
         "min-h-[48px] pointer-coarse:min-h-[52px]",
         "active:scale-[0.96]",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
@@ -211,7 +220,7 @@ export interface HubBottomNavProps {
   /**
    * «Звіти» прибрана з tab-strip-а, поки у користувача немає жодного
    * реального запису. Порожній звіт — найгірший FTUX-стан: юзер тапне,
-   * побачить «— ₴» і втратить довіру до модуля. Тому tab з'являється
+   * побачить «— ₴» і втратить довіру до модуля. Тому tab зʼявляється
    * лише коли `hasAnyRealEntry()` повертає `true` (див. `firstRealEntry.ts`).
    */
   showReports?: boolean | undefined;
@@ -257,7 +266,7 @@ export function HubBottomNav({
   // Публікуємо зайняту знизу смугу для fixed-шарів з інших гілок дерева
   // (`<ToastContainer>` живе у `Providers`, поза `children`, тож локальний
   // `--bottom-nav-height` до нього не доходить). Під відкритою клавіатурою
-  // навігація з'їжджає вниз — тоді змінна знімається і тост опускається.
+  // навігація зʼїжджає вниз — тоді змінна знімається і тост опускається.
   const navRef = useRef<HTMLElement>(null);
   useBottomInsetVar(navRef, BOTTOM_NAV_INSET_VAR, !kbHidden);
 

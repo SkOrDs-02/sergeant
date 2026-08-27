@@ -150,7 +150,7 @@ export function mergeItems(
       }
     }
 
-    // Якщо не сумуємо — перевіряємо чи є запис з тим самим (канонічним) ім'ям
+    // Якщо не сумуємо — перевіряємо чи є запис з тим самим (канонічним) імʼям
     const sameNameIdx = merged.findIndex(
       (x) => canonicalFoodKey(x?.name) === key,
     );

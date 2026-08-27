@@ -10,7 +10,7 @@ describe("signedDeltaClass", () => {
     );
   });
 
-  it("від'ємна дельта → danger без dark-перекриття", () => {
+  it("відʼємна дельта → danger без dark-перекриття", () => {
     expect(signedDeltaClass(-1)).toBe("text-danger");
     expect(signedDeltaClass(-0.0001)).toBe("text-danger");
     expect(signedDeltaClass(Number.MIN_SAFE_INTEGER)).toBe("text-danger");
@@ -26,7 +26,7 @@ describe("signedDeltaClass", () => {
     expect(signedDeltaClass(-0)).toBe("text-muted");
   });
 
-  it("NaN — не позитивне і не від'ємне → muted (fallback гілка)", () => {
+  it("NaN — не позитивне і не відʼємне → muted (fallback гілка)", () => {
     // Жоден з порівнянь у NaN не true, тож хелпер чесно віддає muted.
     expect(signedDeltaClass(Number.NaN)).toBe("text-muted");
   });

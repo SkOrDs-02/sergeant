@@ -362,7 +362,7 @@ export function titleFor(name: string, status: "completed" | "failed"): string {
       return `Експорт даних${failedSuffix}`;
     // Memory
     case "remember":
-      return `Пам'ять оновлено${failedSuffix}`;
+      return `Памʼять оновлено${failedSuffix}`;
     case "forget":
       return `Забуто${failedSuffix}`;
     case "my_profile":

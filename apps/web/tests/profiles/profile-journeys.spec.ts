@@ -132,7 +132,7 @@ for (const profile of PROFILES) {
     test(`${profile.id}: базові CRUD-дії доходять до кінця`, async () => {
       if (profile.account === "returning") {
         // Дані створені до зміни «пристрою» — тут перевіряємо, що вони
-        // під'їхали з сервера, а не що їх можна створити ще раз.
+        // підʼїхали з сервера, а не що їх можна створити ще раз.
         await goto(page, "/routine/habits");
         await expect(
           visibleText(page, `QA ${profile.id} звичка`),

@@ -62,7 +62,7 @@ export function createBullConnection(name: string): IORedisClient | null {
  */
 export const BULLMQ_QUEUE_PREFIX = "sergeant";
 
-/** Ім'я BullMQ-черги, шарене між producer-ом і consumer-ом. */
+/** Імʼя BullMQ-черги, шарене між producer-ом і consumer-ом. */
 export const AUTH_MAIL_QUEUE_NAME = "auth-mail";
 
 /**

@@ -241,7 +241,7 @@ describe("create_transaction", () => {
     expect(arr[0]!.amount).toBe(5000);
   });
 
-  it("відмовляє на 0 або від'ємну суму без серверного виклику", async () => {
+  it("відмовляє на 0 або відʼємну суму без серверного виклику", async () => {
     stubFetchReject();
     const fetchMock = globalThis.fetch as ReturnType<typeof vi.fn>;
     const results = await executeActions([

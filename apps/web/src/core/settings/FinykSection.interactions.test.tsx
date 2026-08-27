@@ -251,7 +251,7 @@ describe("FinykSection interactions", () => {
     fireEvent.change(input, { target: { value: "tok" } });
     fireEvent.click(screen.getByText("Підключити Monobank"));
     expect(
-      await screen.findByText("Monobank API не відповідає. Спробуйте пізніше."),
+      await screen.findByText("Monobank API не відповідає. Спробуй пізніше."),
     ).toBeInTheDocument();
   });
 
@@ -293,7 +293,7 @@ describe("FinykSection interactions", () => {
     });
     mockedDisconnect.mockResolvedValue(undefined);
     renderSection();
-    fireEvent.click(await screen.findByText("Від'єднати"));
+    fireEvent.click(await screen.findByText("Відʼєднати"));
 
     const dialog = await screen.findByRole("alertdialog");
     fireEvent.click(within(dialog).getByText("Вийти"));
@@ -428,17 +428,17 @@ describe("FinykSection interactions", () => {
       accountsCount: 1,
     };
     mockedSyncState.mockResolvedValue(activeState);
-    mockedDisconnect.mockRejectedValue(new Error("Не вдалося від’єднатися"));
+    mockedDisconnect.mockRejectedValue(new Error("Не вдалося відʼєднатися"));
     const { client } = renderSection();
 
-    fireEvent.click(await screen.findByText("Від'єднати"));
+    fireEvent.click(await screen.findByText("Відʼєднати"));
     const removeQueries = vi.spyOn(client, "removeQueries");
     fireEvent.click(
       within(await screen.findByRole("alertdialog")).getByText("Вийти"),
     );
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Не вдалося від’єднатися",
+      "Не вдалося відʼєднатися",
     );
     expect(removeQueries).not.toHaveBeenCalled();
     expect(client.getQueryData(finykKeys.monoSyncState)).toEqual(activeState);

@@ -105,7 +105,7 @@ describe("SwipePages", () => {
     expect(page?.style.transform).toBe("none");
   });
 
-  // Нова вкладка в'їжджає з того боку, куди вів палець: спершу стартовий
+  // Нова вкладка вʼїжджає з того боку, куди вів палець: спершу стартовий
   // зсув без transition, наступним кадром — відпускання в нуль.
   it("seeds a directional enter offset when the active tab changes", () => {
     const { container, rerender } = renderPages("a", vi.fn());

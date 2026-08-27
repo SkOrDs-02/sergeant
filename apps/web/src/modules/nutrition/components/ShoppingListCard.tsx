@@ -23,12 +23,13 @@ import type {
 } from "@sergeant/nutrition-domain";
 import type { NutritionWeekPlan } from "../hooks/useNutritionUiState";
 import { Icon, type IconName } from "@shared/components/ui/Icon";
+import { foldApostrophes } from "@sergeant/shared";
 
 // Іконка групи в списку покупок. До 2026-08-03 тут лежали emoji, які
 // малювалися системним шрифтом: «🫒» на Windows деградувало в порожній
 // прямокутник, а «🥦» на старому Android — у чорно-білий гліф.
 const CATEGORY_ICONS: Record<string, IconName> = {
-  "М'ясо та риба": "utensils",
+  "Мʼясо та риба": "utensils",
   "Молочні продукти": "droplet",
   Овочі: "leaf",
   "Овочі та гриби": "leaf",
@@ -44,7 +45,15 @@ const CATEGORY_ICONS: Record<string, IconName> = {
 };
 
 function getCategoryIcon(name: string): IconName {
-  return CATEGORY_ICONS[name] || "shopping-cart";
+  // Назву категорії віддає модель за промптом сервера
+  // (`shopping-list.ts`), тобто апостроф у ній не гарантований. Ключі тут
+  // канонічні (§1.10), тож звіряємо згорнутими формами — інакше
+  // «М'ясо та риба» з ASCII-апострофом мовчки падає у дефолтний кошик.
+  const folded = foldApostrophes(name);
+  const key = Object.keys(CATEGORY_ICONS).find(
+    (k) => foldApostrophes(k) === folded,
+  );
+  return (key && CATEGORY_ICONS[key]) || "shopping-cart";
 }
 
 const pm = messages.nutrition.shoppingListPantryMath;

@@ -52,7 +52,7 @@ describe("Label", () => {
     expect(label.className).not.toContain("uppercase");
   });
 
-  it("optional appends the · необов'язково suffix", () => {
+  it("optional appends the · необовʼязково suffix", () => {
     render(<Label optional>Нотатка</Label>);
     expect(screen.getByText(/необов/)).toBeInTheDocument();
   });

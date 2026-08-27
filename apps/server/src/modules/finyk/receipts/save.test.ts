@@ -626,7 +626,7 @@ describe("saveReceiptHandler — vision retry-дедуп через clientScanId
   it("clientScanId, вкладений клієнтом ЛИШЕ в rawPayload (без body-поля) → дедуп-SELECT працює з ним же", async () => {
     // Ефективний ключ — те, що реально ляже в raw_payload (і що бачить
     // партіальний UNIQUE): дедуп-SELECT/guard мусять дивитись туди ж,
-    // інакше конфлікт, видимий індексу, давав би нез'ясовне 500.
+    // інакше конфлікт, видимий індексу, давав би незʼясовне 500.
     const client = makeFakeClient({
       selectReceipt: () => ({
         rows: [receiptDbRow({ fiscal_num: null, source: "vision" })],

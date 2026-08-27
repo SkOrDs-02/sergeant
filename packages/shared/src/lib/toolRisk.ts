@@ -51,7 +51,7 @@ export const TOOL_RISK: Readonly<Record<string, ToolRisk>> = {
   forget: "destructive",
 
   // Перезаписує категорії до 50 транзакцій за патерном; попередні значення
-  // не зберігаються. Це рівно «перезапис» із рішення founder-а. Пом'якшення
+  // не зберігаються. Це рівно «перезапис» із рішення founder-а. Помʼякшення
   // у вигляді `dry_run` за замовчуванням існує, але воно captures лише
   // випадок, коли модель САМА вирішила показати превʼю.
   batch_categorize: "destructive",
@@ -74,6 +74,20 @@ export const TOOL_RISK: Readonly<Record<string, ToolRisk>> = {
   // Той самий інструмент приймає `archived: false` — тобто вміє себе
   // скасувати; плюс екран архіву в налаштуваннях Рутини.
   archive_habit: "reversible",
+
+  // AI-CONTEXT (B39, 2026-08-25): `set_budget_limit`, `set_monthly_plan`,
+  // `update_budget`, `change_category` перезаписують значення без
+  // читання попереднього — тобто формально підпадають під «перезапис» з
+  // рішення founder-а #8. Але founder уточнив межу саме тут: підтвердження
+  // потребує лише НЕЗВОРОТНЕ. Ці чотири інструменти отримали робочий
+  // `undo`, що читає попереднє значення ПЕРЕД записом і повертає closure,
+  // яка пише його назад (той самий 5-секундний undo-тост, що й у
+  // `create_transaction`) — тобто зворотні, а не деструктивні. Блокуючий
+  // модал лишається тільки для дій без reverse-snapshot-у.
+  set_budget_limit: "reversible",
+  set_monthly_plan: "reversible",
+  update_budget: "reversible",
+  change_category: "reversible",
 };
 
 /** Усі ризикові інструменти — для бейджа-попередження в каталозі й картці. */

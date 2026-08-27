@@ -13,7 +13,7 @@
  *  * **Пастки перед суддями.** У кожного кейса є поле `trap` — одне речення
  *    про те, що тут означає «неправильно». Воно друкується у звіті поруч із
  *    сирим текстом відповіді.
- *  * **Повний текст обов'язковий.** Звіт друкує НЕОБРІЗАНУ відповідь для
+ *  * **Повний текст обовʼязковий.** Звіт друкує НЕОБРІЗАНУ відповідь для
  *    кожного кейса, де кандидат розійшовся з базовою моделлю або провалив
  *    суддю. Евристичні судді помиляються в обидва боки — цифрам без тексту
  *    вірити не можна.
@@ -44,13 +44,20 @@ import { fileURLToPath } from "node:url";
 import { loadCatalog } from "./eval/cost.js";
 import { PIPELINES } from "./eval/pipelines.js";
 import { toMarkdown } from "./eval/report.js";
-import { runOne } from "./eval/run.js";
-import type { RunResult } from "./eval/types.js";
+import { candidateProviderAvailable, runOne } from "./eval/run.js";
+import type { Candidate, RunResult } from "./eval/types.js";
 
 async function main(): Promise<void> {
   const { values } = parseArgs({
     options: {
       "dry-run": { type: "boolean", default: false },
+      // Гейт B44 фейлить прогін, коли кандидат резолвиться не у власного
+      // провайдера (немає ключа). Це правильно за замовчуванням, але робить
+      // неможливим легітимний сценарій «маю лише OpenRouter-ключ, хочу
+      // порівняти OpenRouter-моделі». Прапорець ВІДСІВАЄ таких кандидатів і
+      // називає їх у звіті — на відміну від мовчазної заглушки, через яку
+      // й зʼявився B44: пропущений кандидат видно, підмінений — ні.
+      "skip-unavailable": { type: "boolean", default: false },
       pipeline: { type: "string" },
       out: { type: "string" },
       extra: { type: "string", multiple: true, default: [] },
@@ -97,7 +104,27 @@ async function main(): Promise<void> {
 
   const repeats = Math.max(1, Number(values.repeat ?? 1) || 1);
   const dryRun = values["dry-run"] === true;
+  const skipUnavailable = values["skip-unavailable"] === true;
   if (!dryRun) await loadCatalog();
+
+  const skipped: Candidate[] = [];
+  if (skipUnavailable && !dryRun) {
+    for (const pipeline of pipelines) {
+      const available = pipeline.candidates.filter((c) => {
+        if (candidateProviderAvailable(c)) return true;
+        if (!skipped.some((s) => s.label === c.label && s.model === c.model)) {
+          skipped.push(c);
+        }
+        return false;
+      });
+      pipeline.candidates = available;
+    }
+    for (const c of skipped) {
+      console.error(
+        `[skip-unavailable] пропущено "${c.label}" (\`${c.model}\`, provider=${c.provider}) — ключа немає`,
+      );
+    }
+  }
 
   const results: RunResult[] = [];
   for (const pipeline of pipelines) {
@@ -114,7 +141,7 @@ async function main(): Promise<void> {
   }
 
   const generatedAt = new Date().toISOString();
-  const markdown = toMarkdown(results, pipelines, generatedAt);
+  const markdown = toMarkdown(results, pipelines, generatedAt, skipped);
   console.log(markdown);
 
   // `scripts/` лежить на apps/server/scripts — три рівні під коренем репо.

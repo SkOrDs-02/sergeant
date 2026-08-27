@@ -147,7 +147,7 @@ export function PrivacySection() {
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- `appLock` — новий обʼєкт-літерал щорендеру (useAppLock.ts не мемоізує повернене значення). Додавання ЦІЛОГО обʼєкта в deps ганяло б цей ефект (і реальний IndexedDB-запит `hasPin()`) на КОЖЕН непов'язаний ре-рендер PrivacySection; має значення лише ідентичність `.state` і `.hasPin` (остання міняється тільки з userId), обидві вже явно в deps.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `appLock` — новий обʼєкт-літерал щорендеру (useAppLock.ts не мемоізує повернене значення). Додавання ЦІЛОГО обʼєкта в deps ганяло б цей ефект (і реальний IndexedDB-запит `hasPin()`) на КОЖЕН неповʼязаний ре-рендер PrivacySection; має значення лише ідентичність `.state` і `.hasPin` (остання міняється тільки з userId), обидві вже явно в deps.
   }, [flagEnabled, appLock.state, appLock.hasPin]);
 
   const handleToggle = async (checked: boolean) => {
@@ -253,7 +253,7 @@ export function PrivacySection() {
     }
     // L-20: без явної інвалідації aiMemoryKeys інфініт-список у
     // AiMemoryList лишається зі стертими фактами до наступного
-    // непов'язаного refetch — той самий ключ, який AiMemoryList сам
+    // неповʼязаного refetch — той самий ключ, який AiMemoryList сам
     // інвалідує після точкового видалення ОДНОГО факту (AiMemoryList.tsx,
     // remove.onSuccess). Тут стирається ВЕСЬ список, тож той самий шлях.
     // Інвалідація відбувається В БУДЬ-ЯКОМУ разі — сервер підтвердив
@@ -367,7 +367,7 @@ export function PrivacySection() {
               // `LegalLinks` — зрячий юзер, що щойно бачив, як тумблер
               // мовчки відкотився (див. `catch` у `updatePreference`
               // вище), потребує пояснення поруч із контролом, а не під
-              // списком фактів ШІ-пам'яті.
+              // списком фактів ШІ-памʼяті.
               <p className="text-style-caption text-danger-strong" role="alert">
                 {preferencesError}
               </p>
@@ -436,7 +436,7 @@ export function PrivacySection() {
                   Спершу кажемо, ЩО тут лежить (включно з фактами профілю,
                   які тепер дзеркаляться сюди), і лише потім — що з ним
                   можна зробити. Без цього рядка мітка «Профіль» на факті
-                  читається як дубль секції «Пам'ять» у Профілі. */}
+                  читається як дубль секції «Памʼять» у Профілі. */}
               <p className="text-style-caption text-subtle leading-relaxed">
                 {messages.privacy.aiMemory.sectionScope}
               </p>

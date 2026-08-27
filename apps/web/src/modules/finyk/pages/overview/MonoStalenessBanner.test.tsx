@@ -27,7 +27,7 @@ describe("MonoStalenessBanner", () => {
     render(<MonoStalenessBanner days={9} />);
     const hint = screen.getByText(/Можливо, витрат справді не було/);
     expect(hint).toBeInTheDocument();
-    expect(hint.textContent).toMatch(/можливо, зв'язок із банком обірвався/);
+    expect(hint.textContent).toMatch(/можливо, звʼязок із банком обірвався/);
   });
 
   it("оголошується асистивним технологіям як статус", () => {

@@ -153,7 +153,7 @@ export function ReceiptScanSheet({
       resetSave();
       bulkReceipts.reset();
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset-on-close only; `bulkReceipts` — новий об'єкт щорендера (той самий патерн, що в BulkImportSheet до переносу).
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset-on-close only; `bulkReceipts` — новий обʼєкт щорендера (той самий патерн, що в BulkImportSheet до переносу).
   }, [open, resetSave]);
 
   const openReview = (nextDraft: ReceiptDraft) => {
@@ -367,7 +367,7 @@ export function ReceiptScanSheet({
             Завантажити фото
           </Button>
           <p className="text-style-caption text-subtle">
-            Можна вибрати одразу кілька фото — до {BATCH_RECEIPTS_MAX_FILES}{" "}
+            Можна вибрати одразу кілька фото, до {BATCH_RECEIPTS_MAX_FILES}{" "}
             чеків за раз, кожен збережеться окремою витратою.
           </p>
         </div>
@@ -390,7 +390,7 @@ export function ReceiptScanSheet({
                 role="status"
                 className="rounded-xl border border-line bg-panelHi/60 p-2.5 text-style-caption text-text"
               >
-                Схоже, на фото не чек — розпізнати нічого не вдалося. Заповни
+                Схоже, на фото не чек: розпізнати нічого не вдалося. Заповни
                 поля вручну, і чек повернеться у вибрані.
               </p>
             )}
@@ -463,7 +463,7 @@ export function ReceiptScanSheet({
               role="status"
               className="rounded-xl border border-line bg-panelHi/60 p-2.5 text-style-caption text-text"
             >
-              Схоже, на фото не чек — розпізнати нічого не вдалося. Спробуй
+              Схоже, на фото не чек: розпізнати нічого не вдалося. Спробуй
               чіткіше фото чека або заповни поля вручну.
             </p>
           )}

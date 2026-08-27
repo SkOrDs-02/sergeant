@@ -3,7 +3,7 @@
  *
  * Дані завантажуються як звичайний JSON, що дозволяє пакету лишатись
  * pure (без `fetch`/`dynamic import`/DOM-залежностей). Споживачі в
- * `apps/web` / `apps/mobile` можуть імпортувати готовий об'єкт або
+ * `apps/web` / `apps/mobile` можуть імпортувати готовий обʼєкт або
  * окремі хелпери пошуку / lookup.
  */
 
@@ -68,11 +68,11 @@ export const PRIMARY_GROUPS_UK: Record<string, string> =
 export const EQUIPMENT_UK: Record<string, string> =
   EXERCISE_CATALOG.labels?.equipmentUk || {};
 
-/** Мапа українських назв м'язів. */
+/** Мапа українських назв мʼязів. */
 export const MUSCLES_UK: Record<string, string> =
   EXERCISE_CATALOG.labels?.musclesUk || {};
 
-/** Мапа м'язів по primary-групі (для BodyAtlas і recovery-обчислень). */
+/** Мапа мʼязів по primary-групі (для BodyAtlas і recovery-обчислень). */
 export const MUSCLES_BY_PRIMARY_GROUP: Record<string, string[]> =
   EXERCISE_CATALOG.labels?.musclesByPrimaryGroup || {};
 
@@ -105,7 +105,7 @@ export function getExercisesByPrimaryGroup(
 }
 
 /**
- * Перетворює запис каталогу у форму `ExerciseDef` (плоскі масиви м'язів).
+ * Перетворює запис каталогу у форму `ExerciseDef` (плоскі масиви мʼязів).
  */
 export function toExerciseDef(
   ex: RawExerciseDef | null | undefined,

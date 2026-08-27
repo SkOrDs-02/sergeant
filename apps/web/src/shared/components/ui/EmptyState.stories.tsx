@@ -23,13 +23,13 @@ import { Button } from "./Button";
  *
  * - Зовнішній контейнер має `role="status"` + `aria-live="polite"` +
  *   `aria-atomic="true"`, тому SR озвучує `title` + `description`
- *   одним повідомленням, коли empty-state з'являється динамічно
+ *   одним повідомленням, коли empty-state зʼявляється динамічно
  *   (наприклад, після фільтра).
  * - Іконки та ілюстрації стоять у `aria-hidden`-обгортках — SR не
  *   дублює декоративну графіку у live-region-озвучці.
  * - `action`-кнопка фокус НЕ перехоплює на mount; коли користувач
  *   до неї tab-неться, `<Button>` показує власний `focus-visible:ring`
- *   (Hard Rule #14). Для icon-only action-у обов'язково передай
+ *   (Hard Rule #14). Для icon-only action-у обовʼязково передай
  *   `aria-label`.
  *
  * **API-нюанс:** якщо передати і `icon`, і `illustration` —

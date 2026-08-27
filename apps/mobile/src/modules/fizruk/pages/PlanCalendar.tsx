@@ -358,7 +358,7 @@ export function PlanCalendar({
             </Text>
             <Text className="text-xs text-fg-muted leading-snug mt-1">
               Ще немає ні шаблонів на день, ні запланованих тренувань. Створи
-              перше тренування або шаблон, і вони з&apos;являться тут.
+              перше тренування або шаблон, і вони зʼявляться тут.
             </Text>
             <View className="mt-3">
               <Button

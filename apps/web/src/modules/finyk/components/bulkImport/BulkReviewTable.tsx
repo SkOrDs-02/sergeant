@@ -11,7 +11,7 @@
  *
  * Власні категорії (CodeRabbit round 5, PR #818): `customCategories`
  * проп раніше оголошувався, але не деструктурувався — власні категорії
- * користувача просто ніде не з'являлись у bulk-review, хоча
+ * користувача просто ніде не зʼявлялись у bulk-review, хоча
  * `ReceiptReviewForm`/`ManualExpenseSheet` їх уже показують. Мержимо їх у
  * ОБИДВА пікери (per-row і масовий), той самий патерн, що
  * `ManualExpenseSheet.tsx` (`customExpenseCategories`/`customCategoryDisplay`):

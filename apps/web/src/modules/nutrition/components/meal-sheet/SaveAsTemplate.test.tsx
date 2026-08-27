@@ -43,7 +43,7 @@ describe("SaveAsTemplate", () => {
     render(
       <SaveAsTemplate form={form()} setForm={vi.fn()} setPrefs={setPrefs} />,
     );
-    fireEvent.click(screen.getByText("+ Запам’ятати для повтору"));
+    fireEvent.click(screen.getByText("+ Запамʼятати для повтору"));
     expect(setPrefs).toHaveBeenCalled();
     const updater = setPrefs.mock.calls[0]![0];
     const next = updater({ mealTemplates: [] });
@@ -66,7 +66,7 @@ describe("SaveAsTemplate", () => {
         setPrefs={setPrefs}
       />,
     );
-    fireEvent.click(screen.getByText("+ Запам’ятати для повтору"));
+    fireEvent.click(screen.getByText("+ Запамʼятати для повтору"));
     expect(setPrefs).not.toHaveBeenCalled();
     expect(setForm).toHaveBeenCalled();
   });
@@ -81,7 +81,7 @@ describe("SaveAsTemplate", () => {
         setPrefs={setPrefs}
       />,
     );
-    fireEvent.click(screen.getByText("+ Запам’ятати для повтору"));
+    fireEvent.click(screen.getByText("+ Запамʼятати для повтору"));
     expect(setPrefs).not.toHaveBeenCalled();
     expect(setForm).toHaveBeenCalled();
   });

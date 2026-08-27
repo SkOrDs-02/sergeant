@@ -205,7 +205,7 @@ function diffFormAgainst(
 
 export interface BiometricsSectionProps {
   /**
-   * Reflects the page-level "Ви офлайн" banner — biometrics is a pure
+   * Reflects the page-level "Офлайн" banner — biometrics is a pure
    * client-side store so editing works offline, but the disabled state
    * mirrors the rest of Profile for visual consistency.
    */

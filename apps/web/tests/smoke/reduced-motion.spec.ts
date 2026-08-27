@@ -11,7 +11,7 @@ import { seedFTUX } from "../utils/seedFTUX";
  * running CSS-АНІМАЦІЙ має бути ~0 (бюджет ≤ 2 на transient-хвіст).
  *
  * Рахуємо ЛИШЕ CSSAnimation: `document.getAnimations()` повертає й
- * CSSTransition-об'єкти, а універсальне правило reduce-шару
+ * CSSTransition-обʼєкти, а універсальне правило reduce-шару
  * (`transition-duration: 100ms` на `*`) породжує сотні короткоживучих
  * scrollbar-color-транзишнів на маунті — це кольорові інтерполяції без
  * руху, не motion (зафіксовано в аудиті 2026-07 як false positive).

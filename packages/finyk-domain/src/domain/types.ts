@@ -62,13 +62,25 @@ export interface Category {
 export interface LimitBudget {
   id: string;
   type: "limit";
+  /**
+   * Legacy-поле однієї категорії. Для мульти-категорійного ліміту тримає
+   * ПЕРШУ категорію з `categoryIds`, щоб старі читачі (mobile, insights,
+   * старі снапшоти/бекапи) бачили валідний запис. Пиши через
+   * `normalizeLimitBudget` — він тримає обидва поля синхронними.
+   */
   categoryId: string;
+  /**
+   * Повний набір категорій ліміту (multi-category limit, 2026-08-25).
+   * Legacy-записи поля не мають — `normalizeLimitBudget` добудовує його
+   * як `[categoryId]` на read-time, без міграції даних.
+   */
+  categoryIds?: string[];
   limit: number;
   /** Calendar window used to reset/aggregate the limit. Legacy records omit it. */
   period?: "month" | "week" | "one_time";
   /** ISO instant from which a one-time limit starts accumulating expenses. */
   createdAt?: string;
-  /** Необов'язкова людино-читана назва (UI). */
+  /** Необовʼязкова людино-читана назва (UI). */
   label?: string;
 }
 

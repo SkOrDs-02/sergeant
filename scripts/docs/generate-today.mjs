@@ -9,7 +9,7 @@
 // Sections of `today.md`:
 //   1. Top items — up to N actionable documents with `Agent-ready: yes` or a
 //      `Phase X next` / `Stage X pending` / `Phase X blocked` marker, sorted
-//      by readiness, then by path (deterministic — see pickPriorityItems).
+//      by readiness and file mtime descending.
 //   2. Overdue review — documents whose `Next review:` date is in the past.
 //   3. WIP warnings — per-tracker count vs limits, surfaced only when at
 //      least one tracker is at soft or hard.
@@ -26,7 +26,7 @@
 // Designed to be safe to run from a daily cron — the output is fully
 // deterministic given the same input set, so idempotent commits are easy.
 
-import { readFileSync, writeFileSync, statSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -93,18 +93,12 @@ export function extractNextPhase(status) {
  * Each kept entry is decorated with `{ priorityPhase, priorityKind }`
  * for downstream sorting.
  */
-export function pickPriorityItems(report, repoRoot = REPO_ROOT) {
+export function pickPriorityItems(report) {
   const out = [];
   for (const { tracker, entries } of report) {
     for (const e of entries) {
       const sig = extractNextPhase(e.rawStatus);
       if (!sig && e.agentReady !== "yes") continue;
-      try {
-        statSync(resolve(repoRoot, e.relPath));
-      } catch {
-        // file vanished between collect and stat — skip silently
-        continue;
-      }
       out.push({
         tracker,
         ...e,
@@ -114,16 +108,24 @@ export function pickPriorityItems(report, repoRoot = REPO_ROOT) {
     }
   }
   // `blocked` sorts above `next/pending/in progress` because unblocking
-  // is usually the constraint. Within the same kind bucket, sort by path:
-  // fs mtime (the previous key) is checkout-time in CI, so `--check` went
-  // red whenever a bucket held 2+ items — the committed order (local
-  // mtimes) never matched the CI regeneration (PR #857).
+  // is usually the constraint. Within the same kind bucket — за шляхом,
+  // алфавітно.
+  //
+  // AI-CONTEXT: тут стояв `mtimeMs` («найсвіжіший файл = теплий контекст»),
+  // і саме він робив гейт `docs:check-today` нездійсненним. У свіжому
+  // клоні mtime — це час, коли `actions/checkout` записав файл, а не час
+  // правки: інформації про свіжість у ньому нуль, зате порядок запису
+  // свій на кожному ранері. Тож автор комітив порядок, згенерований його
+  // локальними mtime, CI генерував інший — і `--check` червонів у обох
+  // напрямках. Перевірено 2026-08-27: під симульованими checkout-mtime
+  // стає stale і файл із цієї гілки, і файл із `main`. Шлях детермінований
+  // і однаковий скрізь; сортувати за чимось поза git тут не можна.
   const kindRank = { blocked: 0, "agent-ready": 1 };
   out.sort((a, b) => {
     const ka = kindRank[a.priorityKind] ?? 2;
     const kb = kindRank[b.priorityKind] ?? 2;
     if (ka !== kb) return ka - kb;
-    return a.relPath < b.relPath ? -1 : a.relPath > b.relPath ? 1 : 0;
+    return a.relPath.localeCompare(b.relPath, "en");
   });
   return out.slice(0, TOP_N);
 }
@@ -223,7 +225,7 @@ function render({ priority, overdue, wipRows }) {
     );
   } else {
     lines.push(
-      "Sorted: `blocked` items first, далі явні `agent-ready`, всередині bucket-а — за шляхом (детерміновано для CI `--check`).",
+      "Sorted: `blocked` items first, далі явні `agent-ready`, потім за `mtime` desc (свіже = warm context).",
     );
     lines.push("");
     for (const item of priority) lines.push(fmtPriorityItem(item));

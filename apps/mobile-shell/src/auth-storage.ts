@@ -7,7 +7,7 @@
  * - **iOS** → Keychain з `KeychainAccess.afterFirstUnlockThisDeviceOnly`
  *   (доступний тільки після першого unlock-у і **не** мігрує на інший
  *   девайс через iCloud-backup) і `setSynchronize(false)` (іспортуємо із
- *   iCloud Keychain sync — токен **не** з'явиться на іншому пристрої з тим
+ *   iCloud Keychain sync — токен **не** зʼявиться на іншому пристрої з тим
  *   самим AppleID).
  * - **Android** → AndroidX EncryptedSharedPreferences (AES-GCM, ключ у
  *   AndroidKeyStore). Файл захищений `android:allowBackup="false"` у
@@ -67,7 +67,7 @@ function ensureConfigured(): Promise<void> {
   if (configurePromise) return configurePromise;
   configurePromise = (async () => {
     try {
-      // iCloud Keychain sync OFF — токен НЕ повинен з'являтись на іншому
+      // iCloud Keychain sync OFF — токен НЕ повинен зʼявлятись на іншому
       // девайсі з тим самим AppleID.
       await SecureStorage.setSynchronize(false);
       // Default accessibility — `afterFirstUnlockThisDeviceOnly`. Картка H1

@@ -246,7 +246,7 @@ describe("AuthPage — register mode", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /Немає акаунту/ }));
 
-    fireEvent.change(screen.getByLabelText("Ім'я"), {
+    fireEvent.change(screen.getByLabelText("Імʼя"), {
       target: { value: "Боб" },
     });
     fireEvent.change(screen.getByLabelText("Email"), {
@@ -318,7 +318,7 @@ describe("AuthPage — UX polish (autoFocus / password toggle / a11y)", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /Немає акаунту/ }));
 
-    const name = screen.getByLabelText("Ім'я") as HTMLInputElement;
+    const name = screen.getByLabelText("Імʼя") as HTMLInputElement;
     const email = screen.getByLabelText("Email") as HTMLInputElement;
     const password = screen.getByLabelText("Пароль") as HTMLInputElement;
 
@@ -347,7 +347,7 @@ describe("AuthPage — UX polish (autoFocus / password toggle / a11y)", () => {
     expect(password.type).toBe("password");
   });
 
-  it("aria-describedby з'являється лише після помилки валідації", async () => {
+  it("aria-describedby зʼявляється лише після помилки валідації", async () => {
     render(
       <MemoryRouter>
         <AuthPage />

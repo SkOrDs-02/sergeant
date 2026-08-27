@@ -139,9 +139,9 @@ export function WaitlistForm({
         created: res.created,
       });
       if (res.created) {
-        toast.success("Дякуємо! Повідомимо, щойно Premium буде готовий.");
+        toast.success("Дякую! Повідомлю, щойно Premium буде готовий.");
       } else {
-        toast.info("Ми вже памʼятаємо твій інтерес, жодних дублікатів.");
+        toast.info("Вже памʼятаю твій інтерес, жодних дублікатів.");
       }
       reset({ email: "", tier_interest: values.tier_interest });
       onSuccess?.(res.created);

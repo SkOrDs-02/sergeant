@@ -42,7 +42,7 @@ export function isMonoDebt(acc: MonoAccount): boolean {
   if (creditLimit > 0) return creditLimit - balance > 0;
   // Дебетова картка у мінусі (овердрафт / реверс комісії) — теж борг.
   // До фіксу ця гілка `getMonoDebt` була недосяжна з `getMonoTotals`,
-  // бо `isMonoDebt` вимагав `creditLimit > 0`, і від'ємні дебетові
+  // бо `isMonoDebt` вимагав `creditLimit > 0`, і відʼємні дебетові
   // баланси мовчки не йшли у networth.
   return balance < 0;
 }

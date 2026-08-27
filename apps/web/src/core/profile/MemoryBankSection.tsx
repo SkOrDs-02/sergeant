@@ -54,7 +54,7 @@ export function MemoryBankSection() {
    * екран не перемонтовується — без підписки список і лічильник у шапці
    * лишались такими, якими були до розмови. `openMemoryChat` до того ж
    * обирає режим за `entries.length`, тобто застарілий знімок ще й ламав
-   * вибір між інтерв'ю і доповненням.
+   * вибір між інтервʼю і доповненням.
    */
   useEffect(() => subscribeMemoryEntries(setEntries), []);
 
@@ -69,7 +69,7 @@ export function MemoryBankSection() {
         // Запис у local-first сховище падає на квоті — стан минущий
         // (користувач звільнив місце / закрив іншу вкладку), тож повтор
         // із тим самим `next` має шанс і це єдиний шлях не втратити зміну.
-        toast.error("Не вдалося зберегти пам'ять профілю", undefined, {
+        toast.error("Не вдалося зберегти памʼять профілю", undefined, {
           label: "Повторити",
           onClick: () => persist(next),
         });
@@ -99,11 +99,11 @@ export function MemoryBankSection() {
    * Два режими розмови про профіль. Разом із повідомленням їде `preset`:
    * сама інструкція живе на сервері (`chatPresets.ts`), звідси йде лише
    * ідентифікатор. Preset також переводить розмову на окреме тижневе відро
-   * AI-квоти, щоб заповнення профілю не з'їдало денний ліміт.
+   * AI-квоти, щоб заповнення профілю не зʼїдало денний ліміт.
    *
    * AI-CONTEXT (2026-08-07): режим більше НЕ виводиться з `entries.length`.
    * Раніше перший же запис назавжди перемикав кнопку на `profile_add_info`,
-   * і повне інтерв'ю ставало недосяжним — щоб пройти його вдруге, треба
+   * і повне інтервʼю ставало недосяжним — щоб пройти його вдруге, треба
    * було спорожнити банк. Вибір тепер за користувачем: обидві дії видимі.
    */
   const openMemoryChat = useCallback((mode: "interview" | "add") => {
@@ -236,8 +236,8 @@ export function MemoryBankSection() {
     <Card radius="lg" padding="none" className="overflow-hidden">
       {/* V-4 (deep-module-audit 2026-08-08, § «Профіль і Налаштування»):
           цей `<div>` раніше малював власний текстовий заголовок
-          «Пам'ять ШІ» поверх `text-style-label` — БІЛЬШИМ за зовнішній
-          `CollapsibleSection`-заголовок «Пам'ять» (`SectionHeading
+          «Памʼять ШІ» поверх `text-style-label` — БІЛЬШИМ за зовнішній
+          `CollapsibleSection`-заголовок «Памʼять» (`SectionHeading
           size="xs"` у `ProfilePage.tsx`), тобто інверсія ієрархії:
           дрібніший зовнішній рівень над більшим вкладеним. Заголовок-текст
           прибрано, іконка й лічильник/розмір сховища (мета-інформація,
@@ -268,7 +268,7 @@ export function MemoryBankSection() {
               icon={
                 <Icon name="sparkle" size={22} className="text-brand-500" />
               }
-              title="Банк пам'яті порожній"
+              title="Банк памʼяті порожній"
               description="ШІ задасть кілька запитань щоб дізнатися про ваші алергії, цілі, уподобання та рівень активності"
               action={
                 <Button
@@ -330,7 +330,7 @@ export function MemoryBankSection() {
                         // жодного способу прочитати решту (ні title, ні
                         // розкриття). `items-start` тримає кнопку видалення
                         // біля верхнього краю тепер, коли факт може зайняти
-                        // кілька рядків, а не з'їжджає в середину блоку.
+                        // кілька рядків, а не зʼїжджає в середину блоку.
                         className="flex items-start gap-2 group"
                       >
                         <span className="text-style-label text-text flex-1 min-w-0 break-words">
@@ -361,7 +361,7 @@ export function MemoryBankSection() {
                 Додати інфо
               </button>
               {/*
-                Повне інтерв'ю лишається доступним і з непорожнім банком:
+                Повне інтервʼю лишається доступним і з непорожнім банком:
                 воно ставить ширші питання, ніж «додати інфо», і людина може
                 захотіти пройти його ще раз — після зміни цілей, наприклад.
               */}
@@ -371,7 +371,7 @@ export function MemoryBankSection() {
                 className="py-2.5 px-3 rounded-xl border border-line text-style-label text-muted hover:text-text hover:border-muted transition-colors flex items-center justify-center gap-1.5"
               >
                 <Icon name="sparkle" size={14} />
-                Інтерв&apos;ю
+                Інтервʼю
               </button>
               <button
                 type="button"
@@ -384,7 +384,7 @@ export function MemoryBankSection() {
                 type="button"
                 onClick={handleExport}
                 className="py-2.5 px-3 rounded-xl border border-line text-style-label text-muted hover:text-text hover:border-muted transition-colors flex items-center justify-center gap-1.5"
-                aria-label="Експорт пам'яті"
+                aria-label="Експорт памʼяті"
               >
                 <Icon name="download" size={14} />
               </button>
@@ -392,7 +392,7 @@ export function MemoryBankSection() {
                 type="button"
                 onClick={() => importRef.current?.click()}
                 className="py-2.5 px-3 rounded-xl border border-line text-style-label text-muted hover:text-text hover:border-muted transition-colors flex items-center justify-center gap-1.5"
-                aria-label="Імпорт пам'яті"
+                aria-label="Імпорт памʼяті"
               >
                 <Icon name="upload" size={14} />
               </button>

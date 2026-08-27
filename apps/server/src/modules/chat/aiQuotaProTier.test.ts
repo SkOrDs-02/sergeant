@@ -224,7 +224,11 @@ describe("resolveProTier — bypass paths return premium without touching DB", (
     pool.query.mockResolvedValueOnce(full()).mockResolvedValueOnce(ok());
     const r = await resolveProTier(makeReq(), makeRes(), "coach");
     expect(r.tier).toBe("standard");
-    expect(r.model).toBe("google/gemini-2.5-flash-lite");
+    // Пін оновлено 2026-08-26 разом зі зміною дефолту (рішення власника,
+    // ADR-0087): `2.5-flash-lite` → `3.5-flash-lite`, 8/8 на коуч-стенді
+    // проти нуля порушень голосу. Пін лишається жорстким навмисно — це
+    // прод-модель, її зміна має вимагати свідомої правки тесту.
+    expect(r.model).toBe("google/gemini-3.5-flash-lite");
   });
 });
 
@@ -270,7 +274,7 @@ describe("resolveProTier — Pro cascade premium → standard → floor", () => 
 
   /**
    * Тут стояв `openai/gpt-5.1`, і за замірами проду він майже не працював:
-   * із десяти викликів коуча дев'ять обслуговував anthropic-фолбек із
+   * із десяти викликів коуча девʼять обслуговував anthropic-фолбек із
    * `claude-sonnet-4-6`, бо reasoning-модель не встигала у 20-секундний
    * таймаут `coach.ts`. Ставимо ту саму модель, що й так відповідала,
    * тільки через шлюз — щоб шлях був один і вартість була видна в одному
@@ -295,7 +299,9 @@ describe("resolveProTier — Pro cascade premium → standard → floor", () => 
     pool.query.mockResolvedValueOnce(full()).mockResolvedValueOnce(full());
     const r = await resolveProTier(makeReq(), makeRes(), "coach");
     expect(r.tier).toBe("floor");
-    expect(r.model).toBe("google/gemini-2.5-flash-lite");
+    // Див. коментар до standard-піна вище — обидва тири коуча переведено
+    // однією зміною 2026-08-26.
+    expect(r.model).toBe("google/gemini-3.5-flash-lite");
   });
 });
 
@@ -325,11 +331,15 @@ describe("resolveProTier — chat-тиринг під CHAT_VIA_OPENROUTER", () =
     expect(r.model).toBe("deepseek/deepseek-v4-flash");
   });
 
-  it("floor → google/gemini-2.5-flash-lite", async () => {
+  // Модель змінено 2026-08-26: `google/gemini-2.5-flash-lite` давала 9 зривів
+  // стріму з 12 на прод-формі виклику (stream + 78 інструментів), тобто три
+  // чверті відповідей floor-тиру були порожні. Обґрунтування й заміри —
+  // у докстрінгу `env/chatModels.ts::CHAT_MODEL_DEFAULTS.floor`.
+  it("floor → google/gemini-3.7-flash", async () => {
     pool.query.mockResolvedValueOnce(full()).mockResolvedValueOnce(full());
     const r = await resolveProTier(makeReq(), makeRes(), "chat");
     expect(r.tier).toBe("floor");
-    expect(r.model).toBe("google/gemini-2.5-flash-lite");
+    expect(r.model).toBe("google/gemini-3.7-flash");
   });
 
   it("явний env-override перекриває дефолт шлюзу", async () => {

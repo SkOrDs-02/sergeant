@@ -49,7 +49,7 @@ describe("PackageEntryStep", () => {
   it("каже, що КБЖВ читаються з етикетки на 100 г", () => {
     renderStep();
     expect(screen.getByText(/на 100 г/)).toBeInTheDocument();
-    expect(screen.getByLabelText("Скільки з’їв, г")).toHaveValue("100");
+    expect(screen.getByLabelText("Скільки зʼїв, г")).toHaveValue("100");
   });
 
   it("requires a product name", () => {
@@ -68,7 +68,7 @@ describe("PackageEntryStep", () => {
     });
     submit();
     expect(
-      screen.getByText("Введи невід’ємні КБЖВ на 100 г і додатну вагу порції."),
+      screen.getByText("Введи невідʼємні КБЖВ на 100 г і додатну вагу порції."),
     ).toBeInTheDocument();
     expect(upsertFood).not.toHaveBeenCalled();
   });
@@ -76,12 +76,12 @@ describe("PackageEntryStep", () => {
   it("rejects a zero portion", () => {
     renderStep();
     fillValidProduct();
-    fireEvent.change(screen.getByLabelText("Скільки з’їв, г"), {
+    fireEvent.change(screen.getByLabelText("Скільки зʼїв, г"), {
       target: { value: "0" },
     });
     submit();
     expect(
-      screen.getByText("Введи невід’ємні КБЖВ на 100 г і додатну вагу порції."),
+      screen.getByText("Введи невідʼємні КБЖВ на 100 г і додатну вагу порції."),
     ).toBeInTheDocument();
     expect(upsertFood).not.toHaveBeenCalled();
   });
@@ -89,7 +89,7 @@ describe("PackageEntryStep", () => {
   it("не пропускає вагу порції понад стелю", () => {
     const onCreated = renderStep();
     fillValidProduct();
-    fireEvent.change(screen.getByLabelText("Скільки з’їв, г"), {
+    fireEvent.change(screen.getByLabelText("Скільки зʼїв, г"), {
       target: { value: "10001" },
     });
     submit();
@@ -107,7 +107,7 @@ describe("PackageEntryStep", () => {
     });
     const onCreated = renderStep();
     fillValidProduct();
-    fireEvent.change(screen.getByLabelText("Скільки з’їв, г"), {
+    fireEvent.change(screen.getByLabelText("Скільки зʼїв, г"), {
       target: { value: "125" },
     });
     submit();
@@ -131,7 +131,7 @@ describe("PackageEntryStep", () => {
     });
     const onCreated = renderStep();
     fillValidProduct();
-    fireEvent.change(screen.getByLabelText("Скільки з’їв, г"), {
+    fireEvent.change(screen.getByLabelText("Скільки зʼїв, г"), {
       target: { value: "150,5" },
     });
     submit();

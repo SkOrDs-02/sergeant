@@ -201,7 +201,7 @@ describe("Budgets page", () => {
     });
 
     // 500 ₴ from 30 червня counts against the current week's 1000 ₴ limit.
-    expect(screen.getByText(/500\s*\/\s*1000/)).toBeInTheDocument();
+    expect(screen.getByText(/500\s*\/\s*1\s?000/)).toBeInTheDocument();
   });
 
   it("auto-opens the limits section for a deep-linked focus category", () => {
@@ -313,7 +313,7 @@ describe("Budgets page", () => {
         focusLimitCategoryId: "food",
       });
     });
-    expect(screen.getByText(/2600\s*\/\s*2000/)).toBeInTheDocument();
+    expect(screen.getByText(/2\s?600\s*\/\s*2\s?000/)).toBeInTheDocument();
   });
 
   it("counts a manual `cafe` expense against a «Кафе та ресторани» limit", () => {
@@ -342,6 +342,6 @@ describe("Budgets page", () => {
         focusLimitCategoryId: "restaurant",
       });
     });
-    expect(screen.getByText(/850\s*\/\s*1000/)).toBeInTheDocument();
+    expect(screen.getByText(/850\s*\/\s*1\s?000/)).toBeInTheDocument();
   });
 });

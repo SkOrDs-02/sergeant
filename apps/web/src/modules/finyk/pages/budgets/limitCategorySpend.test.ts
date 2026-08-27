@@ -10,6 +10,7 @@
  */
 import { describe, it, expect } from "vitest";
 import {
+  calcLimitCategoryBreakdown,
   calcLimitCategorySpent,
   categoryBucketIds,
 } from "./limitCategorySpend";
@@ -73,7 +74,7 @@ describe("categoryBucketIds", () => {
 
 describe("calcLimitCategorySpent", () => {
   it("counts spending that existed before the limit was created", () => {
-    // Транзакції сіємо першими — «бюджет» з'являється лише в аргументі нижче.
+    // Транзакції сіємо першими — «бюджет» зʼявляється лише в аргументі нижче.
     const txs = [manual("m1", 1600, "food"), manual("m2", 1000, "food")];
     expect(calcLimitCategorySpent(txs, "food")).toBe(2600);
   });
@@ -137,5 +138,74 @@ describe("calcLimitCategorySpent", () => {
 
   it("returns 0 for an empty category id", () => {
     expect(calcLimitCategorySpent([manual("m1", 100, "food")], "")).toBe(0);
+  });
+});
+
+describe("multi-category limits", () => {
+  it("union of buckets: manual groceries + cafe land in a food+restaurant combo", () => {
+    const txs = [
+      manual("m1", 2000, "groceries"),
+      manual("m2", 600, "food"),
+      manual("m3", 850, "cafe"),
+      manual("m4", 300, "transport"),
+    ];
+    expect(calcLimitCategorySpent(txs, ["food", "restaurant"])).toBe(3450);
+  });
+
+  it("counts a transaction exactly once even with overlapping buckets", () => {
+    // `food` двічі в наборі (дедуп) + сума комбо = сума одиночних.
+    const txs = [manual("m1", 1000, "groceries"), manual("m2", 400, "cafe")];
+    expect(calcLimitCategorySpent(txs, ["food", "food", "restaurant"])).toBe(
+      calcLimitCategorySpent(txs, "food") +
+        calcLimitCategorySpent(txs, "restaurant"),
+    );
+  });
+
+  it("splits a split-transaction between combo categories without double counting", () => {
+    const txs = [bank("b1", -100000, "Змішана покупка", 0)];
+    const splits = {
+      b1: [
+        { categoryId: "food", amount: 700 },
+        { categoryId: "restaurant", amount: 300 },
+      ],
+    };
+    expect(
+      calcLimitCategorySpent(txs, ["food", "restaurant"], {}, splits),
+    ).toBe(1000);
+  });
+
+  it("empty id list returns 0", () => {
+    expect(calcLimitCategorySpent([manual("m1", 100, "food")], [])).toBe(0);
+  });
+
+  it("breakdown rows follow categoryIds order and sum to the combo spent", () => {
+    const txs = [
+      manual("m1", 2000, "groceries"),
+      manual("m2", 850, "cafe"),
+      manual("m3", 300, "transport"),
+    ];
+    const rows = calcLimitCategoryBreakdown(txs, ["food", "restaurant"]);
+    expect(rows).toEqual([
+      { categoryId: "food", spent: 2000 },
+      { categoryId: "restaurant", spent: 850 },
+    ]);
+    const total = rows.reduce((s, r) => s + r.spent, 0);
+    expect(total).toBe(calcLimitCategorySpent(txs, ["food", "restaurant"]));
+  });
+
+  it("breakdown assigns split parts to their own categories", () => {
+    const txs = [bank("b1", -100000, "Змішана покупка", 0)];
+    const splits = {
+      b1: [
+        { categoryId: "food", amount: 700 },
+        { categoryId: "cafe", amount: 300 },
+      ],
+    };
+    expect(
+      calcLimitCategoryBreakdown(txs, ["food", "restaurant"], {}, splits),
+    ).toEqual([
+      { categoryId: "food", spent: 700 },
+      { categoryId: "restaurant", spent: 300 },
+    ]);
   });
 });

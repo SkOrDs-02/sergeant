@@ -79,7 +79,7 @@ export async function bootSqliteReadPath(
 
     // Демо: залити засіяний payload із LS у SQLite ДО першого читання,
     // інакше модуль намалює порожньо (аудит L-8). Гейт на демо
-    // обов'язковий — див. AI-DANGER у `demoSeedImport.ts`. Порядок теж
+    // обовʼязковий — див. AI-DANGER у `demoSeedImport.ts`. Порядок теж
     // важливий: нижче йде `refreshSqliteCompletions` /
     // `refreshSqliteRoutineState`, які гріють кеш, з якого рендериться
     // модуль.

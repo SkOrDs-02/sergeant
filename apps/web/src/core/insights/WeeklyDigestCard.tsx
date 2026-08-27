@@ -62,9 +62,9 @@ function LoadingSpinner() {
       role="status"
       aria-busy="true"
       aria-live="polite"
-      aria-label="Генеруємо звіт тижня"
+      aria-label="Генерую звіт тижня"
     >
-      <span className="sr-only">Генеруємо звіт тижня…</span>
+      <span className="sr-only">Генерую звіт тижня…</span>
       {Array(4)
         .fill(0)
         .map((_, i) => (
@@ -432,7 +432,7 @@ export function WeeklyDigestCard({
   } = useWeeklyDigest(selectedWeekKey);
   const { data: history = [] } = useDigestHistory();
 
-  // Автогенерація по понеділках працює у фоні: звіт з'являвся мовчки, і
+  // Автогенерація по понеділках працює у фоні: звіт зʼявлявся мовчки, і
   // користувач дізнавався про нього, лише якщо сам відкривав блок. Бейдж
   // тримається, поки він не розгорнув саме цей тиждень.
   const [lastSeenWeekKey, setLastSeenWeekKey] = useState<string>(

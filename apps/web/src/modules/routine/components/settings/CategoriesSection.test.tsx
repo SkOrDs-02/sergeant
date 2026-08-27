@@ -79,11 +79,11 @@ describe("CategoriesSection", () => {
   it("creates a category from the draft and lists it with a habit count", async () => {
     render(<Harness initial={defaultRoutineState()} />);
     fireEvent.change(screen.getByPlaceholderText("Назва категорії"), {
-      target: { value: "Здоров'я" },
+      target: { value: "Здоровʼя" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Додати" }));
     await waitFor(() => {
-      expect(screen.getByText(hasText("Здоров'я"))).toBeInTheDocument();
+      expect(screen.getByText(hasText("Здоровʼя"))).toBeInTheDocument();
     });
     // 0 habits -> "звичок" plural form.
     expect(screen.getByText(/0\s+звичок/)).toBeInTheDocument();

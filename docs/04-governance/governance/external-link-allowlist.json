@@ -36,7 +36,7 @@
     },
     {
       "pattern": "^https?://(www\\.)?ibtimes\\.sg/why-so-many-ai-built-websites-are-starting-look-same-91292",
-      "reason": "\u0421\u0442\u0430\u0442\u0442\u044f IBTimes SG \u2014 \u0434\u0440\u0443\u0433\u0435 \u0437 \u0434\u0432\u043e\u0445 \u043f\u0435\u0440\u0448\u043e\u0434\u0436\u0435\u0440\u0435\u043b \u0434\u0456\u0430\u0433\u043d\u043e\u0437\u0443 \u0432 docs/05-design/design/anti-slop-strategy.md (\u043f\u043e\u0440\u0443\u0447 \u0456\u0437 Muzli). \u0425\u043e\u0441\u0442 \u0432\u0456\u0434\u0434\u0430\u0454 502 \u043d\u0430 \u0431\u0443\u0434\u044c-\u044f\u043a\u0438\u0439 CI-\u0437\u0430\u043f\u0438\u0442 (\u043f\u0435\u0440\u0435\u0432\u0456\u0440\u0435\u043d\u043e \u0442\u0440\u044c\u043c\u0430 \u0441\u043f\u0440\u043e\u0431\u0430\u043c\u0438 \u043f\u043e\u0441\u043f\u0456\u043b\u044c 2026-08-08). Pattern \u0437\u0432\u0443\u0436\u0435\u043d\u043e \u0440\u0456\u0432\u043d\u043e \u0434\u043e \u0446\u044c\u043e\u0433\u043e URL \u2014 \u044f\u043a \u0456 \u0434\u043b\u044f Muzli \u043d\u0438\u0436\u0447\u0435, \u0440\u0435\u0448\u0442\u0430 \u0445\u043e\u0441\u0442\u0430 \u043b\u0438\u0448\u0430\u0454\u0442\u044c\u0441\u044f \u043f\u0456\u0434 \u043f\u0435\u0440\u0435\u0432\u0456\u0440\u043a\u043e\u044e."
+      "reason": "Стаття IBTimes SG — друге з двох першоджерел діагнозу в docs/05-design/design/anti-slop-strategy.md (поруч із Muzli). Хост віддає 502 на будь-який CI-запит (перевірено трьма спробами поспіль 2026-08-08). Pattern звужено рівно до цього URL — як і для Muzli нижче, решта хоста лишається під перевіркою."
     },
     {
       "pattern": "^https?://(www\\.)?producthunt\\.com/(directory/upcoming|coming-soon)",
@@ -253,6 +253,14 @@
     {
       "pattern": "^https?://medium\\.muz\\.li/why-every-ai-built-app-looks-the-same-and-how-to-escape-ai-slop-919bf2dc6fc0",
       "reason": "Стаття Muzli про AI-slop — одне з двох першоджерел діагнозу в docs/05-design/design/anti-slop-strategy.md (§1 і §додатки). Medium віддає 403 будь-якому небраузерному User-Agent; у браузері лінк живий. Лінк додано ще в #641 і від того часу валив `Markdown link checker` на КОЖНОМУ PR незалежно від змісту — типовий «червоний завжди = вимкнений». Pattern звужено рівно до цього URL, решта medium.muz.li лишається під перевіркою."
+    },
+    {
+      "pattern": "^https?://www\\.designrush\\.com/agency/website-design-development/trends/ai-startup-homepage-design",
+      "reason": "Оглядова стаття про тренди AI-лендингів, цитована в docs/05-design/design/anti-slop-strategy.md. designrush.com віддає 403 на HEAD/GET від CI-агентів (Cloudflare bot-протекція) — у браузері сторінка відкривається. Той самий клас, що й gist-запис вище: посилання живе, недоступний лише чекер. Pattern звужено рівно до цього URL (єдиного designrush-лінка в доках) — решта домену лишається під перевіркою, як і для medium.muz.li вище."
+    },
+    {
+      "pattern": "^https?://api\\.ukrainealarm\\.com(/|$)",
+      "reason": "Офіційний API повітряних тривог, цитований як джерело в docs/90-work/research/2026-08-26-integrations-second-pass.md. Це bare API-хост без публічної кореневої сторінки: віддає 403 і на HEAD, і на GET, з браузерним User-Agent і без нього (заміряно 2026-08-26). Документація живе за токеном, тож перевіряти лінк автоматично нічим."
     }
   ]
 }

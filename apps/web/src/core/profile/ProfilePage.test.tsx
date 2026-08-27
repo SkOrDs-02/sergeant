@@ -225,7 +225,7 @@ describe("ProfilePage", () => {
       useOnlineStatusMock.mockReturnValue(false);
       renderPage();
       expect(
-        screen.getByText("Ви офлайн, редагування профілю тимчасово недоступне"),
+        screen.getByText("Офлайн, редагування профілю тимчасово недоступне"),
       ).toBeInTheDocument();
     });
 
@@ -233,9 +233,7 @@ describe("ProfilePage", () => {
       useOnlineStatusMock.mockReturnValue(true);
       renderPage();
       expect(
-        screen.queryByText(
-          "Ви офлайн, редагування профілю тимчасово недоступне",
-        ),
+        screen.queryByText("Офлайн, редагування профілю тимчасово недоступне"),
       ).not.toBeInTheDocument();
     });
 
@@ -249,7 +247,7 @@ describe("ProfilePage", () => {
     it("disables change password button when offline", () => {
       useOnlineStatusMock.mockReturnValue(false);
       const { container } = renderPage();
-      // «Пароль» — один із п'яти `CollapsibleSection`, згорнутих за
+      // «Пароль» — один із пʼяти `CollapsibleSection`, згорнутих за
       // замовчуванням; L-7 фікс ховає їхній вміст через `inert` +
       // `aria-hidden`, тож кнопку треба спершу розкрити, як зробив би юзер.
       expandAllCollapsedSections(container);
@@ -320,8 +318,8 @@ describe("ProfilePage", () => {
     it("resets name save loading and shows error when updateUser throws", async () => {
       updateUserMock.mockRejectedValueOnce(new Error("network"));
       renderPage();
-      const nameInput = screen.getByLabelText("Ім'я");
-      fireEvent.change(nameInput, { target: { value: "Нове ім'я" } });
+      const nameInput = screen.getByLabelText("Імʼя");
+      fireEvent.change(nameInput, { target: { value: "Нове імʼя" } });
 
       const saveBtn = screen.getAllByRole("button", { name: "Зберегти" })[0];
       fireEvent.click(saveBtn!);
@@ -329,7 +327,7 @@ describe("ProfilePage", () => {
       // Помилка форми лишається у формі (`useApiForm.serverError`), а не
       // дублюється тостом — див. коментар у `PersonalInfoSection`.
       await waitFor(() =>
-        expect(screen.getByText("Не вдалося оновити ім'я")).toBeInTheDocument(),
+        expect(screen.getByText("Не вдалося оновити імʼя")).toBeInTheDocument(),
       );
       expect(toastErrorMock).not.toHaveBeenCalled();
       expect(saveBtn).not.toBeDisabled();
@@ -368,7 +366,7 @@ describe("ProfilePage", () => {
       fireEvent.click(logoutBtn);
       await waitFor(() => expect(logoutMock).toHaveBeenCalled());
       await waitFor(() =>
-        expect(toastSuccessMock).toHaveBeenCalledWith("Ви вийшли з акаунта"),
+        expect(toastSuccessMock).toHaveBeenCalledWith("Вихід виконано"),
       );
       // Redirect to the auth surface, not the hub root (browser-QA (a)).
       expect(navigateMock).toHaveBeenCalledWith("/sign-in", { replace: true });
@@ -425,7 +423,7 @@ describe("ProfilePage", () => {
       );
 
       await waitFor(() =>
-        expect(toastSuccessMock).toHaveBeenCalledWith("Ви вийшли з акаунта"),
+        expect(toastSuccessMock).toHaveBeenCalledWith("Вихід виконано"),
       );
       expect(navigateMock).toHaveBeenCalledWith("/sign-in", { replace: true });
       expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
@@ -458,7 +456,7 @@ describe("ProfilePage", () => {
       // Сесія лишається живою — жодного сигналу «ви вийшли», жодного
       // редиректу на екран входу. Це саме те, що мало б зламатись, якби
       // `cancelled` ігнорувався після `await logout(...)`.
-      expect(toastSuccessMock).not.toHaveBeenCalledWith("Ви вийшли з акаунта");
+      expect(toastSuccessMock).not.toHaveBeenCalledWith("Вихід виконано");
       expect(navigateMock).not.toHaveBeenCalledWith("/sign-in", {
         replace: true,
       });
@@ -495,8 +493,8 @@ describe("ProfilePage", () => {
       expect(screen.getAllByText("Біометрія")).toHaveLength(1);
       expect(screen.getAllByText("Пароль")).toHaveLength(1);
       // MemoryBankSection мала близький, а не дослівний дублікат —
-      // «Пам'ять ШІ» замість «Пам'ять» — цей текст мав зникнути повністю.
-      expect(screen.queryByText("Пам'ять ШІ")).not.toBeInTheDocument();
+      // «Памʼять ШІ» замість «Памʼять» — цей текст мав зникнути повністю.
+      expect(screen.queryByText("Памʼять ШІ")).not.toBeInTheDocument();
     });
 
     it("raises the outer section heading to text-style-label so it is never smaller than its inner card header (V-4)", () => {
@@ -504,7 +502,7 @@ describe("ProfilePage", () => {
       expandAllCollapsedSections(container);
       for (const title of [
         "Активні сесії",
-        "Пам'ять",
+        "Памʼять",
         "Біометрія",
         "Пароль",
         "Видалення акаунта",
@@ -569,7 +567,7 @@ describe("ProfilePage", () => {
 // V-11 (аудит Профілю/Налаштувань, фаза 2 L-8 — 2026-08-09).
 //
 // Знахідка описувала «два входи в «що ШІ про мене знає» з різними назвами».
-// Точніша її форма: ПІДЗАГОЛОВОК профільної секції «Пам'ять» був майже
+// Точніша її форма: ПІДЗАГОЛОВОК профільної секції «Памʼять» був майже
 // дослівним ЗАГОЛОВКОМ секції в Конфіденційності — «Що асистент знає про
 // тебе» проти «Що ШІ про тебе памʼятає». Тобто це не просто схожі рядки, а
 // підпис одного входу, який дорівнює назві іншого; людина, прочитавши
@@ -582,9 +580,9 @@ describe("ProfilePage", () => {
 // мінятиметься), а тримає саме інваріант: підзаголовок одного входу не
 // повторює назву іншого.
 describe("V-11: два входи в памʼять розрізняються назвами", () => {
-  it("підзаголовок секції «Пам'ять» не дублює заголовок списку в Конфіденційності", () => {
+  it("підзаголовок секції «Памʼять» не дублює заголовок списку в Конфіденційності", () => {
     renderPage();
-    const memoryTrigger = screen.getByText("Пам'ять").closest("button");
+    const memoryTrigger = screen.getByText("Памʼять").closest("button");
     expect(memoryTrigger).not.toBeNull();
     const subtitle = memoryTrigger?.textContent ?? "";
     // Позитивний assert ПЕРЕД негативними (CodeRabbit-ревʼю PR #762): самих

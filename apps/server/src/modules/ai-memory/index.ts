@@ -7,7 +7,7 @@
  *           `modules/ai-memory/{ingestRoute,recallRoute,ragContext}.ts`,
  *           `index.ts`) на цей barrel замість deep imports у
  *           `./{service,types,embeddings,vectorStore,ingestQueue,bootstrap}.js`.
- *           Як тільки консумери з'являться — зняти цей маркер. Див. AGENTS.md → Hard Rule #10.
+ *           Як тільки консумери зʼявляться — зняти цей маркер. Див. AGENTS.md → Hard Rule #10.
  *
  * Public surface AI memory модуля. Caller-и (PR2 ingestion + PR3
  * retrieval) мають імпортувати лише звідси — нікуди в `./vectorStore.ts` чи

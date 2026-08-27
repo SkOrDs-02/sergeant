@@ -274,7 +274,7 @@ export function useWorkoutsOrchestrator(
       }
       if (!activeWorkoutId) {
         toast.warning(
-          "Спочатку натисни «+ Нове» у блоці нижче, щоб з'явилось активне тренування.",
+          "Спочатку натисни «+ Нове» у блоці нижче, щоб зʼявилось активне тренування.",
         );
         return;
       }
@@ -287,7 +287,7 @@ export function useWorkoutsOrchestrator(
       const conflicts = recoveryConflictsForExercise(ex, rec.by);
       if (conflicts.injury.blocked) {
         toast.warning(
-          "Ти позначив біль у цій групі. Ми не радимо її навантажувати.",
+          "Ти позначив біль у цій групі. Навантажувати її не раджу.",
         );
       }
       addExerciseToActive(ex);

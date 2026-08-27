@@ -33,7 +33,7 @@ export function Water({ testID }: WaterProps) {
       <WaterTrackerCard goalMl={goalMl} testID="nutrition-water-card" />
       <Text className="text-[11px] text-fg-subtle leading-snug">
         Підрахунок скидається опівночі локального часу. Зміна денної цілі
-        доступна у налаштуваннях харчування, з&apos;явиться в PR-7.
+        доступна у налаштуваннях харчування, зʼявиться в PR-7.
       </Text>
     </ScrollView>
   );
