@@ -1093,6 +1093,138 @@
       "expectedSkills": ["sergeant-start-here", "sergeant-module-push"],
       "forbiddenSkills": [],
       "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-copy-and-tone-trigger-error-message",
+      "skill": "sergeant-copy-and-tone",
+      "kind": "trigger",
+      "prompt": "Write the Ukrainian error message and empty state copy for the new receipts import screen.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-copy-and-tone"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-copy-and-tone-trigger-review-tone",
+      "skill": "sergeant-copy-and-tone",
+      "kind": "trigger",
+      "prompt": "Review the onboarding toasts and button labels for tone-of-voice consistency with the UA style guide.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-copy-and-tone"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-copy-and-tone-anti-adr",
+      "skill": "sergeant-copy-and-tone",
+      "kind": "anti-trigger",
+      "prompt": "Write a new architecture decision record about the sync retention policy with a consequences section.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-adr"],
+      "forbiddenSkills": ["sergeant-copy-and-tone"]
+    },
+    {
+      "id": "sergeant-copy-and-tone-workflow-start-here",
+      "skill": "sergeant-copy-and-tone",
+      "kind": "workflow",
+      "prompt": "Before writing the Ukrainian interface texts, load Sergeant startup rules and then exactly the copy-and-tone skill.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-copy-and-tone"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-adr-trigger-new-decision",
+      "skill": "sergeant-adr",
+      "kind": "trigger",
+      "prompt": "Document the decision to switch the embeddings provider as a new numbered ADR with consequences.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-adr"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-adr-trigger-supersede",
+      "skill": "sergeant-adr",
+      "kind": "trigger",
+      "prompt": "Mark the old hosting ADR as superseded and add the replacement record to the ADR index table.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-adr"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-adr-anti-feature-flag",
+      "skill": "sergeant-adr",
+      "kind": "anti-trigger",
+      "prompt": "Add a build-time feature flag for the new pantry screen and register it with a removal condition.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-feature-flags"],
+      "forbiddenSkills": ["sergeant-adr"]
+    },
+    {
+      "id": "sergeant-adr-workflow-start-here",
+      "skill": "sergeant-adr",
+      "kind": "workflow",
+      "prompt": "Before writing the new decision record, load Sergeant startup rules and then exactly the ADR skill.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-adr"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-feature-flags-trigger-add-flag",
+      "skill": "sergeant-feature-flags",
+      "kind": "trigger",
+      "prompt": "Add a server-side flag to gate the new coach advice model and register its default and removal condition.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-feature-flags"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-feature-flags-trigger-remove-flag",
+      "skill": "sergeant-feature-flags",
+      "kind": "trigger",
+      "prompt": "Remove the expired reverse-trial flag, its registry row, and the dead code branch behind it.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-feature-flags"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-feature-flags-anti-analytics",
+      "skill": "sergeant-feature-flags",
+      "kind": "anti-trigger",
+      "prompt": "Add a PostHog event for pantry item deletion with a small payload and dashboard manifest update.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-analytics"],
+      "forbiddenSkills": ["sergeant-feature-flags"]
+    },
+    {
+      "id": "sergeant-feature-flags-workflow-start-here",
+      "skill": "sergeant-feature-flags",
+      "kind": "workflow",
+      "prompt": "Before touching any toggle, load Sergeant startup rules and then exactly the feature-flags skill.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-feature-flags"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-analytics-trigger-new-event",
+      "skill": "sergeant-analytics",
+      "kind": "trigger",
+      "prompt": "Add a product analytics event for habit archive actions with correct naming and a scrubbed payload.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-analytics"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-analytics-trigger-dashboard-manifest",
+      "skill": "sergeant-analytics",
+      "kind": "trigger",
+      "prompt": "Update the PostHog dashboard manifest so the retention panel includes the new activation event.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-analytics"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-analytics-anti-copy",
+      "skill": "sergeant-analytics",
+      "kind": "anti-trigger",
+      "prompt": "Rewrite the Ukrainian toast texts and button labels for the budgets screen per the style guide.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-copy-and-tone"],
+      "forbiddenSkills": ["sergeant-analytics"]
+    },
+    {
+      "id": "sergeant-analytics-workflow-start-here",
+      "skill": "sergeant-analytics",
+      "kind": "workflow",
+      "prompt": "Before adding tracking calls, load Sergeant startup rules and then exactly the analytics skill.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-analytics"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
     }
   ]
 }
