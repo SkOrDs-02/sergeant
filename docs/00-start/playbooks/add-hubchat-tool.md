@@ -1,6 +1,6 @@
 # Playbook: Додати HubChat Tool
 
-> **Last touched:** 2026-08-27 by @Skords-01. **Next review:** 2026-12-17.
+> **Last touched:** 2026-08-27 by @github-actions[bot]. **Next review:** 2026-12-17.
 > **Status:** Active
 
 **Trigger:** "Дай асистенту нову дію" / "Додай tool в HubChat" / зміна серверного tool definition, клієнтського executor-а або action card для HubChat orchestration.
@@ -67,3 +67,14 @@
 - Skill: `sergeant-module-ai`
 - Skill: `sergeant-web-ui`
 - Skill: `sergeant-server-api`
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                       | Merged     |
+| ------------------------------------------------------ | ------------------------------------------- | ---------- |
+| [#889](https://github.com/Skords-01/Sergeant/pull/889) | feat(agents): продуктові module-owner скіли | 2026-08-27 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
