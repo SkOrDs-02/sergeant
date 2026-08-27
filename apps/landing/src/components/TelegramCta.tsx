@@ -45,8 +45,8 @@ export default function TelegramCta({
   const [ref] = useState(newLandingRef);
   const palette =
     variant === "inverse"
-      ? "bg-ink-text text-ink hover:bg-card focus-visible:outline-ink-text"
-      : "bg-ink text-ink-text hover:bg-ink-hi focus-visible:outline-ink";
+      ? "bg-background text-foreground-strong hover:bg-card focus-visible:outline-ink-text"
+      : "bg-foreground-strong text-background hover:bg-ink-hi focus-visible:outline-ink";
 
   return (
     <a
@@ -60,7 +60,7 @@ export default function TelegramCta({
           ref,
         })
       }
-      className={`inline-flex min-h-12 items-center justify-center rounded-[10px] px-7 py-3 text-base font-bold shadow-sm transition focus-visible:outline-2 focus-visible:outline-offset-2 ${palette}`}
+      className={`inline-flex min-h-12 items-center justify-center px-8 py-4 font-display text-sm font-bold uppercase tracking-[0.08em] transition focus-visible:outline-2 focus-visible:outline-offset-2 ${palette}`}
     >
       {label ?? "Приєднатися через Telegram"}
     </a>

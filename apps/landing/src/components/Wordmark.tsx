@@ -12,7 +12,7 @@ export function LogoMark({ size = 26 }: { size?: number }) {
       viewBox="0 0 512 512"
       fill="none"
       aria-hidden="true"
-      className="stroke-ink"
+      className="stroke-foreground-strong"
     >
       <g strokeWidth="46" strokeLinejoin="miter">
         <polyline points="96,180 256,90 416,180" />
@@ -32,9 +32,9 @@ export default function Wordmark({ small = false }: { small?: boolean }) {
       href="/"
       className="inline-flex min-h-11 items-center gap-2.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
     >
-      <LogoMark size={small ? 18 : 26} />
+      <LogoMark size={small ? 18 : 24} />
       <span
-        className={`font-display font-bold tracking-tight text-foreground-strong ${small ? "text-sm" : "text-xl"}`}
+        className={`font-display font-extrabold uppercase tracking-[0.06em] text-foreground-strong ${small ? "text-xs" : "text-[15px]"}`}
       >
         Sergeant
       </span>

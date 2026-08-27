@@ -34,13 +34,13 @@ export default function GuideMonobankPage() {
         "Як підʼєднати Monobank до трекера витрат – і що він реально бачить",
       inLanguage: "uk",
       dateModified: "2026-08-28",
-      author: { "@type": "Person", name: "Дмитро, фаундер Sergeant" },
+      author: { "@type": "Person", name: "Автор Sergeant" },
       publisher: { "@type": "Organization", name: "Sergeant" },
     },
   });
 
   const h2 =
-    "font-display text-2xl font-bold tracking-tight text-foreground-strong sm:text-3xl";
+    "font-display text-xl font-extrabold uppercase tracking-tight text-foreground-strong sm:text-2xl";
 
   return (
     <>
@@ -49,19 +49,19 @@ export default function GuideMonobankPage() {
       <main>
         <article className="mx-auto flex w-full max-w-3xl flex-col gap-10 px-5 pb-20 pt-12 sm:px-8 sm:pt-16">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-subtle">
+            <p className="font-display text-xs font-medium uppercase tracking-[0.12em] text-subtle">
               Гайди · Фінанси
             </p>
-            <h1 className="mt-4 font-display text-3xl font-bold leading-[1.12] tracking-tight text-balance text-foreground-strong sm:text-4xl">
+            <h1 className="mt-4 text-3xl font-extrabold leading-[1.12] tracking-tight text-balance text-foreground-strong sm:text-4xl">
               Як підʼєднати Monobank до трекера витрат – і що він реально бачить
             </h1>
             <p className="mt-4 text-sm text-subtle">
-              Оновлено 28.08.2026 · Дмитро, роблю Sergeant сам
+              Оновлено 28.08.2026 · автор Sergeant, роблю його сам
             </p>
           </div>
 
           <div className="rounded-[var(--radius-card)] bg-ink px-7 py-6">
-            <p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
+            <p className="font-display text-xs font-medium uppercase tracking-[0.12em] text-ink-muted">
               Коротка відповідь
             </p>
             <p className="mt-2.5 font-semibold leading-relaxed text-ink-text">

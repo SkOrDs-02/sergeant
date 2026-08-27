@@ -15,7 +15,8 @@ export default function PrivacyPage() {
       "Що сайт Sergeant збирає, а що ні: cookieless-аналітика без персональних профілів і Telegram-черга без пошти.",
   });
 
-  const h2 = "mt-8 font-display text-xl font-bold text-foreground-strong";
+  const h2 =
+    "mt-9 font-display text-lg font-extrabold uppercase tracking-tight text-foreground-strong";
   const p = "mt-3 max-w-2xl leading-relaxed text-foreground";
 
   return (
@@ -23,7 +24,7 @@ export default function PrivacyPage() {
       <SiteHeader />
 
       <main className="mx-auto w-full max-w-3xl px-5 pb-24 pt-12 sm:px-8 sm:pt-16">
-        <h1 className="font-display text-4xl font-bold tracking-tight text-foreground-strong">
+        <h1 className="font-display text-3xl font-extrabold uppercase tracking-tight text-foreground-strong sm:text-4xl">
           Політика приватності
         </h1>
         <p className="mt-3 text-sm text-subtle">Оновлено 28.08.2026</p>
