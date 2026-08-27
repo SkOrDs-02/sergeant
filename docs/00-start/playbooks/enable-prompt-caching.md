@@ -332,9 +332,10 @@ sum(rate(anthropic_prompt_cache_hit_total{outcome="miss"}[5m])) by (version)
 
 ## Recent PRs
 
-| PR                                                     | Title                                       | Merged     |
-| ------------------------------------------------------ | ------------------------------------------- | ---------- |
-| [#889](https://github.com/Skords-01/Sergeant/pull/889) | feat(agents): продуктові module-owner скіли | 2026-08-27 |
+| PR                                                     | Title                                             | Merged     |
+| ------------------------------------------------------ | ------------------------------------------------- | ---------- |
+| [#890](https://github.com/Skords-01/Sergeant/pull/890) | feat(agents): інфра module-скіли і nested-роутинг | 2026-08-27 |
+| [#889](https://github.com/Skords-01/Sergeant/pull/889) | feat(agents): продуктові module-owner скіли       | 2026-08-27 |
 
-_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 2 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

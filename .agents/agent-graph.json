@@ -46,6 +46,30 @@
       "path": ".agents/skills/better-auth-best-practices/SKILL.md"
     },
     {
+      "id": "sergeant-adr",
+      "kind": "skill",
+      "role": "specialist",
+      "path": ".agents/skills/sergeant-adr/SKILL.md"
+    },
+    {
+      "id": "sergeant-analytics",
+      "kind": "skill",
+      "role": "specialist",
+      "path": ".agents/skills/sergeant-analytics/SKILL.md"
+    },
+    {
+      "id": "sergeant-copy-and-tone",
+      "kind": "skill",
+      "role": "specialist",
+      "path": ".agents/skills/sergeant-copy-and-tone/SKILL.md"
+    },
+    {
+      "id": "sergeant-feature-flags",
+      "kind": "skill",
+      "role": "specialist",
+      "path": ".agents/skills/sergeant-feature-flags/SKILL.md"
+    },
+    {
       "id": "sergeant-backend-architecture",
       "kind": "skill",
       "role": "specialist",
@@ -660,6 +684,21 @@
     {
       "from": "sergeant-module-push",
       "to": "sergeant-server-api",
+      "rel": "escalates"
+    },
+    {
+      "from": "sergeant-copy-and-tone",
+      "to": "sergeant-web-ui",
+      "rel": "escalates"
+    },
+    {
+      "from": "sergeant-analytics",
+      "to": "sergeant-web-ui",
+      "rel": "escalates"
+    },
+    {
+      "from": "sergeant-feature-flags",
+      "to": "sergeant-deploy-and-observability",
       "rel": "escalates"
     },
     {

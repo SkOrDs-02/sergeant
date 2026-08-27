@@ -26,6 +26,10 @@ Sergeant is **tool-agnostic**. Any AI agent harness — Claude Code, Kilo Code, 
 | Billing: тарифи, квоти, LiqPay, pricing                              | `sergeant-module-billing`             |
 | Зовнішні інтеграції: silpo / telegram / transcribe / webhooks        | `sergeant-module-integrations`        |
 | Push-сповіщення: web push, APNs, FCM, fan-out                        | `sergeant-module-push`                |
+| UA-текст інтерфейсу: кнопки, помилки, тости, empty states            | `sergeant-copy-and-tone`              |
+| Написання або оновлення ADR, індекс рішень, supersede                | `sergeant-adr`                        |
+| Фіче-прапорці: додати/змінити/зняти тумблер                          | `sergeant-feature-flags`              |
+| PostHog-івенти, аналітика, дашборд-манифести                         | `sergeant-analytics`                  |
 | Touches `apps/web/**`, RQ keys, design tokens, a11y                  | `sergeant-web-ui`                     |
 | Touches `apps/server/**`, API contract, `api-client`, pino, OpenAPI  | `sergeant-server-api`                 |
 | Touches `apps/mobile/**` or `apps/mobile-shell/**`, Expo, EAS        | `sergeant-mobile-expo`                |

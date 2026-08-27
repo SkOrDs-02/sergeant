@@ -60,6 +60,10 @@ The script is zero-dep and offline-safe (`[gh unavailable: ...]` for sections th
 | Billing: тарифи, квоти, LiqPay, pricing                          | `sergeant-module-billing`          |
 | Зовнішні інтеграції: silpo / telegram / transcribe / webhooks    | `sergeant-module-integrations`     |
 | Push-сповіщення: web push, APNs, FCM, fan-out                    | `sergeant-module-push`             |
+| UA-текст інтерфейсу: кнопки, помилки, тости, empty states        | `sergeant-copy-and-tone`           |
+| Написання або оновлення ADR, індекс рішень, supersede            | `sergeant-adr`                     |
+| Фіче-прапорці: додати/змінити/зняти тумблер                      | `sergeant-feature-flags`           |
+| PostHog-івенти, аналітика, дашборд-манифести                     | `sergeant-analytics`               |
 | Нова фіча, новий екран, behavior-зміна                           | `sergeant-feature-delivery`        |
 | Баг, регресія, флакі-поведінка, hotfix                           | `sergeant-bugfix-and-regression`   |
 | Ревʼю PR, готовність до merge, pre-merge-перевірки               | `sergeant-review-and-merge`        |
