@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "current": "4.2.0",
+  "current": "4.3.0",
   "versions": {
     "0.1.0": {
       "releasedAt": "2026-06-29",
@@ -313,6 +313,14 @@
       "releasedAt": "2026-08-27",
       "changes": [
         "bump from 4.1.0 -> 4.2.0: AGENTS.md modified; skill file added/modified"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "4.3.0": {
+      "releasedAt": "2026-08-27",
+      "changes": [
+        "bump from 4.2.0 -> 4.3.0: AGENTS.md modified; skill file added/modified"
       ],
       "agentsTestedWith": [],
       "passRateBaseline": null
