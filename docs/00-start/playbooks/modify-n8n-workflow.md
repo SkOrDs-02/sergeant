@@ -1,6 +1,6 @@
 # Playbook: Зміна або додавання n8n-воркфлоу
 
-> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-13.
+> **Last touched:** 2026-08-27 by @Skords-01. **Next review:** 2026-12-10.
 > **Status:** Active
 
 **Trigger:** "Додай новий n8n workflow" / "Зміни логіку workflow X" / зміна в `ops/n8n-workflows/` або `manifest.json`.
@@ -13,7 +13,7 @@
 ## Required context
 
 - Почни з `sergeant-start-here`, потім відкрий `sergeant-deploy-and-observability`.
-- Якщо воркфлоу викликає AI / tooling behavior або зачіпає HubChat-поверхню — звір пов'язаний специалізований skill (`sergeant-hubchat`).
+- Якщо воркфлоу викликає AI / tooling behavior або зачіпає HubChat-поверхню — звір пов'язаний специалізований skill (`sergeant-module-ai`).
 - Памʼятай: Git є source of truth для n8n-воркфлоу-артефактів. Якщо хтось редагував воркфлоу через UI — синхронізуй назад у репо до того, як накладати свої зміни.
 
 ## Кроки

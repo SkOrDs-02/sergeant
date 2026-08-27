@@ -57,7 +57,7 @@ lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); t
 - `pnpm typecheck` після кожного surface-агента (проміжна перевірка, **не** заміна stage 5)
 - Якщо migration-agent повідомив про нові `bigint` колонки — переконайся, що server-agent їх coerce-ить із `Number()`
 - api-client-agent отримує фінальний serializer від server-agent, а не draft
-- Якщо фіча торкається HubChat — після web/mobile додай `sergeant-hubchat` skill для tool def і executor
+- Якщо фіча торкається HubChat — після web/mobile додай `sergeant-module-ai` skill для tool def і executor
 - Звіти самих агентів (їхні секції «Report to …») — канонічне джерело handoff-даних; цей skill задає **порядок** і межі, не переказує зміст звітів
 
 ## Червоні прапорці

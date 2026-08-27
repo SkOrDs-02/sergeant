@@ -40,7 +40,7 @@ lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); t
 
 - auth/session/cookies → `better-auth-best-practices`
 - SQL-схема або rollout-послідовність → `sergeant-data-and-migrations`
-- інтеграція HubChat-tool-у → `sergeant-hubchat`
+- інтеграція HubChat-tool-у → `sergeant-module-ai`
 
 ## Playbooks
 

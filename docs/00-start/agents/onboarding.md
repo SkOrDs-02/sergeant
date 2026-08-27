@@ -1,6 +1,6 @@
 # Перші 30 хвилин агента в Sergeant
 
-> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-09.
+> **Last touched:** 2026-08-27 by @Skords-01. **Next review:** 2026-12-14.
 > **Status:** Active
 
 Стартова шпаргалка для AI-агентів (Devin, Claude, локальні моделі) і нових контриб'юторів. Мета — за 30 хвилин довести середовище до стану «можна писати код, не порушуючи hard rules і не падаючи на pre-commit». Для повної repo policy джерело правди — [`AGENTS.md`](../../../AGENTS.md). Цей файл — навігація і `quickstart`, не паралельний source-of-truth.
@@ -53,7 +53,7 @@ CI hard-rules ловляться різними механізмами. Стар
 - **«додаю/міняю API endpoint, серіалізатор, RQ ключі»** → `sergeant-server-api`.
 - **«React Native / Expo screen, MMKV, Capacitor»** → `sergeant-mobile-expo`.
 - **«SQL міграція, схема, query, Postgres налаштування»** → `sergeant-data-and-migrations`.
-- **«HubChat tool, action card, prompt cache»** → `sergeant-hubchat`.
+- **«HubChat tool, action card, prompt cache»** → `sergeant-module-ai`.
 - **«auth, login, session cookies, Better Auth»** → `better-auth-best-practices`.
 - **«deploy config, Vercel/Coolify, env vars, Sentry»** → `sergeant-deploy-and-observability`.
 - **«review-and-merge / PR review / safe to ship»** → `sergeant-review-and-merge`.

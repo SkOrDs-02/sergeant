@@ -1,6 +1,6 @@
 # Playbook Catalog
 
-> **Last touched:** 2026-08-18 by @claude. **Next review:** 2026-12-09.
+> **Last touched:** 2026-08-27 by @Skords-01. **Next review:** 2026-11-30.
 > **Status:** Active
 
 Scenario catalog: which playbook to open, which skill governs the work, and whether the document is primarily for humans, agents, or both.
@@ -9,7 +9,7 @@ Scenario catalog: which playbook to open, which skill governs the work, and whet
 | ---------------------------------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------- | ------------- |
 | Add a new API endpoint                         | [`add-api-endpoint.md`](./add-api-endpoint.md)                                            | `sergeant-server-api`                                   | Human + agent |
 | Add or change DB schema                        | [`add-sql-migration.md`](./add-sql-migration.md)                                          | `sergeant-data-and-migrations`                          | Human + agent |
-| Add or change HubChat tool                     | [`add-hubchat-tool.md`](./add-hubchat-tool.md)                                            | `sergeant-hubchat`                                      | Human + agent |
+| Add or change HubChat tool                     | [`add-hubchat-tool.md`](./add-hubchat-tool.md)                                            | `sergeant-module-ai`                                    | Human + agent |
 | Fix red CI on a PR                             | [`fix-failing-ci.md`](./fix-failing-ci.md)                                                | `sergeant-bugfix-and-regression`                        | Human + agent |
 | Run the app locally after a merge              | [`run-locally-after-merge.md`](./run-locally-after-merge.md)                              | `sergeant-verify-before-done`                           | Human         |
 | Respond to a prod regression                   | [`hotfix-prod-regression.md`](./hotfix-prod-regression.md)                                | `sergeant-deploy-and-observability`                     | Human + agent |

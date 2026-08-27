@@ -1,6 +1,6 @@
 # Playbook: Enable Anthropic Prompt Caching
 
-> **Last touched:** 2026-07-25 by @claude. **Next review:** 2026-10-28.
+> **Last touched:** 2026-08-27 by @Skords-01. **Next review:** 2026-12-09.
 > **Status:** Active
 
 **Status:** ✅ active (PR-12.A, Sprint 0)
@@ -11,7 +11,7 @@
 
 - Primary surface: `apps/server/src/modules/chat`
 - Coupled surface: `apps/server/src/lib/anthropic.ts` (SDK wrapper), Grafana dashboards
-- Governing skill: `sergeant-hubchat`
+- Governing skill: `sergeant-module-ai`
 
 ---
 

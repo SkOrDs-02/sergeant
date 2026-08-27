@@ -149,9 +149,33 @@ export const ROUTES = [
   },
   {
     role: "new-agent",
-    reason: "HubChat specialist skill",
+    reason: "AI-layer module owner skill (ex-HubChat)",
     entrypoints: ["docs/00-start/agents/agent-skills-catalog.md"],
-    target: ".agents/skills/sergeant-hubchat/SKILL.md",
+    target: ".agents/skills/sergeant-module-ai/SKILL.md",
+  },
+  {
+    role: "new-agent",
+    reason: "finyk module owner skill",
+    entrypoints: ["docs/00-start/agents/agent-skills-catalog.md"],
+    target: ".agents/skills/sergeant-module-finyk/SKILL.md",
+  },
+  {
+    role: "new-agent",
+    reason: "nutrition module owner skill",
+    entrypoints: ["docs/00-start/agents/agent-skills-catalog.md"],
+    target: ".agents/skills/sergeant-module-nutrition/SKILL.md",
+  },
+  {
+    role: "new-agent",
+    reason: "fizruk module owner skill",
+    entrypoints: ["docs/00-start/agents/agent-skills-catalog.md"],
+    target: ".agents/skills/sergeant-module-fizruk/SKILL.md",
+  },
+  {
+    role: "new-agent",
+    reason: "routine module owner skill",
+    entrypoints: ["docs/00-start/agents/agent-skills-catalog.md"],
+    target: ".agents/skills/sergeant-module-routine/SKILL.md",
   },
   {
     role: "new-agent",

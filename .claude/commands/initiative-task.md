@@ -30,7 +30,7 @@ Arguments: `$ARGUMENTS`
    - `apps/server/**`, route handlers, serializers → `sergeant-server-api`
    - `apps/server/db/migrations/**`, `*.sql` → `sergeant-data-and-migrations`
    - `apps/mobile/**`, Expo → `sergeant-mobile-expo`
-   - `apps/server/src/hubchat/**` → `sergeant-hubchat`
+   - `apps/server/src/modules/{chat,mono,digest,ai-memory}/**` → `sergeant-module-ai`
    - `tools/openclaw/**` → `sergeant-openclaw`
    - `auth.ts`, Better Auth → `better-auth-best-practices`
    - `docs/**`, `scripts/docs/**`, `.github/workflows/docs-*.yml` → cross-surface: read **no** specialist, treat as `sergeant-writing-skills` if SKILL.md is touched, otherwise plain docs work

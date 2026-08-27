@@ -3,9 +3,22 @@
   "fallbackSkill": "sergeant-start-here",
   "skillRules": [
     {
-      "skill": "sergeant-hubchat",
-      "globs": ["apps/server/src/hubchat/**"],
-      "keywords": ["hubchat", "hub chat", "assistant tool", "action card"]
+      "skill": "sergeant-module-ai",
+      "globs": [
+        "apps/server/src/modules/chat/**",
+        "apps/server/src/modules/mono/**",
+        "apps/server/src/modules/digest/**",
+        "apps/server/src/modules/ai-memory/**"
+      ],
+      "keywords": [
+        "hubchat",
+        "hub chat",
+        "assistant tool",
+        "action card",
+        "coach",
+        "digest",
+        "ai-memory"
+      ]
     },
     {
       "skill": "sergeant-data-and-migrations",

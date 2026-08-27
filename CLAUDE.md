@@ -1,6 +1,6 @@
 # Claude in Sergeant
 
-> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-05.
+> **Last touched:** 2026-08-27 by @Skords-01. **Next review:** 2026-12-12.
 > **Status:** Active
 
 > **Single source of truth → [AGENTS.md](./AGENTS.md).** Тонкий wrapper; repo policy приходить нижче через `@import` — не дублюй її тут.
@@ -30,7 +30,7 @@ Root вантажиться при старті; вкладені `CLAUDE.md` �
 
 ## Notes
 
-- OpenClaw/Gateway виведено з експлуатації ([ADR-0075](./docs/04-governance/adr/0075-openclaw-gateway-decommissioned.md)) — скіла `sergeant-openclaw` НЕ існує. Web-асистент → `sergeant-hubchat`; PAT-guard (Hard Rule #20) → `sergeant-security-audit`. Каталоги: [agent-workflows.md](./docs/00-start/agents/agent-workflows.md), [agent-skills-catalog.md](./docs/00-start/agents/agent-skills-catalog.md).
+- OpenClaw/Gateway виведено з експлуатації ([ADR-0075](./docs/04-governance/adr/0075-openclaw-gateway-decommissioned.md)) — скіла `sergeant-openclaw` НЕ існує. Web-асистент → `sergeant-module-ai`; PAT-guard (Hard Rule #20) → `sergeant-security-audit`. Каталоги: [agent-workflows.md](./docs/00-start/agents/agent-workflows.md), [agent-skills-catalog.md](./docs/00-start/agents/agent-skills-catalog.md).
 - Топологія агентного шару (вузли skill/agent/workspace + дозволені переходи) — [`.agents/agent-graph.json`](./.agents/agent-graph.json), гейт `pnpm lint:agent-graph`. Додав скіл чи агента — додай вузол, інакше лінт червоніє.
 - SKILL.md зміни: спершу `sergeant-writing-skills`, потім `pnpm lint:skills && pnpm skills:lock`. Heavy local commands — лише за потреби чи на прохання.
 - Глобальні `~/.claude/agents/` subagent-и через `Agent` — для self-contained задач (ad copy, generic review, research), коли немає specialist skill-у.

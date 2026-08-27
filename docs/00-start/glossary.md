@@ -25,7 +25,7 @@
 
 | Термін          | Що це                                                                                                                                                                                                                 |
 | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **HubChat**     | Web-**Асистент** для кінцевого користувача: tool-defs, executors, prompt cache, action cards. **HubChat ≠ OpenClaw.** Skill: `sergeant-hubchat`.                                                                      |
+| **HubChat**     | Web-**Асистент** для кінцевого користувача: tool-defs, executors, prompt cache, action cards. **HubChat ≠ OpenClaw.** Skill: `sergeant-module-ai`.                                                                    |
 | **OpenClaw**    | _(Decommissioned 2026-07-20 — [ADR-0075](../04-governance/adr/0075-openclaw-gateway-decommissioned.md).)_ Історично — Telegram co-founder bot / external Gateway. **Не плутати з HubChat** (web-асистент для юзерів). |
 | **Gateway**     | _(Historical.)_ Колишній OpenClaw Gateway runtime — повністю прибрано з репо.                                                                                                                                         |
 | **Memory Bank** | Local-first сховище AI-фактів про користувача. ADR → [`0021-memory-bank.md`](../04-governance/adr/0021-memory-bank.md).                                                                                               |

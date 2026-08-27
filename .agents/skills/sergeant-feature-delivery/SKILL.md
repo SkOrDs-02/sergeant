@@ -32,7 +32,7 @@ lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); t
 - Server/API: `sergeant-server-api`
 - БД/міграції: `sergeant-data-and-migrations`
 - Mobile/Expo: `sergeant-mobile-expo`
-- HubChat: `sergeant-hubchat`
+- HubChat: `sergeant-module-ai`
 - Auth: `better-auth-best-practices`
 
 ## Поширені помилки
