@@ -1,6 +1,6 @@
 # Playbook: Debug HubChat Tool
 
-> **Last touched:** 2026-08-27 by @Skords-01. **Next review:** 2026-12-10.
+> **Last touched:** 2026-08-27 by @github-actions[bot]. **Next review:** 2026-12-10.
 > **Status:** Active
 
 **Trigger:** «Асистент каже що зробив, але нічого не сталось» / «Натиснув кнопку quick action — нема ефекту» / tool call повернувся текстом замість дії / `Невідома дія: …` у відповіді.
@@ -211,8 +211,9 @@ Response **другого** `/api/chat` запиту повертає `{ type: "
 
 | PR                                                     | Title                                             | Merged     |
 | ------------------------------------------------------ | ------------------------------------------------- | ---------- |
+| [#891](https://github.com/Skords-01/Sergeant/pull/891) | feat(agents): скіли-дисципліни                    | 2026-08-27 |
 | [#890](https://github.com/Skords-01/Sergeant/pull/890) | feat(agents): інфра module-скіли і nested-роутинг | 2026-08-27 |
 | [#889](https://github.com/Skords-01/Sergeant/pull/889) | feat(agents): продуктові module-owner скіли       | 2026-08-27 |
 
-_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 2 most recent PRs touching this file._
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 3 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->
