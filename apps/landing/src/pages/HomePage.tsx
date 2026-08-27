@@ -1,3 +1,4 @@
+import { useState } from "react";
 import SiteHeader from "../components/SiteHeader";
 import SiteFooter from "../components/SiteFooter";
 import TelegramCta from "../components/TelegramCta";
@@ -14,11 +15,44 @@ import {
 import { usePageMeta } from "../lib/pageMeta";
 
 /**
+ * Сценарії «живого звʼязку» в hero: скільки тренувань — стільки доставки.
+ * Дані ілюстративні (підпис у нотатці про це каже) — сенс віджета в тому,
+ * щоб показати причину-наслідок, а не конкретні числа.
+ */
+const HERO_SCENARIOS = {
+  1: {
+    spend: "2 260",
+    pct: 90,
+    note: "У тижні з одним тренуванням доставки найбільше",
+    meta: "закономірність тримається · 6 тижнів даних",
+  },
+  3: {
+    spend: "1 840",
+    pct: 74,
+    note: "Три тренування, і замовлень доставки вже менше",
+    meta: "закономірність тримається · 6 тижнів даних",
+  },
+  5: {
+    spend: "1 320",
+    pct: 53,
+    note: "Пʼять тренувань, і доставка падає майже вдвічі",
+    meta: "впевненість висока · 6 тижнів даних",
+  },
+} as const;
+
+type HeroTrainings = keyof typeof HERO_SCENARIOS;
+
+/**
  * Hero-колаж: картки даних, «розкидані на столі», і нотатка-інсайт, яку
- * Sergeant ніби лишив поверх них. До lg — звичайна колонка з легкими
- * нахилами, на lg — absolute-розкладка з пунктирними звʼязками.
+ * Sergeant ніби лишив поверх них. Картка тренувань — живий перемикач:
+ * 1/3/5 тренувань перераховують бар доставки і саму нотатку, показуючи
+ * причину-наслідок замість статичної картинки. До lg — звичайна колонка
+ * з легкими нахилами, на lg — absolute-розкладка з пунктирними звʼязками.
  */
 function HeroCollage() {
+  const [trainings, setTrainings] = useState<HeroTrainings>(3);
+  const scenario = HERO_SCENARIOS[trainings];
+
   return (
     <div className="relative mx-auto mt-4 flex w-full max-w-md flex-col gap-5 lg:mt-0 lg:h-[430px] lg:w-[480px] lg:max-w-none lg:shrink-0">
       <svg
@@ -43,41 +77,56 @@ function HeroCollage() {
         />
       </svg>
 
-      <div
-        aria-hidden="true"
-        className="paper-shadow flex -rotate-3 flex-col gap-2.5 rounded-[var(--radius-card)] bg-card p-5 lg:absolute lg:left-10 lg:top-4 lg:w-[290px]"
-      >
+      <div className="paper-shadow flex -rotate-3 flex-col gap-2.5 rounded-[var(--radius-card)] bg-card p-5 lg:absolute lg:left-10 lg:top-4 lg:w-[290px]">
         <div className="flex justify-between text-[13px]">
           <span className="font-bold text-foreground">Кафе і доставка</span>
           <span className="tabular-nums text-muted">
-            1&nbsp;840 / 2&nbsp;500&#8239;₴
+            {scenario.spend}&nbsp;/ 2&nbsp;500&#8239;₴
           </span>
         </div>
         <div className="h-1.5 bg-finyk-soft">
-          <div className="h-1.5 w-[74%] bg-finyk" />
+          <div
+            className="h-1.5 bg-finyk transition-[width] duration-300 motion-reduce:transition-none"
+            style={{ width: `${scenario.pct}%` }}
+          />
         </div>
         <p className="text-xs text-subtle">Фінік · синк із Monobank</p>
       </div>
 
       <div
-        aria-hidden="true"
-        className="paper-shadow flex rotate-2 flex-col gap-1.5 rounded-[var(--radius-card)] bg-card p-4.5 lg:absolute lg:right-0 lg:top-[118px] lg:w-[210px]"
+        role="group"
+        aria-label="Тренувань цього тижня"
+        className="paper-shadow flex rotate-2 flex-col gap-2 rounded-[var(--radius-card)] bg-card p-4.5 lg:absolute lg:right-0 lg:top-[104px] lg:w-[210px]"
       >
         <span className="text-[13px] font-bold text-foreground">
           Тренування
         </span>
-        <div className="flex items-baseline gap-2">
-          <span className="text-xl font-bold tabular-nums text-fizruk">3</span>
-          <span className="text-xs text-subtle">цього тижня</span>
+        <div className="flex gap-2">
+          {([1, 3, 5] as const).map((n) => (
+            <button
+              key={n}
+              type="button"
+              aria-pressed={n === trainings}
+              onClick={() => setTrainings(n)}
+              className={`flex h-11 w-11 items-center justify-center border-2 border-foreground-strong font-display text-[13px] font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink ${
+                n === trainings
+                  ? "bg-foreground-strong text-background"
+                  : "bg-card text-foreground-strong hover:bg-background"
+              }`}
+            >
+              {n}
+            </button>
+          ))}
         </div>
+        <span className="text-xs text-subtle">цього тижня · перемкни</span>
       </div>
 
-      <figure className="paper-shadow-lg flex rotate-[1.5deg] flex-col gap-2.5 rounded-[var(--radius-card)] bg-note px-7 py-6 lg:absolute lg:left-3 lg:top-[268px] lg:w-[400px]">
+      <figure className="paper-shadow-lg flex rotate-[1.5deg] flex-col gap-2.5 rounded-[var(--radius-card)] bg-note px-7 py-6 lg:absolute lg:left-3 lg:top-[268px] lg:min-h-[120px] lg:w-[400px]">
         <blockquote className="font-serif text-lg italic leading-normal text-foreground sm:text-xl">
-          «У тижні, коли тренувань більше, замовлень доставки менше»
+          «{scenario.note}»
         </blockquote>
         <figcaption className="text-xs text-subtle">
-          записав Sergeant · впевненість висока · приклад
+          записав Sergeant · {scenario.meta} · ілюстративний приклад
         </figcaption>
       </figure>
     </div>
