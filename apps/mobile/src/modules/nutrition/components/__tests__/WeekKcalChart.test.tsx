@@ -23,7 +23,7 @@ const TODAY = "2026-08-12";
 
 describe("WeekKcalChart", () => {
   it("малює порожній день пласким треком, а не стовпчиком", () => {
-    // Канон §5.2: пропуск — це неповні дані, а не «мало з'їв».
+    // Канон §5.2: пропуск — це неповні дані, а не «мало зʼїв».
     const { getByTestId, queryByTestId } = render(
       <WeekKcalChart rows={WEEK} targetKcal={2000} todayIso={TODAY} />,
     );

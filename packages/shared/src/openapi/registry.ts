@@ -15,7 +15,7 @@ import * as silpoSchemas from "../schemas/silpo";
  * `#/components/schemas/<id>` формується автоматично з `$ref`-ом.
  *
  * Caller має імпортувати `./routes` перед викликом, щоб route-каталог
- * зареєструвався у локальному об'єкті `paths`.
+ * зареєструвався у локальному обʼєкті `paths`.
  */
 
 // ────────────────────── Named components (з ID для $ref) ──────────────────────
@@ -74,7 +74,7 @@ const AiMemoryClearResponse = schemas.AiMemoryClearResponseSchema.meta({
 const AiMemoryListResponse = schemas.AiMemoryListResponseSchema.meta({
   id: "AiMemoryListResponse",
   description:
-    "Відповідь GET /api/ai-memory/list — сторінка фактів пам'яті + keyset-курсор.",
+    "Відповідь GET /api/ai-memory/list — сторінка фактів памʼяті + keyset-курсор.",
 });
 const AiMemoryDeleteResponse = schemas.AiMemoryDeleteResponseSchema.meta({
   id: "AiMemoryDeleteResponse",

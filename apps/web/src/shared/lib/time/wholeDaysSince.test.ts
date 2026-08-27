@@ -50,7 +50,7 @@ describe("wholeDaysSince", () => {
     expect(wholeDaysSince("не дата", now)).toBe(Infinity);
   });
 
-  it("майбутній момент дає від'ємне число, а не затиснутий нуль", () => {
+  it("майбутній момент дає відʼємне число, а не затиснутий нуль", () => {
     expect(
       wholeDaysSince(local(2026, 8, 25, 10, 0), local(2026, 8, 23, 10, 0)),
     ).toBe(-2);

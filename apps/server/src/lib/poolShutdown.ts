@@ -6,7 +6,7 @@
  * `pool.end()` чекає, поки всі checked-out клієнти повернуться у pool. Якщо
  * якийсь worker (BullMQ-job, AI-стрім, retry-loop) зависає у середині
  * транзакції або тримає row-lock — drain зависає до `SHUTDOWN_HARD_TIMEOUT_MS`
- * у `index.ts`, після чого `process.exit()` обриває pg-з'єднання, клієнти
+ * у `index.ts`, після чого `process.exit()` обриває pg-зʼєднання, клієнти
  * отримують ECONNRESET замість graceful 503, а Sentry-flush і Redis-quit
  * взагалі не встигають виконатися.
  *

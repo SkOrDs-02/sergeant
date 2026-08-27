@@ -216,7 +216,7 @@ function buildMemorySummary(memory: CoachMemory | null): string {
     !Array.isArray(memory.weeklyDigests) ||
     memory.weeklyDigests.length === 0
   ) {
-    return "Пам'яті ще немає — це перший сеанс.";
+    return "Памʼяті ще немає — це перший сеанс.";
   }
 
   const lines: string[] = [];
@@ -255,12 +255,12 @@ function buildMemorySummary(memory: CoachMemory | null): string {
     lines.push(...routineSummaries.slice(0, 4));
   }
 
-  // Помічені зв'язки — крос-модульні кореляції, пораховані КОДОМ на клієнті
+  // Помічені звʼязки — крос-модульні кореляції, пораховані КОДОМ на клієнті
   // (не LLM) під час weekly-digest. Даємо коучу «у дні тренувань ти витрачаєш
   // менше» без окремого виклику моделі. Найсвіжіші тижні першими, дедуп.
   const correlations = pickRecentCorrelations(digests, 4);
   if (correlations.length) {
-    lines.push("Помічені зв'язки:");
+    lines.push("Помічені звʼязки:");
     correlations.forEach((c) => lines.push(`  • ${c}`));
   }
 
@@ -346,7 +346,7 @@ async function saveNudgeCache(userId: string, body: string): Promise<void> {
 }
 
 /**
- * GET /api/coach/memory — віддати поточну coach-пам'ять користувача.
+ * GET /api/coach/memory — віддати поточну coach-памʼять користувача.
  * `req.user` гарантовано заповнений middleware-ом `requireSession`.
  */
 export async function coachMemoryGet(
@@ -359,7 +359,7 @@ export async function coachMemoryGet(
 }
 
 /**
- * POST /api/coach/memory — merge incoming digest у збережену пам'ять.
+ * POST /api/coach/memory — merge incoming digest у збережену памʼять.
  * `req.user` гарантовано заповнений middleware-ом `requireSession`.
  */
 export async function coachMemoryPost(
@@ -387,7 +387,7 @@ export async function coachMemoryPost(
  *
  * AI-CONTEXT: винесено з `coachInsight`, щоб стенд
  * (`scripts/eval/pipelines.finance.ts`) міряв прод-промпт, а не однорядкову
- * заглушку. Промпт динамічний (пам'ять + знімок тижня), тож експортується
+ * заглушку. Промпт динамічний (памʼять + знімок тижня), тож експортується
  * білдер; стенд подає йому фіксований зразок.
  *
  * Прод шле весь текст ОДНИМ user-повідомленням без `system` — це не помилка
@@ -445,7 +445,7 @@ export function buildCoachInsightPrompt(input: {
   }
   if (snapshot?.fizruk) {
     snapshotLines.push(
-      `[ТРЕНУВАННЯ ЦЬОГО ТИЖНЯ] Тренувань: ${snapshot.fizruk.workoutsCount ?? 0}, Об'єм: ${snapshot.fizruk.totalVolume ?? 0} кг, Відновлення: ${snapshot.fizruk.recoveryLabel ?? "?"}`,
+      `[ТРЕНУВАННЯ ЦЬОГО ТИЖНЯ] Тренувань: ${snapshot.fizruk.workoutsCount ?? 0}, Обʼєм: ${snapshot.fizruk.totalVolume ?? 0} кг, Відновлення: ${snapshot.fizruk.recoveryLabel ?? "?"}`,
     );
   }
   if (snapshot?.nutrition) {
@@ -470,7 +470,7 @@ ${ADVICE_BOUNDARY_RULE}
 КОНТЕКСТ ДАТИ (Київ):
 ${dateContextText}
 
-ПАМ'ЯТЬ (попередні тижні):
+ПАМʼЯТЬ (попередні тижні):
 ${memorySummary}
 
 ПОТОЧНИЙ ТИЖДЕНЬ:
@@ -487,7 +487,7 @@ ${snapshotText}
 - Запропонувати одну конкретну дію на сьогодні
 - Бути особистим і мотивуючим, але без загальних фраз
 - Якщо згадуєш "сьогодні" чи прогрес тижня — спирайся ТІЛЬКИ на КОНТЕКСТ ДАТИ; не вигадуй "середина тижня" / "кінець тижня" самостійно. Тиждень = понеділок→неділя.
-- Порівнюючи з ПАМ'ЯТТЮ, називай напрям прямо. Цифри впали — це спад, і сказати треба про спад, а не привітати з прогресом.
+- Порівнюючи з ПАМʼЯТТЮ, називай напрям прямо. Цифри впали — це спад, і сказати треба про спад, а не привітати з прогресом.
 ${VOICE_RULE}
 
 Відповідай ТІЛЬКИ текстом повідомлення, без вітань, без підписів, без лапок.`;

@@ -146,7 +146,7 @@ export const ANALYTICS_EVENTS = Object.freeze({
   //                                 | "unknown",
   //                            status?: number }
   //
-  // `tool` — канонічне ім'я ChatAction (напр. `add_expense`, `log_workout`).
+  // `tool` — канонічне імʼя ChatAction (напр. `add_expense`, `log_workout`).
   // Body повідомлень / tool_input НЕ потрапляють у payload — лише counts
   // + latency + провайдер/модуль, щоб дашборди працювали без експорту PII.
   //
@@ -541,7 +541,7 @@ export const ANALYTICS_EVENTS = Object.freeze({
   // localStorage-флаг `sergeant.nps_survey_eligible_fired`. Survey у
   // PostHog dashboard таргетиться display-умовою «user sends event
   // nps_survey_eligible» (див. ops-довідку вище). Назви подій не
-  // міняти — на них зав'язані survey-умови й дашборди у PostHog.
+  // міняти — на них завʼязані survey-умови й дашборди у PostHog.
   FEEDBACK_WIDGET_OPENED: "feedback_widget_opened",
   FEEDBACK_SUBMITTED: "feedback_submitted",
   NPS_SURVEY_ELIGIBLE: "nps_survey_eligible",

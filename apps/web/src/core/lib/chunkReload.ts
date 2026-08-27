@@ -139,7 +139,7 @@ export function reloadOnceForChunkError(now: number = Date.now()): boolean {
   // Офлайн reload не лікує нічого: перезавантаження без мережі дасть або той
   // самий провал, або взагалі порожню сторінку замість уже відрендереного
   // застосунку. Виходимо ДО обліку, щоб мережевий провал у тунелі чи метро не
-  // з'їдав бюджет `MAX_RELOADS`, який потрібен реальному stale-деплою.
+  // зʼїдав бюджет `MAX_RELOADS`, який потрібен реальному stale-деплою.
   if (typeof navigator !== "undefined" && navigator.onLine === false) {
     return false;
   }

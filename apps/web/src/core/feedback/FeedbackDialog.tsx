@@ -101,7 +101,7 @@ export function FeedbackDialog({ open, onClose }: FeedbackDialogProps) {
       });
     } catch {
       // Офлайн відрізняємо від решти не заради краси, а заради поради:
-      // «спробуй, коли з'явиться інтернет» дієва, а на заблокований запит —
+      // «спробуй, коли зʼявиться інтернет» дієва, а на заблокований запит —
       // ні, там треба інший канал.
       setSubmitError(navigator.onLine === false ? "offline" : "generic");
       setSending(false);

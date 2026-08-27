@@ -62,7 +62,7 @@ describe("ExperimentalSection (PR-36 / §9.3)", () => {
     render(<ExperimentalSection />);
     expandSection();
 
-    // Acceptance: «Перший раз — checkbox обов'язковий…»
+    // Acceptance: «Перший раз — checkbox обовʼязковий…»
     expect(screen.getByText(COPY.optInLabel)).toBeTruthy();
     expect(screen.getByTestId("experimental-opt-in")).toBeTruthy();
 

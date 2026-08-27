@@ -80,7 +80,7 @@ export interface LimitBudget {
   period?: "month" | "week" | "one_time";
   /** ISO instant from which a one-time limit starts accumulating expenses. */
   createdAt?: string;
-  /** Необов'язкова людино-читана назва (UI). */
+  /** Необовʼязкова людино-читана назва (UI). */
   label?: string;
 }
 

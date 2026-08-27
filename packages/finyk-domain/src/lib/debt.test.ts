@@ -36,7 +36,7 @@ describe("getDebtPaid (wrapper)", () => {
     expect(getDebtPaid(debt, transactions)).toBe(125);
   });
 
-  it("повертає 0 коли немає прив'язаних транзакцій", () => {
+  it("повертає 0 коли немає привʼязаних транзакцій", () => {
     expect(getDebtPaid({ id: "d", amount: 0 })).toBe(0);
   });
 

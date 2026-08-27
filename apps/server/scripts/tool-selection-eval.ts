@@ -42,7 +42,7 @@ const SKIN_URL = "https://openrouter.ai/api/v1/messages";
  * (`create_`, `mark_`, `log_`…) виглядає природніше, але тоді новий інструмент
  * із незнайомим дієсловом мовчки випадає з перевірки — так повз неї проходять
  * `change_category`, `finish_workout`, `reorder_habits`, `forget`. При
- * інверсії незнайоме ім'я за замовчуванням перевіряється: гірше, що може
+ * інверсії незнайоме імʼя за замовчуванням перевіряється: гірше, що може
  * статися — хибне спрацювання на read-і, і воно видно у звіті.
  */
 const READ_ONLY = (name: string): boolean =>
@@ -199,7 +199,7 @@ const CASES: ToolCase[] = [
   },
   {
     name: "факт про себе",
-    user: "Запам'ятай: у мене алергія на арахіс",
+    user: "Запамʼятай: у мене алергія на арахіс",
     accept: ["remember"],
   },
   {
@@ -398,7 +398,7 @@ async function main(): Promise<void> {
       for (let i = 0; i < repeats; i += 1) {
         const r = await runCase(apiKey, model, toolCase, !values["no-data"]);
         results.push(r);
-        // FAKE б'є MISS: вигаданий id у правильно вибраному інструменті — гірша
+        // FAKE бʼє MISS: вигаданий id у правильно вибраному інструменті — гірша
         // з двох поразок, бо доходить до виконавця й пише фантомний запис.
         const mark = r.error
           ? "ERR"

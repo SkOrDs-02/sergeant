@@ -75,7 +75,7 @@ export interface ImportScreenshotVisionInput {
  * `receipts/visionClient.ts#callReceiptVision`). Інакше — `anthropicMessages`
  * (retry/timeout/metrics/cost-ledger, спільний транспорт), з
  * `allowOpenRouter` обчисленим із `LLM_RECEIPT_PROVIDER`/`OPENROUTER_API_KEY`.
- * Кидає (не повертає error-об'єкт) на upstream-невдачі — caller-у не треба
+ * Кидає (не повертає error-обʼєкт) на upstream-невдачі — caller-у не треба
  * розрізняти "throw" і "ok:false"; `errorHandler` мапить `ExternalServiceError`
  * у клієнтський 502/503 сам.
  */

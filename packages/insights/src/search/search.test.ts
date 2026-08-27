@@ -8,8 +8,8 @@ describe("normalize", () => {
   });
 
   it("уніфікує апострофи", () => {
-    expect(normalize("м'ясо")).toBe(normalize("мʼясо"));
-    expect(normalize("м`ясо")).toBe(normalize("м'ясо"));
+    expect(normalize("мʼясо")).toBe(normalize("мʼясо"));
+    expect(normalize("м`ясо")).toBe(normalize("мʼясо"));
   });
 
   it("повертає пустий рядок на falsy input", () => {

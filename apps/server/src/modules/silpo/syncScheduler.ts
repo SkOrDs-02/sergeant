@@ -29,7 +29,7 @@ const DEFAULT_TICK_MS = 60 * 60 * 1000; // година
 
 /**
  * Синкати користувача не частіше, ніж раз на стільки годин. 20, а не 24 —
- * інакше при годинному тику «раз на добу» плавно з'їжджало б на добу з
+ * інакше при годинному тику «раз на добу» плавно зʼїжджало б на добу з
  * гаком, і синк дрейфував би по колу доби.
  */
 const DEFAULT_MIN_AGE_HOURS = 20;
@@ -45,7 +45,7 @@ export interface SilpoSyncPollerOptions {
   minAgeHours?: number | undefined;
   startDelayMs?: number | undefined;
   enabled?: boolean | undefined;
-  /** Інʼєкція для тестів — реальний прогін б'є в мережу. */
+  /** Інʼєкція для тестів — реальний прогін бʼє в мережу. */
   run?: ((opts: { minAgeHours: number }) => Promise<SyncAllResult>) | undefined;
 }
 

@@ -20,7 +20,7 @@ interface NetworthChartProps {
 }
 
 // SVG-графік нетворсу повністю детермінований вхідним `data`.
-// `memo` запобігає перерендеру при незв'язаних оновленнях стану Overview.
+// `memo` запобігає перерендеру при незвʼязаних оновленнях стану Overview.
 function NetworthChartComponent({ data, goalValue }: NetworthChartProps) {
   if (!data || data.length < 2) return null;
   return <NetworthChartInner data={data} goalValue={goalValue} />;

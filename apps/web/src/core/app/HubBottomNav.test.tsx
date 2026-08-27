@@ -11,7 +11,7 @@ import { HubBottomNav } from "./HubBottomNav";
 const STORAGE_KEY = "sergeant.hub.reportsTabRevealedAt";
 
 // Читаємо мітку з каталогу, а не прибиваємо рядком: вкладку вже
-// перейменовували («Звіти» → «Зв'язки», 2026-08-05), і тест має ловити
+// перейменовували («Звіти» → «Звʼязки», 2026-08-05), і тест має ловити
 // зникнення вкладки, а не зміну її назви.
 const REPORTS_TAB = new RegExp(messages.nav.reports);
 
@@ -136,7 +136,7 @@ describe("HubBottomNav", () => {
     }
   });
 
-  it("ставить прапор у localStorage коли reports з'являється", () => {
+  it("ставить прапор у localStorage коли reports зʼявляється", () => {
     const { rerender, onChange } = renderNav({ showReports: false });
     expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
 

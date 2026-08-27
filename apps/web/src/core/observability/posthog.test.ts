@@ -300,7 +300,7 @@ describe("error resilience", () => {
 
     // Капчер/ідентифай/ресет після збою не мають викликати SDK і не мають
     // лишати нічого у внутрішній черзі — інакше flushQueue ніколи не
-    // обробить їх, а пам'ять буде безцільно займатися.
+    // обробить їх, а памʼять буде безцільно займатися.
     mod.capturePostHogEvent("after_fail", { ok: true });
     mod.identifyPostHogUser("user-456");
     mod.resetPostHog();

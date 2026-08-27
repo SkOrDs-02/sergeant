@@ -85,7 +85,7 @@ const SWITCH_LABEL = {
 // сам підпис, тож `closest("label")` більше не веде до тумблера. Запит
 // за іменем стійкіший саме тому, що резолвиться тим самим
 // accname-алгоритмом, що й axe: якщо він знову знайде тумблер — значить
-// ім'я на місці.
+// імʼя на місці.
 function clickSwitch(which: keyof typeof SWITCH_LABEL) {
   const toggle = screen.getByRole("switch", { name: SWITCH_LABEL[which] });
   fireEvent.click(toggle);

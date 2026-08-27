@@ -185,7 +185,7 @@ export function useFinykBackupSync(
       // Clear `?sync=…` із URL через `navigate({ replace: true })`, а не
       // `history.replaceState` — інакше data-router `createBrowserRouter`
       // не дізнається про зміну search-string-у і `useLocation()`
-      // консьюмери лишаться зі застарілим URL у пам'яті.
+      // консьюмери лишаться зі застарілим URL у памʼяті.
       navigate(
         { pathname: location.pathname, search: "", hash: "" },
         { replace: true },

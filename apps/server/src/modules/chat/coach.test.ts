@@ -176,7 +176,7 @@ describe("coachMemoryPost blob-size guard", () => {
 });
 
 describe("coachMemoryGet", () => {
-  it("повертає збережену пам'ять", async () => {
+  it("повертає збережену памʼять", async () => {
     const memory = {
       weeklyDigests: [{ weekKey: "2026-W01", finyk: { summary: "ok" } }],
     };
@@ -394,14 +394,14 @@ describe("coachMemoryGet — parseMemory raw-fallback warn", () => {
     expect(logger.warn).not.toHaveBeenCalled();
   });
 
-  it("не логує warn коли data вже є об'єктом (JSONB автопарс pg-клієнта)", async () => {
+  it("не логує warn коли data вже є обʼєктом (JSONB автопарс pg-клієнта)", async () => {
     const memory = {
       weeklyDigests: [],
       lastInsightDate: null,
       lastInsightText: null,
     };
     pool.query.mockResolvedValueOnce({
-      rows: [{ data: memory }], // pg вже розпарсив JSONB у об'єкт
+      rows: [{ data: memory }], // pg вже розпарсив JSONB у обʼєкт
     });
     const res = makeRes();
     await coachMemoryGet(asReq({ user: { id: "user_obj" } }), res);

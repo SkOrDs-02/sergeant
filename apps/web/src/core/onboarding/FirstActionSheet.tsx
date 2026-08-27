@@ -203,7 +203,7 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
     // add-sheet — і `detectFirstRealEntry` → `useFirstEntryCelebration`
     // ніколи б не спрацювали. Натомість лишаємо прапор висіти: при
     // наступному маунті дашборду hero-картка повертається, а коли
-    // справжній запис з'явиться — обидва механізми знімуть її разом.
+    // справжній запис зʼявиться — обидва механізми знімуть її разом.
     setActivePresetId(null);
     if (persisted) {
       clearFirstActionPending();
@@ -407,7 +407,7 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
               {picks.length > 1 ? "З чого хочеш почати?" : "Почни з однієї дії"}
             </h2>
             <p className="text-style-body text-muted mt-0.5 leading-snug">
-              Твої показники з&apos;являться після першого збереженого запису.
+              Твої показники зʼявляться після першого збереженого запису.
             </p>
           </div>
           <Button

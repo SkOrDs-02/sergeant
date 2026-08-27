@@ -53,7 +53,7 @@ const NetworthSectionImpl = function NetworthSection({
         module="finyk"
         icon={<Icon name="trending-up" size={20} />}
         title="Поки що мало записів балансу"
-        description="Графік капіталу з'явиться після кількох змін балансу."
+        description="Графік капіталу зʼявиться після кількох змін балансу."
       />
     </Card>
   );

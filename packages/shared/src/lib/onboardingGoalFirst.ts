@@ -84,7 +84,7 @@ export const ONBOARDING_OUTCOMES: readonly OnboardingOutcomeCopy[] = [
   {
     id: "stay-in-shape",
     headline: "Тримати тіло у формі",
-    body: "Признач тренування, у п'ятницю побачиш, що зробив за тиждень.",
+    body: "Признач тренування, у пʼятницю побачиш, що зробив за тиждень.",
     module: "fizruk",
   },
   {
@@ -95,7 +95,7 @@ export const ONBOARDING_OUTCOMES: readonly OnboardingOutcomeCopy[] = [
   },
   {
     id: "eat-better",
-    headline: "Краще їсти і знати що з'їв",
+    headline: "Краще їсти і знати що зʼїв",
     body: "Логуй прийоми, за тиждень побачиш свій pattern по БЖВ.",
     module: "nutrition",
   },

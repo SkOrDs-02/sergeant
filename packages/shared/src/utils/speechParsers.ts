@@ -19,6 +19,8 @@
 // "вісімдесятьох кілограмів" — the digit comes from "вісімдесят", and the
 // case ending lives on the unit, which the regex tolerates separately.
 
+import { foldApostrophes } from "./ukApostrophe";
+
 const UA_NUMBER_WORDS: Record<string, number> = {
   нуль: 0,
   один: 1,
@@ -29,55 +31,83 @@ const UA_NUMBER_WORDS: Record<string, number> = {
   дві: 2,
   три: 3,
   чотири: 4,
-  "п'ять": 5,
+  пʼять: 5,
   шість: 6,
   сім: 7,
   вісім: 8,
-  "дев'ять": 9,
+  девʼять: 9,
   десять: 10,
   одинадцять: 11,
   дванадцять: 12,
   тринадцять: 13,
   чотирнадцять: 14,
-  "п'ятнадцять": 15,
+  пʼятнадцять: 15,
   шістнадцять: 16,
   сімнадцять: 17,
   вісімнадцять: 18,
-  "дев'ятнадцять": 19,
+  девʼятнадцять: 19,
   двадцять: 20,
   тридцять: 30,
   сорок: 40,
-  "п'ятдесят": 50,
+  пʼятдесят: 50,
   шістдесят: 60,
   сімдесят: 70,
   вісімдесят: 80,
-  "дев'яносто": 90,
+  девʼяносто: 90,
   сто: 100,
   двісті: 200,
   триста: 300,
   чотириста: 400,
-  "п'ятсот": 500,
+  пʼятсот: 500,
   шістсот: 600,
   сімсот: 700,
   вісімсот: 800,
-  "дев'ятсот": 900,
+  девʼятсот: 900,
   тисяча: 1000,
   тисячі: 1000,
   тисяч: 1000,
 };
 
 // Apostrophes Whisper emits vary: ASCII `'`, typographic `’`, modifier `ʼ`.
-// Normalize to ASCII before lookup so "п'ять" / "п’ять" / "пʼять" all hit.
+// Fold every form to the canonical `ʼ` before lookup so "п'ять" / "п’ять"
+// / "пʼять" all hit the same key. The keys above are written canonically
+// (§1.10); folding the INPUT is what makes the other two forms work, and
+// dropping it would silently un-recognize ten numerals.
 // (Combining marks like U+0301 are deliberately excluded — character-class
 // linters flag them, and Whisper does not emit them in this position.)
-function normalizeApostrophes(s: string): string {
-  return s.replace(/[\u2019\u02BC]/g, "'");
-}
+
+// AI-CONTEXT: скан двома вказівниками, а не `/[…]+$/` — і це не стиль.
+// Ця функція їсть транскрипт Whisper, тобто НЕконтрольований рядок, а
+// привʼязаний до кінця клас `[…]+$` рушій пробує з КОЖНОЇ позиції:
+// "!!!!…!!!!" довжини n коштує O(n²) (CodeQL js/polynomial-redos,
+// alert #389). Розширення класу апострофами в §1.10 нічого не зламало,
+// але зробило рядок «зміненим» — і давню поліноміальну форму видно.
+// Тут же лінійно: два вказівники, жодного бектрекінгу.
+const EDGE_PUNCTUATION = new Set([
+  ".",
+  ",",
+  "!",
+  "?",
+  ";",
+  ":",
+  "(",
+  ")",
+  "«",
+  "»",
+  '"',
+  "'",
+  "‘",
+  "’",
+  "ʼ",
+  "`",
+]);
 
 function stripWordPunctuation(token: string): string {
-  return token
-    .replace(/[.,!?;:()«»"'`]+$/g, "")
-    .replace(/^[.,!?;:()«»"'`]+/g, "");
+  let start = 0;
+  let end = token.length;
+  while (start < end && EDGE_PUNCTUATION.has(token.charAt(start))) start += 1;
+  while (end > start && EDGE_PUNCTUATION.has(token.charAt(end - 1))) end -= 1;
+  return token.slice(start, end);
 }
 
 /**
@@ -92,7 +122,7 @@ function stripWordPunctuation(token: string): string {
  *   "кава" → null
  */
 export function parseUaNumber(text: string): number | null {
-  const lower = normalizeApostrophes(text.toLowerCase());
+  const lower = foldApostrophes(text.toLowerCase());
   const parsed = parseFloat(lower.replace(",", "."));
   if (!isNaN(parsed)) return parsed;
   let total = 0;
@@ -132,7 +162,7 @@ export function parseUaNumber(text: string): number | null {
  * extract weights / reps / amounts unchanged.
  */
 export function normalizeUaNumbers(text: string): string {
-  const normalized = normalizeApostrophes(text);
+  const normalized = foldApostrophes(text);
   const words = normalized.split(/\s+/).filter((w) => w.length > 0);
   const out: string[] = [];
   const PUNCT_BREAK = /[.,;:!?)»]$/;

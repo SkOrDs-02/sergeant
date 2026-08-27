@@ -35,7 +35,7 @@ describe("touchLastSeen", () => {
     expect(queryMock.mock.calls[0]?.[1]).toEqual(["u1"]);
   });
 
-  it("не б'є в БД частіше разу на годину для одного юзера", async () => {
+  it("не бʼє в БД частіше разу на годину для одного юзера", async () => {
     touchLastSeen("u1");
     touchLastSeen("u1");
     touchLastSeen("u1");

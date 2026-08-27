@@ -66,7 +66,7 @@ export const QUICK_LINK_TILES: readonly QuickLinkTile[] = [
   {
     id: "atlas",
     title: "Атлас",
-    subtitle: "Карта груп м'язів",
+    subtitle: "Карта груп мʼязів",
     glyph: "🗺️",
   },
 ] as const;

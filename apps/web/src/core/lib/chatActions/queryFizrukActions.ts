@@ -133,7 +133,7 @@ export function queryWorkouts(action: QueryWorkoutsAction): ChatActionResult {
     matched.length > shown.length
       ? ` (показано ${shown.length} з ${matched.length})`
       : "";
-  return `Тренувань за ${days} днів: ${matched.length}, сумарний об'єм ${round(totalVolume)} кг×повт${more}: ${list}`;
+  return `Тренувань за ${days} днів: ${matched.length}, сумарний обʼєм ${round(totalVolume)} кг×повт${more}: ${list}`;
 }
 
 export function exerciseProgress(
@@ -182,8 +182,8 @@ export function exerciseProgress(
   return [
     `Прогрес "${exercise}" за ${days} днів (${sessions.length} сесій):`,
     `Макс. вага: ${first.maxWeight} → ${last.maxWeight} кг (${sign(wDelta)}${wDelta})`,
-    `Об'єм: ${round(first.volume)} → ${round(last.volume)} кг×повт (${sign(volPct)}${volPct}%)`,
-    `Найкраще: ${bestWeight} кг, об'єм ${round(bestVolume)} кг×повт`,
+    `Обʼєм: ${round(first.volume)} → ${round(last.volume)} кг×повт (${sign(volPct)}${volPct}%)`,
+    `Найкраще: ${bestWeight} кг, обʼєм ${round(bestVolume)} кг×повт`,
   ].join("\n");
 }
 
@@ -221,7 +221,7 @@ export function trainingStats(action: TrainingStatsAction): ChatActionResult {
     `Статистика тренувань за ${days} днів:`,
     `Тренувань: ${completed.length} (~${perWeek.toFixed(1)}/тиждень), підходів: ${totalSets}`,
     `Топ вправи: ${topList(exerciseFreq) || "—"}`,
-    `Топ м'язи: ${topList(muscleFreq) || "—"}`,
+    `Топ мʼязи: ${topList(muscleFreq) || "—"}`,
   ].join("\n");
 }
 

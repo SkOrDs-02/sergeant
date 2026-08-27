@@ -154,7 +154,7 @@ export function getExpenseCategoryForTransaction(
     //
     // Порядок важливий: спершу `resolveExpenseOverride` (MCC → ручні →
     // ВЛАСНІ), і лише потім легасі-підписи. Інакше власна категорія з
-    // id на кшталт «їжа» була б з'їдена мапою — та сама підміна даних,
+    // id на кшталт «їжа» була б зʼїдена мапою — та сама підміна даних,
     // від якої застерігає `upgradeCategoryAllowingCustom`.
     const fromOverride = resolveExpenseOverride(explicitId, customCategories);
     if (fromOverride) return fromOverride;

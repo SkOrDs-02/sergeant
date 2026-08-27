@@ -52,11 +52,11 @@ export function currentLogLevel(): string {
 
 // Список шляхів, які pino маскуватиме на `[redacted]`, щоб PII та секрети
 // ніколи не просочувались у JSON-логи. Розширюємо консервативно: email і phone
-// — навіть у вкладених user-об'єктах; усі типові варіанти токенів і secret.
+// — навіть у вкладених user-обʼєктах; усі типові варіанти токенів і secret.
 // Якщо треба додати новий шлях — додавай тут, а НЕ робиш `logger.info({...})`
 // з плейнтекстовим email, обходячи редакцію.
 //
-// Контракт (для пов'язаного `Sentry.beforeSend` PII-скрабера в `sentry.ts`
+// Контракт (для повʼязаного `Sentry.beforeSend` PII-скрабера в `sentry.ts`
 // і браузерного аналога в `apps/web/src/core/observability/sentry.ts`):
 //   - `redactKeyNames` — імена полів, які потрібно маскувати на будь-якій
 //     глибині. Sentry-скрабер ходить рекурсивно і маскує ці ключі у
@@ -337,7 +337,7 @@ setInterval(() => {
 }, 5_000).unref();
 
 /**
- * pino-http middleware — додає `req.log` (child logger, прив'язаний до запиту)
+ * pino-http middleware — додає `req.log` (child logger, привʼязаний до запиту)
  * до кожного Request. `autoLogging` вимкнено, бо access-log + Prometheus
  * метрики вже генеруються `requestLogMiddleware`. Мета — тільки `req.log`.
  */
@@ -373,7 +373,7 @@ type ErrorShape = {
 };
 
 /**
- * Розгортає `err.cause` ланцюжком у plain об'єкт, безпечний для JSON/pino.
+ * Розгортає `err.cause` ланцюжком у plain обʼєкт, безпечний для JSON/pino.
  * Корисно в `errorHandler` і process-level hooks, щоб у Loki/Grafana причину
  * бачити без розгортання stack.
  */

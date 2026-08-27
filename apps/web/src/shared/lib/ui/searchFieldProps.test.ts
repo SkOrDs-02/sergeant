@@ -32,12 +32,12 @@ describe("searchFieldProps", () => {
 
   it("guard без `name` не тягне за собою `name`", () => {
     // `Input` підмішує саме цей варіант і не має затирати `name`, яким
-    // react-hook-form прив'язує поле.
+    // react-hook-form привʼязує поле.
     expect(searchFieldAutofillGuard).not.toHaveProperty("name");
     expect(searchFieldAutofillGuard.autoComplete).toBe("off");
   });
 
-  it("повертає новий об'єкт на кожен виклик", () => {
+  it("повертає новий обʼєкт на кожен виклик", () => {
     // Спред у JSX не має мутувати спільну константу через спільну ссилку.
     const a = searchFieldProps("hub-search");
     const b = searchFieldProps("hub-search");

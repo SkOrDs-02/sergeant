@@ -124,7 +124,7 @@ function searchFizruk(tokens: string[]): Hit[] {
   }
   // Заміняємо subtitle на коротку версію (без aliases) перед рендером —
   // довгий список синонімів був корисний для скорінгу, але в UI хочеться
-  // лише примарну м'язову групу.
+  // лише примарну мʼязову групу.
   for (const r of results) {
     const ex = FizrukData.EXERCISES.find((e) => `fizruk_cat_${e?.id}` === r.id);
     if (!ex) continue;

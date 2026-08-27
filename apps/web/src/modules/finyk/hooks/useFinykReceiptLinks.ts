@@ -11,7 +11,7 @@ export interface UseFinykReceiptLinksResult {
   hasReceipt: (txId: string) => boolean;
   /** `receiptId` для `txId`, або `null`, якщо цей пристрій про нього не знає. */
   getReceiptId: (txId: string) => number | null;
-  /** Запам'ятати щойно збережений/зісканований лінк (викликається одразу
+  /** Запамʼятати щойно збережений/зісканований лінк (викликається одразу
    * після успішного `saveReceipt()`). */
   recordReceiptLink: (txRef: string, receiptId: number) => void;
 }

@@ -28,9 +28,9 @@ const RECEIPT_SOURCES = ["dps", "vision", "silpo"] as const;
 /**
  * Грошове поле ОДНІЄЇ позиції чека. На відміну від `amountMinorSchema`
  * (строго додатне — ручна витрата не може бути "мінус"), рядок чека
- * легітимно буває 0 (промо-подарунок) або від'ємним (рядок знижки, який
+ * легітимно буває 0 (промо-подарунок) або відʼємним (рядок знижки, який
  * ДПС/vision іноді друкує окремим рядком, а не згортає в ціну товару) —
- * тому лише межа за модулем, без floor на нулі/від'ємному.
+ * тому лише межа за модулем, без floor на нулі/відʼємному.
  */
 const receiptItemMoneySchema = z
   .number()
@@ -46,7 +46,7 @@ export const RECEIPT_ITEM_NAME_MAX_LEN = 300;
 export const RECEIPT_STORE_MAX_LEN = 300;
 
 /** Кількість/вага позиції — може бути дробовою (вагові товари, напр. 0.345
- * кг) і теоретично від'ємною (рядок знижки без власної кількості). Той
+ * кг) і теоретично відʼємною (рядок знижки без власної кількості). Той
  * самий "reuse for clamping" мотив, що й `RECEIPT_ITEM_NAME_MAX_LEN`. */
 export const RECEIPT_ITEM_QTY_ABS_MAX = 1_000_000;
 const receiptItemQtySchema = z
@@ -76,7 +76,7 @@ export type ReceiptDraftItem = z.infer<typeof ReceiptDraftItemSchema>;
 
 /**
  * Дубль `position` у межах ОДНОГО чека → 400 ще тут (review-фікс,
- * MINOR): без цього першим бар'єром був би `receipt_items_receipt_id_
+ * MINOR): без цього першим барʼєром був би `receipt_items_receipt_id_
  * position_idx` UNIQUE(receipt_id, position) з міграції 121 — pg
  * unique_violation (23505) без спеціального catch у `save.ts::
  * insertReceiptItems` (на відміну від `finyk_tx_receipt_links`, де є
@@ -115,7 +115,7 @@ export const RECEIPT_RAW_PAYLOAD_MAX_BYTES = 256 * 1024;
 const receiptRawPayloadSchema = z
   .unknown()
   .refine((v) => v !== undefined && v !== null, {
-    message: "rawPayload є обов'язковим",
+    message: "rawPayload є обовʼязковим",
   })
   .refine(
     (v) => {

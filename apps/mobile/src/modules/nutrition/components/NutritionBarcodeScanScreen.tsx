@@ -85,7 +85,7 @@ export function NutritionBarcodeScanScreen() {
       } catch (e) {
         if (isApiError(e) && e.kind === "network") {
           setError(
-            e.message || "Немає мережі. Перевір з'єднання і спробуй знову.",
+            e.message || "Немає мережі. Перевір зʼєднання і спробуй знову.",
           );
         } else if (isApiError(e) && e.kind === "http") {
           setError(

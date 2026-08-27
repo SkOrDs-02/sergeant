@@ -20,7 +20,7 @@ function weekdaysHabit(overrides: Partial<Habit> = {}): Habit {
 }
 
 /**
- * Фікстура, що навмисно проганяє одне вікно крізь усі п'ять станів +
+ * Фікстура, що навмисно проганяє одне вікно крізь усі пʼять станів +
  * "pending" одночасно, без обриву серії (див. еквівалентний доменний тест
  * у `packages/routine-domain/src/flexStreak.test.ts` для викладки логіки):
  *
@@ -164,7 +164,7 @@ describe("HabitStreakCanvas", () => {
     ).toBeInTheDocument();
   });
 
-  it("показує повну легенду з п'ятьма пунктами", () => {
+  it("показує повну легенду з пʼятьма пунктами", () => {
     render(
       <HabitStreakCanvas
         habit={HABIT}

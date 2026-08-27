@@ -80,7 +80,7 @@ describe("deviceWallClockToInstant", () => {
     expect(eatenAt.slice(11, 16)).toBe("02:53");
   });
 
-  it("від'ємний зсув пристрою пишеться зі знаком мінус", () => {
+  it("відʼємний зсув пристрою пишеться зі знаком мінус", () => {
     withDeviceOffsetMinutes(-330);
     expect(deviceWallClockToInstant("2026-08-23", "18:53")).toBe(
       "2026-08-23T18:53:00.000-05:30",

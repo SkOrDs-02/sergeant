@@ -25,6 +25,7 @@ import { toLocalISODate } from "@sergeant/shared";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Sheet } from "@/components/ui/Sheet";
+import { foldApostrophes } from "@sergeant/shared";
 
 // Category list must stay aligned with the web component — Finyk
 // storage and analytics key off these exact labels (`MANUAL_CATEGORY_ID_MAP`).
@@ -34,7 +35,7 @@ export const MANUAL_EXPENSE_CATEGORIES = [
   "🍔 кафе та ресторани",
   "🚗 транспорт",
   "🎮 розваги",
-  "💊 здоров'я",
+  "💊 здоровʼя",
   "🛍️ покупки",
   "🏠 комунальні",
   "📱 техніка",
@@ -54,7 +55,7 @@ const LEGACY_CATEGORY_UPGRADE: Record<string, ManualExpenseCategory> = {
   їжа: "🍴 їжа",
   транспорт: "🚗 транспорт",
   розваги: "🎮 розваги",
-  "здоров'я": "💊 здоров'я",
+  здоровʼя: "💊 здоровʼя",
   одяг: "🛍️ покупки",
   комунальні: "🏠 комунальні",
   техніка: "📱 техніка",
@@ -65,10 +66,21 @@ export function upgradeCategory(
   raw: string | undefined,
 ): ManualExpenseCategory {
   if (!raw) return DEFAULT_CATEGORY;
-  if ((MANUAL_EXPENSE_CATEGORIES as readonly string[]).includes(raw)) {
-    return raw as ManualExpenseCategory;
-  }
-  return LEGACY_CATEGORY_UPGRADE[raw] ?? DEFAULT_CATEGORY;
+  // AI-DANGER: порівнюємо ЗГОРНУТИМИ формами (канон §1.10). Ці підписи —
+  // не показ, а значення, яке лягає у сховище; «💊 здоров'я» через ASCII
+  // `'` уже записаний старими версіями застосунку й на інших платформах.
+  // Точний збіг після зміни символу не спрацював би, `LEGACY_*` теж, і
+  // витрата мовчки поїхала б у «🏷 інше» — підміна даних без сліду.
+  const folded = foldApostrophes(raw);
+  const known = (MANUAL_EXPENSE_CATEGORIES as readonly string[]).find(
+    (c) => foldApostrophes(c) === folded,
+  );
+  if (known) return known as ManualExpenseCategory;
+  const legacyKey = Object.keys(LEGACY_CATEGORY_UPGRADE).find(
+    (k) => foldApostrophes(k) === folded,
+  );
+  if (legacyKey === undefined) return DEFAULT_CATEGORY;
+  return LEGACY_CATEGORY_UPGRADE[legacyKey] ?? DEFAULT_CATEGORY;
 }
 
 // Strips leading emoji / punctuation so "🍴 їжа" → "їжа". Used as the

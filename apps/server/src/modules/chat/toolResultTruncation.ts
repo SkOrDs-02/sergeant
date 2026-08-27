@@ -11,7 +11,7 @@
  *    допомагає, бо `tool_result`-content ніколи не потрапляє у
  *    cache-prefix.
  * 2. Через `max_tokens=2500` cap на відповідь, велика вхідна
- *    `tool_result`-секція з'їдає бюджет токенів і модель не встигає
+ *    `tool_result`-секція зʼїдає бюджет токенів і модель не встигає
  *    закінчити саму відповідь — у `chat.ts::streamOneIterationToSse`
  *    включається `auto-continuation`, але якщо кожне `iteration` знов
  *    тягне ту ж саму tool_result, обриваємось на cap-у

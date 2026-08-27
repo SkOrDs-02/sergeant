@@ -58,7 +58,7 @@ export interface ReplicaFreshness {
 /**
  * `datetime('now')` у SQLite дає `YYYY-MM-DD HH:MM:SS` **без зони**, і це UTC.
  * `Date.parse` на такому рядку поводиться залежно від рушія (десь UTC, десь
- * локальний час), тож нормалізуємо явно — інакше вік синку з'їжджав би на
+ * локальний час), тож нормалізуємо явно — інакше вік синку зʼїжджав би на
  * зсув таймзони, і в Києві влітку «щойно» читалось би як «3 години тому».
  */
 export function parseSqliteUtc(
@@ -124,7 +124,7 @@ export async function readReplicaFreshness(
 
     const rawAt = cursorRows[0]?.updated_at ?? null;
     const atMs = parseSqliteUtc(rawAt);
-    // Майбутня дата (кривий годинник) — це 0 годин тому, не від'ємний вік.
+    // Майбутня дата (кривий годинник) — це 0 годин тому, не відʼємний вік.
     const ageHours =
       atMs === null ? null : Math.max(0, (nowMs - atMs) / MS_PER_HOUR);
     const pendingOps = Math.max(0, Number(pendingRows[0]?.n ?? 0));

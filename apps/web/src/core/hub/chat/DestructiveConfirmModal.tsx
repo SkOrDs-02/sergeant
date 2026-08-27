@@ -60,7 +60,7 @@ export function DestructiveConfirmModal({
               {items.map((item, i) => (
                 <li
                   // Один і той самий інструмент може прийти в батчі двічі
-                  // (наприклад, два видалення), тож ім'я не унікальне —
+                  // (наприклад, два видалення), тож імʼя не унікальне —
                   // ключ складений з індексом.
                   key={`${item.name}_${i}`}
                   className="text-style-body text-text"

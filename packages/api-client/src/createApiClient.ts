@@ -62,7 +62,7 @@ export type ApiClientConfig = HttpClientConfig;
 
 /**
  * Типізований API-клієнт для всіх публічних ендпоінтів Sergeant. Повертає
- * об'єкт з `http` (низькорівневі методи) та набором модульних ендпоінтів
+ * обʼєкт з `http` (низькорівневі методи) та набором модульних ендпоінтів
  * (`sync`, `coach`, `chat`, `push`, `nutrition`, `barcode`, `foodSearch`,
  * `monoWebhook`, `privat`, `weeklyDigest`, `transcribe`, `webVitals`, `silpo`).
  *

@@ -119,7 +119,7 @@ afterEach(() => {
 describe("weekly-digest route — auth guard", () => {
   // Знахідка A1 (`docs/90-work/audits/ai-abuse-2026-08-05.md`) — роут витрачає
   // Anthropic-ключ власника і будує звіт про особисті дані, тож сесія
-  // обов'язкова і перевіряється до ключа.
+  // обовʼязкова і перевіряється до ключа.
   it("POST /api/weekly-digest → 401 без сесії", async () => {
     getSessionUserMock.mockResolvedValue(null);
     vi.stubEnv("ANTHROPIC_API_KEY", "test-key");

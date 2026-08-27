@@ -4,10 +4,6 @@
 
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-
 import { extractNextPhase, pickPriorityItems } from "../generate-today.mjs";
 
 describe("extractNextPhase", () => {
@@ -29,52 +25,69 @@ describe("extractNextPhase", () => {
 
 describe("pickPriorityItems", () => {
   it("includes explicit agent-ready work without requiring Phase wording", () => {
-    const tmp = mkdtempSync(join(tmpdir(), "today-test-"));
-    try {
-      for (const name of ["blocked.md", "ready.md", "ignored.md"]) {
-        writeFileSync(join(tmp, name), `# ${name}\n`, "utf8");
-      }
-
-      const tracker = { id: "planning", title: "Планування" };
-      const report = [
-        {
-          tracker,
-          entries: [
-            {
-              relPath: "ready.md",
-              linkPath: "ready.md",
-              title: "Ready",
-              rawStatus: "Active — executable residual",
-              agentReady: "yes",
-            },
-            {
-              relPath: "blocked.md",
-              linkPath: "blocked.md",
-              title: "Blocked phase",
-              rawStatus: "Active — Phase 3 blocked",
-              agentReady: "blocked",
-            },
-            {
-              relPath: "ignored.md",
-              linkPath: "ignored.md",
-              title: "Not actionable",
-              rawStatus: "Active",
-              agentReady: null,
-            },
-          ],
-        },
-      ];
-
-      const items = pickPriorityItems(report, tmp);
-      assert.deepEqual(
-        items.map((item) => [item.title, item.priorityKind]),
-        [
-          ["Blocked phase", "blocked"],
-          ["Ready", "agent-ready"],
+    const tracker = { id: "planning", title: "Планування" };
+    const report = [
+      {
+        tracker,
+        entries: [
+          {
+            relPath: "ready.md",
+            linkPath: "ready.md",
+            title: "Ready",
+            rawStatus: "Active — executable residual",
+            agentReady: "yes",
+          },
+          {
+            relPath: "blocked.md",
+            linkPath: "blocked.md",
+            title: "Blocked phase",
+            rawStatus: "Active — Phase 3 blocked",
+            agentReady: "blocked",
+          },
+          {
+            relPath: "ignored.md",
+            linkPath: "ignored.md",
+            title: "Not actionable",
+            rawStatus: "Active",
+            agentReady: null,
+          },
         ],
-      );
-    } finally {
-      rmSync(tmp, { recursive: true, force: true });
-    }
+      },
+    ];
+
+    const items = pickPriorityItems(report);
+    assert.deepEqual(
+      items.map((item) => [item.title, item.priorityKind]),
+      [
+        ["Blocked phase", "blocked"],
+        ["Ready", "agent-ready"],
+      ],
+    );
+  });
+
+  it("порядок не залежить від файлової системи", () => {
+    // Регресія: сортування колись мало tie-break по `mtimeMs`, тож у
+    // свіжому клоні порядок задавав `actions/checkout`, а не зміст. Тут
+    // жодного файлу на диску немає навмисно — якщо функція знову почне
+    // ходити у fs, цей кейс упаде (або скине запис, або кине).
+    const tracker = { id: "planning", title: "Планування" };
+    const entry = (relPath, title) => ({
+      relPath,
+      linkPath: relPath,
+      title,
+      rawStatus: "Active — executable residual",
+      agentReady: "yes",
+    });
+    const report = [
+      {
+        tracker,
+        entries: [entry("zeta.md", "Zeta"), entry("alpha.md", "Alpha")],
+      },
+    ];
+
+    assert.deepEqual(
+      pickPriorityItems(report).map((item) => item.title),
+      ["Alpha", "Zeta"],
+    );
   });
 });

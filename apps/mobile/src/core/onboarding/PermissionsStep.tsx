@@ -116,7 +116,7 @@ export function PermissionsStep({
           Дозволи: лише потрібні
         </Text>
         <Text className="text-center text-xs text-fg-muted">
-          Проси можна пізніше. Нічого не обов’язкове.
+          Проси можна пізніше. Нічого не обовʼязкове.
         </Text>
       </View>
 

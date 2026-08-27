@@ -422,7 +422,7 @@ describe("chat handler — tool_use parsing", () => {
         {
           type: "tool_use",
           id: "toolu_briefing",
-          // Реальне ім'я реєстру (`tools.ts`) — B32 валідує `name` проти
+          // Реальне імʼя реєстру (`tools.ts`) — B32 валідує `name` проти
           // `TOOLS`, тому вигаданого "briefing" тут уже недостатньо.
           name: "morning_briefing",
           input: {},
@@ -788,11 +788,11 @@ describe("chat handler — B36 tool_results/tool_calls_raw XOR", () => {
 });
 
 // B32 (`docs/90-work/audits/ai-testing-2026-08-25.md`) — `tool_calls_raw`
-// більше не unvalidated passthrough: невідоме ім'я інструменту чи
+// більше не unvalidated passthrough: невідоме імʼя інструменту чи
 // tool_use-блок без відповідного tool_result відхиляються 400-кою ДО того,
 // як потраплять у `{role: "assistant", content: tool_calls_raw}`.
 describe("chat handler — B32 tool_calls_raw allowlist + provenance", () => {
-  it("невідоме ім'я інструменту в tool_use → 400 CHAT_UNKNOWN_TOOL_NAME", async () => {
+  it("невідоме імʼя інструменту в tool_use → 400 CHAT_UNKNOWN_TOOL_NAME", async () => {
     const req = makeReq({
       messages: [{ role: "user", content: "зроби щось" }],
       tool_calls_raw: [
@@ -986,7 +986,7 @@ describe("TOOLS registry — структура нових tools", () => {
       expect(byName[name]!.input_schema.properties).toBeTypeOf("object");
     }
 
-    // Обов'язкові required-поля для критичних tools
+    // Обовʼязкові required-поля для критичних tools
     expect(byName!["delete_transaction"]!.input_schema.required!).toEqual([
       "tx_id",
     ]);

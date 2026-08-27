@@ -174,7 +174,7 @@ export function buildTemplateReport(
       ? {
           summary: `Середньодобово ${nutrition.avgKcal ?? 0} ккал з ${nutrition.daysLogged ?? 0}/7 днів записів.`,
           comment:
-            "Шаблонний звіт без AI-аналізу. Деталі (макроси, тенденції) з'являться після відновлення AI-сервісу.",
+            "Шаблонний звіт без AI-аналізу. Деталі (макроси, тенденції) зʼявляться після відновлення AI-сервісу.",
           recommendations: [],
         }
       : null,
@@ -236,7 +236,7 @@ ${topCats}
         : "  Немає даних";
     sections.push(`[ТРЕНУВАННЯ (${weekRange || "тиждень"})]
 Тренувань завершено: ${fizruk.workoutsCount ?? 0}
-Загальний об'єм: ${fizruk.totalVolume ?? 0} кг
+Загальний обʼєм: ${fizruk.totalVolume ?? 0} кг
 Стан відновлення: ${fizruk.recoveryLabel ?? "Немає даних"}
 Топ вправи:
 ${exercises}`);
@@ -287,7 +287,7 @@ ${habitsInfo}`);
   },
   "fizruk": {
     "summary": "1 речення: підсумок тренувань",
-    "comment": "2-3 речення: аналіз об'єму, відновлення",
+    "comment": "2-3 речення: аналіз обʼєму, відновлення",
     "recommendations": ["рекомендація 1", "рекомендація 2"]
   },
   "nutrition": {

@@ -104,7 +104,7 @@ export function SaveAsTemplate({
           onDoneEditing?.();
         }}
       >
-        {isEditing ? "Оновити швидкий прийом" : "+ Запам’ятати для повтору"}
+        {isEditing ? "Оновити швидкий прийом" : "+ Запамʼятати для повтору"}
       </button>
     </div>
   );

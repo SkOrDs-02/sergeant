@@ -128,7 +128,7 @@ describe("resolveEffectiveGoal — кілька періодів в один д�
 });
 
 describe("resolveEffectiveGoal — ретракція", () => {
-  it("м'яко видалений період невидимий, діє попередній", () => {
+  it("мʼяко видалений період невидимий, діє попередній", () => {
     const periods = [
       period({ id: "p1", effectiveFrom: "2026-03-01", kcal: 2400 }),
       period({

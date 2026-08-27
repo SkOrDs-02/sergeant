@@ -106,7 +106,7 @@ export const HINT_DEFINITIONS: Readonly<Record<HintId, HintDefinition>> =
     },
     ftux_reports_unlock: {
       id: "ftux_reports_unlock",
-      title: "Звіти з’являться після першого запису",
+      title: "Звіти зʼявляться після першого запису",
       body: "Додай будь-що, і побачиш аналітику там, де вона доречна.",
       maxShowsTotal: 2,
       cooldownHours: 48,

@@ -16,7 +16,7 @@ const CHIP_VIEWPORT_MARGIN = 8;
 // Висота чипа динамічна (1–2 рядки тексту), але для розрахунку «вгору vs
 // вниз» нам достатньо консервативної оцінки: один рядок ≈ 56px,
 // два рядки ≈ 72px. Беремо більшу — краще трохи зайнятого простору
-// зверху, ніж чип, який вилазить за нижній край в'юпорта.
+// зверху, ніж чип, який вилазить за нижній край вʼюпорта.
 const CHIP_HEIGHT_ESTIMATE = 72;
 
 export interface PendingVoiceChipProps {
@@ -71,9 +71,9 @@ export function PendingVoiceChip({
     return () => window.removeEventListener("keydown", onKey);
   }, [onCancel]);
 
-  // Позиціонування фіксоване відносно в'юпорта: пробуємо знизу від
+  // Позиціонування фіксоване відносно вʼюпорта: пробуємо знизу від
   // кнопки; якщо не вліз — піднімаємо вгору. Горизонтально центруємо
-  // по кнопці, але клампимо у в'юпорт.
+  // по кнопці, але клампимо у вʼюпорт.
   const vw = typeof window !== "undefined" ? window.innerWidth : 0;
   const vh = typeof window !== "undefined" ? window.innerHeight : 0;
   const spaceBelow = vh - anchorRect.bottom;

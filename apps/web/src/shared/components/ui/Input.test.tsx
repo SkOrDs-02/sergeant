@@ -81,7 +81,7 @@ describe("Input type-aware defaults", () => {
     );
     const input = container.querySelector("input")!;
     expect(input.getAttribute("autocomplete")).toBe("on");
-    // Гард не має затирати `name`, яким форм-бібліотеки прив'язують поле.
+    // Гард не має затирати `name`, яким форм-бібліотеки привʼязують поле.
     expect(input.getAttribute("name")).toBe("custom");
   });
 

@@ -4,7 +4,7 @@
  * Виокремлено з sw.ts (initiative 0001 Phase 2 — module decomposition).
  * Snapshot використовується UI «Дебаг service worker» (page
  * `/debug/sw`), де ми показуємо адміну поточний стан кешів і
- * dedup-set-у. Збираємо все async-у і повертаємо плоский об'єкт, бо
+ * dedup-set-у. Збираємо все async-у і повертаємо плоский обʼєкт, бо
  * postMessage сериалізує тільки structured-clonable.
  */
 

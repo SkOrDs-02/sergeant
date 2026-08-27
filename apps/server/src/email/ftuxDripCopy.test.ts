@@ -13,7 +13,7 @@ describe("FTUX drip copy", () => {
     appUrl: "https://app.sergeant.fit",
   };
 
-  it("Day 0 містить ім'я, CTA на додаток і unsubscribe-link у text та html", () => {
+  it("Day 0 містить імʼя, CTA на додаток і unsubscribe-link у text та html", () => {
     const tpl = buildFtuxDripTemplate("day_0", baseInput);
     expect(tpl.subject.length).toBeGreaterThan(0);
     expect(tpl.text).toContain("Дмитро");
@@ -45,7 +45,7 @@ describe("FTUX drip copy", () => {
     expect(tpl.text.length).toBeGreaterThan(40);
   });
 
-  it("HTML escape: ім'я з спецсимволами не ламає розмітку", () => {
+  it("HTML escape: імʼя з спецсимволами не ламає розмітку", () => {
     const tpl = buildFtuxDripTemplate("day_0", {
       ...baseInput,
       recipientName: 'Алекс<script>alert("x")</script>',

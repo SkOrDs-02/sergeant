@@ -22,7 +22,7 @@ describe("hubBackup", () => {
     ).toBe(true);
   });
 
-  it("відхиляє сторонні об'єкти", () => {
+  it("відхиляє сторонні обʼєкти", () => {
     expect(isHubBackupPayload(null)).toBe(false);
     expect(isHubBackupPayload({ kind: "other" })).toBe(false);
     expect(isHubBackupPayload({ kind: HUB_BACKUP_KIND })).toBe(false);

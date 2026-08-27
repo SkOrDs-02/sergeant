@@ -34,8 +34,8 @@ vi.mock("@capacitor/preferences", () => ({
 }));
 
 vi.mock("@aparajita/capacitor-secure-storage", () => ({
-  // Enum-подібний об'єкт; реальні значення — числа, але достатньо
-  // мати об'єкт із потрібним ключем для assertion-у.
+  // Enum-подібний обʼєкт; реальні значення — числа, але достатньо
+  // мати обʼєкт із потрібним ключем для assertion-у.
   KeychainAccess: {
     whenUnlocked: 0,
     whenUnlockedThisDeviceOnly: 1,

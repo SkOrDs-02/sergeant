@@ -1,7 +1,7 @@
 /**
  * Pure parsing/serialization для персистованих структур Фізрука
  * (workouts + custom exercises). Жодних DOM-залежностей — працює з
- * сирими рядками / JS-об'єктами. Web-only обгортка над localStorage
+ * сирими рядками / JS-обʼєктами. Web-only обгортка над localStorage
  * живе в `apps/web/src/modules/fizruk/lib/fizrukStorage.ts`.
  */
 

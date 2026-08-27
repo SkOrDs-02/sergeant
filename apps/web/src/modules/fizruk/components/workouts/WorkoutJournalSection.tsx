@@ -232,7 +232,7 @@ export function WorkoutJournalSection({
               // `CelebrationModal` — це `fixed inset-0 z-9999` із
               // backdrop-ом, а аркуш живе на `z-100`, тож трофей накривав
               // крок «Самопочуття»: кнопка «Пропустити» лишалась видимою,
-              // але кліки з'їдав backdrop. І сам собою він не зникав —
+              // але кліки зʼїдав backdrop. І сам собою він не зникав —
               // focus-trap модала переводить фокус усередину, `focusin`
               // ставить `autoCloseMs` на паузу, і той уже не стартує.
               // Ловилось `fizruk-active-workout.spec.ts`.

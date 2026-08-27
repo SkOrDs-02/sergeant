@@ -869,7 +869,7 @@ describe("profile memory actions", () => {
       input: {},
     });
 
-    expect(msg).toBe("Потрібен факт для запам'ятовування.");
+    expect(msg).toBe("Потрібен факт для запамʼятовування.");
     expect(readLS("hub_user_profile_v1", [])).toHaveLength(0);
   });
 
@@ -879,7 +879,7 @@ describe("profile memory actions", () => {
       input: { fact: "Не їм арахіс", category: "allergy" },
     });
 
-    expect(msg).toContain("Запам'ятав");
+    expect(msg).toContain("Запамʼятав");
     const profile = readLS<
       Array<{ id: string; fact: string; category: string }>
     >("hub_user_profile_v1", []);

@@ -90,7 +90,7 @@ async function insertManualExpenseRow(
  * (буквально зі спеки): рядок, що matched на mono, НІКОЛИ не доходить до
  * ON CONFLICT-перевірки. AI-DANGER: якщо рядок раніше (в іншому commit)
  * уже створив `finyk_manual_expenses`-запис БЕЗ мono-матчу, а тепер (у
- * цьому commit-і) той самий рядок matched-иться на mono, яка з'явилась
+ * цьому commit-і) той самий рядок matched-иться на mono, яка зʼявилась
  * пізніше (backfill/webhook-лаг) — стара manual-expense НЕ видаляється
  * (matcher "ніколи не зливає і не видаляє дані", той самий принцип, що
  * `receipts/matcher.ts`), і платіж може порахуватись ДВІЧІ (стара

@@ -144,7 +144,7 @@ export function ReceivableSheet({
         <View>
           <Text className="text-xs font-medium text-fg mb-1">Хто винен</Text>
           <Input
-            placeholder="Ім'я або назва"
+            placeholder="Імʼя або назва"
             value={draft.name}
             onChangeText={(t) => setDraft((d) => ({ ...d, name: t }))}
             error={nameError}
@@ -176,7 +176,7 @@ export function ReceivableSheet({
         <View>
           <Text className="text-xs font-medium text-fg mb-1">Нотатка</Text>
           <Input
-            placeholder="Необов'язково"
+            placeholder="Необовʼязково"
             value={draft.note}
             onChangeText={(t) => setDraft((d) => ({ ...d, note: t }))}
             testID={testID ? `${testID}-note` : undefined}

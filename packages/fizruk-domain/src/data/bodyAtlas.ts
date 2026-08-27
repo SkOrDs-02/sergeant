@@ -50,14 +50,14 @@ export const BODY_ATLAS_MUSCLE_LABELS_UK: Record<BodyAtlasMuscleId, string> = {
   triceps: "Трицепс",
   forearm: "Передпліччя",
   abs: "Прес",
-  obliques: "Косі м'язи",
+  obliques: "Косі мʼязи",
   "upper-back": "Верх спини",
   "lower-back": "Низ спини",
   gluteal: "Сідниці",
   quadriceps: "Квадрицепс",
   hamstring: "Задня поверхня стегна",
-  adductor: "Привідні м'язи",
-  abductors: "Відвідні м'язи",
+  adductor: "Привідні мʼязи",
+  abductors: "Відвідні мʼязи",
   calves: "Литки",
 };
 

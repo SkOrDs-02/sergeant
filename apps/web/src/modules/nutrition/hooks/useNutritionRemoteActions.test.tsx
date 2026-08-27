@@ -187,7 +187,7 @@ describe("useNutritionRemoteActions", () => {
       expect(apiRecommendRecipes).not.toHaveBeenCalled();
     });
 
-    it("дозволяє prefer без продуктів — комора не є обов'язковою", async () => {
+    it("дозволяє prefer без продуктів — комора не є обовʼязковою", async () => {
       apiRecommendRecipes.mockResolvedValueOnce({ recipes: [] });
       const { result } = makeHarness({
         pantry: { effectiveItems: [] },

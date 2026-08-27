@@ -31,7 +31,7 @@ export type ImportDirection = z.infer<typeof ImportDirectionSchema>;
 
 /** Сума одного рядка імпорту — завжди ДОДАТНА величина (напрям несе окреме
  * поле `direction`, не знак), на відміну від `mono_transaction.amount`
- * (signed bigint) чи чекових позицій (можуть бути 0/від'ємні). */
+ * (signed bigint) чи чекових позицій (можуть бути 0/відʼємні). */
 export const importAmountKopiykasSchema = z
   .number()
   .int()
@@ -81,7 +81,7 @@ const transferLikelySchema = z.boolean().optional();
 
 /** «Сітка 2» дедуп-превʼю (бета-фідбек №4, 2026-08-18: той самий скрін,
  * кинутий двічі, задвоїв рядки — vision читає описи недетерміновано, тож
- * тір-2 хеш `rowKey.ts` їх не ловить). Сервер на прев'ю звіряє рядок з уже
+ * тір-2 хеш `rowKey.ts` їх не ловить). Сервер на превʼю звіряє рядок з уже
  * збереженими витратами за трійкою дата+сума+напрям (ОПИС свідомо
  * ігнорується — саме він і плаває між прогонами) і ставить ЛИШЕ `true`
  * (відсутнє поле = збігів немає) — детектор `duplicateDetect.ts`; клієнт
@@ -271,7 +271,7 @@ export type ImportSkippedRow = z.infer<typeof ImportSkippedRowSchema>;
 export const IMPORT_STATEMENT_PROFILES = ["mono", "privat24"] as const;
 export type ImportStatementProfile = (typeof IMPORT_STATEMENT_PROFILES)[number];
 
-/** Один флет-об'єкт для обох гілок відповіді (спека: "Результат:
+/** Один флет-обʼєкт для обох гілок відповіді (спека: "Результат:
  * {profile|'custom'|needsMapping, rows, skipped}"; "невідомий формат: без
  * mapping → {needsMapping:true, headers[], sampleRows[][]}"). Коли
  * `needsMapping: true` — `profile: null`, `rows`/`skipped` порожні,
@@ -301,7 +301,7 @@ export const ImportCommitRowSchema = z
     amountKopiykas: importAmountKopiykasSchema,
     direction: ImportDirectionSchema,
     description: z.string().max(300),
-    /** Обов'язкова per row — клієнт дає, включно з income-категоріями
+    /** Обовʼязкова per row — клієнт дає, включно з income-категоріями
      * finyk (`manualIncomeCategories.ts`); сервер зберігає опаково,
      * так само як `ManualExpenseCreateSchema.category`. */
     category: z.string().min(1).max(120),
@@ -351,7 +351,7 @@ export type ImportCommitResponse = z.infer<typeof ImportCommitResponseSchema>;
  * зі спеки Stage 1: `'completed' | 'undone'`. Цей slice синхронний
  * (commit обробляє всі рядки в одній транзакції) — проміжних
  * async-станів (`pending`/`processing`) немає; якщо майбутній async-режим
- * (черга, дуже великі виписки) з'явиться — розширювати тут, одним PR з
+ * (черга, дуже великі виписки) зʼявиться — розширювати тут, одним PR з
  * migration-agent-note (без DB-міграції, бо CHECK немає). */
 export const IMPORT_BATCH_STATUSES = ["completed", "undone"] as const;
 export type ImportBatchStatus = (typeof IMPORT_BATCH_STATUSES)[number];

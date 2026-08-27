@@ -139,13 +139,13 @@ describe("WeeklyDigestCard — телеметрія AI-поради", () => {
       "collapse",
     ]);
     expect(generateMock).toHaveBeenCalledTimes(1);
-    // Усі реакції прив'язані до одного й того самого advice_id.
+    // Усі реакції привʼязані до одного й того самого advice_id.
     const ids = new Set(reacted().map((p) => p.advice_id));
     expect(ids.size).toBe(1);
     expect(ids.has(shown()[0]?.advice_id)).toBe(true);
   });
 
-  it("хедерне згортання картки їде як collapse і не з'їдає консюмерський колбек", () => {
+  it("хедерне згортання картки їде як collapse і не зʼїдає консюмерський колбек", () => {
     const onCollapse = vi.fn();
     render(<WeeklyDigestCard onCollapse={onCollapse} />);
 

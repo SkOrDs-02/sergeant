@@ -12,7 +12,7 @@ const BUILTIN: Record<string, string> = {
   restaurant: "Кафе та ресторани",
   transport: "Транспорт",
   entertainment: "Розваги",
-  health: "Здоров'я",
+  health: "Здоровʼя",
   shopping: "Покупки",
   utilities: "Комунальні",
   subscriptions: "Підписки",

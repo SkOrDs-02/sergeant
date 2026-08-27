@@ -81,12 +81,12 @@ export function RegisterForm({ onAlreadyRegistered }: RegisterFormProps) {
           htmlFor="auth-name"
           className="block text-style-caption text-muted mb-1.5"
         >
-          Ім{"'"}я
+          Імʼя
         </label>
         <Input
           id="auth-name"
           type="text"
-          placeholder={"Твоє ім'я"}
+          placeholder={"Твоє імʼя"}
           autoComplete="name"
           error={!!errors.name}
           aria-invalid={!!errors.name}

@@ -141,7 +141,7 @@ describe("useServerPreference — L-14 GET/PUT race", () => {
   // (зміна deps), поки PUT ще летів — стара перевірка `requestId ===
   // current` знімала `saving` лише якщо САМЕ цей виклик лишався
   // найновіше-виданим запитом на момент завершення, а це міг мовчки
-  // зламати непов'язаний перезапуск ефекту.
+  // зламати неповʼязаний перезапуск ефекту.
   it("clears `saving` once its own set()/PUT settles, even if the effect re-ran (deps change) and re-issued a GET while it was in flight", async () => {
     getPreferencesMock.mockResolvedValue(BASE_PREFS);
     let resolveUpdate!: (prefs: UserPreferences) => void;

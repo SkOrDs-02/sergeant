@@ -251,9 +251,9 @@ const SILPO_ERROR_REASON_MESSAGES: Readonly<Record<string, string>> = {
   invalid_request: "Сільпо не передав потрібні дані. Спробуй ще раз.",
   invalid_state: "Забагато часу минуло з переходу в Сільпо. Спробуй ще раз.",
   config_missing:
-    "Зв'язування тимчасово недоступне на сервері. Спробуй пізніше.",
+    "Звʼязування тимчасово недоступне на сервері. Спробуй пізніше.",
   missing_refresh_token: "Сільпо не надав потрібний доступ. Спробуй ще раз.",
-  exchange_failed: "Не вдалося завершити зв'язування з Сільпо. Спробуй ще раз.",
+  exchange_failed: "Не вдалося завершити звʼязування з Сільпо. Спробуй ще раз.",
   session_expired:
     "Сесія Sergeant завершилась, поки ти був на сторінці Сільпо. Спробуй ще раз.",
 };
@@ -539,13 +539,13 @@ export function HubSettingsPage({ scrollContainer }: HubSettingsPageProps) {
     void queryClient.invalidateQueries({ queryKey: silpoKeys.all });
     if (silpo === "connected") {
       toast.success(
-        "Сільпо зв'язано. Натисни «Оновити чеки», щоб підтягнути покупки.",
+        "Сільпо звʼязано. Натисни «Оновити чеки», щоб підтягнути покупки.",
       );
     } else {
       const reason = params.get("reason");
       toast.error(
         (reason && SILPO_ERROR_REASON_MESSAGES[reason]) ??
-          "Не вдалося зв'язати Сільпо.",
+          "Не вдалося звʼязати Сільпо.",
         undefined,
         {
           label: "Спробувати ще раз",

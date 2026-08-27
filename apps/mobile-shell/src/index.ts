@@ -53,7 +53,7 @@ const DEEP_LINK_SCHEME = "com.sergeant.shell://";
  */
 export const BACK_TO_EXIT_WINDOW_MS = 2000;
 
-/** Custom event-ім'я, яке shell диспатчить на `window` перед першим тапом-виходом. */
+/** Custom event-імʼя, яке shell диспатчить на `window` перед першим тапом-виходом. */
 export const SHELL_BACK_HINT_EVENT = "mobileshell:back-hint";
 
 /**
@@ -173,7 +173,7 @@ export const DEEP_LINK_HTTPS_HOSTS: readonly string[] = Object.freeze([
 
 export interface InitNativeShellOptions {
   /**
-   * Хук навігації з web-side (тестова ін'єкція). Якщо передано — єдиний
+   * Хук навігації з web-side (тестова інʼєкція). Якщо передано — єдиний
    * шлях dispatch-у; BroadcastChannel і queue пропускаються.
    */
   navigate?: (path: string) => void;
@@ -205,7 +205,7 @@ function getDeepLinkChannel(): DeepLinkChannel {
 
 /**
  * Диспатчер deep-link шляху у web-сторону:
- *   1. `options.navigate` — тестова ін'єкція (short-circuit).
+ *   1. `options.navigate` — тестова інʼєкція (short-circuit).
  *   2. BroadcastChannel — canonical path.
  *   3. Pre-mount queue (+ optional queue event коли bridge уже mounted,
  *      але BC недоступний).
@@ -319,7 +319,7 @@ export function parseDeepLink(url: string): string | null {
     if (!matchesHost) return null;
     // `parsed.pathname` завжди починається з `/` (у т.ч. для кореня);
     // `parsed.search` і `parsed.hash` вже з лідируючим `?` / `#` або
-    // порожні рядки — об'єднуємо напряму без re-encoding.
+    // порожні рядки — обʼєднуємо напряму без re-encoding.
     candidate = `${parsed.pathname}${parsed.search}${parsed.hash}`;
   }
 

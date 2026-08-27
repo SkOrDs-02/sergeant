@@ -70,7 +70,7 @@ export const FIRST_ENTRY_CELEBRATIONS: Record<
     headline: "Звичка стартувала",
     // Outcome-first frame (S6.6 / B-4): сказати, що користувач *купує*
     // регулярністю — автоматизм без сили волі — а не просто розповісти
-    // про мехнику ("Streak з'явиться", «Серія днів: 0»). Поріг 30 синхро-
+    // про мехнику ("Streak зʼявиться", «Серія днів: 0»). Поріг 30 синхро-
     // нізований з `ROUTINE_TARGET_DAYS` у `ValueProgressBar.tsx`; якщо
     // число почне дрейфувати — винесемо в спільну константу. Audit-guard
     // у `onboardingCelebrations.test.ts` блокує повернення слова
@@ -90,7 +90,7 @@ export const FIRST_ENTRY_CELEBRATIONS: Record<
     headline: "Перший запис",
     subtext: "Це вже твої дані. Sergeant працює для тебе.",
     nextStepTip:
-      "Додай ще запис у будь-якому розділі, Sergeant почне зв'язувати дані.",
+      "Додай ще запис у будь-якому розділі, Sergeant почне звʼязувати дані.",
     primaryCtaLabel: "Продовжити",
   },
 };

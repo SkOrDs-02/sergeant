@@ -60,7 +60,7 @@ import {
  *
  * AI-DANGER: Anthropic вимагає, щоб блоки з ДОВШИМ TTL стояли ПЕРЕД
  * коротшими. Порядок рендеру `tools → system → messages` це задовольняє
- * (1h, 1h, 5m). Якщо колись з'явиться четвертий breakpoint — став його з
+ * (1h, 1h, 5m). Якщо колись зʼявиться четвертий breakpoint — став його з
  * урахуванням цього правила, інакше отримаєш 400.
  *
  * **Tool search.** Решта інструментів іде з `defer_loading: true` і в
@@ -245,7 +245,7 @@ const toolsPayloadByModel = new Map<string, ReadonlyArray<object>>();
  * підтримує і `CHAT_TOOL_SEARCH` увімкнений; інакше — legacy-масив із усіма
  * 77 дефініціями в контексті.
  *
- * Модель обов'язкова: `CHAT_MODEL_FIRST_TURN`, `CHAT_MODEL_SYNTHESIS` і
+ * Модель обовʼязкова: `CHAT_MODEL_FIRST_TURN`, `CHAT_MODEL_SYNTHESIS` і
  * `AI_PRO_*_CHAT_MODEL` env-керовані, тож ops може ре-тирити чат на модель
  * без tool search. Ми це переживаємо деградацією, а не 400.
  */
@@ -316,7 +316,7 @@ export function buildSynthesisToolsPayload(
     ? keepStrictTrueOnly(TOOLS)
     : stripStrictModeForAnthropic(TOOLS);
   const subset = base.filter((t) => wanted.has(t.name));
-  // Жодне ім'я не збіглося з реєстром (перейменували tool, а клієнт шле старий
+  // Жодне імʼя не збіглося з реєстром (перейменували tool, а клієнт шле старий
   // id) — краще заплатити за повний payload, ніж лишити модель без контексту.
   if (subset.length === 0) return full;
 

@@ -55,7 +55,7 @@ describe("seedNutrition", () => {
     }
   });
 
-  it("значення води виживають normalizeWaterLog (регресія: об'єктна форма давала 0)", async () => {
+  it("значення води виживають normalizeWaterLog (регресія: обʼєктна форма давала 0)", async () => {
     const { normalizeWaterLog } = await import("@sergeant/nutrition-domain");
     seedNutrition();
     const waterCall = writeJSONMock.mock.calls.find(

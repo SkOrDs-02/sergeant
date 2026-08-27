@@ -394,7 +394,7 @@ export async function applyRoutineCompletionNotes(
  * Форма один-в-один як `applyRoutineCompletionNotes`: композитний PK
  * `(user_id, skip_key)`, LWW по `updated_at`, tombstone-guard.
  *
- * AI-NOTE: взаємну виключність із відміткою виконання сервер НЕ нав'язує.
+ * AI-NOTE: взаємну виключність із відміткою виконання сервер НЕ навʼязує.
  * Два девайси можуть надіслати «зробив» і «не зміг» на той самий день —
  * розсуджує їх LWW за часом, а не відмова обом. Клієнтський домен
  * (`applySetHabitSkip`) тримає інваріант локально.

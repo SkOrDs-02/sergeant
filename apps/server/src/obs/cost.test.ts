@@ -4,7 +4,7 @@
  *   1. `applyInfraMonthlyCosts()` пушить env-driven monthly USD у
  *      `infra_monthly_cost_usd` Gauge для виставлених provider-ів.
  *   2. Нульові / невиставлені env-vars НЕ пре-allocate-ять серії
- *      (gauge має не з'являтися у `/metrics` для skip-нутих провайдерів).
+ *      (gauge має не зʼявлятися у `/metrics` для skip-нутих провайдерів).
  *   3. `applyInfraMonthlyCosts()` idempotent (повторні виклики не
  *      ламають snapshot, перезаписують ту саму label-комбінацію).
  *
@@ -78,7 +78,7 @@ describe("applyInfraMonthlyCosts() — PR-33", () => {
 
   it("НЕ пре-allocate серії для нульових / невиставлених env-vars", async () => {
     // Тільки hetzner. Vercel/PostHog/Sentry/Anthropic/Voyage — без env →
-    // у metrics-payload ці лейбли не з'являються (PromQL-фільтр стає
+    // у metrics-payload ці лейбли не зʼявляються (PromQL-фільтр стає
     // тривіальним: `infra_monthly_cost_usd > 0` не потрібно).
     process.env["HETZNER_MONTHLY_COST_USD"] = "20";
     process.env["HETZNER_PLAN"] = "cx23";

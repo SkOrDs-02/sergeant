@@ -3,7 +3,7 @@ import { env } from "../../env.js";
 import type { WithAiQuotaRefund } from "./aiQuota.js";
 
 // Anthropic upstream-виклики повертають web/fetch `Response`, а Express також
-// експортує тип з ім'ям `Response`. Розрізняємо явно через alias, інакше TS
+// експортує тип з імʼям `Response`. Розрізняємо явно через alias, інакше TS
 // підставляє Express-type у віддалені від HTTP-ендпоінту місця.
 export type FetchResponse = globalThis.Response;
 

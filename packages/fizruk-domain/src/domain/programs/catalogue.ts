@@ -79,8 +79,8 @@ export const PROGRAM_CATALOGUE: readonly TrainingProgramDef[] = [
     schedule: [
       { day: 1, sessionKey: "upper_a", name: "Upper A: Верх тіла (сила)" },
       { day: 2, sessionKey: "lower_a", name: "Lower A: Низ тіла (сила)" },
-      { day: 4, sessionKey: "upper_b", name: "Upper B: Верх тіла (об'єм)" },
-      { day: 5, sessionKey: "lower_b", name: "Lower B: Низ тіла (об'єм)" },
+      { day: 4, sessionKey: "upper_b", name: "Upper B: Верх тіла (обʼєм)" },
+      { day: 5, sessionKey: "lower_b", name: "Lower B: Низ тіла (обʼєм)" },
     ],
     sessions: {
       upper_a: {
@@ -109,7 +109,7 @@ export const PROGRAM_CATALOGUE: readonly TrainingProgramDef[] = [
         defaultRestSec: 120,
       },
       upper_b: {
-        name: "Upper B (об'єм)",
+        name: "Upper B (обʼєм)",
         exerciseIds: [
           "incline_bench_press",
           "cable_seated_row",
@@ -122,7 +122,7 @@ export const PROGRAM_CATALOGUE: readonly TrainingProgramDef[] = [
         defaultRestSec: 75,
       },
       lower_b: {
-        name: "Lower B (об'єм)",
+        name: "Lower B (обʼєм)",
         exerciseIds: [
           "deadlift",
           "leg_press",
@@ -139,7 +139,7 @@ export const PROGRAM_CATALOGUE: readonly TrainingProgramDef[] = [
     id: "full_body",
     name: "Full Body 3×тиждень",
     description:
-      "Три повних тренування тіла на тиждень (Пн/Ср/Пт). Ідеально для початківців та тих, хто має обмежений час. Максимальна частота стимуляції м'язів.",
+      "Три повних тренування тіла на тиждень (Пн/Ср/Пт). Ідеально для початківців та тих, хто має обмежений час. Максимальна частота стимуляції мʼязів.",
     days: 3,
     durationWeeks: 6,
     schedule: [

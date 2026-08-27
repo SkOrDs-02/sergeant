@@ -176,7 +176,7 @@ export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
             placeholder="мл"
             inputMode="numeric"
             className="h-11 w-full"
-            aria-label="Свій об'єм у мл"
+            aria-label="Свій обʼєм у мл"
           />
         </div>
         <button

@@ -7,7 +7,7 @@
  * Спека (`docs/90-work/planning/specs/receipt-scan.md` § Флоу v1): QR
  * фіскального чека кодує URL виду
  * `https://cabinet.tax.gov.ua/cashregs/check?id=..&date=..&time=..&fn=..&sm=..`.
- * Клієнт парсить URL і шле п'ять полів у `POST /api/finyk/receipts/lookup`
+ * Клієнт парсить URL і шле пʼять полів у `POST /api/finyk/receipts/lookup`
  * (`ReceiptLookupRequest`) — сервер сам ходить у ДПС `chkAll` за токеном.
  *
  * Поля дзеркалять `dpsQrFieldSchema` (`packages/shared/src/schemas/receipts.ts`):

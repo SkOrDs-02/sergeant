@@ -74,7 +74,7 @@ function bucketFor(model: string): string {
  * Anthropic-виклик уже успішно повернув response до моменту виклику цього
  * helper-а.
  *
- * `await`-итись цей helper не зобов'язаний (fire-and-forget). Але ми все
+ * `await`-итись цей helper не зобовʼязаний (fire-and-forget). Але ми все
  * одно повертаємо `Promise<void>`, щоб caller-и, які мокають у тестах
  * (інтеграційні), могли дочекатися завершення INSERT-у.
  */
