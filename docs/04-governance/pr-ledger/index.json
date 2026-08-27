@@ -1,8 +1,22 @@
 {
   "$schema": "../governance/schemas/pr-ledger.schema.json",
   "version": 1,
-  "generated_at": "2026-08-07",
+  "generated_at": "2026-08-27",
   "prs": [
+    {
+      "number": 889,
+      "title": "feat(agents): продуктові module-owner скіли",
+      "merged_at": "2026-08-27T21:54:48Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": [
+        "docs/00-start/playbooks/add-hubchat-tool.md",
+        "docs/00-start/playbooks/debug-chat-tool.md",
+        "docs/00-start/playbooks/enable-prompt-caching.md",
+        "docs/00-start/playbooks/modify-n8n-workflow.md",
+        "docs/00-start/playbooks/playbook-catalog.md",
+        "docs/00-start/playbooks/tune-system-prompt.md"
+      ]
+    },
     {
       "number": 689,
       "title": "fix(ci): governance-sync відрізняє живе посилання від навмисно мертвого",

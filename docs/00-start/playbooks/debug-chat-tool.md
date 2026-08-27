@@ -204,3 +204,14 @@ Response **другого** `/api/chat` запиту повертає `{ type: "
 - [AGENTS.md](../../../AGENTS.md) — секції _Architecture: AI tool execution path_, _max_tokens budget per request_, anti-pattern #6 про `localStorage.setItem`
 - `apps/web/src/core/lib/hubChatActions.ts` — `executeAction` entry point
 - `apps/server/src/modules/chat/chat.ts` — `/api/chat` handler і continuation logic
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                       | Merged     |
+| ------------------------------------------------------ | ------------------------------------------- | ---------- |
+| [#889](https://github.com/Skords-01/Sergeant/pull/889) | feat(agents): продуктові module-owner скіли | 2026-08-27 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
