@@ -1,7 +1,14 @@
 # Sergeant — план Спринтів 9-10 (2026-07-07 – 2026-08-01)
 
-> **Last validated:** 2026-07-29 by Codex (code-reconcile against current main). **Next review:** 2027-10-17.
-> **Status:** Active — Sprint 9 code-side closed; Sprint 10 shipped S10-T2, S10-Q1, S10-X1, S10-T3 (JSON), S10-F2 and OG/Twitter slice of S10-R1. Open residuals: S10-R2 (custom-i18n decision/original contract) and S10-R1 (`/app` routing only).
+> **Last validated:** 2026-08-27 by @Skords-01 (закриття трекера; залишки звірені з HEAD і перенесені). **Next review:** 2027-10-17.
+> **Status:** Closed — вікно спринтів (2026-07-07 – 2026-08-01) завершилось; документ лишається як історія рішень і не є трекером відкритої роботи.
+>
+> Sprint 9 code-side закритий; Sprint 10 відвантажив S10-T2, S10-Q1, S10-X1, S10-T3 (JSON), S10-F2 і OG/Twitter-зріз S10-R1.
+>
+> **Два залишки звірено з HEAD 2026-08-27 і перенесено** у [`tech-debt/frontend.md`](../tech-debt/frontend.md) — далі трекаються там, не тут:
+>
+> - **S10-R1** — Hub досі не на `/app/`: у [`core/app/router.tsx`](../../../apps/web/src/core/app/router.tsx) маршрути лишаються `/` + `finyk/*` / `fizruk/*` / …, auth-гейт через conditional render на `/`.
+> - **S10-R2** — кастомний i18n as-built: ADR-0056 у `docs/04-governance/adr/` **не існує**, `i18next` у `pnpm-lock.yaml` **відсутній**, скрипта `lint:i18n-parity` немає. Потребує рішення власника: ратифікувати кастомне рішення окремим ADR або дотягнути original acceptance.
 
 > **Оновлено 2026-07-20 (S10-Q1):** mutation tier-1 для `apps/server/src/lib/normalizers/{mono,off,upcitemdb,usda}.ts` (`pnpm --filter @sergeant/server mutation:normalizers`, break ≥70%, score ~90%); weekly CI job `server-normalizers` + artifacts `mutation-tier-1-*-report`. `uk-to-en.ts` виключено (статичний словник). Harness follow-ups (п.9): golden-task suite + `pnpm harness:bench`, `lint:harness-version-freshness`, `eval:playbooks` — див. `harness-engineering-v1.md` / `ai-coding-improvements.md`.
 
