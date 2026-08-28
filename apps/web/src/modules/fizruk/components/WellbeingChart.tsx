@@ -1,5 +1,5 @@
 import { EmptyState } from "@shared/components/ui/EmptyState";
-import { chartStatusSeries } from "@shared/charts";
+import { chartStatusSeries, linearY, linearSpan } from "@shared/charts";
 
 interface WellbeingPoint {
   label: string;
@@ -102,7 +102,7 @@ export function WellbeingChart({ data }: WellbeingChartProps) {
       >
         {/* Horizontal guide lines at 1,2,3,4,5 */}
         {[1, 3, 5].map((score) => {
-          const y = padT + innerH - ((score - 1) / (MAX_SCORE - 1)) * innerH;
+          const y = linearY(score, 1, MAX_SCORE - 1, padT, innerH);
           return (
             <line
               key={score}
@@ -121,9 +121,11 @@ export function WellbeingChart({ data }: WellbeingChartProps) {
         {data.map((d: WellbeingPoint, i: number) => {
           const cx = padL + i * groupW + groupW / 2;
           const energyH =
-            d.energy != null ? ((d.energy - 1) / (MAX_SCORE - 1)) * innerH : 0;
+            d.energy != null
+              ? linearSpan(d.energy, 1, MAX_SCORE - 1, innerH)
+              : 0;
           const moodH =
-            d.mood != null ? ((d.mood - 1) / (MAX_SCORE - 1)) * innerH : 0;
+            d.mood != null ? linearSpan(d.mood, 1, MAX_SCORE - 1, innerH) : 0;
           const baseY = padT + innerH;
 
           return (

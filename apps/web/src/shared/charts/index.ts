@@ -13,6 +13,22 @@
  */
 
 export {
+  seriesExtent,
+  pointStep,
+  xAt,
+  fractionX,
+  linearY,
+  linearSpan,
+  clampToDomain,
+  buildLinePath,
+  buildAreaPath,
+  buildPolylinePoints,
+  buildAreaPolygonPoints,
+  type ChartPoint,
+  type SeriesExtent,
+} from "./chartMath";
+
+export {
   brandColors,
   chartAxis,
   chartGradients,
