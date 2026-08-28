@@ -63,6 +63,11 @@ const METRIC_MODULE: Record<DailyMetric, CrossModuleLinkModule> = {
   weight: "fizruk",
   wellbeing: "fizruk",
   habit_rate: "routine",
+  // Витрати за категорією — Фінік, як і будь-які інші гроші. Саме тому
+  // пари «алкоголь × самопочуття/калорії/звички» рахуються крос-модульними
+  // (`isCrossModule`), а «алкоголь × spending» — ні, і це правильно: обидва
+  // полюси там з одного модуля й одних даних.
+  alcohol_spending: "finyk",
 };
 
 /**
