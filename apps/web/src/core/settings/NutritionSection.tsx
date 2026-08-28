@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
+import { Select } from "@shared/components/ui/Select";
 import {
   defaultNutritionPrefs,
   loadActivePantryId,
@@ -179,11 +180,14 @@ export function NutritionSection() {
           <span className="text-style-label text-text flex-1 min-w-0">
             Активна комора
           </span>
-          <select
-            className={cn(
-              "input-focus h-10 px-2.5 text-style-body min-w-[140px]",
-              "bg-panelHi border border-line rounded-xl text-text",
-            )}
+          {/* Shared Select (default variant = той самий brand-focus, що й
+              колишній `input-focus`); геометрію сайту збережено через
+              className (last-wins у cn): h-10, лівий відступ 10px,
+              min-w-[140px], rounded-xl. pr лишаємо від size="sm" (pr-9) —
+              місце під декоративну каретку, як раніше під нативну стрілку. */}
+          <Select
+            size="sm"
+            className="h-10 pl-2.5 min-w-[140px]"
             value={activePantry?.id || ""}
             onChange={(e) => handleSetActivePantry(e.target.value)}
           >
@@ -196,7 +200,7 @@ export function NutritionSection() {
                   : ""}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
         <p className="text-style-caption text-subtle">
           Деталі продуктів і перейменування комор – у менеджері комори всередині

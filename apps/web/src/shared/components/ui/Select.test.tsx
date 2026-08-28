@@ -35,6 +35,43 @@ describe("Select", () => {
     expect(getByRole("combobox").className).toContain("hover:bg-panelHi");
   });
 
+  it("keeps the brand focus ring when accent is omitted (default stays brand)", () => {
+    const { getByRole } = render(<Select />);
+    const cls = getByRole("combobox").className;
+    expect(cls).toContain("focus-visible:border-brand-400");
+    expect(cls).toContain("focus-visible:ring-focus/30");
+    expect(cls).not.toContain("input-focus-");
+  });
+
+  it.each(["finyk", "fizruk", "nutrition", "routine"] as const)(
+    "accent='%s' swaps the brand focus classes for input-focus-%s (exactly one ring family)",
+    (accent) => {
+      const { getByRole } = render(<Select accent={accent} />);
+      const cls = getByRole("combobox").className;
+      expect(cls).toContain(`input-focus-${accent}`);
+      expect(cls).not.toContain("focus-visible:border-brand-400");
+      expect(cls).not.toContain("focus-visible:ring-focus/30");
+    },
+  );
+
+  it("accent='brand' is byte-identical to the omitted default", () => {
+    const { getByRole, unmount } = render(<Select accent="brand" />);
+    const explicit = getByRole("combobox").className;
+    unmount();
+    const { getByRole: getByRole2 } = render(<Select />);
+    expect(explicit).toBe(getByRole2("combobox").className);
+  });
+
+  it("error takes precedence over a module accent — danger ring, no module utility", () => {
+    const { getByRole } = render(<Select accent="finyk" error />);
+    const cls = getByRole("combobox").className;
+    expect(cls).not.toContain("input-focus-finyk");
+    expect(cls).toContain("border-danger/70");
+    expect(cls).toContain("focus-visible:border-danger");
+    expect(cls).toContain("focus-visible:ring-danger/25");
+    expect(cls).toContain("focus-visible:ring-2");
+  });
+
   it("sets aria-invalid and the danger border when error=true", () => {
     const { getByRole } = render(<Select error />);
     const select = getByRole("combobox");
