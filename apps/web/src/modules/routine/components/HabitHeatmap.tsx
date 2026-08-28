@@ -5,6 +5,7 @@
 import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import { buildHeatmapGrid } from "@sergeant/routine-domain";
 import { cn } from "@shared/lib/ui/cn";
+import { useOutsideClick } from "@shared/hooks/useOutsideClick";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Card } from "@shared/components/ui/Card";
 import { chartHeatmap } from "@shared/charts";
@@ -83,23 +84,11 @@ export function HabitHeatmap({
   const cellRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
   const didInitialScrollRef = useRef(false);
 
-  useEffect(() => {
-    if (!selected) return;
-    function onPointerDown(e: PointerEvent) {
-      if (
-        rootRef.current &&
-        e.target instanceof Node &&
-        !rootRef.current.contains(e.target)
-      ) {
-        setSelected(null);
-      }
-    }
-    document.addEventListener("pointerdown", onPointerDown, { capture: true });
-    return () =>
-      document.removeEventListener("pointerdown", onPointerDown, {
-        capture: true,
-      });
-  }, [selected]);
+  useOutsideClick(rootRef, () => setSelected(null), {
+    enabled: !!selected,
+    events: ["pointerdown"],
+    capture: true,
+  });
 
   const { weeks, monthMarkers } = useMemo(() => {
     // Anchor "today" on Kyiv local calendar so the heatmap's "today" cell

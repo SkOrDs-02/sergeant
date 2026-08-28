@@ -9,6 +9,7 @@ import {
 import { createPortal } from "react-dom";
 import { cn } from "../../lib/ui/cn";
 import { useDialogFocusTrap } from "../../hooks/useDialogFocusTrap";
+import { useOutsideClick } from "../../hooks/useOutsideClick";
 import { type FloatingPlacement } from "./floatingPosition";
 import { useFloatingPanelPosition } from "./useFloatingPanelPosition";
 
@@ -121,21 +122,8 @@ export function Popover({
 
   const close = useCallback(() => setOpen(false), [setOpen]);
 
-  // Outside-click dismiss. Mousedown is intentional: matches existing
-  // contract tests and avoids double-firing when the user releases
-  // over a sibling element.
-  useEffect(() => {
-    if (!open) return;
-    function handleClick(e: MouseEvent) {
-      const target = e.target as Node | null;
-      if (!target) return;
-      if (wrapperRef.current?.contains(target)) return;
-      if (panelRef.current?.contains(target)) return;
-      close();
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [open, close]);
+  // Outside-click dismiss — спільний хук (mousedown-контракт там же).
+  useOutsideClick([wrapperRef, panelRef], close, { enabled: open });
 
   // Focus-trap + Escape via the same hook the rest of the design system
   // uses for dialogs (Modal, Sheet). Tab cycles inside the panel; the

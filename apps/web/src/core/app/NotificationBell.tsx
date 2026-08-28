@@ -18,6 +18,7 @@
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
+import { useOutsideClick } from "@shared/hooks/useOutsideClick";
 import { Icon } from "@shared/components/ui/Icon";
 import { Button } from "@shared/components/ui/Button";
 import { messages } from "@shared/i18n/uk";
@@ -54,28 +55,19 @@ export function NotificationBell({ notifications }: NotificationBellProps) {
 
   const menuOpen = open && count > 0;
 
-  // Close on outside click + ESC; focus returns to the trigger.
+  // Outside click — спільний хук; Esc лишається окремим ефектом, бо
+  // повертає фокус на тригер (outside-click цього навмисно не робить).
+  useOutsideClick([menuRef, buttonRef], close, { enabled: menuOpen });
   useEffect(() => {
     if (!menuOpen) return;
-    const handleClick = (event: MouseEvent) => {
-      const target = event.target as Node | null;
-      if (!target) return;
-      if (menuRef.current?.contains(target)) return;
-      if (buttonRef.current?.contains(target)) return;
-      close();
-    };
     const handleKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         close();
         buttonRef.current?.focus();
       }
     };
-    document.addEventListener("mousedown", handleClick);
     document.addEventListener("keydown", handleKey);
-    return () => {
-      document.removeEventListener("mousedown", handleClick);
-      document.removeEventListener("keydown", handleKey);
-    };
+    return () => document.removeEventListener("keydown", handleKey);
   }, [menuOpen, close]);
 
   if (count === 0) return null;

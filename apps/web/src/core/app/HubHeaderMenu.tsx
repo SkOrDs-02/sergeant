@@ -12,6 +12,7 @@
  */
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
+import { useOutsideClick } from "@shared/hooks/useOutsideClick";
 import { Icon } from "@shared/components/ui/Icon";
 import { ThemeSwitcher } from "@shared/components/ui/ThemeSwitcher";
 import { hapticTap } from "@shared/lib/adapters/haptic";
@@ -48,28 +49,19 @@ export function HubHeaderMenu({
 
   const close = useCallback(() => setOpen(false), []);
 
-  // Close on outside click + Esc; focus returns to the trigger.
+  // Outside click — спільний хук; Esc лишається окремим ефектом, бо
+  // повертає фокус на тригер (outside-click цього навмисно не робить).
+  useOutsideClick([menuRef, buttonRef], close, { enabled: open });
   useEffect(() => {
     if (!open) return;
-    const handleClick = (event: MouseEvent) => {
-      const target = event.target as Node | null;
-      if (!target) return;
-      if (menuRef.current?.contains(target)) return;
-      if (buttonRef.current?.contains(target)) return;
-      close();
-    };
     const handleKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         close();
         buttonRef.current?.focus();
       }
     };
-    document.addEventListener("mousedown", handleClick);
     document.addEventListener("keydown", handleKey);
-    return () => {
-      document.removeEventListener("mousedown", handleClick);
-      document.removeEventListener("keydown", handleKey);
-    };
+    return () => document.removeEventListener("keydown", handleKey);
   }, [open, close]);
 
   return (
