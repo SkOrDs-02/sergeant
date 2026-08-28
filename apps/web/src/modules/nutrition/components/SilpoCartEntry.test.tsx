@@ -74,6 +74,11 @@ const MATCHED_TOP = {
   lagerId: "lager-1",
   name: "Молоко Яготинське 2.5% 900г",
   priceKop: 4500,
+  oldPriceKop: null,
+  // Наявність тепер вирішує, чи рядок відмічений за замовчуванням
+  // (`useSilpoCart` seed) — без неї фікстура описувала б товар, якого
+  // немає у філії, і жоден рядок не був би відмічений.
+  available: true,
   unit: "шт",
   displayRatio: null,
 };
@@ -81,6 +86,8 @@ const MATCHED_ALT = {
   lagerId: "lager-2",
   name: "Молоко Простоквашино 3.2% 900г",
   priceKop: 5200,
+  oldPriceKop: null,
+  available: true,
   unit: "шт",
   displayRatio: null,
 };

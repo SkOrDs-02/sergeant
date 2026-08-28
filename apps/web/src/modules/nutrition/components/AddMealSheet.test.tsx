@@ -137,6 +137,13 @@ vi.mock("./meal-sheet/FromPantryRow", () => ({
   ),
 }));
 
+// Справжній `FromReceiptRow` тягне React Query (чеки Сільпо), а цей файл
+// рендерить аркуш без `QueryClientProvider`. Власна поведінка рядка
+// покрита в `FromReceiptRow.test.tsx`.
+vi.mock("./meal-sheet/FromReceiptRow", () => ({
+  FromReceiptRow: () => null,
+}));
+
 vi.mock("./meal-sheet/FoodPickerSection", () => ({
   FoodPickerSection: ({
     setPickedFood,

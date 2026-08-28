@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatReceiptQty } from "./receiptQty";
+import { formatReceiptQty, receiptQtyToGrams } from "./receiptQty";
 
 const nbsp = " ";
 
@@ -25,5 +25,32 @@ describe("formatReceiptQty", () => {
     expect(formatReceiptQty(null, null)).toBeNull();
     expect(formatReceiptQty(2, null)).toBe("2");
     expect(formatReceiptQty(2, "  ")).toBe("2");
+  });
+});
+
+describe("receiptQtyToGrams", () => {
+  it("обидві позиції з реального чека Сільпо", () => {
+    // «Котлети курячі з кускусом», 1 × фасування 330г.
+    expect(receiptQtyToGrams(1, "330г")).toBe(330);
+    // «Асорті із свіжих овочів», 0.212 кг ваги.
+    expect(receiptQtyToGrams(0.212, "кг")).toBe(212);
+  });
+
+  it("закупівля не стає порцією", () => {
+    expect(receiptQtyToGrams(1, "кг")).toBeNull();
+    expect(receiptQtyToGrams(3, "800г")).toBeNull();
+  });
+
+  it("обʼєм не конвертуємо — щільність невідома", () => {
+    expect(receiptQtyToGrams(1, "0,25л")).toBeNull();
+    expect(receiptQtyToGrams(1, "500мл")).toBeNull();
+  });
+
+  it("немасові юніти й порожні поля дають null, а не вгадану вагу", () => {
+    expect(receiptQtyToGrams(1, "шт")).toBeNull();
+    expect(receiptQtyToGrams(2, "пачка")).toBeNull();
+    expect(receiptQtyToGrams(null, "330г")).toBeNull();
+    expect(receiptQtyToGrams(1, null)).toBeNull();
+    expect(receiptQtyToGrams(0, "330г")).toBeNull();
   });
 });

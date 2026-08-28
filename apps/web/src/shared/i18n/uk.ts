@@ -617,6 +617,10 @@ export const messages = {
 
   nutrition: {
     fromPantry: "З комори",
+    /** Рядок-джерело `FromReceiptRow` — позиції останнього чека Сільпо. */
+    fromReceipt: "З чека Сільпо",
+    /** Суфікс ваги на чіпсі чека («330 г»). */
+    gramsShort: "г",
     mealType: "Прийом їжі",
     templates: "Швидкі прийоми",
     deleteTemplateTitle: "Видалити швидкий прийом?",
