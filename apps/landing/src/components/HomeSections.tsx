@@ -404,15 +404,30 @@ export function FaqSection() {
       </h2>
       <div className="mt-6 grid gap-x-12 sm:grid-cols-2">
         {FAQ_ITEMS.map((item) => (
-          <div
+          <details
             key={item.q}
-            className="flex flex-col gap-2 border-t border-cardline py-5"
+            name="faq"
+            className="group border-t border-cardline"
           >
-            <h3 className="font-bold text-foreground-strong">{item.q}</h3>
-            <p className="max-w-2xl text-sm leading-relaxed text-muted">
+            <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-4 py-4 font-bold text-foreground-strong transition hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink [&::-webkit-details-marker]:hidden">
+              <h3>{item.q}</h3>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+                aria-hidden="true"
+                className="shrink-0 stroke-foreground-strong transition-transform group-open:rotate-45 motion-reduce:transition-none"
+                strokeWidth="2"
+                strokeLinecap="round"
+              >
+                <path d="M8 2 v12 M2 8 h12" />
+              </svg>
+            </summary>
+            <p className="max-w-2xl pb-5 text-sm leading-relaxed text-muted">
               {item.a}
             </p>
-          </div>
+          </details>
         ))}
       </div>
     </section>
