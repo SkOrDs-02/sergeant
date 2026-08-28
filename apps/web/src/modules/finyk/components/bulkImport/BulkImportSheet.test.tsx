@@ -570,6 +570,9 @@ describe("BulkImportSheet — commit + undo", () => {
       created: 1,
       linked: 0,
       skipped: { monoMatched: 0, duplicate: 0 },
+      // Порожній `rows` = легасі-шлях (сервер без per-row результатів):
+      // ці кейси навмисно лишаються на `getImportBatch`.
+      rows: [],
     });
     getImportBatchMock.mockResolvedValue({
       batch: {
@@ -603,6 +606,9 @@ describe("BulkImportSheet — commit + undo", () => {
       created: 1,
       linked: 0,
       skipped: { monoMatched: 0, duplicate: 0 },
+      // Порожній `rows` = легасі-шлях (сервер без per-row результатів):
+      // ці кейси навмисно лишаються на `getImportBatch`.
+      rows: [],
     });
     getImportBatchMock.mockResolvedValue({
       batch: {
@@ -662,6 +668,7 @@ describe("BulkImportSheet — commit + undo", () => {
       created: 0,
       linked: 0,
       skipped: { monoMatched: 1, duplicate: 0 },
+      rows: [{ id: "imp1:aaa", status: "mono_matched" }],
     });
     await reachBulkReview();
 

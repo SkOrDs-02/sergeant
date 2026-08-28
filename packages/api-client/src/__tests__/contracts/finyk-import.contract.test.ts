@@ -589,6 +589,15 @@ describe(
             created: 2,
             linked: 0,
             skipped: { monoMatched: 1, duplicate: 0 },
+            // Per-row результат 1:1 з поданими рядками (фікс 2026-08-28):
+            // без нього клієнт не міг зіставити id з рядками, щойно в
+            // батчі траплявся бодай один пропущений — і створені рядки
+            // лишались невидимими локально.
+            rows: [
+              { id: "imp1:aaa", status: "mono_matched" },
+              { id: "imp1:bbb", status: "created" },
+              { id: "imp1:ccc", status: "created" },
+            ],
           });
         })
         .executeTest(async (mockServer) => {
@@ -626,6 +635,14 @@ describe(
           expect(out.created).toBe(2);
           expect(out.linked).toBe(0);
           expect(out.skipped).toEqual({ monoMatched: 1, duplicate: 0 });
+          // Позиційне зіставлення — контракт поля: i-й результат про
+          // i-й поданий рядок.
+          expect(out.rows).toHaveLength(3);
+          expect(out.rows.map((r) => r.status)).toEqual([
+            "mono_matched",
+            "created",
+            "created",
+          ]);
         });
     });
   },

@@ -232,8 +232,7 @@ async function lookupOFF(barcode: string): Promise<NormalizedProduct | null> {
   try {
     const r = await fetch(url, {
       headers: {
-        "User-Agent":
-          "Sergeant-NutritionApp/1.0 (https://sergeant.2dmanager.com.ua)",
+        "User-Agent": "Sergeant-NutritionApp/1.0 (https://sergeant.com.ua)",
       },
       signal: AbortSignal.timeout(4000),
     });
