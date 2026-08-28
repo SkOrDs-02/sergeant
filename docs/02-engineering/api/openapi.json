@@ -9761,6 +9761,9 @@
                           }
                         ]
                       },
+                      "available": {
+                        "type": "boolean"
+                      },
                       "unit": {
                         "type": "string",
                         "minLength": 1
@@ -9781,6 +9784,7 @@
                       "name",
                       "priceKop",
                       "oldPriceKop",
+                      "available",
                       "unit",
                       "displayRatio"
                     ],
