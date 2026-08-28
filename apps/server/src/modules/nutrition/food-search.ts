@@ -103,8 +103,7 @@ async function fetchOFF(
 
   const r = await fetch(url.toString(), {
     headers: {
-      "User-Agent":
-        "Sergeant-NutritionApp/1.0 (https://sergeant.2dmanager.com.ua)",
+      "User-Agent": "Sergeant-NutritionApp/1.0 (https://sergeant.com.ua)",
     },
     signal,
   });

@@ -30,4 +30,4 @@ Disallow: /onboarding/
 # them (no `Disallow: /assets/`) but skip the dev-friendly fingerprint
 # query strings; nothing to do here, just for the record.
 
-Sitemap: https://sergeant.vercel.app/sitemap.xml
+Sitemap: https://app.sergeant.com.ua/sitemap.xml
