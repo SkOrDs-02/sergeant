@@ -19,6 +19,7 @@
 
 Останні 10 PR, що торкнулися canonical-доків. Повна історія → [`pr-ledger/index.json`](./04-governance/pr-ledger/index.json).
 
+- [#895](https://github.com/Skords-01/Sergeant/pull/895) — fix(agents): полірування агентного шару після розкатки module-owners _(2026-08-28)_
 - [#892](https://github.com/Skords-01/Sergeant/pull/892) — feat(agents): module-owner і службові Claude-агенти _(2026-08-27)_
 - [#891](https://github.com/Skords-01/Sergeant/pull/891) — feat(agents): скіли-дисципліни _(2026-08-27)_
 - [#890](https://github.com/Skords-01/Sergeant/pull/890) — feat(agents): інфра module-скіли і nested-роутинг _(2026-08-27)_
@@ -28,7 +29,6 @@
 - [#334](https://github.com/Skords-01/Sergeant/pull/334) — docs(root): reconcile docs with code after 2026-07-20 audit (Railway->Coolify, CI gates, dual-write, domain invariants) _(2026-07-21)_
 - [#74](https://github.com/Skords-01/Sergeant/pull/74) — feat(agents): add scheduled entropy janitors (doc-drift, dead-code, dep-cycles) _(2026-06-30)_
 - [#3665](https://github.com/Skords-01/Sergeant/pull/3665) — docs(web): add ADR-0067 engagement mechanism standardization _(2026-06-20)_
-- [#3638](https://github.com/Skords-01/Sergeant/pull/3638) — Audit triage digest (auto, twice-weekly) _(2026-06-19)_
 
 ## 🔵 В роботі — 59 відкритих
 
