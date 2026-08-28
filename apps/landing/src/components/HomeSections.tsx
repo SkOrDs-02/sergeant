@@ -1,4 +1,5 @@
 import TelegramCta from "./TelegramCta";
+import { LogoMark } from "./Wordmark";
 
 /** Стрілка звʼязку між парою модулів. */
 function PairArrow() {
@@ -46,7 +47,7 @@ export function ModulesSection() {
           <h3 className={title}>Фінік</h3>
           <p className={`${body} text-ink-text/90`}>
             Синк із Monobank і сканер чеків із фото. Бюджети в гривні, борги під
-            контролем. Без ручного вводу.
+            контролем. Руками – хіба витрати без чека.
           </p>
           <div aria-hidden="true" className="mt-auto flex flex-col gap-2 pt-6">
             <div className="flex justify-between text-xs">
@@ -65,7 +66,8 @@ export function ModulesSection() {
           <p className={label}>02 · Тіло</p>
           <h3 className={title}>Фізрук</h3>
           <p className={`${body} text-ink-text/90`}>
-            Плани тренувань, прогрес силових і біометрія в одному місці.
+            Плани тренувань, прогрес силових і біометрія. Підхід записується за
+            пару тапів.
           </p>
           <div
             aria-hidden="true"
@@ -114,6 +116,9 @@ export function ModulesSection() {
           </div>
         </div>
       </div>
+      <p className="mx-auto w-full max-w-6xl px-5 pt-3 text-xs text-subtle sm:px-8">
+        Цифри на блоках ілюстративні
+      </p>
     </section>
   );
 }
@@ -130,7 +135,7 @@ export function ConnectionsSection() {
       className="mx-auto w-full max-w-6xl scroll-mt-16 px-5 pb-20 pt-16 sm:px-8"
     >
       <h2 className="font-display text-2xl font-extrabold uppercase tracking-tight text-foreground-strong sm:text-3xl">
-        Що він помічає
+        Звʼязки, які він помічає
       </h2>
       <p className="mt-4 max-w-2xl leading-relaxed text-muted">
         Окремі трекери показують цифри. Sergeant читає всі сфери разом і
@@ -266,10 +271,13 @@ export function StatuteSection() {
 /** Голос автора – місток довіри між статутом і станом розробки. */
 export function FounderSection() {
   return (
-    <section className="mx-auto w-full max-w-3xl border-t border-cardline px-5 py-14 sm:px-8">
-      <h2 className="font-display text-xl font-extrabold uppercase tracking-tight text-foreground-strong sm:text-2xl">
-        Чому я це роблю
-      </h2>
+    <section className="mx-auto w-full max-w-3xl border-t-2 border-foreground-strong px-5 py-14 sm:px-8">
+      <div className="flex items-center gap-3">
+        <LogoMark size={22} />
+        <h2 className="font-display text-xl font-extrabold uppercase tracking-tight text-foreground-strong sm:text-2xl">
+          Чому я це роблю
+        </h2>
+      </div>
       <p className="mt-4 leading-relaxed text-foreground">
         Я вів чотири застосунки паралельно: банк, тренування, звички, їжу. Кожен
         показував свої цифри, і жоден не бачив цілої картини. Sergeant я роблю
@@ -369,7 +377,7 @@ export const FAQ_ITEMS = [
   },
   {
     q: "Чи працює без підписки?",
-    a: "Так. Ядро і банк-синк безкоштовні назавжди. Платний план відкриває лише AI-надбудову поверх твоїх даних: глибшу аналітику і розпізнавання.",
+    a: "Так. Ядро і банк-синк безкоштовні назавжди, базовий AI-помічник у чаті доступний без підписки. Платний план відкриває лише глибшу аналітику і розпізнавання поверх твоїх даних.",
   },
   {
     q: "Звідки Sergeant знає, що звʼязок справжній, а не збіг?",
@@ -420,7 +428,8 @@ export function ClosingCta() {
             Бета відкривається хвилями
           </h2>
           <p className="max-w-lg leading-relaxed text-ink-muted">
-            Стань у чергу, і я напишу одне повідомлення, коли відкриється твоя.
+            Стань у чергу в Telegram, і я напишу одне повідомлення, коли
+            відкриється твоя.
           </p>
           <p className="text-sm text-ink-muted">
             Ядро безкоштовне назавжди · Твої дані залишаються твоїми
