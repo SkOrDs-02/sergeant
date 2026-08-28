@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "current": "4.3.1",
+  "current": "4.4.0",
   "versions": {
     "0.1.0": {
       "releasedAt": "2026-06-29",
@@ -330,6 +330,12 @@
       "changes": [
         "bump from 4.3.0 -> 4.3.1: typo / link / freshness-only change"
       ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "4.4.0": {
+      "releasedAt": "2026-08-28",
+      "changes": ["bump from 4.3.1 -> 4.4.0: skill file added/modified"],
       "agentsTestedWith": [],
       "passRateBaseline": null
     }
