@@ -104,3 +104,14 @@ Delayed-job-и на 24/72 години (`ftuxDrip.ts:16,22-24`) лежать у 
 - [`apps/server/src/lib/mcc/unknownQueue.ts`](../../../apps/server/src/lib/mcc/unknownQueue.ts) — single-replica припущення
 - [`apps/server/src/modules/silpo/syncAll.ts`](../../../apps/server/src/modules/silpo/syncAll.ts) — виправлений коментар про BullMQ-воркери
 - [`docs/03-operations/observability/runbook.md`](../../03-operations/observability/runbook.md) § `/health/workers` — реальний payload (без `backgroundQueue`)
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                         | Merged     |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------- | ---------- |
+| [#908](https://github.com/Skords-01/Sergeant/pull/908) | fix(server): queue-substrate hardening + ADR-0089 (outbox vs broker vs timer) | 2026-08-28 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

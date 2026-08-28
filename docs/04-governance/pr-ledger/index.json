@@ -4,6 +4,15 @@
   "generated_at": "2026-08-28",
   "prs": [
     {
+      "number": 908,
+      "title": "fix(server): queue-substrate hardening + ADR-0089 (outbox vs broker vs timer)",
+      "merged_at": "2026-08-28T02:26:41Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": [
+        "docs/04-governance/adr/0089-job-substrates-outbox-broker-timer.md"
+      ]
+    },
+    {
       "number": 895,
       "title": "fix(agents): полірування агентного шару після розкатки module-owners",
       "merged_at": "2026-08-28T00:58:58Z",
