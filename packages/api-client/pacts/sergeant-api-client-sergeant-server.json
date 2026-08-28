@@ -2755,16 +2755,20 @@
             {
               "matches": [
                 {
+                  "available": true,
                   "displayRatio": null,
                   "lagerId": "eyJwcm9kdWN0SWQiOiJwLTEifQ==",
                   "name": "Молоко Селянське 2.5% 900г",
+                  "oldPriceKop": 5290,
                   "priceKop": 4500,
                   "unit": "шт"
                 },
                 {
+                  "available": false,
                   "displayRatio": "0.9 кг",
                   "lagerId": "eyJwcm9kdWN0SWQiOiJwLTIifQ==",
                   "name": "Молоко Яготинське 2.5% 1л",
+                  "oldPriceKop": null,
                   "priceKop": 5200,
                   "unit": "кг"
                 }

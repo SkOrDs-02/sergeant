@@ -12,6 +12,7 @@ import { Tooltip } from "@shared/components/ui/Tooltip";
 import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
 import { NAME_MAX_LEN, NOTE_MAX_LEN } from "@shared/lib/text/limits";
+import { formatReceiptQty } from "@shared/lib/format/receiptQty";
 import { PantryListGuide, PantryParsePreview } from "./PantryParsePanel";
 import type { PantryParsePreview as PantryParsePreviewData } from "../hooks/useNutritionPantries";
 import { groupItemsByCategory } from "../lib/foodCategories";
@@ -61,6 +62,9 @@ function ItemRow({
   removeItemAtOrByName,
   busy,
 }: ItemRowProps) {
+  // Сирий `unit` із чека Сільпо буває фасуванням («0,25л»), не одиницею
+  // виміру, тож `${qty} ${unit}` давало «2 0,25л».
+  const qtyLabel = formatReceiptQty(item?.qty, item?.unit);
   return (
     <div className="flex items-center gap-2 px-2 rounded-xl group min-h-[44px] hover:bg-panelHi/50 transition-colors">
       <button
@@ -73,13 +77,9 @@ function ItemRow({
         <span className="text-style-label text-text truncate">
           {item?.name || "—"}
         </span>
-        {(item?.qty != null || item?.unit) && (
+        {qtyLabel && (
           <span className="text-style-caption text-subtle shrink-0">
-            {item?.qty != null && item?.unit
-              ? `${item.qty} ${item.unit}`
-              : item?.qty != null
-                ? `${item.qty}`
-                : item?.unit || ""}
+            {qtyLabel}
           </span>
         )}
         {isPantryItemLowStock(item) && (

@@ -47,6 +47,30 @@ describe("FromPantryRow", () => {
     expect(setForm).toHaveBeenCalled();
   });
 
+  // Реальні позиції з чека Сільпо: `unit` там — фасування, не одиниця
+  // виміру, і голе `{qty}{unit}` показувало «20,25л» замість «2 × 0,25 л»
+  // (скарга founder-а, 2026-08-28).
+  it("renders packaging units as a multiplier, not a glued number", () => {
+    render(
+      <FromPantryRow
+        pantryItems={
+          [
+            { name: "Напій енергетичний Red Bull", qty: 2, unit: "0,25л" },
+            { name: "Насіння Roni гарбуза", qty: 1, unit: "150г" },
+          ] as never[]
+        }
+        fromPantryItem={null}
+        setFromPantryItem={vi.fn()}
+        setForm={vi.fn()}
+        setFoodQuery={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("2 × 0,25 л")).toBeTruthy();
+    // Одна пачка — множник зайвий шум.
+    expect(screen.getByText("150 г")).toBeTruthy();
+    expect(screen.queryByText("20,25л")).toBeNull();
+  });
+
   it("deselects the active item on a second tap", () => {
     const setFromPantryItem = vi.fn();
     render(

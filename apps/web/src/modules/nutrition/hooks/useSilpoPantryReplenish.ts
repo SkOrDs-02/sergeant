@@ -19,7 +19,11 @@
  */
 import { useMemo, useState } from "react";
 import { mapReceiptItemToCategory } from "@sergeant/finyk-domain/domain";
-import { canonicalFoodKey, displayFoodName } from "@sergeant/nutrition-domain";
+import {
+  buildPantryIndex,
+  displayFoodName,
+  findPantryMatch,
+} from "@sergeant/nutrition-domain";
 import {
   useSilpoReceipts,
   useSilpoReceiptDetail,
@@ -75,17 +79,13 @@ export function useSilpoPantryReplenish({
     [detailQuery.data],
   );
 
-  // key → display-назва першої позиції комори з таким канонічним ключем.
-  // Лише для показу «Уже є: …» — сам запис матчиться заново всередині
-  // `upsertItem`/`mergeItems`, ця мапа не бере участі в мутації.
-  const pantryNameByKey = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const p of pantryItems) {
-      const key = canonicalFoodKey(p.name);
-      if (key && !map.has(key)) map.set(key, displayFoodName(p.name));
-    }
-    return map;
-  }, [pantryItems]);
+  // Нормалізовані назви комори рахуються ОДИН раз на комору, а не заново
+  // для кожного рядка чека: інакше 200 позицій × десятки продуктів дають
+  // десятки тисяч regex-спліт на кожен рендер `rows`.
+  const pantryIndex = useMemo(
+    () => buildPantryIndex(pantryItems),
+    [pantryItems],
+  );
 
   const [checkedState, setCheckedState] = useState<Record<number, boolean>>({});
   // Один чекпойнт "seed" на чек: перезаходити в дефолти щоразу, коли
@@ -110,17 +110,20 @@ export function useSilpoPantryReplenish({
   const rows: SilpoReplenishRow[] = useMemo(
     () =>
       items.map((item) => {
-        const key = canonicalFoodKey(item.name);
+        // `findPantryMatch` бере на себе і точний збіг ключів (те, що тут
+        // було раніше), і випадок «коротка назва комори всередині довгої
+        // назви з чека» — саме він створював дублі замість доливання.
+        const match = findPantryMatch(item.name, pantryIndex);
         return {
           item,
           category: mapReceiptItemToCategory(item),
-          matchedName: key ? (pantryNameByKey.get(key) ?? null) : null,
+          matchedName: match ? displayFoodName(match.name) : null,
           checked:
             checkedState[item.id] ??
             mapReceiptItemToCategory(item) === "groceries",
         };
       }),
-    [items, pantryNameByKey, checkedState],
+    [items, pantryIndex, checkedState],
   );
 
   const checkedCount = rows.reduce((n, r) => (r.checked ? n + 1 : n), 0);
