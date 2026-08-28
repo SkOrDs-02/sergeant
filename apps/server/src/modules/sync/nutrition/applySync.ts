@@ -203,18 +203,21 @@ export async function applyNutritionPantries(
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
+  // AI-CONTEXT: lookup обовʼязково user-scoped — `id` унікальний У МЕЖАХ
+  // КОРИСТУВАЧА, не глобально (композитний PK, міграція 128). Клієнт віддає
+  // кожному юзеру комору з id `home` (`makeDefaultPantry()`), тож глобальний
+  // `WHERE id = $1` знаходив ЧУЖИЙ рядок і повертав `fk_violation` — комора
+  // синхронізувалася лише в того, хто перший її допушив (SERGEANT-WEB-T).
+  // Перевірки `existing.user_id !== userId` тут більше немає й бути не може:
+  // запит уже звужений по `user_id`, тож чужий рядок сюди не долітає.
   const existing = await client.query<{
-    user_id: string;
     updated_at: Date;
     deleted_at: Date | null;
   }>(
-    `SELECT user_id, updated_at, deleted_at FROM nutrition_pantries WHERE id = $1`,
-    [id],
+    `SELECT updated_at, deleted_at FROM nutrition_pantries WHERE id = $1 AND user_id = $2`,
+    [id, userId],
   );
   if (existing.rows.length > 0) {
-    if (existing!.rows[0]!.user_id !== userId) {
-      return { status: "rejected", reason: "fk_violation" };
-    }
     if (existing!.rows[0]!.updated_at.getTime() >= clientTs.getTime()) {
       return { status: "rejected", reason: "lww_conflict" };
     }
@@ -298,18 +301,18 @@ export async function applyNutritionPantryItems(
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
+  // AI-CONTEXT: user-scoped із тієї ж причини, що й комора вище (міграція 128),
+  // і тут колізія навіть імовірніша: id позиції — `<pantryId>::<index>::<name>`,
+  // тож у двох користувачів із коморою `home` і однаковим продуктом на тій
+  // самій позиції id збігаються посимвольно.
   const existing = await client.query<{
-    user_id: string;
     updated_at: Date;
     deleted_at: Date | null;
   }>(
-    `SELECT user_id, updated_at, deleted_at FROM nutrition_pantry_items WHERE id = $1`,
-    [id],
+    `SELECT updated_at, deleted_at FROM nutrition_pantry_items WHERE id = $1 AND user_id = $2`,
+    [id, userId],
   );
   if (existing.rows.length > 0) {
-    if (existing!.rows[0]!.user_id !== userId) {
-      return { status: "rejected", reason: "fk_violation" };
-    }
     if (existing!.rows[0]!.updated_at.getTime() >= clientTs.getTime()) {
       return { status: "rejected", reason: "lww_conflict" };
     }

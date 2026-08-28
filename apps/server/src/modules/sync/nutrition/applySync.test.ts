@@ -5,6 +5,7 @@ import { NAME_MAX_LEN, NOTE_MAX_LEN } from "@sergeant/shared";
 import type { SyncV2Op } from "../../../http/schemas.js";
 import {
   applyNutritionMeals,
+  applyNutritionPantries,
   applyNutritionPantryItems,
   applyNutritionPrefs,
 } from "./applySync.js";
@@ -247,5 +248,144 @@ describe("applyNutritionPrefs", () => {
     const insert = lastQuery(fake);
     expect(insert.sql).toContain("INSERT INTO nutrition_prefs");
     expect(insert.params).toEqual(["user-1", "{}", null, clientTs, clientTs]);
+  });
+});
+
+/**
+ * Комора мовчки не синхронізувалась ні в кого, крім однієї людини в системі.
+ *
+ * `makeDefaultPantry()` віддає КОЖНОМУ користувачу комору з id `home`, а id
+ * позиції — це `<pantryId>::<index>::<name>`. Обидва не унікальні між
+ * користувачами. Поки PK був глобальним, а lookup ішов по голому
+ * `WHERE id = $1`, перший користувач, чия комора доїхала до сервера, «займав»
+ * `home` назавжди: у всіх наступних запит знаходив ЧУЖИЙ рядок і повертав
+ * `fk_violation`, клієнт позначав аутбокс термінально відхиленим, і комора
+ * лишалась локальною без жодного сигналу. Прод: SERGEANT-WEB-T, серпень 2026.
+ *
+ * Міграція 128 зробила PK композитним `(user_id, id)`; ці тести стережуть
+ * другу половину фікса — що lookup звужений по користувачу.
+ */
+describe("комора: lookup звужений по користувачу (міграція 128)", () => {
+  it("applyNutritionPantries шукає комору по парі (id, user_id)", async () => {
+    const fake = new FakeClient();
+    const clientTs = new Date("2026-08-28T10:00:00.000Z");
+
+    await expect(
+      applyNutritionPantries(
+        asClient(fake),
+        syncOp("nutrition_pantries", "insert", {
+          id: "home",
+          user_id: "user-2",
+          name: "Дім",
+          text: "",
+        }),
+        "user-2",
+        clientTs,
+      ),
+    ).resolves.toEqual({ status: "applied" });
+
+    const select = fake.queries[0];
+    expect(select?.sql).toContain("FROM nutrition_pantries");
+    expect(select?.sql).toContain("user_id = $2");
+    expect(select?.params).toEqual(["home", "user-2"]);
+  });
+
+  it("чужа комора з тим самим id більше не блокує вставку", async () => {
+    const fake = new FakeClient();
+    const clientTs = new Date("2026-08-28T10:00:00.000Z");
+    // Рядок `home` користувача user-1 у базі є, але user-scoped SELECT його не
+    // бачить — саме тому черга порожня. Раніше той самий стан давав
+    // `fk_violation`; тепер user-2 отримує ВЛАСНИЙ рядок.
+    await expect(
+      applyNutritionPantries(
+        asClient(fake),
+        syncOp("nutrition_pantries", "insert", {
+          id: "home",
+          user_id: "user-2",
+          name: "Дім",
+          text: "",
+        }),
+        "user-2",
+        clientTs,
+      ),
+    ).resolves.toEqual({ status: "applied" });
+
+    const insert = lastQuery(fake);
+    expect(insert.sql).toContain("INSERT INTO nutrition_pantries");
+    expect(insert.params[0]).toBe("home");
+    expect(insert.params[1]).toBe("user-2");
+  });
+
+  it("власна комора користувача так само лишається під LWW-захистом", async () => {
+    const fake = new FakeClient();
+    // Свіжіший серверний рядок цього ж користувача — локальна правка програє.
+    fake.queueRows([
+      {
+        updated_at: new Date("2026-08-28T12:00:00.000Z"),
+        deleted_at: null,
+      },
+    ]);
+
+    await expect(
+      applyNutritionPantries(
+        asClient(fake),
+        syncOp("nutrition_pantries", "insert", {
+          id: "home",
+          user_id: "user-2",
+          name: "Дім",
+          text: "",
+        }),
+        "user-2",
+        new Date("2026-08-28T10:00:00.000Z"),
+      ),
+    ).resolves.toEqual({ status: "rejected", reason: "lww_conflict" });
+  });
+
+  it("applyNutritionPantryItems шукає позицію по парі (id, user_id)", async () => {
+    const fake = new FakeClient();
+    const clientTs = new Date("2026-08-28T10:00:00.000Z");
+
+    await expect(
+      applyNutritionPantryItems(
+        asClient(fake),
+        syncOp("nutrition_pantry_items", "insert", {
+          id: "home::0::Молоко",
+          user_id: "user-2",
+          pantry_id: "home",
+          name: "Молоко",
+        }),
+        "user-2",
+        clientTs,
+      ),
+    ).resolves.toEqual({ status: "applied" });
+
+    const select = fake.queries[0];
+    expect(select?.sql).toContain("FROM nutrition_pantry_items");
+    expect(select?.sql).toContain("user_id = $2");
+    expect(select?.params).toEqual(["home::0::Молоко", "user-2"]);
+
+    const insert = lastQuery(fake);
+    expect(insert.sql).toContain("INSERT INTO nutrition_pantry_items");
+    expect(insert.params[0]).toBe("home::0::Молоко");
+    expect(insert.params[2]).toBe("user-2");
+  });
+
+  it("op від імені чужого user_id усе одно відкидається до будь-якого DML", async () => {
+    const fake = new FakeClient();
+
+    await expect(
+      applyNutritionPantries(
+        asClient(fake),
+        syncOp("nutrition_pantries", "insert", {
+          id: "home",
+          user_id: "user-1",
+          name: "Дім",
+          text: "",
+        }),
+        "user-2",
+        new Date("2026-08-28T10:00:00.000Z"),
+      ),
+    ).resolves.toEqual({ status: "rejected", reason: "user_id_mismatch" });
+    expect(fake.queries).toHaveLength(0);
   });
 });

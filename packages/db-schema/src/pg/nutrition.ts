@@ -71,9 +71,7 @@ export const nutritionMeals = pgTable(
 export const nutritionPantries = pgTable(
   "nutrition_pantries",
   {
-    id: text()
-      .primaryKey()
-      .default(sql`gen_random_uuid()::text`),
+    id: text().default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     name: text().notNull().default(""),
     text: text().notNull().default(""),
@@ -86,6 +84,13 @@ export const nutritionPantries = pgTable(
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
   (table) => [
+    // AI-DANGER: PK композитний — `id` унікальний У МЕЖАХ КОРИСТУВАЧА, не
+    // глобально (міграція 128). Клієнт віддає кожному юзеру комору з id
+    // `home` (`makeDefaultPantry()`), тож глобальний PK означав, що першу
+    // синхронізовану комору «займає» перший користувач, а решта назавжди
+    // отримує `fk_violation` і синхронізується лише локально.
+    // НЕ повертай `.primaryKey()` на `id`.
+    primaryKey({ columns: [table.userId, table.id] }),
     index("nutrition_pantries_user_active_idx")
       .on(table.userId, table.deletedAt)
       .where(sql`${table.deletedAt} IS NULL`),
@@ -103,9 +108,7 @@ export const nutritionPantries = pgTable(
 export const nutritionPantryItems = pgTable(
   "nutrition_pantry_items",
   {
-    id: text()
-      .primaryKey()
-      .default(sql`gen_random_uuid()::text`),
+    id: text().default(sql`gen_random_uuid()::text`),
     pantryId: text("pantry_id").notNull(),
     userId: text("user_id").notNull(),
     name: text().notNull().default(""),
@@ -122,6 +125,12 @@ export const nutritionPantryItems = pgTable(
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
   (table) => [
+    // AI-DANGER: PK композитний із тієї ж причини, що й у `nutritionPantries`
+    // (міграція 128), і тут колізія навіть імовірніша: id позиції — це
+    // `<pantryId>::<index>::<name>`, тож у двох користувачів із коморою `home`
+    // і однаковим продуктом на тій самій позиції id збігаються посимвольно.
+    // НЕ повертай `.primaryKey()` на `id`.
+    primaryKey({ columns: [table.userId, table.id] }),
     index("nutrition_pantry_items_pantry_idx").on(
       table.pantryId,
       table.sortOrder,

@@ -125,12 +125,25 @@ describe("pg/nutritionPantries schema snapshot", () => {
     );
 
     expect(columnMap["id"]!.columnType).toBe("PgText");
-    expect(columnMap["id"]!.primary).toBe(true);
+    // `id` більше НЕ самостійний PK — див. наступний кейс.
+    expect(columnMap["id"]!.primary).toBe(false);
 
     expect(columnMap["user_id"]!.notNull).toBe(true);
     expect(columnMap["name"]!.notNull).toBe(true);
     expect(columnMap["text"]!.notNull).toBe(true);
     expect(columnMap["deleted_at"]!.notNull).toBe(false);
+  });
+
+  // Регресія SERGEANT-WEB-T (міграція 128). Клієнт віддає КОЖНОМУ юзеру
+  // комору з id `home` (`makeDefaultPantry()`), тож глобальний PK на `id`
+  // означав, що першу синхронізовану комору «займає» перший користувач, а
+  // решта назавжди отримує `fk_violation` і лишається без синку — мовчки.
+  it("keys the pantry per user, not globally", () => {
+    expect(config.primaryKeys).toHaveLength(1);
+    expect(config.primaryKeys[0]!.columns.map((c) => c.name)).toEqual([
+      "user_id",
+      "id",
+    ]);
   });
 
   it("declares the soft-delete partial index", () => {
@@ -182,6 +195,18 @@ describe("pg/nutritionPantryItems schema snapshot", () => {
     expect(columnMap["unit"]!.notNull).toBe(false);
     expect(columnMap["notes"]!.notNull).toBe(false);
     expect(columnMap["deleted_at"]!.notNull).toBe(false);
+  });
+
+  // Та сама регресія, що й у комори (міграція 128), але тут колізія навіть
+  // імовірніша: id позиції — `<pantryId>::<index>::<name>`, тож у двох
+  // користувачів із коморою `home` і однаковим продуктом на тій самій позиції
+  // id збігаються посимвольно.
+  it("keys the item per user, not globally", () => {
+    expect(config.primaryKeys).toHaveLength(1);
+    expect(config.primaryKeys[0]!.columns.map((c) => c.name)).toEqual([
+      "user_id",
+      "id",
+    ]);
   });
 
   it("declares both indexes", () => {
