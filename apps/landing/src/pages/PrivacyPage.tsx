@@ -1,6 +1,6 @@
 import SiteHeader from "../components/SiteHeader";
 import SiteFooter from "../components/SiteFooter";
-import { usePageMeta } from "../lib/pageMeta";
+import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
 
 /**
  * Політика приватності сайту. Коротка, бо сайт справді збирає мінімум:
@@ -9,11 +9,7 @@ import { usePageMeta } from "../lib/pageMeta";
  * @sergeant/shared landingAttribution).
  */
 export default function PrivacyPage() {
-  usePageMeta({
-    title: "Політика приватності Sergeant",
-    description:
-      "Що сайт Sergeant збирає, а що ні: cookieless-аналітика без персональних профілів і Telegram-черга без пошти.",
-  });
+  usePageMeta(ROUTE_META["/privacy"]);
 
   const h2 =
     "mt-9 font-display text-lg font-extrabold uppercase tracking-tight text-foreground-strong";
@@ -32,9 +28,11 @@ export default function PrivacyPage() {
         <h2 className={h2}>Що збирає цей сайт</h2>
         <p className={p}>
           Сайт не ставить кукі і не будує персональних профілів. Аналітика
-          (PostHog, ЄС-сервери) отримує три анонімні події: перегляд сторінки,
-          клік по кнопці бети і перехід у Telegram. Кожне відвідування – новий
-          анонім; повʼязати їх між собою чи з тобою особисто неможливо.
+          (PostHog, ЄС-сервери) отримує кілька анонімних подій: перегляд
+          сторінки, перехід у Telegram, перемикання демо-віджета в hero і
+          відкриття питання у FAQ. Жодна подія не несе введеного тексту. Кожне
+          відвідування – новий анонім; повʼязати їх між собою чи з тобою
+          особисто неможливо.
         </p>
 
         <h2 className={h2}>Черга в бету</h2>

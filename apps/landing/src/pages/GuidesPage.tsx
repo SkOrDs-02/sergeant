@@ -1,12 +1,27 @@
 import SiteHeader from "../components/SiteHeader";
 import SiteFooter from "../components/SiteFooter";
-import { usePageMeta } from "../lib/pageMeta";
+import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
 
 /**
  * Реєстр гайдів. Один запис – один файл сторінки; нові гайди додаються
  * сюди і в роутер App.tsx.
  */
 const GUIDES = [
+  {
+    href: "/guides/cheky",
+    category: "Фінанси",
+    title:
+      "Як перетворити паперовий чек на облік витрат, коли QR не сканується",
+    teaser:
+      "Чому QR-код на фіскальному чеку зараз веде в нікуди, що чек знає понад банківську виписку і як його сфотографувати з першого разу.",
+  },
+  {
+    href: "/guides/kbzhu",
+    category: "Харчування",
+    title: "Як рахувати КБЖУ, коли в базі немає українських продуктів",
+    teaser:
+      "Штрихкод, українська база і рецепти замість щоденного перебирання інгредієнтів. Плюс чесна відповідь, скільки похибки можна собі дозволити.",
+  },
   {
     href: "/guides/monobank",
     category: "Фінанси",
@@ -17,11 +32,7 @@ const GUIDES = [
 ];
 
 export default function GuidesPage() {
-  usePageMeta({
-    title: "Гайди Sergeant",
-    description:
-      "Практичні гайди про особисті фінанси, звички і трекінг: коротка відповідь одразу, без води.",
-  });
+  usePageMeta(ROUTE_META["/guides"]);
 
   return (
     <>
@@ -32,8 +43,8 @@ export default function GuidesPage() {
           Гайди
         </h1>
         <p className="mt-5 max-w-xl leading-relaxed text-muted">
-          Практичні розбори про гроші, звички і трекінг. Коротка відповідь –
-          одразу на початку, без води.
+          Розбори про гроші, звички і трекінг. Коротка відповідь стоїть одразу
+          на початку.
         </p>
 
         <div className="mt-10 border-b border-cardline">

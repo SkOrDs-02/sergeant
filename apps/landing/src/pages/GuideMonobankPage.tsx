@@ -1,18 +1,7 @@
 import SiteHeader from "../components/SiteHeader";
 import SiteFooter from "../components/SiteFooter";
-import { usePageMeta } from "../lib/pageMeta";
-
-const ACCESS_TABLE = [
-  { data: "Суми і час транзакцій", access: "Бачить", ok: true },
-  { data: "Категорія покупки (MCC)", access: "Бачить", ok: true },
-  { data: "Баланс рахунку", access: "Бачить", ok: true },
-  { data: "Повний номер картки, CVV", access: "Не бачить", ok: false },
-  {
-    data: "Перекази, платежі, будь-який рух грошей",
-    access: "Не може",
-    ok: false,
-  },
-];
+import MonoAccessTable from "../components/MonoAccessTable";
+import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
 
 const STEPS = [
   "Відкрий api.monobank.ua і авторизуйся через застосунок банку: QR-кодом, як звичайний вхід.",
@@ -25,8 +14,7 @@ const SHORT_ANSWER =
 
 export default function GuideMonobankPage() {
   usePageMeta({
-    title: "Як підʼєднати Monobank до трекера витрат",
-    description: SHORT_ANSWER,
+    ...ROUTE_META["/guides/monobank"],
     jsonLd: {
       "@context": "https://schema.org",
       "@type": "Article",
@@ -71,27 +59,8 @@ export default function GuideMonobankPage() {
 
           <section>
             <h2 className={h2}>Що саме бачить трекер</h2>
-            <div className="mt-5 grid grid-cols-[minmax(0,1fr)_130px]">
-              <span className="border-b border-cardline-strong py-2.5 text-xs font-semibold uppercase tracking-wide text-subtle">
-                Дані
-              </span>
-              <span className="border-b border-cardline-strong py-2.5 text-xs font-semibold uppercase tracking-wide text-subtle">
-                Доступ
-              </span>
-              {ACCESS_TABLE.map((row) => (
-                <div key={row.data} className="contents">
-                  <span className="border-b border-cardline py-3.5 text-sm text-foreground">
-                    {row.data}
-                  </span>
-                  <span
-                    className={`border-b border-cardline py-3.5 text-sm font-bold ${
-                      row.ok ? "text-accent" : "text-danger"
-                    }`}
-                  >
-                    {row.access}
-                  </span>
-                </div>
-              ))}
+            <div className="mt-5">
+              <MonoAccessTable />
             </div>
           </section>
 

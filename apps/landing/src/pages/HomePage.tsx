@@ -4,6 +4,7 @@ import SiteFooter from "../components/SiteFooter";
 import TelegramCta from "../components/TelegramCta";
 import {
   ModulesSection,
+  ScreensSection,
   ConnectionsSection,
   StatuteSection,
   FounderSection,
@@ -12,7 +13,8 @@ import {
   ClosingCta,
   FAQ_ITEMS,
 } from "../components/HomeSections";
-import { usePageMeta } from "../lib/pageMeta";
+import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
+import { ANALYTICS_EVENTS, LANDING_LOCALE, track } from "../lib/analytics";
 
 /**
  * Сценарії «живого звʼязку» в hero: скільки тренувань – стільки доставки.
@@ -107,7 +109,13 @@ function HeroCollage() {
               key={n}
               type="button"
               aria-pressed={n === trainings}
-              onClick={() => setTrainings(n)}
+              onClick={() => {
+                setTrainings(n);
+                track(ANALYTICS_EVENTS.LANDING_WIDGET_CHANGED, {
+                  trainings: n,
+                  locale: LANDING_LOCALE,
+                });
+              }}
               className={`flex h-11 w-11 items-center justify-center border-2 border-foreground-strong font-display text-[13px] font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink ${
                 n === trainings
                   ? "bg-foreground-strong text-background"
@@ -135,9 +143,7 @@ function HeroCollage() {
 
 export default function HomePage() {
   usePageMeta({
-    title: "Sergeant: порядок без крику",
-    description:
-      "Гроші, тіло, звички й харчування в одному приватному просторі. Sergeant бачить звʼязки між ними і каже головне.",
+    ...ROUTE_META["/"],
     jsonLd: {
       "@context": "https://schema.org",
       "@type": "FAQPage",
@@ -163,8 +169,8 @@ export default function HomePage() {
             </h1>
             <p className="max-w-lg text-lg leading-relaxed text-pretty text-muted">
               Sergeant – приватний застосунок, що тримає гроші, тренування,
-              звички і їжу в одному місці й показує, як вони тягнуть одне
-              одного. Не карає. Не мотивує цитатами. Сержант на твоєму боці.
+              звички і їжу разом і показує, як вони тягнуть одне одного. Сержант
+              на твоєму боці: рахує, а не читає лекцій.
             </p>
             <div className="flex flex-col gap-2.5">
               <TelegramCta placement="hero" label="Стати в чергу" />
@@ -178,6 +184,7 @@ export default function HomePage() {
         </section>
 
         <ModulesSection />
+        <ScreensSection />
         <ConnectionsSection />
 
         <section className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-x-6 gap-y-3 px-5 pb-16 sm:px-8">

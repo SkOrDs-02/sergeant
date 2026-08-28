@@ -1,13 +1,9 @@
 import SiteHeader from "../components/SiteHeader";
 import SiteFooter from "../components/SiteFooter";
-import { usePageMeta } from "../lib/pageMeta";
+import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
 
 export default function TermsPage() {
-  usePageMeta({
-    title: "Умови використання Sergeant",
-    description:
-      "Умови використання бети Sergeant простими словами: що обіцяю, що ні, і що з твоїми даними за будь-якого сценарію.",
-  });
+  usePageMeta(ROUTE_META["/terms"]);
 
   const h2 =
     "mt-9 font-display text-lg font-extrabold uppercase tracking-tight text-foreground-strong";

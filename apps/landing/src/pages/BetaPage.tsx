@@ -1,19 +1,16 @@
 import SiteHeader from "../components/SiteHeader";
 import SiteFooter from "../components/SiteFooter";
 import TelegramCta from "../components/TelegramCta";
-import { usePageMeta } from "../lib/pageMeta";
+import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
 
 const GIVE = [
   "Повний доступ до всіх чотирьох модулів. Ядро і банк-синк безкоштовні назавжди, а на час бети відкрита й платна аналітика поверх них.",
-  "Прямий канал до фаундера, без підтримки-посередника",
+  "Прямий канал до автора: питання не проходять через підтримку",
   "Вплив на те, які звʼязки продукт навчиться бачити першими",
 ];
 
-const ASK = [
-  "Користуватись хоча б одним модулем щодня",
-  "Раз на тиждень – три речення чесного фідбеку",
-  "Терпіння до гострих кутів: це бета, і вони будуть",
-];
+const ASK =
+  "Користуйся хоча б одним модулем щодня, раз на тиждень кидай три речення чесного фідбеку і тримай терпіння до гострих кутів: це бета, і вони будуть.";
 
 const MINI_FAQ = [
   {
@@ -31,13 +28,9 @@ const MINI_FAQ = [
 ];
 
 export default function BetaPage() {
-  usePageMeta({
-    title: "Черга в бету Sergeant",
-    description:
-      "Бета Sergeant відкривається хвилями. Стань у чергу через Telegram і отримай одне повідомлення, коли відкриється твоя.",
-    // Гейт бети не має конкурувати в індексі з головною до відкриття CTA-фази.
-    noindex: true,
-  });
+  // Гейт бети не має конкурувати в індексі з головною до відкриття CTA-фази
+  // (noindex живе в routeMeta.json).
+  usePageMeta(ROUTE_META["/beta"]);
 
   return (
     <>
@@ -46,7 +39,7 @@ export default function BetaPage() {
       <main>
         <section className="mx-auto w-full max-w-6xl px-5 pb-14 pt-12 sm:px-8 sm:pt-16">
           <p className="font-display text-xs font-medium uppercase tracking-[0.12em] text-subtle">
-            Закрита бета · місць небагато
+            Закрита бета
           </p>
           <h1 className="mt-4 max-w-3xl font-display text-3xl font-extrabold uppercase leading-[1.08] tracking-tight text-balance text-foreground-strong sm:text-5xl">
             Бета відкривається хвилями
@@ -68,17 +61,10 @@ export default function BetaPage() {
                   key={item}
                   className="flex items-baseline gap-2.5 text-sm font-semibold leading-relaxed text-foreground-strong"
                 >
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 20 20"
-                    fill="none"
+                  <span
                     aria-hidden="true"
-                    className="shrink-0 translate-y-0.5 stroke-accent"
-                    strokeWidth="2.6"
-                  >
-                    <path d="M4 10.5 8.2 15 16 5.5" />
-                  </svg>
+                    className="h-2 w-2 shrink-0 translate-y-px bg-foreground-strong"
+                  />
                   {item}
                 </li>
               ))}
@@ -88,13 +74,9 @@ export default function BetaPage() {
             <h2 className="border-b-2 border-cardline-strong pb-2.5 font-display text-xs font-bold uppercase tracking-[0.08em] text-subtle">
               Що прошу натомість
             </h2>
-            <ul className="mt-4 flex flex-col gap-4">
-              {ASK.map((item) => (
-                <li key={item} className="text-sm leading-relaxed text-muted">
-                  {item}
-                </li>
-              ))}
-            </ul>
+            <p className="mt-4 max-w-md text-[15px] leading-relaxed text-muted">
+              {ASK}
+            </p>
           </div>
         </section>
 

@@ -2,31 +2,11 @@ import SiteHeader from "../components/SiteHeader";
 import SiteFooter from "../components/SiteFooter";
 import TelegramCta from "../components/TelegramCta";
 import { telegramStartLink } from "../lib/links";
-import { usePageMeta } from "../lib/pageMeta";
-
-const PRINCIPLES = [
-  {
-    n: "01",
-    title: "Твої дані залишаються твоїми",
-    text: "Токен банку – лише читання, експорт – в один клік, і я не продаю і не передаю твої дані нікому.",
-  },
-  {
-    n: "02",
-    title: "Показує лише те, в чому впевнений",
-    text: "Коли даних замало, Sergeant мовчить, а не вигадує звʼязок заради ефекту.",
-  },
-  {
-    n: "03",
-    title: "Ядро безкоштовне назавжди",
-    text: "Модулі й банк-синк не стануть платними. Платною буде лише глибша аналітика поверх твоїх даних.",
-  },
-];
+import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
 
 export default function AboutPage() {
   usePageMeta({
-    title: "Що таке Sergeant",
-    description:
-      "Sergeant – український застосунок, який тримає гроші, тіло, звички й харчування в одному приватному просторі та показує звʼязки між ними.",
+    ...ROUTE_META["/about"],
     jsonLd: {
       "@context": "https://schema.org",
       "@type": "SoftwareApplication",
@@ -69,9 +49,9 @@ export default function AboutPage() {
             </p>
             <p className="leading-relaxed text-foreground">
               Тому я роблю Sergeant: не пʼятий трекер, а місце, де чотири сфери
-              нарешті бачать одна одну. Роблю сам, користуюсь щодня, показую
-              процес відкрито. Це не стартап під інвесторів, а інструмент, без
-              якого мені самому вже незручно жити.
+              нарешті бачать одна одну. Користуюсь ним щодня сам і викладаю
+              процес розробки відкрито. Це інструмент, без якого мені самому вже
+              незручно жити.
             </p>
             <p className="font-serif italic text-subtle">– автор Sergeant</p>
           </div>
@@ -84,25 +64,23 @@ export default function AboutPage() {
         </section>
 
         <section className="mx-auto w-full max-w-6xl px-5 pb-16 sm:px-8">
-          <h2 className="mb-2 font-display text-2xl font-extrabold uppercase tracking-tight text-balance text-foreground-strong sm:text-3xl">
-            Три принципи, які не зміняться
-          </h2>
-          <div className="flex flex-col">
-            {PRINCIPLES.map((p) => (
-              <div
-                key={p.n}
-                className="grid gap-2 border-t-2 border-foreground-strong py-6 sm:grid-cols-[90px_minmax(0,1fr)] sm:gap-6 lg:grid-cols-[90px_minmax(0,1fr)_400px]"
-              >
-                <span className="font-display text-sm font-bold text-subtle">
-                  {p.n}
-                </span>
-                <h3 className="text-2xl font-bold leading-tight text-foreground-strong sm:text-[26px]">
-                  {p.title}
-                </h3>
-                <p className="text-sm leading-relaxed text-muted">{p.text}</p>
-              </div>
-            ))}
-          </div>
+          <p className="max-w-2xl leading-relaxed text-muted">
+            Правила, за які продукт відповідає, зібрані в одному місці: у{" "}
+            <a
+              href="/#statute"
+              className="font-semibold text-foreground underline decoration-cardline-strong underline-offset-4 transition hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+            >
+              статуті на головній
+            </a>
+            . Що саме Sergeant бачить і де лежать твої дані – на сторінці{" "}
+            <a
+              href="/data"
+              className="font-semibold text-foreground underline decoration-cardline-strong underline-offset-4 transition hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+            >
+              «Твої дані»
+            </a>
+            .
+          </p>
         </section>
 
         <section className="bg-ink py-14 text-ink-text sm:py-16">
@@ -175,7 +153,7 @@ export default function AboutPage() {
         <section className="mx-auto flex w-full max-w-6xl flex-col items-start justify-between gap-8 px-5 py-16 sm:px-8 lg:flex-row lg:items-center">
           <div className="flex flex-col gap-3">
             <h2 className="font-display text-2xl font-extrabold uppercase tracking-tight text-balance text-foreground-strong sm:text-3xl">
-              Хочеш спробувати сам?
+              Готовий навести порядок?
             </h2>
             <p className="max-w-lg leading-relaxed text-pretty text-muted">
               Бета відкривається хвилями. Стань у чергу, і я напишу одне
