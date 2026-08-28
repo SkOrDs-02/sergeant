@@ -1,5 +1,6 @@
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { readFizrukWorkouts } from "./fizrukActions/shared";
+import { clamp, clampDays, normalizeText, round } from "./queryArgs";
 import type { Workout, WorkoutItem } from "@sergeant/fizruk-domain";
 import type { ChatAction, ChatActionResult } from "./types";
 
@@ -37,24 +38,6 @@ interface TrainingStatsAction {
 const DAY_MS = 86_400_000;
 
 // ─── helpers ────────────────────────────────────────────────────────────────
-
-function normalizeText(value: unknown): string {
-  return String(value ?? "")
-    .trim()
-    .toLowerCase();
-}
-
-function clampDays(value: unknown, fallback: number): number {
-  const n = Number(value);
-  if (!Number.isFinite(n) || n <= 0) return fallback;
-  return Math.min(365, Math.floor(n));
-}
-
-function clamp(value: unknown, fallback: number, max: number): number {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return fallback;
-  return Math.min(max, Math.max(1, Math.floor(n)));
-}
 
 function startedTs(w: Workout): number {
   return new Date(w.startedAt).getTime();
@@ -97,10 +80,6 @@ function dayLabel(w: Workout): string {
   return getKyivDayKey(new Date(w.startedAt));
 }
 
-function round(n: number): number {
-  return Math.round(n);
-}
-
 // ─── executors ──────────────────────────────────────────────────────────────
 
 export function queryWorkouts(action: QueryWorkoutsAction): ChatActionResult {
@@ -133,7 +112,7 @@ export function queryWorkouts(action: QueryWorkoutsAction): ChatActionResult {
     matched.length > shown.length
       ? ` (показано ${shown.length} з ${matched.length})`
       : "";
-  return `Тренувань за ${days} днів: ${matched.length}, сумарний об'єм ${round(totalVolume)} кг×повт${more}: ${list}`;
+  return `Тренувань за ${days} днів: ${matched.length}, сумарний обʼєм ${round(totalVolume)} кг×повт${more}: ${list}`;
 }
 
 export function exerciseProgress(
@@ -182,8 +161,8 @@ export function exerciseProgress(
   return [
     `Прогрес "${exercise}" за ${days} днів (${sessions.length} сесій):`,
     `Макс. вага: ${first.maxWeight} → ${last.maxWeight} кг (${sign(wDelta)}${wDelta})`,
-    `Об'єм: ${round(first.volume)} → ${round(last.volume)} кг×повт (${sign(volPct)}${volPct}%)`,
-    `Найкраще: ${bestWeight} кг, об'єм ${round(bestVolume)} кг×повт`,
+    `Обʼєм: ${round(first.volume)} → ${round(last.volume)} кг×повт (${sign(volPct)}${volPct}%)`,
+    `Найкраще: ${bestWeight} кг, обʼєм ${round(bestVolume)} кг×повт`,
   ].join("\n");
 }
 
@@ -221,7 +200,7 @@ export function trainingStats(action: TrainingStatsAction): ChatActionResult {
     `Статистика тренувань за ${days} днів:`,
     `Тренувань: ${completed.length} (~${perWeek.toFixed(1)}/тиждень), підходів: ${totalSets}`,
     `Топ вправи: ${topList(exerciseFreq) || "—"}`,
-    `Топ м'язи: ${topList(muscleFreq) || "—"}`,
+    `Топ мʼязи: ${topList(muscleFreq) || "—"}`,
   ].join("\n");
 }
 

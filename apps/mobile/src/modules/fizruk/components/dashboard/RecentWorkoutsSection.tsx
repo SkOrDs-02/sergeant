@@ -90,7 +90,7 @@ export function RecentWorkoutsSection({
             Ще жодного завершеного тренування
           </Text>
           <Text className="text-xs text-fg-muted text-center mt-1">
-            Почни сесію, результати з&apos;являться тут автоматично.
+            Почни сесію, результати зʼявляться тут автоматично.
           </Text>
         </Card>
       ) : (

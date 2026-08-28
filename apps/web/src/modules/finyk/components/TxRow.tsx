@@ -70,7 +70,7 @@ function TxRowImpl({
   const catName = cat.label.replace(/^[^\p{L}\p{N}]+/u, "").trim();
   const rawDescription = tx.description?.trim() ?? "";
   // До 2026-08-13 форма підставляла підпис вибраної категорії в порожню
-  // необов'язкову назву. На старих ручних записах не дублюємо цей
+  // необовʼязкову назву. На старих ручних записах не дублюємо цей
   // згенерований текст над таким самим чипом категорії. Власні назви, які
   // відрізняються від підпису категорії, лишаються без змін.
   const hasLegacyGeneratedDescription =
@@ -89,7 +89,7 @@ function TxRowImpl({
   const accountName = getAccountShortName(account);
 
   // useMemo — стабілізуємо масив сплітів, щоб `openSplitEditor` (useCallback
-  // нижче) не перестворювався, коли `txSplits` — той самий об'єкт.
+  // нижче) не перестворювався, коли `txSplits` — той самий обʼєкт.
   const existingSplits = useMemo(
     () => txSplits?.[tx.id] ?? [],
     [txSplits, tx.id],

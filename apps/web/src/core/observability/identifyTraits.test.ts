@@ -35,7 +35,7 @@ afterEach(() => {
 });
 
 describe("buildIdentifyTraits", () => {
-  it("повертає всі п'ять трейтів, коли всі джерела доступні", () => {
+  it("повертає всі пʼять трейтів, коли всі джерела доступні", () => {
     mockGetVibePicks.mockReturnValue(["finyk", "fizruk"]);
     vi.stubGlobal("navigator", { language: "uk-UA" });
 

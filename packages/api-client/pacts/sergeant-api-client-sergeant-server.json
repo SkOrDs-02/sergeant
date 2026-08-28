@@ -1732,6 +1732,20 @@
           "batchId": 88,
           "created": 2,
           "linked": 0,
+          "rows": [
+            {
+              "id": "imp1:aaa",
+              "status": "mono_matched"
+            },
+            {
+              "id": "imp1:bbb",
+              "status": "created"
+            },
+            {
+              "id": "imp1:ccc",
+              "status": "created"
+            }
+          ],
           "skipped": {
             "duplicate": 0,
             "monoMatched": 1
@@ -2402,8 +2416,8 @@
       "response": {
         "body": {
           "code": "DPS_RECEIPT_NOT_FOUND",
-          "error": "Чек ще не з'явився в реєстрі ДПС, спробуй за кілька хвилин або сфотографуй чек.",
-          "message": "Чек ще не з'явився в реєстрі ДПС, спробуй за кілька хвилин або сфотографуй чек.",
+          "error": "Чек ще не зʼявився в реєстрі ДПС, спробуй за кілька хвилин або сфотографуй чек.",
+          "message": "Чек ще не зʼявився в реєстрі ДПС, спробуй за кілька хвилин або сфотографуй чек.",
           "requestId": "req-pact-receipts-lookup-404"
         },
         "headers": {
@@ -2450,7 +2464,7 @@
                 "notes": null
               },
               {
-                "name": "м'ясо",
+                "name": "мʼясо",
                 "notes": "телятина"
               }
             ],

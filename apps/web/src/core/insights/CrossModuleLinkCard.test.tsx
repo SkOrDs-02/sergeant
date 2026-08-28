@@ -19,7 +19,7 @@ const poleB = {
   unit: "витрат на доставку",
 };
 
-describe("CrossModuleLinkCard — напрямок зв'язку", () => {
+describe("CrossModuleLinkCard — напрямок звʼязку", () => {
   afterEach(cleanup);
 
   // `phrase` — єдине місце в картці, де видно НАПРЯМОК: товщина містка
@@ -240,7 +240,7 @@ describe("CrossModuleLinkCard — право мовчати (порожній с
       />,
     );
 
-    expect(screen.getByText("Поки що зв'язків не бачу")).toBeInTheDocument();
+    expect(screen.getByText("Поки що звʼязків не бачу")).toBeInTheDocument();
     expect(screen.getByText(/2 з 5 спостережень/)).toBeInTheDocument();
     // Полюси лишаються — контекст «що саме перевіряємо» не зникає, лише
     // конкретні значення/одиниці мовчать.
@@ -252,7 +252,7 @@ describe("CrossModuleLinkCard — право мовчати (порожній с
     expect(screen.queryByText("Тримається стабільно")).toBeNull();
   });
 
-  it("залишається мовчазним, коли спостережень достатньо, але зв'язку не видно (|r| < NOTABLE_R)", () => {
+  it("залишається мовчазним, коли спостережень достатньо, але звʼязку не видно (|r| < NOTABLE_R)", () => {
     render(
       <CrossModuleLinkCard
         poleA={poleA}
@@ -262,9 +262,9 @@ describe("CrossModuleLinkCard — право мовчати (порожній с
       />,
     );
 
-    expect(screen.getByText("Поки що зв'язків не бачу")).toBeInTheDocument();
+    expect(screen.getByText("Поки що звʼязків не бачу")).toBeInTheDocument();
     // Прогрес-бар не бреше: спостережень уже достатньо (5 з 5), проблема
-    // не в кількості даних, а у відсутності самого зв'язку.
+    // не в кількості даних, а у відсутності самого звʼязку.
     expect(screen.getByText("5 з 5 спостережень")).toBeInTheDocument();
   });
 

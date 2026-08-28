@@ -67,7 +67,7 @@ function makeRoutine(over: Partial<RoutineState> = {}): RoutineState {
   return {
     ...defaultRoutineState(),
     tags: [{ id: "t1", name: "Ранок" }],
-    categories: [{ id: "c1", name: "Здоров'я" }],
+    categories: [{ id: "c1", name: "Здоровʼя" }],
     habits: [
       {
         id: "h1",
@@ -166,7 +166,7 @@ describe("HabitDetailSheet", () => {
     // recurrence label "Щодня" + timeOfDay are concatenated
     expect(screen.getByText(/08:00/)).toBeInTheDocument();
     expect(screen.getByText("Ранок")).toBeInTheDocument();
-    expect(screen.getByText("Здоров'я")).toBeInTheDocument();
+    expect(screen.getByText("Здоровʼя")).toBeInTheDocument();
   });
 
   it("shows total completions and a non-zero current streak in the stats grid", () => {

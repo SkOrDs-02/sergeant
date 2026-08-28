@@ -213,7 +213,7 @@ export function AssistantAdviceCard({
                     onClick={(e) => {
                       e.stopPropagation();
                       // Подія — ДО консюмерського шляху: `trackAdviceReaction`
-                      // fire-and-forget і не кидає, зате throw у шині не з'їсть
+                      // fire-and-forget і не кидає, зате throw у шині не зʼїсть
                       // реакцію.
                       //
                       // AI-NOTE: наявна поведінка, НЕ вводиться цим патчем —

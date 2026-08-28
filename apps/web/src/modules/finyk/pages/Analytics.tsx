@@ -76,7 +76,7 @@ export interface AnalyticsProps {
 }
 
 // Презентаційний контейнер-секція. memo, бо приймає лише `title/className/children`
-// і не має побічних ефектів — уникаємо рендеру при оновленнях, не пов'язаних з пропсами.
+// і не має побічних ефектів — уникаємо рендеру при оновленнях, не повʼязаних з пропсами.
 const Section = memo(function Section({
   title,
   children,

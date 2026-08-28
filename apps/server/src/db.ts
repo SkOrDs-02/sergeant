@@ -93,7 +93,7 @@ pool.on("error", (err: Error) => {
  * `db_slow_pool_connects_total`. Це leading indicator pool-saturation:
  * `db_pool_waiting > 0` сидить 5хв до того, як `DbPoolWaitingSustained`
  * паде — а ці breadcrumb-и ловлять перші повільні acquire-и одразу і
- * прив'язуються до Sentry-events через ALS у `obs/requestContext.ts`.
+ * привʼязуються до Sentry-events через ALS у `obs/requestContext.ts`.
  *
  * Wrapping done by reassigning `pool.connect` (function-property override).
  * Tests load the module з clean cache (`vi.resetModules()`), тому wrap
@@ -102,7 +102,7 @@ pool.on("error", (err: Error) => {
  * pg-pool exposes two overloads: zero-arg returning Promise<PoolClient>, і
  * callback-style. У repo всі call-site-и — Promise; callback-варіант
  * лишений як прозорий passthrough щоб не ламати external консьюмерів,
- * якщо такі з'являться.
+ * якщо такі зʼявляться.
  */
 type PoolConnect = typeof pool.connect;
 const originalConnect = pool.connect.bind(pool);
@@ -194,7 +194,7 @@ interface QueryMeta {
   noRetry?: boolean;
 }
 
-/** Коротке ім'я SQL для логів (перше слово + перші 120 символів, без параметрів). */
+/** Коротке імʼя SQL для логів (перше слово + перші 120 символів, без параметрів). */
 function sqlSummary(text: unknown): string | undefined {
   if (typeof text !== "string") return undefined;
   return text.replace(/\s+/g, " ").trim().slice(0, 120);

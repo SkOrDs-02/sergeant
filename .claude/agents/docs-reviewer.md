@@ -44,6 +44,10 @@ If a diff touches one of those but `docs/04-governance/pr-ledger/index.json` is 
 
 > ⚠️ **Do NOT raise this BLOCKER for `docs/02-engineering/architecture/**`, `docs/90-work/audits/**`, `AGENTS.md`, or `CLAUDE.md`** — the rule excludes them deliberately (audits are snapshot-natured; architecture is covered by drift-detectors). Flagging them is a false BLOCKER that stalls a correct PR.
 
+## Canon & decision-journal sync (WARNING)
+
+A PR that changes **product behavior** inside a module (diff touches `apps/web/src/modules/<m>/`, `apps/server/src/modules/<m>/`, or `packages/<m>-domain/` beyond pure refactor/tests) must update that module's canon in the same PR — `docs/01-product/model/<m>.md`, usually a row in its `§ Журнал рішень` (AGENTS.md § See also; AI layer maps to `hub-coach.md`, infra modules keep the journal inside their `sergeant-module-*` SKILL.md). Flag as WARNING: behavior-changing module diff with no matching canon/journal change. Do not flag refactors, test-only, or infra-only diffs.
+
 ## Report format
 
 Group by Hard Rule number. Each finding: `file:line`, what's missing/wrong, severity (BLOCKER only for missing #26 ledger entry; WARNING otherwise). "✅ None" under clean rules. Send findings to the lead.

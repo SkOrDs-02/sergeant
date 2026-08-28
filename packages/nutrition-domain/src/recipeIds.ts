@@ -1,4 +1,9 @@
-function shortHash(str: string): string {
+/**
+ * FNV-1a 32-bit → base36. Канонічна реалізація для стабільних коротких
+ * хешів у nutrition-шарі (recipe id, ключі кешу рецептів). Експортовано,
+ * щоб споживачі (web/mobile recipeCache) не тримали власних копій.
+ */
+export function shortHash(str: string): string {
   let h = 2166136261;
   for (let i = 0; i < str.length; i++) {
     h ^= str.charCodeAt(i);

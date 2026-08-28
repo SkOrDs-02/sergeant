@@ -432,7 +432,7 @@ export function WeeklyDigestCard({
   } = useWeeklyDigest(selectedWeekKey);
   const { data: history = [] } = useDigestHistory();
 
-  // Автогенерація по понеділках працює у фоні: звіт з'являвся мовчки, і
+  // Автогенерація по понеділках працює у фоні: звіт зʼявлявся мовчки, і
   // користувач дізнавався про нього, лише якщо сам відкривав блок. Бейдж
   // тримається, поки він не розгорнув саме цей тиждень.
   const [lastSeenWeekKey, setLastSeenWeekKey] = useState<string>(

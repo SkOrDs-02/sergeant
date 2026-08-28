@@ -30,7 +30,7 @@ describe("SilpoSyncPoller", () => {
     expect(run).not.toHaveBeenCalled();
   });
 
-  it("не б'є Сільпо одразу на старті процесу", () => {
+  it("не бʼє Сільпо одразу на старті процесу", () => {
     vi.useFakeTimers();
     const run = vi.fn().mockResolvedValue(EMPTY);
     const poller = new SilpoSyncPoller({

@@ -18,16 +18,16 @@
  * Чому це не ламає cookieless-позицію: токен генерується на КОЖНЕ
  * завантаження сторінки, ніде не зберігається (ні cookie, ні localStorage) і
  * помирає разом зі вкладкою. Це разова estafeta, а не ідентифікатор людини —
- * повторний захід на лендінг дає інший токен і не зв'язується з попереднім.
+ * повторний захід на лендінг дає інший токен і не звʼязується з попереднім.
  *
  * Формат payload-а: `<placement>_<ref>`. Обмеження Telegram — до 64 символів
  * із набору `[A-Za-z0-9_-]`; `footer_` + 16 символів = 23, запас великий.
  */
 
 /** Місце кнопки на лендінгу. Воно ж — канал у звіті `/stats` бота. */
-export type LandingPlacement = "hero" | "footer";
+export type LandingPlacement = "hero" | "footer" | "beta";
 
-const PLACEMENTS: readonly LandingPlacement[] = ["hero", "footer"];
+const PLACEMENTS: readonly LandingPlacement[] = ["hero", "footer", "beta"];
 
 /**
  * Довжина токена. 16 символів base36 ≈ 82 біти — колізій на наших обсягах не

@@ -47,7 +47,7 @@ test("analyzeAgentWrapper catches duplicate source-of-truth lines", () => {
 
 test("analyzeAgentWrapper catches short or malformed startup flow", () => {
   const content = [
-    "# Devin in Sergeant",
+    "# OpenAI in Sergeant",
     "",
     "> **Single source of truth → [AGENTS.md](./AGENTS.md).** Thin wrapper.",
     "",
@@ -56,7 +56,7 @@ test("analyzeAgentWrapper catches short or malformed startup flow", () => {
     "1. Do something else.",
   ].join("\n");
 
-  const errors = analyzeAgentWrapper(content, "DEVIN.md");
+  const errors = analyzeAgentWrapper(content, "OPENAI.md");
   assert.equal(errors.length, 2);
   assert.match(errors.join("\n"), /at least 5 numbered items/);
   assert.match(errors.join("\n"), /item 1 must start/);
@@ -66,10 +66,10 @@ test("checkAgentsFamilySync checks existing wrappers and ignores missing optiona
   const dir = mkdtempSync(join(tmpdir(), "agents-family-sync-"));
   try {
     writeFileSync(join(dir, "CLAUDE.md"), VALID);
-    writeFileSync(join(dir, "DEVIN.md"), VALID.replace("Claude", "Devin"));
+    writeFileSync(join(dir, "OPENAI.md"), VALID.replace("Claude", "OpenAI"));
     const report = checkAgentsFamilySync(dir);
     assert.equal(report.ok, true);
-    assert.deepEqual(report.checked, ["CLAUDE.md", "DEVIN.md"]);
+    assert.deepEqual(report.checked, ["CLAUDE.md", "OPENAI.md"]);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

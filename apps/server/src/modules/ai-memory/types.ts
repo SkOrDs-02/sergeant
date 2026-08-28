@@ -37,7 +37,7 @@ export const ALLOWED_MEMORY_SOURCES = [
   "product",
   // Migration 118 — L-8, аудит Профілю/Налаштувань (2026-08-08,
   // docs/90-work/audits/2026-08-08-profile-settings-deep-audit.md). Явно
-  // заявлені факти про самого користувача (client-side «банк пам'яті»
+  // заявлені факти про самого користувача (client-side «банк памʼяті»
   // `hub_user_profile_v1` / `USER_PROFILE`, дзеркальований серверним
   // `user_profile` з міграції 115) — НЕ поведінкові events (`product`) і
   // НЕ витяг із чату (`chat`). ФАЗА 1 (ця міграція): лише CHECK-constraint
@@ -50,7 +50,7 @@ export const ALLOWED_MEMORY_SOURCES = [
 export type MemorySource = (typeof ALLOWED_MEMORY_SOURCES)[number];
 
 /**
- * Метадані embedд'ингу — записуються у row, щоб майбутній re-embed
+ * Метадані embedдʼингу — записуються у row, щоб майбутній re-embed
  * batch міг знайти всі rows конкретної (provider, model, version)
  * комбінації. Без цього вектор-spaces різних моделей перемішуються
  * у HNSW і recall провалюється.
@@ -69,7 +69,7 @@ export interface EmbeddingMetadata {
 /**
  * Запис у memory store. Caller передає content + metadata; embedding
  * генерується сервісом (`AiMemoryService.remember`). VectorStore сам
- * по собі embedд'ингу не робить.
+ * по собі embedдʼингу не робить.
  */
 export interface MemoryWrite {
   userId: string;
@@ -83,7 +83,7 @@ export interface MemoryWrite {
   sourceRef: string | null;
   /** Оригінальний текст memory (для re-embedding + human-debug). */
   content: string;
-  /** Embedд'инг — Float32Array замість number[] для economy. */
+  /** Embedдʼинг — Float32Array замість number[] для economy. */
   embedding: Float32Array;
   /** Snapshot embedding-метаданих на момент запису. */
   embeddingMeta: EmbeddingMetadata;
@@ -175,7 +175,7 @@ export interface EmbedBatchOptions {
 }
 
 /**
- * Embedд'инг-провайдер. Окремий від `VectorStore`: store зберігає
+ * Embedдʼинг-провайдер. Окремий від `VectorStore`: store зберігає
  * вектори, provider їх генерує. Розділення дозволяє мокати у тестах
  * (in-memory store + fake embeddings) без дотику до Voyage API.
  */

@@ -1,6 +1,6 @@
 # Observability-runbook
 
-> **Last touched:** 2026-08-24 by @claude. **Next review:** 2026-12-08.
+> **Last touched:** 2026-08-28 by @Skords-01. **Next review:** 2026-12-16.
 > **Status:** Active
 
 > **Update 2026-07-21:** API/server logs — **Coolify** ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md)). Посилання на «n8n Railway env» нижче — legacy n8n hosting (migrate TBD). OpenClaw WF-103 env — historical ([ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md)).
@@ -385,17 +385,16 @@ curl https://api.sergeant/health/workers | jq
         "pending": 5, "processing": 1, "done": 4242,
         "failed": 0, "dead_letter": 0, "total": 4248
       }
-    },
-    "backgroundQueue": {
-      "status": "healthy",
-      "queued": 0,
-      "running": 0,
-      "concurrency": 5,
-      "isShuttingDown": false
     }
   }
 }
 ```
+
+> Source of truth для складу `workers` — `createWorkersHealthHandler` у
+> `apps/server/src/http/health.ts`: станом на 2026-08-28 це `aiMemoryIngest`
+> і `monoEnrichment` (паралельна гілка gdpr-поллера додає `gdprCleanup`).
+> Блока `backgroundQueue` в payload-і немає і ніколи не було — попередня
+> версія цього прикладу документувала неіснуючий контракт.
 
 Status-code mapping:
 

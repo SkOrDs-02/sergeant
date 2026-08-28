@@ -5,7 +5,7 @@
  * Розгортка транзакції у список позицій чека (спека § Розгортка):
  * `GET /api/finyk/receipts/:id` за `receiptId`, показаний у
  * `BankTransactionDetailsSheet` / `ManualExpenseSheet` коли транзакція
- * має прив'язаний чек (`useFinykReceiptLinks`, device-local — див. цей
+ * має привʼязаний чек (`useFinykReceiptLinks`, device-local — див. цей
  * хук для того, чому індикатор бачить лише те, що зіскановано НА ЦЬОМУ
  * пристрої).
  */

@@ -7,7 +7,16 @@ import { Measure } from "@shared/components/ui/Measure";
 import { cn } from "@shared/lib/ui/cn";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { Skeleton } from "@shared/components/ui/Skeleton";
-import { chartGradients, chartGrid, chartTick } from "@shared/charts";
+import {
+  chartGradients,
+  chartGrid,
+  chartTick,
+  pointStep,
+  xAt,
+  linearY,
+  buildLinePath,
+  buildAreaPath,
+} from "@shared/charts";
 import { useChartScrub } from "@shared/hooks";
 import { ChartScrubOverlay, ChartGoalLine } from "@shared/components/charts";
 import { formatNumberUk } from "@sergeant/shared";
@@ -64,10 +73,10 @@ export function WeeklyVolumeChart({
   const innerW = w - padL - padR;
   const innerH = h - padT - padB;
   const n = vals.length;
-  const step = innerW / (n - 1 || 1);
+  const step = pointStep(innerW, n);
   const svgRef = useRef<SVGSVGElement>(null);
   const xPositions = useMemo(
-    () => vals.map((_, index) => padL + index * step),
+    () => vals.map((_, index) => xAt(padL, index, step)),
     [vals, step],
   );
   const { activeIndex, scrubX, bind } = useChartScrub({
@@ -115,21 +124,16 @@ export function WeeklyVolumeChart({
   }
 
   const max = Math.max(1, ...vals.map((v) => Number(v) || 0));
+  // Домен [0, max] з клемпом лише зверху — нижнього клемпа тут ніколи не
+  // було (обʼєм не буває відʼємним), тож зберігаємо формулу дослівно.
   const points = vals.map((v, i) => {
-    const x = padL + i * step;
-    const y = padT + innerH - (Math.min(Number(v) || 0, max) / max) * innerH;
+    const x = xAt(padL, i, step);
+    const y = linearY(Math.min(Number(v) || 0, max), 0, max, padT, innerH);
     return { x, y, v: Number(v) || 0 };
   });
 
-  const lineD = points
-    .map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`)
-    .join(" ");
-  const lastPoint = points[n - 1];
-  const firstPoint = points[0];
-  const areaD =
-    lastPoint && firstPoint
-      ? `${lineD} L ${lastPoint.x.toFixed(1)} ${(padT + innerH).toFixed(1)} L ${firstPoint.x.toFixed(1)} ${(padT + innerH).toFixed(1)} Z`
-      : lineD;
+  const lineD = buildLinePath(points);
+  const areaD = buildAreaPath(points, padT + innerH);
 
   const yTicks = [0, 0.5, 1].map((fr) => ({
     y: padT + innerH * (1 - fr),
@@ -139,7 +143,7 @@ export function WeeklyVolumeChart({
   // #2 — goal line y-position
   const goalY =
     weeklyGoal !== undefined && weeklyGoal > 0
-      ? padT + innerH - (Math.min(weeklyGoal, max) / max) * innerH
+      ? linearY(Math.min(weeklyGoal, max), 0, max, padT, innerH)
       : undefined;
 
   const activePoint = activeIndex !== null ? points[activeIndex] : null;
@@ -248,7 +252,7 @@ export function WeeklyVolumeChart({
           />
         ))}
         {LABELS_UK.map((lab, i) => {
-          const x = padL + i * step;
+          const x = xAt(padL, i, step);
           return (
             <text
               key={lab}

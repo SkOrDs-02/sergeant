@@ -221,7 +221,7 @@ describe("enqueueAuthMail — BullMQ path", () => {
     // Мокаємо connection → ненульове, і Queue → spy на add().
     const { createBullConnection } = await import("./connection.js");
     vi.mocked(createBullConnection).mockReturnValue(
-      // мінімальний об'єкт, BullMQ Queue/Worker конструктор-у потрібно.
+      // мінімальний обʼєкт, BullMQ Queue/Worker конструктор-у потрібно.
       {} as never,
     );
 

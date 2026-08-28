@@ -21,7 +21,7 @@ const WEEK = [
 ];
 
 describe("computeWeekKcalChart", () => {
-  it("прив'язує стелю до цілі з запасом, а не до максимуму тижня", () => {
+  it("привʼязує стелю до цілі з запасом, а не до максимуму тижня", () => {
     const model = computeWeekKcalChart(WEEK, 2000);
     expect(model.ceiling).toBe(2000 * WEEK_KCAL_CEILING_HEADROOM);
     expect(model.goalRatio).toBeCloseTo(1 / WEEK_KCAL_CEILING_HEADROOM, 5);
@@ -98,7 +98,7 @@ describe("computeWeekKcalChart", () => {
     expect(junk.goalRatio).toBeNull();
   });
 
-  it("не приймає від'ємні ккал як висоту", () => {
+  it("не приймає відʼємні ккал як висоту", () => {
     const model = computeWeekKcalChart([row("2026-08-10", -500)], 2000);
     expect(model.bars[0]?.kcal).toBe(0);
     expect(model.bars[0]?.ratio).toBe(0);

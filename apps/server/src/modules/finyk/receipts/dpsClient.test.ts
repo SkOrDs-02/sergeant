@@ -3,7 +3,7 @@ import type { Mock } from "vitest";
 
 /**
  * `dpsClient.ts` читає лише `env.DPS_API_TOKEN` — мокаємо саме його
- * (той самий hoisted-mutable-об'єкт патерн, що `lib/anthropic.test.ts`),
+ * (той самий hoisted-mutable-обʼєкт патерн, що `lib/anthropic.test.ts`),
  * щоб перемикати "токен є / нема токена" без реального env-модуля.
  */
 const envMock = vi.hoisted(() => ({ DPS_API_TOKEN: "" }));

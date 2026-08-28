@@ -454,7 +454,7 @@ const SUMMARY_REGISTRY: Record<string, SummaryFn> = {
 
   my_profile: () => "Профіль користувача",
 
-  recall_memory: (input) => stringField(input, "query") || "Пошук у пам'яті",
+  recall_memory: (input) => stringField(input, "query") || "Пошук у памʼяті",
 };
 
 const QUERY_TOOLS_FOR_PASSTHROUGH: ReadonlySet<string> = new Set([

@@ -97,7 +97,7 @@ vi.mock("./../push/send.js", () => ({
 // handler (див. `apps/server/src/routes/coach.ts`). Це консьюмить перший
 // `queryMock.mockResolvedValueOnce` (rate-limit Postgres-фолбек), і в результаті
 // handler читає `{ rows: [{ "?column?": 1 }] }` за дефолтом, повертаючи
-// `memory: null` замість підставленого об'єкта. Цей файл тестує route-wiring
+// `memory: null` замість підставленого обʼєкта. Цей файл тестує route-wiring
 // + handler-shape; rate-limiter має власний `http/rateLimit.test.ts`. Mock-аємо
 // як passthrough.
 vi.mock("./../http/rateLimit.js", async () => {

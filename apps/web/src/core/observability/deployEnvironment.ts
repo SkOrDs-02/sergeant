@@ -82,7 +82,7 @@ function resolveWithExplicit(
 
   if (isLocalHost(host)) return "development";
 
-  // Hostname свідомо б'є env-var: preview успадковує змінні основного деплою,
+  // Hostname свідомо бʼє env-var: preview успадковує змінні основного деплою,
   // тож довіряти їм тут не можна (див. doc-string модуля, пункт 2).
   if (!canonicalHosts().includes(host)) return "preview";
 

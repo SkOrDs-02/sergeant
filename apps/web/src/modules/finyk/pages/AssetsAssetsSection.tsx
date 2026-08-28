@@ -83,7 +83,7 @@ export function AssetsAssetsSection({ state }: { state: State }) {
         <div hidden={!receivablesExpanded} className="space-y-2">
           {receivables.length === 0 && !showRecvForm && (
             <p className="text-style-caption text-muted px-1">
-              Зберігайте облік боргів і дат повернення, прив&apos;язуйте вхідні
+              Зберігайте облік боргів і дат повернення, привʼязуйте вхідні
               транзакції, щоб автоматично рахувати повернене.
             </p>
           )}

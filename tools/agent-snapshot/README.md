@@ -1,6 +1,6 @@
 # tools/agent-snapshot
 
-> **Last validated:** 2026-07-01 by @claude. **Next review:** 2026-10-20.
+> **Last touched:** 2026-08-28 by @Skords-01. **Next review:** 2026-12-19.
 > **Status:** Active
 
 Single-file Node script that gathers a "dynamic context" report for Sergeant
@@ -11,7 +11,7 @@ for the full design.
 ## Usage
 
 ```bash
-pnpm snapshot                            # writes .kilocode/snapshot.md
+pnpm snapshot                            # writes .agents/snapshot.md
 node tools/agent-snapshot/snapshot.mjs /tmp/out.md   # write to a custom path
 pnpm snapshot --refresh                  # bypass 15-min cache
 ```
@@ -36,7 +36,7 @@ the script never throws on a missing `gh` or unreadable file.
   `node:fs`, `node:path`).
 - Output is hard-capped at **50 KB**; on overflow, the richest sections
   (entropy issues, CI failure details) are dropped, never truncated mid-line.
-- Cache lives in `.kilocode/snapshot.cache.json` (15-min TTL by mtime),
+- Cache lives in `.agents/snapshot.cache.json` (15-min TTL by mtime),
   force-refresh via `--refresh`; auto-invalidated when `.git/FETCH_HEAD`
   mtime is <60s (a `git pull` just happened).
 - Script never reads Sentry DSN, tokens, or any other env-defined secret

@@ -451,7 +451,7 @@ export function handleNutritionAction(
         protein: Math.max(0, target.protein - eaten.protein),
       };
       const parts: string[] = [
-        `З'їдено сьогодні: ${Math.round(eaten.kcal)} ккал, ${Math.round(eaten.protein)}г білка`,
+        `Зʼїдено сьогодні: ${Math.round(eaten.kcal)} ккал, ${Math.round(eaten.protein)}г білка`,
         `Залишилось: ${Math.round(remaining.kcal)} ккал, ${Math.round(remaining.protein)}г білка`,
       ];
       if (focus) parts.push(`Фокус: ${focus}`);

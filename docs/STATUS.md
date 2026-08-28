@@ -19,25 +19,25 @@
 
 Останні 10 PR, що торкнулися canonical-доків. Повна історія → [`pr-ledger/index.json`](./04-governance/pr-ledger/index.json).
 
+- [#895](https://github.com/Skords-01/Sergeant/pull/895) — fix(agents): полірування агентного шару після розкатки module-owners _(2026-08-28)_
+- [#892](https://github.com/Skords-01/Sergeant/pull/892) — feat(agents): module-owner і службові Claude-агенти _(2026-08-27)_
+- [#891](https://github.com/Skords-01/Sergeant/pull/891) — feat(agents): скіли-дисципліни _(2026-08-27)_
+- [#890](https://github.com/Skords-01/Sergeant/pull/890) — feat(agents): інфра module-скіли і nested-роутинг _(2026-08-27)_
+- [#889](https://github.com/Skords-01/Sergeant/pull/889) — feat(agents): продуктові module-owner скіли _(2026-08-27)_
 - [#689](https://github.com/Skords-01/Sergeant/pull/689) — fix(ci): governance-sync відрізняє живе посилання від навмисно мертвого _(2026-08-07)_
 - [#508](https://github.com/Skords-01/Sergeant/pull/508) — fix(docs): reconcile canonical docs with current repo _(2026-07-29)_
 - [#334](https://github.com/Skords-01/Sergeant/pull/334) — docs(root): reconcile docs with code after 2026-07-20 audit (Railway->Coolify, CI gates, dual-write, domain invariants) _(2026-07-21)_
 - [#74](https://github.com/Skords-01/Sergeant/pull/74) — feat(agents): add scheduled entropy janitors (doc-drift, dead-code, dep-cycles) _(2026-06-30)_
 - [#3665](https://github.com/Skords-01/Sergeant/pull/3665) — docs(web): add ADR-0067 engagement mechanism standardization _(2026-06-20)_
-- [#3638](https://github.com/Skords-01/Sergeant/pull/3638) — Audit triage digest (auto, twice-weekly) _(2026-06-19)_
-- [#3649](https://github.com/Skords-01/Sergeant/pull/3649) — chore(root): fizruk a11y/UX tidy + reconcile stale tracked-task docs _(2026-06-19)_
-- [#3640](https://github.com/Skords-01/Sergeant/pull/3640) — fix(docs): accept "Last touched" label + bot handles in playbook schema check _(2026-06-18)_
-- [#3610](https://github.com/Skords-01/Sergeant/pull/3610) — chore(config): per-package eslint configs — PR-31 Phase 2b _(2026-06-16)_
-- [#3611](https://github.com/Skords-01/Sergeant/pull/3611) — fix(web): clear a11y gate _(2026-06-16)_
 
-## 🔵 В роботі — 60 відкритих
+## 🔵 В роботі — 59 відкритих
 
 | Трекер                           | Відкрито |
 | -------------------------------- | -------- |
 | Ініціативи                       | 5        |
 | Планування                       | 20       |
 | Launch / запуск                  | 12       |
-| Аудити й прожарки                | 18       |
+| Аудити й прожарки                | 17       |
 | Security hardening               | 1        |
 | Техборг                          | 4        |
 | Superpowers — плани впровадження | 0        |
@@ -50,16 +50,16 @@
 - [`90-work/tech-debt/mobile.md`](./90-work/tech-debt/mobile.md) — Mobile Tech Debt — Sergeant Mobile (Expo + Capacitor) — Active _(Техборг)_
 - [`90-work/initiatives/0010-revenue-first-launch.md`](./90-work/initiatives/0010-revenue-first-launch.md) — 0010 — Revenue-first launch: ship paid, focus wedge — In progress _(Ініціативи)_
 - [`01-product/launch/product-os/ftux-master-tracker.md`](./01-product/launch/product-os/ftux-master-tracker.md) — FTUX Master Tracker — стан, проблеми, план — Active — **single source of truth** для First-Time User Experience. _(Launch / запуск)_
-- [`90-work/planning/sprint-9-10-plan-2026.md`](./90-work/planning/sprint-9-10-plan-2026.md) — Sergeant — план Спринтів 9-10 (2026-07-07 – 2026-08-01) — Active — Sprint 9 code-side closed; Sprint 10 shipped S10-T2, S10-Q1, S10-X1, S10-T3 (JSON), S10-F2 and OG/Twitter slice _(Планування)_
 - [`01-product/launch/phases/02-capacitor-launch.md`](./01-product/launch/phases/02-capacitor-launch.md) — Phase 2 — Capacitor launch roadmap with users — Active — research deliverable for the parent launch program. _(Launch / запуск)_
+- [`90-work/audits/2026-08-05-orphaned-code-audit.md`](./90-work/audits/2026-08-05-orphaned-code-audit.md) — Аудит сиротілого коду, елементів і таблиць — 2026-08-05 — Active _(Аудити й прожарки)_
 
 ## ⏭️ Наступний крок / заблоковано
 
 Items із `Agent-ready: yes` або явним `Phase/Stage X next|blocked|pending` маркером — `blocked` першими.
 
-- [`90-work/initiatives/0024-ai-memory-source-coverage.md`](./90-work/initiatives/0024-ai-memory-source-coverage.md) — 0024 — Памʼять ШІ: звузити список джерел до тих, що справді пишуться → **agent-ready** _(Ініціативи)_
-- [`90-work/initiatives/0023-photo-analysis-multi-item.md`](./90-work/initiatives/0023-photo-analysis-multi-item.md) — 0023 — Розбивка фото-аналізу на позиції (correction UX) → **agent-ready** _(Ініціативи)_
 - [`90-work/initiatives/0022-import-from-external-trackers.md`](./90-work/initiatives/0022-import-from-external-trackers.md) — 0022 — Імпорт даних з зовнішніх трекерів (CSV-onboarding) → **agent-ready** _(Ініціативи)_
+- [`90-work/initiatives/0023-photo-analysis-multi-item.md`](./90-work/initiatives/0023-photo-analysis-multi-item.md) — 0023 — Розбивка фото-аналізу на позиції (correction UX) → **agent-ready** _(Ініціативи)_
+- [`90-work/initiatives/0024-ai-memory-source-coverage.md`](./90-work/initiatives/0024-ai-memory-source-coverage.md) — 0024 — Памʼять ШІ: звузити список джерел до тих, що справді пишуться → **agent-ready** _(Ініціативи)_
 - [`90-work/planning/specs/anonymous-local-first-persistence.md`](./90-work/planning/specs/anonymous-local-first-persistence.md) — Спека: персистентність даних незалогіненого користувача → **agent-ready** _(Планування)_
 
 ## 🧱 Стек

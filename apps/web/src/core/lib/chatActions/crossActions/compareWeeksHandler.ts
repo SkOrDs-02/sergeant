@@ -75,7 +75,7 @@ export function compareWeeks(action: CompareWeeksAction): string {
       const aVol = za?.totalVolume ?? 0;
       const bVol = zb?.totalVolume ?? 0;
       lines.push(`  ${diffLine("Тренувань", aCount, bCount, "")}`);
-      lines.push(`  ${diffLine("Об'єм", aVol, bVol, " кг·повт")}`);
+      lines.push(`  ${diffLine("Обʼєм", aVol, bVol, " кг·повт")}`);
     }
   }
 

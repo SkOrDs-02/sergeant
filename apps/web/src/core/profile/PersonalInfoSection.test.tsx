@@ -80,7 +80,7 @@ describe("PersonalInfoSection — name save", () => {
     const save = screen.getByRole("button", { name: "Зберегти" });
     expect((save as HTMLButtonElement).disabled).toBe(true);
 
-    fireEvent.change(screen.getByLabelText("Ім'я"), {
+    fireEvent.change(screen.getByLabelText("Імʼя"), {
       target: { value: "Олександр" },
     });
     expect((save as HTMLButtonElement).disabled).toBe(false);
@@ -90,7 +90,7 @@ describe("PersonalInfoSection — name save", () => {
     updateUserMock.mockResolvedValue({ data: { ok: true }, error: null });
     const { onRefresh } = renderSection();
 
-    fireEvent.change(screen.getByLabelText("Ім'я"), {
+    fireEvent.change(screen.getByLabelText("Імʼя"), {
       target: { value: "  Олександр  " },
     });
     fireEvent.click(screen.getByRole("button", { name: "Зберегти" }));
@@ -99,7 +99,7 @@ describe("PersonalInfoSection — name save", () => {
       expect(updateUserMock).toHaveBeenCalledWith({ name: "Олександр" });
     });
     await waitFor(() => {
-      expect(toastSuccessMock).toHaveBeenCalledWith("Ім'я оновлено");
+      expect(toastSuccessMock).toHaveBeenCalledWith("Імʼя оновлено");
       expect(onRefresh).toHaveBeenCalled();
     });
   });
@@ -115,8 +115,8 @@ describe("PersonalInfoSection — name save", () => {
     });
     renderSection();
 
-    fireEvent.change(screen.getByLabelText("Ім'я"), {
-      target: { value: "Новеім'я" },
+    fireEvent.change(screen.getByLabelText("Імʼя"), {
+      target: { value: "Новеімʼя" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Зберегти" }));
 
@@ -132,7 +132,7 @@ describe("PersonalInfoSection — name save", () => {
 
   it("does not save a whitespace-only name", async () => {
     renderSection();
-    fireEvent.change(screen.getByLabelText("Ім'я"), {
+    fireEvent.change(screen.getByLabelText("Імʼя"), {
       target: { value: "   " },
     });
     const save = screen.getByRole("button", { name: "Зберегти" });
@@ -144,7 +144,7 @@ describe("PersonalInfoSection — name save", () => {
 
   it("offline disables the save button", () => {
     renderSection({}, false);
-    fireEvent.change(screen.getByLabelText("Ім'я"), {
+    fireEvent.change(screen.getByLabelText("Імʼя"), {
       target: { value: "Інше" },
     });
     expect(

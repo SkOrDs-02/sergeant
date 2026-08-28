@@ -686,7 +686,7 @@ describe("AddMealSheet — source step (with templates)", () => {
     renderSheet({ mealTemplates: [] });
     goToWholeMeal();
     expect(
-      screen.getByText(/Значення – за всю порцію, як з’їв, а не на 100 г/),
+      screen.getByText(/Значення – за всю порцію, як зʼїв, а не на 100 г/),
     ).toBeInTheDocument();
     expect(screen.queryByTestId("picked-food-card")).not.toBeInTheDocument();
     fireEvent.click(
@@ -696,7 +696,7 @@ describe("AddMealSheet — source step (with templates)", () => {
   });
 
   // Раніше картка ваги жила у `FoodPickerSection` на кроці «source», а
-  // аркуш перемикається на «fill» у тому ж рендері, у якому з'являється
+  // аркуш перемикається на «fill» у тому ж рендері, у якому зʼявляється
   // `pickedFood` — тож вона розмонтовувалась, не встигнувши показатись,
   // і порція назавжди лишалась типовою.
   it("показує вагу порції на fill після вибору продукту з пошуку", () => {
@@ -705,7 +705,7 @@ describe("AddMealSheet — source step (with templates)", () => {
     expect(screen.getByTestId("picked-food-card")).toBeInTheDocument();
   });
 
-  it("«обрати інший продукт» повертає на крок джерела без зв'язку", () => {
+  it("«обрати інший продукт» повертає на крок джерела без звʼязку", () => {
     renderSheet({ mealTemplates: [] });
     fireEvent.click(screen.getByTestId("pick-food"));
     fireEvent.click(screen.getByTestId("change-product"));
@@ -781,7 +781,7 @@ describe("AddMealSheet — fill step (no templates/photoResult/initialMeal)", ()
       screen.getByRole("button", { name: "Додати прийом" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("checkbox", { name: "Запам’ятати для повтору" }),
+      screen.getByRole("checkbox", { name: "Запамʼятати для повтору" }),
     ).toBeInTheDocument();
     expect(screen.getByText("Скасувати")).toBeInTheDocument();
   });
@@ -797,7 +797,7 @@ describe("AddMealSheet — fill step (no templates/photoResult/initialMeal)", ()
       target: { value: "350" },
     });
     fireEvent.click(
-      screen.getByRole("checkbox", { name: "Запам’ятати для повтору" }),
+      screen.getByRole("checkbox", { name: "Запамʼятати для повтору" }),
     );
     fireEvent.click(screen.getByRole("button", { name: "Додати прийом" }));
 

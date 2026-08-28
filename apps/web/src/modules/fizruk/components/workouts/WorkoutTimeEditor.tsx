@@ -53,7 +53,7 @@ function formatTime(iso: string): string {
 
 /**
  * Кінець тієї ж доби показуємо самим часом. А от сесія через північ мусить
- * показати дату: «23:40 → 00:20» без неї виглядає як від'ємна тривалість.
+ * показати дату: «23:40 → 00:20» без неї виглядає як відʼємна тривалість.
  */
 function formatEndStamp(startIso: string, endIso: string): string {
   const start = new Date(startIso);

@@ -141,7 +141,7 @@ describe("applyNutritionGoalPeriods — insert", () => {
     expect(b).toEqual({ status: "applied" });
   });
 
-  it("зберігає всі п'ять значень і origin у параметрах", async () => {
+  it("зберігає всі пʼять значень і origin у параметрах", async () => {
     const fake = new FakeClient();
     await applyNutritionGoalPeriods(
       asClient(fake),
@@ -418,7 +418,7 @@ describe("applyNutritionGoalPeriods — числові межі (pre-beta input-
     expect(res).toEqual({ status: "rejected", reason: "invalid_qty" });
   });
 
-  it("відхиляє від'ємний kcal (нижче min=0)", async () => {
+  it("відхиляє відʼємний kcal (нижче min=0)", async () => {
     const fake = new FakeClient();
     const res = await applyNutritionGoalPeriods(
       asClient(fake),

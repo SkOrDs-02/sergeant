@@ -49,7 +49,7 @@ export function createPushRouter(): Router {
   r.post("/api/push/register", requireSession(), pushRegister);
   // `/api/push/unregister` — симетричний анрег. Web шле
   // `{ platform: "web", endpoint }`, native — `{ platform, token }`.
-  // Сесія обов'язкова з тих самих причин, що й у register.
+  // Сесія обовʼязкова з тих самих причин, що й у register.
   r.post("/api/push/unregister", requireSession(), pushUnregister);
   // `/api/push/send` — internal-only fan-out endpoint. Hardening item M14
   // (`docs/security/hardening/M14-internal-push-ip-allowlist.md`) layers

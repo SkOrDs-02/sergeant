@@ -106,7 +106,7 @@ describe("normalizeFinykBackup", () => {
   it("відхиляє txCategories-масив", () => {
     expect(() =>
       normalizeFinykBackup({ version: 2, txCategories: [] }),
-    ).toThrow(/об'єктом/);
+    ).toThrow(/обʼєктом/);
   });
 });
 
@@ -141,7 +141,7 @@ describe("normalizeFinykSyncPayload", () => {
 
   it("відхиляє зіпсований компактний tc", () => {
     expect(() => normalizeFinykSyncPayload({ v: 3, b: [], tc: [] })).toThrow(
-      /об'єктом/,
+      /обʼєктом/,
     );
   });
 });

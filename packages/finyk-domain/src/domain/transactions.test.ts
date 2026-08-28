@@ -57,7 +57,7 @@ describe("normalizeTransaction — канонічні поля", () => {
     expect(tx.id.length).toBeGreaterThan(0);
   });
 
-  it("type='expense' для від'ємного amount без явної категорії", () => {
+  it("type='expense' для відʼємного amount без явної категорії", () => {
     const tx = normalizeTransaction({ id: "x", amount: -500 });
     expect(tx.type).toBe("expense");
   });
@@ -186,7 +186,7 @@ describe("normalizeTransactions / dedupeAndSortTransactions", () => {
     expect(result.map((t) => t.id)).toEqual(["b", "a"]);
   });
 
-  it("толерує null/undefined/не-об'єкти у вхідному списку", () => {
+  it("толерує null/undefined/не-обʼєкти у вхідному списку", () => {
     const result = dedupeAndSortTransactions([
       null,
       undefined,

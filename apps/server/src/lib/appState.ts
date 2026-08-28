@@ -29,7 +29,7 @@ const state: AppState = {
 };
 
 /**
- * Read-only view на live-state. Хендлери здоров'я просто читають
+ * Read-only view на live-state. Хендлери здоровʼя просто читають
  * `appState.startupComplete`; модуль експортує `markStartupComplete()` як
  * єдину точку запису, щоб уникнути випадкових `state.startupComplete = false`
  * у викликаючому коді.

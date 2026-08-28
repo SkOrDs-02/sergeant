@@ -4,7 +4,33 @@ import { fireEvent, render, screen } from "@testing-library/react-native";
 import {
   ManualExpenseSheet,
   MANUAL_EXPENSE_CATEGORIES,
+  upgradeCategory,
 } from "./ManualExpenseSheet";
+
+describe("upgradeCategory — апостроф у збереженому значенні", () => {
+  // Канон §1.10: підписи в коді канонічні (`ʼ`), але це ЗНАЧЕННЯ, яке
+  // лежить у сховищі — його писали попередні версії застосунку й інша
+  // платформа, через ASCII `'`. Без згортання на межі точний збіг
+  // провалюється, legacy-мапа теж, і витрата мовчки стає «🏷 інше».
+  const forms = ["'", "\u2019", "\u02BC"];
+
+  it("розрізняє три форми як різні символи", () => {
+    expect(new Set(forms).size).toBe(3);
+  });
+
+  it.each(forms)("Ера 2 «💊 здоров%sя» → канонічна категорія", (a) => {
+    expect(upgradeCategory(`\u{1F48A} здоров${a}я`)).toBe("\u{1F48A} здоровʼя");
+  });
+
+  it.each(forms)("Ера 1 «здоров%sя» → канонічна категорія", (a) => {
+    expect(upgradeCategory(`здоров${a}я`)).toBe("\u{1F48A} здоровʼя");
+  });
+
+  it("невідоме значення й далі падає в дефолт", () => {
+    expect(upgradeCategory("щось геть інше")).toBe("🏷 інше");
+    expect(upgradeCategory(undefined)).toBe("🏷 інше");
+  });
+});
 
 describe("ManualExpenseSheet", () => {
   beforeEach(() => {

@@ -134,7 +134,7 @@ describe("week-plan handler", () => {
     expect(String(opts["system"])).toContain("Комору не враховуй");
   });
 
-  it("без pantryMode тижневий план лишається прив'язаним до комори", async () => {
+  it("без pantryMode тижневий план лишається привʼязаним до комори", async () => {
     invokeLLM.mockResolvedValueOnce({
       ok: true,
       text: JSON.stringify({ days: [] }),

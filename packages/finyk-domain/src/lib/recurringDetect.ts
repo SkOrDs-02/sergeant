@@ -70,7 +70,7 @@ export interface RecurringSubscription {
 export interface RecurringCandidate {
   /** Нормалізований merchant-ключ (унікальний для групи). */
   key: string;
-  /** Найкраще ім'я з транзакцій (для відображення). */
+  /** Найкраще імʼя з транзакцій (для відображення). */
   displayName: string;
   /** Середня сума у одиницях (грн/долар), додатня. */
   avgAmount: number;

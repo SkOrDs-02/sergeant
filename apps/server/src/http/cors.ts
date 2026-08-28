@@ -13,7 +13,7 @@ import { logger } from "../obs/logger.js";
  * Патерн має бути максимально вузьким. Простір імен проєктів на
  * `*.vercel.app` глобальний, тож широке `^https://sergeant(?:-[a-z0-9-]+)?
  * \.vercel\.app$` віддало б credentialed CORS будь-кому, хто зареєструє
- * сумісний піддомен у власному акаунті. Прив'язуйте патерн до фіксованого
+ * сумісний піддомен у власному акаунті. Привʼязуйте патерн до фіксованого
  * суфікса своєї команди/акаунта, напр.:
  *   `^https://sergeant-git-[a-z0-9-]+-myteam\.vercel\.app$`
  *
@@ -23,11 +23,12 @@ import { logger } from "../obs/logger.js";
 const PROD_ORIGINS = [
   "https://sergeant.vercel.app",
   "https://sergeant.2dmanager.com.ua",
+  "https://app.sergeant.com.ua",
 ];
 
 // Локальні dev-поверхні: Vite :5173, `vite preview` :4173, unified-mode
 // сервер :5000 і Metro/Expo web :8081 (нативні клієнти Origin не шлють і
-// CORS не перевіряють, але Expo-web симулятор і браузерна прев'юшка —
+// CORS не перевіряють, але Expo-web симулятор і браузерна превʼюшка —
 // шлють). У production у список НЕ потрапляють: session-cookie там
 // `SameSite=None; Secure`, тож сторінка на localhost жертви інакше робила б
 // credentialed cross-site запити до прода і читала б відповідь. Той самий

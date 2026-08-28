@@ -12,6 +12,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "../../lib/ui/cn";
+import { useOutsideClick } from "../../hooks/useOutsideClick";
 import { type FloatingPlacementInput } from "./floatingPosition";
 import { useFloatingPanelPosition } from "./useFloatingPanelPosition";
 
@@ -183,18 +184,7 @@ export function Tooltip({
   // Outside-click closes the tooltip — guards against a tap on the
   // trigger that briefly held focus and then lost it without
   // triggering blur (some touch keyboards on iOS).
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      const t = e.target as Node | null;
-      if (!t) return;
-      if (wrapperRef.current?.contains(t)) return;
-      if (panelRef.current?.contains(t)) return;
-      closeNow();
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [open, closeNow]);
+  useOutsideClick([wrapperRef, panelRef], closeNow, { enabled: open });
 
   const triggerProps = children.props as TriggerExtraProps;
 

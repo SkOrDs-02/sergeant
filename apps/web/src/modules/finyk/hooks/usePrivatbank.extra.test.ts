@@ -290,7 +290,7 @@ describe("usePrivatbank (extra) — credential storage", () => {
       await result.current.connect("mid-session", "tok-session");
     });
     expect(result.current.connected).toBe(true);
-    // «Запам'ятати на пристрої» більше не існує як поняття: підключення —
+    // «Запамʼятати на пристрої» більше не існує як поняття: підключення —
     // властивість акаунта, а токен живе зашифрованим на сервері.
     for (const store of [sessionStorage, localStorage]) {
       expect(store.getItem("finyk_privat_id")).toBeNull();

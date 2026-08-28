@@ -232,8 +232,7 @@ async function lookupOFF(barcode: string): Promise<NormalizedProduct | null> {
   try {
     const r = await fetch(url, {
       headers: {
-        "User-Agent":
-          "Sergeant-NutritionApp/1.0 (https://sergeant.2dmanager.com.ua)",
+        "User-Agent": "Sergeant-NutritionApp/1.0 (https://sergeant.com.ua)",
       },
       signal: AbortSignal.timeout(4000),
     });
@@ -385,7 +384,7 @@ async function lookupUPCitemdb(
 // ──────────────────────────────────────────────────────────────────────────────
 /**
  * GET /api/barcode?barcode=... — каскадний lookup через OFF → USDA →
- * UPCitemdb → Silpo (четверте джерело, лише для юзера зі зв'язаним акаунтом
+ * UPCitemdb → Silpo (четверте джерело, лише для юзера зі звʼязаним акаунтом
  * — `modules/silpo/foodSource.ts`). Middleware-и роутера (`setModule`,
  * `rateLimitExpress`) забезпечують module-tag і rate-limit; тут лише
  * бізнес-логіка.

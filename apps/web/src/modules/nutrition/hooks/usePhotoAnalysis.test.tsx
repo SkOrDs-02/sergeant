@@ -164,7 +164,7 @@ describe("usePhotoAnalysis", () => {
       // `onMutate` чистить поле перед запитом, тож після відповіді сюди
       // лягає оцінка моделі — але це вже НЕ ввід користувача, він стерся
       // разом із попереднім результатом. Пін тут на тому, що підстановка
-      // не б'ється з непорожнім полем: див. `refine` нижче.
+      // не бʼється з непорожнім полем: див. `refine` нижче.
       expect(result.current.portionGrams).toBe("314");
 
       apiRefinePhoto.mockResolvedValueOnce({
@@ -374,7 +374,7 @@ describe("usePhotoAnalysis", () => {
     it("drops the note when a new photo is analyzed", async () => {
       // Зауваження до попередньої страви поїхало б у промпт наступного
       // кадру мовчки — і зіпсувало б розбір, який людина навіть не
-      // пов'язала б із тим, що вона колись написала.
+      // повʼязала б із тим, що вона колись написала.
       apiAnalyzePhoto.mockResolvedValue({ result: { name: "v1" } });
       const { result } = renderUsePhotoAnalysis();
       attachFile(result, fakeImageFile());

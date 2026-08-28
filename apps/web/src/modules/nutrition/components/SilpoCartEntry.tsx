@@ -3,7 +3,7 @@
  * Status: Active
  *
  * Точка входу «У кошик Сільпо» — видима лише коли інтеграцію Сільпо
- * зв'язано (Silpo integration трек G, спека
+ * звʼязано (Silpo integration трек G, спека
  * `docs/90-work/planning/specs/silpo-mcp-integration.md` §
  * «Cart (MCP write path)»). Гейт-стан реюзає `useSilpoSyncState`
  * (`@finyk/hooks`, read-only) — той самий хук, що вже гейтить

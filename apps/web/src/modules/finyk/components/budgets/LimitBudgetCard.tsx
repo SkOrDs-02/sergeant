@@ -284,7 +284,7 @@ function LimitBudgetCardComponent({
           </div>
 
           {breakdown && breakdown.length > 1 && (
-            // Розбивка факту комбо-ліміту: видно, ЩО саме з'їло бюджет.
+            // Розбивка факту комбо-ліміту: видно, ЩО саме зʼїло бюджет.
             // Без власних під-лімітів — лише факт по кожній категорії.
             <ul className="mt-2 space-y-1" aria-label="Витрати по категоріях">
               {breakdown.map((row) => (

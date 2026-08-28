@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * W1-PANTRY-APPEND, СТАДІЯ 2 — п'ять мутаторів `useNutritionPantries.ts`
+ * W1-PANTRY-APPEND, СТАДІЯ 2 — пʼять мутаторів `useNutritionPantries.ts`
  * мають емітити ledger-подію ПАРАЛЕЛЬНО старому запису `qty`. Тест не йде
  * крізь реальний SQLite-пайплайн (важко піднімати заради самого факту
  * виклику) — мокає `appendNutritionPantryEvent`/`backfillNutritionPantryCheckpoints`
@@ -81,7 +81,7 @@ function lastEvent(): NutritionPantryEventSnapshot {
   return appendMock.mock.calls[0]![0];
 }
 
-describe("useNutritionPantries — ledger-подія на кожен з п'яти мутаторів", () => {
+describe("useNutritionPantries — ledger-подія на кожен з пʼяти мутаторів", () => {
   beforeEach(() => {
     localStorage.clear();
     clearNutritionSqliteCache();

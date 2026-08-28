@@ -114,7 +114,7 @@ export function useHints({
         case "ftux_switch_modules":
           return "Перемикай модулі внизу, це один хаб.";
         case "ftux_reports_unlock":
-          return "Звіти з’являться після першого запису.";
+          return "Звіти зʼявляться після першого запису.";
         case "ftux_quick_add":
           return "Швидке додавання – найкоротший шлях до результату.";
         case "module_first_entry":

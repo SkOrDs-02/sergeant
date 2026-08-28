@@ -74,8 +74,8 @@ export function Programs({ testID = "fizruk-programs" }: ProgramsProps) {
         <Text className="text-[22px] font-bold text-fg flex-1">Програми</Text>
       </View>
       <Text className="px-4 text-sm text-fg-muted leading-snug mb-3">
-        Готові програми тренувань. Активуй одну, сьогоднішня сесія
-        з&apos;явиться вгорі з кнопкою «Почати».
+        Готові програми тренувань. Активуй одну, сьогоднішня сесія зʼявиться
+        вгорі з кнопкою «Почати».
       </Text>
 
       <ScrollView

@@ -20,7 +20,7 @@ interface AmountMeta {
   lastTx: Transaction | null;
 }
 
-/** Остання релевантна транзакція: спочатку прив'язана вручну, інакше за ключовим словом (найновіша). */
+/** Остання релевантна транзакція: спочатку привʼязана вручну, інакше за ключовим словом (найновіша). */
 export function getLastTxForSubscription(
   sub: Subscription,
   transactions: Transaction[],

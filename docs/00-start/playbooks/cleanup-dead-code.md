@@ -1,6 +1,6 @@
 # Playbook: Прибирання dead code
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-29.
+> **Last touched:** 2026-08-28 by @Skords-01. **Next review:** 2026-12-20.
 > **Status:** Active
 
 **Trigger:** «Видали X і всі його використання» / видалення застарілого модуля, компонента, утиліти або feature flag.
@@ -112,7 +112,7 @@ pnpm build         # має успішно пройти
 
 ### 10. Створи PR
 
-- Гілка: `devin/<unix-ts>-chore-remove-<thing>`
+- Гілка: `<harness>/chore-remove-<thing>`
 - Commit: `chore(<scope>): remove <thing>` (Conventional Commits — AGENTS.md правило #5)
 - Опис PR має містити:
   - Підсумок видалених файлів/рядків

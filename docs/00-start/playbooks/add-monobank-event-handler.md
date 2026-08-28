@@ -1,6 +1,6 @@
 # Playbook: Add Monobank Event Handler
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-10-03.
+> **Last touched:** 2026-08-28 by @Skords-01. **Next review:** 2026-11-26.
 > **Status:** Active
 
 **Trigger:** "Треба обробити нову подію X від Monobank" / новий тип webhook event / новий статус транзакції від Monobank API.
@@ -94,7 +94,7 @@ pnpm lint       # має бути зеленим
 pnpm typecheck  # має бути зеленим
 ```
 
-- Branch: `devin/<unix-ts>-feat-mono-<event-name>`
+- Branch: `<harness>/feat-mono-<event-name>`
 - Commit: `feat(server): add Monobank <event_type> event handler`
 - PR description:
   - Який тип події додано і для чого.

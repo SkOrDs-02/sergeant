@@ -10,7 +10,7 @@ import {
 
 /**
  * Лендінг живе на Tailwind 4 з `@theme`, а `packages/design-tokens` віддає
- * Tailwind-3 preset для apps/web — спільного рантайму немає. Тому синхронність
+ * Tailwind-3 preset для apps/web – спільного рантайму немає. Тому синхронність
  * тримає не імпорт, а цей тест.
  *
  * Він не гіпотетичний: до нього лендінг малював finyk кольором emerald-500,
@@ -22,14 +22,14 @@ const css = readFileSync(
   "utf8",
 );
 
-/** Значення з `index.css`. `undefined` — токена немає, і це теж провал. */
+/** Значення з `index.css`. `undefined` – токена немає, і це теж провал. */
 function tokenHex(name: string): string | undefined {
   const m = new RegExp(`--color-${name}:\\s*(#[0-9a-fA-F]{3,8})`).exec(css);
   return m?.[1]?.toLowerCase();
 }
 
 /**
- * Очікуване значення з пакета токенів. Кидає, якщо токен зник upstream —
+ * Очікуване значення з пакета токенів. Кидає, якщо токен зник upstream –
  * інакше `noUncheckedIndexedAccess` дав би `undefined`, і тест мовчки
  * порівнював би відсутність з відсутністю.
  */
@@ -39,7 +39,7 @@ function canonical(value: string | undefined, label: string): string {
 }
 
 describe("токени лендінга не розходяться з @sergeant/design-tokens", () => {
-  it("бренд-акцент — emerald-700 / -800 / -50", () => {
+  it("бренд-акцент – emerald-700 / -800 / -50", () => {
     expect(tokenHex("accent")).toBe(
       canonical(brandColors.emerald[700], "emerald.700"),
     );
@@ -79,7 +79,7 @@ describe("токени лендінга не розходяться з @sergeant
   });
 
   it("«Чорнило» дзеркалить inkTheme, а не власну темну палітру", () => {
-    // Темна секція звʼязків — це канонічний напрям продукту, а не вигаданий
+    // Темна секція звʼязків – це канонічний напрям продукту, а не вигаданий
     // для лендінга градієнт. Якщо inkTheme зрушить, тест впаде.
     expect(tokenHex("ink")).toBe(canonical(inkTheme.surface.bg, "ink.bg"));
     expect(tokenHex("ink-surface")).toBe(
@@ -105,7 +105,7 @@ describe("токени лендінга не розходяться з @sergeant
   });
 
   it("помилки мають власний семантичний токен, а не модульний акцент", () => {
-    // Модульний accent у ролі кольору стану — той самий смелл, що ловить
+    // Модульний accent у ролі кольору стану – той самий смелл, що ловить
     // module-accent containment в apps/web. `#c23a3a` історично був
     // coral-700, тобто той самий хекс, що й акцент Рутини; після переходу
     // рампи на rose (2026-08-07) цього збігу вже немає, але тест лишається

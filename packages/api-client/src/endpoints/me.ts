@@ -69,7 +69,7 @@ export interface MeEndpoints {
   ) => Promise<AiMemoryClearResponse>;
   /**
    * `GET /api/ai-memory/list` — сторінка фактів, які асистент про тебе
-   * запам'ятав. `cursor` — `nextCursor` попередньої сторінки.
+   * запамʼятав. `cursor` — `nextCursor` попередньої сторінки.
    *
    * AI-CONTEXT: живе в `me`-групі поруч із `clearAiMemory`, хоч шлях і
    * `/api/ai-memory/*`. Це свідомо: всі три виклики обслуговують один

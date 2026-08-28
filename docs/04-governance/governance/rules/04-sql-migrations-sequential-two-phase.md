@@ -2,7 +2,7 @@
 
 > **Category:** `blocker-invariant`
 > **Severity:** `blocker`
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-12-04.
+> **Last touched:** 2026-08-28 by @Skords-01. **Next review:** 2026-12-17.
 > **Status:** Active
 
 > Per-rule canonical body for Hard Rule #4. Compact summary lives in [`AGENTS.md § Hard rules`](../../../../AGENTS.md#hard-rules-do-not-break) (rendered as a table). The machine-readable registry lives in [`docs/04-governance/governance/hard-rules.json`](../hard-rules.json). The 3-way sync (AGENTS.md ↔ JSON ↔ this file) is enforced by `pnpm lint:hard-rules-registry`.
@@ -17,7 +17,7 @@
 
 ## Why / What is enforced
 
-Files in `apps/server/src/migrations/` use the pattern `NNN_description.sql` (currently 001–103, sequential, no gaps). Pre-deploy: Coolify `pre_deployment_command = node dist-server/migrate.js` (compiled from `apps/server/migrate.mjs`; requires `MIGRATE_DATABASE_URL`), per [ADR-0074](../../adr/0074-hosting-hetzner-coolify.md) — раніше це був Railway `[deploy].preDeployCommand`. Локально — `pnpm db:migrate`. The build step copies them via `apps/server/build.mjs` (fixed in [#704](https://github.com/Skords-01/Sergeant/issues/704)).
+Files in `apps/server/src/migrations/` use the pattern `NNN_description.sql` (currently 001–127, sequential, no gaps; єдиний історичний дубль — `091`, див. § «Перейменування вже застосованої міграції»). Pre-deploy: Coolify `pre_deployment_command = node dist-server/migrate.js` (compiled from `apps/server/migrate.mjs`; requires `MIGRATE_DATABASE_URL`), per [ADR-0074](../../adr/0074-hosting-hetzner-coolify.md) — раніше це був Railway `[deploy].preDeployCommand`. Локально — `pnpm db:migrate`. The build step copies them via `apps/server/build.mjs` (fixed in [#704](https://github.com/Skords-01/Sergeant/issues/704)).
 
 > **Local Postgres image:** `docker-compose.yml` uses `pgvector/pgvector:pg17`, not stock `postgres:17-alpine`. Migration `025_ai_memories_pgvector.sql` runs `CREATE EXTENSION IF NOT EXISTS vector;` and the alpine image does not ship the extension — `pnpm db:up` would fail at migrate-time. CI workflows (`ci.yml`, `extended-e2e.yml`, `db-backup-verify.yml`) already pin the same image.
 
@@ -69,6 +69,30 @@ If rollback is genuinely impossible (irreversible data backfill, `DROP TABLE` of
 ```
 
 A reason after the colon is mandatory — the linter rejects bare `-- NO_ROLLBACK:` lines.
+
+### Перейменування вже застосованої міграції = повторне виконання
+
+Раннер ([`packages/db-schema/src/migrate/runner.ts`](../../../../packages/db-schema/src/migrate/runner.ts)) веде реєстр `schema_migrations` **за іменем файлу**: `getAppliedNames()` повертає рядки, і файл виконується, якщо його імені там немає. Отже перейменований файл для раннера - це нова міграція, і його SQL виконається на проді вдруге, а старий запис лишиться сиротою (запис є, файлу немає).
+
+Це вже сталося тричі, щоразу як «дрібний фікс нумерації»:
+
+| Комміт                                                          | Дія                                  | Сирота в `schema_migrations`   |
+| --------------------------------------------------------------- | ------------------------------------ | ------------------------------ |
+| `831ea60ad` fix(migrations): renumber duplicate 047 → 048       | `047_tg_topic_archive` → `048_…`     | `047_tg_topic_archive.sql`     |
+| `0f8bd3c17` fix(migrations): renumber 096 → 097 finyk/fizruk PK | `096_finyk_fizruk_pk_text` → `097_…` | `096_finyk_fizruk_pk_text.sql` |
+| `989061f5d` fix(migrations): повернути fizruk_injuries на 097   | `096_fizruk_injuries` → `097_…`      | `096_fizruk_injuries.sql`      |
+
+Пронесло без пошкоджень випадково: повторений SQL виявився стійким до другого прогону (`097_fizruk_injuries` увесь під `IF NOT EXISTS`; `096_finyk_fizruk_pk_text` робить DROP+recreate FK і `ALTER … TYPE text` на вже-`text` колонці). Наступного разу так не буде.
+
+**Що робити при колізії номерів на ребейзі:**
+
+- Файл ще **не** змерджений у `main` (звичайний випадок: два паралельні PR-и взяли той самий номер) - перенумеровуй свій файл вільно. Git бачить його як `A` (додано) відносно `main`, лінтер мовчить.
+- Файл **уже** на `main` - ім'я недоторкане, навіть якщо номер задубльований. Дубль лишається як є; обидва файли додаються до `APPLIED_DUPLICATE_FILENAMES` у [`scripts/lint-migrations.mjs`](../../../../scripts/lint-migrations.mjs) з поясненням, чому саме ці два. Двозначності це не створює: файли застосовуються в лексикографічному порядку.
+- Ніколи не «вирівнюй» нумерацію заднім числом заради краси. Порядок номерів - це контракт із реєстром, а не стиль.
+
+`pnpm lint:migrations` блокує перейменування up-міграції, що існує на `origin/<base>` (`git diff --diff-filter=R`). Escape-hatch `ALLOW_MIGRATION_RENAME=1` - лише для міграції, яка точно ніколи не деплоїлась (рідко: push у `main` деплоїть автоматично).
+
+Джоба `migration-lint` навмисно працює і на `pull_request`, і на `push` у `main`: дубль `091` проліз саме тому, що обидва PR-и лінтувались проти `main` з максимумом `090`, а після мержу гейт не запускався ніде.
 
 ## Related
 

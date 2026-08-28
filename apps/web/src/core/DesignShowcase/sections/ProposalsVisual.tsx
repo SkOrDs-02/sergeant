@@ -144,7 +144,7 @@ export function ProposalsVisualSection() {
           <span className="h-px flex-1 bg-line" />
         </div>
         <p className="text-style-caption leading-relaxed text-muted">
-          Кожен мокап – пара «Зараз ↔ Може бути». R2-V-10/16/18 зі списку рев’ю
+          Кожен мокап – пара «Зараз ↔ Може бути». R2-V-10/16/18 зі списку ревʼю
           прибрано як уже реалізовані вище (DynamicThemeColor · EmptyStateIdle ·
           BottomNavGlow). Анімовані демо поважають prefers-reduced-motion.
         </p>

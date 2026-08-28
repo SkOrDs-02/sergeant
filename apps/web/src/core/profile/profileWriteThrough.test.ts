@@ -690,7 +690,7 @@ describe("combined payload — nesting depth (trap #3)", () => {
 // survive a logout/login cycle, and the `my_profile` chat tool must see
 // the recovered facts (it reads local storage directly).
 // ────────────────────────────────────────────────────────────────────────
-describe("L-8 regression: логаут → вхід відновлює банк пам'яті", () => {
+describe("L-8 regression: логаут → вхід відновлює банк памʼяті", () => {
   it("a fact saved while authenticated survives logout (local purge) + re-login", async () => {
     // 1. User is signed in, saves a fact — same call path
     //    `remember()` (memoryHandlers.ts) uses.
@@ -721,7 +721,7 @@ describe("L-8 regression: логаут → вхід відновлює банк 
     // the chat tool reports it empty.
     expect(readMemoryEntries()).toEqual([]);
     expect(myProfile({ name: "my_profile", input: {} })).toBe(
-      "Профіль пам'яті порожній.",
+      "Профіль памʼяті порожній.",
     );
 
     // 4. Re-login as the SAME user — boot reconcile runs against the
@@ -736,7 +736,7 @@ describe("L-8 regression: логаут → вхід відновлює банк 
     //    view (memoryHandlers.ts reads local storage directly).
     expect(readMemoryEntries()).toEqual([FACT_A]);
     const profileText = myProfile({ name: "my_profile", input: {} });
-    expect(profileText).not.toBe("Профіль пам'яті порожній.");
+    expect(profileText).not.toBe("Профіль памʼяті порожній.");
     expect(profileText).toContain(FACT_A.fact);
   });
 
@@ -760,7 +760,7 @@ describe("L-8 regression: логаут → вхід відновлює банк 
 
     expect(readMemoryEntries()).toEqual([]);
     expect(myProfile({ name: "my_profile", input: {} })).toBe(
-      "Профіль пам'яті порожній.",
+      "Профіль памʼяті порожній.",
     );
     expect(mockUpdateProfile).not.toHaveBeenCalled();
   });

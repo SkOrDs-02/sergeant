@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "current": "4.0.3",
+  "current": "5.0.1",
   "versions": {
     "0.1.0": {
       "releasedAt": "2026-06-29",
@@ -96,7 +96,9 @@
     },
     "2.0.0": {
       "releasedAt": "2026-07-24",
-      "changes": ["bump from 1.0.2 -> 2.0.0: Hard Rule files changed"],
+      "changes": [
+        "bump from 1.0.2 -> 2.0.0: Hard Rule files changed"
+      ],
       "agentsTestedWith": [],
       "passRateBaseline": null
     },
@@ -265,7 +267,9 @@
     },
     "3.4.0": {
       "releasedAt": "2026-08-07",
-      "changes": ["bump from 3.3.4 -> 3.4.0: AGENTS.md modified"],
+      "changes": [
+        "bump from 3.3.4 -> 3.4.0: AGENTS.md modified"
+      ],
       "agentsTestedWith": [],
       "passRateBaseline": null
     },
@@ -297,6 +301,77 @@
       "releasedAt": "2026-08-18",
       "changes": [
         "bump from 4.0.2 -> 4.0.3: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "4.1.0": {
+      "releasedAt": "2026-08-27",
+      "changes": [
+        "bump from 4.0.3 -> 4.1.0: AGENTS.md modified; skill file added/modified"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "4.2.0": {
+      "releasedAt": "2026-08-27",
+      "changes": [
+        "bump from 4.1.0 -> 4.2.0: AGENTS.md modified; skill file added/modified"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "4.3.0": {
+      "releasedAt": "2026-08-27",
+      "changes": [
+        "bump from 4.2.0 -> 4.3.0: AGENTS.md modified; skill file added/modified"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "4.3.1": {
+      "releasedAt": "2026-08-27",
+      "changes": [
+        "bump from 4.3.0 -> 4.3.1: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "4.4.0": {
+      "releasedAt": "2026-08-28",
+      "changes": [
+        "bump from 4.3.1 -> 4.4.0: skill file added/modified"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "4.5.0": {
+      "releasedAt": "2026-08-28",
+      "changes": [
+        "bump 4.4.0 -> 4.5.0 (minor): Devin і Kilo Code виведені з активних харнесів (ADR-0088); активні - Claude Code і Codex",
+        "OVERRIDE: скрипт-бампер визначив major, бо в дифі є docs/04-governance/governance/rules/15. Ручне пониження до minor за § 'How to bump' harness-versioning.md (прецедент 3.2.0) - норма правила не змінилась, з переліків прибрано видалений DEVIN.md і Devin-читача",
+        "реєстр перенесено .kilo/harness-versions.json -> .agents/harness-versions.json; snapshot-вивід .kilocode/ -> .agents/snapshot.md (+ .agents/snapshot.cache.json, gitignored)",
+        "DEVIN.md видалено; check-agents-family-sync перевіряє CLAUDE.md + опційний OPENAI.md",
+        "kilo-code прибрано з tools-списків loop-реєстру; playbooks: devin/<unix-ts>- -> <harness>/; sergeant-start-here §0.1 читає .agents/snapshot.md"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "5.0.0": {
+      "releasedAt": "2026-08-28",
+      "changes": [
+        "Hard Rule #4: нова заборона — не перейменовувати міграцію, яка вже є на `main`. Раннер трекає застосовані міграції за іменем файлу, тож перейменування виконує той самий SQL у проді вдруге і лишає сироту в `schema_migrations` (сталося тричі). Колізію номерів на ребейзі розв'язують перенумеруванням СВОГО, ще не змердженого файлу.",
+        "`pnpm lint:migrations`: нова перевірка 2c (`git diff --diff-filter=R -M`) блокує таке перейменування; escape-hatch `ALLOW_MIGRATION_RENAME=1`.",
+        "Джоба `migration-lint` більше не PR-only — працює і на push у `main`.",
+        "`sergeant-data-and-migrations`: правило про перейменування додано в § Жорсткі правила."
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "5.0.1": {
+      "releasedAt": "2026-08-28",
+      "changes": [
+        "bump from 5.0.0 -> 5.0.1: typo / link / freshness-only change"
       ],
       "agentsTestedWith": [],
       "passRateBaseline": null

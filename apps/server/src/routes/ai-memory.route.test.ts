@@ -238,7 +238,7 @@ describe("POST /api/ai-memory/ingest — happy path", () => {
       .set("X-Requested-With", "XMLHttpRequest")
       .send({
         source: "chat",
-        content: "Я хочу запам'ятати: книга — 'Atomic habits'",
+        content: "Я хочу запамʼятати: книга — 'Atomic habits'",
       });
     expect(res.status).toBe(202);
     expect(enqueueMemoryIngestMock).toHaveBeenCalledWith(

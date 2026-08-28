@@ -11,7 +11,7 @@ import type { IconName } from "@shared/components/ui/Icon";
 export const PROFILE_KEY = STORAGE_KEYS.USER_PROFILE;
 
 /**
- * L-8 (2026-08-08, profile-settings-deep-audit): «коли банк пам'яті
+ * L-8 (2026-08-08, profile-settings-deep-audit): «коли банк памʼяті
  * востаннє писали на ЦЬОМУ пристрої» — потрібен `profileWriteThrough.ts`
  * для LWW-звірки з `/api/me/profile` (migration 115). ОКРЕМИЙ ключ, а не
  * поле всередині `PROFILE_KEY`: той зберігає РІВНО `MemoryEntry[]`
@@ -87,13 +87,13 @@ export const CATEGORY_META: Record<string, { label: string; icon: IconName }> =
     diet: { label: "Дієта", icon: "leaf" },
     goal: { label: "Цілі", icon: "target" },
     training: { label: "Тренування", icon: "dumbbell" },
-    health: { label: "Здоров'я", icon: "heart" },
+    health: { label: "Здоровʼя", icon: "heart" },
     preference: { label: "Уподобання", icon: "sparkles" },
     other: { label: "Інше", icon: "pen" },
   };
 
 /**
- * Видимий текст кнопок секції «Пам'ять ШІ». Це рівно те, що читається
+ * Видимий текст кнопок секції «Памʼять ШІ». Це рівно те, що читається
  * бульбашкою «від користувача» в чаті.
  *
  * AI-CONTEXT: до 2026-08-05 тут жила семирядкова інструкція («запитуй по
@@ -104,8 +104,8 @@ export const CATEGORY_META: Record<string, { label: string; icon: IconName }> =
  *   1. Вона суперечила системному промпту. Той наказує зберігати факти
  *      автоматично й не питати дозволу — це ратифіковане продуктове
  *      рішення (`docs/01-product/model/hub-coach.md` § 6.4, «Auto-remember
- *      + пам'ять прозора»). Інструкція вимагала протилежного, і кожна
- *      модель розв'язувала конфлікт по-своєму.
+ *      + памʼять прозора»). Інструкція вимагала протилежного, і кожна
+ *      модель розвʼязувала конфлікт по-своєму.
  *   2. Сценарій не влазив у Free-ліміт: інтервʼю «по одному питанню» +
  *      раунд підтверджень ≈ 8-10 запитів проти 5 на добу.
  *   3. Сім рядків правил назавжди осідали в історії чату як репліка
@@ -166,7 +166,7 @@ export function isKnownMemoryCategory(category: string): boolean {
  * Серверна схема `remember` віддає `enum` (`toolDefs/memory.ts`), але це
  * гарантія лише для Anthropic-моделей у strict-режимі — під OpenRouter-шлюзом
  * strict ігнорується, тож валідне значення тут не аксіома. Без зведення
- * невідома категорія створює в секції «Пам'ять ШІ» групу з сирим ключем
+ * невідома категорія створює в секції «Памʼять ШІ» групу з сирим ключем
  * замість людської назви та іконки.
  *
  * На ЧИТАННЯ (`normalizeMemoryEntry`) навмисно лишаємо як є: легасі-записи
@@ -252,14 +252,14 @@ export function readMemoryEntries(): MemoryEntry[] {
 }
 
 /**
- * Підписники на зміну банку пам'яті В МЕЖАХ ЦІЄЇ ВКЛАДКИ.
+ * Підписники на зміну банку памʼяті В МЕЖАХ ЦІЄЇ ВКЛАДКИ.
  *
- * WHY. Банк пишуть дві незалежні поверхні: екран «Пам'ять ШІ» і виконавці
+ * WHY. Банк пишуть дві незалежні поверхні: екран «Памʼять ШІ» і виконавці
  * чат-інструментів (`remember` / `forget`). Чат при цьому відкривається
  * ОВЕРЛЕЄМ поверх екрана, тобто екран не перемонтовується і свій
  * `useState`-знімок не переливає — список під оверлеєм лишався таким, яким
  * був до розмови, разом із лічильником у шапці. Гірше: `openMemoryChat`
- * обирає режим (інтерв'ю чи доповнення) за тим самим застарілим `length`.
+ * обирає режим (інтервʼю чи доповнення) за тим самим застарілим `length`.
  *
  * `window.storage` тут не рятує принципово: він не спрацьовує у вкладці, яка
  * сама зробила запис. Тому нотифікація йде з єдиного писаря — так її не
@@ -311,7 +311,7 @@ export function writeMemoryEntries(entries: MemoryEntry[]): void {
   // through the v2 op-log writer-runtime, not LS-key-watcher, so a plain
   // `safeWriteLS` is enough here.
   if (!safeWriteLS(PROFILE_KEY, entries)) {
-    throw new Error("Не вдалося зберегти пам'ять профілю");
+    throw new Error("Не вдалося зберегти памʼять профілю");
   }
   // L-8: генуїнний ЛОКАЛЬНИЙ запис — нова мітка часу ("зараз") + поточний
   // owner, які `profileWriteThrough.ts` звіряє з сервером на наступному
@@ -334,7 +334,7 @@ export function writeMemoryEntriesFromServer(
   serverUpdatedAt: string,
 ): void {
   if (!safeWriteLS(PROFILE_KEY, entries)) {
-    throw new Error("Не вдалося зберегти пам'ять профілю");
+    throw new Error("Не вдалося зберегти памʼять профілю");
   }
   writeMemoryBankMeta(serverUpdatedAt);
   notify(listeners, entries);
@@ -365,7 +365,7 @@ export function upsertMemoryFact(
   category?: string,
 ): { entries: MemoryEntry[]; entry: MemoryEntry; created: boolean } {
   const normalizedFact = fact.trim();
-  if (!normalizedFact) throw new Error("Потрібен факт для запам'ятовування.");
+  if (!normalizedFact) throw new Error("Потрібен факт для запамʼятовування.");
 
   const normalizedCategory = toWritableMemoryCategory(category);
   const existingIndex = entries.findIndex(
@@ -375,7 +375,7 @@ export function upsertMemoryFact(
   if (existingIndex >= 0) {
     const existingEntry = entries[existingIndex];
     if (!existingEntry) {
-      throw new Error("Не вдалося оновити запис пам'яті.");
+      throw new Error("Не вдалося оновити запис памʼяті.");
     }
     const updated: MemoryEntry = {
       ...existingEntry,

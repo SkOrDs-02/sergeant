@@ -31,7 +31,7 @@ import {
  *   - Без `REDIS_URL` — Day 0 шлеться синхронно (in-process), Day 1 + 3
  *     ПРОПУСКАЮТЬСЯ із warn-логом. Це навмисно: у нас нема in-memory
  *     persistence для 3-денних delayed-job-ів, а fake-setTimeout-чергу
- *     ми будувати не будемо (рестарт процесу вб'є її).
+ *     ми будувати не будемо (рестарт процесу вбʼє її).
  *
  * Idempotency:
  *   - `email_unsubscribes` (user_id, campaign_family) — opt-out перевіряється
@@ -256,7 +256,7 @@ export class FtuxDripSkip extends Error {
 }
 
 /**
- * Real worker-payload. Кидає `FtuxDripSkip` для м'яких skip-ів і real
+ * Real worker-payload. Кидає `FtuxDripSkip` для мʼяких skip-ів і real
  * `Error` для retryable / permanent failures.
  *
  * Caller (BullMQ-worker) вирізняє `FtuxDripSkip` через `instanceof` і
@@ -325,7 +325,7 @@ async function dispatchFtuxDripEmail(data: FtuxDripJobData): Promise<void> {
   });
 
   // Залишаємо row у `email_campaigns_log` НАВІТЬ якщо Resend поверне 5xx:
-  // ретрай BullMQ на тому ж job-id побачить існуючий log-row і м'яко
+  // ретрай BullMQ на тому ж job-id побачить існуючий log-row і мʼяко
   // заскіпає (`skipped_already_sent`). Це безпечніше ніж дублікат на
   // 0.1% non-idempotent-кейсів (Resend accept→reply-5xx race).
   const { providerMessageId } = await sendViaResend({

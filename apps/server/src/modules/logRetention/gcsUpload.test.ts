@@ -56,7 +56,7 @@ describe("uploadGzippedJsonl", () => {
     vi.unstubAllGlobals();
   });
 
-  it("успішно завантажує об'єкт і виставляє правильні заголовки", async () => {
+  it("успішно завантажує обʼєкт і виставляє правильні заголовки", async () => {
     const fetchImpl = vi.fn().mockResolvedValue(makeSuccessResponse());
     const getAccessToken = vi.fn().mockResolvedValue("my-bearer-token");
     const gzippedBody = Buffer.from("fake-gzip-content");

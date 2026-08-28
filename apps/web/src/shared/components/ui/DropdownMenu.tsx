@@ -39,6 +39,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@shared/lib/ui/cn";
+import { useOutsideClick } from "@shared/hooks/useOutsideClick";
 import {
   DropdownMenuEntryView,
   type DropdownMenuEntryViewProps,
@@ -361,18 +362,9 @@ function DropdownMenuPanel({
     target?.focus({ preventScroll: false });
   }, [focusedIndex, openSubmenuId]);
 
-  // Outside click closes.
-  useEffect(() => {
-    const handler = (event: MouseEvent) => {
-      const t = event.target as Node | null;
-      if (!t) return;
-      if (panelRef.current?.contains(t)) return;
-      if (anchorRef.current?.contains(t)) return;
-      onClose(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [anchorRef, onClose]);
+  // Outside click closes. `enabled` не потрібен: панель монтується лише
+  // коли меню відкрите. onClose(false) — без повернення фокуса на тригер.
+  useOutsideClick([panelRef, anchorRef], () => onClose(false));
 
   const activateItem = useCallback(
     (item: DropdownMenuItem) => {

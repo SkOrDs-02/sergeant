@@ -5,7 +5,7 @@
  * із `tool_results + tool_calls_raw`, сервер відкриває upstream-стрім до
  * Anthropic і форвардить text-дельти у `data: {"t":"…"}\n\n` події. Цей файл
  * мокає `anthropicMessagesStream` фейковою `Response` із `ReadableStream`-боді,
- * а Express-`Response` — об'єктом, що збирає все, що пишуть у `res.write()`,
+ * а Express-`Response` — обʼєктом, що збирає все, що пишуть у `res.write()`,
  * щоб можна було асертити саме SSE-протокол (а не лише фінальний текст).
  *
  * Тести покривають:
@@ -189,7 +189,7 @@ function makeStreamReqBody(): Record<string, unknown> {
       {
         type: "tool_use",
         id: "toolu_x",
-        // Реальне ім'я з реєстру (`tools.ts`) — B32 валідує `name` проти
+        // Реальне імʼя з реєстру (`tools.ts`) — B32 валідує `name` проти
         // `TOOLS`, тож синтетичне "noop" більше не проходить.
         name: "delete_transaction",
         input: {},
@@ -634,7 +634,7 @@ describe("chat handler — SSE protocol robustness", () => {
       delta: { stop_reason: "end_turn" },
     });
     const fullPayload = `data: ${json}\n\ndata: ${stop}\n\n`;
-    // Шматуємо по 7 байтів — гарантовано б'є по середині `data: `, JSON, та між \n\n.
+    // Шматуємо по 7 байтів — гарантовано бʼє по середині `data: `, JSON, та між \n\n.
     const chunks: string[] = [];
     for (let i = 0; i < fullPayload.length; i += 7) {
       chunks.push(fullPayload.slice(i, i + 7));

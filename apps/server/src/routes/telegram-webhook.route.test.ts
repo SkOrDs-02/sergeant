@@ -361,7 +361,7 @@ describe("telegram webhook — груповий чат", () => {
   function groupUpdate(groupChatId: number, text: string) {
     return {
       message: {
-        // Ід групи від'ємний — саме так їх шле Telegram. Беремо справжню
+        // Ід групи відʼємний — саме так їх шле Telegram. Беремо справжню
         // форму, бо гейт `/stats` порівнює `chat_id` рядком, і додатне
         // число тут випадково зробило б тест поблажливішим.
         chat: { id: groupChatId, type: "supergroup" },

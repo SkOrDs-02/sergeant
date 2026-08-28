@@ -114,7 +114,7 @@ export function WorkoutCatalogSection({
                       // Active-стан — ті самі fizruk-soft токени, що в
                       // `Segmented` style="soft": інверсне «чорнило»
                       // (bg-text/text-bg) читалось як чужорідний елемент
-                      // серед м'яких поверхонь модуля.
+                      // серед мʼяких поверхонь модуля.
                       "text-xs px-3 py-2 pointer-coarse:min-h-[44px] rounded-full border transition-colors",
                       active
                         ? "border-fizruk-ring bg-fizruk-surface text-fizruk-soft-fg font-semibold shadow-sm dark:border-fizruk-border-dark/40 dark:bg-fizruk-surface-dark/15"

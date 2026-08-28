@@ -404,7 +404,7 @@ export default function NutritionApp({
     // docs/ui/toast-policy.md. The retry callback runs the same dual
     // refetch (`invalidateQueries` + `requestCloudPull`) the gesture
     // triggered so the user does not need to repeat the PTR pull.
-    toast.error("Не вдалося оновити дані. Перевір з'єднання.", undefined, {
+    toast.error("Не вдалося оновити дані. Перевір зʼєднання.", undefined, {
       label: "Повторити",
       onClick: () => {
         void handlePullRefresh();

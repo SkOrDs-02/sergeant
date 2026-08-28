@@ -17,6 +17,7 @@ import {
 import { calcFinykPeriodAggregate } from "@sergeant/finyk-domain/lib/spending";
 import { readFinykStatsContext } from "@finyk/lib/lsStats";
 import { formatNumberUk, pluralDays, pluralUa } from "@sergeant/shared";
+import { dateKeyFromDate } from "@sergeant/routine-domain";
 import { wholeDaysSince } from "@shared/lib/time/wholeDaysSince";
 import {
   BODY_ATLAS_MUSCLE_LABELS_UK,
@@ -41,9 +42,9 @@ interface Workout {
   items?: Exercise[];
 }
 
-function localDateKey(d: Date = new Date()): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
+// Device-local day key (ADR-0078) — делегат до канонічного `dateKeyFromDate`
+// з `@sergeant/routine-domain` замість колишньої інлайн-копії.
+const localDateKey = (d: Date = new Date()): string => dateKeyFromDate(d);
 
 function daysBetween(isoA: string, isoB: string): number {
   const a = new Date(isoA);
@@ -54,7 +55,7 @@ function daysBetween(isoA: string, isoB: string): number {
 /**
  * Loose muscle keys → canonical `@sergeant/fizruk-domain` muscle ids.
  *
- * AI-CONTEXT: два джерела м'язів сходяться в одну купу. `getExerciseMuscles`
+ * AI-CONTEXT: два джерела мʼязів сходяться в одну купу. `getExerciseMuscles`
  * дає грубі ключі з regex по назві вправи (`chest`, `legs`, …), а
  * `musclesPrimary`/`musclesSecondary` з каталогу — доменні id
  * (`pectoralis_major`, `rhomboids`, …). Раніше рушій підписував їх власною
@@ -137,7 +138,7 @@ function buildMuscleLastTrained(
   for (const w of completed) {
     for (const item of w.items || []) {
       for (const raw of getExerciseMuscles(item)) {
-        // Кілька доменних м'язів (rhomboids + upper_back + latissimus_dorsi)
+        // Кілька доменних мʼязів (rhomboids + upper_back + latissimus_dorsi)
         // згортаються в одну атласну групу — саме тому «спина» лишається
         // однією карткою, а не трьома.
         const m = toAtlasMuscle(raw);
@@ -169,7 +170,7 @@ function buildFinanceRecs(): Rec[] {
 
 /** Днів без жодного тренування, після яких говорить `fizruk_long_break`. */
 const LONG_BREAK_DAYS = 5;
-/** Днів без конкретної м'язової групи, після яких вона вважається несвіжою. */
+/** Днів без конкретної мʼязової групи, після яких вона вважається несвіжою. */
 const STALE_DAYS = 8;
 /** Далі цієї межі група випадає з нагадування (див. коментар у місці фільтра). */
 const STALE_LOOKBACK_DAYS = 45;
@@ -218,7 +219,7 @@ function buildFizrukRecs(): Rec[] {
     });
   }
 
-  // М'язовий баланс. ОДНА картка на весь дисбаланс, а не картка на групу:
+  // Мʼязовий баланс. ОДНА картка на весь дисбаланс, а не картка на групу:
   // після паузи стають несвіжими всі групи одразу, і старий цикл висипав у
   // «Що зараз важливо» до 18 однакових рядків (скріншот 2026-08-18).
   //
@@ -250,9 +251,9 @@ function buildFizrukRecs(): Rec[] {
         icon: "dumbbell",
         title: single
           ? `${labels[0]} не тренували ${maxDays} ${pluralDays(maxDays)}`
-          : `${stale.length} ${pluralUa(stale.length, MUSCLE_GROUP_FORMS)} м'язів без навантаження ${maxDays}+ ${pluralDays(maxDays)}`,
+          : `${stale.length} ${pluralUa(stale.length, MUSCLE_GROUP_FORMS)} мʼязів без навантаження ${maxDays}+ ${pluralDays(maxDays)}`,
         body: single
-          ? "Включи вправи на ці м'язи в наступне тренування."
+          ? "Включи вправи на ці мʼязи в наступне тренування."
           : `Найдовше без роботи: ${shown.join(", ")}${
               labels.length > shown.length
                 ? ` і ще ${labels.length - shown.length}`
@@ -439,7 +440,7 @@ function buildNutritionRecs(): Rec[] {
         priority: 68,
         icon: "utensils",
         title: `Лише ${Math.round(protein)}г білка з ${targetProtein}г`,
-        body: "Додай протеїновий прийом їжі, це важливо для м'язів.",
+        body: "Додай протеїновий прийом їжі, це важливо для мʼязів.",
         action: "nutrition",
         pwaAction: "add_meal",
       });

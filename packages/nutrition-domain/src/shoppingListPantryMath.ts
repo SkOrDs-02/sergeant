@@ -382,7 +382,7 @@ function makeLowStockItemId(key: string): string {
  * порога (дві банки по 60 г консерви — це разом 120 г, не дві позиції по
  * 60 г кожна).
  *
- * `categorize` — ін'єкція `categorizeFood` з `foodCategories.ts` (той самий
+ * `categorize` — інʼєкція `categorizeFood` з `foodCategories.ts` (той самий
  * пакет) для підбору "доречної" категорії; винесена параметром, щоб не
  * плодити прихований import-цикл між файлами модуля.
  */

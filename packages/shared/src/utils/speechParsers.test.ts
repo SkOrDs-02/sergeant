@@ -32,10 +32,23 @@ describe("parseUaNumber", () => {
     expect(parseUaNumber("   ")).toBeNull();
   });
 
-  it("normalizes typographic apostrophes", () => {
-    // typographic right-quote and ASCII single-quote both map to the same key
-    expect(parseUaNumber("п’ять")).toBe(5);
-    expect(parseUaNumber("дев’яносто")).toBe(90);
+  it("normalizes every apostrophe form to the canonical key", () => {
+    // Ключі словника канонічні (`ʼ`, U+02BC — канон §1.10), а Whisper і
+    // клавіатури віддають три різні символи. Перевіряємо КОЖЕН окремо:
+    // саме цей тест 2026-08-26 знеміс себе сам, коли після заміни символу
+    // почав двічі перевіряти той самий, і десять числівників мовчки
+    // перестали б розпізнаватись.
+    const forms = ["'", "’", "ʼ"];
+    // Санітарна перевірка, що це справді три РІЗНІ символи: без неї тест
+    // знову зможе тихо виродитись у потрійну перевірку одного й того ж.
+    expect(new Set(forms).size).toBe(3);
+    for (const a of forms) {
+      expect(parseUaNumber(`п${a}ять`)).toBe(5);
+      expect(parseUaNumber(`дев${a}яносто`)).toBe(90);
+      expect(normalizeUaNumbers(`сто двадцять п${a}ять гривень`)).toBe(
+        "125 гривень",
+      );
+    }
   });
 });
 

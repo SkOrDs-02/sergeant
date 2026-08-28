@@ -66,7 +66,7 @@ export function GoalEditSheet({
       return;
     }
     if (s < 0) {
-      setError("Відкладена сума не може бути від'ємною");
+      setError("Відкладена сума не може бути відʼємною");
       return;
     }
     onSubmit({

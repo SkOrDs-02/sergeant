@@ -49,7 +49,7 @@ export interface SearchFieldProps extends SearchFieldAutofillGuard {
  *    ігнорує `off` лише для `type="password"`; для решти полів поважає.
  * 2. `name` виду `*-search` — щоб евристика другого шару, якщо до неї дійде,
  *    класифікувала поле як пошукове (`SEARCH_TERM`), а не як username.
- *    Саме тому `searchFieldProps()` вимагає ім'я аргументом: bundle без
+ *    Саме тому `searchFieldProps()` вимагає імʼя аргументом: bundle без
  *    `name` лікує лише половину причини.
  * 3. `data-*` opt-out-и — сторонні менеджери паролів (1Password, LastPass,
  *    Bitwarden, Dashlane) не читають `autocomplete`, у кожного свій атрибут.

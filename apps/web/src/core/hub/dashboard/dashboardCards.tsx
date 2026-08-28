@@ -232,7 +232,7 @@ export function StaggerChild({
  * least one real entry across any module. Returns `null` until then —
  * до першого real entry юзер бачить онбординг-нагадування / FirstAction
  * вгорі дашборду, і pre-emptive «Sergeant працює офлайн» внизу плутав
- * 'one-hero rule' — два полюси уваги до того, як з'явилась причина
+ * 'one-hero rule' — два полюси уваги до того, як зʼявилась причина
  * святкувати. Реальний engagement-маркер живе вище (StreakIndicator).
  */
 export function MotivationalFooter() {

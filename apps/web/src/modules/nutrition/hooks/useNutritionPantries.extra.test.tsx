@@ -79,7 +79,7 @@ describe("useNutritionPantries — parsePantry lifecycle branches", () => {
     expect(setStatusText).toHaveBeenCalledWith("Розбираю список…");
     await waitFor(() => expect(setBusy).toHaveBeenCalledWith(false));
     expect(setStatusText).toHaveBeenCalledWith("");
-    // Текст лишається, доки користувач не підтвердить прев'ю.
+    // Текст лишається, доки користувач не підтвердить превʼю.
     expect(result.current.pantryText).toBe("молоко");
   });
 

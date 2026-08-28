@@ -184,7 +184,7 @@ describe("WorkoutItemCard — strength", () => {
   });
 
   it("treats a bodyweight set (0 кг × N) as done — ✓ works for підтягування/віджимання", () => {
-    // Регрес, спійманий на рев'ю редизайну: критерій «зроблено» вимагав
+    // Регрес, спійманий на ревʼю редизайну: критерій «зроблено» вимагав
     // ваги > 0, тож для вправ із власною вагою ✓ була мертвою і таймер
     // не стартував узагалі. Каталог має окремий фільтр обладнання
     // «Власна вага», тобто цей клас вправ — не крайній випадок.
@@ -316,7 +316,7 @@ describe("WorkoutItemCard — groups", () => {
   it("renders the group-select checkbox with an accessible name + state and toggles it", () => {
     renderCard({ groupSelectMode: true, isSelected: false });
     const checkbox = screen.getByRole("checkbox", {
-      name: "Жим лежачи: вибрати для об'єднання в суперсет",
+      name: "Жим лежачи: вибрати для обʼєднання в суперсет",
     });
     expect(checkbox).toHaveAttribute("aria-checked", "false");
     fireEvent.click(checkbox);
@@ -327,7 +327,7 @@ describe("WorkoutItemCard — groups", () => {
     renderCard({ groupSelectMode: true, isSelected: true });
     expect(
       screen.getByRole("checkbox", {
-        name: "Жим лежачи: вибрати для об'єднання в суперсет",
+        name: "Жим лежачи: вибрати для обʼєднання в суперсет",
       }),
     ).toHaveAttribute("aria-checked", "true");
   });

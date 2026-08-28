@@ -33,7 +33,7 @@ const MAX_ENTRY_UNCOMPRESSED_BYTES = 64 * 1024 * 1024;
 export class ZipFormatError extends Error {}
 
 export interface ZipEntries {
-  /** Ім'я частини (`xl/workbook.xml`) → сирі байти. */
+  /** Імʼя частини (`xl/workbook.xml`) → сирі байти. */
   get(name: string): Buffer | undefined;
   has(name: string): boolean;
   names(): string[];

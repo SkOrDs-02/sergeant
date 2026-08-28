@@ -1,6 +1,6 @@
 # Playbook: Fix Exhaustive Deps Warnings
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-10-05.
+> **Last touched:** 2026-08-28 by @Skords-01. **Next review:** 2026-11-28.
 > **Status:** Active
 
 **Trigger:** "Виправити exhaustive-deps warnings" / ESLint `react-hooks/exhaustive-deps` violations / стале закриття з `apps-web-exhaustive-deps.md`.
@@ -84,7 +84,7 @@ useEffect(() => {
 
 ### 6. Створити PR
 
-- Branch: `devin/<unix-ts>-fix-exhaustive-deps-<module>`
+- Branch: `<harness>/fix-exhaustive-deps-<module>`
 - Commit: `fix(web): resolve exhaustive-deps warnings in <module>`
 - PR description: які файли виправлено, яку стратегію обрано для кожного.
 

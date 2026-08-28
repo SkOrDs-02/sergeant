@@ -44,7 +44,7 @@ export function GoalsStep({
         </Text>
         <Text className="text-center text-xs text-fg-muted">
           {hasQuestions
-            ? "Необов'язково, можна пропустити."
+            ? "Необовʼязково, можна пропустити."
             : "Налаштуй деталі потім у кожному модулі."}
         </Text>
       </View>

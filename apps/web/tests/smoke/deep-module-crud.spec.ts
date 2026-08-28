@@ -87,7 +87,7 @@ async function expandTodayAndExpect(
   const timeoutMs = opts?.timeoutMs ?? 30_000;
   // Harness helper: між boot-refresh і hydration-refresh (другий notify
   // dual-write черги) день-група може перерендеритись назад згорнутою і
-  // з'їсти одиночний клік — тому expand+assert атомарно ретраяться.
+  // зʼїсти одиночний клік — тому expand+assert атомарно ретраяться.
   await expect(async () => {
     const toggle = page.getByRole("button", {
       name: /(Розгорнути|Згорнути) Сьогодні/,
@@ -199,8 +199,8 @@ test.describe("@critical deep module CRUD browser loop", () => {
     await expect(undoBtn).toBeVisible();
     // Harness correction: undo диспатчиться ОДРАЗУ по свіжому тосту
     // (TTL 5000мс з продакт-брифу — полінг toHaveCount(0) перед undo
-    // зрідка з'їдав увесь бюджет під CI-навантаженням). Delete-proof —
-    // сам undo-тост: він з'являється лише після успішного delete; UI-
+    // зрідка зʼїдав увесь бюджет під CI-навантаженням). Delete-proof —
+    // сам undo-тост: він зʼявляється лише після успішного delete; UI-
     // proof зникнення/повернення рядка покриває nutrition-сценарій, а
     // анти-резурекцію після undo фіксує фінальний expand-assert нижче.
     await undoBtn.dispatchEvent("click");

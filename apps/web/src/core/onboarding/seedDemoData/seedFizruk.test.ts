@@ -109,12 +109,12 @@ describe("seedFizruk", () => {
     expect(keys).toContain("fizruk_workout_templates_v1");
   });
 
-  // Ключі м'язів мусять бути ДОМЕННІ. Невідомий ключ мапиться в `null`,
+  // Ключі мʼязів мусять бути ДОМЕННІ. Невідомий ключ мапиться в `null`,
   // випадає з силуету «Моє тіло» і спливає сирим англійським рядком у
   // списку «Почекати» — саме це й було видно наживо 2026-08-08
   // («Почекати: Квадрицепс, back, shoulders»), щойно демо знову
   // почало доїжджати до модуля.
-  it("вживає лише ключі м'язів, які розуміє mapDomainMuscleToAtlas", async () => {
+  it("вживає лише ключі мʼязів, які розуміє mapDomainMuscleToAtlas", async () => {
     const { mapDomainMuscleToAtlas } =
       await import("@sergeant/fizruk-domain/data");
     seedFizruk();

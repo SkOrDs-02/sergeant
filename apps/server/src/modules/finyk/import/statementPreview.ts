@@ -243,7 +243,7 @@ export default async function statementPreviewHandler(
       ImportStatementPreviewResponseSchema.parse({
         profile: autodetected.profile,
         needsMapping: false,
-        // «Сітка 2» дедуп-превʼю (duplicateDetect.ts): м'яка мітка
+        // «Сітка 2» дедуп-превʼю (duplicateDetect.ts): мʼяка мітка
         // «схоже, вже є» за трійкою дата+сума+напрям проти вже збережених
         // витрат — до того, як людина побачить галочки.
         rows: await markDuplicateLikely(pool, userId, rows),

@@ -245,7 +245,7 @@ export function detectCsvProfile(headers: string[]): DetectedProfile | null {
  * `needsMapping: true` → `headers[]`) у позиційні індекси. Порівняння —
  * case/whitespace-толерантне (той самий `normalizeHeader`), щоб
  * copy-paste заголовка з невеликою відмінністю в регістрі не провалював
- * mapping. `null`, якщо будь-яка з трьох обов'язкових колонок не
+ * mapping. `null`, якщо будь-яка з трьох обовʼязкових колонок не
  * знайдена серед `headers`.
  *
  * Custom mapping НЕ несе currency-колонку (контракт `ImportColumnMapping`,

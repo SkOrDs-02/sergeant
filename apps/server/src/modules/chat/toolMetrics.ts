@@ -11,7 +11,7 @@
  * - `recordToolExecutions(toolResults, toolCallsRaw)` — на другому кроці,
  *   коли клієнт прислав tool_result-и: маперимо `tool_use_id → name` через
  *   `tool_calls_raw` і інкрементимо `executed`. Якщо `tool_use_id` не
- *   мапиться — інкрементимо `unknown_tool` з placeholder ім'ям.
+ *   мапиться — інкрементимо `unknown_tool` з placeholder імʼям.
  *
  * Tool name мітка ОБМЕЖЕНА відомими TOOL-ами (whitelist із `tools.ts`),
  * щоб уникнути cardinality explosion, якщо клієнт надішле довільний `name`.
@@ -74,7 +74,7 @@ export function buildToolUseIdToNameMap(
 
 /**
  * Інкрементить `chat_tool_invocations_total{tool, outcome=executed}` для
- * кожного `tool_result`, чий `tool_use_id` змапився на ім'я з `tool_calls_raw`.
+ * кожного `tool_result`, чий `tool_use_id` змапився на імʼя з `tool_calls_raw`.
  * Інакше — `outcome=unknown_tool` з `tool="unknown"`.
  */
 export function recordToolExecutions(

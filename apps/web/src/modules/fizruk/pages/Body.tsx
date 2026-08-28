@@ -39,7 +39,7 @@ export function Body({ onOpenAtlas }: BodyProps) {
     useDailyLog();
   // W1-WEIGHT-SOT стадія 1: вага живе у ДВОХ сховищах (`fizruk_daily_log` +
   // `fizruk_measurements`), і екран «Тіло» історично читав лише перше — тому
-  // зважування з екрана «Заміри» тут не з'являлося. Читаємо union обох через
+  // зважування з екрана «Заміри» тут не зʼявлялося. Читаємо union обох через
   // доменний селектор; сторінка нічого не пише інакше.
   const { entries: measurementEntries } = useMeasurements();
   const toast = useToast();
@@ -163,7 +163,7 @@ export function Body({ onOpenAtlas }: BodyProps) {
               <div className="text-style-caption text-subtle">
                 {messages.fizruk.body.weight}
               </div>
-              {/* eslint-disable-next-line sergeant-design/no-raw-type-size -- пре-існуюча типографіка КПІ-смуги; три колонки мусять лишитись однакової висоти, і міняти їх шкалу в PR про порядок секцій — не те місце. */}
+              {}
               <div className="text-base font-extrabold text-text tabular-nums">
                 {stats.latestWeight != null ? (
                   <Measure
@@ -180,7 +180,7 @@ export function Body({ onOpenAtlas }: BodyProps) {
               <div className="text-style-caption text-subtle">
                 {messages.fizruk.body.sleep}
               </div>
-              {/* eslint-disable-next-line sergeant-design/no-raw-type-size -- пре-існуюча типографіка КПІ-смуги; три колонки мусять лишитись однакової висоти, і міняти їх шкалу в PR про порядок секцій — не те місце. */}
+              {}
               <div className="text-base font-extrabold text-text tabular-nums">
                 {/* `toFixed(1)` давав КРАПКУ («7.5 год») посеред
                     інтерфейсу, де всюди кома. `Measure` бере роздільник
@@ -200,7 +200,7 @@ export function Body({ onOpenAtlas }: BodyProps) {
               <div className="text-style-caption text-subtle">
                 {messages.fizruk.body.energyShort}
               </div>
-              {/* eslint-disable-next-line sergeant-design/no-raw-type-size -- пре-існуюча типографіка КПІ-смуги; три колонки мусять лишитись однакової висоти, і міняти їх шкалу в PR про порядок секцій — не те місце. */}
+              {}
               <div className="text-base font-extrabold text-text tabular-nums">
                 {/* Defect #8: computed 7-day average energy already lived
                     in `stats` but never rendered anywhere on the page —

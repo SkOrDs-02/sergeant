@@ -299,7 +299,7 @@ describe("adapter — запис сходинки і outbox", () => {
     expect(insert.params[2]).toBe("2026-07-26");
   });
 
-  it("кладе origin='manual' і всі п'ять значень", async () => {
+  it("кладе origin='manual' і всі пʼять значень", async () => {
     const { client, calls } = makeRecordingClient();
     await applyNutritionDualWriteOps(client, [OP], {
       userId: "user_1",

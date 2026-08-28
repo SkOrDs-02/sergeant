@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { CrossModuleLinkCard } from "./CrossModuleLinkCard";
 
 /**
- * `CrossModuleLinkCard` — форма крос-модульного зв'язку (анти-слоп P2).
+ * `CrossModuleLinkCard` — форма крос-модульного звʼязку (анти-слоп P2).
  * Дві осі + місток, що несе впевненість товщиною й суцільністю ліній, три
  * словесні ступені градації, і окремий «мовчазний» стан, коли даних ще
  * замало. Пороги (`MIN_N`, `NOTABLE_R`) — ті самі, що керують weekly-digest
@@ -38,7 +38,7 @@ export default meta;
 type Story = StoryObj<typeof CrossModuleLinkCard>;
 
 /**
- * Стабільний зв'язок — товста суцільна лінія, найвищий ступінь.
+ * Стабільний звʼязок — товста суцільна лінія, найвищий ступінь.
  *
  * `observations`/`strength` задані явно, а не успадковані від `meta.args`:
  * дефолтні 23/0.62 не дотягують до жодного порога третього ступеня
@@ -113,7 +113,7 @@ export const NotEnoughData: Story = {
   },
 };
 
-/** Право мовчати — даних достатньо, але зв'язку не видно (|r| < NOTABLE_R). */
+/** Право мовчати — даних достатньо, але звʼязку не видно (|r| < NOTABLE_R). */
 export const NoPatternFound: Story = {
   args: {
     observations: 40,

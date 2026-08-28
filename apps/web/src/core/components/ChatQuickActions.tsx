@@ -98,7 +98,7 @@ export function ChatQuickActions({
   const renderChip = (a: AssistantCapability) => {
     const requiresOnline = a.requiresOnline ?? true;
     const disabled = loading || (requiresOnline && !online);
-    const reason = !online && requiresOnline ? "Потрібне з'єднання" : undefined;
+    const reason = !online && requiresOnline ? "Потрібне зʼєднання" : undefined;
     const shortLabel = a.shortLabel ?? a.label;
     return (
       <button

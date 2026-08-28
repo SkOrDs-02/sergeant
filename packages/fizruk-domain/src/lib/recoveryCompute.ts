@@ -97,7 +97,7 @@ function ageHours(at: string | undefined, nowMs: number): number | null {
   if (typeof at !== "string" || at.length === 0) return null;
   const t = Date.parse(at);
   if (!Number.isFinite(t)) return null;
-  // Майбутня дата — це 0 годин тому, не від'ємний вік.
+  // Майбутня дата — це 0 годин тому, не відʼємний вік.
   return Math.max(0, (nowMs - t) / MS_PER_HOUR);
 }
 

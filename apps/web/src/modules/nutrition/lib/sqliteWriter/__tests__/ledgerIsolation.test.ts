@@ -109,7 +109,7 @@ describe("nutrition dual-write adapter — журнал комори недот�
     expect(touching).toEqual([]);
   });
 
-  it("cleanup дітей комори прив'язаний до nutrition_pantry_items, не до журналу", async () => {
+  it("cleanup дітей комори привʼязаний до nutrition_pantry_items, не до журналу", async () => {
     const { client, calls } = makeRecordingClient();
 
     await applyNutritionDualWriteOps(client, [PANTRY_OPS[2]!], {

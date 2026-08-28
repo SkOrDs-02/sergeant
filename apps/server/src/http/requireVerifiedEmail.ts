@@ -5,7 +5,7 @@ import type { Request, RequestHandler } from "express";
  * middleware, бо читає `req.user` (resolved Better Auth-ом). Якщо
  * `req.user.emailVerified !== true` — повертаємо 403 з code
  * `EMAIL_VERIFICATION_REQUIRED`, фронт показує банер "Підтвердіть email,
- * щоб під'єднати банк".
+ * щоб підʼєднати банк".
  *
  * Чому окремий middleware, а не inline-чек у handler-і `connectHandler`:
  *   - threat model H6 каже про **кожний** sensitive flow (Mono connect,

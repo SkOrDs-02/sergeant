@@ -31,7 +31,7 @@ export interface FinykManualExpenseConflictBannerProps {
  *
  * **Чому inline, а не toast:** конфлікт — стійкий стан (висить, поки
  * юзер не вирішить), а toast — ефемерний. Якщо юзер закриє вкладку,
- * conflict-store скине себе у пам'яті, але banner перевідкриється
+ * conflict-store скине себе у памʼяті, але banner перевідкриється
  * на наступному push-фейлі — це детермінований UX без race-у з
  * toast-черги.
  *

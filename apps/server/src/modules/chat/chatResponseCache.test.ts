@@ -1,7 +1,7 @@
 /**
  * Unit-тести для short-TTL response-cache першого туру `/api/chat`
  * (`chatResponseCache.ts`). `env` парситься один раз при import, тож TTL/ємність
- * патчимо прямо на об'єкті `env` із save/restore (як у ai-memory/service.test).
+ * патчимо прямо на обʼєкті `env` із save/restore (як у ai-memory/service.test).
  */
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { env } from "../../env.js";

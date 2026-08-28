@@ -1,6 +1,6 @@
 # Playbook: Stabilize Flaky Test
 
-> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-15.
+> **Last touched:** 2026-08-28 by @Skords-01. **Next review:** 2026-12-09.
 > **Status:** Active
 
 **Trigger:** «Тест X падає 1 з 5 разів» / у CI red, локально green / тест у списку **«Pre-existing flaky tests»** в AGENTS.md.
@@ -240,7 +240,7 @@ Push, побач 3 послідовних зелених CI run-и для `Test 
 
 ### 7. PR
 
-Branch: `devin/<unix-ts>-fix-flaky-<test-name>`. Commit:
+Branch: `<harness>/fix-flaky-<test-name>`. Commit:
 
 ```
 fix(mobile): stabilize OnboardingWizard flaky test

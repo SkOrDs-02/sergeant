@@ -112,7 +112,7 @@ export function useSilpoCart({ enabled, items }: UseSilpoCartParams) {
 
   const [rowState, setRowState] = useState<Record<number, RowLocalState>>({});
   // Seed рівно один раз на нову відповідь preview — порівнюємо з референсом
-  // самого об'єкта відповіді, не з `rows` (які вже похідні від
+  // самого обʼєкта відповіді, не з `rows` (які вже похідні від
   // `rowState`+`data` і тому завжди "змінились" би).
   const [seededData, setSeededData] = useState<SilpoCartPreviewResponse | null>(
     null,

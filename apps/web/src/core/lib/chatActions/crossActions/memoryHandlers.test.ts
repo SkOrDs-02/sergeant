@@ -45,7 +45,7 @@ describe("remember", () => {
       name: "remember",
       input: { fact: "Люблю каву" },
     }) as { result: string };
-    expect(result.result).toContain("Запам'ятав");
+    expect(result.result).toContain("Запамʼятав");
     expect(result.result).toContain("Люблю каву");
     expect(mockWrite).toHaveBeenCalledOnce();
   });
@@ -194,7 +194,7 @@ describe("myProfile", () => {
 
   it("returns 'no records for category' when filter yields empty", () => {
     mockRead.mockReturnValue([
-      { id: "e1", fact: "Каву п'ю", category: "personal" },
+      { id: "e1", fact: "Каву пʼю", category: "personal" },
     ] as MemoryEntry[]);
     const result = myProfile({
       name: "my_profile",

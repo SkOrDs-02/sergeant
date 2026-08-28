@@ -220,7 +220,7 @@ export interface HubBottomNavProps {
   /**
    * «Звіти» прибрана з tab-strip-а, поки у користувача немає жодного
    * реального запису. Порожній звіт — найгірший FTUX-стан: юзер тапне,
-   * побачить «— ₴» і втратить довіру до модуля. Тому tab з'являється
+   * побачить «— ₴» і втратить довіру до модуля. Тому tab зʼявляється
    * лише коли `hasAnyRealEntry()` повертає `true` (див. `firstRealEntry.ts`).
    */
   showReports?: boolean | undefined;
@@ -266,7 +266,7 @@ export function HubBottomNav({
   // Публікуємо зайняту знизу смугу для fixed-шарів з інших гілок дерева
   // (`<ToastContainer>` живе у `Providers`, поза `children`, тож локальний
   // `--bottom-nav-height` до нього не доходить). Під відкритою клавіатурою
-  // навігація з'їжджає вниз — тоді змінна знімається і тост опускається.
+  // навігація зʼїжджає вниз — тоді змінна знімається і тост опускається.
   const navRef = useRef<HTMLElement>(null);
   useBottomInsetVar(navRef, BOTTOM_NAV_INSET_VAR, !kbHidden);
 

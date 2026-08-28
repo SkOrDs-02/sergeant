@@ -49,7 +49,7 @@ interface ParsePantryVariables {
   text: string;
 }
 
-/** Звідки взялись позиції у прев'ю — впливає лише на копірайт підказки. */
+/** Звідки взялись позиції у превʼю — впливає лише на копірайт підказки. */
 export type PantryParseSource = "ai" | "local";
 
 export interface PantryParsePreview {
@@ -305,7 +305,7 @@ export function useNutritionPantries({
 
   const removeItemAt = (idx: number) => {
     if (!ensureStructuredItems()) return;
-    // Читаємо ім'я ДО setPantries — той самий закриттєвий патерн, що вже
+    // Читаємо імʼя ДО setPantries — той самий закриттєвий патерн, що вже
     // працює у `editItemAt` вище: `activePantry` в цьому рендері ще бачить
     // структуровані items, які щойно поставив `ensureStructuredItems`.
     const removedName = (
@@ -491,7 +491,7 @@ export function useNutritionPantries({
   // позицій. Сервер віддає 200 з порожнім `items`, коли модель обірвала
   // JSON (`extractJsonFromText` повертає null), тому фолбек на локальний
   // regex-парсер висить і на `onSuccess`, і на `onError`. Результат не
-  // мерджиться одразу — лягає у прев'ю, яке підтверджує користувач.
+  // мерджиться одразу — лягає у превʼю, яке підтверджує користувач.
   const applyParseResult = (
     pantryId: string,
     text: string,

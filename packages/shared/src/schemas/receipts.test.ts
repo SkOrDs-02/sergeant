@@ -48,7 +48,7 @@ describe("ReceiptDraftSchema", () => {
     expect(r.success).toBe(true);
   });
 
-  it("дозволяє вiд'ємну суму позиції (рядок знижки)", () => {
+  it("дозволяє вiдʼємну суму позиції (рядок знижки)", () => {
     const r = ReceiptDraftSchema.safeParse(
       validDraft({
         items: [
@@ -190,7 +190,7 @@ describe("ReceiptDraftSchema", () => {
 });
 
 describe("ReceiptLookupRequestSchema", () => {
-  it("приймає п'ять полів з QR-URL ДПС кабінету", () => {
+  it("приймає пʼять полів з QR-URL ДПС кабінету", () => {
     const r = ReceiptLookupRequestSchema.safeParse({
       fn: "4000123456",
       id: "RRO001",

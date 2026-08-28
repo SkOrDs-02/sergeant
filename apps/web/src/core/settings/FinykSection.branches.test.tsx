@@ -306,11 +306,11 @@ describe("FinykSection branch gaps", () => {
   it("shows the Monobank disconnect title in the confirm modal", async () => {
     mockedSyncState.mockResolvedValue(ACTIVE);
     renderSection();
-    fireEvent.click(await screen.findByText("Від'єднати"));
+    fireEvent.click(await screen.findByText("Відʼєднати"));
     const dialog = await screen.findByRole("alertdialog");
     expect(within(dialog).getByText("Вийти з Monobank?")).toBeInTheDocument();
     expect(
-      within(dialog).getByText(/Webhook-з'єднання буде від'єднано/),
+      within(dialog).getByText(/Webhook-зʼєднання буде відʼєднано/),
     ).toBeInTheDocument();
   });
 

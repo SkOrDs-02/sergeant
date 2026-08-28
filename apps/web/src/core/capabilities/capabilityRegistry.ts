@@ -108,7 +108,7 @@ export const CAPABILITY_GROUPS: readonly CapabilityGroup[] = [
       },
       {
         id: "insights",
-        title: "Зв'язки й тижневий розбір",
+        title: "Звʼязки й тижневий розбір",
         description:
           "Що з чим збігається у твоїх даних, порада дня на головній і тижневий звіт по всіх модулях разом.",
         icon: "bar-chart",

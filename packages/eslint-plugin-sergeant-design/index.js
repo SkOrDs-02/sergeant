@@ -1624,7 +1624,7 @@ function isBodySizeLimitValue(valueNode) {
 function isLimitedBodyParserCall(node) {
   // node — CallExpression. Ми очікуємо callee на кшталт
   // `express.json({ limit })` або `express.raw({ ..., limit })`. Без
-  // обов'язкового імені модуля `express`, бо хтось може робити
+  // обовʼязкового імені модуля `express`, бо хтось може робити
   // `import { json } from "express"` і потім `json({ limit })`.
   if (node.type !== "CallExpression") return null;
   const args = node.arguments;
@@ -1700,13 +1700,13 @@ const noInlineBodySizeLimit = {
 // списком ~50 полів (Authorization, Cookie, password, email, phone, …),
 // але redact-paths працюють тільки на КЛЮЧАХ, які явно перераховані.
 // Якщо хтось пише `logger.info(req)` — у JSON-payload потрапляють УСІ
-// поля об'єкта Express Request, включно з тими, що не у redact-list:
+// поля обʼєкта Express Request, включно з тими, що не у redact-list:
 // `req.signedCookies`, custom-headers від upstream-проксі, `req.user`
 // (Better Auth session), `req.body` для нових endpoint-ів. Pino
 // redact-paths не закривають "зрост��юче дерево" — нові sensitive-поля
-// з'являються без auto-redaction.
+// зʼявляються без auto-redaction.
 //
-// Це правило змушує робити **явний destructure** замість raw-об'єкта:
+// Це правило змушує робити **явний destructure** замість raw-обʼєкта:
 //
 //   ❌ logger.info(req)
 //   ❌ logger.error(res.headers, "request failed")
@@ -1765,8 +1765,8 @@ const PINO_RAW_REQ_LIKE_MEMBER_PROPS = new Set([
 const NO_RAW_REQ_IN_PINO_LOG_MESSAGE =
   "Не передавай raw `{{name}}` у `{{method}}()` — це ризик протекти Authorization/Cookie/password/email/session-token " +
   "у Pino-output або Sentry breadcrumbs. Зроби явний destructure: `logger.{{method}}({ field: req.url, status: res.statusCode }, 'msg')`. " +
-  "Pino redact-paths у `apps/server/src/obs/logger.ts` ловлять відомі поля, але raw-об'єкт лишає контракт неявним — " +
-  "нові sensitive-поля з'являються без redaction. Див. `docs/security/logging-redaction-policy.md`.";
+  "Pino redact-paths у `apps/server/src/obs/logger.ts` ловлять відомі поля, але raw-обʼєкт лишає контракт неявним — " +
+  "нові sensitive-поля зʼявляються без redaction. Див. `docs/security/logging-redaction-policy.md`.";
 
 function isPinoLoggerReceiver(callee) {
   if (
@@ -2529,9 +2529,9 @@ const noAdhocMetricAggregation = {
 // щоб мовчазний глухий кут став свідомим і підписаним.
 //
 // Виявляє `toast.error(...)`, `t.error(...)`, `toastApi.error(...)` — усе,
-// де об'єкт-приймач названий `*toast*` (case-insensitive), плюс голий
+// де обʼєкт-приймач названий `*toast*` (case-insensitive), плюс голий
 // `error(...)`, деструктурований з `useToast()`. Третій аргумент має бути
-// об'єктним літералом із `label` і `onClick`, або ідентифікатором /
+// обʼєктним літералом із `label` і `onClick`, або ідентифікатором /
 // spread-ом (тоді довіряємо — форма не читається статично).
 const REQUIRE_TOAST_ERROR_ACTION_MESSAGE =
   '`toast.error()` без recovery-дії лишає користувача в глухому куті: він не знає, чи буде нова спроба і що робити далі. Додай третім аргументом `{ label, onClick }` (напр. `{ label: "Повторити", onClick: retry }`). Якщо дії справді не може бути — валідація файлу, rate-limit із поясненням у копії, помилка форми, що вже видно інлайном — додай файл у `allowlist` цього правила з коментарем-причиною.';
@@ -2682,7 +2682,7 @@ const RAW_MOTION_RE = new RegExp(
   "(?:^|[\\s\"'`])(?:[a-z-]+:)*(?:duration-(?:\\d+|\\[[^\\]]+\\])|ease-(?:in-out|in|out|linear)(?![-a-z]))",
 );
 
-// Друга половина правила: ім'я ТОКЕНА, що потрапило в CSS-літерал.
+// Друга половина правила: імʼя ТОКЕНА, що потрапило в CSS-літерал.
 //
 // AI-DANGER: `ease-standard` — клас Tailwind, а НЕ функція плавності.
 // Опинившись у рядку `transition: transform 0.2s ease-standard`, воно
@@ -2712,7 +2712,7 @@ function isCssLiteralWithTokenName(value) {
 }
 
 const CSS_LITERAL_TOKEN_MESSAGE =
-  "Ім'я Tailwind-класу в CSS-літералі: `ease-standard` / `duration-base` тут НЕ працюють — браузер відкине всю декларацію мовчки. Візьми змінну: var(--motion-ease-standard), var(--motion-duration-base).";
+  "Імʼя Tailwind-класу в CSS-літералі: `ease-standard` / `duration-base` тут НЕ працюють — браузер відкине всю декларацію мовчки. Візьми змінну: var(--motion-ease-standard), var(--motion-duration-base).";
 
 const rawMotionValue = {
   meta: {
@@ -2771,7 +2771,7 @@ const rawMotionValue = {
 const OPACITY_ON_TEXT_TOKEN_MESSAGE =
   "Прозорість на кольоровому токені тексту. Нейтральні токени підібрані рівно на порозі WCAG AA (subtle 4.88 на фоні сторінки), тож для них навіть /80 дає 3.3; `-strong` мають трохи запасу й тримаються до /80, але вже /70 їх валить. Бери тихіший ТОКЕН або `-strong` companion замість розведення. Винятки, де правило не застосовне, — hover-стан над правильною базою, вимкнений контрол і неозначальна іконка (поріг 3:1): познач їх `eslint-disable-next-line` з причиною. Заміри — анти-слоп §3.2, атрактор 9.";
 
-// Суфікси обов'язкові. Перша версія цього регексу дивилась лише на
+// Суфікси обовʼязкові. Перша версія цього регексу дивилась лише на
 // голі корені й пропускала 18 місць із 60 — `text-danger-strong/80`,
 // `text-info-soft-fg/70` тощо. Той самий клас помилки, проти якого
 // написано §8 анти-слоп канону («не описувати ціле за заміром
@@ -2874,15 +2874,18 @@ const noRawTypeSize = {
 // Що НЕ ловить: коментарі (ESLint не віддає їх як вузли), рядки без
 // кирилиці, тести й stories (там копія запінена навмисно).
 //
-// АПОСТРОФА ТУТ СВІДОМО НЕМА. Канон §1.10 фіксує `ʼ` (U+02BC) канонічним, і
-// спокуса догейтити його звідси велика — але ці рядки не завжди копія: у
-// `packages/**` і `apps/server` ті самі слова працюють КЛЮЧАМИ зіставлення
-// (`MANUAL_CATEGORY_ID_MAP` у finyk-domain, `aliases` у genericFoods,
-// `UA_NUMBER_WORDS` у speechParsers — останній ще й нормалізує вхід ДО ASCII
-// `'`, тож ключ із `ʼ` не збігся б ніколи). Спроба масової заміни 2026-08-26
-// зламала саме це і була відкочена. Правильна послідовність — спершу
-// нормалізація апострофа на межі порівняння, потім заміна у показі, і лише
-// тоді гейт. Деталі — §1.10 канону.
+//   4. APOSTROPHE — `'` (U+0027) чи `’` (U+2019) між українськими
+//      літерами. §1.10: канонічний апостроф — `ʼ` (U+02BC).
+//
+// Гейт апострофа зʼявився ТРЕТІМ кроком, і порядок тут важливіший за саму
+// перевірку. Ці слова не завжди копія: у `packages/**` і `apps/server` ті
+// самі рядки працюють ключами зіставлення й значеннями у сховищі
+// користувача. Спроба замінити символ ПЕРШИМ ділом (2026-08-26) мовчки
+// розірвала розпізнавання числівників і категоризацію ручних витрат — і
+// була відкочена. Тому спершу кожна межа порівняння отримала
+// `foldApostrophes` (`@sergeant/shared`), потім пройшла заміна у показі, і
+// лише тепер стоїть цей гейт. Знімати його — лише разом із поверненням
+// перших двох кроків.
 
 const UKRAINIAN_COPY_MESSAGES = {
   emDash:
@@ -2893,6 +2896,11 @@ const UKRAINIAN_COPY_MESSAGES = {
   firstPersonPlural:
     "1-а особа множини заборонена (канон §2): «ми» створює дистанцію «команда проти користувача». " +
     "Голос асистента — 1-а однини («не раджу»), опис системи — 3-я однини. Знайдено «{{found}}».",
+  apostrophe:
+    "Український апостроф — «ʼ» (U+02BC), канон §1.10. Знайдено «{{found}}»: " +
+    "`'` і `’` це лапки, а не літера, тож пошук по слову з одним символом не знаходить слово з іншим. " +
+    "Якщо цей рядок — КЛЮЧ зіставлення чи значення у сховищі, не міняй символ наосліп: " +
+    "спершу згорни форми через `foldApostrophes` на межі порівняння.",
 };
 
 const RX_EM_DASH_IN_COPY = /\S\s*—\s*\S/;
@@ -2909,6 +2917,11 @@ const RX_IMPERATIVE_PLURAL =
 // множини в цьому коді — саме спінер «Завантажуємо…», і без трикрапки
 // правило мовчало б рівно там, де порушення трапляється найчастіше
 // (знайдено юніт-тестом до цього правила, а не на кодовій базі).
+// Апостроф у показі: `'` або `’` між українськими літерами. Саме «між
+// літерами» — інакше правило ловило б звичайні лапки навколо слова
+// («'Готово'») і англійські контракції, які до §1.10 стосунку не мають.
+const RX_APOSTROPHE = /[а-яіїєґА-ЯІЇЄҐ](['’])[а-яіїєґА-ЯІЇЄҐ]/;
+
 const RX_FIRST_PERSON_PLURAL =
   /(^|[\s"'`>(«])(М|м)и\s+[а-яіїєґ]|[а-яіїєґ]{2}(аємо|уємо|юємо|имемо|немо|ємо)(\s|[.,!?»…:;)]|$)/;
 
@@ -2933,6 +2946,10 @@ function ukrainianCopyViolations(text, emDashText = text) {
     const verb = RX_IMPERATIVE_PLURAL.exec(text);
     if (verb)
       out.push({ messageId: "formalVy", data: { found: verb[0].trim() } });
+  }
+  const apostrophe = RX_APOSTROPHE.exec(text);
+  if (apostrophe) {
+    out.push({ messageId: "apostrophe", data: { found: apostrophe[1] } });
   }
   const plural = RX_FIRST_PERSON_PLURAL.exec(text);
   if (plural) {
@@ -2976,7 +2993,7 @@ const ukrainianCopy = {
     if (
       /\.(test|spec)\.[jt]sx?$/.test(filename) ||
       filename.includes("/__tests__/") ||
-      // Уся тека `tests/` — E2E/QA-обв'язка, а не продукт. Крім спеків там
+      // Уся тека `tests/` — E2E/QA-обвʼязка, а не продукт. Крім спеків там
       // лежать матриці ручних прогонів (`tests/beta/betaMatrix.ts`,
       // `tests/profiles/profileMatrix.ts`), де «питання» адресовані
       // ТЕСТЕРУ, а не користувачу: «чи не продаємо платнику підписку
@@ -3007,7 +3024,7 @@ const ukrainianCopy = {
       // на межі інтерполяції, і поквазі там не збігається нічого.
       //
       // Але одного склеювання мало, і це коштувало другого заходу
-      // (рев'ю CodeRabbit). Пробіл-роздільник рятує лише випадок, коли
+      // (ревʼю CodeRabbit). Пробіл-роздільник рятує лише випадок, коли
       // ліворуч від тире вже є текст у своєму квазі: `Немає ${n} — …`
       // дає «Немає   — …», де `\S\s*—` збігається на «є». А коли квазі
       // ПОРОЖНІЙ — `${name} — …` — квазі це ["", " — …"], склейка дає

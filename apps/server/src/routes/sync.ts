@@ -42,7 +42,7 @@ export function createSyncRouter(): Router {
   r.get("/api/v2/sync/pull", syncV2Pull);
   // Stage 5 / PR #041: SSE long-polling. Окрема rate-limit-категорія,
   // бо connection-handshake — це 1 hit; ми не хочемо, щоб stream-
-  // reconnect-loop при flapping-мережі з'їдав push-budget.
+  // reconnect-loop при flapping-мережі зʼїдав push-budget.
   r.get(
     "/api/v2/sync/stream",
     rateLimitExpress({

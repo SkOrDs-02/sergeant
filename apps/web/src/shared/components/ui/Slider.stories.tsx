@@ -19,7 +19,7 @@ import { Slider } from "./Slider";
  *
  * **A11y:** `aria-valuemin/max/now`, `aria-valuetext`, `aria-orientation`,
  * звуження range через динамічний `aria-valuemax`/`aria-valuemin` на
- * сусідній тумбі. Tooltip з'являється при focus/drag.
+ * сусідній тумбі. Tooltip зʼявляється при focus/drag.
  */
 const meta: Meta<typeof Slider> = {
   title: "UI / Slider",

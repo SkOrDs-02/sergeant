@@ -1440,7 +1440,7 @@ describe("syncV2Push: nutrition_pantry_events (W1-PANTRY-APPEND стадія 1)"
 //   1. Per-row UPSERT для `fizruk_workouts` працює (insert → update).
 //   2. LWW guard на `fizruk_workouts` — старіший client_ts відкидається.
 //   3. Soft-delete (op="delete") пише `deleted_at` замість DELETE row-у.
-//   4. FK-зв'язок `fizruk_workout_items.workout_id` коректно застосовує
+//   4. FK-звʼязок `fizruk_workout_items.workout_id` коректно застосовує
 //      child після parent (один батч, один push).
 //   5. `applyFizrukMeasurements` — валідує `measured_at` як required.
 //
@@ -2151,7 +2151,7 @@ describe("syncV2Push: nutrition apply-функції (PR #031)", () => {
       expect(r3Body.accepted).toBe(0);
       expect(r3Body!.results[0]!.reason).toBe("tombstoned");
 
-      // Стан у БД: ряд лишається soft-deleted, ім'я НЕ перезаписане.
+      // Стан у БД: ряд лишається soft-deleted, імʼя НЕ перезаписане.
       const finalRow = await testPool.query<{
         deleted_at: Date | null;
         name: string;
@@ -2254,7 +2254,7 @@ describe("syncV2Push: nutrition apply-функції (PR #031)", () => {
   );
 
   it(
-    "nutrition_meals: G-set — конкурентні insert-и з різними id з обох девайсів об'єднуються",
+    "nutrition_meals: G-set — конкурентні insert-и з різними id з обох девайсів обʼєднуються",
     async (ctx) => {
       if (!dockerAvailable || !testPool) return ctx.skip();
       await ensureUser("u-nm-gset-merge");
@@ -3018,7 +3018,7 @@ describe("syncV2Push: finyk apply-функції (PR #035)", () => {
 // з `reason='tombstoned'`, ряд лишається soft-deleted.
 //
 // ВИНЯТОК — `routine_entries` (audit E-1): PK детермінований
-// (`habitId:dateKey`), тому повторний чекін того самого дня б'є в той
+// (`habitId:dateKey`), тому повторний чекін того самого дня бʼє в той
 // самий рядок і мусить його воскресити. Перший тест нижче кодифікує
 // саме цю (протилежну) семантику.
 // ---------------------------------------------------------------------

@@ -123,7 +123,7 @@ export type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 
 /**
  * Translate auth errors to Ukrainian. Приймає або рядок (для catch-гілок,
- * де ми вже маємо тільки `err.message`), або частковий error-об'єкт
+ * де ми вже маємо тільки `err.message`), або частковий error-обʼєкт
  * (`{ code, message, error?, status? }`) — тоді мапимо насамперед за
  * Better Auth `code`, бо це стабільний контракт, на відміну від
  * англійських `message`, які регулярно ламали мапер (наприклад,
@@ -339,14 +339,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // її треба стерти, інакше наступний юзер читає чужі розмови. Ефект на
   // resolved identity ловить і UI-logout, і cookie-switch після reload.
   // Той самий сигнал чистить і quick-stats хаб-карток — вони теж плоскі
-  // й показували числа попереднього акаунта поряд із новим ім'ям
+  // й показували числа попереднього акаунта поряд із новим імʼям
   // (браузерна верифікація 2026-08-06/07); модуль перезапише їх при
   // першому власному рендері.
   //
   // Identity-wipe (follow-up тієї ж верифікації): коли попередня
-  // identity на пристрої була ІНШИМ залогіненим користувачем, м'якої
+  // identity на пристрої була ІНШИМ залогіненим користувачем, мʼякої
   // чистки замало — module-фіди попередника живуть у React-Query кеші
-  // (пам'ять) та в persisted-снапшоті на диску (keyed by build-id, не
+  // (памʼять) та в persisted-снапшоті на диску (keyed by build-id, не
   // user-id), а module-scope singleton-и (booted-прапорці reader-ів,
   // dualwrite prev-снапшоти) тримають стан старої SQLite-партиції.
   // Тому: clear() → purge снапшота → повний reload у свіжу партицію.
@@ -599,7 +599,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // partition to `anon` for any post-logout anonymous usage. Dynamic import
       // keeps the sqlite-wasm chunk lazy (see `sqlite.lazy.test.ts`).
       try {
-        // Скидаємо origin-device-id ДО wipe, поки `kv_store` ще прив'язаний.
+        // Скидаємо origin-device-id ДО wipe, поки `kv_store` ще привʼязаний.
         // Сервер відсіює на pull операції, чий `origin_device_id` дорівнює
         // нашому — echo-suppression. Але id живе у `kv_store`, який не
         // user-scoped, тож `wipeSqliteDb()` його не чіпає: пристрій лишався

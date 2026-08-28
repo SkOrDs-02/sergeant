@@ -42,7 +42,7 @@ export const nutritionPageMessages = {
     srKcal: "Калорії",
     srEstimated: "З них оцінка з фото",
   },
-  /** Пом'якшена копія `nutrition-protein-low` при високій частці photoAI. */
+  /** Помʼякшена копія `nutrition-protein-low` при високій частці photoAI. */
   proteinLowEstimated: {
     subtitle: "Схоже, білка малувато, але сьогодні багато цифр з фото-оцінки.",
   },

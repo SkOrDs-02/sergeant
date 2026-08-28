@@ -374,7 +374,7 @@ async function anthropicMessagesInner(
       throw new DOMException("client disconnected", "AbortError");
     }
     // Сон ПЕРЕД тим, як озброїти таймер спроби. Доти таймер стартував
-    // раніше за сон, тож довгий `retry-after` з'їдав увесь бюджет самої
+    // раніше за сон, тож довгий `retry-after` зʼїдав увесь бюджет самої
     // спроби — fetch відрубувався майже одразу після пробудження.
     const baseDelay = retryDelayMs[attempt - 1] ?? 0;
     if (baseDelay) {
@@ -396,7 +396,7 @@ async function anthropicMessagesInner(
     // писала `Math.max(MIN_USEFUL_ATTEMPT_MS, Math.min(timeoutMs, залишок))`
     // — і цим РОЗТЯГУВАЛА вичерпаний бюджет: при залишку 1 мс спроба все
     // одно стартувала з таймаутом 1000 мс, тобто `maxTotalMs` переставав
-    // бути стелею рівно там, де він потрібен (рев'ю CodeRabbit 2026-08-26).
+    // бути стелею рівно там, де він потрібен (ревʼю CodeRabbit 2026-08-26).
     // Гілка `break` вище ловила лише випадок зі сном, а перша спроба має
     // `baseDelay === 0` і крізь неї проходила.
     const remainingMs = maxTotalMs - elapsedMs();
@@ -457,7 +457,7 @@ async function anthropicMessagesInner(
 
 /**
  * Стрімова версія Anthropic Messages API. Викликає fetch з `stream: true`,
- * інструментує outcome/latency (розмір відповіді = час до закриття з'єднання),
+ * інструментує outcome/latency (розмір відповіді = час до закриття зʼєднання),
  * і повертає `{ response, recordStreamEnd }`. Викликай `recordStreamEnd(outcome?)`
  * коли боді повністю спожите (або з помилкою) щоб закрити latency-вимір.
  *

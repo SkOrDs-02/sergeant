@@ -188,7 +188,7 @@ describe("FinykSection extra branches", () => {
   it("cancels the disconnect confirm modal without disconnecting", async () => {
     mockedSyncState.mockResolvedValue(ACTIVE);
     renderSection();
-    fireEvent.click(await screen.findByText("Від'єднати"));
+    fireEvent.click(await screen.findByText("Відʼєднати"));
 
     const dialog = await screen.findByRole("alertdialog");
     fireEvent.click(within(dialog).getByText("Скасувати"));
@@ -237,7 +237,7 @@ describe("FinykSection extra branches", () => {
     mockedSyncState.mockResolvedValue(ACTIVE);
     mockedDisconnect.mockRejectedValue(new Error("disconnect failed"));
     renderSection();
-    fireEvent.click(await screen.findByText("Від'єднати"));
+    fireEvent.click(await screen.findByText("Відʼєднати"));
 
     const dialog = await screen.findByRole("alertdialog");
     fireEvent.click(within(dialog).getByText("Вийти"));

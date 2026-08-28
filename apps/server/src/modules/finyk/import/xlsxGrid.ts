@@ -76,7 +76,7 @@ function attr(tag: string, name: string): string | undefined {
     const at = tag.indexOf(name, from);
     if (at === -1) return undefined;
     from = at + name.length;
-    // Ліва межа: ім'я має починати атрибут, а не бути хвостом іншого
+    // Ліва межа: імʼя має починати атрибут, а не бути хвостом іншого
     // (`r` у `numFmtId`, `Id` у значенні `"rId1"`).
     const before = at === 0 ? "<" : tag[at - 1]!;
     if (before !== "<" && !/\s/.test(before)) continue;
@@ -96,7 +96,7 @@ function attr(tag: string, name: string): string | undefined {
   }
 }
 
-/** Конкатенація вмісту всіх `<t>`-вузлів фрагмента (rich-text `<si>` б'ється
+/** Конкатенація вмісту всіх `<t>`-вузлів фрагмента (rich-text `<si>` бʼється
  * на кілька `<r><t>`); `<rPh>` (японська фонетика) не трапляється в
  * банківських файлах і навмисно не виокремлюється. */
 function joinTextNodes(fragment: string): string {
@@ -283,7 +283,7 @@ function cellText(
 function parseSheet(xml: string, ctx: SheetReadContext): string[][] {
   const rows: string[][] = [];
   // САМОЗАКРИВНА альтернатива йде ПЕРШОЮ, і це не косметика: у
-  // `<row r="1"/><row r="2">…</row>` парна альтернатива вміє з'їсти
+  // `<row r="1"/><row r="2">…</row>` парна альтернатива вміє зʼїсти
   // `/` через `[^>]*` і проковтнути обидва рядки як один. Регексп
   // пробує альтернативи зліва направо, тож порядок і є фіксом.
   const rowRe = /<row(?:\s[^>]*)?\/>|<row(?:\s[^>]*)?>([\s\S]*?)<\/row>/g;
@@ -305,7 +305,7 @@ function parseSheet(xml: string, ctx: SheetReadContext): string[][] {
       const ref = attr(`<c${tagAttrs}>`, "r");
       // `<c>` без `r` легальний — тоді колонка йде по порядку. З `r`
       // порожні клітинки в файлі просто відсутні, і без цього зсуву
-      // колонки «з'їхали б» уліво (типово для експортів з пропусками).
+      // колонки «зʼїхали б» уліво (типово для експортів з пропусками).
       const colIdx = ref ? columnRefToIndex(ref) : autoIndex;
       if (colIdx >= 0) {
         while (cells.length < colIdx) cells.push("");

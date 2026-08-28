@@ -237,7 +237,7 @@ describe("computeNutritionTargetsFromBiometrics", () => {
       ).toEqual(base);
     });
 
-    it("ігнорує сміттєву fizruk-вагу (0, від'ємна, NaN)", () => {
+    it("ігнорує сміттєву fizruk-вагу (0, відʼємна, NaN)", () => {
       const bio = fullBiometrics({ weightKg: 80 });
       const base = computeNutritionTargetsFromBiometrics(
         bio,

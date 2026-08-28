@@ -62,7 +62,7 @@ const CHECK_TAG_RE = /<CHECK(?:\s[^>]*)?>/i;
  * `GET .../ws/api_public/rro/chkAll` — публічний lookup фіскального чека
  * за полями QR-коду. Переюзає `bankProxyFetch` (timeout/retry-з-jitter/
  * circuit-breaker/in-memory TTL-кеш — той самий transport-шар, що
- * Monobank/PrivatBank) замість заново писати resilience-обв'язку: ДПС —
+ * Monobank/PrivatBank) замість заново писати resilience-обвʼязку: ДПС —
  * такий самий "upstream, що іноді 5xx-ить чи лагає", як банківські
  * проксі, різниця лише в baseUrl/path/query.
  *

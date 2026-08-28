@@ -59,7 +59,7 @@ export const INJURY_SITE_IDS: readonly InjurySiteId[] = [
 export const INJURY_ZONE_LABELS_UK: Record<InjuryZoneId, string> = {
   shoulder: "Плечовий суглоб",
   elbow: "Лікоть",
-  wrist: "Зап'ясток",
+  wrist: "Запʼясток",
   hip: "Кульшовий суглоб",
   knee: "Коліно",
   ankle: "Гомілковостоп",

@@ -128,7 +128,7 @@ describe("applyRoutineEntries integration", () => {
   );
 
   // Регресія audit E-1: toggle→untoggle→toggle. PK `routine_entries`
-  // детермінований (`habitId:dateKey`), тож третій чекін б'є у той самий
+  // детермінований (`habitId:dateKey`), тож третій чекін бʼє у той самий
   // рядок і мусить його воскресити, а не отримати `tombstoned`.
   it(
     "resurrects a soft-deleted entry on a strictly newer re-check",

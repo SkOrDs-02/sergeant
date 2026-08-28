@@ -57,11 +57,12 @@ lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); t
 - `pnpm typecheck` після кожного surface-агента (проміжна перевірка, **не** заміна stage 5)
 - Якщо migration-agent повідомив про нові `bigint` колонки — переконайся, що server-agent їх coerce-ить із `Number()`
 - api-client-agent отримує фінальний serializer від server-agent, а не draft
-- Якщо фіча торкається HubChat — після web/mobile додай `sergeant-hubchat` skill для tool def і executor
+- Якщо фіча торкається HubChat — після web/mobile додай `sergeant-module-ai` skill для tool def і executor
 - Звіти самих агентів (їхні секції «Report to …») — канонічне джерело handoff-даних; цей skill задає **порядок** і межі, не переказує зміст звітів
 
 ## Червоні прапорці
 
+- «Фіча в одній теці модуля, хай і на 2-3 його поверхнях» → не squad-кейс: віддай module-owner агенту (`finyk-owner` тощо) через відповідний `sergeant-module-*` скіл. Squad — коли зʼявляється **нова контрактна залежність** server↔client через `packages/api-client` (межа — `docs/00-start/agents/agent-workflows.md` § 0)
 - «Запущу web-agent до завершення api-client-agent» → типи ще не готові, web-agent напише проти stale interface
 - «Пропущу migration-agent, зроблю ALTER TABLE в коді» → порушення Hard Rule #4, немає sequential migration файлу
 - «api-client-agent не потрібен, web-agent прочитає типи з server прямо» → заборонено, cross-app imports порушують monorepo boundaries

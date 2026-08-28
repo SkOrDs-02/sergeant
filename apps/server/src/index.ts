@@ -77,6 +77,7 @@ import {
 import { LogArchivePoller } from "./modules/logRetention/archivePoller.js";
 import { WebhookEventsRetentionPoller } from "./modules/webhooks/retentionPoller.js";
 import { PlataRecurringPoller } from "./modules/billing/plataScheduler.js";
+import { GdprCleanupPoller } from "./modules/gdpr/cleanupPoller.js";
 import { SilpoSyncPoller } from "./modules/silpo/syncScheduler.js";
 import { Sentry } from "./sentry.js";
 
@@ -126,7 +127,7 @@ void pingSecurityRoom().then(({ ok, reason }) => {
 
 // Mono AI enrichment worker — polling-консьюмер `mono_ai_enrichment_queue`.
 // Стартує у тому ж процесі, що API (in-process worker). Це свідомий вибір:
-// при поточному об'ємі трафіку (десятки tx/min) виносити окремий worker-сервіс
+// при поточному обʼємі трафіку (десятки tx/min) виносити окремий worker-сервіс
 // — оверкіл, а multi-replica-safety гарантує `FOR UPDATE SKIP LOCKED` у
 // `runEnrichmentTick`. Якщо ANTHROPIC_API_KEY не заданий — worker не стартує
 // (інакше кожен tick впаде на upstream-call). Default state: off; вмикається
@@ -209,6 +210,17 @@ const webhookEventsRetentionPoller = new WebhookEventsRetentionPoller({
 });
 webhookEventsRetentionPoller.start();
 
+// GDPR cleanup queue drain — in-process годинний полер (Tier-A). Раніше
+// чергу мав смикати Railway/n8n cron через `/api/internal/gdpr/
+// cleanup-queue/process`, але Railway decommissioned (ADR-0074), а n8n у
+// проді на паузі — без цього полера черга не дренувалась ВЗАГАЛІ
+// (compliance-дефект, ADR-0016 § ADR-6.3). 0 → off. Idempotent start/stop.
+const gdprCleanupPoller = new GdprCleanupPoller({
+  pool,
+  intervalMs: env.GDPR_CLEANUP_POLL_INTERVAL_MS,
+});
+gdprCleanupPoller.start();
+
 // Log-retention archive cron — opt-in (`LOG_ARCHIVE_ENABLED=true`).
 // Streams `openclaw_invocations` / `tg_alert_acks` / `n8n_webhook_events`
 // rows older than `LOG_RETENTION_DAYS` to GCS as gzipped JSONL, then
@@ -246,10 +258,10 @@ silpoSyncPoller.start();
 // послідовність:
 //
 //   1. Залогувати причину зупинки.
-//   2. `server.close()` — перестаємо приймати нові з'єднання, але вже
+//   2. `server.close()` — перестаємо приймати нові зʼєднання, але вже
 //      прийняті запити допрацьовують свій цикл.
 //   3. Дочекатись до `SHUTDOWN_GRACE_MS` на завершення in-flight.
-//   4. `pool.end()` — коректно закрити pg-з'єднання.
+//   4. `pool.end()` — коректно закрити pg-зʼєднання.
 //   5. `Sentry.flush()` — до виходу допостити події, бо transport асинхронний.
 //   6. `process.exit(code)`.
 //
@@ -289,7 +301,7 @@ async function shutdown(reason: string, exitCode: number): Promise<void> {
     if (httpServer) {
       const server = httpServer;
       await new Promise<void>((resolve) => {
-        // `server.close` чекає, поки всі активні з'єднання завершаться. Якщо
+        // `server.close` чекає, поки всі активні зʼєднання завершаться. Якщо
         // у нас довгі SSE-стріми (AI chat), grace-період обмежує це зверху.
         const graceTimer = setTimeout(() => {
           logger.warn({
@@ -317,7 +329,7 @@ async function shutdown(reason: string, exitCode: number): Promise<void> {
 
     // Auth-mail BullMQ worker завершує inflight job-и ДО того, як ми
     // закриваємо pg-pool — bullmq-worker сам не пише у pg, але якщо у нас
-    // у майбутньому з'являться pg-залежні processor-и, цей порядок
+    // у майбутньому зʼявляться pg-залежні processor-и, цей порядок
     // (workers → pool) запобіжить ECONNRESET у середині процесінгу.
     if (authMailWorker) {
       try {
@@ -420,6 +432,15 @@ async function shutdown(reason: string, exitCode: number): Promise<void> {
     }
 
     try {
+      await gdprCleanupPoller.stop();
+    } catch (err) {
+      logger.warn({
+        msg: "gdpr_cleanup_poller_stop_error",
+        err: serializeError(err, { includeStack: false }),
+      });
+    }
+
+    try {
       await logArchivePoller.stop();
     } catch (err) {
       logger.warn({
@@ -444,7 +465,7 @@ async function shutdown(reason: string, exitCode: number): Promise<void> {
     //
     // Primary і replica пули дренуємо ПАРАЛЕЛЬНО (`Promise.all`): пули
     // незалежні, а кожен drain уже bounded окремим `SHUTDOWN_GRACE_MS / 2`
-    // AbortController-ом. Послідовний дренаж міг би з'їсти весь grace-бюджет
+    // AbortController-ом. Послідовний дренаж міг би зʼїсти весь grace-бюджет
     // (2 × GRACE/2 = GRACE) і не лишити часу на Redis + Sentry-flush до
     // hard-timeout-у; паралельно ж сумарний drain лишається ≤ GRACE/2.
     // `pool: "primary"|"replica"` у логах розрізняє два пули; replica-drain —
@@ -524,7 +545,7 @@ for (const sig of ["SIGTERM", "SIGINT"]) {
 // (див. `scripts/migrate.mjs` / `npm run db:migrate`). При rolling deploy з 2+
 // реплік race на `INSERT schema_migrations` раніше валив один із процесів,
 // плюс readiness-проб затримувався часом виконання міграцій.
-// Позначаємо звірку схеми як розпочату СИНХРОННО, до прив'язки до порту.
+// Позначаємо звірку схеми як розпочату СИНХРОННО, до привʼязки до порту.
 // Сам запит іде нижче, у `listen`-колбеку, але readiness мусить знати про
 // «перевірка ще не завершена» вже з першої проби: інакше під увімкненим
 // `MIGRATION_DRIFT_BLOCKS_READINESS` існує вікно, у якому `/readyz` зелений,
@@ -533,7 +554,7 @@ markSchemaDriftCheckStarted();
 
 httpServer = app.listen(config.port, "0.0.0.0", () => {
   // Сигнал для `/startupz` (a.k.a. `/health/startup`): процес завершив
-  // env-assert, Sentry-init і прив'язку до порту, тож платформа може
+  // env-assert, Sentry-init і привʼязку до порту, тож платформа може
   // переключитися з startup-probe на readiness/liveness. Idempotent.
   markStartupComplete();
   logger.info({

@@ -72,7 +72,7 @@ describe("useNutritionLog — delete + undo meal flow", () => {
     // Регресія: handleRemoveMeal планує `deleteMealThumbnail` через 6с. Якщо
     // юзер встигає undo — ми повинні прибрати цей timer, бо інакше фото
     // буде видалене з IndexedDB асинхронно уже після того, як meal знову
-    // з'явився у логу.
+    // зʼявився у логу.
     const { result } = renderHook(() => useNutritionLog(), {
       wrapper: makeWrapper(),
     });
@@ -98,7 +98,7 @@ describe("useNutritionLog — delete + undo meal flow", () => {
   it("подвійний restore не дублює запис (ідемпотентність)", () => {
     // Регресія: раніше `addLogEntry` просто апендив у масив без dedup —
     // якщо юзер двічі тапнув "Повернути" (типова скарга на повільний фідбек),
-    // у логу з'являвся другий однаковий meal. Тепер handleRestoreMeal
+    // у логу зʼявлявся другий однаковий meal. Тепер handleRestoreMeal
     // ігнорує повторний виклик з тим самим id на ту саму дату.
     const { result } = renderHook(() => useNutritionLog(), {
       wrapper: makeWrapper(),

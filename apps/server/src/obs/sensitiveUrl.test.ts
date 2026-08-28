@@ -59,7 +59,7 @@ describe("redactSensitiveUrl", () => {
 
   it("обробляє абсолютні URL з origin-ом (Sentry може передавати повний URL)", () => {
     // Sentry `event.request.url` буває повним: scheme + host + path. Хелпер
-    // не парсить його як URL-об'єкт, але path-prefix не співпаде, тому
+    // не парсить його як URL-обʼєкт, але path-prefix не співпаде, тому
     // повертаємо as-is — `event.request.url` від Sentry для express-app
     // насправді `req.originalUrl`-альний path. Цей кейс — sanity check, що
     // ми не ламаємо абсолютні URL і не редагуємо те, що не повинні.
@@ -85,7 +85,7 @@ describe("redactSensitiveUrl", () => {
   });
 
   it("залишає suffix після секрету (defensive — на майбутнє під-роути)", () => {
-    // Якщо коли-небудь з'явиться `/api/mono/webhook/<secret>/replay` — суфікс
+    // Якщо коли-небудь зʼявиться `/api/mono/webhook/<secret>/replay` — суфікс
     // не має маскуватись, тільки сам секрет.
     expect(redactSensitiveUrl("/api/mono/webhook/abc123/replay")).toBe(
       "/api/mono/webhook/[redacted]/replay",

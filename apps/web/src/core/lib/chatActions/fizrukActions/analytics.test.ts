@@ -108,7 +108,7 @@ describe("compareProgress", () => {
       input: { period_days: 30 },
     }) as string;
     expect(result).toContain("Прогрес");
-    expect(result).toContain("Об'єм");
+    expect(result).toContain("Обʼєм");
   });
 });
 

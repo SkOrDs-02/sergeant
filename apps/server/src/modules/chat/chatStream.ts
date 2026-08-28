@@ -92,7 +92,7 @@ function mergeStreamUsage(
 /**
  * Як часто слати SSE-коментар ": ping\n\n", коли upstream мовчить.
  *
- * Контекст: Vercel/Railway/Cloudflare закривають idle HTTP-з'єднання приблизно
+ * Контекст: Vercel/Railway/Cloudflare закривають idle HTTP-зʼєднання приблизно
  * через 30-60с. Якщо Anthropic довго генерує першу токен-дельту (reasoning,
  * великий prompt, rate-limit backoff), проксі обірве SSE-сокет раніше, ніж
  * ми встигнемо щось записати — клієнт побачить "зависло" замість відповіді.
@@ -326,7 +326,7 @@ export async function streamAnthropicToSse(
   res.setHeader("Cache-Control", "no-cache, no-transform");
   res.setHeader("X-Accel-Buffering", "no");
 
-  // Heartbeat: чистий SSE-коментар кожні N мс, поки живе з'єднання.
+  // Heartbeat: чистий SSE-коментар кожні N мс, поки живе зʼєднання.
   // `res.writableEnded` — щоб не писати у вже закритий потік (клієнт відвалився).
   const heartbeat = setInterval(() => {
     if (!res.writableEnded) res.write(": ping\n\n");

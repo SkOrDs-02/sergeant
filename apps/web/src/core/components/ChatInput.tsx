@@ -26,7 +26,7 @@ interface ChatInputProps {
   >;
   /**
    * Опційний callback ref для фокусу інпуту зовні (наприклад, після
-   * prefill з ChatQuickActions). HubChat прив'язує сюди функцію, яка
+   * prefill з ChatQuickActions). HubChat привʼязує сюди функцію, яка
    * потім викликає `.focus()`.
    */
   focusInputRef?: MutableRefObject<(() => void) | null>;

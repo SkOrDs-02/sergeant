@@ -26,7 +26,7 @@
 // Designed to be safe to run from a daily cron — the output is fully
 // deterministic given the same input set, so idempotent commits are easy.
 
-import { readFileSync, writeFileSync, statSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -90,40 +90,42 @@ export function extractNextPhase(status) {
  * For a list of open-work entries (already produced by `collectOpenWork`),
  * pull the ones that carry a `Phase/Stage X next/pending/...` marker or an
  * explicit `Agent-ready: yes` header.
- * Each kept entry is decorated with `{ priorityPhase, priorityKind, mtimeMs }`
+ * Each kept entry is decorated with `{ priorityPhase, priorityKind }`
  * for downstream sorting.
  */
-export function pickPriorityItems(report, repoRoot = REPO_ROOT) {
+export function pickPriorityItems(report) {
   const out = [];
   for (const { tracker, entries } of report) {
     for (const e of entries) {
       const sig = extractNextPhase(e.rawStatus);
       if (!sig && e.agentReady !== "yes") continue;
-      let mtimeMs = 0;
-      try {
-        mtimeMs = statSync(resolve(repoRoot, e.relPath)).mtimeMs;
-      } catch {
-        // file vanished between collect and stat — skip silently
-        continue;
-      }
       out.push({
         tracker,
         ...e,
         priorityPhase: sig?.phase ?? null,
         priorityKind: sig?.kind ?? "agent-ready",
-        mtimeMs,
       });
     }
   }
   // `blocked` sorts above `next/pending/in progress` because unblocking
-  // is usually the constraint. Within the same kind bucket, freshest
-  // file mtime wins (recently touched = warm context).
+  // is usually the constraint. Within the same kind bucket — за шляхом,
+  // алфавітно.
+  //
+  // AI-CONTEXT: тут стояв `mtimeMs` («найсвіжіший файл = теплий контекст»),
+  // і саме він робив гейт `docs:check-today` нездійсненним. У свіжому
+  // клоні mtime — це час, коли `actions/checkout` записав файл, а не час
+  // правки: інформації про свіжість у ньому нуль, зате порядок запису
+  // свій на кожному ранері. Тож автор комітив порядок, згенерований його
+  // локальними mtime, CI генерував інший — і `--check` червонів у обох
+  // напрямках. Перевірено 2026-08-27: під симульованими checkout-mtime
+  // стає stale і файл із цієї гілки, і файл із `main`. Шлях детермінований
+  // і однаковий скрізь; сортувати за чимось поза git тут не можна.
   const kindRank = { blocked: 0, "agent-ready": 1 };
   out.sort((a, b) => {
     const ka = kindRank[a.priorityKind] ?? 2;
     const kb = kindRank[b.priorityKind] ?? 2;
     if (ka !== kb) return ka - kb;
-    return b.mtimeMs - a.mtimeMs;
+    return a.relPath.localeCompare(b.relPath, "en");
   });
   return out.slice(0, TOP_N);
 }

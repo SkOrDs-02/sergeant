@@ -181,17 +181,17 @@ describe("AddBudgetForm — useApiForm + zod (Item #8 round-13)", () => {
     });
     // Після першого вибору селект скидається в плейсхолдер «додай ще».
     const addMore = screen.getByDisplayValue("Додай ще категорію");
-    expect(screen.queryByLabelText("Назва (необов'язково)")).toBeNull();
+    expect(screen.queryByLabelText("Назва (необовʼязково)")).toBeNull();
     fireEvent.change(addMore, { target: { value: "transport" } });
 
-    // Обидві категорії — у списку чипів, поле назви з'явилось.
+    // Обидві категорії — у списку чипів, поле назви зʼявилось.
     expect(
       screen.getByRole("button", { name: "Прибрати категорію Їжа" }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Прибрати категорію Транспорт" }),
     ).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText("Назва (необов'язково)"), {
+    fireEvent.change(screen.getByLabelText("Назва (необовʼязково)"), {
       target: { value: "Все на життя" },
     });
     fireEvent.change(screen.getByLabelText("Ліміт"), {

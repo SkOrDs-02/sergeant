@@ -4,7 +4,7 @@
  * Той самий клас правила, що `chartHex.contract.test.js`: компонентна
  * колірна драбина мусить складатися з бренд-тирів або статус/celebration
  * токенів, а не з довільних hue. До циклу 3 `StreakFlame` ротував
- * yellow → amber → orange → red → pink → violet — п'ять чужих родин, і
+ * yellow → amber → orange → red → pink → violet — пʼять чужих родин, і
  * жоден лінтер їх не бачив, бо кольори жили гілками всередині компонента.
  *
  * Розширити правило вдалося саме тому, що цикл 4 переніс щаблі у токени:
@@ -53,7 +53,7 @@ const ALLOWED = new Set(
   [
     ...Object.values(brandColors).flatMap((family) => Object.values(family)),
     ...Object.values(statusColors),
-    // Святкування — узаконений п'ятий hue (див. `celebrationColors`).
+    // Святкування — узаконений пʼятий hue (див. `celebrationColors`).
     ...Object.values(celebrationColors),
   ]
     .filter((v) => typeof v === "string" && v.startsWith("#"))

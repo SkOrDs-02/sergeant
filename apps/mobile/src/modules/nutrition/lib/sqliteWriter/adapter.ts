@@ -56,7 +56,7 @@ export type ApplyDualWriteResult = CoreApplyDualWriteResult;
 
 /**
  * ADR-0073 Open question #7: mobile-логер `console.warn` заміняємо на
- * ін'єктований логер під час цієї міграції. `(sql, params)`-snapshot
+ * інʼєктований логер під час цієї міграції. `(sql, params)`-snapshot
  * незалежний від логера, тож заміна не впливає на byte-identity гейт.
  */
 const DEFAULT_LOGGER: DualWriteLogger = (level, message, meta) => {

@@ -31,7 +31,7 @@ export type ImportDirection = z.infer<typeof ImportDirectionSchema>;
 
 /** Сума одного рядка імпорту — завжди ДОДАТНА величина (напрям несе окреме
  * поле `direction`, не знак), на відміну від `mono_transaction.amount`
- * (signed bigint) чи чекових позицій (можуть бути 0/від'ємні). */
+ * (signed bigint) чи чекових позицій (можуть бути 0/відʼємні). */
 export const importAmountKopiykasSchema = z
   .number()
   .int()
@@ -81,7 +81,7 @@ const transferLikelySchema = z.boolean().optional();
 
 /** «Сітка 2» дедуп-превʼю (бета-фідбек №4, 2026-08-18: той самий скрін,
  * кинутий двічі, задвоїв рядки — vision читає описи недетерміновано, тож
- * тір-2 хеш `rowKey.ts` їх не ловить). Сервер на прев'ю звіряє рядок з уже
+ * тір-2 хеш `rowKey.ts` їх не ловить). Сервер на превʼю звіряє рядок з уже
  * збереженими витратами за трійкою дата+сума+напрям (ОПИС свідомо
  * ігнорується — саме він і плаває між прогонами) і ставить ЛИШЕ `true`
  * (відсутнє поле = збігів немає) — детектор `duplicateDetect.ts`; клієнт
@@ -271,7 +271,7 @@ export type ImportSkippedRow = z.infer<typeof ImportSkippedRowSchema>;
 export const IMPORT_STATEMENT_PROFILES = ["mono", "privat24"] as const;
 export type ImportStatementProfile = (typeof IMPORT_STATEMENT_PROFILES)[number];
 
-/** Один флет-об'єкт для обох гілок відповіді (спека: "Результат:
+/** Один флет-обʼєкт для обох гілок відповіді (спека: "Результат:
  * {profile|'custom'|needsMapping, rows, skipped}"; "невідомий формат: без
  * mapping → {needsMapping:true, headers[], sampleRows[][]}"). Коли
  * `needsMapping: true` — `profile: null`, `rows`/`skipped` порожні,
@@ -301,7 +301,7 @@ export const ImportCommitRowSchema = z
     amountKopiykas: importAmountKopiykasSchema,
     direction: ImportDirectionSchema,
     description: z.string().max(300),
-    /** Обов'язкова per row — клієнт дає, включно з income-категоріями
+    /** Обовʼязкова per row — клієнт дає, включно з income-категоріями
      * finyk (`manualIncomeCategories.ts`); сервер зберігає опаково,
      * так само як `ManualExpenseCreateSchema.category`. */
     category: z.string().min(1).max(120),
@@ -327,6 +327,38 @@ export const ImportCommitRequestSchema = z
   .strict();
 export type ImportCommitRequest = z.infer<typeof ImportCommitRequestSchema>;
 
+/**
+ * Що САМЕ сталося з кожним поданим рядком. Агрегати (`created` /
+ * `skipped.*`) кажуть скільки, але не який — а клієнту потрібне саме
+ * «який»: `finyk_manual_expenses` рядки народжуються прямим SQL-INSERT-ом,
+ * і локально їх видно лише тим, що клієнт запише ті самі id у свій
+ * storage (`useBulkImport.ts` write-through). Поки відповідь несла лише
+ * лічильники, зіставити id з рядками можна було ТІЛЬКИ коли не пропущено
+ * жодного рядка — тож будь-який один дубль чи mono-матч у батчі робив
+ * НЕВИДИМИМИ локально ВСІ створені рядки цього імпорту (звіт власника
+ * 2026-08-28: «пише, що вони вже є, а в операціях їх немає»).
+ *
+ * - `created` — рядок щойно вставлено (є в `batch.createdRowIds`).
+ * - `duplicate` — рядок із таким id уже був і ЖИВИЙ (тір-2 дедуп).
+ * - `tombstoned` — рядок із таким id уже був, але видалений (undo імпорту
+ *   чи ручне видалення). Клієнт НЕ воскрешає його локально.
+ * - `mono_matched` — тір-1: платіж уже видно як mono-транзакцію.
+ */
+export const IMPORT_COMMIT_ROW_STATUSES = [
+  "created",
+  "duplicate",
+  "tombstoned",
+  "mono_matched",
+] as const;
+export type ImportCommitRowStatus = (typeof IMPORT_COMMIT_ROW_STATUSES)[number];
+
+export const ImportCommitRowResultSchema = z.object({
+  /** `finyk_manual_expenses.id` — детермінований `rowKey.ts`-хеш. */
+  id: z.string().min(1),
+  status: z.enum(IMPORT_COMMIT_ROW_STATUSES),
+});
+export type ImportCommitRowResult = z.infer<typeof ImportCommitRowResultSchema>;
+
 export const ImportCommitResponseSchema = z.object({
   batchId: z.number().int().positive(),
   created: z.number().int().min(0),
@@ -341,6 +373,16 @@ export const ImportCommitResponseSchema = z.object({
     monoMatched: z.number().int().min(0),
     duplicate: z.number().int().min(0),
   }),
+  /** Результат КОЖНОГО поданого рядка, у тому самому порядку й тій самій
+   * довжині, що `rows` запиту. `.default([])`, а не обовʼязкове поле: web
+   * і server деплояться окремо (Vercel / Coolify), тож новий клієнт мусить
+   * пережити відповідь ще не оновленого сервера — той самий підхід, що
+   * `ImportScreenshotDraftSchema.dropped`. Порожній масив = «сервер
+   * старий», клієнт падає на легасі-шлях (`GET .../batches/:id`). */
+  rows: z
+    .array(ImportCommitRowResultSchema)
+    .max(IMPORT_COMMIT_MAX_ROWS)
+    .default([]),
 });
 export type ImportCommitResponse = z.infer<typeof ImportCommitResponseSchema>;
 
@@ -351,7 +393,7 @@ export type ImportCommitResponse = z.infer<typeof ImportCommitResponseSchema>;
  * зі спеки Stage 1: `'completed' | 'undone'`. Цей slice синхронний
  * (commit обробляє всі рядки в одній транзакції) — проміжних
  * async-станів (`pending`/`processing`) немає; якщо майбутній async-режим
- * (черга, дуже великі виписки) з'явиться — розширювати тут, одним PR з
+ * (черга, дуже великі виписки) зʼявиться — розширювати тут, одним PR з
  * migration-agent-note (без DB-міграції, бо CHECK немає). */
 export const IMPORT_BATCH_STATUSES = ["completed", "undone"] as const;
 export type ImportBatchStatus = (typeof IMPORT_BATCH_STATUSES)[number];

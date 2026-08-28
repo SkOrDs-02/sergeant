@@ -103,8 +103,7 @@ async function fetchOFF(
 
   const r = await fetch(url.toString(), {
     headers: {
-      "User-Agent":
-        "Sergeant-NutritionApp/1.0 (https://sergeant.2dmanager.com.ua)",
+      "User-Agent": "Sergeant-NutritionApp/1.0 (https://sergeant.com.ua)",
     },
     signal,
   });
@@ -135,7 +134,7 @@ async function fetchUSDA(
 
 /**
  * GET /api/food-search?q=… — каскадний пошук через Open Food Facts + USDA
- * (+ Silpo як четверте джерело, лише для юзера зі зв'язаним акаунтом —
+ * (+ Silpo як четверте джерело, лише для юзера зі звʼязаним акаунтом —
  * `modules/silpo/foodSource.ts`). CORS і rate-limit виставляє роутер.
  */
 export default async function handler(
@@ -271,7 +270,7 @@ export default async function handler(
     // `includes(token)` означало б викинути саме те, заради чого ці канали
     // й потрібні: на запит «малоко» каталог знаходить «Молоко…», а на
     // «помідор» базова їжа знаходить «Томат» — буквального токена запиту
-    // в назві немає в обох випадках, і фільтр мовчки з'їв би влучний
+    // в назві немає в обох випадках, і фільтр мовчки зʼїв би влучний
     // результат.
     const ownFirst = ownProducts.filter((p) => {
       const key = keyOf(p);

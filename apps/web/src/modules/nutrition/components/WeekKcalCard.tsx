@@ -166,7 +166,7 @@ export function WeekKcalCard({
                 {bar.isEmpty ? (
                   // Канон §5.2: пропущений день — це неповні дані, а не
                   // нульове споживання. Плаский трек читається як «нічого
-                  // не внесено», огризок у 3px читався як «мало з'їв».
+                  // не внесено», огризок у 3px читався як «мало зʼїв».
                   <div
                     data-testid={`week-kcal-empty-${bar.date}`}
                     className="w-full max-w-[18px] h-0.5 rounded-full bg-text/15"

@@ -113,7 +113,7 @@ describe("H9 dailyCapMicros (env override)", () => {
     expect(__testing.dailyCapMicros()).toBe(1_000_000);
   });
 
-  it("env-override приймається коли ціле невід'ємне", () => {
+  it("env-override приймається коли ціле невідʼємне", () => {
     process.env["TRANSCRIBE_USD_CAP_DAILY_MICROS"] = "5000000";
     expect(__testing.dailyCapMicros()).toBe(5_000_000);
   });
@@ -163,7 +163,7 @@ describe("H9 assertTranscribeUsdCap — happy path", () => {
 
 describe("H9 assertTranscribeUsdCap — cap-hit (402)", () => {
   it("spent + estimate > cap → 402 TRANSCRIBE_USD_CAP, без SELECT-у Groq-a", async () => {
-    // 0.99 USD витрачено → ще один 10 MB ($0.04) переб'є $1.00 cap.
+    // 0.99 USD витрачено → ще один 10 MB ($0.04) перебʼє $1.00 cap.
     queryMock.mockResolvedValueOnce({
       rows: [{ usd_micros: "990000" }],
     });

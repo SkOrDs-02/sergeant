@@ -35,8 +35,8 @@ function clamp(n: number, min: number, max: number): number {
  * ЗАВЖДИ кламп-ить у межі, які вимагає shared-схема (Hard Rule #3):
  * `total_kopiykas` — `[0, AMOUNT_MINOR_MAX]`, `price_kopiykas`/
  * `sum_kopiykas` — `[-AMOUNT_MINOR_MAX, AMOUNT_MINOR_MAX]` (рядок знижки
- * легітимно від'ємний, звідси окремі `min`/`max` за викликом, не єдина
- * жорстка межа). Без цього LLM-галюцинація (від'ємний total, число поза
+ * легітимно відʼємний, звідси окремі `min`/`max` за викликом, не єдина
+ * жорстка межа). Без цього LLM-галюцинація (відʼємний total, число поза
  * AMOUNT_MINOR_MAX) проходила б крізь `Math.round`, і фінальний
  * `ReceiptDraftResponseSchema.parse()` кидав би — 500 замість
  * редагованої чернетки (review-фікс MAJOR). */
@@ -94,13 +94,13 @@ function isValidWallClockTime(hour: number, minute: number): boolean {
  * що завгодно (сміттєвий текст, урізаний JSON, чужу мову тощо); на
  * будь-яку невідповідність — безпечний дефолт, а не throw. Це дзеркалить
  * `normalizePhotoResult` (nutrition) — draft усе одно проходить через
- * обов'язковий редагований review-екран, тож "найкраща здогадка" тут
+ * обовʼязковий редагований review-екран, тож "найкраща здогадка" тут
  * краща за 500-ку на кожне трохи криве фото.
  *
  * Кожне поле, що потрапляє у `ReceiptDraftResponseSchema.parse()` нижче
  * в handler-і, кламп-иться до МЕЖ ТІЄЇ Ж схеми (store/name — довжина,
  * qty/total/price/sum — числові межі) — інакше LLM-галюцинація (задовге
- * ім'я, від'ємний total, qty поза розумними межами) валила б `.parse()`
+ * імʼя, відʼємний total, qty поза розумними межами) валила б `.parse()`
  * у 500 замість повернення редагованої чернетки (review-фікс MAJOR).
  */
 export function normalizeVisionResult(raw: unknown): ReceiptDraft {
@@ -144,7 +144,7 @@ export function normalizeVisionResult(raw: unknown): ReceiptDraft {
 
   // LLM дало нечитабельну/неможливу дату — "зараз" краще за падіння
   // всього запиту чи криво "нормалізовану" Date.UTC-дату: review-екран
-  // усе одно редагований (спека § Review-екран обов'язковий), користувач
+  // усе одно редагований (спека § Review-екран обовʼязковий), користувач
   // виправить дату вручну за потреби.
   const purchasedAt = validDate
     ? kyivWallClockToUtc({

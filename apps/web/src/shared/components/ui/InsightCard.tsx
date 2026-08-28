@@ -17,7 +17,7 @@
  * Handoff JSX був nested-button: зовнішній `<div>` wrapping і activate
  * button + dismiss button — це OK, але це не group. Sergeant wraps в
  * `<div role="group" aria-labelledby="…">` так що screen readers
- * announce'ять обидві дії як пов'язані.
+ * announce'ять обидві дії як повʼязані.
  *
  * ## Token discipline (Hard Rule #11 — no raw palette in className)
  *
@@ -168,7 +168,7 @@ export function InsightCard({
   // Обидві події емітяться ДО консюмерських колбеків (`onActivate` часто
   // навігує, `onDismiss` — довільний код власника). `trackEvent` сам по собі
   // fire-and-forget і ніколи не кидає, тож порядок нічим не ризикує, зате
-  // throw усередині колбека не з'їдає подію.
+  // throw усередині колбека не зʼїдає подію.
   const handleDismiss = () => {
     hapticTap();
     trackEvent(ANALYTICS_EVENTS.VALUE_SIGNAL_DISMISSED, {

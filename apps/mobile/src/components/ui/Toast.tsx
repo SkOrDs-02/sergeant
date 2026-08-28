@@ -115,7 +115,7 @@ const DEFAULT_DURATION: Record<ToastType, number> = {
 
 /**
  * Скільки тостів одночасно на екрані — тримаємо в парі з web
- * (`MAX_VISIBLE_TOASTS`). На мобільному вежа з п'яти аркушів з'їдала
+ * (`MAX_VISIBLE_TOASTS`). На мобільному вежа з пʼяти аркушів зʼїдала
  * верхню третину екрана.
  */
 const MAX_VISIBLE_TOASTS = 3;

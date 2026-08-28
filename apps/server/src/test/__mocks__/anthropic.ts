@@ -103,7 +103,7 @@ export interface AnthropicMockHandle {
 }
 
 /**
- * Створює сумісний з `vi.mock("../../lib/anthropic.js", () => ...)` об'єкт.
+ * Створює сумісний з `vi.mock("../../lib/anthropic.js", () => ...)` обʼєкт.
  * Усі експорти — `vi.fn()` з якомога мінімальною дефолтною поведінкою:
  *
  * - `anthropicMessages` / `anthropicMessagesStream` — без default behaviour;

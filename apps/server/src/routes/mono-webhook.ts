@@ -49,7 +49,7 @@ export function createMonoWebhookRouter(): Router {
   //
   // Header-only маршрут реєструється першим, щоб `POST /api/mono/webhook` без
   // path-secret (edge-rewrite кейс) потрапляв сюди, а не у 404. Monobank
-  // реально б'є у path-варіант нижче.
+  // реально бʼє у path-варіант нижче.
   r.post("/api/mono/webhook", webhookHandler);
   r.post("/api/mono/webhook/:secret", webhookHandler);
 
@@ -57,16 +57,16 @@ export function createMonoWebhookRouter(): Router {
   //
   // H6-контекст: `/api/mono/connect` МАЄ гейтитися на `email_verified=true`
   // через `requireVerifiedEmail()` — без цього атакувальник, що зареєстрував
-  // squat-акаунт на чужий email, під'єднав би свій Mono-token і дав жертві
+  // squat-акаунт на чужий email, підʼєднав би свій Mono-token і дав жертві
   // картину "хтось бачить мої транзакції" (плюс шифрований token у БД на
   // чужому user_id). `/api/mono/disconnect`, accounts, transactions,
   // backfill навмисно НЕ гейтнуті: вони не створюють нових прав, лише
-  // дають подивитись/відключити вже під'єднане; disconnect — anti-lock-in.
+  // дають подивитись/відключити вже підʼєднане; disconnect — anti-lock-in.
   //
   // AI-LEGACY: expires 2026-11-07 — бета-виняток H6. Гейт вище тимчасово
   // знято: поки не налагоджено доставку верифікаційних листів
   // (RESEND_API_KEY / RESEND_FROM — див. `email/authTransactionalMail.ts`),
-  // бета-юзер не може підтвердити пошту й узагалі не під'єднав би Mono.
+  // бета-юзер не може підтвердити пошту й узагалі не підʼєднав би Mono.
   // Повернути `requireVerifiedEmail()` між `requireSession()` і
   // `connectHandler` (плюс import із `../http`) щойно листи запрацюють;
   // регрес-тест у `apiV1.test.ts` під тим самим маркером.

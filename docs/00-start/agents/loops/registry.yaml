@@ -33,7 +33,7 @@ loops:
     goal: React to open PRs with safety review, contract checks, docs freshness, commit scope
     cadence: twice-weekly (Mon+Thu ~10:00 Kyiv)
     risk: medium
-    tools: [claude-code, kilo-code, codex, github-actions]
+    tools: [claude-code, codex, github-actions]
     skills: [sergeant-review-and-merge, sergeant-review-squad]
     state: null
     phases: [discover, triage, fix, verify, notify]
@@ -65,7 +65,7 @@ loops:
     goal: Discover dead code, Knip findings, ESLint baseline drift, module-size violations
     cadence: 6h-1d
     risk: low
-    tools: [claude-code, kilo-code, codex, github-actions]
+    tools: [claude-code, codex, github-actions]
     skills: [sergeant-tech-debt]
     state: null
     phases: [scan, prioritize, fix-small, ticket-large]
@@ -95,7 +95,7 @@ loops:
     goal: pnpm audit, secret scan, Pino redaction check, Drizzle SQL injection review, CVE triage
     cadence: 1d
     risk: medium
-    tools: [claude-code, kilo-code, codex, github-actions]
+    tools: [claude-code, codex, github-actions]
     skills: [sergeant-security-audit]
     state: null
     phases: [scan, triage-risk, patch-safe, verify-worktree, escalate-risky]
@@ -126,7 +126,7 @@ loops:
     goal: Sequential-numbering check, two-phase DROP detection, index audit on every PR touching db-schema
     cadence: per-pr
     risk: high
-    tools: [claude-code, kilo-code, codex, github-actions]
+    tools: [claude-code, codex, github-actions]
     skills: [sergeant-data-and-migrations]
     state: null
     phases: [detect, classify, block, escalate]
@@ -156,7 +156,7 @@ loops:
     goal: React to deploy health, Sentry alerts, env drift, Coolify/infra incidents
     cadence: 5m-15m
     risk: high
-    tools: [claude-code, kilo-code, github-actions, sentry-webhooks]
+    tools: [claude-code, github-actions, sentry-webhooks]
     skills: [sergeant-deploy-and-observability]
     state: null
     phases: [detect, classify, page-human, file-postmortem]
@@ -187,7 +187,7 @@ loops:
     goal: Detect and quarantine Playwright E2E flakes; surface new a11y regressions on PRs
     cadence: per-pr
     risk: low
-    tools: [claude-code, kilo-code, codex, github-actions]
+    tools: [claude-code, codex, github-actions]
     skills: [sergeant-e2e-testing]
     state: null
     phases: [detect, quarantine, propose-fix, escalate]
@@ -218,7 +218,7 @@ loops:
     goal: Parallel lens coverage (contract, design, security, docs) for PRs touching 3+ governed surfaces
     cadence: per-pr
     risk: medium
-    tools: [claude-code, kilo-code]
+    tools: [claude-code]
     skills: [sergeant-review-squad]
     state: null
     phases: [discover, fan-out, synthesize, gate]
@@ -254,7 +254,7 @@ loops:
     goal: Per-surface test + typecheck across all 3 surfaces before synthesis; full QA fan-out
     cadence: per-pr
     risk: low
-    tools: [claude-code, kilo-code]
+    tools: [claude-code]
     skills: [sergeant-qa-squad]
     state: null
     phases: [discover, fan-out, synthesize, report]
@@ -289,7 +289,7 @@ loops:
     goal: Multi-perspective product/strategy/UX advice for ambiguous decisions and tradeoffs
     cadence: per-decision
     risk: low
-    tools: [claude-code, kilo-code]
+    tools: [claude-code]
     skills: [sergeant-council]
     state: null
     phases: [frame, fan-out, debate, synthesize]
@@ -319,7 +319,7 @@ loops:
     goal: Execute a batch of N planning tasks via parallel agents with tracker sync
     cadence: per-batch
     risk: low
-    tools: [claude-code, kilo-code]
+    tools: [claude-code]
     skills: [sergeant-planning-batch]
     state: null
     phases: [discover, batch, fan-out, sync, archive]

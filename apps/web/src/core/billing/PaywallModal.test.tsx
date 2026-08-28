@@ -109,7 +109,7 @@ describe("PaywallModal", () => {
   it("does not promise a trial in the default feature list", () => {
     renderModal(true);
     expect(screen.queryByText(/trial/i)).toBeNull();
-    expect(screen.queryByText(/прив'язки картки/i)).toBeNull();
+    expect(screen.queryByText(/привʼязки картки/i)).toBeNull();
     // Решта дефолтних булітів лишається на місці.
     expect(screen.getByText(/Безлімітний AI-чат/)).toBeInTheDocument();
     expect(screen.getByText(/Експорт CSV\/PDF/)).toBeInTheDocument();

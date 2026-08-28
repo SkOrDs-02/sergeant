@@ -179,7 +179,7 @@ const SendBody = z
      * SAB direct-to-founder pings).
      */
     founderUserId: z.string().min(1).max(128).optional(),
-    /** Override window. Необов'язково — default 600_000 ms (10 хв). */
+    /** Override window. Необовʼязково — default 600_000 ms (10 хв). */
     windowMs: z
       .number()
       .int()

@@ -13,7 +13,7 @@ type HubAction = Parameters<typeof openHubModuleWithAction>[1];
 interface PresetItem {
   id: string;
   /**
-   * Гліф плитки — ІМ'Я з каталогу `Icon`, не емодзі. Раніше тут стояв
+   * Гліф плитки — ІМʼЯ з каталогу `Icon`, не емодзі. Раніше тут стояв
    * сирий `💧`/`📖`: `no-emoji-icon` цей шейп не ловить (емодзі всередині
    * рядкової мітки, а не в полі `icon`), тому дефект дожив до 2026-07.
    * З 2026-08-03 гліф самої звички (`data.emoji`) — теж icon-slug із
@@ -123,13 +123,13 @@ const PRESETS: PresetCatalog = {
         id: "lunch",
         icon: "utensils",
         title: "Обід",
-        desc: "що з'їв, і за скільки",
+        desc: "що зʼїв, і за скільки",
         data: { description: "Обід", category: "їжа" },
       },
     ],
   },
   nutrition: {
-    title: "Що з'їв зараз?",
+    title: "Що зʼїв зараз?",
     desc: "Відкрию форму добавляння страви, калорії підтвердиш у модулі.",
     accent: "text-nutrition-soft-fg bg-nutrition-soft",
     moduleIcon: "utensils",
@@ -224,7 +224,7 @@ export function PresetSheet({
       module: moduleId,
       presetId: item.id,
     });
-    // Routine preсети пишуться одразу — звичка це «ім'я + ✓», тут
+    // Routine preсети пишуться одразу — звичка це «імʼя + ✓», тут
     // немає метрики, яку можна сфабрикувати. Для finyk (а в перспективі
     // й інших) натомість стешимо `item.data` у sessionStorage і
     // відкриваємо повний add-sheet модуля — без фейкових сум у ledger-і,

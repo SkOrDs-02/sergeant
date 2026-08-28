@@ -73,7 +73,7 @@ const EXTRA_SKILL_KEYWORDS = {
     "two-phase",
     "numbering",
   ],
-  "sergeant-hubchat": [
+  "sergeant-module-ai": [
     "hub",
     "chat",
     "executor",

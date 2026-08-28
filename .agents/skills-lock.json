@@ -6,115 +6,180 @@
       "sourceType": "local",
       "computedHash": "9e37838997540530d230ebed1487a9696181d306a9c48e95236a50128d74c95f"
     },
+    "sergeant-adr": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "14e99777256bc4e5c773a7eecbee7a8c3b95c4f9b7479d9afda498103881af1e"
+    },
+    "sergeant-analytics": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "e7679b8282b477d70db8e8774a72d669457f9265f3dc5c2afadbeada09a60353"
+    },
+    "sergeant-backend-architecture": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "2f710cf90eba9b1a185f25d35d003e06f86553ed1ae6534ad81231dd79d598d4"
+    },
     "sergeant-bugfix-and-regression": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "c42d3b5a94b859d46ac0256c97f8c21cba23099f8d94ad2c4d5df53491c4478c"
+      "computedHash": "26a4af70c3757acd3cc1e576c79eaaf621828d9e576fc3aa1f3a609c63f92903"
     },
-    "sergeant-data-and-migrations": {
+    "sergeant-copy-and-tone": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "fb7eb1a3d2c254bc0ea5f77c38206ca3dc2c3180adb4f1ce3abb684060a0d31e"
-    },
-    "sergeant-deploy-and-observability": {
-      "source": "local",
-      "sourceType": "local",
-      "computedHash": "566a11ddeeb0a8244406f814d87aa9575d2de5cb05aecd7792756d464da7ae38"
-    },
-    "sergeant-feature-delivery": {
-      "source": "local",
-      "sourceType": "local",
-      "computedHash": "bf2ce8969a143de3603037e4d6c25ee6a322d44af57d966a72597d6adecbdd82"
-    },
-    "sergeant-hubchat": {
-      "source": "local",
-      "sourceType": "local",
-      "computedHash": "d95c969426aa7566bcda60b9e7fcab9f1153c5e2095e45ea3a6c5caf8a8ca71a"
-    },
-    "sergeant-mobile-expo": {
-      "source": "local",
-      "sourceType": "local",
-      "computedHash": "a5e2f27392530be574b6d4934bb195741a5c1348264405c52f99ed0eaa36a20b"
-    },
-    "sergeant-monorepo-boundaries": {
-      "source": "local",
-      "sourceType": "local",
-      "computedHash": "8c9a599ff0e7277eab32c1bbc467b3871499139127ac931a2485b7c535d46596"
-    },
-    "sergeant-review-and-merge": {
-      "source": "local",
-      "sourceType": "local",
-      "computedHash": "825c070853d302013a0ab175452c07015a38b731a57856a81bedb2be39101e61"
-    },
-    "sergeant-server-api": {
-      "source": "local",
-      "sourceType": "local",
-      "computedHash": "ada114d00e947b6e4619c0fa37f9ea841b082c2c1da387a41bed828015deba3a"
-    },
-    "sergeant-start-here": {
-      "source": "local",
-      "sourceType": "local",
-      "computedHash": "ca2b9cbfe03ca5d13f02ba08b0b329beec1a5bb9b0335ea936adfe4864419cd7"
-    },
-    "sergeant-web-ui": {
-      "source": "local",
-      "sourceType": "local",
-      "computedHash": "63ff15ae2be78a31e02e448e380256ea6ca40e175f19e5dc2da0ef0f33298951"
-    },
-    "sergeant-writing-skills": {
-      "source": "local",
-      "sourceType": "local",
-      "computedHash": "521a46aee0ebb5f3bfb30e2cdbda8114639e1438dbdc58160dd36188ac64297a"
-    },
-    "sergeant-security-audit": {
-      "source": "local",
-      "sourceType": "local",
-      "computedHash": "f80981e6a896805a67c37f2c471f6f45c09ebc569747e2352f77b581d22ab3da"
-    },
-    "sergeant-e2e-testing": {
-      "source": "local",
-      "sourceType": "local",
-      "computedHash": "c53561cafab54bd8076268a71beaa7a50a7b716cf7c8cd2aaa566001f8064139"
-    },
-    "sergeant-tech-debt": {
-      "source": "local",
-      "sourceType": "local",
-      "computedHash": "fbb17d91f5cf05b8422d6cd395c91cc8cd9b15476f90d4c7c3bc3677ccce44ca"
-    },
-    "sergeant-review-squad": {
-      "source": "local",
-      "sourceType": "local",
-      "computedHash": "aab46af94f6996c48e80dfd68c8fc99cab20ba010ffde3fe22cfb257e98008dd"
-    },
-    "sergeant-deliver-squad": {
-      "source": "local",
-      "sourceType": "local",
-      "computedHash": "526138ed54904c2bf9725381351bcad712630fb1e78de72d349570873452231c"
-    },
-    "sergeant-qa-squad": {
-      "source": "local",
-      "sourceType": "local",
-      "computedHash": "6852248d7d68a3e88fbfb7a305019eee9a71e67c348320430111790000758a53"
+      "computedHash": "7cf8a7448bc1f1e33b1d32f88b7528114c1f3cf524a7889a058f0d27167e7e81"
     },
     "sergeant-council": {
       "source": "local",
       "sourceType": "local",
       "computedHash": "c9f8eb36f6a7647a98820b84269579da96b1a7b7e5a488aefeb7aa1ca2f64547"
     },
+    "sergeant-data-and-migrations": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "08542b97dcca4983bf257dc9752a01348d47488b640f75024e767aa6d7f39de5"
+    },
+    "sergeant-deliver-squad": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "3a202e557d6b891d53290fd15aac9a6e4641ee5ff33b60ddcfd36d39543398f1"
+    },
+    "sergeant-deploy-and-observability": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "566a11ddeeb0a8244406f814d87aa9575d2de5cb05aecd7792756d464da7ae38"
+    },
+    "sergeant-e2e-testing": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "c53561cafab54bd8076268a71beaa7a50a7b716cf7c8cd2aaa566001f8064139"
+    },
+    "sergeant-feature-delivery": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "0ffb28fafd29cca4c4d5803deae5b0745e79c0b1ea9f7b8b04a48e25736f27ff"
+    },
+    "sergeant-feature-flags": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "284b94a92dc78f9ee04ee2c1f7cf412a682825b526ca773921a0b3c3ad079834"
+    },
+    "sergeant-hubchat": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "3a302c6d940461e6158b55e816e3480383f79849afc741fc1085217952fb9c38"
+    },
+    "sergeant-mobile-expo": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "a5e2f27392530be574b6d4934bb195741a5c1348264405c52f99ed0eaa36a20b"
+    },
+    "sergeant-module-ai": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "7cff37dde8af7048cde146f2f40404979269afee839d02c49146d81b14f58d9b"
+    },
+    "sergeant-module-billing": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "a340019c3cead5d8f12a161702c36081473530e3eb79c576c763013761c80c06"
+    },
+    "sergeant-module-finyk": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "3c219152b6d4c6e00c73d9aeed5fcedaee750b8db2236efe5ded1807282d5e9f"
+    },
+    "sergeant-module-fizruk": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "bf3247d4cf975c961ebc4118f10f0d57c1c953730f5fb21805514a45fba54a7f"
+    },
+    "sergeant-module-integrations": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "cb05365d871a97ea2c94ef9a6ac812caee3d3e068039f0a062c477795e0af57e"
+    },
+    "sergeant-module-nutrition": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "4c73bca5997a99f55a09ff72147548e7b18dd6b88aeb214b634063ae1b9dd308"
+    },
+    "sergeant-module-push": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "48669851ef18124892ac091d7bc43a4e3436c8a745e8d6178698af0ec45a6e47"
+    },
+    "sergeant-module-routine": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "941a5e7bd01a7502bc93c4bfd712eaa888e5817c88e5cb4601f39f193fa06ad9"
+    },
+    "sergeant-module-sync": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "eb94388ed2466655f13c8aca02a7f6f9ef7a9568d8fac5c7598b173596164843"
+    },
+    "sergeant-monorepo-boundaries": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "8c9a599ff0e7277eab32c1bbc467b3871499139127ac931a2485b7c535d46596"
+    },
     "sergeant-planning-batch": {
       "source": "local",
       "sourceType": "local",
       "computedHash": "cced5ffaa7cd9f2b69f651f2ab2ee6958fc18907ba092cc23eb5c9209aa42a9f"
     },
-    "sergeant-backend-architecture": {
+    "sergeant-qa-squad": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "056d2ef67de78e986d694b60f4e1dae52f80f1121c0549158d66bb8032116b97"
+      "computedHash": "6852248d7d68a3e88fbfb7a305019eee9a71e67c348320430111790000758a53"
+    },
+    "sergeant-review-and-merge": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "825c070853d302013a0ab175452c07015a38b731a57856a81bedb2be39101e61"
+    },
+    "sergeant-review-squad": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "aab46af94f6996c48e80dfd68c8fc99cab20ba010ffde3fe22cfb257e98008dd"
+    },
+    "sergeant-security-audit": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "f80981e6a896805a67c37f2c471f6f45c09ebc569747e2352f77b581d22ab3da"
+    },
+    "sergeant-server-api": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "f3d7c496f6a72db0f35b4a1f4c59cde92afc657d950d82cd63110cc5140f74ce"
+    },
+    "sergeant-start-here": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "9c91e811bbca35b8315815c2c1e7d269bbbb2fa3c57f8d69a3aa021cd740ed98"
+    },
+    "sergeant-tech-debt": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "fbb17d91f5cf05b8422d6cd395c91cc8cd9b15476f90d4c7c3bc3677ccce44ca"
     },
     "sergeant-verify-before-done": {
       "source": "local",
       "sourceType": "local",
       "computedHash": "28b71011ea0ae98f953dbe3844b7d2e35ff280667655a85ea99c59bf5afa96d9"
+    },
+    "sergeant-web-ui": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "659b9f375eb86a46b47706bd5062a7d81fee0f93f69d489313ce0fd0221539e8"
+    },
+    "sergeant-writing-skills": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "521a46aee0ebb5f3bfb30e2cdbda8114639e1438dbdc58160dd36188ac64297a"
     }
   }
 }

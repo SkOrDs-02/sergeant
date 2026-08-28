@@ -214,7 +214,7 @@ export function HubHeader({
       <p className="mt-2 ms-[3px] flex flex-wrap items-baseline gap-x-2">
         {/* Роль, не розмір (D8-sweep, Р1): привітання — це H1 хаба,
             якір екрана з мови «Папір» (П2), а не заголовок секції.
-            `truncate` живе лише на привітанні: довге ім'я не повинно
+            `truncate` живе лише на привітанні: довге імʼя не повинно
             зʼїдати дату — вона переноситься на новий рядок замість
             того, щоб зникати разом з привітанням на вузьких екранах. */}
         <span className="text-style-headline text-text truncate min-w-0">

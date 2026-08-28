@@ -133,7 +133,7 @@ export const aiMemoryIngestQueueDepth = new client.Gauge({
 });
 
 /**
- * Розподіл найкращого cosine-скору на запит до AI-пам'яті.
+ * Розподіл найкращого cosine-скору на запит до AI-памʼяті.
  *
  * WHY. Досі не існувало ЖОДНОГО сигналу про якість retrieval-у: прод рахував
  * `llm_provider_invocations_total` (скільки викликів), але не те, чи знайшлося

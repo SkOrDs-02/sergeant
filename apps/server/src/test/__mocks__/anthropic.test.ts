@@ -2,7 +2,7 @@
  * Юніт-тести для Anthropic mock harness.
  *
  * Контракт:
- * - `createAnthropicMockHandle()` повертає об'єкт із `vi.fn()`-symbols, готовий
+ * - `createAnthropicMockHandle()` повертає обʼєкт із `vi.fn()`-symbols, готовий
  *   віддати у `vi.mock()` factory.
  * - `extractAnthropicText` дзеркалить реальну реалізацію (включно з `.trim()`
  *   та порядком join-у для multi-block відповідей).
@@ -132,7 +132,7 @@ describe("anthropicResponses.toolUse", () => {
     });
   });
 
-  it("дефолтить input до пустого об'єкта", () => {
+  it("дефолтить input до пустого обʼєкта", () => {
     const r = anthropicResponses.toolUse([{ id: "x", name: "y" }]);
     const block = r.data.content[0] as { type: string; input?: unknown };
     expect(block.input).toEqual({});

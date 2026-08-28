@@ -44,7 +44,7 @@ export function useNutritionQuickStatsWriter({
  * користувач не задав цілі. Ніякого дефолтного таргета тут не вигадуємо —
  * `computeNutritionQuickStats` поверне `calGoal: 0`, а селектор
  * `selectModulePreview` на нулі просто не рендерить рядок «Ціль: …» і
- * лишає кільце прогресу порожнім. З'їдені сьогодні калорії — виміряний
+ * лишає кільце прогресу порожнім. Зʼїдені сьогодні калорії — виміряний
  * факт, тож їх картка показує й без цілі; мовчить саме та частина, що без
  * цілі не має сенсу (пор. F-010 у browser QA 2026-08-04).
  */
@@ -56,7 +56,7 @@ export function writeNutritionQuickStatsSnapshot({
   prefs: NutritionPrefs | null;
 }): string {
   const payload = JSON.stringify(
-    // ADR-0078: картка показує "з'їдено сьогодні" за тим самим днем, під
+    // ADR-0078: картка показує "зʼїдено сьогодні" за тим самим днем, під
     // яким лог реально зберігає прийоми їжі — днем пристрою.
     computeNutritionQuickStats(log, prefs, todayISODate()),
   );

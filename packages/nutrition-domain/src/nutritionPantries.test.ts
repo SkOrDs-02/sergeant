@@ -15,7 +15,7 @@ describe("makeDefaultPantry", () => {
     expect(p).toEqual({ id: "home", name: "Дім", items: [], text: "" });
   });
 
-  it("кожен виклик дає НОВИЙ об'єкт (не shared reference)", () => {
+  it("кожен виклик дає НОВИЙ обʼєкт (не shared reference)", () => {
     const a = makeDefaultPantry();
     const b = makeDefaultPantry();
     expect(a).not.toBe(b);

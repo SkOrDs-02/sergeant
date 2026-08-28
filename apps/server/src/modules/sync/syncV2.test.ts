@@ -137,7 +137,7 @@ describe("APPLY_REJECT_REASONS / ENGINE_REJECT_REASONS — frozen contract", () 
     );
   });
 
-  it("APPLY ↔ ENGINE — диз'юнктивні множини (жодного перетину)", () => {
+  it("APPLY ↔ ENGINE — дизʼюнктивні множини (жодного перетину)", () => {
     const apply = new Set<string>(APPLY_REJECT_REASONS);
     for (const r of ENGINE_REJECT_REASONS) {
       expect(apply.has(r)).toBe(false);
@@ -193,7 +193,7 @@ describe("syncV2Push · validation gate", () => {
     expect(pool.connect).not.toHaveBeenCalled();
   });
 
-  it("ValidationError на op без обов'язкового поля", async () => {
+  it("ValidationError на op без обовʼязкового поля", async () => {
     const req = makeReq({
       body: {
         ops: [

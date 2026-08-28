@@ -58,7 +58,7 @@ export function startReminderScheduler(pool: Pool): StartedReminderScheduler {
     if (stopped) return;
     try {
       const result = await runReminderSweep(pool);
-      // Прибирання прив'язане до київської години, а не до інтервалу: так
+      // Прибирання привʼязане до київської години, а не до інтервалу: так
       // воно трапляється рівно раз на добу незалежно від рестартів.
       if (result.hm === PRUNE_AT_HM && lastPruneDayKey !== result.dayKey) {
         lastPruneDayKey = result.dayKey;

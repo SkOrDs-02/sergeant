@@ -134,7 +134,7 @@ export function removeSavedRecipe(id: string): boolean {
 }
 
 /**
- * Імпорт з експорту web (JSON) / масиву / об'єкта { recipes: [...] }.
+ * Імпорт з експорту web (JSON) / масиву / обʼєкта { recipes: [...] }.
  * Кожен елемент нормалізується; існуючі id перезаписуються. Усі updates
  * батчаться в один `saveRecipeBook` щоб уникнути race-у з SQLite cache
  * refresh-ом між послідовними викликами.
@@ -162,7 +162,7 @@ export function importRecipesFromJson(
   } else if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
     list = [parsed];
   } else {
-    return { ok: false, error: "Очікується об’єкт рецепта або масив" };
+    return { ok: false, error: "Очікується обʼєкт рецепта або масив" };
   }
 
   if (list.length === 0) {

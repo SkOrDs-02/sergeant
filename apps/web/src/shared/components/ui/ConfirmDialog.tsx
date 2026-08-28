@@ -78,7 +78,7 @@ export const ConfirmDialog = memo(function ConfirmDialog({
     >
       {/* Scrim — real <button> keeps dismiss reachable by keyboard & AT.
 
-          Ім'я скрима НЕ дорівнює `cancelLabel` (V-8, аудит Профілю/
+          Імʼя скрима НЕ дорівнює `cancelLabel` (V-8, аудит Профілю/
           Налаштувань 2026-08-08). Доти обидва звалися «Скасувати», і в
           дереві доступності виходили дві кнопки з однаковим іменем —
           скрінрідер не міг їх розрізнити, а role-запит у тестах ламався на
@@ -141,7 +141,7 @@ export const ConfirmDialog = memo(function ConfirmDialog({
           // content, тобто `<ul>` чи вкладений `<p>` усередині нього
           // невалідні. Реальний HTML-парсер авто-закрив
           // би `<p>` перед першим таким блоком, розірвавши
-          // `aria-describedby`-зв'язок і породжуючи React DOM-nesting
+          // `aria-describedby`-звʼязок і породжуючи React DOM-nesting
           // warning. Викликачі (як `HubBackupPanel`) передають описи зі
           // списками — `<div>` з тим самим класом дає той самий вигляд без
           // невалідної вкладеності.

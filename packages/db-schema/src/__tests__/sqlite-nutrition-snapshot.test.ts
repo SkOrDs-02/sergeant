@@ -486,7 +486,7 @@ describe("sqlite/nutrition migrations exports", () => {
     const sql = NUTRITION_CLIENT_MIGRATIONS[4]!.sql;
     // `IF NOT EXISTS` — additive, старі клієнти не ламаються.
     expect(sql).toMatch(/CREATE TABLE IF NOT EXISTS nutrition_goal_periods/);
-    // Закритий enum origin з обов'язковим 'backfill'.
+    // Закритий enum origin з обовʼязковим 'backfill'.
     expect(sql).toMatch(
       /CHECK \(origin IN \('manual','preset','tdee','backfill'\)\)/,
     );

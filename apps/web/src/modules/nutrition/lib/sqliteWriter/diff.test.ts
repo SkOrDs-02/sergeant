@@ -547,7 +547,7 @@ describe("diffNutritionDualWriteOps — water-log-set (Stage 11)", () => {
     ]);
   });
 
-  it("емітить water-log-set з volumeMl=0 для видаленого ключа (м'який скид)", () => {
+  it("емітить water-log-set з volumeMl=0 для видаленого ключа (мʼякий скид)", () => {
     const ops = diffNutritionDualWriteOps(
       makeState({ waterLog: { "2026-05-01": 500 } }),
       EMPTY,

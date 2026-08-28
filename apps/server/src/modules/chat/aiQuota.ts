@@ -38,7 +38,7 @@ type SessionUser = { id: string } | null;
 /**
  * Квиток на refund у разі неуспіху upstream AI-виклику. Атачиться до `req`
  * (див. `WithAiQuotaRefund`), handler викликає його якщо Anthropic повернув
- * помилку / timeout / клієнт відвалився — тоді квоту не сп'ємо за провалений
+ * помилку / timeout / клієнт відвалився — тоді квоту не спʼємо за провалений
  * запит. Без-db режим (fail-open) повертає no-op refund.
  */
 export interface AiQuotaRefund {
@@ -194,7 +194,7 @@ async function userDailyLimit(userId: string): Promise<number | null> {
  * Це ГЛОБАЛЬНА (per-tool-name-agnostic) вага: усі tool-и коштують однаково.
  * За замовчуванням `DEFAULT_TOOL_COST` (3) — один tool-call "важить" як три
  * звичайні chat-повідомлення (`default`-bucket, cost=1). Override —
- * через env `AI_QUOTA_TOOL_COST` (невід'ємне ціле; биті/від'ємні значення
+ * через env `AI_QUOTA_TOOL_COST` (невідʼємне ціле; биті/відʼємні значення
  * ігноруються `parseLimit`-ом і падають на дефолт).
  *
  * NB: вартість і ліміт — це ДВА різні важелі. `AI_QUOTA_TOOL_COST` керує тим,
@@ -216,7 +216,7 @@ function toolCost(): number {
  *
  * Precedence (від найвищого до найнижчого):
  *   1. `AI_QUOTA_TOOL_LIMITS[toolName]` — явний per-tool ліміт із JSON-мапи,
- *      якщо ключ присутній і значення — валідне невід'ємне число.
+ *      якщо ключ присутній і значення — валідне невідʼємне число.
  *   2. `AI_QUOTA_TOOL_DEFAULT_LIMIT` — fallback для tool-ів, яких немає в мапі
  *      (а також коли `AI_QUOTA_TOOL_LIMITS` взагалі не задано).
  *   3. `null` (unlimited) — якщо й дефолтний ліміт не задано.
@@ -375,7 +375,7 @@ export async function assertAiQuota(
       // HTTP-запит до AI-роута, а одне повідомлення в чаті може коштувати
       // кілька: після tool_use клієнт шле наступний POST /api/chat із
       // tool_results, і той теж проходить сюди. Копія «5 повідомлень» лишала
-      // юзера з 4 відповідями і 429 на п'ятій — обіцяли не те, що метрять.
+      // юзера з 4 відповідями і 429 на пʼятій — обіцяли не те, що метрять.
       res.status(429).json(
         isPresetBudget
           ? {

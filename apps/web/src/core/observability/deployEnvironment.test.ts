@@ -98,7 +98,7 @@ describe("resolveSentryEnvironment", () => {
 
   // Override не має бути лазівкою навколо hostname-класифікації: інакше
   // preview-збірка з `VITE_SENTRY_ENVIRONMENT=production` знову зливалась би
-  // з продом — тобто рівно та проблема, заради якої резолвер і з'явився.
+  // з продом — тобто рівно та проблема, заради якої резолвер і зʼявився.
   it("не дозволяє override-у видати preview за production", () => {
     stubEnv({ VITE_SENTRY_ENVIRONMENT: "production" });
     expect(

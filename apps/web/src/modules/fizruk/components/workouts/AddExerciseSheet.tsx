@@ -151,7 +151,7 @@ export function AddExerciseSheet({
                 musclesSecondary: [],
               }))
             }
-            aria-label="Основна група м'язів"
+            aria-label="Основна група мʼязів"
           >
             {Object.keys(primaryGroupsUk).map((id) => (
               <option key={id} value={id}>

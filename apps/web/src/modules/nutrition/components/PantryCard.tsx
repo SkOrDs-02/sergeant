@@ -389,7 +389,7 @@ export function PantryCard({
               className={cn(
                 // Той самий 44px-флор, що й у «Додати» вище: `h-11` дає
                 // 41.25px на 320px, а це вже дві кнопки того самого блоку
-                // з тим самим дефектом (рев'ю CodeRabbit 2026-08-26).
+                // з тим самим дефектом (ревʼю CodeRabbit 2026-08-26).
                 "text-style-label shrink-0 px-4 h-11 pointer-coarse:min-h-[44px] rounded-2xl mt-0.5",
                 "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors",
               )}

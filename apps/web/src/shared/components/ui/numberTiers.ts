@@ -32,7 +32,7 @@ export const NUMBER_TONE_CLASS: Record<NumberTone, string> = {
 };
 
 /**
- * Знак: U+2212, не дефіс — інакше рядки з мінусом з'їжджають у стовпчику.
+ * Знак: U+2212, не дефіс — інакше рядки з мінусом зʼїжджають у стовпчику.
  */
 export const TIER_SIGN = "text-[0.78em] font-normal";
 
@@ -45,6 +45,6 @@ export const TIER_UNIT = "text-[0.72em] font-normal";
 /**
  * Копійки. Найменший тир — і він НАВМИСНО не застосовується до дробової
  * частини вимірів (див. `Measure`): копійка — сота частка гривні, тоді як
- * 0,5 кг — це п'ята частина 2,5 кг.
+ * 0,5 кг — це пʼята частина 2,5 кг.
  */
 export const TIER_FRACTION = "text-[0.64em] font-normal";

@@ -153,7 +153,7 @@ export function ReceiptScanSheet({
       resetSave();
       bulkReceipts.reset();
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset-on-close only; `bulkReceipts` — новий об'єкт щорендера (той самий патерн, що в BulkImportSheet до переносу).
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset-on-close only; `bulkReceipts` — новий обʼєкт щорендера (той самий патерн, що в BulkImportSheet до переносу).
   }, [open, resetSave]);
 
   const openReview = (nextDraft: ReceiptDraft) => {

@@ -105,7 +105,7 @@ describe("query_workouts", () => {
     seed();
     const out = call({ name: "query_workouts", input: {} });
     expect(out).toContain("Тренувань за 30 днів: 3"); // w1,w2,w3 (not old, not planned)
-    expect(out).toMatch(/об'єм/i);
+    expect(out).toMatch(/обʼєм/i);
   });
 
   it("happy: filters by exercise", () => {

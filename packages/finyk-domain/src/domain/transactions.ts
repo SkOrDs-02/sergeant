@@ -274,7 +274,7 @@ export function filterStatTransactions(
 }
 
 // Захищаємось від "сирих" входів з неправильною формою: нормалізуємо
-// лише валідні об'єкти, пропускаємо пусті/null/недійсні записи та гарантуємо
+// лише валідні обʼєкти, пропускаємо пусті/null/недійсні записи та гарантуємо
 // унікальність за стабільним id. Остання транзакція з тим же id виграє —
 // це важливо для merge між cache + network, коли сервер повернув свіжу копію.
 export function dedupeAndSortTransactions(
@@ -299,7 +299,7 @@ export function dedupeAndSortTransactions(
 /**
  * Перетворює збережену manual-витрату (`addManualExpense`-entry) у
  * нормалізовану Transaction. Зберігає amount у копійках зі знаком, похідним
- * від `kind` (expense → від'ємний, income → додатний), та проставляє
+ * від `kind` (expense → відʼємний, income → додатний), та проставляє
  * categoryId з поля `category`.
  */
 export interface ManualExpenseEntry {

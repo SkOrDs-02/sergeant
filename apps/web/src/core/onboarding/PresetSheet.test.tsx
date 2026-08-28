@@ -163,7 +163,7 @@ describe("PresetSheet", () => {
 
   it("renders only the fallback row for nutrition (no preset tiles)", () => {
     render(<PresetSheet open moduleId="nutrition" onClose={onClose} />);
-    expect(screen.getByText("Що з'їв зараз?")).toBeInTheDocument();
+    expect(screen.getByText("Що зʼїв зараз?")).toBeInTheDocument();
     expect(screen.queryByText("Кава")).not.toBeInTheDocument();
     expect(screen.getByText("Додати страву")).toBeInTheDocument();
   });

@@ -92,7 +92,7 @@ describe("friendlyApiError", () => {
 describe("friendlyChatError", () => {
   it("maps network errors", () => {
     expect(friendlyChatError(new Error("Failed to fetch"))).toBe(
-      "Немає з'єднання з мережею або сервер недоступний.",
+      "Немає зʼєднання з мережею або сервер недоступний.",
     );
     expect(friendlyChatError(new Error("network down"))).toContain("мережею");
   });

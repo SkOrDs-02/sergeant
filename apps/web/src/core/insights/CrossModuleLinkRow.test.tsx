@@ -19,7 +19,7 @@ const poleB = {
   unit: "ккал за день",
 };
 
-describe("CrossModuleLinkRow — згорнутий зв'язок", () => {
+describe("CrossModuleLinkRow — згорнутий звʼязок", () => {
   afterEach(cleanup);
 
   it("показує пару, ступінь і формулювання, але не полюси з числами", () => {

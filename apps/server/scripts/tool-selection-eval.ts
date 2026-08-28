@@ -22,6 +22,12 @@
  * strictly instead — an id in a write-call that was never given to the model is
  * a `FAKE`, and it counts as worse than a `MISS`.
  *
+ * Окремим блоком (`IMPLICIT_FACT_CASES`) міряється неявна памʼять: факт про
+ * себе, сказаний мимохідь усередині звичайного прохання, без слова
+ * «запамʼятай». Підсумок друкується рядком `implicit remember: N/M` — решта
+ * ланцюга памʼяті (`profileMirror` → `ai_memories`) працює лише тоді, коли
+ * модель узагалі викликала `remember`, тож це його вхідна точка.
+ *
  * Usage:
  *   OPENROUTER_API_KEY=... pnpm eval:tools
  *   OPENROUTER_API_KEY=... pnpm eval:tools --models=anthropic/claude-haiku-4.5
@@ -42,7 +48,7 @@ const SKIN_URL = "https://openrouter.ai/api/v1/messages";
  * (`create_`, `mark_`, `log_`…) виглядає природніше, але тоді новий інструмент
  * із незнайомим дієсловом мовчки випадає з перевірки — так повз неї проходять
  * `change_category`, `finish_workout`, `reorder_habits`, `forget`. При
- * інверсії незнайоме ім'я за замовчуванням перевіряється: гірше, що може
+ * інверсії незнайоме імʼя за замовчуванням перевіряється: гірше, що може
  * статися — хибне спрацювання на read-і, і воно видно у звіті.
  */
 const READ_ONLY = (name: string): boolean =>
@@ -199,7 +205,7 @@ const CASES: ToolCase[] = [
   },
   {
     name: "факт про себе",
-    user: "Запам'ятай: у мене алергія на арахіс",
+    user: "Запамʼятай: у мене алергія на арахіс",
     accept: ["remember"],
   },
   {
@@ -254,6 +260,76 @@ const CASES: ToolCase[] = [
     acceptRefusal: true,
   },
 ];
+
+/**
+ * Неявні факти — сказані мимохідь, без прямого «запамʼятай».
+ *
+ * AI-CONTEXT: у `CASES` факт про себе представлений однією реплікою, яка
+ * починається дослівно з «Запамʼятай:». Це найлегший різновид: намір
+ * користувача вже названий словом, модель лише виконує. У проді так майже
+ * ніхто не пише — обмеження й цілі проговорюються попутно, всередині
+ * звичайного прохання («я взагалі не їм глютен, що приготувати?»), і саме
+ * там ланцюг `remember` → `profileMirror` → `ai_memories` мовчки рветься:
+ * жоден інший продюсер такий факт не підхоплює, тож незбережений факт не
+ * осідає ніде.
+ *
+ * Тому кожен кейс тут навмисно ставить `remember` у конкуренцію з іншим
+ * інструментом: репліка несе І факт, І звичайне прохання, яке саме по собі
+ * тягне read- або write-виклик. `accept` перевіряє наявність `remember`
+ * серед викликів (`scoreCase` шукає збіг, а не єдиний виклик), тож модель,
+ * яка зробила обидві дії, зараховується; модель, яка відповіла лише на
+ * прохання і пропустила факт, — ні. Це і є вимірюване.
+ *
+ * Кейси покривають категорії з `enum` інструмента (`diet`, `health`, `goal`,
+ * `preference`, `allergy`), бо саме по них групується секція «Памʼять ШІ».
+ * Сутності в репліках беруться з блоку ДАНІ, щоб супутній виклик не ловив
+ * `hallucinated` і не змішував дві різні поразки в одному рядку звіту.
+ */
+const IMPLICIT_FACT_CASES: ToolCase[] = [
+  {
+    name: "неявний факт: глютен",
+    user: "Я взагалі не їм глютен. Що б приготувати на вечерю?",
+    accept: ["remember"],
+  },
+  {
+    name: "неявний факт: травма",
+    user: "Присідання поки не роблю, травма коліна. Який мій максимум у жимі лежачи?",
+    accept: ["remember"],
+  },
+  {
+    /**
+     * Єдиний кейс, де у факту є конкурент зі структурованим домом: `set_goal`.
+     * Замір 2026-08-27 показав два різні прочитання — `gemini-3.7-flash`
+     * викликала обидва інструменти (3/3), `claude-haiku-4.5` обмежилась
+     * `set_goal` (0/3). Кейс лишається саме через цю розбіжність: ціль у
+     * таблиці цілей НЕ потрапляє в `ai_memories`, тож для RAG-контексту
+     * чату вона невидима — а це і є те, що міряє ця ініціатива.
+     */
+    name: "неявний факт: ціль ваги",
+    user: "Хочу скинути 5 кг до вересня. Скільки калорій я вже зʼїв сьогодні?",
+    accept: ["remember"],
+  },
+  {
+    name: "неявний факт: час тренувань",
+    user: "Ранкові тренування ненавиджу, займаюся тільки ввечері. Скільки разів я тренувався цього тижня?",
+    accept: ["remember"],
+  },
+  {
+    name: "неявний факт: морепродукти",
+    user: "Мене висипає від морепродуктів, тому суші пропускаю. Що зʼїсти після тренування?",
+    accept: ["remember"],
+  },
+  {
+    name: "неявний факт: бюджет",
+    user: "Я тепер відкладаю 20% доходу, тому стараюсь менше витрачати. Скільки я витратив на продукти цього місяця?",
+    accept: ["remember"],
+  },
+];
+
+/** Імена неявних кейсів — для окремого підсумку `implicit remember`. */
+const IMPLICIT_NAMES = new Set(IMPLICIT_FACT_CASES.map((c) => c.name));
+
+const ALL_CASES: ToolCase[] = [...CASES, ...IMPLICIT_FACT_CASES];
 
 interface AnthropicBlock {
   type: string;
@@ -388,17 +464,17 @@ async function main(): Promise<void> {
     .filter(Boolean);
 
   console.log(
-    `Registry: ${TOOLS.length} tools (${WRITE_ID_FIELDS.size} write-tools with id args), system prefix ${SYSTEM_PREFIX.length} chars, ДАНІ: ${values["no-data"] ? "немає" : `${DATA_BLOCK.length} chars`}\n`,
+    `Registry: ${TOOLS.length} tools (${WRITE_ID_FIELDS.size} write-tools with id args), system prefix ${SYSTEM_PREFIX.length} chars, ДАНІ: ${values["no-data"] ? "немає" : `${DATA_BLOCK.length} chars`}, кейсів: ${ALL_CASES.length} (неявних фактів: ${IMPLICIT_FACT_CASES.length})\n`,
   );
 
   const repeats = Math.max(1, Number(values.repeat ?? 1) || 1);
   const results: CaseResult[] = [];
   for (const model of models) {
-    for (const toolCase of CASES) {
+    for (const toolCase of ALL_CASES) {
       for (let i = 0; i < repeats; i += 1) {
         const r = await runCase(apiKey, model, toolCase, !values["no-data"]);
         results.push(r);
-        // FAKE б'є MISS: вигаданий id у правильно вибраному інструменті — гірша
+        // FAKE бʼє MISS: вигаданий id у правильно вибраному інструменті — гірша
         // з двох поразок, бо доходить до виконавця й пише фантомний запис.
         const mark = r.error
           ? "ERR"
@@ -409,7 +485,7 @@ async function main(): Promise<void> {
               : "MISS";
         const picked = r.picked.length ? r.picked.join(",") : "(no tool_use)";
         console.log(
-          `[${mark}] ${model.padEnd(30)} ${toolCase.name.padEnd(20)} ${String(r.latencyMs).padStart(6)}ms  ${r.error ?? picked}`,
+          `[${mark}] ${model.padEnd(30)} ${toolCase.name.padEnd(28)} ${String(r.latencyMs).padStart(6)}ms  ${r.error ?? picked}`,
         );
         if (r.hallucinated.length)
           console.log(`        ↳ вигадані id: ${r.hallucinated.join(", ")}`);
@@ -433,6 +509,19 @@ async function main(): Promise<void> {
     console.log(
       `| \`${model}\` | ${correct}/${rows.length} | ${invented}/${rows.length} | ${errors} | ${mid} |`,
     );
+  }
+
+  // Окремо від зведеної таблиці: у ній неявні кейси розчиняються серед решти,
+  // а лікуємо ми саме їх — тож число має бути видно без арифметики в голові.
+  console.log(
+    "\nНеявні факти (сказані мимохідь, без «запамʼятай») — чи викликано `remember`:",
+  );
+  for (const model of models) {
+    const rows = results.filter(
+      (r) => r.model === model && IMPLICIT_NAMES.has(r.caseName),
+    );
+    const hit = rows.filter((r) => r.correct).length;
+    console.log(`implicit remember: ${hit}/${rows.length}  \`${model}\``);
   }
 }
 

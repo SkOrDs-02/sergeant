@@ -58,15 +58,15 @@ export interface UseApiFormReturn<
   /** Pre-bound `handleSubmit(onSubmit)` — для `<form onSubmit>` з шаблону. */
   submit: (e?: React.BaseSyntheticEvent) => Promise<void>;
   /**
-   * Чи виконується submit зараз. Об'єднує
+   * Чи виконується submit зараз. Обʼєднує
    * `formState.isSubmitting` з нашим внутрішнім флагом — нативний RHF
    * `isSubmitting` сам слідкує за promise-ом, але цей флаг гарантовано
    * ставиться навіть якщо handler упав до `setError` (не "pending forever").
    */
   isSubmitting: boolean;
   /**
-   * Top-level повідомлення помилки (не прив'язане до конкретного поля).
-   * `null`, якщо останній submit пройшов або серверна помилка прив'язана
+   * Top-level повідомлення помилки (не привʼязане до конкретного поля).
+   * `null`, якщо останній submit пройшов або серверна помилка привʼязана
    * до поля. Для відображення у toast / банері над формою.
    */
   serverError: string | null;
@@ -131,7 +131,7 @@ function applyServerError<TValues extends FieldValues>(
 /**
  * `useApiForm` — стандартний form-engine для всіх форм у `apps/web`.
  *
- * Об'єднує:
+ * Обʼєднує:
  * - **react-hook-form** (стан полів, `register`, `handleSubmit`, `formState`)
  * - **zod** (через `@hookform/resolvers/zod`) для client-side валідації
  * - **server-error mapping** — `ApiError` з `body.details: [{ path, message }]`

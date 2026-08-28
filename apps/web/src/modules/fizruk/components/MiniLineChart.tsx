@@ -1,5 +1,15 @@
 import { useRef, useMemo } from "react";
 import { EmptyState } from "@shared/components/ui/EmptyState";
+import {
+  seriesExtent,
+  pointStep,
+  xAt,
+  linearY,
+  clampToDomain,
+  buildLinePath,
+  buildAreaPath,
+  type ChartPoint,
+} from "@shared/charts";
 import { useChartScrub } from "@shared/hooks";
 import { ChartScrubOverlay, ChartGoalLine } from "@shared/components/charts";
 // Один форматер на модуль — інакше «Тіло» друкує «82,5 кг», а «Прогрес»
@@ -86,10 +96,10 @@ export function MiniLineChart({
   const innerW = w - padL - padR;
   const innerH = h - padT - padB;
   const n = data.length;
-  const step = innerW / (n - 1 || 1);
+  const step = pointStep(innerW, n);
   const svgRef = useRef<SVGSVGElement>(null);
   const xPositions = useMemo(
-    () => data.map((_, index) => padL + index * step),
+    () => data.map((_, index) => xAt(padL, index, step)),
     [data, step],
   );
   const { activeIndex, scrubX, bind } = useChartScrub({
@@ -121,18 +131,15 @@ export function MiniLineChart({
   }
 
   const vals = valid.map((d: MiniLineChartDataPoint) => Number(d.value));
-  const minVal = Math.min(...vals);
-  const maxVal = Math.max(...vals);
-  const range = maxVal - minVal || 1;
+  const { min: minVal, max: maxVal, range } = seriesExtent(vals);
 
   // Map each data point to x,y (null points get x position but no y)
   const points: MappedPoint[] = data.map(
     (d: MiniLineChartDataPoint, i: number) => {
-      const x = padL + i * step;
+      const x = xAt(padL, i, step);
       if (d.value == null || !Number.isFinite(Number(d.value)))
         return { x, y: null, v: null, label: d.label };
-      const pct = (Number(d.value) - minVal) / range;
-      const y = padT + innerH - pct * innerH;
+      const y = linearY(Number(d.value), minVal, range, padT, innerH);
       return { x, y, v: Number(d.value), label: d.label };
     },
   );
@@ -150,25 +157,18 @@ export function MiniLineChart({
   }
   if (segment.length >= 2) lineSegments.push(segment);
 
+  // Сегменти зібрані лише з не-null точок, тож `y` тут завжди number —
+  // каст звужує тип до ChartPoint-сумісного (зайві поля не заважають).
+  const asPlotted = (seg: MappedPoint[]): readonly ChartPoint[] =>
+    seg as Array<MappedPoint & { y: number }>;
   const lineD = lineSegments
-    .map((seg: MappedPoint[]) =>
-      seg
-        .map(
-          (p: MappedPoint, i: number) =>
-            `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${(p.y as number).toFixed(1)}`,
-        )
-        .join(" "),
-    )
+    .map((seg: MappedPoint[]) => buildLinePath(asPlotted(seg)))
     .join(" ");
 
   // Area fill: use first complete segment
   const mainSeg: MappedPoint[] = lineSegments[0] || [];
-  const lastMainSeg = mainSeg[mainSeg.length - 1];
-  const firstMainSeg = mainSeg[0];
   const areaD =
-    mainSeg.length >= 2 && lastMainSeg && firstMainSeg
-      ? `${mainSeg.map((p: MappedPoint, i: number) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${(p.y as number).toFixed(1)}`).join(" ")} L ${lastMainSeg.x.toFixed(1)} ${(padT + innerH).toFixed(1)} L ${firstMainSeg.x.toFixed(1)} ${(padT + innerH).toFixed(1)} Z`
-      : "";
+    mainSeg.length >= 2 ? buildAreaPath(asPlotted(mainSeg), padT + innerH) : "";
 
   const yTicks = [0, 0.5, 1].map((fr) => ({
     y: padT + innerH * (1 - fr),
@@ -205,10 +205,13 @@ export function MiniLineChart({
   // #2 — goal line y-position (clamp to visible range)
   const goalY =
     goalValue !== undefined
-      ? padT +
-        innerH -
-        ((Math.min(Math.max(goalValue, minVal), maxVal) - minVal) / range) *
-          innerH
+      ? linearY(
+          clampToDomain(goalValue, minVal, maxVal),
+          minVal,
+          range,
+          padT,
+          innerH,
+        )
       : undefined;
 
   return (
