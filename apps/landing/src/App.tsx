@@ -7,6 +7,8 @@ import GuidesPage from "./pages/GuidesPage";
 import GuideMonobankPage from "./pages/GuideMonobankPage";
 import GuideKbzhuPage from "./pages/GuideKbzhuPage";
 import GuideChekyPage from "./pages/GuideChekyPage";
+import GuideFotoKaloriiPage from "./pages/GuideFotoKaloriiPage";
+import GuideBankBezpekaPage from "./pages/GuideBankBezpekaPage";
 import PrivacyPage from "./pages/PrivacyPage";
 import TermsPage from "./pages/TermsPage";
 import NotFoundPage from "./pages/NotFoundPage";
@@ -27,6 +29,8 @@ const ROUTES: Record<string, ComponentType> = {
   "/guides/monobank": GuideMonobankPage,
   "/guides/kbzhu": GuideKbzhuPage,
   "/guides/cheky": GuideChekyPage,
+  "/guides/foto-kalorii": GuideFotoKaloriiPage,
+  "/guides/bank-bezpeka": GuideBankBezpekaPage,
   "/privacy": PrivacyPage,
   "/terms": TermsPage,
 };
