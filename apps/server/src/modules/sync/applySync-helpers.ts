@@ -1,5 +1,4 @@
 import type { PoolClient } from "pg";
-import type { SyncV2Op } from "../../http/schemas.js";
 import {
   parseOptionalDate,
   parseOptionalInt,
@@ -29,11 +28,40 @@ export function assertRowUserId(
   return null;
 }
 
+/**
+ * Канонічний guard для UUID-PK таблиць: чужий рядок, LWW, і все.
+ *
+ * AI-DANGER: тут НЕМАЄ і не має бути перевірки
+ * `deleted_at !== null && op.op !== "delete" → tombstoned`. Вона тут була і
+ * її знято свідомо — не «загублено» при рефакторингу. Не повертай.
+ *
+ * Чому вона була неправильна. Уся синхронізація живе за LWW: видалення — це
+ * просто ще один запис із міткою часу, а перемагає останній. Перевірка на
+ * `deleted_at` стояла ПІСЛЯ LWW-перевірки, тож у неї фізично не міг
+ * потрапити запис, старіший за видалення — такий уже відсіяно як
+ * `lww_conflict`. Долітав лише запис, НОВІШИЙ за видалення, тобто рівно той,
+ * який за правилами LWW має вигравати. Тобто це був єдиний виняток, що
+ * суперечив моделі решти системи.
+ *
+ * Чого вона коштувала. Undo після видалення повертає той самий рядок із тим
+ * самим id (`BudgetsLimitsSection.tsx` → `showUndoToast`, `useMeasurements`
+ * → `restoreEntry`). Сервер відхиляв його як `tombstoned`, клієнт позначав
+ * операцію в аутбоксі `rejected` НАЗАВЖДИ, і запис лишався тільки локально:
+ * на екрані є, на сервері немає, на іншому пристрої немає. Мовчки. Прод:
+ * `SERGEANT-WEB-T`, `finyk_budgets.insert`.
+ *
+ * Ціна зняття, свідомо прийнята власником: офлайн-пристрій, який не бачив
+ * видалення і зробив правку ПІЗНІШЕ за нього, тепер воскрешає запис замість
+ * того, щоб мовчки його втратити. Це звичайний LWW-компроміс, той самий, що
+ * діє для кожного іншого поля.
+ *
+ * Воскресіння окремого SQL не потребує: шлях UPDATE у кожному хендлері вже
+ * пише `deleted_at` зі вхідного рядка, а відновлений рядок несе `null`.
+ */
 export function guardUuidPkApply(
   existing: ExistingUuidRow | undefined,
   userId: string,
   clientTs: Date,
-  op: SyncV2Op,
 ): AppliedStatus | null {
   if (!existing) return null;
   if (existing.user_id !== userId) {
@@ -41,9 +69,6 @@ export function guardUuidPkApply(
   }
   if (existing.updated_at.getTime() >= clientTs.getTime()) {
     return { status: "rejected", reason: "lww_conflict" };
-  }
-  if (existing.deleted_at !== null && op.op !== "delete") {
-    return { status: "rejected", reason: "tombstoned" };
   }
   return null;
 }

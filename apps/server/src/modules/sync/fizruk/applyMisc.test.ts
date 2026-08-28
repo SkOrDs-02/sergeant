@@ -113,7 +113,10 @@ describe("applyFizrukCustomExercises", () => {
     ).resolves.toEqual({ status: "rejected", reason: "lww_conflict" });
   });
 
-  it("rejects tombstoned when updating an already soft-deleted row", async () => {
+  // Регресія SERGEANT-WEB-T. Раніше цей стан давав `tombstoned`, і undo
+  // після видалення мовчки не доїжджав на сервер. Тепер новіший запис
+  // воскрешає рядок — це LWW, за яким живе решта синку.
+  it("новіший запис воскрешає soft-deleted вправу", async () => {
     const fake = new FakeClient();
     fake.queueRows([
       {
@@ -134,12 +137,18 @@ describe("applyFizrukCustomExercises", () => {
         "user-1",
         clientTs,
       ),
-    ).resolves.toEqual({ status: "rejected", reason: "tombstoned" });
+    ).resolves.toEqual({ status: "applied" });
+
+    // Не лише «не відхилено»: UPDATE справді знімає мітку видалення —
+    // `deleted_at` це `$3`, і вхідний рядок його не несе, тож там `null`.
+    const update = lastQuery(fake);
+    expect(update.sql).toContain("UPDATE fizruk_custom_exercises");
+    expect(update.params[2]).toBeNull();
   });
 
-  it("allows deleting a row that is already tombstoned (idempotent retract)", async () => {
-    // op === "delete" пропускає tombstoned-гілку — повторний delete-op з
-    // офлайн-черги не має падати з помилкою.
+  it("allows deleting a row that is already soft-deleted (idempotent retract)", async () => {
+    // Повторний delete-op з офлайн-черги не має падати з помилкою:
+    // видалення вже видаленого — це той самий стан, а не конфлікт.
     const fake = new FakeClient();
     fake.queueRows([
       {
@@ -682,7 +691,9 @@ describe("applyFizrukMeasurements", () => {
     ).resolves.toEqual({ status: "rejected", reason: "lww_conflict" });
   });
 
-  it("rejects tombstoned when updating an already soft-deleted row", async () => {
+  // Регресія SERGEANT-WEB-T. Той самий стан раніше давав `tombstoned`, через
+  // що `restoreEntry` у `useMeasurements` мовчки не доїжджав на сервер.
+  it("новіший запис воскрешає soft-deleted вимір", async () => {
     const fake = new FakeClient();
     fake.queueRows([
       {
@@ -699,10 +710,16 @@ describe("applyFizrukMeasurements", () => {
         "user-1",
         clientTs,
       ),
-    ).resolves.toEqual({ status: "rejected", reason: "tombstoned" });
+    ).resolves.toEqual({ status: "applied" });
+
+    // Мітку видалення справді знято: `deleted_at` це `$11`, а вхідний рядок
+    // його не несе, тож туди лягає `null`.
+    const update = lastQuery(fake);
+    expect(update.sql).toContain("UPDATE fizruk_measurements");
+    expect(update.params[10]).toBeNull();
   });
 
-  it("allows deleting a measurement that is already tombstoned (idempotent retract)", async () => {
+  it("allows deleting a measurement that is already soft-deleted (idempotent retract)", async () => {
     const fake = new FakeClient();
     fake.queueRows([
       {

@@ -166,7 +166,7 @@ describe("finyk applySync", () => {
         USER_ID,
         CLIENT_TS,
       ),
-    ).resolves.toEqual({ status: "rejected", reason: "tombstoned" });
+    ).resolves.toEqual({ status: "applied" });
 
     await expect(
       applyFinykHiddenAccounts(
@@ -330,7 +330,7 @@ describe("finyk applySync", () => {
         USER_ID,
         CLIENT_TS,
       ),
-    ).resolves.toEqual({ status: "rejected", reason: "tombstoned" });
+    ).resolves.toEqual({ status: "applied" });
 
     await expect(
       applyFinykBudgets(
@@ -752,7 +752,7 @@ describe("nutrition applySync", () => {
         USER_ID,
         CLIENT_TS,
       ),
-    ).resolves.toEqual({ status: "rejected", reason: "tombstoned" });
+    ).resolves.toEqual({ status: "applied" });
 
     await expect(
       applyNutritionMeals(
@@ -921,7 +921,7 @@ describe("nutrition applySync", () => {
         USER_ID,
         CLIENT_TS,
       ),
-    ).resolves.toEqual({ status: "rejected", reason: "tombstoned" });
+    ).resolves.toEqual({ status: "applied" });
 
     await expect(
       applyNutritionPantries(
@@ -1044,7 +1044,7 @@ describe("nutrition applySync", () => {
         USER_ID,
         CLIENT_TS,
       ),
-    ).resolves.toEqual({ status: "rejected", reason: "tombstoned" });
+    ).resolves.toEqual({ status: "applied" });
 
     await expect(
       applyNutritionPantryItems(
@@ -1232,7 +1232,7 @@ describe("nutrition applySync", () => {
         USER_ID,
         CLIENT_TS,
       ),
-    ).resolves.toEqual({ status: "rejected", reason: "tombstoned" });
+    ).resolves.toEqual({ status: "applied" });
 
     await expect(
       applyNutritionRecipes(
@@ -1371,7 +1371,7 @@ describe("fizruk applySync", () => {
         USER_ID,
         CLIENT_TS,
       ),
-    ).resolves.toEqual({ status: "rejected", reason: "tombstoned" });
+    ).resolves.toEqual({ status: "applied" });
 
     await expect(
       applyFizrukWorkouts(
@@ -1522,7 +1522,7 @@ describe("fizruk applySync", () => {
         USER_ID,
         CLIENT_TS,
       ),
-    ).resolves.toEqual({ status: "rejected", reason: "tombstoned" });
+    ).resolves.toEqual({ status: "applied" });
 
     await expect(
       applyFizrukItems(
@@ -1698,7 +1698,7 @@ describe("fizruk applySync", () => {
         USER_ID,
         CLIENT_TS,
       ),
-    ).resolves.toEqual({ status: "rejected", reason: "tombstoned" });
+    ).resolves.toEqual({ status: "applied" });
 
     await expect(
       applyFizrukSets(
@@ -1853,7 +1853,7 @@ describe("fizruk applySync", () => {
         USER_ID,
         CLIENT_TS,
       ),
-    ).resolves.toEqual({ status: "rejected", reason: "tombstoned" });
+    ).resolves.toEqual({ status: "applied" });
 
     await expect(
       applyFizrukCustomExercises(
@@ -1990,7 +1990,7 @@ describe("fizruk applySync", () => {
         USER_ID,
         CLIENT_TS,
       ),
-    ).resolves.toEqual({ status: "rejected", reason: "tombstoned" });
+    ).resolves.toEqual({ status: "applied" });
 
     await expect(
       applyFizrukMeasurements(

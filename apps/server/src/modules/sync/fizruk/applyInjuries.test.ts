@@ -320,7 +320,10 @@ describe("applyFizrukInjuries", () => {
     ).resolves.toEqual({ status: "rejected", reason: "lww_conflict" });
   });
 
-  it("rejects tombstoned when updating an already soft-deleted row", async () => {
+  // Регресія SERGEANT-WEB-T. Раніше цей стан давав `tombstoned`: правило
+  // «видалення остаточне» стояло після LWW, тож ловило лише записи, НОВІШІ
+  // за видалення, — рівно ті, що за LWW мають вигравати.
+  it("новіший запис воскрешає soft-deleted позначку травми", async () => {
     const fake = new FakeClient();
     fake.queueRows([
       {
@@ -337,7 +340,13 @@ describe("applyFizrukInjuries", () => {
         "user-1",
         clientTs,
       ),
-    ).resolves.toEqual({ status: "rejected", reason: "tombstoned" });
+    ).resolves.toEqual({ status: "applied" });
+
+    // Мітку видалення знято: `deleted_at` це `$6`, а `validRow()` його не
+    // несе, тож туди лягає `null`.
+    const update = lastQuery(fake);
+    expect(update.sql).toContain("UPDATE fizruk_injuries");
+    expect(update.params[5]).toBeNull();
   });
 
   it("rejects deleting a row that does not exist", async () => {
@@ -388,9 +397,9 @@ describe("applyFizrukInjuries", () => {
     ]);
   });
 
-  it("allows deleting a row that is already tombstoned (idempotent retract)", async () => {
-    // op === "delete" пропускає tombstoned-гілку в guardUuidPkApply —
-    // повторний delete-op з офлайн-черги не має падати з помилкою.
+  it("allows deleting a row that is already soft-deleted (idempotent retract)", async () => {
+    // Повторний delete-op з офлайн-черги не має падати з помилкою:
+    // видалення вже видаленого — той самий стан, а не конфлікт.
     const fake = new FakeClient();
     fake.queueRows([
       {

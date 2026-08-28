@@ -31,6 +31,7 @@ lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); t
 
 | Дата       | Рішення                                                                | Джерело/ADR                                                                                 |
 | ---------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| 2026-08-28 | Правило `tombstoned` знято: видалення живе за чистим LWW, новіший запис воскрешає soft-deleted рядок | `guardUuidPkApply` в [`applySync-helpers.ts`](../../../apps/server/src/modules/sync/applySync-helpers.ts) (регресія `SERGEANT-WEB-T`) |
 | 2026-07-03 | Дуалрайт — generic framework, спільний для 4 модульних пайплайнів      | [ADR-0073](../../../docs/04-governance/adr/0073-dualwrite-generic-framework.md)             |
 | 2026-06-07 | Оп-лог: retention/архівація + multi-instance fan-out (план, Proposed)  | [ADR-0065](../../../docs/04-governance/adr/0065-sync-op-log-retention-and-multi-instance-fanout.md) |
 
