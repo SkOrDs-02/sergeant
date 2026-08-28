@@ -882,14 +882,28 @@ describe("nutrition applySync", () => {
       ),
     ).resolves.toEqual({ status: "rejected", reason: "user_id_mismatch" });
 
+    // Міграція 129: комора ключується парою `(user_id, id)`, і lookup звужений
+    // по користувачу — чужий рядок із тим самим `id` сюди просто не долітає,
+    // тож `fk_violation` тут більше не буває. Стан «у базі є `pantry-1`
+    // іншого юзера» на боці цього хендлера невідрізнимий від «нічого немає»,
+    // і саме це нам і потрібно: раніше кожен, крім першого власника id `home`,
+    // діставав відмову і лишався без синку (SERGEANT-WEB-T).
+    const foreignIdClient = makeClient([]);
     await expect(
       applyNutritionPantries(
-        makeClient([existing({ user_id: "other-user" })]),
+        foreignIdClient,
         op({ id: "pantry-1", user_id: USER_ID }),
         USER_ID,
         CLIENT_TS,
       ),
-    ).resolves.toEqual({ status: "rejected", reason: "fk_violation" });
+    ).resolves.toEqual({ status: "applied" });
+    expect(String(foreignIdClient.query.mock.calls[0]?.[0] ?? "")).toContain(
+      "user_id = $2",
+    );
+    expect(foreignIdClient.query.mock.calls[0]?.[1]).toEqual([
+      "pantry-1",
+      USER_ID,
+    ]);
 
     await expect(
       applyNutritionPantries(
@@ -993,14 +1007,26 @@ describe("nutrition applySync", () => {
       ),
     ).resolves.toEqual({ status: "rejected", reason: "user_id_mismatch" });
 
+    // Міграція 129, дзеркало кейсу для комори вище. Для позицій колізія id
+    // навіть імовірніша: id — це `<pantryId>::<index>::<name>`, тож у двох
+    // користувачів із коморою `home` і однаковим продуктом на тій самій
+    // позиції він збігається посимвольно.
+    const foreignItemClient = makeClient([]);
     await expect(
       applyNutritionPantryItems(
-        makeClient([existing({ user_id: "other-user" })]),
+        foreignItemClient,
         op({ id: "item-1", user_id: USER_ID, pantry_id: "p-1" }),
         USER_ID,
         CLIENT_TS,
       ),
-    ).resolves.toEqual({ status: "rejected", reason: "fk_violation" });
+    ).resolves.toEqual({ status: "applied" });
+    expect(String(foreignItemClient.query.mock.calls[0]?.[0] ?? "")).toContain(
+      "user_id = $2",
+    );
+    expect(foreignItemClient.query.mock.calls[0]?.[1]).toEqual([
+      "item-1",
+      USER_ID,
+    ]);
 
     await expect(
       applyNutritionPantryItems(
