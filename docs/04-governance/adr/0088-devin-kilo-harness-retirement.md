@@ -37,3 +37,14 @@
 - `pnpm lint:harness-version-freshness` і тести бампера (`scripts/__tests__/ci-bump-harness-version.test.mjs`, `check-harness-version-freshness.test.mjs`) читають новий шлях реєстру.
 - `pnpm lint:agents-family-sync` перевіряє лише наявні wrappers.
 - Окремого механічного гейта «без devin/kilo» не вводимо: чистка разова, нові згадки зловить review.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                   | Merged     |
+| ------------------------------------------------------ | ----------------------------------------------------------------------- | ---------- |
+| [#904](https://github.com/Skords-01/Sergeant/pull/904) | chore(agents): вивести Devin і Kilo Code з активних харнесів (ADR-0088) | 2026-08-28 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

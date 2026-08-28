@@ -4,6 +4,32 @@
   "generated_at": "2026-08-28",
   "prs": [
     {
+      "number": 904,
+      "title": "chore(agents): вивести Devin і Kilo Code з активних харнесів (ADR-0088)",
+      "merged_at": "2026-08-28T01:46:19Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": [
+        "docs/00-start/playbooks/add-feature-flag.md",
+        "docs/00-start/playbooks/add-monobank-event-handler.md",
+        "docs/00-start/playbooks/add-new-page-route.md",
+        "docs/00-start/playbooks/add-onboarding-step.md",
+        "docs/00-start/playbooks/add-react-query-hook.md",
+        "docs/00-start/playbooks/bump-dep-safely.md",
+        "docs/00-start/playbooks/cleanup-dead-code.md",
+        "docs/00-start/playbooks/fix-exhaustive-deps.md",
+        "docs/00-start/playbooks/migrate-localstorage-to-typedstore.md",
+        "docs/00-start/playbooks/onboard-external-api.md",
+        "docs/00-start/playbooks/prettier-pass-on-docs.md",
+        "docs/00-start/playbooks/reconcile-doc-drift.md",
+        "docs/00-start/playbooks/stabilize-flaky-test.md",
+        "docs/00-start/playbooks/sync-rn-migration-progress.md",
+        "docs/00-start/playbooks/tune-system-prompt.md",
+        "docs/04-governance/adr/0072-harness-versioning.md",
+        "docs/04-governance/adr/0088-devin-kilo-harness-retirement.md",
+        "docs/04-governance/governance/rules/15-governance-and-doc-language.md"
+      ]
+    },
+    {
       "number": 895,
       "title": "fix(agents): полірування агентного шару після розкатки module-owners",
       "merged_at": "2026-08-28T00:58:58Z",

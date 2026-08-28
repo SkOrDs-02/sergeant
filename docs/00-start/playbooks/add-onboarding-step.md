@@ -1,6 +1,6 @@
 # Playbook: Add Onboarding Step
 
-> **Last touched:** 2026-08-28 by @Skords-01. **Next review:** 2026-12-01.
+> **Last touched:** 2026-08-28 by @github-actions[bot]. **Next review:** 2026-12-01.
 > **Status:** Active
 
 **Trigger:** «Додай новий крок в онбординг» / зміна послідовності перших кроків нового юзера / новий FTUX-етап.
@@ -204,3 +204,14 @@ feat(shared): add `<step_id>` onboarding step
 - [migrate-localstorage-to-typedstore.md](./migrate-localstorage-to-typedstore.md) — для KV persistence патернів
 - `packages/shared/src/lib/onboarding.ts` — single source of truth
 - [AGENTS.md](../../../AGENTS.md) — flaky-tests список (mobile OnboardingWizard)
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                   | Merged     |
+| ------------------------------------------------------ | ----------------------------------------------------------------------- | ---------- |
+| [#904](https://github.com/Skords-01/Sergeant/pull/904) | chore(agents): вивести Devin і Kilo Code з активних харнесів (ADR-0088) | 2026-08-28 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

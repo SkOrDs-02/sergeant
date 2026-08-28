@@ -1,6 +1,6 @@
 # Playbook: Tune System Prompt
 
-> **Last touched:** 2026-08-28 by @Skords-01. **Next review:** 2026-12-10.
+> **Last touched:** 2026-08-28 by @github-actions[bot]. **Next review:** 2026-12-10.
 > **Status:** Active
 
 **Trigger:** «AI відповідає не так як треба» / «Зміни тон асистента» / «Додай нову інструкцію в системний промпт» / зміна як модель розуміє контекст модулі.
@@ -176,13 +176,13 @@ feat(server): tighten Finyk tool-calling rules in system prompt
 
 ## Recent PRs
 
-| PR                                                     | Title                                                                | Merged     |
-| ------------------------------------------------------ | -------------------------------------------------------------------- | ---------- |
-| [#895](https://github.com/Skords-01/Sergeant/pull/895) | fix(agents): полірування агентного шару після розкатки module-owners | 2026-08-28 |
-| [#892](https://github.com/Skords-01/Sergeant/pull/892) | feat(agents): module-owner і службові Claude-агенти                  | 2026-08-27 |
-| [#891](https://github.com/Skords-01/Sergeant/pull/891) | feat(agents): скіли-дисципліни                                       | 2026-08-27 |
-| [#890](https://github.com/Skords-01/Sergeant/pull/890) | feat(agents): інфра module-скіли і nested-роутинг                    | 2026-08-27 |
-| [#889](https://github.com/Skords-01/Sergeant/pull/889) | feat(agents): продуктові module-owner скіли                          | 2026-08-27 |
+| PR                                                     | Title                                                                   | Merged     |
+| ------------------------------------------------------ | ----------------------------------------------------------------------- | ---------- |
+| [#904](https://github.com/Skords-01/Sergeant/pull/904) | chore(agents): вивести Devin і Kilo Code з активних харнесів (ADR-0088) | 2026-08-28 |
+| [#895](https://github.com/Skords-01/Sergeant/pull/895) | fix(agents): полірування агентного шару після розкатки module-owners    | 2026-08-28 |
+| [#892](https://github.com/Skords-01/Sergeant/pull/892) | feat(agents): module-owner і службові Claude-агенти                     | 2026-08-27 |
+| [#891](https://github.com/Skords-01/Sergeant/pull/891) | feat(agents): скіли-дисципліни                                          | 2026-08-27 |
+| [#890](https://github.com/Skords-01/Sergeant/pull/890) | feat(agents): інфра module-скіли і nested-роутинг                       | 2026-08-27 |
 
 _Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 5 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

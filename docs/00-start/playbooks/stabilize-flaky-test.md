@@ -1,6 +1,6 @@
 # Playbook: Stabilize Flaky Test
 
-> **Last touched:** 2026-08-28 by @Skords-01. **Next review:** 2026-12-09.
+> **Last touched:** 2026-08-28 by @github-actions[bot]. **Next review:** 2026-12-09.
 > **Status:** Active
 
 **Trigger:** «Тест X падає 1 з 5 разів» / у CI red, локально green / тест у списку **«Pre-existing flaky tests»** в AGENTS.md.
@@ -283,3 +283,14 @@ Verified: 50/50 runs locally pass; AGENTS.md flaky-list trimmed.
 - [AGENTS.md](../../../AGENTS.md) — секція «Pre-existing flaky tests»
 - [#743](https://github.com/Skords-01/Sergeant/pull/743) — приклад DOM-cleanup fix у `ChatQuickActions.test.tsx`
 - [hotfix-prod-regression.md](./hotfix-prod-regression.md) — якщо це не flaky, а справжня регресія
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                   | Merged     |
+| ------------------------------------------------------ | ----------------------------------------------------------------------- | ---------- |
+| [#904](https://github.com/Skords-01/Sergeant/pull/904) | chore(agents): вивести Devin і Kilo Code з активних харнесів (ADR-0088) | 2026-08-28 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

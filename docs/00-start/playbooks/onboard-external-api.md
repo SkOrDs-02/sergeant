@@ -1,6 +1,6 @@
 # Playbook: Onboard External API
 
-> **Last touched:** 2026-08-28 by @Skords-01. **Next review:** 2026-12-17.
+> **Last touched:** 2026-08-28 by @github-actions[bot]. **Next review:** 2026-12-17.
 > **Status:** Active
 
 **Trigger:** "Інтегрувати нову зовнішню API" / додати новий third-party сервіс / нова банківська інтеграція / новий AI-провайдер.
@@ -176,8 +176,9 @@ async function healthCheck() {
 
 | PR                                                     | Title                                                                                                                   | Merged     |
 | ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- | ---------- |
+| [#904](https://github.com/Skords-01/Sergeant/pull/904) | chore(agents): вивести Devin і Kilo Code з активних харнесів (ADR-0088)                                                 | 2026-08-28 |
 | [#508](https://github.com/Skords-01/Sergeant/pull/508) | fix(docs): reconcile canonical docs with current repo                                                                   | 2026-07-29 |
 | [#334](https://github.com/Skords-01/Sergeant/pull/334) | docs(root): reconcile docs with code after 2026-07-20 audit (Railway->Coolify, CI gates, dual-write, domain invariants) | 2026-07-21 |
 
-_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 2 most recent PRs touching this file._
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 3 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

@@ -1,6 +1,6 @@
 # Playbook: Прибирання dead code
 
-> **Last touched:** 2026-08-28 by @Skords-01. **Next review:** 2026-12-20.
+> **Last touched:** 2026-08-28 by @github-actions[bot]. **Next review:** 2026-12-20.
 > **Status:** Active
 
 **Trigger:** «Видали X і всі його використання» / видалення застарілого модуля, компонента, утиліти або feature flag.
@@ -142,3 +142,14 @@ pnpm build         # має успішно пройти
 - Завжди видаляй окремим PR — не змішуй із feature-роботою (AGENTS.md soft rule).
 - Якщо видаляєш файл — спочатку переконайся, що він не імпортується динамічно (шукай `import()` вирази).
 - Якщо є сумніви — `pnpm check` (повний CI-набір) — це остаточна верифікація.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                   | Merged     |
+| ------------------------------------------------------ | ----------------------------------------------------------------------- | ---------- |
+| [#904](https://github.com/Skords-01/Sergeant/pull/904) | chore(agents): вивести Devin і Kilo Code з активних харнесів (ADR-0088) | 2026-08-28 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

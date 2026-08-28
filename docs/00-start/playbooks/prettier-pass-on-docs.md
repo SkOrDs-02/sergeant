@@ -1,6 +1,6 @@
 # Playbook: Prettier Pass on `docs/`
 
-> **Last touched:** 2026-08-28 by @Skords-01. **Next review:** 2026-12-02.
+> **Last touched:** 2026-08-28 by @github-actions[bot]. **Next review:** 2026-12-02.
 > **Status:** Active
 
 **Trigger:** `pnpm format:check` фейлиться на `docs/**/*.md` / треба прогнати prettier по одному / кільком doc-файлах (як [PR #447](https://github.com/Skords-01/Sergeant/pull/447)).
@@ -87,3 +87,14 @@ git diff '<target-glob>' | head -80
 - [sync-rn-migration-progress.md](./sync-rn-migration-progress.md) — частий випадок, коли цей playbook треба відразу після sync-у.
 - [`.prettierrc.json`](../../../.prettierrc.json), [`.prettierignore`](../../../.prettierignore) — конфіг.
 - [AGENTS.md](../../../AGENTS.md) — rule #5 (commit scope), rule #7 (no `--no-verify`).
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                   | Merged     |
+| ------------------------------------------------------ | ----------------------------------------------------------------------- | ---------- |
+| [#904](https://github.com/Skords-01/Sergeant/pull/904) | chore(agents): вивести Devin і Kilo Code з активних харнесів (ADR-0088) | 2026-08-28 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
