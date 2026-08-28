@@ -594,7 +594,7 @@ export function HubSettingsPage({ scrollContainer }: HubSettingsPageProps) {
     // Compute the target relative to the one app-owned scroller instead.
     const hostRect = scrollContainer.getBoundingClientRect();
     const targetRect = el.getBoundingClientRect();
-    const stickyHeight = stickyHeaderRef.current?.offsetHeight ?? 128;
+    const stickyHeight = stickyHeaderRef.current?.offsetHeight ?? 146;
     const top = Math.max(
       0,
       scrollContainer.scrollTop +
@@ -609,19 +609,35 @@ export function HubSettingsPage({ scrollContainer }: HubSettingsPageProps) {
   return (
     <div className="flex flex-col gap-4 pt-3 pb-6">
       <h1 className="sr-only">Налаштування</h1>
-      {/* Search and tabs header. Container uses the soft glass tint so the
-          inputs sitting on top can use a stronger surface and visually
-          "lift" off the header. Previously the input + tabs used
-          `bg-surface-soft-glass` (50% white) on top of `bg-surface-glass`
-          (82% white) — the input read as lighter than its own container
-          and the whole block felt empty in light theme (user report
-          2026-05-26 / `ui-layout-styling-fixes`). */}
+      {/* «Острів» (рішення власника 2026-08-28): sticky-обгортка прозора —
+          суцільної плашки більше немає; пошук і вкладки живуть в одній
+          піднятій картці (bg-panel + shadow-e2), а контент при скролі
+          «розчиняється» позаду через градієнт-фейд нижче, замість різкого
+          зрізу об border-b. Попередня плашка була `bg-surface-soft-glass`,
+          який після «Чорнила» — НЕпрозорий #f6f5f2 (panel-hi): він не
+          збігався ні з фоном сторінки, ні з білими картками і читався як
+          чужа сіра плита, а `backdrop-blur-md` при альфі 1 не мав чого
+          блюрити (скарга власника 2026-08-28).
+
+          Safe-area відступу тут більше немає навмисно: Налаштування живуть
+          рівно в одному місці — вкладці хаба під його фіксованою шапкою
+          (L-1, `settings/route.tsx`: `/settings` — redirect-only), тож цей
+          sticky ніколи не досягає статус-бара, і `env(safe-area-inset-top)`
+          давав лише ~60px мертвої порожнечі у standalone/shell. */}
       <div
         ref={stickyHeaderRef}
-        className="flex flex-col gap-3 sticky top-0 z-10 bg-surface-soft-glass backdrop-blur-md border-b border-surface-line -mx-4 px-4 py-2 -mt-3"
-        style={{ paddingTop: "calc(0.5rem + env(safe-area-inset-top, 0px))" }}
+        className="sticky top-0 z-10 -mx-4 -mt-3 px-4 pt-2 pb-1"
       >
-        {/* Audit finding #12 (2026-08-08): the clear <Button> used to live
+        {/* Фейд позаду острова: фон сторінки → прозорий, на 32px нижче
+            картки. Саме він пом'якшує зріз контенту в бокових проміжках і
+            під карткою. pointer-events-none — крізь прозору частину все ще
+            видно (і має клікатись) контент. */}
+        <div
+          aria-hidden
+          className="absolute inset-x-0 top-0 -bottom-8 bg-linear-to-b from-bg from-55% to-transparent pointer-events-none"
+        />
+        <div className="relative flex flex-col gap-2.5 rounded-2xl bg-panel border border-surface-line shadow-e2 p-3">
+          {/* Audit finding #12 (2026-08-08): the clear <Button> used to live
             INSIDE this <label>. Per the accname algorithm, a wrapped
             <label>'s computed name folds in the text/accessible-name of
             every descendant, including embedded controls — so the input's
@@ -632,73 +648,87 @@ export function HubSettingsPage({ scrollContainer }: HubSettingsPageProps) {
             absolute positioning still lines up) keeps the label's name
             clean. The two "clear" buttons on screen at zero results also
             now carry DISTINCT accessible names — see below. */}
-        <div className="relative block">
-          <label className="block">
-            <span className="sr-only">Пошук по налаштуваннях</span>
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted pointer-events-none">
-              <Icon name="search" size={18} />
-            </span>
-            <input
-              type="search"
-              // Chrome's password manager used to claim this box: it showed
-              // the saved-account dropdown, autofilled the e-mail and refilled
-              // it after every click on the clear "×", so the field could not
-              // be emptied at all (tester video 2026-08-10). The field carried
-              // no `name`/`autocomplete`, and its only text context is
-              // Cyrillic, which Chromium's field heuristics cannot read — so
-              // it stayed unclassified and got picked up as a username field.
-              // `searchFieldProps` supplies both layers Chromium looks at.
-              {...searchFieldProps("settings-search")}
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Пошук налаштувань…"
-              // V-16 (audit 2026-08-08): `[&::-webkit-search-cancel-button]:
-              // appearance-none` suppresses Chromium's own hard-coded "×"
-              // for `type="search"` inputs. Before this, a zero-result query
-              // showed the NATIVE cancel icon (our own clear <Button> below
-              // was hidden by the `visible.length > 0` guard) — two visually
-              // different "clear" affordances depending on result count, and
-              // Firefox has no native icon at all, so the field looked
-              // clear-less there. Kept `type="search"` (not `type="text"` +
-              // `role="searchbox"`) — the semantic type still drives the
-              // mobile-keyboard "Search" action key, and suppressing just
-              // the one pseudo-element is a smaller diff than overriding
-              // the input's implicit role.
-              className="input-focus w-full min-h-[48px] pl-11 pr-11 py-3 bg-panel border border-line rounded-2xl text-style-body text-ink placeholder:text-muted [&::-webkit-search-cancel-button]:appearance-none"
+          <div className="relative block">
+            <label className="block">
+              <span className="sr-only">Пошук по налаштуваннях</span>
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted pointer-events-none">
+                <Icon name="search" size={18} />
+              </span>
+              <input
+                type="search"
+                // Chrome's password manager used to claim this box: it showed
+                // the saved-account dropdown, autofilled the e-mail and refilled
+                // it after every click on the clear "×", so the field could not
+                // be emptied at all (tester video 2026-08-10). The field carried
+                // no `name`/`autocomplete`, and its only text context is
+                // Cyrillic, which Chromium's field heuristics cannot read — so
+                // it stayed unclassified and got picked up as a username field.
+                // `searchFieldProps` supplies both layers Chromium looks at.
+                {...searchFieldProps("settings-search")}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Пошук налаштувань…"
+                // V-16 (audit 2026-08-08): `[&::-webkit-search-cancel-button]:
+                // appearance-none` suppresses Chromium's own hard-coded "×"
+                // for `type="search"` inputs. Before this, a zero-result query
+                // showed the NATIVE cancel icon (our own clear <Button> below
+                // was hidden by the `visible.length > 0` guard) — two visually
+                // different "clear" affordances depending on result count, and
+                // Firefox has no native icon at all, so the field looked
+                // clear-less there. Kept `type="search"` (not `type="text"` +
+                // `role="searchbox"`) — the semantic type still drives the
+                // mobile-keyboard "Search" action key, and suppressing just
+                // the one pseudo-element is a smaller diff than overriding
+                // the input's implicit role.
+                // `bg-panelHi` (не `bg-panel`): всередині білої картки-острова
+                // біле поле зливалося б із власним контейнером — той самий
+                // ефект «порожнього блоку», що й у звіті 2026-05-26, лише
+                // навпаки. Тон panel-hi віддає поле від картки без бордера.
+                className="input-focus w-full min-h-[48px] pl-11 pr-11 py-3 bg-panelHi border border-transparent rounded-xl text-style-body text-ink placeholder:text-muted [&::-webkit-search-cancel-button]:appearance-none"
+              />
+            </label>
+            {query && (
+              <Button
+                variant="ghost"
+                size="xs"
+                iconOnly
+                onClick={() => setQuery("")}
+                // Distinct from the empty-state CTA's "Очистити пошук" below
+                // (audit finding #12) — before this fix both buttons shared
+                // the exact same accessible name, indistinguishable to a
+                // screen reader whenever both were on screen at once (zero
+                // search results).
+                aria-label="Очистити поле пошуку"
+                className="absolute right-2 top-1/2 -translate-y-1/2 hover:bg-panel"
+              >
+                <Icon name="close" size={16} />
+              </Button>
+            )}
+          </div>
+
+          {!q && (
+            <Tabs
+              style="pill"
+              variant="brand"
+              fill
+              ariaLabel="Групи налаштувань"
+              items={GROUPS.map((g) => ({ value: g.id, label: g.label }))}
+              value={tab}
+              onChange={(v) => setTab(v)}
+              getPanelId={() => groupPanelId}
+              // Трек — panel-hi всередині білої картки (та сама логіка, що
+              // в пошуку вище). На такому треці дефолтний активний піл
+              // `bg-brand-soft` (stone-100) був би невідрізнюваний від
+              // фону — тому активний перекрито на панельно-білий чип із
+              // hairline + e1 через `aria-selected:` (cn = twMerge, і
+              // `[aria-selected="true"]` специфічніший за базові класи
+              // Tabs). `rounded-lg` — концентричний радіус до треку
+              // `rounded-xl` з його p-1.
+              className="overflow-x-auto bg-panelHi rounded-xl"
+              tabsClassName="rounded-lg border-transparent aria-selected:bg-panel aria-selected:border-line aria-selected:shadow-e1"
             />
-          </label>
-          {query && (
-            <Button
-              variant="ghost"
-              size="xs"
-              iconOnly
-              onClick={() => setQuery("")}
-              // Distinct from the empty-state CTA's "Очистити пошук" below
-              // (audit finding #12) — before this fix both buttons shared
-              // the exact same accessible name, indistinguishable to a
-              // screen reader whenever both were on screen at once (zero
-              // search results).
-              aria-label="Очистити поле пошуку"
-              className="absolute right-2 top-1/2 -translate-y-1/2 hover:bg-panelHi"
-            >
-              <Icon name="close" size={16} />
-            </Button>
           )}
         </div>
-
-        {!q && (
-          <Tabs
-            style="pill"
-            variant="brand"
-            fill
-            ariaLabel="Групи налаштувань"
-            items={GROUPS.map((g) => ({ value: g.id, label: g.label }))}
-            value={tab}
-            onChange={(v) => setTab(v)}
-            getPanelId={() => groupPanelId}
-            className="overflow-x-auto border border-line bg-panel rounded-2xl"
-          />
-        )}
       </div>
 
       {/* Settings sections. `role="tabpanel"` only while the group Tabs
@@ -790,15 +820,15 @@ export function HubSettingsPage({ scrollContainer }: HubSettingsPageProps) {
                   ref={(el) => {
                     refs.current[s.id] = el;
                   }}
-                  // The Search + Tabs row above is `sticky top-0` (≈120-140px on
-                  // mobile/desktop). With `scroll-mt-4` (16px) the section title
-                  // landed *behind* that sticky chrome after `scrollIntoView`,
-                  // so deep-links like `#settings-dashboard` from the inactive
-                  // Bento card felt like they "just opened the Settings tab"
-                  // (issue 2026-05-08). 8rem clears the sticky header on every
-                  // viewport while still leaving a small visual gap above the
-                  // landed section.
-                  className="scroll-mt-32"
+                  // The Search + Tabs island above is `sticky top-0` (≈146px
+                  // with the card paddings). With `scroll-mt-4` (16px) the
+                  // section title landed *behind* that sticky chrome after
+                  // `scrollIntoView`, so deep-links like `#settings-dashboard`
+                  // from the inactive Bento card felt like they "just opened
+                  // the Settings tab" (issue 2026-05-08). 10rem clears the
+                  // island on every viewport while still leaving a small
+                  // visual gap above the landed section.
+                  className="scroll-mt-40"
                 >
                   {s.lazy ? (
                     // V-15: резервуємо рівно ту висоту, якою секція
