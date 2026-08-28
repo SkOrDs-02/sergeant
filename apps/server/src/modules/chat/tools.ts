@@ -40,6 +40,7 @@ import { CROSS_MODULE_TOOLS } from "./toolDefs/crossModule.js";
 import { UTILITY_TOOLS } from "./toolDefs/utility.js";
 import { MEMORY_TOOLS } from "./toolDefs/memory.js";
 import { normalizeStrictTools } from "./toolDefs/strict.js";
+import { DASHBOARD_MODULE_IDS, type DashboardModuleId } from "@sergeant/shared";
 import { logger } from "../../obs/logger.js";
 
 import type { AnthropicTool } from "./toolDefs/types.js";
@@ -57,6 +58,59 @@ export const TOOLS: AnthropicTool[] = normalizeStrictTools([
   ...UTILITY_TOOLS,
   ...MEMORY_TOOLS,
 ]);
+
+/**
+ * Доменні tools у розрізі модулів дашборда — основа для звуження реєстру
+ * під конкретного користувача (`filterToolsByActiveModules`).
+ *
+ * Тут ЛИШЕ доменні набори. `CROSS_MODULE_TOOLS`, `UTILITY_TOOLS` і
+ * `MEMORY_TOOLS` навмисно поза мапою: вони або обслуговують кілька модулів
+ * одразу, або взагалі не про модулі, і різати їх за цією ознакою означало б
+ * ламати чат людині, яка просто не додала модуль на дашборд.
+ */
+const TOOL_NAMES_BY_MODULE: Record<DashboardModuleId, ReadonlySet<string>> = {
+  finyk: new Set([...FINYK_TOOLS, ...QUERY_FINYK_TOOLS].map((t) => t.name)),
+  fizruk: new Set([...FIZRUK_TOOLS, ...QUERY_FIZRUK_TOOLS].map((t) => t.name)),
+  routine: new Set(
+    [...ROUTINE_TOOLS, ...QUERY_ROUTINE_TOOLS].map((t) => t.name),
+  ),
+  nutrition: new Set(
+    [...NUTRITION_TOOLS, ...QUERY_NUTRITION_TOOLS].map((t) => t.name),
+  ),
+};
+
+/**
+ * Прибирає з реєстру tools модулів, яких людина НЕ увімкнула.
+ *
+ * AI-CONTEXT: вимір 2026-07-25 (шапка `toolSearch.ts`) показав, що весь
+ * реєстр — 43 КБ JSON, і він домінує у вартості запиту. Anthropic tool
+ * search це лікує, але **лише на `claude-*` моделях**, а дефолтні chat-
+ * моделі — gateway-ні (`gemini`, `deepseek`, `glm`), тож там payload тихо
+ * відкочується на повний масив і платиться щоразу. Це звуження працює
+ * незалежно від моделі й від того, чи ввімкнений tool search.
+ *
+ * Консервативно за задумом: ріжемо ТІЛЬКИ коли є непорожній явний вибір
+ * модулів. `null` — «вибору немає» (людина не проходила онбординг, або
+ * колонки ще не існувало), `[]` — «вимкнула все»; в обох випадках повний
+ * реєстр безпечніший за здогад. Ціна помилки асиметрична: зайвий tool у
+ * контексті коштує токенів, відсутній — ламає дію, яку людина просить.
+ */
+export function filterToolsByActiveModules<T extends { name: string }>(
+  tools: readonly T[],
+  activeModules: readonly DashboardModuleId[] | null | undefined,
+): readonly T[] {
+  if (!activeModules || activeModules.length === 0) return tools;
+
+  const active = new Set<string>(activeModules);
+  const off = DASHBOARD_MODULE_IDS.filter((id) => !active.has(id));
+  if (off.length === 0) return tools;
+
+  const dropped = new Set<string>();
+  for (const id of off) {
+    for (const name of TOOL_NAMES_BY_MODULE[id]) dropped.add(name);
+  }
+  return tools.filter((t) => !dropped.has(t.name));
+}
 
 /**
  * Validate tool registry at startup:

@@ -6,7 +6,8 @@
 
 import { env } from "../../env.js";
 import { presetInstruction } from "./chatPresets.js";
-import { TOOLS, SYSTEM_PREFIX } from "./tools.js";
+import { TOOLS, SYSTEM_PREFIX, filterToolsByActiveModules } from "./tools.js";
+import type { DashboardModuleId } from "@sergeant/shared";
 import { wrapAndScanUserContext } from "./toolOutputWrapping.js";
 import {
   buildToolSearchPayload,
@@ -240,6 +241,9 @@ export const TOOLS_WITH_CACHE = applyToolsCacheBreakpoint(
  */
 const toolsPayloadByModel = new Map<string, ReadonlyArray<object>>();
 
+/** 4 моделі × 4 типові набори модулів із запасом. */
+const MAX_TOOLS_PAYLOAD_CACHE = 32;
+
 /**
  * Tools для конкретної моделі. Повертає tool-search-payload, коли модель це
  * підтримує і `CHAT_TOOL_SEARCH` увімкнений; інакше — legacy-масив із усіма
@@ -249,20 +253,35 @@ const toolsPayloadByModel = new Map<string, ReadonlyArray<object>>();
  * `AI_PRO_*_CHAT_MODEL` env-керовані, тож ops може ре-тирити чат на модель
  * без tool search. Ми це переживаємо деградацією, а не 400.
  */
-export function buildToolsPayload(model: string): ReadonlyArray<object> {
-  const cached = toolsPayloadByModel.get(model);
+export function buildToolsPayload(
+  model: string,
+  activeModules?: readonly DashboardModuleId[] | null,
+): ReadonlyArray<object> {
+  // Ключ кешу несе і вибір модулів: інакше перший користувач «прогрів» би
+  // мемоїзацію своїм зрізом і роздав її решті — з чужими вирізаними tools.
+  const cacheKey = `${model}|${activeModules ? [...activeModules].sort().join(",") : "*"}`;
+  const cached = toolsPayloadByModel.get(cacheKey);
   if (cached) return cached;
 
+  const registry = filterToolsByActiveModules(TOOLS, activeModules);
   const base = env.CHAT_STRICT_TOOLS
-    ? keepStrictTrueOnly(TOOLS)
-    : stripStrictModeForAnthropic(TOOLS);
+    ? keepStrictTrueOnly(registry)
+    : stripStrictModeForAnthropic(registry);
 
   const useToolSearch = env.CHAT_TOOL_SEARCH && modelSupportsToolSearch(model);
   const tools: ReadonlyArray<object> = useToolSearch
     ? buildToolSearchPayload(base)
     : base;
   const payload = applyToolsCacheBreakpoint(tools);
-  toolsPayloadByModel.set(model, payload);
+  // Ключ тепер несе і набір модулів, тож кількість записів множиться на
+  // число комбінацій (до 16), а кожен запис — клон реєстру на ~43 КБ.
+  // FIFO-стеля тримає це обмеженим; попадання все одно майже стовідсоткове,
+  // бо реальних комбінацій у сесії небагато.
+  if (toolsPayloadByModel.size >= MAX_TOOLS_PAYLOAD_CACHE) {
+    const oldest = toolsPayloadByModel.keys().next().value;
+    if (oldest !== undefined) toolsPayloadByModel.delete(oldest);
+  }
+  toolsPayloadByModel.set(cacheKey, payload);
   return payload;
 }
 
