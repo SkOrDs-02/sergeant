@@ -3,7 +3,7 @@ import SiteFooter from "../components/SiteFooter";
 import { usePageMeta } from "../lib/pageMeta";
 
 /**
- * Реєстр гайдів. Один запис — один файл сторінки; нові гайди додаються
+ * Реєстр гайдів. Один запис – один файл сторінки; нові гайди додаються
  * сюди і в роутер App.tsx.
  */
 const GUIDES = [
