@@ -44,9 +44,6 @@ export async function applyNutritionMeals(
     if (existing!.rows[0]!.updated_at.getTime() >= clientTs.getTime()) {
       return { status: "rejected", reason: "lww_conflict" };
     }
-    if (existing!.rows[0]!.deleted_at !== null && op.op !== "delete") {
-      return { status: "rejected", reason: "tombstoned" };
-    }
   }
 
   if (op.op === "delete") {
@@ -221,9 +218,6 @@ export async function applyNutritionPantries(
     if (existing!.rows[0]!.updated_at.getTime() >= clientTs.getTime()) {
       return { status: "rejected", reason: "lww_conflict" };
     }
-    if (existing!.rows[0]!.deleted_at !== null && op.op !== "delete") {
-      return { status: "rejected", reason: "tombstoned" };
-    }
   }
 
   if (op.op === "delete") {
@@ -315,9 +309,6 @@ export async function applyNutritionPantryItems(
   if (existing.rows.length > 0) {
     if (existing!.rows[0]!.updated_at.getTime() >= clientTs.getTime()) {
       return { status: "rejected", reason: "lww_conflict" };
-    }
-    if (existing!.rows[0]!.deleted_at !== null && op.op !== "delete") {
-      return { status: "rejected", reason: "tombstoned" };
     }
   }
 
@@ -500,9 +491,6 @@ export async function applyNutritionRecipes(
     }
     if (existing!.rows[0]!.updated_at.getTime() >= clientTs.getTime()) {
       return { status: "rejected", reason: "lww_conflict" };
-    }
-    if (existing!.rows[0]!.deleted_at !== null && op.op !== "delete") {
-      return { status: "rejected", reason: "tombstoned" };
     }
   }
 

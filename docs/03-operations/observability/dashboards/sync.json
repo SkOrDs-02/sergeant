@@ -445,7 +445,7 @@
           "mode": "multi"
         }
       },
-      "description": "Top 10 reject_reason lines among rejected ops. Fan-out by table+reason. Spikes on `tombstoned` after PR #043 deploy = expected; sustained `clock_skew` = client clock drift; `apply_failed` ≠ 0 = unhandled exception in apply path → page on-call.",
+      "description": "Top 10 reject_reason lines among rejected ops. Fan-out by table+reason. `tombstoned` is retired on the write path (the rule was removed — see `guardUuidPkApply`), so any non-zero `tombstoned` after that deploy means an old server instance is still serving; sustained `clock_skew` = client clock drift; `apply_failed` ≠ 0 = unhandled exception in apply path → page on-call.",
       "targets": [
         {
           "expr": "topk(10, sum by (table, reason) (rate(sync_op_log_apply_total{status=\"rejected\"}[5m])))",

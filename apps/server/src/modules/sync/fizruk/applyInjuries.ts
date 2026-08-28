@@ -44,7 +44,7 @@ export async function applyFizrukInjuries(
     `SELECT user_id, updated_at, deleted_at FROM fizruk_injuries WHERE id = $1`,
     [id],
   );
-  const guard = guardUuidPkApply(existing, userId, clientTs, op);
+  const guard = guardUuidPkApply(existing, userId, clientTs);
   if (guard) return guard;
 
   if (op.op === "delete") {

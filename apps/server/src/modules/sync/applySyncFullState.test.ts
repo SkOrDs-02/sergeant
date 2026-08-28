@@ -481,7 +481,9 @@ describe("routine full-state appliers", () => {
     expect(result).toEqual({ status: "rejected", reason: "fk_violation" });
   });
 
-  it("applyRoutineCompletionNotes rejects tombstoned rows on non-delete ops", async () => {
+  // Регресія SERGEANT-WEB-T. Раніше цей стан давав `tombstoned`. Тепер
+  // новіший запис воскрешає нотатку — upsert явно скидає `deleted_at`.
+  it("applyRoutineCompletionNotes воскрешає soft-deleted нотатку новішим записом", async () => {
     const client = makeClient([
       {
         user_id: USER_ID,
@@ -499,7 +501,11 @@ describe("routine full-state appliers", () => {
       USER_ID,
       CLIENT_TS,
     );
-    expect(result).toEqual({ status: "rejected", reason: "tombstoned" });
+    expect(result).toEqual({ status: "applied" });
+
+    const upsert = client.query.mock.calls.at(-1)!;
+    expect(upsert[0]).toContain("INSERT INTO routine_completion_notes");
+    expect(upsert[0]).toContain("deleted_at = NULL");
   });
 
   it("applyRoutineCompletionNotes soft-deletes an existing note", async () => {
@@ -1295,7 +1301,7 @@ describe("fizruk full-state validation edge cases", () => {
     ).toEqual({ status: "rejected", reason: "lww_conflict" });
   });
 
-  it("applyFizrukWellbeing rejects fk_violation, lww_conflict and tombstoned", async () => {
+  it("applyFizrukWellbeing rejects fk_violation and lww_conflict, but resurrects a soft-deleted day", async () => {
     const fkClient = makeClient([
       {
         user_id: "other-user",
@@ -1328,7 +1334,9 @@ describe("fizruk full-state validation edge cases", () => {
       ),
     ).toEqual({ status: "rejected", reason: "lww_conflict" });
 
-    const tombstonedClient = makeClient([
+    // Регресія SERGEANT-WEB-T: soft-deleted день більше не блокує новіший
+    // запис — upsert явно скидає `deleted_at`.
+    const resurrectClient = makeClient([
       {
         user_id: USER_ID,
         updated_at: new Date("2026-07-01T00:00:00.000Z"),
@@ -1337,12 +1345,16 @@ describe("fizruk full-state validation edge cases", () => {
     ]);
     expect(
       await applyFizrukWellbeing(
-        tombstonedClient,
+        resurrectClient,
         op("fizruk_wellbeing", { user_id: USER_ID, date_key: "2026-07-10" }),
         USER_ID,
         CLIENT_TS,
       ),
-    ).toEqual({ status: "rejected", reason: "tombstoned" });
+    ).toEqual({ status: "applied" });
+
+    const upsert = resurrectClient.query.mock.calls.at(-1)!;
+    expect(upsert[0]).toContain("INSERT INTO fizruk_wellbeing");
+    expect(upsert[0]).toContain("deleted_at = NULL");
   });
 
   it("applyFizrukWellbeing rejects invalid energy / sleep_quality / sleep_hours / created_at", async () => {

@@ -32,7 +32,7 @@ export async function applyFizrukDailyLog(
     `SELECT user_id, updated_at, deleted_at FROM fizruk_daily_log WHERE id = $1`,
     [id],
   );
-  const guard = guardUuidPkApply(existing, userId, clientTs, op);
+  const guard = guardUuidPkApply(existing, userId, clientTs);
   if (guard) return guard;
 
   if (op.op === "delete") {
@@ -246,9 +246,6 @@ export async function applyFizrukWellbeing(
     if (existing.updated_at.getTime() >= clientTs.getTime()) {
       return { status: "rejected", reason: "lww_conflict" };
     }
-    if (existing.deleted_at !== null && op.op !== "delete") {
-      return { status: "rejected", reason: "tombstoned" };
-    }
   }
 
   if (op.op === "delete") {
@@ -327,7 +324,7 @@ export async function applyFizrukWorkoutTemplates(
     `SELECT user_id, updated_at, deleted_at FROM fizruk_workout_templates WHERE id = $1`,
     [id],
   );
-  const guard = guardUuidPkApply(existing, userId, clientTs, op);
+  const guard = guardUuidPkApply(existing, userId, clientTs);
   if (guard) return guard;
 
   if (op.op === "delete") {
