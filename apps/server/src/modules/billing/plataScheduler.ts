@@ -10,6 +10,10 @@
  * Патерн — той самий in-process setInterval-воркер, що
  * `WebhookEventsRetentionPoller` / `enrichmentWorker` (Tier-A, без BullMQ,
  * idempotent, `unref()` не блокує shutdown). НЕ n8n (paused у проді).
+ * Вибір субстрату (timer, не broker/outbox) — ADR-0089. На відміну від
+ * решти timer-воркерів, тут дедупу в Postgres не було — його дає
+ * claim-транзакція у `chargeDuePlataSubscriptions` (`FOR UPDATE SKIP
+ * LOCKED`), інакше два одночасні прогони = подвійне списання грошей.
  */
 import type { Pool } from "pg";
 import { env } from "../../env/env.js";
@@ -76,72 +80,103 @@ async function chargeByToken(cardToken: string): Promise<boolean> {
 export async function chargeDuePlataSubscriptions(
   pool: Pool,
 ): Promise<PlataChargeResult> {
-  const { rows } = await pool.query<DueRow>(
-    `SELECT t.user_id, t.wallet_id,
-            t.card_token_ciphertext, t.card_token_iv, t.card_token_tag
-       FROM subscriptions s
-       JOIN plata_card_token t ON t.user_id = s.user_id
-      WHERE s.provider = 'plata'
-        AND s.status = 'active'
-        AND s.cancel_at_period_end = FALSE
-        AND s.current_period_end <= NOW()`,
-  );
-
+  // Ключ перевіряємо ДО відкриття транзакції: конфіг-фейл не має тримати
+  // row-lock-и на підписках.
   const key = getEncKey();
+
+  // Claim через `FOR UPDATE OF s SKIP LOCKED` у ЄДИНІЙ транзакції з
+  // charge+UPDATE — той самий lease/claim-патерн, що у gdpr
+  // `cleanupWorker.ts::claimBatch`. Друга інстанція (друга репліка, другий
+  // tick, ручний прогін) свій SELECT просто пропустить повз заблоковані
+  // row-и, а на момент COMMIT-у period уже зсунуто (або статус past_due) —
+  // тож повторний SELECT цю підписку due-ю не побачить. Без цього два
+  // одночасні прогони списували б ту саму підписку двічі (double-charge).
+  const client = await pool.connect();
   let charged = 0;
   let pastDue = 0;
-  for (const row of rows) {
-    let ok = false;
-    try {
-      const cardToken = decryptToken(
-        {
-          ciphertext: row.card_token_ciphertext,
-          iv: row.card_token_iv,
-          tag: row.card_token_tag,
-        },
-        key,
-      );
-      ok = await chargeByToken(cardToken);
-    } catch (err) {
-      logger.error({
-        msg: "plata_recurring_charge_error",
-        userId: row.user_id,
-        err: err instanceof Error ? err.message : String(err),
-      });
+  let processed = 0;
+  try {
+    await client.query("BEGIN");
+    const { rows } = await client.query<DueRow>(
+      `SELECT t.user_id, t.wallet_id,
+              t.card_token_ciphertext, t.card_token_iv, t.card_token_tag
+         FROM subscriptions s
+         JOIN plata_card_token t ON t.user_id = s.user_id
+        WHERE s.provider = 'plata'
+          AND s.status = 'active'
+          AND s.cancel_at_period_end = FALSE
+          AND s.current_period_end <= NOW()
+        FOR UPDATE OF s SKIP LOCKED`,
+    );
+    processed = rows.length;
+
+    for (const row of rows) {
+      let ok = false;
+      try {
+        const cardToken = decryptToken(
+          {
+            ciphertext: row.card_token_ciphertext,
+            iv: row.card_token_iv,
+            tag: row.card_token_tag,
+          },
+          key,
+        );
+        ok = await chargeByToken(cardToken);
+      } catch (err) {
+        logger.error({
+          msg: "plata_recurring_charge_error",
+          userId: row.user_id,
+          err: err instanceof Error ? err.message : String(err),
+        });
+      }
+
+      if (ok) {
+        await client.query(
+          `UPDATE subscriptions
+              SET status = 'active',
+                  current_period_end = current_period_end + INTERVAL '1 month',
+                  updated_at = NOW()
+            WHERE user_id = $1 AND provider = 'plata'`,
+          [row.user_id],
+        );
+        billingRecurringChargeTotal.inc({
+          provider: "plata",
+          result: "charged",
+        });
+        charged += 1;
+      } else {
+        await client.query(
+          `UPDATE subscriptions
+              SET status = 'past_due', updated_at = NOW()
+            WHERE user_id = $1 AND provider = 'plata' AND status = 'active'`,
+          [row.user_id],
+        );
+        billingRecurringChargeTotal.inc({
+          provider: "plata",
+          result: "past_due",
+        });
+        pastDue += 1;
+      }
     }
 
-    if (ok) {
-      await pool.query(
-        `UPDATE subscriptions
-            SET status = 'active',
-                current_period_end = current_period_end + INTERVAL '1 month',
-                updated_at = NOW()
-          WHERE user_id = $1 AND provider = 'plata'`,
-        [row.user_id],
-      );
-      billingRecurringChargeTotal.inc({ provider: "plata", result: "charged" });
-      charged += 1;
-    } else {
-      await pool.query(
-        `UPDATE subscriptions
-            SET status = 'past_due', updated_at = NOW()
-          WHERE user_id = $1 AND provider = 'plata' AND status = 'active'`,
-        [row.user_id],
-      );
-      billingRecurringChargeTotal.inc({
-        provider: "plata",
-        result: "past_due",
-      });
-      pastDue += 1;
+    await client.query("COMMIT");
+  } catch (err) {
+    try {
+      await client.query("ROLLBACK");
+    } catch {
+      /* secondary rollback failure — original error matters more */
     }
+    throw err;
+  } finally {
+    client.release();
   }
 
   const result: PlataChargeResult = {
-    processed: rows.length,
+    processed,
     charged,
     pastDue,
   };
-  if (rows.length > 0) {
+  if (processed > 0) {
     logger.info({ msg: "plata_recurring_tick", ...result });
   }
   return result;
