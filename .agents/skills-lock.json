@@ -44,7 +44,7 @@
     "sergeant-deliver-squad": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "e0a92854368ca7b016831b73b70d3ce1df2fa668605eb4aaea8fd6bd8c4a6c06"
+      "computedHash": "3a202e557d6b891d53290fd15aac9a6e4641ee5ff33b60ddcfd36d39543398f1"
     },
     "sergeant-deploy-and-observability": {
       "source": "local",
@@ -59,7 +59,7 @@
     "sergeant-feature-delivery": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "4790e49e3dab02ca0af19ec43416e10a26636f0f1aa6005077f2cda714629448"
+      "computedHash": "0ffb28fafd29cca4c4d5803deae5b0745e79c0b1ea9f7b8b04a48e25736f27ff"
     },
     "sergeant-feature-flags": {
       "source": "local",
@@ -154,7 +154,7 @@
     "sergeant-server-api": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "92411722f1f041f705d8b354814c7e3e619aef4a101c95b102f1da50393e37cd"
+      "computedHash": "f3d7c496f6a72db0f35b4a1f4c59cde92afc657d950d82cd63110cc5140f74ce"
     },
     "sergeant-start-here": {
       "source": "local",
@@ -174,7 +174,7 @@
     "sergeant-web-ui": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "63ff15ae2be78a31e02e448e380256ea6ca40e175f19e5dc2da0ef0f33298951"
+      "computedHash": "659b9f375eb86a46b47706bd5062a7d81fee0f93f69d489313ce0fd0221539e8"
     },
     "sergeant-writing-skills": {
       "source": "local",
