@@ -60,13 +60,12 @@ export { messagesEn } from "./en";
  */
 export function getMessages(lang: Locale): LocalizedMessages {
   if (lang === "uk") return uk;
-  // Shallow merge: each top-level key in `messagesEn` fully replaces UK.
-  // Missing keys (most of the catalog right now) inherit from UK. Cast to
-  // `LocalizedMessages` is safe: `messagesEn` is `Partial<MessageCatalog>`
-  // shape-compatible with `uk`, and shallow-merge preserves structural
-  // identity for non-overridden groups. The double-cast bridges
-  // Object.freeze's loosened readonly-shape return back to the precise
-  // literal `LocalizedMessages` type without losing structural identity.
+  // Shallow merge: each top-level key in `messagesEn` fully replaces UK;
+  // absent groups inherit from UK. Cast is safe: `messagesEn` типізовано
+  // структурним дзеркалом `typeof uk` (Partial лише на верхньому рівні),
+  // тож оголошена EN-група ГАРАНТОВАНО має повний набір листових ключів —
+  // компілятор не пропустить stub. Double-cast лише повертає literal-тип
+  // після Object.freeze (widened string vs literal values).
   // eslint-disable-next-line sergeant-design/no-strict-bypass
   return Object.freeze({
     ...uk,

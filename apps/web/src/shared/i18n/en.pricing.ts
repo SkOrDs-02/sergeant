@@ -1,6 +1,8 @@
-import type { MessageCatalog } from "./uk";
+import type { messages as ukMessages, MessageGroupShape } from "./uk";
 
-export const pricingEn: MessageCatalog["pricing"] = {
+// Структурне дзеркало uk-групи `pricing`: кожен листовий ключ обовʼязковий,
+// stub неможливий (див. shallow-merge контракт у `index.ts`).
+export const pricingEn: MessageGroupShape<(typeof ukMessages)["pricing"]> = {
   pageTitle: "Plans",
   backLabel: "Back",
   plansAriaLabel: "Pricing plans",

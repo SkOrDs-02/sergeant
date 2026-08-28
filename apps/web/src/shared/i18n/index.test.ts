@@ -39,7 +39,7 @@ describe("i18n resolver", () => {
       expect(paywall["multi-currency"]?.["name"]).toBe("Multi-currency assets");
     });
 
-    it("en.ts now fully covers all groups — auth resolves to EN values", () => {
+    it("a group declared in en.ts resolves to EN values (auth)", () => {
       const result = getMessages("en");
       const resultAuth = result.auth as Record<string, string>;
       // auth IS in en.ts (fully translated) → EN values must be returned
@@ -84,18 +84,31 @@ describe("i18n resolver", () => {
   });
 
   describe("messagesEn contract", () => {
-    it("only declares top-level groups that are fully populated", () => {
-      // Every top-level key in en.ts must mirror the same shape as uk.
-      // This guards against half-translated groups (e.g. en.paywall with 2
-      // of 3 features) that would silently leave UK fallthrough for the
-      // missing feature.
+    it("only declares top-level groups that are fully populated (leaf-path parity)", () => {
+      // За shallow-merge контрактом оголошена EN-група ПОВНІСТЮ замінює
+      // UA-групу, тож кожна оголошена група мусить мати ІДЕНТИЧНИЙ набір
+      // листових шляхів. Попередня версія цього тесту звіряла лише
+      // `typeof` груп і пропускала 3-ключовий stub, що затирав 283
+      // UA-ключі та давав TypeError під `?lang=en`.
+      const leafPaths = (obj: unknown, prefix = ""): string[] => {
+        if (typeof obj === "string") return [prefix];
+        if (obj === null || typeof obj !== "object") return [prefix];
+        return Object.entries(obj as Record<string, unknown>).flatMap(
+          ([key, value]) => leafPaths(value, prefix ? `${prefix}.${key}` : key),
+        );
+      };
       for (const [groupName, enGroup] of Object.entries(messagesEn)) {
         const ukGroup = (uk as Record<string, unknown>)[groupName];
         expect(
           ukGroup,
           `en.ts has group "${groupName}" but uk.ts doesn't`,
         ).toBeDefined();
-        expect(typeof enGroup).toBe(typeof ukGroup);
+        const ukLeaves = leafPaths(ukGroup).sort();
+        const enLeaves = leafPaths(enGroup).sort();
+        expect(
+          enLeaves,
+          `en.ts group "${groupName}" must mirror the exact uk leaf-path set`,
+        ).toEqual(ukLeaves);
       }
     });
 
