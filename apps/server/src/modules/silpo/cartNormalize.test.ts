@@ -69,6 +69,57 @@ describe("normalizeCartMatch", () => {
     displayRatio: "900мл",
   };
 
+  it("exposes the pre-promo price only when it is strictly higher", () => {
+    // Акція: 45.50 замість 52.90 — показуємо.
+    expect(normalizeCartMatch({ ...RAW_HIT, oldPrice: 52.9 })).toMatchObject({
+      priceKop: 4550,
+      oldPriceKop: 5290,
+    });
+    // Сільпо іноді шле `oldPrice` рівний `price` (слід перецінки) —
+    // «знижка 0%» гірша за відсутність значка.
+    expect(normalizeCartMatch({ ...RAW_HIT, oldPrice: 45.5 })).toMatchObject({
+      oldPriceKop: null,
+    });
+    expect(normalizeCartMatch({ ...RAW_HIT, oldPrice: null })).toMatchObject({
+      oldPriceKop: null,
+    });
+    expect(normalizeCartMatch(RAW_HIT)).toMatchObject({ oldPriceKop: null });
+  });
+
+  it("ignores a sub-1% promo — the client would round it to «−0%»", () => {
+    // 45.50 замість 45.60 це 0.2%: перекреслена ціна поруч із «−0%»
+    // виглядає як акція, не будучи нею.
+    expect(normalizeCartMatch({ ...RAW_HIT, oldPrice: 45.6 })).toMatchObject({
+      oldPriceKop: null,
+    });
+    // 1% рівно — вже показуємо.
+    expect(
+      normalizeCartMatch({ ...RAW_HIT, price: 99, oldPrice: 100 }),
+    ).toMatchObject({ oldPriceKop: 10000 });
+  });
+
+  it("treats a giveaway (price 0) as a full discount", () => {
+    expect(
+      normalizeCartMatch({ ...RAW_HIT, price: 0, oldPrice: 30 }),
+    ).toMatchObject({ priceKop: 0, oldPriceKop: 3000 });
+  });
+
+  it("reads availability from either signal, and defaults to available", () => {
+    expect(normalizeCartMatch(RAW_HIT)).toMatchObject({ available: true });
+    expect(normalizeCartMatch({ ...RAW_HIT, available: false })).toMatchObject({
+      available: false,
+    });
+    // `stock: 0` — теж «немає», навіть коли прапорець каже інше.
+    expect(
+      normalizeCartMatch({ ...RAW_HIT, available: true, stock: 0 }),
+    ).toMatchObject({ available: false });
+    // Мовчазна відсутність полів НЕ читається як «немає»: інакше дрейф
+    // схеми зробив би весь список сірим.
+    expect(normalizeCartMatch({ ...RAW_HIT, stock: 12 })).toMatchObject({
+      available: true,
+    });
+  });
+
   it("normalizes a complete hit — UAH price → kopiykas (Hard Rule #1), unit from displayRatio", () => {
     const match = normalizeCartMatch(RAW_HIT);
     expect(match).not.toBeNull();
