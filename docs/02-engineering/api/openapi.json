@@ -8942,13 +8942,42 @@
               "duplicate"
             ],
             "additionalProperties": false
+          },
+          "rows": {
+            "default": [],
+            "maxItems": 1000,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "created",
+                    "duplicate",
+                    "tombstoned",
+                    "mono_matched"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "status"
+              ],
+              "additionalProperties": false
+            }
           }
         },
         "required": [
           "batchId",
           "created",
           "linked",
-          "skipped"
+          "skipped",
+          "rows"
         ],
         "additionalProperties": false,
         "description": "Відповідь commit — batchId + created/linked + skipped{monoMatched,duplicate}."

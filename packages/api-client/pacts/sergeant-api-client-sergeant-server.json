@@ -1732,6 +1732,20 @@
           "batchId": 88,
           "created": 2,
           "linked": 0,
+          "rows": [
+            {
+              "id": "imp1:aaa",
+              "status": "mono_matched"
+            },
+            {
+              "id": "imp1:bbb",
+              "status": "created"
+            },
+            {
+              "id": "imp1:ccc",
+              "status": "created"
+            }
+          ],
           "skipped": {
             "duplicate": 0,
             "monoMatched": 1

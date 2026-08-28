@@ -108,14 +108,26 @@ describe("getImportBatchHandler", () => {
   });
 });
 
+const DELETED_AT = new Date("2026-01-16T09:00:00.000Z");
+
+/** Результат tombstone-UPDATE-у: `RETURNING id, deleted_at` живить
+ * емісію delete-опів (undo мусить доїхати на інші пристрої). */
+function tombstoned(ids: string[]) {
+  return {
+    rowCount: ids.length,
+    rows: ids.map((id) => ({ id, deleted_at: DELETED_AT })),
+  };
+}
+
 /**
  * Диспетчер по SQL-тексту для DELETE-транзакції (SELECT ... FOR UPDATE →
- * UPDATE finyk_manual_expenses → UPDATE import_batches RETURNING).
+ * UPDATE finyk_manual_expenses → емісія опів → UPDATE import_batches
+ * RETURNING).
  */
 function makeFakeClient(
   overrides: {
     selectBatch?: (params: unknown[]) => { rows: unknown[] };
-    tombstone?: (params: unknown[]) => { rowCount: number };
+    tombstone?: (params: unknown[]) => { rowCount: number; rows: unknown[] };
     updateBatch?: (params: unknown[]) => { rows: unknown[] };
   } = {},
 ) {
@@ -129,9 +141,11 @@ function makeFakeClient(
         : { rows: [] };
     }
     if (/UPDATE finyk_manual_expenses/.test(sql)) {
-      return overrides.tombstone
-        ? overrides.tombstone(params)
-        : { rowCount: 0 };
+      return overrides.tombstone ? overrides.tombstone(params) : tombstoned([]);
+    }
+    if (/INSERT INTO sync_op_log/.test(sql)) {
+      const keys = (params[2] ?? []) as string[];
+      return { rows: [], rowCount: keys.length };
     }
     if (/UPDATE import_batches/.test(sql)) {
       return overrides.updateBatch
@@ -166,7 +180,7 @@ describe("deleteImportBatchHandler", () => {
   it("tombstone-ить created_row_ids, оновлює status на 'undone', повертає 200 + tombstoned:N", async () => {
     const client = makeFakeClient({
       selectBatch: () => ({ rows: [batchRow()] }),
-      tombstone: () => ({ rowCount: 2 }),
+      tombstone: () => tombstoned(["imp1:abc", "imp1:def"]),
       updateBatch: () => ({ rows: [batchRow({ status: "undone" })] }),
     });
     connectMock.mockResolvedValue(client);
@@ -194,7 +208,7 @@ describe("deleteImportBatchHandler", () => {
   it("ідемпотентний повторний виклик: tombstoned:0, все одно 200 (не помилка)", async () => {
     const client = makeFakeClient({
       selectBatch: () => ({ rows: [batchRow({ status: "undone" })] }),
-      tombstone: () => ({ rowCount: 0 }), // deleted_at IS NULL більше нічого не матче
+      tombstone: () => tombstoned([]), // deleted_at IS NULL більше нічого не матче
       updateBatch: () => ({ rows: [batchRow({ status: "undone" })] }),
     });
     connectMock.mockResolvedValue(client);
@@ -214,7 +228,7 @@ describe("deleteImportBatchHandler", () => {
   it("порожній created_row_ids → tombstone-запит з порожнім масивом, без помилки", async () => {
     const client = makeFakeClient({
       selectBatch: () => ({ rows: [batchRow({ created_row_ids: [] })] }),
-      tombstone: () => ({ rowCount: 0 }),
+      tombstone: () => tombstoned([]),
       updateBatch: () => ({
         rows: [batchRow({ created_row_ids: [], status: "undone" })],
       }),
@@ -232,7 +246,7 @@ describe("deleteImportBatchHandler", () => {
   it("скоупить SELECT FOR UPDATE по user_id із сесії", async () => {
     const client = makeFakeClient({
       selectBatch: () => ({ rows: [batchRow()] }),
-      tombstone: () => ({ rowCount: 0 }),
+      tombstone: () => tombstoned([]),
       updateBatch: () => ({ rows: [batchRow({ status: "undone" })] }),
     });
     connectMock.mockResolvedValue(client);
@@ -243,6 +257,57 @@ describe("deleteImportBatchHandler", () => {
       (c) => /FROM import_batches/.test(c.sql) && /FOR UPDATE/.test(c.sql),
     );
     expect(selectCall?.params).toEqual([1, "session-user"]);
+  });
+
+  it("емітує delete-опи рівно на реально tombstone-нуті рядки (undo доїжджає на інші пристрої)", async () => {
+    const client = makeFakeClient({
+      selectBatch: () => ({ rows: [batchRow()] }),
+      tombstone: () => tombstoned(["imp1:abc", "imp1:def"]),
+      updateBatch: () => ({ rows: [batchRow({ status: "undone" })] }),
+    });
+    connectMock.mockResolvedValue(client);
+
+    await deleteImportBatchHandler(makeReq("1"), makeRes());
+
+    const emit = client.calls.find((c) =>
+      c.sql.includes("INSERT INTO sync_op_log"),
+    );
+    expect(emit).toBeDefined();
+    const [userId, tableName, keys, ops, rows] = emit!.params as [
+      string,
+      string,
+      string[],
+      string[],
+      string[],
+    ];
+    expect(userId).toBe("u1");
+    expect(tableName).toBe("finyk_manual_expenses");
+    expect(ops).toEqual(["delete", "delete"]);
+    expect(keys.every((k) => /^srvimpdel:1:[0-9a-f]{32}$/.test(k))).toBe(true);
+    expect(JSON.parse(rows[0]!)).toMatchObject({
+      id: "imp1:abc",
+      user_id: "u1",
+      deleted_at: DELETED_AT.toISOString(),
+    });
+    // Емісія — до COMMIT: ROLLBACK не має лишити оп про нескасований undo.
+    const emitIdx = client.calls.indexOf(emit!);
+    const commitIdx = client.calls.findIndex((c) => c.sql.trim() === "COMMIT");
+    expect(emitIdx).toBeLessThan(commitIdx);
+  });
+
+  it("ідемпотентний повтор (нічого не тонили) не емітує жодного опа", async () => {
+    const client = makeFakeClient({
+      selectBatch: () => ({ rows: [batchRow({ status: "undone" })] }),
+      tombstone: () => tombstoned([]),
+      updateBatch: () => ({ rows: [batchRow({ status: "undone" })] }),
+    });
+    connectMock.mockResolvedValue(client);
+
+    await deleteImportBatchHandler(makeReq("1"), makeRes());
+
+    expect(
+      client.calls.some((c) => c.sql.includes("INSERT INTO sync_op_log")),
+    ).toBe(false);
   });
 
   it("ROLLBACK + release(), коли tombstone-запит кидає помилку", async () => {
