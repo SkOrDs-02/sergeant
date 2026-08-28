@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "current": "4.5.0",
+  "current": "5.0.0",
   "versions": {
     "0.1.0": {
       "releasedAt": "2026-06-29",
@@ -353,6 +353,17 @@
         "реєстр перенесено .kilo/harness-versions.json -> .agents/harness-versions.json; snapshot-вивід .kilocode/ -> .agents/snapshot.md (+ .agents/snapshot.cache.json, gitignored)",
         "DEVIN.md видалено; check-agents-family-sync перевіряє CLAUDE.md + опційний OPENAI.md",
         "kilo-code прибрано з tools-списків loop-реєстру; playbooks: devin/<unix-ts>- -> <harness>/; sergeant-start-here §0.1 читає .agents/snapshot.md"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "5.0.0": {
+      "releasedAt": "2026-08-28",
+      "changes": [
+        "Hard Rule #4: нова заборона — не перейменовувати міграцію, яка вже є на `main`. Раннер трекає застосовані міграції за іменем файлу, тож перейменування виконує той самий SQL у проді вдруге і лишає сироту в `schema_migrations` (сталося тричі). Колізію номерів на ребейзі розв'язують перенумеруванням СВОГО, ще не змердженого файлу.",
+        "`pnpm lint:migrations`: нова перевірка 2c (`git diff --diff-filter=R -M`) блокує таке перейменування; escape-hatch `ALLOW_MIGRATION_RENAME=1`.",
+        "Джоба `migration-lint` більше не PR-only — працює і на push у `main`.",
+        "`sergeant-data-and-migrations`: правило про перейменування додано в § Жорсткі правила."
       ],
       "agentsTestedWith": [],
       "passRateBaseline": null

@@ -17,6 +17,7 @@ import {
   isEmptyDownMigration,
   checkSequentialNumbers,
   findCrossBranchCollisions,
+  findRenamedMigrations,
   filterNewMigrationFiles,
   parseTwoPhaseDropHeader,
   validateTwoPhaseDropHeader,
@@ -969,6 +970,106 @@ describe("run() — cross-branch collision", () => {
       mainFiles,
     });
 
+    assert.equal(ok, true);
+  });
+});
+
+// ── findRenamedMigrations ────────────────────────────────────────────────────
+
+describe("findRenamedMigrations", () => {
+  const R = (score, from, to) =>
+    [
+      `R${score}`,
+      `apps/server/src/migrations/${from}`,
+      `apps/server/src/migrations/${to}`,
+    ].join("\t");
+
+  it("returns the up-migration rename pair", () => {
+    const out = R(
+      100,
+      "096_finyk_fizruk_pk_text.sql",
+      "097_finyk_fizruk_pk_text.sql",
+    );
+    assert.deepEqual(findRenamedMigrations(out), [
+      {
+        from: "096_finyk_fizruk_pk_text.sql",
+        to: "097_finyk_fizruk_pk_text.sql",
+      },
+    ]);
+  });
+
+  it("ignores .down.sql companions — prod never applies them", () => {
+    const out = R(98, "096_a.down.sql", "097_a.down.sql");
+    assert.deepEqual(findRenamedMigrations(out), []);
+  });
+
+  it("ignores non-rename status lines and non-migration paths", () => {
+    const out = [
+      "M\tapps/server/src/migrations/001_noop.sql",
+      "A\tapps/server/src/migrations/128_new.sql",
+      R(100, "README.md", "NOTES.md"),
+    ].join("\n");
+    assert.deepEqual(findRenamedMigrations(out), []);
+  });
+
+  it("returns empty for empty input", () => {
+    assert.deepEqual(findRenamedMigrations(""), []);
+  });
+});
+
+// ── run() with a rename of an already-merged migration ───────────────────────
+
+describe("run() — rename of an applied migration", () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = mkdtempSync(join(tmpdir(), "migration-lint-rename-"));
+    writeFileSync(join(tmpDir, "001_a.sql"), "SELECT 1;\n");
+    writeFileSync(join(tmpDir, "002_b.sql"), "SELECT 1;\n");
+  });
+
+  afterEach(() => {
+    rmSync(tmpDir, { recursive: true, force: true });
+    delete process.env.ALLOW_MIGRATION_RENAME;
+  });
+
+  it("fails when a migration that exists on main was renamed", () => {
+    const { ok, errors } = run({
+      migrationsDir: tmpDir,
+      changedFiles: [],
+      newFiles: [],
+      mainFiles: ["001_a.sql", "002_b.sql"],
+      renamedFiles: [{ from: "001_a.sql", to: "002_b.sql" }],
+    });
+    assert.equal(ok, false);
+    assert.ok(
+      errors.some((e) =>
+        e.includes("Migration renamed although it already exists"),
+      ),
+      `expected a rename error, got: ${errors.join(" | ")}`,
+    );
+  });
+
+  it("passes when nothing was renamed", () => {
+    const { ok } = run({
+      migrationsDir: tmpDir,
+      changedFiles: [],
+      newFiles: [],
+      mainFiles: ["001_a.sql", "002_b.sql"],
+      renamedFiles: [],
+    });
+    assert.equal(ok, true);
+  });
+
+  it("ALLOW_MIGRATION_RENAME=1 waives the check", () => {
+    process.env.ALLOW_MIGRATION_RENAME = "1";
+    const { ok } = run({
+      migrationsDir: tmpDir,
+      changedFiles: [],
+      newFiles: [],
+      mainFiles: ["001_a.sql", "002_b.sql"],
+      renamedFiles: [{ from: "001_a.sql", to: "002_b.sql" }],
+    });
     assert.equal(ok, true);
   });
 });
