@@ -1,6 +1,6 @@
 # Playbook Catalog
 
-> **Last touched:** 2026-08-28 by @Skords-01. **Next review:** 2026-12-01.
+> **Last touched:** 2026-08-28 by @github-actions[bot]. **Next review:** 2026-12-01.
 > **Status:** Active
 
 Scenario catalog: which playbook to open, which skill governs the work, and whether the document is primarily for humans, agents, or both.
@@ -90,12 +90,13 @@ Curated table вище лишається швидким роутером для
 
 ## Recent PRs
 
-| PR                                                     | Title                                               | Merged     |
-| ------------------------------------------------------ | --------------------------------------------------- | ---------- |
-| [#892](https://github.com/Skords-01/Sergeant/pull/892) | feat(agents): module-owner і службові Claude-агенти | 2026-08-27 |
-| [#891](https://github.com/Skords-01/Sergeant/pull/891) | feat(agents): скіли-дисципліни                      | 2026-08-27 |
-| [#890](https://github.com/Skords-01/Sergeant/pull/890) | feat(agents): інфра module-скіли і nested-роутинг   | 2026-08-27 |
-| [#889](https://github.com/Skords-01/Sergeant/pull/889) | feat(agents): продуктові module-owner скіли         | 2026-08-27 |
+| PR                                                     | Title                                                                | Merged     |
+| ------------------------------------------------------ | -------------------------------------------------------------------- | ---------- |
+| [#895](https://github.com/Skords-01/Sergeant/pull/895) | fix(agents): полірування агентного шару після розкатки module-owners | 2026-08-28 |
+| [#892](https://github.com/Skords-01/Sergeant/pull/892) | feat(agents): module-owner і службові Claude-агенти                  | 2026-08-27 |
+| [#891](https://github.com/Skords-01/Sergeant/pull/891) | feat(agents): скіли-дисципліни                                       | 2026-08-27 |
+| [#890](https://github.com/Skords-01/Sergeant/pull/890) | feat(agents): інфра module-скіли і nested-роутинг                    | 2026-08-27 |
+| [#889](https://github.com/Skords-01/Sergeant/pull/889) | feat(agents): продуктові module-owner скіли                          | 2026-08-27 |
 
-_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 4 most recent PRs touching this file._
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 5 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->
