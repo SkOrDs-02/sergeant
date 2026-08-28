@@ -14,6 +14,14 @@ const commitImportMock = vi.fn();
 const getImportBatchMock = vi.fn();
 const deleteImportBatchMock = vi.fn();
 
+const bootSyncEngineReaderMock = vi.fn();
+const pullOnceMock = vi.fn();
+
+vi.mock("../../../core/syncEngine/singleton", () => ({
+  bootSyncEngineReader: (...args: unknown[]) =>
+    bootSyncEngineReaderMock(...args),
+}));
+
 vi.mock("@shared/api", async () => {
   const actual =
     await vi.importActual<typeof import("@shared/api")>("@shared/api");
@@ -79,6 +87,9 @@ function commitResponse(
     created: 2,
     linked: 0,
     skipped: { monoMatched: 0, duplicate: 0 },
+    // Порожній `rows` = сервер ще не вміє per-row результати (окремі
+    // деплої web/server) — легасі-шлях через `getImportBatch`.
+    rows: [],
     ...overrides,
   };
 }
@@ -106,9 +117,13 @@ beforeEach(() => {
   commitImportMock.mockReset();
   getImportBatchMock.mockReset();
   deleteImportBatchMock.mockReset();
+  pullOnceMock.mockReset();
+  pullOnceMock.mockResolvedValue({ pulled: 0 });
+  bootSyncEngineReaderMock.mockReset();
+  bootSyncEngineReaderMock.mockResolvedValue({ pullOnce: pullOnceMock });
 });
 
-describe("useImportCommit — write-through (skipped === 0 only)", () => {
+describe("useImportCommit — легасі write-through (сервер без per-row rows)", () => {
   it("writes through every created row when nothing was skipped", async () => {
     commitImportMock.mockResolvedValue(commitResponse());
     getImportBatchMock.mockResolvedValue({
@@ -241,6 +256,173 @@ describe("useImportCommit — write-through (skipped === 0 only)", () => {
       ).resolves.toMatchObject({ batchId: 7 });
     });
     expect(storage.addManualExpense).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * Регресія 2026-08-28: один пропущений рядок у батчі робив невидимими
+ * ЛОКАЛЬНО всі створені рядки цього імпорту («пише, що вони вже є, а в
+ * операціях їх немає»). Per-row `response.rows` знімає це обмеження.
+ */
+describe("useImportCommit — per-row write-through (сервер із rows)", () => {
+  const perRow = (statuses: string[]) =>
+    statuses.map((status, i) => ({
+      id: `imp1:${"abcdef"[i] ?? i}`,
+      status,
+    })) as ImportCommitResponse["rows"];
+
+  it("пише створені рядки навіть коли інші пропущені — без getImportBatch", async () => {
+    commitImportMock.mockResolvedValue(
+      commitResponse({
+        created: 1,
+        skipped: { monoMatched: 1, duplicate: 0 },
+        rows: perRow(["mono_matched", "created"]),
+      }),
+    );
+    const storage = makeStorage();
+    const { result } = renderHook(() => useImportCommit({ storage }), {
+      wrapper: makeWrapper(),
+    });
+
+    let resolved:
+      Awaited<ReturnType<typeof result.current.mutateAsync>> | undefined;
+    await act(async () => {
+      resolved = await result.current.mutateAsync({
+        source: "bank_statement",
+        rows,
+      });
+    });
+
+    expect(getImportBatchMock).not.toHaveBeenCalled();
+    expect(storage.addManualExpense).toHaveBeenCalledTimes(1);
+    // Другий рядок запиту → другий результат: зіставлення позиційне.
+    expect(storage.addManualExpense).toHaveBeenCalledWith({
+      id: "imp1:b",
+      date: "2026-08-02",
+      description: "Зарплата",
+      amount: 5000,
+      category: "salary",
+      kind: "income",
+    });
+    expect(resolved?.locallyWrittenIds).toEqual(["imp1:b"]);
+  });
+
+  it("НЕ пише локально duplicate/tombstoned/mono_matched рядки", async () => {
+    commitImportMock.mockResolvedValue(
+      commitResponse({
+        created: 0,
+        skipped: { monoMatched: 1, duplicate: 1 },
+        rows: perRow(["duplicate", "mono_matched"]),
+      }),
+    );
+    const storage = makeStorage();
+    const { result } = renderHook(() => useImportCommit({ storage }), {
+      wrapper: makeWrapper(),
+    });
+
+    let resolved:
+      Awaited<ReturnType<typeof result.current.mutateAsync>> | undefined;
+    await act(async () => {
+      resolved = await result.current.mutateAsync({
+        source: "bank_statement",
+        rows,
+      });
+    });
+
+    expect(storage.addManualExpense).not.toHaveBeenCalled();
+    // Undo не має чіпати локально рядки, яких воно не створювало.
+    expect(resolved?.locallyWrittenIds).toEqual([]);
+  });
+
+  it("просить позачерговий pull, коли є duplicate-рядки (їх видно лише через нього)", async () => {
+    commitImportMock.mockResolvedValue(
+      commitResponse({
+        created: 1,
+        skipped: { monoMatched: 0, duplicate: 1 },
+        rows: perRow(["created", "duplicate"]),
+      }),
+    );
+    const storage = makeStorage();
+    const { result } = renderHook(() => useImportCommit({ storage }), {
+      wrapper: makeWrapper(),
+    });
+
+    await act(async () => {
+      await result.current.mutateAsync({ source: "bank_statement", rows });
+      await Promise.resolve();
+    });
+
+    expect(pullOnceMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("не смикає pull, коли дублів немає", async () => {
+    commitImportMock.mockResolvedValue(
+      commitResponse({ created: 2, rows: perRow(["created", "created"]) }),
+    );
+    const storage = makeStorage();
+    const { result } = renderHook(() => useImportCommit({ storage }), {
+      wrapper: makeWrapper(),
+    });
+
+    await act(async () => {
+      await result.current.mutateAsync({ source: "bank_statement", rows });
+      await Promise.resolve();
+    });
+
+    expect(pullOnceMock).not.toHaveBeenCalled();
+  });
+
+  it("збійний pull не валить імпорт", async () => {
+    bootSyncEngineReaderMock.mockRejectedValue(new Error("offline"));
+    commitImportMock.mockResolvedValue(
+      commitResponse({
+        created: 0,
+        skipped: { monoMatched: 0, duplicate: 2 },
+        rows: perRow(["duplicate", "duplicate"]),
+      }),
+    );
+    const storage = makeStorage();
+    const { result } = renderHook(() => useImportCommit({ storage }), {
+      wrapper: makeWrapper(),
+    });
+
+    await act(async () => {
+      await expect(
+        result.current.mutateAsync({ source: "bank_statement", rows }),
+      ).resolves.toMatchObject({ batchId: 7 });
+      await Promise.resolve();
+    });
+  });
+
+  it("розбіжна довжина rows → легасі-шлях (не довіряємо частковому зіставленню)", async () => {
+    commitImportMock.mockResolvedValue(
+      commitResponse({ created: 2, rows: perRow(["created"]) }),
+    );
+    getImportBatchMock.mockResolvedValue({
+      batch: {
+        id: 7,
+        source: "bank_statement",
+        status: "completed",
+        rowsTotal: 2,
+        rowsCreated: 2,
+        rowsLinked: 0,
+        rowsSkipped: 0,
+        createdRowIds: ["imp1:aaa", "imp1:bbb"],
+        createdAt: "2026-08-17T10:00:00.000Z",
+        updatedAt: "2026-08-17T10:00:00.000Z",
+      },
+    });
+    const storage = makeStorage();
+    const { result } = renderHook(() => useImportCommit({ storage }), {
+      wrapper: makeWrapper(),
+    });
+
+    await act(async () => {
+      await result.current.mutateAsync({ source: "bank_statement", rows });
+    });
+
+    expect(getImportBatchMock).toHaveBeenCalledWith(7);
+    expect(storage.addManualExpense).toHaveBeenCalledTimes(2);
   });
 });
 
