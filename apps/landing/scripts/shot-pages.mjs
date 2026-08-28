@@ -15,6 +15,8 @@ const ROUTES = [
   ["/guides/monobank", "guide-monobank"],
   ["/guides/kbzhu", "guide-kbzhu"],
   ["/guides/cheky", "guide-cheky"],
+  ["/guides/foto-kalorii", "guide-foto-kalorii"],
+  ["/guides/bank-bezpeka", "guide-bank-bezpeka"],
   ["/data", "data"],
   ["/privacy", "privacy"],
   ["/terms", "terms"],
