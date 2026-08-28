@@ -2,7 +2,10 @@
  * Last validated: 2026-06-15
  * Status: Active
  */
-import { NUTRITION_RECIPES_CACHE_KEY } from "@sergeant/nutrition-domain";
+import {
+  NUTRITION_RECIPES_CACHE_KEY,
+  shortHash,
+} from "@sergeant/nutrition-domain";
 
 import { matchFoodName } from "./pantryTextParser";
 
@@ -29,15 +32,6 @@ function safeWriteSessionRaw(key: string, value: string): void {
   } catch {
     /* quota / private mode / blocked-by-extension — swallow */
   }
-}
-
-function shortHash(str: string): string {
-  let h = 2166136261;
-  for (let i = 0; i < str.length; i++) {
-    h ^= str.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return (h >>> 0).toString(36);
 }
 
 export interface RecipeCachePrefs {

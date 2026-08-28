@@ -1,5 +1,12 @@
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { formatDayRangeUk } from "@shared/lib/time/dayKeyLabel";
+import {
+  clamp,
+  clampDays,
+  isoOrUndef,
+  normalizeText,
+  round,
+} from "./queryArgs";
 
 /**
  * Людський підпис періоду для текстів, які бачить користувач.
@@ -57,33 +64,6 @@ interface DatedMeal extends NutritionMeal {
 }
 
 // ─── helpers ────────────────────────────────────────────────────────────────
-
-function normalizeText(value: unknown): string {
-  return String(value ?? "")
-    .trim()
-    .toLowerCase();
-}
-
-function isoOrUndef(value: unknown): string | undefined {
-  const s = String(value ?? "").trim();
-  return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : undefined;
-}
-
-function clampDays(value: unknown, fallback: number): number {
-  const n = Number(value);
-  if (!Number.isFinite(n) || n <= 0) return fallback;
-  return Math.min(365, Math.floor(n));
-}
-
-function clamp(value: unknown, fallback: number, max: number): number {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return fallback;
-  return Math.min(max, Math.max(1, Math.floor(n)));
-}
-
-function round(n: number): number {
-  return Math.round(n);
-}
 
 /**
  * Resolve the inclusive `[from, to]` day-key window. Explicit dates win; else
