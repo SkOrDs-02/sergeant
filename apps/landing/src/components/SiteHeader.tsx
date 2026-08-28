@@ -51,6 +51,12 @@ export default function SiteHeader() {
           >
             Стати в чергу
           </a>
+          <a
+            href="/beta"
+            className="inline-flex min-h-11 items-center bg-foreground-strong px-4 py-2.5 font-display text-xs font-bold uppercase tracking-[0.08em] text-background transition hover:bg-ink-hi focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink md:hidden"
+          >
+            У чергу
+          </a>
           <button
             type="button"
             aria-expanded={open}

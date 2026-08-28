@@ -111,14 +111,14 @@ function HeroCollage() {
               className={`flex h-11 w-11 items-center justify-center border-2 border-foreground-strong font-display text-[13px] font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink ${
                 n === trainings
                   ? "bg-foreground-strong text-background"
-                  : "bg-card text-foreground-strong hover:bg-background"
+                  : "bg-background text-foreground-strong hover:bg-cardline"
               }`}
             >
               {n}
             </button>
           ))}
         </div>
-        <span className="text-xs text-subtle">цього тижня · перемкни</span>
+        <span className="text-xs text-muted">цього тижня · натисни цифру</span>
       </div>
 
       <figure className="paper-shadow-lg flex rotate-[1.5deg] flex-col gap-2.5 rounded-[var(--radius-card)] bg-note px-7 py-6 lg:absolute lg:left-3 lg:top-[268px] lg:min-h-[120px] lg:w-[400px]">
@@ -162,14 +162,14 @@ export default function HomePage() {
               без крику
             </h1>
             <p className="max-w-lg text-lg leading-relaxed text-pretty text-muted">
-              Сержант, який на твоєму боці. Рахує гроші, тренування, звички і
-              їжу, а потім каже головне. Не карає. Не мотивує цитатами. Просто
-              бачить звʼязки.
+              Sergeant – приватний застосунок, що тримає гроші, тренування,
+              звички і їжу в одному місці й показує, як вони тягнуть одне
+              одного. Не карає. Не мотивує цитатами. Сержант на твоєму боці.
             </p>
             <div className="flex flex-col gap-2.5">
               <TelegramCta placement="hero" label="Стати в чергу" />
               <p className="text-sm text-subtle">
-                ядро безкоштовне назавжди · без карток
+                черга живе в Telegram · ядро безкоштовне назавжди
               </p>
             </div>
           </div>
@@ -179,6 +179,20 @@ export default function HomePage() {
 
         <ModulesSection />
         <ConnectionsSection />
+
+        <section className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-x-6 gap-y-3 px-5 pb-16 sm:px-8">
+          <a
+            href="/beta"
+            className="inline-flex min-h-12 items-center bg-foreground-strong px-8 py-4 font-display text-sm font-bold uppercase tracking-[0.08em] text-background transition hover:bg-ink-hi focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+          >
+            Стати в чергу
+          </a>
+          <p className="text-sm text-subtle">
+            черга живе в Telegram · одне повідомлення, коли відкриється твоя
+            хвиля
+          </p>
+        </section>
+
         <StatuteSection />
         <FounderSection />
         <StatusSection />
