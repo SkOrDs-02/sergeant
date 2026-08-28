@@ -372,7 +372,41 @@ describe("runEnrichmentTick — SQL invariants", () => {
     expect(pickSql).toMatch(/FOR UPDATE SKIP LOCKED/);
     expect(pickSql).toMatch(/available_at <= NOW\(\)/);
     expect(pickSql).toMatch(/status IN \('pending', 'failed'\)/);
-    expect(pool!.query.mock.calls[0]![1]).toEqual([7]);
+    // Reaper-гілка: застряглі processing-row-и старші за stale-поріг ($2).
+    expect(pickSql).toMatch(/status = 'processing'/);
+    expect(pickSql).toMatch(/updated_at < NOW\(\)/);
+    // Дефолтний поріг без MCC-буфера — 15 хв.
+    expect(pool!.query.mock.calls[0]![1]).toEqual([7, 15 * 60 * 1000]);
+  });
+
+  it("staleProcessingMs override передається у PICK-параметри", async () => {
+    const pool = makePool() as unknown as MockPool;
+    pool.query.mockResolvedValueOnce({ rows: [] });
+
+    await runEnrichmentTick(pool as unknown as Pool, {
+      batchSize: 5,
+      staleProcessingMs: 60_000,
+    });
+
+    expect(pool!.query.mock.calls[0]![1]).toEqual([5, 60_000]);
+  });
+
+  it("при MCC_BATCH_HOURLY_ENABLED дефолтний stale-поріг = 4 × MCC_BATCH_INTERVAL_MS (буферні row-и легітимно сидять у processing до 3 batch-тіків)", async () => {
+    const envFlags = env as unknown as { MCC_BATCH_INTERVAL_MS: number };
+    env.MCC_BATCH_HOURLY_ENABLED = true;
+    const prevInterval = envFlags.MCC_BATCH_INTERVAL_MS;
+    envFlags.MCC_BATCH_INTERVAL_MS = 3_600_000;
+    try {
+      const pool = makePool() as unknown as MockPool;
+      pool.query.mockResolvedValueOnce({ rows: [] });
+
+      await runEnrichmentTick(pool as unknown as Pool, { batchSize: 5 });
+
+      expect(pool!.query.mock.calls[0]![1]).toEqual([5, 4 * 3_600_000]);
+    } finally {
+      env.MCC_BATCH_HOURLY_ENABLED = false;
+      envFlags.MCC_BATCH_INTERVAL_MS = prevInterval;
+    }
   });
 });
 
