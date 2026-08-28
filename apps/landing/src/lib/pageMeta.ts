@@ -1,4 +1,12 @@
 import { useEffect } from "react";
+import ROUTE_META_JSON from "./routeMeta.json";
+
+/**
+ * Єдине джерело title/description для маршрутів: сторінки читають звідси
+ * в рантаймі, а `scripts/postbuild-seo.mjs` – у білді, коли генерує
+ * per-route HTML, sitemap і canonical. Додаєш маршрут – додай запис сюди.
+ */
+export const ROUTE_META = ROUTE_META_JSON;
 
 interface PageMeta {
   title: string;

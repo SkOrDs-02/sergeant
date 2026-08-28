@@ -1,6 +1,6 @@
 User-agent: *
 Allow: /
 
-# Sitemap свідомо не вказано: сайт має три сторінки, а публічний домен ще не
-# закріплений (деплой на *.vercel.app). Неправильний absolute URL у sitemap
-# гірший за його відсутність — краулер піде індексувати неіснуючий хост.
+# Домен закріплено 2026-08 (sergeant.com.ua), sitemap генерує
+# scripts/postbuild-seo.mjs на кожному білді з src/lib/routeMeta.json.
+Sitemap: https://sergeant.com.ua/sitemap.xml

@@ -2,8 +2,11 @@ import { useEffect, type ComponentType } from "react";
 import HomePage from "./pages/HomePage";
 import BetaPage from "./pages/BetaPage";
 import AboutPage from "./pages/AboutPage";
+import DataPage from "./pages/DataPage";
 import GuidesPage from "./pages/GuidesPage";
 import GuideMonobankPage from "./pages/GuideMonobankPage";
+import GuideKbzhuPage from "./pages/GuideKbzhuPage";
+import GuideChekyPage from "./pages/GuideChekyPage";
 import PrivacyPage from "./pages/PrivacyPage";
 import TermsPage from "./pages/TermsPage";
 import NotFoundPage from "./pages/NotFoundPage";
@@ -19,8 +22,11 @@ const ROUTES: Record<string, ComponentType> = {
   "/": HomePage,
   "/beta": BetaPage,
   "/about": AboutPage,
+  "/data": DataPage,
   "/guides": GuidesPage,
   "/guides/monobank": GuideMonobankPage,
+  "/guides/kbzhu": GuideKbzhuPage,
+  "/guides/cheky": GuideChekyPage,
   "/privacy": PrivacyPage,
   "/terms": TermsPage,
 };

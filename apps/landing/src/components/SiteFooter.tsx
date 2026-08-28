@@ -16,7 +16,6 @@ export default function SiteFooter() {
             <span className="font-display text-xs font-extrabold uppercase tracking-[0.06em] text-foreground-strong">
               Sergeant
             </span>
-            <span>· роблю сам, показую чесно</span>
           </p>
           <p>© 2026 · Made in Ukraine</p>
         </div>
@@ -29,6 +28,9 @@ export default function SiteFooter() {
           </a>
           <a href="/terms" className={link}>
             Умови використання
+          </a>
+          <a href="/data" className={link}>
+            Твої дані
           </a>
           <a href="/guides" className={link}>
             Гайди
