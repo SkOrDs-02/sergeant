@@ -27,7 +27,7 @@ const ROUTES: Record<string, ComponentType> = {
 
 /**
  * Зовнішній referrer першого входу. Внутрішні переходи віддають наш власний
- * домен — це шум, який зіпсував би атрибуцію каналів, тож він відкидається.
+ * домен – це шум, який зіпсував би атрибуцію каналів, тож він відкидається.
  */
 function externalReferrer(): string | undefined {
   const ref = document.referrer;

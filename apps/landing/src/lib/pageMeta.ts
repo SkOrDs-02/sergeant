@@ -22,7 +22,7 @@ function upsertMeta(name: string, content: string) {
 /**
  * Per-page SEO для SPA: лендінг рендериться клієнтом, тож title/description
  * і JSON-LD виставляються після маунта. Google виконує JS і бачить їх;
- * повний SSG — свідомо відкладений апгрейд (див. README лендінга).
+ * повний SSG – свідомо відкладений апгрейд (див. README лендінга).
  */
 export function usePageMeta({ title, description, noindex, jsonLd }: PageMeta) {
   useEffect(() => {
@@ -40,7 +40,7 @@ export function usePageMeta({ title, description, noindex, jsonLd }: PageMeta) {
       };
     }
     return undefined;
-    // Метадані статичні для сторінки — ефект має відпрацювати один раз.
+    // Метадані статичні для сторінки – ефект має відпрацювати один раз.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 }
