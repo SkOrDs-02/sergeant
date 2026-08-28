@@ -125,6 +125,72 @@ export function ModulesSection() {
 }
 
 /**
+ * Справжні екрани бети (демо-режим продукту, знято з живого dev-стенда).
+ * Найчастіше зауваження всіх зовнішніх рецензій: «лендінг без продукту».
+ */
+export function ScreensSection() {
+  const screens = [
+    {
+      src: "/screens/hub.webp",
+      alt: "Головний екран Sergeant: картки чотирьох модулів із даними дня і серією 14 днів",
+      label: "Хаб: усі чотири сфери на одному екрані",
+    },
+    {
+      src: "/screens/finyk.webp",
+      alt: "Екран Фініка: денний ліміт 4 579 гривень, витрати і надходження за сьогодні",
+      label: "Фінік: скільки можна витратити сьогодні",
+    },
+    {
+      src: "/screens/nutrition.webp",
+      alt: "Екран Їжі: кільце 1250 із 2200 ккал, білки, жири й вуглеводи, вода за день",
+      label: "Їжа: КБЖУ і вода без таблиць",
+    },
+    {
+      src: "/screens/routine.webp",
+      alt: "Екран Рутини: 5 із 5 звичок виконано, серія 14 днів, тижнева стрічка",
+      label: "Рутина: 5/5 за сьогодні, серія 14 днів",
+    },
+  ];
+
+  return (
+    <section
+      id="screens"
+      className="mx-auto w-full max-w-6xl scroll-mt-16 px-5 pt-16 sm:px-8"
+    >
+      <h2 className="font-display text-2xl font-extrabold uppercase tracking-tight text-foreground-strong sm:text-3xl">
+        Як це виглядає
+      </h2>
+      <p className="mt-4 max-w-2xl leading-relaxed text-muted">
+        Справжні екрани бети. Дані на них з демо-режиму продукту.
+      </p>
+
+      <div className="mt-8 flex snap-x snap-mandatory gap-5 overflow-x-auto pb-4 lg:grid lg:grid-cols-4 lg:overflow-visible lg:pb-0">
+        {screens.map((s, i) => (
+          <figure
+            key={s.src}
+            className={`w-[240px] shrink-0 snap-start lg:w-auto ${
+              i % 2 ? "lg:rotate-[0.8deg]" : "lg:-rotate-1"
+            }`}
+          >
+            <img
+              src={s.src}
+              alt={s.alt}
+              width={414}
+              height={896}
+              loading="lazy"
+              className="paper-shadow w-full rounded-[var(--radius-card)] border border-cardline-strong bg-card"
+            />
+            <figcaption className="mt-2.5 text-xs text-subtle">
+              {s.label}
+            </figcaption>
+          </figure>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/**
  * Звʼязки – «паперові» нотатки, ніби Sergeant лишив їх на столі. Третя
  * нотатка навмисно порожня формою (пунктир, без тіні): право мовчати,
  * коли закономірності немає – це чесність продукту, показана версткою.

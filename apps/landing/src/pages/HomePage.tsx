@@ -4,6 +4,7 @@ import SiteFooter from "../components/SiteFooter";
 import TelegramCta from "../components/TelegramCta";
 import {
   ModulesSection,
+  ScreensSection,
   ConnectionsSection,
   StatuteSection,
   FounderSection,
@@ -183,6 +184,7 @@ export default function HomePage() {
         </section>
 
         <ModulesSection />
+        <ScreensSection />
         <ConnectionsSection />
 
         <section className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-x-6 gap-y-3 px-5 pb-16 sm:px-8">
