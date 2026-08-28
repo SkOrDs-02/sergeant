@@ -238,6 +238,18 @@ export const SilpoCartMatchDtoSchema = z.object({
   lagerId: z.string().min(1),
   name: z.string().min(1),
   priceKop: z.number().int().nonnegative(),
+  /**
+   * Ціна до акції, копійки; `null` — акції немає. Сервер заповнює лише
+   * коли вона СТРОГО більша за `priceKop` (`normalizeCartMatch`), тож
+   * клієнту не треба перевіряти це вдруге — достатньо `!= null`.
+   */
+  oldPriceKop: z.number().int().nonnegative().nullable(),
+  /**
+   * `false` — товару немає у філії. Клієнт показує позицію, але не
+   * відмічає її: покласти в кошик відсутнє можна, і тоді людина дізнається
+   * про це вже в застосунку Сільпо.
+   */
+  available: z.boolean(),
   unit: z.string().min(1),
   displayRatio: z.string().nullable(),
 });

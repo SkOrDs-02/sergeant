@@ -9749,6 +9749,18 @@
                         "minimum": 0,
                         "maximum": 9007199254740991
                       },
+                      "oldPriceKop": {
+                        "anyOf": [
+                          {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
                       "unit": {
                         "type": "string",
                         "minLength": 1
@@ -9768,6 +9780,7 @@
                       "lagerId",
                       "name",
                       "priceKop",
+                      "oldPriceKop",
                       "unit",
                       "displayRatio"
                     ],

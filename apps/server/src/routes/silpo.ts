@@ -35,7 +35,12 @@ import {
   relinkReceiptToTransaction,
   unlinkReceiptFromTransaction,
 } from "../modules/silpo/receipts.js";
-import { applyCart, getCart, previewCart } from "../modules/silpo/cart.js";
+import {
+  applyCart,
+  clearCart,
+  getCart,
+  previewCart,
+} from "../modules/silpo/cart.js";
 import { parseBody } from "../http/validate.js";
 
 /**
@@ -510,6 +515,22 @@ export async function cartApplyHandler(
   res.status(200).json(SilpoCartDtoSchema.parse(cart));
 }
 
+/**
+ * `POST /api/silpo/cart/clear` — empty the external cart, then return the
+ * post-write (empty) state. Body-less: there is exactly one cart per user.
+ */
+export async function cartClearHandler(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  if (!assertSilpoEnabled(res)) return;
+  const userId = getUserId(req as AuthedRequest, res);
+  if (!userId) return;
+
+  const cart = await clearCart(userId);
+  res.status(200).json(SilpoCartDtoSchema.parse(cart));
+}
+
 /** `GET /api/silpo/cart` — current cart state. */
 export async function cartGetHandler(
   req: Request,
@@ -642,6 +663,16 @@ export function createSilpoRouter(): Router {
       windowMs: 60_000,
     }),
     cartApplyHandler,
+  );
+  r.post(
+    "/api/silpo/cart/clear",
+    // Те саме відро, що й `apply`: обидві дії пишуть у зовнішній кошик.
+    rateLimitExpress({
+      key: "api:silpo:cart-clear",
+      limit: 5,
+      windowMs: 60_000,
+    }),
+    cartClearHandler,
   );
   r.get(
     "/api/silpo/cart",
