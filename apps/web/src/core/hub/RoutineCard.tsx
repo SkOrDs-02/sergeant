@@ -8,9 +8,9 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
-import { getKyivDateParts, parseKyivDate } from "@shared/lib/time/kyivTime";
 import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
 import { loadRoutineState } from "@routine/lib/routineStorage";
+import { formatChartTooltip } from "./reportChartLabels";
 import {
   aggregateHabits,
   getPeriodRange,
@@ -57,12 +57,8 @@ function HabitHeatmap({
     return "bg-chart-routine opacity-100";
   }
 
-  function formatTooltip(dateStr: string, value: number) {
-    const parts = getKyivDateParts(parseKyivDate(dateStr) ?? new Date(dateStr));
-    const day = String(parts.day).padStart(2, "0");
-    const month = String(parts.month).padStart(2, "0");
-    return `${day}.${month}: ${value}%`;
-  }
+  const formatTooltip = (dateStr: string, value: number) =>
+    formatChartTooltip(dateStr, value, "%");
 
   return (
     <div>

@@ -19,7 +19,7 @@
  * @see docs/audits/2026-05-13-consolidated-page-audit.md § Theme 1
  */
 
-import { kyivMondayStartMs } from "@sergeant/shared";
+import { kyivMondayStartMs, toKyivISODate } from "@sergeant/shared";
 
 const KYIV_TZ = "Europe/Kyiv";
 
@@ -108,12 +108,17 @@ export function getKyivDateParts(input?: Date | number): KyivDateParts {
  * `YYYY-MM-DD` day key in Kyiv local time. Stable across `toLocaleString`
  * locales (always ISO-8601 calendar shape) and across host clock skew.
  *
+ * Delegates to the monorepo-wide `toKyivISODate` (`@sergeant/shared`) so
+ * web, server and packages share one implementation — the previous local
+ * body re-derived the same string from `getKyivDateParts`. Note the shared
+ * helper returns the `"1970-01-01"` sentinel for unparseable input instead
+ * of throwing.
+ *
  * @example
  *   getKyivDayKey(new Date("2026-05-16T23:00:00Z")); // → "2026-05-17"
  */
 export function getKyivDayKey(input?: Date | number): string {
-  const { year, month, day } = getKyivDateParts(input);
-  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  return toKyivISODate(coerce(input));
 }
 
 /**

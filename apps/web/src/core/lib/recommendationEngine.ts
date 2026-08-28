@@ -17,6 +17,7 @@ import {
 import { calcFinykPeriodAggregate } from "@sergeant/finyk-domain/lib/spending";
 import { readFinykStatsContext } from "@finyk/lib/lsStats";
 import { formatNumberUk, pluralDays, pluralUa } from "@sergeant/shared";
+import { dateKeyFromDate } from "@sergeant/routine-domain";
 import { wholeDaysSince } from "@shared/lib/time/wholeDaysSince";
 import {
   BODY_ATLAS_MUSCLE_LABELS_UK,
@@ -41,9 +42,9 @@ interface Workout {
   items?: Exercise[];
 }
 
-function localDateKey(d: Date = new Date()): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
+// Device-local day key (ADR-0078) — делегат до канонічного `dateKeyFromDate`
+// з `@sergeant/routine-domain` замість колишньої інлайн-копії.
+const localDateKey = (d: Date = new Date()): string => dateKeyFromDate(d);
 
 function daysBetween(isoA: string, isoB: string): number {
   const a = new Date(isoA);

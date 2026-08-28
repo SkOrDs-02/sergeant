@@ -17,6 +17,7 @@ import { parseFizrukWorkouts } from "@shared/lib/ui/parseFizrukWorkouts";
 import { calcFinykSpendingByDate } from "@finyk/utils";
 import { calcRoutinePeriodCompletion } from "@sergeant/routine-domain/period-completion";
 import { calcNutritionPeriodAverages } from "@sergeant/nutrition-domain";
+import { addDays, dateKeyFromDate } from "@sergeant/routine-domain";
 import type { Habit } from "@sergeant/routine-domain/types";
 
 // ── Date helpers ─────────────────────────────────────────────────────────────
@@ -28,6 +29,17 @@ export interface PeriodRange {
   end: Date;
 }
 
+/**
+ * Device-local day key (ADR-0078) — делегат до канонічного `dateKeyFromDate`
+ * з `@sergeant/routine-domain` (раніше — інлайн-копія того самого тіла).
+ * `addDays` теж ре-експортується звідти — реалізації байт-еквівалентні.
+ */
+export function localDateKey(d: Date = new Date()): string {
+  return dateKeyFromDate(d);
+}
+
+export { addDays };
+
 /* eslint-disable sergeant-design/prefer-kyiv-time --
    Pre-existing kyiv-time burndown (Theme 1), успадкований від inline-логіки
    `HubReports.tsx`. Ці date-helper-и читають host-local частини дати; переведення
@@ -35,15 +47,6 @@ export interface PeriodRange {
    карток одразу, тож це окрема задача з власним `METRICS_VERSION`, а не
    побічний ефект зміни знаменника. Скоуп disable-у обмежений блоком
    date-helper-ів нижче — агрегатори під ним правило перевіряє як завжди. */
-export function localDateKey(d: Date = new Date()): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-export function addDays(d: Date, n: number): Date {
-  const r = new Date(d);
-  r.setDate(r.getDate() + n);
-  return r;
-}
 
 /**
  * Тиждень: пн–нд (Kyiv-style; getDay() = 0 = неділя). Місяць: 1-ше – останнє

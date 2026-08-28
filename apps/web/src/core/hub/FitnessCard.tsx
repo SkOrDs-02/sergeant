@@ -10,7 +10,11 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { cn } from "@shared/lib/ui/cn";
 import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
 import { getCachedFizrukSqliteState } from "@fizruk/lib/sqliteReader";
-import { getKyivDateParts, parseKyivDate } from "@shared/lib/time/kyivTime";
+import {
+  formatChartLabel,
+  formatChartTooltip,
+  labelStep,
+} from "./reportChartLabels";
 import {
   aggregateWorkouts,
   getPeriodRange,
@@ -51,28 +55,10 @@ function BarChart({
     );
   }
 
-  function labelStep(count: number) {
-    if (count <= 7) return 1;
-    if (count <= 15) return 2;
-    return Math.ceil(count / 8);
-  }
   const step = labelStep(dates.length);
-
-  function formatLabel(dateStr: string) {
-    const parts = getKyivDateParts(parseKyivDate(dateStr) ?? new Date(dateStr));
-    if (isWeek) {
-      const dayNames = ["Нд", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
-      return dayNames[parts.weekday];
-    }
-    return String(parts.day);
-  }
-
-  function formatTooltip(dateStr: string, value: number) {
-    const parts = getKyivDateParts(parseKyivDate(dateStr) ?? new Date(dateStr));
-    const day = String(parts.day).padStart(2, "0");
-    const month = String(parts.month).padStart(2, "0");
-    return `${day}.${month}: ${formatNumberUk(value)}${unit}`;
-  }
+  const formatLabel = (dateStr: string) => formatChartLabel(dateStr, isWeek);
+  const formatTooltip = (dateStr: string, value: number) =>
+    formatChartTooltip(dateStr, value, unit);
 
   return (
     <div>
