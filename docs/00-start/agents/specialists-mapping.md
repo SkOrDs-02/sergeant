@@ -1,6 +1,6 @@
 # Specialists ↔ skills mapping
 
-> **Last touched:** 2026-08-27 by @Skords-01. **Next review:** 2026-12-04.
+> **Last touched:** 2026-08-28 by @Skords-01. **Next review:** 2026-11-26.
 > **Status:** Active
 
 Цей файл — канонічний міст між **історичними runtime specialist agents** (колишній Telegram `/assign` dispatcher у видаленому `tools/openclaw`) і **governance skills** ([`./agent-skills-catalog.md`](./agent-skills-catalog.md)), якими оперують агенти під час роботи в репо.
@@ -27,7 +27,7 @@
 
 ## Як це використовується
 
-1. **Governance skill routing** — Devin / Claude session на старті читає `AGENTS.md`, потім `.agents/skills/sergeant-start-here/SKILL.md`, і — якщо в задачі присутній SpecialistAgent-tag (з PR-опису або ручного `/assign`) — завантажує відповідний skill з цієї таблиці.
+1. **Governance skill routing** — Claude Code / Codex session на старті читає `AGENTS.md`, потім `.agents/skills/sergeant-start-here/SKILL.md`, і — якщо в задачі присутній SpecialistAgent-tag (з PR-опису або ручного `/assign`) — завантажує відповідний skill з цієї таблиці.
 2. ~~**Telegram dispatcher**~~ _(removed ADR-0075)_ — historical: `tools/openclaw/src/agents/dispatcher.ts` класифікував `/assign web-ui …`.
 3. ~~**OpenClaw personas**~~ _(removed ADR-0075)_ — historical mapping у видаленому `tools/openclaw/src/agents/personas.ts`.
 

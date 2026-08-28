@@ -20,7 +20,7 @@ const SCRIPT_PATH = resolve(
 
 function makeRoot(overrides = {}) {
   const root = mkdtempSync(join(tmpdir(), "harness-fresh-test-"));
-  mkdirSync(join(root, ".kilo"), { recursive: true });
+  mkdirSync(join(root, ".agents"), { recursive: true });
 
   const registry = {
     schemaVersion: 1,
@@ -32,13 +32,13 @@ function makeRoot(overrides = {}) {
     ...overrides.registry,
   };
   writeFileSync(
-    join(root, ".kilo", "harness-versions.json"),
+    join(root, ".agents", "harness-versions.json"),
     JSON.stringify(registry, null, 2),
   );
 
   const agentsMd =
     overrides.agentsMd ??
-    "# AGENTS.md\n\n## Harness version\n\n- **Current:** see `current` field in `.kilo/harness-versions.json`.\n";
+    "# AGENTS.md\n\n## Harness version\n\n- **Current:** see `current` field in `.agents/harness-versions.json`.\n";
   writeFileSync(join(root, "AGENTS.md"), agentsMd);
 
   mkdirSync(join(root, "docs", "90-work", "planning"), { recursive: true });
@@ -64,7 +64,7 @@ test("passes for a healthy repo fixture", () => {
   }
 });
 
-test("fails when .kilo/harness-versions.json is missing", () => {
+test("fails when .agents/harness-versions.json is missing", () => {
   const root = mkdtempSync(join(tmpdir(), "harness-fresh-test-"));
   try {
     const result = checkFreshness(root);

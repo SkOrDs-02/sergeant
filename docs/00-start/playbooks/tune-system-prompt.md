@@ -1,6 +1,6 @@
 # Playbook: Tune System Prompt
 
-> **Last touched:** 2026-08-28 by @github-actions[bot]. **Next review:** 2026-12-05.
+> **Last touched:** 2026-08-28 by @Skords-01. **Next review:** 2026-12-10.
 > **Status:** Active
 
 **Trigger:** «AI відповідає не так як треба» / «Зміни тон асистента» / «Додай нову інструкцію в системний промпт» / зміна як модель розуміє контекст модулі.
@@ -129,7 +129,7 @@ pnpm --filter @sergeant/server exec vitest run src/modules/chat
 
 ### 9. PR з прикладами
 
-Branch: `devin/<unix-ts>-tune-system-prompt-<topic>`. PR description **обов'язково** містить:
+Branch: `<harness>/tune-system-prompt-<topic>`. PR description **обов'язково** містить:
 
 - Diff промпту (GitHub покаже автоматично).
 - Eval-set до / після — як таблицю «request → tool called (before)`/`tool called (after)`».

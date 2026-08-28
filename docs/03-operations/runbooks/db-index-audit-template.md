@@ -5,7 +5,7 @@
 
 Цей файл — **template** для one-time index-audit snapshot-ів проти
 production-replica DB. Цей snapshot спеціально **не запускався проти
-production** під час релізного PR — Devin не має credentials до Railway
+production** під час релізного PR — агентські сесії не мають credentials до
 production replica, а dev / CI database контейнер свіжо створений і
 дає 0 seq-scan / купу false-positive zero-scan indexes (всі recently
 created → не використовувалися фізично). Корисний signal вимагає
@@ -16,7 +16,7 @@ production-traffic, накопиченого хоча б за 7 днів піс�
 
 ```bash
 # 1. Виставити DATABASE_URL (read-only replica preferred):
-export DATABASE_URL=postgresql://devin-audit:***@prod-replica.example.com:5432/sergeant
+export DATABASE_URL=postgresql://<audit-user>:***@prod-replica.example.com:5432/sergeant
 
 # 2. Запустити одну з форм:
 pnpm db:index-audit > /tmp/index-audit.md            # на stdout

@@ -1,6 +1,6 @@
 # Renovate maintainer runbook
 
-> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-12-01.
+> **Last touched:** 2026-08-28 by @Skords-01. **Next review:** 2026-12-20.
 > **Status:** Active
 
 Operational runbook для maintainer-а Sergeant. Описує **щотижневу рутину**, **триаж duplicate-PR-ів** з Dependabot (per [ADR-0044](../../04-governance/adr/0044-renovate-vs-dependabot.md)), **escalation-шлях** на випадок Mend Renovate downtime, і **monthly hygiene**. Контриб'юторам потрібна дочірня дока [`docs/02-engineering/integrations/renovate-usage.md`](../../02-engineering/integrations/renovate-usage.md) — вона про «що приходитиме і як я review-ю». Ця — про «коли і чому щось не приходить».
@@ -50,7 +50,7 @@ flowchart TD
     B -- ні --> C[Failed checks?]
     C -- API breaking --> D[Read changelog<br/>+ напиши ADR на upgrade<br/>або close PR]
     C -- flake --> E[Re-run failed jobs]
-    C -- type-fail --> F[Запросити Devin сесію<br/>«fix types after <pkg> bump»]
+    C -- type-fail --> F[Запросити AI-сесію<br/>«fix types after <pkg> bump»]
     B -- так --> G{Тип PR?}
     G -- Lockfile maintenance --> H[Merge]
     G -- Dev-only patch --> I[Auto-merged раніше, нічого не робити]

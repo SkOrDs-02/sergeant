@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Validates that .kilo/harness-versions.json is internally consistent and
+// Validates that .agents/harness-versions.json is internally consistent and
 // that key governance docs have not drifted to a stale version reference.
 
 import { existsSync, readFileSync } from "node:fs";
@@ -15,9 +15,9 @@ export const DEFAULT_ROOT = resolve(__dirname, "..");
  * Read and parse harness-versions.json. Returns the parsed object or throws.
  */
 export function readHarnessVersions(repoRoot = DEFAULT_ROOT) {
-  const jsonPath = resolve(repoRoot, ".kilo/harness-versions.json");
+  const jsonPath = resolve(repoRoot, ".agents/harness-versions.json");
   if (!existsSync(jsonPath)) {
-    throw new Error(`Missing .kilo/harness-versions.json at ${jsonPath}`);
+    throw new Error(`Missing .agents/harness-versions.json at ${jsonPath}`);
   }
   return JSON.parse(readFileSync(jsonPath, "utf8"));
 }
@@ -109,7 +109,7 @@ export function checkFreshness(repoRoot = DEFAULT_ROOT) {
     const docVersion = extractDocVersion(agentsContent);
     if (docVersion && docVersion !== current) {
       errors.push(
-        `AGENTS.md claims current harness version is "${docVersion}" but .kilo/harness-versions.json says "${current}". Update the doc.`,
+        `AGENTS.md claims current harness version is "${docVersion}" but .agents/harness-versions.json says "${current}". Update the doc.`,
       );
     }
     // Specifically flag the historically problematic 0.1.7 ref

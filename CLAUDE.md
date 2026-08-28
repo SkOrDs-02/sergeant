@@ -1,6 +1,6 @@
 # Claude in Sergeant
 
-> **Last touched:** 2026-08-27 by @Skords-01. **Next review:** 2026-12-12.
+> **Last touched:** 2026-08-28 by @Skords-01. **Next review:** 2026-12-24.
 > **Status:** Active
 
 > **Single source of truth → [AGENTS.md](./AGENTS.md).** Тонкий wrapper; repo policy приходить нижче через `@import` — не дублюй її тут.
@@ -15,14 +15,9 @@
 4. Є playbook під задачу в [docs/00-start/playbooks/](./docs/00-start/playbooks/README.md)? Виконуй як canonical recipe.
 5. Перший раз у репо? Пройди [docs/00-start/agents/onboarding.md](./docs/00-start/agents/onboarding.md).
 
-## Claude Code native equivalents
+## Legacy-харнеси
 
-§ «Agent harnesses & routing» в AGENTS.md повністю нейтральний — Kilo-примітиви там НЕ згадуються (вони живуть лише в `~/.config/kilo/rules.md`). Якщо натрапиш на них у legacy-PR чи Kilo-доках, ось нативні еквіваленти Claude Code:
-
-- Kilo `skill` → **`Read .agents/skills/<name>/SKILL.md`** (Claude `Skill` tool індексує лише plugin / `~/.claude/skills` скіли — Sergeant-скілів там НЕМА, тому Read, не `Skill`); Kilo `task` + agent-defs→`Agent`+`~/.claude/agents/*`, `Task*` для teams; `agent_manager`→`EnterWorktree`.
-- `kilo_local_recall`→auto-memory+`Explore`; Kilo MCP (context7/github/memory)→`ToolSearch` (`.mcp.json`); Kilo commands→`pnpm check` або `.claude/commands/*`.
-
-Спільне для всіх харнесів і валідне для тебе: routing-таблиця surface→skill і список hard rules / invariants нижче по AGENTS.md. Конфіг Kilo живе глобально в `~/.config/kilo/`, не в репо — у репо з `.kilo/` лишився тільки harness-neutral реєстр версій `.kilo/harness-versions.json` (див. AGENTS.md § Harness version).
+Kilo Code і Devin виведені з експлуатації ([ADR-0088](./docs/04-governance/adr/0088-devin-kilo-harness-retirement.md)); активні харнеси - Claude Code і Codex. Kilo-примітиви (`skill`, `task`, `agent_manager`, `kilo_local_recall`) та гілки `devin/<unix-ts>-…` у старих PR і доках - історія, не інструкція. Реєстр версій харнеса тепер `.agents/harness-versions.json`; snapshot пишеться в `.agents/snapshot.md` (`pnpm snapshot`).
 
 ## Sub-tree CLAUDE.md
 
