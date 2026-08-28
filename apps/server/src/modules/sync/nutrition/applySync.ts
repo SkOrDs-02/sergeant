@@ -204,7 +204,7 @@ export async function applyNutritionPantries(
   }
 
   // AI-CONTEXT: lookup обовʼязково user-scoped — `id` унікальний У МЕЖАХ
-  // КОРИСТУВАЧА, не глобально (композитний PK, міграція 128). Клієнт віддає
+  // КОРИСТУВАЧА, не глобально (композитний PK, міграція 129). Клієнт віддає
   // кожному юзеру комору з id `home` (`makeDefaultPantry()`), тож глобальний
   // `WHERE id = $1` знаходив ЧУЖИЙ рядок і повертав `fk_violation` — комора
   // синхронізувалася лише в того, хто перший її допушив (SERGEANT-WEB-T).
@@ -301,7 +301,7 @@ export async function applyNutritionPantryItems(
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
-  // AI-CONTEXT: user-scoped із тієї ж причини, що й комора вище (міграція 128),
+  // AI-CONTEXT: user-scoped із тієї ж причини, що й комора вище (міграція 129),
   // і тут колізія навіть імовірніша: id позиції — `<pantryId>::<index>::<name>`,
   // тож у двох користувачів із коморою `home` і однаковим продуктом на тій
   // самій позиції id збігаються посимвольно.

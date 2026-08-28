@@ -134,7 +134,7 @@ describe("pg/nutritionPantries schema snapshot", () => {
     expect(columnMap["deleted_at"]!.notNull).toBe(false);
   });
 
-  // Регресія SERGEANT-WEB-T (міграція 128). Клієнт віддає КОЖНОМУ юзеру
+  // Регресія SERGEANT-WEB-T (міграція 129). Клієнт віддає КОЖНОМУ юзеру
   // комору з id `home` (`makeDefaultPantry()`), тож глобальний PK на `id`
   // означав, що першу синхронізовану комору «займає» перший користувач, а
   // решта назавжди отримує `fk_violation` і лишається без синку — мовчки.
@@ -197,7 +197,7 @@ describe("pg/nutritionPantryItems schema snapshot", () => {
     expect(columnMap["deleted_at"]!.notNull).toBe(false);
   });
 
-  // Та сама регресія, що й у комори (міграція 128), але тут колізія навіть
+  // Та сама регресія, що й у комори (міграція 129), але тут колізія навіть
   // імовірніша: id позиції — `<pantryId>::<index>::<name>`, тож у двох
   // користувачів із коморою `home` і однаковим продуктом на тій самій позиції
   // id збігаються посимвольно.
