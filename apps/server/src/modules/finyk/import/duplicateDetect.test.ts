@@ -12,6 +12,35 @@ function makeDb(rows: DbRow[]) {
   return { query: vi.fn().mockResolvedValue({ rows }) };
 }
 
+/**
+ * Мок бази, що приймає СИРЕ значення `data_json->>'date'` і сам
+ * застосовує до нього ту саму проєкцію, що й SQL — `left(…, 10)`.
+ *
+ * Навіщо: `markDuplicateLikely` сирого `data_json` не бачить взагалі,
+ * зріз до дня робить Postgres. Тест, який одразу подає нормалізовану
+ * дату, тому нічого про ISO-форму не доводить. Тут фікстура тримає
+ * саме те, що лежить у базі (`2026-08-17T12:00:00.000Z`), а
+ * проєкція виражена явно й ОДНИМ рядком — і вона зобовʼязана
+ * збігатися з SQL, що пінить тест «порівнює дату за днем з ОБОХ боків».
+ * Семантику самого `left(…, 10)` на реальному PostgreSQL 16 звірено
+ * окремо (див. докстрінг `duplicateDetect.ts`).
+ */
+function storedRows(
+  rows: Array<{
+    storedDate: string;
+    amount: string;
+    kind: string;
+    count: string;
+  }>,
+) {
+  return makeDb(
+    rows.map(({ storedDate, ...rest }) => ({
+      date: storedDate.slice(0, 10),
+      ...rest,
+    })),
+  );
+}
+
 const SILPO = {
   date: "2026-08-17",
   amountKopiykas: 84750,
@@ -131,13 +160,41 @@ describe("markDuplicateLikely — дві форми дати в data_json", () =
   });
 
   it("витрата, збережена аркушем (ISO-інстант), теж маркує рядок превʼю", async () => {
-    // Те, що віддає ВИПРАВЛЕНИЙ SQL для рядка з
-    // data_json->>'date' = '2026-08-17T12:00:00.000Z': `left(…, 10)`
-    // зрізає його до дня, тож бакет збігається з день-ключем превʼю.
-    const db = makeDb([
-      { date: "2026-08-17", amount: "847.5", kind: "expense", count: "1" },
+    // Фікстура тримає СИРУ збережену форму, а проєкцію робить
+    // `storedRows` — інакше тест подавав би вже нормалізоване значення і
+    // перевіряв би сам себе (ревʼю CodeRabbit на a131a50).
+    const db = storedRows([
+      {
+        storedDate: "2026-08-17T12:00:00.000Z",
+        amount: "847.5",
+        kind: "expense",
+        count: "1",
+      },
     ]);
     const out = await markDuplicateLikely(db, "u1", [SILPO]);
     expect(out[0]).toMatchObject({ duplicateLikely: true });
+  });
+
+  it("обидві форми в одній вибірці зливаються в ОДИН бакет (лічильник додається)", async () => {
+    // Реальний стан прода: той самий платіж приїхав скріном (день-ключ),
+    // потім рядок відредагували аркушем (ISO). Обидва мають рахуватись
+    // разом, інакше count-обмеження змарнує один із них.
+    const db = storedRows([
+      {
+        storedDate: "2026-08-17",
+        amount: "847.5",
+        kind: "expense",
+        count: "1",
+      },
+      {
+        storedDate: "2026-08-17T12:00:00.000Z",
+        amount: "847.5",
+        kind: "expense",
+        count: "1",
+      },
+    ]);
+    const out = await markDuplicateLikely(db, "u1", [SILPO, { ...SILPO }]);
+    expect(out[0]).toMatchObject({ duplicateLikely: true });
+    expect(out[1]).toMatchObject({ duplicateLikely: true });
   });
 });
