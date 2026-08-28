@@ -2,13 +2,14 @@
  * Last validated: 2026-08-03
  * Status: Active
  */
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Measure } from "@shared/components/ui/Measure";
 import { Icon } from "@shared/components/ui/Icon";
 import type { Dispatch, RefObject, SetStateAction } from "react";
 import { Link } from "react-router-dom";
 import { cn } from "@shared/lib/ui/cn";
 import { useToast } from "@shared/hooks/useToast";
+import { useOutsideClick } from "@shared/hooks/useOutsideClick";
 import { messages } from "@shared/i18n/uk";
 import { PROFILE_PATH } from "../../../core/app/appPaths";
 import { useBiometrics } from "../../../core/profile/useBiometrics";
@@ -158,22 +159,13 @@ export function DailyPlanGoalSelectors({
     toast.success(TDEE_COPY.appliedToast);
   };
 
-  useEffect(() => {
-    if (!menuOpen) return;
-    const onPointer = (e: MouseEvent | TouchEvent) => {
-      const root = menuRef.current;
-      if (!root) return;
-      const target = e.target as Node | null;
-      if (target && root.contains(target)) return;
-      setMenuOpen(false);
-    };
-    document.addEventListener("mousedown", onPointer);
-    document.addEventListener("touchstart", onPointer);
-    return () => {
-      document.removeEventListener("mousedown", onPointer);
-      document.removeEventListener("touchstart", onPointer);
-    };
-  }, [menuOpen]);
+  // touchstart додатково до mousedown — історична поведінка цього меню;
+  // closeOnNullRef: false відтворює старий ранній вихід при відсутньому ref.
+  useOutsideClick(menuRef, () => setMenuOpen(false), {
+    enabled: menuOpen,
+    events: ["mousedown", "touchstart"],
+    closeOnNullRef: false,
+  });
 
   return (
     <div className="flex items-center gap-1.5 flex-wrap justify-end">
