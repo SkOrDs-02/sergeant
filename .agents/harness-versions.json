@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "current": "5.0.0",
+  "current": "5.0.1",
   "versions": {
     "0.1.0": {
       "releasedAt": "2026-06-29",
@@ -364,6 +364,14 @@
         "`pnpm lint:migrations`: нова перевірка 2c (`git diff --diff-filter=R -M`) блокує таке перейменування; escape-hatch `ALLOW_MIGRATION_RENAME=1`.",
         "Джоба `migration-lint` більше не PR-only — працює і на push у `main`.",
         "`sergeant-data-and-migrations`: правило про перейменування додано в § Жорсткі правила."
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "5.0.1": {
+      "releasedAt": "2026-08-28",
+      "changes": [
+        "bump from 5.0.0 -> 5.0.1: typo / link / freshness-only change"
       ],
       "agentsTestedWith": [],
       "passRateBaseline": null
