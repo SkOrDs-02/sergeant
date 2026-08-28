@@ -108,3 +108,36 @@ describe("markDuplicateLikely — «сітка 2» дедуп-превʼю", () 
     expect(params[1]).toEqual(["2026-08-17", "2026-08-18"]);
   });
 });
+
+/**
+ * Регресія 2026-08-28. `ManualExpense.date` існує у двох формах:
+ * день-ключ `YYYY-MM-DD` (серверні писарі) та ISO-інстант о 12:00 UTC
+ * (`ManualExpenseSheet` через `toExpenseInstant`). Точне порівняння
+ * рядків робило сітку сліпою до ДРУГОЇ форми, тобто до всіх ручних
+ * витрат — і саме через це рядок виписки, який уже існував, не отримав
+ * бейджа, поїхав на commit і став там `duplicate`.
+ */
+describe("markDuplicateLikely — дві форми дати в data_json", () => {
+  it("порівнює дату за днем з ОБОХ боків (SELECT і WHERE), а не точним рядком", async () => {
+    const db = makeDb([]);
+    await markDuplicateLikely(db, "u1", [SILPO]);
+
+    const [sql] = db.query.mock.calls[0] as [string, unknown[]];
+    const normalized = sql.match(/left\(data_json->>'date', 10\)/g) ?? [];
+    // Двічі: у проєкції (щоб бакет-ключ був днем) і в фільтрі (щоб
+    // ISO-рядок узагалі потрапив у вибірку).
+    expect(normalized).toHaveLength(2);
+    expect(sql).not.toMatch(/data_json->>'date' = ANY/);
+  });
+
+  it("витрата, збережена аркушем (ISO-інстант), теж маркує рядок превʼю", async () => {
+    // Те, що віддає ВИПРАВЛЕНИЙ SQL для рядка з
+    // data_json->>'date' = '2026-08-17T12:00:00.000Z': `left(…, 10)`
+    // зрізає його до дня, тож бакет збігається з день-ключем превʼю.
+    const db = makeDb([
+      { date: "2026-08-17", amount: "847.5", kind: "expense", count: "1" },
+    ]);
+    const out = await markDuplicateLikely(db, "u1", [SILPO]);
+    expect(out[0]).toMatchObject({ duplicateLikely: true });
+  });
+});
