@@ -28,7 +28,20 @@
 --   SELECT id, count(*) FROM nutrition_pantries     GROUP BY id HAVING count(*) > 1;
 --   SELECT id, count(*) FROM nutrition_pantry_items GROUP BY id HAVING count(*) > 1;
 --
--- Обидва запити мають повернути нуль рядків.
+-- ДРУГА ПЕРЕДУМОВА, з тієї ж природи: осиротілі позиції. Крок 3 нижче повертає
+-- FK `pantry_id -> nutrition_pantries(id)`, тобто ГЛОБАЛЬНЕ посилання, і
+-- Postgres вимагає для кожного рядка наявну цільову комору. Міграція 129 такий
+-- стан якраз і уможливлює: після неї lookup user-scoped, тож позиція цілком
+-- законно живе з `pantry_id`, чия комора під тим самим `id` належить іншому
+-- користувачу або ще не доїхала з клієнта. Обидві перевірки на дублі вище на
+-- це сліпі — вони дивляться лише на `id`, а не на звʼязок.
+--
+--   SELECT i.id, i.user_id, i.pantry_id
+--     FROM nutrition_pantry_items AS i
+--     LEFT JOIN nutrition_pantries AS p ON p.id = i.pantry_id
+--    WHERE p.id IS NULL;
+--
+-- Усі три запити мають повернути нуль рядків. Знайдено ревʼю-ботом на PR #915.
 
 BEGIN;
 
