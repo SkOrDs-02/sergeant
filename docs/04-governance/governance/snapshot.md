@@ -1,7 +1,7 @@
 # Dynamic Snapshot — Governance
 
 > **Status:** Active
-> **Last touched:** 2026-08-08 by @claude. **Next review:** 2026-11-09.
+> **Last touched:** 2026-08-28 by @Skords-01. **Next review:** 2026-12-23.
 > **Owner:** @SkOrDs-02
 > **Supersedes:** —
 > **Related:** [ADR-0071](../adr/0071-dynamic-agent-snapshot.md) — rationale and design; [tools/agent-snapshot/README.md](../../../tools/agent-snapshot/README.md) — usage; §0.1 in [`.agents/skills/sergeant-start-here/SKILL.md`](../../../.agents/skills/sergeant-start-here/SKILL.md) — required entry point.
@@ -19,7 +19,7 @@ ADR-0071 explains _why_ the snapshot exists and _what_ it contains. This governa
 
 Every agent that loads `sergeant-start-here` MUST run `pnpm snapshot` before loading any
 specialist skill. The script is zero-dep, offline-safe, and degrades gracefully. The
-agent reads `.kilocode/snapshot.md` and reacts to its 7 sections:
+agent reads `.agents/snapshot.md` and reacts to its 7 sections:
 
 | Section              | Failure mode          | Agent action when healthy                        | Agent action when degraded         |
 | -------------------- | --------------------- | ------------------------------------------------ | ---------------------------------- |
@@ -53,7 +53,7 @@ The snapshot answers **state** questions:
 These are **complementary, not redundant**. The recommended flow on session start:
 
 ```
-1. pnpm snapshot                 → .kilocode/snapshot.md       (state, ~1s)
+1. pnpm snapshot                 → .agents/snapshot.md         (state, ~1s)
 2. Read §0.1 reactions in SKILL  → decide which specialist skill
 3. Load specialist skill         → read its rules + governance
 4. For code-structure questions: → codebase-memory-mcp (search_graph, trace_path,
@@ -98,13 +98,13 @@ When adding a new section to `tools/agent-snapshot/snapshot.mjs`:
 
 ## Failure modes — what the agent does
 
-| Failure                                         | Agent behavior                                                                                                              |
-| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `pnpm snapshot` not installed (script missing)  | Skip §0.1, log a warning, proceed (CI enforces the script's presence on `main`).                                            |
-| `.kilocode/snapshot.md` older than 15 min (TTL) | Re-run `pnpm snapshot --refresh`.                                                                                           |
-| A single section returns `[unavailable: ...]`   | Continue with the other sections. Note the gap in the session's own worklog.                                                |
-| Total snapshot >50 KB                           | Truncation drops the richest sections first. The agent should prefer the §0.1 actions it _can_ see over the ones it cannot. |
-| Cache file corrupted                            | `pnpm snapshot --refresh` (re-runs all sections, overwrites cache).                                                         |
+| Failure                                        | Agent behavior                                                                                                              |
+| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm snapshot` not installed (script missing) | Skip §0.1, log a warning, proceed (CI enforces the script's presence on `main`).                                            |
+| `.agents/snapshot.md` older than 15 min (TTL)  | Re-run `pnpm snapshot --refresh`.                                                                                           |
+| A single section returns `[unavailable: ...]`  | Continue with the other sections. Note the gap in the session's own worklog.                                                |
+| Total snapshot >50 KB                          | Truncation drops the richest sections first. The agent should prefer the §0.1 actions it _can_ see over the ones it cannot. |
+| Cache file corrupted                           | `pnpm snapshot --refresh` (re-runs all sections, overwrites cache).                                                         |
 
 ## Cross-references
 
@@ -112,4 +112,4 @@ When adding a new section to `tools/agent-snapshot/snapshot.mjs`:
 - **§0.1 in `sergeant-start-here/SKILL.md`** — the contract an agent follows
 - **`docs/00-start/agents/agent-skills-catalog.md`** — catalog entry for the snapshot tooling
 - **`harness-engineering-v1.md`** (rollout summary) — links this doc as the snapshot governance reference
-- **`.kilo/codebase-memory-mcp`** (global tool config, not in repo) — structural graph
+- **`codebase-memory-mcp`** (глобальний конфіг харнеса, поза репо) — structural graph

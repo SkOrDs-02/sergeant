@@ -2,7 +2,7 @@
 
 > **Update 2026-07-21:** Backend на **Hetzner/Coolify** ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md)); OpenClaw decommissioned ([ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md)). Railway CLI/дашборд нижче — **historical**, де не позначено Coolify.
 
-> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-02.
+> **Last touched:** 2026-08-28 by @Skords-01. **Next review:** 2026-12-02.
 > **Status:** Active
 
 Цей runbook — bus-factor мітигація: коли єдиний оператор `@Skords-01`
@@ -325,7 +325,7 @@ node --test scripts/__tests__/lint-migrations.test.mjs   # 75 unit + integration
 
    ```bash
    # Read-only replica preferred — audit не пише.
-   export DATABASE_URL=postgresql://devin-audit:***@prod-replica:5432/sergeant
+   export DATABASE_URL=postgresql://<audit-user>:***@prod-replica:5432/sergeant
    pnpm db:index-audit > /tmp/audit.md            # stdout
    pnpm db:index-audit --write                     # docs/03-operations/runbooks/db-index-audit-YYYY-MM-DD.md
    ```

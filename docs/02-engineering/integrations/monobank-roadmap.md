@@ -443,7 +443,7 @@ A → B → C → D → E — рекомендована, але не строг
 
 Кожен PR повинен:
 
-1. Бути окремою гілкою `devin/<timestamp>-<short-name>`.
+1. Бути окремою гілкою `<harness>/<short-name>`.
 2. Мати окремий PR-template.
 3. Покривати зміни тестами (vitest).
 4. Не ламати CI: lint, typecheck, vitest усі зелені.

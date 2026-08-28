@@ -1,6 +1,6 @@
 # Repo map — apps, packages, and tooling
 
-> **Last touched:** 2026-08-22 by @Skords-01. **Next review:** 2026-12-08.
+> **Last touched:** 2026-08-28 by @Skords-01. **Next review:** 2026-12-08.
 > **Status:** Active
 
 > **Machine-readable mirror:** [`docs/04-governance/governance/repo-map.auto.json`](../../04-governance/governance/repo-map.auto.json) (auto-gen via `pnpm docs:gen-repo-map`; CI gate `pnpm docs:check-repo-map` enforces that every workspace listed here is mentioned in this file). The auto-mirror enumerates workspaces + framework deps + owner from CODEOWNERS; editorial Purpose / Stack-narrative / Test-stacks-per-surface stays hand-maintained below.
@@ -46,7 +46,7 @@
 
 - `ops/n8n-workflows/` — n8n workflow JSON manifests (heartbeat, agent-dispatcher). Validated by `pnpm ops:n8n:validate`.
 - `tools/tsconfig-guard/` — guards strict-family `tsconfig` flags (Hard Rule #19); allowlist with expiry/owner.
-- `tools/agent-snapshot/` — zero-dep динамічний snapshot контексту для агентів (`pnpm snapshot`, ADR-0071) → `.kilocode/snapshot.md`.
+- `tools/agent-snapshot/` — zero-dep динамічний snapshot контексту для агентів (`pnpm snapshot`, ADR-0071) → `.agents/snapshot.md`.
 - `scripts/` — governance / docs / API / CI helpers. See [`docs/04-governance/governance/README.md`](../../04-governance/governance/README.md) for the full list.
 
 Теки кореня поза workspace-ами (не білдяться, але трекаються в git):
@@ -57,7 +57,7 @@
 - `.tech-debt/` — JSON-бюджети burn-down, читаються `pnpm lint:localstorage-allowlist` і `pnpm lint:env-single-source`.
 - `patches/` — `pnpm patch` для upstream-багів; кожен запис описано в [`pnpm-overrides.md`](../../../pnpm-overrides.md), гейт `pnpm lint:patches`.
 - `.codex/` — репо-owned harness-шар Codex (`config.toml`, `hooks.json`, `agents/*.toml`); стан — `pnpm codex:status`.
-- `.agents/skills/` — harness-нейтральні SKILL.md; `.claude/` — worktree-конфіг Claude Code; `.kilo/harness-versions.json` — реєстр версій харнеса.
+- `.agents/` — harness-нейтральні SKILL.md (`skills/`) і реєстр версій харнеса (`harness-versions.json`); `.claude/` — worktree-конфіг Claude Code.
 
 ## Test stacks per surface
 

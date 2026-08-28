@@ -117,7 +117,7 @@ weekly A/B workflow `.github/workflows/harness-a-b.yml` з matrix
   - [docs/04-governance/governance/harness-versioning.md](../../../docs/04-governance/governance/harness-versioning.md)
 - **Tooling:**
   - [tools/agent-snapshot/README.md](../../../tools/agent-snapshot/README.md) — `pnpm snapshot`
-  - [`.kilo/harness-versions.json`](../../../.kilo/harness-versions.json) — registry
+  - [`.agents/harness-versions.json`](../../../.agents/harness-versions.json) — registry (шлях з 2026-08-28, ADR-0088; історично `.kilo/`)
   - [scripts/ci-bump-harness-version.mjs](../../../scripts/ci-bump-harness-version.mjs) — bumper
 - **Workflows:**
   - `.github/workflows/ai-pr-checklist.yml` — прибрано ([ADR-0082](../../04-governance/adr/0082-private-storage-repo-posture.md))

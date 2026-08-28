@@ -1,15 +1,15 @@
 # Agents in Sergeant
 
-> **Last touched:** 2026-08-27 by @Skords-01. **Next review:** 2026-12-10.
+> **Last touched:** 2026-08-28 by @Skords-01. **Next review:** 2026-12-20.
 > **Status:** Active
 
 > **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load one owner skill for the primary touched surface. Load extra workflow/squad/helper skills only when `docs/00-start/agents/agent-workflows.md` or the routing catalog explicitly says to. The routing catalog lives in `docs/00-start/agents/agent-skills-catalog.md`.
 
 ## Agent harnesses & routing
 
-Sergeant is **tool-agnostic**. Any AI agent harness — Claude Code, Kilo Code, Devin, Cursor — drives this repo through the same shared primitives: harness-neutral skills in `.agents/skills/`, this `AGENTS.md` as the policy source of truth, and the surface→specialist routing table below. **Harness-specific config (models, permissions, MCP wiring, custom agents, commands) lives outside the checkout**, in each tool's own global config directory — the repo carries no tool config beyond the versioned `.kilo/harness-versions.json` (see § Harness version), the repo-owned Codex layer `.codex/` and the shared MCP wiring in `.mcp.json` (see the table below).
+Sergeant is **tool-agnostic**: any AI agent harness drives this repo through the same shared primitives - harness-neutral skills in `.agents/skills/`, this `AGENTS.md` as the policy source of truth, and the surface→specialist routing table below. Active harnesses today: **Claude Code** and **Codex**; Devin and Kilo Code retired 2026-08-28 ([ADR-0088](./docs/04-governance/adr/0088-devin-kilo-harness-retirement.md)). **Harness-specific config (models, permissions, MCP wiring, custom agents, commands) lives outside the checkout**, in each tool's own global config directory - the repo carries no tool config beyond the versioned `.agents/harness-versions.json` (see § Harness version), the repo-owned Codex layer `.codex/` and the shared MCP wiring in `.mcp.json` (see the table below).
 
-- **Source of truth.** For all project / policy / hard-rules questions, this file (`AGENTS.md`) wins. `CLAUDE.md` and `DEVIN.md` are thin wrappers that add only runtime/tool notes and must not duplicate policy.
+- **Source of truth.** For all project / policy / hard-rules questions, this file (`AGENTS.md`) wins. `CLAUDE.md` is a thin wrapper that adds only runtime/tool notes and must not duplicate policy.
 - **Skills.** Load the skill for the touched surface — start with `.agents/skills/sergeant-start-here/SKILL.md`, then choose the primary owner skill from the table below. Catalog: `docs/00-start/agents/agent-skills-catalog.md`. Skills are plain SKILL.md files; each harness loads them through its own skill loader — prefer that loader over reading SKILL.md by hand when one exists.
 - **Specialists.** Sergeant owner skills cover product surfaces, cross-cutting disciplines, and explicit multi-agent workflows. Keep one primary owner in mind for a task; add a second skill only when the catalog/workflow says the handoff is intentional (for example feature delivery + web, auth + touched surface, or review-squad). Each harness ships its own agent definitions in its global config; the surface→specialist mapping is what they all share.
 
@@ -57,18 +57,16 @@ If two surfaces overlap (e.g. web + e2e), load the **owner** first; add the othe
 
 ### Harness config lives outside the repo
 
-Harnesses keep their config outside the checkout, with three deliberate exceptions: the harness-neutral version registry `.kilo/harness-versions.json` (§ Harness version), the repo-owned Codex layer `.codex/` (`config.toml`, `hooks.json`, `agents/*.toml` — 21 tracked files; стан через `pnpm codex:status`, опис у [`docs/00-start/agents/codex-capabilities.md`](./docs/00-start/agents/codex-capabilities.md)), and the shared MCP wiring in `.mcp.json`. Nothing else. Every harness is an **equal peer**: it reads `AGENTS.md` + `.agents/skills/` from the repo for shared policy, then keeps its own models, permissions, MCP wiring, custom agents and commands in its own global config home. **None of them is "the" driver of this repo.**
+Harnesses keep their config outside the checkout, with three deliberate exceptions: the harness-neutral version registry `.agents/harness-versions.json` (§ Harness version), the repo-owned Codex layer `.codex/` (`config.toml`, `hooks.json`, `agents/*.toml` — 21 tracked files; стан через `pnpm codex:status`, опис у [`docs/00-start/agents/codex-capabilities.md`](./docs/00-start/agents/codex-capabilities.md)), and the shared MCP wiring in `.mcp.json`. Nothing else. Every harness is an **equal peer**: it reads `AGENTS.md` + `.agents/skills/` from the repo for shared policy, then keeps its own models, permissions, MCP wiring, custom agents and commands in its own global config home. **None of them is "the" driver of this repo.**
 
 | Harness     | Config home (global, outside the repo)                                                                         | Tool-specific wrapper                                                                        |
 | ----------- | -------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
 | Claude Code | `~/.claude/` (+ repo `.claude/` for tool-managed worktrees)                                                    | [`CLAUDE.md`](./CLAUDE.md)                                                                   |
-| Kilo Code   | `~/.config/kilo/` (`agents/`, `command/`, `rules.md`, MCP)                                                     | `~/.config/kilo/rules.md`                                                                    |
-| Devin       | Devin workspace settings                                                                                       | [`DEVIN.md`](./DEVIN.md)                                                                     |
 | Codex       | репо-owned `.codex/` (`config.toml`, `hooks.json`, `agents/*.toml`) — єдиний харнес, чий конфіг живе в чекауті | [`docs/00-start/agents/codex-capabilities.md`](./docs/00-start/agents/codex-capabilities.md) |
 
 Harness-specific primitives — session recall, worktree/branch managers, MCP tool names, dev-server runners — live in that harness's **own wrapper**, never in this file. **If you are reading `AGENTS.md` and see a tool you don't have, it is not yours — use your own harness's equivalent.**
 
-> **SECURITY.** A harness that wires a `github` (or any) MCP with a Personal Access Token keeps that token in its **own** global config (e.g. `~/.config/kilo/kilo.json`), outside git. Treat such tokens as secrets — never echo, commit, or log them. Hard Rule #20 also forbids OpenClaw PATs in production.
+> **SECURITY.** A harness that wires a `github` (or any) MCP with a Personal Access Token keeps that token in its **own** global config, outside git. Treat such tokens as secrets — never echo, commit, or log them. Hard Rule #20 also forbids OpenClaw PATs in production.
 
 ## Agent operating system (project)
 
@@ -79,7 +77,7 @@ Harness-specific primitives — session recall, worktree/branch managers, MCP to
 - Execution recipes: [`docs/00-start/playbooks/README.md`](./docs/00-start/playbooks/README.md)
 - Playbook lookup: [`docs/00-start/playbooks/playbook-catalog.md`](./docs/00-start/playbooks/playbook-catalog.md)
 
-Repo policy lives here in `AGENTS.md`. Platform-specific wrappers such as `CLAUDE.md` and `DEVIN.md` only add runtime/tool notes and must not become parallel sources of truth.
+Repo policy lives here in `AGENTS.md`. Platform-specific wrappers such as `CLAUDE.md` only add runtime/tool notes and must not become parallel sources of truth.
 
 ## Quick commands
 
@@ -212,7 +210,7 @@ If you legitimately need to raise a limit (e.g. a major new dependency), bump th
 
 ## Soft rules (preferred)
 
-- Branch naming: `<harness>/<short-desc>` — префікс агента/харнеса (фактична практика: `claude/<desc>-<suffix>`, напр. `claude/ai-memory-retrieval-scores`; історична форма `devin/<unix-ts>-<short-area>-<desc>` теж валідна).
+- Branch naming: `<harness>/<short-desc>` — префікс агента/харнеса (фактична практика: `claude/<desc>-<suffix>`, напр. `claude/ai-memory-retrieval-scores`; історична форма `devin/<unix-ts>-<short-area>-<desc>` лишається тільки в старих гілках - Devin retired, [ADR-0088](./docs/04-governance/adr/0088-devin-kilo-harness-retirement.md)).
 - Tests next to code: `foo.ts` + `foo.test.ts` in the same folder (Vitest).
 - Use path aliases (`@shared/*`, `@finyk/*`, etc.) instead of relative `../../../`.
 - Dependency bumps — separate PRs (don't mix with features).
@@ -257,10 +255,10 @@ PR body follows [`.github/PULL_REQUEST_TEMPLATE.md`](./.github/PULL_REQUEST_TEMP
 
 ## Harness version
 
-The agent harness (AGENTS.md, `.agents/skills/**`, Hard Rules registry, `eslint-plugin-sergeant-design`, pre-commit hooks, `tools/agent-snapshot/snapshot.mjs`) is versioned in [`.kilo/harness-versions.json`](.kilo/harness-versions.json). Follow [the governance doc](docs/04-governance/governance/harness-versioning.md) for bump rules and the [ADR-0072](docs/04-governance/adr/0072-harness-versioning.md) for rationale.
+The agent harness (AGENTS.md, `.agents/skills/**`, Hard Rules registry, `eslint-plugin-sergeant-design`, pre-commit hooks, `tools/agent-snapshot/snapshot.mjs`) is versioned in [`.agents/harness-versions.json`](.agents/harness-versions.json) (до 2026-08-28 жив у `.kilo/`, перенесено [ADR-0088](docs/04-governance/adr/0088-devin-kilo-harness-retirement.md)). Follow [the governance doc](docs/04-governance/governance/harness-versioning.md) for bump rules and the [ADR-0072](docs/04-governance/adr/0072-harness-versioning.md) for rationale.
 
 - **Schema:** `schemaVersion: 1` (bump on backward-incompatible layout changes).
-- **Current:** see `current` field in `.kilo/harness-versions.json`.
+- **Current:** see `current` field in `.agents/harness-versions.json`.
 - **A/B experiments:** `.github/workflows/harness-a-b.yml` прибрано [ADR-0082](docs/04-governance/adr/0082-private-storage-repo-posture.md) §4; A/B-прогони наразі ручні, реєстр `abExperiments` лишається чинним, але порожній.
 - **How to bump:** run `node scripts/ci-bump-harness-version.mjs` locally before opening a PR that touches AGENTS.md, a skill, a Hard Rule, or an ESLint design rule; the script auto-detects `patch` / `minor` / `major` from the diff and updates the file in place.
 - **Cross-read:** on session start, if `current` differs from the version noted in the previous session summary, re-read the linked governance doc and the latest `versions.<x.y.z>.changes` entry.
@@ -270,6 +268,6 @@ The agent harness (AGENTS.md, `.agents/skills/**`, Hard Rules registry, `eslint-
 Rollout завершено 2026-06-29. Два активні компоненти — AI-PR Checklist і Entropy Janitors retired ([ADR-0081](./docs/04-governance/adr/0081-repository-simplification.md), [ADR-0082](./docs/04-governance/adr/0082-private-storage-repo-posture.md)):
 
 - **Dynamic snapshot** — `tools/agent-snapshot/snapshot.mjs`, runs `pnpm snapshot`
-- **Harness versioning** — `.kilo/harness-versions.json` + `scripts/ci-bump-harness-version.mjs` (A/B-воркфлоу прибрано ADR-0082 §4; `abExperiments` порожній, прогони ручні)
+- **Harness versioning** — `.agents/harness-versions.json` + `scripts/ci-bump-harness-version.mjs` (A/B-воркфлоу прибрано ADR-0082 §4; `abExperiments` порожній, прогони ручні)
 
 Деталі: [harness-engineering-v1.md](./docs/90-work/planning/harness-engineering-v1.md)

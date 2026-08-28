@@ -5,7 +5,7 @@
 // 1. SKILL.md exists for every locked skill in .agents/skills-lock.json.
 // 2. Each SKILL.md starts with a YAML-ish frontmatter block (--- ... ---) that
 //    contains `name:` and `description:` keys. The `description` value must be
-//    non-empty and ≤ 220 chars (Claude/Devin tooling truncates aggressively).
+//    non-empty and ≤ 220 chars (Claude/Codex tooling truncates aggressively).
 // 3. The `name:` value matches the directory slug.
 // 4. The body contains either a concrete repo path (apps/*, packages/*, scripts/*,
 //    docs/*, .agents/*, .github/*) or a `pnpm`/`pnpx` command — i.e. the skill

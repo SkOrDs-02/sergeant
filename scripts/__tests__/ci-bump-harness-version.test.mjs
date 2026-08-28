@@ -20,10 +20,10 @@ const SCRIPT = join(process.cwd(), "scripts/ci-bump-harness-version.mjs");
 
 function runBumper({ files, registry }) {
   const dir = mkdtempSync(join(tmpdir(), "harness-bump-"));
-  const kilo = join(dir, ".kilo");
-  mkdirSync(kilo, { recursive: true });
+  const agentsDir = join(dir, ".agents");
+  mkdirSync(agentsDir, { recursive: true });
   writeFileSync(
-    join(kilo, "harness-versions.json"),
+    join(agentsDir, "harness-versions.json"),
     JSON.stringify(registry, null, 2),
   );
   for (const f of files) {
@@ -62,7 +62,7 @@ function runBumper({ files, registry }) {
     throw err;
   }
   const updated = JSON.parse(
-    readFileSync(join(kilo, "harness-versions.json"), "utf8"),
+    readFileSync(join(agentsDir, "harness-versions.json"), "utf8"),
   );
   rmSync(dir, { recursive: true, force: true });
   return { out, updated };
@@ -126,12 +126,12 @@ describe("ci-bump-harness-version", () => {
     assert.equal(updated.current, "0.1.1");
   });
 
-  it("bumps patch on .husky change (0.1.0 -> 0.1.1)", () => {
+  it("bumps minor on .husky change (0.1.0 -> 0.2.0)", () => {
     const { updated } = runBumper({
       files: [".husky/pre-commit"],
       registry: baseRegistry,
     });
-    assert.equal(updated.current, "0.1.1");
+    assert.equal(updated.current, "0.2.0");
   });
 
   it("writes an entry into versions[next]", () => {

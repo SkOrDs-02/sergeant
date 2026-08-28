@@ -67,7 +67,7 @@ Schema, phased rollout (L1/L2/L3), gates vocabulary і cost fields запози�
 - **Phases:** discover → triage → fix → verify → notify.
 - **Gates:** billing, auth, security, breaking API, hard-rule amendments.
 - **Hard rules:** #3, #6, #7, #15, #26.
-- **Tools:** claude-code, kilo-code, codex, github-actions.
+- **Tools:** claude-code, codex, github-actions.
 - **Counterpart:** `pr-babysitter` pattern у loop-engineering.
 - **Status:** **active** — запускається як Claude Code scheduled task `pr-triage-weekly` на машині власника (поза репо), двічі на тиждень (Пн+Чт ~10:00 Kyiv). Brakes з `registry.yaml.cost` (`max_turns`, `max_budget_usd`, `circuit_breaker`, `heartbeat_required`) лишаються design constraints для цього runner-а.
 - **Cost:** [registry.yaml#pr-review](./registry.yaml) — suggested_daily_cap 1.5M tokens.
@@ -78,7 +78,7 @@ Schema, phased rollout (L1/L2/L3), gates vocabulary і cost fields запози�
 - **Phases:** scan → prioritize → fix-small → ticket-large.
 - **Gates:** architectural changes, baseline amendment, rule amendment.
 - **Hard rules:** #18, #19, #26.
-- **Tools:** claude-code, kilo-code, codex, github-actions.
+- **Tools:** claude-code, codex, github-actions.
 - **Counterpart:** `dependency-sweeper` + `post-merge-cleanup` hybrid.
 - **Cost:** 400k tokens/day cap.
 
@@ -88,7 +88,7 @@ Schema, phased rollout (L1/L2/L3), gates vocabulary і cost fields запози�
 - **Phases:** scan → triage-risk → patch-safe → verify-worktree → escalate-risky.
 - **Gates:** high-sev CVE, denylisted packages, auth-cookie changes, prod PAT.
 - **Hard rules:** #20, #21, #22.
-- **Tools:** claude-code, kilo-code, codex, github-actions.
+- **Tools:** claude-code, codex, github-actions.
 - **Counterpart:** `dependency-sweeper` (security mode).
 - **Cost:** 500k tokens/day cap.
 
@@ -98,7 +98,7 @@ Schema, phased rollout (L1/L2/L3), gates vocabulary і cost fields запози�
 - **Phases:** detect → classify → block → escalate.
 - **Gates:** DROP TABLE, gap in numbering, prod rollback required.
 - **Hard rules:** #4.
-- **Tools:** claude-code, kilo-code, codex, github-actions.
+- **Tools:** claude-code, codex, github-actions.
 - **Counterpart:** `ci-sweeper` (DB-migration variant).
 - **Cost:** 100k tokens/day cap. High risk per-run, low volume.
 
@@ -108,7 +108,7 @@ Schema, phased rollout (L1/L2/L3), gates vocabulary і cost fields запози�
 - **Phases:** detect → classify → page-human → file-postmortem.
 - **Gates:** prod outage, secret rotation, DB migration on prod.
 - **Hard rules:** #6, #21.
-- **Tools:** claude-code, kilo-code, github-actions, sentry-webhooks.
+- **Tools:** claude-code, github-actions, sentry-webhooks.
 - **Counterpart:** `ci-sweeper` (deploy variant).
 - **Status:** **blocked-on-infra** — Grafana Alloy + n8n паузовано 2026-06-28 (`railway down`); Sentry→Telegram alert chain непрацездатний — вмикати після redeploy observability.
 - **Cost:** 500k tokens/day cap.
@@ -118,7 +118,7 @@ Schema, phased rollout (L1/L2/L3), gates vocabulary і cost fields запози�
 - **Goal:** Detect and quarantine Playwright E2E flakes; surface new a11y regressions on PRs.
 - **Phases:** detect → quarantine → propose-fix → escalate.
 - **Gates:** seed-data change, role-selector change, infra change.
-- **Tools:** claude-code, kilo-code, codex, github-actions.
+- **Tools:** claude-code, codex, github-actions.
 - **Counterpart:** `ci-sweeper` (E2E variant).
 - **Cost:** 100k tokens/day cap.
 
@@ -128,7 +128,7 @@ Schema, phased rollout (L1/L2/L3), gates vocabulary і cost fields запози�
 - **Phases:** discover → fan-out → synthesize → gate.
 - **Gates:** contradictory lens findings, security flag, contract break.
 - **Hard rules:** #3, #15, #26.
-- **Tools:** claude-code, kilo-code.
+- **Tools:** claude-code.
 - **Counterpart:** none — multi-agent DAG (review-squad є нашою розробкою).
 - **Cost:** 800k tokens/day cap. **early_exit_required: true** — fan-out може роздуватись.
 
@@ -138,7 +138,7 @@ Schema, phased rollout (L1/L2/L3), gates vocabulary і cost fields запози�
 - **Phases:** discover → fan-out → synthesize → report.
 - **Gates:** cross-surface bug, baseline amendment.
 - **Hard rules:** #18, #19.
-- **Tools:** claude-code, kilo-code.
+- **Tools:** claude-code.
 - **Counterpart:** none.
 - **Cost:** 800k tokens/day cap.
 
@@ -147,7 +147,7 @@ Schema, phased rollout (L1/L2/L3), gates vocabulary і cost fields запози�
 - **Goal:** Multi-perspective product/strategy/UX advice for ambiguous decisions and tradeoffs.
 - **Phases:** frame → fan-out → debate → synthesize.
 - **Gates:** none — purely advisory.
-- **Tools:** claude-code, kilo-code.
+- **Tools:** claude-code.
 - **Counterpart:** none.
 - **Status:** **manual** — enabled, trigger-by-owner only, через `sergeant-council` skill.
 - **Cost:** 600k tokens/day cap.
@@ -158,7 +158,7 @@ Schema, phased rollout (L1/L2/L3), gates vocabulary і cost fields запози�
 - **Phases:** discover → batch → fan-out → sync → archive.
 - **Gates:** contradictory plans, scope creep, blocker amendment.
 - **Hard rules:** #15.
-- **Tools:** claude-code, kilo-code.
+- **Tools:** claude-code.
 - **Counterpart:** `issue-triage` analogue (planning variant).
 - **Status:** **manual** — enabled, trigger-by-owner only.
 - **Cost:** 400k tokens/day cap.

@@ -1,6 +1,6 @@
 # Playbook: Звірка дрифту документації та архівація
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-15.
+> **Last touched:** 2026-08-28 by @Skords-01. **Next review:** 2026-12-02.
 > **Status:** Active
 
 **Trigger:** «Актуалізуй документацію» / «Знайди дрифт і не позначені виконані таски» / «Заархівуй завершені плани/ініціативи/аудити» / періодична гігієна docs, щоб у кожному документі було видно стан і залишок роботи.
@@ -174,7 +174,7 @@ pnpm dead-code:files             # marker-aware wrapper (поважає @scaffol
 Перегенеруй дашборди (тепер архівоване зникне з open-work) і прожени гейти — див. [§ Verification](#verification).
 
 ```bash
-git checkout -b devin/$(date +%s)-docs-reconcile-drift
+git checkout -b claude/docs-reconcile-drift
 git commit -m "docs(docs): reconcile drift and close completed trackers"
 ```
 

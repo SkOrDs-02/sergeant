@@ -1,6 +1,6 @@
 # Playbook: Sync RN Migration Progress
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-29.
+> **Last touched:** 2026-08-28 by @Skords-01. **Next review:** 2026-12-14.
 > **Status:** Active
 
 **Trigger:** після merge порту web → mobile (див. `port-web-screen-to-mobile.md`) — оновити progress tracker `docs/02-engineering/mobile/react-native-migration.md`.
@@ -59,7 +59,7 @@ Diff має містити **тільки** zміни прогресу + авт�
 
 ### 5. Створити PR
 
-- Branch: `devin/<unix-ts>-docs-rn-progress-sync`.
+- Branch: `<harness>/docs-rn-progress-sync`.
 - Commit: `docs(docs): sync rn-migration progress (PR #X/#Y/#Z)` (scope `docs`, AGENTS.md rule #5).
 - PR description (`.github/PULL_REQUEST_TEMPLATE.md`):
   - Перерахуй кожен merged PR з one-liner-ом, що він портнув.

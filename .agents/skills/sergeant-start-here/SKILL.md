@@ -24,10 +24,10 @@ lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); t
 Before loading any specialist skill, run:
 
 ```bash
-pnpm snapshot           # writes .kilocode/snapshot.md
+pnpm snapshot           # writes .agents/snapshot.md
 ```
 
-Read `.kilocode/snapshot.md` and react:
+Read `.agents/snapshot.md` and react:
 
 - Red CI on `main` → stop, investigate before opening a new PR.
 - Bundle budgets breached (>95%) or Lighthouse failing → load `sergeant-deploy-and-observability`.
