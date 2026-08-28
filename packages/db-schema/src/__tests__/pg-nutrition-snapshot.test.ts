@@ -127,6 +127,12 @@ describe("pg/nutritionPantries schema snapshot", () => {
     expect(columnMap["id"]!.columnType).toBe("PgText");
     // `id` більше НЕ самостійний PK — див. наступний кейс.
     expect(columnMap["id"]!.primary).toBe(false);
+    // …але лишається NOT NULL. Drizzle виводить not-null-ність із
+    // `.primaryKey()` на колонці, а композитний `primaryKey({ columns })`
+    // типів не звужує — без явного `.notNull()` `$inferSelect["id"]` став би
+    // `string | null`, хоча в базі колонка під композитним PK усе одно
+    // NOT NULL.
+    expect(columnMap["id"]!.notNull).toBe(true);
 
     expect(columnMap["user_id"]!.notNull).toBe(true);
     expect(columnMap["name"]!.notNull).toBe(true);
@@ -182,6 +188,9 @@ describe("pg/nutritionPantryItems schema snapshot", () => {
     );
 
     expect(columnMap["id"]!.columnType).toBe("PgText");
+    // NOT NULL попри композитний PK — див. пояснення в блоці комори вище.
+    expect(columnMap["id"]!.primary).toBe(false);
+    expect(columnMap["id"]!.notNull).toBe(true);
     expect(columnMap["pantry_id"]!.columnType).toBe("PgText");
     expect(columnMap["pantry_id"]!.notNull).toBe(true);
 

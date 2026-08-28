@@ -71,7 +71,15 @@ export const nutritionMeals = pgTable(
 export const nutritionPantries = pgTable(
   "nutrition_pantries",
   {
-    id: text().default(sql`gen_random_uuid()::text`),
+    // `.notNull()` тут ОБОВʼЯЗКОВИЙ і не дублює PK. Drizzle виводить
+    // not-null-ність із `.primaryKey()` НА КОЛОНЦІ; композитний
+    // `primaryKey({ columns })` нижче типів не звужує, тож без цього
+    // `$inferSelect["id"]` стає `string | null` — хоча в базі колонка під
+    // композитним PK усе одно NOT NULL. Тобто типи почали б брехати
+    // споживачам. Знайдено ревʼю-ботом на PR #915.
+    id: text()
+      .notNull()
+      .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     name: text().notNull().default(""),
     text: text().notNull().default(""),
@@ -108,7 +116,10 @@ export const nutritionPantries = pgTable(
 export const nutritionPantryItems = pgTable(
   "nutrition_pantry_items",
   {
-    id: text().default(sql`gen_random_uuid()::text`),
+    // `.notNull()` обовʼязковий — див. пояснення в `nutritionPantries`.
+    id: text()
+      .notNull()
+      .default(sql`gen_random_uuid()::text`),
     pantryId: text("pantry_id").notNull(),
     userId: text("user_id").notNull(),
     name: text().notNull().default(""),
