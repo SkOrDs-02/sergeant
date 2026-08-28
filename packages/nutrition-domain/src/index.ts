@@ -11,6 +11,9 @@
 // власного KVStore.
 export * from "./mealTypes.js";
 export * from "./pantryTextParser.js";
+// Зіставлення назв із чека рітейлера з позиціями комори — детермінована
+// частина мапінгу, що передує AI-маперу зі спеки Сільпо.
+export * from "./receiptItemName.js";
 export * from "./pantryConsume.js";
 // W1-PANTRY-APPEND стадія 2: типи журналу + чиста згортка залишку +
 // детермінований id backfill-чекпойнта. `apps/web` тепер ПИШЕ сюди
