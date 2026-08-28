@@ -126,6 +126,32 @@ export function createSqliteAdapter(
       return withClientLock(client, async () => {
         await client.exec("BEGIN");
         try {
+          // AI-DANGER: перевірка лежить УСЕРЕДИНІ транзакції, а не
+          // покладається на `appliedSet`, який раннер зняв ДО циклу.
+          //
+          // `withClientLock` серіалізує по обʼєкту клієнта, а не по фізичній
+          // базі, тож два різні хендли на ОДНУ БД мають два незалежні замки.
+          // Так буває у двох штатних станах: kvvfs-фолбек (старий iOS Safari)
+          // тримає всі партиції в одному фізичному файлі, а перемикання
+          // анон→юзер створює свіжий хендл поверх тієї самої бази. Обидва
+          // прогони знімають порожній `appliedSet`, перший комітить міграцію,
+          // другий уже поза транзакцією першого — тож `BEGIN` проходить, тіло
+          // (ідемпотентні `CREATE TABLE IF NOT EXISTS`) теж, а `INSERT`
+          // у леджер валиться `UNIQUE constraint failed: __migrations.name`.
+          // Бут модуля падав, і він тихо лишався на LS-фолбеку —
+          // `SERGEANT-API-V`, 4 користувачі, серпень 2026.
+          //
+          // Повторна перевірка робить операцію no-op, коли гонку виграв
+          // хтось інший: наслідок для схеми той самий (міграція застосована),
+          // тому це не приховування помилки, а розпізнавання benign-гонки.
+          const already = await client.all<{ name: string }>(
+            `SELECT name FROM ${ident} WHERE name = ? LIMIT 1`,
+            [name],
+          );
+          if (already.length > 0) {
+            await client.exec("COMMIT");
+            return;
+          }
           if (sql.trim().length > 0) {
             await client.exec(sql);
           }
