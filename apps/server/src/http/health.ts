@@ -8,6 +8,7 @@ import { elapsedMs } from "../lib/timing.js";
 import { appState } from "../lib/appState.js";
 import { getMemoryIngestWorkerStats } from "../modules/ai-memory/ingestQueue.js";
 import { getMonoEnrichmentWorkerStatus } from "../modules/mono/enrichmentWorker.js";
+import { getGdprCleanupWorkerStatus } from "../modules/gdpr/cleanupPoller.js";
 import {
   driftBlocksReadiness,
   getLastSchemaDriftReport,
@@ -187,7 +188,7 @@ export function createHealthzHandler(pool: DbPool): RequestHandler {
  *      processing/failed/dead_letter для mono-enrichment).
  *
  * Контракт відповіді: `{status, timestamp, workers:{aiMemoryIngest,
- * monoEnrichment}}`. Не включає `version`/`commit`/`sha`
+ * monoEnrichment, gdprCleanup}}`. Не включає `version`/`commit`/`sha`
  * (L7 audit `docs/security/hardening/L7-health-endpoint-info-leak.md` —
  * ті самі invariants, що й для `/healthz`).
  *
@@ -200,15 +201,20 @@ export function createHealthzHandler(pool: DbPool): RequestHandler {
  */
 export function createWorkersHealthHandler(pool: Pool): RequestHandler {
   return async (_req, res) => {
-    const [memoryIngest, monoEnrichment] = await Promise.all([
+    const [memoryIngest, monoEnrichment, gdprCleanup] = await Promise.all([
       getMemoryIngestWorkerStats(),
       getMonoEnrichmentWorkerStatus(pool),
+      getGdprCleanupWorkerStatus(pool),
     ]);
     // Worker вважається "responsive": його sample-функція не повернула
     // `error`. Disabled / fallback — все ще responsive.
     const memoryIngestResponsive = memoryIngest.error === undefined;
     const monoEnrichmentResponsive = monoEnrichment.error === undefined;
-    const allResponsive = memoryIngestResponsive && monoEnrichmentResponsive;
+    const gdprCleanupResponsive = gdprCleanup.error === undefined;
+    const allResponsive =
+      memoryIngestResponsive &&
+      monoEnrichmentResponsive &&
+      gdprCleanupResponsive;
 
     res.status(allResponsive ? 200 : 503).json({
       status: allResponsive ? "healthy" : "unhealthy",
@@ -216,6 +222,7 @@ export function createWorkersHealthHandler(pool: Pool): RequestHandler {
       workers: {
         aiMemoryIngest: memoryIngest,
         monoEnrichment,
+        gdprCleanup,
       },
     });
   };

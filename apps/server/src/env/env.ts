@@ -580,6 +580,12 @@ const envSchema = z.object({
 
   WEBHOOK_EVENTS_RETENTION_POLL_INTERVAL_MS: intFromEnv(60 * 60 * 1000),
 
+  // In-process полер `gdpr_cleanup_queue` (modules/gdpr/cleanupPoller.ts).
+  // Та сама філософія, що WEBHOOK_EVENTS_RETENTION_POLL_INTERVAL_MS:
+  // default — година, 0 → off. Default УВІМКНЕНО: без полера черга не
+  // дренується взагалі (Railway/n8n cron-и мертві — ADR-0074).
+  GDPR_CLEANUP_POLL_INTERVAL_MS: intFromEnv(60 * 60 * 1000),
+
   LOG_ARCHIVE_ENABLED: boolFromEnv(false),
 
   LOG_RETENTION_DAYS: intFromEnv(30),
