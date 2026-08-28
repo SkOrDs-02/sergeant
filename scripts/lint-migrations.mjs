@@ -389,6 +389,46 @@ export function listMigrationsOnRef(migrationsDir, baseRef) {
 }
 
 /**
+ * Парсер `git diff --name-status --diff-filter=R -M` для каталогу міграцій.
+ * Повертає `{ from, to }[]` лише для **up**-міграцій (`NNN_*.sql`, без
+ * `.down.sql`) — прод виконує тільки їх, тож лише їхнє ім'я живе в реєстрі
+ * `schema_migrations`.
+ *
+ * Формат рядка git: `R100 <TAB> old/path <TAB> new/path` (score після `R` варіюється).
+ */
+export function findRenamedMigrations(nameStatusOutput) {
+  const renames = [];
+  for (const line of nameStatusOutput.split("\n")) {
+    const parts = line.split("\t");
+    if (parts.length < 3) continue;
+    if (!/^R\d*$/.test(parts[0].trim())) continue;
+    const from = basename(parts[1]);
+    const to = basename(parts[2]);
+    if (!MIGRATION_FILE_RE.test(from) || DOWN_FILE_RE.test(from)) continue;
+    renames.push({ from, to });
+  }
+  return renames;
+}
+
+/**
+ * Перейменування up-міграцій між `origin/<baseRef>` і робочим деревом.
+ * Порожній масив, коли ref недосяжний: як і решта крос-гілкових перевірок,
+ * відсутній remote деградує лінтер до локальних перевірок, а не валить його.
+ */
+export function listRenamedMigrations(migrationsDir, baseRef) {
+  try {
+    const out = execSync(
+      `git diff --name-status --diff-filter=R -M origin/${baseRef} -- "${migrationsDir}"`,
+      { encoding: "utf8" },
+    ).trim();
+    if (!out) return [];
+    return findRenamedMigrations(out);
+  } catch {
+    return [];
+  }
+}
+
+/**
  * Given a list of files changed in the PR (from `git diff --diff-filter=A`),
  * keep only the migration files (basenames look like `NNN_*.sql`) and
  * exclude `.down.sql` companions — only the "up" file owns the number.
@@ -404,6 +444,7 @@ export function run({
   changedFiles = null,
   newFiles = null,
   mainFiles = null,
+  renamedFiles = null,
 } = {}) {
   const baseRef = process.env.BASE_REF || "main";
   const errors = [];
@@ -594,15 +635,58 @@ export function run({
           `   These migration numbers already exist on \`${baseRef}\`. Another PR`,
           `   merged a migration with the same number while your branch was open.`,
           ``,
-          `   Fix: rebase onto \`${baseRef}\` and renumber your migration to`,
+          `   Fix: rebase onto \`${baseRef}\` and renumber YOUR migration to`,
           `   max(${baseRef}) + 1, then re-push. The two-phase DROP rule still`,
           `   applies to the renumbered file.`,
+          ``,
+          `   Перенумеровують ЛИШЕ свій, ще не змерджений файл. Файл, який уже`,
+          `   є на \`${baseRef}\`, не чіпають: раннер трекає міграції за іменем,`,
+          `   тож перейменування виконає його SQL у проді вдруге (див. 2c).`,
           ``,
           `   Ref: docs/90-work/initiatives/0011-foundation-adoption-and-process-discipline.md`,
           `        (Phase 1 PR 1.2 — closes PR #1652 type-incident)`,
         ].join("\n"),
       );
     }
+  }
+
+  // 2c. Rename check: перейменування міграції, що ВЖЕ лежить на `main`.
+  //     Раннер (`packages/db-schema/src/migrate/runner.ts`) веде реєстр
+  //     застосованих міграцій ЗА ІМЕНЕМ ФАЙЛУ, тож нове ім'я для нього — нова
+  //     міграція, і той самий SQL виконується в проді вдруге. Це вже сталося
+  //     тричі (047→048 `tg_topic_archive`, 096↔097 finyk/fizruk) і лишило три
+  //     сироти в `schema_migrations`; пронесло тільки тому, що повторений SQL
+  //     випадково витримав другий прогін.
+  //
+  //     Ловить саме ту дію, яку радить фікс колізії номерів вище: поки файл не
+  //     змерджений — перенумеровуй вільно (git бачить його як `A`, не `R`);
+  //     коли вже на `main` — ім'я недоторкане.
+  if (renamedFiles === null) {
+    renamedFiles = listRenamedMigrations(migrationsDir, baseRef);
+  }
+  if (renamedFiles.length > 0 && process.env.ALLOW_MIGRATION_RENAME !== "1") {
+    const list = renamedFiles
+      .map((r) => `     • ${r.from} → ${r.to}`)
+      .join("\n");
+    errors.push(
+      [
+        `❌ Migration renamed although it already exists on origin/${baseRef}:`,
+        list,
+        ``,
+        `   Раннер трекає застосовані міграції за іменем файлу, тож під новим`,
+        `   іменем той самий SQL виконається в проді ВДРУГЕ, а старий запис`,
+        `   лишиться сиротою в \`schema_migrations\`.`,
+        ``,
+        `   Fix: поверни попереднє ім'я. Якщо перейменування розв'язувало`,
+        `   колізію номерів — колізію лишають як є, а обидва файли додають до`,
+        `   \`APPLIED_DUPLICATE_FILENAMES\` у цьому скрипті.`,
+        ``,
+        `   Якщо міграція точно ніколи не деплоїлась (рідко — \`main\``,
+        `   деплоїться автоматично): ALLOW_MIGRATION_RENAME=1.`,
+        ``,
+        `   Ref: docs/04-governance/governance/rules/04-sql-migrations-sequential-two-phase.md`,
+      ].join("\n"),
+    );
   }
 
   // 3. Check sequential numbering across ALL migration files
