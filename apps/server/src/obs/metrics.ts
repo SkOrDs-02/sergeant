@@ -527,6 +527,22 @@ export const runtimeKillSwitchActivationsTotal = new client.Counter({
   registers: [register],
 });
 
+// ───────────────────────── GDPR cleanup queue ─────────────────
+// `gdpr_cleanup_queue` (ADR-0016 § ADR-6.3) дренується in-process полером
+// `modules/gdpr/cleanupPoller.ts`, який семплить цей gauge на кожному tick-у:
+//   * `pending` — completed_at IS NULL (весь недороблений backlog);
+//   * `stuck`   — completed_at IS NULL AND attempts > 5 — audit-предикат
+//     ADR-0016. > 0 тривалий час = vendor-cleanup фейлить підряд або рядок
+//     exhausted (attempts=10, next_attempt_at='infinity') і чекає оператора.
+//     Алерт: `GdprCleanupQueueStuckRows` в ops/prometheus/rules/gdpr.yml.
+// Cardinality: 2 серії — безпечно.
+export const gdprCleanupQueueDepth = new client.Gauge({
+  name: "gdpr_cleanup_queue_depth",
+  help: "gdpr_cleanup_queue rows by state (pending = not completed; stuck = ADR-0016 audit predicate: not completed AND attempts > 5)",
+  labelNames: ["status"], // pending|stuck
+  registers: [register],
+});
+
 // ───────────────────────── Re-exports (barrel) ────────────────
 // Registry, DB-pool gauges, build-info, helpers, and the sync / BullMQ-job
 // metric families were extracted into `./metrics/*` for Hard Rule #18

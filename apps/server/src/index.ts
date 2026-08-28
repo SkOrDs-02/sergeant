@@ -77,6 +77,7 @@ import {
 import { LogArchivePoller } from "./modules/logRetention/archivePoller.js";
 import { WebhookEventsRetentionPoller } from "./modules/webhooks/retentionPoller.js";
 import { PlataRecurringPoller } from "./modules/billing/plataScheduler.js";
+import { GdprCleanupPoller } from "./modules/gdpr/cleanupPoller.js";
 import { SilpoSyncPoller } from "./modules/silpo/syncScheduler.js";
 import { Sentry } from "./sentry.js";
 
@@ -208,6 +209,17 @@ const webhookEventsRetentionPoller = new WebhookEventsRetentionPoller({
   intervalMs: env.WEBHOOK_EVENTS_RETENTION_POLL_INTERVAL_MS,
 });
 webhookEventsRetentionPoller.start();
+
+// GDPR cleanup queue drain — in-process годинний полер (Tier-A). Раніше
+// чергу мав смикати Railway/n8n cron через `/api/internal/gdpr/
+// cleanup-queue/process`, але Railway decommissioned (ADR-0074), а n8n у
+// проді на паузі — без цього полера черга не дренувалась ВЗАГАЛІ
+// (compliance-дефект, ADR-0016 § ADR-6.3). 0 → off. Idempotent start/stop.
+const gdprCleanupPoller = new GdprCleanupPoller({
+  pool,
+  intervalMs: env.GDPR_CLEANUP_POLL_INTERVAL_MS,
+});
+gdprCleanupPoller.start();
 
 // Log-retention archive cron — opt-in (`LOG_ARCHIVE_ENABLED=true`).
 // Streams `openclaw_invocations` / `tg_alert_acks` / `n8n_webhook_events`
@@ -415,6 +427,15 @@ async function shutdown(reason: string, exitCode: number): Promise<void> {
     } catch (err) {
       logger.warn({
         msg: "webhook_events_retention_poller_stop_error",
+        err: serializeError(err, { includeStack: false }),
+      });
+    }
+
+    try {
+      await gdprCleanupPoller.stop();
+    } catch (err) {
+      logger.warn({
+        msg: "gdpr_cleanup_poller_stop_error",
         err: serializeError(err, { includeStack: false }),
       });
     }
