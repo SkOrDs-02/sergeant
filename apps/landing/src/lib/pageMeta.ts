@@ -16,6 +16,12 @@ interface PageMeta {
   noindex?: boolean;
   /** Дата останньої змістовної зміни (YYYY-MM-DD) – іде в sitemap lastmod. */
   lastmod?: string;
+  /**
+   * Шлях per-route og-картинки в `public/` (напр. `/og/guides.png`).
+   * Використовується лише білдом (`postbuild-seo.mjs`); генерація –
+   * `scripts/generate-og.mjs`. Без поля сторінка ділить спільну og.png.
+   */
+  ogImage?: string;
   /** Структуровані дані сторінки (FAQPage, Article тощо). */
   jsonLd?: object;
 }
