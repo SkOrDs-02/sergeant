@@ -47,6 +47,11 @@ export function FromPantryRow({
             <button
               key={item.name}
               type="button"
+              // Якір для e2e: у цьому ж кроці аркуша живуть швидкі чіпи з
+              // тими самими назвами продуктів, і пошук за текстом ловить
+              // їх замість комори — а вони йдуть іншим шляхом збереження,
+              // без списання.
+              data-testid="from-pantry-chip"
               onClick={() => {
                 if (isActive) {
                   setFromPantryItem(null);
