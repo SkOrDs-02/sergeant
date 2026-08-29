@@ -16,8 +16,9 @@ vi.setConfig({ testTimeout: 60_000 });
  *
  * These complement `modules/digest/weekly-digest.test.ts` (unit, handler-level
  * via `createWeeklyDigestHandler({ provider })`) by asserting the full HTTP
- * wiring: setModule → rateLimit → requireAnthropicKey → requireAiQuota →
- * handler.
+ * wiring: setModule → rateLimit → requireSession → requireLlmUpstream →
+ * handler. (requireAiQuota знято 2026-08-30: дайджест поза добовою
+ * AI-квотою — рішення founder-а, див. коментар у route-файлі.)
  *
  * AI-CONTEXT: env single-source migration.  `requireAnthropicKey` reads
  * `env.ANTHROPIC_API_KEY` (validated Zod env, captured at first load of
