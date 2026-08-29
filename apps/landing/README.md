@@ -1,6 +1,6 @@
 # @sergeant/landing
 
-> **Last touched:** 2026-07-30 by @Skords-01. **Next review:** 2026-10-28.
+> **Last touched:** 2026-08-29 by @claude. **Next review:** 2026-12-01.
 > **Status:** Active
 
 Маркетинговий лендінг Sergeant. Одна сторінка, одна дія — перехід у
@@ -112,10 +112,22 @@ same-origin-проксі дешевший, ніж вписувати туди д
 [`src/tokens.drift.test.ts`](./src/tokens.drift.test.ts) — він падає, щойно
 значення розійдуться.
 
-## og-картинка
+## og-картинки
 
-`public/og.png` закомічена. Перегенерувати після зміни копірайту чи токенів:
+Дві родини, обидві закомічені:
+
+- `public/og.png` – брендовий макет головної (і дефолт для сторінок без
+  власної картинки);
+- `public/og/*.png` – per-route превʼю контентних сторінок. Джерело правди –
+  поле `ogImage` у `src/lib/routeMeta.json`: заголовок і опис картинки
+  беруться з мети маршруту, а `postbuild-seo.mjs` підставляє
+  `og:image`/`twitter:image` у per-route HTML на білді.
+
+Перегенерувати після зміни копірайту, мети маршруту чи токенів:
 
 ```bash
 node apps/landing/scripts/generate-og.mjs
 ```
+
+Новий контентний маршрут = запис у `routeMeta.json` з `ogImage` + прогін
+генератора в тому ж PR.
