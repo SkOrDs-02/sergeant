@@ -65,12 +65,12 @@ export default function AboutPage() {
 
         <section className="mx-auto w-full max-w-6xl px-5 pb-16 sm:px-8">
           <p className="max-w-2xl leading-relaxed text-muted">
-            Правила, за які продукт відповідає, зібрані в одному місці: у{" "}
+            Обіцянки, за які продукт відповідає, зібрані в одному місці: у{" "}
             <a
-              href="/#statute"
+              href="/#promises"
               className="font-semibold text-foreground underline decoration-cardline-strong underline-offset-4 transition hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
             >
-              статуті на головній
+              розділі «Що обіцяю» на головній
             </a>
             . Що саме Sergeant бачить і де лежать твої дані – на сторінці{" "}
             <a

@@ -4,7 +4,7 @@ import Wordmark from "./Wordmark";
 const ANCHOR_ITEMS = [
   { hash: "modules", label: "Модулі" },
   { hash: "connections", label: "Звʼязки" },
-  { hash: "statute", label: "Статут" },
+  { hash: "promises", label: "Обіцянки" },
   { hash: "faq", label: "Питання" },
 ] as const;
 
