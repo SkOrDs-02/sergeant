@@ -906,6 +906,34 @@ describe("weekly-digest handler · memory ingest hook", () => {
     expect(payload.metadata.usedFallback).toBe(false);
   });
 
+  it("W3: weekKey стає sourceRef, generatedAt — dedupeSalt (остання генерація тижня перемагає)", async () => {
+    const { handler } = buildHandler();
+    const req = asReq({
+      anthropicKey: "k",
+      user: { id: "user_42" },
+      body: {
+        weekRange: "25 серп. – 31 серп.",
+        weekKey: "2026-08-25",
+        finyk: { totalSpent: 1, totalIncome: 1, txCount: 1 },
+      },
+    });
+    const res = makeRes();
+    await handler(req, res);
+
+    expect(enqueueMemoryIngest).toHaveBeenCalledTimes(1);
+    const payload = enqueueMemoryIngest.mock.calls[0]![0];
+    // Канонічний ключ тижня, а не локалізований display-рядок:
+    expect(payload.sourceRef).toBe("2026-08-25");
+    // Кожна генерація — окремий BullMQ-job: без солі jobId-дедуп мовчки
+    // відкидав повторну генерацію, і в памʼяті застигав перший знімок тижня.
+    expect(payload.dedupeSalt).toBe(
+      (res.body as { generatedAt: string }).generatedAt,
+    );
+    // Людський заголовок контенту й metadata лишаються на weekRange.
+    expect(payload.content).toContain("25 серп. – 31 серп.");
+    expect(payload.metadata.weekRange).toBe("25 серп. – 31 серп.");
+  });
+
   it("PR-25: на fallback-template memory теж enqueue-иться з usedFallback=true", async () => {
     const { handler } = buildHandler(
       { ok: false, error: "boom", code: "rate_limited", status: 429 },
