@@ -12,7 +12,7 @@ import { Tooltip } from "@shared/components/ui/Tooltip";
 import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
 import { NAME_MAX_LEN, NOTE_MAX_LEN } from "@shared/lib/text/limits";
-import { formatReceiptQty } from "@shared/lib/format/receiptQty";
+import { formatPantryQty } from "../lib/formatPantryQty";
 import { PantryListGuide, PantryParsePreview } from "./PantryParsePanel";
 import type { PantryParsePreview as PantryParsePreviewData } from "../hooks/useNutritionPantries";
 import { groupItemsByCategory } from "../lib/foodCategories";
@@ -73,7 +73,7 @@ function VariantList({ sources }: { sources: readonly PantryItemSource[] }) {
             {s.name}
           </span>
           <span className="shrink-0 text-style-caption text-subtle tabular-nums">
-            {formatReceiptQty(s.qty, s.unit)}
+            {formatPantryQty(s.qty, s.unit)}
           </span>
         </li>
       ))}
@@ -90,7 +90,7 @@ function ItemRow({
 }: ItemRowProps) {
   // Сирий `unit` із чека Сільпо буває фасуванням («0,25л»), не одиницею
   // виміру, тож `${qty} ${unit}` давало «2 0,25л».
-  const qtyLabel = formatReceiptQty(item?.qty, item?.unit);
+  const qtyLabel = formatPantryQty(item?.qty, item?.unit);
   const sources = Array.isArray(item?.sources) ? item.sources : [];
   // Контрол розгортання — лише від ДВОХ покупок: на одній розкривати
   // нічого, і зайва стрілка читалась би як обіцянка деталей, яких немає.

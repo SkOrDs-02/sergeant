@@ -14,7 +14,7 @@
 import { Sheet } from "@shared/components/ui/Sheet";
 import { Button } from "@shared/components/ui/Button";
 import { messages } from "@shared/i18n/uk";
-import { formatReceiptQty } from "@shared/lib/format/receiptQty";
+import { formatPantryQty } from "../lib/formatPantryQty";
 import type { PantryItemSource } from "@sergeant/nutrition-domain";
 
 const COPY = messages.nutrition.pantrySources;
@@ -58,7 +58,7 @@ export function PantryVariantChoiceSheet({
                 </span>
               </span>
               <span className="shrink-0 tabular-nums text-style-caption text-subtle">
-                {formatReceiptQty(s.qty, s.unit)}
+                {formatPantryQty(s.qty, s.unit)}
               </span>
             </button>
           </li>

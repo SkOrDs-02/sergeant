@@ -101,6 +101,62 @@ export function massToVolumeIfKnown(
   return { dimension: "volume", base: Math.round(base.base / density) };
 }
 
+/**
+ * Найзручніша «побутова» одиниця для виміру: та сама шкала, що й
+ * `LOW_STOCK_THRESHOLD_BY_UNIT` і що вже показує список покупок.
+ *
+ * Поріг 1000 — саме він робить читабельним обидва кінці шкали. Місячна
+ * закупівля молока в базовій одиниці це «20 000 мл», і таке число читається
+ * як помилка; одна ж пачка в літрах — «0,874 л» — читається гірше за «874
+ * мл». Одне правило на обидва рівні картки продукту дає потрібне саме
+ * собою: сума виїжджає в літри, окремі покупки лишаються в мілілітрах.
+ *
+ * `шт` більшої одиниці не має і лишається собою.
+ */
+export function fromBaseNatural(
+  base: number,
+  dimension: UnitDimension,
+): { value: number; unit: string } {
+  if (dimension === "mass") {
+    return base >= 1000
+      ? { value: base / 1000, unit: "кг" }
+      : { value: base, unit: "г" };
+  }
+  if (dimension === "volume") {
+    return base >= 1000
+      ? { value: base / 1000, unit: "л" }
+      : { value: base, unit: "мл" };
+  }
+  return { value: base, unit: "шт" };
+}
+
+/**
+ * Кількість позиції комори у побутовій одиниці, або `null` коли одиниця
+ * не є одиницею ВИМІРУ.
+ *
+ * Друге важливе: `null` тут — не помилка, а нормальний стан. У полі `unit`
+ * позиції, набитої з чека без варіантів, лежить ФАСУВАННЯ («0,25л»), а не
+ * одиниця виміру; зводити його до побутової шкали не можна, бо це не та
+ * сама величина. Викликач у такому разі показує рядок як раніше.
+ *
+ * Вимір НЕ змінюється: позиція в грамах лишається в грамах або кілограмах.
+ * Конверсія маси рідини в об'єм належить моменту ЗАПИСУ
+ * (`massToVolumeIfKnown`), не показу — інакше людина купила б «900 г», а
+ * комора малювала б «874 мл» на тому самому числі.
+ */
+export function pantryQtyNatural(
+  qty: number | null | undefined,
+  unit: string | null | undefined,
+): { value: number; unit: string } | null {
+  const q = Number(qty);
+  if (qty == null || !Number.isFinite(q)) return null;
+  const normalized = unit ? normalizeUnit(unit) : null;
+  if (!normalized) return null;
+  const based = toBase(q, normalized);
+  if (!based) return null;
+  return fromBaseNatural(based.base, based.dimension);
+}
+
 /** Фасування завжди починається з цифри — «800г», «0,25л», «1.5 л». */
 const PACKAGING_RE = /^\d/;
 

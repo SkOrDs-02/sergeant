@@ -33,6 +33,7 @@ import { isPantryItemLowStock } from "./pantryLowStock.js";
 // продукту комори. Дублювати їх заборонено: розʼїхавшись, вони дадуть
 // різні числа на тих самих даних.
 import {
+  fromBaseNatural,
   fromBaseToUnit,
   toBase,
   unitDimension,
@@ -84,24 +85,6 @@ export const LOW_STOCK_CATEGORY_NAME = "Закінчується вдома";
 
 /** Точний текст `calcNote` для довлитих low-stock позицій — реюзиться UI для бейджа. */
 export const LOW_STOCK_CALC_NOTE = "закінчується вдома";
-
-/** Найзручніша "побутова" одиниця для виміру — та сама шкала, що й `LOW_STOCK_THRESHOLD_BY_UNIT`. */
-function fromBaseNatural(
-  base: number,
-  dimension: UnitDimension,
-): { value: number; unit: string } {
-  if (dimension === "mass") {
-    return base >= 1000
-      ? { value: base / 1000, unit: "кг" }
-      : { value: base, unit: "г" };
-  }
-  if (dimension === "volume") {
-    return base >= 1000
-      ? { value: base / 1000, unit: "л" }
-      : { value: base, unit: "мл" };
-  }
-  return { value: base, unit: "шт" };
-}
 
 /** Гасить float-похибку (0.1+0.2=0.30000000000000004) перед округленням до display-точності. */
 function roundTo(value: number, decimals: number): number {
