@@ -18,6 +18,7 @@ exports[`registerRoutes > mounts the stable set of /api/* endpoints (snapshot) 1
   "GET /api/coach/memory",
   "GET /api/email/unsubscribe",
   "GET /api/finyk/import/batches/:id",
+  "GET /api/finyk/import/recent",
   "GET /api/finyk/receipts/:id",
   "GET /api/food-search",
   "GET /api/internal/ai-usage",
