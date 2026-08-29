@@ -692,9 +692,20 @@ export function assertStartupEnv(): void {
     );
   }
 
-  if (!env.ANTHROPIC_API_KEY) {
+  // Дефолтна конфігурація — gateway-only (усі LLM_*_PROVIDER=openrouter,
+  // CHAT/VISION_VIA_OPENROUTER=true), тож відсутній Anthropic-ключ сам по
+  // собі нічого не ламає — він лише вимикає FallbackProvider і прямий
+  // транспорт. До 2026-08-29 warning тут погрожував 500-ками на chat/coach/
+  // nutrition — неправда з часів до-OpenRouter, яка вела ops додавати ключ,
+  // що ніде не використовується. Жорстке попередження лишається рівно для
+  // конфігурації без ЖОДНОГО upstream-ключа.
+  if (!env.ANTHROPIC_API_KEY && !env.OPENROUTER_API_KEY) {
     warnings.push(
-      "ANTHROPIC_API_KEY is not set — AI chat/coach/nutrition endpoints will return 500.",
+      "Neither OPENROUTER_API_KEY nor ANTHROPIC_API_KEY is set — every AI endpoint will 503 (or serve StubProvider text).",
+    );
+  } else if (!env.ANTHROPIC_API_KEY) {
+    warnings.push(
+      "ANTHROPIC_API_KEY is not set — direct-Anthropic fallback is disabled; AI runs gateway-only via OpenRouter.",
     );
   }
 
