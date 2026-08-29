@@ -5,7 +5,7 @@ import AboutPage from "./pages/AboutPage";
 import DataPage from "./pages/DataPage";
 import GuidesPage from "./pages/GuidesPage";
 import GuideMonobankPage from "./pages/GuideMonobankPage";
-import GuideKbzhuPage from "./pages/GuideKbzhuPage";
+import GuideKbzhvPage from "./pages/GuideKbzhvPage";
 import GuideChekyPage from "./pages/GuideChekyPage";
 import GuideFotoKaloriiPage from "./pages/GuideFotoKaloriiPage";
 import GuideBankBezpekaPage from "./pages/GuideBankBezpekaPage";
@@ -27,7 +27,7 @@ export const ROUTES: Record<string, ComponentType> = {
   "/data": DataPage,
   "/guides": GuidesPage,
   "/guides/monobank": GuideMonobankPage,
-  "/guides/kbzhu": GuideKbzhuPage,
+  "/guides/kbzhv": GuideKbzhvPage,
   "/guides/cheky": GuideChekyPage,
   "/guides/foto-kalorii": GuideFotoKaloriiPage,
   "/guides/bank-bezpeka": GuideBankBezpekaPage,

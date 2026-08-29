@@ -13,7 +13,7 @@ const ROUTES = [
   ["/about", "about"],
   ["/guides", "guides"],
   ["/guides/monobank", "guide-monobank"],
-  ["/guides/kbzhu", "guide-kbzhu"],
+  ["/guides/kbzhv", "guide-kbzhv"],
   ["/guides/cheky", "guide-cheky"],
   ["/guides/foto-kalorii", "guide-foto-kalorii"],
   ["/guides/bank-bezpeka", "guide-bank-bezpeka"],

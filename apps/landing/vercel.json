@@ -5,6 +5,13 @@
   "ignoreCommand": "npx --yes turbo-ignore @sergeant/landing --fallback=HEAD^1",
   "outputDirectory": "dist",
   "framework": "vite",
+  "redirects": [
+    {
+      "source": "/guides/kbzhu",
+      "destination": "/guides/kbzhv",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     {
       "source": "/(.*)",
