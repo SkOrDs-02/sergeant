@@ -180,9 +180,9 @@ const PANTRY_UPSERT_SPEC: TableSpec = {
 const PANTRY_ITEM_UPSERT_SPEC: TableSpec = {
   table: "nutrition_pantry_items",
   insertClause: `INSERT INTO nutrition_pantry_items
-         (id, pantry_id, user_id, name, qty, unit, notes, sort_order,
+         (id, pantry_id, user_id, name, qty, unit, notes, sources, sort_order,
           created_at, updated_at, deleted_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
   conflictTarget: ["id"],
   updateColumns: [
     { column: "pantry_id" },
@@ -190,6 +190,7 @@ const PANTRY_ITEM_UPSERT_SPEC: TableSpec = {
     { column: "qty" },
     { column: "unit" },
     { column: "notes" },
+    { column: "sources" },
     { column: "sort_order" },
     { column: "updated_at" },
     { column: "deleted_at", value: "NULL" },
@@ -417,6 +418,7 @@ async function upsertPantry(
       toRealOrNull(it!.qty!),
       it!.unit! ?? null,
       it!.notes! ?? null,
+      it!.sources ?? null,
       i,
       clientTs,
       clientTs,
@@ -433,6 +435,7 @@ async function upsertPantry(
         qty: toRealOrNull(it!.qty!),
         unit: it!.unit! ?? null,
         notes: it!.notes! ?? null,
+        sources: it!.sources ?? null,
         sort_order: i,
       },
       clientTs,

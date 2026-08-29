@@ -29,6 +29,15 @@ import {
   normalizeUnit,
 } from "./pantryTextParser.js";
 import { isPantryItemLowStock } from "./pantryLowStock.js";
+// Таблиці одиниць живуть у `units.ts` — та сама шкала, що й у картці
+// продукту комори. Дублювати їх заборонено: розʼїхавшись, вони дадуть
+// різні числа на тих самих даних.
+import {
+  fromBaseToUnit,
+  toBase,
+  unitDimension,
+  type UnitDimension,
+} from "./units.js";
 import type { ShoppingItem, ShoppingList } from "./shoppingList.js";
 
 /** Мінімальна форма позиції комори, потрібна для розрахунку (сумісна з `PantryItem`). */
@@ -75,46 +84,6 @@ export const LOW_STOCK_CATEGORY_NAME = "Закінчується вдома";
 
 /** Точний текст `calcNote` для довлитих low-stock позицій — реюзиться UI для бейджа. */
 export const LOW_STOCK_CALC_NOTE = "закінчується вдома";
-
-type UnitDimension = "mass" | "volume" | "count";
-
-const UNIT_DIMENSION: Readonly<Record<string, UnitDimension>> = {
-  г: "mass",
-  кг: "mass",
-  мл: "volume",
-  л: "volume",
-  шт: "count",
-};
-
-/** Множник переведення одиниці у базову (`г` для маси, `мл` для обʼєму, `шт` для лічби). */
-const UNIT_TO_BASE_FACTOR: Readonly<Record<string, number>> = {
-  г: 1,
-  кг: 1000,
-  мл: 1,
-  л: 1000,
-  шт: 1,
-};
-
-function unitDimension(unit: string): UnitDimension | null {
-  return UNIT_DIMENSION[unit] ?? null;
-}
-
-/** Кількість у базовій одиниці свого виміру, або `null` для нерозпізнаної одиниці. */
-function toBase(
-  value: number,
-  unit: string,
-): { dimension: UnitDimension; base: number } | null {
-  const dimension = unitDimension(unit);
-  if (dimension == null) return null;
-  const factor = UNIT_TO_BASE_FACTOR[unit];
-  if (factor == null) return null;
-  return { dimension, base: value * factor };
-}
-
-function fromBaseToUnit(base: number, unit: string): number {
-  const factor = UNIT_TO_BASE_FACTOR[unit] ?? 1;
-  return base / factor;
-}
 
 /** Найзручніша "побутова" одиниця для виміру — та сама шкала, що й `LOW_STOCK_THRESHOLD_BY_UNIT`. */
 function fromBaseNatural(

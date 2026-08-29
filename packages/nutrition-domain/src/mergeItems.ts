@@ -4,7 +4,13 @@ import {
   matchFoodName,
   normalizeUnit,
   type PantryItem,
+  type PantryItemSource,
 } from "./pantryTextParser.js";
+import {
+  mergeSources,
+  sourcesTotal,
+  syntheticSource,
+} from "./pantrySources.js";
 
 interface BaseUnit {
   base: "г" | "мл" | "шт";
@@ -76,6 +82,38 @@ function roundNice(n: number): number {
   return Math.round(x);
 }
 
+/**
+ * Позиція з варіантами тримає `qty`/`unit` у БАЗОВІЙ одиниці — інакше
+ * інваріант «сума варіантів = кількість позиції» довелось би доводити через
+ * конверсію на кожному читанні. Зручна одиниця (`кг`/`л`) лишається тільки
+ * позиціям без варіантів, набитим руками.
+ */
+function withSources(
+  base: PantryItem,
+  sources: readonly PantryItemSource[],
+): PantryItem {
+  const first = sources[0];
+  if (!first) return { ...base, sources: null };
+  return {
+    ...base,
+    qty: sourcesTotal(sources),
+    unit: first.unit,
+    sources: [...sources],
+  };
+}
+
+/**
+ * Варіанти наявної позиції: власні, або синтетичний із її залишку — щоб
+ * перше ж доливання з чека не «загубило» те, що вже лежало в коморі.
+ */
+function existingSourcesOf(item: PantryItem): readonly PantryItemSource[] {
+  if (Array.isArray(item.sources) && item.sources.length > 0) {
+    return item.sources;
+  }
+  const synthetic = syntheticSource(item);
+  return synthetic ? [synthetic] : [];
+}
+
 export function mergeItems(
   oldItems: readonly PantryItem[] | unknown,
   newItems: readonly PantryItem[] | unknown,
@@ -97,6 +135,11 @@ export function mergeItems(
         ? Number(it.qty)
         : null;
     const rawUnit = it?.unit ? normalizeUnit(it.unit) : null;
+    const incomingSources: readonly PantryItemSource[] = Array.isArray(
+      it?.sources,
+    )
+      ? it.sources
+      : [];
 
     // Гола назва без кількості/одиниці трактується як "1 шт" — це дозволяє
     // сумувати "огірок" з існуючим "огірки 4 шт" так само, як "огірок 1".
@@ -133,6 +176,33 @@ export function mergeItems(
           const ux = normalizeUnit(cur.unit);
           const baseX = toBaseUnit(qx, ux);
           if (baseX) {
+            const name = pickDisplayName(cur.name, display);
+            const hasSources =
+              incomingSources.length > 0 ||
+              (Array.isArray(cur.sources) && cur.sources.length > 0);
+            if (hasSources) {
+              // Ручне доливання до позиції-картки («молоко 200 мл» поверх
+              // двох покупок з чека) варіантів не несе. Без синтетичного
+              // запису його кількість зникла б: qty позиції перераховується
+              // з варіантів, і те, чого в них немає, просто не існує.
+              const incoming =
+                incomingSources.length > 0
+                  ? incomingSources
+                  : ([
+                      syntheticSource({
+                        name: display,
+                        qty: incomingQty,
+                        unit: incomingUnit,
+                      }),
+                    ].filter(Boolean) as PantryItemSource[]);
+              // Картка продукту: числа лишаються в базовій одиниці, а
+              // «Яготинське 2.6%» не зникає разом із брендом.
+              merged[idx] = withSources(
+                { ...cur, name },
+                mergeSources(existingSourcesOf(cur), incoming, name),
+              );
+              continue;
+            }
             const totalBase: BaseUnit = {
               base: baseX.base,
               value: baseX.value + baseIncoming.value,
@@ -140,7 +210,7 @@ export function mergeItems(
             const out = fromBaseUnit(totalBase, ux);
             merged[idx] = {
               ...cur,
-              name: pickDisplayName(cur.name, display),
+              name,
               qty: roundNice(out.qty),
               unit: out.unit,
             };
@@ -154,6 +224,30 @@ export function mergeItems(
     const sameNameIdx = merged.findIndex(
       (x) => canonicalFoodKey(x?.name) === key,
     );
+
+    // Маса і обʼєм — РІЗНІ позиції, навіть за однакової назви: щільність
+    // невідома, тож «Молоко 900 г» і «Молоко 1 л» не мають спільного числа.
+    // Раніше друга з них мовчки зникала — dedup-гілка нижче лишала стару
+    // кількість і викидала нову покупку взагалі.
+    if (sameNameIdx >= 0 && incomingQty != null && incomingUnit) {
+      const baseIncoming = toBaseUnit(incomingQty, incomingUnit);
+      const cur = merged[sameNameIdx]!;
+      const baseCur = toBaseUnit(cur.qty, normalizeUnit(cur.unit));
+      if (baseIncoming && baseCur && baseIncoming.base !== baseCur.base) {
+        const fresh: PantryItem = {
+          name: display,
+          qty: incomingQty,
+          unit: incomingUnit,
+          notes: it?.notes ?? null,
+        };
+        merged.push(
+          incomingSources.length > 0
+            ? withSources(fresh, incomingSources)
+            : fresh,
+        );
+        continue;
+      }
+    }
 
     if (sameNameIdx >= 0) {
       // Аналогічно вище: `findIndex` повернув валідний індекс,
@@ -186,12 +280,15 @@ export function mergeItems(
       continue;
     }
 
-    merged.push({
+    const fresh: PantryItem = {
       name: display,
       qty: incomingQty,
       unit: incomingUnit,
       notes: it?.notes ?? null,
-    });
+    };
+    merged.push(
+      incomingSources.length > 0 ? withSources(fresh, incomingSources) : fresh,
+    );
   }
 
   return merged;

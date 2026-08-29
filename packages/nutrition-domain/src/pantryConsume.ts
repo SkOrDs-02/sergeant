@@ -13,7 +13,12 @@
  * нутриціологічну точність. Розширюй записи лише на запит продукту щодо
  * точнішого обліку залишків, а не «про всяк випадок».
  */
-import { canonicalFoodKey, normalizeUnit } from "./pantryTextParser.js";
+import {
+  canonicalFoodKey,
+  normalizeUnit,
+  type PantryItem,
+} from "./pantryTextParser.js";
+import { consumeFromSources, sourcesTotal } from "./pantrySources.js";
 
 /** Густина за замовчуванням (вода-подібна), коли продукту немає в таблиці. г/мл. */
 export const DEFAULT_DENSITY_G_PER_ML = 1.0;
@@ -100,4 +105,48 @@ export function gramsToUnitQty(
     default:
       return null;
   }
+}
+
+/**
+ * Списання з позиції комори — разом із варіантами.
+ *
+ * Повертає `null`, коли списати не можна (немає кількості, або одиниця без
+ * грубого масового відображення) — викликач лишає позицію без змін.
+ * Повертає `item: null`, коли позиція вичерпалась і має зникнути з комори.
+ *
+ * `variantName` — назва варіанта, який обрала людина. Без нього списується
+ * найстаріший: куплене раніше псується першим. Інваріант суми тримається
+ * тим, що кількість позиції перераховується з варіантів, а не окремо.
+ */
+export function applyConsumeToPantryItem(
+  item: PantryItem,
+  gramsConsumed: number,
+  variantName?: string | null,
+): { item: PantryItem | null; deducted: number; unit: string | null } | null {
+  const qty = Number(item.qty);
+  if (!Number.isFinite(qty) || qty <= 0) return null;
+  const deduct = gramsToUnitQty(gramsConsumed, item.unit, item.name);
+  if (deduct == null) return null;
+
+  const sources = Array.isArray(item.sources) ? item.sources : null;
+  if (sources && sources.length > 0) {
+    const next = consumeFromSources(sources, deduct, variantName);
+    const total = sourcesTotal(next);
+    if (next.length === 0 || total <= 0) {
+      return { item: null, deducted: deduct, unit: item.unit };
+    }
+    return {
+      item: { ...item, qty: total, sources: next },
+      deducted: deduct,
+      unit: item.unit,
+    };
+  }
+
+  const remaining = qty - deduct;
+  if (remaining <= 0) return { item: null, deducted: deduct, unit: item.unit };
+  return {
+    item: { ...item, qty: Math.round(remaining * 10) / 10 },
+    deducted: deduct,
+    unit: item.unit,
+  };
 }

@@ -39,12 +39,55 @@ export interface SilpoPantryReplenishSheetProps {
 
 const COPY = messages.nutrition.pantryReplenish;
 
+/**
+ * Рядок згортання: під якою назвою позиція ляже в комору і як це скасувати.
+ *
+ * Показується ЛИШЕ коли згортання щось змінює — інакше він був би шумом на
+ * кожному рядку чека. Кнопка живе поза `<label>` чекбокса: вкладений
+ * інтерактив перехоплював би тап, призначений перемиканню самої позиції.
+ */
+function CollapseHint({
+  row,
+  onToggleKeepFull,
+}: {
+  row: SilpoReplenishRow;
+  onToggleKeepFull: (itemId: number) => void;
+}) {
+  if (!row.genericName) return null;
+  return (
+    <div className="flex items-center gap-2 pl-[38px] pr-1 pb-1">
+      <span className="min-w-0 text-style-caption text-subtle truncate">
+        {row.keepFull ? (
+          COPY.keepFullActive
+        ) : (
+          <>
+            {COPY.collapsedTo}{" "}
+            <span className="text-nutrition-strong dark:text-nutrition">
+              {row.genericName}
+            </span>
+          </>
+        )}
+      </span>
+      <button
+        type="button"
+        onClick={() => onToggleKeepFull(row.item.id)}
+        aria-pressed={row.keepFull}
+        className="shrink-0 text-style-caption text-subtle underline underline-offset-2 touch-target px-2 rounded-xl hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutrition/60 transition-colors"
+      >
+        {row.keepFull ? COPY.collapseCta : COPY.keepFullCta}
+      </button>
+    </div>
+  );
+}
+
 function ReceiptItemRow({
   row,
   onToggle,
+  onToggleKeepFull,
 }: {
   row: SilpoReplenishRow;
   onToggle: (itemId: number) => void;
+  onToggleKeepFull: (itemId: number) => void;
 }) {
   const qtyLabel = formatReceiptQty(row.item.qty, row.item.unit);
   return (
@@ -84,6 +127,7 @@ function ReceiptItemRow({
           </span>
         )}
       </label>
+      <CollapseHint row={row} onToggleKeepFull={onToggleKeepFull} />
     </li>
   );
 }
@@ -104,6 +148,7 @@ export function SilpoPantryReplenishSheet({
     rows,
     checkedCount,
     toggleItem,
+    toggleKeepFull,
     confirm,
     reset,
   } = useSilpoPantryReplenish({ enabled: open, pantryItems, upsertItem });
@@ -227,6 +272,7 @@ export function SilpoPantryReplenishSheet({
                     key={row.item.id}
                     row={row}
                     onToggle={toggleItem}
+                    onToggleKeepFull={toggleKeepFull}
                   />
                 ))}
               </ul>

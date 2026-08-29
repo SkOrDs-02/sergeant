@@ -274,6 +274,13 @@ function extractPantrySnapshots(
       qty: typeof it.qty === "number" ? it.qty : null,
       unit: typeof it.unit === "string" ? it.unit : null,
       notes: typeof it.notes === "string" ? it.notes : null,
+      // Дзеркало web: варіанти покупок їдуть одним JSON-полем разом зі
+      // своєю позицією (міграція 130). Без цього рядка синк із телефону
+      // затирав би картку продукту, яку щойно записав веб.
+      sources:
+        Array.isArray(it.sources) && it.sources.length > 0
+          ? JSON.stringify(it.sources)
+          : null,
     })),
   }));
 }

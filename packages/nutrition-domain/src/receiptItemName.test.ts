@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   findPantryMatch,
+  genericFoodName,
   normalizeReceiptItemName,
 } from "./receiptItemName.js";
 
@@ -60,5 +61,72 @@ describe("findPantryMatch", () => {
 
   it("точний збіг лишається точним", () => {
     expect(findPantryMatch("яйця", pantry)).toEqual({ name: "Яйця" });
+  });
+});
+
+describe("genericFoodName", () => {
+  // Таблиця з § Рішення 3 спеки `pantry-generic-names.md`.
+  it.each([
+    ["Молоко Яготинське 2.6% 900г", "Молоко"],
+    ["Насіння Roni гарбуза", "Насіння гарбуза"],
+    ["Паста арахісова Лавка традицій Aumi кранч", "Паста арахісова кранч"],
+    ["Напій енергетичний Red Bull", "Напій енергетичний"],
+    ["Котлети курячі з кускусом", "Котлети курячі з кускусом"],
+  ])("'%s' → '%s'", (raw, expected) => {
+    expect(genericFoodName(raw)).toBe(expected);
+  });
+
+  it("не втрачає сорт у CAPS-назві (правило великої літери вимкнене)", () => {
+    // Без захисту від CAPS від назви лишилось би «СИР».
+    expect(genericFoodName("СИР КИСЛОМОЛОЧНИЙ 9%")).toBe("СИР КИСЛОМОЛОЧНИЙ");
+  });
+
+  it("у CAPS-назві латиниця все одно вважається брендом", () => {
+    expect(genericFoodName("СИР ADYGEA КИСЛОМОЛОЧНИЙ")).toBe(
+      "СИР КИСЛОМОЛОЧНИЙ",
+    );
+  });
+
+  it.each([
+    ["Сир Адигейський", "Сир Адигейський"],
+    ["Ковбаса Краківська", "Ковбаса Краківська"],
+    ["Соус BBQ Heinz", "Соус BBQ"],
+    ["Кола Zero", "Кола Zero"],
+    ["Яблука Голден", "Яблука Голден"],
+  ])("стоп-лист зберігає сорт: '%s' → '%s'", (raw, expected) => {
+    expect(genericFoodName(raw)).toBe(expected);
+  });
+
+  it("перший токен не викидається ніколи", () => {
+    expect(genericFoodName("Nutella 350г")).toBe("Nutella");
+    expect(genericFoodName("Яготинське 900г")).toBe("Яготинське");
+  });
+
+  it("фолбек: назва з самого шуму лишається повною", () => {
+    expect(genericFoodName("900г")).toBe("900г");
+    expect(genericFoodName("")).toBe("");
+    // Після викидання бренду лишився б один символ — беремо повну назву.
+    expect(genericFoodName("Я Roni")).toBe("Я Roni");
+  });
+});
+
+describe("buildPantryIndex + findPantryMatch зі варіантами", () => {
+  it("знаходить позицію за назвою її варіанта", () => {
+    const pantry = [
+      {
+        name: "Молоко",
+        sources: [
+          {
+            name: "Молоко Яготинське 2.6% 900г",
+            qty: 900,
+            unit: "мл",
+            addedAt: "2026-08-21",
+          },
+        ],
+      },
+    ];
+    expect(findPantryMatch("Молоко Яготинське 2.6% 900г", pantry)?.name).toBe(
+      "Молоко",
+    );
   });
 });

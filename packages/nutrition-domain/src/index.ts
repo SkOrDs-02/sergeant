@@ -15,6 +15,11 @@ export * from "./pantryTextParser.js";
 // частина мапінгу, що передує AI-маперу зі спеки Сільпо.
 export * from "./receiptItemName.js";
 export * from "./pantryConsume.js";
+// Одиниці виміру комори (вимір, база, фасування з чека) — одна таблиця на
+// комору і список покупок; друга копія розʼїхалась би з першою.
+export * from "./units.js";
+// Картка продукту: варіанти позиції комори та інваріант суми.
+export * from "./pantrySources.js";
 // W1-PANTRY-APPEND стадія 2: типи журналу + чиста згортка залишку +
 // детермінований id backfill-чекпойнта. `apps/web` тепер ПИШЕ сюди
 // (readers — стадія 3+) — див. AI-CONTEXT у pantryLedger.ts.

@@ -18,6 +18,7 @@ import type { PantryParsePreview as PantryParsePreviewData } from "../hooks/useN
 import { groupItemsByCategory } from "../lib/foodCategories";
 import type { FoodCategory } from "../lib/foodCategories";
 import type { PantryItem } from "../lib/pantryTextParser";
+import type { PantryItemSource } from "@sergeant/nutrition-domain";
 import { isPantryItemLowStock } from "../lib/pantryLowStock";
 
 /**
@@ -55,6 +56,31 @@ interface ItemRowProps {
   busy: boolean;
 }
 
+/**
+ * Фактичні покупки, що злились у позицію. Кількості вже в базовій одиниці
+ * (інваріант картки продукту), тож `formatReceiptQty` тут просто форматує
+ * число з одиницею, а не розбирає фасування.
+ */
+function VariantList({ sources }: { sources: readonly PantryItemSource[] }) {
+  return (
+    <ul className="pl-8 pr-2 pb-1 grid gap-0.5">
+      {sources.map((s, i) => (
+        <li
+          key={`${s.name}_${s.addedAt ?? ""}_${i}`}
+          className="flex items-baseline justify-between gap-2"
+        >
+          <span className="min-w-0 text-style-caption text-subtle truncate">
+            {s.name}
+          </span>
+          <span className="shrink-0 text-style-caption text-subtle tabular-nums">
+            {formatReceiptQty(s.qty, s.unit)}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function ItemRow({
   item,
   idx,
@@ -65,42 +91,65 @@ function ItemRow({
   // Сирий `unit` із чека Сільпо буває фасуванням («0,25л»), не одиницею
   // виміру, тож `${qty} ${unit}` давало «2 0,25л».
   const qtyLabel = formatReceiptQty(item?.qty, item?.unit);
+  const sources = Array.isArray(item?.sources) ? item.sources : [];
+  // Контрол розгортання — лише від ДВОХ покупок: на одній розкривати
+  // нічого, і зайва стрілка читалась би як обіцянка деталей, яких немає.
+  const expandable = sources.length >= 2;
+  const [open, setOpen] = useState(false);
   return (
-    <div className="flex items-center gap-2 px-2 rounded-xl group min-h-[44px] hover:bg-panelHi/50 transition-colors">
-      <button
-        type="button"
-        onClick={() => editItemAt(idx)}
-        disabled={busy}
-        className="flex-1 min-w-0 flex items-baseline gap-1.5 text-left min-h-[44px]"
-        aria-label={`Редагувати ${item?.name || "продукт"}`}
-      >
-        <span className="text-style-label text-text truncate">
-          {item?.name || "—"}
-        </span>
-        {qtyLabel && (
-          <span className="text-style-caption text-subtle shrink-0">
-            {qtyLabel}
-          </span>
+    <div>
+      <div className="flex items-center gap-2 px-2 rounded-xl group min-h-[44px] hover:bg-panelHi/50 transition-colors">
+        {expandable && (
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            aria-expanded={open}
+            aria-label={
+              open
+                ? messages.nutrition.pantrySources.collapseLabel
+                : messages.nutrition.pantrySources.expandLabel
+            }
+            className="shrink-0 text-subtle touch-target flex items-center justify-center rounded-xl hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutrition/60 transition-colors"
+          >
+            <ChevronIcon open={open} />
+          </button>
         )}
-        {isPantryItemLowStock(item) && (
-          <span className="inline-flex items-center gap-1 text-style-caption text-warning-strong dark:text-warning shrink-0">
-            <Icon name="trending-down" size={12} aria-hidden />
-            {messages.nutrition.pantryLowStock.badge}
+        <button
+          type="button"
+          onClick={() => editItemAt(idx)}
+          disabled={busy}
+          className="flex-1 min-w-0 flex items-baseline gap-1.5 text-left min-h-[44px]"
+          aria-label={`Редагувати ${item?.name || "продукт"}`}
+        >
+          <span className="text-style-label text-text truncate">
+            {item?.name || "—"}
           </span>
-        )}
-      </button>
-      <Button
-        variant="ghost"
-        size="xs"
-        iconOnly
-        onClick={() => removeItemAtOrByName(idx, item?.name)}
-        disabled={busy}
-        aria-label={`Прибрати ${item?.name || "продукт"}`}
-        title="Прибрати"
-        className="shrink-0 text-subtle sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:ring-2 sm:focus-visible:ring-focus/45 sm:focus-visible:opacity-100 hover:text-danger hover:bg-danger/10 transition-[color,background-color,opacity]"
-      >
-        ×
-      </Button>
+          {qtyLabel && (
+            <span className="text-style-caption text-subtle shrink-0">
+              {qtyLabel}
+            </span>
+          )}
+          {isPantryItemLowStock(item) && (
+            <span className="inline-flex items-center gap-1 text-style-caption text-warning-strong dark:text-warning shrink-0">
+              <Icon name="trending-down" size={12} aria-hidden />
+              {messages.nutrition.pantryLowStock.badge}
+            </span>
+          )}
+        </button>
+        <Button
+          variant="ghost"
+          size="xs"
+          iconOnly
+          onClick={() => removeItemAtOrByName(idx, item?.name)}
+          disabled={busy}
+          aria-label={`Прибрати ${item?.name || "продукт"}`}
+          title="Прибрати"
+          className="shrink-0 text-subtle sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:ring-2 sm:focus-visible:ring-focus/45 sm:focus-visible:opacity-100 hover:text-danger hover:bg-danger/10 transition-[color,background-color,opacity]"
+        >
+          ×
+        </Button>
+      </div>
+      {expandable && open && <VariantList sources={sources} />}
     </div>
   );
 }

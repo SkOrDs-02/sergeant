@@ -272,9 +272,112 @@ describe("useSilpoPantryReplenish", () => {
 
     expect(added).toBe(1);
     expect(upsertItem).toHaveBeenCalledTimes(1);
+    // Повна назва покупки не зникає разом із родовою назвою — вона їде
+    // варіантом, а кількість зводиться до базової одиниці.
     expect(upsertItem).toHaveBeenCalledWith([
-      { name: "Хліб", qty: 1, unit: "шт", notes: null },
+      {
+        name: "Хліб",
+        qty: 1,
+        unit: "шт",
+        notes: null,
+        sources: [
+          {
+            name: "Хліб",
+            qty: 1,
+            unit: "шт",
+            addedAt: expect.any(String) as unknown as string,
+          },
+        ],
+      },
     ]);
+  });
+
+  it("згортає назву з чека до родової і показує це в рядку", () => {
+    mockReceipts([RECEIPT_SUMMARY]);
+    mockDetail(
+      detailWithItems([
+        {
+          id: 1,
+          name: "Молоко Яготинське 2.6% 900г",
+          qty: 1,
+          unit: "900мл",
+          priceKop: 3000,
+          categorySlug: null,
+          barcode: null,
+        },
+        // Напої згортання не проходять: бренд змінює суть продукту.
+        {
+          id: 2,
+          name: "Напій енергетичний Red Bull",
+          qty: 1,
+          unit: "0,25л",
+          priceKop: 4000,
+          categorySlug: null,
+          barcode: null,
+        },
+      ]),
+    );
+    const upsertItem = vi.fn();
+    const { result } = renderHook(() =>
+      useSilpoPantryReplenish({
+        enabled: true,
+        pantryItems: [],
+        upsertItem,
+      }),
+    );
+
+    const byId = new Map(result.current.rows.map((r) => [r.item.id, r]));
+    expect(byId.get(1)?.genericName).toBe("Молоко");
+    expect(byId.get(2)?.genericName).toBeNull();
+
+    act(() => {
+      result.current.confirm();
+    });
+    const written = upsertItem.mock.calls[0]?.[0] as Array<{
+      name: string;
+      qty: number | null;
+      unit: string | null;
+    }>;
+    expect(written.map((x) => x.name)).toEqual([
+      "Молоко",
+      "Напій енергетичний Red Bull",
+    ]);
+    expect(written[0]).toMatchObject({ qty: 900, unit: "мл" });
+    expect(written[1]).toMatchObject({ qty: 250, unit: "мл" });
+  });
+
+  it("«лишити повну» вимикає згортання для одного рядка", () => {
+    mockReceipts([RECEIPT_SUMMARY]);
+    mockDetail(
+      detailWithItems([
+        {
+          id: 1,
+          name: "Молоко Яготинське 2.6% 900г",
+          qty: 1,
+          unit: "900мл",
+          priceKop: 3000,
+          categorySlug: null,
+          barcode: null,
+        },
+      ]),
+    );
+    const upsertItem = vi.fn();
+    const { result } = renderHook(() =>
+      useSilpoPantryReplenish({
+        enabled: true,
+        pantryItems: [],
+        upsertItem,
+      }),
+    );
+
+    act(() => result.current.toggleKeepFull(1));
+    expect(result.current.rows[0]?.keepFull).toBe(true);
+
+    act(() => {
+      result.current.confirm();
+    });
+    const written = upsertItem.mock.calls[0]?.[0] as Array<{ name: string }>;
+    expect(written[0]?.name).toBe("Молоко Яготинське 2.6% 900г");
   });
 
   it("confirm() is a no-op (nothing written) when nothing is checked", () => {

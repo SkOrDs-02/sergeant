@@ -1,7 +1,9 @@
 # SPEC: Родові назви, картка продукту з варіантами і розширені категорії комори
 
 > **Last touched:** 2026-08-29 by @Skords-01. **Next review:** 2026-11-29.
-> **Status:** Proposed - рішення founder-а зафіксовані, не почато.
+> **Status:** Active - реалізовано (обидві фази) у гілці
+> `claude/pantry-generic-names-spec`. Міграція отримала номер **130**, а не
+> 129: 129 уже зайнята `129_nutrition_pantry_pk_per_user.sql`.
 
 ## Проблема
 
