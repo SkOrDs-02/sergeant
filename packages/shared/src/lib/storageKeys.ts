@@ -49,6 +49,16 @@ export const STORAGE_KEYS = {
 
   // Hub quick-stats previews rendered on the dashboard
   FINYK_QUICK_STATS: "finyk_quick_stats",
+  /**
+   * Snooze/mute плашки «залий документи» (спека
+   * `docs/90-work/planning/specs/finyk-import-reminders.md`).
+   *
+   * Свідомо localStorage, а не `finyk_prefs.prefs_json`: це стан
+   * відхилення підказки, а не дані користувача. Ціна помилки при втраті
+   * (нове пристрій → плашка зʼявиться ще раз) на порядок менша за ціну
+   * протягування ще однієї сутності крізь dual-write/LWW-шар синку.
+   */
+  FINYK_IMPORT_REMINDER: "finyk_import_reminder_v1",
   FIZRUK_QUICK_STATS: "fizruk_quick_stats",
   ROUTINE_QUICK_STATS: "routine_quick_stats",
   NUTRITION_QUICK_STATS: "nutrition_quick_stats",
