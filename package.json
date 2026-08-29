@@ -80,7 +80,6 @@
     "dev:db": "pnpm db:up && pnpm db:migrate",
     "replay:webhook": "node scripts/replay-webhook.mjs",
     "replay:dlq": "node scripts/replay-dlq.mjs",
-    "ai-memory:backfill": "node scripts/ai-memory-backfill.mjs",
     "strict:coverage": "node scripts/strict-coverage.mjs",
     "dead-code:files": "node scripts/knip-respects-scaffolded.mjs",
     "knip": "knip",
