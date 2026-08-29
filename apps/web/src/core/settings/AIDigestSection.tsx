@@ -12,9 +12,12 @@ import { SettingsGroup, ToggleRow } from "./SettingsPrimitives";
 
 export function AIDigestSection() {
   const { digest, weekRange } = useWeeklyDigest();
+  // Default ON з 2026-08-30: дайджест поза AI-квотою, тож автозапуск
+  // більше нічого не «зʼїдає». Відсутнє значення = увімкнено; «0» —
+  // явний opt-out.
   const [mondayAuto, setMondayAuto] = useState<boolean>(
     () =>
-      safeReadLS<string>(STORAGE_KEYS.WEEKLY_DIGEST_MONDAY_AUTO, "") === "1",
+      safeReadLS<string>(STORAGE_KEYS.WEEKLY_DIGEST_MONDAY_AUTO, "") !== "0",
   );
 
   const handleToggleMondayAuto = (next: boolean) => {
@@ -58,7 +61,7 @@ export function AIDigestSection() {
         </div>
         <ToggleRow
           label="Автогенерація щопонеділка"
-          description="Якщо ввімкнено, ранкова сесія в понеділок запускає звіт у фоні. Вимкнуто за замовчуванням, інакше AI-виклик зʼїдається без твого запиту."
+          description="Перша сесія понеділка сама збирає звіт за завершений тиждень. Звіт не витрачає денний ліміт AI-запитів."
           checked={mondayAuto}
           onChange={handleToggleMondayAuto}
         />

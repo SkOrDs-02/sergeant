@@ -46,6 +46,8 @@ export interface NutritionPantryItemSnapshot {
   readonly qty: number | null;
   readonly unit: string | null;
   readonly notes: string | null;
+  /** Серіалізовані варіанти покупок (міграція 130); `null` — варіантів немає. */
+  readonly sources?: string | null;
 }
 
 export interface NutritionPantrySnapshot {

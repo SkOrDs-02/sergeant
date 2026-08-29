@@ -43,9 +43,6 @@ export async function applyFinykTombstone(
     if (existing!.rows[0]!.updated_at.getTime() >= clientTs.getTime()) {
       return { status: "rejected", reason: "lww_conflict" };
     }
-    if (existing!.rows[0]!.deleted_at !== null && op.op !== "delete") {
-      return { status: "rejected", reason: "tombstoned" };
-    }
   }
 
   if (op.op === "delete") {
@@ -151,9 +148,6 @@ export async function applyFinykPerRowBlob(
     }
     if (existing!.rows[0]!.updated_at.getTime() >= clientTs.getTime()) {
       return { status: "rejected", reason: "lww_conflict" };
-    }
-    if (existing!.rows[0]!.deleted_at !== null && op.op !== "delete") {
-      return { status: "rejected", reason: "tombstoned" };
     }
   }
 

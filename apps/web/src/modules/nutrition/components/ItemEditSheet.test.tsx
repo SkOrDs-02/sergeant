@@ -51,7 +51,7 @@ describe("ItemEditSheet", () => {
       />,
     );
     fireEvent.click(screen.getByText("Зберегти"));
-    expect(onSave).toHaveBeenCalledWith(0, 3.5, expect.any(String));
+    expect(onSave).toHaveBeenCalledWith(0, "Молоко", 3.5, expect.any(String));
   });
 
   it("flags an invalid quantity", () => {
@@ -81,7 +81,7 @@ describe("ItemEditSheet", () => {
       />,
     );
     fireEvent.click(screen.getByText("Зберегти"));
-    expect(onSave).toHaveBeenCalledWith(0, null, null);
+    expect(onSave).toHaveBeenCalledWith(0, "Молоко", null, null);
   });
 
   it("invokes onClose from cancel", () => {

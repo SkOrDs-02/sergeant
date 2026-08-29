@@ -39,4 +39,41 @@ describe("Vercel output configuration", () => {
       "public, max-age=0, must-revalidate, s-maxage=0",
     );
   });
+
+  // Регресія SERGEANT-API-M / SERGEANT-WEB-R (~25 користувачів за бету).
+  //
+  // SPA-rewrite ловить усе, що не знайшлося на диску, і віддає `index.html`
+  // з кодом 200. Для відсутнього асета це найгірша з можливих відповідей:
+  // замість чесної 404 клієнт отримує HTML із типом `text/html`, і далі
+  // помилка спливає там, де її ніхто не повʼязує з деплоєм. Для `.wasm` це
+  // виглядало як «both async and sync fetching of the wasm failed» —
+  // emscripten валив і streaming-, і ArrayBuffer-шлях, бо намагався
+  // скомпілювати сторінку застосунку.
+  it("відсутній асет дає 404, а не HTML-оболонку", () => {
+    const config = readJson(resolve(process.cwd(), "vercel.json")) as {
+      rewrites?: Array<{ source: string; destination: string }>;
+    };
+
+    const spaRewrite = config.rewrites?.find(
+      (entry) => entry.destination === "/index.html",
+    );
+    expect(spaRewrite).toBeDefined();
+
+    // `assets/` мусить бути у виключеннях — інакше стейлі хеші знову
+    // почнуть повертати сторінку замість 404.
+    expect(spaRewrite!.source).toContain("assets/");
+
+    // А тепер головне: перевіряємо не текст патерну, а його ПОВЕДІНКУ.
+    // Негативний lookahead прикріплений до початку шляху, тож він відсікає
+    // рівно `/assets/**` і НЕ чіпає прикладні роути, у яких слово `assets`
+    // стоїть глибше — а такий у застосунку є (`/finyk/assets`).
+    const rewriteRe = new RegExp(`^${spaRewrite!.source}$`);
+
+    expect(rewriteRe.test("/assets/sqlite3-DGXXSD5r.wasm")).toBe(false);
+    expect(rewriteRe.test("/assets/index-abc123.js")).toBe(false);
+
+    expect(rewriteRe.test("/finyk/assets")).toBe(true);
+    expect(rewriteRe.test("/finyk/analytics")).toBe(true);
+    expect(rewriteRe.test("/")).toBe(true);
+  });
 });

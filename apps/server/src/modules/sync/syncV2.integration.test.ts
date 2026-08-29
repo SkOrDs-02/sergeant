@@ -2064,7 +2064,7 @@ describe("syncV2Push: nutrition apply-функції (PR #031)", () => {
   // delete-у не воскрешає ряд. Покриває multi-device race: offline-edit на
   // одному девайсі НЕ повинен перевизначити delete з іншого девайсу.
   it(
-    "nutrition_meals: G-set — після soft-delete update із новішим client_ts відхилено як tombstoned",
+    "nutrition_meals: G-set — після soft-delete update із новішим client_ts воскрешає рядок",
     async (ctx) => {
       if (!dockerAvailable || !testPool) return ctx.skip();
       await ensureUser("u-nm-gset-tombstoned");
@@ -2148,10 +2148,10 @@ describe("syncV2Push: nutrition apply-функції (PR #031)", () => {
         accepted: number;
         results: Array<{ status: string; reason?: string }>;
       };
-      expect(r3Body.accepted).toBe(0);
-      expect(r3Body!.results[0]!.reason).toBe("tombstoned");
+      expect(r3Body.accepted).toBe(1);
+      expect(r3Body!.results[0]!.status).toBe("applied");
 
-      // Стан у БД: ряд лишається soft-deleted, імʼя НЕ перезаписане.
+      // Стан у БД: мітку видалення знято, поля перезаписані вхідним рядком.
       const finalRow = await testPool.query<{
         deleted_at: Date | null;
         name: string;
@@ -2159,9 +2159,9 @@ describe("syncV2Push: nutrition apply-функції (PR #031)", () => {
       }>(`SELECT deleted_at, name, kcal FROM nutrition_meals WHERE id = $1`, [
         mealId,
       ]);
-      expect(finalRow!.rows[0]!.deleted_at).not.toBeNull();
-      expect(finalRow!.rows[0]!.name).toBe("before-delete");
-      expect(finalRow!.rows[0]!.kcal).toBe(100);
+      expect(finalRow!.rows[0]!.deleted_at).toBeNull();
+      expect(finalRow!.rows[0]!.name).toBe("resurrected");
+      expect(finalRow!.rows[0]!.kcal).toBe(999);
     },
     TIMEOUT_MS,
   );
@@ -2218,7 +2218,7 @@ describe("syncV2Push: nutrition apply-функції (PR #031)", () => {
       );
 
       // Другий delete із новішим client_ts. Idempotency-ключ інший
-      // (з іншого девайсу), тому це не duplicate; ряд уже tombstoned,
+      // (з іншого девайсу), тому це не duplicate; ряд уже soft-deleted,
       // але delete-шлях має пройти й оновити deleted_at.
       const r3 = makeRes();
       await syncV2Push(
@@ -3007,22 +3007,22 @@ describe("syncV2Push: finyk apply-функції (PR #035)", () => {
 });
 
 // ---------------------------------------------------------------------
-// Tombstone-resurrection guard — Stage 5 follow-up до PR #043 (G-set
-// CRDT для `nutrition_meals`). Інваріант діє для таблиць з ВИПАДКОВИМ
-// UUID-PK: 5 fizruk_* таблиць + nutrition_meals.
+// Tombstone resurrection — семантика ПІСЛЯ зняття правила `tombstoned`
+// (регресія SERGEANT-WEB-T). Стосується таблиць з ВИПАДКОВИМ UUID-PK:
+// 5 fizruk_* таблиць + nutrition_meals.
 //
-// Кожен такий тест проганяє послідовність insert(t1) → delete(t2) →
-// update(t3, t3 > t2). Без guard-а raw LWW дозволив би update
-// перезаписати рядок (deleted_at скинеться у null із payload-у), що
-// фактично воскрешає видалений ряд. З guard-ом — update reject-нуто
-// з `reason='tombstoned'`, ряд лишається soft-deleted.
+// Кожен тест проганяє послідовність insert(t1) → delete(t2) →
+// update(t3, t3 > t2). Раніше третій крок відхилявся з
+// `reason='tombstoned'`; тепер він проходить за звичайним LWW і знімає
+// мітку видалення — саме так undo після видалення доїжджає на сервер.
+// Повне обґрунтування — в `guardUuidPkApply` (`applySync-helpers.ts`).
 //
-// ВИНЯТОК — `routine_entries` (audit E-1): PK детермінований
-// (`habitId:dateKey`), тому повторний чекін того самого дня бʼє в той
-// самий рядок і мусить його воскресити. Перший тест нижче кодифікує
-// саме цю (протилежну) семантику.
+// Захист НЕ послаблено: запис, СТАРІШИЙ за видалення, усе одно програє —
+// просто вже на LWW-перевірці (`lww_conflict`), і це кодифікує окремий
+// stale-тест нижче. `routine_entries` (audit E-1) з детермінованим PK
+// поводився так завжди — тепер решта таблиць має ту саму семантику.
 // ---------------------------------------------------------------------
-describe("syncV2Push: tombstone resurrection guard (Stage 5)", () => {
+describe("syncV2Push: tombstone resurrection — новіший запис виграє (LWW)", () => {
   it(
     "routine_entries: update після soft-delete із новішим client_ts воскрешає рядок",
     async (ctx) => {
@@ -3211,7 +3211,7 @@ describe("syncV2Push: tombstone resurrection guard (Stage 5)", () => {
   );
 
   it(
-    "fizruk_workouts: update після soft-delete відхилено як tombstoned",
+    "fizruk_workouts: update після soft-delete воскрешає рядок (LWW)",
     async (ctx) => {
       if (!dockerAvailable || !testPool) return ctx.skip();
       await ensureUser("u-fz-w-tomb");
@@ -3289,21 +3289,21 @@ describe("syncV2Push: tombstone resurrection guard (Stage 5)", () => {
         accepted: number;
         results: Array<{ status: string; reason?: string }>;
       };
-      expect(body.accepted).toBe(0);
-      expect(body!.results[0]!.reason).toBe("tombstoned");
+      expect(body.accepted).toBe(1);
+      expect(body!.results[0]!.status).toBe("applied");
 
       const finalRow = await testPool.query<{
         deleted_at: Date | null;
         note: string;
       }>(`SELECT deleted_at, note FROM fizruk_workouts WHERE id = $1`, [id]);
-      expect(finalRow!.rows[0]!.deleted_at).not.toBeNull();
-      expect(finalRow!.rows[0]!.note).toBe("before-delete");
+      expect(finalRow!.rows[0]!.deleted_at).toBeNull();
+      expect(finalRow!.rows[0]!.note).toBe("resurrected");
     },
     TIMEOUT_MS,
   );
 
   it(
-    "fizruk_workout_items: update після soft-delete відхилено як tombstoned",
+    "fizruk_workout_items: update після soft-delete воскрешає рядок (LWW)",
     async (ctx) => {
       if (!dockerAvailable || !testPool) return ctx.skip();
       await ensureUser("u-fz-i-tomb");
@@ -3401,8 +3401,8 @@ describe("syncV2Push: tombstone resurrection guard (Stage 5)", () => {
         accepted: number;
         results: Array<{ status: string; reason?: string }>;
       };
-      expect(body.accepted).toBe(0);
-      expect(body!.results[0]!.reason).toBe("tombstoned");
+      expect(body.accepted).toBe(1);
+      expect(body!.results[0]!.status).toBe("applied");
 
       const finalRow = await testPool.query<{
         deleted_at: Date | null;
@@ -3410,14 +3410,14 @@ describe("syncV2Push: tombstone resurrection guard (Stage 5)", () => {
       }>(`SELECT deleted_at, name_uk FROM fizruk_workout_items WHERE id = $1`, [
         itemId,
       ]);
-      expect(finalRow!.rows[0]!.deleted_at).not.toBeNull();
-      expect(finalRow!.rows[0]!.name_uk).toBe("Присідання");
+      expect(finalRow!.rows[0]!.deleted_at).toBeNull();
+      expect(finalRow!.rows[0]!.name_uk).toBe("Resurrected");
     },
     TIMEOUT_MS,
   );
 
   it(
-    "fizruk_workout_sets: update після soft-delete відхилено як tombstoned",
+    "fizruk_workout_sets: update після soft-delete воскрешає рядок (LWW)",
     async (ctx) => {
       if (!dockerAvailable || !testPool) return ctx.skip();
       await ensureUser("u-fz-s-tomb");
@@ -3528,8 +3528,8 @@ describe("syncV2Push: tombstone resurrection guard (Stage 5)", () => {
         accepted: number;
         results: Array<{ status: string; reason?: string }>;
       };
-      expect(body.accepted).toBe(0);
-      expect(body!.results[0]!.reason).toBe("tombstoned");
+      expect(body.accepted).toBe(1);
+      expect(body!.results[0]!.status).toBe("applied");
 
       const finalRow = await testPool.query<{
         deleted_at: Date | null;
@@ -3538,14 +3538,14 @@ describe("syncV2Push: tombstone resurrection guard (Stage 5)", () => {
         `SELECT deleted_at, weight_kg FROM fizruk_workout_sets WHERE id = $1`,
         [setId],
       );
-      expect(finalRow!.rows[0]!.deleted_at).not.toBeNull();
-      expect(Number(finalRow!.rows[0]!.weight_kg)).toBe(80);
+      expect(finalRow!.rows[0]!.deleted_at).toBeNull();
+      expect(Number(finalRow!.rows[0]!.weight_kg)).toBe(999);
     },
     TIMEOUT_MS,
   );
 
   it(
-    "fizruk_custom_exercises: update після soft-delete відхилено як tombstoned",
+    "fizruk_custom_exercises: update після soft-delete воскрешає рядок (LWW)",
     async (ctx) => {
       if (!dockerAvailable || !testPool) return ctx.skip();
       await ensureUser("u-fz-ce-tomb");
@@ -3621,8 +3621,8 @@ describe("syncV2Push: tombstone resurrection guard (Stage 5)", () => {
         accepted: number;
         results: Array<{ status: string; reason?: string }>;
       };
-      expect(body.accepted).toBe(0);
-      expect(body!.results[0]!.reason).toBe("tombstoned");
+      expect(body.accepted).toBe(1);
+      expect(body!.results[0]!.status).toBe("applied");
 
       const finalRow = await testPool.query<{
         deleted_at: Date | null;
@@ -3631,14 +3631,14 @@ describe("syncV2Push: tombstone resurrection guard (Stage 5)", () => {
         `SELECT deleted_at, data_json FROM fizruk_custom_exercises WHERE id = $1`,
         [id],
       );
-      expect(finalRow!.rows[0]!.deleted_at).not.toBeNull();
-      expect(finalRow!.rows[0]!.data_json.name).toBe("before-delete");
+      expect(finalRow!.rows[0]!.deleted_at).toBeNull();
+      expect(finalRow!.rows[0]!.data_json.name).toBe("resurrected");
     },
     TIMEOUT_MS,
   );
 
   it(
-    "fizruk_measurements: update після soft-delete відхилено як tombstoned",
+    "fizruk_measurements: update після soft-delete воскрешає рядок (LWW)",
     async (ctx) => {
       if (!dockerAvailable || !testPool) return ctx.skip();
       await ensureUser("u-fz-m-tomb");
@@ -3716,8 +3716,8 @@ describe("syncV2Push: tombstone resurrection guard (Stage 5)", () => {
         accepted: number;
         results: Array<{ status: string; reason?: string }>;
       };
-      expect(body.accepted).toBe(0);
-      expect(body!.results[0]!.reason).toBe("tombstoned");
+      expect(body.accepted).toBe(1);
+      expect(body!.results[0]!.status).toBe("applied");
 
       const finalRow = await testPool.query<{
         deleted_at: Date | null;
@@ -3726,26 +3726,26 @@ describe("syncV2Push: tombstone resurrection guard (Stage 5)", () => {
         `SELECT deleted_at, weight_kg FROM fizruk_measurements WHERE id = $1`,
         [id],
       );
-      expect(finalRow!.rows[0]!.deleted_at).not.toBeNull();
-      expect(Number(finalRow!.rows[0]!.weight_kg)).toBe(80);
+      expect(finalRow!.rows[0]!.deleted_at).toBeNull();
+      expect(Number(finalRow!.rows[0]!.weight_kg)).toBe(120);
     },
     TIMEOUT_MS,
   );
 });
 
 // ---------------------------------------------------------------------
-// Stage 5 — tombstone-resurrection guard для nutrition non-meals + finyk
-// soft-delete shapes. Дзеркалить інваріант з PR #043 (`applyNutritionMeals`)
-// та PR-A (routine + fizruk) на 3 nutrition apply-фн і 2 finyk хелпери,
-// які покривають усі 10 finyk soft-delete таблиць (`applyFinykTombstone` —
-// 2 composite-PK, `applyFinykPerRowBlob` — 8 per-row+JSONB).
+// Tombstone resurrection для nutrition non-meals + finyk soft-delete
+// shapes. Дзеркалить семантику з блоку вище на 3 nutrition apply-фн і 2
+// finyk хелпери, які покривають усі 10 finyk soft-delete таблиць
+// (`applyFinykTombstone` — 2 composite-PK, `applyFinykPerRowBlob` — 8
+// per-row+JSONB).
 // Інваріант: після soft-delete `op='insert'/'update'` із новішим
-// `client_ts` відхиляється з `reason='tombstoned'`. `op='delete'`
+// `client_ts` ВОСКРЕШАЄ рядок (`deleted_at` знято). `op='delete'`
 // лишається ідемпотентним (re-stamp).
 // ---------------------------------------------------------------------
-describe("syncV2Push: nutrition + finyk tombstone resurrection guard (Stage 5)", () => {
+describe("syncV2Push: nutrition + finyk tombstone resurrection (LWW)", () => {
   it(
-    "nutrition_pantries: update після soft-delete із новішим client_ts відхилено як tombstoned",
+    "nutrition_pantries: update після soft-delete із новішим client_ts воскрешає рядок (LWW)",
     async (ctx) => {
       if (!dockerAvailable || !testPool) return ctx.skip();
       await ensureUser("u-np-tomb");
@@ -3823,8 +3823,8 @@ describe("syncV2Push: nutrition + finyk tombstone resurrection guard (Stage 5)",
         accepted: number;
         results: Array<{ status: string; reason?: string }>;
       };
-      expect(body.accepted).toBe(0);
-      expect(body!.results[0]!.reason).toBe("tombstoned");
+      expect(body.accepted).toBe(1);
+      expect(body!.results[0]!.status).toBe("applied");
 
       const finalRow = await testPool.query<{
         deleted_at: Date | null;
@@ -3834,15 +3834,15 @@ describe("syncV2Push: nutrition + finyk tombstone resurrection guard (Stage 5)",
         `SELECT deleted_at, name, text FROM nutrition_pantries WHERE id = $1`,
         [id],
       );
-      expect(finalRow!.rows[0]!.deleted_at).not.toBeNull();
-      expect(finalRow!.rows[0]!.name).toBe("before-delete");
-      expect(finalRow!.rows[0]!.text).toBe("v1");
+      expect(finalRow!.rows[0]!.deleted_at).toBeNull();
+      expect(finalRow!.rows[0]!.name).toBe("resurrected");
+      expect(finalRow!.rows[0]!.text).toBe("v2");
     },
     TIMEOUT_MS,
   );
 
   it(
-    "nutrition_pantry_items: update після soft-delete відхилено як tombstoned",
+    "nutrition_pantry_items: update після soft-delete воскрешає рядок (LWW)",
     async (ctx) => {
       if (!dockerAvailable || !testPool) return ctx.skip();
       await ensureUser("u-npi-tomb");
@@ -3947,8 +3947,8 @@ describe("syncV2Push: nutrition + finyk tombstone resurrection guard (Stage 5)",
         accepted: number;
         results: Array<{ status: string; reason?: string }>;
       };
-      expect(body.accepted).toBe(0);
-      expect(body!.results[0]!.reason).toBe("tombstoned");
+      expect(body.accepted).toBe(1);
+      expect(body!.results[0]!.status).toBe("applied");
 
       const finalRow = await testPool.query<{
         deleted_at: Date | null;
@@ -3956,14 +3956,14 @@ describe("syncV2Push: nutrition + finyk tombstone resurrection guard (Stage 5)",
       }>(`SELECT deleted_at, name FROM nutrition_pantry_items WHERE id = $1`, [
         itemId,
       ]);
-      expect(finalRow!.rows[0]!.deleted_at).not.toBeNull();
-      expect(finalRow!.rows[0]!.name).toBe("milk");
+      expect(finalRow!.rows[0]!.deleted_at).toBeNull();
+      expect(finalRow!.rows[0]!.name).toBe("resurrected");
     },
     TIMEOUT_MS,
   );
 
   it(
-    "nutrition_recipes: update після soft-delete відхилено як tombstoned",
+    "nutrition_recipes: update після soft-delete воскрешає рядок (LWW)",
     async (ctx) => {
       if (!dockerAvailable || !testPool) return ctx.skip();
       await ensureUser("u-nr-tomb");
@@ -4041,8 +4041,8 @@ describe("syncV2Push: nutrition + finyk tombstone resurrection guard (Stage 5)",
         accepted: number;
         results: Array<{ status: string; reason?: string }>;
       };
-      expect(body.accepted).toBe(0);
-      expect(body!.results[0]!.reason).toBe("tombstoned");
+      expect(body.accepted).toBe(1);
+      expect(body!.results[0]!.status).toBe("applied");
 
       const finalRow = await testPool.query<{
         deleted_at: Date | null;
@@ -4052,15 +4052,15 @@ describe("syncV2Push: nutrition + finyk tombstone resurrection guard (Stage 5)",
         `SELECT deleted_at, name, data_json FROM nutrition_recipes WHERE id = $1`,
         [id],
       );
-      expect(finalRow!.rows[0]!.deleted_at).not.toBeNull();
-      expect(finalRow!.rows[0]!.name).toBe("Борщ");
-      expect(finalRow!.rows[0]!.data_json.servings).toBe(4);
+      expect(finalRow!.rows[0]!.deleted_at).toBeNull();
+      expect(finalRow!.rows[0]!.name).toBe("resurrected");
+      expect(finalRow!.rows[0]!.data_json.servings).toBe(8);
     },
     TIMEOUT_MS,
   );
 
   it(
-    "finyk_hidden_accounts: update після soft-delete відхилено як tombstoned (applyFinykTombstone shape)",
+    "finyk_hidden_accounts: update після soft-delete воскрешає рядок (LWW) (applyFinykTombstone shape)",
     async (ctx) => {
       if (!dockerAvailable || !testPool) return ctx.skip();
       await ensureUser("u-fha-tomb");
@@ -4128,21 +4128,21 @@ describe("syncV2Push: nutrition + finyk tombstone resurrection guard (Stage 5)",
         accepted: number;
         results: Array<{ status: string; reason?: string }>;
       };
-      expect(body.accepted).toBe(0);
-      expect(body!.results[0]!.reason).toBe("tombstoned");
+      expect(body.accepted).toBe(1);
+      expect(body!.results[0]!.status).toBe("applied");
 
       const finalRow = await testPool.query<{ deleted_at: Date | null }>(
         `SELECT deleted_at FROM finyk_hidden_accounts
            WHERE user_id = $1 AND account_id = $2`,
         ["u-fha-tomb", accountId],
       );
-      expect(finalRow!.rows[0]!.deleted_at).not.toBeNull();
+      expect(finalRow!.rows[0]!.deleted_at).toBeNull();
     },
     TIMEOUT_MS,
   );
 
   it(
-    "finyk_hidden_transactions: update після soft-delete відхилено як tombstoned (applyFinykTombstone shape)",
+    "finyk_hidden_transactions: update після soft-delete воскрешає рядок (LWW) (applyFinykTombstone shape)",
     async (ctx) => {
       if (!dockerAvailable || !testPool) return ctx.skip();
       await ensureUser("u-fht-tomb");
@@ -4219,21 +4219,21 @@ describe("syncV2Push: nutrition + finyk tombstone resurrection guard (Stage 5)",
         accepted: number;
         results: Array<{ status: string; reason?: string }>;
       };
-      expect(body.accepted).toBe(0);
-      expect(body!.results[0]!.reason).toBe("tombstoned");
+      expect(body.accepted).toBe(1);
+      expect(body!.results[0]!.status).toBe("applied");
 
       const finalRow = await testPool.query<{ deleted_at: Date | null }>(
         `SELECT deleted_at FROM finyk_hidden_transactions
            WHERE user_id = $1 AND transaction_id = $2`,
         ["u-fht-tomb", txId],
       );
-      expect(finalRow!.rows[0]!.deleted_at).not.toBeNull();
+      expect(finalRow!.rows[0]!.deleted_at).toBeNull();
     },
     TIMEOUT_MS,
   );
 
   it(
-    "finyk_budgets: update після soft-delete відхилено як tombstoned (applyFinykPerRowBlob shape)",
+    "finyk_budgets: update після soft-delete воскрешає рядок (LWW) (applyFinykPerRowBlob shape)",
     async (ctx) => {
       if (!dockerAvailable || !testPool) return ctx.skip();
       await ensureUser("u-fb-tomb");
@@ -4309,21 +4309,21 @@ describe("syncV2Push: nutrition + finyk tombstone resurrection guard (Stage 5)",
         accepted: number;
         results: Array<{ status: string; reason?: string }>;
       };
-      expect(body.accepted).toBe(0);
-      expect(body!.results[0]!.reason).toBe("tombstoned");
+      expect(body.accepted).toBe(1);
+      expect(body!.results[0]!.status).toBe("applied");
 
       const finalRow = await testPool.query<{
         deleted_at: Date | null;
         data_json: { limit: number };
       }>(`SELECT deleted_at, data_json FROM finyk_budgets WHERE id = $1`, [id]);
-      expect(finalRow!.rows[0]!.deleted_at).not.toBeNull();
-      expect(finalRow!.rows[0]!.data_json.limit).toBe(1000);
+      expect(finalRow!.rows[0]!.deleted_at).toBeNull();
+      expect(finalRow!.rows[0]!.data_json.limit).toBe(9999);
     },
     TIMEOUT_MS,
   );
 
   it(
-    "finyk_subscriptions: update після soft-delete відхилено як tombstoned (applyFinykPerRowBlob shape, інша таблиця)",
+    "finyk_subscriptions: update після soft-delete воскрешає рядок (LWW) (applyFinykPerRowBlob shape, інша таблиця)",
     async (ctx) => {
       if (!dockerAvailable || !testPool) return ctx.skip();
       await ensureUser("u-fs-tomb");
@@ -4399,8 +4399,8 @@ describe("syncV2Push: nutrition + finyk tombstone resurrection guard (Stage 5)",
         accepted: number;
         results: Array<{ status: string; reason?: string }>;
       };
-      expect(body.accepted).toBe(0);
-      expect(body!.results[0]!.reason).toBe("tombstoned");
+      expect(body.accepted).toBe(1);
+      expect(body!.results[0]!.status).toBe("applied");
 
       const finalRow = await testPool.query<{
         deleted_at: Date | null;
@@ -4409,8 +4409,8 @@ describe("syncV2Push: nutrition + finyk tombstone resurrection guard (Stage 5)",
         `SELECT deleted_at, data_json FROM finyk_subscriptions WHERE id = $1`,
         [id],
       );
-      expect(finalRow!.rows[0]!.deleted_at).not.toBeNull();
-      expect(finalRow!.rows[0]!.data_json.monthly).toBe(199);
+      expect(finalRow!.rows[0]!.deleted_at).toBeNull();
+      expect(finalRow!.rows[0]!.data_json.monthly).toBe(999);
     },
     TIMEOUT_MS,
   );

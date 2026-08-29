@@ -99,10 +99,11 @@ const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${Object.entries(routes)
   .filter(([, meta]) => !meta.noindex)
-  .map(
-    ([route]) =>
-      `  <url><loc>${site}${route === "/" ? "/" : route}</loc></url>`,
-  )
+  .map(([route, meta]) => {
+    const loc = `<loc>${site}${route === "/" ? "/" : route}</loc>`;
+    const lastmod = meta.lastmod ? `<lastmod>${meta.lastmod}</lastmod>` : "";
+    return `  <url>${loc}${lastmod}</url>`;
+  })
   .join("\n")}
 </urlset>
 `;

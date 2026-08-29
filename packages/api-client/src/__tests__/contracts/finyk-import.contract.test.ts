@@ -746,3 +746,59 @@ describe(
     });
   },
 );
+
+describe(
+  "contract @ GET /api/v1/finyk/import/recent",
+  CONTRACT_SUITE_OPTIONS,
+  () => {
+    let pact: PactV4;
+    beforeAll(() => {
+      pact = createPact();
+    });
+    afterAll(() => {});
+
+    it("returns last-import dates per document type, newest first", async () => {
+      await pact
+        .addInteraction()
+        .given(
+          "authenticated user-pact-001 has completed statement and screenshot imports",
+        )
+        .uponReceiving("a GET /api/v1/finyk/import/recent request")
+        .withRequest("GET", "/api/v1/finyk/import/recent", (req) => {
+          req.headers({ accept: "application/json" });
+        })
+        .willRespondWith(200, (res) => {
+          res.headers({ "content-type": "application/json" });
+          res.jsonBody({
+            sources: [
+              {
+                source: "bank_screenshot",
+                recentAt: ["2026-01-10T09:00:00.000Z"],
+              },
+              {
+                source: "bank_statement",
+                recentAt: [
+                  "2026-01-16T10:00:00.000Z",
+                  "2025-12-17T10:00:00.000Z",
+                ],
+              },
+            ],
+          });
+        })
+        .executeTest(async (mockServer) => {
+          const http = createHttpClient({ baseUrl: mockServer.url });
+          const imports = createFinykImportEndpoints(http);
+          const out = await imports.getRecentImports();
+
+          expect(out.sources).toHaveLength(2);
+          const statement = out.sources.find(
+            (s) => s.source === "bank_statement",
+          );
+          // Newest first — the reminder reads `recentAt[0]` as "last import"
+          // and derives the rhythm from the gaps behind it.
+          expect(statement?.recentAt[0]).toBe("2026-01-16T10:00:00.000Z");
+          expect(statement?.recentAt).toHaveLength(2);
+        });
+    });
+  },
+);
