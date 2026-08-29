@@ -1109,7 +1109,12 @@ describe("nutrition applySync", () => {
       ),
     ).resolves.toEqual({ status: "applied" });
     expect(sql(client)).toContain("INSERT INTO nutrition_pantry_items");
-    expect(client.query.mock.calls[1]?.[1]?.[7]).toBe(0);
+    // `sort_order` — 9-й параметр INSERT-у: id, pantry_id, user_id, name,
+    // qty, unit, notes, sources, sort_order. Індекс зсунувся на одиницю
+    // разом із колонкою `sources` (міграція 130); додаси ще колонку перед
+    // ним — зсунеться знову.
+    const insertParams = client.query.mock.calls[1]?.[1];
+    expect(insertParams?.[8]).toBe(0);
 
     const updateClient = makeClient([existing()]);
     await expect(
