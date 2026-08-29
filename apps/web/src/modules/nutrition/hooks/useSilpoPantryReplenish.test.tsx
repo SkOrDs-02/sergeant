@@ -300,7 +300,7 @@ describe("useSilpoPantryReplenish", () => {
           id: 1,
           name: "Молоко Яготинське 2.6% 900г",
           qty: 1,
-          unit: "900мл",
+          unit: "900г",
           priceKop: 3000,
           categorySlug: null,
           barcode: null,
@@ -342,7 +342,10 @@ describe("useSilpoPantryReplenish", () => {
       "Молоко",
       "Напій енергетичний Red Bull",
     ]);
-    expect(written[0]).toMatchObject({ qty: 900, unit: "мл" });
+    // 900 г молока = 874 мл (щільність 1.03), а не 900 мл. Саме ця
+    // конверсія дає позиції зійтись із «Молоко 1 л» в одну картку.
+    expect(written[0]!.unit).toBe("мл");
+    expect(written[0]!.qty).toBe(Math.round(900 / 1.03));
     expect(written[1]).toMatchObject({ qty: 250, unit: "мл" });
   });
 
@@ -354,7 +357,7 @@ describe("useSilpoPantryReplenish", () => {
           id: 1,
           name: "Молоко Яготинське 2.6% 900г",
           qty: 1,
-          unit: "900мл",
+          unit: "900г",
           priceKop: 3000,
           categorySlug: null,
           barcode: null,

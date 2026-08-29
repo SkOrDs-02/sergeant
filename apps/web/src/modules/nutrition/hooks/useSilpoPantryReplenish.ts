@@ -205,7 +205,10 @@ export function useSilpoPantryReplenish({
     const addedAt = toKyivISODate(purchasedAt ?? new Date());
     const toAdd: PantryItem[] = checked.map((r) => {
       const name = r.keepFull ? r.item.name : (r.genericName ?? r.item.name);
-      const based = receiptQtyToBase(r.item.qty, r.item.unit);
+      // Назва потрібна для щільності: «Молоко ... 900г» з чека має лягти
+      // як 874 мл, інакше воно ніколи не зійдеться з «Молоко 1 л» в одну
+      // картку продукту — а молоко Сільпо віддає саме в грамах.
+      const based = receiptQtyToBase(r.item.qty, r.item.unit, name);
       if (!based) {
         // Одиниця без масштабу («уп») — варіант створити чесно не можна,
         // тож позиція лишається звичайною, як до цієї фічі.

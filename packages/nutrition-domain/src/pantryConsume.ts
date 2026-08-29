@@ -19,28 +19,19 @@ import {
   type PantryItem,
 } from "./pantryTextParser.js";
 import { consumeFromSources, sourcesTotal } from "./pantrySources.js";
-
-/** Густина за замовчуванням (вода-подібна), коли продукту немає в таблиці. г/мл. */
-export const DEFAULT_DENSITY_G_PER_ML = 1.0;
+// Таблиця щільності живе в `density.ts` — її потребує і зведення одиниць
+// (`units.ts`), і списання тут; спільний файл нижче за обома розриває цикл
+// імпортів. Реекспорт зберігає сабпас `@sergeant/nutrition-domain/pantry-consume`.
+import { densityFor } from "./density.js";
+export {
+  DEFAULT_DENSITY_G_PER_ML,
+  DENSITY_G_PER_ML,
+  densityFor,
+  knownDensityGPerMl,
+} from "./density.js";
 
 /** Вага однієї штуки за замовчуванням, коли продукту немає в таблиці. г. */
 export const DEFAULT_PIECE_WEIGHT_G = 100;
-
-/**
- * Груба таблиця густин (г/мл) для позицій у `мл`/`л`.
- * Ключ — `canonicalFoodKey(name)`, тож відмінкові/множинні форми
- * («молока», «олії») зводяться до канонічної форми перед пошуком.
- */
-export const DENSITY_G_PER_ML: Readonly<Record<string, number>> = {
-  молоко: 1.03,
-  кефір: 1.03,
-  ряжанка: 1.03,
-  йогурт: 1.03,
-  вершки: 1.01,
-  олія: 0.92,
-  "оливкова олія": 0.92,
-  мед: 1.42,
-};
 
 /**
  * Груба таблиця ваги однієї штуки (г) для позицій у `шт`.
@@ -61,11 +52,6 @@ export const PIECE_WEIGHT_G: Readonly<Record<string, number>> = {
   кабачок: 300,
   баклажан: 250,
 };
-
-/** Густина (г/мл) для продукту; default `DEFAULT_DENSITY_G_PER_ML`. */
-export function densityFor(name: unknown): number {
-  return DENSITY_G_PER_ML[canonicalFoodKey(name)] ?? DEFAULT_DENSITY_G_PER_ML;
-}
 
 /** Вага однієї штуки (г) для продукту; default `DEFAULT_PIECE_WEIGHT_G`. */
 export function pieceWeightFor(name: unknown): number {

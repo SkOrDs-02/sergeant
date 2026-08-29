@@ -11,22 +11,43 @@ import {
   sourcesTotal,
   syntheticSource,
 } from "./pantrySources.js";
+import { massToVolumeIfKnown } from "./units.js";
 
 interface BaseUnit {
   base: "г" | "мл" | "шт";
   value: number;
 }
 
-function toBaseUnit(qty: unknown, unit: unknown): BaseUnit | null {
+/**
+ * Кількість у базовій одиниці. `name` потрібне не для косметики: маса
+ * рідини з ВІДОМОЮ щільністю зводиться до мл (`massToVolumeIfKnown`), і
+ * саме це дозволяє «Молоко 900 г» із чека долитись у «Молоко 1 л».
+ * Продукт без щільності лишається у своєму вимірі й далі.
+ */
+function toBaseUnit(
+  qty: unknown,
+  unit: unknown,
+  name?: unknown,
+): BaseUnit | null {
   const u = String(unit || "").toLowerCase();
   const q = Number(qty);
   if (!Number.isFinite(q)) return null;
-  if (u === "г") return { base: "г", value: q };
-  if (u === "кг") return { base: "г", value: q * 1000 };
+  if (u === "г") return liquidAware({ base: "г", value: q }, name);
+  if (u === "кг") return liquidAware({ base: "г", value: q * 1000 }, name);
   if (u === "мл") return { base: "мл", value: q };
   if (u === "л") return { base: "мл", value: q * 1000 };
   if (u === "шт") return { base: "шт", value: q };
   return null;
+}
+
+function liquidAware(mass: BaseUnit, name: unknown): BaseUnit {
+  const out = massToVolumeIfKnown(
+    { dimension: "mass", base: mass.value },
+    name,
+  );
+  return out.dimension === "volume"
+    ? { base: "мл", value: out.base }
+    : { base: "г", value: out.base };
 }
 
 // Convert a base-unit value back to a human-friendly unit, preferring the
@@ -149,7 +170,7 @@ export function mergeItems(
 
     // Гібрид: сумуємо лише якщо є qty+unit і одиниці сумісні (або однакові)
     if (incomingQty != null && incomingUnit) {
-      const baseIncoming = toBaseUnit(incomingQty, incomingUnit);
+      const baseIncoming = toBaseUnit(incomingQty, incomingUnit, display);
       if (baseIncoming) {
         const idx = merged.findIndex((x) => {
           const nx = canonicalFoodKey(x?.name);
@@ -162,7 +183,7 @@ export function mergeItems(
               : null;
           const ux = x?.unit ? normalizeUnit(x.unit) : null;
           if (qx == null || !ux) return false;
-          const baseX = toBaseUnit(qx, ux);
+          const baseX = toBaseUnit(qx, ux, x?.name);
           return !!baseX && baseX.base === baseIncoming.base;
         });
 
@@ -174,7 +195,7 @@ export function mergeItems(
           const cur = merged[idx]!;
           const qx = Number(cur.qty);
           const ux = normalizeUnit(cur.unit);
-          const baseX = toBaseUnit(qx, ux);
+          const baseX = toBaseUnit(qx, ux, cur.name);
           if (baseX) {
             const name = pickDisplayName(cur.name, display);
             const hasSources =
@@ -230,9 +251,9 @@ export function mergeItems(
     // Раніше друга з них мовчки зникала — dedup-гілка нижче лишала стару
     // кількість і викидала нову покупку взагалі.
     if (sameNameIdx >= 0 && incomingQty != null && incomingUnit) {
-      const baseIncoming = toBaseUnit(incomingQty, incomingUnit);
+      const baseIncoming = toBaseUnit(incomingQty, incomingUnit, display);
       const cur = merged[sameNameIdx]!;
-      const baseCur = toBaseUnit(cur.qty, normalizeUnit(cur.unit));
+      const baseCur = toBaseUnit(cur.qty, normalizeUnit(cur.unit), cur.name);
       if (baseIncoming && baseCur && baseIncoming.base !== baseCur.base) {
         const fresh: PantryItem = {
           name: display,

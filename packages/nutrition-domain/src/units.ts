@@ -10,10 +10,13 @@
  * друга копія, розʼїхавшись, дала б різні числа в коморі й у списку покупок
  * на тих самих даних.
  *
- * Виміри між собою НЕ конвертуються: маса і обʼєм лишаються різними
- * позиціями навіть за однакової назви, бо щільність невідома.
+ * Виміри між собою конвертуються ЛИШЕ там, де щільність продукту відома
+ * явно (`massToVolumeIfKnown`). Для решти маса й обʼєм лишаються різними
+ * позиціями навіть за однакової назви: вигаданий коефіцієнт гірший за дві
+ * чесні позиції.
  */
 import { normalizeUnit } from "./pantryTextParser.js";
+import { knownDensityGPerMl } from "./density.js";
 
 export type UnitDimension = "mass" | "volume" | "count";
 
@@ -69,6 +72,35 @@ export function fromBaseToUnit(base: number, unit: string): number {
   return base / factor;
 }
 
+/**
+ * Зводить масу рідини до об'єму — але ЛИШЕ коли щільність продукту відома.
+ *
+ * 900 г молока це 874 мл, а не 900 мл: щільність 1.03. Без цієї конверсії
+ * «Молоко 900 г» із чека і «Молоко 1 л» лишались би двома позиціями за
+ * однакової назви — тобто головний кейс фічі («скільки в мене молока —
+ * одним рядком») не спрацьовував би саме на молоці, бо в чеку Сільпо воно
+ * приходить у грамах.
+ *
+ * AI-DANGER: межа тут — `knownDensityGPerMl`, а НЕ `densityFor`. Дефолт
+ * 1.0 перетворив би «не знаю» на «900 г = 900 мл»; для меду це помилка на
+ * 30%, і вона тихо потекла б у калорії та список покупок. Продукт без
+ * щільності лишається у своєму вимірі — дві чесні позиції кращі за одну з
+ * вигаданим числом.
+ */
+export function massToVolumeIfKnown(
+  base: { dimension: UnitDimension; base: number },
+  name: unknown,
+): { dimension: UnitDimension; base: number } {
+  if (base.dimension !== "mass") return base;
+  const density = knownDensityGPerMl(name);
+  if (density == null || !(density > 0)) return base;
+  // Ціле число мілілітрів. Дробові мл у коморі сенсу не мають, а без
+  // округлення саме тут воно протікає в показ: 900 / 1.03 = 873.786, і
+  // позиція малює «1 873,786 мл». Округлюємо ДО запису у варіант, тож
+  // інваріант суми рахується вже з цілих і не розходиться.
+  return { dimension: "volume", base: Math.round(base.base / density) };
+}
+
 /** Фасування завжди починається з цифри — «800г», «0,25л», «1.5 л». */
 const PACKAGING_RE = /^\d/;
 
@@ -90,6 +122,7 @@ const PACK_SPLIT_RE = /^([\d.,]+)\s*(.*)$/;
 export function receiptQtyToBase(
   qty: number | null | undefined,
   unit: string | null | undefined,
+  name?: unknown,
 ): { qty: number; unit: BaseUnit } | null {
   if (qty == null || !Number.isFinite(qty) || qty <= 0) return null;
   const raw = String(unit ?? "").trim();
@@ -103,12 +136,14 @@ export function receiptQtyToBase(
     if (!packUnit) return null;
     const based = toBase(amount * qty, packUnit);
     if (!based) return null;
-    return { qty: based.base, unit: baseUnitFor(based.dimension) };
+    const out = massToVolumeIfKnown(based, name);
+    return { qty: out.base, unit: baseUnitFor(out.dimension) };
   }
 
   const normalized = normalizeUnit(raw);
   if (!normalized) return null;
   const based = toBase(qty, normalized);
   if (!based) return null;
-  return { qty: based.base, unit: baseUnitFor(based.dimension) };
+  const out = massToVolumeIfKnown(based, name);
+  return { qty: out.base, unit: baseUnitFor(out.dimension) };
 }

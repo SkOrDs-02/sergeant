@@ -29,8 +29,9 @@ function fromReceipt(
   qty: number,
   unit: string,
   addedAt: string,
+  genericName = "",
 ): PantryItem {
-  const based = receiptQtyToBase(qty, unit);
+  const based = receiptQtyToBase(qty, unit, genericName || name);
   if (!based) throw new Error(`не вдалось звести до базової: ${qty} ${unit}`);
   return {
     name: "",
@@ -53,6 +54,30 @@ describe("receiptQtyToBase (рішення 7)", () => {
     [2, "л", { qty: 2000, unit: "мл" }],
   ])("%s + '%s' → базова одиниця", (qty, unit, expected) => {
     expect(receiptQtyToBase(qty, unit)).toEqual(expected);
+  });
+
+  // 900 г молока це НЕ 900 мл: щільність 1.03. Без цієї конверсії головний
+  // кейс фічі не спрацьовує саме на молоці — Сільпо віддає його в грамах.
+  it("зводить масу рідини до об'єму, коли щільність відома", () => {
+    const milk = receiptQtyToBase(1, "900г", "Молоко")!;
+    expect(milk.unit).toBe("мл");
+    // Ціле число мілілітрів — дробові мл у коморі сенсу не мають.
+    expect(milk.qty).toBe(Math.round(900 / 1.03));
+    expect(milk.qty).not.toBe(900);
+  });
+
+  it("НЕ конвертує, коли щільності немає — дефолт 1.0 сюди не тече", () => {
+    // Для продукту поза таблицею «900 г = 900 мл» було б вигаданим числом.
+    expect(receiptQtyToBase(1, "900г", "Сир кисломолочний")).toEqual({
+      qty: 900,
+      unit: "г",
+    });
+  });
+
+  it("мед у грамах не стає рівною кількістю мілілітрів (1.42)", () => {
+    const honey = receiptQtyToBase(1, "400г", "Мед")!;
+    expect(honey.unit).toBe("мл");
+    expect(honey.qty).toBe(Math.round(400 / 1.42));
   });
 
   it("не вигадує число для одиниці без масштабу", () => {
@@ -99,18 +124,47 @@ describe("mergeItems із варіантами", () => {
     expect(merged[0]!.sources).toHaveLength(2);
   });
 
-  it("кейс 7: маса і обʼєм лишаються двома позиціями за однакової назви", () => {
+  it("кейс 7: маса і обʼєм лишаються двома позиціями, коли щільність невідома", () => {
     const grams = {
-      ...fromReceipt("Молоко сухе 900г", 1, "900г", "2026-08-21"),
-      name: "Молоко",
+      ...fromReceipt("Сир кисломолочний 900г", 1, "900г", "2026-08-21", "Сир"),
+      name: "Сир",
     };
     const millis = {
-      ...fromReceipt("Молоко 1л", 1, "1л", "2026-08-21"),
-      name: "Молоко",
+      ...fromReceipt("Сир питний 1л", 1, "1л", "2026-08-21", "Сир"),
+      name: "Сир",
     };
     const merged = mergeItems([], [grams, millis]);
     expect(merged).toHaveLength(2);
     expect(merged.map((x) => x.unit)).toEqual(["г", "мл"]);
+  });
+
+  // Рішення founder-а 2026-08-29, що уточнює рішення 7 спеки: там, де
+  // щільність ВІДОМА, маса й обʼєм сходяться в одну картку. Інакше «Молоко
+  // 900 г» із чека і «Молоко 1 л» лишались би двома рядками — тобто фіча
+  // не працювала б на продукті, заради якого її писали.
+  it("молоко в грамах і в літрах — ОДНА позиція, бо щільність відома", () => {
+    const grams = {
+      ...fromReceipt(
+        "Молоко Яготинське 2.6% 900г",
+        1,
+        "900г",
+        "2026-08-21",
+        "Молоко",
+      ),
+      name: "Молоко",
+    };
+    const millis = {
+      ...fromReceipt("Молоко Галичина 1%", 1, "1л", "2026-08-28", "Молоко"),
+      name: "Молоко",
+    };
+    const merged = mergeItems([], [grams, millis]);
+    expect(merged).toHaveLength(1);
+    const item = merged[0]!;
+    expect(item.unit).toBe("мл");
+    // 900 г / 1.03 + 1000 мл = 1874 мл, а НЕ 1900.
+    expect(item.qty).toBe(Math.round(900 / 1.03) + 1000);
+    expect(item.sources).toHaveLength(2);
+    expect(pantrySourcesInvariantHolds(item)).toBe(true);
   });
 
   it("наявний ручний залишок стає синтетичним варіантом, інваріант тримається", () => {

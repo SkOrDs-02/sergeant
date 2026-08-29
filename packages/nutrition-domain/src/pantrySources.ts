@@ -18,7 +18,7 @@ import {
   type PantryItem,
   type PantryItemSource,
 } from "./pantryTextParser.js";
-import { baseUnitFor, toBase } from "./units.js";
+import { baseUnitFor, massToVolumeIfKnown, toBase } from "./units.js";
 
 /** Гасить float-похибку (0.1+0.2=0.30000000000000004) до кухонної точності. */
 function roundBase(value: number): number {
@@ -40,7 +40,7 @@ export function sourcesTotal(
  * одиниця немасштабована (`уп` — пакет може важити будь-що).
  */
 export function itemQtyInBase(
-  item: Pick<PantryItem, "qty" | "unit">,
+  item: Pick<PantryItem, "name" | "qty" | "unit">,
 ): { qty: number; unit: string } | null {
   const qty = Number(item.qty);
   if (!Number.isFinite(qty) || qty <= 0) return null;
@@ -48,7 +48,10 @@ export function itemQtyInBase(
   if (!unit) return null;
   const based = toBase(qty, unit);
   if (!based) return null;
-  return { qty: roundBase(based.base), unit: baseUnitFor(based.dimension) };
+  // Маса рідини з відомою щільністю рахується в мл — інакше «Молоко 900 г»
+  // і «Молоко 1 л» ніколи не зійшлись би в одну картку продукту.
+  const out = massToVolumeIfKnown(based, item.name);
+  return { qty: roundBase(out.base), unit: baseUnitFor(out.dimension) };
 }
 
 /**
