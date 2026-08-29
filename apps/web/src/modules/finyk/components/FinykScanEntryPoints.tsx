@@ -60,6 +60,15 @@ export interface FinykScanEntryPointsProps {
   storage: ManualExpenseWriteThroughStorage;
   onReceiptLinked: (txRef: string, receiptId: number) => void;
   customCategories?: readonly CustomCategoryInput[] | undefined;
+  /**
+   * Аркуш масового імпорту КОНТРОЛЬОВАНИЙ ззовні, на відміну від сканера
+   * чеків поруч. Причина: його відкриває не лише FAB, а й плашка
+   * нагадування в Огляді (`ImportReminderBanner`), і обидва входи мають
+   * вести в один і той самий аркуш. Тримати стан тут означало б або
+   * другий екземпляр аркуша, або сигнальний проп-костиль.
+   */
+  bulkImportOpen: boolean;
+  onBulkImportOpenChange: (open: boolean) => void;
 }
 
 export function FinykScanEntryPoints({
@@ -67,10 +76,11 @@ export function FinykScanEntryPoints({
   storage,
   onReceiptLinked,
   customCategories,
+  bulkImportOpen,
+  onBulkImportOpenChange,
 }: FinykScanEntryPointsProps) {
   const toast = useToast();
   const [showReceiptScan, setShowReceiptScan] = useState(false);
-  const [showBulkImport, setShowBulkImport] = useState(false);
 
   return (
     <>
@@ -95,7 +105,7 @@ export function FinykScanEntryPoints({
             id: "bulk-import",
             icon: "upload",
             label: "Додати документи",
-            onClick: () => setShowBulkImport(true),
+            onClick: () => onBulkImportOpenChange(true),
           },
         ]}
       />
@@ -121,12 +131,12 @@ export function FinykScanEntryPoints({
         </SectionErrorBoundary>
       )}
 
-      {showBulkImport && (
+      {bulkImportOpen && (
         <SectionErrorBoundary title="Не вдалось відкрити масовий імпорт">
           <Suspense fallback={<SheetOpeningFallback />}>
             <BulkImportSheet
-              open={showBulkImport}
-              onClose={() => setShowBulkImport(false)}
+              open={bulkImportOpen}
+              onClose={() => onBulkImportOpenChange(false)}
               storage={storage}
               customCategories={customCategories}
             />

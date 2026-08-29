@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, expect, it, vi } from "vitest";
 import { ToastProvider } from "@shared/hooks/useToast";
@@ -38,6 +39,31 @@ vi.mock("./lazyReceiptSheets", () => ({
 import { FinykScanEntryPoints } from "./FinykScanEntryPoints";
 import type { ManualExpenseWriteThroughStorage } from "../hooks/manualExpenseWriteThrough";
 
+/**
+ * Аркуш масового імпорту контрольований ззовні (його відкривають два
+ * входи: FAB тут і плашка нагадування в Огляді), тож тест тримає той стан
+ * так само, як `FinykApp` — інакше перевірявся б не той контракт, який
+ * компонент насправді має.
+ */
+function ControlledEntryPoints({
+  onAddExpense,
+  storage,
+}: {
+  onAddExpense: () => void;
+  storage: ManualExpenseWriteThroughStorage;
+}) {
+  const [bulkImportOpen, setBulkImportOpen] = useState(false);
+  return (
+    <FinykScanEntryPoints
+      onAddExpense={onAddExpense}
+      storage={storage}
+      onReceiptLinked={vi.fn()}
+      bulkImportOpen={bulkImportOpen}
+      onBulkImportOpenChange={setBulkImportOpen}
+    />
+  );
+}
+
 function renderEntryPoints(onAddExpense = vi.fn()) {
   const storage: ManualExpenseWriteThroughStorage = {
     manualExpenses: [],
@@ -50,11 +76,7 @@ function renderEntryPoints(onAddExpense = vi.fn()) {
   render(
     <QueryClientProvider client={client}>
       <ToastProvider>
-        <FinykScanEntryPoints
-          onAddExpense={onAddExpense}
-          storage={storage}
-          onReceiptLinked={vi.fn()}
-        />
+        <ControlledEntryPoints onAddExpense={onAddExpense} storage={storage} />
       </ToastProvider>
     </QueryClientProvider>,
   );

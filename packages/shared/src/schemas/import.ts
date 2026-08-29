@@ -431,3 +431,25 @@ export const ImportBatchUndoResponseSchema = z.object({
 export type ImportBatchUndoResponse = z.infer<
   typeof ImportBatchUndoResponseSchema
 >;
+
+/**
+ * `GET /api/finyk/import/recent` — сирі факти для плашки «залий
+ * документи» (спека `docs/90-work/planning/specs/finyk-import-reminders.md`).
+ *
+ * Сервер НЕ виносить вердикт «показувати чи ні» навмисно. Умова плашки
+ * росте від ЧАСУ, а не від даних («днів від останнього імпорту»), тож
+ * серверна відповідь застаріває сама собою на довго відкритій вкладці —
+ * та сама пастка, яку вже ловив `useMonoStaleness`. Вердикт вважає
+ * клієнт із власним годинником, а сервер віддає лише дати.
+ */
+export const ImportRecentSourceSchema = z.object({
+  source: z.enum(IMPORT_SOURCES),
+  /** ISO-дати останніх успішних батчів цього типу, найновіший перший. */
+  recentAt: z.array(z.iso.datetime()).min(1),
+});
+export type ImportRecentSource = z.infer<typeof ImportRecentSourceSchema>;
+
+export const ImportRecentResponseSchema = z.object({
+  sources: z.array(ImportRecentSourceSchema),
+});
+export type ImportRecentResponse = z.infer<typeof ImportRecentResponseSchema>;

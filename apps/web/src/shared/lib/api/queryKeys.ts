@@ -117,6 +117,11 @@ export const finykKeys = {
   // `analyzeImportScreenshot`/`previewImportStatement` are mutations;
   // `getImportBatch` (undo-summary re-read) is the only cached GET.
   importBatch: (id: number) => ["finyk", "import-batch", id] as const,
+
+  // Дати останніх імпортів по кожному типу документа — джерело фактів для
+  // плашки «залий документи». Інвалідується після успішного commit-у, щоб
+  // плашка зникла без перезавантаження сторінки.
+  importRecent: () => ["finyk", "import-recent"] as const,
 };
 
 // ─── Silpo (MCP receipts integration, walking-skeleton experiment) ────────
