@@ -57,8 +57,8 @@ export default function AboutPage() {
           </div>
           <figure className="paper-shadow rotate-[1.2deg] rounded-[var(--radius-card)] bg-note px-7 py-6">
             <blockquote className="font-serif text-lg italic leading-normal text-foreground sm:text-xl">
-              «Назва – від сержанта, який тримає стрій без крику: рахує, звіряє
-              і чесно каже, що бачить»
+              «Трекери зазвичай або тренери-мотиватори, або бухгалтери. Мені був
+              потрібен сержант: той, хто щодня поруч, тримає лад і каже як є»
             </blockquote>
           </figure>
         </section>
