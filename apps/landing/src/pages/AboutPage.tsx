@@ -48,17 +48,17 @@ export default function AboutPage() {
               чому зірваний сніданок тягне за собою зірваний день.
             </p>
             <p className="leading-relaxed text-foreground">
-              Тому я роблю Sergeant: не пʼятий трекер, а місце, де чотири сфери
-              нарешті бачать одна одну. Користуюсь ним щодня сам і викладаю
-              процес розробки відкрито. Це інструмент, без якого мені самому вже
-              незручно жити.
+              Тому я роблю Sergeant – місце, де чотири сфери нарешті бачать одна
+              одну, замість пʼятого відокремленого трекера. Користуюсь ним щодня
+              сам і викладаю процес розробки відкрито. Це інструмент, без якого
+              мені самому вже незручно жити.
             </p>
             <p className="font-serif italic text-subtle">– автор Sergeant</p>
           </div>
           <figure className="paper-shadow rotate-[1.2deg] rounded-[var(--radius-card)] bg-note px-7 py-6">
             <blockquote className="font-serif text-lg italic leading-normal text-foreground sm:text-xl">
-              «Назва – від сержанта, який не читає лекцій і не карає. Він рахує,
-              тримає стрій і чесно каже, що бачить»
+              «Назва – від сержанта, який тримає стрій без крику: рахує, звіряє
+              і чесно каже, що бачить»
             </blockquote>
           </figure>
         </section>
