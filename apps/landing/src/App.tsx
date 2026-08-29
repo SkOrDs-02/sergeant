@@ -20,7 +20,7 @@ import { ANALYTICS_EVENTS, LANDING_LOCALE, track } from "./lib/analytics";
  * Новий маршрут = новий запис тут (він же потрапляє в `path` події
  * `LANDING_VIEWED`; усе невідоме зводиться до `/404`).
  */
-const ROUTES: Record<string, ComponentType> = {
+export const ROUTES: Record<string, ComponentType> = {
   "/": HomePage,
   "/beta": BetaPage,
   "/about": AboutPage,

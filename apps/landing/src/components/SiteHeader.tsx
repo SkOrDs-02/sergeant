@@ -15,7 +15,10 @@ const PAGE_ITEMS = [
 
 export default function SiteHeader() {
   const [open, setOpen] = useState(false);
-  const onHome = window.location.pathname === "/";
+  // SSG-прохід (entry-server) не має window; «/#hash» замість «#hash» у
+  // статичному HTML веде на той самий URL, а після маунта клієнт перерендерить.
+  const onHome =
+    typeof window !== "undefined" && window.location.pathname === "/";
 
   const anchor = (hash: string) => (onHome ? `#${hash}` : `/#${hash}`);
 
