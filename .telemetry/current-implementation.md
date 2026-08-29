@@ -97,7 +97,7 @@ Event-name constants centralized in [`packages/shared/src/lib/analyticsEvents.ts
 In addition to PostHog, each platform writes to:
 
 - **Local ring buffer** — [`dualWriteTelemetry.ts`](../apps/web/src/core/observability/dualWriteTelemetry.ts) (web, max 200), [`dualWriteTelemetry.ts`](../apps/mobile/src/lib/observability/dualWriteTelemetry.ts) (mobile, max 100). Stored in localStorage / MMKV. Read by debug surfaces.
-- **Product-memory sync** — [`productMemorySync.ts`](../apps/web/src/core/observability/productMemorySync.ts) forwards a subset of events to the `/recall` endpoint for AI-memory consumption.
+- **Product-memory sync** — `productMemorySync.ts` (видалено PR #928) forwards a subset of events to the `/recall` endpoint for AI-memory consumption.
 
 Total instrumented event volume per session is therefore higher than PostHog's view alone.
 
