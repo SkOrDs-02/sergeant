@@ -88,7 +88,7 @@ describe("NutritionSection", () => {
     });
   });
 
-  // Редактор КБЖУ живе тільки в модулі Їжі (`DailyPlanCard`). Ні полів, ні
+  // Редактор КБЖВ живе тільки в модулі Їжі (`DailyPlanCard`). Ні полів, ні
   // посилання на них у налаштуваннях більше немає.
   it("does not surface the macro editor at all", () => {
     renderSection();

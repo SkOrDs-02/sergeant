@@ -65,7 +65,7 @@ export const CAPABILITY_GROUPS: readonly CapabilityGroup[] = [
         id: "nutrition",
         title: "Їжа: харчування",
         description:
-          "Прийоми їжі, КБЖУ й вода за день. Цілі можна порахувати з твоєї біометрії, а продукти – додати сканом штрихкоду.",
+          "Прийоми їжі, КБЖВ й вода за день. Цілі можна порахувати з твоєї біометрії, а продукти – додати сканом штрихкоду.",
         icon: "utensils",
         href: "/nutrition/menu",
         module: "nutrition",
