@@ -21,6 +21,9 @@ import { __resetSqliteDbForTests, getSqliteDb } from "../sqlite";
 vi.mock("@sqlite.org/sqlite-wasm", () => import("./sqlite-wasm-fake"));
 vi.mock("../../observability/sentry.js", () => ({
   addSentryBreadcrumb: vi.fn(),
+  // `getSqliteDb` тегує активний VFS на всю сесію (див. AI-CONTEXT у
+  // `sqlite.ts`) — без цього експорту мок валить увесь файл.
+  setSentryTag: vi.fn(),
 }));
 
 function makeWorkingLocalStorage(): Storage {

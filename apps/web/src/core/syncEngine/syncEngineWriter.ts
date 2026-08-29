@@ -14,6 +14,7 @@ import type {
   RecoverDeadLetterSelector,
   SyncOpOutboxStatusCounts,
 } from "@sergeant/db-schema/sqlite";
+import { classifyTickError, readOnlineStatus } from "./tickErrorReport.js";
 
 export interface SentryBreadcrumb {
   readonly category: string;
@@ -86,7 +87,22 @@ export function createSyncEngineWriterRuntime(
   };
 
   const onTickError = (error: unknown) => {
-    captureException?.(error, { scope: "sync-v2-push-tick" });
+    // Зірваний мережею тік — штатний стан офлайн-first застосунку, а не
+    // помилка. Розбір і межі глушіння — у `tickErrorReport.ts`.
+    const verdict = classifyTickError(
+      error,
+      "sync-v2-push-tick",
+      readOnlineStatus(),
+    );
+    if (!verdict.report) {
+      addBreadcrumb?.({
+        category: "sync.v2.push",
+        level: "warning",
+        message: "sync v2 push tick failed while offline",
+      });
+      return;
+    }
+    captureException?.(error, verdict.context);
   };
 
   const onSkippedTick = () => {
