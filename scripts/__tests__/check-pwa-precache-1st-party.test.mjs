@@ -8,6 +8,7 @@ import assert from "node:assert/strict";
 
 import {
   ORIGIN_ALLOWLIST,
+  checkSqliteWasmPaired,
   extractPrecacheUrls,
   isFirstParty,
 } from "../check-pwa-precache-1st-party.mjs";
@@ -134,5 +135,42 @@ describe("end-to-end gate logic", () => {
       "https://fonts.googleapis.com/css?family=Inter",
       "//cdn.example.com/lib.js",
     ]);
+  });
+});
+
+// ── checkSqliteWasmPaired ────────────────────────────────────────────────────
+//
+// Регресія SERGEANT-API-M / SERGEANT-WEB-R: glue у прекеші без свого
+// бінарника. Саме ця конфігурація давала «both async and sync fetching of
+// the wasm failed» на старих воркерах.
+
+describe("checkSqliteWasmPaired", () => {
+  it("ловить glue без .wasm — точна форма регресії", () => {
+    const urls = [
+      "index.html",
+      "assets/vendor-sqlite-abc123.js",
+      "assets/index-def456.js",
+    ];
+    const result = checkSqliteWasmPaired(urls);
+    assert.equal(result.ok, false);
+    assert.deepEqual(result.glue, ["assets/vendor-sqlite-abc123.js"]);
+    assert.deepEqual(result.wasm, []);
+  });
+
+  it("пропускає, коли glue і бінарник у прекеші разом", () => {
+    const urls = [
+      "index.html",
+      "assets/vendor-sqlite-abc123.js",
+      "assets/sqlite3-DGXXSD5r.wasm",
+    ];
+    const result = checkSqliteWasmPaired(urls);
+    assert.equal(result.ok, true);
+    assert.deepEqual(result.wasm, ["assets/sqlite3-DGXXSD5r.wasm"]);
+  });
+
+  it("не падає на білді взагалі без sqlite — гейт не вимагає wasm сам по собі", () => {
+    const result = checkSqliteWasmPaired(["index.html", "assets/index-a.js"]);
+    assert.equal(result.ok, true);
+    assert.deepEqual(result.glue, []);
   });
 });
