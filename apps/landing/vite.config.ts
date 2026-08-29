@@ -56,6 +56,12 @@ export default defineConfig(({ mode }) => {
       // тримає один інстанс, якщо транзитивна залежність притягне копію.
       dedupe: ["react", "react-dom"],
     },
+    ssr: {
+      // SSG-збірка (entry-server) бандлить УСЕ, включно з workspace-пакетами:
+      // prerender.mjs тоді імпортує один самодостатній файл, і жодна
+      // залежність не резолвиться в рантаймі Node на CI.
+      noExternal: true,
+    },
     server: {
       host: true,
       port: 3100,
