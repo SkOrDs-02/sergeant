@@ -132,7 +132,7 @@ describe("useNutritionPantries — ledger-подія на кожен з пʼят
   it("onSaveItemEdit → чекпойнт 'adjust' на введену кількість", () => {
     seedPantries([{ name: "цукор", qty: 200, unit: "г", notes: null }]);
     const result = renderHarness();
-    act(() => result.current.onSaveItemEdit(0, 750, "г"));
+    act(() => result.current.onSaveItemEdit(0, "цукор", 750, "г"));
     const ev = lastEvent();
     expect(ev.kind).toBe("adjust");
     expect(ev.absQty).toBe(750);
@@ -143,7 +143,7 @@ describe("useNutritionPantries — ledger-подія на кожен з пʼят
   it("onSaveItemEdit із очищеною кількістю (null) НЕ емітить подію", () => {
     seedPantries([{ name: "цукор", qty: 200, unit: "г", notes: null }]);
     const result = renderHarness();
-    act(() => result.current.onSaveItemEdit(0, null, "г"));
+    act(() => result.current.onSaveItemEdit(0, "цукор", null, "г"));
     expect(appendMock).not.toHaveBeenCalled();
   });
 

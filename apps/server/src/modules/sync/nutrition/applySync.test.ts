@@ -370,6 +370,59 @@ describe("комора: lookup звужений по користувачу (м�
     expect(insert.params[2]).toBe("user-2");
   });
 
+  it("applyNutritionPantryItems пропускає `sources` наскрізь як непрозорий JSON", async () => {
+    const fake = new FakeClient();
+    const sources = JSON.stringify([
+      {
+        name: "Молоко Яготинське 2.6% 900г",
+        qty: 900,
+        unit: "мл",
+        addedAt: "2026-08-21",
+      },
+    ]);
+
+    await expect(
+      applyNutritionPantryItems(
+        asClient(fake),
+        syncOp("nutrition_pantry_items", "insert", {
+          id: "home::0::Молоко",
+          user_id: "user-2",
+          pantry_id: "home",
+          name: "Молоко",
+          qty: 900,
+          unit: "мл",
+          sources,
+        }),
+        "user-2",
+        new Date("2026-08-29T10:00:00.000Z"),
+      ),
+    ).resolves.toEqual({ status: "applied" });
+
+    const insert = lastQuery(fake);
+    expect(insert.sql).toContain("sources");
+    // Сервер JSON не розбирає: інваріант суми тримає домен на клієнті.
+    expect(insert.params).toContain(sources);
+  });
+
+  it("applyNutritionPantryItems відкидає роздутий `sources`", async () => {
+    const fake = new FakeClient();
+
+    await expect(
+      applyNutritionPantryItems(
+        asClient(fake),
+        syncOp("nutrition_pantry_items", "insert", {
+          id: "home::0::Молоко",
+          user_id: "user-2",
+          pantry_id: "home",
+          name: "Молоко",
+          sources: "x".repeat(4001),
+        }),
+        "user-2",
+        new Date("2026-08-29T10:00:00.000Z"),
+      ),
+    ).resolves.toEqual({ status: "rejected", reason: "text_too_long" });
+  });
+
   it("op від імені чужого user_id усе одно відкидається до будь-якого DML", async () => {
     const fake = new FakeClient();
 

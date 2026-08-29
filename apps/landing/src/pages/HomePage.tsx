@@ -6,7 +6,7 @@ import {
   ModulesSection,
   ScreensSection,
   ConnectionsSection,
-  StatuteSection,
+  PromisesSection,
   FounderSection,
   StatusSection,
   FaqSection,
@@ -200,7 +200,7 @@ export default function HomePage() {
           </p>
         </section>
 
-        <StatuteSection />
+        <PromisesSection />
         <FounderSection />
         <StatusSection />
         <FaqSection />

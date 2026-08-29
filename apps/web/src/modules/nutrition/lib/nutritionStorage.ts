@@ -417,6 +417,13 @@ export function extractPantrySnapshots(
       qty: typeof it.qty === "number" ? it.qty : null,
       unit: typeof it.unit === "string" ? it.unit : null,
       notes: typeof it.notes === "string" ? it.notes : null,
+      // Варіанти покупок їдуть одним JSON-полем разом зі своєю позицією
+      // (міграція 130). Порожній список і `null` означають одне й те саме —
+      // пишемо `null`, щоб diff не бачив зміни там, де її немає.
+      sources:
+        Array.isArray(it.sources) && it.sources.length > 0
+          ? JSON.stringify(it.sources)
+          : null,
     })),
   }));
 }
