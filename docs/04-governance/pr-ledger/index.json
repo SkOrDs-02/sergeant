@@ -1,8 +1,17 @@
 {
   "$schema": "../governance/schemas/pr-ledger.schema.json",
   "version": 1,
-  "generated_at": "2026-08-28",
+  "generated_at": "2026-08-29",
   "prs": [
+    {
+      "number": 936,
+      "title": "docs(docs): полагодити dangling-ref ADR-0075 після видалення invocation-audit",
+      "merged_at": "2026-08-29T23:41:29Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": [
+        "docs/04-governance/adr/0075-openclaw-gateway-decommissioned.md"
+      ]
+    },
     {
       "number": 895,
       "title": "fix(agents): полірування агентного шару після розкатки module-owners",

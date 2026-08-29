@@ -92,3 +92,14 @@ Docs, на які лінкують immutable-ADR (`openclaw-roadmap.md`, `deploy
 
 - Якщо колись знадобиться co-founder-асистент — це буде нова реалізація з нуля
   (external Gateway як продукт лишається доступним, але інтеграцію треба відновлювати).
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                         | Merged     |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------- | ---------- |
+| [#936](https://github.com/Skords-01/Sergeant/pull/936) | docs(docs): полагодити dangling-ref ADR-0075 після видалення invocation-audit | 2026-08-29 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
