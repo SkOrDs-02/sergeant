@@ -79,7 +79,7 @@
     "sergeant-module-ai": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "7cff37dde8af7048cde146f2f40404979269afee839d02c49146d81b14f58d9b"
+      "computedHash": "e1f91846e555478a6959b4a2b266847119dc6590d41ba5d95417fc64ce70ee3d"
     },
     "sergeant-module-billing": {
       "source": "local",
