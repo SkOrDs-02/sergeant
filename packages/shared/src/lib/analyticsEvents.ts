@@ -583,6 +583,21 @@ export const ANALYTICS_EVENTS = Object.freeze({
   // not a route change).
   ROUTE_CHANGE: "route_change",
 
+  // Плашка «залий документи» (спека
+  // `docs/90-work/planning/specs/finyk-import-reminders.md` § Телеметрія).
+  //
+  // `_SHOWN` — плашка реально відрендерилась; це знаменник CTR у критерії
+  // зняття фічі. Окремої shadow-події тут НЕ заводимо саме тому: подія
+  // «умова істинна, але плашку не показали» зіпсувала б цей знаменник, і
+  // фічу зняли б за критерієм, якого вона не проходила.
+  //
+  // Payload: { source: "bank_statement" | "bank_screenshot",
+  //            daysSince: number, expectedIntervalDays: number }
+  FINYK_IMPORT_REMINDER_SHOWN: "finyk_import_reminder_shown",
+  FINYK_IMPORT_REMINDER_CLICKED: "finyk_import_reminder_clicked",
+  FINYK_IMPORT_REMINDER_SNOOZED: "finyk_import_reminder_snoozed",
+  FINYK_IMPORT_REMINDER_MUTED: "finyk_import_reminder_muted",
+
   // Хвиля 2 — петлі цінності («сигнал показано → дію зроблено»).
   // Група живе в окремому модулі, щоб тримати цей файл у межах
   // module-size-дисципліни (Hard Rule #18); публічний доступ незмінний —

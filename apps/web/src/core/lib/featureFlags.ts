@@ -61,6 +61,14 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     defaultValue: false,
     experimental: true,
   },
+  {
+    id: "finyk_import_reminder",
+    label: "Нагадування залити документи",
+    description:
+      "Плашка в Огляді Фініка, коли ти давно не додавав виписку чи скрін банкінгу. Показується лише за твоїм звичним ритмом: якщо імпортів не було, вона мовчить.",
+    defaultValue: false,
+    experimental: true,
+  },
   // Stage 13 PR #078: `feature.finyk.sqlite_v2.mono_mirror` retired.
   // Previously defaultValue: true, experimental: true. Mono mirror now
   // triggers unconditionally — see monoMirrorBoot.ts / monoMirrorGate.ts.

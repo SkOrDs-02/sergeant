@@ -98,6 +98,9 @@ export default function App({
   const showBalance = storage.showBalance;
   const setShowBalance = storage.setShowBalance;
   const [showExpenseSheet, setShowExpenseSheet] = useState(false);
+  // Аркуш масового імпорту живе тут, а не в `FinykScanEntryPoints`: його
+  // відкривають два входи — FAB і плашка нагадування в Огляді.
+  const [showBulkImport, setShowBulkImport] = useState(false);
   const [showLoginOverlay, setShowLoginOverlay] = useState(false);
   const loginOverlayRef = useRef<HTMLDivElement>(null);
   useDialogFocusTrap(showLoginOverlay, loginOverlayRef, {
@@ -225,6 +228,7 @@ export default function App({
             storage={storage}
             onNavigate={navigate}
             showBalance={showBalance}
+            onOpenBulkImport={() => setShowBulkImport(true)}
           />
         </SectionErrorBoundary>
       );
@@ -425,6 +429,8 @@ export default function App({
             storage={storage}
             onReceiptLinked={receiptLinks.recordReceiptLink}
             customCategories={storage.customCategories}
+            bulkImportOpen={showBulkImport}
+            onBulkImportOpenChange={setShowBulkImport}
           />
         )}
 

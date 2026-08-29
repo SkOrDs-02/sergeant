@@ -3,6 +3,7 @@ import {
   ImportBatchUndoResponseSchema,
   ImportCommitRequestSchema,
   ImportCommitResponseSchema,
+  ImportRecentResponseSchema,
   ImportScreenshotAnalyzeRequestSchema,
   ImportScreenshotAnalyzeResponseSchema,
   ImportStatementPreviewRequestSchema,
@@ -40,6 +41,7 @@ export const ImportCommitRequestBodySchema = ImportCommitRequestSchema;
 export const ImportCommitResponseBodySchema = ImportCommitResponseSchema;
 export const ImportBatchGetResponseBodySchema = ImportBatchGetResponseSchema;
 export const ImportBatchUndoResponseBodySchema = ImportBatchUndoResponseSchema;
+export const ImportRecentResponseBodySchema = ImportRecentResponseSchema;
 
 export type ImportScreenshotAnalyzeRequest = z.infer<
   typeof ImportScreenshotAnalyzeRequestBodySchema
@@ -63,6 +65,9 @@ export type ImportBatchGetResponse = z.infer<
 export type ImportBatchUndoResponse = z.infer<
   typeof ImportBatchUndoResponseBodySchema
 >;
+export type ImportRecentResponse = z.infer<
+  typeof ImportRecentResponseBodySchema
+>;
 
 // Nested shapes referenced inside the response types above — re-exported
 // verbatim so callers (bulk-review / import-batch UI) can type against
@@ -80,6 +85,7 @@ export type {
   ImportScreenshotDropped,
   ImportScreenshotRow,
   ImportSkipReason,
+  ImportRecentSource,
   ImportSkippedRow,
   ImportSource,
   ImportStatementProfile,
@@ -175,6 +181,22 @@ export interface FinykImportEndpoints {
     id: number,
     opts?: Pick<RequestOptions, "signal">,
   ) => Promise<ImportBatchUndoResponse>;
+  /**
+   * `GET /api/finyk/import/recent` — dates of the last successful batches
+   * per document type, newest first, for the "upload your documents"
+   * reminder banner.
+   *
+   * Deliberately returns FACTS, not a "show the banner" verdict: the
+   * condition grows with TIME rather than with data, so a server-side
+   * verdict goes stale on its own in a long-open tab. The caller decides
+   * via `FinykDomain.evaluateImportReminder` against its own clock.
+   *
+   * `sources` omits document types the user never imported, and skips
+   * undone batches — a source with no surviving rows is not history.
+   */
+  getRecentImports: (
+    opts?: Pick<RequestOptions, "signal">,
+  ) => Promise<ImportRecentResponse>;
 }
 
 export function createFinykImportEndpoints(
@@ -208,6 +230,12 @@ export function createFinykImportEndpoints(
         signal,
       });
       return ImportBatchGetResponseBodySchema.parse(raw);
+    },
+    getRecentImports: async ({ signal } = {}) => {
+      const raw = await http.get<unknown>("/api/finyk/import/recent", {
+        signal,
+      });
+      return ImportRecentResponseBodySchema.parse(raw);
     },
     deleteImportBatch: async (id, { signal } = {}) => {
       const raw = await http.del<unknown>(
