@@ -166,13 +166,15 @@ describe("GET /health/workers — degraded paths", () => {
     expect(res.body.workers.monoEnrichment).not.toHaveProperty("stack");
   });
 
-  it("reflects MONO_ENRICHMENT_WORKER_ENABLED + ANTHROPIC_API_KEY env flags", async () => {
-    // HR-3: env.ANTHROPIC_API_KEY is read from the Zod-validated env singleton
-    // (fixed at module-eval time), so we must use the canonical vi.stubEnv +
-    // vi.resetModules() + dynamic import() pattern — plain process.env mutation
-    // after the module was already loaded is a no-op for the guard.
+  it("reflects MONO_ENRICHMENT_WORKER_ENABLED + provider-key env flags", async () => {
+    // Гейт воркера з 2026-08-29 (#928) питає ключ РЕАЛЬНОГО провайдера
+    // категоризації — providerUpstreamReady("readonly"), дефолт
+    // LLM_READONLY_PROVIDER=openrouter → потрібен OPENROUTER_API_KEY
+    // (Anthropic-ключ цим шляхом більше не вимагається).
+    // HR-3: env читається з Zod-singleton-а (fixed at module-eval time), тож
+    // канонічний патерн vi.stubEnv + vi.resetModules() + dynamic import().
     vi.stubEnv("MONO_ENRICHMENT_WORKER_ENABLED", "true");
-    vi.stubEnv("ANTHROPIC_API_KEY", "sk-ant-test");
+    vi.stubEnv("OPENROUTER_API_KEY", "sk-or-test");
     queryMock.mockResolvedValue({ rows: [] });
     vi.resetModules();
     const { createApp: freshCreateApp } = await import("../app.js");
@@ -182,10 +184,11 @@ describe("GET /health/workers — degraded paths", () => {
     expect(res.body.workers.monoEnrichment.enabled).toBe(true);
   });
 
-  it("reports monoEnrichment.enabled=false when API key missing", async () => {
+  it("reports monoEnrichment.enabled=false when provider key missing", async () => {
     process.env["MONO_ENRICHMENT_WORKER_ENABLED"] = "true";
-    // env.ANTHROPIC_API_KEY defaults to "" (stringWithDefault("") in env schema)
-    // when the key is absent at module-eval time — no re-import needed here.
+    // Без OPENROUTER_API_KEY (і без ANTHROPIC_API_KEY як fallback-гілки
+    // предиката) readonly-провайдер недосяжний → enabled=false. Обидва
+    // дефолтяться у "" в env-схемі — re-import не потрібен.
     queryMock.mockResolvedValue({ rows: [] });
     const app = createApp();
     const res = await request(app).get("/health/workers");
