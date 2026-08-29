@@ -23,6 +23,7 @@ import { config } from "./config.js";
 import { pool } from "./db.js";
 import { drainReplicaPool } from "./dbReplica.js";
 import { env } from "./env.js";
+import { providerUpstreamReady } from "./http/requireAnthropicKey.js";
 import { markStartupComplete } from "./lib/appState.js";
 import {
   markSchemaDriftCheckStarted,
@@ -129,11 +130,13 @@ void pingSecurityRoom().then(({ ok, reason }) => {
 // Стартує у тому ж процесі, що API (in-process worker). Це свідомий вибір:
 // при поточному обʼємі трафіку (десятки tx/min) виносити окремий worker-сервіс
 // — оверкіл, а multi-replica-safety гарантує `FOR UPDATE SKIP LOCKED` у
-// `runEnrichmentTick`. Якщо ANTHROPIC_API_KEY не заданий — worker не стартує
-// (інакше кожен tick впаде на upstream-call). Default state: off; вмикається
-// через Railway env var, щоб локальний dev випадково не палив квоту.
+// `runEnrichmentTick`. Гейт по ключу — того провайдера, яким worker реально
+// категоризує (`LLM_READONLY_PROVIDER`, дефолт `openrouter`): до 2026-08-29
+// тут стояв `ANTHROPIC_API_KEY`, і на gateway-only проді worker мовчки не
+// стартував, хоча OpenRouter-шлях був робочий. Default state: off; вмикається
+// env-флагом, щоб локальний dev випадково не палив квоту.
 let enrichmentWorker: StartedWorker | null = null;
-if (env.MONO_ENRICHMENT_WORKER_ENABLED && env.ANTHROPIC_API_KEY) {
+if (env.MONO_ENRICHMENT_WORKER_ENABLED && providerUpstreamReady("readonly")) {
   enrichmentWorker = startMonoEnrichmentWorker(pool, {
     batchSize: env.MONO_ENRICHMENT_BATCH_SIZE,
     intervalMs: env.MONO_ENRICHMENT_INTERVAL_MS,
@@ -142,7 +145,8 @@ if (env.MONO_ENRICHMENT_WORKER_ENABLED && env.ANTHROPIC_API_KEY) {
 } else if (env.MONO_ENRICHMENT_WORKER_ENABLED) {
   logger.warn({
     msg: "mono_enrichment_worker_disabled_no_api_key",
-    reason: "ANTHROPIC_API_KEY is not configured",
+    reason:
+      "no upstream key for LLM_READONLY_PROVIDER (OPENROUTER_API_KEY or ANTHROPIC_API_KEY)",
   });
 }
 

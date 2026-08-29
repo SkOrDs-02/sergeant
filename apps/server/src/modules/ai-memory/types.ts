@@ -27,13 +27,15 @@ export const ALLOWED_MEMORY_SOURCES = [
   "routine",
   "journal",
   "digest",
+  // LEGACY-source: писався OpenClaw-архівом (`tg_topic_archive` backfill,
+  // ADR-0031). OpenClaw retired (ADR-0075), backfill-механіку знято
+  // 2026-08-29 — нових рядків не буде. Значення лишається в enum, щоб
+  // наявні рядки читались у list/recall і видалялись через UI; зняття з
+  // CHECK-constraint — двофазне, разом із чисткою даних.
   "cofounder",
-  // Migration 068 — PostHog → AI memory sync (PR-24). Behavioral product
-  // events (`onboarding_completed`, `first_action_completed`,
-  // `subscription_started`, `activation_v2_hit`) дзеркаляться як
-  // structured text-rows. Strict-isolation: `recall_memory` openclaw tool
-  // лишається на `sources=['cofounder']`; combined recall — через
-  // `POST /api/ai-memory/recall` з явним `sources=['cofounder','product']`.
+  // LEGACY-source: PostHog → memory дзеркало (migration 068, PR-24) знято
+  // 2026-08-29 — телеметрія в ролі «фактів про людину» шуміла в RAG.
+  // Значення лишається для наявних рядків; двофазне зняття — як вище.
   "product",
   // Migration 118 — L-8, аудит Профілю/Налаштувань (2026-08-08,
   // docs/90-work/audits/2026-08-08-profile-settings-deep-audit.md). Явно

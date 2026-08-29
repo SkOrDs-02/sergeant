@@ -1,7 +1,8 @@
-# AI-шар: mono (coach)
+# Інтеграція Monobank (mono)
 
-> **Last touched:** 2026-08-28 by @Skords-01. **Next review:** 2026-11-30.
+> **Last touched:** 2026-08-29 by @Skords-01. **Next review:** 2026-11-30.
 > **Status:** Active
 
-Контекст шару: `Read .agents/skills/sergeant-module-ai/SKILL.md` → канон `docs/01-product/model/hub-coach.md` (§ Журнал рішень).
-Ключові інваріанти: порада коуча ділить AI-квоту з чатом (ADR-0085); анонімного AI не існує — сесія обовʼязкова (ADR-0086).
+Це НЕ AI-шар і НЕ коуч (коуч живе в `apps/server/src/modules/chat/coach.ts`). Тут: webhook Monobank, enrichment-воркери категоризації транзакцій, jars, Privat.
+Контекст: `Read .agents/skills/sergeant-module-integrations/SKILL.md`; фінансовий домен — `sergeant-module-finyk`.
+Ключові інваріанти: воркери гейтяться ключем провайдера з `LLM_READONLY_PROVIDER` (`providerUpstreamReady("readonly")`), не Anthropic-ключем; токени банку — тільки шифровані (`MONO_TOKEN_ENC_KEY`), у логи не течуть (Hard Rule #21).

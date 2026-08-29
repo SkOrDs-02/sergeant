@@ -17,7 +17,7 @@ lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); t
 
 ## Мапа файлів
 
-- Server: `apps/server/src/modules/chat/` (HubChat tool defs, prompt cache), `apps/server/src/modules/mono/` (coach), `apps/server/src/modules/digest/`, `apps/server/src/modules/ai-memory/`.
+- Server: `apps/server/src/modules/chat/` (HubChat tool defs, prompt cache, `coach.ts` — коуч живе ТУТ; `modules/mono/` — це Monobank-інтеграція, не AI-шар), `apps/server/src/modules/digest/`, `apps/server/src/modules/ai-memory/`.
 - Web (executors): `apps/web/src/core/lib/hubChatActions.ts`, `apps/web/src/core/lib/chatActions/` (per-domain executor-и: `finykActions`, `fizrukActions`, `nutritionActions`, `routineActions`, `serverActions`, `crossActions`, `query*Actions`), `apps/web/src/core/lib/hubChatActionCards.ts`.
 - RQ-ключі: `hubKeys`, `coachKeys`, `chatKeys`, `digestKeys`, `aiMemoryKeys` з `apps/web/src/shared/lib/api/queryKeys.ts` (Hard Rule #2).
 

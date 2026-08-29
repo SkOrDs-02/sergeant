@@ -225,7 +225,7 @@ interface WelcomeScreenProps {
  * from Settings → «Переглянути вступну екскурсію»; only this
  * `/welcome` cold-start surface swapped. Persistence still flows
  * through `vibePicks` + `onboardingGate` so HubDashboard,
- * `getActiveModules`, and `productMemorySync` observe the same
+ * `getActiveModules` observe the same
  * downstream state regardless of which welcome surface ran.
  *
  * PR-05 promoted the demo entry to a first-class CTA *inside* the
@@ -264,7 +264,7 @@ export function WelcomeScreen({ onDone, onOpenAuth }: WelcomeScreenProps) {
   // selection, marks onboarding done, fires the canonical analytics
   // funnel and bubbles the picks up to App-level navigation. Mirrors
   // `useOnboardingWizardState.finish()` so legacy consumers
-  // (onboardingGate, productMemorySync) see identical state.
+  // (onboardingGate) see identical state.
   const handlePicksComplete = useCallback(
     (picks: DashboardModuleId[]) => {
       saveVibePicks(picks);

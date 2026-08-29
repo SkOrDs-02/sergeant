@@ -59,7 +59,7 @@ export { requireCsrfHeader } from "./requireCsrfHeader.js";
 export type { RequireCsrfHeaderOptions } from "./requireCsrfHeader.js";
 export { safeStringEqual } from "./safeCompare.js";
 export {
-  requireAnthropicKey,
+  providerUpstreamReady,
   requireChatUpstreamKey,
   requireLlmUpstream,
 } from "./requireAnthropicKey.js";
