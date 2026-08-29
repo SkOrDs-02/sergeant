@@ -126,6 +126,13 @@ export const nutritionPantryItems = pgTable(
     qty: real(),
     unit: text(),
     notes: text(),
+    /**
+     * Варіанти покупок, що злились у позицію (міграція 130) — JSON-масив
+     * `{name, qty, unit, addedAt}` у TEXT. NULL = «варіантів немає», а не
+     * порожній список. Інваріант суми тримає застосунок, не БД —
+     * `packages/nutrition-domain/src/pantrySources.ts`.
+     */
+    sources: text(),
     sortOrder: integer("sort_order").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()

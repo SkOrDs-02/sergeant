@@ -194,6 +194,7 @@ describe("sqlite/nutritionPantryItems schema snapshot", () => {
       "qty",
       "unit",
       "notes",
+      "sources",
       "sort_order",
       "created_at",
       "updated_at",
@@ -217,6 +218,9 @@ describe("sqlite/nutritionPantryItems schema snapshot", () => {
 
     expect(columnMap["unit"]!.notNull).toBe(false);
     expect(columnMap["notes"]!.notNull).toBe(false);
+    // Міграція 130: nullable — NULL означає «варіантів немає», не порожній список.
+    expect(columnMap["sources"]!.notNull).toBe(false);
+    expect(columnMap["sources"]!.hasDefault).toBe(false);
 
     expect(columnMap["sort_order"]!.dataType).toBe("number");
     expect(columnMap["sort_order"]!.notNull).toBe(true);
@@ -420,7 +424,7 @@ describe("sqlite/nutrition migrations exports", () => {
 
   it("ships the Stage 11 002_nutrition_full_state.sql delta", () => {
     // Append-only — `001_*` first, then `002_*` for the Stage 11 delta.
-    expect(NUTRITION_CLIENT_MIGRATIONS).toHaveLength(6);
+    expect(NUTRITION_CLIENT_MIGRATIONS).toHaveLength(7);
     expect(NUTRITION_CLIENT_MIGRATIONS[1]!.name).toBe(
       "002_nutrition_full_state.sql",
     );

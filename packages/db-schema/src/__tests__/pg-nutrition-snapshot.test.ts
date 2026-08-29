@@ -175,6 +175,7 @@ describe("pg/nutritionPantryItems schema snapshot", () => {
       "qty",
       "unit",
       "notes",
+      "sources",
       "sort_order",
       "created_at",
       "updated_at",
@@ -203,6 +204,9 @@ describe("pg/nutritionPantryItems schema snapshot", () => {
 
     expect(columnMap["unit"]!.notNull).toBe(false);
     expect(columnMap["notes"]!.notNull).toBe(false);
+    // Міграція 130: nullable — NULL означає «варіантів немає», не порожній список.
+    expect(columnMap["sources"]!.notNull).toBe(false);
+    expect(columnMap["sources"]!.hasDefault).toBe(false);
     expect(columnMap["deleted_at"]!.notNull).toBe(false);
   });
 

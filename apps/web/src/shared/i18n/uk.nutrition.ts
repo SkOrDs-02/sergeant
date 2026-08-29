@@ -107,6 +107,23 @@ export const nutritionPageMessages = {
   },
 
   /**
+   * Картка продукту в коморі — родова назва зверху, фактичні покупки
+   * всередині (спека `docs/90-work/planning/specs/pantry-generic-names.md`).
+   * Контрол розгортання зʼявляється лише від ДВОХ варіантів: на одному
+   * розкривати нічого.
+   */
+  pantrySources: {
+    expandLabel: "Показати покупки",
+    collapseLabel: "Сховати покупки",
+    variantsHeading: "Покупки",
+    unknownAddedAt: "без дати",
+    consumeTitle: "З чого списати?",
+    consumeDescription:
+      "У цій позиції кілька покупок. Обери, з якої списати, або лишай найстарішу: вона псується першою.",
+    consumeOldestCta: "З найстарішої",
+  },
+
+  /**
    * «Поповнити комору з покупок Сільпо» — екран підтвердження перед
    * записом `replenish`-подій (Silpo integration трек C, спека
    * `docs/90-work/planning/specs/silpo-mcp-integration.md`
@@ -130,6 +147,13 @@ export const nutritionPageMessages = {
     itemsEmpty: "У цьому чеку немає позицій.",
     matchedPrefix: "Уже є:",
     newPosition: "Нова позиція",
+    // Показ згортання ДО запису — перша з двох страховок проти помилки
+    // евристики (друга — редагування назви вже в коморі). Рядки, де
+    // згортання нічого не змінило, цього блоку не мають взагалі.
+    collapsedTo: "Ляже як",
+    keepFullCta: "лишити повну",
+    keepFullActive: "Лишаю повну назву",
+    collapseCta: "згорнути",
     confirmCta: "Додати в комору",
     cancelCta: "Скасувати",
     loading: "Завантажую…",

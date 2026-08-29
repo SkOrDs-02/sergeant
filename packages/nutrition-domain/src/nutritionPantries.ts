@@ -2,10 +2,35 @@
  * Pure-операції над складами (pantries). Без `localStorage`.
  */
 import type { Pantry } from "./nutritionTypes.js";
-import type { PantryItem } from "./pantryTextParser.js";
+import type { PantryItem, PantryItemSource } from "./pantryTextParser.js";
 
 export function makeDefaultPantry(): Pantry {
   return { id: "home", name: "Дім", items: [], text: "" };
+}
+
+/**
+ * Варіанти позиції (картка продукту). Запис без придатної кількості
+ * відкидається: він зламав би інваріант «сума варіантів = кількість
+ * позиції», а мовчазний нуль у списку виглядав би як вичерпана покупка.
+ */
+function sanitizePantrySources(raw: unknown): PantryItemSource[] | null {
+  if (!Array.isArray(raw)) return null;
+  const out: PantryItemSource[] = [];
+  for (const s of raw as unknown[]) {
+    if (!s || typeof s !== "object") continue;
+    const r = s as Record<string, unknown>;
+    const name = String(r["name"] || "").trim();
+    const qty = Number(r["qty"]);
+    const unit = r["unit"] == null ? "" : String(r["unit"]).trim();
+    if (!name || !unit || !Number.isFinite(qty) || qty <= 0) continue;
+    out.push({
+      name,
+      qty,
+      unit,
+      addedAt: r["addedAt"] == null ? null : String(r["addedAt"]),
+    });
+  }
+  return out.length > 0 ? out : null;
 }
 
 function sanitizePantryItem(raw: unknown): PantryItem | null {
@@ -20,6 +45,7 @@ function sanitizePantryItem(raw: unknown): PantryItem | null {
     qty,
     unit: r["unit"] == null ? null : String(r["unit"]),
     notes: r["notes"] == null ? null : String(r["notes"]),
+    sources: sanitizePantrySources(r["sources"]),
   };
 }
 

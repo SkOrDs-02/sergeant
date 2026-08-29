@@ -13,29 +13,25 @@
  * нутриціологічну точність. Розширюй записи лише на запит продукту щодо
  * точнішого обліку залишків, а не «про всяк випадок».
  */
-import { canonicalFoodKey, normalizeUnit } from "./pantryTextParser.js";
-
-/** Густина за замовчуванням (вода-подібна), коли продукту немає в таблиці. г/мл. */
-export const DEFAULT_DENSITY_G_PER_ML = 1.0;
+import {
+  canonicalFoodKey,
+  normalizeUnit,
+  type PantryItem,
+} from "./pantryTextParser.js";
+import { consumeFromSources, sourcesTotal } from "./pantrySources.js";
+// Таблиця щільності живе в `density.ts` — її потребує і зведення одиниць
+// (`units.ts`), і списання тут; спільний файл нижче за обома розриває цикл
+// імпортів. Реекспорт зберігає сабпас `@sergeant/nutrition-domain/pantry-consume`.
+import { densityFor } from "./density.js";
+export {
+  DEFAULT_DENSITY_G_PER_ML,
+  DENSITY_G_PER_ML,
+  densityFor,
+  knownDensityGPerMl,
+} from "./density.js";
 
 /** Вага однієї штуки за замовчуванням, коли продукту немає в таблиці. г. */
 export const DEFAULT_PIECE_WEIGHT_G = 100;
-
-/**
- * Груба таблиця густин (г/мл) для позицій у `мл`/`л`.
- * Ключ — `canonicalFoodKey(name)`, тож відмінкові/множинні форми
- * («молока», «олії») зводяться до канонічної форми перед пошуком.
- */
-export const DENSITY_G_PER_ML: Readonly<Record<string, number>> = {
-  молоко: 1.03,
-  кефір: 1.03,
-  ряжанка: 1.03,
-  йогурт: 1.03,
-  вершки: 1.01,
-  олія: 0.92,
-  "оливкова олія": 0.92,
-  мед: 1.42,
-};
 
 /**
  * Груба таблиця ваги однієї штуки (г) для позицій у `шт`.
@@ -56,11 +52,6 @@ export const PIECE_WEIGHT_G: Readonly<Record<string, number>> = {
   кабачок: 300,
   баклажан: 250,
 };
-
-/** Густина (г/мл) для продукту; default `DEFAULT_DENSITY_G_PER_ML`. */
-export function densityFor(name: unknown): number {
-  return DENSITY_G_PER_ML[canonicalFoodKey(name)] ?? DEFAULT_DENSITY_G_PER_ML;
-}
 
 /** Вага однієї штуки (г) для продукту; default `DEFAULT_PIECE_WEIGHT_G`. */
 export function pieceWeightFor(name: unknown): number {
@@ -100,4 +91,48 @@ export function gramsToUnitQty(
     default:
       return null;
   }
+}
+
+/**
+ * Списання з позиції комори — разом із варіантами.
+ *
+ * Повертає `null`, коли списати не можна (немає кількості, або одиниця без
+ * грубого масового відображення) — викликач лишає позицію без змін.
+ * Повертає `item: null`, коли позиція вичерпалась і має зникнути з комори.
+ *
+ * `variantName` — назва варіанта, який обрала людина. Без нього списується
+ * найстаріший: куплене раніше псується першим. Інваріант суми тримається
+ * тим, що кількість позиції перераховується з варіантів, а не окремо.
+ */
+export function applyConsumeToPantryItem(
+  item: PantryItem,
+  gramsConsumed: number,
+  variantName?: string | null,
+): { item: PantryItem | null; deducted: number; unit: string | null } | null {
+  const qty = Number(item.qty);
+  if (!Number.isFinite(qty) || qty <= 0) return null;
+  const deduct = gramsToUnitQty(gramsConsumed, item.unit, item.name);
+  if (deduct == null) return null;
+
+  const sources = Array.isArray(item.sources) ? item.sources : null;
+  if (sources && sources.length > 0) {
+    const next = consumeFromSources(sources, deduct, variantName);
+    const total = sourcesTotal(next);
+    if (next.length === 0 || total <= 0) {
+      return { item: null, deducted: deduct, unit: item.unit };
+    }
+    return {
+      item: { ...item, qty: total, sources: next },
+      deducted: deduct,
+      unit: item.unit,
+    };
+  }
+
+  const remaining = qty - deduct;
+  if (remaining <= 0) return { item: null, deducted: deduct, unit: item.unit };
+  return {
+    item: { ...item, qty: Math.round(remaining * 10) / 10 },
+    deducted: deduct,
+    unit: item.unit,
+  };
 }

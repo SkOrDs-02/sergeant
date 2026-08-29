@@ -6,6 +6,7 @@ import type { Dispatch, SetStateAction } from "react";
 import type { Meal, NutritionPrefs } from "@sergeant/nutrition-domain";
 import { PantryManagerSheet } from "./PantryManagerSheet";
 import { ItemEditSheet } from "./ItemEditSheet";
+import { PantryVariantChoiceSheet } from "./PantryVariantChoiceSheet";
 import { BarcodeScanner } from "./BarcodeScanner";
 import { AddMealSheet } from "./AddMealSheet";
 import { InputDialog } from "@shared/components/ui/InputDialog";
@@ -132,6 +133,11 @@ export function NutritionOverlays({
           }))
         }
         onSave={pantry.onSaveItemEdit}
+      />
+
+      <PantryVariantChoiceSheet
+        choice={pantry.variantChoice}
+        onResolve={pantry.resolveVariantChoice}
       />
 
       {pantryScannerOpen && (
