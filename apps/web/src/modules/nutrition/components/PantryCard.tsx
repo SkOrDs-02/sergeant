@@ -238,8 +238,12 @@ function InventoryCard({
         </div>
       </button>
 
+      {/* `grid-cols-[minmax(0,1fr)]`, а не дефолтний `auto`-трек: `auto`
+          росте до min-content найширшої дитини, а min-content рядка комори —
+          це повний текст назви під `truncate` (`white-space: nowrap`). Довгі
+          назви з чека Сільпо через це розпирали картку за межі екрана. */}
       {mainOpen && (
-        <div className="mt-3 grid gap-2">
+        <div className="mt-3 grid grid-cols-[minmax(0,1fr)] gap-2">
           {groups.map((g) => (
             <CategorySection
               key={g.cat.id}
