@@ -296,8 +296,8 @@ Telegram і Threads – окремим рядком під колонками.
 
 ## Джерела
 
-Канон продукту: [`docs/01-product/model/`](../../../01-product/model/) (`finyk.md`, `nutrition.md`, `routine.md`, `fizruk.md`, `hub-coach.md`, `product-overview.md`).
-Стайлгайд копії: [`docs/01-product/copy/style-guide.uk.md`](../../../01-product/copy/style-guide.uk.md).
-Код сайту: [`apps/landing/`](../../../../apps/landing/) – `src/App.tsx`, `src/lib/routeMeta.json`, `src/lib/ssgJsonLd.ts`, `src/components/`, `scripts/`.
+Канон продукту: [`docs/01-product/model/`](../../../../01-product/model/) (`finyk.md`, `nutrition.md`, `routine.md`, `fizruk.md`, `hub-coach.md`, `product-overview.md`).
+Стайлгайд копії: [`docs/01-product/copy/style-guide.uk.md`](../../../../01-product/copy/style-guide.uk.md).
+Код сайту: [`apps/landing/`](../../../../../apps/landing/) – `src/App.tsx`, `src/lib/routeMeta.json`, `src/lib/ssgJsonLd.ts`, `src/components/`, `scripts/`.
 
 Пріоритезація питань людини і формулювання болів спираються на висновки маркетингового дослідження; сама розвідка живе поза цим репозиторієм і сюди не переноситься – у документі лишились тільки ті висновки, що стосуються структури й копії сайту.
