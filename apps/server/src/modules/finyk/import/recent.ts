@@ -5,7 +5,10 @@ import {
   ImportRecentResponseSchema,
   type ImportRecentSource,
 } from "@sergeant/shared";
-import { FinykDomain } from "@sergeant/finyk-domain";
+// Підшлях, а не кореневий барель: `@sergeant/finyk-domain` тягне
+// `categories.ts` -> `@sergeant/design-tokens`, якого немає в образі
+// (див. AI-DANGER у Dockerfile.api). Ловиться лише збіркою образу.
+import { IMPORT_REMINDER_HISTORY_SIZE } from "@sergeant/finyk-domain/domain/importReminder";
 
 /**
  * `GET /api/finyk/import/recent` — дати останніх успішних батчів по
@@ -86,7 +89,7 @@ export async function getRecentImportsHandler(
        ) ranked
       WHERE rn <= $2
       ORDER BY source ASC, created_at DESC`,
-    [userId, FinykDomain.IMPORT_REMINDER_HISTORY_SIZE],
+    [userId, IMPORT_REMINDER_HISTORY_SIZE],
   );
 
   res.status(200).json(
