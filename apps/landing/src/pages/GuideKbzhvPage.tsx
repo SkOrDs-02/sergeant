@@ -35,13 +35,13 @@ const STEPS = [
 const SHORT_ANSWER =
   "Підрахунок ламається на пошуку: у міжнародних базах немає половини того, що лежить у твоєму холодильнику. Майже всі випадки закривають три речі: сканер штрихкоду для всього, що має етикетку, українська база для локальних брендів і одна збережена картка на кожну домашню страву, яку ти готуєш регулярно. Точність до грама тут зайва: стабільна похибка все одно показує правильний напрямок.";
 
-export default function GuideKbzhuPage() {
+export default function GuideKbzhvPage() {
   usePageMeta({
-    ...ROUTE_META["/guides/kbzhu"],
+    ...ROUTE_META["/guides/kbzhv"],
     jsonLd: {
       "@context": "https://schema.org",
       "@type": "HowTo",
-      name: "Як рахувати КБЖУ, коли в базі немає українських продуктів",
+      name: "Як рахувати КБЖВ, коли в базі немає українських продуктів",
       inLanguage: "uk",
       dateModified: "2026-08-28",
       step: STEPS.map((text, i) => ({
@@ -66,7 +66,7 @@ export default function GuideKbzhuPage() {
               Гайди · Харчування
             </p>
             <h1 className="mt-4 text-3xl font-extrabold leading-[1.12] tracking-tight text-balance text-foreground-strong sm:text-4xl">
-              Як рахувати КБЖУ, коли в базі немає українських продуктів
+              Як рахувати КБЖВ, коли в базі немає українських продуктів
             </h1>
             <p className="mt-4 text-sm text-subtle">
               Оновлено 28.08.2026 · автор Sergeant

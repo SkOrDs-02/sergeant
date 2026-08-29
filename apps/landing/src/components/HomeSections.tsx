@@ -103,7 +103,7 @@ export function ModulesSection() {
           <p className={label}>04 · Їжа</p>
           <h3 className={title}>Харчування</h3>
           <p className={`${body} text-ink/90`}>
-            КБЖУ, фото страви, сканер штрих-кодів і українська база продуктів.
+            КБЖВ, фото страви, сканер штрихкодів і українська база продуктів.
           </p>
           <div
             aria-hidden="true"
@@ -142,7 +142,7 @@ export function ScreensSection() {
     {
       src: "/screens/nutrition.webp",
       alt: "Екран Їжі: кільце 1250 із 2200 ккал, білки, жири й вуглеводи, вода за день",
-      label: "Їжа: КБЖУ і вода без таблиць",
+      label: "Їжа: КБЖВ і вода без таблиць",
     },
     {
       src: "/screens/routine.webp",
