@@ -1,7 +1,7 @@
 # Спека: Telegram-вейтліст
 
-> **Last touched:** 2026-08-10 by @claude. **Next review:** 2027-10-06.
-> **Status:** Implemented — бот вейтліста живий (`apps/server/src/modules/telegram/waitlistBot.ts`, міграція `089_telegram_waitlist.sql`, follow-up `/stats` у #524). Спека лишається як reference на прийняті рішення.
+> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-13.
+> **Status:** Archived (реалізовано) — бот вейтліста живий (`apps/server/src/modules/telegram/waitlistBot.ts`, міграція `089_telegram_waitlist.sql`, follow-up `/stats` у #524). Спека лишається як reference на прийняті рішення.
 
 ## Проблема
 
@@ -24,7 +24,7 @@
 
 Кнопка на лендінгу веде на deep link бота → бот на `/start` записує `chat_id`
 → окремий скрипт розсилає інвайти по цьому списку через **уже наявний**
-[`createTelegramApiClient`](../../../../apps/server/src/modules/alerts/telegramShipper.ts).
+[`createTelegramApiClient`](../../../../../apps/server/src/modules/alerts/telegramShipper.ts).
 
 ## Що НЕ будуємо
 
@@ -68,7 +68,7 @@
 `TELEGRAM_WAITLIST_BOT_TOKEN` (Coolify env), у репо його немає й бути не може.
 
 Лінки лендінга вже дивляться на нього через
-[`src/lib/links.ts`](../../../../apps/landing/src/lib/links.ts)
+[`src/lib/links.ts`](../../../../../apps/landing/src/lib/links.ts)
 (`telegramStartLink(payload)`), юзернейм перевизначається змінною
 `VITE_TELEGRAM_BOT`.
 
@@ -80,7 +80,7 @@
 ## Команди бети
 
 Розширення під двотижневу закриту бету на 30 тестерів. Усі тексти живуть у
-[`modules/telegram/betaTexts.ts`](../../../../apps/server/src/modules/telegram/betaTexts.ts),
+[`modules/telegram/betaTexts.ts`](../../../../../apps/server/src/modules/telegram/betaTexts.ts),
 жодне посилання не захардкоджене — вони приходять з env через `BetaLinks`.
 
 | Команда    | Що робить                                                        | Ходить у БД | Працює в групі |
@@ -104,7 +104,7 @@ allowlist у коді; «не чіпає БД» — це критерій, за 
 конкретне надіслане повідомлення. Три довідкові команди від цього вільні —
 статичний текст, однаковий для будь-якого чату.
 
-Гейт живе в [`routes/telegram-webhook.ts`](../../../../apps/server/src/routes/telegram-webhook.ts)
+Гейт живе в [`routes/telegram-webhook.ts`](../../../../../apps/server/src/routes/telegram-webhook.ts)
 і зроблений **allowlist-ом**, а не blocklist-ом: нова команда за
 замовчуванням лишається приватною, і забути додати її до заборонених
 неможливо. `/help` у групі дописує рядок про те, що підписка — в особистих;
@@ -242,7 +242,7 @@ ALTER TABLE telegram_waitlist
 ### Webhook
 
 `POST /api/v1/telegram/webhook` — новий роутер, реєструється в
-[`routes/index.ts`](../../../../apps/server/src/routes/index.ts) поруч із
+[`routes/index.ts`](../../../../../apps/server/src/routes/index.ts) поруч із
 `createWaitlistRouter`.
 
 - **Автентифікація:** заголовок `X-Telegram-Bot-Api-Secret-Token` звіряється з
@@ -261,7 +261,7 @@ ALTER TABLE telegram_waitlist
 
 ### Env
 
-Оголосити в [`env.ts`](../../../../apps/server/src/env/env.ts) поруч із
+Оголосити в [`env.ts`](../../../../../apps/server/src/env/env.ts) поруч із
 наявним Telegram-блоком:
 
 | Змінна                             | Навіщо                                                                           |
@@ -339,7 +339,7 @@ ALTER TABLE telegram_waitlist
 - У логах не друкувати тіло апдейта: там ім'я й хендл. Pino-редакція —
   Hard Rule #21.
 - Токен бота — секрет; не echo-ити, ротація за
-  [`rotate-secrets.md`](../../../00-start/playbooks/rotate-secrets.md).
+  [`rotate-secrets.md`](../../../../00-start/playbooks/rotate-secrets.md).
 - Вебхук публічний і його URL знає Telegram — не покладатись на «ніхто не
   вгадає шлях», лише на звірку секрету.
 

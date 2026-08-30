@@ -1,7 +1,7 @@
 # SPEC: системний промпт чату v14 — голос і заборона вигаданих аргументів
 
-> **Last touched:** 2026-08-05 by @claude. **Next review:** 2027-08-30.
-> **Status:** Implemented — у проді з 2026-07-30 (`apps/server/src/modules/chat/toolDefs/systemPrompt.ts`, маркер `v14`); деталі — § «Що вийшло насправді».
+> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-15.
+> **Status:** Archived (реалізовано) — у проді з 2026-07-30 (`apps/server/src/modules/chat/toolDefs/systemPrompt.ts`, маркер `v14`); деталі — § «Що вийшло насправді».
 
 ## Проблема
 
@@ -13,7 +13,7 @@
 
 ## Рішення дизайну
 
-**Голос — чотири правила разом.** Додаємо форму звертання «ти», заборону емодзі, заборону markdown-розмітки і 1-у особу однини для опису дій («Записую транзакцію», не «Записуємо»). Джерело правил — [`docs/01-product/copy/style-guide.uk.md`](../../../01-product/copy/style-guide.uk.md) § Voice, правило #2. Промпт має містити правила текстом, а не посилання на документ.
+**Голос — чотири правила разом.** Додаємо форму звертання «ти», заборону емодзі, заборону markdown-розмітки і 1-у особу однини для опису дій («Записую транзакцію», не «Записуємо»). Джерело правил — [`docs/01-product/copy/style-guide.uk.md`](../../../../01-product/copy/style-guide.uk.md) § Voice, правило #2. Промпт має містити правила текстом, а не посилання на документ.
 
 **Markdown заборонено повністю**, попри те що веб його рендерить. Причина — паритет поверхонь: мобільний `HubChatBody.tsx` розмітку не обробляє й показує сирі зірочки, а TTS її вирізає регуляркою. Відкинута альтернатива: дозволити підмножину, яку підтримує веб — відхилена, бо лишає мобайл зламаним.
 
@@ -25,7 +25,7 @@
 
 **Неоднозначність результату read → перепитати.** Якщо read повернув рівно один очевидний збіг — модель діє без питань. Якщо кілька кандидатів — показує список і питає, який саме. Відкинута альтернатива: завжди брати найкращий збіг — відхилена, бо помилковий вибір непомітний для користувача.
 
-**Промпт підкріплюється технічною гарантією.** Промпт — це прохання, не контракт. Кожен write-виконавець, що приймає ідентифікатор існуючої сутності, перевіряє його наявність перед записом і повертає моделі текст помилки замість виконання. Зразок уже є в [`routineActions.ts`](../../../../apps/web/src/core/lib/chatActions/routineActions.ts) (кейс `mark_habit_done`): не знайшов — повертає «Не знайшов звичку …— перевір список звичок». Модель бачить цю відповідь як `tool_result` і виправляється сама.
+**Промпт підкріплюється технічною гарантією.** Промпт — це прохання, не контракт. Кожен write-виконавець, що приймає ідентифікатор існуючої сутності, перевіряє його наявність перед записом і повертає моделі текст помилки замість виконання. Зразок уже є в [`routineActions.ts`](../../../../../apps/web/src/core/lib/chatActions/routineActions.ts) (кейс `mark_habit_done`): не знайшов — повертає «Не знайшов звичку …— перевір список звичок». Модель бачить цю відповідь як `tool_result` і виправляється сама.
 
 **Одна спека на все.** Промпт і клієнтські guard-и їдуть разом, бо критерій успіху «жодного вигаданого id» без guard-ів тримається лише на добрій волі моделі.
 
@@ -35,13 +35,13 @@
 
 ## Поверхня змін
 
-- [`apps/server/src/modules/chat/toolDefs/systemPrompt.ts`](../../../../apps/server/src/modules/chat/toolDefs/systemPrompt.ts) — текст `buildSystemPrompt()`, бамп `SYSTEM_PROMPT_VERSION` на `v14` і запис у журнал версій у шапці файлу (формат видно з наявних записів v6–v13). Правила голосу й заборону вигаданих аргументів винести окремими іменованими константами за зразком `ADVICE_BOUNDARY_RULE` з [`apps/server/src/lib/adviceBoundary.ts`](../../../../apps/server/src/lib/adviceBoundary.ts), щоб їх можна було перевіряти й перевикористовувати.
-- Клієнтські виконавці в [`apps/web/src/core/lib/chatActions/`](../../../../apps/web/src/core/lib/chatActions/) — перевірка існування для кожного write-кейсу, що приймає ідентифікатор. `finykActions.ts`, `crossActions.ts`, `fizrukActions.ts` — це barrel-файли; реальні кейси живуть у однойменних теках поруч (`finykActions/search.ts`, `finykActions/budgets.ts`, `finykActions/transactions.ts`). Рахувати покриття по barrel-у безглуздо — воно там не живе. Аудит реєстру показав, що перевірок бракує лише у Фініку, 6 кейсів: `change_category`, `batch_categorize`, `hide_transaction`, `split_transaction`, `set_budget_limit`, `update_budget`. У fizruk (`finish_workout`, `copy_workout`) і cross (`forget`) перевірки вже є, а в nutrition жоден write-інструмент не приймає `*_id` — там посилання за назвою й датою.
-- [`apps/server/scripts/model-eval.ts`](../../../../apps/server/scripts/model-eval.ts) — додати суддів на голос: відсутність «Ви»/«Ваш», відсутність емодзі, відсутність markdown-розмітки.
-- [`apps/server/scripts/tool-selection-eval.ts`](../../../../apps/server/scripts/tool-selection-eval.ts) — додати перевірку аргументів: жоден id у виклику write-інструмента не має бути відсутнім у поданому контексті.
+- [`apps/server/src/modules/chat/toolDefs/systemPrompt.ts`](../../../../../apps/server/src/modules/chat/toolDefs/systemPrompt.ts) — текст `buildSystemPrompt()`, бамп `SYSTEM_PROMPT_VERSION` на `v14` і запис у журнал версій у шапці файлу (формат видно з наявних записів v6–v13). Правила голосу й заборону вигаданих аргументів винести окремими іменованими константами за зразком `ADVICE_BOUNDARY_RULE` з [`apps/server/src/lib/adviceBoundary.ts`](../../../../../apps/server/src/lib/adviceBoundary.ts), щоб їх можна було перевіряти й перевикористовувати.
+- Клієнтські виконавці в [`apps/web/src/core/lib/chatActions/`](../../../../../apps/web/src/core/lib/chatActions/) — перевірка існування для кожного write-кейсу, що приймає ідентифікатор. `finykActions.ts`, `crossActions.ts`, `fizrukActions.ts` — це barrel-файли; реальні кейси живуть у однойменних теках поруч (`finykActions/search.ts`, `finykActions/budgets.ts`, `finykActions/transactions.ts`). Рахувати покриття по barrel-у безглуздо — воно там не живе. Аудит реєстру показав, що перевірок бракує лише у Фініку, 6 кейсів: `change_category`, `batch_categorize`, `hide_transaction`, `split_transaction`, `set_budget_limit`, `update_budget`. У fizruk (`finish_workout`, `copy_workout`) і cross (`forget`) перевірки вже є, а в nutrition жоден write-інструмент не приймає `*_id` — там посилання за назвою й датою.
+- [`apps/server/scripts/model-eval.ts`](../../../../../apps/server/scripts/model-eval.ts) — додати суддів на голос: відсутність «Ви»/«Ваш», відсутність емодзі, відсутність markdown-розмітки.
+- [`apps/server/scripts/tool-selection-eval.ts`](../../../../../apps/server/scripts/tool-selection-eval.ts) — додати перевірку аргументів: жоден id у виклику write-інструмента не має бути відсутнім у поданому контексті.
 - Owner-скіл за routing-таблицею AGENTS.md: `sergeant-feature-delivery`; додатково `sergeant-server-api` для промпту і `sergeant-web-ui` для guard-ів.
 
-**Як зібрати перелік write-інструментів з ідентифікаторами.** Не вгадувати: пройти `TOOLS` з [`apps/server/src/modules/chat/tools.ts`](../../../../apps/server/src/modules/chat/tools.ts) (77 інструментів) і відібрати ті, чий `input_schema.properties` містить поле з суфіксом `_id`; звірити з `case`-блоками у файлах `chatActions/*Actions.ts`. Перелік у цій спеці свідомо не зафіксований, бо реєстр змінюється.
+**Як зібрати перелік write-інструментів з ідентифікаторами.** Не вгадувати: пройти `TOOLS` з [`apps/server/src/modules/chat/tools.ts`](../../../../../apps/server/src/modules/chat/tools.ts) (77 інструментів) і відібрати ті, чий `input_schema.properties` містить поле з суфіксом `_id`; звірити з `case`-блоками у файлах `chatActions/*Actions.ts`. Перелік у цій спеці свідомо не зафіксований, бо реєстр змінюється.
 
 **Передумова.** Верифікація нижче спирається на стенди, яких може не бути в основній гілці: `pnpm eval:tools` разом зі скриптом `tool-selection-eval.ts`, прапорці `--max-tokens` і `--real-system-prompt` у `model-eval.ts`, і голден-сет із шести кейсів у пайплайні `chat`. Перед початком перевір, що `apps/server/package.json` містить скрипт `eval:tools`; якщо ні — ці стенди треба спершу занести в гілку.
 
@@ -49,7 +49,7 @@
 
 - Мобільні виконавці (`apps/mobile`) — окрема задача після веб-проходу.
 - Спільний хелпер валідації в `packages/shared` — свідомо відкладено.
-- Видалення чи зміна [`AssistantMessageBody.tsx`](../../../../apps/web/src/shared/components/AssistantMessageBody.tsx) — лишається як є заради історії чату.
+- Видалення чи зміна [`AssistantMessageBody.tsx`](../../../../../apps/web/src/shared/components/AssistantMessageBody.tsx) — лишається як є заради історії чату.
 - Розширення блоку `ДАНІ` (передавати список звичок і категорій у кожен запит) — окреме рішення з власним впливом на вартість.
 - Зміна моделей чи провайдера — ця спека не чіпає `CHAT_MODEL_*` і `LLM_PROVIDER`.
 - Серверна валідація аргументів — інструменти виконує клієнт, серверного диспетчера для них не існує.

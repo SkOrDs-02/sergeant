@@ -1,9 +1,7 @@
 # SPEC: Родові назви, картка продукту з варіантами і розширені категорії комори
 
-> **Last touched:** 2026-08-29 by @Skords-01. **Next review:** 2026-11-29.
-> **Status:** Active - реалізовано (обидві фази) у гілці
-> `claude/pantry-generic-names-spec`. Міграція отримала номер **130**, а не
-> 129: 129 уже зайнята `129_nutrition_pantry_pk_per_user.sql`.
+> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-03.
+> **Status:** Archived (реалізовано) — обидві фази змержені (#924, міграція 130); супутні фікси #925, перенумерація комори.
 
 ## Проблема
 
@@ -136,7 +134,7 @@ PantryItem {
 - «Молоко 900 г» + «Молоко 1 л» → одна позиція ≈ 1874 мл (900 / 1.03 + 1000).
 - «Сир 900 г» + «Сир 1 л» → дві позиції: щільності немає, а вигаданий коефіцієнт гірший за дві чесні позиції.
 
-**Перевикористати наявне, не писати заново:** `UNIT_DIMENSION`, `UNIT_TO_BASE_FACTOR`, `toBase` і `fromBaseToUnit` уже реалізовані в [`shoppingListPantryMath.ts`](../../../../packages/nutrition-domain/src/shoppingListPantryMath.ts). Вони модуль-приватні; їх треба експортувати або винести в окремий `units.ts` того ж пакета. Дублювати таблиці одиниць заборонено: розʼїхавшись, вони дадуть різні числа в коморі й у списку покупок на тих самих даних.
+**Перевикористати наявне, не писати заново:** `UNIT_DIMENSION`, `UNIT_TO_BASE_FACTOR`, `toBase` і `fromBaseToUnit` уже реалізовані в [`shoppingListPantryMath.ts`](../../../../../packages/nutrition-domain/src/shoppingListPantryMath.ts). Вони модуль-приватні; їх треба експортувати або винести в окремий `units.ts` того ж пакета. Дублювати таблиці одиниць заборонено: розʼїхавшись, вони дадуть різні числа в коморі й у списку покупок на тих самих даних.
 
 ### 8. У пошук їжі сіється згорнута назва
 
@@ -170,32 +168,32 @@ PantryItem {
 
 **`packages/nutrition-domain/`**
 
-- [`foodCategories.ts`](../../../../packages/nutrition-domain/src/foodCategories.ts) - `FOOD_CATEGORIES` розширюється до 13 записів, `nuts_seeds` ставиться ПЕРЕД `vegetables`, кожен запис отримує ознаку згортання (наприклад `collapseBrand: boolean`).
-- [`receiptItemName.ts`](../../../../packages/nutrition-domain/src/receiptItemName.ts) - функція родової назви, стоп-лист, захист від CAPS. Поруч із наявними `normalizeReceiptItemName` / `findPantryMatch`.
-- [`pantryTextParser.ts`](../../../../packages/nutrition-domain/src/pantryTextParser.ts) - інтерфейс `PantryItem` отримує `sources`.
-- [`shoppingListPantryMath.ts`](../../../../packages/nutrition-domain/src/shoppingListPantryMath.ts) - експорт конвертерів одиниць.
-- [`mergeItems.ts`](../../../../packages/nutrition-domain/src/mergeItems.ts) - злиття зводить одиниці, накопичує варіанти й тримає інваріант суми.
-- [`pantryConsume.ts`](../../../../packages/nutrition-domain/src/pantryConsume.ts) - списання з конкретного варіанта, видалення вичерпаних.
+- [`foodCategories.ts`](../../../../../packages/nutrition-domain/src/foodCategories.ts) - `FOOD_CATEGORIES` розширюється до 13 записів, `nuts_seeds` ставиться ПЕРЕД `vegetables`, кожен запис отримує ознаку згортання (наприклад `collapseBrand: boolean`).
+- [`receiptItemName.ts`](../../../../../packages/nutrition-domain/src/receiptItemName.ts) - функція родової назви, стоп-лист, захист від CAPS. Поруч із наявними `normalizeReceiptItemName` / `findPantryMatch`.
+- [`pantryTextParser.ts`](../../../../../packages/nutrition-domain/src/pantryTextParser.ts) - інтерфейс `PantryItem` отримує `sources`.
+- [`shoppingListPantryMath.ts`](../../../../../packages/nutrition-domain/src/shoppingListPantryMath.ts) - експорт конвертерів одиниць.
+- [`mergeItems.ts`](../../../../../packages/nutrition-domain/src/mergeItems.ts) - злиття зводить одиниці, накопичує варіанти й тримає інваріант суми.
+- [`pantryConsume.ts`](../../../../../packages/nutrition-domain/src/pantryConsume.ts) - списання з конкретного варіанта, видалення вичерпаних.
 - `index.ts` - реекспорт нового публічного API.
 
 **`packages/db-schema/`**
 
-- [`src/sqlite/nutrition.ts`](../../../../packages/db-schema/src/sqlite/nutrition.ts) - таблиця `nutritionPantryItems` (рядок ~103) отримує колонку під `sources` (JSON-текст).
+- [`src/sqlite/nutrition.ts`](../../../../../packages/db-schema/src/sqlite/nutrition.ts) - таблиця `nutritionPantryItems` (рядок ~103) отримує колонку під `sources` (JSON-текст).
 
 **`apps/server/`**
 
-- Нова міграція `129_pantry_item_sources.sql` + `.down.sql`. Колонка nullable (Hard Rule #4: additive-first). Таблиця створена в [`035_nutrition_tables.sql`](../../../../apps/server/src/migrations/035_nutrition_tables.sql).
+- Нова міграція `129_pantry_item_sources.sql` + `.down.sql`. Колонка nullable (Hard Rule #4: additive-first). Таблиця створена в [`035_nutrition_tables.sql`](../../../../../apps/server/src/migrations/035_nutrition_tables.sql).
 - Серіалізатор і sync-шлях комори пропускають нове поле; контрактний триплет (сервер ↔ `api-client` ↔ contract-тест) рухається одним PR - Hard Rule #3.
 
 **`apps/web/`**
 
-- [`hooks/useSilpoPantryReplenish.ts`](../../../../apps/web/src/modules/nutrition/hooks/useSilpoPantryReplenish.ts) - `confirm()` (рядок ~150) пише родову назву і варіанти, зливає дублікати чека, віддає в UI пару «сира назва → родова» і прапорець «лишити повну».
-- [`components/SilpoPantryReplenishSheet.tsx`](../../../../apps/web/src/modules/nutrition/components/SilpoPantryReplenishSheet.tsx) - рядок згортання з дією «лишити повну».
-- [`components/PantryCard.tsx`](../../../../apps/web/src/modules/nutrition/components/PantryCard.tsx) - розгортання варіантів у рядку позиції. Нові категорії рендеряться автоматично через `groupItemsByCategory`.
-- [`components/ItemEditSheet.tsx`](../../../../apps/web/src/modules/nutrition/components/ItemEditSheet.tsx) - поле назви.
-- [`hooks/useNutritionPantries.ts`](../../../../apps/web/src/modules/nutrition/hooks/useNutritionPantries.ts) - `consumePantryItem` (рядок ~437) вміє списувати з обраного варіанта; пошук у коморі дивиться і в назви варіантів, щоб запит «Яготинське» знаходив позицію «Молоко».
-- [`components/NutritionOverlays.tsx`](../../../../apps/web/src/modules/nutrition/components/NutritionOverlays.tsx) - діалог вибору варіанта при списанні (рядок ~158, `onConsumePantryItem`).
-- [`components/meal-sheet/FromPantryRow.tsx`](../../../../apps/web/src/modules/nutrition/components/meal-sheet/FromPantryRow.tsx) - сіє згорнуту назву (рішення 8). Форматування кількості вже йде через `formatReceiptQty`, чіпати не треба.
+- [`hooks/useSilpoPantryReplenish.ts`](../../../../../apps/web/src/modules/nutrition/hooks/useSilpoPantryReplenish.ts) - `confirm()` (рядок ~150) пише родову назву і варіанти, зливає дублікати чека, віддає в UI пару «сира назва → родова» і прапорець «лишити повну».
+- [`components/SilpoPantryReplenishSheet.tsx`](../../../../../apps/web/src/modules/nutrition/components/SilpoPantryReplenishSheet.tsx) - рядок згортання з дією «лишити повну».
+- [`components/PantryCard.tsx`](../../../../../apps/web/src/modules/nutrition/components/PantryCard.tsx) - розгортання варіантів у рядку позиції. Нові категорії рендеряться автоматично через `groupItemsByCategory`.
+- [`components/ItemEditSheet.tsx`](../../../../../apps/web/src/modules/nutrition/components/ItemEditSheet.tsx) - поле назви.
+- [`hooks/useNutritionPantries.ts`](../../../../../apps/web/src/modules/nutrition/hooks/useNutritionPantries.ts) - `consumePantryItem` (рядок ~437) вміє списувати з обраного варіанта; пошук у коморі дивиться і в назви варіантів, щоб запит «Яготинське» знаходив позицію «Молоко».
+- [`components/NutritionOverlays.tsx`](../../../../../apps/web/src/modules/nutrition/components/NutritionOverlays.tsx) - діалог вибору варіанта при списанні (рядок ~158, `onConsumePantryItem`).
+- [`components/meal-sheet/FromPantryRow.tsx`](../../../../../apps/web/src/modules/nutrition/components/meal-sheet/FromPantryRow.tsx) - сіє згорнуту назву (рішення 8). Форматування кількості вже йде через `formatReceiptQty`, чіпати не треба.
 
 ## Фази
 

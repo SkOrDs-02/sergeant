@@ -1,6 +1,6 @@
 # @sergeant/landing
 
-> **Last touched:** 2026-08-29 by @claude. **Next review:** 2026-12-01.
+> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-25.
 > **Status:** Active
 
 Маркетинговий лендінг Sergeant. Одна сторінка, одна дія — перехід у
@@ -89,7 +89,7 @@ same-origin-проксі дешевший, ніж вписувати туди д
 клієнт; сам `/start` відбувається вже в Telegram і потрапляє в
 `telegram_waitlist`. Тобто чисельник у БД, знаменник у PostHog — зводити
 вручну, автоматичного звіту не буде. Деталі —
-[спека](../../docs/90-work/planning/specs/telegram-waitlist.md).
+[спека](../../docs/90-work/planning/specs/archive/telegram-waitlist.md).
 
 Свідомі обмеження:
 

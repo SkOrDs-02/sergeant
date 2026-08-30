@@ -1,6 +1,6 @@
 # Sergeant Agent Workflows
 
-> **Last touched:** 2026-08-28 by @Skords-01. **Next review:** 2026-12-09.
+> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-09.
 > **Status:** Active
 
 Стислі decision trees для найважливіших агентних сценаріїв у Sergeant.
@@ -9,7 +9,7 @@
 
 Роутинг має дві осі. **Модуль** дає продуктовий контекст (канон, журнал рішень, мапа файлів, модульні інваріанти) — скіли `sergeant-module-{finyk,nutrition,fizruk,routine,ai,sync,billing,integrations,push}`. **Поверхня** дає технічні правила — surface-скіли (`sergeant-web-ui`, `sergeant-server-api`, …). Задача в межах модуля вантажить **обидва**: спершу module-owner, потім surface (таблиці — `AGENTS.md` § Routing і `sergeant-start-here` § «Роутся одразу»; per-тека вказівники — nested `CLAUDE.md` у теках модулів).
 
-**Межа owner-агент ↔ deliver-squad** (рішення 11 спеки [agent-module-owners](../../90-work/planning/specs/agent-module-owners.md)):
+**Межа owner-агент ↔ deliver-squad** (рішення 11 спеки [agent-module-owners](../../90-work/planning/specs/archive/agent-module-owners.md)):
 
 - **Module-owner агент** (`finyk-owner`, `nutrition-owner`, `fizruk-owner`, `routine-owner`, `ai-owner`) — делегований виконавець **всередині одного модуля** на всіх його поверхнях. Диспатчиться відповідним `sergeant-module-*` скілом.
 - **Deliver-squad** (`migration-agent` → `server-agent` → `api-client-agent` → `web-agent`/`mobile-agent`) — веде **крос-поверхневу фічу по стадіях** із контрактними залежностями (§ 8 нижче).

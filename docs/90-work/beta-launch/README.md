@@ -1,6 +1,6 @@
 # Закрита бета — тимчасова інфраструктура
 
-> **Last touched:** 2026-08-07 by @claude. **Next review:** 2027-10-06.
+> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-11-29.
 > **Status:** Scaffolded — уся тека тимчасова. Живе рівно стільки, скільки триває закрита бета.
 
 **Термін: 2026-10-31.** Після цієї дати тека або видаляється, або дата свідомо пересувається.
@@ -43,5 +43,5 @@
 
 ## Пов'язане
 
-- Спека вейтліста: [`../planning/specs/telegram-waitlist.md`](../planning/specs/telegram-waitlist.md)
+- Спека вейтліста: [`../planning/specs/archive/telegram-waitlist.md`](../planning/specs/archive/telegram-waitlist.md)
 - Змінні оточення (канон): [`../../02-engineering/integrations/env-vars.md`](../../02-engineering/integrations/env-vars.md)
