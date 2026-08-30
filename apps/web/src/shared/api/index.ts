@@ -102,7 +102,6 @@ export type {
   MonoWebhookEndpoints,
   NutritionBackupDownloadResponse,
   NutritionBackupUploadResponse,
-  NutritionDayHintResponse,
   NutritionDayMeal,
   NutritionDayPlan,
   NutritionDayPlanResponse,

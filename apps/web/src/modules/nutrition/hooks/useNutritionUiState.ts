@@ -67,11 +67,6 @@ export interface UseNutritionUiStateResult {
   shoppingBusy: boolean;
   setShoppingBusy: Dispatch<SetStateAction<boolean>>;
 
-  dayHintText: string;
-  setDayHintText: Dispatch<SetStateAction<string>>;
-  dayHintBusy: boolean;
-  setDayHintBusy: Dispatch<SetStateAction<boolean>>;
-
   cloudBackupBusy: boolean;
   setCloudBackupBusy: Dispatch<SetStateAction<boolean>>;
   backupPasswordDialog: BackupPasswordDialogState | null;
@@ -112,9 +107,6 @@ export function useNutritionUiState(): UseNutritionUiStateResult {
 
   const [shoppingBusy, setShoppingBusy] = useState(false);
 
-  const [dayHintText, setDayHintText] = useState("");
-  const [dayHintBusy, setDayHintBusy] = useState(false);
-
   const [cloudBackupBusy, setCloudBackupBusy] = useState(false);
   const [backupPasswordDialog, setBackupPasswordDialog] =
     useState<BackupPasswordDialogState | null>(null);
@@ -146,10 +138,6 @@ export function useNutritionUiState(): UseNutritionUiStateResult {
     setDayPlanBusy,
     shoppingBusy,
     setShoppingBusy,
-    dayHintText,
-    setDayHintText,
-    dayHintBusy,
-    setDayHintBusy,
     cloudBackupBusy,
     setCloudBackupBusy,
     backupPasswordDialog,

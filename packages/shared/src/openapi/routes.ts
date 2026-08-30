@@ -402,21 +402,6 @@ export const paths: ZodOpenApiPathsObject = {
       },
     },
   },
-  "/api/nutrition/day-hint": {
-    post: {
-      summary: "Згенерувати hint наступного прийому їжі на день",
-      tags: ["nutrition"],
-      security: cookieOrBearer,
-      requestBody: {
-        content: { "application/json": { schema: namedSchemas.DayHint } },
-      },
-      responses: {
-        "200": okEmpty,
-        "400": validationError,
-        "401": unauthorized,
-      },
-    },
-  },
   "/api/nutrition/day-plan": {
     post: {
       summary: "Згенерувати/перегенерувати план прийомів їжі на день",

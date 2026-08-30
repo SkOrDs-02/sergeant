@@ -45,6 +45,8 @@ import { Skeleton } from "@shared/components/ui/Skeleton";
 import { useAuth } from "../../../core/auth/AuthContext";
 import { useActiveFizrukWorkout } from "@shared/hooks/useActiveFizrukWorkout";
 import { InsightCard } from "@shared/components/ui/InsightCard";
+import { emitHubBus } from "@shared/lib/modules/hubBus";
+import { useAskAiQuotaExhausted } from "@shared/lib/insights/useAskAiQuota";
 import { useRestDayOverdueInsight } from "../hooks/useRestDayOverdueInsight";
 import { usePrPendingInsight } from "../hooks/usePrPendingInsight";
 import { usePrLatest } from "../hooks/usePrLatest";
@@ -308,6 +310,7 @@ export function Dashboard({
     if (restDayInsight && out.length < 2) out.push(restDayInsight);
     return out;
   }, [prPendingInsight, restDayInsight]);
+  const askAiDisabled = useAskAiQuotaExhausted();
 
   const nextPlanSession = useMemo(() => {
     if (!templates?.length) return null;
@@ -443,6 +446,13 @@ export function Dashboard({
                 onNavigate("workouts");
               }
             }}
+            onAskAi={() =>
+              emitHubBus("openChat", {
+                message: insight.askAiPrompt,
+                autoSend: false,
+              })
+            }
+            askAiDisabled={askAiDisabled}
           />
         ))}
 

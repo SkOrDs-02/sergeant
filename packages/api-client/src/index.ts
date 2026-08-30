@@ -152,7 +152,6 @@ export {
   createNutritionEndpoints,
   type NutritionBackupDownloadResponse,
   type NutritionBackupUploadResponse,
-  type NutritionDayHintResponse,
   type NutritionDayMeal,
   type NutritionDayPlan,
   type NutritionDayPlanResponse,

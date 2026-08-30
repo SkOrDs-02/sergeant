@@ -1,8 +1,7 @@
 import { useCallback, type Dispatch, type SetStateAction } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { hapticSuccess } from "@shared/lib/adapters/haptic";
 import { nutritionApi } from "@shared/api";
-import { nutritionKeys } from "@shared/lib/api/queryKeys";
 import {
   generatePrefixedId,
   pantryModeAvailabilityError,
@@ -20,7 +19,6 @@ import { formatNutritionError } from "../lib/nutritionErrors";
 import { writeRecipeCache } from "../lib/recipeCache";
 import { stableRecipeId } from "../lib/recipeIds";
 import { newMealId } from "../lib/mealId";
-import { getDayMacros, getDaySummary } from "../lib/nutritionStorage";
 import type { Meal, NutritionLogLike } from "../lib/nutritionStorage";
 import type { PantryItem } from "../lib/pantryTextParser";
 import type {
@@ -113,8 +111,7 @@ export interface RemoteActionsPrefs {
 }
 
 /**
- * Subset of `useNutritionLog()` return used by `fetchDayHint` and
- * `addMealFromPlan`.
+ * Subset of `useNutritionLog()` return used by `addMealFromPlan`.
  */
 export interface RemoteActionsLog {
   nutritionLog: NutritionLogLike;
@@ -157,8 +154,6 @@ export interface UseNutritionRemoteActionsParams {
   setWeekPlanBusy: AnySetter<boolean>;
   setDayPlan: Dispatch<SetStateAction<UiNutritionDayPlan | null>>;
   setDayPlanBusy: AnySetter<boolean>;
-  setDayHintBusy: AnySetter<boolean>;
-  setDayHintText: AnySetter<string>;
   log: RemoteActionsLog;
   shopping: RemoteActionsShopping;
   setShoppingBusy: AnySetter<boolean>;
@@ -248,18 +243,14 @@ export function useNutritionRemoteActions({
   weekPlanRaw,
   setWeekPlanRaw,
   setWeekPlanBusy,
-  // day plan / day hint
+  // day plan
   setDayPlan,
   setDayPlanBusy,
-  setDayHintBusy,
-  setDayHintText,
   // log + shopping
   log,
   shopping,
   setShoppingBusy,
 }: UseNutritionRemoteActionsParams) {
-  const queryClient = useQueryClient();
-
   // ─── Recipes ────────────────────────────────────────────────────────────
   const recipesMutation = useMutation({
     mutationFn: () => {
@@ -360,77 +351,6 @@ export function useNutritionRemoteActions({
   const fetchWeekPlan = useCallback(
     () => weekPlanMutation.mutate(),
     [weekPlanMutation],
-  );
-
-  // ─── Day hint ───────────────────────────────────────────────────────────
-  const dayHintMutation = useMutation({
-    mutationFn: () => {
-      const summary = getDaySummary(log.nutritionLog, log.selectedDate);
-      if (!summary.hasMeals) {
-        // Return a synthetic payload so `onSuccess` can render the "empty day"
-        // message without triggering an actual API call.
-        return Promise.resolve({
-          hint: "День порожній. Додай прийом їжі, і я зможу дати підказку.",
-          _synthetic: true,
-        });
-      }
-      const rawMeals = log.nutritionLog?.[log.selectedDate]?.meals || [];
-      const meals = rawMeals as Array<Partial<Meal>>;
-      const macroSources = meals.reduce<Record<string, number>>((acc, m) => {
-        const k = String(
-          m?.macroSource || (m?.source === "photo" ? "photoAI" : "manual"),
-        );
-        acc[k] = (acc[k] || 0) + 1;
-        return acc;
-      }, {});
-      const macros = summary.hasAnyMacros
-        ? getDayMacros(log.nutritionLog, log.selectedDate)
-        : { kcal: null, protein_g: null, fat_g: null, carbs_g: null };
-      const payload = {
-        macros,
-        hasMeals: summary.hasMeals,
-        hasAnyMacros: summary.hasAnyMacros,
-        macroSources,
-        targets: {
-          dailyTargetKcal: prefs.dailyTargetKcal,
-          dailyTargetProtein_g: prefs.dailyTargetProtein_g,
-          dailyTargetFat_g: prefs.dailyTargetFat_g,
-          dailyTargetCarbs_g: prefs.dailyTargetCarbs_g,
-        },
-        locale: "uk-UA" as const,
-      };
-      // Незмінний вхід — незмінна відповідь. `fetchQuery` віддає закешоване,
-      // якщо ключ той самий, і йде в мережу лише коли payload змінився.
-      //
-      // Модель кличеться з `temperature: 0.3`, тож на однакових даних вона
-      // щоразу формулювала по-новому — той самий сенс іншими словами. Це
-      // читалось як випадковість асистента; гроші тут ні до чого (виклик
-      // коштує ~$0.00007). Мутація кешу не мала й не могла мати: React Query
-      // навмисно не кешує `useMutation`, кожен `mutate()` завжди йде в мережу.
-      return queryClient.fetchQuery({
-        queryKey: nutritionKeys.dayHint(payload),
-        queryFn: () => nutritionApi.dayHint(payload),
-        staleTime: Infinity,
-      });
-    },
-    onMutate: () => {
-      setDayHintBusy(true);
-      setErr("");
-    },
-    onSuccess: (data) => {
-      setDayHintText(typeof data?.hint === "string" ? data.hint : "");
-    },
-    onError: (err) => {
-      setErr(formatNutritionError(err, "Помилка підказки"));
-    },
-    onSettled: () => {
-      setDayHintBusy(false);
-    },
-  });
-
-  const fetchDayHint = useCallback(
-    () => dayHintMutation.mutate(),
-    [dayHintMutation],
   );
 
   // ─── Day plan ───────────────────────────────────────────────────────────
@@ -645,7 +565,6 @@ export function useNutritionRemoteActions({
   return {
     recommendRecipes,
     fetchWeekPlan,
-    fetchDayHint,
     fetchDayPlan,
     addMealFromPlan,
     generateShoppingList,

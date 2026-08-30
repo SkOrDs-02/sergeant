@@ -37,6 +37,7 @@ const todoInsight: Insight = {
   module: "routine",
   title: "todo",
   subtitle: "todo-sub",
+  askAiPrompt: "todo-ask",
   action: { type: "navigate", path: "/routine/today" },
   showOn: "both",
 };
@@ -46,6 +47,7 @@ const streakInsight: Insight = {
   module: "routine",
   title: "streak",
   subtitle: "streak-sub",
+  askAiPrompt: "streak-ask",
   action: { type: "navigate", path: "/routine/today" },
   showOn: "both",
 };

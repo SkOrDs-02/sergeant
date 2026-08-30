@@ -409,6 +409,7 @@ describe("Dashboard extended coverage", () => {
       showOn: "module" as const,
       title: "Побий рекорд!",
       subtitle: "Завтра шанс для нового PR",
+      askAiPrompt: "Питання про PR",
       action: { type: "navigate", path: "workouts" },
     });
 
@@ -424,6 +425,7 @@ describe("Dashboard extended coverage", () => {
       showOn: "module" as const,
       title: "День відпочинку",
       subtitle: "Ти тренуєшся 5 днів поспіль",
+      askAiPrompt: "Питання про відпочинок",
       action: { type: "navigate", path: "workouts" },
     });
 
@@ -644,6 +646,7 @@ describe("Dashboard — navigation callbacks", () => {
       showOn: "module" as const,
       title: "Побий рекорд!",
       subtitle: "Завтра шанс для нового PR",
+      askAiPrompt: "Питання про PR",
       action: { type: "navigate", path: "workouts" },
     });
 

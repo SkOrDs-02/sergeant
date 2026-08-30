@@ -133,10 +133,6 @@ vi.mock("./hooks/useNutritionUiState", () => ({
     setDayPlanBusy: vi.fn(),
     shoppingBusy: false,
     setShoppingBusy: vi.fn(),
-    dayHintText: "",
-    setDayHintText: vi.fn(),
-    dayHintBusy: false,
-    setDayHintBusy: vi.fn(),
     cloudBackupBusy: false,
     setCloudBackupBusy: vi.fn(),
     backupPasswordDialog: null,
@@ -210,7 +206,6 @@ vi.mock("./hooks/useNutritionRemoteActions", () => ({
       return {
         recommendRecipes: vi.fn(),
         fetchWeekPlan: vi.fn(),
-        fetchDayHint: vi.fn(),
         fetchDayPlan: vi.fn(),
         addMealFromPlan: vi.fn(),
         generateShoppingList: vi.fn(),

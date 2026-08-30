@@ -147,8 +147,6 @@ describe("стенд моделей подає продові промпти", (
         locale: "uk-UA",
       }).system,
     );
-    // `day-hint` прод шле без `system` — стенд теж.
-    expect(byKey("day-hint").system).toBeUndefined();
   });
 
   it("покриває всі текстові AI-шляхи з інвентарю endpoint:", () => {
@@ -163,7 +161,6 @@ describe("стенд моделей подає продові промпти", (
       "coach-insight",
       "chat",
       "analysis",
-      "day-hint",
       "day-plan",
       "week-plan",
       "shopping-list",
