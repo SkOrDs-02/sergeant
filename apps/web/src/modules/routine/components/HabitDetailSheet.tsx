@@ -265,6 +265,7 @@ export function HabitDetailSheet({
 
   const habitName = habit.name;
   const canMutate = typeof setRoutine === "function";
+  const isOnce = (habit.recurrence || "daily") === "once";
 
   const handleConfirmDelete = () => {
     if (!setRoutine) return;
@@ -399,39 +400,50 @@ export function HabitDetailSheet({
           тут його немає: два однакові h3 підряд дублювались би і в тексті,
           і в heading-навігації скрінрідера.
         */}
-        <section
-          className="mb-5"
-          aria-label={messages.routine.streakCanvas.heading}
-        >
-          <HabitStreakCanvas
-            habit={habit}
-            completions={completions}
-            skips={routine.skips?.[habitId]}
-            todayKey={tk}
-          />
-        </section>
+        {/*
+          Для `once` серій і відсотків не існує (канон §7 п.2, рішення
+          2026-08-30): разова подія — не послідовність днів. Полотно і
+          стрік/відсоткові картки ховаємо, лишається лише «Разів виконано».
+        */}
+        {isOnce ? null : (
+          <section
+            className="mb-5"
+            aria-label={messages.routine.streakCanvas.heading}
+          >
+            <HabitStreakCanvas
+              habit={habit}
+              completions={completions}
+              skips={routine.skips?.[habitId]}
+              todayKey={tk}
+            />
+          </section>
+        )}
 
         <section className="mb-5" aria-label="Статистика">
           <SectionHeading as="h3" size="xs" className="mb-2" variant="routine">
             Статистика
           </SectionHeading>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <div className={C.statCard}>
-              <p className="text-style-headline text-text tabular-nums">
-                {currentStreak}
-              </p>
-              <p className="text-style-caption text-subtle mt-0.5">
-                Поточна серія
-              </p>
-            </div>
-            <div className={C.statCard}>
-              <p className="text-style-headline text-text tabular-nums">
-                {bestStreak}
-              </p>
-              <p className="text-style-caption text-subtle mt-0.5">
-                Макс серія
-              </p>
-            </div>
+            {!isOnce && (
+              <div className={C.statCard}>
+                <p className="text-style-headline text-text tabular-nums">
+                  {currentStreak}
+                </p>
+                <p className="text-style-caption text-subtle mt-0.5">
+                  Поточна серія
+                </p>
+              </div>
+            )}
+            {!isOnce && (
+              <div className={C.statCard}>
+                <p className="text-style-headline text-text tabular-nums">
+                  {bestStreak}
+                </p>
+                <p className="text-style-caption text-subtle mt-0.5">
+                  Макс серія
+                </p>
+              </div>
+            )}
             <div className={C.statCard}>
               <p className="text-style-headline text-text tabular-nums">
                 {totalDone}
@@ -440,37 +452,39 @@ export function HabitDetailSheet({
                 Разів виконано
               </p>
             </div>
-            <div className={C.statCard}>
-              <div className="flex items-baseline justify-center gap-1.5">
-                {pct7 !== null && (
-                  <Measure
-                    value={pct7}
-                    unit="%"
-                    className="text-style-label text-text"
-                  />
-                )}
-                {pct30 !== null && (
-                  <Measure
-                    value={pct30}
-                    unit="%"
-                    className="text-style-caption text-muted"
-                  />
-                )}
-                {pct90 !== null && (
-                  <Measure
-                    value={pct90}
-                    unit="%"
-                    className="text-style-caption text-subtle"
-                  />
-                )}
-                {pct7 === null && pct30 === null && pct90 === null && (
-                  <span className="text-style-label text-muted">—</span>
-                )}
+            {!isOnce && (
+              <div className={C.statCard}>
+                <div className="flex items-baseline justify-center gap-1.5">
+                  {pct7 !== null && (
+                    <Measure
+                      value={pct7}
+                      unit="%"
+                      className="text-style-label text-text"
+                    />
+                  )}
+                  {pct30 !== null && (
+                    <Measure
+                      value={pct30}
+                      unit="%"
+                      className="text-style-caption text-muted"
+                    />
+                  )}
+                  {pct90 !== null && (
+                    <Measure
+                      value={pct90}
+                      unit="%"
+                      className="text-style-caption text-subtle"
+                    />
+                  )}
+                  {pct7 === null && pct30 === null && pct90 === null && (
+                    <span className="text-style-label text-muted">—</span>
+                  )}
+                </div>
+                <p className="text-style-caption text-subtle mt-0.5">
+                  % за 7 / 30 / 90 д
+                </p>
               </div>
-              <p className="text-style-caption text-subtle mt-0.5">
-                % за 7 / 30 / 90 д
-              </p>
-            </div>
+            )}
           </div>
         </section>
 

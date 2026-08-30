@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { Pool } from "pg";
 import { getUserPlan } from "./getUserPlan.js";
 
@@ -77,58 +77,5 @@ describe("getUserPlan", () => {
       expect.stringContaining("FROM subscriptions"),
       ["user_abc"],
     );
-  });
-});
-
-/**
- * AI-LEGACY: expires 2026-10-31 — знімається разом із рештою бета-інфраструктури.
- *
- * `BILLING_ALL_PRO` читається через Zod-схему `env/env.ts`, а вона парсить
- * `process.env` РАЗ при імпорті. Тому кожен кейс стабить env і пере-імпортує
- * модуль з чистого реєстру — той самий патерн, що в `requirePlan.test.ts`.
- */
-async function loadGetUserPlan(allPro?: string) {
-  if (allPro !== undefined) vi.stubEnv("BILLING_ALL_PRO", allPro);
-  vi.resetModules();
-  return (await import("./getUserPlan.js")).getUserPlan;
-}
-
-describe("getUserPlan × BILLING_ALL_PRO", () => {
-  afterEach(() => {
-    vi.unstubAllEnvs();
-    vi.resetModules();
-  });
-
-  it("віддає Pro будь-якому юзеру без рядка в subscriptions", async () => {
-    const fn = await loadGetUserPlan("true");
-    const pool = mockPool([]);
-    const result = await fn(pool, "user_without_subscription");
-    expect(result.plan).toBe("pro");
-    expect(result.status).toBe("active");
-    // Байпас має бути ДО запиту: інакше кожен виклик платить точковим
-    // читанням `subscriptions` заради відповіді, яка від нього не залежить.
-    expect(pool.query).not.toHaveBeenCalled();
-  });
-
-  it("не втручається, поки прапорець вимкнений", async () => {
-    const fn = await loadGetUserPlan("false");
-    const pool = mockPool([]);
-    const result = await fn(pool, "user_without_subscription");
-    expect(result.plan).toBe("free");
-    expect(pool.query).toHaveBeenCalled();
-  });
-
-  it("незаданий прапорець дорівнює вимкненому", async () => {
-    const fn = await loadGetUserPlan();
-    const pool = mockPool([]);
-    expect((await fn(pool, "user_1")).plan).toBe("free");
-  });
-
-  it("одруківка валить старт замість тихого Free", async () => {
-    vi.stubEnv("BILLING_ALL_PRO", "yes");
-    vi.resetModules();
-    // Мовчазний фолбек на Free тут коштував би того, що бета-тестери
-    // сидять на 5 запитах AI на добу, а ніхто про це не дізнається.
-    await expect(import("./getUserPlan.js")).rejects.toThrow(/BILLING_ALL_PRO/);
   });
 });

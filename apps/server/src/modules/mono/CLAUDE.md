@@ -1,6 +1,6 @@
 # Інтеграція Monobank (mono)
 
-> **Last touched:** 2026-08-29 by @Skords-01. **Next review:** 2026-11-30.
+> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-11-30.
 > **Status:** Active
 
 Це НЕ AI-шар і НЕ коуч (коуч живе в `apps/server/src/modules/chat/coach.ts`). Тут: webhook Monobank, enrichment-воркери категоризації транзакцій, jars, Privat.

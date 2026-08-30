@@ -153,11 +153,9 @@ jobs:
         run: pnpm --filter @sergeant/server db:migrate:dev
 
       - name: Build web app
-        # `build:e2e` — та сама причина, що й у `ci.yml` (critical-flow):
-        # бета-гейт ховає комерцію та юрдоки, а цей лейн ганяє повну
-        # поверхню на webkit/mobile-safari. `PW_SKIP_WEBSERVER: "1"` нижче
-        # означає, що збірку робить саме цей крок, а не smoke-раннер.
-        run: pnpm --filter @sergeant/web build:e2e
+        # `PW_SKIP_WEBSERVER: "1"` нижче означає, що збірку робить саме цей
+        # крок, а не smoke-раннер.
+        run: pnpm --filter @sergeant/web build
 
       - name: Start API server
         run: pnpm --filter @sergeant/server dev &

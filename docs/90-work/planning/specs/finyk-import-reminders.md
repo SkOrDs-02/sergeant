@@ -1,6 +1,6 @@
 # SPEC: плашка «залий транзакції» у Фініку
 
-> **Last touched:** 2026-08-29 by @Skords-01. **Next review:** 2026-11-27.
+> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-02.
 > **Status:** Active — Фаза 1 реалізована (гілка `claude/reminder-other-sources-design-f1ee17`), за прапорцем `finyk_import_reminder`, за замовчуванням вимкненим.
 
 > **Звідки взялось.** Запит власника 2026-08-29: «є опція завантаження з інших

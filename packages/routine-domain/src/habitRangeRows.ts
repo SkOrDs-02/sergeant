@@ -13,7 +13,7 @@
  */
 
 import { addDays, dateKeyFromDate, isoWeekdayFromDateKey } from "./dateKeys.js";
-import { habitScheduledOnDate } from "./schedule.js";
+import { habitCountsTowardMetrics, habitScheduledOnDate } from "./schedule.js";
 import type { Habit, HabitSkip } from "./types.js";
 
 /**
@@ -113,6 +113,9 @@ export function buildHabitRangeRows(
   const rows: HabitRangeRow[] = [];
   for (const habit of habits) {
     if (habit.archived) continue;
+    // `once` не отримує рядка: його `rate` — метрика, якої канон §7 п.2
+    // для разових подій не визнає (рішення 2026-08-30).
+    if (!habitCountsTowardMetrics(habit)) continue;
 
     const done = new Set(completions?.[habit.id] ?? []);
     const habitSkips = opts.skips?.[habit.id];

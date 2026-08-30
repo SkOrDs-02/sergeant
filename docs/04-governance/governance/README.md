@@ -1,6 +1,6 @@
 # Governance
 
-> **Last touched:** 2026-08-28 by @Skords-01. **Next review:** 2026-12-07.
+> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-13.
 > **Status:** Active
 
 Governance in Sergeant is intentionally split between human-readable policy and machine-readable enforcement.

@@ -14,8 +14,8 @@ import {
 } from "./crossModuleLinkTiers";
 
 describe("gradeCrossModuleLink", () => {
-  it("mirrors digestCorrelations.ts thresholds (MIN_N=5, NOTABLE_R=0.4)", () => {
-    expect(MIN_N).toBe(5);
+  it("mirrors digestCorrelations.ts thresholds (MIN_N=10, NOTABLE_R=0.4)", () => {
+    expect(MIN_N).toBe(10);
     expect(NOTABLE_R).toBe(0.4);
   });
 

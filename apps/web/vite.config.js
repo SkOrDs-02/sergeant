@@ -98,21 +98,6 @@ export default defineConfig(({ mode }) => {
       // глобалів на стандартний Vite `import.meta.env.VITE_*` pattern,
       // типізований через `apps/web/src/vite-env.d.ts`.
       "import.meta.env.VITE_BUILD_ID": JSON.stringify(buildId),
-      // Beta kill switches for the commerce and legal surfaces
-      // (`src/core/lib/betaSurfaces.ts`). Injected as literals for the same
-      // reason as `VITE_TARGET` above: an unset `VITE_*` is only substituted
-      // at RUNTIME from the injected env object, so the comparison never
-      // folds and Rollup keeps the gated `import()` — measured 2026-08-08,
-      // `PricingPage`/`LegalPage` were still emitted and, worse, still listed
-      // in the service-worker precache manifest, i.e. every beta user
-      // downloaded a tariffs page they cannot open and can read in devtools.
-      // As explicit literals the branch is statically dead and the chunks go.
-      "import.meta.env.VITE_ENABLE_COMMERCE": JSON.stringify(
-        env.VITE_ENABLE_COMMERCE ?? process.env.VITE_ENABLE_COMMERCE ?? "",
-      ),
-      "import.meta.env.VITE_ENABLE_LEGAL": JSON.stringify(
-        env.VITE_ENABLE_LEGAL ?? process.env.VITE_ENABLE_LEGAL ?? "",
-      ),
     },
     plugins: [
       tailwindcss(),

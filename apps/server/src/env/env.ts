@@ -208,6 +208,11 @@ const envSchema = z.object({
 
   AI_QUOTA_FOUNDER_IDS: z.string().optional(),
 
+  // AI-LEGACY: expires 2026-11-30 — рубильник закритого доступу після бети.
+  // Кома-розділений список `userId`, яким дозволено входити; порожнє
+  // значення лишає продукт відкритим. Логіка — `auth/accessGate.ts`.
+  ACCESS_ALLOWLIST_USER_IDS: z.string().optional(),
+
   AI_TIERED_PRO_ENABLED: boolFromEnv(true),
 
   /**
@@ -377,41 +382,6 @@ const envSchema = z.object({
         code: z.ZodIssueCode.custom,
         message:
           "STRIPE_ENABLED must be one of true/false/1/0 — refusing to guess on a billing flag",
-      });
-      return z.NEVER;
-    }),
-
-  // AI-LEGACY: expires 2026-10-31 — інфраструктура закритої бети; знімається
-  // разом із docs/90-work/beta-launch/ (перелік — у README тієї теки).
-  //
-  // Видає Pro КОЖНОМУ автентизованому користувачу, не заводячи рядків у
-  // `subscriptions`. Причина: під час закритої бети доступ і так лише за
-  // інвайтом, а поіменна видача скриптом (`scripts/billing/grant-beta-pro.mjs`)
-  // додає крок, який нічого не захищає — і про який легко забути, коли
-  // тестер приєднався між прогонами.
-  //
-  // Парситься так само строго, як `STRIPE_ENABLED`: одруківка валить старт
-  // замість того, щоб тихо лишити всіх на Free. Це не косметика — єдина
-  // річ, яку прапорець реально відмикає, коштує грошей (див. нижче).
-  //
-  // AI-DANGER: PRO_LIMITS ставить `aiRequestsPerDay: null`, тобто БЕЗ
-  // ліміту. З увімкненим прапорцем персональної стелі на AI не лишається
-  // ні в кого, і єдиним гальмом стає ГЛОБАЛЬНИЙ денний бюджет
-  // (`ANTHROPIC_BUDGET_HARD_DEGRADE_ALL`) — а він, спрацювавши, роняє на
-  // дешеву модель ОДРАЗУ ВСІХ. Тобто один захоплений тестер може зіпсувати
-  // досвід решті. Вмикати свідомо і лише на закриту групу.
-  BILLING_ALL_PRO: z
-    .string()
-    .optional()
-    .transform((v, ctx) => {
-      if (v === undefined || v === "") return false;
-      const lower = v.trim().toLowerCase();
-      if (lower === "true" || lower === "1") return true;
-      if (lower === "false" || lower === "0") return false;
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message:
-          "BILLING_ALL_PRO must be one of true/false/1/0 — refusing to guess on a billing flag",
       });
       return z.NEVER;
     }),

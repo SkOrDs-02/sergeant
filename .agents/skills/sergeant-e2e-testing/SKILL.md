@@ -36,7 +36,6 @@ Both configs boot their own web server — do not start `pnpm build && pnpm prev
 ```bash
 pnpm --filter @sergeant/web e2e            # smoke lane (playwright.smoke.config.ts, --grep @critical)
 pnpm --filter @sergeant/web e2e:auth       # auth lane (playwright.smoke.config.ts, --grep @auth)
-pnpm --filter @sergeant/web e2e:beta       # beta-readiness lane (playwright.beta.config.ts)
 pnpm --filter @sergeant/web e2e:mobile     # 44px touch-target audit (playwright.mobile.config.ts, local-only)
 pnpm --filter @sergeant/web e2e:profiles   # profiles lane (playwright.profiles.config.ts)
 pnpm --filter @sergeant/web test:a11y      # accessibility suite (playwright.config.ts, base config)
