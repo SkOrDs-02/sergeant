@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { safeReadLS } from "@shared/lib/storage/storage";
 import { STORAGE_KEYS } from "@sergeant/shared";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
@@ -9,24 +9,42 @@ import {
 } from "../../insights/useWeeklyDigest";
 
 /**
- * Auto-generates a weekly digest on Monday if the user has opted in via
- * `WEEKLY_DIGEST_MONDAY_AUTO === "1"` and no digest exists yet for this
- * week. Generation is deferred 3s so the dashboard finishes mounting
- * before the network/AI request kicks off.
+ * Auto-generates the weekly digest on Monday for the WEEK THAT JUST
+ * ENDED. До 2026-08-30 хук брав `getWeekKey(now)` — для понеділка це
+ * сам понеділок, тобто генерувався щойно-початий тиждень із ~нульовими
+ * даними, і opt-in юзер отримував INSUFFICIENT_DATA замість звіту
+ * (знахідка W1 ревʼю дайджесту).
+ *
+ * Default ON (opt-out через тумблер у налаштуваннях): дайджест виведено
+ * з добової AI-квоти (рішення founder-а 2026-08-30), тож стара причина
+ * дефолтного OFF («AI-виклик зʼїдається без запиту») більше не діє.
+ * Відсутнє значення прапорця означає «увімкнено»; збережене «0» —
+ * явний opt-out і поважається.
+ *
+ * Generation is deferred 3s so the dashboard finishes mounting before
+ * the network/AI request kicks off.
  *
  * Idempotency: a mount-scoped ref blocks a second `generate()` call when
  * the `generate` callback identity flips at the Sunday→Monday midnight
- * transition (the original 2× LLM cost risk). A second `loadDigest`
+ * transition (the original 2x LLM cost risk). A second `loadDigest`
  * check inside the timer mitigates cross-tab races. See
  * `docs/audits/2026-05-13-page-audit-02-hub-dashboard.md § F12`.
  */
 export function useMondayAutoDigest() {
-  const { generate } = useWeeklyDigest();
+  // Тиждень, що завершився вчора (неділею): понеділок now мінус 7 днів.
+  // Lazy-ініціалізатор useState — санкціоноване місце для одноразового
+  // читання годинника (react-hooks/purity забороняє Date.now() у тілі
+  // рендера). Перетин півночі Нд→Пн під час відкритої вкладки ловить не
+  // цей ключ, а firedRef + повторний loadDigest у таймері.
+  const [previousWeekKey] = useState(() =>
+    getWeekKey(new Date(Date.now() - 7 * 86_400_000)),
+  );
+  const { generate } = useWeeklyDigest(previousWeekKey);
   const firedRef = useRef(false);
 
   useEffect(() => {
     const enabled =
-      safeReadLS<string>(STORAGE_KEYS.WEEKLY_DIGEST_MONDAY_AUTO, "") === "1";
+      safeReadLS<string>(STORAGE_KEYS.WEEKLY_DIGEST_MONDAY_AUTO, "") !== "0";
     if (!enabled) return;
 
     const now = new Date();
@@ -35,15 +53,14 @@ export function useMondayAutoDigest() {
     const isMonday = getKyivDateParts(now).weekday === 1;
     if (!isMonday) return;
 
-    const weekKey = getWeekKey(now);
-    if (loadDigest(weekKey)) return;
+    if (loadDigest(previousWeekKey)) return;
     if (firedRef.current) return;
     firedRef.current = true;
 
     const timer = setTimeout(() => {
-      if (loadDigest(weekKey)) return;
+      if (loadDigest(previousWeekKey)) return;
       generate();
     }, 3000);
     return () => clearTimeout(timer);
-  }, [generate]);
+  }, [generate, previousWeekKey]);
 }

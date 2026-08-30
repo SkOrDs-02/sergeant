@@ -115,7 +115,15 @@ describe("nutrition sqliteReader (mobile)", () => {
         id: "pantry-1",
         name: "",
         text: "",
-        items: [{ name: "Гречка", qty: 2, unit: null, notes: "пачки" }],
+        items: [
+          {
+            name: "Гречка",
+            qty: 2,
+            unit: null,
+            notes: "пачки",
+            sources: null,
+          },
+        ],
       },
     ]);
     expect(cache.activePantryId).toBe("pantry-1");

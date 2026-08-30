@@ -11,6 +11,7 @@ import type { CategorizeResult } from "../../routes/internal/categorize.js";
 import { lookupMccCategory } from "../../lib/mcc/mccMap.js";
 import { maskPii } from "../../lib/pii-mask.js";
 import { enqueueUnknownMcc } from "../../lib/mcc/unknownQueue.js";
+import { providerUpstreamReady } from "../../http/requireAnthropicKey.js";
 import { env } from "../../env.js";
 
 /**
@@ -24,7 +25,9 @@ import { env } from "../../env.js";
  *
  * Що worker робить за один tick (`runOnce`):
  *   1) Атомарно бере до `batchSize` ready-row-ів (status pending|failed,
- *      `available_at <= NOW()`), переводить їх у `processing`.
+ *      `available_at <= NOW()`, ПЛЮС застряглі `processing`-row-и старші за
+ *      stale-поріг — вбудований reaper, див. PICK_BATCH_SQL), переводить
+ *      їх у `processing`.
  *   2) Для кожного — JOIN-ом тягне `description/amount/mcc` з
  *      `mono_transaction`. Якщо tx видалена/відсутня — `outcome=missing_tx`,
  *      row закриваємо як `done` (немає що класифікувати).
@@ -57,6 +60,12 @@ export interface EnrichmentWorkerOptions {
   maxAttempts?: number;
   /** Інтервал між ticks. Polling-cycle старту ніколи не пересікається сам із собою. */
   intervalMs?: number;
+  /**
+   * Поріг (мс), після якого `processing`-row вважається застряглим і
+   * підбирається знову (reaper у PICK_BATCH_SQL). Default —
+   * `defaultStaleProcessingMs()`.
+   */
+  staleProcessingMs?: number;
   /** Override для DI у тестах. */
   categorize?: typeof categorizeTransaction;
   /** Override для DI у тестах. */
@@ -87,12 +96,25 @@ interface QueueRow {
   mcc: number | null;
 }
 
+/**
+ * Крім ready-row-ів (pending|failed) PICK підбирає і «застряглі»
+ * `processing`-row-и, чий `updated_at` старший за stale-поріг ($2, мс) —
+ * це вбудований reaper. Row міг застрягнути у `processing` двома шляхами:
+ * (а) процес убито (OOM/kill -9) посеред tick-у, коли graceful-stop не
+ * спрацював; (б) row сидів у in-memory MCC-буфері (див. enqueue-гілку
+ * нижче) і процес рестартував — буфер зник разом із памʼяттю. Раніше такі
+ * row-и не підбирав ніхто (PICK бачив лише pending|failed) — вони висіли
+ * вічно. `attempts` при re-pick лишається як був — reaper це recovery, не
+ * покарання.
+ */
 const PICK_BATCH_SQL = `
 WITH next_batch AS (
   SELECT id
     FROM mono_ai_enrichment_queue
-   WHERE status IN ('pending', 'failed')
-     AND available_at <= NOW()
+   WHERE (status IN ('pending', 'failed')
+          AND available_at <= NOW())
+      OR (status = 'processing'
+          AND updated_at < NOW() - ($2::bigint * INTERVAL '1 millisecond'))
    ORDER BY available_at, id
    LIMIT $1
    FOR UPDATE SKIP LOCKED
@@ -104,6 +126,22 @@ UPDATE mono_ai_enrichment_queue q
  WHERE q.id = nb.id
 RETURNING q.id, q.user_id, q.mono_tx_id, q.attempts;
 `;
+
+/**
+ * Дефолтний stale-поріг для reaper-а. Row легітимно живе у `processing`
+ * довше за один tick лише в MCC-буфер-і (hourly batch): item може
+ * пересидіти там до `MAX_BUFFER_MISSED_TICKS`(=3, batchEnrichmentWorker.ts)
+ * tick-ів. Тому з увімкненим `MCC_BATCH_HOURLY_ENABLED` поріг —
+ * 4 × `MCC_BATCH_INTERVAL_MS` (4 год за дефолтів), інакше 15 хв. Занизький
+ * поріг при живому буфер-і дав би подвійну обробку (буфер + re-pick), а не
+ * лише зайвий Anthropic-виклик.
+ */
+const DEFAULT_STALE_PROCESSING_MS = 15 * 60 * 1000;
+
+function defaultStaleProcessingMs(): number {
+  if (!env.MCC_BATCH_HOURLY_ENABLED) return DEFAULT_STALE_PROCESSING_MS;
+  return Math.max(DEFAULT_STALE_PROCESSING_MS, 4 * env.MCC_BATCH_INTERVAL_MS);
+}
 
 const FETCH_TX_SQL = `
 SELECT description, amount, mcc
@@ -156,6 +194,8 @@ export async function runEnrichmentTick(
 ): Promise<EnrichmentTickResult> {
   const batchSize = opts.batchSize ?? 5;
   const maxAttempts = opts.maxAttempts ?? 5;
+  const staleProcessingMs =
+    opts.staleProcessingMs ?? defaultStaleProcessingMs();
   const categorize = opts.categorize ?? categorizeTransaction;
 
   const result: EnrichmentTickResult = {
@@ -173,7 +213,7 @@ export async function runEnrichmentTick(
       user_id: string;
       mono_tx_id: string;
       attempts: number;
-    }>(PICK_BATCH_SQL, [batchSize]);
+    }>(PICK_BATCH_SQL, [batchSize, staleProcessingMs]);
     picked = pickRes.rows.map((r) => ({
       // `id` — BIGSERIAL → bigint → string у pg. Hard Rule #1.
       id: Number(r.id),
@@ -228,9 +268,11 @@ export async function runEnrichmentTick(
       // ── Hourly batch fallback (PR-18 з pr-plan-2026-05) ──
       // Коли feature-flag увімкнено і MCC НЕ зматчився rule-based,
       // запушуємо item у in-memory буфер замість per-row Anthropic-виклику.
-      // Queue.row лишається у `status='processing'` (PICK_BATCH_SQL не
-      // підбирає такі) — batch-worker write-back-ить `done` при успіху
-      // або redirect-ить через `MARK_RETRY_SQL` при фейлі. Якщо буфер
+      // Queue.row лишається у `status='processing'` — batch-worker
+      // write-back-ить `done` при успіху або redirect-ить через
+      // `MARK_RETRY_SQL` при фейлі. Якщо процес рестартує і буфер зникне —
+      // stale-reaper у PICK_BATCH_SQL підбере row знову після
+      // 4 × MCC_BATCH_INTERVAL_MS (див. defaultStaleProcessingMs). Якщо буфер
       // переповнений (`MCC_BATCH_MAX_SIZE × 10`) — `enqueueUnknownMcc()`
       // повертає false, і ми фолбекаємо на per-row Claude нижче (legacy
       // behaviour). PR-17 fast-path лишається в `categorizeTransaction()`,
@@ -352,7 +394,8 @@ export async function sampleEnrichmentQueueDepth(pool: Pool): Promise<void> {
  * SQL-запит фейлить — повертає `null` queueDepth + `error`. Не throw-ить
  * — health-endpoint має лишатись reachable навіть у DB-incident.
  *
- * `enabled` — env-flag `MONO_ENRICHMENT_WORKER_ENABLED && ANTHROPIC_API_KEY`,
+ * `enabled` — env-flag `MONO_ENRICHMENT_WORKER_ENABLED` + ключ провайдера,
+ * яким worker реально категоризує (`providerUpstreamReady("readonly")`),
  * віддзеркалює інваріант з `index.ts` (worker запускається лише коли
  * обидва true). Це proxy для "очікуваний live-worker", бо worker сам
  * не реєструється у appState.
@@ -378,14 +421,12 @@ export async function getMonoEnrichmentWorkerStatus(
   // закешований `env`-snapshot), щоб health-endpoint відображав фактичний стан
   // process-у — Railway теоретично може підмінити цей toggle через `set` без
   // рестарту. Міграція цього flag-а на env-single-source — Phase-2 ціль.
-  // `ANTHROPIC_API_KEY`, навпаки, вже мігровано на env-single-source
-  // (`env.ANTHROPIC_API_KEY`, обчислюється на module-load) згідно з HR-3 /
-  // canonical pattern із `coach.route.test.ts` та `requireAnthropicKey.ts`;
-  // ключ задається на старті process-у, тож runtime-reflection тут не потрібна.
+  // Ключ провайдера, навпаки, вже на env-single-source (обчислюється на
+  // module-load); ключі задаються на старті process-у, тож runtime-reflection
+  // тут не потрібна. Предикат той самий, що в старт-гейті `index.ts`.
   const flagRaw = process.env["MONO_ENRICHMENT_WORKER_ENABLED"]?.toLowerCase();
   const flagOn = flagRaw === "true" || flagRaw === "1";
-  const apiKeyPresent = Boolean(env.ANTHROPIC_API_KEY);
-  const enabled = flagOn && apiKeyPresent;
+  const enabled = flagOn && providerUpstreamReady("readonly");
   const intervalMs = env.MONO_ENRICHMENT_INTERVAL_MS;
   try {
     const res = await pool.query<{ status: string; count: number | string }>(
@@ -476,8 +517,10 @@ export function startMonoEnrichmentWorker(
    *   setInterval встиг би пере-затерти `inflight` 15 разів. Stop() тоді
    *   awaitить лише ОСТАННІЙ tick, а попередні 14 — abandoned, і коли
    *   index.ts викличе pool.end() одразу після stop(), ці tick-и
-   *   отримають ECONNRESET → queue.row застрягне у status='processing'
-   *   назавжди (Devin Review знайшов це у PR #1251).
+   *   отримають ECONNRESET → queue.row застрягав у status='processing'
+   *   (Devin Review знайшов це у PR #1251). Відтоді stale-reaper у
+   *   PICK_BATCH_SQL повертає такі row-и в роботу після порога, але це
+   *   recovery-мережа, а не привід ламати non-overlap інваріант.
    * - `setTimeout`-loop запускає НАСТУПНИЙ tick тільки після завершення
    *   попереднього. Гарантовано non-overlap, гарантовано stop() ловить
    *   справжній in-flight, без extra book-keeping (Set<Promise>).

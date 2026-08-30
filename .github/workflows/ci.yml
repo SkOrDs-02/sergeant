@@ -789,7 +789,15 @@ jobs:
   migration-lint:
     name: Migration lint (AGENTS rule #4)
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
+    # Свідомо БЕЗ `if: github.event_name == 'pull_request'` (на відміну від
+    # решти PR-only джоб): дубль 091 у 2026-07-31 проліз саме тому, що обидва
+    # PR-и лінтувались проти `main`, на якому тоді був максимум 090 — жоден із
+    # прогонів не бачив другого файлу, а після мержу гейт більше не запускався
+    # ніде. Прогін на push у `main` ловить таку колізію в межах хвилини після
+    # мержу, замість того щоб вона спливла в продовій діагностиці. На push
+    # `github.base_ref` порожній → BASE_REF падає в дефолт "main", diff проти
+    # origin/main порожній, і лишаються рівно whole-tree перевірки (gaps +
+    # duplicates) — саме те, що тут потрібно.
     steps:
       # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd

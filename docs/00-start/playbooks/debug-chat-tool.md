@@ -1,6 +1,6 @@
 # Playbook: Debug HubChat Tool
 
-> **Last touched:** 2026-08-22 by @claude. **Next review:** 2026-11-22.
+> **Last touched:** 2026-08-28 by @github-actions[bot]. **Next review:** 2026-12-11.
 > **Status:** Active
 
 **Trigger:** «Асистент каже що зробив, але нічого не сталось» / «Натиснув кнопку quick action — нема ефекту» / tool call повернувся текстом замість дії / `Невідома дія: …` у відповіді.
@@ -9,7 +9,7 @@
 
 - Primary surfaces: `apps/server/src/modules/chat`, `apps/web/src/core/lib/chatActions`
 - Coupled surface: `apps/web/src/core/hub` (HubChat UI)
-- Governing skill: `sergeant-hubchat`
+- Governing skill: `sergeant-module-ai`
 
 ---
 
@@ -204,3 +204,18 @@ Response **другого** `/api/chat` запиту повертає `{ type: "
 - [AGENTS.md](../../../AGENTS.md) — секції _Architecture: AI tool execution path_, _max_tokens budget per request_, anti-pattern #6 про `localStorage.setItem`
 - `apps/web/src/core/lib/hubChatActions.ts` — `executeAction` entry point
 - `apps/server/src/modules/chat/chat.ts` — `/api/chat` handler і continuation logic
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                | Merged     |
+| ------------------------------------------------------ | -------------------------------------------------------------------- | ---------- |
+| [#895](https://github.com/Skords-01/Sergeant/pull/895) | fix(agents): полірування агентного шару після розкатки module-owners | 2026-08-28 |
+| [#892](https://github.com/Skords-01/Sergeant/pull/892) | feat(agents): module-owner і службові Claude-агенти                  | 2026-08-27 |
+| [#891](https://github.com/Skords-01/Sergeant/pull/891) | feat(agents): скіли-дисципліни                                       | 2026-08-27 |
+| [#890](https://github.com/Skords-01/Sergeant/pull/890) | feat(agents): інфра module-скіли і nested-роутинг                    | 2026-08-27 |
+| [#889](https://github.com/Skords-01/Sergeant/pull/889) | feat(agents): продуктові module-owner скіли                          | 2026-08-27 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 5 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

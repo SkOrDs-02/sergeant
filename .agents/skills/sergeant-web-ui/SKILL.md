@@ -9,6 +9,8 @@ lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); t
 
 Web-робота в Sergeant — це React 18 + Vite PWA + Tailwind з репо-дизайн-конвенціями, які тримаються design tokens + review (ESLint-enforcement візуальних правил retired ADR-0081). Дотримуйся локальної design-system і shell-конвенцій, а не generic React- або Tailwind-дефолтів.
 
+Задача в межах продуктового модуля (`apps/web/src/modules/*`)? Спершу завантаж його `sergeant-module-*` скіл — канон, § Журнал рішень і модульні інваріанти; цей скіл дає лише технічні правила поверхні (роутинг — `sergeant-start-here` § «Роутся одразу»).
+
 ## Що покриває
 
 - `apps/web/src/core/**`

@@ -70,7 +70,7 @@ Hard Rule #18 — `max-lines: 600` для server TS/JS. Ріж по use-case-а�
 
 - Роути, серіалізатори, контракт, api-client → `sergeant-server-api`
 - SQL-схема, міграції, індекси → `sergeant-data-and-migrations`
-- HubChat tool-defs і executor-и → `sergeant-hubchat`
+- HubChat tool-defs і executor-и → `sergeant-module-ai`
 - Розміщення коду між app і package → `sergeant-monorepo-boundaries`
 - Деплой, env, health, Coolify → `sergeant-deploy-and-observability`
 

@@ -450,6 +450,45 @@
       }
     },
     {
+      "description": "a GET /api/v1/finyk/import/recent request",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001 has completed statement and screenshot imports"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/finyk/import/recent"
+      },
+      "response": {
+        "body": {
+          "sources": [
+            {
+              "recentAt": [
+                "2026-01-10T09:00:00.000Z"
+              ],
+              "source": "bank_screenshot"
+            },
+            {
+              "recentAt": [
+                "2026-01-16T10:00:00.000Z",
+                "2025-12-17T10:00:00.000Z"
+              ],
+              "source": "bank_statement"
+            }
+          ]
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
       "description": "a GET /api/v1/finyk/receipts/501 request",
       "providerStates": [
         {
@@ -1732,6 +1771,20 @@
           "batchId": 88,
           "created": 2,
           "linked": 0,
+          "rows": [
+            {
+              "id": "imp1:aaa",
+              "status": "mono_matched"
+            },
+            {
+              "id": "imp1:bbb",
+              "status": "created"
+            },
+            {
+              "id": "imp1:ccc",
+              "status": "created"
+            }
+          ],
           "skipped": {
             "duplicate": 0,
             "monoMatched": 1
@@ -2741,16 +2794,20 @@
             {
               "matches": [
                 {
+                  "available": true,
                   "displayRatio": null,
                   "lagerId": "eyJwcm9kdWN0SWQiOiJwLTEifQ==",
                   "name": "Молоко Селянське 2.5% 900г",
+                  "oldPriceKop": 5290,
                   "priceKop": 4500,
                   "unit": "шт"
                 },
                 {
+                  "available": false,
                   "displayRatio": "0.9 кг",
                   "lagerId": "eyJwcm9kdWN0SWQiOiJwLTIifQ==",
                   "name": "Молоко Яготинське 2.5% 1л",
+                  "oldPriceKop": null,
                   "priceKop": 5200,
                   "unit": "кг"
                 }

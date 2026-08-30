@@ -223,7 +223,31 @@ export default defineConfig(({ mode }) => {
             // L11) which fails CI if any non-1st-party URL still ends
             // up in the manifest (e.g. a Vite plugin inlines a CDN
             // asset into `dist/`).
-            globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+            //
+            // AI-DANGER: `wasm` мусить лишатися в цьому списку разом із
+            // `js`. Прибереш його — повернеш SERGEANT-API-M /
+            // SERGEANT-WEB-R (~25 користувачів за бету).
+            //
+            // Чому пара нероздільна. `js` затягує в прекеш glue-чанк
+            // sqlite-wasm, а той обчислює адресу свого бінарника як
+            // `new URL("sqlite3.wasm", import.meta.url)` — тобто
+            // `/assets/sqlite3-<hash>.wasm` того ж білда. Поки `wasm` був
+            // поза прекешем, виходила асиметрія: glue віддавався з кешу
+            // старого деплою, а його бінарник щоразу йшов у мережу. На
+            // проді там уже новий деплой, старого хеша немає — і замість
+            // файлу приїжджав HTML (див. `assets/` у виключеннях rewrite
+            // у `vercel.json`). Emscripten валив обидва шляхи —
+            // streaming і ArrayBuffer — і кидав
+            // «both async and sync fetching of the wasm failed».
+            //
+            // Реліз-цикл тут `registerType: "prompt"` без
+            // `skipWaiting` (свідомо — див. AI-DANGER у `src/sw.ts`), тож
+            // клієнт може сидіти на старому воркері днями, і кожен його
+            // старт мовчки з'їжджав на LocalStorage без синку. Прекеш
+            // атомарний на білд: glue і бінарник тепер завжди з однієї
+            // збірки. Ціна — ~350 kB brotli на install SW поверх ~265 kB
+            // glue, який туди й так входив.
+            globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2,wasm}"],
             globIgnores: [
               "**/node_modules/**",
               "**/*.map",

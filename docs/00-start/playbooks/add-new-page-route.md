@@ -1,6 +1,6 @@
 # Playbook: Add New Page Route
 
-> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-27.
+> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-01.
 > **Status:** Active
 
 **Trigger:** "Додати нову сторінку в apps/web" / новий розділ UI / новий route для SPA.
@@ -83,7 +83,7 @@ pnpm --filter @sergeant/web exec playwright test
 
 ### 7. Створити PR
 
-- Branch: `devin/<unix-ts>-feat-<page-name>`
+- Branch: `<harness>/feat-<page-name>`
 - Commit: `feat(web): add <page-name> page`
 - PR description: screenshot нової сторінки, link на route.
 

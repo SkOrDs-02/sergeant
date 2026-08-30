@@ -129,6 +129,12 @@ importers:
       '@fontsource-variable/manrope':
         specifier: ^5.2.8
         version: 5.2.8
+      '@fontsource/piazzolla':
+        specifier: ^5.2.5
+        version: 5.3.0
+      '@fontsource/unbounded':
+        specifier: ^5.2.5
+        version: 5.3.0
       '@sergeant/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -2504,6 +2510,12 @@ packages:
 
   '@fontsource-variable/manrope@5.2.8':
     resolution: {integrity: sha512-nc9lOuCRz73UHnovDE2bwXUdghE2SEOc7Aii0qGe3CLyE03W1a7VnY5Z6euRiapiKbCkGS+eXbY3s/kvWeGeSw==}
+
+  '@fontsource/piazzolla@5.3.0':
+    resolution: {integrity: sha512-TdNHvrECFtU5g3hYGDraUHBHwRlR60EGpBlf80IGpu0/puUrWTH79xeiNqPwxKcuC6pWKYFRD2mLXHoMB9BJkw==}
+
+  '@fontsource/unbounded@5.3.0':
+    resolution: {integrity: sha512-pPD6hsTnjoQRr6pCsqMHbHBfauB4LZygCNQEUJHu+CO2wzDFHqELEFSG7sTwo5Z5Gr4q3OK0fIILOXBJDv6lcw==}
 
   '@formatjs/ecma402-abstract@2.3.6':
     resolution: {integrity: sha512-HJnTFeRM2kVFVr5gr5kH1XP6K0JcJtE7Lzvtr3FS/so5f1kpsqqqxy5JF+FRaO6H2qmcMfAUIox7AJteieRtVw==}
@@ -14774,6 +14786,10 @@ snapshots:
   '@fontsource-variable/jetbrains-mono@5.2.8': {}
 
   '@fontsource-variable/manrope@5.2.8': {}
+
+  '@fontsource/piazzolla@5.3.0': {}
+
+  '@fontsource/unbounded@5.3.0': {}
 
   '@formatjs/ecma402-abstract@2.3.6':
     dependencies:

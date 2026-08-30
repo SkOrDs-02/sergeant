@@ -1,7 +1,7 @@
 import { drizzle, type SqliteRemoteDatabase } from "drizzle-orm/sqlite-proxy";
 import * as sqliteSchema from "@sergeant/db-schema/sqlite";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
-import { addSentryBreadcrumb } from "../observability/sentry.js";
+import { addSentryBreadcrumb, setSentryTag } from "../observability/sentry.js";
 import {
   isChunkLoadError,
   reloadOnceForChunkError,
@@ -322,6 +322,21 @@ async function initSqliteDb(
   // перетинали б `BEGIN`, валячи бут із «cannot start a transaction
   // within a transaction».
   const sharedMigrationClient = makeMigrationClient(driver.db);
+
+  // Який VFS реально дістався пристрою — тег на всю сесію.
+  //
+  // AI-CONTEXT: без цього тега цілий клас прод-питань нерозвʼязний. У
+  // `kvvfs` (фолбек для старого iOS Safari) УСІ партиції користувачів
+  // лежать в одному сховищі, тоді як `opfs-sahpool` тримає файл на
+  // акаунт (`sergeant-<id>.db`). Тобто гіпотези виду «два акаунти на
+  // одному пристрої переплутали дані» перевіряються рівно цим полем — а
+  // воно не потрапляло в жодну подію. Саме через це `SERGEANT-API-X`
+  // (`fk_violation` на `fizruk_measurements.insert`, 3 користувачі) досі
+  // без діагнозу: id виміру випадковий (`m_<ts>_<uuid>`), тож збіг між
+  // акаунтами неможливий — лишається спільне сховище, але підтвердити
+  // це нічим. Той самий тег розділяє `SQLITE_CORRUPT` (`API-P` / `API-Q`)
+  // за бекендом зберігання.
+  setSentryTag("sqlite.vfs", driver.vfs);
 
   const handle: SqliteDbHandle = {
     drizzle: drizzleDb,

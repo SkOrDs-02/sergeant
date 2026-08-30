@@ -102,6 +102,29 @@ export function extractPrecacheUrls(swSource) {
   return urls;
 }
 
+/**
+ * Прекеш мусить містити `sqlite3-*.wasm`, якщо він містить glue-чанк
+ * sqlite-wasm. Це не стильова прискіпливість, а регресійний гейт на
+ * SERGEANT-API-M / SERGEANT-WEB-R (~25 користувачів за бету).
+ *
+ * Пара нероздільна за побудовою: glue обчислює адресу бінарника як
+ * `new URL("sqlite3.wasm", import.meta.url)`, тобто вказує на
+ * `/assets/sqlite3-<hash>.wasm` СВОГО білда. Якщо в прекеші лежить лише
+ * glue, то на старому воркері (реліз-цикл `prompt`, без `skipWaiting`)
+ * він віддається з кешу, а бінарник іде в мережу — де вже новий деплой і
+ * старого хеша немає. Emscripten валить обидва шляхи й кидає
+ * «both async and sync fetching of the wasm failed», а застосунок мовчки
+ * з'їжджає на LocalStorage без синку.
+ *
+ * @param {Array<string>} urls URL-и з precache manifest-у.
+ * @returns {{ glue: Array<string>, wasm: Array<string>, ok: boolean }}
+ */
+export function checkSqliteWasmPaired(urls) {
+  const glue = urls.filter((u) => /sqlite/i.test(u) && u.endsWith(".js"));
+  const wasm = urls.filter((u) => u.endsWith(".wasm"));
+  return { glue, wasm, ok: glue.length === 0 || wasm.length > 0 };
+}
+
 function main() {
   if (!existsSync(SW_PATH)) {
     console.error(
@@ -137,8 +160,24 @@ function main() {
     process.exit(1);
   }
 
+  const pairing = checkSqliteWasmPaired(urls);
+  if (!pairing.ok) {
+    console.error(
+      "[check-pwa-precache] sqlite-wasm glue is precached without its .wasm binary:",
+    );
+    for (const u of pairing.glue) console.error(`  - ${u}`);
+    console.error(
+      "\nЦе точна конфігурація регресії SERGEANT-API-M / SERGEANT-WEB-R: " +
+        "старий воркер віддає glue з кешу, а бінарник тягне з мережі, де " +
+        "його хеша вже немає.\nПоверни `wasm` у `globPatterns` " +
+        "(apps/web/vite.config.js → VitePWA → injectManifest).",
+    );
+    process.exit(1);
+  }
+
   console.log(
-    `[check-pwa-precache] OK — ${urls.length} precache URLs, all 1st-party.`,
+    `[check-pwa-precache] OK — ${urls.length} precache URLs, all 1st-party; ` +
+      `sqlite glue+wasm paired (${pairing.wasm.length} wasm).`,
   );
 }
 

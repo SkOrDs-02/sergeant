@@ -17,6 +17,7 @@
 import { useState } from "react";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { Button } from "@shared/components/ui/Button";
+import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { Icon } from "@shared/components/ui/Icon";
 import { Money } from "@shared/components/ui/Money";
 import { messages } from "@shared/i18n/uk";
@@ -220,8 +221,32 @@ function CartRow({
             {selected && (
               <span className="min-w-0 text-style-caption text-subtle truncate">
                 <Money amount={selected.priceKop / 100} kopecks />
+                {/* Стара ціна поруч, а не замість: сам по собі значок
+                    «-14%» не каже, скільки це в гривнях, а перекреслена
+                    сума робить вигоду видимою без арифметики. Сервер уже
+                    гарантує, що вона строго більша (`normalizeCartMatch`). */}
+                {selected.oldPriceKop != null && (
+                  <>
+                    {" "}
+                    <s className="opacity-60">
+                      <Money amount={selected.oldPriceKop / 100} kopecks />
+                    </s>{" "}
+                    <span className="text-success font-semibold">
+                      −
+                      {Math.round(
+                        (1 - selected.priceKop / selected.oldPriceKop) * 100,
+                      )}
+                      %
+                    </span>
+                  </>
+                )}
                 {" / "}
                 {selected.displayRatio ?? selected.unit}
+                {!selected.available && (
+                  <span className="ml-1 text-warning font-semibold">
+                    {COPY.outOfStock}
+                  </span>
+                )}
               </span>
             )}
           </span>
@@ -247,9 +272,17 @@ function CartRow({
 function SuccessView({
   cart,
   onClose,
+  onClear,
+  clearPending,
+  cleared,
+  clearErrorKind,
 }: {
   cart: SilpoCartDto;
   onClose: () => void;
+  onClear: () => void;
+  clearPending: boolean;
+  cleared: boolean;
+  clearErrorKind: SilpoCartErrorKind;
 }) {
   return (
     <div role="status" aria-live="polite" className="grid gap-4">
@@ -304,6 +337,30 @@ function SuccessView({
       >
         {COPY.closeCta}
       </Button>
+      {/* Помилився списком — прибрати все одним тапом дешевше, ніж знімати
+          позиції по одній у чужому застосунку. Після очищення кнопка
+          зникає: чистити порожній кошик нема сенсу. */}
+      {/* Збій очищення мусить бути видимим: без банера спінер просто гас,
+          кнопка поверталась у вихідний стан, і людина читала це як «нічого
+          не сталось», хоча кошик у Сільпо лишався повним. */}
+      <ErrorBanner kind={clearErrorKind} onRetry={onClear} />
+      {cleared ? (
+        <p className="text-style-caption text-subtle text-center">
+          {COPY.cleared}
+        </p>
+      ) : (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="min-h-[44px] text-danger-strong dark:text-danger"
+          onClick={onClear}
+          disabled={clearPending}
+          loading={clearPending}
+        >
+          {clearPending ? COPY.clearing : COPY.clearCta}
+        </Button>
+      )}
     </div>
   );
 }
@@ -323,14 +380,21 @@ export function SilpoCartSheet({ open, onClose, items }: SilpoCartSheetProps) {
     applyResult,
     applyPending,
     applyErrorKind,
+    clear,
+    clearResult,
+    clearPending,
+    clearErrorKind,
     reset,
   } = useSilpoCart({ enabled: open, items });
+
+  const [confirmClear, setConfirmClear] = useState(false);
 
   // Sheet закрився → локальний вибір скидається (той самий render-phase-
   // reset idiom, що `SilpoPantryReplenishSheet.tsx`).
   const [prevOpen, setPrevOpen] = useState(open);
   if (!open && prevOpen) {
     setPrevOpen(false);
+    setConfirmClear(false);
     reset();
   } else if (open && !prevOpen) {
     setPrevOpen(true);
@@ -373,7 +437,29 @@ export function SilpoCartSheet({ open, onClose, items }: SilpoCartSheetProps) {
       }
     >
       {applyResult ? (
-        <SuccessView cart={applyResult} onClose={onClose} />
+        <>
+          <SuccessView
+            cart={clearResult ?? applyResult}
+            onClose={onClose}
+            onClear={() => setConfirmClear(true)}
+            clearPending={clearPending}
+            cleared={clearResult != null}
+            clearErrorKind={clearErrorKind}
+          />
+          <ConfirmDialog
+            open={confirmClear}
+            title={COPY.clearConfirmTitle}
+            description={COPY.clearConfirmBody}
+            confirmLabel={COPY.clearConfirmCta}
+            cancelLabel={COPY.cancelCta}
+            danger
+            onConfirm={() => {
+              setConfirmClear(false);
+              clear();
+            }}
+            onCancel={() => setConfirmClear(false)}
+          />
+        </>
       ) : (
         <div className="grid gap-4">
           {isLoading && (

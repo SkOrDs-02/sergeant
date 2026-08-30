@@ -1,62 +1,72 @@
 # Agents in Sergeant
 
-> **Last touched:** 2026-08-22 by @Skords-01. **Next review:** 2026-12-14.
+> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-05.
 > **Status:** Active
 
 > **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load one owner skill for the primary touched surface. Load extra workflow/squad/helper skills only when `docs/00-start/agents/agent-workflows.md` or the routing catalog explicitly says to. The routing catalog lives in `docs/00-start/agents/agent-skills-catalog.md`.
 
 ## Agent harnesses & routing
 
-Sergeant is **tool-agnostic**. Any AI agent harness — Claude Code, Kilo Code, Devin, Cursor — drives this repo through the same shared primitives: harness-neutral skills in `.agents/skills/`, this `AGENTS.md` as the policy source of truth, and the surface→specialist routing table below. **Harness-specific config (models, permissions, MCP wiring, custom agents, commands) lives outside the checkout**, in each tool's own global config directory — the repo carries no tool config beyond the versioned `.kilo/harness-versions.json` (see § Harness version), the repo-owned Codex layer `.codex/` and the shared MCP wiring in `.mcp.json` (see the table below).
+Sergeant is **tool-agnostic**: any AI agent harness drives this repo through the same shared primitives - harness-neutral skills in `.agents/skills/`, this `AGENTS.md` as the policy source of truth, and the surface→specialist routing table below. Active harnesses today: **Claude Code** and **Codex**; Devin and Kilo Code retired 2026-08-28 ([ADR-0088](./docs/04-governance/adr/0088-devin-kilo-harness-retirement.md)). **Harness-specific config (models, permissions, MCP wiring, custom agents, commands) lives outside the checkout**, in each tool's own global config directory - the repo carries no tool config beyond the versioned `.agents/harness-versions.json` (see § Harness version), the repo-owned Codex layer `.codex/` and the shared MCP wiring in `.mcp.json` (see the table below).
 
-- **Source of truth.** For all project / policy / hard-rules questions, this file (`AGENTS.md`) wins. `CLAUDE.md` and `DEVIN.md` are thin wrappers that add only runtime/tool notes and must not duplicate policy.
+- **Source of truth.** For all project / policy / hard-rules questions, this file (`AGENTS.md`) wins. `CLAUDE.md` is a thin wrapper that adds only runtime/tool notes and must not duplicate policy.
 - **Skills.** Load the skill for the touched surface — start with `.agents/skills/sergeant-start-here/SKILL.md`, then choose the primary owner skill from the table below. Catalog: `docs/00-start/agents/agent-skills-catalog.md`. Skills are plain SKILL.md files; each harness loads them through its own skill loader — prefer that loader over reading SKILL.md by hand when one exists.
 - **Specialists.** Sergeant owner skills cover product surfaces, cross-cutting disciplines, and explicit multi-agent workflows. Keep one primary owner in mind for a task; add a second skill only when the catalog/workflow says the handoff is intentional (for example feature delivery + web, auth + touched surface, or review-squad). Each harness ships its own agent definitions in its global config; the surface→specialist mapping is what they all share.
 
-**Routing (surface → specialist).** Pick the smallest specialist that owns the touched surface; escalate to `sergeant-review-and-merge` only at PR-boundary.
+**Routing (module × surface → specialist).** Роутинг двовимірний: задача в межах продуктового модуля вантажить **module-owner скіл** (продуктовий контекст: канон, журнал рішень, мапа файлів) **плюс** surface-скіл (технічні правила поверхні). Pick the smallest specialist that owns the touched surface; escalate to `sergeant-review-and-merge` only at PR-boundary.
 
-| Signal in the task                                                   | Load                                |
-| -------------------------------------------------------------------- | ----------------------------------- |
-| Touches `apps/web/**`, RQ keys, design tokens, a11y                  | `sergeant-web-ui`                   |
-| Touches `apps/server/**`, API contract, `api-client`, pino, OpenAPI  | `sergeant-server-api`               |
-| Touches `apps/mobile/**` or `apps/mobile-shell/**`, Expo, EAS        | `sergeant-mobile-expo`              |
-| Touches `db-schema/`, migrations, drill-down, index audit            | `sergeant-data-and-migrations`      |
-| Coolify / Vercel / Sentry / alerting/SLO / CI workflow change / n8n  | `sergeant-deploy-and-observability` |
-| HubChat module / HubChat reset / HubChat E2E                         | `sergeant-hubchat`                  |
-| Writing or running E2E (Playwright/Vitest browser)                   | `sergeant-e2e-testing`              |
-| Security review, vuln triage, secret scan, dependency CVE            | `sergeant-security-audit`           |
-| New feature, new screen, endpoint, workflow, behavior change         | `sergeant-feature-delivery`         |
-| Unsure where code belongs, shared extraction, package boundary       | `sergeant-monorepo-boundaries`      |
-| Backend architecture, CQRS, Temporal, Saga, service boundary design  | `sergeant-backend-architecture`     |
-| Auth/session/cookie/account lifecycle                                | `better-auth-best-practices`        |
-| Regression, hotfix, "this used to work"                              | `sergeant-bugfix-and-regression`    |
-| Refactor, dead code, Knip baseline, eslint baseline reduction        | `sergeant-tech-debt`                |
-| Creating or editing `.agents/skills/**/SKILL.md`                     | `sergeant-writing-skills`           |
-| Touches `tools/**`, `scripts/**`, ops tooling (snapshot, ci-скрипти) | `sergeant-tech-debt`                |
-| PR review, squash-merge, release-cut, changelog                      | `sergeant-review-and-merge`         |
-| Before claiming done/green/fixed — фінальна перевірка перед звітом   | `sergeant-verify-before-done`       |
-| PR review touching 3+ governed surfaces                              | `sergeant-review-squad`             |
-| Feature across 2+ surfaces with contract dependencies                | `sergeant-deliver-squad`            |
-| Full QA across all surfaces in parallel                              | `sergeant-qa-squad`                 |
-| Founder needs multi-perspective product/strategy/UX advice           | `sergeant-council`                  |
-| Execute a batch of planning tasks via parallel agents                | `sergeant-planning-batch`           |
+| Signal in the task                                                   | Load                                  |
+| -------------------------------------------------------------------- | ------------------------------------- |
+| Задача згадує finyk — бюджети, транзакції, чеки, готівку             | `sergeant-module-finyk` + surface     |
+| Задача згадує nutrition — їжу, калорії, комору, страви               | `sergeant-module-nutrition` + surface |
+| Задача згадує fizruk — тренування, відновлення, травми, вагу         | `sergeant-module-fizruk` + surface    |
+| Задача згадує routine — звички, стріки, щоденні відмітки             | `sergeant-module-routine` + surface   |
+| AI-шар: hub, HubChat (tools/executors), coach, digest, ai-memory     | `sergeant-module-ai`                  |
+| Sync, оп-лог, LWW-конфлікти, `dualwrite-core`                        | `sergeant-module-sync`                |
+| Billing: тарифи, квоти, LiqPay, pricing                              | `sergeant-module-billing`             |
+| Зовнішні інтеграції: silpo / telegram / transcribe / webhooks        | `sergeant-module-integrations`        |
+| Push-сповіщення: web push, APNs, FCM, fan-out                        | `sergeant-module-push`                |
+| UA-текст інтерфейсу: кнопки, помилки, тости, empty states            | `sergeant-copy-and-tone`              |
+| Написання або оновлення ADR, індекс рішень, supersede                | `sergeant-adr`                        |
+| Фіче-прапорці: додати/змінити/зняти тумблер                          | `sergeant-feature-flags`              |
+| PostHog-івенти, аналітика, дашборд-манифести                         | `sergeant-analytics`                  |
+| Touches `apps/web/**`, RQ keys, design tokens, a11y                  | `sergeant-web-ui`                     |
+| Touches `apps/server/**`, API contract, `api-client`, pino, OpenAPI  | `sergeant-server-api`                 |
+| Touches `apps/mobile/**` or `apps/mobile-shell/**`, Expo, EAS        | `sergeant-mobile-expo`                |
+| Touches `db-schema/`, migrations, drill-down, index audit            | `sergeant-data-and-migrations`        |
+| Coolify / Vercel / Sentry / alerting/SLO / CI workflow change / n8n  | `sergeant-deploy-and-observability`   |
+| Writing or running E2E (Playwright/Vitest browser)                   | `sergeant-e2e-testing`                |
+| Security review, vuln triage, secret scan, dependency CVE            | `sergeant-security-audit`             |
+| New feature, new screen, endpoint, workflow, behavior change         | `sergeant-feature-delivery`           |
+| Unsure where code belongs, shared extraction, package boundary       | `sergeant-monorepo-boundaries`        |
+| Backend architecture, CQRS, Temporal, Saga, service boundary design  | `sergeant-backend-architecture`       |
+| Auth/session/cookie/account lifecycle                                | `better-auth-best-practices`          |
+| Regression, hotfix, "this used to work"                              | `sergeant-bugfix-and-regression`      |
+| Refactor, dead code, Knip baseline, eslint baseline reduction        | `sergeant-tech-debt`                  |
+| Creating or editing `.agents/skills/**/SKILL.md`                     | `sergeant-writing-skills`             |
+| Touches `tools/**`, `scripts/**`, ops tooling (snapshot, ci-скрипти) | `sergeant-tech-debt`                  |
+| PR review, squash-merge, release-cut, changelog                      | `sergeant-review-and-merge`           |
+| Before claiming done/green/fixed — фінальна перевірка перед звітом   | `sergeant-verify-before-done`         |
+| PR review touching 3+ governed surfaces                              | `sergeant-review-squad`               |
+| Feature across 2+ surfaces with contract dependencies                | `sergeant-deliver-squad`              |
+| Full QA across all surfaces in parallel                              | `sergeant-qa-squad`                   |
+| Founder needs multi-perspective product/strategy/UX advice           | `sergeant-council`                    |
+| Execute a batch of planning tasks via parallel agents                | `sergeant-planning-batch`             |
 
 If two surfaces overlap (e.g. web + e2e), load the **owner** first; add the other only when the workflow requires it or when blocked. Full catalog: [`docs/00-start/agents/agent-skills-catalog.md`](./docs/00-start/agents/agent-skills-catalog.md).
 
 ### Harness config lives outside the repo
 
-Harnesses keep their config outside the checkout, with three deliberate exceptions: the harness-neutral version registry `.kilo/harness-versions.json` (§ Harness version), the repo-owned Codex layer `.codex/` (`config.toml`, `hooks.json`, `agents/*.toml` — 21 tracked files; стан через `pnpm codex:status`, опис у [`docs/00-start/agents/codex-capabilities.md`](./docs/00-start/agents/codex-capabilities.md)), and the shared MCP wiring in `.mcp.json`. Nothing else. Every harness is an **equal peer**: it reads `AGENTS.md` + `.agents/skills/` from the repo for shared policy, then keeps its own models, permissions, MCP wiring, custom agents and commands in its own global config home. **None of them is "the" driver of this repo.**
+Harnesses keep their config outside the checkout, with three deliberate exceptions: the harness-neutral version registry `.agents/harness-versions.json` (§ Harness version), the repo-owned Codex layer `.codex/` (`config.toml`, `hooks.json`, `agents/*.toml` — 21 tracked files; стан через `pnpm codex:status`, опис у [`docs/00-start/agents/codex-capabilities.md`](./docs/00-start/agents/codex-capabilities.md)), and the shared MCP wiring in `.mcp.json`. Nothing else. Every harness is an **equal peer**: it reads `AGENTS.md` + `.agents/skills/` from the repo for shared policy, then keeps its own models, permissions, MCP wiring, custom agents and commands in its own global config home. **None of them is "the" driver of this repo.**
 
 | Harness     | Config home (global, outside the repo)                                                                         | Tool-specific wrapper                                                                        |
 | ----------- | -------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
 | Claude Code | `~/.claude/` (+ repo `.claude/` for tool-managed worktrees)                                                    | [`CLAUDE.md`](./CLAUDE.md)                                                                   |
-| Kilo Code   | `~/.config/kilo/` (`agents/`, `command/`, `rules.md`, MCP)                                                     | `~/.config/kilo/rules.md`                                                                    |
-| Devin       | Devin workspace settings                                                                                       | [`DEVIN.md`](./DEVIN.md)                                                                     |
 | Codex       | репо-owned `.codex/` (`config.toml`, `hooks.json`, `agents/*.toml`) — єдиний харнес, чий конфіг живе в чекауті | [`docs/00-start/agents/codex-capabilities.md`](./docs/00-start/agents/codex-capabilities.md) |
 
 Harness-specific primitives — session recall, worktree/branch managers, MCP tool names, dev-server runners — live in that harness's **own wrapper**, never in this file. **If you are reading `AGENTS.md` and see a tool you don't have, it is not yours — use your own harness's equivalent.**
 
-> **SECURITY.** A harness that wires a `github` (or any) MCP with a Personal Access Token keeps that token in its **own** global config (e.g. `~/.config/kilo/kilo.json`), outside git. Treat such tokens as secrets — never echo, commit, or log them. Hard Rule #20 also forbids OpenClaw PATs in production.
+> **SECURITY.** A harness that wires a `github` (or any) MCP with a Personal Access Token keeps that token in its **own** global config, outside git. Treat such tokens as secrets — never echo, commit, or log them. Hard Rule #20 also forbids OpenClaw PATs in production.
 
 ## Agent operating system (project)
 
@@ -67,7 +77,7 @@ Harness-specific primitives — session recall, worktree/branch managers, MCP to
 - Execution recipes: [`docs/00-start/playbooks/README.md`](./docs/00-start/playbooks/README.md)
 - Playbook lookup: [`docs/00-start/playbooks/playbook-catalog.md`](./docs/00-start/playbooks/playbook-catalog.md)
 
-Repo policy lives here in `AGENTS.md`. Platform-specific wrappers such as `CLAUDE.md` and `DEVIN.md` only add runtime/tool notes and must not become parallel sources of truth.
+Repo policy lives here in `AGENTS.md`. Platform-specific wrappers such as `CLAUDE.md` only add runtime/tool notes and must not become parallel sources of truth.
 
 ## Quick commands
 
@@ -89,7 +99,7 @@ Surface-scoped quick references (commands, gotchas, specialist skill pointer) li
 
 - **pnpm 9.15.1** (enforced via `packageManager`) + **Turborepo** monorepo, **Node 22.x** (Volta pins 22.19.0), **TypeScript 6**.
 - 5 apps (`apps/web`, `apps/landing`, `apps/server`, `apps/mobile`, `apps/mobile-shell`) + 12 packages — 17 pnpm workspaces total.
-- Pre-commit: **Husky** runs `lint-staged` — ESLint --fix + Prettier for code, `staged-typecheck.mjs` for staged TS/TSX, `bump-last-validated.mjs` for `.md`. Pipeline matrix: [`CONTRIBUTING.md § Pre-commit hooks`](./CONTRIBUTING.md#pre-commit-hooks).
+- Pre-commit: **Husky** runs `lint-staged` — ESLint --fix + Prettier for code, `staged-typecheck.mjs` for staged TS/TSX, `bump-last-validated.mjs` for `.md`, `pre-commit-derived-artifacts.mjs` для похідних артефактів (openapi + щоденні доки). Pipeline matrix: [`CONTRIBUTING.md § Pre-commit hooks`](./CONTRIBUTING.md#pre-commit-hooks).
 - Deep tech-stack matrix (per-app stack, per-package purpose, build/deploy outputs): [`docs/02-engineering/architecture/repo-map.md`](./docs/02-engineering/architecture/repo-map.md).
 
 ## Module ownership map
@@ -147,6 +157,8 @@ Per-app owner + secondary reviewer for the bus-factor contract (Stack-pulse PR-0
 
 WCAG 2.5.5 / Apple HIG ≥44×44 на coarse pointers. Three layers: `Button` (auto-applies `min-h-[44px] min-w-[44px]` **лише під `@media (pointer: coarse)`** for `xs`/`sm`/`iconOnly` — на fine-pointer floor навмисно не діє), `touch-target` / `touch-target-48` Tailwind utilities, and a global safety-net in `apps/web/src/index.css` (opt out with `data-compact` for intentionally smaller cells like heatmaps). See [`packages/design-tokens/tailwind-preset.js`](./packages/design-tokens/tailwind-preset.js) and [`apps/web/src/shared/components/ui/Button.tsx`](./apps/web/src/shared/components/ui/Button.tsx). Playwright-аудит 44px touch-targets ([`apps/web/tests/mobile/mobile-ui-audit.spec.ts`](./apps/web/tests/mobile/mobile-ui-audit.spec.ts), скрипт `pnpm --filter @sergeant/web e2e:mobile`) — **блокуючий PR-гейт** `Mobile UI audit (44px touch targets)` у [`ci.yml`](./.github/workflows/ci.yml) (промоутнуто з nightly 2026-08-07 після фіксу крашу `FINYK_ASSETS`). Це єдиний механічний enforcement 44×44 floor під `pointer: coarse`.
 
+Той самий спек несе ще три viewport-перевірки, і одна з них варта окремої згадки, бо її бракувало. Горизонтальний overflow міряється двічі: `documentElement.scrollWidth - innerWidth` (контент, що дає бічний скрол) **і** `scrollWidth > clientWidth` на кожному боксі з `overflow-x: hidden` (контент, обрізаний і недосяжний). Друга перевірка існує тому, що перша при кліпері дає чистий нуль — так комора проїхала 155px за 393px-екран непоміченою ([#925](https://github.com/SkOrDs-02/sergeant/pull/925)). Замір іде по боксу-кліперу, а не по rect-ах дітей: бокс із hidden-overflow лишається програмно скрольним, браузер його скролить (досить фокуса в полі), і rect-и дітей ховаються назад у viewport. Кейс із наповненою коморою (`PANTRY`) стоїть окремим тестом поза списком `ROUTES` — steady-state комора порожня, тож рядок, який і розпирає трек, у цьому свіпі не рендериться взагалі.
+
 ## AI markers
 
 Five comment prefixes: `AI-NOTE` (pointer hint), `AI-CONTEXT` (architectural rationale future AI must know), `AI-DANGER` (high-risk zone — confirm before changing), `AI-GENERATED: <generator>` (file is generated — edit the generator), `AI-LEGACY: expires YYYY-MM-DD` (temporary code with deadline). Enforced by `sergeant-design/ai-marker-syntax`. `AI-LEGACY` expiry tracked by `pnpm lint:ai-legacy` (PR-time gate + weekly idempotent issue from `.github/workflows/ai-legacy-scan.yml`). Lifecycle status semantics for files/docs (Active / Scaffolded / Deprecated / Archived) — see [Rule #10](./docs/04-governance/governance/rules/10-lifecycle-markers.md).
@@ -200,7 +212,7 @@ If you legitimately need to raise a limit (e.g. a major new dependency), bump th
 
 ## Soft rules (preferred)
 
-- Branch naming: `<harness>/<short-desc>` — префікс агента/харнеса (фактична практика: `claude/<desc>-<suffix>`, напр. `claude/ai-memory-retrieval-scores`; історична форма `devin/<unix-ts>-<short-area>-<desc>` теж валідна).
+- Branch naming: `<harness>/<short-desc>` — префікс агента/харнеса (фактична практика: `claude/<desc>-<suffix>`, напр. `claude/ai-memory-retrieval-scores`; історична форма `devin/<unix-ts>-<short-area>-<desc>` лишається тільки в старих гілках - Devin retired, [ADR-0088](./docs/04-governance/adr/0088-devin-kilo-harness-retirement.md)).
 - Tests next to code: `foo.ts` + `foo.test.ts` in the same folder (Vitest).
 - Use path aliases (`@shared/*`, `@finyk/*`, etc.) instead of relative `../../../`.
 - Dependency bumps — separate PRs (don't mix with features).
@@ -245,10 +257,10 @@ PR body follows [`.github/PULL_REQUEST_TEMPLATE.md`](./.github/PULL_REQUEST_TEMP
 
 ## Harness version
 
-The agent harness (AGENTS.md, `.agents/skills/**`, Hard Rules registry, `eslint-plugin-sergeant-design`, pre-commit hooks, `tools/agent-snapshot/snapshot.mjs`) is versioned in [`.kilo/harness-versions.json`](.kilo/harness-versions.json). Follow [the governance doc](docs/04-governance/governance/harness-versioning.md) for bump rules and the [ADR-0072](docs/04-governance/adr/0072-harness-versioning.md) for rationale.
+The agent harness (AGENTS.md, `.agents/skills/**`, Hard Rules registry, `eslint-plugin-sergeant-design`, pre-commit hooks, `tools/agent-snapshot/snapshot.mjs`) is versioned in [`.agents/harness-versions.json`](.agents/harness-versions.json) (до 2026-08-28 жив у `.kilo/`, перенесено [ADR-0088](docs/04-governance/adr/0088-devin-kilo-harness-retirement.md)). Follow [the governance doc](docs/04-governance/governance/harness-versioning.md) for bump rules and the [ADR-0072](docs/04-governance/adr/0072-harness-versioning.md) for rationale.
 
 - **Schema:** `schemaVersion: 1` (bump on backward-incompatible layout changes).
-- **Current:** see `current` field in `.kilo/harness-versions.json`.
+- **Current:** see `current` field in `.agents/harness-versions.json`.
 - **A/B experiments:** `.github/workflows/harness-a-b.yml` прибрано [ADR-0082](docs/04-governance/adr/0082-private-storage-repo-posture.md) §4; A/B-прогони наразі ручні, реєстр `abExperiments` лишається чинним, але порожній.
 - **How to bump:** run `node scripts/ci-bump-harness-version.mjs` locally before opening a PR that touches AGENTS.md, a skill, a Hard Rule, or an ESLint design rule; the script auto-detects `patch` / `minor` / `major` from the diff and updates the file in place.
 - **Cross-read:** on session start, if `current` differs from the version noted in the previous session summary, re-read the linked governance doc and the latest `versions.<x.y.z>.changes` entry.
@@ -258,6 +270,6 @@ The agent harness (AGENTS.md, `.agents/skills/**`, Hard Rules registry, `eslint-
 Rollout завершено 2026-06-29. Два активні компоненти — AI-PR Checklist і Entropy Janitors retired ([ADR-0081](./docs/04-governance/adr/0081-repository-simplification.md), [ADR-0082](./docs/04-governance/adr/0082-private-storage-repo-posture.md)):
 
 - **Dynamic snapshot** — `tools/agent-snapshot/snapshot.mjs`, runs `pnpm snapshot`
-- **Harness versioning** — `.kilo/harness-versions.json` + `scripts/ci-bump-harness-version.mjs` (A/B-воркфлоу прибрано ADR-0082 §4; `abExperiments` порожній, прогони ручні)
+- **Harness versioning** — `.agents/harness-versions.json` + `scripts/ci-bump-harness-version.mjs` (A/B-воркфлоу прибрано ADR-0082 §4; `abExperiments` порожній, прогони ручні)
 
 Деталі: [harness-engineering-v1.md](./docs/90-work/planning/harness-engineering-v1.md)

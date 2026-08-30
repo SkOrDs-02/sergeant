@@ -327,6 +327,38 @@ export const ImportCommitRequestSchema = z
   .strict();
 export type ImportCommitRequest = z.infer<typeof ImportCommitRequestSchema>;
 
+/**
+ * Що САМЕ сталося з кожним поданим рядком. Агрегати (`created` /
+ * `skipped.*`) кажуть скільки, але не який — а клієнту потрібне саме
+ * «який»: `finyk_manual_expenses` рядки народжуються прямим SQL-INSERT-ом,
+ * і локально їх видно лише тим, що клієнт запише ті самі id у свій
+ * storage (`useBulkImport.ts` write-through). Поки відповідь несла лише
+ * лічильники, зіставити id з рядками можна було ТІЛЬКИ коли не пропущено
+ * жодного рядка — тож будь-який один дубль чи mono-матч у батчі робив
+ * НЕВИДИМИМИ локально ВСІ створені рядки цього імпорту (звіт власника
+ * 2026-08-28: «пише, що вони вже є, а в операціях їх немає»).
+ *
+ * - `created` — рядок щойно вставлено (є в `batch.createdRowIds`).
+ * - `duplicate` — рядок із таким id уже був і ЖИВИЙ (тір-2 дедуп).
+ * - `tombstoned` — рядок із таким id уже був, але видалений (undo імпорту
+ *   чи ручне видалення). Клієнт НЕ воскрешає його локально.
+ * - `mono_matched` — тір-1: платіж уже видно як mono-транзакцію.
+ */
+export const IMPORT_COMMIT_ROW_STATUSES = [
+  "created",
+  "duplicate",
+  "tombstoned",
+  "mono_matched",
+] as const;
+export type ImportCommitRowStatus = (typeof IMPORT_COMMIT_ROW_STATUSES)[number];
+
+export const ImportCommitRowResultSchema = z.object({
+  /** `finyk_manual_expenses.id` — детермінований `rowKey.ts`-хеш. */
+  id: z.string().min(1),
+  status: z.enum(IMPORT_COMMIT_ROW_STATUSES),
+});
+export type ImportCommitRowResult = z.infer<typeof ImportCommitRowResultSchema>;
+
 export const ImportCommitResponseSchema = z.object({
   batchId: z.number().int().positive(),
   created: z.number().int().min(0),
@@ -341,6 +373,16 @@ export const ImportCommitResponseSchema = z.object({
     monoMatched: z.number().int().min(0),
     duplicate: z.number().int().min(0),
   }),
+  /** Результат КОЖНОГО поданого рядка, у тому самому порядку й тій самій
+   * довжині, що `rows` запиту. `.default([])`, а не обовʼязкове поле: web
+   * і server деплояться окремо (Vercel / Coolify), тож новий клієнт мусить
+   * пережити відповідь ще не оновленого сервера — той самий підхід, що
+   * `ImportScreenshotDraftSchema.dropped`. Порожній масив = «сервер
+   * старий», клієнт падає на легасі-шлях (`GET .../batches/:id`). */
+  rows: z
+    .array(ImportCommitRowResultSchema)
+    .max(IMPORT_COMMIT_MAX_ROWS)
+    .default([]),
 });
 export type ImportCommitResponse = z.infer<typeof ImportCommitResponseSchema>;
 
@@ -389,3 +431,25 @@ export const ImportBatchUndoResponseSchema = z.object({
 export type ImportBatchUndoResponse = z.infer<
   typeof ImportBatchUndoResponseSchema
 >;
+
+/**
+ * `GET /api/finyk/import/recent` — сирі факти для плашки «залий
+ * документи» (спека `docs/90-work/planning/specs/finyk-import-reminders.md`).
+ *
+ * Сервер НЕ виносить вердикт «показувати чи ні» навмисно. Умова плашки
+ * росте від ЧАСУ, а не від даних («днів від останнього імпорту»), тож
+ * серверна відповідь застаріває сама собою на довго відкритій вкладці —
+ * та сама пастка, яку вже ловив `useMonoStaleness`. Вердикт вважає
+ * клієнт із власним годинником, а сервер віддає лише дати.
+ */
+export const ImportRecentSourceSchema = z.object({
+  source: z.enum(IMPORT_SOURCES),
+  /** ISO-дати останніх успішних батчів цього типу, найновіший перший. */
+  recentAt: z.array(z.iso.datetime()).min(1),
+});
+export type ImportRecentSource = z.infer<typeof ImportRecentSourceSchema>;
+
+export const ImportRecentResponseSchema = z.object({
+  sources: z.array(ImportRecentSourceSchema),
+});
+export type ImportRecentResponse = z.infer<typeof ImportRecentResponseSchema>;

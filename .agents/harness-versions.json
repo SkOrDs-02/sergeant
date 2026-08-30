@@ -1,0 +1,405 @@
+{
+  "schemaVersion": 1,
+  "current": "5.0.4",
+  "versions": {
+    "0.1.0": {
+      "releasedAt": "2026-06-29",
+      "changes": [
+        "Initial harness versioning: schemaVersion 1, current 0.1.0 (pre-1.0.0 baseline, no stable release yet)",
+        "Added .kilo/harness-versions.json with versions map and abExperiments registry",
+        "Added .github/workflows/harness-a-b.yml (weekly Sun 00:00 UTC + workflow_dispatch)",
+        "Added scripts/ci-bump-harness-version.mjs (PR-time version incrementer)",
+        "Added Harness version section to AGENTS.md"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "0.1.1": {
+      "releasedAt": "2026-07-01",
+      "changes": [
+        "bump from 0.1.0 -> 0.1.1: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "0.1.2": {
+      "releasedAt": "2026-07-02",
+      "changes": [
+        "bump from 0.1.1 -> 0.1.2: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "0.1.3": {
+      "releasedAt": "2026-07-03",
+      "changes": [
+        "bump from 0.1.2 -> 0.1.3: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "0.1.4": {
+      "releasedAt": "2026-07-19",
+      "changes": [
+        "bump from 0.1.3 -> 0.1.4: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "0.1.5": {
+      "releasedAt": "2026-07-19",
+      "changes": [
+        "bump from 0.1.4 -> 0.1.5: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "0.1.6": {
+      "releasedAt": "2026-07-20",
+      "changes": [
+        "bump from 0.1.5 -> 0.1.6: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "0.1.7": {
+      "releasedAt": "2026-07-20",
+      "changes": [
+        "bump from 0.1.6 -> 0.1.7: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "1.0.0": {
+      "releasedAt": "2026-07-20",
+      "changes": [
+        "bump from 0.1.7 -> 1.0.0: Hard Rule files changed; AGENTS.md modified; eslint-plugin-sergeant-design modified"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "1.0.1": {
+      "releasedAt": "2026-07-20",
+      "changes": [
+        "bump from 1.0.0 -> 1.0.1: docs-vs-code reconciliation — Railway→Coolify (ADR-0074) purge across ops/runbooks/playbooks/diagrams, CloudSync v1 410→404, LCP gate warn→error, dual-write progress, domain-invariant fixes. Rebased onto ADR-0075 (OpenClaw Gateway fully decommissioned) — superseded this branch's own 'not deployed yet' framing. Prose/link/freshness-only; no normative Hard Rule change (rules/04 body: migration range 001-049→001-082 + Railway→Coolify pre-deploy) — patch."
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "1.0.2": {
+      "releasedAt": "2026-07-22",
+      "changes": [
+        "bump from 1.0.1 -> 1.0.2: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "2.0.0": {
+      "releasedAt": "2026-07-24",
+      "changes": [
+        "bump from 1.0.2 -> 2.0.0: Hard Rule files changed"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "2.0.1": {
+      "releasedAt": "2026-07-24",
+      "changes": [
+        "bump from 2.0.0 -> 2.0.1: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "2.0.2": {
+      "releasedAt": "2026-07-25",
+      "changes": [
+        "bump from 2.0.1 -> 2.0.2: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "2.0.3": {
+      "releasedAt": "2026-07-30",
+      "changes": [
+        "bump from 2.0.2 -> 2.0.3: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "2.0.4": {
+      "releasedAt": "2026-08-02",
+      "changes": [
+        "bump from 2.0.3 -> 2.0.4: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "2.0.5": {
+      "releasedAt": "2026-08-04",
+      "changes": [
+        "bump from 2.0.4 -> 2.0.5: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "3.0.0": {
+      "releasedAt": "2026-08-04",
+      "changes": [
+        "Rule #10: словник lifecycle-статусів розширено — додано Reference і Draft; явно зафіксовано, що ADR (MADR) та ініціативи (In progress/Done) мають власний доменний lifecycle і не є порушенням.",
+        "Rule #25: Scope переписано з 4-пунктового списку на таблицю артефакт→генератор (9 повністю + 3 частково генеровані).",
+        "Канонічний freshness-лейбл — Last touched:, не Last validated:. Legacy-лейбл читається, але мігрується pre-commit-хуком.",
+        "AGENTS.md: .codex/ і .mcp.json визнані винятками з правила «конфіг харнеса поза чекаутом»; Codex доданий у таблицю харнесів.",
+        "AGENTS.md § Harness-engineering v1: два активні компоненти замість чотирьох (AI-PR Checklist і Entropy Janitors retired).",
+        "AGENTS.md § Design conventions: доданий вказівник на DESIGN.md.",
+        "sergeant-review-squad/SKILL.md: посилання на retired Hard Rules #8-#17 замінено на опис дименсії design-reviewer."
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "3.0.1": {
+      "releasedAt": "2026-08-04",
+      "changes": [
+        "bump from 3.0.0 -> 3.0.1: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "3.1.0": {
+      "releasedAt": "2026-08-05",
+      "changes": [
+        "bump 3.0.1 -> 3.1.0 (minor): agent-layer audit remediation + graph engineering",
+        "NEW: .agents/agent-graph.json — explicit skill/agent/workspace topology with typed handoff payloads (ADR-0084)",
+        "NEW: scripts/check-agent-graph.mjs + pnpm lint:agent-graph, wired into pnpm lint:skills",
+        "NEW agent: qa-packages (11 packages/* workspaces incl. api-client contract tests, Hard Rule #3 evidence)",
+        "NEW agent: docs-governance-auditor ported to .claude/agents (agent-workflows §10 was unrunnable on Claude)",
+        "qa-web extended to apps/landing; sergeant-qa-squad rescoped 3 -> 4 runners, all 17 workspaces covered",
+        "sergeant-deliver-squad: added mandatory stage 5 (qa-squad -> verify-before-done)",
+        "sergeant-backend-architecture rewritten against the real Express/flat-module stack (removed fabricated Clean/CQRS/Temporal/Saga layout)",
+        "ADR-0078 day-boundary split corrected in sergeant-server-api + server-agent (device-local personal entities vs Kyiv reports)",
+        "web-agent: retired rule numbers relabelled per ADR-0081; false claim that ESLint enforces visual conventions removed",
+        "ADR-0074/0075 sweep across 6 agents, CLAUDE.md, agent-workflows, codex-capabilities; .codex/agents/qa-openclaw.toml deleted",
+        "verification gate de-duplicated: sergeant-verify-before-done is canonical, review-and-merge/bugfix/feature-delivery point at it",
+        "skill-mapping.json: fixed dangling \"docs\" target, 8 -> 15 rules (e2e, deploy, security, mobile-shell, landing, tools, packages)",
+        "lang: frontmatter corrected on 17 skills whose bodies are Ukrainian per Hard Rule #15"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "3.2.0": {
+      "releasedAt": "2026-08-05",
+      "changes": [
+        "bump 3.1.0 -> 3.2.0 (minor): наскрізна звірка документації з кодом (docs audit)",
+        "OVERRIDE: скрипт-бампер визначив major, бо в дифі є docs/04-governance/governance/rules/**. Ручне пониження до minor за § 'How to bump' harness-versioning.md — жодна норма правил не змінилась, змінені лише факти всередині них",
+        "rule #2: у список RQ-фабрик додано chatKeys і aiMemoryKeys (обидві давно є в queryKeys.ts)",
+        "rule #4: прибрано мертвий enforcement-вказівник .github/CODEOWNERS (файла не існує); діапазон міграцій 001-082 -> 001-103; неіснуючий visual-regression.yml -> db-backup-verify.yml",
+        "rule #5: scope-enum синхронізовано з commitlint.config.js — прибрано console/openclaw/openclaw-plugin, додано dualwrite-core, виправлено шляхи scope agents",
+        "rule #15: посилання на 'Hard Rules (#1-#15)' -> '#1-#26, з gap-ами по retired-правилах'",
+        "rule #25: eval-звіти емітять AUTO-GENERATED маркер із генератора (apps/server/scripts/eval/report.ts) і додані у scope правила",
+        "AGENTS.md: RQ-фабрики, формулювання Lighthouse CI, branch-naming, .codex 21 -> 20 файлів",
+        "skills: інфраструктурний дрифт Railway -> Coolify/Hetzner, зачистка мертвих згадок OpenClaw (ADR-0074/0075), retired hard rules більше не подаються як чинні (ADR-0081)"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "3.2.1": {
+      "releasedAt": "2026-08-05",
+      "changes": [
+        "bump from 3.2.0 -> 3.2.1: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "3.2.2": {
+      "releasedAt": "2026-08-05",
+      "changes": [
+        "bump from 3.2.1 -> 3.2.2: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "3.2.3": {
+      "releasedAt": "2026-08-06",
+      "changes": [
+        "bump from 3.2.2 -> 3.2.3: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "3.3.0": {
+      "releasedAt": "2026-08-06",
+      "changes": [
+        "bump from 3.2.3 -> 3.3.0: eslint-plugin-sergeant-design modified"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "3.3.1": {
+      "releasedAt": "2026-08-06",
+      "changes": [
+        "bump from 3.3.0 -> 3.3.1: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "3.3.2": {
+      "releasedAt": "2026-08-06",
+      "changes": [
+        "bump from 3.3.1 -> 3.3.2: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "3.3.3": {
+      "releasedAt": "2026-08-07",
+      "changes": [
+        "bump from 3.3.2 -> 3.3.3: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "3.3.4": {
+      "releasedAt": "2026-08-07",
+      "changes": [
+        "bump from 3.3.3 -> 3.3.4: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "3.4.0": {
+      "releasedAt": "2026-08-07",
+      "changes": [
+        "bump from 3.3.4 -> 3.4.0: AGENTS.md modified"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "4.0.0": {
+      "releasedAt": "2026-08-08",
+      "changes": [
+        "bump from 3.4.0 -> 4.0.0: Hard Rule files changed; AGENTS.md modified; skill file added/modified"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "4.0.1": {
+      "releasedAt": "2026-08-11",
+      "changes": [
+        "bump from 4.0.0 -> 4.0.1: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "4.0.2": {
+      "releasedAt": "2026-08-16",
+      "changes": [
+        "bump from 4.0.1 -> 4.0.2: apps/web AGENTS.md — keyboard-aware overlay gotcha extended (compensation pairs with keyboard geometry; wired overlays enumerated)"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "4.0.3": {
+      "releasedAt": "2026-08-18",
+      "changes": [
+        "bump from 4.0.2 -> 4.0.3: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "4.1.0": {
+      "releasedAt": "2026-08-27",
+      "changes": [
+        "bump from 4.0.3 -> 4.1.0: AGENTS.md modified; skill file added/modified"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "4.2.0": {
+      "releasedAt": "2026-08-27",
+      "changes": [
+        "bump from 4.1.0 -> 4.2.0: AGENTS.md modified; skill file added/modified"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "4.3.0": {
+      "releasedAt": "2026-08-27",
+      "changes": [
+        "bump from 4.2.0 -> 4.3.0: AGENTS.md modified; skill file added/modified"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "4.3.1": {
+      "releasedAt": "2026-08-27",
+      "changes": [
+        "bump from 4.3.0 -> 4.3.1: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "4.4.0": {
+      "releasedAt": "2026-08-28",
+      "changes": [
+        "bump from 4.3.1 -> 4.4.0: skill file added/modified"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "4.5.0": {
+      "releasedAt": "2026-08-28",
+      "changes": [
+        "bump 4.4.0 -> 4.5.0 (minor): Devin і Kilo Code виведені з активних харнесів (ADR-0088); активні - Claude Code і Codex",
+        "OVERRIDE: скрипт-бампер визначив major, бо в дифі є docs/04-governance/governance/rules/15. Ручне пониження до minor за § 'How to bump' harness-versioning.md (прецедент 3.2.0) - норма правила не змінилась, з переліків прибрано видалений DEVIN.md і Devin-читача",
+        "реєстр перенесено .kilo/harness-versions.json -> .agents/harness-versions.json; snapshot-вивід .kilocode/ -> .agents/snapshot.md (+ .agents/snapshot.cache.json, gitignored)",
+        "DEVIN.md видалено; check-agents-family-sync перевіряє CLAUDE.md + опційний OPENAI.md",
+        "kilo-code прибрано з tools-списків loop-реєстру; playbooks: devin/<unix-ts>- -> <harness>/; sergeant-start-here §0.1 читає .agents/snapshot.md"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "5.0.0": {
+      "releasedAt": "2026-08-28",
+      "changes": [
+        "Hard Rule #4: нова заборона — не перейменовувати міграцію, яка вже є на `main`. Раннер трекає застосовані міграції за іменем файлу, тож перейменування виконує той самий SQL у проді вдруге і лишає сироту в `schema_migrations` (сталося тричі). Колізію номерів на ребейзі розв'язують перенумеруванням СВОГО, ще не змердженого файлу.",
+        "`pnpm lint:migrations`: нова перевірка 2c (`git diff --diff-filter=R -M`) блокує таке перейменування; escape-hatch `ALLOW_MIGRATION_RENAME=1`.",
+        "Джоба `migration-lint` більше не PR-only — працює і на push у `main`.",
+        "`sergeant-data-and-migrations`: правило про перейменування додано в § Жорсткі правила."
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "5.0.1": {
+      "releasedAt": "2026-08-28",
+      "changes": [
+        "bump from 5.0.0 -> 5.0.1: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "5.0.2": {
+      "releasedAt": "2026-08-28",
+      "changes": [
+        "bump from 5.0.1 -> 5.0.2: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "5.0.3": {
+      "releasedAt": "2026-08-29",
+      "changes": [
+        "bump from 5.0.2 -> 5.0.3: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "5.0.4": {
+      "releasedAt": "2026-08-30",
+      "changes": [
+        "bump from 5.0.3 -> 5.0.4: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    }
+  },
+  "abExperiments": {}
+}

@@ -67,6 +67,22 @@ function silpoCartErrorKind(error: unknown): SilpoCartErrorKind {
   }
 }
 
+/**
+ * Кандидат, який стає дефолтом рядка: перший ДОСТУПНИЙ, інакше просто
+ * перший. Класти в кошик те, чого немає у філії, безглуздо, а Сільпо все
+ * одно повертає такі хіти у видачі.
+ *
+ * Живе окремою функцією, бо дефолт потрібен у ДВОХ місцях — seed і fallback
+ * у `rows`. Доки логіка стояла інлайном двічі, вони встигли розійтись:
+ * seed брав перший доступний, а fallback — `matches[0]`, тож той самий
+ * рядок читався по-різному залежно від того, чи встиг спрацювати seed.
+ */
+function pickDefaultMatch(
+  matches: readonly SilpoCartMatchDto[],
+): SilpoCartMatchDto | undefined {
+  return matches.find((m) => m.available) ?? matches[0];
+}
+
 interface RowLocalState {
   checked: boolean;
   qty: number;
@@ -104,10 +120,10 @@ export function useSilpoCart({ enabled, items }: UseSilpoCartParams) {
   if (previewQuery.data && previewQuery.data !== seededData) {
     const next: Record<number, RowLocalState> = {};
     previewQuery.data.results.forEach((r, i) => {
-      const top = r.matches[0];
+      const top = pickDefaultMatch(r.matches);
       const seedQty = items[i]?.quantity;
       next[i] = {
-        checked: !r.unmatched,
+        checked: !r.unmatched && top?.available === true,
         qty:
           seedQty != null && seedQty > 0 ? Math.max(1, Math.round(seedQty)) : 1,
         selectedLagerId: top ? top.lagerId : null,
@@ -121,15 +137,17 @@ export function useSilpoCart({ enabled, items }: UseSilpoCartParams) {
     const results = previewQuery.data?.results ?? [];
     return results.map((r, i) => {
       const local = rowState[i];
+      // Той самий дефолт, що й у seed вище — інакше рядок до seed і після
+      // нього описує різні товари.
+      const fallbackTop = pickDefaultMatch(r.matches);
       return {
         query: r.query,
         matches: r.matches,
         unmatched: r.unmatched,
-        checked: local?.checked ?? !r.unmatched,
+        checked:
+          local?.checked ?? (!r.unmatched && fallbackTop?.available === true),
         qty: local?.qty ?? 1,
-        selectedLagerId:
-          local?.selectedLagerId ??
-          (r.matches[0] ? r.matches[0].lagerId : null),
+        selectedLagerId: local?.selectedLagerId ?? fallbackTop?.lagerId ?? null,
       };
     });
   }, [previewQuery.data, rowState]);
@@ -190,11 +208,24 @@ export function useSilpoCart({ enabled, items }: UseSilpoCartParams) {
     },
   });
 
+  /**
+   * Спорожнити зовнішній кошик. Окрема мутація, а не «apply з порожнім
+   * списком»: `cartApply` вимагає 1..100 позицій, і порожній запис для нього
+   * — помилка валідації, а не «прибери все».
+   */
+  const clearMutation = useMutation<SilpoCartDto, unknown, void>({
+    mutationFn: () => silpoApi.cartClear(),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: silpoKeys.cart() });
+    },
+  });
+
   /** Скидає локальний вибір і результат apply — виклик при закритті шіта. */
   function reset() {
     setRowState({});
     setSeededData(null);
     applyMutation.reset();
+    clearMutation.reset();
   }
 
   return {
@@ -211,6 +242,10 @@ export function useSilpoCart({ enabled, items }: UseSilpoCartParams) {
     applyResult: applyMutation.data ?? null,
     applyPending: applyMutation.isPending,
     applyErrorKind: silpoCartErrorKind(applyMutation.error),
+    clear: () => clearMutation.mutate(),
+    clearResult: clearMutation.data ?? null,
+    clearPending: clearMutation.isPending,
+    clearErrorKind: silpoCartErrorKind(clearMutation.error),
     reset,
   };
 }

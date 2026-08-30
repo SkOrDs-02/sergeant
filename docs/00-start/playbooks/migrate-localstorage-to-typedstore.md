@@ -1,6 +1,6 @@
 # Playbook: Migrate localStorage to typedStore
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-08.
+> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-17.
 > **Status:** Active
 
 **Trigger:** "Мігрувати файл X з прямого localStorage на typedStore" / зменшити TODO-список у ESLint allowlist / `frontend-tech-debt.md` #2.
@@ -87,7 +87,7 @@ pnpm lint
 
 ### 6. Створити PR
 
-- Branch: `devin/<unix-ts>-chore-migrate-ls-<module>`
+- Branch: `<harness>/chore-migrate-ls-<module>`
 - Commit: `chore(web): migrate <file> from raw localStorage to typedStore`
 - PR description: які виклики замінено, яку обгортку обрано і чому.
 

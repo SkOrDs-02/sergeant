@@ -25,9 +25,9 @@
  */
 
 /** Місце кнопки на лендінгу. Воно ж — канал у звіті `/stats` бота. */
-export type LandingPlacement = "hero" | "footer";
+export type LandingPlacement = "hero" | "footer" | "beta";
 
-const PLACEMENTS: readonly LandingPlacement[] = ["hero", "footer"];
+const PLACEMENTS: readonly LandingPlacement[] = ["hero", "footer", "beta"];
 
 /**
  * Довжина токена. 16 символів base36 ≈ 82 біти — колізій на наших обсягах не

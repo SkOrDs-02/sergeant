@@ -1,6 +1,6 @@
 # Playbook: Tune System Prompt
 
-> **Last touched:** 2026-07-25 by @claude. **Next review:** 2026-11-14.
+> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-12.
 > **Status:** Active
 
 **Trigger:** «AI відповідає не так як треба» / «Зміни тон асистента» / «Додай нову інструкцію в системний промпт» / зміна як модель розуміє контекст модулі.
@@ -9,7 +9,7 @@
 
 - Primary surface: `apps/server/src/modules/chat/toolDefs/systemPrompt.ts`
 - Coupled surface: `apps/server/src/modules/chat/tools.ts`, prompt-cache budget
-- Governing skill: `sergeant-hubchat`
+- Governing skill: `sergeant-module-ai`
 
 ---
 
@@ -129,7 +129,7 @@ pnpm --filter @sergeant/server exec vitest run src/modules/chat
 
 ### 9. PR з прикладами
 
-Branch: `devin/<unix-ts>-tune-system-prompt-<topic>`. PR description **обов'язково** містить:
+Branch: `<harness>/tune-system-prompt-<topic>`. PR description **обов'язково** містить:
 
 - Diff промпту (GitHub покаже автоматично).
 - Eval-set до / після — як таблицю «request → tool called (before)`/`tool called (after)`».
@@ -171,3 +171,18 @@ feat(server): tighten Finyk tool-calling rules in system prompt
 - [add-feature-flag.md](./add-feature-flag.md) — якщо A/B тест двох промптів
 - `apps/server/src/modules/chat/toolDefs/systemPrompt.ts` — поточний промпт
 - [AGENTS.md](../../../AGENTS.md) — секція «Architecture: AI tool execution path»
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                | Merged     |
+| ------------------------------------------------------ | -------------------------------------------------------------------- | ---------- |
+| [#895](https://github.com/Skords-01/Sergeant/pull/895) | fix(agents): полірування агентного шару після розкатки module-owners | 2026-08-28 |
+| [#892](https://github.com/Skords-01/Sergeant/pull/892) | feat(agents): module-owner і службові Claude-агенти                  | 2026-08-27 |
+| [#891](https://github.com/Skords-01/Sergeant/pull/891) | feat(agents): скіли-дисципліни                                       | 2026-08-27 |
+| [#890](https://github.com/Skords-01/Sergeant/pull/890) | feat(agents): інфра module-скіли і nested-роутинг                    | 2026-08-27 |
+| [#889](https://github.com/Skords-01/Sergeant/pull/889) | feat(agents): продуктові module-owner скіли                          | 2026-08-27 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 5 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

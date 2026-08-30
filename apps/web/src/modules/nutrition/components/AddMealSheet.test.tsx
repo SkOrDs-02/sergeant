@@ -13,6 +13,7 @@ import {
   waitFor,
   within,
 } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AddMealSheet } from "./AddMealSheet";
 
 // ─── Mock heavy sub-components ───────────────────────────────────────────────
@@ -395,6 +396,17 @@ vi.mock("@shared/lib/adapters/haptic", () => ({
 
 // ─── Default props helpers ─────────────────────────────────────────────────
 
+// `FromReceiptRow` — єдина дитина аркуша, що ходить у React Query (чеки
+// Сільпо), і вона НЕ мокається: так тест лишається чесним щодо контракту
+// props, які `SearchTabPanel` їй передає. Без звʼязаної інтеграції рядок
+// рендерить null, тож провайдера з `retry: false` достатньо.
+function QueryWrapper({ children }: { children: React.ReactNode }) {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+}
+
 function renderSheet(
   props: Partial<React.ComponentProps<typeof AddMealSheet>> = {},
 ) {
@@ -404,7 +416,9 @@ function renderSheet(
     onSave: vi.fn(),
     mealTemplates: [],
   };
-  return render(<AddMealSheet {...defaults} {...props} />);
+  return render(<AddMealSheet {...defaults} {...props} />, {
+    wrapper: QueryWrapper,
+  });
 }
 
 // Крок джерела — смужка вкладок, тож обидва ручні режими живуть під
@@ -1231,7 +1245,9 @@ describe("AddMealSheet — вкладка «Скан» сама відкрива
       onSave: vi.fn(),
       mealTemplates: [],
     };
-    const view = render(<AddMealSheet {...props} open />);
+    const view = render(<AddMealSheet {...props} open />, {
+      wrapper: QueryWrapper,
+    });
     fireEvent.click(screen.getByRole("tab", { name: /Скан/ }));
     expect(stableBarcodeLookup.setScannerOpen).toHaveBeenCalledWith(true);
 

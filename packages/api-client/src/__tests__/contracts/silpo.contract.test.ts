@@ -526,6 +526,10 @@ describe(
                     lagerId: "eyJwcm9kdWN0SWQiOiJwLTEifQ==",
                     name: "Молоко Селянське 2.5% 900г",
                     priceKop: 4500,
+                    // Позиція в акції: `oldPrice` приходить у тому самому
+                    // хіті `find_products_batch`, який робить прев'ю.
+                    oldPriceKop: 5290,
+                    available: true,
                     unit: "шт",
                     displayRatio: null,
                   },
@@ -533,6 +537,8 @@ describe(
                     lagerId: "eyJwcm9kdWN0SWQiOiJwLTIifQ==",
                     name: "Молоко Яготинське 2.5% 1л",
                     priceKop: 5200,
+                    oldPriceKop: null,
+                    available: false,
                     unit: "кг",
                     displayRatio: "0.9 кг",
                   },
@@ -565,8 +571,11 @@ describe(
           expect(typeof top.priceKop).toBe("number");
           expect(top.priceKop).toBe(4500);
           expect(top.lagerId).toBe("eyJwcm9kdWN0SWQiOiJwLTEifQ==");
+          // Акційна ціна — теж копійки-`number`, і `null` коли акції немає.
+          expect(top.oldPriceKop).toBe(5290);
           const alt = matched.matches[1]!;
           expect(alt.displayRatio).toBe("0.9 кг");
+          expect(alt.oldPriceKop).toBeNull();
           const unmatched = out.results[1]!;
           expect(unmatched.unmatched).toBe(true);
           expect(unmatched.matches).toHaveLength(0);

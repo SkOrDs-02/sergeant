@@ -127,6 +127,8 @@ interface DigestContentProps {
    */
   insufficientData: boolean;
   isCurrentWeek: boolean;
+  /** Поточний АБО щойно завершений тиждень: для них дозволена (пере)генерація. */
+  canGenerate: boolean;
   onGenerate: () => void;
   onUpdate: () => void;
   onPlayStories: () => void;
@@ -148,6 +150,7 @@ function DigestContent({
   error,
   insufficientData,
   isCurrentWeek,
+  canGenerate,
   onGenerate,
   onUpdate,
   onPlayStories,
@@ -199,7 +202,7 @@ function DigestContent({
           Запиши хоча б одну транзакцію, тренування, прийом їжі чи звичку і
           спробуй ще раз.
         </p>
-        {isCurrentWeek && (
+        {canGenerate && (
           <button
             type="button"
             onClick={handleRegenerate(onGenerate)}
@@ -231,7 +234,7 @@ function DigestContent({
       <p className="text-style-caption text-danger-strong dark:text-danger bg-danger/10 rounded-xl px-3 py-2 mb-2">
         {error}
       </p>
-      {isCurrentWeek && (
+      {canGenerate && (
         <button
           type="button"
           onClick={handleRegenerate(onGenerate)}
@@ -245,7 +248,7 @@ function DigestContent({
 
   const emptySlot = (
     <div className="px-4 pb-4">
-      {isCurrentWeek ? (
+      {canGenerate ? (
         <>
           <p className="text-style-body text-muted mb-3 leading-relaxed">
             AI-звіт підсумовує прогрес по всіх модулях і дає конкретні
@@ -349,7 +352,7 @@ function DigestContent({
                       )}
                     </div>
                   )}
-                {isCurrentWeek && (
+                {canGenerate && (
                   <button
                     type="button"
                     onClick={handleRegenerate(onUpdate)}
@@ -429,6 +432,7 @@ export function WeeklyDigestCard({
     weekRange,
     generate,
     isCurrentWeek,
+    canGenerate,
   } = useWeeklyDigest(selectedWeekKey);
   const { data: history = [] } = useDigestHistory();
 
@@ -675,6 +679,7 @@ export function WeeklyDigestCard({
           error={error}
           insufficientData={insufficientData}
           isCurrentWeek={isCurrentWeek}
+          canGenerate={canGenerate}
           onGenerate={handleGenerate}
           onUpdate={handleGenerate}
           onPlayStories={() => setStoriesOpen(true)}

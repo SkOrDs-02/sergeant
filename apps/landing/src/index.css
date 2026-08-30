@@ -1,14 +1,18 @@
 @import "tailwindcss";
 
 /*
-  Sergeant landing — Soft & Organic light theme.
+  Sergeant landing – напрям «Порядок без крику».
+
+  Гібрид двох затверджених гіпотез (2026-08-27): тепла паперова основа з
+  «рукописними» нотатками-інсайтами + бренд-характер Сержанта (Unbounded,
+  кольорові блоки модулів, статут, гострі кути).
 
   Значення НЕ вигадуються тут: кожен модульний акцент дзеркалить
-  `moduleColors` з `packages/design-tokens/tokens.js`, а бренд-акцент —
+  `moduleColors` з `packages/design-tokens/tokens.js`, а бренд-акцент –
   `brandColors.emerald[700|800]`. Дрейф ловить `src/tokens.drift.test.ts`,
   який читає цей файл і порівнює з пакетом токенів.
 
-  Чому не імпорт пресета напряму: `packages/design-tokens` — це Tailwind-3
+  Чому не імпорт пресета напряму: `packages/design-tokens` – це Tailwind-3
   preset для apps/web (rgb-триплети + `<alpha-value>`), а лендінг на
   Tailwind 4 з `@theme`. Мостити дві версії заради восьми кольорів дорожче,
   ніж тест, який падає при розходженні.
@@ -18,33 +22,35 @@
   --font-sans:
     "Manrope Variable", "Manrope", ui-sans-serif, system-ui, sans-serif;
   --font-display:
-    "Manrope Variable", "Manrope", ui-sans-serif, system-ui, sans-serif;
+    "Unbounded", "Manrope Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Piazzolla", Georgia, "Times New Roman", serif;
 
-  /* Surfaces — cream */
-  --color-background: #fdf9f3;
+  /* Surfaces – теплий папір (темніший за колишній крем, щоб білі картки
+     і жовті нотатки читались як окремі шари, а не зливались із фоном) */
+  --color-background: #f3ede2;
   --color-surface: #faf7f1;
-  --color-surface-muted: #f5ead8;
   --color-card: #ffffff;
-  --color-cardline: #e2e0da;
-  --color-cardline-strong: #d0c8bc;
+  --color-note: #fbf3df;
+  --color-cardline: #ddd2bf;
+  --color-cardline-strong: #c9bda5;
 
-  /* Text — warm black */
+  /* Text – warm black */
   --color-foreground: #1c1917;
   --color-foreground-strong: #0a0a09;
   --color-muted: #57534e;
   --color-subtle: #6f6862;
 
-  /* Brand — emerald-700 / -800 (brandColors.emerald) */
+  /* Brand – emerald-700 / -800 (brandColors.emerald) */
   --color-accent: #047857;
   --color-accent-hover: #065f46;
   --color-accent-soft: #ecfdf5;
   --color-accent-ink: #ffffff;
 
   /*
-    Module accents — `moduleColors.<module>.primary` + `.surface`.
-    finyk — teal-700, НЕ emerald-500: дизайн-система пішла з emerald ще в
+    Module accents – `moduleColors.<module>.primary` + `.surface`.
+    finyk – teal-700, НЕ emerald-500: дизайн-система пішла з emerald ще в
     2026-07, лендінг лишався на старому кольорі.
-    nutrition — lime-800 (`moduleAccentRgb.nutrition.strong`), бо канонічний
+    nutrition – lime-800 (`moduleAccentRgb.nutrition.strong`), бо канонічний
     lime-500 як текст на світлому не тримає контраст; `-strong` companion
     існує саме для цього випадку.
   */
@@ -58,43 +64,47 @@
   --color-nutrition-soft: #f8fee7;
 
   /*
-    Помилки. Раніше тут стояв `text-routine` — модульний акцент замість
+    Акцент Рутини на світлих поверхнях. Rose-400 `#eb7691` тримає лише
+    великі заливки (кольоровий блок модуля); як текст на папері чи нотатці
+    він дає ~2.6:1. Для підписів пар модулів у нотатках – темніший щабель
+    тієї ж рампи (rose-600-ish), контраст ≥4.5:1 на `--color-note`.
+  */
+  --color-routine-strong: #d3506e;
+
+  /*
+    Помилки. Раніше тут стояв `text-routine` – модульний акцент замість
     семантичного кольору стану (той самий смелл, що ловить Hard Rule #12
-    у apps/web). #c23a3a — це колишній coral-700; посилання на акцент
+    у apps/web). #c23a3a – це колишній coral-700; посилання на акцент
     Рутини БІЛЬШЕ НЕ ЧИННЕ: рампу переведено на троянду (Р2, 2026-08-07),
     а помилка мусить лишатись червоною. Значення тепер самостійне.
   */
   --color-danger: #c23a3a;
 
   /*
-    «Чорнило» — канонічний темний напрям продукту (`inkTheme` у
-    design-tokens, спека chornylo-visual-direction). Використовується рівно
-    в одній секції: суцільно кремова сторінка на 4000px не має хребта, а
-    модульні акценти тир-400 задумані саме як світіння на чорнилі.
-
-    2026-08-05: база зрушила з зелено-чорної (#0d1512 / #121c17) на тепле
-    вугілля — фон і акцент більше не одного hue (anti-slop-strategy § 5/P1).
-    Значення дзеркалять `inkTheme.surface`; синхронність тримає
-    `tokens.drift.test.ts`, бо спільного рантайму в лендінга з preset-ом нема.
+    «Чорнило» – канонічний темний напрям продукту (`inkTheme` у
+    design-tokens, спека chornylo-visual-direction). У новому напрямі це
+    CTA-смуги і блок «Стеж за розробкою»: значення дзеркалять
+    `inkTheme.surface`; синхронність тримає `tokens.drift.test.ts`, бо
+    спільного рантайму в лендінга з preset-ом нема.
   */
   --color-ink: #14100e;
+  --color-ink-hi: #221c18;
   --color-ink-surface: #1b1613;
   --color-ink-line: rgba(255, 255, 255, 0.1);
   --color-ink-text: #f2f6f2;
-  /* 2026-08-21: inkTheme підняв нейтральні тири на щабель — `muted`
+  /* 2026-08-21: inkTheme підняв нейтральні тири на щабель – `muted`
      пішов з #8a968e (5.84:1) на #a3aea6 (7.83:1) після репорту, що
-     сірі літери погано видно. Лендінг тоді не оновили, і drift-тест
-     цього не показав: джоба `check` вмирала раніше, на гейті каденсу
-     свіжості. #8a968e тепер — `subtle`, а не `muted`. */
+     сірі літери погано видно. #8a968e тепер – `subtle`, а не `muted`. */
   --color-ink-muted: #a3aea6;
 
-  /* Акценти модулів у їхній ink-ролі — brandColors.*[400]. */
+  /* Акценти модулів у їхній ink-ролі – brandColors.*[400]. */
   --color-finyk-glow: #2dd4bf;
   --color-fizruk-glow: #22d3ee;
   --color-routine-glow: #f68da4;
   --color-nutrition-glow: #b0e636;
 
-  --radius-card: 24px;
+  /* Гострі кути – частина напряму: 6px лише для «паперових» карток. */
+  --radius-card: 6px;
 }
 
 html {
@@ -108,13 +118,13 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-.hero-wash {
-  background: var(--color-background);
-  border-top: 1px solid var(--color-cardline);
+/* Тінь «паперової» картки колажу – тепла, без синяви дефолтних shadow. */
+.paper-shadow {
+  box-shadow: 0 14px 34px rgb(28 25 23 / 13%);
 }
 
-.product-frame-shadow {
-  box-shadow: 0 28px 70px rgb(13 21 18 / 18%);
+.paper-shadow-lg {
+  box-shadow: 0 16px 36px rgb(28 25 23 / 16%);
 }
 
 @media (prefers-reduced-motion: reduce) {

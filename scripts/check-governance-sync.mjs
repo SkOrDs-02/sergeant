@@ -229,13 +229,7 @@ function checkDanglingRefs() {
     const rel = relative(ROOT, f).replace(/\\/g, "/");
     return (
       rel.startsWith("docs/") ||
-      [
-        "AGENTS.md",
-        "CONTRIBUTING.md",
-        "CLAUDE.md",
-        "DEVIN.md",
-        "README.md",
-      ].includes(rel)
+      ["AGENTS.md", "CONTRIBUTING.md", "CLAUDE.md", "README.md"].includes(rel)
     );
   });
 

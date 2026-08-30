@@ -13,10 +13,11 @@
  * клік поза межами) успадковані від колишнього emoji-пікера в `HabitForm`,
  * щоб клавіатурний досвід не змінився.
  */
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { ROUTINE_GLYPHS, type RoutineGlyph } from "@sergeant/routine-domain";
 import { Icon } from "@shared/components/ui/Icon";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
+import { useOutsideClick } from "@shared/hooks/useOutsideClick";
 import { cn } from "@shared/lib/ui/cn";
 import { routineGlyphLabel } from "../lib/habitGlyphs";
 import { HabitGlyph } from "./HabitGlyph";
@@ -51,16 +52,7 @@ export function HabitGlyphPicker({
     },
   });
 
-  useEffect(() => {
-    if (!open) return;
-    const handleOutside = (e: MouseEvent) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleOutside);
-    return () => document.removeEventListener("mousedown", handleOutside);
-  }, [open]);
+  useOutsideClick(wrapRef, () => setOpen(false), { enabled: open });
 
   return (
     <div className={cn("relative shrink-0", className)} ref={wrapRef}>

@@ -1,6 +1,6 @@
 # Sergeant Agent Skills Catalog
 
-> **Last touched:** 2026-08-08 by @claude. **Next review:** 2026-11-29.
+> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-05.
 > **Status:** Active
 
 Канонічна карта repo-owned skills. Якщо ти агент у цьому репо, починай із `sergeant-start-here`, а потім переходь до одного specialist skill на основну поверхню змін.
@@ -34,7 +34,19 @@ Skill-trigger eval-и живуть у [`skill-trigger-evals.json`](./skill-trigg
 | [`sergeant-backend-architecture`](../../../.agents/skills/sergeant-backend-architecture/SKILL.md)         | Backend architecture, CQRS, Temporal, Saga, service boundaries   | Flat Express 5 monolith, module-per-domain, sync-vs-queue decision, no layered scaffolding (blocks Clean/Hexagonal/CQRS/Saga)       |
 | [`sergeant-data-and-migrations`](../../../.agents/skills/sergeant-data-and-migrations/SKILL.md)           | SQL, Postgres, migrations, rollout safety                        | Generator usage, sequential numbering, two-phase DROP                                                                               |
 | [`sergeant-mobile-expo`](../../../.agents/skills/sergeant-mobile-expo/SKILL.md)                           | `apps/mobile`, `apps/mobile-shell`                               | Expo Router boundaries, NativeWind, MMKV, no DOM leakage                                                                            |
-| [`sergeant-hubchat`](../../../.agents/skills/sergeant-hubchat/SKILL.md)                                   | HubChat tools and executors                                      | Tool/executor coordination, prompt cache, risky actions                                                                             |
+| [`sergeant-module-finyk`](../../../.agents/skills/sergeant-module-finyk/SKILL.md)                         | Задачі в модулі finyk (бюджети, транзакції, готівка)             | Канон + журнал рішень finyk, копійки як number, заморожене минуле (ADR-0079)                                                        |
+| [`sergeant-module-nutrition`](../../../.agents/skills/sergeant-module-nutrition/SKILL.md)                 | Задачі в модулі nutrition (їжа, калорії, комора)                 | Канон + журнал рішень nutrition, append-only комора (ADR-0077), device-local день (ADR-0078)                                        |
+| [`sergeant-module-fizruk`](../../../.agents/skills/sergeant-module-fizruk/SKILL.md)                       | Задачі в модулі fizruk (тренування, відновлення, травми)         | Канон + журнал рішень fizruk, зонна травма-модель (ADR-0083), вага тіла — джерело істини (ADR-0080)                                 |
+| [`sergeant-module-routine`](../../../.agents/skills/sergeant-module-routine/SKILL.md)                     | Задачі в модулі routine (звички, стріки, відмітки)               | Канон + журнал рішень routine, device-local день (ADR-0078), стрік-філософія канону                                                 |
+| [`sergeant-module-ai`](../../../.agents/skills/sergeant-module-ai/SKILL.md)                               | AI-шар: hub, HubChat tools/executors, coach, digest, ai-memory   | Канон hub-coach + журнал, tool/executor coordination, prompt cache (ADR-0039), risky actions                                        |
+| [`sergeant-module-sync`](../../../.agents/skills/sergeant-module-sync/SKILL.md)                           | Sync-шар: op-log, LWW, dualwrite-core                            | Per-row LWW у applySync, device-local день (ADR-0078), generic дуалрайт (ADR-0073)                                                  |
+| [`sergeant-module-billing`](../../../.agents/skills/sergeant-module-billing/SKILL.md)                     | Billing: тарифи, квоти, LiqPay                                   | Pricing v4 (ADR-0068), атомарні SQL-квоти (ADR-0022), копійки як number                                                             |
+| [`sergeant-module-integrations`](../../../.agents/skills/sergeant-module-integrations/SKILL.md)           | Зовнішні інтеграції: silpo, telegram, transcribe, webhooks       | Error-шляхи без блокування продукту, ідемпотентні webhooks, USD-кап transcribe                                                      |
+| [`sergeant-module-push`](../../../.agents/skills/sergeant-module-push/SKILL.md)                           | Push-сповіщення: web push, APNs, FCM                             | Server-driven fan-out (ADR-0019), деактивація протухлих підписок, UA-тексти                                                         |
+| [`sergeant-copy-and-tone`](../../../.agents/skills/sergeant-copy-and-tone/SKILL.md)                       | UA-копірайтинг: кнопки, помилки, тости, empty states             | style-guide.uk.md hard rules: «ти», 1-ша особа, action-prompt-closed errors                                                         |
+| [`sergeant-adr`](../../../.agents/skills/sergeant-adr/SKILL.md)                                           | Написання/оновлення ADR та індексу рішень                        | Нумерація без пропусків, Proposed→Accepted при мержі, supersede-ланцюги, check-adr-index                                            |
+| [`sergeant-feature-flags`](../../../.agents/skills/sergeant-feature-flags/SKILL.md)                       | Додавання/зняття фіче-прапорців                                  | Реєстр feature-flags.md у тому ж PR, вибір із 4 систем, умова зняття обовʼязкова                                                    |
+| [`sergeant-analytics`](../../../.agents/skills/sergeant-analytics/SKILL.md)                               | PostHog-івенти, неймінг, дашборд-манифести                       | trackEvent + ANALYTICS_EVENTS, PII-скрабінг, lint:posthog-manifests                                                                 |
 | [`sergeant-monorepo-boundaries`](../../../.agents/skills/sergeant-monorepo-boundaries/SKILL.md)           | Unsure where code belongs                                        | App vs package placement, shared logic boundaries                                                                                   |
 | [`sergeant-deploy-and-observability`](../../../.agents/skills/sergeant-deploy-and-observability/SKILL.md) | Deploys, env vars, health, Sentry, n8n                           | Runtime verification, operator docs, release safety                                                                                 |
 | [`better-auth-best-practices`](../../../.agents/skills/better-auth-best-practices/SKILL.md)               | Login/session/cookie/account lifecycle                           | Better Auth wiring, cross-site cookies, auth env safety                                                                             |
@@ -58,7 +70,8 @@ Skill-trigger eval-и живуть у [`skill-trigger-evals.json`](./skill-trigg
 | Design a new backend module or workflow      | `sergeant-backend-architecture` + `sergeant-server-api`                               |
 | Add a DB column safely                       | `sergeant-feature-delivery` + `sergeant-data-and-migrations`                          |
 | Review PR touching server + `api-client`     | `sergeant-review-and-merge` + `sergeant-server-api`                                   |
-| Add or change a HubChat tool                 | `sergeant-feature-delivery` + `sergeant-hubchat`                                      |
+| Add or change a HubChat tool                 | `sergeant-feature-delivery` + `sergeant-module-ai`                                    |
+| Change product behavior inside one module    | `sergeant-module-<finyk\|nutrition\|fizruk\|routine\|ai>` + surface skill             |
 | Write or debug a Playwright E2E test         | `sergeant-e2e-testing`                                                                |
 | Run a security review or pnpm audit          | `sergeant-security-audit`                                                             |
 | Reduce tech debt, dead code, ESLint baseline | `sergeant-tech-debt`                                                                  |
@@ -93,7 +106,8 @@ pnpm lint:agent-graph   # входить у pnpm lint:skills
 | `frontend-design`             | Removed from repo surface | `sergeant-web-ui`                                     |
 | `sergeant-api-patterns`       | Merged                    | `sergeant-server-api`                                 |
 | `sergeant-design-system`      | Merged                    | `sergeant-web-ui`                                     |
-| `sergeant-hubchat-tool`       | Renamed/merged            | `sergeant-hubchat`                                    |
+| `sergeant-hubchat`            | Deprecated pointer        | `sergeant-module-ai`                                  |
+| `sergeant-hubchat-tool`       | Renamed/merged            | `sergeant-module-ai`                                  |
 | `sergeant-postgres`           | Merged                    | `sergeant-data-and-migrations`                        |
 | `sergeant-sql-migrations`     | Merged                    | `sergeant-data-and-migrations`                        |
 | `skill-creator`               | Removed from repo surface | platform skill-authoring workflow if needed           |

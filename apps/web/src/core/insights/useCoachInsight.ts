@@ -16,6 +16,7 @@ import {
   loadNutritionPrefs,
 } from "@nutrition/lib/nutritionStorage";
 import { loadRoutineState } from "@routine/lib/routineStorage";
+import { dateKeyFromDate } from "@sergeant/routine-domain";
 import { newAdviceId } from "../observability/adviceTelemetry";
 
 /* eslint-disable sergeant-design/prefer-kyiv-time, @typescript-eslint/no-non-null-assertion --
@@ -29,9 +30,10 @@ import { newAdviceId } from "../observability/adviceTelemetry";
 
 const CACHE_KEY = "hub_coach_insight_cache_v1";
 
-function localDateKey(d = new Date()): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
+// Device-local day key (ADR-0078) — канонічна реалізація живе в
+// `@sergeant/routine-domain` (`dateKeyFromDate`); тут лише тонкий делегат
+// із дефолтним `new Date()` замість колишньої інлайн-копії.
+const localDateKey = (d: Date = new Date()): string => dateKeyFromDate(d);
 
 interface CategoryAmount {
   name: string;

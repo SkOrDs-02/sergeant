@@ -1,6 +1,6 @@
 # Playbook: Bump Dependency Safely
 
-> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-22.
+> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-20.
 > **Status:** Active
 
 **Trigger:** "Оновити X до версії Y" / Renovate PR з major-bump / security advisory на залежність.
@@ -67,7 +67,7 @@ pnpm lint        # має пройти
 
 ### 6. Створити PR
 
-- Branch: `devin/<unix-ts>-chore-bump-<pkg>`
+- Branch: `<harness>/chore-bump-<pkg>`
 - Commit: `chore(deps): bump <pkg> from <old> to <new>`
 - PR description:
   - Яка залежність оновлена і в яких workspace-ах

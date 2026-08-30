@@ -1,8 +1,78 @@
 {
   "$schema": "../governance/schemas/pr-ledger.schema.json",
   "version": 1,
-  "generated_at": "2026-08-07",
+  "generated_at": "2026-08-28",
   "prs": [
+    {
+      "number": 895,
+      "title": "fix(agents): полірування агентного шару після розкатки module-owners",
+      "merged_at": "2026-08-28T00:58:58Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": [
+        "docs/00-start/playbooks/add-hubchat-tool.md",
+        "docs/00-start/playbooks/debug-chat-tool.md",
+        "docs/00-start/playbooks/enable-prompt-caching.md",
+        "docs/00-start/playbooks/modify-n8n-workflow.md",
+        "docs/00-start/playbooks/playbook-catalog.md",
+        "docs/00-start/playbooks/tune-system-prompt.md"
+      ]
+    },
+    {
+      "number": 892,
+      "title": "feat(agents): module-owner і службові Claude-агенти",
+      "merged_at": "2026-08-27T23:22:09Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": [
+        "docs/00-start/playbooks/add-hubchat-tool.md",
+        "docs/00-start/playbooks/debug-chat-tool.md",
+        "docs/00-start/playbooks/enable-prompt-caching.md",
+        "docs/00-start/playbooks/modify-n8n-workflow.md",
+        "docs/00-start/playbooks/playbook-catalog.md",
+        "docs/00-start/playbooks/tune-system-prompt.md"
+      ]
+    },
+    {
+      "number": 891,
+      "title": "feat(agents): скіли-дисципліни",
+      "merged_at": "2026-08-27T22:47:13Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": [
+        "docs/00-start/playbooks/add-hubchat-tool.md",
+        "docs/00-start/playbooks/debug-chat-tool.md",
+        "docs/00-start/playbooks/enable-prompt-caching.md",
+        "docs/00-start/playbooks/modify-n8n-workflow.md",
+        "docs/00-start/playbooks/playbook-catalog.md",
+        "docs/00-start/playbooks/tune-system-prompt.md"
+      ]
+    },
+    {
+      "number": 890,
+      "title": "feat(agents): інфра module-скіли і nested-роутинг",
+      "merged_at": "2026-08-27T22:21:50Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": [
+        "docs/00-start/playbooks/add-hubchat-tool.md",
+        "docs/00-start/playbooks/debug-chat-tool.md",
+        "docs/00-start/playbooks/enable-prompt-caching.md",
+        "docs/00-start/playbooks/modify-n8n-workflow.md",
+        "docs/00-start/playbooks/playbook-catalog.md",
+        "docs/00-start/playbooks/tune-system-prompt.md"
+      ]
+    },
+    {
+      "number": 889,
+      "title": "feat(agents): продуктові module-owner скіли",
+      "merged_at": "2026-08-27T21:54:48Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": [
+        "docs/00-start/playbooks/add-hubchat-tool.md",
+        "docs/00-start/playbooks/debug-chat-tool.md",
+        "docs/00-start/playbooks/enable-prompt-caching.md",
+        "docs/00-start/playbooks/modify-n8n-workflow.md",
+        "docs/00-start/playbooks/playbook-catalog.md",
+        "docs/00-start/playbooks/tune-system-prompt.md"
+      ]
+    },
     {
       "number": 689,
       "title": "fix(ci): governance-sync відрізняє живе посилання від навмисно мертвого",

@@ -18,14 +18,16 @@
 
 Рішення founder-а 2026-08-26: **прибрати всі шість**, повністю — включно зі звуженням CHECK-констрейнта двофазно. `ALLOWED_MEMORY_SOURCES` стає `['digest', 'cofounder', 'product', 'profile']`.
 
+> ⚠️ **Заміри нижче застаріли після PR [#928](https://github.com/SkOrDs-02/sergeant/pull/928)** (2026-08-29, зняття атавізмів AI-шару). Той PR видалив `eventSync.ts`, `backfill.ts`, `forgetCleanup.ts` і `scripts/ai-memory-backfill.mjs`, тож рядки `product` і `cofounder` у таблиці нижче більше не мають продюсерів, а посилання на ці файли зняті (лишились назвами, щоб історію було видно). Скільки джерел лишилось насправді і що з цього випливає для плану змін — перезаміряти має власник ініціативи; цей коміт лише прибрав биті посилання, статусів у таблиці не чіпав.
+
 ## Виміряний стан (перевірено на HEAD 2026-08-26)
 
 | Джерело     | Продюсер у дереві                                                                                                      | Стан                                                            |
 | ----------- | ---------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
 | `digest`    | [`weekly-digest.ts`](../../../apps/server/src/modules/digest/weekly-digest.ts) — `enqueueMemoryIngest` після генерації | ✅ пише                                                         |
-| `product`   | [`eventSync.ts`](../../../apps/server/src/modules/ai-memory/eventSync.ts) ← `POST /api/ai-memory/event-sync` ← веб     | ✅ пише (4 події allowlist-у)                                   |
+| `product`   | `eventSync.ts` (видалено PR #928) ← `POST /api/ai-memory/event-sync` ← веб                                             | ✅ пише (4 події allowlist-у)                                   |
 | `profile`   | [`profileMirror.ts`](../../../apps/server/src/modules/ai-memory/profileMirror.ts) — дзеркало банку памʼяті профілю     | ✅ пише (міграція 118, фаза 2 приземлена)                       |
-| `cofounder` | [`backfill.ts`](../../../apps/server/src/modules/ai-memory/backfill.ts) + CLI `pnpm ai-memory:backfill`                | ✅ пише (founder-only, Telegram-архів)                          |
+| `cofounder` | `backfill.ts` (видалено PR #928) + CLI `pnpm ai-memory:backfill`                                                       | ✅ пише (founder-only, Telegram-архів)                          |
 | `chat`      | —                                                                                                                      | ❌ дозволений у zod-схемі ingest-у, але веб туди не ходить      |
 | `fizruk`    | —                                                                                                                      | ❌ те саме                                                      |
 | `nutrition` | —                                                                                                                      | ❌ те саме                                                      |
@@ -122,7 +124,7 @@ grep -rn "enqueueMemoryIngest" apps/server/src/modules/mono/*.ts | grep -v "\.te
 3. [`ingestQueue.ts`](../../../apps/server/src/modules/ai-memory/ingestQueue.ts) — повернути per-source гілку, тепер на `payload.source === "digest"`. Метрика `mode="source_disabled"` лишається як є.
 4. [`eval-rag.ts`](../../../apps/server/src/routes/internal/eval-rag.ts) — перейменувати `shouldAutoDisableMonoIngest` і рядок `activateKillSwitch`.
 5. [`obs/metrics.ts`](../../../apps/server/src/obs/metrics.ts), [`obs/metrics/jobs.ts`](../../../apps/server/src/obs/metrics/jobs.ts) — коментарі з назвою switch-а.
-6. Доки: [`runbook.md`](../../03-operations/observability/runbook.md) (§ «RagQualityGateKillSwitch»), [`feature-flags.md` (engineering)](../../02-engineering/architecture/feature-flags.md), [`feature-flags.md` (governance)](../../04-governance/governance/feature-flags.md), [`env-vars.md`](../../02-engineering/integrations/env-vars.md), [`rag-eval.md`](../../02-engineering/architecture/rag-eval.md), [`voyage-pgvector.md`](../../02-engineering/integrations/voyage-pgvector.md), [`ops/n8n-workflows/manifest.json`](../../../ops/n8n-workflows/manifest.json) (WF-30 notes), [`scripts/ai-memory-backfill.mjs`](../../../scripts/ai-memory-backfill.mjs) (коментар шапки).
+6. Доки: [`runbook.md`](../../03-operations/observability/runbook.md) (§ «RagQualityGateKillSwitch»), [`feature-flags.md` (engineering)](../../02-engineering/architecture/feature-flags.md), [`feature-flags.md` (governance)](../../04-governance/governance/feature-flags.md), [`env-vars.md`](../../02-engineering/integrations/env-vars.md), [`rag-eval.md`](../../02-engineering/architecture/rag-eval.md), [`voyage-pgvector.md`](../../02-engineering/integrations/voyage-pgvector.md), [`ops/n8n-workflows/manifest.json`](../../../ops/n8n-workflows/manifest.json) (WF-30 notes), `scripts/ai-memory-backfill.mjs` (видалено PR #928) (коментар шапки).
 
 ### Замір на проді (між PR-2 і PR-3, операторський крок)
 
@@ -209,6 +211,27 @@ psql "$DATABASE_URL" -c "INSERT INTO ai_memories (user_id, source, content) VALU
 Очікується `ERROR: new row violates check constraint "ai_memories_source_check"`.
 
 Клік-through на вебі: Налаштування → «Що ШІ про тебе памʼятає» — у списку лишаються тільки чотири групи (Підсумок тижня, Співзасновник, Події застосунку, Профіль), жодного `chat` / `Фінік` / `Щоденник`.
+
+## Ратифіковані рішення
+
+1. **`chat` — без окремого конвеєра автовитягу** (2026-08-26, рішення власника). Закриває відкрите рішення №1 у бік «лишити явний шлях, але навчити модель ловити неявне». Факти й далі потрапляють у памʼять ЛИШЕ через інструмент [`remember`](../../../apps/server/src/modules/chat/toolDefs/memory.ts) → банк памʼяті профілю → [`profileMirror.ts`](../../../apps/server/src/modules/ai-memory/profileMirror.ts) → `ai_memories` з `source='profile'`. Окремий постобробник розмови, який сам витягує кандидатів у факти, **не будуємо**: ризик «запамʼятає зайве» з § Ризики оцінено дорожчим за виграш, а другий продюсер на ті самі факти довелося б ще й дедуплікувати проти банку профілю.
+
+   Дірка, яку це лишає, названа явно: факт, сказаний мимохідь («я взагалі не їм глютен», «у мене травма коліна»), без слова «запамʼятай» не осідає ніде — ланцюг цілий, але стартує лише тоді, коли модель сама викликала `remember`. Лікування промптове, не конвеєрне: опис інструмента `remember` і відповідна секція [`SYSTEM_PREFIX`](../../../apps/server/src/modules/chat/toolDefs/systemPrompt.ts) мають ловити неявні твердження про користувача.
+
+   Замір — блок `IMPLICIT_FACT_CASES` у [`tool-selection-eval.ts`](../../../apps/server/scripts/tool-selection-eval.ts): шість реплік, де факт конкурує зі звичайним проханням, і окремий підсумок `implicit remember: N/M` у звіті `pnpm --filter @sergeant/server eval:tools`. Без цього числа промптові правки непроверяємі — «стало краще» на око тут не працює.
+
+### Замір 2026-08-27 (базова лінія, `--repeat=3`)
+
+`pnpm --filter @sergeant/server eval:tools --models=<model> --repeat=3`, 18 кейсів × 3 прогони:
+
+| Модель                                       | implicit remember | Загалом | Вигадані id |
+| -------------------------------------------- | ----------------- | ------- | ----------- |
+| `google/gemini-3.7-flash` (прод, перший хід) | **18/18**         | 53/54   | 0/54        |
+| `anthropic/claude-haiku-4.5` (фолбек)        | **14/18**         | 48/54   | 2/54        |
+
+**Висновок: промптова правка не потрібна.** Правило вже стоїть у `SYSTEM_PREFIX` («Якщо користувач каже щось важливе про себе … АВТОМАТИЧНО використай remember»), і на моделі, яка реально робить перший хід, воно спрацьовує в усіх 18 прогонах. Чіпати текст промпта заради цього — це інвалідація кеш-префікса і бамп версії (зараз v23) без вимірюваного виграшу.
+
+Чотири промахи Haiku розкладаються на два різні: три — кейс «ціль ваги», де модель обрала `set_goal` замість `remember` (структурований дім для цілі є, але в `ai_memories` вона не потрапляє, тож для RAG-контексту невидима); один — «час тренувань», де модель написала «Запамʼятав» текстом, не викликавши інструмент. Другий — справжня дірка, але одна з вісімнадцяти на не-прод моделі.
 
 ## Критерії DONE
 

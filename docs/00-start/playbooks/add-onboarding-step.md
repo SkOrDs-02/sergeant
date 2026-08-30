@@ -1,6 +1,6 @@
 # Playbook: Add Onboarding Step
 
-> **Last touched:** 2026-07-24 by @Skords-01. **Next review:** 2026-11-06.
+> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-17.
 > **Status:** Active
 
 **Trigger:** «Додай новий крок в онбординг» / зміна послідовності перших кроків нового юзера / новий FTUX-етап.
@@ -168,7 +168,7 @@ pnpm --filter @sergeant/mobile exec vitest run src/core/OnboardingWizard.test.ts
 
 ### 8. PR
 
-Branch: `devin/<unix-ts>-feat-onboarding-<step-id>`. Commit:
+Branch: `<harness>/feat-onboarding-<step-id>`. Commit:
 
 ```
 feat(shared): add `<step_id>` onboarding step

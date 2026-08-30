@@ -1,4 +1,4 @@
-import type { MessageCatalog } from "./uk";
+import type { messages as ukMessages, MessageGroupShape } from "./uk";
 import { pricingEn } from "./en.pricing";
 
 /**
@@ -6,10 +6,16 @@ import { pricingEn } from "./en.pricing";
  * key in `uk.ts` when the resolver picks `lang='en'`. Top-level keys absent
  * fall through to `uk.ts`. See `index.ts → getMessages()` for merge semantics.
  *
- * Typed as `Partial<MessageCatalog>` so the resolver's merge produces a full
- * `MessageCatalog` regardless of which groups EN currently covers.
+ * Type contract: структурне дзеркало `typeof uk`, Partial лише на верхньому
+ * рівні. Оголосив групу — зобовʼязаний перекласти КОЖЕН її ключ, інакше
+ * compile error. Це механічне втілення shallow-merge правила «translate the
+ * whole group or don't touch it»: раніше тип був `Partial<MessageCatalog>`
+ * (гола index-signature), і 3-ключовий stub групи `fizruk` мовчки затирав
+ * 283 UA-ключі, даючи `undefined`/TypeError під `?lang=en`.
  */
-export const messagesEn: Partial<MessageCatalog> = {
+export const messagesEn: Partial<{
+  [K in keyof typeof ukMessages]: MessageGroupShape<(typeof ukMessages)[K]>;
+}> = {
   auth: {
     // Generic fallback — used when the specific cause cannot be determined.
     genericFailure: "Sign-in failed. Please try again.",
@@ -45,6 +51,20 @@ export const messagesEn: Partial<MessageCatalog> = {
     conflictResolved: "Conflict resolved automatically.",
     pushFailed: "Sync failed. We'll retry shortly.",
     offlineQueueRecovered: "Recovered from offline queue.",
+
+    anonymousMigrationProgress:
+      "Moving your data into the profile and saving it to the server…",
+    anonymousMigrationFailure:
+      "Could not finish the migration. The data on this device was not deleted, but it is not protected by sync yet.",
+    anonymousMigrationRetry: "Retry",
+    anonymousMigrationDefer: "Continue, I'll migrate later",
+    anonymousMigrationDeferredToast:
+      "Okay. The data stays on this device; I'll try to migrate it on the next launch.",
+    anonymousMigrationDeferredNotice:
+      "The data has not been moved to the profile yet, it lives only on this device.",
+    anonymousMigrationDeferredRetry: "Try now",
+    anonymousMigrationSuccess:
+      "Data migrated and safely stored in your profile.",
   },
 
   validation: {
@@ -77,6 +97,7 @@ export const messagesEn: Partial<MessageCatalog> = {
     passwordResetMin10: "Password must be at least 10 characters.",
     passwordsDontMatchDot: "Passwords don't match.",
     passwordsDontMatch: "Passwords don't match",
+    categoryNameRequired: "Enter a category name",
   },
 
   actions: {
@@ -116,6 +137,7 @@ export const messagesEn: Partial<MessageCatalog> = {
     updating: "Updating…",
     done: "Done",
     doneLowercase: "done",
+    hiddenValuePrefix: "Hidden",
   },
 
   period: {
@@ -144,6 +166,10 @@ export const messagesEn: Partial<MessageCatalog> = {
     quickActions: "Quick actions",
     voiceInput: "Voice input",
     welcome: "Welcome",
+    finykSections: "Finyk sections",
+    fizrukSections: "Fizruk sections",
+    routineSections: "Routine sections",
+    nutritionSections: "Nutrition sections",
   },
 
   empty: {
@@ -228,6 +254,12 @@ export const messagesEn: Partial<MessageCatalog> = {
       aiUsage: "AI usage by day",
       aiMemories: "AI memory",
     },
+    subprocessors: {
+      title: "Where your data goes for AI",
+      body: "To answer in chat, give advice and recognize photos, we send requests to Anthropic, and to Voyage AI for memory search. Before sending we strip email, phone, IBAN, card number and tax ID, and people's names from bank transfers.",
+      photoNote:
+        "Photos are the exception: part of the frame cannot be hidden, so it is sent whole. We warn you before the first photo.",
+    },
     sunset: {
       title: "If Sergeant ever shuts down",
       body: "We will warn you at least 30 days ahead, and export will keep working the whole time. Your data is yours: take it whenever you like, no permission and no explanation needed.",
@@ -263,6 +295,13 @@ export const messagesEn: Partial<MessageCatalog> = {
     reportNoData: "No data",
     reportChartAria: "Chart",
     reportPrevious: "Previous:",
+
+    overlayTitle: "AI assistant",
+    closeChat: "Close chat",
+    chatUsageUnit: "requests",
+    chatUsageAriaPrefix: "Used",
+    chatUsageAriaSuffix: "AI requests today",
+    chatUsageExhausted: "AI request limit reached for today. See plans",
   },
 
   onboarding: {
@@ -279,6 +318,12 @@ export const messagesEn: Partial<MessageCatalog> = {
       "Choose your priority, Sergeant will suggest where to start.",
     goalFirstSkipLabel: "See everything",
     goalFirstAriaLabel: "Onboarding goals",
+
+    presetSaveFailed: "Could not save. Try again.",
+    demoBadgeText: "Demo",
+    demoBadgeExit: "Exit",
+    demoBadgeLabel: "Demo data: tap to exit and create your own profile",
+    demoBadgeTitle: "Demo. Tap to exit and start from a clean slate.",
   },
 
   welcomeModulePicker: {
@@ -321,46 +366,11 @@ export const messagesEn: Partial<MessageCatalog> = {
     openSettings: "Module settings",
   },
 
-  fizruk: {
-    returnToActiveWorkout: "Return to active workout",
-    workoutRest: "Rest",
-    kgUnit: "kg",
-  },
-
-  nutrition: {
-    fromPantry: "From pantry",
-    mealType: "Meal type",
-    templates: "Templates",
-    deleteTemplateTitle: "Delete template?",
-    reportHeading: "Nutrition (kcal/day)",
-    kcalUnit: "kcal",
-  },
-
-  routine: {
-    dayReport: "Day report",
-    weekdays: "Weekdays",
-    archive: "Archive",
-    reportHeading: "Routine (habit completion)",
-    firstRun: {
-      title: "Your first habit, a preview",
-      description:
-        "Add any habit to get started. You can edit it and add more from the same dialog.",
-    },
-  },
-
-  finyk: {
-    reportHeading: "Finyk (expenses)",
-    addLimitOrGoal: "+ Add limit or goal",
-    transactionsFilterLabel: "Transaction filter",
-    daySummaryLabel: "day total",
-    monoConnectErrors: {
-      tokenRejected:
-        "Mono rejected the token. Check that you copied it correctly.",
-      accountRequired:
-        "Sign in first, the Mono token is stored on the server, so connecting a bank needs an account. Nothing is wrong with your token.",
-      networkUnavailable: "Could not reach Mono. Check your connection.",
-    },
-  },
+  // Групи fizruk / finyk / nutrition / routine НЕ оголошені навмисно:
+  // за shallow-merge контрактом оголошена група повністю замінює UA-групу,
+  // а перекладати 280+ ключів модуля частково заборонено (див. тип вище).
+  // Історичні 3–7-ключові stub-и цих груп видалено 2026-08-28 — вони
+  // затирали 560 UA-ключів і давали TypeError під `?lang=en`.
 
   profileSessions: {
     sectionTitle: "Active sessions",
@@ -376,6 +386,8 @@ export const messagesEn: Partial<MessageCatalog> = {
     unknownIp: "IP unknown",
     unknownDevice: "Unknown device",
     lastSeenPrefix: "Active",
+    currentUnknown:
+      "Could not identify this device's session. Refresh the list to end sessions.",
   },
 
   experimentalSection: {
@@ -445,6 +457,15 @@ export const messagesEn: Partial<MessageCatalog> = {
         "will be gone from the AI memory for good, there is no undo.",
       confirmButton: "Delete permanently",
       deleteError: "Could not delete the fact. Try again.",
+      groupToggleAria: "Show facts from this source",
+      expandFact: "Show in full",
+      collapseFact: "Collapse",
+      technicalGroupHints: {
+        product:
+          "App service markers: registration, onboarding, first action in a module, subscription. The assistant reads them as an action history, not as a fact about you.",
+        digest:
+          "Weekly reports the assistant compiled itself from your modules. This is not a fact you told it — it is its own summary.",
+      },
     },
   },
 
@@ -559,64 +580,6 @@ export const messagesEn: Partial<MessageCatalog> = {
       title: "PDF reports: Premium",
       description: "Cross-module reports and PDF export, available on Premium.",
     },
-  },
-
-  // Initiative 0010 Phase 6.2 — Landing page (`/`). Full EN translation of the
-  // `landing` group so non-UA visitors see English copy end-to-end. Voice:
-  // 1st-person singular, friendly-not-corporate, concrete. Tier names
-  // ("Premium") capitalized per ADR-0051.
-  landing: {
-    // Header
-    signIn: "Sign in",
-    signInAria: "Sign in to your account",
-
-    // Hero section
-    heroAriaLabel: "Hero: introducing Sergeant",
-    eyebrow: "Local-first · AI · In your language",
-    heroHeadline:
-      "One assistant for finances, workouts,\nnutrition and routines.",
-    heroSubcopy:
-      "Sergeant combines four modules (Finyk, Fizruk, Nutrition, Routine)" +
-      " into one AI chat that remembers your goals and suggests the next step." +
-      " No cloud by default. Full control over your data.",
-    registerCta: "Create account",
-    loginCta: "I already have an account",
-    skipCta: "Try without an account",
-
-    // Features section
-    featuresAriaLabel: "Why Sergeant",
-    features: {
-      aiTitle: "AI assistant in your pocket",
-      aiBody:
-        "A chat that knows your finances, workouts, nutrition and routines, and suggests what to do next.",
-      localFirstTitle: "Local-first by default",
-      localFirstBody:
-        "Your data lives on your device. Cloud sync is optional (Premium) and never turns on without your confirmation.",
-      noHiddenTitle: "No surprise charges",
-      noHiddenBody:
-        "Free tier is forever. Premium is one paid plan, no surprise charges. Pricing will be announced at launch.",
-    },
-
-    // Waitlist section
-    waitlistAriaLabel: "Subscribe to the Sergeant launch",
-    waitlistHeadline: "Get notified when Premium is ready",
-    waitlistSubcopy:
-      "Leave your email for a launch update. Same interest list," +
-      " now with `source=landing` attribution.",
-
-    // Pricing section
-    pricingAriaLabel: "View pricing",
-    pricingHeadline: "Check out the plans",
-    pricingSubcopy:
-      "Free forever for everyday use. Premium unlocks unlimited AI chat," +
-      " auto-Mono sync and cross-device CloudSync.",
-    pricingCta: "See plans",
-
-    // Footer
-    footerText:
-      "Sergeant is a Ukrainian project. No ads, no data reselling," +
-      " no dark patterns. Telegram channel for updates and a public" +
-      " changelog in the repo.",
   },
 
   pricing: pricingEn,

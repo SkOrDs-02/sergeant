@@ -334,16 +334,28 @@ describe("035_nutrition_tables migration", () => {
         prefs: await listColumns(pool, "nutrition_prefs"),
       };
 
-      // 095_nutrition_pk_text.sql widens id/pantry_id/active_pantry_id
-      // uuid -> text on top of these tables. It must be unwound before
-      // 035's down.sql drops them (its ALTER TABLE targets wouldn't
-      // exist otherwise) and re-applied after 035's up.sql recreates
-      // them fresh as uuid — else `after` would still be uuid while
-      // `before` (captured post-095) is text.
+      // Пізніші міграції нашаровуються на ці таблиці, тож перед тим, як
+      // 035's down.sql їх дропне, шари треба зняти у зворотному порядку — і
+      // повернути після того, як 035's up.sql відтворить таблиці свіжими.
+      // Інакше `after` розійдеться з `before`, знятим на повністю
+      // змігрованій схемі.
+      //
+      // 095_nutrition_pk_text.sql розширює id/pantry_id/active_pantry_id
+      // uuid -> text (його ALTER TABLE не мав би цілей після 035's down.sql).
+      //
+      // 129_nutrition_pantry_pk_per_user.sql переводить PK комори й позицій
+      // на композитний `(user_id, id)` і ЗНІМАЄ FK
+      // `nutrition_pantry_items_pantry_id_fkey`. Саме тому він розкручується
+      // ПЕРШИМ: `095_nutrition_pk_text.down.sql` починається з
+      // `DROP CONSTRAINT nutrition_pantry_items_pantry_id_fkey` без
+      // `IF EXISTS`, тож на схемі після 129 він падав би
+      // `constraint ... does not exist`.
+      await execSqlFile(pool, "129_nutrition_pantry_pk_per_user.down.sql");
       await execSqlFile(pool, "095_nutrition_pk_text.down.sql");
       await execSqlFile(pool, "035_nutrition_tables.down.sql");
       await execSqlFile(pool, "035_nutrition_tables.sql");
       await execSqlFile(pool, "095_nutrition_pk_text.sql");
+      await execSqlFile(pool, "129_nutrition_pantry_pk_per_user.sql");
 
       const after = {
         tables: await listOwnTables(pool),

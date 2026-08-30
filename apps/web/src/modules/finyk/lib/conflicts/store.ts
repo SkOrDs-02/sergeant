@@ -49,9 +49,15 @@ export interface FinykManualExpenseConflict {
   /**
    * Server-reported rejection reason. `lww_conflict` означає, що
    * локальний `clientTs` старіший за серверний `updated_at` —
-   * cloud має свіжішу версію. `tombstoned` означає, що рядок
-   * soft-deleted на сервері, а ми спробували insert/update —
-   * resurrection guard сработав.
+   * cloud має свіжішу версію.
+   *
+   * `tombstoned` ВИВЕДЕНО З ОБІГУ: серверне правило «видалення
+   * остаточне» знято (`guardUuidPkApply` в
+   * `apps/server/src/modules/sync/applySync-helpers.ts`), і новіший запис
+   * тепер воскрешає soft-deleted рядок за звичайним LWW. Значення
+   * лишається в юніоні навмисно — web і server деплояться окремо, тож
+   * старий сервер за проксі ще може його прислати. Нових продюсерів не
+   * додавай.
    */
   readonly reason: FinykManualExpenseConflictReason;
   /**

@@ -13,9 +13,9 @@
  * profileWriteThrough.ts`) для нього невидимі, доки хтось не embed-ить їх
  * туди. Цей модуль — той хтось.
  *
- * Роль аналогічна `eventSync.ts` (product-events → `ai_memories`), стиль
- * і межі — ті самі: pure diff-логіка тестується без DB/Voyage, DB/Voyage
- * ходить лише у `mirrorProfileMemoryEntries`.
+ * Межі: pure diff-логіка тестується без DB/Voyage, DB/Voyage ходить
+ * лише у `mirrorProfileMemoryEntries`. (Історична рідня — eventSync.ts,
+ * PostHog-дзеркало; знято 2026-08-29.)
  *
  * ─── Idempotency (ПАСТКА 1 задачі) ─────────────────────────────────────
  *
@@ -446,9 +446,8 @@ export async function mirrorProfileMemoryEntries(
       // відповідь на час embed-у кожного нового чи зміненого факту.
       // Інтерактивний шлях платив би за фонову роботу.
       //
-      // `enqueueMemoryIngest` — той самий шлях, яким уже ходять інші
-      // server-side хуки (`recordProductMemoryEvent` у `eventSync.ts`), і
-      // він дешевий: push у Redis. Без Redis (local dev / CI / інцидент)
+      // `enqueueMemoryIngest` — той самий шлях, яким ходять server-side
+      // хуки (finyk-webhook, digest), і він дешевий: push у Redis. Без Redis (local dev / CI / інцидент)
       // черга сама падає у `runDirectDispatch`, тобто поведінка дорівнює
       // прямому виклику — факти не губляться, лише зникає асинхронність.
       //

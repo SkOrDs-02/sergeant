@@ -3,9 +3,81 @@
   "fallbackSkill": "sergeant-start-here",
   "skillRules": [
     {
-      "skill": "sergeant-hubchat",
-      "globs": ["apps/server/src/hubchat/**"],
-      "keywords": ["hubchat", "hub chat", "assistant tool", "action card"]
+      "skill": "sergeant-module-finyk",
+      "globs": [
+        "apps/web/src/modules/finyk/**",
+        "apps/server/src/modules/finyk/**",
+        "packages/finyk-domain/**"
+      ],
+      "keywords": ["finyk", "бюджет", "транзакц", "budget carryover"]
+    },
+    {
+      "skill": "sergeant-module-nutrition",
+      "globs": [
+        "apps/web/src/modules/nutrition/**",
+        "apps/server/src/modules/nutrition/**",
+        "packages/nutrition-domain/**"
+      ],
+      "keywords": ["nutrition", "комора", "калорі", "pantry", "food log"]
+    },
+    {
+      "skill": "sergeant-module-fizruk",
+      "globs": ["apps/web/src/modules/fizruk/**", "packages/fizruk-domain/**"],
+      "keywords": ["fizruk", "тренуванн", "травм", "workout", "recovery"]
+    },
+    {
+      "skill": "sergeant-module-routine",
+      "globs": [
+        "apps/web/src/modules/routine/**",
+        "packages/routine-domain/**"
+      ],
+      "keywords": ["routine", "звичк", "стрік", "habit", "streak"]
+    },
+    {
+      "skill": "sergeant-module-sync",
+      "globs": [
+        "apps/server/src/modules/sync/**",
+        "packages/dualwrite-core/**"
+      ],
+      "keywords": ["sync", "дуалрайт", "dualwrite", "op-log", "lww"]
+    },
+    {
+      "skill": "sergeant-module-billing",
+      "globs": ["apps/server/src/modules/billing/**"],
+      "keywords": ["billing", "тариф", "квот", "liqpay", "pricing"]
+    },
+    {
+      "skill": "sergeant-module-integrations",
+      "globs": [
+        "apps/server/src/modules/silpo/**",
+        "apps/server/src/modules/telegram/**",
+        "apps/server/src/modules/transcribe/**",
+        "apps/server/src/modules/webhooks/**"
+      ],
+      "keywords": ["silpo", "telegram bot", "transcribe", "webhook"]
+    },
+    {
+      "skill": "sergeant-module-push",
+      "globs": ["apps/server/src/modules/push/**"],
+      "keywords": ["push notification", "apns", "fcm", "сповіщенн"]
+    },
+    {
+      "skill": "sergeant-module-ai",
+      "globs": [
+        "apps/server/src/modules/chat/**",
+        "apps/server/src/modules/mono/**",
+        "apps/server/src/modules/digest/**",
+        "apps/server/src/modules/ai-memory/**"
+      ],
+      "keywords": [
+        "hubchat",
+        "hub chat",
+        "assistant tool",
+        "action card",
+        "coach",
+        "digest",
+        "ai-memory"
+      ]
     },
     {
       "skill": "sergeant-data-and-migrations",

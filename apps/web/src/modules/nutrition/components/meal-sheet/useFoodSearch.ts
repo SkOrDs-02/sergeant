@@ -2,8 +2,9 @@
  * Last validated: 2026-06-15
  * Status: Active
  */
-import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
+import { useState, type Dispatch, type SetStateAction } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useDebounce } from "@shared/hooks";
 import { foodSearchApi } from "@shared/api";
 import type { FoodSearchProduct } from "@shared/api";
 import { nutritionKeys } from "@shared/lib/api/queryKeys";
@@ -38,18 +39,6 @@ async function fetchOpenFoodFacts(
     : [];
 }
 
-// Debounce user input separately from the queries themselves. We don't want
-// react-query to see every keystroke — otherwise it would spin up (and
-// cancel) one request per character.
-function useDebouncedValue<T>(value: T, delay: number): T {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const id = window.setTimeout(() => setDebounced(value), delay);
-    return () => window.clearTimeout(id);
-  }, [value, delay]);
-  return debounced;
-}
-
 export interface UseFoodSearchResult {
   foodHits: FoodProduct[];
   offHits: FoodSearchProduct[];
@@ -61,8 +50,11 @@ export interface UseFoodSearchResult {
 
 export function useFoodSearch(foodQuery: string): UseFoodSearchResult {
   const trimmed = foodQuery.trim();
-  const localQuery = useDebouncedValue(trimmed, LOCAL_DEBOUNCE_MS);
-  const offQuery = useDebouncedValue(trimmed, OFF_DEBOUNCE_MS);
+  // Debounce user input separately from the queries themselves. We don't want
+  // react-query to see every keystroke — otherwise it would spin up (and
+  // cancel) one request per character.
+  const localQuery = useDebounce(trimmed, LOCAL_DEBOUNCE_MS);
+  const offQuery = useDebounce(trimmed, OFF_DEBOUNCE_MS);
 
   const local = useQuery<FoodProduct[]>({
     queryKey: nutritionKeys.foodSearchLocal(localQuery),

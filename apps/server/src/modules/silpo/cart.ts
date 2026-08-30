@@ -304,3 +304,57 @@ export async function applyCart(
   if (!call.ok) throw silpoErrorToAppError(call.error);
   return call.data;
 }
+
+/**
+ * `POST /api/silpo/cart/clear` — спорожнити зовнішній кошик.
+ *
+ * Навіщо, якщо є апка Сільпо: `applyCart` пише REPLACE-ом рівно вибрані
+ * позиції, тож помилковий список лишається в кошику цілком. Один тап тут
+ * дешевший, ніж вручну знімати десяток позицій у чужому інтерфейсі.
+ *
+ * ponytail: тільки повне очищення, БЕЗ per-item `silpo_remove_cart_products`
+ * і `silpo_update_shopping_cart`. Поштучне редагування дублює апку Сільпо,
+ * куди людина йде одразу після `apply` (checkout усе одно там) — а наш
+ * степер живе на прев'ю ДО запису. Зʼявиться сценарій «зняти одну позицію,
+ * не виходячи з Sergeant» — саме тоді й додавай, tool у MCP є.
+ *
+ * Порожній кошик — не помилка: акаунт без жодного пошуку/замовлення не має
+ * `shoppingCartId` взагалі, і «очистити нічого» це успіх, той самий degrade,
+ * що в `getCart`.
+ */
+export async function clearCart(
+  userId: string,
+  deps: { query?: QueryFn } = {},
+): Promise<NormalizedCart> {
+  const empty: NormalizedCart = { items: [], totalKop: 0, cartUrl: null };
+
+  const call = await callWithFreshAccessToken(
+    userId,
+    async (accessToken) => {
+      const cartRef = await callMcpTool({
+        accessToken,
+        toolName: "silpo_get_my_shopping_cart",
+        args: {},
+        schema: CartRefSchema,
+      });
+      if (!cartRef.ok) return cartRef;
+      const shoppingCartId = cartRef.data.shoppingCartId;
+      if (!shoppingCartId) return { ok: true as const, data: empty };
+
+      const cleared = await callMcpTool({
+        accessToken,
+        toolName: "silpo_clear_shopping_cart",
+        args: { shoppingCartId },
+        schema: z.unknown(),
+      });
+      if (!cleared.ok) return cleared;
+
+      // Той самий post-write verify, що й в `applyCart`: контракт tool-а
+      // вимагає перечитати кошик після запису, і це ж дає стан для роута.
+      return fetchNormalizedCart(accessToken, shoppingCartId);
+    },
+    { query: deps.query ?? defaultQuery },
+  );
+  if (!call.ok) throw silpoErrorToAppError(call.error);
+  return call.data;
+}

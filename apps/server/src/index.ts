@@ -23,6 +23,7 @@ import { config } from "./config.js";
 import { pool } from "./db.js";
 import { drainReplicaPool } from "./dbReplica.js";
 import { env } from "./env.js";
+import { providerUpstreamReady } from "./http/requireAnthropicKey.js";
 import { markStartupComplete } from "./lib/appState.js";
 import {
   markSchemaDriftCheckStarted,
@@ -77,6 +78,7 @@ import {
 import { LogArchivePoller } from "./modules/logRetention/archivePoller.js";
 import { WebhookEventsRetentionPoller } from "./modules/webhooks/retentionPoller.js";
 import { PlataRecurringPoller } from "./modules/billing/plataScheduler.js";
+import { GdprCleanupPoller } from "./modules/gdpr/cleanupPoller.js";
 import { SilpoSyncPoller } from "./modules/silpo/syncScheduler.js";
 import { Sentry } from "./sentry.js";
 
@@ -128,11 +130,13 @@ void pingSecurityRoom().then(({ ok, reason }) => {
 // Стартує у тому ж процесі, що API (in-process worker). Це свідомий вибір:
 // при поточному обʼємі трафіку (десятки tx/min) виносити окремий worker-сервіс
 // — оверкіл, а multi-replica-safety гарантує `FOR UPDATE SKIP LOCKED` у
-// `runEnrichmentTick`. Якщо ANTHROPIC_API_KEY не заданий — worker не стартує
-// (інакше кожен tick впаде на upstream-call). Default state: off; вмикається
-// через Railway env var, щоб локальний dev випадково не палив квоту.
+// `runEnrichmentTick`. Гейт по ключу — того провайдера, яким worker реально
+// категоризує (`LLM_READONLY_PROVIDER`, дефолт `openrouter`): до 2026-08-29
+// тут стояв `ANTHROPIC_API_KEY`, і на gateway-only проді worker мовчки не
+// стартував, хоча OpenRouter-шлях був робочий. Default state: off; вмикається
+// env-флагом, щоб локальний dev випадково не палив квоту.
 let enrichmentWorker: StartedWorker | null = null;
-if (env.MONO_ENRICHMENT_WORKER_ENABLED && env.ANTHROPIC_API_KEY) {
+if (env.MONO_ENRICHMENT_WORKER_ENABLED && providerUpstreamReady("readonly")) {
   enrichmentWorker = startMonoEnrichmentWorker(pool, {
     batchSize: env.MONO_ENRICHMENT_BATCH_SIZE,
     intervalMs: env.MONO_ENRICHMENT_INTERVAL_MS,
@@ -141,7 +145,8 @@ if (env.MONO_ENRICHMENT_WORKER_ENABLED && env.ANTHROPIC_API_KEY) {
 } else if (env.MONO_ENRICHMENT_WORKER_ENABLED) {
   logger.warn({
     msg: "mono_enrichment_worker_disabled_no_api_key",
-    reason: "ANTHROPIC_API_KEY is not configured",
+    reason:
+      "no upstream key for LLM_READONLY_PROVIDER (OPENROUTER_API_KEY or ANTHROPIC_API_KEY)",
   });
 }
 
@@ -208,6 +213,17 @@ const webhookEventsRetentionPoller = new WebhookEventsRetentionPoller({
   intervalMs: env.WEBHOOK_EVENTS_RETENTION_POLL_INTERVAL_MS,
 });
 webhookEventsRetentionPoller.start();
+
+// GDPR cleanup queue drain — in-process годинний полер (Tier-A). Раніше
+// чергу мав смикати Railway/n8n cron через `/api/internal/gdpr/
+// cleanup-queue/process`, але Railway decommissioned (ADR-0074), а n8n у
+// проді на паузі — без цього полера черга не дренувалась ВЗАГАЛІ
+// (compliance-дефект, ADR-0016 § ADR-6.3). 0 → off. Idempotent start/stop.
+const gdprCleanupPoller = new GdprCleanupPoller({
+  pool,
+  intervalMs: env.GDPR_CLEANUP_POLL_INTERVAL_MS,
+});
+gdprCleanupPoller.start();
 
 // Log-retention archive cron — opt-in (`LOG_ARCHIVE_ENABLED=true`).
 // Streams `openclaw_invocations` / `tg_alert_acks` / `n8n_webhook_events`
@@ -415,6 +431,15 @@ async function shutdown(reason: string, exitCode: number): Promise<void> {
     } catch (err) {
       logger.warn({
         msg: "webhook_events_retention_poller_stop_error",
+        err: serializeError(err, { includeStack: false }),
+      });
+    }
+
+    try {
+      await gdprCleanupPoller.stop();
+    } catch (err) {
+      logger.warn({
+        msg: "gdpr_cleanup_poller_stop_error",
         err: serializeError(err, { includeStack: false }),
       });
     }

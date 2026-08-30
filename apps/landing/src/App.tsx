@@ -1,19 +1,43 @@
-import { useEffect } from "react";
+import { useEffect, type ComponentType } from "react";
 import HomePage from "./pages/HomePage";
+import BetaPage from "./pages/BetaPage";
+import AboutPage from "./pages/AboutPage";
+import DataPage from "./pages/DataPage";
+import GuidesPage from "./pages/GuidesPage";
+import GuideMonobankPage from "./pages/GuideMonobankPage";
+import GuideKbzhvPage from "./pages/GuideKbzhvPage";
+import GuideChekyPage from "./pages/GuideChekyPage";
+import GuideFotoKaloriiPage from "./pages/GuideFotoKaloriiPage";
+import GuideBankBezpekaPage from "./pages/GuideBankBezpekaPage";
+import PrivacyPage from "./pages/PrivacyPage";
+import TermsPage from "./pages/TermsPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import { ANALYTICS_EVENTS, LANDING_LOCALE, track } from "./lib/analytics";
 
 /**
- * Шляхи з контракту `LANDING_VIEWED`; усе інше зводиться до `/404`.
- *
- * Лендінг однасторінковий: конверсія веде в Telegram, тож сторінки подяки
- * більше немає — підтвердження людина бачить від бота, а не від сайту.
+ * Маршрути сайту. Лендінг лишається MPA-простим: без client-side router,
+ * кожен перехід – повне завантаження, App обирає сторінку за pathname.
+ * Новий маршрут = новий запис тут (він же потрапляє в `path` події
+ * `LANDING_VIEWED`; усе невідоме зводиться до `/404`).
  */
-const TRACKED_PATHS = new Set(["/"]);
+export const ROUTES: Record<string, ComponentType> = {
+  "/": HomePage,
+  "/beta": BetaPage,
+  "/about": AboutPage,
+  "/data": DataPage,
+  "/guides": GuidesPage,
+  "/guides/monobank": GuideMonobankPage,
+  "/guides/kbzhv": GuideKbzhvPage,
+  "/guides/cheky": GuideChekyPage,
+  "/guides/foto-kalorii": GuideFotoKaloriiPage,
+  "/guides/bank-bezpeka": GuideBankBezpekaPage,
+  "/privacy": PrivacyPage,
+  "/terms": TermsPage,
+};
 
 /**
  * Зовнішній referrer першого входу. Внутрішні переходи віддають наш власний
- * домен — це шум, який зіпсував би атрибуцію каналів, тож він відкидається.
+ * домен – це шум, який зіпсував би атрибуцію каналів, тож він відкидається.
  */
 function externalReferrer(): string | undefined {
   const ref = document.referrer;
@@ -30,7 +54,7 @@ function usePageview(pathname: string) {
   useEffect(() => {
     const ref = externalReferrer();
     track(ANALYTICS_EVENTS.LANDING_VIEWED, {
-      path: TRACKED_PATHS.has(pathname) ? pathname : "/404",
+      path: pathname in ROUTES ? pathname : "/404",
       locale: LANDING_LOCALE,
       ...(ref ? { referrer: ref } : {}),
     });
@@ -38,12 +62,23 @@ function usePageview(pathname: string) {
 }
 
 export default function App() {
-  const pathname = window.location.pathname;
+  const pathname = window.location.pathname.replace(/\/+$/, "") || "/";
   usePageview(pathname);
 
   useEffect(() => {
-    window.scrollTo(0, 0);
+    // Якірні переходи (/#faq) мають довезти до секції. Нативний скрол по хешу
+    // відбувається ДО маунта React-контенту і промахується, тож докручуємо
+    // самі після першого кадру.
+    const hash = window.location.hash.slice(1);
+    if (!hash) {
+      window.scrollTo(0, 0);
+      return;
+    }
+    requestAnimationFrame(() => {
+      document.getElementById(hash)?.scrollIntoView();
+    });
   }, []);
 
-  return pathname === "/" ? <HomePage /> : <NotFoundPage />;
+  const Page = ROUTES[pathname] ?? NotFoundPage;
+  return <Page />;
 }

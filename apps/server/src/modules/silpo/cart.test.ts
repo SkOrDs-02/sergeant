@@ -30,6 +30,7 @@ vi.mock("../../obs/logger.js", () => ({
 import {
   applyCart,
   buildPreviewResults,
+  clearCart,
   getCart,
   previewCart,
 } from "./cart.js";
@@ -360,6 +361,55 @@ describe("getCart", () => {
     });
 
     await expect(getCart("user-1")).rejects.toMatchObject({
+      status: 409,
+      code: "SILPO_REAUTH_REQUIRED",
+    });
+  });
+});
+
+// ─────────────────────────────── clearCart ───────────────────────────────────
+
+describe("clearCart", () => {
+  it("clears the cart and returns the post-write state", async () => {
+    passThroughAccessToken();
+    mocks.callMcpTool
+      .mockResolvedValueOnce({ ok: true, data: { shoppingCartId: "cart-1" } })
+      .mockResolvedValueOnce({ ok: true, data: { success: true } })
+      .mockResolvedValueOnce({
+        ok: true,
+        data: {
+          cart: { shipments: [{ products: [] }], calculation: { total: 0 } },
+        },
+      });
+
+    const cart = await clearCart("user-1");
+    expect(cart).toEqual({ items: [], totalKop: 0, cartUrl: null });
+    expect(mocks.callMcpTool).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        toolName: "silpo_clear_shopping_cart",
+        args: { shoppingCartId: "cart-1" },
+      }),
+    );
+  });
+
+  it("is a no-op success when the account has no cart at all", async () => {
+    passThroughAccessToken();
+    mocks.callMcpTool.mockResolvedValueOnce({ ok: true, data: {} });
+
+    const cart = await clearCart("user-1");
+    expect(cart).toEqual({ items: [], totalKop: 0, cartUrl: null });
+    // Нічого не чистимо — другого виклику немає.
+    expect(mocks.callMcpTool).toHaveBeenCalledTimes(1);
+  });
+
+  it("maps a reauth_required token error to a 409 AppError", async () => {
+    mocks.callWithFreshAccessToken.mockResolvedValue({
+      ok: false,
+      error: { kind: "reauth_required", message: "reauth" },
+    });
+
+    await expect(clearCart("user-1")).rejects.toMatchObject({
       status: 409,
       code: "SILPO_REAUTH_REQUIRED",
     });

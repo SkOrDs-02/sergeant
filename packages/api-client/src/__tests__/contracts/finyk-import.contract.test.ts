@@ -589,6 +589,15 @@ describe(
             created: 2,
             linked: 0,
             skipped: { monoMatched: 1, duplicate: 0 },
+            // Per-row результат 1:1 з поданими рядками (фікс 2026-08-28):
+            // без нього клієнт не міг зіставити id з рядками, щойно в
+            // батчі траплявся бодай один пропущений — і створені рядки
+            // лишались невидимими локально.
+            rows: [
+              { id: "imp1:aaa", status: "mono_matched" },
+              { id: "imp1:bbb", status: "created" },
+              { id: "imp1:ccc", status: "created" },
+            ],
           });
         })
         .executeTest(async (mockServer) => {
@@ -626,6 +635,14 @@ describe(
           expect(out.created).toBe(2);
           expect(out.linked).toBe(0);
           expect(out.skipped).toEqual({ monoMatched: 1, duplicate: 0 });
+          // Позиційне зіставлення — контракт поля: i-й результат про
+          // i-й поданий рядок.
+          expect(out.rows).toHaveLength(3);
+          expect(out.rows.map((r) => r.status)).toEqual([
+            "mono_matched",
+            "created",
+            "created",
+          ]);
         });
     });
   },
@@ -725,6 +742,62 @@ describe(
           expect(out.batch.status).toBe("undone");
           expect(out.tombstoned).toBe(2);
           expect(typeof out.tombstoned).toBe("number");
+        });
+    });
+  },
+);
+
+describe(
+  "contract @ GET /api/v1/finyk/import/recent",
+  CONTRACT_SUITE_OPTIONS,
+  () => {
+    let pact: PactV4;
+    beforeAll(() => {
+      pact = createPact();
+    });
+    afterAll(() => {});
+
+    it("returns last-import dates per document type, newest first", async () => {
+      await pact
+        .addInteraction()
+        .given(
+          "authenticated user-pact-001 has completed statement and screenshot imports",
+        )
+        .uponReceiving("a GET /api/v1/finyk/import/recent request")
+        .withRequest("GET", "/api/v1/finyk/import/recent", (req) => {
+          req.headers({ accept: "application/json" });
+        })
+        .willRespondWith(200, (res) => {
+          res.headers({ "content-type": "application/json" });
+          res.jsonBody({
+            sources: [
+              {
+                source: "bank_screenshot",
+                recentAt: ["2026-01-10T09:00:00.000Z"],
+              },
+              {
+                source: "bank_statement",
+                recentAt: [
+                  "2026-01-16T10:00:00.000Z",
+                  "2025-12-17T10:00:00.000Z",
+                ],
+              },
+            ],
+          });
+        })
+        .executeTest(async (mockServer) => {
+          const http = createHttpClient({ baseUrl: mockServer.url });
+          const imports = createFinykImportEndpoints(http);
+          const out = await imports.getRecentImports();
+
+          expect(out.sources).toHaveLength(2);
+          const statement = out.sources.find(
+            (s) => s.source === "bank_statement",
+          );
+          // Newest first — the reminder reads `recentAt[0]` as "last import"
+          // and derives the rhythm from the gaps behind it.
+          expect(statement?.recentAt[0]).toBe("2026-01-16T10:00:00.000Z");
+          expect(statement?.recentAt).toHaveLength(2);
         });
     });
   },

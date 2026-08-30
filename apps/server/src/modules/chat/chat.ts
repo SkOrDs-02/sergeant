@@ -41,6 +41,8 @@ import { getCounterpartyNames } from "../../lib/counterpartyNames.js";
 import { maskMachineText, maskUserText } from "../../lib/llmRedaction.js";
 import { buildRagContext } from "../ai-memory/ragContext.js";
 import { getCoachCorrelationsBlock } from "./coach.js";
+import { getUserPreferences } from "../me/dataRights.js";
+import { pool } from "../../db.js";
 
 type WithAnthropicKey = Request & { anthropicKey?: string };
 
@@ -517,6 +519,20 @@ export default async function handler(
     return;
   }
 
+  // ПІСЛЯ кеш-виходу навмисно: `activeModules` потрібен лише для `tools:`
+  // у виклику нижче, а попадання в response-cache має пропускати всю
+  // роботу — інакше кожна закешована відповідь усе одно платила б SELECT-ом
+  // у `user_preferences`.
+  //
+  // Best-effort: будь-яка помилка читання — повний реєстр, бо втратити
+  // потрібний tool дорожче, ніж заплатити за зайвий. Анонім теж отримує
+  // повний.
+  const activeModules = sessionUser?.id
+    ? await getUserPreferences(pool, sessionUser.id)
+        .then((p) => p.activeModules)
+        .catch(() => null)
+    : null;
+
   let response, data;
   try {
     ({ response, data } = await callAnthropicWithContinuation(
@@ -535,7 +551,7 @@ export default async function handler(
         model: env.CHAT_MODEL_FIRST_TURN,
         max_tokens: 1500,
         system: firstTurnSystem,
-        tools: buildToolsPayload(env.CHAT_MODEL_FIRST_TURN),
+        tools: buildToolsPayload(env.CHAT_MODEL_FIRST_TURN, activeModules),
         // 3-й cache breakpoint: кешуємо префікс історії діалогу, щоб наступний
         // тур читав попередні повідомлення з кешу замість повного re-білінгу.
         messages: applyMessagesCacheBreakpoint(cleaned),

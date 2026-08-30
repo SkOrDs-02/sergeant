@@ -592,6 +592,10 @@ export function AddMealSheet({
                   onQuickAddMeal={onQuickAddMeal}
                   onQuickAdded={onClose}
                   pantryItems={pantryItems}
+                  // Редагування наявного прийому їжі й вхід одразу на
+                  // «fill» (PWA-шорткат, фото) чека не потребують — і не
+                  // мають будити мережу заради рядка, який там не потрібен.
+                  receiptRowEnabled={step === "source"}
                   fromPantryItem={fromPantryItem}
                   setFromPantryItem={setFromPantryItem}
                   picker={{

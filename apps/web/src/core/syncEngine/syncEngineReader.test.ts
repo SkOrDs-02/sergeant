@@ -45,6 +45,23 @@ beforeEach(() => {
   refreshCachesAfterPullMock.mockClear();
 });
 
+/**
+ * `navigator.onLine` у цьому jsdom не є власною властивістю об'єкта, тож
+ * `vi.spyOn(navigator, "onLine", "get")` кидає «property is not defined».
+ * Підміняємо напряму і повертаємо відновлювач.
+ */
+function stubOnLine(value: boolean): () => void {
+  const original = Object.getOwnPropertyDescriptor(navigator, "onLine");
+  Object.defineProperty(navigator, "onLine", {
+    configurable: true,
+    get: () => value,
+  });
+  return () => {
+    if (original) Object.defineProperty(navigator, "onLine", original);
+    else delete (navigator as unknown as Record<string, unknown>)["onLine"];
+  };
+}
+
 describe("createSyncEngineReaderRuntime", () => {
   it("pulls pages, applies ops, and advances the cursor", async () => {
     applyPullOpMock.mockClear();
@@ -214,9 +231,53 @@ describe("createSyncEngineReaderRuntime", () => {
     );
 
     await expect(runtime.pullOnce()).rejects.toThrow("network down");
+    // Контекст події збагачено (`tickErrorReport.ts`): без `transport` /
+    // `online` / `errorName` у Sentry не відрізнити телефон у метро від
+    // стейл-асета після деплою — обидва в Safari звуться `Load failed`.
     expect(captureException).toHaveBeenCalledWith(expect.any(Error), {
       scope: "sync-v2-pull-tick",
+      transport: false,
+      online: expect.anything(),
+      errorName: "Error",
     });
+  });
+
+  // Регресія SERGEANT-API-C / SERGEANT-WEB-G: офлайн-first застосунок не
+  // має репортити зірваний мережею тік як помилку. Кидати — і далі кидає:
+  // глушиться лише звіт у Sentry, потік керування не змінюється.
+  it("не репортить транспортний збій, коли браузер офлайн", async () => {
+    const captureException = vi.fn();
+    const pull = vi.fn().mockRejectedValue(new TypeError("Load failed"));
+    const restoreOnLine = stubOnLine(false);
+
+    const runtime = createSyncEngineReaderRuntime(
+      makeDeps({ pull, captureException }),
+    );
+
+    await expect(runtime.pullOnce()).rejects.toThrow("Load failed");
+    expect(captureException).not.toHaveBeenCalled();
+
+    restoreOnLine();
+  });
+
+  it("репортить той самий збій, поки браузер вважає, що мережа є", async () => {
+    const captureException = vi.fn();
+    const pull = vi.fn().mockRejectedValue(new TypeError("Load failed"));
+    const restoreOnLine = stubOnLine(true);
+
+    const runtime = createSyncEngineReaderRuntime(
+      makeDeps({ pull, captureException }),
+    );
+
+    await expect(runtime.pullOnce()).rejects.toThrow("Load failed");
+    expect(captureException).toHaveBeenCalledWith(expect.any(TypeError), {
+      scope: "sync-v2-pull-tick",
+      transport: true,
+      online: true,
+      errorName: "TypeError",
+    });
+
+    restoreOnLine();
   });
 
   it("start/stop wires interval, visibility listener, and is idempotent", async () => {

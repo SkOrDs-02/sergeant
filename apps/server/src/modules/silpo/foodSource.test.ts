@@ -295,6 +295,59 @@ describe("toSearchProduct", () => {
       }),
     ).toBeNull();
   });
+
+  it("drops an attribute-complete but value-empty card (Silpo ships these — 0 kcal would lie in the diary)", () => {
+    // Живий каталог 2026-08-27: «Кускус з курячими котлетками та лінивими
+    // огірками» — 0/2 ккал, білки 0.1, решта 0. `hasMacro` тут true.
+    expect(
+      toSearchProduct({
+        name: "Кускус з курячими котлетками та лінивими огірками",
+        brand: null,
+        barcode: null,
+        kcal_100g: 0,
+        protein_100g: 0.1,
+        fat_100g: 0,
+        carbs_100g: 0,
+        servingAmount: 330,
+        servingGrams: 330,
+        servingUnit: "г",
+        hasMacro: true,
+      }),
+    ).toBeNull();
+  });
+
+  it("falls back to Atwater when the declared energy value is a bogus zero", () => {
+    // `0/0` ккал при справжніх БЖВ — той самий клас битих карток. Доти
+    // `kcal ?? atwater` лишав нуль (0 не nullish), і гейт викидав картку.
+    const parsed = normalizeRawProduct({
+      name: "Салат із нульовою енергетичною цінністю",
+      displayRatio: "200г",
+      attributes: {
+        "Енергетична цінність (кКал/кДЖ)": "0/0",
+        "Білки (г)": 20,
+        "Жири (г)": 10,
+        "Вуглеводи (г)": 5,
+      },
+    });
+    // 4*20 + 9*10 + 4*5 = 190
+    expect(parsed?.kcal_100g).toBe(190);
+    expect(toSearchProduct(parsed!)?.per100.kcal).toBe(190);
+  });
+
+  it("keeps a card whose kcal came from the Atwater fallback (macros present, energy attribute missing)", () => {
+    const parsed = normalizeRawProduct({
+      name: "Салат без енергетичної цінності",
+      displayRatio: "200г",
+      attributes: {
+        "Білки (г)": 3,
+        "Жири (г)": 12,
+        "Вуглеводи (г)": 5,
+      },
+    });
+    // 4*3 + 9*12 + 4*5 = 140
+    expect(parsed?.kcal_100g).toBe(140);
+    expect(toSearchProduct(parsed!)?.per100.kcal).toBe(140);
+  });
 });
 
 describe("toBarcodeProduct", () => {

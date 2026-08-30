@@ -1,6 +1,6 @@
 # 03. Сервіси та тулстек
 
-> **Last touched:** 2026-08-24 by @claude. **Next review:** 2026-12-01.
+> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-06.
 > **Status:** Active
 
 > Повний аудит зовнішніх сервісів, інфраструктури, dev-інструментів: що є, що додати, що змінити.
@@ -216,15 +216,15 @@
 
 ### 2.12 Cron / Scheduled jobs / workflow automation
 
-| Сервіс           | Сайт                                                                                 | Free tier                        | Paid tier          | Date checked | Why this / Why not                                                                                                                                                                                          | Status  |
-| ---------------- | ------------------------------------------------------------------------------------ | -------------------------------- | ------------------ | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| **BullMQ**       | [docs.bullmq.io](https://docs.bullmq.io/)                                            | Open-source, $0 (потребує Redis) | N/A                | 2026-05      | Інтегровано (`bullmq ^5.0`). Черги: `auth-mail`, `ftux-drip`, `ai-memory-ingest`, `mono-enrichment`. Worker — у тому ж процесі сервера, fallback на in-process direct dispatch якщо `REDIS_URL` не заданий. | in use  |
-| **n8n**          | [n8n.io](https://n8n.io)                                                             | Self-hosted, $0                  | Cloud: from $20/mo | 2026-05      | 26 workflow-ів у `ops/n8n-workflows/` (billing, failed-payment, sentry routing, backup verification, daily metrics, growth funnel snapshot, etc.). Source-of-truth — git (ADR-0026). Секрет: `n8n_API`.     | in use  |
-| **Railway Cron** | [docs.railway.app/reference/cron-jobs](https://docs.railway.app/reference/cron-jobs) | Включено в Hobby                 | Включено в Pro     | 2026-07      | Railway виведено (ADR-0074) — не застосовно. Cron-задачі покриваються BullMQ repeatable jobs / n8n schedule trigger.                                                                                        | retired |
+| Сервіс           | Сайт                                                                                 | Free tier                        | Paid tier          | Date checked | Why this / Why not                                                                                                                                                                                                                                                                               | Status  |
+| ---------------- | ------------------------------------------------------------------------------------ | -------------------------------- | ------------------ | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------- |
+| **BullMQ**       | [docs.bullmq.io](https://docs.bullmq.io/)                                            | Open-source, $0 (потребує Redis) | N/A                | 2026-05      | Інтегровано (`bullmq ^5.0`). Черги: `auth-mail`, `ftux-drip`, `ai-memory-ingest`. Worker — у тому ж процесі сервера, fallback на in-process direct dispatch якщо `REDIS_URL` не заданий. Mono-enrichment — НЕ BullMQ, а Postgres-outbox (`mono_ai_enrichment_queue` + polling-worker, ADR-0089). | in use  |
+| **n8n**          | [n8n.io](https://n8n.io)                                                             | Self-hosted, $0                  | Cloud: from $20/mo | 2026-05      | 26 workflow-ів у `ops/n8n-workflows/` (billing, failed-payment, sentry routing, backup verification, daily metrics, growth funnel snapshot, etc.). Source-of-truth — git (ADR-0026). Секрет: `n8n_API`.                                                                                          | in use  |
+| **Railway Cron** | [docs.railway.app/reference/cron-jobs](https://docs.railway.app/reference/cron-jobs) | Включено в Hobby                 | Включено в Pro     | 2026-07      | Railway виведено (ADR-0074) — не застосовно. Cron-задачі покриваються BullMQ repeatable jobs / n8n schedule trigger.                                                                                                                                                                             | retired |
 
 > **Розподіл відповідальності:**
 >
-> - **BullMQ** — internal background jobs всередині сервера (auth email, FTUX drip, AI-memory embedding ingest, Mono-AI enrichment).
+> - **BullMQ** — internal background jobs всередині сервера (auth email, FTUX drip, AI-memory embedding ingest). Mono-AI enrichment живе на Postgres-outbox (enqueue атомарний із webhook-транзакцією), не в BullMQ — критерій вибору субстрату: ADR-0089.
 > - **n8n** — cross-system workflow automation (Stripe webhook → DB + Telegram, Sentry alerts → Telegram, daily/weekly digests, GitHub PR stale alerts, security audit).
 >
 > Деталі автоматизації — див. [05-operations-and-automation.md](./05-operations-and-automation.md#зона-6--automation-мета-зона) і [`ops/n8n-workflows/manifest.json`](../../../../ops/n8n-workflows/manifest.json).

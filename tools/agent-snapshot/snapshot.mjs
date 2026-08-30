@@ -9,8 +9,8 @@
 //
 // Spec: docs/04-governance/adr/0071-dynamic-agent-snapshot.md
 //
-// Output: writes to .kilocode/snapshot.md by default (override via argv[2]).
-// Cache:  .kilocode/snapshot.cache.json, 15 min TTL, invalidated on `git pull`.
+// Output: writes to .agents/snapshot.md by default (override via argv[2]).
+// Cache:  .agents/snapshot.cache.json, 15 min TTL, invalidated on `git pull`.
 // Graceful: any gh / network / fs failure becomes `[unavailable: <reason>]`.
 
 import { execFileSync } from "node:child_process";
@@ -24,7 +24,7 @@ import {
 import { dirname, resolve } from "node:path";
 
 const REPO_ROOT = process.cwd();
-const CACHE_DIR = resolve(REPO_ROOT, ".kilocode");
+const CACHE_DIR = resolve(REPO_ROOT, ".agents");
 const CACHE_PATH = resolve(CACHE_DIR, "snapshot.cache.json");
 const DEFAULT_OUT = resolve(CACHE_DIR, "snapshot.md");
 const TTL_MS = 15 * 60 * 1000;

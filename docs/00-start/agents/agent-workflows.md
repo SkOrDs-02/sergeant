@@ -1,9 +1,21 @@
 # Sergeant Agent Workflows
 
-> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-06.
+> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-11-29.
 > **Status:** Active
 
 Стислі decision trees для найважливіших агентних сценаріїв у Sergeant.
+
+## 0. Двовимірний роутинг: модуль × поверхня
+
+Роутинг має дві осі. **Модуль** дає продуктовий контекст (канон, журнал рішень, мапа файлів, модульні інваріанти) — скіли `sergeant-module-{finyk,nutrition,fizruk,routine,ai,sync,billing,integrations,push}`. **Поверхня** дає технічні правила — surface-скіли (`sergeant-web-ui`, `sergeant-server-api`, …). Задача в межах модуля вантажить **обидва**: спершу module-owner, потім surface (таблиці — `AGENTS.md` § Routing і `sergeant-start-here` § «Роутся одразу»; per-тека вказівники — nested `CLAUDE.md` у теках модулів).
+
+**Межа owner-агент ↔ deliver-squad** (рішення 11 спеки [agent-module-owners](../../90-work/planning/specs/agent-module-owners.md)):
+
+- **Module-owner агент** (`finyk-owner`, `nutrition-owner`, `fizruk-owner`, `routine-owner`, `ai-owner`) — делегований виконавець **всередині одного модуля** на всіх його поверхнях. Диспатчиться відповідним `sergeant-module-*` скілом.
+- **Deliver-squad** (`migration-agent` → `server-agent` → `api-client-agent` → `web-agent`/`mobile-agent`) — веде **крос-поверхневу фічу по стадіях** із контрактними залежностями (§ 8 нижче).
+- Правило вибору: одна тека модуля, хай і на 2-3 поверхнях цього модуля → owner; нова контрактна залежність server↔client через `packages/api-client` → deliver-squad.
+
+Службові агенти шару: `canon-drift-auditor` (read-only звіт канон↔код по модулю), `product-historian` (read-only «чому так вирішили» з журналів/ADR), `spec-executor` (виконує спеки з `docs/90-work/planning/specs/` у worktree; диспатчиться з `sergeant-feature-delivery`). Топологія — [`.agents/agent-graph.json`](../../../.agents/agent-graph.json), гейт `pnpm lint:agent-graph`.
 
 ## 1. Feature Delivery
 
@@ -52,7 +64,7 @@
 
 ## 6. OpenClaw Gateway Change _(historical — decommissioned ADR-0075)_
 
-OpenClaw runtime прибрано з репо (2026-07-20). Якщо задача стосується **HubChat** (web-асистент) — див. § HubChat у `agent-skills-catalog.md` → `sergeant-hubchat`. Якщо задача про **Hard Rule #20 PAT guard** — `sergeant-security-audit`.
+OpenClaw runtime прибрано з репо (2026-07-20). Якщо задача стосується **HubChat** (web-асистент) — див. § HubChat у `agent-skills-catalog.md` → `sergeant-module-ai`. Якщо задача про **Hard Rule #20 PAT guard** — `sergeant-security-audit`.
 
 ## 7. Squad Review (PR touches 3+ governed surfaces)
 

@@ -1,6 +1,6 @@
 # Playbook: Зміна або додавання n8n-воркфлоу
 
-> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-13.
+> **Last touched:** 2026-08-28 by @github-actions[bot]. **Next review:** 2026-12-11.
 > **Status:** Active
 
 **Trigger:** "Додай новий n8n workflow" / "Зміни логіку workflow X" / зміна в `ops/n8n-workflows/` або `manifest.json`.
@@ -13,7 +13,7 @@
 ## Required context
 
 - Почни з `sergeant-start-here`, потім відкрий `sergeant-deploy-and-observability`.
-- Якщо воркфлоу викликає AI / tooling behavior або зачіпає HubChat-поверхню — звір пов'язаний специалізований skill (`sergeant-hubchat`).
+- Якщо воркфлоу викликає AI / tooling behavior або зачіпає HubChat-поверхню — звір пов'язаний специалізований skill (`sergeant-module-ai`).
 - Памʼятай: Git є source of truth для n8n-воркфлоу-артефактів. Якщо хтось редагував воркфлоу через UI — синхронізуй назад у репо до того, як накладати свої зміни.
 
 ## Кроки
@@ -69,10 +69,13 @@
 
 ## Recent PRs
 
-| PR                                                     | Title                                                                                                                   | Merged     |
-| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- | ---------- |
-| [#508](https://github.com/Skords-01/Sergeant/pull/508) | fix(docs): reconcile canonical docs with current repo                                                                   | 2026-07-29 |
-| [#334](https://github.com/Skords-01/Sergeant/pull/334) | docs(root): reconcile docs with code after 2026-07-20 audit (Railway->Coolify, CI gates, dual-write, domain invariants) | 2026-07-21 |
+| PR                                                     | Title                                                                | Merged     |
+| ------------------------------------------------------ | -------------------------------------------------------------------- | ---------- |
+| [#895](https://github.com/Skords-01/Sergeant/pull/895) | fix(agents): полірування агентного шару після розкатки module-owners | 2026-08-28 |
+| [#892](https://github.com/Skords-01/Sergeant/pull/892) | feat(agents): module-owner і службові Claude-агенти                  | 2026-08-27 |
+| [#891](https://github.com/Skords-01/Sergeant/pull/891) | feat(agents): скіли-дисципліни                                       | 2026-08-27 |
+| [#890](https://github.com/Skords-01/Sergeant/pull/890) | feat(agents): інфра module-скіли і nested-роутинг                    | 2026-08-27 |
+| [#889](https://github.com/Skords-01/Sergeant/pull/889) | feat(agents): продуктові module-owner скіли                          | 2026-08-27 |
 
-_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 2 most recent PRs touching this file._
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 5 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

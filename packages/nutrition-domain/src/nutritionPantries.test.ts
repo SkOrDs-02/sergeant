@@ -52,9 +52,15 @@ describe("normalizePantries", () => {
     expect(res).toHaveLength(1);
     expect(res[0]!.name).toBe("Кухня");
     expect(res[0]!.items).toEqual([
-      { name: "Хліб", qty: 2, unit: "шт", notes: "цільнозерновий" },
-      { name: "Молоко", qty: null, unit: "л", notes: null },
-      { name: "Сир", qty: null, unit: null, notes: null },
+      {
+        name: "Хліб",
+        qty: 2,
+        unit: "шт",
+        notes: "цільнозерновий",
+        sources: null,
+      },
+      { name: "Молоко", qty: null, unit: "л", notes: null, sources: null },
+      { name: "Сир", qty: null, unit: null, notes: null, sources: null },
     ]);
   });
 

@@ -1,6 +1,6 @@
 # Playbook: Prettier Pass on `docs/`
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-15.
+> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-26.
 > **Status:** Active
 
 **Trigger:** `pnpm format:check` фейлиться на `docs/**/*.md` / треба прогнати prettier по одному / кільком doc-файлах (як [PR #447](https://github.com/Skords-01/Sergeant/pull/447)).
@@ -58,7 +58,7 @@ git diff '<target-glob>' | head -80
 
 ### 5. Створити PR
 
-- Branch: `devin/<unix-ts>-chore-docs-prettier`.
+- Branch: `<harness>/chore-docs-prettier`.
 - Commit: `chore(docs): apply prettier to <path-or-glob>` (scope `docs`, AGENTS.md rule #5; саме така форма використана в [PR #447](https://github.com/Skords-01/Sergeant/pull/447)).
 - PR description (`.github/PULL_REQUEST_TEMPLATE.md`):
   - Target glob / path.
