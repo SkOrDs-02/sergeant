@@ -6,6 +6,7 @@ import {
   manualExpenseToTransaction,
   resolveManualExpenseKind,
   dedupeAndSortTransactions,
+  withManualExpenses,
 } from "./transactions.js";
 import { INTERNAL_TRANSFER_ID } from "../constants.js";
 
@@ -279,5 +280,36 @@ describe("resolveManualExpenseKind", () => {
     expect(resolveManualExpenseKind({})).toBe("expense");
     expect(resolveManualExpenseKind(null)).toBe("expense");
     expect(resolveManualExpenseKind(undefined)).toBe("expense");
+  });
+});
+
+describe("withManualExpenses", () => {
+  const bank = [
+    { id: "bank-1", time: 1_750_000_000, amount: -12345, description: "АТБ" },
+  ] as never[];
+
+  it("повертає банківський потік без змін, коли ручних витрат немає", () => {
+    expect(withManualExpenses(bank, []).map((t) => t.id)).toEqual(["bank-1"]);
+    expect(withManualExpenses(bank, null).map((t) => t.id)).toEqual(["bank-1"]);
+  });
+
+  it("домержує ручні витрати як транзакції", () => {
+    const merged = withManualExpenses(bank, [
+      { id: "cash-1", amount: 42, kind: "expense", category: "food" },
+    ] as never[]);
+    expect(merged.map((t) => t.id)).toEqual(["bank-1", "manual_cash-1"]);
+    // Витрата лишається відʼємною, як і в решті потоку.
+    expect(merged[1]?.amount).toBe(-4200);
+  });
+
+  it("не звужує вікно — минулі місяці лишаються у списку", () => {
+    const merged = withManualExpenses([], [
+      { id: "old", amount: 10, kind: "expense", date: "2020-01-01" },
+    ] as never[]);
+    expect(merged).toHaveLength(1);
+  });
+
+  it("витримує null замість потоку транзакцій", () => {
+    expect(withManualExpenses(null, null)).toEqual([]);
   });
 });
