@@ -1,6 +1,6 @@
 # Contributing to Sergeant
 
-> **Last touched:** 2026-08-06 by @claude. **Next review:** 2026-11-30.
+> **Last touched:** 2026-08-30 by @claude. **Next review:** 2026-12-19.
 > **Status:** Active
 
 `CONTRIBUTING.md` - канонічний manual для людей. Repo policy і hard rules описані в [AGENTS.md](./AGENTS.md), а repeatable execution recipes - у [docs/00-start/playbooks/README.md](./docs/00-start/playbooks/README.md).
@@ -164,14 +164,21 @@ Husky `pre-commit` запускає два кроки послідовно:
 1. `lint-staged` з пайплайнами для staged-файлів (таблиця нижче).
 2. `node scripts/pre-commit-gitleaks.mjs` — secret-scan на staged-changes ([I5](docs/04-governance/security/hardening/archive/I5-pre-commit-secret-detection.md); деталі та інсталяція — у §«Локальний secret-scan (gitleaks)» вище).
 
-| Pattern                      | Команди                                                                  |
-| ---------------------------- | ------------------------------------------------------------------------ |
-| `*.{js,jsx,ts,tsx,mjs,cjs}`  | `eslint --fix --max-warnings=0 --no-warn-ignored` → `prettier --write`   |
-| `*.{ts,tsx}`                 | `node scripts/staged-typecheck.mjs` (швидкий `tsc --noEmit` per-project) |
-| `*.md`                       | `node scripts/docs/bump-last-validated.mjs` → `prettier --write`         |
-| `*.{json,css,html,yml,yaml}` | `prettier --write`                                                       |
+| Pattern                                         | Команди                                                                                                                   |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `*.{js,jsx,ts,tsx,mjs,cjs}`                     | `eslint --fix --max-warnings=0 --no-warn-ignored` → `prettier --write`                                                    |
+| `*.{ts,tsx}`                                    | `node scripts/staged-typecheck.mjs` (швидкий `tsc --noEmit` per-project)                                                  |
+| `*.md`                                          | `node scripts/docs/bump-last-validated.mjs` → `prettier --write` → `node scripts/pre-commit-derived-artifacts.mjs --docs` |
+| `packages/shared/src/{openapi,schemas}/**/*.ts` | `node scripts/pre-commit-derived-artifacts.mjs --openapi`                                                                 |
+| `*.{json,css,html,yml,yaml}`                    | `prettier --write`                                                                                                        |
 
 Скрипт `scripts/staged-typecheck.mjs` групує staged TS/TSX за найближчим `tsconfig.json` (apps/web, apps/server, packages/\*…) і викликає `tsc-files --noEmit --skipLibCheck` під cwd кожного sub-project — це уникнення повного `pnpm typecheck` (16 турбо-task-ів) на кожен коміт. На гарячому кеші проходить за 3–8 сек на 10–20 staged файлів. На холодному (після `git pull` зі змінами в `node_modules` або `tsconfig`) — 15–30 сек. Якщо typecheck падає на staged-файлі, виправ помилку — `--no-verify` залишається забороненим.
+
+Останній крок у `*.md`-пайплайні — [`scripts/pre-commit-derived-artifacts.mjs`](./scripts/pre-commit-derived-artifacts.mjs), гейт **похідних артефактів**: файлів, які генеруються з інших файлів репо і комітяться поруч (`docs/open-work.md`, `docs/today.md`, `docs/STATUS.md`, trust-badge у `docs/README.md`, `freshness-dashboard.html`, а для `packages/shared/src/{openapi,schemas}/**` — `docs/02-engineering/api/openapi.json`). Він нічого не переписує: запускає ті самі `--check`-и, що стоять PR-гейтами, паралельно (~0.7 с на всі шість) і на розбіжності друкує рівно ту команду регенерації, якої бракує. Автофіксу тут немає свідомо — на відміну від `bump-last-validated.mjs`, який дописує в коміт наслідок власної правки (дашборд — чиста функція від дат, які він щойно зсунув), ці артефакти рендеряться зі стану трекерів, `pr-ledger` і всіх zod-схем: тиха регенерація підмішала б у коміт автора чужий стан, якого він не торкався. Дашборд у списку лишається навмисно — у `bump-last-validated` його регенерація best-effort у `try/catch`, і цей гейт ловить саме випадок, коли вона мовчки не спрацювала.
+
+Гейт не додає нового класу блокувань — рівно ці перевірки вже стоять у `contract-tests.yml` і `docs-automation.yml`. Змінюється лише момент: автор бачить розсинхрон на своїй машині до пушу, а не через червоний CI на чужому відкритому PR. Причина появи — ніч 2026-08-29/30, коли `main` зламався шість разів поспіль трьома PR, і щоразу одним механізмом: джерело змінилось, похідний артефакт не перегенеровано. Порядок усередині `*.md`-пайплайну не випадковий: гейт стоїть **після** `bump-last-validated.mjs`, бо той переписує дати у staged-доках і сам може зрушити похідні.
+
+Opt-out — `SERGEANT_NO_DERIVED_CHECK=1 git commit …` для проміжного коміту в гілці. Це не обхід хука (Hard Rule #7 лишається чинним) і не обхід CI: перевірка просто переїжджає на PR.
 
 Хук обгорнуто wrapper-ом [`scripts/pre-commit-timing.mjs`](./scripts/pre-commit-timing.mjs), що міряє wall-clock час і друкує markdown summary одразу після commit-у. Історичний p50/p95 — `pnpm pre-commit:timings`. Деталі (env-контракт `SERGEANT_TIMING_LOG`, opt-out `SERGEANT_SKIP_TIMING=1`) — [`docs/02-engineering/development/pre-commit-timing.md`](./docs/02-engineering/development/pre-commit-timing.md).
 
