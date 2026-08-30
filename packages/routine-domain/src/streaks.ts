@@ -7,7 +7,7 @@
  */
 
 import { dateKeyFromDate, parseDateKey } from "./dateKeys.js";
-import { habitScheduledOnDate } from "./schedule.js";
+import { habitCountsTowardMetrics, habitScheduledOnDate } from "./schedule.js";
 import type { Habit, HabitSkip } from "./types.js";
 
 function dateKeyMinusDays(baseKey: string, daysBack: number): string {
@@ -28,6 +28,8 @@ export function streakForHabit(
   completionsForHabit: string[] | undefined,
   todayKey: string,
 ): number {
+  // `once` не бере участі в стріку (канон §7 п.2, рішення 2026-08-30).
+  if (!habitCountsTowardMetrics(habit)) return 0;
   const set = new Set(completionsForHabit || []);
   if (set.size === 0) return 0;
   // Нижня межа: найдавніша відома дата (старт звички або перша відмітка).
@@ -59,6 +61,7 @@ export function maxStreakAllTime(
   habit: Habit,
   completionsForHabit: string[] | undefined,
 ): number {
+  if (!habitCountsTowardMetrics(habit)) return 0;
   const sorted = [...(completionsForHabit || [])].sort();
   if (sorted.length === 0) return 0;
   // Всі історичні відмітки враховуються — користувач позначив виконання, незалежно
@@ -135,6 +138,16 @@ export interface CompletionRateOptions {
    * Дефолт (не передано) зберігає історичну поведінку: пропуск = провал.
    */
   skips?: Record<string, Record<string, HabitSkip>> | undefined;
+  /**
+   * Рахувати і `once`-звички.
+   *
+   * Дефолт (не передано) — метрична семантика: `once` поза знаменником
+   * (канон §7 п.2, рішення 2026-08-30). `true` — семантика ЧЕК-ЛИСТА:
+   * лічильник дня («N з M») стоїть поруч зі списком, який разову подію
+   * показує, тож ігнорувати її там означало б «2 з 2» при трьох видимих
+   * пунктах. Метрики за період цю опцію не передають ніколи.
+   */
+  includeOnce?: boolean | undefined;
 }
 
 export function completionRateForRange(
@@ -161,6 +174,10 @@ export function completionRateForRange(
   let completed = 0;
   for (const h of habits) {
     if (h.archived) continue;
+    // `once` виходить зі знаменника rate (канон §7 п.2, рішення 2026-08-30):
+    // разова подія лишається в чек-листі дня, але число не рухає. Виняток —
+    // `includeOnce` для лічильників чек-листа (див. доку опції).
+    if (!opts.includeOnce && !habitCountsTowardMetrics(h)) continue;
     const set = new Set(completions[h.id] || []);
     const habitSkips = opts.skips?.[h.id];
     for (const dk of days) {
@@ -198,6 +215,12 @@ export function habitCompletionRate(
   while (d <= end) {
     dateList.push(dateKeyFromDate(d));
     d.setDate(d.getDate() + 1);
+  }
+
+  // Для `once` віддаємо порожній результат (`scheduled: 0`) — споживачі
+  // (лідери/аутсайдери, per-habit відсотки) фільтрують за `scheduled > 0`.
+  if (!habitCountsTowardMetrics(habit)) {
+    return { completed: 0, scheduled: 0, rate: 0 };
   }
 
   const set = new Set(completions || []);

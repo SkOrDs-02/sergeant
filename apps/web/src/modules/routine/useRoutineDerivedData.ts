@@ -263,12 +263,14 @@ export function useRoutineDerivedData({
     range.startKey === range.endKey ? range.startKey : todayKey;
   const dayProgress = useMemo(
     () =>
+      // `includeOnce` — це лічильник чек-листа, не метрика: список дня
+      // разову подію показує, тож і «N з M» мусить (канон §7 п.2).
       completionRateForRange(
         routine.habits,
         routine.completions,
         progressDayKey,
         progressDayKey,
-        { pausedFrom: todayKey, skips: routine.skips ?? {} },
+        { pausedFrom: todayKey, skips: routine.skips ?? {}, includeOnce: true },
       ),
     [
       routine.habits,

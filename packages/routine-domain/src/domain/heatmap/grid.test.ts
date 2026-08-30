@@ -236,7 +236,7 @@ describe("buildHeatmapGrid — denominator: 'scheduled'", () => {
     return new Map(grid.weeks.flat().map((c) => [c.dateKey, c]));
   }
 
-  it("drops a `once` habit from the denominator on every day but its own", () => {
+  it("drops a `once` habit from the heatmap entirely (canon §7.2, 2026-08-30)", () => {
     const habits = [
       habit({
         id: "a",
@@ -250,13 +250,13 @@ describe("buildHeatmapGrid — denominator: 'scheduled'", () => {
         denominator: "scheduled",
       }),
     );
-    expect(cells.get("2025-01-10")?.total).toBe(1);
-    expect(cells.get("2025-01-10")?.cnt).toBe(1);
-    expect(cells.get("2025-01-10")?.ratio).toBe(1);
-    // Any other day: the habit is simply not on the calendar.
+    // Навіть у власний день: разова подія не рухає heatmap ні знаменником,
+    // ні чисельником.
+    expect(cells.get("2025-01-10")?.total).toBe(0);
+    expect(cells.get("2025-01-10")?.cnt).toBe(0);
+    expect(cells.get("2025-01-10")?.ratio).toBe(0);
+    expect(cells.get("2025-01-10")?.intensity).toBe("empty");
     expect(cells.get("2025-01-12")?.total).toBe(0);
-    expect(cells.get("2025-01-12")?.ratio).toBe(0);
-    expect(cells.get("2025-01-12")?.intensity).toBe("empty");
     expect(cells.get("2025-01-09")?.total).toBe(0);
   });
 
@@ -342,14 +342,15 @@ describe("buildHeatmapGrid — denominator: 'scheduled'", () => {
     ];
     const completions = { a: ["2025-01-13"], b: ["2025-01-10"] };
     const active = byKey(buildHeatmapGrid(habits, completions, TODAY, 4));
-    // Legacy fields keep the "all non-archived habits" semantics …
-    expect(active.get("2025-01-13")?.total).toBe(2);
+    // Legacy fields keep the flat "all counting habits, every day" semantics —
+    // the `once` habit is out of BOTH modes since 2026-08-30 (canon §7.2).
+    expect(active.get("2025-01-13")?.total).toBe(1);
     expect(active.get("2025-01-13")?.cnt).toBe(1);
     // … while the additive schedule-aware pair is already populated.
     expect(active.get("2025-01-13")?.scheduledTotal).toBe(1);
     expect(active.get("2025-01-13")?.scheduledCnt).toBe(1);
-    expect(active.get("2025-01-10")?.scheduledTotal).toBe(2);
-    expect(active.get("2025-01-10")?.scheduledCnt).toBe(1);
+    expect(active.get("2025-01-10")?.scheduledTotal).toBe(1);
+    expect(active.get("2025-01-10")?.scheduledCnt).toBe(0);
   });
 
   it("stays empty (never NaN) when no habit is scheduled on a day", () => {
