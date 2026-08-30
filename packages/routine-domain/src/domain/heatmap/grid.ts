@@ -13,7 +13,10 @@
  */
 
 import { dateKeyFromDate } from "../../dateKeys.js";
-import { habitScheduledOnDate } from "../../schedule.js";
+import {
+  habitCountsTowardMetrics,
+  habitScheduledOnDate,
+} from "../../schedule.js";
 import type { Habit } from "../../types.js";
 import {
   HEATMAP_DAYS,
@@ -175,11 +178,15 @@ export function buildHeatmapGrid(
   const gridWeeks = historyWeeks + futureWeeks;
   const useScheduled = opts.denominator === "scheduled";
 
-  const active = activeHabits(habits);
+  // `once` не входить у heatmap — ні в знаменник, ні в чисельник (канон
+  // §7 п.2, рішення 2026-08-30). Фільтр діє в ОБОХ режимах знаменника:
+  // у легасі-`"active"` разова звичка інакше роздувала б знаменник кожного
+  // дня сітки назавжди після своєї дати.
+  const active = activeHabits(habits).filter(habitCountsTowardMetrics);
   const totalActive = active.length;
   const cntByDay = useScheduled
     ? {}
-    : countHabitCompletionsByDay(habits, completions);
+    : countHabitCompletionsByDay(active, completions);
   // Per-habit completion sets: membership lookup for the schedule-aware
   // numerator, and de-duplication of repeated date-keys in one pass.
   const completionSets = new Map<string, Set<string>>();

@@ -48,6 +48,25 @@ export interface HabitScheduledOptions {
   pausedFrom?: string | undefined;
 }
 
+/**
+ * Чи бере звичка участь в агрегатних метриках — стрік, heatmap, % виконання.
+ *
+ * AI-CONTEXT: канон `routine.md` §7 п.2 — `once` є «легким винятком, не
+ * задачею»: разову подію можна відмітити (розклад її показує, чекін
+ * працює), але вона не рухає жодного накопичувального числа. Рішення
+ * founder-а 2026-08-30 поширює виняток і на rate: стрік, heatmap і rate
+ * ділять один канонічний знаменник (ADR-0079 §3), тож вибіркове
+ * виключення знову розвело б ці числа між собою.
+ *
+ * Предикат навмисно живе ОКРЕМО від `habitScheduledOnDate`: розклад
+ * відповідає на «чи показувати сьогодні у списку», метрики — на «чи
+ * рахувати в число». Календар, стрічка дня і чек-лист «сьогодні»
+ * зобовʼязані бачити `once`; агрегатори — ні.
+ */
+export function habitCountsTowardMetrics(habit: Habit): boolean {
+  return (habit.recurrence || "daily") !== "once";
+}
+
 export function habitScheduledOnDate(
   habit: Habit,
   dateKey: string,

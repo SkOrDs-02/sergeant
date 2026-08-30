@@ -22,7 +22,7 @@
  * визначення як зміну поведінки (ADR-0079 §4).
  */
 
-import { habitScheduledOnDate } from "./schedule.js";
+import { habitCountsTowardMetrics, habitScheduledOnDate } from "./schedule.js";
 import type { Habit } from "./types.js";
 
 /** Зріз по одній звичці за період. */
@@ -69,9 +69,11 @@ export function calcRoutinePeriodCompletion(
 ): RoutinePeriodCompletion {
   const keys = Array.isArray(dayKeys) ? dayKeys : [];
   // `archived` відсіюємо тут, а не покладаємось на викликача: Hub-Reports
-  // фільтрував, дайджест фільтрував, а чат-тулза — ні.
+  // фільтрував, дайджест фільтрував, а чат-тулза — ні. `once` виходить зі
+  // знаменника з тієї ж причини (канон §7 п.2, рішення 2026-08-30) — і з
+  // per-habit зрізу теж: рядок «0 з 0» у дайджесті — шум, не інформація.
   const active = (Array.isArray(habits) ? habits : []).filter(
-    (h) => h && !h.archived,
+    (h) => h && !h.archived && habitCountsTowardMetrics(h),
   );
 
   const scheduleOpts =
