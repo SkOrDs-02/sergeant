@@ -18,7 +18,6 @@ vi.mock("@shared/api", async () => {
     nutritionApi: {
       recommendRecipes: vi.fn(),
       weekPlan: vi.fn(),
-      dayHint: vi.fn(),
       dayPlan: vi.fn(),
       shoppingList: vi.fn(),
     },
@@ -38,7 +37,6 @@ import { deviceDayKey } from "@sergeant/nutrition-domain";
 type MockFn = ReturnType<typeof vi.fn>;
 const apiRecommendRecipes = nutritionApi.recommendRecipes as unknown as MockFn;
 const apiFetchWeekPlan = nutritionApi.weekPlan as unknown as MockFn;
-const apiFetchDayHint = nutritionApi.dayHint as unknown as MockFn;
 const apiFetchDayPlan = nutritionApi.dayPlan as unknown as MockFn;
 const apiFetchShoppingList = nutritionApi.shoppingList as unknown as MockFn;
 
@@ -65,8 +63,6 @@ function makeHarness(overrides: Partial<UseNutritionRemoteActionsParams> = {}) {
   const setWeekPlanBusy = vi.fn();
   const setDayPlan = vi.fn();
   const setDayPlanBusy = vi.fn();
-  const setDayHintBusy = vi.fn();
-  const setDayHintText = vi.fn();
   const setShoppingBusy = vi.fn();
   const setGeneratedList = vi.fn();
   const handleAddMeal = vi.fn();
@@ -100,8 +96,6 @@ function makeHarness(overrides: Partial<UseNutritionRemoteActionsParams> = {}) {
     setWeekPlanBusy,
     setDayPlan,
     setDayPlanBusy,
-    setDayHintBusy,
-    setDayHintText,
     log: {
       nutritionLog: {},
       selectedDate: "2025-01-01",
@@ -131,8 +125,6 @@ function makeHarness(overrides: Partial<UseNutritionRemoteActionsParams> = {}) {
       setWeekPlanBusy,
       setDayPlan,
       setDayPlanBusy,
-      setDayHintBusy,
-      setDayHintText,
       setShoppingBusy,
       setGeneratedList,
       handleAddMeal,
@@ -174,41 +166,6 @@ describe("useNutritionRemoteActions — recipe + week plan branches", () => {
     );
     expect(spies.setErr).toHaveBeenLastCalledWith("boom");
     expect(spies.setWeekPlanBusy).toHaveBeenCalledWith(false);
-  });
-});
-
-describe("useNutritionRemoteActions — day hint branches", () => {
-  it("maps photo meals to photoAI macro source and calls API without macros", async () => {
-    apiFetchDayHint.mockResolvedValueOnce({ hint: "Більше білка" });
-    const { result, spies } = makeHarness({
-      log: {
-        nutritionLog: {
-          "2025-01-01": {
-            meals: [
-              {
-                id: "m1",
-                source: "photo",
-                macros: {},
-              },
-            ],
-          },
-        },
-        selectedDate: "2025-01-01",
-        handleAddMeal: vi.fn(),
-      },
-    });
-
-    act(() => result.current.fetchDayHint());
-    await waitFor(() =>
-      expect(spies.setDayHintText).toHaveBeenCalledWith("Більше білка"),
-    );
-    expect(apiFetchDayHint).toHaveBeenCalledWith(
-      expect.objectContaining({
-        hasMeals: true,
-        hasAnyMacros: false,
-        macroSources: { photoAI: 1 },
-      }),
-    );
   });
 });
 

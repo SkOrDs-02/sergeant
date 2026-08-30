@@ -64,6 +64,7 @@ export function useRestDayOverdueInsight(
       module: "fizruk",
       title: `${days} ${pluralDays(days)} без тренування`,
       subtitle: "Час повернутися?",
+      askAiPrompt: `${days} ${pluralDays(days)} поспіль без дня відновлення. Наскільки це критично за моїми даними і коли найкраще поставити відпочинок?`,
       action: { type: "navigate", path: "/fizruk/workouts" },
       // Hub surface promoted post-Phase 5e: rest-day overdue is the canonical
       // cross-module re-engagement signal — needs Hub visibility to actually

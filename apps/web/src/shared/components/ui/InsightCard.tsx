@@ -58,6 +58,7 @@ import {
 } from "../../../core/observability/analytics";
 import { getAnalyticsConsent } from "../../../core/observability/analyticsConsent";
 import { markSignalShown } from "../../../core/observability/valueSignalAttribution";
+import { trackAdviceReaction } from "../../../core/observability/adviceTelemetry";
 
 /** Де саме рендериться картка — property `surface` контракту `value_signal_*`. */
 export type InsightSurface = "module" | "hub";
@@ -102,6 +103,14 @@ export interface InsightCardProps {
   /** Called after dismissal is persisted (analytics hook). */
   onDismiss?: () => void;
   /**
+   * Чип «Спитати AI» — відкриває HubChat із префілом `Insight.askAiPrompt`.
+   * Рендериться лише коли переданий (усі 9 продуктових інсайтів мають
+   * `askAiPrompt`, тож call-site завжди його передає).
+   */
+  onAskAi?: () => void;
+  /** Квота AI на сьогодні вичерпана (Free) — чип сірий, клік не працює. */
+  askAiDisabled?: boolean;
+  /**
    * Де рендериться картка. Їде у property `surface` подій `value_signal_*`.
    * Дефолт `"module"` — усі чотири модульні блоки рендерять картку без
    * пропа; хаб (`HubInsightsBlock`) передає `"hub"` явно.
@@ -117,6 +126,8 @@ export function InsightCard({
   ctaLabel = "→",
   onActivate,
   onDismiss,
+  onAskAi,
+  askAiDisabled = false,
   surface = "module",
   className,
 }: InsightCardProps) {
@@ -198,6 +209,19 @@ export function InsightCard({
     onActivate();
   };
 
+  const handleAskAi = () => {
+    hapticTap();
+    trackEvent(ANALYTICS_EVENTS.VALUE_SIGNAL_ASK_AI, {
+      module,
+      signal: kind,
+      surface,
+    });
+    if (getAnalyticsConsent()) {
+      trackAdviceReaction(computeAdviceId(kind, id), "ask_ai");
+    }
+    onAskAi?.();
+  };
+
   const titleId = `insight-card-title-${id}`;
 
   return (
@@ -248,6 +272,41 @@ export function InsightCard({
           {subtitle}
         </div>
       </button>
+
+      {/* «AI» — окремий чип, праворуч перед dismiss (тап по тілу картки
+          лишається навігацією в модуль, це третя незалежна дія).
+          Рендериться лише коли call-site передав `onAskAi` — усі 9
+          продуктових інсайтів це роблять.
+
+          Підпис саме «AI», а не «Спитати AI»: на 375px довгий підпис з'їдав
+          ширину картки і рубав заголовок із підзаголовком у трикрапку
+          (браузерна перевірка 2026-08-31). Іскра вже несе те саме значення,
+          тож слово «Спитати» платило текстом плашки за нуль нової
+          інформації. Повне формулювання лишається в `aria-label` — для
+          скрінрідера нічого не змінилось. */}
+      {onAskAi && (
+        <button
+          type="button"
+          onClick={handleAskAi}
+          disabled={askAiDisabled}
+          aria-label={
+            askAiDisabled ? "Ліміт AI на сьогодні" : "Спитати AI про це"
+          }
+          title={askAiDisabled ? "Ліміт AI на сьогодні" : undefined}
+          className={cn(
+            "shrink-0 touch-target inline-flex items-center justify-center gap-1 px-2 rounded-xl",
+            "text-style-caption font-semibold",
+            "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-soft-fg/45",
+            "focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
+            askAiDisabled
+              ? "bg-white/10 text-bg-base/40 cursor-not-allowed"
+              : "bg-brand-soft text-brand-soft-fg hover:brightness-105 active:scale-[0.98] transition-[filter,transform]",
+          )}
+        >
+          <Icon name="sparkle" size={13} strokeWidth={2} aria-hidden />
+          <span>AI</span>
+        </button>
+      )}
 
       {/* Dismiss button — separate sibling so Tab order is activate → dismiss. */}
       <button

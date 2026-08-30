@@ -12,7 +12,6 @@ import analyzePhoto from "../modules/nutrition/analyze-photo.js";
 import parsePantry from "../modules/nutrition/parse-pantry.js";
 import refinePhoto from "../modules/nutrition/refine-photo.js";
 import recommendRecipes from "../modules/nutrition/recommend-recipes.js";
-import dayHint from "../modules/nutrition/day-hint.js";
 import weekPlan from "../modules/nutrition/week-plan.js";
 import backupUpload from "../modules/nutrition/backup-upload.js";
 import backupDownload from "../modules/nutrition/backup-download.js";
@@ -109,16 +108,6 @@ export function createNutritionRouter({ pool }: { pool: Pool }): Router {
     }),
     ...aiText,
     recommendRecipes,
-  );
-  r.post(
-    "/api/nutrition/day-hint",
-    rateLimitExpress({
-      key: "nutrition:day-hint",
-      limit: 30,
-      windowMs: 60_000,
-    }),
-    ...aiText,
-    dayHint,
   );
   // Heaviest plan — generates 7 days of meals at once (~10–15s, larger
   // prompt). Cost 3 leaves the bucket at ~3 plans/min before tightening.

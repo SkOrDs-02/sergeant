@@ -182,10 +182,6 @@ export default function NutritionApp({
     setDayPlanBusy,
     shoppingBusy,
     setShoppingBusy,
-    dayHintText,
-    setDayHintText,
-    dayHintBusy,
-    setDayHintBusy,
     cloudBackupBusy,
     setCloudBackupBusy,
     backupPasswordDialog,
@@ -294,7 +290,6 @@ export default function NutritionApp({
   const {
     recommendRecipes,
     fetchWeekPlan,
-    fetchDayHint,
     fetchDayPlan,
     addMealFromPlan,
     generateShoppingList,
@@ -316,8 +311,6 @@ export default function NutritionApp({
     setWeekPlanBusy,
     setDayPlan,
     setDayPlanBusy,
-    setDayHintBusy,
-    setDayHintText,
     log,
     shopping,
     setShoppingBusy,
@@ -508,9 +501,6 @@ export default function NutritionApp({
                     log={log}
                     prefs={prefs}
                     setActivePageAndHash={setActivePageAndHash}
-                    fetchDayHint={fetchDayHint}
-                    dayHintText={dayHintText}
-                    dayHintBusy={dayHintBusy}
                     onRequestAddMeal={handleRequestAddMeal}
                   />
                 )}

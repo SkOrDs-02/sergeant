@@ -54,6 +54,7 @@ function insight(id: string, action: Insight["action"]): Insight {
     module: "finyk",
     title: `Insight ${id}`,
     subtitle: "Branch coverage",
+    askAiPrompt: `Питання по ${id}`,
     action,
     showOn: "module",
   };

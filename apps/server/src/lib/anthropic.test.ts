@@ -357,7 +357,7 @@ describe("anthropicMessages", () => {
     await anthropicMessages(
       "sk-anthropic",
       { model: "claude-sonnet-4-6" },
-      { endpoint: "day-hint" },
+      { endpoint: "day-plan" },
     );
 
     const [url, request] = fetchMock.mock.calls[0] as [
@@ -484,7 +484,7 @@ describe("anthropicMessagesStream", () => {
     const result = await anthropicMessagesStream(
       "sk-anthropic",
       { model: "claude-sonnet-4-6" },
-      { endpoint: "day-hint" },
+      { endpoint: "day-plan" },
     );
 
     const [url, request] = fetchMock.mock.calls[0] as [

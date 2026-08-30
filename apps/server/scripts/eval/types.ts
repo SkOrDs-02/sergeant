@@ -57,8 +57,8 @@ export interface Pipeline {
   label: string;
   /**
    * Системний промпт — ЗАВЖДИ з продового білдера, ніколи не рукописний.
-   * `undefined` означає, що прод сам не шле `system` (coach-insight, day-hint
-   * пакують усе в user-репліку) — стенд це дзеркалить, інакше міряє інший
+   * `undefined` означає, що прод сам не шле `system` (coach-insight
+   * пакує все в user-репліку) — стенд це дзеркалить, інакше міряє інший
    * режим моделі.
    */
   system: string | undefined;
