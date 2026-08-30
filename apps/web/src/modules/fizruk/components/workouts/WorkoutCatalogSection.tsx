@@ -27,12 +27,27 @@ export type CatalogGroup = {
   total: number;
 };
 
+/**
+ * Локація — це не нове поле в каталозі, а прочитане `equipment`
+ * (`getExerciseLocations`). Підписи живуть тут, бо це UI-копія.
+ */
+const LOCATION_OPTIONS: ReadonlyArray<{
+  id: FizrukData.ExerciseLocation;
+  label: string;
+}> = [
+  { id: "gym", label: "Зал" },
+  { id: "home", label: "Дім" },
+  { id: "outdoor", label: "Вулиця" },
+];
+
 type WorkoutCatalogSectionProps = {
   mode: "log" | "catalog";
   q: string;
   setQ: Dispatch<SetStateAction<string>>;
   equipmentFilter: string[];
   setEquipmentFilter: Dispatch<SetStateAction<string[]>>;
+  locationFilter: FizrukData.ExerciseLocation | "";
+  setLocationFilter: Dispatch<SetStateAction<FizrukData.ExerciseLocation | "">>;
   equipmentUk: Record<string, string>;
   grouped: CatalogGroup[];
   open: Record<string, boolean>;
@@ -49,12 +64,31 @@ function toggleArr(arr: string[] | null | undefined, value: string): string[] {
   return a.includes(value) ? a.filter((x) => x !== value) : [...a, value];
 }
 
+/**
+ * AI-DANGER: `text-xs` — розмір КОНТРОЛА (рамка, падинг, hover), а не роль
+ * тексту. Шкала ролей описує текст; спеціальної ролі для контролів у ній
+ * немає, тож правильна дія — лишити сирий розмір, а не підібрати найближчу
+ * роль. Active-стан — ті самі fizruk-soft токени, що в `Segmented`
+ * style="soft": інверсне «чорнило» (bg-text/text-bg) читалось як чужорідний
+ * елемент серед мʼяких поверхонь модуля.
+ */
+function chipClass(active: boolean): string {
+  return cn(
+    "text-xs px-3 py-2 pointer-coarse:min-h-[44px] rounded-full border transition-colors",
+    active
+      ? "border-fizruk-ring bg-fizruk-surface text-fizruk-soft-fg font-semibold shadow-sm dark:border-fizruk-border-dark/40 dark:bg-fizruk-surface-dark/15"
+      : "border-line bg-bg text-muted hover:border-muted hover:text-text",
+  );
+}
+
 export function WorkoutCatalogSection({
   mode,
   q,
   setQ,
   equipmentFilter,
   setEquipmentFilter,
+  locationFilter,
+  setLocationFilter,
   equipmentUk,
   grouped,
   open,
@@ -65,8 +99,17 @@ export function WorkoutCatalogSection({
   rec,
   musclesUk,
 }: WorkoutCatalogSectionProps) {
-  /** Список звужений людиною — запитом або фільтром обладнання. */
-  const hasQuery = q.trim().length > 0 || (equipmentFilter || []).length > 0;
+  /** Список звужений людиною — запитом або будь-яким із фільтрів. */
+  const hasQuery =
+    q.trim().length > 0 ||
+    (equipmentFilter || []).length > 0 ||
+    Boolean(locationFilter);
+
+  const resetFilters = () => {
+    setQ("");
+    setEquipmentFilter([]);
+    setLocationFilter("");
+  };
 
   return (
     <>
@@ -89,6 +132,26 @@ export function WorkoutCatalogSection({
         )}
       </div>
 
+      <div className="mb-3">
+        <div className="text-style-caption text-subtle mb-1.5">Де тренуюсь</div>
+        <div className="flex flex-wrap gap-1.5">
+          {LOCATION_OPTIONS.map(({ id, label }) => {
+            const active = locationFilter === id;
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setLocationFilter(active ? "" : id)}
+                className={chipClass(active)}
+                aria-pressed={active}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {equipmentUk && Object.keys(equipmentUk).length > 0 && (
         <div className="mb-3">
           <div className="text-style-caption text-subtle mb-1.5">
@@ -105,21 +168,7 @@ export function WorkoutCatalogSection({
                     onClick={() =>
                       setEquipmentFilter(toggleArr(equipmentFilter, id))
                     }
-                    className={cn(
-                      // AI-DANGER: `text-xs` — розмір КОНТРОЛА (рамка,
-                      // падинг, hover), а не роль тексту. Шкала ролей
-                      // описує текст; спеціальної ролі для контролів у
-                      // ній немає, тож правильна дія — лишити сирий
-                      // розмір, а не підібрати найближчу роль.
-                      // Active-стан — ті самі fizruk-soft токени, що в
-                      // `Segmented` style="soft": інверсне «чорнило»
-                      // (bg-text/text-bg) читалось як чужорідний елемент
-                      // серед мʼяких поверхонь модуля.
-                      "text-xs px-3 py-2 pointer-coarse:min-h-[44px] rounded-full border transition-colors",
-                      active
-                        ? "border-fizruk-ring bg-fizruk-surface text-fizruk-soft-fg font-semibold shadow-sm dark:border-fizruk-border-dark/40 dark:bg-fizruk-surface-dark/15"
-                        : "border-line bg-bg text-muted hover:border-muted hover:text-text",
-                    )}
+                    className={chipClass(active)}
                     aria-pressed={active}
                   >
                     {label}
@@ -151,7 +200,7 @@ export function WorkoutCatalogSection({
         {grouped.length === 0 ? (
           /*
             Порожній каталог і порожній РЕЗУЛЬТАТ ПОШУКУ — різні стани, і
-            плутати їх не можна: у каталозі 119 вправ, а на запит без збігів
+            плутати їх не можна: каталог непорожній, а на запит без збігів
             екран радив «Додай першу через кнопку «+ Додати»» (браузерне QA
             2026-08-23). Друга гілка називає причину й пропонує дію, яка
             справді допоможе, — скинути запит/фільтр.
@@ -163,16 +212,13 @@ export function WorkoutCatalogSection({
               description={
                 q
                   ? `За запитом «${q}» вправ немає. Спробуй іншу назву, групу мʼязів або скинь пошук.`
-                  : "Під вибране обладнання вправ немає. Скинь фільтр або обери інше."
+                  : "Під вибрані фільтри вправ немає. Скинь їх або обери інші."
               }
               module="fizruk"
               action={
                 <button
                   type="button"
-                  onClick={() => {
-                    setQ("");
-                    setEquipmentFilter([]);
-                  }}
+                  onClick={resetFilters}
                   className="focus-ring min-h-[44px] rounded-full border border-line px-4 text-style-caption text-text transition-colors hover:bg-panelHi"
                 >
                   Скинути пошук

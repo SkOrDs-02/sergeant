@@ -19,7 +19,10 @@ import {
 } from "./useWorkoutsLifecycle";
 import { useRestTimer } from "../context/RestTimerContext";
 import { recoveryConflictsForExercise } from "@sergeant/fizruk-domain";
-import type { RawExerciseDef } from "@sergeant/fizruk-domain/data";
+import type {
+  ExerciseLocation,
+  RawExerciseDef,
+} from "@sergeant/fizruk-domain/data";
 import type { Workout, WorkoutGroup } from "@sergeant/fizruk-domain";
 import {
   ACTIVE_WORKOUT_KEY,
@@ -111,6 +114,9 @@ export function useWorkoutsOrchestrator(
   const templateApi = useWorkoutTemplates();
   const [q, setQ] = useState("");
   const [equipmentFilter, setEquipmentFilter] = useState<string[]>([]);
+  const [locationFilter, setLocationFilter] = useState<ExerciseLocation | "">(
+    "",
+  );
   const [selected, setSelected] = useState<RawExerciseDef | null>(null);
   const [open, setOpen] = useState<Record<string, boolean>>(() => ({}));
   const [addOpen, setAddOpen] = useState(false);
@@ -386,8 +392,14 @@ export function useWorkoutsOrchestrator(
   );
 
   const grouped = useMemo(
-    () => buildGroupedExercises(list, equipmentFilter, primaryGroupsUk),
-    [list, equipmentFilter, primaryGroupsUk],
+    () =>
+      buildGroupedExercises(
+        list,
+        equipmentFilter,
+        primaryGroupsUk,
+        locationFilter,
+      ),
+    [list, equipmentFilter, primaryGroupsUk, locationFilter],
   );
 
   const finishedCount = useMemo(
@@ -536,6 +548,8 @@ export function useWorkoutsOrchestrator(
     setQ,
     equipmentFilter,
     setEquipmentFilter,
+    locationFilter,
+    setLocationFilter,
     selected,
     setSelected,
     open,

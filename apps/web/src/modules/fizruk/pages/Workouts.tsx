@@ -204,6 +204,8 @@ export function Workouts({
             setQ={o.setQ}
             equipmentFilter={o.equipmentFilter}
             setEquipmentFilter={o.setEquipmentFilter}
+            locationFilter={o.locationFilter}
+            setLocationFilter={o.setLocationFilter}
             equipmentUk={o.equipmentUk}
             grouped={o.grouped}
             open={o.open}

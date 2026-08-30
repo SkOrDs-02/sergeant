@@ -3,7 +3,11 @@
  * Status: Active
  */
 import type { Workout } from "@sergeant/fizruk-domain";
-import type { RawExerciseDef } from "@sergeant/fizruk-domain/data";
+import type {
+  ExerciseLocation,
+  RawExerciseDef,
+} from "@sergeant/fizruk-domain/data";
+import { matchesExerciseLocation } from "@sergeant/fizruk-domain/data";
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import type { LastExerciseItem } from "./Workouts.types";
 
@@ -44,11 +48,14 @@ export function buildGroupedExercises(
   list: readonly RawExerciseDef[],
   equipmentFilter: readonly string[],
   primaryGroupsUk: Record<string, string>,
+  locationFilter: ExerciseLocation | "" = "",
 ): GroupedExercises[] {
   const eqSet = equipmentFilter.length > 0 ? new Set(equipmentFilter) : null;
-  const pool = eqSet
-    ? list.filter((ex) => (ex.equipment ?? []).some((e) => eqSet.has(e)))
-    : list;
+  const pool = list.filter(
+    (ex) =>
+      (!eqSet || (ex.equipment ?? []).some((e) => eqSet.has(e))) &&
+      matchesExerciseLocation(ex, locationFilter),
+  );
   const m = new Map<string, RawExerciseDef[]>();
   for (const ex of pool) {
     const gid = ex.primaryGroup || "full_body";
