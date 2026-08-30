@@ -21,23 +21,52 @@ export default function SiteFooter() {
         </div>
         <nav
           aria-label="Футер"
-          className="flex flex-wrap items-center gap-x-5 gap-y-0 text-sm text-muted"
+          className="mt-2 grid gap-x-8 gap-y-1 text-sm text-muted sm:grid-cols-3"
         >
-          <a href="/privacy" className={link}>
-            Політика приватності
-          </a>
-          <a href="/terms" className={link}>
-            Умови використання
-          </a>
-          <a href="/data" className={link}>
-            Твої дані
-          </a>
-          <a href="/guides" className={link}>
-            Гайди
-          </a>
-          <a href="/about" className={link}>
-            Про проєкт
-          </a>
+          <div className="flex flex-col">
+            <p className="pb-1 font-display text-xs font-bold uppercase tracking-[0.08em] text-subtle">
+              Продукт
+            </p>
+            <a href="/zvyazky" className={link}>
+              Звʼязки
+            </a>
+            <a href="/guides" className={link}>
+              Гайди
+            </a>
+          </div>
+          <div className="flex flex-col">
+            <p className="pb-1 font-display text-xs font-bold uppercase tracking-[0.08em] text-subtle">
+              Чесність
+            </p>
+            <a href="/obitsyanky" className={link}>
+              Що обіцяю
+            </a>
+            <a href="/stan" className={link}>
+              Доповідь про стан
+            </a>
+            <a href="/pytannya" className={link}>
+              Питання
+            </a>
+            <a href="/about" className={link}>
+              Про Sergeant
+            </a>
+          </div>
+          <div className="flex flex-col">
+            <p className="pb-1 font-display text-xs font-bold uppercase tracking-[0.08em] text-subtle">
+              Дані і право
+            </p>
+            <a href="/data" className={link}>
+              Твої дані
+            </a>
+            <a href="/privacy" className={link}>
+              Політика приватності
+            </a>
+            <a href="/terms" className={link}>
+              Умови використання
+            </a>
+          </div>
+        </nav>
+        <div className="mt-3 flex flex-wrap items-center gap-x-5 border-t border-cardline pt-2 text-sm text-muted">
           <a
             href={telegramStartLink("footer")}
             target="_blank"
@@ -54,7 +83,7 @@ export default function SiteFooter() {
           >
             Threads
           </a>
-        </nav>
+        </div>
       </div>
     </footer>
   );

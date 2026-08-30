@@ -1,16 +1,19 @@
 import { useState } from "react";
 import Wordmark from "./Wordmark";
 
-const ANCHOR_ITEMS = [
-  { hash: "modules", label: "Модулі" },
-  { hash: "connections", label: "Звʼязки" },
-  { hash: "promises", label: "Обіцянки" },
-  { hash: "faq", label: "Питання" },
-] as const;
+/**
+ * У шапці стоїть тільки те, що відповідає на «що це вміє», плюс єдина дія.
+ * Якорів немає: секція без URL не існує ні для пошуку, ні для аналітики.
+ * «Модулі» лишається останнім якорем до Етапу 3, коли пункт розсиплеться
+ * на чотири модульні сторінки.
+ */
+const MODULES_ANCHOR = { hash: "modules", label: "Модулі" } as const;
 
 const PAGE_ITEMS = [
+  { href: "/zvyazky", label: "Звʼязки" },
+  { href: "/obitsyanky", label: "Обіцянки" },
+  { href: "/pytannya", label: "Питання" },
   { href: "/guides", label: "Гайди" },
-  { href: "/about", label: "Про проєкт" },
 ] as const;
 
 export default function SiteHeader() {
@@ -36,11 +39,9 @@ export default function SiteHeader() {
           aria-label="Головна навігація"
           className="hidden items-center gap-7 text-sm font-semibold text-foreground md:flex"
         >
-          {ANCHOR_ITEMS.map((item) => (
-            <a key={item.hash} href={anchor(item.hash)} className={navLink}>
-              {item.label}
-            </a>
-          ))}
+          <a href={anchor(MODULES_ANCHOR.hash)} className={navLink}>
+            {MODULES_ANCHOR.label}
+          </a>
           {PAGE_ITEMS.map((item) => (
             <a key={item.href} href={item.href} className={navLink}>
               {item.label}
@@ -93,17 +94,18 @@ export default function SiteHeader() {
             aria-label="Мобільна навігація"
             className="absolute left-0 right-0 top-full z-10 flex flex-col gap-0 border-b-2 border-foreground-strong bg-background px-5 pb-4 shadow-lg sm:px-8 md:hidden"
           >
-            {ANCHOR_ITEMS.map((item) => (
-              <a
-                key={item.hash}
-                href={anchor(item.hash)}
-                className={mobileNavLink}
-                onClick={() => setOpen(false)}
-              >
-                {item.label}
-              </a>
-            ))}
-            {PAGE_ITEMS.map((item) => (
+            <a
+              href={anchor(MODULES_ANCHOR.hash)}
+              className={mobileNavLink}
+              onClick={() => setOpen(false)}
+            >
+              {MODULES_ANCHOR.label}
+            </a>
+            {[
+              ...PAGE_ITEMS,
+              { href: "/stan", label: "Доповідь про стан" },
+              { href: "/about", label: "Про проєкт" },
+            ].map((item) => (
               <a
                 key={item.href}
                 href={item.href}

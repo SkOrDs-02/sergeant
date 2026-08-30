@@ -5,12 +5,9 @@ import {
   ModulesSection,
   ScreensSection,
   ConnectionsSection,
-  PromisesSection,
   FounderSection,
-  StatusSection,
-  FaqSection,
+  StatusBridge,
   ClosingCta,
-  FAQ_ITEMS,
 } from "../components/HomeSections";
 import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
 import { ANALYTICS_EVENTS, LANDING_LOCALE, track } from "../lib/analytics";
@@ -143,14 +140,16 @@ function HeroCollage() {
 export default function HomePage() {
   usePageMeta({
     ...ROUTE_META["/"],
+    // Головна після переїзду секцій – пітч продукту. FAQPage поїхав на
+    // /pytannya разом із питаннями: розмітка без видимого контенту не тримається.
     jsonLd: {
       "@context": "https://schema.org",
-      "@type": "FAQPage",
-      mainEntity: FAQ_ITEMS.map((item) => ({
-        "@type": "Question",
-        name: item.q,
-        acceptedAnswer: { "@type": "Answer", text: item.a },
-      })),
+      "@type": "SoftwareApplication",
+      name: "Sergeant",
+      inLanguage: "uk",
+      applicationCategory: "LifestyleApplication",
+      operatingSystem: "Web, iOS, Android",
+      offers: { "@type": "Offer", price: 0, priceCurrency: "UAH" },
     },
   });
 
@@ -195,10 +194,8 @@ export default function HomePage() {
         </p>
       </section>
 
-      <PromisesSection />
       <FounderSection />
-      <StatusSection />
-      <FaqSection />
+      <StatusBridge />
       <ClosingCta />
     </SiteLayout>
   );

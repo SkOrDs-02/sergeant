@@ -6,16 +6,15 @@ import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
 export default function AboutPage() {
   usePageMeta({
     ...ROUTE_META["/about"],
+    // `SoftwareApplication` поїхав на головну, де він жанрово на місці:
+    // два описи одного продукту конкурували б за той самий субʼєкт.
     jsonLd: {
       "@context": "https://schema.org",
-      "@type": "SoftwareApplication",
-      name: "Sergeant",
-      applicationCategory: "LifestyleApplication",
-      operatingSystem: "Web",
+      "@type": "AboutPage",
+      name: "Що таке Sergeant",
       inLanguage: "uk",
       description:
-        "Український застосунок, який тримає гроші, тіло, звички й харчування в одному приватному просторі та показує звʼязки між ними.",
-      offers: { "@type": "Offer", price: "0", priceCurrency: "UAH" },
+        "Навіщо існує Sergeant, хто його робить і чому продукт влаштований саме так.",
     },
   });
 
@@ -63,7 +62,7 @@ export default function AboutPage() {
         <p className="max-w-2xl leading-relaxed text-muted">
           Обіцянки, за які продукт відповідає, зібрані в одному місці: у{" "}
           <a
-            href="/#promises"
+            href="/obitsyanky"
             className="font-semibold text-foreground underline decoration-cardline-strong underline-offset-4 transition hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
           >
             розділі «Що обіцяю» на головній
