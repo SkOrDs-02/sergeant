@@ -1,6 +1,6 @@
 # Agents in Sergeant
 
-> **Last touched:** 2026-08-28 by @Skords-01. **Next review:** 2026-12-20.
+> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-05.
 > **Status:** Active
 
 > **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load one owner skill for the primary touched surface. Load extra workflow/squad/helper skills only when `docs/00-start/agents/agent-workflows.md` or the routing catalog explicitly says to. The routing catalog lives in `docs/00-start/agents/agent-skills-catalog.md`.
@@ -99,7 +99,7 @@ Surface-scoped quick references (commands, gotchas, specialist skill pointer) li
 
 - **pnpm 9.15.1** (enforced via `packageManager`) + **Turborepo** monorepo, **Node 22.x** (Volta pins 22.19.0), **TypeScript 6**.
 - 5 apps (`apps/web`, `apps/landing`, `apps/server`, `apps/mobile`, `apps/mobile-shell`) + 12 packages — 17 pnpm workspaces total.
-- Pre-commit: **Husky** runs `lint-staged` — ESLint --fix + Prettier for code, `staged-typecheck.mjs` for staged TS/TSX, `bump-last-validated.mjs` for `.md`. Pipeline matrix: [`CONTRIBUTING.md § Pre-commit hooks`](./CONTRIBUTING.md#pre-commit-hooks).
+- Pre-commit: **Husky** runs `lint-staged` — ESLint --fix + Prettier for code, `staged-typecheck.mjs` for staged TS/TSX, `bump-last-validated.mjs` for `.md`, `pre-commit-derived-artifacts.mjs` для похідних артефактів (openapi + щоденні доки). Pipeline matrix: [`CONTRIBUTING.md § Pre-commit hooks`](./CONTRIBUTING.md#pre-commit-hooks).
 - Deep tech-stack matrix (per-app stack, per-package purpose, build/deploy outputs): [`docs/02-engineering/architecture/repo-map.md`](./docs/02-engineering/architecture/repo-map.md).
 
 ## Module ownership map
@@ -156,6 +156,8 @@ Per-app owner + secondary reviewer for the bus-factor contract (Stack-pulse PR-0
 ## Touch targets
 
 WCAG 2.5.5 / Apple HIG ≥44×44 на coarse pointers. Three layers: `Button` (auto-applies `min-h-[44px] min-w-[44px]` **лише під `@media (pointer: coarse)`** for `xs`/`sm`/`iconOnly` — на fine-pointer floor навмисно не діє), `touch-target` / `touch-target-48` Tailwind utilities, and a global safety-net in `apps/web/src/index.css` (opt out with `data-compact` for intentionally smaller cells like heatmaps). See [`packages/design-tokens/tailwind-preset.js`](./packages/design-tokens/tailwind-preset.js) and [`apps/web/src/shared/components/ui/Button.tsx`](./apps/web/src/shared/components/ui/Button.tsx). Playwright-аудит 44px touch-targets ([`apps/web/tests/mobile/mobile-ui-audit.spec.ts`](./apps/web/tests/mobile/mobile-ui-audit.spec.ts), скрипт `pnpm --filter @sergeant/web e2e:mobile`) — **блокуючий PR-гейт** `Mobile UI audit (44px touch targets)` у [`ci.yml`](./.github/workflows/ci.yml) (промоутнуто з nightly 2026-08-07 після фіксу крашу `FINYK_ASSETS`). Це єдиний механічний enforcement 44×44 floor під `pointer: coarse`.
+
+Той самий спек несе ще три viewport-перевірки, і одна з них варта окремої згадки, бо її бракувало. Горизонтальний overflow міряється двічі: `documentElement.scrollWidth - innerWidth` (контент, що дає бічний скрол) **і** `scrollWidth > clientWidth` на кожному боксі з `overflow-x: hidden` (контент, обрізаний і недосяжний). Друга перевірка існує тому, що перша при кліпері дає чистий нуль — так комора проїхала 155px за 393px-екран непоміченою ([#925](https://github.com/SkOrDs-02/sergeant/pull/925)). Замір іде по боксу-кліперу, а не по rect-ах дітей: бокс із hidden-overflow лишається програмно скрольним, браузер його скролить (досить фокуса в полі), і rect-и дітей ховаються назад у viewport. Кейс із наповненою коморою (`PANTRY`) стоїть окремим тестом поза списком `ROUTES` — steady-state комора порожня, тож рядок, який і розпирає трек, у цьому свіпі не рендериться взагалі.
 
 ## AI markers
 

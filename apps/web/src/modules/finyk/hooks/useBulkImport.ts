@@ -44,7 +44,8 @@
  * сервер при undo не тонить (їх немає в `batch.createdRowIds`), тож
  * прибирати їх локально означало б знову сховати те, що на сервері живе.
  */
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { finykKeys } from "@shared/lib/api/queryKeys";
 import { apiClient } from "@shared/api";
 import type {
   ImportCommitRequest,
@@ -189,7 +190,16 @@ async function nudgeSyncPull(): Promise<void> {
 }
 
 export function useImportCommit({ storage }: UseImportCommitOptions) {
+  const queryClient = useQueryClient();
   return useMutation<ImportCommitResult, unknown, ImportCommitRequest>({
+    // Історія імпортів щойно змінилась — плашка «залий документи» має
+    // зникнути одразу, а не через годину staleTime. Інакше людина щойно
+    // залила виписку і далі бачить прохання залити виписку.
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: finykKeys.importRecent(),
+      });
+    },
     mutationFn: async (params) => {
       const response = await apiClient.finyk.commitImport(params);
       const locallyWrittenIds = await writeThroughCommittedRows(

@@ -41,7 +41,10 @@ vi.mock("./useWeeklyDigest", () => ({
     error: null,
     weekRange: "20 — 26 лип.",
     generate: generateMock,
+    // Див. коментар у `WeeklyDigestCard.datastate.test.tsx`: `canGenerate`
+    // прийшов у контракт хука з #935 і мусить бути в моку.
     isCurrentWeek: true,
+    canGenerate: true,
   }),
   useDigestHistory: () => ({ data: [] }),
   getWeekKey: () => "2026-W30",

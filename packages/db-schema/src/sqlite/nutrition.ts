@@ -110,6 +110,8 @@ export const nutritionPantryItems = sqliteTable(
     qty: real(),
     unit: text(),
     notes: text(),
+    /** Дзеркало PG-колонки з міграції 130 — див. `pg/nutrition.ts`. */
+    sources: text(),
     sortOrder: integer("sort_order").notNull().default(0),
     createdAt: text("created_at")
       .notNull()

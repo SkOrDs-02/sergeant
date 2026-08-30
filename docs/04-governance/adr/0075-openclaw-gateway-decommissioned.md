@@ -55,9 +55,10 @@ Railway-контейнер із плагіном-містком над серв�
   `openclaw_decisions`, `openclaw_reminders` — міграції immutable (Hard Rule #4).
   Назви історичні; таблиці не перейменовуються.
 - **Invocation-audit helper-и** (`openInvocation` / `finalizeInvocation`) —
-  перенесено у `apps/server/src/modules/ai-memory/invocation-audit.ts`; тепер їх
-  єдиний писар — `ai-memory /forget` (audit LLM-інвокації, ADR-0037 лишається
-  Active у частині таблиці).
+  після виводу жили в ai-memory як писар консольного `/forget`; видалені
+  2026-08-29 разом із `/forget`-тріо (PR #928) — консольні команди мертві з
+  виходом OpenClaw, імпортерів не лишалось. Таблиця `openclaw_invocations`
+  (ADR-0037) лишається immutable-історією без нових писарів.
 - **Founder-mute guard** (`isFounderMuted`) — перенесено у
   `apps/server/src/modules/alerts/mute-state.ts`; alerts-shipper і далі поважає
   «do not disturb» для founder-DM каналів.

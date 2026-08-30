@@ -1,6 +1,6 @@
 # API v1 + v2 — версіонування і контракт
 
-> **Last touched:** 2026-07-20 by @Skords-01. **Next review:** 2026-11-12.
+> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-25.
 > **Status:** Active
 
 Коротка довідка, як влаштоване версіонування Sergeant-API, гарантії контракту і міграційна стратегія.
@@ -53,7 +53,7 @@ Web прокидає `apiPrefix` через `getApiPrefix()` (div. `apps/web/src
 | `/api/v1/coach/insight` | POST     | Coaching insight write                                                |
 | `/api/v1/weekly-digest` | POST     | Weekly digest (живе у `routes/weekly-digest.ts`, окремо від coach)    |
 | `/api/v1/mono/*`        | GET/POST | Monobank: connect, accounts, transactions, backfill                   |
-| `/api/v1/ai-memory/*`   | POST     | AI memory ingest / recall / event-sync                                |
+| `/api/v1/ai-memory/*`   | POST     | AI memory ingest / recall                                             |
 | `/api/v1/push/send`     | POST     | Internal push send (service-to-service, X-Api-Secret header)          |
 | `/api/v1/nutrition/*`   | POST     | Nutrition log, backup та AI-endpoints (analyze-photo, day-plan, тощо) |
 | `/api/v1/barcode`       | GET      | Barcode lookup (Open Food Facts proxy)                                |

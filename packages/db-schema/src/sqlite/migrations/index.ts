@@ -1238,6 +1238,19 @@ ALTER TABLE nutrition_pantry_events ADD COLUMN tz_offset_min INTEGER;
 ALTER TABLE nutrition_goal_periods ADD COLUMN tz_offset_min INTEGER;
 `;
 
+/**
+ * Клієнтське дзеркало `130_pantry_item_sources.sql` — варіанти покупок у
+ * позиції комори (картка продукту).
+ *
+ * `ALTER TABLE ... ADD COLUMN` без `IF NOT EXISTS` — SQLite його не
+ * підтримує, але міграції append-only й ведуться леджером
+ * `__nutrition_migrations`, тож повторного застосування не буде (той самий
+ * патерн, що й `006_nutrition_events_tz_offset.sql`).
+ */
+const NUTRITION_007_PANTRY_ITEM_SOURCES_SQL = `
+ALTER TABLE nutrition_pantry_items ADD COLUMN sources TEXT;
+`;
+
 export const NUTRITION_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
   { name: "001_nutrition_tables.sql", sql: NUTRITION_001_SQL },
   {
@@ -1259,6 +1272,10 @@ export const NUTRITION_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
   {
     name: "006_nutrition_events_tz_offset.sql",
     sql: NUTRITION_006_EVENTS_TZ_OFFSET_SQL,
+  },
+  {
+    name: "007_nutrition_pantry_item_sources.sql",
+    sql: NUTRITION_007_PANTRY_ITEM_SOURCES_SQL,
   },
 ] as const;
 

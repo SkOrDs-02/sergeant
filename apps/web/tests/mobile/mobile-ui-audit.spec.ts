@@ -68,9 +68,12 @@ const FLOOR_SELECTOR = [
   "[data-touch-target]",
 ].join(",");
 
-// Run the three viewport-dependent checks that only mean something on a real
-// coarse-pointer mobile viewport: no sideways scroll, the touch-target floor,
-// and no truncated structural label. Structural labels are detected via
+// Run the four viewport-dependent checks that only mean something on a real
+// coarse-pointer mobile viewport: no sideways scroll, no content buried inside
+// an `overflow-x: hidden` box, the touch-target floor, and no truncated
+// structural label. The first two are separate on purpose — a clipping box
+// turns the first one green while the layout is still broken.
+// Structural labels are detected via
 // `text-transform: uppercase` — the design system uppercases section/legend
 // captions but never user content, so clipping there is a real layout bug
 // while an ellipsis on a user-typed note is expected.
@@ -84,6 +87,23 @@ async function auditPage(page: Page, id: string) {
     () => window.matchMedia("(pointer: coarse)").matches,
   );
   expect(coarse, `pointer:coarse must be active — ${id}`).toBe(true);
+
+  // Settle before measuring. Loading skeletons swap for real content, and
+  // `module-slide-in` / `skeleton-stagger` translate that content sideways for
+  // a few hundred ms — a rect read mid-flight reports an escape that does not
+  // exist once the frame lands. Looped ambience (shimmer, pulse) never
+  // finishes, so only finite animations are awaited.
+  await page
+    .locator('[aria-busy="true"]')
+    .first()
+    .waitFor({ state: "hidden", timeout: 15_000 })
+    .catch(() => undefined);
+  await page.evaluate(async () => {
+    const finite = document
+      .getAnimations()
+      .filter((a) => a.effect?.getComputedTiming().iterations !== Infinity);
+    await Promise.all(finite.map((a) => a.finished.catch(() => undefined)));
+  });
 
   const report = await page.evaluate((selector) => {
     const FLOOR = 44;
@@ -142,10 +162,36 @@ async function auditPage(page: Page, id: string) {
       });
     }
 
+    // Content wider than an `overflow-x: hidden` box: off-screen AND
+    // unreachable, because that box swallows the scroll `overflowPx` below
+    // would otherwise report. So `overflowPx` reads a clean zero while the
+    // layout is broken — exactly how the pantry grid blew 155px past a 393px
+    // viewport unnoticed (PR #925).
+    //
+    // Measured on the clipping box rather than on child rects: a hidden
+    // overflow box is still programmatically scrollable, and the browser does
+    // scroll it (focusing an input is enough), which slides every child rect
+    // back inside the viewport and hides the defect from a rect sweep.
+    //
+    // `text-overflow: ellipsis` is excluded — a truncated label is meant to
+    // overflow its box, and `clippedLabels` above already judges those.
+    const clippedContent: Array<{ cls: string; lostPx: number }> = [];
+    for (const el of Array.from(document.querySelectorAll("*"))) {
+      const cs = getComputedStyle(el);
+      if (cs.overflowX !== "hidden" || cs.textOverflow === "ellipsis") continue;
+      const lostPx = el.scrollWidth - el.clientWidth;
+      if (lostPx <= 1 || el.clientWidth <= 12) continue;
+      clippedContent.push({
+        cls: (el.getAttribute("class") || "").slice(0, 80),
+        lostPx,
+      });
+    }
+
     return {
       overflowPx: document.documentElement.scrollWidth - window.innerWidth,
       undersized,
       clippedLabels,
+      clippedContent,
     };
   }, FLOOR_SELECTOR);
 
@@ -153,11 +199,33 @@ async function auditPage(page: Page, id: string) {
     report.overflowPx,
     `horizontal overflow (px) — ${id}`,
   ).toBeLessThanOrEqual(1);
+  expect(
+    report.clippedContent,
+    `content clipped by an overflow-x:hidden box — ${id}`,
+  ).toEqual([]);
   expect(report.undersized, `sub-44px touch targets — ${id}`).toEqual([]);
   expect(report.clippedLabels, `truncated uppercase labels — ${id}`).toEqual(
     [],
   );
 }
+
+// Receipt-length names, the stress case the ROUTES sweep structurally cannot
+// reach: a steady-state pantry is empty, so the row that actually sizes the
+// grid track never renders. Seeded through the UI because `upsertItem` is a
+// pure local mutation — no SQLite handshake, none of the timing fragility
+// that keeps the demo funnel out of this lane (see the note above).
+// No commas: `upsertItem` runs a loose parse that splits on them, so a decimal
+// inside a name («2,6%») would silently land as two pantry rows and make the
+// seeded count non-obvious. Length is what matters here, not punctuation.
+const RECEIPT_PANTRY_ITEMS: readonly string[] = [
+  "Паста арахісова Лавка традицій Aumi кранч",
+  "Молоко Яготинське добірне пастеризоване 900 г",
+  "Сир кисломолочний Президент розсипчастий 350 г",
+  "Хліб Київхліб Український подовий 950 г",
+  "Печиво Roshen Bonjour Souffle капучино 232 г",
+  "Вода мінеральна Моршинська негазована",
+  "Кава розчинна Jacobs Monarch Intense 200 г",
+];
 
 test.describe("mobile coarse-pointer UI audit", () => {
   for (const routeCase of ROUTES) {
@@ -168,4 +236,38 @@ test.describe("mobile coarse-pointer UI audit", () => {
       await auditPage(page, routeCase.id);
     });
   }
+
+  test("PANTRY /nutrition/pantry with receipt-length names", async ({
+    page,
+  }) => {
+    await mockApi(page);
+    // Registered after `mockApi` so it wins: a connected Silpo account is what
+    // puts the "З покупок Сільпо" entry on the same grid as the pantry rows.
+    await page.route("**/silpo/sync-state", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          status: "connected",
+          accessTokenExpiresAt: "2099-01-01T00:00:00.000Z",
+          lastSyncAt: "2026-08-28T09:15:00.000Z",
+          receiptsCount: 5,
+        }),
+      });
+    });
+    await seedFTUX(page, "post-ftux");
+    await page.goto("/nutrition/pantry", { waitUntil: "domcontentloaded" });
+
+    const nameInput = page.getByPlaceholder("напр. лосось 300г");
+    await nameInput.waitFor({ state: "visible", timeout: 15_000 });
+    for (const name of RECEIPT_PANTRY_ITEMS) {
+      await nameInput.fill(name);
+      await page.getByRole("button", { name: "Додати", exact: true }).click();
+    }
+    await expect(
+      page.getByRole("button", { name: /^Редагувати / }),
+    ).toHaveCount(RECEIPT_PANTRY_ITEMS.length);
+
+    await auditPage(page, "PANTRY");
+  });
 });

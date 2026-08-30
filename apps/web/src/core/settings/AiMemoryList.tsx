@@ -65,8 +65,8 @@ const SOURCE_LABEL: Record<string, string> = {
   digest: "Підсумок тижня",
   cofounder: "Співзасновник",
   // Рішення власника 2026-08-18: «Продукт» нічого не пояснювало. Ці рядки —
-  // не факти про людину, а 4 мілстоуни телеметрії (`PRODUCT_MEMORY_EVENTS`
-  // у `apps/server/src/modules/ai-memory/eventSync.ts`): signup, onboarding,
+  // не факти про людину, а 4 мілстоуни телеметрії (ex-eventSync.ts,
+  // дзеркало знято 2026-08-29; legacy-рядки лишились): signup, onboarding,
   // перша дія в модулі, підписка. Пишуться напів-англійським текстом під
   // founder-ський `/recall`, тому називаємо їх тим, чим вони є.
   product: "Події застосунку",

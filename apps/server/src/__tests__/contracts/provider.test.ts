@@ -274,13 +274,15 @@ afterAll(() => {
 const pact = loadPact();
 
 describe("Pact provider replay — consumer=sergeant-api-client, provider=sergeant-server", () => {
-  it("pact file has 75 expected consumer interactions across 49 routes", () => {
+  it("pact file has 76 expected consumer interactions across 50 routes", () => {
     expect(pact.consumer.name).toBe("sergeant-api-client");
     expect(pact.provider.name).toBe("sergeant-server");
     // 75, не 73: +2 інтеракції 2026-08-25 на ВЖЕ покритих маршрутах
     // (файлова гілка `statement/preview` і порожній draft
     // `screenshot/analyze` із причиною) — `expectedRoutes` нижче не росте.
-    expect(pact.interactions).toHaveLength(75);
+    // 76, не 75: +1 інтеракція на НОВОМУ маршруті `import/recent` (#930),
+    // тож цього разу росте і `expectedRoutes`.
+    expect(pact.interactions).toHaveLength(76);
     const expectedRoutes = new Set([
       // PR-42 baseline (5)
       "GET /api/v1/me",
@@ -336,6 +338,9 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
       "POST /api/v1/finyk/import/commit",
       "GET /api/v1/finyk/import/batches/88",
       "DELETE /api/v1/finyk/import/batches/88",
+      // плашка «залий документи» в Огляді Фініка (#930): 1 інтеракція /
+      // 1 новий маршрут — дати останніх успішних батчів (75 → 76, 49 → 50).
+      "GET /api/v1/finyk/import/recent",
       // silpo розлінк хибної пари (аудит 2026-08-24): 1 інтеракція / 1 маршрут
       "DELETE /api/v1/silpo/receipts/link/mono-tx-1",
       // silpo ручне привʼязування + «Повернути» (2026-08-25): 1 / 1

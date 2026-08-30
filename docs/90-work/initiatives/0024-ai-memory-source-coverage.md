@@ -18,14 +18,16 @@
 
 Рішення founder-а 2026-08-26: **прибрати всі шість**, повністю — включно зі звуженням CHECK-констрейнта двофазно. `ALLOWED_MEMORY_SOURCES` стає `['digest', 'cofounder', 'product', 'profile']`.
 
+> ⚠️ **Заміри нижче застаріли після PR [#928](https://github.com/SkOrDs-02/sergeant/pull/928)** (2026-08-29, зняття атавізмів AI-шару). Той PR видалив `eventSync.ts`, `backfill.ts`, `forgetCleanup.ts` і `scripts/ai-memory-backfill.mjs`, тож рядки `product` і `cofounder` у таблиці нижче більше не мають продюсерів, а посилання на ці файли зняті (лишились назвами, щоб історію було видно). Скільки джерел лишилось насправді і що з цього випливає для плану змін — перезаміряти має власник ініціативи; цей коміт лише прибрав биті посилання, статусів у таблиці не чіпав.
+
 ## Виміряний стан (перевірено на HEAD 2026-08-26)
 
 | Джерело     | Продюсер у дереві                                                                                                      | Стан                                                            |
 | ----------- | ---------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
 | `digest`    | [`weekly-digest.ts`](../../../apps/server/src/modules/digest/weekly-digest.ts) — `enqueueMemoryIngest` після генерації | ✅ пише                                                         |
-| `product`   | [`eventSync.ts`](../../../apps/server/src/modules/ai-memory/eventSync.ts) ← `POST /api/ai-memory/event-sync` ← веб     | ✅ пише (4 події allowlist-у)                                   |
+| `product`   | `eventSync.ts` (видалено PR #928) ← `POST /api/ai-memory/event-sync` ← веб                                             | ✅ пише (4 події allowlist-у)                                   |
 | `profile`   | [`profileMirror.ts`](../../../apps/server/src/modules/ai-memory/profileMirror.ts) — дзеркало банку памʼяті профілю     | ✅ пише (міграція 118, фаза 2 приземлена)                       |
-| `cofounder` | [`backfill.ts`](../../../apps/server/src/modules/ai-memory/backfill.ts) + CLI `pnpm ai-memory:backfill`                | ✅ пише (founder-only, Telegram-архів)                          |
+| `cofounder` | `backfill.ts` (видалено PR #928) + CLI `pnpm ai-memory:backfill`                                                       | ✅ пише (founder-only, Telegram-архів)                          |
 | `chat`      | —                                                                                                                      | ❌ дозволений у zod-схемі ingest-у, але веб туди не ходить      |
 | `fizruk`    | —                                                                                                                      | ❌ те саме                                                      |
 | `nutrition` | —                                                                                                                      | ❌ те саме                                                      |
@@ -122,7 +124,7 @@ grep -rn "enqueueMemoryIngest" apps/server/src/modules/mono/*.ts | grep -v "\.te
 3. [`ingestQueue.ts`](../../../apps/server/src/modules/ai-memory/ingestQueue.ts) — повернути per-source гілку, тепер на `payload.source === "digest"`. Метрика `mode="source_disabled"` лишається як є.
 4. [`eval-rag.ts`](../../../apps/server/src/routes/internal/eval-rag.ts) — перейменувати `shouldAutoDisableMonoIngest` і рядок `activateKillSwitch`.
 5. [`obs/metrics.ts`](../../../apps/server/src/obs/metrics.ts), [`obs/metrics/jobs.ts`](../../../apps/server/src/obs/metrics/jobs.ts) — коментарі з назвою switch-а.
-6. Доки: [`runbook.md`](../../03-operations/observability/runbook.md) (§ «RagQualityGateKillSwitch»), [`feature-flags.md` (engineering)](../../02-engineering/architecture/feature-flags.md), [`feature-flags.md` (governance)](../../04-governance/governance/feature-flags.md), [`env-vars.md`](../../02-engineering/integrations/env-vars.md), [`rag-eval.md`](../../02-engineering/architecture/rag-eval.md), [`voyage-pgvector.md`](../../02-engineering/integrations/voyage-pgvector.md), [`ops/n8n-workflows/manifest.json`](../../../ops/n8n-workflows/manifest.json) (WF-30 notes), [`scripts/ai-memory-backfill.mjs`](../../../scripts/ai-memory-backfill.mjs) (коментар шапки).
+6. Доки: [`runbook.md`](../../03-operations/observability/runbook.md) (§ «RagQualityGateKillSwitch»), [`feature-flags.md` (engineering)](../../02-engineering/architecture/feature-flags.md), [`feature-flags.md` (governance)](../../04-governance/governance/feature-flags.md), [`env-vars.md`](../../02-engineering/integrations/env-vars.md), [`rag-eval.md`](../../02-engineering/architecture/rag-eval.md), [`voyage-pgvector.md`](../../02-engineering/integrations/voyage-pgvector.md), [`ops/n8n-workflows/manifest.json`](../../../ops/n8n-workflows/manifest.json) (WF-30 notes), `scripts/ai-memory-backfill.mjs` (видалено PR #928) (коментар шапки).
 
 ### Замір на проді (між PR-2 і PR-3, операторський крок)
 

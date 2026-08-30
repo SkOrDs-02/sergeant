@@ -44,7 +44,7 @@ export default function GuideMonobankPage() {
               Як підʼєднати Monobank до трекера витрат – і що він реально бачить
             </h1>
             <p className="mt-4 text-sm text-subtle">
-              Оновлено 28.08.2026 · автор Sergeant, роблю його сам
+              Оновлено 28.08.2026 · автор Sergeant
             </p>
           </div>
 

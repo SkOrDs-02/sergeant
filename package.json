@@ -80,7 +80,6 @@
     "dev:db": "pnpm db:up && pnpm db:migrate",
     "replay:webhook": "node scripts/replay-webhook.mjs",
     "replay:dlq": "node scripts/replay-dlq.mjs",
-    "ai-memory:backfill": "node scripts/ai-memory-backfill.mjs",
     "strict:coverage": "node scripts/strict-coverage.mjs",
     "dead-code:files": "node scripts/knip-respects-scaffolded.mjs",
     "knip": "knip",
@@ -183,7 +182,14 @@
     ],
     "*.md": [
       "node scripts/docs/bump-last-validated.mjs",
-      "prettier --write"
+      "prettier --write",
+      "node scripts/pre-commit-derived-artifacts.mjs --docs"
+    ],
+    "packages/shared/src/{openapi,schemas}/**/*.ts": [
+      "node scripts/pre-commit-derived-artifacts.mjs --openapi"
+    ],
+    "docs/04-governance/pr-ledger/index.json": [
+      "node scripts/pre-commit-derived-artifacts.mjs --ledger"
     ],
     "*.{json,css,html,yml,yaml}": [
       "prettier --write"

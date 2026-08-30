@@ -1,6 +1,6 @@
 # Аудит AI-пайплайну — 2026-08-05
 
-> **Last touched:** 2026-08-05 by @claude. **Next review:** 2027-08-21.
+> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-24.
 > **Status:** Active — B1 і B2 закриті кодом у цій же гілці
 > (`claude/sergeant-security-review-h4s302`), з регресійними тестами.
 > Відкриті: B3–B30 (порядок робіт — у кінці). Знімок стану на момент аудиту.
@@ -672,7 +672,7 @@ GDPR-експорт ці рядки теж не включає — тобто д
 Grep по всьому репо на `forgetById` / `previewForget` / `confirmForget` /
 `runForgetCleanup` дає лише самі ці файли та їхні тести: ні роута, ні крона, ні
 експорту з `index.ts`. Тобто задокументований контракт «7 днів recovery-вікна,
-потім hard-delete» ([`forgetCleanup.ts:11-21`](../../../apps/server/src/modules/ai-memory/forgetCleanup.ts))
+потім hard-delete» (`forgetCleanup.ts:11-21` (файл видалено PR #928))
 — документація для коду, який не виконується.
 
 Наслідок уже матеріальний: міграція 090 м'яко видалила всі рядки

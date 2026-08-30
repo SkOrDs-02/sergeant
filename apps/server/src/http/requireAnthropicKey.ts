@@ -6,37 +6,10 @@ import { visionViaOpenRouter } from "../modules/nutrition/visionTransport.js";
 
 type WithAnthropicKey = Request & { anthropicKey?: string };
 
-/**
- * Guard для ендпоінтів, що викликають Anthropic. Читає `env.ANTHROPIC_API_KEY`,
- * кладе у `req.anthropicKey`, або віддає 503 якщо ключ не сконфігурований.
- *
- * Заміняє повторення `if (!env.ANTHROPIC_API_KEY) return 500…` у
- * 11 handler-ах. 503 точніше 500: це не внутрішня помилка, а проблема
- * конфігурації деплою.
- *
- * AI-CONTEXT: `env.ANTHROPIC_API_KEY` парситься один раз при бутстрапі
- * (`apps/server/src/env/env.ts`). Тести, що хочуть «вимкнути» ключ для
- * 503-сценаріїв, мають використовувати канонічний pattern із
- * `apps/server/src/auth.test.ts` — `vi.stubEnv("ANTHROPIC_API_KEY", "")` +
- * `vi.resetModules()` + динамічний `import()`, бо `env` уже міг бути
- * прочитаний раніше і зафіксований у топ-level конст.
- */
-export function requireAnthropicKey(): RequestHandler {
-  return (req, res, next) => {
-    const key = env.ANTHROPIC_API_KEY;
-    if (!key) {
-      // Не світимо назву env-змінної клієнту: вона потрапляє у formatApiError
-      // і показується юзеру дослівно. Дискримінатор для frontend — `code`.
-      res.status(503).json({
-        error: "AI-помічник тимчасово недоступний. Спробуй пізніше.",
-        code: "ANTHROPIC_KEY_MISSING",
-      });
-      return;
-    }
-    (req as WithAnthropicKey).anthropicKey = key;
-    next();
-  };
-}
+// `requireAnthropicKey()` жив тут до 2026-08-29 і питав лише «чи існує
+// Anthropic-ключ» — питання, що втратило сенс після переїзду всіх шляхів на
+// OpenRouter (B31-хвиля). Останній роут-користувач зник разом із нею;
+// видалено як мертвий код. Історія формулювання — git blame цього блока.
 
 /**
  * Guard для `/api/chat` — вимагає ключ ТОГО транспорту, яким піде запит.
@@ -85,7 +58,7 @@ export function requireChatUpstreamKey(): RequestHandler {
  * `anthropicMessages()` замість `getLLMProvider()` — тож і питання про ключ
  * у нього інше (див. нижче).
  */
-export type LlmPath = "coach" | "digest" | "nutrition" | "vision";
+export type LlmPath = "coach" | "digest" | "nutrition" | "readonly" | "vision";
 
 /**
  * Guard для AI-роутів поза чатом: `coach/insight`, `weekly-digest` і
@@ -151,14 +124,26 @@ function visionUpstreamReady(): boolean {
   return visionViaOpenRouter() || Boolean(env.ANTHROPIC_API_KEY);
 }
 
-/** `getLLMProvider()`-шляхи: чи дотягнеться він до РЕАЛЬНОЇ моделі. */
-function providerUpstreamReady(path: Exclude<LlmPath, "vision">): boolean {
+/**
+ * `getLLMProvider()`-шляхи: чи дотягнеться він до РЕАЛЬНОЇ моделі.
+ *
+ * Експортований не лише для роут-гейта: mono-enrichment-worker (`index.ts`
+ * старт + `getMonoEnrichmentWorkerStatus`) гейтиться цим же предикатом по
+ * шляху `readonly` — до 2026-08-29 він вимагав `ANTHROPIC_API_KEY`, хоча
+ * категоризує через `LLM_READONLY_PROVIDER` (дефолт `openrouter`), і на
+ * gateway-only проді мовчки не стартував.
+ */
+export function providerUpstreamReady(
+  path: Exclude<LlmPath, "vision">,
+): boolean {
   const provider =
     path === "coach"
       ? env.LLM_COACH_PROVIDER
       : path === "digest"
         ? env.LLM_DIGEST_PROVIDER
-        : env.LLM_NUTRITION_PROVIDER;
+        : path === "readonly"
+          ? env.LLM_READONLY_PROVIDER
+          : env.LLM_NUTRITION_PROVIDER;
   if (provider === "stub") return true;
   if (provider === "openrouter") return Boolean(env.OPENROUTER_API_KEY);
   return Boolean(env.ANTHROPIC_API_KEY);

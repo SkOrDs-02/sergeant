@@ -94,6 +94,8 @@ function makePantry(
     parsePantry: vi.fn(),
     pantryStorageErr: "",
     consumePantryItem: vi.fn(),
+    variantChoice: null,
+    resolveVariantChoice: vi.fn(),
     ...override,
   } as ReturnType<typeof useNutritionPantries>;
 }

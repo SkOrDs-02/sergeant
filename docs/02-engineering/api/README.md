@@ -1,6 +1,6 @@
 # Sergeant API — OpenAPI-специфікація
 
-> **Last touched:** 2026-08-07 by @claude. **Next review:** 2027-02-21.
+> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-14.
 > **Status:** Active
 
 [`openapi.json`](./openapi.json) — згенерований OpenAPI 3.1 specification. Single source of truth — zod-схеми у [`packages/shared/src/schemas/api.ts`](../../../packages/shared/src/schemas/api.ts) + route-каталог у [`packages/shared/src/openapi/routes.ts`](../../../packages/shared/src/openapi/routes.ts). Автогенерований TS-клієнт (`packages/api-client/src/generated/`) виведено з експлуатації ponytail-аудитом (#679) разом зі скриптами генерації та звіркою `api:check-openapi-types`; типи `api-client` тепер пишуться вручну під контрактні тести (Hard Rule #3).
@@ -61,7 +61,6 @@ npx @redocly/cli preview-docs docs/02-engineering/api/openapi.json
 ### Відомі прогалини (треба додати у `packages/shared/src/openapi/routes.ts` і перегенерувати spec)
 
 - `POST /api/ai-memory/ingest` — є у `apps/server/src/routes/ai-memory.ts:47`, нема у spec.
-- `POST /api/ai-memory/event-sync` — є у `apps/server/src/routes/ai-memory.ts:58`, нема у spec.
 - `GET /api/status` — є у `apps/server/src/routes/status.ts:15`, нема у spec (це product-facing status snapshot, не infra probe).
 
 Після того як ці три рядки додадуть у `routes.ts`, лічильники в абзаці вище треба пересипати.

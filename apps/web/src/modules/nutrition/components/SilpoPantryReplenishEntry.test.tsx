@@ -138,7 +138,20 @@ describe("SilpoPantryReplenishEntry", () => {
 
     expect(upsertItem).toHaveBeenCalledTimes(1);
     expect(upsertItem).toHaveBeenCalledWith([
-      { name: "Хліб", qty: 1, unit: "шт", notes: null },
+      {
+        name: "Хліб",
+        qty: 1,
+        unit: "шт",
+        notes: null,
+        sources: [
+          {
+            name: "Хліб",
+            qty: 1,
+            unit: "шт",
+            addedAt: expect.any(String) as unknown as string,
+          },
+        ],
+      },
     ]);
   });
 

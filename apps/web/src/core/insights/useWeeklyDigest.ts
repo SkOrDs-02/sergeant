@@ -429,6 +429,9 @@ async function generateWeeklyDigest(weekKey: string): Promise<{
   // `isApiError(query.error)`.
   const json = await weeklyDigestApi.generate({
     weekRange: currentWeekRange,
+    // Канонічний ключ тижня для ai_memories.source_ref (сервер падає назад
+    // на weekRange лише для старих бандлів без цього поля).
+    weekKey,
     // AI-CONTEXT: провенанс методики (ADR-0079 §3-§4). Числа вище пораховані
     // агрегаторами цього бандла, тож дайджест штампується версією, чинною на
     // момент підрахунку. Без цього штампу коуч, який тримає 8 тижнів,
@@ -487,6 +490,15 @@ export function useWeeklyDigest(selectedWeekKey?: string) {
   const weekKey = selectedWeekKey || currentWeekKey;
   const weekRange = getWeekRange(new Date(weekKey + "T12:00:00"));
   const isCurrentWeek = weekKey === currentWeekKey;
+  // Минулий (щойно завершений) тиждень теж генерується: понеділковий
+  // авто-звіт підбиває САМЕ його, а ручна кнопка дає перегенерувати
+  // неповний недільний знімок повними даними. Старіші тижні лишаються
+  // read-only: їхні локальні дані вже могли поїхати, і звіт брехав би.
+  const previousWeekKey = getWeekKey(
+    new Date(new Date(currentWeekKey + "T12:00:00").getTime() - 7 * 86_400_000),
+  );
+  const isPreviousWeek = weekKey === previousWeekKey;
+  const canGenerate = isCurrentWeek || isPreviousWeek;
 
   const query = useQuery({
     queryKey: weeklyDigestQueryKey(weekKey),
@@ -554,7 +566,7 @@ export function useWeeklyDigest(selectedWeekKey?: string) {
   const { mutateAsync } = mutation;
 
   const generate = useCallback(async () => {
-    if (!isCurrentWeek) return null;
+    if (!canGenerate) return null;
     try {
       const result = await mutateAsync(weekKey);
       return {
@@ -566,7 +578,7 @@ export function useWeeklyDigest(selectedWeekKey?: string) {
     } catch {
       return null;
     }
-  }, [weekKey, isCurrentWeek, mutateAsync]);
+  }, [weekKey, canGenerate, mutateAsync]);
 
   const insufficientData = isInsufficientDataError(mutation.error);
 
@@ -587,5 +599,6 @@ export function useWeeklyDigest(selectedWeekKey?: string) {
     weekRange,
     generate,
     isCurrentWeek,
+    canGenerate,
   };
 }

@@ -26,6 +26,12 @@ vi.mock("./useWeeklyDigest", () => ({
 import { WeeklyDigestCard } from "./WeeklyDigestCard";
 
 describe("WeeklyDigestCard — DataState routing", () => {
+  // `canGenerate` — частина контракту `useWeeklyDigest` з #935
+  // (`isCurrentWeek || isPreviousWeek`). Мок мусить його віддавати: без
+  // нього поле приходить `undefined`, картка ховає обидві кнопки
+  // генерації, і тести падають із «Unable to find an accessible element
+  // with the role button» — тобто симптом вказує на розмітку, а причина
+  // в формі мока.
   beforeEach(() => {
     vi.clearAllMocks();
     useDigestHistoryMock.mockReturnValue({ data: [] });
@@ -46,6 +52,7 @@ describe("WeeklyDigestCard — DataState routing", () => {
       weekRange: "10 — 16 листоп.",
       generate: vi.fn(),
       isCurrentWeek: true,
+      canGenerate: true,
     });
 
     render(<WeeklyDigestCard />);
@@ -65,6 +72,7 @@ describe("WeeklyDigestCard — DataState routing", () => {
       weekRange: "10 — 16 листоп.",
       generate: vi.fn(),
       isCurrentWeek: true,
+      canGenerate: true,
     });
 
     render(<WeeklyDigestCard />);
@@ -83,6 +91,7 @@ describe("WeeklyDigestCard — DataState routing", () => {
       weekRange: "03 — 09 листоп.",
       generate: vi.fn(),
       isCurrentWeek: false,
+      canGenerate: false,
     });
 
     render(<WeeklyDigestCard />);
@@ -103,6 +112,7 @@ describe("WeeklyDigestCard — DataState routing", () => {
       weekRange: "10 — 16 листоп.",
       generate: vi.fn(),
       isCurrentWeek: true,
+      canGenerate: true,
     });
 
     render(<WeeklyDigestCard />);
@@ -128,6 +138,7 @@ describe("WeeklyDigestCard — DataState routing", () => {
       weekRange: "10 — 16 листоп.",
       generate: vi.fn(),
       isCurrentWeek: true,
+      canGenerate: true,
     });
 
     render(<WeeklyDigestCard />);

@@ -4,7 +4,7 @@
  */
 import type { Dispatch, SetStateAction } from "react";
 import { cn } from "@shared/lib/ui/cn";
-import { formatReceiptQty } from "@shared/lib/format/receiptQty";
+import { formatPantryQty } from "../../lib/formatPantryQty";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import type { PantryItem } from "@sergeant/nutrition-domain";
 import type { MealFormState } from "./mealFormUtils";
@@ -42,11 +42,16 @@ export function FromPantryRow({
           // `unit` у коморі несе два різні сенси, бо приходить сирим із
           // чека: одиницю виміру («кг») або фасування («0,25л»). Голе
           // `{qty}{unit}` давало «20,25л» замість «2 × 0,25 л».
-          const qtyLabel = formatReceiptQty(item.qty, item.unit || "г");
+          const qtyLabel = formatPantryQty(item.qty, item.unit || "г");
           return (
             <button
               key={item.name}
               type="button"
+              // Якір для e2e: у цьому ж кроці аркуша живуть швидкі чіпи з
+              // тими самими назвами продуктів, і пошук за текстом ловить
+              // їх замість комори — а вони йдуть іншим шляхом збереження,
+              // без списання.
+              data-testid="from-pantry-chip"
               onClick={() => {
                 if (isActive) {
                   setFromPantryItem(null);
