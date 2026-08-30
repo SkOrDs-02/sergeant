@@ -30,14 +30,14 @@
 - [#74](https://github.com/Skords-01/Sergeant/pull/74) — feat(agents): add scheduled entropy janitors (doc-drift, dead-code, dep-cycles) _(2026-06-30)_
 - [#3665](https://github.com/Skords-01/Sergeant/pull/3665) — docs(web): add ADR-0067 engagement mechanism standardization _(2026-06-20)_
 
-## 🔵 В роботі — 68 відкритих
+## 🔵 В роботі — 69 відкритих
 
 | Трекер                           | Відкрито |
 | -------------------------------- | -------- |
 | Ініціативи                       | 6        |
 | Планування                       | 28       |
 | Launch / запуск                  | 12       |
-| Аудити й прожарки                | 17       |
+| Аудити й прожарки                | 18       |
 | Security hardening               | 1        |
 | Техборг                          | 4        |
 | Superpowers — плани впровадження | 0        |
