@@ -1,5 +1,4 @@
-import SiteHeader from "../components/SiteHeader";
-import SiteFooter from "../components/SiteFooter";
+import SiteLayout from "../components/SiteLayout";
 import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
 
 /**
@@ -47,48 +46,59 @@ const GUIDES = [
 ];
 
 export default function GuidesPage() {
-  usePageMeta(ROUTE_META["/guides"]);
+  usePageMeta({
+    ...ROUTE_META["/guides"],
+    // Каталог – це перелік, а не наратив: ItemList віддає краулеру склад
+    // хабу машинно, без переписування самих карток.
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      name: "Гайди Sergeant",
+      inLanguage: "uk",
+      numberOfItems: GUIDES.length,
+      itemListElement: GUIDES.map((guide, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        name: guide.title,
+        url: guide.href,
+      })),
+    },
+  });
 
   return (
-    <>
-      <SiteHeader />
+    <SiteLayout mainClassName="mx-auto w-full max-w-3xl px-5 pb-24 pt-12 sm:px-8 sm:pt-16">
+      <h1 className="font-display text-4xl font-extrabold uppercase tracking-tight text-foreground-strong sm:text-5xl">
+        Гайди
+      </h1>
+      <p className="mt-5 max-w-xl leading-relaxed text-muted">
+        Розбори про гроші, звички і трекінг. Коротка відповідь стоїть одразу на
+        початку.
+      </p>
 
-      <main className="mx-auto w-full max-w-3xl px-5 pb-24 pt-12 sm:px-8 sm:pt-16">
-        <h1 className="font-display text-4xl font-extrabold uppercase tracking-tight text-foreground-strong sm:text-5xl">
-          Гайди
-        </h1>
-        <p className="mt-5 max-w-xl leading-relaxed text-muted">
-          Розбори про гроші, звички і трекінг. Коротка відповідь стоїть одразу
-          на початку.
-        </p>
+      <div className="mt-10 border-b border-cardline">
+        {GUIDES.map((guide) => (
+          <a
+            key={guide.href}
+            href={guide.href}
+            className="group block border-t border-cardline py-6 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+          >
+            <p className="font-display text-xs font-medium uppercase tracking-[0.12em] text-subtle">
+              {guide.category}
+            </p>
+            <h2 className="mt-2 max-w-2xl text-xl font-bold leading-snug text-balance text-foreground-strong group-hover:underline sm:text-2xl">
+              {guide.title}
+            </h2>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
+              {guide.teaser}
+            </p>
+          </a>
+        ))}
+      </div>
 
-        <div className="mt-10 border-b border-cardline">
-          {GUIDES.map((guide) => (
-            <a
-              key={guide.href}
-              href={guide.href}
-              className="group block border-t border-cardline py-6 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
-            >
-              <p className="font-display text-xs font-medium uppercase tracking-[0.12em] text-subtle">
-                {guide.category}
-              </p>
-              <h2 className="mt-2 max-w-2xl text-xl font-bold leading-snug text-balance text-foreground-strong group-hover:underline sm:text-2xl">
-                {guide.title}
-              </h2>
-              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
-                {guide.teaser}
-              </p>
-            </a>
-          ))}
-        </div>
-
-        <p className="mt-8 text-sm text-subtle">
-          Нові гайди зʼявляються, щойно я їх дописую. Анонси – у Threads і
-          Telegram.
-        </p>
-      </main>
-
-      <SiteFooter />
-    </>
+      <p className="mt-8 text-sm text-subtle">
+        Нові гайди зʼявляються, щойно я їх дописую. Анонси – у Threads і
+        Telegram.
+      </p>
+    </SiteLayout>
   );
 }
