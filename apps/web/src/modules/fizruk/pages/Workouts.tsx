@@ -24,6 +24,12 @@ import { messages } from "@shared/i18n/uk";
 interface WorkoutsProps {
   workoutId?: string | undefined;
   activeOnly?: boolean;
+  /**
+   * Розділ із власним маршрутом (`/fizruk/catalog`, `/fizruk/templates`).
+   * Сторінка та сама, але вона відкривається одразу в цьому вигляді, а
+   * «назад» веде на хаб «Тренування», а не перемикає локальний `view`.
+   */
+  section?: "catalog" | "templates" | undefined;
   onNavigate?: ((target: string) => void) | undefined;
   /**
    * Deep-link to the Routine module's calendar tab. Wired by
@@ -39,12 +45,13 @@ interface WorkoutsProps {
 export function Workouts({
   workoutId,
   activeOnly = false,
+  section,
   onNavigate,
   onOpenRoutine,
 }: WorkoutsProps = {}) {
   const o = useWorkoutsOrchestrator({
     requestedWorkoutId: workoutId,
-    initialView: activeOnly ? "log" : "home",
+    initialView: activeOnly ? "log" : (section ?? "home"),
     onWorkoutStarted: onNavigate
       ? (id) => onNavigate(`workout/${id}`)
       : undefined,
@@ -84,7 +91,7 @@ export function Workouts({
           activeWorkout={o.activeWorkout}
           finishedCount={o.finishedCount}
           onBack={() =>
-            activeOnly ? onNavigate?.("workouts") : o.setView("home")
+            activeOnly || section ? onNavigate?.("workouts") : o.setView("home")
           }
           onAddCatalog={() => o.setAddOpen(true)}
         />
@@ -102,8 +109,10 @@ export function Workouts({
                 o.setView("log");
               }
             }}
-            onOpenCatalog={() => o.setView("catalog")}
-            onOpenTemplates={() => o.setView("templates")}
+            // Каталог і шаблони мають власні адреси (`FIZRUK_PAGES`), тож
+            // це навігація, а не перемикання локального `view`.
+            onOpenCatalog={() => onNavigate?.("catalog")}
+            onOpenTemplates={() => onNavigate?.("templates")}
             // 03-A — "Всі →" now owns its own URL (`/fizruk/history`)
             // instead of flipping `view` to "log" on the same
             // `/fizruk/workouts` path (the dual start-path bug).
