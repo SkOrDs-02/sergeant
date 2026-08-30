@@ -75,6 +75,22 @@ describe("catalog integrity gate", () => {
     expect(unknown).toEqual([]);
   });
 
+  // Домашня програма — це перевірка фільтра локації на реальних даних:
+  // якщо туди просочиться вправа зі штангою, зламається обіцянка «без
+  // обладнання», а не просто тест.
+  it("keeps the home program free of gym-only exercises", () => {
+    const home = PROGRAM_CATALOGUE.find((p) => p.id === "home_bodyweight");
+    expect(home).toBeTruthy();
+    const gymOnly: string[] = [];
+    for (const session of Object.values(home!.sessions)) {
+      for (const id of session.exerciseIds) {
+        const ex = findExerciseById(id);
+        if (!getExerciseLocations(ex).includes("home")) gymOnly.push(id);
+      }
+    }
+    expect(gymOnly).toEqual([]);
+  });
+
   it("keeps exercise ids unique", () => {
     const ids = EXERCISES.map((ex) => ex.id);
     expect(new Set(ids).size).toBe(ids.length);
