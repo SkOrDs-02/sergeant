@@ -1,6 +1,6 @@
 # @sergeant/landing
 
-> **Last touched:** 2026-08-29 by @claude. **Next review:** 2026-12-01.
+> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-11.
 > **Status:** Active
 
 Маркетинговий лендінг Sergeant. Одна сторінка, одна дія — перехід у
