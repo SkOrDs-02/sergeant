@@ -1,6 +1,6 @@
 # Playbook: Sync RN Migration Progress
 
-> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-10.
+> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-11-28.
 > **Status:** Active
 
 **Trigger:** після merge порту web → mobile (див. `port-web-screen-to-mobile.md`) — оновити progress tracker `docs/02-engineering/mobile/react-native-migration.md`.

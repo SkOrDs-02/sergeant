@@ -1,6 +1,6 @@
 # Repo map — apps, packages, and tooling
 
-> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-16.
+> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-22.
 > **Status:** Active
 
 > **Machine-readable mirror:** [`docs/04-governance/governance/repo-map.auto.json`](../../04-governance/governance/repo-map.auto.json) (auto-gen via `pnpm docs:gen-repo-map`; CI gate `pnpm docs:check-repo-map` enforces that every workspace listed here is mentioned in this file). The auto-mirror enumerates workspaces + framework deps + owner from CODEOWNERS; editorial Purpose / Stack-narrative / Test-stacks-per-surface stays hand-maintained below.

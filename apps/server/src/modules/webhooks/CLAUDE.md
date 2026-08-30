@@ -1,6 +1,6 @@
 # Інфра-модуль Webhooks (інтеграція)
 
-> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-05.
+> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-13.
 > **Status:** Active
 
 Контекст: `Read .agents/skills/sergeant-module-integrations/SKILL.md` (журнал рішень — у самому скілі).

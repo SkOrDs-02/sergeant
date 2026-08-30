@@ -1,6 +1,6 @@
 # Пакет fizruk-domain
 
-> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-19.
+> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-11.
 > **Status:** Active
 
 Продуктовий контекст модуля: `Read .agents/skills/sergeant-module-fizruk/SKILL.md` → канон `docs/01-product/model/fizruk.md`.

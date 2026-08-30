@@ -1,6 +1,6 @@
 # Observability-runbook
 
-> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-11-29.
+> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-15.
 > **Status:** Active
 
 > **Update 2026-07-21:** API/server logs — **Coolify** ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md)). Посилання на «n8n Railway env» нижче — legacy n8n hosting (migrate TBD). OpenClaw WF-103 env — historical ([ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md)).

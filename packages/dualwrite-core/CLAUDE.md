@@ -1,6 +1,6 @@
 # Пакет dualwrite-core
 
-> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-02.
+> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-16.
 > **Status:** Active
 
 Контекст sync-шару: `Read .agents/skills/sergeant-module-sync/SKILL.md` (журнал рішень — у скілі).

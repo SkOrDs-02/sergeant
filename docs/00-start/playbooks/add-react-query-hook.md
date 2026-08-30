@@ -1,6 +1,6 @@
 # Playbook: Add React Query Hook
 
-> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-11-29.
+> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-07.
 > **Status:** Active
 
 **Trigger:** «Дай хук який тягне X з API» / новий useQuery або useMutation у `apps/web` / нова server-state дата.
