@@ -71,6 +71,49 @@ describe("FromPantryRow", () => {
     expect(screen.queryByText("20,25л")).toBeNull();
   });
 
+  // Рішення 8 спеки `pantry-generic-names.md`: у пошук іде РОДОВА назва
+  // позиції, а не назва варіанта. Видача каталогу на «Молоко» завжди
+  // непорожня, і це важливіше за точність жирності — «Молоко Яготинське
+  // 2.6% 900г» у пошуку не знаходить нічого.
+  it("seeds the generic item name, never a variant name", () => {
+    const setFoodQuery = vi.fn();
+    render(
+      <FromPantryRow
+        pantryItems={
+          [
+            {
+              name: "Молоко",
+              qty: 2000,
+              unit: "мл",
+              sources: [
+                {
+                  name: "Молоко Яготинське 2.6% 900г",
+                  qty: 900,
+                  unit: "мл",
+                  addedAt: "2026-08-21",
+                },
+                {
+                  name: "Молоко Галичина 1%",
+                  qty: 1100,
+                  unit: "мл",
+                  addedAt: "2026-08-28",
+                },
+              ],
+            },
+          ] as never[]
+        }
+        fromPantryItem={null}
+        setFromPantryItem={vi.fn()}
+        setForm={vi.fn()}
+        setFoodQuery={setFoodQuery}
+      />,
+    );
+    // Чіп показує родову назву; назви покупок у ряд «З комори» не течуть.
+    expect(screen.queryByText(/Яготинське/)).toBeNull();
+    fireEvent.click(screen.getByText("Молоко"));
+    expect(setFoodQuery).toHaveBeenCalledWith("Молоко");
+  });
+
   it("deselects the active item on a second tap", () => {
     const setFromPantryItem = vi.fn();
     render(

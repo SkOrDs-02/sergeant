@@ -57,20 +57,20 @@ export default function AboutPage() {
           </div>
           <figure className="paper-shadow rotate-[1.2deg] rounded-[var(--radius-card)] bg-note px-7 py-6">
             <blockquote className="font-serif text-lg italic leading-normal text-foreground sm:text-xl">
-              «Назва – від сержанта, який тримає стрій без крику: рахує, звіряє
-              і чесно каже, що бачить»
+              «Трекери зазвичай або тренери-мотиватори, або бухгалтери. Мені був
+              потрібен сержант: той, хто щодня поруч, тримає лад і каже як є»
             </blockquote>
           </figure>
         </section>
 
         <section className="mx-auto w-full max-w-6xl px-5 pb-16 sm:px-8">
           <p className="max-w-2xl leading-relaxed text-muted">
-            Правила, за які продукт відповідає, зібрані в одному місці: у{" "}
+            Обіцянки, за які продукт відповідає, зібрані в одному місці: у{" "}
             <a
-              href="/#statute"
+              href="/#promises"
               className="font-semibold text-foreground underline decoration-cardline-strong underline-offset-4 transition hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
             >
-              статуті на головній
+              розділі «Що обіцяю» на головній
             </a>
             . Що саме Sergeant бачить і де лежать твої дані – на сторінці{" "}
             <a

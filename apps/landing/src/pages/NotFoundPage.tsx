@@ -4,27 +4,31 @@ import SiteFooter from "../components/SiteFooter";
 
 /**
  * Раніше невідомий шлях віддавав головну – для пошуковика це soft-404
- * (статус 200 на неіснуючій сторінці), і такі URL потрапляють в індекс.
+ * (статус 200 на сторінці, якої не існує), і такі URL потрапляють в індекс.
  * Статичний SPA-хостинг не дасть віддати справжній 404-статус, тож робимо
- * наступне найкраще: окрема сторінка + `noindex`.
+ * наступне найкраще: окрема сторінка + `noindex` + власний title, щоб у
+ * вкладці не лишався заголовок головної.
  *
  * Тег ставиться імперативно, а не JSX-ом: document-metadata у дереві –
  * це React 19, а тут React 18 (спільна версія з `apps/web`).
  */
-function useNoindex() {
+function useNotFoundMeta() {
   useEffect(() => {
+    const prevTitle = document.title;
+    document.title = "Такої сторінки немає – Sergeant";
     const meta = document.createElement("meta");
     meta.name = "robots";
     meta.content = "noindex";
     document.head.appendChild(meta);
     return () => {
+      document.title = prevTitle;
       document.head.removeChild(meta);
     };
   }, []);
 }
 
 export default function NotFoundPage() {
-  useNoindex();
+  useNotFoundMeta();
 
   return (
     <>

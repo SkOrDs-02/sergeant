@@ -5,7 +5,7 @@ import AboutPage from "./pages/AboutPage";
 import DataPage from "./pages/DataPage";
 import GuidesPage from "./pages/GuidesPage";
 import GuideMonobankPage from "./pages/GuideMonobankPage";
-import GuideKbzhuPage from "./pages/GuideKbzhuPage";
+import GuideKbzhvPage from "./pages/GuideKbzhvPage";
 import GuideChekyPage from "./pages/GuideChekyPage";
 import GuideFotoKaloriiPage from "./pages/GuideFotoKaloriiPage";
 import GuideBankBezpekaPage from "./pages/GuideBankBezpekaPage";
@@ -20,14 +20,14 @@ import { ANALYTICS_EVENTS, LANDING_LOCALE, track } from "./lib/analytics";
  * Новий маршрут = новий запис тут (він же потрапляє в `path` події
  * `LANDING_VIEWED`; усе невідоме зводиться до `/404`).
  */
-const ROUTES: Record<string, ComponentType> = {
+export const ROUTES: Record<string, ComponentType> = {
   "/": HomePage,
   "/beta": BetaPage,
   "/about": AboutPage,
   "/data": DataPage,
   "/guides": GuidesPage,
   "/guides/monobank": GuideMonobankPage,
-  "/guides/kbzhu": GuideKbzhuPage,
+  "/guides/kbzhv": GuideKbzhvPage,
   "/guides/cheky": GuideChekyPage,
   "/guides/foto-kalorii": GuideFotoKaloriiPage,
   "/guides/bank-bezpeka": GuideBankBezpekaPage,

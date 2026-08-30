@@ -12,6 +12,7 @@ import {
   deleteImportBatchHandler,
   getImportBatchHandler,
 } from "../modules/finyk/import/batches.js";
+import getRecentImportsHandler from "../modules/finyk/import/recent.js";
 
 /**
  * `/api/finyk/*` — server-side доменні endpoint-и Фініка.
@@ -180,6 +181,15 @@ export function createFinykRouter(): Router {
       windowMs: 60_000,
     }),
     deleteImportBatchHandler,
+  );
+  r.get(
+    "/api/finyk/import/recent",
+    rateLimitExpress({
+      key: "finyk:import-recent",
+      limit: 60,
+      windowMs: 60_000,
+    }),
+    getRecentImportsHandler,
   );
 
   return r;

@@ -74,6 +74,21 @@ function pageHtml(route, meta) {
     html = html.replace("</head>", `  ${canonical}\n    ${ogUrl}\n  </head>`);
   }
 
+  // Per-route превʼю: маршрути з `ogImage` (контентні сторінки) отримують
+  // власну картинку замість спільної og.png. Маркер із ` content=` –
+  // навмисно: `property="og:image"` без нього збігся б із og:image:width.
+  if (meta.ogImage) {
+    const ogImage = `<meta property="og:image" content="${site}${meta.ogImage}" />`;
+    const twImage = `<meta name="twitter:image" content="${site}${meta.ogImage}" />`;
+    if (html.includes('property="og:image" content=')) {
+      html = replaceTag(html, tag('property="og:image" content='), ogImage);
+      html = replaceTag(html, tag('name="twitter:image"'), twImage);
+    } else {
+      // Локальний білд без SITE_URL: absoluteUrlMeta тегів не додав.
+      html = html.replace("</head>", `  ${ogImage}\n    ${twImage}\n  </head>`);
+    }
+  }
+
   if (meta.noindex) {
     html = html.replace(
       "</head>",
@@ -99,10 +114,11 @@ const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${Object.entries(routes)
   .filter(([, meta]) => !meta.noindex)
-  .map(
-    ([route]) =>
-      `  <url><loc>${site}${route === "/" ? "/" : route}</loc></url>`,
-  )
+  .map(([route, meta]) => {
+    const loc = `<loc>${site}${route === "/" ? "/" : route}</loc>`;
+    const lastmod = meta.lastmod ? `<lastmod>${meta.lastmod}</lastmod>` : "";
+    return `  <url>${loc}${lastmod}</url>`;
+  })
   .join("\n")}
 </urlset>
 `;

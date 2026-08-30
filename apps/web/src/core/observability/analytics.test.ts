@@ -14,7 +14,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const capturePostHogEventFn = vi.fn();
 const safeReadLSFn = vi.fn<(key: string) => unknown>(() => null);
 const safeWriteLSFn = vi.fn<(key: string, value: unknown) => void>();
-const syncEventToMemoryFn = vi.fn();
 
 vi.mock("./posthog", () => ({
   capturePostHogEvent: capturePostHogEventFn,
@@ -31,11 +30,6 @@ vi.mock("@shared/lib/storage/storage", () => ({
   safeListLSKeys: vi.fn(() => []),
 }));
 
-// productMemorySync uses fetch internally; mock it so tests stay offline.
-vi.mock("./productMemorySync", () => ({
-  syncEventToMemory: syncEventToMemoryFn,
-}));
-
 beforeEach(() => {
   // Reset analytics module so module-level state (memoryLog, flushTimer,
   // flushListenersAttached) is fresh for every test. Must come before the
@@ -46,7 +40,6 @@ beforeEach(() => {
   safeReadLSFn.mockReset();
   safeReadLSFn.mockReturnValue(null);
   safeWriteLSFn.mockReset();
-  syncEventToMemoryFn.mockReset();
 
   localStorage.clear();
   const w = window as Window & {

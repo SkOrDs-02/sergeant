@@ -139,6 +139,8 @@ function makePantry(overrides: Record<string, unknown> = {}) {
     onSaveItemEdit: vi.fn(),
     effectiveItems: [],
     consumePantryItem: vi.fn(),
+    variantChoice: null,
+    resolveVariantChoice: vi.fn(),
     ...overrides,
   } as never;
 }

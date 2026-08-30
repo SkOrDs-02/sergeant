@@ -1,6 +1,6 @@
 # Sergeant — Панель керування
 
-> **Last touched:** 2026-08-28 by docs:gen-status. **Next review:** 2026-09-04.
+> **Last touched:** 2026-08-29 by docs:gen-status. **Next review:** 2026-09-05.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED, ОКРІМ блоку FOCUS. Редагуй лише між `<!-- FOCUS:START -->` / `<!-- FOCUS:END -->`; решту регенеруй через `pnpm docs:gen-status`. -->
@@ -30,12 +30,12 @@
 - [#74](https://github.com/Skords-01/Sergeant/pull/74) — feat(agents): add scheduled entropy janitors (doc-drift, dead-code, dep-cycles) _(2026-06-30)_
 - [#3665](https://github.com/Skords-01/Sergeant/pull/3665) — docs(web): add ADR-0067 engagement mechanism standardization _(2026-06-20)_
 
-## 🔵 В роботі — 59 відкритих
+## 🔵 В роботі — 66 відкритих
 
 | Трекер                           | Відкрито |
 | -------------------------------- | -------- |
 | Ініціативи                       | 5        |
-| Планування                       | 20       |
+| Планування                       | 27       |
 | Launch / запуск                  | 12       |
 | Аудити й прожарки                | 17       |
 | Security hardening               | 1        |

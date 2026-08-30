@@ -784,6 +784,15 @@ const RoutineDigestSchema = z
 // клієнт пропускає поле, чи надсилає його як `null`.
 export const WeeklyDigestSchema = z.object({
   weekRange: z.string().max(80).optional(),
+  // ISO-понеділок тижня (`YYYY-MM-DD`) — канонічний ключ тижня. Йде у
+  // `ai_memories.source_ref` (контракт `MemoryWrite.sourceRef` завжди
+  // обіцяв week_key, а фактично їхав display-рядок weekRange). Опційне з
+  // тих самих причин, що `metricsVersion` нижче: старі PWA-бандли поля не
+  // шлють — тоді сервер падає назад на weekRange.
+  weekKey: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
   // Версія МЕТОДИКИ підрахунку, якою клієнт порахував числа нижче — див.
   // `@sergeant/shared` → `METRICS_VERSION`. Опційне навмисно: старіші бандли
   // (PWA з service-worker-ом) поля не шлють, і їхні дайджести мають

@@ -494,7 +494,15 @@ export default function NutritionApp({
                 </Banner>
               )}
 
-              <div className="grid gap-4 min-w-0">
+              {/* `grid-cols-[minmax(0,1fr)]`, а не дефолтна колонка `auto`:
+                  `auto`-трек росте до min-content найширшої дитини, а
+                  min-content рядка комори — це повний текст назви під
+                  `truncate` (`white-space: nowrap`). `min-w-0` на самому
+                  контейнері цього не знімає: він обмежує контейнер, а не
+                  трек. Через це довгі назви з чеків Сільпо розпирали трек
+                  ширше за екран, а `overflow-x-hidden` вище просто
+                  обрізав недосяжний хвіст. */}
+              <div className="grid grid-cols-[minmax(0,1fr)] gap-4 min-w-0">
                 {activePage === "start" && (
                   <NutritionStartPage
                     log={log}

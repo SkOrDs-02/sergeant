@@ -12,6 +12,15 @@ import {
 } from "../syncV2-core.js";
 import type { AppliedStatus } from "../syncV2-types.js";
 
+/**
+ * Стеля для `nutrition_pantry_items.sources` — JSON-масиву варіантів
+ * покупок (міграція 130). Клієнт тримає щонайбільше 10 записів, кожен із
+ * назвою під `NAME_MAX_LEN` (200); 4000 лишає запас на розділові символи
+ * й одиниці, але й далі відсікає зловмисно роздутий payload. `NOTE_MAX_LEN`
+ * (1000) тут не годиться — він відкидав би легітимну повну картку.
+ */
+const PANTRY_SOURCES_MAX_LEN = 4000;
+
 export async function applyNutritionMeals(
   client: PoolClient,
   op: SyncV2Op,
@@ -337,12 +346,18 @@ export async function applyNutritionPantryItems(
   }
   const unit = typeof row["unit"] === "string" ? row["unit"] : null;
   const notes = typeof row["notes"] === "string" ? row["notes"] : null;
+  // Варіанти покупок їдуть як серіалізований JSON — сервер його НЕ
+  // розбирає й не валідує форму: інваріант суми тримає домен на клієнті
+  // (`packages/nutrition-domain/src/pantrySources.ts`), а сюди доїжджає
+  // непрозорий blob рівно як `prefs_json` чи `data_json`.
+  const sources = typeof row["sources"] === "string" ? row["sources"] : null;
   // Pre-beta input-boundaries audit: pantry item name/unit are name-shaped,
   // free-form notes get the longer bound.
   if (
     !isWithinTextBound(name) ||
     !isWithinTextBound(unit) ||
-    !isWithinTextBound(notes, NOTE_MAX_LEN)
+    !isWithinTextBound(notes, NOTE_MAX_LEN) ||
+    !isWithinTextBound(sources, PANTRY_SOURCES_MAX_LEN)
   ) {
     return { status: "rejected", reason: "text_too_long" };
   }
@@ -359,9 +374,9 @@ export async function applyNutritionPantryItems(
   if (existing.rows.length === 0) {
     await client.query(
       `INSERT INTO nutrition_pantry_items
-         (id, pantry_id, user_id, name, qty, unit, notes, sort_order,
+         (id, pantry_id, user_id, name, qty, unit, notes, sources, sort_order,
           created_at, updated_at, deleted_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
       [
         id,
         pantryId,
@@ -370,6 +385,7 @@ export async function applyNutritionPantryItems(
         qty ?? null,
         unit,
         notes,
+        sources,
         sortOrder,
         createdAt ?? clientTs,
         clientTs,
@@ -384,16 +400,18 @@ export async function applyNutritionPantryItems(
              qty        = $3,
              unit       = $4,
              notes      = $5,
-             sort_order = $6,
-             updated_at = $7,
-             deleted_at = $8
-       WHERE id = $9 AND user_id = $10`,
+             sources    = $6,
+             sort_order = $7,
+             updated_at = $8,
+             deleted_at = $9
+       WHERE id = $10 AND user_id = $11`,
       [
         pantryId,
         name,
         qty ?? null,
         unit,
         notes,
+        sources,
         sortOrder,
         clientTs,
         deletedAt ?? null,

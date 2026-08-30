@@ -3,7 +3,6 @@ import type { Pool } from "pg";
 
 import { rateLimitExpress, requireSession, setModule } from "../http/index.js";
 import { requirePlan } from "../modules/billing/index.js";
-import { buildEventSyncHandler } from "../modules/ai-memory/eventSyncRoute.js";
 import { ingestMemoryHandler } from "../modules/ai-memory/ingestRoute.js";
 import { recallMemoryHandler } from "../modules/ai-memory/recallRoute.js";
 import { clearAiMemoryHandler } from "../modules/ai-memory/clearRoute.js";
@@ -29,7 +28,7 @@ import {
  *
  * AI-CONTEXT (2026-07-25): цей ліміт більше НЕ вішається на весь префікс.
  * Він захищає worker-pool і Voyage-бюджет, тобто стосується `ingest` /
- * `recall` / `event-sync`. Екран «Що ШІ про мене памʼятає» робить дешеві
+ * `recall`. Екран «Що ШІ про мене памʼятає» робить дешеві
  * реляційні запити без жодного ембеддингу, і при спільному бакеті юзер,
  * який чистить памʼять, впирався б у 429 приблизно на 25-му видаленні —
  * рівно посеред дії, яку ми самі йому пропонуємо. Тому list/delete мають
@@ -99,16 +98,8 @@ export function createAiMemoryRouter({ pool }: { pool: Pool }): Router {
     requireSession(),
     buildMemoryDeleteHandler(pool),
   );
-  // PR-24: PostHog → AI memory sync. Не вимагаємо pro-plan — behavioral
-  // events важливі для founder-recall на будь-якому tier-і (founder теж
-  // user-row, на free-tier у dev). Memory ingest сам перевіряє
-  // `AI_MEMORY_ENABLED`; per-user Voyage квоту обмежує
-  // `service.remember()`.
-  r.post(
-    "/api/ai-memory/event-sync",
-    heavyRateLimit,
-    requireSession(),
-    buildEventSyncHandler(pool),
-  );
+  // `POST /api/ai-memory/event-sync` (PostHog → memory, PR-24) знято
+  // 2026-08-29: телеметрія у ролі «фактів про людину» лише шуміла в RAG.
+  // Наявні рядки source='product' лишаються читабельними у list/recall.
   return r;
 }

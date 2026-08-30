@@ -11,6 +11,7 @@ import type { CategorizeResult } from "../../routes/internal/categorize.js";
 import { lookupMccCategory } from "../../lib/mcc/mccMap.js";
 import { maskPii } from "../../lib/pii-mask.js";
 import { enqueueUnknownMcc } from "../../lib/mcc/unknownQueue.js";
+import { providerUpstreamReady } from "../../http/requireAnthropicKey.js";
 import { env } from "../../env.js";
 
 /**
@@ -393,7 +394,8 @@ export async function sampleEnrichmentQueueDepth(pool: Pool): Promise<void> {
  * SQL-запит фейлить — повертає `null` queueDepth + `error`. Не throw-ить
  * — health-endpoint має лишатись reachable навіть у DB-incident.
  *
- * `enabled` — env-flag `MONO_ENRICHMENT_WORKER_ENABLED && ANTHROPIC_API_KEY`,
+ * `enabled` — env-flag `MONO_ENRICHMENT_WORKER_ENABLED` + ключ провайдера,
+ * яким worker реально категоризує (`providerUpstreamReady("readonly")`),
  * віддзеркалює інваріант з `index.ts` (worker запускається лише коли
  * обидва true). Це proxy для "очікуваний live-worker", бо worker сам
  * не реєструється у appState.
@@ -419,14 +421,12 @@ export async function getMonoEnrichmentWorkerStatus(
   // закешований `env`-snapshot), щоб health-endpoint відображав фактичний стан
   // process-у — Railway теоретично може підмінити цей toggle через `set` без
   // рестарту. Міграція цього flag-а на env-single-source — Phase-2 ціль.
-  // `ANTHROPIC_API_KEY`, навпаки, вже мігровано на env-single-source
-  // (`env.ANTHROPIC_API_KEY`, обчислюється на module-load) згідно з HR-3 /
-  // canonical pattern із `coach.route.test.ts` та `requireAnthropicKey.ts`;
-  // ключ задається на старті process-у, тож runtime-reflection тут не потрібна.
+  // Ключ провайдера, навпаки, вже на env-single-source (обчислюється на
+  // module-load); ключі задаються на старті process-у, тож runtime-reflection
+  // тут не потрібна. Предикат той самий, що в старт-гейті `index.ts`.
   const flagRaw = process.env["MONO_ENRICHMENT_WORKER_ENABLED"]?.toLowerCase();
   const flagOn = flagRaw === "true" || flagRaw === "1";
-  const apiKeyPresent = Boolean(env.ANTHROPIC_API_KEY);
-  const enabled = flagOn && apiKeyPresent;
+  const enabled = flagOn && providerUpstreamReady("readonly");
   const intervalMs = env.MONO_ENRICHMENT_INTERVAL_MS;
   try {
     const res = await pool.query<{ status: string; count: number | string }>(

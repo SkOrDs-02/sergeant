@@ -23,7 +23,7 @@ export default function PrivacyPage() {
         <h1 className="font-display text-3xl font-extrabold uppercase tracking-tight text-foreground-strong sm:text-4xl">
           Політика приватності
         </h1>
-        <p className="mt-3 text-sm text-subtle">Оновлено 28.08.2026</p>
+        <p className="mt-3 text-sm text-subtle">Оновлено 29.08.2026</p>
 
         <h2 className={h2}>Що збирає цей сайт</h2>
         <p className={p}>
@@ -47,7 +47,16 @@ export default function PrivacyPage() {
         <p className={p}>
           Це політика сайту. Про дані всередині застосунку коротко: токен
           Monobank – лише читання і зберігається зашифрованим, експорт доступний
-          в один клік, і я не продаю і не передаю твої дані нікому.
+          в один клік, і я не продаю і не передаю твої дані нікому. Повна мапа
+          доступів – що бачить банківський токен, куди їдуть фото чеків, як
+          працює AI-помічник – зібрана на сторінці{" "}
+          <a
+            href="/data"
+            className="font-semibold text-foreground underline decoration-cardline-strong underline-offset-4 transition hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+          >
+            «Твої дані»
+          </a>
+          .
         </p>
 
         <h2 className={h2}>Питання</h2>
