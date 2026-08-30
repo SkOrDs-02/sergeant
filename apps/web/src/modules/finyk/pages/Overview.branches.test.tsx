@@ -18,9 +18,15 @@ import { Overview } from "./Overview";
 import type { useStorage } from "../hooks/useStorage";
 import type { useUnifiedFinanceData } from "../hooks/useUnifiedFinanceData";
 
+vi.mock("../../../core/auth/useLocalUserId", () => ({
+  useLocalUserId: () => "local-anon",
+}));
+
 vi.mock("../../../core/durability/LocalOnlyDataBanner", () => ({
   LocalOnlyDataBanner: () => null,
 }));
+
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 const KYIV = new Date("2026-06-15T09:00:00Z");
 
@@ -28,11 +34,16 @@ type StorageLike = ReturnType<typeof useStorage>;
 type MergedMonoLike = ReturnType<typeof useUnifiedFinanceData>["mergedMono"];
 
 function Providers({ children }: { children: ReactNode }) {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
   return (
-    <MemoryRouter>
-      {children}
-      <LocationProbe />
-    </MemoryRouter>
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter>
+        {children}
+        <LocationProbe />
+      </MemoryRouter>
+    </QueryClientProvider>
   );
 }
 

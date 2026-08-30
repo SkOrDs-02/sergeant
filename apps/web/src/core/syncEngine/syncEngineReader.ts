@@ -4,6 +4,7 @@ import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 import { applyPullOp } from "./applyPullOp.js";
 import { readPullSinceCursor, writePullSinceCursor } from "./syncOpCursor.js";
 import { refreshCachesAfterPull } from "./refreshCachesAfterPull.js";
+import { classifyTickError, readOnlineStatus } from "./tickErrorReport.js";
 
 export interface SyncEnginePullResult {
   readonly pulled: number;
@@ -123,7 +124,17 @@ export function createSyncEngineReaderRuntime(
       };
     })()
       .catch((error: unknown) => {
-        deps.captureException?.(error, { scope: "sync-v2-pull-tick" });
+        // Той самий класифікатор, що й у push-тіку: офлайн — не помилка.
+        // Тут немає breadcrumb-каналу в deps, тож офлайн просто не
+        // репортиться; лічильники тіка й далі веде викликач.
+        const verdict = classifyTickError(
+          error,
+          "sync-v2-pull-tick",
+          readOnlineStatus(),
+        );
+        if (verdict.report) {
+          deps.captureException?.(error, verdict.context);
+        }
         throw error;
       })
       .finally(() => {
