@@ -108,12 +108,12 @@ export default function BetaPage() {
                   <>
                     Чесний список – у розділі{" "}
                     <a
-                      href="/#status"
+                      href="/stan"
                       className="text-foreground underline decoration-cardline-strong underline-offset-4 transition hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
                     >
                       «Доповідь про стан»
-                    </a>{" "}
-                    на головній. Він оновлюється.
+                    </a>
+                    . Він оновлюється, і там видно дату останньої правки.
                   </>
                 )}
               </p>
