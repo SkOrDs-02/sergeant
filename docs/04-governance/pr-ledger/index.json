@@ -1,8 +1,17 @@
 {
   "$schema": "../governance/schemas/pr-ledger.schema.json",
   "version": 1,
-  "generated_at": "2026-08-28",
+  "generated_at": "2026-08-30",
   "prs": [
+    {
+      "number": 937,
+      "title": "docs(docs): спека структури сайту і драфти чотирьох сторінок модулів",
+      "merged_at": "2026-08-30T00:04:22Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": [
+        "docs/90-work/initiatives/0024-ai-memory-source-coverage.md"
+      ]
+    },
     {
       "number": 895,
       "title": "fix(agents): полірування агентного шару після розкатки module-owners",

@@ -261,3 +261,14 @@ psql "$DATABASE_URL" -c "INSERT INTO ai_memories (user_id, source, content) VALU
 - [`docs/01-product/launch/tech/ai-memory-activation.md`](../../01-product/launch/tech/ai-memory-activation.md) — runbook увімкнення на проді.
 - [`docs/01-product/model/hub-coach.md`](../../01-product/model/hub-coach.md) — продуктовий канон AI-шару (D5/G3: памʼять, якої не видно, юзер не контролює).
 - [`docs/90-work/audits/product-knowledge-hub-coach.md`](../audits/product-knowledge-hub-coach.md) — напруга 4 (замикання AI-шару на власний вихід).
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                | Merged     |
+| ------------------------------------------------------ | -------------------------------------------------------------------- | ---------- |
+| [#937](https://github.com/Skords-01/Sergeant/pull/937) | docs(docs): спека структури сайту і драфти чотирьох сторінок модулів | 2026-08-30 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
