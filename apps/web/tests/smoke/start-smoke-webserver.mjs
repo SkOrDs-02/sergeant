@@ -155,14 +155,7 @@ try {
   await runOnce(["--filter", "@sergeant/server", "db:migrate:dev"]);
   const api = spawnLogged(["--filter", "@sergeant/server", "dev"]);
   await waitForHttp("http://127.0.0.1:3000/health", "API server", api);
-  // Beta gate: `src/core/lib/betaSurfaces.ts` hides the commerce and legal
-  // surfaces by default. The Playwright lanes build with both switched ON
-  // (`build:e2e`) because their job is to protect the product's FULL surface —
-  // checkout, paywall, tariffs, legal pages — which still exists in code and
-  // comes back when the beta ends. The hidden state has its own coverage in
-  // `src/core/lib/betaSurfaces.hidden.test.tsx`; without this the five critical
-  // flows that walk those pages would assert against a 404.
-  await runOnce(["--filter", "@sergeant/web", "build:e2e"]);
+  await runOnce(["--filter", "@sergeant/web", "build"]);
   const preview = spawnLogged([
     "--filter",
     "@sergeant/web",

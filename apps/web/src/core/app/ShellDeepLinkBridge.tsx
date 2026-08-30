@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { logger } from "@shared/lib";
-import { COMMERCE_SURFACES_ENABLED } from "../lib/betaSurfaces";
 import {
   createDeepLinkChannel,
   isCapacitor,
@@ -35,10 +34,7 @@ const ALLOWED_PATH_PREFIXES: readonly string[] = [
   "/reset-password",
   "/profile",
   "/design",
-  // Gated rather than removed: with commerce enabled the route exists, and a
-  // shell deep-link rejecting it would be an inconsistency between two
-  // contracts that must agree.
-  ...(COMMERCE_SURFACES_ENABLED ? ["/pricing"] : []),
+  "/pricing",
   "/status",
   "/assistant",
   "/chat",

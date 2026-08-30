@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import { messages } from "@shared/i18n/uk";
-import { LEGAL_SURFACES_ENABLED } from "../lib/betaSurfaces";
 import {
   LEGAL_COOKIES_PATH,
   LEGAL_OFFER_PATH,
@@ -24,11 +23,6 @@ export function LegalLinks({
   className = "",
   compact = false,
 }: LegalLinksProps) {
-  // Single choke point for every legal-links consumer (sign-in screen,
-  // Settings → Конфіденційність, pricing footer, the legal pages themselves).
-  // With `/legal/*` 404-ing during the beta these would all be dead links.
-  if (!LEGAL_SURFACES_ENABLED) return null;
-
   return (
     <nav
       aria-label={messages.legal.linksNavAria}

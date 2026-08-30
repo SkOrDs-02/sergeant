@@ -63,13 +63,19 @@ export function createMonoWebhookRouter(): Router {
   // backfill навмисно НЕ гейтнуті: вони не створюють нових прав, лише
   // дають подивитись/відключити вже підʼєднане; disconnect — anti-lock-in.
   //
-  // AI-LEGACY: expires 2026-11-07 — бета-виняток H6. Гейт вище тимчасово
-  // знято: поки не налагоджено доставку верифікаційних листів
-  // (RESEND_API_KEY / RESEND_FROM — див. `email/authTransactionalMail.ts`),
-  // бета-юзер не може підтвердити пошту й узагалі не підʼєднав би Mono.
-  // Повернути `requireVerifiedEmail()` між `requireSession()` і
-  // `connectHandler` (плюс import із `../http`) щойно листи запрацюють;
-  // регрес-тест у `apiV1.test.ts` під тим самим маркером.
+  // AI-LEGACY: expires 2026-11-07 — гейт знято, і це ЄДИНИЙ беточний виняток,
+  // який пережив закриття бети. Причина зняття була не в самій беті, а в
+  // доставці верифікаційних листів: поки RESEND_API_KEY / RESEND_FROM не
+  // працюють (`email/authTransactionalMail.ts`), користувач не може
+  // підтвердити пошту й узагалі не підʼєднає Mono, тобто гейт перетворює
+  // фічу на глухий кут.
+  //
+  // ЩО ЗРОБИТИ: спершу перевірити на проді, що лист про верифікацію реально
+  // доходить, і аж тоді повернути `requireVerifiedEmail()` між
+  // `requireSession()` і `connectHandler` (плюс import із `../http`).
+  // Порядок обовʼязковий: гейт без робочих листів не закриває діру, а
+  // блокує підключення банку всім новим. Регрес-тест чекає в `apiV1.test.ts`
+  // під тим самим маркером.
   r.post("/api/mono/connect", requireSession(), connectHandler);
   r.post("/api/mono/disconnect", requireSession(), disconnectHandler);
   r.get("/api/mono/sync-state", requireSession(), syncStateHandler);

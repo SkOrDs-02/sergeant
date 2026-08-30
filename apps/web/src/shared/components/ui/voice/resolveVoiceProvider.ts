@@ -10,8 +10,7 @@ export function resolveConfiguredProvider(): VoiceProvider {
 
 /**
  * Kill-switch голосового вводу. **Вимкнено за замовчуванням** — щоб
- * увімкнути, постав `VITE_ENABLE_VOICE_INPUT=1` (та сама конвенція, що й
- * `VITE_ENABLE_COMMERCE` / `VITE_ENABLE_LEGAL` у `StandaloneRoutes.tsx`).
+ * увімкнути, постав `VITE_ENABLE_VOICE_INPUT=1`.
  *
  * Дві причини, чому фіча знята з продукту, а не полагоджена (2026-08-10):
  *
