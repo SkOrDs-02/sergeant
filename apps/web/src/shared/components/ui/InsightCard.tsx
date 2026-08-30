@@ -273,10 +273,17 @@ export function InsightCard({
         </div>
       </button>
 
-      {/* «Спитати AI» — окремий чип, праворуч перед dismiss (тап по тілу
-          картки лишається навігацією в модуль, це третя незалежна дія).
+      {/* «AI» — окремий чип, праворуч перед dismiss (тап по тілу картки
+          лишається навігацією в модуль, це третя незалежна дія).
           Рендериться лише коли call-site передав `onAskAi` — усі 9
-          продуктових інсайтів це роблять. */}
+          продуктових інсайтів це роблять.
+
+          Підпис саме «AI», а не «Спитати AI»: на 375px довгий підпис з'їдав
+          ширину картки і рубав заголовок із підзаголовком у трикрапку
+          (браузерна перевірка 2026-08-31). Іскра вже несе те саме значення,
+          тож слово «Спитати» платило текстом плашки за нуль нової
+          інформації. Повне формулювання лишається в `aria-label` — для
+          скрінрідера нічого не змінилось. */}
       {onAskAi && (
         <button
           type="button"
@@ -287,7 +294,7 @@ export function InsightCard({
           }
           title={askAiDisabled ? "Ліміт AI на сьогодні" : undefined}
           className={cn(
-            "shrink-0 touch-target inline-flex items-center gap-1 px-2.5 rounded-xl",
+            "shrink-0 touch-target inline-flex items-center justify-center gap-1 px-2 rounded-xl",
             "text-style-caption font-semibold",
             "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-soft-fg/45",
             "focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
@@ -297,7 +304,7 @@ export function InsightCard({
           )}
         >
           <Icon name="sparkle" size={13} strokeWidth={2} aria-hidden />
-          <span>Спитати AI</span>
+          <span>AI</span>
         </button>
       )}
 

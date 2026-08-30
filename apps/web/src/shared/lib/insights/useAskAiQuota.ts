@@ -20,7 +20,7 @@ const detachedClient = new QueryClient({
 });
 
 /**
- * Чи дизейблити чип «Спитати AI» на `InsightCard` через вичерпану денну
+ * Чи дизейблити чип «AI» на `InsightCard` через вичерпану денну
  * AI-квоту (Free). Читає той самий `GET /api/chat/usage`, що й
  * `ChatUsageCounter` — той самий RQ-ключ (`chatKeys.usage`) дедуплікує
  * запит між усіма поверхнями, що монтують хук одночасно (хаб + модуль).
