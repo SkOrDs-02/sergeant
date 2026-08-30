@@ -55,18 +55,15 @@ vi.mock("../components/NutritionDashboard", () => ({
     onGoToLog,
     onGoToDailyPlan,
     onAddMeal,
-    onFetchDayHint,
   }: {
     onGoToLog: () => void;
     onGoToDailyPlan: () => void;
     onAddMeal: () => void;
-    onFetchDayHint: () => void;
   }) => (
     <div data-testid="nutrition-dashboard">
       <button onClick={onGoToLog}>До щоденника</button>
       <button onClick={onGoToDailyPlan}>До плану</button>
       <button onClick={onAddMeal}>Додати прийом їжі</button>
-      <button onClick={onFetchDayHint}>Підказка дня</button>
     </div>
   ),
 }));
@@ -119,9 +116,6 @@ function renderStartPage(
           page: import("../lib/nutritionRouter").NutritionPage,
         ) => void
       }
-      fetchDayHint={vi.fn()}
-      dayHintText=""
-      dayHintBusy={false}
       onRequestAddMeal={onRequestAddMeal}
     />,
   );

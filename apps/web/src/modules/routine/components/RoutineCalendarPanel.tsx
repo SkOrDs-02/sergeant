@@ -37,6 +37,8 @@ import {
   useRoutineCalendarData,
 } from "../context/RoutineCalendarContext";
 import { InsightCard } from "@shared/components/ui/InsightCard";
+import { emitHubBus } from "@shared/lib/modules/hubBus";
+import { useAskAiQuotaExhausted } from "@shared/lib/insights/useAskAiQuota";
 import { useStreakRecordPendingInsight } from "../hooks/useStreakRecordPendingInsight";
 import { useTodoEveningInsight } from "../hooks/useTodoEveningInsight";
 import type { HubCalendarEvent } from "../lib/types";
@@ -102,6 +104,7 @@ export function RoutineCalendarPanel({
 
   const streakInsight = useStreakRecordPendingInsight(routine);
   const eveningInsight = useTodoEveningInsight(routine);
+  const askAiDisabled = useAskAiQuotaExhausted();
 
   const [listQueryDraft, setListQueryDraft] = useState(listQuery || "");
   const [prevListQuery, setPrevListQuery] = useState(listQuery);
@@ -200,6 +203,13 @@ export function RoutineCalendarPanel({
               title={streakInsight.title}
               subtitle={streakInsight.subtitle}
               onActivate={() => applyTimeMode("today")}
+              onAskAi={() =>
+                emitHubBus("openChat", {
+                  message: streakInsight.askAiPrompt,
+                  autoSend: false,
+                })
+              }
+              askAiDisabled={askAiDisabled}
             />
           )}
           {eveningInsight && (
@@ -208,6 +218,13 @@ export function RoutineCalendarPanel({
               title={eveningInsight.title}
               subtitle={eveningInsight.subtitle}
               onActivate={() => applyTimeMode("today")}
+              onAskAi={() =>
+                emitHubBus("openChat", {
+                  message: eveningInsight.askAiPrompt,
+                  autoSend: false,
+                })
+              }
+              askAiDisabled={askAiDisabled}
             />
           )}
         </div>

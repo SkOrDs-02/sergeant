@@ -77,6 +77,7 @@ export function useRecurringDetectedInsight({
       module: "finyk",
       title: `Знайшов повторення: ${merchantName}`,
       subtitle: `~${amountDisplay} ${symbol} щомісяця. Зробити регулярним платежем?`,
+      askAiPrompt: `Схоже, зʼявився регулярний платіж "${merchantName}" ~${amountDisplay} ${symbol}/міс. Підкажи, як його краще обліковувати і чи не дублюється він із наявними.`,
       action: { type: "navigate", path: "/finyk/assets" },
       // Stays "module" post-Phase 5e: recurring-detection prompt needs the
       // in-Finyk tx history preview to be persuasive — surfacing on Hub

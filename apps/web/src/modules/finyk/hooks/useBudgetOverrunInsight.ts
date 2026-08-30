@@ -115,6 +115,7 @@ export function useBudgetOverrunInsight({
       module: "finyk",
       title: `${catLabel}: використано ${pct}% ліміту`,
       subtitle: `+${formatNumberUk(overage)} грн. Залишилось ${daysLeft} дн. Подивитись?`,
+      askAiPrompt: `У Фініку категорія "${catLabel}" вже ${formatNumberUk(Math.round(spent))} грн із бюджету ${formatNumberUk(Math.round(limit))} грн (+${pct - 100}%). Це разовий сплеск чи тренд? Що підрізати?`,
       action: {
         type: "navigate",
         path: `/finyk/budgets?cat=${budget.categoryId}`,
