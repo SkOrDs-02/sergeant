@@ -115,18 +115,6 @@ const PREFS_UPSERT_SPEC: TableSpec = {
   alignSetColumns: false,
 };
 
-const PUSHUP_UPSERT_SPEC: TableSpec = {
-  table: "routine_pushups",
-  insertClause: `INSERT INTO routine_pushups (user_id, date_key, reps, updated_at)
-         VALUES (?, ?, ?, ?)`,
-  conflictTarget: ["user_id", "date_key"],
-  updateColumns: [{ column: "reps" }, { column: "updated_at" }],
-  upsertGuard: "strictly-newer",
-  conflictIndent: 9,
-  setIndent: 11,
-  alignSetColumns: false,
-};
-
 const HABIT_ORDER_UPSERT_SPEC: TableSpec = {
   table: "routine_habit_order",
   insertClause: `INSERT INTO routine_habit_order (user_id, order_json, updated_at)
@@ -184,7 +172,6 @@ export const HABIT_UPSERT_SQL = buildLwwUpsert(HABIT_UPSERT_SPEC);
 export const TAG_UPSERT_SQL = buildLwwUpsert(TAG_UPSERT_SPEC);
 export const CATEGORY_UPSERT_SQL = buildLwwUpsert(CATEGORY_UPSERT_SPEC);
 export const PREFS_UPSERT_SQL = buildLwwUpsert(PREFS_UPSERT_SPEC);
-export const PUSHUP_UPSERT_SQL = buildLwwUpsert(PUSHUP_UPSERT_SPEC);
 export const HABIT_ORDER_UPSERT_SQL = buildLwwUpsert(HABIT_ORDER_UPSERT_SPEC);
 export const COMPLETION_NOTE_UPSERT_SQL = buildLwwUpsert(
   COMPLETION_NOTE_UPSERT_SPEC,

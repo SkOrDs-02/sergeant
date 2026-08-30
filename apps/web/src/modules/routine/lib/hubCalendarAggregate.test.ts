@@ -11,7 +11,6 @@ describe("buildHubCalendarEvents", () => {
       },
       tags: [],
       categories: [],
-      pushupsByDate: {},
       habits: [
         {
           id: "h1",

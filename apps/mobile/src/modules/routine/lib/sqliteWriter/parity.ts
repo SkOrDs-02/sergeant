@@ -17,7 +17,6 @@ import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
  *   - `routine_tags` (id-set parity)
  *   - `routine_categories` (id-set parity)
  *   - `routine_prefs` (JSON blob parity)
- *   - `routine_pushups` (date-key set parity)
  *   - `routine_habit_order` (JSON array parity)
  *   - `routine_completion_notes` (note-key set parity)
  *
@@ -75,9 +74,6 @@ export async function probeRoutineParity(
     next.categories.map((c) => c.id),
   );
 
-  // --- Pushups (routine_pushups) ---
-  const pushupsDiff = await probePushups(client, userId, next);
-
   // --- Completion notes (routine_completion_notes) ---
   const notesDiff = await probeNotes(client, userId, next);
 
@@ -92,7 +88,6 @@ export async function probeRoutineParity(
     habitsDiff.match &&
     tagsDiff.match &&
     categoriesDiff.match &&
-    pushupsDiff.match &&
     notesDiff.match &&
     prefsDiff.match &&
     orderDiff.match;
@@ -102,7 +97,6 @@ export async function probeRoutineParity(
     habits: habitsDiff.details,
     tags: tagsDiff.details,
     categories: categoriesDiff.details,
-    pushups: pushupsDiff.details,
     notes: notesDiff.details,
     prefs: prefsDiff.details,
     order: orderDiff.details,
@@ -165,55 +159,6 @@ async function probeIdSet(
   }
   const lsSet = new Set(lsIds);
   return compareIdSets(lsSet, sqliteSet);
-}
-
-// -----------------------------------------------------------------------
-// Pushups (routine_pushups) — compare by date_key set
-// -----------------------------------------------------------------------
-
-async function probePushups(
-  client: SqliteMigrationClient,
-  userId: string,
-  next: RoutineState,
-): Promise<DiffResult> {
-  const rows = await client.all<{ date_key: string; reps: number }>(
-    `SELECT date_key, reps FROM routine_pushups WHERE user_id = ?`,
-    [userId],
-  );
-  const sqliteMap = new Map<string, number>();
-  for (const row of rows) sqliteMap.set(row.date_key, row.reps);
-
-  const lsMap = next.pushupsByDate ?? {};
-  const allKeys = new Set([...Object.keys(lsMap), ...sqliteMap.keys()]);
-
-  let mismatch = false;
-  let lsOnly = 0;
-  let sqliteOnly = 0;
-  for (const key of allKeys) {
-    const lsVal = lsMap[key] ?? 0;
-    const sqliteVal = sqliteMap.get(key) ?? 0;
-    if (lsVal !== sqliteVal) {
-      mismatch = true;
-      if (sqliteVal === 0) lsOnly += 1;
-      else if (lsVal === 0) sqliteOnly += 1;
-    }
-  }
-
-  if (!mismatch) {
-    return {
-      match: true,
-      details: { ls: Object.keys(lsMap).length, sqlite: sqliteMap.size },
-    };
-  }
-  return {
-    match: false,
-    details: {
-      ls: Object.keys(lsMap).length,
-      sqlite: sqliteMap.size,
-      lsOnly,
-      sqliteOnly,
-    },
-  };
 }
 
 // -----------------------------------------------------------------------

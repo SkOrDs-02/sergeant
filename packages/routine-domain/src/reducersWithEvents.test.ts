@@ -39,7 +39,6 @@ function baseState(): RoutineState {
       { id: "hab_2", name: "Вода", recurrence: "daily" },
     ],
     completions: {},
-    pushupsByDate: {},
     habitOrder: ["hab_1", "hab_2"],
     completionNotes: {},
   };

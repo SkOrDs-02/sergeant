@@ -36,7 +36,7 @@ import { probeRoutineParity } from "./parity.js";
  * legacy `feature.routine.sqlite_v2.dual_write` flag was default-on
  * with no toggle path remaining. Stage 10 / PR #070r-dualwrite
  * extended the schema and dual-write pipeline to cover all 7 new
- * tables (habits / tags / categories / prefs / pushups /
+ * tables (habits / tags / categories / prefs /
  * habitOrder / completionNotes), so SQLite is now mirrored
  * unconditionally for the full `RoutineState`.
  *

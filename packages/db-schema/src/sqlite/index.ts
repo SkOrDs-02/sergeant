@@ -97,6 +97,7 @@ export {
   fizrukWellbeing,
   fizrukWorkoutTemplates,
   fizrukInjuries,
+  fizrukPushups,
 } from "./fizruk.js";
 export {
   nutritionMeals,

@@ -11,7 +11,6 @@ function makeState(overrides: Partial<RoutineState> = {}): RoutineState {
     categories: [],
     habits: [],
     completions: {},
-    pushupsByDate: {},
     habitOrder: [],
     completionNotes: {},
     ...overrides,
@@ -435,21 +434,6 @@ describe("diffRoutineDualWriteOps", () => {
     const next = makeState({ prefs: { ...prefs } });
     const ops = diffRoutineDualWriteOps(prev, next);
     expect(ops.filter((o) => o.kind === "prefs-set")).toHaveLength(0);
-  });
-
-  // -----------------------------------------------------------------------
-  // Stage 10: pushup-upsert
-  // -----------------------------------------------------------------------
-
-  it("emits pushup-upsert when a pushup entry changes", () => {
-    const prev = makeState({ pushupsByDate: {} });
-    const next = makeState({ pushupsByDate: { "2026-05-01": 30 } });
-    const ops = diffRoutineDualWriteOps(prev, next);
-    expect(ops).toContainEqual({
-      kind: "pushup-upsert",
-      dateKey: "2026-05-01",
-      reps: 30,
-    });
   });
 
   // -----------------------------------------------------------------------

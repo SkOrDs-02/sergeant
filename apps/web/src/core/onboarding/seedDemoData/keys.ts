@@ -22,6 +22,13 @@ export const FIZRUK_MEASUREMENTS_KEY = "fizruk_measurements_v1"; // gitleaks:all
  * `STORAGE_KEYS.FIZRUK_TEMPLATES`.
  */
 export const FIZRUK_TEMPLATES_KEY = "fizruk_workout_templates_v1";
+/**
+ * Демо-лічильник віджимань (перенос власності routine → fizruk,
+ * 2026-08-30). НЕ `fizruk_pushups_v1`: той ключ — легасі-джерело
+ * migrateLegacyPushups у `storageManager.ts`, і запис у нього воскресив би
+ * односторонню міграцію в routine-стан.
+ */
+export const FIZRUK_PUSHUPS_SEED_KEY = "fizruk_pushups_seed_v1";
 export const ROUTINE_STATE_KEY = "hub_routine_v1";
 export const NUTRITION_LOG_KEY = "nutrition_log_v1";
 export const NUTRITION_PREFS_KEY = "nutrition_prefs_v1"; // gitleaks:allow

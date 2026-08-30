@@ -238,7 +238,7 @@ async function probeWaterLog(
   // The diff layer emits a `water-log-set` op with `volumeMl = 0`
   // when an LS entry is removed; the SQLite row stays as `volume_ml = 0`
   // (no soft-delete column). So treat «missing key» and «value 0» as
-  // equivalent for parity, mirroring routine_pushups.
+  // equivalent for parity, mirroring fizruk_pushups.
   const allKeys = new Set([...Object.keys(lsMap), ...sqliteMap.keys()]);
 
   let lsOnly = 0;

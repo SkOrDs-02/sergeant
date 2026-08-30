@@ -98,7 +98,6 @@ const CANONICAL_OPS: RoutineDualWriteOp[] = [
   },
   { kind: "category-delete", categoryId: "cat1" },
   { kind: "prefs-set", prefs: { weekStart: "monday" } },
-  { kind: "pushup-upsert", dateKey: "2026-06-22", reps: 40 },
   { kind: "habit-order-set", orderedIds: ["h1", "h2"] },
   {
     kind: "completion-note-upsert",

@@ -237,61 +237,7 @@ storageManager.register({
   },
 });
 
-/**
- * Migrate Fizruk legacy pushup log ("fizruk_pushups_v1") into the routine
- * state's pushupsByDate field ("hub_routine_v1").
- */
-storageManager.register({
-  id: "routine_001_migrate_fizruk_pushups",
-  description:
-    'Migrate "fizruk_pushups_v1" pushup log into routine state pushupsByDate.',
-  up() {
-    const ROUTINE_KEY = "hub_routine_v1";
-    const PUSHUPS_LEGACY = "fizruk_pushups_v1";
-
-    let legacy: Record<string, unknown>;
-    try {
-      const raw = webKVStore.getString(PUSHUPS_LEGACY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw);
-      if (
-        !parsed ||
-        typeof parsed !== "object" ||
-        Object.keys(parsed).length === 0
-      )
-        return;
-      legacy = parsed as Record<string, unknown>;
-    } catch {
-      return;
-    }
-
-    const routineRaw = webKVStore.getString(ROUTINE_KEY);
-    let state: Record<string, unknown>;
-    try {
-      state = routineRaw
-        ? (JSON.parse(routineRaw) as Record<string, unknown>)
-        : {};
-    } catch {
-      state = {};
-    }
-    // Only migrate if pushupsByDate is empty
-    const existing = state["pushupsByDate"];
-    if (
-      existing &&
-      typeof existing === "object" &&
-      Object.keys(existing as Record<string, unknown>).length > 0
-    ) {
-      webKVStore.remove(PUSHUPS_LEGACY);
-      return;
-    }
-    state = { ...state, pushupsByDate: { ...legacy } };
-    // Throw on write failure so runAll() does not mark this migration as done
-    // (mirrors the legacy `localStorage.setItem` semantics that surfaced
-    // QuotaExceededError to the caller).
-    const stateWrite = safeJsonSet(ROUTINE_KEY, state);
-    if (!stateWrite.ok) {
-      throw stateWrite.error ?? new Error(stateWrite.reason ?? "write");
-    }
-    webKVStore.remove(PUSHUPS_LEGACY);
-  },
-});
+// Легасі-міграція `routine_001_migrate_fizruk_pushups` ("fizruk_pushups_v1" →
+// pushupsByDate) видалена у Phase B переносу власності pushup-даних
+// routine → fizruk (канон routine.md §10): цільового поля більше не існує,
+// а серверна міграція 131 уже скопіювала дані у `fizruk_pushups`.

@@ -44,6 +44,7 @@ function emptyCache(
     monthlyPlan: null,
     workoutTemplates: [],
     injuries: [],
+    pushupsByDate: {},
     refreshedAt: null,
     ...overrides,
   };

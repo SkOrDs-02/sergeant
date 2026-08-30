@@ -27,7 +27,6 @@ const EMPTY_STATE: RoutineState = {
   categories: [],
   habits: [],
   completions: {},
-  pushupsByDate: {},
   habitOrder: [],
   completionNotes: {},
 };

@@ -13,7 +13,49 @@ import {
   parseRequiredDate,
   readJsonbField,
   softDeleteById,
+  toNonNegativeInt,
 } from "../applySync-helpers.js";
+
+/**
+ * Pushup-лічильник — перенос власності routine → fizruk (канон
+ * `routine.md` §10, рішення 2026-08-30). Дзеркало `applyRoutinePushups`
+ * (`../routine/applySyncFullState.ts`), який лишається чинним для push-ів
+ * зі старих клієнтів до Phase B переносу.
+ */
+export async function applyFizrukPushups(
+  client: PoolClient,
+  op: SyncV2Op,
+  userId: string,
+  clientTs: Date,
+): Promise<AppliedStatus> {
+  if (op.op === "delete") {
+    return { status: "rejected", reason: "delete_not_supported" };
+  }
+  const row = op.row;
+  const userReject = assertRowUserId(row, userId);
+  if (userReject) return userReject;
+
+  const dateKey = typeof row["date_key"] === "string" ? row["date_key"] : null;
+  if (!dateKey) return { status: "rejected", reason: "missing_date_key" };
+
+  const existing = await queryOne<{ user_id: string; updated_at: Date }>(
+    client,
+    `SELECT user_id, updated_at FROM fizruk_pushups WHERE user_id = $1 AND date_key = $2`,
+    [userId, dateKey],
+  );
+  const guard = guardUserPkLww(existing, clientTs);
+  if (guard) return guard;
+
+  const reps = toNonNegativeInt(row["reps"]) ?? 0;
+  await client.query(
+    `INSERT INTO fizruk_pushups (user_id, date_key, reps, updated_at)
+     VALUES ($1, $2, $3, $4)
+     ON CONFLICT (user_id, date_key) DO UPDATE
+       SET reps = EXCLUDED.reps, updated_at = EXCLUDED.updated_at`,
+    [userId, dateKey, reps, clientTs],
+  );
+  return { status: "applied" };
+}
 
 export async function applyFizrukDailyLog(
   client: PoolClient,

@@ -12,6 +12,7 @@ import {
   fizrukPrograms,
   fizrukWellbeing,
   fizrukWorkoutTemplates,
+  fizrukPushups,
 } from "../sqlite/fizruk.js";
 import {
   FIZRUK_CLIENT_MIGRATIONS,
@@ -574,9 +575,35 @@ describe("sqlite/fizrukWorkoutTemplates schema snapshot", () => {
   });
 });
 
+describe("sqlite/fizrukPushups schema snapshot", () => {
+  const config = getTableConfig(fizrukPushups);
+
+  it("has the canonical table name", () => {
+    expect(config.name).toBe("fizruk_pushups");
+  });
+
+  it("declares all expected columns (mirror of routine_pushups)", () => {
+    const columnNames = config.columns.map((c) => c.name);
+    expect(columnNames).toEqual(["user_id", "date_key", "reps", "updated_at"]);
+  });
+
+  it("declares column types matching migration 004", () => {
+    const columnMap = Object.fromEntries(
+      config.columns.map((c) => [c.name, c]),
+    );
+    expect(columnMap["user_id"]!.notNull).toBe(true);
+    expect(columnMap["date_key"]!.notNull).toBe(true);
+    expect(columnMap["reps"]!.dataType).toBe("number");
+    expect(columnMap["reps"]!.notNull).toBe(true);
+    expect(columnMap["reps"]!.hasDefault).toBe(true);
+    expect(columnMap["updated_at"]!.dataType).toBe("string");
+    expect(columnMap["updated_at"]!.notNull).toBe(true);
+  });
+});
+
 describe("sqlite/fizruk migrations exports", () => {
-  it("exports the 001 baseline + 002 full-state + 003 injuries migration", () => {
-    expect(FIZRUK_CLIENT_MIGRATIONS).toHaveLength(3);
+  it("exports the 001 baseline + 002 full-state + 003 injuries + 004 pushups migration", () => {
+    expect(FIZRUK_CLIENT_MIGRATIONS).toHaveLength(4);
     expect(FIZRUK_CLIENT_MIGRATIONS[0]!.name).toBe("001_fizruk_tables.sql");
     expect(FIZRUK_CLIENT_MIGRATIONS[0]!.sql).toMatch(
       /CREATE TABLE IF NOT EXISTS fizruk_workouts/,
@@ -626,6 +653,14 @@ describe("sqlite/fizruk migrations exports", () => {
     // encodes it, so a rename would silently change the hot query.
     expect(FIZRUK_CLIENT_MIGRATIONS[2]!.sql).toMatch(
       /fizruk_injuries_user_active_idx_lite[\s\S]*cleared_at IS NULL/,
+    );
+
+    expect(FIZRUK_CLIENT_MIGRATIONS[3]!.name).toBe("004_fizruk_pushups.sql");
+    expect(FIZRUK_CLIENT_MIGRATIONS[3]!.sql).toMatch(
+      /CREATE TABLE IF NOT EXISTS fizruk_pushups/,
+    );
+    expect(FIZRUK_CLIENT_MIGRATIONS[3]!.sql).toMatch(
+      /PRIMARY KEY \(user_id, date_key\)/,
     );
   });
 

@@ -99,7 +99,7 @@ export async function bootSqliteReadPath(
 
     await refreshSqliteCompletions(client, userId);
     // Stage 10: also warm the full-state cache (habits, tags,
-    // categories, prefs, pushups, habitOrder, completionNotes).
+    // categories, prefs, habitOrder, completionNotes).
     await refreshSqliteRoutineState(client, userId);
 
     booted = true;
