@@ -2,7 +2,7 @@
 
 > **Update 2026-07-21:** Backend на **Hetzner/Coolify** ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md)); OpenClaw decommissioned ([ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md)). Railway CLI/дашборд нижче — **historical**, де не позначено Coolify.
 
-> **Last touched:** 2026-08-28 by @Skords-01. **Next review:** 2026-12-02.
+> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-22.
 > **Status:** Active
 
 Цей runbook — bus-factor мітигація: коли єдиний оператор `@Skords-01`

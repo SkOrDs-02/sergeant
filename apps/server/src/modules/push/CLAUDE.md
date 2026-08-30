@@ -1,6 +1,6 @@
 # Інфра-модуль Push
 
-> **Last touched:** 2026-08-28 by @Skords-01. **Next review:** 2026-11-27.
+> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-21.
 > **Status:** Active
 
 Контекст: `Read .agents/skills/sergeant-module-push/SKILL.md` (журнал рішень — у самому скілі).

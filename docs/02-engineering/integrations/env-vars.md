@@ -1,6 +1,6 @@
 # Environment variables — повний reference
 
-> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-07.
+> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-19.
 > **Status:** Active
 
 Цей документ — канонічний reference усіх змінних оточення Sergeant. Мінімальний `.env` (12 змінних, потрібних для `pnpm dev:web` + `pnpm dev:server`) лежить у [`/.env.example`](../../../.env.example) у корені репо. Сюди винесено: повний опис, формати, default-и, наслідки незаповненості, перехресні посилання на код / ADR / hardening-ноти.
@@ -102,18 +102,6 @@ Origin веб-застосунку — куди повертається кор�
 
 - Нова multi-key ротація: `BETTER_AUTH_TOKEN_ENC_KEYS` (CSV `<ver>:<hex>`) + `BETTER_AUTH_TOKEN_ENC_KEY_CURRENT_VERSION` (активна версія). Legacy single-key варіант (`BETTER_AUTH_TOKEN_ENC_KEY`) залишається підтримуватися для зворотньої сумісності.
 - У production рекомендується використовувати `BETTER_AUTH_TOKEN_ENC_KEYS` + `BETTER_AUTH_TOKEN_ENC_KEY_CURRENT_VERSION` для безшовної ротації ключів без downtime.
-
-### `ACCESS_ALLOWLIST_USER_IDS` _(optional, default порожньо)_
-
-Рубильник закритого доступу після бети. Кома-розділений список `userId`, яким дозволено входити. Поки список непорожній, реєстрація вимкнена цілком, а логін проходять лише перелічені.
-
-Порожнє значення = продукт відкритий. Це навмисний напрямок за замовчуванням: dev, CI та E2E реєструють користувачів пачками, тож забута змінна має лишати їх працездатними.
-
-Реалізація — [`auth/accessGate.ts`](../../../apps/server/src/auth/accessGate.ts) + два хуки Better Auth у [`auth.ts`](../../../apps/server/src/auth.ts) (`user.create.before` і `session.create.before`). Повний розбір, чому саме ці два хуки і чому список тримає `userId`, а не пошту: [`feature-flags.md § 3.2`](../architecture/feature-flags.md#32-фічі-та-інтеграції).
-
-Уже видані сесії гейт не чіпає — вибити їх можна одноразовим `DELETE FROM session WHERE "userId" <> '<твій-id>'`.
-
-`AI-LEGACY: expires 2026-11-30` — знімається разом із появою справжнього гейта запрошень.
 
 ---
 

@@ -1,6 +1,6 @@
 # Renovate maintainer runbook
 
-> **Last touched:** 2026-08-28 by @Skords-01. **Next review:** 2026-12-20.
+> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-24.
 > **Status:** Active
 
 Operational runbook для maintainer-а Sergeant. Описує **щотижневу рутину**, **триаж duplicate-PR-ів** з Dependabot (per [ADR-0044](../../04-governance/adr/0044-renovate-vs-dependabot.md)), **escalation-шлях** на випадок Mend Renovate downtime, і **monthly hygiene**. Контриб'юторам потрібна дочірня дока [`docs/02-engineering/integrations/renovate-usage.md`](../../02-engineering/integrations/renovate-usage.md) — вона про «що приходитиме і як я review-ю». Ця — про «коли і чому щось не приходить».
