@@ -38,7 +38,7 @@ describe("seedRoutine", () => {
     expect(state.habits.every((h) => h.demo === true)).toBe(true);
   });
 
-  it("seeds completions for every habit and 14 days of pushups", () => {
+  it("seeds completions for every habit; pushups moved to the fizruk seed", () => {
     seedRoutine();
     const [, state] = writeJSONMock.mock.calls[0]! as [string, SeededState];
     expect(Object.keys(state.completions)).toHaveLength(5);
@@ -47,7 +47,9 @@ describe("seedRoutine", () => {
       // YYYY-MM-DD Kyiv-local day key format
       expect(dates[0]).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     }
-    expect(Object.keys(state.pushupsByDate)).toHaveLength(14);
+    // Перенос власності routine → fizruk (2026-08-30): віджимання сіє
+    // `seedFizruk` під `fizruk_pushups_seed_v1`.
+    expect(state.pushupsByDate).toEqual({});
   });
 
   it("derives habitOrder from the habit ids", () => {

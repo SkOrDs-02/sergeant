@@ -50,6 +50,7 @@ import {
   applyFizrukMonthlyPlan,
   applyFizrukPlanTemplates,
   applyFizrukPrograms,
+  applyFizrukPushups,
   applyFizrukWellbeing,
   applyFizrukWorkoutTemplates,
 } from "./fizruk/applySyncFullState.js";
@@ -173,6 +174,10 @@ const OP_LOG_TABLE_REGISTRY: Record<string, ApplyFn> = {
   fizruk_programs: applyFizrukPrograms,
   fizruk_wellbeing: applyFizrukWellbeing,
   fizruk_workout_templates: applyFizrukWorkoutTemplates,
+  // Перенос власності pushup-даних routine → fizruk (канон routine.md §10,
+  // рішення 2026-08-30). `routine_pushups` вище лишається чинним для
+  // push-ів зі старих клієнтів до Phase B переносу.
+  fizruk_pushups: applyFizrukPushups,
   // Модель «не можна» (ADR-0083). `site` навмисно не валідується проти
   // серверного enum — словник зон живе в домені й росте, а нерозпізнане
   // значення клієнт відкидає в `activeInjurySites`, тобто воно деградує в

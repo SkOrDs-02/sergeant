@@ -414,3 +414,24 @@ export const fizrukInjuries = sqliteTable(
       .where(sql`${table.deletedAt} IS NULL`),
   ],
 );
+
+/**
+ * SQLite schema for the `fizruk_pushups` table.
+ *
+ * Перенос власності pushup-даних routine → fizruk (канон `routine.md` §10,
+ * рішення 2026-08-30). Дзеркалить `routine_pushups` за формою: один рядок
+ * на (user, day) з лічильником повторів; day key — device-local
+ * `YYYY-MM-DD` (ADR-0078). Міграція `004_fizruk_pushups.sql`.
+ */
+export const fizrukPushups = sqliteTable(
+  "fizruk_pushups",
+  {
+    userId: text("user_id").notNull(),
+    dateKey: text("date_key").notNull(),
+    reps: integer().notNull().default(0),
+    updatedAt: text("updated_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.dateKey] })],
+);

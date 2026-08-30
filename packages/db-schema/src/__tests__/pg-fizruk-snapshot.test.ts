@@ -12,6 +12,7 @@ import {
   fizrukPrograms,
   fizrukWellbeing,
   fizrukWorkoutTemplates,
+  fizrukPushups,
 } from "../pg/fizruk.js";
 
 /**
@@ -479,5 +480,31 @@ describe("pg/fizrukWorkoutTemplates schema snapshot", () => {
   it("declares the partial user index", () => {
     const indexNames = config.indexes.map((i) => i.config.name);
     expect(indexNames).toContain("fizruk_workout_templates_user_idx");
+  });
+});
+
+describe("pg/fizrukPushups schema snapshot", () => {
+  const config = getTableConfig(fizrukPushups);
+
+  it("has the canonical table name", () => {
+    expect(config.name).toBe("fizruk_pushups");
+  });
+
+  it("declares all expected columns (mirror of routine_pushups)", () => {
+    const columnNames = config.columns.map((c) => c.name);
+    expect(columnNames).toEqual(["user_id", "date_key", "reps", "updated_at"]);
+  });
+
+  it("declares column types matching migration 131", () => {
+    const columnMap = Object.fromEntries(
+      config.columns.map((c) => [c.name, c]),
+    );
+    expect(columnMap["user_id"]!.notNull).toBe(true);
+    expect(columnMap["date_key"]!.notNull).toBe(true);
+    expect(columnMap["reps"]!.columnType).toBe("PgInteger");
+    expect(columnMap["reps"]!.notNull).toBe(true);
+    expect(columnMap["reps"]!.hasDefault).toBe(true);
+    expect(columnMap["updated_at"]!.columnType).toBe("PgTimestamp");
+    expect(columnMap["updated_at"]!.notNull).toBe(true);
   });
 });

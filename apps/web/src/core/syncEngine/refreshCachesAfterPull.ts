@@ -49,6 +49,10 @@ const FIZRUK_PULL_TABLES = new Set([
   // сервера позначка травми має негайно перерахувати список вправ, інакше
   // юзер бачить як дозволену вправу, яку модель уже блокує.
   "fizruk_injuries",
+  // Перенос власності pushup-даних routine → fizruk (2026-08-30): без
+  // цього рядка pull нових повторів з іншого пристрою не оновив би
+  // сторінку Прогрес.
+  "fizruk_pushups",
 ]);
 const NUTRITION_PULL_TABLES = new Set([
   "nutrition_meals",

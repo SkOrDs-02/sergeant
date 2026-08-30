@@ -25,6 +25,7 @@ import {
   MEASUREMENT_DELETE_SQL,
   MEASUREMENT_UPSERT_SQL,
   setMonthlyPlan,
+  setPushups,
   softDeleteDailyLog,
   softDeleteRemovedChildren,
   softDeleteInjury,
@@ -197,6 +198,24 @@ const applyOps = createApplyOps<FizrukDualWriteOp>({
           cleared_at: i.clearedAt ?? null,
           note: i.note ?? "",
           created_at: rt.clientTs,
+        },
+      });
+      return "applied";
+    },
+    // Перенос власності pushup-даних routine → fizruk (2026-08-30).
+    // Row keys збігаються з колонками SQLite/PG, тож generic pull-apply на
+    // іншому пристрої обходиться без мапера.
+    "pushup-set": async (client, op, rt) => {
+      await setPushups(client, op.dateKey, op.reps, rt);
+      fireSyncOutboxUpsert(client, {
+        userId: rt.userId,
+        table: "fizruk_pushups",
+        op: "insert",
+        clientTs: rt.clientTs,
+        row: {
+          user_id: rt.userId,
+          date_key: op.dateKey,
+          reps: op.reps,
         },
       });
       return "applied";

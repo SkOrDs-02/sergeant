@@ -392,3 +392,27 @@ export const fizrukInjuries = pgTable(
       .where(sql`${table.deletedAt} IS NULL`),
   ],
 );
+
+/**
+ * Postgres schema for `fizruk_pushups`.
+ *
+ * Перенос власності pushup-даних routine → fizruk (канон `routine.md` §10,
+ * рішення founder-а 2026-08-30: «фізактивність належить fizruk»). Форма
+ * 1:1 успадкована від `routine_pushups` (`pg/routine.ts`): один рядок на
+ * (user, day) з лічильником повторів; day key — device-local `YYYY-MM-DD`
+ * (ADR-0078). Дані копіюються серверною міграцією `131_fizruk_pushups.sql`
+ * зі збереженням `updated_at`, тож LWW-конфлікти девайсів вирішуються так
+ * само, як і до переносу.
+ */
+export const fizrukPushups = pgTable(
+  "fizruk_pushups",
+  {
+    userId: text("user_id").notNull(),
+    dateKey: text("date_key").notNull(),
+    reps: integer().notNull().default(0),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.dateKey] })],
+);

@@ -94,6 +94,7 @@ export const EMPTY_FIZRUK_DUAL_WRITE_STATE: FizrukDualWriteState = {
   monthlyPlan: null,
   workoutTemplates: [],
   injuries: [],
+  pushups: {},
 };
 
 /**
@@ -115,6 +116,7 @@ export function peekFizrukDualWriteState(): FizrukDualWriteState | null {
         cache.workoutTemplates ?? [],
       ),
       injuries: extractInjurySnapshots(cache.injuries ?? []),
+      pushups: cache.pushupsByDate ?? {},
     };
   } catch {
     return null;

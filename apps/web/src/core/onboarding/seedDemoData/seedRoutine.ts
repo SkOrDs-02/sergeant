@@ -77,14 +77,10 @@ export function seedRoutine(): void {
     completions[habit.id] = dates;
   }
 
-  // 14 days of push-ups — consumed by Fizruk's pushup-activity widget
-  // (usePushupActivity), the Routine module no longer renders this data.
-  const pushupsByDate: Record<string, number> = {};
-  const pushupPlan = [25, 30, 28, 35, 40, 30, 32, 45, 50, 42, 38, 40, 55, 48];
-  for (const [i, count] of pushupPlan.entries()) {
-    pushupsByDate[dateKey(daysAgo(i))] = count;
-  }
-
+  // Віджимання переїхали у fizruk-сід (`seedFizruk.ts`) — перенос
+  // власності routine → fizruk, канон routine.md §10 (2026-08-30).
+  // `pushupsByDate: {}` лишається в payload-і до Phase B: поле ще живе в
+  // `RoutineState`, і його відсутність нормалізатор трактує так само.
   const state = {
     schemaVersion: 1,
     prefs: {
@@ -96,7 +92,7 @@ export function seedRoutine(): void {
     categories: [],
     habits,
     completions,
-    pushupsByDate,
+    pushupsByDate: {},
     habitOrder: habits.map((h) => h.id),
     completionNotes: {},
   };

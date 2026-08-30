@@ -34,6 +34,8 @@ export const CLIENT_PULL_SUPPORTED_TABLES = new Set<string>([
   // пристрою мовчки відкидаються на pull — тобто травма, позначена на
   // телефоні, не блокує вправи у вебі.
   "fizruk_injuries",
+  // Перенос власності pushup-даних routine → fizruk (2026-08-30).
+  "fizruk_pushups",
   "nutrition_meals",
   "nutrition_pantries",
   "nutrition_pantry_items",

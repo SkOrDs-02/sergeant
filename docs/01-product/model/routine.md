@@ -132,7 +132,7 @@ routine-календар і hub-картка мають бути першокл�
 | **Reminder**       | prefs `routineRemindersEnabled` (default off) | —                                               | дескриптори (`reminders.ts:24-40`) → SW (web) / expo-notifications (mobile); idempotency 45д                                        |
 | **Category / Tag** | домен `types.ts:28-38`                        | `routine_tags` / `routine_categories` (`050`)   | повний CRUD + каскадне чищення (`reducers.ts:41-77`); без ієрархій. Тегів на звичці — **кілька** (`tagIds[]`), категорія — **одна** |
 | **CompletionNote** | `completionNotes` (cap 500)                   | `routine_completion_notes` (`050`)              | вільна нотатка, прив'язана до **відмітки**, не до пропуску                                                                          |
-| **pushupsByDate**  | `RoutineState.pushupsByDate` (`types.ts:54`)  | `routine_pushups` (`050`)                       | **живе в routine, читається fizruk** — шов (§10)                                                                                    |
+| **pushupsByDate**  | `RoutineState.pushupsByDate` (`types.ts:54`)  | `routine_pushups` (`050`)                       | **власність перенесено у fizruk** (`fizruk_pushups`, міграція 131) — routine-половина чекає зачистки Phase B (§10)                  |
 | **Archive**        | `Habit.archived=true` (`reducers.ts:203`)     | soft-tombstone (`applySyncFullState.ts:37`)     | безстрокове м'яке приховування; без TTL                                                                                             |
 
 **Гліф звички / категорії (`glyphs.ts`, з 2026-08-03).** Поле `emoji` в
@@ -533,18 +533,20 @@ routine — **єдиний модуль із двостороннім швом �
 routine як поверхню-агрегатор, але ownership даних лишається за
 модулями-власниками.
 
-**Pushup-шов — відкритий інженерний борг (НЕ закритий рішенням 2026-08-30).**
-Дослівно: «Ні — фізактивність належить fizruk». Віджимання-звичка
-має стати fizruk-активністю (легкий тип), routine лише нагадує; читання
-pushup-даних із routine — **нелегітимне довгостроково.**
+**Pushup-шов.** Дослівно: «Ні — фізактивність належить fizruk».
+Віджимання-звичка має стати fizruk-активністю (легкий тип), routine лише
+нагадує; читання pushup-даних із routine — **нелегітимне довгостроково.**
 
-> **Код: напрям шва — fizruk читає routine.** `pushupsByDate` живе в
-> `RoutineState` (`types.ts:54`); `usePushupActivity.ts:2-4,31` (fizruk)
-> слухає `ROUTINE_EVENT` і читає `loadRoutineState().pushupsByDate` через
-> `buildPushupHistoryFromRoutine` (`routinePushupsRead.ts:6-9`). Тобто **дані
-> фізактивності сьогодні належать routine, а fizruk від них залежить** —
-> пряма інверсія founder-наміру. Доки це фіксують як «display-only» читання,
-> але власника не переносять. Шов розібрати: pushup → fizruk-активність.
+> **✅ Власність перенесено (Phase A, 2026-08-30).** Дані живуть у
+> fizruk-власній таблиці `fizruk_pushups` (серверна міграція 131 скопіювала
+> `routine_pushups` зі збереженням `updated_at`, тож LWW девайсів не
+> зрушив), write-шлях — кнопки «Легка активність» на сторінці Прогрес
+> (`usePushupActivity.logReps` → fizruk dual-write → sync-v2), читання —
+> fizruk SQLite-кеш; шов `routinePushupsRead` видалено. **Phase B —
+> лишається:** зачистити `RoutineState.pushupsByDate`, routine-редʼюсер
+> `applyAddPushupReps`, дзеркала sqliteWriter/Reader (web + mobile) і,
+> двофазно, таблицю `routine_pushups` із серверним handler-ом. Нагадування
+> «віджиматись» — звичайна routine-звичка без окремого коду.
 
 **FizrukDayPlanSheet — переїхав у fizruk.** Дослівно узгоджено з
 fizruk-каноном «план — власність fizruk».
@@ -622,11 +624,12 @@ Append-only журнал ухвалених продуктових рішень 
 курується maintainer-ом. «Дозріле» рішення переїжджає в ADR — тут лишається рядок-лінк.
 PR, що змінює продуктову поведінку, додає рядок **у тому ж PR** (правило `AGENTS.md § See also`).
 
-| Дата       | Рішення                                                                                                                            | Джерело/ADR                                                                      |
-| ---------- | ---------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| 2026-08-30 | Крос-модульний календар дня лишається; routine = трекер звичок + огляд дня (реверс вектора інтерв'ю 2026-07-23/24 «чистий трекер») | [site-ia §10 п. 2](../../90-work/planning/specs/site-ia/README.md)               |
-| 2026-07-25 | День-ключ відмітки звички — за годинником пристрою користувача                                                                     | [ADR-0078](../../04-governance/adr/0078-day-boundary-device-local.md)            |
-| 2026-06-20 | Нагадування — через стандартизовані Hub-механізми (signals/reminders/dismiss-state)                                                | [ADR-0067](../../04-governance/adr/0067-engagement-mechanism-standardization.md) |
+| Дата       | Рішення                                                                                                                                    | Джерело/ADR                                                                      |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------- |
+| 2026-08-30 | Pushup-власність перенесено у fizruk (`fizruk_pushups`, write-шлях на Прогресі); routine лише нагадує; зачистка routine-половини — Phase B | founder, сесія боргів routine; §10                                               |
+| 2026-08-30 | Крос-модульний календар дня лишається; routine = трекер звичок + огляд дня (реверс вектора інтерв'ю 2026-07-23/24 «чистий трекер»)         | [site-ia §10 п. 2](../../90-work/planning/specs/site-ia/README.md)               |
+| 2026-07-25 | День-ключ відмітки звички — за годинником пристрою користувача                                                                             | [ADR-0078](../../04-governance/adr/0078-day-boundary-device-local.md)            |
+| 2026-06-20 | Нагадування — через стандартизовані Hub-механізми (signals/reminders/dismiss-state)                                                        | [ADR-0067](../../04-governance/adr/0067-engagement-mechanism-standardization.md) |
 
 ---
 

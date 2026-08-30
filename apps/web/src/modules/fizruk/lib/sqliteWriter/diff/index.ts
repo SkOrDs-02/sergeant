@@ -49,6 +49,7 @@ import { diffDailyLogOps } from "./dailyLog";
 import { diffInjuriesOps } from "./injuries";
 import { diffMeasurementsOps } from "./measurements";
 import { diffMonthlyPlanOps } from "./monthlyPlan";
+import { diffPushupOps } from "./pushups";
 import { diffWorkoutTemplatesOps } from "./workoutTemplates";
 import { diffWorkoutsOps } from "./workouts";
 
@@ -76,6 +77,7 @@ import type {
   FizrukMonthlyPlanSnapshot,
   MonthlyPlanSetOp,
 } from "./monthlyPlan";
+import type { PushupSetOp } from "./pushups";
 import type {
   FizrukWorkoutTemplateSnapshot,
   WorkoutTemplateDeleteOp,
@@ -111,6 +113,7 @@ export type {
   MeasurementDeleteOp,
   MeasurementUpsertOp,
   MonthlyPlanSetOp,
+  PushupSetOp,
   WorkoutDeleteOp,
   WorkoutTemplateDeleteOp,
   WorkoutTemplateUpsertOp,
@@ -130,7 +133,8 @@ export type FizrukDualWriteOp =
   | WorkoutTemplateUpsertOp
   | WorkoutTemplateDeleteOp
   | InjuryUpsertOp
-  | InjuryDeleteOp;
+  | InjuryDeleteOp
+  | PushupSetOp;
 
 // -----------------------------------------------------------------------
 // State shape
@@ -158,6 +162,14 @@ export interface FizrukDualWriteState {
    * `fizruk_injuries`; `clearedAt === null` means the zone is still blocked.
    */
   readonly injuries: readonly FizrukInjurySnapshot[];
+  /**
+   * Лічильник віджимань: `dateKey → reps` (device-local `YYYY-MM-DD`,
+   * ADR-0078). Перенос власності routine → fizruk (канон `routine.md`
+   * §10, рішення 2026-08-30). Опційне: старіші стани, зібрані вручну в
+   * тестах, поля не несуть — трактується як `{}` (той самий контракт, що
+   * `pantryEvents` у nutrition-диффі).
+   */
+  readonly pushups?: Readonly<Record<string, number>>;
 }
 
 // -----------------------------------------------------------------------
@@ -188,5 +200,6 @@ export function diffFizrukDualWriteOps(
     ...diffMonthlyPlanOps(prev.monthlyPlan, next.monthlyPlan),
     ...diffWorkoutTemplatesOps(prev.workoutTemplates, next.workoutTemplates),
     ...diffInjuriesOps(prev.injuries, next.injuries),
+    ...diffPushupOps(prev.pushups, next.pushups),
   ];
 }

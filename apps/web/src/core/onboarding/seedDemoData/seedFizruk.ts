@@ -1,9 +1,10 @@
 import {
   FIZRUK_MEASUREMENTS_KEY,
+  FIZRUK_PUSHUPS_SEED_KEY,
   FIZRUK_TEMPLATES_KEY,
   FIZRUK_WORKOUTS_KEY,
 } from "./keys";
-import { daysAgo, shortId, toISO, writeJSON } from "./utils";
+import { dateKey, daysAgo, shortId, toISO, writeJSON } from "./utils";
 
 /**
  * AI-DANGER: `musclesPrimary` / `musclesSecondary` мусять містити ДОМЕННІ
@@ -158,6 +159,16 @@ export function seedFizruk(): void {
   // Два шаблони — рівно щоб «Із шаблону» на хоумі відкривало не порожнечу.
   // Вправи ті самі, що у засіяних тренуваннях, тож демо виглядає як один
   // послідовний план, а не як набір неповʼязаних прикладів.
+  // 14 днів віджимань — лічильник «Легкої активності» на сторінці
+  // Прогрес. Історично сіявся routine-сідом у `pushupsByDate`; переїхав
+  // сюди разом із власністю даних (канон routine.md §10, 2026-08-30).
+  const pushups: Record<string, number> = {};
+  const pushupPlan = [25, 30, 28, 35, 40, 30, 32, 45, 50, 42, 38, 40, 55, 48];
+  for (const [i, count] of pushupPlan.entries()) {
+    pushups[dateKey(daysAgo(i))] = count;
+  }
+  writeJSON(FIZRUK_PUSHUPS_SEED_KEY, pushups);
+
   writeJSON(FIZRUK_TEMPLATES_KEY, [
     {
       id: shortId("demo_tpl", 1),
