@@ -29,6 +29,7 @@ test("parseGroups бере лише названі групи й ігнорує 
     "docs",
   ]);
   assert.deepEqual(parseGroups(["--openapi"]), ["openapi"]);
+  assert.deepEqual(parseGroups(["--ledger"]), ["ledger"]);
   assert.deepEqual(parseGroups(["--docs", "--openapi"]), ["docs", "openapi"]);
   assert.deepEqual(parseGroups(["docs/today.md"]), []);
   assert.deepEqual(parseGroups(["--nope"]), []);
@@ -67,7 +68,7 @@ test("кожен check/fix із таблиці існує в package.json", asyn
     (m) => m[1],
   );
 
-  assert.ok(referenced.length >= 12, "таблиця груп не розпарсилась");
+  assert.ok(referenced.length >= 16, "таблиця груп не розпарсилась");
   for (const name of referenced) {
     assert.ok(
       typeof pkg.scripts?.[name] === "string",
@@ -94,6 +95,18 @@ test("lint-staged викликає гейт для обох груп", () => {
     ),
     "shared-запис не викликає --openapi",
   );
+
+  // `pr-ledger/index.json` — не markdown, тож `*.md` його не ловить, а
+  // `STATUS.md` рендериться саме звідти. Без власного запису правка самого
+  // лише реєстру проходила б повз гейт (знахідка рев'ю на PR #944).
+  const ledgerKey = Object.keys(staged).find((k) => k.includes("pr-ledger"));
+  assert.ok(ledgerKey, "немає path-scoped запису для pr-ledger");
+  assert.ok(
+    staged[ledgerKey].some((c) =>
+      c.includes("pre-commit-derived-artifacts.mjs --ledger"),
+    ),
+    "ledger-запис не викликає --ledger",
+  );
 });
 
 // Порядок усередині запису — не косметика. `bump-last-validated.mjs`
@@ -114,18 +127,48 @@ test("formatFailure називає артефакт, команду регене
   const out = formatFailure([
     {
       artifact: "docs/today.md",
+      path: "docs/today.md",
       check: "docs:check-today",
       fix: "docs:gen-today",
     },
     {
       artifact: "docs/README.md (блок trust-badge)",
+      path: "docs/README.md",
       check: "docs:check-trust-badge",
       fix: "docs:gen-trust-badge",
     },
   ]);
   assert.match(out, /docs\/today\.md/);
   assert.match(out, /pnpm docs:gen-today && pnpm docs:gen-trust-badge/);
-  // Дужковий коментар до шляху не має протікати в `git add`.
+  // У `git add` іде `path`, а не показова назва з дужковим уточненням.
   assert.match(out, /git add docs\/today\.md docs\/README\.md$/m);
   assert.match(out, /SERGEANT_NO_DERIVED_CHECK=1/);
+});
+
+// Регресія на зліплений шлях. `docs:gen-pr-backlinks` переписує backlink-
+// блоки в десятках доків — одного вихідного файлу немає, тож підказка
+// `git add` для нього була б командою, яка не виконується.
+test("formatFailure не вигадує git add для артефакту без шляху", () => {
+  const backlinks = {
+    artifact: "backlink-блоки в доках (pr-ledger)",
+    path: null,
+    check: "docs:check-pr-ledger",
+    fix: "docs:gen-pr-backlinks",
+  };
+
+  const alone = formatFailure([backlinks]);
+  assert.match(alone, /pnpm docs:gen-pr-backlinks/);
+  assert.doesNotMatch(alone, /git add/);
+
+  const mixed = formatFailure([
+    {
+      artifact: "docs/STATUS.md",
+      path: "docs/STATUS.md",
+      check: "docs:check-status",
+      fix: "docs:gen-status",
+    },
+    backlinks,
+  ]);
+  assert.match(mixed, /git add docs\/STATUS\.md$/m);
+  assert.doesNotMatch(mixed, /git add.*backlink/);
 });

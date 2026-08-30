@@ -88,26 +88,31 @@ const GROUPS = {
   docs: [
     {
       artifact: "docs/open-work.md",
+      path: "docs/open-work.md",
       check: "docs:check-open-work",
       fix: "docs:gen-open-work",
     },
     {
       artifact: "docs/today.md",
+      path: "docs/today.md",
       check: "docs:check-today",
       fix: "docs:gen-today",
     },
     {
       artifact: "docs/STATUS.md",
+      path: "docs/STATUS.md",
       check: "docs:check-status",
       fix: "docs:gen-status",
     },
     {
       artifact: "docs/README.md (блок trust-badge)",
+      path: "docs/README.md",
       check: "docs:check-trust-badge",
       fix: "docs:gen-trust-badge",
     },
     {
       artifact: "docs/04-governance/governance/freshness-dashboard.html",
+      path: "docs/04-governance/governance/freshness-dashboard.html",
       check: "docs:check-freshness-dashboard",
       fix: "docs:freshness-dashboard",
     },
@@ -115,8 +120,33 @@ const GROUPS = {
   openapi: [
     {
       artifact: "docs/02-engineering/api/openapi.json",
+      path: "docs/02-engineering/api/openapi.json",
       check: "api:check-openapi",
       fix: "api:generate-openapi",
+    },
+  ],
+  // Окрема група, а не додаток до `docs`. `pr-ledger/index.json` — не
+  // markdown, тож під `*.md` він не потрапляє: правка самого лише реєстру
+  // зсуває `STATUS.md` (він рендерить звідти список shipped-PR) і backlink-
+  // блоки в доках, і жоден із наявних тригерів цього не бачив. Тримати ці
+  // дві перевірки в групі `docs` було б дорого — `docs:check-pr-ledger`
+  // коштує ~2 с (ліниво тягне prettier), тобто втричі більше за всю решту
+  // разом, і платив би за нього КОЖЕН коміт із `.md`. Реєстр же правиться
+  // рідко й здебільшого автоматикою `pr-backlinks.yml`.
+  ledger: [
+    {
+      artifact: "docs/STATUS.md",
+      path: "docs/STATUS.md",
+      check: "docs:check-status",
+      fix: "docs:gen-status",
+    },
+    {
+      artifact: "backlink-блоки в доках (pr-ledger)",
+      // Генератор пише в десятки доків одразу — одного шляху для `git add`
+      // тут не існує, тому його немає. Див. `formatFailure`.
+      path: null,
+      check: "docs:check-pr-ledger",
+      fix: "docs:gen-pr-backlinks",
     },
   ],
 };
@@ -153,8 +183,17 @@ export function resolveCommand(scriptName, scripts) {
   return { cmd: "pnpm", args: ["-s", scriptName] };
 }
 
-/** Текст, який бачить автор, коли щось розійшлось. */
+/**
+ * Текст, який бачить автор, коли щось розійшлось.
+ *
+ * `artifact` — для очей, `path` — для `git add`. Розділені навмисно: у
+ * `docs:gen-pr-backlinks` немає ОДНОГО вихідного файлу (він переписує
+ * backlink-блоки в десятках доків), і зліплений із назви шлях був би
+ * командою, яка не виконується. Коли жодна з розбіжностей не має шляху,
+ * рядка `git add` немає взагалі — краще без підказки, ніж із хибною.
+ */
 export function formatFailure(failures) {
+  const paths = [...new Set(failures.map((f) => f.path).filter(Boolean))];
   const lines = [
     "",
     "✖ Похідні артефакти розійшлися з джерелом:",
@@ -164,7 +203,7 @@ export function formatFailure(failures) {
     "  Перегенеруй і додай у коміт:",
     "",
     `    pnpm ${failures.map((f) => f.fix).join(" && pnpm ")}`,
-    `    git add ${[...new Set(failures.map((f) => f.artifact.replace(/ \(.*\)$/, "")))].join(" ")}`,
+    ...(paths.length > 0 ? [`    git add ${paths.join(" ")}`] : []),
     "",
     "  Ці ж перевірки стоять PR-гейтом — без них червонітиме CI, а не тільки цей хук.",
     "  Проміжний коміт: SERGEANT_NO_DERIVED_CHECK=1 git commit …",

@@ -188,6 +188,9 @@
     "packages/shared/src/{openapi,schemas}/**/*.ts": [
       "node scripts/pre-commit-derived-artifacts.mjs --openapi"
     ],
+    "docs/04-governance/pr-ledger/index.json": [
+      "node scripts/pre-commit-derived-artifacts.mjs --ledger"
+    ],
     "*.{json,css,html,yml,yaml}": [
       "prettier --write"
     ]
