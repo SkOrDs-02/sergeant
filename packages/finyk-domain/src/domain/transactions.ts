@@ -360,3 +360,29 @@ export function manualExpenseToTransaction(
     { source: "manual", accountId: null, categoryId: e.category || "" },
   );
 }
+
+/**
+ * Банківський потік плюс ручні витрати, одним списком.
+ *
+ * Ручні витрати живуть у storage, а не в потоці транзакцій банку, тож
+ * кожен селектор, який рахує «скільки витрачено», мусить домержити їх сам.
+ * Овервʼю це робило інлайном, а інсайт-хуки отримували сирий банківський
+ * потік - і на одному екрані плашка лімітів казала «Продукти 140%
+ * перевищено», поки інсайт тих самих грошей не бачив (браузерна перевірка
+ * 2026-08-31, готівкова витрата 4 200 грн при ліміті 3 000). Спільна
+ * функція існує, щоб наступний виклик не повторив розходження.
+ *
+ * Вікно не звужує: місячний clamp і фільтр виключень лишаються на совісті
+ * виклику - `useCoffeeLimitInsight` порівнює два місяці, тож клампувати
+ * тут було б помилкою.
+ */
+export function withManualExpenses(
+  transactions: readonly Transaction[] | null | undefined,
+  manualExpenses: readonly ManualExpenseEntry[] | null | undefined,
+): Transaction[] {
+  const bank = Array.isArray(transactions) ? [...transactions] : [];
+  if (!Array.isArray(manualExpenses) || manualExpenses.length === 0) {
+    return bank;
+  }
+  return [...bank, ...manualExpenses.map(manualExpenseToTransaction)];
+}
