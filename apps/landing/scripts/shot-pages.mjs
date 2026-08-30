@@ -20,7 +20,8 @@ const ROUTES = [
   ["/data", "data"],
   ["/privacy", "privacy"],
   ["/terms", "terms"],
-  ["/nope", "404"],
+  ["/404", "404"],
+  ["/nope", "404-fallback"],
 ];
 
 const server = spawn(

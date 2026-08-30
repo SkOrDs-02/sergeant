@@ -18,8 +18,14 @@ const ROUTES = [
   "/about",
   "/guides",
   "/guides/monobank",
+  "/guides/kbzhv",
+  "/guides/cheky",
+  "/guides/foto-kalorii",
+  "/guides/bank-bezpeka",
+  "/data",
   "/privacy",
   "/terms",
+  "/404",
   "/nope-404",
 ];
 
@@ -147,6 +153,7 @@ for (const [vw, tag] of [
     ["/", "FAQPage"],
     ["/about", "SoftwareApplication"],
     ["/guides/monobank", "Article"],
+    ["/guides", "ItemList"],
   ]) {
     await page.goto(BASE + route, { waitUntil: "networkidle" });
     const kinds = await page

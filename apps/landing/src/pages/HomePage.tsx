@@ -1,6 +1,5 @@
 import { useState } from "react";
-import SiteHeader from "../components/SiteHeader";
-import SiteFooter from "../components/SiteFooter";
+import SiteLayout from "../components/SiteLayout";
 import TelegramCta from "../components/TelegramCta";
 import {
   ModulesSection,
@@ -156,58 +155,51 @@ export default function HomePage() {
   });
 
   return (
-    <>
-      <SiteHeader />
-
-      <main>
-        <section className="mx-auto flex w-full max-w-6xl flex-col items-start gap-10 px-5 py-12 sm:px-8 sm:py-16 lg:flex-row lg:items-center lg:justify-between lg:gap-12">
-          <div className="flex max-w-2xl flex-col items-start gap-6">
-            <h1 className="font-display text-[44px] font-extrabold uppercase leading-[1.05] tracking-tight text-foreground-strong sm:text-6xl lg:text-[62px]">
-              Порядок
-              <br />
-              без крику
-            </h1>
-            <p className="max-w-lg text-lg leading-relaxed text-pretty text-muted">
-              Sergeant – приватний застосунок, що тримає гроші, тренування,
-              звички і їжу разом і показує, як вони тягнуть одне одного. Сержант
-              на твоєму боці: рахує, а не читає лекцій.
-            </p>
-            <div className="flex flex-col gap-2.5">
-              <TelegramCta placement="hero" label="Стати в чергу" />
-              <p className="text-sm text-subtle">
-                черга живе в Telegram · ядро безкоштовне назавжди
-              </p>
-            </div>
-          </div>
-
-          <HeroCollage />
-        </section>
-
-        <ModulesSection />
-        <ScreensSection />
-        <ConnectionsSection />
-
-        <section className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-x-6 gap-y-3 px-5 pb-16 sm:px-8">
-          <a
-            href="/beta"
-            className="inline-flex min-h-12 items-center bg-foreground-strong px-8 py-4 font-display text-sm font-bold uppercase tracking-[0.08em] text-background transition hover:bg-ink-hi focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
-          >
-            Стати в чергу
-          </a>
-          <p className="text-sm text-subtle">
-            черга живе в Telegram · одне повідомлення, коли відкриється твоя
-            хвиля
+    <SiteLayout>
+      <section className="mx-auto flex w-full max-w-6xl flex-col items-start gap-10 px-5 py-12 sm:px-8 sm:py-16 lg:flex-row lg:items-center lg:justify-between lg:gap-12">
+        <div className="flex max-w-2xl flex-col items-start gap-6">
+          <h1 className="font-display text-[44px] font-extrabold uppercase leading-[1.05] tracking-tight text-foreground-strong sm:text-6xl lg:text-[62px]">
+            Порядок
+            <br />
+            без крику
+          </h1>
+          <p className="max-w-lg text-lg leading-relaxed text-pretty text-muted">
+            Sergeant – приватний застосунок, що тримає гроші, тренування, звички
+            і їжу разом і показує, як вони тягнуть одне одного. Сержант на
+            твоєму боці: рахує, а не читає лекцій.
           </p>
-        </section>
+          <div className="flex flex-col gap-2.5">
+            <TelegramCta placement="hero" label="Стати в чергу" />
+            <p className="text-sm text-subtle">
+              черга живе в Telegram · ядро безкоштовне назавжди
+            </p>
+          </div>
+        </div>
 
-        <PromisesSection />
-        <FounderSection />
-        <StatusSection />
-        <FaqSection />
-        <ClosingCta />
-      </main>
+        <HeroCollage />
+      </section>
 
-      <SiteFooter />
-    </>
+      <ModulesSection />
+      <ScreensSection />
+      <ConnectionsSection />
+
+      <section className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-x-6 gap-y-3 px-5 pb-16 sm:px-8">
+        <a
+          href="/beta"
+          className="inline-flex min-h-12 items-center bg-foreground-strong px-8 py-4 font-display text-sm font-bold uppercase tracking-[0.08em] text-background transition hover:bg-ink-hi focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+        >
+          Стати в чергу
+        </a>
+        <p className="text-sm text-subtle">
+          черга живе в Telegram · одне повідомлення, коли відкриється твоя хвиля
+        </p>
+      </section>
+
+      <PromisesSection />
+      <FounderSection />
+      <StatusSection />
+      <FaqSection />
+      <ClosingCta />
+    </SiteLayout>
   );
 }

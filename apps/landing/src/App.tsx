@@ -33,6 +33,9 @@ export const ROUTES: Record<string, ComponentType> = {
   "/guides/bank-bezpeka": GuideBankBezpekaPage,
   "/privacy": PrivacyPage,
   "/terms": TermsPage,
+  // Свій маршрут, щоб prerender поклав у dist/404/index.html тіло цієї
+  // сторінки, а не пререндерене тіло головної (soft-404 в індексі).
+  "/404": NotFoundPage,
 };
 
 /**
