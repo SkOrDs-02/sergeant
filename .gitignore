@@ -86,3 +86,4 @@ artifacts/
 # Auto-generated planning-run scratch (read-only multi-agent backlog plan);
 # regenerated on demand, never hand-edited — must not be tracked.
 plans/agent-fanout-plan-*.md
+bash.exe.stackdump

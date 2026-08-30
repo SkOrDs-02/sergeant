@@ -19,15 +19,6 @@ import { SETTINGS_INDEX, searchSettings } from "./searchSettings";
  * two tests below check things that actually depend on catalog CONTENT
  * (which can still drift) rather than the `.map()` shape.
  */
-// This suite pins the behaviour of the commerce/legal surfaces as they look
-// when SHOWN. Both are hidden by default for the closed beta, so the gate is
-// forced on here — otherwise re-enabling them later would ship against zero
-// coverage. The hidden state is covered in `core/lib/betaSurfaces.hidden.test.tsx`.
-vi.mock("../../lib/betaSurfaces", () => ({
-  COMMERCE_SURFACES_ENABLED: true,
-  LEGAL_SURFACES_ENABLED: true,
-}));
-
 describe("SETTINGS_INDEX ↔ SETTINGS_SECTIONS_CATALOG parity", () => {
   it("previously-orphaned ids ('general', 'assistant') are gone", () => {
     // Locks in the specific regression: these two ids were hardcoded into

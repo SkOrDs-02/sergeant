@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { MemoryRouter } from "react-router-dom";
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
   LEGAL_COOKIES_PATH,
   LEGAL_OFFER_PATH,
@@ -9,15 +9,6 @@ import {
   LEGAL_TERMS_PATH,
 } from "../app/appPaths";
 import { LegalPage } from "./LegalPage";
-
-// This suite pins the behaviour of the commerce/legal surfaces as they look
-// when SHOWN. Both are hidden by default for the closed beta, so the gate is
-// forced on here — otherwise re-enabling them later would ship against zero
-// coverage. The hidden state is covered in `core/lib/betaSurfaces.hidden.test.tsx`.
-vi.mock("../lib/betaSurfaces", () => ({
-  COMMERCE_SURFACES_ENABLED: true,
-  LEGAL_SURFACES_ENABLED: true,
-}));
 
 const cases = [
   [LEGAL_PRIVACY_PATH, "Політика приватності"],

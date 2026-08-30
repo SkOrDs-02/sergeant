@@ -11,11 +11,6 @@ Disallow: /assistant
 Disallow: /status
 Disallow: /design
 
-# Hidden for the closed beta (VITE_ENABLE_COMMERCE / VITE_ENABLE_LEGAL) —
-# both answer 404 right now, so keep crawlers off them until they return.
-Disallow: /pricing
-Disallow: /legal/
-
 # Module deep-links live behind the auth wall and are not crawlable
 # anonymously. Excluding them keeps the index honest.
 Disallow: /finyk/

@@ -60,27 +60,8 @@ const AssistantCataloguePage = lazyImport(
   () => import("../AssistantCataloguePage"),
   "AssistantCataloguePage",
 );
-// Commerce and legal surfaces are hidden for the closed beta; the routes
-// below render the 404 page instead.
-//
-// AI-CONTEXT: the condition is spelled out as a literal `import.meta.env`
-// comparison ON PURPOSE, rather than importing the shared
-// `COMMERCE_SURFACES_ENABLED` / `LEGAL_SURFACES_ENABLED` consts that the rest
-// of the app uses. Measured 2026-08-08: routed through the shared module the
-// branch stays un-folded, Rollup still emits `PricingPage`/`LegalPage` as
-// orphan chunks, and — the part that actually hurts — the service worker
-// precaches them, so every beta user downloads a tariffs page they cannot
-// open and can read in devtools. Inline, the branch is statically dead and
-// both chunks disappear from the build. Do not "tidy" this into the shared
-// const.
-const PricingPage =
-  import.meta.env.VITE_ENABLE_COMMERCE === "1"
-    ? lazyImport(() => import("../PricingPage"), "PricingPage")
-    : null;
-const LegalPage =
-  import.meta.env.VITE_ENABLE_LEGAL === "1"
-    ? lazyImport(() => import("../legal/LegalPage"), "LegalPage")
-    : null;
+const PricingPage = lazyImport(() => import("../PricingPage"), "PricingPage");
+const LegalPage = lazyImport(() => import("../legal/LegalPage"), "LegalPage");
 const StatusPage = lazyImport(
   () => import("../status/StatusPage"),
   "StatusPage",
@@ -304,21 +285,15 @@ const STANDALONE_ROUTES: ReadonlyArray<StandaloneRoute> = [
   // компонент із власним входом у ще один вхід. Той самий опт-аут уже де-факто
   // діяв для `/welcome` (він теж рендериться без `page-enter`) — тут він
   // просто стає явним.
-  //
-  // Hidden for the closed beta (`VITE_ENABLE_COMMERCE`): the path stays in
-  // the registry so the exhaustiveness contract still covers it and the 404
-  // is an explicit decision rather than a fall-through.
   defineStandaloneRoute({
     paths: [PRICING_PATH],
     render: () => (
       <Suspense fallback={<PageLoader />}>
-        {PricingPage ? <PricingPage /> : <NotFoundPage />}
+        <PricingPage />
       </Suspense>
     ),
   }),
 
-  // Hidden for the closed beta (`VITE_ENABLE_LEGAL`) — same reasoning as
-  // `/pricing` above.
   defineStandaloneRoute({
     paths: [
       LEGAL_PRIVACY_PATH,
@@ -326,18 +301,13 @@ const STANDALONE_ROUTES: ReadonlyArray<StandaloneRoute> = [
       LEGAL_COOKIES_PATH,
       LEGAL_OFFER_PATH,
     ],
-    render: ({ pathname }) =>
-      LegalPage ? (
-        <Suspense fallback={<PageLoader />}>
-          <div className="page-enter h-app-dvh min-h-0 overflow-hidden">
-            <LegalPage pathname={pathname} />
-          </div>
-        </Suspense>
-      ) : (
-        <Suspense fallback={<PageLoader />}>
-          <NotFoundPage />
-        </Suspense>
-      ),
+    render: ({ pathname }) => (
+      <Suspense fallback={<PageLoader />}>
+        <div className="page-enter h-app-dvh min-h-0 overflow-hidden">
+          <LegalPage pathname={pathname} />
+        </div>
+      </Suspense>
+    ),
   }),
 
   // `/status` — public health page (PR-41). Anonymous: fetches

@@ -1,8 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <!-- /pricing and /legal/* are hidden for the closed beta and answer 404;
-       re-add them here in the same change that flips VITE_ENABLE_COMMERCE /
-       VITE_ENABLE_LEGAL back on. -->
   <url>
     <loc>https://app.sergeant.com.ua/</loc>
     <changefreq>weekly</changefreq>
@@ -12,5 +9,30 @@
     <loc>https://app.sergeant.com.ua/welcome</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://app.sergeant.com.ua/pricing</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://app.sergeant.com.ua/legal/privacy</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  <url>
+    <loc>https://app.sergeant.com.ua/legal/terms</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  <url>
+    <loc>https://app.sergeant.com.ua/legal/cookies</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://app.sergeant.com.ua/legal/offer</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
   </url>
 </urlset>

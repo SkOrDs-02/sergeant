@@ -27,7 +27,6 @@ import {
   verifyStripeSignature,
   processStripeWebhook,
   isFounderUser,
-  isAllProEnabled,
   ensurePlataPubkey,
   plataProvider,
 } from "../modules/billing/index.js";
@@ -159,13 +158,7 @@ export function createBillingRouter({ pool }: { pool: Pool }): Router {
       // also clear (round-2 UI audit S1: these two paths used to diverge
       // because `getUserPlan()` had the bypass but this route read straight
       // from `subscriptions` instead).
-      //
-      // `isAllProEnabled()` стоїть тут із ТІЄЇ САМОЇ причини, а не «за
-      // компанію»: цей роут годує клієнтський `usePlan()`, і без нього
-      // прапорець дав би розкол навпіл — сервер пускає на Pro-роути й знімає
-      // ліміт AI, а інтерфейс малює Free з пейволами. Рівно та розбіжність,
-      // яку описує коментар вище; повторювати її вдруге не варто.
-      if (isFounderUser(userId) || isAllProEnabled()) {
+      if (isFounderUser(userId)) {
         res.json(
           BillingStatusResponseSchema.parse({
             subscription: {

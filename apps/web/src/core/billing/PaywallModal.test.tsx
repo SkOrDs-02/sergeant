@@ -3,15 +3,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 
-// This suite pins the behaviour of the commerce/legal surfaces as they look
-// when SHOWN. Both are hidden by default for the closed beta, so the gate is
-// forced on here — otherwise re-enabling them later would ship against zero
-// coverage. The hidden state is covered in `core/lib/betaSurfaces.hidden.test.tsx`.
-vi.mock("../lib/betaSurfaces", () => ({
-  COMMERCE_SURFACES_ENABLED: true,
-  LEGAL_SURFACES_ENABLED: true,
-}));
-
 const { trackEventMock, navigateSpy } = vi.hoisted(() => ({
   trackEventMock: vi.fn(),
   navigateSpy: vi.fn(),

@@ -16,15 +16,6 @@ import {
 // without a per-call cast.
 type EventSpy = Mock<(event: Event) => void>;
 
-// This suite pins the behaviour of the commerce/legal surfaces as they look
-// when SHOWN. Both are hidden by default for the closed beta, so the gate is
-// forced on here — otherwise re-enabling them later would ship against zero
-// coverage. The hidden state is covered in `core/lib/betaSurfaces.hidden.test.tsx`.
-vi.mock("../../../core/lib/betaSurfaces", () => ({
-  COMMERCE_SURFACES_ENABLED: true,
-  LEGAL_SURFACES_ENABLED: true,
-}));
-
 describe("openHubModule", () => {
   let listener: EventSpy;
 

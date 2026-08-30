@@ -608,17 +608,9 @@ jobs:
         run: pnpm --filter @sergeant/server db:migrate:dev
 
       - name: Build web app
-        # `build:e2e`, НЕ `build`: бета-гейт у `src/core/lib/betaSurfaces.ts`
-        # ховає комерційні та юридичні поверхні дефолтом, і критичні флоу
-        # (checkout, paywall, тарифи, юрдоки) впираються в 404. Лейн існує,
-        # щоб боронити ПОВНУ поверхню продукту — вона лишається в коді й
-        # повертається після бети. Схований стан має власне покриття в
-        # `betaSurfaces.hidden.test.tsx`.
-        #
-        # Нижче `PW_SKIP_WEBSERVER: "1"`, тому `start-smoke-webserver.mjs`
-        # тут НЕ виконується — правити треба обидва місця, інакше збірка
-        # в CI розходиться з локальним прогоном.
-        run: pnpm --filter @sergeant/web build:e2e
+        # `PW_SKIP_WEBSERVER: "1"` нижче означає, що збірку робить саме цей
+        # крок, а не `start-smoke-webserver.mjs`.
+        run: pnpm --filter @sergeant/web build
 
       - name: Start API server
         run: pnpm --filter @sergeant/server dev &
