@@ -45,7 +45,7 @@ export interface Insight {
   /** Subtitle — рекомендована дія ("Встановити ліміт?"). */
   subtitle: string;
   /**
-   * Розгорнуте питання з числами правила — префіл чипа «Спитати AI»
+   * Розгорнуте питання з числами правила — префіл чипа «AI»
    * (`emitHubBus("openChat", { message: askAiPrompt, autoSend: false })`).
    * Числа детерміновані з даних хука, НЕ парсяться з `title`/`subtitle`.
    */
