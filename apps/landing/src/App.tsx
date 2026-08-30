@@ -4,6 +4,10 @@ import BetaPage from "./pages/BetaPage";
 import AboutPage from "./pages/AboutPage";
 import DataPage from "./pages/DataPage";
 import GuidesPage from "./pages/GuidesPage";
+import HroshiPage from "./pages/HroshiPage";
+import YizhaPage from "./pages/YizhaPage";
+import ZvychkyPage from "./pages/ZvychkyPage";
+import TrenuvanniaPage from "./pages/TrenuvanniaPage";
 import ZvyazkyPage from "./pages/ZvyazkyPage";
 import StanPage from "./pages/StanPage";
 import ObitsyankyPage from "./pages/ObitsyankyPage";
@@ -29,6 +33,10 @@ export const ROUTES: Record<string, ComponentType> = {
   "/beta": BetaPage,
   "/about": AboutPage,
   "/data": DataPage,
+  "/hroshi": HroshiPage,
+  "/yizha": YizhaPage,
+  "/zvychky": ZvychkyPage,
+  "/trenuvannia": TrenuvanniaPage,
   "/guides": GuidesPage,
   "/zvyazky": ZvyazkyPage,
   "/stan": StanPage,

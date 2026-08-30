@@ -42,147 +42,49 @@ export function ModulesSection() {
       </div>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-4">
-        <div className="flex min-h-[280px] flex-col gap-1 bg-finyk px-6 py-7 text-ink-text">
+        <a
+          href="/hroshi"
+          className="group flex flex-col gap-1 bg-finyk px-6 py-7 text-ink-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+        >
           <p className={label}>01 · Гроші</p>
-          <h3 className={title}>Фінік</h3>
+          <h3 className={`${title} group-hover:underline`}>Фінік</h3>
           <p className={`${body} text-ink-text/90`}>
-            Синк із Monobank і сканер чеків із фото. Бюджети в гривні, борги під
-            контролем. Руками – хіба витрати без чека.
+            Чотири входи витрат замість одного банку.
           </p>
-          <div aria-hidden="true" className="mt-auto flex flex-col gap-2 pt-6">
-            <div className="flex justify-between text-xs">
-              <span className="font-semibold">Кафе і доставка</span>
-              <span className="tabular-nums">
-                1&nbsp;840 / 2&nbsp;500&#8239;₴
-              </span>
-            </div>
-            <div className="h-1.5 bg-ink-text/25">
-              <div className="h-1.5 w-[74%] bg-ink-text" />
-            </div>
-          </div>
-        </div>
+        </a>
 
-        <div className="flex min-h-[280px] flex-col gap-1 bg-fizruk px-6 py-7 text-ink-text">
+        <a
+          href="/trenuvannia"
+          className="group flex flex-col gap-1 bg-fizruk px-6 py-7 text-ink-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+        >
           <p className={label}>02 · Тіло</p>
-          <h3 className={title}>Фізрук</h3>
+          <h3 className={`${title} group-hover:underline`}>Фізрук</h3>
           <p className={`${body} text-ink-text/90`}>
-            Плани тренувань, прогрес силових, вага і заміри. Підхід записується
-            за пару тапів.
+            Щоденник тренувань і чесні межі поради.
           </p>
-          <div
-            aria-hidden="true"
-            className="mt-auto flex items-baseline gap-2.5 pt-6 tabular-nums"
-          >
-            <span className="text-xl font-bold">80 → 85 кг</span>
-            <span className="text-xs text-ink-text/85">присід · 4 тижні</span>
-          </div>
-        </div>
+        </a>
 
-        <div className="flex min-h-[280px] flex-col gap-1 bg-routine px-6 py-7 text-ink">
+        <a
+          href="/zvychky"
+          className="group flex flex-col gap-1 bg-routine px-6 py-7 text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+        >
           <p className={label}>03 · Звички</p>
-          <h3 className={title}>Рутина</h3>
+          <h3 className={`${title} group-hover:underline`}>Рутина</h3>
           <p className={`${body} text-ink/90`}>
-            Стріки з чесною статистикою. Пропуск із причиною не обнуляє серію.
+            Пропуск із причиною не обнуляє серію.
           </p>
-          <div
-            aria-hidden="true"
-            className="mt-auto flex items-center gap-2 pt-6"
-          >
-            {[0, 1, 2].map((i) => (
-              <span key={i} className="h-3 w-3 rounded-full bg-ink" />
-            ))}
-            <span className="h-3 w-3 rounded-full border-2 border-dashed border-ink" />
-            {[4, 5].map((i) => (
-              <span key={i} className="h-3 w-3 rounded-full bg-ink" />
-            ))}
-          </div>
-        </div>
+        </a>
 
-        <div className="flex min-h-[280px] flex-col gap-1 bg-nutrition-glow px-6 py-7 text-ink">
+        <a
+          href="/yizha"
+          className="group flex flex-col gap-1 bg-nutrition-glow px-6 py-7 text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+        >
           <p className={label}>04 · Їжа</p>
-          <h3 className={title}>Харчування</h3>
+          <h3 className={`${title} group-hover:underline`}>Харчування</h3>
           <p className={`${body} text-ink/90`}>
-            КБЖВ, фото страви, сканер штрихкодів і українська база продуктів.
+            КБЖВ, коли половини продуктів немає в базах.
           </p>
-          <div
-            aria-hidden="true"
-            className="mt-auto flex items-baseline gap-3 pt-6 tabular-nums"
-          >
-            <span className="font-bold">Б 92</span>
-            <span className="font-bold">Ж 61</span>
-            <span className="font-bold">В 210</span>
-            <span className="text-xs">1&nbsp;780 ккал</span>
-          </div>
-        </div>
-      </div>
-      <p className="mx-auto w-full max-w-6xl px-5 pt-3 text-xs text-subtle sm:px-8">
-        Цифри на блоках ілюстративні
-      </p>
-    </section>
-  );
-}
-
-/**
- * Справжні екрани бети (демо-режим продукту, знято з живого dev-стенда).
- * Найчастіше зауваження всіх зовнішніх рецензій: «лендінг без продукту».
- */
-export function ScreensSection() {
-  const screens = [
-    {
-      src: "/screens/hub.webp",
-      alt: "Головний екран Sergeant: картки чотирьох модулів із даними дня і серією 14 днів",
-      label: "Хаб: усі чотири сфери на одному екрані",
-    },
-    {
-      src: "/screens/finyk.webp",
-      alt: "Екран Фініка: денний ліміт 4 579 гривень, витрати і надходження за сьогодні",
-      label: "Фінік: скільки можна витратити сьогодні",
-    },
-    {
-      src: "/screens/nutrition.webp",
-      alt: "Екран Їжі: кільце 1250 із 2200 ккал, білки, жири й вуглеводи, вода за день",
-      label: "Їжа: КБЖВ і вода без таблиць",
-    },
-    {
-      src: "/screens/routine.webp",
-      alt: "Екран Рутини: 5 із 5 звичок виконано, серія 14 днів, тижнева стрічка",
-      label: "Рутина: 5/5 за сьогодні, серія 14 днів",
-    },
-  ];
-
-  return (
-    <section
-      id="screens"
-      className="mx-auto w-full max-w-6xl scroll-mt-16 px-5 pt-16 sm:px-8"
-    >
-      <h2 className="font-display text-2xl font-extrabold uppercase tracking-tight text-foreground-strong sm:text-3xl">
-        Як це виглядає
-      </h2>
-      <p className="mt-4 max-w-2xl leading-relaxed text-muted">
-        Справжні екрани бети. Дані на них з демо-режиму продукту.
-      </p>
-
-      <div className="mt-8 flex snap-x snap-mandatory gap-5 overflow-x-auto pb-4 lg:grid lg:grid-cols-4 lg:overflow-visible lg:pb-0">
-        {screens.map((s, i) => (
-          <figure
-            key={s.src}
-            className={`w-[240px] shrink-0 snap-start lg:w-auto ${
-              i % 2 ? "lg:rotate-[0.8deg]" : "lg:-rotate-1"
-            }`}
-          >
-            <img
-              src={s.src}
-              alt={s.alt}
-              width={414}
-              height={896}
-              loading="lazy"
-              className="paper-shadow w-full rounded-[var(--radius-card)] border border-cardline-strong bg-card"
-            />
-            <figcaption className="mt-2.5 text-xs text-subtle">
-              {s.label}
-            </figcaption>
-          </figure>
-        ))}
+        </a>
       </div>
     </section>
   );

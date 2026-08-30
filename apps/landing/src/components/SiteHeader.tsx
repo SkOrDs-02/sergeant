@@ -3,27 +3,20 @@ import Wordmark from "./Wordmark";
 
 /**
  * У шапці стоїть тільки те, що відповідає на «що це вміє», плюс єдина дія.
- * Якорів немає: секція без URL не існує ні для пошуку, ні для аналітики.
- * «Модулі» лишається останнім якорем до Етапу 3, коли пункт розсиплеться
- * на чотири модульні сторінки.
+ * Якорів більше немає взагалі: секція без URL не існує ні для пошуку, ні
+ * для аналітики. Чотири модулі – чотири сторінки, а не один якір.
  */
-const MODULES_ANCHOR = { hash: "modules", label: "Модулі" } as const;
-
 const PAGE_ITEMS = [
+  { href: "/hroshi", label: "Гроші" },
+  { href: "/yizha", label: "Їжа" },
+  { href: "/zvychky", label: "Звички" },
+  { href: "/trenuvannia", label: "Тренування" },
   { href: "/zvyazky", label: "Звʼязки" },
-  { href: "/obitsyanky", label: "Обіцянки" },
-  { href: "/pytannya", label: "Питання" },
   { href: "/guides", label: "Гайди" },
 ] as const;
 
 export default function SiteHeader() {
   const [open, setOpen] = useState(false);
-  // SSG-прохід (entry-server) не має window; «/#hash» замість «#hash» у
-  // статичному HTML веде на той самий URL, а після маунта клієнт перерендерить.
-  const onHome =
-    typeof window !== "undefined" && window.location.pathname === "/";
-
-  const anchor = (hash: string) => (onHome ? `#${hash}` : `/#${hash}`);
 
   const navLink =
     "transition hover:text-foreground-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
@@ -39,9 +32,6 @@ export default function SiteHeader() {
           aria-label="Головна навігація"
           className="hidden items-center gap-7 text-sm font-semibold text-foreground md:flex"
         >
-          <a href={anchor(MODULES_ANCHOR.hash)} className={navLink}>
-            {MODULES_ANCHOR.label}
-          </a>
           {PAGE_ITEMS.map((item) => (
             <a key={item.href} href={item.href} className={navLink}>
               {item.label}
@@ -94,16 +84,11 @@ export default function SiteHeader() {
             aria-label="Мобільна навігація"
             className="absolute left-0 right-0 top-full z-10 flex flex-col gap-0 border-b-2 border-foreground-strong bg-background px-5 pb-4 shadow-lg sm:px-8 md:hidden"
           >
-            <a
-              href={anchor(MODULES_ANCHOR.hash)}
-              className={mobileNavLink}
-              onClick={() => setOpen(false)}
-            >
-              {MODULES_ANCHOR.label}
-            </a>
             {[
               ...PAGE_ITEMS,
+              { href: "/obitsyanky", label: "Що обіцяю" },
               { href: "/stan", label: "Доповідь про стан" },
+              { href: "/pytannya", label: "Питання" },
               { href: "/about", label: "Про проєкт" },
             ].map((item) => (
               <a

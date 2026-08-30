@@ -16,6 +16,10 @@ const ROUTES = [
   "/",
   "/beta",
   "/about",
+  "/hroshi",
+  "/yizha",
+  "/zvychky",
+  "/trenuvannia",
   "/guides",
   "/zvyazky",
   "/stan",
@@ -96,15 +100,18 @@ for (const [vw, tag] of [
   const { ctx, page } = await newPage({ width: 1280, height: 900 });
   await page.goto(BASE + "/", { waitUntil: "networkidle" });
 
-  await page.getByRole("link", { name: "Модулі" }).click();
-  await page.waitForTimeout(700);
-  ok(
-    "desktop якір Модулі докручує до секції",
-    await page.evaluate(() => {
-      const el = document.getElementById("modules");
-      return !!el && el.getBoundingClientRect().top < 200;
-    }),
-  );
+  await page
+    .getByLabel("Головна навігація")
+    .getByRole("link", { name: "Гроші", exact: true })
+    .click();
+  await page.waitForURL("**/hroshi");
+  ok("desktop нав Гроші → /hroshi", page.url().endsWith("/hroshi"));
+
+  // Картка модуля на головній – теж точка входу, не декорація
+  await page.goto(BASE + "/", { waitUntil: "networkidle" });
+  await page.getByRole("link", { name: "Харчування" }).first().click();
+  await page.waitForURL("**/yizha");
+  ok("картка модуля Харчування → /yizha", page.url().endsWith("/yizha"));
 
   await page.getByRole("link", { name: "Гайди" }).first().click();
   await page.waitForURL("**/guides");
@@ -163,6 +170,10 @@ for (const [vw, tag] of [
     ["/pytannya", "FAQPage"],
     ["/obitsyanky", "ItemList"],
     ["/zvyazky", "Article"],
+    ["/hroshi", "Article"],
+    ["/yizha", "Article"],
+    ["/zvychky", "Article"],
+    ["/trenuvannia", "Article"],
     ["/stan", "Article"],
     ["/about", "AboutPage"],
     ["/guides/monobank", "Article"],
