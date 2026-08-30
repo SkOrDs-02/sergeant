@@ -106,7 +106,6 @@ describe("sqliteReader full-state cache", () => {
       routine_tags: [{ id: "t1", name: "Health", scope: "" }],
       routine_categories: [{ id: "c1", name: "Body", emoji: "" }],
       routine_prefs: [{ data_json: '{"routineRemindersEnabled":true}' }],
-      routine_pushups: [{ date_key: "2026-01-01", reps: 30 }],
       routine_habit_order: [{ order_json: '["h1"]' }],
       routine_completion_notes: [{ note_key: "h1:2026-01-01", note: "done" }],
     });
@@ -127,7 +126,6 @@ describe("sqliteReader full-state cache", () => {
       { id: "c1", name: "Body", emoji: undefined },
     ]);
     expect(s.prefs).toEqual({ routineRemindersEnabled: true });
-    expect(s.pushupsByDate).toEqual({ "2026-01-01": 30 });
     expect(s.habitOrder).toEqual(["h1"]);
     expect(s.completionNotes).toEqual({ "h1:2026-01-01": "done" });
     expect(getCachedSqliteRoutineState()).toBe(s);
@@ -138,7 +136,6 @@ describe("sqliteReader full-state cache", () => {
     const s = await refreshSqliteRoutineState(client, "u1");
     expect(s.prefs).toEqual({});
     expect(s.habitOrder).toEqual([]);
-    expect(s.pushupsByDate).toEqual({});
   });
 
   it("falls back to defaults on malformed JSON columns", async () => {
@@ -181,7 +178,6 @@ describe("sqliteReader full-state cache", () => {
       categories: [],
       prefs: { routineRemindersEnabled: true },
       skips: {},
-      pushupsByDate: { "2026-01-01": 5 },
       habitOrder: ["h1"],
       completionNotes: {},
     });

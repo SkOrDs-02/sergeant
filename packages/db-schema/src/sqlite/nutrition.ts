@@ -311,7 +311,7 @@ export const nutritionRecipes = sqliteTable(
  * SQLite schema for the `nutrition_water_log` table.
  *
  * Один рядок на (user, date) — мілілітри води за день. Дзеркалить
- * `routine_pushups` за формою. Day key — `YYYY-MM-DD` у локальному
+ * `fizruk_pushups` за формою. Day key — `YYYY-MM-DD` у локальному
  * часовому поясі користувача (як уже працює `WaterLog` blob у
  * `packages/nutrition-domain/src/waterLog.ts`).
  *

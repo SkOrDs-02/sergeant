@@ -226,8 +226,6 @@ export function defaultRoutineState(): RoutineState {
     completions: {},
     /** habitId -> dateKey -> «не зміг з причиною» (канон §5) */
     skips: {},
-    /** "YYYY-MM-DD" -> кількість відтискань */
-    pushupsByDate: {},
     /** порядок id активних звичок (drag/up-down) */
     habitOrder: [],
     /** completionNoteKey -> короткий текст */
@@ -279,10 +277,6 @@ export function normalizeRoutineState(raw: unknown): RoutineState {
     habits: Array.isArray(p.habits) ? p.habits.map(normalizeHabit) : [],
     completions: normalizeCompletionsMap(p.completions),
     skips: normalizeSkipsMap(p.skips),
-    pushupsByDate:
-      typeof p.pushupsByDate === "object" && p.pushupsByDate
-        ? (p.pushupsByDate as Record<string, number>)
-        : {},
     habitOrder: Array.isArray(p.habitOrder) ? (p.habitOrder as string[]) : [],
     completionNotes:
       typeof p.completionNotes === "object" && p.completionNotes

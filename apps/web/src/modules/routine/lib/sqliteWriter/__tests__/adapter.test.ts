@@ -521,26 +521,6 @@ describe("applyRoutineDualWriteOps", () => {
   });
 
   // -----------------------------------------------------------------------
-  // Stage 10: pushup-upsert
-  // -----------------------------------------------------------------------
-
-  it("upserts routine_pushups for pushup-upsert", async () => {
-    const result = await applyRoutineDualWriteOps(
-      client,
-      [{ kind: "pushup-upsert", dateKey: "2026-05-01", reps: 30 }],
-      { userId: USER_ID, clientTs: T1, logger },
-    );
-    expect(result).toEqual({ applied: 1, errored: 0, skipped: 0 });
-
-    const rows = await client.all<Record<string, unknown>>(
-      `SELECT date_key, reps FROM routine_pushups WHERE user_id = ?`,
-      [USER_ID],
-    );
-    expect(rows).toHaveLength(1);
-    expect(rows[0]).toMatchObject({ date_key: "2026-05-01", reps: 30 });
-  });
-
-  // -----------------------------------------------------------------------
   // Stage 10: habit-order-set
   // -----------------------------------------------------------------------
 

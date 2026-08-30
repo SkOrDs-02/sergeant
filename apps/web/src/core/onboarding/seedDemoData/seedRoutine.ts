@@ -79,8 +79,6 @@ export function seedRoutine(): void {
 
   // Віджимання переїхали у fizruk-сід (`seedFizruk.ts`) — перенос
   // власності routine → fizruk, канон routine.md §10 (2026-08-30).
-  // `pushupsByDate: {}` лишається в payload-і до Phase B: поле ще живе в
-  // `RoutineState`, і його відсутність нормалізатор трактує так само.
   const state = {
     schemaVersion: 1,
     prefs: {
@@ -92,7 +90,6 @@ export function seedRoutine(): void {
     categories: [],
     habits,
     completions,
-    pushupsByDate: {},
     habitOrder: habits.map((h) => h.id),
     completionNotes: {},
   };

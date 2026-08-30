@@ -32,7 +32,6 @@ function makeState(habits: Habit[]): RoutineState {
     categories: [],
     habits,
     completions: {},
-    pushupsByDate: {},
     habitOrder: habits.map((h) => h.id),
     completionNotes: {},
   };

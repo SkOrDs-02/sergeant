@@ -15,7 +15,6 @@ function makeState(overrides: Partial<RoutineState> = {}): RoutineState {
     categories: [],
     habits: [],
     completions: {},
-    pushupsByDate: {},
     habitOrder: [],
     completionNotes: {},
     ...overrides,
@@ -379,27 +378,6 @@ describe("probeRoutineParity", () => {
       const out = await probeRoutineParity(handle.client, USER_ID, next);
       expect(out.result).toBe("mismatch");
       expect(out.details["prefs"]).toMatchObject({ lsLen: expect.any(Number) });
-    } finally {
-      handle.close();
-    }
-  });
-
-  // -----------------------------------------------------------------------
-  // Stage 10: pushups parity (date-key + reps)
-  // -----------------------------------------------------------------------
-
-  it("reports match for pushups when date-key sets agree", async () => {
-    const handle = await createTestSqlite();
-    try {
-      await handle.client.run(
-        `INSERT INTO routine_pushups (user_id, date_key, reps, updated_at)
-         VALUES (?, ?, ?, ?)`,
-        [USER_ID, "2026-05-01", 30, "2026-05-01T00:00:00.000Z"],
-      );
-      const next = makeState({ pushupsByDate: { "2026-05-01": 30 } });
-      const out = await probeRoutineParity(handle.client, USER_ID, next);
-      expect(out.result).toBe("match");
-      expect(out.details["pushups"]).toEqual({ ls: 1, sqlite: 1 });
     } finally {
       handle.close();
     }

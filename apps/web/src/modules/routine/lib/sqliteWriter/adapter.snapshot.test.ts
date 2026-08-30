@@ -177,7 +177,6 @@ const CANONICAL_OPS: RoutineDualWriteOp[] = [
     kind: "prefs-set",
     prefs: { showFizrukInCalendar: true, routineRemindersEnabled: false },
   },
-  { kind: "pushup-upsert", dateKey: "2026-06-20", reps: 30 },
   { kind: "habit-order-set", orderedIds: ["h2", "h1"] },
   {
     kind: "completion-note-upsert",

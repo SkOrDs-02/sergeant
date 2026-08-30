@@ -1,14 +1,13 @@
 // @vitest-environment jsdom
 /**
- * Tests for the three built-in localStorage migrations registered as a
+ * Tests for the built-in localStorage migrations registered as a
  * side-effect of importing `storageManager`:
  *   - finyk_001_rename_finto_keys
  *   - nutrition_001_migrate_legacy_pantry
- *   - routine_001_migrate_fizruk_pushups
  *
  * The API-level tests live in `storageManager.test.ts`; this file drives
- * the migration bodies with realistic legacy data so the rename / pantry /
- * pushup branches execute.
+ * the migration bodies with realistic legacy data so the rename / pantry
+ * branches execute.
  */
 import { describe, it, expect, beforeEach } from "vitest";
 import { storageManager } from "./storageManager";
@@ -91,48 +90,5 @@ describe("built-in migration: nutrition_001_migrate_legacy_pantry", () => {
     storageManager.resetMigration("nutrition_001_migrate_legacy_pantry");
     storageManager.runAll();
     expect(webKVStore.getString("nutrition_pantries_v1")).toBeNull();
-  });
-});
-
-describe("built-in migration: routine_001_migrate_fizruk_pushups", () => {
-  it("merges the legacy pushup log into routine pushupsByDate", () => {
-    webKVStore.setString(
-      "fizruk_pushups_v1",
-      JSON.stringify({ "2026-06-01": 20 }),
-    );
-
-    storageManager.resetMigration("routine_001_migrate_fizruk_pushups");
-    storageManager.runAll();
-
-    const raw = webKVStore.getString("hub_routine_v1");
-    expect(raw).toBeTruthy();
-    const state = JSON.parse(raw!);
-    expect(state.pushupsByDate["2026-06-01"]).toBe(20);
-    expect(webKVStore.getString("fizruk_pushups_v1")).toBeNull();
-  });
-
-  it("skips merge but cleans legacy key when routine already has pushups", () => {
-    webKVStore.setString(
-      "hub_routine_v1",
-      JSON.stringify({ pushupsByDate: { "2026-05-01": 10 } }),
-    );
-    webKVStore.setString(
-      "fizruk_pushups_v1",
-      JSON.stringify({ "2026-06-01": 20 }),
-    );
-
-    storageManager.resetMigration("routine_001_migrate_fizruk_pushups");
-    storageManager.runAll();
-
-    const state = JSON.parse(webKVStore.getString("hub_routine_v1")!);
-    expect(state.pushupsByDate["2026-05-01"]).toBe(10);
-    expect(state.pushupsByDate["2026-06-01"]).toBeUndefined();
-    expect(webKVStore.getString("fizruk_pushups_v1")).toBeNull();
-  });
-
-  it("is a no-op when no legacy pushup log exists", () => {
-    storageManager.resetMigration("routine_001_migrate_fizruk_pushups");
-    storageManager.runAll();
-    expect(webKVStore.getString("hub_routine_v1")).toBeNull();
   });
 });

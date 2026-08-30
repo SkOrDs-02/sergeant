@@ -97,9 +97,6 @@ describe("sqliteReader (mobile routine)", () => {
         if (sql.includes("FROM routine_prefs")) {
           return [{ data_json: '{"showFizrukInCalendar":false}' }];
         }
-        if (sql.includes("FROM routine_pushups")) {
-          return [{ date_key: "2026-05-04", reps: 42 }];
-        }
         if (sql.includes("FROM routine_habit_order")) {
           return [{ order_json: '["habit-1"]' }];
         }
@@ -139,7 +136,6 @@ describe("sqliteReader (mobile routine)", () => {
       { id: "cat-1", name: "Ранок", emoji: "🌅" },
     ]);
     expect(cache.prefs).toEqual({ showFizrukInCalendar: false });
-    expect(cache.pushupsByDate).toEqual({ "2026-05-04": 42 });
     expect(cache.habitOrder).toEqual(["habit-1"]);
     expect(cache.completionNotes).toEqual({ "habit-1:2026-05-04": "Легко" });
     expect(getCachedSqliteRoutineState()).toBe(cache);
@@ -152,7 +148,6 @@ describe("sqliteReader (mobile routine)", () => {
         if (sql.includes("FROM routine_tags")) return [];
         if (sql.includes("FROM routine_categories")) return [];
         if (sql.includes("FROM routine_prefs")) return [];
-        if (sql.includes("FROM routine_pushups")) return [];
         if (sql.includes("FROM routine_habit_order")) {
           return [{ order_json: "not-json" }];
         }
@@ -183,13 +178,11 @@ describe("sqliteReader (mobile routine)", () => {
       tags: [],
       categories: [],
       prefs: { routineRemindersEnabled: true },
-      pushupsByDate: { "2026-05-05": 10 },
       habitOrder: ["habit-1"],
       completionNotes: { "habit-1:2026-05-05": "Ок" },
     });
     expect(getCachedSqliteRoutineState()).toMatchObject({
       prefs: { routineRemindersEnabled: true },
-      pushupsByDate: { "2026-05-05": 10 },
       habitOrder: ["habit-1"],
       completionNotes: { "habit-1:2026-05-05": "Ок" },
       refreshedAt: "2026-05-05T09:00:00.000Z",

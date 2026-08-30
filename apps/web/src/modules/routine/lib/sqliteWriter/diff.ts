@@ -26,7 +26,6 @@ import {
  *   - `routine_tags` (tag-upsert / tag-delete)
  *   - `routine_categories` (category-upsert / category-delete)
  *   - `routine_prefs` (prefs-set)
- *   - `routine_pushups` (pushup-upsert)
  *   - `routine_habit_order` (habit-order-set)
  *   - `routine_habit_skips` (habit-skip-upsert / habit-skip-delete)
  *   - `routine_completion_notes` (completion-note-upsert /
@@ -127,12 +126,6 @@ export interface PrefsSetOp {
   readonly prefs: RoutinePrefs;
 }
 
-export interface PushupUpsertOp {
-  readonly kind: "pushup-upsert";
-  readonly dateKey: string;
-  readonly reps: number;
-}
-
 export interface HabitOrderSetOp {
   readonly kind: "habit-order-set";
   readonly orderedIds: readonly string[];
@@ -181,7 +174,6 @@ export type RoutineDualWriteOp =
   | CategoryUpsertOp
   | CategoryDeleteOp
   | PrefsSetOp
-  | PushupUpsertOp
   | HabitOrderSetOp
   | CompletionNoteUpsertOp
   | CompletionNoteDeleteOp
@@ -207,10 +199,9 @@ export type RoutineDualWriteOp =
  *   5. tag-upsert / tag-delete (tagId asc)
  *   6. category-upsert / category-delete (categoryId asc)
  *   7. prefs-set (at most one)
- *   8. pushup-upsert (dateKey asc)
- *   9. habit-order-set (at most one)
- *  10. completion-note-upsert / completion-note-delete (noteKey asc)
- *  11. habit-skip-upsert / habit-skip-delete (skipKey asc)
+ *   8. habit-order-set (at most one)
+ *   9. completion-note-upsert / completion-note-delete (noteKey asc)
+ *  10. habit-skip-upsert / habit-skip-delete (skipKey asc)
  *
  * — so adapter callers can rely on a deterministic apply order, which
  * matters when several SQLite writes target the same row id (e.g. a
@@ -234,7 +225,6 @@ export function diffRoutineDualWriteOps(
   diffTagOps(prev, next, ops);
   diffCategoryOps(prev, next, ops);
   diffPrefsOps(prev, next, ops);
-  diffPushupOps(prev, next, ops);
   diffHabitOrderOps(prev, next, ops);
   diffCompletionNoteOps(prev, next, ops);
   diffHabitSkipOps(prev, next, ops);
@@ -433,30 +423,6 @@ function diffPrefsOps(
   if (prev.prefs === next.prefs) return;
   if (JSON.stringify(prev.prefs) === JSON.stringify(next.prefs)) return;
   ops.push({ kind: "prefs-set", prefs: next.prefs });
-}
-
-function diffPushupOps(
-  prev: RoutineState,
-  next: RoutineState,
-  ops: RoutineDualWriteOp[],
-): void {
-  if (prev.pushupsByDate === next.pushupsByDate) return;
-  const pushups: PushupUpsertOp[] = [];
-  const allKeys = new Set([
-    ...Object.keys(prev.pushupsByDate ?? {}),
-    ...Object.keys(next.pushupsByDate ?? {}),
-  ]);
-  for (const dateKey of allKeys) {
-    const prevVal = (prev.pushupsByDate ?? {})[dateKey] ?? 0;
-    const nextVal = (next.pushupsByDate ?? {})[dateKey] ?? 0;
-    if (prevVal !== nextVal) {
-      pushups.push({ kind: "pushup-upsert", dateKey, reps: nextVal });
-    }
-  }
-  pushups.sort((a, b) =>
-    a.dateKey < b.dateKey ? -1 : a.dateKey > b.dateKey ? 1 : 0,
-  );
-  ops.push(...pushups);
 }
 
 function diffHabitOrderOps(

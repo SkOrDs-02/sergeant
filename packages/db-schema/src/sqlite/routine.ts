@@ -274,7 +274,10 @@ export const routinePrefs = sqliteTable("routine_prefs", {
  * SQLite schema for the `routine_pushups` table.
  *
  * Один рядок на (user, date) — кількість відтискань за день.
- * Дзеркалить `RoutineState.pushupsByDate`.
+ *
+ * Власність перенесено у `fizruk_pushups` (канон routine.md §10, Phase B):
+ * dual-write і читачі знято, локальна таблиця лишається порожнім
+ * артефактом старих міграцій.
  */
 export const routinePushups = sqliteTable(
   "routine_pushups",

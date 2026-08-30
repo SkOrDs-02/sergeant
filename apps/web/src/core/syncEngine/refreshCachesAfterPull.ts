@@ -7,7 +7,6 @@ const ROUTINE_PULL_TABLES = new Set([
   "routine_tags",
   "routine_categories",
   "routine_prefs",
-  "routine_pushups",
   "routine_habit_order",
   "routine_completion_notes",
   "routine_habit_skips",

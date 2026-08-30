@@ -12,7 +12,6 @@ function makeState(partial: Partial<RoutineState> = {}): RoutineState {
     categories: [],
     habits: [],
     completions: {},
-    pushupsByDate: {},
     habitOrder: [],
     completionNotes: {},
     ...partial,
@@ -363,52 +362,6 @@ describe("diffRoutineDualWriteOps – prefs-set", () => {
     const next = makeState({ prefs });
     const ops = diffRoutineDualWriteOps(prev, next);
     expect(ops.filter((o) => o.kind === "prefs-set")).toHaveLength(0);
-  });
-});
-
-// ─── pushup-upsert ───────────────────────────────────────────────────────────
-
-describe("diffRoutineDualWriteOps – pushup-upsert", () => {
-  it("emits pushup-upsert when reps change for a date", () => {
-    const prev = makeState({ pushupsByDate: { "2026-04-20": 30 } });
-    const next = makeState({ pushupsByDate: { "2026-04-20": 50 } });
-    const ops = diffRoutineDualWriteOps(prev, next);
-    expect(ops).toContainEqual({
-      kind: "pushup-upsert",
-      dateKey: "2026-04-20",
-      reps: 50,
-    });
-  });
-
-  it("emits pushup-upsert with 0 reps when date removed", () => {
-    const prev = makeState({ pushupsByDate: { "2026-04-20": 30 } });
-    const next = makeState({ pushupsByDate: {} });
-    const ops = diffRoutineDualWriteOps(prev, next);
-    expect(ops).toContainEqual({
-      kind: "pushup-upsert",
-      dateKey: "2026-04-20",
-      reps: 0,
-    });
-  });
-
-  it("emits no pushup ops when same reference", () => {
-    const pushupsByDate = { "2026-04-20": 30 };
-    const prev = makeState({ pushupsByDate });
-    const next = makeState({ pushupsByDate });
-    const ops = diffRoutineDualWriteOps(prev, next);
-    expect(ops.filter((o) => o.kind === "pushup-upsert")).toHaveLength(0);
-  });
-
-  it("sorts pushup ops by dateKey ascending", () => {
-    const prev = makeState({ pushupsByDate: {} });
-    const next = makeState({
-      pushupsByDate: { "2026-04-22": 10, "2026-04-20": 5, "2026-04-21": 8 },
-    });
-    const ops = diffRoutineDualWriteOps(prev, next).filter(
-      (o) => o.kind === "pushup-upsert",
-    );
-    const dates = ops.map((o) => (o as { dateKey: string }).dateKey);
-    expect(dates).toEqual(["2026-04-20", "2026-04-21", "2026-04-22"]);
   });
 });
 

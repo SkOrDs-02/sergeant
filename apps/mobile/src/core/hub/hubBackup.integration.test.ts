@@ -127,7 +127,6 @@ describe("buildHubBackupPayload — reads from SQLite warm cache", () => {
       tags: baseState.tags,
       categories: baseState.categories,
       prefs: baseState.prefs,
-      pushupsByDate: {},
       habitOrder: ["h1"],
       completionNotes: {},
     });

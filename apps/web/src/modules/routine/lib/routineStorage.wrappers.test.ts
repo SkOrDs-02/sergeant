@@ -17,7 +17,6 @@ let cachedState = {
   tags: [] as unknown[],
   categories: [] as unknown[],
   prefs: {},
-  pushupsByDate: {},
   habitOrder: [] as string[],
   completionNotes: {},
   refreshedAt: null as string | null,
@@ -48,7 +47,6 @@ describe("routineStorage wrappers (domain-backed)", () => {
       tags: [],
       categories: [],
       prefs: {},
-      pushupsByDate: {},
       habitOrder: [],
       completionNotes: {},
       refreshedAt: null,
@@ -91,18 +89,6 @@ describe("routineStorage wrappers (domain-backed)", () => {
     expect(withTag.tags.length).toBe(1);
     const withCat = RS.createCategory(base, "Body", "💪");
     expect(withCat.categories.length).toBe(1);
-  });
-
-  it("addPushupReps records reps for today", () => {
-    const base = RS.loadRoutineState();
-    const next = RS.addPushupReps(base, 20);
-    expect(Object.values(next.pushupsByDate)).toContain(20);
-  });
-
-  it("addPushupReps with invalid input is a no-op", () => {
-    const base = RS.loadRoutineState();
-    const next = RS.addPushupReps(base, 0);
-    expect(next).toBe(base);
   });
 
   it("setPref updates a preference", () => {
