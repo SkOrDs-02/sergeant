@@ -18,7 +18,7 @@
  *  4. Warm the `routine_entries` completions cache via
  *     {@link refreshSqliteCompletions}.
  *  5. Warm the Stage 10 full-state cache (habits / tags / categories /
- *     prefs / pushups / habitOrder / completionNotes) via
+ *     prefs / habitOrder / completionNotes) via
  *     {@link refreshSqliteRoutineState}.
  *
  * Stage 8 PR #057r-flag dropped `feature.routine.sqlite_v2.read_sqlite`
@@ -61,7 +61,7 @@ export async function bootRoutineSqliteReadPath(
     // Stage 8 PR #057r-tombstone-mobile: drain any leftover
     // `hub_routine_v1` MMKV payload into SQLite before warming the
     // read caches so a first-launch user upgrading from the MMKV-write
-    // era keeps their habits / tags / categories / prefs / pushups /
+    // era keeps their habits / tags / categories / prefs /
     // habitOrder / completionNotes / completions. Failures here are
     // non-fatal — the helper logs and falls back to a no-op so the
     // boot can keep going.
@@ -69,7 +69,7 @@ export async function bootRoutineSqliteReadPath(
 
     await refreshSqliteCompletions(client, userId);
     // Stage 10: also warm the full-state cache (habits, tags,
-    // categories, prefs, pushups, habitOrder, completionNotes).
+    // categories, prefs, habitOrder, completionNotes).
     await refreshSqliteRoutineState(client, userId);
 
     return true;

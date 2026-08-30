@@ -6,7 +6,7 @@
  * cached SQLite full-state onto `defaultRoutineState()` and
  * `saveRoutineState()` triggers the dual-write pipeline (the same one
  * Stage 10 PR #070r-mobile-dualwrite uses to mirror habits / tags /
- * categories / prefs / pushups / habitOrder / completionNotes /
+ * categories / prefs / habitOrder / completionNotes /
  * completions to the 7 routine_* SQLite tables). Residual MMKV data
  * is drained on boot once via `importRoutineResidualFromMmkv`
  * (`./residualImport.ts`) and then the legacy `ROUTINE_STORAGE_KEY`
@@ -58,7 +58,7 @@ import {
  * Stage 8 PR #057r-tombstone-mobile — MMKV read is retired. When
  * `bootRoutineSqliteReadPath()` has populated
  * `getCachedSqliteRoutineState()` we overlay all 7 entity slices
- * (habits / tags / categories / prefs / pushups / habitOrder /
+ * (habits / tags / categories / prefs / habitOrder /
  * completionNotes) onto a fresh `defaultRoutineState()`. The
  * `getCachedSqliteCompletions()` cache wins for `completions` (it
  * stays as source-of-truth for the `routine_entries` reader so the
@@ -85,7 +85,6 @@ export function loadRoutineState(): RoutineState {
       tags: fullState.tags,
       categories: fullState.categories,
       prefs: { ...base.prefs, ...fullState.prefs },
-      pushupsByDate: fullState.pushupsByDate,
       habitOrder: fullState.habitOrder,
       completionNotes: fullState.completionNotes,
     };
@@ -125,7 +124,6 @@ function readCachedRoutineState(): RoutineState {
       tags: fullState.tags,
       categories: fullState.categories,
       prefs: { ...base.prefs, ...fullState.prefs },
-      pushupsByDate: fullState.pushupsByDate,
       habitOrder: fullState.habitOrder,
       completionNotes: fullState.completionNotes,
     };
@@ -175,7 +173,6 @@ export function saveRoutineState(next: RoutineState): boolean {
       tags: next.tags,
       categories: next.categories,
       prefs: next.prefs,
-      pushupsByDate: next.pushupsByDate,
       habitOrder: next.habitOrder,
       completionNotes: next.completionNotes,
     });

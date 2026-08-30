@@ -226,20 +226,6 @@ exports[`mobile routine dual-write SQL snapshot (ADR-0073 Крок 0) emits a by
   {
     "params": [
       "u1",
-      "2026-06-22",
-      40,
-      "2026-06-23T00:00:00.000Z",
-    ],
-    "sql": "INSERT INTO routine_pushups (user_id, date_key, reps, updated_at)
-         VALUES (?, ?, ?, ?)
-         ON CONFLICT(user_id, date_key) DO UPDATE SET
-           reps = excluded.reps,
-           updated_at = excluded.updated_at
-         WHERE excluded.updated_at > routine_pushups.updated_at",
-  },
-  {
-    "params": [
-      "u1",
       "["h1","h2"]",
       "2026-06-23T00:00:00.000Z",
     ],

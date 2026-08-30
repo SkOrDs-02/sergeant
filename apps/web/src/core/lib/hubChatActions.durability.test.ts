@@ -32,7 +32,6 @@ const state = vi.hoisted(() => ({
     tags: [],
     categories: [],
     prefs: {},
-    pushupsByDate: {},
     habitOrder: [],
     completionNotes: {},
     skips: {},

@@ -42,7 +42,6 @@ function makeState(overrides: Partial<RoutineState> = {}): RoutineState {
     categories: [],
     habits: [],
     completions: {},
-    pushupsByDate: {},
     habitOrder: [],
     completionNotes: {},
     ...overrides,
@@ -78,7 +77,6 @@ describe("probeRoutineParity", () => {
       tags: [{ id: "t1", name: "morning" }],
       categories: [{ id: "c1", name: "Health" }],
       completions: { h1: ["2026-05-01"] },
-      pushupsByDate: { "2026-05-01": 30 },
       habitOrder: ["h1"],
       completionNotes: { "h1__2026-05-01": "did well" },
       prefs: { showFizrukInCalendar: true },
@@ -98,7 +96,6 @@ describe("probeRoutineParity", () => {
           habitName: "Drink water",
           dateKey: "2026-05-01",
         },
-        { kind: "pushup-upsert", dateKey: "2026-05-01", reps: 30 },
         { kind: "habit-order-set", orderedIds: ["h1"] },
         {
           kind: "completion-note-upsert",

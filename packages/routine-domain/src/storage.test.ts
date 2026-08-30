@@ -150,7 +150,6 @@ describe("routine-domain/storage", () => {
         },
       ],
       completions: { h1: ["2026-01-06", "bad"] },
-      pushupsByDate: null,
       habitOrder: "bad",
       completionNotes: { "h1__2026-01-06": "Good" },
     });
@@ -168,7 +167,6 @@ describe("routine-domain/storage", () => {
       reminderTimes: ["08:00"],
     });
     expect(normalized.completions).toEqual({ h1: ["2026-01-06"] });
-    expect(normalized.pushupsByDate).toEqual({});
     expect(normalized.habitOrder).toEqual([]);
     expect(normalized.completionNotes).toEqual({ "h1__2026-01-06": "Good" });
   });

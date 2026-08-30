@@ -7,7 +7,7 @@
  * AI-CONTEXT: демо-сід (`core/onboarding/seedDemoData/seedRoutine.ts`)
  * пише сирим `writeJSON` у ЄДИНИЙ ключ `hub_routine_v1` — цілісний
  * `RoutineState`-подібний обʼєкт (`{schemaVersion, prefs, tags,
- * categories, habits[], completions, pushupsByDate, habitOrder,
+ * categories, habits[], completions, habitOrder,
  * completionNotes}`). Це виконується в `main.tsx` ДО React-дерева і
  * одразу робить `location.replace` — жодного хука, отже й жодного
  * dual-write, там ще не існує. Доки модуль читав LS, цього вистачало.

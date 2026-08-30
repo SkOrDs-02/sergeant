@@ -5,7 +5,7 @@
  * retired. `loadRoutineState()` overlays the cached SQLite full-state
  * onto `defaultRoutineState()` and `saveRoutineState()` triggers the
  * dual-write pipeline (the same one Stage 10 PR #070r-dualwrite uses
- * to mirror habits / tags / categories / prefs / pushups / habitOrder /
+ * to mirror habits / tags / categories / prefs / habitOrder /
  * completionNotes / completions to the 7 routine_* SQLite tables).
  * Residual LS data used to be drained on boot once via
  * `importRoutineResidualFromLs` (`./residualImport.ts`) before the
@@ -33,7 +33,6 @@ import {
   applySetHabitArchived,
   applyDeleteHabit,
   applyRestoreHabit,
-  applyAddPushupReps,
   applyMoveHabitInOrder,
   applySetHabitOrder,
   applySetCompletionNote,
@@ -89,7 +88,7 @@ export function emitRoutineStorage() {
  * Stage 8 PR #057r-tombstone — LS read is retired. When the
  * `bootSqliteReadPath()` warm-up has populated
  * `getCachedSqliteRoutineState()` we overlay all 7 entity slices
- * (habits / tags / categories / prefs / pushups / habitOrder /
+ * (habits / tags / categories / prefs / habitOrder /
  * completionNotes / skips) onto a fresh `defaultRoutineState()`. The
  * legacy `getCachedSqliteCompletions()` cache wins for
  * `completions` (it stays as source-of-truth for the
@@ -114,7 +113,6 @@ export function loadRoutineState(): RoutineState {
       tags: fullState.tags,
       categories: fullState.categories,
       prefs: { ...base.prefs, ...fullState.prefs },
-      pushupsByDate: fullState.pushupsByDate,
       habitOrder: fullState.habitOrder,
       completionNotes: fullState.completionNotes,
       skips: fullState.skips,
@@ -213,7 +211,6 @@ function writeThroughRoutineCaches(next: RoutineState): RoutineState {
     tags: next.tags,
     categories: next.categories,
     prefs: next.prefs,
-    pushupsByDate: next.pushupsByDate,
     habitOrder: next.habitOrder,
     completionNotes: next.completionNotes,
     skips: next.skips ?? {},
@@ -256,7 +253,6 @@ function readCachedRoutineState(): RoutineState {
       tags: fullState.tags,
       categories: fullState.categories,
       prefs: { ...base.prefs, ...fullState.prefs },
-      pushupsByDate: fullState.pushupsByDate,
       habitOrder: fullState.habitOrder,
       completionNotes: fullState.completionNotes,
       skips: fullState.skips,
@@ -377,15 +373,6 @@ export function restoreHabit(
   snapshot: HabitSnapshot | null | undefined,
 ): RoutineState {
   const next = applyRestoreHabit(state, snapshot);
-  if (next === state) return state;
-  return persist(next);
-}
-
-export function addPushupReps(
-  state: RoutineState,
-  reps: unknown,
-): RoutineState {
-  const next = applyAddPushupReps(state, reps);
   if (next === state) return state;
   return persist(next);
 }

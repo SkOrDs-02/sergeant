@@ -433,24 +433,6 @@ describe("applyRoutineDualWriteOps (mobile, better-sqlite3)", () => {
       });
     });
 
-    it("pushup-upsert writes per (user, date_key)", async () => {
-      await applyRoutineDualWriteOps(
-        client,
-        [
-          { kind: "pushup-upsert", dateKey: "2026-05-01", reps: 30 },
-          { kind: "pushup-upsert", dateKey: "2026-05-02", reps: 40 },
-        ],
-        { userId: USER_ID, clientTs: T1, logger },
-      );
-      const rows = listAll<{ date_key: string; reps: number }>(
-        "routine_pushups",
-      );
-      expect(rows).toHaveLength(2);
-      const map = new Map(rows.map((r) => [r.date_key, r.reps]));
-      expect(map.get("2026-05-01")).toBe(30);
-      expect(map.get("2026-05-02")).toBe(40);
-    });
-
     it("habit-order-set persists JSON array", async () => {
       await applyRoutineDualWriteOps(
         client,

@@ -15,7 +15,6 @@ interface SeededState {
   schemaVersion: number;
   habits: Array<{ id: string; demo: boolean; name: string }>;
   completions: Record<string, string[]>;
-  pushupsByDate: Record<string, number>;
   habitOrder: string[];
 }
 
@@ -47,9 +46,6 @@ describe("seedRoutine", () => {
       // YYYY-MM-DD Kyiv-local day key format
       expect(dates[0]).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     }
-    // Перенос власності routine → fizruk (2026-08-30): віджимання сіє
-    // `seedFizruk` під `fizruk_pushups_seed_v1`.
-    expect(state.pushupsByDate).toEqual({});
   });
 
   it("derives habitOrder from the habit ids", () => {

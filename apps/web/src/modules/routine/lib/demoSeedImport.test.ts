@@ -38,7 +38,6 @@ function seedLikePayload() {
     completions: {
       demo_h_1: ["2026-08-06", "2026-08-07"],
     },
-    pushupsByDate: { "2026-08-07": 25 },
     habitOrder: ["demo_h_1"],
     completionNotes: {},
   };
