@@ -70,7 +70,7 @@ type PresetCatalog = Record<ModuleId, PresetModuleConfig>;
  */
 const PRESETS: PresetCatalog = {
   routine: {
-    title: "Яку звичку почнемо?",
+    title: "З якої звички почати?",
     desc: "Одне натискання, і вона у твоєму списку сьогодні.",
     accentChip: "bg-rose-50 border border-rose-300/60",
     fallback: { action: "add_habit", label: "Своя звичка" },
@@ -123,13 +123,13 @@ const PRESETS: PresetCatalog = {
         id: "lunch",
         emoji: "utensils",
         title: "Обід",
-        desc: "що з'їв, і за скільки",
+        desc: "що зʼїв, і за скільки",
         data: { description: "Обід", category: "їжа" },
       },
     ],
   },
   nutrition: {
-    title: "Що з'їв зараз?",
+    title: "Що зʼїв зараз?",
     desc: "Відкрию форму добавляння страви, калорії підтвердиш у модулі.",
     accentChip: "bg-lime-50 border border-lime-200/60",
     fallback: { action: "add_meal", label: "Додати страву" },

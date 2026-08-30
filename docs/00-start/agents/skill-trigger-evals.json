@@ -796,6 +796,435 @@
       "expectedSkills": ["sergeant-start-here", "sergeant-verify-before-done"],
       "forbiddenSkills": [],
       "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-module-finyk-trigger-budget-carryover",
+      "skill": "sergeant-module-finyk",
+      "kind": "trigger",
+      "prompt": "Change the unspent budget carryover rule in the finyk module and update the monthly analytics accordingly.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-finyk"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-finyk-trigger-cash-on-hand",
+      "skill": "sergeant-module-finyk",
+      "kind": "trigger",
+      "prompt": "Add a cash-on-hand adjustment flow to finyk transactions with receipt attachments and correct kopiyka totals.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-finyk"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-finyk-anti-nutrition-dashboard",
+      "skill": "sergeant-module-finyk",
+      "kind": "anti-trigger",
+      "prompt": "Improve the nutrition dashboard meal cards and pantry list without touching budgets, transactions, or money.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-nutrition"],
+      "forbiddenSkills": ["sergeant-module-finyk"]
+    },
+    {
+      "id": "sergeant-module-finyk-workflow-start-here",
+      "skill": "sergeant-module-finyk",
+      "kind": "workflow",
+      "prompt": "Before changing finyk budget behavior, load Sergeant startup rules and then exactly the finyk module owner skill.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-finyk"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-module-nutrition-trigger-pantry-derivation",
+      "skill": "sergeant-module-nutrition",
+      "kind": "trigger",
+      "prompt": "Update how the pantry stock balance is derived when a meal is logged in the nutrition module.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-nutrition"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-nutrition-trigger-food-log",
+      "skill": "sergeant-module-nutrition",
+      "kind": "trigger",
+      "prompt": "Add a recipe import flow to the nutrition food log with per-day calorie totals keyed by device-local day.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-nutrition"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-nutrition-anti-finyk-budget",
+      "skill": "sergeant-module-nutrition",
+      "kind": "anti-trigger",
+      "prompt": "Fix the finyk monthly budget percent denominator for frozen past months without touching food or meals.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-finyk"],
+      "forbiddenSkills": ["sergeant-module-nutrition"]
+    },
+    {
+      "id": "sergeant-module-nutrition-workflow-start-here",
+      "skill": "sergeant-module-nutrition",
+      "kind": "workflow",
+      "prompt": "For this pantry ledger change, start with repo rules and then load only the nutrition module owner skill.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-nutrition"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-module-fizruk-trigger-injury-recovery",
+      "skill": "sergeant-module-fizruk",
+      "kind": "trigger",
+      "prompt": "Adjust the fizruk recovery recommendation after an injury is logged for a muscle zone.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-fizruk"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-fizruk-trigger-body-weight",
+      "skill": "sergeant-module-fizruk",
+      "kind": "trigger",
+      "prompt": "Change how fizruk records body weight entries and shows the workout streak trend on the web surface.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-fizruk"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-fizruk-anti-routine-habits",
+      "skill": "sergeant-module-fizruk",
+      "kind": "anti-trigger",
+      "prompt": "Rework the routine habits skip model and daily check-in streak logic without touching workouts or recovery.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-routine"],
+      "forbiddenSkills": ["sergeant-module-fizruk"]
+    },
+    {
+      "id": "sergeant-module-fizruk-workflow-start-here",
+      "skill": "sergeant-module-fizruk",
+      "kind": "workflow",
+      "prompt": "Before editing fizruk injury zones, load Sergeant startup rules and then exactly the fizruk module owner skill.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-fizruk"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-module-routine-trigger-skip-model",
+      "skill": "sergeant-module-routine",
+      "kind": "trigger",
+      "prompt": "Change the routine module skip model so a planned pause day does not break the habit streak.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-routine"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-routine-trigger-reminders",
+      "skill": "sergeant-module-routine",
+      "kind": "trigger",
+      "prompt": "Add a reminder schedule editor for daily habit check-ins in the routine module.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-routine"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-routine-anti-fizruk-program",
+      "skill": "sergeant-module-routine",
+      "kind": "anti-trigger",
+      "prompt": "Tune the fizruk workout program progression and recovery advice without touching habits or check-ins.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-fizruk"],
+      "forbiddenSkills": ["sergeant-module-routine"]
+    },
+    {
+      "id": "sergeant-module-routine-workflow-start-here",
+      "skill": "sergeant-module-routine",
+      "kind": "workflow",
+      "prompt": "For this habit streak change, start with repo rules and then load only the routine module owner skill.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-routine"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-module-ai-trigger-hubchat-tool",
+      "skill": "sergeant-module-ai",
+      "kind": "trigger",
+      "prompt": "Add a new HubChat tool definition together with its client executor and action card rendering.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-ai"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-ai-trigger-digest-coach",
+      "skill": "sergeant-module-ai",
+      "kind": "trigger",
+      "prompt": "Change the weekly digest generation and the coach advice prompt assembly in the AI layer.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-ai"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-ai-anti-sql-migration",
+      "skill": "sergeant-module-ai",
+      "kind": "anti-trigger",
+      "prompt": "Add a Postgres column with a sequential SQL migration for the finyk transactions table.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-data-and-migrations"],
+      "forbiddenSkills": ["sergeant-module-ai"]
+    },
+    {
+      "id": "sergeant-module-ai-workflow-start-here",
+      "skill": "sergeant-module-ai",
+      "kind": "workflow",
+      "prompt": "Before changing HubChat prompt cache breakpoints, load startup rules and then exactly the AI module owner skill.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-ai"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-module-sync-trigger-oplog",
+      "skill": "sergeant-module-sync",
+      "kind": "trigger",
+      "prompt": "Change how the sync op-log applies per-row LWW conflict resolution for habit check-ins.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-sync"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-sync-trigger-dualwrite",
+      "skill": "sergeant-module-sync",
+      "kind": "trigger",
+      "prompt": "Extend the dualwrite-core pipeline so a new entity type syncs across devices with cursor pulls.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-sync"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-sync-anti-billing-quota",
+      "skill": "sergeant-module-sync",
+      "kind": "anti-trigger",
+      "prompt": "Change the daily AI quota limits for the Pro plan in the billing module without touching sync.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-billing"],
+      "forbiddenSkills": ["sergeant-module-sync"]
+    },
+    {
+      "id": "sergeant-module-sync-workflow-start-here",
+      "skill": "sergeant-module-sync",
+      "kind": "workflow",
+      "prompt": "Before editing the sync conflict rules, load Sergeant startup rules and then exactly the sync module owner skill.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-sync"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-module-billing-trigger-plan-limits",
+      "skill": "sergeant-module-billing",
+      "kind": "trigger",
+      "prompt": "Update the effective limits computation for the Pro plan and its reverse-trial expiry behavior.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-billing"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-billing-trigger-liqpay",
+      "skill": "sergeant-module-billing",
+      "kind": "trigger",
+      "prompt": "Handle a failed LiqPay payment callback so the user plan downgrades cleanly at period end.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-billing"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-billing-anti-push-fanout",
+      "skill": "sergeant-module-billing",
+      "kind": "anti-trigger",
+      "prompt": "Fix the push notification fan-out so expired APNs subscriptions get deactivated without errors.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-push"],
+      "forbiddenSkills": ["sergeant-module-billing"]
+    },
+    {
+      "id": "sergeant-module-billing-workflow-start-here",
+      "skill": "sergeant-module-billing",
+      "kind": "workflow",
+      "prompt": "Before changing quota enforcement, load Sergeant startup rules and then exactly the billing module owner skill.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-billing"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-module-integrations-trigger-silpo",
+      "skill": "sergeant-module-integrations",
+      "kind": "trigger",
+      "prompt": "Fix the Silpo receipts import so a failed branch context lookup falls back without blocking the cart.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-integrations"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-integrations-trigger-webhook-replay",
+      "skill": "sergeant-module-integrations",
+      "kind": "trigger",
+      "prompt": "Add replay support for a new inbound webhook event type with idempotent record handling.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-integrations"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-integrations-anti-sync-lww",
+      "skill": "sergeant-module-integrations",
+      "kind": "anti-trigger",
+      "prompt": "Rework the per-row LWW conflict resolution in the sync module for multi-device habit data.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-sync"],
+      "forbiddenSkills": ["sergeant-module-integrations"]
+    },
+    {
+      "id": "sergeant-module-integrations-workflow-start-here",
+      "skill": "sergeant-module-integrations",
+      "kind": "workflow",
+      "prompt": "Before touching the Telegram waitlist bot, load Sergeant startup rules and then exactly the integrations module owner skill.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-integrations"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-module-push-trigger-fanout",
+      "skill": "sergeant-module-push",
+      "kind": "trigger",
+      "prompt": "Change the push notification fan-out so web, APNs and FCM channels retry independently.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-push"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-push-trigger-subscription",
+      "skill": "sergeant-module-push",
+      "kind": "trigger",
+      "prompt": "Deactivate expired push subscriptions during delivery audit instead of raising errors.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-push"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-push-anti-integrations-transcribe",
+      "skill": "sergeant-module-push",
+      "kind": "anti-trigger",
+      "prompt": "Raise the USD spending cap for the audio transcription integration after reviewing costs.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-integrations"],
+      "forbiddenSkills": ["sergeant-module-push"]
+    },
+    {
+      "id": "sergeant-module-push-workflow-start-here",
+      "skill": "sergeant-module-push",
+      "kind": "workflow",
+      "prompt": "Before editing notification delivery, load Sergeant startup rules and then exactly the push module owner skill.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-push"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-copy-and-tone-trigger-error-message",
+      "skill": "sergeant-copy-and-tone",
+      "kind": "trigger",
+      "prompt": "Write the Ukrainian error message and empty state copy for the new receipts import screen.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-copy-and-tone"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-copy-and-tone-trigger-review-tone",
+      "skill": "sergeant-copy-and-tone",
+      "kind": "trigger",
+      "prompt": "Review the onboarding toasts and button labels for tone-of-voice consistency with the UA style guide.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-copy-and-tone"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-copy-and-tone-anti-adr",
+      "skill": "sergeant-copy-and-tone",
+      "kind": "anti-trigger",
+      "prompt": "Write a new architecture decision record about the sync retention policy with a consequences section.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-adr"],
+      "forbiddenSkills": ["sergeant-copy-and-tone"]
+    },
+    {
+      "id": "sergeant-copy-and-tone-workflow-start-here",
+      "skill": "sergeant-copy-and-tone",
+      "kind": "workflow",
+      "prompt": "Before writing the Ukrainian interface texts, load Sergeant startup rules and then exactly the copy-and-tone skill.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-copy-and-tone"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-adr-trigger-new-decision",
+      "skill": "sergeant-adr",
+      "kind": "trigger",
+      "prompt": "Document the decision to switch the embeddings provider as a new numbered ADR with consequences.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-adr"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-adr-trigger-supersede",
+      "skill": "sergeant-adr",
+      "kind": "trigger",
+      "prompt": "Mark the old hosting ADR as superseded and add the replacement record to the ADR index table.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-adr"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-adr-anti-feature-flag",
+      "skill": "sergeant-adr",
+      "kind": "anti-trigger",
+      "prompt": "Add a build-time feature flag for the new pantry screen and register it with a removal condition.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-feature-flags"],
+      "forbiddenSkills": ["sergeant-adr"]
+    },
+    {
+      "id": "sergeant-adr-workflow-start-here",
+      "skill": "sergeant-adr",
+      "kind": "workflow",
+      "prompt": "Before writing the new decision record, load Sergeant startup rules and then exactly the ADR skill.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-adr"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-feature-flags-trigger-add-flag",
+      "skill": "sergeant-feature-flags",
+      "kind": "trigger",
+      "prompt": "Add a server-side flag to gate the new coach advice model and register its default and removal condition.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-feature-flags"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-feature-flags-trigger-remove-flag",
+      "skill": "sergeant-feature-flags",
+      "kind": "trigger",
+      "prompt": "Remove the expired reverse-trial flag, its registry row, and the dead code branch behind it.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-feature-flags"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-feature-flags-anti-analytics",
+      "skill": "sergeant-feature-flags",
+      "kind": "anti-trigger",
+      "prompt": "Add a PostHog event for pantry item deletion with a small payload and dashboard manifest update.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-analytics"],
+      "forbiddenSkills": ["sergeant-feature-flags"]
+    },
+    {
+      "id": "sergeant-feature-flags-workflow-start-here",
+      "skill": "sergeant-feature-flags",
+      "kind": "workflow",
+      "prompt": "Before touching any toggle, load Sergeant startup rules and then exactly the feature-flags skill.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-feature-flags"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-analytics-trigger-new-event",
+      "skill": "sergeant-analytics",
+      "kind": "trigger",
+      "prompt": "Add a product analytics event for habit archive actions with correct naming and a scrubbed payload.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-analytics"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-analytics-trigger-dashboard-manifest",
+      "skill": "sergeant-analytics",
+      "kind": "trigger",
+      "prompt": "Update the PostHog dashboard manifest so the retention panel includes the new activation event.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-analytics"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-analytics-anti-copy",
+      "skill": "sergeant-analytics",
+      "kind": "anti-trigger",
+      "prompt": "Rewrite the Ukrainian toast texts and button labels for the budgets screen per the style guide.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-copy-and-tone"],
+      "forbiddenSkills": ["sergeant-analytics"]
+    },
+    {
+      "id": "sergeant-analytics-workflow-start-here",
+      "skill": "sergeant-analytics",
+      "kind": "workflow",
+      "prompt": "Before adding tracking calls, load Sergeant startup rules and then exactly the analytics skill.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-analytics"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
     }
   ]
 }

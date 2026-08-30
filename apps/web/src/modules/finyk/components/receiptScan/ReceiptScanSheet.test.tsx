@@ -176,7 +176,7 @@ describe.skipIf(!DPS_QR_SCAN_ENABLED)(
           url: "https://api.test/finyk/receipts/lookup",
           body: {
             error:
-              "Чек ще не з'явився в реєстрі ДПС, спробуй за кілька хвилин або сфотографуй чек.",
+              "Чек ще не зʼявився в реєстрі ДПС, спробуй за кілька хвилин або сфотографуй чек.",
           },
         }),
       );
@@ -188,7 +188,7 @@ describe.skipIf(!DPS_QR_SCAN_ENABLED)(
 
       await waitFor(() =>
         expect(
-          screen.getByText(/ще не з'явився в реєстрі ДПС/),
+          screen.getByText(/ще не зʼявився в реєстрі ДПС/),
         ).toBeInTheDocument(),
       );
     });

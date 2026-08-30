@@ -21,7 +21,7 @@ type AuthedRequest = Request & { user?: { id: string } };
  * `(user_id, key)` PK — замінює попередній запис у `process.cwd()/.data/`
  * (ефемерна ФС контейнера; Coolify redeploy/restart стирав кожен бекап,
  * pre-beta schema-debt аудит 2026-08-04). `payload` — JSONB: `blob` уже є
- * JSON-об'єктом, шифрування — client-side всередині значень.
+ * JSON-обʼєктом, шифрування — client-side всередині значень.
  */
 export default async function handler(
   req: Request,

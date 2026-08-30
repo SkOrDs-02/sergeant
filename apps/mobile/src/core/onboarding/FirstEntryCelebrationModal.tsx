@@ -217,7 +217,7 @@ export function FirstEntryCelebrationModal({
           }
           accessibilityViewIsModal
           accessibilityRole={ALERT_DIALOG_ROLE}
-          accessibilityLabel="Вітаємо!"
+          accessibilityLabel="Вітаю!"
           className="w-full max-w-sm items-center gap-4 rounded-3xl bg-surface px-6 py-8 shadow-xl"
           testID="celebration-modal"
         >

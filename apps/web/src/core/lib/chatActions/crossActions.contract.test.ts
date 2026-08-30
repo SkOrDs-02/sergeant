@@ -419,7 +419,7 @@ describe("remember", () => {
       input: { fact: "Я вегетаріанець", category: "diet" },
     });
     expect(typeof out).toBe("string");
-    expect(out).toContain("Запам'ятав");
+    expect(out).toContain("Запамʼятав");
     expect(out).toContain("вегетаріанець");
   });
 
@@ -615,7 +615,7 @@ describe("save_note · undo", () => {
   it("повертає {undo} який видаляє щойно додану нотатку за id", () => {
     const out = handleCrossAction({
       name: "save_note",
-      input: { text: "Тест запам'ятати щось важливе", tag: "ideas" },
+      input: { text: "Тест запамʼятати щось важливе", tag: "ideas" },
     });
     if (out == null || typeof out === "string") {
       throw new Error(`expected undoable result, got ${typeof out}`);

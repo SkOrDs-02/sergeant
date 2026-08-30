@@ -278,6 +278,50 @@ describe("anthropicMessages", () => {
     expect(extractAnthropicText(result.data)).toBe("ok");
   });
 
+  it("вичерпаний сумарний бюджет не розтягується до мінімального таймауту спроби", async () => {
+    // B42, регрес ревʼю CodeRabbit 2026-08-26. Перша версія рахувала
+    // `Math.max(MIN_USEFUL_ATTEMPT_MS, Math.min(timeoutMs, залишок))` — і
+    // при `maxTotalMs: 1` все одно СТАРТУВАЛА спробу з таймаутом 1000 мс.
+    // Тобто стеля, заведена саме щоб обмежити сумарний час, переставала
+    // бути стелею. Гілка `break` ловила лише випадок зі сном, а перша
+    // спроба має `baseDelay === 0` і проходила крізь неї.
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(new Response(JSON.stringify({}), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await anthropicMessages(
+      "sk-test",
+      { model: "claude-3-5-haiku-20241022" },
+      { endpoint: "budget-test", timeoutMs: 20_000, maxTotalMs: 1 },
+    );
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(result.response).toBeNull();
+  });
+
+  it("достатній бюджет — спроба відбувається штатно", async () => {
+    // Зворотний бік: перевірка залишку не має рубати нормальні виклики.
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(
+        new Response(
+          JSON.stringify({ content: [{ type: "text", text: "ok" }] }),
+          { status: 200 },
+        ),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await anthropicMessages(
+      "sk-test",
+      { model: "claude-3-5-haiku-20241022" },
+      { endpoint: "budget-test", timeoutMs: 20_000 },
+    );
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(extractAnthropicText(result.data)).toBe("ok");
+  });
+
   it("routes to OpenRouter with a Bearer token when the flag and the opt-in are both on", async () => {
     envMock.CHAT_VIA_OPENROUTER = true;
     envMock.OPENROUTER_API_KEY = "sk-or-test";

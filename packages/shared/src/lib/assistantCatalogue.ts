@@ -16,6 +16,8 @@
 // Without an entry the capability is invisible to the user and absent
 // from /help, even though the model can still call it.
 
+import { foldApostrophes } from "../utils/ukApostrophe";
+
 export type CapabilityModule =
   | "finyk"
   | "fizruk"
@@ -113,7 +115,7 @@ export const CAPABILITY_MODULE_META: Record<
   cross: { title: "Кросмодульні", icon: "sparkles" },
   analytics: { title: "Аналітика", icon: "bar-chart" },
   utility: { title: "Утиліти", icon: "tool" },
-  memory: { title: "Пам'ять", icon: "brain" },
+  memory: { title: "Памʼять", icon: "brain" },
 };
 
 // AI-NOTE: counts in section comments below match `ASSISTANT_CAPABILITIES`.
@@ -151,6 +153,10 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     ],
     prompt: "Зміни категорію транзакції: ",
     requiresInput: true,
+    // Перезаписує категорію без підтвердження (рішення founder-а #8: режим
+    // `reversible` у toolRisk.ts) — виконавець повертає `undo`, що
+    // відновлює попередню категорію.
+    risky: true,
     requiresOnline: true,
   },
   {
@@ -275,6 +281,10 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     examples: ["встанови ліміт на їжу 3000 грн", "ліміт на розваги 1500"],
     prompt: "Постав ліміт: ",
     requiresInput: true,
+    // Перезаписує ліміт без підтвердження (рішення founder-а #8: режим
+    // `reversible` у toolRisk.ts) — виконавець повертає `undo`, що
+    // відновлює попереднє значення.
+    risky: true,
     requiresOnline: true,
   },
   {
@@ -289,6 +299,10 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     ],
     prompt: "Онови бюджет: ",
     requiresInput: true,
+    // Перезаписує ліміт/ціль без підтвердження (рішення founder-а #8:
+    // режим `reversible` у toolRisk.ts) — виконавець повертає `undo`, що
+    // відновлює попередній запис бюджету.
+    risky: true,
     requiresOnline: true,
     aiHint: "ліміт або ціль",
   },
@@ -304,6 +318,10 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     ],
     prompt: "Фінплан: ",
     requiresInput: true,
+    // Перезаписує фінплан без підтвердження (рішення founder-а #8: режим
+    // `reversible` у toolRisk.ts) — виконавець повертає `undo`, що
+    // відновлює попередній фінплан.
+    risky: true,
     requiresOnline: true,
   },
   {
@@ -467,7 +485,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     label: "Запланувати тренування",
     icon: "calendar-plus",
     description: "Поставити тренування на майбутню дату.",
-    examples: ["заплануй ноги на завтра", "груди в п'ятницю"],
+    examples: ["заплануй ноги на завтра", "груди в пʼятницю"],
     prompt: "Заплануй тренування: ",
     requiresInput: true,
     requiresOnline: true,
@@ -556,7 +574,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     shortLabel: "Тренування",
     icon: "list",
     description:
-      "Вибірка завершених тренувань за період з опційним фільтром за вправою чи м'язом. Read-only, з кількістю й сумарним об'ємом.",
+      "Вибірка завершених тренувань за період з опційним фільтром за вправою чи мʼязом. Read-only, з кількістю й сумарним обʼємом.",
     examples: [
       "покажи мої тренування за останній тиждень",
       "скільки разів я робив присідання за місяць",
@@ -575,7 +593,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     shortLabel: "Динаміка",
     icon: "trending-up",
     description:
-      "Зміна показників у конкретній вправі (вага, об'єм, повтори) за період, від першої до останньої сесії плюс найкращі результати.",
+      "Зміна показників у конкретній вправі (вага, обʼєм, повтори) за період, від першої до останньої сесії плюс найкращі результати.",
     examples: [
       "як змінилась моя жим лежачи за місяць",
       "динаміка присідань за 3 місяці",
@@ -585,7 +603,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     requiresInput: true,
     requiresOnline: true,
     aiHint: "динаміка вправи",
-    keywords: ["progress", "динаміка", "вага", "об'єм"],
+    keywords: ["progress", "динаміка", "вага", "обʼєм"],
   },
   {
     id: "training_stats",
@@ -594,17 +612,17 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     shortLabel: "Статистика",
     icon: "bar-chart-2",
     description:
-      "Агрегована статистика за період: частота на тиждень, улюблені вправи, розподіл по м'язових групах.",
+      "Агрегована статистика за період: частота на тиждень, улюблені вправи, розподіл по мʼязових групах.",
     examples: [
-      "які м'язи я треную найчастіше",
+      "які мʼязи я треную найчастіше",
       "статистика тренувань за місяць",
       "як часто я тренуюсь",
     ],
     prompt: "Статистика тренувань: ",
     requiresInput: true,
     requiresOnline: true,
-    aiHint: "частота+м'язи",
-    keywords: ["stats", "статистика", "частота", "м'язи"],
+    aiHint: "частота+мʼязи",
+    keywords: ["stats", "статистика", "частота", "мʼязи"],
   },
 
   // ───── Рутина (14) ─────────────────────────────────────────────────────
@@ -817,7 +835,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     shortLabel: "Їжа",
     icon: "utensils",
     description: "Записати страву з калоріями і макросами.",
-    examples: ["з'їв вівсянку 350 ккал", "обід: курка з рисом 600 ккал"],
+    examples: ["зʼїв вівсянку 350 ккал", "обід: курка з рисом 600 ккал"],
     prompt: "Залогай їжу: ",
     requiresInput: true,
     isQuickAction: true,
@@ -849,11 +867,11 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
   {
     id: "suggest_meal",
     module: "nutrition",
-    label: "Що з'їсти зараз",
+    label: "Що зʼїсти зараз",
     icon: "lightbulb",
     description: "Порада що приготувати під поточний macro-баланс.",
-    examples: ["що з'їсти щоб добити білок", "поради на вечерю"],
-    prompt: "Що з'їсти сьогодні, щоб добити білок без перебору калорій?",
+    examples: ["що зʼїсти щоб добити білок", "поради на вечерю"],
+    prompt: "Що зʼїсти сьогодні, щоб добити білок без перебору калорій?",
     requiresInput: false,
     isQuickAction: true,
     quickActionPriority: 20,
@@ -1109,17 +1127,17 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
   {
     id: "get_daily_series",
     module: "analytics",
-    label: "Зв'язки між метриками",
+    label: "Звʼязки між метриками",
     shortLabel: "Кореляції",
     icon: "activity",
     description:
-      "Чи пов'язано X з Y? Вирівнює по днях метрики різних модулів і рахує кореляцію: витрати↔тренування, вага↔калорії, звички↔білок.",
+      "Чи повʼязано X з Y? Вирівнює по днях метрики різних модулів і рахує кореляцію: витрати↔тренування, вага↔калорії, звички↔білок.",
     examples: [
-      "чи пов'язані мої витрати з тренуваннями",
+      "чи повʼязані мої витрати з тренуваннями",
       "вага корелює з калоріями?",
       "у дні коли роблю звички, їм більше білка?",
     ],
-    prompt: "Проаналізуй зв'язок між: ",
+    prompt: "Проаналізуй звʼязок між: ",
     requiresInput: true,
     requiresOnline: true,
     isNew: true,
@@ -1183,19 +1201,19 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     requiresOnline: true,
   },
 
-  // ───── Пам'ять (4) ────────────────────────────────────────────────────
+  // ───── Памʼять (4) ────────────────────────────────────────────────────
   {
     id: "remember",
     module: "memory",
-    label: "Запам'ятати факт",
+    label: "Запамʼятати факт",
     icon: "brain",
     description: "Зафіксувати інформацію про себе (алергії, цілі, обмеження).",
     examples: [
-      "запам'ятай: алергія на горіхи",
+      "запамʼятай: алергія на горіхи",
       "ціль: схуднути до 75 кг",
       "не їм після 20:00",
     ],
-    prompt: "Запам'ятай: ",
+    prompt: "Запамʼятай: ",
     requiresInput: true,
     requiresOnline: true,
   },
@@ -1218,7 +1236,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     icon: "user",
     description: "Показати все, що асистент про тебе знає.",
     examples: ["що ти про мене знаєш", "покажи мій профіль"],
-    prompt: "Що ти про мене запам'ятав?",
+    prompt: "Що ти про мене запамʼятав?",
     requiresInput: false,
     requiresOnline: true,
   },
@@ -1252,6 +1270,25 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
 export function getCapabilityServerTool(c: AssistantCapability): string | null {
   if (c.serverTool === null) return null;
   return c.serverTool ?? c.id;
+}
+
+/**
+ * Модуль, до якого належить серверний tool, за іменем інструмента.
+ *
+ * Джерело — той самий `ASSISTANT_CAPABILITIES`, що вже синхронізується з
+ * `apps/server/src/modules/chat/toolDefs/`. Окрема мапа «tool → модуль» тут
+ * НЕ заводиться свідомо: другий список розійшовся б із першим при наступній
+ * зміні реєстру, і саме ця хвороба дала знахідки B37 і B38.
+ *
+ * Повертає `"unknown"` для невідомого імені: викликач — телеметрія, і
+ * зронити подію через незнайомий tool гірше, ніж записати її з чесною
+ * міткою. Той самий принцип, що в `safeName()` у `toolOutputWrapping.ts`.
+ */
+export function getToolModule(toolName: string): CapabilityModule | "unknown" {
+  const hit = ASSISTANT_CAPABILITIES.find(
+    (c) => getCapabilityServerTool(c) === toolName,
+  );
+  return hit?.module ?? "unknown";
 }
 
 /**
@@ -1359,7 +1396,10 @@ export function groupCapabilitiesByModule(
 
 /** Plain-text search across label / shortLabel / description / examples / keywords. */
 export function searchCapabilities(query: string): AssistantCapability[] {
-  const q = query.trim().toLowerCase();
+  // Згортаємо апостроф з обох боків (канон §1.10): запит людина набирає
+  // тією клавіатурою, що має, а `keywords` тут канонічні. Без цього
+  // «обʼєм» не знаходив би картку, підписану «обʼєм».
+  const q = foldApostrophes(query.trim().toLowerCase());
   if (!q) return [...ASSISTANT_CAPABILITIES];
   return ASSISTANT_CAPABILITIES.filter((c) => {
     const haystack = [
@@ -1372,6 +1412,6 @@ export function searchCapabilities(query: string): AssistantCapability[] {
     ]
       .join(" ")
       .toLowerCase();
-    return haystack.includes(q);
+    return foldApostrophes(haystack).includes(q);
   });
 }

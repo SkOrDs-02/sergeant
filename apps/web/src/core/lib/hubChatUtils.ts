@@ -66,7 +66,7 @@ export function getActiveModule(): ActiveModule | null {
  * 2026-08-23). Текст називає вихід; кнопку входу дає `ChatAuthGate`.
  */
 export const CHAT_AUTH_REQUIRED_TEXT =
-  "Асистент працює після входу в акаунт — увійди, і повернемось до розмови.";
+  "Асистент працює після входу в акаунт. Увійди, і повернемось до розмови.";
 
 /**
  * HubChat-специфічний `friendlyApiError`. Додає три кейси поверх
@@ -109,7 +109,7 @@ export function friendlyApiError(
 export function friendlyChatError(e: unknown): string {
   const msg = e instanceof Error ? e.message : String(e);
   if (/failed to fetch|network|load failed/i.test(msg)) {
-    return "Немає з'єднання з мережею або сервер недоступний.";
+    return "Немає зʼєднання з мережею або сервер недоступний.";
   }
   // `/api/chat` стоїть за `requireSession()` (аудит `ai-abuse-2026-08-05.md`, A1),
   // тож анонім упирається сюди. Сервер віддає «Потрібна автентифікація» —

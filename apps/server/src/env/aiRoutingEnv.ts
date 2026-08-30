@@ -31,7 +31,29 @@ export const aiRoutingEnvShape = {
 
   OPENROUTER_READONLY_MODEL: stringWithDefault("google/gemini-2.5-flash-lite"),
   OPENROUTER_DIGEST_MODEL: stringWithDefault("google/gemini-2.5-flash-lite"),
-  OPENROUTER_COACH_MODEL: stringWithDefault("openai/gpt-5.1"),
+  /**
+   * `anthropic/claude-sonnet-4.6`, НЕ `openai/gpt-5.1` (стояло тут до
+   * 2026-08-25 — B37). Це другий source of truth для тієї самої моделі:
+   * тир-таблиця `modules/chat/aiQuotaTierModels.ts::PRO_TIER_MODEL.premium.coach`
+   * читає `OPENROUTER_COACH_MODEL` через `envStr()` з ХАРДКОДНИМ fallback-ом
+   * `anthropic/claude-sonnet-4.6` — свідомо переозначеним 2026-08-07 за
+   * фактом 12-денного проду: 9 із 10 викликів коуча з `openai/gpt-5.1`
+   * мовчки обслуговував Anthropic-фолбек (`FallbackProvider`), бо
+   * reasoning-токени gpt-5.1 зʼїдали 20-секундний timeout у `coach.ts`.
+   * Той сам gpt-5.1 фактично ніколи не відповідав напряму. Дефолт тут мав
+   * лишитись зі старою моделлю — будь-який шлях, що читає
+   * `env.OPENROUTER_COACH_MODEL` НАПРЯМУ (в обхід тир-таблиці), досі
+   * отримував модель, доведену непрацездатною в проді. Тепер обидва шляхи
+   * узгоджені.
+   *
+   * Відкрите продуктове питання (НЕ причина міняти тир-таблицю тут —
+   * рішення власника): живий замір 2026-08-25 показав gpt-5.1 11/12 за
+   * $2.82/1k, тоді як стандартний тир `google/gemini-2.5-flash-lite`
+   * дав 12/12 за $0.174/1k — тобто дешевша модель у 16 разів і не гірша
+   * за якістю. Якщо це підтвердиться, кандидат на premium-заміну —
+   * gemini-flash-lite, не gpt-5.1.
+   */
+  OPENROUTER_COACH_MODEL: stringWithDefault("anthropic/claude-sonnet-4.6"),
   OPENROUTER_NUTRITION_MODEL: stringWithDefault("google/gemini-2.5-flash-lite"),
   OPENROUTER_MONO_MODEL: stringWithDefault("google/gemini-2.5-flash-lite"),
 

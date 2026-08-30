@@ -7,6 +7,7 @@ import {
 } from "@shared/lib/time/kyivTime";
 import { formatDayKeyUk } from "@shared/lib/time/dayKeyLabel";
 import { ls } from "../hubChatUtils";
+import { clampDays, normalizeText, round } from "./queryArgs";
 import { readFizrukWorkouts } from "./fizrukActions/shared";
 import { getVisibleFinykMonoMirrorState } from "../../../modules/finyk/lib/monoMirrorReader";
 import { getCachedFinykSqliteState } from "../../../modules/finyk/lib/sqliteReader";
@@ -97,22 +98,6 @@ function readRoutine(): {
 }
 
 // ─── helpers ────────────────────────────────────────────────────────────────
-
-function normalizeText(value: unknown): string {
-  return String(value ?? "")
-    .trim()
-    .toLowerCase();
-}
-
-function clampDays(value: unknown, fallback: number): number {
-  const n = Number(value);
-  if (!Number.isFinite(n) || n <= 0) return fallback;
-  return Math.min(365, Math.floor(n));
-}
-
-function round(n: number): number {
-  return Math.round(n);
-}
 
 /** Mon-first weekday index (0=Пн … 6=Нд) for a `YYYY-MM-DD` day key. */
 function mondayIndexOfDayKey(dayKey: string): number {
@@ -251,7 +236,7 @@ function spendingByDay(days: number): Map<string, number> {
   // користувача без підключеного банку `habit_correlation` завжди бачив
   // нуль витрат в ОБОХ групах днів. Тул не мовчав — він упевнено відповідав
   // «0 грн/день зі звичкою проти 0 грн/день без неї», модель переказувала це
-  // як «зв'язку немає», хоча курований графік на тих самих даних показував
+  // як «звʼязку немає», хоча курований графік на тих самих даних показував
   // r=-0.99 (браузерний QA 2026-08-24, F-10/F-11). Той самий баг уже ловили
   // у `crossActions/dailySeries.ts` (F7 репетиції бета-прогону 2026-08-07) —
   // цей виконавець тоді лишився зі старим всесвітом.
@@ -341,10 +326,10 @@ export function habitCorrelation(
 
   // Порожній всесвіт метрики — це «нема даних», а не «різниці нема». Без
   // цієї гілки тул повертав «0 грн/день проти 0 грн/день, різниця 0%», і
-  // модель переказувала це як упевнене «зв'язку немає» (QA F-10).
+  // модель переказувала це як упевнене «звʼязку немає» (QA F-10).
   if (withSum === 0 && withoutSum === 0) {
     const what = metric === "workouts" ? "тренування" : "витрати";
-    return `Немає даних про ${what} за останні ${days} днів — порівнювати нема що.`;
+    return `Немає даних про ${what} за останні ${days} днів, порівнювати нема що.`;
   }
 
   const withAvg = withSum / withCount;

@@ -166,7 +166,7 @@ describe("finyk applySync", () => {
         USER_ID,
         CLIENT_TS,
       ),
-    ).resolves.toEqual({ status: "rejected", reason: "tombstoned" });
+    ).resolves.toEqual({ status: "applied" });
 
     await expect(
       applyFinykHiddenAccounts(
@@ -330,7 +330,7 @@ describe("finyk applySync", () => {
         USER_ID,
         CLIENT_TS,
       ),
-    ).resolves.toEqual({ status: "rejected", reason: "tombstoned" });
+    ).resolves.toEqual({ status: "applied" });
 
     await expect(
       applyFinykBudgets(
@@ -752,7 +752,7 @@ describe("nutrition applySync", () => {
         USER_ID,
         CLIENT_TS,
       ),
-    ).resolves.toEqual({ status: "rejected", reason: "tombstoned" });
+    ).resolves.toEqual({ status: "applied" });
 
     await expect(
       applyNutritionMeals(
@@ -882,14 +882,28 @@ describe("nutrition applySync", () => {
       ),
     ).resolves.toEqual({ status: "rejected", reason: "user_id_mismatch" });
 
+    // Міграція 129: комора ключується парою `(user_id, id)`, і lookup звужений
+    // по користувачу — чужий рядок із тим самим `id` сюди просто не долітає,
+    // тож `fk_violation` тут більше не буває. Стан «у базі є `pantry-1`
+    // іншого юзера» на боці цього хендлера невідрізнимий від «нічого немає»,
+    // і саме це нам і потрібно: раніше кожен, крім першого власника id `home`,
+    // діставав відмову і лишався без синку (SERGEANT-WEB-T).
+    const foreignIdClient = makeClient([]);
     await expect(
       applyNutritionPantries(
-        makeClient([existing({ user_id: "other-user" })]),
+        foreignIdClient,
         op({ id: "pantry-1", user_id: USER_ID }),
         USER_ID,
         CLIENT_TS,
       ),
-    ).resolves.toEqual({ status: "rejected", reason: "fk_violation" });
+    ).resolves.toEqual({ status: "applied" });
+    expect(String(foreignIdClient.query.mock.calls[0]?.[0] ?? "")).toContain(
+      "user_id = $2",
+    );
+    expect(foreignIdClient.query.mock.calls[0]?.[1]).toEqual([
+      "pantry-1",
+      USER_ID,
+    ]);
 
     await expect(
       applyNutritionPantries(
@@ -907,7 +921,7 @@ describe("nutrition applySync", () => {
         USER_ID,
         CLIENT_TS,
       ),
-    ).resolves.toEqual({ status: "rejected", reason: "tombstoned" });
+    ).resolves.toEqual({ status: "applied" });
 
     await expect(
       applyNutritionPantries(
@@ -993,14 +1007,26 @@ describe("nutrition applySync", () => {
       ),
     ).resolves.toEqual({ status: "rejected", reason: "user_id_mismatch" });
 
+    // Міграція 129, дзеркало кейсу для комори вище. Для позицій колізія id
+    // навіть імовірніша: id — це `<pantryId>::<index>::<name>`, тож у двох
+    // користувачів із коморою `home` і однаковим продуктом на тій самій
+    // позиції він збігається посимвольно.
+    const foreignItemClient = makeClient([]);
     await expect(
       applyNutritionPantryItems(
-        makeClient([existing({ user_id: "other-user" })]),
+        foreignItemClient,
         op({ id: "item-1", user_id: USER_ID, pantry_id: "p-1" }),
         USER_ID,
         CLIENT_TS,
       ),
-    ).resolves.toEqual({ status: "rejected", reason: "fk_violation" });
+    ).resolves.toEqual({ status: "applied" });
+    expect(String(foreignItemClient.query.mock.calls[0]?.[0] ?? "")).toContain(
+      "user_id = $2",
+    );
+    expect(foreignItemClient.query.mock.calls[0]?.[1]).toEqual([
+      "item-1",
+      USER_ID,
+    ]);
 
     await expect(
       applyNutritionPantryItems(
@@ -1018,7 +1044,7 @@ describe("nutrition applySync", () => {
         USER_ID,
         CLIENT_TS,
       ),
-    ).resolves.toEqual({ status: "rejected", reason: "tombstoned" });
+    ).resolves.toEqual({ status: "applied" });
 
     await expect(
       applyNutritionPantryItems(
@@ -1083,7 +1109,12 @@ describe("nutrition applySync", () => {
       ),
     ).resolves.toEqual({ status: "applied" });
     expect(sql(client)).toContain("INSERT INTO nutrition_pantry_items");
-    expect(client.query.mock.calls[1]?.[1]?.[7]).toBe(0);
+    // `sort_order` — 9-й параметр INSERT-у: id, pantry_id, user_id, name,
+    // qty, unit, notes, sources, sort_order. Індекс зсунувся на одиницю
+    // разом із колонкою `sources` (міграція 130); додаси ще колонку перед
+    // ним — зсунеться знову.
+    const insertParams = client.query.mock.calls[1]?.[1];
+    expect(insertParams?.[8]).toBe(0);
 
     const updateClient = makeClient([existing()]);
     await expect(
@@ -1206,7 +1237,7 @@ describe("nutrition applySync", () => {
         USER_ID,
         CLIENT_TS,
       ),
-    ).resolves.toEqual({ status: "rejected", reason: "tombstoned" });
+    ).resolves.toEqual({ status: "applied" });
 
     await expect(
       applyNutritionRecipes(
@@ -1345,7 +1376,7 @@ describe("fizruk applySync", () => {
         USER_ID,
         CLIENT_TS,
       ),
-    ).resolves.toEqual({ status: "rejected", reason: "tombstoned" });
+    ).resolves.toEqual({ status: "applied" });
 
     await expect(
       applyFizrukWorkouts(
@@ -1496,7 +1527,7 @@ describe("fizruk applySync", () => {
         USER_ID,
         CLIENT_TS,
       ),
-    ).resolves.toEqual({ status: "rejected", reason: "tombstoned" });
+    ).resolves.toEqual({ status: "applied" });
 
     await expect(
       applyFizrukItems(
@@ -1672,7 +1703,7 @@ describe("fizruk applySync", () => {
         USER_ID,
         CLIENT_TS,
       ),
-    ).resolves.toEqual({ status: "rejected", reason: "tombstoned" });
+    ).resolves.toEqual({ status: "applied" });
 
     await expect(
       applyFizrukSets(
@@ -1827,7 +1858,7 @@ describe("fizruk applySync", () => {
         USER_ID,
         CLIENT_TS,
       ),
-    ).resolves.toEqual({ status: "rejected", reason: "tombstoned" });
+    ).resolves.toEqual({ status: "applied" });
 
     await expect(
       applyFizrukCustomExercises(
@@ -1964,7 +1995,7 @@ describe("fizruk applySync", () => {
         USER_ID,
         CLIENT_TS,
       ),
-    ).resolves.toEqual({ status: "rejected", reason: "tombstoned" });
+    ).resolves.toEqual({ status: "applied" });
 
     await expect(
       applyFizrukMeasurements(

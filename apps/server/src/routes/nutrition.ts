@@ -3,7 +3,7 @@ import type { Pool } from "pg";
 import {
   rateLimitExpress,
   requireAiQuota,
-  requireAnthropicKey,
+  requireLlmUpstream,
   requireSession,
   setModule,
 } from "../http/index.js";
@@ -46,7 +46,18 @@ export function createNutritionRouter({ pool }: { pool: Pool }): Router {
   );
   r.use("/api/nutrition", requireSession());
 
-  const ai = [requireAnthropicKey(), requireAiQuota()];
+  // Два різні гейти, бо два різні транспорти — і це не косметика.
+  //
+  // `analyze-photo` / `refine-photo` кличуть `anthropicMessages()` напряму
+  // (їм потрібен `image`-блок), тож ключ їм треба той, який обере
+  // `pickTransport()` під `VISION_VIA_OPENROUTER`. Решта йде через
+  // `getLLMProvider()` з `LLM_NUTRITION_PROVIDER`, який fail-soft віддає
+  // `StubProvider` без потрібного ключа — тобто 200 із заглушкою замість
+  // помилки. Спільний `requireAnthropicKey()` не описував ЖОДЕН із двох
+  // випадків: питав про ключ, який під дефолтним шлюзом не використовується.
+  // Докстрінг `requireLlmUpstream`, знахідка B31 у решті роутів.
+  const aiVision = [requireLlmUpstream("vision"), requireAiQuota()];
+  const aiText = [requireLlmUpstream("nutrition"), requireAiQuota()];
 
   // Vision API call (~5–10s upstream, ~10–20KB image upload). Cost 3 makes
   // a 20-token bucket effectively ~6 photo-analyses per minute. See
@@ -60,7 +71,7 @@ export function createNutritionRouter({ pool }: { pool: Pool }): Router {
       cost: () => 3,
     }),
     requirePlan(pool, "pro"),
-    ...ai,
+    ...aiVision,
     analyzePhoto,
   );
   r.post(
@@ -70,7 +81,7 @@ export function createNutritionRouter({ pool }: { pool: Pool }): Router {
       limit: 60,
       windowMs: 60_000,
     }),
-    ...ai,
+    ...aiText,
     parsePantry,
   );
   // Same Vision shape as analyze-photo — same cost (3).
@@ -83,7 +94,7 @@ export function createNutritionRouter({ pool }: { pool: Pool }): Router {
       cost: () => 3,
     }),
     requirePlan(pool, "pro"),
-    ...ai,
+    ...aiVision,
     refinePhoto,
   );
   // Anthropic text generation — medium-weight (~5–8s, smaller payloads
@@ -96,7 +107,7 @@ export function createNutritionRouter({ pool }: { pool: Pool }): Router {
       windowMs: 60_000,
       cost: () => 2,
     }),
-    ...ai,
+    ...aiText,
     recommendRecipes,
   );
   r.post(
@@ -106,7 +117,7 @@ export function createNutritionRouter({ pool }: { pool: Pool }): Router {
       limit: 30,
       windowMs: 60_000,
     }),
-    ...ai,
+    ...aiText,
     dayHint,
   );
   // Heaviest plan — generates 7 days of meals at once (~10–15s, larger
@@ -119,7 +130,7 @@ export function createNutritionRouter({ pool }: { pool: Pool }): Router {
       windowMs: 60_000,
       cost: () => 3,
     }),
-    ...ai,
+    ...aiText,
     weekPlan,
   );
   // Day plan is ~3× lighter than week-plan — cost 2.
@@ -131,7 +142,7 @@ export function createNutritionRouter({ pool }: { pool: Pool }): Router {
       windowMs: 60_000,
       cost: () => 2,
     }),
-    ...ai,
+    ...aiText,
     dayPlan,
   );
   r.post(
@@ -141,7 +152,7 @@ export function createNutritionRouter({ pool }: { pool: Pool }): Router {
       limit: 12,
       windowMs: 60_000,
     }),
-    ...ai,
+    ...aiText,
     shoppingList,
   );
   r.post(

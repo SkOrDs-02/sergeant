@@ -40,13 +40,13 @@ describe("useBottomInsetVar", () => {
     expect(document.documentElement.style.getPropertyValue(VAR)).toBe("");
   });
 
-  it("active=false (навігація з'їхала під клавіатуру) → змінної немає", () => {
+  it("active=false (навігація зʼїхала під клавіатуру) → змінної немає", () => {
     window.innerHeight = 800;
     render(<Probe top={732} active={false} />);
     expect(document.documentElement.style.getPropertyValue(VAR)).toBe("");
   });
 
-  it("елемент за межами в'юпорта дає 0, а не від'ємне значення", () => {
+  it("елемент за межами вʼюпорта дає 0, а не відʼємне значення", () => {
     window.innerHeight = 800;
     render(<Probe top={900} />);
     expect(document.documentElement.style.getPropertyValue(VAR)).toBe("0px");

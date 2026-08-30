@@ -431,7 +431,7 @@ describe("DailyPlanCard — dayPlan meals section", () => {
         dayPlan={dayPlanWithMeals}
       />,
     );
-    expect(screen.getByText("Ваш план на сьогодні")).toBeInTheDocument();
+    expect(screen.getByText("Твій план на сьогодні")).toBeInTheDocument();
     // Both meal rows should appear
     expect(screen.getByTestId("meal-row-breakfast")).toBeInTheDocument();
     expect(screen.getByTestId("meal-row-lunch")).toBeInTheDocument();

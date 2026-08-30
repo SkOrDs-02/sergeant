@@ -275,6 +275,81 @@ export const ToolResult = z.object({
 });
 
 /**
+ * B32 (`docs/90-work/audits/ai-testing-2026-08-25.md`) — блоки, дозволені
+ * всередині `tool_calls_raw`. До 2026-08-25 поле було `z.array(z.unknown())`
+ * — фактично unvalidated passthrough: `chat.ts` кладе його НАПРЯМУ в
+ * `{ role: "assistant", content: tool_calls_raw }`, єдину роль без
+ * `<user_data>`/`<tool_output>`-огорожі (`toolOutputWrapping.ts`). Клієнт
+ * міг тому написати довільний assistant-текст, повністю обійшовши
+ * injection-фенсинг, і отруїти `ai_memories` через `remember`.
+ *
+ * Type-allowlist сам по собі НЕ достатній, поки поля всередині блоку
+ * лишаються `unknown` — тому кожен варіант нижче `.strict()` з явним
+ * переліком полів (зайве поле → 400, не мовчазне перенесення).
+ *
+ * Навмисно НЕ у списку: `type: "text"`. Це той самий блок, що Anthropic
+ * повертає як текстовий preamble перед `tool_use` (див. фікстуру
+ * `textAndToolCall` у `contract-fixtures/chat.ts`) — і водночас РІВНО
+ * вектор цієї знахідки: `text`-поле є вільним рядком незалежно від
+ * `.strict()`-форми блоку, тож дозволити тип не закривши вміст означало б
+ * залишити injection-поверхню відкритою. Наслідок: клієнт, що echo-ить
+ * `tool_calls_raw` з text-preamble назад у другому турі, отримає 400 —
+ * `apps/web` має відфільтрувати нетул-блоки перед replay (окремий фронтовий
+ * фікс, поза скоупом цього серверного PR).
+ *
+ * Реальний whitelist ІМЕН інструментів (`TOOLS` з server-only
+ * `modules/chat/tools.ts`) і provenance-звʼязок з `tool_results`
+ * перевіряються ДАЛІ на сервері (`validateToolCallsRawProvenance` у
+ * `chat.ts`) — сюди server-модулі імпортувати не можна: `@sergeant/shared`
+ * лишається edge-runtime-friendly (той самий принцип, що й
+ * `RECALL_MEMORY_SOURCES` вище).
+ */
+const ToolUseBlockSchema = z
+  .object({
+    type: z.literal("tool_use"),
+    id: z.string().min(1).max(200),
+    name: z.string().min(1).max(200),
+    input: z.unknown(),
+  })
+  .strict();
+
+/**
+ * Anthropic-hosted server tool call — наразі єдиний такий інструмент у нас
+ * — `tool_search_tool_regex` (`modules/chat/toolSearch.ts`). Форма поля
+ * ідентична `tool_use`; сервер додатково звіряє `name` з реальним
+ * `TOOL_SEARCH_TOOL.name`.
+ */
+const ServerToolUseBlockSchema = z
+  .object({
+    type: z.literal("server_tool_use"),
+    id: z.string().min(1).max(200),
+    name: z.string().min(1).max(200),
+    input: z.unknown(),
+  })
+  .strict();
+
+/**
+ * Результат серверного tool-search — Anthropic генерує це на своєму боці,
+ * ми лише echo-имо назад НЕЗМІНЕНИМ (інакше 400 від upstream), тому
+ * `content` навмисно `z.unknown()`: це не наша форма для валідації, і
+ * Anthropic розширює її без узгодження з нами.
+ */
+const ToolSearchToolResultBlockSchema = z
+  .object({
+    type: z.literal("tool_search_tool_result"),
+    tool_use_id: z.string().min(1).max(200),
+    content: z.unknown(),
+  })
+  .strict();
+
+export const ToolCallsRawBlockSchema = z.discriminatedUnion("type", [
+  ToolUseBlockSchema,
+  ServerToolUseBlockSchema,
+  ToolSearchToolResultBlockSchema,
+]);
+export type ToolCallsRawBlock = z.infer<typeof ToolCallsRawBlockSchema>;
+
+/**
  * Ідентифікатори серверних preset-ів системної інструкції для `/api/chat`.
  *
  * Клієнт шле ЛИШЕ ідентифікатор — сам текст інструкції живе на сервері
@@ -287,8 +362,8 @@ export const ToolResult = z.object({
  * Другий ефект — UX: інструкція більше не рендериться бульбашкою «від
  * користувача» і не сміттить в історії чату (`hub_chat_history`).
  *
- * - `profile_interview` — коротке інтерв'ю на порожньому банку пам'яті
- *   (кнопка «Заповнити профіль» у секції «Пам'ять ШІ»);
+ * - `profile_interview` — коротке інтервʼю на порожньому банку памʼяті
+ *   (кнопка «Заповнити профіль» у секції «Памʼять ШІ»);
  * - `profile_add_info` — доповнення вже непорожнього банку («Додати інфо»).
  */
 export const CHAT_PRESETS = ["profile_interview", "profile_add_info"] as const;
@@ -300,8 +375,10 @@ export const ChatRequestSchema = z.object({
   preset: z.enum(CHAT_PRESETS).optional(),
   messages: z.array(ChatMessage).max(50).optional().default([]),
   tool_results: z.array(ToolResult).max(20).optional(),
-  // tool_calls_raw — сирий вміст від Anthropic, не валідуємо глибоко,
-  // лише гарантуємо, що це масив розумного розміру.
+  // B32 — раніше `z.array(z.unknown())`; тепер кожен блок валідується проти
+  // `ToolCallsRawBlockSchema` (див. докстрінг вище). `name`-allowlist проти
+  // реального `TOOLS`-реєстру і provenance-звʼязок з `tool_results`
+  // перевіряються далі на сервері (`chat.ts`), сюди їх заносити не можна.
   //
   // AI-CONTEXT: cap підняли 20 → 60 разом із tool search (2026-07-25). Тепер
   // у `content` крім `tool_use` приїжджають ще `server_tool_use` +
@@ -310,7 +387,7 @@ export const ChatRequestSchema = z.object({
   // лишається `MAX_TOOL_ITERATIONS = 8` і перевіряється окремо в `chat.ts`,
   // тож це послаблення не розширює runaway-поверхню: воно лише перестає
   // рубати легітимний пошуковий трафік нашою ж валідацією.
-  tool_calls_raw: z.array(z.unknown()).max(60).optional(),
+  tool_calls_raw: z.array(ToolCallsRawBlockSchema).max(60).optional(),
   stream: z.boolean().optional(),
 });
 
@@ -407,7 +484,7 @@ export const AiMemoryListQuerySchema = z.object({
 export type AiMemoryListQuery = z.infer<typeof AiMemoryListQuerySchema>;
 
 /**
- * Один факт AI-пам'яті у списку налаштувань.
+ * Один факт AI-памʼяті у списку налаштувань.
  *
  * `id` — `number`: у Postgres це `BIGSERIAL`, і pg-драйвер віддає його
  * стрінгою. Коерція живе в серверному серіалізаторі (Hard Rule #1) — тут
@@ -707,6 +784,15 @@ const RoutineDigestSchema = z
 // клієнт пропускає поле, чи надсилає його як `null`.
 export const WeeklyDigestSchema = z.object({
   weekRange: z.string().max(80).optional(),
+  // ISO-понеділок тижня (`YYYY-MM-DD`) — канонічний ключ тижня. Йде у
+  // `ai_memories.source_ref` (контракт `MemoryWrite.sourceRef` завжди
+  // обіцяв week_key, а фактично їхав display-рядок weekRange). Опційне з
+  // тих самих причин, що `metricsVersion` нижче: старі PWA-бандли поля не
+  // шлють — тоді сервер падає назад на weekRange.
+  weekKey: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
   // Версія МЕТОДИКИ підрахунку, якою клієнт порахував числа нижче — див.
   // `@sergeant/shared` → `METRICS_VERSION`. Опційне навмисно: старіші бандли
   // (PWA з service-worker-ом) поля не шлють, і їхні дайджести мають
@@ -797,7 +883,7 @@ export const WeeklyDigestResponseSchema = z.union([
 ]);
 export type WeeklyDigestResponse = z.infer<typeof WeeklyDigestResponseSchema>;
 
-// AI-NOTE: `dateContext` обов'язковий для адекватного темпорального
+// AI-NOTE: `dateContext` обовʼязковий для адекватного темпорального
 // обрамлення інсайту (без нього модель імпровізує "середина тижня" в неділю).
 // Поля: `todayKey` — Kyiv-time `YYYY-MM-DD`; `weekDayUk` — день тижня
 // українською ("понеділок"…"неділя"); `dayOfWeekIso` — 1 (пн)…7 (нд);
@@ -826,7 +912,7 @@ const CoachSnapshotSchema = z
   })
   .partial();
 
-// Пам'ять coach-а зберігається сервером і повертається назад клієнтом —
+// Памʼять coach-а зберігається сервером і повертається назад клієнтом —
 // не валідуємо глибоко, лише обмежуємо кількість digest-ів.
 const CoachMemoryEchoSchema = z
   .object({
@@ -837,7 +923,7 @@ const CoachMemoryEchoSchema = z
   .partial();
 
 // `snapshot` і `memory` можуть надходити як `null` (нема даних / перший
-// сеанс без збереженої пам'яті), тому приймаємо `nullish`, а handler уже
+// сеанс без збереженої памʼяті), тому приймаємо `nullish`, а handler уже
 // коректно обробляє обидва випадки через `snapshot?.finyk` / `memory || null`.
 export const CoachInsightSchema = z.object({
   snapshot: CoachSnapshotSchema.nullish(),
@@ -906,7 +992,7 @@ const SyncV2OpKindEnum = z.enum(["insert", "update", "delete", "increment"]);
  * Один запис op-log-а. `row` — JSON-payload (PK + поля); серверний
  * apply-шлях знає shape per-table і не валідує тут. Розмір payload-а
  * обмежено окремим refine-ом (256 KB), щоб не платити за safeParse-инг
- * мегабайтних об'єктів.
+ * мегабайтних обʼєктів.
  *
  * `client_ts` приймається як ISO-8601 рядок з offset-ом; пізніше
  * сервер відхилить значення з clock skew > 1 година.
@@ -1001,7 +1087,7 @@ export const PushUnsubscribeSchema = z.object({
  * `/api/v1/push/register` — уніфікована реєстрація push-пристрою.
  *
  * `platform: "web"` — web-push: `token` несемо як endpoint URL, `keys`
- * обов'язкові (див. RFC 8030). `platform: "ios"|"android"` — native push:
+ * обовʼязкові (див. RFC 8030). `platform: "ios"|"android"` — native push:
  * `token` — opaque APNs/FCM device token, `endpoint`/`keys` відсутні.
  *
  * Валідатор нижче приймає обидва shape-и; handler сам маршрутизує у
@@ -1042,7 +1128,7 @@ export const PushUnregisterSchema = z.discriminatedUnion("platform", [
   }),
 ]);
 
-// `.nullable()` на необов'язкових полях — для back-compat із воркерами, які
+// `.nullable()` на необовʼязкових полях — для back-compat із воркерами, які
 // історично слали `null` замість відсутнього поля.
 export const PushSendSchema = z.object({
   userId: z.string().min(1).max(200),
@@ -1054,7 +1140,7 @@ export const PushSendSchema = z.object({
 
 /**
  * `POST /api/v1/push/test` — ручка для відправки тестового пуша на всі
- * зареєстровані пристрої поточного користувача. Auth обов'язкова; сервер
+ * зареєстровані пристрої поточного користувача. Auth обовʼязкова; сервер
  * пропускає body через `sendToUser` (див. `apps/server/src/push/send.ts`)
  * і повертає агрегований summary.
  *
@@ -1068,7 +1154,7 @@ export const PushTestRequestSchema = z.object({
   /**
    * Deep-link, що клієнт відкриє по тапу. Сервер прокине у `data.url` для
    * всіх трьох каналів; native/web handler читають з одного ключа.
-   * URL-валідацію навмисно робимо м'якою (`.url()` без `.startsWith`), щоб
+   * URL-валідацію навмисно робимо мʼякою (`.url()` без `.startsWith`), щоб
    * поза-HTTPS кастом-схеми (`sergeant://finyk/tx/123`) теж проходили.
    */
   url: z.string().trim().min(1).max(2048).optional(),

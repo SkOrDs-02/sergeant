@@ -55,7 +55,7 @@ describe("Money — тири суми", () => {
     expect(container.firstElementChild).toHaveClass("tabular-nums");
   });
 
-  it("успадковує кегль від викликача, а не нав'язує свій", () => {
+  it("успадковує кегль від викликача, а не навʼязує свій", () => {
     const { container } = render(
       <Money amount={7} className="text-style-title" />,
     );

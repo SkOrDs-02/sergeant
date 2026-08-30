@@ -118,7 +118,7 @@ export function friendlyApiError(status: number, message?: string): string {
 export function friendlyChatError(e: unknown): string {
   const msg = e instanceof Error ? e.message : String(e);
   if (/failed to fetch|network|load failed/i.test(msg)) {
-    return "Немає з'єднання з мережею або сервер недоступний.";
+    return "Немає зʼєднання з мережею або сервер недоступний.";
   }
   return `Помилка: ${msg}`;
 }

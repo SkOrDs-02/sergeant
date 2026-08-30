@@ -1,5 +1,16 @@
 import { memo, useRef, useMemo } from "react";
-import { chartAxis, chartGrid, chartTick, statusColors } from "@shared/charts";
+import {
+  chartAxis,
+  chartGrid,
+  chartTick,
+  statusColors,
+  seriesExtent,
+  fractionX,
+  linearY,
+  clampToDomain,
+  buildPolylinePoints,
+  buildAreaPolygonPoints,
+} from "@shared/charts";
 import { useChartScrub, useTweenedValues } from "@shared/hooks";
 import { ChartScrubOverlay } from "@shared/components/charts";
 import { ChartGoalLine } from "@shared/components/charts";
@@ -20,7 +31,7 @@ interface NetworthChartProps {
 }
 
 // SVG-графік нетворсу повністю детермінований вхідним `data`.
-// `memo` запобігає перерендеру при незв'язаних оновленнях стану Overview.
+// `memo` запобігає перерендеру при незвʼязаних оновленнях стану Overview.
 function NetworthChartComponent({ data, goalValue }: NetworthChartProps) {
   if (!data || data.length < 2) return null;
   return <NetworthChartInner data={data} goalValue={goalValue} />;
@@ -38,9 +49,7 @@ function NetworthChartInner({
   goalValue?: number | undefined;
 }) {
   const values = data.map((d) => d.networth);
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const range = max - min || 1;
+  const { min, max, range } = seriesExtent(values);
 
   const W = 300;
   const H = 80;
@@ -48,8 +57,11 @@ function NetworthChartInner({
   const chartW = W - PAD.left - PAD.right;
   const chartH = H - PAD.top - PAD.bottom;
 
-  const px = (i: number) => PAD.left + (i / (data.length - 1)) * chartW;
-  const py = (v: number) => PAD.top + chartH - ((v - min) / range) * chartH;
+  // `fractionX` (не `xAt`): цей чарт пише сирі float-и в `<polyline
+  // points>`, і історична формула `i / (n - 1) * chartW` мусить лишитись
+  // дослівною — інший порядок множення зрушив би останні біти координат.
+  const px = (i: number) => fractionX(PAD.left, i, data.length, chartW);
+  const py = (v: number) => linearY(v, min, range, PAD.top, chartH);
 
   // Month-label thinning: with 8-12+ points the 8px labels collide when
   // rendered on every tick. Keep spacing at ~24 viewBox units by only
@@ -89,12 +101,9 @@ function NetworthChartInner({
   const plotValues = useTweenedValues(values);
   const vAt = (i: number) => plotValues[i] ?? data[i]?.networth ?? 0;
 
-  const points = data.map((_, i) => `${px(i)},${py(vAt(i))}`).join(" ");
-  const areaPoints = [
-    `${px(0)},${H - PAD.bottom}`,
-    ...data.map((_, i) => `${px(i)},${py(vAt(i))}`),
-    `${px(data.length - 1)},${H - PAD.bottom}`,
-  ].join(" ");
+  const plotted = data.map((_, i) => ({ x: px(i), y: py(vAt(i)) }));
+  const points = buildPolylinePoints(plotted);
+  const areaPoints = buildAreaPolygonPoints(plotted, H - PAD.bottom);
 
   const lastValue = values.at(-1) ?? 0;
   const firstValue = values[0] ?? 0;
@@ -148,7 +157,7 @@ function NetworthChartInner({
   // #2 — goal line y-position
   const goalY =
     goalValue !== undefined
-      ? py(Math.max(min, Math.min(max, goalValue)))
+      ? py(clampToDomain(goalValue, min, max))
       : undefined;
 
   const summaryId = "finyk-networth-summary";

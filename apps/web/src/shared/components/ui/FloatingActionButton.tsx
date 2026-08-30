@@ -10,6 +10,7 @@ import { cn } from "../../lib/ui/cn";
 import { Icon, type IconName } from "./Icon";
 import { hapticTap } from "../../lib/adapters/haptic";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
+import { useOutsideClick } from "@shared/hooks/useOutsideClick";
 import { useBodyScrollLock } from "@shared/hooks/useBodyScrollLock";
 import { useVisualKeyboardInset } from "@sergeant/shared";
 
@@ -177,20 +178,7 @@ export const FloatingActionButton = memo(function FloatingActionButton({
 
   // Close on outside click (pointer events outside the outer FAB container).
   // Escape is now handled by useDialogFocusTrap above.
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleClick = (e: MouseEvent) => {
-      if (outerRef.current && !outerRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClick);
-    return () => {
-      document.removeEventListener("mousedown", handleClick);
-    };
-  }, [isOpen]);
+  useOutsideClick(outerRef, () => setIsOpen(false), { enabled: isOpen });
 
   const handleClick = useCallback(() => {
     hapticTap();

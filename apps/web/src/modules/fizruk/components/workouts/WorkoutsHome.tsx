@@ -190,8 +190,7 @@ export function WorkoutsHome({
           </ul>
         ) : (
           <div className="rounded-2xl border border-dashed border-line p-4 text-style-caption text-subtle text-center">
-            Після першого завершеного тренування тут з&apos;являться останні
-            сесії.
+            Після першого завершеного тренування тут зʼявляться останні сесії.
           </div>
         )}
       </Card>
@@ -209,7 +208,7 @@ export function WorkoutsHome({
               <div className="flex-1 min-w-0">
                 <div className="text-style-label text-text">Каталог вправ</div>
                 <div className="text-style-caption text-subtle mt-0.5">
-                  Пошук · групи м&apos;язів · своя вправа
+                  Пошук · групи мʼязів · своя вправа
                 </div>
               </div>
               <Icon

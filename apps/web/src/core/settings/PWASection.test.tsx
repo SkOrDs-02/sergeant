@@ -122,7 +122,7 @@ describe("PWASection", () => {
       expect(swMocks.swClearCaches).toHaveBeenCalledTimes(1);
     });
     expect(toastMocks.success).toHaveBeenCalledWith(
-      "Кеш PWA скинуто. Перезавантажуємо…",
+      "Кеш PWA скинуто. Перезавантажую…",
       4000,
     );
 

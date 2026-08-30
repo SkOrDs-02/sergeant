@@ -202,8 +202,8 @@ export function ReceivableForm({
         {editingId ? "Редагування запису" : "Новий запис «Мені винні»"}
       </div>
       <Input
-        aria-label="Ім'я або назва боржника"
-        placeholder="Ім'я або назва"
+        aria-label="Імʼя або назва боржника"
+        placeholder="Імʼя або назва"
         maxLength={NAME_MAX_LEN}
         showCharCount={false}
         value={newRecv.name}
@@ -221,8 +221,8 @@ export function ReceivableForm({
         }
       />
       <Input
-        aria-label="Нотатка (необов'язково)"
-        placeholder="Нотатка (необов'язково)"
+        aria-label="Нотатка (необовʼязково)"
+        placeholder="Нотатка (необовʼязково)"
         maxLength={NAME_MAX_LEN}
         showCharCount={false}
         value={newRecv.note}
@@ -469,7 +469,7 @@ export function DebtForm({
           {editingId ? "Редагування пасиву" : "Новий пасив"}
         </div>
         <div className="text-style-caption text-muted mt-0.5">
-          Кредит, борг або інше зобов&#x27;язання.
+          Кредит, борг або інше зобовʼязання.
         </div>
       </div>
       <div className="flex gap-2">

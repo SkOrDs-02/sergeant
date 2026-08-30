@@ -5,10 +5,10 @@
  *
  * Не вимірюємо самі значення (collectDefaultMetrics + business counters
  * — це стани процесу, які тестувати в unit-форматі дорого і крихко).
- * Покриваємо саме контракт: ім'я метрики, тип, набір лейблів, видимість
- * у експорт-payload-і. Це той контракт, на який зав'язані Grafana-дашборди
+ * Покриваємо саме контракт: імʼя метрики, тип, набір лейблів, видимість
+ * у експорт-payload-і. Це той контракт, на який завʼязані Grafana-дашборди
  * (e.g. `* on (instance) group_left(version, commit) http_request_duration_ms`)
- * — тут ми ловимо drift, який інакше з'явився б тільки під alert-evaluator-ом.
+ * — тут ми ловимо drift, який інакше зʼявився б тільки під alert-evaluator-ом.
  */
 import { afterEach, describe, it, expect, vi } from "vitest";
 import type { Request, Response } from "express";
@@ -31,7 +31,7 @@ import {
 import { env } from "../env/env.js";
 
 describe("metrics registry — `app_build_info` gauge", () => {
-  it("реєструється у спільному `register`-і з ім'ям `app_build_info`", () => {
+  it("реєструється у спільному `register`-і з імʼям `app_build_info`", () => {
     const metric = register.getSingleMetric("app_build_info");
     expect(metric).toBe(appBuildInfo);
     expect(metric).toBeDefined();
@@ -52,7 +52,7 @@ describe("metrics registry — `app_build_info` gauge", () => {
     expect(text).toMatch(/node_version="[^"]+"/);
   });
 
-  it("`commit` обрізається до 12 символів (slice ув'язується з prom-cardinality bound-ом)", async () => {
+  it("`commit` обрізається до 12 символів (slice увʼязується з prom-cardinality bound-ом)", async () => {
     const text = await register.metrics();
     const match = /commit="([^"]+)"/.exec(text);
     expect(match).not.toBeNull();
@@ -65,7 +65,7 @@ describe("metrics registry — `app_build_info` gauge", () => {
 
 describe("metrics registry — AI per-endpoint duration histogram", () => {
   it("`ai_request_duration_ms` зареєстрований і має лейбли provider/model/endpoint/outcome", () => {
-    // SLO/dashboards зав'язані саме на цей набір лейблів. Дзеркалить
+    // SLO/dashboards завʼязані саме на цей набір лейблів. Дзеркалить
     // labelNames у `aiRequestsTotal` — щоб p95-латентність помилкових
     // запитів можна було виокремити з `outcome="error"`.
     const metric = register.getSingleMetric("ai_request_duration_ms");
@@ -160,7 +160,7 @@ describe("metrics registry — v2 sync op-log RED metrics (PR #048)", () => {
     expect(APPLY_REJECT_REASONS.length).toBe(64);
     expect(ENGINE_REJECT_REASONS.length).toBe(5);
 
-    // Ключові CRDT-інваріанти, на які прив'язаний sync health alerting,
+    // Ключові CRDT-інваріанти, на які привʼязаний sync health alerting,
     // фіксуємо явно — щоб accidental refactor не приховав їх із
     // допустимого набору.
     expect(APPLY_REJECT_REASONS).toContain("lww_conflict");
@@ -189,7 +189,7 @@ describe("metrics registry — v2 sync op-log RED metrics (PR #048)", () => {
     const text = await register.metrics();
     expect(text).toContain("# TYPE sync_op_log_pull_lag_ms histogram");
     expect(text).toContain("# TYPE sync_op_log_pull_queue_depth histogram");
-    // Bucket borders, на які зав'язані SLO-алерти (SSE happy-path <100ms,
+    // Bucket borders, на які завʼязані SLO-алерти (SSE happy-path <100ms,
     // polling-fallback <5s) — фіксуємо у тесті, щоб випадковий refactor
     // bucket-ів не зламав алерти.
     expect(text).toMatch(/sync_op_log_pull_lag_ms_bucket\{le="100"\}/);

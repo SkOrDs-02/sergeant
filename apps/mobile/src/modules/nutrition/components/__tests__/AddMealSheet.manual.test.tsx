@@ -79,7 +79,7 @@ describe("AddMealSheet manual flow", () => {
     fireEvent.press(getByTestId("add-meal-save"));
 
     expect((await findByTestId("add-meal-fill-err")).props.children).toBe(
-      "Введіть назву страви.",
+      "Введи назву страви.",
     );
 
     fireEvent.changeText(getByTestId("add-meal-name"), " Сирники ");

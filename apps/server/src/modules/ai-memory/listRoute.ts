@@ -3,10 +3,10 @@
  * Status: Active
  *
  * `GET /api/ai-memory/list` + `DELETE /api/ai-memory/:id` — перегляд і
- * видалення окремих фактів AI-пам'яті користувачем.
+ * видалення окремих фактів AI-памʼяті користувачем.
  *
  * До цього PR-у користувач міг лише **стерти все** (`DELETE /api/ai-memory`)
- * або нічого: побачити, що саме про нього пам'ятає асистент, було ніяк.
+ * або нічого: побачити, що саме про нього памʼятає асистент, було ніяк.
  * Канон `hub-coach` (D5/G3) вимагає рівно цього — видимість і точкове
  * видалення.
  *
@@ -21,7 +21,7 @@
  *   * `forget.ts` (`/forget` у Telegram, founder-only) — soft-delete через
  *     `deleted_at`, 7-денне вікно відновлення, аудит в `openclaw_invocations`.
  *   * user-facing шлях — hard `DELETE`, як уже робить `deleteAllForUser`
- *     під кнопкою «Очистити пам'ять ШІ».
+ *     під кнопкою «Очистити памʼять ШІ».
  * Рішення founder-а 2026-07-25 (#4): «Зникає назавжди. Стираємо з бази».
  * Тому тут `DELETE`, і UI має право писати «назавжди» без зірочки. Не
  * «уніфікуй» це з `forget.ts` — то інший шлях з іншим власником і іншою
@@ -52,7 +52,7 @@ import { removeMemoryBankEntry } from "../me/profile.js";
 
 type WithSessionUser = Request & { user?: { id: string } };
 
-/** Дефолт і стеля сторінки. Стеля — щоб один запит не тягнув усю пам'ять. */
+/** Дефолт і стеля сторінки. Стеля — щоб один запит не тягнув усю памʼять. */
 export const MEMORY_LIST_DEFAULT_LIMIT = 20;
 export const MEMORY_LIST_MAX_LIMIT = 100;
 
@@ -73,7 +73,7 @@ const SQL_LIST_FIRST_PAGE = `SELECT id, source, content, topic, created_at
     LIMIT $2`;
 
 /**
- * `deleted_at IS NULL` обов'язковий і тут, і вище: `/forget` у Telegram
+ * `deleted_at IS NULL` обовʼязковий і тут, і вище: `/forget` у Telegram
  * робить soft-delete, і без фільтра вже стерті факти спливали б у списку
  * з робочою на вигляд кнопкою видалення.
  */
@@ -86,7 +86,7 @@ const SQL_LIST_AFTER_CURSOR = `SELECT id, source, content, topic, created_at
     LIMIT $2`;
 
 /**
- * Keyset-пагінація по `id DESC`. Не OFFSET: пам'ять поповнюється фоновою
+ * Keyset-пагінація по `id DESC`. Не OFFSET: памʼять поповнюється фоновою
  * чергою під час перегляду, і OFFSET на такій таблиці або дублює, або
  * пропускає рядки між сторінками.
  */

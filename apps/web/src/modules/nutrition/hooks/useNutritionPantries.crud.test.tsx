@@ -190,7 +190,7 @@ describe("useNutritionPantries CRUD", () => {
     expect(result.current.itemEdit.open).toBe(true);
     expect(result.current.itemEdit.name).toMatch(/молоко/i);
 
-    act(() => result.current.onSaveItemEdit(0, 5, "л"));
+    act(() => result.current.onSaveItemEdit(0, "Молоко", 5, "л"));
     expect(result.current.pantryItems[0]?.qty).toBe(5);
     expect(result.current.itemEdit.open).toBe(false);
   });

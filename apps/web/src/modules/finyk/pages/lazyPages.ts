@@ -23,6 +23,7 @@
  */
 import { useEffect } from "react";
 import { lazyImport } from "../../../core/lib/lazyImport";
+import { CategoryPieChart } from "../components/charts/lazy";
 
 export const Transactions = lazyImport(
   () => import("./transactions/Transactions"),
@@ -36,7 +37,17 @@ export const Analytics = lazyImport(() => import("./Analytics"), "Analytics");
 const PAGE_PRELOADERS: Record<string, () => void> = {
   transactions: () => Transactions.preload(),
   budgets: () => Budgets.preload(),
-  analytics: () => Analytics.preload(),
+  // Analytics page shell AND its nested `CategoryPieChart` chunk (own
+  // `React.lazy` boundary, `components/charts/lazy.ts`) both need to be
+  // warm before the tab commits — otherwise the page-level chunk lands in
+  // time but the donut chart still suspends on mount, so the transition
+  // (and the nav pill it runs alongside) hitches on the second, un-warmed
+  // chunk fetch+parse. Founder report 2026-08-28: half-second freeze on
+  // tap/swipe into "Аналітика".
+  analytics: () => {
+    Analytics.preload();
+    CategoryPieChart.preload();
+  },
   assets: () => Assets.preload(),
 };
 

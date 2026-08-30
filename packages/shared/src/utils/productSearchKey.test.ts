@@ -23,12 +23,17 @@ describe("normalizeProductText", () => {
   });
 
   it("зводить усі варіанти апострофа до одного", () => {
-    // Без цього «мʼясо» не знайшлося б за запитом «м'ясо».
-    const expected = "м'ясо";
-    expect(normalizeProductText("м’ясо")).toBe(expected);
-    expect(normalizeProductText("мʼясо")).toBe(expected);
-    expect(normalizeProductText("м`ясо")).toBe(expected);
-    expect(normalizeProductText("м'ясо")).toBe(expected);
+    // Форми будуються з кодпоінтів навмисно, а не пишуться літерами:
+    // масова заміна апострофа 2026-08-26 сплющила цей тест в одну форму
+    // й він перестав щось перевіряти. Через `\u` таке вже не станеться.
+    const APOS = ["\u2019", "\u02BC", "\u0060", "\u0027"];
+    expect(new Set(APOS).size).toBe(4);
+    // Ціль згортання тут — ASCII `'`, а НЕ канонічний `ʼ`: результат
+    // персиститься в `generic_foods.name_norm` (див. коментар у модулі).
+    const expected = `м\u0027ясо`;
+    for (const a of APOS) {
+      expect(normalizeProductText(`м${a}ясо`)).toBe(expected);
+    }
   });
 
   it("порожні й нетекстові входи дають порожній рядок", () => {

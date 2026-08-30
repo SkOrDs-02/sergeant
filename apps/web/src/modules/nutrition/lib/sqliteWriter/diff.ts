@@ -85,6 +85,12 @@ export interface NutritionPantryItemSnapshot {
   readonly qty: number | null;
   readonly unit: string | null;
   readonly notes: string | null;
+  /**
+   * Серіалізовані варіанти покупок (міграція 130); `null`/відсутнє —
+   * варіантів немає. Опційне, щоб снапшоти, зібрані до цієї колонки,
+   * лишались валідними без переписування кожного літерала.
+   */
+  readonly sources?: string | null;
 }
 
 export interface NutritionPantrySnapshot {
@@ -585,7 +591,8 @@ function pantryItemsChanged(
       a.name !== b.name ||
       a.qty !== b.qty ||
       a.unit !== b.unit ||
-      a.notes !== b.notes
+      a.notes !== b.notes ||
+      (a.sources ?? null) !== (b.sources ?? null)
     ) {
       return true;
     }

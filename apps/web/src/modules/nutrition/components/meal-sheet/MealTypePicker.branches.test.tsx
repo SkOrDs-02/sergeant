@@ -27,7 +27,7 @@ describe("MealTypePicker", () => {
       expect(next.mealType).toBe("breakfast");
     }) as Dispatch<SetStateAction<MealFormState>>;
     render(<MealTypePicker mealType="snack" setForm={setForm} />);
-    // Ім'я кнопки — самий підпис. До 2026-08-21 перед ним стояло емодзі
+    // Імʼя кнопки — самий підпис. До 2026-08-21 перед ним стояло емодзі
     // («🌅 Сніданок»), яке малювалось системним шрифтом; тепер гліф —
     // `<Icon aria-hidden>`, тож в accessible name він не потрапляє.
     fireEvent.click(screen.getByRole("button", { name: "Сніданок" }));

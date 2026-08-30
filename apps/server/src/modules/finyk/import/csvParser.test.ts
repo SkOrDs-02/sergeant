@@ -109,7 +109,7 @@ describe("isBlankRow", () => {
 });
 
 describe("parseSignedAmountKopiykas", () => {
-  it("парсить dot-decimal від'ємну суму (mono-стиль)", () => {
+  it("парсить dot-decimal відʼємну суму (mono-стиль)", () => {
     expect(parseSignedAmountKopiykas("-847.50")).toBe(-84750);
   });
 

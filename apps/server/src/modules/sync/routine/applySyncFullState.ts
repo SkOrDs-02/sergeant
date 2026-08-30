@@ -31,7 +31,7 @@ export async function applyRoutineHabits(
     `SELECT user_id, updated_at, deleted_at FROM routine_habits WHERE id = $1`,
     [id],
   );
-  const guard = guardUuidPkApply(existing, userId, clientTs, op);
+  const guard = guardUuidPkApply(existing, userId, clientTs);
   if (guard) return guard;
 
   if (op.op === "delete") {
@@ -164,7 +164,7 @@ export async function applyUuidNameScopeTable(
       ? `SELECT user_id, updated_at, deleted_at FROM routine_tags WHERE id = $1`
       : `SELECT user_id, updated_at, deleted_at FROM routine_categories WHERE id = $1`;
   const existing = await queryOne<ExistingUuidRow>(client, selectSql, [id]);
-  const guard = guardUuidPkApply(existing, userId, clientTs, op);
+  const guard = guardUuidPkApply(existing, userId, clientTs);
   if (guard) return guard;
 
   if (op.op === "delete") {
@@ -361,9 +361,6 @@ export async function applyRoutineCompletionNotes(
     if (existing.updated_at.getTime() >= clientTs.getTime()) {
       return { status: "rejected", reason: "lww_conflict" };
     }
-    if (existing.deleted_at !== null && op.op !== "delete") {
-      return { status: "rejected", reason: "tombstoned" };
-    }
   }
 
   if (op.op === "delete") {
@@ -392,9 +389,10 @@ export async function applyRoutineCompletionNotes(
  * Третій стан дня — «не зміг з причиною» (Хвиля 4, канон `routine.md` §5).
  *
  * Форма один-в-один як `applyRoutineCompletionNotes`: композитний PK
- * `(user_id, skip_key)`, LWW по `updated_at`, tombstone-guard.
+ * `(user_id, skip_key)`, LWW по `updated_at`, upsert зі скиданням
+ * `deleted_at` (воскресіння новішим записом — див. `guardUuidPkApply`).
  *
- * AI-NOTE: взаємну виключність із відміткою виконання сервер НЕ нав'язує.
+ * AI-NOTE: взаємну виключність із відміткою виконання сервер НЕ навʼязує.
  * Два девайси можуть надіслати «зробив» і «не зміг» на той самий день —
  * розсуджує їх LWW за часом, а не відмова обом. Клієнтський домен
  * (`applySetHabitSkip`) тримає інваріант локально.
@@ -423,9 +421,6 @@ export async function applyRoutineHabitSkips(
     }
     if (existing.updated_at.getTime() >= clientTs.getTime()) {
       return { status: "rejected", reason: "lww_conflict" };
-    }
-    if (existing.deleted_at !== null && op.op !== "delete") {
-      return { status: "rejected", reason: "tombstoned" };
     }
   }
 

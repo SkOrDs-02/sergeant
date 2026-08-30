@@ -180,7 +180,7 @@ describe("Log", () => {
 
     expect(getByText("Немає записів за цей день")).toBeTruthy();
     expect(
-      getByText("Натисніть «+ Додати прийом», щоб записати їжу."),
+      getByText("Натисни «+ Додати прийом», щоб записати їжу."),
     ).toBeTruthy();
   });
 });

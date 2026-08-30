@@ -1,6 +1,6 @@
 # Playbook: Onboard External API
 
-> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-12-01.
+> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-17.
 > **Status:** Active
 
 **Trigger:** "Інтегрувати нову зовнішню API" / додати новий third-party сервіс / нова банківська інтеграція / новий AI-провайдер.
@@ -133,7 +133,7 @@ async function healthCheck() {
 
 ### 8. Створити PR
 
-- Branch: `devin/<unix-ts>-feat-<service>-integration`
+- Branch: `<harness>/feat-<service>-integration`
 - Commit: `feat(server): integrate <service> API`
 - PR description:
   - Що робить інтеграція

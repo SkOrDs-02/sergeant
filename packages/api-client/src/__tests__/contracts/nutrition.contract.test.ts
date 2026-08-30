@@ -61,7 +61,7 @@ describe(
               ingredients: [
                 { name: "буряк", notes: null },
                 { name: "капуста", notes: null },
-                { name: "м'ясо", notes: "телятина" },
+                { name: "мʼясо", notes: "телятина" },
               ],
               macros: {
                 kcal: 280,

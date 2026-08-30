@@ -252,8 +252,8 @@ describe("PhotoStep — коли кнопка «Аналізувати» вза�
   });
 
   it("ховає кнопку в Pro до privacy-ack, щоб вона не обійшла гейт згоди", () => {
-    // `gatedAnalyzePhoto` перевіряє лише тариф, не ack — тож видима тут
-    // кнопка відправляла б кадр раніше, ніж людина підтвердила нотіс.
+    // Гейт тримають ДВОЄ: тут кнопки просто нема, а `gatedAnalyzePhoto`
+    // усе одно відсік би клік — див. наступний тест.
     photoState.photoPreviewUrl = "blob:photo-1";
     render(<PhotoStep onApply={vi.fn()} />);
     expect(screen.queryByRole("button", { name: "Аналізувати" })).toBeNull();
@@ -263,6 +263,44 @@ describe("PhotoStep — коли кнопка «Аналізувати» вза�
       screen.getByRole("button", { name: "Зрозуміло, аналізувати" }),
     );
     expect(photoState.analyzePhoto).toHaveBeenCalledTimes(1);
+  });
+
+  it("не пускає retry після помилки повз privacy-ack", () => {
+    // Регресія (ревʼю CodeRabbit). Помилку вміє покласти не лише аналіз,
+    // а й піккер — і тоді превʼю лишається, а нотіс досі не підтверджено.
+    // Доти гілка `photoErr` стояла ПЕРШОЮ в `analyzeLabel`, тож кнопка
+    // «Спробувати ще раз» зʼявлялась і в цьому стані та йшла в
+    // `gatedAnalyzePhoto`, який перевіряв самий лише тариф — тобто
+    // відправляла кадр Pro-користувача, який згоди ще не дав.
+    photoState.photoPreviewUrl = "blob:photo-1";
+    render(<PhotoStep onApply={vi.fn()} />);
+    act(() => photoState.setErr?.("Не вдалось прочитати файл"));
+
+    expect(
+      screen.queryByRole("button", { name: "Спробувати ще раз" }),
+    ).toBeNull();
+    expect(photoState.analyzePhoto).not.toHaveBeenCalled();
+
+    // Вихід зі стану лишається один — той самий нотіс.
+    fireEvent.click(
+      screen.getByRole("button", { name: "Зрозуміло, аналізувати" }),
+    );
+    expect(photoState.analyzePhoto).toHaveBeenCalledTimes(1);
+  });
+
+  it("`gatedAnalyzePhoto` тримає ack навіть коли тариф пропустив", () => {
+    // Другий шар того самого гейта, окремо від сховування кнопки: тут
+    // вона видима (Free), а `requireAccess()` віддає доступ — і кадр усе
+    // одно не їде, бо згоди нема. Ховати кнопку й перевіряти в обробнику
+    // треба разом: приберуть одне — лишиться друге.
+    // `requireAccessMock` за замовчуванням віддає true — саме той стан,
+    // що нас цікавить (тариф пропустив, ack не питали).
+    gateState.canAccess = false;
+    photoState.photoPreviewUrl = "blob:photo-1";
+    render(<PhotoStep onApply={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Аналізувати" }));
+    expect(photoState.analyzePhoto).not.toHaveBeenCalled();
   });
 });
 

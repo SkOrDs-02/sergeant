@@ -1,6 +1,6 @@
 # ADR-0072: Harness versioning and A/B evaluation
 
-> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-02.
+> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-21.
 
 - **Status:** Accepted
 - **Date:** 2026-06-29
@@ -8,7 +8,7 @@
 - **Supersedes:** —
 - **Related:**
   - [`docs/04-governance/governance/harness-versioning.md`](../governance/harness-versioning.md) — operational rules and bump matrix
-  - [`.kilo/harness-versions.json`](../../../.kilo/harness-versions.json) — version registry
+  - [`.agents/harness-versions.json`](../../../.agents/harness-versions.json) — version registry (шлях з 2026-08-28, [ADR-0088](./0088-devin-kilo-harness-retirement.md); історично `.kilo/harness-versions.json`)
   - [`scripts/ci-bump-harness-version.mjs`](../../../scripts/ci-bump-harness-version.mjs) — local PR-time bumper
   - [`docs/04-governance/adr/0067-engagement-mechanism-standardization.md`](./0067-engagement-mechanism-standardization.md) — прецедент централізованого реєстру
   - [`docs/04-governance/adr/0021-memory-bank.md`](./0021-memory-bank.md) — прецедент персистентного cross-session state

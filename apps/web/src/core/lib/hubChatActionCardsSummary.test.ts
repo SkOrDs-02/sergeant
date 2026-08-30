@@ -460,7 +460,7 @@ describe("summaryFor", () => {
    */
   it("remember / forget — картка без технічного id", () => {
     const rawResult =
-      "Запам'ятав: Не любить чорнослив (Уподобання, id:84920a0a-84b4-4f5e-932a-43ef23733ffa)";
+      "Запамʼятав: Не любить чорнослив (Уподобання, id:84920a0a-84b4-4f5e-932a-43ef23733ffa)";
     expect(
       summaryFor("remember", { fact: "Не любить чорнослив" }, rawResult),
     ).toBe("Не любить чорнослив");
@@ -475,7 +475,7 @@ describe("summaryFor", () => {
 
   it("recall_memory: query and default", () => {
     expect(summaryFor("recall_memory", { query: "пошук" }, "r")).toBe("пошук");
-    expect(summaryFor("recall_memory", {}, "r")).toBe("Пошук у пам'яті");
+    expect(summaryFor("recall_memory", {}, "r")).toBe("Пошук у памʼяті");
   });
 
   it("query/analytics tools return raw result untruncated", () => {
@@ -502,7 +502,7 @@ describe("summaryFor", () => {
       "fallback",
     );
     expect(summaryFor("save_note", {}, "fallback")).toBe("fallback");
-    // `remember` без `fact` — теоретичний випадок: поле обов'язкове за схемою.
+    // `remember` без `fact` — теоретичний випадок: поле обовʼязкове за схемою.
     expect(summaryFor("remember", {}, "fallback")).toBe("fallback");
   });
 });

@@ -65,13 +65,13 @@ export function buildAmountSuggestions(
 // string); межі й нормалізація — у спільному `parseAmountToMinor`.
 // description / category / date — string-поля; category стає порожньою
 // після зміни типу й вимагає нового вибору. `date` перевіряється лише на
-// жорстке вікно — м'яке вікно рендериться як попередження в аркуші.
+// жорстке вікно — мʼяке вікно рендериться як попередження в аркуші.
 export const expenseFormSchema = z.object({
   description: z.string().max(NAME_MAX_LEN),
   // Без власного повідомлення — канонічні тексти парсера вже точні
   // («Вкажи суму» для порожнього, «Сума має бути більше 0» для нуля).
   amount: amountStringSchema(),
-  category: z.string().min(1, "Оберіть категорію"),
+  category: z.string().min(1, "Обери категорію"),
   date: z
     .string()
     .refine(

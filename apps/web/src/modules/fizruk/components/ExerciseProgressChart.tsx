@@ -1,4 +1,12 @@
 import { cn } from "@shared/lib/ui/cn";
+import {
+  seriesExtent,
+  pointStep,
+  xAt,
+  linearY,
+  buildLinePath,
+  buildAreaPath,
+} from "@shared/charts";
 import { fmt } from "../lib/numberFmt";
 
 export interface ProgressPoint {
@@ -28,9 +36,7 @@ export function ExerciseProgressChart({
   }
 
   const vals = points.map((p) => p.value);
-  const minVal = Math.min(...vals);
-  const maxVal = Math.max(...vals);
-  const range = maxVal - minVal || 1;
+  const { min: minVal, range } = seriesExtent(vals);
 
   const w = 320;
   const h = 90;
@@ -41,25 +47,16 @@ export function ExerciseProgressChart({
   const innerW = w - padL - padR;
   const innerH = h - padT - padB;
   const n = points.length;
-  const step = n > 1 ? innerW / (n - 1) : innerW;
+  const step = pointStep(innerW, n);
 
   const mapped = points.map((p, i) => {
-    const x = padL + i * step;
-    const pct = (p.value - minVal) / range;
-    const y = padT + innerH - pct * innerH;
+    const x = xAt(padL, i, step);
+    const y = linearY(p.value, minVal, range, padT, innerH);
     return { x, y, ...p };
   });
 
-  const lineD = mapped
-    .map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`)
-    .join(" ");
-
-  const lastMapped = mapped[mapped.length - 1];
-  const firstMapped = mapped[0];
-  const areaD =
-    lastMapped && firstMapped
-      ? `${lineD} L ${lastMapped.x.toFixed(1)} ${(padT + innerH).toFixed(1)} L ${firstMapped.x.toFixed(1)} ${(padT + innerH).toFixed(1)} Z`
-      : lineD;
+  const lineD = buildLinePath(mapped);
+  const areaD = buildAreaPath(mapped, padT + innerH);
 
   const gradId = `prog_${label.replace(/\s/g, "_")}`;
 

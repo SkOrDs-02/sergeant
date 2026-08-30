@@ -422,6 +422,14 @@ UPDATE` у `kv_store`; cross-tab `onChange` через `BroadcastChannel("kv-sto
 
 ## 🟡 Бажане
 
+### Залишки Спринту 10: `/app`-роутинг і контракт i18n
+
+**Перенесено 2026-08-27** із [`planning/sprint-9-10-plan-2026.md`](../planning/sprint-9-10-plan-2026.md) при закритті того трекера: вікно спринту (2026-07-07 – 2026-08-01) завершилось, а два пункти лишились відкритими. Обидва звірені з HEAD у момент переносу — це не переписані з плану твердження, а заміряний стан.
+
+1. **S10-R1 — Hub не перенесено на `/app/`.** У [`core/app/router.tsx`](../../../apps/web/src/core/app/router.tsx) верхній маршрут лишається `/`, під ним `finyk/*`, `fizruk/*`, `nutrition/*`, `routine/*`, `insights/*`, `settings/*`, `onboarding/*`. Auth-гейт тримається на conditional render у корені, а не на межі роуту. Решта S10-R1 (LandingPage, `LANDING_VIEWED`/`LANDING_EMAIL_CAPTURED`, WaitlistForm, OpenGraph/Twitter-мета в PR #505) відвантажена — лишився рівно цей шматок.
+
+2. **S10-R2 — кастомний i18n as-built, контракт не ратифікований.** Живе рішення: `apps/web/src/shared/i18n/` + `en.ts` + `useLocale` + `?lang=en`. Original acceptance із плану **не приземлився і не спростований**: ADR-0056 у `docs/04-governance/adr/` немає, `i18next` у `pnpm-lock.yaml` немає, скрипта `lint:i18n-parity` немає. Це **needs-decision, не робота**: власник має або ратифікувати кастомне рішення окремим ADR, або дотягнути original acceptance. Поки рішення немає, EN-локаль не має механічної перевірки паритету — тобто розходження каталогів ніхто не ловить.
+
 ### Хвіст після кольорів категорій: доки дизайн-системи і паритет мобілки
 
 **Заведено 2026-08-11** разом із родиною токенів `categoryColors` (репорт

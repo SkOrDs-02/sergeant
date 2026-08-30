@@ -6,6 +6,8 @@ import {
   recordAnthropicUsage,
 } from "../../lib/anthropic.js";
 import { makeAiProviderError } from "../../obs/errors.js";
+import { logger } from "../../obs/logger.js";
+import { aiFirstTokenMs } from "../../obs/metrics.js";
 import {
   type AnthropicMessagesResponseData,
   type FetchResponse,
@@ -33,6 +35,22 @@ interface StreamEvent {
    * (секція "Event types" → message_delta).
    */
   usage?: StreamUsage;
+
+  /**
+   * In-stream error event. Anthropic і OpenRouter однаково шлють
+   * `event: error` / `data: {"type":"error","error":{...}}` ПІСЛЯ того, як
+   * тіло вже відкрито 200-кою — тобто тоді, коли HTTP-статус уже нічого не
+   * розкаже, а ретраї в `lib/anthropic.ts` вже не діють (вони живуть до
+   * відправки заголовків).
+   *
+   * Знахідка B46 (`docs/90-work/audits/ai-testing-2026-08-25.md`): доки цієї
+   * гілки не було, подія просто провалювалась крізь цикл — `outcome`
+   * лишався `"ok"`, текст порожнім, `stop_reason` — `null`. Наслідок:
+   * користувач бачив мовчання, метрика рахувала успіх, квота не поверталась,
+   * у Sentry не йшло нічого. Заміряна частота на прод-формі виклику
+   * (floor-модель + 78 інструментів + стрім) — 7 зривів із 12.
+   */
+  error?: { type?: string; message?: string };
 }
 
 const USAGE_KEYS = [
@@ -74,7 +92,7 @@ function mergeStreamUsage(
 /**
  * Як часто слати SSE-коментар ": ping\n\n", коли upstream мовчить.
  *
- * Контекст: Vercel/Railway/Cloudflare закривають idle HTTP-з'єднання приблизно
+ * Контекст: Vercel/Railway/Cloudflare закривають idle HTTP-зʼєднання приблизно
  * через 30-60с. Якщо Anthropic довго генерує першу токен-дельту (reasoning,
  * великий prompt, rate-limit backoff), проксі обірве SSE-сокет раніше, ніж
  * ми встигнемо щось записати — клієнт побачить "зависло" замість відповіді.
@@ -90,7 +108,20 @@ interface StreamIterationResult {
   stopReason: string | null;
   accumulatedText: string;
   usage: StreamUsage | null;
+  /** Деталь збою для лога/метрики; клієнту НЕ віддається (B33/B46). */
+  streamErrorReason: string | null;
+  /** `Date.now()` першої текстової дельти, або null якщо тексту не було. */
+  firstTextAtMs: number | null;
 }
+
+/**
+ * Єдиний текст помилки, який бачить клієнт у SSE-потоці.
+ *
+ * Політика та сама, що в `makeAiProviderError` для pre-SSE помилок: сирий
+ * провайдерний рядок назовні не йде ніколи. Тримаємо константою, щоб гілки
+ * не розʼїхались формулюваннями (як розʼїхались до B33).
+ */
+const SSE_GENERIC_ERROR = "Асистент тимчасово недоступний";
 
 /**
  * Читає одну upstream-відповідь Anthropic (SSE) і форвардить text-дельти у `res`.
@@ -122,6 +153,8 @@ async function streamOneIterationToSse(
       stopReason: null,
       accumulatedText: "",
       usage: null,
+      streamErrorReason: "empty_body",
+      firstTextAtMs: null,
     };
   }
 
@@ -131,6 +164,8 @@ async function streamOneIterationToSse(
   let stopReason: string | null = null;
   let outcome: "ok" | "error" = "ok";
   let usage: StreamUsage | null = null;
+  let streamErrorReason: string | null = null;
+  let firstTextAtMs: number | null = null;
 
   try {
     while (true) {
@@ -156,6 +191,10 @@ async function streamOneIterationToSse(
           ev.delta?.type === "text_delta" &&
           ev.delta.text
         ) {
+          // TTFT: перший текстовий фрагмент цієї ітерації. Оркестратор
+          // рахує метрику лише для ПЕРШОЇ ітерації — continuation-и
+          // стартують з уже теплого зʼєднання і межу SLO не характеризують.
+          if (firstTextAtMs === null) firstTextAtMs = Date.now();
           accumulatedText += ev.delta.text;
           if (!res.writableEnded) {
             res.write(`data: ${JSON.stringify({ t: ev.delta.text })}\n\n`);
@@ -170,18 +209,46 @@ async function streamOneIterationToSse(
           if (ev.usage) usage = mergeStreamUsage(usage, ev.usage);
         } else if (ev.type === "message_start" && ev.message?.usage) {
           usage = mergeStreamUsage(usage, ev.message.usage);
+        } else if (ev.type === "error") {
+          // B46. Провайдер обірвав уже відкритий стрім. Єдине місце, де це
+          // можна зловити: HTTP-статус був 200, ретраї відпрацювали до
+          // заголовків, а `stop_reason` не прийде взагалі.
+          //
+          // Провайдерний текст (`ev.error.message`) НЕ віддаємо клієнту —
+          // та сама політика, що в `!firstResponse.ok` вище: назовні йде
+          // generic-рядок, деталь лишається в лозі й метриці.
+          outcome = "error";
+          streamErrorReason = ev.error?.message || ev.error?.type || "unknown";
+          if (!res.writableEnded) {
+            res.write(
+              `data: ${JSON.stringify({ err: SSE_GENERIC_ERROR })}\n\n`,
+            );
+          }
+          // Далі читати нема сенсу: після `error` провайдер тіло закриває.
+          break;
         }
       }
+      if (outcome === "error") break;
     }
   } catch (e: unknown) {
     outcome = "error";
-    const message = e instanceof Error ? e.message : String(e);
+    // B33. Тут стояв сирий `e.message` — будь-яке повідомлення undici/zlib/
+    // fetch доїжджало до браузера. Двома гілками нижче той самий файл
+    // свідомо шле generic-текст; уніфікуємо.
+    streamErrorReason = e instanceof Error ? e.message : String(e);
     if (!res.writableEnded) {
-      res.write(`data: ${JSON.stringify({ err: message })}\n\n`);
+      res.write(`data: ${JSON.stringify({ err: SSE_GENERIC_ERROR })}\n\n`);
     }
   }
 
-  return { outcome, stopReason, accumulatedText, usage };
+  return {
+    outcome,
+    stopReason,
+    accumulatedText,
+    usage,
+    streamErrorReason,
+    firstTextAtMs,
+  };
 }
 
 /**
@@ -259,7 +326,7 @@ export async function streamAnthropicToSse(
   res.setHeader("Cache-Control", "no-cache, no-transform");
   res.setHeader("X-Accel-Buffering", "no");
 
-  // Heartbeat: чистий SSE-коментар кожні N мс, поки живе з'єднання.
+  // Heartbeat: чистий SSE-коментар кожні N мс, поки живе зʼєднання.
   // `res.writableEnded` — щоб не писати у вже закритий потік (клієнт відвалився).
   const heartbeat = setInterval(() => {
     if (!res.writableEnded) res.write(": ping\n\n");
@@ -267,6 +334,12 @@ export async function streamAnthropicToSse(
   if (typeof heartbeat.unref === "function") heartbeat.unref();
 
   const baseMessages = (payload["messages"] as Array<unknown>) ?? [];
+  // Точка відліку TTFT — момент, коли upstream уже відповів заголовками і ми
+  // почали віддавати SSE. Ретраї/бекоф до цього моменту вимірює
+  // `ai_request_duration_ms`; тут нас цікавить саме очікування людини перед
+  // порожнім екраном.
+  const streamStartedAtMs = Date.now();
+  let firstTokenObserved = false;
   let accumulatedAllText = "";
   let currentResponse: FetchResponse = firstResponse;
   let currentRecordEnd = firstRecordEnd;
@@ -277,6 +350,37 @@ export async function streamAnthropicToSse(
       const iter = await streamOneIterationToSse(res, currentResponse);
       currentRecordEnd(iter.outcome);
       if (iter.accumulatedText) accumulatedAllText += iter.accumulatedText;
+
+      if (!firstTokenObserved && iter.firstTextAtMs !== null) {
+        firstTokenObserved = true;
+        aiFirstTokenMs.observe(
+          {
+            provider: chatViaOpenRouter() ? "openrouter" : "anthropic",
+            model: (payload["model"] as string) || "unknown",
+            endpoint,
+          },
+          iter.firstTextAtMs - streamStartedAtMs,
+        );
+      }
+
+      // B46. Стрім обірвався, не віддавши ЖОДНОГО символу — для користувача
+      // це те саме, що upstream-помилка до заголовків, тож і поводимось
+      // однаково: повертаємо квоту й лишаємо слід у лозі.
+      //
+      // Умова саме `!accumulatedAllText`, а не `iter.outcome === "error"`:
+      // якщо частина тексту вже дострімилась, людина щось отримала, і
+      // повертати квоту за напів-успішний запит було б неправильно (та сама
+      // логіка, що в continuation-гілці нижче — там partial-текст лишається
+      // без refund).
+      if (iter.outcome === "error" && !accumulatedAllText) {
+        await refundQuotaOnUpstreamFailure(req);
+        logger.warn({
+          msg: "chat_stream_failed_empty",
+          endpoint,
+          model: (payload["model"] as string) || "unknown",
+          reason: iter.streamErrorReason ?? "unknown",
+        });
+      }
 
       // Streaming path раніше пропускав tokens/cost-метрики (єдина точка
       // лічильника була в non-streaming `recordUsage`). Тепер витягнутий з

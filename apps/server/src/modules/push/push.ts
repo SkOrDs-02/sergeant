@@ -386,7 +386,7 @@ export async function sendPush(req: Request, res: Response): Promise<void> {
   if (stale.length > 0) {
     // Stale (404/410) від push-сервісу — soft-delete замість DELETE, щоб:
     //   - лишити endpoint у таблиці для analytics (кількість відпадінь);
-    //   - якщо браузер знову з'явиться з тим самим endpoint у subscribe,
+    //   - якщо браузер знову зʼявиться з тим самим endpoint у subscribe,
     //     просто очистимо deleted_at (див. `subscribe` вище) без втрати keys.
     await pool.query(
       `UPDATE push_subscriptions

@@ -9,7 +9,7 @@ function isPerfEnabled(): boolean {
   // Раніше був try/catch навколо `localStorage.getItem("hub_perf")` —
   // приватний режим Safari / quota wedge кидають. `safeReadStringLS`
   // вже повертає `null` у всіх цих випадках (див.
-  // shared/lib/storage/storage.ts) і жодного об'єкта не кидає,
+  // shared/lib/storage/storage.ts) і жодного обʼєкта не кидає,
   // тому семантика є біт в біт тою ж, що була.
   return safeReadStringLS("hub_perf") === "1";
 }

@@ -58,7 +58,7 @@ export interface RecallInput {
   caller?: RecallCaller | undefined;
 }
 
-/** Поверхні, що ходять у пам'ять. Літерали, а не `string`, щоб мітка не розповзлась. */
+/** Поверхні, що ходять у памʼять. Літерали, а не `string`, щоб мітка не розповзлась. */
 export type RecallCaller = "chat-rag" | "forget-preview" | "explicit-recall";
 
 /**
@@ -70,7 +70,7 @@ export type RecallCaller = "chat-rag" | "forget-preview" | "explicit-recall";
  * відповіддю в сенсі якості пошуку. Інлайн неминуче доповз би й туди, і
  * метрика показувала б відсутність згоди як поганий retrieval.
  *
- * Логуємо число, не текст — вміст пам'яті це персональні дані (Hard Rule #21).
+ * Логуємо число, не текст — вміст памʼяті це персональні дані (Hard Rule #21).
  * `queryLen` замість самого запиту з тієї ж причини.
  */
 function recordRecallQuality(
@@ -223,7 +223,7 @@ export function createAiMemoryService(
       // зі sourceRef!=null уже дедупляться через (user,source,sourceRef) upsert,
       // тож їх не чіпаємо. Переюзуємо ВЖЕ пораховані `embeddings[i]` — dedup-query
       // йде лише в pgvector, БЕЗ додаткового Voyage-виклику. Fail-open: якщо
-      // similarity-query впав, пишемо запис (краще дубль, ніж втрата пам'яті).
+      // similarity-query впав, пишемо запис (краще дубль, ніж втрата памʼяті).
       const dedupThreshold = env.AI_MEMORY_DEDUP_THRESHOLD;
       let finalWrites = writes;
       if (dedupThreshold > 0) {

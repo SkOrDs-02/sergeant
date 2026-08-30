@@ -1,6 +1,6 @@
 # Playbook: Додати feature flag
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-27.
+> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-24.
 > **Status:** Active
 
 **Trigger:** «Сховай фічу X за прапорцем» / будь-яка нова експериментальна фіча, яку треба вмикати/вимикати без редеплою.
@@ -78,7 +78,7 @@ it("hides new feature when flag is off", () => {
 
 ### 5. Створи PR
 
-- Гілка: `devin/<unix-ts>-feat-<flag-name>` або `<author>/<flag-name>`
+- Гілка: `<harness>/feat-<flag-name>` або `<author>/<flag-name>`
 - Commit: `feat(<module>): add <flag_name> feature flag`
 - Опис PR має містити:
   - Критерій випуску прапорця (`defaultValue → true`): яка метрика / який feedback користувачів

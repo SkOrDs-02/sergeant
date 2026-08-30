@@ -8,7 +8,7 @@ import type { Habit } from "../lib/types";
  * (канон `routine.md` §4/§5): виконано / не зміг з причиною / мовчазний
  * пропуск прощений заморозкою / планована пауза / не за розкладом. Дані
  * рахує `flexibleStreakBreakdown` (`packages/routine-domain`) — сторі лише
- * підбирають фікстури, що проганяють усі п'ять станів.
+ * підбирають фікстури, що проганяють усі пʼять станів.
  */
 const meta: Meta<typeof HabitStreakCanvas> = {
   title: "Routine / HabitStreakCanvas",
@@ -46,7 +46,7 @@ const mixedSkips: Record<string, HabitSkip> = {
   "2026-07-24": { reason: "busy", at: "2026-07-24T09:00:00.000Z" },
 };
 
-/** Усі п'ять станів (+ сьогоднішній `pending`) в одному вікні. */
+/** Усі пʼять станів (+ сьогоднішній `pending`) в одному вікні. */
 export const AllStates: Story = {
   args: {
     habit: weekdaysHabit,
@@ -56,7 +56,7 @@ export const AllStates: Story = {
   },
 };
 
-/** Проста суцільна серія без м'яких днів — лише «виконано». */
+/** Проста суцільна серія без мʼяких днів — лише «виконано». */
 export const CleanStreak: Story = {
   args: {
     habit: { ...weekdaysHabit, pauseIntervals: undefined },

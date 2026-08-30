@@ -33,7 +33,7 @@
  *   counter («N конфліктів»), а не повний список, тому FIFO-витискання
  *   не міняє UX.
  *
- * - **No persistence (yet).** Конфлікти живуть лише у пам'яті вкладки.
+ * - **No persistence (yet).** Конфлікти живуть лише у памʼяті вкладки.
  *   Якщо юзер закриє таб до dismiss — конфлікт зникне, наступний push
  *   або pull (PR #044+) їх відновить. Persistence у `localStorage`
  *   додамо коли підключимо реальний sync-v2 client (поза скоупом #044).
@@ -49,9 +49,15 @@ export interface FinykManualExpenseConflict {
   /**
    * Server-reported rejection reason. `lww_conflict` означає, що
    * локальний `clientTs` старіший за серверний `updated_at` —
-   * cloud має свіжішу версію. `tombstoned` означає, що рядок
-   * soft-deleted на сервері, а ми спробували insert/update —
-   * resurrection guard сработав.
+   * cloud має свіжішу версію.
+   *
+   * `tombstoned` ВИВЕДЕНО З ОБІГУ: серверне правило «видалення
+   * остаточне» знято (`guardUuidPkApply` в
+   * `apps/server/src/modules/sync/applySync-helpers.ts`), і новіший запис
+   * тепер воскрешає soft-deleted рядок за звичайним LWW. Значення
+   * лишається в юніоні навмисно — web і server деплояться окремо, тож
+   * старий сервер за проксі ще може його прислати. Нових продюсерів не
+   * додавай.
    */
   readonly reason: FinykManualExpenseConflictReason;
   /**

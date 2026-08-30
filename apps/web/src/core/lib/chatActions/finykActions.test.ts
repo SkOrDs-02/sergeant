@@ -770,7 +770,7 @@ describe("create_transaction · undo", () => {
     expect(after).toHaveLength(0);
   });
 
-  it("undo не зачіпає інші транзакції що з'явились пізніше", () => {
+  it("undo не зачіпає інші транзакції що зʼявились пізніше", () => {
     const first = handleFinykAction({
       name: "create_transaction",
       input: { amount: 50, description: "перша" },

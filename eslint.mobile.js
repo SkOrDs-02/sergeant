@@ -44,6 +44,19 @@ export const mobileBlocks = [
       "sergeant-design/no-raw-local-storage": "error",
     },
   },
+  // Tone-of-voice канону `docs/01-product/copy/style-guide.uk.md` — той самий
+  // гейт, що у web. Mobile тримаємо під ним із першого дня: аудит копії
+  // 2026-08-26 знайшов саме тут більшість формального «Ви» (19 рядків проти
+  // 15 у web), бо поверхня молодша й ніколи не проходила ToV-ревʼю.
+  {
+    files: [
+      "apps/mobile/src/**/*.{js,jsx,ts,tsx}",
+      "apps/mobile/app/**/*.{js,jsx,ts,tsx}",
+    ],
+    rules: {
+      "sergeant-design/ukrainian-copy": "error",
+    },
+  },
   // Mirror of the web umbrella ban for the mobile app — Metro tolerates
   // `node:fs` shims today, but the latent dual breakage (audit §8) means
   // we lock all client-side surfaces to the safe sub-segments.

@@ -136,7 +136,7 @@ const HeroCardImpl = function HeroCard({
               />
               <span className="text-hero-ink"> · </span>
               <span>Борги </span>
-              {/* Борг подається від'ємним, а не мінусом у розмітці: знак —
+              {/* Борг подається відʼємним, а не мінусом у розмітці: знак —
                   властивість суми, і Money набирає його окремим тиром. */}
               <Money
                 amount={-totalDebt}

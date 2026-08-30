@@ -40,7 +40,7 @@ export function CategoryFilterSheet({
       open={open}
       onClose={onClose}
       title="Фільтр по категорії"
-      description="Оберіть категорію (включно з MCC-категоріями за замовчуванням), щоб показати лише транзакції з нею."
+      description="Обери категорію (включно з MCC-категоріями за замовчуванням), щоб показати лише транзакції з нею."
     >
       <ScrollView
         contentContainerStyle={{ paddingBottom: 16, gap: 4 }}

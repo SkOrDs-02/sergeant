@@ -33,6 +33,7 @@ import {
 } from "@nutrition/lib/nutritionStorage";
 import { calcFinykPeriodAggregate } from "@sergeant/finyk-domain";
 import { calcRoutinePeriodCompletion } from "@sergeant/routine-domain/period-completion";
+import { dateKeyFromDate } from "@sergeant/routine-domain";
 import { calcNutritionPeriodAverages } from "@sergeant/nutrition-domain";
 import type { MonthlyPlan } from "@finyk/hooks/useStorage.types";
 
@@ -45,10 +46,9 @@ interface Category {
   mccs?: number[];
 }
 
-function localDateKey(d = new Date()): string {
-  // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- pre-existing kyiv-time burndown (Theme 1), out of scope for this routine-source fix
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
+// Device-local day key (ADR-0078) — делегат до канонічного `dateKeyFromDate`
+// з `@sergeant/routine-domain` замість колишньої інлайн-копії.
+const localDateKey = (d: Date = new Date()): string => dateKeyFromDate(d);
 
 // `getWeekKey` lives in `@sergeant/shared` now (DOM-free, reused by
 // mobile); re-exported here so existing call-sites keep their import
@@ -429,6 +429,9 @@ async function generateWeeklyDigest(weekKey: string): Promise<{
   // `isApiError(query.error)`.
   const json = await weeklyDigestApi.generate({
     weekRange: currentWeekRange,
+    // Канонічний ключ тижня для ai_memories.source_ref (сервер падає назад
+    // на weekRange лише для старих бандлів без цього поля).
+    weekKey,
     // AI-CONTEXT: провенанс методики (ADR-0079 §3-§4). Числа вище пораховані
     // агрегаторами цього бандла, тож дайджест штампується версією, чинною на
     // момент підрахунку. Без цього штампу коуч, який тримає 8 тижнів,
@@ -487,6 +490,15 @@ export function useWeeklyDigest(selectedWeekKey?: string) {
   const weekKey = selectedWeekKey || currentWeekKey;
   const weekRange = getWeekRange(new Date(weekKey + "T12:00:00"));
   const isCurrentWeek = weekKey === currentWeekKey;
+  // Минулий (щойно завершений) тиждень теж генерується: понеділковий
+  // авто-звіт підбиває САМЕ його, а ручна кнопка дає перегенерувати
+  // неповний недільний знімок повними даними. Старіші тижні лишаються
+  // read-only: їхні локальні дані вже могли поїхати, і звіт брехав би.
+  const previousWeekKey = getWeekKey(
+    new Date(new Date(currentWeekKey + "T12:00:00").getTime() - 7 * 86_400_000),
+  );
+  const isPreviousWeek = weekKey === previousWeekKey;
+  const canGenerate = isCurrentWeek || isPreviousWeek;
 
   const query = useQuery({
     queryKey: weeklyDigestQueryKey(weekKey),
@@ -516,7 +528,7 @@ export function useWeeklyDigest(selectedWeekKey?: string) {
 
       try {
         // Кореляції рахуються кодом (не LLM) з локальних даних усіх модулів —
-        // коуч отримує «помічені зв'язки» без окремого виклику моделі (WP3).
+        // коуч отримує «помічені звʼязки» без окремого виклику моделі (WP3).
         const correlations = buildDigestCorrelations();
         coachApi
           .postMemory({
@@ -531,7 +543,7 @@ export function useWeeklyDigest(selectedWeekKey?: string) {
           .catch((err: unknown) => {
             // non-fatal, але без логу не було видно серверних збоїв у
             // персоналізованому coach-контексті — digest генерувався, а
-            // пам'ять мовчки не оновлювалася.
+            // памʼять мовчки не оновлювалася.
             logger.warn("[weeklyDigest] coachApi.postMemory failed", err);
           });
       } catch {
@@ -554,7 +566,7 @@ export function useWeeklyDigest(selectedWeekKey?: string) {
   const { mutateAsync } = mutation;
 
   const generate = useCallback(async () => {
-    if (!isCurrentWeek) return null;
+    if (!canGenerate) return null;
     try {
       const result = await mutateAsync(weekKey);
       return {
@@ -566,7 +578,7 @@ export function useWeeklyDigest(selectedWeekKey?: string) {
     } catch {
       return null;
     }
-  }, [weekKey, isCurrentWeek, mutateAsync]);
+  }, [weekKey, canGenerate, mutateAsync]);
 
   const insufficientData = isInsufficientDataError(mutation.error);
 
@@ -587,5 +599,6 @@ export function useWeeklyDigest(selectedWeekKey?: string) {
     weekRange,
     generate,
     isCurrentWeek,
+    canGenerate,
   };
 }

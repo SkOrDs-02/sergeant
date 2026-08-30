@@ -77,6 +77,7 @@ import type { RequestOptions } from "../types";
  *   - `POST /api/silpo/cart/apply`  → `cartApply()` — confirm-before-write;
  *     зіпсований `lagerId` → 400 `VALIDATION` ДО будь-якого мережевого
  *     виклику (декодиться на сервері перш ніж торкнутись MCP).
+ *   - `POST /api/silpo/cart/clear`  → `cartClear()` — спорожнити кошик;
  *   - `GET  /api/silpo/cart`        → `cartGet()` — порожній кошик
  *     деградує до `{items: [], totalKop: 0, cartUrl: null}`, не помилки.
  */
@@ -124,7 +125,7 @@ export interface SilpoReceiptsListParams {
 export interface SilpoEndpoints {
   /**
    * `POST /api/silpo/disconnect` — видаляє лише `silpo_connection` (mono-
-   * патерн); чеки/items/зв'язки лишаються.
+   * патерн); чеки/items/звʼязки лишаються.
    */
   disconnect: (
     opts?: Pick<RequestOptions, "signal">,
@@ -208,6 +209,12 @@ export interface SilpoEndpoints {
     opts?: Pick<RequestOptions, "signal">,
   ) => Promise<SilpoCartDto>;
   /**
+   * `POST /api/silpo/cart/clear` — спорожнити зовнішній кошик. Тіла немає:
+   * кошик у користувача один. Повертає пост-write стан (форма `cartGet()`);
+   * акаунт без кошика взагалі — теж успіх із порожнім станом.
+   */
+  cartClear: (opts?: Pick<RequestOptions, "signal">) => Promise<SilpoCartDto>;
+  /**
    * `GET /api/silpo/cart` — поточний стан кошика. Порожній кошик →
    * `{items: [], totalKop: 0, cartUrl: null}`, не помилка.
    */
@@ -282,6 +289,12 @@ export function createSilpoEndpoints(http: HttpClient): SilpoEndpoints {
     cartApply: async (selections, { signal } = {}) => {
       const body = SilpoCartApplyRequestSchema.parse({ selections });
       const raw = await http.post<unknown>("/api/silpo/cart/apply", body, {
+        signal,
+      });
+      return SilpoCartDtoSchema.parse(raw);
+    },
+    cartClear: async ({ signal } = {}) => {
+      const raw = await http.post<unknown>("/api/silpo/cart/clear", undefined, {
         signal,
       });
       return SilpoCartDtoSchema.parse(raw);

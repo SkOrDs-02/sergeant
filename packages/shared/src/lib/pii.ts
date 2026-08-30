@@ -100,6 +100,16 @@ export const REDACT_KEY_NAMES: readonly string[] = [
   "anthropicKey",
   "voyageKey",
   "silpoToken",
+  // Class B-adjacent — вміст розмови з асистентом (B43,
+  // `docs/90-work/audits/ai-testing-2026-08-25.md`). Сюди беремо ЛИШЕ
+  // однозначно чат-специфічні імена: вони не зустрічаються ніде, крім
+  // payload-у асистента, тож матч на будь-якій глибині безпечний.
+  // `content`/`messages`/`context` НЕ додаємо навмисно — це найуживаніші
+  // імена полів у діагностиці взагалі, і глобальний deny на них засліпив
+  // би логи; для них у сервера є прицільні `req.body.*` шляхи
+  // (`apps/server/src/obs/logger.ts`).
+  "tool_calls_raw",
+  "tool_results",
   // Class B — personal identifiers (GDPR PII).
   "email",
   "phone",

@@ -120,7 +120,7 @@ describe("lookupReceiptHandler", () => {
     expect(body.draft["fiscalNum"]).toBe(VALID_BODY.fn);
   });
 
-  it("передає всі п'ять полів body у fetchDpsCheckXml", async () => {
+  it("передає всі пʼять полів body у fetchDpsCheckXml", async () => {
     dpsMocks.fetchDpsCheckXml.mockResolvedValueOnce({
       status: "ok",
       xml: VALID_XML,

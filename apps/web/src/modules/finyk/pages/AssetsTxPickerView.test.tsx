@@ -435,7 +435,7 @@ describe("AssetsTxPickerView", () => {
       />,
     );
     const maskedAmounts = screen.getAllByRole("button", {
-      name: /Прихована сума, натисніть щоб показати/,
+      name: /Прихована сума, натисни, щоб показати/,
     });
     expect(maskedAmounts.length).toBeGreaterThan(0);
     expect(maskedAmounts[0]).toHaveStyle({ filter: "blur(5px)" });

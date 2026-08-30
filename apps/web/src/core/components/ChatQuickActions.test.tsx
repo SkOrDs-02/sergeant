@@ -64,7 +64,7 @@ describe("ChatQuickActions", () => {
       "chat-quick-action-morning_briefing",
     ) as HTMLButtonElement;
     expect(briefing.disabled).toBe(true);
-    expect(briefing.getAttribute("title")).toMatch(/з'єднання/i);
+    expect(briefing.getAttribute("title")).toMatch(/зʼєднання/i);
   });
 
   it("кнопка «Ще» розгортає прихований список", () => {

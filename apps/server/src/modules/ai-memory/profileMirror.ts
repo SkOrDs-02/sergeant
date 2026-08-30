@@ -8,14 +8,14 @@
  * порожнім" — ingestion-hook приземляється тут. Мета: `ragContext.ts`
  * автоматично вкидає top-K схожих `ai_memories` записів у system prompt на
  * кожному першому чат-турі, але дивиться ЛИШЕ у `ai_memories`. Явно заявлені
- * факти з локального «банку пам'яті» (`hub_user_profile_v1`, дзеркальований
+ * факти з локального «банку памʼяті» (`hub_user_profile_v1`, дзеркальований
  * серверним `user_profile` з міграції 115 — `apps/web/src/core/profile/
  * profileWriteThrough.ts`) для нього невидимі, доки хтось не embed-ить їх
  * туди. Цей модуль — той хтось.
  *
- * Роль аналогічна `eventSync.ts` (product-events → `ai_memories`), стиль
- * і межі — ті самі: pure diff-логіка тестується без DB/Voyage, DB/Voyage
- * ходить лише у `mirrorProfileMemoryEntries`.
+ * Межі: pure diff-логіка тестується без DB/Voyage, DB/Voyage ходить
+ * лише у `mirrorProfileMemoryEntries`. (Історична рідня — eventSync.ts,
+ * PostHog-дзеркало; знято 2026-08-29.)
  *
  * ─── Idempotency (ПАСТКА 1 задачі) ─────────────────────────────────────
  *
@@ -37,11 +37,11 @@
  * HARD DELETE (`DELETE FROM ai_memories WHERE ...`), без огляду на
  * `deleted_at` — той самий вибір, що вже задокументований у
  * `listRoute.ts` для user-facing видалення ("рішення founder-а
- * 2026-07-25: Зникає назавжди"). М'яке видалення (`deleted_at`, міграція
+ * 2026-07-25: Зникає назавжди"). Мʼяке видалення (`deleted_at`, міграція
  * 067) існує лише для founder-ового `/forget` у Telegram
  * (`forget.ts`) — інша авдиторія, інший власник, інша обіцянка.
  *
- * Тому запит "наявних рядків" нижче ОБОВ'ЯЗКОВО фільтрує
+ * Тому запит "наявних рядків" нижче ОБОВʼЯЗКОВО фільтрує
  * `deleted_at IS NULL`: якщо founder колись `/forget`-нув чийсь
  * `profile`-рядок (technically можливо — `forgetById` не фільтрує по
  * `source`), без цього фільтра діф вважав би факт "наявним" і НЕ
@@ -89,7 +89,7 @@ const PROFILE_SOURCE: MemorySource = "profile";
  * Стеля на кількість фактів, які дзеркалюються за ОДИН виклик (ПАСТКА 3).
  * `UserProfilePayloadSchema` (16KB) технічно вміщує ~400 коротких фактів,
  * але кожен НОВИЙ/ЗМІНЕНИЙ факт — окремий Voyage embed-виклик. 200 —
- * розумна стеля: нормальний інтерв'ю-профіль має ~10-30 фактів
+ * розумна стеля: нормальний інтервʼю-профіль має ~10-30 фактів
  * (докстрінг 025), а стеля захищає від навмисно роздутого payload-а
  * (badly-behaved client / зловмисник із валідною сесією).
  */
@@ -185,7 +185,7 @@ function normalizeEntry(item: unknown): NormalizedProfileMemoryEntry | null {
  * колонкової схеми (міграція 115), і biometrics-only PUT з майбутнього/
  * легасі клієнта, який про `memoryBank` не знає, не повинен трактуватись
  * як "видали все" — інакше один PUT з чужого клієнта міг би мовчки
- * стерти чиюсь пам'ять.
+ * стерти чиюсь памʼять.
  */
 function extractIncomingEntries(profile: unknown): unknown[] | null {
   if (!profile || typeof profile !== "object" || Array.isArray(profile)) {
@@ -446,9 +446,8 @@ export async function mirrorProfileMemoryEntries(
       // відповідь на час embed-у кожного нового чи зміненого факту.
       // Інтерактивний шлях платив би за фонову роботу.
       //
-      // `enqueueMemoryIngest` — той самий шлях, яким уже ходять інші
-      // server-side хуки (`recordProductMemoryEvent` у `eventSync.ts`), і
-      // він дешевий: push у Redis. Без Redis (local dev / CI / інцидент)
+      // `enqueueMemoryIngest` — той самий шлях, яким ходять server-side
+      // хуки (finyk-webhook, digest), і він дешевий: push у Redis. Без Redis (local dev / CI / інцидент)
       // черга сама падає у `runDirectDispatch`, тобто поведінка дорівнює
       // прямому виклику — факти не губляться, лише зникає асинхронність.
       //

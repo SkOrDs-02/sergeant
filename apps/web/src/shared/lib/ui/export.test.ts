@@ -75,7 +75,7 @@ describe("arrayToCSV", () => {
     expect(csv).toContain("coffee");
   });
 
-  it("nested key для рядка без вкладеного об'єкта — пустий рядок", () => {
+  it("nested key для рядка без вкладеного обʼєкта — пустий рядок", () => {
     // У третій row немає meta, тож тег має бути порожній.
     const csv = arrayToCSV(rows, columns);
     const last = csv.split("\n").at(-1)!;

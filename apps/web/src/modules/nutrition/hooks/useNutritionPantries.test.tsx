@@ -102,7 +102,7 @@ describe("useNutritionPantries", () => {
         result.current.parsePantry();
       });
 
-      // Розібране НЕ потрапляє в комору одразу — спершу прев'ю.
+      // Розібране НЕ потрапляє в комору одразу — спершу превʼю.
       await waitFor(() => {
         expect(result.current.parsePreview?.items.length).toBe(2);
       });

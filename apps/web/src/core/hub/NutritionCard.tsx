@@ -8,9 +8,13 @@ import { Icon } from "@shared/components/ui/Icon";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
-import { getKyivDateParts, parseKyivDate } from "@shared/lib/time/kyivTime";
 import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
 import { loadNutritionLog } from "@nutrition/lib/nutritionStorage";
+import {
+  formatChartLabel,
+  formatChartTooltip,
+  labelStep,
+} from "./reportChartLabels";
 import {
   aggregateKcal,
   getPeriodRange,
@@ -50,31 +54,10 @@ function BarChart({
     );
   }
 
-  function labelStep(count: number) {
-    if (count <= 7) return 1;
-    if (count <= 15) return 2;
-    return Math.ceil(count / 8);
-  }
   const step = labelStep(dates.length);
-
-  function formatLabel(dateStr: string) {
-    // `dateStr` is a `YYYY-MM-DD` Kyiv day-key; read its calendar parts
-    // in Europe/Kyiv (kyivTime) rather than host-local `getDay/getDate`,
-    // so labels never drift on a roaming clock (domain-invariants spec).
-    const parts = getKyivDateParts(parseKyivDate(dateStr) ?? new Date(dateStr));
-    if (isWeek) {
-      const dayNames = ["Нд", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
-      return dayNames[parts.weekday];
-    }
-    return String(parts.day);
-  }
-
-  function formatTooltip(dateStr: string, value: number) {
-    const parts = getKyivDateParts(parseKyivDate(dateStr) ?? new Date(dateStr));
-    const day = String(parts.day).padStart(2, "0");
-    const month = String(parts.month).padStart(2, "0");
-    return `${day}.${month}: ${formatNumberUk(value)}${unit}`;
-  }
+  const formatLabel = (dateStr: string) => formatChartLabel(dateStr, isWeek);
+  const formatTooltip = (dateStr: string, value: number) =>
+    formatChartTooltip(dateStr, value, unit);
 
   const selectedDate = selected !== null ? dates[selected] : undefined;
   const selectedVal = selected !== null ? vals[selected] : undefined;

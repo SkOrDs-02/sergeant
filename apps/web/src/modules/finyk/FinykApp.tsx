@@ -98,6 +98,9 @@ export default function App({
   const showBalance = storage.showBalance;
   const setShowBalance = storage.setShowBalance;
   const [showExpenseSheet, setShowExpenseSheet] = useState(false);
+  // Аркуш масового імпорту живе тут, а не в `FinykScanEntryPoints`: його
+  // відкривають два входи — FAB і плашка нагадування в Огляді.
+  const [showBulkImport, setShowBulkImport] = useState(false);
   const [showLoginOverlay, setShowLoginOverlay] = useState(false);
   const loginOverlayRef = useRef<HTMLDivElement>(null);
   useDialogFocusTrap(showLoginOverlay, loginOverlayRef, {
@@ -139,9 +142,9 @@ export default function App({
   // AI-CONTEXT: тут БУВ одноразовий ефект, що з `/finyk` кидав першого
   // користувача на `/finyk/budgets` (фінплан). Аудит зафіксував це як
   // розбіжність A2 — канон finyk §8 каже, що bank-connected і manual-only
-  // рівноправні, а редірект нав'язував третій сценарій, якого не обирав
+  // рівноправні, а редірект навʼязував третій сценарій, якого не обирав
   // ніхто. Founder ухвалив 2026-07-25: перший вхід — **порожній екран
-  // finyk із ненав'язливими підказками**, ні budgets-first, ні екран
+  // finyk із ненавʼязливими підказками**, ні budgets-first, ні екран
   // вибору режиму. Тому редіректу більше немає: користувач лишається на
   // default-сторінці `overview`, яка при нульових даних показує
   // `ModuleEmptyState`. Прапорець first-run НЕ видалено — він і далі
@@ -225,6 +228,7 @@ export default function App({
             storage={storage}
             onNavigate={navigate}
             showBalance={showBalance}
+            onOpenBulkImport={() => setShowBulkImport(true)}
           />
         </SectionErrorBoundary>
       );
@@ -425,6 +429,8 @@ export default function App({
             storage={storage}
             onReceiptLinked={receiptLinks.recordReceiptLink}
             customCategories={storage.customCategories}
+            bulkImportOpen={showBulkImport}
+            onBulkImportOpenChange={setShowBulkImport}
           />
         )}
 

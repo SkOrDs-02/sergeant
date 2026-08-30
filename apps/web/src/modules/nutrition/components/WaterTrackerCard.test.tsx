@@ -54,7 +54,7 @@ describe("WaterTrackerCard", () => {
 
   it("adds a custom amount and shows undo", () => {
     render(<WaterTrackerCard goalMl={2000} />);
-    const input = screen.getByLabelText("Свій об'єм у мл");
+    const input = screen.getByLabelText("Свій обʼєм у мл");
     fireEvent.change(input, { target: { value: "350" } });
     fireEvent.click(screen.getByText("+ Додати"));
     expect(add).toHaveBeenCalledWith(350);
@@ -66,7 +66,7 @@ describe("WaterTrackerCard", () => {
 
   it("adds a custom amount on Enter", () => {
     render(<WaterTrackerCard goalMl={2000} />);
-    const input = screen.getByLabelText("Свій об'єм у мл");
+    const input = screen.getByLabelText("Свій обʼєм у мл");
     fireEvent.change(input, { target: { value: "250" } });
     fireEvent.keyDown(input, { key: "Enter" });
     expect(add).toHaveBeenCalledWith(250);
@@ -81,7 +81,7 @@ describe("WaterTrackerCard", () => {
 
   it("ignores a non-positive custom amount", () => {
     render(<WaterTrackerCard goalMl={2000} />);
-    const input = screen.getByLabelText("Свій об'єм у мл");
+    const input = screen.getByLabelText("Свій обʼєм у мл");
     fireEvent.change(input, { target: { value: "0" } });
     // Button disabled → click does nothing.
     fireEvent.click(screen.getByText("+ Додати"));

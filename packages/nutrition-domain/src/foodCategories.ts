@@ -7,6 +7,14 @@ export interface FoodCategory {
    */
   iconName: string;
   keywords: readonly string[];
+  /**
+   * Чи згортати назву з чека до родової (`genericFoodName`).
+   *
+   * Вимкнено там, де бренд змінює суть продукту: Red Bull це не Burn, а
+   * «Кола Zero» не «Кола». У решті категорій бренд — шум, який плодить
+   * дублі позицій.
+   */
+  collapseBrand: boolean;
 }
 
 export interface GroupedCategoryBucket<T = unknown> {
@@ -14,11 +22,151 @@ export interface GroupedCategoryBucket<T = unknown> {
   items: Array<{ item: T; idx: number }>;
 }
 
+/**
+ * AI-DANGER: ПОРЯДОК масиву — значуща частина поведінки, не косметика.
+ * `categorizeFood` віддає ПЕРШИЙ збіг за ключовим словом, тож перестановка
+ * записів мовчки перекидає продукти між категоріями. Порядок покритий
+ * тестом (`foodCategories.test.ts` § «порядок каталогу»); ламаючи його,
+ * ти ламаєш і тест.
+ *
+ * Чому саме такий порядок — три залежності, кожна з реального чека:
+ *  - `sweets_snacks` перед `drinks`: «шоколад» містить підрядок «кола»;
+ *  - `sauces` перед `nuts_seeds`: «Паста арахісова» — соус, не горіхи;
+ *  - `nuts_seeds` перед `vegetables`: «Насіння Roni гарбуза» — не овоч;
+ *  - `ready_meals` перед `meat_fish`: «Котлети курячі» — готова страва.
+ */
 export const FOOD_CATEGORIES: readonly FoodCategory[] = [
+  {
+    id: "sweets_snacks",
+    label: "Солодощі та снеки",
+    iconName: "sparkle",
+    collapseBrand: false,
+    keywords: [
+      "цукерк",
+      "шоколад",
+      "печив",
+      "вафл",
+      "морозиво",
+      "чіпс",
+      "снек",
+      "крекер",
+      "мармелад",
+      "зефір",
+      "халва",
+      "батончик",
+      "тістечк",
+      "жуйк",
+      "попкорн",
+    ],
+  },
+  {
+    id: "drinks",
+    label: "Напої та вода",
+    iconName: "coffee",
+    collapseBrand: false,
+    keywords: [
+      "напій",
+      "вода",
+      "сік",
+      "кола",
+      "лимонад",
+      "пиво",
+      "кава",
+      "кави",
+      "чай",
+      "енергетик",
+      "мінеральн",
+      "смузі",
+      "компот",
+    ],
+  },
+  {
+    id: "sauces",
+    label: "Соуси та пасти",
+    iconName: "bottle",
+    collapseBrand: true,
+    keywords: [
+      "соус",
+      "кетчуп",
+      "майонез",
+      "гірчиц",
+      "паста",
+      "песто",
+      "хумус",
+      "аджик",
+      "тахін",
+      "сальс",
+      "теріякі",
+    ],
+  },
+  {
+    id: "nuts_seeds",
+    label: "Горіхи та насіння",
+    iconName: "leaf",
+    collapseBrand: true,
+    keywords: [
+      "насіння",
+      "горіх",
+      "мигдал",
+      "кешʼю",
+      "кешью",
+      "фісташ",
+      "арахіс",
+      "фундук",
+      "кедров",
+      "чіа",
+      "кунжут",
+    ],
+  },
+  {
+    id: "ready_meals",
+    label: "Готова кулінарія",
+    iconName: "utensils",
+    collapseBrand: true,
+    keywords: [
+      "котлет",
+      "готов",
+      "кулінар",
+      "суші",
+      "піц",
+      "сендвіч",
+      "шаурм",
+      "бургер",
+      "вареник",
+      "пельмен",
+      "голубц",
+      "млинц",
+      "деруни",
+    ],
+  },
+  {
+    id: "canned",
+    label: "Консерви",
+    iconName: "archive",
+    collapseBrand: true,
+    keywords: [
+      "консерв",
+      "тушонк",
+      "шпрот",
+      "маринован",
+      "квашен",
+      "оливки",
+      "маслини",
+      "паштет",
+    ],
+  },
+  {
+    id: "frozen",
+    label: "Заморожене",
+    iconName: "snowflake",
+    collapseBrand: true,
+    keywords: ["заморож", "морожен", "с/м"],
+  },
   {
     id: "vegetables",
     label: "Овочі",
     iconName: "carrot",
+    collapseBrand: true,
     keywords: [
       "огірок",
       "помідор",
@@ -50,6 +198,7 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
     id: "fruits",
     label: "Фрукти та ягоди",
     iconName: "apple",
+    collapseBrand: true,
     keywords: [
       "яблук",
       "груш",
@@ -79,6 +228,7 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
     id: "meat_fish",
     label: "Мʼясо та риба",
     iconName: "fish",
+    collapseBrand: true,
     keywords: [
       "курк",
       "курч",
@@ -113,6 +263,7 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
     id: "dairy_eggs",
     label: "Молочні та яйця",
     iconName: "egg",
+    collapseBrand: true,
     keywords: [
       "молок",
       "кефір",
@@ -134,6 +285,7 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
     id: "grains",
     label: "Крупи та хліб",
     iconName: "wheat",
+    collapseBrand: true,
     keywords: [
       "рис",
       "гречк",
@@ -161,6 +313,7 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
     id: "pantry",
     label: "Олії, спеції та бакалія",
     iconName: "droplet",
+    collapseBrand: true,
     keywords: [
       "олі",
       "олія",
@@ -178,10 +331,6 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
       "ванілін",
       "сод",
       "розпушувач",
-      "соус",
-      "кетчуп",
-      "майонез",
-      "гірчиц",
     ],
   },
 ];
@@ -191,6 +340,9 @@ const OTHER: FoodCategory = {
   label: "Інше",
   iconName: "package",
   keywords: [],
+  // Останній фолбек: якщо ми не впізнали продукт, то не впізнали й того,
+  // що в його назві бренд, а що суть. Не чіпаємо назву взагалі.
+  collapseBrand: false,
 };
 
 export function categorizeFood(name: unknown): FoodCategory {

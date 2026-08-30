@@ -190,9 +190,9 @@ describe("SilpoReceiptSection", () => {
 
     // Category chips resolved through `resolveExpenseCategoryMeta` after
     // canonicalization: "groceries" → "food" ("Продукти"), plus "health"
-    // ("Здоров'я") and "shopping" ("Покупки").
+    // ("Здоровʼя") and "shopping" ("Покупки").
     expect(await screen.findByText("Продукти")).toBeInTheDocument();
-    expect(screen.getByText("Здоров'я")).toBeInTheDocument();
+    expect(screen.getByText("Здоровʼя")).toBeInTheDocument();
     expect(screen.getByText("Покупки")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Підтвердити спліт" }));
@@ -237,7 +237,7 @@ describe("SilpoReceiptSection", () => {
 
     expect(
       screen.getByText(
-        "У транзакції вже є ручний спліт — підтвердження замінить його.",
+        "У транзакції вже є ручний спліт, підтвердження замінить його.",
       ),
     ).toBeInTheDocument();
   });
@@ -269,7 +269,7 @@ describe("SilpoReceiptSection", () => {
     });
     expect(splitCta).toBeDisabled();
     expect(
-      screen.getByText("Усе — продукти, спліт не потрібен."),
+      screen.getByText("Усе – продукти, спліт не потрібен."),
     ).toBeInTheDocument();
   });
 
@@ -332,7 +332,7 @@ describe("SilpoReceiptSection", () => {
     });
 
     // Позиції чека (39 000 коп.) > списання (19 500 коп.) — знижка «на
-    // касі». Раніше від'ємний remainder з'їдав food-бакет і сума сплітів
+    // касі». Раніше відʼємний remainder зʼїдав food-бакет і сума сплітів
     // перевищувала total; тепер бакети пропорційно масштабуються.
     const { onSplitChange } = renderSection({ transactionAmountKop: 19_500 });
 
@@ -580,7 +580,7 @@ describe("SilpoReceiptSection", () => {
       renderSection({ transactionDescription: "СІЛЬПО №42" });
 
       expect(
-        await screen.findByRole("button", { name: /Зв'язати Сільпо/ }),
+        await screen.findByRole("button", { name: /Звʼязати Сільпо/ }),
       ).toBeInTheDocument();
       expect(mockedReceipts).not.toHaveBeenCalled();
     });
@@ -623,7 +623,7 @@ describe("SilpoReceiptSection", () => {
         await screen.findByRole("button", { name: /Розбити за чеком/ }),
       ).toBeInTheDocument();
       expect(
-        screen.queryByRole("button", { name: /Зв'язати Сільпо/ }),
+        screen.queryByRole("button", { name: /Звʼязати Сільпо/ }),
       ).not.toBeInTheDocument();
     });
 
@@ -631,7 +631,7 @@ describe("SilpoReceiptSection", () => {
       // Регресія: `SILPO_ENABLED=false` — дефолт і поточний стан проду.
       // Умова «будь-що крім connected» показала б цей банер геть усім, а
       // кнопка вела б у налаштування, де написано «Інтеграція ще не
-      // увімкнена». Зв'язати в цьому стані НЕМОЖЛИВО — отже й кликати нема куди.
+      // увімкнена». Звʼязати в цьому стані НЕМОЖЛИВО — отже й кликати нема куди.
       mockedSyncState.mockRejectedValue(
         new ApiError({
           kind: "http",

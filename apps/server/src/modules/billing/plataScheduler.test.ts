@@ -38,8 +38,13 @@ function mockPool(dueRows: ReturnType<typeof dueRow>[]) {
     }
     return { rowCount: 1, rows: [] };
   });
+  // Claim-транзакція йде через виділеного клієнта (`pool.connect()`), як у
+  // gdpr cleanupWorker — mock ділить той самий `query`, щоб assert-и по
+  // `calls` бачили і BEGIN/COMMIT, і SELECT/UPDATE.
+  const release = vi.fn();
+  const connect = vi.fn(async () => ({ query, release }));
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return { pool: { query } as any, calls };
+  return { pool: { query, connect } as any, calls, connect, release };
 }
 
 beforeEach(() => {
@@ -117,12 +122,64 @@ describe("chargeDuePlataSubscriptions", () => {
     delete process.env["MONO_TOKEN_ENC_KEY"];
     const fetchImpl = vi.fn();
     vi.stubGlobal("fetch", fetchImpl);
-    const { pool } = mockPool([dueRow("usr_missing_key", "tok_missing_key")]);
+    const { pool, connect } = mockPool([
+      dueRow("usr_missing_key", "tok_missing_key"),
+    ]);
 
     await expect(chargeDuePlataSubscriptions(pool)).rejects.toThrow(
       /MONO_TOKEN_ENC_KEY/,
     );
     expect(fetchImpl).not.toHaveBeenCalled();
+    // Конфіг-фейл валідовано ДО відкриття транзакції — жодного row-lock-у.
+    expect(connect).not.toHaveBeenCalled();
+  });
+
+  it("claims due rows with FOR UPDATE SKIP LOCKED inside one BEGIN…COMMIT (no double-charge)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(JSON.stringify({ status: "success" }))),
+    );
+    const { pool, calls, release } = mockPool([dueRow("usr_lock", "tok_lock")]);
+
+    await chargeDuePlataSubscriptions(pool);
+
+    const sqls = calls.map((c) => c.sql);
+    expect(sqls[0]).toBe("BEGIN");
+    expect(sqls[sqls.length - 1]).toBe("COMMIT");
+    const select = sqls.find((s) => s.includes("JOIN plata_card_token"));
+    expect(select).toMatch(/FOR UPDATE OF s SKIP LOCKED/);
+    // Charge-UPDATE відбувається МІЖ BEGIN і COMMIT (та сама транзакція).
+    const shiftIdx = sqls.findIndex((s) =>
+      s.includes("current_period_end + INTERVAL '1 month'"),
+    );
+    expect(shiftIdx).toBeGreaterThan(0);
+    expect(shiftIdx).toBeLessThan(sqls.length - 1);
+    expect(release).toHaveBeenCalledTimes(1);
+  });
+
+  it("rolls back and releases the client when the claim transaction fails", async () => {
+    vi.stubGlobal("fetch", vi.fn());
+    const calls: string[] = [];
+    const query = vi.fn(async (sql: string) => {
+      calls.push(sql);
+      if (sql.includes("JOIN plata_card_token")) {
+        throw new Error("connection reset");
+      }
+      return { rowCount: 0, rows: [] };
+    });
+    const release = vi.fn();
+    const pool = {
+      query,
+      connect: vi.fn(async () => ({ query, release })),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any;
+
+    await expect(chargeDuePlataSubscriptions(pool)).rejects.toThrow(
+      /connection reset/,
+    );
+    expect(calls).toContain("ROLLBACK");
+    expect(calls).not.toContain("COMMIT");
+    expect(release).toHaveBeenCalledTimes(1);
   });
 
   it("no-ops when nothing is due", async () => {
@@ -172,8 +229,11 @@ describe("PlataRecurringPoller", () => {
       return { rowCount: 1, rows: [] };
     });
     const poller = new PlataRecurringPoller({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      pool: { query } as any,
+      pool: {
+        query,
+        connect: async () => ({ query, release: vi.fn() }),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any,
       enabled: true,
       intervalMs: 1,
     });

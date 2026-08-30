@@ -173,7 +173,7 @@ export function FirstEntryCelebrationModal({
       role="dialog"
       aria-modal="true"
       // eslint-disable-next-line sergeant-design/no-cyrillic-jsx-literal -- aria-label, pre-existing copy; i18n extraction tracked separately
-      aria-label="Вітаємо!"
+      aria-label="Вітаю!"
       className={cn(
         "fixed inset-0 z-9999 flex items-center justify-center",
         "bg-bg/85 backdrop-blur-md",

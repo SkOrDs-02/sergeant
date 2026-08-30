@@ -78,13 +78,13 @@ describe("AiMemoryList", () => {
     expect(screen.getByText(/Харчування/)).toBeTruthy();
   });
 
-  it("порожня пам'ять → пояснення, а не порожнеча", async () => {
+  it("порожня памʼять → пояснення, а не порожнеча", async () => {
     listAiMemory.mockResolvedValue(page([]));
     renderList();
     expect(await screen.findByText(/Поки що ШІ нічого/)).toBeTruthy();
   });
 
-  it("порожня пам'ять малює спільний <EmptyState> (role=status), не голий <p> (V-14, аудит 2026-08-08)", async () => {
+  it("порожня памʼять малює спільний <EmptyState> (role=status), не голий <p> (V-14, аудит 2026-08-08)", async () => {
     // `findByRole("status")` тут не годиться напряму — стан завантаження
     // теж має `role="status"`, і `findByRole` підхопив би саме його.
     listAiMemory.mockResolvedValue(page([]));

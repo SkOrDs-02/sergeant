@@ -280,7 +280,7 @@ export function BodyAtlas({
             options={MODES}
             value={mode}
             onChange={setMode}
-            ariaLabel="Режим карти м'язів"
+            ariaLabel="Режим карти мʼязів"
           />
         )}
         <div className="flex-1" />
@@ -443,7 +443,7 @@ export function BodyAtlas({
                 return (
                   <g
                     key={m.id}
-                    // Видимий шар — суто картинка для AT (ім'я, стан і
+                    // Видимий шар — суто картинка для AT (імʼя, стан і
                     // клавіатура живуть на hit-шарі вище), але кліки він
                     // ловить сам: прямий тап по тілу мʼяза не має права
                     // дістатись розширеної зони сусіда під ним.

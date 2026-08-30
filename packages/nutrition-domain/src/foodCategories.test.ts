@@ -13,8 +13,8 @@ import {
 } from "./foodCategories.js";
 
 describe("FOOD_CATEGORIES catalog", () => {
-  it("має 6 базових категорій", () => {
-    expect(FOOD_CATEGORIES).toHaveLength(6);
+  it("має 13 базових категорій", () => {
+    expect(FOOD_CATEGORIES).toHaveLength(13);
   });
 
   it("всі id унікальні", () => {
@@ -44,6 +44,13 @@ describe("FOOD_CATEGORIES catalog", () => {
 
   it("експортує очікувані id-и (стабільний контракт для UI)", () => {
     expect(FOOD_CATEGORIES.map((c) => c.id)).toEqual([
+      "sweets_snacks",
+      "drinks",
+      "sauces",
+      "nuts_seeds",
+      "ready_meals",
+      "canned",
+      "frozen",
       "vegetables",
       "fruits",
       "meat_fish",
@@ -51,6 +58,36 @@ describe("FOOD_CATEGORIES catalog", () => {
       "grains",
       "pantry",
     ]);
+  });
+
+  // AI-DANGER: порядок каталогу — поведінка, не косметика. Кожна пара нижче
+  // взята з реального чека Сільпо: переставиш записи — продукт мовчки
+  // переїде в чужу категорію.
+  it.each([
+    ["sweets_snacks", "drinks", "«шоколад» містить підрядок «кола»"],
+    ["sauces", "nuts_seeds", "«Паста арахісова» — соус, не горіхи"],
+    ["nuts_seeds", "vegetables", "«Насіння Roni гарбуза» — не овоч"],
+    ["ready_meals", "meat_fish", "«Котлети курячі» — готова страва"],
+  ])("%s стоїть перед %s (%s)", (first, second) => {
+    const ids = FOOD_CATEGORIES.map((c) => c.id);
+    expect(ids.indexOf(first)).toBeGreaterThanOrEqual(0);
+    expect(ids.indexOf(first)).toBeLessThan(ids.indexOf(second));
+  });
+
+  it("згортання бренду вимкнене там, де бренд змінює суть продукту", () => {
+    const byId = new Map(FOOD_CATEGORIES.map((c) => [c.id, c]));
+    expect(byId.get("drinks")!.collapseBrand).toBe(false);
+    expect(byId.get("sweets_snacks")!.collapseBrand).toBe(false);
+    expect(categorizeFood("щось геть невпізнаване").collapseBrand).toBe(false);
+    for (const id of [
+      "nuts_seeds",
+      "frozen",
+      "canned",
+      "sauces",
+      "ready_meals",
+    ]) {
+      expect(byId.get(id)!.collapseBrand, id).toBe(true);
+    }
   });
 });
 
@@ -83,7 +120,7 @@ describe("categorizeFood", () => {
     ["рис круглозернистий", "grains"],
     ["хліб бородинський", "grains"],
     ["олія соняшникова", "pantry"],
-    ["сіль кам'яна", "pantry"],
+    ["сіль камʼяна", "pantry"],
   ])("'%s' → %s", (input, expectedId) => {
     expect(categorizeFood(input).id).toBe(expectedId);
   });
@@ -99,8 +136,36 @@ describe("categorizeFood", () => {
   });
 
   it("повертає 'other' коли name не містить жодного keyword", () => {
-    expect(categorizeFood("вода").id).toBe("other");
+    expect(categorizeFood("серветки").id).toBe("other");
     expect(categorizeFood("якийсь невідомий продукт").id).toBe("other");
+  });
+
+  // Дефект, який ця спека виправляє: «гарбуз» стоїть у ключових словах
+  // `vegetables`, тож насіння гарбуза лежало в Овочах.
+  it.each([
+    ["Насіння Roni гарбуза", "nuts_seeds"],
+    ["Паста арахісова Лавка традицій Aumi кранч", "sauces"],
+    ["Котлети курячі з кускусом", "ready_meals"],
+    ["Напій енергетичний Red Bull", "drinks"],
+    ["Шоколад молочний", "sweets_snacks"],
+    ["Кока-Кола Zero", "drinks"],
+    ["Оливки зелені без кісточки", "canned"],
+    ["Овочі заморожені", "frozen"],
+  ])("'%s' → %s", (input, expectedId) => {
+    expect(categorizeFood(input).id).toBe(expectedId);
+  });
+
+  // Нові ключові слова легко ловлять чужі продукти як підрядок — ці пари
+  // ловились під час розробки і лишаються сторожами.
+  it.each([
+    ["Виноград", "fruits"],
+    ["Квасоля червона", "vegetables"],
+    ["Олія соняшникова", "pantry"],
+    ["Тортилья пшенична", "grains"],
+    ["Олія оливкова", "pantry"],
+    ["Кавун", "fruits"],
+  ])("'%s' не перехоплюється новою категорією → %s", (input, expectedId) => {
+    expect(categorizeFood(input).id).toBe(expectedId);
   });
 
   it("keyword працює як substring (часткове входження)", () => {
@@ -155,7 +220,11 @@ describe("groupItemsByCategory", () => {
   });
 
   it("неперекласифікований item потрапляє у 'other' bucket (зберігається в кінці порядку)", () => {
-    const items = [{ name: "вода" }, { name: "Огірок" }, { name: "інше щось" }];
+    const items = [
+      { name: "серветки" },
+      { name: "Огірок" },
+      { name: "інше щось" },
+    ];
     const groups = groupItemsByCategory(items);
     const ids = groups.map((g) => g.cat.id);
     expect(ids).toContain("vegetables");

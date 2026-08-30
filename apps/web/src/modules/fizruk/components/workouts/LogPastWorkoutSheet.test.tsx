@@ -60,7 +60,7 @@ describe("LogPastWorkoutSheet", () => {
     const dialog = screen.getByRole("dialog");
     expect(dialog).toHaveAttribute("aria-modal", "true");
     // Портал у `document.body` — саме він рятує від transform-контекстів
-    // предків, через які `position: fixed` прив'язується не до вікна.
+    // предків, через які `position: fixed` привʼязується не до вікна.
     expect(container).not.toContainElement(dialog);
     expect(within(dialog).getByLabelText("Дата")).toBeVisible();
   });

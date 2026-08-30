@@ -61,7 +61,7 @@ export function WorkoutsConfirmDialogs({
       <ConfirmDialog
         open={!!riskyTemplate}
         title="Є жорстке застереження"
-        description="Ти позначив біль або ця група ще має червоний recovery-статус. Ми не радимо її навантажувати. Почати все одно?"
+        description="Ти позначив біль або ця група ще має червоний recovery-статус. Навантажувати її не раджу. Почати все одно?"
         confirmLabel="Так, почати"
         cancelLabel="Скасувати"
         danger={false}

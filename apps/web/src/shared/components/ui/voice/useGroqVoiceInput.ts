@@ -133,7 +133,7 @@ export function useGroqVoiceInput({
             );
             return;
           case "rate_limited":
-            onError?.("Забагато голосових запитів, спробуйте за хвилину.");
+            onError?.("Забагато голосових запитів. Спробуй за хвилину.");
             return;
           case "payload_too_large":
             onError?.("Запис задовгий. Зроби коротшим і повтори.");

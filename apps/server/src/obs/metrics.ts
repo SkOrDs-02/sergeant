@@ -211,6 +211,30 @@ export const aiRequestDurationMs = new client.Histogram({
   registers: [register],
 });
 
+/**
+ * Час до ПЕРШОГО токена стріму (TTFT), мс.
+ *
+ * `ai_request_duration_ms` вище міряє стрім ЦІЛКОМ — від запиту до
+ * останньої події. Для чату це не те число, яке відчуває людина: вона
+ * дивиться на порожній екран рівно доти, доки не приїде перший фрагмент.
+ *
+ * `apps/server/AGENTS.md` декларує SLO «Anthropic /api/chat p95 first token
+ * < 1.5 s», але до цієї метрики TTFT не міряли ніде в ран-таймі — єдиний
+ * замір жив в офлайн-скрипті `scripts/stream-check.ts` (знахідка з
+ * `docs/90-work/audits/ai-testing-2026-08-25.md`, § Телеметрія).
+ *
+ * Бакети щільніші за `ai_request_duration_ms` у зоні до 2 с: саме там
+ * проходить межа SLO, і саме там різниця між моделями вирішальна
+ * (заміряно: flash-lite 365 мс, haiku-4.5 954 мс, sonnet-5 5586 мс).
+ */
+export const aiFirstTokenMs = new client.Histogram({
+  name: "ai_first_token_ms",
+  help: "Time to first streamed token in ms",
+  labelNames: ["provider", "model", "endpoint"],
+  buckets: [100, 250, 500, 750, 1000, 1500, 2000, 3000, 5000, 10000, 30000],
+  registers: [register],
+});
+
 // PR-24: per-LLMProvider invocation counter. Окремо від `ai_requests_total`,
 // бо той вимагає `model`/`endpoint`/`outcome` labels від raw Anthropic-шляху,
 // а тут трекаємо саме provider-abstraction-шар: який provider пішов на call
@@ -500,6 +524,22 @@ export const runtimeKillSwitchActivationsTotal = new client.Counter({
   name: "runtime_kill_switch_activations_total",
   help: "Total runtime kill-switch state transitions",
   labelNames: ["switch", "outcome"], // outcome: activate|reactivate|deactivate
+  registers: [register],
+});
+
+// ───────────────────────── GDPR cleanup queue ─────────────────
+// `gdpr_cleanup_queue` (ADR-0016 § ADR-6.3) дренується in-process полером
+// `modules/gdpr/cleanupPoller.ts`, який семплить цей gauge на кожному tick-у:
+//   * `pending` — completed_at IS NULL (весь недороблений backlog);
+//   * `stuck`   — completed_at IS NULL AND attempts > 5 — audit-предикат
+//     ADR-0016. > 0 тривалий час = vendor-cleanup фейлить підряд або рядок
+//     exhausted (attempts=10, next_attempt_at='infinity') і чекає оператора.
+//     Алерт: `GdprCleanupQueueStuckRows` в ops/prometheus/rules/gdpr.yml.
+// Cardinality: 2 серії — безпечно.
+export const gdprCleanupQueueDepth = new client.Gauge({
+  name: "gdpr_cleanup_queue_depth",
+  help: "gdpr_cleanup_queue rows by state (pending = not completed; stuck = ADR-0016 audit predicate: not completed AND attempts > 5)",
+  labelNames: ["status"], // pending|stuck
   registers: [register],
 });
 

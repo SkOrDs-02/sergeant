@@ -49,6 +49,13 @@ export interface AnthropicCallOptions {
    * відкатом обох. Тепер кожен шлях приносить власну умову.
    */
   allowOpenRouter?: boolean | undefined;
+  /**
+   * Сумарна стеля на ОДИН логічний виклик, включно зі сном між ретраями
+   * (B42). За замовчуванням `timeoutMs * 2`. `timeoutMs` лишається бюджетом
+   * однієї спроби — плутати їх не можна: саме через це 429 з довгим
+   * `retry-after` міг розтягнути «20-секундний» виклик на дві хвилини.
+   */
+  maxTotalMs?: number | undefined;
 }
 
 /**
@@ -325,6 +332,7 @@ async function anthropicMessagesInner(
     promptVersion,
     userId,
     allowOpenRouter,
+    maxTotalMs: maxTotalMsOpt,
   }: AnthropicCallOptions,
   model: string,
 ): Promise<AnthropicMessagesResult> {
@@ -339,6 +347,21 @@ async function anthropicMessagesInner(
   const retryDelayMs = [0, 250, 750];
   const overallStart = process.hrtime.bigint();
 
+  // B42 (`docs/90-work/audits/ai-testing-2026-08-25.md`) — сумарний бюджет.
+  //
+  // `computeRetryDelayMs` клампить сон до `timeoutMs`, але це бюджет ОДНІЄЇ
+  // спроби, не запиту. 429 з `retry-after: 60` при `timeoutMs=60000` давав
+  // 60 с сну плюс свіжий 60-секундний fetch — понад 120 с на один логічний
+  // виклик, тобто рівно за глобальний 120-с ліміт `http/timeout.ts`.
+  //
+  // Дефолт `timeoutMs * 2` — це «одна повна спроба плюс одна повторна»:
+  // більше все одно не встигне, бо далі рубає глобальний таймаут.
+  const maxTotalMs = maxTotalMsOpt ?? timeoutMs * 2;
+  // Нижче цього спроба безглузда: TLS+запит не встигнуть, і ми лише
+  // спалимо квоту провайдера, щоб отримати власний abort.
+  const MIN_USEFUL_ATTEMPT_MS = 1_000;
+  const elapsedMs = () => Number(process.hrtime.bigint() - overallStart) / 1e6;
+
   let lastResponse: Response | null = null;
   let lastData: Record<string, unknown> = {};
 
@@ -350,21 +373,39 @@ async function anthropicMessagesInner(
       recordOutcome("timeout", { model, endpoint, ms });
       throw new DOMException("client disconnected", "AbortError");
     }
+    // Сон ПЕРЕД тим, як озброїти таймер спроби. Доти таймер стартував
+    // раніше за сон, тож довгий `retry-after` зʼїдав увесь бюджет самої
+    // спроби — fetch відрубувався майже одразу після пробудження.
+    const baseDelay = retryDelayMs[attempt - 1] ?? 0;
+    if (baseDelay) {
+      const delay = computeRetryDelayMs({
+        baseMs: baseDelay,
+        timeoutMs,
+        previousResponse: lastResponse,
+      });
+      // Немає бюджету на сон І корисну спробу після нього — далі не йдемо.
+      // Повертаємо останню відповідь (як правило, 429), а не власний abort:
+      // caller побачить справжню причину від провайдера.
+      if (delay + MIN_USEFUL_ATTEMPT_MS > maxTotalMs - elapsedMs()) break;
+      await sleep(delay);
+    }
+
+    // Таймаут спроби не може виходити за сумарний бюджет.
+    //
+    // Перевірка залишку СТОЇТЬ ОКРЕМО від `Math.min` навмисно. Перша версія
+    // писала `Math.max(MIN_USEFUL_ATTEMPT_MS, Math.min(timeoutMs, залишок))`
+    // — і цим РОЗТЯГУВАЛА вичерпаний бюджет: при залишку 1 мс спроба все
+    // одно стартувала з таймаутом 1000 мс, тобто `maxTotalMs` переставав
+    // бути стелею рівно там, де він потрібен (ревʼю CodeRabbit 2026-08-26).
+    // Гілка `break` вище ловила лише випадок зі сном, а перша спроба має
+    // `baseDelay === 0` і крізь неї проходила.
+    const remainingMs = maxTotalMs - elapsedMs();
+    if (remainingMs < MIN_USEFUL_ATTEMPT_MS) break;
+    const attemptTimeoutMs = Math.min(timeoutMs, remainingMs);
     const controller = new AbortController();
-    const t = setTimeout(() => controller.abort(), timeoutMs);
+    const t = setTimeout(() => controller.abort(), attemptTimeoutMs);
     const signal = composeSignal(controller, externalSignal);
     try {
-      const baseDelay = retryDelayMs[attempt - 1] ?? 0;
-      if (baseDelay) {
-        await sleep(
-          computeRetryDelayMs({
-            baseMs: baseDelay,
-            timeoutMs,
-            previousResponse: lastResponse,
-          }),
-        );
-      }
-
       const response = await fetch(transport.url, {
         method: "POST",
         headers: transport.headers,
@@ -416,7 +457,7 @@ async function anthropicMessagesInner(
 
 /**
  * Стрімова версія Anthropic Messages API. Викликає fetch з `stream: true`,
- * інструментує outcome/latency (розмір відповіді = час до закриття з'єднання),
+ * інструментує outcome/latency (розмір відповіді = час до закриття зʼєднання),
  * і повертає `{ response, recordStreamEnd }`. Викликай `recordStreamEnd(outcome?)`
  * коли боді повністю спожите (або з помилкою) щоб закрити latency-вимір.
  *

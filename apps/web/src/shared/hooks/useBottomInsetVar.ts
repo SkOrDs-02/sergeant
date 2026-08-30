@@ -1,7 +1,7 @@
 import { useLayoutEffect, type RefObject } from "react";
 
 /**
- * Публікує «скільки пікселів знизу в'юпорта займає цей елемент» у CSS-змінну
+ * Публікує «скільки пікселів знизу вʼюпорта займає цей елемент» у CSS-змінну
  * на `<html>`, щоб її бачили **fixed**-шари з іншої гілки дерева.
  *
  * AI-CONTEXT: навіщо взагалі ref на `<html>`, коли є `--bottom-nav-height`.
@@ -19,11 +19,11 @@ import { useLayoutEffect, type RefObject } from "react";
  * треку (60/64 px), бордера і `padding-bottom: env(safe-area-inset-bottom)`,
  * і всі три вже двічі розходилися з ручним `calc()` (round-3 UI-аудит).
  * `window.innerHeight - rect.top` дає рівно зайняту смугу — і коректно
- * зводиться до ~0, коли навігація з'їхала за екран (`translate-y-full` під
+ * зводиться до ~0, коли навігація зʼїхала за екран (`translate-y-full` під
  * відкритою клавіатурою).
  *
  * @param ref елемент, чию нижню смугу треба опублікувати
- * @param varName ім'я CSS-змінної (`--sgt-*`)
+ * @param varName імʼя CSS-змінної (`--sgt-*`)
  * @param active `false` → змінна знімається (елемент логічно відсутній)
  */
 export function useBottomInsetVar(

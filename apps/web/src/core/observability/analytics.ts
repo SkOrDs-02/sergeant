@@ -23,7 +23,6 @@
 import { ANALYTICS_EVENTS, scrubPII } from "@sergeant/shared";
 import { capturePostHogEvent } from "./posthog";
 import { containsPII } from "./containsPII";
-import { syncEventToMemory } from "./productMemorySync";
 import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 
 export { ANALYTICS_EVENTS };
@@ -176,15 +175,6 @@ export function trackEvent(
   } catch {
     /* PostHog transport never breaks trackEvent callers */
   }
-  // PR-24 — PostHog → AI memory sync. Дзеркалить allowlist-events до
-  // server-side ingest queue як `source='product'`, щоб `/recall`
-  // мав behavioral context. Fire-and-forget, ніколи не throw-ить.
-  // Server-side allowlist authoritative (`PRODUCT_MEMORY_EVENTS`);
-  // тут — фільтр-shortcut, що пропускає лишні network-trip-и.
-  try {
-    syncEventToMemory(eventName, event.payload as Record<string, unknown>);
-  } catch {
-    /* AI memory sync best-effort — analytics call-site не повинен
-       впасти, якщо fetch() throw-нув на CSP/lock-tab edge-кейсі. */
-  }
+  // PostHog → AI memory дзеркало (PR-24) знято 2026-08-29: продуктові
+  // івенти в ролі «фактів про людину» лише займали місце в RAG top-K.
 }

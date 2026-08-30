@@ -99,7 +99,7 @@ export function ManualExpenseCategorySection({
           // plain field change never re-runs the resolver before the first
           // submit. Switching Витрата ↔ Надходження blanks the category with
           // `shouldValidate: true` (the taxonomies don't overlap), which
-          // paints "Оберіть категорію" immediately — and without an explicit
+          // paints "Обери категорію" immediately — and without an explicit
           // re-validation here that warning stayed on screen even after the
           // user picked a category. Mirrors the amount field's
           // `shouldValidate: Boolean(amountError)` idiom: only re-validate
@@ -119,7 +119,7 @@ export function ManualExpenseCategorySection({
         }}
       >
         <option value="" disabled>
-          Оберіть категорію
+          Обери категорію
         </option>
         {categorySlugs.map((slug) => (
           <option key={slug} value={slug}>

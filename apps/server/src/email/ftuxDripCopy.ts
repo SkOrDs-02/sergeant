@@ -8,14 +8,14 @@
  * лист має одну дію (CTA + контекст) і footer з opt-out-link-ою.
  *
  * Copy-review: KEEP-AS-IS поки founder-friend не схвалить альтернативи
- * (S1.1 в FTUX-плані лишається відкритим). Якщо PR-овий рев'ю просить
+ * (S1.1 в FTUX-плані лишається відкритим). Якщо PR-овий ревʼю просить
  * іншу копію — точкові правки тут, без зачіпання dispatcher-у.
  */
 
 export type FtuxDripDay = "day_0" | "day_1" | "day_3";
 
 export interface FtuxDripTemplateInput {
-  /** Ім'я для звернення; якщо порожнє — використовується нейтральне «Привіт». */
+  /** Імʼя для звернення; якщо порожнє — використовується нейтральне «Привіт». */
   recipientName: string | null;
   /** Абсолютна URL з пре-генерованим HMAC-токеном. */
   unsubscribeUrl: string;

@@ -44,7 +44,7 @@ const NetworthSectionImpl = function NetworthSection({
           className="text-sm text-fg-muted text-center"
           testID="finyk-overview-networth-empty"
         >
-          Ще мало знімків для графіка нетворсу, з’явиться після кількох змін
+          Ще мало знімків для графіка нетворсу, зʼявиться після кількох змін
           балансу.
         </Text>
       </Card>

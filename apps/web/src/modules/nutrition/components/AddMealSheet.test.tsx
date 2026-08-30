@@ -13,6 +13,7 @@ import {
   waitFor,
   within,
 } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AddMealSheet } from "./AddMealSheet";
 
 // ─── Mock heavy sub-components ───────────────────────────────────────────────
@@ -395,6 +396,17 @@ vi.mock("@shared/lib/adapters/haptic", () => ({
 
 // ─── Default props helpers ─────────────────────────────────────────────────
 
+// `FromReceiptRow` — єдина дитина аркуша, що ходить у React Query (чеки
+// Сільпо), і вона НЕ мокається: так тест лишається чесним щодо контракту
+// props, які `SearchTabPanel` їй передає. Без звʼязаної інтеграції рядок
+// рендерить null, тож провайдера з `retry: false` достатньо.
+function QueryWrapper({ children }: { children: React.ReactNode }) {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+}
+
 function renderSheet(
   props: Partial<React.ComponentProps<typeof AddMealSheet>> = {},
 ) {
@@ -404,7 +416,9 @@ function renderSheet(
     onSave: vi.fn(),
     mealTemplates: [],
   };
-  return render(<AddMealSheet {...defaults} {...props} />);
+  return render(<AddMealSheet {...defaults} {...props} />, {
+    wrapper: QueryWrapper,
+  });
 }
 
 // Крок джерела — смужка вкладок, тож обидва ручні режими живуть під
@@ -672,7 +686,7 @@ describe("AddMealSheet — source step (with templates)", () => {
     renderSheet({ mealTemplates: [] });
     goToWholeMeal();
     expect(
-      screen.getByText(/Значення — за всю порцію, як з’їв, а не на 100 г/),
+      screen.getByText(/Значення – за всю порцію, як зʼїв, а не на 100 г/),
     ).toBeInTheDocument();
     expect(screen.queryByTestId("picked-food-card")).not.toBeInTheDocument();
     fireEvent.click(
@@ -682,7 +696,7 @@ describe("AddMealSheet — source step (with templates)", () => {
   });
 
   // Раніше картка ваги жила у `FoodPickerSection` на кроці «source», а
-  // аркуш перемикається на «fill» у тому ж рендері, у якому з'являється
+  // аркуш перемикається на «fill» у тому ж рендері, у якому зʼявляється
   // `pickedFood` — тож вона розмонтовувалась, не встигнувши показатись,
   // і порція назавжди лишалась типовою.
   it("показує вагу порції на fill після вибору продукту з пошуку", () => {
@@ -691,7 +705,7 @@ describe("AddMealSheet — source step (with templates)", () => {
     expect(screen.getByTestId("picked-food-card")).toBeInTheDocument();
   });
 
-  it("«обрати інший продукт» повертає на крок джерела без зв'язку", () => {
+  it("«обрати інший продукт» повертає на крок джерела без звʼязку", () => {
     renderSheet({ mealTemplates: [] });
     fireEvent.click(screen.getByTestId("pick-food"));
     fireEvent.click(screen.getByTestId("change-product"));
@@ -729,7 +743,7 @@ describe("AddMealSheet — source step (with templates)", () => {
       },
     });
     expect(screen.getByTestId("macros-editor")).toBeInTheDocument();
-    expect(screen.queryByText(/Значення — за всю порцію/)).toBeNull();
+    expect(screen.queryByText(/Значення – за всю порцію/)).toBeNull();
     expect(
       screen.queryByRole("button", { name: "Маю етикетку на 100 г" }),
     ).toBeNull();
@@ -767,7 +781,7 @@ describe("AddMealSheet — fill step (no templates/photoResult/initialMeal)", ()
       screen.getByRole("button", { name: "Додати прийом" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("checkbox", { name: "Запам’ятати для повтору" }),
+      screen.getByRole("checkbox", { name: "Запамʼятати для повтору" }),
     ).toBeInTheDocument();
     expect(screen.getByText("Скасувати")).toBeInTheDocument();
   });
@@ -783,7 +797,7 @@ describe("AddMealSheet — fill step (no templates/photoResult/initialMeal)", ()
       target: { value: "350" },
     });
     fireEvent.click(
-      screen.getByRole("checkbox", { name: "Запам’ятати для повтору" }),
+      screen.getByRole("checkbox", { name: "Запамʼятати для повтору" }),
     );
     fireEvent.click(screen.getByRole("button", { name: "Додати прийом" }));
 
@@ -1231,7 +1245,9 @@ describe("AddMealSheet — вкладка «Скан» сама відкрива
       onSave: vi.fn(),
       mealTemplates: [],
     };
-    const view = render(<AddMealSheet {...props} open />);
+    const view = render(<AddMealSheet {...props} open />, {
+      wrapper: QueryWrapper,
+    });
     fireEvent.click(screen.getByRole("tab", { name: /Скан/ }));
     expect(stableBarcodeLookup.setScannerOpen).toHaveBeenCalledWith(true);
 

@@ -166,7 +166,7 @@ const USDA_FIXTURE_CHEERIOS: USDAFood = {
 };
 
 /**
- * USDA-варіант, де nutrient.id-и приходять як вкладений `nutrient.id` об'єкт
+ * USDA-варіант, де nutrient.id-и приходять як вкладений `nutrient.id` обʼєкт
  * (старіша shape, USDA іноді робить це для легасі-feeds).
  */
 const USDA_FIXTURE_NESTED_NUTRIENT_ID: USDAFood = {

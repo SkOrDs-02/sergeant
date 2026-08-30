@@ -61,10 +61,10 @@ export default function ForgotPasswordScreen() {
             <Mail size={40} color={colors.accent} strokeWidth={1.5} />
           </View>
           <Text className="text-fg text-2xl font-bold text-center">
-            Перевірте пошту
+            Перевір пошту
           </Text>
           <Text className="text-fg-muted text-sm text-center max-w-xs leading-relaxed">
-            Ми надіслали інструкції для відновлення пароля на{" "}
+            Інструкції для відновлення пароля надіслано на{" "}
             <Text className="font-semibold text-fg">{email}</Text>
           </Text>
           <View className="mt-6 w-full gap-3">
@@ -108,8 +108,8 @@ export default function ForgotPasswordScreen() {
           </View>
         </View>
         <Text className="text-fg-muted text-sm mb-4 leading-relaxed">
-          Введіть email, який ви використовували для реєстрації, і ми надішлемо
-          інструкції для відновлення пароля.
+          Введи email, з яким реєструвався, і я надішлю інструкції для
+          відновлення пароля.
         </Text>
 
         {/* Email Input */}

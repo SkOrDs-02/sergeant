@@ -95,7 +95,7 @@ function macrosAreAllEmpty(macros: {
 /**
  * Грами порції з поля вводу; 100 г — дефолт, коли поле порожнє або зіпсоване.
  *
- * Раніше тут стояло `Number(pickedGrams) || 100`, і це мовчки з'їдало кому:
+ * Раніше тут стояло `Number(pickedGrams) || 100`, і це мовчки зʼїдало кому:
  * «150,5» ставало `NaN`, `|| 100` перетворював його на 100 г, і в журнал
  * потрапляла НЕ та вага без жодного натяку користувачу. Тиха підміна даних
  * гірша за помилку, тому парсинг тут спільний із КБЖВ.
@@ -343,7 +343,7 @@ export function AddMealSheet({
       MEAL_TYPES.find((m) => m.id === form.mealType)?.label || "Прийом їжі";
     const source = appliedPhoto ? "photo" : "manual";
     // Пріоритет foodId: новий вибір з pickedFood → інакше зберігаємо foodId з оригінальної страви.
-    // Раніше при простому редагуванні страви з продуктом зв'язок з foodDb втрачався, бо pickedFood
+    // Раніше при простому редагуванні страви з продуктом звʼязок з foodDb втрачався, бо pickedFood
     // скидається в null при відкритті схита.
     const effectiveFoodId = pickedFood?.id ?? initialMeal?.foodId ?? null;
     const hasAmount = pickedFood || initialMeal?.amount_g != null;
@@ -456,7 +456,7 @@ export function AddMealSheet({
   }
 
   // Крок «з упаковки» → «fill»: продукт уже збережено в локальну базу,
-  // лишається зв'язати його з прийомом. Макроси форми не чіпаємо тут —
+  // лишається звʼязати його з прийомом. Макроси форми не чіпаємо тут —
   // їх порахує `PickedFoodCard` під вагу порції.
   function handlePackageCreated(product: PickedFood, grams: string) {
     setAppliedPhoto(null);
@@ -467,7 +467,7 @@ export function AddMealSheet({
     setStep("fill");
   }
 
-  // «Обрати інший продукт» з картки на кроці «fill». Скидаємо зв'язок
+  // «Обрати інший продукт» з картки на кроці «fill». Скидаємо звʼязок
   // ПЕРЕД поверненням, інакше авто-перехід нижче миттєво штовхне назад.
   function handleChangeProduct() {
     dropSeededMacros();
@@ -592,6 +592,10 @@ export function AddMealSheet({
                   onQuickAddMeal={onQuickAddMeal}
                   onQuickAdded={onClose}
                   pantryItems={pantryItems}
+                  // Редагування наявного прийому їжі й вхід одразу на
+                  // «fill» (PWA-шорткат, фото) чека не потребують — і не
+                  // мають будити мережу заради рядка, який там не потрібен.
+                  receiptRowEnabled={step === "source"}
                   fromPantryItem={fromPantryItem}
                   setFromPantryItem={setFromPantryItem}
                   picker={{
@@ -686,7 +690,7 @@ export function AddMealSheet({
                 // в руках за замовчуванням читає етикетку — тобто на 100 г.
                 <div className="mb-3 rounded-2xl border border-line bg-panelHi px-3 py-2">
                   <p className="text-style-caption text-muted">
-                    Значення — за всю порцію, як з’їв, а не на 100 г.
+                    Значення – за всю порцію, як зʼїв, а не на 100 г.
                   </p>
                   <button
                     type="button"
@@ -730,7 +734,7 @@ export function AddMealSheet({
                 <label className="mt-4 flex min-h-[44px] cursor-pointer items-start gap-3 rounded-2xl border border-line bg-panelHi p-3">
                   <input
                     type="checkbox"
-                    aria-label="Запам’ятати для повтору"
+                    aria-label="Запамʼятати для повтору"
                     checked={rememberForRepeat}
                     onChange={(event) =>
                       setRememberForRepeat(event.currentTarget.checked)
@@ -739,10 +743,10 @@ export function AddMealSheet({
                   />
                   <span className="min-w-0">
                     <span className="block text-style-label text-text">
-                      Запам’ятати для повтору
+                      Запамʼятати для повтору
                     </span>
                     <span className="mt-0.5 block text-style-caption text-muted">
-                      Назва, тип прийому та КБЖВ з’являться серед швидких
+                      Назва, тип прийому та КБЖВ зʼявляться серед швидких
                       прийомів.
                     </span>
                   </span>

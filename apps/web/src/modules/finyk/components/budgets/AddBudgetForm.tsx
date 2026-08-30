@@ -325,7 +325,7 @@ function AddBudgetFormComponent({
     [limitCategoryIds, existingBudgets],
   );
 
-  /** Прев'ю авто-назви для підказки під опціональним полем «Назва». */
+  /** Превʼю авто-назви для підказки під опціональним полем «Назва». */
   const limitAutoLabel = useMemo(
     () =>
       formatLimitBudgetLabel(
@@ -480,7 +480,7 @@ function AddBudgetFormComponent({
           </div>
           {limitCategoryIds.length > 1 && (
             <div>
-              <Label htmlFor={limitNameId}>{"Назва (необов'язково)"}</Label>
+              <Label htmlFor={limitNameId}>{"Назва (необовʼязково)"}</Label>
               <Input
                 id={limitNameId}
                 placeholder="Напр. Їжа"
@@ -489,7 +489,7 @@ function AddBudgetFormComponent({
                 {...limitForm.register("label")}
               />
               <p className="mt-1 text-style-caption text-subtle">
-                Порожньо — назвемо «{limitAutoLabel}».
+                Якщо лишити порожнім, назва буде «{limitAutoLabel}».
               </p>
             </div>
           )}
@@ -554,7 +554,7 @@ function AddBudgetFormComponent({
           aria-label="Нова ціль бюджету"
         >
           <div className="flex items-center gap-2">
-            {/* Прев'ю обраної іконки — нативний `<option>` малює лише
+            {/* Превʼю обраної іконки — нативний `<option>` малює лише
                 текст, тож без нього вибір лишався б невидимим. */}
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-line bg-panelHi text-finyk">
               <Icon name={goalIconOf(goalEmoji)} size={18} aria-hidden />

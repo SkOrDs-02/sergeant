@@ -129,7 +129,7 @@ const SAFE_COPY: OnboardingHeroCopy = {
  */
 const BOLD_COPY: OnboardingHeroCopy = {
   title: "Не для всіх. Для тих, хто втомився забувати.",
-  subtitle: "Записуй один раз, Sergeant пам'ятає за тебе. Офлайн, без акаунта.",
+  subtitle: "Записуй один раз, Sergeant памʼятає за тебе. Офлайн, без акаунта.",
   badges: ["Без реєстрації", "Без хмари", "Без реклами"],
   primaryCta: "Спробувати · 30 секунд",
   secondaryCta: "Подивитись приклад",

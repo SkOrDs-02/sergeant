@@ -6,11 +6,21 @@ import {
   ImportCommitRequestSchema,
   ImportCommitResponseSchema,
 } from "@sergeant/shared";
-import type { ImportCommitRow } from "@sergeant/shared";
+import type {
+  ImportCommitRow,
+  ImportCommitRowResult,
+  ImportCommitRowStatus,
+} from "@sergeant/shared";
 import { assignImportRowIds } from "./rowKey.js";
 import { findMonoMatch } from "./dedupMono.js";
 import { serializeImportBatch } from "./serialize.js";
 import type { ImportBatchRow } from "./serialize.js";
+import { emitServerSyncOps } from "../../sync/serverOpLog.js";
+import type { ServerSyncOp } from "../../sync/serverOpLog.js";
+import {
+  MANUAL_EXPENSES_TABLE,
+  buildManualExpenseInsertOp,
+} from "./syncOps.js";
 
 type WithSessionUser = Request & { user?: { id: string } };
 
@@ -41,19 +51,41 @@ interface ManualExpenseBlob {
 
 const FALLBACK_DESCRIPTION = "Без опису";
 
+interface UpsertedManualExpense {
+  /** `true` — рядок реально вставлено цим викликом (created); `false` —
+   * конфлікт, рядок уже існував (тір-2 дедуп). */
+  inserted: boolean;
+  /** Стан рядка ПІСЛЯ виклику: свіжовставлений або той, що вже лежав. */
+  dataJson: unknown;
+  createdAt: Date;
+  updatedAt: Date;
+  deletedAt: Date | null;
+}
+
 /**
- * INSERT ... ON CONFLICT (id) DO NOTHING RETURNING id — детермінований
- * `id` (rowKey.ts) робить повторний commit того самого рядка (той самий
+ * INSERT ... ON CONFLICT (id) DO NOTHING — детермінований `id`
+ * (rowKey.ts) робить повторний commit того самого рядка (той самий
  * файл/період завантажено вдруге) no-op замість дубля (0022 § Відкриті
- * рішення №2). `true` — реально вставлено (created); `false` — конфлікт,
- * рядок уже існував (дубль, tier 2 дедупу спеки).
+ * рішення №2).
+ *
+ * Повертає СТАН рядка, а не лише «вставили/ні»: серверний
+ * `sync_op_log`-оп несе фактичний `data_json` і `updated_at` рядка, тож
+ * для конфліктного рядка треба саме те, що вже лежить у базі, а не blob,
+ * який щойно намагались вставити (категорія в базі могла бути іншою —
+ * id хешує дату/суму/напрям/опис, але НЕ категорію). Друга гілка UNION
+ * читає знімок ДО цього statement-у, тож вона порожня рівно тоді, коли
+ * INSERT спрацював, і навпаки.
+ *
+ * `deletedAt !== null` — рядок існує, але tombstone (undo імпорту чи
+ * ручне видалення). AI-DANGER: такий рядок НЕ можна реплікувати опом —
+ * це воскресило б дані, які користувач свідомо прибрав.
  */
-async function insertManualExpenseRow(
+async function upsertManualExpenseRow(
   client: PoolClient,
   userId: string,
   id: string,
   row: ImportCommitRow,
-): Promise<boolean> {
+): Promise<UpsertedManualExpense | null> {
   const blob: ManualExpenseBlob = {
     id,
     date: row.date,
@@ -62,14 +94,36 @@ async function insertManualExpenseRow(
     category: row.category,
     kind: row.direction,
   };
-  const { rows } = await client.query<{ id: string }>(
-    `INSERT INTO finyk_manual_expenses (id, user_id, data_json)
-     VALUES ($1, $2, $3::jsonb)
-     ON CONFLICT (id) DO NOTHING
-     RETURNING id`,
+  const { rows } = await client.query<{
+    data_json: unknown;
+    created_at: Date;
+    updated_at: Date;
+    deleted_at: Date | null;
+    inserted: boolean;
+  }>(
+    `WITH ins AS (
+       INSERT INTO finyk_manual_expenses (id, user_id, data_json)
+       VALUES ($1, $2, $3::jsonb)
+       ON CONFLICT (id) DO NOTHING
+       RETURNING data_json, created_at, updated_at, deleted_at
+     )
+     SELECT data_json, created_at, updated_at, deleted_at, TRUE AS inserted
+       FROM ins
+     UNION ALL
+     SELECT data_json, created_at, updated_at, deleted_at, FALSE AS inserted
+       FROM finyk_manual_expenses
+      WHERE id = $1 AND user_id = $2 AND NOT EXISTS (SELECT 1 FROM ins)`,
     [id, userId, JSON.stringify(blob)],
   );
-  return rows.length > 0;
+  const found = rows[0];
+  if (!found) return null;
+  return {
+    inserted: found.inserted,
+    dataJson: found.data_json,
+    createdAt: found.created_at,
+    updatedAt: found.updated_at,
+    deletedAt: found.deleted_at,
+  };
 }
 
 /**
@@ -86,11 +140,26 @@ async function insertManualExpenseRow(
  * не спершу з placeholder-статусом — цей slice синхронний, проміжного
  * async-стану немає, тому двоетапний insert+update тут не потрібен).
  *
+ * **Видимість на пристроях (фікс 2026-08-28).** Раніше рядок існував
+ * лише в таблиці — а `syncV2Pull` читає ВИКЛЮЧНО `sync_op_log`, тож
+ * жоден пристрій його не отримував; єдиним каналом лишався крихкий
+ * клієнтський write-through, який вимикався цілком, щойно в батчі
+ * траплявся бодай один пропущений рядок. Наслідок, який і привів до
+ * цього фіксу: імпорт виписки «спрацював», повторне завантаження чесно
+ * казало «схоже, вони вже є» (превʼю дивиться в БД), а в «Операціях»
+ * рядків не було НІКОЛИ. Тепер кожен рядок, що після commit-у реально
+ * лежить у таблиці ЖИВИМ, отримує серверний оп (`syncOps.ts` +
+ * `sync/serverOpLog.ts`) — і created, і `duplicate`. Реплікація дублів
+ * тут не косметика: саме вона витягує на пристрій рядки, які застрягли
+ * на сервері до цього фіксу (повторний імпорт того самого файлу
+ * самолікується). Tombstone-рядки (undo/ручне видалення) свідомо НЕ
+ * реплікуються — інакше повторний імпорт воскрешав би видалене.
+ *
  * Порядок дедупу ЗА рядком — (а) mono, потім (б) between-imports
  * (буквально зі спеки): рядок, що matched на mono, НІКОЛИ не доходить до
  * ON CONFLICT-перевірки. AI-DANGER: якщо рядок раніше (в іншому commit)
  * уже створив `finyk_manual_expenses`-запис БЕЗ мono-матчу, а тепер (у
- * цьому commit-і) той самий рядок matched-иться на mono, яка з'явилась
+ * цьому commit-і) той самий рядок matched-иться на mono, яка зʼявилась
  * пізніше (backfill/webhook-лаг) — стара manual-expense НЕ видаляється
  * (matcher "ніколи не зливає і не видаляє дані", той самий принцип, що
  * `receipts/matcher.ts`), і платіж може порахуватись ДВІЧІ (стара
@@ -132,6 +201,10 @@ export default async function commitImportHandler(
     let monoMatched = 0;
     let duplicate = 0;
     const createdRowIds: string[] = [];
+    const rowResults: ImportCommitRowResult[] = [];
+    /** Рядки, які після commit-у реально лежать у таблиці ЖИВИМИ — саме
+     * їх реплікуємо опом (created + живі дублі, § докстрінг handler-а). */
+    const replicable: Array<{ id: string; state: UpsertedManualExpense }> = [];
 
     for (const { row, id } of rowsWithIds) {
       const match = await findMonoMatch(client, {
@@ -142,16 +215,24 @@ export default async function commitImportHandler(
       });
       if (match) {
         monoMatched++;
+        rowResults.push({ id, status: "mono_matched" });
         continue;
       }
 
-      const inserted = await insertManualExpenseRow(client, userId, id, row);
-      if (inserted) {
+      const upserted = await upsertManualExpenseRow(client, userId, id, row);
+      let status: ImportCommitRowStatus;
+      if (upserted?.inserted) {
         created++;
         createdRowIds.push(id);
+        status = "created";
       } else {
         duplicate++;
+        status = upserted?.deletedAt ? "tombstoned" : "duplicate";
       }
+      if (upserted && upserted.deletedAt === null) {
+        replicable.push({ id, state: upserted });
+      }
+      rowResults.push({ id, status });
     }
 
     const rowsTotal = body.rows.length;
@@ -179,15 +260,31 @@ export default async function commitImportHandler(
       );
     }
 
+    const batchId = serializeImportBatch(batchRow).id;
+
+    // Рядки їдуть на пристрої тим самим pull-каналом, що й будь-яка інша
+    // зміна. Емісія — ПІСЛЯ вставки батчу (потрібен його id для
+    // idempotency-ключа) і ВСЕРЕДИНІ тієї самої транзакції: ROLLBACK не
+    // має лишити оп про рядок, якого немає.
+    const syncOps: ServerSyncOp[] = replicable.map(({ id, state }) =>
+      buildManualExpenseInsertOp(batchId, userId, {
+        id,
+        dataJson: state.dataJson,
+        createdAt: state.createdAt,
+        updatedAt: state.updatedAt,
+      }),
+    );
+    await emitServerSyncOps(client, userId, MANUAL_EXPENSES_TABLE, syncOps);
+
     await client.query("COMMIT");
 
-    const batchId = serializeImportBatch(batchRow).id;
     res.status(201).json(
       ImportCommitResponseSchema.parse({
         batchId,
         created,
         linked: 0,
         skipped: { monoMatched, duplicate },
+        rows: rowResults,
       }),
     );
   } catch (err) {

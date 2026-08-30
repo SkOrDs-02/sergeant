@@ -34,6 +34,12 @@ export type { UseLocalStorageStateOptions } from "./useLocalStorageState";
 
 export { useOnlineStatus } from "./useOnlineStatus";
 
+export { useOutsideClick } from "./useOutsideClick";
+export type {
+  OutsideClickEventName,
+  UseOutsideClickOptions,
+} from "./useOutsideClick";
+
 export { useCloudPullPending } from "./useCloudPullPending";
 
 export { usePushNotifications } from "./usePushNotifications";

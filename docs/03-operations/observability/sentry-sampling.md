@@ -1,6 +1,6 @@
 # Sentry tracesSampler — per-route sampling policy
 
-> **Last validated:** 2026-06-02 by server-agent (PR-07). **Next review:** 2026-09-18.
+> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-06.
 > **Status:** Active
 >
 > Source of truth for **server** rules: `apps/server/src/sentry.ts`
@@ -40,7 +40,12 @@ to keep the audit pattern consistent.
 | `/api/account/recovery`         | `1.0`   | Security-critical, low volume — capture every trace.                                                                                                                |
 | `/api/admin/`                   | `1.0`   | Admin tooling, low volume + high blast radius.                                                                                                                      |
 | `/api/auth/`                    | `1.0`   | Login / signup / SSO — security-critical, low-volume.                                                                                                               |
-| `/api/photo/analyze`            | `0.5`   | Expensive AI route; half-trace keeps perf signal without 1× cost.                                                                                                   |
+| `/api/chat/usage`               | `0.01`  | Лічильник квоти — дешевий GET на кожному відкритті чату. Стоїть ПЕРЕД `/api/chat`: матч підрядковий, перший збіг виграє.                                            |
+| `/api/chat`                     | `0.5`   | Найдорожчий AI-роут (SSE ~30 с, до 8 tool-ітерацій). Правила не було — падав у fallback, хоча саме тут B46 показав 9 зривів із 12.                                  |
+| `/api/coach/insight`            | `0.5`   | Дорога генерація, ліміт 20/год. Саме `/insight`: memory-ендпоінти модель не викликають.                                                                             |
+| `/api/weekly-digest`            | `0.5`   | Фоновий тижневий дайджест — на його збій ніхто не поскаржиться.                                                                                                     |
+| `/api/nutrition/analyze-photo`  | `0.5`   | Vision (~5–10 с). Замінює мертве `/api/photo/analyze` — такого роута застосунок не віддає, тож правило не матчило нічого.                                           |
+| `/api/nutrition/refine-photo`   | `0.5`   | Той самий vision-shape і та сама ціна.                                                                                                                              |
 | `/api/v2/sync/`                 | `0.01`  | v2 op-log sync (push / pull / stream) fires every ~10 s per active client (Initiative 0003 Phase 5 / ADR-0047). 1 % is enough for latency trend without quota burn. |
 | `/api/sync/poll`                | `0.01`  | Chatty heartbeat poll — 1 % is enough for trend.                                                                                                                    |
 | `/api/health`                   | `0.001` | Liveness probe — 0.1 % prevents quota burn.                                                                                                                         |

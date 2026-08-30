@@ -199,11 +199,28 @@ export function changeCategory(action: ChangeCategoryAction): ChatActionResult {
   if (!finykCategoryExists(categoryId))
     return unknownCategoryMessage(categoryId);
   const cats = ls<Record<string, string>>("finyk_tx_cats", {});
+  // B39: reversible overwrite (canon §8 / founder decision) — snapshot the
+  // previous override BEFORE writing. `undefined` means "no override was
+  // set" (category came from the base rules), so undo removes the key
+  // instead of writing back an `undefined` string.
+  const prevCategoryId = cats[txId];
   cats[txId] = categoryId;
   finykChatWrite("finyk_tx_cats", cats);
   const customC = getCachedFinykSqliteState().customCategories;
   const cat = resolveExpenseCategoryMeta(categoryId, customC);
-  return `Категорію транзакції ${txId} змінено на ${cat?.label || categoryId}`;
+  const result = `Категорію транзакції ${txId} змінено на ${cat?.label || categoryId}`;
+  return {
+    result,
+    undo: () => {
+      const current = ls<Record<string, string>>("finyk_tx_cats", {});
+      if (prevCategoryId === undefined) {
+        delete current[txId];
+      } else {
+        current[txId] = prevCategoryId;
+      }
+      finykChatWrite("finyk_tx_cats", current);
+    },
+  };
 }
 
 export function findTransaction(

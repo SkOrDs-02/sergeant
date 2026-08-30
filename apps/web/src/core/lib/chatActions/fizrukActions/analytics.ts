@@ -38,7 +38,7 @@ export function suggestWorkout(action: SuggestWorkoutAction): ChatActionResult {
     .sort((a, b) => b.daysAgo - a.daysAgo);
   // Підпис, а не сирий доменний id: без цього в українську відповідь
   // асистента протікали `rhomboids` / `erector_spinae`. Кілька доменних
-  // м'язів згортаються в одну атласну групу, тому дедуплікуємо по підпису
+  // мʼязів згортаються в одну атласну групу, тому дедуплікуємо по підпису
   // і лишаємо найдавніший запис групи (масив уже відсортований за спаданням).
   const seenLabels = new Set<string>();
   const neglected: Array<{ label: string; daysAgo: number }> = [];
@@ -61,7 +61,7 @@ export function suggestWorkout(action: SuggestWorkoutAction): ChatActionResult {
   const parts: string[] = [];
   if (neglected.length > 0) {
     parts.push(
-      `М'язи, які найдовше не тренували: ${neglected.map((n) => `${n.label} (${n.daysAgo}д)`).join(", ")}`,
+      `Мʼязи, які найдовше не тренували: ${neglected.map((n) => `${n.label} (${n.daysAgo}д)`).join(", ")}`,
     );
   }
   if (lastExercises) {
@@ -144,7 +144,7 @@ export function compareProgress(
   const volChange = vol1 > 0 ? Math.round(((vol2 - vol1) / vol1) * 100) : 0;
   const parts: string[] = [
     `Прогрес (${label}) за ${days} днів:`,
-    `Об'єм (кг×повт): ${Math.round(vol1)} → ${Math.round(vol2)} (${volChange >= 0 ? "+" : ""}${volChange}%)`,
+    `Обʼєм (кг×повт): ${Math.round(vol1)} → ${Math.round(vol2)} (${volChange >= 0 ? "+" : ""}${volChange}%)`,
     `Макс. вага: ${max1} → ${max2} кг`,
     `Тренувань: ${firstHalf.length} → ${secondHalf.length}`,
   ];

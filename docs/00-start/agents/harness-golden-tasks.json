@@ -33,7 +33,7 @@
       "id": "hubchat-tool-def-balance-read",
       "title": "Add HubChat tool definition and executor for balance read",
       "prompt": "Add a new HubChat tool definition and executor for reading the latest user balance, with prompt-cache headers on the tool block and typed executor output. Register it in the tool registry and write a debug test.",
-      "expectedSkills": ["sergeant-start-here", "sergeant-hubchat"],
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-ai"],
       "expectedPlaybook": "add-hubchat-tool.md",
       "surface": "server",
       "acceptance": "HubChat tool definition registered; executor typed; prompt-cache header present; debug test passes"
@@ -115,6 +115,87 @@
       "expectedPlaybook": "add-react-query-hook.md",
       "surface": "web",
       "acceptance": "billingKeys.summary in queryKeys.ts; useBillingSummary uses factory key; no inline key; Hard Rule #2 satisfied"
+    },
+    {
+      "id": "module-finyk-budget-carryover",
+      "title": "Change unspent budget carryover in the finyk module",
+      "prompt": "Change the unspent budget carryover rule in the finyk module so a closed month stays frozen while the current month picks up the remainder, and update the monthly analytics view accordingly.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-finyk"],
+      "expectedPlaybook": null,
+      "surface": "cross",
+      "acceptance": "canon § Журнал рішень consulted; frozen past (ADR-0079) preserved; finykKeys factories used; tests updated"
+    },
+    {
+      "id": "module-nutrition-pantry-derivation",
+      "title": "Derive pantry stock from the nutrition ledger on meal log",
+      "prompt": "Update how the nutrition module derives pantry stock when a meal is logged: append a ledger entry instead of mutating the balance, keyed by the device-local day.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-nutrition"],
+      "expectedPlaybook": null,
+      "surface": "cross",
+      "acceptance": "append-only ledger preserved (ADR-0077); derived stock recomputed; device-local day key (ADR-0078)"
+    },
+    {
+      "id": "module-fizruk-injury-zone-advice",
+      "title": "Adjust fizruk recovery advice after a zone-level injury",
+      "prompt": "Adjust the fizruk recovery recommendation after an injury is logged for a muscle zone, keeping the zone-level injury model and without inventing a server directory for the module.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-fizruk"],
+      "expectedPlaybook": null,
+      "surface": "web",
+      "acceptance": "zone-level model (ADR-0083) kept; client-local module untouched on server; canon journal consulted"
+    },
+    {
+      "id": "module-routine-skip-pause",
+      "title": "Planned pause must not break a routine streak",
+      "prompt": "Change the routine module skip model so a planned pause day does not break the habit streak, following the canon streak philosophy instead of a generic tracker model.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-routine"],
+      "expectedPlaybook": null,
+      "surface": "web",
+      "acceptance": "skip model per canon §4-5; device-local day key; no server dir invented; tests updated"
+    },
+    {
+      "id": "module-ai-digest-prompt",
+      "title": "Change weekly digest generation in the AI layer",
+      "prompt": "Change the weekly digest generation and the coach advice prompt assembly in the AI layer module, respecting the prompt cache policy for deferred tools.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-ai"],
+      "expectedPlaybook": "tune-system-prompt.md",
+      "surface": "server",
+      "acceptance": "prompt cache policy (ADR-0039) respected; promptPrefixBudget test green; canon hub-coach journal consulted"
+    },
+    {
+      "id": "module-sync-lww-conflict",
+      "title": "Tune per-row LWW conflict resolution in the sync module",
+      "prompt": "Change how the sync module op-log applies per-row LWW conflict resolution for habit check-ins arriving from two devices, keeping applySync as the single merge point.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-sync"],
+      "expectedPlaybook": null,
+      "surface": "server",
+      "acceptance": "per-row LWW kept in applySync; no ad-hoc merge strategy; dualwrite-core semantics unchanged or updated together"
+    },
+    {
+      "id": "module-billing-quota-limit",
+      "title": "Add a daily limit to the billing module quotas",
+      "prompt": "Add a new daily limit to the billing module effective limits and enforce it with the atomic SQL quota upsert instead of an application-level counter.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-billing"],
+      "expectedPlaybook": null,
+      "surface": "server",
+      "acceptance": "atomic SQL upsert (ADR-0022); kopiyka-as-number where money involved; registry of limits updated"
+    },
+    {
+      "id": "module-integrations-silpo-fallback",
+      "title": "Graceful fallback for the Silpo receipts integration",
+      "prompt": "Fix the Silpo receipts import in the integrations module so a failed branch context lookup falls back gracefully without blocking the product flow, with an explicit error path.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-integrations"],
+      "expectedPlaybook": null,
+      "surface": "server",
+      "acceptance": "external failure does not block product flow; error path tested; secrets stay in env; logs redacted"
+    },
+    {
+      "id": "module-push-expired-subscription",
+      "title": "Deactivate expired push subscriptions during fan-out",
+      "prompt": "Change the push module delivery audit so expired APNs and FCM subscriptions are deactivated during server-driven fan-out instead of raising errors.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-push"],
+      "expectedPlaybook": "add-push-notification.md",
+      "surface": "server",
+      "acceptance": "server-driven fan-out kept (ADR-0019); expired subscription handled as expected case; audit test green"
     }
   ]
 }

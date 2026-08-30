@@ -42,18 +42,18 @@ describe("FINYK_FIELD_TO_STORAGE_KEY", () => {
 describe("normalizeFinykBackup", () => {
   it("rejects non-object input", () => {
     expect(() => normalizeFinykBackup(null)).toThrow(
-      /Файл має містити JSON-об'єкт/,
+      /Файл має містити JSON-обʼєкт/,
     );
     expect(() => normalizeFinykBackup("hello")).toThrow(
-      /Файл має містити JSON-об'єкт/,
+      /Файл має містити JSON-обʼєкт/,
     );
     expect(() => normalizeFinykBackup([])).toThrow(
-      /Файл має містити JSON-об'єкт/,
+      /Файл має містити JSON-обʼєкт/,
     );
   });
 
   it("rejects empty object", () => {
-    expect(() => normalizeFinykBackup({})).toThrow(/Порожній об'єкт/);
+    expect(() => normalizeFinykBackup({})).toThrow(/Порожній обʼєкт/);
   });
 
   it("rejects out-of-range version", () => {

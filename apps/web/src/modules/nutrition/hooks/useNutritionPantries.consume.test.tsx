@@ -87,7 +87,7 @@ describe("useNutritionPantries.consumePantryItem (F15 uom-conversion)", () => {
     expect(activeItems(result)[0]?.qty).toBeCloseTo(305.8, 1);
   });
 
-  it("л: 2 л молока − 206 г ≈ 1.8 л (F15 H2 — більше не з'їдає всю пляшку)", () => {
+  it("л: 2 л молока − 206 г ≈ 1.8 л (F15 H2 — більше не зʼїдає всю пляшку)", () => {
     seedPantries([{ name: "молоко", qty: 2, unit: "л", notes: null }]);
     const result = renderHarness();
     act(() => result.current.consumePantryItem("молоко", 206));

@@ -10,7 +10,7 @@
  * має сенс тільки у вебі: `IconName`-типізація і людські підписи.
  *
  * AI-NOTE: `satisfies readonly IconName[]` нижче — це і є гарантія, що
- * жоден slug не роз'їхався з атласом іконок. Якщо додаєш slug у доменний
+ * жоден slug не розʼїхався з атласом іконок. Якщо додаєш slug у доменний
  * `ROUTINE_GLYPHS`, компілятор змусить дописати іконку й підпис тут.
  */
 import { ROUTINE_GLYPHS, type RoutineGlyph } from "@sergeant/routine-domain";

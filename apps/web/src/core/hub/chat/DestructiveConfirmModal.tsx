@@ -13,11 +13,19 @@
  * Тепер тонка обгортка над `<ConfirmDialog>` (shared, C1 web-audit) —
  * canonical alertdialog з `useDialogFocusTrap` (inert background) +
  * `useBodyScrollLock`, той самий shell, що й `ConfirmDialog` скрізь у web.
+ *
+ * AI-CONTEXT (B39, 2026-08-25): кожен рядок тепер може мати другий,
+ * приглушений рядок — компактний підсумок аргументів САМЕ цього виклику
+ * (`summarizeDestructiveToolInput`, наприклад патерн і ліміт для
+ * `batch_categorize`). До фіксу людина погоджувалась на голу назву
+ * інструмента, не бачачи, що саме він зачепить. Це модал, не звіт — один
+ * рядок, `.text-style-caption`, без списків чи таблиць.
  */
 import { ASSISTANT_CAPABILITIES } from "@sergeant/shared";
 
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { messages } from "@shared/i18n/uk";
+import type { DestructiveConfirmItem } from "./useDestructiveConfirm";
 
 const m = messages.hub.destructiveConfirm;
 
@@ -27,37 +35,42 @@ const LABEL_BY_ID = new Map(
 
 export interface DestructiveConfirmModalProps {
   /** `null` — діалог закритий. */
-  toolNames: readonly string[] | null;
+  items: readonly DestructiveConfirmItem[] | null;
   onConfirm: () => void;
   onCancel: () => void;
 }
 
 export function DestructiveConfirmModal({
-  toolNames,
+  items,
   onConfirm,
   onCancel,
 }: DestructiveConfirmModalProps) {
-  const open = !!toolNames && toolNames.length > 0;
+  const open = !!items && items.length > 0;
 
   return (
     <ConfirmDialog
       open={open}
       title={m.title}
       description={
-        toolNames &&
-        toolNames.length > 0 && (
+        items &&
+        items.length > 0 && (
           <>
             {m.body}
             <ul className="mt-2 space-y-1">
-              {toolNames.map((name, i) => (
+              {items.map((item, i) => (
                 <li
                   // Один і той самий інструмент може прийти в батчі двічі
-                  // (наприклад, два видалення), тож ім'я не унікальне —
+                  // (наприклад, два видалення), тож імʼя не унікальне —
                   // ключ складений з індексом.
-                  key={`${name}_${i}`}
+                  key={`${item.name}_${i}`}
                   className="text-style-body text-text"
                 >
-                  • {LABEL_BY_ID.get(name) ?? name}
+                  • {LABEL_BY_ID.get(item.name) ?? item.name}
+                  {item.summary && (
+                    <span className="block text-style-caption text-content-secondary">
+                      {item.summary}
+                    </span>
+                  )}
                 </li>
               ))}
             </ul>

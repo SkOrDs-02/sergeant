@@ -114,7 +114,7 @@ export function DashboardSection() {
          * міграції. */}
         <ToggleRow
           label="Адаптивний порядок"
-          description="Піднімає в топ модуль, актуальний зараз, за часом дня та сигналами. Ваш порядок зберігається."
+          description="Піднімає в топ модуль, актуальний зараз, за часом дня та сигналами. Твій порядок зберігається."
           checked={adaptiveBento !== false}
           onChange={setAdaptiveBento}
         />

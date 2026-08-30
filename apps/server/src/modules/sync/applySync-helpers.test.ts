@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Mock } from "vitest";
 import type { PoolClient } from "pg";
-import type { SyncV2Op } from "../../http/schemas.js";
 import {
   assertRowUserId,
   guardUserPkLww,
@@ -21,16 +20,6 @@ function makeClient(rows: Array<Record<string, unknown>>): PoolClient & {
 } {
   const query = vi.fn().mockResolvedValue({ rows });
   return { query } as unknown as PoolClient & { query: Mock };
-}
-
-function op(kind: "insert" | "update" | "delete" = "insert"): SyncV2Op {
-  return {
-    table: "routine_habits",
-    op: kind,
-    row: { id: "row-1", user_id: USER_ID },
-    client_ts: CLIENT_TS.toISOString(),
-    idempotency_key: "k-1",
-  } as unknown as SyncV2Op;
 }
 
 describe("assertRowUserId", () => {
@@ -62,7 +51,7 @@ describe("assertRowUserId", () => {
 
 describe("guardUuidPkApply", () => {
   it("allows through when there is no existing row", () => {
-    expect(guardUuidPkApply(undefined, USER_ID, CLIENT_TS, op())).toBeNull();
+    expect(guardUuidPkApply(undefined, USER_ID, CLIENT_TS)).toBeNull();
   });
 
   it("rejects on fk_violation when the existing row belongs to another user", () => {
@@ -71,7 +60,7 @@ describe("guardUuidPkApply", () => {
       updated_at: new Date("2026-07-10T11:00:00.000Z"),
       deleted_at: null,
     };
-    expect(guardUuidPkApply(existing, USER_ID, CLIENT_TS, op())).toEqual({
+    expect(guardUuidPkApply(existing, USER_ID, CLIENT_TS)).toEqual({
       status: "rejected",
       reason: "fk_violation",
     });
@@ -83,23 +72,35 @@ describe("guardUuidPkApply", () => {
       updated_at: new Date("2026-07-10T13:00:00.000Z"),
       deleted_at: null,
     };
-    expect(guardUuidPkApply(existing, USER_ID, CLIENT_TS, op())).toEqual({
+    expect(guardUuidPkApply(existing, USER_ID, CLIENT_TS)).toEqual({
       status: "rejected",
       reason: "lww_conflict",
     });
   });
 
-  it("rejects on tombstoned when the row is soft-deleted and op is not delete", () => {
+  // Регресія SERGEANT-WEB-T. Раніше цей самий стан давав `tombstoned`, і
+  // undo після видалення мовчки не доїжджав на сервер. Тепер новіший запис
+  // проходить — це і є LWW, за яким живе решта синку.
+  it("дає новішому запису воскресити soft-deleted рядок", () => {
     const existing: ExistingUuidRow = {
       user_id: USER_ID,
       updated_at: new Date("2026-07-10T11:00:00.000Z"),
       deleted_at: new Date("2026-07-09T00:00:00.000Z"),
     };
-    expect(
-      guardUuidPkApply(existing, USER_ID, CLIENT_TS, op("update")),
-    ).toEqual({
+    expect(guardUuidPkApply(existing, USER_ID, CLIENT_TS)).toBeNull();
+  });
+
+  // Захист не послаблено: старіший за видалення запис усе одно програє —
+  // просто вже на LWW-перевірці, а не на окремому правилі.
+  it("старіший за видалення запис усе одно відсікається як lww_conflict", () => {
+    const existing: ExistingUuidRow = {
+      user_id: USER_ID,
+      updated_at: new Date("2026-07-10T13:00:00.000Z"),
+      deleted_at: new Date("2026-07-10T13:00:00.000Z"),
+    };
+    expect(guardUuidPkApply(existing, USER_ID, CLIENT_TS)).toEqual({
       status: "rejected",
-      reason: "tombstoned",
+      reason: "lww_conflict",
     });
   });
 
@@ -109,9 +110,7 @@ describe("guardUuidPkApply", () => {
       updated_at: new Date("2026-07-10T11:00:00.000Z"),
       deleted_at: new Date("2026-07-09T00:00:00.000Z"),
     };
-    expect(
-      guardUuidPkApply(existing, USER_ID, CLIENT_TS, op("delete")),
-    ).toBeNull();
+    expect(guardUuidPkApply(existing, USER_ID, CLIENT_TS)).toBeNull();
   });
 
   it("allows a fresh update through when the row is not tombstoned", () => {
@@ -120,9 +119,7 @@ describe("guardUuidPkApply", () => {
       updated_at: new Date("2026-07-10T11:00:00.000Z"),
       deleted_at: null,
     };
-    expect(
-      guardUuidPkApply(existing, USER_ID, CLIENT_TS, op("update")),
-    ).toBeNull();
+    expect(guardUuidPkApply(existing, USER_ID, CLIENT_TS)).toBeNull();
   });
 });
 

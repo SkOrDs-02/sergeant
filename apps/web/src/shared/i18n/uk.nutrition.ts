@@ -42,7 +42,7 @@ export const nutritionPageMessages = {
     srKcal: "Калорії",
     srEstimated: "З них оцінка з фото",
   },
-  /** Пом'якшена копія `nutrition-protein-low` при високій частці photoAI. */
+  /** Помʼякшена копія `nutrition-protein-low` при високій частці photoAI. */
   proteinLowEstimated: {
     subtitle: "Схоже, білка малувато, але сьогодні багато цифр з фото-оцінки.",
   },
@@ -107,6 +107,23 @@ export const nutritionPageMessages = {
   },
 
   /**
+   * Картка продукту в коморі — родова назва зверху, фактичні покупки
+   * всередині (спека `docs/90-work/planning/specs/pantry-generic-names.md`).
+   * Контрол розгортання зʼявляється лише від ДВОХ варіантів: на одному
+   * розкривати нічого.
+   */
+  pantrySources: {
+    expandLabel: "Показати покупки",
+    collapseLabel: "Сховати покупки",
+    variantsHeading: "Покупки",
+    unknownAddedAt: "без дати",
+    consumeTitle: "З чого списати?",
+    consumeDescription:
+      "У цій позиції кілька покупок. Обери, з якої списати, або лишай найстарішу: вона псується першою.",
+    consumeOldestCta: "З найстарішої",
+  },
+
+  /**
    * «Поповнити комору з покупок Сільпо» — екран підтвердження перед
    * записом `replenish`-подій (Silpo integration трек C, спека
    * `docs/90-work/planning/specs/silpo-mcp-integration.md`
@@ -122,7 +139,7 @@ export const nutritionPageMessages = {
     // (`SilpoPrivacyPromise`), лише посилається на її суть у моменті
     // підтвердження.
     privacyReminder:
-      "Позиції з чека лишаються у твоїй базі — в аналітику вони не йдуть.",
+      "Позиції з чека лишаються у твоїй базі, в аналітику вони не йдуть.",
     receiptsHeading: "Останні чеки",
     receiptsEmptyTitle: "Ще немає завантажених чеків",
     receiptsEmptyHint: "Онови чеки в Налаштуваннях → Сільпо.",
@@ -130,6 +147,13 @@ export const nutritionPageMessages = {
     itemsEmpty: "У цьому чеку немає позицій.",
     matchedPrefix: "Уже є:",
     newPosition: "Нова позиція",
+    // Показ згортання ДО запису — перша з двох страховок проти помилки
+    // евристики (друга — редагування назви вже в коморі). Рядки, де
+    // згортання нічого не змінило, цього блоку не мають взагалі.
+    collapsedTo: "Ляже як",
+    keepFullCta: "лишити повну",
+    keepFullActive: "Лишаю повну назву",
+    collapseCta: "згорнути",
     confirmCta: "Додати в комору",
     cancelCta: "Скасувати",
     loading: "Завантажую…",
@@ -145,7 +169,7 @@ export const nutritionPageMessages = {
   shoppingListPantryMath: {
     toggleLabel: "Враховувати комору",
     athomeSectionLabel: "Вже вдома",
-    athomeSectionHint: "Достатньо в коморі — купувати не треба, лише звір.",
+    athomeSectionHint: "Достатньо в коморі: купувати не треба, лише звір.",
     // Той самий бейдж-текст, що і `pantryLowStock.badge` на позиції комори —
     // одна фраза на все, свідомо коротша за назву fallback-категорії
     // `LOW_STOCK_CATEGORY_NAME` («Закінчується вдома»), щоб бейдж на
@@ -163,7 +187,7 @@ export const nutritionPageMessages = {
   silpoCart: {
     entryCta: "У кошик Сільпо",
     sheetTitle: "У кошик Сільпо",
-    sheetDescription: "Обери позиції та підтверди — додам їх у твій кошик.",
+    sheetDescription: "Обери позиції та підтверди, додам їх у твій кошик.",
     // Коротке нагадування (1 речення) перед записом у зовнішній кошик —
     // не дублює повну обіцянку приватності з картки Сільпо в
     // Налаштуваннях (`SilpoPrivacyPromise`), лише її суть у моменті
@@ -172,6 +196,12 @@ export const nutritionPageMessages = {
     loading: "Шукаю позиції в каталозі…",
     emptyList: "У списку покупок немає невідмічених позицій.",
     unmatched: "Не знайшлось у Сільпо",
+    /**
+     * Товар існує, але закінчився у філії. Позицію показуємо (людина має
+     * бачити, що продукт є в асортименті), але не відмічаємо: покласти
+     * відсутнє в кошик можна, і сюрприз чекав би вже в застосунку Сільпо.
+     */
+    outOfStock: "немає в наявності",
     altPickerLabel: "Інший варіант",
     totalLabel: "Разом",
     applyCta: "Додати в кошик Сільпо",
@@ -182,6 +212,18 @@ export const nutritionPageMessages = {
     successTitle: "Додано в кошик Сільпо",
     successCartLink: "Відкрити кошик у Сільпо",
     closeCta: "Готово",
+    clearCta: "Очистити кошик",
+    clearing: "Очищаю…",
+    /**
+     * Confirm деструктивний навмисно: кошик у Сільпо один, і в ньому може
+     * лежати те, що людина сама наклала в їхньому застосунку. Очищення
+     * знищує і його — тому питаємо, а не робимо тихо.
+     */
+    clearConfirmTitle: "Очистити кошик Сільпо?",
+    clearConfirmBody:
+      "Приберу з кошика Сільпо всі позиції: і додані звідси, і ті, що ти клала в застосунку Сільпо. Відновити не вийде, доведеться зібрати заново.",
+    clearConfirmCta: "Очистити",
+    cleared: "Кошик Сільпо порожній.",
     errorNotConnected: "Сільпо не звʼязано. Звʼяжи акаунт у Налаштуваннях.",
     errorReauthRequired:
       "Сільпо просить повторну авторизацію. Підключи заново в Налаштуваннях.",

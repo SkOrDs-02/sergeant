@@ -253,7 +253,7 @@ export interface NudgeSweepSummary {
 
 export interface NudgeSweepDeps {
   now?: Date;
-  /** Ін'єкція відправника — тести не піднімають push-стек. */
+  /** Інʼєкція відправника — тести не піднімають push-стек. */
   send?: (
     userId: string,
     payload: { title: string; body: string; tag: string; url: string },

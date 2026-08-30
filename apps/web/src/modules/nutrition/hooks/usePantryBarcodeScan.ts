@@ -82,7 +82,7 @@ export function usePantryBarcodeScan({
           setPantryScanStatus(err.serverMessage || "Помилка пошуку.");
           return;
         }
-        setPantryScanStatus("Помилка пошуку. Перевір з’єднання.");
+        setPantryScanStatus("Помилка пошуку. Перевір зʼєднання.");
         return;
       }
 

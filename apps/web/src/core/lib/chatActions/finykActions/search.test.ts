@@ -1,9 +1,19 @@
-import { describe, it, expect, vi } from "vitest";
-import { txSourceOf, toIsoDay, toDisplayAmount } from "./search";
+import { afterEach, beforeEach, describe, it, expect, vi } from "vitest";
+import {
+  txSourceOf,
+  toIsoDay,
+  toDisplayAmount,
+  changeCategory,
+} from "./search";
 import type { FinykSearchTx } from "./search";
+import type { ChatActionUndoableResult } from "../types";
 
-// Heavy IO deps — mocked so pure helpers can be imported
-vi.mock("../../hubChatUtils", () => ({ ls: vi.fn(() => []) }));
+// Heavy IO deps — mocked so pure helpers can be imported. `ls` is
+// key-aware (backed by `lsFixtures`, see beforeEach below) so the
+// `changeCategory` / undo tests further down can seed and observe
+// per-key state — the pure-helper tests above never call `ls`, so the
+// richer mock is a no-op for them.
+vi.mock("../../hubChatUtils", () => ({ ls: vi.fn() }));
 vi.mock("./dualWriteBridge", () => ({ finykChatWrite: vi.fn() }));
 vi.mock("../../../../modules/finyk/utils", () => ({
   resolveExpenseCategoryMeta: vi.fn(() => ({ label: "Інше", emoji: "🔹" })),
@@ -13,8 +23,52 @@ vi.mock("../../../../modules/finyk/lib/sqliteReader", () => ({
     manualExpenses: [],
     txCategories: {},
     hiddenTransactions: [],
+    customCategories: [],
   })),
 }));
+// `changeCategory` guards against hallucinated ids via `entityLookup`
+// (same guard as `hideTransaction`/`splitTransaction` in
+// `transactions.test.ts`) — override only the existence checks so the
+// happy-path tests below don't need real SQLite/Mono state.
+vi.mock("./entityLookup", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./entityLookup")>()),
+  finykTransactionExists: vi.fn(() => true),
+  finykCategoryExists: vi.fn(() => true),
+}));
+
+import { ls } from "../../hubChatUtils";
+import { finykChatWrite } from "./dualWriteBridge";
+
+const mockLs = vi.mocked(ls) as ReturnType<typeof vi.fn>;
+const mockWrite = vi.mocked(finykChatWrite);
+
+/** Mirrors the real key-value store `ls`/`finykChatWrite` operate on. */
+const lsFixtures = new Map<string, unknown>();
+
+function isUndoable(
+  out: ReturnType<typeof changeCategory>,
+): out is ChatActionUndoableResult {
+  return typeof out === "object" && out !== null && "undo" in out;
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  lsFixtures.clear();
+  mockLs.mockImplementation((key: string, fallback: unknown) =>
+    lsFixtures.has(key) ? lsFixtures.get(key) : fallback,
+  );
+  // Read-after-write: `changeCategory`'s `undo` re-reads `finyk_tx_cats`
+  // via `ls`, so the mocked write must land back in the same fixture map
+  // the mocked read serves from — otherwise undo would always see the
+  // pre-mutation state regardless of what the forward write did.
+  mockWrite.mockImplementation((key: string, value: unknown) => {
+    lsFixtures.set(key, value);
+  });
+});
+
+afterEach(() => {
+  lsFixtures.clear();
+});
 
 // --- txSourceOf ---
 
@@ -167,5 +221,80 @@ describe("toDisplayAmount", () => {
       description: "",
     };
     expect(toDisplayAmount(tx, "bank")).toBe(50);
+  });
+});
+
+// --- changeCategory (B39: reversible overwrite, canon hub-coach §8) ---
+
+describe("changeCategory", () => {
+  it("B39: classified reversible — returns undo, not a bare success string", () => {
+    // Before the fix, `change_category` had no entry in `TOOL_RISK` at
+    // all (neither destructive-with-confirm nor reversible-with-undo): a
+    // silent overwrite. It's `reversible` now — a working `undo`, no
+    // blocking modal.
+    const out = changeCategory({
+      name: "change_category",
+      input: { tx_id: "m_1", category_id: "food" },
+    });
+    expect(isUndoable(out)).toBe(true);
+  });
+
+  it("writes the new category mapping", () => {
+    const out = changeCategory({
+      name: "change_category",
+      input: { tx_id: "m_1", category_id: "food" },
+    });
+    expect(isUndoable(out)).toBe(true);
+    expect(mockWrite).toHaveBeenCalledWith(
+      "finyk_tx_cats",
+      expect.objectContaining({ m_1: "food" }),
+    );
+  });
+
+  it("undo restores the PREVIOUS category override", () => {
+    lsFixtures.set("finyk_tx_cats", { m_1: "transport" });
+    const out = changeCategory({
+      name: "change_category",
+      input: { tx_id: "m_1", category_id: "food" },
+    });
+    if (!isUndoable(out)) throw new Error("expected an undoable result");
+    expect(lsFixtures.get("finyk_tx_cats")).toEqual({ m_1: "food" });
+
+    out.undo?.();
+
+    expect(lsFixtures.get("finyk_tx_cats")).toEqual({ m_1: "transport" });
+  });
+
+  it("undo on a transaction with NO prior override removes the key entirely", () => {
+    // The transaction's category came from the base categorisation rules
+    // (no entry in `finyk_tx_cats`) — undo must not invent a mapping to
+    // `undefined`, it must leave the map exactly as it was: absent.
+    lsFixtures.set("finyk_tx_cats", {});
+    const out = changeCategory({
+      name: "change_category",
+      input: { tx_id: "m_1", category_id: "food" },
+    });
+    if (!isUndoable(out)) throw new Error("expected an undoable result");
+    expect(lsFixtures.get("finyk_tx_cats")).toEqual({ m_1: "food" });
+
+    out.undo?.();
+
+    expect(lsFixtures.get("finyk_tx_cats")).toEqual({});
+  });
+
+  it("undo doesn't disturb OTHER transactions' overrides", () => {
+    lsFixtures.set("finyk_tx_cats", { m_1: "transport", m_2: "housing" });
+    const out = changeCategory({
+      name: "change_category",
+      input: { tx_id: "m_1", category_id: "food" },
+    });
+    if (!isUndoable(out)) throw new Error("expected an undoable result");
+
+    out.undo?.();
+
+    expect(lsFixtures.get("finyk_tx_cats")).toEqual({
+      m_1: "transport",
+      m_2: "housing",
+    });
   });
 });

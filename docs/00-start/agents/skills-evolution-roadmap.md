@@ -3,7 +3,7 @@
 > **Last touched:** 2026-06-14 by Claude (drift reconcile: PR 4/10/11 merged #2925; PR 7 superseded by central eval harness). **Next review:** 2026-09-26.
 > **Status:** Active (proposal — sequencing only; кожен пункт окремий PR із власним acceptance criteria)
 
-> **Що це.** Курований план, як еволюціонувати repo-owned skill-систему Sergeant (`.agents/skills/**`) запозичивши перевірені патерни з широкого agent-skills ecosystem-у — без розмиття існуючих 12 specialist-skill-ів і без імпорту generic-обгорток. Документ працює як roadmap для будь-якого AI-агента (Claude Code, Devin, Codex, Cursor, Gemini CLI), що візьметься за конкретний пункт.
+> **Що це.** Курований план, як еволюціонувати repo-owned skill-систему Sergeant (`.agents/skills/**`) запозичивши перевірені патерни з широкого agent-skills ecosystem-у — без розмиття існуючих 12 specialist-skill-ів і без імпорту generic-обгорток. Документ працює як roadmap для будь-якого AI-агента (Claude Code, Codex, Cursor, Gemini CLI), що візьметься за конкретний пункт.
 
 > **Не ініціатива в `docs/90-work/initiatives/`** через [audit-freeze 2026-05-05 → 2026-06-02](../../04-governance/governance/audit-freeze-2026-05-05.md). Якщо post-freeze команда вирішить підняти це в формальну initiative-у з owner-ом і ETA — створити `docs/90-work/initiatives/00NN-skills-evolution.md` і перенести скоуп туди; цей файл тоді стає секцією `## Sources` в новій initiative-і. До того часу — це **discovery roadmap**, не зобов'язання.
 

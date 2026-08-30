@@ -52,11 +52,11 @@ export function currentLogLevel(): string {
 
 // Список шляхів, які pino маскуватиме на `[redacted]`, щоб PII та секрети
 // ніколи не просочувались у JSON-логи. Розширюємо консервативно: email і phone
-// — навіть у вкладених user-об'єктах; усі типові варіанти токенів і secret.
+// — навіть у вкладених user-обʼєктах; усі типові варіанти токенів і secret.
 // Якщо треба додати новий шлях — додавай тут, а НЕ робиш `logger.info({...})`
 // з плейнтекстовим email, обходячи редакцію.
 //
-// Контракт (для пов'язаного `Sentry.beforeSend` PII-скрабера в `sentry.ts`
+// Контракт (для повʼязаного `Sentry.beforeSend` PII-скрабера в `sentry.ts`
 // і браузерного аналога в `apps/web/src/core/observability/sentry.ts`):
 //   - `redactKeyNames` — імена полів, які потрібно маскувати на будь-якій
 //     глибині. Sentry-скрабер ходить рекурсивно і маскує ці ключі у
@@ -198,6 +198,22 @@ export const redactPaths = [
   "req.body.token",
   "req.body.currentPassword",
   "req.body.newPassword",
+  // B43 (`docs/90-work/audits/ai-testing-2026-08-25.md`) — тіла AI-запитів.
+  // Досі розмова не текла в логи лише тому, що її НІХТО не логував: політики
+  // не було, був щасливий збіг. Один `logger.error({ req })` на chat-шляху
+  // (а pino-std `req`-серіалізатор тягне body) опублікував би листування
+  // цілком. Імена — з `ChatRequestSchema`/`CoachRequest` (`@sergeant/shared`).
+  //
+  // ЧОМУ САМЕ ШЛЯХИ, А НЕ `content`/`messages`/`context` у `REDACT_KEY_NAMES`:
+  // той список матчить ключ на БУДЬ-ЯКІЙ глибині, а `content` і `context` —
+  // найуживаніші імена полів у діагностиці взагалі (тіла помилок провайдера,
+  // Sentry-extra, конфіги). Глобальний deny на них зробив би логи нечитними
+  // і, як наслідок, спонукав би обходити редакцію — гірше, ніж проблема.
+  // Тут же шлях один і однозначний.
+  "req.body.messages",
+  "req.body.context",
+  "req.body.tool_results",
+  "req.body.tool_calls_raw",
   // M3 — axios `err.config.headers.Authorization` (i.e. упав запит до
   // зовнішнього сервісу). Pino-std `err` serializer прокидає `config`
   // як частину помилки, тож Authorization потрапляв у лог як plaintext.
@@ -321,7 +337,7 @@ setInterval(() => {
 }, 5_000).unref();
 
 /**
- * pino-http middleware — додає `req.log` (child logger, прив'язаний до запиту)
+ * pino-http middleware — додає `req.log` (child logger, привʼязаний до запиту)
  * до кожного Request. `autoLogging` вимкнено, бо access-log + Prometheus
  * метрики вже генеруються `requestLogMiddleware`. Мета — тільки `req.log`.
  */
@@ -357,7 +373,7 @@ type ErrorShape = {
 };
 
 /**
- * Розгортає `err.cause` ланцюжком у plain об'єкт, безпечний для JSON/pino.
+ * Розгортає `err.cause` ланцюжком у plain обʼєкт, безпечний для JSON/pino.
  * Корисно в `errorHandler` і process-level hooks, щоб у Loki/Grafana причину
  * бачити без розгортання stack.
  */

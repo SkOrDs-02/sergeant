@@ -111,7 +111,7 @@ describe("buildSynthesisToolsPayload — шлюз (без tool search)", () => {
     expect(names(payload).length).toBe(TOOLS.length);
   });
 
-  it("невідоме ім'я (перейменували tool) → повний payload, а не порожній", () => {
+  it("невідоме імʼя (перейменували tool) → повний payload, а не порожній", () => {
     const payload = buildSynthesisToolsPayload(GATEWAY_MODEL, [
       "tool_that_no_longer_exists",
     ]);

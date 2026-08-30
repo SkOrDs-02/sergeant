@@ -5,6 +5,13 @@
   "ignoreCommand": "npx --yes turbo-ignore @sergeant/landing --fallback=HEAD^1",
   "outputDirectory": "dist",
   "framework": "vite",
+  "redirects": [
+    {
+      "source": "/guides/kbzhu",
+      "destination": "/guides/kbzhv",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     {
       "source": "/(.*)",
@@ -40,11 +47,11 @@
         },
         {
           "key": "Reporting-Endpoints",
-          "value": "csp-endpoint=\"https://api.sergeant.app/api/csp-report\""
+          "value": "csp-endpoint=\"https://api.sergeant.com.ua/api/csp-report\""
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' https://*.posthog.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://*.posthog.com; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; report-uri https://api.sergeant.app/api/csp-report; report-to csp-endpoint"
+          "value": "default-src 'self'; script-src 'self' https://*.posthog.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://*.posthog.com; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; report-uri https://api.sergeant.com.ua/api/csp-report; report-to csp-endpoint"
         }
       ]
     }

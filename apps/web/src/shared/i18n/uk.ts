@@ -8,7 +8,7 @@
  *
  * **Як додавати нові ключі.** Сортуй за поверхнею (`auth`, `sync`,
  * `validation`, `actions`, `empty`, `errors`, `toast`, …). Якщо новий
- * ключ — це reused-string з кількох місць, обов'язково веди його сюди.
+ * ключ — це reused-string з кількох місць, обовʼязково веди його сюди.
  * Якщо ключ використовується лише в одному компоненті — також ОК тримати
  * тут (homogenізує підхід). ESLint-правило
  * `sergeant-design/no-cyrillic-jsx-literal` (warn-режим, allowlist у
@@ -62,24 +62,24 @@ export const messages = {
 
   sync: {
     anonymousMigrationProgress:
-      "Переносимо дані в профіль і зберігаємо на сервері…",
+      "Переношу дані в профіль і зберігаю на сервері…",
     anonymousMigrationFailure:
       "Не вдалося завершити перенесення. Дані на цьому пристрої не видалено й вони ще не захищені синхронізацією.",
     anonymousMigrationRetry: "Повторити",
     anonymousMigrationDefer: "Продовжити, перенесу пізніше",
     anonymousMigrationDeferredToast:
-      "Гаразд. Дані лишаються на цьому пристрої, спробуємо перенести їх при наступному запуску.",
+      "Гаразд. Дані лишаються на цьому пристрої, спробую перенести їх при наступному запуску.",
     anonymousMigrationDeferredNotice:
       "Дані ще не перенесено в профіль, вони лише на цьому пристрої.",
     anonymousMigrationDeferredRetry: "Спробувати зараз",
     anonymousMigrationSuccess:
       "Дані перенесено й безпечно збережено у профілі.",
     // Reserved legacy sync error copy. Historical retry cycle:
-    //   network                → перевір з'єднання
+    //   network                → перевір зʼєднання
     //   server retryable       → 5xx → invite-retry
     //   server non-retryable   → 4xx / parse → no-retry, ask to check input
     //   unknown                → fallback
-    errorNetwork: "Не вдалось синхронізувати, перевір з'єднання.",
+    errorNetwork: "Не вдалось синхронізувати, перевір зʼєднання.",
     errorServerRetryable: "Сервер тимчасово не відповідає. Спробуй ще раз.",
     errorServerNonRetryable: "Помилка синхронізації. Передивись введення.",
     errorGeneric: "Помилка синхронізації.",
@@ -89,7 +89,7 @@ export const messages = {
     // ще живуть inline у `cloudSync/**`. Поточний baseline (round 14) —
     // above; no current renderer should revive CloudSync v1 toast plumbing.
     conflictResolved: "Конфлікт автоматично вирішено.",
-    pushFailed: "Не вдалося синхронізувати. Спробуємо ще раз.",
+    pushFailed: "Не вдалося синхронізувати. Спробую ще раз.",
     offlineQueueRecovered: "Відновлено з офлайн-черги.",
   },
 
@@ -144,7 +144,7 @@ export const messages = {
     categoryNameDuplicate: "Категорія з такою назвою вже існує",
     goalNameRequired: "Введи назву цілі",
     goalAmountRequired: "Введи суму цілі більше 0",
-    goalSavedNonNegative: "Відкладена сума не може бути від'ємною",
+    goalSavedNonNegative: "Відкладена сума не може бути відʼємною",
     limitAmountRequired: "Введи ліміт більше 0",
     categoryRequired: "Обери категорію",
     passwordResetMin10: "Пароль має бути мінімум 10 символів.",
@@ -178,7 +178,7 @@ export const messages = {
     open: "Відкрити",
 
     // Round 16 additions — high-frequency burndown candidates
-    // («Згорнути»/«Розгорнути» з'являються в 5+ місцях кожен,
+    // («Згорнути»/«Розгорнути» зʼявляються в 5+ місцях кожен,
     // «Продовжити»/«Пропустити»/«Пізніше» — у onboarding-flow-ах).
     skip: "Пропустити",
     continue: "Продовжити",
@@ -218,7 +218,7 @@ export const messages = {
   },
 
   period: {
-    // Round 16 — common period-labels. «День»/«Тиждень»/«Місяць» з'являються
+    // Round 16 — common period-labels. «День»/«Тиждень»/«Місяць» зʼявляються
     // у range-toggle-ах (analytics, journal, dashboard); «Сьогодні» — у
     // header-міток і chip-ах.
     today: "Сьогодні",
@@ -242,13 +242,13 @@ export const messages = {
     nutritionLog: "Журнал",
     /**
      * Рішення власника 2026-08-05: сторінка перейменована зі «Звіти» на
-     * «Зв'язки». «Аналітика» відкинута навмисно — це слово стоїть у навбарі
-     * кожного продукту, тобто не відрізняє нас ні від кого; «Зв'язки»
+     * «Звʼязки». «Аналітика» відкинута навмисно — це слово стоїть у навбарі
+     * кожного продукту, тобто не відрізняє нас ні від кого; «Звʼязки»
      * називає рівно те, чого конкурент не має, бо не має чотирьох модулів на
      * одних даних (`docs/05-design/design/anti-slop-strategy.md` §4).
-     * «Сержант» теж відкинуто: це вже ім'я асистента в чаті.
+     * «Сержант» теж відкинуто: це вже імʼя асистента в чаті.
      */
-    reports: "Зв'язки",
+    reports: "Звʼязки",
     finykSections: "Розділи Фініка",
     fizrukSections: "Розділи Фізрука",
     routineSections: "Розділи Рутини",
@@ -449,7 +449,7 @@ export const messages = {
     // legacy module-checklist welcome.
     goalFirstHeading: "Що для тебе зараз важливо?",
     goalFirstSubtitle:
-      "Обери головне, Sergeant підбере розділ, з якого почнемо.",
+      "Обери головне, Sergeant підбере розділ, з якого почати.",
     goalFirstSkipLabel: "Подивитись усе",
     goalFirstAriaLabel: "Цілі онбордингу",
 
@@ -469,7 +469,7 @@ export const messages = {
   // surface. Taglines are kept short (~5-7 words each) so the cards stay
   // scannable at the 2-col mobile breakpoint without truncation.
   welcomeModulePicker: {
-    heading: "З чого почнемо?",
+    heading: "З чого почати?",
     // Копія мусить описувати ФАКТИЧНИЙ стан гріда: усі чотири модулі вже
     // ввімкнені (`WelcomeModulePicker` стартує з `[...ALL_MODULES]`). Стара
     // фраза «Обери модулі, з яких хочеш почати» читалася як «нічого не
@@ -493,7 +493,7 @@ export const messages = {
 
   form: {
     // Round 16 — generic form-shell labels. `quickFill` — keyboard-accessory
-    // ("autocomplete") header, з'являється над клавіатурою на мобілці.
+    // ("autocomplete") header, зʼявляється над клавіатурою на мобілці.
     quickFill: "Швидке заповнення",
   },
 
@@ -581,7 +581,7 @@ export const messages = {
      * AI-CONTEXT: тон констатувальний, без докору — канон `fizruk.md` §6
      * вимагає саме цього. Тому в середині шкали стоїть факт про паузу
      * («34 дні без роботи»), а не оцінка людини, і слово «спад»
-     * з'являється лише коли він справді дійшов до підлоги.
+     * зʼявляється лише коли він справді дійшов до підлоги.
      */
     returnScale: {
       referenceLabel: "орієнтир",
@@ -590,7 +590,7 @@ export const messages = {
       fresh: "свіже",
       daysAgo: "дн. тому",
       daysWithoutWork: "дн. без роботи",
-      atFloor: "нижче не опускаємо",
+      atFloor: "нижче не опускаю",
       noHistory: "історії ще немає",
     },
     // Shared Fizruk unit suffixes (composed at call-site as `${n} ${unit}`).
@@ -617,6 +617,10 @@ export const messages = {
 
   nutrition: {
     fromPantry: "З комори",
+    /** Рядок-джерело `FromReceiptRow` — позиції останнього чека Сільпо. */
+    fromReceipt: "З чека Сільпо",
+    /** Суфікс ваги на чіпсі чека («330 г»). */
+    gramsShort: "г",
     mealType: "Прийом їжі",
     templates: "Швидкі прийоми",
     deleteTemplateTitle: "Видалити швидкий прийом?",
@@ -640,7 +644,7 @@ export const messages = {
       emptyTitle: "Поки немає історії",
       emptyDescription: "Додай воду за сьогодні, і тут зʼявиться графік.",
     },
-    // Комора: згортка-гайд режиму «Списком» + прев'ю розібраних позицій.
+    // Комора: згортка-гайд режиму «Списком» + превʼю розібраних позицій.
     pantryGuide: {
       summary: "Як писати список?",
       separators: "Розділяй продукти комою або новим рядком:",
@@ -712,7 +716,7 @@ export const messages = {
     // ⌘K-індексом (`settingsSectionsCatalog.ts`), який ніс "Експериментальні".
     // `ExperimentalSection.tsx` більше не читає це поле для заголовка —
     // тепер він бере title з `settingsSectionTitle("experimental")` — але
-    // значення тут лишається дзеркалом каталогу, щоб не з'являлось друге
+    // значення тут лишається дзеркалом каталогу, щоб не зʼявлялось друге
     // джерело правди для тексту. КОПІЯ ДЛЯ ЗАТВЕРДЖЕННЯ ВЛАСНИКОМ.
     title: "Експериментальні функції",
     intro:
@@ -741,7 +745,7 @@ export const messages = {
   // в `uk.sergeant.ts` (той самий прецедент, що `uk.privacy.ts`).
   sergeant: sergeantMessages,
 
-  // Крос-модульний зв'язок (`CrossModuleLinkCard`, P2 анти-слоп плану) —
+  // Крос-модульний звʼязок (`CrossModuleLinkCard`, P2 анти-слоп плану) —
   // копія в `uk.crossModuleLink.ts` (той самий прецедент, що `uk.privacy.ts`).
   crossModuleLink: crossModuleLinkMessages,
 
@@ -755,15 +759,15 @@ export const messages = {
   biometrics: {
     sectionTitle: "Біометрія",
     statusReady: "Готово до розрахунку TDEE",
-    statusIncomplete: "Заповніть дані для розрахунку",
+    statusIncomplete: "Заповни дані для розрахунку",
     heightLabel: "Зріст (см)",
     birthDateLabel: "Дата народження",
     sexLabel: "Стать",
     sexMale: "Чоловік",
     sexFemale: "Жінка",
-    sexPlaceholder: "Оберіть",
+    sexPlaceholder: "Обери",
     activityLabel: "Рівень активності",
-    activityPlaceholder: "Оберіть",
+    activityPlaceholder: "Обери",
     activitySedentaryLabel: "Малорухливий",
     activitySedentaryHint: "Офісна робота, майже без тренувань",
     activityLightLabel: "Легка активність",
@@ -807,7 +811,7 @@ export const messages = {
   nutritionTdee: {
     triggerLabel: "Розрахувати з профілю",
     triggerHint:
-      "Заповни біометрію в профілі (стать, вік, зріст, вагу, рівень активності), і ми порахуємо твою денну норму ккал автоматично.",
+      "Заповни біометрію в профілі (стать, вік, зріст, вагу, рівень активності), і я порахую твою денну норму ккал автоматично.",
     profileLink: "Заповнити в профілі",
     goalCutting: "Схуднення (-500 ккал)",
     goalMaintenance: "Підтримка",
@@ -848,7 +852,7 @@ export const messages = {
     pageTitle: "Sergeant · Status",
     pollNote: "Поточний стан компонентів. Оновлюється автоматично кожні",
     pollNoteSuffix: "с.",
-    loading: "Завантажуємо стан сервісу…",
+    loading: "Завантаження стану сервісу…",
     overallOperational: "Усі сервіси працюють",
     overallDegraded: "Часткова деградація",
     overallDown: "Серйозна проблема",
@@ -919,7 +923,7 @@ export const messages = {
     // Помилки закриваються дією (style-guide.uk.md): людина щойно витратила
     // час на текст, і найгірше — залишити її без способу його врятувати.
     errorOffline:
-      "Немає зв'язку, відгук не надіслався. Скопіюй текст і спробуй ще раз, коли з'явиться інтернет.",
+      "Немає звʼязку, відгук не надіслався. Скопіюй текст і спробуй ще раз, коли зʼявиться інтернет.",
     errorGeneric:
       "Не вдалося надіслати, запит не дійшов. Спробуй ще раз або скопіюй текст і кинь у чат бети.",
     copyMessage: "Скопіювати текст",
@@ -951,64 +955,6 @@ export const messages = {
     },
   },
 
-  // Initiative 0010 Phase 6 — Landing page (`/`). Publicly-visible marketing
-  // surface. All user-visible strings live here so EN can fully replace this
-  // group via the shallow-merge contract in `index.ts`. The FEATURES array in
-  // LandingPage.tsx is built from messages.landing.features at render-time.
-  landing: {
-    // Header
-    signIn: "Увійти",
-    signInAria: "Увійти в обліковий запис",
-
-    // Hero section
-    heroAriaLabel: "Hero: анонс Sergeant",
-    eyebrow: "Local-first · AI · Українською",
-    heroHeadline:
-      "Один помічник для фінансів, тренувань,\nхарчування і рутини.",
-    heroSubcopy:
-      "Sergeant обʼєднує чотири модулі (Фінік, Фізрук, Їжа, Рутина)" +
-      " в один AI-чат, що памʼятає твої цілі і пропонує наступний крок." +
-      " Без хмари за замовчуванням, з повним контролем над даними.",
-    registerCta: "Створити акаунт",
-    loginCta: "Вже маю акаунт",
-    skipCta: "Спробувати без облікового запису",
-
-    // Features section
-    featuresAriaLabel: "Чому Sergeant",
-    features: {
-      aiTitle: "AI-помічник у кишені",
-      aiBody:
-        "Чат, що знає твої фінанси, тренування, харчування і рутину, і пропонує наступний крок.",
-      localFirstTitle: "Local-first за замовчуванням",
-      localFirstBody:
-        "Дані живуть на твоєму пристрої. Cloud sync – опціональний (Premium), не вмикається без твого підтвердження.",
-      noHiddenTitle: "Без зайвих списань",
-      noHiddenBody:
-        "Free-тір – назавжди. Premium – один платний план без прихованих списань. Ціну оголосимо на запуску.",
-    },
-
-    // Waitlist section
-    waitlistAriaLabel: "Підписатися на запуск Sergeant",
-    waitlistHeadline: "Лист, коли Premium буде готовий",
-    waitlistSubcopy:
-      "Залиш email для launch-апдейту. Це той самий список інтересу, але" +
-      " тепер із attribution `source=landing`.",
-
-    // Pricing section
-    pricingAriaLabel: "Перехід до тарифів",
-    pricingHeadline: "Подивись на тарифи",
-    pricingSubcopy:
-      "Free назавжди для повсякденного використання. Premium відкриває" +
-      " безлімітний AI-чат, авто-Mono sync і CloudSync між пристроями.",
-    pricingCta: "Дивитись тарифи",
-
-    // Footer
-    footerText:
-      "Sergeant – український проєкт. Без реклами, без перепродажу даних," +
-      " без темних патернів. Telegram-канал з оновленнями і публічний" +
-      " changelog у репозиторії.",
-  },
-
   // Initiative 0010 Phase 6 — Pricing page (`/pricing`). Conversion-funnel
   // surface; EN translation is launch-critical. All user-visible strings on
   // the page route through this group so they can be locale-switched per
@@ -1026,3 +972,15 @@ export const messages = {
 export interface MessageCatalog {
   readonly [key: string]: string | MessageCatalog;
 }
+
+/**
+ * Структурне дзеркало групи каталогу: та сама форма ключів, але кожен
+ * літеральний рядок розширено до `string`. Використовується en-каталогами,
+ * щоб оголошена група БУЛА ЗОБОВʼЯЗАНА покривати кожен листовий ключ
+ * uk-групи (shallow-merge контракт `index.ts → getMessages`).
+ */
+export type MessageGroupShape<T> = {
+  readonly [K in keyof T]: T[K] extends string
+    ? string
+    : MessageGroupShape<T[K]>;
+};

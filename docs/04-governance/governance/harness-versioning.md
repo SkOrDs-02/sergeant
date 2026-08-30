@@ -1,8 +1,8 @@
 # Harness versioning
 
-> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-02.
+> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-20.
 > **Status:** Active
-> **Owns:** [.kilo/harness-versions.json](../../../.kilo/harness-versions.json), [`scripts/ci-bump-harness-version.mjs`](../../../scripts/ci-bump-harness-version.mjs).
+> **Owns:** [.agents/harness-versions.json](../../../.agents/harness-versions.json), [`scripts/ci-bump-harness-version.mjs`](../../../scripts/ci-bump-harness-version.mjs).
 > **Decided by:** [ADR-0072](../adr/0072-harness-versioning.md).
 
 ## Scope
@@ -14,13 +14,13 @@ The "harness" is the set of files that every AI agent reads before touching code
 - `docs/04-governance/governance/rules/**` (Hard Rules)
 - `packages/eslint-plugin-sergeant-design/**` (mechanical design enforcement)
 - `.husky/**` (pre-commit gates)
-- `.kilocode/snapshot.md` (post-§2 dynamic context)
+- `.agents/snapshot.md` (post-§2 dynamic context)
 
 A change to any of these is a _harness change_ and must bump the registry.
 
 ## Schema
 
-The registry lives at `.kilo/harness-versions.json`:
+The registry lives at `.agents/harness-versions.json` (до 2026-08-28 - у `.kilo/`; перенесено [ADR-0088](../adr/0088-devin-kilo-harness-retirement.md)):
 
 ```json
 {
@@ -71,7 +71,7 @@ The bumper is conservative: a `major` triggers any time a Hard Rule file is in t
 ```bash
 # from repo root, with origin/main up to date
 node scripts/ci-bump-harness-version.mjs
-git add .kilo/harness-versions.json
+git add .agents/harness-versions.json
 git commit -m "chore(agents): bump harness to <next>"
 ```
 
@@ -98,7 +98,7 @@ For an agent at session start:
 ```js
 import { readFileSync } from "node:fs";
 const { current, versions } = JSON.parse(
-  readFileSync(".kilo/harness-versions.json", "utf8"),
+  readFileSync(".agents/harness-versions.json", "utf8"),
 );
 const entry = versions[current];
 // if `current` differs from the version noted in the previous session summary,

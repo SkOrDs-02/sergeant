@@ -83,7 +83,7 @@ const state: BudgetState = {
  * парс-фрі шлях; toISOString() гарантовано повертає UTC (не локальний TZ).
  *
  * NOTE: domain-invariant Sergeant-у — `Europe/Kyiv` day-boundary. Тут
- * саме UTC: budget-аналітика прив'язана до Voyage billing-day (UTC),
+ * саме UTC: budget-аналітика привʼязана до Voyage billing-day (UTC),
  * а не до user-facing-дня. Це окремий agreement з SRE — не плутати з
  * за-Kyiv-time finyk-roll-up-ами.
  */

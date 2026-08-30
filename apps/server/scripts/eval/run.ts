@@ -8,6 +8,26 @@ import { estimateCost } from "./cost.js";
 import { voiceViolations } from "./judges.js";
 import type { Candidate, GoldenCase, Pipeline, RunResult } from "./types.js";
 
+/** Яку env-змінну знімає `getLLMProvider()`, коли їй бракує ключа для провайдера. */
+function missingKeyEnvVar(provider: Candidate["provider"]): string {
+  return provider === "anthropic" ? "ANTHROPIC_API_KEY" : "OPENROUTER_API_KEY";
+}
+
+/**
+ * Чи резолвиться кандидат у власного провайдера прямо зараз.
+ *
+ * Потрібно, щоб `--skip-unavailable` міг ВІДСІЯТИ кандидата ДО прогону, а не
+ * ловити виняток по кожному кейсу. Перевірка та сама, що в гейті нижче.
+ */
+export function candidateProviderAvailable(candidate: Candidate): boolean {
+  return (
+    getLLMProvider({
+      provider: candidate.provider,
+      disableFallback: true,
+    }).name === candidate.provider
+  );
+}
+
 export async function runOne(
   pipeline: Pipeline,
   goldenCase: GoldenCase,
@@ -21,6 +41,24 @@ export async function runOne(
     // кандидата іншим провайдером і зробив би рядок таблиці брехнею.
     disableFallback: true,
   });
+  // AI-DANGER: (B44) без ключа `getLLMProvider()` МОВЧКИ повертає
+  // `StubProvider` для `anthropic`/`openrouter`. Кандидат далі відпрацьовує
+  // за 0 мс і $0, а звіт друкує його оголошену модель з вердиктом — «0/N»
+  // читається як «модель провалила всі пастки», хоча її взагалі не
+  // викликали (доказ: `z-ai/glm-5.2` — 0/18 заглушкою, 18/18 живим
+  // викликом, той самий рядок таблиці). Мовчазний stub у звіті гірший за
+  // впалий прогін — тому поза `--dry-run` розбіжність оголошений↔резолвлений
+  // провайдер фейлить прогін гучно, з іменем змінної, якої бракує.
+  if (!dryRun && provider.name !== candidate.provider) {
+    throw new Error(
+      `eval stand: кандидат "${candidate.label}" (\`${candidate.model}\`) оголошений як provider="${candidate.provider}", ` +
+        `але getLLMProvider() резолвнув "${provider.name}" — ключ ${missingKeyEnvVar(candidate.provider)} не заданий ` +
+        `(або порожній), тож виклик мовчки пішов би у StubProvider замість оголошеної моделі. ` +
+        `Задай ${missingKeyEnvVar(candidate.provider)}, запусти з --dry-run, ` +
+        `або з --skip-unavailable, щоб прогнати лише доступних кандидатів ` +
+        `(відсіяні будуть названі у звіті — на відміну від мовчазної заглушки).`,
+    );
+  }
   const system = goldenCase.system ?? pipeline.system;
   const t0 = Date.now();
   const result = await invokeLLM(provider, {
@@ -45,6 +83,9 @@ export async function runOne(
     return {
       ...base,
       ok: false,
+      // Транспортна помилка (B47) — модель не відповіла, це не вердикт
+      // судді. `report.ts` виключає такі рядки зі знаменника точності.
+      transportFailed: true,
       passedJudge: false,
       judgeReason: null,
       inputTokens: null,
@@ -63,6 +104,7 @@ export async function runOne(
   return {
     ...base,
     ok: true,
+    transportFailed: false,
     passedJudge: verdict === true,
     judgeReason: typeof verdict === "string" ? verdict : null,
     inputTokens,

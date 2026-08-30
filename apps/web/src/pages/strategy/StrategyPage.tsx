@@ -34,6 +34,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { strategicKeys } from "@shared/lib/api/queryKeys";
+import { Select } from "@shared/components/ui/Select";
 import { messages } from "../../shared/i18n/uk";
 import { internalFetch } from "@shared/lib/api/internalFetch";
 import { getKyivWeekStartKey } from "@shared/lib/time/kyivTime";
@@ -234,20 +235,27 @@ export function StrategyPage({ founderUserId }: StrategyPageProps) {
               <span className="text-style-label">
                 {messages.strategy.personaLabel}
               </span>
-              <select
-                ref={personaSelectRef}
-                value={persona}
-                onChange={(e) =>
-                  setPersona(e.target.value as StrategicGoalPersona)
-                }
-                className="mt-1 block w-full rounded-md border px-3 py-2"
-              >
-                {STRATEGIC_GOAL_PERSONAS.map((p) => (
-                  <option key={p} value={p}>
-                    {PERSONA_LABELS[p]}
-                  </option>
-                ))}
-              </select>
+              {/* Shared Select замість raw <select>: тут не було жодного
+                  focus-стилю (a11y-gap) і стояв нетокенізований rounded-md;
+                  size="sm" (h-9 pl-3 rounded-xl) — найближчий до сусідніх
+                  полів форми з px-3 py-2. Обгортка mt-1 — щоб каретка
+                  Select лишалась вертикально центрованою. */}
+              <div className="mt-1">
+                <Select
+                  ref={personaSelectRef}
+                  size="sm"
+                  value={persona}
+                  onChange={(e) =>
+                    setPersona(e.target.value as StrategicGoalPersona)
+                  }
+                >
+                  {STRATEGIC_GOAL_PERSONAS.map((p) => (
+                    <option key={p} value={p}>
+                      {PERSONA_LABELS[p]}
+                    </option>
+                  ))}
+                </Select>
+              </div>
             </label>
             <label className="block">
               <span className="text-style-label">

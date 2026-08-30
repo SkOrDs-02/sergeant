@@ -35,7 +35,7 @@ export function AccountFilterSheet({
       open={open}
       onClose={onClose}
       title="Фільтр по рахунках"
-      description="Оберіть рахунки, транзакції з яких показувати."
+      description="Обери рахунки, транзакції з яких показувати."
     >
       <View testID={`${testID}-accounts-sheet`}>
         {accounts.length === 0 ? (

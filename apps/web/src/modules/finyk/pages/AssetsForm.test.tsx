@@ -354,7 +354,7 @@ describe("ReceivableForm", () => {
     );
     expect(screen.getByPlaceholderText("Сума ₴")).toBeInTheDocument();
     expect(
-      screen.getByPlaceholderText("Нотатка (необов'язково)"),
+      screen.getByPlaceholderText("Нотатка (необовʼязково)"),
     ).toBeInTheDocument();
     const dueDate = screen.getByLabelText("Дата повернення");
     expect(dueDate).toHaveClass("w-full");

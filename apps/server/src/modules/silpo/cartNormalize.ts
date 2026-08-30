@@ -87,6 +87,19 @@ export const RawCartCatalogHitSchema = z
     id: z.string().optional(),
     name: z.string().optional(),
     price: z.number().optional(), // UAH
+    /**
+     * Ціна ДО акції, UAH. Приходить у тому самому хіті
+     * `silpo_find_products_batch`, який ми вже робимо для прев'ю — тобто
+     * знижка не коштує жодного додаткового MCP-виклику.
+     */
+    oldPrice: z.number().nullable().optional(),
+    /**
+     * Наявність у філії. Теж приходить у хіті пошуку, і теж досі
+     * викидалась — через що в кошик можна було покласти те, чого немає,
+     * і дізнатись про це вже в застосунку Сільпо.
+     */
+    available: z.boolean().optional(),
+    stock: z.number().optional(),
     companyId: z.string().nullable().optional(),
     branchId: z.string().nullable().optional(),
     weighted: z.boolean().optional(),
@@ -114,10 +127,49 @@ export type RawBatchQuery = NonNullable<
   z.infer<typeof BatchEnvelopeSchema>["queries"]
 >[number];
 
+/**
+ * Мінімальна знижка, яку варто показувати: 1%. Нижче цього клієнтське
+ * `Math.round(...)` дає «−0%», тобто значок, який нічого не повідомляє,
+ * але виглядає як акція.
+ */
+const MIN_PROMO_FRACTION = 0.01;
+
+function isNotablePromo(
+  oldPrice: number | null | undefined,
+  price: number,
+): oldPrice is number {
+  if (oldPrice == null || oldPrice <= price) return false;
+  // price === 0 (промо-подарунок) — знижка 100%, показуємо.
+  if (price <= 0) return true;
+  return (oldPrice - price) / oldPrice >= MIN_PROMO_FRACTION;
+}
+
 export interface CartMatch {
   lagerId: string;
   name: string;
   priceKop: number;
+  /**
+   * Ціна до акції в копійках, або `null` коли акції немає.
+   *
+   * Заповнюється лише коли знижка ПОМІТНА — щонайменше
+   * {@link MIN_PROMO_FRACTION}. Спершу тут стояло просто «строго більша за
+   * поточну», і цього виявилось замало: різниця в десять копійок на сотні
+   * гривень проходила гейт, а `Math.round` у клієнті перетворював її на
+   * «−0%». Сільпо шле і рівний `oldPrice` (технічний слід перецінки), і
+   * такі копійчані хвости, тож поріг має жити тут — один раз, а не в
+   * кожного споживача DTO.
+   */
+  oldPriceKop: number | null;
+  /**
+   * `false` — товару немає у філії. Позиція лишається у видачі (людина має
+   * бачити, що продукт існує, просто закінчився), але прев'ю не відмічає
+   * її за замовчуванням.
+   *
+   * Дефолт `true`: поле опційне, і мовчазна відсутність не мусить читатись
+   * як «немає в наявності» — це зробило б увесь список сірим на першому ж
+   * дрейфі схеми.
+   */
+  available: boolean;
   unit: string;
   displayRatio: string | null;
 }
@@ -147,6 +199,11 @@ export function normalizeCartMatch(raw: RawCartCatalogHit): CartMatch | null {
     }),
     name: raw.name,
     priceKop: uahToKop(raw.price),
+    oldPriceKop: isNotablePromo(raw.oldPrice, raw.price)
+      ? uahToKop(raw.oldPrice)
+      : null,
+    // `stock: 0` — теж «немає», навіть коли прапорець мовчить.
+    available: raw.available !== false && raw.stock !== 0,
     unit: deriveUnit(raw.displayRatio, raw.weighted),
     displayRatio: raw.displayRatio ?? null,
   };

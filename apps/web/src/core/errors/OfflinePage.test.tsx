@@ -53,16 +53,16 @@ describe("OfflinePage", () => {
     expect(screen.getByText("Спробувати ще")).toBeInTheDocument();
   });
 
-  it("renders 'Очікуємо мережу…' button text when offline", () => {
+  it("renders 'Очікування мережі…' button text when offline", () => {
     mockUseOnlineStatus.mockReturnValue(false);
     render(<OfflinePage />);
-    expect(screen.getByText("Очікуємо мережу…")).toBeInTheDocument();
+    expect(screen.getByText("Очікування мережі…")).toBeInTheDocument();
   });
 
   it("reload button is disabled when offline", () => {
     mockUseOnlineStatus.mockReturnValue(false);
     render(<OfflinePage />);
-    const btn = screen.getByRole("button", { name: /Очікуємо мережу/i });
+    const btn = screen.getByRole("button", { name: /Очікування мережі/i });
     expect(btn).toBeDisabled();
   });
 

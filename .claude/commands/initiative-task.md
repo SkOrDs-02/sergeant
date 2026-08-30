@@ -30,8 +30,7 @@ Arguments: `$ARGUMENTS`
    - `apps/server/**`, route handlers, serializers → `sergeant-server-api`
    - `apps/server/db/migrations/**`, `*.sql` → `sergeant-data-and-migrations`
    - `apps/mobile/**`, Expo → `sergeant-mobile-expo`
-   - `apps/server/src/hubchat/**` → `sergeant-hubchat`
-   - `tools/openclaw/**` → `sergeant-openclaw`
+   - `apps/server/src/modules/{chat,mono,digest,ai-memory}/**` → `sergeant-module-ai`
    - `auth.ts`, Better Auth → `better-auth-best-practices`
    - `docs/**`, `scripts/docs/**`, `.github/workflows/docs-*.yml` → cross-surface: read **no** specialist, treat as `sergeant-writing-skills` if SKILL.md is touched, otherwise plain docs work
    - `.github/workflows/**` (non-docs), `tools/**` (non-openclaw), `packages/config/**`, root `eslint.config.js` / `pnpm-workspace.yaml` → no specialist exists; load `sergeant-start-here` + relevant playbook from `docs/00-start/playbooks/` (e.g. `fix-failing-ci.md`). Note the catalog gap in the end-of-turn summary.

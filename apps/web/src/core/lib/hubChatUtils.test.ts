@@ -80,7 +80,7 @@ describe("friendlyApiError", () => {
   it("names the way out on 401/403 instead of a bare «access denied»", () => {
     expect(friendlyApiError(401, "Unauthorized")).toBe(CHAT_AUTH_REQUIRED_TEXT);
     expect(friendlyApiError(403, "Forbidden")).toBe(CHAT_AUTH_REQUIRED_TEXT);
-    expect(CHAT_AUTH_REQUIRED_TEXT).toContain("увійди");
+    expect(CHAT_AUTH_REQUIRED_TEXT).toContain("Увійди");
   });
   it("delegates to base mapper otherwise", () => {
     const out = friendlyApiError(404, "not found");
@@ -92,7 +92,7 @@ describe("friendlyApiError", () => {
 describe("friendlyChatError", () => {
   it("maps network errors", () => {
     expect(friendlyChatError(new Error("Failed to fetch"))).toBe(
-      "Немає з'єднання з мережею або сервер недоступний.",
+      "Немає зʼєднання з мережею або сервер недоступний.",
     );
     expect(friendlyChatError(new Error("network down"))).toContain("мережею");
   });

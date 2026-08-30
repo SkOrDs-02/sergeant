@@ -23,7 +23,7 @@ import {
 } from "./summary.js";
 
 describe("selectBodyWeightSamples", () => {
-  it("об'єднує обидва сховища — жоден день не губиться", () => {
+  it("обʼєднує обидва сховища — жоден день не губиться", () => {
     const samples = selectBodyWeightSamples(
       [{ id: "dl1", at: "2026-06-20T08:00:00Z", weightKg: 82 }],
       [{ id: "m1", at: "2026-06-22T08:00:00Z", weightKg: 81 }],

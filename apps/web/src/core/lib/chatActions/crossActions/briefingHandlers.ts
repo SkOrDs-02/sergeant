@@ -73,7 +73,7 @@ export function weeklySummary(): string {
       ),
     0,
   );
-  if (totalVolume > 0) parts.push(`Об'єм: ${Math.round(totalVolume)} кг×повт`);
+  if (totalVolume > 0) parts.push(`Обʼєм: ${Math.round(totalVolume)} кг×повт`);
   const routineState = loadRoutineState();
   if (routineState.habits.length > 0) {
     const activeHabits = routineState.habits.filter((h) => !h.archived);

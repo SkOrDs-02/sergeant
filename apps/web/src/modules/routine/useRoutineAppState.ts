@@ -346,7 +346,7 @@ export function useRoutineAppState({
       //   1) `startTransition` виконує колбек синхронно, тож до моменту
       //      емісії `outcome` уже заповнений — зайвого стану не треба;
       //   2) сам `trackEvent` лишається поза transition-скоупом, щоб не
-      //      з'їхати в render-фазу (та сама межа, що описана вище).
+      //      зʼїхати в render-фазу (та сама межа, що описана вище).
       const outcome = { changed: false, done: false };
       startHabitTransition(() => {
         const prev = loadRoutineState();
@@ -397,9 +397,9 @@ export function useRoutineAppState({
     if (next === prev) return;
     hapticSuccess();
     // Масова відмітка — це «закрити день одним тапом», а не мотивований
-    // чекін. Подія та сама (інакше знаменник роз'їхався б по двох іменах),
+    // чекін. Подія та сама (інакше знаменник розʼїхався б по двох іменах),
     // але `source: "bulk"` дозволяє виключити її зі знаменника петлі на
-    // боці дашборда. Стрік-поля свідомо null: приписати експозицію полум'я
+    // боці дашборда. Стрік-поля свідомо null: приписати експозицію полумʼя
     // одному тапу по «відмітити все» означало б рахувати N чекінів як
     // мотивовані одним показом.
     trackEvent(ANALYTICS_EVENTS.ROUTINE_HABIT_CHECKED, {
@@ -425,7 +425,7 @@ export function useRoutineAppState({
     // the error toast is actionable per docs/ui/toast-policy.md. The
     // retry callback fires the same `requestCloudPull` the PTR gesture
     // used, so the user does not need to remember the gesture.
-    toast.error("Не вдалося оновити дані. Перевір з'єднання.", undefined, {
+    toast.error("Не вдалося оновити дані. Перевір зʼєднання.", undefined, {
       label: "Повторити",
       onClick: () => {
         void requestCloudPull(2500);

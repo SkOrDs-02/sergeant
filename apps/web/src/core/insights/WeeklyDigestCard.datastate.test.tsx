@@ -50,7 +50,7 @@ describe("WeeklyDigestCard — DataState routing", () => {
 
     render(<WeeklyDigestCard />);
 
-    expect(screen.getByLabelText(/генеруємо звіт тижня/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/генерую звіт тижня/i)).toBeInTheDocument();
     // No empty/error/content affordances while skeleton is up.
     expect(
       screen.queryByRole("button", { name: /згенерувати звіт/i }),
@@ -72,7 +72,7 @@ describe("WeeklyDigestCard — DataState routing", () => {
     expect(
       screen.getByRole("button", { name: /згенерувати звіт/i }),
     ).toBeInTheDocument();
-    expect(screen.queryByLabelText(/генеруємо звіт тижня/i)).toBeNull();
+    expect(screen.queryByLabelText(/генерую звіт тижня/i)).toBeNull();
   });
 
   it("renders the empty slot with a 'not stored' message on a past week", () => {

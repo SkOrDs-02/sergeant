@@ -208,11 +208,11 @@ export function useTransactionSelection({
     // defaulting back to expense.
     const isIncome = Number(tx.amount || 0) > 0;
     // Без `id` навмисно: знімок існує лише заради undo, а `addManualExpense`
-    // без нього згенерує НОВИЙ ідентифікатор. Зі старим id операція
-    // прилітала б на сервері в тумбстоун видаленого рядка й відхилялась
-    // (`reason: "tombstoned"`) — запис повертався б локально й не
-    // повертався на сервері. Те саме, що лікує `restoreManualExpense` для
-    // другого шляху undo; тут дешевше просто не класти id у знімок.
+    // без нього згенерує НОВИЙ ідентифікатор. Історично зі старим id
+    // операція відхилялась на сервері як `tombstoned` — те саме, що лікує
+    // `restoreManualExpense` для другого шляху undo (повний розбір там).
+    // Серверне правило знято, старий id теж доїхав би, але тримати новий
+    // дешевше й безпечніше на старому сервері за проксі.
     const snapshot: Omit<ManualExpense, "id"> = {
       date: tx.time
         ? new Date(tx.time * 1000).toISOString()

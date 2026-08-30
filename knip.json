@@ -78,7 +78,11 @@
       ]
     },
     "apps/landing": {
-      "entry": ["middleware.ts", "scripts/generate-og.mjs"]
+      // entry-server.tsx — SSG-вхід (`vite build --ssr`, див. package.json
+      // build): Vite-плагін knip бачить лише index.html → main.tsx.
+      // middleware.ts прибрано: файл видалено разом з edge-проксі (README
+      // § «Якщо тут колись зʼявиться запит до API») — патерн без збігів.
+      "entry": ["src/entry-server.tsx", "scripts/generate-og.mjs"]
     },
     "apps/server": {
       "project": ["src/**/*.{js,ts}"],

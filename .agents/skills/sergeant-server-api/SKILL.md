@@ -9,6 +9,8 @@ lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); t
 
 Робота на сервері в Sergeant — це робота з контрактом. API правильний лише тоді, коли серіалізатори, клієнтські типи, тести і time-правила йдуть разом.
 
+Задача в межах модуля (`apps/server/src/modules/*` — finyk, nutrition, AI-шар, sync, billing, integrations, push)? Спершу завантаж його `sergeant-module-*` скіл — контекст, журнал рішень і модульні інваріанти; цей скіл дає лише технічні правила поверхні (роутинг — `sergeant-start-here` § «Роутся одразу»).
+
 ## Що покриває
 
 - `apps/server/src/modules/**`, `apps/server/src/routes/**`, `apps/server/src/http/**`
@@ -40,7 +42,7 @@ lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); t
 
 - auth/session/cookies → `better-auth-best-practices`
 - SQL-схема або rollout-послідовність → `sergeant-data-and-migrations`
-- інтеграція HubChat-tool-у → `sergeant-hubchat`
+- інтеграція HubChat-tool-у → `sergeant-module-ai`
 
 ## Playbooks
 

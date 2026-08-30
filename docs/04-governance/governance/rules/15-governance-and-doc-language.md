@@ -2,7 +2,7 @@
 
 > **Category:** `lint-enforced-convention`
 > **Severity:** `blocker`
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-11-23.
+> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-16.
 > **Status:** Active
 
 > Per-rule canonical body for Hard Rule #15. Compact summary lives in [`AGENTS.md § Hard rules`](../../../../AGENTS.md#hard-rules-do-not-break) (rendered as a table). The machine-readable registry lives in [`docs/04-governance/governance/hard-rules.json`](../hard-rules.json). The 3-way sync (AGENTS.md ↔ JSON ↔ this file) is enforced by `pnpm lint:hard-rules-registry`.
@@ -88,10 +88,10 @@ All **prose** in internal docs (ADRs, playbooks, audits, RFCs, architecture docs
 
 - `README.md` (public-facing, GitHub default-rendered).
 - ADR titles and Status badges (canonical English keywords: `proposed`, `accepted`, `superseded`, `shipped`).
-- The first H1 of `AGENTS.md`, `CONTRIBUTING.md`, `CLAUDE.md`, `DEVIN.md` (shared-tooling convention).
+- The first H1 of `AGENTS.md`, `CONTRIBUTING.md`, `CLAUDE.md` (shared-tooling convention).
 - OpenAPI / `docs/02-engineering/api/*` schema & description fields (consumed by tooling).
 - Commit messages (Conventional Commits English vocabulary — Hard Rule #5).
-- PR titles & descriptions (English so reviewers across timezones / Devin / Codex can scan).
+- PR titles & descriptions (English so reviewers across timezones / Codex can scan).
 - Code identifiers, command names, log lines, env-var names, error codes (always English).
 - Verbatim quotes from English-language sources (RFCs, vendor docs, Stripe error names, etc.).
 - `.agents/skills/**/SKILL.md` — `lang: uk` is the default (most skills). `lang: en` is allowed **only** with a mandatory `lang-reason:` field in the frontmatter, used when the skill body is critical to tool-routing stability (e.g. `sergeant-e2e-testing`, `sergeant-planning-batch`, `sergeant-security-audit`, `sergeant-tech-debt`, `sergeant-verify-before-done`). The `description:` field still carries a bilingual trigger phrase regardless of body language — see `sergeant-writing-skills` § Грамар.

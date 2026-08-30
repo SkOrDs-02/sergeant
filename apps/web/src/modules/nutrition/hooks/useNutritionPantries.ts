@@ -32,7 +32,10 @@ import {
   parseLoosePantryText,
   type PantryItem,
 } from "../lib/pantryTextParser";
-import { gramsToUnitQty } from "@sergeant/nutrition-domain";
+import {
+  applyConsumeToPantryItem,
+  type PantryItemSource,
+} from "@sergeant/nutrition-domain";
 import type {
   PantryForm,
   PantryFormMode,
@@ -49,7 +52,7 @@ interface ParsePantryVariables {
   text: string;
 }
 
-/** Звідки взялись позиції у прев'ю — впливає лише на копірайт підказки. */
+/** Звідки взялись позиції у превʼю — впливає лише на копірайт підказки. */
 export type PantryParseSource = "ai" | "local";
 
 export interface PantryParsePreview {
@@ -83,6 +86,7 @@ function normalizeIncomingItems(raw: PantryItem | PantryItem[]): PantryItem[] {
           : Number(item.qty),
       unit: item?.unit != null ? normalizeUnit(item.unit) : null,
       notes: item?.notes ?? null,
+      sources: Array.isArray(item?.sources) ? item.sources : null,
     }))
     .filter((item) => item.name);
 }
@@ -305,7 +309,7 @@ export function useNutritionPantries({
 
   const removeItemAt = (idx: number) => {
     if (!ensureStructuredItems()) return;
-    // Читаємо ім'я ДО setPantries — той самий закриттєвий патерн, що вже
+    // Читаємо імʼя ДО setPantries — той самий закриттєвий патерн, що вже
     // працює у `editItemAt` вище: `activePantry` в цьому рендері ще бачить
     // структуровані items, які щойно поставив `ensureStructuredItems`.
     const removedName = (
@@ -382,8 +386,21 @@ export function useNutritionPantries({
     setPantryManagerOpen(false);
   };
 
+  /**
+   * Зберігає редагування позиції: назва, кількість, одиниця.
+   *
+   * Назва тут — універсальний запобіжник проти помилки евристики згортання
+   * чи категоризації: будь-яку з них можна виправити за два тапи, не
+   * видаляючи позицію. Перейменування варіантів НЕ чіпає.
+   *
+   * AI-DANGER: ручна зміна кількості СКИДАЄ варіанти. Інакше інваріант
+   * «сума варіантів = кількість позиції» ламався б мовчки: людина ставить
+   * число від руки, а ми не знаємо, з якої саме покупки воно взялось.
+   * Чесніше втратити розклад, ніж показувати суму, якої немає.
+   */
   const onSaveItemEdit = (
     idx: number,
+    name: string | null,
     qty: number | string | null,
     unit: string | null,
   ) => {
@@ -400,9 +417,17 @@ export function useNutritionPantries({
         const qtyNum = qty == null || qty === "" ? null : Number(qty);
         const normalizedQty =
           qtyNum != null && Number.isFinite(qtyNum) ? qtyNum : null;
-        editedName = item.name;
+        const nextName = displayFoodName(name) || item.name;
+        editedName = nextName;
         editedQty = normalizedQty;
-        items[idx] = { ...item, qty: normalizedQty, unit };
+        const qtyChanged = normalizedQty !== item.qty || unit !== item.unit;
+        items[idx] = {
+          ...item,
+          name: nextName,
+          qty: normalizedQty,
+          unit,
+          ...(qtyChanged ? { sources: null } : {}),
+        };
         return { ...p, items };
       }),
     );
@@ -427,6 +452,16 @@ export function useNutritionPantries({
     }
   };
 
+  // Вибір варіанта при списанні (рішення 11): показується ЛИШЕ коли
+  // варіантів два і більше. Списання спрацьовує всередині збереження
+  // прийому їжі, тож зайвий діалог у швидкому сценарії дорожчий за
+  // точність — на одному варіанті нічого не питаємо.
+  const [variantChoice, setVariantChoice] = useState<{
+    itemName: string;
+    grams: number;
+    sources: readonly PantryItemSource[];
+  } | null>(null);
+
   // AI-CONTEXT: списує gramsConsumed зі складської позиції, конвертуючи грами
   // в її одиницю через `gramsToUnitQty` (@sergeant/nutrition-domain): г/кг —
   // маса 1:1, мл/л — через грубу таблицю густин, шт — через вагу однієї штуки.
@@ -434,7 +469,14 @@ export function useNutritionPantries({
   // позицію без змін. Раніше тут пропускались усі немасові одиниці; конверсія
   // закриває inventory-drift із F15 (page-audit-08-nutrition) і коректно
   // обробляє кейс H2 ("200 г молока" зі "2 л" ≈ 0.19 л, а не вся пляшка).
-  const consumePantryItem = (name: string, gramsConsumed: number) => {
+  //
+  // Розподіл між варіантами і видалення вичерпаних живуть у домені
+  // (`applyConsumeToPantryItem`) — там же тримається інваріант суми.
+  const applyConsume = (
+    name: string,
+    gramsConsumed: number,
+    variantName: string | null,
+  ) => {
     const norm = matchFoodName(name);
     if (!norm) return;
     let deductedQty: number | null = null;
@@ -446,17 +488,14 @@ export function useNutritionPantries({
         if (idx < 0) return p;
         const item = items[idx];
         if (!item) return p;
-        const qty = Number(item.qty);
-        if (!Number.isFinite(qty) || qty <= 0) return p;
-        const deduct = gramsToUnitQty(gramsConsumed, item.unit, item.name);
-        if (deduct == null) return p;
-        deductedQty = deduct;
-        deductedUnit = item.unit;
-        const remaining = qty - deduct;
-        if (remaining <= 0) {
+        const res = applyConsumeToPantryItem(item, gramsConsumed, variantName);
+        if (!res) return p;
+        deductedQty = res.deducted;
+        deductedUnit = res.unit;
+        if (res.item === null) {
           items.splice(idx, 1);
         } else {
-          items[idx] = { ...item, qty: Math.round(remaining * 10) / 10 };
+          items[idx] = res.item;
         }
         return { ...p, items };
       }),
@@ -481,6 +520,33 @@ export function useNutritionPantries({
     }
   };
 
+  const consumePantryItem = (name: string, gramsConsumed: number) => {
+    const norm = matchFoodName(name);
+    if (!norm) return;
+    const target = pantryItems.find((x) => matchFoodName(x?.name) === norm);
+    const sources = Array.isArray(target?.sources) ? target.sources : [];
+    if (target && sources.length >= 2) {
+      setVariantChoice({
+        itemName: displayFoodName(target.name),
+        grams: gramsConsumed,
+        sources,
+      });
+      return;
+    }
+    applyConsume(name, gramsConsumed, null);
+  };
+
+  /**
+   * Закриває вибір варіанта. `null` = «з найстарішого» — і це ж поведінка
+   * при закритті діалогу: прийом їжі вже збережено, тож не списати нічого
+   * означало б лишити комору з завищеним залишком.
+   */
+  const resolveVariantChoice = (variantName: string | null) => {
+    if (!variantChoice) return;
+    applyConsume(variantChoice.itemName, variantChoice.grams, variantName);
+    setVariantChoice(null);
+  };
+
   const setPantryText = (text: string) => {
     setPantries((cur) =>
       updatePantry(cur, activePantryId, (p) => ({ ...p, text })),
@@ -491,7 +557,7 @@ export function useNutritionPantries({
   // позицій. Сервер віддає 200 з порожнім `items`, коли модель обірвала
   // JSON (`extractJsonFromText` повертає null), тому фолбек на локальний
   // regex-парсер висить і на `onSuccess`, і на `onError`. Результат не
-  // мерджиться одразу — лягає у прев'ю, яке підтверджує користувач.
+  // мерджиться одразу — лягає у превʼю, яке підтверджує користувач.
   const applyParseResult = (
     pantryId: string,
     text: string,
@@ -604,5 +670,7 @@ export function useNutritionPantries({
     dismissParsePreview,
     pantryStorageErr,
     consumePantryItem,
+    variantChoice,
+    resolveVariantChoice,
   };
 }

@@ -212,13 +212,13 @@ export function RecipeFormPage({ testID }: { testID?: string }) {
         {!isEdit ? (
           <Card>
             <Text className="text-xs text-fg-muted mb-1">
-              ID (необов’язково, для deep link)
+              ID (необовʼязково, для deep link)
             </Text>
             <TextInput
               className="border border-cream-200 rounded-lg p-2 text-fg"
               value={idDraft}
               onChangeText={setIdDraft}
-              placeholder="Залиш порожнім, згенеруємо"
+              placeholder="Залиш порожнім, згенерую"
               autoCapitalize="none"
               placeholderTextColor="#a8a29e"
               testID="recipe-form-id"

@@ -1,5 +1,5 @@
 /**
- * Витягує JSON-об'єкт або масив з довільного тексту.
+ * Витягує JSON-обʼєкт або масив з довільного тексту.
  * Потрібно, бо LLM інколи додає пояснення/текст навколо JSON.
  */
 export function extractJsonFromText(raw: unknown): unknown {
@@ -13,7 +13,7 @@ export function extractJsonFromText(raw: unknown): unknown {
     /* continue */
   }
 
-  // 2) Витягнути перший JSON об'єкт/масив за дужками
+  // 2) Витягнути перший JSON обʼєкт/масив за дужками
   const firstObj = s.indexOf("{");
   const firstArr = s.indexOf("[");
   let start = -1;

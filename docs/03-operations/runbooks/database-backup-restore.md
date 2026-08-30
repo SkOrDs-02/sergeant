@@ -1,6 +1,6 @@
 # Database backup / restore — runbook (PR #049)
 
-> **Last validated:** 2026-07-21 by @cursoragent. **Next review:** 2026-11-08.
+> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-02.
 > **Status:** Active
 
 > **⚠️ Платформа мігрована ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md), 2026-07-11):** Postgres переїхав з Railway на **Coolify-керований `pgvector/pgvector:pg18`** на Hetzner CX23 VPS. Операторські кроки нижче (§1–2, §6–7) переписано під Coolify; platform-agnostic частини (§3–5 — `pg_dump`/`pg_restore`/`psql` smoke-тести) чинні без змін, бо це чистий Postgres. Автоматичний weekly-verify job ([`db-backup-verify.yml`](../../../.github/workflows/db-backup-verify.yml)) теж мігровано — деталі у §6.
@@ -185,9 +185,17 @@ SELECT
 ### 4.3. CRDT-інваріанти (PR #043 / PR-A / PR-B)
 
 ```sql
--- Tombstoned rows (deleted_at != NULL) для основних per-row tables.
--- Кожен ряд тут має лишатися tombstoned після restore — НЕ воскрешатися
--- з op_log replay-ом (G-set CRDT invariant).
+-- Soft-deleted rows (deleted_at != NULL) для основних per-row tables.
+--
+-- УВАГА: це вже НЕ інваріант «жоден ряд не воскресне». Правило
+-- `reason='tombstoned'` знято — після нього видалення живе за звичайним
+-- LWW, тож пуш, СТРОГО НОВІШИЙ за видалення, легітимно знімає
+-- `deleted_at` (розбір — у `guardUuidPkApply`,
+-- `apps/server/src/modules/sync/applySync-helpers.ts`).
+--
+-- Тому цифри читаємо як ПОРІВНЯННЯ до/після restore, а не як «має бути
+-- нуль воскресінь»: різке падіння лічильника при тому, що клієнти нічого
+-- не редагували, лишається сигналом про застарілий snapshot.
 SELECT
   'nutrition_meals'      AS tab, COUNT(*) AS tombstoned FROM nutrition_meals     WHERE deleted_at IS NOT NULL
 UNION ALL SELECT 'routine_entries',          COUNT(*) FROM routine_entries          WHERE deleted_at IS NOT NULL

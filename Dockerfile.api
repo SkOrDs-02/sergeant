@@ -24,14 +24,36 @@
 #      бо binary просто немає у образі.
 #
 # Healthcheck: Coolify для образних деплоїв перевіряє здоровʼя ВСЕРЕДИНІ
-# контейнера, викликаючи `curl` або `wget`. Distroless не має ні того, ні
-# іншого, і доставити їх пакетним менеджером неможливо — його теж немає.
-# Тому нижче в runtime-стейдж запікається busybox і як `/bin/sh`, і як
-# `/bin/wget` (див. коментар над тими двома `COPY`).
+# контейнера. Команда не редагується в UI напряму: Coolify збирає її з
+# полів `health_check_*` (`generate_healthcheck_commands()` у
+# `ApplicationDeploymentJob.php`) в один рядок CMD-SHELL:
 #
-# Dockerfile-івський `HEALTHCHECK` при цьому лишається опущеним свідомо:
-# Coolify задає перевірку своїми полями (`health_check_*` у API / UI) і
-# власний `HEALTHCHECK` з образу лише конфліктував би з ними.
+#   curl -s -X 'GET' -f 'http://localhost:3000/health' > /dev/null
+#     || wget -q -O- 'http://localhost:3000/health' > /dev/null || exit 1
+#
+# тобто `curl` і `wget` тут не альтернатива на вибір, а ланцюг `||`.
+# Distroless не має ні того, ні іншого, і доставити їх пакетним
+# менеджером неможливо (його теж немає). Тому нижче в runtime-стейдж
+# запікається busybox і як `/bin/sh`, і як `/bin/wget` (див. коментар
+# над тими двома `COPY`).
+#
+# Наслідок, який виглядає як поломка і нею не є: перша гілка ланцюга
+# падає ЗАВЖДИ, тож у логах деплою стоїть `/bin/sh: curl: not found`
+# навіть на цілком здоровому контейнері. Перевірку фактично виконує
+# друга гілка, busybox-wget, і саме її код вирішує результат. Тому
+# `Return code: 0` поруч із тим рядком означає «wget отримав 200», а не
+# «shell проковтнув помилку»: якби `/bin/wget` не було, ланцюг дійшов
+# би до `exit 1`. Заміряно 2026-08-29 docker-health-пробою на цьому ж
+# runtime: `/health` 200 → healthy / exit 0, 503 → unhealthy / exit 1,
+# образ без `/bin/wget` → unhealthy / exit 1.
+#
+# Dockerfile-івський `HEALTHCHECK` лишається опущеним свідомо, і додати
+# його «своїм» healthcheck-ом НЕ вийде: Coolify читає `HEALTHCHECK` з
+# Dockerfile лише коли САМ будує з репозиторію
+# (`parseHealthcheckFromDockerfile` викликається з
+# `dockerfile_from_repo`). Тут він тягне готовий образ із ghcr, тож
+# `custom_healthcheck_found` лишається false, Coolify додає власний
+# healthcheck у compose, і той перекриває запечений в образ.
 #
 # Історична примітка: раніше тут стояло «Railway моніторить через
 # external HTTP-probe». Railway виведено з експлуатації (ADR-0074), а

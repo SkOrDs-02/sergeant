@@ -19,7 +19,7 @@ import type { Mock } from "vitest";
  *   • Логування `circuit_breaker_transition` + інкремент
  *     `circuitBreakerTripsTotal`; помилки prom-client глушаться.
  *   • `CircuitOpenError` — code/name/retryAfterMs/повідомлення.
- *   • Anthropic-singleton — ім'я + початковий стан.
+ *   • Anthropic-singleton — імʼя + початковий стан.
  */
 
 vi.mock("../obs/logger.js", () => ({
@@ -572,7 +572,7 @@ describe("CircuitBreaker — prom-client помилки глушаться", () 
 });
 
 describe("CircuitOpenError", () => {
-  it("несе stable code, name, retryAfterMs і повідомлення з ім'ям і таймаутом", () => {
+  it("несе stable code, name, retryAfterMs і повідомлення з імʼям і таймаутом", () => {
     const err = new CircuitOpenError("anthropic", 12_345);
 
     expect(err).toBeInstanceOf(Error);
@@ -587,7 +587,7 @@ describe("CircuitOpenError", () => {
 });
 
 describe("anthropicCircuitBreaker (shared singleton)", () => {
-  it("експортується і має ім'я anthropic у getStats()", () => {
+  it("експортується і має імʼя anthropic у getStats()", () => {
     expect(anthropicCircuitBreaker).toBeInstanceOf(CircuitBreaker);
     expect(anthropicCircuitBreaker.getStats().name).toBe("anthropic");
   });

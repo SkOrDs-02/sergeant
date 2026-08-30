@@ -616,3 +616,129 @@ describe("streamAnthropicToSse — heartbeat", () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 });
+
+/**
+ * B46 — in-stream `error` event (`docs/90-work/audits/ai-testing-2026-08-25.md`).
+ *
+ * Провайдер відкриває тіло 200-кою і аж потім шле
+ * `{"type":"error","error":{...}}`. HTTP-статус про це вже нічого не скаже,
+ * а ретраї в `lib/anthropic.ts` не діють — вони живуть до заголовків.
+ * Заміряна частота на прод-формі виклику (floor-модель + 78 інструментів +
+ * стрім): 7 зривів із 12.
+ *
+ * До фікса подія не мала жодної гілки в циклі: `outcome` лишався `"ok"`,
+ * текст порожнім, квота списаною, у Sentry — нічого. Тобто 58% зривів
+ * рахувались як успішні запити.
+ */
+describe("streamAnthropicToSse — B46 in-stream error event", () => {
+  it("records the iteration as an error instead of a silent success", async () => {
+    const recordStreamEnd = vi.fn();
+    anthropicMessagesStream.mockResolvedValueOnce({
+      response: makeUpstreamSse([
+        { type: "message_start", message: { usage: { input_tokens: 0 } } },
+        {
+          type: "error",
+          error: {
+            type: "api_error",
+            message: "stream closed before completion",
+          },
+        },
+      ]),
+      recordStreamEnd,
+    });
+
+    const res = makeSseRes();
+    await streamAnthropicToSse(makeReq(), res, "key", PAYLOAD);
+
+    expect(recordStreamEnd).toHaveBeenCalledWith("error");
+  });
+
+  it("does not leak the provider error text to the client", async () => {
+    anthropicMessagesStream.mockResolvedValueOnce({
+      response: makeUpstreamSse([
+        {
+          type: "error",
+          error: {
+            type: "api_error",
+            message: "stream closed before completion",
+          },
+        },
+      ]),
+      recordStreamEnd: vi.fn(),
+    });
+
+    const res = makeSseRes();
+    await streamAnthropicToSse(makeReq(), res, "key", PAYLOAD);
+
+    const payloads = dataPayloads(res.writes);
+    const errEvent = payloads.find((p) => p.includes('"err"'));
+    expect(errEvent).toBeDefined();
+    // Клієнт бачить generic-рядок; сирий провайдерний текст лишається всередині.
+    expect(errEvent).not.toContain("stream closed before completion");
+    expect(res.writes.join("")).not.toContain(
+      "stream closed before completion",
+    );
+  });
+
+  it("refunds the AI quota when the stream died without a single character", async () => {
+    const refund = vi.fn().mockResolvedValue(undefined);
+    anthropicMessagesStream.mockResolvedValueOnce({
+      response: makeUpstreamSse([
+        {
+          type: "error",
+          error: { message: "stream closed before completion" },
+        },
+      ]),
+      recordStreamEnd: vi.fn(),
+    });
+
+    const res = makeSseRes();
+    await streamAnthropicToSse(makeReq(refund), res, "key", PAYLOAD);
+
+    expect(refund).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the quota spent when partial text already reached the user", async () => {
+    // Половина відповіді дострімилась — людина щось отримала, тож повертати
+    // квоту було б неправильно (та сама логіка, що в continuation-гілці).
+    const refund = vi.fn().mockResolvedValue(undefined);
+    anthropicMessagesStream.mockResolvedValueOnce({
+      response: makeUpstreamSse([
+        {
+          type: "content_block_delta",
+          delta: { type: "text_delta", text: "Половина відповіді" },
+        },
+        {
+          type: "error",
+          error: { message: "stream closed before completion" },
+        },
+      ]),
+      recordStreamEnd: vi.fn(),
+    });
+
+    const res = makeSseRes();
+    await streamAnthropicToSse(makeReq(refund), res, "key", PAYLOAD);
+
+    expect(refund).not.toHaveBeenCalled();
+    expect(dataPayloads(res.writes).join("")).toContain("Половина відповіді");
+  });
+
+  it("stops reading after the error event and does not attempt continuation", async () => {
+    const secondCall = vi.fn();
+    anthropicMessagesStream.mockResolvedValueOnce({
+      response: makeUpstreamSse([
+        { type: "message_delta", delta: { stop_reason: "max_tokens" } },
+        { type: "error", error: { message: "boom" } },
+      ]),
+      recordStreamEnd: vi.fn(),
+    });
+    anthropicMessagesStream.mockImplementationOnce(secondCall);
+
+    const res = makeSseRes();
+    await streamAnthropicToSse(makeReq(), res, "key", PAYLOAD);
+
+    // `stop_reason: max_tokens` сам собою тягне continuation — але не тоді,
+    // коли стрім упав: продовжувати нема від чого.
+    expect(secondCall).not.toHaveBeenCalled();
+  });
+});

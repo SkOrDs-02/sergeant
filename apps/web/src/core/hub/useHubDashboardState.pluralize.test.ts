@@ -15,7 +15,7 @@ import { describe, it, expect } from "vitest";
 import { pluralize } from "./useHubDashboardState";
 
 describe("pluralize — Ukrainian grammatical number rules", () => {
-  // Форми для тестового іменника: одна звичка / дві звички / п'ять звичок
+  // Форми для тестового іменника: одна звичка / дві звички / пʼять звичок
   const one = "звичка";
   const few = "звички";
   const many = "звичок";

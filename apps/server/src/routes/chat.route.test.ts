@@ -78,18 +78,29 @@ vi.mock("./../lib/anthropic.js", () => ({
   recordAnthropicUsage: vi.fn(),
 }));
 
-// `chat` router stacks `rateLimitExpress({ key: "api:chat", … })` before the
-// handler. Mock it as passthrough so a rate-limit Postgres-fallback query does
-// not consume a `queryMock.mockResolvedValueOnce`. The limiter has its own
-// `http/rateLimit.test.ts`.
+// `chat` router stacks `rateLimitExpress({ key: "api:chat", … })` after
+// `requireSession()` (B31, `docs/90-work/audits/ai-testing-2026-08-25.md`).
+// Mock it as passthrough so a rate-limit Postgres-fallback query does not
+// consume a `queryMock.mockResolvedValueOnce`. The limiter has its own
+// `http/rateLimit.test.ts`. `rateLimitExpressCalls` records whether
+// `req.user` was already populated at call-time — the B31 regression test
+// below asserts on it directly, since `rateLimitSubject` (`http/rateLimit.ts`)
+// only buckets by `u:<id>` when `req.user` exists at the point it runs.
+const { rateLimitExpressCalls } = vi.hoisted(() => ({
+  rateLimitExpressCalls: [] as Array<{ hasUser: boolean }>,
+}));
+
 vi.mock("./../http/rateLimit.js", async () => {
   const actual = await vi.importActual<typeof import("./../http/rateLimit.js")>(
     "./../http/rateLimit.js",
   );
   return {
     ...actual,
-    rateLimitExpress: () => (_req: unknown, _res: unknown, next: () => void) =>
-      next(),
+    rateLimitExpress:
+      () => (req: { user?: unknown }, _res: unknown, next: () => void) => {
+        rateLimitExpressCalls.push({ hasUser: !!req.user });
+        next();
+      },
   };
 });
 
@@ -127,6 +138,7 @@ beforeEach(() => {
   getSessionUserMock.mockResolvedValue({ id: "u1" });
   anthropicMessagesMock.mockReset();
   anthropicMessagesStreamMock.mockReset();
+  rateLimitExpressCalls.length = 0;
   // Default: no Anthropic key (covers the key-guard test). Quota disabled so
   // `requireAiQuota` is a no-op (it reads `process.env.AI_QUOTA_DISABLED` at
   // runtime — no re-import needed).
@@ -142,7 +154,7 @@ afterEach(() => {
 describe("chat route — auth guard", () => {
   // Знахідка A1 (`docs/90-work/audits/ai-abuse-2026-08-05.md`): роут довго стояв
   // без `requireSession()`, і анонімна квота `ip:<addr>` не була межею — під
-  // IPv6-підпискою клієнт має цілу /64. Тест фіксує, що сесія обов'язкова і
+  // IPv6-підпискою клієнт має цілу /64. Тест фіксує, що сесія обовʼязкова і
   // перевіряється ДО ключа: без неї 401, а не 503.
   it("POST /api/chat → 401 без сесії", async () => {
     getSessionUserMock.mockResolvedValue(null);
@@ -155,6 +167,46 @@ describe("chat route — auth guard", () => {
       .send({ messages: [{ role: "user", content: "Привіт" }] });
     expect(res.status).toBe(401);
     expect(anthropicMessagesMock).not.toHaveBeenCalled();
+  });
+});
+
+// B31 (`docs/90-work/audits/ai-testing-2026-08-25.md`) — `requireSession()`
+// must run BEFORE `rateLimitExpress`, otherwise `rateLimitSubject`
+// (`http/rateLimit.ts`) never sees `req.user` and every request buckets by
+// IP instead of by user.
+describe("chat route — B31 rate-limit ordering", () => {
+  it("req.user є заповненим на момент виклику rateLimitExpress (session-first)", async () => {
+    vi.stubEnv("ANTHROPIC_API_KEY", "test-key");
+    anthropicMessagesMock.mockResolvedValue({
+      response: { ok: true, status: 200 } as unknown as Response,
+      data: { content: [{ type: "text", text: "Привіт!" }] },
+    });
+
+    const createApp = await loadCreateApp();
+    const app = createApp();
+    const res = await request(app)
+      .post("/api/chat")
+      .set("X-Requested-With", "XMLHttpRequest")
+      .send({ messages: [{ role: "user", content: "Привіт" }] });
+
+    expect(res.status).toBe(200);
+    expect(rateLimitExpressCalls).toHaveLength(1);
+    expect(rateLimitExpressCalls[0]).toEqual({ hasUser: true });
+  });
+
+  it("без сесії rateLimitExpress НЕ виконується (401 зупиняє ланцюг раніше)", async () => {
+    getSessionUserMock.mockResolvedValue(null);
+    vi.stubEnv("ANTHROPIC_API_KEY", "test-key");
+
+    const createApp = await loadCreateApp();
+    const app = createApp();
+    const res = await request(app)
+      .post("/api/chat")
+      .set("X-Requested-With", "XMLHttpRequest")
+      .send({ messages: [{ role: "user", content: "Привіт" }] });
+
+    expect(res.status).toBe(401);
+    expect(rateLimitExpressCalls).toHaveLength(0);
   });
 });
 

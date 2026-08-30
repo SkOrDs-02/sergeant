@@ -5,14 +5,18 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port 3100 --host 0.0.0.0",
-    "build": "vite build",
+    "build": "vite build && vite build --ssr src/entry-server.tsx --outDir dist-ssr && node scripts/postbuild-seo.mjs && node scripts/prerender.mjs",
     "preview": "vite preview --port 3100",
     "lint": "eslint .",
     "test": "vitest run",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "shots": "node scripts/shot-pages.mjs",
+    "verify:browser": "node scripts/verify-browser.mjs"
   },
   "dependencies": {
     "@fontsource-variable/manrope": "^5.2.8",
+    "@fontsource/piazzolla": "^5.2.5",
+    "@fontsource/unbounded": "^5.2.5",
     "@sergeant/shared": "workspace:*",
     "posthog-js": "^1.399.2",
     "react": "^18.3.0",

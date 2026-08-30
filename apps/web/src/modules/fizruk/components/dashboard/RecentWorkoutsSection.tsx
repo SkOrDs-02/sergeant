@@ -111,7 +111,7 @@ export function RecentWorkoutsSection({
               Ще жодного завершеного тренування
             </p>
             <p className="text-style-caption text-muted mt-1">
-              Почни сесію, результати з&apos;являться тут автоматично.
+              Почни сесію, результати зʼявляться тут автоматично.
             </p>
           </div>
         ) : (

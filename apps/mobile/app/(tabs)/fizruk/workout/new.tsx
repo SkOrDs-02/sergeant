@@ -12,7 +12,7 @@ export default function FizrukWorkoutNewScreen() {
   return (
     <DeepLinkPlaceholder
       title="Нове тренування"
-      followUp="Стартер сесії тренування (вибір шаблону / швидкий старт) — наступний PR фази Фізрук."
+      followUp="Стартер сесії тренування (вибір шаблону / швидкий старт): наступний PR фази Фізрук."
       primaryAction={{
         label: "До списку тренувань",
         href: "/(tabs)/fizruk/workouts",

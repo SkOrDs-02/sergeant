@@ -142,8 +142,8 @@ function MaskedValue({
       // же правці тексту.
       aria-label={
         revealed
-          ? `${label} показана, натисніть щоб приховати`
-          : `${messages.status.hiddenValuePrefix} ${label}, натисніть щоб показати`
+          ? `${label} показана, натисни, щоб приховати`
+          : `${messages.status.hiddenValuePrefix} ${label}, натисни, щоб показати`
       }
       className={cn(
         "tabular-nums cursor-pointer border-0 bg-transparent p-0 font-inherit text-inherit",

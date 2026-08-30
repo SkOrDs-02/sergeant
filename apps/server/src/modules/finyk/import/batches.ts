@@ -7,6 +7,11 @@ import {
 } from "@sergeant/shared";
 import { serializeImportBatch } from "./serialize.js";
 import type { ImportBatchRow } from "./serialize.js";
+import { emitServerSyncOps } from "../../sync/serverOpLog.js";
+import {
+  MANUAL_EXPENSES_TABLE,
+  buildManualExpenseDeleteOp,
+} from "./syncOps.js";
 
 type WithSessionUser = Request & { user?: { id: string } };
 
@@ -102,11 +107,30 @@ export async function deleteImportBatchHandler(
 
     const rowIds = serializeImportBatch(existing).createdRowIds;
 
-    const tombstoneResult = await client.query(
+    const tombstoneResult = await client.query<{
+      id: string;
+      deleted_at: Date;
+    }>(
       `UPDATE finyk_manual_expenses
           SET deleted_at = NOW(), updated_at = NOW()
-        WHERE user_id = $1 AND id = ANY($2::text[]) AND deleted_at IS NULL`,
+        WHERE user_id = $1 AND id = ANY($2::text[]) AND deleted_at IS NULL
+      RETURNING id, deleted_at`,
       [userId, rowIds],
+    );
+
+    // Дзеркало емісії в `commit.ts`: undo мусить доїхати тим самим
+    // pull-каналом, яким приїхало створення. Без цього рядок зникав би
+    // лише на сервері й на пристрої, що натиснув кнопку, а решта
+    // пристроїв лишалась із фантомом. `RETURNING` дає рівно ті рядки,
+    // які цей виклик реально тонив, тож повторний (ідемпотентний) undo
+    // не плодить опів.
+    await emitServerSyncOps(
+      client,
+      userId,
+      MANUAL_EXPENSES_TABLE,
+      tombstoneResult.rows.map((r) =>
+        buildManualExpenseDeleteOp(batchId, userId, r.id, r.deleted_at),
+      ),
     );
 
     const { rows: updatedRows } = await client.query<ImportBatchRow>(

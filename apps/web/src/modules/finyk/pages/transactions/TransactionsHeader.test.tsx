@@ -97,11 +97,11 @@ describe("TransactionsHeader", () => {
 
   it("shows the inline hint while select mode is active and nothing is selected", () => {
     renderHeader({ selectMode: true, selectedCount: 0 });
-    expect(screen.getByText("Оберіть транзакції")).toBeInTheDocument();
+    expect(screen.getByText("Обери транзакції")).toBeInTheDocument();
   });
 
   it("hides the inline hint once at least one row is selected", () => {
     renderHeader({ selectMode: true, selectedCount: 2 });
-    expect(screen.queryByText("Оберіть транзакції")).not.toBeInTheDocument();
+    expect(screen.queryByText("Обери транзакції")).not.toBeInTheDocument();
   });
 });

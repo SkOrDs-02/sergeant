@@ -22,7 +22,7 @@ export function PWASection() {
     try {
       const res = await swClearCaches();
       logger.info("[sw] caches cleared", res);
-      toast.success("Кеш PWA скинуто. Перезавантажуємо…", 4000);
+      toast.success("Кеш PWA скинуто. Перезавантажую…", 4000);
       setTimeout(() => window.location.reload(), 300);
     } catch (err) {
       // Скидання кешу ідемпотентне — повторна спроба безпечна і це єдиний
@@ -95,7 +95,7 @@ export function PWASection() {
           «Результат діагностики» — не структурний заголовок підрозділу, а
           inline-лейбл у ряду з кнопкою «Скопіювати» (флекс-рядок
           `justify-between`, а не окрема стрічка над вмістом), і сам блок —
-          умовний preview-контейнер JSON-снепшота, що з'являється лише
+          умовний preview-контейнер JSON-снепшота, що зʼявляється лише
           після діагностики, а не завжди-видима група налаштувань. Примітив
           рендерить `title` окремим рядком над `children`
           (`SettingsPrimitives.tsx`, який тут не чіпаємо) — вимога title

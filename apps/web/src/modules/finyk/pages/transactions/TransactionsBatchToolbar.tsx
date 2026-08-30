@@ -24,7 +24,7 @@ export interface TransactionsBatchToolbarProps {
  *
  * Visibility:
  *   - the toolbar renders only once at least one row is selected — the
- *     empty-selection "оберіть транзакції" hint moved inline into
+ *     empty-selection "обери транзакції" hint moved inline into
  *     `TransactionsHeader` (A6/B4) so it no longer floats over content
  *     with nothing to act on;
  *   - the sheet is independently mounted because its open-state

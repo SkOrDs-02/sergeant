@@ -57,7 +57,7 @@ export function useNutritionCloudBackup({
     setBackupPasswordDialog({
       mode: "upload",
       title: "Пароль для шифрування",
-      description: "Введи пароль для шифрування бекапу (запам'ятай його):",
+      description: "Введи пароль для шифрування бекапу (запамʼятай його):",
     });
   }, [cloudBackupBusy, setBackupPasswordDialog]);
 

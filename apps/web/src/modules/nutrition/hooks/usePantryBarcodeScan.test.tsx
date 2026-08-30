@@ -168,7 +168,7 @@ describe("usePantryBarcodeScan", () => {
     const { scan, setPantryScanStatus } = setup();
     await scan("4820000000007");
     expect(setPantryScanStatus).toHaveBeenLastCalledWith(
-      "Помилка пошуку. Перевір з’єднання.",
+      "Помилка пошуку. Перевір зʼєднання.",
     );
   });
 });

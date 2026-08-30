@@ -1,6 +1,6 @@
 # Frontend-observability — web і mobile
 
-> **Last touched:** 2026-08-10 by @claude. **Next review:** 2026-11-25.
+> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-23.
 > **Status:** Active
 
 Observability-стек для web- і mobile-клієнтів Sergeant: error tracking,
@@ -255,11 +255,11 @@ auto-pageview стріляє на будь-яку мутацію URL (включ
 
 Трекаємо факт взаємодії з асистентом, НЕ текст повідомлень. Три події:
 
-| Event                  | Коли                                              | Payload                                                                        |
-| ---------------------- | ------------------------------------------------- | ------------------------------------------------------------------------------ |
-| `hubchat_message_sent` | Юзер відправив повідомлення (після всіх guard-ів) | `{ length, fromVoice, module? }`                                               |
-| `hubchat_tool_invoked` | На кожен `tool_call` із відповіді LLM             | `{ tool, module? }`                                                            |
-| `hubchat_error`        | Будь-яка помилка у `send()` catch-блоці           | `{ kind, status? }` де `kind ∈ http \| parse \| aborted \| network \| unknown` |
+| Event                  | Коли                                                    | Payload                                                                                                                                                                |
+| ---------------------- | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `hubchat_message_sent` | Юзер відправив повідомлення (після всіх guard-ів)       | `{ length, fromVoice, module? }`                                                                                                                                       |
+| `hubchat_tool_invoked` | На кожен виконаний `tool_call` (після `executeActions`) | `{ tool, module, success, latency_ms }` — `success` зі структурного `ok`, не з тексту; `latency_ms` міряний по кожному виклику окремо, бо батч іде через `Promise.all` |
+| `hubchat_error`        | Будь-яка помилка у `send()` catch-блоці                 | `{ kind, status? }` де `kind ∈ http \| parse \| aborted \| network \| unknown`                                                                                         |
 
 `length` — кількість символів, не текст; `fromVoice: boolean` — дає розділити
 voice vs typed сценарії у funnels; `tool` — канонічне ім'я `ChatAction`

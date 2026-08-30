@@ -35,7 +35,7 @@ describe("perfMark / perfEnd", () => {
       window.localStorage.setItem("hub_perf", "1");
     });
 
-    it("perfMark повертає об'єкт із name та numeric t", () => {
+    it("perfMark повертає обʼєкт із name та numeric t", () => {
       const mark = perfMark("hub-load");
       expect(mark).not.toBeNull();
       expect(mark).toMatchObject({ name: "hub-load" });

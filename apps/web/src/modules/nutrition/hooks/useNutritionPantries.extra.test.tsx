@@ -79,7 +79,7 @@ describe("useNutritionPantries — parsePantry lifecycle branches", () => {
     expect(setStatusText).toHaveBeenCalledWith("Розбираю список…");
     await waitFor(() => expect(setBusy).toHaveBeenCalledWith(false));
     expect(setStatusText).toHaveBeenCalledWith("");
-    // Текст лишається, доки користувач не підтвердить прев'ю.
+    // Текст лишається, доки користувач не підтвердить превʼю.
     expect(result.current.pantryText).toBe("молоко");
   });
 
@@ -253,11 +253,11 @@ describe("useNutritionPantries — item + pantry helper branches", () => {
     );
     const { result } = renderHarness();
 
-    act(() => result.current.onSaveItemEdit(0, "", "л"));
+    act(() => result.current.onSaveItemEdit(0, "Молоко", "", "л"));
     expect(result.current.pantryItems[0]?.qty).toBeNull();
 
     const before = result.current.pantryItems.length;
-    act(() => result.current.onSaveItemEdit(5, 3, "л"));
+    act(() => result.current.onSaveItemEdit(5, "Молоко", 3, "л"));
     expect(result.current.pantryItems).toHaveLength(before);
   });
 

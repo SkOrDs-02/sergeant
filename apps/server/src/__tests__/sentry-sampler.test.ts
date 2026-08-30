@@ -45,8 +45,57 @@ describe("pickTracesSampleRate", () => {
     expect(pickTracesSampleRate("/api/admin/jobs/retry", 0.05)).toBe(1.0);
   });
 
-  it("samples /api/photo/analyze at 50% (expensive AI route)", () => {
-    expect(pickTracesSampleRate("/api/photo/analyze", 0.05)).toBe(0.5);
+  // Тут раніше стояло `/api/photo/analyze` — і тест був ЗЕЛЕНИЙ, бо перевіряв
+  // правило проти URL, який існує лише в самому тесті. Такого роута застосунок
+  // не віддає (реальні — у `routes/nutrition.ts`), тож правило не матчило
+  // нічого, а зорові виклики роками падали в generic-fallback. Тепер шляхи
+  // беруться такими, як їх монтує роутер.
+  it.each([
+    "/api/nutrition/analyze-photo",
+    "/api/nutrition/refine-photo",
+    "/api/chat",
+    "/api/coach/insight",
+    "/api/weekly-digest",
+  ])("дорогий AI-роут семплиться на 50%%: %s", (url) => {
+    expect(pickTracesSampleRate(url, 0.05)).toBe(0.5);
+  });
+
+  // `url.includes()` + перший-збіг-виграє: якби `/api/chat/usage` стояв після
+  // `/api/chat`, дешевий лічильник успадкував би ставку стріму.
+  it("лічильник квоти чату лишається на 1%, не успадковує ставку стріму", () => {
+    expect(pickTracesSampleRate("/api/chat/usage", 0.05)).toBe(0.01);
+  });
+
+  // Memory-ендпоінти коуча моделі не викликають — правило звужене до
+  // `/insight` саме тому, і це має лишатись правдою.
+  it("memory-ендпоінти коуча не підпадають під AI-ставку", () => {
+    expect(pickTracesSampleRate("/api/coach/memory", 0.05)).toBe(0.05);
+  });
+
+  // Гарантія проти повернення мертвого правила: кожен `match` мусить бути
+  // підрядком щонайменше одного шляху, який реально монтує застосунок.
+  it("жодне правило не є мертвим — кожен match трапляється в реальному шляху", async () => {
+    const { SENTRY_SAMPLING_RULES } = await import("../sentry.js");
+    const REAL_PATHS = [
+      "/api/internal/openclaw/write/habit",
+      "/api/internal/cron/digest",
+      "/api/account/recovery",
+      "/api/admin/users",
+      "/api/auth/sign-in",
+      "/api/chat",
+      "/api/chat/usage",
+      "/api/coach/insight",
+      "/api/weekly-digest",
+      "/api/nutrition/analyze-photo",
+      "/api/nutrition/refine-photo",
+      "/api/v2/sync/push",
+      "/api/sync/poll",
+      "/api/health",
+    ];
+    const dead = SENTRY_SAMPLING_RULES.filter(
+      (r) => !REAL_PATHS.some((p) => p.includes(r.match)),
+    ).map((r) => r.match);
+    expect(dead).toEqual([]);
   });
 
   it("samples /api/sync/poll at 1% (chatty heartbeat)", () => {

@@ -15,7 +15,7 @@ describe("makeDefaultPantry", () => {
     expect(p).toEqual({ id: "home", name: "Дім", items: [], text: "" });
   });
 
-  it("кожен виклик дає НОВИЙ об'єкт (не shared reference)", () => {
+  it("кожен виклик дає НОВИЙ обʼєкт (не shared reference)", () => {
     const a = makeDefaultPantry();
     const b = makeDefaultPantry();
     expect(a).not.toBe(b);
@@ -52,9 +52,15 @@ describe("normalizePantries", () => {
     expect(res).toHaveLength(1);
     expect(res[0]!.name).toBe("Кухня");
     expect(res[0]!.items).toEqual([
-      { name: "Хліб", qty: 2, unit: "шт", notes: "цільнозерновий" },
-      { name: "Молоко", qty: null, unit: "л", notes: null },
-      { name: "Сир", qty: null, unit: null, notes: null },
+      {
+        name: "Хліб",
+        qty: 2,
+        unit: "шт",
+        notes: "цільнозерновий",
+        sources: null,
+      },
+      { name: "Молоко", qty: null, unit: "л", notes: null, sources: null },
+      { name: "Сир", qty: null, unit: null, notes: null, sources: null },
     ]);
   });
 

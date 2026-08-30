@@ -82,7 +82,7 @@ function HubChat({
   // Гейт входу. `useAuthOptional`, а не `useAuth`: чат монтується поза
   // `AuthProvider` у частині юніт-тестів, і там «контексту немає» означає
   // «не знаю» — тоді нічого не гейтимо й лишаємо composer, як було.
-  // Гейт спрацьовує лише на РОЗВ'ЯЗАНОМУ `unauthenticated`, тож на буті
+  // Гейт спрацьовує лише на РОЗВʼЯЗАНОМУ `unauthenticated`, тож на буті
   // (`loading`) поле вводу не блимає.
   const auth = useAuthOptional();
   const signedOut = auth?.status === "unauthenticated";
@@ -207,7 +207,7 @@ function HubChat({
       />
 
       <DestructiveConfirmModal
-        toolNames={confirmDestructive.pending?.toolNames ?? null}
+        items={confirmDestructive.pending?.items ?? null}
         onConfirm={confirmDestructive.accept}
         onCancel={confirmDestructive.reject}
       />

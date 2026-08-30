@@ -5,7 +5,7 @@ import { ProgressBar } from "./ProgressBar";
  * `ProgressBar` — лінійний індикатор прогресу.
  *
  * Determinate (`value` 0..`max`) і indeterminate (`indeterminate`).
- * Чотири розміри (`xs`/`sm`/`md`/`lg`) і п'ять статус-варіантів
+ * Чотири розміри (`xs`/`sm`/`md`/`lg`) і пʼять статус-варіантів
  * (`brand`/`success`/`warning`/`danger`/`neutral`). Насичені філли —
  * `*-strong` companions (Hard Rule #9) для AA-контрасту з білим
  * inner-label; `neutral` (ink `bg-primary`) не насичений, тож без

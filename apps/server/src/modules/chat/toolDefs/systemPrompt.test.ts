@@ -100,7 +100,7 @@ describe("SYSTEM_PREFIX — registry-driven", () => {
   // Approximation: chars / 3.5 ≈ tokens for mixed Cyrillic/ASCII Anthropic
   // tokenizer. Real measurement happens server-side in usage logs.
   //
-  // Стара цифра (1012, знята 2026-04-26 з рукописного v5) пережила п'ять
+  // Стара цифра (1012, знята 2026-04-26 з рукописного v5) пережила пʼять
   // свідомих доповнень промпта — межа порад (v13), голос і заборона вигаданих
   // аргументів (v14), звірка чисел (v15), межа скоупу і `<user_data>` (v17) —
   // і на v17 стеля 1113 виявилась нижчою за факт. Гейт, який червоний завжди,
@@ -114,7 +114,7 @@ describe("SYSTEM_PREFIX — registry-driven", () => {
   // Так і сталося: v22 стояв на 1201 при стелі 1202 — один токен запасу.
   // Рядок про справжні українські слова (v23, +27 токенів) впертися в гейт
   // мусив, і це саме та свідома розмова, заради якої гейт існує: правило
-  // з'явилось за фото від тестера («дніорвий челендж»), тобто платимо
+  // зʼявилось за фото від тестера («дніорвий челендж»), тобто платимо
   // 27 токенів кешованого префікса за читабельність кожної відповіді.
   // Baseline перебазовано на факт v23 (1228), запас звужено 1.05 → 1.03 —
   // за тим самим принципом, що й попереднього разу.
@@ -137,7 +137,7 @@ describe("SYSTEM_PREFIX — registry-driven", () => {
     expect(list).toMatch(/- Кросмодульні: /);
     expect(list).toMatch(/- Аналітика: /);
     expect(list).toMatch(/- Утиліти: /);
-    expect(list).toMatch(/- Пам'ять: /);
+    expect(list).toMatch(/- Памʼять: /);
   });
 
   it("skips a module bullet when every capability is prompt-only", async () => {
@@ -160,7 +160,7 @@ describe("SYSTEM_PREFIX — registry-driven", () => {
 
     const list = buildModuleToolListWithEmptyMemory();
     expect(list).toMatch(/- Фінанси: /);
-    expect(list).not.toMatch(/- Пам'ять: /);
+    expect(list).not.toMatch(/- Памʼять: /);
 
     vi.doUnmock("@sergeant/shared");
     vi.resetModules();

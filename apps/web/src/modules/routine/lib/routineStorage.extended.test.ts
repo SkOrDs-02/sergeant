@@ -359,7 +359,7 @@ describe("edge cases: double completion in one day", () => {
     expect(s2).toBe(s);
   });
   it("toggleHabitCompletion дедуплікує передувало-дубльований масив", () => {
-    // Симулюємо пошкоджений state з дублем прямо в пам'яті
+    // Симулюємо пошкоджений state з дублем прямо в памʼяті
     let s = createHabit(fresh(), { name: "A" });
     const id = s.habits[0]!.id;
     s = {

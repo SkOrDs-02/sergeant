@@ -76,7 +76,7 @@ export const Sizes: Story = {
   ),
 };
 
-/** Edge-cases для `getInitials` — порожнє ім'я, одне слово, не-латиниця. */
+/** Edge-cases для `getInitials` — порожнє імʼя, одне слово, не-латиниця. */
 export const InitialsEdgeCases: Story = {
   render: () => (
     <div className="flex items-center gap-4">

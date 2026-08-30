@@ -11,7 +11,7 @@ export interface TransactionsHeaderProps {
   showHidden: boolean;
   setShowHidden: (updater: (v: boolean) => boolean) => void;
   hiddenCount: number;
-  /** Batch selection size — drives the inline "Оберіть транзакції" hint. */
+  /** Batch selection size — drives the inline "Обери транзакції" hint. */
   selectedCount?: number;
 }
 
@@ -64,7 +64,7 @@ export function TransactionsHeader({
           <>
             {selectedCount === 0 && (
               <span className="text-style-caption text-muted">
-                Оберіть транзакції
+                Обери транзакції
               </span>
             )}
             <button

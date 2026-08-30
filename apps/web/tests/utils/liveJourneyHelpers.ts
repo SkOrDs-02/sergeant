@@ -167,7 +167,7 @@ export async function signUp(
   await page
     .getByRole("button", { name: /Немає акаунту\? Зареєструватися/ })
     .click();
-  await page.getByPlaceholder("Твоє ім'я").fill(name);
+  await page.getByPlaceholder("Твоє імʼя").fill(name);
   await page.getByPlaceholder("email@example.com").fill(email);
   await page.getByPlaceholder(/Мінімум 10 символів/).fill(password);
   await page

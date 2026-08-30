@@ -5,7 +5,7 @@ import {
 } from "./rateLimit.js";
 
 /**
- * Юніт-тести auth rate-limit option-об'єктів. Bucket-логіка лежить у
+ * Юніт-тести auth rate-limit option-обʼєктів. Bucket-логіка лежить у
  * `apps/server/src/http/rateLimit.test.ts`.
  */
 

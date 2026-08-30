@@ -92,14 +92,14 @@ const SKIP_REASON_LABEL: Record<string, string> = {
  */
 function explainEmptyScreenshot(draft: ImportScreenshotDraft): string {
   if (draft.truncated) {
-    return "На скріні забагато операцій — не встиг дочитати список. Зроби кілька скрінів по частинах.";
+    return "На скріні забагато операцій, не встиг дочитати список. Зроби кілька скрінів по частинах.";
   }
   const { failed, nonUah, unreadable } = draft.dropped;
   if (nonUah > 0 && failed === 0 && unreadable === 0) {
-    return `Знайшов ${nonUah} ${plural(nonUah, "операцію", "операції", "операцій")}, але не в гривні — імпорт поки працює лише з UAH.`;
+    return `Знайшов ${nonUah} ${plural(nonUah, "операцію", "операції", "операцій")}, але не в гривні. Імпорт поки працює лише з UAH.`;
   }
   if (failed > 0 && nonUah === 0 && unreadable === 0) {
-    return `Усі ${failed} ${plural(failed, "операція", "операції", "операцій")} на скріні позначені як невдалі — гроші за ними не рухались.`;
+    return `Усі ${failed} ${plural(failed, "операція", "операції", "операцій")} на скріні позначені як невдалі: гроші за ними не рухались.`;
   }
   if (failed + nonUah + unreadable > 0) {
     return "Бачу операції, але жодну не вдалось прочитати повністю. Спробуй скрін крупніше або без обрізаних країв.";
@@ -446,8 +446,8 @@ export function BulkImportSheet({
               (Excel 97) свідомо відхиляє з підказкою перезберегти. Обіцяти
               тут «XLS» — обіцяти те, чого немає. */}
           <p className="text-style-caption text-subtle">
-            Виписка — CSV або XLSX, один файл за раз; файл .xls з банку теж
-            спробую. Фото чеків — через «Сканувати чек», там можна кілька
+            Виписка – CSV або XLSX, один файл за раз; файл .xls з банку теж
+            спробую. Фото чеків – через «Сканувати чек», там можна кілька
             одразу.
           </p>
         </div>
@@ -506,12 +506,12 @@ export function BulkImportSheet({
           </p>
           {commitResult.skipped.monoMatched > 0 && (
             <p className="text-style-caption text-muted">
-              {commitResult.skipped.monoMatched} пропущено — вже є в mono.
+              {commitResult.skipped.monoMatched} пропущено, вже є в mono.
             </p>
           )}
           {commitResult.skipped.duplicate > 0 && (
             <p className="text-style-caption text-muted">
-              {commitResult.skipped.duplicate} пропущено — вже імпортовано
+              {commitResult.skipped.duplicate} пропущено, вже імпортовано
               раніше.
             </p>
           )}

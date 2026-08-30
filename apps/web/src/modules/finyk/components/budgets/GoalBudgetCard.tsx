@@ -289,9 +289,7 @@ function GoalBudgetCardComponent({
                   />
                 </div>
                 <div>
-                  <Label htmlFor={contribNoteId}>
-                    Нотатка (необов&apos;язково)
-                  </Label>
+                  <Label htmlFor={contribNoteId}>Нотатка (необовʼязково)</Label>
                   <Input
                     id={contribNoteId}
                     size="sm"

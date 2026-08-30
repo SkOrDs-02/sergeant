@@ -6,9 +6,9 @@
  * раз на годину — на порядки дешевше.
  *
  * Архітектура:
- *   * Буфер — `Array<UnknownMccItem>` у пам'яті одного процесу. Multi-replica
+ *   * Буфер — `Array<UnknownMccItem>` у памʼяті одного процесу. Multi-replica
  *     setup-у не передбачаємо (Railway api-service працює у 1 replica для
- *     цього сервісу); якщо колись з'явиться 2+, треба буде перенести на
+ *     цього сервісу); якщо колись зʼявиться 2+, треба буде перенести на
  *     Redis / DB-таблицю.
  *   * Producer — `enqueueUnknownMcc()` з `enrichmentWorker.ts::runEnrichmentTick`,
  *     коли `MCC_BATCH_HOURLY_ENABLED=true` і MCC не зматчився rule-based.
@@ -21,7 +21,7 @@
  *   * Idempotency: ми не дедуплікуємо по `monoTxId` всередині буфера —
  *     виклики `enqueueUnknownMcc()` гарантуються при `FOR UPDATE SKIP
  *     LOCKED` SELECT-і у enrichment-worker-і, тож дубль одного `monoTxId`
- *     у пам'яті в один момент часу — це bug у caller-і, а не у буфер-і.
+ *     у памʼяті в один момент часу — це bug у caller-і, а не у буфер-і.
  *
  * Тестабельність:
  *   * Буфер — module-scoped singleton, але ми експонуємо `__resetForTests()`

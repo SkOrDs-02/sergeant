@@ -293,7 +293,7 @@ describe("FinykWebhookServiceSection — відкликаний токен (stat
     renderSection();
 
     expect(
-      await screen.findByRole("button", { name: /Від'єднати/i }),
+      await screen.findByRole("button", { name: /Відʼєднати/i }),
     ).toBeInTheDocument();
   });
 });

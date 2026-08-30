@@ -5,7 +5,7 @@ import { assertAvatarFile, compressAvatar } from "./avatar";
 describe("assertAvatarFile", () => {
   it("rejects non-image files", () => {
     const file = new File(["x"], "doc.txt", { type: "text/plain" });
-    expect(() => assertAvatarFile(file)).toThrow("Оберіть файл зображення");
+    expect(() => assertAvatarFile(file)).toThrow("Обери файл зображення");
   });
 
   it("rejects files larger than 5 MB", () => {

@@ -77,7 +77,7 @@ export function FinykSection() {
         <SettingsSubGroup title="Власні категорії витрат">
           <p className="text-style-caption text-subtle leading-snug">
             Додаються до списку категорій у транзакціях, сплітах і лімітах.
-            Іконку підбираємо автоматично, емодзі в назві не потрібне.
+            Іконка підбирається автоматично, емодзі в назві не потрібне.
           </p>
           <div className="flex gap-2">
             <input

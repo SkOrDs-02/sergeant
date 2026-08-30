@@ -61,7 +61,7 @@ describe("writeNutritionQuickStatsSnapshot", () => {
 
   it("records the kcal but no goal when the user has not set one", () => {
     // Ціль користувач не задавав — теплий SQLite-кеш віддає `prefs: null`.
-    // З'їдені калорії це виміряний факт, тож картка їх показує; вигадувати
+    // Зʼїдені калорії це виміряний факт, тож картка їх показує; вигадувати
     // «дефолтні 2000» не можна — саме за це прибрано фолбек у
     // recommendationEngine (browser QA 2026-08-04, F-010). `calGoal: 0` —
     // сигнал для `selectModulePreview` не рендерити рядок «Ціль: …».

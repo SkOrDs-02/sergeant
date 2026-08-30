@@ -32,8 +32,8 @@ describe("DataResultCard (talk-to-your-data PR4)", () => {
     const result = [
       'Прогрес "жим лежачи" за 90 днів (6 сесій):',
       "Макс. вага: 60 → 75 кг (+15)",
-      "Об'єм: 2400 → 3600 кг×повт (+50%)",
-      "Найкраще: 75 кг, об'єм 3600 кг×повт",
+      "Обʼєм: 2400 → 3600 кг×повт (+50%)",
+      "Найкраще: 75 кг, обʼєм 3600 кг×повт",
     ].join("\n");
     render(
       <DataResultCard
@@ -49,7 +49,7 @@ describe("DataResultCard (talk-to-your-data PR4)", () => {
     // subsequent lines become metric label/value pairs.
     expect(within(card).getByText("Макс. вага")).toBeInTheDocument();
     expect(within(card).getByText("60 → 75 кг (+15)")).toBeInTheDocument();
-    expect(within(card).getByText("Об'єм")).toBeInTheDocument();
+    expect(within(card).getByText("Обʼєм")).toBeInTheDocument();
   });
 
   it("рендерить compare_periods як headline без breakdown", () => {

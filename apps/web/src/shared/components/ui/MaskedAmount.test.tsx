@@ -25,7 +25,7 @@ describe("MaskedAmount", () => {
   it("hides the value behind a reveal button when masked", () => {
     render(<MaskedAmount masked>-247,00₴</MaskedAmount>);
     const btn = screen.getByRole("button", {
-      name: /натисніть щоб показати/i,
+      name: /натисни, щоб показати/i,
     });
     expect(btn).toBeInTheDocument();
     // Value is present in the DOM (for layout stability) but aria-hidden.
@@ -35,11 +35,11 @@ describe("MaskedAmount", () => {
   it("reveals the value on tap and swaps to a hide affordance", () => {
     render(<MaskedAmount masked>-247,00₴</MaskedAmount>);
     fireEvent.click(
-      screen.getByRole("button", { name: /натисніть щоб показати/i }),
+      screen.getByRole("button", { name: /натисни, щоб показати/i }),
     );
     // Button stays (tap again to re-hide), value is now visible.
     expect(
-      screen.getByRole("button", { name: /натисніть щоб приховати/i }),
+      screen.getByRole("button", { name: /натисни, щоб приховати/i }),
     ).toBeInTheDocument();
     expect(screen.getByText("-247,00₴")).toHaveAttribute(
       "aria-hidden",
@@ -50,7 +50,7 @@ describe("MaskedAmount", () => {
   it("drops a local peek when the global mask toggles off then on", () => {
     const { rerender } = render(<MaskedAmount masked>-247,00₴</MaskedAmount>);
     fireEvent.click(
-      screen.getByRole("button", { name: /натисніть щоб показати/i }),
+      screen.getByRole("button", { name: /натисни, щоб показати/i }),
     );
     // Eye off → transparent passthrough (no button at all).
     rerender(<MaskedAmount masked={false}>-247,00₴</MaskedAmount>);
@@ -58,7 +58,7 @@ describe("MaskedAmount", () => {
     // Eye on again → re-masked, local peek forgotten.
     rerender(<MaskedAmount masked>-247,00₴</MaskedAmount>);
     expect(
-      screen.getByRole("button", { name: /натисніть щоб показати/i }),
+      screen.getByRole("button", { name: /натисни, щоб показати/i }),
     ).toBeInTheDocument();
   });
 

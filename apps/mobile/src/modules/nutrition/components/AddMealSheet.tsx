@@ -180,7 +180,7 @@ export function AddMealSheet({
   function handleSave() {
     const name = form.name.trim();
     if (!name) {
-      setForm((s) => ({ ...s, err: "Введіть назву страви." }));
+      setForm((s) => ({ ...s, err: "Введи назву страви." }));
       return;
     }
     const kcal = form.kcal === "" ? null : Number(form.kcal);
@@ -348,8 +348,8 @@ export function AddMealSheet({
       {step === "source" ? (
         <View>
           <Text className="text-xs text-fg-subtle mb-4">
-            Оберіть джерело нижче. Макроси, назву й час відредагуєте на
-            наступному кроці.
+            Обери джерело нижче. Макроси, назву й час відредагуєш на наступному
+            кроці.
           </Text>
 
           <Button

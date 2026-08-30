@@ -64,7 +64,7 @@ function normalizeTime(v: unknown): string | null {
  * завгодно (сміттєвий текст, урізаний JSON, чужу мову); на будь-яку
  * невідповідність — безпечний дефолт, а не throw. Дзеркалить
  * `receipts/analyze.ts#normalizeVisionResult` — draft усе одно йде через
- * обов'язковий редагований bulk-review, тож "найкраща здогадка" тут краща
+ * обовʼязковий редагований bulk-review, тож "найкраща здогадка" тут краща
  * за 500-ку на трохи криве фото.
  *
  * `date` НЕ конвертується через `kyivWallClockToUtc` (на відміну від
@@ -92,7 +92,7 @@ export function normalizeImportScreenshotResult(
   // Один прохід (не map+filter+re-index) навмисно: `time` читається з ТОГО
   // Ж вихідного `row`, з якого читались `date`/`amount` — indexing у
   // ПОСТ-filter масив за індексом ДО filter був баг, знайдений на
-  // рев'ю цього PR (row N міг отримати `time` рядка N-k після того, як
+  // ревʼю цього PR (row N міг отримати `time` рядка N-k після того, як
   // k попередніх рядків відкинуло filter).
   const rows: ImportScreenshotRow[] = [];
   // Лічильники відкинутого — щоб UI міг сказати ЧОМУ порожньо, а не

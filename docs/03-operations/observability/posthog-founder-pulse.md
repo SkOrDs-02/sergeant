@@ -1,6 +1,6 @@
 # PostHog Founder Pulse dashboard — runbook
 
-> **Last validated:** 2026-08-10 by @claude. **Next review:** 2026-12-05.
+> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-09.
 > **Status:** Active
 
 > **⚠️ Дашборд не працює станом на 2026-07-26 — цифрам не вір.**
@@ -503,10 +503,19 @@ dismissible), яка їде як `value_signal_shown{signal='routine-streak-reco
 не висновком із `location.pathname`: оверлей можна відкрити і перебуваючи на
 `/chat`, і тоді шлях збрехав би.
 
-`hubchat_tool_invoked` — константа існує в каталозі, але call-site-а поки
-НЕМАЄ. `had_tools: boolean` у `response_received` покриває питання «чи коуч
-щось зробив» на рівні відповіді; per-tool розріз заводимо, коли зʼявиться
-конкретне питання, на яке він відповідає.
+`hubchat_tool_invoked` — **емітер додано 2026-08-26** (`useChatSend.ts`, одразу
+після `executeActions`). Доти константа лежала в каталозі з квітня без жодного
+call-site-а, тож панель tool-leaderboard у `hubchat.json` була порожня — і
+читалась не як «даних немає», а як «інструментами не користуються».
+
+Форма: `{ tool, module, success, latency_ms }`. `success` береться зі
+структурного прапорця `ok` результату виконання, а НЕ з префікса тексту
+(«Помилка виконання: …») — інакше телеметрія тихо зламалась би на першому ж
+переписуванні копірайту. Незбережений запис (`WRITE_NOT_PERSISTED`, коли
+dual-write не підтвердив) рахується провалом: інакше leaderboard показував би
+фантомні виклики. `module` резолвиться через `getToolModule()` з
+`assistantCatalogue`, тобто з того самого реєстру, що синхронізується з
+серверними tool-defs; невідоме імʼя дає `"unknown"`, а не втрачену подію.
 
 ### 9.2 Пастки читання
 

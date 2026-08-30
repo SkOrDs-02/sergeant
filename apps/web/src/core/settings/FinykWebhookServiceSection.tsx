@@ -38,11 +38,11 @@ const COPY = {
   clearCacheBody:
     "Буде видалено збережені транзакції в кеші. Потім дані підтягнуться з Monobank знову.",
   disconnectBody:
-    "Webhook-з'єднання буде від'єднано. Щоб відновити, введіть токен заново.",
+    "Webhook-зʼєднання буде відʼєднано. Щоб відновити, введи токен заново.",
   clear: "Очистити",
   exit: "Вийти",
   accounts: "рахунків",
-  disconnect: "Від'єднати",
+  disconnect: "Відʼєднати",
   tokenHelp:
     "Токен відправляється на сервер і не зберігається у браузері. Mono → Налаштування → Інші → API.",
   connect: "Підключити Monobank",
@@ -153,10 +153,10 @@ export function FinykWebhookServiceSection({
       if (isApiError(error) && error.kind === "http" && error.isAuth) {
         setWebhookError(
           error.serverMessage ||
-            "Токен Monobank недійсний або закінчився. Оновіть токен.",
+            "Токен Monobank недійсний або закінчився. Онови токен.",
         );
       } else if (isApiError(error) && error.kind === "aborted") {
-        setWebhookError("Monobank API не відповідає. Спробуйте пізніше.");
+        setWebhookError("Monobank API не відповідає. Спробуй пізніше.");
       } else {
         setWebhookError(
           error instanceof Error && error.message

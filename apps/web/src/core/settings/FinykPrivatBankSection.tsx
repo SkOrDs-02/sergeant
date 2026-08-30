@@ -18,17 +18,17 @@ interface FinykPrivatBankSectionProps {
 
 const COPY = {
   title: "ПриватБанк (Приват24 для підприємців)",
-  disconnectTitle: "Від'єднати ПриватБанк?",
+  disconnectTitle: "Відʼєднати ПриватБанк?",
   disconnectBody:
     "Збережені облікові дані ПриватБанку буде видалено з твого акаунта.",
-  disconnectLabel: "Від'єднати",
+  disconnectLabel: "Відʼєднати",
   connected: "ПриватБанк підключено",
-  disconnect: "Від'єднати ПриватБанк",
+  disconnect: "Відʼєднати ПриватБанк",
   help: "API Приват24 для підприємців. Merchant ID та токен знаходяться у Приват24 Бізнес → Налаштування → API.",
   storageNote:
     "Токен зберігається зашифрованим на сервері й привʼязаний до твого акаунта, у браузері він не лишається.",
   merchantId: "Merchant ID",
-  merchantIdPlaceholder: "Ваш Merchant ID",
+  merchantIdPlaceholder: "Твій Merchant ID",
   tokenLabel: "Токен / пароль",
   tokenPlaceholder: "Токен продавця",
   hide: "Приховати",
@@ -43,7 +43,7 @@ const COPY = {
  * будь-кому, хто відкриє DevTools — спека
  * `docs/90-work/planning/specs/beta-security-readiness.md` (F1).
  *
- * Чекбокса «Запам'ятати на цьому пристрої» більше немає: підключення тепер
+ * Чекбокса «Запамʼятати на цьому пристрої» більше немає: підключення тепер
  * властивість акаунта, а не пристрою, тож вибір нічого не означав би.
  */
 export function FinykPrivatBankSection({

@@ -62,9 +62,9 @@ export const pricingMessages = {
   },
   cta: {
     tryPremium: "Спробувати Premium",
-    openingCheckout: "Відкриваємо оплату…",
+    openingCheckout: "Відкриваю оплату…",
     manageSubscription: "Керувати підпискою",
-    openingPortal: "Відкриваємо керування…",
+    openingPortal: "Відкриваю керування…",
     switchToFree: "Перейти на Free",
     currentPlan: "Зараз ваш план",
     // Гість: «Зараз ваш план» — неправда, поки акаунта немає. Free-CTA
@@ -83,7 +83,7 @@ export const pricingMessages = {
     portalUnavailable:
       "Керування підпискою тимчасово недоступне. Спробуй пізніше.",
     portalGeneric:
-      "Не вдалося відкрити керування підпискою. Перевір зв'язок і спробуй ще раз.",
+      "Не вдалося відкрити керування підпискою. Перевір звʼязок і спробуй ще раз.",
   },
   toast: {
     subscriptionActive: "Підписку активовано, ласкаво просимо в Premium!",

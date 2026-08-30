@@ -31,8 +31,9 @@ import {
   setCachedChatResponse,
 } from "./chatResponseCache.js";
 import { prepareToolResults } from "./prepareToolResults.js";
+import { validateToolCallsRawProvenance } from "./validateToolCallsRaw.js";
 import { als } from "../../obs/requestContext.js";
-import { makeAiProviderError } from "../../obs/errors.js";
+import { makeAiProviderError, ValidationError } from "../../obs/errors.js";
 import { chatToolIterationCapHitTotal } from "../../obs/metrics.js";
 import { emitSecurityEvent } from "../../obs/securityEvents.js";
 import { getSessionUser } from "../../auth.js";
@@ -40,6 +41,8 @@ import { getCounterpartyNames } from "../../lib/counterpartyNames.js";
 import { maskMachineText, maskUserText } from "../../lib/llmRedaction.js";
 import { buildRagContext } from "../ai-memory/ragContext.js";
 import { getCoachCorrelationsBlock } from "./coach.js";
+import { getUserPreferences } from "../me/dataRights.js";
+import { pool } from "../../db.js";
 
 type WithAnthropicKey = Request & { anthropicKey?: string };
 
@@ -274,6 +277,26 @@ export default async function handler(
     preset,
   } = parseBody(ChatRequestSchema, req);
 
+  // B36 — `tool_results` і `tool_calls_raw` мусять приходити РАЗОМ або не
+  // приходити взагалі. Рядок нижче (304) перевіряє лише `tool_results &&
+  // tool_calls_raw`: запит з РІВНО ОДНИМ полем не потрапляв у ту гілку й
+  // мовчки падав у "перший тур" — round-trip виконаних інструментів губився
+  // без жодного сигналу клієнту (та без явного 400 у логах/Sentry).
+  // `!!x` нормалізує порожній масив (`[]`, truthy в JS) так само, як і
+  // непорожній — важлива лише присутність поля, не його довжина.
+  if (!!tool_results !== !!tool_calls_raw) {
+    throw new ValidationError(
+      "tool_results і tool_calls_raw мають надходити разом",
+      {
+        code: "CHAT_TOOL_ROUND_TRIP_INCOMPLETE",
+        cause: {
+          hasToolResults: !!tool_results,
+          hasToolCallsRaw: !!tool_calls_raw,
+        },
+      },
+    );
+  }
+
   // Резолвимо сесію один раз — для RAG-injection (перший тур) і для per-user
   // cost-ledger (`ai_usage_daily` рядок `u:<id>` поряд із global aggregate).
   // anon / lookup-error → null: cost тоді пишеться лише глобально.
@@ -286,12 +309,12 @@ export default async function handler(
   // не можна. `context` (знімок фінансів) і `tool_results` (відповіді
   // інструментів) — машинного походження, до них іде клас А + клас Б.
   // `messages` — те, що людина набрала руками; до них іде ЛИШЕ клас А.
-  // Причина в `lib/llmRedaction.ts`: вирізати ім'я з фрази користувача —
+  // Причина в `lib/llmRedaction.ts`: вирізати імʼя з фрази користувача —
   // це клас В, відкладений власником, і без повернення імені у відповідь
   // AI відповість «[особа] винна тобі 500».
   //
   // Кожен шлях маскується РІВНО ОДИН раз. Спокуса поставити маску і тут,
-  // і глибше («про всяк випадок») робить кожну точку окремо необов'язковою
+  // і глибше («про всяк випадок») робить кожну точку окремо необовʼязковою
   // — тоді видалення однієї з них не ловиться жодним тестом, бо друга
   // ще тримає. Ідемпотентність маски це приховує, а не рятує.
   const knownValues = await getCounterpartyNames(ledgerUserId);
@@ -321,11 +344,16 @@ export default async function handler(
       );
       return;
     }
+    // B32 — реєстр-allowlist на `name` + provenance-звʼязок кожного
+    // `tool_use.id` з `tool_results`. Так само ДО `recordToolExecutions`,
+    // щоб підроблений payload не отруював метрику раніше, ніж ми його
+    // відхилимо 400-кою.
+    validateToolCallsRawProvenance(tool_calls_raw, tool_results);
     recordToolExecutions(tool_results, tool_calls_raw);
-    // Великі `tool_result`-блоби (брифінги, місячні digest-и) з'їдають
+    // Великі `tool_result`-блоби (брифінги, місячні digest-и) зʼїдають
     // бюджет вхідних токенів і зривають continuation. Truncate на сервері,
     // повний blob — у Sentry breadcrumb для debug-у.
-    // Маска → усічення → `<tool_output>`-огорожа + сканер ін'єкцій. Порядок
+    // Маска → усічення → `<tool_output>`-огорожа + сканер інʼєкцій. Порядок
     // між кроками — інваріант безпеки (маска мусить бути ПЕРЕД усіченням, бо
     // те кладе повний оригінал у Sentry-breadcrumb); тому всі три живуть
     // одним конвеєром у `prepareToolResults`, а не тут поодинці.
@@ -447,7 +475,7 @@ export default async function handler(
   }
 
   // Coach-correlations surfacing: підмішуємо ≤3 найсвіжіші крос-модульні
-  // кореляції з weekly-digest пам'яті коуча (`coach_memory`, WP3) у system
+  // кореляції з weekly-digest памʼяті коуча (`coach_memory`, WP3) у system
   // context **тільки на першому турі**, тим самим шляхом що й RAG нижче.
   // Дешевий point-lookup (<1мс) — на відміну від RAG не ходить у Voyage,
   // тож fail-safe і без помітної затримки.
@@ -491,6 +519,20 @@ export default async function handler(
     return;
   }
 
+  // ПІСЛЯ кеш-виходу навмисно: `activeModules` потрібен лише для `tools:`
+  // у виклику нижче, а попадання в response-cache має пропускати всю
+  // роботу — інакше кожна закешована відповідь усе одно платила б SELECT-ом
+  // у `user_preferences`.
+  //
+  // Best-effort: будь-яка помилка читання — повний реєстр, бо втратити
+  // потрібний tool дорожче, ніж заплатити за зайвий. Анонім теж отримує
+  // повний.
+  const activeModules = sessionUser?.id
+    ? await getUserPreferences(pool, sessionUser.id)
+        .then((p) => p.activeModules)
+        .catch(() => null)
+    : null;
+
   let response, data;
   try {
     ({ response, data } = await callAnthropicWithContinuation(
@@ -509,7 +551,7 @@ export default async function handler(
         model: env.CHAT_MODEL_FIRST_TURN,
         max_tokens: 1500,
         system: firstTurnSystem,
-        tools: buildToolsPayload(env.CHAT_MODEL_FIRST_TURN),
+        tools: buildToolsPayload(env.CHAT_MODEL_FIRST_TURN, activeModules),
         // 3-й cache breakpoint: кешуємо префікс історії діалогу, щоб наступний
         // тур читав попередні повідомлення з кешу замість повного re-білінгу.
         messages: applyMessagesCacheBreakpoint(cleaned),
@@ -589,11 +631,22 @@ function sanitizeMessages(messages: unknown): ClientChatMessage[] {
     )
     .slice(-12);
 
-  // Anthropic вимагає чергування user/assistant і початок з user
+  // Anthropic вимагає чергування user/assistant і початок з user.
+  //
+  // B35: на дублікаті ролі поспіль тримаємо НОВІШЕ повідомлення, не старіше.
+  // `cleaned` іде у хронологічному порядку (найстаріше → найновіше), тож
+  // коли два `user`-и опиняються поспіль (типовий сценарій: тур обірвався
+  // без асистентської репліки — мережевий збій, refresh посеред стріму),
+  // старе `continue` пропускало САМЕ НОВЕ повідомлення і модель відповідала
+  // на застаріле питання. Гілка tool-result вище (`lastUserMsg`,
+  // `.reverse().find(...)`) уже бере найновіше — цей цикл тепер узгоджений
+  // із тим самим інваріантом.
   const result: ClientChatMessage[] = [];
   for (const m of cleaned) {
-    if (result.length > 0 && result[result.length - 1]!.role === m.role)
+    if (result.length > 0 && result[result.length - 1]!.role === m.role) {
+      result[result.length - 1] = m;
       continue;
+    }
     result.push(m);
   }
   while (result.length > 0 && result[0]!.role !== "user") result.shift();

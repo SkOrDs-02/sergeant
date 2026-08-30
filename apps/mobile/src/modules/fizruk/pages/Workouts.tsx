@@ -416,7 +416,7 @@ export function Workouts({ testID = "fizruk-workouts" }: WorkoutsProps) {
                           Каталог вправ
                         </Text>
                         <Text className="text-[11px] text-fg-muted mt-0.5">
-                          Пошук · групи м&apos;язів · своя вправа
+                          Пошук · групи мʼязів · своя вправа
                         </Text>
                       </View>
                       <Text className="text-fg-subtle text-lg">›</Text>
@@ -495,8 +495,8 @@ export function Workouts({ testID = "fizruk-workouts" }: WorkoutsProps) {
               ) : (
                 <Card variant="flat" radius="lg" padding="lg">
                   <Text className="text-sm text-fg-muted">
-                    Після першого завершеного тренування тут з&apos;являться
-                    останні сесії.
+                    Після першого завершеного тренування тут зʼявляться останні
+                    сесії.
                   </Text>
                 </Card>
               )}

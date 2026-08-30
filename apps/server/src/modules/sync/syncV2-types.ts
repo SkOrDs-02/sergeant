@@ -16,6 +16,20 @@ export type SyncV2Outcome =
 export const APPLY_REJECT_REASONS = [
   // CRDT / per-row state invariants
   "lww_conflict",
+  /**
+   * ВИВЕДЕНО З ОБІГУ на шляху запису — жоден apply-хендлер більше цього не
+   * повертає. Значення лишається в enum навмисно: у клієнтів у локальному
+   * `sync_op_outbox` уже лежать рядки з `reject_reason='tombstoned'` від
+   * старого сервера, і їх читає `syncOpOutboxLifecycle` / dev-панель.
+   *
+   * Прибрано разом із перевіркою `deleted_at !== null` — повне обґрунтування
+   * в `guardUuidPkApply` (`applySync-helpers.ts`). Коротко: перевірка стояла
+   * після LWW, тож ловила лише записи, НОВІШІ за видалення, — тобто ті, що
+   * за LWW мають вигравати. Через неї undo після видалення мовчки не
+   * доїжджав на сервер (`SERGEANT-WEB-T`).
+   *
+   * Не додавай сюди нових продюсерів.
+   */
   "tombstoned",
   "not_found",
   "delete_not_supported",

@@ -28,11 +28,13 @@ lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); t
 
 ## Куди роутити по поверхнях
 
+Роутинг двовимірний: фіча в продуктовому модулі (finyk / nutrition / fizruk / routine / AI-шар) чи інфра-модулі (sync / billing / integrations / push) — **спершу** завантаж його `sergeant-module-*` скіл (канон, § Журнал рішень, мапа файлів, інваріанти), потім surface-скіл нижче. Таблиця сигналів — `sergeant-start-here` § «Роутся одразу».
+
 - Web/PWA: `sergeant-web-ui`
 - Server/API: `sergeant-server-api`
 - БД/міграції: `sergeant-data-and-migrations`
 - Mobile/Expo: `sergeant-mobile-expo`
-- HubChat: `sergeant-hubchat`
+- HubChat / AI-шар: `sergeant-module-ai`
 - Auth: `better-auth-best-practices`
 
 ## Поширені помилки

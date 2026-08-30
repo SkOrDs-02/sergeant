@@ -190,7 +190,7 @@ function renderTransactions(
   });
   return render(
     // Деталі транзакції відкривають `SilpoReceiptSection`, а той ходить у
-    // `useNavigate` (CTA «Зв'язати Сільпо») — хук кидає без роутер-контексту.
+    // `useNavigate` (CTA «Звʼязати Сільпо») — хук кидає без роутер-контексту.
     <MemoryRouter>
       <QueryClientProvider client={client}>
         <Transactions

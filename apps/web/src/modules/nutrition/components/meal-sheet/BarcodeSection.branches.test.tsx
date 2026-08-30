@@ -24,7 +24,7 @@ describe("BarcodeSection", () => {
       screen.queryByRole("button", { name: "Знайти" }),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: "Прив'язати" }),
+      screen.queryByRole("button", { name: "Привʼязати" }),
     ).not.toBeInTheDocument();
     expect(screen.getByTestId("barcode-action-icon")).toBeInTheDocument();
 

@@ -5,7 +5,7 @@
  * AI-CONTEXT: цей пакет — дім generic dual-write фреймворку для 4 модульних
  * пайплайнів (finyk/fizruk/nutrition/routine, web + mobile). Він МУСИТЬ
  * лишатися вільним від DOM/React-Native/Sentry залежностей — усе платформне
- * (логер, телеметрія, uuid) ін'єктується споживачем (ADR-0073 § Risks #2).
+ * (логер, телеметрія, uuid) інʼєктується споживачем (ADR-0073 § Risks #2).
  */
 
 export interface ApplyDualWriteOptions {

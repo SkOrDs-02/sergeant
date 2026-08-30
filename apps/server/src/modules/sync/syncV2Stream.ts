@@ -172,7 +172,7 @@ export function formatSseFrame(
 
 export function formatSseHeartbeat(): string {
   // SSE-comment рядок (`:`) — клієнт ігнорує, але reverse-proxy бачить
-  // активність і не закриває idle-з'єднання.
+  // активність і не закриває idle-зʼєднання.
   return `: heartbeat\n\n`;
 }
 

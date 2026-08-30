@@ -15,6 +15,7 @@ import {
   type TxSplitsLike,
 } from "@sergeant/finyk-domain/utils";
 import { getKyivDateParts, getKyivDayKey } from "@shared/lib/time/kyivTime";
+import { clamp, isoOrUndef, normalizeText, round } from "./queryArgs";
 import { getCachedFinykSqliteState } from "../../../modules/finyk/lib/sqliteReader";
 import { getVisibleFinykMonoMirrorState } from "../../../modules/finyk/lib/monoMirrorReader";
 import {
@@ -165,27 +166,10 @@ function readTxSplits(): TxSplitsLike {
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
-function normalizeText(value: unknown): string {
-  return String(value ?? "")
-    .trim()
-    .toLowerCase();
-}
-
 function parseNum(value: unknown): number | undefined {
   if (value == null || value === "") return undefined;
   const n = Number(value);
   return Number.isFinite(n) ? n : undefined;
-}
-
-function isoOrUndef(value: unknown): string | undefined {
-  const s = String(value ?? "").trim();
-  return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : undefined;
-}
-
-function clamp(value: unknown, fallback: number, max: number): number {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return fallback;
-  return Math.min(max, Math.max(1, Math.floor(n)));
 }
 
 function normalizeType(value: unknown): TxDirection | undefined {
@@ -269,9 +253,8 @@ function withinRange(
   return true;
 }
 
-function roundGrn(n: number): number {
-  return Math.round(n);
-}
+// Домашня назва для округлення сум у гривнях; реалізація — спільний `round`.
+const roundGrn = round;
 
 function groupKeyFor(
   tx: FinykSearchTx,

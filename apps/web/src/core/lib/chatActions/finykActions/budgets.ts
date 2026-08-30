@@ -47,6 +47,11 @@ export function setBudgetLimit(action: SetBudgetLimitAction): ChatActionResult {
   if (!finykCategoryExists(categoryId))
     return unknownCategoryMessage(categoryId);
   const budgets = ls<Budget[]>("finyk_budgets", []);
+  // B39: reversible overwrite (canon §8 / founder decision) — snapshot the
+  // ENTIRE array before mutating, since entries are mutated in place below
+  // and `ls()` re-parses storage on every call (so re-reading after the
+  // write would return the already-mutated state, not the previous one).
+  const prevBudgets = structuredClone(budgets);
   const idx = budgets.findIndex(
     (b) => b.type === "limit" && b.categoryId === categoryId,
   );
@@ -75,24 +80,39 @@ export function setBudgetLimit(action: SetBudgetLimitAction): ChatActionResult {
       : period === "one_time"
         ? "одноразово"
         : "на місяць";
-  return `Ліміт ${cat?.label || categoryId} встановлено: ${limit} грн ${periodLabel}`;
+  const result = `Ліміт ${cat?.label || categoryId} встановлено: ${limit} грн ${periodLabel}`;
+  return {
+    result,
+    undo: () => finykChatWrite("finyk_budgets", prevBudgets),
+  };
 }
 
 export function setMonthlyPlan(action: SetMonthlyPlanAction): ChatActionResult {
   const { income, expense, savings } = action.input;
   const cur = ls<MonthlyPlan>("finyk_monthly_plan", {});
+  // B39: reversible overwrite — snapshot the previous plan before writing
+  // the merged one; `undo` writes it back verbatim.
+  const prevPlan = structuredClone(cur);
   const next: MonthlyPlan = { ...cur };
   if (income != null && income !== "") next.income = String(income);
   if (expense != null && expense !== "") next.expense = String(expense);
   if (savings != null && savings !== "") next.savings = String(savings);
   finykChatWrite("finyk_monthly_plan", next);
-  return `Фінплан місяця оновлено: дохід ${next.income ?? "—"} / витрати ${next.expense ?? "—"} / заощадження ${next.savings ?? "—"} грн/міс`;
+  const result = `Фінплан місяця оновлено: дохід ${next.income ?? "—"} / витрати ${next.expense ?? "—"} / заощадження ${next.savings ?? "—"} грн/міс`;
+  return {
+    result,
+    undo: () => finykChatWrite("finyk_monthly_plan", prevPlan),
+  };
 }
 
 export function updateBudget(action: UpdateBudgetAction): ChatActionResult {
   const input = action.input;
   const scope = input.scope;
   const budgets = ls<Budget[]>("finyk_budgets", []);
+  // B39: reversible overwrite — snapshot BEFORE either branch mutates an
+  // entry in place. Taken unconditionally (validation returns below don't
+  // write anything, so the snapshot is simply unused in that path).
+  const prevBudgets = structuredClone(budgets);
   if (scope === "limit") {
     const categoryId = normalizeFinykId(input.category_id);
     const limitN = Number(input.limit);
@@ -117,7 +137,11 @@ export function updateBudget(action: UpdateBudgetAction): ChatActionResult {
     finykChatWrite("finyk_budgets", budgets);
     const customC = getCachedFinykSqliteState().customCategories;
     const cat = resolveExpenseCategoryMeta(categoryId, customC);
-    return `Ліміт ${cat?.label || categoryId} оновлено: ${limitN} грн`;
+    const result = `Ліміт ${cat?.label || categoryId} оновлено: ${limitN} грн`;
+    return {
+      result,
+      undo: () => finykChatWrite("finyk_budgets", prevBudgets),
+    };
   }
   if (scope === "goal") {
     const goalName = String(input.name || "").trim();
@@ -150,7 +174,11 @@ export function updateBudget(action: UpdateBudgetAction): ChatActionResult {
       });
     }
     finykChatWrite("finyk_budgets", budgets);
-    return `Ціль "${goalName}" оновлено: ${saved}/${target} грн`;
+    const result = `Ціль "${goalName}" оновлено: ${saved}/${target} грн`;
+    return {
+      result,
+      undo: () => finykChatWrite("finyk_budgets", prevBudgets),
+    };
   }
   return "Невідомий scope для update_budget (очікую 'limit' або 'goal').";
 }

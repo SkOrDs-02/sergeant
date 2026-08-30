@@ -1,6 +1,6 @@
 # Playbook: Pre-Merge Migration Checklist
 
-> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-10-09.
+> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-23.
 > **Status:** Active
 
 **Trigger:** PR містить файли в `apps/server/src/migrations/` (новий `NNN_*.sql` або зміна існуючого `*.down.sql`).
@@ -26,6 +26,7 @@
 
 - [ ] **Sequential**: новий файл — `(N+1)_<desc>.sql` де N = max(існуючі номери). Без пропусків.
 - [ ] **No duplicate prefix**: жодного існуючого `NNN_*.sql` з тим самим номером.
+- [ ] **Жодного перейменування файлу, що вже є на `main`.** Раннер трекає застосовані міграції за іменем файлу — перейменована міграція виконається в проді вдруге. Колізію номерів розв'язують перенумеруванням **свого, ще не змердженого** файлу; файл із `main` лишають як є. Розбір і три реальні інциденти: [Rule #4 § Перейменування вже застосованої міграції](../../04-governance/governance/rules/04-sql-migrations-sequential-two-phase.md).
 - [ ] **Naming**: `NNN_<short_snake_case_desc>.sql` (≤ 5 слів у `desc`).
 - [ ] **Companion `down.sql`** (опціонально, але рекомендовано): `NNN_<desc>.down.sql` для локального rollback. Production ніколи його не виконує.
 
@@ -124,6 +125,7 @@ Reviewer must confirm before approving merge:
 | `CREATE INDEX` без `CONCURRENTLY` на таблиці > 1M рядків | Coolify pre-deploy timeout (>10 хв) → rollback           | `CONCURRENTLY` + перевірка таблиці > 100k          |
 | Відсутній `RLS`-policy на новій user-scoped таблиці | Один user через model-hallucination бачить чужі дані         | G-секція + automated test (planned, not yet implemented) |
 | Numbering `008` після `008_*` (duplicate)         | `pnpm db:migrate` падає з `migration already applied`         | A-секція + `migration-lint` CI                    |
+| Перейменування вже застосованої міграції заради «рівної» нумерації | Той самий SQL виконується в проді вдруге + сирота в `schema_migrations` (сталося 3 рази: 047→048, 096↔097) | A-секція + `migration-lint` rename-гейт |
 | Drift `api-client` types після server-shape зміни | TypeScript у `apps/web` компилиться, але runtime — `undefined` | D-секція + inline-snapshot                         |
 
 ---

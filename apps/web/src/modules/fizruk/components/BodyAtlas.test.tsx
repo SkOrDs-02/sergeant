@@ -83,7 +83,7 @@ describe("BodyAtlas · segmented controls", () => {
     // defect #3: real button groups, not a fake tablist/tab pair — no
     // aria-controls/tabpanel/roving-tabindex machinery to half-implement.
     expect(
-      screen.getByRole("group", { name: "Режим карти м'язів" }),
+      screen.getByRole("group", { name: "Режим карти мʼязів" }),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Відновлення" })).toHaveAttribute(
       "aria-pressed",

@@ -243,7 +243,7 @@ export function FirstActionHeroCard({
         <View className="flex-row items-start justify-between gap-3">
           <View className="flex-1">
             <SectionHeading size="2xs" weight="semibold" variant="muted">
-              Почнемо
+              Почни звідси
             </SectionHeading>
             <Text className="mt-1 text-base font-bold leading-snug text-fg">
               {primary.title}

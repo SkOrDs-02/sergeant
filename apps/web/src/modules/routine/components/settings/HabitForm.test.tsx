@@ -50,7 +50,7 @@ function routineWithTagsAndCategories(): RoutineState {
   return {
     ...emptyRoutine,
     tags: [{ id: "t1", name: "Ранок" }],
-    categories: [{ id: "c1", name: "Здоров'я", emoji: "💚" }],
+    categories: [{ id: "c1", name: "Здоровʼя", emoji: "💚" }],
   } as unknown as RoutineState;
 }
 
@@ -230,7 +230,7 @@ describe("HabitForm – advanced options disclosure", () => {
     const catSelect = screen.getByRole("combobox", { name: /Категорія/ });
     expect(catSelect).toBeInTheDocument();
     expect(
-      screen.getByRole("option", { name: /Здоров'я/ }),
+      screen.getByRole("option", { name: /Здоровʼя/ }),
     ).toBeInTheDocument();
   });
 

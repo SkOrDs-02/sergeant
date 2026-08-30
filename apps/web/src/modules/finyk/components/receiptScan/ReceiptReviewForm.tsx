@@ -160,7 +160,7 @@ export function ReceiptReviewForm({
             disabled={disabled}
             // `pointer-coarse:text-base!` мусить бути поруч із важливим
             // `text-style-body!` (≈15px на вузькому екрані), інакше той
-            // б'є неважливий 16px-floor бази і iOS знову зумить екран на
+            // бʼє неважливий 16px-floor бази і iOS знову зумить екран на
             // фокусі саме цього поля (бета-фідбек №2, 2026-08-18 — «клік
             // по сумі все ще зумить»; той самий патерн, що BulkReviewTable).
             // eslint-disable-next-line sergeant-design/no-raw-type-size -- анти-зум ІНВАРІАНТ контрола вводу (iOS: input <16px → авто-зум), не типографічна шкала.
@@ -178,7 +178,7 @@ export function ReceiptReviewForm({
           onChange={(e) => setCategory(e.target.value)}
         >
           <option value="" disabled>
-            Оберіть категорію
+            Обери категорію
           </option>
           {categorySlugs.map((slug) => (
             <option key={slug} value={slug}>

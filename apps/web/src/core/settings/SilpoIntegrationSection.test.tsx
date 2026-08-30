@@ -83,7 +83,7 @@ describe("SilpoIntegrationSection", () => {
       await screen.findByText("Інтеграція ще не увімкнена"),
     ).toBeInTheDocument();
     // No connect CTA, no danger section — the card degrades quietly.
-    expect(screen.queryByText("Зв'язати Сільпо")).not.toBeInTheDocument();
+    expect(screen.queryByText("Звʼязати Сільпо")).not.toBeInTheDocument();
   });
 
   it("shows the connect CTA when disconnected", async () => {
@@ -96,7 +96,7 @@ describe("SilpoIntegrationSection", () => {
 
     renderSection();
 
-    expect(await screen.findByText("Зв'язати Сільпо")).toBeInTheDocument();
+    expect(await screen.findByText("Звʼязати Сільпо")).toBeInTheDocument();
     // No leftover receipts — no single point of deletion needed.
     expect(
       screen.queryByText("Видалити всі дані Сільпо"),
@@ -123,13 +123,13 @@ describe("SilpoIntegrationSection", () => {
     expect(
       screen.getByText(/Назви куплених товарів ніколи не потрапляють/),
     ).toBeInTheDocument();
-    // Обіцянка стоїть ПЕРЕД кнопкою рішення, не після — саме над "Зв'язати
+    // Обіцянка стоїть ПЕРЕД кнопкою рішення, не після — саме над "Звʼязати
     // Сільпо" в DOM-порядку картки (не окремий `<details>`, як у
     // connected-стані).
     expect(
-      screen.queryByText("Що ми робимо з даними чеків"),
+      screen.queryByText("Що відбувається з даними чеків"),
     ).not.toBeInTheDocument();
-    expect(screen.getByText("Зв'язати Сільпо")).toBeInTheDocument();
+    expect(screen.getByText("Звʼязати Сільпо")).toBeInTheDocument();
   });
 
   it("keeps the wipe action reachable after disconnect when receipts remain", async () => {
@@ -142,7 +142,7 @@ describe("SilpoIntegrationSection", () => {
 
     renderSection();
 
-    expect(await screen.findByText("Зв'язати Сільпо")).toBeInTheDocument();
+    expect(await screen.findByText("Звʼязати Сільпо")).toBeInTheDocument();
     // `findByText` (not `getByText`) — the danger group only appears once
     // `syncState.receiptsCount` has actually loaded, not at the initial
     // "unknown" pre-fetch render (which also shows the connect CTA).
@@ -161,7 +161,7 @@ describe("SilpoIntegrationSection", () => {
 
     renderSection();
 
-    expect(await screen.findByText("Сільпо зв'язано")).toBeInTheDocument();
+    expect(await screen.findByText("Сільпо звʼязано")).toBeInTheDocument();
     expect(screen.getByText(/5 чеків/)).toBeInTheDocument();
     expect(screen.getByText("Оновити чеки")).toBeInTheDocument();
     expect(screen.getByText("Видалити всі дані Сільпо")).toBeInTheDocument();
@@ -177,8 +177,8 @@ describe("SilpoIntegrationSection", () => {
 
     renderSection();
 
-    expect(await screen.findByText("Сільпо зв'язано")).toBeInTheDocument();
-    const summary = screen.getByText("Що ми робимо з даними чеків");
+    expect(await screen.findByText("Сільпо звʼязано")).toBeInTheDocument();
+    const summary = screen.getByText("Що відбувається з даними чеків");
     expect(summary.closest("details")).not.toBeNull();
     expect(summary.closest("details")).not.toHaveAttribute("open");
     // Той самий i18n-текст, що в disconnected-стані — не дубль рядка.

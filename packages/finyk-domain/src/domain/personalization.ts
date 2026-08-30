@@ -14,6 +14,7 @@
 import { getCategory, getExpenseCategoryForTransaction } from "../utils";
 import { MANUAL_EXPENSE_TAXONOMY } from "../lib/manualTaxonomy.js";
 import { INTERNAL_TRANSFER_ID } from "../constants";
+import { foldApostrophes } from "@sergeant/shared";
 import type { Category, Transaction } from "./types";
 
 /** Manual-витрата як зберігається у localStorage (`finyk_manual_expenses_v1`). */
@@ -82,7 +83,7 @@ const MANUAL_CATEGORY_ID_MAP: Record<string, string> = {
   транспорт: "transport",
   підписки: "subscriptions",
   розваги: "entertainment",
-  "здоров'я": "health",
+  здоровʼя: "health",
   здоров: "health",
   одяг: "shopping",
   покупки: "shopping",
@@ -127,9 +128,17 @@ function stripLeadingSymbols(str: string): string {
 }
 
 function normalizeManualLabel(label: string | undefined | null): string {
-  return stripLeadingSymbols((label || "").trim())
-    .trim()
-    .toLocaleLowerCase("uk-UA");
+  // AI-DANGER: згортання апострофа тут ОБОВʼЯЗКОВЕ (канон §1.10). Ключі
+  // мапи нижче канонічні (`ʼ`), а підписи категорій у сховищі
+  // користувача писали попередні версії застосунку через ASCII `'` — і
+  // переписати їх ми не можемо. Без згортання «Здоров'я» зі старих даних
+  // перестане резолвитись у `health`, а це тихо розсипає категоризацію
+  // наявних витрат: ліміт на здоровʼя перестане їх бачити.
+  return foldApostrophes(
+    stripLeadingSymbols((label || "").trim())
+      .trim()
+      .toLocaleLowerCase("uk-UA"),
+  );
 }
 
 /**

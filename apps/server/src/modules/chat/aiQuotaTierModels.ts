@@ -87,7 +87,7 @@ const PRO_TIER_MODEL: Record<ProTier, Record<ProEndpoint, () => string>> = {
     // Sonnet, а не `openai/gpt-5.1` (стояло тут до 2026-08-07).
     //
     // Заміна зроблена за фактом, а не за прайс-листом. Замір за 12 днів у
-    // проді показав, що з десяти викликів коуча дев'ять обслуговував
+    // проді показав, що з десяти викликів коуча девʼять обслуговував
     // `claude-sonnet-4-6` — тобто OpenRouter падав, і його мовчки підміняв
     // anthropic-фолбек (`FallbackProvider` у `lib/llm/provider.ts`). Тобто
     // gpt-5.1 фактично ніколи не працював, а обґрунтування «у коуча
@@ -98,7 +98,7 @@ const PRO_TIER_MODEL: Record<ProTier, Record<ProEndpoint, () => string>> = {
     // проти reasoning-моделі; каталог OpenRouter це підтверджує непрямо:
     // gpt-5.1 дешевший ЗА ТОКЕН ($1.25/$10 проти $3/$15), але вийшов
     // удвічі дорожчим ЗА ВИКЛИК ($20.2/1k проти $8.97/1k) — різницю дають
-    // reasoning-токени, які й з'їдають таймаут.
+    // reasoning-токени, які й зʼїдають таймаут.
     //
     // Ставимо рівно ту модель, що вже обслуговує коуча, тільки через шлюз:
     // якість та сама, шлях один, вартість видно в одному місці.
@@ -108,13 +108,21 @@ const PRO_TIER_MODEL: Record<ProTier, Record<ProEndpoint, () => string>> = {
   standard: {
     chat: () =>
       envStr("AI_PRO_STANDARD_CHAT_MODEL", defaultChatModel("standard")),
+    // `gemini-3.5-flash-lite`, а не `gemini-2.5-flash-lite` (стояло тут до
+    // 2026-08-26). Рішення власника за виміром 2026-08-25: 8/8 на коуч-стенді,
+    // НУЛЬ порушень голосу, 987 мс. Свідомо приймається зростання ціни втричі
+    // за вхід і вшестеро за вихід ($0.16 → $0.64 на 1k викликів).
+    //
+    // AI-DANGER: НЕ став сюди `gemini-3.7-flash`, навіть попри те, що вона
+    // стоїть на floor-тирі ЧАТУ. На коуч-стенді вона дала лише 3/8 — це різні
+    // задачі, і «найкраща для чату» не означає «годиться для коуча».
     coach: () =>
-      envStr("AI_PRO_STANDARD_COACH_MODEL", "google/gemini-2.5-flash-lite"),
+      envStr("AI_PRO_STANDARD_COACH_MODEL", "google/gemini-3.5-flash-lite"),
   },
   floor: {
     chat: () => envStr("AI_PRO_FLOOR_CHAT_MODEL", defaultChatModel("floor")),
     coach: () =>
-      envStr("AI_PRO_FLOOR_COACH_MODEL", "google/gemini-2.5-flash-lite"),
+      envStr("AI_PRO_FLOOR_COACH_MODEL", "google/gemini-3.5-flash-lite"),
   },
 };
 

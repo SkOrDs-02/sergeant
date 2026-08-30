@@ -21,6 +21,7 @@ import {
 } from "../../lib/llm/provider.js";
 import { logger } from "../../obs/logger.js";
 import { enqueueMemoryIngest } from "../ai-memory/ingestQueue.js";
+import { getAiMemory } from "../ai-memory/bootstrap.js";
 
 import { ADVICE_BOUNDARY_RULE } from "../../lib/adviceBoundary.js";
 
@@ -174,7 +175,7 @@ export function buildTemplateReport(
       ? {
           summary: `Середньодобово ${nutrition.avgKcal ?? 0} ккал з ${nutrition.daysLogged ?? 0}/7 днів записів.`,
           comment:
-            "Шаблонний звіт без AI-аналізу. Деталі (макроси, тенденції) з'являться після відновлення AI-сервісу.",
+            "Шаблонний звіт без AI-аналізу. Деталі (макроси, тенденції) зʼявляться після відновлення AI-сервісу.",
           recommendations: [],
         }
       : null,
@@ -236,7 +237,7 @@ ${topCats}
         : "  Немає даних";
     sections.push(`[ТРЕНУВАННЯ (${weekRange || "тиждень"})]
 Тренувань завершено: ${fizruk.workoutsCount ?? 0}
-Загальний об'єм: ${fizruk.totalVolume ?? 0} кг
+Загальний обʼєм: ${fizruk.totalVolume ?? 0} кг
 Стан відновлення: ${fizruk.recoveryLabel ?? "Немає даних"}
 Топ вправи:
 ${exercises}`);
@@ -287,7 +288,7 @@ ${habitsInfo}`);
   },
   "fizruk": {
     "summary": "1 речення: підсумок тренувань",
-    "comment": "2-3 речення: аналіз об'єму, відновлення",
+    "comment": "2-3 речення: аналіз обʼєму, відновлення",
     "recommendations": ["рекомендація 1", "рекомендація 2"]
   },
   "nutrition": {
@@ -351,7 +352,7 @@ export function createWeeklyDigestHandler(
     const apiKey = (req as WithAnthropicKey).anthropicKey as string;
 
     const parsed = parseBody(WeeklyDigestSchema, req);
-    const { weekRange, finyk, fizruk, nutrition, routine } = parsed;
+    const { weekKey, weekRange, finyk, fizruk, nutrition, routine } = parsed;
 
     // Гейт СТОЇТЬ ПЕРЕД побудовою промпту й перед мережевим викликом — тиждень
     // без жодного змістовного сигналу не має ані отримувати шаблонний AI-аналіз
@@ -467,43 +468,68 @@ export function createWeeklyDigestHandler(
     );
 
     // AI memory ingest hook (PR2). Fire-and-forget після відправки відповіді,
-    // щоб не затримувати клієнт. `userId` беремо з сесії; для anon-режиму
-    // (квота через IP) digest без `req.user` теж генерується — у такому разі
-    // memory не зберігаємо. `weekRange` як sourceRef означає, що повторні
-    // generate-кліки за той самий тиждень дедуплікуються (jobId-rule у BullMQ).
+    // щоб не затримувати клієнт (роут за requireSession(), тож req.user
+    // завжди є — ADR-0086 прибрав анонімний режим).
+    //
+    // Семантика "остання генерація тижня перемагає" (2026-08-30, знахідка
+    // W3 ревʼю дайджесту): sourceRef — канонічний weekKey (fallback на
+    // weekRange для старих бандлів), а перед enqueue старий рядок тижня
+    // hard-видаляється (той самий delete-then-insert патерн, що в
+    // profileMirror: BullMQ jobId-дедуп інакше мовчки відкидає повторну
+    // генерацію, і в памʼяті назавжди застигав перший, часто неповний,
+    // знімок тижня). dedupeSalt=generatedAt робить кожну генерацію
+    // окремим job-ом, а той самий знімок і далі дедуплікується.
     //
     // PR-25: template-fallback теж enqueue-ить memory (краще зберегти числа,
     // ніж залишити gap у history); тег `usedFallback` потрапляє у metadata
     // для post-hoc query "які тижні згенеровані без AI?".
     const sessionUser = (req as WithSessionUser).user ?? null;
-    if (sessionUser?.id && weekRange) {
-      try {
-        const content = buildDigestMemoryContent(weekRange, report);
-        void enqueueMemoryIngest({
-          userId: sessionUser.id,
-          source: "digest",
-          sourceRef: weekRange,
-          content,
-          metadata: {
-            weekRange,
-            generatedAt,
-            sections: {
-              finyk: !!finyk,
-              fizruk: !!fizruk,
-              nutrition: !!nutrition,
-              routine: !!routine,
+    const memorySourceRef = weekKey ?? weekRange ?? null;
+    if (sessionUser?.id && memorySourceRef) {
+      const userId = sessionUser.id;
+      void (async () => {
+        try {
+          const content = buildDigestMemoryContent(
+            weekRange ?? memorySourceRef,
+            report,
+          );
+          if (env.AI_MEMORY_ENABLED) {
+            await getAiMemory()
+              .forgetSource(userId, "digest", memorySourceRef)
+              .catch((err: unknown) => {
+                // Видалення — best-effort: якщо воно впало, enqueue все одно
+                // спробує записати (перший знімок тижня краще за жодного).
+                logger.warn({
+                  msg: "weekly_digest_memory_forget_failed",
+                  err: err instanceof Error ? err.message : String(err),
+                });
+              });
+          }
+          await enqueueMemoryIngest({
+            userId,
+            source: "digest",
+            sourceRef: memorySourceRef,
+            content,
+            metadata: {
+              weekRange,
+              generatedAt,
+              sections: {
+                finyk: !!finyk,
+                fizruk: !!fizruk,
+                nutrition: !!nutrition,
+                routine: !!routine,
+              },
+              usedFallback,
             },
-            usedFallback,
-          },
-        });
-      } catch (err) {
-        // enqueueMemoryIngest сам не throw-ить, але buildDigestMemoryContent
-        // теоретично може у крайньому випадку — не валимо response через це.
-        logger.warn({
-          msg: "weekly_digest_memory_ingest_skipped",
-          err: err instanceof Error ? err.message : String(err),
-        });
-      }
+            dedupeSalt: generatedAt,
+          });
+        } catch (err) {
+          logger.warn({
+            msg: "weekly_digest_memory_ingest_skipped",
+            err: err instanceof Error ? err.message : String(err),
+          });
+        }
+      })();
     }
   };
 }

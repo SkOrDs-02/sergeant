@@ -404,7 +404,7 @@ export default function NutritionApp({
     // docs/ui/toast-policy.md. The retry callback runs the same dual
     // refetch (`invalidateQueries` + `requestCloudPull`) the gesture
     // triggered so the user does not need to repeat the PTR pull.
-    toast.error("Не вдалося оновити дані. Перевір з'єднання.", undefined, {
+    toast.error("Не вдалося оновити дані. Перевір зʼєднання.", undefined, {
       label: "Повторити",
       onClick: () => {
         void handlePullRefresh();
@@ -494,7 +494,15 @@ export default function NutritionApp({
                 </Banner>
               )}
 
-              <div className="grid gap-4 min-w-0">
+              {/* `grid-cols-[minmax(0,1fr)]`, а не дефолтна колонка `auto`:
+                  `auto`-трек росте до min-content найширшої дитини, а
+                  min-content рядка комори — це повний текст назви під
+                  `truncate` (`white-space: nowrap`). `min-w-0` на самому
+                  контейнері цього не знімає: він обмежує контейнер, а не
+                  трек. Через це довгі назви з чеків Сільпо розпирали трек
+                  ширше за екран, а `overflow-x-hidden` вище просто
+                  обрізав недосяжний хвіст. */}
+              <div className="grid grid-cols-[minmax(0,1fr)] gap-4 min-w-0">
                 {activePage === "start" && (
                   <NutritionStartPage
                     log={log}

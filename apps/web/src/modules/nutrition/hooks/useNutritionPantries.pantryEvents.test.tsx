@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * W1-PANTRY-APPEND, СТАДІЯ 2 — п'ять мутаторів `useNutritionPantries.ts`
+ * W1-PANTRY-APPEND, СТАДІЯ 2 — пʼять мутаторів `useNutritionPantries.ts`
  * мають емітити ledger-подію ПАРАЛЕЛЬНО старому запису `qty`. Тест не йде
  * крізь реальний SQLite-пайплайн (важко піднімати заради самого факту
  * виклику) — мокає `appendNutritionPantryEvent`/`backfillNutritionPantryCheckpoints`
@@ -81,7 +81,7 @@ function lastEvent(): NutritionPantryEventSnapshot {
   return appendMock.mock.calls[0]![0];
 }
 
-describe("useNutritionPantries — ledger-подія на кожен з п'яти мутаторів", () => {
+describe("useNutritionPantries — ledger-подія на кожен з пʼяти мутаторів", () => {
   beforeEach(() => {
     localStorage.clear();
     clearNutritionSqliteCache();
@@ -132,7 +132,7 @@ describe("useNutritionPantries — ledger-подія на кожен з п'ят�
   it("onSaveItemEdit → чекпойнт 'adjust' на введену кількість", () => {
     seedPantries([{ name: "цукор", qty: 200, unit: "г", notes: null }]);
     const result = renderHarness();
-    act(() => result.current.onSaveItemEdit(0, 750, "г"));
+    act(() => result.current.onSaveItemEdit(0, "цукор", 750, "г"));
     const ev = lastEvent();
     expect(ev.kind).toBe("adjust");
     expect(ev.absQty).toBe(750);
@@ -143,7 +143,7 @@ describe("useNutritionPantries — ledger-подія на кожен з п'ят�
   it("onSaveItemEdit із очищеною кількістю (null) НЕ емітить подію", () => {
     seedPantries([{ name: "цукор", qty: 200, unit: "г", notes: null }]);
     const result = renderHarness();
-    act(() => result.current.onSaveItemEdit(0, null, "г"));
+    act(() => result.current.onSaveItemEdit(0, "цукор", null, "г"));
     expect(appendMock).not.toHaveBeenCalled();
   });
 

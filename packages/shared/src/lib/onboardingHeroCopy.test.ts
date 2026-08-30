@@ -56,7 +56,7 @@ describe("getOnboardingHeroCopy — bold variant", () => {
   it("uses an exclusionary lead targeting the 'tired of forgetting' cohort", () => {
     const copy = getOnboardingHeroCopy("bold");
     expect(copy.title).toBe("Не для всіх. Для тих, хто втомився забувати.");
-    expect(copy.subtitle).toContain("пам'ятає за тебе");
+    expect(copy.subtitle).toContain("памʼятає за тебе");
   });
 });
 

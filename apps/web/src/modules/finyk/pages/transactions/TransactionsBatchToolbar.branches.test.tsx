@@ -31,7 +31,7 @@ describe("TransactionsBatchToolbar (branches)", () => {
 
   it("does not render the floating toolbar when selectMode=false", () => {
     render(<TransactionsBatchToolbar {...buildProps({ selectMode: false })} />);
-    expect(screen.queryByText("Оберіть транзакції")).toBeNull();
+    expect(screen.queryByText("Обери транзакції")).toBeNull();
     expect(screen.queryByText(/обрано/)).toBeNull();
   });
 
@@ -41,7 +41,7 @@ describe("TransactionsBatchToolbar (branches)", () => {
         {...buildProps({ selectMode: true, selectedSize: 0 })}
       />,
     );
-    expect(screen.queryByText("Оберіть транзакції")).toBeNull();
+    expect(screen.queryByText("Обери транзакції")).toBeNull();
     expect(screen.queryByRole("button", { name: "Категорія" })).toBeNull();
   });
 

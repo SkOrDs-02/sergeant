@@ -21,7 +21,10 @@ import { requestTimeout } from "./timeout.js";
 
 type ResponseEvent = "finish" | "close";
 
-function makeHarness({ headersSent = false }: { headersSent?: boolean } = {}) {
+function makeHarness({
+  headersSent = false,
+  contentType = null,
+}: { headersSent?: boolean; contentType?: string | null } = {}) {
   const events = new Map<ResponseEvent, () => void>();
   const originalStatus = vi.fn(function status(_code: number) {
     return res;
@@ -43,6 +46,12 @@ function makeHarness({ headersSent = false }: { headersSent?: boolean } = {}) {
   } as unknown as Request;
   const res = {
     headersSent,
+    // Реальний Express-`Response` успадковує `getHeader` від Node-івського
+    // `ServerResponse`, тож він є ЗАВЖДИ. Дубль його не мав, і мідлварь, яка
+    // почала звірятись із `Content-Type` (SSE-виняток, B41), падала тут —
+    // не через баг у коді, а через розбіжність дубля з реальністю.
+    getHeader: (name: string) =>
+      name.toLowerCase() === "content-type" ? contentType : undefined,
     status: originalStatus,
     json: originalJson,
     send: originalSend,

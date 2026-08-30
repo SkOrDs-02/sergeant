@@ -2,7 +2,7 @@
 
 > **Update 2026-07-21:** Backend на **Hetzner/Coolify** ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md)); OpenClaw decommissioned ([ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md)). Railway CLI/дашборд нижче — **historical**, де не позначено Coolify.
 
-> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-02.
+> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-10.
 > **Status:** Active
 
 Цей runbook — bus-factor мітигація: коли єдиний оператор `@Skords-01`
@@ -299,8 +299,32 @@ ALTER TABLE foo DROP COLUMN unused_blob;
 
 ```bash
 pnpm lint:migrations         # парсер + всі pure-checks
-node --test scripts/__tests__/lint-migrations.test.mjs   # 75 unit + integration тестів
+node --test scripts/__tests__/lint-migrations.test.mjs   # unit + integration тести
 ```
+
+### 8.3. Три сироти в `schema_migrations` — рішення: лишити
+
+**Симптом.** `schema_migrations` у проді містить **131** запис при **128** forward-міграціях в образі. Розбіжність знайдено 2026-08-28 звіркою `/healthz` → `schemaDrift`; чек відпрацював правильно, це не його баг.
+
+**Сироти** (запис є, файлу немає):
+
+| Запис у леджері                | Що сталося                                                  |
+| ------------------------------ | ----------------------------------------------------------- |
+| `047_tg_topic_archive.sql`     | перейменовано в `048_…` (комміт `831ea60ad`)                |
+| `096_fizruk_injuries.sql`      | перейменовано в `097_…` (комміт `989061f5d`)                |
+| `097_finyk_fizruk_pk_text.sql` | перейменовано в `096_…` (комміти `0f8bd3c17` / `5e979d216`) |
+
+Причина одна на всі три: перейменування вже застосованої міграції. Раннер трекає застосовані міграції за іменем файлу, тож під новим іменем той самий SQL виконався вдруге. Механіка й гейт, що це тепер блокує, — [Rule #4 § Перейменування вже застосованої міграції](../../04-governance/governance/rules/04-sql-migrations-sequential-two-phase.md).
+
+**Пошкоджень немає.** Обидва повторні прогони пройшли успішно (раннер пише ім'я в леджер лише після виконання, тож невдалий прогін узагалі не лишив би запису): `097_fizruk_injuries` весь під `IF NOT EXISTS`, а `096_finyk_fizruk_pk_text` витримує повтор випадково — DROP+recreate FK і `ALTER … TYPE text` на вже-`text` колонці.
+
+**Рішення: лишити записи як є.** Не видаляти.
+
+- Функціонального ефекту нуль: раннер читає імена лише щоб пропустити вже застосовані файли, а ім'я без файлу не зіставляється ні з чим ніколи.
+- Леджер — це журнал того, що фактично виконалось. Кожен із трьох рядків — правдиве твердження. `DELETE` стер би єдиний слід трьох інцидентів заради косметики.
+- Ручний `DELETE` на проді — ненульовий ризик із нульовим виграшем.
+
+**Єдина реальна ціна** — розбіжність 131 vs 128 у діагностиці. Закривається цим записом: наступний, хто побачить mismatch, читає таблицю вище замість повторного розслідування. Якщо кількість сиріт колись зросте вище трьох — це вже сигнал, що rename-гейт обійшли, і привід розслідувати, а не чистити.
 
 ## 9. Index hygiene
 
@@ -325,7 +349,7 @@ node --test scripts/__tests__/lint-migrations.test.mjs   # 75 unit + integration
 
    ```bash
    # Read-only replica preferred — audit не пише.
-   export DATABASE_URL=postgresql://devin-audit:***@prod-replica:5432/sergeant
+   export DATABASE_URL=postgresql://<audit-user>:***@prod-replica:5432/sergeant
    pnpm db:index-audit > /tmp/audit.md            # stdout
    pnpm db:index-audit --write                     # docs/03-operations/runbooks/db-index-audit-YYYY-MM-DD.md
    ```

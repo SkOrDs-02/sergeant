@@ -99,7 +99,7 @@ export function useTextToSpeech({
       mobileKVStore.setString(MUTE_STORAGE_KEY, next ? "true" : "false");
     } catch (err) {
       // MMKV може бути недоступний у тестах — лог для observability,
-      // але стан у пам'яті вже виставлено, тому UX не блокується.
+      // але стан у памʼяті вже виставлено, тому UX не блокується.
       console.warn("[useTextToSpeech] persist mute flag failed", err);
     }
     if (next) {

@@ -1,6 +1,6 @@
 # Governance
 
-> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-27.
+> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-21.
 > **Status:** Active
 
 Governance in Sergeant is intentionally split between human-readable policy and machine-readable enforcement.
@@ -19,7 +19,7 @@ Governance in Sergeant is intentionally split between human-readable policy and 
 - [audit-freeze-2026-05-05.md](./audit-freeze-2026-05-05.md) - completed 4-week freeze on new audit/initiative/playbook/ADR files (2026-05-05 → 2026-06-02, `Status: Closed`). The enforcing `audit-freeze.yml` workflow and the PR-template section were retired 2026-06-03.
 - [feature-flags.md](./feature-flags.md) - operational registry of release toggles, experiments, kill switches (human-readable; code in `apps/{web,mobile}/src/core/lib/featureFlags.ts` is executable source of truth).
 - [pnpm-overrides-policy.md](./pnpm-overrides-policy.md) - правила для `pnpm.overrides`; гейт `pnpm lint:overrides`. Самі записи — у [`pnpm-overrides.md`](../../../pnpm-overrides.md).
-- [harness-versioning.md](./harness-versioning.md) - bump-правила для `.kilo/harness-versions.json`.
+- [harness-versioning.md](./harness-versioning.md) - bump-правила для `.agents/harness-versions.json`.
 - [ai-pr-checklist.md](./ai-pr-checklist.md) - AI PR checklist.
 - [snapshot.md](./snapshot.md) - dynamic agent snapshot (`pnpm snapshot`).
 - [external-link-allowlist.json](./external-link-allowlist.json) - machine-readable allowlist for `pnpm docs:check-links` (immutable ADRs, anti-bot hosts, localhost-only references). Each entry needs a non-trivial `reason`; loader rejects empty/short reasons.

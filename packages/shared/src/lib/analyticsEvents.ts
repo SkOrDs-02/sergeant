@@ -146,7 +146,7 @@ export const ANALYTICS_EVENTS = Object.freeze({
   //                                 | "unknown",
   //                            status?: number }
   //
-  // `tool` — канонічне ім'я ChatAction (напр. `add_expense`, `log_workout`).
+  // `tool` — канонічне імʼя ChatAction (напр. `add_expense`, `log_workout`).
   // Body повідомлень / tool_input НЕ потрапляють у payload — лише counts
   // + latency + провайдер/модуль, щоб дашборди працювали без експорту PII.
   //
@@ -335,10 +335,15 @@ export const ANALYTICS_EVENTS = Object.freeze({
   //
   //   LANDING_TELEGRAM_CLICKED { source: "hero" | "footer" | "thanks",
   //                              locale: "uk" | "en",
-  //                              ref: string }
+  //                              ref: string,
+  //                              path?: string }
   //   LANDING_TELEGRAM_STARTED { placement: "hero" | "footer",
   //                              ref: string,
   //                              first_start: boolean }
+  //
+  // `path` (додано 2026-08-28, аудит воронки): сторінка, з якої зроблено
+  // клік. `source` кодує лише місце кнопки (hero/footer/beta), тож без
+  // `path` footer-кліки з різних сторінок нерозрізнимі.
   //
   // `LANDING_TELEGRAM_CLICKED` — остання подія, яку бачить КЛІЄНТ: сам
   // `/start` відбувається вже в Telegram. Раніше друга половина воронки
@@ -353,6 +358,18 @@ export const ANALYTICS_EVENTS = Object.freeze({
   // воронку по цих двох подіях будувати саме join-ом по `ref`.
   LANDING_TELEGRAM_CLICKED: "landing_telegram_clicked",
   LANDING_TELEGRAM_STARTED: "landing_telegram_started",
+
+  // Engagement-події лендінга (аудит воронки 2026-08-28). Обидві анонімні
+  // й content-free: несуть лише стан контрола, жодного вводу користувача.
+  //
+  //   LANDING_WIDGET_CHANGED { trainings: 1 | 3 | 5, locale: "uk" | "en" }
+  //   LANDING_FAQ_OPENED     { question: string, locale: "uk" | "en" }
+  //
+  // `question` — літерал заголовка з FAQ_ITEMS (фіксований словник, не
+  // текст користувача). Перелік подій дубльовано в політиці приватності
+  // лендінга — додаєш подію, онови і її.
+  LANDING_WIDGET_CHANGED: "landing_widget_changed",
+  LANDING_FAQ_OPENED: "landing_faq_opened",
 
   // Auth multi-provider (initiative 0010 Phase 4.3). Better Auth wires
   // Apple + Google + Email/password fallback; these events split the
@@ -541,7 +558,7 @@ export const ANALYTICS_EVENTS = Object.freeze({
   // localStorage-флаг `sergeant.nps_survey_eligible_fired`. Survey у
   // PostHog dashboard таргетиться display-умовою «user sends event
   // nps_survey_eligible» (див. ops-довідку вище). Назви подій не
-  // міняти — на них зав'язані survey-умови й дашборди у PostHog.
+  // міняти — на них завʼязані survey-умови й дашборди у PostHog.
   FEEDBACK_WIDGET_OPENED: "feedback_widget_opened",
   FEEDBACK_SUBMITTED: "feedback_submitted",
   NPS_SURVEY_ELIGIBLE: "nps_survey_eligible",
@@ -565,6 +582,21 @@ export const ANALYTICS_EVENTS = Object.freeze({
   // 10 %. The first event after page-load is suppressed (initial mount,
   // not a route change).
   ROUTE_CHANGE: "route_change",
+
+  // Плашка «залий документи» (спека
+  // `docs/90-work/planning/specs/finyk-import-reminders.md` § Телеметрія).
+  //
+  // `_SHOWN` — плашка реально відрендерилась; це знаменник CTR у критерії
+  // зняття фічі. Окремої shadow-події тут НЕ заводимо саме тому: подія
+  // «умова істинна, але плашку не показали» зіпсувала б цей знаменник, і
+  // фічу зняли б за критерієм, якого вона не проходила.
+  //
+  // Payload: { source: "bank_statement" | "bank_screenshot",
+  //            daysSince: number, expectedIntervalDays: number }
+  FINYK_IMPORT_REMINDER_SHOWN: "finyk_import_reminder_shown",
+  FINYK_IMPORT_REMINDER_CLICKED: "finyk_import_reminder_clicked",
+  FINYK_IMPORT_REMINDER_SNOOZED: "finyk_import_reminder_snoozed",
+  FINYK_IMPORT_REMINDER_MUTED: "finyk_import_reminder_muted",
 
   // Хвиля 2 — петлі цінності («сигнал показано → дію зроблено»).
   // Група живе в окремому модулі, щоб тримати цей файл у межах

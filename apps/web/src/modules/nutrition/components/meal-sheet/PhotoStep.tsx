@@ -51,10 +51,6 @@ export function PhotoStep({ onApply }: PhotoStepProps) {
   // Sheet (z 120), тож рендер прямо звідси коректний.
   const photoGate = useFeatureGate("ai-photo-analysis");
   const { messages } = useLocale();
-  const gatedAnalyzePhoto = () => {
-    if (!photoGate.requireAccess()) return;
-    void photo.analyzePhoto();
-  };
 
   // Автоаналіз після вибору/заміни фото (рішення founder-а 2026-08-13).
   // Три гейти — кожен навмисний:
@@ -72,6 +68,19 @@ export function PhotoStep({ onApply }: PhotoStepProps) {
   const lastAutoAnalyzedUrlRef = useRef("");
   const previewUrl = photo.photoPreviewUrl;
   const canAutoAnalyze = photoGate.canAccess && privacyAcked;
+
+  // Ручний запуск тримає ОБИДВА гейти, не лише тариф. Privacy-ack —
+  // не косметика нотіса, а умова відправлення кадру (founder
+  // 2026-07-26), тож ручний шлях мусить питати те саме, що авто-ефект
+  // вище; інакше «Спробувати ще раз» після помилки піккера відправляло
+  // б фото Pro-користувача, який нотіс ще не підтвердив (ревʼю
+  // CodeRabbit). Порядок навмисний: `requireAccess()` спершу, бо для
+  // Free ця кнопка — вхід у paywall, і ack тут ні до чого.
+  const gatedAnalyzePhoto = () => {
+    if (!photoGate.requireAccess()) return;
+    if (!privacyAcked) return;
+    void photo.analyzePhoto();
+  };
   useEffect(() => {
     if (!previewUrl || !canAutoAnalyze) return;
     if (lastAutoAnalyzedUrlRef.current === previewUrl) return;
@@ -117,22 +126,29 @@ export function PhotoStep({ onApply }: PhotoStepProps) {
   //    вискакував би одразу після вибору файлу), тож кнопка лишається
   //    входом у paywall.
   // Pro без privacy-ack теж лишається без кнопки — навмисно: гейт згоди
-  // знімає «Зрозуміло» в нотісі, а `gatedAnalyzePhoto` перевіряє лише
-  // тариф, тож видима тут кнопка була б обходом privacy-гейта. Але два
-  // «навмисно» разом давали глухий кут: Pro обирає файл, автоаналіз
-  // мовчить через ack, кнопки нема — і ніщо не каже, що розблоковує саме
-  // «Зрозуміло». Тому нотіс отримує прапорець і сам називає себе
-  // наступним кроком (гейт лишається на місці — просто перестає бути
-  // невидимим).
+  // знімає «Зрозуміло» в нотісі, тож видима тут кнопка вела б у глухий
+  // кут (`gatedAnalyzePhoto` її б відсік і нічого видимо не сталось).
+  // Але два «навмисно» разом давали інший глухий кут: Pro обирає файл,
+  // автоаналіз мовчить через ack, кнопки нема — і ніщо не каже, що
+  // розблоковує саме «Зрозуміло». Тому нотіс отримує прапорець і сам
+  // називає себе наступним кроком.
+  //
+  // Помилка НЕ скасовує цього: «Спробувати ще раз» без ack — мертва
+  // кнопка (див. гейт у `gatedAnalyzePhoto`), а піккер уміє покласти
+  // помилку, лишивши превʼю, тож стан «Pro + помилка + без ack»
+  // досяжний. Виходом звідти лишається той самий нотіс.
   const analysisAwaitingPrivacyAck =
     Boolean(previewUrl) && photoGate.canAccess && !privacyAcked;
   const analyzeLabel = !previewUrl
     ? null
-    : photoErr
-      ? "Спробувати ще раз"
-      : photoGate.canAccess
-        ? null
-        : "Аналізувати";
+    : !photoGate.canAccess
+      ? // Free: автозапуск вимкнений, кнопка — вхід у paywall.
+        photoErr
+        ? "Спробувати ще раз"
+        : "Аналізувати"
+      : photoErr && privacyAcked
+        ? "Спробувати ще раз"
+        : null;
 
   const handleApply = () => {
     const result = photo.photoResult;

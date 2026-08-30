@@ -5,7 +5,7 @@
 /**
  * `get_daily_series` — вирівняні по днях ряди метрик з усіх 4 модулів +
  * пораховані КОДОМ кореляції (Pearson/Spearman) для кожної пари. Це базовий
- * примітив для «чи пов'язано X з Y»: раніше модель мусила зіставляти агрегати
+ * примітив для «чи повʼязано X з Y»: раніше модель мусила зіставляти агрегати
  * різної форми з кількох query-тулів «в умі», що ненадійно.
  *
  * Усі читання йдуть ЛИШЕ через доменні storage-обгортки (не сирі LS-ключі, крім
@@ -14,10 +14,13 @@
  * `getTxStatAmount` вже ділить копійки на 100.
  *
  * `buildDailySeries` та `computePairwiseCorrelations` — чисті й експортовані
- * навмисно: WP3 (кореляції у weekly digest → пам'ять коуча) переюзає той самий
+ * навмисно: WP3 (кореляції у weekly digest → памʼять коуча) переюзає той самий
  * обчислювальний код замість дублювання статистики.
  */
-import { buildFinykSpendingUniverse } from "@sergeant/finyk-domain";
+import {
+  buildFinykSpendingUniverse,
+  calcCategorySpent,
+} from "@sergeant/finyk-domain";
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { ls } from "../../hubChatUtils";
 import { getTxStatAmount } from "../../../../modules/finyk/utils";
@@ -45,6 +48,7 @@ export const DAILY_SERIES_METRICS = [
   "weight",
   "wellbeing",
   "habit_rate",
+  "alcohol_spending",
 ] as const;
 
 export type DailyMetric = (typeof DAILY_SERIES_METRICS)[number];
@@ -60,6 +64,7 @@ const METRIC_UNIT: Record<DailyMetric, string> = {
   weight: "кг",
   wellbeing: "1-5",
   habit_rate: "%",
+  alcohol_spending: "грн",
 };
 
 // ─── Що означає ВІДСУТНІЙ запис за день ──────────────────────────────────────
@@ -69,10 +74,10 @@ const METRIC_UNIT: Record<DailyMetric, string> = {
  * усі пропуски були `undefined`, тож кореляція рахувалась лише на днях, де
  * записано ОБИДВІ метрики. Для пари «тренування × звички» це означало вибірку
  * з самих лише днів, коли людина і тренувалась, І виконала звичку, — тобто
- * питання «чи пов'язані вони» ставилось рівно на тих днях, де відповідь уже
+ * питання «чи повʼязані вони» ставилось рівно на тих днях, де відповідь уже
  * «так». Систематичне завищення, а не шум.
  *
- * - `unknown` — не виміряно. Не з'їв 0 ккал і не важив 0 кг — просто не записав.
+ * - `unknown` — не виміряно. Не зʼїв 0 ккал і не важив 0 кг — просто не записав.
  *   Такий день має лишитись поза розрахунком.
  * - `zero` — справжній нуль від першого запису метрики й далі. Запис створює
  *   САМА людина всередині застосунку (тренування, відмітка звички), тож день
@@ -84,7 +89,7 @@ const METRIC_UNIT: Record<DailyMetric, string> = {
  *   підтверджений день ми нулі не вигадуємо.
  *
  * AI-DANGER: перенести метрику з `unknown` у `zero` — це змінити зміст усіх
- * кореляцій, у яких вона бере участь, і чисел на полюсах карток зв'язку
+ * кореляцій, у яких вона бере участь, і чисел на полюсах карток звʼязку
  * (середнє стає «за календарний день», а не «за день із записом»). Не роби це
  * без перечитування `crossModuleLinkData.ts` і копії в `uk.crossModuleLink.ts`.
  */
@@ -101,6 +106,16 @@ export const ABSENCE_MEANS: Record<DailyMetric, AbsenceMeaning> = {
   weight: "unknown",
   wellbeing: "unknown",
   habit_rate: "zero",
+  // Той самий зміст, що й `spending`: у покритому періоді день без покупки
+  // алкоголю — справжній нуль, а не «невідомо».
+  //
+  // Наслідок, який варто знати: покриття рахується по САМІЙ метриці, тож
+  // вікно пар з алкоголем — між першою й останньою його покупкою за 60
+  // днів, а не весь період банківського синку. Для того, хто купує його
+  // бодай раз на два тижні, це майже все вікно; для того, хто не купує
+  // взагалі, метрика мовчить — і це правильніше, ніж константний нуль,
+  // який корелював би з будь-чим.
+  alcohol_spending: "zero-while-covered",
 };
 
 const DAY_MS = 86_400_000;
@@ -157,6 +172,28 @@ function addTo(map: Map<string, number>, day: string, amount: number): void {
 
 // ─── Читачі метрик → Map<dayKey, value> (лише дні з реальними даними) ─────────
 
+/**
+ * Видимі транзакції + спліти — спільна основа для `readFinyk` і
+ * `readFinykCategory`. Обидва читачі раніше самі кликали
+ * `buildFinykSpendingUniverse` і самі парсили `finyk_tx_splits`, тож пара
+ * `spending × alcohol_spending` в одному вікні робила цю роботу двічі.
+ */
+function loadFinykSpending(): {
+  txs: Array<{ id: string; amount: number; time?: number }>;
+  splits: Record<string, unknown>;
+} {
+  const cached = getCachedFinykSqliteState();
+  const all = buildFinykSpendingUniverse({
+    bankTxs: getVisibleFinykMonoMirrorState().transactions,
+    manualExpenses: cached.manualExpenses,
+  }).transactions as Array<{ id: string; amount: number; time?: number }>;
+  const hidden = cached.hiddenTransactions;
+  return {
+    txs: all.filter((t) => !hidden.includes(t.id || "")),
+    splits: ls<Record<string, unknown>>("finyk_tx_splits", {}),
+  };
+}
+
 function readFinyk(sign: "spending" | "income"): Map<string, number> {
   const out = new Map<string, number>();
   // Всесвіт витрат — банк + РУЧНІ записи, як вимагає канон finyk §5
@@ -165,24 +202,59 @@ function readFinyk(sign: "spending" | "income"): Map<string, number> {
   // були порожні назавжди — жодна курована пара з Фініком не могла
   // заговорити (знахідка F7 репетиції бета-прогону,
   // docs/90-work/audits/2026-08-07-beta-rehearsal-run.md).
-  const txs = buildFinykSpendingUniverse({
-    bankTxs: getVisibleFinykMonoMirrorState().transactions,
-    manualExpenses: getCachedFinykSqliteState().manualExpenses,
-  }).transactions as Array<{
-    id: string;
-    amount: number;
-    time?: number;
-  }>;
-  const hidden = getCachedFinykSqliteState().hiddenTransactions;
-  const splits = ls<Record<string, unknown>>("finyk_tx_splits", {});
+  const { txs, splits } = loadFinykSpending();
   for (const t of txs) {
-    if (hidden.includes(t.id || "")) continue;
     if (!t.time) continue;
     if (sign === "spending" && t.amount < 0) {
       addTo(out, getKyivDayKey(t.time * 1000), getTxStatAmount(t, splits));
     } else if (sign === "income" && t.amount > 0) {
       addTo(out, getKyivDayKey(t.time * 1000), t.amount / 100);
     }
+  }
+  return out;
+}
+
+/**
+ * Денні витрати за ОДНІЄЮ категорією — новий клас метрики, що виріс із
+ * чекового спліту (Silpo трек F).
+ *
+ * AI-CONTEXT: до чек-скану алкоголь тонув у `groceries` — одна покупка в
+ * супермаркеті була неподільним рядком, і питання «чи повʼязані вечері з
+ * вином і ранковим самопочуттям» не можна було поставити навіть у теорії.
+ * Спліт за чеком розділив рядок на категорії, а калібрування 2026-08-25
+ * (§4 спеки) завело `alcohol` окремою категорією — тобто дані для такої
+ * пари вже накопичуються, просто ніхто їх не читав.
+ *
+ * `calcCategorySpent` рахує суму за категорією рівно так само, як екран
+ * категорій Фініка: спліт має пріоритет над категорією транзакції. Тому
+ * тут не власна арифметика, а той самий примітив — інакше картка зв'язку
+ * і розбивка витрат розійшлись би в числах на тих самих даних.
+ */
+function readFinykCategory(categoryId: string): Map<string, number> {
+  const out = new Map<string, number>();
+  const cached = getCachedFinykSqliteState();
+  const { txs, splits } = loadFinykSpending();
+
+  // Групуємо по днях, а суму за категорією рахує `calcCategorySpent` —
+  // їй байдуже, скільки транзакцій у масиві.
+  const byDay = new Map<string, typeof txs>();
+  for (const t of txs) {
+    if (!t.time || t.amount >= 0) continue;
+    const day = getKyivDayKey(t.time * 1000);
+    const bucket = byDay.get(day);
+    if (bucket) bucket.push(t);
+    else byDay.set(day, [t]);
+  }
+
+  for (const [day, dayTxs] of byDay) {
+    const spent = calcCategorySpent(
+      dayTxs as never,
+      categoryId,
+      cached.txCategories,
+      splits,
+      cached.customCategories,
+    );
+    if (spent > 0) out.set(day, spent);
   }
   return out;
 }
@@ -297,6 +369,8 @@ function readMetric(
       return readFizrukDaily("wellbeing");
     case "habit_rate":
       return readHabitRate(habitId);
+    case "alcohol_spending":
+      return readFinykCategory("alcohol");
   }
 }
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // scripts/ci-bump-harness-version.mjs
 // PR-time harness version bumper.
-// Reads .kilo/harness-versions.json, detects which governance surfaces the
+// Reads .agents/harness-versions.json, detects which governance surfaces the
 // diff touches (AGENTS.md / .agents/skills/** / docs/04-governance/governance/rules/** /
 // eslint-plugin-sergeant-design rules / .husky hooks), increments the patch by
 // default (typo, link, freshness), minor when adding a new skill/section,
@@ -11,7 +11,7 @@ import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { execSync } from "node:child_process";
 
-const FILE = resolve(process.cwd(), ".kilo/harness-versions.json");
+const FILE = resolve(process.cwd(), ".agents/harness-versions.json");
 
 if (!existsSync(FILE)) {
   console.error(`[bump] ${FILE} not found. Run from repo root.`);

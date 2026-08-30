@@ -21,6 +21,7 @@ import type {
   NutritionLog,
   NutritionPrefs,
   Pantry,
+  PantryItemSource,
   ShoppingList,
 } from "@sergeant/nutrition-domain";
 import { normalizeShoppingList } from "@sergeant/nutrition-domain";
@@ -115,6 +116,8 @@ interface PantryItemRow {
   qty: number | null;
   unit: string | null;
   notes: string | null;
+  /** Серіалізовані варіанти покупок (міграція 130). */
+  sources: string | null;
   sort_order: number | null;
   [key: string]: unknown;
 }
@@ -290,7 +293,7 @@ export async function refreshNutritionSqliteState(
       [userId],
     ),
     client.all<PantryItemRow>(
-      `SELECT id, pantry_id, name, qty, unit, notes, sort_order
+      `SELECT id, pantry_id, name, qty, unit, notes, sources, sort_order
            FROM nutrition_pantry_items
           WHERE user_id = ? AND deleted_at IS NULL
           ORDER BY pantry_id ASC, sort_order ASC, id ASC`,
@@ -342,6 +345,9 @@ export async function refreshNutritionSqliteState(
       qty: row.qty ?? null,
       unit: row.unit ?? null,
       notes: row.notes ?? null,
+      // Форму варіантів чистить `normalizePantries` нижче по потоку —
+      // тут лише розбір JSON, який на битому рядку дає `null`, а не кидає.
+      sources: safeParseJson<PantryItemSource[] | null>(row.sources, null),
     });
     itemsByPantry.set(row.pantry_id, arr);
   }

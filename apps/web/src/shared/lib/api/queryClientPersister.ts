@@ -25,7 +25,7 @@
  * активному використанні легко перевалює за 5 MB, і JSON.stringify
  * у localStorage блокував би основний потік. Async-persister пише в
  * IDB поза main thread і на 1s throttle (відповідає дефолту
- * TanStack), тому навіть burst оновлень кешу не б'є по UI.
+ * TanStack), тому навіть burst оновлень кешу не бʼє по UI.
  *
  * ## Cache busting
  *
@@ -173,7 +173,7 @@ export const idbKeyvalStorage: AsyncStorage<string> = {
 };
 
 /**
- * Фабрика persister-а. Повертає об'єкт, який можна напряму передати
+ * Фабрика persister-а. Повертає обʼєкт, який можна напряму передати
  * у `<PersistQueryClientProvider persistOptions={{ persister, ... }} />`.
  *
  * Throttle 1000 мс відповідає дефолту TanStack і збігається з
@@ -236,7 +236,7 @@ export function shouldDehydrateQueryForPersist(query: Query): boolean {
 
 /**
  * Зібраний `persistOptions` для `<PersistQueryClientProvider />`.
- * Об'єднує persister, TTL, buster і `dehydrateOptions` в одне місце,
+ * Обʼєднує persister, TTL, buster і `dehydrateOptions` в одне місце,
  * щоб `main.tsx` не тримав цю верстку у себе.
  */
 export function createWebPersistOptions() {

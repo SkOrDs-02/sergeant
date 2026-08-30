@@ -1,6 +1,6 @@
 # Playbook: Розслідування alert-у
 
-> **Last validated:** 2026-08-26 by @claude. **Next review:** 2026-11-26.
+> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-05.
 > **Status:** Active
 
 **Trigger:** спрацював Prometheus alert / росте Sentry issue / підозрілі 5xx, latency або деградація health-ендпоїнтів, але ще не очевидно, чи це інцидент, false positive або транзитний шум.
@@ -22,6 +22,15 @@
 - Назва alert-у або Sentry issue.
 - Початок у часі та тривалість порушення.
 - Severity, уражена поверхня (surface), контекст останнього deploy/config-змін.
+
+> **Якщо це AI-шлях — у Sentry буде порожньо, і це не означає «немає
+> проблеми».** Помилки Anthropic/OpenRouter приходять як `ExternalServiceError`
+> (502/503), тобто operational, а `errorHandler` капчить у Sentry лише
+> НЕ-operational 5xx. Тому аутедж провайдера не створює жодного issue. Дивись
+> натомість: `ai_requests_total{outcome="error"}`, `ai_first_token_ms` (TTFT) і
+> pino-лог `chat_stream_failed_empty`. Те саме застереження діє для пошуку в
+> логах: доставка в Loki зламана (див. `SLO.md § Зламано`), тож відсутність
+> рядків там нічого не доводить.
 
 ### 2. Відокрем signal від noise
 

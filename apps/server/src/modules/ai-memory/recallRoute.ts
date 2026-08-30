@@ -1,7 +1,7 @@
 /**
  * Handler `POST /api/ai-memory/recall` — semantic memory retrieval.
  *
- * Розв'язує задачу: "знайди top-K схожих записів для запиту юзера". Викликають
+ * Розвʼязує задачу: "знайди top-K схожих записів для запиту юзера". Викликають
  * двоє caller-ів:
  *   1. HubChat tool `recall_memory` (`apps/web/src/core/lib/chatActions/`) —
  *      коли LLM явно вирішив пошукати у memory bank.

@@ -126,13 +126,13 @@ describe("TagsSection — useApiForm inline rename (Item #8 round-12)", () => {
 
     // Edit-mode залишається відкритим, бо `.trim().min(1)` валить submit
     // (input усе ще in-DOM з поточним value), а тег не перейменовано —
-    // `Змінити морк` button не з'являється, бо ми ще в edit-mode для нього.
+    // `Змінити морк` button не зʼявляється, бо ми ще в edit-mode для нього.
     await waitFor(() => {
       expect(input).toHaveAttribute("aria-invalid", "true");
     });
     expect(input).toBeInTheDocument();
     // Aria-label усе ще використовує оригінальну назву "морк"; тобто routine
-    // state не отримав updateTag-виклик з порожнім ім'ям.
+    // state не отримав updateTag-виклик з порожнім імʼям.
     expect(screen.getByLabelText("Назва тега морк")).toBe(input);
   });
 
@@ -167,7 +167,7 @@ describe("TagsSection — useApiForm inline rename (Item #8 round-12)", () => {
     fireEvent.submit(input.closest("form")!);
 
     await waitFor(() => {
-      // Тег рендериться з обрізаним ім'ям — не " обід ", а саме "обід";
+      // Тег рендериться з обрізаним імʼям — не " обід ", а саме "обід";
       // `getByText` за замовчуванням нормалізує whitespace, тому
       // exact-match через `{ exact: true, normalizer }` не застосовуємо —
       // достатньо, що button-aria-label не містить навколишніх пробілів.

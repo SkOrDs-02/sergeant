@@ -352,7 +352,7 @@ describe("compare_weeks — Харчування diff", () => {
 });
 
 describe("compare_weeks — Фізрук diff", () => {
-  it("показує count і об'єм за два тижні", () => {
+  it("показує count і обʼєм за два тижні", () => {
     seedFizruk([
       {
         startedAt: "2026-04-21T10:00:00Z",
@@ -387,6 +387,6 @@ describe("compare_weeks — Фізрук diff", () => {
     // W17: 2 workouts; volume = 100*5 + 100*5 + 80*8 = 1640
     // W16: 1 workout; volume = 500
     expect(out).toMatch(/Тренувань:.*2.*1/);
-    expect(out).toMatch(/Об'єм:.*1640.*500/);
+    expect(out).toMatch(/Обʼєм:.*1640.*500/);
   });
 });

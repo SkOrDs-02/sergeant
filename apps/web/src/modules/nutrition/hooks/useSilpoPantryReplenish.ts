@@ -13,13 +13,23 @@
  * («нерозпізнане — пропозиція нової позиції», спека), і сам емітить
  * `replenish`-подію в ledger для кожної позиції з відомою кількістю. Цей
  * хук лише читає чеки Сільпо (`@finyk/hooks/useSilpoReceipts`, read-only
- * REST — не dual-write, спека § «Sync у клієнт») і будує прев'ю
+ * REST — не dual-write, спека § «Sync у клієнт») і будує превʼю
  * зіставлення, нічого не пише мовчки: `confirm()` викликається лише
  * явним тапом користувача.
  */
 import { useMemo, useState } from "react";
 import { mapReceiptItemToCategory } from "@sergeant/finyk-domain/domain";
-import { canonicalFoodKey, displayFoodName } from "@sergeant/nutrition-domain";
+import {
+  buildPantryIndex,
+  categorizeFood,
+  displayFoodName,
+  findPantryMatch,
+  genericFoodName,
+  matchFoodName,
+  receiptQtyToBase,
+  type PantryItemSource,
+} from "@sergeant/nutrition-domain";
+import { toKyivISODate } from "@sergeant/shared";
 import {
   useSilpoReceipts,
   useSilpoReceiptDetail,
@@ -36,6 +46,14 @@ export interface SilpoReplenishRow {
   category: string;
   /** Display-назва існуючої позиції комори, якщо знайдено збіг за `canonicalFoodKey`. `null` = «нова позиція». */
   matchedName: string | null;
+  /**
+   * Родова назва, під яку ляже позиція, коли згортання щось змінює.
+   * `null` — назва не змінюється (згортання вимкнене для категорії або
+   * викидати не було чого), тож рядок показується як раніше.
+   */
+  genericName: string | null;
+  /** Людина натиснула «лишити повну» — згортання для цього рядка вимкнене. */
+  keepFull: boolean;
   checked: boolean;
 }
 
@@ -75,17 +93,13 @@ export function useSilpoPantryReplenish({
     [detailQuery.data],
   );
 
-  // key → display-назва першої позиції комори з таким канонічним ключем.
-  // Лише для показу «Уже є: …» — сам запис матчиться заново всередині
-  // `upsertItem`/`mergeItems`, ця мапа не бере участі в мутації.
-  const pantryNameByKey = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const p of pantryItems) {
-      const key = canonicalFoodKey(p.name);
-      if (key && !map.has(key)) map.set(key, displayFoodName(p.name));
-    }
-    return map;
-  }, [pantryItems]);
+  // Нормалізовані назви комори рахуються ОДИН раз на комору, а не заново
+  // для кожного рядка чека: інакше 200 позицій × десятки продуктів дають
+  // десятки тисяч regex-спліт на кожен рендер `rows`.
+  const pantryIndex = useMemo(
+    () => buildPantryIndex(pantryItems),
+    [pantryItems],
+  );
 
   const [checkedState, setCheckedState] = useState<Record<number, boolean>>({});
   // Один чекпойнт "seed" на чек: перезаходити в дефолти щоразу, коли
@@ -107,20 +121,43 @@ export function useSilpoPantryReplenish({
     setCheckedState(next);
   }
 
+  // «Лишити повну» — точковий вимикач згортання на один рядок чека. Це
+  // страховка проти помилки евристики ДО запису; друга (редагування назви
+  // позиції) працює вже після.
+  const [keepFullState, setKeepFullState] = useState<Record<number, boolean>>(
+    {},
+  );
+
   const rows: SilpoReplenishRow[] = useMemo(
     () =>
       items.map((item) => {
-        const key = canonicalFoodKey(item.name);
+        // `findPantryMatch` бере на себе і точний збіг ключів (те, що тут
+        // було раніше), і випадок «коротка назва комори всередині довгої
+        // назви з чека» — саме він створював дублі замість доливання.
+        const match = findPantryMatch(item.name, pantryIndex);
+        // Згортати чи ні — вирішує КАТЕГОРІЯ продукту: у напоях і снеках
+        // бренд змінює суть («Red Bull» це не «Burn»), тож там назва їде
+        // як є. Категорія рахується на СИРІЙ назві: саме в ній ще є слова
+        // на кшталт «Напій енергетичний».
+        const category = categorizeFood(item.name);
+        const generic = category.collapseBrand
+          ? genericFoodName(item.name)
+          : "";
         return {
           item,
           category: mapReceiptItemToCategory(item),
-          matchedName: key ? (pantryNameByKey.get(key) ?? null) : null,
+          matchedName: match ? displayFoodName(match.name) : null,
+          genericName:
+            generic && matchFoodName(generic) !== matchFoodName(item.name)
+              ? generic
+              : null,
+          keepFull: keepFullState[item.id] ?? false,
           checked:
             checkedState[item.id] ??
             mapReceiptItemToCategory(item) === "groceries",
         };
       }),
-    [items, pantryNameByKey, checkedState],
+    [items, pantryIndex, checkedState, keepFullState],
   );
 
   const checkedCount = rows.reduce((n, r) => (r.checked ? n + 1 : n), 0);
@@ -144,18 +181,59 @@ export function useSilpoPantryReplenish({
     });
   }
 
-  /** Пише `replenish` для кожної підтвердженої позиції. Повертає скільки додано (0 — нема що писати, викликач нічого не робить). */
+  /**
+   * Пише `replenish` для кожної підтвердженої позиції. Повертає скільки
+   * додано (0 — нема що писати, викликач нічого не робить).
+   *
+   * Кожен рядок їде під СВОЄЮ родовою назвою, а повна назва з чека
+   * зберігається варіантом. Два рядки одного чека, що згорнулись однаково,
+   * зливає вже `mergeItems` за канонічним ключем — тут вони просто йдуть
+   * одним масивом, тож у комору лягає одна позиція з двома варіантами, а
+   * не дві однойменні (рішення 9).
+   */
   function confirm(): number {
     const checked = rows.filter((r) => r.checked);
     if (checked.length === 0) return 0;
-    const toAdd: PantryItem[] = checked.map((r) => ({
-      name: r.item.name,
-      qty: r.item.qty,
-      unit: r.item.unit,
-      notes: null,
-    }));
+    // День ПОКУПКИ, не день імпорту: чек — фінансовий запис, тож його день
+    // рахується в Києві (domain invariants), і головне — він стабільний.
+    // Саме на цю стабільність спирається дедуп повторного імпорту в
+    // `mergeSources`: з датою «сьогодні» той самий чек, підтверджений
+    // завтра, виглядав би новою покупкою і подвоїв би кількість.
+    const purchasedAt = receiptsQuery.receipts.find(
+      (r) => r.receiptId === selectedReceiptId,
+    )?.purchasedAt;
+    const addedAt = toKyivISODate(purchasedAt ?? new Date());
+    const toAdd: PantryItem[] = checked.map((r) => {
+      const name = r.keepFull ? r.item.name : (r.genericName ?? r.item.name);
+      // Назва потрібна для щільності: «Молоко ... 900г» з чека має лягти
+      // як 874 мл, інакше воно ніколи не зійдеться з «Молоко 1 л» в одну
+      // картку продукту — а молоко Сільпо віддає саме в грамах.
+      const based = receiptQtyToBase(r.item.qty, r.item.unit, name);
+      if (!based) {
+        // Одиниця без масштабу («уп») — варіант створити чесно не можна,
+        // тож позиція лишається звичайною, як до цієї фічі.
+        return { name, qty: r.item.qty, unit: r.item.unit, notes: null };
+      }
+      const source: PantryItemSource = {
+        name: displayFoodName(r.item.name),
+        qty: based.qty,
+        unit: based.unit,
+        addedAt,
+      };
+      return {
+        name,
+        qty: based.qty,
+        unit: based.unit,
+        notes: null,
+        sources: [source],
+      };
+    });
     upsertItem(toAdd);
     return toAdd.length;
+  }
+
+  function toggleKeepFull(itemId: number) {
+    setKeepFullState((cur) => ({ ...cur, [itemId]: !cur[itemId] }));
   }
 
   /** Скидає локальний вибір чека/чекбоксів — виклик при закритті sheet-а. */
@@ -163,6 +241,7 @@ export function useSilpoPantryReplenish({
     setSelectedReceiptId(null);
     setSeededReceiptId(null);
     setCheckedState({});
+    setKeepFullState({});
   }
 
   return {
@@ -174,6 +253,7 @@ export function useSilpoPantryReplenish({
     rows,
     checkedCount,
     toggleItem,
+    toggleKeepFull,
     confirm,
     reset,
   };

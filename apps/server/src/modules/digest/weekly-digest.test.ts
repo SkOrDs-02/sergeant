@@ -373,7 +373,7 @@ describe("weekly-digest handler · prompt assembly", () => {
     await handler(req, res);
     const sys = provider.calls[0]!.system!;
     expect(sys).toContain("Тренувань завершено: 4");
-    expect(sys).toContain("Загальний об'єм: 5400 кг");
+    expect(sys).toContain("Загальний обʼєм: 5400 кг");
     expect(sys).toContain("Squat: 2200 кг");
     expect(sys).toContain("Стан відновлення: Помірне");
   });
@@ -485,7 +485,7 @@ describe("weekly-digest handler · prompt assembly", () => {
     expect(sys).toContain("Витрати: 0 грн | Надходження: 0 грн");
     expect(sys).toContain("Транзакцій: 0");
     expect(sys).toContain("Тренувань завершено: 0");
-    expect(sys).toContain("Загальний об'єм: 0 кг");
+    expect(sys).toContain("Загальний обʼєм: 0 кг");
     expect(sys).toContain("Стан відновлення: Немає даних");
     expect(sys).toContain("Середньодобово: 0 ккал (ціль 2000 ккал");
     expect(sys).toContain("Днів із записами: 1 з 7");
@@ -906,6 +906,34 @@ describe("weekly-digest handler · memory ingest hook", () => {
     expect(payload.metadata.usedFallback).toBe(false);
   });
 
+  it("W3: weekKey стає sourceRef, generatedAt — dedupeSalt (остання генерація тижня перемагає)", async () => {
+    const { handler } = buildHandler();
+    const req = asReq({
+      anthropicKey: "k",
+      user: { id: "user_42" },
+      body: {
+        weekRange: "25 серп. – 31 серп.",
+        weekKey: "2026-08-25",
+        finyk: { totalSpent: 1, totalIncome: 1, txCount: 1 },
+      },
+    });
+    const res = makeRes();
+    await handler(req, res);
+
+    expect(enqueueMemoryIngest).toHaveBeenCalledTimes(1);
+    const payload = enqueueMemoryIngest.mock.calls[0]![0];
+    // Канонічний ключ тижня, а не локалізований display-рядок:
+    expect(payload.sourceRef).toBe("2026-08-25");
+    // Кожна генерація — окремий BullMQ-job: без солі jobId-дедуп мовчки
+    // відкидав повторну генерацію, і в памʼяті застигав перший знімок тижня.
+    expect(payload.dedupeSalt).toBe(
+      (res.body as { generatedAt: string }).generatedAt,
+    );
+    // Людський заголовок контенту й metadata лишаються на weekRange.
+    expect(payload.content).toContain("25 серп. – 31 серп.");
+    expect(payload.metadata.weekRange).toBe("25 серп. – 31 серп.");
+  });
+
   it("PR-25: на fallback-template memory теж enqueue-иться з usedFallback=true", async () => {
     const { handler } = buildHandler(
       { ok: false, error: "boom", code: "rate_limited", status: 429 },
@@ -1014,7 +1042,7 @@ const AI_RESPONSE_FIXTURE = `Ось аналіз тижня:
     "recommendations": ["Переглянь підписки", "Збережи профіцит у запасний фонд"]
   },
   "fizruk": {
-    "summary": "4 тренування за тиждень, загальний об'єм 6 500 кг.",
+    "summary": "4 тренування за тиждень, загальний обʼєм 6 500 кг.",
     "comment": "Прогрес стабільний. Відновлення достатнє.",
     "recommendations": ["Додай мобільну розминку", "Зафіксуй рекорди Squat"]
   },

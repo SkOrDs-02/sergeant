@@ -86,7 +86,7 @@ describe("readNutritionDemoStateFromLs", () => {
     expect(state?.waterLog).toEqual({ "2026-08-07": 1400, "2026-08-06": 2200 });
     expect(state?.prefs).not.toBeNull();
     // Форма prefs у dual-write — `{prefsJson, activePantryId}`, не сирий
-    // об'єкт (пастка #2 із завдання): перевіряємо, що JSON справді
+    // обʼєкт (пастка #2 із завдання): перевіряємо, що JSON справді
     // РОЗІБРАНИЙ і нормалізований, а не сирий сід один-в-один.
     const parsedPrefsJson = JSON.parse(state!.prefs!.prefsJson);
     expect(parsedPrefsJson.dailyTargetKcal).toBe(2200);
@@ -171,7 +171,7 @@ describe("importNutritionDemoSeed", () => {
 
   it("вода, засіяна поламаною формою {ml: N}, НЕ доїжджає до SQLite (регресія)", async () => {
     // Прямий доказ пастки #1 із завдання: якби демо-сід і далі писав
-    // об'єктну форму, `normalizeWaterLog` відкинув би геть усі ключі і
+    // обʼєктну форму, `normalizeWaterLog` відкинув би геть усі ключі і
     // жодного `water-log-set` не булоб — цей тест ловить регрес у СІДІ,
     // не лише в імпортері.
     localStorage.setItem(

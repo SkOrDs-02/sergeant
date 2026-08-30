@@ -10,7 +10,7 @@
  * - Назвати polyglot SVG як `image/jpeg` і покластися на Anthropic
  *   preprocessing — той розпарсить як SVG.
  * - Надіслати inflated PNG: 50 MB на дискі → сотні MB після decode.
- * - Надіслати довільні байти, що з'їдають parser-budget Anthropic.
+ * - Надіслати довільні байти, що зʼїдають parser-budget Anthropic.
  *
  * Рішення (M6):
  * 1. Декодуємо base64 на сервері до буфера.
@@ -167,7 +167,7 @@ export function detectImageMime(bytes: Uint8Array): string | null {
  * вирішує HTTP-статус (415 для MAGIC_MISMATCH/INVALID_BASE64/TRUNCATED,
  * 413 для TOO_LARGE).
  *
- * Аргумент `declaredMime` — необов'язковий: якщо `undefined`, повертаємо
+ * Аргумент `declaredMime` — необовʼязковий: якщо `undefined`, повертаємо
  * успіх лише при детектованому MIME з allowlist; якщо ж вказаний, він
  * повинен збігатися з detected (case-insensitive, без `; charset=...`).
  */

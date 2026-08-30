@@ -27,7 +27,7 @@ describe("defaultNutritionPrefs", () => {
     });
   });
 
-  it("кожен виклик дає новий об'єкт", () => {
+  it("кожен виклик дає новий обʼєкт", () => {
     const a = defaultNutritionPrefs();
     const b = defaultNutritionPrefs();
     expect(a).not.toBe(b);

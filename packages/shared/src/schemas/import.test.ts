@@ -107,7 +107,7 @@ describe("ImportScreenshotDraftSchema", () => {
 });
 
 describe("ImportColumnMappingSchema", () => {
-  it("приймає мінімальний mapping (лише 3 обов'язкові колонки)", () => {
+  it("приймає мінімальний mapping (лише 3 обовʼязкові колонки)", () => {
     const r = ImportColumnMappingSchema.safeParse({
       dateCol: "Дата",
       amountCol: "Сума",

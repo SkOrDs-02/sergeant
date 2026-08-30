@@ -66,10 +66,55 @@ export const SENTRY_SAMPLING_RULES: readonly SentrySamplingRule[] = [
     rate: 1.0,
     reason: "Login/signup/SSO — security-critical, low-volume.",
   },
+  // AI-шлях (B-телеметрія, `docs/90-work/audits/ai-testing-2026-08-25.md`).
+  //
+  // `/api/photo/analyze` стояло тут із самого початку і НЕ МАТЧИЛО НІЧОГО:
+  // такого роута в застосунку немає, реальні — `/api/nutrition/analyze-photo`
+  // і `/api/nutrition/refine-photo` (`routes/nutrition.ts`). Тобто найдорожчі
+  // виклики роками падали у generic-fallback (0.05), а правило виглядало
+  // як робоче. Матч — `url.includes(rule.match)`, тож помилка була тиха:
+  // ані винятку, ані попередження.
+  //
+  // ПОРЯДОК ТУТ ЗНАЧУЩИЙ: перший збіг виграє, а `/api/chat` як підрядок
+  // покриває і `/api/chat/usage`. Тому дешевий лічильник іде ПЕРШИМ —
+  // інакше він успадкував би ставку стріму. З тієї ж причини для коуча
+  // взято саме `/api/coach/insight`, а не `/api/coach/`: memory-ендпоінти
+  // моделі не викликають і платити за них трасами нема сенсу.
   {
-    match: "/api/photo/analyze",
+    match: "/api/chat/usage",
+    rate: 0.01,
+    reason:
+      "Лічильник квоти — дешевий GET, який фронт смикає на кожному відкритті чату. 1% вистачає на тренд. МАЄ стояти перед /api/chat (підрядковий матч).",
+  },
+  {
+    match: "/api/chat",
     rate: 0.5,
-    reason: "Expensive AI route; half-trace keeps perf signal without 1× cost.",
+    reason:
+      "Найдорожчий AI-роут: SSE-стрім ~30 с і до 8 tool-ітерацій. Правила не було взагалі — падало у generic-fallback, тоді як саме тут B46 показав 9 зривів із 12, невидимих одночасно в метриках, логах і Sentry.",
+  },
+  {
+    match: "/api/coach/insight",
+    rate: 0.5,
+    reason:
+      "Дорога генерація на Sonnet-класі, ліміт 20/год на юзера — обсяг малий, ціна помилки висока. Саме /insight, не /api/coach/: memory-ендпоінти модель не викликають.",
+  },
+  {
+    match: "/api/weekly-digest",
+    rate: 0.5,
+    reason:
+      "Тижневий дайджест — рідкісний, дорогий і повністю фоновий: користувач не поскаржиться, тож окрім трасування сигналу про його збій немає.",
+  },
+  {
+    match: "/api/nutrition/analyze-photo",
+    rate: 0.5,
+    reason:
+      "Vision-виклик (~5–10 с, зображення в тілі). Замінює мертве /api/photo/analyze — саме цей шлях віддає `routes/nutrition.ts`.",
+  },
+  {
+    match: "/api/nutrition/refine-photo",
+    rate: 0.5,
+    reason:
+      "Той самий vision-shape, що й analyze-photo, і та сама ціна — мертвим правилом теж не покривався.",
   },
   {
     match: "/api/v2/sync/",

@@ -12,7 +12,7 @@
  * — секрет одразу витікає у read-only-системи з 30-day retention. Цей хелпер
  * — defense-in-depth поверх primary-фіксу (нова прийомка через
  * `X-Mono-Webhook-Secret` header, див. `modules/mono/webhook.ts`). Поки
- * Monobank ще шле path-secret, ми **обов'язково** ганяємо кожний URL, що
+ * Monobank ще шле path-secret, ми **обовʼязково** ганяємо кожний URL, що
  * піде у лог/Sentry, через `redactSensitiveUrl()`.
  *
  * Контракт:
@@ -66,7 +66,7 @@ const TELEGRAM_BOT_TOKEN_IN_PATH =
  * `req.route` ще порожній. Дешевше вирізати, ніж пояснювати кожному
  * наступному аудитору, чому воно там лежить.
  *
- * `[?&]` перед ключем обов'язковий — інакше під редакцію потрапили б
+ * `[?&]` перед ключем обовʼязковий — інакше під редакцію потрапили б
  * нешкідливі суфікси на кшталт `?substate=` чи `?code_challenge=`.
  */
 const SENSITIVE_QUERY_VALUES = /([?&](?:code|state)=)[^&#]*/gi;

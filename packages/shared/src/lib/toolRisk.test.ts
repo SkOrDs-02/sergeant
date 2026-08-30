@@ -43,7 +43,7 @@ describe("TOOL_RISK ↔ каталог здібностей", () => {
   it("кожен ризиковий інструмент має явний режим, без дефолту", () => {
     // `TOOL_RISK[x] ?? "reversible"` було б найзручнішою і найгіршою
     // помилкою: новий деструктивний інструмент тихо отримав би
-    // найм'якший режим і виконувався б без підтвердження.
+    // наймʼякший режим і виконувався б без підтвердження.
     for (const id of RISKY_TOOL_IDS) {
       expect(["destructive", "reversible"]).toContain(TOOL_RISK[id]);
     }
@@ -67,9 +67,28 @@ describe("TOOL_RISK ↔ каталог здібностей", () => {
   it("оборотні дії НЕ вимагають підтвердження", () => {
     // Друга половина рішення #8: «Решта — одразу, з кнопкою скасувати».
     // Без цього асерта найпростіший спосіб «полагодити» падіння —
-    // позначити все як destructive, і діалог почне з'являтись на кожну дію.
+    // позначити все як destructive, і діалог почне зʼявлятись на кожну дію.
     expect(requiresConfirmation("hide_transaction")).toBe(false);
     expect(requiresConfirmation("archive_habit")).toBe(false);
+  });
+
+  it("B39: overwrite-інструменти Фініка класифіковано reversible, не destructive", () => {
+    // `set_budget_limit`, `set_monthly_plan`, `update_budget`,
+    // `change_category` перезаписують значення без явної згоди людини —
+    // до фіксу B39 вони взагалі не мали запису в `TOOL_RISK`, тобто ні
+    // блокуючого підтвердження, ні undo. Founder уточнив межу: вони
+    // reversible (мають робочий `undo`), а не destructive — модал НЕ
+    // повинен їх блокувати.
+    for (const id of [
+      "set_budget_limit",
+      "set_monthly_plan",
+      "update_budget",
+      "change_category",
+    ]) {
+      expect(TOOL_RISK[id]).toBe("reversible");
+      expect(requiresConfirmation(id)).toBe(false);
+      expect(isRiskyTool(id)).toBe(true);
+    }
   });
 
   it("нериковий інструмент не проходить жоден із гейтів", () => {

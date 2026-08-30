@@ -143,7 +143,7 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
     expect(optionLabels).toEqual([
       // Disabled placeholder — required so switching Витрата ↔ Надходження can
       // blank the field and force an explicit pick from the new taxonomy.
-      "Оберіть категорію",
+      "Обери категорію",
       // 2026-08-13: «Їжа» (`food`) і «Продукти» (`groceries`) були двома
       // чипами на ОДИН канонічний кошик `food`, який MCC-каталог зве
       // «Продукти». Лишився один — `food` під канонічним підписом;
@@ -152,7 +152,7 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
       "Кафе та ресторани",
       "Транспорт",
       "Розваги",
-      "Здоров'я",
+      "Здоровʼя",
       "Покупки",
       // 2026-08-25: цигарки й алкоголь стали окремими кошиками — доти
       // спліт за чеком Сільпо не мав куди їх покласти й зсипав у
@@ -191,9 +191,9 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
       />,
     );
     // Транспорт has the highest frequency rank → first real <option> in the
-    // dropdown, right after the disabled "Оберіть категорію" placeholder.
+    // dropdown, right after the disabled "Обери категорію" placeholder.
     const select = screen.getByLabelText("Категорія") as HTMLSelectElement;
-    expect(select.options[0]?.textContent).toBe("Оберіть категорію");
+    expect(select.options[0]?.textContent).toBe("Обери категорію");
     expect(select.options[1]?.textContent).toBe("Транспорт");
   });
 

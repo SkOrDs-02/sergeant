@@ -91,7 +91,7 @@ export function useHubUIState(): HubUIState {
       // `window.scrollTo({ top: 0, behavior: "smooth" })`, але документ
       // взагалі не скролиться (#root = `100dvh` + HubHomeView `overflow-hidden`),
       // і виклик `smooth`-скролу на iOS Safari / Capacitor триггерив візуальний
-      // viewport jump: на мить з'являвся UI-бар браузера, верх отримував зайвий
+      // viewport jump: на мить зʼявлявся UI-бар браузера, верх отримував зайвий
       // safe-area простір, а низ підрізав bottom-nav (user feedback 2026-05-13).
     },
     [navigate],

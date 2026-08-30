@@ -24,10 +24,10 @@ lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); t
 Before loading any specialist skill, run:
 
 ```bash
-pnpm snapshot           # writes .kilocode/snapshot.md
+pnpm snapshot           # writes .agents/snapshot.md
 ```
 
-Read `.kilocode/snapshot.md` and react:
+Read `.agents/snapshot.md` and react:
 
 - Red CI on `main` → stop, investigate before opening a new PR.
 - Bundle budgets breached (>95%) or Lighthouse failing → load `sergeant-deploy-and-observability`.
@@ -47,8 +47,23 @@ The script is zero-dep and offline-safe (`[gh unavailable: ...]` for sections th
 
 ## Роутся одразу
 
+Роутинг двовимірний: задача в межах продуктового модуля вантажить **module-owner скіл** (канон, журнал рішень, мапа файлів) **плюс** surface-скіл поверхні.
+
 | Ситуація                                                         | Skill                              |
 | ---------------------------------------------------------------- | ---------------------------------- |
+| Задача згадує finyk / бюджети / транзакції / чеки / готівку      | `sergeant-module-finyk` + surface-скіл |
+| Задача згадує nutrition / їжу / калорії / комору / страви        | `sergeant-module-nutrition` + surface-скіл |
+| Задача згадує fizruk / тренування / відновлення / травми / вагу  | `sergeant-module-fizruk` + surface-скіл |
+| Задача згадує routine / звички / стріки / щоденні відмітки       | `sergeant-module-routine` + surface-скіл |
+| AI-шар: hub, HubChat tool/executor, coach, digest, ai-memory     | `sergeant-module-ai`               |
+| Sync, оп-лог, LWW-конфлікти, dualwrite-core                      | `sergeant-module-sync`             |
+| Billing: тарифи, квоти, LiqPay, pricing                          | `sergeant-module-billing`          |
+| Зовнішні інтеграції: silpo / telegram / transcribe / webhooks    | `sergeant-module-integrations`     |
+| Push-сповіщення: web push, APNs, FCM, fan-out                    | `sergeant-module-push`             |
+| UA-текст інтерфейсу: кнопки, помилки, тости, empty states        | `sergeant-copy-and-tone`           |
+| Написання або оновлення ADR, індекс рішень, supersede            | `sergeant-adr`                     |
+| Фіче-прапорці: додати/змінити/зняти тумблер                      | `sergeant-feature-flags`           |
+| PostHog-івенти, аналітика, дашборд-манифести                     | `sergeant-analytics`               |
 | Нова фіча, новий екран, behavior-зміна                           | `sergeant-feature-delivery`        |
 | Баг, регресія, флакі-поведінка, hotfix                           | `sergeant-bugfix-and-regression`   |
 | Ревʼю PR, готовність до merge, pre-merge-перевірки               | `sergeant-review-and-merge`        |
@@ -58,7 +73,6 @@ The script is zero-dep and offline-safe (`[gh unavailable: ...]` for sections th
 | Backend-архітектура, CQRS, Temporal, Saga, service boundaries    | `sergeant-backend-architecture`    |
 | SQL, схема, дизайн запитів, міграції, prod DB rollout (Coolify), `db-schema/`, index audit | `sergeant-data-and-migrations`     |
 | Expo, React Native, mobile-shell, MMKV, deep-link-и, EAS         | `sergeant-mobile-expo`             |
-| HubChat tool-defs, executors, prompt cache, action cards         | `sergeant-hubchat`                 |
 | Незрозуміло, де саме код має жити в монорепо                     | `sergeant-monorepo-boundaries`     |
 | Деплой, env-vars, health checks, Sentry, Coolify/Vercel, n8n     | `sergeant-deploy-and-observability`|
 | Логін/сесія/кукі/account lifecycle                               | `better-auth-best-practices`       |

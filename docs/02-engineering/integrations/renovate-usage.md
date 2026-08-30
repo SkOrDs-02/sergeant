@@ -1,6 +1,6 @@
 # Renovate — як працювати з PR-ами
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2027-01-04.
+> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-11.
 > **Status:** Active
 >
 > Створено 2026-04-25 разом з [#721](https://github.com/Skords-01/Sergeant/pull/721). Конфіг: `renovate.json` у корені.
@@ -109,7 +109,7 @@
 Опції:
 
 - Закрити PR (Renovate знову створить його через тиждень або при наступному релізі — змусить розібратись).
-- Попросити AI-сесію (нову Devin) пофіксити код у тій же гілці.
+- Попросити нову AI-сесію (Claude Code / Codex) пофіксити код у тій же гілці.
 - Додати правило в `renovate.json`: `"matchPackageNames": ["X"], "enabled": false` — і Renovate більше не пробуватиме.
 
 ### Як заборонити апдейт пакета

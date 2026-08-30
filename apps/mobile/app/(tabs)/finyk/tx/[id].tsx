@@ -18,7 +18,7 @@ export default function FinykTransactionDetailScreen() {
     <DeepLinkPlaceholder
       title="Транзакція"
       detail={id ? `ID: ${id}` : undefined}
-      followUp="Детальна карточка транзакції (bank-tx або manual expense) — наступний PR фази Фінік."
+      followUp="Детальна карточка транзакції (bank-tx або manual expense): наступний PR фази Фінік."
       primaryAction={{
         label: "До Операцій",
         href: "/(tabs)/finyk/transactions",

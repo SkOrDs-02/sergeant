@@ -125,12 +125,31 @@ describe("pg/nutritionPantries schema snapshot", () => {
     );
 
     expect(columnMap["id"]!.columnType).toBe("PgText");
-    expect(columnMap["id"]!.primary).toBe(true);
+    // `id` більше НЕ самостійний PK — див. наступний кейс.
+    expect(columnMap["id"]!.primary).toBe(false);
+    // …але лишається NOT NULL. Drizzle виводить not-null-ність із
+    // `.primaryKey()` на колонці, а композитний `primaryKey({ columns })`
+    // типів не звужує — без явного `.notNull()` `$inferSelect["id"]` став би
+    // `string | null`, хоча в базі колонка під композитним PK усе одно
+    // NOT NULL.
+    expect(columnMap["id"]!.notNull).toBe(true);
 
     expect(columnMap["user_id"]!.notNull).toBe(true);
     expect(columnMap["name"]!.notNull).toBe(true);
     expect(columnMap["text"]!.notNull).toBe(true);
     expect(columnMap["deleted_at"]!.notNull).toBe(false);
+  });
+
+  // Регресія SERGEANT-WEB-T (міграція 129). Клієнт віддає КОЖНОМУ юзеру
+  // комору з id `home` (`makeDefaultPantry()`), тож глобальний PK на `id`
+  // означав, що першу синхронізовану комору «займає» перший користувач, а
+  // решта назавжди отримує `fk_violation` і лишається без синку — мовчки.
+  it("keys the pantry per user, not globally", () => {
+    expect(config.primaryKeys).toHaveLength(1);
+    expect(config.primaryKeys[0]!.columns.map((c) => c.name)).toEqual([
+      "user_id",
+      "id",
+    ]);
   });
 
   it("declares the soft-delete partial index", () => {
@@ -156,6 +175,7 @@ describe("pg/nutritionPantryItems schema snapshot", () => {
       "qty",
       "unit",
       "notes",
+      "sources",
       "sort_order",
       "created_at",
       "updated_at",
@@ -169,6 +189,9 @@ describe("pg/nutritionPantryItems schema snapshot", () => {
     );
 
     expect(columnMap["id"]!.columnType).toBe("PgText");
+    // NOT NULL попри композитний PK — див. пояснення в блоці комори вище.
+    expect(columnMap["id"]!.primary).toBe(false);
+    expect(columnMap["id"]!.notNull).toBe(true);
     expect(columnMap["pantry_id"]!.columnType).toBe("PgText");
     expect(columnMap["pantry_id"]!.notNull).toBe(true);
 
@@ -181,7 +204,22 @@ describe("pg/nutritionPantryItems schema snapshot", () => {
 
     expect(columnMap["unit"]!.notNull).toBe(false);
     expect(columnMap["notes"]!.notNull).toBe(false);
+    // Міграція 130: nullable — NULL означає «варіантів немає», не порожній список.
+    expect(columnMap["sources"]!.notNull).toBe(false);
+    expect(columnMap["sources"]!.hasDefault).toBe(false);
     expect(columnMap["deleted_at"]!.notNull).toBe(false);
+  });
+
+  // Та сама регресія, що й у комори (міграція 129), але тут колізія навіть
+  // імовірніша: id позиції — `<pantryId>::<index>::<name>`, тож у двох
+  // користувачів із коморою `home` і однаковим продуктом на тій самій позиції
+  // id збігаються посимвольно.
+  it("keys the item per user, not globally", () => {
+    expect(config.primaryKeys).toHaveLength(1);
+    expect(config.primaryKeys[0]!.columns.map((c) => c.name)).toEqual([
+      "user_id",
+      "id",
+    ]);
   });
 
   it("declares both indexes", () => {

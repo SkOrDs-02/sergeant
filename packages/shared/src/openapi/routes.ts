@@ -173,7 +173,7 @@ export const paths: ZodOpenApiPathsObject = {
   },
   "/api/ai-memory/list": {
     get: {
-      summary: "Список збережених фактів AI-пам'яті поточного користувача.",
+      summary: "Список збережених фактів AI-памʼяті поточного користувача.",
       tags: ["ai-memory"],
       security: cookieOrBearer,
       parameters: [
@@ -209,7 +209,7 @@ export const paths: ZodOpenApiPathsObject = {
   },
   "/api/ai-memory/{id}": {
     delete: {
-      summary: "Видалити один факт AI-пам'яті. Назавжди, без відновлення.",
+      summary: "Видалити один факт AI-памʼяті. Назавжди, без відновлення.",
       tags: ["ai-memory"],
       security: cookieOrBearer,
       parameters: [
@@ -891,7 +891,7 @@ export const paths: ZodOpenApiPathsObject = {
         "401": unauthorized,
         "404": {
           description:
-            "DPS_RECEIPT_NOT_FOUND — чек ще не з'явився в реєстрі ДПС.",
+            "DPS_RECEIPT_NOT_FOUND — чек ще не зʼявився в реєстрі ДПС.",
           content: { "application/json": { schema: namedSchemas.ApiError } },
         },
         "502": {
@@ -1233,7 +1233,7 @@ export const paths: ZodOpenApiPathsObject = {
   // ────────────────────── In-app feedback ───────────────────────────────────
   // Головний багрепорт-канал закритої бети. Анонімний, як і waitlist: вимагати
   // акаунт саме від людини, яка прийшла поскаржитись, — найгірший момент для
-  // бар'єра. Обидва префікси документуємо однаково (сервер монтує обидва).
+  // барʼєра. Обидва префікси документуємо однаково (сервер монтує обидва).
   "/api/feedback": {
     post: {
       summary: "Надіслати in-app фідбек (анонімний)",

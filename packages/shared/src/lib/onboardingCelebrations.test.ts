@@ -47,8 +47,8 @@ describe("onboardingCelebrations", () => {
 
   it("routine subtext leads with outcome — not «Серія / Streak» mechanism (S6.6)", () => {
     // Audit B-4: routine first-entry copy used to be «Перший день
-    // рахується. Streak з'явиться після другого підряд.» The «Streak
-    // з'явиться» / «Серія днів: N» framing is *mechanism-first* and
+    // рахується. Streak зʼявиться після другого підряд.» The «Streak
+    // зʼявиться» / «Серія днів: N» framing is *mechanism-first* and
     // reads as a 0-streak shame indicator on day 1. Outcome-first
     // re-frames the same idea around what the user is buying with
     // persistence — an automatic habit. These guards lock the frame
@@ -59,7 +59,7 @@ describe("onboardingCelebrations", () => {
       /\bстрик\b/i,
       /\bstreak\b/i,
       /\bСерія днів\b/i,
-      /Streak з'явиться/i,
+      /Streak зʼявиться/i,
     ];
     for (const pattern of banned) {
       expect(subtext).not.toMatch(pattern);

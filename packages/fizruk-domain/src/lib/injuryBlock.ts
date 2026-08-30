@@ -103,7 +103,7 @@ export function activeInjurySites(
  *
  * Симетрично до {@link activeInjurySites}: тут беруться РІВНО протилежні
  * марки — зняті й не видалені. Видалена («не ту зону позначив») не є
- * поверненням після травми, тож у м'який режим не вводить.
+ * поверненням після травми, тож у мʼякий режим не вводить.
  */
 export function latestClearedInjuryAtForExercise(
   ex: InjuryCheckableExercise | null | undefined,

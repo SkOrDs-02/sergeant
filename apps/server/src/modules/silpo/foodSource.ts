@@ -205,6 +205,41 @@ function toServingGrams(
   return null;
 }
 
+/**
+ * Порожня картка Сільпо виглядає як заповнена: атрибути присутні, але
+ * нульові. Звірено на живому каталозі (2026-08-27): «Кускус з курячими
+ * котлетками та лінивими огірками» (той самий товар, що в чеку тестерки)
+ * віддає `0/2` ккал, білки `0.1`, жири `0`, вуглеводи `0`, тоді як піца,
+ * борщ і чизкейк тієї ж категорії мають нормальні 238/53/356 ккал. Сама
+ * лише наявність атрибутів (`hasMacro`) таку картку пропускає, і в
+ * щоденник їде страва на 330 г з нулем калорій — тихо зіпсований денний
+ * баланс, який людина побачить аж у підсумку і не звʼяже з цим товаром.
+ *
+ * ponytail: один поріг замість моделі «повноти картки». Нижче 5 ккал/100 г
+ * легітимні лише вода/чай/спеції, яких у пошуку СТРАВИ не шукають (питна
+ * вода має власний лічильник, `waterGoalMl`). Зʼявиться реальний
+ * 0-калорійний продукт, який треба логувати — рахуй ненульові атрибути,
+ * а не піднімай поріг.
+ */
+const MIN_SEARCH_KCAL_100G = 5;
+
+/**
+ * Atwater 4/9/4 — калорійність, коли Сільпо дав БЖВ, але не саме поле
+ * енергетичної цінності. Той самий прийом, що `repairKcal` у
+ * `scripts/seed-product-catalog.mjs`; без нього гейт нижче викидав би
+ * картку, у якої КБЖВ насправді є.
+ */
+function atwaterKcal(
+  protein: number | undefined,
+  fat: number | undefined,
+  carbs: number | undefined,
+): number | null {
+  if (protein === undefined && fat === undefined && carbs === undefined) {
+    return null;
+  }
+  return 4 * (protein ?? 0) + 9 * (fat ?? 0) + 4 * (carbs ?? 0);
+}
+
 interface NormalizedSilpoProduct {
   name: string;
   brand: string | null;
@@ -244,7 +279,13 @@ function normalizeRawProduct(
     name,
     brand: typeof brandAttr === "string" ? brandAttr : null,
     barcode: null, // EAN відсутній у контракті Silpo MCP (спайк §0)
-    kcal_100g: kcal ?? null,
+    // Не `kcal ?? atwater`: заявлений НУЛЬ так само підозрілий, як
+    // відсутнє поле, а `??` пропускає лише null/undefined. Картка «0/0
+    // ккал, білки 20» інакше відсіювалась би гейтом нижче, хоча КБЖВ у
+    // неї справжні — рівно той клас битих карток, заради якого Atwater
+    // сюди й додано.
+    kcal_100g:
+      kcal != null && kcal > 0 ? kcal : atwaterKcal(protein, fat, carbs),
     protein_100g: protein ?? null,
     fat_100g: fat ?? null,
     carbs_100g: carbs ?? null,
@@ -303,11 +344,13 @@ export interface SilpoBarcodeProduct {
 }
 
 /**
- * A search hit without ANY macro is dropped — matches
+ * A search hit without USABLE calories is dropped — stricter than
  * `normalizeOFFSearch`/`normalizeUSDASearch`'s `hasSomeMacro` gate
- * (`apps/server/src/lib/normalizers/{off,usda}.ts`). `FoodSearchProductSchema`
- * has no `partial` escape hatch (unlike barcode), so a fully macro-less hit
- * here would otherwise lie as "0 kcal" across the board.
+ * (`apps/server/src/lib/normalizers/{off,usda}.ts`), because Silpo ships
+ * attribute-complete but value-empty cards that gate cannot see (see
+ * `MIN_SEARCH_KCAL_100G`). `FoodSearchProductSchema` has no `partial` escape
+ * hatch (unlike barcode), so such a hit would otherwise lie as "0 kcal"
+ * across the board.
  *
  * A PARTIAL hit (at least one macro present) IS emitted, with the missing
  * macro fields zero-filled (`?? 0`) — the same convention the OFF/USDA search
@@ -317,7 +360,10 @@ export interface SilpoBarcodeProduct {
  * like it would coming from OFF or USDA.
  */
 function toSearchProduct(p: NormalizedSilpoProduct): SilpoSearchProduct | null {
-  if (!p.hasMacro) return null;
+  // Гейт по КАЛОРІЙНОСТІ, а не по наявності атрибутів: нульова картка
+  // проходить `hasMacro`, але в щоденнику бреше нулем — див.
+  // `MIN_SEARCH_KCAL_100G`. `kcal_100g` тут уже включає Atwater-фолбек.
+  if ((p.kcal_100g ?? 0) < MIN_SEARCH_KCAL_100G) return null;
   return {
     id: p.barcode
       ? `silpo_${p.barcode.replace(/^0+/, "") || "0"}`
