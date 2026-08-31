@@ -194,9 +194,6 @@ export function useOverviewData({
       txSplits,
     });
   }, [txForStats, excludedTxIds, txSplits, nowMs]);
-  const projectedSpend =
-    daysPassed > 0 ? (spent / daysPassed) * daysInMonth : 0;
-
   const assetsSummary = useMemo(
     () =>
       computeAssetsSummary({
@@ -451,13 +448,31 @@ export function useOverviewData({
   const unknownOutCount = monthFlows.filter(
     (f) => f.sign === "-" && f.amount === null,
   ).length;
+
+  // Прогноз v2 (Фаза 2, PR-5): лінійна екстраполяція факту плюс заплановані
+  // витрати, що ще не сталися цього місяця (`recurringOutThisMonth`, тобто
+  // майбутні підписки й борги, не перетинається з `spent`, бо той рахує
+  // тільки реальні транзакції). Стеля - наявні активи (`monoTotal`) плюс
+  // очікувані надходження (`recurringInThisMonth`): прогноз не може обіцяти
+  // витрату грошей, яких не буде звідки взяти.
+  const linearProjectedSpend =
+    daysPassed > 0 ? (spent / daysPassed) * daysInMonth : 0;
+  const projectedSpendRaw = linearProjectedSpend + recurringOutThisMonth;
+  const availableForSpend = monoTotal + recurringInThisMonth;
+  const projectedSpendCapped = projectedSpendRaw > availableForSpend;
+  const projectedSpend = projectedSpendCapped
+    ? Math.max(0, availableForSpend)
+    : projectedSpendRaw;
+
   // AI-DANGER: `dayBudget` is `null` — not a fallback number — when the user
   // has не задав місячний план. Do not resurrect a projected-spend fallback.
   //
   // AI-CONTEXT: it used to be `expenseTarget = planExpense > 0 ? planExpense
-  // : projectedSpend`, and `projectedSpend` is itself
-  // `spent / daysPassed * daysInMonth`. Substituting it makes `spent` the only
-  // real input, and the whole expression collapses to
+  // : projectedSpend`, and `projectedSpend` was itself
+  // `spent / daysPassed * daysInMonth` (now `linearProjectedSpend` above,
+  // before the recurring-flows addend and the available-funds cap PR-5
+  // introduced). Substituting it makes `spent` the only real input, and the
+  // whole expression collapses to
   //
   //     dayBudget ≈ spent · (daysInMonth − daysPassed)
   //                 ─────────────────────────────────────────
@@ -523,6 +538,7 @@ export function useOverviewData({
     dailyPlan,
     showMonthForecast,
     projectedSpend,
+    projectedSpendCapped,
     planExpense,
     recurringOutThisMonth,
     recurringInThisMonth,
