@@ -12,6 +12,8 @@ export const ROUTINE_CASES: ToolCase[] = [
     name: "нагадування по звичці",
     user: "Постав нагадування на звичку пити воду о 9 ранку",
     accept: ["create_reminder", "edit_habit"],
+    // «Склянка води зранку» це hab_water з блоку ДАНІ, час у HH:MM.
+    expectArgs: { create_reminder: { habit_id: "hab_water", time: "09:00" } },
   },
   {
     // Звички «бігати» немає в блоці ДАНІ, тож розвідка перед архівацією -
@@ -32,6 +34,8 @@ export const ROUTINE_CASES: ToolCase[] = [
     name: "разова подія в календарі",
     user: "Додай у календар день народження мами 15 вересня",
     accept: ["add_calendar_event", "create_habit"],
+    // Найближче 15 вересня від 2026-07-30 це 2026-09-15, не наступний рік.
+    expectArgs: { add_calendar_event: { date: "2026-09-15" } },
   },
   {
     name: "редагування звички",
@@ -57,6 +61,8 @@ export const ROUTINE_CASES: ToolCase[] = [
     name: "планова пауза звички",
     user: "Я їду у відпустку з 5 по 15 вересня, постав медитацію на паузу на цей час",
     accept: ["pause_habit", "query_habits"],
+    // Межі відпустки однозначні, рік береться найближчий від 2026-07-30.
+    expectArgs: { pause_habit: { from: "2026-09-05", to: "2026-09-15" } },
     turns: [
       {
         result:

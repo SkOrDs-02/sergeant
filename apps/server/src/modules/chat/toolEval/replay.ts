@@ -17,6 +17,11 @@ import {
   scoreCase,
   scoreTurn,
 } from "./scoring.js";
+import {
+  expectedArgViolations,
+  schemaViolations,
+  type ArgViolation,
+} from "./argChecks.js";
 
 export interface ReplayedCase {
   name: string;
@@ -26,6 +31,14 @@ export interface ReplayedCase {
   pickedByTurn: string[][];
   /** Вигадані id по всіх ходах разом. */
   hallucinated: string[];
+  /**
+   * Порушення аргументів по всіх ходах разом.
+   *
+   * Навмисно НЕ входять у `correct`: вибір інструмента і якість аргументів -
+   * два різні виміри, і злиття їх в одне число зробило б неможливим сказати,
+   * що саме просіло. Гейт дивиться на них окремими порогами.
+   */
+  argViolations: ArgViolation[];
   /** Модель дійшла до цільового виклику раніше, ніж сценарій дозволяв. */
   shortCircuited: boolean;
   correct: boolean;
@@ -39,6 +52,10 @@ export interface ReplaySummary {
   errors: number;
   multiTurnCases: number;
   multiTurnCorrect: number;
+  /** Кейси, у яких є бодай одне порушення аргументів. */
+  argFailedCases: number;
+  /** Порушення по типах - щоб просідання було видно за причиною, а не сумою. */
+  argByKind: Record<string, number>;
 }
 
 /**
@@ -58,6 +75,7 @@ export function replayCase(
   const turnHits: boolean[] = [];
   const pickedByTurn: string[][] = [];
   const hallucinated: string[] = [];
+  const argViolations: ArgViolation[] = [];
   let shortCircuited = false;
 
   recorded.turns.forEach((turn, index) => {
@@ -65,6 +83,10 @@ export function replayCase(
     const picked = pickedFrom(turn.blocks);
     pickedByTurn.push(picked);
     hallucinated.push(...hallucinatedIds(turn.blocks, context));
+    argViolations.push(
+      ...schemaViolations(turn.blocks),
+      ...expectedArgViolations(toolCase, turn.blocks),
+    );
     const expected = expectedTurns[index - 1];
     turnHits.push(
       index === 0
@@ -89,6 +111,7 @@ export function replayCase(
     turnHits,
     pickedByTurn,
     hallucinated,
+    argViolations,
     shortCircuited,
     correct: recorded.error ? false : turnHits.every(Boolean),
     ...(recorded.error === undefined ? {} : { error: recorded.error }),
@@ -112,7 +135,15 @@ export function summarize(
   const multiTurn = new Set(
     cases.filter((c) => (c.turns?.length ?? 0) > 0).map((c) => c.name),
   );
+  const argByKind: Record<string, number> = {};
+  for (const r of replayed) {
+    for (const v of r.argViolations) {
+      argByKind[v.kind] = (argByKind[v.kind] ?? 0) + 1;
+    }
+  }
   return {
+    argFailedCases: replayed.filter((r) => r.argViolations.length > 0).length,
+    argByKind,
     total: replayed.length,
     correct: replayed.filter((r) => r.correct).length,
     invented: replayed.filter((r) => r.hallucinated.length > 0).length,

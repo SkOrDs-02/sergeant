@@ -32,6 +32,8 @@ export const NUTRITION_CASES: ToolCase[] = [
     name: "спожив продукт з комори",
     user: "Використав 200 г курячого філе з комори",
     accept: ["consume_from_pantry"],
+    // Позиція комори в грамах, тож 200, а не 0.2 кг.
+    expectArgs: { consume_from_pantry: { qty: 200 } },
   },
   {
     name: "очистити комору повністю",
@@ -47,6 +49,7 @@ export const NUTRITION_CASES: ToolCase[] = [
     name: "задати денну ціль",
     user: "Постав мені ціль 2200 ккал і 150 г білка на день",
     accept: ["set_daily_plan"],
+    expectArgs: { set_daily_plan: { kcal: 2200, protein_g: 150 } },
   },
   {
     name: "порадити їжу під ціль",

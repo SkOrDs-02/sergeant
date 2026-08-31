@@ -12,6 +12,7 @@
     "test": "vitest run",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:rag-eval": "vitest run --config vitest.rag-eval.config.ts",
+    "test:tool-eval": "vitest run src/modules/chat/toolEval src/modules/chat/toolCoverage.test.ts",
     "test:coverage": "vitest run --coverage",
     "mutation:normalizers": "cross-env TZ=Europe/Kyiv stryker run stryker.normalizers.conf.json",
     "db:migrate": "node dist-server/migrate.js",
@@ -22,6 +23,7 @@
     "eval:stream": "node --env-file-if-exists=.env --import tsx scripts/stream-check.ts",
     "eval:vision": "node --env-file-if-exists=.env --import tsx scripts/vision-eval.ts",
     "rag-eval:embed": "node --env-file-if-exists=.env --env-file-if-exists=../../.env --import tsx src/scripts/ragEvalEmbed.ts",
+    "eval:tools:judge": "node --env-file-if-exists=.env --env-file-if-exists=../../.env --import tsx src/scripts/toolEvalJudge.ts",
     "rag-eval:live": "node --env-file-if-exists=.env --env-file-if-exists=../../.env --import tsx src/scripts/ragEvalLive.ts"
   },
   "dependencies": {
