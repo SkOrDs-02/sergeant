@@ -106,6 +106,23 @@ export const finykPageMessages = {
     hideLabel: "Приховати зі списку",
     hideDescription: "Її можна повернути через показ прихованих операцій",
   },
+  /**
+   * Місток «надходження з категорією Борг → пасив» (спека
+   * finyk-observations, PR-3). Привʼязка одразу отримує роль `source` —
+   * транзакція лише пояснює, звідки борг узявся, і не додається до суми.
+   */
+  debtIncomeLink: {
+    prompt: "Це борг? Привʼяжи до пасиву, і сума зʼявиться в Активах.",
+    linkExisting: "Обрати наявний пасив",
+    createNew: "Створити новий пасив",
+    createTitle: "Новий пасив із цієї операції",
+    namePlaceholder: "Назва пасиву (кредит, борг…)",
+    create: "Створити",
+    cancel: "Скасувати",
+    pickTitle: "Який це пасив?",
+    linkedPrefix: "Привʼязано до пасиву",
+    unlink: "Відвʼязати",
+  },
   // "Чек" — секція деталей транзакції для Silpo MCP інтеграції, трек B
   // (докс `docs/90-work/planning/specs/silpo-mcp-integration.md`).
   silpoReceipt: {

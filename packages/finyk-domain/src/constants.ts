@@ -248,6 +248,9 @@ export const INCOME_CATEGORIES = [
     label: "Пенсія/соц.",
     keywords: ["пенсія", "соц", "виплата держ", "допомога"],
   },
+  // keywords навмисно порожні: автокатегоризація за словами дала б хибні
+  // спрацювання на «повернення боргу» (спека finyk-observations, PR-3).
+  { id: "in_debt", label: "Борг", keywords: [] },
   { id: "in_other", label: "Надходження", keywords: [] },
 ];
 

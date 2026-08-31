@@ -13,6 +13,10 @@ import type {
   TxSplitsMap,
 } from "@sergeant/finyk-domain/domain/types";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain/constants";
+import type {
+  Debt,
+  LinkedTxRole,
+} from "@sergeant/finyk-domain/domain/debtEngine";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { MaskedAmount } from "@shared/components/ui/MaskedAmount";
@@ -30,6 +34,7 @@ import {
   getExpenseCategoryForTransaction,
   getIncomeCategoryForTransaction,
 } from "../utils";
+import { DebtIncomeLinkSection } from "./DebtIncomeLinkSection";
 import { SilpoReceiptSection } from "./SilpoReceiptSection";
 import { TxRowCategoryPicker } from "./TxRowCategoryPicker";
 import { TxRowSplitEditor } from "./TxRowSplitEditor";
@@ -54,6 +59,17 @@ export interface BankTransactionDetailsSheetProps {
    * — `null` коли цей пристрій про чек не знає (`useFinykReceiptLinks`). */
   receiptId?: number | null | undefined;
   hideAmount?: boolean | undefined;
+  /** Пасиви + мутатори для мостика «Борг → пасив» (спека finyk-observations,
+   * PR-3) — потрібні лише коли категорія операції `in_debt`. */
+  manualDebts: readonly Debt[];
+  setManualDebts: (updater: (debts: Debt[]) => Debt[]) => void;
+  setLinkedTxRole: (
+    id: string,
+    txId: string,
+    type: "debt" | "receivable",
+    role: LinkedTxRole | null,
+    amountUAH?: number,
+  ) => void;
   onCategoryChange: (id: string, categoryId: string | null) => void;
   onNoteChange: (id: string, note: string | null) => void;
   onSplitChange: (id: string, splits: TxSplit[] | null) => void;
@@ -113,6 +129,9 @@ export function BankTransactionDetailsSheet({
   customCategories = [],
   receiptId = null,
   hideAmount = false,
+  manualDebts,
+  setManualDebts,
+  setLinkedTxRole,
   onCategoryChange,
   onNoteChange,
   onSplitChange,
@@ -281,6 +300,15 @@ export function BankTransactionDetailsSheet({
             onClose={() => undefined}
           />
         </section>
+
+        {isIncome && category.id === "in_debt" && (
+          <DebtIncomeLinkSection
+            transaction={transaction}
+            manualDebts={manualDebts}
+            setManualDebts={setManualDebts}
+            setLinkedTxRole={setLinkedTxRole}
+          />
+        )}
 
         {!isIncome && (
           <section className="rounded-2xl border border-line bg-panel p-3">
