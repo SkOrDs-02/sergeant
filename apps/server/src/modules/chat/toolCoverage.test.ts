@@ -53,6 +53,27 @@ describe("покриття реєстру інструментів кейсам�
       expect(c.accept.length, `${c.name}: порожній accept`).toBeGreaterThan(0);
     }
   });
+
+  it("ланцюжки не довші за три ходи і кожен хід чогось очікує", () => {
+    for (const c of ALL_CASES) {
+      const turns = c.turns ?? [];
+      // Два записи плюс перший хід = три. Довші ланцюжки недетерміновані
+      // настільки, що їхній результат уже нічого не доводить.
+      expect(
+        turns.length,
+        `${c.name}: ланцюжок довший за три ходи`,
+      ).toBeLessThanOrEqual(2);
+      for (const turn of turns) {
+        expect(turn.accept.length, `${c.name}: хід без accept`).toBeGreaterThan(
+          0,
+        );
+        expect(
+          turn.result.length,
+          `${c.name}: хід без tool_result`,
+        ).toBeGreaterThan(0);
+      }
+    }
+  });
 });
 
 describe("звужений реєстр (те, що бачить прод)", () => {

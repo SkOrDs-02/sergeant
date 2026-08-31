@@ -18,7 +18,7 @@
     "db:migrate:dev": "node --import tsx ./migrate.mjs",
     "reencrypt:tokens": "node --env-file-if-exists=.env --import tsx scripts/token-reencrypt-rollover.ts",
     "eval:models": "node --env-file-if-exists=.env --import tsx scripts/model-eval.ts",
-    "eval:tools": "node --env-file-if-exists=.env --import tsx scripts/tool-selection-eval.ts",
+    "eval:tools": "node --env-file-if-exists=.env --env-file-if-exists=../../.env --import tsx scripts/tool-selection-eval.ts",
     "eval:stream": "node --env-file-if-exists=.env --import tsx scripts/stream-check.ts",
     "eval:vision": "node --env-file-if-exists=.env --import tsx scripts/vision-eval.ts",
     "rag-eval:embed": "node --env-file-if-exists=.env --env-file-if-exists=../../.env --import tsx src/scripts/ragEvalEmbed.ts",
