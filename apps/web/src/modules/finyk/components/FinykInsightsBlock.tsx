@@ -11,6 +11,11 @@
  *
  * Dismissal is handled inside <InsightCard> via useInsightDismissal, so
  * this component does not need to track it.
+ *
+ * Builds its own candidates from the three detection hooks directly
+ * (props come from Overview, not from `useFinykInsights`'s internal
+ * fetch), so it filters `showOn` locally with the same "module surface"
+ * condition `useAllInsights` uses, instead of routing through that hook.
  */
 
 import { useNavigate } from "react-router-dom";
@@ -93,6 +98,9 @@ export function FinykInsightsBlock({
 
   const active = candidates
     .filter((insight): insight is Insight => insight !== null)
+    // Module surface: hide hub-only insights (e.g. budget-overrun, which
+    // duplicates BudgetAlertsList's worst-category row on this same screen).
+    .filter((insight) => insight.showOn !== "hub")
     .slice(0, MAX_VISIBLE);
 
   if (!active.length) return null;
