@@ -7,7 +7,11 @@ import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { Button } from "@shared/components/ui/Button";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
-import { getKyivDateParts, isSameKyivDay } from "@shared/lib/time/kyivTime";
+import {
+  getKyivDateParts,
+  getKyivShortDateStamp,
+  isSameKyivDay,
+} from "@shared/lib/time/kyivTime";
 import type { HubChatSession } from "./hubChatSessions";
 
 interface HubChatHistoryDrawerProps {
@@ -23,13 +27,11 @@ interface HubChatHistoryDrawerProps {
 function formatStamp(ts: number): string {
   // "Today" / "older" decision in Kyiv local time so users abroad don't
   // see drawer entries jump days (consolidated page-audit § Theme 1 — 03 F2).
-  const parts = getKyivDateParts(ts);
-  const hh = String(parts.hour).padStart(2, "0");
-  const mm = String(parts.minute).padStart(2, "0");
-  if (isSameKyivDay(ts)) return `${hh}:${mm}`;
-  const dd = String(parts.day).padStart(2, "0");
-  const mo = String(parts.month).padStart(2, "0");
-  return `${dd}.${mo} ${hh}:${mm}`;
+  if (isSameKyivDay(ts)) {
+    const { hour, minute } = getKyivDateParts(ts);
+    return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+  }
+  return getKyivShortDateStamp(ts);
 }
 
 function userMessageCount(s: HubChatSession): number {

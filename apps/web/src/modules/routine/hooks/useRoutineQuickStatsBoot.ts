@@ -22,6 +22,7 @@ export function useRoutineQuickStatsBoot(): void {
       writeRoutineQuickStatsSnapshot({
         habits: state.habits,
         completions: state.completions,
+        skips: state.skips,
       });
     };
 

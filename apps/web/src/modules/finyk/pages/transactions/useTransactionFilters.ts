@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { manualExpenseToTransaction } from "@sergeant/finyk-domain/domain/transactions";
+import { txTimeMs } from "@sergeant/finyk-domain/lib/transactions";
 import type {
   Category,
   Transaction,
@@ -312,9 +313,8 @@ export function useTransactionFilters({
     const todayKey = dayFilter === "today" ? getKyivDayKey() : null;
     const res = sortedTxs.filter((t) => {
       if (todayKey) {
-        const time = Number(t.time);
-        if (!Number.isFinite(time) || time <= 0) return false;
-        const timeMs = time > 10_000_000_000 ? time : time * 1000;
+        const timeMs = txTimeMs(t.time);
+        if (!Number.isFinite(timeMs) || timeMs <= 0) return false;
         if (getKyivDayKey(timeMs) !== todayKey) return false;
       }
       if (effectiveFilter === "all") return true;

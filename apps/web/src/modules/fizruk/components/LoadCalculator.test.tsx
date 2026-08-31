@@ -32,9 +32,11 @@ describe("LoadCalculator", () => {
     expect(screen.queryByText("92.5")).toBeNull();
   });
 
-  it("renders dashes for zero loads when 1RM is 0", () => {
-    render(<LoadCalculator oneRM={0} />);
-    expect(screen.getAllByText("—").length).toBeGreaterThan(0);
+  // Раніше веб малював зони з прочерками на нульовому 1RM, а канонічний
+  // `buildLoadCalculatorZones` ховає картку (`oneRM <= 0` → []).
+  it("renders nothing when 1RM is 0, matching the domain contract", () => {
+    const { container } = render(<LoadCalculator oneRM={0} />);
+    expect(container).toBeEmptyDOMElement();
   });
 
   it("labels the header as a reduced reference instead of 1RM when reduced", () => {

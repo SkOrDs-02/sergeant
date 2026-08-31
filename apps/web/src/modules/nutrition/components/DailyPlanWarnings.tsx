@@ -4,7 +4,10 @@
  */
 import type { Dispatch, SetStateAction } from "react";
 import { Icon } from "@shared/components/ui/Icon";
-import type { NutritionPrefs } from "@sergeant/nutrition-domain";
+import {
+  ATWATER_KCAL_PER_G,
+  type NutritionPrefs,
+} from "@sergeant/nutrition-domain";
 import { cn } from "@shared/lib/ui/cn";
 import {
   calcGoalRangeIssues,
@@ -140,10 +143,18 @@ export function MissingMacrosHint({
   // 30 % білок · 25 % жир · 45 % вуглеводи від цільових ккал → грами.
   // Білок і жир округлюємо вниз, а вуглеводи добираємо залишком,
   // щоб сума макро ніколи не перевищувала цільові ккал.
-  const suggestedProtein = Math.floor((kcal * 0.3) / 4);
-  const suggestedFat = Math.floor((kcal * 0.25) / 9);
-  const remainingKcal = kcal - suggestedProtein * 4 - suggestedFat * 9;
-  const suggestedCarbs = Math.max(0, Math.floor(remainingKcal / 4));
+  const suggestedProtein = Math.floor(
+    (kcal * 0.3) / ATWATER_KCAL_PER_G.protein,
+  );
+  const suggestedFat = Math.floor((kcal * 0.25) / ATWATER_KCAL_PER_G.fat);
+  const remainingKcal =
+    kcal -
+    suggestedProtein * ATWATER_KCAL_PER_G.protein -
+    suggestedFat * ATWATER_KCAL_PER_G.fat;
+  const suggestedCarbs = Math.max(
+    0,
+    Math.floor(remainingKcal / ATWATER_KCAL_PER_G.carbs),
+  );
 
   return (
     <div

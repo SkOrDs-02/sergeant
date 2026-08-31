@@ -16,6 +16,8 @@
  * пропозиції лінків. Персист і UI-підтвердження — на сервері/клієнті.
  */
 
+import { toKyivISODate } from "@sergeant/shared";
+
 const SILPO_DESCRIPTION_RE = /(?:сільпо|silpo)/iu;
 
 /**
@@ -64,16 +66,9 @@ export interface ReceiptMatchResult {
   ambiguousReceiptIds: string[];
 }
 
-const kyivDayFormatter = new Intl.DateTimeFormat("en-CA", {
-  timeZone: "Europe/Kyiv",
-  year: "numeric",
-  month: "2-digit",
-  day: "2-digit",
-});
-
-/** `YYYY-MM-DD` у Europe/Kyiv (en-CA дає ISO-порядок). */
+/** `YYYY-MM-DD` у Europe/Kyiv. */
 function kyivDayKey(epochMs: number): string {
-  return kyivDayFormatter.format(new Date(epochMs));
+  return toKyivISODate(epochMs);
 }
 
 /** Відстань у добах між київськими календарними днями двох моментів. */

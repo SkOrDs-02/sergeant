@@ -131,6 +131,18 @@ export function fromBaseNatural(
 }
 
 /**
+ * Точність показу побутової одиниці: до сотих для `кг`/`л` (кухонна вага
+ * рідко точніша за 10 г, «1.20 кг» читається гірше за «1.2 кг»), ціле для
+ * решти (`г`/`мл`/`шт`).
+ *
+ * unification-modules.md #2.11: те саме правило раніше жило окремо в
+ * `shoppingListPantryMath.ts` і в `formatPantryQty.ts` — тут єдине джерело.
+ */
+export function displayDecimalsFor(unit: string): number {
+  return unit === "кг" || unit === "л" ? 2 : 0;
+}
+
+/**
  * Кількість позиції комори у побутовій одиниці, або `null` коли одиниця
  * не є одиницею ВИМІРУ.
  *

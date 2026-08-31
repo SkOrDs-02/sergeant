@@ -1,13 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ApiError, chatApi, isApiError } from "@shared/api";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { useOnlineStatus } from "@shared/hooks/useOnlineStatus";
 import { chatKeys, hubKeys } from "@shared/lib/api/queryKeys";
 import { perfMark, perfEnd } from "@shared/lib/ui/perf";
-import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
-import { getKyivDayKey } from "@shared/lib/time/kyivTime";
+import { safeReadLS } from "@shared/lib/storage/storage";
 import {
   CONTEXT_TTL_MS,
   cancelIdle,
@@ -48,19 +47,6 @@ import { usePlan } from "../../billing/usePlan";
 import { requiresConfirmation } from "@sergeant/shared";
 
 type ChatMessage = HubChatSession["messages"][number];
-/**
- * Клієнтський пре-гейт пейволу. Мусить збігатися з
- * `billing/effectiveLimits.ts::aiRequestsPerDay` для free-плану.
- *
- * AI-DANGER: тут стояло 15 після того, як сервер зрізали до 5 (PR #464) —
- * тобто клієнт пускав ще десять запитів, які сервер відбивав квотою.
- * Користувач бачив помилку замість пейволу. Точного паритету все одно
- * немає: сервер рахує ОДИНИЦІ (виклик з інструментом коштує 3), а тут
- * рахуються повідомлення, тож це груба нижня оцінка, і сервер лишається
- * джерелом істини. Змінюєш ліміт — зміни в обох місцях і в копії.
- */
-const FREE_DAILY_AI_CHAT_LIMIT = 5;
-const DAILY_CHAT_COUNT_KEY = "sergeant:ai-chat:daily-count:v1";
 const CANCELLED_BY_USER_TEXT = "Скасовано, нічого не змінено.";
 const AUTO_TTS_ENABLED_KEY = "sergeant:hub-chat:auto-tts:v1";
 const HUB_CHAT_HELP_TEXT = [
@@ -85,25 +71,6 @@ const MAX_STREAM_CHARS = 256 * 1024;
 
 function isAutoTtsEnabled(): boolean {
   return safeReadLS<boolean>(AUTO_TTS_ENABLED_KEY) === true;
-}
-
-type DailyChatCounter = { day: string; count: number };
-
-function readDailyChatCount(): DailyChatCounter {
-  const today = getKyivDayKey();
-  const parsed = safeReadLS<DailyChatCounter>(DAILY_CHAT_COUNT_KEY);
-  if (parsed?.day === today && typeof parsed.count === "number") {
-    return { day: today, count: Math.max(0, parsed.count) };
-  }
-  return { day: today, count: 0 };
-}
-
-function incrementDailyChatCount(): void {
-  const current = readDailyChatCount();
-  safeWriteLS(DAILY_CHAT_COUNT_KEY, {
-    day: current.day,
-    count: current.count + 1,
-  });
 }
 
 /**
@@ -151,6 +118,13 @@ export interface UseChatSendResult {
   /** Abort the in-flight request (cancel button or close while streaming). */
   cancelInFlight: () => void;
   paywallOpen: boolean;
+  /**
+   * Free-tier денний ліміт AI-запитів (`GET /api/chat/usage::limit`).
+   * `null`, поки запит ще не відповів або план Pro — той самий кеш, з
+   * якого читає `ChatUsageCounter`, тож пейвол-копія не тримає власного
+   * числа.
+   */
+  usageLimit: number | null;
   /** Гейт підтвердження незворотних інструментів (канон §8). */
   confirmDestructive: UseDestructiveConfirmResult;
   closePaywall: () => void;
@@ -188,6 +162,21 @@ export function useChatSend({
   const { isPro } = usePlan();
   const hasData = finykPreview.data?.hasMonoData ?? false;
   const online = useOnlineStatus();
+
+  // Джерело істини для пре-гейту пейволу — той самий `GET /api/chat/usage`,
+  // з якого читає `ChatUsageCounter` (спільний RQ-кеш `chatKeys.usage`).
+  // Раніше тут стояв окремий localStorage-лічильник повідомлень: рахував
+  // не те (повідомлення, а не одиниці квоти) і не там (per-device, сервер —
+  // per-user), тож два ходи з інструментом розходились із серверним
+  // рахунком удвічі. `enabled: !isPro` — Pro не гейтиться взагалі, запит
+  // не потрібен.
+  const { data: usageData } = useQuery({
+    queryKey: chatKeys.usage,
+    queryFn: ({ signal }) => chatApi.usage({ signal }),
+    enabled: !isPro,
+    staleTime: 30_000,
+    retry: false,
+  });
 
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -332,12 +321,14 @@ export function useChatSend({
       if (turnPreset) presetTurnsRef.current -= 1;
 
       if (!isPro && !turnPreset) {
-        const usage = readDailyChatCount();
-        if (usage.count >= FREE_DAILY_AI_CHAT_LIMIT) {
+        if (
+          usageData &&
+          usageData.remaining != null &&
+          usageData.remaining <= 0
+        ) {
           setPaywallOpen(true);
           return;
         }
-        incrementDailyChatCount();
       }
 
       const shouldSpeak =
@@ -791,6 +782,7 @@ export function useChatSend({
       scheduleContextBuild,
       setMessages,
       toast,
+      usageData,
     ],
   );
 
@@ -842,6 +834,7 @@ export function useChatSend({
     send,
     cancelInFlight,
     paywallOpen,
+    usageLimit: usageData?.limit ?? null,
     closePaywall,
     confirmDestructive,
     sendRef,

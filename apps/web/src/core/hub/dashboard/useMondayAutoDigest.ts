@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { safeReadLS } from "@shared/lib/storage/storage";
 import { STORAGE_KEYS } from "@sergeant/shared";
-import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import {
   getWeekKey,
   loadDigest,
@@ -48,9 +47,14 @@ export function useMondayAutoDigest() {
     if (!enabled) return;
 
     const now = new Date();
-    // Kyiv-anchored weekday so the Monday auto-digest fires on Kyiv's Monday,
-    // not the host-local one (domain invariant: day boundaries in Europe/Kyiv).
-    const isMonday = getKyivDateParts(now).weekday === 1;
+    // Device-local weekday — той самий годинник, що й `getWeekKey`
+    // (device-local, ADR-0078 §parity з mobile). Раніше гейт брав київський
+    // weekday, а `weekKey` рахувався за пристроєм: у поясах на захід від
+    // Києва понеділок за Києвом наставав РАНІШЕ понеділка за пристроєм, і
+    // гейт спрацьовував на позаминулому `previousWeekKey` (audit
+    // unification-modules §1.2).
+    // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- ADR-0078: matches getWeekKey's device-local clock, not a display/report value.
+    const isMonday = now.getDay() === 1;
     if (!isMonday) return;
 
     if (loadDigest(previousWeekKey)) return;

@@ -15,7 +15,6 @@ import type {
   GoalBudget,
   GoalContribution,
   LimitBudget,
-  RemainingBudget,
   Transaction,
   TxSplitsMap,
 } from "./types";
@@ -44,8 +43,9 @@ export type LimitPeriod = "month" | "week" | "one_time";
 
 /**
  * Повний набір категорій ліміту з дедупом і фолбеком на legacy `categoryId`.
- * Єдина точка читання пари `categoryId`/`categoryIds` — щоб жоден екран не
- * вигадував власного пріоритету полів.
+ * Канонічна точка читання пари `categoryId`/`categoryIds`: `@sergeant/insights`
+ * (`financeContext.ts` § `budgetCategoryIds`) тепер теж викликає цю функцію
+ * напряму, а не тримає власну копію (§2.28 audit finding).
  */
 export function limitBudgetCategoryIds(
   budget: Pick<LimitBudget, "categoryId" | "categoryIds">,
@@ -211,16 +211,6 @@ function rawPct(spent: number, limit: number) {
   return limit > 0 ? (spent / limit) * 100 : 0;
 }
 
-export function calculateRemainingBudget(
-  budget: { limit?: number | undefined },
-  spent: number,
-): RemainingBudget {
-  const limit = budget.limit || 0;
-  const remaining = Math.max(0, limit - spent);
-  const pct = limit > 0 ? Math.min(100, Math.round((spent / limit) * 100)) : 0;
-  return { remaining, pct, isOver: spent > limit };
-}
-
 export function calculateSafeToSpendPerDay(
   remaining: number,
   daysLeft: number,
@@ -306,7 +296,9 @@ export function buildAtRiskKey(
 ) {
   const atRisk = selectAtRiskForecasts(forecasts, threshold);
   if (atRisk.length === 0) return "";
-  const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  // §1.9: Kyiv civil month, not the host clock's — matches the month key
+  // every other "цього місяця" aggregate in Finyk keys off.
+  const monthKey = toLocalISODate(now).slice(0, 7);
   const ids = atRisk.map((fc) => fc.categoryId).sort();
   return `${monthKey}|${ids.join(",")}`;
 }
@@ -423,7 +415,11 @@ export function getCurrentMonthContext(now: Date = new Date()) {
   const [year = 1970, month = 1, day = 1] = toLocalISODate(now)
     .split("-")
     .map(Number);
-  const monthStart = new Date(year, month - 1, 1);
+  // §1.10: a host-local `new Date(year, month-1, 1)` here is the same class
+  // of drift as `calcForecast`'s month window — the Kyiv civil year/month
+  // above deserve a Kyiv-local midnight instant, not a host-local one.
+  const monthKey = `${year}-${String(month).padStart(2, "0")}-01`;
+  const monthStart = new Date(kyivDayStartMs(monthKey));
   const daysInMonth = new Date(year, month, 0).getDate();
   const daysPassed = day;
   const daysLeft = daysInMonth - daysPassed;

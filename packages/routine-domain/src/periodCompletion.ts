@@ -23,7 +23,7 @@
  */
 
 import { habitCountsTowardMetrics, habitScheduledOnDate } from "./schedule.js";
-import type { Habit } from "./types.js";
+import type { Habit, HabitSkip } from "./types.js";
 
 /** Зріз по одній звичці за період. */
 export interface HabitPeriodCompletion {
@@ -59,6 +59,17 @@ export interface RoutinePeriodCompletionOptions {
    * Дефолт (не передано) зберігає історичну поведінку: пауза ретроактивна.
    */
   pausedFrom?: string | undefined;
+  /**
+   * Пропуски з причиною: `habitId → dateKey → HabitSkip`.
+   *
+   * Та сама семантика, що в `CompletionRateOptions.skips` (`./streaks.ts`):
+   * канон §5 виключає день «не зміг» зі ЗНАМЕННИКА, а не рахує його
+   * провалом. Опційне й адитивне — існуючі виклики без цього поля
+   * (дайджест, Hub-Reports) поведінки не міняють (unification audit
+   * 2026-08-31, finding 1.7). Дефолт (не передано) зберігає історичну
+   * поведінку: пропуск = провал.
+   */
+  skips?: Record<string, Record<string, HabitSkip>> | undefined;
 }
 
 export function calcRoutinePeriodCompletion(
@@ -92,11 +103,15 @@ export function calcRoutinePeriodCompletion(
 
   for (const habit of active) {
     const doneSet = new Set(completions?.[habit.id] ?? []);
+    const habitSkips = opts.skips?.[habit.id];
     let habitDone = 0;
     let habitScheduled = 0;
 
     for (const dk of keys) {
       if (!habitScheduledOnDate(habit, dk, scheduleOpts)) continue;
+      // «Не зміг з причиною» виходить зі знаменника, а не рахується
+      // провалом (канон §5) — та сама гілка, що в `completionRateForRange`.
+      if (habitSkips?.[dk] && !doneSet.has(dk)) continue;
       habitScheduled += 1;
       dailyScheduled[dk] = (dailyScheduled[dk] ?? 0) + 1;
       if (doneSet.has(dk)) {

@@ -11,8 +11,12 @@
 // CTA: `pwaAction: "add_expense"` — шлях до manual-sheet одним тапом.
 
 import type { Rule } from "../types.js";
-import { txTimestamp, type FinanceContext } from "../financeContext.js";
+import {
+  financeExcludedTxIds,
+  type FinanceContext,
+} from "../financeContext.js";
 import { formatNumberUk } from "@sergeant/shared";
+import { calcFinykPeriodAggregate } from "@sergeant/finyk-domain/lib/spending";
 
 const MIN_PREV7_SUM = 700;
 const MIN_TODAY_SUM = 200;
@@ -33,25 +37,30 @@ export const dailyVsWeeklyPaceRule: Rule<FinanceContext> = {
 
     const todayMs = todayStart.getTime();
     const weekAgoMs = weekAgoStart.getTime();
+    const excludedTxIds = financeExcludedTxIds(ctx);
 
-    let todaySpend = 0;
-    let prev7Spend = 0;
-    const add = (ts: number, amt: number) => {
-      if (!Number.isFinite(ts)) return;
-      const abs = Math.abs(amt);
-      if (ts >= todayMs) todaySpend += abs;
-      else if (ts >= weekAgoMs) prev7Spend += abs;
-    };
+    // Банк — через канонічний агрегатор (враховує спліти й виключені id),
+    // ручні витрати — окремо, calcFinykPeriodAggregate їх не бачить.
+    const bankSpend = (start: number, end: number): number =>
+      calcFinykPeriodAggregate(ctx.transactions, {
+        start,
+        end,
+        excludedTxIds,
+        txSplits: ctx.txSplits ?? {},
+      }).totalSpent;
 
-    for (const tx of ctx.transactions) {
-      if (ctx.hiddenTxIds.has(tx.id) || ctx.transferIds.has(tx.id)) continue;
-      if ((tx.amount ?? 0) >= 0) continue;
-      add(txTimestamp(tx), tx.amount / 100);
-    }
+    let todayManual = 0;
+    let prev7Manual = 0;
     for (const me of ctx.manualExpenses) {
       const ts = new Date(me.date).getTime();
-      add(ts, Number(me.amount) || 0);
+      if (!Number.isFinite(ts)) continue;
+      const abs = Math.abs(Number(me.amount) || 0);
+      if (ts >= todayMs) todayManual += abs;
+      else if (ts >= weekAgoMs) prev7Manual += abs;
     }
+
+    const todaySpend = bankSpend(todayMs, Infinity) + todayManual;
+    const prev7Spend = bankSpend(weekAgoMs, todayMs) + prev7Manual;
 
     if (prev7Spend < MIN_PREV7_SUM) return [];
     if (todaySpend < MIN_TODAY_SUM) return [];

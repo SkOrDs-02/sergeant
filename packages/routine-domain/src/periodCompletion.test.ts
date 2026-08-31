@@ -122,4 +122,31 @@ describe("calcRoutinePeriodCompletion", () => {
     });
     expect(frozen.scheduled).toBe(3);
   });
+
+  it("skips виключає «не зміг» зі знаменника, як completionRateForRange (finding 1.7)", () => {
+    // Пн/Ср/Пт виконана в Пн, у Ср позначена «не зміг».
+    const completions = { h1: ["2026-05-04"] };
+    const skips = {
+      h1: { "2026-05-06": { reason: "sick" as const, at: "" } },
+    };
+    const withSkips = calcRoutinePeriodCompletion([MWF], completions, WEEK, {
+      skips,
+    });
+    // Знаменник 2 (Пн + Пт), не 3 — середа не рахується провалом.
+    expect(withSkips).toMatchObject({ completed: 1, scheduled: 2, pct: 50 });
+
+    const canon = completionRateForRange(
+      [MWF],
+      completions,
+      WEEK[0]!,
+      WEEK[6]!,
+      { skips },
+    );
+    expect(withSkips.completed).toBe(canon.completed);
+    expect(withSkips.scheduled).toBe(canon.scheduled);
+
+    // Без опції — стара поведінка: пропуск рахується провалом.
+    const withoutSkips = calcRoutinePeriodCompletion([MWF], completions, WEEK);
+    expect(withoutSkips.scheduled).toBe(3);
+  });
 });

@@ -30,7 +30,7 @@ import {
   manualExpenseToTransaction,
   type ManualExpenseEntry,
 } from "../domain/transactions.js";
-import type { SpendingTxLike } from "./transactions.js";
+import { txTimeMs, type SpendingTxLike } from "./transactions.js";
 
 /**
  * Мінімальна форма транзакції для всесвіту витрат: те саме, що приймають
@@ -139,13 +139,6 @@ export interface FinykSpendingUniverse {
   excludedTxIds: Set<string>;
 }
 
-/** `time` у транзакціях Фініка — секунди (легасі) або мілісекунди. */
-function toMs(time: number | undefined): number {
-  const raw = time ?? 0;
-  if (!Number.isFinite(raw)) return Number.NaN;
-  return raw > 1e10 ? raw : raw * 1000;
-}
-
 /**
  * Збирає канонічний всесвіт витрат: банківські транзакції + ручні витрати,
  * зведені до однієї нормалізованої форми, плюс excluded-set, який до них
@@ -170,7 +163,7 @@ export function buildFinykSpendingUniverse(
 
   const inWindow = (tx: FinykUniverseTx): boolean => {
     if (!hasWindow) return true;
-    const ms = toMs(tx.time);
+    const ms = txTimeMs(tx.time);
     if (!Number.isFinite(ms)) return false;
     if (start !== undefined && ms < start) return false;
     if (end !== undefined && ms >= end) return false;

@@ -4,6 +4,7 @@ import {
   BODY_ATLAS_MUSCLE_LABELS_UK,
   mapDomainMuscleToAtlas,
 } from "@sergeant/fizruk-domain/data/bodyAtlas";
+import { wholeDaysSince } from "@shared/lib/time/wholeDaysSince";
 import type {
   SuggestWorkoutAction,
   CompareProgressAction,
@@ -29,11 +30,11 @@ export function suggestWorkout(action: SuggestWorkoutAction): ChatActionResult {
       }
     }
   }
-  const now = Date.now();
+  const now = new Date();
   const sorted = Object.entries(muscleLastTrained)
     .map(([m, ts]) => ({
       muscle: m,
-      daysAgo: Math.round((now - ts) / 86400000),
+      daysAgo: wholeDaysSince(ts, now),
     }))
     .sort((a, b) => b.daysAgo - a.daysAgo);
   // Підпис, а не сирий доменний id: без цього в українську відповідь

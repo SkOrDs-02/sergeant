@@ -1,6 +1,7 @@
 import { getExpenseCategoryForTransaction } from "../utils";
 import { toLocalISODate } from "@sergeant/shared";
 import { INTERNAL_TRANSFER_ID } from "../constants";
+import { getCurrentMonthContext } from "../domain/budget";
 import type { Category, TxCategoriesMap, TxSplitsMap } from "../domain/types";
 
 /** Мінімальний набір полів транзакції, потрібних прогнозу. */
@@ -96,15 +97,17 @@ export function calcForecast(
   customCategories: Category[] = [],
 ): ForecastResult[] {
   const now = today || new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const daysInMonth = new Date(
-    now.getFullYear(),
-    now.getMonth() + 1,
-    0,
-  ).getDate();
-  const dayOfMonth = now.getDate();
+  // §1.10: Kyiv-anchored month window (the same one `getCurrentMonthContext`
+  // gives Budgets/Overview), not host-local `Date` getters, so the forecast
+  // and the rest of Finyk agree on which month/day it currently is.
+  const {
+    monthStart,
+    daysInMonth,
+    daysPassed: dayOfMonth,
+    daysLeft: daysRemaining,
+  } = getCurrentMonthContext(now);
   const daysElapsed = Math.max(1, dayOfMonth);
-  const daysRemaining = daysInMonth - dayOfMonth;
+  const monthPrefix = toLocalISODate(monthStart).slice(0, 7);
 
   const dailySpending = buildDailySpending(
     transactions,
@@ -141,8 +144,7 @@ export function calcForecast(
     // Running cumulative for actual
     let cumActual = 0;
     for (let d = 1; d <= daysInMonth; d++) {
-      const dateObj = new Date(now.getFullYear(), now.getMonth(), d);
-      const dayKey = toLocalISODate(dateObj);
+      const dayKey = `${monthPrefix}-${String(d).padStart(2, "0")}`;
       const isPast = d <= dayOfMonth;
 
       if (isPast) {

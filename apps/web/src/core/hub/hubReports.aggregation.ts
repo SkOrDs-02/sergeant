@@ -19,6 +19,7 @@ import { calcRoutinePeriodCompletion } from "@sergeant/routine-domain/period-com
 import { calcNutritionPeriodAverages } from "@sergeant/nutrition-domain";
 import { addDays, dateKeyFromDate } from "@sergeant/routine-domain";
 import type { Habit } from "@sergeant/routine-domain/types";
+import { deviceMondayStart } from "@sergeant/shared";
 
 // ── Date helpers ─────────────────────────────────────────────────────────────
 
@@ -61,10 +62,12 @@ export function getPeriodRange(
   now: Date = new Date(),
 ): PeriodRange {
   if (period === "week") {
-    const mondayOffset = (now.getDay() + 6) % 7;
-    const mon = new Date(now);
-    mon.setDate(now.getDate() - mondayOffset + offset * 7);
-    mon.setHours(0, 0, 0, 0);
+    // offset*7 днів — цілу кількість тижнів, тож день тижня не зсувається:
+    // Monday-старт зсунутої дати збігається з тим, що раніше давала
+    // `now.getDate() - mondayOffset + offset*7` напряму.
+    const offsetDate = new Date(now);
+    offsetDate.setDate(now.getDate() + offset * 7);
+    const mon = new Date(deviceMondayStart(offsetDate));
     const sun = addDays(mon, 6);
     return { start: mon, end: sun };
   }

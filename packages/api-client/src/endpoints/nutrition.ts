@@ -1,4 +1,5 @@
 import type { HttpClient } from "../httpClient";
+import type { MealTypeId, NullableMacros } from "@sergeant/shared";
 
 // ---------------------------------------------------------------------------
 // Response shapes returned by `apps/server/src/modules/nutrition/*`.
@@ -7,12 +8,9 @@ import type { HttpClient } from "../httpClient";
 // normalizers in individual handlers.
 // ---------------------------------------------------------------------------
 
-export interface NutritionMacros {
-  kcal: number | null;
-  protein_g: number | null;
-  fat_g: number | null;
-  carbs_g: number | null;
-}
+// unification-modules.md #2.27: канон — `NullableMacros` у
+// `@sergeant/shared/utils/macros`.
+export type NutritionMacros = NullableMacros;
 
 // analyze-photo / refine-photo
 export interface NutritionPhotoPortion {
@@ -88,7 +86,9 @@ export interface NutritionWeekPlanResponse {
 }
 
 // day-plan
-export type NutritionMealType = "breakfast" | "lunch" | "dinner" | "snack";
+// unification-modules.md #2.25: канон — `MealTypeIdSchema` у
+// `@sergeant/shared/schemas`; nutrition-domain реекспортує той самий тип.
+export type NutritionMealType = MealTypeId;
 
 export interface NutritionDayMeal {
   type: NutritionMealType;

@@ -94,7 +94,7 @@ vi.mock("@fizruk/lib/sqliteReader", () => ({
       {
         startedAt: recentIso,
         endedAt: recentIso,
-        items: [{ sets: [{ weightKg: 100, reps: 5 }] }],
+        items: [{ type: "strength", sets: [{ weightKg: 100, reps: 5 }] }],
       },
     ],
   }),

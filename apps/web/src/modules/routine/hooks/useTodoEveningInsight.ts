@@ -1,6 +1,7 @@
 import { useMemo } from "react";
-import { getKyivDateParts, getKyivDayKey } from "@shared/lib/time/kyivTime";
+import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import { habitScheduledOnDate } from "@sergeant/routine-domain";
+import { anchoredTodayKey } from "../lib/dayAnchor";
 import type { RoutineState } from "../lib/types";
 import type { Insight } from "@shared/lib/insights/types";
 
@@ -19,7 +20,7 @@ import type { Insight } from "@shared/lib/insights/types";
  * between habit interactions.
  */
 export function useTodoEveningInsight(routine: RoutineState): Insight | null {
-  const todayKey = getKyivDayKey();
+  const todayKey = anchoredTodayKey();
   const kyivHour = getKyivDateParts().hour;
   const isEvening = kyivHour >= 20;
 

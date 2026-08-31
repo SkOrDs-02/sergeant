@@ -6,6 +6,7 @@ import type { WeeklyDigestReport } from "@shared/api";
 import {
   METRICS_VERSION,
   STORAGE_KEYS,
+  deviceMondayStart,
   getWeekKey as sharedGetWeekKey,
 } from "@sergeant/shared";
 import {
@@ -33,8 +34,10 @@ import {
 } from "@nutrition/lib/nutritionStorage";
 import { calcFinykPeriodAggregate } from "@sergeant/finyk-domain";
 import { calcRoutinePeriodCompletion } from "@sergeant/routine-domain/period-completion";
-import { dateKeyFromDate } from "@sergeant/routine-domain";
+import { addDays, dateKeyFromDate } from "@sergeant/routine-domain";
 import { calcNutritionPeriodAverages } from "@sergeant/nutrition-domain";
+import { workoutTonnageKg } from "@sergeant/fizruk-domain";
+import { formatDayRangeUk } from "@shared/lib/time/dayKeyLabel";
 import type { MonthlyPlan } from "@finyk/hooks/useStorage.types";
 
 const DIGEST_PREFIX = STORAGE_KEYS.WEEKLY_DIGEST_PREFIX;
@@ -50,6 +53,18 @@ interface Category {
 // з `@sergeant/routine-domain` замість колишньої інлайн-копії.
 const localDateKey = (d: Date = new Date()): string => dateKeyFromDate(d);
 
+/**
+ * Межі `weekKey` (device-local Monday-ключ від `getWeekKey`) — через
+ * канонічний `deviceMondayStart`, а не наївний `new Date(`${weekKey}T00:00:00`)`.
+ * `weekKey` уже позначає понеділок, тож виклик ідемпотентний; важливо саме
+ * те, що межі рахує ТА САМА функція, що й сам ключ (audit
+ * unification-modules §1.2), а не окремий рядковий парсер.
+ */
+function weekKeyToDeviceMondayMs(weekKey: string): number {
+  const [y, m, d] = weekKey.split("-").map(Number);
+  return deviceMondayStart(new Date(y ?? 1970, (m ?? 1) - 1, d ?? 1));
+}
+
 // `getWeekKey` lives in `@sergeant/shared` now (DOM-free, reused by
 // mobile); re-exported here so existing call-sites keep their import
 // path. `localDateKey` above is still used by the per-day loops
@@ -57,15 +72,11 @@ const localDateKey = (d: Date = new Date()): string => dateKeyFromDate(d);
 export const getWeekKey = sharedGetWeekKey;
 
 export function getWeekRange(d = new Date()): string {
-  const monday = new Date(d);
-  // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- pre-existing kyiv-time burndown (Theme 1), out of scope for this routine-source fix
-  monday.setDate(d.getDate() - ((d.getDay() + 6) % 7));
-  const sunday = new Date(monday);
-  // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- pre-existing kyiv-time burndown (Theme 1), out of scope for this routine-source fix
-  sunday.setDate(monday.getDate() + 6);
-  const fmt = (dt: Date) =>
-    dt.toLocaleDateString("uk-UA", { day: "numeric", month: "short" });
-  return `${fmt(monday)} – ${fmt(sunday)}`;
+  const monday = new Date(deviceMondayStart(d));
+  const sunday = addDays(monday, 6);
+  return formatDayRangeUk(localDateKey(monday), localDateKey(sunday), {
+    relative: false,
+  });
 }
 
 export interface WeeklyDigest {
@@ -117,7 +128,7 @@ export function aggregateFinyk(weekKey: string): FinykAggregate {
   const { txs, excludedTxIds, txSplits, txCategories, customCategories } =
     readFinykStatsContext();
 
-  const monday = new Date(`${weekKey}T00:00:00`).getTime();
+  const monday = weekKeyToDeviceMondayMs(weekKey);
   const sunday = monday + 7 * 86_400_000;
 
   // AI-NOTE: Раніше aggregateFinyk парсив `finyk_tx_cache`/`finyk_hidden_txs`/
@@ -231,9 +242,9 @@ export function aggregateFizruk(weekKey: string): FizrukAggregate | null {
   const workouts = fizruk.workouts;
   if (workouts.length === 0) return null;
 
-  const monday = new Date(`${weekKey}T00:00:00`);
+  const monday = new Date(weekKeyToDeviceMondayMs(weekKey));
   const sunday = new Date(monday);
-  // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- pre-existing kyiv-time burndown (Theme 1), out of scope for the tombstone read-side fix
+  // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- ADR-0078: workouts are the personal day, device-local by design; monday itself already came from the canonical deviceMondayStart above.
   sunday.setDate(monday.getDate() + 7);
 
   const weekWorkouts = workouts.filter((w) => {
@@ -242,16 +253,19 @@ export function aggregateFizruk(weekKey: string): FizrukAggregate | null {
     return d >= monday && d < sunday;
   });
 
-  let totalVolume = 0;
+  const totalVolume = weekWorkouts.reduce(
+    (sum, w) => sum + workoutTonnageKg(w),
+    0,
+  );
   const exerciseVolumes: Record<string, number> = {};
 
   for (const w of weekWorkouts) {
     for (const item of w.items) {
+      if (item.type !== "strength") continue;
       const vol = (item.sets ?? []).reduce(
         (s, set) => s + set.weightKg * set.reps,
         0,
       );
-      totalVolume += vol;
       if (item.nameUk) {
         exerciseVolumes[item.nameUk] =
           (exerciseVolumes[item.nameUk] ?? 0) + vol;

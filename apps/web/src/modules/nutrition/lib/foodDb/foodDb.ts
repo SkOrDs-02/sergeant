@@ -9,7 +9,7 @@ import {
   migrateLegacyDbOnce,
   openSergeantDb,
 } from "../../../../shared/lib/idb/sergeantDb";
-import { generatePrefixedId } from "@sergeant/shared";
+import { clampNonNegative, generatePrefixedId } from "@sergeant/shared";
 
 /**
  * Lazy-loader для 1600+ seed-продуктів. Статичний import затягував весь
@@ -67,21 +67,16 @@ function normText(s: unknown): string {
     .replace(/\s+/g, " ");
 }
 
-function clamp0(n: unknown): number {
-  const v = Number(n);
-  return Number.isFinite(v) ? Math.max(0, v) : 0;
-}
-
 function normalizeMacros(per100: unknown): Macros {
   const m =
     per100 && typeof per100 === "object"
       ? (per100 as Record<string, unknown>)
       : {};
   return {
-    kcal: clamp0(m["kcal"]),
-    protein_g: clamp0(m["protein_g"]),
-    fat_g: clamp0(m["fat_g"]),
-    carbs_g: clamp0(m["carbs_g"]),
+    kcal: clampNonNegative(m["kcal"]),
+    protein_g: clampNonNegative(m["protein_g"]),
+    fat_g: clampNonNegative(m["fat_g"]),
+    carbs_g: clampNonNegative(m["carbs_g"]),
   };
 }
 
@@ -149,7 +144,8 @@ export function makeFoodProduct(partial: unknown): FoodProduct {
       ? String(p.id).trim()
       : generatePrefixedId("food");
   const norm = normText([name, brand].filter(Boolean).join(" "));
-  const defaultGrams = p.defaultGrams != null ? clamp0(p.defaultGrams) : 100;
+  const defaultGrams =
+    p.defaultGrams != null ? clampNonNegative(p.defaultGrams) : 100;
   return {
     id,
     name,
@@ -266,7 +262,7 @@ export async function upsertFood(product: unknown): Promise<UpsertFoodResult> {
 }
 
 export function macrosForGrams(per100: unknown, grams: unknown): Macros {
-  const g = clamp0(grams);
+  const g = clampNonNegative(grams);
   const k = g / 100;
   const m = normalizeMacros(per100);
   return {

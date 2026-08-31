@@ -146,8 +146,10 @@ export function useStorage({
     }
     networthSnapshotRef.current = { date: today, value: rounded };
     writeJSON("finyk_networth_last_snap", { date: today, value: rounded });
-    // eslint-disable-next-line no-restricted-syntax, sergeant-design/prefer-kyiv-time -- YYYY-MM key for networth history snapshot; pre-existing host-local; tracked in tech-debt
-    const key = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
+    // §1.9: `today` above is already the Kyiv day key ("YYYY-MM-DD") — slice
+    // it instead of re-deriving the month from the host clock, which drifted
+    // a month at the Kyiv midnight boundary on non-Kyiv devices.
+    const key = today.slice(0, 7);
     setNetworthHistory((prev) => {
       const filtered = prev.filter((s) => s.month !== key);
       return [...filtered, { month: key, networth: rounded }]

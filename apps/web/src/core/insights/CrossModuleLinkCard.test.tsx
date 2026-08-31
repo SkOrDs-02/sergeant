@@ -1,5 +1,5 @@
 /** @vitest-environment jsdom */
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
@@ -61,7 +61,19 @@ describe("CrossModuleLinkCard — напрямок звʼязку", () => {
 });
 
 describe("CrossModuleLinkCard — перевірка доказів", () => {
-  afterEach(cleanup);
+  // formatDayLabel читає "сьогодні" з реального годинника (deviceDayKey), щоб
+  // рік прибирався для дат того самого року — фіксуємо системний час, інакше
+  // тест зламався б 1 січня, коли реальний рік розійдеться з 2026-08-xx.
+  // `toFake: ["Date"]` лишає setTimeout/setInterval реальними, інакше
+  // `userEvent.click` під фейковими таймерами підвисає.
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-08-15T12:00:00"));
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    cleanup();
+  });
 
   const days = [
     { key: "2026-08-03", valueA: "1,5", valueB: "380" },
@@ -80,14 +92,14 @@ describe("CrossModuleLinkCard — перевірка доказів", () => {
       />,
     );
 
-    expect(screen.queryByText("3 серп.")).toBeNull();
+    expect(screen.queryByText("3 серп")).toBeNull();
 
     const toggle = screen.getByRole("button", { name: "Показати ці дні" });
     expect(toggle).toHaveAttribute("aria-expanded", "false");
     await user.click(toggle);
 
-    expect(screen.getByText("3 серп.")).toBeInTheDocument();
-    expect(screen.getByText("2 серп.")).toBeInTheDocument();
+    expect(screen.getByText("3 серп")).toBeInTheDocument();
+    expect(screen.getByText("2 серп")).toBeInTheDocument();
     expect(screen.getByText("380")).toBeInTheDocument();
     // Підпис пояснює, чому днів саме стільки, а не 60.
     expect(screen.getByText("Дні, за якими я порівнював")).toBeInTheDocument();

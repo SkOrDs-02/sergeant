@@ -1,6 +1,9 @@
 // Типи контексту для фінансових правил. Сам білдер (`buildFinanceContext`)
 // читає `localStorage` і тому залишається у `apps/web`; сюди винесені
-// лише платформо-незалежні типи + маленький helper `txTimestamp`.
+// лише платформо-незалежні типи + маленький helper `txTimeMs`.
+
+import { limitBudgetCategoryIds } from "@sergeant/finyk-domain/domain/budget";
+import type { TxSplitsLike } from "@sergeant/finyk-domain/lib/transactions";
 
 export interface Transaction {
   id: string;
@@ -28,17 +31,14 @@ export interface Budget {
   limit?: number;
 }
 
-/** Набір категорій ліміту з фолбеком на legacy `categoryId`. */
+/** Набір категорій ліміту з фолбеком на legacy `categoryId` (канон finyk-domain). */
 export function budgetCategoryIds(budget: Budget): string[] {
-  const raw =
-    Array.isArray(budget.categoryIds) && budget.categoryIds.length > 0
-      ? budget.categoryIds
-      : [budget.categoryId];
-  const out: string[] = [];
-  for (const id of raw) {
-    if (typeof id === "string" && id && !out.includes(id)) out.push(id);
-  }
-  return out;
+  return limitBudgetCategoryIds({
+    categoryId: budget.categoryId ?? "",
+    ...(budget.categoryIds !== undefined
+      ? { categoryIds: budget.categoryIds }
+      : {}),
+  });
 }
 
 export interface CustomCategory {
@@ -57,6 +57,8 @@ export interface FinanceContext {
   customCategories: CustomCategory[];
   hiddenTxIds: Set<string>;
   transferIds: Set<string>;
+  /** Спліт-мапа транзакцій (id → частини за категоріями), для getTxStatAmount/calcFinykPeriodAggregate. */
+  txSplits?: TxSplitsLike;
   thisMonthTx: Transaction[];
   /** Суми витрат за цей місяць, ключ — сирий override/label (legacy формат). */
   categorySpend: Record<string, number>;
@@ -70,6 +72,16 @@ export interface FinanceContext {
  * Таймстемп транзакції у мс. `time` зберігаються або як Unix-seconds
  * (Monobank API), або як JS ms; евристика 1e10 відрізняє їх.
  */
-export function txTimestamp(tx: Transaction): number {
+export function txTimeMs(tx: Transaction): number {
   return tx.time > 1e10 ? tx.time : tx.time * 1000;
+}
+
+// ponytail: alias for existing callers (noTxRecent.ts, apps/web) — rename them to txTimeMs when next touched.
+export const txTimestamp = txTimeMs;
+
+/** Обʼєднаний excluded-set (сховані + перекази) для банк-агрегаторів витрат. */
+export function financeExcludedTxIds(
+  ctx: Pick<FinanceContext, "hiddenTxIds" | "transferIds">,
+): Set<string> {
+  return new Set([...ctx.hiddenTxIds, ...ctx.transferIds]);
 }

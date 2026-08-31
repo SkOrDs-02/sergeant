@@ -8,9 +8,12 @@ import { Stat } from "@shared/components/ui/Stat";
 import { HabitHeatmap } from "./HabitHeatmap";
 import { HabitRangeGrid } from "./HabitRangeGrid";
 import { HabitLeadersBlock } from "./HabitLeadersBlock";
-import { completionRateForRange, maxStreakAllTime } from "../lib/streaks";
-import { dateKeyFromDate, parseDateKey } from "../lib/hubCalendarAggregate";
-import { getKyivDayKey } from "@shared/lib/time/kyivTime";
+import {
+  completionRateForRange,
+  flexibleMaxStreakAllTimeAcrossHabits,
+} from "../lib/streaks";
+import { dateKeyMinusDays } from "@sergeant/routine-domain";
+import { anchoredTodayKey } from "../lib/dayAnchor";
 import { ROUTINE_THEME as C } from "../lib/routineConstants";
 import {
   ROUTINE_STATS_DEFAULT_RANGE,
@@ -19,16 +22,6 @@ import {
   type RoutineStatsRangeId,
 } from "../lib/statsRanges";
 import type { RoutineState } from "../lib/types";
-
-function dateKeyMinusDays(baseKey: string, daysBack: number): string {
-  const d = parseDateKey(baseKey);
-  // Календарна арифметика на вже київському ключі (`baseKey` приходить з
-  // `getKyivDayKey`), а не читання host-local доби — зсув на N днів назад.
-  // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- calendar arithmetic on a Kyiv-anchored key; not a host day key
-  d.setDate(d.getDate() - daysBack);
-  d.setHours(12, 0, 0, 0);
-  return dateKeyFromDate(d);
-}
 
 const rangeItems = ROUTINE_STATS_RANGES.map((r) => ({
   value: r.id,
@@ -46,9 +39,10 @@ export function RoutineStatsPanel({
   currentStreak,
   hidden,
 }: RoutineStatsPanelProps) {
-  // Kyiv-anchored "today" so day-aggregated stats don't shift around
-  // host TZ (consolidated page-audit § Theme 1 — 09 F3).
-  const todayKey = getKyivDayKey();
+  // Той самий анкер доби, що й решта web-routine (`lib/dayAnchor.ts`), не
+  // окремий прямий виклик — інакше день тут і в сусідніх картках знову
+  // могли б розійтись (unification audit 2026-08-31, finding 2.3).
+  const todayKey = anchoredTodayKey();
 
   // Вибір зрізу навмисно не переживає перезавантаження: писати його в
   // localStorage означало б новий ключ в allowlist заради стану, який
@@ -61,11 +55,15 @@ export function RoutineStatsPanel({
   const summary = useMemo(() => {
     const habits = routine.habits || [];
     const completions = routine.completions || {};
-    const maxAllTime = habits.reduce((acc: number, h) => {
-      if (h.archived) return acc;
-      const m = maxStreakAllTime(h, completions[h.id] || []);
-      return m > acc ? m : acc;
-    }, 0);
+    // Гнучкий аналог, як і `currentStreak` — інакше «Серія сьогодні» могла
+    // показувати БІЛЬШЕ, ніж «Макс. серія» (unification audit 2026-08-31,
+    // finding 1.22): жорсткий рекорд не бачив прощених пропусків, які
+    // гнучка поточна серія вже пережила.
+    const maxAllTime = flexibleMaxStreakAllTimeAcrossHabits(
+      habits,
+      completions,
+      routine.skips ?? {},
+    );
     // `pausedFrom: todayKey` — заморозка минулого (ADR-0079 §2). Саме тут вона
     // найпомітніша: усі зрізи цілком лежать у минулому, тож без параметра
     // пауза, поставлена сьогодні, обнуляла б їх усі одразу.
@@ -77,7 +75,13 @@ export function RoutineStatsPanel({
       { pausedFrom: todayKey },
     );
     return { maxAllTime, rate };
-  }, [routine.habits, routine.completions, todayKey, range.days]);
+  }, [
+    routine.habits,
+    routine.completions,
+    routine.skips,
+    todayKey,
+    range.days,
+  ]);
 
   return (
     <div

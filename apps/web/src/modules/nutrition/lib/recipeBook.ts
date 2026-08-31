@@ -2,13 +2,13 @@
  * Last validated: 2026-06-15
  * Status: Active
  */
-import type { NullableMacros } from "./macros";
+import { normalizeMacrosNullable, type NullableMacros } from "./macros";
 import {
   SERGEANT_STORE,
   migrateLegacyDbOnce,
   openSergeantDb,
 } from "../../../shared/lib/idb/sergeantDb";
-import { generatePrefixedId } from "@sergeant/shared";
+import { clampNonNegative, generatePrefixedId } from "@sergeant/shared";
 
 /**
  * Pre-PR-#010 saved recipes lived in a dedicated `hub_nutrition_recipe_book`
@@ -66,23 +66,6 @@ function txDone(tx: IDBTransaction): Promise<void> {
   });
 }
 
-function clamp0(n: unknown): number {
-  const v = Number(n);
-  return Number.isFinite(v) ? Math.max(0, v) : 0;
-}
-
-function normalizeMacros(mac: unknown): NullableMacros {
-  const m = (mac && typeof mac === "object" ? mac : {}) as Partial<
-    Record<keyof NullableMacros, unknown>
-  >;
-  return {
-    kcal: m.kcal == null ? null : clamp0(m.kcal),
-    protein_g: m.protein_g == null ? null : clamp0(m.protein_g),
-    fat_g: m.fat_g == null ? null : clamp0(m.fat_g),
-    carbs_g: m.carbs_g == null ? null : clamp0(m.carbs_g),
-  };
-}
-
 export function normalizeRecipeForSave(r: unknown): SavedRecipe {
   const raw = (r && typeof r === "object" ? r : {}) as Record<string, unknown>;
   const title = String(raw["title"] || "").trim();
@@ -93,8 +76,10 @@ export function normalizeRecipeForSave(r: unknown): SavedRecipe {
   return {
     id,
     title,
-    timeMinutes: raw["timeMinutes"] != null ? clamp0(raw["timeMinutes"]) : null,
-    servings: raw["servings"] != null ? clamp0(raw["servings"]) : null,
+    timeMinutes:
+      raw["timeMinutes"] != null ? clampNonNegative(raw["timeMinutes"]) : null,
+    servings:
+      raw["servings"] != null ? clampNonNegative(raw["servings"]) : null,
     ingredients: Array.isArray(raw["ingredients"])
       ? (raw["ingredients"] as unknown[])
           .map((x) => String(x))
@@ -113,7 +98,7 @@ export function normalizeRecipeForSave(r: unknown): SavedRecipe {
           .filter(Boolean)
           .slice(0, 40)
       : [],
-    macros: normalizeMacros(raw["macros"]),
+    macros: normalizeMacrosNullable(raw["macros"]),
     createdAt:
       raw["createdAt"] != null
         ? Number(raw["createdAt"]) || Date.now()
@@ -185,7 +170,7 @@ export function scaleMacros(macros: unknown, factor: unknown): NullableMacros {
     Record<keyof NullableMacros, unknown>
   >;
   const v = (x: unknown): number | null =>
-    x == null ? null : Math.round(clamp0(x) * k * 10) / 10;
+    x == null ? null : Math.round(clampNonNegative(x) * k * 10) / 10;
   return {
     kcal: v(m.kcal),
     protein_g: v(m.protein_g),

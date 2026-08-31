@@ -1,5 +1,5 @@
 import { CURRENCY, CURRENCY_SYMBOL } from "../constants";
-import { formatNumberUk } from "@sergeant/shared";
+import { formatNumberUk, toKyivISODate } from "@sergeant/shared";
 
 export function fmtAmt(
   amount: number,
@@ -12,18 +12,20 @@ export function fmtAmt(
 
 export function fmtDate(ts: number): string {
   const d = new Date(ts * 1000);
-  // Compare by calendar day at midnight, not elapsed milliseconds, so a
-  // transaction at 23:50 and a read at 00:10 render as "Вчора", not "Сьогодні".
-  const d0 = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const diff = Math.round((today.getTime() - d0.getTime()) / 86400000);
+  // Domain invariant: financial periods are Europe/Kyiv-anchored. Compare
+  // Kyiv calendar-day keys, not the device clock's midnight, otherwise
+  // the same transaction can read "Сьогодні" on one card and "Вчора" on
+  // another depending on which helper rendered it (§1.24 audit finding;
+  // mirrors `formatStickyDayLabel` in transactionsLib.ts).
+  const dayKey = toKyivISODate(d);
+  const todayKey = toKyivISODate(Date.now());
+  const yesterdayKey = toKyivISODate(Date.now() - 86400000);
   const t = d.toLocaleTimeString("uk-UA", {
     hour: "2-digit",
     minute: "2-digit",
   });
-  if (diff === 0) return `Сьогодні, ${t}`;
-  if (diff === 1) return `Вчора, ${t}`;
+  if (dayKey === todayKey) return `Сьогодні, ${t}`;
+  if (dayKey === yesterdayKey) return `Вчора, ${t}`;
   return d.toLocaleDateString("uk-UA", { day: "2-digit", month: "short" });
 }
 

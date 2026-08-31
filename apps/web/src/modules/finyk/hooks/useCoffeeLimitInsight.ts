@@ -13,7 +13,7 @@
  */
 
 import { useMemo } from "react";
-import { calcCategorySpent } from "@sergeant/finyk-domain/domain/categories";
+import { calcLimitCategorySpent } from "@sergeant/finyk-domain/lib/limitCategorySpend";
 import type { Insight } from "@shared/lib/insights/types";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import type {
@@ -21,6 +21,7 @@ import type {
   TxSplitsMap,
 } from "@sergeant/finyk-domain/domain/types";
 import { formatNumberUk } from "@sergeant/shared";
+import { filterToKyivMonth } from "../lib/monthWindow";
 
 // Tunable thresholds — export so tests can override.
 /** MoM growth ratio that triggers the insight (0.25 = 25%). */
@@ -57,24 +58,12 @@ function monthlyCategorySpend(
   txSplits: TxSplitsMap,
   customCategories: readonly { id: string; label?: string | undefined }[],
 ): number {
-  const [y, m] = month.split("-").map(Number);
-  if (!y || !m) return 0;
-  const monthStart = new Date(y, m - 1, 1).getTime();
-  const monthEnd = new Date(y, m, 1).getTime();
+  // Kyiv-anchored clamp (§1.8: a host-local `new Date(y, m-1, 1)` bound
+  // put late-month transactions outside their month on devices west of
+  // Kyiv), same helper the bank-tx month clamp uses elsewhere in Finyk.
+  const filtered = filterToKyivMonth(transactions, month);
 
-  const filtered = transactions.filter((tx) => {
-    // `tx.time` is unix seconds for mono txs; `tx.date` is "YYYY-MM-DD" for manual.
-    // Prefer `tx.time` (epoch) when available, fall back to `tx.date` string parse.
-    const tsMs =
-      tx.time > 0
-        ? tx.time > 1e10
-          ? tx.time
-          : tx.time * 1000
-        : new Date(tx.date).getTime();
-    return tsMs >= monthStart && tsMs < monthEnd;
-  });
-
-  return calcCategorySpent(
+  return calcLimitCategorySpent(
     filtered,
     categoryId,
     txCategories,

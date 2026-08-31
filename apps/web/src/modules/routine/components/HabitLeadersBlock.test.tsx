@@ -18,6 +18,18 @@ vi.mock("@shared/lib/time/kyivTime", () => ({
     const d = ms !== undefined ? new Date(ms) : FIXED_NOW;
     return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
   },
+  // `endKey` now comes through `anchoredTodayKey()` (`lib/dayAnchor.ts`),
+  // which reads `getKyivDateParts()` — Kyiv summer = UTC+3, so FIXED_NOW
+  // (09:00 UTC) is 2026-07-10 12:00 local, same calendar day as above.
+  getKyivDateParts: () => ({
+    year: 2026,
+    month: 7,
+    day: 10,
+    hour: 12,
+    minute: 0,
+    second: 0,
+    weekday: 5,
+  }),
 }));
 
 // habitCompletionRate: returns rate=1 for habit "h1", rate=0.5 for "h2",

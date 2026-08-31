@@ -11,19 +11,7 @@ import type { Rec, Rule } from "../types.js";
 import type { FinanceContext } from "../financeContext.js";
 import { budgetCategoryIds } from "../financeContext.js";
 import { formatNumberUk } from "@sergeant/shared";
-
-const BUILTIN_LABELS: Record<string, string> = {
-  food: "Продукти",
-  cafe: "Кафе та ресторани",
-  restaurant: "Кафе та ресторани",
-  transport: "Транспорт",
-  entertainment: "Розваги",
-  health: "Здоровʼя",
-  shopping: "Покупки",
-  utilities: "Комунальні",
-  subscriptions: "Підписки",
-  other: "Інше",
-};
+import { MCC_CATEGORIES } from "@sergeant/finyk-domain/constants";
 
 function resolveLabel(
   categoryId: string,
@@ -31,7 +19,8 @@ function resolveLabel(
 ): string {
   const custom = customCategories.find((c) => c.id === categoryId);
   if (custom) return custom.label;
-  return BUILTIN_LABELS[categoryId] || categoryId;
+  const canonical = MCC_CATEGORIES.find((c) => c.id === categoryId);
+  return canonical?.label || categoryId;
 }
 
 export const budgetLimitsRule: Rule<FinanceContext> = {

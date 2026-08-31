@@ -6,16 +6,9 @@
  * consumers. Behaviour is unchanged.
  */
 
-import { dateKeyFromDate, parseDateKey } from "./dateKeys.js";
+import { dateKeyFromDate, dateKeyMinusDays, parseDateKey } from "./dateKeys.js";
 import { habitCountsTowardMetrics, habitScheduledOnDate } from "./schedule.js";
 import type { Habit, HabitSkip } from "./types.js";
-
-function dateKeyMinusDays(baseKey: string, daysBack: number): string {
-  const d = parseDateKey(baseKey);
-  d.setDate(d.getDate() - daysBack);
-  d.setHours(12, 0, 0, 0);
-  return dateKeyFromDate(d);
-}
 
 /**
  * Поточна серія: від сьогодні назад, лише дні де звичка запланована;

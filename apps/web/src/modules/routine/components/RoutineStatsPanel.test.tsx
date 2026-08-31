@@ -17,6 +17,13 @@ const FIXED_NOW = new Date("2026-07-10T09:00:00Z");
 
 vi.mock("@shared/lib/time/kyivTime", () => ({
   getKyivDayKey: () => "2026-07-10",
+  getKyivDateParts: () => ({
+    year: 2026,
+    month: 7,
+    day: 10,
+    hour: 12,
+    minute: 0,
+  }),
 }));
 
 // Stub heavy children to lightweight markers. The range-grid stub echoes its
@@ -44,18 +51,7 @@ const completionRateForRange = vi.fn(() => ({
 vi.mock("../lib/streaks", () => ({
   completionRateForRange: (...args: unknown[]) =>
     completionRateForRange(...(args as [])),
-  maxStreakAllTime: () => 5,
-}));
-
-vi.mock("../lib/hubCalendarAggregate", () => ({
-  dateKeyFromDate: (d: Date) =>
-    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
-      d.getDate(),
-    ).padStart(2, "0")}`,
-  parseDateKey: (key: string) => {
-    const [y, m, d] = key.split("-").map(Number);
-    return new Date(y!, m! - 1, d!);
-  },
+  flexibleMaxStreakAllTimeAcrossHabits: () => 5,
 }));
 
 import { RoutineStatsPanel } from "./RoutineStatsPanel";

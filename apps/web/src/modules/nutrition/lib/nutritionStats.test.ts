@@ -1,11 +1,9 @@
 import { describe, it, expect } from "vitest";
 import {
   summarizeRows,
-  avgFromSummary,
   topMeals,
   mealTypeBreakdown,
   getRowsForRange,
-  type RowsSummary,
 } from "./nutritionStats";
 import type { DaySummary, NutritionLog } from "./nutritionStorage";
 
@@ -108,59 +106,10 @@ describe("nutrition/summarizeRows", () => {
   });
 });
 
-// ─── avgFromSummary ───────────────────────────────────────────────────────────
-
-describe("nutrition/avgFromSummary", () => {
-  it("divides totals by daysWithAnyMacros", () => {
-    const sum: RowsSummary = {
-      days: 3,
-      kcal: 6000,
-      protein_g: 300,
-      fat_g: 210,
-      carbs_g: 600,
-      daysWithMeals: 3,
-      daysWithAnyMacros: 3,
-      nonEmptyDays: 3,
-    };
-    const avg = avgFromSummary(sum);
-    expect(avg.kcal).toBeCloseTo(2000);
-    expect(avg.protein_g).toBeCloseTo(100);
-    expect(avg.denom).toBe(3);
-  });
-
-  it("uses denom=1 when daysWithAnyMacros is 0 to avoid division by zero", () => {
-    const sum: RowsSummary = {
-      days: 5,
-      kcal: 0,
-      protein_g: 0,
-      fat_g: 0,
-      carbs_g: 0,
-      daysWithMeals: 0,
-      daysWithAnyMacros: 0,
-      nonEmptyDays: 0,
-    };
-    const avg = avgFromSummary(sum);
-    expect(avg.denom).toBe(1);
-    expect(avg.kcal).toBe(0);
-  });
-
-  it("ignores empty days without macros in the average", () => {
-    // 2 days with macros, 3 empty days → average must not be diluted by the 3 empty
-    const sum: RowsSummary = {
-      days: 5,
-      kcal: 4000,
-      protein_g: 200,
-      fat_g: 140,
-      carbs_g: 400,
-      daysWithMeals: 2,
-      daysWithAnyMacros: 2,
-      nonEmptyDays: 2,
-    };
-    const avg = avgFromSummary(sum);
-    expect(avg.kcal).toBeCloseTo(2000);
-    expect(avg.denom).toBe(2);
-  });
-});
+// avgFromSummary removed (unification-modules.md #1.12): averages now come
+// from the canon `calcNutritionPeriodAverages` (packages/nutrition-domain),
+// whose denominator is `daysLogged` (days with ≥1 meal), not
+// `daysWithAnyMacros`. See its own test suite in nutrition-domain.
 
 // ─── topMeals ─────────────────────────────────────────────────────────────────
 

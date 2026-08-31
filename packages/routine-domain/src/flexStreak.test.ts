@@ -4,6 +4,8 @@ import {
   GRACE_EARN_EVERY_DAYS,
   MAX_GRACE_BUDGET,
   flexibleMaxActiveStreak,
+  flexibleMaxStreakAllTime,
+  flexibleMaxStreakAllTimeAcrossHabits,
   flexibleStreakBreakdown,
   flexibleStreakForHabit,
 } from "./flexStreak.js";
@@ -265,6 +267,52 @@ describe("flexibleMaxActiveStreak", () => {
     const skips = { b: { "2026-07-31": skip("busy") } };
     expect(
       flexibleMaxActiveStreak([a, bHabit, archived], completions, TODAY, skips),
+    ).toBe(9);
+  });
+});
+
+describe("flexibleMaxStreakAllTime (finding 1.22)", () => {
+  it("current streak never exceeds the flexible all-time max on the same data", () => {
+    // 7 виконаних, один прощений мовчазний пропуск, ще 5 виконаних —
+    // сама ситуація з фіндингу: жорсткий `maxStreakAllTime` бачив би тут
+    // 7 (найдовший суцільний прогін), а поточна гнучка серія — 12.
+    const done = [...runOfDays("2026-07-27", 7), ...runOfDays(TODAY, 5)];
+    const current = flexibleStreakForHabit(daily(), done, TODAY);
+    const allTime = flexibleMaxStreakAllTime(daily(), done);
+    expect(current).toBe(12);
+    expect(allTime).toBe(12);
+    expect(allTime).toBeGreaterThanOrEqual(current);
+  });
+
+  it("finds a longer historical run than the one ending today", () => {
+    const historical = runOfDays("2026-06-01", 20); // long past streak
+    const current = runOfDays(TODAY, 3); // short recent streak
+    const done = [...historical, ...current];
+    expect(flexibleMaxStreakAllTime(daily(), done)).toBe(20);
+    expect(flexibleStreakForHabit(daily(), done, TODAY)).toBe(3);
+  });
+
+  it("once-habits have no streak by definition", () => {
+    const habit = daily({ recurrence: "once" });
+    expect(flexibleMaxStreakAllTime(habit, runOfDays(TODAY, 5))).toBe(0);
+  });
+
+  it("flexibleMaxStreakAllTimeAcrossHabits takes the max over active habits and honours skips", () => {
+    const a = daily({ id: "a" });
+    const bHabit = daily({ id: "b" });
+    const archived = daily({ id: "c", archived: true });
+    const completions = {
+      a: runOfDays("2026-08-01", 3),
+      b: [...runOfDays("2026-07-30", 8), ...runOfDays(TODAY, 1)],
+      c: runOfDays(TODAY, 100),
+    };
+    const skips = { b: { "2026-07-31": skip("busy") } };
+    expect(
+      flexibleMaxStreakAllTimeAcrossHabits(
+        [a, bHabit, archived],
+        completions,
+        skips,
+      ),
     ).toBe(9);
   });
 });

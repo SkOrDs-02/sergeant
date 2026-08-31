@@ -19,8 +19,13 @@ import type { Dispatch, SetStateAction } from "react";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
-import { toLocalISODate } from "@sergeant/shared";
-import type { Meal, NutritionPrefs, Pantry } from "@sergeant/nutrition-domain";
+import {
+  deviceDayKey,
+  deviceTimeOfDay,
+  type Meal,
+  type NutritionPrefs,
+  type Pantry,
+} from "@sergeant/nutrition-domain";
 import {
   deleteSavedRecipe,
   listSavedRecipes,
@@ -155,12 +160,12 @@ export function RecipesCard({
       MEAL_TYPES.find((x) => x.id === mealType)?.label || "Прийом їжі";
     // Не пишемо поточний час, якщо журнал відкритий не на сьогодні —
     // інакше "вчора 09:30" виглядає як артефакт. Див. H5 з аудиту.
+    // ADR-0078 / unification-modules.md #1.25: `selectedDate` — device-local
+    // ключ (useNutritionLog), тож порівнюємо і форматуємо час тим самим
+    // годинником пристрою, не Kyiv.
     const now = new Date();
-    const isToday = !selectedDate || selectedDate === toLocalISODate(now);
-    const time = isToday
-      ? // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- display time for meal log uses local wall-clock hours/minutes (cosmetic, not a day-boundary)
-        `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`
-      : "";
+    const isToday = !selectedDate || selectedDate === deviceDayKey(now);
+    const time = isToday ? deviceTimeOfDay(now) : "";
     await addMealToLog({
       id: newMealId(),
       time,

@@ -13,7 +13,7 @@ import type {
   LimitBudget,
 } from "@sergeant/finyk-domain/domain/types";
 import { resolveExpenseCategoryMeta } from "../../utils";
-import { getKyivDateParts } from "@shared/lib/time/kyivTime";
+import { currentKyivMonthPrefix } from "../../lib/monthWindow";
 import {
   fetchProactiveAdvice,
   loadProactiveAdviceFromLS,
@@ -59,8 +59,7 @@ export function useProactiveAdvice({
     const { daysLeft: daysRemaining } = getCurrentMonthContext(now);
     // Key by the Kyiv civil month so advice rolls over on the same boundary
     // for every user regardless of host timezone (domain-invariants spec).
-    const { year, month } = getKyivDateParts(now);
-    const monthKey = `${year}-${String(month).padStart(2, "0")}`;
+    const monthKey = currentKyivMonthPrefix(now);
     const items: ProactiveItem[] = [];
     for (const b of limitBudgets) {
       const limit = Number(b.limit) || 0;

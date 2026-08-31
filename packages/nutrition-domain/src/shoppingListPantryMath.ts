@@ -33,6 +33,7 @@ import { isPantryItemLowStock } from "./pantryLowStock.js";
 // продукту комори. Дублювати їх заборонено: розʼїхавшись, вони дадуть
 // різні числа на тих самих даних.
 import {
+  displayDecimalsFor,
   fromBaseNatural,
   fromBaseToUnit,
   toBase,
@@ -92,13 +93,9 @@ function roundTo(value: number, decimals: number): number {
   return Math.round((value + Number.EPSILON) * factor) / factor;
 }
 
-/**
- * Розумна точність показу: цілі для `г`/`мл`/`шт`, до сотих для `кг`/`л`
- * (кухонна вага рідко точніша за 10 г, а `1.20 кг` читається гірше за `1.2 кг`).
- */
+/** Точність показу — `displayDecimalsFor` (units.ts), спільна з формою комори. */
 function formatQty(value: number, unit: string): string {
-  const decimals = unit === "кг" || unit === "л" ? 2 : 0;
-  return `${roundTo(value, decimals)} ${unit}`;
+  return `${roundTo(value, displayDecimalsFor(unit))} ${unit}`;
 }
 
 const QUANTITY_RE = /^(\d+(?:[.,]\d+)?)\s*([a-zA-Zа-яА-ЯіїєґІЇЄҐ]+)$/;

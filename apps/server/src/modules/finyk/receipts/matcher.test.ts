@@ -99,6 +99,17 @@ describe("matchReceiptToMono", () => {
     expect(call).toBe(2); // і сильний, і слабкий (обидва порожні) перевірені
   });
 
+  it("обидва запити виключають mono-транзакції, вже привʼязані до Сільпо-чека (NOT EXISTS silpo_tx_receipt_links, §1.14)", async () => {
+    let call = 0;
+    const client = mockClient(async (sql) => {
+      call += 1;
+      expect(sql).toContain("silpo_tx_receipt_links");
+      return { rows: [] };
+    });
+    await matchReceiptToMono(client, { ...BASE_INPUT, fiscalNum: "fn-1" });
+    expect(call).toBe(2);
+  });
+
   it("обидва запити фільтрують deleted_at IS NULL (soft-delete, міграція 024)", async () => {
     const client = mockClient(async (sql) => {
       expect(sql).toContain("t.deleted_at IS NULL");

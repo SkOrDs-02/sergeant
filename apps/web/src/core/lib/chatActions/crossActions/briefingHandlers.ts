@@ -5,6 +5,7 @@
    Tx splits stay on LS; bank transactions now come from the Mono mirror
    reader (Dual-write teardown Phase 3). */
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
+import { workoutTonnageKg } from "@sergeant/fizruk-domain";
 import { ls } from "../../hubChatUtils";
 import { getTxStatAmount } from "../../../../modules/finyk/utils";
 import { getVisibleFinykMonoMirrorState } from "../../../../modules/finyk/lib/monoMirrorReader";
@@ -60,17 +61,7 @@ export function weeklySummary(): string {
   );
   parts.push(`Тренувань: ${weekWorkouts.length}`);
   const totalVolume = weekWorkouts.reduce(
-    (total, w) =>
-      total +
-      w.items.reduce(
-        (s, item) =>
-          s +
-          (item.sets ?? []).reduce(
-            (ss, set) => ss + set.weightKg * set.reps,
-            0,
-          ),
-        0,
-      ),
+    (total, w) => total + workoutTonnageKg(w),
     0,
   );
   if (totalVolume > 0) parts.push(`Обʼєм: ${Math.round(totalVolume)} кг×повт`);

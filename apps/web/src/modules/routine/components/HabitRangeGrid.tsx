@@ -26,7 +26,7 @@ import { Measure } from "@shared/components/ui/Measure";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { chartHeatmap } from "@shared/charts";
 import { messages } from "@shared/i18n/uk";
-import { getKyivDateParts } from "@shared/lib/time/kyivTime";
+import { anchoredTodayDate } from "../lib/dayAnchor";
 import { HabitGlyph } from "./HabitGlyph";
 import type { Habit, RoutineState } from "../lib/types";
 
@@ -91,10 +91,9 @@ export function HabitRangeGrid({
   hint,
 }: HabitRangeGridProps) {
   const rows = useMemo(() => {
-    // Той самий київський анкер, що й у хітмапі та «Зведенні»: інакше зріз
-    // зсувався б на клітинку при роумінгу.
-    const { year, month, day } = getKyivDateParts();
-    const today = new Date(year, month - 1, day, 12, 0, 0, 0);
+    // Той самий анкер доби, що й у хітмапі та «Зведенні» (`lib/dayAnchor.ts`),
+    // не окрема копія — інакше зріз зсувався б на клітинку при роумінгу.
+    const today = anchoredTodayDate();
     return buildHabitRangeRows(habits, completions, today, days, {
       // Пара «заморозка минулого + недатований `paused`» — ADR-0079 §3.
       // Вмикається разом із хітмапом, інакше пауза, поставлена сьогодні,

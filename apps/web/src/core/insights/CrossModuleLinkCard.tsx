@@ -33,6 +33,8 @@ import { useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
+import { formatDayKeyUk } from "@shared/lib/time/dayKeyLabel";
+import { deviceDayKey } from "@sergeant/shared";
 import {
   gradeCrossModuleLink,
   nextDaysThreshold,
@@ -254,13 +256,9 @@ function EvidenceStrip({ observations }: { observations: number }) {
 }
 
 function formatDayLabel(key: string): string {
-  // Парсимо готовий day-key на візуальну мітку — годинник хоста не
-  // читається, тож `prefer-kyiv-time` тут не застосовний (той самий підхід,
-  // що у `HabitStreakCanvas.formatCellDate`).
-  return new Date(`${key}T12:00:00`).toLocaleDateString("uk-UA", {
-    day: "numeric",
-    month: "short",
-  });
+  // Канонічний парсер day-key (`dayKeyLabel.ts`) — таблиця доказової смуги
+  // хоче стабільний абсолютний формат для всіх рядків, тож `relative: false`.
+  return formatDayKeyUk(key, { todayKey: deviceDayKey(), relative: false });
 }
 
 /**

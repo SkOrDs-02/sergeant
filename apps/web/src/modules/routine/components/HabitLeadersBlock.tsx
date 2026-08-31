@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Measure } from "@shared/components/ui/Measure";
 import { habitCompletionRate } from "../lib/streaks";
+import { anchoredTodayKey } from "../lib/dayAnchor";
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Card } from "@shared/components/ui/Card";
@@ -23,7 +24,7 @@ export function HabitLeadersBlock({
     if (active.length === 0) return { best: null, worst: null };
 
     // Kyiv-anchored inclusive 30-day window (today + 29 days back).
-    const endKey = getKyivDayKey();
+    const endKey = anchoredTodayKey();
     const startKey = getKyivDayKey(windowStartMs);
 
     const rates = active

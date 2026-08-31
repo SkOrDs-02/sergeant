@@ -145,6 +145,10 @@ export * from "./lib/formatMoney";
 // Hub weekly-digest helpers — week key / storage key / digest freshness.
 export * from "./lib/weeklyDigest";
 
+// Weekly-digest / coach publication threshold — shared client↔server signal
+// count (audit §2.23: `coachSnapshotSignals` ↔ `countDigestSignalModules`).
+export * from "./lib/weeklyDigestSignals";
+
 // Shared hint/tip system (taxonomy + caps). Rendering is per-platform.
 export * from "./lib/hints";
 

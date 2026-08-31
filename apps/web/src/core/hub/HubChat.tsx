@@ -123,6 +123,7 @@ function HubChat({
     send,
     cancelInFlight,
     paywallOpen,
+    usageLimit,
     closePaywall,
     confirmDestructive,
     sendRef,
@@ -218,7 +219,11 @@ function HubChat({
         onClose={closePaywall}
         surface="ai_chat_limit"
         title="Безлімітний AI-чат у Pro"
-        description="Free-тариф має 5 запитів до AI на день (хід з дією може коштувати кілька). Pro відкриває безлімітний чат, авто-Mono sync і CloudSync."
+        description={
+          usageLimit != null
+            ? `Free-тариф має ${usageLimit} запитів до AI на день (хід з дією може коштувати кілька). Pro відкриває безлімітний чат, авто-Mono sync і CloudSync.`
+            : "Free-тариф має денний ліміт запитів до AI (хід з дією може коштувати кілька). Pro відкриває безлімітний чат, авто-Mono sync і CloudSync."
+        }
       />
       {/* eslint-enable sergeant-design/no-cyrillic-jsx-literal */}
     </div>

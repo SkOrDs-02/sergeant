@@ -61,6 +61,7 @@ vi.mock("./chat/useChatSend", () => ({
     send: sendMock,
     cancelInFlight: cancelInFlightMock,
     paywallOpen: true,
+    usageLimit: 5,
     closePaywall: closePaywallMock,
     // Гейт §8 — мок мусить нести його форму, інакше HubChat падає на
     // читанні `pending`. Тримаємо закритим: цей сюїт про композицію,

@@ -9,7 +9,11 @@ import { Measure } from "@shared/components/ui/Measure";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
 import { FirstRunHintBanner } from "../../../core/onboarding/FirstRunHintBanner";
-import type { NutritionPrefs, PantryItem } from "@sergeant/nutrition-domain";
+import {
+  kcalFromMacros,
+  type NutritionPrefs,
+  type PantryItem,
+} from "@sergeant/nutrition-domain";
 import type {
   NutritionDayPlan,
   NutritionWeekPlan,
@@ -216,7 +220,11 @@ export function DailyPlanCard({
                         const prevFat = p.dailyTargetFat_g ?? 0;
                         const prevCarb = p.dailyTargetCarbs_g ?? 0;
                         const prevCalc = Math.round(
-                          prevProt * 4 + prevFat * 9 + prevCarb * 4,
+                          kcalFromMacros({
+                            protein_g: prevProt,
+                            fat_g: prevFat,
+                            carbs_g: prevCarb,
+                          }),
                         );
                         const isAutoKcal =
                           p.dailyTargetKcal == null ||
@@ -228,7 +236,11 @@ export function DailyPlanCard({
                           const carb =
                             key === "dailyTargetCarbs_g" ? v : prevCarb;
                           const calc = Math.round(
-                            (prot || 0) * 4 + (fat || 0) * 9 + (carb || 0) * 4,
+                            kcalFromMacros({
+                              protein_g: prot,
+                              fat_g: fat,
+                              carbs_g: carb,
+                            }),
                           );
                           next.dailyTargetKcal = calc > 0 ? calc : null;
                         }

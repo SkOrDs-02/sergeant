@@ -3,16 +3,17 @@ import {
   INTERNAL_TRANSFER_ID,
 } from "../../../modules/finyk/constants";
 import { calcFinykPeriodAggregate } from "@sergeant/finyk-domain";
+import { calcLimitCategorySpent } from "@sergeant/finyk-domain/lib/limitCategorySpend";
 import {
   getExpenseCategoryForTransaction,
   getIncomeCategoryForTransaction,
   getMonoTotals,
-  calcCategorySpent,
   calcDebtRemaining,
   calcReceivableRemaining,
   getDebtEffectiveTotal,
   getReceivableEffectiveTotal,
   resolveExpenseCategoryMeta,
+  type MonoAccount,
 } from "../../../modules/finyk/utils";
 import { fmt } from "../hubChatUtils";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
@@ -58,8 +59,13 @@ function appendOverviewLines(lines: string[], d: AllData, now: Date): void {
 
 function appendBalanceLines(lines: string[], d: AllData): void {
   if (d.accounts.length === 0) return;
+  const monoAccounts: MonoAccount[] = d.accounts.map((a) => ({
+    id: a.id,
+    balance: a.balance,
+    creditLimit: a.creditLimit,
+  }));
   const { balance, debt: monoDebt } = getMonoTotals(
-    d.accounts as Parameters<typeof getMonoTotals>[0],
+    monoAccounts,
     d.hiddenAccounts,
   );
   const manualDebtTotal = d.manualDebts.reduce(
@@ -133,7 +139,7 @@ function appendMonthlyTotals(lines: string[], d: AllData, now: Date): void {
       // Той самий місячний зріз, що й `spent` вище: інакше «Витрати місяця»
       // і сума рядка «Категорії витрат» розійшлися б у межах одного
       // промпт-блоку, і модель отримала б суперечливі числа.
-      spent: calcCategorySpent(
+      spent: calcLimitCategorySpent(
         monthTx,
         c.id,
         d.txCategories,
@@ -243,7 +249,7 @@ function appendBudgetLines(lines: string[], d: AllData, now: Date): void {
             b.categoryId,
             d.customCategories,
           );
-          const spent = calcCategorySpent(
+          const spent = calcLimitCategorySpent(
             monthTx,
             b.categoryId,
             d.txCategories,

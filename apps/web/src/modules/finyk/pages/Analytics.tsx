@@ -315,31 +315,28 @@ export function Analytics({ mono, storage, onSelectCategory }: AnalyticsProps) {
   // must be merged into `activeTx` explicitly — otherwise Analytics shows
   // 0 ₴ even when Transactions clearly lists them. See useTransactionFilters
   // for the source-of-truth merge pattern.
+  // §1.8: host-local `new Date(year, month-1, 1)` bounds put an entry
+  // dated "2026-08-01" outside August for any device west of Kyiv (its
+  // UTC-midnight instant lands before the host's local month start).
+  // `filterToKyivMonth` is the same Kyiv-anchored clamp the bank slice
+  // below already uses, reuse it instead of a second, host-local rule.
   const manualExpenseTxs = useMemo(() => {
     const list = storage.manualExpenses;
     if (!list || list.length === 0) return [] as Transaction[];
-    const monthStart = new Date(year, month - 1, 1).getTime();
-    const monthEnd = new Date(year, month, 1).getTime();
-    return list
-      .filter((e) => {
-        const ts = new Date(e.date).getTime();
-        return ts >= monthStart && ts < monthEnd;
-      })
-      .map((e) => manualExpenseToTransaction(e));
-  }, [storage.manualExpenses, year, month]);
+    return filterToKyivMonth(
+      list.map((e) => manualExpenseToTransaction(e)),
+      monthKey,
+    );
+  }, [storage.manualExpenses, monthKey]);
 
   const prevManualExpenseTxs = useMemo(() => {
     const list = storage.manualExpenses;
     if (!list || list.length === 0) return [] as Transaction[];
-    const monthStart = new Date(prevYear, prevMonth - 1, 1).getTime();
-    const monthEnd = new Date(prevYear, prevMonth, 1).getTime();
-    return list
-      .filter((e) => {
-        const ts = new Date(e.date).getTime();
-        return ts >= monthStart && ts < monthEnd;
-      })
-      .map((e) => manualExpenseToTransaction(e));
-  }, [storage.manualExpenses, prevYear, prevMonth]);
+    return filterToKyivMonth(
+      list.map((e) => manualExpenseToTransaction(e)),
+      prevKey,
+    );
+  }, [storage.manualExpenses, prevKey]);
 
   // AI-DANGER: банківський зріз ОБОВʼЯЗКОВО клампиться по місяцю, як в
   // Огляді (`useOverviewData`) і Бюджетах (`Budgets.tsx`). Ручні витрати

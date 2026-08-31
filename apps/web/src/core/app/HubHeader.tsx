@@ -13,7 +13,10 @@ import { messages } from "@shared/i18n/uk";
 import { emitHubBus } from "@shared/lib/modules/hubBus";
 import { hapticTap } from "@shared/lib/adapters/haptic";
 import type { User } from "@sergeant/shared";
-import { getKyivDateParts } from "@shared/lib/time/kyivTime";
+import {
+  formatKyivNominativeDate,
+  getKyivGreeting,
+} from "@shared/lib/time/greeting";
 import { NotificationBell, type HubNotification } from "./NotificationBell";
 
 // WCAG 2.5.5 AAA «Target Size (Enhanced)» рекомендує ≥44×44 пкс для hit-areas;
@@ -28,48 +31,6 @@ import { NotificationBell, type HubNotification } from "./NotificationBell";
 // `rounded-3xl` on the outer container).
 const ICON_BUTTON_CLS =
   "w-12 h-12 sm:w-11 sm:h-11 flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-bg";
-
-const GREETINGS: Record<string, string> = {
-  morning: "Доброго ранку",
-  afternoon: "Доброго дня",
-  evening: "Доброго вечора",
-  night: "Доброї ночі",
-};
-
-function getTimeOfDay(): keyof typeof GREETINGS {
-  // Use Kyiv-local hour so greeting stays consistent for users abroad —
-  // domain invariant: Europe/Kyiv is the anchor clock (audit Theme 1).
-  const { hour: h } = getKyivDateParts();
-  if (h >= 5 && h < 12) return "morning";
-  if (h >= 12 && h < 17) return "afternoon";
-  if (h >= 17 && h < 22) return "evening";
-  return "night";
-}
-
-function formatUkrainianDate(): string {
-  // Show the Kyiv-local calendar date so the header reads correctly on
-  // devices in a different timezone (audit Theme 1 — Europe/Kyiv anchor).
-  const { year, month, day } = getKyivDateParts();
-  try {
-    // Reconstruct a UTC instant at Kyiv midday so Intl formats the right
-    // calendar date regardless of the host timezone.
-    // `new Date(Date.UTC(...))` is a UTC-safe instant construction —
-    // no host-local offset is involved here.
-    const inst = new Date(Date.UTC(year, month - 1, day, 9, 0, 0));
-    const weekdayStr = inst.toLocaleDateString("uk-UA", {
-      weekday: "long",
-      timeZone: "Europe/Kyiv",
-    });
-    const rest = inst.toLocaleDateString("uk-UA", {
-      day: "numeric",
-      month: "long",
-      timeZone: "Europe/Kyiv",
-    });
-    return `${weekdayStr.charAt(0).toUpperCase()}${weekdayStr.slice(1)}, ${rest}`;
-  } catch {
-    return "";
-  }
-}
 
 interface HubHeaderProps {
   onOpenSearch: () => void;
@@ -92,13 +53,12 @@ export function HubHeader({
   notifications,
 }: HubHeaderProps) {
   const greetingText = useMemo(() => {
-    const tod = getTimeOfDay();
-    const base = GREETINGS[tod];
+    const base = getKyivGreeting();
     const name = user?.name?.split(" ")[0];
     return name ? `${base}, ${name}` : base;
   }, [user?.name]);
 
-  const dateStr = useMemo(() => formatUkrainianDate(), []);
+  const dateStr = useMemo(() => formatKyivNominativeDate(), []);
   const { modK } = useShortcutGlyph();
 
   return (

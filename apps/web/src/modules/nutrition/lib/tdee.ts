@@ -45,6 +45,7 @@ import {
   type Biometrics,
   type Sex,
 } from "../../../core/profile/biometrics";
+import { ATWATER_KCAL_PER_G } from "@sergeant/nutrition-domain";
 
 export const NUTRITION_GOALS = ["cutting", "maintenance", "bulking"] as const;
 export type NutritionGoalId = (typeof NUTRITION_GOALS)[number];
@@ -139,10 +140,10 @@ export function computeNutritionTargets(
   const protein_g = Math.round(input.weightKg * split.proteinPerKg);
   const fat_g = Math.round(input.weightKg * split.fatPerKg);
 
-  const proteinKcal = protein_g * 4;
-  const fatKcal = fat_g * 9;
+  const proteinKcal = protein_g * ATWATER_KCAL_PER_G.protein;
+  const fatKcal = fat_g * ATWATER_KCAL_PER_G.fat;
   const remainingKcal = Math.max(0, kcal - proteinKcal - fatKcal);
-  const carbs_g = Math.round(remainingKcal / 4);
+  const carbs_g = Math.round(remainingKcal / ATWATER_KCAL_PER_G.carbs);
 
   return { kcal, protein_g, fat_g, carbs_g };
 }

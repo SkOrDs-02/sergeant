@@ -32,6 +32,7 @@ export * from "./habitRangeRows.js";
 // споживачі не перемкнені.
 export * from "./flexStreak.js";
 export * from "./quickStats.js";
+export * from "./dayProgress.js";
 export * from "./periodCompletion.js";
 export * from "./drafts.js";
 export * from "./storage.js";

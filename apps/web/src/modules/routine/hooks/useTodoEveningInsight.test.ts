@@ -1,16 +1,14 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { renderHook } from "@testing-library/react";
 import type { RoutineState, Habit } from "../lib/types";
 import { useTodoEveningInsight } from "./useTodoEveningInsight";
 
 vi.mock("@shared/lib/time/kyivTime", () => ({
-  getKyivDayKey: vi.fn(),
   getKyivDateParts: vi.fn(),
 }));
 
-import { getKyivDayKey, getKyivDateParts } from "@shared/lib/time/kyivTime";
-const mockDayKey = vi.mocked(getKyivDayKey);
+import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 const mockDateParts = vi.mocked(getKyivDateParts);
 
 const TODAY = "2026-07-19";
@@ -40,33 +38,38 @@ function makeState(
   };
 }
 
-beforeEach(() => {
-  mockDayKey.mockReturnValue(TODAY);
-});
-
 describe("useTodoEveningInsight", () => {
   it("returns null before 20:00 Kyiv even with pending habits", () => {
-    mockDateParts.mockReturnValue({ hour: 19 } as ReturnType<
-      typeof getKyivDateParts
-    >);
+    mockDateParts.mockReturnValue({
+      year: 2026,
+      month: 7,
+      day: 19,
+      hour: 19,
+    } as ReturnType<typeof getKyivDateParts>);
     const state = makeState([makeHabit({ id: "a" }), makeHabit({ id: "b" })]);
     const { result } = renderHook(() => useTodoEveningInsight(state));
     expect(result.current).toBeNull();
   });
 
   it("returns null in the evening when fewer than 2 habits are pending", () => {
-    mockDateParts.mockReturnValue({ hour: 21 } as ReturnType<
-      typeof getKyivDateParts
-    >);
+    mockDateParts.mockReturnValue({
+      year: 2026,
+      month: 7,
+      day: 19,
+      hour: 21,
+    } as ReturnType<typeof getKyivDateParts>);
     const state = makeState([makeHabit({ id: "a" })]);
     const { result } = renderHook(() => useTodoEveningInsight(state));
     expect(result.current).toBeNull();
   });
 
   it("returns an insight with the pending count when 2+ habits are pending in the evening", () => {
-    mockDateParts.mockReturnValue({ hour: 21 } as ReturnType<
-      typeof getKyivDateParts
-    >);
+    mockDateParts.mockReturnValue({
+      year: 2026,
+      month: 7,
+      day: 19,
+      hour: 21,
+    } as ReturnType<typeof getKyivDateParts>);
     const state = makeState([
       makeHabit({ id: "a" }),
       makeHabit({ id: "b" }),
@@ -84,9 +87,12 @@ describe("useTodoEveningInsight", () => {
   });
 
   it("excludes archived habits from the pending count", () => {
-    mockDateParts.mockReturnValue({ hour: 21 } as ReturnType<
-      typeof getKyivDateParts
-    >);
+    mockDateParts.mockReturnValue({
+      year: 2026,
+      month: 7,
+      day: 19,
+      hour: 21,
+    } as ReturnType<typeof getKyivDateParts>);
     const state = makeState([
       makeHabit({ id: "a" }),
       makeHabit({ id: "b" }),
@@ -97,9 +103,12 @@ describe("useTodoEveningInsight", () => {
   });
 
   it("excludes habits already completed today", () => {
-    mockDateParts.mockReturnValue({ hour: 21 } as ReturnType<
-      typeof getKyivDateParts
-    >);
+    mockDateParts.mockReturnValue({
+      year: 2026,
+      month: 7,
+      day: 19,
+      hour: 21,
+    } as ReturnType<typeof getKyivDateParts>);
     const state = makeState(
       [makeHabit({ id: "a" }), makeHabit({ id: "b" }), makeHabit({ id: "c" })],
       { a: [TODAY] },
@@ -109,9 +118,12 @@ describe("useTodoEveningInsight", () => {
   });
 
   it("excludes habits not scheduled today (e.g. a one-off completed on a different date)", () => {
-    mockDateParts.mockReturnValue({ hour: 21 } as ReturnType<
-      typeof getKyivDateParts
-    >);
+    mockDateParts.mockReturnValue({
+      year: 2026,
+      month: 7,
+      day: 19,
+      hour: 21,
+    } as ReturnType<typeof getKyivDateParts>);
     const state = makeState([
       makeHabit({ id: "a", recurrence: "once", startDate: "2026-01-01" }),
       makeHabit({ id: "b" }),

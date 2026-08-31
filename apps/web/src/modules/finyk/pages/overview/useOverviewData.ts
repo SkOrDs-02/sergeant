@@ -94,6 +94,7 @@ export function useOverviewData({
     error: monoError,
     refresh: monoRefresh,
     privatTotal = 0,
+    privatDebt = 0,
     jars,
   } = mono;
   const {
@@ -225,7 +226,10 @@ export function useOverviewData({
     ],
   );
   const monoTotal = assetsSummary.monoBalance + privatTotal;
-  const totalDebt = assetsSummary.totalLiabilities;
+  // §1.3: PrivatBank overdrafts used to vanish from «Пасиви» entirely.
+  // `privatDebt` now goes through the same `getMonoTotals` creditLimit/
+  // overdraft rule as Monobank's `totalLiabilities`.
+  const totalDebt = assetsSummary.totalLiabilities + privatDebt;
   const nonUahManualAssetCount = useMemo(() => {
     const all = manualAssets || [];
     return all.filter((a) => a.currency !== "UAH").length;
@@ -237,7 +241,7 @@ export function useOverviewData({
       );
     }
   }, [nonUahManualAssetCount]);
-  const networth = assetsSummary.networth + privatTotal;
+  const networth = assetsSummary.networth + privatTotal - privatDebt;
 
   const limitBudgets = useMemo(() => getLimitBudgets(budgets), [budgets]);
 

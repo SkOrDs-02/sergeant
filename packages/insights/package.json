@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@sergeant/design-tokens": "workspace:*",
+    "@sergeant/finyk-domain": "workspace:*",
     "@sergeant/shared": "workspace:*"
   },
   "devDependencies": {

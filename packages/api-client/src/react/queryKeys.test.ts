@@ -19,8 +19,9 @@ describe("api-client react query keys", () => {
       "weekly-digest",
       "history",
     ]);
-    expect(apiQueryKeys.push.vapidPublic()).toEqual(["push", "vapid-public"]);
+    expect(apiQueryKeys.push.vapidPublic()).toEqual(["push", "vapid"]);
     expect(apiQueryKeys.foodSearch.query("banana")).toEqual([
+      "nutrition",
       "food-search",
       "banana",
     ]);

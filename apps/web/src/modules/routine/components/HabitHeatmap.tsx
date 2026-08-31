@@ -10,6 +10,7 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Card } from "@shared/components/ui/Card";
 import { chartHeatmap } from "@shared/charts";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
+import { anchoredTodayDate } from "../lib/dayAnchor";
 import type { Habit, RoutineState } from "../lib/types";
 
 const HISTORY_WEEKS = 53;
@@ -91,13 +92,11 @@ export function HabitHeatmap({
   });
 
   const { weeks, monthMarkers } = useMemo(() => {
-    // Anchor "today" on Kyiv local calendar so the heatmap's "today" cell
-    // doesn't drift to a different square when the user roams
-    // (consolidated page-audit § Theme 1 — 09 F3). Construct as local-noon
-    // of Kyiv-Y/M/D so the grid arithmetic inside `buildHeatmapGrid`
-    // preserves the calendar day across host TZ.
-    const { year, month, day } = getKyivDateParts();
-    const today = new Date(year, month - 1, day, 12, 0, 0, 0);
+    // Той самий анкер доби, що й решта web-routine (`lib/dayAnchor.ts`), не
+    // окрема копія — інакше хітмап знову міг би показати «сьогодні» в
+    // іншій клітинці, ніж решта картки (unification audit 2026-08-31,
+    // finding 2.3).
+    const today = anchoredTodayDate();
 
     // AI-CONTEXT: знаменник за розкладом — ADR-0079 §3, стадія 3 Хвилі 1.
     // Раніше було `"active"`: кожна неархівна звичка рахувалась у знаменник

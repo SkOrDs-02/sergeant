@@ -17,13 +17,17 @@ import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { messages } from "@shared/i18n/uk";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import {
-  dateKeyFromDate,
-  parseDateKey,
+  dateKeyMinusDays,
   habitScheduledOnDate,
-} from "../lib/hubCalendarAggregate";
+  monthGrid,
+} from "@sergeant/routine-domain";
 import { completionNoteKey } from "../lib/completionNoteKey";
 import { anchoredTodayKey } from "../lib/dayAnchor";
-import { flexibleStreakBreakdown, maxStreakAllTime } from "../lib/streaks";
+import {
+  flexibleStreakBreakdown,
+  habitCompletionRate,
+  maxStreakAllTime,
+} from "../lib/streaks";
 import {
   deleteHabit,
   restoreHabit,
@@ -49,39 +53,30 @@ function todayKey(): string {
   return anchoredTodayKey();
 }
 
-/* eslint-disable sergeant-design/prefer-kyiv-time -- calendar matrix for an arbitrary (y, m): days-in-month and weekday-of-the-1st are pure date arithmetic on locally constructed Date objects, not a host-local "now" read, so the Kyiv-time invariant doesn't apply */
-function monthGrid(y: number, m: number): Array<number | null> {
-  const last = new Date(y, m + 1, 0).getDate();
-  const firstWd = (new Date(y, m, 1).getDay() + 6) % 7;
-  const cells: Array<number | null> = [];
-  for (let i = 0; i < firstWd; i++) cells.push(null);
-  for (let d = 1; d <= last; d++) cells.push(d);
-  while (cells.length % 7 !== 0) cells.push(null);
-  return cells;
-}
-/* eslint-enable sergeant-design/prefer-kyiv-time */
-
+/**
+ * Rolling `days`-window completion percentage, delegated to the canonical
+ * `habitCompletionRate` (unification audit 2026-08-31, finding 1.23):
+ * without it, this card's own loop skipped the `once`-habit exclusion
+ * (`habitCountsTowardMetrics`) that the rest of the module already
+ * respects, so a one-off event showed a percentage nowhere else in the
+ * product does. `habitCompletionRate` doesn't accept `skips` either, so
+ * part of the divergence from the hero (which does) remains until that
+ * option lands here too.
+ */
 function completionPct(
   habit: Habit,
   completions: string[],
   days: number,
 ): number | null {
   const tk = todayKey();
-  let scheduled = 0;
-  let done = 0;
-  const set = new Set(completions || []);
-  for (let i = 0; i < days; i++) {
-    const d = parseDateKey(tk);
-    // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- `d` is parsed from the Kyiv-anchored `tk` and pinned to noon below; this is day-subtraction arithmetic, not a host-now read
-    d.setDate(d.getDate() - i);
-    d.setHours(12, 0, 0, 0);
-    const key = dateKeyFromDate(d);
-    if (!habitScheduledOnDate(habit, key)) continue;
-    scheduled++;
-    if (set.has(key)) done++;
-  }
+  const { scheduled, rate } = habitCompletionRate(
+    habit,
+    completions,
+    dateKeyMinusDays(tk, days - 1),
+    tk,
+  );
   if (scheduled === 0) return null;
-  return Math.round((done / scheduled) * 100);
+  return Math.round(rate * 100);
 }
 
 export interface HabitDetailSheetProps {
@@ -218,7 +213,7 @@ export function HabitDetailSheet({
   );
 
   const cells = useMemo(
-    () => monthGrid(calMonth.y, calMonth.m),
+    () => monthGrid(calMonth.y, calMonth.m).cells,
     [calMonth.y, calMonth.m],
   );
   const completionSet = useMemo(() => new Set(completions), [completions]);

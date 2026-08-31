@@ -11,6 +11,7 @@
  */
 
 import { INTERNAL_TRANSFER_ID } from "../constants";
+import { txTimeMs } from "../lib/transactions.js";
 import type { Transaction, TransactionSource, TransactionType } from "./types";
 
 interface NormalizeDefaults {
@@ -68,10 +69,10 @@ const SOURCE_ALIASES: Record<string, TransactionSource> = {
  */
 function toSafeTimestampSeconds(input: unknown): number {
   if (typeof input === "number" && Number.isFinite(input)) {
-    // Якщо це мілісекунди (10^10 межа для секунд — приблизно 2286 рік).
-    return input > 10_000_000_000
-      ? Math.floor(input / 1000)
-      : Math.floor(input);
+    // `txTimeMs` (§2.10 canon) makes this decision the other way round
+    // (any → ms); dividing its output back to seconds keeps both
+    // directions on the same 1e10 threshold.
+    return Math.floor(txTimeMs(input) / 1000);
   }
   if (input instanceof Date) return Math.floor(input.getTime() / 1000);
   const parsed = new Date((input as string | number) || Date.now()).getTime();

@@ -72,6 +72,7 @@ export default function RoutineApp({
   useRoutineQuickStatsWriter({
     habits: routine.habits,
     completions: routine.completions,
+    skips: routine.skips,
   });
 
   return (
