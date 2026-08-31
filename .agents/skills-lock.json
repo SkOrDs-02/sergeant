@@ -54,7 +54,7 @@
     "sergeant-e2e-testing": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "c53561cafab54bd8076268a71beaa7a50a7b716cf7c8cd2aaa566001f8064139"
+      "computedHash": "2b1902bc2bfb04f9f8870fef1219ec06f1fc983d59156739859412945dd97872"
     },
     "sergeant-feature-delivery": {
       "source": "local",

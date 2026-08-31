@@ -8,6 +8,7 @@ import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
 const GUIDES = [
   {
     href: "/guides/bank-bezpeka",
+    module: { href: "/data", label: "Твої дані" },
     category: "Фінанси",
     title:
       "Чи безпечно давати застосунку доступ до банку: що перевірити перед підключенням",
@@ -16,6 +17,7 @@ const GUIDES = [
   },
   {
     href: "/guides/foto-kalorii",
+    module: { href: "/yizha", label: "Їжа" },
     category: "Харчування",
     title: "Чи можна порахувати калорії страви з фото – і наскільки це точно",
     teaser:
@@ -23,6 +25,7 @@ const GUIDES = [
   },
   {
     href: "/guides/cheky",
+    module: { href: "/hroshi", label: "Гроші" },
     category: "Фінанси",
     title:
       "Як перетворити паперовий чек на облік витрат, коли QR не сканується",
@@ -31,13 +34,23 @@ const GUIDES = [
   },
   {
     href: "/guides/kbzhv",
+    module: { href: "/yizha", label: "Їжа" },
     category: "Харчування",
     title: "Як рахувати КБЖВ, коли в базі немає українських продуктів",
     teaser:
       "Штрихкод, українська база і рецепти замість щоденного перебирання інгредієнтів. Плюс чесна відповідь, скільки похибки можна собі дозволити.",
   },
   {
+    href: "/guides/kilka-bankiv",
+    module: { href: "/hroshi", label: "Гроші" },
+    category: "Фінанси",
+    title: "Як звести витрати докупи, якщо карти в кількох банках",
+    teaser:
+      "Автосинк є лише з Monobank. Решта карт заводиться випискою файлом раз на місяць, і все опиняється в одній стрічці.",
+  },
+  {
     href: "/guides/monobank",
+    module: { href: "/hroshi", label: "Гроші" },
     category: "Фінанси",
     title: "Як підʼєднати Monobank до трекера витрат – і що він реально бачить",
     teaser:
@@ -90,6 +103,9 @@ export default function GuidesPage() {
             </h2>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
               {guide.teaser}
+            </p>
+            <p className="mt-2 text-xs text-subtle">
+              Рідний модуль: {guide.module.label}
             </p>
           </a>
         ))}

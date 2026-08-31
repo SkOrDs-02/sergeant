@@ -65,7 +65,7 @@ export default function AboutPage() {
             href="/obitsyanky"
             className="font-semibold text-foreground underline decoration-cardline-strong underline-offset-4 transition hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
           >
-            розділі «Що обіцяю» на головній
+            розділі «Що обіцяю»
           </a>
           . Що саме Sergeant бачить і де лежать твої дані – на сторінці{" "}
           <a

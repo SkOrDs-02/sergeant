@@ -20,6 +20,8 @@ const ROUTES = [
   "/yizha",
   "/zvychky",
   "/trenuvannia",
+  "/ruchna-robota",
+  "/vyhid",
   "/guides",
   "/zvyazky",
   "/stan",
@@ -30,6 +32,7 @@ const ROUTES = [
   "/guides/cheky",
   "/guides/foto-kalorii",
   "/guides/bank-bezpeka",
+  "/guides/kilka-bankiv",
   "/data",
   "/privacy",
   "/terms",
@@ -118,7 +121,7 @@ for (const [vw, tag] of [
   ok("desktop нав Гайди → /guides", page.url().endsWith("/guides"));
 
   await page
-    .getByRole("link", { name: /Monobank/ })
+    .getByRole("link", { name: /Як підʼєднати Monobank/ })
     .first()
     .click();
   await page.waitForURL("**/guides/monobank");
@@ -174,6 +177,9 @@ for (const [vw, tag] of [
     ["/yizha", "Article"],
     ["/zvychky", "Article"],
     ["/trenuvannia", "Article"],
+    ["/ruchna-robota", "Article"],
+    ["/vyhid", "Article"],
+    ["/guides/kilka-bankiv", "Article"],
     ["/stan", "Article"],
     ["/about", "AboutPage"],
     ["/guides/monobank", "Article"],

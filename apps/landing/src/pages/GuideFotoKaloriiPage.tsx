@@ -1,4 +1,5 @@
 import SiteLayout from "../components/SiteLayout";
+import GuideHomeModule from "../components/GuideHomeModule";
 import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
 
 const VISION = [
@@ -72,6 +73,7 @@ export default function GuideFotoKaloriiPage() {
           <p className="mt-4 text-sm text-subtle">
             Оновлено 29.08.2026 · автор Sergeant
           </p>
+          <GuideHomeModule href="/yizha" label="Їжа" />
         </div>
 
         <div className="rounded-[var(--radius-card)] bg-ink px-7 py-6">

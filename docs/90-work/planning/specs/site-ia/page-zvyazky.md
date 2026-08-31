@@ -1,6 +1,6 @@
 # Звʼязки між сферами: чому все в одному місці
 
-> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-19.
+> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-16.
 > **Status:** Implemented - сторінка відвантажена (`apps/landing/src/pages/ZvyazkyPage.tsx`), PR #955/#956.
 
 ## Мета сторінки

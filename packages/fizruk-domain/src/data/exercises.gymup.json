@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "source": {
-    "name": "manual-only",
-    "notes": "Вбудований каталог вправ прибрано. Додай вправи вручну."
+    "name": "sergeant-own",
+    "notes": "Власний каталог Sergeant. Назви, аліаси й описи техніки написані для цього продукту, не запозичені з інших застосунків."
   },
   "labels": {
     "primaryGroupsUk": {
@@ -105,23 +105,33 @@
   "exercises": [
     {
       "id": "bench_press_barbell",
-      "name": { "uk": "Жим штанги лежачи", "en": "Barbell Bench Press" },
+      "name": {
+        "uk": "Жим штанги лежачи",
+        "en": "Barbell Bench Press"
+      },
       "primaryGroup": "chest",
       "muscles": {
         "primary": ["pectoralis_major"],
         "secondary": ["front_deltoid", "triceps", "serratus_anterior"]
       },
-      "equipment": ["barbell", "bench"]
+      "equipment": ["barbell", "bench"],
+      "aliases": ["бенч", "жим лежа", "бенч прес", "bench press"],
+      "description": "Лягай на лаву так, щоб очі були під грифом, лопатки зведені, стопи міцно на підлозі. Опусти штангу до низу грудей і вижми вгору по короткій дузі. Типова помилка: відрив тазу від лави заради ваги."
     },
     {
       "id": "bench_press_dumbbell",
-      "name": { "uk": "Жим гантелей лежачи", "en": "Dumbbell Bench Press" },
+      "name": {
+        "uk": "Жим гантелей лежачи",
+        "en": "Dumbbell Bench Press"
+      },
       "primaryGroup": "chest",
       "muscles": {
         "primary": ["pectoralis_major"],
         "secondary": ["front_deltoid", "triceps"]
       },
-      "equipment": ["dumbbell", "bench"]
+      "equipment": ["dumbbell", "bench"],
+      "aliases": ["гантельний жим", "жим гантель лежа"],
+      "description": "Ляж на лаву з гантелями біля грудей, лікті приблизно під кутом 45 градусів до тіла. Вижми гантелі вгору, не стукаючи ними одна об одну, і повільно опусти назад. Типова помилка: розводити лікті строго в сторони."
     },
     {
       "id": "incline_bench_press",
@@ -134,7 +144,9 @@
         "primary": ["pectoralis_major", "front_deltoid"],
         "secondary": ["triceps", "serratus_anterior"]
       },
-      "equipment": ["barbell", "bench"]
+      "equipment": ["barbell", "bench"],
+      "aliases": ["інклайн жим", "жим під кутом", "верх грудей штангою"],
+      "description": "Постав спинку лави під кутом 30-45 градусів, лопатки зведені, гриф над ключицями. Опусти штангу до верху грудей і вижми вгору. Типова помилка: завеликий кут нахилу, після якого рух перетворюється на жим для плечей."
     },
     {
       "id": "incline_dumbbell_press",
@@ -147,7 +159,9 @@
         "primary": ["pectoralis_major", "front_deltoid"],
         "secondary": ["triceps"]
       },
-      "equipment": ["dumbbell", "bench"]
+      "equipment": ["dumbbell", "bench"],
+      "aliases": ["інклайн гантелі", "жим гантелей під кутом"],
+      "description": "Сядь на похилу лаву, гантелі на рівні верху грудей, зап'ястя над ліктями. Вижми гантелі вгору, зводячи їх ближче нагорі, і контрольовано опусти. Типова помилка: закидати гантелі ривком із колін і губити контроль першого повторення."
     },
     {
       "id": "decline_bench_press",
@@ -160,17 +174,24 @@
         "primary": ["pectoralis_major", "pectoralis_minor"],
         "secondary": ["triceps", "front_deltoid"]
       },
-      "equipment": ["barbell", "bench"]
+      "equipment": ["barbell", "bench"],
+      "aliases": ["деклайн жим", "жим головою вниз"],
+      "description": "Зафіксуй ноги у валиках на лаві з від'ємним нахилом, гриф над низом грудей. Опусти штангу до низу грудей і вижми вгору, не випрямляючи лікті різко. Типова помилка: різко підводитись після сету, коли голова була нижче тазу."
     },
     {
       "id": "dumbbell_flyes",
-      "name": { "uk": "Розводка гантелей лежачи", "en": "Dumbbell Flyes" },
+      "name": {
+        "uk": "Розводка гантелей лежачи",
+        "en": "Dumbbell Flyes"
+      },
       "primaryGroup": "chest",
       "muscles": {
         "primary": ["pectoralis_major", "pectoralis_minor"],
         "secondary": ["front_deltoid", "serratus_anterior"]
       },
-      "equipment": ["dumbbell", "bench"]
+      "equipment": ["dumbbell", "bench"],
+      "aliases": ["розводка", "метелик з гантелями"],
+      "description": "Ляж на лаву, гантелі над грудьми, лікті трохи зігнуті й зафіксовані в цьому куті. Розведи руки в сторони до легкого розтягнення грудей і зведи назад по тій самій дузі. Типова помилка: перетворювати розводку на жим, згинаючи лікті."
     },
     {
       "id": "incline_dumbbell_flyes",
@@ -183,27 +204,39 @@
         "primary": ["pectoralis_major"],
         "secondary": ["front_deltoid", "serratus_anterior"]
       },
-      "equipment": ["dumbbell", "bench"]
+      "equipment": ["dumbbell", "bench"],
+      "aliases": ["інклайн розводка", "розводка під кутом"],
+      "description": "На похилій лаві тримай гантелі над верхом грудей із фіксованим кутом у ліктях. Розведи руки в сторони, відчуваючи розтягнення верху грудей, і зведи назад. Типова помилка: брати вагу, з якою амплітуда скорочується вдвічі."
     },
     {
       "id": "pushup",
-      "name": { "uk": "Віджимання від підлоги", "en": "Push-up" },
+      "name": {
+        "uk": "Віджимання від підлоги",
+        "en": "Push-up"
+      },
       "primaryGroup": "chest",
       "muscles": {
         "primary": ["pectoralis_major", "triceps"],
         "secondary": ["serratus_anterior", "front_deltoid"]
       },
-      "equipment": ["bodyweight"]
+      "equipment": ["bodyweight"],
+      "aliases": ["віджимання", "пушапи", "push up"],
+      "description": "Упор лежачи, долоні під плечима, тіло однією лінією від п'ят до потилиці. Опустись, поки груди майже торкнуться підлоги, і виштовхнись угору. Типова помилка: провалений таз і опущена голова замість прямої лінії корпусу."
     },
     {
       "id": "pushup_wide",
-      "name": { "uk": "Віджимання широким хватом", "en": "Wide Push-up" },
+      "name": {
+        "uk": "Віджимання широким хватом",
+        "en": "Wide Push-up"
+      },
       "primaryGroup": "chest",
       "muscles": {
         "primary": ["pectoralis_major"],
         "secondary": ["triceps", "front_deltoid", "serratus_anterior"]
       },
-      "equipment": ["bodyweight"]
+      "equipment": ["bodyweight"],
+      "aliases": ["широкі віджимання"],
+      "description": "Постав долоні ширше плечей приблизно на півтори ширини, корпус напружений. Опускайся, поки плечі не стануть паралельні підлозі, і виштовхнись угору. Типова помилка: занадто широкий упор, у якому плечовий суглоб виходить у крайню позицію."
     },
     {
       "id": "diamond_pushup",
@@ -216,7 +249,9 @@
         "primary": ["pectoralis_major", "triceps"],
         "secondary": ["front_deltoid"]
       },
-      "equipment": ["bodyweight"]
+      "equipment": ["bodyweight"],
+      "aliases": ["алмазні віджимання", "вузькі віджимання"],
+      "description": "Постав долоні під грудьми так, щоб великі й вказівні пальці утворили трикутник. Опускайся, тримаючи лікті ближче до корпусу, і виштовхнись угору. Типова помилка: розводити лікті в сторони, після чого навантаження йде з трицепса."
     },
     {
       "id": "dips_chest",
@@ -229,39 +264,55 @@
         "primary": ["pectoralis_major", "pectoralis_minor"],
         "secondary": ["triceps", "front_deltoid"]
       },
-      "equipment": ["bodyweight"]
+      "equipment": ["bodyweight"],
+      "aliases": ["бруси на груди", "діпси груди"],
+      "description": "Стань на брусах, нахили корпус уперед і трохи розведи лікті. Опускайся до відчуття розтягнення грудей і виштовхнись угору, зберігаючи нахил. Типова помилка: падати вниз без контролю в найглибшій точці."
     },
     {
       "id": "cable_crossover",
-      "name": { "uk": "Зведення рук на блоці", "en": "Cable Crossover" },
+      "name": {
+        "uk": "Зведення рук на блоці",
+        "en": "Cable Crossover"
+      },
       "primaryGroup": "chest",
       "muscles": {
         "primary": ["pectoralis_major", "pectoralis_minor"],
         "secondary": ["front_deltoid", "serratus_anterior"]
       },
-      "equipment": ["cable"]
+      "equipment": ["cable"],
+      "aliases": ["кросовер", "зведення в кросовері"],
+      "description": "Стань між блоками, зроби невеликий крок уперед, лікті трохи зігнуті. Зведи руки перед собою по дузі й повільно поверни у вихідне. Типова помилка: тягнути вагу корпусом, розгойдуючись уперед-назад."
     },
     {
       "id": "machine_chest_press",
-      "name": { "uk": "Жим у тренажері (груди)", "en": "Machine Chest Press" },
+      "name": {
+        "uk": "Жим у тренажері (груди)",
+        "en": "Machine Chest Press"
+      },
       "primaryGroup": "chest",
       "muscles": {
         "primary": ["pectoralis_major"],
         "secondary": ["triceps", "front_deltoid"]
       },
-      "equipment": ["machine"]
+      "equipment": ["machine"],
+      "aliases": ["хаммер жим", "жим у тренажері на груди"],
+      "description": "Налаштуй сидіння так, щоб ручки були на рівні середини грудей, спина щільно до спинки. Вижми ручки вперед і поверни, не даючи вазі стукнути в стек. Типова помилка: неправильна висота сидіння, через яку рух іде вгору, а не вперед."
     },
     {
       "id": "pec_deck",
-      "name": { "uk": "Зведення рук у тренажері (пек-дек)", "en": "Pec Deck" },
+      "name": {
+        "uk": "Зведення рук у тренажері (пек-дек)",
+        "en": "Pec Deck"
+      },
       "primaryGroup": "chest",
       "muscles": {
         "primary": ["pectoralis_major", "pectoralis_minor"],
         "secondary": ["front_deltoid"]
       },
-      "equipment": ["machine"]
+      "equipment": ["machine"],
+      "aliases": ["пек-дек", "метелик у тренажері"],
+      "description": "Сядь щільно до спинки, передпліччя на подушках, лікті на рівні плечей. Зведи руки перед собою й повільно поверни назад до легкого розтягнення. Типова помилка: заводити лікті надто далеко назад заради амплітуди."
     },
-
     {
       "id": "pullup",
       "name": {
@@ -273,17 +324,24 @@
         "primary": ["latissimus_dorsi"],
         "secondary": ["biceps", "rear_deltoid", "rhomboids", "upper_back"]
       },
-      "equipment": ["bodyweight"]
+      "equipment": ["bodyweight"],
+      "aliases": ["підтягування", "підтяг", "pull up"],
+      "description": "Візьмись за перекладину хватом ширше плечей, повисни з активними лопатками. Підтягнись, ведучи груди до перекладини, і опустись під контролем. Типова помилка: ривок ногами замість роботи спини."
     },
     {
       "id": "chinup",
-      "name": { "uk": "Підтягування зворотним хватом", "en": "Chin-up" },
+      "name": {
+        "uk": "Підтягування зворотним хватом",
+        "en": "Chin-up"
+      },
       "primaryGroup": "back",
       "muscles": {
         "primary": ["latissimus_dorsi", "biceps"],
         "secondary": ["rear_deltoid", "rhomboids"]
       },
-      "equipment": ["bodyweight"]
+      "equipment": ["bodyweight"],
+      "aliases": ["підтягування зворотним", "підтягування на біцепс"],
+      "description": "Візьмись за перекладину зворотним хватом на ширині плечей. Підтягнись, тримаючи лікті ближче до корпусу, і опустись повністю. Типова помилка: не доходити до повного випрямлення рук унизу."
     },
     {
       "id": "neutral_pullup",
@@ -296,27 +354,39 @@
         "primary": ["latissimus_dorsi", "biceps"],
         "secondary": ["rear_deltoid", "upper_back", "forearms"]
       },
-      "equipment": ["bodyweight"]
+      "equipment": ["bodyweight"],
+      "aliases": ["паралельний хват", "нейтральні підтягування"],
+      "description": "Візьмись за паралельні ручки долонями одна до одної, повисни з напруженим корпусом. Підтягнись до рівня грудей і опустись під контролем. Типова помилка: розгойдування корпусом на останніх повтореннях."
     },
     {
       "id": "barbell_row",
-      "name": { "uk": "Тяга штанги в нахилі", "en": "Barbell Bent-over Row" },
+      "name": {
+        "uk": "Тяга штанги в нахилі",
+        "en": "Barbell Bent-over Row"
+      },
       "primaryGroup": "back",
       "muscles": {
         "primary": ["latissimus_dorsi", "rhomboids", "upper_back"],
         "secondary": ["biceps", "rear_deltoid", "erector_spinae", "forearms"]
       },
-      "equipment": ["barbell"]
+      "equipment": ["barbell"],
+      "aliases": ["тяга штанги", "тяга в нахилі"],
+      "description": "Нахили корпус приблизно до 45 градусів, спина пряма, штанга під плечима. Підтягни гриф до низу живота, зводячи лопатки, і опусти назад. Типова помилка: округлена поперекова частина спини."
     },
     {
       "id": "dumbbell_row",
-      "name": { "uk": "Тяга гантелі в нахилі", "en": "Dumbbell Row" },
+      "name": {
+        "uk": "Тяга гантелі в нахилі",
+        "en": "Dumbbell Row"
+      },
       "primaryGroup": "back",
       "muscles": {
         "primary": ["latissimus_dorsi", "rhomboids"],
         "secondary": ["biceps", "rear_deltoid", "forearms"]
       },
-      "equipment": ["dumbbell", "bench"]
+      "equipment": ["dumbbell", "bench"],
+      "aliases": ["тяга гантелі", "тяга однією рукою"],
+      "description": "Обіпрись коліном і рукою на лаву, друга нога на підлозі, спина паралельно землі. Підтягни гантель до пояса, ведучи лікоть назад, і опусти. Типова помилка: розвертати корпус, щоб дотягнути вагу."
     },
     {
       "id": "cable_lat_pulldown",
@@ -329,7 +399,9 @@
         "primary": ["latissimus_dorsi"],
         "secondary": ["biceps", "rear_deltoid", "rhomboids"]
       },
-      "equipment": ["cable", "machine"]
+      "equipment": ["cable", "machine"],
+      "aliases": ["верхня тяга", "тяга за голову вперед", "латка"],
+      "description": "Сядь, зафіксуй стегна валиками, візьми рукоятку хватом ширше плечей. Потягни її до верху грудей, зводячи лопатки вниз, і поверни вгору. Типова помилка: відхилятись корпусом далеко назад і перетворювати рух на тягу."
     },
     {
       "id": "close_grip_lat_pulldown",
@@ -342,47 +414,69 @@
         "primary": ["latissimus_dorsi", "biceps"],
         "secondary": ["rhomboids", "rear_deltoid"]
       },
-      "equipment": ["cable", "machine"]
+      "equipment": ["cable", "machine"],
+      "aliases": ["вузька верхня тяга"],
+      "description": "Візьми вузьку рукоятку, сядь щільно, груди підняті. Потягни рукоятку до низу грудей, ведучи лікті вздовж корпусу, і поверни вгору. Типова помилка: тягнути силою біцепса, не опускаючи лопатки."
     },
     {
       "id": "cable_seated_row",
-      "name": { "uk": "Тяга нижнього блоку сидячи", "en": "Seated Cable Row" },
+      "name": {
+        "uk": "Тяга нижнього блоку сидячи",
+        "en": "Seated Cable Row"
+      },
       "primaryGroup": "back",
       "muscles": {
         "primary": ["latissimus_dorsi", "rhomboids", "upper_back"],
         "secondary": ["biceps", "rear_deltoid", "forearms"]
       },
-      "equipment": ["cable", "machine"]
+      "equipment": ["cable", "machine"],
+      "aliases": ["горизонтальна тяга", "нижня тяга"],
+      "description": "Сядь, упрись стопами в платформу, коліна трохи зігнуті, спина пряма. Підтягни рукоятку до живота, зводячи лопатки, і поверни під контролем. Типова помилка: розгойдування корпусом уперед-назад."
     },
     {
       "id": "t_bar_row",
-      "name": { "uk": "Тяга T-грифа", "en": "T-bar Row" },
+      "name": {
+        "uk": "Тяга T-грифа",
+        "en": "T-bar Row"
+      },
       "primaryGroup": "back",
       "muscles": {
         "primary": ["latissimus_dorsi", "rhomboids"],
         "secondary": ["biceps", "rear_deltoid", "trapezius"]
       },
-      "equipment": ["barbell", "machine"]
+      "equipment": ["barbell", "machine"],
+      "aliases": ["тяга т-грифа"],
+      "description": "Стань над грифом, нахили корпус, спина пряма, груди на упорі, якщо він є. Підтягни ручки до низу грудей і опусти під контролем. Типова помилка: різко випрямляти корпус на кожному повторенні."
     },
     {
       "id": "hyperextension",
-      "name": { "uk": "Гіперекстензія", "en": "Hyperextension" },
+      "name": {
+        "uk": "Гіперекстензія",
+        "en": "Hyperextension"
+      },
       "primaryGroup": "back",
       "muscles": {
         "primary": ["erector_spinae"],
         "secondary": ["gluteus_maximus", "hamstrings"]
       },
-      "equipment": ["machine", "bodyweight"]
+      "equipment": ["machine", "bodyweight"],
+      "aliases": ["гіпера", "розгинання спини"],
+      "description": "Зафіксуй стегна на подушці, п'яти під валиками, корпус вільно звисає. Підіймай корпус до прямої лінії з ногами і повертайся вниз. Типова помилка: перерозгинатись угору, вигинаючи поперек назад."
     },
     {
       "id": "inverted_row",
-      "name": { "uk": "Горизонтальні підтягування", "en": "Inverted Row" },
+      "name": {
+        "uk": "Горизонтальні підтягування",
+        "en": "Inverted Row"
+      },
       "primaryGroup": "back",
       "muscles": {
         "primary": ["latissimus_dorsi", "rhomboids", "upper_back"],
         "secondary": ["biceps", "rear_deltoid"]
       },
-      "equipment": ["bodyweight"]
+      "equipment": ["bodyweight"],
+      "aliases": ["австралійські підтягування", "тяга під кутом"],
+      "description": "Візьмись за низьку перекладину, тіло пряме, п'яти на підлозі. Підтягни груди до перекладини, зводячи лопатки, і опустись. Типова помилка: провалений таз і згинання в стегнах."
     },
     {
       "id": "straight_arm_pulldown",
@@ -395,38 +489,54 @@
         "primary": ["latissimus_dorsi"],
         "secondary": ["rear_deltoid", "triceps"]
       },
-      "equipment": ["cable"]
+      "equipment": ["cable"],
+      "aliases": ["пуловер на блоці", "тяга прямими руками"],
+      "description": "Стань перед верхнім блоком, руки прямі, корпус трохи нахилений. Опусти рукоятку до стегон, не згинаючи лікті, і поверни вгору. Типова помилка: згинати лікті й перетворювати рух на розгинання трицепса."
     },
     {
       "id": "machine_row",
-      "name": { "uk": "Тяга в тренажері (горизонт.)", "en": "Machine Row" },
+      "name": {
+        "uk": "Тяга в тренажері (горизонт.)",
+        "en": "Machine Row"
+      },
       "primaryGroup": "back",
       "muscles": {
         "primary": ["latissimus_dorsi", "rhomboids"],
         "secondary": ["biceps", "rear_deltoid"]
       },
-      "equipment": ["machine"]
+      "equipment": ["machine"],
+      "aliases": ["тяга в тренажері", "хаммер тяга"],
+      "description": "Сядь, груди щільно до упору, ручки на рівні середини грудей. Тягни ручки назад, зводячи лопатки, і повертай без ривка. Типова помилка: відривати груди від упору, добираючи вагу корпусом."
     },
-
     {
       "id": "overhead_press_barbell",
-      "name": { "uk": "Жим штанги стоячи", "en": "Barbell Overhead Press" },
+      "name": {
+        "uk": "Жим штанги стоячи",
+        "en": "Barbell Overhead Press"
+      },
       "primaryGroup": "shoulders",
       "muscles": {
         "primary": ["front_deltoid", "lateral_deltoid"],
         "secondary": ["triceps", "trapezius", "serratus_anterior"]
       },
-      "equipment": ["barbell"]
+      "equipment": ["barbell"],
+      "aliases": ["армійський жим", "жим стоячи штанга"],
+      "description": "Стань, стопи на ширині тазу, гриф лежить на передніх дельтах, корпус напружений. Вижми штангу над головою, прибираючи голову з траєкторії, і опусти на груди. Типова помилка: прогин у попереку замість напруженого преса."
     },
     {
       "id": "overhead_press_dumbbell",
-      "name": { "uk": "Жим гантелей стоячи", "en": "Dumbbell Shoulder Press" },
+      "name": {
+        "uk": "Жим гантелей стоячи",
+        "en": "Dumbbell Shoulder Press"
+      },
       "primaryGroup": "shoulders",
       "muscles": {
         "primary": ["front_deltoid", "lateral_deltoid"],
         "secondary": ["triceps", "trapezius"]
       },
-      "equipment": ["dumbbell"]
+      "equipment": ["dumbbell"],
+      "aliases": ["жим гантелей над головою"],
+      "description": "Стань прямо, гантелі на рівні вух, лікті трохи попереду корпусу. Вижми гантелі вгору до майже прямих рук і опусти під контролем. Типова помилка: відхилятись назад, перетворюючи рух на жим під кутом."
     },
     {
       "id": "seated_dumbbell_press",
@@ -439,27 +549,39 @@
         "primary": ["front_deltoid", "lateral_deltoid"],
         "secondary": ["triceps", "trapezius"]
       },
-      "equipment": ["dumbbell", "bench"]
+      "equipment": ["dumbbell", "bench"],
+      "aliases": ["жим сидячи гантелі"],
+      "description": "Сядь на лаву зі спинкою, притисни спину, гантелі на рівні вух. Вижми вгору, не зводячи гантелі різко, і поверни в вихідне. Типова помилка: відривати поперек від спинки на важких повтореннях."
     },
     {
       "id": "arnold_press",
-      "name": { "uk": "Жим Арнольда", "en": "Arnold Press" },
+      "name": {
+        "uk": "Жим Арнольда",
+        "en": "Arnold Press"
+      },
       "primaryGroup": "shoulders",
       "muscles": {
         "primary": ["front_deltoid", "lateral_deltoid", "rear_deltoid"],
         "secondary": ["triceps", "trapezius"]
       },
-      "equipment": ["dumbbell"]
+      "equipment": ["dumbbell"],
+      "aliases": ["арнольд"],
+      "description": "Сядь із гантелями перед грудьми долонями до себе. Вижимаючи вгору, розвертай долоні вперед, униз повертай у зворотному порядку. Типова помилка: робити розворот ривком у верхній точці."
     },
     {
       "id": "lateral_raise",
-      "name": { "uk": "Підйом гантелей через сторони", "en": "Lateral Raise" },
+      "name": {
+        "uk": "Підйом гантелей через сторони",
+        "en": "Lateral Raise"
+      },
       "primaryGroup": "shoulders",
       "muscles": {
         "primary": ["lateral_deltoid"],
         "secondary": ["front_deltoid", "trapezius"]
       },
-      "equipment": ["dumbbell"]
+      "equipment": ["dumbbell"],
+      "aliases": ["махи в сторони", "махи гантелями"],
+      "description": "Стань прямо, гантелі біля стегон, лікті трохи зігнуті. Підійми руки в сторони до рівня плечей і повільно опусти. Типова помилка: закидати гантелі вище плечей поштовхом корпусу."
     },
     {
       "id": "cable_lateral_raise",
@@ -472,17 +594,24 @@
         "primary": ["lateral_deltoid"],
         "secondary": ["front_deltoid", "trapezius"]
       },
-      "equipment": ["cable"]
+      "equipment": ["cable"],
+      "aliases": ["махи на блоці"],
+      "description": "Стань боком до нижнього блоку, рукоятка в дальній руці перед стегном. Підійми руку в сторону до рівня плеча і повільно поверни вниз. Типова помилка: нахилятись убік, добираючи амплітуду корпусом."
     },
     {
       "id": "front_raise",
-      "name": { "uk": "Підйом гантелей перед собою", "en": "Front Raise" },
+      "name": {
+        "uk": "Підйом гантелей перед собою",
+        "en": "Front Raise"
+      },
       "primaryGroup": "shoulders",
       "muscles": {
         "primary": ["front_deltoid"],
         "secondary": ["lateral_deltoid", "pectoralis_major"]
       },
-      "equipment": ["dumbbell"]
+      "equipment": ["dumbbell"],
+      "aliases": ["махи перед собою"],
+      "description": "Стань прямо, гантелі перед стегнами, долоні до себе. Підійми руки вперед до рівня плечей і опусти під контролем. Типова помилка: розгойдування тазом на кожному повторенні."
     },
     {
       "id": "reverse_flyes",
@@ -495,37 +624,54 @@
         "primary": ["rear_deltoid"],
         "secondary": ["rhomboids", "trapezius", "upper_back"]
       },
-      "equipment": ["dumbbell"]
+      "equipment": ["dumbbell"],
+      "aliases": ["задня дельта", "зворотні махи"],
+      "description": "Нахили корпус уперед, гантелі під грудьми, лікті трохи зігнуті. Розведи руки в сторони, зводячи лопатки, і опусти. Типова помилка: тягнути гантелі ліктями вгору, вмикаючи трапецію."
     },
     {
       "id": "upright_row",
-      "name": { "uk": "Тяга штанги до підборіддя", "en": "Upright Row" },
+      "name": {
+        "uk": "Тяга штанги до підборіддя",
+        "en": "Upright Row"
+      },
       "primaryGroup": "shoulders",
       "muscles": {
         "primary": ["lateral_deltoid", "trapezius"],
         "secondary": ["front_deltoid", "biceps", "forearms"]
       },
-      "equipment": ["barbell", "dumbbell"]
+      "equipment": ["barbell", "dumbbell"],
+      "aliases": ["протяжка", "тяга до підборіддя"],
+      "description": "Візьми гриф хватом трохи ширше плечей, руки прямі перед стегнами. Тягни гриф уздовж тіла до рівня грудей, ведучи лікті вгору. Типова помилка: тягнути вище рівня плечей вузьким хватом."
     },
     {
       "id": "cable_face_pull",
-      "name": { "uk": "Тяга на обличчя (блок)", "en": "Face Pull" },
+      "name": {
+        "uk": "Тяга на обличчя (блок)",
+        "en": "Face Pull"
+      },
       "primaryGroup": "shoulders",
       "muscles": {
         "primary": ["rear_deltoid"],
         "secondary": ["rhomboids", "trapezius", "upper_back"]
       },
-      "equipment": ["cable", "machine"]
+      "equipment": ["cable", "machine"],
+      "aliases": ["фейс пул", "тяга до обличчя"],
+      "description": "Постав блок на рівень обличчя, візьми канат хватом зверху, зроби крок назад. Тягни канат до обличчя, розводячи кисті в сторони, і поверни вперед. Типова помилка: опускати лікті нижче за плечі."
     },
     {
       "id": "shrugs",
-      "name": { "uk": "Шраги зі штангою", "en": "Barbell Shrugs" },
+      "name": {
+        "uk": "Шраги зі штангою",
+        "en": "Barbell Shrugs"
+      },
       "primaryGroup": "shoulders",
       "muscles": {
         "primary": ["trapezius"],
         "secondary": ["neck", "forearms"]
       },
-      "equipment": ["barbell", "dumbbell"]
+      "equipment": ["barbell", "dumbbell"],
+      "aliases": ["шраги", "трапеції"],
+      "description": "Стань прямо з вагою в опущених руках, спина пряма. Підійми плечі вертикально вгору, затримайся на мить і опусти. Типова помилка: обертати плечима по колу замість прямого підйому."
     },
     {
       "id": "machine_shoulder_press",
@@ -538,28 +684,39 @@
         "primary": ["front_deltoid", "lateral_deltoid"],
         "secondary": ["triceps"]
       },
-      "equipment": ["machine"]
+      "equipment": ["machine"],
+      "aliases": ["жим у тренажері на плечі"],
+      "description": "Налаштуй сидіння так, щоб ручки були на рівні плечей, спина щільно до спинки. Вижми ручки вгору і поверни, не кидаючи вагу. Типова помилка: завелика вага, з якою підіймається все тіло."
     },
     {
       "id": "band_pull_apart",
-      "name": { "uk": "Розведення рук із резинкою", "en": "Band Pull-apart" },
+      "name": {
+        "uk": "Розведення рук із резинкою",
+        "en": "Band Pull-apart"
+      },
       "primaryGroup": "shoulders",
       "muscles": {
         "primary": ["rear_deltoid"],
         "secondary": ["rhomboids", "upper_back"]
       },
-      "equipment": ["band"]
+      "equipment": ["band"],
+      "aliases": ["розтягування резинки", "гумка на дельти"],
+      "description": "Тримай резинку прямими руками перед грудьми на ширині плечей. Розведи руки в сторони, зводячи лопатки, і поверни без ривка. Типова помилка: згинати лікті, скорочуючи амплітуду."
     },
-
     {
       "id": "bicep_curl_barbell",
-      "name": { "uk": "Згинання рук зі штангою", "en": "Barbell Bicep Curl" },
+      "name": {
+        "uk": "Згинання рук зі штангою",
+        "en": "Barbell Bicep Curl"
+      },
       "primaryGroup": "biceps",
       "muscles": {
         "primary": ["biceps"],
         "secondary": ["forearms", "brachialis"]
       },
-      "equipment": ["barbell"]
+      "equipment": ["barbell"],
+      "aliases": ["згинання зі штангою", "біцуха штанга"],
+      "description": "Стань прямо, штанга в опущених руках хватом знизу на ширині плечей. Зігни руки, тримаючи лікті біля корпусу, і опусти повністю. Типова помилка: розгойдування корпусом, коли вага завелика."
     },
     {
       "id": "bicep_curl_dumbbell",
@@ -572,47 +729,69 @@
         "primary": ["biceps"],
         "secondary": ["forearms"]
       },
-      "equipment": ["dumbbell"]
+      "equipment": ["dumbbell"],
+      "aliases": ["банки", "згинання з гантелями"],
+      "description": "Стань прямо з гантелями в опущених руках, долоні вперед. Зігни руки почергово або разом, не рухаючи ліктями, і опусти. Типова помилка: підіймати лікті вперед у верхній точці."
     },
     {
       "id": "hammer_curl",
-      "name": { "uk": "Молоткоподібні згинання", "en": "Hammer Curl" },
+      "name": {
+        "uk": "Молоткоподібні згинання",
+        "en": "Hammer Curl"
+      },
       "primaryGroup": "biceps",
       "muscles": {
         "primary": ["biceps", "brachialis"],
         "secondary": ["forearms"]
       },
-      "equipment": ["dumbbell"]
+      "equipment": ["dumbbell"],
+      "aliases": ["молоток", "молоткові згинання"],
+      "description": "Тримай гантелі нейтральним хватом, долоні одна до одної, лікті біля боків. Зігни руки до рівня плечей і опусти під контролем. Типова помилка: розвертати кисті всередині руху."
     },
     {
       "id": "concentration_curl",
-      "name": { "uk": "Концентроване згинання", "en": "Concentration Curl" },
+      "name": {
+        "uk": "Концентроване згинання",
+        "en": "Concentration Curl"
+      },
       "primaryGroup": "biceps",
       "muscles": {
         "primary": ["biceps"],
         "secondary": ["forearms"]
       },
-      "equipment": ["dumbbell"]
+      "equipment": ["dumbbell"],
+      "aliases": ["концентровані згинання"],
+      "description": "Сядь, упрись ліктем у внутрішню поверхню стегна, гантель у опущеній руці. Зігни руку до плеча і повільно опусти повністю. Типова помилка: допомагати корпусом, відхиляючись назад."
     },
     {
       "id": "preacher_curl",
-      "name": { "uk": "Згинання на лаві Скотта", "en": "Preacher Curl" },
+      "name": {
+        "uk": "Згинання на лаві Скотта",
+        "en": "Preacher Curl"
+      },
       "primaryGroup": "biceps",
       "muscles": {
         "primary": ["biceps", "brachialis"],
         "secondary": ["forearms"]
       },
-      "equipment": ["barbell", "dumbbell", "bench"]
+      "equipment": ["barbell", "dumbbell", "bench"],
+      "aliases": ["лава скотта", "парта"],
+      "description": "Поклади руки на похилу подушку так, щоб пахви щільно лягли на край. Зігни руки до верхньої точки і опусти майже до повного випрямлення. Типова помилка: різко розгинати лікті внизу під вагою."
     },
     {
       "id": "cable_curl",
-      "name": { "uk": "Згинання рук на блоці", "en": "Cable Curl" },
+      "name": {
+        "uk": "Згинання рук на блоці",
+        "en": "Cable Curl"
+      },
       "primaryGroup": "biceps",
       "muscles": {
         "primary": ["biceps"],
         "secondary": ["forearms"]
       },
-      "equipment": ["cable"]
+      "equipment": ["cable"],
+      "aliases": ["згинання на блоці"],
+      "description": "Стань перед нижнім блоком, рукоятка в опущених руках, лікті біля корпусу. Зігни руки до грудей і повертай під контролем, не даючи вазі тягнути. Типова помилка: відступати від блоку, змінюючи вектор навантаження."
     },
     {
       "id": "incline_dumbbell_curl",
@@ -625,58 +804,84 @@
         "primary": ["biceps"],
         "secondary": ["forearms"]
       },
-      "equipment": ["dumbbell", "bench"]
+      "equipment": ["dumbbell", "bench"],
+      "aliases": ["згинання на похилій лаві"],
+      "description": "Сядь на похилу лаву, руки вільно звисають за лінією корпусу. Зігни руки, не рухаючи плечима вперед, і опусти до повного розтягнення. Типова помилка: підіймати лікті, зменшуючи розтягнення."
     },
     {
       "id": "spider_curl",
-      "name": { "uk": "Спайдер-згинання", "en": "Spider Curl" },
+      "name": {
+        "uk": "Спайдер-згинання",
+        "en": "Spider Curl"
+      },
       "primaryGroup": "biceps",
       "muscles": {
         "primary": ["biceps"],
         "secondary": ["brachialis"]
       },
-      "equipment": ["barbell", "dumbbell", "bench"]
+      "equipment": ["barbell", "dumbbell", "bench"],
+      "aliases": ["спайдер"],
+      "description": "Ляж грудьми на похилу лаву, руки з вагою вертикально вниз. Зігни руки до плечей і опусти повністю, не рухаючи ліктями. Типова помилка: розгойдувати вагу маятником."
     },
     {
       "id": "ez_bar_curl",
-      "name": { "uk": "Згинання рук із EZ-грифом", "en": "EZ-bar Curl" },
+      "name": {
+        "uk": "Згинання рук із EZ-грифом",
+        "en": "EZ-bar Curl"
+      },
       "primaryGroup": "biceps",
       "muscles": {
         "primary": ["biceps", "brachialis"],
         "secondary": ["forearms"]
       },
-      "equipment": ["barbell"]
+      "equipment": ["barbell"],
+      "aliases": ["ez гриф", "згинання з кривим грифом"],
+      "description": "Візьми EZ-гриф за вигини хватом знизу, лікті біля корпусу. Зігни руки до грудей і опусти повністю. Типова помилка: вибирати надто вузький хват, який тисне на зап'ястя."
     },
     {
       "id": "band_bicep_curl",
-      "name": { "uk": "Згинання рук з резинкою", "en": "Band Bicep Curl" },
+      "name": {
+        "uk": "Згинання рук з резинкою",
+        "en": "Band Bicep Curl"
+      },
       "primaryGroup": "biceps",
       "muscles": {
         "primary": ["biceps"],
         "secondary": ["forearms"]
       },
-      "equipment": ["band"]
+      "equipment": ["band"],
+      "aliases": ["згинання з гумкою"],
+      "description": "Стань на середину резинки, кінці в руках, долоні вперед. Зігни руки до плечей і поверни під контролем, не даючи резинці смикнути руки вниз. Типова помилка: відпускати опір різко."
     },
-
     {
       "id": "tricep_pushdown",
-      "name": { "uk": "Розгинання рук на блоці", "en": "Tricep Pushdown" },
+      "name": {
+        "uk": "Розгинання рук на блоці",
+        "en": "Tricep Pushdown"
+      },
       "primaryGroup": "triceps",
       "muscles": {
         "primary": ["triceps"],
         "secondary": []
       },
-      "equipment": ["cable", "machine"]
+      "equipment": ["cable", "machine"],
+      "aliases": ["розгинання на блоці", "трицепс блок"],
+      "description": "Стань перед верхнім блоком, лікті притиснуті до боків, рукоятка на рівні грудей. Розігни руки вниз до повного випрямлення і поверни. Типова помилка: відводити лікті назад, вмикаючи спину."
     },
     {
       "id": "skull_crusher",
-      "name": { "uk": "Французький жим лежачи", "en": "Skull Crusher" },
+      "name": {
+        "uk": "Французький жим лежачи",
+        "en": "Skull Crusher"
+      },
       "primaryGroup": "triceps",
       "muscles": {
         "primary": ["triceps"],
         "secondary": []
       },
-      "equipment": ["barbell", "dumbbell", "bench"]
+      "equipment": ["barbell", "dumbbell", "bench"],
+      "aliases": ["французький жим", "череполомка"],
+      "description": "Ляж на лаву, гриф над грудьми на прямих руках. Згинаючи лікті, опусти гриф до чола і розігни назад, не рухаючи плечима. Типова помилка: розводити лікті в сторони під навантаженням."
     },
     {
       "id": "dips_tricep",
@@ -689,7 +894,9 @@
         "primary": ["triceps"],
         "secondary": ["pectoralis_major", "front_deltoid"]
       },
-      "equipment": ["bodyweight"]
+      "equipment": ["bodyweight"],
+      "aliases": ["бруси на трицепс", "діпси"],
+      "description": "Стань на брусах, корпус вертикально, лікті біля боків. Опускайся, поки плечі не стануть паралельні підлозі, і виштовхнись угору. Типова помилка: провалюватись нижче за комфортну амплітуду плеча."
     },
     {
       "id": "overhead_tricep_extension",
@@ -702,7 +909,9 @@
         "primary": ["triceps"],
         "secondary": []
       },
-      "equipment": ["dumbbell", "cable"]
+      "equipment": ["dumbbell", "cable"],
+      "aliases": ["розгинання через голову", "французький жим сидячи"],
+      "description": "Підійми вагу над головою, лікті спрямовані вперед і зафіксовані. Опусти вагу за голову і розігни руки вгору. Типова помилка: розводити лікті в сторони під час опускання."
     },
     {
       "id": "close_grip_bench_press",
@@ -715,7 +924,9 @@
         "primary": ["triceps"],
         "secondary": ["pectoralis_major", "front_deltoid"]
       },
-      "equipment": ["barbell", "bench"]
+      "equipment": ["barbell", "bench"],
+      "aliases": ["вузький жим"],
+      "description": "Ляж на лаву, візьми гриф хватом на ширині плечей, лікті ближче до корпусу. Опусти гриф до низу грудей і вижми вгору. Типова помилка: занадто вузький хват, який навантажує зап'ястя."
     },
     {
       "id": "tricep_kickback",
@@ -728,7 +939,9 @@
         "primary": ["triceps"],
         "secondary": []
       },
-      "equipment": ["dumbbell"]
+      "equipment": ["dumbbell"],
+      "aliases": ["кікбек", "відведення руки назад"],
+      "description": "Нахили корпус, плече паралельно підлозі, лікоть зафіксований біля боку. Розігни руку назад до прямої і поверни. Типова помилка: рухати плечем замість передпліччя."
     },
     {
       "id": "rope_pushdown",
@@ -741,7 +954,9 @@
         "primary": ["triceps"],
         "secondary": []
       },
-      "equipment": ["cable"]
+      "equipment": ["cable"],
+      "aliases": ["канат на трицепс"],
+      "description": "Візьми канат нейтральним хватом, лікті біля боків. Розігни руки вниз, розводячи кінці каната в сторони, і поверни. Типова помилка: нахилятись усім корпусом, добираючи вагу."
     },
     {
       "id": "bench_dips",
@@ -754,7 +969,9 @@
         "primary": ["triceps"],
         "secondary": ["front_deltoid", "pectoralis_major"]
       },
-      "equipment": ["bench", "bodyweight"]
+      "equipment": ["bench", "bodyweight"],
+      "aliases": ["зворотні віджимання", "віджимання від лави"],
+      "description": "Обіпрись долонями об край лави за спиною, ноги попереду. Опускайся, згинаючи лікті назад, і виштовхнись угору. Типова помилка: опускатись занадто глибоко, вивертаючи плечі."
     },
     {
       "id": "band_tricep_pushdown",
@@ -767,18 +984,24 @@
         "primary": ["triceps"],
         "secondary": []
       },
-      "equipment": ["band"]
+      "equipment": ["band"],
+      "aliases": ["трицепс із гумкою"],
+      "description": "Закріпи резинку над головою, візьми кінці, лікті притиснуті до боків. Розігни руки вниз і поверни під контролем. Типова помилка: відводити лікті від корпусу для більшої амплітуди."
     },
-
     {
       "id": "wrist_curl",
-      "name": { "uk": "Згинання зап'ястя", "en": "Wrist Curl" },
+      "name": {
+        "uk": "Згинання зап'ястя",
+        "en": "Wrist Curl"
+      },
       "primaryGroup": "forearms",
       "muscles": {
         "primary": ["forearms"],
         "secondary": []
       },
-      "equipment": ["barbell", "dumbbell"]
+      "equipment": ["barbell", "dumbbell"],
+      "aliases": ["згинання кисті", "передпліччя штанга"],
+      "description": "Сядь, поклади передпліччя на стегна долонями вгору, кисті за коліном. Зігни зап'ястя вгору і повільно опусти до повного розтягнення. Типова помилка: рухати ліктями замість самих кистей."
     },
     {
       "id": "reverse_wrist_curl",
@@ -791,7 +1014,9 @@
         "primary": ["forearms"],
         "secondary": []
       },
-      "equipment": ["barbell", "dumbbell"]
+      "equipment": ["barbell", "dumbbell"],
+      "aliases": ["розгинання кисті"],
+      "description": "Поклади передпліччя на стегна долонями вниз, кисті за коліном. Підійми кисті вгору і повільно опусти. Типова помилка: брати ту саму вагу, що й на згинання."
     },
     {
       "id": "reverse_curl",
@@ -804,109 +1029,159 @@
         "primary": ["forearms", "brachialis"],
         "secondary": ["biceps"]
       },
-      "equipment": ["barbell", "dumbbell"]
+      "equipment": ["barbell", "dumbbell"],
+      "aliases": ["згинання зворотним хватом", "брахіаліс"],
+      "description": "Візьми гриф хватом зверху на ширині плечей, лікті біля корпусу. Зігни руки до грудей, тримаючи кисті прямими, і опусти. Типова помилка: заламувати зап'ястя вниз під вагою."
     },
-
     {
       "id": "crunch",
-      "name": { "uk": "Скручування", "en": "Crunch" },
+      "name": {
+        "uk": "Скручування",
+        "en": "Crunch"
+      },
       "primaryGroup": "core",
       "muscles": {
         "primary": ["rectus_abdominis"],
         "secondary": ["obliques"]
       },
-      "equipment": ["bodyweight"]
+      "equipment": ["bodyweight"],
+      "aliases": ["скручування на прес", "прес класика"],
+      "description": "Ляж на спину, коліна зігнуті, руки біля скронь або на грудях. Відірви лопатки від підлоги, скручуючи корпус, і повільно опустись. Типова помилка: тягнути голову руками замість роботи преса."
     },
     {
       "id": "plank",
-      "name": { "uk": "Планка", "en": "Plank" },
+      "name": {
+        "uk": "Планка",
+        "en": "Plank"
+      },
       "primaryGroup": "core",
       "muscles": {
         "primary": ["rectus_abdominis"],
         "secondary": ["obliques", "erector_spinae", "front_deltoid"]
       },
-      "equipment": ["bodyweight"]
+      "equipment": ["bodyweight"],
+      "aliases": ["планка на ліктях", "статика на прес"],
+      "description": "Упор на передпліччя й носки, тіло прямою лінією, таз підкручений. Тримай позицію задану кількість секунд, дихаючи рівно. Типова помилка: провалений таз, від якого навантаження йде в поперек."
     },
     {
       "id": "leg_raise",
-      "name": { "uk": "Підйом ніг лежачи", "en": "Lying Leg Raise" },
+      "name": {
+        "uk": "Підйом ніг лежачи",
+        "en": "Lying Leg Raise"
+      },
       "primaryGroup": "core",
       "muscles": {
         "primary": ["rectus_abdominis"],
         "secondary": ["obliques", "quadriceps"]
       },
-      "equipment": ["bodyweight"]
+      "equipment": ["bodyweight"],
+      "aliases": ["підйом ніг", "нижній прес"],
+      "description": "Ляж на спину, руки вздовж тіла, поперек притиснутий до підлоги. Підійми прямі ноги до вертикалі і повільно опусти, не кладучи п'яти. Типова помилка: відрив попереку від підлоги внизу амплітуди."
     },
     {
       "id": "bicycle_crunch",
-      "name": { "uk": "Велосипед", "en": "Bicycle Crunch" },
+      "name": {
+        "uk": "Велосипед",
+        "en": "Bicycle Crunch"
+      },
       "primaryGroup": "core",
       "muscles": {
         "primary": ["rectus_abdominis", "obliques"],
         "secondary": []
       },
-      "equipment": ["bodyweight"]
+      "equipment": ["bodyweight"],
+      "aliases": ["велосипед на прес"],
+      "description": "Ляж на спину, руки біля скронь, ноги підняті. Тягни лікоть до протилежного коліна, чергуючи сторони в рівному темпі. Типова помилка: смикати шию руками замість скручування корпусу."
     },
     {
       "id": "russian_twist",
-      "name": { "uk": "Скручування з поворотом", "en": "Russian Twist" },
+      "name": {
+        "uk": "Скручування з поворотом",
+        "en": "Russian Twist"
+      },
       "primaryGroup": "core",
       "muscles": {
         "primary": ["obliques"],
         "secondary": ["rectus_abdominis"]
       },
-      "equipment": ["bodyweight", "dumbbell"]
+      "equipment": ["bodyweight", "dumbbell"],
+      "aliases": ["російські скручування", "повороти корпусу"],
+      "description": "Сядь, відхили корпус назад, ноги відірвані або на підлозі, вага перед грудьми. Повертай корпус із боку в бік, ведучи вагу за поглядом. Типова помилка: рухати тільки руками, лишаючи корпус нерухомим."
     },
     {
       "id": "hanging_leg_raise",
-      "name": { "uk": "Підйом ніг у висі", "en": "Hanging Leg Raise" },
+      "name": {
+        "uk": "Підйом ніг у висі",
+        "en": "Hanging Leg Raise"
+      },
       "primaryGroup": "core",
       "muscles": {
         "primary": ["rectus_abdominis"],
         "secondary": ["obliques", "forearms"]
       },
-      "equipment": ["bodyweight"]
+      "equipment": ["bodyweight"],
+      "aliases": ["підйом ніг у висі", "прес на турніку"],
+      "description": "Повисни на перекладині, плечі активні, корпус без розгойдування. Підійми ноги до рівня тазу або вище і опусти під контролем. Типова помилка: розгойдуватись, використовуючи інерцію."
     },
     {
       "id": "side_plank",
-      "name": { "uk": "Бокова планка", "en": "Side Plank" },
+      "name": {
+        "uk": "Бокова планка",
+        "en": "Side Plank"
+      },
       "primaryGroup": "core",
       "muscles": {
         "primary": ["obliques"],
         "secondary": ["rectus_abdominis", "gluteus_medius"]
       },
-      "equipment": ["bodyweight"]
+      "equipment": ["bodyweight"],
+      "aliases": ["планка на боці", "косі статика"],
+      "description": "Ляж на бік, упор на передпліччя, стопи одна на одній, таз піднятий. Тримай пряму лінію від голови до п'ят задану кількість секунд. Типова помилка: провалювати таз униз наприкінці підходу."
     },
     {
       "id": "ab_wheel_rollout",
-      "name": { "uk": "Розкатка з роликом", "en": "Ab Wheel Rollout" },
+      "name": {
+        "uk": "Розкатка з роликом",
+        "en": "Ab Wheel Rollout"
+      },
       "primaryGroup": "core",
       "muscles": {
         "primary": ["rectus_abdominis"],
         "secondary": ["obliques", "erector_spinae", "latissimus_dorsi"]
       },
-      "equipment": ["other"]
+      "equipment": ["other"],
+      "aliases": ["ролик для преса", "розкатка"],
+      "description": "Стань на коліна, візьми ролик, таз підкручений, поперек нейтральний. Викочуй ролик уперед, скільки дозволяє контроль, і поверни назад. Типова помилка: прогинати поперек у крайній точці."
     },
     {
       "id": "cable_woodchop",
-      "name": { "uk": "Дроворуб (блок)", "en": "Cable Woodchop" },
+      "name": {
+        "uk": "Дроворуб (блок)",
+        "en": "Cable Woodchop"
+      },
       "primaryGroup": "core",
       "muscles": {
         "primary": ["obliques"],
         "secondary": ["rectus_abdominis"]
       },
-      "equipment": ["cable"]
+      "equipment": ["cable"],
+      "aliases": ["дроворуб", "діагональна тяга на прес"],
+      "description": "Стань боком до блоку, візьми рукоятку обома руками, стопи стабільні. Проведи руки по діагоналі згори вниз, повертаючи корпус, і поверни назад. Типова помилка: тягнути руками без обертання корпусу."
     },
-
     {
       "id": "squat_barbell",
-      "name": { "uk": "Присідання зі штангою", "en": "Barbell Back Squat" },
+      "name": {
+        "uk": "Присідання зі штангою",
+        "en": "Barbell Back Squat"
+      },
       "primaryGroup": "quadriceps",
       "muscles": {
         "primary": ["quadriceps", "gluteus_maximus"],
         "secondary": ["hamstrings", "erector_spinae", "adductors", "calves"]
       },
-      "equipment": ["barbell"]
+      "equipment": ["barbell"],
+      "aliases": ["присід", "присідання", "сквот"],
+      "description": "Штанга на трапеціях, стопи трохи ширше плечей, носки трохи назовні. Сідай, ведучи таз назад і коліна за напрямком стоп, до паралелі або нижче, потім вставай. Типова помилка: зводити коліна всередину на підйомі."
     },
     {
       "id": "front_squat",
@@ -919,77 +1194,114 @@
         "primary": ["quadriceps"],
         "secondary": ["gluteus_maximus", "erector_spinae"]
       },
-      "equipment": ["barbell"]
+      "equipment": ["barbell"],
+      "aliases": ["фронтальний присід", "фронт"],
+      "description": "Поклади гриф на передні дельти, лікті високо вперед, корпус вертикально. Сідай униз, тримаючи лікті піднятими, і вставай. Типова помилка: опущені лікті, після яких гриф скочується вперед."
     },
     {
       "id": "squat_goblet",
-      "name": { "uk": "Присідання з гирею (goblet)", "en": "Goblet Squat" },
+      "name": {
+        "uk": "Присідання з гирею (goblet)",
+        "en": "Goblet Squat"
+      },
       "primaryGroup": "quadriceps",
       "muscles": {
         "primary": ["quadriceps", "gluteus_maximus"],
         "secondary": ["hamstrings", "adductors", "erector_spinae"]
       },
-      "equipment": ["kettlebell", "dumbbell"]
+      "equipment": ["kettlebell", "dumbbell"],
+      "aliases": ["гоблет", "присід із гирею"],
+      "description": "Тримай гирю або гантель обома руками біля грудей, лікті всередині. Сідай між колінами до комфортної глибини і вставай. Типова помилка: нахилятись уперед, замість того щоб тримати корпус вертикально."
     },
     {
       "id": "squat_bodyweight",
-      "name": { "uk": "Присідання (власна вага)", "en": "Bodyweight Squat" },
+      "name": {
+        "uk": "Присідання (власна вага)",
+        "en": "Bodyweight Squat"
+      },
       "primaryGroup": "quadriceps",
       "muscles": {
         "primary": ["quadriceps", "gluteus_maximus"],
         "secondary": ["hamstrings", "calves"]
       },
-      "equipment": ["bodyweight"]
+      "equipment": ["bodyweight"],
+      "aliases": ["присідання без ваги", "повітряний присід"],
+      "description": "Стопи на ширині плечей, руки перед собою для балансу. Сідай, ведучи таз назад, до паралелі стегна з підлогою, і вставай. Типова помилка: відрив п'ят від підлоги внизу."
     },
     {
       "id": "leg_press",
-      "name": { "uk": "Жим ногами в тренажері", "en": "Leg Press" },
+      "name": {
+        "uk": "Жим ногами в тренажері",
+        "en": "Leg Press"
+      },
       "primaryGroup": "quadriceps",
       "muscles": {
         "primary": ["quadriceps", "gluteus_maximus"],
         "secondary": ["hamstrings", "calves"]
       },
-      "equipment": ["machine"]
+      "equipment": ["machine"],
+      "aliases": ["жим ногами", "платформа"],
+      "description": "Сядь у тренажер, стопи на платформі на ширині тазу, поперек притиснутий. Опусти платформу до кута приблизно 90 градусів у колінах і вижми. Типова помилка: відрив тазу від сидіння в нижній точці."
     },
     {
       "id": "leg_extension",
-      "name": { "uk": "Розгинання ніг у тренажері", "en": "Leg Extension" },
+      "name": {
+        "uk": "Розгинання ніг у тренажері",
+        "en": "Leg Extension"
+      },
       "primaryGroup": "quadriceps",
       "muscles": {
         "primary": ["quadriceps"],
         "secondary": []
       },
-      "equipment": ["machine"]
+      "equipment": ["machine"],
+      "aliases": ["розгинання ніг", "квадрицепс тренажер"],
+      "description": "Сядь, валик на нижній частині гомілки, спина щільно до спинки. Розігни ноги до прямої і повільно опусти. Типова помилка: викидати вагу ривком і кидати її назад."
     },
     {
       "id": "lunge",
-      "name": { "uk": "Випади з гантелями", "en": "Dumbbell Lunge" },
+      "name": {
+        "uk": "Випади з гантелями",
+        "en": "Dumbbell Lunge"
+      },
       "primaryGroup": "quadriceps",
       "muscles": {
         "primary": ["quadriceps", "gluteus_maximus"],
         "secondary": ["hamstrings", "calves", "adductors"]
       },
-      "equipment": ["dumbbell"]
+      "equipment": ["dumbbell"],
+      "aliases": ["випади", "випади вперед"],
+      "description": "Стань прямо з гантелями, зроби крок уперед і опустись, поки обидва коліна не будуть близько до прямого кута. Відштовхнись передньою ногою назад. Типова помилка: виводити коліно далеко за носок."
     },
     {
       "id": "reverse_lunge",
-      "name": { "uk": "Зворотні випади", "en": "Reverse Lunge" },
+      "name": {
+        "uk": "Зворотні випади",
+        "en": "Reverse Lunge"
+      },
       "primaryGroup": "quadriceps",
       "muscles": {
         "primary": ["gluteus_maximus", "quadriceps"],
         "secondary": ["hamstrings", "calves"]
       },
-      "equipment": ["bodyweight", "dumbbell"]
+      "equipment": ["bodyweight", "dumbbell"],
+      "aliases": ["випад назад"],
+      "description": "Зроби крок назад і опустись, поки заднє коліно майже торкнеться підлоги. Поверни ногу у вихідне, штовхаючись передньою п'ятою. Типова помилка: падати на заднє коліно замість контрольованого опускання."
     },
     {
       "id": "walking_lunge",
-      "name": { "uk": "Випади у ходьбі", "en": "Walking Lunge" },
+      "name": {
+        "uk": "Випади у ходьбі",
+        "en": "Walking Lunge"
+      },
       "primaryGroup": "quadriceps",
       "muscles": {
         "primary": ["quadriceps", "gluteus_maximus"],
         "secondary": ["hamstrings", "calves"]
       },
-      "equipment": ["bodyweight", "dumbbell"]
+      "equipment": ["bodyweight", "dumbbell"],
+      "aliases": ["випади в русі"],
+      "description": "Крокуй уперед випадами, опускаючи заднє коліно ближче до підлоги, корпус вертикально. Тримай рівний темп на всю задану дистанцію. Типова помилка: нахилятись уперед на кожному кроці."
     },
     {
       "id": "bulgarian_split_squat",
@@ -1002,58 +1314,84 @@
         "primary": ["quadriceps", "gluteus_maximus"],
         "secondary": ["hamstrings", "adductors"]
       },
-      "equipment": ["dumbbell", "bench"]
+      "equipment": ["dumbbell", "bench"],
+      "aliases": ["болгарка", "болгарський присід"],
+      "description": "Постав задню стопу на лаву, передня нога на кроці вперед. Опустись, поки переднє стегно не стане паралельним підлозі, і вставай. Типова помилка: ставити передню ногу надто близько до лави."
     },
     {
       "id": "hack_squat",
-      "name": { "uk": "Гак-присідання", "en": "Hack Squat" },
+      "name": {
+        "uk": "Гак-присідання",
+        "en": "Hack Squat"
+      },
       "primaryGroup": "quadriceps",
       "muscles": {
         "primary": ["quadriceps"],
         "secondary": ["gluteus_maximus", "calves"]
       },
-      "equipment": ["machine"]
+      "equipment": ["machine"],
+      "aliases": ["гакк", "гак присід"],
+      "description": "Стань у тренажер, спина щільно до платформи, стопи на ширині тазу. Опустись до паралелі і вижми, не розгинаючи коліна різко. Типова помилка: відривати поперек від спинки внизу."
     },
     {
       "id": "sissy_squat",
-      "name": { "uk": "Сіссі-присідання", "en": "Sissy Squat" },
+      "name": {
+        "uk": "Сіссі-присідання",
+        "en": "Sissy Squat"
+      },
       "primaryGroup": "quadriceps",
       "muscles": {
         "primary": ["quadriceps"],
         "secondary": []
       },
-      "equipment": ["bodyweight"]
+      "equipment": ["bodyweight"],
+      "aliases": ["сіссі присід"],
+      "description": "Стань прямо, тримайся рукою за опору, п'яти можна трохи підняти. Відхиляй коліна вперед, опускаючи корпус по одній лінії зі стегнами, і повертайся. Типова помилка: брати амплітуду, у якій коліна болять уже під час підходу."
     },
     {
       "id": "step_up",
-      "name": { "uk": "Зашагування на платформу", "en": "Step-up" },
+      "name": {
+        "uk": "Зашагування на платформу",
+        "en": "Step-up"
+      },
       "primaryGroup": "quadriceps",
       "muscles": {
         "primary": ["quadriceps", "gluteus_maximus"],
         "secondary": ["hamstrings", "calves"]
       },
-      "equipment": ["bodyweight", "dumbbell"]
+      "equipment": ["bodyweight", "dumbbell"],
+      "aliases": ["зашагування", "степ ап"],
+      "description": "Стань перед стійкою платформою, постав на неї всю стопу. Виштовхнись угору переважно передньою ногою і опустись під контролем. Типова помилка: відштовхуватись нижньою ногою від підлоги."
     },
-
     {
       "id": "leg_curl",
-      "name": { "uk": "Згинання ніг у тренажері", "en": "Leg Curl" },
+      "name": {
+        "uk": "Згинання ніг у тренажері",
+        "en": "Leg Curl"
+      },
       "primaryGroup": "hamstrings",
       "muscles": {
         "primary": ["hamstrings"],
         "secondary": ["calves"]
       },
-      "equipment": ["machine"]
+      "equipment": ["machine"],
+      "aliases": ["згинання ніг лежачи", "біцепс стегна тренажер"],
+      "description": "Ляж на тренажер, валик над п'ятами, таз притиснутий до подушки. Зігни ноги до максимуму і повільно розігни. Типова помилка: відривати таз, добираючи амплітуду."
     },
     {
       "id": "romanian_deadlift",
-      "name": { "uk": "Румунська тяга", "en": "Romanian Deadlift" },
+      "name": {
+        "uk": "Румунська тяга",
+        "en": "Romanian Deadlift"
+      },
       "primaryGroup": "hamstrings",
       "muscles": {
         "primary": ["hamstrings", "gluteus_maximus"],
         "secondary": ["erector_spinae", "calves"]
       },
-      "equipment": ["barbell", "dumbbell"]
+      "equipment": ["barbell", "dumbbell"],
+      "aliases": ["румунка", "румунська тяга"],
+      "description": "Стань зі штангою біля стегон, коліна трохи зігнуті й зафіксовані. Веди таз назад, опускаючи гриф уздовж ніг до розтягнення задньої поверхні, і повернись угору. Типова помилка: перетворювати рух на присідання."
     },
     {
       "id": "stiff_leg_deadlift",
@@ -1066,27 +1404,39 @@
         "primary": ["hamstrings", "erector_spinae"],
         "secondary": ["gluteus_maximus"]
       },
-      "equipment": ["barbell", "dumbbell"]
+      "equipment": ["barbell", "dumbbell"],
+      "aliases": ["тяга на прямих ногах", "мертва тяга"],
+      "description": "Стань зі штангою, ноги майже прямі, спина нейтральна. Опускай гриф уздовж ніг, поки відчуваєш розтягнення, і повернись угору. Типова помилка: округлювати поперек у нижній точці."
     },
     {
       "id": "good_morning",
-      "name": { "uk": "Доброго ранку (Good Morning)", "en": "Good Morning" },
+      "name": {
+        "uk": "Доброго ранку (Good Morning)",
+        "en": "Good Morning"
+      },
       "primaryGroup": "hamstrings",
       "muscles": {
         "primary": ["hamstrings", "erector_spinae"],
         "secondary": ["gluteus_maximus"]
       },
-      "equipment": ["barbell"]
+      "equipment": ["barbell"],
+      "aliases": ["гуд морнінг", "нахили зі штангою"],
+      "description": "Штанга на трапеціях, коліна трохи зігнуті, спина нейтральна. Нахиляй корпус уперед, ведучи таз назад, до паралелі, і повернись. Типова помилка: брати робочу вагу як для присідань."
     },
     {
       "id": "nordic_curl",
-      "name": { "uk": "Нордичне згинання", "en": "Nordic Hamstring Curl" },
+      "name": {
+        "uk": "Нордичне згинання",
+        "en": "Nordic Hamstring Curl"
+      },
       "primaryGroup": "hamstrings",
       "muscles": {
         "primary": ["hamstrings"],
         "secondary": ["calves"]
       },
-      "equipment": ["bodyweight"]
+      "equipment": ["bodyweight"],
+      "aliases": ["нордик", "нордичне згинання"],
+      "description": "Стань на коліна, зафіксуй п'яти під опорою, корпус прямий від колін до плечей. Опускайся вперед якнайповільніше і повертайся або відштовхнись руками. Типова помилка: згинатись у стегнах замість роботи задньої поверхні."
     },
     {
       "id": "single_leg_deadlift",
@@ -1099,17 +1449,24 @@
         "primary": ["hamstrings", "gluteus_maximus"],
         "secondary": ["erector_spinae"]
       },
-      "equipment": ["dumbbell", "kettlebell"]
+      "equipment": ["dumbbell", "kettlebell"],
+      "aliases": ["тяга на одній нозі", "ластівка з вагою"],
+      "description": "Стань на одну ногу, вага в руках, друга нога йде назад як противага. Нахиляйся вперед до горизонталі корпусу і повернись. Типова помилка: розвертати таз убік на нахилі."
     },
     {
       "id": "kettlebell_swing",
-      "name": { "uk": "Свінг з гирею", "en": "Kettlebell Swing" },
+      "name": {
+        "uk": "Свінг з гирею",
+        "en": "Kettlebell Swing"
+      },
       "primaryGroup": "hamstrings",
       "muscles": {
         "primary": ["hamstrings", "gluteus_maximus"],
         "secondary": ["erector_spinae", "quadriceps"]
       },
-      "equipment": ["kettlebell"]
+      "equipment": ["kettlebell"],
+      "aliases": ["свінги", "махи гирею"],
+      "description": "Стань ширше плечей, гиря між стопами, спина нейтральна. Заведи гирю назад між ніг і різко виштовхни її вперед рухом тазу, руки лишаються прямими. Типова помилка: підіймати гирю руками замість поштовху тазом."
     },
     {
       "id": "band_leg_curl",
@@ -1122,9 +1479,10 @@
         "primary": ["hamstrings"],
         "secondary": ["calves"]
       },
-      "equipment": ["band"]
+      "equipment": ["band"],
+      "aliases": ["згинання ніг гумкою"],
+      "description": "Закріпи резинку за опору й накинь на щиколотку, ляж на живіт. Зігни ногу проти опору і повільно розігни. Типова помилка: відривати таз від підлоги на кожному повторенні."
     },
-
     {
       "id": "calf_raise_standing",
       "name": {
@@ -1136,17 +1494,24 @@
         "primary": ["calves"],
         "secondary": []
       },
-      "equipment": ["bodyweight", "machine"]
+      "equipment": ["bodyweight", "machine"],
+      "aliases": ["носки стоячи", "ікри стоячи"],
+      "description": "Стань носками на край сходинки чи платформи, тримайся за опору. Підіймайся якнайвище на носки і повільно опускай п'яти нижче рівня опори. Типова помилка: пружинити коротко, не використовуючи повну амплітуду."
     },
     {
       "id": "calf_raise_seated",
-      "name": { "uk": "Підйоми на носки сидячи", "en": "Seated Calf Raise" },
+      "name": {
+        "uk": "Підйоми на носки сидячи",
+        "en": "Seated Calf Raise"
+      },
       "primaryGroup": "calves",
       "muscles": {
         "primary": ["calves"],
         "secondary": []
       },
-      "equipment": ["machine"]
+      "equipment": ["machine"],
+      "aliases": ["носки сидячи", "камбаловидний"],
+      "description": "Сядь у тренажер, подушка на нижній частині стегон, носки на платформі. Підійми п'яти якнайвище і повільно опусти. Типова помилка: качати вагу ривками замість повного скорочення нагорі."
     },
     {
       "id": "donkey_calf_raise",
@@ -1159,7 +1524,9 @@
         "primary": ["calves"],
         "secondary": []
       },
-      "equipment": ["machine", "bodyweight"]
+      "equipment": ["machine", "bodyweight"],
+      "aliases": ["ослик", "ікри в нахилі"],
+      "description": "Нахилися вперед, спираючись руками на опору, носки на підвищенні. Підіймай п'яти якнайвище і повільно опускай. Типова помилка: згинати коліна, перетворюючи рух на пружину."
     },
     {
       "id": "single_leg_calf_raise",
@@ -1172,48 +1539,69 @@
         "primary": ["calves"],
         "secondary": []
       },
-      "equipment": ["bodyweight", "dumbbell"]
+      "equipment": ["bodyweight", "dumbbell"],
+      "aliases": ["ікри на одній нозі"],
+      "description": "Стань носком однієї ноги на сходинку, тримайся рукою за опору. Підіймайся на носок і опускай п'яту нижче рівня опори. Типова помилка: спиратись на руку так, що вона забирає частину ваги."
     },
-
     {
       "id": "hip_thrust",
-      "name": { "uk": "Ягідний місток зі штангою", "en": "Barbell Hip Thrust" },
+      "name": {
+        "uk": "Ягідний місток зі штангою",
+        "en": "Barbell Hip Thrust"
+      },
       "primaryGroup": "glutes",
       "muscles": {
         "primary": ["gluteus_maximus"],
         "secondary": ["hamstrings", "erector_spinae"]
       },
-      "equipment": ["barbell", "bench"]
+      "equipment": ["barbell", "bench"],
+      "aliases": ["хіп траст", "сідничний міст зі штангою"],
+      "description": "Обіпрись лопатками об лаву, штанга на згині стегон, стопи під колінами. Підіймай таз до прямої лінії корпусу, стискаючи сідниці, і опускай. Типова помилка: перерозгинати поперек замість роботи сідницями."
     },
     {
       "id": "glute_bridge",
-      "name": { "uk": "Ягідний місток (власна вага)", "en": "Glute Bridge" },
+      "name": {
+        "uk": "Ягідний місток (власна вага)",
+        "en": "Glute Bridge"
+      },
       "primaryGroup": "glutes",
       "muscles": {
         "primary": ["gluteus_maximus"],
         "secondary": ["hamstrings"]
       },
-      "equipment": ["bodyweight"]
+      "equipment": ["bodyweight"],
+      "aliases": ["міст на сідниці", "місток"],
+      "description": "Ляж на спину, коліна зігнуті, стопи на ширині тазу. Підійми таз до прямої лінії від колін до плечей і опусти, не кладучи повністю. Типова помилка: штовхатись носками замість п'ят."
     },
     {
       "id": "cable_kickback",
-      "name": { "uk": "Відведення ноги назад (блок)", "en": "Cable Kickback" },
+      "name": {
+        "uk": "Відведення ноги назад (блок)",
+        "en": "Cable Kickback"
+      },
       "primaryGroup": "glutes",
       "muscles": {
         "primary": ["gluteus_maximus"],
         "secondary": ["hamstrings"]
       },
-      "equipment": ["cable", "machine"]
+      "equipment": ["cable", "machine"],
+      "aliases": ["махи ногою назад на блоці"],
+      "description": "Пристібни манжету до щиколотки, стань обличчям до блоку, тримайся за раму. Відведи ногу назад до скорочення сідниці і поверни під контролем. Типова помилка: прогинати поперек, добираючи амплітуду."
     },
     {
       "id": "sumo_deadlift",
-      "name": { "uk": "Станова тяга сумо", "en": "Sumo Deadlift" },
+      "name": {
+        "uk": "Станова тяга сумо",
+        "en": "Sumo Deadlift"
+      },
       "primaryGroup": "glutes",
       "muscles": {
         "primary": ["gluteus_maximus", "adductors"],
         "secondary": ["hamstrings", "quadriceps", "erector_spinae"]
       },
-      "equipment": ["barbell"]
+      "equipment": ["barbell"],
+      "aliases": ["сумо", "станова сумо"],
+      "description": "Стань широко, носки назовні, візьмись за гриф усередині ніг. Штовхай підлогу ногами, тримаючи гриф близько до тіла, і випрямись. Типова помилка: підіймати таз раніше за плечі на старті."
     },
     {
       "id": "abductor_machine",
@@ -1226,7 +1614,9 @@
         "primary": ["gluteus_medius", "abductors"],
         "secondary": []
       },
-      "equipment": ["machine"]
+      "equipment": ["machine"],
+      "aliases": ["розведення ніг у тренажері"],
+      "description": "Сядь у тренажер, коліна за подушками, спина до спинки. Розводь ноги назовні до кінцевої точки і повертай під контролем. Типова помилка: кидати вагу назад після кожного повторення."
     },
     {
       "id": "adductor_machine",
@@ -1239,7 +1629,9 @@
         "primary": ["adductors"],
         "secondary": ["gluteus_medius"]
       },
-      "equipment": ["machine"]
+      "equipment": ["machine"],
+      "aliases": ["зведення ніг у тренажері", "привідні тренажер"],
+      "description": "Сядь у тренажер, коліна на подушках зовні, спина до спинки. Зводь ноги разом і повільно розводь до розтягнення. Типова помилка: брати амплітуду розведення більшу, ніж дозволяє гнучкість."
     },
     {
       "id": "banded_clamshell",
@@ -1252,7 +1644,9 @@
         "primary": ["gluteus_medius"],
         "secondary": ["gluteus_maximus"]
       },
-      "equipment": ["band"]
+      "equipment": ["band"],
+      "aliases": ["мушля", "клемшел"],
+      "description": "Ляж на бік, резинка над колінами, ноги зігнуті, стопи разом. Розводь верхнє коліно вгору проти опору і повертай. Типова помилка: відвалювати таз назад, замінюючи роботу сідниці обертанням корпусу."
     },
     {
       "id": "single_leg_hip_thrust",
@@ -1265,42 +1659,61 @@
         "primary": ["gluteus_maximus"],
         "secondary": ["hamstrings"]
       },
-      "equipment": ["bench", "bodyweight"]
+      "equipment": ["bench", "bodyweight"],
+      "aliases": ["міст на одній нозі"],
+      "description": "Обіпрись лопатками об лаву, одна стопа на підлозі, друга нога піднята. Підіймай таз опорною ногою до прямої лінії й опускай. Типова помилка: перекошувати таз убік на підйомі."
     },
-
     {
       "id": "running",
-      "name": { "uk": "Біг", "en": "Running" },
+      "name": {
+        "uk": "Біг",
+        "en": "Running"
+      },
       "primaryGroup": "cardio",
       "muscles": {
         "primary": ["quadriceps", "hamstrings", "calves"],
         "secondary": ["gluteus_maximus"]
       },
-      "equipment": ["other"]
+      "equipment": ["other"],
+      "aliases": ["пробіжка", "кардіо біг"],
+      "description": "Тримай корпус вертикально, погляд уперед, приземляйся під центром ваги. Тримай рівний темп, за яким можеш дихати без задишки в розмові. Типова помилка: різко нарощувати обсяг тижня заради результату."
     },
     {
       "id": "cycling",
-      "name": { "uk": "Велосипед / велотренажер", "en": "Cycling" },
+      "name": {
+        "uk": "Велосипед / велотренажер",
+        "en": "Cycling"
+      },
       "primaryGroup": "cardio",
       "muscles": {
         "primary": ["quadriceps", "hamstrings"],
         "secondary": ["calves", "gluteus_maximus"]
       },
-      "equipment": ["machine", "other"]
+      "equipment": ["machine", "other"],
+      "aliases": ["вело", "велотренажер"],
+      "description": "Виміряй висоту сідла так, щоб у нижній точці коліно лишалось трохи зігнутим. Крути педалі рівним каденсом, корпус розслаблений. Типова помилка: занизьке сідло, від якого коліна перевантажуються."
     },
     {
       "id": "jump_rope",
-      "name": { "uk": "Скакалка", "en": "Jump Rope" },
+      "name": {
+        "uk": "Скакалка",
+        "en": "Jump Rope"
+      },
       "primaryGroup": "cardio",
       "muscles": {
         "primary": ["calves"],
         "secondary": ["quadriceps", "hamstrings"]
       },
-      "equipment": ["other"]
+      "equipment": ["other"],
+      "aliases": ["стрибки на скакалці"],
+      "description": "Тримай лікті біля боків, обертай скакалку кистями, стрибай низько на носках. Тримай рівний ритм задану кількість хвилин. Типова помилка: стрибати високо й приземлятись на п'яти."
     },
     {
       "id": "burpee",
-      "name": { "uk": "Бурпі", "en": "Burpee" },
+      "name": {
+        "uk": "Бурпі",
+        "en": "Burpee"
+      },
       "primaryGroup": "cardio",
       "muscles": {
         "primary": ["quadriceps", "pectoralis_major"],
@@ -1311,82 +1724,121 @@
           "rectus_abdominis"
         ]
       },
-      "equipment": ["bodyweight"]
+      "equipment": ["bodyweight"],
+      "aliases": ["берпі"],
+      "description": "З положення стоячи опустись в упор лежачи, зроби віджимання, підтягни ноги і вистрибни вгору. Повторюй у рівному темпі. Типова помилка: провалювати поперек в упорі, коли темп зростає."
     },
     {
       "id": "box_jump",
-      "name": { "uk": "Стрибок на тумбу", "en": "Box Jump" },
+      "name": {
+        "uk": "Стрибок на тумбу",
+        "en": "Box Jump"
+      },
       "primaryGroup": "cardio",
       "muscles": {
         "primary": ["quadriceps", "gluteus_maximus"],
         "secondary": ["hamstrings", "calves"]
       },
-      "equipment": ["other"]
+      "equipment": ["other"],
+      "aliases": ["стрибки на тумбу"],
+      "description": "Стань перед тумбою, зігни коліна і вистрибни, приземляючись на всю стопу з м'якими колінами. Сходь із тумби, а не зістрибуй. Типова помилка: брати висоту, на яку заходиш тільки підтягнувши коліна до грудей."
     },
     {
       "id": "rowing_machine",
-      "name": { "uk": "Веслувальний тренажер", "en": "Rowing Machine" },
+      "name": {
+        "uk": "Веслувальний тренажер",
+        "en": "Rowing Machine"
+      },
       "primaryGroup": "cardio",
       "muscles": {
         "primary": ["latissimus_dorsi", "quadriceps"],
         "secondary": ["biceps", "hamstrings", "erector_spinae"]
       },
-      "equipment": ["machine"]
+      "equipment": ["machine"],
+      "aliases": ["гребля", "гребний тренажер"],
+      "description": "Почни рух ногами, потім підключи корпус і в кінці руки, повертайся у зворотному порядку. Тримай спину нейтральною весь цикл. Типова помилка: тягнути руками раніше за поштовх ногами."
     },
     {
       "id": "stairclimber",
-      "name": { "uk": "Сходовий тренажер", "en": "Stair Climber" },
+      "name": {
+        "uk": "Сходовий тренажер",
+        "en": "Stair Climber"
+      },
       "primaryGroup": "cardio",
       "muscles": {
         "primary": ["quadriceps", "gluteus_maximus"],
         "secondary": ["calves", "hamstrings"]
       },
-      "equipment": ["machine"]
+      "equipment": ["machine"],
+      "aliases": ["сходинки", "степер"],
+      "description": "Стань прямо, тримайся легко за поручні, ступай на повну стопу. Тримай рівний темп задану кількість хвилин. Типова помилка: висіти на поручнях, знімаючи вагу з ніг."
     },
     {
       "id": "battle_ropes",
-      "name": { "uk": "Канатні хвилі (Battle Ropes)", "en": "Battle Ropes" },
+      "name": {
+        "uk": "Канатні хвилі (Battle Ropes)",
+        "en": "Battle Ropes"
+      },
       "primaryGroup": "cardio",
       "muscles": {
         "primary": ["front_deltoid", "forearms"],
         "secondary": ["rectus_abdominis", "quadriceps"]
       },
-      "equipment": ["other"]
+      "equipment": ["other"],
+      "aliases": ["канати", "батл ропс"],
+      "description": "Візьми кінці канатів, коліна трохи зігнуті, корпус напружений. Створюй хвилі почергово або одночасно задану кількість секунд. Типова помилка: працювати тільки руками, не включаючи ноги й корпус."
     },
-
     {
       "id": "deadlift",
-      "name": { "uk": "Станова тяга", "en": "Deadlift" },
+      "name": {
+        "uk": "Станова тяга",
+        "en": "Deadlift"
+      },
       "primaryGroup": "full_body",
       "muscles": {
         "primary": ["hamstrings", "gluteus_maximus", "erector_spinae"],
         "secondary": ["quadriceps", "latissimus_dorsi", "trapezius", "forearms"]
       },
-      "equipment": ["barbell"]
+      "equipment": ["barbell"],
+      "aliases": ["станова", "тяга", "становая"],
+      "description": "Стань так, щоб гриф був над серединою стопи, візьмись хватом за ширину плечей, спина нейтральна. Штовхай підлогу ногами і випрямись, ведучи гриф уздовж ніг. Типова помилка: округлена спина на старті."
     },
     {
       "id": "clean_and_press",
-      "name": { "uk": "Поштовх штанги", "en": "Clean and Press" },
+      "name": {
+        "uk": "Поштовх штанги",
+        "en": "Clean and Press"
+      },
       "primaryGroup": "full_body",
       "muscles": {
         "primary": ["quadriceps", "gluteus_maximus", "front_deltoid"],
         "secondary": ["hamstrings", "trapezius", "triceps", "erector_spinae"]
       },
-      "equipment": ["barbell"]
+      "equipment": ["barbell"],
+      "aliases": ["поштовх", "кліни"],
+      "description": "Зніми штангу з підлоги на груди одним рухом, потім вижми над головою. Опускай так само контрольовано на груди й на підлогу. Типова помилка: вчити рух одразу з робочою вагою."
     },
     {
       "id": "turkish_getup",
-      "name": { "uk": "Турецький підйом", "en": "Turkish Get-up" },
+      "name": {
+        "uk": "Турецький підйом",
+        "en": "Turkish Get-up"
+      },
       "primaryGroup": "full_body",
       "muscles": {
         "primary": ["gluteus_maximus", "quadriceps", "rectus_abdominis"],
         "secondary": ["front_deltoid", "obliques", "triceps"]
       },
-      "equipment": ["kettlebell", "dumbbell"]
+      "equipment": ["kettlebell", "dumbbell"],
+      "aliases": ["турецький підйом"],
+      "description": "Лежачи, тримай гирю на прямій руці вгору й підіймайся до положення стоячи через опору на руку й коліно. Опускайся тим самим шляхом, не опускаючи погляд із ваги. Типова помилка: поспішати між фазами."
     },
     {
       "id": "farmers_walk",
-      "name": { "uk": "Хода фермера", "en": "Farmer's Walk" },
+      "name": {
+        "uk": "Хода фермера",
+        "en": "Farmer's Walk"
+      },
       "primaryGroup": "full_body",
       "muscles": {
         "primary": ["forearms", "trapezius"],
@@ -1397,21 +1849,31 @@
           "gluteus_maximus"
         ]
       },
-      "equipment": ["dumbbell", "kettlebell"]
+      "equipment": ["dumbbell", "kettlebell"],
+      "aliases": ["хода фермера", "перенесення ваги"],
+      "description": "Візьми вагу в обидві руки, плечі опущені, корпус напружений. Крокуй рівно задану дистанцію короткими впевненими кроками. Типова помилка: нахилятись убік під нерівною вагою."
     },
     {
       "id": "thruster",
-      "name": { "uk": "Трастер", "en": "Thruster" },
+      "name": {
+        "uk": "Трастер",
+        "en": "Thruster"
+      },
       "primaryGroup": "full_body",
       "muscles": {
         "primary": ["quadriceps", "gluteus_maximus", "front_deltoid"],
         "secondary": ["triceps", "erector_spinae", "rectus_abdominis"]
       },
-      "equipment": ["barbell", "dumbbell"]
+      "equipment": ["barbell", "dumbbell"],
+      "aliases": ["траст", "присід з жимом"],
+      "description": "Тримай вагу на плечах, сідай до паралелі й на підйомі одразу вижимай вагу над головою. Опускай назад на плечі й повторюй. Типова помилка: розривати рух паузою на рівні плечей, коли темп заданий."
     },
     {
       "id": "snatch",
-      "name": { "uk": "Ривок штанги", "en": "Snatch" },
+      "name": {
+        "uk": "Ривок штанги",
+        "en": "Snatch"
+      },
       "primaryGroup": "full_body",
       "muscles": {
         "primary": [
@@ -1422,11 +1884,16 @@
         ],
         "secondary": ["hamstrings", "erector_spinae", "triceps"]
       },
-      "equipment": ["barbell"]
+      "equipment": ["barbell"],
+      "aliases": ["ривок"],
+      "description": "Зніми штангу з підлоги широким хватом і одним рухом виведи над головою, підсідаючи під неї. Зафіксуй позицію і опусти під контролем. Типова помилка: братись за ривок без відпрацьованої техніки на легкій вазі."
     },
     {
       "id": "man_maker",
-      "name": { "uk": "Мен-мейкер", "en": "Man Maker" },
+      "name": {
+        "uk": "Мен-мейкер",
+        "en": "Man Maker"
+      },
       "primaryGroup": "full_body",
       "muscles": {
         "primary": [
@@ -1442,7 +1909,1209 @@
           "biceps"
         ]
       },
-      "equipment": ["dumbbell"]
+      "equipment": ["dumbbell"],
+      "aliases": ["менмейкер"],
+      "description": "З упору лежачи з гантелями зроби віджимання, по тязі кожною рукою, потім вистрибни й вижми гантелі над головою. Повторюй у рівному темпі. Типова помилка: губити пряму лінію корпусу під час тяг."
+    },
+    {
+      "id": "smith_bench_press",
+      "name": {
+        "uk": "Жим лежачи у Сміті",
+        "en": "Smith Machine Bench Press"
+      },
+      "primaryGroup": "chest",
+      "muscles": {
+        "primary": ["pectoralis_major"],
+        "secondary": ["front_deltoid", "triceps"]
+      },
+      "equipment": ["machine", "bench"],
+      "aliases": ["сміт жим", "жим у машині сміта"],
+      "description": "Постав лаву так, щоб гриф опускався до низу грудей, лопатки зведені. Зніми гриф із фіксаторів, опусти до грудей і вижми вгору. Типова помилка: лягати не по центру, через що траєкторія тисне на одне плече."
+    },
+    {
+      "id": "incline_pushup",
+      "name": {
+        "uk": "Віджимання від опори",
+        "en": "Incline Push-up"
+      },
+      "primaryGroup": "chest",
+      "muscles": {
+        "primary": ["pectoralis_major"],
+        "secondary": ["front_deltoid", "triceps"]
+      },
+      "equipment": ["bodyweight"],
+      "aliases": ["віджимання руки вище", "легкі віджимання"],
+      "description": "Постав долоні на стійку опору вище підлоги, тіло витягнуте в лінію. Опустись грудьми до опори і виштовхнись угору. Типова помилка: завелика висота опори, після якої вправа перестає давати навантаження."
+    },
+    {
+      "id": "decline_pushup",
+      "name": {
+        "uk": "Віджимання з ногами на підвищенні",
+        "en": "Decline Push-up"
+      },
+      "primaryGroup": "chest",
+      "muscles": {
+        "primary": ["pectoralis_major"],
+        "secondary": ["front_deltoid", "triceps", "serratus_anterior"]
+      },
+      "equipment": ["bodyweight"],
+      "aliases": ["віджимання ноги на лаві", "важкі віджимання"],
+      "description": "Постав стопи на лаву чи стілець, долоні під плечима, корпус напружений. Опустись до підлоги і виштовхнись угору, тримаючи пряму лінію тіла. Типова помилка: провалювати поперек, коли ноги вище за плечі."
+    },
+    {
+      "id": "dumbbell_pullover",
+      "name": {
+        "uk": "Пуловер із гантеллю",
+        "en": "Dumbbell Pullover"
+      },
+      "primaryGroup": "chest",
+      "muscles": {
+        "primary": ["pectoralis_major", "latissimus_dorsi"],
+        "secondary": ["triceps", "serratus_anterior"]
+      },
+      "equipment": ["dumbbell", "bench"],
+      "aliases": ["пуловер"],
+      "description": "Ляж упоперек або вздовж лави, тримай одну гантель обома руками над грудьми. Опусти її за голову до відчуття розтягнення і поверни над груди. Типова помилка: іти за голову глибше, ніж дозволяє рухливість плеча."
+    },
+    {
+      "id": "band_chest_press",
+      "name": {
+        "uk": "Жим із резинкою",
+        "en": "Band Chest Press"
+      },
+      "primaryGroup": "chest",
+      "muscles": {
+        "primary": ["pectoralis_major"],
+        "secondary": ["front_deltoid", "triceps"]
+      },
+      "equipment": ["band"],
+      "aliases": ["жим гумкою"],
+      "description": "Пропусти резинку за спиною на рівні лопаток, кінці в долонях біля грудей. Вижми руки вперед до повного випрямлення і поверни назад під контролем. Типова помилка: відпускати резинку різко на зворотному русі."
+    },
+    {
+      "id": "plyometric_pushup",
+      "name": {
+        "uk": "Віджимання з відривом рук",
+        "en": "Plyometric Push-up"
+      },
+      "primaryGroup": "chest",
+      "muscles": {
+        "primary": ["pectoralis_major"],
+        "secondary": ["front_deltoid", "triceps"]
+      },
+      "equipment": ["bodyweight"],
+      "aliases": ["вибухові віджимання", "віджимання з бавовною"],
+      "description": "Прийми звичайний упор лежачи, корпус жорсткий. Опустись і виштовхнись угору так, щоб долоні відірвались від підлоги, м'яко приземлись на зігнуті лікті. Типова помилка: приземлятись на прямі руки."
+    },
+    {
+      "id": "pendlay_row",
+      "name": {
+        "uk": "Тяга Пендлея",
+        "en": "Pendlay Row"
+      },
+      "primaryGroup": "back",
+      "muscles": {
+        "primary": ["latissimus_dorsi", "rhomboids"],
+        "secondary": ["trapezius", "biceps", "erector_spinae"]
+      },
+      "equipment": ["barbell"],
+      "aliases": ["тяга з підлоги в нахилі"],
+      "description": "Корпус паралельно підлозі, штанга лежить на землі перед стопами, спина пряма. Різко підтягни гриф до низу грудей і поклади назад на підлогу. Типова помилка: підіймати корпус угору разом зі штангою."
+    },
+    {
+      "id": "rack_pull",
+      "name": {
+        "uk": "Тяга з плінтів",
+        "en": "Rack Pull"
+      },
+      "primaryGroup": "back",
+      "muscles": {
+        "primary": ["erector_spinae", "trapezius"],
+        "secondary": ["latissimus_dorsi", "gluteus_maximus", "forearms"]
+      },
+      "equipment": ["barbell"],
+      "aliases": ["часткова станова", "тяга з упорів"],
+      "description": "Постав гриф на упори приблизно на рівні колін, візьмись хватом на ширині плечей. Випрямись, зводячи лопатки, і поверни штангу на упори. Типова помилка: починати рух ривком спини замість поштовху ногами."
+    },
+    {
+      "id": "barbell_row_underhand",
+      "name": {
+        "uk": "Тяга штанги зворотним хватом",
+        "en": "Underhand Barbell Row"
+      },
+      "primaryGroup": "back",
+      "muscles": {
+        "primary": ["latissimus_dorsi"],
+        "secondary": ["biceps", "rhomboids", "erector_spinae"]
+      },
+      "equipment": ["barbell"],
+      "aliases": ["тяга янди"],
+      "description": "Візьми штангу зворотним хватом на ширині плечей, нахили корпус, спина пряма. Тягни гриф до низу живота, ведучи лікті назад уздовж боків. Типова помилка: перерозгинати зап'ястя під вагою."
+    },
+    {
+      "id": "chest_supported_row",
+      "name": {
+        "uk": "Тяга гантелей лежачи на похилій лаві",
+        "en": "Chest-Supported Row"
+      },
+      "primaryGroup": "back",
+      "muscles": {
+        "primary": ["rhomboids", "latissimus_dorsi"],
+        "secondary": ["rear_deltoid", "biceps", "trapezius"]
+      },
+      "equipment": ["dumbbell", "bench"],
+      "aliases": ["тяга з упором у лаву"],
+      "description": "Ляж грудьми на похилу лаву, гантелі звисають вертикально вниз. Тягни їх до пояса, зводячи лопатки, і опусти повністю. Типова помилка: відривати груди від лави, щоб дотягнути вагу."
+    },
+    {
+      "id": "single_arm_lat_pulldown",
+      "name": {
+        "uk": "Тяга верхнього блоку однією рукою",
+        "en": "Single-Arm Lat Pulldown"
+      },
+      "primaryGroup": "back",
+      "muscles": {
+        "primary": ["latissimus_dorsi"],
+        "secondary": ["biceps", "rear_deltoid"]
+      },
+      "equipment": ["cable", "machine"],
+      "aliases": ["одностороння верхня тяга"],
+      "description": "Візьми одну рукоятку верхнього блоку, сядь або стань на коліно, корпус стабільний. Потягни рукоятку до боку грудей і поверни вгору з повним розтягненням. Типова помилка: скручувати корпус убік замість роботи широчайшого."
+    },
+    {
+      "id": "band_row",
+      "name": {
+        "uk": "Тяга резинки сидячи",
+        "en": "Seated Band Row"
+      },
+      "primaryGroup": "back",
+      "muscles": {
+        "primary": ["rhomboids", "latissimus_dorsi"],
+        "secondary": ["biceps", "rear_deltoid"]
+      },
+      "equipment": ["band"],
+      "aliases": ["тяга гумки сидячи"],
+      "description": "Сядь на підлогу, накинь резинку на стопи, тримай кінці в руках, спина пряма. Тягни кінці до пояса, зводячи лопатки, і повертай під контролем. Типова помилка: відхиляти корпус назад замість руху лопаток."
+    },
+    {
+      "id": "band_lat_pulldown",
+      "name": {
+        "uk": "Тяга резинки згори",
+        "en": "Band Lat Pulldown"
+      },
+      "primaryGroup": "back",
+      "muscles": {
+        "primary": ["latissimus_dorsi"],
+        "secondary": ["biceps", "rear_deltoid", "trapezius"]
+      },
+      "equipment": ["band"],
+      "aliases": ["гумка згори"],
+      "description": "Закріпи резинку над головою, візьми кінці в руки, стань або сядь під нею. Потягни кінці вниз до рівня грудей, опускаючи лопатки, і поверни вгору. Типова помилка: тягнути тільки руками, не включаючи спину."
+    },
+    {
+      "id": "pullup_negative",
+      "name": {
+        "uk": "Негативні підтягування",
+        "en": "Negative Pull-up"
+      },
+      "primaryGroup": "back",
+      "muscles": {
+        "primary": ["latissimus_dorsi"],
+        "secondary": ["biceps", "forearms", "rhomboids"]
+      },
+      "equipment": ["bodyweight"],
+      "aliases": ["негативи на турніку"],
+      "description": "Стань на опору так, щоб підборіддя вже було над перекладиною, і зніми ноги. Опускайся якнайповільніше до повного випрямлення рук. Типова помилка: падати вниз замість утримувати опускання щонайменше три секунди."
+    },
+    {
+      "id": "superman",
+      "name": {
+        "uk": "Супермен",
+        "en": "Superman"
+      },
+      "primaryGroup": "back",
+      "muscles": {
+        "primary": ["erector_spinae"],
+        "secondary": ["gluteus_maximus", "trapezius"]
+      },
+      "equipment": ["bodyweight"],
+      "aliases": ["лодочка", "розгинання лежачи на животі"],
+      "description": "Ляж на живіт, руки витягнуті вперед, ноги прямі. Одночасно підійми руки й ноги на кілька сантиметрів, затримайся і повільно опустись. Типова помилка: закидати голову назад, підіймаючи погляд угору."
+    },
+    {
+      "id": "landmine_press",
+      "name": {
+        "uk": "Жим лендмайн",
+        "en": "Landmine Press"
+      },
+      "primaryGroup": "shoulders",
+      "muscles": {
+        "primary": ["front_deltoid"],
+        "secondary": ["triceps", "pectoralis_major", "rectus_abdominis"]
+      },
+      "equipment": ["barbell"],
+      "aliases": ["жим під кутом однією рукою"],
+      "description": "Закріпи один кінець грифа в кутку або в лендмайні, другий тримай біля плеча. Вижми гриф уперед-угору по діагоналі і поверни до плеча. Типова помилка: розвертати корпус, замість того щоб тримати його стабільним."
+    },
+    {
+      "id": "pike_pushup",
+      "name": {
+        "uk": "Віджимання щукою",
+        "en": "Pike Push-up"
+      },
+      "primaryGroup": "shoulders",
+      "muscles": {
+        "primary": ["front_deltoid"],
+        "secondary": ["triceps", "trapezius"]
+      },
+      "equipment": ["bodyweight"],
+      "aliases": ["віджимання будиночком"],
+      "description": "Стань у позицію будиночка: таз угору, руки й стопи на підлозі, спина пряма. Опустись маківкою до підлоги між долонями і виштовхнись угору. Типова помилка: згинати спину замість руху в плечах."
+    },
+    {
+      "id": "band_lateral_raise",
+      "name": {
+        "uk": "Підйом через сторони з резинкою",
+        "en": "Band Lateral Raise"
+      },
+      "primaryGroup": "shoulders",
+      "muscles": {
+        "primary": ["lateral_deltoid"],
+        "secondary": ["trapezius"]
+      },
+      "equipment": ["band"],
+      "aliases": ["махи з гумкою"],
+      "description": "Стань на середину резинки, кінці в опущених руках, лікті трохи зігнуті. Підійми руки в сторони до рівня плечей і поверни вниз під контролем. Типова помилка: підіймати плечі до вух разом із руками."
+    },
+    {
+      "id": "plate_front_raise",
+      "name": {
+        "uk": "Підйом млинця перед собою",
+        "en": "Plate Front Raise"
+      },
+      "primaryGroup": "shoulders",
+      "muscles": {
+        "primary": ["front_deltoid"],
+        "secondary": ["trapezius", "rectus_abdominis"]
+      },
+      "equipment": ["other"],
+      "aliases": ["млинець перед собою"],
+      "description": "Візьми млинець обома руками за краї, руки опущені перед стегнами. Підійми його прямими руками до рівня очей і опусти під контролем. Типова помилка: закидати млинець імпульсом від тазу."
+    },
+    {
+      "id": "handstand_pushup",
+      "name": {
+        "uk": "Віджимання у стійці біля стіни",
+        "en": "Handstand Push-up"
+      },
+      "primaryGroup": "shoulders",
+      "muscles": {
+        "primary": ["front_deltoid"],
+        "secondary": ["triceps", "trapezius"]
+      },
+      "equipment": ["bodyweight"],
+      "aliases": ["стійка на руках віджимання"],
+      "description": "Стань у стійку на руках спиною до стіни, долоні трохи ширше плечей. Опустись маківкою майже до підлоги і виштовхнись угору. Типова помилка: братись за вправу без упевненої утримуваної стійки."
+    },
+    {
+      "id": "rear_delt_machine",
+      "name": {
+        "uk": "Зворотна розводка в тренажері",
+        "en": "Reverse Pec Deck"
+      },
+      "primaryGroup": "shoulders",
+      "muscles": {
+        "primary": ["rear_deltoid"],
+        "secondary": ["rhomboids", "trapezius"]
+      },
+      "equipment": ["machine"],
+      "aliases": ["зворотний пек-дек"],
+      "description": "Сядь обличчям до спинки тренажера, візьми ручки на рівні плечей. Розведи руки назад, зводячи лопатки, і поверни без ривка. Типова помилка: згинати лікті сильніше в кінці руху, підключаючи біцепс."
+    },
+    {
+      "id": "zottman_curl",
+      "name": {
+        "uk": "Згинання Зоттмана",
+        "en": "Zottman Curl"
+      },
+      "primaryGroup": "biceps",
+      "muscles": {
+        "primary": ["biceps", "brachialis"],
+        "secondary": ["forearms"]
+      },
+      "equipment": ["dumbbell"],
+      "aliases": ["зоттман"],
+      "description": "Зігни руки з гантелями долонями вгору, у верхній точці розверни кисті долонями вниз. Опусти вагу в такому положенні і розверни назад унизу. Типова помилка: брати вагу, з якою неможливо контролювати опускання."
+    },
+    {
+      "id": "cable_rope_hammer_curl",
+      "name": {
+        "uk": "Молоткові згинання з канатом",
+        "en": "Rope Hammer Curl"
+      },
+      "primaryGroup": "biceps",
+      "muscles": {
+        "primary": ["brachialis", "biceps"],
+        "secondary": ["forearms"]
+      },
+      "equipment": ["cable"],
+      "aliases": ["канат на біцепс"],
+      "description": "Візьми канат нижнього блоку нейтральним хватом, лікті біля боків. Зігни руки до грудей і поверни під контролем. Типова помилка: відходити від блоку так далеко, що навантаження зникає внизу."
+    },
+    {
+      "id": "seated_dumbbell_curl",
+      "name": {
+        "uk": "Згинання рук сидячи",
+        "en": "Seated Dumbbell Curl"
+      },
+      "primaryGroup": "biceps",
+      "muscles": {
+        "primary": ["biceps"],
+        "secondary": ["brachialis", "forearms"]
+      },
+      "equipment": ["dumbbell", "bench"],
+      "aliases": ["біцепс сидячи"],
+      "description": "Сядь на край лави, гантелі в опущених руках, спина пряма. Зігни руки до плечей, тримаючи лікті нерухомими, і опусти повністю. Типова помилка: підштовхувати вагу стегном на початку руху."
+    },
+    {
+      "id": "twenty_one_curl",
+      "name": {
+        "uk": "Згинання 21",
+        "en": "21s Curl"
+      },
+      "primaryGroup": "biceps",
+      "muscles": {
+        "primary": ["biceps"],
+        "secondary": ["brachialis", "forearms"]
+      },
+      "equipment": ["barbell"],
+      "aliases": ["двадцять одне", "21"],
+      "description": "Зроби сім повторень у нижній половині амплітуди, сім у верхній і сім повних. Лікті лишаються біля корпусу весь підхід. Типова помилка: починати з ваги для звичайних згинань, а не легшої."
+    },
+    {
+      "id": "single_arm_pushdown",
+      "name": {
+        "uk": "Розгинання руки на блоці",
+        "en": "Single-Arm Pushdown"
+      },
+      "primaryGroup": "triceps",
+      "muscles": {
+        "primary": ["triceps"],
+        "secondary": ["forearms"]
+      },
+      "equipment": ["cable"],
+      "aliases": ["однією рукою на блоці"],
+      "description": "Візьми одну рукоятку верхнього блоку зворотним або прямим хватом, лікоть біля боку. Розігни руку вниз до повного випрямлення і поверни. Типова помилка: допомагати корпусом, нахиляючись уперед."
+    },
+    {
+      "id": "french_press_seated",
+      "name": {
+        "uk": "Французький жим сидячи зі штангою",
+        "en": "Seated French Press"
+      },
+      "primaryGroup": "triceps",
+      "muscles": {
+        "primary": ["triceps"],
+        "secondary": ["front_deltoid"]
+      },
+      "equipment": ["barbell", "bench"],
+      "aliases": ["французький сидячи"],
+      "description": "Сядь на лаву зі спинкою, підійми штангу над головою, лікті спрямовані вперед. Опусти гриф за голову і розігни руки вгору. Типова помилка: опускати гриф на потилицю замість глибше за голову."
+    },
+    {
+      "id": "machine_tricep_extension",
+      "name": {
+        "uk": "Розгинання рук у тренажері",
+        "en": "Machine Triceps Extension"
+      },
+      "primaryGroup": "triceps",
+      "muscles": {
+        "primary": ["triceps"],
+        "secondary": []
+      },
+      "equipment": ["machine"],
+      "aliases": ["трицепс тренажер"],
+      "description": "Сядь, поклади лікті на упор, візьми ручки. Розігни руки до прямої і поверни, не даючи вазі стукнути в стек. Типова помилка: підіймати лікті з упору у верхній частині руху."
+    },
+    {
+      "id": "band_overhead_extension",
+      "name": {
+        "uk": "Розгинання через голову з резинкою",
+        "en": "Band Overhead Extension"
+      },
+      "primaryGroup": "triceps",
+      "muscles": {
+        "primary": ["triceps"],
+        "secondary": ["front_deltoid"]
+      },
+      "equipment": ["band"],
+      "aliases": ["гумка через голову"],
+      "description": "Наступи на один кінець резинки, другий тримай обома руками за головою, лікті вперед. Розігни руки вгору і поверни за голову під контролем. Типова помилка: розводити лікті в сторони під натягом."
+    },
+    {
+      "id": "farmers_hold",
+      "name": {
+        "uk": "Утримання ваги на час",
+        "en": "Farmer's Hold"
+      },
+      "primaryGroup": "forearms",
+      "muscles": {
+        "primary": ["forearms"],
+        "secondary": ["trapezius"]
+      },
+      "equipment": ["dumbbell", "kettlebell"],
+      "aliases": ["утримання хвата", "статичне утримання"],
+      "description": "Візьми важкі гантелі, стань прямо, плечі опущені, лопатки зведені. Тримай вагу нерухомо задану кількість секунд. Типова помилка: сутулитись, коли хват починає здавати."
+    },
+    {
+      "id": "plate_pinch",
+      "name": {
+        "uk": "Утримання млинця щипцевим хватом",
+        "en": "Plate Pinch"
+      },
+      "primaryGroup": "forearms",
+      "muscles": {
+        "primary": ["forearms"],
+        "secondary": []
+      },
+      "equipment": ["other"],
+      "aliases": ["щипцевий хват"],
+      "description": "Візьми млинець пальцями за гладкий бік, рука опущена вздовж тіла. Утримуй вагу задану кількість секунд, не спираючи її на стегно. Типова помилка: підпирати млинець ногою, коли пальці слабнуть."
+    },
+    {
+      "id": "dead_hang",
+      "name": {
+        "uk": "Віс на перекладині",
+        "en": "Dead Hang"
+      },
+      "primaryGroup": "forearms",
+      "muscles": {
+        "primary": ["forearms"],
+        "secondary": ["latissimus_dorsi", "trapezius"]
+      },
+      "equipment": ["bodyweight"],
+      "aliases": ["віс на турніку"],
+      "description": "Візьмись за перекладину хватом на ширині плечей і повисни, лопатки трохи активні, а не повністю розслаблені. Тримайся задану кількість секунд. Типова помилка: висіти повністю розслабленими плечима."
+    },
+    {
+      "id": "wrist_roller",
+      "name": {
+        "uk": "Скручування на кистьовому ролику",
+        "en": "Wrist Roller"
+      },
+      "primaryGroup": "forearms",
+      "muscles": {
+        "primary": ["forearms"],
+        "secondary": ["front_deltoid"]
+      },
+      "equipment": ["other"],
+      "aliases": ["кистьовий ролик"],
+      "description": "Тримай ролик на прямих руках перед собою, вага на шнурі внизу. Накручуй шнур кистями догори, потім так само контрольовано розкручуй. Типова помилка: опускати руки вниз, коли плечі втомились."
+    },
+    {
+      "id": "behind_back_wrist_curl",
+      "name": {
+        "uk": "Згинання зап'ястя за спиною",
+        "en": "Behind-the-Back Wrist Curl"
+      },
+      "primaryGroup": "forearms",
+      "muscles": {
+        "primary": ["forearms"],
+        "secondary": []
+      },
+      "equipment": ["barbell"],
+      "aliases": ["штанга за спиною на передпліччя"],
+      "description": "Стань прямо, тримай штангу за спиною хватом знизу, руки прямі. Зігни зап'ястя, підкочуючи гриф пальцями, і опусти. Типова помилка: згинати лікті, перетворюючи рух на тягу."
+    },
+    {
+      "id": "band_wrist_extension",
+      "name": {
+        "uk": "Розгинання зап'ястя з резинкою",
+        "en": "Band Wrist Extension"
+      },
+      "primaryGroup": "forearms",
+      "muscles": {
+        "primary": ["forearms"],
+        "secondary": []
+      },
+      "equipment": ["band"],
+      "aliases": ["гумка на зап'ястя"],
+      "description": "Наступи на резинку, візьми кінець долонею вниз, передпліччя на стегні. Підійми кисть угору проти опору і повільно опусти. Типова помилка: рухати всім передпліччям замість кисті."
+    },
+    {
+      "id": "towel_hang",
+      "name": {
+        "uk": "Віс на рушнику",
+        "en": "Towel Hang"
+      },
+      "primaryGroup": "forearms",
+      "muscles": {
+        "primary": ["forearms"],
+        "secondary": ["latissimus_dorsi", "biceps"]
+      },
+      "equipment": ["bodyweight", "other"],
+      "aliases": ["рушник на турніку"],
+      "description": "Перекинь рушник через перекладину, візьмись за обидва кінці й повисни. Тримайся задану кількість секунд, плечі трохи активні. Типова помилка: зривати хват ривком замість того, щоб завершити підхід свідомо."
+    },
+    {
+      "id": "hollow_hold",
+      "name": {
+        "uk": "Утримання човника",
+        "en": "Hollow Hold"
+      },
+      "primaryGroup": "core",
+      "muscles": {
+        "primary": ["rectus_abdominis"],
+        "secondary": ["obliques"]
+      },
+      "equipment": ["bodyweight"],
+      "aliases": ["холлоу", "човник на спині"],
+      "description": "Ляж на спину, притисни поперек до підлоги, підійми лопатки, руки й ноги. Тримай позицію задану кількість секунд, дихаючи рівно. Типова помилка: відрив попереку, коли ноги опускаються надто низько."
+    },
+    {
+      "id": "mountain_climber",
+      "name": {
+        "uk": "Скелелаз",
+        "en": "Mountain Climber"
+      },
+      "primaryGroup": "core",
+      "muscles": {
+        "primary": ["rectus_abdominis"],
+        "secondary": ["obliques", "front_deltoid", "quadriceps"]
+      },
+      "equipment": ["bodyweight"],
+      "aliases": ["альпініст"],
+      "description": "Прийми упор лежачи на прямих руках, корпус жорсткий. Почергово підтягуй коліна до грудей у рівному темпі, не підіймаючи таз. Типова помилка: підкидати таз угору з кожним рухом ноги."
+    },
+    {
+      "id": "dead_bug",
+      "name": {
+        "uk": "Мертвий жук",
+        "en": "Dead Bug"
+      },
+      "primaryGroup": "core",
+      "muscles": {
+        "primary": ["rectus_abdominis"],
+        "secondary": ["obliques"]
+      },
+      "equipment": ["bodyweight"],
+      "aliases": ["дед баг"],
+      "description": "Ляж на спину, руки вгору, стегна й коліна під прямим кутом, поперек притиснутий. Опускай протилежні руку й ногу, зберігаючи контакт попереку з підлогою. Типова помилка: поспішати й губити притиснутий поперек."
+    },
+    {
+      "id": "bird_dog",
+      "name": {
+        "uk": "Птах-собака",
+        "en": "Bird Dog"
+      },
+      "primaryGroup": "core",
+      "muscles": {
+        "primary": ["erector_spinae", "rectus_abdominis"],
+        "secondary": ["gluteus_maximus", "rear_deltoid"]
+      },
+      "equipment": ["bodyweight"],
+      "aliases": ["берд дог"],
+      "description": "Стань на чотири точки, спина нейтральна. Витягни протилежні руку й ногу до горизонталі, затримайся і поверни. Типова помилка: розвертати таз убік замість утримувати його рівним."
+    },
+    {
+      "id": "reverse_crunch",
+      "name": {
+        "uk": "Зворотні скручування",
+        "en": "Reverse Crunch"
+      },
+      "primaryGroup": "core",
+      "muscles": {
+        "primary": ["rectus_abdominis"],
+        "secondary": ["obliques"]
+      },
+      "equipment": ["bodyweight"],
+      "aliases": ["скручування тазом"],
+      "description": "Ляж на спину, коліна зігнуті над тазом, руки вздовж тіла. Скрути таз до грудей, відриваючи його від підлоги, і повільно опусти. Типова помилка: розгойдувати ноги замість скручування тазу."
+    },
+    {
+      "id": "cable_crunch",
+      "name": {
+        "uk": "Скручування на блоці",
+        "en": "Cable Crunch"
+      },
+      "primaryGroup": "core",
+      "muscles": {
+        "primary": ["rectus_abdominis"],
+        "secondary": ["obliques"]
+      },
+      "equipment": ["cable"],
+      "aliases": ["молитва на блоці"],
+      "description": "Стань на коліна перед верхнім блоком, канат біля голови, таз нерухомий. Скручуй корпус до колін, згинаючи хребет, і повертайся вгору. Типова помилка: тягнути вагу руками й тазом замість скручування."
+    },
+    {
+      "id": "pallof_press",
+      "name": {
+        "uk": "Жим Паллофа",
+        "en": "Pallof Press"
+      },
+      "primaryGroup": "core",
+      "muscles": {
+        "primary": ["obliques"],
+        "secondary": ["rectus_abdominis"]
+      },
+      "equipment": ["cable", "band"],
+      "aliases": ["паллоф", "антиротація"],
+      "description": "Стань боком до блоку або резинки, рукоятка біля грудей обома руками. Вижми руки прямо вперед, не даючи корпусу розвернутись, і поверни. Типова помилка: дозволяти корпусу повертатись за натягом."
+    },
+    {
+      "id": "v_up",
+      "name": {
+        "uk": "Складання",
+        "en": "V-Up"
+      },
+      "primaryGroup": "core",
+      "muscles": {
+        "primary": ["rectus_abdominis"],
+        "secondary": ["obliques", "quadriceps"]
+      },
+      "equipment": ["bodyweight"],
+      "aliases": ["книжка", "ві-ап"],
+      "description": "Ляж на спину, руки за головою, ноги прямі. Одночасно підійми корпус і ноги, тягнучись руками до стоп, і опустись під контролем. Типова помилка: смикати корпус ривком, допомагаючи руками."
+    },
+    {
+      "id": "box_squat",
+      "name": {
+        "uk": "Присідання на тумбу",
+        "en": "Box Squat"
+      },
+      "primaryGroup": "quadriceps",
+      "muscles": {
+        "primary": ["quadriceps", "gluteus_maximus"],
+        "secondary": ["hamstrings", "erector_spinae"]
+      },
+      "equipment": ["barbell"],
+      "aliases": ["присід на ящик"],
+      "description": "Постав тумбу позаду, штанга на трапеціях. Сідай, ведучи таз назад, торкнись тумби без падіння на неї і вставай. Типова помилка: розслабляти спину в момент дотику."
+    },
+    {
+      "id": "wall_sit",
+      "name": {
+        "uk": "Стілець біля стіни",
+        "en": "Wall Sit"
+      },
+      "primaryGroup": "quadriceps",
+      "muscles": {
+        "primary": ["quadriceps"],
+        "secondary": ["gluteus_maximus", "calves"]
+      },
+      "equipment": ["bodyweight"],
+      "aliases": ["стільчик", "присід біля стіни"],
+      "description": "Обіпрись спиною об стіну і опустись, поки стегна не стануть паралельні підлозі, коліна над стопами. Тримай позицію задану кількість секунд. Типова помилка: спиратись руками на стегна."
+    },
+    {
+      "id": "jump_squat",
+      "name": {
+        "uk": "Присідання зі стрибком",
+        "en": "Jump Squat"
+      },
+      "primaryGroup": "quadriceps",
+      "muscles": {
+        "primary": ["quadriceps", "gluteus_maximus"],
+        "secondary": ["calves", "hamstrings"]
+      },
+      "equipment": ["bodyweight"],
+      "aliases": ["стрибкові присідання"],
+      "description": "Сідай до паралелі й вибухово виштовхнись угору, приземляючись на всю стопу. Гаси приземлення, одразу переходячи в наступний присід. Типова помилка: приземлятись на прямі ноги."
+    },
+    {
+      "id": "split_squat",
+      "name": {
+        "uk": "Статичний випад",
+        "en": "Split Squat"
+      },
+      "primaryGroup": "quadriceps",
+      "muscles": {
+        "primary": ["quadriceps", "gluteus_maximus"],
+        "secondary": ["hamstrings", "calves"]
+      },
+      "equipment": ["bodyweight", "dumbbell"],
+      "aliases": ["випад на місці"],
+      "description": "Стань у позицію випаду й лишайся в ній весь підхід. Опускайся вниз, поки заднє коліно майже торкнеться підлоги, і вставай. Типова помилка: переносити вагу на носок передньої ноги."
+    },
+    {
+      "id": "pistol_squat",
+      "name": {
+        "uk": "Присідання на одній нозі",
+        "en": "Pistol Squat"
+      },
+      "primaryGroup": "quadriceps",
+      "muscles": {
+        "primary": ["quadriceps", "gluteus_maximus"],
+        "secondary": ["hamstrings", "calves"]
+      },
+      "equipment": ["bodyweight"],
+      "aliases": ["пістолетик", "пістоль"],
+      "description": "Стань на одну ногу, другу витягни вперед, руки для балансу. Опускайся до низу амплітуди і вставай на тій самій нозі. Типова помилка: заходити глибше, ніж дозволяє контроль коліна."
+    },
+    {
+      "id": "smith_squat",
+      "name": {
+        "uk": "Присідання у Сміті",
+        "en": "Smith Machine Squat"
+      },
+      "primaryGroup": "quadriceps",
+      "muscles": {
+        "primary": ["quadriceps", "gluteus_maximus"],
+        "secondary": ["hamstrings"]
+      },
+      "equipment": ["machine"],
+      "aliases": ["присід у сміті"],
+      "description": "Постав стопи трохи попереду грифа, спина пряма, гриф на трапеціях. Опустись до паралелі й вижми вгору. Типова помилка: ставити стопи строго під гриф, через що коліна йдуть далеко вперед."
+    },
+    {
+      "id": "glute_ham_raise",
+      "name": {
+        "uk": "Згинання на GHD",
+        "en": "Glute Ham Raise"
+      },
+      "primaryGroup": "hamstrings",
+      "muscles": {
+        "primary": ["hamstrings"],
+        "secondary": ["gluteus_maximus", "erector_spinae"]
+      },
+      "equipment": ["machine"],
+      "aliases": ["гхр", "тренажер ghd"],
+      "description": "Зафіксуй стопи в тренажері, стегна на подушці, корпус прямий. Опускайся вперед під контролем і повертайся силою задньої поверхні. Типова помилка: згинатись у стегнах, знімаючи навантаження."
+    },
+    {
+      "id": "seated_leg_curl",
+      "name": {
+        "uk": "Згинання ніг сидячи",
+        "en": "Seated Leg Curl"
+      },
+      "primaryGroup": "hamstrings",
+      "muscles": {
+        "primary": ["hamstrings"],
+        "secondary": ["calves"]
+      },
+      "equipment": ["machine"],
+      "aliases": ["згинання сидячи тренажер"],
+      "description": "Сядь, валик над щиколотками, стегна зафіксовані верхньою подушкою. Зігни ноги до упору і повільно розігни. Типова помилка: підіймати таз, добираючи останні повторення."
+    },
+    {
+      "id": "cable_pull_through",
+      "name": {
+        "uk": "Протяжка між ніг на блоці",
+        "en": "Cable Pull-Through"
+      },
+      "primaryGroup": "hamstrings",
+      "muscles": {
+        "primary": ["hamstrings", "gluteus_maximus"],
+        "secondary": ["erector_spinae"]
+      },
+      "equipment": ["cable"],
+      "aliases": ["пул сру", "протяжка на блоці"],
+      "description": "Стань спиною до нижнього блоку, канат між ніг, коліна трохи зігнуті. Веди таз назад до розтягнення, потім випрямись, стискаючи сідниці. Типова помилка: тягнути канат руками замість руху тазом."
+    },
+    {
+      "id": "kettlebell_deadlift",
+      "name": {
+        "uk": "Станова тяга з гирею",
+        "en": "Kettlebell Deadlift"
+      },
+      "primaryGroup": "hamstrings",
+      "muscles": {
+        "primary": ["hamstrings", "gluteus_maximus"],
+        "secondary": ["erector_spinae", "forearms"]
+      },
+      "equipment": ["kettlebell"],
+      "aliases": ["тяга гирі"],
+      "description": "Постав гирю між стопами, візьмись обома руками, спина нейтральна. Випрямись, штовхаючи підлогу ногами, і опусти гирю тим самим шляхом. Типова помилка: тягнути спиною з округленим попереком."
+    },
+    {
+      "id": "sliding_leg_curl",
+      "name": {
+        "uk": "Згинання ніг ковзанням",
+        "en": "Sliding Leg Curl"
+      },
+      "primaryGroup": "hamstrings",
+      "muscles": {
+        "primary": ["hamstrings"],
+        "secondary": ["gluteus_maximus", "rectus_abdominis"]
+      },
+      "equipment": ["bodyweight"],
+      "aliases": ["згинання на слайдерах"],
+      "description": "Ляж на спину, п'яти на ковзкій поверхні або рушнику, таз піднятий. Випрямляй ноги від себе і повертай, не опускаючи таз. Типова помилка: класти таз на підлогу після кожного повторення."
+    },
+    {
+      "id": "band_good_morning",
+      "name": {
+        "uk": "Нахили з резинкою",
+        "en": "Band Good Morning"
+      },
+      "primaryGroup": "hamstrings",
+      "muscles": {
+        "primary": ["hamstrings", "erector_spinae"],
+        "secondary": ["gluteus_maximus"]
+      },
+      "equipment": ["band"],
+      "aliases": ["гуд морнінг з гумкою"],
+      "description": "Стань на резинку, накинь верх петлі на шию й плечі, коліна трохи зігнуті. Нахиляй корпус уперед до паралелі й повертайся. Типова помилка: круглити спину, коли опір зростає."
+    },
+    {
+      "id": "reverse_hyperextension",
+      "name": {
+        "uk": "Зворотна гіперекстензія",
+        "en": "Reverse Hyperextension"
+      },
+      "primaryGroup": "hamstrings",
+      "muscles": {
+        "primary": ["hamstrings", "gluteus_maximus"],
+        "secondary": ["erector_spinae"]
+      },
+      "equipment": ["machine", "bodyweight"],
+      "aliases": ["зворотна гіпера"],
+      "description": "Ляж животом на лаву чи тренажер так, щоб ноги вільно звисали, тримайся руками. Підіймай прямі ноги до лінії корпусу і опускай під контролем. Типова помилка: закидати ноги вище за спину ривком."
+    },
+    {
+      "id": "calf_raise_leg_press",
+      "name": {
+        "uk": "Підйоми на носки в жимі ногами",
+        "en": "Leg Press Calf Raise"
+      },
+      "primaryGroup": "calves",
+      "muscles": {
+        "primary": ["calves"],
+        "secondary": []
+      },
+      "equipment": ["machine"],
+      "aliases": ["носки в платформі"],
+      "description": "Постав носки на нижній край платформи, ноги майже прямі, але коліна не заблоковані. Виштовхуй платформу носками і повільно опускай п'яти. Типова помилка: згинати коліна, перетворюючи рух на жим."
+    },
+    {
+      "id": "dumbbell_calf_raise",
+      "name": {
+        "uk": "Підйоми на носки з гантелями",
+        "en": "Dumbbell Calf Raise"
+      },
+      "primaryGroup": "calves",
+      "muscles": {
+        "primary": ["calves"],
+        "secondary": ["forearms"]
+      },
+      "equipment": ["dumbbell"],
+      "aliases": ["ікри з гантелями"],
+      "description": "Стань прямо з гантелями в опущених руках, носки на підвищенні. Підіймайся на носки якнайвище і повільно опускай п'яти. Типова помилка: підстрибувати замість плавного підйому."
+    },
+    {
+      "id": "calf_raise_stairs",
+      "name": {
+        "uk": "Підйоми на носки на сходинці",
+        "en": "Stair Calf Raise"
+      },
+      "primaryGroup": "calves",
+      "muscles": {
+        "primary": ["calves"],
+        "secondary": []
+      },
+      "equipment": ["bodyweight"],
+      "aliases": ["ікри на сходах"],
+      "description": "Стань передньою частиною стоп на край сходинки, тримайся за поручень. Опусти п'яти нижче краю і підіймайся на носки. Типова помилка: працювати в короткій амплітуді без розтягнення внизу."
+    },
+    {
+      "id": "tibialis_raise",
+      "name": {
+        "uk": "Підйом носків",
+        "en": "Tibialis Raise"
+      },
+      "primaryGroup": "calves",
+      "muscles": {
+        "primary": ["calves"],
+        "secondary": []
+      },
+      "equipment": ["bodyweight"],
+      "aliases": ["передня гомілка", "тібіаліс"],
+      "description": "Обіпрись спиною об стіну, стопи на кроці попереду, п'яти на підлозі. Підіймай носки якнайвище і повільно опускай. Типова помилка: відривати п'яти, допомагаючи гомілкою."
+    },
+    {
+      "id": "band_calf_raise",
+      "name": {
+        "uk": "Підйоми на носки з резинкою",
+        "en": "Band Calf Raise"
+      },
+      "primaryGroup": "calves",
+      "muscles": {
+        "primary": ["calves"],
+        "secondary": []
+      },
+      "equipment": ["band"],
+      "aliases": ["ікри з гумкою"],
+      "description": "Сядь, накинь резинку на подушечки стоп, кінці тримай у руках. Тягни носки від себе проти опору і повільно повертай. Типова помилка: тягнути резинку руками замість роботи стопою."
+    },
+    {
+      "id": "pogo_hops",
+      "name": {
+        "uk": "Пружні стрибки на носках",
+        "en": "Pogo Hops"
+      },
+      "primaryGroup": "calves",
+      "muscles": {
+        "primary": ["calves"],
+        "secondary": ["quadriceps"]
+      },
+      "equipment": ["bodyweight"],
+      "aliases": ["пого стрибки"],
+      "description": "Стрибай на місці на носках, коліна майже прямі, контакт із підлогою короткий. Тримай ритм задану кількість секунд. Типова помилка: приземлятись на п'яти й гасити пружність."
+    },
+    {
+      "id": "band_kickback",
+      "name": {
+        "uk": "Відведення ноги назад з резинкою",
+        "en": "Band Kickback"
+      },
+      "primaryGroup": "glutes",
+      "muscles": {
+        "primary": ["gluteus_maximus"],
+        "secondary": ["hamstrings"]
+      },
+      "equipment": ["band"],
+      "aliases": ["махи ногою з гумкою"],
+      "description": "Накинь резинку на щиколотки, стань на чотири точки або тримайся за опору. Відводь ногу назад до скорочення сідниці і повертай під контролем. Типова помилка: компенсувати прогином попереку."
+    },
+    {
+      "id": "fire_hydrant",
+      "name": {
+        "uk": "Відведення коліна вбік",
+        "en": "Fire Hydrant"
+      },
+      "primaryGroup": "glutes",
+      "muscles": {
+        "primary": ["gluteus_medius"],
+        "secondary": ["gluteus_maximus"]
+      },
+      "equipment": ["bodyweight", "band"],
+      "aliases": ["пожежний гідрант"],
+      "description": "Стань на чотири точки, спина нейтральна, коліна під тазом. Відводь зігнуту ногу вбік до рівня тазу і повертай. Типова помилка: завалювати корпус у протилежний бік."
+    },
+    {
+      "id": "curtsy_lunge",
+      "name": {
+        "uk": "Випад-реверанс",
+        "en": "Curtsy Lunge"
+      },
+      "primaryGroup": "glutes",
+      "muscles": {
+        "primary": ["gluteus_maximus", "gluteus_medius"],
+        "secondary": ["quadriceps", "hamstrings"]
+      },
+      "equipment": ["bodyweight", "dumbbell"],
+      "aliases": ["реверанс", "діагональний випад"],
+      "description": "Зроби крок назад по діагоналі за опорну ногу і опустись, тримаючи корпус вертикально. Повернись у вихідне, штовхаючись передньою п'ятою. Типова помилка: завалювати переднє коліно всередину."
+    },
+    {
+      "id": "sumo_squat",
+      "name": {
+        "uk": "Присідання сумо",
+        "en": "Sumo Squat"
+      },
+      "primaryGroup": "glutes",
+      "muscles": {
+        "primary": ["gluteus_maximus", "adductors"],
+        "secondary": ["quadriceps", "hamstrings"]
+      },
+      "equipment": ["dumbbell", "kettlebell"],
+      "aliases": ["присід сумо", "широкий присід"],
+      "description": "Стань широко, носки назовні, вага в опущених руках між ніг. Сідай, розводячи коліна за напрямком стоп, і вставай, стискаючи сідниці. Типова помилка: зводити коліна всередину на підйомі."
+    },
+    {
+      "id": "frog_pump",
+      "name": {
+        "uk": "Міст із розведеними стопами",
+        "en": "Frog Pump"
+      },
+      "primaryGroup": "glutes",
+      "muscles": {
+        "primary": ["gluteus_maximus"],
+        "secondary": ["hamstrings"]
+      },
+      "equipment": ["bodyweight"],
+      "aliases": ["жабка на сідниці"],
+      "description": "Ляж на спину, зведи стопи підошвами разом, коліна розведені. Підіймай таз, стискаючи сідниці, і опускай, не кладучи повністю. Типова помилка: штовхатись поперекою замість сідниць."
+    },
+    {
+      "id": "machine_hip_thrust",
+      "name": {
+        "uk": "Ягідний міст у тренажері",
+        "en": "Machine Hip Thrust"
+      },
+      "primaryGroup": "glutes",
+      "muscles": {
+        "primary": ["gluteus_maximus"],
+        "secondary": ["hamstrings", "quadriceps"]
+      },
+      "equipment": ["machine"],
+      "aliases": ["хіп траст тренажер"],
+      "description": "Сядь у тренажер, подушка на згині стегон, спина щільно до опори. Виштовхуй таз уперед до повного розгинання і повертай під контролем. Типова помилка: перерозгинати поперек у верхній точці."
+    },
+    {
+      "id": "lateral_band_walk",
+      "name": {
+        "uk": "Крокування вбік з резинкою",
+        "en": "Lateral Band Walk"
+      },
+      "primaryGroup": "glutes",
+      "muscles": {
+        "primary": ["gluteus_medius"],
+        "secondary": ["gluteus_maximus", "quadriceps"]
+      },
+      "equipment": ["band"],
+      "aliases": ["крабик", "ходьба з гумкою"],
+      "description": "Накинь резинку над колінами, стань у півприсід, стопи на ширині плечей. Крокуй убік, зберігаючи натяг і рівний таз, задану кількість кроків. Типова помилка: зводити коліна між кроками."
+    },
+    {
+      "id": "walking",
+      "name": {
+        "uk": "Ходьба",
+        "en": "Walking"
+      },
+      "primaryGroup": "cardio",
+      "muscles": {
+        "primary": ["quadriceps", "calves"],
+        "secondary": ["gluteus_maximus", "hamstrings"]
+      },
+      "equipment": ["other"],
+      "aliases": ["прогулянка", "кроки"],
+      "description": "Іди рівним темпом, плечі розслаблені, погляд уперед. Тримай темп, за якого дихання прискорене, але розмова можлива. Типова помилка: рахувати як тренування лише дуже швидку ходьбу."
+    },
+    {
+      "id": "incline_treadmill_walk",
+      "name": {
+        "uk": "Ходьба в гору",
+        "en": "Incline Treadmill Walk"
+      },
+      "primaryGroup": "cardio",
+      "muscles": {
+        "primary": ["gluteus_maximus", "calves"],
+        "secondary": ["quadriceps", "hamstrings"]
+      },
+      "equipment": ["machine", "other"],
+      "aliases": ["доріжка в нахилі", "ходьба в підйом"],
+      "description": "Постав нахил доріжки або обери підйом, іди рівним темпом без опори на поручні. Тримай корпус вертикально задану кількість хвилин. Типова помилка: триматись за поручні, знімаючи навантаження."
+    },
+    {
+      "id": "swimming",
+      "name": {
+        "uk": "Плавання",
+        "en": "Swimming"
+      },
+      "primaryGroup": "cardio",
+      "muscles": {
+        "primary": ["latissimus_dorsi", "front_deltoid"],
+        "secondary": ["quadriceps", "rectus_abdominis"]
+      },
+      "equipment": ["other"],
+      "aliases": ["басейн"],
+      "description": "Пливи рівним темпом обраним стилем, тримаючи корпус витягнутим і дихання ритмічним. Відрахуй час або кількість басейнів. Типова помилка: задирати голову, через що таз опускається вниз."
+    },
+    {
+      "id": "elliptical",
+      "name": {
+        "uk": "Еліптичний тренажер",
+        "en": "Elliptical"
+      },
+      "primaryGroup": "cardio",
+      "muscles": {
+        "primary": ["quadriceps", "gluteus_maximus"],
+        "secondary": ["hamstrings", "calves"]
+      },
+      "equipment": ["machine"],
+      "aliases": ["еліпс", "орбітрек"],
+      "description": "Стань на педалі всією стопою, тримай корпус вертикально, працюй руками разом із ногами. Тримай рівний темп задану кількість хвилин. Типова помилка: висіти на поручнях, розвантажуючи ноги."
+    },
+    {
+      "id": "sprint_intervals",
+      "name": {
+        "uk": "Спринт-інтервали",
+        "en": "Sprint Intervals"
+      },
+      "primaryGroup": "cardio",
+      "muscles": {
+        "primary": ["hamstrings", "quadriceps"],
+        "secondary": ["gluteus_maximus", "calves"]
+      },
+      "equipment": ["other"],
+      "aliases": ["інтервали", "спринти"],
+      "description": "Після розминки чергуй короткі відрізки на високій швидкості з відпочинком у легкому темпі. Заверши заминкою. Типова помилка: виходити на спринт без повноцінної розминки."
+    },
+    {
+      "id": "trap_bar_deadlift",
+      "name": {
+        "uk": "Тяга з трап-грифом",
+        "en": "Trap Bar Deadlift"
+      },
+      "primaryGroup": "full_body",
+      "muscles": {
+        "primary": ["quadriceps", "gluteus_maximus"],
+        "secondary": ["hamstrings", "erector_spinae", "trapezius", "forearms"]
+      },
+      "equipment": ["other"],
+      "aliases": ["трап гриф", "гексагональний гриф"],
+      "description": "Стань усередину трап-грифа, візьмись за ручки з боків, спина нейтральна. Випрямись, штовхаючи підлогу ногами, і опусти гриф тим самим шляхом. Типова помилка: починати рух ривком плечей."
+    },
+    {
+      "id": "kettlebell_clean",
+      "name": {
+        "uk": "Взяття гирі на груди",
+        "en": "Kettlebell Clean"
+      },
+      "primaryGroup": "full_body",
+      "muscles": {
+        "primary": ["gluteus_maximus", "hamstrings"],
+        "secondary": ["trapezius", "front_deltoid", "forearms"]
+      },
+      "equipment": ["kettlebell"],
+      "aliases": ["клін з гирею"],
+      "description": "Заведи гирю назад між ніг і виштовхни рухом тазу, приймаючи її на передпліччя біля грудей. Опусти назад у замах під контролем. Типова помилка: дозволяти гирі бити по передпліччю."
+    },
+    {
+      "id": "wall_ball",
+      "name": {
+        "uk": "Кидки м'яча в стіну",
+        "en": "Wall Ball"
+      },
+      "primaryGroup": "full_body",
+      "muscles": {
+        "primary": ["quadriceps", "front_deltoid"],
+        "secondary": ["gluteus_maximus", "triceps", "rectus_abdominis"]
+      },
+      "equipment": ["other"],
+      "aliases": ["волбол", "м'яч у стіну"],
+      "description": "Тримай медичний м'яч біля грудей, сідай до паралелі і на підйомі викидай м'яч у позначку на стіні. Лови його й одразу переходь у наступний присід. Типова помилка: кидати руками без поштовху ногами."
+    },
+    {
+      "id": "sled_push",
+      "name": {
+        "uk": "Штовхання саней",
+        "en": "Sled Push"
+      },
+      "primaryGroup": "full_body",
+      "muscles": {
+        "primary": ["quadriceps", "gluteus_maximus"],
+        "secondary": ["calves", "front_deltoid", "erector_spinae"]
+      },
+      "equipment": ["other"],
+      "aliases": ["сани", "пролер"],
+      "description": "Візьмись за стійки саней, корпус нахилений уперед по прямій лінії з ногами. Штовхай сани короткими потужними кроками задану дистанцію. Типова помилка: округлювати спину, коли вага завелика."
+    },
+    {
+      "id": "bear_crawl",
+      "name": {
+        "uk": "Ведмежа хода",
+        "en": "Bear Crawl"
+      },
+      "primaryGroup": "full_body",
+      "muscles": {
+        "primary": ["rectus_abdominis", "front_deltoid"],
+        "secondary": ["quadriceps", "triceps", "obliques"]
+      },
+      "equipment": ["bodyweight"],
+      "aliases": ["ведмежа хода на чотирьох"],
+      "description": "Стань на долоні й носки, коліна за кілька сантиметрів від підлоги. Рухайся вперед протилежними рукою й ногою, тримаючи таз низько й рівно. Типова помилка: підіймати таз угору й розгойдувати корпус."
     }
   ]
 }

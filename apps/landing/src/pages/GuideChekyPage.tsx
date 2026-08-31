@@ -1,4 +1,5 @@
 import SiteLayout from "../components/SiteLayout";
+import GuideHomeModule from "../components/GuideHomeModule";
 import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
 
 const SOURCES = [
@@ -51,6 +52,7 @@ export default function GuideChekyPage() {
           <p className="mt-4 text-sm text-subtle">
             Оновлено 28.08.2026 · автор Sergeant
           </p>
+          <GuideHomeModule href="/hroshi" label="Гроші" />
         </div>
 
         <div className="rounded-[var(--radius-card)] bg-ink px-7 py-6">
