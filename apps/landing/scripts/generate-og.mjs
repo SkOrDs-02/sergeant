@@ -118,12 +118,29 @@ const esc = (s) =>
  * «дріт» звʼязків унизу. Кегль заголовка залежить від довжини, щоб довгі
  * назви гайдів не вилазили за 630px.
  */
+/**
+ * Родина сторінки за префіксом маршруту. Мапа замість гілки `if`: інакше
+ * кожна нова родина сторінок додавала б сюди ще одну умову.
+ */
+const EYEBROW_BY_PREFIX = [
+  ["/guides/", "Гайд"],
+  ["/hroshi", "Модуль"],
+  ["/yizha", "Модуль"],
+  ["/zvychky", "Модуль"],
+  ["/trenuvannia", "Модуль"],
+];
+
+function eyebrowFor(route) {
+  const hit = EYEBROW_BY_PREFIX.find(([prefix]) => route.startsWith(prefix));
+  return hit ? hit[1] : null;
+}
+
 function routeHtml(route, meta) {
   const h1Size = meta.title.length <= 30 ? 62 : 50;
-  // Eyebrow лише для гайдів: на решті сторінок він дублював би вордмарку.
-  const eyebrow = route.startsWith("/guides/")
-    ? `<div class="eyebrow">Гайд</div>`
-    : "";
+  // Eyebrow лише там, де сторінка належить родині: на решті він дублював
+  // би вордмарку.
+  const label = eyebrowFor(route);
+  const eyebrow = label ? `<div class="eyebrow">${label}</div>` : "";
   return `<!doctype html>
 <meta charset="utf-8">
 <style>
@@ -138,7 +155,7 @@ body { display: flex; flex-direction: column; }
   color: ${brandColors.emerald[700]};
 }
 h1 {
-  margin-top: ${route.startsWith("/guides/") ? 18 : 52}px;
+  margin-top: ${label ? 18 : 52}px;
   max-width: 980px;
   font-size: ${h1Size}px;
   font-weight: 800;

@@ -168,6 +168,28 @@ export default function ZvyazkyPage() {
       </section>
 
       <section className="mt-14 border-t-2 border-foreground-strong pt-8">
+        <h2 className={h2}>Як це виглядає</h2>
+        <p className={body}>
+          Хаб збирає всі чотири сфери на одному екрані – саме з цих даних і
+          рахуються звʼязки.
+        </p>
+        <figure className="mt-6 max-w-[320px]">
+          <img
+            src="/screens/hub.webp"
+            alt="Головний екран Sergeant: картки чотирьох модулів із даними дня і серією"
+            width={414}
+            height={896}
+            loading="lazy"
+            className="paper-shadow w-full rounded-[var(--radius-card)] border border-cardline-strong bg-card"
+          />
+          <figcaption className="mt-2.5 text-xs text-subtle">
+            Хаб: усі чотири сфери на одному екрані. Справжній екран бети, дані з
+            демо-режиму продукту.
+          </figcaption>
+        </figure>
+      </section>
+
+      <section className="mt-14 border-t-2 border-foreground-strong pt-8">
         <h2 className={h2}>Межі</h2>
         <ul className="mt-5 flex max-w-2xl flex-col gap-3">
           {LIMITS.map((limit) => (
