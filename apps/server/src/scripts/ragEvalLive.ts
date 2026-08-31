@@ -48,6 +48,7 @@ import {
   startPgVector,
   stopPgVector,
 } from "../lib/ragEval/testcontainer.js";
+import { embedSequentially } from "../lib/ragEval/pacedEmbedding.js";
 
 const USER_ID = "rag-eval-live-user";
 
@@ -77,9 +78,14 @@ async function main(): Promise<void> {
     console.log(
       `Живий ембеддинг ${docTexts.length + queryTexts.length} текстів, модель ${env.VOYAGE_EMBEDDING_MODEL}`,
     );
-    const vectors = await provider.embedBatch([...docTexts, ...queryTexts], {
-      criticality: "non-critical",
-    });
+    // Послідовно, з витримкою темпу — інакше 25 паралельних батчів
+    // вибивають 429 на акаунті без платіжного методу і відкривають
+    // circuit breaker. Саме на цьому перший живий прогін і впав.
+    const vectors = await embedSequentially(
+      provider,
+      [...docTexts, ...queryTexts],
+      (done, total) => console.log(`  ${done}/${total} векторів`),
+    );
 
     await ensureUser(handle.pool, USER_ID);
     const store = createPgVectorStore(handle.pool);
@@ -126,6 +132,8 @@ async function main(): Promise<void> {
       },
       metrics,
       status: classification.status,
+      // Зберігаємо для сумісності зі звітами CLI, але процесом НЕ виходимо
+      // з цим кодом — див. нижче.
       exitCode: statusToExitCode(classification.status),
       // Свідомо НЕ шлемо `autoDisable`: живий шар алертить, а не гасить.
     };
@@ -134,7 +142,17 @@ async function main(): Promise<void> {
     const out = outputPath();
     if (out) writeFileSync(out, `${JSON.stringify(summary, null, 2)}\n`);
 
-    process.exitCode = summary.exitCode;
+    // Успішний прогін завершується нулем незалежно від `warn`/`kill`:
+    // деградація якості — це сигнал у звіті, а не поломка прогону.
+    // Ненульовий код тут означав би рівно одне — евал не відпрацював, і
+    // саме тому крок у workflow більше не ховається за `|| true`. Перший
+    // живий прогін упав на 429 і лишився зеленим саме через таке
+    // змішування «модель просіла» і «скрипт помер».
+    if (classification.status !== "pass") {
+      console.warn(
+        `[rag-eval live] статус ${classification.status}: recall@${golden.topK}=${metrics.recallAtK.mean.toFixed(3)} нижче порога ${classification.warnThreshold}`,
+      );
+    }
   } finally {
     await stopPgVector(handle);
   }

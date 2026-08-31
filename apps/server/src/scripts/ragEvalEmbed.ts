@@ -31,6 +31,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { env } from "../env.js";
+import { embedSequentially } from "../lib/ragEval/pacedEmbedding.js";
 import { createVoyageEmbeddings } from "../modules/ai-memory/embeddings.js";
 import {
   corpusTextsFingerprint,
@@ -82,73 +83,6 @@ function writeManifest(path: string, input: ManifestInput): void {
     embeddingsSha256: input.embeddingsSha256,
   };
   writeFileSync(path, `${JSON.stringify(manifest, null, 2)}\n`);
-}
-
-/**
- * Пауза між викликами, у мілісекундах. `RAG_EVAL_EMBED_RPM` дозволяє
- * підняти темп на акаунті зі стандартними лімітами; дефолт розрахований
- * на безплатний тариф Voyage (3 запити на хвилину), де паралельний
- * батчинг прод-клієнта миттєво впирається в 429.
- */
-function pacingMs(): number {
-  const rpm = Number(process.env["RAG_EVAL_EMBED_RPM"] ?? "3");
-  return (
-    Math.ceil(60_000 / (Number.isFinite(rpm) && rpm > 0 ? rpm : 3)) + 1_000
-  );
-}
-
-const sleep = (ms: number): Promise<void> =>
-  new Promise((r) => setTimeout(r, ms));
-
-/**
- * Прогін по одному батчу за раз із витримкою темпу і бекофом на 429.
- *
- * Прод-клієнт свідомо шле всі батчі паралельно — для живої інжесції це
- * правильно, для одноразової генерації фікстури на rate-limited акаунті
- * це гарантований 429. Батчинг, ретраї, маскування і `input_type`
- * лишаються клієнтові; тут — лише темп.
- */
-async function embedSequentially(
-  provider: ReturnType<typeof createVoyageEmbeddings>,
-  texts: string[],
-): Promise<Float32Array[]> {
-  const size = env.VOYAGE_BATCH_SIZE;
-  const delay = pacingMs();
-  const out: Float32Array[] = [];
-
-  for (let start = 0; start < texts.length; start += size) {
-    const chunk = texts.slice(start, start + size);
-    const batchNo = Math.floor(start / size) + 1;
-    const totalBatches = Math.ceil(texts.length / size);
-
-    let attempt = 0;
-    for (;;) {
-      try {
-        const vectors = await provider.embedBatch(chunk, {
-          criticality: "non-critical",
-        });
-        out.push(...vectors);
-        break;
-      } catch (error) {
-        const retryable =
-          typeof error === "object" &&
-          error !== null &&
-          (error as { retryable?: boolean }).retryable === true;
-        if (!retryable || attempt >= 5) throw error;
-        attempt++;
-        const backoff = delay * (attempt + 1);
-        console.warn(
-          `  батч ${batchNo}: ${(error as Error).message.slice(0, 80)} — повтор через ${Math.round(backoff / 1000)} с`,
-        );
-        await sleep(backoff);
-      }
-    }
-
-    console.log(`  батч ${batchNo}/${totalBatches} — ${out.length} векторів`);
-    if (start + size < texts.length) await sleep(delay);
-  }
-
-  return out;
 }
 
 async function main(): Promise<void> {
@@ -214,10 +148,11 @@ async function main(): Promise<void> {
   // `non-critical` — щоб евал ніколи не зʼїв денний бюджет продової
   // інжесції: при перевищенні soft-порога виклик відхиляється, а не
   // конкурує з живими користувачами.
-  const vectors = await embedSequentially(provider, [
-    ...docTexts,
-    ...queryTexts,
-  ]);
+  const vectors = await embedSequentially(
+    provider,
+    [...docTexts, ...queryTexts],
+    (done, total) => console.log(`  ${done}/${total} векторів`),
+  );
 
   if (vectors.length !== total) {
     throw new Error(
