@@ -1,8 +1,7 @@
 # Спека: чип «Спитати AI» на інсайт-плашках + зняття day-hint
 
-> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-16.
-> **Status:** Active (спека до виконання)
-> **Виконання:** чиста сесія у свіжому worktree від main. Governing skills: `sergeant-module-ai` + `sergeant-web-ui` (+ `sergeant-server-api` для видалення роуту).
+> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-24.
+> **Status:** Implemented — чип живе в [`InsightCard.tsx`](../../../../apps/web/src/shared/components/ui/InsightCard.tsx) (`askAiPrompt`, `askAiDisabled`) і викликається з хабу та інсайтів Фініка; генератор `POST /api/nutrition/day-hint` знято (`adf5f063c`), підпис чипа згодом скорочено до іскри з «AI» (`caa9bab65`).
 
 ## Проблема
 

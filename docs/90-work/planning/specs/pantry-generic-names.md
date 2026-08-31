@@ -1,9 +1,13 @@
 # SPEC: Родові назви, картка продукту з варіантами і розширені категорії комори
 
-> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-08.
-> **Status:** Active - реалізовано (обидві фази) у гілці
-> `claude/pantry-generic-names-spec`. Міграція отримала номер **130**, а не
-> 129: 129 уже зайнята `129_nutrition_pantry_pk_per_user.sql`.
+> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-24.
+> **Status:** Implemented — обидві фази в `main`: [`bce76b8fc`](https://github.com/SkOrDs-02/sergeant/pull/924)
+> (родові назви й картка продукту в коморі, #924), міграція **130**
+> `130_pantry_item_sources.sql` (номер 129 уже займала
+> `129_nutrition_pantry_pk_per_user.sql`), покриття smoke-тестом
+> `apps/web/tests/smoke/nutrition-pantry-generic-names.spec.ts`.
+> **Хвіст:** цей smoke-тест нестабільний і періодично валить джобу
+> `Critical-flow E2E` на чужих PR — окремий борг, не частина спеки.
 
 ## Проблема
 

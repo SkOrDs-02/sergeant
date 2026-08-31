@@ -1,7 +1,10 @@
 # SPEC: Модульний шар агентної системи (module-owner скіли + Claude-агенти)
 
-> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-06.
-> **Status:** Active
+> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-06.
+> **Status:** Implemented — модульний шар розкатано (PR #889–#892, агенти додані в
+> [`742d31735`](https://github.com/SkOrDs-02/sergeant/commit/742d31735)). У дереві
+> девʼять `sergeant-module-*` скілів і пʼять `*-owner` агентів, роутинг
+> `AGENTS.md` двовимірний (module + surface).
 
 <!-- Самодостатня спека: виконавець (свіжа сесія, нуль контексту з розмови-інтервʼю)
 реалізує зміни, читаючи лише її. Створена через скіл `spec` 2026-08-27. -->
