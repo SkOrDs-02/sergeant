@@ -1,13 +1,13 @@
 # Глибокий аудит модуля Фізрук (web): логіка, фло, візуал
 
-> **Last touched:** 2026-08-10 by @claude. **Next review:** 2027-11-18.
+> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-24.
 > **Status:** Active — дослідження виконано; перша хвиля фіксів застосована (§0), решта лишається беклогом (§7).
 
 > **Що це.** Наскрізний аудит модуля fizruk на вебі: чи працюють елементи,
 > кнопки й логіка; браузерна верифікація живих фло; дизайн-дослідження екрана
 > активного тренування (скарга founder-а: «щільно і без структури»).
 > Контекст-джерела: [канон fizruk](../../01-product/model/fizruk.md), спека
-> [`fizruk-workouts-active-workout.md`](../planning/specs/fizruk-workouts-active-workout.md),
+> [`fizruk-workouts-active-workout.md`](../planning/specs/archive/fizruk-workouts-active-workout.md),
 > [diff-звіт product-knowledge-fizruk](product-knowledge-fizruk.md).
 
 ## 0. Що вже виправлено (хвиля 1, 2026-08-08)

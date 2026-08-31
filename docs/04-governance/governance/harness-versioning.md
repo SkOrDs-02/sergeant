@@ -1,6 +1,6 @@
 # Harness versioning
 
-> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-11-30.
+> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-01.
 > **Status:** Active
 > **Owns:** [.agents/harness-versions.json](../../../.agents/harness-versions.json), [`scripts/ci-bump-harness-version.mjs`](../../../scripts/ci-bump-harness-version.mjs).
 > **Decided by:** [ADR-0072](../adr/0072-harness-versioning.md).

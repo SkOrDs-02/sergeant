@@ -1,7 +1,7 @@
 # SPEC: стенд перевірки AI-шляхів v2 — реальні промпти, пастки, вартість із кешем
 
-> **Last touched:** 2026-08-05 by @claude. **Next review:** 2027-11-03.
-> **Status:** Implemented — стенд у `apps/server/scripts/eval/` (`pipelines.*`, `judges.ts`, `cost.ts`, `report.ts`) + `model-eval.ts` / `vision-eval.ts`; звіти лягають у `docs/90-work/planning/{model,vision}-eval-YYYY-MM-DD.md`.
+> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-02.
+> **Status:** Archived (реалізовано) — стенд у `apps/server/scripts/eval/` (`pipelines.*`, `judges.ts`, `cost.ts`, `report.ts`) + `model-eval.ts` / `vision-eval.ts`; звіти лягають у `docs/90-work/planning/{model,vision}-eval-YYYY-MM-DD.md`.
 
 ## Проблема
 
@@ -77,15 +77,15 @@ prompt-кеш. Для чату це дало помилку в 4 рази: пе�
 
 ## Поверхня змін
 
-- [`apps/server/scripts/model-eval.ts`](../../../../apps/server/scripts/model-eval.ts)
+- [`apps/server/scripts/model-eval.ts`](../../../../../apps/server/scripts/model-eval.ts)
   — пайплайни `classify`, `digest`, `nutrition`, `mono`, `coach` переводяться на
   реальні промпти й отримують голден-сети з пастками.
 - Продові модулі — експорт білдерів промпту:
-  [`routes/internal/categorize.ts`](../../../../apps/server/src/routes/internal/categorize.ts),
-  [`modules/digest/weekly-digest.ts`](../../../../apps/server/src/modules/digest/weekly-digest.ts),
-  [`modules/mono/batchEnrichmentWorker.ts`](../../../../apps/server/src/modules/mono/batchEnrichmentWorker.ts),
-  [`modules/chat/coach.ts`](../../../../apps/server/src/modules/chat/coach.ts),
-  і нутриційні модулі в [`modules/nutrition/`](../../../../apps/server/src/modules/nutrition/).
+  [`routes/internal/categorize.ts`](../../../../../apps/server/src/routes/internal/categorize.ts),
+  [`modules/digest/weekly-digest.ts`](../../../../../apps/server/src/modules/digest/weekly-digest.ts),
+  [`modules/mono/batchEnrichmentWorker.ts`](../../../../../apps/server/src/modules/mono/batchEnrichmentWorker.ts),
+  [`modules/chat/coach.ts`](../../../../../apps/server/src/modules/chat/coach.ts),
+  і нутриційні модулі в [`modules/nutrition/`](../../../../../apps/server/src/modules/nutrition/).
 - Нові пайплайни для непокритих шляхів: `day-plan`, `week-plan`,
   `shopping-list`, `recommend-recipes`, `parse-pantry`, `coach-insight`.
 - Новий скрипт `apps/server/scripts/vision-eval.ts` + команда `eval:vision`
