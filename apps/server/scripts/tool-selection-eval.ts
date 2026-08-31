@@ -37,6 +37,11 @@ import { parseArgs } from "node:util";
 import process from "node:process";
 
 import { SYSTEM_PREFIX, TOOLS } from "../src/modules/chat/tools.js";
+import {
+  ALL_CASES as CASE_SET,
+  IMPLICIT_FACT_CASES,
+  type ToolCase,
+} from "../src/modules/chat/toolSelectionCases/index.js";
 import type { AnthropicTool } from "../src/modules/chat/toolDefs/types.js";
 
 const SKIN_URL = "https://openrouter.ai/api/v1/messages";
@@ -151,185 +156,7 @@ function hallucinatedIds(blocks: AnthropicBlock[], context: string): string[] {
   return found;
 }
 
-interface ToolCase {
-  name: string;
-  user: string;
-  /** Any of these counts as correct. */
-  accept: string[];
-  /**
-   * Правильна поведінка — НЕ викликати інструмент (балачка, поза доменом,
-   * деструктивна дія без підтвердження). Без цього прапорця стенд міряв лише
-   * «чи обрав правильний», але не «чи втримався від виклику» — а зайвий
-   * виклик у write-інструмент дорожчий за пропущений read.
-   */
-  expectNoTool?: boolean;
-  /** Потрібні ВСІ інструменти зі списку, а не будь-який (складені прохання). */
-  requireAll?: boolean;
-  /**
-   * Відмова словами теж зараховується.
-   *
-   * AI-CONTEXT: у кейсі «неіснуюча сутність» блок ДАНІ вже містить повний
-   * список звичок, тож `query_habits` — зайвий рід-виклик. `glm-5.2` відповів
-   * «у твоїй рутині немає медитації, створити?» і отримав MISS, хоча це краща
-   * поведінка за очікувану. Пастка цього кейса — вигаданий `hab_meditation`,
-   * і її ловить окремий лічильник `hallucinated`, а не цей предикат.
-   */
-  acceptRefusal?: boolean;
-}
-
-const CASES: ToolCase[] = [
-  {
-    name: "запит витрат",
-    user: "Скільки я витратив на продукти минулого місяця?",
-    accept: [
-      "aggregate_spending",
-      "query_transactions",
-      "category_breakdown",
-      "spending_trend",
-    ],
-  },
-  {
-    name: "запис витрати",
-    user: "Запиши витрату 250 грн на таксі",
-    accept: ["create_transaction"],
-  },
-  {
-    name: "порівняння періодів",
-    user: "Порівняй мої витрати цього і минулого місяця",
-    accept: ["compare_periods", "aggregate_spending", "spending_trend"],
-  },
-  {
-    name: "звичка виконана",
-    user: "Познач що я сьогодні зробив ранкову зарядку",
-    accept: ["mark_habit_done", "complete_habit_for_date", "query_habits"],
-  },
-  {
-    name: "факт про себе",
-    user: "Запамʼятай: у мене алергія на арахіс",
-    accept: ["remember"],
-  },
-  {
-    name: "прогрес у залі",
-    user: "Який мій максимум у жимі лежачи?",
-    accept: [
-      "exercise_progress",
-      "calculate_1rm",
-      "query_workouts",
-      "compare_progress",
-      "training_stats",
-    ],
-  },
-  {
-    name: "балачка",
-    user: "Дякую, ти дуже допомагаєш!",
-    accept: [],
-    expectNoTool: true,
-  },
-  {
-    name: "поза доменом",
-    user: "Яка завтра погода в Києві?",
-    accept: [],
-    expectNoTool: true,
-  },
-  {
-    name: "неоднозначний період",
-    user: "Скільки я витратив?",
-    accept: [
-      "aggregate_spending",
-      "query_transactions",
-      "category_breakdown",
-      "spending_trend",
-    ],
-  },
-  {
-    name: "дві дії поспіль",
-    user: "Запиши каву 60 грн і познач що я зробив ранкову зарядку",
-    accept: ["create_transaction", "mark_habit_done"],
-    requireAll: true,
-  },
-  {
-    name: "деструктивна дія",
-    user: "Видали всі мої транзакції за липень",
-    accept: ["query_transactions", "find_transaction"],
-    expectNoTool: true,
-  },
-  {
-    name: "неіснуюча сутність",
-    user: "Познач що я сьогодні медитував",
-    accept: ["query_habits", "create_habit"],
-    acceptRefusal: true,
-  },
-];
-
-/**
- * Неявні факти — сказані мимохідь, без прямого «запамʼятай».
- *
- * AI-CONTEXT: у `CASES` факт про себе представлений однією реплікою, яка
- * починається дослівно з «Запамʼятай:». Це найлегший різновид: намір
- * користувача вже названий словом, модель лише виконує. У проді так майже
- * ніхто не пише — обмеження й цілі проговорюються попутно, всередині
- * звичайного прохання («я взагалі не їм глютен, що приготувати?»), і саме
- * там ланцюг `remember` → `profileMirror` → `ai_memories` мовчки рветься:
- * жоден інший продюсер такий факт не підхоплює, тож незбережений факт не
- * осідає ніде.
- *
- * Тому кожен кейс тут навмисно ставить `remember` у конкуренцію з іншим
- * інструментом: репліка несе І факт, І звичайне прохання, яке саме по собі
- * тягне read- або write-виклик. `accept` перевіряє наявність `remember`
- * серед викликів (`scoreCase` шукає збіг, а не єдиний виклик), тож модель,
- * яка зробила обидві дії, зараховується; модель, яка відповіла лише на
- * прохання і пропустила факт, — ні. Це і є вимірюване.
- *
- * Кейси покривають категорії з `enum` інструмента (`diet`, `health`, `goal`,
- * `preference`, `allergy`), бо саме по них групується секція «Памʼять ШІ».
- * Сутності в репліках беруться з блоку ДАНІ, щоб супутній виклик не ловив
- * `hallucinated` і не змішував дві різні поразки в одному рядку звіту.
- */
-const IMPLICIT_FACT_CASES: ToolCase[] = [
-  {
-    name: "неявний факт: глютен",
-    user: "Я взагалі не їм глютен. Що б приготувати на вечерю?",
-    accept: ["remember"],
-  },
-  {
-    name: "неявний факт: травма",
-    user: "Присідання поки не роблю, травма коліна. Який мій максимум у жимі лежачи?",
-    accept: ["remember"],
-  },
-  {
-    /**
-     * Єдиний кейс, де у факту є конкурент зі структурованим домом: `set_goal`.
-     * Замір 2026-08-27 показав два різні прочитання — `gemini-3.7-flash`
-     * викликала обидва інструменти (3/3), `claude-haiku-4.5` обмежилась
-     * `set_goal` (0/3). Кейс лишається саме через цю розбіжність: ціль у
-     * таблиці цілей НЕ потрапляє в `ai_memories`, тож для RAG-контексту
-     * чату вона невидима — а це і є те, що міряє ця ініціатива.
-     */
-    name: "неявний факт: ціль ваги",
-    user: "Хочу скинути 5 кг до вересня. Скільки калорій я вже зʼїв сьогодні?",
-    accept: ["remember"],
-  },
-  {
-    name: "неявний факт: час тренувань",
-    user: "Ранкові тренування ненавиджу, займаюся тільки ввечері. Скільки разів я тренувався цього тижня?",
-    accept: ["remember"],
-  },
-  {
-    name: "неявний факт: морепродукти",
-    user: "Мене висипає від морепродуктів, тому суші пропускаю. Що зʼїсти після тренування?",
-    accept: ["remember"],
-  },
-  {
-    name: "неявний факт: бюджет",
-    user: "Я тепер відкладаю 20% доходу, тому стараюсь менше витрачати. Скільки я витратив на продукти цього місяця?",
-    accept: ["remember"],
-  },
-];
-
-/** Імена неявних кейсів — для окремого підсумку `implicit remember`. */
-const IMPLICIT_NAMES = new Set(IMPLICIT_FACT_CASES.map((c) => c.name));
-
-const ALL_CASES: ToolCase[] = [...CASES, ...IMPLICIT_FACT_CASES];
+const ALL_CASES: ToolCase[] = [...CASE_SET, ...IMPLICIT_FACT_CASES];
 
 interface AnthropicBlock {
   type: string;
