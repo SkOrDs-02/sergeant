@@ -215,3 +215,25 @@ export function receiptQtyToBase(
   const out = massToVolumeIfKnown(based, name);
   return { qty: out.base, unit: baseUnitFor(out.dimension) };
 }
+
+/**
+ * Скільки ОДИНИЦЬ фасування було в покупці: `2` для «2 × 0,25 л».
+ *
+ * Живе окремо від {@link receiptQtyToBase}, бо там кількість уже втоплена в
+ * добуток і назад не дістається: «500 мл» однаково описує дві банки по 250
+ * і одну пляшку 500. Число суто презентаційне — арифметика комори працює
+ * лише з базовою кількістю, тож інваріант суми варіантів воно не чіпає.
+ *
+ * `null` там, де множення не відбувалось: чиста одиниця виміру («0.212 кг»
+ * вагового товару) або одна штука фасування.
+ */
+export function receiptPackCount(
+  qty: number | null | undefined,
+  unit: string | null | undefined,
+): number | null {
+  if (qty == null || !Number.isFinite(qty) || qty <= 1) return null;
+  if (!Number.isInteger(qty)) return null;
+  const raw = String(unit ?? "").trim();
+  if (!raw || !PACKAGING_RE.test(raw)) return null;
+  return qty;
+}

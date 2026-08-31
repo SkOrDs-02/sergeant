@@ -12,7 +12,7 @@ import {
   syntheticSource,
 } from "./pantrySources.js";
 import { applyConsumeToPantryItem } from "./pantryConsume.js";
-import { receiptQtyToBase } from "./units.js";
+import { receiptPackCount, receiptQtyToBase } from "./units.js";
 import { MAX_PANTRY_SOURCES, type PantryItem } from "./pantryTextParser.js";
 
 function source(
@@ -84,6 +84,38 @@ describe("receiptQtyToBase (рішення 7)", () => {
     expect(receiptQtyToBase(1, "уп")).toBeNull();
     expect(receiptQtyToBase(null, "кг")).toBeNull();
     expect(receiptQtyToBase(0, "кг")).toBeNull();
+  });
+});
+
+// Звіт власника 2026-08-31: дві банки Red Bull 0,25 л показувались у
+// розкладі позиції як одна «500 мл» — пляшка, якої людина не купувала.
+// Добуток лишається (інваріант суми), кількість штук їде поруч із ним.
+describe("receiptPackCount", () => {
+  it("2 × 0,25 л → 2, поруч із добутком 500 мл", () => {
+    expect(receiptPackCount(2, "0,25л")).toBe(2);
+    expect(receiptQtyToBase(2, "0,25л")).toEqual({ qty: 500, unit: "мл" });
+  });
+
+  it.each([
+    [1, "0,25л", "одна банка — множення не відбувалось"],
+    [0.212, "кг", "ваговий товар — одиниця виміру, не фасування"],
+    [2, "кг", "чиста одиниця виміру: 2 кг це не «2 × кг»"],
+    [null, "0,25л", "кількості немає"],
+  ])("%s + '%s' → null (%s)", (qty, unit, _why) => {
+    expect(receiptPackCount(qty as number | null, unit as string)).toBeNull();
+  });
+
+  it("надпочата покупка втрачає «× N»: 250 мл від двох банок це вже не пара", () => {
+    const source = {
+      name: "Напій енергетичний Red Bull",
+      qty: 500,
+      unit: "мл",
+      addedAt: "2026-08-31",
+      packCount: 2,
+    };
+    const after = consumeFromSources([source], 250);
+    expect(after[0]!.qty).toBe(250);
+    expect(after[0]!.packCount).toBeNull();
   });
 });
 

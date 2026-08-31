@@ -23,11 +23,14 @@ function sanitizePantrySources(raw: unknown): PantryItemSource[] | null {
     const qty = Number(r["qty"]);
     const unit = r["unit"] == null ? "" : String(r["unit"]).trim();
     if (!name || !unit || !Number.isFinite(qty) || qty <= 0) continue;
+    const packCount = Number(r["packCount"]);
     out.push({
       name,
       qty,
       unit,
       addedAt: r["addedAt"] == null ? null : String(r["addedAt"]),
+      packCount:
+        Number.isInteger(packCount) && packCount > 1 ? packCount : null,
     });
   }
   return out.length > 0 ? out : null;

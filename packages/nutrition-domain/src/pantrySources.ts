@@ -102,6 +102,8 @@ export function capSources(
       qty: sourcesTotal(folded),
       unit: first.unit,
       addedAt: first.addedAt,
+      // Згорнуті покупки мали різні фасування — спільного «× N» у них немає.
+      packCount: null,
     },
     ...rest,
   ];
@@ -184,7 +186,11 @@ export function consumeFromSources(
     if (left <= 0) break;
     const cur = list[i]!;
     const take = Math.min(cur.qty, left);
-    cur.qty = roundBase(cur.qty - take);
+    if (take > 0) {
+      cur.qty = roundBase(cur.qty - take);
+      // Надпочата покупка більше не «2 × 250 мл»: фасування ціле, залишок ні.
+      cur.packCount = null;
+    }
     left = roundBase(left - take);
   }
 
