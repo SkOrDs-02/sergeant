@@ -139,3 +139,58 @@ describe("alcohol_spending — денні витрати за категоріє
     expect(s.raw["alcohol_spending"]).toEqual([300, 0, 200]);
   });
 });
+
+/**
+ * `smoking_spending` — та сама механіка, інша категорія. Тест тут не
+ * дублює алкогольний заради симетрії: він стереже рівно те, що ламається
+ * при копіюванні метрики — забутий `case` у reader-і поверне порожній ряд,
+ * і продукт покаже це як чесне «закономірностей не помічено», а не як баг.
+ */
+describe("smoking_spending — денні витрати на цигарки", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    mockCachedFinyk.mockReturnValue({
+      hiddenTransactions: [],
+      manualExpenses: [],
+      txCategories: {},
+      customCategories: [],
+    });
+  });
+
+  it("бере частку спліту цигарок, а не всю суму покупки", () => {
+    seedTx("tx-smoke", 900);
+    localStorage.setItem(
+      "finyk_tx_splits",
+      JSON.stringify({
+        "tx-smoke": [
+          { categoryId: "smoking", amount: 250 },
+          { categoryId: "groceries", amount: 650 },
+        ],
+      }),
+    );
+
+    const s = buildDailySeries(["smoking_spending"], { from: DAY, to: DAY });
+    expect(s.raw["smoking_spending"]![0]).toBe(250);
+  });
+
+  it("не плутає категорії: алкоголь у той самий день не тече в тютюн", () => {
+    seedTx("tx-both", 1000);
+    localStorage.setItem(
+      "finyk_tx_splits",
+      JSON.stringify({
+        "tx-both": [
+          { categoryId: "smoking", amount: 200 },
+          { categoryId: "alcohol", amount: 300 },
+          { categoryId: "groceries", amount: 500 },
+        ],
+      }),
+    );
+
+    const s = buildDailySeries(["smoking_spending", "alcohol_spending"], {
+      from: DAY,
+      to: DAY,
+    });
+    expect(s.raw["smoking_spending"]![0]).toBe(200);
+    expect(s.raw["alcohol_spending"]![0]).toBe(300);
+  });
+});

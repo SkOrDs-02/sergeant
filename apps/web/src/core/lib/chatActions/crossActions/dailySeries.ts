@@ -49,6 +49,7 @@ export const DAILY_SERIES_METRICS = [
   "wellbeing",
   "habit_rate",
   "alcohol_spending",
+  "smoking_spending",
 ] as const;
 
 export type DailyMetric = (typeof DAILY_SERIES_METRICS)[number];
@@ -65,6 +66,7 @@ const METRIC_UNIT: Record<DailyMetric, string> = {
   wellbeing: "1-5",
   habit_rate: "%",
   alcohol_spending: "грн",
+  smoking_spending: "грн",
 };
 
 // ─── Що означає ВІДСУТНІЙ запис за день ──────────────────────────────────────
@@ -116,6 +118,10 @@ export const ABSENCE_MEANS: Record<DailyMetric, AbsenceMeaning> = {
   // взагалі, метрика мовчить — і це правильніше, ніж константний нуль,
   // який корелював би з будь-чим.
   alcohol_spending: "zero-while-covered",
+  // Те саме, що й алкоголь: у покритому періоді день без покупки цигарок -
+  // справжній нуль. Вікно так само вужче за банківський синк, бо покриття
+  // рахується по самій метриці; для того, хто не курить, метрика мовчить.
+  smoking_spending: "zero-while-covered",
 };
 
 const DAY_MS = 86_400_000;
@@ -371,6 +377,8 @@ function readMetric(
       return readHabitRate(habitId);
     case "alcohol_spending":
       return readFinykCategory("alcohol");
+    case "smoking_spending":
+      return readFinykCategory("smoking");
   }
 }
 

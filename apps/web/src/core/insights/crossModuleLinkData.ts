@@ -68,6 +68,7 @@ const METRIC_MODULE: Record<DailyMetric, CrossModuleLinkModule> = {
   // (`isCrossModule`), а «алкоголь × spending» — ні, і це правильно: обидва
   // полюси там з одного модуля й одних даних.
   alcohol_spending: "finyk",
+  smoking_spending: "finyk",
 };
 
 /**
