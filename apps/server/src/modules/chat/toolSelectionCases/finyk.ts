@@ -44,6 +44,8 @@ export const FINYK_CASES: ToolCase[] = [
     name: "ліміт на категорію",
     user: "Постав ліміт 3000 грн на місяць для категорії розваги",
     accept: ["set_budget_limit", "update_budget"],
+    // Схема називає поле `limit`, а не `amount`, і період має enum.
+    expectArgs: { set_budget_limit: { limit: 3000, period: "month" } },
   },
   {
     name: "оновлення місячного фінплану",
@@ -91,10 +93,15 @@ export const FINYK_CASES: ToolCase[] = [
     name: "нова підписка щомісяця",
     user: "Додай підписку на спортзал, 900 грн, списується 5 числа кожного місяця",
     accept: ["recurring_expense"],
+    expectArgs: { recurring_expense: { amount: 900, day_of_month: 5 } },
   },
   {
     name: "текстовий звіт за тиждень",
     user: "Зроби мені звіт по фінансах за минулий тиждень",
     accept: ["export_report"],
+    // Сьогодні четвер 2026-07-30, тиждень з понеділка, тож «минулий тиждень»
+    // це 20-26 липня. Період `week` без дат теж приймається: він означає те
+    // саме, поки виконавець рахує від сьогодні.
+    expectArgs: { export_report: { period: ["week", "custom"] } },
   },
 ];

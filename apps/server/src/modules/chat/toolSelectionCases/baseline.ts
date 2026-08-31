@@ -19,11 +19,24 @@ export const BASELINE_CASES: ToolCase[] = [
       "category_breakdown",
       "spending_trend",
     ],
+    // Сьогодні в блоці ДАНІ 2026-07-30, тож «минулий місяць» це червень цілком.
+    expectArgs: {
+      query_transactions: {
+        date_from: "2026-06-01",
+        date_to: "2026-06-30",
+      },
+      aggregate_spending: {
+        date_from: "2026-06-01",
+        date_to: "2026-06-30",
+      },
+    },
   },
   {
     name: "запис витрати",
     user: "Запиши витрату 250 грн на таксі",
     accept: ["create_transaction"],
+    // Схема каже «Сума в грн», тобто 250, а не 25000 копійок.
+    expectArgs: { create_transaction: { amount: 250, type: "expense" } },
   },
   {
     name: "порівняння періодів",

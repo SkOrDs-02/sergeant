@@ -25,6 +25,7 @@ import {
   type Cassette,
 } from "./cassette.js";
 import { replayAll, summarize } from "./replay.js";
+import BASELINE from "../../../__fixtures__/tool-eval/baseline.json" with { type: "json" };
 
 const CASES: ToolCase[] = [...ALL_CASES, ...IMPLICIT_FACT_CASES];
 
@@ -93,13 +94,41 @@ describe("касета стенду вибору інструментів", () =
     ).toBeLessThan(CASES.filter((c) => (c.turns?.length ?? 0) > 0).length);
   });
 
+  it("числа не просіли проти базової лінії", () => {
+    if (!cassette) return;
+    const summary = summarize(CASES, replayAll(CASES, cassette));
+    // Допуску немає навмисно, і це не строгість заради строгості: відтворення
+    // касети детерміноване - ті самі записані блоки, те саме оцінювання.
+    // Недетермінованість моделі лишилась зовні, у живому прогоні. Тому будь-яке
+    // відхилення тут означає рівно одну річ: змінився наш код. Допуск у такому
+    // гейті лише дозволив би тихо зʼїсти регресію на один-два кейси.
+    expect(
+      summary.correct,
+      "Правильних виборів менше, ніж у базовій лінії. Перевір оцінювання, промпт і схеми; якщо просідання свідоме - перезапиши касету і бампни baseline.json",
+    ).toBeGreaterThanOrEqual(BASELINE.correct);
+    expect(
+      summary.invented,
+      "Побільшало вигаданих id - найдорожчий клас помилок",
+    ).toBeLessThanOrEqual(BASELINE.invented);
+    expect(
+      summary.argFailedCases,
+      `Побільшало кейсів із поганими аргументами: ${JSON.stringify(summary.argByKind)}`,
+    ).toBeLessThanOrEqual(BASELINE.argFailedCases);
+    expect(
+      summary.multiTurnCorrect,
+      "Просіли багатоходові кейси - ланцюжок або перенесення id",
+    ).toBeGreaterThanOrEqual(BASELINE.multiTurnCorrect);
+  });
+
   it("друкує виміряне число як базову лінію", () => {
     if (!cassette) return;
     const summary = summarize(CASES, replayAll(CASES, cassette));
     console.log(
       `[tool-eval] ${cassette.manifest.model} @ ${cassette.manifest.recordedAt}: ` +
         `correct ${summary.correct}/${summary.total}, вигадані id ${summary.invented}, ` +
-        `помилки ${summary.errors}, багатоходові ${summary.multiTurnCorrect}/${summary.multiTurnCases}`,
+        `помилки ${summary.errors}, багатоходові ${summary.multiTurnCorrect}/${summary.multiTurnCases}, ` +
+        `кейси з поганими аргументами ${summary.argFailedCases}, ` +
+        `порушення ${JSON.stringify(summary.argByKind)}`,
     );
     // Осудність, не якість: нуль правильних означає зламане оцінювання, а не
     // погану модель - жодна модель не промахується у 100% кейсів реєстру.
