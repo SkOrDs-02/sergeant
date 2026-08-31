@@ -1,14 +1,14 @@
 /**
  * Спільний pgvector-контейнер для RAG-евалу.
  *
- * Витягнуто з `vectorStore.integration.test.ts` — обидва сьюти піднімають
+ * Витягнуто з `vectorStore.integration.test.ts` - обидва сьюти піднімають
  * той самий `pgvector/pgvector:pg17` і прокочують ті самі міграції.
  * Shared `test/pg-container.ts` тут не годиться: він на чистому
  * `postgres:17-alpine`, де `CREATE EXTENSION vector` у міграції 025 падає.
  *
- * AI-DANGER: `if (process.env["CI"]) throw e;` — не стилістика. Без цього
+ * AI-DANGER: `if (process.env["CI"]) throw e;` - не стилістика. Без цього
  * рядка раннер без Docker мовчки пропустив би сьют, і гейт світився б
- * зеленим, нічого не перевіривши. Локально пропуск припустимий, у CI —
+ * зеленим, нічого не перевіривши. Локально пропуск припустимий, у CI -
  * ні.
  */
 
@@ -73,7 +73,7 @@ export async function startPgVector(label: string): Promise<PgVectorHandle> {
   } catch (e) {
     if (process.env["CI"]) throw e;
     const skipReason = e instanceof Error ? e.message : String(e);
-    console.warn(`[${label}] Skipping: pgvector unavailable — ${skipReason}`);
+    console.warn(`[${label}] Skipping: pgvector unavailable - ${skipReason}`);
     return { skipReason };
   }
 }
@@ -83,7 +83,7 @@ export async function stopPgVector(handle: PgVectorHandle): Promise<void> {
   if (handle.container) await handle.container.stop().catch(() => {});
 }
 
-/** `ai_memories.user_id` — FK CASCADE на `"user"`, тож юзер має існувати. */
+/** `ai_memories.user_id` - FK CASCADE на `"user"`, тож юзер має існувати. */
 export async function ensureUser(pool: pg.Pool, userId: string): Promise<void> {
   await pool.query(
     `INSERT INTO "user" (id, email, name, "emailVerified", "createdAt", "updatedAt")

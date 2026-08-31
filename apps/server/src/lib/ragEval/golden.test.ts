@@ -5,11 +5,11 @@ import { loadDefaultGoldenSet, parseGoldenSet } from "./golden.js";
 describe("loadDefaultGoldenSet (canonical fixture)", () => {
   const set = loadDefaultGoldenSet();
 
-  it("містить ≥50 queries — задовольняє вимогу PR-20/22", () => {
+  it("містить ≥50 queries - задовольняє вимогу PR-20/22", () => {
     expect(set.queries.length).toBeGreaterThanOrEqual(50);
   });
 
-  it("topK = 4 — узгоджено з env.AI_MEMORY_RAG_TOP_K", () => {
+  it("topK = 4 - узгоджено з env.AI_MEMORY_RAG_TOP_K", () => {
     expect(set.topK).toBe(4);
   });
 

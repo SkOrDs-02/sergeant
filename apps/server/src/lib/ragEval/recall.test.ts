@@ -34,7 +34,7 @@ describe("recallAtK", () => {
   });
 
   it("обрізає retrieved по K", () => {
-    // Експ "b" у позиції 5 — поза топ-4 → recall@4 = 0.
+    // Експ "b" у позиції 5 - поза топ-4 → recall@4 = 0.
     expect(recallAtK(["a", "x", "y", "z", "b"], ["b"], 4)).toBe(0);
     // Той самий retrieved при K=5 → recall = 1.
     expect(recallAtK(["a", "x", "y", "z", "b"], ["b"], 5)).toBe(1);
@@ -82,12 +82,12 @@ describe("aggregateRecall", () => {
     expect(agg.count).toBe(4);
   });
 
-  it("p50 — nearest-rank (не interpolated)", () => {
+  it("p50 - nearest-rank (не interpolated)", () => {
     // 5 значень: [0, 0.25, 0.5, 0.75, 1] → median = 0.5 (index 2).
     expect(aggregateRecall([0, 0.25, 0.5, 0.75, 1]).p50).toBe(0.5);
   });
 
-  it("p50 при парній кількості — нижчий з двох центральних (nearest-rank semantics)", () => {
+  it("p50 при парній кількості - нижчий з двох центральних (nearest-rank semantics)", () => {
     // 4 значення: відсортовані [0.2, 0.4, 0.6, 0.8].
     // ceil(0.5 * 4) - 1 = 1 → значення 0.4.
     expect(aggregateRecall([0.4, 0.6, 0.2, 0.8]).p50).toBe(0.4);
@@ -223,7 +223,7 @@ describe("aggregateMetrics", () => {
     expect(bundle.mrr.mean).toBeCloseTo(0.5);
   });
 
-  it("P@1 mean — фактично fraction-hits@1", () => {
+  it("P@1 mean - фактично fraction-hits@1", () => {
     // 5 query, з яких 2 hit-нули на pos 1 → P@1 mean = 0.4.
     const bundle = aggregateMetrics([
       { recall: 1, precisionAt1: 1, reciprocalRank: 1 },
