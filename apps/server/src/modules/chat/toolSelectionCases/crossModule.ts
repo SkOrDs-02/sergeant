@@ -73,6 +73,8 @@ export const CROSS_MODULE_CASES: ToolCase[] = [
     name: "конвертація одиниць",
     user: "Скільки це буде в фунтах, якщо я важу 82 кг?",
     accept: ["convert_units"],
+    // Одиниці беруться зі словника в описі схеми, а не з української репліки.
+    expectArgs: { convert_units: { value: 82, from: "kg", to: "lb" } },
   },
   {
     name: "нотатка на потім",

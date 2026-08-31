@@ -12,6 +12,7 @@
     "test": "vitest run",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:rag-eval": "vitest run --config vitest.rag-eval.config.ts",
+    "test:tool-eval": "vitest run src/modules/chat/toolEval src/modules/chat/toolCoverage.test.ts",
     "test:coverage": "vitest run --coverage",
     "mutation:normalizers": "cross-env TZ=Europe/Kyiv stryker run stryker.normalizers.conf.json",
     "db:migrate": "node dist-server/migrate.js",
