@@ -370,6 +370,117 @@ describe("useOverviewData", () => {
     });
   });
 
+  // PR-5 (Фаза 2, детермінована частина): прогноз враховує заплановані
+  // потоки місяця і обрізається доступними коштами.
+  describe("projected spend v2 (Фаза 2, PR-5)", () => {
+    it("is deterministic across repeated renders on unchanged data", () => {
+      const mono = buildMono({
+        realTx: [
+          mkTx("spend-1", -10_000, {
+            time: Math.floor(new Date("2026-06-02T09:00:00Z").getTime() / 1000),
+          }),
+        ],
+      });
+      const storage = buildStorage();
+
+      const first = renderHook(() => useOverviewData({ mono, storage }));
+      const second = renderHook(() => useOverviewData({ mono, storage }));
+
+      expect(second.result.current.projectedSpend).toBe(
+        first.result.current.projectedSpend,
+      );
+    });
+
+    it("adds recurring planned outflows to the raw forecast when funds allow", () => {
+      const storage = buildStorage({
+        subscriptions: [
+          {
+            id: "sub-spotify",
+            emoji: "S",
+            name: "Spotify",
+            billingDay: 6,
+            keyword: "spotify",
+            currency: "UAH",
+          },
+        ],
+      });
+      const { result } = renderHook(() =>
+        useOverviewData({
+          mono: buildMono({
+            // Величезний залишок: стеля точно не заважає цьому тесту.
+            accounts: [
+              mkMonoAccount("a1", 100_000_000),
+            ] as UseOverviewDataParams["mono"]["accounts"],
+            realTx: [
+              mkTx("spend-1", -10_000, {
+                time: Math.floor(
+                  new Date("2026-06-02T09:00:00Z").getTime() / 1000,
+                ),
+              }),
+            ] as UseOverviewDataParams["mono"]["realTx"],
+            // `getSubscriptionAmountMeta` виводить суму підписки з минулого
+            // збігу за ключовим словом (окреме поле від `realTx`).
+            transactions: [
+              {
+                id: "tx-spotify",
+                amount: -19900,
+                time: new Date(2026, 4, 10, 12, 0).getTime(),
+                date: "2026-05-10",
+                description: "spotify premium",
+                categoryId: "subscriptions",
+                type: "expense",
+                source: "monobank",
+                accountId: null,
+                manual: false,
+                _source: "monobank",
+                _accountId: null,
+                _manual: false,
+                currencyCode: 980,
+              },
+            ] as unknown as UseOverviewDataParams["mono"]["transactions"],
+          }),
+          storage,
+        }),
+      );
+
+      // daysPassed=4, daysInMonth=30, spent=100 → лінійний прогноз 750 ₴.
+      // Spotify (billingDay=6) ще попереду в цьому місяці → +199 ₴.
+      expect(result.current.recurringOutThisMonth).toBeGreaterThan(0);
+      expect(result.current.projectedSpendCapped).toBe(false);
+      expect(result.current.projectedSpend).toBeCloseTo(
+        (100 / 4) * 30 + result.current.recurringOutThisMonth,
+        5,
+      );
+    });
+
+    it("caps the forecast at available funds and flags it as capped", () => {
+      const { result } = renderHook(() =>
+        useOverviewData({
+          mono: buildMono({
+            // Залишок у кілька гривень, навмисно менший за лінійний прогноз.
+            accounts: [
+              mkMonoAccount("a1", 500),
+            ] as UseOverviewDataParams["mono"]["accounts"],
+            realTx: [
+              mkTx("spend-1", -10_000, {
+                time: Math.floor(
+                  new Date("2026-06-02T09:00:00Z").getTime() / 1000,
+                ),
+              }),
+            ] as UseOverviewDataParams["mono"]["realTx"],
+          }),
+          storage: buildStorage(),
+        }),
+      );
+
+      // Лінійний прогноз (750 ₴) набагато більший за залишок (5 ₴): прогноз
+      // не має обіцяти тисячі витрат, коли грошей на них нема.
+      expect(result.current.monoTotal).toBe(5);
+      expect(result.current.projectedSpendCapped).toBe(true);
+      expect(result.current.projectedSpend).toBe(5);
+    });
+  });
+
   describe("first-insight banner", () => {
     it("showFirstInsight is true when the seen-key is absent from localStorage", () => {
       localStorage.removeItem("finyk_first_insight_seen_v1");
@@ -588,6 +699,7 @@ describe("useOverviewData", () => {
       expect(keys).toContain("hasAnyData");
       expect(keys).toContain("dayBudget");
       expect(keys).toContain("projectedSpend");
+      expect(keys).toContain("projectedSpendCapped");
     });
 
     it("dateLabel is a non-empty string", () => {

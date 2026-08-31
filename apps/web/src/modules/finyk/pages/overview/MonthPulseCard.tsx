@@ -14,6 +14,7 @@ interface MonthPulseCardProps {
   showBalance: boolean;
   showMonthForecast: boolean;
   projectedSpend: number;
+  projectedSpendCapped?: boolean;
   hasExpensePlan: boolean;
   spendPlanRatio: number;
   planExpense: number;
@@ -39,6 +40,7 @@ const MonthPulseCardImpl = function MonthPulseCard({
   showBalance,
   showMonthForecast,
   projectedSpend,
+  projectedSpendCapped = false,
   hasExpensePlan,
   spendPlanRatio,
   planExpense,
@@ -57,6 +59,9 @@ const MonthPulseCardImpl = function MonthPulseCard({
   const showPlanBar = hasExpensePlan && showBalance;
   const showForecastBlock =
     showMonthForecast && !hasExpensePlan && projectedSpend > 0;
+  const showForecastNumber =
+    showForecastBlock ||
+    (showPlanBar && showMonthForecast && projectedSpend > 0);
 
   return (
     <Card variant="default" radius="lg" padding="lg">
@@ -151,6 +156,12 @@ const MonthPulseCardImpl = function MonthPulseCard({
             />
           </p>
         </div>
+      )}
+
+      {showForecastNumber && projectedSpendCapped && showBalance && (
+        <p className="text-style-caption text-muted mt-2 leading-snug">
+          Прогноз обмежений залишком коштів: витратити більше нема з чого.
+        </p>
       )}
 
       {(recurringOutThisMonth > 0 || recurringInThisMonth > 0) &&

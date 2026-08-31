@@ -241,6 +241,7 @@ export function Overview({
                   showBalance={showBalance}
                   showMonthForecast={d.showMonthForecast && showBalance}
                   projectedSpend={d.projectedSpend}
+                  projectedSpendCapped={d.projectedSpendCapped}
                   hasExpensePlan={d.hasExpensePlan}
                   spendPlanRatio={d.spendPlanRatio}
                   planExpense={d.planExpense}

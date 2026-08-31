@@ -153,6 +153,20 @@ describe("MonthPulseCard", () => {
     ).toBeInTheDocument();
   });
 
+  it("says the forecast was capped when projectedSpendCapped is true", () => {
+    render(<MonthPulseCard {...baseProps} projectedSpendCapped={true} />);
+    expect(
+      screen.getByText(/Прогноз обмежений залишком коштів/),
+    ).toBeInTheDocument();
+  });
+
+  it("does not mention the cap when projectedSpendCapped is false", () => {
+    render(<MonthPulseCard {...baseProps} projectedSpendCapped={false} />);
+    expect(
+      screen.queryByText(/Прогноз обмежений залишком коштів/),
+    ).not.toBeInTheDocument();
+  });
+
   it("masks numbers when showBalance is false", () => {
     render(<MonthPulseCard {...baseProps} showBalance={false} />);
     expect(screen.getAllByText("••••").length).toBeGreaterThanOrEqual(2);
