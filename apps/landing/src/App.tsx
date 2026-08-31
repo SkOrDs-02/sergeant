@@ -4,6 +4,8 @@ import BetaPage from "./pages/BetaPage";
 import AboutPage from "./pages/AboutPage";
 import DataPage from "./pages/DataPage";
 import GuidesPage from "./pages/GuidesPage";
+import RuchnaRobotaPage from "./pages/RuchnaRobotaPage";
+import VyhidPage from "./pages/VyhidPage";
 import HroshiPage from "./pages/HroshiPage";
 import YizhaPage from "./pages/YizhaPage";
 import ZvychkyPage from "./pages/ZvychkyPage";
@@ -17,6 +19,7 @@ import GuideKbzhvPage from "./pages/GuideKbzhvPage";
 import GuideChekyPage from "./pages/GuideChekyPage";
 import GuideFotoKaloriiPage from "./pages/GuideFotoKaloriiPage";
 import GuideBankBezpekaPage from "./pages/GuideBankBezpekaPage";
+import GuideKilkaBankivPage from "./pages/GuideKilkaBankivPage";
 import PrivacyPage from "./pages/PrivacyPage";
 import TermsPage from "./pages/TermsPage";
 import NotFoundPage from "./pages/NotFoundPage";
@@ -37,6 +40,8 @@ export const ROUTES: Record<string, ComponentType> = {
   "/yizha": YizhaPage,
   "/zvychky": ZvychkyPage,
   "/trenuvannia": TrenuvanniaPage,
+  "/ruchna-robota": RuchnaRobotaPage,
+  "/vyhid": VyhidPage,
   "/guides": GuidesPage,
   "/zvyazky": ZvyazkyPage,
   "/stan": StanPage,
@@ -47,6 +52,7 @@ export const ROUTES: Record<string, ComponentType> = {
   "/guides/cheky": GuideChekyPage,
   "/guides/foto-kalorii": GuideFotoKaloriiPage,
   "/guides/bank-bezpeka": GuideBankBezpekaPage,
+  "/guides/kilka-bankiv": GuideKilkaBankivPage,
   "/privacy": PrivacyPage,
   "/terms": TermsPage,
   // Свій маршрут, щоб prerender поклав у dist/404/index.html тіло цієї

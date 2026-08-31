@@ -1,6 +1,6 @@
 # Сьогодні в роботі
 
-> **Last touched:** 2026-08-30 by docs:gen-today. **Next review:** 2026-09-06.
+> **Last touched:** 2026-08-31 by docs:gen-today. **Next review:** 2026-09-07.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED FILE. Do not edit by hand. Regenerate via `pnpm docs:gen-today`. -->
@@ -27,7 +27,7 @@ _Жодного документа не пропустило `Next review:` да
 
 | Severity | Tracker    | Active | Soft / Hard |
 | -------- | ---------- | ------ | ----------- |
-| 🟡 SOFT  | Планування | 32     | 28 / 35     |
+| 🟡 SOFT  | Планування | 34     | 28 / 35     |
 
 ## Quick links
 

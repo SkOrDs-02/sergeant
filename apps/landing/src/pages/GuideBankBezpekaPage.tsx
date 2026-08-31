@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import SiteLayout from "../components/SiteLayout";
+import GuideHomeModule from "../components/GuideHomeModule";
 import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
 
 const link =
@@ -106,6 +107,7 @@ export default function GuideBankBezpekaPage() {
           <p className="mt-4 text-sm text-subtle">
             Оновлено 29.08.2026 · автор Sergeant
           </p>
+          <GuideHomeModule href="/data" label="Твої дані" />
         </div>
 
         <div className="rounded-[var(--radius-card)] bg-ink px-7 py-6">

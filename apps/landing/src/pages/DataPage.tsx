@@ -89,12 +89,23 @@ export default function DataPage() {
         </section>
 
         <section className="max-w-3xl">
-          <h2 className={h2}>Експорт і контроль</h2>
+          <h2 className={h2}>Забрати і стерти</h2>
           <p className={p}>
-            Експорт у стандартні формати доступний в один клік, без листів у
-            підтримку. Дані не продаються і не передаються нікому. Питання про
-            свої дані став у Telegram-бот або у Threads @sergeant.app –
-            відповідаю сам.
+            Дані експортуються у відкритому форматі, акаунт видаляєш сам, без
+            листів у підтримку. Експорт сьогодні живе двома поверхнями –
+            акаунтські дані окремо від даних модулів; як саме це працює і що
+            буде, якщо продукт зупиниться, розписано{" "}
+            <a
+              href="/vyhid"
+              className="font-semibold text-foreground underline decoration-cardline-strong underline-offset-4 transition hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+            >
+              на сторінці про вихід
+            </a>
+            .
+          </p>
+          <p className={p}>
+            Дані не продаються і не передаються нікому. Питання про свої дані
+            став у Telegram-бот або у Threads @sergeant.app – відповідаю сам.
           </p>
         </section>
       </div>
