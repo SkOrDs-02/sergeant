@@ -53,6 +53,7 @@ import { PhotoStep } from "./meal-sheet/PhotoStep";
 import { MealTypePicker } from "./meal-sheet/MealTypePicker";
 import { NameTimeRow } from "./meal-sheet/NameTimeRow";
 import type { PickedFood } from "./meal-sheet/FoodPickerSection";
+import { useReceiptAutoPick } from "./meal-sheet/useReceiptAutoPick";
 import { PickedFoodCard } from "./meal-sheet/PickedFoodCard";
 import { PackageEntryStep } from "./meal-sheet/PackageEntryStep";
 import { ManualEntryTab } from "./meal-sheet/ManualEntryTab";
@@ -157,8 +158,14 @@ export function AddMealSheet({
   // to "source" and picks another source doesn't keep photoAI semantics.
   const [appliedPhoto, setAppliedPhoto] = useState<AppliedPhoto | null>(null);
 
-  const { foodHits, offHits, foodBusy, offBusy, foodErr, setFoodErr } =
-    useFoodSearch(foodQuery);
+  const search = useFoodSearch(foodQuery);
+  const { foodHits, offHits, foodBusy, offBusy, foodErr, setFoodErr } = search;
+  const onReceiptItemPicked = useReceiptAutoPick<PickedFood>({
+    foodQuery,
+    search,
+    setFoodQuery,
+    setPickedFood,
+  });
 
   const {
     barcode,
@@ -596,6 +603,7 @@ export function AddMealSheet({
                   // «fill» (PWA-шорткат, фото) чека не потребують — і не
                   // мають будити мережу заради рядка, який там не потрібен.
                   receiptRowEnabled={step === "source"}
+                  onReceiptItemPicked={onReceiptItemPicked}
                   fromPantryItem={fromPantryItem}
                   setFromPantryItem={setFromPantryItem}
                   picker={{

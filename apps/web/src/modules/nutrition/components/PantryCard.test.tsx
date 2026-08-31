@@ -180,6 +180,55 @@ describe("PantryCard inventory", () => {
     expect(editItemAt).toHaveBeenCalledWith(0);
   });
 
+  // Звіт власника 2026-08-31: дві банки Red Bull 0,25 л із чека показувались
+  // у розкладі позиції як одна «500 мл» — пляшка, якої він не купував.
+  // `qty` варіанта лишається добутком (інваріант суми), тож розмір фасування
+  // деривується з `packCount`.
+  it("shows a multi-pack purchase as «2 × 250 мл», not a phantom 500 ml bottle", () => {
+    const sources = [
+      {
+        name: "Напій енергетичний Red Bull",
+        qty: 250,
+        unit: "мл",
+        addedAt: "2026-08-30",
+        packCount: null,
+      },
+      {
+        name: "Напій енергетичний Red Bull",
+        qty: 500,
+        unit: "мл",
+        addedAt: "2026-08-31",
+        packCount: 2,
+      },
+    ];
+    render(
+      <Card
+        {...baseProps({
+          effectiveItems: [
+            {
+              name: "Напій енергетичний Red Bull",
+              qty: 750,
+              unit: "мл",
+              sources,
+            },
+          ],
+          pantryItemsLength: 1,
+        })}
+      />,
+    );
+    // Категорія з однією позицією розкрита за замовчуванням; клікаємо лише
+    // якщо вона згорнута, інакше клік її ЗАКРИВ би.
+    if (!screen.queryByRole("button", { name: "Показати покупки" })) {
+      fireEvent.click(screen.getByRole("button", { name: /Інше/ }));
+    }
+    // Розкриваємо розклад варіантів позиції.
+    fireEvent.click(screen.getByRole("button", { name: "Показати покупки" }));
+    expect(screen.getByText("2 × 250 мл")).toBeInTheDocument();
+    // Одинична покупка лишається просто «250 мл» — «1 ×» було б шумом.
+    expect(screen.getByText("250 мл")).toBeInTheDocument();
+    expect(screen.queryByText("500 мл")).not.toBeInTheDocument();
+  });
+
   it("renders fallback labels for unnamed inventory items", () => {
     const removeItemAtOrByName = vi.fn();
     render(

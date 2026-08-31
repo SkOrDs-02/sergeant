@@ -3,7 +3,7 @@
  * Status: Active — walking-skeleton experiment (Silpo MCP integration,
  * track A). See `docs/90-work/planning/specs/silpo-mcp-integration.md`.
  */
-import { useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import {
   isApiError,
   silpoApi,
@@ -64,6 +64,33 @@ export function useSilpoReceiptDetail(receiptId: string | null | undefined) {
     isLoading: query.isLoading,
     notFound,
   };
+}
+
+/**
+ * Деталі кількох чеків одним хуком — `useQueries`, бо кількість чеків
+ * відома лише в рантаймі, а `useSilpoReceiptDetail` у циклі порушив би
+ * правила хуків.
+ *
+ * Ключі, `staleTime` і 404-семантика ті самі, що в одиничного хука: кеш
+ * спільний, тож чек, уже відкритий у деталях транзакції, повторного
+ * запиту не робить.
+ */
+export function useSilpoReceiptDetails(
+  receiptIds: readonly string[],
+): SilpoReceiptDetailDto[] {
+  const results = useQueries({
+    queries: receiptIds.map((id) => ({
+      queryKey: silpoKeys.receiptDetail(id),
+      queryFn: ({ signal }: { signal: AbortSignal }) =>
+        silpoApi.receiptDetail(id, { signal }),
+      staleTime: STALE_TIME,
+      retry: (failureCount: number, error: unknown) =>
+        !(isApiError(error) && error.status === 404) && failureCount < 2,
+    })),
+  });
+  return results
+    .map((r) => r.data)
+    .filter((d): d is SilpoReceiptDetailDto => Boolean(d));
 }
 
 /**

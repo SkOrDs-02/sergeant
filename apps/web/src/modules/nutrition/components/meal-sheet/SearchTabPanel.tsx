@@ -23,6 +23,8 @@ import type {
 } from "@sergeant/nutrition-domain";
 import type { QuickChip } from "../../hooks/useNutritionQuickChips";
 import type { MealFormState } from "./mealFormUtils";
+import { CollapsibleSection } from "@shared/components/ui/CollapsibleSection";
+import { ADD_MEAL_SECTION_KEYS } from "./addMealSections";
 import { FoodPickerSection } from "./FoodPickerSection";
 import { FromPantryRow } from "./FromPantryRow";
 import { FromReceiptRow } from "./FromReceiptRow";
@@ -43,6 +45,11 @@ interface SearchTabPanelProps {
   pantryItems: PantryItem[];
   /** `false` — рядок чека Сільпо мовчить і не ходить у мережу. */
   receiptRowEnabled: boolean;
+  /**
+   * Тап по позиції чека: аркуш дізнається, що запит поставлено НЕ руками,
+   * і сам розгортає перший знайдений продукт карткою з КБЖУ.
+   */
+  onReceiptItemPicked: (query: string) => void;
   fromPantryItem: string | null;
   setFromPantryItem: Dispatch<SetStateAction<string | null>>;
   /** Props пошуку йдуть групою — вони належать одному компоненту. */
@@ -60,6 +67,7 @@ export function SearchTabPanel({
   onQuickAdded,
   pantryItems,
   receiptRowEnabled,
+  onReceiptItemPicked,
   fromPantryItem,
   setFromPantryItem,
   picker,
@@ -77,16 +85,16 @@ export function SearchTabPanel({
       )}
 
       {onQuickAddMeal && quickChips.length > 0 && (
-        <section
+        <CollapsibleSection
+          storageKey={ADD_MEAL_SECTION_KEYS.recent}
+          title="Нещодавні прийоми"
+          // Єдина секція, відкрита за замовчуванням: повторити вчорашній
+          // сніданок — найкоротший шлях у цьому аркуші, і згорнути його
+          // означало б додати клік саме туди, де їх і так найменше.
+          defaultOpen
+          collapsedSubtitle={`${quickChips.length} прийомів`}
           className="mb-4 min-w-0"
-          aria-labelledby="recent-meals-heading"
         >
-          <h3
-            id="recent-meals-heading"
-            className="mb-2 text-style-label text-text"
-          >
-            Нещодавні прийоми
-          </h3>
           <QuickAddChips
             chips={quickChips}
             onTap={(chip) => {
@@ -94,7 +102,7 @@ export function SearchTabPanel({
               onQuickAdded();
             }}
           />
-        </section>
+        </CollapsibleSection>
       )}
 
       {pantryItems.length > 0 && (
@@ -112,6 +120,7 @@ export function SearchTabPanel({
         setForm={setForm}
         setFoodQuery={picker.setFoodQuery}
         setPickedGrams={picker.setPickedGrams}
+        onPicked={onReceiptItemPicked}
       />
 
       <FoodPickerSection {...picker} />

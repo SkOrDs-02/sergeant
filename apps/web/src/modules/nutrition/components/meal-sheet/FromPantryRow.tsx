@@ -5,9 +5,10 @@
 import type { Dispatch, SetStateAction } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { formatPantryQty } from "../../lib/formatPantryQty";
-import { SectionHeading } from "@shared/components/ui/SectionHeading";
+import { CollapsibleSection } from "@shared/components/ui/CollapsibleSection";
 import type { PantryItem } from "@sergeant/nutrition-domain";
 import type { MealFormState } from "./mealFormUtils";
+import { ADD_MEAL_SECTION_KEYS } from "./addMealSections";
 import { messages } from "@shared/i18n/uk";
 
 interface FromPantryRowProps {
@@ -27,61 +28,64 @@ export function FromPantryRow({
 }: FromPantryRowProps) {
   if (!pantryItems || pantryItems.length === 0) return null;
   return (
-    <div className="mb-4 rounded-2xl border border-line bg-panel/40 px-3 py-3">
-      <SectionHeading as="div" size="xs" variant="nutrition" className="mb-2">
-        {messages.nutrition.fromPantry}
-        {fromPantryItem && (
-          <span className="ml-2 text-nutrition-strong dark:text-nutrition font-semibold normal-case tracking-normal">
-            · {fromPantryItem}
-          </span>
-        )}
-      </SectionHeading>
-      <div className="flex flex-wrap gap-1.5">
-        {pantryItems.slice(0, 20).map((item) => {
-          const isActive = fromPantryItem === item.name;
-          // `unit` у коморі несе два різні сенси, бо приходить сирим із
-          // чека: одиницю виміру («кг») або фасування («0,25л»). Голе
-          // `{qty}{unit}` давало «20,25л» замість «2 × 0,25 л».
-          const qtyLabel = formatPantryQty(item.qty, item.unit || "г");
-          return (
-            <button
-              key={item.name}
-              type="button"
-              // Якір для e2e: у цьому ж кроці аркуша живуть швидкі чіпи з
-              // тими самими назвами продуктів, і пошук за текстом ловить
-              // їх замість комори — а вони йдуть іншим шляхом збереження,
-              // без списання.
-              data-testid="from-pantry-chip"
-              onClick={() => {
-                if (isActive) {
-                  setFromPantryItem(null);
-                  setForm((s) => ({
-                    ...s,
-                    name: s.name === item.name ? "" : s.name,
-                  }));
-                } else {
-                  setFromPantryItem(item.name);
-                  setForm((s) => ({ ...s, name: item.name, err: "" }));
-                  setFoodQuery(item.name);
-                }
-              }}
-              className={cn(
-                "px-2.5 py-1.5 rounded-xl text-style-caption border transition-[background-color,border-color,color,opacity]",
-                isActive
-                  ? "bg-nutrition-strong text-white border-nutrition"
-                  : "bg-panelHi text-text border-line hover:border-nutrition/50",
-              )}
-            >
-              {item.name}
-              {qtyLabel && (
-                <span className="ml-1 text-style-caption opacity-70">
-                  {qtyLabel}
-                </span>
-              )}
-            </button>
-          );
-        })}
+    <CollapsibleSection
+      storageKey={ADD_MEAL_SECTION_KEYS.pantry}
+      title={messages.nutrition.fromPantry}
+      defaultOpen={false}
+      // Обране з комори мусить бути видно і згорнутим: інакше людина не
+      // побачить, що прийом уже прив'язаний до позиції, і списання
+      // виглядатиме як таке, що взялось нізвідки.
+      collapsedSubtitle={fromPantryItem ?? `${pantryItems.length} позицій`}
+      className="mb-4"
+    >
+      <div className="rounded-2xl border border-line bg-panel/40 px-3 py-3">
+        <div className="flex flex-wrap gap-1.5">
+          {pantryItems.slice(0, 20).map((item) => {
+            const isActive = fromPantryItem === item.name;
+            // `unit` у коморі несе два різні сенси, бо приходить сирим із
+            // чека: одиницю виміру («кг») або фасування («0,25л»). Голе
+            // `{qty}{unit}` давало «20,25л» замість «2 × 0,25 л».
+            const qtyLabel = formatPantryQty(item.qty, item.unit || "г");
+            return (
+              <button
+                key={item.name}
+                type="button"
+                // Якір для e2e: у цьому ж кроці аркуша живуть швидкі чіпи з
+                // тими самими назвами продуктів, і пошук за текстом ловить
+                // їх замість комори — а вони йдуть іншим шляхом збереження,
+                // без списання.
+                data-testid="from-pantry-chip"
+                onClick={() => {
+                  if (isActive) {
+                    setFromPantryItem(null);
+                    setForm((s) => ({
+                      ...s,
+                      name: s.name === item.name ? "" : s.name,
+                    }));
+                  } else {
+                    setFromPantryItem(item.name);
+                    setForm((s) => ({ ...s, name: item.name, err: "" }));
+                    setFoodQuery(item.name);
+                  }
+                }}
+                className={cn(
+                  "px-2.5 py-1.5 rounded-xl text-style-caption border transition-[background-color,border-color,color,opacity]",
+                  isActive
+                    ? "bg-nutrition-strong text-white border-nutrition"
+                    : "bg-panelHi text-text border-line hover:border-nutrition/50",
+                )}
+              >
+                {item.name}
+                {qtyLabel && (
+                  <span className="ml-1 text-style-caption opacity-70">
+                    {qtyLabel}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
-    </div>
+    </CollapsibleSection>
   );
 }

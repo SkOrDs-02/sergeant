@@ -125,7 +125,13 @@ describe("FromPantryRow", () => {
         setFoodQuery={vi.fn()}
       />,
     );
-    fireEvent.click(screen.getByText("Молоко"));
+    // Не `getByText`: активна позиція тепер видно ДВІЧІ — у чіпі й у
+    // підзаголовку згорнутої секції, щоб прив'язка прийому до комори не
+    // ховалась разом зі списком. Клікати треба саме по чіпу.
+    const chip = screen
+      .getAllByTestId("from-pantry-chip")
+      .find((el) => el.textContent?.includes("Молоко"));
+    fireEvent.click(chip!);
     expect(setFromPantryItem).toHaveBeenCalledWith(null);
   });
 });

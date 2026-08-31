@@ -149,6 +149,9 @@ describe("SilpoPantryReplenishEntry", () => {
             qty: 1,
             unit: "шт",
             addedAt: expect.any(String) as unknown as string,
+            // Одна штука — множення фасування не відбувалось, тож «× N»
+            // у розкладі позиції показувати нема чого.
+            packCount: null,
           },
         ],
       },

@@ -73,7 +73,15 @@ function VariantList({ sources }: { sources: readonly PantryItemSource[] }) {
             {s.name}
           </span>
           <span className="shrink-0 text-style-caption text-subtle tabular-nums">
-            {formatPantryQty(s.qty, s.unit)}
+            {/*
+              «2 × 250 мл», а не «500 мл»: пляшки 500 мл людина не купувала,
+              і побачити її серед своїх покупок означає не впізнати власну
+              комору. Розмір фасування деривується, бо `qty` варіанта — це
+              вже добуток (`units.ts` § receiptPackCount).
+            */}
+            {s.packCount && s.packCount > 1
+              ? `${s.packCount} × ${formatPantryQty(s.qty / s.packCount, s.unit)}`
+              : formatPantryQty(s.qty, s.unit)}
           </span>
         </li>
       ))}
