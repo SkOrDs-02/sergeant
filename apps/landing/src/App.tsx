@@ -20,6 +20,9 @@ import GuideChekyPage from "./pages/GuideChekyPage";
 import GuideFotoKaloriiPage from "./pages/GuideFotoKaloriiPage";
 import GuideBankBezpekaPage from "./pages/GuideBankBezpekaPage";
 import GuideKilkaBankivPage from "./pages/GuideKilkaBankivPage";
+import GuidePauzaPropuskPage from "./pages/GuidePauzaPropuskPage";
+import GuideOhlyadDnyaPage from "./pages/GuideOhlyadDnyaPage";
+import GuideTyzhnevyiPidsumokPage from "./pages/GuideTyzhnevyiPidsumokPage";
 import PrivacyPage from "./pages/PrivacyPage";
 import TermsPage from "./pages/TermsPage";
 import NotFoundPage from "./pages/NotFoundPage";
@@ -53,6 +56,9 @@ export const ROUTES: Record<string, ComponentType> = {
   "/guides/foto-kalorii": GuideFotoKaloriiPage,
   "/guides/bank-bezpeka": GuideBankBezpekaPage,
   "/guides/kilka-bankiv": GuideKilkaBankivPage,
+  "/guides/pauza-i-propusk": GuidePauzaPropuskPage,
+  "/guides/ohlyad-dnya": GuideOhlyadDnyaPage,
+  "/guides/tyzhnevyi-pidsumok": GuideTyzhnevyiPidsumokPage,
   "/privacy": PrivacyPage,
   "/terms": TermsPage,
   // Свій маршрут, щоб prerender поклав у dist/404/index.html тіло цієї
