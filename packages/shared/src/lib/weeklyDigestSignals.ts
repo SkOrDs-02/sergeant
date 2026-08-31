@@ -8,11 +8,22 @@
  * Рахуємо не «поле присутнє», а факт даних: `finyk` у клієнтському знімку
  * НЕ nullable і приходить із нулями навіть тоді, коли транзакцій немає.
  */
+/**
+ * `| undefined` у кожній гілці стоїть навмисно. Під `exactOptionalPropertyTypes`
+ * (Hard Rule #19) необовʼязкове поле, оголошене як `finyk?: X | null`, приймає
+ * відсутність поля або `X | null`, але НЕ приймає явний `undefined` - а саме
+ * такий тип приїжджає з `WeeklyDigestRequest` на сервері. Через це
+ * `countDigestSignalModules` не збирався взагалі, і локальний typecheck був
+ * червоний незалежно від того, що людина щойно правила.
+ *
+ * Розширення односторонє: сюди лише ЧИТАЮТЬ, тож ширший вхід нічого не ламає
+ * у викликачів і не змінює жодного рантайму.
+ */
 export interface WeeklyModuleSignalInput {
-  finyk?: { txCount?: number | null } | null;
-  fizruk?: { workoutsCount?: number | null } | null;
-  nutrition?: { daysLogged?: number | null } | null;
-  routine?: { habitCount?: number | null } | null;
+  finyk?: { txCount?: number | null | undefined } | null | undefined;
+  fizruk?: { workoutsCount?: number | null | undefined } | null | undefined;
+  nutrition?: { daysLogged?: number | null | undefined } | null | undefined;
+  routine?: { habitCount?: number | null | undefined } | null | undefined;
 }
 
 /**
