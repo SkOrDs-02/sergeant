@@ -43,6 +43,9 @@ function backLabelFor(page: FizrukPage): string {
     case "atlas":
       return "Моє тіло";
     case "exercise":
+      // Каталог і шаблони сюди не потрапляють навмисно: у них є власна
+      // шапка зі стрілкою (`WorkoutsHeader`), і друга стрілка в шапці
+      // модуля була б дублем тієї самої дії.
       return "Тренування";
     case "measurements":
       // Measurements is entered exclusively from the «Прогрес» stat, so the

@@ -8,11 +8,14 @@ import {
   getExercisePR,
   personalRecordsExerciseCount,
   suggestNextSet,
+  targetRepRange,
   totalCompletedVolumeKg,
+  weightStepKg,
   workoutDurationSec,
   workoutTonnageKg,
   weeklyVolumeSeriesNow,
 } from "./workoutStats";
+import { computeOneRmAging } from "../domain/workouts/oneRmAging";
 
 describe("epley1rm", () => {
   it("returns 0 for nullish, zero, or negative inputs", () => {
@@ -425,35 +428,103 @@ describe("suggestNextSet", () => {
     expect(suggestNextSet({ weightKg: 60, reps: 0 })).toBeNull();
   });
 
-  it("reps ≤ 5: adds 2.5 kg, no alt", () => {
-    const s = suggestNextSet({ weightKg: 100, reps: 5 });
-    expect(s).not.toBeNull();
-    expect(s!.weightKg).toBe(102.5);
-    expect(s!.reps).toBe(5);
-    expect(s!.altWeightKg).toBeUndefined();
-  });
-
-  it("reps 6-10: adds 2.5 kg primary + same-weight +1 rep alt", () => {
+  it("grows reps inside the range before touching the weight", () => {
     const s = suggestNextSet({ weightKg: 80, reps: 8 });
     expect(s).not.toBeNull();
-    expect(s!.weightKg).toBe(82.5);
-    expect(s!.reps).toBe(8);
-    expect(s!.altWeightKg).toBe(80);
-    expect(s!.altReps).toBe(9);
+    expect(s!.weightKg).toBe(80);
+    expect(s!.reps).toBe(9);
+    expect(s!.altWeightKg).toBe(82.5);
+    expect(s!.altReps).toBe(8);
   });
 
-  it("reps > 10: adds 5% rounded to 2.5 kg, no alt", () => {
+  it("adds weight and returns to the bottom of the range at the ceiling", () => {
     const s = suggestNextSet({ weightKg: 40, reps: 12 });
     expect(s).not.toBeNull();
     expect(s!.weightKg).toBe(42.5);
+    expect(s!.reps).toBe(8);
     expect(s!.altWeightKg).toBeUndefined();
   });
 
-  it("result weightKg is always a multiple of 2.5", () => {
-    [3, 8, 15].forEach((reps) => {
-      const s = suggestNextSet({ weightKg: 67.5, reps });
-      expect(s).not.toBeNull();
-      expect(s!.weightKg % 2.5).toBeCloseTo(0);
+  it("reads the target range from the catalog entry", () => {
+    const barbell = { equipment: ["barbell"], primaryGroup: "chest" };
+    const curl = { equipment: ["dumbbell"], primaryGroup: "biceps" };
+
+    expect(targetRepRange(barbell)).toEqual({ min: 5, max: 8 });
+    expect(targetRepRange(curl)).toEqual({ min: 10, max: 15 });
+    expect(targetRepRange(null)).toEqual({ min: 8, max: 12 });
+
+    const s = suggestNextSet({ weightKg: 100, reps: 8 }, { exercise: barbell });
+    expect(s!.weightKg).toBe(102.5);
+    expect(s!.reps).toBe(5);
+  });
+
+  it("uses a 5 kg step for barbell lower-body work", () => {
+    expect(
+      weightStepKg({ equipment: ["barbell"], primaryGroup: "quadriceps" }),
+    ).toBe(5);
+    expect(
+      weightStepKg({ equipment: ["barbell"], primaryGroup: "chest" }),
+    ).toBe(2.5);
+    const s = suggestNextSet(
+      { weightKg: 100, reps: 8 },
+      { exercise: { equipment: ["barbell"], primaryGroup: "quadriceps" } },
+    );
+    expect(s!.weightKg).toBe(105);
+  });
+
+  it("never raises the weight in return mode", () => {
+    const s = suggestNextSet(
+      { weightKg: 100, reps: 12 },
+      { aging: { returnMode: true, returnReason: "layoff", reductionPct: 10 } },
+    );
+    expect(s!.weightKg).toBe(90);
+    expect(s!.reps).toBe(8);
+    expect(s!.softMode).toBe(true);
+    expect(s!.returnReason).toBe("layoff");
+  });
+
+  it("holds the weight when return mode has not reduced the anchor yet", () => {
+    const s = suggestNextSet(
+      { weightKg: 62.5, reps: 12 },
+      { aging: { returnMode: true, returnReason: "injury", reductionPct: 0 } },
+    );
+    expect(s!.weightKg).toBe(62.5);
+    expect(s!.softMode).toBe(true);
+  });
+});
+
+// Сценарій зі спеки: три сесії за програмою підряд. Перевіряємо не «функція
+// щось повернула», а що між сесіями вага рухається в очікуваний бік.
+describe("suggestNextSet — три сесії за програмою", () => {
+  const press = { equipment: ["dumbbell", "bench"], primaryGroup: "chest" };
+
+  it("reps grow, then weight steps up, then a layoff pulls it back", () => {
+    const first = suggestNextSet(
+      { weightKg: 30, reps: 8 },
+      { exercise: press },
+    );
+    expect(first).toMatchObject({ weightKg: 30, reps: 9, softMode: false });
+
+    const second = suggestNextSet(
+      { weightKg: 30, reps: 12 },
+      { exercise: press },
+    );
+    expect(second).toMatchObject({ weightKg: 32.5, reps: 8 });
+
+    const aging = computeOneRmAging({
+      // Epley не рахує понад 10 повторень (E1RM_REP_CAP), тож пік беремо
+      // з підходу, який у цю межу вкладається.
+      peak1rm: epley1rm(32.5, 8),
+      lastSessionAt: new Date(Date.now() - 40 * 86_400_000).toISOString(),
     });
+    expect(aging.returnMode).toBe(true);
+
+    const third = suggestNextSet(
+      { weightKg: 32.5, reps: 12 },
+      { exercise: press, aging },
+    );
+    expect(third!.softMode).toBe(true);
+    expect(third!.returnReason).toBe("layoff");
+    expect(third!.weightKg).toBeLessThan(second!.weightKg);
   });
 });

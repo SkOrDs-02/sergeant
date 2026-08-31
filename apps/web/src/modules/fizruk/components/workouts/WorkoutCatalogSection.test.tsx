@@ -58,6 +58,8 @@ function baseProps(
     setQ: vi.fn(),
     equipmentFilter: [],
     setEquipmentFilter: vi.fn(),
+    locationFilter: "" as const,
+    setLocationFilter: vi.fn(),
     equipmentUk: { barbell: "Штанга", dumbbell: "Гантелі" },
     grouped: [],
     open: {},
@@ -99,6 +101,32 @@ describe("WorkoutCatalogSection — search input", () => {
     expect(
       screen.queryByRole("button", { name: "Очистити пошук" }),
     ).not.toBeInTheDocument();
+  });
+});
+
+describe("WorkoutCatalogSection — location filter", () => {
+  it("renders a chip per location", () => {
+    render(<WorkoutCatalogSection {...baseProps()} />);
+    for (const label of ["Зал", "Дім", "Вулиця"]) {
+      expect(screen.getByRole("button", { name: label })).toBeInTheDocument();
+    }
+  });
+
+  it("selects a location on click and clears it on a second click", () => {
+    const setLocationFilter = vi.fn();
+    const { rerender } = render(
+      <WorkoutCatalogSection {...baseProps({ setLocationFilter })} />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Дім" }));
+    expect(setLocationFilter).toHaveBeenCalledWith("home");
+
+    rerender(
+      <WorkoutCatalogSection
+        {...baseProps({ locationFilter: "home", setLocationFilter })}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Дім" }));
+    expect(setLocationFilter).toHaveBeenLastCalledWith("");
   });
 });
 
@@ -179,14 +207,24 @@ describe("WorkoutCatalogSection — empty state", () => {
     expect(setEquipmentFilter).toHaveBeenCalledWith([]);
   });
 
-  it("names the equipment filter when it is the only narrowing", () => {
+  it("names the filters when they are the only narrowing", () => {
     render(
       <WorkoutCatalogSection
         {...baseProps({ grouped: [], q: "", equipmentFilter: ["barbell"] })}
       />,
     );
     expect(screen.getByText("Нічого не знайшлось")).toBeInTheDocument();
-    expect(screen.getByText(/обладнання/)).toBeInTheDocument();
+    expect(screen.getByText(/фільтри/)).toBeInTheDocument();
+  });
+
+  it("treats a location filter alone as narrowing", () => {
+    render(
+      <WorkoutCatalogSection
+        {...baseProps({ grouped: [], q: "", locationFilter: "home" })}
+      />,
+    );
+    expect(screen.getByText("Нічого не знайшлось")).toBeInTheDocument();
+    expect(screen.queryByText("Поки немає вправ")).not.toBeInTheDocument();
   });
 });
 
