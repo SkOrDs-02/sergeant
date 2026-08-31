@@ -47,15 +47,22 @@ jobs:
       - name: Run live eval
         env:
           VOYAGE_API_KEY: ${{ secrets.VOYAGE_API_KEY }}
-        # Exit code 1 = warn, 2 = kill. Живий шар не блокує нічого, тому
-        # прогін завжди «успішний»; сигнал читається зі звіту й гейджів.
-        run: |
-          pnpm --filter @sergeant/server rag-eval:live -- --output=rag-eval-live.json || true
+          # Безплатний тариф Voyage — 3 запити на хвилину, тож 780 текстів
+          # їдуть ~9 хвилин. Підняти після додавання платіжного методу.
+          RAG_EVAL_EMBED_RPM: "3"
+        # Без `|| true`: скрипт виходить нулем і на `warn`, і на `kill`
+        # (деградація — сигнал у звіті, живий шар нічого не блокує), тому
+        # ненульовий код тут означає рівно одне — евал не відпрацював.
+        # Перша версія ховала помилку за `|| true`, і прогін, що впав на
+        # 429 за 26 секунд, відрапортував зеленим.
+        run: pnpm --filter @sergeant/server rag-eval:live -- --output=rag-eval-live.json
 
       # actions/upload-artifact v7.0.0 (SHA-pinned)
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: rag-eval-live-report
           path: apps/server/rag-eval-live.json
-          if-no-files-found: warn
+          # `error`, а не `warn`: відсутній звіт означає, що прогін не
+          # відбувся, і мовчазне «зелено» тут уже одного разу сталося.
+          if-no-files-found: error
           retention-days: 30
