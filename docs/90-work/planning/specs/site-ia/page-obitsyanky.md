@@ -1,7 +1,7 @@
 # Що обіцяю: пʼять пунктів, за які мене можна тримати
 
 > **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-25.
-> **Status:** Scaffolded
+> **Status:** Implemented - сторінка відвантажена (`apps/landing/src/pages/ObitsyankyPage.tsx`), PR #955/#956.
 
 ## Мета сторінки
 

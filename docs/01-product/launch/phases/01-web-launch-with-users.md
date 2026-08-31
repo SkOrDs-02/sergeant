@@ -1,6 +1,6 @@
 # Phase 1 — Web launch with users
 
-> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-03.
+> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-04.
 > **Status:** Active — roadmap for first user-facing launch фази.
 
 > Цей документ описує **першу з трьох послідовних фаз запуску** Sergeant з реальними юзерами. Phase 1 покриває web-only (PWA на Vercel), 15 тижнів від `W-4` до `W10`. Phase 2 (Capacitor) і Phase 3 (Native RN) описані в окремих файлах цього піддерева.

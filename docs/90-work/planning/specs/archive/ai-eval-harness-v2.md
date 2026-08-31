@@ -1,6 +1,6 @@
 # SPEC: стенд перевірки AI-шляхів v2 — реальні промпти, пастки, вартість із кешем
 
-> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-19.
+> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-20.
 > **Status:** Archived (реалізовано) — стенд у `apps/server/scripts/eval/` (`pipelines.*`, `judges.ts`, `cost.ts`, `report.ts`) + `model-eval.ts` / `vision-eval.ts`; звіти лягають у `docs/90-work/planning/{model,vision}-eval-YYYY-MM-DD.md`.
 
 ## Проблема
