@@ -1,6 +1,6 @@
 # Phase 1 — Web launch with users
 
-> **Last touched:** 2026-08-01 by @claude. **Next review:** 2027-10-09.
+> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-04.
 > **Status:** Active — roadmap for first user-facing launch фази.
 
 > Цей документ описує **першу з трьох послідовних фаз запуску** Sergeant з реальними юзерами. Phase 1 покриває web-only (PWA на Vercel), 15 тижнів від `W-4` до `W10`. Phase 2 (Capacitor) і Phase 3 (Native RN) описані в окремих файлах цього піддерева.
@@ -118,7 +118,7 @@ Phase 1 — це **15-тижнева кампанія від "web-PWA шипит
 - [ ] **Домен.** `sergeant.com.ua` не зареєстрований. Розділення apex (лендінг) ↔ `app.` (PWA) — досі цільова схема, але не діюча.
 - [ ] **Прив'язати Vercel-проєкт.** `apps/landing/vercel.json` у репо є; лишається створити окремий Vercel-проєкт і навести на нього apex-домен.
 - [ ] **PostHog production config.** Підтвердити `VITE_POSTHOG_KEY`/host і що події `landing_viewed` + `landing_telegram_clicked` доходять у вибраний проєкт.
-- [ ] **Юзернейм бота.** `serg_qa_bot` читається як внутрішній тестовий. Перейменування вб'є вже роздані deep link-и — робити **до** першої публічної роздачі, не після ([`telegram-waitlist.md`](../../../90-work/planning/specs/telegram-waitlist.md)).
+- [ ] **Юзернейм бота.** `serg_qa_bot` читається як внутрішній тестовий. Перейменування вб'є вже роздані deep link-и — робити **до** першої публічної роздачі, не після ([`telegram-waitlist.md`](../../../90-work/planning/specs/archive/telegram-waitlist.md)).
 - [ ] **Рядок про приватність біля CTA.** Окремої юридичної сторінки на лендінгу немає за рішенням власника 2026-07-26; замість неї — рядок у точці збору. Він має сказати, що при `/start` зберігається ID чату і що відписка — це `/stop`.
 - [ ] **Блог** `sergeant.com.ua/blog` — не існує; SEO-контент з [`02-go-to-market.md §5.1`](../business/02-go-to-market.md#51-контент-маркетинг-seo) не має де жити.
 
@@ -523,7 +523,7 @@ node scripts/telegram/broadcast-waitlist.mjs --dry-run
 
 > **Ні Loops, ні Calendly в стеці немає** — раніше вони стояли в цій таблиці як діючі інструменти. Фактично:
 >
-> - **Email** — єдиний транспорт це **Resend** (`RESEND_API_KEY`, `RESEND_FROM`). Код розсилок: `apps/server/src/email/authTransactionalMail.ts` (транзакційні) і `ftuxDripMail.ts` + `ftuxDripCopy.ts` + `ftuxUnsubscribeToken.ts` (FTUX-drip через BullMQ). **Блокер:** домен у Resend не верифіковано, тому масова розсилка сьогодні не піде — це і є причина, чому Telegram став головним каналом ([`telegram-waitlist.md`](../../../90-work/planning/specs/telegram-waitlist.md)).
+> - **Email** — єдиний транспорт це **Resend** (`RESEND_API_KEY`, `RESEND_FROM`). Код розсилок: `apps/server/src/email/authTransactionalMail.ts` (транзакційні) і `ftuxDripMail.ts` + `ftuxDripCopy.ts` + `ftuxUnsubscribeToken.ts` (FTUX-drip через BullMQ). **Блокер:** домен у Resend не верифіковано, тому масова розсилка сьогодні не піде — це і є причина, чому Telegram став головним каналом ([`telegram-waitlist.md`](../../../90-work/planning/specs/archive/telegram-waitlist.md)).
 > - **Scheduling** — інструмента немає. Слоти custdev узгоджуються в переписці. Заводити Calendly заради 5-7 дзвінків на тиждень не варто; якщо стане боляче — це рішення для Phase 2, не блокер Phase 1.
 > - **NPS** — не Tally, а PostHog Surveys: клієнтський тригер за віком акаунта, разова настройка survey у дашборді ([`feedback-loop.md § 2`](../../../03-operations/observability/feedback-loop.md)).
 

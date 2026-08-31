@@ -1,7 +1,7 @@
 # Спека: Сержант як єдиний AI-персонаж + проактивні пуші
 
-> **Last touched:** 2026-08-07 by @Skords-01. **Next review:** 2027-11-07.
-> **Status:** Implemented — міграції `099_push_reminder_log.sql` / `100_sergeant_proactive_push.sql`, планувальник `apps/server/src/lib/reminders/nudge.ts`; свідомі відхилення перелічені нижче.
+> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-10.
+> **Status:** Archived (реалізовано) — міграції `099_push_reminder_log.sql` / `100_sergeant_proactive_push.sql`, планувальник `apps/server/src/lib/reminders/nudge.ts`; свідомі відхилення перелічені нижче.
 
 ## Що змінилось під час реалізації
 
@@ -29,7 +29,7 @@
 4. **Обидві секції злиті, «Почати з початку» прибрано (2026-08-03).** ¹
    `GeneralSection.tsx` і `AssistantCatalogueSection.tsx` видалені, їхній
    вміст живе в одному блоці
-   [`CapabilitiesSection.tsx`](../../../../apps/web/src/core/settings/CapabilitiesSection.tsx)
+   [`CapabilitiesSection.tsx`](../../../../../apps/web/src/core/settings/CapabilitiesSection.tsx)
    («Можливості») з двома опціями — «Що вміє додаток» → `/capabilities` і
    «Що вміє Сержант» → `/assistant`. Дві сусідні секції відповідали на одне
    питання «а що тут взагалі є», і користувач мусив здогадуватись, чим
@@ -72,7 +72,7 @@
 поводяться вони як одна: **асистент** (чат `/api/chat` з tool-use) і **коуч**
 (денна порада `/api/coach/insight` + тижневий дайджест). Найменування вже
 поплило — денну пораду коуча картка на дашборді підписує «Порада асистента»
-([`AssistantAdviceCard.tsx:138`](../../../../apps/web/src/core/insights/AssistantAdviceCard.tsx)),
+([`AssistantAdviceCard.tsx:138`](../../../../../apps/web/src/core/insights/AssistantAdviceCard.tsx)),
 а пуш донедавна підписувався «Коуч».
 
 Паралельно проактивний канал зламаний з двох боків. Пуш денної поради
@@ -80,7 +80,7 @@
 коли клієнт на передньому плані сам його запитав і користувач уже читає цей
 текст на екрані; без `tag`, без дедупу, по одному пушу з кожної поверхні
 (веб + мобілка). Цей виклик уже прибрано з
-[`coach.ts`](../../../../apps/server/src/modules/chat/coach.ts), тож **сьогодні
+[`coach.ts`](../../../../../apps/server/src/modules/chat/coach.ts), тож **сьогодні
 пушів від коуча немає взагалі** — канал треба відбудувати правильно.
 
 Третій розрив — знайомство з функціоналом. Пункт «Переглянути вступну
@@ -91,7 +91,7 @@
 
 Четвертий — автогенерація тижневого звіту щопонеділка нічим себе не проявляє:
 через 3с після відкриття дашборда звіт мовчки генерується у фоні
-([`useMondayAutoDigest.ts`](../../../../apps/web/src/core/hub/dashboard/useMondayAutoDigest.ts)),
+([`useMondayAutoDigest.ts`](../../../../../apps/web/src/core/hub/dashboard/useMondayAutoDigest.ts)),
 і користувач дізнається про нього, тільки якщо сам відкриє блок «Звіт тижня».
 
 ## Мета
@@ -118,25 +118,25 @@
 - Чат і денна порада маркера не мають — просто `Сержант`.
 - Слово «коуч» і «асистент» зникають із **користувацьких** рядків. У коментарях
   коду, іменах файлів, роутах (`/api/coach/insight`, `coachKeys`) і в юридичних
-  текстах ([`legalShared.ts`](../../../../apps/web/src/core/legal/legalShared.ts))
+  текстах ([`legalShared.ts`](../../../../../apps/web/src/core/legal/legalShared.ts))
   вони лишаються — перейменування API і legal-копії поза обсягом.
 
 **Усі користувацькі рядки персонажа виносяться в один неймспейс** у
-[`apps/web/src/shared/i18n/uk.ts`](../../../../apps/web/src/shared/i18n/uk.ts)
+[`apps/web/src/shared/i18n/uk.ts`](../../../../../apps/web/src/shared/i18n/uk.ts)
 (наприклад `messages.sergeant.*`), щоб формулювання мінялося в одному місці.
 Компоненти більше не мають літералів із іменем персонажа.
 
 Конкретні заміни (мінімальний перелік, не вичерпний — грепни `асистент`/`коуч`
 по користувацьких рядках):
 
-| Де                                                                                              | Було                              | Стає                         |
-| ----------------------------------------------------------------------------------------------- | --------------------------------- | ---------------------------- |
-| [`AssistantAdviceCard.tsx:138`](../../../../apps/web/src/core/insights/AssistantAdviceCard.tsx) | `Порада асистента`                | `Сержант`                    |
-| [`AssistantAdviceCard.tsx:166`](../../../../apps/web/src/core/insights/AssistantAdviceCard.tsx) | `Готую пораду асистента` (aria)   | `Сержант готує пораду`       |
-| [`AssistantAdviceCard.tsx:189`](../../../../apps/web/src/core/insights/AssistantAdviceCard.tsx) | `…відкриває асистента…`           | `…відкриває Сержанта…`       |
-| [`CapabilitiesSection.tsx`](../../../../apps/web/src/core/settings/CapabilitiesSection.tsx) ¹   | `Можливості асистента`            | `Що вміє Сержант`            |
-| [`appPaths.ts:25`](../../../../apps/web/src/core/app/appPaths.ts)                               | `Sergeant — Можливості асистента` | `Sergeant — Що вміє Сержант` |
-| [`DashboardSection.tsx:117`](../../../../apps/web/src/core/settings/DashboardSection.tsx)       | `…порадою коуча…`                 | `…порадою Сержанта…`         |
+| Де                                                                                                 | Було                              | Стає                         |
+| -------------------------------------------------------------------------------------------------- | --------------------------------- | ---------------------------- |
+| [`AssistantAdviceCard.tsx:138`](../../../../../apps/web/src/core/insights/AssistantAdviceCard.tsx) | `Порада асистента`                | `Сержант`                    |
+| [`AssistantAdviceCard.tsx:166`](../../../../../apps/web/src/core/insights/AssistantAdviceCard.tsx) | `Готую пораду асистента` (aria)   | `Сержант готує пораду`       |
+| [`AssistantAdviceCard.tsx:189`](../../../../../apps/web/src/core/insights/AssistantAdviceCard.tsx) | `…відкриває асистента…`           | `…відкриває Сержанта…`       |
+| [`CapabilitiesSection.tsx`](../../../../../apps/web/src/core/settings/CapabilitiesSection.tsx) ¹   | `Можливості асистента`            | `Що вміє Сержант`            |
+| [`appPaths.ts:25`](../../../../../apps/web/src/core/app/appPaths.ts)                               | `Sergeant — Можливості асистента` | `Sergeant — Що вміє Сержант` |
+| [`DashboardSection.tsx:117`](../../../../../apps/web/src/core/settings/DashboardSection.tsx)       | `…порадою коуча…`                 | `…порадою Сержанта…`         |
 
 Дзеркальні рядки в `apps/mobile` міняються так само.
 
@@ -148,7 +148,7 @@
 покривають лише частину модулів і лише для тих, хто синхронізується.
 
 Тому: **клієнт залишає консерву.** Кожного разу, коли
-[`useCoachInsight`](../../../../apps/web/src/core/insights/useCoachInsight.ts)
+[`useCoachInsight`](../../../../../apps/web/src/core/insights/useCoachInsight.ts)
 успішно отримує пораду, сервер зберігає її текст. Якщо наступного дня
 користувач не зайшов — шедулер надсилає збережений текст. Жодного нового
 AI-виклику, жодного дублювання агрегаційної логіки.
@@ -240,7 +240,7 @@ CREATE INDEX IF NOT EXISTS idx_user_last_seen_at
 надішле два пуші.
 
 Точну назву таблиці користувачів (`"user"`) звір із
-[`003_baseline_schema.sql`](../../../../apps/server/src/migrations/003_baseline_schema.sql)
+[`003_baseline_schema.sql`](../../../../../apps/server/src/migrations/003_baseline_schema.sql)
 перед написанням міграції.
 
 ### D7. Трекінг `last_seen_at`
@@ -261,10 +261,10 @@ throttle — не частіше разу на годину на користу�
 > (каденція, tag, claim-before-send, тихі години) перенесена без змін.
 
 Живе поруч із наявними чергами в
-[`apps/server/src/lib/jobs/`](../../../../apps/server/src/lib/jobs/) і повторює
-патерн [`ftuxDrip.ts`](../../../../apps/server/src/lib/jobs/ftuxDrip.ts):
+[`apps/server/src/lib/jobs/`](../../../../../apps/server/src/lib/jobs/) і повторює
+патерн [`ftuxDrip.ts`](../../../../../apps/server/src/lib/jobs/ftuxDrip.ts):
 BullMQ + `createBullConnection` / `BULLMQ_QUEUE_PREFIX` з
-[`connection.ts`](../../../../apps/server/src/lib/jobs/connection.ts).
+[`connection.ts`](../../../../../apps/server/src/lib/jobs/connection.ts).
 
 Дві частини:
 
@@ -273,7 +273,7 @@ BullMQ + `createBullConnection` / `BULLMQ_QUEUE_PREFIX` з
    з `last_seen_at IS NOT NULL`, у яких `днів_без_візиту` ∈ {2, 4, 7}, і в яких
    немає рядка в `sergeant_push_log` за сьогодні з `channel='nudge'`.
 2. **Per-user job** — надсилає пуш через `sendToUserQuietly` з
-   [`push/send.ts`](../../../../apps/server/src/push/send.ts) і пише рядок в
+   [`push/send.ts`](../../../../../apps/server/src/push/send.ts) і пише рядок в
    `sergeant_push_log`.
 
 **`jobId` кодує `userId` + київську дату + канал** — рівно як `buildJobId` у
@@ -290,7 +290,7 @@ BullMQ + `createBullConnection` / `BULLMQ_QUEUE_PREFIX` з
 ### D9. Тумблер і згода
 
 Новий `ToggleRow` **«Повідомлення від Сержанта»** в
-[`NotificationsSection.tsx`](../../../../apps/web/src/core/settings/NotificationsSection.tsx)
+[`NotificationsSection.tsx`](../../../../../apps/web/src/core/settings/NotificationsSection.tsx)
 поруч із наявними Рутина / Фізрук / Їжа.
 
 - **За замовчуванням OFF для всіх, включно з новими.** Жоден існуючий
@@ -325,9 +325,9 @@ BullMQ + `createBullConnection` / `BULLMQ_QUEUE_PREFIX` з
 
 **`OnboardingWizard mode="tour"` видаляється повністю**: проп `mode`, гілки
 `isTour` в
-[`OnboardingWizard.tsx`](../../../../apps/web/src/core/onboarding/OnboardingWizard.tsx)
+[`OnboardingWizard.tsx`](../../../../../apps/web/src/core/onboarding/OnboardingWizard.tsx)
 і
-[`useOnboardingWizardState.ts`](../../../../apps/web/src/core/onboarding/useOnboardingWizardState.ts),
+[`useOnboardingWizardState.ts`](../../../../../apps/web/src/core/onboarding/useOnboardingWizardState.ts),
 відповідні тести (`OnboardingWizard.tour.test.tsx` та tour-кейси в
 `.pr07`/`.ux`/`.goalFirst` тестах), і рендер `<OnboardingWizard mode="tour">` у
 `GeneralSection.tsx`. ¹
@@ -343,7 +343,7 @@ BullMQ + `createBullConnection` / `BULLMQ_QUEUE_PREFIX` з
 - Коли звіт готовий і ще не відкритий — на картці непрочитаний бейдж. Бейдж
   знімається при першому розгортанні картки.
 - Прапорець «прочитано» зберігається локально поруч зі самим дайджестом
-  (ключ у [`storageKeys.ts`](../../../../packages/shared/src/lib/storageKeys.ts),
+  (ключ у [`storageKeys.ts`](../../../../../packages/shared/src/lib/storageKeys.ts),
   за зразком `WEEKLY_DIGEST_PREFIX`).
 
 Автогенерація лишається opt-in і за замовчуванням вимкненою — міняється лише

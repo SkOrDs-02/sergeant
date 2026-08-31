@@ -1,6 +1,6 @@
 # Інфра-модуль Sync
 
-> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-14.
+> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-05.
 > **Status:** Active
 
 Контекст: `Read .agents/skills/sergeant-module-sync/SKILL.md` (журнал рішень — у самому скілі).

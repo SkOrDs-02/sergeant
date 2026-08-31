@@ -1,8 +1,8 @@
 # Спека: fizruk — «Тренування» та «Активне тренування» (UX-чистка + safety + route + телеметрія)
 
 > **Last touched:** 2026-08-01 by @claude (інтерв'ю з founder-ом).
-> **Status:** Implemented — виконано в #589 (route активного тренування, чесний 1RM, injury-UI на [ADR-0083](../../../04-governance/adr/0083-injury-model-zone-level.md)); супутні #585 (старіння 1RM) і #586 (recovery), міграція `097_fizruk_injuries.sql`, телеметрія `apps/web/src/modules/fizruk/lib/workoutTelemetry.ts`.
-> Контекст-джерела: [канон fizruk](../../../01-product/model/fizruk.md), [аудит product-knowledge-fizruk](../../audits/product-knowledge-fizruk.md) (напруги 3/4, blindspot E-1).
+> **Status:** Archived (реалізовано) — виконано в #589 (route активного тренування, чесний 1RM, injury-UI на [ADR-0083](../../../../04-governance/adr/0083-injury-model-zone-level.md)); супутні #585 (старіння 1RM) і #586 (recovery), міграція `097_fizruk_injuries.sql`, телеметрія `apps/web/src/modules/fizruk/lib/workoutTelemetry.ts`.
+> Контекст-джерела: [канон fizruk](../../../../01-product/model/fizruk.md), [аудит product-knowledge-fizruk](../../../audits/product-knowledge-fizruk.md) (напруги 3/4, blindspot E-1).
 
 ## Проблема
 

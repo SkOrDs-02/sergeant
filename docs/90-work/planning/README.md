@@ -13,9 +13,9 @@
 
 ### Спеки фіч
 
-Кожна нетривіальна фіча починається зі спеки у [`specs/`](./specs/) (шаблон: [`specs/TEMPLATE.md`](./specs/TEMPLATE.md)). Scaffolded / Active спеки лишаються тут; закриті snapshot-и доступні у Git history.
+Кожна нетривіальна фіча починається зі спеки у [`specs/`](./specs/) (шаблон: [`specs/TEMPLATE.md`](./specs/TEMPLATE.md)). Scaffolded / Active спеки лишаються тут; завершені переїжджають у [`specs/archive/`](./specs/archive/README.md).
 
-> Станом на 2026-08-01 у `specs/` три відкриті роботи: `anonymous-local-first-persistence.md` (agent-ready residual), `telegram-waitlist.md` (потрібне founder-рішення) і `silpo-mcp-integration.md` (спека ухвалена founder-ом 2026-07-31: G/H ратифіковано як Pro, хакатон — ні, B/C/D — рівноправні треки; Phase 0-спайк agent-ready; відкриті гейти — оферта Сільпо й формулювання приватності). `goal-progress-auto.md`, `keyboard-and-scroll.md` та `transactions-page-polish.md` видалено 2026-08-01 як реалізовані (PR #481 / #439 / #478) — snapshot-и лишаються в Git history. `TEMPLATE.md` не є роботою. Спеку груп A/B перенесено в `archive/specs/` після code-reconcile з PR #427.
+> Станом на 2026-08-30 у `specs/` 18 відкритих робіт; повний перелік зі статусами — [`../../open-work.md`](../../open-work.md). Завершені спеки переїжджають у [`specs/archive/`](./specs/archive/README.md), а не видаляються: батч 2026-08-30 закрив сім (agent-module-owners, ai-eval-harness-v2, chat-system-prompt-v14, fizruk-workouts-active-workout, pantry-generic-names, sergeant-persona-and-proactive-push, telegram-waitlist). `TEMPLATE.md` не є роботою.
 
 ### Зведені роадмапи
 

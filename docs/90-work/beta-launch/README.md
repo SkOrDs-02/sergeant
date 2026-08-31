@@ -43,5 +43,5 @@
 
 ## Пов'язане
 
-- Спека вейтліста: [`../planning/specs/telegram-waitlist.md`](../planning/specs/telegram-waitlist.md)
+- Спека вейтліста: [`../planning/specs/archive/telegram-waitlist.md`](../planning/specs/archive/telegram-waitlist.md)
 - Змінні оточення (канон): [`../../02-engineering/integrations/env-vars.md`](../../02-engineering/integrations/env-vars.md)

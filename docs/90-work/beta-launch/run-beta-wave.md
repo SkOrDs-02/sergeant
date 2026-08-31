@@ -1,6 +1,6 @@
 # Провести хвилю закритої бети
 
-> **Last touched:** 2026-08-24 by @claude. **Next review:** 2026-12-14.
+> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-20.
 > **Status:** Scaffolded — тимчасовий док на час закритої бети, термін 2026-10-31.
 > Прибрати разом з усією текою: [`README.md`](./README.md) § Що прибрати.
 
@@ -14,7 +14,7 @@
 
 ## Required context
 
-- Спека вейтліста: [`docs/90-work/planning/specs/telegram-waitlist.md`](../planning/specs/telegram-waitlist.md)
+- Спека вейтліста: [`docs/90-work/planning/specs/archive/telegram-waitlist.md`](../planning/specs/archive/telegram-waitlist.md)
 - Змінні оточення (канон): [`docs/02-engineering/integrations/env-vars.md`](../../02-engineering/integrations/env-vars.md)
 - Два операторські скрипти — обидва запускаються **з твого ноута**, у прод не деплояться:
   - [`scripts/telegram/broadcast-waitlist.mjs`](../../../scripts/telegram/broadcast-waitlist.mjs) — розсилка інвайтів
