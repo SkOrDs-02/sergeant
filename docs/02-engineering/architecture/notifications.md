@@ -1,6 +1,6 @@
 # Сповіщення і пуші
 
-> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-04.
+> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-08.
 > **Status:** Active
 
 > Канонічний опис того, як сповіщення доходять до користувача на всіх поверхнях. Рецепт «додати новий тип пушу» — у [`add-push-notification.md`](../../00-start/playbooks/add-push-notification.md); тут — сама архітектура і межі, за які виходити не можна.

@@ -1,6 +1,6 @@
 # SPEC: системний промпт чату v14 — голос і заборона вигаданих аргументів
 
-> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-20.
+> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-16.
 > **Status:** Archived (реалізовано) — у проді з 2026-07-30 (`apps/server/src/modules/chat/toolDefs/systemPrompt.ts`, маркер `v14`); деталі — § «Що вийшло насправді».
 
 ## Проблема
