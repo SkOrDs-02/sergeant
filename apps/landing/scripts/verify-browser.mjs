@@ -242,6 +242,32 @@ for (const [vw, tag] of [
   await page.waitForURL("**/guides");
   ok("mobile меню Гайди → /guides", page.url().endsWith("/guides"));
 
+  // Меню-пастка: розкривний список, з якого не вийти нічим, крім повторного
+  // тапу по бургеру. Обидві дірки знайдені живим кліком 2026-08-31.
+  await page.goto(BASE + "/", { waitUntil: "networkidle" });
+  const trapBurger = page.getByRole("button", { name: /меню/i });
+  const mobileNav = page.getByLabel("Мобільна навігація");
+
+  await trapBurger.click();
+  await page.waitForTimeout(250);
+  ok(
+    "mobile меню має заголовки груп",
+    (await mobileNav.locator("p").allInnerTexts()).length >= 2,
+  );
+
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(250);
+  ok("mobile меню закривається Escape", !(await mobileNav.isVisible()));
+
+  await trapBurger.click();
+  await page.waitForTimeout(250);
+  await page.mouse.click(200, 800);
+  await page.waitForTimeout(250);
+  ok(
+    "mobile меню закривається тапом повз нього",
+    !(await mobileNav.isVisible()),
+  );
+
   // Бургер працює і на внутрішній сторінці
   await page.getByRole("button", { name: /меню/i }).click();
   await page.waitForTimeout(300);
