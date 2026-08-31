@@ -13,7 +13,7 @@
  * керують show/hide для weekly-digest кореляцій. Три ступені — похідні
  * цих самих чисел плюс `WINDOW_DAYS`, а не окрема шкала:
  *
- *   MIN_N = 5, NOTABLE_R = 0.4, WINDOW_DAYS = 60 (з digestCorrelations.ts)
+ *   MIN_N = 10, NOTABLE_R = 0.4, WINDOW_DAYS = 60 (з digestCorrelations.ts)
  *   REPEATING_R = 0.55               — середина між «помітно» і «сильно»
  *   STRONG_R    = 0.7                — межа «сильний» бакета в existing
  *                                        `strength()` (dailySeries.ts),

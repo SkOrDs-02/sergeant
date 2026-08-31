@@ -163,7 +163,7 @@ describe("CrossModuleLinkCard — три ступені градації", () =>
     );
 
     expect(screen.getByText("Поки що збіг")).toBeInTheDocument();
-    expect(screen.getByText("2 тижні · 5 спостережень")).toBeInTheDocument();
+    expect(screen.getByText("2 тижні · 10 спостережень")).toBeInTheDocument();
     // Обидва полюси видно з їхнім значенням і одиницею.
     expect(screen.getByText("Фізрук")).toBeInTheDocument();
     expect(screen.getByText("3+")).toBeInTheDocument();
@@ -253,7 +253,7 @@ describe("CrossModuleLinkCard — право мовчати (порожній с
     );
 
     expect(screen.getByText("Поки що звʼязків не бачу")).toBeInTheDocument();
-    expect(screen.getByText(/2 з 5 спостережень/)).toBeInTheDocument();
+    expect(screen.getByText(/2 з 10 спостережень/)).toBeInTheDocument();
     // Полюси лишаються — контекст «що саме перевіряємо» не зникає, лише
     // конкретні значення/одиниці мовчать.
     expect(screen.getByText("Фізрук")).toBeInTheDocument();
@@ -275,9 +275,9 @@ describe("CrossModuleLinkCard — право мовчати (порожній с
     );
 
     expect(screen.getByText("Поки що звʼязків не бачу")).toBeInTheDocument();
-    // Прогрес-бар не бреше: спостережень уже достатньо (5 з 5), проблема
+    // Прогрес-бар не бреше: спостережень уже достатньо (10 з 10), проблема
     // не в кількості даних, а у відсутності самого звʼязку.
-    expect(screen.getByText("5 з 5 спостережень")).toBeInTheDocument();
+    expect(screen.getByText("10 з 10 спостережень")).toBeInTheDocument();
   });
 
   it("не показує доказову смугу чи місток у порожньому стані", () => {

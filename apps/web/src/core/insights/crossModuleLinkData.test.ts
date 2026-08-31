@@ -141,12 +141,14 @@ describe("isCrossModule", () => {
 
 describe("linkFromPair", () => {
   it("будує два полюси з модулями, числами й одиницями", () => {
+    // Вікно навмисно ≥ MIN_N (10): нижче порога пара мовчить, і тест
+    // перевіряв би порожнечу. Патерн подвоєно, тож середні й r ті самі.
     const s = series(
       {
-        spending: [100, 200, 300, 400, 500],
-        workout_volume: [10, 20, 30, 40, 50],
+        spending: [100, 200, 300, 400, 500, 100, 200, 300, 400, 500],
+        workout_volume: [10, 20, 30, 40, 50, 10, 20, 30, 40, 50],
       },
-      5,
+      10,
     );
     const pair = notablePairsFromSeries(s)[0]!;
     const link = linkFromPair(s, pair)!;
@@ -158,7 +160,7 @@ describe("linkFromPair", () => {
     );
     expect(link.poleB.module).toBe("finyk");
     expect(link.poleB.value).toBe(formatNumberUk(300));
-    expect(link.observations).toBe(5);
+    expect(link.observations).toBe(10);
     expect(link.strength).toBeCloseTo(1, 5);
   });
 
@@ -168,12 +170,18 @@ describe("linkFromPair", () => {
     // тож два користувачі робили з неї протилежні висновки. Цей тест
     // фіксує, що напрямок таки доходить до UI.
     const rising = series(
-      { spending: [1, 2, 3, 4, 5], workout_volume: [10, 20, 30, 40, 50] },
-      5,
+      {
+        spending: [1, 2, 3, 4, 5, 1, 2, 3, 4, 5],
+        workout_volume: [10, 20, 30, 40, 50, 10, 20, 30, 40, 50],
+      },
+      10,
     );
     const falling = series(
-      { spending: [1, 2, 3, 4, 5], workout_volume: [50, 40, 30, 20, 10] },
-      5,
+      {
+        spending: [1, 2, 3, 4, 5, 1, 2, 3, 4, 5],
+        workout_volume: [50, 40, 30, 20, 10, 50, 40, 30, 20, 10],
+      },
+      10,
     );
 
     const up = linkFromPair(rising, notablePairsFromSeries(rising)[0]!)!;
@@ -193,10 +201,12 @@ describe("linkFromPair", () => {
     // щоденника.
     const s = series(
       {
-        workout_volume: [1000, 2000, 3000, 4000, 5000],
-        wellbeing: [1, 2, 3, 4, 5],
+        workout_volume: [
+          1000, 2000, 3000, 4000, 5000, 1000, 2000, 3000, 4000, 5000,
+        ],
+        wellbeing: [1, 2, 3, 4, 5, 1, 2, 3, 4, 5],
       },
-      5,
+      10,
     );
     const pair = notablePairsFromSeries(s)[0];
     // Статистика її бачить — форма картки її не бере.
@@ -209,16 +219,16 @@ describe("linkFromPair", () => {
     // Самопочуття це бал 1–5, тобто дрібне число поруч із калоріями.
     const s = series(
       {
-        kcal: [1800, 2000, 2200, 2100, 2300],
-        wellbeing: [3, 4, 5, 4, 5],
+        kcal: [1800, 2000, 2200, 2100, 2300, 1800, 2000, 2200, 2100, 2300],
+        wellbeing: [3, 4, 5, 4, 5, 3, 4, 5, 4, 5],
       },
-      5,
+      10,
     );
     const pair = notablePairsFromSeries(s)[0];
     expect(pair).toBeDefined();
     const link = linkFromPair(s, pair!)!;
     const values = [link.poleA.value, link.poleB.value];
-    // 21/5 = 4.2 — ціле «4» стерло б різницю між «стабільно добре» і «так собі».
+    // 42/10 = 4.2 — ціле «4» стерло б різницю між «стабільно добре» і «так собі».
     expect(values).toContain(formatNumberUk(4.2));
     expect(values).toContain(formatNumberUk(2080));
   });

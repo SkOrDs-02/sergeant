@@ -91,7 +91,7 @@ export const Emerging: Story = {
       value: "+11 г",
       unit: "білка за день",
     },
-    observations: 6,
+    observations: 11,
     strength: 0.44,
     weeks: 2,
   },
