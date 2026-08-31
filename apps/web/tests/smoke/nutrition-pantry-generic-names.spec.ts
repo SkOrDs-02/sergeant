@@ -83,6 +83,18 @@ function summary(receiptId: string, purchasedAt: string, totalKop: number) {
   };
 }
 
+/**
+ * Один обробник на весь `/silpo/receipts*`-простір, а не чотири окремі
+ * `page.route()` з частково пересічними glob/regex-патернами на той самий
+ * префікс. Playwright матчить кілька зареєстрованих маршрутів на один
+ * запит у порядку LIFO — окремі patterns для списку, `r-1` і `r-2` не мали
+ * пересікатись логічно, але саме на цій парі детально й консистентно (за
+ * доказом із трейсів трьох CI-падінь: `GET .../silpo/receipts/r-2` завжди
+ * летів НЕ мокнутим на реальний бекенд і ловив 401) щось у матчингу
+ * розходилось. Один патерн + диспетч по URL усередині прибирає саму
+ * можливість такого — тут просто нема кількох маршрутів, між якими можна
+ * розійтись.
+ */
 async function mockSilpo(page: Page) {
   await page.route("**/silpo/sync-state", (route) =>
     route.fulfill({
@@ -96,8 +108,29 @@ async function mockSilpo(page: Page) {
       }),
     }),
   );
-  await page.route(/\/silpo\/receipts(\?|$)/, (route) =>
-    route.fulfill({
+  await page.route(/\/silpo\/receipts(\/|\?|$)/, (route) => {
+    const url = route.request().url();
+    if (url.includes(`/silpo/receipts/${SECOND_RECEIPT_ID}`)) {
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          ...summary(SECOND_RECEIPT_ID, "2026-08-21T10:00:00.000Z", 4400),
+          items: SECOND_RECEIPT_ITEMS,
+        }),
+      });
+    }
+    if (url.includes(`/silpo/receipts/${RECEIPT_ID}`)) {
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          ...summary(RECEIPT_ID, "2026-08-28T10:00:00.000Z", 15700),
+          items: RECEIPT_ITEMS,
+        }),
+      });
+    }
+    return route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
@@ -107,28 +140,8 @@ async function mockSilpo(page: Page) {
         ],
         nextCursor: null,
       }),
-    }),
-  );
-  await page.route(`**/silpo/receipts/${SECOND_RECEIPT_ID}`, (route) =>
-    route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({
-        ...summary(SECOND_RECEIPT_ID, "2026-08-21T10:00:00.000Z", 4400),
-        items: SECOND_RECEIPT_ITEMS,
-      }),
-    }),
-  );
-  await page.route(`**/silpo/receipts/${RECEIPT_ID}`, (route) =>
-    route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({
-        ...summary(RECEIPT_ID, "2026-08-28T10:00:00.000Z", 15700),
-        items: RECEIPT_ITEMS,
-      }),
-    }),
-  );
+    });
+  });
 }
 
 async function seedDemo(page: Page) {
