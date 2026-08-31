@@ -245,31 +245,12 @@ export function BankTransactionDetailsSheet({
         {receiptId != null && <ReceiptItemsSection receiptId={receiptId} />}
 
         <section aria-labelledby="bank-transaction-category-title">
-          <div className="mb-2 flex items-center justify-between gap-2 px-2">
-            <h3
-              id="bank-transaction-category-title"
-              className="text-style-label text-text"
-            >
-              {copy.categoryAndNote}
-            </h3>
-            {/* PR-2 фінік-спеки: помітна дія без пари в автодетекторі
-                (`transferMatching.ts` вимагає пару в межах 6 год), той
-                самий `overrideCategory(id, INTERNAL_TRANSFER_ID)`, що й
-                підтвердження автопідказки в `Transactions.tsx`. Ховаємо,
-                коли категорія вже переказ: повторний тап нічого не додає. */}
-            {category.id !== INTERNAL_TRANSFER_ID && (
-              <Button
-                variant="secondary"
-                module="finyk"
-                size="xs"
-                onClick={() =>
-                  onCategoryChange(transaction.id, INTERNAL_TRANSFER_ID)
-                }
-              >
-                {messages.finyk.transferSuggestion.confirm}
-              </Button>
-            )}
-          </div>
+          <h3
+            id="bank-transaction-category-title"
+            className="mb-2 px-2 text-style-label text-text"
+          >
+            {copy.categoryAndNote}
+          </h3>
           <TxRowCategoryPicker
             categories={categoryOptions}
             currentCatId={category.id}
