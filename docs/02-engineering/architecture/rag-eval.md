@@ -12,16 +12,60 @@
 ## Що це
 
 Harness вимірює якість RAG-retrieval-у поверх `ai_memory` модуля (Voyage
-embeddings + pgvector). Складається з трьох частин:
+embeddings + pgvector). Складається з пʼяти частин:
 
 1. **Golden-set** — 50 curated queries з expected memory refs у топ-K
    (`apps/server/src/__fixtures__/rag-eval/golden.json`).
-2. **Metric module** — pure-math functions (`recallAtK`, `precisionAt1`,
+2. **Корпус** — 730 документів, за якими ці refs нарешті мають текст
+   (`apps/server/src/__fixtures__/rag-eval/corpus.json`, генерується
+   `pnpm eval:rag-corpus` із `scripts/rag-eval/corpus-seed.json`).
+3. **Metric module** — pure-math functions (`recallAtK`, `precisionAt1`,
    `reciprocalRank`, `aggregateMetrics`) у
    [`apps/server/src/lib/ragEval/recall.ts`](../../../apps/server/src/lib/ragEval/recall.ts).
-3. **CLI** — [`scripts/eval-rag-recall.mjs`](../../../scripts/eval-rag-recall.mjs)
+4. **Кешований гейт** — `pnpm --filter @sergeant/server test:rag-eval`.
+   Блокувальний, безмережевий, окрема CI-джоба `rag-eval`.
+5. **CLI** — [`scripts/eval-rag-recall.mjs`](../../../scripts/eval-rag-recall.mjs)
    (alias `pnpm eval:rag`). Виводить JSON summary + exit-code (0=pass, 1=warn,
    2=kill, 3=error).
+
+### Двошаровість: детермінований шар блокує, платний алертить
+
+Харнес більше не мок-онлі, але жива модель свідомо не стоїть у PR-гейті —
+через гроші, 10–30 с на кейс і недетермінованість разом. Гейт, який іноді
+червоніє сам, люди навчаються ігнорувати за два тижні.
+
+**Кешований шар (блокує).** Платне в RAG — тільки перетворення тексту у
+вектор. Один раз оплатили (`pnpm --filter @sergeant/server rag-eval:embed`,
+~$0.0012), поклали вектори у `embeddings-v1.bin` — і далі гейт ганяє
+**справжній HNSW, справжню косинусну відстань і справжній
+`vectorStore.query`** без жодного запиту назовні. Мокати retrieval було б
+хибно: це міряло б репліку, а не прод-шлях.
+
+**Живий шар (алертить).** `.github/workflows/rag-eval-live.yml`, щопонеділка
+
+- `workflow_dispatch`. Ділить із гейтом корпус, запити, pgvector,
+  HNSW-параметри й `topK` — єдина змінна тут вектори. Тому дельта означає не
+  «твій код зламався» (це ловить гейт), а «Voyage змінився під тобою».
+  Автоматичного гасіння модуля немає: `activateKillSwitch` тримається в
+  памʼяті процесу, тож вимикач бреше про своє ввімкнення — він випаровується
+  на наступному деплої. Прапорець `autoDisable: true` у тілі
+  `/api/internal/eval/rag-weekly` повертає стару поведінку явно.
+
+### Корпус: чому 730, а не 73
+
+Recall@4 проти випадкових відволікачів з інших доменів тривіально дорівнює
+1.0 — крос-доменна косинусна відстань у мультимовній моделі величезна. За
+місце в топ-4 конкурує документ **про те саме, але з неправильною
+відповіддю**. Тому інваріант не «багато документів», а «≥3 near-miss на
+кожен золотий»: той самий текст з іншим тижнем, іншою сумою, іншою
+альтернативою. Розмір корпусу — наслідок цього правила, не його причина.
+Інваріанти перевіряє `corpus.test.ts`, відтворюваність — `pnpm
+eval:rag-corpus:check`.
+
+Живого режиму в `.mjs` CLI більше немає: він переїхав у TypeScript, бо
+потребує `env`, `createVoyageEmbeddings` з ретраями й бюджетом і
+`createPgVectorStore` із `SET LOCAL hnsw.ef_search`. Переписати їх у JS
+означало б міряти копію retrieval-шляху замість самого шляху.
 
 Крон PR-22 (`.github/workflows/rag-quality-gate.yml`) прибрано рішенням
 [ADR-0082](../../04-governance/adr/0082-private-storage-repo-posture.md) §4 — він ганявся

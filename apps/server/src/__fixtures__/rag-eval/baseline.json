@@ -1,0 +1,262 @@
+{
+  "comment": "AUTO-GENERATED базова лінія RAG-евалу. Перезаписати: RAG_EVAL_WRITE_BASELINE=1 pnpm --filter @sergeant/server test:rag-eval. Бампає людина — авторатчет при роздільності метрики 0.02 осцилював би.",
+  "embeddingModel": "voyage-3.5-lite",
+  "topK": 4,
+  "metrics": {
+    "recallAtK": 0.553,
+    "precisionAt1": 0.3,
+    "mrr": 0.443
+  },
+  "perQuery": {
+    "finyk-001": {
+      "recall": 0.333,
+      "precisionAt1": 0,
+      "reciprocalRank": 0.25
+    },
+    "finyk-002": {
+      "recall": 0.333,
+      "precisionAt1": 1,
+      "reciprocalRank": 1
+    },
+    "finyk-003": {
+      "recall": 0.5,
+      "precisionAt1": 0,
+      "reciprocalRank": 0.333
+    },
+    "finyk-004": {
+      "recall": 0.333,
+      "precisionAt1": 0,
+      "reciprocalRank": 0.25
+    },
+    "finyk-005": {
+      "recall": 0.333,
+      "precisionAt1": 0,
+      "reciprocalRank": 0.5
+    },
+    "finyk-006": {
+      "recall": 0.333,
+      "precisionAt1": 0,
+      "reciprocalRank": 0.5
+    },
+    "finyk-007": {
+      "recall": 0.5,
+      "precisionAt1": 0,
+      "reciprocalRank": 0.25
+    },
+    "finyk-008": {
+      "recall": 0,
+      "precisionAt1": 0,
+      "reciprocalRank": 0
+    },
+    "fizruk-001": {
+      "recall": 0,
+      "precisionAt1": 0,
+      "reciprocalRank": 0
+    },
+    "fizruk-002": {
+      "recall": 0.5,
+      "precisionAt1": 0,
+      "reciprocalRank": 0.333
+    },
+    "fizruk-003": {
+      "recall": 1,
+      "precisionAt1": 0,
+      "reciprocalRank": 0.5
+    },
+    "fizruk-004": {
+      "recall": 0,
+      "precisionAt1": 0,
+      "reciprocalRank": 0
+    },
+    "fizruk-005": {
+      "recall": 1,
+      "precisionAt1": 1,
+      "reciprocalRank": 1
+    },
+    "fizruk-006": {
+      "recall": 1,
+      "precisionAt1": 0,
+      "reciprocalRank": 0.333
+    },
+    "fizruk-007": {
+      "recall": 1,
+      "precisionAt1": 1,
+      "reciprocalRank": 1
+    },
+    "fizruk-008": {
+      "recall": 0.5,
+      "precisionAt1": 1,
+      "reciprocalRank": 1
+    },
+    "nutrition-001": {
+      "recall": 0,
+      "precisionAt1": 0,
+      "reciprocalRank": 0
+    },
+    "nutrition-002": {
+      "recall": 1,
+      "precisionAt1": 1,
+      "reciprocalRank": 1
+    },
+    "nutrition-003": {
+      "recall": 1,
+      "precisionAt1": 0,
+      "reciprocalRank": 0.5
+    },
+    "nutrition-004": {
+      "recall": 1,
+      "precisionAt1": 0,
+      "reciprocalRank": 0.5
+    },
+    "nutrition-005": {
+      "recall": 1,
+      "precisionAt1": 0,
+      "reciprocalRank": 0.25
+    },
+    "nutrition-006": {
+      "recall": 1,
+      "precisionAt1": 1,
+      "reciprocalRank": 1
+    },
+    "nutrition-007": {
+      "recall": 1,
+      "precisionAt1": 1,
+      "reciprocalRank": 1
+    },
+    "nutrition-008": {
+      "recall": 0,
+      "precisionAt1": 0,
+      "reciprocalRank": 0
+    },
+    "routine-001": {
+      "recall": 1,
+      "precisionAt1": 1,
+      "reciprocalRank": 1
+    },
+    "routine-002": {
+      "recall": 1,
+      "precisionAt1": 0,
+      "reciprocalRank": 0.5
+    },
+    "routine-003": {
+      "recall": 1,
+      "precisionAt1": 0,
+      "reciprocalRank": 0.5
+    },
+    "routine-004": {
+      "recall": 0.5,
+      "precisionAt1": 1,
+      "reciprocalRank": 1
+    },
+    "routine-005": {
+      "recall": 0,
+      "precisionAt1": 0,
+      "reciprocalRank": 0
+    },
+    "routine-006": {
+      "recall": 0,
+      "precisionAt1": 0,
+      "reciprocalRank": 0
+    },
+    "routine-007": {
+      "recall": 1,
+      "precisionAt1": 1,
+      "reciprocalRank": 1
+    },
+    "routine-008": {
+      "recall": 1,
+      "precisionAt1": 1,
+      "reciprocalRank": 1
+    },
+    "journal-001": {
+      "recall": 0,
+      "precisionAt1": 0,
+      "reciprocalRank": 0
+    },
+    "journal-002": {
+      "recall": 1,
+      "precisionAt1": 1,
+      "reciprocalRank": 1
+    },
+    "journal-003": {
+      "recall": 1,
+      "precisionAt1": 1,
+      "reciprocalRank": 1
+    },
+    "journal-004": {
+      "recall": 1,
+      "precisionAt1": 0,
+      "reciprocalRank": 0.25
+    },
+    "journal-005": {
+      "recall": 1,
+      "precisionAt1": 0,
+      "reciprocalRank": 0.25
+    },
+    "journal-006": {
+      "recall": 0,
+      "precisionAt1": 0,
+      "reciprocalRank": 0
+    },
+    "journal-007": {
+      "recall": 1,
+      "precisionAt1": 0,
+      "reciprocalRank": 0.333
+    },
+    "journal-008": {
+      "recall": 1,
+      "precisionAt1": 1,
+      "reciprocalRank": 1
+    },
+    "digest-001": {
+      "recall": 0,
+      "precisionAt1": 0,
+      "reciprocalRank": 0
+    },
+    "digest-002": {
+      "recall": 0,
+      "precisionAt1": 0,
+      "reciprocalRank": 0
+    },
+    "digest-003": {
+      "recall": 1,
+      "precisionAt1": 1,
+      "reciprocalRank": 1
+    },
+    "digest-004": {
+      "recall": 0,
+      "precisionAt1": 0,
+      "reciprocalRank": 0
+    },
+    "digest-005": {
+      "recall": 1,
+      "precisionAt1": 0,
+      "reciprocalRank": 0.5
+    },
+    "chat-001": {
+      "recall": 0.5,
+      "precisionAt1": 0,
+      "reciprocalRank": 0.333
+    },
+    "chat-002": {
+      "recall": 0,
+      "precisionAt1": 0,
+      "reciprocalRank": 0
+    },
+    "chat-003": {
+      "recall": 0,
+      "precisionAt1": 0,
+      "reciprocalRank": 0
+    },
+    "cofounder-001": {
+      "recall": 0,
+      "precisionAt1": 0,
+      "reciprocalRank": 0
+    },
+    "cofounder-002": {
+      "recall": 0,
+      "precisionAt1": 0,
+      "reciprocalRank": 0
+    }
+  }
+}

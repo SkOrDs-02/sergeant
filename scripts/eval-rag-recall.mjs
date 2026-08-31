@@ -17,9 +17,13 @@
 //          Sanity-check CI; gate не false-alarm-ить до PR-21.
 //        - `simulate` — повертає `expected` у відсотках, заданих
 //          `--simulate-recall=0.X`. Manually тригерити warn / kill.
-//        - `live` — real AI-memory service (Voyage + pgvector). NOT
-//          IMPLEMENTED — placeholder для PR-21 (`live` вимагає
-//          `DATABASE_URL` + `VOYAGE_API_KEY`).
+//      Живого режиму тут більше немає. Він переїхав у TypeScript
+//      (`apps/server/src/lib/ragEval/cachedRecall.ragEval.test.ts` і
+//      `src/scripts/ragEvalLive.ts`), бо потребує `env`,
+//      `createVoyageEmbeddings` з ретраями та бюджетом і
+//      `createPgVectorStore` із `SET LOCAL hnsw.ef_search`. Дзеркало
+//      формул у цьому файлі лишається цінним саме як незалежна
+//      реалізація — але лише для mock/simulate.
 //   3. Обчислює три метрики per query:
 //        - recall@K = |retrieved[0..K] ∩ expected| / |expected|
 //        - precision@1 = 1 якщо retrieved[0] ∈ expected else 0
@@ -110,8 +114,18 @@ function parseArgs(argv) {
 
     switch (key) {
       case "mode":
-        if (value !== "mock" && value !== "simulate" && value !== "live") {
-          throw new Error(`Invalid --mode: ${value}. Use mock|simulate|live.`);
+        if (value === "live") {
+          throw new Error(
+            "--mode=live більше не існує тут. Живий вимір переїхав у TypeScript: " +
+              "кешований гейт — `pnpm --filter @sergeant/server test:rag-eval`, " +
+              "живі ембеддинги — `pnpm --filter @sergeant/server rag-eval:live`. " +
+              "Причина: живому режиму потрібні env, createVoyageEmbeddings з ретраями і " +
+              "createPgVectorStore із SET LOCAL hnsw.ef_search — переписати їх у JS означало б " +
+              "міряти копію retrieval-шляху замість самого шляху.",
+          );
+        }
+        if (value !== "mock" && value !== "simulate") {
+          throw new Error(`Invalid --mode: ${value}. Use mock|simulate.`);
         }
         opts.mode = value;
         break;
@@ -168,7 +182,8 @@ function printHelp() {
       "Usage: node scripts/eval-rag-recall.mjs [options]",
       "",
       "Options:",
-      "  --mode=mock|simulate|live   Retrieval mode (default: mock).",
+      "  --mode=mock|simulate        Retrieval mode (default: mock).",
+      "                              Живий вимір — pnpm --filter @sergeant/server test:rag-eval.",
       "  --simulate-recall=<0..1>    For --mode=simulate: target recall.",
       "  --warn=<0..1>               Warn threshold (default: 0.5).",
       "  --kill=<0..1>               Kill threshold (default: 0.4).",
@@ -234,12 +249,6 @@ function reciprocalRank(retrieved, expected) {
  * сходив у target. Deterministic — без RNG (порядок expected).
  */
 function buildRetrievedForQuery(query, mode, targetRecall, topK) {
-  if (mode === "live") {
-    throw new Error(
-      "--mode=live not implemented (waits for PR-21 real-data eval wiring).",
-    );
-  }
-
   const expected = query.expected_memory_ids;
 
   if (mode === "mock") {

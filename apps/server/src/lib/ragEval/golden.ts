@@ -17,6 +17,7 @@
  *   - `apps/server/src/lib/ragEval/golden.test.ts` (validation).
  */
 
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
@@ -71,6 +72,19 @@ export function parseGoldenSet(raw: unknown): GoldenSet {
     seenIds.add(q.id);
   }
   return parsed;
+}
+
+/**
+ * Відбиток **текстів запитів** — того, що їде в ембеддинг. Як і в
+ * `corpusTextsFingerprint`, свідомо не sha цілого файлу: правка
+ * коментаря чи `expected_memory_ids` вектора запиту не змінює, і
+ * вимагати за неї платного переембеддингу було б безглуздо.
+ */
+export function goldenQueriesFingerprint(golden: GoldenSet): string {
+  const canonical = golden.queries
+    .map((q) => `${q.id}\n${q.query}`)
+    .join("\n \n");
+  return createHash("sha256").update(canonical, "utf-8").digest("hex");
 }
 
 /**
