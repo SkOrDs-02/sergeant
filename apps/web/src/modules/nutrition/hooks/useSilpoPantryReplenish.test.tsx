@@ -286,10 +286,50 @@ describe("useSilpoPantryReplenish", () => {
             qty: 1,
             unit: "шт",
             addedAt: expect.any(String) as unknown as string,
+            // Одна штука: множення фасування не відбувалось, показувати
+            // «× N» у розкладі позиції нема чого.
+            packCount: null,
           },
         ],
       },
     ]);
+  });
+
+  // Звіт власника 2026-08-31: дві банки Red Bull 0,25 л із чека лягли в
+  // розклад позиції як одна «500 мл» — пляшка, якої він не купував. Сума
+  // лишається добутком (інваріант «сума варіантів = кількість позиції»),
+  // але кількість штук їде поруч, щоб покупку можна було впізнати.
+  it("запамʼятовує кількість штук у фасуванні: 2 × 0,25 л, не «пляшка 500 мл»", () => {
+    mockReceipts([RECEIPT_SUMMARY]);
+    mockDetail(
+      detailWithItems([
+        {
+          id: 1,
+          name: "Напій енергетичний Red Bull",
+          qty: 2,
+          unit: "0,25л",
+          priceKop: 8000,
+          categorySlug: null,
+          barcode: null,
+        },
+      ]),
+    );
+    const upsertItem = vi.fn();
+    const { result } = renderHook(() =>
+      useSilpoPantryReplenish({ enabled: true, pantryItems: [], upsertItem }),
+    );
+
+    act(() => {
+      result.current.confirm();
+    });
+
+    const written = upsertItem.mock.calls[0]![0] as Array<{
+      qty: number;
+      sources?: Array<{ qty: number; packCount?: number | null }>;
+    }>;
+    expect(written[0]!.qty).toBe(500);
+    expect(written[0]!.sources![0]!.qty).toBe(500);
+    expect(written[0]!.sources![0]!.packCount).toBe(2);
   });
 
   it("згортає назву з чека до родової і показує це в рядку", () => {

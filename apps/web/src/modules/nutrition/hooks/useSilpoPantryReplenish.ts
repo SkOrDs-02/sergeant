@@ -27,6 +27,7 @@ import {
   genericFoodName,
   matchFoodName,
   receiptQtyToBase,
+  receiptPackCount,
   type PantryItemSource,
 } from "@sergeant/nutrition-domain";
 import { toKyivISODate } from "@sergeant/shared";
@@ -219,6 +220,7 @@ export function useSilpoPantryReplenish({
         qty: based.qty,
         unit: based.unit,
         addedAt,
+        packCount: receiptPackCount(r.item.qty, r.item.unit),
       };
       return {
         name,

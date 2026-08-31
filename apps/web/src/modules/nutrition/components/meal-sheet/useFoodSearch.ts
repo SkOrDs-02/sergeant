@@ -44,6 +44,17 @@ export interface UseFoodSearchResult {
   offHits: FoodSearchProduct[];
   foodBusy: boolean;
   offBusy: boolean;
+  /**
+   * Обидва джерела відпрацювали САМЕ поточний запит: debounce догнав, і
+   * жоден запит не в польоті.
+   *
+   * Порожній `foodHits` сам собою не означає «нічого не знайдено» — рівно
+   * так само він виглядає в перші 600 мс, поки зовнішній debounce ще не
+   * догнав набране. Тому автоматичний вибір результату (позиція з чека
+   * Сільпо) чекає на цей прапорець: без нього він вирішував би «промах»
+   * ще до того, як пошук почався.
+   */
+  searchSettled: boolean;
   foodErr: string;
   setFoodErr: Dispatch<SetStateAction<string>>;
 }
@@ -87,6 +98,11 @@ export function useFoodSearch(foodQuery: string): UseFoodSearchResult {
     offHits: trimmed && offQuery === trimmed ? (off.data ?? []) : [],
     foodBusy: local.isFetching && localQuery.length > 0,
     offBusy: off.isFetching && offQuery.length >= OFF_MIN_LEN,
+    searchSettled:
+      localQuery === trimmed &&
+      offQuery === trimmed &&
+      !local.isFetching &&
+      !off.isFetching,
     foodErr,
     setFoodErr,
   };

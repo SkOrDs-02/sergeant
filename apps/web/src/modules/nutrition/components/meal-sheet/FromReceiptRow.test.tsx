@@ -21,7 +21,8 @@ vi.mock("@finyk/hooks/useSilpoSyncState", () => ({
 }));
 vi.mock("@finyk/hooks/useSilpoReceipts", () => ({
   useSilpoReceipts: () => ({ receipts: [{ receiptId: "r1" }] }),
-  useSilpoReceiptDetail: () => receiptDetail,
+  useSilpoReceiptDetails: () =>
+    receiptDetail.data ? [receiptDetail.data] : [],
 }));
 
 const items = [
@@ -34,15 +35,17 @@ function setup() {
   const setForm = vi.fn();
   const setFoodQuery = vi.fn();
   const setPickedGrams = vi.fn();
+  const onPicked = vi.fn();
   const result = render(
     <FromReceiptRow
       enabled
       setForm={setForm}
       setFoodQuery={setFoodQuery}
       setPickedGrams={setPickedGrams}
+      onPicked={onPicked}
     />,
   );
-  return { ...result, setForm, setFoodQuery, setPickedGrams };
+  return { ...result, setForm, setFoodQuery, setPickedGrams, onPicked };
 }
 
 describe("FromReceiptRow", () => {
@@ -76,6 +79,15 @@ describe("FromReceiptRow", () => {
     expect(setFoodQuery).toHaveBeenCalledWith("Котлети курячі з кускусом");
     expect(setPickedGrams).toHaveBeenCalledWith("330");
     expect(setForm).toHaveBeenCalled();
+  });
+
+  // Людина вже назвала цей продукт на касі: тап по позиції чека має
+  // повідомити аркуш, що запит НЕ ручний, і той сам розгорне перший
+  // результат карткою з КБЖУ замість списку.
+  it("signals the sheet to auto-open the first hit, with the cleaned query", () => {
+    const { onPicked } = setup();
+    fireEvent.click(screen.getByText("Котлети курячі з кускусом"));
+    expect(onPicked).toHaveBeenCalledWith("Котлети курячі з кускусом");
   });
 
   it("leaves the weight field untouched when the receipt can't tell it", () => {
