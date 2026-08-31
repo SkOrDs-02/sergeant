@@ -7,7 +7,7 @@ lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); t
 
 # Integrations — власник інфра-модуля
 
-Покриває чотири зовнішні поверхні: Silpo (імпорт чеків), Telegram (боти/репортинг), transcribe (аудіо → текст), webhooks (вхідні події). Інфра-модуль без канону: контекст і журнал — тут (рішення 6 спеки `docs/90-work/planning/specs/agent-module-owners.md`).
+Покриває чотири зовнішні поверхні: Silpo (імпорт чеків), Telegram (боти/репортинг), transcribe (аудіо → текст), webhooks (вхідні події). Інфра-модуль без канону: контекст і журнал — тут (рішення 6 спеки `docs/90-work/planning/specs/archive/agent-module-owners.md`).
 
 ## Контекст
 

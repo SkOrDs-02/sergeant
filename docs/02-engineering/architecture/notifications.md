@@ -1,6 +1,6 @@
 # Сповіщення і пуші
 
-> **Last touched:** 2026-08-07 by @Skords-01. **Next review:** 2026-11-12.
+> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-07.
 > **Status:** Active
 
 > Канонічний опис того, як сповіщення доходять до користувача на всіх поверхнях. Рецепт «додати новий тип пушу» — у [`add-push-notification.md`](../../00-start/playbooks/add-push-notification.md); тут — сама архітектура і межі, за які виходити не можна.
@@ -111,6 +111,6 @@ Payload підписаний VAPID, але це не робить його до�
 
 - [`add-push-notification.md`](../../00-start/playbooks/add-push-notification.md) — рецепт додавання нового типу
 - `apps/server/src/lib/reminders/` — `due.ts` (чисті предикати), `sweep.ts` (БД і відправка), `nudge.ts` (проактивний канал), `scheduler.ts` (таймер)
-- [`sergeant-persona-and-proactive-push.md`](../../90-work/planning/specs/sergeant-persona-and-proactive-push.md) — спека каналу підштовхувань і персони
+- [`sergeant-persona-and-proactive-push.md`](../../90-work/planning/specs/archive/sergeant-persona-and-proactive-push.md) — спека каналу підштовхувань і персони
 - `apps/server/src/push/send.ts` — fan-out на APNs / FCM / web-push
 - `apps/web/src/sw/pushPayload.ts` — розбір і захисні обрізки payload-у

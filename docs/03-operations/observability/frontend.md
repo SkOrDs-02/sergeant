@@ -1,6 +1,6 @@
 # Frontend-observability — web і mobile
 
-> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-27.
+> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-16.
 > **Status:** Active
 
 Observability-стек для web- і mobile-клієнтів Sergeant: error tracking,

@@ -1,6 +1,6 @@
 # Sentry tracesSampler — per-route sampling policy
 
-> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-20.
+> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-03.
 > **Status:** Active
 >
 > Source of truth for **server** rules: `apps/server/src/sentry.ts`

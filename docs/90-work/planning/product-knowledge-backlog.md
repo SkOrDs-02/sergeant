@@ -460,7 +460,7 @@ SKU/магазин; point-lookup одного EAN — прийнятний ри�
 дубль полагоджено 2026-08-01 (`fix(server): stop pushing the daily insight
 from the foreground request path`), а повний дизайн планувальника тепер
 описаний у
-[`sergeant-persona-and-proactive-push.md`](./specs/sergeant-persona-and-proactive-push.md).
+[`sergeant-persona-and-proactive-push.md`](./specs/archive/sergeant-persona-and-proactive-push.md).
 Рядок «Проактивність для Pro» у Хвилі 5 нижче переходить зі стану «нічого
 немає» у «спека є, коду ще немає» — див. примітку під таблицею Хвилі 5.
 
@@ -1547,7 +1547,7 @@ verbatim; кожне переводить свій рядок таблиці з 
 
 > **Проактивність для Pro — дизайн зʼявився 2026-08-01, коду ще нема.**
 > Повний план планувальника й тону нотифікацій тепер описаний у
-> [`sergeant-persona-and-proactive-push.md`](./specs/sergeant-persona-and-proactive-push.md).
+> [`sergeant-persona-and-proactive-push.md`](./specs/archive/sergeant-persona-and-proactive-push.md).
 > Побічно того ж дня прибрано дубль push-повідомлення в `coachInsight`
 > (foreground-запит слав той самий текст, що вже показувався на екрані —
 > комміт «stop pushing the daily insight from the foreground request path»).

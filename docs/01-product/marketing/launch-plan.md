@@ -12,7 +12,7 @@
 - **Бери звідси:** persona archetype, voice playbook per channel, UA lexicon, tagline lineup, content pillars, SEO-кластери, email-копію, prepublish-чеклист. Це все лишається канонічним.
 - **Не бери звідси:** Airtable, n8n-флоу, Astro-стек, `nanoid(8)` ref-коди, Google Sheet як лічильник. Нічого з цього в репо немає.
 
-**Реальні поверхні для звірки:** `apps/landing/src/pages/HomePage.tsx`, `apps/landing/src/components/` (`TelegramCta`, `HomeSections`, `DashboardPreview`), `apps/landing/src/lib/links.ts`, `apps/web/src/core/pricing/WaitlistForm.tsx`, server `/api/v1/waitlist` і `/api/v1/telegram/webhook`, [`telegram-waitlist.md`](../../90-work/planning/specs/telegram-waitlist.md).
+**Реальні поверхні для звірки:** `apps/landing/src/pages/HomePage.tsx`, `apps/landing/src/components/` (`TelegramCta`, `HomeSections`, `DashboardPreview`), `apps/landing/src/lib/links.ts`, `apps/web/src/core/pricing/WaitlistForm.tsx`, server `/api/v1/waitlist` і `/api/v1/telegram/webhook`, [`telegram-waitlist.md`](../../90-work/planning/specs/archive/telegram-waitlist.md).
 
 > ⚠️ Шляхи `apps/web/src/core/LandingPage.tsx` і `apps/web/src/core/WaitlistForm.tsx`, які раніше стояли в цьому абзаці, **не існують**. Кореневий `/` у `apps/web` — це `RootRoute` (хаб для залогіненого юзера), а не маркетингова сторінка; маркетинговий лендінг живе в окремому воркспейсі `apps/landing`.
 

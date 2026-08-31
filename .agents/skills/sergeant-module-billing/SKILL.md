@@ -7,7 +7,7 @@ lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); t
 
 # Billing — власник інфра-модуля
 
-Інфра-модуль без продуктового канону: контекст і журнал рішень живуть прямо тут (рішення 6 спеки `docs/90-work/planning/specs/agent-module-owners.md`). Роутинг двовимірний: технічні правила поверхні бере surface-скіл.
+Інфра-модуль без продуктового канону: контекст і журнал рішень живуть прямо тут (рішення 6 спеки `docs/90-work/planning/specs/archive/agent-module-owners.md`). Роутинг двовимірний: технічні правила поверхні бере surface-скіл.
 
 ## Контекст
 

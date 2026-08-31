@@ -1,6 +1,6 @@
 # Observability env-vars
 
-> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-07.
+> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-08.
 > **Status:** Active
 
 Цей файл — observability-індекс по env-vars, які впливають на дашборди й алерти у `docs/03-operations/observability/dashboards/`. Канонічні описи (defaults, валідація, sentinel-значення) живуть у [`docs/02-engineering/integrations/env-vars.md`](../../02-engineering/integrations/env-vars.md) — тут лише посилання + який саме panel/alert ламається без них.
