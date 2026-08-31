@@ -34,7 +34,6 @@ const {
     recommendRecipes: vi.fn((_req, res) =>
       res.json({ ok: true, handler: "recommendRecipes" }),
     ),
-    dayHint: vi.fn((_req, res) => res.json({ ok: true, handler: "dayHint" })),
     weekPlan: vi.fn((_req, res) => res.json({ ok: true, handler: "weekPlan" })),
     dayPlan: vi.fn((_req, res) => res.json({ ok: true, handler: "dayPlan" })),
     shoppingList: vi.fn((_req, res) =>
@@ -114,9 +113,6 @@ vi.mock("../modules/nutrition/refine-photo.js", () => ({
 }));
 vi.mock("../modules/nutrition/recommend-recipes.js", () => ({
   default: nutritionHandlers.recommendRecipes,
-}));
-vi.mock("../modules/nutrition/day-hint.js", () => ({
-  default: nutritionHandlers.dayHint,
 }));
 vi.mock("../modules/nutrition/week-plan.js", () => ({
   default: nutritionHandlers.weekPlan,

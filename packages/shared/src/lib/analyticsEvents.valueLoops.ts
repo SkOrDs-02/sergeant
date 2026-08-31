@@ -25,6 +25,10 @@ export const VALUE_LOOP_ANALYTICS_EVENTS = Object.freeze({
   //                            surface: "module" | "hub" }
   //   VALUE_SIGNAL_ACTIVATED { module, signal, surface }
   //   VALUE_SIGNAL_DISMISSED { module, signal, surface }
+  //   VALUE_SIGNAL_ASK_AI    { module, signal, surface } — чип «Спитати AI»
+  //     на InsightCard (insights-ask-ai-chip): відкриває HubChat із
+  //     префілом `Insight.askAiPrompt`. Не замінює ACTIVATED — тіло картки
+  //     (навігація в модуль) і чип — дві різні дії користувача.
   //
   // Модуль і вид сигналу їдуть property-полями (конвенція
   // `cross_module_preview_*` / `daily_nudge_action`), а не в імені події —
@@ -39,6 +43,7 @@ export const VALUE_LOOP_ANALYTICS_EVENTS = Object.freeze({
   VALUE_SIGNAL_SHOWN: "value_signal_shown",
   VALUE_SIGNAL_ACTIVATED: "value_signal_activated",
   VALUE_SIGNAL_DISMISSED: "value_signal_dismissed",
+  VALUE_SIGNAL_ASK_AI: "value_signal_ask_ai",
 
   // ── 2) Друга половина петлі: «дію зроблено» ────────────────────────
   //

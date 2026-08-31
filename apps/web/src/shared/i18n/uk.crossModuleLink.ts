@@ -53,6 +53,7 @@ export const crossModuleLinkMessages = {
     wellbeing: "самопочуття, 1–5",
     habit_rate: "звичок виконано, %",
     alcohol_spending: "₴ на алкоголь за день",
+    smoking_spending: "₴ на цигарки за день",
   },
   /**
    * Розгортання доказової смуги (рішення власника 2026-08-05).

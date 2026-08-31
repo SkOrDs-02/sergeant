@@ -1,5 +1,4 @@
-import SiteHeader from "../components/SiteHeader";
-import SiteFooter from "../components/SiteFooter";
+import SiteLayout from "../components/SiteLayout";
 import TelegramCta from "../components/TelegramCta";
 import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
 
@@ -33,102 +32,95 @@ export default function BetaPage() {
   usePageMeta(ROUTE_META["/beta"]);
 
   return (
-    <>
-      <SiteHeader />
+    <SiteLayout>
+      <section className="mx-auto w-full max-w-6xl px-5 pb-14 pt-12 sm:px-8 sm:pt-16">
+        <p className="font-display text-xs font-medium uppercase tracking-[0.12em] text-subtle">
+          Закрита бета
+        </p>
+        <h1 className="mt-4 max-w-3xl font-display text-3xl font-extrabold uppercase leading-[1.08] tracking-tight text-balance text-foreground-strong sm:text-5xl">
+          Бета відкривається хвилями
+        </h1>
+        <p className="mt-6 max-w-xl text-lg leading-relaxed text-pretty text-muted">
+          Sergeant вчиться на реальних даних, тому я відкриваю доступ поступово,
+          щоб встигати говорити з кожним, хто зайшов.
+        </p>
+      </section>
 
-      <main>
-        <section className="mx-auto w-full max-w-6xl px-5 pb-14 pt-12 sm:px-8 sm:pt-16">
-          <p className="font-display text-xs font-medium uppercase tracking-[0.12em] text-subtle">
-            Закрита бета
-          </p>
-          <h1 className="mt-4 max-w-3xl font-display text-3xl font-extrabold uppercase leading-[1.08] tracking-tight text-balance text-foreground-strong sm:text-5xl">
-            Бета відкривається хвилями
-          </h1>
-          <p className="mt-6 max-w-xl text-lg leading-relaxed text-pretty text-muted">
-            Sergeant вчиться на реальних даних, тому я відкриваю доступ
-            поступово, щоб встигати говорити з кожним, хто зайшов.
-          </p>
-        </section>
-
-        <section className="mx-auto grid w-full max-w-6xl gap-10 px-5 pb-16 sm:grid-cols-2 sm:gap-14 sm:px-8">
-          <div>
-            <h2 className="border-b-2 border-foreground-strong pb-2.5 font-display text-xs font-bold uppercase tracking-[0.08em] text-foreground-strong">
-              Що отримуєш
-            </h2>
-            <ul className="mt-4 flex flex-col gap-4">
-              {GIVE.map((item) => (
-                <li
-                  key={item}
-                  className="flex items-baseline gap-2.5 text-sm font-semibold leading-relaxed text-foreground-strong"
-                >
-                  <span
-                    aria-hidden="true"
-                    className="h-2 w-2 shrink-0 translate-y-px bg-foreground-strong"
-                  />
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div>
-            <h2 className="border-b-2 border-cardline-strong pb-2.5 font-display text-xs font-bold uppercase tracking-[0.08em] text-subtle">
-              Що прошу натомість
-            </h2>
-            <p className="mt-4 max-w-md text-[15px] leading-relaxed text-muted">
-              {ASK}
-            </p>
-          </div>
-        </section>
-
-        <section className="bg-ink py-16 sm:py-20">
-          <div className="mx-auto w-full max-w-6xl px-5 sm:px-8">
-            <h2 className="font-display text-2xl font-extrabold uppercase tracking-tight text-ink-text sm:text-3xl">
-              Черга в бету
-            </h2>
-            <p className="mt-4 max-w-lg leading-relaxed text-ink-muted">
-              Черга живе в Telegram: натисни кнопку, бот запамʼятає тебе і
-              напише одне повідомлення, коли відкриється твоя хвиля. Без пошти і
-              спаму.
-            </p>
-            <div className="mt-7">
-              <TelegramCta
-                placement="beta"
-                label="Стати в чергу в Telegram"
-                variant="inverse"
-              />
-            </div>
-          </div>
-        </section>
-
-        <section className="mx-auto grid w-full max-w-6xl gap-8 px-5 py-16 sm:px-8 sm:py-20 lg:grid-cols-[320px_minmax(0,1fr)] lg:gap-16">
-          <h2 className="font-display text-2xl font-extrabold uppercase tracking-tight text-foreground-strong sm:text-3xl">
-            Коротко про бету
+      <section className="mx-auto grid w-full max-w-6xl gap-10 px-5 pb-16 sm:grid-cols-2 sm:gap-14 sm:px-8">
+        <div>
+          <h2 className="border-b-2 border-foreground-strong pb-2.5 font-display text-xs font-bold uppercase tracking-[0.08em] text-foreground-strong">
+            Що отримуєш
           </h2>
-          <div className="border-b border-cardline">
-            {MINI_FAQ.map((item) => (
-              <div key={item.q} className="border-t border-cardline py-5">
-                <h3 className="font-bold text-foreground-strong">{item.q}</h3>
-                <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
-                  {item.a ?? (
-                    <>
-                      Чесний список – у розділі{" "}
-                      <a
-                        href="/#status"
-                        className="text-foreground underline decoration-cardline-strong underline-offset-4 transition hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
-                      >
-                        «Доповідь про стан»
-                      </a>{" "}
-                      на головній. Він оновлюється.
-                    </>
-                  )}
-                </p>
-              </div>
+          <ul className="mt-4 flex flex-col gap-4">
+            {GIVE.map((item) => (
+              <li
+                key={item}
+                className="flex items-baseline gap-2.5 text-sm font-semibold leading-relaxed text-foreground-strong"
+              >
+                <span
+                  aria-hidden="true"
+                  className="h-2 w-2 shrink-0 translate-y-px bg-foreground-strong"
+                />
+                {item}
+              </li>
             ))}
-          </div>
-        </section>
-      </main>
+          </ul>
+        </div>
+        <div>
+          <h2 className="border-b-2 border-cardline-strong pb-2.5 font-display text-xs font-bold uppercase tracking-[0.08em] text-subtle">
+            Що прошу натомість
+          </h2>
+          <p className="mt-4 max-w-md text-[15px] leading-relaxed text-muted">
+            {ASK}
+          </p>
+        </div>
+      </section>
 
-      <SiteFooter />
-    </>
+      <section className="bg-ink py-16 sm:py-20">
+        <div className="mx-auto w-full max-w-6xl px-5 sm:px-8">
+          <h2 className="font-display text-2xl font-extrabold uppercase tracking-tight text-ink-text sm:text-3xl">
+            Черга в бету
+          </h2>
+          <p className="mt-4 max-w-lg leading-relaxed text-ink-muted">
+            Черга живе в Telegram: натисни кнопку, бот запамʼятає тебе і напише
+            одне повідомлення, коли відкриється твоя хвиля. Без пошти і спаму.
+          </p>
+          <div className="mt-7">
+            <TelegramCta
+              placement="beta"
+              label="Стати в чергу в Telegram"
+              variant="inverse"
+            />
+          </div>
+        </div>
+      </section>
+
+      <section className="mx-auto grid w-full max-w-6xl gap-8 px-5 py-16 sm:px-8 sm:py-20 lg:grid-cols-[320px_minmax(0,1fr)] lg:gap-16">
+        <h2 className="font-display text-2xl font-extrabold uppercase tracking-tight text-foreground-strong sm:text-3xl">
+          Коротко про бету
+        </h2>
+        <div className="border-b border-cardline">
+          {MINI_FAQ.map((item) => (
+            <div key={item.q} className="border-t border-cardline py-5">
+              <h3 className="font-bold text-foreground-strong">{item.q}</h3>
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
+                {item.a ?? (
+                  <>
+                    Чесний список – у розділі{" "}
+                    <a
+                      href="/stan"
+                      className="text-foreground underline decoration-cardline-strong underline-offset-4 transition hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                    >
+                      «Доповідь про стан»
+                    </a>
+                    . Він оновлюється, і там видно дату останньої правки.
+                  </>
+                )}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+    </SiteLayout>
   );
 }

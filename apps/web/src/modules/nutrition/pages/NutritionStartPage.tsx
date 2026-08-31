@@ -26,9 +26,6 @@ interface NutritionStartPageProps {
   log: LogController;
   prefs: NutritionPrefs;
   setActivePageAndHash: (page: NutritionPage) => void;
-  fetchDayHint: () => void | Promise<void>;
-  dayHintText: string;
-  dayHintBusy: boolean;
   onRequestAddMeal: () => void;
 }
 
@@ -36,9 +33,6 @@ export function NutritionStartPage({
   log,
   prefs,
   setActivePageAndHash,
-  fetchDayHint,
-  dayHintText,
-  dayHintBusy,
   onRequestAddMeal,
 }: NutritionStartPageProps) {
   const { messages } = useLocale();
@@ -53,9 +47,6 @@ export function NutritionStartPage({
           onGoToDailyPlan={() => {
             setActivePageAndHash("menu");
           }}
-          onFetchDayHint={fetchDayHint}
-          dayHintText={dayHintText}
-          dayHintBusy={dayHintBusy}
           onAddMeal={onRequestAddMeal}
         />
       </>

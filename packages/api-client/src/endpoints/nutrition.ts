@@ -116,11 +116,6 @@ export interface NutritionDayPlanResponse {
   rawText?: string | null;
 }
 
-// day-hint
-export interface NutritionDayHintResponse {
-  hint: string;
-}
-
 // shopping-list
 export interface NutritionShoppingItem {
   name: string;
@@ -169,7 +164,6 @@ export interface NutritionEndpoints {
   recommendRecipes: (body: unknown) => Promise<NutritionRecipesResponse>;
   weekPlan: (body: unknown) => Promise<NutritionWeekPlanResponse>;
   dayPlan: (body: unknown) => Promise<NutritionDayPlanResponse>;
-  dayHint: (body: unknown) => Promise<NutritionDayHintResponse>;
   shoppingList: (body: unknown) => Promise<NutritionShoppingListResponse>;
   parsePantry: (body: unknown) => Promise<NutritionParsePantryResponse>;
   backupUpload: (body: {
@@ -208,8 +202,6 @@ export function createNutritionEndpoints(http: HttpClient): NutritionEndpoints {
       ),
     dayPlan: (body) =>
       postNutrition<NutritionDayPlanResponse>("/api/nutrition/day-plan", body),
-    dayHint: (body) =>
-      postNutrition<NutritionDayHintResponse>("/api/nutrition/day-hint", body),
     shoppingList: (body) =>
       postNutrition<NutritionShoppingListResponse>(
         "/api/nutrition/shopping-list",

@@ -16,10 +16,27 @@ const ROUTES = [
   "/",
   "/beta",
   "/about",
+  "/hroshi",
+  "/yizha",
+  "/zvychky",
+  "/trenuvannia",
+  "/ruchna-robota",
+  "/vyhid",
   "/guides",
+  "/zvyazky",
+  "/stan",
+  "/obitsyanky",
+  "/pytannya",
   "/guides/monobank",
+  "/guides/kbzhv",
+  "/guides/cheky",
+  "/guides/foto-kalorii",
+  "/guides/bank-bezpeka",
+  "/guides/kilka-bankiv",
+  "/data",
   "/privacy",
   "/terms",
+  "/404",
   "/nope-404",
 ];
 
@@ -86,46 +103,54 @@ for (const [vw, tag] of [
   const { ctx, page } = await newPage({ width: 1280, height: 900 });
   await page.goto(BASE + "/", { waitUntil: "networkidle" });
 
-  await page.getByRole("link", { name: "Модулі" }).click();
-  await page.waitForTimeout(700);
-  ok(
-    "desktop якір Модулі докручує до секції",
-    await page.evaluate(() => {
-      const el = document.getElementById("modules");
-      return !!el && el.getBoundingClientRect().top < 200;
-    }),
-  );
+  await page
+    .getByLabel("Головна навігація")
+    .getByRole("link", { name: "Гроші", exact: true })
+    .click();
+  await page.waitForURL("**/hroshi");
+  ok("desktop нав Гроші → /hroshi", page.url().endsWith("/hroshi"));
+
+  // Картка модуля на головній – теж точка входу, не декорація
+  await page.goto(BASE + "/", { waitUntil: "networkidle" });
+  await page.getByRole("link", { name: "Харчування" }).first().click();
+  await page.waitForURL("**/yizha");
+  ok("картка модуля Харчування → /yizha", page.url().endsWith("/yizha"));
 
   await page.getByRole("link", { name: "Гайди" }).first().click();
   await page.waitForURL("**/guides");
   ok("desktop нав Гайди → /guides", page.url().endsWith("/guides"));
 
   await page
-    .getByRole("link", { name: /Monobank/ })
+    .getByRole("link", { name: /Як підʼєднати Monobank/ })
     .first()
     .click();
   await page.waitForURL("**/guides/monobank");
   ok("desktop список гайдів → стаття", page.url().endsWith("/guides/monobank"));
 
-  await page.getByRole("link", { name: "Про", exact: true }).click();
+  await page
+    .getByLabel("Головна навігація")
+    .getByRole("link", { name: "Звʼязки", exact: true })
+    .click();
+  await page.waitForURL("**/zvyazky");
+  ok("desktop нав Звʼязки → /zvyazky", page.url().endsWith("/zvyazky"));
+
+  await page
+    .getByLabel("Футер")
+    .getByRole("link", { name: "Про Sergeant" })
+    .click();
   await page.waitForURL("**/about");
-  ok("desktop нав Про → /about", page.url().endsWith("/about"));
+  ok("футер Про Sergeant → /about", page.url().endsWith("/about"));
 
   await page.getByRole("link", { name: "Стати в чергу" }).first().click();
   await page.waitForURL("**/beta");
   ok("desktop хедер-CTA → /beta", page.url().endsWith("/beta"));
 
-  const statusLink = page.getByRole("link", { name: /Що вже працює/ });
+  const statusLink = page
+    .getByRole("link", { name: /Доповідь про стан/ })
+    .first();
   await statusLink.click();
-  await page.waitForTimeout(900);
-  ok(
-    "beta лінк «Що вже працює» → /#status докручує",
-    page.url().includes("#status") &&
-      (await page.evaluate(() => {
-        const el = document.getElementById("status");
-        return !!el && el.getBoundingClientRect().top < 300;
-      })),
-  );
+  await page.waitForURL("**/stan");
+  ok("beta лінк «Що вже працює» → /stan", page.url().endsWith("/stan"));
 
   // TelegramCta: правильний деплінк з payload-ом
   await page.goto(BASE + "/beta", { waitUntil: "networkidle" });
@@ -144,9 +169,21 @@ for (const [vw, tag] of [
     .getAttribute("content");
   ok("beta має robots=noindex", robots === "noindex", String(robots));
   for (const [route, type] of [
-    ["/", "FAQPage"],
-    ["/about", "SoftwareApplication"],
+    ["/", "SoftwareApplication"],
+    ["/pytannya", "FAQPage"],
+    ["/obitsyanky", "ItemList"],
+    ["/zvyazky", "Article"],
+    ["/hroshi", "Article"],
+    ["/yizha", "Article"],
+    ["/zvychky", "Article"],
+    ["/trenuvannia", "Article"],
+    ["/ruchna-robota", "Article"],
+    ["/vyhid", "Article"],
+    ["/guides/kilka-bankiv", "Article"],
+    ["/stan", "Article"],
+    ["/about", "AboutPage"],
     ["/guides/monobank", "Article"],
+    ["/guides", "ItemList"],
   ]) {
     await page.goto(BASE + route, { waitUntil: "networkidle" });
     const kinds = await page
@@ -202,9 +239,15 @@ for (const [vw, tag] of [
   // Бургер працює і на внутрішній сторінці
   await page.getByRole("button", { name: /меню/i }).click();
   await page.waitForTimeout(300);
-  await page.getByRole("link", { name: "Про", exact: true }).last().click();
+  await page
+    .getByLabel("Мобільна навігація")
+    .getByRole("link", { name: "Про проєкт" })
+    .click();
   await page.waitForURL("**/about");
-  ok("mobile меню Про → /about (з /guides)", page.url().endsWith("/about"));
+  ok(
+    "mobile меню Про проєкт → /about (з /guides)",
+    page.url().endsWith("/about"),
+  );
 
   await ctx.close();
 }

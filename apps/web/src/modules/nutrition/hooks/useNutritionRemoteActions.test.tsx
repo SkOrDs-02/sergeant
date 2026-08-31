@@ -14,7 +14,6 @@ vi.mock("@shared/api", async () => {
     nutritionApi: {
       recommendRecipes: vi.fn(),
       weekPlan: vi.fn(),
-      dayHint: vi.fn(),
       dayPlan: vi.fn(),
       shoppingList: vi.fn(),
     },
@@ -29,7 +28,6 @@ import { nutritionApi } from "@shared/api";
 type MockFn = ReturnType<typeof vi.fn>;
 const apiRecommendRecipes = nutritionApi.recommendRecipes as unknown as MockFn;
 const apiFetchWeekPlan = nutritionApi.weekPlan as unknown as MockFn;
-const apiFetchDayHint = nutritionApi.dayHint as unknown as MockFn;
 const apiFetchDayPlan = nutritionApi.dayPlan as unknown as MockFn;
 const apiFetchShoppingList = nutritionApi.shoppingList as unknown as MockFn;
 
@@ -67,8 +65,6 @@ function makeHarness(overrides: Partial<UseNutritionRemoteActionsParams> = {}) {
   const setWeekPlanBusy = vi.fn();
   const setDayPlan = vi.fn();
   const setDayPlanBusy = vi.fn();
-  const setDayHintBusy = vi.fn();
-  const setDayHintText = vi.fn();
   const setShoppingBusy = vi.fn();
   const setGeneratedList = vi.fn();
 
@@ -92,8 +88,6 @@ function makeHarness(overrides: Partial<UseNutritionRemoteActionsParams> = {}) {
     setWeekPlanBusy,
     setDayPlan,
     setDayPlanBusy,
-    setDayHintBusy,
-    setDayHintText,
     log: {
       nutritionLog: {},
       selectedDate: "2025-01-01",
@@ -127,8 +121,6 @@ function makeHarness(overrides: Partial<UseNutritionRemoteActionsParams> = {}) {
       setWeekPlanBusy,
       setDayPlan,
       setDayPlanBusy,
-      setDayHintBusy,
-      setDayHintText,
       setShoppingBusy,
       setGeneratedList,
     },
@@ -285,123 +277,6 @@ describe("useNutritionRemoteActions", () => {
         }),
       );
       expect(spies.setWeekPlanRaw).toHaveBeenCalledWith("попередній текст");
-    });
-  });
-
-  describe("fetchDayHint", () => {
-    it("skips network and emits synthetic hint when day has no meals", async () => {
-      const { result, spies } = makeHarness();
-      act(() => {
-        result.current.fetchDayHint();
-      });
-      await waitFor(() =>
-        expect(spies.setDayHintText).toHaveBeenCalledWith(
-          "День порожній. Додай прийом їжі, і я зможу дати підказку.",
-        ),
-      );
-      expect(apiFetchDayHint).not.toHaveBeenCalled();
-    });
-
-    it("calls API when day has meals and feeds hint to setter", async () => {
-      apiFetchDayHint.mockResolvedValueOnce({ hint: "Додай білка" });
-      const { result, spies } = makeHarness({
-        log: {
-          nutritionLog: {
-            "2025-01-01": {
-              meals: [
-                {
-                  id: "m1",
-                  mealType: "breakfast",
-                  macros: { kcal: 300, protein_g: 20, fat_g: 10, carbs_g: 30 },
-                  macroSource: "manual",
-                },
-              ],
-            },
-          },
-          selectedDate: "2025-01-01",
-          handleAddMeal: vi.fn(),
-        },
-      });
-      act(() => {
-        result.current.fetchDayHint();
-      });
-      await waitFor(() =>
-        expect(spies.setDayHintText).toHaveBeenCalledWith("Додай білка"),
-      );
-      expect(apiFetchDayHint).toHaveBeenCalled();
-    });
-
-    /**
-     * Модель кличеться з `temperature: 0.3`, тож на незмінних даних вона
-     * щоразу формулювала по-новому — той самий сенс іншими словами. Це
-     * читалось як випадковість асистента. Кешу не було й не могло бути:
-     * React Query навмисно не кешує `useMutation`, кожен `mutate()` йде в
-     * мережу.
-     */
-    const dayWithMeal = (kcal: number) => ({
-      nutritionLog: {
-        "2025-01-01": {
-          meals: [
-            {
-              id: "m1",
-              mealType: "breakfast",
-              macros: { kcal, protein_g: 20, fat_g: 10, carbs_g: 30 },
-              macroSource: "manual",
-            },
-          ],
-        },
-      },
-      selectedDate: "2025-01-01",
-      handleAddMeal: vi.fn(),
-    });
-
-    it("другий клік без змін даних НЕ йде в мережу", async () => {
-      apiFetchDayHint.mockResolvedValue({ hint: "Додай білка" });
-      const { result, spies } = makeHarness({ log: dayWithMeal(300) });
-
-      act(() => {
-        result.current.fetchDayHint();
-      });
-      await waitFor(() =>
-        expect(spies.setDayHintText).toHaveBeenCalledWith("Додай білка"),
-      );
-      expect(apiFetchDayHint).toHaveBeenCalledTimes(1);
-
-      spies.setDayHintText.mockClear();
-      act(() => {
-        result.current.fetchDayHint();
-      });
-      await waitFor(() =>
-        expect(spies.setDayHintText).toHaveBeenCalledWith("Додай білка"),
-      );
-      // Текст той самий і другий виклик до API не пішов.
-      expect(apiFetchDayHint).toHaveBeenCalledTimes(1);
-    });
-
-    it("зміна даних дня — новий ключ, новий виклик", async () => {
-      apiFetchDayHint
-        .mockResolvedValueOnce({ hint: "Додай білка" })
-        .mockResolvedValueOnce({ hint: "Забагато калорій" });
-      const { result, rerender, base, spies } = makeHarness({
-        log: dayWithMeal(300),
-      });
-
-      act(() => {
-        result.current.fetchDayHint();
-      });
-      await waitFor(() =>
-        expect(spies.setDayHintText).toHaveBeenCalledWith("Додай білка"),
-      );
-
-      // Та сама доба, інші макроси → інший payload → інший ключ.
-      rerender({ ...base, log: dayWithMeal(1200) });
-      act(() => {
-        result.current.fetchDayHint();
-      });
-      await waitFor(() =>
-        expect(spies.setDayHintText).toHaveBeenCalledWith("Забагато калорій"),
-      );
-      expect(apiFetchDayHint).toHaveBeenCalledTimes(2);
     });
   });
 

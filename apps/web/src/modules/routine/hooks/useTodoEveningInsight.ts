@@ -24,28 +24,29 @@ export function useTodoEveningInsight(routine: RoutineState): Insight | null {
   const kyivHour = getKyivDateParts().hour;
   const isEvening = kyivHour >= 20;
 
-  const pendingCount = useMemo(() => {
-    if (!isEvening) return 0;
-    let pending = 0;
+  const pendingNames = useMemo(() => {
+    if (!isEvening) return [];
+    const names: string[] = [];
     for (const h of routine.habits) {
       if (h.archived) continue;
       if (!habitScheduledOnDate(h, todayKey)) continue;
       const completions = routine.completions[h.id] ?? [];
-      if (!completions.includes(todayKey)) pending += 1;
+      if (!completions.includes(todayKey)) names.push(h.name);
     }
-    return pending;
+    return names;
   }, [isEvening, routine.habits, routine.completions, todayKey]);
 
   return useMemo((): Insight | null => {
     if (!isEvening) return null;
-    if (pendingCount < 2) return null;
+    if (pendingNames.length < 2) return null;
     return {
       id: "routine-todo-evening",
       module: "routine",
-      title: `${pendingCount} звичок чекають`,
+      title: `${pendingNames.length} звичок чекають`,
       subtitle: "Закрити сьогоднішнє?",
+      askAiPrompt: `Вечір, а зі звичок сьогодні не відмічені: ${pendingNames.join(", ")}. Допоможи вирішити, що з цього ще реально зробити, а що чесно перенести.`,
       action: { type: "navigate", path: "/routine/today" },
       showOn: "both",
     };
-  }, [isEvening, pendingCount]);
+  }, [isEvening, pendingNames]);
 }

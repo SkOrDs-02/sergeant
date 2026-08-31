@@ -380,6 +380,63 @@ describe("InsightCard — advice_shown / advice_dismissed telemetry", () => {
     });
   });
 
+  it("клік по чипу «Спитати AI» кличе onAskAi, емітить value_signal_ask_ai і advice_reacted", () => {
+    const onAskAi = vi.fn();
+    const { getByLabelText } = render(
+      <InsightCard
+        id="nutrition-protein-low"
+        title="t"
+        subtitle="s"
+        onActivate={() => {}}
+        onAskAi={onAskAi}
+      />,
+    );
+    fireEvent.click(getByLabelText("Спитати AI про це"));
+
+    expect(onAskAi).toHaveBeenCalledTimes(1);
+    const askAi = callsOf(ANALYTICS_EVENTS.VALUE_SIGNAL_ASK_AI);
+    expect(askAi).toHaveLength(1);
+    expect(askAi[0]?.[1]).toEqual({
+      module: "nutrition",
+      signal: "nutrition-protein-low",
+      surface: "module",
+    });
+    const reacted = callsOf(ANALYTICS_EVENTS.AI_ADVICE_REACTED);
+    expect(reacted).toHaveLength(1);
+    expect(reacted[0]?.[1]).toMatchObject({
+      advice_id: computeAdviceId(
+        "nutrition-protein-low",
+        "nutrition-protein-low",
+      ),
+      reaction: "ask_ai",
+    });
+  });
+
+  it("дизейблений чип «Спитати AI» не кличе onAskAi і не емітить подій", () => {
+    const onAskAi = vi.fn();
+    const { getByLabelText } = render(
+      <InsightCard
+        id="nutrition-protein-low"
+        title="t"
+        subtitle="s"
+        onActivate={() => {}}
+        onAskAi={onAskAi}
+        askAiDisabled
+      />,
+    );
+    fireEvent.click(getByLabelText("Ліміт AI на сьогодні"));
+
+    expect(onAskAi).not.toHaveBeenCalled();
+    expect(callsOf(ANALYTICS_EVENTS.VALUE_SIGNAL_ASK_AI)).toHaveLength(0);
+  });
+
+  it("без onAskAi чип не рендериться", () => {
+    const { queryByLabelText } = render(
+      <InsightCard id="x" title="t" subtitle="s" onActivate={() => {}} />,
+    );
+    expect(queryByLabelText("Спитати AI про це")).toBeNull();
+  });
+
   it("НЕ емітить advice_shown / advice_dismissed без analytics-згоди, але value_signal_* лишається неушкодженим", () => {
     setAnalyticsConsent(false);
     const { getByLabelText } = render(

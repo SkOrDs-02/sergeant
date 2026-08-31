@@ -1,6 +1,6 @@
 # Сьогодні в роботі
 
-> **Last touched:** 2026-08-30 by docs:gen-today. **Next review:** 2026-09-06.
+> **Last touched:** 2026-08-31 by docs:gen-today. **Next review:** 2026-09-07.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED FILE. Do not edit by hand. Regenerate via `pnpm docs:gen-today`. -->
@@ -21,13 +21,13 @@ Sorted: `blocked` items first, далі явні `agent-ready`, потім за 
 
 _Жодного документа не пропустило `Next review:` дату. 🎉_
 
-## WIP load — 🟡 over soft
+## WIP load — 🔴 OVER HARD
 
 Принаймні один tracker перевищив soft або hard. Подумай чи закрити старе перед відкриттям нового.
 
 | Severity | Tracker    | Active | Soft / Hard |
 | -------- | ---------- | ------ | ----------- |
-| 🟡 SOFT  | Планування | 28     | 28 / 35     |
+| 🔴 HARD  | Планування | 35     | 28 / 35     |
 
 ## Quick links
 

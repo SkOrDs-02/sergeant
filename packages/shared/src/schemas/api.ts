@@ -634,18 +634,10 @@ export const RecommendRecipesSchema = z.object({
   locale: Locale,
 });
 
-/** /api/nutrition/day-hint, day-plan, week-plan, shopping-list */
-const Macros = z.object({
-  kcal: z.number().finite().nonnegative().nullable().optional(),
-  protein_g: z.number().finite().nonnegative().nullable().optional(),
-  fat_g: z.number().finite().nonnegative().nullable().optional(),
-  carbs_g: z.number().finite().nonnegative().nullable().optional(),
-});
-
 /**
- * Цілі КБЖВ у форматі, який реально шле клієнт у day-hint:
- * `dailyTargetKcal`, `dailyTargetProtein_g`, ... Приймаємо і короткі
- * `kcal/protein_g/...` (як у day-plan), і довгі — тому `passthrough()`.
+ * Цілі КБЖВ для /api/nutrition/day-plan, week-plan і shopping-list.
+ * Приймаємо і короткі `kcal/protein_g/...`, і довгі
+ * `dailyTargetKcal/dailyTargetProtein_g/...` — тому `passthrough()`.
  */
 const NutritionTargets = z
   .object({
@@ -664,20 +656,6 @@ const NutritionTargets = z
     dailyTargetCarbs_g: z.number().finite().nonnegative().nullable().optional(),
   })
   .passthrough();
-
-export const DayHintSchema = z.object({
-  macros: Macros.optional(),
-  targets: NutritionTargets.optional(),
-  hasMeals: z.boolean().optional(),
-  hasAnyMacros: z.boolean().optional(),
-  macroSources: z
-    .union([
-      z.record(z.string().max(50), z.number().finite()),
-      z.array(z.string().max(50)).max(20),
-    ])
-    .optional(),
-  locale: Locale,
-});
 
 export const DayPlanSchema = z.object({
   pantry: z.array(PantryItem).max(200).optional(),

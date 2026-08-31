@@ -79,40 +79,152 @@ export function getExercisePR(
   return { best1rm, bestSet, date: bestDate };
 }
 
+export interface TargetRepRange {
+  min: number;
+  max: number;
+}
+
+/**
+ * Цільові діапазони повторів. ⚠️ Інженерний дефолт, не рішення власника:
+ * числа взяті як загальновживані орієнтири і живуть в одному місці саме
+ * для того, щоб їх можна було змінити однією правкою.
+ */
+export const TARGET_REP_RANGES = {
+  compound: { min: 5, max: 8 },
+  accessory: { min: 8, max: 12 },
+  isolation: { min: 10, max: 15 },
+} as const satisfies Record<string, TargetRepRange>;
+
+/** Групи, де рух односуглобовий і вага росте дрібними кроками. */
+const ISOLATION_GROUPS = new Set([
+  "biceps",
+  "triceps",
+  "forearms",
+  "calves",
+  "core",
+]);
+
+/** Групи, де крок 2.5 кг на штанзі надто дрібний, щоб щось означати. */
+const LOWER_BODY_GROUPS = new Set([
+  "quadriceps",
+  "hamstrings",
+  "glutes",
+  "full_body",
+]);
+
+/** Мінімум із каталогу, потрібний для вибору діапазону й кроку. */
+export interface ExerciseProgressionHint {
+  equipment?: string[] | readonly string[] | null | undefined;
+  primaryGroup?: string | null | undefined;
+}
+
+/** М'який режим повернення — форма зрізу `computeOneRmAging`. */
+export interface ReturnModeHint {
+  returnMode?: boolean | undefined;
+  returnReason?: string | null | undefined;
+  reductionPct?: number | undefined;
+}
+
+export interface SuggestNextSetOptions {
+  exercise?: ExerciseProgressionHint | null | undefined;
+  aging?: ReturnModeHint | null | undefined;
+}
+
+/**
+ * Діапазон повторів виводиться з каталогу, а не задається в програмі: одна
+ * таблиця на весь домен замість ручного проходу по всіх сесіях усіх програм.
+ */
+export function targetRepRange(
+  exercise: ExerciseProgressionHint | null | undefined,
+): TargetRepRange {
+  const group = String(exercise?.primaryGroup ?? "");
+  if (ISOLATION_GROUPS.has(group)) return TARGET_REP_RANGES.isolation;
+  const equipment = exercise?.equipment ?? [];
+  const isBarbell = Array.from(equipment).includes("barbell");
+  return isBarbell ? TARGET_REP_RANGES.compound : TARGET_REP_RANGES.accessory;
+}
+
+/** Крок ваги: 5 кг там, де працюють великі групи зі штангою, інакше 2.5. */
+export function weightStepKg(
+  exercise: ExerciseProgressionHint | null | undefined,
+): number {
+  const equipment = Array.from(exercise?.equipment ?? []);
+  const heavy =
+    equipment.includes("barbell") &&
+    LOWER_BODY_GROUPS.has(String(exercise?.primaryGroup ?? ""));
+  return heavy ? 5 : 2.5;
+}
+
 export interface SuggestedNextSetResult {
   weightKg: number;
   reps: number;
   altWeightKg?: number;
   altReps?: number;
+  /** Діапазон, у межах якого росли повтори. */
+  targetReps: TargetRepRange;
+  /** Вага навмисно не піднімається — режим повернення. */
+  softMode: boolean;
+  /** `layoff` | `injury` — причина м'якого режиму, `null` коли його немає. */
+  returnReason: string | null;
 }
 
 /**
- * Рекомендує наступний сет на основі останнього кращого сету (за 3 зонами):
- *   reps ≤ 5  → +2.5 кг, ті самі повт.
- *   reps 6-10 → primary: +2.5 кг / ті самі повт.
- *               alt: та сама вага / +1 повт.
- *   reps > 10 → +5% ваги (округл. до 2.5 кг), ті самі повт.
- * Повертає { weightKg, reps, altWeightKg?, altReps? } або null.
+ * Подвійна прогресія: спершу ростуть повтори в межах цільового діапазону,
+ * після досягнення стелі додається вага і повтори повертаються на низ.
+ *
+ * AI-DANGER: у режимі повернення (пауза понад поріг або свіже зняття позначки
+ * травми) підказка НЕ підвищує вагу — вона пропонує від зниженого орієнтира.
+ * Це той самий контракт довіри тіла, що й `computeOneRmAging`: помилка
+ * «занизька вага» коштує одного легкого підходу, «завищена» коштує травми.
+ *
+ * Це підказка, а не автомат: значення підставляється в поле і його можна
+ * перебити. Повертає `null`, коли історії ще немає.
  */
 export function suggestNextSet(
   lastBestSet: StatsSet | null | undefined,
+  options: SuggestNextSetOptions = {},
 ): SuggestedNextSetResult | null {
   const w = Number(lastBestSet?.weightKg) || 0;
   const r = Number(lastBestSet?.reps) || 0;
   if (w <= 0 || r <= 0) return null;
 
-  if (r <= 5) {
-    return { weightKg: roundToStep(w + 2.5, 2.5), reps: r };
-  }
-  if (r <= 10) {
+  const targetReps = targetRepRange(options.exercise);
+  const step = weightStepKg(options.exercise);
+  const aging = options.aging;
+
+  if (aging?.returnMode) {
+    const reduction = Math.max(0, Number(aging.reductionPct) || 0) / 100;
+    const softWeight = roundToStep(w * (1 - reduction), step);
     return {
-      weightKg: roundToStep(w + 2.5, 2.5),
-      reps: r,
-      altWeightKg: w,
-      altReps: r + 1,
+      // Округлення вгору до кроку не має права дати вагу БІЛЬШУ за минулу:
+      // це рівно те підвищення, якого режим повернення уникає.
+      weightKg: Math.min(w, softWeight),
+      reps: targetReps.min,
+      targetReps,
+      softMode: true,
+      returnReason: aging.returnReason ?? null,
     };
   }
-  return { weightKg: roundToStep(w * 1.05, 2.5), reps: r };
+
+  if (r >= targetReps.max) {
+    return {
+      weightKg: roundToStep(w + step, step),
+      reps: targetReps.min,
+      targetReps,
+      softMode: false,
+      returnReason: null,
+    };
+  }
+
+  return {
+    weightKg: w,
+    reps: r + 1,
+    altWeightKg: roundToStep(w + step, step),
+    altReps: targetReps.min,
+    targetReps,
+    softMode: false,
+    returnReason: null,
+  };
 }
 
 /**

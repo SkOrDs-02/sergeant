@@ -76,7 +76,7 @@ export interface LLMGenerateOpts {
   maxTokens: number;
   /** Sampling temperature (`0` для деtermistic, `0.7` typical chat). */
   temperature?: number | undefined;
-  /** Endpoint-tag для observability metrics (`day-hint`, `coach`, etc). */
+  /** Endpoint-tag для observability metrics (`day-plan`, `coach`, etc). */
   endpoint?: string | undefined;
   /** Request timeout у мс. Якщо `undefined` — provider вирішує default. */
   timeoutMs?: number | undefined;

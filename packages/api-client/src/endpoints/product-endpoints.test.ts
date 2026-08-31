@@ -22,7 +22,6 @@ describe("nutrition endpoints", () => {
     await endpoints.recommendRecipes({ pantry: [] });
     await endpoints.weekPlan({ pantry: [] });
     await endpoints.dayPlan({ pantry: [] });
-    await endpoints.dayHint({ pantry: [] });
     await endpoints.shoppingList({ pantry: [] });
     await endpoints.parsePantry({ text: "milk" });
     await endpoints.backupUpload({ blob: { log: {} } });
@@ -35,7 +34,6 @@ describe("nutrition endpoints", () => {
       "/api/nutrition/recommend-recipes",
       "/api/nutrition/week-plan",
       "/api/nutrition/day-plan",
-      "/api/nutrition/day-hint",
       "/api/nutrition/shopping-list",
       "/api/nutrition/parse-pantry",
       "/api/nutrition/backup-upload",

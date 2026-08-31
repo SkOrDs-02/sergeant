@@ -101,10 +101,6 @@ const RecommendRecipes = schemas.RecommendRecipesSchema.meta({
   id: "RecommendRecipes",
   description: "POST /api/nutrition/recommend-recipes.",
 });
-const DayHint = schemas.DayHintSchema.meta({
-  id: "DayHint",
-  description: "POST /api/nutrition/day-hint.",
-});
 const DayPlan = schemas.DayPlanSchema.meta({
   id: "DayPlan",
   description: "POST /api/nutrition/day-plan.",
@@ -514,7 +510,6 @@ export const namedSchemas = {
   ParsePantry,
   BackupUpload,
   RecommendRecipes,
-  DayHint,
   DayPlan,
   WeekPlan,
   ShoppingList,

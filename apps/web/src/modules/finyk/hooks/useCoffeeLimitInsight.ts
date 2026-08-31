@@ -125,6 +125,7 @@ export function useCoffeeLimitInsight({
       module: "finyk",
       title: `Витрати на каву ↑ ${pct}%`,
       subtitle: `Це ${formatNumberUk(amount)} грн. Встановити ліміт?`,
+      askAiPrompt: `Витрати на каву цього місяця ${formatNumberUk(amount)} грн, на ${pct}% більше за минулий. Варто ставити ліміт чи це норм?`,
       action: {
         type: "navigate",
         path: `/finyk/budgets?cat=${COFFEE_CATEGORY_SLUG}`,

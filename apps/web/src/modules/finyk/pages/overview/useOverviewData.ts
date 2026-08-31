@@ -26,7 +26,7 @@ import {
 import { calcLimitCategorySpent } from "@sergeant/finyk-domain/lib/limitCategorySpend";
 import {
   filterStatTransactions,
-  manualExpenseToTransaction,
+  withManualExpenses,
 } from "@sergeant/finyk-domain/domain/transactions";
 import { kyivCalendarDaysBetween } from "@sergeant/shared";
 import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
@@ -143,25 +143,32 @@ export function useOverviewData({
   // "цього місяця" aggregate below is clamped to.
   const kyivMonthPrefix = `${kyivYear}-${String(kyivMonth + 1).padStart(2, "0")}`;
 
-  // Manual expenses live in storage (LS + React state), not in the bank tx
-  // stream, so the spend/summary selectors must merge them in explicitly —
-  // otherwise the Overview totals ignore a manually added expense entirely
-  // and the page looks frozen after the add/edit sheet closes. Mirrors the
-  // merge pattern Transactions/Analytics already use.
-  const manualExpenseTxs = useMemo(
-    () => manualExpenses.map((e) => manualExpenseToTransaction(e)),
-    [manualExpenses],
+  // Той самий потік, що годує місячні агрегати нижче, але БЕЗ місячного
+  // clamp-у: інсайт-хуки мають власні вікна (`useCoffeeLimitInsight`
+  // порівнює два місяці), тож звузити тут означало б їх зламати. Виключення
+  // застосовані, бо картка ліміту в `BudgetAlertsList` теж їх застосовує -
+  // на одному екрані два числа про ті самі гроші мають збігатись.
+  const insightTx = useMemo(
+    () =>
+      filterStatTransactions(
+        withManualExpenses(realTx, manualExpenses),
+        excludedTxIds,
+      ),
+    [realTx, manualExpenses, excludedTxIds],
   );
 
   // AI-DANGER: this clamp is what makes every "цього місяця" number on Огляд
   // actually mean the current month. Do not drop it — the Finyk selectors
   // carry no implicit window and `realTx` is not month-scoped. Full rationale
   // and the founder report it came from: `../../lib/monthWindow.ts`.
-  const txForStats = useMemo(() => {
-    const merged =
-      manualExpenseTxs.length > 0 ? [...realTx, ...manualExpenseTxs] : realTx;
-    return filterToKyivMonth(merged, kyivMonthPrefix);
-  }, [realTx, manualExpenseTxs, kyivMonthPrefix]);
+  const txForStats = useMemo(
+    () =>
+      filterToKyivMonth(
+        withManualExpenses(realTx, manualExpenses),
+        kyivMonthPrefix,
+      ),
+    [realTx, manualExpenses, kyivMonthPrefix],
+  );
 
   const statTx = useMemo(
     () => filterStatTransactions(txForStats, excludedTxIds),
@@ -524,6 +531,7 @@ export function useOverviewData({
     networthHistory,
     budgetAlerts,
     statTx,
+    insightTx,
     txCategories,
     txSplits,
     customCategories,
