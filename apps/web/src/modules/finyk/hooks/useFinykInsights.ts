@@ -22,6 +22,11 @@
  *   1. budget-overrun  — actionable today
  *   2. coffee-limit    — MoM trend
  *   3. recurring       — discovery
+ *
+ * `showOn` filtering uses the same condition as `useAllInsights` (its
+ * only current reader). Defaults to `surface: "hub"`, the sole
+ * production caller today (`useAllInsights`), so the default is a no-op
+ * for existing behavior.
  */
 
 import { useMemo } from "react";
@@ -40,7 +45,15 @@ import {
 /** Max insights this wrapper surfaces. */
 const MAX_VISIBLE = 3;
 
-export function useFinykInsights(): Insight[] {
+export interface UseFinykInsightsOptions {
+  /** Mirrors `UseAllInsightsOptions.surface`. Defaults to `"hub"`. */
+  surface?: "hub" | "module";
+}
+
+export function useFinykInsights(
+  opts: UseFinykInsightsOptions = {},
+): Insight[] {
+  const { surface = "hub" } = opts;
   // Reactive tick — re-renders when the Mono mirror cache is refreshed.
   const mirrorTick = useFinykMonoMirrorTick();
 
@@ -92,6 +105,9 @@ export function useFinykInsights(): Insight[] {
     ];
     return candidates
       .filter((i): i is Insight => i !== null)
+      .filter((i) =>
+        surface === "hub" ? i.showOn !== "module" : i.showOn !== "hub",
+      )
       .slice(0, MAX_VISIBLE);
-  }, [overrunInsight, coffeeInsight, recurringInsight]);
+  }, [overrunInsight, coffeeInsight, recurringInsight, surface]);
 }

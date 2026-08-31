@@ -120,9 +120,11 @@ export function useBudgetOverrunInsight({
         type: "navigate",
         path: `/finyk/budgets?cat=${budget.categoryId}`,
       },
-      // Hub surface promoted post-Phase 5e: budget overrun is urgent + simple
-      // (one navigate, no in-Finyk preview required to understand stakes).
-      showOn: "both",
+      // Hub-only (Фаза 3, finyk-observations spec PR-1): BudgetAlertsList
+      // already shows every overrun category on the Finyk Overview itself,
+      // so this card duplicated the worst one there. It stays on the Hub,
+      // where it's the only budget signal.
+      showOn: "hub",
     };
   }, [budgets, transactions, txCategories, txSplits, customCategories]);
 }
