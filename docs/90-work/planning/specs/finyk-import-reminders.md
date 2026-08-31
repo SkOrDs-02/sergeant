@@ -1,7 +1,7 @@
 # SPEC: плашка «залий транзакції» у Фініку
 
-> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-02.
-> **Status:** Active — Фаза 1 реалізована (гілка `claude/reminder-other-sources-design-f1ee17`), за прапорцем `finyk_import_reminder`, за замовчуванням вимкненим.
+> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-14.
+> **Status:** Active — Фаза 1 у `main` ([`4a50500f1`](https://github.com/SkOrDs-02/sergeant/pull/930), #930): `ImportReminderBanner.tsx` + `useImportReminder.ts` в Огляді Фініка, за прапорцем `finyk_import_reminder` (`featureFlags.ts`, за замовчуванням вимкнений), телеметрія `FINYK_IMPORT_REMINDER_{SHOWN,CLICKED,SNOOZED}`. Відкрите: зняття прапорця і наступні фази.
 
 > **Звідки взялось.** Запит власника 2026-08-29: «є опція завантаження з інших
 > банкінгів скріншотом або випискою; чи можливо зробити нагадування, що не
