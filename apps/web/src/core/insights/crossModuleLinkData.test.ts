@@ -141,6 +141,8 @@ describe("isCrossModule", () => {
 
 describe("linkFromPair", () => {
   it("будує два полюси з модулями, числами й одиницями", () => {
+    // Вікно навмисно ≥ MIN_N (10): нижче порога пара мовчить, і тест
+    // перевіряв би порожнечу. Патерн подвоєно, тож середні й r ті самі.
     const s = series(
       {
         spending: [100, 200, 300, 400, 500, 100, 200, 300, 400, 500],
@@ -226,7 +228,7 @@ describe("linkFromPair", () => {
     expect(pair).toBeDefined();
     const link = linkFromPair(s, pair!)!;
     const values = [link.poleA.value, link.poleB.value];
-    // 21/5 = 4.2 — ціле «4» стерло б різницю між «стабільно добре» і «так собі».
+    // 42/10 = 4.2 — ціле «4» стерло б різницю між «стабільно добре» і «так собі».
     expect(values).toContain(formatNumberUk(4.2));
     expect(values).toContain(formatNumberUk(2080));
   });
