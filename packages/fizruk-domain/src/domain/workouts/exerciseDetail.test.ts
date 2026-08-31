@@ -72,10 +72,22 @@ describe("roundToNearest2_5", () => {
 
 describe("suggestExerciseNextSet", () => {
   it("returns a suggestion for a valid last best set", () => {
+    // Подвійна прогресія: до стелі діапазону росте повторення, не вага.
     const s = suggestExerciseNextSet({ weightKg: 100, reps: 5 });
     expect(s).not.toBeNull();
-    expect(s!.weightKg).toBeGreaterThan(100);
+    expect(s!.weightKg).toBe(100);
+    expect(s!.reps).toBe(6);
+    expect(s!.altWeightKg).toBeGreaterThan(100);
+  });
+
+  it("forwards the catalog hint and the soft-mode flag", () => {
+    const s = suggestExerciseNextSet(
+      { weightKg: 100, reps: 8 },
+      { exercise: { equipment: ["barbell"], primaryGroup: "chest" } },
+    );
+    expect(s!.weightKg).toBe(102.5);
     expect(s!.reps).toBe(5);
+    expect(s!.softMode).toBe(false);
   });
 
   it("returns null for a null/undefined last best set", () => {

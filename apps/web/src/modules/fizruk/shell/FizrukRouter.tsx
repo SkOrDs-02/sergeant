@@ -29,6 +29,8 @@ const PAGE_ERROR_TITLES: Record<FizrukPage, string> = {
   exercise: "Не вдалось показати вправу",
   workout: "Не вдалось показати активне тренування",
   history: "Не вдалось показати історію тренувань",
+  catalog: "Не вдалось показати каталог вправ",
+  templates: "Не вдалось показати шаблони",
 };
 
 // Per-page lazy chunks. Previously this file eager-imported all nine
@@ -122,6 +124,10 @@ function renderPage(props: FizrukRouterProps) {
           onNavigate={onNavigate}
         />
       );
+    case "catalog":
+      return <Workouts section="catalog" onNavigate={onNavigate} />;
+    case "templates":
+      return <Workouts section="templates" onNavigate={onNavigate} />;
     case "workout":
       return (
         <ActiveWorkout workoutId={workoutId ?? ""} onNavigate={onNavigate} />

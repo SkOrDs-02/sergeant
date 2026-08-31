@@ -27,6 +27,7 @@ import {
   WorkoutItemLastTimeHint,
   type LastByExerciseEntry,
 } from "./WorkoutItemLastTimeHint";
+import { WorkoutItemNextSetHint } from "./WorkoutItemNextSetHint";
 import { WorkoutItemRecoveryChip } from "./WorkoutItemRecoveryChip";
 import { WorkoutItemRestPresets } from "./WorkoutItemRestPresets";
 import { isSetDone, WorkoutSetRow } from "./WorkoutSetRow";
@@ -293,6 +294,31 @@ export function WorkoutItemCard({
             }}
           />
         </div>
+      )}
+
+      {it.type === "strength" && (
+        <WorkoutItemNextSetHint
+          last={last}
+          exerciseId={it.exerciseId}
+          isReadOnly={isReadOnly}
+          onApply={(weightKg, reps) => {
+            // Підказка заповнює перший порожній рядок, а якщо всі вже
+            // заповнені — додає новий підхід. Наявні значення не чіпаємо:
+            // це підказка, а не автомат.
+            const currentSets = it.sets || [];
+            const emptyIdx = currentSets.findIndex((s) => !isSetDone(s));
+            if (emptyIdx === -1) {
+              setSetIds((prev) => [...prev, crypto.randomUUID()]);
+              updateItem(activeWorkout.id, it.id, {
+                sets: [...currentSets, { weightKg, reps }],
+              });
+              return;
+            }
+            const next = [...currentSets];
+            next[emptyIdx] = { ...next[emptyIdx], weightKg, reps };
+            updateItem(activeWorkout.id, it.id, { sets: next });
+          }}
+        />
       )}
 
       {it.type === "strength" && (

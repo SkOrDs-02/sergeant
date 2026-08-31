@@ -293,12 +293,16 @@ function ProgramDetails({ id, prog, exercises }: ProgramDetailsProps) {
                   {messages.fizruk.secondsUnit}
                 </span>
               </span>
-              <span>
-                {messages.fizruk.programs.progressionLabel}{" "}
-                <span className="font-semibold text-text">
-                  +{session.progressionKg} {messages.fizruk.kgUnit}
+              {/* Програма з власною вагою не має чого «додавати» — «+0 кг»
+                  було б підписом ні про що. */}
+              {session.progressionKg > 0 && (
+                <span>
+                  {messages.fizruk.programs.progressionLabel}{" "}
+                  <span className="font-semibold text-text">
+                    +{session.progressionKg} {messages.fizruk.kgUnit}
+                  </span>
                 </span>
-              </span>
+              )}
             </div>
             {exList.length > 0 ? (
               <div className="flex flex-wrap gap-1">

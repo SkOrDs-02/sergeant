@@ -13,7 +13,11 @@ export type FizrukPage =
   | "exercise"
   | "workout"
   // 03-A — dedicated history route (`/fizruk/history`).
-  | "history";
+  | "history"
+  // Каталог вправ і шаблони: власні адреси замість `view`-стану всередині
+  // `/fizruk/workouts` (див. `shell/fizrukRoute.ts`).
+  | "catalog"
+  | "templates";
 
 const VALID_FIZRUK_PAGES: readonly FizrukPage[] = [
   "dashboard",
@@ -26,6 +30,8 @@ const VALID_FIZRUK_PAGES: readonly FizrukPage[] = [
   "exercise",
   "workout",
   "history",
+  "catalog",
+  "templates",
 ];
 
 export interface ParsedFizrukRoute {

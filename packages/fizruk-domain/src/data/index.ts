@@ -160,8 +160,26 @@ export function matchesExerciseSearch(
 }
 
 /**
+ * Наскільки влучно запит попадає у вправу: точна назва чи аліас важать
+ * більше за випадкове входження в опис. Без цього «станова» ховає саму
+ * станову за трьома вправами, у назві яких це слово теж є.
+ */
+function searchRank(
+  ex: SearchableExerciseDef | null | undefined,
+  normalizedQuery: string,
+): number {
+  const labels = [ex?.name?.uk, ex?.name?.en, ...(ex?.aliases || [])].map(norm);
+  if (labels.some((l) => l === normalizedQuery)) return 3;
+  if (labels.some((l) => l.startsWith(normalizedQuery))) return 2;
+  if (labels.some((l) => l.includes(normalizedQuery))) return 1;
+  return 0;
+}
+
+/**
  * Повнотекстовий пошук по локальному каталогу (uk/en назви, aliases,
  * description, primary group). Повертає всі вправи, якщо query порожній.
+ * Результати впорядковані за влучністю збігу, всередині рангу зберігають
+ * порядок каталогу.
  */
 export function searchExercises(
   query: string,
@@ -169,7 +187,61 @@ export function searchExercises(
 ): RawExerciseDef[] {
   const q = norm(query);
   if (!q) return pool.slice();
-  return pool.filter((ex) => matchesExerciseSearch(ex, q));
+  return pool
+    .filter((ex) => matchesExerciseSearch(ex, q))
+    .map((ex, index) => ({ ex, index, rank: searchRank(ex, q) }))
+    .sort((a, b) => b.rank - a.rank || a.index - b.index)
+    .map((row) => row.ex);
+}
+
+/** Де вправу реально можна виконати. */
+export type ExerciseLocation = "gym" | "home" | "outdoor";
+
+export const EXERCISE_LOCATIONS: readonly ExerciseLocation[] = [
+  "gym",
+  "home",
+  "outdoor",
+];
+
+/**
+ * Локація виводиться з наявного `equipment`, окремого поля в JSON немає:
+ * одне джерело істини замість двох, які встигнуть розійтись.
+ */
+const EQUIPMENT_LOCATIONS: Record<string, readonly ExerciseLocation[]> = {
+  bodyweight: ["home", "outdoor"],
+  band: ["home", "outdoor"],
+  dumbbell: ["home", "gym"],
+  kettlebell: ["home", "gym"],
+  barbell: ["gym"],
+  bench: ["gym"],
+  cable: ["gym"],
+  machine: ["gym"],
+  other: ["gym"],
+};
+
+/**
+ * Локації вправи. Вправа без відомого обладнання лишається залом: це
+ * найвужче припущення, і воно не обіцяє людині вдома того, чого вона
+ * не зможе зробити.
+ */
+export function getExerciseLocations(
+  ex: { equipment?: string[] } | null | undefined,
+): ExerciseLocation[] {
+  const out = new Set<ExerciseLocation>();
+  for (const eq of ex?.equipment || []) {
+    for (const loc of EQUIPMENT_LOCATIONS[eq] || []) out.add(loc);
+  }
+  if (out.size === 0) out.add("gym");
+  return EXERCISE_LOCATIONS.filter((loc) => out.has(loc));
+}
+
+/** Чи доступна вправа в заданій локації. */
+export function matchesExerciseLocation(
+  ex: { equipment?: string[] } | null | undefined,
+  location: ExerciseLocation | "" | null | undefined,
+): boolean {
+  if (!location) return true;
+  return getExerciseLocations(ex).includes(location);
 }
 
 /**
