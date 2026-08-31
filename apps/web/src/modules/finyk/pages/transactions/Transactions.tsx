@@ -31,6 +31,10 @@ import type {
   TxSplit,
   TxSplitsMap,
 } from "@sergeant/finyk-domain/domain/types";
+import type {
+  Debt,
+  LinkedTxRole,
+} from "@sergeant/finyk-domain/domain/debtEngine";
 import type { ManualExpense } from "@sergeant/finyk-domain/domain/personalization";
 import type { Category } from "@sergeant/finyk-domain/domain/types";
 
@@ -116,6 +120,17 @@ export interface TransactionsStorageSlice {
   overrideCategory: (id: string, catId: string | null) => void;
   txSplits: TxSplitsMap;
   setSplitTx: (id: string, splits: TxSplit[] | null) => void;
+  /** Пасиви + мутатори для мостика «Борг → пасив» (спека finyk-observations,
+   * PR-3), прокинуті в {@link BankTransactionDetailsSheet}. */
+  manualDebts: Debt[];
+  setManualDebts: (updater: (debts: Debt[]) => Debt[]) => void;
+  setLinkedTxRole: (
+    id: string,
+    txId: string,
+    type: "debt" | "receivable",
+    role: LinkedTxRole | null,
+    amountUAH?: number,
+  ) => void;
   /** User's own free-text annotation per bank transaction — bank facts
    * (amount/date/merchant) stay immutable, this is the user's note. */
   txNotes: Record<string, string | undefined>;
@@ -195,6 +210,9 @@ export function Transactions({
     manualExpenses,
     addManualExpense,
     removeManualExpense,
+    manualDebts,
+    setManualDebts,
+    setLinkedTxRole,
   } = storage;
 
   const filters = useTransactionFilters({
@@ -454,6 +472,9 @@ export function Transactions({
             receiptLinks?.getReceiptId(editingBankTransaction.id) ?? null
           }
           hideAmount={!showBalance}
+          manualDebts={manualDebts}
+          setManualDebts={setManualDebts}
+          setLinkedTxRole={setLinkedTxRole}
           onCategoryChange={selection.stableOverrideCategory}
           onNoteChange={selection.stableSetTxNote}
           onSplitChange={selection.stableSetSplitTx}

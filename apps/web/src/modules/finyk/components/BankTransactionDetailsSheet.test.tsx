@@ -55,6 +55,17 @@ const TRANSACTION: Transaction = {
   _manual: false,
 };
 
+// Надходження 500 грн: база для кейсів категорії «Борг» (PR-3). Сума в
+// копійках, бо саме з неї підставляється totalAmount пасиву без перенабору.
+const INCOME_TRANSACTION: Transaction = {
+  ...TRANSACTION,
+  id: "bank-income-1",
+  amount: 50000,
+  categoryId: "in_salary",
+  type: "income",
+  description: "Зарахування",
+};
+
 function renderSheet(
   overrides: Partial<Parameters<typeof BankTransactionDetailsSheet>[0]> = {},
 ) {
@@ -82,6 +93,9 @@ function renderSheet(
           hidden={false}
           excludedFromStats={false}
           txSplits={{}}
+          manualDebts={[]}
+          setManualDebts={vi.fn()}
+          setLinkedTxRole={vi.fn()}
           {...handlers}
           {...overrides}
         />
@@ -170,5 +184,69 @@ describe("BankTransactionDetailsSheet", () => {
     const handlers = renderSheet();
     fireEvent.click(screen.getByRole("button", { name: "Готово" }));
     expect(handlers.onClose).toHaveBeenCalledTimes(1);
+  });
+  describe("категорія «Борг» у надходженнях (PR-3)", () => {
+    it("створює пасив без перенабору суми, привʼязаний роллю source", () => {
+      const setManualDebts = vi.fn();
+      renderSheet({
+        transaction: INCOME_TRANSACTION,
+        overrideCatId: "in_debt",
+        setManualDebts,
+      });
+
+      fireEvent.click(
+        screen.getByRole("button", { name: "Створити новий пасив" }),
+      );
+      fireEvent.change(
+        screen.getByPlaceholderText("Назва пасиву (кредит, борг…)"),
+        { target: { value: "Позика в Олі" } },
+      );
+      fireEvent.click(screen.getByRole("button", { name: "Створити" }));
+
+      expect(setManualDebts).toHaveBeenCalledTimes(1);
+      const updater = setManualDebts.mock.calls[0]![0] as (
+        debts: unknown[],
+      ) => unknown[];
+      const [created] = updater([]) as [
+        {
+          name: string;
+          totalAmount: number;
+          linkedTxIds: string[];
+          txLinks: Record<string, { role: string; amount: number }>;
+        },
+      ];
+      // amount.500_00 копійок → 500 ₴; жодного ручного перенабору суми.
+      expect(created.name).toBe("Позика в Олі");
+      expect(created.totalAmount).toBe(500);
+      expect(created.linkedTxIds).toEqual([INCOME_TRANSACTION.id]);
+      expect(created.txLinks[INCOME_TRANSACTION.id]).toEqual({
+        role: "source",
+        amount: 500,
+      });
+    });
+
+    it("уже привʼязана операція показує пасив і не пропонує створити другий", () => {
+      renderSheet({
+        transaction: INCOME_TRANSACTION,
+        overrideCatId: "in_debt",
+        manualDebts: [
+          {
+            id: "debt-1",
+            name: "Позика в Олі",
+            amount: 500,
+            totalAmount: 500,
+            linkedTxIds: [INCOME_TRANSACTION.id],
+            txLinks: {
+              [INCOME_TRANSACTION.id]: { role: "source", amount: 500 },
+            },
+          },
+        ],
+      });
+
+      expect(screen.getByText(/Позика в Олі/)).toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "Створити новий пасив" }),
+      ).not.toBeInTheDocument();
+    });
   });
 });
