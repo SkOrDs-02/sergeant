@@ -9,7 +9,6 @@ const GUIDES = [
   {
     href: "/guides/bank-bezpeka",
     module: { href: "/data", label: "Твої дані" },
-    category: "Фінанси",
     title:
       "Чи безпечно давати застосунку доступ до банку: що перевірити перед підключенням",
     teaser:
@@ -18,7 +17,6 @@ const GUIDES = [
   {
     href: "/guides/foto-kalorii",
     module: { href: "/yizha", label: "Їжа" },
-    category: "Харчування",
     title: "Чи можна порахувати калорії страви з фото – і наскільки це точно",
     teaser:
       "Що фото справді впізнає, а де починає вгадувати, і як Sergeant закриває сліпі місця уточнюючими питаннями. Плюс ієрархія точності від штрихкоду до ока.",
@@ -26,7 +24,6 @@ const GUIDES = [
   {
     href: "/guides/cheky",
     module: { href: "/hroshi", label: "Гроші" },
-    category: "Фінанси",
     title:
       "Як перетворити паперовий чек на облік витрат, коли QR не сканується",
     teaser:
@@ -35,7 +32,6 @@ const GUIDES = [
   {
     href: "/guides/kbzhv",
     module: { href: "/yizha", label: "Їжа" },
-    category: "Харчування",
     title: "Як рахувати КБЖВ, коли в базі немає українських продуктів",
     teaser:
       "Штрихкод, українська база і рецепти замість щоденного перебирання інгредієнтів. Плюс чесна відповідь, скільки похибки можна собі дозволити.",
@@ -43,7 +39,6 @@ const GUIDES = [
   {
     href: "/guides/pauza-i-propusk",
     module: { href: "/zvychky", label: "Звички" },
-    category: "Звички",
     title: "Як заявити паузу і пояснити пропуск, щоб серія не обнулилась",
     teaser:
       "Три різні механізми мʼякості: пауза датами, причина пропуску і заморозка, яку серія заробляє сама. Кроки для кожного.",
@@ -51,7 +46,6 @@ const GUIDES = [
   {
     href: "/guides/ohlyad-dnya",
     module: { href: "/zvychky", label: "Звички" },
-    category: "Звички",
     title: "Як бачити тренування і планові платежі поруч зі звичками",
     teaser:
       "Календар Рутини показує не лише звички. Що саме туди підтягується з інших модулів і де межі цього перегляду.",
@@ -59,7 +53,6 @@ const GUIDES = [
   {
     href: "/guides/tyzhnevyi-pidsumok",
     module: { href: "/zvyazky", label: "Звʼязки" },
-    category: "Звʼязки",
     title: "Коли приходить тижневий підсумок і як отримати його раніше",
     teaser:
       "Збирається автоматично в понеділок за тиждень, що завершився. Тому у вівторок «цього тижня» там ще немає.",
@@ -67,7 +60,6 @@ const GUIDES = [
   {
     href: "/guides/kilka-bankiv",
     module: { href: "/hroshi", label: "Гроші" },
-    category: "Фінанси",
     title: "Як звести витрати докупи, якщо карти в кількох банках",
     teaser:
       "Автосинк є лише з Monobank. Решта карт заводиться випискою файлом раз на місяць, і все опиняється в одній стрічці.",
@@ -75,11 +67,24 @@ const GUIDES = [
   {
     href: "/guides/monobank",
     module: { href: "/hroshi", label: "Гроші" },
-    category: "Фінанси",
     title: "Як підʼєднати Monobank до трекера витрат – і що він реально бачить",
     teaser:
       "Персональний токен за хвилину, таблиця «бачить / не може» і як усе відкликати одним кліком.",
   },
+];
+
+/**
+ * Порядок груп той самий, що в шапці сайту: гайд шукають через модуль, з
+ * якого прийшли. При девʼятьох гайдах плоский список читався як безлад –
+ * фінансові стояли на позиціях 1, 3, 8 і 9 просто тому, що в такому
+ * порядку дописувались.
+ */
+const GROUPS = [
+  { href: "/hroshi", label: "Гроші" },
+  { href: "/yizha", label: "Їжа" },
+  { href: "/zvychky", label: "Звички" },
+  { href: "/zvyazky", label: "Звʼязки" },
+  { href: "/data", label: "Твої дані" },
 ];
 
 export default function GuidesPage() {
@@ -112,28 +117,38 @@ export default function GuidesPage() {
         початку.
       </p>
 
-      <div className="mt-10 border-b border-cardline">
-        {GUIDES.map((guide) => (
-          <a
-            key={guide.href}
-            href={guide.href}
-            className="group block border-t border-cardline py-6 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
-          >
-            <p className="font-display text-xs font-medium uppercase tracking-[0.12em] text-subtle">
-              {guide.category}
-            </p>
-            <h2 className="mt-2 max-w-2xl text-xl font-bold leading-snug text-balance text-foreground-strong group-hover:underline sm:text-2xl">
-              {guide.title}
+      {GROUPS.map((group) => {
+        const inGroup = GUIDES.filter((g) => g.module.href === group.href);
+        if (inGroup.length === 0) return null;
+        return (
+          <section key={group.href} className="mt-12">
+            <h2 className="font-display text-xs font-bold uppercase tracking-[0.12em] text-subtle">
+              <a
+                href={group.href}
+                className="transition hover:text-foreground-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+              >
+                {group.label}
+              </a>
             </h2>
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
-              {guide.teaser}
-            </p>
-            <p className="mt-2 text-xs text-subtle">
-              Рідний модуль: {guide.module.label}
-            </p>
-          </a>
-        ))}
-      </div>
+            <div className="mt-3 border-b border-cardline">
+              {inGroup.map((guide) => (
+                <a
+                  key={guide.href}
+                  href={guide.href}
+                  className="group block border-t border-cardline py-6 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                >
+                  <h3 className="max-w-2xl text-xl font-bold leading-snug text-balance text-foreground-strong group-hover:underline sm:text-2xl">
+                    {guide.title}
+                  </h3>
+                  <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
+                    {guide.teaser}
+                  </p>
+                </a>
+              ))}
+            </div>
+          </section>
+        );
+      })}
 
       <p className="mt-8 text-sm text-subtle">
         Нові гайди зʼявляються, щойно я їх дописую. Анонси – у Threads і
