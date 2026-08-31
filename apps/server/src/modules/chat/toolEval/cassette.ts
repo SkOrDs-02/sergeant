@@ -76,8 +76,15 @@ export function cassetteSlug(model: string): string {
   return model.replace(/[^a-z0-9]+/gi, "-").toLowerCase();
 }
 
-export function cassettePath(model: string): string {
-  return `${CASSETTE_DIR}${cassetteSlug(model)}.json`;
+/**
+ * Набори записуються в окремі файли: основний стенд і адверсарний живуть
+ * поруч, але їхні числа не змішуються. Спільна касета зробила б «правильних
+ * виборів 70/81» і «моделі, що встояла проти інʼєкцій» одним показником, а це
+ * різні питання з різною ціною помилки.
+ */
+export function cassettePath(model: string, variant?: string): string {
+  const prefix = variant ? `${variant}-` : "";
+  return `${CASSETTE_DIR}${prefix}${cassetteSlug(model)}.json`;
 }
 
 export function buildManifest(
@@ -121,16 +128,16 @@ export function manifestMismatches(manifest: CassetteManifest): string[] {
   return out;
 }
 
-export function loadCassette(model: string): Cassette | null {
-  const path = cassettePath(model);
+export function loadCassette(model: string, variant?: string): Cassette | null {
+  const path = cassettePath(model, variant);
   if (!existsSync(path)) return null;
   return JSON.parse(readFileSync(path, "utf8")) as Cassette;
 }
 
-export function saveCassette(cassette: Cassette): void {
+export function saveCassette(cassette: Cassette, variant?: string): void {
   mkdirSync(CASSETTE_DIR, { recursive: true });
   writeFileSync(
-    cassettePath(cassette.manifest.model),
+    cassettePath(cassette.manifest.model, variant),
     `${JSON.stringify(cassette, null, 2)}\n`,
     "utf8",
   );
