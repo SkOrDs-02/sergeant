@@ -1,7 +1,7 @@
 # Що обіцяю: пʼять пунктів, за які мене можна тримати
 
-> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-21.
-> **Status:** Scaffolded
+> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-22.
+> **Status:** Implemented - сторінка відвантажена (`apps/landing/src/pages/ObitsyankyPage.tsx`), PR #955/#956.
 
 ## Мета сторінки
 
@@ -101,6 +101,6 @@ Sergeant у закритій беті. Черга живе в Telegram.
 
 ## Джерела фактчеку
 
-Експорт: `apps/server/src/modules/me/dataRights.ts` (`buildMeExport` – акаунтські дані, `moduleData` порожній) і клієнтський `hubBackup.ts`; канон [`product-overview.md`](../../../01-product/model/product-overview.md) §11 дослівно: «Єдиного повного експорту, що обʼєднує обидві поверхні, немає». Видалення акаунта: `dataRights.ts` (`deleteUserData`). Памʼять AI по одному запису: `apps/server/src/modules/ai-memory/listRoute.ts` (`DELETE /api/ai-memory/:id`). Токен банку тільки читає: `apps/server/src/modules/mono/connection.ts` – лише `GET /personal/client-info` і реєстрація вебхука. Платні межі: [ADR-0068](../../../04-governance/adr/0068-pricing-v4-uah-reverse-trial.md), `requirePlan(pool, "pro")` у `routes/nutrition.ts` і `routes/ai-memory.ts`; денна квота: `apps/server/src/modules/chat/aiQuota.ts`.
+Експорт: `apps/server/src/modules/me/dataRights.ts` (`buildMeExport` – акаунтські дані, `moduleData` порожній) і клієнтський `hubBackup.ts`; канон [`product-overview.md`](../../../../01-product/model/product-overview.md) §11 дослівно: «Єдиного повного експорту, що обʼєднує обидві поверхні, немає». Видалення акаунта: `dataRights.ts` (`deleteUserData`). Памʼять AI по одному запису: `apps/server/src/modules/ai-memory/listRoute.ts` (`DELETE /api/ai-memory/:id`). Токен банку тільки читає: `apps/server/src/modules/mono/connection.ts` – лише `GET /personal/client-info` і реєстрація вебхука. Платні межі: [ADR-0068](../../../../04-governance/adr/0068-pricing-v4-uah-reverse-trial.md), `requirePlan(pool, "pro")` у `routes/nutrition.ts` і `routes/ai-memory.ts`; денна квота: `apps/server/src/modules/chat/aiQuota.ts`.
 
 > **Знято при фактчеку.** Формулювання головної «Експорт усіх даних у JSON чи CSV одним кліком» не підтверджене: CSV-експорту немає взагалі, а JSON фрагментований на дві незалежні поверхні. Пункт 04 переписаний і несе межу відкрито. Те саме твердження живе в `public/llms.txt` – правиться тим самим PR.

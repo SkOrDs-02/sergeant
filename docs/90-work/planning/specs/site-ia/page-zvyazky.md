@@ -1,7 +1,7 @@
 # Звʼязки між сферами: чому все в одному місці
 
-> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-24.
-> **Status:** Scaffolded
+> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-19.
+> **Status:** Implemented - сторінка відвантажена (`apps/landing/src/pages/ZvyazkyPage.tsx`), PR #955/#956.
 
 ## Мета сторінки
 
@@ -139,6 +139,6 @@ Sergeant у закритій беті. Черга живе в Telegram, одне
 
 ## Джерела фактчеку
 
-Рівні впевненості й пороги: `apps/web/src/core/insights/crossModuleLinkTiers.ts` (`TIER_WORDS`, `REPEATING_R`, `STRONG_R`, `STABLE_N`). Поріг мовчання і вікно: `apps/web/src/core/insights/digestCorrelations.ts` (`MIN_N = 10`, `WINDOW_DAYS = 60`, `NOTABLE_R`). Список пар: там же, `PAIRS`. Розкриття в дні: `CrossModuleLinkCard.tsx` (`EvidenceDays`, до 14 рядків). Рахунок кодом, не LLM: `apps/web/src/core/lib/chatActions/crossActions/dailySeries.ts`. Канон: [`hub-coach.md`](../../../01-product/model/hub-coach.md) §6.2 «Краще мовчати, ніж шуміти».
+Рівні впевненості й пороги: `apps/web/src/core/insights/crossModuleLinkTiers.ts` (`TIER_WORDS`, `REPEATING_R`, `STRONG_R`, `STABLE_N`). Поріг мовчання і вікно: `apps/web/src/core/insights/digestCorrelations.ts` (`MIN_N = 10`, `WINDOW_DAYS = 60`, `NOTABLE_R`). Список пар: там же, `PAIRS`. Розкриття в дні: `CrossModuleLinkCard.tsx` (`EvidenceDays`, до 14 рядків). Рахунок кодом, не LLM: `apps/web/src/core/lib/chatActions/crossActions/dailySeries.ts`. Канон: [`hub-coach.md`](../../../../01-product/model/hub-coach.md) §6.2 «Краще мовчати, ніж шуміти».
 
 > **Знято при фактчеку.** Формулювання головної «перші обережні спостереження зʼявляються вже за кілька днів спільних даних» не підтверджується кодом: поріг – десять спільних днів, і сторінка каже саме це. Канон §6.2 описує дворівневу модель «факт / припущення» для порад AI – це інший механізм, ніж трирівнева драбина карток звʼязків; сторінка описує драбину і посилається на код, а не на канон.

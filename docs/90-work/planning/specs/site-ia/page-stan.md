@@ -1,7 +1,7 @@
 # Доповідь про стан: що працює сьогодні
 
-> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-02.
-> **Status:** Scaffolded
+> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-11-29.
+> **Status:** Implemented - сторінка відвантажена (`apps/landing/src/pages/StanPage.tsx`), PR #955/#956.
 
 ## Мета сторінки
 
@@ -101,6 +101,6 @@ Sergeant у закритій беті. Черга живе в Telegram.
 
 ## Джерела фактчеку
 
-Сільпо: `apps/server/src/modules/silpo/` (OAuth, receipts, cart) + web-поверхні `SilpoReceiptSection.tsx`, `useSilpoReceipts.ts`; прапорця в [`feature-flags.md`](../../../02-engineering/architecture/feature-flags.md) немає, тобто доступно користувачеві. Тижневий підсумок: `apps/server/src/modules/digest/weekly-digest.ts` + `WeeklyDigestCard.tsx`. Сканер чеків: `apps/server/src/modules/finyk/receipts/` (analyze, save, vision, dpsClient), пачка – `apps/web/src/modules/finyk/components/receiptScan/ReceiptScanSheet.tsx` (стадія «Чеки пачкою», `multiple`-пікер). Звʼязки: див. [`page-zvyazky.md`](./page-zvyazky.md). Мобільний: `apps/mobile` – робочий Expo-застосунок; [`finyk.md`](../../../01-product/model/finyk.md) §9 «Паритет НЕ є поточною ціллю… Відсутність фічі в mobile – не баг».
+Сільпо: `apps/server/src/modules/silpo/` (OAuth, receipts, cart) + web-поверхні `SilpoReceiptSection.tsx`, `useSilpoReceipts.ts`; прапорця в [`feature-flags.md`](../../../../02-engineering/architecture/feature-flags.md) немає, тобто доступно користувачеві. Тижневий підсумок: `apps/server/src/modules/digest/weekly-digest.ts` + `WeeklyDigestCard.tsx`. Сканер чеків: `apps/server/src/modules/finyk/receipts/` (analyze, save, vision, dpsClient), пачка – `apps/web/src/modules/finyk/components/receiptScan/ReceiptScanSheet.tsx` (стадія «Чеки пачкою», `multiple`-пікер). Звʼязки: див. [`page-zvyazky.md`](./page-zvyazky.md). Мобільний: `apps/mobile` – робочий Expo-застосунок; [`finyk.md`](../../../../01-product/model/finyk.md) §9 «Паритет НЕ є поточною ціллю… Відсутність фічі в mobile – не баг».
 
-> **Змінено при фактчеку.** Два рядки, які план пропонував перенести в «у розробці» (чеки Сільпо і тижневий підсумок), фактчек лишив у «вже працює»: обидві функції відвантажені, у коді й UI, без прапорців. Натомість «Мобільний застосунок» переїхав із «у розробці» у «вже працює» з окремою секцією про відкладений вихід – рішення фаундера §10 п. 1. Додано рядок про єдиний експорт у «в розробці»: борг названий у [`product-overview.md`](../../../01-product/model/product-overview.md) §11 і в пункті 04 [`page-obitsyanky.md`](./page-obitsyanky.md).
+> **Змінено при фактчеку.** Два рядки, які план пропонував перенести в «у розробці» (чеки Сільпо і тижневий підсумок), фактчек лишив у «вже працює»: обидві функції відвантажені, у коді й UI, без прапорців. Натомість «Мобільний застосунок» переїхав із «у розробці» у «вже працює» з окремою секцією про відкладений вихід – рішення фаундера §10 п. 1. Додано рядок про єдиний експорт у «в розробці»: борг названий у [`product-overview.md`](../../../../01-product/model/product-overview.md) §11 і в пункті 04 [`page-obitsyanky.md`](./page-obitsyanky.md).
