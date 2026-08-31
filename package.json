@@ -139,6 +139,8 @@
     "precommit:bench": "node scripts/precommit-bench.mjs",
     "agent:route": "node scripts/agent/route.mjs",
     "eval:rag": "node scripts/eval-rag-recall.mjs",
+    "eval:rag-corpus": "node scripts/rag-eval/gen-corpus.mjs",
+    "eval:rag-corpus:check": "node scripts/rag-eval/gen-corpus.mjs --check",
     "eval:skills": "node scripts/eval-skill-triggers.mjs",
     "eval:playbooks": "node scripts/eval-playbook-routing.mjs",
     "harness:bench": "node scripts/harness-bench.mjs",

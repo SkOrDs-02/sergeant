@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "generatedBy": "apps/server/src/scripts/ragEvalEmbed.ts",
+  "comment": "AUTO-GENERATED — не правити руками. Перегенерація додає ~3 MiB blob в історію git, тому робиться лише при зміні моделі, розмірності або текстів корпусу.",
+  "provider": "voyage",
+  "embeddingModel": "voyage-3.5-lite",
+  "embeddingVersion": "1",
+  "dim": 1024,
+  "inputType": "document",
+  "docCount": 730,
+  "queryCount": 50,
+  "corpusFingerprint": "99f8a99a097b92518ae9a184d5285a0c0d8ac7c0fcab1463641bc1cf12083e0a",
+  "goldenFingerprint": "c0eb41c334edb832e3d393a15b0b73a17dbf41a374923d519bd0f39b1867e0f5",
+  "embeddingsSha256": "57688163e1e63befe25d377d7fed766072df75c68c5be69eaf82ca8d02fbebd4"
+}

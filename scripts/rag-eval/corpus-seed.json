@@ -1,0 +1,950 @@
+{
+  "version": "1",
+  "comment": "Джерело корпусу RAG-евалу. Кожен запис — золотий документ, на який посилається `expected_memory_ids` у apps/server/src/__fixtures__/rag-eval/golden.json. Поле `vary` декларує, ЩО відрізняє near-miss від золотого; як саме зсувати — вирішує scripts/rag-eval/gen-corpus.mjs (детерміновано, без LLM і без рандому). Правити тут; corpus.json — вихід, не джерело.",
+  "golden": [
+    {
+      "id": "finyk:tx-coffee-w17-001",
+      "entity": "finyk-coffee-w17",
+      "template": "Витрата: кава в {place}, {amount} грн. Тиждень {week} 2026 року, категорія «кафе».",
+      "params": {
+        "place": "Aroma Kava на Хрещатику",
+        "amount": 95,
+        "week": 17
+      },
+      "vary": ["week", "amount"]
+    },
+    {
+      "id": "finyk:tx-coffee-w17-002",
+      "entity": "finyk-coffee-w17",
+      "template": "Витрата: латте на винос, {place}, {amount} грн. Тиждень {week} 2026 року, категорія «кафе».",
+      "params": { "place": "Blur Coffee", "amount": 78, "week": 17 },
+      "vary": ["week", "amount"]
+    },
+    {
+      "id": "finyk:tx-coffee-w17-003",
+      "entity": "finyk-coffee-w17",
+      "template": "Витрата: подвійне еспресо, {place}, {amount} грн. Тиждень {week} 2026 року, категорія «кафе».",
+      "params": { "place": "Idealist Coffee", "amount": 62, "week": 17 },
+      "vary": ["week", "amount"]
+    },
+    {
+      "id": "finyk:digest-2026-04-spending",
+      "entity": "finyk-spending-digest-2026-04",
+      "template": "Місячний підсумок витрат за {month} 2026: найбільші категорії — продукти {groceries} грн, ресторани {restaurants} грн, транспорт {transport} грн. Разом {total} грн.",
+      "params": {
+        "month": "квітень",
+        "groceries": 18400,
+        "restaurants": 9600,
+        "transport": 4300,
+        "total": 41200
+      },
+      "vary": ["alt:month:березень:травень:лютий", "amount"]
+    },
+    {
+      "id": "finyk:tx-groceries-apr-001",
+      "entity": "finyk-groceries-apr",
+      "template": "Витрата: продукти в {place}, {amount} грн, {month} 2026. Категорія «продукти».",
+      "params": { "place": "Сільпо", "amount": 2340, "month": "квітень" },
+      "vary": ["alt:month:березень:травень:лютий", "amount"]
+    },
+    {
+      "id": "finyk:tx-restaurants-apr-001",
+      "entity": "finyk-restaurants-apr",
+      "template": "Витрата: вечеря в ресторані {place}, {amount} грн, {month} 2026. Категорія «ресторани».",
+      "params": {
+        "place": "Ostannya Barykada",
+        "amount": 1650,
+        "month": "квітень"
+      },
+      "vary": ["alt:month:березень:травень:лютий", "amount"]
+    },
+    {
+      "id": "finyk:budget-restaurants-2026-04",
+      "entity": "finyk-budget-restaurants",
+      "template": "Бюджет на категорію «ресторани», {month} 2026: ліміт {limit} грн, витрачено {spent} грн. Перевищення {over} грн.",
+      "params": {
+        "month": "квітень",
+        "limit": 8000,
+        "spent": 9600,
+        "over": 1600
+      },
+      "vary": ["alt:month:березень:травень:лютий", "amount"]
+    },
+    {
+      "id": "finyk:tx-recent-001",
+      "entity": "finyk-recent-card",
+      "template": "Остання операція по картці: {merchant}, {amount} грн, {date}.",
+      "params": { "merchant": "АТБ", "amount": 870, "date": "29 квітня 2026" },
+      "vary": [
+        "alt:date:12 березня 2026:03 лютого 2026:17 січня 2026",
+        "amount"
+      ]
+    },
+    {
+      "id": "finyk:tx-recent-002",
+      "entity": "finyk-recent-card",
+      "template": "Остання операція по картці: {merchant}, {amount} грн, {date}.",
+      "params": {
+        "merchant": "Rozetka",
+        "amount": 4120,
+        "date": "28 квітня 2026"
+      },
+      "vary": [
+        "alt:date:11 березня 2026:02 лютого 2026:16 січня 2026",
+        "amount"
+      ]
+    },
+    {
+      "id": "finyk:tx-recent-003",
+      "entity": "finyk-recent-card",
+      "template": "Остання операція по картці: {merchant}, {amount} грн, {date}.",
+      "params": { "merchant": "WOG", "amount": 1500, "date": "27 квітня 2026" },
+      "vary": [
+        "alt:date:10 березня 2026:01 лютого 2026:15 січня 2026",
+        "amount"
+      ]
+    },
+    {
+      "id": "finyk:sub-spotify",
+      "entity": "finyk-subscriptions",
+      "template": "Регулярний платіж: підписка {service}, {amount} грн на місяць, списання {day} числа. Статус: активна.",
+      "params": { "service": "Spotify", "amount": 165, "day": 7 },
+      "vary": ["alt:service:Netflix:YouTube Premium:Megogo", "amount"]
+    },
+    {
+      "id": "finyk:sub-icloud",
+      "entity": "finyk-subscriptions",
+      "template": "Регулярний платіж: підписка {service}, {amount} грн на місяць, списання {day} числа. Статус: активна.",
+      "params": { "service": "iCloud 2 ТБ", "amount": 399, "day": 12 },
+      "vary": ["alt:service:Google One:Dropbox:Backblaze", "amount"]
+    },
+    {
+      "id": "finyk:sub-anthropic",
+      "entity": "finyk-subscriptions",
+      "template": "Регулярний платіж: підписка {service}, {amount} грн на місяць, списання {day} числа. Статус: активна.",
+      "params": { "service": "Anthropic Claude", "amount": 830, "day": 3 },
+      "vary": ["alt:service:OpenAI ChatGPT:GitHub Copilot:Cursor", "amount"]
+    },
+    {
+      "id": "finyk:tx-fuel-mar-001",
+      "entity": "finyk-fuel-mar",
+      "template": "Витрата: пальне на {place}, {amount} грн, {month} 2026. Категорія «транспорт».",
+      "params": { "place": "OKKO", "amount": 2100, "month": "березень" },
+      "vary": ["alt:month:квітень:лютий:січень", "amount"]
+    },
+    {
+      "id": "finyk:tx-fuel-mar-002",
+      "entity": "finyk-fuel-mar",
+      "template": "Витрата: пальне на {place}, {amount} грн, {month} 2026. Категорія «транспорт».",
+      "params": { "place": "WOG", "amount": 1850, "month": "березень" },
+      "vary": ["alt:month:квітень:лютий:січень", "amount"]
+    },
+    {
+      "id": "finyk:digest-2026-03-fuel",
+      "entity": "finyk-fuel-digest",
+      "template": "Підсумок витрат на пальне за {month} 2026: {total} грн за {trips} заправок, середній чек {avg} грн.",
+      "params": { "month": "березень", "total": 7400, "trips": 4, "avg": 1850 },
+      "vary": ["alt:month:квітень:лютий:січень", "amount"]
+    },
+    {
+      "id": "finyk:income-q1-salary",
+      "entity": "finyk-income-q1",
+      "template": "Дохід: зарплата за {period} 2026, {amount} грн. Джерело — основна робота.",
+      "params": { "period": "перший квартал", "amount": 312000 },
+      "vary": [
+        "alt:period:другий квартал:третій квартал:четвертий квартал",
+        "amount"
+      ]
+    },
+    {
+      "id": "finyk:income-q1-freelance",
+      "entity": "finyk-income-q1",
+      "template": "Дохід: фриланс-проєкти за {period} 2026, {amount} грн. Джерело — підряди.",
+      "params": { "period": "перший квартал", "amount": 84000 },
+      "vary": [
+        "alt:period:другий квартал:третій квартал:четвертий квартал",
+        "amount"
+      ]
+    },
+    {
+      "id": "finyk:tx-cash-large-001",
+      "entity": "finyk-cash-withdrawal",
+      "template": "Зняття готівки в банкоматі {bank}: {amount} грн, {date}. Категорія «готівка».",
+      "params": {
+        "bank": "ПриватБанк",
+        "amount": 8000,
+        "date": "18 квітня 2026"
+      },
+      "vary": [
+        "amount",
+        "alt:date:06 березня 2026:22 лютого 2026:09 січня 2026"
+      ]
+    },
+
+    {
+      "id": "fizruk:lift-bench-pr-001",
+      "entity": "fizruk-bench-pr",
+      "template": "Особистий рекорд у жимі лежачи: {weight} кг на {reps} повторення, тиждень {week} 2026.",
+      "params": { "weight": 102.5, "reps": 1, "week": 16 },
+      "vary": ["week", "amount"]
+    },
+    {
+      "id": "fizruk:cardio-running-apr-summary",
+      "entity": "fizruk-running-apr",
+      "template": "Підсумок бігу за {month} 2026: {km} км за {runs} пробіжок, середній темп {pace} хв/км.",
+      "params": { "month": "квітень", "km": 68, "runs": 12, "pace": "5:42" },
+      "vary": ["alt:month:березень:травень:лютий", "amount"]
+    },
+    {
+      "id": "fizruk:cardio-running-apr-week3",
+      "entity": "fizruk-running-apr",
+      "template": "Біг, тиждень {week} 2026: {km} км за {runs} пробіжки, найдовша {longest} км.",
+      "params": { "week": 17, "km": 21, "runs": 3, "longest": 10 },
+      "vary": ["week", "amount"]
+    },
+    {
+      "id": "fizruk:digest-weekly-volume-w17",
+      "entity": "fizruk-volume-weekly",
+      "template": "Тижневий обʼєм тренувань, тиждень {week} 2026: {tonnage} кг сумарного тоннажу за {sessions} сесії.",
+      "params": { "week": 17, "tonnage": 42800, "sessions": 4 },
+      "vary": ["week", "amount"]
+    },
+    {
+      "id": "fizruk:digest-weekly-volume-w18",
+      "entity": "fizruk-volume-weekly",
+      "template": "Тижневий обʼєм тренувань, тиждень {week} 2026: {tonnage} кг сумарного тоннажу за {sessions} сесії.",
+      "params": { "week": 18, "tonnage": 45600, "sessions": 5 },
+      "vary": ["week", "amount"]
+    },
+    {
+      "id": "fizruk:lift-squat-trend",
+      "entity": "fizruk-squat-progress",
+      "template": "Динаміка присідання за {span}: робоча вага зросла з {from} до {to} кг, приріст {delta} кг.",
+      "params": {
+        "span": "останні вісім тижнів",
+        "from": 120,
+        "to": 135,
+        "delta": 15
+      },
+      "vary": [
+        "alt:span:останні два тижні:останній рік:останній квартал",
+        "amount"
+      ]
+    },
+    {
+      "id": "fizruk:lift-squat-pr-001",
+      "entity": "fizruk-squat-progress",
+      "template": "Особистий рекорд у присіданні зі штангою: {weight} кг на {reps} повторення, тиждень {week} 2026.",
+      "params": { "weight": 150, "reps": 1, "week": 18 },
+      "vary": ["week", "amount"]
+    },
+    {
+      "id": "fizruk:digest-weekly-w18-muscle-split",
+      "entity": "fizruk-muscle-split-weekly",
+      "template": "Розподіл за групами мʼязів, тиждень {week} 2026: ноги {legs} сетів, спина {back} сетів, груди {chest} сетів, плечі {shoulders} сетів.",
+      "params": {
+        "week": 18,
+        "legs": 16,
+        "back": 14,
+        "chest": 12,
+        "shoulders": 8
+      },
+      "vary": ["week", "amount"]
+    },
+    {
+      "id": "fizruk:streak-current",
+      "entity": "fizruk-training-streak",
+      "template": "Поточна серія тренувань без пропусків: {days} днів, від {since}.",
+      "params": { "days": 23, "since": "6 квітня 2026" },
+      "vary": [
+        "amount",
+        "alt:since:2 січня 2026:14 лютого 2026:21 березня 2026"
+      ]
+    },
+    {
+      "id": "fizruk:program-current-split",
+      "entity": "fizruk-program-split",
+      "template": "Поточна програма: спліт {split}, {days} тренувальних днів на тиждень, мезоцикл {cycle}.",
+      "params": {
+        "split": "push / pull / legs",
+        "days": 5,
+        "cycle": "накопичення обʼєму"
+      },
+      "vary": ["alt:split:full body:upper / lower:push / pull", "amount"]
+    },
+    {
+      "id": "fizruk:digest-weekly-rpe-w17",
+      "entity": "fizruk-rpe-weekly",
+      "template": "Середній RPE на робочих сетах, тиждень {week} 2026: {rpe} при {sets} робочих сетах.",
+      "params": { "week": 17, "rpe": 7.8, "sets": 58 },
+      "vary": ["week", "amount"]
+    },
+    {
+      "id": "fizruk:digest-weekly-rpe-w18",
+      "entity": "fizruk-rpe-weekly",
+      "template": "Середній RPE на робочих сетах, тиждень {week} 2026: {rpe} при {sets} робочих сетах.",
+      "params": { "week": 18, "rpe": 8.2, "sets": 63 },
+      "vary": ["week", "amount"]
+    },
+
+    {
+      "id": "nutrition:meal-today-breakfast",
+      "entity": "nutrition-today-meals",
+      "template": "Сніданок сьогодні: {dish}. {kcal} ккал, білки {protein} г, жири {fat} г, вуглеводи {carbs} г.",
+      "params": {
+        "dish": "вівсянка з ягодами і горіхами",
+        "kcal": 520,
+        "protein": 18,
+        "fat": 16,
+        "carbs": 74
+      },
+      "vary": [
+        "alt:dish:омлет із трьох яєць:грецький йогурт із гранолою:сирники зі сметаною",
+        "amount"
+      ]
+    },
+    {
+      "id": "nutrition:meal-today-lunch",
+      "entity": "nutrition-today-meals",
+      "template": "Обід сьогодні: {dish}. {kcal} ккал, білки {protein} г, жири {fat} г, вуглеводи {carbs} г.",
+      "params": {
+        "dish": "куряче філе з булгуром і салатом",
+        "kcal": 680,
+        "protein": 52,
+        "fat": 18,
+        "carbs": 68
+      },
+      "vary": [
+        "alt:dish:борщ із яловичиною:паста карбонара:лосось із рисом",
+        "amount"
+      ]
+    },
+    {
+      "id": "nutrition:meal-today-dinner",
+      "entity": "nutrition-today-meals",
+      "template": "Вечеря сьогодні: {dish}. {kcal} ккал, білки {protein} г, жири {fat} г, вуглеводи {carbs} г.",
+      "params": {
+        "dish": "запечена риба з овочами",
+        "kcal": 540,
+        "protein": 44,
+        "fat": 22,
+        "carbs": 32
+      },
+      "vary": [
+        "alt:dish:сирна запіканка:індичка з гречкою:салат із тунцем",
+        "amount"
+      ]
+    },
+    {
+      "id": "nutrition:digest-weekly-macros-w18",
+      "entity": "nutrition-macros-weekly",
+      "template": "Середні макроси за тиждень {week} 2026: {protein} г білка, {fat} г жирів, {carbs} г вуглеводів на день, {kcal} ккал.",
+      "params": {
+        "week": 18,
+        "protein": 148,
+        "fat": 72,
+        "carbs": 236,
+        "kcal": 2180
+      },
+      "vary": ["week", "amount"]
+    },
+    {
+      "id": "nutrition:favorite-products-top10",
+      "entity": "nutrition-favorite-products",
+      "template": "Найчастіші продукти раціону за {span}: {first}, {second}, {third}. Разом {share}% усіх записів.",
+      "params": {
+        "span": "останні 90 днів",
+        "first": "куряче філе",
+        "second": "грецький йогурт",
+        "third": "вівсяні пластівці",
+        "share": 41
+      },
+      "vary": [
+        "alt:span:останні сім днів:останній рік:останні 30 днів",
+        "amount"
+      ]
+    },
+    {
+      "id": "nutrition:digest-weekly-deficit-w17",
+      "entity": "nutrition-deficit-weekly",
+      "template": "Калорійний баланс за тиждень {week} 2026: спожито {intake} ккал на день, витрата {burn} ккал, дефіцит {deficit} ккал.",
+      "params": { "week": 17, "intake": 2180, "burn": 2620, "deficit": 440 },
+      "vary": ["week", "amount"]
+    },
+    {
+      "id": "nutrition:digest-weekly-deficit-w18",
+      "entity": "nutrition-deficit-weekly",
+      "template": "Калорійний баланс за тиждень {week} 2026: спожито {intake} ккал на день, витрата {burn} ккал, дефіцит {deficit} ккал.",
+      "params": { "week": 18, "intake": 2240, "burn": 2580, "deficit": 340 },
+      "vary": ["week", "amount"]
+    },
+    {
+      "id": "nutrition:hydration-today",
+      "entity": "nutrition-hydration",
+      "template": "Вода сьогодні: {ml} мл за {times} підходів, ціль {goal} мл.",
+      "params": { "ml": 2100, "times": 7, "goal": 2500 },
+      "vary": ["amount", "alt:times:3:11:5"]
+    },
+    {
+      "id": "nutrition:fastfood-frequency-apr",
+      "entity": "nutrition-fastfood",
+      "template": "Фастфуд за {month} 2026: {count} разів, найчастіше {place}. Це {percent}% усіх прийомів їжі.",
+      "params": {
+        "month": "квітень",
+        "count": 6,
+        "place": "KFC",
+        "percent": 7
+      },
+      "vary": ["alt:month:березень:травень:лютий", "amount"]
+    },
+    {
+      "id": "nutrition:pantry-staples",
+      "entity": "nutrition-pantry",
+      "template": "Постійні запаси комори: {first}, {second}, {third}. Оновлено {updated}.",
+      "params": {
+        "first": "рис басматі",
+        "second": "оливкова олія",
+        "third": "консервований тунець",
+        "updated": "28 квітня 2026"
+      },
+      "vary": [
+        "alt:updated:15 січня 2026:03 березня 2026:22 лютого 2026",
+        "amount"
+      ]
+    },
+
+    {
+      "id": "routine:morning-today-checkin",
+      "entity": "routine-morning-checkin",
+      "template": "Ранкова рутина сьогодні: виконано {done} з {total} пунктів. Пропущено: {missed}.",
+      "params": { "done": 4, "total": 5, "missed": "холодний душ" },
+      "vary": ["amount", "alt:missed:зарядка:щоденник:склянка води"]
+    },
+    {
+      "id": "routine:meditation-streak",
+      "entity": "routine-meditation-streak",
+      "template": "Серія медитацій: {days} днів поспіль, найдовша серія {best} днів, від {since}.",
+      "params": { "days": 34, "best": 51, "since": "27 березня 2026" },
+      "vary": [
+        "amount",
+        "alt:since:11 січня 2026:05 лютого 2026:19 квітня 2026"
+      ]
+    },
+    {
+      "id": "routine:digest-weekly-misses-w18",
+      "entity": "routine-misses-weekly",
+      "template": "Пропущені звички, тиждень {week} 2026: найчастіше {top} ({count} разів), далі {second}.",
+      "params": {
+        "week": 18,
+        "top": "вечірнє читання",
+        "count": 4,
+        "second": "розтяжка"
+      },
+      "vary": ["week", "amount"]
+    },
+    {
+      "id": "routine:digest-weekly-misses-w17",
+      "entity": "routine-misses-weekly",
+      "template": "Пропущені звички, тиждень {week} 2026: найчастіше {top} ({count} разів), далі {second}.",
+      "params": {
+        "week": 17,
+        "top": "розтяжка",
+        "count": 3,
+        "second": "вечірнє читання"
+      },
+      "vary": ["week", "amount"]
+    },
+    {
+      "id": "routine:sleep-schedule-w18",
+      "entity": "routine-sleep-schedule",
+      "template": "Режим сну, тиждень {week} 2026: відбій о {bed}, підйом о {wake}, дотримано {kept} з семи ночей.",
+      "params": { "week": 18, "bed": "23:15", "wake": "07:00", "kept": 5 },
+      "vary": ["week", "amount"]
+    },
+    {
+      "id": "routine:sleep-quality-trend",
+      "entity": "routine-sleep-quality",
+      "template": "Динаміка якості сну за {span}: середня оцінка {score} з 5, тривалість {hours} години.",
+      "params": { "span": "останній місяць", "score": 3.8, "hours": 7.1 },
+      "vary": [
+        "alt:span:останній тиждень:останній квартал:останній рік",
+        "amount"
+      ]
+    },
+    {
+      "id": "routine:streaks-active-summary",
+      "entity": "routine-active-streaks",
+      "template": "Активні серії: {first} — {firstDays} днів, {second} — {secondDays} днів, {third} — {thirdDays} днів.",
+      "params": {
+        "first": "медитація",
+        "firstDays": 34,
+        "second": "щоденник",
+        "secondDays": 19,
+        "third": "зарядка",
+        "thirdDays": 12
+      },
+      "vary": ["amount", "alt:first:читання:холодний душ:прогулянка"]
+    },
+    {
+      "id": "routine:reading-frequency-apr",
+      "entity": "routine-reading",
+      "template": "Читання за {month} 2026: {days} днів із {total}, у середньому {minutes} хвилин за сесію.",
+      "params": { "month": "квітень", "days": 18, "total": 30, "minutes": 35 },
+      "vary": ["alt:month:березень:травень:лютий", "amount"]
+    },
+    {
+      "id": "routine:evening-template",
+      "entity": "routine-evening-template",
+      "template": "Вечірня рутина, поточний шаблон: {first}, {second}, {third}. Старт о {start}.",
+      "params": {
+        "first": "розтяжка 10 хвилин",
+        "second": "щоденник",
+        "third": "читання",
+        "start": "22:00"
+      },
+      "vary": ["alt:start:06:30:12:00:19:45", "amount"]
+    },
+    {
+      "id": "routine:screen-time-pre-sleep-w18",
+      "entity": "routine-screen-time",
+      "template": "Екранний час перед сном, тиждень {week} 2026: {minutes} хвилин у середньому, ціль {goal} хвилин.",
+      "params": { "week": 18, "minutes": 48, "goal": 30 },
+      "vary": ["week", "amount"]
+    },
+
+    {
+      "id": "journal:entry-2026-04-w17-001",
+      "entity": "journal-w17-entries",
+      "template": "Запис щоденника, тиждень {week} 2026: {text}",
+      "params": {
+        "week": 17,
+        "text": "Довгий день на проєкті, але вперше за місяць закрив усе заплановане. Втома приємна, не виснажлива."
+      },
+      "vary": ["week", "amount"]
+    },
+    {
+      "id": "journal:entry-2026-04-w17-002",
+      "entity": "journal-w17-entries",
+      "template": "Запис щоденника, тиждень {week} 2026: {text}",
+      "params": {
+        "week": 17,
+        "text": "Розмова з батьками вибила з колії. Помітив, що знову відкладаю складні розмови на потім."
+      },
+      "vary": ["week", "amount"]
+    },
+    {
+      "id": "journal:themes-monthly-apr",
+      "entity": "journal-themes-monthly",
+      "template": "Теми записів за {month} 2026: найчастіше {first} ({firstCount} згадок), далі {second} і {third}.",
+      "params": {
+        "month": "квітень",
+        "first": "робоче перевантаження",
+        "firstCount": 11,
+        "second": "стосунки",
+        "third": "спорт"
+      },
+      "vary": ["alt:month:березень:травень:лютий", "amount"]
+    },
+    {
+      "id": "journal:mood-anxiety-w18-trend",
+      "entity": "journal-anxiety-trend",
+      "template": "Тривожність, тиждень {week} 2026: середній рівень {level} з 5, пік у {peak}. Тригер — {trigger}.",
+      "params": {
+        "week": 18,
+        "level": 3.4,
+        "peak": "середу",
+        "trigger": "дедлайн релізу"
+      },
+      "vary": ["week", "amount"]
+    },
+    {
+      "id": "journal:entry-work-latest",
+      "entity": "journal-work-entry",
+      "template": "Останній запис про роботу, {date}: {text}",
+      "params": {
+        "date": "29 квітня 2026",
+        "text": "Вирішив не брати новий підряд до кінця кварталу. Двох паралельних проєктів достатньо, третій зламає все."
+      },
+      "vary": [
+        "alt:date:14 січня 2026:02 березня 2026:20 лютого 2026",
+        "amount"
+      ]
+    },
+    {
+      "id": "journal:goals-2026-yearly",
+      "entity": "journal-yearly-goals",
+      "template": "Річні цілі на {year}: {first}, {second}, {third}.",
+      "params": {
+        "year": 2026,
+        "first": "стабільні п'ять тренувань на тиждень",
+        "second": "запустити продукт у беті",
+        "third": "відкласти піврічну подушку"
+      },
+      "vary": ["alt:year:2024:2025:2027", "amount"]
+    },
+    {
+      "id": "journal:gratitude-themes-monthly-apr",
+      "entity": "journal-gratitude-themes",
+      "template": "Теми вдячності за {month} 2026: найчастіше {first}, далі {second} і {third}.",
+      "params": {
+        "month": "квітень",
+        "first": "підтримка близьких",
+        "second": "здоров'я",
+        "third": "робота, яка подобається"
+      },
+      "vary": ["alt:month:березень:травень:лютий", "amount"]
+    },
+    {
+      "id": "journal:reflection-q1-2026",
+      "entity": "journal-quarterly-reflection",
+      "template": "Квартальна рефлексія, {period} 2026: {text}",
+      "params": {
+        "period": "перший квартал",
+        "text": "Головна зміна — перестав міряти день кількістю зробленого і почав міряти тим, чи рухалось головне."
+      },
+      "vary": [
+        "alt:period:другий квартал:третій квартал:четвертий квартал",
+        "amount"
+      ]
+    },
+    {
+      "id": "journal:reflection-misses-w18",
+      "entity": "journal-reflection-misses",
+      "template": "Пропущені питання рефлексії, тиждень {week} 2026: {first} і {second}, разом {count} пропусків.",
+      "params": {
+        "week": 18,
+        "first": "що я сьогодні відклав",
+        "second": "кому я вдячний",
+        "count": 4
+      },
+      "vary": ["week", "amount"]
+    },
+
+    {
+      "id": "digest:weekly-2026-w18",
+      "entity": "digest-weekly-summary",
+      "template": "Тижневий підсумок, тиждень {week} 2026: тренувань {workouts}, звички {habits}%, середні {kcal} ккал, витрати {spend} грн.",
+      "params": {
+        "week": 18,
+        "workouts": 5,
+        "habits": 82,
+        "kcal": 2240,
+        "spend": 9800
+      },
+      "vary": ["week", "amount"]
+    },
+    {
+      "id": "digest:weekly-2026-w17",
+      "entity": "digest-weekly-summary",
+      "template": "Тижневий підсумок, тиждень {week} 2026: тренувань {workouts}, звички {habits}%, середні {kcal} ккал, витрати {spend} грн.",
+      "params": {
+        "week": 17,
+        "workouts": 4,
+        "habits": 76,
+        "kcal": 2180,
+        "spend": 11200
+      },
+      "vary": ["week", "amount"]
+    },
+    {
+      "id": "digest:monthly-2026-04",
+      "entity": "digest-monthly-summary",
+      "template": "Місячний підсумок за {month} 2026: тренувань {workouts}, звички {habits}%, витрати {spend} грн, вага {weight} кг.",
+      "params": {
+        "month": "квітень",
+        "workouts": 19,
+        "habits": 79,
+        "spend": 41200,
+        "weight": 78.4
+      },
+      "vary": ["alt:month:березень:травень:лютий", "amount"]
+    },
+    {
+      "id": "digest:weekly-2026-w18-wins",
+      "entity": "digest-weekly-wins",
+      "template": "Головні перемоги тижня {week} 2026: {first}, {second}, {third}.",
+      "params": {
+        "week": 18,
+        "first": "рекорд у присіданні 150 кг",
+        "second": "п'ять тренувань поспіль",
+        "third": "жодного пропуску медитації"
+      },
+      "vary": ["week", "amount"]
+    },
+    {
+      "id": "digest:weekly-2026-w17-misses",
+      "entity": "digest-weekly-misses",
+      "template": "Що не вийшло на тижні {week} 2026: {first}, {second}. Причина — {reason}.",
+      "params": {
+        "week": 17,
+        "first": "два пропуски вечірнього читання",
+        "second": "перевищений бюджет на ресторани",
+        "reason": "аврал на роботі"
+      },
+      "vary": ["week", "amount"]
+    },
+    {
+      "id": "digest:monthly-2026-04-mood-trend",
+      "entity": "digest-monthly-mood",
+      "template": "Динаміка самопочуття за {month} 2026: середня оцінка {score} з 5, найкращий тиждень {best}, найгірший {worst}.",
+      "params": { "month": "квітень", "score": 3.9, "best": 16, "worst": 18 },
+      "vary": ["alt:month:березень:травень:лютий", "amount"]
+    },
+
+    {
+      "id": "chat:coach-progress-001",
+      "entity": "chat-coach-progress",
+      "template": "Розмова з коучем про прогрес, {date}: {text}",
+      "params": {
+        "date": "24 квітня 2026",
+        "text": "Домовились міряти прогрес тоннажем за тиждень, а не окремими рекордами, бо рекорди стрибають від сну."
+      },
+      "vary": [
+        "alt:date:09 січня 2026:17 лютого 2026:05 березня 2026",
+        "amount"
+      ]
+    },
+    {
+      "id": "chat:coach-progress-002",
+      "entity": "chat-coach-progress",
+      "template": "Розмова з коучем про прогрес, {date}: {text}",
+      "params": {
+        "date": "30 квітня 2026",
+        "text": "Коуч підтвердив, що плато в жимі — це недобір білка, а не програма. Підняли ціль до 150 г на день."
+      },
+      "vary": [
+        "alt:date:10 січня 2026:18 лютого 2026:06 березня 2026",
+        "amount"
+      ]
+    },
+    {
+      "id": "chat:coach-training-plan-001",
+      "entity": "chat-coach-plan",
+      "template": "План тренувань від коуча, {date}: {text}",
+      "params": {
+        "date": "21 квітня 2026",
+        "text": "Чотири тижні накопичення обʼєму на спліті push / pull / legs, потім тиждень розвантаження на 60% робочих ваг."
+      },
+      "vary": [
+        "alt:date:07 січня 2026:12 лютого 2026:03 березня 2026",
+        "amount"
+      ]
+    },
+    {
+      "id": "chat:coach-sleep-advice-001",
+      "entity": "chat-coach-sleep",
+      "template": "Порада коуча про сон, {date}: {text}",
+      "params": {
+        "date": "26 квітня 2026",
+        "text": "Головне — не тривалість, а стабільний час відбою. Порадив тримати вікно 23:00-23:30 навіть у вихідні."
+      },
+      "vary": [
+        "alt:date:08 січня 2026:13 лютого 2026:04 березня 2026",
+        "amount"
+      ]
+    },
+
+    {
+      "id": "cofounder:decision-q1-2026-001",
+      "entity": "cofounder-q1-decisions",
+      "template": "Стратегічне рішення, {period} 2026: {text}",
+      "params": {
+        "period": "перший квартал",
+        "text": "Не виходити в маркетплейси до бети. Спершу довести утримання на власній аудиторії, інакше платимо за трафік у дірку."
+      },
+      "vary": [
+        "alt:period:другий квартал:третій квартал:четвертий квартал",
+        "amount"
+      ]
+    },
+    {
+      "id": "cofounder:decision-q1-2026-002",
+      "entity": "cofounder-q1-decisions",
+      "template": "Стратегічне рішення, {period} 2026: {text}",
+      "params": {
+        "period": "перший квартал",
+        "text": "Мобільний застосунок відкладено на після бети вебу. Дві поверхні одночасно неможливо тримати однією парою рук."
+      },
+      "vary": [
+        "alt:period:другий квартал:третій квартал:четвертий квартал",
+        "amount"
+      ]
+    },
+    {
+      "id": "cofounder:review-monthly-apr-2026",
+      "entity": "cofounder-monthly-review",
+      "template": "Стратегічний огляд за {month} 2026: {text}",
+      "params": {
+        "month": "квітень",
+        "text": "Головний ризик кварталу — не швидкість розробки, а те, що продукт вирішує чотири задачі й жодну не вирішує до кінця."
+      },
+      "vary": ["alt:month:березень:травень:лютий", "amount"]
+    }
+  ],
+  "fillerTemplates": [
+    {
+      "source": "finyk",
+      "entity": "filler-finyk-misc",
+      "template": "Витрата: {merchant}, {amount} грн, {date}. Категорія «{category}».",
+      "slots": {
+        "merchant": [
+          "Нова пошта",
+          "Аптека Доброго Дня",
+          "Епіцентр",
+          "Книгарня Є",
+          "Каршеринг",
+          "Хімчистка",
+          "Комунальні послуги",
+          "Інтернет-провайдер"
+        ],
+        "category": [
+          "послуги",
+          "здоровʼя",
+          "дім",
+          "освіта",
+          "транспорт",
+          "побут"
+        ],
+        "date": [
+          "3 січня 2026",
+          "19 лютого 2026",
+          "8 березня 2026",
+          "25 травня 2026",
+          "14 червня 2026"
+        ]
+      }
+    },
+    {
+      "source": "fizruk",
+      "entity": "filler-fizruk-misc",
+      "template": "Тренування {date}: {exercise}, {sets} сети по {reps} повторень, робоча вага {amount} кг.",
+      "slots": {
+        "exercise": [
+          "тяга верхнього блоку",
+          "жим гантелей сидячи",
+          "румунська тяга",
+          "підйом на біцепс",
+          "французький жим",
+          "гіперекстензія",
+          "випади з гантелями",
+          "тяга штанги в нахилі"
+        ],
+        "sets": ["3", "4", "5"],
+        "reps": ["6", "8", "10", "12"],
+        "date": [
+          "5 січня 2026",
+          "21 лютого 2026",
+          "9 березня 2026",
+          "26 травня 2026",
+          "15 червня 2026"
+        ]
+      }
+    },
+    {
+      "source": "nutrition",
+      "entity": "filler-nutrition-misc",
+      "template": "Прийом їжі {date}: {dish}, {amount} ккал.",
+      "slots": {
+        "dish": [
+          "гречка з куркою",
+          "салат із фетою",
+          "сирна запіканка",
+          "суп-пюре з гарбуза",
+          "тост з авокадо",
+          "смузі з бананом",
+          "плов",
+          "млинці з медом"
+        ],
+        "date": [
+          "6 січня 2026",
+          "22 лютого 2026",
+          "10 березня 2026",
+          "27 травня 2026",
+          "16 червня 2026"
+        ]
+      }
+    },
+    {
+      "source": "routine",
+      "entity": "filler-routine-misc",
+      "template": "Відмітка звички {date}: {habit} — {status}. Серія {amount} днів.",
+      "slots": {
+        "habit": [
+          "прогулянка",
+          "вітамін D",
+          "планування дня",
+          "дзвінок рідним",
+          "прибирання столу",
+          "вивчення англійської"
+        ],
+        "status": ["виконано", "пропущено", "виконано частково"],
+        "date": [
+          "7 січня 2026",
+          "23 лютого 2026",
+          "11 березня 2026",
+          "28 травня 2026",
+          "17 червня 2026"
+        ]
+      }
+    },
+    {
+      "source": "journal",
+      "entity": "filler-journal-misc",
+      "template": "Запис щоденника {date}: {text}",
+      "slots": {
+        "text": [
+          "Спокійний день без подій, які варто запамʼятати.",
+          "Довго не міг взятись за роботу, розігнався лише після обіду.",
+          "Гарна прогулянка ввечері, голова прояснилась.",
+          "Знову засидівся за екраном до ночі.",
+          "Приємна зустріч з друзями, давно не бачились.",
+          "Багато дрібних справ, жодної великої."
+        ],
+        "date": [
+          "8 січня 2026",
+          "24 лютого 2026",
+          "12 березня 2026",
+          "29 травня 2026",
+          "18 червня 2026"
+        ]
+      }
+    },
+    {
+      "source": "digest",
+      "entity": "filler-digest-misc",
+      "template": "Підсумок дня {date}: активність {amount} кроків, сон {sleep} години, настрій {mood} з 5.",
+      "slots": {
+        "sleep": ["6.2", "7.0", "7.8", "8.4"],
+        "mood": ["2", "3", "4", "5"],
+        "date": [
+          "9 січня 2026",
+          "25 лютого 2026",
+          "13 березня 2026",
+          "30 травня 2026",
+          "19 червня 2026"
+        ]
+      }
+    },
+    {
+      "source": "chat",
+      "entity": "filler-chat-misc",
+      "template": "Повідомлення в чаті {date}: {text}",
+      "slots": {
+        "text": [
+          "Уточнив, як рахується тижневий обʼєм.",
+          "Питав, чи можна перенести тренування на вечір.",
+          "Просив нагадати про воду вдень.",
+          "Обговорювали, коли варто робити розвантажувальний тиждень.",
+          "Питав про заміну вправи через біль у плечі."
+        ],
+        "date": [
+          "10 січня 2026",
+          "26 лютого 2026",
+          "14 березня 2026",
+          "31 травня 2026",
+          "20 червня 2026"
+        ]
+      }
+    }
+  ]
+}

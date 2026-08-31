@@ -38,3 +38,12 @@ export {
   parseGoldenSet,
 } from "./golden.js";
 export type { GoldenQuery, GoldenSet } from "./golden.js";
+
+export {
+  CorpusDocSchema,
+  CorpusSetSchema,
+  DOC_ROLES,
+  loadDefaultCorpusSet,
+  parseCorpusSet,
+} from "./corpus.js";
+export type { CorpusDoc, CorpusSet } from "./corpus.js";

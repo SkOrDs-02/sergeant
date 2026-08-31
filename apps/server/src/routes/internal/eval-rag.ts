@@ -133,12 +133,23 @@ export function formatEventMessage(summary: RagEvalSummary): string {
 }
 
 /**
- * Чи варто авто-вимикати `mono_ai_memory_ingest`. Гард-функція для
- * idempotency-тестування — endpoint викликає це навіть якщо `status=kill`,
- * щоб у майбутньому можна було додати condition-и (наприклад, потребує
- * baseline-comparison-у з `regression=true`).
+ * Чи варто авто-вимикати `mono_ai_memory_ingest`.
+ *
+ * За замовчуванням — ніколи, і це свідома зміна поведінки. Дві причини.
+ * Перша: живий шар евалу алертить, але нічого не блокує; автоматичне
+ * гасіння модуля цьому прямо суперечить. Друга гірша — `activateKillSwitch`
+ * тримається **в памʼяті процесу**, тобто вимикач бреше про своє
+ * ввімкнення: він випаровується на наступному деплої, а звіт стверджує,
+ * що модуль вимкнено.
+ *
+ * Тіло під прапорцем збережене, щоб повернути автоматику одним рядком,
+ * коли kill-switch стане персистентним.
  */
-export function shouldAutoDisableMonoIngest(summary: RagEvalSummary): boolean {
+export function shouldAutoDisableMonoIngest(
+  summary: RagEvalSummary,
+  opts: { autoDisable?: boolean } = {},
+): boolean {
+  if (opts.autoDisable !== true) return false;
   return summary.status === "kill";
 }
 
@@ -152,6 +163,10 @@ export function createEvalRagInternalRouter({ pool }: { pool: Pool }): Router {
   r.post("/api/internal/eval/rag-weekly", async (req, res) => {
     const parsed = parseBody(SummaryBody, req);
     const summary = parsed;
+    // `SummaryBody` — passthrough, тож прапорець їде поряд зі звітом і не
+    // ламає наявних викликачів, які його не шлють.
+    const autoDisable =
+      (parsed as { autoDisable?: unknown }).autoDisable === true;
 
     // ── 1. INSERT у n8n_failure_events ──
     // `error_message` — human-friendly status (dedup-friendly).
@@ -230,8 +245,10 @@ export function createEvalRagInternalRouter({ pool }: { pool: Pool }): Router {
     }
 
     // ── 4. Auto-flip kill-switch при status=kill ──
+    // Лише коли викликач явно попросив: `autoDisable: true` у тілі. Без
+    // прапорця евал алертить і нічого не гасить (див. докстрінг гарду).
     let killSwitchActivated = false;
-    if (shouldAutoDisableMonoIngest(summary)) {
+    if (shouldAutoDisableMonoIngest(summary, { autoDisable })) {
       activateKillSwitch("mono_ai_memory_ingest", {
         reason: `auto: rag-eval kill (recall@${summary.topK}=${summary.metrics.recallAtK.mean.toFixed(3)})`,
         context: {

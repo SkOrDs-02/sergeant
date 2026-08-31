@@ -773,6 +773,45 @@ jobs:
       - name: Run server integration suite
         run: pnpm --filter @sergeant/server test:integration
 
+  rag-eval:
+    name: RAG eval gate (cached embeddings)
+    runs-on: ubuntu-latest
+    # Окрема джоба, а не крок у `check` — свідомо. `size-limit` колись
+    # стояв кроком ПІСЛЯ «Format, lint, test, build», і коли той червонів,
+    # бюджетний гейт просто не виконувався: у логах це виглядало не як
+    # «бюджет перевищено», а як тиша (AGENTS.md § Performance budgets).
+    # Гейт, що стоїть після потенційно червоного кроку, не є гейтом.
+    #
+    # Мережі тут немає: вектори лежать у фікстурі, а пошук справжній —
+    # той самий pgvector, HNSW і `vectorStore.query`, що в проді.
+    timeout-minutes: 20
+    steps:
+      # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      # pnpm/action-setup v6.0.3 (SHA-pinned for supply-chain hardening)
+      - uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093
+
+      # actions/setup-node v6.4.0 (SHA-pinned for supply-chain hardening)
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: "22"
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build @sergeant/db-schema
+        # Без цього кроку імпорт `drizzle.ts` падає з ERR_MODULE_NOT_FOUND —
+        # той самий крок є у server-integration і critical-flow.
+        run: pnpm --filter @sergeant/db-schema build
+
+      - name: Corpus is reproducible from seed
+        run: pnpm eval:rag-corpus:check
+
+      - name: Run RAG eval gate
+        run: pnpm --filter @sergeant/server test:rag-eval
+
   # openclaw-config-schema retired 2026-07-21 — OpenClaw Gateway fully
   # decommissioned (ADR-0075). Dockerfile.openclaw-gateway, ops/openclaw/,
   # and scripts/validate-openclaw-config.mjs are gone; keeping the job would

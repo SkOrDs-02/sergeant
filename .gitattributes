@@ -1,5 +1,10 @@
 * text=auto eol=lf
 
+# Фікстура ембеддингів RAG-евалу — щільний масив float32. Без цього
+# рядка `text=auto` вирішив би, чи це текст, за евристикою, і будь-яка
+# нормалізація переводу рядка тихо зіпсувала б вектори.
+apps/server/src/__fixtures__/rag-eval/*.bin binary
+
 *.ps1 text eol=crlf
 *.cmd text eol=crlf
 *.bat text eol=crlf
