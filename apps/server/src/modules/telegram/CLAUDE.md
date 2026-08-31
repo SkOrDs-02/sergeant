@@ -1,6 +1,6 @@
 # Інфра-модуль Telegram (інтеграція)
 
-> **Last touched:** 2026-08-28 by @Skords-01. **Next review:** 2026-12-24.
+> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-25.
 > **Status:** Active
 
 Контекст: `Read .agents/skills/sergeant-module-integrations/SKILL.md` (журнал рішень — у самому скілі).

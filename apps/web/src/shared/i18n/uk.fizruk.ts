@@ -93,6 +93,18 @@ export const fizrukPageMessages = {
   lastTimeHint: {
     label: "Минулого разу",
   },
+  // Підказка наступного підходу в картці вправи
+  // (`WorkoutItemNextSetHint.tsx`): подвійна прогресія і м'який режим.
+  nextSetHint: {
+    prefix: "Наступний:",
+    kgUnit: "кг",
+    targetPrefix: "ціль",
+    targetSuffix: "повторень",
+    softPrefix: "легше",
+    softLayoff: "після паузи",
+    softInjury: "після позначки болю",
+    softFallback: "після перерви",
+  },
   // Per-row "було" ghost + done/delete controls inside a strength set
   // row (`WorkoutSetRow.tsx`), redesign 2026-08 (items 1-3).
   setRow: {
@@ -166,8 +178,10 @@ export const fizrukPageMessages = {
     emptyTitle: "Даних ще немає",
     emptyDescription: "Додай тренування або заміри, і тут зʼявиться аналітика",
     crossModuleHeading: "Активність з інших модулів",
+    lightActivityHeading: "Легка активність",
     pushups: "Відтискання",
-    pushupsSource: "за даними щоденних звичок",
+    pushupsSource: "щоденний лічильник повторень",
+    pushupsQuickAddLabel: "Додати повторення",
     weight: "Вага",
     noComparison: "Немає порівняння",
     bodyFat: "% жиру",

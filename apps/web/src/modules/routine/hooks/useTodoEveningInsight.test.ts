@@ -35,7 +35,6 @@ function makeState(
     categories: [],
     habits,
     completions,
-    pushupsByDate: {},
     habitOrder: habits.map((h) => h.id),
     completionNotes: {},
   };
@@ -79,6 +78,8 @@ describe("useTodoEveningInsight", () => {
       module: "routine",
       title: "3 звичок чекають",
       subtitle: "Закрити сьогоднішнє?",
+      askAiPrompt:
+        "Вечір, а зі звичок сьогодні не відмічені: Вода, Вода, Вода. Допоможи вирішити, що з цього ще реально зробити, а що чесно перенести.",
       action: { type: "navigate", path: "/routine/today" },
       showOn: "both",
     });

@@ -184,8 +184,10 @@ describe("HabitDetailSheet", () => {
   });
 
   it("renders an em-dash when nothing is scheduled in the windows (all pct null)", () => {
-    // A "once" habit anchored years ago is never scheduled within the last
+    // A daily habit that ENDED years ago is never scheduled within the last
     // 7/30/90 days, so completionPct returns null for all three windows.
+    // (`once` не годиться фікстурою: для неї відсоткова картка схована
+    // взагалі — канон §7 п.2, 2026-08-30.)
     render(
       <HabitDetailSheet
         habitId="h1"
@@ -194,8 +196,9 @@ describe("HabitDetailSheet", () => {
             {
               id: "h1",
               name: "Старе",
-              recurrence: "once",
+              recurrence: "daily",
               startDate: "2020-01-01",
+              endDate: "2020-02-01",
             },
           ],
           completions: { h1: [] },

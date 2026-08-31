@@ -9,7 +9,6 @@ import type {
   WhatsNewItemKind,
   WhatsNewRelease,
 } from "./releases";
-import { isHiddenBetaHref } from "../lib/betaSurfaces";
 
 /**
  * `<WhatsNewModal />` — in-product release notes overlay (PR-18 у
@@ -77,13 +76,7 @@ export function WhatsNewModal({
 
   if (!release) return null;
 
-  // A release note can outlive the surface its CTA points at — the newest one
-  // still links to `/pricing`, which 404s while commerce is hidden. Drop the
-  // button in that case and show the note without it.
-  const cta =
-    release.cta && !isHiddenBetaHref(release.cta.href)
-      ? release.cta
-      : undefined;
+  const cta = release.cta;
 
   const handleCtaClick = () => {
     if (!cta) return;

@@ -28,7 +28,11 @@
  */
 
 import { dateKeyFromDate, parseDateKey } from "./dateKeys.js";
-import { dateKeyInPauseInterval, habitScheduledOnDate } from "./schedule.js";
+import {
+  dateKeyInPauseInterval,
+  habitCountsTowardMetrics,
+  habitScheduledOnDate,
+} from "./schedule.js";
 import type { Habit, HabitSkip } from "./types.js";
 
 /**
@@ -164,6 +168,10 @@ export function flexibleStreakBreakdown(
     brokenOn: null,
     window: [],
   };
+
+  // `once` серії не має за визначенням (канон §7 п.2, рішення 2026-08-30):
+  // разова подія — не послідовність днів, тож і полотну нема чого показати.
+  if (!habitCountsTowardMetrics(habit)) return empty;
 
   // Нижня межа проходу — найдавніша відома дата звички. Без неї рідкі
   // рекурентності (monthly) крутили б цикл до safety-cap.

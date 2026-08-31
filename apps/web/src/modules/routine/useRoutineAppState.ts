@@ -331,12 +331,11 @@ export function useRoutineAppState({
       // visual change at high priority while deferring the full list
       // re-render + localStorage persist to a lower-priority lane.
       //
-      // Compute the next state EAGERLY (from fresh LS, mirroring
-      // `useRoutinePushups.addReps`) rather than inside a `setRoutine`
-      // updater. `toggleHabitCompletion` persists + dispatches
+      // Compute the next state EAGERLY (from fresh LS) rather than
+      // inside a `setRoutine` updater. `toggleHabitCompletion` persists + dispatches
       // `ROUTINE_EVENT` synchronously; running that as a state-updater
       // would fire those side effects during React's render phase, whose
-      // re-entrant `ROUTINE_EVENT` listeners (e.g. `PushupsWidget`) then
+      // re-entrant `ROUTINE_EVENT` listeners then
       // `setState` mid-render → "Cannot update a component while rendering
       // a different component". Persisting in the handler keeps updaters pure.
       //

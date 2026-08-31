@@ -929,6 +929,23 @@ CREATE INDEX IF NOT EXISTS fizruk_injuries_user_started_at_idx_lite
 `;
 
 /**
+ * Pushup counter — перенос власності routine → fizruk (канон `routine.md`
+ * §10, рішення 2026-08-30). Дзеркалить `routine_pushups` за формою і
+ * серверну міграцію `131_fizruk_pushups.sql`. Історичні дані клієнт не
+ * копіює: серверна міграція переносить синхронізовані рядки, а pull
+ * наповнює цю таблицю.
+ */
+const FIZRUK_004_PUSHUPS_SQL = `
+CREATE TABLE IF NOT EXISTS fizruk_pushups (
+  user_id     TEXT NOT NULL,
+  date_key    TEXT NOT NULL,
+  reps        INTEGER NOT NULL DEFAULT 0,
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (user_id, date_key)
+);
+`;
+
+/**
  * Ordered list of bundled client migrations for the Fizruk module on
  * SQLite. Pass this directly to `runMigrations` from
  * `@sergeant/db-schema/migrate/runner`.
@@ -953,6 +970,10 @@ export const FIZRUK_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
   {
     name: "003_fizruk_injuries.sql",
     sql: FIZRUK_003_INJURIES_SQL,
+  },
+  {
+    name: "004_fizruk_pushups.sql",
+    sql: FIZRUK_004_PUSHUPS_SQL,
   },
 ] as const;
 

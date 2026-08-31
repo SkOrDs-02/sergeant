@@ -1,13 +1,14 @@
 import { createHash } from "node:crypto";
 
 import { betterAuth } from "better-auth";
-import { createAuthMiddleware } from "better-auth/api";
+import { APIError, createAuthMiddleware } from "better-auth/api";
 import { fromNodeHeaders } from "better-auth/node";
 import { bearer } from "better-auth/plugins";
 import { expo } from "@better-auth/expo";
 import { importPKCS8, SignJWT } from "jose";
 import type { Request } from "express";
 import { env } from "./env/env.js";
+import { isAccessAllowed, isAccessGateEnabled } from "./auth/accessGate.js";
 import { startAppleSecretRefresher } from "./auth/appleClientSecretCache.js";
 import { createEncryptingAdapter } from "./auth/encryptingAdapter.js";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
@@ -428,6 +429,16 @@ export const auth = betterAuth({
     user: {
       create: {
         before: async (data) => {
+          // AI-LEGACY: expires 2026-11-30 — рубильник закритого доступу.
+          // Стоїть саме тут, а не на формі реєстрації: `user.create`
+          // спрацьовує однаково для email+пароля, Google і Apple, тож
+          // соцвхід не обходить гейт створенням користувача в колбеку.
+          if (isAccessGateEnabled()) {
+            throw new APIError("FORBIDDEN", {
+              code: "REGISTRATION_CLOSED",
+              message: "Реєстрація зараз закрита.",
+            });
+          }
           const result = sanitizeUserImage(data);
           if (result.imageStripped) {
             logger.warn(
@@ -522,6 +533,17 @@ export const auth = betterAuth({
     session: {
       create: {
         before: async (data) => {
+          // AI-LEGACY: expires 2026-11-30 — друга половина рубильника.
+          // Блокування `user.create` зупиняє лише НОВИХ; сесію ж отримує
+          // і той, хто зареєструвався під час бети. Перевірка тут ловить
+          // кожен логін незалежно від провайдера. Уже видані сесії живуть
+          // до свого TTL — їх знімає одноразовий DELETE (див. env-vars.md).
+          if (!isAccessAllowed(data.userId)) {
+            throw new APIError("FORBIDDEN", {
+              code: "ACCESS_CLOSED",
+              message: "Доступ зараз закритий.",
+            });
+          }
           if (!data.ipAddress) return undefined;
           const truncated = ipPrefix(data.ipAddress);
           if (truncated && truncated !== data.ipAddress) {

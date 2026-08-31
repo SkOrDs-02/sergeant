@@ -19,7 +19,6 @@ import {
   toggleHabitCompletion,
   markAllScheduledHabitsComplete,
   setHabitArchived,
-  addPushupReps,
   moveHabitInOrder,
   setHabitOrder,
   setCompletionNote,
@@ -219,21 +218,6 @@ describe("markAllScheduledHabitsComplete", () => {
     const s1 = fresh();
     const s2 = markAllScheduledHabitsComplete(s1, "2024-06-15");
     expect(s2).toBe(s1);
-  });
-});
-
-describe("addPushupReps", () => {
-  it("додає до лічильника за сьогодні", () => {
-    let s = addPushupReps(fresh(), 10);
-    expect(s.pushupsByDate["2024-06-15"]).toBe(10);
-    s = addPushupReps(s, 5);
-    expect(s.pushupsByDate["2024-06-15"]).toBe(15);
-  });
-  it("ігнорує невалідні reps", () => {
-    const s1 = fresh();
-    expect(addPushupReps(s1, 0)).toBe(s1);
-    expect(addPushupReps(s1, -3)).toBe(s1);
-    expect(addPushupReps(s1, "abc")).toBe(s1);
   });
 });
 

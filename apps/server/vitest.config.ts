@@ -52,7 +52,7 @@ export default defineConfig({
         //    (verified via `pnpm --filter @sergeant/server test:coverage`).
         //    The three surfaces the 2026-05-05 entry called out as the next
         //    sprint's targets are now all 95-100% lines: nutrition tool
-        //    handlers (day-hint/day-plan/food-search/parse-pantry/
+        //    handlers (day-plan/food-search/parse-pantry/
         //    shopping-list/week-plan), modules/sync/syncV2.ts, and
         //    modules/digest/weekly-digest.ts. Stale coverage claims in
         //    docs/90-work/tech-debt/backend.md § "Tests coverage map"

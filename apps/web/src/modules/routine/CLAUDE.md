@@ -1,6 +1,6 @@
 # Модуль Routine (web)
 
-> **Last touched:** 2026-08-28 by @Skords-01. **Next review:** 2026-12-24.
+> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-27.
 > **Status:** Active
 
 Продуктовий контекст: `Read .agents/skills/sergeant-module-routine/SKILL.md` → канон `docs/01-product/model/routine.md` (§ Журнал рішень — уже ухвалені рішення, не перепитуй).

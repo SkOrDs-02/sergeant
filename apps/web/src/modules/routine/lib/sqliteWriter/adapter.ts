@@ -28,7 +28,6 @@ import {
   HABIT_SOFT_DELETE_SQL,
   HABIT_UPSERT_SQL,
   PREFS_UPSERT_SQL,
-  PUSHUP_UPSERT_SQL,
   TAG_SOFT_DELETE_SQL,
   TAG_UPSERT_SQL,
 } from "./adapter.sql.js";
@@ -69,7 +68,6 @@ import {
  *   - `tag-upsert` / `tag-delete` → `routine_tags`
  *   - `category-upsert` / `category-delete` → `routine_categories`
  *   - `prefs-set` → `routine_prefs`
- *   - `pushup-upsert` → `routine_pushups`
  *   - `habit-order-set` → `routine_habit_order`
  *   - `completion-note-upsert` / `completion-note-delete` →
  *     `routine_completion_notes`
@@ -140,10 +138,6 @@ const applyOps = createApplyOps<RoutineDualWriteOp>({
     },
     "prefs-set": async (client, op, rt) => {
       await setPrefs(client, op.prefs, rt);
-      return "applied";
-    },
-    "pushup-upsert": async (client, op, rt) => {
-      await upsertPushup(client, op.dateKey, op.reps, rt);
       return "applied";
     },
     "habit-order-set": async (client, op, rt) => {
@@ -509,26 +503,6 @@ async function setPrefs(
     op: "insert",
     clientTs,
     row: { user_id: userId, data_json: JSON.stringify(prefs) },
-  });
-}
-
-// -----------------------------------------------------------------------
-// routine_pushups (one row per (user, date))
-// -----------------------------------------------------------------------
-
-async function upsertPushup(
-  client: SqliteMigrationClient,
-  dateKey: string,
-  reps: number,
-  { userId, clientTs }: DualWriteRuntime,
-): Promise<void> {
-  await client.run(PUSHUP_UPSERT_SQL, [userId, dateKey, reps, clientTs]);
-  fireSyncOutboxUpsert(client, {
-    userId,
-    table: "routine_pushups",
-    op: "insert",
-    clientTs,
-    row: { user_id: userId, date_key: dateKey, reps },
   });
 }
 

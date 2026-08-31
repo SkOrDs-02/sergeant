@@ -1,6 +1,6 @@
 # Playbook: Pre-Merge Migration Checklist
 
-> **Last touched:** 2026-08-28 by @Skords-01. **Next review:** 2026-12-05.
+> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-08.
 > **Status:** Active
 
 **Trigger:** PR містить файли в `apps/server/src/migrations/` (новий `NNN_*.sql` або зміна існуючого `*.down.sql`).

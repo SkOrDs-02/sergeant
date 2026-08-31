@@ -244,59 +244,6 @@ describe("billing routes", () => {
     unsetEnv("AI_QUOTA_FOUNDER_IDS");
   });
 
-  // ── BILLING_ALL_PRO (AI-LEGACY: expires 2026-10-31) ─────────────────
-  // Той самий клас багу, що й S1 вище, тому й покриття парне: прапорець
-  // мусить діяти НА ОБОХ шляхах читання плану. Якби він жив лише в
-  // `getUserPlan()`, сервер знімав би ліміт AI, а цей роут — єдине джерело
-  // для клієнтського `usePlan()` — і далі віддавав би Free, тобто інтерфейс
-  // малював би пейволи поверх уже відкритого доступу.
-  it("GET /status віддає синтетичний Pro усім, поки BILLING_ALL_PRO увімкнено", async () => {
-    setEnv("BILLING_ALL_PRO", "true");
-    getSessionUserMock.mockResolvedValue({
-      id: "beta_tester_7",
-      email: "tester@example.com",
-    });
-    const query = vi.fn().mockResolvedValue({ rows: [] });
-    const app = createTestApp(createQueryPool(query));
-
-    const res = await request(app).get("/api/billing/status");
-
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual({
-      subscription: {
-        id: null,
-        provider: "manual",
-        plan: "pro",
-        status: "active",
-        active: true,
-        currentPeriodEnd: null,
-      },
-    });
-    // Як і у founder-гілці: до БД не ходимо взагалі.
-    expect(query).not.toHaveBeenCalled();
-    unsetEnv("BILLING_ALL_PRO");
-  });
-
-  it("GET /status читає subscriptions як завжди, поки прапорця немає", async () => {
-    // ВАЖЛИВО: саме `unsetEnv`, а не `setEnv(..., "false")`. Тутешній
-    // env-мок — Proxy над мапою рядків, тож рядок "false" був би truthy і
-    // тест мовчки перевіряв би не те. У проді такого немає: там значення
-    // проходить через Zod-трансформ і стає справжнім boolean.
-    unsetEnv("BILLING_ALL_PRO");
-    getSessionUserMock.mockResolvedValue({
-      id: "user_1",
-      email: "billing@example.com",
-    });
-    const query = vi.fn().mockResolvedValue({ rows: [] });
-    const app = createTestApp(createQueryPool(query));
-
-    const res = await request(app).get("/api/billing/status");
-
-    expect(res.status).toBe(200);
-    expect(res.body.subscription.plan).toBeNull();
-    expect(query).toHaveBeenCalled();
-  });
-
   // ───────── POST /api/billing/portal (P0-6) ─────────
   // Happy path: user with an active Stripe subscription gets a fresh
   // Customer Portal URL. Edge cases:

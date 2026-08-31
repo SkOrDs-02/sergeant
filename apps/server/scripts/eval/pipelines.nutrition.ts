@@ -1,9 +1,6 @@
 /**
- * Пайплайни нутриційних AI-шляхів: `day-hint`, `day-plan`, `week-plan`,
+ * Пайплайни нутриційних AI-шляхів: `day-plan`, `week-plan`,
  * `shopping-list`, `recommend-recipes`, `parse-pantry`.
- *
- * Усі шість були непокриті — інвентар `endpoint:` дає 16 AI-шляхів, стенд
- * знав про шість (спека § Проблема).
  *
  * Судді тут переважно СТРУКТУРНІ, і це не випадковість: усі ці ендпоінти
  * повертають JSON, який прод одразу проганяє через нормалізатор. «Модель
@@ -12,10 +9,6 @@
  */
 
 import { env } from "../../src/env/env.js";
-import {
-  buildDayHintPrompt,
-  type DayHintInput,
-} from "../../src/modules/nutrition/day-hint.js";
 import {
   buildDayPlanPrompt,
   type DayPlanInput,
@@ -84,83 +77,6 @@ function pantryStem(pantryName: string): string {
 /** Базові допущення, які промпти явно дозволяють додавати понад комору. */
 const ALLOWED_EXTRAS =
   /сіл|перц|перець|вод|оли|олі|спец|приправ|цукор|оцет|лавров/i;
-
-// ── day-hint ────────────────────────────────────────────────────────
-
-const dayHint = (
-  name: string,
-  trap: string,
-  input: DayHintInput,
-  judge: (text: string) => JudgeVerdict,
-) => ({ name, trap, user: buildDayHintPrompt(input).user, judge });
-
-/** Прод дістає підказку так само: JSON → поле `hint`. */
-const hintText = (text: string): string => {
-  const rec = asRecord(text);
-  return typeof rec?.["hint"] === "string" ? rec["hint"] : "";
-};
-
-const hintNonEmpty = (text: string): JudgeVerdict =>
-  hintText(text).trim().length > 3 ||
-  "нема поля hint (прод покаже сирий текст)";
-
-const dayHintPipeline: Pipeline = {
-  key: "day-hint",
-  label: "Nutrition day-hint",
-  // Прод не шле `system` — увесь текст іде user-реплікою.
-  system: undefined,
-  promptOrigin: "modules/nutrition/day-hint.ts::buildDayHintPrompt",
-  maxTokens: 400,
-  judge: hintNonEmpty,
-  cases: [
-    dayHint(
-      "недобір білка",
-      'НЕПРАВИЛЬНО: віддати прозу замість `{"hint":"…"}` — прод тоді покаже сирий текст як підказку. І окремо: не помітити, що білка 60 г при цілі 120 г, тобто рівно вдвічі менше.',
-      {
-        macros: { kcal: 1800, protein_g: 60, fat_g: 70, carbs_g: 210 },
-        targets: { dailyTargetKcal: 2200, dailyTargetProtein_g: 120 },
-        locale: "uk-UA",
-      },
-      (text) => {
-        const base = hintNonEmpty(text);
-        if (base !== true) return base;
-        return (
-          /білк|протеїн/i.test(hintText(text)) ||
-          "не помітив недобір білка (60 г при цілі 120 г)"
-        );
-      },
-    ),
-    dayHint(
-      "прийоми є, макросів немає",
-      "НЕПРАВИЛЬНО: вигадати числа КБЖВ, яких у вході немає (усі поля порожні). Промпт у цій гілці просить порадити, ЯК заповнювати КБЖВ, а не оцінити неіснуючі.",
-      {
-        macros: {},
-        targets: { dailyTargetKcal: 2200 },
-        hasMeals: true,
-        hasAnyMacros: false,
-        locale: "uk-UA",
-      },
-      (text) => {
-        const base = hintNonEmpty(text);
-        if (base !== true) return base;
-        const made = hintText(text).match(/\d{3,}/);
-        return (
-          made === null || `вигадав число ${made[0]} — макросів у вході немає`
-        );
-      },
-    ),
-    dayHint(
-      "цілі не задані",
-      "НЕПРАВИЛЬНО: порівнювати з вигаданою ціллю («ти недобрав до 2000»). Цілей немає — порівнювати нема з чим.",
-      {
-        macros: { kcal: 1650, protein_g: 88, fat_g: 60, carbs_g: 180 },
-        locale: "uk-UA",
-      },
-      hintNonEmpty,
-    ),
-  ],
-  candidates: [...nutritionCandidates],
-};
 
 // ── day-plan ────────────────────────────────────────────────────────
 
@@ -541,7 +457,6 @@ const parsePantryPipeline: Pipeline = {
 };
 
 export const NUTRITION_PIPELINES: Pipeline[] = [
-  dayHintPipeline,
   dayPlanPipeline,
   weekPlanPipeline,
   shoppingListPipeline,

@@ -171,6 +171,9 @@ export default function FizrukApp({
         return "workouts";
       case "workout":
         return "workouts";
+      case "catalog":
+      case "templates":
+        return "workouts";
       case "measurements":
         return "progress";
       default:

@@ -228,6 +228,24 @@ describe("syncV2 table-coverage smoke (PR-5)", () => {
     INTEGRATION_TIMEOUT_MS,
   );
 
+  // Перенос власності pushup-даних routine → fizruk (2026-08-30):
+  // fizruk-власна таблиця тієї самої форми, що й routine_pushups вище.
+  it(
+    "fizruk-tracking: fizruk_pushups insert → pull",
+    async (ctx) => {
+      await smokePushPull(ctx, {
+        table: "fizruk_pushups",
+        userId: "u-smoke-fp",
+        row: {
+          date_key: "2026-07-10",
+          reps: 25,
+        },
+        key: "smoke-fizruk-pushups",
+      });
+    },
+    INTEGRATION_TIMEOUT_MS,
+  );
+
   // Group: fizruk-planning — fizruk_daily_log, fizruk_monthly_plan, fizruk_plan_templates, fizruk_programs
   it(
     "fizruk-planning: fizruk_monthly_plan insert → pull",

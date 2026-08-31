@@ -126,7 +126,6 @@ export interface RoutineState {
    * усе одно завжди віддає обʼєкт, тож читачі бачать `{}`, а не `undefined`.
    */
   skips?: Record<string, Record<string, HabitSkip>> | undefined;
-  pushupsByDate: Record<string, number>;
   habitOrder: string[];
   completionNotes: Record<string, string>;
 }

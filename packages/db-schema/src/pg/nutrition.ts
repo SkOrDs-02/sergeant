@@ -359,7 +359,7 @@ export const nutritionRecipes = pgTable(
  * Postgres schema for `nutrition_water_log` table.
  *
  * Один рядок на (user, date) — мілілітри води за день. Дзеркалить
- * `routine_pushups` за формою (per-(user, date) лічильник). Day key —
+ * `fizruk_pushups` за формою (per-(user, date) лічильник). Day key —
  * `YYYY-MM-DD` у локальному часовому поясі користувача (як уже працює
  * `WaterLog` blob у `packages/nutrition-domain/src/waterLog.ts`).
  *

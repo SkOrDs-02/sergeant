@@ -1,6 +1,6 @@
 # Playbook: Tune System Prompt
 
-> **Last touched:** 2026-08-28 by @Skords-01. **Next review:** 2026-12-10.
+> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-11.
 > **Status:** Active
 
 **Trigger:** «AI відповідає не так як треба» / «Зміни тон асистента» / «Додай нову інструкцію в системний промпт» / зміна як модель розуміє контекст модулі.

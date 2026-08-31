@@ -23,28 +23,27 @@ import {
   epley1rm,
   suggestNextSet as suggestNextSetJs,
 } from "../../lib/workoutStats.js";
+import type {
+  SuggestNextSetOptions,
+  SuggestedNextSetResult,
+} from "../../lib/workoutStats.js";
 import type { Workout, WorkoutItem, WorkoutSet } from "./types.js";
 
 /** Typed wrapper around the legacy JS `suggestNextSet` helper. */
-export interface SuggestedNextSet {
-  weightKg: number;
-  reps: number;
-  altWeightKg?: number | null;
-  altReps?: number | null;
-}
+export type SuggestedNextSet = SuggestedNextSetResult;
 
 /**
  * Typed re-export of {@link suggestNextSetJs} so TS consumers (mobile,
  * web) get a proper shape without resorting to `any`. Behaviour is
  * identical to the legacy helper; `null` means "not enough data".
+ * `options` передаються далі: діапазон повторів і м'який режим — частина
+ * того самого контракту підказки.
  */
 export function suggestExerciseNextSet(
   lastBestSet: Pick<WorkoutSet, "weightKg" | "reps"> | null | undefined,
+  options: SuggestNextSetOptions = {},
 ): SuggestedNextSet | null {
-  const result = suggestNextSetJs(
-    lastBestSet ?? null,
-  ) as SuggestedNextSet | null;
-  return result ?? null;
+  return suggestNextSetJs(lastBestSet ?? null, options);
 }
 
 const WEEK_BUCKET_CAP = 12;

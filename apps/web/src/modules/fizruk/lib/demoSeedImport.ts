@@ -53,6 +53,9 @@ import {
 const DEMO_WORKOUTS_KEY = "fizruk_workouts_v1";
 const DEMO_MEASUREMENTS_KEY = "fizruk_measurements_v1"; // gitleaks:allow
 const DEMO_TEMPLATES_KEY = "fizruk_workout_templates_v1";
+// НЕ `fizruk_pushups_v1` — той ключ читає migrateLegacyPushups у
+// storageManager і затягнув би демо-повтори назад у routine-стан.
+const DEMO_PUSHUPS_KEY = "fizruk_pushups_seed_v1";
 
 interface DemoWorkoutsBlob {
   workouts?: readonly unknown[];
@@ -72,14 +75,26 @@ export function readFizrukDemoStateFromLs(): FizrukDualWriteState | null {
   );
 
   const templates = safeReadLS<readonly unknown[]>(DEMO_TEMPLATES_KEY, null);
+  const pushupsBlob = safeReadLS<Record<string, unknown>>(
+    DEMO_PUSHUPS_KEY,
+    null,
+  );
 
   const workoutsRaw = Array.isArray(blob?.workouts) ? blob.workouts : [];
   const measurementsRaw = Array.isArray(measurements) ? measurements : [];
   const templatesRaw = Array.isArray(templates) ? templates : [];
+  const pushups: Record<string, number> = {};
+  if (pushupsBlob && typeof pushupsBlob === "object") {
+    for (const [k, v] of Object.entries(pushupsBlob)) {
+      const n = Number(v);
+      if (Number.isFinite(n) && n > 0) pushups[k] = Math.floor(n);
+    }
+  }
   if (
     workoutsRaw.length === 0 &&
     measurementsRaw.length === 0 &&
-    templatesRaw.length === 0
+    templatesRaw.length === 0 &&
+    Object.keys(pushups).length === 0
   ) {
     return null;
   }
@@ -89,6 +104,7 @@ export function readFizrukDemoStateFromLs(): FizrukDualWriteState | null {
     workouts: extractWorkoutSnapshots(workoutsRaw),
     measurements: extractMeasurementSnapshots(measurementsRaw),
     workoutTemplates: extractWorkoutTemplateSnapshots(templatesRaw),
+    pushups,
   };
 }
 

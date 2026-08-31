@@ -1,6 +1,6 @@
 # Playbook: Onboard External API
 
-> **Last touched:** 2026-08-28 by @Skords-01. **Next review:** 2026-12-17.
+> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-08.
 > **Status:** Active
 
 **Trigger:** "Інтегрувати нову зовнішню API" / додати новий third-party сервіс / нова банківська інтеграція / новий AI-провайдер.

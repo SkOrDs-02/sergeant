@@ -36,7 +36,6 @@ function stubState(): RoutineState {
     categories: [],
     habits: [],
     completions: {},
-    pushupsByDate: {},
     habitOrder: [],
     completionNotes: {},
   } as unknown as RoutineState;

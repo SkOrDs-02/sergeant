@@ -32,7 +32,10 @@ import { useCoffeeLimitInsight } from "./useCoffeeLimitInsight";
 import { useBudgetOverrunInsight } from "./useBudgetOverrunInsight";
 import { useRecurringDetectedInsight } from "./useRecurringDetectedInsight";
 import type { Insight } from "@shared/lib/insights/types";
-import { filterStatTransactions } from "@sergeant/finyk-domain/domain/transactions";
+import {
+  filterStatTransactions,
+  withManualExpenses,
+} from "@sergeant/finyk-domain/domain/transactions";
 
 /** Max insights this wrapper surfaces. */
 const MAX_VISIBLE = 3;
@@ -47,9 +50,16 @@ export function useFinykInsights(): Insight[] {
   }, [mirrorTick]);
 
   const slots = useFinykStorageSlots();
+  // Дзеркало Mono несе тільки банк. Ручні витрати лежать у storage-слотах,
+  // і без них хабова плашка мовчала б про готівку, яку модульний Огляд уже
+  // рахує (браузерна перевірка 2026-08-31).
   const statTransactions = useMemo(
-    () => filterStatTransactions(transactions, slots.excludedStatTxIds),
-    [transactions, slots.excludedStatTxIds],
+    () =>
+      filterStatTransactions(
+        withManualExpenses(transactions, slots.manualExpenses),
+        slots.excludedStatTxIds,
+      ),
+    [transactions, slots.manualExpenses, slots.excludedStatTxIds],
   );
 
   const overrunInsight = useBudgetOverrunInsight({

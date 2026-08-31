@@ -180,6 +180,19 @@ const MONTHLY_PLAN_UPSERT_SPEC: TableSpec = {
   setIndent: 7,
 };
 
+// Перенос власності pushup-даних routine → fizruk (канон routine.md §10,
+// рішення 2026-08-30). Форма — дзеркало `nutrition_water_log`.
+const PUSHUPS_UPSERT_SPEC: TableSpec = {
+  table: "fizruk_pushups",
+  insertClause: `INSERT INTO fizruk_pushups (user_id, date_key, reps, updated_at)
+     VALUES (?, ?, ?, ?)`,
+  conflictTarget: ["user_id", "date_key"],
+  updateColumns: [{ column: "reps" }, { column: "updated_at" }],
+  upsertGuard: "strictly-newer",
+  conflictIndent: 5,
+  setIndent: 7,
+};
+
 const WORKOUT_TEMPLATE_UPSERT_SPEC: TableSpec = {
   table: "fizruk_workout_templates",
   insertClause: `INSERT INTO fizruk_workout_templates
@@ -237,6 +250,7 @@ const INJURY_UPSERT_SPEC: TableSpec = {
 export const MEASUREMENT_UPSERT_SQL = buildLwwUpsert(MEASUREMENT_UPSERT_SPEC);
 export const DAILY_LOG_UPSERT_SQL = buildLwwUpsert(DAILY_LOG_UPSERT_SPEC);
 export const MONTHLY_PLAN_UPSERT_SQL = buildLwwUpsert(MONTHLY_PLAN_UPSERT_SPEC);
+export const PUSHUPS_UPSERT_SQL = buildLwwUpsert(PUSHUPS_UPSERT_SPEC);
 export const WORKOUT_TEMPLATE_UPSERT_SQL = buildLwwUpsert(
   WORKOUT_TEMPLATE_UPSERT_SPEC,
 );
@@ -351,6 +365,20 @@ export async function setMonthlyPlan(
   await client.run(MONTHLY_PLAN_UPSERT_SQL, [
     userId,
     monthlyPlan.dataJson ?? "{}",
+    clientTs,
+  ]);
+}
+
+export async function setPushups(
+  client: SqliteMigrationClient,
+  dateKey: string,
+  reps: number,
+  { userId, clientTs }: DualWriteRuntime,
+): Promise<void> {
+  await client.run(PUSHUPS_UPSERT_SQL, [
+    userId,
+    dateKey,
+    toIntOrNull(reps) ?? 0,
     clientTs,
   ]);
 }

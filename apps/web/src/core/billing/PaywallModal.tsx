@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@shared/components/ui/Button";
 import { Modal } from "@shared/components/ui/Modal";
 import { ANALYTICS_EVENTS, trackEvent } from "../observability/analytics";
-import { COMMERCE_SURFACES_ENABLED } from "../lib/betaSurfaces";
 
 /**
  * Pro-gate modal (initiative 0010 Phase 4.1).
@@ -99,27 +98,14 @@ export function PaywallModal({
       // slot per Motion #17) live inside <Modal>; we add no new ambient
       // here. The CTA hover state is the single RESPONSE.
       panelClassName="bg-gradient-to-b from-brand/8 to-surface border-brand/20"
-      // Beta: the purchase CTA goes, the explanation stays. Dropping the
-      // whole modal would be worse than keeping it — the gated call-sites
-      // short-circuit on `requireAccess() === false`, so with no modal the
-      // button would simply do nothing and the user would be left guessing.
-      // The plan itself is owned by the server (`aiQuota.ts` reads
-      // `getUserPlan`), so we cannot honestly unlock the feature client-side
-      // either; the honest beta state is "locked, and not for sale yet".
       footer={
         <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
-          <Button
-            variant={COMMERCE_SURFACES_ENABLED ? "ghost" : "primary"}
-            size="md"
-            onClick={onClose}
-          >
-            {COMMERCE_SURFACES_ENABLED ? dismissLabel : "Зрозуміло"}
+          <Button variant="ghost" size="md" onClick={onClose}>
+            {dismissLabel}
           </Button>
-          {COMMERCE_SURFACES_ENABLED && (
-            <Button variant="primary" size="md" onClick={handleCta}>
-              {ctaLabel}
-            </Button>
-          )}
+          <Button variant="primary" size="md" onClick={handleCta}>
+            {ctaLabel}
+          </Button>
         </div>
       }
     >

@@ -1,7 +1,6 @@
 import { useInRouterContext, useNavigate } from "react-router-dom";
 import { Button } from "@shared/components/ui/Button";
 import { usePlan } from "./usePlan";
-import { COMMERCE_SURFACES_ENABLED } from "../lib/betaSurfaces";
 
 /**
  * Trial-expiry banner (initiative 0010 Phase 4 / audit `2026-05-13-revenue-monetization-roast.md` P1-9).
@@ -80,9 +79,6 @@ export function TrialBanner(props: TrialBannerProps = {}) {
   // lands on a `/pricing` that 404s while commerce is hidden. Bailing out here
   // rather than inside `TrialBannerInner` also skips `usePlan()`, so a hidden
   // build never fires the `/api/billing/status` request at all.
-  if (!COMMERCE_SURFACES_ENABLED) {
-    return null;
-  }
   return <TrialBannerInner {...props} />;
 }
 

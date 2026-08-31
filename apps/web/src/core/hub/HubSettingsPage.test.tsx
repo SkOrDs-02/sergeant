@@ -24,15 +24,6 @@ import { SETTINGS_SECTIONS_CATALOG } from "./settingsSectionsCatalog";
 // the test still exercises the `readSettingsGroupParam()` mount path.
 // `QueryClientProvider` is required since L-2 (2026-08-08): the billing-
 // return reader calls `useQueryClient()` unconditionally.
-// This suite pins the behaviour of the commerce/legal surfaces as they look
-// when SHOWN. Both are hidden by default for the closed beta, so the gate is
-// forced on here — otherwise re-enabling them later would ship against zero
-// coverage. The hidden state is covered in `core/lib/betaSurfaces.hidden.test.tsx`.
-vi.mock("../lib/betaSurfaces", () => ({
-  COMMERCE_SURFACES_ENABLED: true,
-  LEGAL_SURFACES_ENABLED: true,
-}));
-
 function createTestQueryClient(): QueryClient {
   return new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },

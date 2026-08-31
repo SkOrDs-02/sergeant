@@ -100,6 +100,12 @@ export interface SqliteFizrukCache {
    * would make "зняти позначку" indistinguishable from "видалити".
    */
   injuries: CachedInjury[];
+  /**
+   * Лічильник віджимань: `dateKey → reps` (device-local `YYYY-MM-DD`,
+   * ADR-0078). Перенос власності routine → fizruk (канон `routine.md` §10,
+   * рішення 2026-08-30). Порожній обʼєкт — «рядків ще немає».
+   */
+  pushupsByDate: Record<string, number>;
   /** ISO timestamp of the last successful refresh, or null. */
   refreshedAt: string | null;
 }
@@ -112,6 +118,7 @@ const EMPTY_CACHE: SqliteFizrukCache = {
   monthlyPlan: null,
   workoutTemplates: [],
   injuries: [],
+  pushupsByDate: {},
   refreshedAt: null,
 };
 
@@ -391,6 +398,7 @@ export async function refreshFizrukSqliteState(
     monthlyPlanRows,
     workoutTemplateRows,
     injuryRows,
+    pushupRows,
   ] = await Promise.all([
     client.all<WorkoutRow>(
       `SELECT id, started_at, ended_at, note, groups_json,
@@ -456,6 +464,12 @@ export async function refreshFizrukSqliteState(
         ORDER BY started_at DESC, id ASC`,
       [userId],
     ),
+    client.all<{ date_key: string; reps: number }>(
+      `SELECT date_key, reps
+         FROM fizruk_pushups
+        WHERE user_id = ?`,
+      [userId],
+    ),
   ]);
 
   // Build sets-by-item map first.
@@ -487,6 +501,10 @@ export async function refreshFizrukSqliteState(
   const monthlyPlan = rowToMonthlyPlan(monthlyPlanRows[0]);
   const workoutTemplates = workoutTemplateRows.map(rowToWorkoutTemplate);
   const injuries = injuryRows.map(rowToInjury);
+  const pushupsByDate: Record<string, number> = {};
+  for (const row of pushupRows) {
+    pushupsByDate[row.date_key] = row.reps;
+  }
 
   if (seq <= publishedSeq) return cache;
   publishedSeq = seq;
@@ -498,6 +516,7 @@ export async function refreshFizrukSqliteState(
     monthlyPlan,
     workoutTemplates,
     injuries,
+    pushupsByDate,
     // eslint-disable-next-line no-restricted-syntax -- cache-freshness stamp: UTC wall-clock instant, not a Kyiv day boundary
     refreshedAt: new Date().toISOString(),
   };

@@ -20,6 +20,7 @@ const slotsValue = {
   subscriptions: [] as unknown[],
   dismissedRecurring: [] as string[],
   excludedStatTxIds: [] as string[],
+  manualExpenses: [] as unknown[],
 };
 vi.mock("./useFinykStorageSlots", () => ({
   useFinykStorageSlots: () => slotsValue,
@@ -32,6 +33,8 @@ beforeEach(() => {
   vi.setSystemTime(new Date(2026, 5, 15, 12, 0, 0));
   cachedState.transactions = [];
   slotsValue.excludedStatTxIds = [];
+  slotsValue.manualExpenses = [];
+  slotsValue.budgets = [];
 });
 afterEach(() => {
   vi.useRealTimers();
@@ -93,5 +96,43 @@ describe("useFinykInsights", () => {
     expect(result.current.some((i) => i.id.includes("coffee"))).toBe(false);
 
     slotsValue.txCategories = {};
+  });
+
+  // Регресія (браузерна перевірка 2026-08-31): дзеркало Mono несе лише банк,
+  // а готівкова витрата живе в storage-слотах. До фікса на одному екрані
+  // картка ліміту казала «перевищено», а інсайт тих самих грошей не бачив.
+  it("бачить перевищення ліміту, зроблене ручною готівковою витратою", () => {
+    slotsValue.budgets = [
+      {
+        id: "b1",
+        type: "limit",
+        period: "month",
+        categoryId: "food",
+        limit: 3000,
+      },
+    ];
+    slotsValue.manualExpenses = [
+      {
+        id: "cash-1",
+        amount: 4200,
+        kind: "expense",
+        category: "food",
+        date: "2026-06-15",
+        description: "Тижневі продукти",
+      },
+    ];
+
+    const { result } = renderHook(() => useFinykInsights());
+
+    const overrun = result.current.find((i) =>
+      i.id.startsWith("finyk-budget-overrun"),
+    );
+    expect(overrun).toBeDefined();
+    expect(overrun?.title).toContain("140%");
+    // Префіл чипа «AI» бере ті самі числа, що й заголовок. Роздільник
+    // розрядів у `formatNumberUk` - нерозривний пробіл, не звичайний.
+    expect(overrun?.askAiPrompt).toMatch(
+      /4\u00a0200 грн із бюджету 3\u00a0000 грн/,
+    );
   });
 });

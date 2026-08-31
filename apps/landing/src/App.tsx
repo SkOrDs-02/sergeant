@@ -4,11 +4,22 @@ import BetaPage from "./pages/BetaPage";
 import AboutPage from "./pages/AboutPage";
 import DataPage from "./pages/DataPage";
 import GuidesPage from "./pages/GuidesPage";
+import RuchnaRobotaPage from "./pages/RuchnaRobotaPage";
+import VyhidPage from "./pages/VyhidPage";
+import HroshiPage from "./pages/HroshiPage";
+import YizhaPage from "./pages/YizhaPage";
+import ZvychkyPage from "./pages/ZvychkyPage";
+import TrenuvanniaPage from "./pages/TrenuvanniaPage";
+import ZvyazkyPage from "./pages/ZvyazkyPage";
+import StanPage from "./pages/StanPage";
+import ObitsyankyPage from "./pages/ObitsyankyPage";
+import PytannyaPage from "./pages/PytannyaPage";
 import GuideMonobankPage from "./pages/GuideMonobankPage";
 import GuideKbzhvPage from "./pages/GuideKbzhvPage";
 import GuideChekyPage from "./pages/GuideChekyPage";
 import GuideFotoKaloriiPage from "./pages/GuideFotoKaloriiPage";
 import GuideBankBezpekaPage from "./pages/GuideBankBezpekaPage";
+import GuideKilkaBankivPage from "./pages/GuideKilkaBankivPage";
 import PrivacyPage from "./pages/PrivacyPage";
 import TermsPage from "./pages/TermsPage";
 import NotFoundPage from "./pages/NotFoundPage";
@@ -25,14 +36,28 @@ export const ROUTES: Record<string, ComponentType> = {
   "/beta": BetaPage,
   "/about": AboutPage,
   "/data": DataPage,
+  "/hroshi": HroshiPage,
+  "/yizha": YizhaPage,
+  "/zvychky": ZvychkyPage,
+  "/trenuvannia": TrenuvanniaPage,
+  "/ruchna-robota": RuchnaRobotaPage,
+  "/vyhid": VyhidPage,
   "/guides": GuidesPage,
+  "/zvyazky": ZvyazkyPage,
+  "/stan": StanPage,
+  "/obitsyanky": ObitsyankyPage,
+  "/pytannya": PytannyaPage,
   "/guides/monobank": GuideMonobankPage,
   "/guides/kbzhv": GuideKbzhvPage,
   "/guides/cheky": GuideChekyPage,
   "/guides/foto-kalorii": GuideFotoKaloriiPage,
   "/guides/bank-bezpeka": GuideBankBezpekaPage,
+  "/guides/kilka-bankiv": GuideKilkaBankivPage,
   "/privacy": PrivacyPage,
   "/terms": TermsPage,
+  // Свій маршрут, щоб prerender поклав у dist/404/index.html тіло цієї
+  // сторінки, а не пререндерене тіло головної (soft-404 в індексі).
+  "/404": NotFoundPage,
 };
 
 /**

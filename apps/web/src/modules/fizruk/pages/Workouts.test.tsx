@@ -557,28 +557,47 @@ describe("Workouts page — home action wiring", () => {
     expect(setView).toHaveBeenCalledWith("log");
   });
 
-  it("'open-catalog' button sets view to 'catalog'", () => {
+  // Каталог і шаблони мають власні маршрути, тож входи навігують, а не
+  // перемикають локальний `view` (інакше «назад» у браузері викидало з
+  // модуля, а посиланням на каталог не поділитись).
+  it("'open-catalog' button navigates to the catalog route", () => {
     const setView = vi.fn();
+    const onNavigate = vi.fn();
     mockedOrchestrator.mockReturnValue(
       makeOrchestrator("home", { setView }) as unknown as ReturnType<
         typeof useWorkoutsOrchestrator
       >,
     );
-    render(<Workouts />);
+    render(<Workouts onNavigate={onNavigate} />);
     fireEvent.click(screen.getByTestId("open-catalog"));
-    expect(setView).toHaveBeenCalledWith("catalog");
+    expect(onNavigate).toHaveBeenCalledWith("catalog");
+    expect(setView).not.toHaveBeenCalled();
   });
 
-  it("'open-templates' button sets view to 'templates'", () => {
-    const setView = vi.fn();
+  it("'open-templates' button navigates to the templates route", () => {
+    const onNavigate = vi.fn();
     mockedOrchestrator.mockReturnValue(
-      makeOrchestrator("home", { setView }) as unknown as ReturnType<
+      makeOrchestrator("home") as unknown as ReturnType<
         typeof useWorkoutsOrchestrator
       >,
     );
-    render(<Workouts />);
+    render(<Workouts onNavigate={onNavigate} />);
     fireEvent.click(screen.getByTestId("open-templates"));
-    expect(setView).toHaveBeenCalledWith("templates");
+    expect(onNavigate).toHaveBeenCalledWith("templates");
+  });
+
+  it("back from a routed section returns to the workouts hub", () => {
+    const setView = vi.fn();
+    const onNavigate = vi.fn();
+    mockedOrchestrator.mockReturnValue(
+      makeOrchestrator("catalog", { setView }) as unknown as ReturnType<
+        typeof useWorkoutsOrchestrator
+      >,
+    );
+    render(<Workouts section="catalog" onNavigate={onNavigate} />);
+    fireEvent.click(screen.getByTestId("back-btn"));
+    expect(onNavigate).toHaveBeenCalledWith("workouts");
+    expect(setView).not.toHaveBeenCalled();
   });
 
   it("passes the routine deep-link callback through the planning tile", () => {

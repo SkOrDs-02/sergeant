@@ -151,22 +151,6 @@ describe("NutritionDashboard", () => {
     expect(toastSuccess).toHaveBeenCalledWith("Денну норму виконано");
   });
 
-  it("renders the AI day-hint card when onFetchDayHint is provided", () => {
-    const onFetchDayHint = vi.fn();
-    render(
-      <NutritionDashboard
-        log={logWith(500)}
-        prefs={GOAL_PREFS}
-        onFetchDayHint={onFetchDayHint}
-        dayHintText="Додай більше білка"
-      />,
-    );
-    expect(screen.getByText("Підказка AI")).toBeInTheDocument();
-    expect(screen.getByText("Додай більше білка")).toBeInTheDocument();
-    fireEvent.click(screen.getByText("Отримати"));
-    expect(onFetchDayHint).toHaveBeenCalled();
-  });
-
   it("dashes the kcal ring on an incomplete day (fewer than 3 meals)", () => {
     render(<NutritionDashboard log={logWithMealCount(1)} prefs={GOAL_PREFS} />);
     const ring = screen.getByLabelText(/Калорії: 300 з 2000/);

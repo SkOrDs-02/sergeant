@@ -32,7 +32,6 @@ function makeState(habits: Habit[]): RoutineState {
     categories: [],
     habits,
     completions: {},
-    pushupsByDate: {},
     habitOrder: habits.map((h) => h.id),
     completionNotes: {},
   };
@@ -69,6 +68,8 @@ describe("useStreakRecordPendingInsight", () => {
       module: "routine",
       title: "Серія: 6 днів",
       subtitle: "Ще один, і рекорд 7",
+      askAiPrompt:
+        "Сьогодні можу побити особистий рекорд стріку (6 днів). Дай коротку мотивацію і підкажи, як не зірватись завтра.",
       action: { type: "navigate", path: "/routine/today" },
       showOn: "both",
     });

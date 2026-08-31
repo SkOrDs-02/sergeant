@@ -6,7 +6,6 @@ import { MeshBackground } from "@shared/components/layout/MeshBackground";
 import { BrandLogo } from "../app/BrandLogo";
 import { PRICING_PATH, SIGN_IN_PATH } from "../app/appPaths";
 import { LegalLinks } from "./LegalLinks";
-import { COMMERCE_SURFACES_ENABLED } from "../lib/betaSurfaces";
 import type { LegalDocument } from "./legalDocumentTypes";
 
 interface LegalDocumentViewProps {
@@ -73,19 +72,15 @@ export function LegalDocumentView({
         <footer className="space-y-4 text-center">
           <LegalLinks />
           <div className="flex flex-wrap items-center justify-center gap-3 text-style-label">
-            {COMMERCE_SURFACES_ENABLED && (
-              <>
-                <Link
-                  to={PRICING_PATH}
-                  className="inline-flex min-h-11 items-center px-1 text-brand-strong underline-offset-4 hover:underline focus-visible:outline-none focus-visible:underline"
-                >
-                  {messages.legal.goToPricing}
-                </Link>
-                <span className="text-subtle" aria-hidden="true">
-                  {"\u00b7"}
-                </span>
-              </>
-            )}
+            <Link
+              to={PRICING_PATH}
+              className="inline-flex min-h-11 items-center px-1 text-brand-strong underline-offset-4 hover:underline focus-visible:outline-none focus-visible:underline"
+            >
+              {messages.legal.goToPricing}
+            </Link>
+            <span className="text-subtle" aria-hidden="true">
+              {"\u00b7"}
+            </span>
             <Link
               to={SIGN_IN_PATH}
               className="inline-flex min-h-11 items-center px-1 text-brand-strong underline-offset-4 hover:underline focus-visible:outline-none focus-visible:underline"

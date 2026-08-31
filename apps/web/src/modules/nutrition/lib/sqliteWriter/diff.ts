@@ -35,7 +35,7 @@
  *
  *   5. **Water log** — `Record<dateKey, volume_ml>` persisted under
  *      `WATER_LOG_KEY`. One row per (user, dateKey) in
- *      `nutrition_water_log`; mirrors the `routine_pushups` shape.
+ *      `nutrition_water_log`; mirrors the `fizruk_pushups` shape.
  *      Stage 11 / PR #070n-dualwrite.
  *
  *   6. **Shopping list** — singleton `ShoppingList` blob persisted under
@@ -182,7 +182,7 @@ export interface RecipeDeleteOp {
 
 /**
  * Stage 11 / PR #070n-dualwrite — water-log per-(user, dateKey) row.
- * Mirrors `routine_pushups`: a row stores a single integer counter
+ * Mirrors `fizruk_pushups`: a row stores a single integer counter
  * keyed by date. There is no soft-delete — `volume_ml = 0` is a valid
  * "reset for that day" state and the diff still emits the op so
  * cross-device LWW resolution converges.

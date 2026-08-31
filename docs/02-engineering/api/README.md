@@ -1,6 +1,6 @@
 # Sergeant API — OpenAPI-специфікація
 
-> **Last touched:** 2026-08-29 by @Skords-01. **Next review:** 2026-12-16.
+> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-01.
 > **Status:** Active
 
 [`openapi.json`](./openapi.json) — згенерований OpenAPI 3.1 specification. Single source of truth — zod-схеми у [`packages/shared/src/schemas/api.ts`](../../../packages/shared/src/schemas/api.ts) + route-каталог у [`packages/shared/src/openapi/routes.ts`](../../../packages/shared/src/openapi/routes.ts). Автогенерований TS-клієнт (`packages/api-client/src/generated/`) виведено з експлуатації ponytail-аудитом (#679) разом зі скриптами генерації та звіркою `api:check-openapi-types`; типи `api-client` тепер пишуться вручну під контрактні тести (Hard Rule #3).

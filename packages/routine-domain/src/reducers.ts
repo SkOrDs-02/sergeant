@@ -470,20 +470,6 @@ export function applyRestoreHabit(
   };
 }
 
-export function applyAddPushupReps(
-  state: RoutineState,
-  reps: unknown,
-): RoutineState {
-  const n = Number(reps);
-  if (!Number.isFinite(n) || n <= 0) return state;
-  const today = dateKeyFromDate(new Date());
-  const cur = state.pushupsByDate?.[today] ?? 0;
-  return {
-    ...state,
-    pushupsByDate: { ...state.pushupsByDate, [today]: cur + n },
-  };
-}
-
 export function applyMoveHabitInOrder(
   state: RoutineState,
   habitId: string,

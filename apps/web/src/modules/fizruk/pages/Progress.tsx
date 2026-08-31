@@ -58,7 +58,7 @@ export function Progress({ onNavigate }: ProgressProps) {
   // тому зважування з екрана «Тіло» (daily_log) сюди не потрапляли.
   const { entries: dailyLogEntries } = useDailyLog();
   const { exercises, musclesUk, primaryGroupsUk } = useExerciseCatalog();
-  const { stats: pushupStats, hasData: hasPushupData } = usePushupActivity();
+  const { stats: pushupStats, logReps: logPushupReps } = usePushupActivity();
 
   const meas = useMemo(() => {
     const latest = entries?.[0] || null;
@@ -375,13 +375,14 @@ export function Progress({ onNavigate }: ProgressProps) {
               />
             )}
 
-            {/* Cross-module activity — real data from another module (not a
-                "no data yet" placeholder), so it stays outside the `hasAny`
-                gate and can show even on an otherwise-empty fizruk profile. */}
-            {hasPushupData && (
+            {/* Легка активність — fizruk-власний лічильник віджимань
+                (перенос власності routine → fizruk, канон routine.md §10,
+                2026-08-30). Поза гейтом `hasAny` навмисно: лог-кнопки і є
+                вхідною точкою на порожньому профілі. */}
+            {loaded && (
               <Card radius="lg">
                 <SectionHeading size="xs" className="mb-3" variant="fizruk">
-                  {messages.fizruk.progress.crossModuleHeading}
+                  {messages.fizruk.progress.lightActivityHeading}
                 </SectionHeading>
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-9 h-9 rounded-xl bg-fizruk/10 text-fizruk-strong dark:text-fizruk flex items-center justify-center shrink-0">
@@ -421,6 +422,24 @@ export function Progress({ onNavigate }: ProgressProps) {
                       align="center"
                     />
                   </div>
+                </div>
+                <div
+                  className="mt-3 flex gap-2"
+                  role="group"
+                  aria-label={messages.fizruk.progress.pushupsQuickAddLabel}
+                >
+                  {[10, 20, 30].map((n) => (
+                    <Button
+                      key={n}
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      className="flex-1 tabular-nums"
+                      onClick={() => logPushupReps(n)}
+                    >
+                      +{n}
+                    </Button>
+                  ))}
                 </div>
               </Card>
             )}

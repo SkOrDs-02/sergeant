@@ -4,6 +4,8 @@
  */
 import { useMemo, useEffect, useRef } from "react";
 import { InsightCard } from "@shared/components/ui/InsightCard";
+import { emitHubBus } from "@shared/lib/modules/hubBus";
+import { useAskAiQuotaExhausted } from "@shared/lib/insights/useAskAiQuota";
 import { Measure } from "@shared/components/ui/Measure";
 import { useProteinLowInsight } from "../hooks/useProteinLowInsight";
 import { useStreakSevenDaysInsight } from "../hooks/useStreakSevenDaysInsight";
@@ -82,9 +84,6 @@ interface NutritionDashboardProps {
   onGoToLog?: (() => void) | undefined;
   onGoToDailyPlan?: (() => void) | undefined;
   onAddMeal?: (() => void) | undefined;
-  onFetchDayHint?: (() => void | Promise<void>) | undefined;
-  dayHintText?: string | undefined;
-  dayHintBusy?: boolean | undefined;
 }
 
 export function NutritionDashboard({
@@ -93,9 +92,6 @@ export function NutritionDashboard({
   onGoToLog,
   onGoToDailyPlan,
   onAddMeal,
-  onFetchDayHint,
-  dayHintText,
-  dayHintBusy,
 }: NutritionDashboardProps) {
   const today = todayISO();
 
@@ -178,6 +174,7 @@ export function NutritionDashboard({
   const activeInsights = [streakInsight, proteinLowInsight]
     .filter(Boolean)
     .slice(0, 2) as NonNullable<typeof proteinLowInsight>[];
+  const askAiDisabled = useAskAiQuotaExhausted();
 
   return (
     <div className="grid min-w-0 gap-3" data-testid="nutrition-dashboard">
@@ -325,6 +322,13 @@ export function NutritionDashboard({
               }
             }
           }}
+          onAskAi={() =>
+            emitHubBus("openChat", {
+              message: insight.askAiPrompt,
+              autoSend: false,
+            })
+          }
+          askAiDisabled={askAiDisabled}
           className="mx-0"
         />
       ))}
@@ -337,31 +341,6 @@ export function NutritionDashboard({
       />
 
       <WaterTrackerCard goalMl={prefs.waterGoalMl ?? 2000} />
-
-      {typeof onFetchDayHint === "function" && (
-        <Card className="p-4">
-          <div className="flex items-center justify-between gap-3 mb-2">
-            <div className="text-style-label text-text">Підказка AI</div>
-            <button
-              type="button"
-              onClick={onFetchDayHint}
-              disabled={dayHintBusy}
-              className="shrink-0 px-3 h-8 pointer-coarse:min-h-[44px] rounded-xl text-style-caption bg-nutrition/10 text-nutrition-strong dark:text-nutrition border border-nutrition/30 hover:bg-nutrition/20 transition-colors disabled:opacity-50"
-            >
-              {dayHintBusy ? "…" : "Отримати"}
-            </button>
-          </div>
-          {dayHintText ? (
-            <p className="text-style-label text-text leading-snug">
-              {dayHintText}
-            </p>
-          ) : (
-            <p className="text-style-caption text-subtle">
-              Аналіз харчування за сьогодні від AI
-            </p>
-          )}
-        </Card>
-      )}
     </div>
   );
 }

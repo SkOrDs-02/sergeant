@@ -6,12 +6,10 @@
 // `snapshotHabit`, `applyRestoreHabit`), completion-операції
 // (`applyToggleHabitCompletion`, `applyMarkAllScheduledHabitsComplete`,
 // `applySetCompletionNote`), порядок
-// (`applyMoveHabitInOrder`, `applySetHabitOrder`) і інші
-// (`applySetPref`, `applyAddPushupReps`).
+// (`applyMoveHabitInOrder`, `applySetHabitOrder`) і інші (`applySetPref`).
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
-  applyAddPushupReps,
   applyCreateCategory,
   applyCreateHabit,
   applyCreateTag,
@@ -754,40 +752,6 @@ describe("routine-domain/reducers — порядок і pref-и", () => {
       const next = applySetPref(s, "foo", 2);
       expect(next.prefs["foo"]).toBe(2);
       expect(next.prefs.showFizrukInCalendar).toBe(true);
-    });
-  });
-
-  describe("applyAddPushupReps", () => {
-    beforeEach(() => {
-      vi.useFakeTimers();
-      vi.setSystemTime(new Date("2026-03-15T12:00:00.000Z"));
-    });
-    afterEach(() => {
-      vi.useRealTimers();
-    });
-
-    it.each([
-      ["NaN", "abc"],
-      ["нуль", 0],
-      ["відʼємне", -5],
-      ["Infinity", Infinity],
-    ])("повертає state без змін для %s", (_, reps) => {
-      const s = baseState();
-      expect(applyAddPushupReps(s, reps)).toBe(s);
-    });
-
-    it("додає reps до сьогоднішнього ключа, акумулює існуюче значення", () => {
-      const today = "2026-03-15";
-      const s = baseState();
-      const first = applyAddPushupReps(s, 10);
-      expect(first.pushupsByDate[today]).toBe(10);
-      const second = applyAddPushupReps(first, 5);
-      expect(second.pushupsByDate[today]).toBe(15);
-    });
-
-    it("приймає reps як рядок-число", () => {
-      const next = applyAddPushupReps(baseState(), "7");
-      expect(next.pushupsByDate["2026-03-15"]).toBe(7);
     });
   });
 });

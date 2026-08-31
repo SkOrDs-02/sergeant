@@ -50,6 +50,10 @@ export function useStreakRecordPendingInsight(
       module: "routine",
       title: `Серія: ${currentStreak} ${pluralDays(currentStreak)}`,
       subtitle: `Ще один, і рекорд ${longestStreak}`,
+      // Стрік тут — cross-habit агрегат (flexibleMaxActiveStreak по ВСІХ
+      // активних звичках разом), не конкретна звичка — те саме, що й title
+      // вище, без назви. Founder-рішення 2026-08-30: без підстановки назви.
+      askAiPrompt: `Сьогодні можу побити особистий рекорд стріку (${currentStreak} ${pluralDays(currentStreak)}). Дай коротку мотивацію і підкажи, як не зірватись завтра.`,
       action: { type: "navigate", path: "/routine/today" },
       showOn: "both",
     };

@@ -67,7 +67,6 @@ type RoutineState = {
   categories?: unknown[];
   habits?: RoutineHabit[];
   completions?: Record<string, unknown>;
-  pushupsByDate?: Record<string, unknown>;
   habitOrder?: string[];
   completionNotes?: Record<string, unknown>;
 };
@@ -129,7 +128,6 @@ async function applyRoutinePreset(preset: RoutinePreset): Promise<boolean> {
     categories: Array.isArray(base.categories) ? base.categories : [],
     habits: nextHabits,
     completions: base.completions || {},
-    pushupsByDate: base.pushupsByDate || {},
     habitOrder: nextOrder,
     completionNotes: base.completionNotes || {},
   };

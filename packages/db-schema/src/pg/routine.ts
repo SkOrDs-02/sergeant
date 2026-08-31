@@ -259,6 +259,10 @@ export const routinePrefs = pgTable("routine_prefs", {
  * Postgres schema for `routine_pushups` table.
  *
  * Один рядок на (user, date) — кількість відтискань за день.
+ *
+ * Власність перенесено у `fizruk_pushups` (канон routine.md §10, Phase B):
+ * нові клієнти сюди не пишуть, таблиця жива лише для старих клієнтів.
+ * DROP — окремою пізнішою міграцією за Hard Rule #4 (двофазність).
  */
 export const routinePushups = pgTable(
   "routine_pushups",

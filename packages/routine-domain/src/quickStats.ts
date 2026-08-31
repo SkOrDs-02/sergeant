@@ -27,11 +27,15 @@ export function computeRoutineQuickStats(
   completions: Record<string, string[]>,
   todayKey: string,
 ): RoutineQuickStats {
+  // `includeOnce` — todayDone/todayTotal є лічильником чек-листа дня, а не
+  // метрикою: разова подія в списку видима, тож і тут рахується (канон
+  // §7 п.2). Стрік нижче лишається метрикою — там `once` не бере участі.
   const { completed, scheduled } = completionRateForRange(
     habits,
     completions,
     todayKey,
     todayKey,
+    { includeOnce: true },
   );
   return {
     todayDone: completed,

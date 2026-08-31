@@ -59,7 +59,6 @@ function makeState(
     categories: [],
     habits,
     completions,
-    pushupsByDate: {},
     habitOrder: habits.map((h) => h.id),
     completionNotes: {},
   };

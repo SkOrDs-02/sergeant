@@ -22,14 +22,22 @@ function series(
 }
 
 describe("correlationsFromSeries", () => {
+  // Фікстури тримають рівно MIN_N=10 днів: поріг мовчання піднято з 5 після
+  // закриття бети, і на коротших рядах пара мовчить незалежно від сили
+  // звʼязку. Береш ці кейси за зразок — не вкорочуй ряд, інакше тест почне
+  // зеленіти з причини «замало днів», а не з тієї, яку перевіряє.
+  const RAMP_10 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+  // Зигзаг проти рампи: |r| ≈ 0.17, тобто впевнено під NOTABLE_R.
+  const ZIGZAG_10 = [1, 2, 1, 2, 1, 2, 1, 2, 1, 2];
+
   it("emits the positive phrase for a strong workout_volume↔spending link", () => {
     const out = correlationsFromSeries(
       series(
         {
-          spending: [1, 2, 3, 4, 5],
-          workout_volume: [10, 20, 30, 40, 50],
+          spending: RAMP_10,
+          workout_volume: RAMP_10.map((n) => n * 10),
         },
-        5,
+        10,
       ),
     );
     expect(out).toHaveLength(1);
@@ -41,24 +49,27 @@ describe("correlationsFromSeries", () => {
     const out = correlationsFromSeries(
       series(
         {
-          spending: [1, 2, 3, 4, 5],
-          workout_volume: [50, 40, 30, 20, 10],
+          spending: RAMP_10,
+          workout_volume: [...RAMP_10].reverse().map((n) => n * 10),
         },
-        5,
+        10,
       ),
     );
     expect(out).toHaveLength(1);
     expect(out[0]).toContain("у дні тренувань ти витрачаєш менше");
   });
 
-  it("skips pairs with fewer than 5 common days", () => {
+  it("skips pairs with fewer than MIN_N common days", () => {
+    // Рівно на день коротше за поріг, і з |r| = 1: мовчання має вирішувати
+    // саме довжина ряду, а не сила звʼязку.
+    const nine = RAMP_10.slice(0, 9);
     const out = correlationsFromSeries(
       series(
         {
-          spending: [1, 2, 3, 4],
-          workout_volume: [10, 20, 30, 40],
+          spending: nine,
+          workout_volume: nine.map((n) => n * 10),
         },
-        4,
+        9,
       ),
     );
     expect(out).toEqual([]);
@@ -68,29 +79,27 @@ describe("correlationsFromSeries", () => {
     const out = correlationsFromSeries(
       series(
         {
-          spending: [1, 2, 3, 4, 5, 6],
-          // near-orthogonal ordering → |r| well under 0.4
-          workout_volume: [3, 1, 4, 1, 5, 2],
+          spending: RAMP_10,
+          workout_volume: ZIGZAG_10,
         },
-        6,
+        10,
       ),
     );
     expect(out).toEqual([]);
   });
 
   it("caps at 3 lines when more pairs are notable", () => {
-    const ramp = [1, 2, 3, 4, 5, 6];
     const out = correlationsFromSeries(
       series(
         {
-          spending: ramp,
-          workout_volume: ramp,
-          protein: ramp,
-          kcal: ramp,
-          habit_rate: ramp,
-          weight: ramp,
+          spending: RAMP_10,
+          workout_volume: RAMP_10,
+          protein: RAMP_10,
+          kcal: RAMP_10,
+          habit_rate: RAMP_10,
+          weight: RAMP_10,
         },
-        6,
+        10,
       ),
     );
     expect(out).toHaveLength(3);
@@ -102,10 +111,10 @@ describe("correlationsFromSeries", () => {
     const out = correlationsFromSeries(
       series(
         {
-          habit_rate: [10, 30, 50, 70, 90],
-          wellbeing: [1, 2, 3, 4, 5],
+          habit_rate: RAMP_10.map((n) => n * 10),
+          wellbeing: RAMP_10,
         },
-        5,
+        10,
       ),
     );
     expect(out).toHaveLength(1);
@@ -116,12 +125,11 @@ describe("correlationsFromSeries", () => {
     const out = correlationsFromSeries(
       series(
         {
-          // Same near-orthogonal ordering as the spending↔workout_volume
-          // weak-correlation case above → |r| well under 0.4.
-          workouts: [1, 2, 3, 4, 5, 6],
-          habit_rate: [3, 1, 4, 1, 5, 2],
+          // Той самий зигзаг проти рампи, що й у слабкій парі вище.
+          workouts: RAMP_10,
+          habit_rate: ZIGZAG_10,
         },
-        6,
+        10,
       ),
     );
     expect(out).toEqual([]);

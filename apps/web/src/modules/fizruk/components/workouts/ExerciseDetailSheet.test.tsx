@@ -214,28 +214,22 @@ describe("ExerciseDetailSheet – description and level", () => {
 
 describe("ExerciseDetailSheet – honest empty detail (QA 2026-08-23)", () => {
   it("says outright when there is no description and no photo", () => {
-    // Вбудований каталог не містить ані описів, ані фото — аркуш
-    // відкривався порожнім під кнопкою «Опис і фото вправи».
+    // Опис має кожна вправа вбудованого каталогу; порожньою лишається
+    // тільки вправа, яку людина додала сама.
     render(<ExerciseDetailSheet {...baseProps()} />);
-    expect(
-      screen.getByText(/Опису й фото для цієї вправи поки немає/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Опису для цієї вправи немає/)).toBeInTheDocument();
   });
 
   it("stays quiet when the exercise actually has a description", () => {
     const ex = makeExercise({ description: "Класична базова вправа" });
     render(<ExerciseDetailSheet {...baseProps({ selected: ex })} />);
-    expect(
-      screen.queryByText(/Опису й фото для цієї вправи поки немає/),
-    ).toBeNull();
+    expect(screen.queryByText(/Опису для цієї вправи немає/)).toBeNull();
   });
 
   it("stays quiet when the exercise has photos", () => {
     const ex = makeExercise({ images: ["https://example.com/img1.jpg"] });
     render(<ExerciseDetailSheet {...baseProps({ selected: ex })} />);
-    expect(
-      screen.queryByText(/Опису й фото для цієї вправи поки немає/),
-    ).toBeNull();
+    expect(screen.queryByText(/Опису для цієї вправи немає/)).toBeNull();
   });
 });
 

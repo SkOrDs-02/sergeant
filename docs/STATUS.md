@@ -1,6 +1,6 @@
 # Sergeant — Панель керування
 
-> **Last touched:** 2026-08-30 by docs:gen-status. **Next review:** 2026-09-06.
+> **Last touched:** 2026-08-31 by docs:gen-status. **Next review:** 2026-09-07.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED, ОКРІМ блоку FOCUS. Редагуй лише між `<!-- FOCUS:START -->` / `<!-- FOCUS:END -->`; решту регенеруй через `pnpm docs:gen-status`. -->
@@ -30,14 +30,14 @@
 - [#74](https://github.com/Skords-01/Sergeant/pull/74) — feat(agents): add scheduled entropy janitors (doc-drift, dead-code, dep-cycles) _(2026-06-30)_
 - [#3665](https://github.com/Skords-01/Sergeant/pull/3665) — docs(web): add ADR-0067 engagement mechanism standardization _(2026-06-20)_
 
-## 🔵 В роботі — 65 відкритих
+## 🔵 В роботі — 74 відкритих
 
 | Трекер                           | Відкрито |
 | -------------------------------- | -------- |
-| Ініціативи                       | 5        |
-| Планування                       | 26       |
+| Ініціативи                       | 6        |
+| Планування                       | 33       |
 | Launch / запуск                  | 12       |
-| Аудити й прожарки                | 17       |
+| Аудити й прожарки                | 18       |
 | Security hardening               | 1        |
 | Техборг                          | 4        |
 | Superpowers — плани впровадження | 0        |
@@ -60,6 +60,7 @@ Items із `Agent-ready: yes` або явним `Phase/Stage X next|blocked|pend
 - [`90-work/initiatives/0022-import-from-external-trackers.md`](./90-work/initiatives/0022-import-from-external-trackers.md) — 0022 — Імпорт даних з зовнішніх трекерів (CSV-onboarding) → **agent-ready** _(Ініціативи)_
 - [`90-work/initiatives/0023-photo-analysis-multi-item.md`](./90-work/initiatives/0023-photo-analysis-multi-item.md) — 0023 — Розбивка фото-аналізу на позиції (correction UX) → **agent-ready** _(Ініціативи)_
 - [`90-work/initiatives/0024-ai-memory-source-coverage.md`](./90-work/initiatives/0024-ai-memory-source-coverage.md) — 0024 — Памʼять ШІ: звузити список джерел до тих, що справді пишуться → **agent-ready** _(Ініціативи)_
+- [`90-work/initiatives/0025-posthog-ai-observability.md`](./90-work/initiatives/0025-posthog-ai-observability.md) — 0025 — PostHog AI Observability для AI-шару (traces + evals) → **agent-ready** _(Ініціативи)_
 - [`90-work/planning/specs/anonymous-local-first-persistence.md`](./90-work/planning/specs/anonymous-local-first-persistence.md) — Спека: персистентність даних незалогіненого користувача → **agent-ready** _(Планування)_
 
 ## 🧱 Стек

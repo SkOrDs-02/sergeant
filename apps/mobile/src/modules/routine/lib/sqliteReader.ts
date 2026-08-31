@@ -12,7 +12,6 @@
  *   - `routine_tags` → `Tag[]`
  *   - `routine_categories` → `Category[]`
  *   - `routine_prefs` → `RoutinePrefs`
- *   - `routine_pushups` → `Record<string, number>`
  *   - `routine_habit_order` → `string[]`
  *   - `routine_completion_notes` → `Record<string, string>`
  *
@@ -96,7 +95,6 @@ export interface SqliteRoutineStateCache {
   tags: Tag[];
   categories: Category[];
   prefs: RoutinePrefs;
-  pushupsByDate: Record<string, number>;
   habitOrder: string[];
   completionNotes: Record<string, string>;
   refreshedAt: string | null;
@@ -107,7 +105,6 @@ const EMPTY_STATE_CACHE: SqliteRoutineStateCache = {
   tags: [],
   categories: [],
   prefs: {},
-  pushupsByDate: {},
   habitOrder: [],
   completionNotes: {},
   refreshedAt: null,
@@ -128,23 +125,20 @@ export async function refreshSqliteRoutineState(
   client: SqliteMigrationClient,
   userId: string,
 ): Promise<SqliteRoutineStateCache> {
-  const [habits, tags, categories, prefs, pushups, order, notes] =
-    await Promise.all([
-      readHabits(client, userId),
-      readTags(client, userId),
-      readCategories(client, userId),
-      readPrefs(client, userId),
-      readPushups(client, userId),
-      readHabitOrder(client, userId),
-      readCompletionNotes(client, userId),
-    ]);
+  const [habits, tags, categories, prefs, order, notes] = await Promise.all([
+    readHabits(client, userId),
+    readTags(client, userId),
+    readCategories(client, userId),
+    readPrefs(client, userId),
+    readHabitOrder(client, userId),
+    readCompletionNotes(client, userId),
+  ]);
 
   stateCache = {
     habits,
     tags,
     categories,
     prefs,
-    pushupsByDate: pushups,
     habitOrder: order,
     completionNotes: notes,
     refreshedAt: new Date().toISOString(),
@@ -174,7 +168,6 @@ export function setCachedSqliteRoutineState(
     | "tags"
     | "categories"
     | "prefs"
-    | "pushupsByDate"
     | "habitOrder"
     | "completionNotes"
   >,
@@ -184,7 +177,6 @@ export function setCachedSqliteRoutineState(
     tags: state.tags,
     categories: state.categories,
     prefs: state.prefs,
-    pushupsByDate: state.pushupsByDate,
     habitOrder: state.habitOrder,
     completionNotes: state.completionNotes,
     refreshedAt: new Date().toISOString(),
@@ -334,18 +326,6 @@ async function readPrefs(
   >(`SELECT data_json FROM routine_prefs WHERE user_id = ?`, [userId]);
   if (rows.length === 0) return {};
   return safeJsonParse<RoutinePrefs>(rows[0]!.data_json, {});
-}
-
-async function readPushups(
-  client: SqliteMigrationClient,
-  userId: string,
-): Promise<Record<string, number>> {
-  const rows = await client.all<
-    { date_key: string; reps: number } & Record<string, unknown>
-  >(`SELECT date_key, reps FROM routine_pushups WHERE user_id = ?`, [userId]);
-  const out: Record<string, number> = {};
-  for (const row of rows) out[row.date_key] = row.reps;
-  return out;
 }
 
 async function readHabitOrder(

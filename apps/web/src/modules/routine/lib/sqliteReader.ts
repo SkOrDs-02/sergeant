@@ -9,7 +9,6 @@
  *   - `routine_tags` → `Tag[]`
  *   - `routine_categories` → `Category[]`
  *   - `routine_prefs` → `RoutinePrefs`
- *   - `routine_pushups` → `Record<string, number>`
  *   - `routine_habit_order` → `string[]`
  *   - `routine_completion_notes` → `Record<string, string>`
  *
@@ -129,7 +128,6 @@ export interface SqliteRoutineStateCache {
   tags: Tag[];
   categories: Category[];
   prefs: RoutinePrefs;
-  pushupsByDate: Record<string, number>;
   habitOrder: string[];
   completionNotes: Record<string, string>;
   /** Третій стан дня — `habitId → dateKey → HabitSkip` (Хвиля 4, канон §5). */
@@ -142,7 +140,6 @@ const EMPTY_STATE_CACHE: SqliteRoutineStateCache = {
   tags: [],
   categories: [],
   prefs: {},
-  pushupsByDate: {},
   habitOrder: [],
   completionNotes: {},
   skips: {},
@@ -165,13 +162,12 @@ export async function refreshSqliteRoutineState(
   userId: string,
 ): Promise<SqliteRoutineStateCache> {
   const seq = ++stateRefreshSeq;
-  const [habits, tags, categories, prefs, pushups, order, notes, skips] =
+  const [habits, tags, categories, prefs, order, notes, skips] =
     await Promise.all([
       readHabits(client, userId),
       readTags(client, userId),
       readCategories(client, userId),
       readPrefs(client, userId),
-      readPushups(client, userId),
       readHabitOrder(client, userId),
       readCompletionNotes(client, userId),
       readHabitSkips(client, userId),
@@ -184,7 +180,6 @@ export async function refreshSqliteRoutineState(
     tags,
     categories,
     prefs,
-    pushupsByDate: pushups,
     habitOrder: order,
     completionNotes: notes,
     skips,
@@ -218,7 +213,6 @@ export function setCachedSqliteRoutineState(
     | "tags"
     | "categories"
     | "prefs"
-    | "pushupsByDate"
     | "habitOrder"
     | "completionNotes"
     | "skips"
@@ -232,7 +226,6 @@ export function setCachedSqliteRoutineState(
     tags: state.tags,
     categories: state.categories,
     prefs: state.prefs,
-    pushupsByDate: state.pushupsByDate,
     habitOrder: state.habitOrder,
     completionNotes: state.completionNotes,
     skips: state.skips,
@@ -403,18 +396,6 @@ async function readPrefs(
   const first = rows[0];
   if (!first) return {};
   return safeJsonParse<RoutinePrefs>(first.data_json, {});
-}
-
-async function readPushups(
-  client: SqliteMigrationClient,
-  userId: string,
-): Promise<Record<string, number>> {
-  const rows = await client.all<
-    { date_key: string; reps: number } & Record<string, unknown>
-  >(`SELECT date_key, reps FROM routine_pushups WHERE user_id = ?`, [userId]);
-  const out: Record<string, number> = {};
-  for (const row of rows) out[row.date_key] = row.reps;
-  return out;
 }
 
 async function readHabitOrder(
