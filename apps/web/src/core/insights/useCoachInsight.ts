@@ -17,6 +17,12 @@ import {
 } from "@nutrition/lib/nutritionStorage";
 import { loadRoutineState } from "@routine/lib/routineStorage";
 import { dateKeyFromDate } from "@sergeant/routine-domain";
+import {
+  deviceMondayStart,
+  countModuleSignals,
+  MIN_SIGNAL_MODULES,
+} from "@sergeant/shared";
+import { workoutTonnageKg } from "@sergeant/fizruk-domain";
 import { newAdviceId } from "../observability/adviceTelemetry";
 
 /* eslint-disable sergeant-design/prefer-kyiv-time, @typescript-eslint/no-non-null-assertion --
@@ -157,9 +163,7 @@ function aggregateCurrentSnapshot(): CoachSnapshot {
 
   const now = new Date();
   const mondayOffset = (now.getDay() + 6) % 7;
-  const weekStart = new Date(now);
-  weekStart.setDate(now.getDate() - mondayOffset);
-  weekStart.setHours(0, 0, 0, 0);
+  const weekStart = new Date(deviceMondayStart(now));
 
   // AI-NOTE: Делегуємо у `calcFinykPeriodAggregate` (`@sergeant/finyk-domain`)
   // замість власного парсингу `finyk_tx_cache`/`finyk_hidden_txs`/
@@ -205,14 +209,10 @@ function aggregateCurrentSnapshot(): CoachSnapshot {
         if (!w.endedAt) return false;
         return new Date(w.startedAt) >= weekStart;
       });
-      let totalVolume = 0;
-      for (const w of weekWorkouts) {
-        for (const item of w.items) {
-          for (const set of item.sets ?? []) {
-            totalVolume += set.weightKg * set.reps;
-          }
-        }
-      }
+      const totalVolume = weekWorkouts.reduce(
+        (sum, w) => sum + workoutTonnageKg(w),
+        0,
+      );
       const completed = allWorkouts.filter((w) => w.endedAt);
       const last = [...completed].sort(
         (a, b) =>
@@ -305,17 +305,13 @@ function aggregateCurrentSnapshot(): CoachSnapshot {
 /**
  * Скільки модулів дали ЗМІСТОВНИЙ сигнал за тиждень.
  *
- * Рахуємо не «поле не null», а наявність даних: `finyk` у снапшоті не
- * nullable і приходить із нулями навіть тоді, коли транзакцій немає, а
- * `fizruk` матеріалізується вже за самим фактом теплого кешу.
+ * Тонкий делегат `countModuleSignals` (`@sergeant/shared`) — той самий
+ * рахунок, яким сервер гейтить дайджест (`countDigestSignalModules` в
+ * `apps/server/src/modules/digest/weekly-digest.ts`), канонізовано за
+ * аудитом §2.23 замість двох незалежних копій.
  */
 export function coachSnapshotSignals(snapshot: CoachSnapshot): number {
-  let signals = 0;
-  if (snapshot.finyk.txCount > 0) signals++;
-  if ((snapshot.fizruk?.workoutsCount ?? 0) > 0) signals++;
-  if ((snapshot.nutrition?.daysLogged ?? 0) > 0) signals++;
-  if ((snapshot.routine?.habitCount ?? 0) > 0) signals++;
-  return signals;
+  return countModuleSignals(snapshot);
 }
 
 /**
@@ -336,9 +332,9 @@ export function coachSnapshotSignals(snapshot: CoachSnapshot): number {
  * Поріг навмисно мінімальний і безспірний: нуль сигналів — мовчимо. Ширша
  * ГРАДАЦІЯ впевненості (скільки саме даних треба на впевнене твердження) —
  * окремий рядок Хвилі 4, і вона потребує продуктового рішення, якого канон
- * поки не дає.
+ * поки не дає. Число саме — `MIN_SIGNAL_MODULES` з `@sergeant/shared`,
+ * той самий, який гейтить дайджест у `weekly-digest.ts`.
  */
-const MIN_SIGNAL_MODULES = 1;
 
 async function fetchCoachInsight(): Promise<string | null> {
   const snapshot = aggregateCurrentSnapshot();

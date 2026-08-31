@@ -17,7 +17,12 @@
  *    window (default 30 days).
  */
 
-import { kyivMondayStartMs } from "@sergeant/shared";
+import { finiteOrNull, kyivMondayStartMs } from "@sergeant/shared";
+
+import {
+  workoutDurationSec as canonWorkoutDurationSec,
+  workoutTonnageKg,
+} from "../../lib/workoutStats.js";
 
 import { computeWeeklyStreakBreakdown } from "./weeklyStreak.js";
 
@@ -27,16 +32,20 @@ import type {
   DashboardWorkoutInput,
 } from "./types.js";
 
+/**
+ * `workoutTonnageKg`/`workoutDurationSec` take an unexported, loosely
+ * typed `StatsWorkout` (index-signature-carrying, for arbitrary persisted
+ * shapes). `DashboardWorkoutInput` is a strict named interface without one:
+ * TS's index-signature assignability rule blocks a direct call even
+ * though every field lines up. The cast documents that this is a real
+ * structural match, not a type escape hatch.
+ */
+type CanonWorkoutInput = Parameters<typeof workoutTonnageKg>[0];
+
 /** Default lookback window for `weightChangeKg`. */
 export const DEFAULT_WEIGHT_WINDOW_DAYS = 30;
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
-
-function toFiniteNumber(v: unknown): number | null {
-  if (v == null || v === "") return null;
-  const n = Number(v);
-  return Number.isFinite(n) ? n : null;
-}
 
 function localYmdKey(ms: number): string {
   const d = new Date(ms);
@@ -52,33 +61,6 @@ function isCompletedWorkout(
   endedAt: string;
 } {
   return typeof w?.endedAt === "string" && w.endedAt.length > 0;
-}
-
-function workoutVolumeKg(w: DashboardWorkoutInput): number {
-  let vol = 0;
-  const items = w?.items ?? [];
-  for (const item of items) {
-    if (item?.type !== "strength") continue;
-    const sets = item?.sets ?? [];
-    for (const s of sets) {
-      const weight = toFiniteNumber(s?.weightKg);
-      const reps = toFiniteNumber(s?.reps);
-      if (weight == null || reps == null) continue;
-      if (weight <= 0 || reps <= 0) continue;
-      vol += weight * reps;
-    }
-  }
-  return vol;
-}
-
-function workoutDurationSec(w: DashboardWorkoutInput, nowMs: number): number {
-  const start =
-    typeof w?.startedAt === "string" ? Date.parse(w.startedAt) : NaN;
-  if (!Number.isFinite(start)) return 0;
-  const end =
-    typeof w?.endedAt === "string" && w.endedAt ? Date.parse(w.endedAt) : nowMs;
-  if (!Number.isFinite(end)) return 0;
-  return Math.max(0, Math.floor((end - start) / 1000));
 }
 
 /**
@@ -155,7 +137,7 @@ export function computeWeeklyTotals(
     if (!Number.isFinite(ms)) continue;
     if (ms < weekStart || ms >= weekEnd) continue;
     count += 1;
-    volumeKg += workoutVolumeKg(w);
+    volumeKg += workoutTonnageKg(w as CanonWorkoutInput);
   }
   return { count, volumeKg };
 }
@@ -189,7 +171,7 @@ function computeAllTimeWorkoutStats(
   for (const w of list) {
     if (!isCompletedWorkout(w)) continue;
     total += 1;
-    durSum += workoutDurationSec(w, nowMs);
+    durSum += canonWorkoutDurationSec(w as CanonWorkoutInput, nowMs);
     const ms = Date.parse(w.endedAt);
     if (Number.isFinite(ms) && ms > latestMs) {
       latestMs = ms;
@@ -227,7 +209,7 @@ export function computeWeightChangeKg(
     const ms = Date.parse(entry.at);
     if (!Number.isFinite(ms)) continue;
     if (ms < windowStart || ms > nowMs) continue;
-    const weight = toFiniteNumber(entry.weightKg);
+    const weight = finiteOrNull(entry.weightKg);
     if (weight == null) continue;
     samples.push({ ms, weight });
   }

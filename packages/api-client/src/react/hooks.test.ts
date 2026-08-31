@@ -101,7 +101,7 @@ describe("api-client react hooks", () => {
 
     useVapidPublicKey();
     const vapid = lastQuery();
-    expect(vapid.queryKey).toEqual(["push", "vapid-public"]);
+    expect(vapid.queryKey).toEqual(["push", "vapid"]);
     await vapid.queryFn?.({ signal });
 
     useFoodSearch("a");

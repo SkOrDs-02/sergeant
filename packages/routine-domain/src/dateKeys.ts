@@ -11,10 +11,17 @@
  * and `weekUtils.ts` (Phase 5 / PR 2). The web `hubCalendarAggregate.ts`
  * still owns the storage-bound `loadMonthlyPlanDays`
  * / `loadTemplateNameById` / `buildHubCalendarEvents` bits.
+ *
+ * `dateKeyFromDate` delegates to `@sergeant/shared`'s `deviceDayKey` — the
+ * canon for the device-local `YYYY-MM-DD` formatter that used to be
+ * byte-identically duplicated in 8 places across the monorepo
+ * (`docs/90-work/audits/unification-modules.md` §2.1).
  */
 
+import { deviceDayKey } from "@sergeant/shared";
+
 export function dateKeyFromDate(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return deviceDayKey(d);
 }
 
 export function parseDateKey(key: string): Date {
@@ -42,6 +49,14 @@ export function addDays(base: Date, n: number): Date {
   const d = new Date(base);
   d.setDate(d.getDate() + n);
   return d;
+}
+
+/** `baseKey` minus `daysBack` calendar days, noon-anchored against DST. */
+export function dateKeyMinusDays(baseKey: string, daysBack: number): string {
+  const d = parseDateKey(baseKey);
+  d.setDate(d.getDate() - daysBack);
+  d.setHours(12, 0, 0, 0);
+  return dateKeyFromDate(d);
 }
 
 /** Monday-first ISO week start (00:00 local); mutates a copy, not the arg. */

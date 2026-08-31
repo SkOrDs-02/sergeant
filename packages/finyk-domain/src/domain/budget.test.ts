@@ -6,7 +6,6 @@ import {
   calculateGoalProgress,
   calculateGoalSavedAmount,
   calculateLimitUsage,
-  calculateRemainingBudget,
   calculateSafeToSpendPerDay,
   calculateTotalExpenseFact,
   getCurrentMonthContext,
@@ -116,20 +115,6 @@ describe("budget: limit periods", () => {
 });
 
 describe("budget: limit usage", () => {
-  it("calculateRemainingBudget caps pct and returns remaining", () => {
-    expect(calculateRemainingBudget({ limit: 100 }, 30)).toEqual({
-      remaining: 70,
-      pct: 30,
-      isOver: false,
-    });
-    expect(calculateRemainingBudget({ limit: 100 }, 150)).toEqual({
-      remaining: 0,
-      pct: 100,
-      isOver: true,
-    });
-    expect(calculateRemainingBudget({ limit: 0 }, 10).pct).toBe(0);
-  });
-
   it("calculateLimitUsage flags overLimit and warnLimit", () => {
     const ok = calculateLimitUsage({ limit: 100 }, 50);
     expect(ok.pctRaw).toBe(50);
@@ -325,6 +310,13 @@ describe("budget: month context and totals", () => {
     expect(ctx.daysPassed).toBe(11);
     expect(ctx.daysInMonth).toBe(31);
     expect(ctx.daysLeft).toBe(20);
+  });
+
+  it("getCurrentMonthContext anchors monthStart to Kyiv midnight, not the host clock (§1.10)", () => {
+    const ctx = getCurrentMonthContext(new Date("2024-03-10T23:30:00Z"));
+    // 2024-03-01 00:00 Kyiv (EET, UTC+2 before the spring DST switch) is
+    // 2024-02-29T22:00:00Z, not a host-local midnight of any calendar day.
+    expect(ctx.monthStart.toISOString()).toBe("2024-02-29T22:00:00.000Z");
   });
 
   it("calculateTotalExpenseFact sums absolute expenses in UAH", () => {

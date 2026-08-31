@@ -1,4 +1,8 @@
-export type MealTypeId = "breakfast" | "lunch" | "dinner" | "snack";
+// unification-modules.md #2.25: канонічний тип живе в
+// `@sergeant/shared/schemas` (zod-енум для API-контракту), обидва пакети
+// вже залежать від `shared` — тут лишається реекспорт, не друге оголошення.
+import type { MealTypeId } from "@sergeant/shared";
+export type { MealTypeId };
 
 export interface MealType {
   id: MealTypeId;

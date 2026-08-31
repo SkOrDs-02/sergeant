@@ -2,6 +2,7 @@ import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { readFizrukWorkouts } from "./fizrukActions/shared";
 import { clamp, clampDays, normalizeText, round } from "./queryArgs";
 import type { Workout, WorkoutItem } from "@sergeant/fizruk-domain";
+import { workoutTonnageKg } from "@sergeant/fizruk-domain";
 import type { ChatAction, ChatActionResult } from "./types";
 
 /**
@@ -44,11 +45,12 @@ function startedTs(w: Workout): number {
 }
 
 function itemVolume(item: WorkoutItem): number {
+  if (item.type !== "strength") return 0;
   return (item.sets ?? []).reduce((s, set) => s + set.weightKg * set.reps, 0);
 }
 
 function workoutVolume(w: Workout): number {
-  return w.items.reduce((s, item) => s + itemVolume(item), 0);
+  return workoutTonnageKg(w);
 }
 
 function itemMatches(

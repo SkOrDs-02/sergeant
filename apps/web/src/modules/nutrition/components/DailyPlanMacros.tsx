@@ -4,7 +4,10 @@
  */
 import { chartHex } from "@sergeant/design-tokens/tokens";
 import { Measure } from "@shared/components/ui/Measure";
-import type { NutritionPrefs } from "@sergeant/nutrition-domain";
+import {
+  ATWATER_KCAL_PER_G,
+  type NutritionPrefs,
+} from "@sergeant/nutrition-domain";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { cn } from "@shared/lib/ui/cn";
 
@@ -14,9 +17,9 @@ export function MacroRatioBar({ prefs }: { prefs: NutritionPrefs }) {
   const carb = prefs.dailyTargetCarbs_g ?? 0;
   if (!(prot > 0) && !(fat > 0) && !(carb > 0)) return null;
 
-  const protKcal = prot * 4;
-  const fatKcal = fat * 9;
-  const carbKcal = carb * 4;
+  const protKcal = prot * ATWATER_KCAL_PER_G.protein;
+  const fatKcal = fat * ATWATER_KCAL_PER_G.fat;
+  const carbKcal = carb * ATWATER_KCAL_PER_G.carbs;
   const total = protKcal + fatKcal + carbKcal || 1;
 
   const pctP = Math.round((protKcal / total) * 100);

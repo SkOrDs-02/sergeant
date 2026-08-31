@@ -16,6 +16,8 @@ import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
 import { pluralUa } from "@sergeant/shared";
 import {
+  WEEK_KCAL_OVER_TOLERANCE,
+  deviceWeekStartKey,
   todayISODate,
   type NutritionLog,
   type NutritionPrefs,
@@ -31,15 +33,11 @@ import { WaterTrackerCard } from "./WaterTrackerCard";
 import { WeekKcalCard } from "./WeekKcalCard";
 import { useToast } from "@shared/hooks/useToast";
 import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
-import { getKyivWeekStartKey } from "@shared/lib/time/kyivTime";
 
 // ADR-0078: "сьогодні" на дашборді (кільце макросів, isToday-підсвітка в
-// тижневому графіку) — день ПРИСТРОЮ, не Kyiv, бо журнал, з якого читаються
-// ці дані, тепер сам пишеться під ключем дня пристрою (useNutritionLog).
-//
-// НЕ ЧІПАЛОСЬ навмисно: `getKyivWeekStartKey()` нижче (вікно тижневого
-// графіка) лишається Kyiv-анкорним. Це залишкова неузгодженість — див. звіт
-// агента / "потребує рішення власника".
+// тижневому графіку) і межі тижневого графіка — обидва день ПРИСТРОЮ, не
+// Kyiv, бо журнал, з якого читаються ці дані, сам пишеться під ключем дня
+// пристрою (useNutritionLog). unification-modules.md #1.18.
 function todayISO(): string {
   return todayISODate();
 }
@@ -51,11 +49,12 @@ function todayISO(): string {
  * by MacroRings' caption slot. Bands mirror the Phase 4.2 onboarding
  * outcome-copy heuristic but stay Nutrition-local.
  *
- * Bands:
- *  - hit window: consumed ∈ [goal, goal*1.05]  → "ціль виконано"
- *  - overshoot:  consumed > goal*1.05          → "+N г понад ціль"
- *  - on-track:   consumed >= goal*0.6          → "N г запас"
- *  - lagging:    else                           → "N г до цілі"
+ * Bands (upper bound — `WEEK_KCAL_OVER_TOLERANCE`, shared with the weekly
+ * kcal chart's "over" threshold — unification-modules.md #2.18):
+ *  - hit window: consumed ∈ [goal, goal*TOLERANCE] → "ціль виконано"
+ *  - overshoot:  consumed > goal*TOLERANCE         → "+N г понад ціль"
+ *  - on-track:   consumed >= goal*0.6              → "N г запас"
+ *  - lagging:    else                               → "N г до цілі"
  *
  * Returns `undefined` when goal is not set so the primitive falls back
  * to its default "value / max" rendering.
@@ -65,10 +64,10 @@ function formatMacroOutcome(
   goal: number,
 ): string | undefined {
   if (goal <= 0) return undefined;
-  if (consumed >= goal && consumed <= goal * 1.05) {
+  if (consumed >= goal && consumed <= goal * WEEK_KCAL_OVER_TOLERANCE) {
     return "ціль виконано";
   }
-  if (consumed > goal * 1.05) {
+  if (consumed > goal * WEEK_KCAL_OVER_TOLERANCE) {
     return `+${Math.round(consumed - goal)} г понад ціль`;
   }
   const gap = goal - consumed;
@@ -97,13 +96,13 @@ export function NutritionDashboard({
 
   const macros = useMemo(() => getDayMacros(log, today), [log, today]);
   const summary = useMemo(() => getDaySummary(log, today), [log, today]);
-  // Calendar ISO week (Mon→Sun, Kyiv), not a rolling-7 window — keeps the
-  // weekly chart consistent with Routine's Monday-first week (domain
-  // invariant: week starts Monday). `getMacrosForDateRange` fills oldest→
-  // newest ending at the given day, so anchoring `endIso` on Sunday yields
-  // Mon…Sun in order.
+  // Calendar ISO week (Mon→Sun, device-local), not a rolling-7 window —
+  // keeps the weekly chart consistent with Routine's Monday-first week
+  // (domain invariant: week starts Monday). `getMacrosForDateRange` fills
+  // oldest→newest ending at the given day, so anchoring `endIso` on Sunday
+  // yields Mon…Sun in order.
   const weekRows = useMemo(() => {
-    const weekStart = getKyivWeekStartKey();
+    const weekStart = deviceWeekStartKey();
     const weekEnd = addDaysISODate(weekStart, 6);
     return getMacrosForDateRange(log, weekEnd, 7);
   }, [log]);
@@ -138,7 +137,11 @@ export function NutritionDashboard({
   useEffect(() => {
     if (!hasGoal || kcalGoal <= 0) return;
     const ratio = kcalConsumed / kcalGoal;
-    if (ratio < 0.95 || ratio > 1.05) return;
+    if (
+      ratio < 2 - WEEK_KCAL_OVER_TOLERANCE ||
+      ratio > WEEK_KCAL_OVER_TOLERANCE
+    )
+      return;
     if (toastFiredRef.current) return;
 
     // Persist per-day dedup so it survives remounts within the same day.

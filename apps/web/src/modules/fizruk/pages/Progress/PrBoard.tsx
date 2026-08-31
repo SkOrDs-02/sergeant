@@ -8,6 +8,8 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { messages } from "@shared/i18n/uk";
 import { Icon } from "@shared/components/ui/Icon";
+import { formatDayKeyUk } from "@shared/lib/time/dayKeyLabel";
+import { deviceDayKey } from "@sergeant/shared";
 import { ReturnScale } from "./ReturnScale";
 import { fmtLoose } from "../../lib/numberFmt";
 
@@ -188,9 +190,9 @@ export function PrBoard({
                   {p.at && (
                     <span className="text-style-caption text-muted">
                       ·{" "}
-                      {new Date(p.at).toLocaleDateString("uk-UA", {
-                        month: "short",
-                        day: "numeric",
+                      {formatDayKeyUk(deviceDayKey(new Date(p.at)), {
+                        todayKey: deviceDayKey(),
+                        relative: false,
                       })}
                     </span>
                   )}

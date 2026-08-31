@@ -1,23 +1,22 @@
 /**
- * Last validated: 2026-08-08
+ * Last validated: 2026-08-31
  * Status: Active
  *
  * Короткий формат дати для сторінок Фізрука.
  *
- * AI-CONTEXT: раніше обидва місця виклику передавали `year: "2-digit"`, і
- * `uk-UA` рендерив це як «7 серп. 26 р.» — форма, яку носій мови читає як
- * «26-те», а не як рік (аудит V-10/L-10, 2026-08-07). Дволітній рік у
- * кирилиці не має усталеного скорочення, тож замість того, щоб робити його
- * зрозумілішим, рік просто прибрано там, де він і так відомий: у поточному
- * році лишається «7 серп.», у минулих — повне «7 серп. 2025 р.».
- *
- * Межу року беремо з годинника ПРИСТРОЮ (ADR-0078): це особистий запис
+ * Тонка обгортка над канонічним `formatDayKeyUk`
+ * (`docs/90-work/audits/unification-modules.md` §2.6): дев'ять копій
+ * підпису «день + скорочений місяць» звело до одного форматера. Межу року
+ * як і раніше бере годинник ПРИСТРОЮ (ADR-0078): це особистий запис
  * користувача, а не серверний звіт, тож «цей рік» означає рік там, де
  * людина стоїть, а не в Києві.
  */
 
+import { deviceDayKey } from "@sergeant/shared";
+import { formatDayKeyUk } from "@shared/lib/time/dayKeyLabel";
+
 /**
- * `7 серп.` для дат цього року, `7 серп. 2025 р.` — для попередніх.
+ * `7 серп` для дат цього року, `7 серп 2025` для попередніх.
  *
  * @param value ISO-рядок, timestamp або `Date`.
  * @returns Порожній рядок, якщо дату розібрати не вдалось.
@@ -26,11 +25,8 @@ export function formatShortDate(value: string | number | Date): string {
   const date = value instanceof Date ? value : new Date(value);
   const ts = date.getTime();
   if (!Number.isFinite(ts)) return "";
-  // eslint-disable-next-line sergeant-design/prefer-kyiv-time, no-restricted-syntax -- ADR-0078: дата підходу й дата тренування — особисті записи, чий день-ключ належить пристрою, а не Києву. Рік тут лише вирішує, друкувати його чи ні, і має збігатися з тим самим годинником, який визначив сам запис; київський рік дав би «2025» на записі, який для людини стався цього року.
-  const sameYear = date.getFullYear() === new Date().getFullYear();
-  return date.toLocaleDateString("uk-UA", {
-    day: "numeric",
-    month: "short",
-    ...(sameYear ? {} : { year: "numeric" }),
+  return formatDayKeyUk(deviceDayKey(date), {
+    todayKey: deviceDayKey(),
+    relative: false,
   });
 }

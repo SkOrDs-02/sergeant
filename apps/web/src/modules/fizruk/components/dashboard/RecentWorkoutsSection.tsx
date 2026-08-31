@@ -18,8 +18,9 @@
 import { Card } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
+import { formatDayKeyUk } from "@shared/lib/time/dayKeyLabel";
 import type { DashboardRecentWorkout } from "@sergeant/fizruk-domain/domain";
-import { formatNumberUk } from "@sergeant/shared";
+import { deviceDayKey, formatNumberUk } from "@sergeant/shared";
 
 export interface RecentWorkoutsSectionProps {
   readonly recent: readonly DashboardRecentWorkout[];
@@ -30,14 +31,10 @@ function formatDateShort(iso: string | null): string {
   if (!iso) return "";
   const ms = Date.parse(iso);
   if (!Number.isFinite(ms)) return "";
-  try {
-    return new Date(ms).toLocaleDateString("uk-UA", {
-      day: "numeric",
-      month: "short",
-    });
-  } catch {
-    return "";
-  }
+  return formatDayKeyUk(deviceDayKey(ms), {
+    todayKey: deviceDayKey(),
+    relative: false,
+  });
 }
 
 function formatDuration(sec: number): string {

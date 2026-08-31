@@ -24,6 +24,7 @@ import { enqueueMemoryIngest } from "../ai-memory/ingestQueue.js";
 import { getAiMemory } from "../ai-memory/bootstrap.js";
 
 import { ADVICE_BOUNDARY_RULE } from "../../lib/adviceBoundary.js";
+import { countModuleSignals, MIN_SIGNAL_MODULES } from "@sergeant/shared";
 
 type WithAnthropicKey = Request & { anthropicKey?: string };
 type WithSessionUser = Request & { user?: { id: string } };
@@ -112,31 +113,21 @@ export function extractJsonObject(raw: unknown): unknown {
 }
 
 /**
- * Скільки модулів дали ЗМІСТОВНИЙ сигнал за тиждень — серверне дзеркало
- * `coachSnapshotSignals` (`apps/web/src/core/insights/useCoachInsight.ts`).
+ * Скільки модулів дали ЗМІСТОВНИЙ сигнал за тиждень — тонкий делегат
+ * `countModuleSignals` (`@sergeant/shared`), канон і для клієнтського
+ * `coachSnapshotSignals` (`apps/web/src/core/insights/useCoachInsight.ts`),
+ * зведено за аудитом §2.23 замість двох незалежних копій.
  *
  * AI-CONTEXT (Хвиля 4, hub-coach § G2): `finyk` приїжджає з клієнта
  * ЗАВЖДИ truthy (`aggregateFinyk` повертає нулі навіть без транзакцій), тож
  * стара перевірка «є хоч одна секція» (`!sections.length`) фактично ніколи
  * не спрацьовувала — порожній тиждень завжди мав хоча б finyk-секцію з
  * нулями, і дайджест генерувався з нічого. Рахуємо не «поле присутнє», а
- * факт даних — той самий принцип, що й у коуча.
+ * факт даних.
  */
 export function countDigestSignalModules(data: WeeklyDigestRequest): number {
-  let signals = 0;
-  if ((data.finyk?.txCount ?? 0) > 0) signals++;
-  if ((data.fizruk?.workoutsCount ?? 0) > 0) signals++;
-  if ((data.nutrition?.daysLogged ?? 0) > 0) signals++;
-  if ((data.routine?.habitCount ?? 0) > 0) signals++;
-  return signals;
+  return countModuleSignals(data);
 }
-
-/**
- * Поріг публікації — канон hub-coach §6.2 «краще мовчати, ніж шуміти».
- * Навмисно мінімальний і безспірний, як і в коуча: нуль сигналів — тиждень
- * чесно «без даних», а не заповнений шаблонним аналізом нулів.
- */
-const MIN_SIGNAL_MODULES = 1;
 
 /**
  * PR-25: build template-based digest report з raw метрик (без LLM).

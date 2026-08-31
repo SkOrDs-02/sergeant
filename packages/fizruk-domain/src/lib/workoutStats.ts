@@ -259,11 +259,19 @@ export function workoutTonnageKg(w: StatsWorkout | null | undefined): number {
   return t;
 }
 
-export function workoutDurationSec(w: StatsWorkout | null | undefined): number {
+/**
+ * @param nowMs Тестовий шов для незавершеного тренування (`endedAt` ще
+ * немає), дефолт `Date.now()`. Канон для двох байт-майже-ідентичних копій
+ * (`docs/90-work/audits/unification-modules.md` §2.20).
+ */
+export function workoutDurationSec(
+  w: StatsWorkout | null | undefined,
+  nowMs: number = Date.now(),
+): number {
   if (!w?.startedAt) return 0;
   const start = Date.parse(w.startedAt);
-  const end = w.endedAt ? Date.parse(w.endedAt) : Date.now();
-  if (!Number.isFinite(start)) return 0;
+  const end = w.endedAt ? Date.parse(w.endedAt) : nowMs;
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return 0;
   return Math.max(0, Math.floor((end - start) / 1000));
 }
 

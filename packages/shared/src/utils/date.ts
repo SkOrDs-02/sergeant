@@ -111,3 +111,42 @@ export function kyivMondayStartMs(
   const approxMondayNoon = dayStart - mondayIndex * DAY_MS + DAY_MS / 2;
   return kyivDayStartMs(toKyivISODate(approxMondayNoon));
 }
+
+/**
+ * Format a Date as `YYYY-MM-DD` in the DEVICE's local timezone.
+ *
+ * За [ADR-0078](../../../../docs/04-governance/adr/0078-day-boundary-device-local.md)
+ * день-ключ відмітки звички, логу їжі й денного запису визначає годинник
+ * ПРИСТРОЮ, не Києва — на відміну від {@link toKyivISODate}. Канон для
+ * восьми байт-ідентичних копій цього форматера
+ * (`docs/90-work/audits/unification-modules.md` §2.1).
+ */
+export function deviceDayKey(d: Date | number = new Date()): string {
+  const date = typeof d === "number" ? new Date(d) : d;
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+/**
+ * Start of the ISO week (Monday 00:00, DEVICE local time) containing the
+ * given instant, as a Unix-epoch millisecond timestamp.
+ *
+ * Пара до {@link kyivMondayStartMs}: та функція — для фінансів і звітів, ця —
+ * для персональних сутностей (звички, тренування) за ADR-0078. Назви
+ * навмисно розрізняють годинник (`docs/90-work/audits/unification-modules.md`
+ * §1.2), інакше наступний виклик знову вибере навмання. Returns `NaN` for
+ * unparseable input.
+ */
+export function deviceMondayStart(
+  d: Date | number | string = Date.now(),
+): number {
+  const date = d instanceof Date ? d : new Date(d);
+  if (Number.isNaN(date.getTime())) return NaN;
+  const mondayOffset = (date.getDay() + 6) % 7;
+  const monday = new Date(date);
+  monday.setDate(date.getDate() - mondayOffset);
+  monday.setHours(0, 0, 0, 0);
+  return monday.getTime();
+}

@@ -6,6 +6,7 @@ import {
   getTxStatAmount,
   getExpenseCategoryForTransaction,
   resolveExpenseCategoryMeta,
+  txTimeMs,
 } from "../utils";
 import { INTERNAL_TRANSFER_ID } from "../constants";
 import type {
@@ -48,8 +49,7 @@ function buildMonthPredicate(month: MonthFilter): MonthPredicate | null {
   if (!Number.isFinite(y) || !Number.isFinite(m)) return null;
   return (tx) => {
     if (!tx || !tx.time) return false;
-    const ts = tx.time > 1e10 ? tx.time : tx.time * 1000;
-    const d = new Date(ts);
+    const d = new Date(txTimeMs(tx.time));
     return d.getFullYear() === y && d.getMonth() + 1 === m;
   };
 }

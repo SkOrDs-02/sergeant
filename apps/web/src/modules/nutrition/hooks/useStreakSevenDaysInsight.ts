@@ -20,6 +20,7 @@
 
 import { useMemo } from "react";
 import {
+  WEEK_KCAL_OVER_TOLERANCE,
   todayISODate,
   type NutritionLog,
   type NutritionPrefs,
@@ -82,7 +83,11 @@ export function useStreakSevenDaysInsight(
       const macros = getDayMacros(log, dateKey);
       const kcal = macros.kcal ?? 0;
       const ratio = kcal / goal;
-      if (ratio < 0.95 || ratio > 1.05) return null;
+      if (
+        ratio < 2 - WEEK_KCAL_OVER_TOLERANCE ||
+        ratio > WEEK_KCAL_OVER_TOLERANCE
+      )
+        return null;
     }
 
     const weekKey = deviceISOWeekKey();

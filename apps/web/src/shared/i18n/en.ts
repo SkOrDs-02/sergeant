@@ -459,6 +459,16 @@ export const messagesEn: Partial<{
       deleteError: "Could not delete the fact. Try again.",
       groupToggleAria: "Show facts from this source",
       expandFact: "Show in full",
+      // The `profile` group is no longer a checklist with delete buttons:
+      // it is a pointer card, since the single profile-facts editor now
+      // lives in Profile -> "Memory bank" (owner decision 2026-08-30).
+      // Mirrors uk.privacy.ts.
+      profileGroupTitle: "Profile facts",
+      profileGroupHint:
+        "This is what you told us about yourself. Edit and delete it in your profile.",
+      profileGroupAction: "Open profile",
+      /** `{count}` — how many facts from this group are loaded so far. */
+      profileGroupCount: "Facts: {count}",
       collapseFact: "Collapse",
       technicalGroupHints: {
         product:

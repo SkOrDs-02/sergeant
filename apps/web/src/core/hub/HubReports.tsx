@@ -24,7 +24,12 @@ import { webKVStore } from "@shared/lib/storage/storage";
 import { generateInsights } from "../lib/insightsEngine";
 import { WeeklyDigestCard } from "../insights/WeeklyDigestCard";
 import { PaywallModal, useFeatureGate } from "../billing";
-import { getPeriodRange, type Period } from "./hubReports.aggregation";
+import {
+  getPeriodRange,
+  localDateKey,
+  type Period,
+} from "./hubReports.aggregation";
+import { formatDayRangeUk } from "@shared/lib/time/dayKeyLabel";
 import ChunkErrorBoundary from "./ChunkErrorBoundary";
 import { PdfPreviewModal } from "./PdfPreviewModal";
 
@@ -56,11 +61,9 @@ function CardSkeleton() {
 function formatPeriodLabel(period: Period, offset: number): string {
   const { start, end } = getPeriodRange(period, offset);
   if (period === "week") {
-    const opts: Intl.DateTimeFormatOptions = {
-      month: "short",
-      day: "numeric",
-    };
-    return `${start.toLocaleDateString("uk-UA", opts)} – ${end.toLocaleDateString("uk-UA", opts)}`;
+    return formatDayRangeUk(localDateKey(start), localDateKey(end), {
+      relative: false,
+    });
   } else {
     return start.toLocaleDateString("uk-UA", {
       month: "long",

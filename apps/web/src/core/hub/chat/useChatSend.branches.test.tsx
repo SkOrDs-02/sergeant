@@ -9,14 +9,21 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 // and the SSE success accumulation path. These complement the happy/tool-call
 // cases in useChatSend.test.tsx.
 
-const { sendMock, streamMock, executeActionsMock, consumeSseMock, speakMock } =
-  vi.hoisted(() => ({
-    sendMock: vi.fn(),
-    streamMock: vi.fn(),
-    executeActionsMock: vi.fn(),
-    consumeSseMock: vi.fn(),
-    speakMock: vi.fn(),
-  }));
+const {
+  sendMock,
+  streamMock,
+  usageMock,
+  executeActionsMock,
+  consumeSseMock,
+  speakMock,
+} = vi.hoisted(() => ({
+  sendMock: vi.fn(),
+  streamMock: vi.fn(),
+  usageMock: vi.fn(),
+  executeActionsMock: vi.fn(),
+  consumeSseMock: vi.fn(),
+  speakMock: vi.fn(),
+}));
 
 // Controllable per-test flags.
 const flags = { isPro: true, online: true };
@@ -31,7 +38,10 @@ vi.mock("../../lib/hubChatUtils", async () => {
 vi.mock("@shared/api", async () => {
   const actual =
     await vi.importActual<typeof import("@shared/api")>("@shared/api");
-  return { ...actual, chatApi: { send: sendMock, stream: streamMock } };
+  return {
+    ...actual,
+    chatApi: { send: sendMock, stream: streamMock, usage: usageMock },
+  };
 });
 
 vi.mock("../useFinykHubPreview", () => ({
@@ -110,6 +120,8 @@ function renderWithCapture(options: { preset?: ChatPreset } = {}) {
 beforeEach(() => {
   sendMock.mockReset();
   streamMock.mockReset();
+  usageMock.mockReset();
+  usageMock.mockResolvedValue({ plan: "free", limit: 5, remaining: 5 });
   executeActionsMock.mockReset();
   consumeSseMock.mockReset();
   speakMock.mockReset();
@@ -191,17 +203,14 @@ describe("useChatSend — guard branches", () => {
     expect(flat.some((m) => m.text.includes("Немає підключення"))).toBe(true);
   });
 
-  it("free-tier user is paywalled after the daily limit is reached", async () => {
+  it("free-tier user is paywalled once the server-reported quota is exhausted", async () => {
     flags.isPro = false;
-    // Seed today's counter at the free daily limit (FREE_DAILY_AI_CHAT_LIMIT = 15).
-    const { getKyivDayKey } = await vi.importActual<
-      typeof import("@shared/lib/time/kyivTime")
-    >("@shared/lib/time/kyivTime");
-    localStorage.setItem(
-      "sergeant:ai-chat:daily-count:v1",
-      JSON.stringify({ day: getKyivDayKey(), count: 15 }),
-    );
+    usageMock.mockResolvedValue({ plan: "free", limit: 5, remaining: 0 });
     const { result } = renderWithCapture();
+    // Пре-гейт читає `chatKeys.usage` з RQ-кеша (канон #1.13) — дочекатись
+    // відповіді `GET /api/chat/usage`, інакше гейт мовчки пропустить хід.
+    await waitFor(() => expect(result.current.usageLimit).toBe(5));
+
     await act(async () => {
       await result.current.send("ще одне питання");
     });
@@ -216,18 +225,14 @@ describe("useChatSend — guard branches", () => {
   // онбординг упирався в paywall посеред інтервʼю — сценарій на ~8 запитів
   // проти ліміту 5 (кожен хід із tool-call-ом коштує два: перший запит +
   // синтез після `remember`).
-  it("preset-хід не блокується пейволом на вичерпаному денному ліміті", async () => {
+  it("preset-хід не блокується пейволом на вичерпаній денній квоті", async () => {
     flags.isPro = false;
+    usageMock.mockResolvedValue({ plan: "free", limit: 5, remaining: 0 });
     sendMock.mockResolvedValue({ text: "Питання перше" });
-    const { getKyivDayKey } = await vi.importActual<
-      typeof import("@shared/lib/time/kyivTime")
-    >("@shared/lib/time/kyivTime");
-    localStorage.setItem(
-      "sergeant:ai-chat:daily-count:v1",
-      JSON.stringify({ day: getKyivDayKey(), count: 15 }),
-    );
 
     const { result } = renderWithCapture({ preset: "profile_interview" });
+    await waitFor(() => expect(result.current.usageLimit).toBe(5));
+
     await act(async () => {
       await result.current.send("Заповни мій профіль");
     });
@@ -237,11 +242,6 @@ describe("useChatSend — guard branches", () => {
     expect(sendMock.mock.calls[0]![0]).toMatchObject({
       preset: "profile_interview",
     });
-    // Денний лічильник не зрушив — списання йде з preset-відра на сервері.
-    expect(
-      JSON.parse(localStorage.getItem("sergeant:ai-chat:daily-count:v1")!)
-        .count,
-    ).toBe(15);
   });
 
   // Preset не може жити вічно: доївши інтервʼю, людина питає щось звичайне
@@ -268,18 +268,18 @@ describe("useChatSend — guard branches", () => {
     ]);
   });
 
-  it("free-tier user under the limit increments the counter and sends", async () => {
+  it("free-tier user under the limit sends normally", async () => {
     flags.isPro = false;
+    usageMock.mockResolvedValue({ plan: "free", limit: 5, remaining: 3 });
     sendMock.mockResolvedValue({ text: "Привіт!" });
     const { result } = renderWithCapture();
+    await waitFor(() => expect(result.current.usageLimit).toBe(5));
+
     await act(async () => {
       await result.current.send("привіт");
     });
     expect(sendMock).toHaveBeenCalledTimes(1);
-    const stored = JSON.parse(
-      localStorage.getItem("sergeant:ai-chat:daily-count:v1") || "{}",
-    );
-    expect(stored.count).toBe(1);
+    expect(result.current.paywallOpen).toBe(false);
   });
 });
 

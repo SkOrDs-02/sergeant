@@ -980,6 +980,9 @@ importers:
       '@sergeant/design-tokens':
         specifier: workspace:*
         version: link:../design-tokens
+      '@sergeant/finyk-domain':
+        specifier: workspace:*
+        version: link:../finyk-domain
       '@sergeant/shared':
         specifier: workspace:*
         version: link:../shared
@@ -1023,6 +1026,10 @@ importers:
         version: 4.1.10(@opentelemetry/api@1.9.1)(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@29.1.1(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@20.19.43)(typescript@6.0.3))(vite@8.1.4(@types/node@20.19.43)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.0)(yaml@2.9.0))
 
   packages/routine-domain:
+    dependencies:
+      '@sergeant/shared':
+        specifier: workspace:*
+        version: link:../shared
     devDependencies:
       '@sergeant/config':
         specifier: workspace:*

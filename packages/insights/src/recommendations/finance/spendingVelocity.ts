@@ -3,15 +3,17 @@
 // з мінімумом даних.
 
 import type { Rule } from "../types.js";
-import { txTimestamp, type FinanceContext } from "../financeContext.js";
-import { formatNumberUk } from "@sergeant/shared";
+import {
+  financeExcludedTxIds,
+  type FinanceContext,
+} from "../financeContext.js";
+import { formatNumberUk, kyivMondayStartMs } from "@sergeant/shared";
+import { calcFinykPeriodAggregate } from "@sergeant/finyk-domain/lib/spending";
 
+// Фінансовий період — Kyiv-anchored (domain invariant, AGENTS.md § Domain
+// invariants), не годинник пристрою.
 function startOfWeek(d: Date): Date {
-  const x = new Date(d);
-  const day = (x.getDay() + 6) % 7; // 0=Mon
-  x.setDate(x.getDate() - day);
-  x.setHours(0, 0, 0, 0);
-  return x;
+  return new Date(kyivMondayStartMs(d));
 }
 
 export const spendingVelocityRule: Rule<FinanceContext> = {
@@ -25,23 +27,25 @@ export const spendingVelocityRule: Rule<FinanceContext> = {
     const dowIdx = (now.getDay() + 6) % 7;
     if (dowIdx < 2) return [];
 
+    const excludedTxIds = financeExcludedTxIds(ctx);
+
+    // Банк — через канонічний агрегатор (враховує спліти й виключені id),
+    // ручні витрати — окремо, calcFinykPeriodAggregate їх не бачить.
     const sumSpending = (start: Date, end: Date): number => {
-      let s = 0;
-      for (const tx of ctx.transactions) {
-        if (ctx.hiddenTxIds.has(tx.id) || ctx.transferIds.has(tx.id)) continue;
-        if ((tx.amount ?? 0) >= 0) continue;
-        const ts = txTimestamp(tx);
-        if (ts >= start.getTime() && ts < end.getTime()) {
-          s += Math.abs(tx.amount / 100);
-        }
-      }
+      const bank = calcFinykPeriodAggregate(ctx.transactions, {
+        start: start.getTime(),
+        end: end.getTime(),
+        excludedTxIds,
+        txSplits: ctx.txSplits ?? {},
+      }).totalSpent;
+      let manual = 0;
       for (const me of ctx.manualExpenses) {
         const ts = new Date(me.date).getTime();
         if (ts >= start.getTime() && ts < end.getTime()) {
-          s += Math.abs(Number(me.amount) || 0);
+          manual += Math.abs(Number(me.amount) || 0);
         }
       }
-      return s;
+      return bank + manual;
     };
 
     const cmpEnd = new Date(thisWeekStart);

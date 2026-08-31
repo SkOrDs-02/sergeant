@@ -23,7 +23,12 @@
  * Anchored on Kyiv day keys rather than host-local `Date` getters, so the
  * month boundary is identical on any device timezone (domain time invariant).
  */
-import { getKyivDateParts, getKyivDayKey } from "@shared/lib/time/kyivTime";
+import {
+  getKyivDateParts,
+  getKyivDayKey,
+  parseKyivDate,
+} from "@shared/lib/time/kyivTime";
+import { txTimeMs } from "@sergeant/finyk-domain/lib/transactions";
 
 /** Minimal shape the clamp reads. Matches `Transaction` and manual rows. */
 interface TxLike {
@@ -40,11 +45,8 @@ interface TxLike {
  */
 export function txEpochMs(tx: TxLike | null | undefined): number | null {
   if (!tx) return null;
-  const raw = Number(tx.time);
-  if (Number.isFinite(raw) && raw > 0) {
-    // 10-digit threshold disambiguates seconds from milliseconds.
-    return raw > 10_000_000_000 ? raw : raw * 1000;
-  }
+  const ms = txTimeMs(tx.time);
+  if (Number.isFinite(ms) && ms > 0) return ms;
   if (typeof tx.date === "string" && tx.date) {
     const parsed = new Date(tx.date).getTime();
     if (Number.isFinite(parsed) && parsed > 0) return parsed;
@@ -56,6 +58,30 @@ export function txEpochMs(tx: TxLike | null | undefined): number | null {
 export function currentKyivMonthPrefix(at?: number | Date): string {
   const { year, month } = getKyivDateParts(at);
   return `${year}-${String(month).padStart(2, "0")}`;
+}
+
+/**
+ * Real Kyiv-local month bounds as `[from, to)` ISO instants, `to` being the
+ * first instant of the next month. Resolved via `parseKyivDate` (DST-safe
+ * Kyiv-midnight lookup) instead of a hardcoded `"...T00:00:00+03:00"`
+ * literal, which silently drops the last hour of a winter month when Kyiv
+ * is on EET, not EEST (§1.8 audit finding).
+ */
+export function kyivMonthRangeIso(
+  year: number,
+  /** 1-12. */
+  month: number,
+): { from: string; to: string } {
+  const nextYear = month === 12 ? year + 1 : year;
+  const nextMonth = month === 12 ? 1 : month + 1;
+  const from = parseKyivDate(`${year}-${String(month).padStart(2, "0")}-01`);
+  const to = parseKyivDate(
+    `${nextYear}-${String(nextMonth).padStart(2, "0")}-01`,
+  );
+  if (!from || !to) {
+    throw new Error(`kyivMonthRangeIso: invalid month ${year}-${month}`);
+  }
+  return { from: from.toISOString(), to: to.toISOString() };
 }
 
 /**

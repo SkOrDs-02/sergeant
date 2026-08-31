@@ -76,8 +76,12 @@ describe("normalizeRecipeForSave (pure)", () => {
     expect(r.ingredients).toEqual(["Буряк", "Капуста", "5"]);
     expect(r.steps).toEqual(["Крок 1"]);
     expect(r.tips).toEqual([]);
+    // unification-modules.md #1.28: normalizeMacrosNullable (canon) treats
+    // a negative/invalid macro as "not entered" (null), not as a fake 0 —
+    // 0 would silently count a broken AI-generated recipe as a real
+    // macros-having day in period averages.
     expect(r.macros).toEqual({
-      kcal: 0,
+      kcal: null,
       protein_g: null,
       fat_g: 3,
       carbs_g: 10,

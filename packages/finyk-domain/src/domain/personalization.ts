@@ -11,7 +11,11 @@
 //  - для мерчантів додатково зберігаємо найчастішу категорію
 //    (щоб quick add міг підставити її автоматично).
 // Без ML, без ваг на зразок TF-IDF — тільки підрахунки + сортування.
-import { getCategory, getExpenseCategoryForTransaction } from "../utils";
+import {
+  getCategory,
+  getExpenseCategoryForTransaction,
+  txTimeMs,
+} from "../utils";
 import { MANUAL_EXPENSE_TAXONOMY } from "../lib/manualTaxonomy.js";
 import { INTERNAL_TRANSFER_ID } from "../constants";
 import { foldApostrophes } from "@sergeant/shared";
@@ -164,7 +168,8 @@ export function manualCategoryToCanonicalId(label: string | undefined): string {
 
 function toTimestampMs(tx: Transaction): number {
   if (!tx || !tx.time) return 0;
-  return tx.time > 1e10 ? tx.time : tx.time * 1000;
+  const ms = txTimeMs(tx.time);
+  return Number.isFinite(ms) ? ms : 0;
 }
 
 function toManualTs(me: ManualExpense): number {

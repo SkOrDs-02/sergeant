@@ -10,34 +10,40 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../lib/nutritionStats", () => ({
   getRowsForRange: vi.fn(),
-  summarizeRows: vi.fn(),
-  avgFromSummary: vi.fn(),
   topMeals: vi.fn(),
   mealTypeBreakdown: vi.fn(),
 }));
+vi.mock("@sergeant/nutrition-domain", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@sergeant/nutrition-domain")>();
+  return { ...actual, calcNutritionPeriodAverages: vi.fn() };
+});
 
 import { LogCardAnalytics } from "./LogCardAnalytics";
 import {
-  avgFromSummary,
   getRowsForRange,
   mealTypeBreakdown,
-  summarizeRows,
   topMeals,
 } from "../lib/nutritionStats";
+import { calcNutritionPeriodAverages } from "@sergeant/nutrition-domain";
 import type { NutritionLog } from "@sergeant/nutrition-domain";
 
 const log = {} as NutritionLog;
 const getRows = getRowsForRange as unknown as ReturnType<typeof vi.fn>;
-const summarize = summarizeRows as unknown as ReturnType<typeof vi.fn>;
-const avg = avgFromSummary as unknown as ReturnType<typeof vi.fn>;
+const avg = calcNutritionPeriodAverages as unknown as ReturnType<typeof vi.fn>;
 const top = topMeals as unknown as ReturnType<typeof vi.fn>;
 const breakdown = mealTypeBreakdown as unknown as ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
   vi.clearAllMocks();
   getRows.mockReturnValue([]);
-  summarize.mockReturnValue({ daysWithAnyMacros: 0 });
-  avg.mockReturnValue({ kcal: 0, protein_g: 0, fat_g: 0, carbs_g: 0 });
+  avg.mockReturnValue({
+    avgKcal: 0,
+    avgProtein: 0,
+    avgFat: 0,
+    avgCarbs: 0,
+    daysLogged: 0,
+  });
   top.mockReturnValue([]);
   breakdown.mockReturnValue({});
 });
@@ -61,12 +67,12 @@ describe("LogCardAnalytics", () => {
 
   it("renders averages, the kcal sparkline, top meals and meal-type split", () => {
     getRows.mockReturnValue([{ kcal: 1800 }, { kcal: 2200 }]);
-    summarize.mockReturnValue({ daysWithAnyMacros: 2 });
     avg.mockReturnValue({
-      kcal: 2000,
-      protein_g: 100,
-      fat_g: 60,
-      carbs_g: 220,
+      avgKcal: 2000,
+      avgProtein: 100,
+      avgFat: 60,
+      avgCarbs: 220,
+      daysLogged: 2,
     });
     top.mockReturnValue([{ name: "Курка", count: 4, kcal: 500 }]);
     breakdown.mockReturnValue({ lunch: { count: 3, kcal: 1200 } });

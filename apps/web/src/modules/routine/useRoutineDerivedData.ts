@@ -24,7 +24,11 @@ import {
 } from "./lib/hubCalendarAggregate";
 import { FINYK_SUB_GROUP_LABEL } from "./lib/finykSubscriptionCalendar";
 import { addDays, startOfIsoWeek } from "./lib/weekUtils";
-import { completionRateForRange, flexibleMaxActiveStreak } from "./lib/streaks";
+import {
+  calcRoutineDayProgress,
+  completionRateForRange,
+  flexibleMaxActiveStreak,
+} from "./lib/streaks";
 import {
   groupEventsForList,
   monthBounds,
@@ -261,16 +265,20 @@ export function useRoutineDerivedData({
   // §2), вона привʼязана до «сьогодні», а не до показуваного дня.
   const progressDayKey =
     range.startKey === range.endKey ? range.startKey : todayKey;
+  // Спільний селектор денного прогресу — `calcRoutineDayProgress`
+  // (routine-domain), не інлайн-виклик: та сама функція, яку має
+  // перейняти mobile-календар, щоб «N з M» не рахувалось двома різними
+  // способами на двох платформах (unification audit 2026-08-31, finding
+  // 1.19). `includeOnce` усередині: це лічильник чек-листа, не метрика —
+  // список дня разову подію показує, тож і «N з M» мусить (канон §7 п.2).
   const dayProgress = useMemo(
     () =>
-      // `includeOnce` — це лічильник чек-листа, не метрика: список дня
-      // разову подію показує, тож і «N з M» мусить (канон §7 п.2).
-      completionRateForRange(
+      calcRoutineDayProgress(
         routine.habits,
         routine.completions,
         progressDayKey,
-        progressDayKey,
-        { pausedFrom: todayKey, skips: routine.skips ?? {}, includeOnce: true },
+        todayKey,
+        routine.skips ?? {},
       ),
     [
       routine.habits,

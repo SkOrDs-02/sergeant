@@ -10,6 +10,8 @@
  * either series (mobile: `WeightChartSection` / `MeasurementsChartSection`).
  */
 
+import { finiteOrNull } from "@sergeant/shared";
+
 import {
   buildBodyWeightSeries,
   type BodyWeightRecordInput,
@@ -27,12 +29,6 @@ import type {
  * публічна поверхня пакета не змінилась.
  */
 export { MEASUREMENT_TREND_WINDOW };
-
-function toFiniteNumber(input: unknown): number | null {
-  if (input == null || input === "") return null;
-  const n = Number(input);
-  return Number.isFinite(n) ? n : null;
-}
 
 /**
  * Build a timeseries of measurement values for a given numeric field.
@@ -63,7 +59,7 @@ export function buildMeasurementSeries(
     const raw = entry[field];
     const value =
       typeof raw === "number" || typeof raw === "string"
-        ? toFiniteNumber(raw)
+        ? finiteOrNull(raw)
         : null;
     return {
       iso: entry.at,
@@ -140,8 +136,8 @@ export function computeMeasurementDelta(
   const latest = source[0] ?? null;
   const prev = source[1] ?? null;
   if (!latest || !prev) return null;
-  const a = toFiniteNumber(latest[field]);
-  const b = toFiniteNumber(prev[field]);
+  const a = finiteOrNull(latest[field]);
+  const b = finiteOrNull(prev[field]);
   if (a == null || b == null) return null;
   return a - b;
 }

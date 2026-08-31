@@ -12,7 +12,7 @@
  */
 
 import { calcDebtRemaining, calcReceivableRemaining } from "../debtEngine.js";
-import { getMonoTotals, type MonoAccount } from "../../lib/accounts.js";
+import { getMonoTotals, filterVisibleAccounts } from "../../lib/accounts.js";
 import { CURRENCY, CURRENCY_SYMBOL } from "../../constants.js";
 import type { Transaction } from "../types.js";
 import type {
@@ -93,18 +93,10 @@ export function sumJarsUAH(
     .reduce((sum, j) => sum + Math.max(0, j.balance ?? 0) / 100, 0);
 }
 
-/**
- * Hide-list-aware filter for Mono accounts. Mirrors
- * `accounts.filter((a) => !hiddenAccounts.includes(a.id))` used on web
- * but accepts both `undefined` ids and read-only inputs.
- */
-export function filterVisibleAccounts(
-  accounts: readonly MonoAccount[],
-  hiddenAccounts: readonly string[] = [],
-): MonoAccount[] {
-  const hidden = new Set(hiddenAccounts);
-  return accounts.filter((a) => !(a.id !== undefined && hidden.has(a.id)));
-}
+// `filterVisibleAccounts` re-exported for callers that already import the
+// Assets rollup helpers from here (§2.22: the canonical body now lives in
+// `../../lib/accounts.js`, which `getMonoTotals` also uses internally).
+export { filterVisibleAccounts };
 
 /**
  * Map an ISO-4217 numeric currency code to its symbol. Defaults to `₴`
@@ -149,9 +141,7 @@ export function computeAssetsSummary(input: AssetsSummaryInput): AssetsSummary {
 
   const { balance: monoBalance, debt: monoDebt } = getMonoTotals(
     accounts,
-    // getMonoTotals takes a mutable `string[]` — readonly → string[] is
-    // safe because `getMonoTotals` only reads the array.
-    hiddenAccounts as string[],
+    hiddenAccounts,
   );
 
   const manualAssetTotal = sumManualAssetsUAH(manualAssets);

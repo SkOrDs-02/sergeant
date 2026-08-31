@@ -63,6 +63,7 @@ export {
   getDayMacros,
   getDaySummary,
   getMacrosForDateRange,
+  lastNDayKeysOldestFirst,
   makeDefaultPantry,
   mergeNutritionLogs,
   normalizeMeal,

@@ -22,6 +22,7 @@ import {
   ANALYTICS_EVENTS,
 } from "../../../core/observability/analytics";
 import { fetchAllMonoTransactions } from "./monoTransactionsLoader";
+import { kyivMonthRangeIso } from "../lib/monthWindow";
 import { apiQueryKeys } from "@sergeant/api-client/react";
 import type { MeResponse } from "@sergeant/api-client";
 import { getSqliteDb } from "../../../core/db/sqlite";
@@ -153,16 +154,10 @@ export function useMonobankWebhook({
   }, [isConnected, accounts]);
 
   // === Current-month transactions ===
-  // Use Kyiv date parts so month boundaries are correct for users outside EET.
+  // Real Kyiv month bounds (not a hardcoded +03:00 offset), so month
+  // boundaries are correct year-round for users outside EET (§1.8).
   const { year: kyivYear, month: kyivMonth } = getKyivDateParts();
-  const fromDate = new Date(
-    `${kyivYear}-${String(kyivMonth).padStart(2, "0")}-01T00:00:00+03:00`,
-  ).toISOString();
-  const nextMonth = kyivMonth === 12 ? 1 : kyivMonth + 1;
-  const nextYear = kyivMonth === 12 ? kyivYear + 1 : kyivYear;
-  const toDate = new Date(
-    `${nextYear}-${String(nextMonth).padStart(2, "0")}-01T00:00:00+03:00`,
-  ).toISOString();
+  const { from: fromDate, to: toDate } = kyivMonthRangeIso(kyivYear, kyivMonth);
   const txQueryKey = `${fromDate}|${toDate}`;
 
   const txQuery = useQuery<MonoTransactionDto[]>({
@@ -337,16 +332,8 @@ export function useMonobankWebhook({
       try {
         // Kyiv-anchored month boundaries (consistent with the current-month
         // logic above) so historical drill-down isn't off-by-hours for users
-        // outside EET. `month` is 0-based; shift to 1-based for the ISO string.
-        const m1 = month + 1;
-        const from = new Date(
-          `${year}-${String(m1).padStart(2, "0")}-01T00:00:00+03:00`,
-        ).toISOString();
-        const toYear = m1 === 12 ? year + 1 : year;
-        const toMonth = m1 === 12 ? 1 : m1 + 1;
-        const to = new Date(
-          `${toYear}-${String(toMonth).padStart(2, "0")}-01T00:00:00+03:00`,
-        ).toISOString();
+        // outside EET. `month` is 0-based; shift to 1-based for `kyivMonthRangeIso`.
+        const { from, to } = kyivMonthRangeIso(year, month + 1);
         const key = `${from}|${to}`;
 
         const data = await queryClient.fetchQuery({

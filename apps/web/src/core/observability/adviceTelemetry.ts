@@ -44,6 +44,7 @@
  */
 
 import { ANALYTICS_EVENTS, trackEvent } from "./analytics";
+import { deviceDayKey } from "@sergeant/shared";
 
 /**
  * Версія інструментації. Бампається, коли змінюється СЕМАНТИКА показу або
@@ -110,24 +111,6 @@ export function newAdviceId(): string {
   adviceIdCounter += 1;
   return `adv-${Date.now().toString(36)}-${adviceIdCounter.toString(36)}`;
 }
-
-/**
- * Локальний день пристрою у форматі `YYYY-MM-DD` (ADR-0078).
- *
- * Свідомо НЕ `toISOString().slice(0,10)`: UTC-зсув перекидає добу ввечері за
- * київським часом і подія поїхала б із «завтрашнім» `day_key`.
- */
-/* eslint-disable sergeant-design/prefer-kyiv-time --
-   ADR-0078: день належить ПРИСТРОЮ, не Києву. Київський day-key приписав би
-   «учорашній» показ мандрівнику, який читає пораду о 20:00 за місцевим часом.
-   `dateKeyFromDate` не переюзаний свідомо: він живе в `@sergeant/routine-domain`,
-   а `core/observability` не має залежати від доменного пакета модуля. */
-function deviceDayKey(d = new Date()): string {
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${d.getFullYear()}-${m}-${day}`;
-}
-/* eslint-enable sergeant-design/prefer-kyiv-time */
 
 /**
  * Стабільний у межах завантаження сторінки `advice_id` для порад, які не

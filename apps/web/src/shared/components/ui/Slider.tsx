@@ -13,6 +13,7 @@ import {
   type ReactNode,
 } from "react";
 import { cn } from "@shared/lib/ui/cn";
+import { clampToDomain } from "@shared/charts/chartMath";
 
 /**
  * Sergeant Design System — Slider.
@@ -103,10 +104,6 @@ const thumbSize: Record<SliderSize, string> = {
   sm: "w-4 h-4",
   md: "w-5 h-5",
 };
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), max);
-}
 
 function snapToStep(value: number, min: number, step: number): number {
   if (step <= 0) return value;
@@ -210,7 +207,11 @@ export const Slider = forwardRef<HTMLDivElement, SliderProps>(
 
     const updateThumb = useCallback(
       (thumb: 0 | 1, rawValue: number, end = false) => {
-        const snapped = clamp(snapToStep(rawValue, min, step), min, max);
+        const snapped = clampToDomain(
+          snapToStep(rawValue, min, step),
+          min,
+          max,
+        );
         if (isRange) {
           const [lo, hi] = currentValue as RangeValue;
           const next: RangeValue =
@@ -234,7 +235,7 @@ export const Slider = forwardRef<HTMLDivElement, SliderProps>(
         const fraction = isVertical
           ? 1 - (clientY - rect.top) / Math.max(rect.height, 1)
           : (clientX - rect.left) / Math.max(rect.width, 1);
-        return min + clamp(fraction, 0, 1) * (max - min);
+        return min + clampToDomain(fraction, 0, 1) * (max - min);
       },
       [isVertical, max, min],
     );

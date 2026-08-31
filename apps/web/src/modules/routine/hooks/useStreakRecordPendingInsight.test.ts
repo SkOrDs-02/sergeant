@@ -5,7 +5,7 @@ import type { RoutineState, Habit } from "../lib/types";
 import { useStreakRecordPendingInsight } from "./useStreakRecordPendingInsight";
 
 vi.mock("@shared/lib/time/kyivTime", () => ({
-  getKyivDayKey: vi.fn(),
+  getKyivDateParts: vi.fn(),
 }));
 vi.mock("../lib/streaks", () => ({
   // Хук перейшов на гнучкий стрік (Хвиля 4) — мок іде за ним.
@@ -13,10 +13,10 @@ vi.mock("../lib/streaks", () => ({
   maxStreakAllTime: vi.fn(),
 }));
 
-import { getKyivDayKey } from "@shared/lib/time/kyivTime";
+import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import { flexibleMaxActiveStreak, maxStreakAllTime } from "../lib/streaks";
 
-const mockDayKey = vi.mocked(getKyivDayKey);
+const mockDateParts = vi.mocked(getKyivDateParts);
 const mockActive = vi.mocked(flexibleMaxActiveStreak);
 const mockAllTime = vi.mocked(maxStreakAllTime);
 
@@ -38,7 +38,12 @@ function makeState(habits: Habit[]): RoutineState {
 }
 
 beforeEach(() => {
-  mockDayKey.mockReturnValue("2026-07-19");
+  mockDateParts.mockReturnValue({
+    year: 2026,
+    month: 7,
+    day: 19,
+    hour: 12,
+  } as ReturnType<typeof getKyivDateParts>);
 });
 
 describe("useStreakRecordPendingInsight", () => {

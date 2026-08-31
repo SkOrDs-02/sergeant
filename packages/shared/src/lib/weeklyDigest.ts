@@ -20,6 +20,7 @@
  */
 
 import { STORAGE_KEYS } from "./storageKeys";
+import { deviceDayKey } from "../utils/date";
 
 export interface WeeklyDigestRecord {
   /** ISO string or epoch ms timestamp of when the digest was generated. */
@@ -46,10 +47,7 @@ export const FRESH_DIGEST_AGE_MS = 48 * 60 * 60 * 1000;
 
 /** Local YYYY-MM-DD key for a date, matching the pre-existing web format. */
 function localDateKey(d: Date): string {
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
+  return deviceDayKey(d);
 }
 
 /**

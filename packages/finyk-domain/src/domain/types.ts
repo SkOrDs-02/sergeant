@@ -220,10 +220,3 @@ export interface MerchantStat {
   count: number;
   total: number;
 }
-
-/** Результат обчислень calculateRemainingBudget. */
-export interface RemainingBudget {
-  remaining: number;
-  pct: number;
-  isOver: boolean;
-}

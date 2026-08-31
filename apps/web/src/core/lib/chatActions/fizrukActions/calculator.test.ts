@@ -46,23 +46,24 @@ describe("calculate1rm", () => {
     expect(result).toContain("Присідання");
   });
 
-  it("returns error for reps >= 37", () => {
-    expect(calculate1rm(makeAction(80, 37))).toContain("1..36");
-    expect(calculate1rm(makeAction(80, 50))).toContain("1..36");
+  it("returns reliability warning for reps beyond the domain cap (E1RM_REP_CAP=10)", () => {
+    expect(calculate1rm(makeAction(80, 11))).toContain("ненадійна");
+    expect(calculate1rm(makeAction(80, 37))).toContain("ненадійна");
+    expect(calculate1rm(makeAction(80, 50))).toContain("ненадійна");
   });
 
-  it("calculates 1RM for typical set (5 reps, 100 kg)", () => {
+  it("calculates 1RM for typical set (5 reps, 100 kg) matching the domain Epley formula", () => {
     const result = calculate1rm(makeAction(100, 5));
     expect(result).toContain("1RM");
-    // Epley: 100 * (1 + 5/30) = 116.7; Brzycki: 100*36/(37-5) = 112.5; avg ~114.6
-    expect(result).toContain("кг");
+    // Epley (workoutStats.ts, canon): 100 * (1 + 5/30) = 116.7
+    expect(result).toContain("116.7");
     expect(result).toContain("Таблиця відсотків");
   });
 
-  it("includes both Epley and Brzycki in result", () => {
+  it("uses the canonical Epley label, not the old Epley/Brzycki average", () => {
     const result = calculate1rm(makeAction(80, 8));
-    expect(result).toContain("Епллі");
-    expect(result).toContain("Бжицкі");
+    expect(result).toContain("Еплі");
+    expect(result).not.toContain("Бжицкі");
   });
 
   it("includes all standard percentage rows", () => {
@@ -77,9 +78,9 @@ describe("calculate1rm", () => {
     expect(result).toContain("Жим лежачи");
   });
 
-  it("handles edge case rep count of 36", () => {
-    const result = calculate1rm(makeAction(100, 36));
+  it("handles edge case rep count at the cap boundary (10)", () => {
+    const result = calculate1rm(makeAction(100, 10));
     expect(result).toContain("1RM");
-    expect(result).not.toContain("1..36");
+    expect(result).not.toContain("ненадійна");
   });
 });

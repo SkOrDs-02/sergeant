@@ -10,6 +10,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const todayISODate = vi.fn();
 vi.mock("@sergeant/nutrition-domain", () => ({
   todayISODate: () => todayISODate(),
+  WEEK_KCAL_OVER_TOLERANCE: 1.05,
 }));
 
 const getDayMacros = vi.fn();

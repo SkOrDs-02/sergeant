@@ -5,6 +5,8 @@ import {
   type WorkoutSet,
 } from "@sergeant/fizruk-domain";
 import { dateKeyFromDate } from "@sergeant/fizruk-domain/domain/plan/calendar";
+import { deviceDayKey } from "@sergeant/shared";
+import { formatDayKeyUk } from "@shared/lib/time/dayKeyLabel";
 
 export interface ExerciseProgressPoint {
   value: number;
@@ -64,14 +66,17 @@ export function buildStrengthProgressData(history: ExerciseHistoryEntry[]): {
 
 export function startOfLocalIsoWeek(d: Date): Date {
   const weekStart = new Date(d);
+  // fizruk is a device-local personal module; a workout's week bucket
+  // follows the device clock the same way its day-key does (ADR-0078).
+  // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- ADR-0078: see comment above
   weekStart.setDate(d.getDate() - ((d.getDay() + 6) % 7));
   weekStart.setHours(0, 0, 0, 0);
   return weekStart;
 }
 
 function formatProgressDate(d: Date): string {
-  return d.toLocaleDateString("uk-UA", {
-    day: "numeric",
-    month: "short",
+  return formatDayKeyUk(deviceDayKey(d), {
+    todayKey: deviceDayKey(),
+    relative: false,
   });
 }

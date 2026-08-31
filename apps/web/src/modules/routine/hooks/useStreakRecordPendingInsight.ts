@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { pluralDays } from "@sergeant/shared";
 import { flexibleMaxActiveStreak, maxStreakAllTime } from "../lib/streaks";
-import { getKyivDayKey } from "@shared/lib/time/kyivTime";
+import { anchoredTodayKey } from "../lib/dayAnchor";
 import type { RoutineState } from "../lib/types";
 import type { Insight } from "@shared/lib/insights/types";
 
@@ -20,7 +20,7 @@ import type { Insight } from "@shared/lib/insights/types";
 export function useStreakRecordPendingInsight(
   routine: RoutineState,
 ): Insight | null {
-  const todayKey = getKyivDayKey();
+  const todayKey = anchoredTodayKey();
 
   const currentStreak = useMemo(
     () =>

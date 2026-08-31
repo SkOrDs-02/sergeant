@@ -600,6 +600,19 @@ const PantryItem = z.union([
 export const PantryModeSchema = z.enum(["prefer", "only", "ignore"]);
 export type PantryMode = z.infer<typeof PantryModeSchema>;
 
+/**
+ * Тип прийому їжі — канон для трьох окремих оголошень (nutrition-domain
+ * `MealTypeId`, api-client `NutritionMealType`, і цей файл), знайдених
+ * unification-modules.md #2.25.
+ */
+export const MealTypeIdSchema = z.enum([
+  "breakfast",
+  "lunch",
+  "dinner",
+  "snack",
+]);
+export type MealTypeId = z.infer<typeof MealTypeIdSchema>;
+
 /** /api/nutrition/recommend-recipes */
 export const RecommendRecipesSchema = z.object({
   pantry: z.array(PantryItem).max(200).optional(),
@@ -649,9 +662,7 @@ export const DayPlanSchema = z.object({
   /** Дефолт — `prefer` (історична поведінка ендпоінта до появи поля). */
   pantryMode: PantryModeSchema.optional(),
   targets: NutritionTargets.optional(),
-  regenerateMealType: z
-    .enum(["breakfast", "lunch", "dinner", "snack"])
-    .optional(),
+  regenerateMealType: MealTypeIdSchema.optional(),
   locale: Locale,
 });
 

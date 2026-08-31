@@ -59,13 +59,24 @@ export function getMonthStart(): Date {
   return new Date(now.getFullYear(), now.getMonth(), 1);
 }
 
+/**
+ * Hide-list-aware filter for Mono accounts. Canonical (§2.22 audit
+ * finding merged the `domain/assets/aggregates.ts` `Set`-based mirror
+ * into this one, which `getMonoTotals` below already used).
+ */
+export function filterVisibleAccounts(
+  accounts: readonly MonoAccount[],
+  hiddenAccountIds: readonly string[] = [],
+): MonoAccount[] {
+  const hidden = new Set(hiddenAccountIds);
+  return accounts.filter((a) => !(a.id !== undefined && hidden.has(a.id)));
+}
+
 export function getMonoTotals(
-  accounts: MonoAccount[],
-  hiddenAccountIds: string[] = [],
+  accounts: readonly MonoAccount[],
+  hiddenAccountIds: readonly string[] = [],
 ): { balance: number; debt: number } {
-  const visible = accounts.filter(
-    (a) => !(a.id !== undefined && hiddenAccountIds.includes(a.id)),
-  );
+  const visible = filterVisibleAccounts(accounts, hiddenAccountIds);
   // Кредитки більше не виключені з balance — власні кошти зверху ліміту
   // (getMonoOwnFunds) враховуються в капітал, лише сам борг (creditLimit -
   // balance, коли додатний) лишається виключно в debt/«Пасиви» нижче.

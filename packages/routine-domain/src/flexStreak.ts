@@ -27,7 +27,7 @@
  * разом із бампом `METRICS_VERSION`.
  */
 
-import { dateKeyFromDate, parseDateKey } from "./dateKeys.js";
+import { dateKeyMinusDays } from "./dateKeys.js";
 import {
   dateKeyInPauseInterval,
   habitCountsTowardMetrics,
@@ -125,13 +125,6 @@ export interface FlexibleStreakBreakdown {
    * потрапляє.
    */
   window: FlexibleStreakDayCell[];
-}
-
-function dateKeyMinusDays(baseKey: string, daysBack: number): string {
-  const d = parseDateKey(baseKey);
-  d.setDate(d.getDate() - daysBack);
-  d.setHours(12, 0, 0, 0);
-  return dateKeyFromDate(d);
 }
 
 /**
@@ -344,6 +337,54 @@ export function flexibleMaxActiveStreak(
     m = Math.max(
       m,
       flexibleStreakForHabit(h, completions[h.id] || [], todayKey, {
+        skipsForHabit: skips[h.id],
+      }),
+    );
+  }
+  return m;
+}
+
+/**
+ * Гнучкий аналог `maxStreakAllTime` — найдовша серія за всю історію
+ * звички, з тими самими трьома механізмами мʼякості, а не лише «поточна».
+ *
+ * Без цього «Серія сьогодні» (`flexibleMaxActiveStreak`) могла показувати
+ * БІЛЬШЕ, ніж «Макс. серія» (`maxStreakAllTime`) — неможливе для
+ * користувача сусідство двох чисел на одній картці (unification audit
+ * 2026-08-31, finding 1.22): 7 виконаних днів, один прощений пропуск, ще
+ * 5 виконаних днів давали поточну серію 12 проти рекорду 7.
+ *
+ * Якорить `flexibleStreakBreakdown` на кожному виконаному дні — будь-яка
+ * найдовша серія за визначенням закінчується на «done», інші якорі
+ * зайві.
+ */
+export function flexibleMaxStreakAllTime(
+  habit: Habit,
+  completionsForHabit: string[] | undefined,
+  opts: FlexibleStreakOptions = {},
+): number {
+  if (!habitCountsTowardMetrics(habit)) return 0;
+  const done = completionsForHabit || [];
+  let best = 0;
+  for (const key of done) {
+    const days = flexibleStreakBreakdown(habit, done, key, opts).days;
+    if (days > best) best = days;
+  }
+  return best;
+}
+
+/** Гнучкий аналог `maxStreakAllTime` по всіх неархівних звичках. */
+export function flexibleMaxStreakAllTimeAcrossHabits(
+  habits: Habit[],
+  completions: Record<string, string[]>,
+  skips: Record<string, Record<string, HabitSkip>> = {},
+): number {
+  let m = 0;
+  for (const h of habits) {
+    if (h.archived) continue;
+    m = Math.max(
+      m,
+      flexibleMaxStreakAllTime(h, completions[h.id] || [], {
         skipsForHabit: skips[h.id],
       }),
     );

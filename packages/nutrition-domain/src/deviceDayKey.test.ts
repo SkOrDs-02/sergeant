@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  addDeviceDays,
   deviceDayKey,
   deviceTimeOfDay,
   deviceWallClockToInstant,
@@ -30,6 +31,20 @@ describe("deviceDayKey / previousDeviceDayKey", () => {
 
   it("previousDeviceDayKey відкочує на добу", () => {
     expect(previousDeviceDayKey("2026-03-01")).toBe("2026-02-28");
+  });
+});
+
+describe("addDeviceDays", () => {
+  it("зсуває вперед і назад через межу місяця", () => {
+    expect(addDeviceDays("2026-05-31", 1)).toBe("2026-06-01");
+    expect(addDeviceDays("2026-01-01", -1)).toBe("2025-12-31");
+    expect(addDeviceDays("2026-05-10", 0)).toBe("2026-05-10");
+  });
+
+  it("previousDeviceDayKey делегує в addDeviceDays(-1)", () => {
+    expect(previousDeviceDayKey("2026-08-30")).toBe(
+      addDeviceDays("2026-08-30", -1),
+    );
   });
 });
 

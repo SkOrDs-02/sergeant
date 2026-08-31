@@ -27,6 +27,21 @@ describe("WorkoutItemTypeSwitcher", () => {
     );
   });
 
+  it("switching away from 'Силова' clears sets so old volume can't survive the merge", () => {
+    const onChange = vi.fn();
+    render(
+      <WorkoutItemTypeSwitcher
+        item={{ type: "strength", sets: [{ weightKg: 80, reps: 10 }] }}
+        isReadOnly={false}
+        onChange={onChange}
+      />,
+    );
+    fireEvent.click(screen.getByRole("tab", { name: "Час: секунди" }));
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "time", sets: undefined }),
+    );
+  });
+
   it("switching to 'Дист' calls onChange with distanceM + durationSec", () => {
     const onChange = vi.fn();
     render(

@@ -16,13 +16,14 @@
  */
 import { useCallback } from "react";
 import { VirtualList } from "@shared/components/ui/VirtualList";
-import { pluralExercises } from "@sergeant/shared";
+import { deviceDayKey, pluralExercises } from "@sergeant/shared";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { SwipeToAction } from "@shared/components/ui/SwipeToAction";
 import { Card } from "@shared/components/ui/Card";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
+import { formatDayKeyUk } from "@shared/lib/time/dayKeyLabel";
 import { messages } from "@shared/i18n/uk";
 import type { Workout } from "@sergeant/fizruk-domain";
 
@@ -69,9 +70,9 @@ function WorkoutRow({ w, onOpen }: WorkoutRowProps) {
     >
       <div className="flex items-center justify-between gap-3">
         <div className="text-style-label text-text">
-          {new Date(w.startedAt).toLocaleDateString("uk-UA", {
-            month: "short",
-            day: "numeric",
+          {formatDayKeyUk(deviceDayKey(new Date(w.startedAt)), {
+            todayKey: deviceDayKey(),
+            relative: false,
           })}
         </div>
         <div className="flex items-center gap-2">

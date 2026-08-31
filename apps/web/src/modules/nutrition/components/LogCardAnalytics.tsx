@@ -8,15 +8,16 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Measure } from "@shared/components/ui/Measure";
 import { cn } from "@shared/lib/ui/cn";
 import {
-  avgFromSummary,
   getRowsForRange,
   mealTypeBreakdown,
-  summarizeRows,
   topMeals,
 } from "../lib/nutritionStats";
 import { MEAL_ORDER, MEAL_META } from "../lib/mealTypes";
 import { Icon, type IconName } from "@shared/components/ui/Icon";
-import type { NutritionLog } from "@sergeant/nutrition-domain";
+import {
+  calcNutritionPeriodAverages,
+  type NutritionLog,
+} from "@sergeant/nutrition-domain";
 
 interface LogCardAnalyticsProps {
   log: NutritionLog;
@@ -30,8 +31,18 @@ export function LogCardAnalytics({ log, selectedDate }: LogCardAnalyticsProps) {
     () => getRowsForRange(log, selectedDate, statsRange),
     [log, selectedDate, statsRange],
   );
-  const statsSummary = useMemo(() => summarizeRows(statsRows), [statsRows]);
-  const statsAvg = useMemo(() => avgFromSummary(statsSummary), [statsSummary]);
+  // Канон `calcNutritionPeriodAverages` (nutrition.md §5.2): знаменник —
+  // дні з ≥1 прийомом їжі (`daysLogged`), а не дні з макросами. Той самий
+  // список дат, що вже породив `statsRows`, тож повторного проходу по логу
+  // немає.
+  const statsAvg = useMemo(
+    () =>
+      calcNutritionPeriodAverages(
+        log,
+        statsRows.map((r) => r.date),
+      ),
+    [log, statsRows],
+  );
   const statsTop = useMemo(
     () => topMeals(log, selectedDate, statsRange, 8),
     [log, selectedDate, statsRange],
@@ -68,10 +79,10 @@ export function LogCardAnalytics({ log, selectedDate }: LogCardAnalyticsProps) {
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {[
-          { key: "kcal", label: "Сер. ккал/день", v: statsAvg.kcal },
-          { key: "protein_g", label: "Сер. Б/день", v: statsAvg.protein_g },
-          { key: "fat_g", label: "Сер. Ж/день", v: statsAvg.fat_g },
-          { key: "carbs_g", label: "Сер. В/день", v: statsAvg.carbs_g },
+          { key: "kcal", label: "Сер. ккал/день", v: statsAvg.avgKcal },
+          { key: "protein_g", label: "Сер. Б/день", v: statsAvg.avgProtein },
+          { key: "fat_g", label: "Сер. Ж/день", v: statsAvg.avgFat },
+          { key: "carbs_g", label: "Сер. В/день", v: statsAvg.avgCarbs },
         ].map((x) => (
           <div key={x.key} className="bg-panelHi rounded-2xl px-2 py-3">
             <div className="text-style-caption text-muted">{x.label}</div>
@@ -79,7 +90,7 @@ export function LogCardAnalytics({ log, selectedDate }: LogCardAnalyticsProps) {
               {Math.round(Number(x.v) || 0)}
             </div>
             <div className="text-style-caption text-muted">
-              на {statsSummary.daysWithAnyMacros} активн. днів
+              на {statsAvg.daysLogged} активн. днів
             </div>
           </div>
         ))}

@@ -30,6 +30,7 @@ import {
 } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { useReducedMotion } from "@shared/hooks/useReducedMotion";
+import { clampToDomain } from "@shared/charts/chartMath";
 
 export interface WheelPickerProps {
   /** Ordered set of selectable values (ascending recommended). */
@@ -51,10 +52,6 @@ export interface WheelPickerProps {
   "aria-label"?: string;
   "aria-labelledby"?: string;
   className?: string;
-}
-
-function clamp(n: number, min: number, max: number): number {
-  return Math.min(Math.max(n, min), max);
 }
 
 function nearestIndex(values: readonly number[], target: number): number {
@@ -99,7 +96,7 @@ export function WheelPicker({
 
   const commit = useCallback(
     (index: number) => {
-      const next = values[clamp(index, 0, values.length - 1)];
+      const next = values[clampToDomain(index, 0, values.length - 1)];
       if (next !== undefined && next !== value) onChange(next);
     },
     [onChange, value, values],
@@ -132,7 +129,7 @@ export function WheelPicker({
   const onScroll = () => {
     const el = scrollRef.current;
     if (!el || disabled) return;
-    const i = clamp(
+    const i = clampToDomain(
       Math.round(el.scrollTop / itemHeight),
       0,
       values.length - 1,

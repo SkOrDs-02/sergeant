@@ -2,30 +2,24 @@
  * Last validated: 2026-06-15
  * Status: Active
  */
+import { clampNonNegative } from "@sergeant/shared";
 import {
   addDaysISODate,
   getDaySummary,
+  lastNDayKeysOldestFirst,
   type DaySummary,
   type NutritionLog,
 } from "./nutritionStorage";
 import { mealTypeFromLabel } from "./mealTypes";
-
-function clamp0(n: unknown): number {
-  const v = Number(n);
-  return Number.isFinite(v) ? Math.max(0, v) : 0;
-}
 
 export function getRowsForRange(
   log: NutritionLog,
   endIso: string,
   dayCount: number,
 ): DaySummary[] {
-  const rows: DaySummary[] = [];
-  for (let i = dayCount - 1; i >= 0; i--) {
-    const d = addDaysISODate(endIso, -i);
-    rows.push(getDaySummary(log, d));
-  }
-  return rows;
+  return lastNDayKeysOldestFirst(endIso, dayCount).map((d) =>
+    getDaySummary(log, d),
+  );
 }
 
 export interface RowsSummary {
@@ -65,27 +59,6 @@ export function summarizeRows(rows: DaySummary[]): RowsSummary {
   return out;
 }
 
-export interface AvgMacros {
-  kcal: number;
-  protein_g: number;
-  fat_g: number;
-  carbs_g: number;
-  denom: number;
-}
-
-export function avgFromSummary(sum: RowsSummary): AvgMacros {
-  // Prefer averaging only over days where some macros exist to avoid dragging
-  // averages down to 0 when meals were logged without macros.
-  const denom = Math.max(1, Number(sum?.daysWithAnyMacros) || 0);
-  return {
-    kcal: sum.kcal / denom,
-    protein_g: sum.protein_g / denom,
-    fat_g: sum.fat_g / denom,
-    carbs_g: sum.carbs_g / denom,
-    denom,
-  };
-}
-
 export interface TopMeal {
   name: string;
   count: number;
@@ -109,7 +82,7 @@ export function topMeals(
       if (!name) continue;
       const cur = map.get(name) || { name, count: 0, kcal: 0 };
       cur.count += 1;
-      cur.kcal += clamp0(m?.macros?.kcal);
+      cur.kcal += clampNonNegative(m?.macros?.kcal);
       map.set(name, cur);
     }
   }
@@ -135,7 +108,7 @@ export function mealTypeBreakdown(
       const type = String(m?.mealType || "") || mealTypeFromLabel(m?.label);
       if (!out[type]) out[type] = { count: 0, kcal: 0 };
       out[type].count += 1;
-      out[type].kcal += clamp0(m?.macros?.kcal);
+      out[type].kcal += clampNonNegative(m?.macros?.kcal);
     }
   }
   return out;

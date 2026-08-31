@@ -22,16 +22,41 @@ export function deviceDayKey(d: Date | number = new Date()): string {
 }
 
 /**
- * Ключ дня пристрою, що передує `key` (`YYYY-MM-DD`).
+ * Ключ дня пристрою, зсунутий від `key` (`YYYY-MM-DD`) на `deltaDays`.
  *
  * Через конструктор `Date(y, m, d)` з полями, а не ручну арифметику в мс —
  * локальні поля `Date` самі коректно перекочують через DST-переходи (той
  * самий підхід, що `addDays`/`dateKeyFromDate` у `@sergeant/routine-domain`),
  * тож окремого DST-guard-а тут не треба.
  */
-export function previousDeviceDayKey(key: string): string {
+export function addDeviceDays(key: string, deltaDays: number): string {
   const [y, m, d] = key.split("-").map(Number);
-  return deviceDayKey(new Date(y ?? 1970, (m ?? 1) - 1, (d ?? 1) - 1));
+  return deviceDayKey(new Date(y ?? 1970, (m ?? 1) - 1, (d ?? 1) + deltaDays));
+}
+
+/** Ключ дня пристрою, що передує `key` (`YYYY-MM-DD`). */
+export function previousDeviceDayKey(key: string): string {
+  return addDeviceDays(key, -1);
+}
+
+/**
+ * Понеділок поточного тижня за годинником ПРИСТРОЮ (`YYYY-MM-DD`).
+ *
+ * unification-modules.md #1.18: `NutritionDashboard` рахував «сьогодні»
+ * пристроєм, а межі тижневого графіка — Києвом, тож поза Києвом сьогоднішній
+ * стовпчик міг випасти з власного тижневого вікна. Тиждень лишається з
+ * понеділка (доменний інваріант), змінюється лише годинник.
+ */
+export function deviceWeekStartKey(d: Date | number = new Date()): string {
+  const date = typeof d === "number" ? new Date(d) : d;
+  const weekday = date.getDay(); // 0=Sun..6=Sat
+  const diffToMonday = weekday === 0 ? -6 : 1 - weekday;
+  const monday = new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate() + diffToMonday,
+  );
+  return deviceDayKey(monday);
 }
 
 /**
