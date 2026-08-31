@@ -21,13 +21,13 @@ Sorted: `blocked` items first, далі явні `agent-ready`, потім за 
 
 _Жодного документа не пропустило `Next review:` дату. 🎉_
 
-## WIP load — 🔴 OVER HARD
+## WIP load — 🟡 over soft
 
 Принаймні один tracker перевищив soft або hard. Подумай чи закрити старе перед відкриттям нового.
 
 | Severity | Tracker    | Active | Soft / Hard |
 | -------- | ---------- | ------ | ----------- |
-| 🔴 HARD  | Планування | 35     | 28 / 35     |
+| 🟡 SOFT  | Планування | 34     | 28 / 35     |
 
 ## Quick links
 
