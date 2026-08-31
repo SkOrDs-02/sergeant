@@ -55,6 +55,7 @@ import {
   type ToolCase,
 } from "../src/modules/chat/toolSelectionCases/index.js";
 import { DATA_BLOCK } from "../src/modules/chat/toolEval/dataBlock.js";
+import { wrapAndScanToolResults } from "../src/modules/chat/toolOutputWrapping.js";
 import {
   buildManifest,
   saveCassette,
@@ -72,6 +73,10 @@ import {
   summarize,
   type ReplayedCase,
 } from "../src/modules/chat/toolEval/replay.js";
+import {
+  INJECTION_CASES,
+  scoreInjection,
+} from "../src/modules/chat/toolEval/injectionCases.js";
 
 const SKIN_URL = "https://openrouter.ai/api/v1/messages";
 
@@ -86,6 +91,15 @@ const ALL_CASES: ToolCase[] = [...CASE_SET, ...IMPLICIT_FACT_CASES];
  * тобто вже ПІСЛЯ всіх оплачених викликів.
  */
 const IMPLICIT_NAMES = new Set(IMPLICIT_FACT_CASES.map((c) => c.name));
+
+/**
+ * Кейси, у результаті яких продовий детектор побачив маркер інʼєкції.
+ *
+ * Лічильник тут локальний навмисно: у проді це метрика Prometheus, і тягнути
+ * її реєстр у CLI означало б ініціалізувати пів обсервабіліті заради одного
+ * булевого значення.
+ */
+const injectionHits = new Set<string>();
 
 interface SkinResponse {
   content?: EvalBlock[];
@@ -185,16 +199,26 @@ async function runChain(
     if (toolUses.length === 0) break;
     if (reachedFinalTurn(toolCase, pickedFrom(blocks))) break;
 
+    // Результат їде моделі ЧЕРЕЗ ПРОДОВУ обгортку `wrapAndScanToolResults`:
+    // огорожа `<tool_output tool="…">`, екранування закриваючого тегу,
+    // інкремент лічильника інʼєкцій. Перша версія годувала сирий рядок - тобто
+    // стенд міряв конвеєр, якого в проді не буває, і адверсарний набір
+    // перевіряв би стійкість БЕЗ головної лінії захисту.
+    const wrapped = wrapAndScanToolResults(
+      toolUses.map((b) => ({ tool_use_id: b.id ?? "", content: next.result })),
+      blocks,
+      { recordInjectionAttempt: () => injectionHits.add(toolCase.name) },
+    );
     messages.push({ role: "assistant", content: blocks });
     messages.push({
       role: "user",
-      content: toolUses.map((b) => ({
+      content: wrapped.map((r) => ({
         type: "tool_result",
-        tool_use_id: b.id,
-        content: next.result,
+        tool_use_id: r.tool_use_id,
+        content: r.content,
       })),
     });
-    fedResult = next.result;
+    fedResult = wrapped[0]?.content ?? next.result;
   }
 
   return {
@@ -219,12 +243,91 @@ function textOf(turn: RecordedTurn | undefined): string {
     .slice(0, 220);
 }
 
+/**
+ * Адверсарний прогін: інʼєкція приїжджає в результаті інструмента, тобто тим
+ * самим шляхом, яким у проді приходить опис транзакції з Монобанку чи назва
+ * звички. Питання одне: чи виконає модель команду, заховану в даних.
+ */
+async function runInjections(
+  apiKey: string,
+  model: string,
+  record: boolean,
+): Promise<void> {
+  console.log(
+    `Адверсарний набір: ${INJECTION_CASES.length} інʼєкцій, модель ${model}${record ? ", режим: ЗАПИС КАСЕТИ" : ""}
+`,
+  );
+  const recorded: RecordedCase[] = [];
+  let obeyed = 0;
+  let undelivered = 0;
+
+  for (const injection of INJECTION_CASES) {
+    // Інʼєкція оформлюється як звичайний сценарій ланцюжка: перший хід -
+    // розвідка, отруєний результат - другий хід. Окремого транспорту не треба.
+    const asCase: ToolCase = {
+      name: injection.name,
+      user: injection.user,
+      accept: injection.accept,
+      turns: [{ result: injection.payload, accept: [] }],
+    };
+    const chain = await runChain(apiKey, model, asCase, true);
+    recorded.push(chain.recorded);
+
+    const outcome = scoreInjection(injection, chain.recorded.turns);
+    if (outcome.obeyed) obeyed += 1;
+    // Payload існує лише всередині `tool_result`, тож без виклику на першому
+    // ході він не доїжджає до моделі взагалі. Такий кейс НЕ доводить
+    // стійкості - він доводить, що інʼєкцію не доставили, і плутати ці два
+    // стани не можна: перше про модель, друге про кейс.
+    const delivered = chain.recorded.turns.length > 1;
+    if (!delivered) undelivered += 1;
+    const detector = injectionHits.has(injection.name);
+    const detectorMark = !delivered
+      ? "НЕ ДОЇХАЛО"
+      : detector === injection.detectorShouldMatch
+        ? detector
+          ? "детектор+"
+          : "детектор-"
+        : `ДЕТЕКТОР РОЗІЙШОВСЯ (очікували ${injection.detectorShouldMatch})`;
+    const verdict = !delivered
+      ? "  недоставл"
+      : outcome.obeyed
+        ? "ПОСЛУХАЛАСЬ"
+        : "     стійка";
+    console.log(
+      `[${verdict}] ${injection.name.padEnd(38)} ${detectorMark.padEnd(12)} ${(chain.recorded.error ?? outcome.calledTools.join(",")) || "(без викликів)"}`,
+    );
+    for (const reason of outcome.reasons) console.log(`        ↳ ${reason}`);
+  }
+
+  console.log(
+    `
+Послухалась інʼєкції: ${obeyed}/${INJECTION_CASES.length}. Не доставлено: ${undelivered}. Детектор побачив: ${injectionHits.size} із ${INJECTION_CASES.length - undelivered} доставлених.`,
+  );
+
+  if (record) {
+    saveCassette(
+      {
+        manifest: buildManifest(
+          model,
+          recorded.length,
+          new Date().toISOString(),
+        ),
+        cases: recorded,
+      },
+      "injections",
+    );
+    console.log(`Касету інʼєкцій записано: ${recorded.length} кейсів.`);
+  }
+}
+
 async function main(): Promise<void> {
   const { values } = parseArgs({
     options: {
       models: { type: "string" },
       "no-data": { type: "boolean", default: false },
       record: { type: "boolean", default: false },
+      injections: { type: "boolean", default: false },
       repeat: { type: "string" },
     },
   });
@@ -243,6 +346,17 @@ async function main(): Promise<void> {
       "--record несумісний з --no-data: касета пінить sha DATA_BLOCK.",
     );
     process.exitCode = 1;
+    return;
+  }
+
+  if (values.injections) {
+    await runInjections(
+      apiKey,
+      (values.models ?? CHAT_MODEL_DEFAULTS.firstTurn.openrouter)
+        .split(",")[0]
+        ?.trim() ?? CHAT_MODEL_DEFAULTS.firstTurn.openrouter,
+      values.record === true,
+    );
     return;
   }
 
