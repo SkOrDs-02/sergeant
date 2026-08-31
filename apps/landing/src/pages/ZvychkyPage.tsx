@@ -246,7 +246,37 @@ export default function ZvychkyPage() {
       </section>
 
       <section className="mt-14 border-t-2 border-foreground-strong pt-8">
-        <p className="text-sm text-subtle">
+        <h2 className={h2}>Гайди про звички</h2>
+        <div className="mt-6 border-b border-cardline">
+          {[
+            {
+              href: "/guides/pauza-i-propusk",
+              title:
+                "Як заявити паузу і пояснити пропуск, щоб серія не обнулилась",
+              teaser: "Три різні механізми мʼякості і кроки для кожного з них.",
+            },
+            {
+              href: "/guides/ohlyad-dnya",
+              title: "Як бачити тренування і планові платежі поруч зі звичками",
+              teaser:
+                "Що саме підтягується в календар з інших модулів і де межі перегляду.",
+            },
+          ].map((guide) => (
+            <a
+              key={guide.href}
+              href={guide.href}
+              className="group block border-t border-cardline py-5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+            >
+              <h3 className="max-w-2xl text-lg font-bold leading-snug text-foreground-strong group-hover:underline">
+                {guide.title}
+              </h3>
+              <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-muted">
+                {guide.teaser}
+              </p>
+            </a>
+          ))}
+        </div>
+        <p className="mt-8 text-sm text-subtle">
           Як Рутина звʼязана з рештою сфер –{" "}
           <a
             href="/zvyazky"
