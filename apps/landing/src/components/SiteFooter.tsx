@@ -33,6 +33,9 @@ export default function SiteFooter() {
             <a href="/guides" className={link}>
               Гайди
             </a>
+            <a href="/ruchna-robota" className={link}>
+              Скільки вводити руками
+            </a>
           </div>
           <div className="flex flex-col">
             <p className="pb-1 font-display text-xs font-bold uppercase tracking-[0.08em] text-subtle">
@@ -57,6 +60,9 @@ export default function SiteFooter() {
             </p>
             <a href="/data" className={link}>
               Твої дані
+            </a>
+            <a href="/vyhid" className={link}>
+              Забрати свої дані
             </a>
             <a href="/privacy" className={link}>
               Політика приватності
