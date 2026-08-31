@@ -12,6 +12,13 @@ export const FINYK_CASES: ToolCase[] = [
     name: "виправлення категорії покупки",
     user: "Та транзакція в АТБ мала піти в 'їжа', а не в 'побут', виправ",
     accept: ["change_category", "find_transaction"],
+    turns: [
+      {
+        result:
+          "Знайдено 1: tx_9f18 — 2026-07-28, 640 грн, «АТБ», категорія cat_groceries.",
+        accept: ["change_category"],
+      },
+    ],
   },
   {
     name: "масова перекатегоризація по мерчанту",
@@ -47,6 +54,13 @@ export const FINYK_CASES: ToolCase[] = [
     name: "видалення дубля витрати",
     user: "Видали ту витрату на каву, я її двічі вручну вніс по помилці",
     accept: ["delete_transaction", "find_transaction"],
+    turns: [
+      {
+        result:
+          "Знайдено 2: tx_9f21 — 2026-07-29, 120 грн, «кава»; tx_9f26 — 2026-07-29, 120 грн, «кава».",
+        accept: ["delete_transaction"],
+      },
+    ],
   },
   {
     name: "нова ціль заощаджень",

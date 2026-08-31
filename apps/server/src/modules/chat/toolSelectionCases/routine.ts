@@ -14,9 +14,19 @@ export const ROUTINE_CASES: ToolCase[] = [
     accept: ["create_reminder", "edit_habit"],
   },
   {
+    // Звички «бігати» немає в блоці ДАНІ, тож розвідка перед архівацією -
+    // правильний хід. Другий хід перевіряє те, чого одноходовий стенд не міг:
+    // чи візьме модель `hab_run` із результату, замість вигадати свій id.
     name: "архівація звички",
     user: "Прибери зі списку звичку бігати, я більше не бігаю",
-    accept: ["archive_habit"],
+    accept: ["archive_habit", "query_habits"],
+    turns: [
+      {
+        result:
+          "Звички: hab_morning «Ранкова зарядка», hab_water «Склянка води зранку», hab_reading «Читання 20 хвилин», hab_run «Біг» (активна, 3 рази на тиждень).",
+        accept: ["archive_habit"],
+      },
+    ],
   },
   {
     name: "разова подія в календарі",
@@ -46,7 +56,14 @@ export const ROUTINE_CASES: ToolCase[] = [
   {
     name: "планова пауза звички",
     user: "Я їду у відпустку з 5 по 15 вересня, постав медитацію на паузу на цей час",
-    accept: ["pause_habit"],
+    accept: ["pause_habit", "query_habits"],
+    turns: [
+      {
+        result:
+          "Звички: hab_morning «Ранкова зарядка», hab_water «Склянка води зранку», hab_reading «Читання 20 хвилин», hab_meditation «Медитація» (активна, щоденна).",
+        accept: ["pause_habit"],
+      },
+    ],
   },
   {
     name: "звʼязок звички з витратами",

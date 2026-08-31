@@ -83,7 +83,7 @@ type ChatModelSlot = "firstTurn" | "synthesis" | "standard" | "floor";
  * НУЛЬ вигаданих id, haiku 21/24 і два вигаданих. Вигаданий `habit_id` доїжджає
  * до клієнтського виконавця й пише фантомний запис — це не косметика.
  */
-const CHAT_MODEL_DEFAULTS: Record<
+export const CHAT_MODEL_DEFAULTS: Record<
   ChatModelSlot,
   { openrouter: string; anthropic: string }
 > = {

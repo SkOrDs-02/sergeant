@@ -18,7 +18,7 @@ import { NUTRITION_CASES } from "./nutrition.js";
 import { ROUTINE_CASES } from "./routine.js";
 import { CROSS_MODULE_CASES } from "./crossModule.js";
 
-export type { ToolCase } from "./types.js";
+export type { ToolCase, ToolTurn } from "./types.js";
 export { IMPLICIT_FACT_CASES } from "./baseline.js";
 
 /** Усі кейси стенду, крім блоку неявної памʼяті (він рахується окремо). */
@@ -31,11 +31,21 @@ export const ALL_CASES: ToolCase[] = [
   ...CROSS_MODULE_CASES,
 ];
 
-/** Кожен інструмент, названий бодай в одному кейсі. */
+/**
+ * Кожен інструмент, названий бодай в одному кейсі.
+ *
+ * Ходи ланцюжка рахуються нарівні з першим: інструмент, який модель має
+ * викликати лише на другому ході, покритий не гірше за той, що на першому.
+ * Без цього перенесення кейса в багатоходовий режим мовчки відкривало б дірку
+ * в гейті покриття.
+ */
 export function coveredToolNames(): Set<string> {
   const covered = new Set<string>();
   for (const c of [...ALL_CASES, ...IMPLICIT_FACT_CASES]) {
     for (const name of c.accept) covered.add(name);
+    for (const turn of c.turns ?? []) {
+      for (const name of turn.accept) covered.add(name);
+    }
   }
   return covered;
 }

@@ -1,270 +1,222 @@
 #!/usr/bin/env node
 /**
- * `pnpm eval:tools` — first-turn tool-selection benchmark.
+ * `pnpm eval:tools` - стенд вибору інструментів, тепер багатоходовий.
  *
- * Context. `model-eval.ts` routes through `getLLMProvider()`, which models a
- * single-shot text generation and nothing else — no tools, no streaming. That
- * covers chat *synthesis* but leaves the first turn untested, and the first
- * turn is where the model picks one of 77 tools from the real registry. A
- * model that writes beautiful Ukrainian and picks `create_habit` when the user
- * asked about spending is worse than useless.
+ * Контекст. `model-eval.ts` ходить через `getLLMProvider()`, який моделює
+ * одноразову генерацію тексту й нічого більше: ані інструментів, ані стріму.
+ * Це покриває СИНТЕЗ відповіді, але лишає неперевіреним перший хід, а саме там
+ * модель обирає один із 78 інструментів реєстру. Модель, що пише красивою
+ * українською і кличе `create_habit` на питання про витрати, гірша за марну.
  *
- * What this does. Sends the production system prefix + the production tool
- * registry to OpenRouter's Anthropic-compatible endpoint (`/api/v1/messages`,
- * the "Anthropic Skin") and checks which `tool_use` block comes back. That
- * exercises two things at once:
- *   1. does the Skin actually carry 77 Anthropic-format tools, and
- *   2. can a non-Claude model pick correctly from them.
+ * Що робить. Шле продовий системний префікс плюс продовий реєстр інструментів
+ * на Anthropic-сумісний ендпойнт OpenRouter (`/api/v1/messages`, «Anthropic
+ * Skin») і дивиться, який `tool_use` повернувся. Перевіряє дві речі заразом:
+ *   1. чи справді Skin несе 78 інструментів у форматі Anthropic, і
+ *   2. чи вміє не-Claude модель обрати з них правильний.
  *
- * Scoring is deliberately generous on the tool NAME: each case lists every tool
- * a reasonable assistant might pick, so a miss means the model went somewhere
- * unrelated, not that it disagreed on a judgement call. Arguments are scored
- * strictly instead — an id in a write-call that was never given to the model is
- * a `FAKE`, and it counts as worse than a `MISS`.
+ * БАГАТОХОДОВІСТЬ. Кейс може нести сценарій `turns`: що повернути моделі як
+ * `tool_result` і що вона має викликати після цього. До трьох ходів разом із
+ * першим. Це закриває цілий клас хибних промахів - розвідку перед дією
+ * (`find_transaction` перед `delete_transaction`), яку одноходовий стенд
+ * рахував як помах у молоко, - і водночас перевіряє дорожче: чи переносить
+ * модель id, здобутий із результату, в аргумент наступного виклику.
+ *
+ * КАСЕТИ. `--record` пише прогін у фікстуру, і далі `cassette.test.ts`
+ * відтворює його безкоштовно й без мережі на кожному PR. Оцінювання в живому
+ * прогоні й у відтворенні - той самий `replayCase()`, навмисно: розійдись вони,
+ * зелений тест перестав би щось означати.
+ *
+ * Оцінювання імені інструмента навмисно поблажливе: кейс перелічує всі
+ * інструменти, які розумний асистент міг би обрати, тож промах означає, що
+ * модель пішла кудись не туди, а не що вона не погодилась у тонкому місці.
+ * Аргументи навпаки оцінюються строго - id у write-виклику, якого моделі ніхто
+ * не давав, це `FAKE`, і він гірший за `MISS`.
  *
  * Окремим блоком (`IMPLICIT_FACT_CASES`) міряється неявна памʼять: факт про
  * себе, сказаний мимохідь усередині звичайного прохання, без слова
- * «запамʼятай». Підсумок друкується рядком `implicit remember: N/M` — решта
+ * «запамʼятай». Підсумок друкується рядком `implicit remember: N/M` - решта
  * ланцюга памʼяті (`profileMirror` → `ai_memories`) працює лише тоді, коли
  * модель узагалі викликала `remember`, тож це його вхідна точка.
  *
  * Usage:
  *   OPENROUTER_API_KEY=... pnpm eval:tools
+ *   OPENROUTER_API_KEY=... pnpm eval:tools --record
  *   OPENROUTER_API_KEY=... pnpm eval:tools --models=anthropic/claude-haiku-4.5
  */
 
 import { parseArgs } from "node:util";
 import process from "node:process";
 
+import { CHAT_MODEL_DEFAULTS } from "../src/env/chatModels.js";
 import { SYSTEM_PREFIX, TOOLS } from "../src/modules/chat/tools.js";
 import {
   ALL_CASES as CASE_SET,
   IMPLICIT_FACT_CASES,
   type ToolCase,
 } from "../src/modules/chat/toolSelectionCases/index.js";
-import type { AnthropicTool } from "../src/modules/chat/toolDefs/types.js";
+import { DATA_BLOCK } from "../src/modules/chat/toolEval/dataBlock.js";
+import {
+  buildManifest,
+  saveCassette,
+  type RecordedCase,
+  type RecordedTurn,
+} from "../src/modules/chat/toolEval/cassette.js";
+import {
+  pickedFrom,
+  reachedFinalTurn,
+  WRITE_ID_FIELDS,
+  type EvalBlock,
+} from "../src/modules/chat/toolEval/scoring.js";
+import {
+  replayCase,
+  summarize,
+  type ReplayedCase,
+} from "../src/modules/chat/toolEval/replay.js";
 
 const SKIN_URL = "https://openrouter.ai/api/v1/messages";
 
-/**
- * Read-only інструменти — усе інше вважаємо записом.
- *
- * AI-CONTEXT: список навмисно інвертований. Перелічити write-дієслова
- * (`create_`, `mark_`, `log_`…) виглядає природніше, але тоді новий інструмент
- * із незнайомим дієсловом мовчки випадає з перевірки — так повз неї проходять
- * `change_category`, `finish_workout`, `reorder_habits`, `forget`. При
- * інверсії незнайоме імʼя за замовчуванням перевіряється: гірше, що може
- * статися — хибне спрацювання на read-і, і воно видно у звіті.
- */
-const READ_ONLY = (name: string): boolean =>
-  /^(query_|aggregate_|compare_|get_|list_|find_|export_|suggest_|recall_|my_)/.test(
-    name,
-  ) ||
-  /(_stats|_trend|_progress|_breakdown|_averages|_correlation)$/.test(name);
-
-function idFields(tool: AnthropicTool): string[] {
-  const properties = (
-    tool.input_schema as { properties?: Record<string, unknown> }
-  ).properties;
-  return Object.keys(properties ?? {}).filter(
-    (k) => k.endsWith("_id") || k.endsWith("_ids"),
-  );
-}
-
-/**
- * Реєстр «write-інструмент → його поля-ідентифікатори», виведений з `TOOLS`.
- * Список навмисно не захардкоджений: реєстр росте, а забутий у списку
- * інструмент — це мовчазна дірка в перевірці, а не помилка компіляції.
- */
-const WRITE_ID_FIELDS = new Map<string, string[]>(
-  TOOLS.filter((t) => !READ_ONLY(t.name))
-    .map((t) => [t.name, idFields(t)] as const)
-    .filter(([, fields]) => fields.length > 0),
-);
-
-/**
- * Блок ДАНІ — те, що прод підставляє після `ДАНІ:` наприкінці `SYSTEM_PREFIX`.
- *
- * AI-CONTEXT: без нього стенд міряв лише одну поведінку — «чи вигадає модель id,
- * коли їй не дали нічого». Це найгостріший, але не найчастіший сценарій. У проді
- * контекст здебільшого Є, і питання інше: чи візьме модель наданий id, чи все
- * одно напише свій. Друге страшніше, бо вигаданий id при порожньому контексті
- * впаде на перевірці виконавця, а підмінений — може влучити в чужу сутність.
- *
- * Формат — правдоподібний stand-in, а не копія продового білдера: мета стенду
- * перевірити поведінку моделі, а не відтворити рядок байт-у-байт. Дата фіксована
- * навмисно, щоб прогони лишались відтворюваними.
- */
-const DATA_BLOCK = `Сьогодні: 2026-07-30 (четвер), Europe/Kyiv. Тиждень рахуємо з понеділка.
-
-[Категорії]
-- cat_groceries — Продукти
-- cat_food_out — Їжа поза домом
-- cat_transport — Транспорт
-- cat_utilities — Комуналка
-
-[Звички]
-- hab_morning — Ранкова зарядка
-- hab_water — Склянка води зранку
-- hab_reading — Читання 20 хвилин
-
-[Останні транзакції]
-- tx_9f21 — 2026-07-29, 120 грн, Їжа поза домом, «кава»
-- tx_9f18 — 2026-07-28, 640 грн, Продукти, «АТБ»
-- tx_9f02 — 2026-07-27, 95 грн, Транспорт, «метро»
-
-[Тренування]
-- Жим лежачи: 2026-07-26 — 80 кг × 5 повторень`;
-
-/**
- * Ідентифікатори, яких моделі ніхто не давав: усе, чого немає дослівно в
- * контексті (системний промпт + блок ДАНІ + репліка користувача), модель
- * вигадала.
- */
-/**
- * Правильність вибору. Три режими, бо «правильно» означає різне:
- * стриманість (не викликати нічого), повнота (виклик кожного з переліку),
- * і звичайне влучання в один із прийнятних.
- */
-function scoreCase(toolCase: ToolCase, picked: string[]): boolean {
-  const hit = (a: string) => picked.some((p) => p.startsWith(`${a}(`));
-  if (toolCase.expectNoTool) return picked.length === 0;
-  if (toolCase.requireAll) return toolCase.accept.every(hit);
-  if (toolCase.acceptRefusal && picked.length === 0) return true;
-  return toolCase.accept.some(hit);
-}
-
-function hallucinatedIds(blocks: AnthropicBlock[], context: string): string[] {
-  const haystack = context.toLowerCase();
-  const found: string[] = [];
-  for (const block of blocks) {
-    if (block.type !== "tool_use" || !block.name) continue;
-    const fields = WRITE_ID_FIELDS.get(block.name);
-    if (!fields) continue;
-    const input = (block.input ?? {}) as Record<string, unknown>;
-    for (const field of fields) {
-      const raw = input[field];
-      if (raw == null) continue;
-      for (const value of Array.isArray(raw) ? raw : [raw]) {
-        const asText = String(value).trim();
-        if (asText && !haystack.includes(asText.toLowerCase())) {
-          found.push(`${block.name}.${field}=${asText}`);
-        }
-      }
-    }
-  }
-  return found;
-}
-
 const ALL_CASES: ToolCase[] = [...CASE_SET, ...IMPLICIT_FACT_CASES];
 
-interface AnthropicBlock {
-  type: string;
-  name?: string;
-  text?: string;
-  input?: unknown;
-}
+/**
+ * Імена кейсів неявної памʼяті - підсумок по них друкується окремим рядком.
+ *
+ * AI-CONTEXT: `scripts/` не входить у `include` серверного tsconfig, тож
+ * typecheck цей файл не бачить. Коли кейси переїхали в `src/`, константа
+ * лишилась неоголошеною, і прогін падав `ReferenceError` у фінальному блоці -
+ * тобто вже ПІСЛЯ всіх оплачених викликів.
+ */
+const IMPLICIT_NAMES = new Set(IMPLICIT_FACT_CASES.map((c) => c.name));
 
 interface SkinResponse {
-  content?: AnthropicBlock[];
+  content?: EvalBlock[];
   error?: { message?: string };
   stop_reason?: string;
 }
 
-interface CaseResult {
+interface ChainResult {
   model: string;
-  caseName: string;
-  ok: boolean;
-  picked: string[];
-  correct: boolean;
-  /** Ідентифікатори у write-викликах, яких не було в контексті. */
-  hallucinated: string[];
+  recorded: RecordedCase;
   latencyMs: number;
-  /** What the model said instead, when it skipped the tool entirely. */
-  text: string;
-  error?: string;
 }
 
-async function runCase(
+async function callSkin(
+  apiKey: string,
+  model: string,
+  system: string,
+  messages: unknown[],
+): Promise<SkinResponse & { httpError?: string }> {
+  const response = await fetch(SKIN_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+      "HTTP-Referer": "https://sergeant.app",
+      "X-Title": "Sergeant tool-selection eval",
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 1500,
+      system,
+      tools: TOOLS,
+      messages,
+    }),
+  });
+  const data = (await response.json()) as SkinResponse;
+  if (!response.ok) {
+    return {
+      ...data,
+      httpError: `HTTP ${response.status}: ${data?.error?.message ?? "unknown"}`,
+    };
+  }
+  return data;
+}
+
+/**
+ * Прогнати кейс до кінця його сценарію.
+ *
+ * Ланцюжок обривається трьома способами, і всі три означають різне:
+ * сценарій вичерпано (норма), модель перестала кликати інструменти (провал
+ * ненаписаних ходів - його зарахує `replayCase`), або модель одразу зробила
+ * цільовий виклик (коротке замикання - не помилка, годувати її після цього
+ * результатом розвідки означало б міряти діалог, якого не буває).
+ */
+async function runChain(
   apiKey: string,
   model: string,
   toolCase: ToolCase,
   withData: boolean,
-): Promise<CaseResult> {
+): Promise<ChainResult> {
   const system = withData ? `${SYSTEM_PREFIX}${DATA_BLOCK}` : SYSTEM_PREFIX;
+  const scenario = toolCase.turns ?? [];
+  const messages: unknown[] = [{ role: "user", content: toolCase.user }];
+  const turns: RecordedTurn[] = [];
+  let fedResult: string | null = null;
   const t0 = Date.now();
-  try {
-    const response = await fetch(SKIN_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-        "HTTP-Referer": "https://sergeant.app",
-        "X-Title": "Sergeant tool-selection eval",
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: 1500,
-        system,
-        tools: TOOLS,
-        messages: [{ role: "user", content: toolCase.user }],
-      }),
-    });
-    const data = (await response.json()) as SkinResponse;
-    const latencyMs = Date.now() - t0;
 
-    if (!response.ok) {
+  for (let i = 0; i <= scenario.length; i += 1) {
+    let data: SkinResponse & { httpError?: string };
+    try {
+      data = await callSkin(apiKey, model, system, messages);
+    } catch (e: unknown) {
       return {
         model,
-        caseName: toolCase.name,
-        ok: false,
-        picked: [],
-        correct: false,
-        hallucinated: [],
-        latencyMs,
-        text: "",
-        error: `HTTP ${response.status}: ${data?.error?.message ?? "unknown"}`,
+        recorded: {
+          name: toolCase.name,
+          turns,
+          error: e instanceof Error ? e.message : String(e),
+        },
+        latencyMs: Date.now() - t0,
+      };
+    }
+    if (data.httpError) {
+      return {
+        model,
+        recorded: { name: toolCase.name, turns, error: data.httpError },
+        latencyMs: Date.now() - t0,
       };
     }
 
-    // Args matter as much as the name. This harness sends no ДАНІ block, so a
-    // model that confidently fills in category/habit ids it was never given is
-    // hallucinating, not succeeding — the name alone would score that as a win.
-    const picked = (data.content ?? [])
-      .filter((b) => b.type === "tool_use" && b.name)
-      .map((b) => `${b.name}(${JSON.stringify(b.input ?? {})})`);
+    const blocks = data.content ?? [];
+    turns.push({ blocks, fedResult });
 
-    return {
-      model,
-      caseName: toolCase.name,
-      ok: true,
-      picked,
-      correct: scoreCase(toolCase, picked),
-      hallucinated: hallucinatedIds(
-        data.content ?? [],
-        `${system}\n${toolCase.user}`,
-      ),
-      latencyMs,
-      text: (data.content ?? [])
-        .filter((b) => b.type === "text" && b.text)
-        .map((b) => b.text as string)
-        .join(" ")
-        .replace(/\s+/g, " ")
-        .slice(0, 220),
-    };
-  } catch (e: unknown) {
-    return {
-      model,
-      caseName: toolCase.name,
-      ok: false,
-      picked: [],
-      correct: false,
-      hallucinated: [],
-      latencyMs: Date.now() - t0,
-      text: "",
-      error: e instanceof Error ? e.message : String(e),
-    };
+    const next = scenario[i];
+    if (!next) break;
+    const toolUses = blocks.filter((b) => b.type === "tool_use" && b.id);
+    if (toolUses.length === 0) break;
+    if (reachedFinalTurn(toolCase, pickedFrom(blocks))) break;
+
+    messages.push({ role: "assistant", content: blocks });
+    messages.push({
+      role: "user",
+      content: toolUses.map((b) => ({
+        type: "tool_result",
+        tool_use_id: b.id,
+        content: next.result,
+      })),
+    });
+    fedResult = next.result;
   }
+
+  return {
+    model,
+    recorded: { name: toolCase.name, turns },
+    latencyMs: Date.now() - t0,
+  };
+}
+
+function mark(r: ReplayedCase): string {
+  if (r.error) return "ERR";
+  if (r.hallucinated.length) return "FAKE";
+  return r.correct ? "  ok" : "MISS";
+}
+
+function textOf(turn: RecordedTurn | undefined): string {
+  return (turn?.blocks ?? [])
+    .filter((b) => b.type === "text" && b.text)
+    .map((b) => b.text as string)
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .slice(0, 220);
 }
 
 async function main(): Promise<void> {
@@ -272,6 +224,7 @@ async function main(): Promise<void> {
     options: {
       models: { type: "string" },
       "no-data": { type: "boolean", default: false },
+      record: { type: "boolean", default: false },
       repeat: { type: "string" },
     },
   });
@@ -283,72 +236,103 @@ async function main(): Promise<void> {
     return;
   }
 
-  const models = (
-    values.models ?? "anthropic/claude-haiku-4.5,google/gemini-3.1-flash-lite"
-  )
+  // Касета пінить sha блоку ДАНІ, тож запис без нього дав би фікстуру, яку
+  // власний маніфест оголосив би протухлою тієї ж секунди.
+  if (values.record && values["no-data"]) {
+    console.error(
+      "--record несумісний з --no-data: касета пінить sha DATA_BLOCK.",
+    );
+    process.exitCode = 1;
+    return;
+  }
+
+  const models = (values.models ?? CHAT_MODEL_DEFAULTS.firstTurn.openrouter)
     .split(",")
     .map((m) => m.trim())
     .filter(Boolean);
 
+  const multiTurn = ALL_CASES.filter((c) => (c.turns?.length ?? 0) > 0).length;
   console.log(
-    `Registry: ${TOOLS.length} tools (${WRITE_ID_FIELDS.size} write-tools with id args), system prefix ${SYSTEM_PREFIX.length} chars, ДАНІ: ${values["no-data"] ? "немає" : `${DATA_BLOCK.length} chars`}, кейсів: ${ALL_CASES.length} (неявних фактів: ${IMPLICIT_FACT_CASES.length})\n`,
+    `Registry: ${TOOLS.length} tools (${WRITE_ID_FIELDS.size} write-tools with id args), system prefix ${SYSTEM_PREFIX.length} chars, ДАНІ: ${values["no-data"] ? "немає" : `${DATA_BLOCK.length} chars`}, кейсів: ${ALL_CASES.length} (неявних фактів: ${IMPLICIT_FACT_CASES.length}, багатоходових: ${multiTurn})${values.record ? ", режим: ЗАПИС КАСЕТИ" : ""}\n`,
   );
 
-  const repeats = Math.max(1, Number(values.repeat ?? 1) || 1);
-  const results: CaseResult[] = [];
+  // Повтори множать той самий кейс у звіті; для касети потрібен рівно один
+  // запис на кейс, інакше «яку з трьох відповідей вважати записаною» стає
+  // питанням без відповіді.
+  const repeats = values.record
+    ? 1
+    : Math.max(1, Number(values.repeat ?? 1) || 1);
+
   for (const model of models) {
+    const replayed: ReplayedCase[] = [];
+    const recorded: RecordedCase[] = [];
+    const latencies: number[] = [];
+
     for (const toolCase of ALL_CASES) {
       for (let i = 0; i < repeats; i += 1) {
-        const r = await runCase(apiKey, model, toolCase, !values["no-data"]);
-        results.push(r);
-        // FAKE бʼє MISS: вигаданий id у правильно вибраному інструменті — гірша
-        // з двох поразок, бо доходить до виконавця й пише фантомний запис.
-        const mark = r.error
-          ? "ERR"
-          : r.hallucinated.length
-            ? "FAKE"
-            : r.correct
-              ? "  ok"
-              : "MISS";
-        const picked = r.picked.length ? r.picked.join(",") : "(no tool_use)";
+        const chain = await runChain(
+          apiKey,
+          model,
+          toolCase,
+          !values["no-data"],
+        );
+        const r = replayCase(toolCase, chain.recorded);
+        replayed.push(r);
+        latencies.push(chain.latencyMs);
+        if (i === 0) recorded.push(chain.recorded);
+
+        const picked = r.pickedByTurn
+          .map(
+            (p, idx) =>
+              `[${idx + 1}] ${p.length ? p.join(",") : "(no tool_use)"}`,
+          )
+          .join("  ");
         console.log(
-          `[${mark}] ${model.padEnd(30)} ${toolCase.name.padEnd(28)} ${String(r.latencyMs).padStart(6)}ms  ${r.error ?? picked}`,
+          `[${mark(r)}] ${model.padEnd(30)} ${toolCase.name.padEnd(28)} ${String(chain.latencyMs).padStart(6)}ms  ${r.error ?? picked}${r.shortCircuited ? "  ↦ коротке замикання" : ""}`,
         );
         if (r.hallucinated.length)
           console.log(`        ↳ вигадані id: ${r.hallucinated.join(", ")}`);
-        if (!r.correct && !r.error && r.text)
-          console.log(`        ↳ ${r.text}`);
+        const tail = textOf(
+          chain.recorded.turns[chain.recorded.turns.length - 1],
+        );
+        if (!r.correct && !r.error && tail) console.log(`        ↳ ${tail}`);
       }
     }
-  }
 
-  console.log(
-    "\n| Model | Correct | Invented ids | Errors | Median latency (ms) |",
-  );
-  console.log("| --- | --- | --- | --- | --- |");
-  for (const model of models) {
-    const rows = results.filter((r) => r.model === model);
-    const correct = rows.filter((r) => r.correct).length;
-    const invented = rows.filter((r) => r.hallucinated.length > 0).length;
-    const errors = rows.filter((r) => r.error).length;
-    const sorted = rows.map((r) => r.latencyMs).sort((a, b) => a - b);
-    const mid = sorted[Math.floor(sorted.length / 2)] ?? 0;
+    const summary = summarize(ALL_CASES, replayed);
+    const sorted = [...latencies].sort((a, b) => a - b);
     console.log(
-      `| \`${model}\` | ${correct}/${rows.length} | ${invented}/${rows.length} | ${errors} | ${mid} |`,
+      "\n| Model | Correct | Invented ids | Errors | Median latency (ms) |",
     );
-  }
+    console.log("| --- | --- | --- | --- | --- |");
+    console.log(
+      `| \`${model}\` | ${summary.correct}/${summary.total} | ${summary.invented}/${summary.total} | ${summary.errors} | ${sorted[Math.floor(sorted.length / 2)] ?? 0} |`,
+    );
+    console.log(
+      `Багатоходові кейси: ${summary.multiTurnCorrect}/${summary.multiTurnCases}`,
+    );
 
-  // Окремо від зведеної таблиці: у ній неявні кейси розчиняються серед решти,
-  // а лікуємо ми саме їх — тож число має бути видно без арифметики в голові.
-  console.log(
-    "\nНеявні факти (сказані мимохідь, без «запамʼятай») — чи викликано `remember`:",
-  );
-  for (const model of models) {
-    const rows = results.filter(
-      (r) => r.model === model && IMPLICIT_NAMES.has(r.caseName),
+    // Окремо від зведеної таблиці: у ній неявні кейси розчиняються серед
+    // решти, а лікуємо ми саме їх - тож число має бути видно без арифметики
+    // в голові.
+    const implicit = replayed.filter((r) => IMPLICIT_NAMES.has(r.name));
+    console.log(
+      `implicit remember: ${implicit.filter((r) => r.correct).length}/${implicit.length}  \`${model}\``,
     );
-    const hit = rows.filter((r) => r.correct).length;
-    console.log(`implicit remember: ${hit}/${rows.length}  \`${model}\``);
+
+    if (values.record) {
+      saveCassette({
+        manifest: buildManifest(
+          model,
+          recorded.length,
+          new Date().toISOString(),
+        ),
+        cases: recorded,
+      });
+      console.log(
+        `\nКасету записано: ${recorded.length} кейсів, модель ${model}.`,
+      );
+    }
   }
 }
 
