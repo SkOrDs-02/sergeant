@@ -1,6 +1,6 @@
 # Питання і відповіді
 
-> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-04.
+> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-04.
 > **Status:** Scaffolded
 
 ## Мета сторінки
@@ -89,6 +89,6 @@ Sergeant у закритій беті. Черга живе в Telegram.
 
 ## Джерела фактчеку
 
-Масив-джерело: `apps/landing/src/components/HomeSections.tsx`, `FAQ_ITEMS`. Поріг звʼязків: `apps/web/src/core/insights/digestCorrelations.ts` (`MIN_N = 10`), рівні – `crossModuleLinkTiers.ts`. Експорт: `apps/server/src/modules/me/dataRights.ts` + канон [`product-overview.md`](../../../01-product/model/product-overview.md) §11. Платні межі: [ADR-0068](../../../04-governance/adr/0068-pricing-v4-uah-reverse-trial.md). Мобільний: [`finyk.md`](../../../01-product/model/finyk.md) §9.
+Масив-джерело: `apps/landing/src/components/HomeSections.tsx`, `FAQ_ITEMS`. Поріг звʼязків: `apps/web/src/core/insights/digestCorrelations.ts` (`MIN_N = 10`), рівні – `crossModuleLinkTiers.ts`. Експорт: `apps/server/src/modules/me/dataRights.ts` + канон [`product-overview.md`](../../../../01-product/model/product-overview.md) §11. Платні межі: [ADR-0068](../../../../04-governance/adr/0068-pricing-v4-uah-reverse-trial.md). Мобільний: [`finyk.md`](../../../../01-product/model/finyk.md) §9.
 
 > **Змінено при фактчеку.** Три відповіді з семи виправлені. «Чи можна забрати свої дані» – було «експорт у стандартні формати в один клік», стало чесним описом двох поверхонь. «На чому працює» – було «мобільний застосунок у розробці», стало формулюванням рішення §10 п. 1. «Звідки знає, що звʼязок справжній» – додано конкретний поріг у десять спільних днів замість загального «менше порогу». Решта чотири переносяться дослівно: фактчек їх підтвердив.
