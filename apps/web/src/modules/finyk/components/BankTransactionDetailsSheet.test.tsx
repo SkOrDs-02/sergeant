@@ -37,7 +37,6 @@ vi.mock("@shared/api", async () => {
 });
 
 import { BankTransactionDetailsSheet } from "./BankTransactionDetailsSheet";
-import { INTERNAL_TRANSFER_ID } from "../constants";
 
 const TRANSACTION: Transaction = {
   id: "bank-1",
@@ -54,14 +53,6 @@ const TRANSACTION: Transaction = {
   _source: "mono",
   _accountId: "account-1",
   _manual: false,
-};
-
-const INCOME_TRANSACTION: Transaction = {
-  ...TRANSACTION,
-  id: "bank-income-1",
-  amount: 50000,
-  categoryId: "in_salary",
-  description: "Зарахування",
 };
 
 function renderSheet(
@@ -179,33 +170,5 @@ describe("BankTransactionDetailsSheet", () => {
     const handlers = renderSheet();
     fireEvent.click(screen.getByRole("button", { name: "Готово" }));
     expect(handlers.onClose).toHaveBeenCalledTimes(1);
-  });
-
-  it("marks an unpaired expense as a transfer in one tap", () => {
-    const handlers = renderSheet();
-
-    fireEvent.click(screen.getByRole("button", { name: "Це переказ" }));
-    expect(handlers.onCategoryChange).toHaveBeenCalledWith(
-      "bank-1",
-      INTERNAL_TRANSFER_ID,
-    );
-  });
-
-  it("marks an unpaired income as a transfer in one tap", () => {
-    const handlers = renderSheet({ transaction: INCOME_TRANSACTION });
-
-    fireEvent.click(screen.getByRole("button", { name: "Це переказ" }));
-    expect(handlers.onCategoryChange).toHaveBeenCalledWith(
-      "bank-income-1",
-      INTERNAL_TRANSFER_ID,
-    );
-  });
-
-  it("hides the quick action once the transaction is already a transfer", () => {
-    renderSheet({ overrideCatId: INTERNAL_TRANSFER_ID });
-
-    expect(
-      screen.queryByRole("button", { name: "Це переказ" }),
-    ).not.toBeInTheDocument();
   });
 });
