@@ -28,6 +28,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 
+import { useOptionalHubShell } from "../app/HubShellContext";
 import { Button } from "@shared/components/ui/Button";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { meApi } from "@shared/api";
@@ -93,6 +94,24 @@ function sourceLabel(source: string): string {
  * 3 серп. — 9 серп.» — ні.
  */
 const TECHNICAL_SOURCES: ReadonlySet<string> = new Set(["product", "digest"]);
+
+/**
+ * Джерело з ЄДИНИМ редактором в іншому місці — Профіль → «Банк памʼяті»
+ * (рішення власника 2026-08-30, спека `memory-bank-consolidation.md`).
+ *
+ * AI-CONTEXT: до цієї зміни факти профілю мали тут власні хрестики, тобто
+ * список редагувався з двох екранів. Гірше за дубль кнопок був кеш-лаг:
+ * видалення звідси йшло `DELETE /api/ai-memory/:id` і чистило сервер, але
+ * локальний банк (`core/profile/memoryBank.ts`) лишався зі старим записом
+ * до перезавантаження сторінки — і чатовий `my_profile` ще бачив «видалений»
+ * факт. Тепер єдиний шлях видалення починається з локалки, яка свіжа за
+ * визначенням, а на сервер і у вектори це доїжджає наявним ланцюгом
+ * push → `mirrorProfileMemoryEntries` diff.
+ *
+ * Роут `DELETE /api/ai-memory/:id` НЕ чіпаємо: він лишається захисною
+ * когерентністю для прямих викликів API, просто UI ним більше не ходить.
+ */
+const PROFILE_SOURCE = "profile";
 
 function formatDay(iso: string): string {
   // Europe/Kyiv — доменний інваріант: дата факту має читатись у часовому
@@ -194,6 +213,50 @@ function MemoryFact({
         <Icon name="close" size={14} aria-hidden />
       </Button>
     </li>
+  );
+}
+
+/**
+ * Картка-вказівник замість розкривної групи: показує, скільки фактів
+ * профілю асистент бачить, і веде туди, де вони редагуються.
+ *
+ * Лічильник свідомо рахує ЗАВАНТАЖЕНІ сторінки, а не робить окремий запит:
+ * список і так пагінований, а точна цифра тут нічого не вирішує — вона
+ * орієнтир, не звіт. Якщо людина дотисне «Показати більше», число підросте
+ * разом зі списком.
+ */
+function ProfileGroupCard({ count }: { count: number }) {
+  // `useOptionalHubShell` (не `useHubShell`): секція рендериться і поза
+  // роутером — у тестах і Storybook, — а падати там через відсутній
+  // контекст вона не має. Без шелла картка лишається читабельною, зникає
+  // лише кнопка переходу.
+  const shell = useOptionalHubShell();
+
+  return (
+    <section className="rounded-xl border border-line bg-panel p-3">
+      <div className="flex items-center gap-2">
+        <span className="text-style-label font-semibold text-text">
+          {m.profileGroupTitle}
+        </span>
+        <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-panelHi text-style-caption font-bold text-muted">
+          {count}
+        </span>
+      </div>
+      <p className="mt-1 text-style-caption text-subtle leading-relaxed">
+        {m.profileGroupHint}
+      </p>
+      {shell ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="mt-2"
+          onClick={() => shell.ui.setHubView("profile")}
+        >
+          {m.profileGroupAction}
+        </Button>
+      ) : null}
+    </section>
   );
 }
 
@@ -336,15 +399,19 @@ export function AiMemoryList() {
   return (
     <div className="space-y-2">
       <div className="space-y-2">
-        {groups.map((group) => (
-          <MemoryGroupSection
-            key={group.source}
-            group={group}
-            defaultOpen={groupsDefaultOpen}
-            onDelete={setPending}
-            deleteDisabled={remove.isPending}
-          />
-        ))}
+        {groups.map((group) =>
+          group.source === PROFILE_SOURCE ? (
+            <ProfileGroupCard key={group.source} count={group.items.length} />
+          ) : (
+            <MemoryGroupSection
+              key={group.source}
+              group={group}
+              defaultOpen={groupsDefaultOpen}
+              onDelete={setPending}
+              deleteDisabled={remove.isPending}
+            />
+          ),
+        )}
       </div>
 
       {query.hasNextPage ? (

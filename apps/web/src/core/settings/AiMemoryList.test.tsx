@@ -320,4 +320,66 @@ describe("AiMemoryList", () => {
     expect(await screen.findByText(/Не вдалося видалити/)).toBeTruthy();
     expect(screen.getByText("Факт")).toBeTruthy();
   });
+
+  // Спека `memory-bank-consolidation.md`: єдиний редактор фактів профілю -
+  // Профіль → «Банк памʼяті». Тести цілять у те, що ламається при
+  // копіюванні гілки групування, а не в «картка відрендерилась».
+  describe("група profile — вітрина, не редактор", () => {
+    it("не дає видалити факт профілю звідси: ні хрестика, ні шляху до DELETE", async () => {
+      listAiMemory.mockResolvedValue(
+        page([{ id: 7, content: "Алергія на горіхи", source: "profile" }]),
+      );
+      renderList();
+
+      expect(await screen.findByText("Факти профілю")).toBeTruthy();
+      // Головне: рядок факту сюди взагалі не рендериться, тож і кнопки
+      // видалення бути не може. Асертимо обидва боки - і відсутність
+      // хрестика, і те, що видалення не викликалось.
+      expect(screen.queryByLabelText(/Видалити факт/)).toBeNull();
+      expect(deleteAiMemory).not.toHaveBeenCalled();
+    });
+
+    it("лічильник показує, скільки фактів профілю бачить асистент", async () => {
+      listAiMemory.mockResolvedValue(
+        page([
+          { id: 1, content: "Алергія на горіхи", source: "profile" },
+          { id: 2, content: "Ціль - 80 кг", source: "profile" },
+          { id: 3, content: "Тренуюсь зранку", source: "profile" },
+        ]),
+      );
+      renderList();
+
+      expect(await screen.findByText("Факти профілю")).toBeTruthy();
+      expect(screen.getByText("3")).toBeTruthy();
+    });
+
+    it("поза hub-шеллом картка лишається читабельною, зникає лише кнопка переходу", async () => {
+      // Рендер без `HubShellProvider` - саме те, що робить цей файл. Якби
+      // компонент брав `useHubShell`, тест упав би на кинутій помилці.
+      listAiMemory.mockResolvedValue(
+        page([{ id: 9, content: "Ціль - 80 кг", source: "profile" }]),
+      );
+      renderList();
+
+      expect(await screen.findByText("Факти профілю")).toBeTruthy();
+      expect(screen.queryByText("Відкрити профіль")).toBeNull();
+    });
+
+    it("решта груп не зачеплені: розкриваються і видаляються як раніше", async () => {
+      listAiMemory.mockResolvedValue(
+        page([
+          { id: 1, content: "Факт профілю", source: "profile" },
+          { id: 2, content: "Факт із чату", source: "chat" },
+        ]),
+      );
+      renderList();
+
+      expect(await screen.findByText("Факт із чату")).toBeTruthy();
+      // Хрестик рівно один - у чатового факту, не в профільного.
+      const deletes = screen.getAllByLabelText(/Видалити факт/);
+      expect(deletes).toHaveLength(1);
+      fireEvent.click(deletes[0]!);
+      expect(await screen.findByText(/Видалити цей факт/)).toBeTruthy();
+    });
+  });
 });
