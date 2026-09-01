@@ -1401,7 +1401,8 @@ export const GENERIC_FOODS: readonly GenericFood[] = [
   {
     slug: "shashlyk-svyniachyi",
     name: "Шашлик свинячий",
-    category: "Мʼясо і птиця",
+    // Шашлик у чеку це готова страва з мангала, а не сире мʼясо.
+    category: "Готові страви",
     aliases: ["шашлик"],
     per100: { kcal: 280, protein_g: 18, fat_g: 22, carbs_g: 2 },
   },
@@ -1444,7 +1445,9 @@ export const GENERIC_FOODS: readonly GenericFood[] = [
   {
     slug: "kholodets",
     name: "Холодець",
-    category: "Мʼясо і птиця",
+    // Готова страва, не мʼясний виріб: із вітрини «Холодець
+    // по-домашньому» їхав у Мʼясо замість кулінарії.
+    category: "Українська кухня",
     per100: { kcal: 120, protein_g: 12, fat_g: 8, carbs_g: 0.5 },
   },
   {
