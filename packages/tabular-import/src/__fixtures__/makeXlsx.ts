@@ -1,13 +1,12 @@
 import { deflateRawSync } from "node:zlib";
 
 /**
- * Мінімальний білдер XLSX для тестів `xlsxGrid.ts` / `statementFile.ts`.
+ * Мінімальний білдер XLSX для тестів `xlsxGrid.ts` / `tabularFile.ts`.
  *
- * WHY він тут, а не бібліотека чи бінарна фікстура: реального
- * банківського файлу в репо немає (`csvProfiles.ts` § AI-DANGER — це
- * відомий гейт), а комітити бінарник, який ніхто не може прочитати
- * очима на ревʼю, гірше за код, що будує той самий байт-стрім явно.
- * Заразом білдер — виконуваний опис тієї підмножини OOXML, яку очікує
+ * WHY він тут, а не бібліотека чи бінарна фікстура: комітити бінарник,
+ * який ніхто не може прочитати очима на ревʼю, гірше за код, що будує
+ * той самий байт-стрім явно. Заразом білдер - виконуваний опис тієї
+ * підмножини OOXML, яку очікує
  * наш ридер.
  */
 
@@ -113,7 +112,7 @@ function cellXml(cell: XlsxCell, ref: string): string {
   }
 }
 
-/** XLSX з одним аркушем «Виписка». */
+/** XLSX з одним аркушем. */
 export function makeXlsx(input: {
   sharedStrings: string[];
   rows: XlsxCell[][];
@@ -136,7 +135,7 @@ export function makeXlsx(input: {
 
   const styles = `<?xml version="1.0" encoding="UTF-8"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/><xf numFmtId="14" fontId="0" fillId="0" borderId="0" applyNumberFormat="1"/></cellXfs></styleSheet>`;
 
-  const workbook = `<?xml version="1.0" encoding="UTF-8"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Виписка" sheetId="1" r:id="rId1"/></sheets></workbook>`;
+  const workbook = `<?xml version="1.0" encoding="UTF-8"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Sheet1" sheetId="1" r:id="rId1"/></sheets></workbook>`;
 
   const rels = `<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>`;
 
