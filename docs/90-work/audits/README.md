@@ -37,7 +37,8 @@
 `2026-07-21-design-audit.md` і стадії циклу 6 лишаються в корені, доки stage 3 не
 закрито.
 
-Станом на 2026-08-25 в активній зоні Active-аудити: `2026-07-31-legal-docs-beta-readiness.md`,
+Станом на 2026-09-01 в активній зоні Active-аудити: `2026-09-01-anti-slop-audit.md`,
+`2026-07-31-legal-docs-beta-readiness.md`,
 `web-qa-pre-beta.md`, `security-comprehensive-2026-08-04.md`, `ai-abuse-2026-08-05.md`,
 `ai-pipeline-2026-08-05.md`, `ai-testing-2026-08-25.md`,
 `2026-08-04-global-qa-findings.md`, `2026-08-04-test-coverage-depth-audit.md`,
