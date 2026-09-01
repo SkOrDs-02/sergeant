@@ -38,8 +38,8 @@ fizruk — модуль фізичної активності Sergeant.
 
 > **Код сьогодні — силовий трекер, з частковим, стихійним розширенням.**
 > `WorkoutSet` вимагає `weightKg`+`reps` (`packages/fizruk-domain/src/domain/types.ts:30`),
-> а тоннаж/PR/1RM рахуються **лише для `strength`** (`workoutStats.ts:136`,
-> `dashboardKpis.ts:60`). Водночас `WorkoutItemType = "strength" | "distance" | "time"`
+> а тоннаж/PR/1RM рахуються **лише для `strength`** (`workoutTonnageKg`,
+> `workoutStats.ts:250`). Водночас `WorkoutItemType = "strength" | "distance" | "time"`
 > (`types.ts:42`) з полями `durationSec`/`distanceM` вже існує, і recovery
 > враховує time/distance (`recoveryCompute.ts:44-52`). Тобто **екстеншн-поінт
 > для не-силових типів частково є, але без плагінного механізму** і без окремих
@@ -174,8 +174,11 @@ SQLite і per-row дзеркало в Postgres через v2-sync op-log (§11).
 > форма мала ту саму властивість.
 
 Похідні величини (не таблиці): **1RM** — формула Еплі `weightKg * (1 + reps/30)`
-(`workoutStats.ts:29`); **тоннаж** — сума `weightKg × reps`, лише strength
-(`workoutStats.ts:136`); **стрік** — `computeStreakDays` (§7).
+(`epley1rm`, `workoutStats.ts:31`), **лише для сетів до 10 повторів включно**
+(`E1RM_REP_CAP = 10`, `workoutStats.ts:29`; PR #966) — сет на 12×50 дає 0 у
+1RM/PR, бо Еплі поза цим діапазоном переоцінює максимум; **тоннаж** — сума
+`weightKg × reps`, лише strength (`workoutTonnageKg`, `workoutStats.ts:250`);
+**стрік** — `computeStreakDays` (§7).
 
 **Дві міграції = дві фази дзеркала.** `029` — нормалізоване ядро
 (workouts/items/sets/custom/measurements); `052` — доповнення до **повного**
@@ -403,7 +406,7 @@ atlas) → recovery **виключає ці м'язи з порад** до зн�
 
 > **Код уже нерівний — але стихійно, не за задумом.** Для **стріку/лічильника**
 > будь-яке завершене тренування рахується рівно, незалежно від типу
-> (`isCompletedWorkout`, `dashboardKpis.ts:47`). Для **volume/tonnage KPI та
+> (`isCompletedWorkout`, `dashboardKpis.ts:58`). Для **volume/tonnage KPI та
 > digest** зараховується **лише strength** (`workoutStats.ts:136`). Для
 > **recovery** усі типи дають loadPoints. Тобто вага типу вже залежить від
 > метрики — але як побічний ефект силового походження коду, а не як продуктове
