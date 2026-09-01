@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { Modal } from "@shared/components/ui/Modal";
-import { Segmented } from "@shared/components/ui/Segmented";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { messages } from "@shared/i18n/uk";
@@ -14,17 +13,12 @@ import { messages } from "@shared/i18n/uk";
  * Кадри це не галерея різних фото, а дві фази ОДНОГО руху: старт і кінець.
  * Тому головний елемент тут не збільшення (вихідні файли 480×320, зум показав
  * би пікселі, а не деталі), а чергування кадрів: саме воно проявляє
- * траєкторію.
+ * траєкторію. Керування навмисно одне на весь стан (тап по фото + кнопка
+ * «Рух»): окремий перемикач «Початок/Кінець» був би третім способом робити
+ * те саме для двох значень.
  */
 
-type Phase = "start" | "end";
-
 const t = messages.fizruk.photoViewer;
-
-const PHASES: ReadonlyArray<{ value: Phase; label: string }> = [
-  { value: "start", label: t.phaseStart },
-  { value: "end", label: t.phaseEnd },
-];
 
 // Автоперемикання стартує лише явним натисканням і тією ж кнопкою
 // зупиняється, тож окремої гілки під `prefers-reduced-motion` тут немає:
@@ -94,22 +88,10 @@ export function ExercisePhotoViewer({
       </button>
 
       {canAlternate && (
-        <div className="mt-4 flex items-center gap-3">
-          <Segmented
-            items={PHASES.map((p) => ({ value: p.value, label: p.label }))}
-            value={index === 0 ? "start" : "end"}
-            onChange={(v) => {
-              setPlaying(false);
-              setIndex(v === "start" ? 0 : 1);
-            }}
-            variant="fizruk"
-            size="md"
-            ariaLabel={t.phaseGroupAriaLabel}
-            className="flex-1"
-          />
+        <div className="mt-4">
           <Button
             variant="secondary"
-            className="h-11 shrink-0"
+            className="h-11 w-full"
             onClick={() => setPlaying((p) => !p)}
             aria-pressed={playing}
           >
