@@ -45,8 +45,10 @@ import type {
   NutritionMealSnapshot,
   NutritionPantryEventSnapshot,
   NutritionPantrySnapshot,
+  NutritionRecipeSnapshot,
 } from "./sqliteWriter/diff.js";
 import { getCachedNutritionSqliteState } from "./sqliteReader.js";
+import type { SavedRecipe } from "./recipeBook.js";
 import { emitHubBus } from "@shared/lib/modules/hubBus";
 
 export {
@@ -230,6 +232,27 @@ export function persistNutritionWaterLog(
 }
 
 /**
+ * Persist the full saved-recipes list into SQLite. `recipeBook.ts` owns
+ * IndexedDB as the write target (`saveRecipeToBook` / `deleteSavedRecipe`);
+ * without this mirror, `sqliteReader.ts`'s `cache.recipes` — what
+ * `RecipesCard`'s "Мої рецепти" actually reads — never sees an IDB-only
+ * write, so a saved recipe shows once (optimistic local state) and then
+ * disappears on the next cache refresh.
+ */
+export function persistNutritionRecipes(
+  recipes: readonly SavedRecipe[] | null | undefined,
+): boolean {
+  const prev = peekNutritionDualWriteState();
+  if (prev === null) return true;
+  const next: NutritionDualWriteState = {
+    ...prev,
+    recipes: (recipes ?? []).map(recipeSnapshot),
+  };
+  triggerNutritionDualWrite(prev, next);
+  return true;
+}
+
+/**
  * Persist the shopping-list singleton. The whole document is sent as
  * one `shopping-list-set` op carrying `dataJson` for `data_json`.
  */
@@ -255,11 +278,16 @@ export function persistNutritionShoppingList(
 // write call sites use this as a fast-path gate so we never enqueue
 // SQLite ops pre-auth.
 //
-// Recipes are intentionally excluded on web: they live in IndexedDB
-// (`recipeBook.ts`) rather than LS, so they are not yet wired into the
-// state extractor here. The diff/adapter still support recipes; the
-// IDB-backed path will be wired in a follow-up.
+// Recipes live in IndexedDB (`recipeBook.ts`) rather than LS, but the
+// SQLite `nutrition_recipes` table is what `sqliteReader.ts` reads back
+// into `cache.recipes` — so `prev.recipes` below reflects the cache, and
+// `persistNutritionRecipes()` is how `recipeBook.ts` mirrors an IDB write
+// into SQLite so the next cache refresh actually contains it.
 // ─────────────────────────────────────────────
+
+function recipeSnapshot(r: SavedRecipe): NutritionRecipeSnapshot {
+  return { id: r.id, title: r.title, dataJson: JSON.stringify(r) };
+}
 
 function peekNutritionDualWriteState(): NutritionDualWriteState | null {
   if (!isNutritionDualWriteRegistered()) return null;
@@ -273,7 +301,7 @@ function peekNutritionDualWriteState(): NutritionDualWriteState | null {
         prefsJson: JSON.stringify(prefs),
         activePantryId: cache.activePantryId ?? null,
       },
-      recipes: [],
+      recipes: cache.recipes.map(recipeSnapshot),
       // Stage 11 / PR #070n-dualwrite — peek water-log + shopping-list
       // from the warm cache. Pre-tombstone these slices may be empty
       // until the call site below dual-writes them on first save —
