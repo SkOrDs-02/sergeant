@@ -17,6 +17,7 @@ import type { ExerciseDef } from "../domain/types.js";
 import exercisesCatalog from "./exercises.gymup.json";
 import { mapDomainMuscleToAtlas } from "./bodyAtlas.js";
 
+export * from "./activities.js";
 export * from "./bodyAtlas.js";
 export * from "./bodyAtlasGeometry.js";
 export * from "./injurySites.js";
@@ -43,6 +44,9 @@ export interface RawExerciseDef {
   name: { uk: string; en?: string };
   primaryGroup: string;
   primaryGroupUk?: string;
+  /** MET вправи — вхід оцінки витрат; проставляється
+   *  `scripts/fizruk/assign-exercise-met.mjs`. */
+  met?: number;
   muscles?: { primary?: string[]; secondary?: string[] };
   equipment?: string[];
   aliases?: string[];
