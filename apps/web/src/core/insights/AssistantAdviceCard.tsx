@@ -17,6 +17,7 @@ import {
   markAdviceShown,
   trackAdviceReaction,
 } from "../observability/adviceTelemetry";
+import { AdviceFeedback } from "./AdviceFeedback";
 
 // Pro tiered model degradation (premium → standard → floor). `premium` is
 // the expected default and stays invisible — only degraded tiers get a
@@ -259,6 +260,12 @@ export function AssistantAdviceCard({
                 >
                   <Icon name="refresh-cw" size={14} />
                 </button>
+                {/* Оцінка — праворуч, окремо від дій над порадою: «зроби
+                    щось із цим» і «чи це взагалі було варте показу» — різні
+                    наміри, і склеєні в один ряд вони читались би як меню. */}
+                {insight && (
+                  <AdviceFeedback adviceId={adviceId} className="ml-auto" />
+                )}
               </div>
             )}
           </div>

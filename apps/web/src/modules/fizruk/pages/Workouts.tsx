@@ -23,6 +23,13 @@ import { useCustomActivities } from "../hooks/useCustomActivities";
 import { useLatestBodyWeightKg } from "../../../core/profile/useLatestBodyWeight";
 import { useCloudPullPending } from "@shared/hooks/useCloudPullPending";
 import { messages } from "@shared/i18n/uk";
+import {
+  markComposeSaved,
+  useComposeTelemetry,
+} from "../../../core/observability/composeTelemetry";
+
+/** Стабільний ключ виміру тертя — той самий на всіх відкриттях форми. */
+const FIZRUK_PAST_WORKOUT_COMPOSE_KEY = "fizruk:log-past-workout";
 
 interface WorkoutsProps {
   workoutId?: string | undefined;
@@ -60,6 +67,18 @@ export function Workouts({
       : undefined,
   });
   const cloudPullPending = useCloudPullPending();
+  // Тертя запису проведеного заняття (`entry_compose_finished`, §6
+  // контракту). `open` враховує ще й вкладку: шит рендериться лише на
+  // `view === "home"`, тож перехід на іншу вкладку з відкритою формою — це
+  // теж кинута композиція, і без цієї кон'юнкції вона зникла б зі
+  // знаменника мовчки.
+  useComposeTelemetry({
+    key: FIZRUK_PAST_WORKOUT_COMPOSE_KEY,
+    open: o.view === "home" && o.logPastOpen,
+    module: "fizruk",
+    entryKind: "past_workout",
+    surface: "workouts_home",
+  });
   // Вага потрібна формі «Записати заняття»: без неї витрати рахувати нічим,
   // і саме тоді форма просить її одним полем.
   const bodyWeightKg = useLatestBodyWeightKg();
@@ -136,7 +155,12 @@ export function Workouts({
           <LogPastWorkoutSheet
             open={o.logPastOpen}
             onClose={() => o.setLogPastOpen(false)}
-            onSubmit={o.submitPastWorkout}
+            onSubmit={(payload) => {
+              // Позначка ДО консюмерського шляху: подію емітить закриття
+              // форми, і воно прилітає вже після цього виклику.
+              markComposeSaved(FIZRUK_PAST_WORKOUT_COMPOSE_KEY);
+              o.submitPastWorkout(payload);
+            }}
             weightKg={bodyWeightKg}
             // Той самий писач, що й у решті зважувань: `addEntry` сам
             // funnel-ить у `recordBodyWeight`, тож профільний знімок для

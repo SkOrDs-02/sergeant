@@ -22,6 +22,7 @@ import {
   aggregateNutrition,
 } from "./useWeeklyDigest";
 import { WeeklyDigestStories } from "./WeeklyDigestStories";
+import { AdviceFeedback } from "./AdviceFeedback";
 import {
   adviceIdForScope,
   markAdviceShown,
@@ -352,6 +353,15 @@ function DigestContent({
                       )}
                     </div>
                   )}
+                {/* Оцінка стоїть під ТІЛОМ звіту і лише коли тіло є: та
+                    сама умова видимості, що гейтить `markAdviceShown` вище.
+                    Питати «чи корисно» про порожній стан — це збирати шум
+                    у той самий знаменник. */}
+                {!loading && hasDigestBody(digest) && (
+                  <div className="flex justify-end">
+                    <AdviceFeedback adviceId={adviceId} />
+                  </div>
+                )}
                 {canGenerate && (
                   <button
                     type="button"
