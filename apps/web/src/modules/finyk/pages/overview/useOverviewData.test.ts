@@ -379,7 +379,7 @@ describe("useOverviewData", () => {
           mkTx("spend-1", -10_000, {
             time: Math.floor(new Date("2026-06-02T09:00:00Z").getTime() / 1000),
           }),
-        ],
+        ] as UseOverviewDataParams["mono"]["realTx"],
       });
       const storage = buildStorage();
 
