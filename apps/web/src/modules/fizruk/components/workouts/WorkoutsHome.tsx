@@ -57,6 +57,7 @@ export interface WorkoutsHomeProps {
    * a once-a-month visit).
    */
   onOpenPrograms: () => void;
+  onOpenStrongImport: () => void;
   /** Active program's display name, if any — folded into the row subtitle. */
   activeProgramName?: string | null | undefined;
 }
@@ -70,6 +71,7 @@ export function WorkoutsHome({
   onOpenTemplates,
   onOpenJournal,
   onOpenPrograms,
+  onOpenStrongImport,
   activeProgramName,
   onRequestStart,
   onLogPast,
@@ -267,6 +269,29 @@ export function WorkoutsHome({
               </div>
             </button>
           )}
+          <button
+            type="button"
+            className="rounded-2xl border border-line bg-bg p-4 text-left hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+            onClick={onOpenStrongImport}
+          >
+            <div className="flex items-center gap-3">
+              <Icon name="upload" size={22} className="text-muted" />
+              <div className="flex-1 min-w-0">
+                <div className="text-style-label text-text">
+                  {messages.fizruk.strongImport.rowTitle}
+                </div>
+                <div className="text-style-caption text-subtle mt-0.5">
+                  {messages.fizruk.strongImport.rowSubtitle}
+                </div>
+              </div>
+              <Icon
+                name="chevron-right"
+                size="sm"
+                className="text-subtle"
+                aria-hidden
+              />
+            </div>
+          </button>
         </div>
       </Card>
     </div>

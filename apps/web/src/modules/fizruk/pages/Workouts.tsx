@@ -3,6 +3,7 @@
  * Status: Active
  */
 import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
+import { useState } from "react";
 import { Skeleton } from "@shared/components/ui/Skeleton";
 import { Button } from "@shared/components/ui/Button";
 import { DataState } from "@shared/components/ui/DataState";
@@ -16,6 +17,7 @@ import { WorkoutsHome } from "../components/workouts/WorkoutsHome";
 import { LogPastWorkoutSheet } from "../components/workouts/LogPastWorkoutSheet";
 import { WorkoutsHeader } from "../components/workouts/WorkoutsHeader";
 import { WorkoutsConfirmDialogs } from "../components/workouts/WorkoutsConfirmDialogs";
+import { StrongImportReview } from "../components/StrongImportReview";
 import { useWorkoutsOrchestrator } from "../hooks/useWorkoutsOrchestrator";
 import { useTrainingProgram } from "../hooks/useTrainingProgram";
 import { useCloudPullPending } from "@shared/hooks/useCloudPullPending";
@@ -65,6 +67,7 @@ export function Workouts({
   // `activateProgram`/`deactivateProgram`, so there is nothing to keep in
   // sync beyond what a fresh mount already re-reads from `localStorage`.
   const { activeProgram } = useTrainingProgram();
+  const [strongImportOpen, setStrongImportOpen] = useState(false);
 
   const workoutsLoadingSkeleton = (
     <div
@@ -118,6 +121,7 @@ export function Workouts({
             // `/fizruk/workouts` path (the dual start-path bug).
             onOpenJournal={() => onNavigate?.("history")}
             onOpenPrograms={() => onNavigate?.("programs")}
+            onOpenStrongImport={() => setStrongImportOpen(true)}
             onRequestStart={o.handleQuickStart}
             onLogPast={() => o.setLogPastOpen(true)}
             onOpenSchedule={onOpenRoutine}
@@ -262,6 +266,11 @@ export function Workouts({
           setFinishFlash={o.setFinishFlash}
           updateWorkout={o.updateWorkout}
           onDone={activeOnly ? () => onNavigate?.("workouts") : undefined}
+        />
+        <StrongImportReview
+          open={strongImportOpen}
+          onClose={() => setStrongImportOpen(false)}
+          exercises={o.exercises}
         />
       </div>
 

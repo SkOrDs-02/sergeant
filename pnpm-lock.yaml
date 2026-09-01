@@ -643,6 +643,9 @@ importers:
       '@sergeant/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@sergeant/tabular-import':
+        specifier: workspace:*
+        version: link:../../packages/tabular-import
       '@sqlite.org/sqlite-wasm':
         specifier: 3.51.2-build9
         version: 3.51.2-build9
