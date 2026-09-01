@@ -1,4 +1,5 @@
-import { INTERNAL_TRANSFER_ID } from "../constants";
+import { buildFinykExcludedTxIds } from "@sergeant/finyk-domain";
+import { manualExpenseToTransaction } from "@sergeant/finyk-domain/domain/transactions";
 import { writeJSON } from "../lib/finykStorage";
 import { toLocalISODate } from "@sergeant/shared";
 import { useFinykStorageSlots } from "./useFinykStorageSlots";
@@ -115,11 +116,6 @@ export function useStorage({
     networthSnapshotRef,
   } = slots;
 
-  // Транзакції позначені як внутрішній переказ — виключаємо зі статистики
-  const transferTxIds = Object.entries(txCategories)
-    .filter(([, catId]) => catId === INTERNAL_TRANSFER_ID)
-    .map(([txId]) => txId);
-
   // ID транзакцій привʼязаних до пасивів — для відстеження погашення в Assets
   // НЕ виключаємо зі статистики, щоб вони відображались у категорії "Борги та кредити"
   const debtLinkedTxIds = new Set<string>([
@@ -127,13 +123,20 @@ export function useStorage({
     ...Object.values(monoDebtLinkedTxIds).flat(),
   ]);
 
-  // Зі статистики виключаємо: приховані, внутрішні перекази, дебіторку (щоб повернення боргу не рахувалось як дохід)
-  const excludedTxIds = new Set<string>([
-    ...hiddenTxIds,
-    ...transferTxIds,
-    ...receivables.flatMap((r) => r.linkedTxIds || []),
-    ...excludedStatTxIds,
-  ]);
+  // Зі статистики виключаємо: приховані, внутрішні перекази, дебіторку (щоб
+  // повернення боргу не рахувалось як дохід) та явно виключені.
+  //
+  // AI-CONTEXT: `transactions` тут — ручні/імпортовані записи, бо тільки вони
+  // несуть мітку переказу в самому записі (`category: "internal_transfer"`);
+  // банківські транзакції позначаються через мапу `txCategories`. Без цього
+  // аргументу ручний переказ рахувався витратою скрізь, крім дайджесту й коуча.
+  const excludedTxIds = buildFinykExcludedTxIds({
+    hiddenTxIds,
+    txCategories,
+    receivables,
+    excludedStatTxIds,
+    transactions: manualExpenses.map(manualExpenseToTransaction),
+  });
 
   const saveNetworthSnapshot = (networth: number) => {
     const today = toLocalISODate();

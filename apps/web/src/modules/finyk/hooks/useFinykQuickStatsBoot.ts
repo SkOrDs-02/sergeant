@@ -29,15 +29,16 @@ export function useFinykQuickStatsBoot(): void {
     // Zero-delta заміна ручної збірки на канонічну `buildFinykExcludedTxIds`
     // (W1-CANON-AGG стадія 2а): попередній інлайн уже мав усі чотири
     // частини, тож жодне число quick-stats не зрушило.
+    const manualTxs = storage.manualExpenses.map((expense) =>
+      manualExpenseToTransaction(expense),
+    );
     const excludedTxIds = buildFinykExcludedTxIds({
       hiddenTxIds: storage.hiddenTransactions,
       txCategories: storage.txCategories,
       receivables: storage.receivables,
       excludedStatTxIds: storage.excludedStatTxIds,
+      transactions: manualTxs,
     });
-    const manualTxs = storage.manualExpenses.map((expense) =>
-      manualExpenseToTransaction(expense),
-    );
 
     writeFinykQuickStatsSnapshot({
       transactions:
