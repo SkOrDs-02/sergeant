@@ -141,14 +141,11 @@ export const fizrukPageMessages = {
   photoViewer: {
     closeLabel: "Закрити перегляд",
     nextFrameLabel: "Наступний кадр",
-    phaseGroupAriaLabel: "Фаза руху",
-    phaseStart: "Початок",
-    phaseEnd: "Кінець",
     playLabel: "Рух",
     stopLabel: "Стоп",
     startAlt: "початкове положення",
     endAlt: "кінцеве положення",
-    hint: "Перемикай кадри, щоб побачити рух: перший - вихідне положення, другий - кінцеве.",
+    hint: "Тапни фото, щоб побачити наступний кадр, або натисни «Рух» для автоматичного чергування.",
     singleFrame: "Для цієї вправи є лише один кадр.",
   },
   // Compact recovery-warning chip next to the exercise title
