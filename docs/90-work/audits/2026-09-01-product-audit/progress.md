@@ -58,65 +58,65 @@ SLOP-відповідь — у § 4.
 
 ### Хаб і акаунт-шар
 
-| Маршрут                                     | Компонент                               | Акаунти     | Desktop | 390×844 | Dark | Нотатки                                                  |
-| ------------------------------------------- | --------------------------------------- | ----------- | ------- | ------- | ---- | -------------------------------------------------------- |
-| `/` (dashboard)                             | `HubDashboard`                          | Q0 Q1 Q2 Q3 | ⬜      | ⬜      | ⬜   |                                                          |
-| `/?tab=reports`                             | `HubReports` (+ дайджест, звʼязки, PDF) | Q2 Q3 Q5    | ⬜      | ⬜      | ⬜   | deep-link **і** SPA (регресія B1 08-09)                  |
-| `/?tab=profile`                             | `ProfilePage`                           | Q1 Q4       | ⬜      | ⬜      | ⬜   | імʼя, пароль, сесії, біометрія, memory, danger           |
-| `/?tab=settings` (13 секцій)                | `HubSettingsPage`                       | Q1 Q5       | ⬜      | ⬜      | ⬜   | план, сповіщення, приватність, експорт, експериментальні |
-| `/insights`, `/settings`, `/profile`        | redirect-и                              | Q2          | ⬜      | —       | —    | query/hash збережені                                     |
-| `/welcome`, `/onboarding/*`                 | `WelcomeScreen` + пікер                 | Q0 Q1       | ⬜      | ⬜      | ⬜   | залогінений → `/`                                        |
-| `/sign-in` (+ `/login`, `/signin`, `/auth`) | `AuthPage`                              | Q1 Q4       | ⬜      | ⬜      | ⬜   | негативні кейси auth                                     |
-| `/reset-password`, `/verify-email`          | `ResetPasswordPage`, `VerifyEmailPage`  | Q1          | ⬜      | ⬜      | —    | прострочений токен                                       |
-| `/chat`                                     | `HubChatPage`                           | Q0 Q2 Q5    | ⬜      | ⬜      | ⬜   | `?q=&autoSend=1`                                         |
-| `/assistant`, `/capabilities`               | каталоги                                | Q1          | ⬜      | ⬜      | —    | «80» vs «~60» (усп. №14)                                 |
-| `/pricing`                                  | `PricingPage`                           | Q1 Q5       | ⬜      | ⬜      | ⬜   | «твій план» для pro                                      |
-| `/legal/{privacy,terms,cookies,offer}`      | `LegalPage`                             | Q0          | ⬜      | ⬜      | —    |                                                          |
-| `/status`, `/offline`, `/500`               | статусні                                | Q0          | ⬜      | ⬜      | —    |                                                          |
-| 404 (`/finykfoo`, bogus)                    | `NotFoundPage`                          | Q0 Q1       | ⬜      | ⬜      | —    |                                                          |
+| Маршрут                                     | Компонент                               | Акаунти     | Desktop | 390×844 | Dark | Нотатки                                                                                            |
+| ------------------------------------------- | --------------------------------------- | ----------- | ------- | ------- | ---- | -------------------------------------------------------------------------------------------------- |
+| `/` (dashboard)                             | `HubDashboard`                          | Q0 Q1 Q2 Q3 | ⚠       | ⚠       | ✅   | Q3: LOG-8 (модалка «Перша витрата») на новому пристрої; SYNC-3 бейдж «60 в черзі»; Q0 → `/welcome` |
+| `/?tab=reports`                             | `HubReports` (+ дайджест, звʼязки, PDF) | Q2 Q3 Q5    | ⚠       | ⚠       | ⚠    | Q3: CALC-4 deep-link нулі vs SPA 915 ₴; What's-new модалка на кожному пристрої                     |
+| `/?tab=profile`                             | `ProfilePage`                           | Q1 Q4       | ✅      | ⚠       | ⚠    | білий екран 1 із 20 (Q3) + 1 із 4 (Q0) — #1/B10, завжди ~16,7 с                                    |
+| `/?tab=settings` (13 секцій)                | `HubSettingsPage`                       | Q1 Q5       | ⬜      | ⬜      | ⬜   | план, сповіщення, приватність, експорт, експериментальні                                           |
+| `/insights`, `/settings`, `/profile`        | redirect-и                              | Q2          | ⬜      | —       | —    | query/hash збережені                                                                               |
+| `/welcome`, `/onboarding/*`                 | `WelcomeScreen` + пікер                 | Q0 Q1       | ⬜      | ⬜      | ⬜   | залогінений → `/`                                                                                  |
+| `/sign-in` (+ `/login`, `/signin`, `/auth`) | `AuthPage`                              | Q1 Q4       | ⬜      | ⬜      | ⬜   | негативні кейси auth                                                                               |
+| `/reset-password`, `/verify-email`          | `ResetPasswordPage`, `VerifyEmailPage`  | Q1          | ⬜      | ⬜      | —    | прострочений токен                                                                                 |
+| `/chat`                                     | `HubChatPage`                           | Q0 Q2 Q5    | ✅      | ✅      | ✅   | Q0/Q3 без падінь; AI-1…4 — Ф4                                                                      |
+| `/assistant`, `/capabilities`               | каталоги                                | Q1          | ⬜      | ⬜      | —    | «80» vs «~60» (усп. №14)                                                                           |
+| `/pricing`                                  | `PricingPage`                           | Q1 Q5       | ✅      | ✅      | ✅   | Q3 Pro: «Зараз ваш план», «Скоро», AI 5/день ✓; TXT-1 «ваш»                                        |
+| `/legal/{privacy,terms,cookies,offer}`      | `LegalPage`                             | Q0          | ✅      | ✅      | —    | Q0/Q3 чисто                                                                                        |
+| `/status`, `/offline`, `/500`               | статусні                                | Q0          | ✅      | ✅      | —    | Q0/Q3 чисто                                                                                        |
+| 404 (`/finykfoo`, bogus)                    | `NotFoundPage`                          | Q0 Q1       | ✅      | ✅      | —    | 404-сторінка є; `<title>` лишається дефолтним (polish)                                             |
 
 ### Фінік
 
-| Маршрут                                   | Компонент      | Акаунти  | Desktop | 390×844 | Dark | Нотатки                                      |
-| ----------------------------------------- | -------------- | -------- | ------- | ------- | ---- | -------------------------------------------- |
-| `/finyk`                                  | `Overview`     | Q1 Q2 Q3 | ⬜      | ⬜      | ⬜   | пульс місяця, алерти, планові потоки         |
-| `/finyk/transactions`                     | `Transactions` | Q2 Q3 Q4 | ⬜      | ⬜      | ⬜   | групи дня, фільтри, чек, CSV-імпорт, переказ |
-| `/finyk/budgets` (+ `/payments` redirect) | `Budgets`      | Q2 Q4    | ⬜      | ⬜      | ⬜   | ліміт < факту                                |
-| `/finyk/analytics`                        | `Analytics`    | Q2 Q3    | ⬜      | ⬜      | ⬜   | кільце → список з фільтром                   |
-| `/finyk/assets`                           | `Assets`       | Q2 Q4    | ⬜      | ⬜      | ⬜   | капітал, валюта, підписки, борги             |
-| `/finyk/cards` (не в роутері)             | —              | Q2       | ⬜      | —       | —    | усп. №8: фолбек на «Огляд»                   |
+| Маршрут                                   | Компонент      | Акаунти  | Desktop | 390×844 | Dark | Нотатки                                                          |
+| ----------------------------------------- | -------------- | -------- | ------- | ------- | ---- | ---------------------------------------------------------------- |
+| `/finyk`                                  | `Overview`     | Q1 Q2 Q3 | ⚠       | ⚠       | ✅   | Q3: банер «Без банку?» на кожному пристрої; TXT-7                |
+| `/finyk/transactions`                     | `Transactions` | Q2 Q3 Q4 | ✅      | ✅      | ✅   | Q3: група дня згорнута (B6 лише для щойно доданого); TXT-7       |
+| `/finyk/budgets` (+ `/payments` redirect) | `Budgets`      | Q2 Q4    | ⬜      | ⬜      | ⬜   | ліміт < факту                                                    |
+| `/finyk/analytics`                        | `Analytics`    | Q2 Q3    | ⚠       | ⚠       | ✅   | Q3: «−100 %» на 1-й день місяця; банер банку; усі витрати «Інше» |
+| `/finyk/assets`                           | `Assets`       | Q2 Q4    | ⬜      | ⬜      | ⬜   | капітал, валюта, підписки, борги                                 |
+| `/finyk/cards` (не в роутері)             | —              | Q2       | ⬜      | —       | —    | усп. №8: фолбек на «Огляд»                                       |
 
 ### Їжа
 
-| Маршрут                                       | Компонент             | Акаунти  | Desktop | 390×844 | Dark | Нотатки                                 |
-| --------------------------------------------- | --------------------- | -------- | ------- | ------- | ---- | --------------------------------------- |
-| `/nutrition`                                  | `NutritionStartPage`  | Q1 Q2    | ⬜      | ⬜      | ⬜   |                                         |
-| `/nutrition/log`                              | `NutritionLogPage`    | Q2 Q4 Q5 | ⬜      | ⬜      | ⬜   | текст, пошук, штрих-код, фото (paywall) |
-| `/nutrition/pantry` (+ `/items`, `/shopping`) | `NutritionPantryPage` | Q2 Q4    | ⬜      | ⬜      | ⬜   | регістр назви, overflow (#925)          |
-| `/nutrition/menu` (+ `/plan`, `/recipes`)     | `NutritionMenuPage`   | Q2 Q5    | ⬜      | ⬜      | ⬜   | цілі КБЖВ, генератор, вода              |
+| Маршрут                                       | Компонент             | Акаунти  | Desktop | 390×844 | Dark | Нотатки                        |
+| --------------------------------------------- | --------------------- | -------- | ------- | ------- | ---- | ------------------------------ |
+| `/nutrition`                                  | `NutritionStartPage`  | Q1 Q2    | ⬜      | ⬜      | ⬜   |                                |
+| `/nutrition/log`                              | `NutritionLogPage`    | Q2 Q4 Q5 | ⚠       | ⚠       | ✅   | Q3: TXT-8, UX-2                |
+| `/nutrition/pantry` (+ `/items`, `/shopping`) | `NutritionPantryPage` | Q2 Q4    | ⬜      | ⬜      | ⬜   | регістр назви, overflow (#925) |
+| `/nutrition/menu` (+ `/plan`, `/recipes`)     | `NutritionMenuPage`   | Q2 Q5    | ⬜      | ⬜      | ⬜   | цілі КБЖВ, генератор, вода     |
 
 ### Фізрук
 
-| Маршрут                                         | Компонент        | Акаунти  | Desktop | 390×844 | Dark | Нотатки                           |
-| ----------------------------------------------- | ---------------- | -------- | ------- | ------- | ---- | --------------------------------- |
-| `/fizruk`                                       | `Dashboard`      | Q1 Q2 Q3 | ⬜      | ⬜      | ⬜   | recovery, тижнева матриця         |
-| `/fizruk/workouts` (+ `/catalog`, `/templates`) | `Workouts`       | Q2       | ⬜      | ⬜      | ⬜   |                                   |
-| `/fizruk/workout/:id`                           | `ActiveWorkout`  | Q2       | ⬜      | ⬜      | ⬜   | сети, суперсет, таймер, завершити |
-| `/fizruk/history`                               | `WorkoutHistory` | Q2 Q3    | ⬜      | ⬜      | ⬜   |                                   |
-| `/fizruk/progress`                              | `Progress`       | Q2 Q3    | ⬜      | ⬜      | ⬜   | PR-борд                           |
-| `/fizruk/measurements`                          | `Measurements`   | Q2 Q4    | ⬜      | ⬜      | ⬜   | кома-десяткова                    |
-| `/fizruk/body`                                  | `Body`           | Q2 Q4    | ⬜      | ⬜      | ⬜   | тренд ваги, журнал                |
-| `/fizruk/atlas`                                 | `Atlas`          | Q2       | ⬜      | ⬜      | ⬜   | травми, блок вправ                |
-| `/fizruk/programs`                              | `Programs`       | Q2       | ⬜      | ⬜      | ⬜   |                                   |
-| `/fizruk/exercise/:id`                          | `Exercise`       | Q2       | ⬜      | ⬜      | ⬜   | «Назад» до джерела                |
+| Маршрут                                         | Компонент        | Акаунти  | Desktop | 390×844 | Dark | Нотатки                                                                      |
+| ----------------------------------------------- | ---------------- | -------- | ------- | ------- | ---- | ---------------------------------------------------------------------------- |
+| `/fizruk`                                       | `Dashboard`      | Q1 Q2 Q3 | ✅      | ⚠       | ✅   | Q3/Q0: VIS-1 підзаголовок обрізаний; іконки 40×40 (coarse — див. e2e:mobile) |
+| `/fizruk/workouts` (+ `/catalog`, `/templates`) | `Workouts`       | Q2       | ⬜      | ⬜      | ⬜   |                                                                              |
+| `/fizruk/workout/:id`                           | `ActiveWorkout`  | Q2       | ⬜      | ⬜      | ⬜   | сети, суперсет, таймер, завершити                                            |
+| `/fizruk/history`                               | `WorkoutHistory` | Q2 Q3    | ⬜      | ⬜      | ⬜   |                                                                              |
+| `/fizruk/progress`                              | `Progress`       | Q2 Q3    | ⬜      | ⬜      | ⬜   | PR-борд                                                                      |
+| `/fizruk/measurements`                          | `Measurements`   | Q2 Q4    | ⬜      | ⬜      | ⬜   | кома-десяткова                                                               |
+| `/fizruk/body`                                  | `Body`           | Q2 Q4    | ⬜      | ⬜      | ⬜   | тренд ваги, журнал                                                           |
+| `/fizruk/atlas`                                 | `Atlas`          | Q2       | ✅      | ✅      | ✅   | Q3: SVG-підписи ок візуально; свіп хибно рахує 7,6 px                        |
+| `/fizruk/programs`                              | `Programs`       | Q2       | ⬜      | ⬜      | ⬜   |                                                                              |
+| `/fizruk/exercise/:id`                          | `Exercise`       | Q2       | ⬜      | ⬜      | ⬜   | «Назад» до джерела                                                           |
 
 ### Рутина
 
-| Маршрут           | Компонент              | Акаунти  | Desktop | 390×844 | Dark | Нотатки                       |
-| ----------------- | ---------------------- | -------- | ------- | ------- | ---- | ----------------------------- |
-| `/routine`        | `RoutineCalendarPanel` | Q1 Q2 Q3 | ⬜      | ⬜      | ⬜   | 399 нульових кнопок; H1→H3→H2 |
-| `/routine/habits` | `RoutineHabitsPanel`   | Q2 Q4    | ⬜      | ⬜      | ⬜   | пауза, архів                  |
-| `/routine/stats`  | `RoutineStatsPanel`    | Q2 Q3    | ⬜      | ⬜      | ⬜   | heatmap, лідери               |
+| Маршрут           | Компонент              | Акаунти  | Desktop | 390×844 | Dark | Нотатки                                     |
+| ----------------- | ---------------------- | -------- | ------- | ------- | ---- | ------------------------------------------- |
+| `/routine`        | `RoutineCalendarPanel` | Q1 Q2 Q3 | ✅      | ✅      | ✅   | Q3: серія 1 день для звички через день — ок |
+| `/routine/habits` | `RoutineHabitsPanel`   | Q2 Q4    | ⬜      | ⬜      | ⬜   | пауза, архів                                |
+| `/routine/stats`  | `RoutineStatsPanel`    | Q2 Q3    | ⬜      | ⬜      | ⬜   | heatmap, лідери                             |
 
 ### Лендінг (`apps/landing`, лише VIS/TXT/SLOP)
 
