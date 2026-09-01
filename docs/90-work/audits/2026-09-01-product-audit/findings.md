@@ -30,12 +30,14 @@
 
 ## Зведення
 
-Лічильник: **2** знахідки (blocker 0 · major 1 · minor 1 · polish 0).
+Лічильник: **4** знахідки (blocker 0 · major 3 · minor 1 · polish 0).
 
-| ID   | Знахідка                                                                             | Маршрут / поверхня           | Акаунт | Severity | Стан                  | PR  |
-| ---- | ------------------------------------------------------------------------------------ | ---------------------------- | ------ | -------- | --------------------- | --- |
-| CI-1 | `@sergeant/web#typecheck` червоний на `main`: TS2740 у `useOverviewData.test.ts:379` | CI `check` (typecheck)       | —      | major    | **виправлено** цим PR |     |
-| CI-2 | Лінк-чекер: 299 битих внутрішніх посилань на `main` (296 в `unification-modules.md`) | CI `docs-automation` (links) | —      | minor    | описано               |     |
+| ID   | Знахідка                                                                                                    | Маршрут / поверхня           | Акаунт | Severity | Стан                  | PR  |
+| ---- | ----------------------------------------------------------------------------------------------------------- | ---------------------------- | ------ | -------- | --------------------- | --- |
+| CI-1 | `@sergeant/web#typecheck` червоний на `main`: TS2740 у `useOverviewData.test.ts:379`                        | CI `check` (typecheck)       | —      | major    | **виправлено** цим PR |     |
+| CI-3 | `web#test` червоний на `main`: пін `SEED_FOODS_UK` = 390, корпус виріс до 424 (`2344cf2`)                   | CI `check` (web unit)        | —      | major    | **виправлено** цим PR |     |
+| CI-4 | `web#test` червоний на `main`: тест «renders images» читає видалене поле `images`, кадри тепер за id (#993) | CI `check` (web unit)        | —      | major    | **виправлено** цим PR |     |
+| CI-2 | Лінк-чекер: 299 битих внутрішніх посилань на `main` (296 в `unification-modules.md`)                        | CI `docs-automation` (links) | —      | minor    | описано               |     |
 
 ## Успадковані відкриті (з попередніх аудитів, перевіряються цим прогоном)
 
@@ -97,6 +99,30 @@ Turbo зупиняє решту пайплайну, тож `web#test` у том�
 сусідніх кейсах того ж файлу. Урок із `AGENTS.md § Performance budgets`
 повторився: мерж до завершення `check` → червоний гейт мовчить на `main`.
 **Фікс:** той самий кастинг (одна рядкова правка); `pnpm --filter @sergeant/web typecheck` → 0 помилок.
+**Стан:** виправлено цим PR.
+
+### CI-3 — пін кількості seed-продуктів відстав від корпусу [major]
+
+**Поверхня:** `pnpm --filter @sergeant/web test` на `b16956d`.
+**Симптом:** `seedFoodsUk.test.ts > should contain exactly 390 seed foods`:
+`expected [ …(424) ] to have a length of 390 but got 424`.
+**Корінь:** `2344cf2` (категорії комори 13 → 17, 2026-09-01) свідомо додав 34
+продукти в `packages/shared/src/data/genericFoods.ts`, оновив тести в
+`nutrition-domain` і `shared`, але не web-пін, який мапить `GENERIC_FOODS` 1:1.
+Той самий клас, що CI-1: мерж до завершення `check`.
+**Фікс:** пін 390 → 424 з коментарем, чому число змінюється лише разом із корпусом.
+**Стан:** виправлено цим PR.
+
+### CI-4 — тест ілюстрацій вправи перевіряє видалену поведінку [major]
+
+**Поверхня:** те саме.
+**Симптом:** `ExerciseDetailSheet.extra.test.tsx > renders images when present`:
+`expected undefined to be 'https://example.com/img.jpg'`.
+**Корінь:** з #993 (`f71a46d`, ілюстрації вправ) шіт бере кадри з реєстру
+`FizrukData.exerciseImagePaths(selected.id)`, а поле `images` каталогу більше
+не читає; тест передавав `images: [...]` і шукав `<img src>` — джерела вже нема.
+**Фікс:** тест переписано на реальний id з реєстру (`squat_barbell` → два
+кадри `/exercises/<id>/{0,1}.webp`) плюс контрольний кейс без ілюстрацій.
 **Стан:** виправлено цим PR.
 
 ### CI-2 — 299 битих внутрішніх посилань у docs [minor]
