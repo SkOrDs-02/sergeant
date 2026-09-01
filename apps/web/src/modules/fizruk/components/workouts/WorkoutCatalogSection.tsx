@@ -74,10 +74,23 @@ function toggleArr(arr: string[] | null | undefined, value: string): string[] {
  */
 function chipClass(active: boolean): string {
   return cn(
-    "text-xs px-3 py-2 pointer-coarse:min-h-[44px] rounded-full border transition-colors",
+    "shrink-0 snap-start text-xs px-3 py-2 pointer-coarse:min-h-[44px] rounded-full border transition-colors",
     active
       ? "border-fizruk-ring bg-fizruk-surface text-fizruk-soft-fg font-semibold shadow-sm dark:border-fizruk-border-dark/40 dark:bg-fizruk-surface-dark/15"
-      : "border-line bg-bg text-muted hover:border-muted hover:text-text",
+      : "border-border-strong bg-panelHi text-text hover:border-muted",
+  );
+}
+
+function ResetFiltersButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label="Скинути фільтри"
+      className="focus-ring shrink-0 rounded-md px-1 py-1 text-style-caption font-semibold text-text underline decoration-border-strong underline-offset-2 transition-colors hover:text-muted pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px]"
+    >
+      Скинути
+    </button>
   );
 }
 
@@ -104,6 +117,15 @@ export function WorkoutCatalogSection({
     q.trim().length > 0 ||
     (equipmentFilter || []).length > 0 ||
     Boolean(locationFilter);
+  const hasEquipmentOptions =
+    Boolean(equipmentUk) && Object.keys(equipmentUk).length > 0;
+  const hasActiveCatalogFilters =
+    (equipmentFilter || []).length > 0 || Boolean(locationFilter);
+
+  const resetCatalogFilters = () => {
+    setEquipmentFilter([]);
+    setLocationFilter("");
+  };
 
   const resetFilters = () => {
     setQ("");
@@ -132,62 +154,81 @@ export function WorkoutCatalogSection({
         )}
       </div>
 
-      <div className="mb-3">
-        <div className="text-style-caption text-subtle mb-1.5">Де тренуюсь</div>
-        <div className="flex flex-wrap gap-1.5">
-          {LOCATION_OPTIONS.map(({ id, label }) => {
-            const active = locationFilter === id;
-            return (
-              <button
-                key={id}
-                type="button"
-                onClick={() => setLocationFilter(active ? "" : id)}
-                className={chipClass(active)}
-                aria-pressed={active}
-              >
-                {label}
-              </button>
-            );
-          })}
+      <div className="mb-3 space-y-2">
+        <div>
+          <div className="mb-1 flex items-center justify-between gap-2">
+            <span
+              id="workout-location-filter-label"
+              className="text-style-caption text-subtle"
+            >
+              Де тренуюсь
+            </span>
+            {!hasEquipmentOptions && hasActiveCatalogFilters ? (
+              <ResetFiltersButton onClick={resetCatalogFilters} />
+            ) : null}
+          </div>
+          <div
+            role="group"
+            aria-labelledby="workout-location-filter-label"
+            className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-2 overflow-x-auto px-4"
+          >
+            {LOCATION_OPTIONS.map(({ id, label }) => {
+              const active = locationFilter === id;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setLocationFilter(active ? "" : id)}
+                  className={chipClass(active)}
+                  aria-pressed={active}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
 
-      {equipmentUk && Object.keys(equipmentUk).length > 0 && (
-        <div className="mb-3">
-          <div className="text-style-caption text-subtle mb-1.5">
-            Обладнання
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {Object.entries(equipmentUk as Record<string, string>).map(
-              ([id, label]) => {
-                const active = (equipmentFilter || []).includes(id);
-                return (
-                  <button
-                    key={id}
-                    type="button"
-                    onClick={() =>
-                      setEquipmentFilter(toggleArr(equipmentFilter, id))
-                    }
-                    className={chipClass(active)}
-                    aria-pressed={active}
-                  >
-                    {label}
-                  </button>
-                );
-              },
-            )}
-            {(equipmentFilter || []).length > 0 && (
-              <button
-                type="button"
-                onClick={() => setEquipmentFilter([])}
-                className="text-xs px-3 py-2 pointer-coarse:min-h-[44px] rounded-full border border-line text-muted hover:text-text hover:border-muted transition-colors"
+        {hasEquipmentOptions && (
+          <div>
+            <div className="mb-1 flex items-center justify-between gap-2">
+              <span
+                id="workout-equipment-filter-label"
+                className="text-style-caption text-subtle"
               >
-                Скинути
-              </button>
-            )}
+                Обладнання
+              </span>
+              {hasActiveCatalogFilters ? (
+                <ResetFiltersButton onClick={resetCatalogFilters} />
+              ) : null}
+            </div>
+            <div
+              role="group"
+              aria-labelledby="workout-equipment-filter-label"
+              className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-2 overflow-x-auto px-4"
+            >
+              {Object.entries(equipmentUk as Record<string, string>).map(
+                ([id, label]) => {
+                  const active = (equipmentFilter || []).includes(id);
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() =>
+                        setEquipmentFilter(toggleArr(equipmentFilter, id))
+                      }
+                      className={chipClass(active)}
+                      aria-pressed={active}
+                    >
+                      {label}
+                    </button>
+                  );
+                },
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {mode === "log" && (
         <p className="text-style-caption text-muted mb-2 leading-relaxed">
