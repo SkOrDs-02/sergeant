@@ -2,11 +2,13 @@
  * Last validated: 2026-05-14
  * Status: Active
  */
+import { useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import type {
   FizrukData,
   recoveryConflictsForExercise as recoveryConflictsForExerciseFn,
 } from "@sergeant/fizruk-domain";
+import { equipmentForLocation } from "@sergeant/fizruk-domain/data";
 import { Input } from "@shared/components/ui/Input";
 import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
 import { Icon } from "@shared/components/ui/Icon";
@@ -15,6 +17,9 @@ import { EmptyState } from "@shared/components/ui/EmptyState";
 import { FizrukEmptyIllustration } from "@shared/components/ui/EmptyStateIllustrations";
 import { cn } from "@shared/lib/ui/cn";
 import { Card } from "@shared/components/ui/Card";
+import { Segmented } from "@shared/components/ui/Segmented";
+import { Sheet } from "@shared/components/ui/Sheet";
+import { Button } from "@shared/components/ui/Button";
 import { fmt } from "../../lib/numberFmt";
 
 type RecExerciseFn = typeof recoveryConflictsForExerciseFn;
@@ -46,8 +51,10 @@ type WorkoutCatalogSectionProps = {
   setQ: Dispatch<SetStateAction<string>>;
   equipmentFilter: string[];
   setEquipmentFilter: Dispatch<SetStateAction<string[]>>;
-  locationFilter: FizrukData.ExerciseLocation | "";
-  setLocationFilter: Dispatch<SetStateAction<FizrukData.ExerciseLocation | "">>;
+  locationFilter: FizrukData.ExerciseLocation;
+  setLocationFilter: Dispatch<SetStateAction<FizrukData.ExerciseLocation>>;
+  /** Скільки вправ дає кожен вид обладнання сам по собі в цій локації. */
+  equipmentCounts: Record<string, number>;
   equipmentUk: Record<string, string>;
   grouped: CatalogGroup[];
   open: Record<string, boolean>;
@@ -64,36 +71,6 @@ function toggleArr(arr: string[] | null | undefined, value: string): string[] {
   return a.includes(value) ? a.filter((x) => x !== value) : [...a, value];
 }
 
-/**
- * AI-DANGER: `text-xs` — розмір КОНТРОЛА (рамка, падинг, hover), а не роль
- * тексту. Шкала ролей описує текст; спеціальної ролі для контролів у ній
- * немає, тож правильна дія — лишити сирий розмір, а не підібрати найближчу
- * роль. Active-стан — ті самі fizruk-soft токени, що в `Segmented`
- * style="soft": інверсне «чорнило» (bg-text/text-bg) читалось як чужорідний
- * елемент серед мʼяких поверхонь модуля.
- */
-function chipClass(active: boolean): string {
-  return cn(
-    "shrink-0 snap-start text-xs px-3 py-2 pointer-coarse:min-h-[44px] rounded-full border transition-colors",
-    active
-      ? "border-fizruk-ring bg-fizruk-surface text-fizruk-soft-fg font-semibold shadow-sm dark:border-fizruk-border-dark/40 dark:bg-fizruk-surface-dark/15"
-      : "border-border-strong bg-panelHi text-text hover:border-muted",
-  );
-}
-
-function ResetFiltersButton({ onClick }: { onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label="Скинути фільтри"
-      className="focus-ring shrink-0 rounded-md px-1 py-1 text-style-caption font-semibold text-text underline decoration-border-strong underline-offset-2 transition-colors hover:text-muted pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px]"
-    >
-      Скинути
-    </button>
-  );
-}
-
 export function WorkoutCatalogSection({
   mode,
   q,
@@ -103,6 +80,7 @@ export function WorkoutCatalogSection({
   locationFilter,
   setLocationFilter,
   equipmentUk,
+  equipmentCounts,
   grouped,
   open,
   setOpen,
@@ -112,25 +90,40 @@ export function WorkoutCatalogSection({
   rec,
   musclesUk,
 }: WorkoutCatalogSectionProps) {
-  /** Список звужений людиною — запитом або будь-яким із фільтрів. */
+  const [equipmentOpen, setEquipmentOpen] = useState(false);
+
+  /**
+   * `gym` — найширший кошик (там доступний увесь каталог), тож він не
+   * звужує список і не рахується за активний фільтр.
+   */
   const hasQuery =
     q.trim().length > 0 ||
     (equipmentFilter || []).length > 0 ||
-    Boolean(locationFilter);
-  const hasEquipmentOptions =
-    Boolean(equipmentUk) && Object.keys(equipmentUk).length > 0;
-  const hasActiveCatalogFilters =
-    (equipmentFilter || []).length > 0 || Boolean(locationFilter);
-
-  const resetCatalogFilters = () => {
-    setEquipmentFilter([]);
-    setLocationFilter("");
-  };
+    locationFilter !== "gym";
+  const availableEquipment = equipmentForLocation(locationFilter).filter(
+    (id) => equipmentUk?.[id],
+  );
+  const hasEquipmentOptions = availableEquipment.length > 0;
+  const selectedEquipment = (equipmentFilter || []).filter((id) =>
+    availableEquipment.includes(id),
+  );
 
   const resetFilters = () => {
     setQ("");
     setEquipmentFilter([]);
-    setLocationFilter("");
+    setLocationFilter("gym");
+  };
+
+  /**
+   * Обладнання, якого в новому місці немає, знімається одразу: інакше
+   * фільтр мовчки дає нуль вправ і список виглядає зламаним.
+   */
+  const changeLocation = (next: FizrukData.ExerciseLocation) => {
+    setLocationFilter(next);
+    const allowed = equipmentForLocation(next);
+    setEquipmentFilter((prev) =>
+      (prev || []).filter((id) => allowed.includes(id)),
+    );
   };
 
   return (
@@ -155,80 +148,97 @@ export function WorkoutCatalogSection({
       </div>
 
       <div className="mb-3 space-y-2">
-        <div>
-          <div className="mb-1 flex items-center justify-between gap-2">
-            <span
-              id="workout-location-filter-label"
-              className="text-style-caption text-subtle"
-            >
-              Де тренуюсь
-            </span>
-            {!hasEquipmentOptions && hasActiveCatalogFilters ? (
-              <ResetFiltersButton onClick={resetCatalogFilters} />
-            ) : null}
-          </div>
-          <div
-            role="group"
-            aria-labelledby="workout-location-filter-label"
-            className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-2 overflow-x-auto px-4"
-          >
-            {LOCATION_OPTIONS.map(({ id, label }) => {
-              const active = locationFilter === id;
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => setLocationFilter(active ? "" : id)}
-                  className={chipClass(active)}
-                  aria-pressed={active}
-                >
-                  {label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        <Segmented
+          items={LOCATION_OPTIONS.map(({ id, label }) => ({
+            value: id,
+            label,
+          }))}
+          value={locationFilter}
+          onChange={changeLocation}
+          variant="fizruk"
+          size="md"
+          ariaLabel="Де тренуюсь"
+        />
 
         {hasEquipmentOptions && (
-          <div>
-            <div className="mb-1 flex items-center justify-between gap-2">
-              <span
-                id="workout-equipment-filter-label"
-                className="text-style-caption text-subtle"
-              >
-                Обладнання
-              </span>
-              {hasActiveCatalogFilters ? (
-                <ResetFiltersButton onClick={resetCatalogFilters} />
-              ) : null}
-            </div>
-            <div
-              role="group"
-              aria-labelledby="workout-equipment-filter-label"
-              className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-2 overflow-x-auto px-4"
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setEquipmentOpen(true)}
+              className="focus-ring flex min-h-[44px] flex-1 items-center justify-between rounded-2xl border border-line bg-panelHi px-3 text-sm text-text transition-colors hover:border-muted"
             >
-              {Object.entries(equipmentUk as Record<string, string>).map(
-                ([id, label]) => {
-                  const active = (equipmentFilter || []).includes(id);
-                  return (
-                    <button
-                      key={id}
-                      type="button"
-                      onClick={() =>
-                        setEquipmentFilter(toggleArr(equipmentFilter, id))
-                      }
-                      className={chipClass(active)}
-                      aria-pressed={active}
-                    >
-                      {label}
-                    </button>
-                  );
-                },
-              )}
-            </div>
+              <span>Обладнання</span>
+              <span className="flex items-center gap-2 text-style-caption text-muted">
+                {selectedEquipment.length > 0 ? (
+                  <span className="rounded-full bg-fizruk-surface px-2 py-0.5 font-semibold text-fizruk-soft-fg">
+                    {fmt(selectedEquipment.length)}
+                  </span>
+                ) : (
+                  <span>{fmt(availableEquipment.length)} видів</span>
+                )}
+                <Icon name="chevron-down" size={16} aria-hidden />
+              </span>
+            </button>
+            {selectedEquipment.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setEquipmentFilter([])}
+                className="focus-ring shrink-0 rounded-md px-2 py-1 text-style-caption font-semibold text-text underline decoration-border-strong underline-offset-2 transition-colors hover:text-muted pointer-coarse:min-h-[44px]"
+              >
+                Скинути
+              </button>
+            )}
           </div>
         )}
       </div>
+
+      <Sheet
+        open={equipmentOpen}
+        onClose={() => setEquipmentOpen(false)}
+        title="Обладнання"
+        description={`${fmt(availableEquipment.length)} з ${fmt(
+          Object.keys(equipmentUk || {}).length,
+        )} видів має сенс тут`}
+        footer={
+          <Button variant="primary" onClick={() => setEquipmentOpen(false)}>
+            Готово
+          </Button>
+        }
+      >
+        <ul className="divide-y divide-line">
+          {availableEquipment.map((id) => {
+            const active = (equipmentFilter || []).includes(id);
+            return (
+              <li key={id}>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setEquipmentFilter(toggleArr(equipmentFilter, id))
+                  }
+                  aria-pressed={active}
+                  className="focus-ring flex min-h-[44px] w-full items-center gap-3 py-2 text-left text-sm text-text"
+                >
+                  <span
+                    aria-hidden
+                    className={cn(
+                      "flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors",
+                      active
+                        ? "border-fizruk-ring bg-fizruk-surface text-fizruk-soft-fg"
+                        : "border-border-strong",
+                    )}
+                  >
+                    {active ? <Icon name="check" size={12} /> : null}
+                  </span>
+                  <span className="flex-1">{equipmentUk[id]}</span>
+                  <span className="text-style-caption tabular-nums text-muted">
+                    {fmt(equipmentCounts[id] ?? 0)}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </Sheet>
 
       {mode === "log" && (
         <p className="text-style-caption text-muted mb-2 leading-relaxed">

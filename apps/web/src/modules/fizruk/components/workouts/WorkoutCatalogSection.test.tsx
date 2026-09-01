@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 /**
  * Tests for WorkoutCatalogSection — the filterable exercise catalog
- * rendered inside Workouts. Covers the search input, equipment filter
- * chips, empty-state fallback, group accordion toggle, exercise list
- * rendering, recovery warnings, and the ⓘ info button.
+ * rendered inside Workouts. Covers the search input, the location
+ * segmented control, the equipment sheet, empty-state fallback, group
+ * accordion toggle, exercise list rendering, recovery warnings, and the
+ * ⓘ info button.
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
@@ -58,9 +59,14 @@ function baseProps(
     setQ: vi.fn(),
     equipmentFilter: [],
     setEquipmentFilter: vi.fn(),
-    locationFilter: "" as const,
+    locationFilter: "gym" as FizrukData.ExerciseLocation,
     setLocationFilter: vi.fn(),
-    equipmentUk: { barbell: "Штанга", dumbbell: "Гантелі" },
+    equipmentUk: {
+      barbell: "Штанга",
+      dumbbell: "Гантелі",
+      machine: "Тренажер",
+    },
+    equipmentCounts: { barbell: 36, dumbbell: 49, machine: 21 },
     grouped: [],
     open: {},
     setOpen: vi.fn(),
@@ -105,80 +111,99 @@ describe("WorkoutCatalogSection — search input", () => {
 });
 
 describe("WorkoutCatalogSection — location filter", () => {
-  it("renders a chip per location", () => {
+  it("renders one segment per location with gym selected by default", () => {
     render(<WorkoutCatalogSection {...baseProps()} />);
     for (const label of ["Зал", "Дім", "Вулиця"]) {
-      expect(screen.getByRole("button", { name: label })).toBeInTheDocument();
+      expect(screen.getByRole("tab", { name: label })).toBeInTheDocument();
     }
+    expect(screen.getByRole("tab", { name: "Зал" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
   });
 
-  it("selects a location on click and clears it on a second click", () => {
+  it("selects a location on click", () => {
     const setLocationFilter = vi.fn();
-    const { rerender } = render(
-      <WorkoutCatalogSection {...baseProps({ setLocationFilter })} />,
-    );
-    fireEvent.click(screen.getByRole("button", { name: "Дім" }));
+    render(<WorkoutCatalogSection {...baseProps({ setLocationFilter })} />);
+    fireEvent.click(screen.getByRole("tab", { name: "Дім" }));
     expect(setLocationFilter).toHaveBeenCalledWith("home");
+  });
 
-    rerender(
+  it("drops equipment the new location cannot host", () => {
+    const setEquipmentFilter = vi.fn();
+    render(
       <WorkoutCatalogSection
-        {...baseProps({ locationFilter: "home", setLocationFilter })}
+        {...baseProps({
+          equipmentFilter: ["barbell", "dumbbell", "machine"],
+          setEquipmentFilter,
+        })}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Дім" }));
-    expect(setLocationFilter).toHaveBeenLastCalledWith("");
+    fireEvent.click(screen.getByRole("tab", { name: "Вулиця" }));
+    const updater = setEquipmentFilter.mock.calls[0]?.[0] as (
+      prev: string[],
+    ) => string[];
+    expect(updater(["barbell", "dumbbell", "machine"])).toEqual(["dumbbell"]);
   });
 });
 
-describe("WorkoutCatalogSection — equipment filter", () => {
-  it("renders equipment chips from equipmentUk", () => {
+describe("WorkoutCatalogSection — equipment sheet", () => {
+  it("counts the kinds that make sense in the current location", () => {
     render(<WorkoutCatalogSection {...baseProps()} />);
-    expect(screen.getByRole("button", { name: "Штанга" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Гантелі" })).toBeInTheDocument();
+    expect(screen.getByText("3 видів")).toBeInTheDocument();
   });
 
-  it("clicking a chip calls setEquipmentFilter with the toggled id", () => {
+  it("narrows the count outdoors, where the barbell has no place", () => {
+    render(
+      <WorkoutCatalogSection {...baseProps({ locationFilter: "outdoor" })} />,
+    );
+    expect(screen.getByText("1 видів")).toBeInTheDocument();
+  });
+
+  it("opens the sheet and lists equipment with its own exercise count", () => {
+    render(<WorkoutCatalogSection {...baseProps()} />);
+    fireEvent.click(screen.getByRole("button", { name: /Обладнання/ }));
+    expect(screen.getByRole("button", { name: /Штанга/ })).toBeInTheDocument();
+    expect(screen.getByText("36", { selector: "span" })).toBeInTheDocument();
+  });
+
+  it("toggles a kind from inside the sheet", () => {
     const setEquipmentFilter = vi.fn();
     render(<WorkoutCatalogSection {...baseProps({ setEquipmentFilter })} />);
-    fireEvent.click(screen.getByRole("button", { name: "Штанга" }));
+    fireEvent.click(screen.getByRole("button", { name: /Обладнання/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Штанга/ }));
     expect(setEquipmentFilter).toHaveBeenCalledWith(["barbell"]);
   });
 
-  it("shows one reset control and clears both catalog filters", () => {
+  it("shows the selected count instead of the kind count", () => {
+    render(
+      <WorkoutCatalogSection
+        {...baseProps({ equipmentFilter: ["barbell"] })}
+      />,
+    );
+    expect(screen.queryByText("3 видів")).not.toBeInTheDocument();
+    expect(screen.getByText("1")).toBeInTheDocument();
+  });
+
+  it("clears the equipment selection with the reset control", () => {
     const setEquipmentFilter = vi.fn();
-    const setLocationFilter = vi.fn();
     const setQ = vi.fn();
     render(
       <WorkoutCatalogSection
         {...baseProps({
           q: "жим",
           equipmentFilter: ["barbell"],
-          locationFilter: "home",
           setEquipmentFilter,
-          setLocationFilter,
           setQ,
         })}
       />,
     );
-    const resetBtn = screen.getByRole("button", {
-      name: "Скинути фільтри",
-    });
-    fireEvent.click(resetBtn);
+    fireEvent.click(screen.getByRole("button", { name: "Скинути" }));
     expect(setEquipmentFilter).toHaveBeenCalledWith([]);
-    expect(setLocationFilter).toHaveBeenCalledWith("");
     expect(setQ).not.toHaveBeenCalled();
   });
 
-  it("shows the reset control when only a location filter is active", () => {
-    render(
-      <WorkoutCatalogSection {...baseProps({ locationFilter: "outdoor" })} />,
-    );
-    expect(
-      screen.getByRole("button", { name: "Скинути фільтри" }),
-    ).toBeInTheDocument();
-  });
-
-  it("renders no equipment section when equipmentUk is empty", () => {
+  it("hides the equipment control when equipmentUk is empty", () => {
     render(<WorkoutCatalogSection {...baseProps({ equipmentUk: {} })} />);
     expect(screen.queryByText("Обладнання")).not.toBeInTheDocument();
   });
