@@ -11,6 +11,9 @@
 
 export const fizrukPageMessages = {
   headerSubtitle: "Рух · сила · відновлення",
+  // < sm: повний підпис не вміщається поруч із двома кнопками шапки на
+  // 390 px (VIS-1, аудит 2026-09).
+  headerSubtitleShort: "Рух і відновлення",
   startWorkoutFab: "Почати тренування",
   resumeWorkoutFab: "Продовжити тренування",
   // Only one unfinished workout may exist, so every start path funnels

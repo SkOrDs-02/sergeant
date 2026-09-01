@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { monoWebhookApi, billingApi, pushApi } from "@shared/api";
 import { finykKeys, billingKeys, pushKeys } from "@shared/lib/api/queryKeys";
+import { useAuthOptional } from "../auth/AuthContext";
 import { shouldPrefetchOnConnection } from "./connectionGate";
 import type { HubModuleId } from "../hooks/useHubNavigation";
 
@@ -33,6 +34,10 @@ const STALE_TIME = 30_000;
  */
 export function useModuleRouteLoader(activeModule: HubModuleId | null): void {
   const queryClient = useQueryClient();
+  // FUN-1 (аудит 2026-09): анонім отримував 401 на `billing/status` при
+  // кожній навігації між модулями. Без сесії Pro-гейт і так закритий.
+  const auth = useAuthOptional();
+  const signedOut = auth?.status === "unauthenticated";
 
   useEffect(() => {
     if (!activeModule) return;
@@ -40,11 +45,13 @@ export function useModuleRouteLoader(activeModule: HubModuleId | null): void {
 
     // Billing status is relevant for all modules — gates Pro UI. Prefetch
     // once; RQ deduplicates subsequent calls within staleTime.
-    void queryClient.prefetchQuery({
-      queryKey: billingKeys.status,
-      queryFn: ({ signal }) => billingApi.status({ signal }),
-      staleTime: STALE_TIME,
-    });
+    if (!signedOut) {
+      void queryClient.prefetchQuery({
+        queryKey: billingKeys.status,
+        queryFn: ({ signal }) => billingApi.status({ signal }),
+        staleTime: STALE_TIME,
+      });
+    }
 
     // VAPID public key — needed to register push notification subscriptions
     // for workout / meal / routine reminders. Small payload; prefetch eagerly
@@ -71,5 +78,5 @@ export function useModuleRouteLoader(activeModule: HubModuleId | null): void {
         staleTime: STALE_TIME,
       });
     }
-  }, [activeModule, queryClient]);
+  }, [activeModule, queryClient, signedOut]);
 }

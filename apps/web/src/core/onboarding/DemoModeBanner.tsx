@@ -6,7 +6,7 @@ import { useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
-import { isDemoMode, exitDemoToWizard } from "./seedDemoData";
+import { isDemoMode, exitDemoToWizard } from "./demoMode";
 
 // Key name kept from the original "dismiss for the session" feature —
 // renaming the string would drop anyone mid-session back into the

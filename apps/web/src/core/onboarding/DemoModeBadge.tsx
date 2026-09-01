@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { messages } from "@shared/i18n/uk";
-import { isDemoMode, exitDemoToWizard } from "./seedDemoData";
+import { isDemoMode, exitDemoToWizard } from "./demoMode";
 
 /**
  * Persistent demo-mode marker + exit. Unlike `DemoModeBanner` (a

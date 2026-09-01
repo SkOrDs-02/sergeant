@@ -163,7 +163,7 @@ for (const profile of PROFILES) {
           page.getByRole("button", { name: /Керувати підпискою/ }),
         ).toBeVisible();
       } else {
-        await expect(visibleText(page, "Зараз ваш план")).toBeVisible();
+        await expect(visibleText(page, "Зараз твій план")).toBeVisible();
       }
     });
 

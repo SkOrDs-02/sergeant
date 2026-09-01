@@ -269,7 +269,7 @@ export function MemoryBankSection() {
                 <Icon name="sparkle" size={22} className="text-brand-500" />
               }
               title="Банк памʼяті порожній"
-              description="ШІ задасть кілька запитань щоб дізнатися про ваші алергії, цілі, уподобання та рівень активності"
+              description="ШІ поставить кілька запитань, щоб дізнатися про твої алергії, цілі, уподобання та рівень активності"
               action={
                 <Button
                   variant="primary"

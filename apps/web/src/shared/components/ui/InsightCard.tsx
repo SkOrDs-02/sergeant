@@ -45,7 +45,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { computeAdviceId } from "@sergeant/insights";
+import { computeAdviceId } from "@sergeant/insights/adviceId";
 import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { hapticTap } from "@shared/lib/adapters/haptic";
@@ -123,7 +123,7 @@ export function InsightCard({
   id,
   title,
   subtitle,
-  ctaLabel = "→",
+  ctaLabel,
   onActivate,
   onDismiss,
   onAskAi,
@@ -320,7 +320,10 @@ export function InsightCard({
           "focus-visible:ring-2 focus-visible:ring-celebration/45",
         )}
       >
-        {ctaLabel}
+        {/* SLOP-1 (аудит 2026-09): без явної мітки тут стояв текстовий гліф
+            «→» — «гліф у слоті іконки» з анти-слоп стратегії §3.2. Тепер
+            дефолт — справжня іконка; рядок лишається для кастомних міток. */}
+        {ctaLabel ?? <Icon name="close" size={16} aria-hidden />}
       </button>
     </div>
   );
