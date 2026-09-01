@@ -262,18 +262,29 @@ describe("PantryManagerSheet (PR-37 / §3.2 + 2026-05 §3.4)", () => {
     expect(onSavePantryForm).toHaveBeenCalledWith("Робота", "rename");
   });
 
-  it("resets a visible form when the sheet closes", () => {
+  // Скидання форми переїхало з тіла рендера в обробник закриття
+  // (браузерний аудит 2026-09-01: виклик батьківського сеттера під час
+  // рендера дитини давав «Cannot update a component while rendering a
+  // different component»). Тому тест закриває аркуш дією, а не флипом
+  // пропа `open`.
+  it("resets a visible form when the sheet is closed", () => {
     const setPantryForm = vi.fn();
-    const props = makeProps({
-      pantries: [{ id: "home", name: "Дім", items: [], text: "" }],
-      activePantryId: "home",
-      pantryForm: { mode: "rename", name: "Дім", err: "Помилка" },
-      setPantryForm,
-    });
-    const { rerender } = render(<PantryManagerSheet {...props} />);
+    const onClose = vi.fn();
+    render(
+      <PantryManagerSheet
+        {...makeProps({
+          pantries: [{ id: "home", name: "Дім", items: [], text: "" }],
+          activePantryId: "home",
+          pantryForm: { mode: "rename", name: "Дім", err: "Помилка" },
+          setPantryForm,
+          onClose,
+        })}
+      />,
+    );
 
-    rerender(<PantryManagerSheet {...props} open={false} />);
+    fireEvent.keyDown(document, { key: "Escape" });
 
+    expect(onClose).toHaveBeenCalled();
     const update = setPantryForm.mock.calls[0]?.[0] as (
       form: PantryForm,
     ) => PantryForm;
