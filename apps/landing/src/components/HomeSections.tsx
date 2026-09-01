@@ -112,7 +112,7 @@ export function ConnectionExamples() {
           <PairArrow />
           <span className="text-routine-strong">Рутина</span>
         </div>
-        <blockquote className="font-serif text-lg italic leading-snug text-foreground">
+        <blockquote className="text-lg font-medium leading-snug text-foreground">
           «У дні, коли тренуєшся зранку, інші звички зриваються рідше»
         </blockquote>
         <figcaption className="mt-auto text-xs text-subtle">
@@ -129,7 +129,7 @@ export function ConnectionExamples() {
           <PairArrow />
           <span className="text-routine-strong">Рутина</span>
         </div>
-        <blockquote className="font-serif text-lg italic leading-snug text-foreground">
+        <blockquote className="text-lg font-medium leading-snug text-foreground">
           «Коли снідаєш удома, ранкова рутина тримається довше»
         </blockquote>
         <figcaption className="mt-auto text-xs text-subtle">
@@ -146,7 +146,7 @@ export function ConnectionExamples() {
           <PairArrow />
           <span className="text-fizruk">Фізрук</span>
         </div>
-        <blockquote className="font-serif text-lg italic leading-snug text-subtle">
+        <blockquote className="text-lg font-medium leading-snug text-subtle">
           «Закономірностей не помічено. Ще збираю дані»
         </blockquote>
         <figcaption className="sr-only">
@@ -180,7 +180,7 @@ export function ConnectionsSection() {
           <PairArrow />
           <span className="text-routine-strong">Рутина</span>
         </div>
-        <blockquote className="font-serif text-lg italic leading-snug text-foreground">
+        <blockquote className="text-lg font-medium leading-snug text-foreground">
           «У дні, коли тренуєшся зранку, інші звички зриваються рідше»
         </blockquote>
         <figcaption className="mt-auto text-xs text-subtle">
@@ -195,7 +195,7 @@ export function ConnectionsSection() {
           href="/zvyazky"
           className="font-semibold text-foreground underline decoration-cardline-strong underline-offset-4 transition hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
         >
-          Як це влаштовано →
+          Як це влаштовано
         </a>
       </p>
     </section>
@@ -217,7 +217,7 @@ export function FounderSection() {
         показував свої цифри, і жоден не бачив цілої картини. Sergeant я роблю
         для себе і таких, як я: чесна статистика і жодної торгівлі даними.
       </p>
-      <p className="mt-4 font-serif italic text-subtle">– автор Sergeant</p>
+      <p className="mt-4 text-subtle">– автор Sergeant</p>
     </section>
   );
 }

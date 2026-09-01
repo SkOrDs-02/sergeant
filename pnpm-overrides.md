@@ -1,6 +1,6 @@
 # pnpm Overrides Rationale
 
-> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-08.
+> **Last touched:** 2026-09-01 by @Skords-01. **Next review:** 2026-12-16.
 > **Status:** Active
 
 Документація кожного запису в `pnpm.overrides` кореневого `package.json`.
@@ -213,6 +213,23 @@ pin на `tmp >=0.2.6`, або advisory буде відкликано.
 | `axios@>=1.15.2 <1.18.0`         | `>=1.18.0`        | — (борг)              |
 | `fast-uri`                       | `3.1.5`           | — (борг)              |
 | `ip-address@<10.3.1`             | `>=10.3.1`        | — (борг)              |
+| `browserslist@<4.28.7`           | `>=4.28.7`        | ✅ так                |
 
-Всього: **32** override-ів. Борг на дописування обґрунтувань трекається політикою
+Всього: **33** override-ів. Борг на дописування обґрунтувань трекається політикою
 [`pnpm-overrides-policy.md`](docs/04-governance/governance/pnpm-overrides-policy.md) § Правила п.1.
+
+---
+
+## `browserslist@<4.28.7` → `>=4.28.7`
+
+**Why:** CVE-2026-73088 (prototype pollution → DoS) і CVE-2026-73089 (необмежений ріст
+пам'яті) у `browserslist <4.28.7`. Пакет — dev-транзитив через `@babel/core →
+@babel/helper-compilation-targets` у кожному воркспейсі, але потрапляє в образ `Dockerfile.api`,
+тож Trivy image scan гейтить його як HIGH. Override піднімає всі копії до 4.28.8 і змінює в
+лок-файлі лише сам пакет та його дані про браузери (`caniuse-lite`, `electron-to-chromium`,
+`node-releases`, `update-browserslist-db`).
+
+**Drop when:** `@babel/helper-compilation-targets` (через `@babel/core`) оголосить
+`browserslist@^4.28.7` або новіше і `pnpm why browserslist -r` не покаже жодної копії `<4.28.7`.
+
+**Last reviewed:** 2026-09-01

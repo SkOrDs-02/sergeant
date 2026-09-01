@@ -34,6 +34,7 @@ import { messages } from "@shared/i18n/uk";
 
 import { useLocalUserId } from "../auth/useLocalUserId";
 import { isSyncableUserId } from "../syncEngine/syncableUserId";
+import { useHubBannerSlot } from "../hub/bannerBudget";
 
 const m = messages.durability.localOnly;
 
@@ -49,12 +50,19 @@ export function LocalOnlyDataBanner({
   onBackup,
 }: LocalOnlyDataBannerProps) {
   const userId = useLocalUserId();
+  // Бюджет банерів хабу (F3, 2026-09-01): це попередження — пріоритет 0,
+  // тож місце в нього є завжди, коли воно хоче показатись.
+  const hasSlot = useHubBannerSlot(
+    "localOnlyData",
+    userId !== null && !isSyncableUserId(userId),
+  );
 
   // `null` — сесія ще вантажиться. Мигнути попередженням «дані під загрозою»
   // і прибрати його через 200 мс — гірше, ніж не показати нічого: користувач
   // запамʼятає тривогу, а не факт.
   if (userId === null) return null;
   if (isSyncableUserId(userId)) return null;
+  if (!hasSlot) return null;
 
   return (
     <div

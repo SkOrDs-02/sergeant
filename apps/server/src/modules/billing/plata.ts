@@ -1,11 +1,16 @@
 /**
- * Plata by mono (monopay) payment-provider — live (Phase 7 UA billing).
+ * Plata by mono (monopay) payment-provider — native subscriptions (Phase 7 UA
+ * billing, plata-recurring spec 2026-09-01).
  *
- * Plata = еквайринг monobank, привʼязаний до українського ФОП. На відміну
- * від LiqPay, monopay НЕ має провайдер-керованої auto-subscribe, тож
- * рекурентка — **самокерована (token-billing)**: перший платіж створюємо з
- * `saveCardData` → у webhook отримуємо `walletId` + `cardToken` → далі наш
- * {@link ./plataScheduler} щомісяця списує через `wallet/payment`.
+ * monobank ЄDE провайдер-керований auto-subscribe (`subscription/*`): один
+ * виклик `subscription/create` заводить підписку, а періодичність, списання
+ * і ретраї лишаються на боці monobank. Наш код лише слухає два webhook-и
+ * (`chargeUrl`/`statusUrl`, обробляються цим самим `processWebhook`) і
+ * звіряється полінгом `subscription/status` — {@link ./plataSync}.
+ *
+ * `subscription/create` не повертає `reference`, тож звʼязок «юзер ↔
+ * subscriptionId» записуємо самі, у `plata_subscription`, до повернення
+ * `pageUrl` викликачу (до редиректу).
  *
  * Auth — header `X-Token` (merchant token, `PLATA_TOKEN`). Webhook
  * підписаний ECDSA (`X-Sign`, base64) над сирим тілом; верифікуємо проти
@@ -13,8 +18,8 @@
  *
  * verifyWebhookSignature на інтерфейсі — SYNC (читає кешований pubkey);
  * warm-up і retry-on-rotation тримає async {@link ensurePlataPubkey}, який
- * route await-ить перед verify. Секрети (`PLATA_TOKEN`, card-token) ніколи
- * не логуються (Hard Rule #21).
+ * route await-ить перед verify. Секрети (`PLATA_TOKEN`) ніколи не логуються
+ * (Hard Rule #21).
  */
 import crypto from "node:crypto";
 import type { Pool } from "pg";
@@ -25,43 +30,27 @@ import type {
 } from "@sergeant/shared";
 import { env } from "../../env/env.js";
 import { logger } from "../../obs/logger.js";
-import { decryptToken, encryptToken } from "../mono/crypto.js";
 import {
   BillingConfigurationError,
   type BillingProvider,
   type ProviderCheckoutInput,
   type ProviderPortalInput,
 } from "./provider.js";
+import { reconcileBySubscriptionId } from "./plataSync.js";
 import { isoOrNull } from "./stripeShared.js";
 
-const MONOPAY_BASE = "https://api.monobank.ua/api/merchant";
+export const MONOPAY_BASE = "https://api.monobank.ua/api/merchant";
 const CCY_UAH = 980;
-const INVOICE_VALIDITY_SECONDS = 3600;
+const SUBSCRIPTION_VALIDITY_SECONDS = 3600;
 const PUBKEY_TTL_MS = 60 * 60 * 1000;
 const ACTIVE_STATUSES = new Set(["active", "trialing"]);
-const SUCCESS = "success";
 
-function getToken(): string {
+export function getToken(): string {
   const token = env.PLATA_TOKEN;
   if (!token) {
     throw new BillingConfigurationError("PLATA_TOKEN is not set");
   }
   return token;
-}
-
-/**
- * Ключ для шифрування card-token-а. Дзеркалить mono-token AES-256-GCM
- * (m008) — reuse `MONO_TOKEN_ENC_KEY`, той самий crypto-util
- * (`encryptToken`). Card-token Plata — того ж класу секрет (дає списувати).
- */
-function getEncKey(): string {
-  const key = process.env["MONO_TOKEN_ENC_KEY"];
-  if (!key) {
-    throw new BillingConfigurationError(
-      "MONO_TOKEN_ENC_KEY is required to encrypt the Plata card token",
-    );
-  }
-  return key;
 }
 
 function getAppBaseUrl(): string {
@@ -119,18 +108,29 @@ export function __setPlataPubkeyForTesting(key: crypto.KeyObject | null): void {
   cachedPubkey = key ? { key, fetchedAt: Date.now() } : null;
 }
 
-// ── invoice / webhook shapes ─────────────────────────────────────────
-interface PlataWebhook {
-  invoiceId?: string;
-  status?: string;
-  amount?: number;
-  ccy?: number;
-  reference?: string;
-  walletData?: { cardToken?: string; walletId?: string };
-}
-
-export function parsePlataWebhook(rawBody: string): PlataWebhook {
-  return JSON.parse(rawBody) as PlataWebhook;
+/**
+ * Тіло `chargeUrl`/`statusUrl` webhook-ів НЕ задокументоване (spec § Ризики).
+ * Webhook не має права змінювати стан напряму — витягуємо лише
+ * `subscriptionId`, толерантно (top-level або вкладений `data`), і тригеримо
+ * звірку {@link reconcileBySubscriptionId}, яка бере стан з
+ * `GET subscription/status`, не з цього payload-у.
+ */
+export function parseSubscriptionIdFromWebhook(rawBody: string): string | null {
+  let body: unknown;
+  try {
+    body = JSON.parse(rawBody);
+  } catch {
+    return null;
+  }
+  if (!body || typeof body !== "object") return null;
+  const top = (body as Record<string, unknown>)["subscriptionId"];
+  if (typeof top === "string" && top.length > 0) return top;
+  const nested = (body as Record<string, unknown>)["data"];
+  if (nested && typeof nested === "object") {
+    const nestedId = (nested as Record<string, unknown>)["subscriptionId"];
+    if (typeof nestedId === "string" && nestedId.length > 0) return nestedId;
+  }
+  return null;
 }
 
 interface BillingRow {
@@ -181,29 +181,15 @@ async function readLatestSubscription(
   return rows[0] ?? null;
 }
 
-/**
- * Зберігає card-token зашифровано у plata_card_token (AES-256-GCM, дзеркало
- * mono_connection). Upsert по user_id. Експортовано для scheduler-а.
- */
-export async function storePlataCardToken(
+async function findSubscriptionId(
   pool: Pool,
   userId: string,
-  walletId: string,
-  cardToken: string,
-): Promise<void> {
-  const enc = encryptToken(cardToken, getEncKey());
-  await pool.query(
-    `INSERT INTO plata_card_token
-       (user_id, wallet_id, card_token_ciphertext, card_token_iv, card_token_tag)
-     VALUES ($1, $2, $3, $4, $5)
-     ON CONFLICT (user_id) DO UPDATE SET
-       wallet_id = EXCLUDED.wallet_id,
-       card_token_ciphertext = EXCLUDED.card_token_ciphertext,
-       card_token_iv = EXCLUDED.card_token_iv,
-       card_token_tag = EXCLUDED.card_token_tag,
-       updated_at = NOW()`,
-    [userId, walletId, enc.ciphertext, enc.iv, enc.tag],
+): Promise<string | null> {
+  const { rows } = await pool.query<{ subscription_id: string }>(
+    `SELECT subscription_id FROM plata_subscription WHERE user_id = $1`,
+    [userId],
   );
+  return rows[0]?.subscription_id ?? null;
 }
 
 export const plataProvider: BillingProvider = {
@@ -217,33 +203,43 @@ export const plataProvider: BillingProvider = {
     const body = {
       amount: env.PRO_MONTHLY_UAH_KOPIYKAS, // копійки як є (Hard Rule #1)
       ccy: CCY_UAH,
-      merchantPaymInfo: {
-        reference: input.user.id, // мапимо юзера у webhook
-        destination: "Sergeant Pro: місячна підписка",
-      },
       redirectUrl: `${baseUrl}/pricing?checkout=success`,
-      webHookUrl: `${serverBaseUrl()}/api/billing/plata-webhook`,
-      validity: INVOICE_VALIDITY_SECONDS,
-      paymentType: "debit",
-      saveCardData: { saveCard: true },
+      webHookUrls: {
+        chargeUrl: `${serverBaseUrl()}/api/billing/plata-charge`,
+        statusUrl: `${serverBaseUrl()}/api/billing/plata-status`,
+      },
+      interval: "1m",
+      validity: SUBSCRIPTION_VALIDITY_SECONDS,
     };
-    const response = await fetch(`${MONOPAY_BASE}/invoice/create`, {
+    const response = await fetch(`${MONOPAY_BASE}/subscription/create`, {
       method: "POST",
       headers: { "X-Token": token, "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
     const payload = (await response.json()) as {
-      invoiceId?: string;
+      subscriptionId?: string;
       pageUrl?: string;
       errText?: string;
     };
-    if (!response.ok || !payload.invoiceId || !payload.pageUrl) {
-      throw new Error(payload.errText || "monopay invoice/create failed");
+    if (!response.ok || !payload.subscriptionId || !payload.pageUrl) {
+      throw new Error(payload.errText || "monopay subscription/create failed");
     }
+    // Записуємо мапінг ДО повернення pageUrl викликачу (до редиректу) —
+    // subscription/create не має `reference`, тож це єдине місце, де звʼязок
+    // «юзер ↔ subscriptionId» можна зафіксувати.
+    await input.pool.query(
+      `INSERT INTO plata_subscription (user_id, subscription_id)
+       VALUES ($1, $2)
+       ON CONFLICT (user_id) DO UPDATE SET
+         subscription_id = EXCLUDED.subscription_id,
+         confirmed_at = NULL,
+         updated_at = NOW()`,
+      [input.user.id, payload.subscriptionId],
+    );
     return {
       ok: true,
       mode: env.PLATA_MODE,
-      sessionId: payload.invoiceId,
+      sessionId: payload.subscriptionId,
       url: payload.pageUrl,
     };
   },
@@ -278,114 +274,63 @@ export const plataProvider: BillingProvider = {
     }
   },
 
+  /**
+   * Webhook НЕ пише у `subscriptions` напряму (spec § Рішення дизайну) —
+   * лише дістає `subscriptionId` і тригерить звірку проти
+   * `GET subscription/status`, яка є арбітром стану.
+   */
   async processWebhook(pool: Pool, rawBody: string): Promise<void> {
-    const wh = parsePlataWebhook(rawBody);
-    const invoiceId = wh.invoiceId;
-    const userId = wh.reference;
-    if (!invoiceId || !userId) {
-      logger.warn({ msg: "plata_webhook_unresolved", invoiceId });
+    const subscriptionId = parseSubscriptionIdFromWebhook(rawBody);
+    if (!subscriptionId) {
+      logger.warn({ msg: "plata_webhook_unresolved" });
       return;
     }
-
-    // Idempotency: dedup по (provider, invoiceId+status) — один invoice
-    // проходить кілька статусів (created→processing→success).
-    const inserted = await pool.query(
-      `INSERT INTO billing_webhook_events (provider, provider_event_id, event_type, payload)
-       VALUES ('plata', $1, $2, $3)
-       ON CONFLICT (provider, provider_event_id) DO NOTHING
-       RETURNING id`,
-      [`${invoiceId}:${wh.status ?? ""}`, wh.status ?? "unknown", rawBody],
-    );
-    if (inserted.rowCount === 0) return;
-
-    const status = wh.status ?? "";
-    if (status === "failure" || status === "expired" || status === "reversed") {
-      await pool.query(
-        `UPDATE subscriptions
-            SET status = 'past_due', updated_at = NOW()
-          WHERE user_id = $1 AND provider = 'plata' AND status = 'active'`,
-        [userId],
-      );
-      return;
-    }
-    if (status !== SUCCESS) return; // created/processing — чекаємо фінал
-
-    // Успіх: зберегти токен (якщо прийшов) і активувати підписку.
-    if (wh.walletData?.cardToken && wh.walletData.walletId) {
-      await storePlataCardToken(
-        pool,
-        userId,
-        wh.walletData.walletId,
-        wh.walletData.cardToken,
-      );
-    }
-    const periodEnd = new Date();
-    periodEnd.setMonth(periodEnd.getMonth() + 1);
-    await pool.query(
-      `INSERT INTO subscriptions
-         (user_id, provider, plan, status, provider_subscription_id, current_period_end)
-       VALUES ($1, 'plata', 'pro', 'active', $2, $3)
-       ON CONFLICT (user_id) WHERE status IN ('active', 'trialing', 'past_due') DO UPDATE SET
-         plan = EXCLUDED.plan,
-         status = 'active',
-         provider = 'plata',
-         provider_subscription_id = COALESCE(EXCLUDED.provider_subscription_id, subscriptions.provider_subscription_id),
-         current_period_end = EXCLUDED.current_period_end,
-         updated_at = NOW()`,
-      [userId, invoiceId, periodEnd],
-    );
+    await reconcileBySubscriptionId(pool, subscriptionId);
   },
 
+  /**
+   * `edit action=cancel` без `refundAmount` (доступ до кінця періоду,
+   * ADR-1.11). Fallback на `subscription/remove` при 404/400 — `remove`
+   * працює лише поки за підпискою не було жодної оплати. Best-effort:
+   * провайдер-помилка не валить локальне скасування (ADR-0016).
+   */
   async cancelSubscription(pool: Pool, userId: string): Promise<void> {
-    // Stop-scheduler ефект: прибрати локальний card-token → наступний tick
-    // не знайде чим списувати (це і є справжнє «зупинити рекурентку»).
-    // Додатково — best-effort delete токена в monopay (не валимо на помилці).
-    const { rows } = await pool.query<{
-      card_token_ciphertext: Buffer;
-      card_token_iv: Buffer;
-      card_token_tag: Buffer;
-    }>(
-      `SELECT card_token_ciphertext, card_token_iv, card_token_tag
-         FROM plata_card_token WHERE user_id = $1`,
-      [userId],
-    );
-    const row = rows[0];
-    let cardToken: string | null = null;
-    if (row) {
+    const subscriptionId = await findSubscriptionId(pool, userId);
+    if (subscriptionId) {
       try {
-        cardToken = decryptToken(
-          {
-            ciphertext: row.card_token_ciphertext,
-            iv: row.card_token_iv,
-            tag: row.card_token_tag,
-          },
-          getEncKey(),
-        );
-      } catch {
-        cardToken = null; // не змогли розшифрувати — локального delete досить
-      }
-    }
-    await pool.query(`DELETE FROM plata_card_token WHERE user_id = $1`, [
-      userId,
-    ]);
-    if (cardToken) {
-      try {
-        await fetch(`${MONOPAY_BASE}/wallet/card`, {
-          method: "DELETE",
+        const token = getToken();
+        const response = await fetch(`${MONOPAY_BASE}/subscription/edit`, {
+          method: "POST",
           headers: {
-            "X-Token": getToken(),
+            "X-Token": token,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ cardToken }),
+          body: JSON.stringify({ subscriptionId, action: "cancel" }),
         });
+        if (response.status === 404 || response.status === 400) {
+          await fetch(`${MONOPAY_BASE}/subscription/remove`, {
+            method: "POST",
+            headers: {
+              "X-Token": token,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ subscriptionId }),
+          });
+        } else if (!response.ok) {
+          logger.warn({
+            msg: "plata_subscription_cancel_failed",
+            status: response.status,
+          });
+        }
       } catch (err) {
         logger.warn({
-          msg: "plata_wallet_card_delete_failed",
+          msg: "plata_subscription_cancel_error",
           err: err instanceof Error ? err.message : String(err),
         });
       }
     }
-    // Доступ до кінця періоду (ADR-1.11).
+    // Доступ до кінця періоду (ADR-1.11). WHERE-guard робить повторний
+    // виклик на вже скасованій підписці no-op.
     await pool.query(
       `UPDATE subscriptions
           SET cancel_at_period_end = TRUE, updated_at = NOW()

@@ -132,7 +132,7 @@ export function searchAiHandoff(query: string): Hit[] {
       moduleLabel: "AI-помічник",
       title: `Запитати AI: «${trimmed}»`,
       subtitle: "Відкрити чат з готовим запитом",
-      icon: "sparkles",
+      icon: "sergeant",
       target: { kind: "ai-handoff", query: trimmed },
       // Constant low score so AI handoff sits at the bottom of its
       // group regardless of query — it's the fallback, not the answer.

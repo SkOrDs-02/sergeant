@@ -103,7 +103,7 @@ export interface InsightCardProps {
   /** Called after dismissal is persisted (analytics hook). */
   onDismiss?: () => void;
   /**
-   * Чип «Спитати AI» — відкриває HubChat із префілом `Insight.askAiPrompt`.
+   * Чип «Спитати Сержанта» — відкриває HubChat із префілом `Insight.askAiPrompt`.
    * Рендериться лише коли переданий (усі 9 продуктових інсайтів мають
    * `askAiPrompt`, тож call-site завжди його передає).
    */
@@ -238,7 +238,7 @@ export function InsightCard({
         className,
       )}
     >
-      {/* Amber sparkle — celebration-tier visual signal so the card
+      {/* Amber sergeant glyph — celebration-tier visual signal so the card
           reads as "AI noticed something" without competing з module accent. */}
       <span
         aria-hidden
@@ -248,7 +248,7 @@ export function InsightCard({
           "bg-celebration/20 text-celebration",
         )}
       >
-        <Icon name="sparkle" size={16} strokeWidth={2} />
+        <Icon name="sergeant" size={16} strokeWidth={2} />
       </span>
 
       {/* Activate button — title + subtitle. Takes the remaining width. */}
@@ -273,26 +273,31 @@ export function InsightCard({
         </div>
       </button>
 
-      {/* «AI» — окремий чип, праворуч перед dismiss (тап по тілу картки
-          лишається навігацією в модуль, це третя незалежна дія).
+      {/* Чип «Спитати Сержанта» — окремий, праворуч перед dismiss (тап по
+          тілу картки лишається навігацією в модуль, це третя незалежна дія).
           Рендериться лише коли call-site передав `onAskAi` — усі 9
           продуктових інсайтів це роблять.
 
-          Підпис саме «AI», а не «Спитати AI»: на 375px довгий підпис з'їдав
+          Чип лише з гліфом, без підпису: на 375px будь-який текст з'їдав
           ширину картки і рубав заголовок із підзаголовком у трикрапку
-          (браузерна перевірка 2026-08-31). Іскра вже несе те саме значення,
-          тож слово «Спитати» платило текстом плашки за нуль нової
-          інформації. Повне формулювання лишається в `aria-label` — для
-          скрінрідера нічого не змінилось. */}
+          (браузерна перевірка 2026-08-31). До 2026-09-01 тут стояло слово
+          «AI» поруч з іскрою; рішення власника Q1 (анти-слоп аудит) замінило
+          іскру на шеврон Сержанта і зняло слово — гліф уже несе значення.
+          Повне формулювання лишається в `aria-label` — для скрінрідера
+          нічого не змінилось. */}
       {onAskAi && (
         <button
           type="button"
           onClick={handleAskAi}
           disabled={askAiDisabled}
           aria-label={
-            askAiDisabled ? "Ліміт AI на сьогодні" : "Спитати AI про це"
+            askAiDisabled
+              ? "Ліміт запитів до Сержанта на сьогодні"
+              : "Спитати Сержанта про це"
           }
-          title={askAiDisabled ? "Ліміт AI на сьогодні" : undefined}
+          title={
+            askAiDisabled ? "Ліміт запитів до Сержанта на сьогодні" : undefined
+          }
           className={cn(
             "shrink-0 touch-target inline-flex items-center justify-center gap-1 px-2 rounded-xl",
             "text-style-caption font-semibold",
@@ -303,8 +308,7 @@ export function InsightCard({
               : "bg-brand-soft text-brand-soft-fg hover:brightness-105 active:scale-[0.98] transition-[filter,transform]",
           )}
         >
-          <Icon name="sparkle" size={13} strokeWidth={2} aria-hidden />
-          <span>AI</span>
+          <Icon name="sergeant" size={14} strokeWidth={2} aria-hidden />
         </button>
       )}
 

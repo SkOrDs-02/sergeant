@@ -15,7 +15,6 @@
   },
   "dependencies": {
     "@fontsource-variable/manrope": "^5.2.8",
-    "@fontsource/piazzolla": "^5.2.5",
     "@fontsource/unbounded": "^5.2.5",
     "@sergeant/shared": "workspace:*",
     "posthog-js": "^1.399.2",

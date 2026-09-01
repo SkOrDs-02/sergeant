@@ -297,8 +297,9 @@ export async function deleteUserData(
   userId: string,
 ): Promise<MeDeleteResponse> {
   // Best-effort provider-cancel ПЕРЕД транзакцією (робить зовнішні HTTP —
-  // не місце в DB-txn). plata.cancelSubscription сам видаляє card-token;
-  // DELETE FROM "user" нижче каскадно добиває plata_card_token, якщо лишився.
+  // не місце в DB-txn). plata.cancelSubscription сам скасовує підписку в
+  // monobank (subscription/edit); DELETE FROM "user" нижче каскадно
+  // прибирає plata_subscription-рядок юзера.
   await notifyProvidersCancel(pool, userId);
 
   const client = await pool.connect();

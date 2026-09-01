@@ -221,7 +221,7 @@ export function PlanSection() {
               data-testid="plan-upgrade-button"
               className="gap-2"
             >
-              <Icon name="sparkles" size={16} />
+              <Icon name="sergeant" size={16} />
               Перейти на Pro
             </Button>
           )}

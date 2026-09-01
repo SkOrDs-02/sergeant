@@ -52,6 +52,9 @@
 ### Зафіксовані борги (стан на 2026-08-28)
 
 1. **plataScheduler double-charge** — `chargeDuePlataSubscriptions` не мав жодного lock-у (`plataScheduler.ts:78-119` до правки): два одночасні прогони списали б ту саму підписку двічі. Дефект був сплячим лише тому, що `PLATA_ENABLED=false` (`env/env.ts:~424`). **Виправлено в цьому PR**: claim через `FOR UPDATE OF s SKIP LOCKED` + charge/UPDATE у одній транзакції (дзеркало `gdpr/cleanupWorker.ts::claimBatch`).
+
+   **Оновлення 2026-09-01 (`docs/90-work/planning/specs/plata-recurring.md`):** цей приклад більше не чинний — `plataScheduler.ts` і самокероване списування видалені, Plata перейшла на нативні monobank `subscription/*`. Звірка (`plataSync.ts`) читає стан, а не рухає гроші, тож claim-транзакція описана вище їй не потрібна (read-only, ідемпотентна за побудовою). Рядок таблиці §Decision («періодичний ідемпотентний скан → in-process timer») лишається чинним для нового поллера, лише приклад-посилання застарів.
+
 2. **Mono-enrichment: застряглі `processing`-row-и** — `PICK_BATCH_SQL` вибирав лише `pending|failed`, тож row, що лишився у `processing` після kill процесу (failure mode був названий у коментарі self-scheduling loop-у), висів вічно; reaper-а не було. **Виправлено в цьому PR**: PICK підбирає також `processing`-row-и, старші за stale-поріг (15 хв; 4 × `MCC_BATCH_INTERVAL_MS` при увімкненому hourly-буфері), `attempts` при цьому не втрачаються.
 3. **`unknownQueue` втрачає вміст на деплої** — свідоме single-replica/in-memory припущення (`unknownQueue.ts:9-12`); втрачені item-и тепер повертає stale-reaper (борг №2), тож ціна — лише затримка. Припущення лишається боргом: при 2+ репліках буфер треба переносити у Redis/DB.
 4. **FTUX-drip Day 1/Day 3 на ефемерному Redis** — відкрите питання нижче.
