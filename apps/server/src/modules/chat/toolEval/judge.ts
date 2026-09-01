@@ -61,10 +61,16 @@ export function parseVerdict(text: string): JudgeVerdict {
     .map((l) => l.replace(/[*_`#>]/g, "").trim())
     .filter(Boolean);
   for (const line of lines) {
-    const match = /^(ОК|ПОГАНО)\s*[:\-–—]?\s*(.*)$/iu.exec(line);
+    // Латинське `OK` приймається нарівні з кириличним «ОК». Дві однакові на
+    // вигляд літери з різних абеток коштували цілого кейса: на «тижневий звіт
+    // по всіх модулях» суддя відповів `OK: викликав інструмент…`, а звіт
+    // показав «без вердикту» - тобто виглядало як мовчання судді там, де він
+    // сказав своє слово, і сказав правильно.
+    const match = /^(ОК|OK|ПОГАНО|BAD)\s*[:\-–—]?\s*(.*)$/iu.exec(line);
     if (match) {
+      const verdict = (match[1] ?? "").toUpperCase();
       return {
-        ok: match[1]?.toUpperCase() === "ОК",
+        ok: verdict === "ОК" || verdict === "OK",
         reason: (match[2] ?? "").trim().slice(0, 120),
       };
     }
