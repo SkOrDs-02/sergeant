@@ -206,18 +206,32 @@ export const EXERCISE_LOCATIONS: readonly ExerciseLocation[] = [
 /**
  * Локація виводиться з наявного `equipment`, окремого поля в JSON немає:
  * одне джерело істини замість двох, які встигнуть розійтись.
+ *
+ * AI-CONTEXT: ділимо не за тим, де річ ЗАЗВИЧАЙ стоїть, а за тим, чи її
+ * можна перенести. Гирю й гантелі люди виносять у двір, тож прив'язка
+ * їх до дому забороняла реальний сценарій. Наслідок: множини строго
+ * вкладені (outdoor ⊂ home ⊂ gym), і «зал» означає «доступне все».
  */
 const EQUIPMENT_LOCATIONS: Record<string, readonly ExerciseLocation[]> = {
-  bodyweight: ["home", "outdoor"],
-  band: ["home", "outdoor"],
-  dumbbell: ["home", "gym"],
-  kettlebell: ["home", "gym"],
-  barbell: ["gym"],
-  bench: ["gym"],
+  bodyweight: ["gym", "home", "outdoor"],
+  band: ["gym", "home", "outdoor"],
+  dumbbell: ["gym", "home", "outdoor"],
+  kettlebell: ["gym", "home", "outdoor"],
+  barbell: ["gym", "home"],
+  bench: ["gym", "home"],
   cable: ["gym"],
   machine: ["gym"],
   other: ["gym"],
 };
+
+/** Обладнання, яке має сенс у заданій локації. */
+export function equipmentForLocation(
+  location: ExerciseLocation | "" | null | undefined,
+): string[] {
+  const all = Object.keys(EQUIPMENT_LOCATIONS);
+  if (!location) return all;
+  return all.filter((eq) => EQUIPMENT_LOCATIONS[eq]?.includes(location));
+}
 
 /**
  * Локації вправи. Вправа без відомого обладнання лишається залом: це

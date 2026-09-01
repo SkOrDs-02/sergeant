@@ -23,6 +23,10 @@ import type {
   ExerciseLocation,
   RawExerciseDef,
 } from "@sergeant/fizruk-domain/data";
+import {
+  equipmentForLocation,
+  matchesExerciseLocation,
+} from "@sergeant/fizruk-domain/data";
 import type { Workout, WorkoutGroup } from "@sergeant/fizruk-domain";
 import {
   ACTIVE_WORKOUT_KEY,
@@ -114,9 +118,10 @@ export function useWorkoutsOrchestrator(
   const templateApi = useWorkoutTemplates();
   const [q, setQ] = useState("");
   const [equipmentFilter, setEquipmentFilter] = useState<string[]>([]);
-  const [locationFilter, setLocationFilter] = useState<ExerciseLocation | "">(
-    "",
-  );
+  // «Зал» — не поточне місце людини, а найширший кошик: після того як
+  // портативне залізо перестало бути прив'язаним до дому, там доступний
+  // увесь каталог. Тому дефолт нічого не ховає, а стану «будь-де» немає.
+  const [locationFilter, setLocationFilter] = useState<ExerciseLocation>("gym");
   const [selected, setSelected] = useState<RawExerciseDef | null>(null);
   const [open, setOpen] = useState<Record<string, boolean>>(() => ({}));
   const [addOpen, setAddOpen] = useState(false);
@@ -402,6 +407,25 @@ export function useWorkoutsOrchestrator(
     [list, equipmentFilter, primaryGroupsUk, locationFilter],
   );
 
+  /**
+   * Скільки вправ дає кожен вид обладнання САМ ПО СОБІ в поточній локації.
+   * Незалежно від інших вибраних: фільтр обладнання працює як OR, тож
+   * кумулятивне число («стане, якщо додати») стрибало б від чужого вибору
+   * і читалось як помилка.
+   */
+  const equipmentCounts = useMemo(() => {
+    const inLocation = list.filter((ex) =>
+      matchesExerciseLocation(ex, locationFilter),
+    );
+    const out: Record<string, number> = {};
+    for (const eq of equipmentForLocation(locationFilter)) {
+      out[eq] = inLocation.filter((ex) =>
+        (ex.equipment ?? []).includes(eq),
+      ).length;
+    }
+    return out;
+  }, [list, locationFilter]);
+
   const finishedCount = useMemo(
     () => (workouts || []).filter((w) => w.endedAt).length,
     [workouts],
@@ -550,6 +574,7 @@ export function useWorkoutsOrchestrator(
     setEquipmentFilter,
     locationFilter,
     setLocationFilter,
+    equipmentCounts,
     selected,
     setSelected,
     open,

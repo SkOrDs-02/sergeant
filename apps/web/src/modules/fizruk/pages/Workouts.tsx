@@ -216,6 +216,7 @@ export function Workouts({
             locationFilter={o.locationFilter}
             setLocationFilter={o.setLocationFilter}
             equipmentUk={o.equipmentUk}
+            equipmentCounts={o.equipmentCounts}
             grouped={o.grouped}
             open={o.open}
             setOpen={o.setOpen}

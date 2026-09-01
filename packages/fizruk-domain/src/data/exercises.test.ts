@@ -6,6 +6,7 @@ import {
   MUSCLES_BY_PRIMARY_GROUP,
   MUSCLES_UK,
   PRIMARY_GROUPS_UK,
+  equipmentForLocation,
   findExerciseById,
   getExerciseLocations,
   getExercisesByPrimaryGroup,
@@ -132,19 +133,62 @@ describe("catalog integrity gate", () => {
   });
 });
 
+describe("equipmentForLocation", () => {
+  it("narrows the equipment list as the location narrows", () => {
+    const gym = equipmentForLocation("gym");
+    const home = equipmentForLocation("home");
+    const outdoor = equipmentForLocation("outdoor");
+    expect(gym).toContain("machine");
+    expect(home).not.toContain("machine");
+    expect(home).toContain("barbell");
+    expect(outdoor).not.toContain("barbell");
+    expect(outdoor).toContain("kettlebell");
+    expect(outdoor.every((eq) => home.includes(eq))).toBe(true);
+    expect(home.every((eq) => gym.includes(eq))).toBe(true);
+  });
+
+  it("returns every kind when no location is given", () => {
+    expect(equipmentForLocation("").length).toBe(
+      equipmentForLocation("gym").length,
+    );
+  });
+});
+
 describe("getExerciseLocations", () => {
   it("derives location from equipment", () => {
     expect(getExerciseLocations({ equipment: ["bodyweight"] })).toEqual([
+      "gym",
       "home",
       "outdoor",
     ]);
-    expect(getExerciseLocations({ equipment: ["barbell", "bench"] })).toEqual([
+    expect(getExerciseLocations({ equipment: ["cable", "machine"] })).toEqual([
       "gym",
     ]);
-    expect(getExerciseLocations({ equipment: ["dumbbell"] })).toEqual([
+    expect(getExerciseLocations({ equipment: ["barbell", "bench"] })).toEqual([
       "gym",
       "home",
     ]);
+  });
+
+  it("lets portable equipment travel outdoors", () => {
+    for (const eq of ["kettlebell", "dumbbell", "band"]) {
+      expect(getExerciseLocations({ equipment: [eq] })).toContain("outdoor");
+    }
+  });
+
+  it("keeps the three locations nested: outdoor in home in gym", () => {
+    const idsFor = (loc: "gym" | "home" | "outdoor") =>
+      new Set(
+        EXERCISES.filter((ex) => getExerciseLocations(ex).includes(loc)).map(
+          (ex) => ex.id,
+        ),
+      );
+    const gym = idsFor("gym");
+    const home = idsFor("home");
+    const outdoor = idsFor("outdoor");
+    expect(gym.size).toBe(EXERCISES.length);
+    expect([...home].every((id) => gym.has(id))).toBe(true);
+    expect([...outdoor].every((id) => home.has(id))).toBe(true);
   });
 
   it("falls back to gym for unknown or missing equipment", () => {
@@ -156,8 +200,11 @@ describe("getExerciseLocations", () => {
   });
 
   it("passes everything through for an empty location filter", () => {
-    expect(matchesExerciseLocation({ equipment: ["barbell"] }, "")).toBe(true);
-    expect(matchesExerciseLocation({ equipment: ["barbell"] }, "home")).toBe(
+    expect(matchesExerciseLocation({ equipment: ["machine"] }, "")).toBe(true);
+    expect(matchesExerciseLocation({ equipment: ["machine"] }, "home")).toBe(
+      false,
+    );
+    expect(matchesExerciseLocation({ equipment: ["barbell"] }, "outdoor")).toBe(
       false,
     );
     expect(matchesExerciseLocation({ equipment: ["band"] }, "outdoor")).toBe(
