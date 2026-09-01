@@ -4616,7 +4616,8 @@
                       "minLength": 1,
                       "maxLength": 200
                     },
-                    "input": {}
+                    "input": {},
+                    "caller": {}
                   },
                   "required": [
                     "type",

@@ -268,14 +268,29 @@ export default async function handler(
     });
   }
 
-  const {
-    context = "",
-    messages = [],
-    tool_results,
-    tool_calls_raw,
-    stream,
-    preset,
-  } = parseBody(ChatRequestSchema, req);
+  // AI-5 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`) —
+  // `assertAiQuota` (router middleware, `requireAiQuota()`) consumes a
+  // daily-quota ticket BEFORE this handler runs. Everything from here down
+  // to the first upstream `callAnthropicWithContinuation` /
+  // `streamAnthropicToSse` call is OUR OWN validation, not an Anthropic
+  // round trip — a 4xx here means the user got nothing for the ticket they
+  // already paid. `refundQuotaOnUpstreamFailure` used to fire only around
+  // the upstream calls themselves; every early-reject path below now
+  // refunds too, so a 400/422 issued before upstream never burns quota.
+  let context, messages, tool_results, tool_calls_raw, stream, preset;
+  try {
+    ({
+      context = "",
+      messages = [],
+      tool_results,
+      tool_calls_raw,
+      stream,
+      preset,
+    } = parseBody(ChatRequestSchema, req));
+  } catch (e) {
+    await refundQuotaOnUpstreamFailure(req);
+    throw e;
+  }
 
   // B36 — `tool_results` і `tool_calls_raw` мусять приходити РАЗОМ або не
   // приходити взагалі. Рядок нижче (304) перевіряє лише `tool_results &&
@@ -285,6 +300,7 @@ export default async function handler(
   // `!!x` нормалізує порожній масив (`[]`, truthy в JS) так само, як і
   // непорожній — важлива лише присутність поля, не його довжина.
   if (!!tool_results !== !!tool_calls_raw) {
+    await refundQuotaOnUpstreamFailure(req);
     throw new ValidationError(
       "tool_results і tool_calls_raw мають надходити разом",
       {
@@ -337,6 +353,9 @@ export default async function handler(
         (b as { type?: unknown }).type === "tool_use",
     );
     if (incomingToolUses.length > MAX_TOOL_ITERATIONS) {
+      // AI-5 — pre-upstream reject (client's own request is malformed), so
+      // the ticket `assertAiQuota` already consumed for this turn goes back.
+      await refundQuotaOnUpstreamFailure(req);
       rejectWithToolIterationCap(
         res,
         "client_request",
@@ -348,7 +367,13 @@ export default async function handler(
     // `tool_use.id` з `tool_results`. Так само ДО `recordToolExecutions`,
     // щоб підроблений payload не отруював метрику раніше, ніж ми його
     // відхилимо 400-кою.
-    validateToolCallsRawProvenance(tool_calls_raw, tool_results);
+    try {
+      validateToolCallsRawProvenance(tool_calls_raw, tool_results);
+    } catch (e) {
+      // AI-5 — same reasoning: still pre-upstream.
+      await refundQuotaOnUpstreamFailure(req);
+      throw e;
+    }
     recordToolExecutions(tool_results, tool_calls_raw);
     // Великі `tool_result`-блоби (брифінги, місячні digest-и) зʼїдають
     // бюджет вхідних токенів і зривають continuation. Truncate на сервері,
@@ -470,6 +495,8 @@ export default async function handler(
   // Перший запит — може повернути tool_use або текст
   const cleaned = sanitizeMessages(maskedMessages);
   if (cleaned.length === 0) {
+    // AI-5 — pre-upstream reject, same as above: refund the ticket.
+    await refundQuotaOnUpstreamFailure(req);
     res.status(400).json({ error: "Немає повідомлень" });
     return;
   }
