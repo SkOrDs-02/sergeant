@@ -7,7 +7,7 @@ Main documentation index for Sergeant.
 
 <!-- TRUST-BADGE:START -->
 
-> 🟢 **Docs trust: HEALTHY** — _оновлено 2026-08-31 via `pnpm docs:gen-trust-badge`_
+> 🟢 **Docs trust: HEALTHY** — _оновлено 2026-09-01 via `pnpm docs:gen-trust-badge`_
 >
 > 0 stale docs · 0 WIP violations · 0 cron failures — система здорова, працюй спокійно. Деталі → [`today.md`](./today.md).
 
@@ -58,7 +58,7 @@ Sections are grouped by **genre** so it is obvious at a glance whether a directo
 | [`api/`](./02-engineering/api/README.md)                    | OpenAPI, API contracts, generated artifacts                                           |
 | [`architecture/`](./02-engineering/architecture/README.md)  | Repo map, runtime surfaces, platform architecture                                     |
 | [`copy/`](./01-product/copy/README.md)                      | UA-copy tone-of-voice rules; reference for every Cyrillic JSX literal                 |
-| [`deploy/`](./03-operations/deploy/README.md)               | Deploy walkthroughs (Hetzner/Coolify, Vercel, OpenClaw, etc.)                         |
+| [`deploy/`](./03-operations/deploy/README.md)               | Deploy walkthroughs (Hetzner/Coolify, Vercel; OpenClaw — archived, ADR-0075)          |
 | [`design/`](./05-design/design/README.md)                   | Design system, brand, accents, dark mode, UI patterns                                 |
 | [`development/`](./02-engineering/development/README.md)    | Local dev-loop how-tos (ESLint config, local Postgres, pre-commit timing)             |
 | [`governance/`](./04-governance/governance/README.md)       | Hard rules registry, policy docs, feature-flag registry, link-check allowlist         |

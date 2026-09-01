@@ -2,7 +2,7 @@ name: Detox (iOS)
 
 # Owner: @SkOrDs-02 (solo maintainer).
 # Triage: false-positive runs → close the auto-created issue з коментарем; reopen якщо повторюється > 2x за тиждень.
-# Schedule rationale: див. docs/90-work/initiatives/archive/_0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
+# Schedule rationale: див. https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
 
 # Mobile E2E lane for the iOS Detox suites in `apps/mobile/e2e/*`.
 # Kept separate from the main `CI` workflow in `.github/workflows/ci.yml`
@@ -28,7 +28,7 @@ name: Detox (iOS)
 #      only by the Hard Rule #3 contract tests + `pnpm api:check-openapi`
 #      (root `lint` script). Behavioural drift those cannot see — route
 #      ordering, header changes — needs a manual `workflow_dispatch` run.
-#   See `docs/90-work/initiatives/archive/stack-pulse-2026-05/pr-18-detox-server-shape-trigger.md`.
+#   See `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/pr-18-detox-server-shape-trigger.md`.
 #
 # Web-focus phase (2026-07): `push` вимкнено — Detox не гониться на кожен
 # merge до `main`. Ручний прогін: `workflow_dispatch`. PR-тригер лише на

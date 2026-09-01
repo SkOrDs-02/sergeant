@@ -4,7 +4,7 @@ name: Detox (Android)
 # Triage: build/prebuild failures stay blocking. Detox app-readiness/test
 # failures soft-pass with a GitHub warning while the Android instrumentation
 # readiness issue is open; use uploaded artifacts/logs for follow-up triage.
-# Schedule rationale: див. docs/90-work/initiatives/archive/_0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
+# Schedule rationale: див. https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
 
 # Mobile E2E lane for the Android Detox suites in `apps/mobile/e2e/*`.
 # Separate from the main `CI` workflow in `.github/workflows/ci.yml`
@@ -38,7 +38,7 @@ name: Detox (Android)
 #      only by the Hard Rule #3 contract tests + `pnpm api:check-openapi`
 #      (root `lint` script). Behavioural drift those cannot see — route
 #      ordering, header changes — needs a manual `workflow_dispatch` run.
-#   See `docs/90-work/initiatives/archive/stack-pulse-2026-05/pr-18-detox-server-shape-trigger.md`.
+#   See `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/pr-18-detox-server-shape-trigger.md`.
 #
 # Web-focus phase (2026-07): `push` вимкнено — Detox не гониться на кожен
 # merge до `main`. PR-тригер лише на прямі зміни mobile-поверхонь.

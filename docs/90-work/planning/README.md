@@ -15,7 +15,7 @@
 
 Кожна нетривіальна фіча починається зі спеки у [`specs/`](./specs/) (шаблон: [`specs/TEMPLATE.md`](./specs/TEMPLATE.md)). Scaffolded / Active спеки лишаються тут; завершені переїжджають у [`specs/archive/`](./specs/archive/README.md).
 
-> Станом на 2026-08-30 у `specs/` 18 відкритих робіт; повний перелік зі статусами — [`../../open-work.md`](../../open-work.md). Завершені спеки переїжджають у [`specs/archive/`](./specs/archive/README.md), а не видаляються: батч 2026-08-30 закрив сім (agent-module-owners, ai-eval-harness-v2, chat-system-prompt-v14, fizruk-workouts-active-workout, pantry-generic-names, sergeant-persona-and-proactive-push, telegram-waitlist). `TEMPLATE.md` не є роботою.
+> Повний перелік відкритих спек зі статусами — [`../../open-work.md`](../../open-work.md). Завершені спеки переїжджають у [`specs/archive/`](./specs/archive/README.md), а не видаляються: батч 2026-08-30 закрив сім (agent-module-owners, ai-eval-harness-v2, chat-system-prompt-v14, fizruk-workouts-active-workout, pantry-generic-names, sergeant-persona-and-proactive-push, telegram-waitlist), батч 2026-09-01 — ще пʼять (fizruk-catalog-programs-navigation, insights-ask-ai-chip, memory-bank-consolidation, pantry-categorization, plata-recurring). Спека зі статусом `Implemented` не лишається в `specs/` — переїжджає в архів тим самим PR. `TEMPLATE.md` не є роботою.
 
 ### Зведені роадмапи
 

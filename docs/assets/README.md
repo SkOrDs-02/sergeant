@@ -1,7 +1,7 @@
 # Repo assets — hero, screenshots, GIFs
 
-> **Last validated:** 2026-05-13 by @Skords-01 / Devin.
-> **Status:** Active
+> **Last touched:** 2026-09-01 by @claude (Devin retired — ADR-0088; assets ще не викапчено). **Next review:** 2027-09-24.
+> **Status:** Scaffolded — жоден із описаних нижче файлів ще не існує в теці; README тримає capture-інструкції, README.md кореня посилається сюди як на pending hero.
 
 > Static assets, що використовуються в `README.md`, `docs/`, або в social-meta-картинках. Не плутати з `apps/web/public/` (runtime web assets) і `apps/mobile/assets/` (mobile bundle).
 

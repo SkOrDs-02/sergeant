@@ -1,7 +1,7 @@
 # Категоризація продуктів комори: корпус як джерело правди
 
-> **Last touched:** 2026-09-01 by @Skords-01. **Next review:** 2026-12-20.
-> **Status:** Active (реалізовано 2026-08-31; журнал рішень канону оновлено)
+> **Last touched:** 2026-09-01 by @Skords-01. **Next review:** 2027-11-09.
+> **Status:** Implemented — реалізовано 2026-08-31 (чотири нові категорії у `packages/nutrition-domain/src/foodCategories.ts`, заміри в § «Що фактично зроблено»); журнал рішень канону `nutrition.md` оновлено. Відкритих пунктів немає, лишилось тільки «Поза скоупом».
 
 ## Проблема
 
@@ -83,15 +83,15 @@
 
 Читати перед роботою: `.agents/skills/sergeant-module-nutrition/SKILL.md` і канон `docs/01-product/model/nutrition.md` (включно з § Журнал рішень).
 
-| Файл                                                                                                                                           | Що змінюється                                                                                        |
-| ---------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| [`packages/nutrition-domain/src/foodCategories.ts`](../../../../packages/nutrition-domain/src/foodCategories.ts)                               | Каскад корпус → ключові слова; межа слова для коротких коренів; 4 нові категорії в `FOOD_CATEGORIES` |
-| [`packages/shared/src/data/genericFoods.ts`](../../../../packages/shared/src/data/genericFoods.ts)                                             | Виправлення хибних категорій; нові позиції з КБЖУ                                                    |
-| [`packages/nutrition-domain/src/foodCategories.test.ts`](../../../../packages/nutrition-domain/src/foodCategories.test.ts)                     | Гейти (див. § Верифікація)                                                                           |
-| [`packages/shared/src/data/genericFoods.test.ts`](../../../../packages/shared/src/data/genericFoods.test.ts)                                   | Ворота Атвотера вже є; переконатись, що нові позиції їх проходять                                    |
-| [`packages/nutrition-domain/src/shoppingListPantryMath.ts`](../../../../packages/nutrition-domain/src/shoppingListPantryMath.ts)               | Споживач `categorizeFood`; перевірити, що зміна каскаду не ламає математику списку покупок           |
-| [`apps/mobile/src/modules/nutrition/components/NutritionIcon.tsx`](../../../../apps/mobile/src/modules/nutrition/components/NutritionIcon.tsx) | Мапа іконок: 4 нові `iconName` мають резолвитись, інакше мобільна комора покаже порожнечу            |
-| [`docs/01-product/model/nutrition.md`](../../../01-product/model/nutrition.md)                                                                 | Рядок у § Журнал рішень (правило `AGENTS.md § See also`)                                             |
+| Файл                                                                                                                                              | Що змінюється                                                                                        |
+| ------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| [`packages/nutrition-domain/src/foodCategories.ts`](../../../../../packages/nutrition-domain/src/foodCategories.ts)                               | Каскад корпус → ключові слова; межа слова для коротких коренів; 4 нові категорії в `FOOD_CATEGORIES` |
+| [`packages/shared/src/data/genericFoods.ts`](../../../../../packages/shared/src/data/genericFoods.ts)                                             | Виправлення хибних категорій; нові позиції з КБЖУ                                                    |
+| [`packages/nutrition-domain/src/foodCategories.test.ts`](../../../../../packages/nutrition-domain/src/foodCategories.test.ts)                     | Гейти (див. § Верифікація)                                                                           |
+| [`packages/shared/src/data/genericFoods.test.ts`](../../../../../packages/shared/src/data/genericFoods.test.ts)                                   | Ворота Атвотера вже є; переконатись, що нові позиції їх проходять                                    |
+| [`packages/nutrition-domain/src/shoppingListPantryMath.ts`](../../../../../packages/nutrition-domain/src/shoppingListPantryMath.ts)               | Споживач `categorizeFood`; перевірити, що зміна каскаду не ламає математику списку покупок           |
+| [`apps/mobile/src/modules/nutrition/components/NutritionIcon.tsx`](../../../../../apps/mobile/src/modules/nutrition/components/NutritionIcon.tsx) | Мапа іконок: 4 нові `iconName` мають резолвитись, інакше мобільна комора покаже порожнечу            |
+| [`docs/01-product/model/nutrition.md`](../../../../01-product/model/nutrition.md)                                                                 | Рядок у § Журнал рішень (правило `AGENTS.md § See also`)                                             |
 
 `apps/web/src/modules/nutrition/lib/foodCategories.ts` це легасі-реекспорт, правити не треба. Веб-споживачі (`PantryCard.tsx`, `useSilpoPantryReplenish.ts`) працюють через ті самі експорти й змін не потребують.
 

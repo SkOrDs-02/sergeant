@@ -1,7 +1,7 @@
 # SPEC: Fizruk — каталог вправ, повнота програм, навігація модуля
 
 > **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-14.
-> **Status:** Implemented — виконано в [#957](https://github.com/SkOrDs-02/sergeant/pull/957): каталог на 199 вправ з аліасами й описами техніки, подвійна прогресія в `suggestNextSet` з м'яким режимом, вісім програм, маршрути `/fizruk/catalog` і `/fizruk/templates`. Зображення до вправ лишились поза скоупом і живуть у беклозі ([`tech-debt/frontend.md`](../../tech-debt/frontend.md) § 13).
+> **Status:** Implemented — виконано в [#957](https://github.com/SkOrDs-02/sergeant/pull/957): каталог на 199 вправ з аліасами й описами техніки, подвійна прогресія в `suggestNextSet` з м'яким режимом, вісім програм, маршрути `/fizruk/catalog` і `/fizruk/templates`. Зображення до вправ лишились поза скоупом і живуть у беклозі ([`tech-debt/frontend.md`](../../../tech-debt/frontend.md) § 13).
 
 ## Проблема
 

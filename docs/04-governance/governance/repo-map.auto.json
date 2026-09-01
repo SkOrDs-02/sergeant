@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/repo-map.schema.json",
   "version": 1,
-  "generated_at": "2026-08-31",
+  "generated_at": "2026-09-01",
   "toolchain": {
     "node": "22.x",
     "pnpm": "pnpm@9.15.1",
@@ -470,6 +470,26 @@
         {
           "name": "zod",
           "version": "^4.3.6"
+        }
+      ],
+      "testRunner": "vitest",
+      "owner": null
+    },
+    {
+      "name": "@sergeant/tabular-import",
+      "path": "packages/tabular-import",
+      "category": "package",
+      "private": true,
+      "version": "0.1.0",
+      "type": "module",
+      "frameworkDeps": [
+        {
+          "name": "typescript",
+          "version": "^6.0.3"
+        },
+        {
+          "name": "vitest",
+          "version": "^4.1.10"
         }
       ],
       "testRunner": "vitest",

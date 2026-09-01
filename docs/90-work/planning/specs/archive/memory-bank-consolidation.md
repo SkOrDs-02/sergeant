@@ -1,7 +1,7 @@
 # Спека: один редактор фактів профілю (банк памʼяті × «Памʼять ШІ»)
 
 > **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-24.
-> **Status:** Implemented — [`e7b4426ee`](https://github.com/SkOrDs-02/sergeant/commit/e7b4426ee) «один редактор фактів профілю - «Памʼять ШІ» веде в Профіль». У `AiMemoryList.tsx` група `profile` рендериться карткою `ProfileGroupCard` (лічильник + перехід через `useOptionalHubShell().ui.setHubView("profile")`), копія в `uk.privacy.ts` і `en.ts`, кейси в `AiMemoryList.test.tsx`, нотатка «Статус коду» в каноні [`hub-coach.md`](../../../01-product/model/hub-coach.md) §6.4.
+> **Status:** Implemented — [`e7b4426ee`](https://github.com/SkOrDs-02/sergeant/commit/e7b4426ee) «один редактор фактів профілю - «Памʼять ШІ» веде в Профіль». У `AiMemoryList.tsx` група `profile` рендериться карткою `ProfileGroupCard` (лічильник + перехід через `useOptionalHubShell().ui.setHubView("profile")`), копія в `uk.privacy.ts` і `en.ts`, кейси в `AiMemoryList.test.tsx`, нотатка «Статус коду» в каноні [`hub-coach.md`](../../../../01-product/model/hub-coach.md) §6.4.
 
 ## Проблема
 

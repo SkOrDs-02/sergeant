@@ -44,7 +44,7 @@ const SENSITIVE_PATH_PREFIXES = [
 /**
  * Outbound-напрямок: Telegram тримає bot-токен у самому path-і
  * (`https://api.telegram.org/bot<token>/sendMessage`, див.
- * `securityEventsRoom.ts` і `tools/openclaw/telegramShipper`). Query-редактор
+ * `securityEventsRoom.ts` і `modules/alerts/telegramShipper.ts`). Query-редактор
  * його не бачить, а `scrubPII` навмисно не інспектує рядки — тож ловимо тут.
  *
  * Форма токена — та сама, що у `PII_STRING_PATTERNS.telegram-bot-token`

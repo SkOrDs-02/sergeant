@@ -1707,7 +1707,7 @@ Ref: PR-6.F (sergeant-audit-devin.md).
 [`ExerciseDetailSheet`](../../../apps/web/src/modules/fizruk/components/workouts/ExerciseDetailSheet.tsx)
 рендериться вхолосту, бо поле порожнє в усіх записах. Спека каталогу свідомо
 винесла картинки за скоуп v1
-([`fizruk-catalog-programs-navigation.md`](../planning/specs/fizruk-catalog-programs-navigation.md)),
+([`fizruk-catalog-programs-navigation.md`](../planning/specs/archive/fizruk-catalog-programs-navigation.md)),
 цей пункт тримає результати розвідки, щоб наступний захід не починався з нуля.
 
 **Три джерела, перевірені 2026-08-31 (завантажено по зразку, оцінено якість):**

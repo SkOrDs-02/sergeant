@@ -1,4 +1,29 @@
-import { describe, it, expect, vi } from "vitest";
+// Runs under `node --test` (root `pnpm test:scripts`), not vitest — the
+// vitest import this file used to carry made it crash under the node runner
+// (`Cannot read properties of undefined (reading 'config')`).
+import { describe, it, mock } from "node:test";
+import assert from "node:assert/strict";
+
+/** Мінімальний expect-шим: рівно ті матчери, які використовує цей файл. */
+function expect(actual) {
+  return {
+    toBe: (expected) => assert.equal(actual, expected),
+    toContain: (expected) =>
+      assert.ok(
+        actual.includes(expected),
+        `expected ${JSON.stringify(actual)} to contain ${JSON.stringify(expected)}`,
+      ),
+    toHaveLength: (n) => assert.equal(actual.length, n),
+    toHaveBeenCalledOnce: () => assert.equal(actual.mock.callCount(), 1),
+    not: {
+      toContain: (expected) =>
+        assert.ok(
+          !actual.includes(expected),
+          `expected ${JSON.stringify(actual)} NOT to contain ${JSON.stringify(expected)}`,
+        ),
+    },
+  };
+}
 import {
   percentile,
   formatDuration,
@@ -234,10 +259,10 @@ describe("fetchWorkflowRuns", () => {
       },
     ];
 
-    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({
+    const fetchSpy = mock.method(globalThis, "fetch", async () => ({
       ok: true,
       json: async () => ({ workflow_runs: mockRuns }),
-    });
+    }));
 
     const result = await fetchWorkflowRuns(
       "owner/repo",
@@ -249,13 +274,13 @@ describe("fetchWorkflowRuns", () => {
     expect(result[0].id).toBe(1);
 
     expect(fetchSpy).toHaveBeenCalledOnce();
-    const calledUrl = fetchSpy.mock.calls[0][0];
+    const calledUrl = fetchSpy.mock.calls[0].arguments[0];
     expect(calledUrl).toContain(
       "/repos/owner/repo/actions/workflows/ci.yml/runs",
     );
     expect(calledUrl).toContain("status=success");
 
-    fetchSpy.mockRestore();
+    fetchSpy.mock.restore();
   });
 });
 
@@ -271,18 +296,18 @@ describe("fetchRunJobs", () => {
       },
     ];
 
-    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({
+    const fetchSpy = mock.method(globalThis, "fetch", async () => ({
       ok: true,
       json: async () => ({ jobs: mockJobs }),
-    });
+    }));
 
     const result = await fetchRunJobs("owner/repo", 123, "fake-token");
     expect(result).toHaveLength(1);
     expect(result[0].name).toBe("check");
 
-    const calledUrl = fetchSpy.mock.calls[0][0];
+    const calledUrl = fetchSpy.mock.calls[0].arguments[0];
     expect(calledUrl).toContain("/repos/owner/repo/actions/runs/123/jobs");
 
-    fetchSpy.mockRestore();
+    fetchSpy.mock.restore();
   });
 });
