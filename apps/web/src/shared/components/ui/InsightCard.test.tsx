@@ -424,7 +424,7 @@ describe("InsightCard — advice_shown / advice_dismissed telemetry", () => {
         askAiDisabled
       />,
     );
-    fireEvent.click(getByLabelText("Ліміт AI на сьогодні"));
+    fireEvent.click(getByLabelText("Ліміт запитів до Сержанта на сьогодні"));
 
     expect(onAskAi).not.toHaveBeenCalled();
     expect(callsOf(ANALYTICS_EVENTS.VALUE_SIGNAL_ASK_AI)).toHaveLength(0);

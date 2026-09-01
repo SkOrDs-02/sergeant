@@ -322,7 +322,7 @@ function LimitBudgetCardComponent({
                       >
                         <span className="flex items-center gap-2 text-style-caption text-text">
                           <Icon name="sergeant" size={16} aria-hidden />
-                          AI-порада
+                          Порада Сержанта
                         </span>
                         <Icon
                           name="chevron-down"

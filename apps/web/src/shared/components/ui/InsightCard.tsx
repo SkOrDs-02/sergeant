@@ -291,9 +291,13 @@ export function InsightCard({
           onClick={handleAskAi}
           disabled={askAiDisabled}
           aria-label={
-            askAiDisabled ? "Ліміт AI на сьогодні" : "Спитати Сержанта про це"
+            askAiDisabled
+              ? "Ліміт запитів до Сержанта на сьогодні"
+              : "Спитати Сержанта про це"
           }
-          title={askAiDisabled ? "Ліміт AI на сьогодні" : undefined}
+          title={
+            askAiDisabled ? "Ліміт запитів до Сержанта на сьогодні" : undefined
+          }
           className={cn(
             "shrink-0 touch-target inline-flex items-center justify-center gap-1 px-2 rounded-xl",
             "text-style-caption font-semibold",
