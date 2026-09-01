@@ -532,6 +532,7 @@ export const fizrukPageMessages = {
     restTimers: "Таймери",
     weightRows: "Вага тіла",
     unresolvedTitle: "Потребують звіряння",
+    autoMatchedTitle: "Зіставлено автоматично",
     chooseExerciseAriaPrefix: "Обрати вправу для",
     skipExercise: "Пропустити цю назву",
     allMatched: "Усі назви вправ зіставлено автоматично.",

@@ -1,8 +1,11 @@
+// Підшлях, а не барель: `index.ts` ре-експортує ще й `zipReader`/`xlsxGrid`,
+// які тягнуть `node:zlib`. У браузері це externalized-модуль, і його імпорт
+// валить увесь розділ «Тренування» на старті.
 import {
   detectDelimiter,
   isBlankRow,
   tokenizeCsv,
-} from "@sergeant/tabular-import";
+} from "@sergeant/tabular-import/csvParser";
 import { FizrukData } from "@sergeant/fizruk-domain";
 import { matchStrongExerciseName } from "./strongMatch";
 import type { StrongExerciseMatch } from "./strongMatch";
@@ -69,6 +72,7 @@ export interface StrongImportItem {
 export interface StrongImportWorkout {
   readonly strongDate: string;
   readonly startedAt: string;
+  readonly endedAt: string;
   readonly note: string;
   readonly items: readonly StrongImportItem[];
 }
@@ -98,6 +102,7 @@ export interface StrongImportBuildResult {
 interface StrongRow {
   date: string;
   workoutName: string;
+  duration: string;
   exerciseName: string;
   setOrder: string;
   weight: string;
@@ -119,6 +124,7 @@ export function parseStrongWorkoutCsv(
     {
       note: string;
       startedAt: string;
+      durationSec: number;
       items: Map<string, { rows: Map<number, StrongImportSet>; order: number }>;
     }
   >();
@@ -144,6 +150,7 @@ export function parseStrongWorkoutCsv(
     const workout = workouts.get(date) ?? {
       note: row.workoutName.trim(),
       startedAt: parseStrongDate(date, index + 2),
+      durationSec: parseStrongDurationSec(row.duration),
       items: new Map(),
     };
     const item = workout.items.get(exerciseName) ?? {
@@ -167,6 +174,9 @@ export function parseStrongWorkoutCsv(
   const parsedWorkouts = [...workouts.entries()].map(([date, workout]) => ({
     strongDate: date,
     startedAt: workout.startedAt,
+    endedAt: new Date(
+      new Date(workout.startedAt).getTime() + workout.durationSec * 1000,
+    ).toISOString(),
     note: workout.note,
     items: [...workout.items.entries()]
       .sort((a, b) => a[1].order - b[1].order)
@@ -263,7 +273,7 @@ export function buildStrongImportState(
     const snapshot: FizrukWorkoutSnapshot = {
       id: workoutId(workout.strongDate),
       startedAt: workout.startedAt,
-      endedAt: null,
+      endedAt: workout.endedAt,
       items: importedItems,
       groups: [],
       warmup: null,
@@ -339,6 +349,7 @@ function toWorkoutRow(row: readonly string[]): StrongRow {
   return {
     date: String(row[0] ?? ""),
     workoutName: String(row[1] ?? ""),
+    duration: String(row[2] ?? ""),
     exerciseName: String(row[3] ?? ""),
     setOrder: String(row[4] ?? ""),
     weight: String(row[5] ?? ""),
@@ -387,6 +398,21 @@ function parseStrongDate(raw: string, row: number): string {
     throw new StrongImportError(`Strong row ${row} has invalid Date`);
   }
   return date.toISOString();
+}
+
+/**
+ * Strong пише тривалість як "34s", "1m", "1h 12m" - без секунд у довгих
+ * і без хвилин у коротких. `0`, якщо колонка порожня або в незнайомому
+ * форматі: краще нульова тривалість, ніж `endedAt: null`, бо порожній
+ * `endedAt` у фізруку означає "тренування ще триває" (`ActiveWorkoutPanel`),
+ * і імпорт історії перетворювався б на пачку активних сесій з живим
+ * таймером замість завершених.
+ */
+function parseStrongDurationSec(raw: string): number {
+  const match = /^\s*(?:(\d+)h)?\s*(?:(\d+)m)?\s*(?:(\d+)s)?\s*$/.exec(raw);
+  if (!match) return 0;
+  const [, h, m, s] = match;
+  return Number(h ?? 0) * 3600 + Number(m ?? 0) * 60 + Number(s ?? 0);
 }
 
 function normalizeWeightUnit(raw: string): StrongWeightUnit {

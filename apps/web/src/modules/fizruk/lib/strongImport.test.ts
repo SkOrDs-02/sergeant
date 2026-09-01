@@ -63,6 +63,17 @@ describe("parseStrongWorkoutCsv", () => {
     ]);
   });
 
+  it("closes each workout with its Strong duration", () => {
+    const draft = parseStrongWorkoutCsv(fixture, "kg");
+    // Порівнюємо тривалість, а не абсолютний ISO: `parseStrongDate` бере
+    // локальний час машини, тож очікуваний рядок залежав би від таймзони.
+    const spans = draft.workouts.map(
+      (workout) =>
+        (Date.parse(workout.endedAt) - Date.parse(workout.startedAt)) / 1000,
+    );
+    expect(spans).toEqual([42 * 60, 65 * 60, 34]);
+  });
+
   it("rounds fractional reps and converts pounds to kilograms", () => {
     const kg = parseStrongWorkoutCsv(fixture, "kg");
     const lb = parseStrongWorkoutCsv(fixture, "lb");
@@ -163,6 +174,9 @@ describe("buildStrongImportState", () => {
     expect(second.next.workouts).toHaveLength(first.next.workouts.length);
     expect(setCount(second.next)).toBe(setCount(first.next));
     expect(itemByName(second.next, "Жим штанги лежачи")?.sets).toHaveLength(2);
+    // Порожній `endedAt` означає "тренування ще триває", і імпорт історії
+    // перетворювався б на пачку активних сесій із живим таймером.
+    expect(first.next.workouts.every((workout) => workout.endedAt)).toBe(true);
   });
 
   it("writes manually selected names from the same catalogue", () => {

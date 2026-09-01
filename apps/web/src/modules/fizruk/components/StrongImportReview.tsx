@@ -55,7 +55,31 @@ export function StrongImportReview({
 
   const unresolved =
     parsed?.matches.filter((match) => match.status !== "auto") ?? [];
+  const autoMatched =
+    parsed?.matches.filter((match) => match.status === "auto") ?? [];
   const canSubmit = Boolean(parsed?.draft && !parsed.error);
+
+  // Лічильники рахуються з резолвленого вибору, а не з файлу: пропущені
+  // назви забирають зі собою всі свої підходи, а тренування без жодної
+  // зіставленої вправи не створюється взагалі (`buildStrongImportState`).
+  // Число над кнопкою підтвердження має описувати запис, а не вхідний CSV.
+  const totals = useMemo(() => {
+    if (!parsed?.draft) return null;
+    const auto = new Map(
+      parsed.matches.map((match) => [match.strongName, match.autoExerciseId]),
+    );
+    let workouts = 0;
+    let sets = 0;
+    for (const workout of parsed.draft.workouts) {
+      const kept = workout.items.filter(
+        (item) => selection[item.strongName] ?? auto.get(item.strongName),
+      );
+      if (kept.length === 0) continue;
+      workouts += 1;
+      for (const item of kept) sets += item.sets.length;
+    }
+    return { workouts, sets };
+  }, [parsed, selection]);
 
   const readFile = async (
     event: ChangeEvent<HTMLInputElement>,
@@ -154,8 +178,8 @@ export function StrongImportReview({
 
         {parsed?.draft ? (
           <div className="grid gap-2 sm:grid-cols-4">
-            <Stat label={copy.workouts} value={parsed.draft.workouts.length} />
-            <Stat label={copy.sets} value={parsed.draft.setCount} />
+            <Stat label={copy.workouts} value={totals?.workouts ?? 0} />
+            <Stat label={copy.sets} value={totals?.sets ?? 0} />
             <Stat
               label={copy.restTimers}
               value={parsed.draft.skippedRestTimerRows}
@@ -168,44 +192,80 @@ export function StrongImportReview({
         ) : null}
 
         {unresolved.length > 0 ? (
-          <div className="space-y-2">
-            <h3 className="text-style-label text-text">
-              {copy.unresolvedTitle}
-            </h3>
-            <ul className="divide-y divide-line rounded-2xl border border-line">
-              {unresolved.map((match) => (
-                <li key={match.strongName} className="space-y-2 p-3">
-                  <div className="text-style-body font-semibold text-text">
-                    {match.strongName}
-                  </div>
-                  <Select
-                    value={selectedExerciseId(match)}
-                    aria-label={`${copy.chooseExerciseAriaPrefix} ${match.strongName}`}
-                    onChange={(event) =>
-                      setSelection((prev) => ({
-                        ...prev,
-                        [match.strongName]: event.target.value || null,
-                      }))
-                    }
-                  >
-                    <option value="">{copy.skipExercise}</option>
-                    {exerciseOptions(match, exercises).map((exercise) => (
-                      <option key={exercise.id} value={exercise.id}>
-                        {exercise.name?.uk || exercise.name?.en || exercise.id}
-                      </option>
-                    ))}
-                  </Select>
-                </li>
-              ))}
-            </ul>
-          </div>
+          <MatchList
+            title={copy.unresolvedTitle}
+            matches={unresolved}
+            exercises={exercises}
+            selectedExerciseId={selectedExerciseId}
+            onSelect={(name, id) =>
+              setSelection((prev) => ({ ...prev, [name]: id }))
+            }
+          />
         ) : parsed?.draft ? (
           <p className="rounded-xl border border-success/30 bg-success/10 p-3 text-style-caption text-success-strong">
             {copy.allMatched}
           </p>
         ) : null}
+
+        {/* Автозбіги теж у списку: приховане зіставлення не видно і не
+            виправити, а промах матчера тихо пише не ту вправу. */}
+        {autoMatched.length > 0 ? (
+          <MatchList
+            title={copy.autoMatchedTitle}
+            matches={autoMatched}
+            exercises={exercises}
+            selectedExerciseId={selectedExerciseId}
+            onSelect={(name, id) =>
+              setSelection((prev) => ({ ...prev, [name]: id }))
+            }
+          />
+        ) : null}
       </div>
     </Modal>
+  );
+}
+
+function MatchList({
+  title,
+  matches,
+  exercises,
+  selectedExerciseId,
+  onSelect,
+}: {
+  readonly title: string;
+  readonly matches: readonly StrongExerciseMatch[];
+  readonly exercises: readonly FizrukData.RawExerciseDef[];
+  readonly selectedExerciseId: (match: StrongExerciseMatch) => string;
+  readonly onSelect: (strongName: string, exerciseId: string | null) => void;
+}) {
+  const copy = messages.fizruk.strongImport;
+  return (
+    <div className="space-y-2">
+      <h3 className="text-style-label text-text">{title}</h3>
+      <ul className="divide-y divide-line rounded-2xl border border-line">
+        {matches.map((match) => (
+          <li key={match.strongName} className="space-y-2 p-3">
+            <div className="text-style-body font-semibold text-text">
+              {match.strongName}
+            </div>
+            <Select
+              value={selectedExerciseId(match)}
+              aria-label={`${copy.chooseExerciseAriaPrefix} ${match.strongName}`}
+              onChange={(event) =>
+                onSelect(match.strongName, event.target.value || null)
+              }
+            >
+              <option value="">{copy.skipExercise}</option>
+              {exerciseOptions(match, exercises).map((exercise) => (
+                <option key={exercise.id} value={exercise.id}>
+                  {exercise.name?.uk || exercise.name?.en || exercise.id}
+                </option>
+              ))}
+            </Select>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
