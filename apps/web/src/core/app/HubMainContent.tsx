@@ -19,6 +19,7 @@ import { coachKeys, digestKeys, hubKeys } from "@shared/lib/api/queryKeys";
 import { messages } from "@shared/i18n/uk";
 import { IOSInstallBanner } from "./IOSInstallBanner";
 import { LocalOnlyDataBanner } from "../durability/LocalOnlyDataBanner";
+import { HubBannerBudgetProvider } from "../hub/bannerBudget";
 import { TrialBanner } from "../billing";
 
 /**
@@ -269,12 +270,18 @@ export const HubMainContent = memo(function HubMainContent({
                   `isSyncableUserId`, що вимикає запис в outbox), тому гейта
                   на `user` тут немає. Під час FTUX мовчить: перша сесія
                   тримає рівно один сигнал на екрані — CTA першої дії. */}
-              {!inFtuxSession && <LocalOnlyDataBanner onSignIn={onShowAuth} />}
-              <HubDashboard
-                onOpenModule={onOpenModule}
-                user={user}
-                onShowAuth={onShowAuth}
-              />
+              {/* Стеля на кількість підказок одночасно — див.
+                  `bannerBudget.tsx` (анти-слоп аудит 2026-09-01, F3). */}
+              <HubBannerBudgetProvider>
+                {!inFtuxSession && (
+                  <LocalOnlyDataBanner onSignIn={onShowAuth} />
+                )}
+                <HubDashboard
+                  onOpenModule={onOpenModule}
+                  user={user}
+                  onShowAuth={onShowAuth}
+                />
+              </HubBannerBudgetProvider>
             </div>
           </ErrorBoundary>
         )}

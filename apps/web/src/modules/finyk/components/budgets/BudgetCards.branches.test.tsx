@@ -63,7 +63,7 @@ describe("LimitBudgetCard", () => {
     expect(screen.getByText("Продукти")).toBeInTheDocument();
     expect(screen.getByText("Зменши каву на цьому тижні.")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /AI-порада/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Порада Сержанта/ }));
     expect(
       screen.queryByText("Зменши каву на цьому тижні."),
     ).not.toBeInTheDocument();

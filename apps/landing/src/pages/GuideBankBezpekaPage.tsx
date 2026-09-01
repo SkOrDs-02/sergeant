@@ -183,7 +183,7 @@ export default function GuideBankBezpekaPage() {
             – там же кнопка експорту й опис зберігання.
           </p>
           <a href="/beta" className={`text-sm ${link}`}>
-            Стати в чергу →
+            Стати в чергу
           </a>
         </div>
       </article>
