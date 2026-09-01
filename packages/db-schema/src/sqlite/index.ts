@@ -89,6 +89,7 @@ export {
   fizrukWorkoutItems,
   fizrukWorkoutSets,
   fizrukCustomExercises,
+  fizrukCustomActivities,
   fizrukMeasurements,
   fizrukDailyLog,
   fizrukMonthlyPlan,

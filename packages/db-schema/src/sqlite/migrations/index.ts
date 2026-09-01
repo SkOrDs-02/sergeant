@@ -946,6 +946,30 @@ CREATE TABLE IF NOT EXISTS fizruk_pushups (
 `;
 
 /**
+ * Оцінка витрат за сесію + свої заняття (дзеркало серверної 132).
+ *
+ * SQLite не має `ADD COLUMN IF NOT EXISTS`, і це тут безпечно: реєстр
+ * `__fizruk_migrations` не дає файлу виконатись двічі, а на свіжій базі
+ * `001` створює таблицю без цієї колонки, тож `ALTER` завжди має що додати.
+ */
+const FIZRUK_005_KCAL_AND_ACTIVITIES_SQL = `
+ALTER TABLE fizruk_workouts ADD COLUMN kcal_burned INTEGER;
+
+CREATE TABLE IF NOT EXISTS fizruk_custom_activities (
+  id          TEXT PRIMARY KEY,
+  user_id     TEXT NOT NULL,
+  data_json   TEXT NOT NULL DEFAULT '{}',
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at  TEXT
+);
+
+CREATE INDEX IF NOT EXISTS fizruk_custom_activities_user_idx_lite
+  ON fizruk_custom_activities (user_id)
+  WHERE deleted_at IS NULL;
+`;
+
+/**
  * Ordered list of bundled client migrations for the Fizruk module on
  * SQLite. Pass this directly to `runMigrations` from
  * `@sergeant/db-schema/migrate/runner`.
@@ -974,6 +998,10 @@ export const FIZRUK_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
   {
     name: "004_fizruk_pushups.sql",
     sql: FIZRUK_004_PUSHUPS_SQL,
+  },
+  {
+    name: "005_fizruk_kcal_and_custom_activities.sql",
+    sql: FIZRUK_005_KCAL_AND_ACTIVITIES_SQL,
   },
 ] as const;
 

@@ -32,6 +32,11 @@ export const fizrukWorkouts = pgTable(
     warmupJson: jsonb("warmup_json"),
     cooldownJson: jsonb("cooldown_json"),
     wellbeingJson: jsonb("wellbeing_json"),
+    /**
+     * Оцінка витрачених калорій (міграція 132). Nullable навмисно: без ваги
+     * в профілі оцінювати нічим, і нуль тут означав би «спалено нічого».
+     */
+    kcalBurned: integer("kcal_burned"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -150,6 +155,37 @@ export const fizrukCustomExercises = pgTable(
   },
   (table) => [
     index("fizruk_custom_exercises_user_idx")
+      .on(table.userId)
+      .where(sql`${table.deletedAt} IS NULL`),
+  ],
+);
+
+/**
+ * Postgres schema for `fizruk_custom_activities` table.
+ * Mirrors migration 132_fizruk_kcal_and_custom_activities.sql.
+ *
+ * Свої заняття для короткого запису - дзеркало `fizruk_custom_exercises`:
+ * увесь вміст у `data_json`, бо форма запису належить домену
+ * (`ActivityDef` у `@sergeant/fizruk-domain`), а не схемі.
+ */
+export const fizrukCustomActivities = pgTable(
+  "fizruk_custom_activities",
+  {
+    id: text()
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
+    userId: text("user_id").notNull(),
+    dataJson: jsonb("data_json").notNull().default({}),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("fizruk_custom_activities_user_idx")
       .on(table.userId)
       .where(sql`${table.deletedAt} IS NULL`),
   ],

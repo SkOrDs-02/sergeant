@@ -48,6 +48,7 @@ describe("sqlite/fizrukWorkouts schema snapshot", () => {
       "warmup_json",
       "cooldown_json",
       "wellbeing_json",
+      "kcal_burned",
       "created_at",
       "updated_at",
       "deleted_at",
@@ -602,8 +603,8 @@ describe("sqlite/fizrukPushups schema snapshot", () => {
 });
 
 describe("sqlite/fizruk migrations exports", () => {
-  it("exports the 001 baseline + 002 full-state + 003 injuries + 004 pushups migration", () => {
-    expect(FIZRUK_CLIENT_MIGRATIONS).toHaveLength(4);
+  it("exports the 001 baseline + 002 full-state + 003 injuries + 004 pushups + 005 kcal/activities migration", () => {
+    expect(FIZRUK_CLIENT_MIGRATIONS).toHaveLength(5);
     expect(FIZRUK_CLIENT_MIGRATIONS[0]!.name).toBe("001_fizruk_tables.sql");
     expect(FIZRUK_CLIENT_MIGRATIONS[0]!.sql).toMatch(
       /CREATE TABLE IF NOT EXISTS fizruk_workouts/,
@@ -661,6 +662,16 @@ describe("sqlite/fizruk migrations exports", () => {
     );
     expect(FIZRUK_CLIENT_MIGRATIONS[3]!.sql).toMatch(
       /PRIMARY KEY \(user_id, date_key\)/,
+    );
+
+    expect(FIZRUK_CLIENT_MIGRATIONS[4]!.name).toBe(
+      "005_fizruk_kcal_and_custom_activities.sql",
+    );
+    expect(FIZRUK_CLIENT_MIGRATIONS[4]!.sql).toMatch(
+      /ALTER TABLE fizruk_workouts ADD COLUMN kcal_burned INTEGER/,
+    );
+    expect(FIZRUK_CLIENT_MIGRATIONS[4]!.sql).toMatch(
+      /CREATE TABLE IF NOT EXISTS fizruk_custom_activities/,
     );
   });
 
