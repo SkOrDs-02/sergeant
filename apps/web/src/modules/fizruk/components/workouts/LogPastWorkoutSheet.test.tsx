@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { ComponentProps } from "react";
 import {
   cleanup,
   fireEvent,
@@ -39,7 +40,9 @@ function setup(
       weightKg={overrides.weightKg ?? null}
       onRecordWeight={onRecordWeight}
       onCreateActivity={
-        onCreateActivity as ((activity: never) => void) | undefined
+        onCreateActivity as ComponentProps<
+          typeof LogPastWorkoutSheet
+        >["onCreateActivity"]
       }
     />,
   );

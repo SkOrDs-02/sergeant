@@ -91,6 +91,12 @@ const EXTRA_INPUTS_BY_TSCONFIG = {
   // `import.meta.env.VITE_*` access trips TS4111 under
   // noPropertyAccessFromIndexSignature once apps/web enabled the flag.
   "apps/web/tsconfig.json": ["src/vite-env.d.ts"],
+  // `fonts.d.ts` оголошує CSS-only пакети шрифтів (`@fontsource-variable/manrope`,
+  // `@fontsource/unbounded/*`), які `main.tsx` імпортує заради side-effect.
+  // Повний tsc резолвить їх через `"main": "index.css"` + `vite/client`, а
+  // `tsc-files` без `include` — ні (TS2882). Знайдено 2026-09-01, коли
+  // `main.tsx` уперше потрапив у staged.
+  "apps/landing/tsconfig.json": ["src/fonts.d.ts"],
 };
 
 /**

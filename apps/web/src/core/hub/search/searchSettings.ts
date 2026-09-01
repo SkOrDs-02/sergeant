@@ -43,7 +43,7 @@ const SETTINGS_PRESENTATION: Readonly<
   },
   ai: {
     description: "Тижневий тренер, insights",
-    icon: "sparkles",
+    icon: "sergeant",
   },
   capabilities: {
     description: "Каталог AI-можливостей, онбординг",
@@ -83,7 +83,7 @@ const SETTINGS_PRESENTATION: Readonly<
   },
   experimental: {
     description: "Lab, beta, debug",
-    icon: "sparkles",
+    icon: "sergeant",
   },
 };
 

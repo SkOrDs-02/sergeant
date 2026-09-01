@@ -46,7 +46,7 @@ const LINKS: readonly CapabilityLink[] = [
   },
   {
     id: "assistant",
-    icon: "sparkles",
+    icon: "sergeant",
     label: messages.sergeant.capabilitiesSectionTitle,
     description: messages.sergeant.capabilitiesSectionBody,
     href: ASSISTANT_PATH,

@@ -14,11 +14,17 @@ vi.mock("../../env/env.js", async (importOriginal) => {
   };
 });
 
-import { encryptToken } from "../mono/crypto.js";
+const { reconcileBySubscriptionIdMock } = vi.hoisted(() => ({
+  reconcileBySubscriptionIdMock: vi.fn(),
+}));
+vi.mock("./plataSync.js", () => ({
+  reconcileBySubscriptionId: reconcileBySubscriptionIdMock,
+}));
+
 import {
   __setPlataPubkeyForTesting,
   ensurePlataPubkey,
-  parsePlataWebhook,
+  parseSubscriptionIdFromWebhook,
   plataProvider,
 } from "./plata.js";
 
@@ -33,8 +39,8 @@ function signBody(body: string): string {
 }
 
 beforeEach(() => {
-  process.env["MONO_TOKEN_ENC_KEY"] = "a".repeat(64);
   __setPlataPubkeyForTesting(publicKey);
+  reconcileBySubscriptionIdMock.mockReset();
 });
 afterEach(() => {
   __setPlataPubkeyForTesting(null);
@@ -43,16 +49,16 @@ afterEach(() => {
 
 describe("plata verifyWebhookSignature (ECDSA)", () => {
   it("accepts a body signed with the cached pubkey", () => {
-    const body = JSON.stringify({ invoiceId: "inv1", status: "success" });
+    const body = JSON.stringify({ subscriptionId: "s1", status: "active" });
     expect(plataProvider.verifyWebhookSignature(body, signBody(body))).toBe(
       true,
     );
   });
 
   it("rejects a tampered body", () => {
-    const body = JSON.stringify({ invoiceId: "inv1", status: "success" });
+    const body = JSON.stringify({ subscriptionId: "s1" });
     const sig = signBody(body);
-    const tampered = JSON.stringify({ invoiceId: "inv1", status: "failure" });
+    const tampered = JSON.stringify({ subscriptionId: "s2" });
     expect(plataProvider.verifyWebhookSignature(tampered, sig)).toBe(false);
   });
 
@@ -65,154 +71,50 @@ describe("plata verifyWebhookSignature (ECDSA)", () => {
   });
 });
 
-describe("plata parsePlataWebhook", () => {
-  it("parses the monopay webhook body", () => {
-    const wh = parsePlataWebhook(
-      JSON.stringify({ invoiceId: "i", status: "success", reference: "u1" }),
+describe("parseSubscriptionIdFromWebhook (tolerant — chargeUrl/statusUrl payload undocumented)", () => {
+  it("reads a top-level subscriptionId", () => {
+    expect(
+      parseSubscriptionIdFromWebhook(
+        JSON.stringify({ subscriptionId: "s2_abc" }),
+      ),
+    ).toBe("s2_abc");
+  });
+
+  it("reads a nested data.subscriptionId", () => {
+    expect(
+      parseSubscriptionIdFromWebhook(
+        JSON.stringify({ data: { subscriptionId: "s2_nested" } }),
+      ),
+    ).toBe("s2_nested");
+  });
+
+  it("returns null when no subscriptionId is found anywhere", () => {
+    expect(parseSubscriptionIdFromWebhook(JSON.stringify({ foo: "bar" }))).toBe(
+      null,
     );
-    expect(wh.invoiceId).toBe("i");
-    expect(wh.reference).toBe("u1");
+  });
+
+  it("returns null on unparseable JSON instead of throwing", () => {
+    expect(parseSubscriptionIdFromWebhook("not json")).toBe(null);
   });
 });
 
-function mockPool(webhookInsertRowCount = 1) {
-  const calls: { sql: string; params: unknown[] | undefined }[] = [];
-  const query = vi.fn(async (sql: string, params?: unknown[]) => {
-    calls.push({ sql, params });
-    if (sql.includes("billing_webhook_events")) {
-      return { rowCount: webhookInsertRowCount, rows: [] };
-    }
-    return { rowCount: 1, rows: [] };
-  });
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return { pool: { query } as any, calls };
-}
-
-describe("plata processWebhook", () => {
-  it("stores the encrypted card token and activates on success", async () => {
-    const { pool, calls } = mockPool();
+describe("plata processWebhook — triggers reconciliation, never writes subscriptions directly", () => {
+  it("delegates to reconcileBySubscriptionId when subscriptionId is found", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const pool = {} as any;
     await plataProvider.processWebhook(
       pool,
-      JSON.stringify({
-        invoiceId: "inv9",
-        status: "success",
-        reference: "usr_1",
-        walletData: { cardToken: "tok_secret", walletId: "wal_1" },
-      }),
+      JSON.stringify({ subscriptionId: "s2_1" }),
     );
-    const tokenInsert = calls.find((c) =>
-      c.sql.includes("INSERT INTO plata_card_token"),
-    );
-    expect(tokenInsert).toBeDefined();
-    // ciphertext must NOT be the plaintext token
-    expect(tokenInsert?.params?.[2]).not.toBe("tok_secret");
-    const activate = calls.find(
-      (c) =>
-        c.sql.includes("INSERT INTO subscriptions") &&
-        c.sql.includes("'active'"),
-    );
-    expect(activate).toBeDefined();
+    expect(reconcileBySubscriptionIdMock).toHaveBeenCalledWith(pool, "s2_1");
   });
 
-  it("marks past_due on a failed invoice", async () => {
-    const { pool, calls } = mockPool();
-    await plataProvider.processWebhook(
-      pool,
-      JSON.stringify({
-        invoiceId: "inv9",
-        status: "failure",
-        reference: "usr_1",
-      }),
-    );
-    expect(calls.some((c) => c.sql.includes("past_due"))).toBe(true);
-  });
-
-  it("skips duplicate deliveries (dedup)", async () => {
-    const { pool, calls } = mockPool(0);
-    await plataProvider.processWebhook(
-      pool,
-      JSON.stringify({
-        invoiceId: "inv9",
-        status: "success",
-        reference: "usr_1",
-      }),
-    );
-    expect(calls.some((c) => c.sql.includes("INSERT INTO subscriptions"))).toBe(
-      false,
-    );
-  });
-
-  it("is a no-op when invoiceId or reference (userId) is missing", async () => {
-    const { pool, calls } = mockPool();
-    await plataProvider.processWebhook(
-      pool,
-      JSON.stringify({ status: "success", reference: "usr_1" }), // no invoiceId
-    );
-    await plataProvider.processWebhook(
-      pool,
-      JSON.stringify({ invoiceId: "inv9", status: "success" }), // no reference
-    );
-    expect(calls.length).toBe(0);
-  });
-
-  it("waits (no subscription write) on an intermediate status like 'processing'", async () => {
-    const { pool, calls } = mockPool();
-    await plataProvider.processWebhook(
-      pool,
-      JSON.stringify({
-        invoiceId: "inv9",
-        status: "processing",
-        reference: "usr_1",
-      }),
-    );
-    expect(
-      calls.some(
-        (c) =>
-          c.sql.includes("INSERT INTO subscriptions") ||
-          c.sql.includes("UPDATE subscriptions"),
-      ),
-    ).toBe(false);
-    // Still recorded for idempotency.
-    expect(calls.some((c) => c.sql.includes("billing_webhook_events"))).toBe(
-      true,
-    );
-  });
-
-  it("marks past_due on expired and reversed invoices too", async () => {
-    for (const status of ["expired", "reversed"]) {
-      const { pool, calls } = mockPool();
-      await plataProvider.processWebhook(
-        pool,
-        JSON.stringify({
-          invoiceId: `inv_${status}`,
-          status,
-          reference: "usr_1",
-        }),
-      );
-      expect(calls.some((c) => c.sql.includes("past_due"))).toBe(true);
-    }
-  });
-
-  it("activates without storing a card token when walletData is absent", async () => {
-    const { pool, calls } = mockPool();
-    await plataProvider.processWebhook(
-      pool,
-      JSON.stringify({
-        invoiceId: "inv9",
-        status: "success",
-        reference: "usr_1",
-      }),
-    );
-    expect(
-      calls.some((c) => c.sql.includes("INSERT INTO plata_card_token")),
-    ).toBe(false);
-    expect(
-      calls.some(
-        (c) =>
-          c.sql.includes("INSERT INTO subscriptions") &&
-          c.sql.includes("'active'"),
-      ),
-    ).toBe(true);
+  it("is a no-op (no reconcile call) when subscriptionId cannot be resolved", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const pool = {} as any;
+    await plataProvider.processWebhook(pool, JSON.stringify({ foo: "bar" }));
+    expect(reconcileBySubscriptionIdMock).not.toHaveBeenCalled();
   });
 });
 
@@ -240,7 +142,6 @@ describe("ensurePlataPubkey", () => {
       "https://api.monobank.ua/api/merchant/pubkey",
       { headers: { "X-Token": "merchant-token" } },
     );
-    // The cached key now verifies signatures correctly.
     const body = "{}";
     expect(plataProvider.verifyWebhookSignature(body, signBody(body))).toBe(
       true,
@@ -270,6 +171,16 @@ describe("ensurePlataPubkey", () => {
   });
 });
 
+function mockCheckoutPool() {
+  const calls: { sql: string; params: unknown[] | undefined }[] = [];
+  const query = vi.fn(async (sql: string, params?: unknown[]) => {
+    calls.push({ sql, params });
+    return { rowCount: 1, rows: [] };
+  });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return { pool: { query } as any, calls };
+}
+
 describe("plataProvider — checkout / portal / status", () => {
   beforeEach(() => {
     mockEnv["PLATA_TOKEN"] = "merchant-token";
@@ -285,8 +196,7 @@ describe("plataProvider — checkout / portal / status", () => {
 
   it("createCheckoutSession throws BillingConfigurationError when PLATA_TOKEN is unset", async () => {
     mockEnv["PLATA_TOKEN"] = undefined;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const pool = {} as any;
+    const { pool } = mockCheckoutPool();
     await expect(
       plataProvider.createCheckoutSession({
         pool,
@@ -296,19 +206,18 @@ describe("plataProvider — checkout / portal / status", () => {
     ).rejects.toThrow("PLATA_TOKEN is not set");
   });
 
-  it("createCheckoutSession posts to monopay invoice/create and returns the invoice URL", async () => {
+  it("posts a correct subscription/create body (interval 1m, amount, both webHookUrls) and returns pageUrl", async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(
         JSON.stringify({
-          invoiceId: "inv_1",
-          pageUrl: "https://pay.mbnk.biz/inv_1",
+          subscriptionId: "s2_1",
+          pageUrl: "https://pay.mbnk.biz/s2_1",
         }),
         { status: 200 },
       ),
     );
     vi.stubGlobal("fetch", fetchMock);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const pool = {} as any;
+    const { pool } = mockCheckoutPool();
 
     const result = await plataProvider.createCheckoutSession({
       pool,
@@ -319,23 +228,56 @@ describe("plataProvider — checkout / portal / status", () => {
     expect(result).toEqual({
       ok: true,
       mode: "test",
-      sessionId: "inv_1",
-      url: "https://pay.mbnk.biz/inv_1",
+      sessionId: "s2_1",
+      url: "https://pay.mbnk.biz/s2_1",
     });
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe("https://api.monobank.ua/api/merchant/invoice/create");
+    expect(url).toBe(
+      "https://api.monobank.ua/api/merchant/subscription/create",
+    );
     expect((init.headers as Record<string, string>)["X-Token"]).toBe(
       "merchant-token",
     );
     const body = JSON.parse(init.body as string) as {
-      merchantPaymInfo: { reference: string };
       amount: number;
+      interval: string;
+      webHookUrls: { chargeUrl: string; statusUrl: string };
     };
-    expect(body.merchantPaymInfo.reference).toBe("usr_1");
     expect(body.amount).toBe(39900);
+    expect(body.interval).toBe("1m");
+    expect(body.webHookUrls.chargeUrl).toContain("/api/billing/plata-charge");
+    expect(body.webHookUrls.statusUrl).toContain("/api/billing/plata-status");
   });
 
-  it("createCheckoutSession throws with the monopay error text on failure", async () => {
+  it("writes plata_subscription BEFORE returning the response", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            subscriptionId: "s2_2",
+            pageUrl: "https://pay.mbnk.biz/s2_2",
+          }),
+          { status: 200 },
+        ),
+      ),
+    );
+    const { pool, calls } = mockCheckoutPool();
+
+    await plataProvider.createCheckoutSession({
+      pool,
+      user: { id: "usr_2" },
+      plan: "pro",
+    });
+
+    const insert = calls.find((c) =>
+      c.sql.includes("INSERT INTO plata_subscription"),
+    );
+    expect(insert).toBeDefined();
+    expect(insert?.params).toEqual(["usr_2", "s2_2"]);
+  });
+
+  it("throws with the monopay error text on failure", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(
@@ -344,8 +286,7 @@ describe("plataProvider — checkout / portal / status", () => {
         }),
       ),
     );
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const pool = {} as any;
+    const { pool } = mockCheckoutPool();
     await expect(
       plataProvider.createCheckoutSession({
         pool,
@@ -356,8 +297,7 @@ describe("plataProvider — checkout / portal / status", () => {
   });
 
   it("createCustomerPortalSession returns the in-app settings URL", async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const pool = {} as any;
+    const { pool } = mockCheckoutPool();
     const result = await plataProvider.createCustomerPortalSession({
       pool,
       user: { id: "usr_1" },
@@ -405,91 +345,95 @@ describe("plataProvider — checkout / portal / status", () => {
 
 describe("plataProvider.cancelSubscription", () => {
   beforeEach(() => {
-    process.env["MONO_TOKEN_ENC_KEY"] = "a".repeat(64);
     mockEnv["PLATA_TOKEN"] = "merchant-token";
   });
   afterEach(() => {
     vi.unstubAllGlobals();
   });
 
-  it("deletes the local card token and marks cancel_at_period_end (no wallet card to revoke)", async () => {
-    const query = vi
-      .fn()
-      .mockResolvedValueOnce({ rows: [] }) // SELECT card token — none stored
-      .mockResolvedValueOnce({ rows: [] }) // DELETE plata_card_token
-      .mockResolvedValueOnce({ rows: [] }); // UPDATE subscriptions
-    const fetchSpy = vi.spyOn(globalThis, "fetch");
-
+  function mockCancelPool(subscriptionId: string | null) {
+    const calls: { sql: string; params: unknown[] | undefined }[] = [];
+    const query = vi.fn(async (sql: string, params?: unknown[]) => {
+      calls.push({ sql, params });
+      if (sql.includes("SELECT subscription_id FROM plata_subscription")) {
+        return {
+          rows: subscriptionId ? [{ subscription_id: subscriptionId }] : [],
+        };
+      }
+      return { rowCount: 1, rows: [] };
+    });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await plataProvider.cancelSubscription({ query } as any, "usr_1");
+    return { pool: { query } as any, calls };
+  }
 
-    expect(fetchSpy).not.toHaveBeenCalled(); // no card token → no wallet/card DELETE
-    expect(query).toHaveBeenCalledTimes(3);
-    const [deleteSql] = query.mock.calls[1] as [string, unknown[]];
-    expect(deleteSql).toContain("DELETE FROM plata_card_token");
-    const [updateSql, updateParams] = query.mock.calls[2] as [
-      string,
-      unknown[],
-    ];
-    expect(updateSql).toContain("cancel_at_period_end = TRUE");
-    expect(updateParams).toEqual(["usr_1"]);
-  });
-
-  it("decrypts and best-effort revokes the wallet card token, then still cancels", async () => {
-    const enc = encryptToken("card_tok_1", "a".repeat(64));
-    const query = vi
-      .fn()
-      .mockResolvedValueOnce({
-        rows: [
-          {
-            card_token_ciphertext: enc.ciphertext,
-            card_token_iv: enc.iv,
-            card_token_tag: enc.tag,
-          },
-        ],
-      })
-      .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({ rows: [] });
+  it("sends action:cancel WITHOUT refundAmount, then marks cancel_at_period_end", async () => {
     const fetchMock = vi
       .fn()
-      .mockResolvedValue(new Response("OK", { status: 200 }));
+      .mockResolvedValue(new Response("", { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
+    const { pool, calls } = mockCancelPool("s2_cancel");
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await plataProvider.cancelSubscription({ query } as any, "usr_1");
+    await plataProvider.cancelSubscription(pool, "usr_1");
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe("https://api.monobank.ua/api/merchant/wallet/card");
-    expect(init.method).toBe("DELETE");
-    const body = JSON.parse(init.body as string) as { cardToken: string };
-    expect(body.cardToken).toBe("card_tok_1");
+    expect(url).toBe("https://api.monobank.ua/api/merchant/subscription/edit");
+    const body = JSON.parse(init.body as string) as Record<string, unknown>;
+    expect(body).toEqual({ subscriptionId: "s2_cancel", action: "cancel" });
+    expect(body["refundAmount"]).toBeUndefined();
+    const cancelUpdate = calls.find((c) =>
+      c.sql.includes("cancel_at_period_end = TRUE"),
+    );
+    expect(cancelUpdate).toBeDefined();
   });
 
-  it("swallows a failed wallet/card DELETE (best-effort) and still cancels locally", async () => {
-    const enc = encryptToken("card_tok_2", "a".repeat(64));
-    const query = vi
+  it("falls back to subscription/remove on 404", async () => {
+    const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce({
-        rows: [
-          {
-            card_token_ciphertext: enc.ciphertext,
-            card_token_iv: enc.iv,
-            card_token_tag: enc.tag,
-          },
-        ],
-      })
-      .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({ rows: [] });
+      .mockResolvedValueOnce(new Response("", { status: 404 }))
+      .mockResolvedValueOnce(new Response("", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const { pool } = mockCancelPool("s2_404");
+
+    await plataProvider.cancelSubscription(pool, "usr_1");
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const [removeUrl] = fetchMock.mock.calls[1] as [string, RequestInit];
+    expect(removeUrl).toBe(
+      "https://api.monobank.ua/api/merchant/subscription/remove",
+    );
+  });
+
+  it("is a no-op (no fetch, no DB row change) when there is nothing left to cancel", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const { pool, calls } = mockCancelPool(null);
+
+    await plataProvider.cancelSubscription(pool, "usr_1");
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    // WHERE-guard on the UPDATE makes a repeat call on an already-cancelled
+    // subscription a no-op at the SQL level (0 rows affected) — the query
+    // itself still runs, but no provider call happens without a stored
+    // subscriptionId.
+    const cancelUpdate = calls.find((c) =>
+      c.sql.includes("cancel_at_period_end = TRUE"),
+    );
+    expect(cancelUpdate).toBeDefined();
+  });
+
+  it("swallows a network error from monobank (best-effort) and still marks locally", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockRejectedValue(new Error("network down")),
     );
+    const { pool, calls } = mockCancelPool("s2_err");
 
     await expect(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      plataProvider.cancelSubscription({ query } as any, "usr_1"),
+      plataProvider.cancelSubscription(pool, "usr_1"),
     ).resolves.toBeUndefined();
-    expect(query).toHaveBeenCalledTimes(3);
+    expect(
+      calls.some((c) => c.sql.includes("cancel_at_period_end = TRUE")),
+    ).toBe(true);
   });
 });

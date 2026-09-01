@@ -39,6 +39,7 @@ function emptyCache(
   return {
     workouts: [],
     customExercises: [],
+    customActivities: [],
     measurements: [],
     dailyLog: [],
     monthlyPlan: null,

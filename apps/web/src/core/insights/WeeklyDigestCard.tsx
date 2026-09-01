@@ -251,8 +251,7 @@ function DigestContent({
       {canGenerate ? (
         <>
           <p className="text-style-body text-muted mb-3 leading-relaxed">
-            AI-звіт підсумовує прогрес по всіх модулях і дає конкретні
-            рекомендації на наступний тиждень.
+            Підсумую тиждень по всіх модулях і скажу, що зробити наступного.
           </p>
           <button
             type="button"
@@ -339,7 +338,7 @@ function DigestContent({
                         (rec: string, i: number) => (
                           <div key={i} className="flex items-start gap-1.5">
                             <Icon
-                              name="sparkle"
+                              name="sergeant"
                               size={12}
                               className="text-primary mt-1 shrink-0"
                               aria-hidden
