@@ -24,6 +24,8 @@ import type {
   RawExerciseDef,
 } from "@sergeant/fizruk-domain/data";
 import {
+  ACTIVITY_INTENSITY_MULTIPLIERS,
+  ACTIVITY_MUSCLE_ZONE_MUSCLES,
   equipmentForLocation,
   matchesExerciseLocation,
 } from "@sergeant/fizruk-domain/data";
@@ -43,6 +45,7 @@ import {
   setPendingRetroEnd,
 } from "../lib/pendingRetroEnd";
 import type { AddExerciseForm } from "../components/workouts/AddExerciseSheet";
+import type { LogPastWorkoutActivity } from "../components/workouts/LogPastWorkoutSheet";
 import {
   trackFizrukWorkoutDiscarded,
   trackFizrukWorkoutStarted,
@@ -477,8 +480,43 @@ export function useWorkoutsOrchestrator(
    * виросли б дві «активні» сесії одночасно.
    */
   const submitPastWorkout = useCallback(
-    ({ startedAt, endedAt }: { startedAt: string; endedAt: string }) => {
+    ({
+      startedAt,
+      endedAt,
+      activity,
+    }: {
+      startedAt: string;
+      endedAt: string;
+      activity?: LogPastWorkoutActivity;
+    }) => {
       setLogPastOpen(false);
+      if (activity) {
+        // Короткий запис нікуди не веде: сесія одразу завершена, слот
+        // «одне активне» не займає, тож і діалог конфлікту тут зайвий.
+        const workout = createWorkoutWithTimes({ startedAt, endedAt });
+        addItem(workout.id, {
+          exerciseId: `activity:${activity.activityId}`,
+          nameUk: activity.nameUk,
+          primaryGroup: "full_body",
+          musclesPrimary: ACTIVITY_MUSCLE_ZONE_MUSCLES[activity.zone],
+          musclesSecondary: [],
+          type: "time",
+          // Інтенсивність множить саме тривалість, що йде у
+          // `loadPointsForItem`: «важко 45 хв» важить як 56. Формулу
+          // навантаження таким чином чіпати не довелось (D4 спеки).
+          durationSec: Math.round(
+            activity.durationSec *
+              ACTIVITY_INTENSITY_MULTIPLIERS[activity.intensity],
+          ),
+          met: activity.met,
+          intensity: activity.intensity,
+        });
+        if (activity.kcalBurned != null) {
+          updateWorkout(workout.id, { kcalBurned: activity.kcalBurned });
+        }
+        trackFizrukWorkoutStarted(workout.id, "past");
+        return;
+      }
       requestWorkoutStart(() => {
         const workout = createWorkoutWithTimes({ startedAt });
         setPendingRetroEnd(workout.id, endedAt);
@@ -489,7 +527,13 @@ export function useWorkoutsOrchestrator(
         else setView("log");
       });
     },
-    [createWorkoutWithTimes, onWorkoutStarted, requestWorkoutStart],
+    [
+      addItem,
+      createWorkoutWithTimes,
+      onWorkoutStarted,
+      requestWorkoutStart,
+      updateWorkout,
+    ],
   );
 
   /**

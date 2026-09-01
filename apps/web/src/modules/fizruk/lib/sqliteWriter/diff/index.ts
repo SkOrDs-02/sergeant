@@ -44,6 +44,7 @@
  *      has no LS key to mirror from.
  */
 
+import { diffCustomActivitiesOps } from "./customActivities";
 import { diffCustomExercisesOps } from "./customExercises";
 import { diffDailyLogOps } from "./dailyLog";
 import { diffInjuriesOps } from "./injuries";
@@ -53,6 +54,11 @@ import { diffPushupOps } from "./pushups";
 import { diffWorkoutTemplatesOps } from "./workoutTemplates";
 import { diffWorkoutsOps } from "./workouts";
 
+import type {
+  CustomActivityDeleteOp,
+  CustomActivityUpsertOp,
+  FizrukCustomActivitySnapshot,
+} from "./customActivities";
 import type {
   CustomExerciseDeleteOp,
   CustomExerciseUpsertOp,
@@ -95,10 +101,13 @@ import type {
 // Preserves the historical surface of `from "./sqliteWriter/diff"`.
 
 export type {
+  CustomActivityDeleteOp,
+  CustomActivityUpsertOp,
   CustomExerciseDeleteOp,
   CustomExerciseUpsertOp,
   DailyLogDeleteOp,
   DailyLogUpsertOp,
+  FizrukCustomActivitySnapshot,
   FizrukCustomExerciseSnapshot,
   FizrukDailyLogSnapshot,
   FizrukInjurySnapshot,
@@ -125,6 +134,8 @@ export type FizrukDualWriteOp =
   | WorkoutDeleteOp
   | CustomExerciseUpsertOp
   | CustomExerciseDeleteOp
+  | CustomActivityUpsertOp
+  | CustomActivityDeleteOp
   | MeasurementUpsertOp
   | MeasurementDeleteOp
   | DailyLogUpsertOp
@@ -170,6 +181,12 @@ export interface FizrukDualWriteState {
    * `pantryEvents` у nutrition-диффі).
    */
   readonly pushups?: Readonly<Record<string, number>>;
+  /**
+   * Свої заняття для короткого запису. Опційне з тієї ж причини, що й
+   * `pushups`: стани, зібрані вручну в старих тестах, поля не несуть -
+   * трактується як порожній список.
+   */
+  readonly customActivities?: readonly FizrukCustomActivitySnapshot[];
 }
 
 // -----------------------------------------------------------------------
@@ -195,6 +212,7 @@ export function diffFizrukDualWriteOps(
   return [
     ...diffWorkoutsOps(prev.workouts, next.workouts),
     ...diffCustomExercisesOps(prev.customExercises, next.customExercises),
+    ...diffCustomActivitiesOps(prev.customActivities, next.customActivities),
     ...diffMeasurementsOps(prev.measurements, next.measurements),
     ...diffDailyLogOps(prev.dailyLog, next.dailyLog),
     ...diffMonthlyPlanOps(prev.monthlyPlan, next.monthlyPlan),

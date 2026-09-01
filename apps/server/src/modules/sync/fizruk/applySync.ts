@@ -75,16 +75,23 @@ export async function applyFizrukWorkouts(
   }
 
   const note = typeof row["note"] === "string" ? row["note"] : "";
+  // Оцінка витрат: ціле або NULL. NULL - «оцінювати нічим» (не було ваги),
+  // не «спалено нуль».
+  const rawKcal = Number(row["kcal_burned"]);
+  const kcalBurned =
+    row["kcal_burned"] == null || !Number.isFinite(rawKcal) || rawKcal < 0
+      ? null
+      : Math.round(rawKcal);
 
   if (existing.rows.length === 0) {
     await client.query(
       `INSERT INTO fizruk_workouts
          (id, user_id, started_at, ended_at, note,
           groups_json, warmup_json, cooldown_json, wellbeing_json,
-          created_at, updated_at, deleted_at)
+          kcal_burned, created_at, updated_at, deleted_at)
        VALUES ($1, $2, $3, $4, $5,
                COALESCE($6::jsonb, '[]'::jsonb), $7, $8, $9,
-               $10, $11, $12)`,
+               $10, $11, $12, $13)`,
       [
         id,
         userId,
@@ -95,6 +102,7 @@ export async function applyFizrukWorkouts(
         toJsonbParam(row["warmup_json"]),
         toJsonbParam(row["cooldown_json"]),
         toJsonbParam(row["wellbeing_json"]),
+        kcalBurned,
         createdAt ?? clientTs,
         clientTs,
         deletedAt ?? null,
@@ -110,9 +118,10 @@ export async function applyFizrukWorkouts(
              warmup_json     = $5,
              cooldown_json   = $6,
              wellbeing_json  = $7,
-             updated_at      = $8,
-             deleted_at      = $9
-       WHERE id = $10 AND user_id = $11`,
+             kcal_burned     = $8,
+             updated_at      = $9,
+             deleted_at      = $10
+       WHERE id = $11 AND user_id = $12`,
       [
         startedAt,
         endedAt ?? null,
@@ -121,6 +130,7 @@ export async function applyFizrukWorkouts(
         toJsonbParam(row["warmup_json"]),
         toJsonbParam(row["cooldown_json"]),
         toJsonbParam(row["wellbeing_json"]),
+        kcalBurned,
         clientTs,
         deletedAt ?? null,
         id,
@@ -400,6 +410,7 @@ export async function applyFizrukSets(
 }
 
 export {
+  applyFizrukCustomActivities,
   applyFizrukCustomExercises,
   applyFizrukMeasurements,
 } from "./applyMisc.js";

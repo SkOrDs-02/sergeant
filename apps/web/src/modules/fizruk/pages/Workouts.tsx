@@ -18,6 +18,9 @@ import { WorkoutsHeader } from "../components/workouts/WorkoutsHeader";
 import { WorkoutsConfirmDialogs } from "../components/workouts/WorkoutsConfirmDialogs";
 import { useWorkoutsOrchestrator } from "../hooks/useWorkoutsOrchestrator";
 import { useTrainingProgram } from "../hooks/useTrainingProgram";
+import { useDailyLog } from "../hooks/useDailyLog";
+import { useCustomActivities } from "../hooks/useCustomActivities";
+import { useLatestBodyWeightKg } from "../../../core/profile/useLatestBodyWeight";
 import { useCloudPullPending } from "@shared/hooks/useCloudPullPending";
 import { messages } from "@shared/i18n/uk";
 
@@ -57,6 +60,11 @@ export function Workouts({
       : undefined,
   });
   const cloudPullPending = useCloudPullPending();
+  // Вага потрібна формі «Записати заняття»: без неї витрати рахувати нічим,
+  // і саме тоді форма просить її одним полем.
+  const bodyWeightKg = useLatestBodyWeightKg();
+  const { addEntry: addDailyLogEntry } = useDailyLog();
+  const { activities, addActivity } = useCustomActivities();
   // 04-A — permanent "Програми" row in the home "Довідники" block reads
   // the active program name directly (cheap: `BUILTIN_PROGRAMS.find` over
   // a static in-memory list + one localStorage read on mount, no network).
@@ -129,6 +137,13 @@ export function Workouts({
             open={o.logPastOpen}
             onClose={() => o.setLogPastOpen(false)}
             onSubmit={o.submitPastWorkout}
+            weightKg={bodyWeightKg}
+            // Той самий писач, що й у решті зважувань: `addEntry` сам
+            // funnel-ить у `recordBodyWeight`, тож профільний знімок для
+            // КБЖВ оновлюється разом із fizruk-журналом (ADR-0080).
+            onRecordWeight={(weightKg) => addDailyLogEntry({ weightKg })}
+            activities={activities}
+            onCreateActivity={addActivity}
           />
         ) : null}
 

@@ -12,6 +12,10 @@ import { logger as webLogger } from "@shared/lib";
 
 import { enqueueOutboxUpsert } from "../../../../core/syncEngine/enqueueOutboxUpsert.js";
 import { fireSyncOutboxUpsert } from "../../../../core/syncEngine/fireSyncOutboxUpsert.js";
+import {
+  softDeleteCustomActivity,
+  upsertCustomActivity,
+} from "./adapter.customActivities.js";
 import type {
   FizrukCustomExerciseSnapshot,
   FizrukDualWriteOp,
@@ -64,7 +68,7 @@ import {
  *   for sets), a shape `buildReconcileChildren` doesn't model.
  * - Sync-v2 outbox bridge: registry tables (`fizruk_workouts`,
  *   `fizruk_workout_items`, `fizruk_workout_sets`, `fizruk_custom_exercises`,
- *   `fizruk_measurements`) fire `enqueueOutboxUpsert` after each local write
+ *   `fizruk_custom_activities`, `fizruk_measurements`) fire `enqueueOutboxUpsert` after each local write
  *   (fire-and-forget; failures are swallowed per R2).
  */
 
@@ -92,6 +96,14 @@ const applyOps = createApplyOps<FizrukDualWriteOp>({
     },
     "custom-exercise-delete": async (client, op, rt) => {
       await softDeleteCustomExercise(client, op.exerciseId, rt);
+      return "applied";
+    },
+    "custom-activity-upsert": async (client, op, rt) => {
+      await upsertCustomActivity(client, op.activity, rt);
+      return "applied";
+    },
+    "custom-activity-delete": async (client, op, rt) => {
+      await softDeleteCustomActivity(client, op.activityId, rt);
       return "applied";
     },
     "measurement-upsert": async (client, op, rt) => {
@@ -270,6 +282,7 @@ async function upsertWorkout(
   const warmupJson = w.warmup ? JSON.stringify(w.warmup) : null;
   const cooldownJson = w.cooldown ? JSON.stringify(w.cooldown) : null;
   const wellbeingJson = w.wellbeing ? JSON.stringify(w.wellbeing) : null;
+  const kcalBurned = toIntOrNull(w.kcalBurned);
 
   await client.run(WORKOUT_UPSERT_SQL, [
     w.id,
@@ -281,6 +294,7 @@ async function upsertWorkout(
     warmupJson,
     cooldownJson,
     wellbeingJson,
+    kcalBurned,
     clientTs,
     clientTs,
   ]);
@@ -299,6 +313,7 @@ async function upsertWorkout(
       warmup_json: warmupJson,
       cooldown_json: cooldownJson,
       wellbeing_json: wellbeingJson,
+      kcal_burned: kcalBurned,
       created_at: clientTs,
       deleted_at: null,
     },

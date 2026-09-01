@@ -55,6 +55,14 @@ export interface WorkoutItem {
   sets?: WorkoutSet[] | undefined;
   durationSec?: number | undefined;
   distanceM?: number | undefined;
+  /**
+   * MET (metabolic equivalent) вправи чи заняття — вхід формули витрат
+   * (`computeKcalBurned`). Необовʼязкове: записи, зроблені до появи поля,
+   * просто не дають оцінки.
+   */
+  met?: number | undefined;
+  /** Рівень зусилля; множить і MET, і тривалість для розрахунку втоми. */
+  intensity?: "easy" | "normal" | "hard" | undefined;
   [key: string]: unknown;
 }
 
@@ -93,6 +101,11 @@ export interface Workout {
   cooldown: ChecklistItem[] | null;
   note: string;
   wellbeing?: WorkoutWellbeing | null;
+  /**
+   * Оцінка витрачених калорій, збережена ЧИСЛОМ на момент запису. Не
+   * перераховується заднім числом при зміні ваги — див. `kcalBurned.ts`.
+   */
+  kcalBurned?: number | undefined;
   [key: string]: unknown;
 }
 

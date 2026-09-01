@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { ComponentProps } from "react";
 import {
   cleanup,
   fireEvent,
@@ -19,17 +20,38 @@ const NOW = new Date("2026-08-09T09:00:00Z");
 /** Свідомо давня доба — минула в будь-якій зоні раннера. */
 const PAST_DAY = "2026-08-01";
 
-function setup(overrides: Partial<{ open: boolean }> = {}) {
+function setup(
+  overrides: Partial<{
+    open: boolean;
+    weightKg: number | null;
+    onCreateActivity: ((activity: unknown) => void) | undefined;
+  }> = {},
+) {
   const onClose = vi.fn();
   const onSubmit = vi.fn();
+  const onRecordWeight = vi.fn();
+  const onCreateActivity =
+    "onCreateActivity" in overrides ? overrides.onCreateActivity : vi.fn();
   const { container } = render(
     <LogPastWorkoutSheet
       open={overrides.open ?? true}
       onClose={onClose}
       onSubmit={onSubmit}
+      weightKg={overrides.weightKg ?? null}
+      onRecordWeight={onRecordWeight}
+      onCreateActivity={
+        onCreateActivity as ComponentProps<
+          typeof LogPastWorkoutSheet
+        >["onCreateActivity"]
+      }
     />,
   );
-  return { onClose, onSubmit, container };
+  return { onClose, onSubmit, onRecordWeight, onCreateActivity, container };
+}
+
+/** Обирає заняття з каталогу - короткий шлях запису. */
+function pickActivity(id = "body_pump") {
+  fireEvent.change(screen.getByLabelText("Заняття"), { target: { value: id } });
 }
 
 function field(name: string): HTMLInputElement {
@@ -72,7 +94,7 @@ describe("LogPastWorkoutSheet", () => {
     fireEvent.change(field("Дата"), { target: { value: PAST_DAY } });
     fireEvent.change(field("Початок"), { target: { value: "18:00" } });
     fireEvent.change(field("Завершення"), { target: { value: "19:30" } });
-    fireEvent.click(screen.getByText("Внести й додати вправи"));
+    fireEvent.click(screen.getByText("Записати"));
 
     expect(onSubmit).toHaveBeenCalledTimes(1);
     const arg = onSubmit.mock.calls[0]![0] as {
@@ -126,7 +148,7 @@ describe("LogPastWorkoutSheet", () => {
     // ще не було.
     const { onSubmit } = setup();
     fireEvent.change(field("Дата"), { target: { value: "2026-08-20" } });
-    const submit = screen.getByText("Внести й додати вправи");
+    const submit = screen.getByText("Записати");
     expect(screen.getByText(/Завершення ще не настало/)).toBeVisible();
     expect(submit).toBeDisabled();
     fireEvent.click(submit);
@@ -138,7 +160,7 @@ describe("LogPastWorkoutSheet", () => {
     const { onSubmit } = setup();
     fireEvent.change(field("Початок"), { target: { value: "08:00" } });
     fireEvent.change(field("Завершення"), { target: { value: "23:59" } });
-    const submit = screen.getByText("Внести й додати вправи");
+    const submit = screen.getByText("Записати");
     expect(submit).toBeDisabled();
     fireEvent.click(submit);
     expect(onSubmit).not.toHaveBeenCalled();
@@ -164,7 +186,7 @@ describe("LogPastWorkoutSheet", () => {
 
     expect(screen.getByText(/Завершення раніше за початок/)).toBeVisible();
     expect(screen.queryByText(/Завершення ще не настало/)).toBeNull();
-    const submit = screen.getByText("Внести й додати вправи");
+    const submit = screen.getByText("Записати");
     expect(submit).toBeDisabled();
     fireEvent.click(submit);
     expect(onSubmit).not.toHaveBeenCalled();
@@ -178,16 +200,132 @@ describe("LogPastWorkoutSheet", () => {
     fireEvent.change(field("Початок"), { target: { value: "18:00" } });
     fireEvent.change(field("Завершення"), { target: { value: "16:00" } });
     expect(screen.getByText(/Завершення раніше за початок/)).toBeVisible();
-    expect(screen.getByText("Внести й додати вправи")).toBeDisabled();
+    expect(screen.getByText("Записати")).toBeDisabled();
   });
 
   it("блокує кнопку, доки ввід неповний", () => {
     const { onSubmit } = setup();
     fireEvent.change(field("Завершення"), { target: { value: "" } });
-    const submit = screen.getByText("Внести й додати вправи");
+    const submit = screen.getByText("Записати");
     expect(submit).toBeDisabled();
     fireEvent.click(submit);
     expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it("із обраним заняттям віддає завершений запис, а не порожню сесію", () => {
+    // Це і є друга форма запису: людина з групового заняття не памʼятає
+    // підходів, і вести її в детальний журнал означало б повернути ту саму
+    // роботу, від якої вона тікає.
+    const { onSubmit } = setup({ weightKg: 60 });
+    fireEvent.change(field("Дата"), { target: { value: PAST_DAY } });
+    fireEvent.change(field("Початок"), { target: { value: "18:00" } });
+    pickActivity();
+    fireEvent.click(screen.getByText("Записати"));
+
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    const arg = onSubmit.mock.calls[0]![0] as {
+      startedAt: string;
+      endedAt: string;
+      activity?: {
+        activityId: string;
+        durationSec: number;
+        kcalBurned: number;
+      };
+    };
+    expect(arg.activity?.activityId).toBe("body_pump");
+    expect(arg.activity?.durationSec).toBe(45 * 60);
+    // MET 6 × 60 кг × 0.75 год.
+    expect(arg.activity?.kcalBurned).toBe(270);
+    expect(Date.parse(arg.endedAt) - Date.parse(arg.startedAt)).toBe(
+      45 * 60_000,
+    );
+  });
+
+  it("без заняття лишає стару поведінку: питає кінець", () => {
+    setup();
+    expect(screen.getByLabelText("Завершення")).toBeVisible();
+    expect(screen.queryByLabelText("Тривалість")).toBeNull();
+  });
+
+  it("поле ваги показується лише за її відсутності й іде у зважування", () => {
+    const { onRecordWeight, onSubmit } = setup({ weightKg: null });
+    fireEvent.change(field("Дата"), { target: { value: PAST_DAY } });
+    pickActivity();
+    fireEvent.change(field("Твоя вага, кг"), { target: { value: "60" } });
+    fireEvent.click(screen.getByText("Записати"));
+
+    expect(onRecordWeight).toHaveBeenCalledWith(60);
+    const arg = onSubmit.mock.calls[0]![0] as {
+      activity?: { kcalBurned: number | null };
+    };
+    expect(arg.activity?.kcalBurned).toBe(270);
+  });
+
+  it("не питає вагу, коли вона вже відома", () => {
+    setup({ weightKg: 80 });
+    pickActivity();
+    expect(screen.queryByLabelText("Твоя вага, кг")).toBeNull();
+  });
+
+  it("без ваги запис зберігається, просто без оцінки витрат", () => {
+    const { onSubmit, onRecordWeight } = setup({ weightKg: null });
+    fireEvent.change(field("Дата"), { target: { value: PAST_DAY } });
+    pickActivity();
+    fireEvent.click(screen.getByText("Записати"));
+
+    expect(onRecordWeight).not.toHaveBeenCalled();
+    const arg = onSubmit.mock.calls[0]![0] as {
+      activity?: { kcalBurned: number | null };
+    };
+    expect(arg.activity?.kcalBurned).toBeNull();
+  });
+
+  it("заводить своє заняття прямо у формі й одразу його обирає", () => {
+    // Відправити людину в окремий довідник означало б загубити введені
+    // дату й час - вона вже посеред запису.
+    const { onCreateActivity, onSubmit } = setup({ weightKg: 60 });
+    fireEvent.change(field("Дата"), { target: { value: PAST_DAY } });
+    fireEvent.change(field("Початок"), { target: { value: "18:00" } });
+    fireEvent.change(screen.getByLabelText("Заняття"), {
+      target: { value: "__new__" },
+    });
+
+    fireEvent.change(field("Назва заняття"), {
+      target: { value: "TRX у моєму залі" },
+    });
+    fireEvent.click(screen.getByRole("tab", { name: "Інтенсивне" }));
+    fireEvent.click(screen.getByText("Зберегти заняття"));
+
+    expect(onCreateActivity).toHaveBeenCalledTimes(1);
+    const created = (onCreateActivity as ReturnType<typeof vi.fn>).mock
+      .calls[0]![0] as { id: string; nameUk: string; met: number };
+    expect(created.nameUk).toBe("TRX у моєму залі");
+    // «Інтенсивне» - опорна точка Compendium, не довільне число.
+    expect(created.met).toBe(8.5);
+
+    // Створене одразу обрано: форма готова до «Записати» без зайвих кроків.
+    fireEvent.click(screen.getByText("Записати"));
+    const arg = onSubmit.mock.calls[0]![0] as {
+      activity?: { activityId: string; kcalBurned: number | null };
+    };
+    expect(arg.activity?.activityId).toBe(created.id);
+    // MET 8.5 × 60 кг × 0.75 год.
+    expect(arg.activity?.kcalBurned).toBe(383);
+  });
+
+  it("поки заводиш своє заняття, «Записати» заблоковано", () => {
+    // Інакше клік створив би сесію БЕЗ заняття - мовчки не те, що людина
+    // щойно почала робити.
+    setup();
+    fireEvent.change(screen.getByLabelText("Заняття"), {
+      target: { value: "__new__" },
+    });
+    expect(screen.getByText("Записати")).toBeDisabled();
+  });
+
+  it("без onCreateActivity опції «своє заняття» немає", () => {
+    setup({ onCreateActivity: undefined });
+    expect(screen.queryByText("+ Своє заняття")).toBeNull();
   });
 
   it("закривається хрестиком", () => {

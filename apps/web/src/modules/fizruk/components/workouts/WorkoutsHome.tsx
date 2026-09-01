@@ -17,6 +17,8 @@ type WorkoutShape = {
   startedAt: string;
   endedAt?: string | null;
   items?: WorkoutItem;
+  /** Оцінка витрат; показується довідково, на норму КБЖВ сама не впливає. */
+  kcalBurned?: number | undefined;
 };
 
 export interface WorkoutsHomeProps {
@@ -296,6 +298,9 @@ export function RecentWorkoutSummary({ workout }: RecentWorkoutSummaryProps) {
     ? Math.max(1, Math.round(summary.durationSec / 60))
     : null;
   if (durMin !== null) parts.push(`${durMin} хв`);
+  if (typeof workout.kcalBurned === "number" && workout.kcalBurned > 0) {
+    parts.push(`${workout.kcalBurned} ккал`);
+  }
   const subtitle = parts.length ? parts.join(" · ") : "порожнє тренування";
 
   return (
