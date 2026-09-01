@@ -42,6 +42,7 @@ describe("Icon coverage for Assistant Catalogue", () => {
     "search",
     "send",
     "sparkles",
+    "sergeant",
     "zap",
     "alert-triangle",
   ];

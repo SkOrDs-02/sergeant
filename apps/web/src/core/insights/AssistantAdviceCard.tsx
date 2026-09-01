@@ -234,7 +234,7 @@ export function AssistantAdviceCard({
                     )}
                   >
                     <Icon
-                      name="sparkle"
+                      name="sergeant"
                       size={13}
                       strokeWidth={2}
                       aria-hidden

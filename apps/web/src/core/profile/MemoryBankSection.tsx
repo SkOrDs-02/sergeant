@@ -247,7 +247,7 @@ export function MemoryBankSection() {
           усередині — цей коментар канонічний, решта секцій Профілю з тим
           самим фіксом лише посилаються на нього. */}
       <div className="px-4 py-3.5 flex items-center gap-2 border-b border-line">
-        <Icon name="sparkle" size={18} className="text-muted" />
+        <Icon name="sergeant" size={18} className="text-muted" />
         <span className="ml-auto text-style-caption text-muted">
           {entries.length} {pluralUa(entries.length, MEMORY_ENTRY_FORMS)}
           {" \u00b7 "}
@@ -266,7 +266,7 @@ export function MemoryBankSection() {
             <EmptyState
               size="sm"
               icon={
-                <Icon name="sparkle" size={22} className="text-brand-500" />
+                <Icon name="sergeant" size={22} className="text-brand-500" />
               }
               title="Банк памʼяті порожній"
               description="ШІ задасть кілька запитань щоб дізнатися про ваші алергії, цілі, уподобання та рівень активності"
@@ -276,7 +276,7 @@ export function MemoryBankSection() {
                   size="sm"
                   onClick={() => openMemoryChat("interview")}
                 >
-                  <Icon name="sparkle" size={14} className="mr-1.5" />
+                  <Icon name="sergeant" size={14} className="mr-1.5" />
                   Заповнити профіль
                 </Button>
               }
@@ -370,7 +370,7 @@ export function MemoryBankSection() {
                 onClick={() => openMemoryChat("interview")}
                 className="py-2.5 px-3 rounded-xl border border-line text-style-label text-muted hover:text-text hover:border-muted transition-colors flex items-center justify-center gap-1.5"
               >
-                <Icon name="sparkle" size={14} />
+                <Icon name="sergeant" size={14} />
                 Інтервʼю
               </button>
               <button

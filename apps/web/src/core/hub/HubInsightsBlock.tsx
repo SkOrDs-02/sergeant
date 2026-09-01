@@ -103,7 +103,7 @@ export function HubInsightsBlock({
       defaultOpen={insightsDefaultOpen}
       onOpenChange={setInsightsOpen}
       title="Що зараз важливо"
-      collapsedIcon="sparkles"
+      collapsedIcon="sergeant"
       collapsedSubtitle={
         coachLoading
           ? "Готую AI-пораду…"

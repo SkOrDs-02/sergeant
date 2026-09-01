@@ -400,6 +400,9 @@ export const messages = {
     reportNoData: "Немає даних",
     reportChartAria: "Графік",
     reportPrevious: "Минулий:",
+    // Нульова дельта до попереднього періоду — без стрілки (DeltaChip,
+    // анти-слоп аудит 2026-09-01 F4).
+    reportDeltaFlat: "без змін",
 
     // PR-42 — Free-tier chat-usage counter pill (`ChatUsageCounter.tsx`,
     // rendered in `HubChatHeader`). Hidden for Pro (unlimited). Numbers are

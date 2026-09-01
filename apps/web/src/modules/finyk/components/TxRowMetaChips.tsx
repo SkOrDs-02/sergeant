@@ -73,7 +73,7 @@ export function TxRowMetaChips({
       {/* 6.4: AI-source tag — surfaces auto-categorized expense rows
           so users can tell which categorizations are inferred (MCC +
           description match) vs explicit (user override, manual entry,
-          splits, transfers, fallback "other"). Sparkles icon-only
+          splits, transfers, fallback "other"). Sergeant-glyph icon-only
           keeps the row uncluttered — category label is right next to it.
           Skipped on:
             – manual expenses (`_manual`): user typed the category
@@ -91,11 +91,11 @@ export function TxRowMetaChips({
             variant="finyk"
             tone="soft"
             size="xs"
-            className="shrink-0 inline-flex items-center gap-1 rounded-full"
-            title="Категорію визначив AI на основі опису + MCC"
+            className="shrink-0 inline-flex items-center rounded-full"
+            title="Категорію визначив Сержант за описом і MCC"
+            aria-label="Категорію визначив Сержант за описом і MCC"
           >
-            <Icon name="sparkles" size={10} aria-hidden />
-            <span>AI</span>
+            <Icon name="sergeant" size={10} aria-hidden />
           </Badge>
         )}
       {catId === INTERNAL_TRANSFER_ID && (

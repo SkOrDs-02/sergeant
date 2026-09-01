@@ -143,12 +143,16 @@ describe("TxRow", () => {
   it("shows the AI badge for an auto-categorized expense", () => {
     // food MCC, no override, not manual, not transfer, not "other"
     render(<TxRow tx={mkTx({ mcc: 5411, description: "Сільпо" })} />);
-    expect(screen.getByText("AI")).toBeInTheDocument();
+    expect(
+      screen.getByLabelText("Категорію визначив Сержант за описом і MCC"),
+    ).toBeInTheDocument();
   });
 
   it("hides the AI badge for a manual expense", () => {
     render(<TxRow tx={mkTx({ _manual: true })} />);
-    expect(screen.queryByText("AI")).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText("Категорію визначив Сержант за описом і MCC"),
+    ).not.toBeInTheDocument();
   });
 
   it("renders income rows with a positive amount and no AI badge", () => {
@@ -156,7 +160,9 @@ describe("TxRow", () => {
       <TxRow tx={mkTx({ amount: 5000000, description: "Надходження ФОП" })} />,
     );
     expect(screen.getByText("Надходження ФОП")).toBeInTheDocument();
-    expect(screen.queryByText("AI")).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText("Категорію визначив Сержант за описом і MCC"),
+    ).not.toBeInTheDocument();
   });
 
   it("masks the amount when hideAmount is set", () => {
@@ -273,7 +279,9 @@ describe("TxRow", () => {
     // overrideCatId pinned to the internal-transfer category id
     render(<TxRow tx={mkTx()} overrideCatId="internal_transfer" />);
     expect(screen.getByText("не в статистиці")).toBeInTheDocument();
-    expect(screen.queryByText("AI")).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText("Категорію визначив Сержант за описом і MCC"),
+    ).not.toBeInTheDocument();
   });
 
   it("sets the amount through Money — sign, kopecks and symbol as own tiers", () => {

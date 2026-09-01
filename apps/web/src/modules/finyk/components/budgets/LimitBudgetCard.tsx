@@ -321,7 +321,7 @@ function LimitBudgetCardComponent({
                         className="flex-1 flex items-center justify-between gap-2 px-3 py-2 text-left hover:bg-panelHi transition-colors"
                       >
                         <span className="flex items-center gap-2 text-style-caption text-text">
-                          <Icon name="sparkles" size={16} aria-hidden />
+                          <Icon name="sergeant" size={16} aria-hidden />
                           AI-порада
                         </span>
                         <Icon
