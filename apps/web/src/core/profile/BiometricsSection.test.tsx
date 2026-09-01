@@ -96,6 +96,7 @@ describe("BiometricsSection", () => {
       activityLevel: "moderate",
       weightKg: 80,
       weightUpdatedAt: "2026-01-01T00:00:00.000Z",
+      countWorkoutsInGoal: false,
       updatedAt: "2026-01-01T00:00:00.000Z",
     };
     localStorage.setItem(STORAGE_KEYS.HUB_BIOMETRICS, JSON.stringify(stored));
@@ -265,6 +266,7 @@ describe("BiometricsSection — L-4 (значення поза діапазон�
     activityLevel: "moderate",
     weightKg: 80,
     weightUpdatedAt: "2026-01-01T00:00:00.000Z",
+    countWorkoutsInGoal: false,
     updatedAt: "2026-01-01T00:00:00.000Z",
   };
 
