@@ -3,11 +3,13 @@ import type {
   Workout,
   WorkoutItem,
 } from "@sergeant/fizruk-domain";
+import { useState } from "react";
 import { FizrukData } from "@sergeant/fizruk-domain";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { WorkoutItemTypeSwitcher } from "./WorkoutItemTypeSwitcher";
+import { ExercisePhotoViewer } from "./ExercisePhotoViewer";
 
 type RecExerciseFn = typeof recoveryConflictsForExerciseFn;
 type RecoveryByMap = Parameters<RecExerciseFn>[1];
@@ -64,6 +66,9 @@ export function ExerciseDetailSheet({
   onNavigate,
   updateItem,
 }: ExerciseDetailSheetProps) {
+  // Вище раннього `return null`: хук не можна викликати умовно.
+  const [viewerOpen, setViewerOpen] = useState(false);
+
   if (!selected) return null;
 
   const activeItem =
@@ -83,6 +88,7 @@ export function ExerciseDetailSheet({
   const level =
     typeof selected["level"] === "string" ? selected["level"] : null;
   const images = FizrukData.exerciseImagePaths(selected.id);
+  const exerciseTitle = selected.name?.uk || selected.name?.en || "Вправа";
   const equipmentLabels: string[] = Array.isArray(selected["equipmentUk"])
     ? (selected["equipmentUk"] as string[]).filter(
         (eq) => typeof eq === "string",
@@ -147,17 +153,24 @@ export function ExerciseDetailSheet({
       {images.length > 0 && (
         <div className="mb-4 -mx-5 px-5 overflow-x-auto no-scrollbar">
           <div className="flex gap-3">
-            {images.map((src) => (
-              <img
+            {images.map((src, i) => (
+              <button
                 key={src}
-                src={src}
-                alt={selected?.name?.uk || selected?.name?.en || "exercise"}
-                loading="lazy"
-                decoding="async"
-                width="160"
-                height="160"
-                className="h-40 w-40 rounded-2xl object-cover border border-line bg-bg"
-              />
+                type="button"
+                className="shrink-0 rounded-2xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fizruk"
+                onClick={() => setViewerOpen(true)}
+                aria-label={`${exerciseTitle}: відкрити перегляд, кадр ${i + 1}`}
+              >
+                <img
+                  src={src}
+                  alt={exerciseTitle}
+                  loading="lazy"
+                  decoding="async"
+                  width="160"
+                  height="160"
+                  className="h-40 w-40 rounded-2xl object-cover border border-line bg-bg"
+                />
+              </button>
             ))}
           </div>
         </div>
@@ -318,6 +331,15 @@ export function ExerciseDetailSheet({
           </Button>
         )}
       </div>
+
+      {viewerOpen && (
+        <ExercisePhotoViewer
+          open
+          onClose={() => setViewerOpen(false)}
+          images={images}
+          title={exerciseTitle}
+        />
+      )}
     </Sheet>
   );
 }
