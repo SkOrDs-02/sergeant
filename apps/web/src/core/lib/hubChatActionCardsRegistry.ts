@@ -13,6 +13,11 @@
  * switch cases (`summaryFor`/`iconFor`/`titleFor`).
  */
 import type { ChatAction } from "./chatActions/types";
+import {
+  categoryLabelFor,
+  habitNameFor,
+  mealTypeLabelFor,
+} from "./hubChatActionCardsHelpers";
 
 type SummaryInput = Record<string, unknown>;
 
@@ -65,7 +70,7 @@ const SUMMARY_REGISTRY: Record<string, SummaryFn> = {
 
   log_meal: (input) =>
     joinParts([
-      stringField(input, "meal_type"),
+      mealTypeLabelFor(stringField(input, "meal_type")),
       stringField(input, "description") || stringField(input, "name"),
       numberField(input, "calories") !== undefined
         ? `${numberField(input, "calories")} ккал`
@@ -92,10 +97,18 @@ const SUMMARY_REGISTRY: Record<string, SummaryFn> = {
         : undefined,
     ]),
 
+  // AI-4 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`) —
+  // `habitNameFor` резолвить `hab_<uuid>` у назву звички з локального
+  // стану Рутини; raw id — fallback, коли звички вже немає локально
+  // (видалена / ще не синхронізована), а не типовий шлях.
   mark_habit_done: (input) =>
-    stringField(input, "habit_id") || stringField(input, "name"),
+    habitNameFor(stringField(input, "habit_id")) ||
+    stringField(input, "habit_id") ||
+    stringField(input, "name"),
   create_habit: (input) =>
-    stringField(input, "habit_id") || stringField(input, "name"),
+    stringField(input, "name") ||
+    habitNameFor(stringField(input, "habit_id")) ||
+    stringField(input, "habit_id"),
 
   set_habit_schedule: (input) => {
     const days = input["days"];
@@ -107,7 +120,8 @@ const SUMMARY_REGISTRY: Record<string, SummaryFn> = {
   },
 
   pause_habit: (input) => {
-    const habit = stringField(input, "habit_id");
+    const rawHabitId = stringField(input, "habit_id");
+    const habit = habitNameFor(rawHabitId) || rawHabitId;
     if (input["paused"] === false) {
       return habit ? `${habit} · повернення з паузи` : "повернення з паузи";
     }
@@ -155,7 +169,8 @@ const SUMMARY_REGISTRY: Record<string, SummaryFn> = {
 
   set_budget_limit: (input) =>
     joinParts([
-      stringField(input, "category_id"),
+      categoryLabelFor(stringField(input, "category_id")) ||
+        stringField(input, "category_id"),
       numberField(input, "limit") !== undefined ||
       numberField(input, "target_amount") !== undefined
         ? `${numberField(input, "limit") ?? numberField(input, "target_amount")} ₴`
@@ -163,7 +178,8 @@ const SUMMARY_REGISTRY: Record<string, SummaryFn> = {
     ]),
   update_budget: (input) =>
     joinParts([
-      stringField(input, "category_id"),
+      categoryLabelFor(stringField(input, "category_id")) ||
+        stringField(input, "category_id"),
       numberField(input, "limit") !== undefined ||
       numberField(input, "target_amount") !== undefined
         ? `${numberField(input, "limit") ?? numberField(input, "target_amount")} ₴`
@@ -235,19 +251,22 @@ const SUMMARY_REGISTRY: Record<string, SummaryFn> = {
   export_report: (input) =>
     `Період: ${stringField(input, "period") || "month"}`,
 
-  create_reminder: (input) =>
-    joinParts(
+  create_reminder: (input) => {
+    const rawHabitId = stringField(input, "habit_id");
+    return joinParts(
       [
-        stringField(input, "habit_id"),
+        habitNameFor(rawHabitId) || rawHabitId,
         stringField(input, "time")
           ? `о ${stringField(input, "time")}`
           : undefined,
       ],
       " ",
-    ),
+    );
+  },
 
   complete_habit_for_date: (input) => {
-    const habitId = stringField(input, "habit_id");
+    const rawHabitId = stringField(input, "habit_id");
+    const habitId = habitNameFor(rawHabitId) || rawHabitId;
     const date = stringField(input, "date");
     const state = input["completed"] === false ? "не виконано" : "виконано";
     if (habitId && date) return `${habitId} · ${date} · ${state}`;
@@ -255,8 +274,14 @@ const SUMMARY_REGISTRY: Record<string, SummaryFn> = {
     return undefined;
   },
 
-  archive_habit: (input) => stringField(input, "habit_id"),
-  edit_habit: (input) => stringField(input, "habit_id"),
+  archive_habit: (input) => {
+    const rawHabitId = stringField(input, "habit_id");
+    return habitNameFor(rawHabitId) || rawHabitId;
+  },
+  edit_habit: (input) => {
+    const rawHabitId = stringField(input, "habit_id");
+    return habitNameFor(rawHabitId) || rawHabitId;
+  },
 
   add_calendar_event: (input) =>
     joinParts([stringField(input, "name"), stringField(input, "date")]),
@@ -267,7 +292,8 @@ const SUMMARY_REGISTRY: Record<string, SummaryFn> = {
   },
 
   habit_stats: (input) => {
-    const habitId = stringField(input, "habit_id");
+    const rawHabitId = stringField(input, "habit_id");
+    const habitId = habitNameFor(rawHabitId) || rawHabitId;
     const periodDays = numberField(input, "period_days") ?? 30;
     if (habitId) return `${habitId} · ${periodDays} днів`;
     return undefined;
@@ -297,7 +323,10 @@ const SUMMARY_REGISTRY: Record<string, SummaryFn> = {
     ]),
 
   suggest_meal: (input) =>
-    joinParts([stringField(input, "meal_type"), stringField(input, "focus")]),
+    joinParts([
+      mealTypeLabelFor(stringField(input, "meal_type")),
+      stringField(input, "focus"),
+    ]),
 
   copy_meal_from_date: (input) =>
     joinParts([
