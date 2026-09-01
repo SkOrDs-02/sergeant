@@ -41,7 +41,7 @@ XLSX- і HTML-грід-білдери, preview перед записом, жур
 **клієнтський**: серверної теки `apps/server/src/modules/fizruk/` не існує
 (перевірено `ls apps/server/src/modules/`), а дані фізрука потрапляють у
 Postgres виключно через оп-лог у
-[`modules/sync/fizruk/applySync.ts`](../../../apps/server/src/modules/sync/fizruk/applySync.ts).
+[`modules/sync/fizruk/applySync.ts`](../../../../apps/server/src/modules/sync/fizruk/applySync.ts).
 Джерело істини - SQLite на пристрої.
 
 Тому спільний шар їде в **новий пакет `packages/tabular-import/`**, доступний і
@@ -53,7 +53,7 @@ XLSX/ZIP це великий шмат коду, який потягнувся б
 План каже «переміщення без правок, лише перейменування». Насправді там дві
 фінансові прив'язки **в коді**, не в коментарях:
 
-- `HEADER_HINTS` ([statementFile.ts:137](../../../apps/server/src/modules/finyk/import/statementFile.ts))
+- `HEADER_HINTS` ([statementFile.ts:137](../../../../apps/server/src/modules/finyk/import/statementFile.ts))
   - евристика пошуку рядка заголовка, налаштована на банк: `валют`, `картк`,
     `рахун`, `баланс`, `mcc`, `debit`, `credit`.
 - Чотири user-facing тексти помилок українською: «PDF-виписки поки не читаю.
@@ -92,7 +92,7 @@ XLSX/ZIP це великий шмат коду, який потягнувся б
 - **Адаптер Strong - клієнтський**, у `apps/web/src/modules/fizruk/`. Пише через
   ті самі шляхи, що ручне введення (dualwrite → sync), а не в обхід. Прецедент
   клієнтського масового запису вже є:
-  [`lib/demoSeedImport.ts`](../../../apps/web/src/modules/fizruk/lib/demoSeedImport.ts).
+  [`lib/demoSeedImport.ts`](../../../../apps/web/src/modules/fizruk/lib/demoSeedImport.ts).
 - **Назви вправ: автозбіг плюс ручне звіряння.** Впевнені збіги мапимо самі
   через наявний `searchExercises` (він уже ранжує по назвах, аліасах і описі);
   решта йде в екран звіряння, де людина обирає вправу з каталогу або пропускає
