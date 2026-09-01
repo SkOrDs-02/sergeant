@@ -144,19 +144,38 @@ describe("WorkoutCatalogSection — equipment filter", () => {
     expect(setEquipmentFilter).toHaveBeenCalledWith(["barbell"]);
   });
 
-  it("shows the 'Скинути' button when a filter is active and resets on click", () => {
+  it("shows one reset control and clears both catalog filters", () => {
     const setEquipmentFilter = vi.fn();
+    const setLocationFilter = vi.fn();
+    const setQ = vi.fn();
     render(
       <WorkoutCatalogSection
         {...baseProps({
+          q: "жим",
           equipmentFilter: ["barbell"],
+          locationFilter: "home",
           setEquipmentFilter,
+          setLocationFilter,
+          setQ,
         })}
       />,
     );
-    const resetBtn = screen.getByRole("button", { name: "Скинути" });
+    const resetBtn = screen.getByRole("button", {
+      name: "Скинути фільтри",
+    });
     fireEvent.click(resetBtn);
     expect(setEquipmentFilter).toHaveBeenCalledWith([]);
+    expect(setLocationFilter).toHaveBeenCalledWith("");
+    expect(setQ).not.toHaveBeenCalled();
+  });
+
+  it("shows the reset control when only a location filter is active", () => {
+    render(
+      <WorkoutCatalogSection {...baseProps({ locationFilter: "outdoor" })} />,
+    );
+    expect(
+      screen.getByRole("button", { name: "Скинути фільтри" }),
+    ).toBeInTheDocument();
   });
 
   it("renders no equipment section when equipmentUk is empty", () => {
