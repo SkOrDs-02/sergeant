@@ -78,7 +78,7 @@ export const nutritionPageMessages = {
    */
   weekKcal: {
     heading: "Тиждень · ккал",
-    logLink: "Журнал →",
+    logLink: "Журнал",
     chartAriaLabel: "Калорії за тиждень",
     kcalUnit: "ккал",
     goalPrefix: "ціль",

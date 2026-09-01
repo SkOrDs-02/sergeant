@@ -390,7 +390,7 @@ function CapabilityRow({ capability, onActivate }: CapabilityRowProps) {
           <span className="text-style-label text-text">{capability.label}</span>
           {capability.isNew && (
             <BadgeChip
-              tone="success"
+              tone="brand"
               icon="sparkles"
               label="Новинка"
               title="Нещодавно додана можливість"
@@ -449,7 +449,7 @@ function CapabilityLegend() {
         критична дія
       </span>
       <span className="inline-flex items-center gap-1.5 text-style-caption text-subtle">
-        <BadgeChip tone="success" icon="sparkles" label="Новинка" />
+        <BadgeChip tone="brand" icon="sparkles" label="Новинка" />
         нещодавно додано
       </span>
     </div>
@@ -457,7 +457,7 @@ function CapabilityLegend() {
 }
 
 interface BadgeChipProps {
-  tone: "brand" | "warning" | "success";
+  tone: "brand" | "warning";
   icon: string;
   label: string;
   title?: string;

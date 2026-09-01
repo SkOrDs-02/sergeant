@@ -3,6 +3,7 @@
  * Status: Active
  */
 import { useMemo, useEffect, useRef, useState, useCallback } from "react";
+import { ucFirst } from "@shared/lib/ui/ucFirst";
 import {
   trackEvent,
   ANALYTICS_EVENTS,
@@ -505,11 +506,13 @@ export function useOverviewData({
   // claims "Понад 50% запланованого" with nothing planned.
   const spendPlanRatio = hasExpensePlan ? spent / planExpense : 0;
 
-  const dateLabel = new Date(nowMs).toLocaleDateString("uk-UA", {
-    timeZone: "Europe/Kyiv",
-    day: "numeric",
-    month: "long",
-  });
+  const dateLabel = ucFirst(
+    new Date(nowMs).toLocaleDateString("uk-UA", {
+      timeZone: "Europe/Kyiv",
+      day: "numeric",
+      month: "long",
+    }),
+  );
 
   return {
     // Mono state
