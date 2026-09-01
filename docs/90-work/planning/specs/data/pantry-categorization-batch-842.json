@@ -1,0 +1,7580 @@
+[
+  {
+    "name": "Хліб пшеничний",
+    "set": "corpus",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Хліб житній",
+    "set": "corpus",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Хліб цільнозерновий",
+    "set": "corpus",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Батон",
+    "set": "corpus",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Лаваш",
+    "set": "corpus",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Сухарі",
+    "set": "corpus",
+    "deterministic": "grains",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Хлібці рисові",
+    "set": "corpus",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Багет",
+    "set": "corpus",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Чіабата",
+    "set": "corpus",
+    "deterministic": "grains",
+    "keywordCats": ["nuts_seeds", "grains"],
+    "collision": true,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Тортилья пшенична",
+    "set": "corpus",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Хлібець гречаний",
+    "set": "corpus",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Булочка для бургера",
+    "set": "corpus",
+    "deterministic": "grains",
+    "keywordCats": ["ready_meals", "grains"],
+    "collision": true,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Круасан",
+    "set": "corpus",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "sweets_snacks",
+    "agree": false
+  },
+  {
+    "name": "Булочка здобна",
+    "set": "corpus",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "sweets_snacks",
+    "agree": false
+  },
+  {
+    "name": "Пиріжок з капустою",
+    "set": "corpus",
+    "deterministic": "grains",
+    "keywordCats": ["vegetables"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": false
+  },
+  {
+    "name": "Пиріжок з мʼясом",
+    "set": "corpus",
+    "deterministic": "grains",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": false
+  },
+  {
+    "name": "Маффін",
+    "set": "corpus",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "sweets_snacks",
+    "agree": false
+  },
+  {
+    "name": "Пончик",
+    "set": "corpus",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "sweets_snacks",
+    "agree": false
+  },
+  {
+    "name": "Еклер",
+    "set": "corpus",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "sweets_snacks",
+    "agree": false
+  },
+  {
+    "name": "Кава (без цукру)",
+    "set": "corpus",
+    "deterministic": "drinks",
+    "keywordCats": ["drinks", "pantry"],
+    "collision": true,
+    "ai": "drinks",
+    "agree": true
+  },
+  {
+    "name": "Чай (без цукру)",
+    "set": "corpus",
+    "deterministic": "drinks",
+    "keywordCats": ["drinks", "pantry"],
+    "collision": true,
+    "ai": "drinks",
+    "agree": true
+  },
+  {
+    "name": "Апельсиновий сік",
+    "set": "corpus",
+    "deterministic": "drinks",
+    "keywordCats": ["drinks", "fruits"],
+    "collision": true,
+    "ai": "drinks",
+    "agree": true
+  },
+  {
+    "name": "Яблучний сік",
+    "set": "corpus",
+    "deterministic": "drinks",
+    "keywordCats": ["drinks"],
+    "collision": false,
+    "ai": "drinks",
+    "agree": true
+  },
+  {
+    "name": "Лате",
+    "set": "corpus",
+    "deterministic": "drinks",
+    "keywordCats": ["drinks"],
+    "collision": false,
+    "ai": "drinks",
+    "agree": true
+  },
+  {
+    "name": "Капучіно",
+    "set": "corpus",
+    "deterministic": "drinks",
+    "keywordCats": ["drinks"],
+    "collision": false,
+    "ai": "drinks",
+    "agree": true
+  },
+  {
+    "name": "Американо",
+    "set": "corpus",
+    "deterministic": "drinks",
+    "keywordCats": ["drinks"],
+    "collision": false,
+    "ai": "drinks",
+    "agree": true
+  },
+  {
+    "name": "Какао з молоком",
+    "set": "corpus",
+    "deterministic": "drinks",
+    "keywordCats": ["drinks", "dairy_eggs"],
+    "collision": true,
+    "ai": "drinks",
+    "agree": true
+  },
+  {
+    "name": "Матча (лате)",
+    "set": "corpus",
+    "deterministic": "drinks",
+    "keywordCats": ["drinks"],
+    "collision": false,
+    "ai": "drinks",
+    "agree": true
+  },
+  {
+    "name": "Кола",
+    "set": "corpus",
+    "deterministic": "drinks",
+    "keywordCats": ["drinks"],
+    "collision": false,
+    "ai": "drinks",
+    "agree": true
+  },
+  {
+    "name": "Кола Zero",
+    "set": "corpus",
+    "deterministic": "drinks",
+    "keywordCats": ["drinks"],
+    "collision": false,
+    "ai": "drinks",
+    "agree": true
+  },
+  {
+    "name": "Спрайт",
+    "set": "corpus",
+    "deterministic": "drinks",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "drinks",
+    "agree": true
+  },
+  {
+    "name": "Фанта",
+    "set": "corpus",
+    "deterministic": "drinks",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "drinks",
+    "agree": true
+  },
+  {
+    "name": "Енергетик Red Bull",
+    "set": "corpus",
+    "deterministic": "drinks",
+    "keywordCats": ["drinks"],
+    "collision": false,
+    "ai": "drinks",
+    "agree": true
+  },
+  {
+    "name": "Квас",
+    "set": "corpus",
+    "deterministic": "drinks",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "drinks",
+    "agree": true
+  },
+  {
+    "name": "Узвар",
+    "set": "corpus",
+    "deterministic": "drinks",
+    "keywordCats": ["drinks"],
+    "collision": false,
+    "ai": "drinks",
+    "agree": true
+  },
+  {
+    "name": "Компот (без цукру)",
+    "set": "corpus",
+    "deterministic": "drinks",
+    "keywordCats": ["drinks", "pantry"],
+    "collision": true,
+    "ai": "drinks",
+    "agree": true
+  },
+  {
+    "name": "Пиво світле 4.5%",
+    "set": "corpus",
+    "deterministic": "alcohol",
+    "keywordCats": ["alcohol"],
+    "collision": false,
+    "ai": "alcohol",
+    "agree": true
+  },
+  {
+    "name": "Пиво темне",
+    "set": "corpus",
+    "deterministic": "alcohol",
+    "keywordCats": ["alcohol"],
+    "collision": false,
+    "ai": "alcohol",
+    "agree": true
+  },
+  {
+    "name": "Вино сухе",
+    "set": "corpus",
+    "deterministic": "alcohol",
+    "keywordCats": ["alcohol"],
+    "collision": false,
+    "ai": "alcohol",
+    "agree": true
+  },
+  {
+    "name": "Вино напівсолодке",
+    "set": "corpus",
+    "deterministic": "alcohol",
+    "keywordCats": ["alcohol"],
+    "collision": false,
+    "ai": "alcohol",
+    "agree": true
+  },
+  {
+    "name": "Шампанське",
+    "set": "corpus",
+    "deterministic": "alcohol",
+    "keywordCats": ["alcohol"],
+    "collision": false,
+    "ai": "alcohol",
+    "agree": true
+  },
+  {
+    "name": "Горілка 40%",
+    "set": "corpus",
+    "deterministic": "alcohol",
+    "keywordCats": ["alcohol"],
+    "collision": false,
+    "ai": "alcohol",
+    "agree": true
+  },
+  {
+    "name": "Віскі 40%",
+    "set": "corpus",
+    "deterministic": "alcohol",
+    "keywordCats": ["alcohol"],
+    "collision": false,
+    "ai": "alcohol",
+    "agree": true
+  },
+  {
+    "name": "Молоко 2.5%",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Молоко 1%",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Молоко 3.2%",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Кефір 2.5%",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Ряжанка",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Йогурт натуральний 2%",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Сир кисломолочний 5%",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Сир кисломолочний 0%",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Сир твердий",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Сир моцарела",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Сир фета",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Сир пармезан",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Сир рікотта",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Сметана 20%",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Сметана 10%",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Вершки 20%",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Вершки 10%",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Вершкове масло",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Морозиво вершкове",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["sweets_snacks", "dairy_eggs"],
+    "collision": true,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Молоко безлактозне",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Молоко знежирене",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Молоко кокосове",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["fruits", "dairy_eggs"],
+    "collision": true,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Молоко мигдалеве",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["nuts_seeds", "dairy_eggs"],
+    "collision": true,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Молоко вівсяне",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs", "grains"],
+    "collision": true,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Молоко соєве",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Йогурт грецький 2%",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Йогурт грецький 0%",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Йогурт питний",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Сир кисломолочний 9%",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Сир кисломолочний 18%",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Сирок глазурований",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "sweets_snacks",
+    "agree": false
+  },
+  {
+    "name": "Сир чеддер",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Сир гауда",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Сир камамбер",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Сир брі",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Сир дор блю",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Сир бринза",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Сир сулугуні",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Сир вершковий",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Маскарпоне",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Сметана 15%",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Сметана 30%",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Ацидофілін",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Сироватка",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Яйце куряче",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["meat", "dairy_eggs"],
+    "collision": true,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Яйце варене",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": false
+  },
+  {
+    "name": "Яєчня",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": false
+  },
+  {
+    "name": "Омлет",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": false
+  },
+  {
+    "name": "Яйце перепелине",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Яєчний білок",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Яєчний жовток",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Лосось",
+    "set": "corpus",
+    "deterministic": "fish",
+    "keywordCats": ["fish"],
+    "collision": false,
+    "ai": "fish",
+    "agree": true
+  },
+  {
+    "name": "Тунець (у власному соку)",
+    "set": "corpus",
+    "deterministic": "fish",
+    "keywordCats": ["fish"],
+    "collision": false,
+    "ai": "fish",
+    "agree": true
+  },
+  {
+    "name": "Оселедець",
+    "set": "corpus",
+    "deterministic": "fish",
+    "keywordCats": ["fish"],
+    "collision": false,
+    "ai": "fish",
+    "agree": true
+  },
+  {
+    "name": "Скумбрія",
+    "set": "corpus",
+    "deterministic": "fish",
+    "keywordCats": ["fish"],
+    "collision": false,
+    "ai": "fish",
+    "agree": true
+  },
+  {
+    "name": "Тріска",
+    "set": "corpus",
+    "deterministic": "fish",
+    "keywordCats": ["fish"],
+    "collision": false,
+    "ai": "fish",
+    "agree": true
+  },
+  {
+    "name": "Форель",
+    "set": "corpus",
+    "deterministic": "fish",
+    "keywordCats": ["fish"],
+    "collision": false,
+    "ai": "fish",
+    "agree": true
+  },
+  {
+    "name": "Горбуша",
+    "set": "corpus",
+    "deterministic": "fish",
+    "keywordCats": ["fish"],
+    "collision": false,
+    "ai": "fish",
+    "agree": true
+  },
+  {
+    "name": "Минтай",
+    "set": "corpus",
+    "deterministic": "fish",
+    "keywordCats": ["fish"],
+    "collision": false,
+    "ai": "fish",
+    "agree": true
+  },
+  {
+    "name": "Короп",
+    "set": "corpus",
+    "deterministic": "fish",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "fish",
+    "agree": true
+  },
+  {
+    "name": "Тілапія",
+    "set": "corpus",
+    "deterministic": "fish",
+    "keywordCats": ["fish"],
+    "collision": false,
+    "ai": "fish",
+    "agree": true
+  },
+  {
+    "name": "Кальмар",
+    "set": "corpus",
+    "deterministic": "fish",
+    "keywordCats": ["fish"],
+    "collision": false,
+    "ai": "fish",
+    "agree": true
+  },
+  {
+    "name": "Креветки",
+    "set": "corpus",
+    "deterministic": "fish",
+    "keywordCats": ["fish"],
+    "collision": false,
+    "ai": "fish",
+    "agree": true
+  },
+  {
+    "name": "Мідії",
+    "set": "corpus",
+    "deterministic": "fish",
+    "keywordCats": ["fish"],
+    "collision": false,
+    "ai": "fish",
+    "agree": true
+  },
+  {
+    "name": "Ікра червона",
+    "set": "corpus",
+    "deterministic": "fish",
+    "keywordCats": ["fish"],
+    "collision": false,
+    "ai": "fish",
+    "agree": true
+  },
+  {
+    "name": "Ікра чорна",
+    "set": "corpus",
+    "deterministic": "fish",
+    "keywordCats": ["fish"],
+    "collision": false,
+    "ai": "fish",
+    "agree": true
+  },
+  {
+    "name": "Крабові палички",
+    "set": "corpus",
+    "deterministic": "fish",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "fish",
+    "agree": true
+  },
+  {
+    "name": "Оселедець солений",
+    "set": "corpus",
+    "deterministic": "fish",
+    "keywordCats": ["fish", "pantry"],
+    "collision": true,
+    "ai": "fish",
+    "agree": true
+  },
+  {
+    "name": "Шпроти в олії",
+    "set": "corpus",
+    "deterministic": "fish",
+    "keywordCats": ["canned", "pantry"],
+    "collision": true,
+    "ai": "canned",
+    "agree": false
+  },
+  {
+    "name": "Сардина в олії",
+    "set": "corpus",
+    "deterministic": "fish",
+    "keywordCats": ["fish", "pantry"],
+    "collision": true,
+    "ai": "canned",
+    "agree": false
+  },
+  {
+    "name": "Судак",
+    "set": "corpus",
+    "deterministic": "fish",
+    "keywordCats": ["fish"],
+    "collision": false,
+    "ai": "fish",
+    "agree": true
+  },
+  {
+    "name": "Сом",
+    "set": "corpus",
+    "deterministic": "fish",
+    "keywordCats": ["fish"],
+    "collision": false,
+    "ai": "fish",
+    "agree": true
+  },
+  {
+    "name": "Хек",
+    "set": "corpus",
+    "deterministic": "fish",
+    "keywordCats": ["fish"],
+    "collision": false,
+    "ai": "fish",
+    "agree": true
+  },
+  {
+    "name": "Оселедець маринований",
+    "set": "corpus",
+    "deterministic": "fish",
+    "keywordCats": ["canned", "fish"],
+    "collision": true,
+    "ai": "fish",
+    "agree": true
+  },
+  {
+    "name": "Устриці",
+    "set": "corpus",
+    "deterministic": "fish",
+    "keywordCats": ["fish"],
+    "collision": false,
+    "ai": "fish",
+    "agree": true
+  },
+  {
+    "name": "Восьминіг",
+    "set": "corpus",
+    "deterministic": "fish",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "fish",
+    "agree": true
+  },
+  {
+    "name": "Млинці заморожені",
+    "set": "corpus",
+    "deterministic": "frozen",
+    "keywordCats": ["ready_meals", "frozen"],
+    "collision": true,
+    "ai": "frozen",
+    "agree": true
+  },
+  {
+    "name": "Пельмені заморожені",
+    "set": "corpus",
+    "deterministic": "frozen",
+    "keywordCats": ["ready_meals", "frozen"],
+    "collision": true,
+    "ai": "frozen",
+    "agree": true
+  },
+  {
+    "name": "Вареники заморожені",
+    "set": "corpus",
+    "deterministic": "frozen",
+    "keywordCats": ["ready_meals", "frozen"],
+    "collision": true,
+    "ai": "frozen",
+    "agree": true
+  },
+  {
+    "name": "Котлета рибна",
+    "set": "corpus",
+    "deterministic": "frozen",
+    "keywordCats": ["ready_meals", "fish"],
+    "collision": true,
+    "ai": "ready_meals",
+    "agree": false
+  },
+  {
+    "name": "Мюслі батончик",
+    "set": "corpus",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["sweets_snacks", "grains"],
+    "collision": true,
+    "ai": "sweets_snacks",
+    "agree": true
+  },
+  {
+    "name": "Яблуко",
+    "set": "corpus",
+    "deterministic": "fruits",
+    "keywordCats": ["fruits"],
+    "collision": false,
+    "ai": "fruits",
+    "agree": true
+  },
+  {
+    "name": "Груша",
+    "set": "corpus",
+    "deterministic": "fruits",
+    "keywordCats": ["fruits"],
+    "collision": false,
+    "ai": "fruits",
+    "agree": true
+  },
+  {
+    "name": "Банан",
+    "set": "corpus",
+    "deterministic": "fruits",
+    "keywordCats": ["fruits"],
+    "collision": false,
+    "ai": "fruits",
+    "agree": true
+  },
+  {
+    "name": "Апельсин",
+    "set": "corpus",
+    "deterministic": "fruits",
+    "keywordCats": ["fruits"],
+    "collision": false,
+    "ai": "fruits",
+    "agree": true
+  },
+  {
+    "name": "Мандарин",
+    "set": "corpus",
+    "deterministic": "fruits",
+    "keywordCats": ["fruits"],
+    "collision": false,
+    "ai": "fruits",
+    "agree": true
+  },
+  {
+    "name": "Лимон",
+    "set": "corpus",
+    "deterministic": "fruits",
+    "keywordCats": ["fruits"],
+    "collision": false,
+    "ai": "fruits",
+    "agree": true
+  },
+  {
+    "name": "Грейпфрут",
+    "set": "corpus",
+    "deterministic": "fruits",
+    "keywordCats": ["fruits"],
+    "collision": false,
+    "ai": "fruits",
+    "agree": true
+  },
+  {
+    "name": "Ківі",
+    "set": "corpus",
+    "deterministic": "fruits",
+    "keywordCats": ["fruits"],
+    "collision": false,
+    "ai": "fruits",
+    "agree": true
+  },
+  {
+    "name": "Манго",
+    "set": "corpus",
+    "deterministic": "fruits",
+    "keywordCats": ["fruits"],
+    "collision": false,
+    "ai": "fruits",
+    "agree": true
+  },
+  {
+    "name": "Ананас",
+    "set": "corpus",
+    "deterministic": "fruits",
+    "keywordCats": ["fruits"],
+    "collision": false,
+    "ai": "fruits",
+    "agree": true
+  },
+  {
+    "name": "Персик",
+    "set": "corpus",
+    "deterministic": "fruits",
+    "keywordCats": ["fruits"],
+    "collision": false,
+    "ai": "fruits",
+    "agree": true
+  },
+  {
+    "name": "Абрикос",
+    "set": "corpus",
+    "deterministic": "fruits",
+    "keywordCats": ["fruits"],
+    "collision": false,
+    "ai": "fruits",
+    "agree": true
+  },
+  {
+    "name": "Слива",
+    "set": "corpus",
+    "deterministic": "fruits",
+    "keywordCats": ["fruits"],
+    "collision": false,
+    "ai": "fruits",
+    "agree": true
+  },
+  {
+    "name": "Вишня",
+    "set": "corpus",
+    "deterministic": "fruits",
+    "keywordCats": ["fruits"],
+    "collision": false,
+    "ai": "fruits",
+    "agree": true
+  },
+  {
+    "name": "Черешня",
+    "set": "corpus",
+    "deterministic": "fruits",
+    "keywordCats": ["fruits"],
+    "collision": false,
+    "ai": "fruits",
+    "agree": true
+  },
+  {
+    "name": "Виноград",
+    "set": "corpus",
+    "deterministic": "fruits",
+    "keywordCats": ["fruits", "alcohol"],
+    "collision": true,
+    "ai": "fruits",
+    "agree": true
+  },
+  {
+    "name": "Полуниця",
+    "set": "corpus",
+    "deterministic": "fruits",
+    "keywordCats": ["fruits"],
+    "collision": false,
+    "ai": "fruits",
+    "agree": true
+  },
+  {
+    "name": "Малина",
+    "set": "corpus",
+    "deterministic": "fruits",
+    "keywordCats": ["fruits"],
+    "collision": false,
+    "ai": "fruits",
+    "agree": true
+  },
+  {
+    "name": "Чорниця",
+    "set": "corpus",
+    "deterministic": "fruits",
+    "keywordCats": ["fruits"],
+    "collision": false,
+    "ai": "fruits",
+    "agree": true
+  },
+  {
+    "name": "Смородина чорна",
+    "set": "corpus",
+    "deterministic": "fruits",
+    "keywordCats": ["fruits"],
+    "collision": false,
+    "ai": "fruits",
+    "agree": true
+  },
+  {
+    "name": "Смородина червона",
+    "set": "corpus",
+    "deterministic": "fruits",
+    "keywordCats": ["fruits"],
+    "collision": false,
+    "ai": "fruits",
+    "agree": true
+  },
+  {
+    "name": "Журавлина",
+    "set": "corpus",
+    "deterministic": "fruits",
+    "keywordCats": ["fruits"],
+    "collision": false,
+    "ai": "fruits",
+    "agree": true
+  },
+  {
+    "name": "Кавун",
+    "set": "corpus",
+    "deterministic": "fruits",
+    "keywordCats": ["fruits"],
+    "collision": false,
+    "ai": "fruits",
+    "agree": true
+  },
+  {
+    "name": "Диня",
+    "set": "corpus",
+    "deterministic": "fruits",
+    "keywordCats": ["fruits"],
+    "collision": false,
+    "ai": "fruits",
+    "agree": true
+  },
+  {
+    "name": "Хурма",
+    "set": "corpus",
+    "deterministic": "fruits",
+    "keywordCats": ["fruits"],
+    "collision": false,
+    "ai": "fruits",
+    "agree": true
+  },
+  {
+    "name": "Гранат",
+    "set": "corpus",
+    "deterministic": "fruits",
+    "keywordCats": ["fruits"],
+    "collision": false,
+    "ai": "fruits",
+    "agree": true
+  },
+  {
+    "name": "Інжир",
+    "set": "corpus",
+    "deterministic": "fruits",
+    "keywordCats": ["fruits"],
+    "collision": false,
+    "ai": "fruits",
+    "agree": true
+  },
+  {
+    "name": "Чорнослив",
+    "set": "corpus",
+    "deterministic": "fruits",
+    "keywordCats": ["fruits"],
+    "collision": false,
+    "ai": "fruits",
+    "agree": true
+  },
+  {
+    "name": "Родзинки",
+    "set": "corpus",
+    "deterministic": "fruits",
+    "keywordCats": ["fruits"],
+    "collision": false,
+    "ai": "fruits",
+    "agree": true
+  },
+  {
+    "name": "Кокос",
+    "set": "corpus",
+    "deterministic": "fruits",
+    "keywordCats": ["fruits"],
+    "collision": false,
+    "ai": "fruits",
+    "agree": true
+  },
+  {
+    "name": "Фініки",
+    "set": "corpus",
+    "deterministic": "fruits",
+    "keywordCats": ["fruits"],
+    "collision": false,
+    "ai": "fruits",
+    "agree": true
+  },
+  {
+    "name": "Курага",
+    "set": "corpus",
+    "deterministic": "fruits",
+    "keywordCats": ["fruits"],
+    "collision": false,
+    "ai": "fruits",
+    "agree": true
+  },
+  {
+    "name": "Фейхоа",
+    "set": "corpus",
+    "deterministic": "fruits",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "fruits",
+    "agree": true
+  },
+  {
+    "name": "Нектарин",
+    "set": "corpus",
+    "deterministic": "fruits",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "fruits",
+    "agree": true
+  },
+  {
+    "name": "Папайя",
+    "set": "corpus",
+    "deterministic": "fruits",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "fruits",
+    "agree": true
+  },
+  {
+    "name": "Агрус",
+    "set": "corpus",
+    "deterministic": "fruits",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "fruits",
+    "agree": true
+  },
+  {
+    "name": "Обліпиха",
+    "set": "corpus",
+    "deterministic": "fruits",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "fruits",
+    "agree": true
+  },
+  {
+    "name": "Лохина",
+    "set": "corpus",
+    "deterministic": "fruits",
+    "keywordCats": ["fruits"],
+    "collision": false,
+    "ai": "fruits",
+    "agree": true
+  },
+  {
+    "name": "Калина",
+    "set": "corpus",
+    "deterministic": "fruits",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "fruits",
+    "agree": true
+  },
+  {
+    "name": "Вівсянка (суха)",
+    "set": "corpus",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Вівсянка варена",
+    "set": "corpus",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": false
+  },
+  {
+    "name": "Рис (сухий)",
+    "set": "corpus",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Рис варений",
+    "set": "corpus",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": false
+  },
+  {
+    "name": "Гречка (суха)",
+    "set": "corpus",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Гречка варена",
+    "set": "corpus",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": false
+  },
+  {
+    "name": "Макарони (сухі)",
+    "set": "corpus",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Паста варена",
+    "set": "corpus",
+    "deterministic": "grains",
+    "keywordCats": ["sauces"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": false
+  },
+  {
+    "name": "Булгур (сухий)",
+    "set": "corpus",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Пшоно (сухе)",
+    "set": "corpus",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Перлова крупа (суха)",
+    "set": "corpus",
+    "deterministic": "grains",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Кіноа (суха)",
+    "set": "corpus",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Кус-кус (сухий)",
+    "set": "corpus",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Манна крупа",
+    "set": "corpus",
+    "deterministic": "grains",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Кукурудзяна крупа",
+    "set": "corpus",
+    "deterministic": "grains",
+    "keywordCats": ["vegetables", "grains"],
+    "collision": true,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Вівсяні пластівці швидкі",
+    "set": "corpus",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Мюслі",
+    "set": "corpus",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Гранола",
+    "set": "corpus",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Кукурудзяні пластівці",
+    "set": "corpus",
+    "deterministic": "grains",
+    "keywordCats": ["vegetables", "grains"],
+    "collision": true,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Пшоно варене",
+    "set": "corpus",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Булгур варений",
+    "set": "corpus",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Кіноа варена",
+    "set": "corpus",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Кус-кус варений",
+    "set": "corpus",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Перлова варена",
+    "set": "corpus",
+    "deterministic": "grains",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Рис бурий варений",
+    "set": "corpus",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Амарант",
+    "set": "corpus",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Полента",
+    "set": "corpus",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Квасоля (варена)",
+    "set": "corpus",
+    "deterministic": "legumes",
+    "keywordCats": ["legumes"],
+    "collision": false,
+    "ai": "legumes",
+    "agree": true
+  },
+  {
+    "name": "Сочевиця (варена)",
+    "set": "corpus",
+    "deterministic": "legumes",
+    "keywordCats": ["legumes"],
+    "collision": false,
+    "ai": "legumes",
+    "agree": true
+  },
+  {
+    "name": "Нут (варений)",
+    "set": "corpus",
+    "deterministic": "legumes",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "legumes",
+    "agree": true
+  },
+  {
+    "name": "Тофу",
+    "set": "corpus",
+    "deterministic": "legumes",
+    "keywordCats": ["legumes"],
+    "collision": false,
+    "ai": "legumes",
+    "agree": true
+  },
+  {
+    "name": "Едамаме",
+    "set": "corpus",
+    "deterministic": "legumes",
+    "keywordCats": ["legumes"],
+    "collision": false,
+    "ai": "legumes",
+    "agree": true
+  },
+  {
+    "name": "Горошок зелений",
+    "set": "corpus",
+    "deterministic": "legumes",
+    "keywordCats": ["vegetables", "legumes"],
+    "collision": true,
+    "ai": "vegetables",
+    "agree": false
+  },
+  {
+    "name": "Куряча грудка",
+    "set": "corpus",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Куряче стегно",
+    "set": "corpus",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Куряче крило",
+    "set": "corpus",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Індичка (філе)",
+    "set": "corpus",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Яловичина",
+    "set": "corpus",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Яловичий фарш",
+    "set": "corpus",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Яловичий стейк",
+    "set": "corpus",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Свинина",
+    "set": "corpus",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Свинячий фарш",
+    "set": "corpus",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Курячий фарш",
+    "set": "corpus",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Шинка",
+    "set": "corpus",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Бекон",
+    "set": "corpus",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Ковбаса варена",
+    "set": "corpus",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Ковбаса копчена",
+    "set": "corpus",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Сосиски",
+    "set": "corpus",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Котлета мʼясна",
+    "set": "corpus",
+    "deterministic": "meat",
+    "keywordCats": ["ready_meals", "meat"],
+    "collision": true,
+    "ai": "ready_meals",
+    "agree": false
+  },
+  {
+    "name": "Котлета куряча",
+    "set": "corpus",
+    "deterministic": "meat",
+    "keywordCats": ["ready_meals", "meat"],
+    "collision": true,
+    "ai": "ready_meals",
+    "agree": false
+  },
+  {
+    "name": "Кролик",
+    "set": "corpus",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Качка",
+    "set": "corpus",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Шашлик свинячий",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals", "meat"],
+    "collision": true,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Сало",
+    "set": "corpus",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Хамон",
+    "set": "corpus",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Пармська шинка",
+    "set": "corpus",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Саламі",
+    "set": "corpus",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Пепероні",
+    "set": "corpus",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Бастурма",
+    "set": "corpus",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Холодець",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Печінка куряча",
+    "set": "corpus",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Печінка яловича",
+    "set": "corpus",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Серце куряче",
+    "set": "corpus",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Шлунки курячі",
+    "set": "corpus",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Баранина",
+    "set": "corpus",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Гусятина",
+    "set": "corpus",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Телятина",
+    "set": "corpus",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Філе індички",
+    "set": "corpus",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Куряча ніжка",
+    "set": "corpus",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Котлета по-київськи",
+    "set": "corpus",
+    "deterministic": "meat",
+    "keywordCats": ["ready_meals"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": false
+  },
+  {
+    "name": "Нагетси курячі",
+    "set": "corpus",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": false
+  },
+  {
+    "name": "Мигдаль",
+    "set": "corpus",
+    "deterministic": "nuts_seeds",
+    "keywordCats": ["nuts_seeds"],
+    "collision": false,
+    "ai": "nuts_seeds",
+    "agree": true
+  },
+  {
+    "name": "Горіхи волоські",
+    "set": "corpus",
+    "deterministic": "nuts_seeds",
+    "keywordCats": ["nuts_seeds"],
+    "collision": false,
+    "ai": "nuts_seeds",
+    "agree": true
+  },
+  {
+    "name": "Арахіс",
+    "set": "corpus",
+    "deterministic": "nuts_seeds",
+    "keywordCats": ["nuts_seeds"],
+    "collision": false,
+    "ai": "nuts_seeds",
+    "agree": true
+  },
+  {
+    "name": "Кешью",
+    "set": "corpus",
+    "deterministic": "nuts_seeds",
+    "keywordCats": ["nuts_seeds"],
+    "collision": false,
+    "ai": "nuts_seeds",
+    "agree": true
+  },
+  {
+    "name": "Фісташки",
+    "set": "corpus",
+    "deterministic": "nuts_seeds",
+    "keywordCats": ["nuts_seeds"],
+    "collision": false,
+    "ai": "nuts_seeds",
+    "agree": true
+  },
+  {
+    "name": "Фундук",
+    "set": "corpus",
+    "deterministic": "nuts_seeds",
+    "keywordCats": ["nuts_seeds"],
+    "collision": false,
+    "ai": "nuts_seeds",
+    "agree": true
+  },
+  {
+    "name": "Насіння соняшнику",
+    "set": "corpus",
+    "deterministic": "nuts_seeds",
+    "keywordCats": ["nuts_seeds"],
+    "collision": false,
+    "ai": "nuts_seeds",
+    "agree": true
+  },
+  {
+    "name": "Насіння гарбуза",
+    "set": "corpus",
+    "deterministic": "nuts_seeds",
+    "keywordCats": ["nuts_seeds", "vegetables"],
+    "collision": true,
+    "ai": "nuts_seeds",
+    "agree": true
+  },
+  {
+    "name": "Насіння льону",
+    "set": "corpus",
+    "deterministic": "nuts_seeds",
+    "keywordCats": ["nuts_seeds"],
+    "collision": false,
+    "ai": "nuts_seeds",
+    "agree": true
+  },
+  {
+    "name": "Кунжут",
+    "set": "corpus",
+    "deterministic": "nuts_seeds",
+    "keywordCats": ["nuts_seeds"],
+    "collision": false,
+    "ai": "nuts_seeds",
+    "agree": true
+  },
+  {
+    "name": "Паста арахісова",
+    "set": "corpus",
+    "deterministic": "sauces",
+    "keywordCats": ["sauces", "nuts_seeds"],
+    "collision": true,
+    "ai": "sauces",
+    "agree": true
+  },
+  {
+    "name": "Оливкова олія",
+    "set": "corpus",
+    "deterministic": "pantry",
+    "keywordCats": ["pantry"],
+    "collision": false,
+    "ai": "pantry",
+    "agree": true
+  },
+  {
+    "name": "Олія соняшникова",
+    "set": "corpus",
+    "deterministic": "pantry",
+    "keywordCats": ["pantry"],
+    "collision": false,
+    "ai": "pantry",
+    "agree": true
+  },
+  {
+    "name": "Олія кокосова",
+    "set": "corpus",
+    "deterministic": "pantry",
+    "keywordCats": ["fruits", "pantry"],
+    "collision": true,
+    "ai": "pantry",
+    "agree": true
+  },
+  {
+    "name": "Вареники з картоплею",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals", "vegetables"],
+    "collision": true,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Вареники з сиром",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals", "dairy_eggs"],
+    "collision": true,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Пельмені",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals"],
+    "collision": false,
+    "ai": "frozen",
+    "agree": false
+  },
+  {
+    "name": "Борщ",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Пюре картопляне",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": ["vegetables"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Плов",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Тушкована капуста",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": ["vegetables"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Піца",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Суші/ролл",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Бургер",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Чізбургер",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Хот-дог",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Шаурма",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Картопля фрі",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": ["vegetables"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Картопля по-селянськи",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": ["vegetables"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Сендвіч з куркою",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals", "meat"],
+    "collision": true,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Ролл з лососем",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals", "fish"],
+    "collision": true,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Піца Маргарита",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Піца Пепероні",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals", "meat"],
+    "collision": true,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Піца 4 сири",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals", "dairy_eggs"],
+    "collision": true,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Паста карбонара",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": ["sauces"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Паста болоньєзе",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": ["sauces"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Лазанья",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Рагу овочеве",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Тушкована яловичина",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Олівʼє",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals", "pantry"],
+    "collision": true,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Вінегрет",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Оселедець під шубою",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": ["fish"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Цезар з куркою",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Грецький салат",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals", "meat"],
+    "collision": true,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Капрезе",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Салат з тунцем",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals", "meat"],
+    "collision": true,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Салат із буряка",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals", "vegetables", "meat"],
+    "collision": true,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Майонез",
+    "set": "corpus",
+    "deterministic": "sauces",
+    "keywordCats": ["sauces"],
+    "collision": false,
+    "ai": "sauces",
+    "agree": true
+  },
+  {
+    "name": "Кетчуп",
+    "set": "corpus",
+    "deterministic": "sauces",
+    "keywordCats": ["sauces"],
+    "collision": false,
+    "ai": "sauces",
+    "agree": true
+  },
+  {
+    "name": "Гірчиця",
+    "set": "corpus",
+    "deterministic": "sauces",
+    "keywordCats": ["sauces"],
+    "collision": false,
+    "ai": "sauces",
+    "agree": true
+  },
+  {
+    "name": "Соєвий соус",
+    "set": "corpus",
+    "deterministic": "sauces",
+    "keywordCats": ["sauces"],
+    "collision": false,
+    "ai": "sauces",
+    "agree": true
+  },
+  {
+    "name": "Томатна паста",
+    "set": "corpus",
+    "deterministic": "sauces",
+    "keywordCats": ["sauces", "vegetables"],
+    "collision": true,
+    "ai": "sauces",
+    "agree": true
+  },
+  {
+    "name": "Хумус",
+    "set": "corpus",
+    "deterministic": "sauces",
+    "keywordCats": ["sauces"],
+    "collision": false,
+    "ai": "sauces",
+    "agree": true
+  },
+  {
+    "name": "Песто",
+    "set": "corpus",
+    "deterministic": "sauces",
+    "keywordCats": ["sauces"],
+    "collision": false,
+    "ai": "sauces",
+    "agree": true
+  },
+  {
+    "name": "Соус терияки",
+    "set": "corpus",
+    "deterministic": "sauces",
+    "keywordCats": ["sauces"],
+    "collision": false,
+    "ai": "sauces",
+    "agree": true
+  },
+  {
+    "name": "Соус барбекю",
+    "set": "corpus",
+    "deterministic": "sauces",
+    "keywordCats": ["sauces"],
+    "collision": false,
+    "ai": "sauces",
+    "agree": true
+  },
+  {
+    "name": "Соус солодкий чилі",
+    "set": "corpus",
+    "deterministic": "sauces",
+    "keywordCats": ["sauces", "pantry"],
+    "collision": true,
+    "ai": "sauces",
+    "agree": true
+  },
+  {
+    "name": "Соус тартар",
+    "set": "corpus",
+    "deterministic": "sauces",
+    "keywordCats": ["sauces"],
+    "collision": false,
+    "ai": "sauces",
+    "agree": true
+  },
+  {
+    "name": "Тахіні",
+    "set": "corpus",
+    "deterministic": "sauces",
+    "keywordCats": ["sauces"],
+    "collision": false,
+    "ai": "sauces",
+    "agree": true
+  },
+  {
+    "name": "Аджика",
+    "set": "corpus",
+    "deterministic": "sauces",
+    "keywordCats": ["sauces"],
+    "collision": false,
+    "ai": "sauces",
+    "agree": true
+  },
+  {
+    "name": "Ткемалі",
+    "set": "corpus",
+    "deterministic": "sauces",
+    "keywordCats": ["sauces"],
+    "collision": false,
+    "ai": "sauces",
+    "agree": true
+  },
+  {
+    "name": "Маргарин",
+    "set": "corpus",
+    "deterministic": "sauces",
+    "keywordCats": ["sauces"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": false
+  },
+  {
+    "name": "Топлене масло (гі)",
+    "set": "corpus",
+    "deterministic": "sauces",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": false
+  },
+  {
+    "name": "Сироватковий протеїн",
+    "set": "corpus",
+    "deterministic": "sports",
+    "keywordCats": ["dairy_eggs", "sports"],
+    "collision": true,
+    "ai": "sports",
+    "agree": true
+  },
+  {
+    "name": "Казеїн",
+    "set": "corpus",
+    "deterministic": "sports",
+    "keywordCats": ["sports"],
+    "collision": false,
+    "ai": "sports",
+    "agree": true
+  },
+  {
+    "name": "Гейнер",
+    "set": "corpus",
+    "deterministic": "sports",
+    "keywordCats": ["sports"],
+    "collision": false,
+    "ai": "sports",
+    "agree": true
+  },
+  {
+    "name": "BCAA",
+    "set": "corpus",
+    "deterministic": "sports",
+    "keywordCats": ["sports"],
+    "collision": false,
+    "ai": "sports",
+    "agree": true
+  },
+  {
+    "name": "Креатин",
+    "set": "corpus",
+    "deterministic": "sports",
+    "keywordCats": ["sports"],
+    "collision": false,
+    "ai": "sports",
+    "agree": true
+  },
+  {
+    "name": "Ізотонік",
+    "set": "corpus",
+    "deterministic": "sports",
+    "keywordCats": ["sports"],
+    "collision": false,
+    "ai": "sports",
+    "agree": true
+  },
+  {
+    "name": "Цукор",
+    "set": "corpus",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["pantry"],
+    "collision": false,
+    "ai": "pantry",
+    "agree": false
+  },
+  {
+    "name": "Мед",
+    "set": "corpus",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["pantry"],
+    "collision": false,
+    "ai": "pantry",
+    "agree": false
+  },
+  {
+    "name": "Варення",
+    "set": "corpus",
+    "deterministic": "sweets_snacks",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "pantry",
+    "agree": false
+  },
+  {
+    "name": "Чорний шоколад",
+    "set": "corpus",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["sweets_snacks"],
+    "collision": false,
+    "ai": "sweets_snacks",
+    "agree": true
+  },
+  {
+    "name": "Шоколад молочний",
+    "set": "corpus",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["sweets_snacks"],
+    "collision": false,
+    "ai": "sweets_snacks",
+    "agree": true
+  },
+  {
+    "name": "Зефір",
+    "set": "corpus",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["sweets_snacks"],
+    "collision": false,
+    "ai": "sweets_snacks",
+    "agree": true
+  },
+  {
+    "name": "Мармелад",
+    "set": "corpus",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["sweets_snacks"],
+    "collision": false,
+    "ai": "sweets_snacks",
+    "agree": true
+  },
+  {
+    "name": "Печиво вівсяне",
+    "set": "corpus",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["sweets_snacks", "grains"],
+    "collision": true,
+    "ai": "sweets_snacks",
+    "agree": true
+  },
+  {
+    "name": "Вафлі",
+    "set": "corpus",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["sweets_snacks"],
+    "collision": false,
+    "ai": "sweets_snacks",
+    "agree": true
+  },
+  {
+    "name": "Чіпси",
+    "set": "corpus",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["sweets_snacks"],
+    "collision": false,
+    "ai": "sweets_snacks",
+    "agree": true
+  },
+  {
+    "name": "Попкорн",
+    "set": "corpus",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["sweets_snacks"],
+    "collision": false,
+    "ai": "sweets_snacks",
+    "agree": true
+  },
+  {
+    "name": "Чизкейк",
+    "set": "corpus",
+    "deterministic": "sweets_snacks",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": false
+  },
+  {
+    "name": "Тірамісу",
+    "set": "corpus",
+    "deterministic": "sweets_snacks",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": false
+  },
+  {
+    "name": "Торт Наполеон",
+    "set": "corpus",
+    "deterministic": "sweets_snacks",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": false
+  },
+  {
+    "name": "Торт Медовик",
+    "set": "corpus",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["pantry"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": false
+  },
+  {
+    "name": "Торт Прага",
+    "set": "corpus",
+    "deterministic": "sweets_snacks",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": false
+  },
+  {
+    "name": "Брауні",
+    "set": "corpus",
+    "deterministic": "sweets_snacks",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": false
+  },
+  {
+    "name": "Молоко згущене",
+    "set": "corpus",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "pantry",
+    "agree": false
+  },
+  {
+    "name": "Халва",
+    "set": "corpus",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["sweets_snacks"],
+    "collision": false,
+    "ai": "sweets_snacks",
+    "agree": true
+  },
+  {
+    "name": "Курага в шоколаді",
+    "set": "corpus",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["sweets_snacks", "fruits"],
+    "collision": true,
+    "ai": "sweets_snacks",
+    "agree": true
+  },
+  {
+    "name": "Карамель",
+    "set": "corpus",
+    "deterministic": "sweets_snacks",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "sweets_snacks",
+    "agree": true
+  },
+  {
+    "name": "Протеїновий батончик",
+    "set": "corpus",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["sweets_snacks", "grains", "sports"],
+    "collision": true,
+    "ai": "sports",
+    "agree": false
+  },
+  {
+    "name": "Гранола батончик",
+    "set": "corpus",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["sweets_snacks", "grains"],
+    "collision": true,
+    "ai": "sweets_snacks",
+    "agree": true
+  },
+  {
+    "name": "Борщ зелений",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals", "vegetables"],
+    "collision": true,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Куряча локшина",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Суп-харчо",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Розсольник",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Солянка мʼясна",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals", "meat", "pantry"],
+    "collision": true,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Окрошка",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Гороховий суп",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Голубці",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Деруни",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Млинці",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Налисники з сиром",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals", "dairy_eggs"],
+    "collision": true,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Сирники",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals", "dairy_eggs"],
+    "collision": true,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Галушки",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Вареники з вишнею",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals", "fruits"],
+    "collision": true,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Вареники з мʼясом",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals", "meat"],
+    "collision": true,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Котлета домашня",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Кабачкова ікра",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": ["vegetables", "fish"],
+    "collision": true,
+    "ai": "canned",
+    "agree": false
+  },
+  {
+    "name": "Баклажанна ікра",
+    "set": "corpus",
+    "deterministic": "ready_meals",
+    "keywordCats": ["vegetables", "fish"],
+    "collision": true,
+    "ai": "canned",
+    "agree": false
+  },
+  {
+    "name": "Картопля",
+    "set": "corpus",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables"],
+    "collision": false,
+    "ai": "vegetables",
+    "agree": true
+  },
+  {
+    "name": "Батат",
+    "set": "corpus",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables"],
+    "collision": false,
+    "ai": "vegetables",
+    "agree": true
+  },
+  {
+    "name": "Томат",
+    "set": "corpus",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables"],
+    "collision": false,
+    "ai": "vegetables",
+    "agree": true
+  },
+  {
+    "name": "Огірок",
+    "set": "corpus",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables"],
+    "collision": false,
+    "ai": "vegetables",
+    "agree": true
+  },
+  {
+    "name": "Перець солодкий",
+    "set": "corpus",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables", "pantry"],
+    "collision": true,
+    "ai": "vegetables",
+    "agree": true
+  },
+  {
+    "name": "Морква",
+    "set": "corpus",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables"],
+    "collision": false,
+    "ai": "vegetables",
+    "agree": true
+  },
+  {
+    "name": "Цибуля",
+    "set": "corpus",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables"],
+    "collision": false,
+    "ai": "vegetables",
+    "agree": true
+  },
+  {
+    "name": "Цибуля зелена",
+    "set": "corpus",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables"],
+    "collision": false,
+    "ai": "vegetables",
+    "agree": true
+  },
+  {
+    "name": "Часник",
+    "set": "corpus",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables"],
+    "collision": false,
+    "ai": "vegetables",
+    "agree": true
+  },
+  {
+    "name": "Капуста білокачанна",
+    "set": "corpus",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables"],
+    "collision": false,
+    "ai": "vegetables",
+    "agree": true
+  },
+  {
+    "name": "Капуста пекінська",
+    "set": "corpus",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables"],
+    "collision": false,
+    "ai": "vegetables",
+    "agree": true
+  },
+  {
+    "name": "Цвітна капуста",
+    "set": "corpus",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables"],
+    "collision": false,
+    "ai": "vegetables",
+    "agree": true
+  },
+  {
+    "name": "Броколі",
+    "set": "corpus",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables"],
+    "collision": false,
+    "ai": "vegetables",
+    "agree": true
+  },
+  {
+    "name": "Шпинат",
+    "set": "corpus",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables"],
+    "collision": false,
+    "ai": "vegetables",
+    "agree": true
+  },
+  {
+    "name": "Салат листовий",
+    "set": "corpus",
+    "deterministic": "vegetables",
+    "keywordCats": ["ready_meals", "meat"],
+    "collision": true,
+    "ai": "vegetables",
+    "agree": true
+  },
+  {
+    "name": "Руккола",
+    "set": "corpus",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables"],
+    "collision": false,
+    "ai": "vegetables",
+    "agree": true
+  },
+  {
+    "name": "Буряк",
+    "set": "corpus",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables"],
+    "collision": false,
+    "ai": "vegetables",
+    "agree": true
+  },
+  {
+    "name": "Кабачок",
+    "set": "corpus",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables"],
+    "collision": false,
+    "ai": "vegetables",
+    "agree": true
+  },
+  {
+    "name": "Баклажан",
+    "set": "corpus",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables"],
+    "collision": false,
+    "ai": "vegetables",
+    "agree": true
+  },
+  {
+    "name": "Гарбуз",
+    "set": "corpus",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables"],
+    "collision": false,
+    "ai": "vegetables",
+    "agree": true
+  },
+  {
+    "name": "Кукурудза",
+    "set": "corpus",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables", "grains"],
+    "collision": true,
+    "ai": "vegetables",
+    "agree": true
+  },
+  {
+    "name": "Гриби (шампіньони)",
+    "set": "corpus",
+    "deterministic": "vegetables",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "vegetables",
+    "agree": true
+  },
+  {
+    "name": "Редиска",
+    "set": "corpus",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables"],
+    "collision": false,
+    "ai": "vegetables",
+    "agree": true
+  },
+  {
+    "name": "Петрушка",
+    "set": "corpus",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables"],
+    "collision": false,
+    "ai": "vegetables",
+    "agree": true
+  },
+  {
+    "name": "Кріп",
+    "set": "corpus",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables"],
+    "collision": false,
+    "ai": "vegetables",
+    "agree": true
+  },
+  {
+    "name": "Квашена капуста",
+    "set": "corpus",
+    "deterministic": "canned",
+    "keywordCats": ["canned", "vegetables"],
+    "collision": true,
+    "ai": "vegetables",
+    "agree": false
+  },
+  {
+    "name": "Авокадо",
+    "set": "corpus",
+    "deterministic": "vegetables",
+    "keywordCats": ["fruits"],
+    "collision": false,
+    "ai": "fruits",
+    "agree": false
+  },
+  {
+    "name": "Спаржа",
+    "set": "corpus",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables"],
+    "collision": false,
+    "ai": "vegetables",
+    "agree": true
+  },
+  {
+    "name": "Імбир свіжий",
+    "set": "corpus",
+    "deterministic": "vegetables",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "vegetables",
+    "agree": true
+  },
+  {
+    "name": "Селера (черешковий)",
+    "set": "corpus",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables"],
+    "collision": false,
+    "ai": "vegetables",
+    "agree": true
+  },
+  {
+    "name": "Селера (корінь)",
+    "set": "corpus",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables"],
+    "collision": false,
+    "ai": "vegetables",
+    "agree": true
+  },
+  {
+    "name": "Ріпа",
+    "set": "corpus",
+    "deterministic": "vegetables",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "vegetables",
+    "agree": true
+  },
+  {
+    "name": "Редька",
+    "set": "corpus",
+    "deterministic": "vegetables",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "vegetables",
+    "agree": true
+  },
+  {
+    "name": "Перець чилі",
+    "set": "corpus",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables"],
+    "collision": false,
+    "ai": "vegetables",
+    "agree": true
+  },
+  {
+    "name": "Гриби білі",
+    "set": "corpus",
+    "deterministic": "vegetables",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "vegetables",
+    "agree": true
+  },
+  {
+    "name": "Гриби лисички",
+    "set": "corpus",
+    "deterministic": "vegetables",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "vegetables",
+    "agree": true
+  },
+  {
+    "name": "Гриби печериці мариновані",
+    "set": "corpus",
+    "deterministic": "canned",
+    "keywordCats": ["canned", "vegetables"],
+    "collision": true,
+    "ai": "canned",
+    "agree": true
+  },
+  {
+    "name": "Помідор черрі",
+    "set": "corpus",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables"],
+    "collision": false,
+    "ai": "vegetables",
+    "agree": true
+  },
+  {
+    "name": "Томат вʼялений",
+    "set": "corpus",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables"],
+    "collision": false,
+    "ai": "canned",
+    "agree": false
+  },
+  {
+    "name": "Кукурудза консервована",
+    "set": "corpus",
+    "deterministic": "canned",
+    "keywordCats": ["canned", "vegetables", "grains"],
+    "collision": true,
+    "ai": "canned",
+    "agree": true
+  },
+  {
+    "name": "Горошок консервований",
+    "set": "corpus",
+    "deterministic": "canned",
+    "keywordCats": ["canned", "legumes"],
+    "collision": true,
+    "ai": "canned",
+    "agree": true
+  },
+  {
+    "name": "Маслини чорні",
+    "set": "corpus",
+    "deterministic": "canned",
+    "keywordCats": ["canned", "dairy_eggs"],
+    "collision": true,
+    "ai": "canned",
+    "agree": true
+  },
+  {
+    "name": "Оливки зелені",
+    "set": "corpus",
+    "deterministic": "canned",
+    "keywordCats": ["canned", "vegetables"],
+    "collision": true,
+    "ai": "canned",
+    "agree": true
+  },
+  {
+    "name": "Каперси",
+    "set": "corpus",
+    "deterministic": "canned",
+    "keywordCats": ["canned"],
+    "collision": false,
+    "ai": "canned",
+    "agree": true
+  },
+  {
+    "name": "Корнішони",
+    "set": "corpus",
+    "deterministic": "canned",
+    "keywordCats": ["canned"],
+    "collision": false,
+    "ai": "canned",
+    "agree": true
+  },
+  {
+    "name": "Огірок солоний",
+    "set": "corpus",
+    "deterministic": "canned",
+    "keywordCats": ["vegetables", "pantry"],
+    "collision": true,
+    "ai": "canned",
+    "agree": true
+  },
+  {
+    "name": "Вода мінеральна",
+    "set": "corpus",
+    "deterministic": "drinks",
+    "keywordCats": ["drinks"],
+    "collision": false,
+    "ai": "drinks",
+    "agree": true
+  },
+  {
+    "name": "Сидр",
+    "set": "corpus",
+    "deterministic": "alcohol",
+    "keywordCats": ["alcohol"],
+    "collision": false,
+    "ai": "alcohol",
+    "agree": true
+  },
+  {
+    "name": "Коньяк",
+    "set": "corpus",
+    "deterministic": "alcohol",
+    "keywordCats": ["alcohol"],
+    "collision": false,
+    "ai": "alcohol",
+    "agree": true
+  },
+  {
+    "name": "Хліб тостовий",
+    "set": "corpus",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Паляниця",
+    "set": "corpus",
+    "deterministic": "grains",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Айран",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "drinks",
+    "agree": false
+  },
+  {
+    "name": "Молоко топлене 4%",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Сир адигейський",
+    "set": "corpus",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Дорадо",
+    "set": "corpus",
+    "deterministic": "fish",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "fish",
+    "agree": true
+  },
+  {
+    "name": "Сібас",
+    "set": "corpus",
+    "deterministic": "fish",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "fish",
+    "agree": true
+  },
+  {
+    "name": "Лосось слабосолений",
+    "set": "corpus",
+    "deterministic": "fish",
+    "keywordCats": ["fish"],
+    "collision": false,
+    "ai": "fish",
+    "agree": true
+  },
+  {
+    "name": "Свиняча шия",
+    "set": "corpus",
+    "deterministic": "meat",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Мʼясо мариноване",
+    "set": "corpus",
+    "deterministic": "meat",
+    "keywordCats": ["canned", "meat"],
+    "collision": true,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Індичий фарш",
+    "set": "corpus",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Сардельки",
+    "set": "corpus",
+    "deterministic": "meat",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Ковбаски мисливські",
+    "set": "corpus",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Цукіні",
+    "set": "corpus",
+    "deterministic": "vegetables",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "vegetables",
+    "agree": true
+  },
+  {
+    "name": "Салат айсберг",
+    "set": "corpus",
+    "deterministic": "vegetables",
+    "keywordCats": ["ready_meals", "meat"],
+    "collision": true,
+    "ai": "vegetables",
+    "agree": true
+  },
+  {
+    "name": "Цибуля червона",
+    "set": "corpus",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables"],
+    "collision": false,
+    "ai": "vegetables",
+    "agree": true
+  },
+  {
+    "name": "Гриби гливи",
+    "set": "corpus",
+    "deterministic": "vegetables",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "vegetables",
+    "agree": true
+  },
+  {
+    "name": "Лайм",
+    "set": "corpus",
+    "deterministic": "fruits",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "fruits",
+    "agree": true
+  },
+  {
+    "name": "Ожина",
+    "set": "corpus",
+    "deterministic": "fruits",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "fruits",
+    "agree": true
+  },
+  {
+    "name": "Помело",
+    "set": "corpus",
+    "deterministic": "fruits",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "fruits",
+    "agree": true
+  },
+  {
+    "name": "Горох (сухий)",
+    "set": "corpus",
+    "deterministic": "legumes",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "legumes",
+    "agree": true
+  },
+  {
+    "name": "Квасоля (суха)",
+    "set": "corpus",
+    "deterministic": "legumes",
+    "keywordCats": ["legumes"],
+    "collision": false,
+    "ai": "legumes",
+    "agree": true
+  },
+  {
+    "name": "Сочевиця (суха)",
+    "set": "corpus",
+    "deterministic": "legumes",
+    "keywordCats": ["legumes"],
+    "collision": false,
+    "ai": "legumes",
+    "agree": true
+  },
+  {
+    "name": "Рис бурий (сухий)",
+    "set": "corpus",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Олія ріпакова",
+    "set": "corpus",
+    "deterministic": "pantry",
+    "keywordCats": ["pantry"],
+    "collision": false,
+    "ai": "pantry",
+    "agree": true
+  },
+  {
+    "name": "Соус цезар",
+    "set": "corpus",
+    "deterministic": "sauces",
+    "keywordCats": ["sauces"],
+    "collision": false,
+    "ai": "sauces",
+    "agree": true
+  },
+  {
+    "name": "Оцет бальзамічний",
+    "set": "corpus",
+    "deterministic": "sauces",
+    "keywordCats": ["pantry"],
+    "collision": false,
+    "ai": "pantry",
+    "agree": false
+  },
+  {
+    "name": "Маршмелоу",
+    "set": "corpus",
+    "deterministic": "sweets_snacks",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "sweets_snacks",
+    "agree": true
+  },
+  {
+    "name": "Паштет печінковий",
+    "set": "corpus",
+    "deterministic": "canned",
+    "keywordCats": ["canned", "meat"],
+    "collision": true,
+    "ai": "canned",
+    "agree": true
+  },
+  {
+    "name": "Тушонка яловича",
+    "set": "corpus",
+    "deterministic": "canned",
+    "keywordCats": ["canned"],
+    "collision": false,
+    "ai": "canned",
+    "agree": true
+  },
+  {
+    "name": "Квасоля консервована",
+    "set": "corpus",
+    "deterministic": "canned",
+    "keywordCats": ["canned", "legumes"],
+    "collision": true,
+    "ai": "canned",
+    "agree": true
+  },
+  {
+    "name": "Ягоди заморожені",
+    "set": "corpus",
+    "deterministic": "frozen",
+    "keywordCats": ["frozen"],
+    "collision": false,
+    "ai": "frozen",
+    "agree": true
+  },
+  {
+    "name": "Овочева суміш заморожена",
+    "set": "corpus",
+    "deterministic": "frozen",
+    "keywordCats": ["frozen"],
+    "collision": false,
+    "ai": "frozen",
+    "agree": true
+  },
+  {
+    "name": "Айран Премія 1,8% пл",
+    "set": "receipt",
+    "deterministic": "dairy_eggs",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "drinks",
+    "agree": false
+  },
+  {
+    "name": "Батарейка Премія AA LR06",
+    "set": "receipt",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": null,
+    "agree": null
+  },
+  {
+    "name": "Бекон Лавка традицій Димні Традиції Угорський свиний с/к, нарізка",
+    "set": "receipt",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Вареники Премія з картоплею",
+    "set": "receipt",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals", "vegetables"],
+    "collision": true,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Виноград чорний без кісточок",
+    "set": "receipt",
+    "deterministic": "fruits",
+    "keywordCats": ["fruits", "alcohol"],
+    "collision": true,
+    "ai": "fruits",
+    "agree": true
+  },
+  {
+    "name": "Виріб тютюновий д/елек нагр Terea Sun Pearl",
+    "set": "receipt",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": null,
+    "agree": null
+  },
+  {
+    "name": "Виріб тютюновий д/електр нагр Terea Sun Pearl",
+    "set": "receipt",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": null,
+    "agree": null
+  },
+  {
+    "name": "Вироби макаронні Garofalo Пазіель",
+    "set": "receipt",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Вода мінеральна Миргородська ІДС",
+    "set": "receipt",
+    "deterministic": "drinks",
+    "keywordCats": ["drinks"],
+    "collision": false,
+    "ai": "drinks",
+    "agree": true
+  },
+  {
+    "name": "Вода мінеральна Моршинська сл/газ",
+    "set": "receipt",
+    "deterministic": "drinks",
+    "keywordCats": ["drinks"],
+    "collision": false,
+    "ai": "drinks",
+    "agree": true
+  },
+  {
+    "name": "Горбуша слабосолена",
+    "set": "receipt",
+    "deterministic": "fish",
+    "keywordCats": ["fish"],
+    "collision": false,
+    "ai": "fish",
+    "agree": true
+  },
+  {
+    "name": "Гумка жувальна Dirol кавунно-динний коктейль",
+    "set": "receipt",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["sweets_snacks", "fruits"],
+    "collision": true,
+    "ai": "sweets_snacks",
+    "agree": true
+  },
+  {
+    "name": "Йогурт Галичина Карпатський вишня 2,2% пл",
+    "set": "receipt",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["fruits", "dairy_eggs"],
+    "collision": true,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Йогурт Галичина Карпатський Лісова ягода 2,2% пет",
+    "set": "receipt",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Йогурт Галичина Карпатський малина 2,2%",
+    "set": "receipt",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["fruits", "dairy_eggs"],
+    "collision": true,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Йогурт Галичина Карпатський чорниця 2,2%",
+    "set": "receipt",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["fruits", "dairy_eggs"],
+    "collision": true,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Йогурт Галичина Карпатський чорниця-злаки 2,2%",
+    "set": "receipt",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["fruits", "dairy_eggs"],
+    "collision": true,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Йогурт Дольче Лісова ягода 2,5%",
+    "set": "receipt",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Йогурт Дольче манго 2,5%",
+    "set": "receipt",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["fruits", "dairy_eggs"],
+    "collision": true,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Кетчуп Щедро Барбекю д/п",
+    "set": "receipt",
+    "deterministic": "sauces",
+    "keywordCats": ["sauces"],
+    "collision": false,
+    "ai": "sauces",
+    "agree": true
+  },
+  {
+    "name": "Кефір Простонаше 1% пет",
+    "set": "receipt",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Ковбаски Глобино Салямки в натуральн плісняві с/в",
+    "set": "receipt",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Ковбаски ЛТ Світ м'яса Салямі Стік яловичі с/к фас",
+    "set": "receipt",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Креветка у соусі Тартар",
+    "set": "receipt",
+    "deterministic": "fish",
+    "keywordCats": ["sauces", "fish"],
+    "collision": true,
+    "ai": "ready_meals",
+    "agree": false
+  },
+  {
+    "name": "Куряча четвертина гриль",
+    "set": "receipt",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Курячий шашлик з ананасом",
+    "set": "receipt",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals", "fruits", "meat"],
+    "collision": true,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Мигдаль Премія смажений зі смаком сальса",
+    "set": "receipt",
+    "deterministic": "nuts_seeds",
+    "keywordCats": ["nuts_seeds"],
+    "collision": false,
+    "ai": "nuts_seeds",
+    "agree": true
+  },
+  {
+    "name": "Млинці з шинкою та сиром",
+    "set": "receipt",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals", "meat", "dairy_eggs"],
+    "collision": true,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Млинці з яблучною начинкою",
+    "set": "receipt",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Молоко ультрапастериз Селянське високобілкове 0,5%",
+    "set": "receipt",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Мюслі AXA медові з шоколадом і бананом",
+    "set": "receipt",
+    "deterministic": "grains",
+    "keywordCats": ["sweets_snacks", "fruits", "grains", "pantry"],
+    "collision": true,
+    "ai": "sweets_snacks",
+    "agree": false
+  },
+  {
+    "name": "Напій Coca-Cola",
+    "set": "receipt",
+    "deterministic": "drinks",
+    "keywordCats": ["drinks"],
+    "collision": false,
+    "ai": "drinks",
+    "agree": true
+  },
+  {
+    "name": "Напій Red Bull енергетичний б/а серед/газ з/б",
+    "set": "receipt",
+    "deterministic": "drinks",
+    "keywordCats": ["drinks"],
+    "collision": false,
+    "ai": "drinks",
+    "agree": true
+  },
+  {
+    "name": "Напій енергетичний Hell смак лайма та м'яти з/б",
+    "set": "receipt",
+    "deterministic": "drinks",
+    "keywordCats": ["drinks"],
+    "collision": false,
+    "ai": "drinks",
+    "agree": true
+  },
+  {
+    "name": "Напій енергетичний Hell смак фрукт асорті с/г з/б",
+    "set": "receipt",
+    "deterministic": "drinks",
+    "keywordCats": ["drinks"],
+    "collision": false,
+    "ai": "drinks",
+    "agree": true
+  },
+  {
+    "name": "Напій енергетичний Red Bull",
+    "set": "receipt",
+    "deterministic": "drinks",
+    "keywordCats": ["drinks"],
+    "collision": false,
+    "ai": "drinks",
+    "agree": true
+  },
+  {
+    "name": "Напій енергетичний Red Bull смак кавуна з/б",
+    "set": "receipt",
+    "deterministic": "drinks",
+    "keywordCats": ["drinks", "fruits"],
+    "collision": true,
+    "ai": "drinks",
+    "agree": true
+  },
+  {
+    "name": "Напій з какао Nesquik Opti-Start швидкорозчинний",
+    "set": "receipt",
+    "deterministic": "drinks",
+    "keywordCats": ["drinks"],
+    "collision": false,
+    "ai": "drinks",
+    "agree": true
+  },
+  {
+    "name": "Огірки Krava малосольні",
+    "set": "receipt",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables"],
+    "collision": false,
+    "ai": "canned",
+    "agree": false
+  },
+  {
+    "name": "Онігірі з куркою та соусом кімчі",
+    "set": "receipt",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals", "sauces", "meat"],
+    "collision": true,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Онігірі з сьомгою",
+    "set": "receipt",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals", "fish"],
+    "collision": true,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Оселедець під шубою в упаковці",
+    "set": "receipt",
+    "deterministic": "ready_meals",
+    "keywordCats": ["fish"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Пакет біорозкладний 3кг 958358",
+    "set": "receipt",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": null,
+    "agree": null
+  },
+  {
+    "name": "Пакет Сільпо 3в1 18кг",
+    "set": "receipt",
+    "deterministic": "pantry",
+    "keywordCats": ["pantry"],
+    "collision": false,
+    "ai": null,
+    "agree": null
+  },
+  {
+    "name": "Пакет Сільпо Пакет з Пакетів 12кг",
+    "set": "receipt",
+    "deterministic": "pantry",
+    "keywordCats": ["pantry"],
+    "collision": false,
+    "ai": null,
+    "agree": null
+  },
+  {
+    "name": "Пакет Сільпо Пакет з Пакетів 18 кг",
+    "set": "receipt",
+    "deterministic": "pantry",
+    "keywordCats": ["pantry"],
+    "collision": false,
+    "ai": null,
+    "agree": null
+  },
+  {
+    "name": "Пакет Сільпо Пакет з Пакетів 18кг",
+    "set": "receipt",
+    "deterministic": "pantry",
+    "keywordCats": ["pantry"],
+    "collision": false,
+    "ai": null,
+    "agree": null
+  },
+  {
+    "name": "Паляничка сирна",
+    "set": "receipt",
+    "deterministic": "grains",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": false
+  },
+  {
+    "name": "Пельмені Геркулес Фірмові",
+    "set": "receipt",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals"],
+    "collision": false,
+    "ai": "frozen",
+    "agree": false
+  },
+  {
+    "name": "Печиво Milka Choco Moo вкрите молочним шоколадом",
+    "set": "receipt",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["sweets_snacks"],
+    "collision": false,
+    "ai": "sweets_snacks",
+    "agree": true
+  },
+  {
+    "name": "Печиво Milka в шоколадній глазурі",
+    "set": "receipt",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["sweets_snacks"],
+    "collision": false,
+    "ai": "sweets_snacks",
+    "agree": true
+  },
+  {
+    "name": "Піца Франческо",
+    "set": "receipt",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Пластівці вівсяні Сквирянка ніжні п/п",
+    "set": "receipt",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Пластівці гречані Сквирянка п/п",
+    "set": "receipt",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Плов зі свининою",
+    "set": "receipt",
+    "deterministic": "ready_meals",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Плов з куркою",
+    "set": "receipt",
+    "deterministic": "ready_meals",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Продукт Премія з ікрою риби і лососем пастер",
+    "set": "receipt",
+    "deterministic": "fish",
+    "keywordCats": ["fish"],
+    "collision": false,
+    "ai": "canned",
+    "agree": false
+  },
+  {
+    "name": "Разом смачніше «Франческо»",
+    "set": "receipt",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": false
+  },
+  {
+    "name": "Рол з сосискою",
+    "set": "receipt",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals", "meat"],
+    "collision": true,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Салат «Кальмар королівський» в унагі соусі",
+    "set": "receipt",
+    "deterministic": "fish",
+    "keywordCats": ["ready_meals", "sauces", "fish", "meat"],
+    "collision": true,
+    "ai": "ready_meals",
+    "agree": false
+  },
+  {
+    "name": "Свинина обJerky корейське барбекю в'ялена",
+    "set": "receipt",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Сигарети Parliament Aqua Blue з фільтром",
+    "set": "receipt",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": null,
+    "agree": null
+  },
+  {
+    "name": "Сигарети Parliament Carat Purple з фільтром",
+    "set": "receipt",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": null,
+    "agree": null
+  },
+  {
+    "name": "Сигарети Sobranie Golds з фільтром",
+    "set": "receipt",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": null,
+    "agree": null
+  },
+  {
+    "name": "Сир Canzona «Данаблу» 50%",
+    "set": "receipt",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Сир «Блю Д'Овернь» Laqueuille 52% з коров'ячого молока",
+    "set": "receipt",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Сирок глазурований «Чудо» зі смаком шоколаду 15%",
+    "set": "receipt",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "sweets_snacks",
+    "agree": false
+  },
+  {
+    "name": "Сир Пирятин Голандський твердий 45%",
+    "set": "receipt",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Слойка з індичкою та сиром фета ГП",
+    "set": "receipt",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["meat", "dairy_eggs"],
+    "collision": true,
+    "ai": "ready_meals",
+    "agree": false
+  },
+  {
+    "name": "Снеки Natural Garden норі з кунжутовою олією смажені",
+    "set": "receipt",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["sweets_snacks", "nuts_seeds", "pantry"],
+    "collision": true,
+    "ai": "sweets_snacks",
+    "agree": true
+  },
+  {
+    "name": "Снек пікантний Pringles зі смаком барбекю",
+    "set": "receipt",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["sweets_snacks"],
+    "collision": false,
+    "ai": "sweets_snacks",
+    "agree": true
+  },
+  {
+    "name": "Сніданок Good morning, Granola To Go з журавлиною",
+    "set": "receipt",
+    "deterministic": "grains",
+    "keywordCats": ["fruits"],
+    "collision": false,
+    "ai": "sweets_snacks",
+    "agree": false
+  },
+  {
+    "name": "Соус Furore з грушею",
+    "set": "receipt",
+    "deterministic": "sauces",
+    "keywordCats": ["sauces", "fruits"],
+    "collision": true,
+    "ai": "sauces",
+    "agree": true
+  },
+  {
+    "name": "Соус Торчин Мехікано д/п",
+    "set": "receipt",
+    "deterministic": "sauces",
+    "keywordCats": ["sauces"],
+    "collision": false,
+    "ai": "sauces",
+    "agree": true
+  },
+  {
+    "name": "Соус Щедро Батумський гострий д/п",
+    "set": "receipt",
+    "deterministic": "sauces",
+    "keywordCats": ["sauces"],
+    "collision": false,
+    "ai": "sauces",
+    "agree": true
+  },
+  {
+    "name": "Соус Щедро Сацебелі д/п",
+    "set": "receipt",
+    "deterministic": "sauces",
+    "keywordCats": ["sauces"],
+    "collision": false,
+    "ai": "sauces",
+    "agree": true
+  },
+  {
+    "name": "Суміш овочева Рудь Мексиканка для жарки",
+    "set": "receipt",
+    "deterministic": "frozen",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "frozen",
+    "agree": true
+  },
+  {
+    "name": "Суміш «Премія»® горіхова",
+    "set": "receipt",
+    "deterministic": "nuts_seeds",
+    "keywordCats": ["nuts_seeds"],
+    "collision": false,
+    "ai": "nuts_seeds",
+    "agree": true
+  },
+  {
+    "name": "Удон з куркою та печерицями в соусі терияки",
+    "set": "receipt",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals", "sauces", "vegetables", "meat"],
+    "collision": true,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Форель, стейк охолоджений",
+    "set": "receipt",
+    "deterministic": "fish",
+    "keywordCats": ["fish", "meat"],
+    "collision": true,
+    "ai": "fish",
+    "agree": true
+  },
+  {
+    "name": "Хамон Serrano Casademont, нарізка",
+    "set": "receipt",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Хліб Кулиничи Європейський тостовий висівковий",
+    "set": "receipt",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Хліб подовий житньо-пшеничний мультизернов",
+    "set": "receipt",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Хліб Сумська Паляниця Grains тостовий нарізний",
+    "set": "receipt",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Хліб Сумська паляниця Фінський нарізанний",
+    "set": "receipt",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Холодець по-домашньому в упаковці",
+    "set": "receipt",
+    "deterministic": "ready_meals",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Холодник зі свининою та вареною ковбасою",
+    "set": "receipt",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals", "meat"],
+    "collision": true,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Цукерки Fruittella асорті жувальні",
+    "set": "receipt",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["sweets_snacks"],
+    "collision": false,
+    "ai": "sweets_snacks",
+    "agree": true
+  },
+  {
+    "name": "Цукерки Raffaello",
+    "set": "receipt",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["sweets_snacks"],
+    "collision": false,
+    "ai": "sweets_snacks",
+    "agree": true
+  },
+  {
+    "name": "Чипси Люкс зі смаком сиру",
+    "set": "receipt",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["sweets_snacks"],
+    "collision": false,
+    "ai": "sweets_snacks",
+    "agree": true
+  },
+  {
+    "name": "Шоколад молочний Millennium Gold мигдаль",
+    "set": "receipt",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["sweets_snacks", "nuts_seeds"],
+    "collision": true,
+    "ai": "sweets_snacks",
+    "agree": true
+  },
+  {
+    "name": "Шоколад чорний Millennium Golden Nut з мигдалем",
+    "set": "receipt",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["sweets_snacks", "nuts_seeds"],
+    "collision": true,
+    "ai": "sweets_snacks",
+    "agree": true
+  },
+  {
+    "name": "Яйця курячі Квочка XL відбірні СВ",
+    "set": "receipt",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["meat", "dairy_eggs"],
+    "collision": true,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Олів'є салат",
+    "set": "synthetic",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals", "meat", "pantry"],
+    "collision": true,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Куряче стегно запечене",
+    "set": "synthetic",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": false
+  },
+  {
+    "name": "Млинці з сиром 2 шт",
+    "set": "synthetic",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals", "dairy_eggs"],
+    "collision": true,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Салат \"Весняний\"",
+    "set": "synthetic",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals", "meat"],
+    "collision": true,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Борщ український",
+    "set": "synthetic",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Гречка з грибами",
+    "set": "synthetic",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": false
+  },
+  {
+    "name": "Куряче філе в паніровці",
+    "set": "synthetic",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Стейк свинячий",
+    "set": "synthetic",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Салат \"Цезар\"",
+    "set": "synthetic",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals", "meat"],
+    "collision": true,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Запіканка сирна",
+    "set": "synthetic",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": false
+  },
+  {
+    "name": "Крученики з яловичини",
+    "set": "synthetic",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Круасан з шоколадом",
+    "set": "synthetic",
+    "deterministic": "grains",
+    "keywordCats": ["sweets_snacks", "grains"],
+    "collision": true,
+    "ai": "sweets_snacks",
+    "agree": false
+  },
+  {
+    "name": "Рогалики з маком",
+    "set": "synthetic",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "sweets_snacks",
+    "agree": false
+  },
+  {
+    "name": "Рулет сливовий",
+    "set": "synthetic",
+    "deterministic": "fruits",
+    "keywordCats": ["fruits"],
+    "collision": false,
+    "ai": "sweets_snacks",
+    "agree": false
+  },
+  {
+    "name": "Свинина, лопатка",
+    "set": "synthetic",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Яловичина, вирізка",
+    "set": "synthetic",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Куряче філе, б/к",
+    "set": "synthetic",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Фарш яловичий",
+    "set": "synthetic",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Ковбаса \"Лікарська\"",
+    "set": "synthetic",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Сало солоне",
+    "set": "synthetic",
+    "deterministic": "meat",
+    "keywordCats": ["meat", "pantry"],
+    "collision": true,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Стегно куряче",
+    "set": "synthetic",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Грудка індика",
+    "set": "synthetic",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Фарш мікс",
+    "set": "synthetic",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Шинка \"Петрівська\"",
+    "set": "synthetic",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Ковбаса \"Домашня\"",
+    "set": "synthetic",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Балик свинячий",
+    "set": "synthetic",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "meat",
+    "agree": false
+  },
+  {
+    "name": "Сосиски \"Молочні\"",
+    "set": "synthetic",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Грудка куряча",
+    "set": "synthetic",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Язик яловичий",
+    "set": "synthetic",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "meat",
+    "agree": false
+  },
+  {
+    "name": "Крила курячі",
+    "set": "synthetic",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Корейка свиняча",
+    "set": "synthetic",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "meat",
+    "agree": false
+  },
+  {
+    "name": "Ковбаски \"Мисливські\"",
+    "set": "synthetic",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Голова свиняча",
+    "set": "synthetic",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "meat",
+    "agree": false
+  },
+  {
+    "name": "Скумбрія с/с",
+    "set": "synthetic",
+    "deterministic": "fish",
+    "keywordCats": ["fish"],
+    "collision": false,
+    "ai": "fish",
+    "agree": true
+  },
+  {
+    "name": "Форель копчена",
+    "set": "synthetic",
+    "deterministic": "fish",
+    "keywordCats": ["fish"],
+    "collision": false,
+    "ai": "fish",
+    "agree": true
+  },
+  {
+    "name": "Сьомга філе",
+    "set": "synthetic",
+    "deterministic": "fish",
+    "keywordCats": ["fish", "meat"],
+    "collision": true,
+    "ai": "fish",
+    "agree": true
+  },
+  {
+    "name": "Оселедець натуральний",
+    "set": "synthetic",
+    "deterministic": "fish",
+    "keywordCats": ["fish"],
+    "collision": false,
+    "ai": "fish",
+    "agree": true
+  },
+  {
+    "name": "Креветка вар./мор.",
+    "set": "synthetic",
+    "deterministic": "fish",
+    "keywordCats": ["fish"],
+    "collision": false,
+    "ai": "fish",
+    "agree": true
+  },
+  {
+    "name": "Кальмар тушка",
+    "set": "synthetic",
+    "deterministic": "fish",
+    "keywordCats": ["fish"],
+    "collision": false,
+    "ai": "fish",
+    "agree": true
+  },
+  {
+    "name": "Мідії в/м",
+    "set": "synthetic",
+    "deterministic": "fish",
+    "keywordCats": ["fish"],
+    "collision": false,
+    "ai": "fish",
+    "agree": true
+  },
+  {
+    "name": "Устриці свіжі",
+    "set": "synthetic",
+    "deterministic": "fish",
+    "keywordCats": ["fish"],
+    "collision": false,
+    "ai": "fish",
+    "agree": true
+  },
+  {
+    "name": "Ікра минтая",
+    "set": "synthetic",
+    "deterministic": "fish",
+    "keywordCats": ["fish"],
+    "collision": false,
+    "ai": "fish",
+    "agree": true
+  },
+  {
+    "name": "Сардини в томаті",
+    "set": "synthetic",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables", "fish"],
+    "collision": true,
+    "ai": "canned",
+    "agree": false
+  },
+  {
+    "name": "Тунець консервований",
+    "set": "synthetic",
+    "deterministic": "fish",
+    "keywordCats": ["canned", "fish"],
+    "collision": true,
+    "ai": "canned",
+    "agree": false
+  },
+  {
+    "name": "Хек заморожений",
+    "set": "synthetic",
+    "deterministic": "fish",
+    "keywordCats": ["frozen", "fish"],
+    "collision": true,
+    "ai": "frozen",
+    "agree": false
+  },
+  {
+    "name": "Минтай заморожений",
+    "set": "synthetic",
+    "deterministic": "fish",
+    "keywordCats": ["frozen", "fish"],
+    "collision": true,
+    "ai": "frozen",
+    "agree": false
+  },
+  {
+    "name": "Тріска шматки",
+    "set": "synthetic",
+    "deterministic": "fish",
+    "keywordCats": ["fish"],
+    "collision": false,
+    "ai": "fish",
+    "agree": true
+  },
+  {
+    "name": "Набір для юшки",
+    "set": "synthetic",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "fish",
+    "agree": false
+  },
+  {
+    "name": "Риба річкова",
+    "set": "synthetic",
+    "deterministic": "fish",
+    "keywordCats": ["fish"],
+    "collision": false,
+    "ai": "fish",
+    "agree": true
+  },
+  {
+    "name": "Морепродукти мікс",
+    "set": "synthetic",
+    "deterministic": "fish",
+    "keywordCats": ["fish"],
+    "collision": false,
+    "ai": "fish",
+    "agree": true
+  },
+  {
+    "name": "Молоко ПЕТ 900мл",
+    "set": "synthetic",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Молоко \"Яготинське\" 2.6% 930г",
+    "set": "synthetic",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Молоко \"Добриня\" 3.2% 1л",
+    "set": "synthetic",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Сир кисломолочний \"Простоквашино\" 5% 300г",
+    "set": "synthetic",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Сир Російський 50% 200г",
+    "set": "synthetic",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Сир твердий \"Гауда\" 45%",
+    "set": "synthetic",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Сир Чеддер 200г",
+    "set": "synthetic",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Сир кисломолочний \"Ферма\" 9%",
+    "set": "synthetic",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Йогурт \"Агуша\" полуниця 100г",
+    "set": "synthetic",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["fruits", "dairy_eggs"],
+    "collision": true,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Кефір \"Славія\" 2.5% 1л",
+    "set": "synthetic",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Сметана \"Просто\" 20% 400г",
+    "set": "synthetic",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Масло вершкове \"Селянське\" 73% 180г",
+    "set": "synthetic",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Масло вершкове \"Янтар\" 82.5% 200г",
+    "set": "synthetic",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Яйця курячі С1 10шт",
+    "set": "synthetic",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["meat", "dairy_eggs"],
+    "collision": true,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Яйця курячі С2 30шт",
+    "set": "synthetic",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["meat", "dairy_eggs"],
+    "collision": true,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Сир типу \"Моцарела\"",
+    "set": "synthetic",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Вершкове масло 73%",
+    "set": "synthetic",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Йогурт натуральний 3.2%",
+    "set": "synthetic",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Огірки мариновані",
+    "set": "synthetic",
+    "deterministic": "vegetables",
+    "keywordCats": ["canned", "vegetables"],
+    "collision": true,
+    "ai": "canned",
+    "agree": false
+  },
+  {
+    "name": "Помідори черрі",
+    "set": "synthetic",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables"],
+    "collision": false,
+    "ai": "vegetables",
+    "agree": true
+  },
+  {
+    "name": "Картопля молода",
+    "set": "synthetic",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables"],
+    "collision": false,
+    "ai": "vegetables",
+    "agree": true
+  },
+  {
+    "name": "Буряк столовий",
+    "set": "synthetic",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables"],
+    "collision": false,
+    "ai": "vegetables",
+    "agree": true
+  },
+  {
+    "name": "Гриби печериці",
+    "set": "synthetic",
+    "deterministic": "canned",
+    "keywordCats": ["vegetables"],
+    "collision": false,
+    "ai": "vegetables",
+    "agree": false
+  },
+  {
+    "name": "Капуста квашена",
+    "set": "synthetic",
+    "deterministic": "canned",
+    "keywordCats": ["canned", "vegetables"],
+    "collision": true,
+    "ai": "canned",
+    "agree": true
+  },
+  {
+    "name": "Перець болгарський",
+    "set": "synthetic",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables"],
+    "collision": false,
+    "ai": "vegetables",
+    "agree": true
+  },
+  {
+    "name": "Цибуля ріпчаста",
+    "set": "synthetic",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables"],
+    "collision": false,
+    "ai": "vegetables",
+    "agree": true
+  },
+  {
+    "name": "Шампіньйони",
+    "set": "synthetic",
+    "deterministic": "vegetables",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "vegetables",
+    "agree": true
+  },
+  {
+    "name": "Кріп свіжий",
+    "set": "synthetic",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables"],
+    "collision": false,
+    "ai": "vegetables",
+    "agree": true
+  },
+  {
+    "name": "Грибний мікс",
+    "set": "synthetic",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "canned",
+    "agree": false
+  },
+  {
+    "name": "Огірки солоні",
+    "set": "synthetic",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables", "pantry"],
+    "collision": true,
+    "ai": "canned",
+    "agree": false
+  },
+  {
+    "name": "Баклажани",
+    "set": "synthetic",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables"],
+    "collision": false,
+    "ai": "vegetables",
+    "agree": true
+  },
+  {
+    "name": "Зелень мікс",
+    "set": "synthetic",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables"],
+    "collision": false,
+    "ai": "vegetables",
+    "agree": true
+  },
+  {
+    "name": "Яблуко Голден",
+    "set": "synthetic",
+    "deterministic": "fruits",
+    "keywordCats": ["fruits"],
+    "collision": false,
+    "ai": "fruits",
+    "agree": true
+  },
+  {
+    "name": "Виноград Кишмиш",
+    "set": "synthetic",
+    "deterministic": "fruits",
+    "keywordCats": ["fruits", "alcohol"],
+    "collision": true,
+    "ai": "fruits",
+    "agree": true
+  },
+  {
+    "name": "Груша Конференц",
+    "set": "synthetic",
+    "deterministic": "fruits",
+    "keywordCats": ["fruits"],
+    "collision": false,
+    "ai": "fruits",
+    "agree": true
+  },
+  {
+    "name": "Фінік",
+    "set": "synthetic",
+    "deterministic": "fruits",
+    "keywordCats": ["fruits"],
+    "collision": false,
+    "ai": "fruits",
+    "agree": true
+  },
+  {
+    "name": "Інжир сушений",
+    "set": "synthetic",
+    "deterministic": "fruits",
+    "keywordCats": ["fruits"],
+    "collision": false,
+    "ai": "fruits",
+    "agree": true
+  },
+  {
+    "name": "Лимон (100г)",
+    "set": "synthetic",
+    "deterministic": "fruits",
+    "keywordCats": ["fruits"],
+    "collision": false,
+    "ai": "fruits",
+    "agree": true
+  },
+  {
+    "name": "Виноград (500г)",
+    "set": "synthetic",
+    "deterministic": "fruits",
+    "keywordCats": ["fruits", "alcohol"],
+    "collision": true,
+    "ai": "fruits",
+    "agree": true
+  },
+  {
+    "name": "Крупа гречана",
+    "set": "synthetic",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "grains",
+    "agree": false
+  },
+  {
+    "name": "Борошно пшеничне вищого ґатунку",
+    "set": "synthetic",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Макарони спагетті",
+    "set": "synthetic",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Хліб білий батон",
+    "set": "synthetic",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Крупа рисова",
+    "set": "synthetic",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Борошно житнє",
+    "set": "synthetic",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Макарони ріжки",
+    "set": "synthetic",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Хліб чорний \"Український\"",
+    "set": "synthetic",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Крупа пшоно",
+    "set": "synthetic",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Борошно кукурудзяне",
+    "set": "synthetic",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables", "grains"],
+    "collision": true,
+    "ai": "grains",
+    "agree": false
+  },
+  {
+    "name": "Макарони вермішель",
+    "set": "synthetic",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Крупа перлова",
+    "set": "synthetic",
+    "deterministic": "grains",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Борошно гречане",
+    "set": "synthetic",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Макарони лійки",
+    "set": "synthetic",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Булочка звичайна",
+    "set": "synthetic",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Крупа вівсяна",
+    "set": "synthetic",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Борошно картопляне",
+    "set": "synthetic",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables", "grains"],
+    "collision": true,
+    "ai": "grains",
+    "agree": false
+  },
+  {
+    "name": "Макарони фузілі",
+    "set": "synthetic",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "grains",
+    "agree": true
+  },
+  {
+    "name": "Пампушка часникова",
+    "set": "synthetic",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": false
+  },
+  {
+    "name": "Шоколад молочний Roshen",
+    "set": "synthetic",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["sweets_snacks"],
+    "collision": false,
+    "ai": "sweets_snacks",
+    "agree": true
+  },
+  {
+    "name": "Печиво \"Ювілейне\" здобне",
+    "set": "synthetic",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["sweets_snacks"],
+    "collision": false,
+    "ai": "sweets_snacks",
+    "agree": true
+  },
+  {
+    "name": "Чипси Pringles Original",
+    "set": "synthetic",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["sweets_snacks"],
+    "collision": false,
+    "ai": "sweets_snacks",
+    "agree": true
+  },
+  {
+    "name": "Сухарики \"Хлібний Дар\" часникові",
+    "set": "synthetic",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["sweets_snacks", "vegetables", "grains"],
+    "collision": true,
+    "ai": "sweets_snacks",
+    "agree": true
+  },
+  {
+    "name": "Батончик Mars",
+    "set": "synthetic",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["sweets_snacks", "grains"],
+    "collision": true,
+    "ai": "sweets_snacks",
+    "agree": true
+  },
+  {
+    "name": "Шоколад чорний Millennium",
+    "set": "synthetic",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["sweets_snacks"],
+    "collision": false,
+    "ai": "sweets_snacks",
+    "agree": true
+  },
+  {
+    "name": "Печиво Delicia",
+    "set": "synthetic",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["sweets_snacks"],
+    "collision": false,
+    "ai": "sweets_snacks",
+    "agree": true
+  },
+  {
+    "name": "Чипси Lays Сметана і цибуля",
+    "set": "synthetic",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["sweets_snacks", "vegetables", "dairy_eggs"],
+    "collision": true,
+    "ai": "sweets_snacks",
+    "agree": false
+  },
+  {
+    "name": "Сухарики \"Flint\" сирні",
+    "set": "synthetic",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["sweets_snacks", "dairy_eggs"],
+    "collision": true,
+    "ai": "sweets_snacks",
+    "agree": true
+  },
+  {
+    "name": "Батончик Snickers",
+    "set": "synthetic",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["sweets_snacks", "grains"],
+    "collision": true,
+    "ai": "sweets_snacks",
+    "agree": true
+  },
+  {
+    "name": "Шоколад білий Milka",
+    "set": "synthetic",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["sweets_snacks"],
+    "collision": false,
+    "ai": "sweets_snacks",
+    "agree": true
+  },
+  {
+    "name": "Печиво Barny Панда",
+    "set": "synthetic",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["sweets_snacks"],
+    "collision": false,
+    "ai": "sweets_snacks",
+    "agree": true
+  },
+  {
+    "name": "Чипси Kracks",
+    "set": "synthetic",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["sweets_snacks"],
+    "collision": false,
+    "ai": "sweets_snacks",
+    "agree": true
+  },
+  {
+    "name": "Сухарики \"Flint\" краб",
+    "set": "synthetic",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["sweets_snacks"],
+    "collision": false,
+    "ai": "sweets_snacks",
+    "agree": true
+  },
+  {
+    "name": "Батончик Twix",
+    "set": "synthetic",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["sweets_snacks", "grains"],
+    "collision": true,
+    "ai": "sweets_snacks",
+    "agree": true
+  },
+  {
+    "name": "Шоколад молочний Milka Oreo",
+    "set": "synthetic",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["sweets_snacks"],
+    "collision": false,
+    "ai": "sweets_snacks",
+    "agree": true
+  },
+  {
+    "name": "Печиво \"Волшебный край\"",
+    "set": "synthetic",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["sweets_snacks"],
+    "collision": false,
+    "ai": "sweets_snacks",
+    "agree": true
+  },
+  {
+    "name": "Чипси \"Козацька розвага\"",
+    "set": "synthetic",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["sweets_snacks"],
+    "collision": false,
+    "ai": "sweets_snacks",
+    "agree": true
+  },
+  {
+    "name": "Сухарики \"Козацька розвага\"",
+    "set": "synthetic",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["sweets_snacks"],
+    "collision": false,
+    "ai": "sweets_snacks",
+    "agree": true
+  },
+  {
+    "name": "Батончик KitKat",
+    "set": "synthetic",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["sweets_snacks", "grains"],
+    "collision": true,
+    "ai": "sweets_snacks",
+    "agree": true
+  },
+  {
+    "name": "Сік яблучний \"Садочок\"",
+    "set": "synthetic",
+    "deterministic": "drinks",
+    "keywordCats": ["drinks"],
+    "collision": false,
+    "ai": "drinks",
+    "agree": true
+  },
+  {
+    "name": "Вода мінеральна Моршинська 0.5л",
+    "set": "synthetic",
+    "deterministic": "drinks",
+    "keywordCats": ["drinks"],
+    "collision": false,
+    "ai": "drinks",
+    "agree": true
+  },
+  {
+    "name": "Сік апельсиновий Jaffa 1л",
+    "set": "synthetic",
+    "deterministic": "drinks",
+    "keywordCats": ["drinks", "fruits"],
+    "collision": true,
+    "ai": "drinks",
+    "agree": true
+  },
+  {
+    "name": "Енергетик Burn Original",
+    "set": "synthetic",
+    "deterministic": "drinks",
+    "keywordCats": ["drinks"],
+    "collision": false,
+    "ai": "drinks",
+    "agree": true
+  },
+  {
+    "name": "Кава розчинна Nescafe Gold",
+    "set": "synthetic",
+    "deterministic": "drinks",
+    "keywordCats": ["drinks"],
+    "collision": false,
+    "ai": "drinks",
+    "agree": true
+  },
+  {
+    "name": "Чай чорний Greenfield English Breakfast",
+    "set": "synthetic",
+    "deterministic": "drinks",
+    "keywordCats": ["drinks"],
+    "collision": false,
+    "ai": "drinks",
+    "agree": true
+  },
+  {
+    "name": "Сік мультивітамінний \"Сила Життя\"",
+    "set": "synthetic",
+    "deterministic": "drinks",
+    "keywordCats": ["drinks"],
+    "collision": false,
+    "ai": "drinks",
+    "agree": true
+  },
+  {
+    "name": "Вода негазована \"Aqua Life\" 1.5л",
+    "set": "synthetic",
+    "deterministic": "drinks",
+    "keywordCats": ["drinks"],
+    "collision": false,
+    "ai": "drinks",
+    "agree": true
+  },
+  {
+    "name": "Лимонад \"Байкал\" 2л",
+    "set": "synthetic",
+    "deterministic": "drinks",
+    "keywordCats": ["drinks", "fruits"],
+    "collision": true,
+    "ai": "drinks",
+    "agree": true
+  },
+  {
+    "name": "Сік вишневий \"Ягідний Край\"",
+    "set": "synthetic",
+    "deterministic": "drinks",
+    "keywordCats": ["drinks", "fruits"],
+    "collision": true,
+    "ai": "drinks",
+    "agree": true
+  },
+  {
+    "name": "Енергетик Monster Ultra",
+    "set": "synthetic",
+    "deterministic": "drinks",
+    "keywordCats": ["drinks"],
+    "collision": false,
+    "ai": "drinks",
+    "agree": true
+  },
+  {
+    "name": "Кава натуральна мелена Lavazza",
+    "set": "synthetic",
+    "deterministic": "drinks",
+    "keywordCats": ["drinks"],
+    "collision": false,
+    "ai": "drinks",
+    "agree": true
+  },
+  {
+    "name": "Чай зелений Lipton Yellow Label",
+    "set": "synthetic",
+    "deterministic": "drinks",
+    "keywordCats": ["drinks", "vegetables"],
+    "collision": true,
+    "ai": "drinks",
+    "agree": true
+  },
+  {
+    "name": "Сік томатний \"Смаколик\"",
+    "set": "synthetic",
+    "deterministic": "drinks",
+    "keywordCats": ["drinks", "vegetables"],
+    "collision": true,
+    "ai": "drinks",
+    "agree": true
+  },
+  {
+    "name": "Вода газована \"Куяльник\" 0.5л",
+    "set": "synthetic",
+    "deterministic": "drinks",
+    "keywordCats": ["drinks"],
+    "collision": false,
+    "ai": "drinks",
+    "agree": true
+  },
+  {
+    "name": "Напій безалкогольний \"Фруктовий Мікс\"",
+    "set": "synthetic",
+    "deterministic": "drinks",
+    "keywordCats": ["drinks"],
+    "collision": false,
+    "ai": "drinks",
+    "agree": true
+  },
+  {
+    "name": "Енергетик Red Bull Sugarfree",
+    "set": "synthetic",
+    "deterministic": "drinks",
+    "keywordCats": ["drinks"],
+    "collision": false,
+    "ai": "drinks",
+    "agree": true
+  },
+  {
+    "name": "Кава з молоком \"Латте\"",
+    "set": "synthetic",
+    "deterministic": "drinks",
+    "keywordCats": ["drinks", "dairy_eggs"],
+    "collision": true,
+    "ai": "drinks",
+    "agree": true
+  },
+  {
+    "name": "Чай трав'яний \"Спокій\"",
+    "set": "synthetic",
+    "deterministic": "drinks",
+    "keywordCats": ["drinks"],
+    "collision": false,
+    "ai": "drinks",
+    "agree": true
+  },
+  {
+    "name": "Сік виноградний \"Сонячний\"",
+    "set": "synthetic",
+    "deterministic": "drinks",
+    "keywordCats": ["drinks", "fruits", "alcohol"],
+    "collision": true,
+    "ai": "drinks",
+    "agree": true
+  },
+  {
+    "name": "Пиво \"Львівське\" світле 0.5",
+    "set": "synthetic",
+    "deterministic": "alcohol",
+    "keywordCats": ["alcohol"],
+    "collision": false,
+    "ai": "alcohol",
+    "agree": true
+  },
+  {
+    "name": "Пиво \"Оболонь\" жигулівське 0.45",
+    "set": "synthetic",
+    "deterministic": "alcohol",
+    "keywordCats": ["alcohol"],
+    "collision": false,
+    "ai": "alcohol",
+    "agree": true
+  },
+  {
+    "name": "Вино червоне напівсолодке 0.75",
+    "set": "synthetic",
+    "deterministic": "alcohol",
+    "keywordCats": ["alcohol"],
+    "collision": false,
+    "ai": "alcohol",
+    "agree": true
+  },
+  {
+    "name": "Вино біле сухе 0.75",
+    "set": "synthetic",
+    "deterministic": "alcohol",
+    "keywordCats": ["alcohol"],
+    "collision": false,
+    "ai": "alcohol",
+    "agree": true
+  },
+  {
+    "name": "Горілка \"Хортиця\" Special 0.5",
+    "set": "synthetic",
+    "deterministic": "alcohol",
+    "keywordCats": ["alcohol"],
+    "collision": false,
+    "ai": "alcohol",
+    "agree": true
+  },
+  {
+    "name": "Горілка \"Nemiroff\" De Luxe 0.7",
+    "set": "synthetic",
+    "deterministic": "alcohol",
+    "keywordCats": ["alcohol"],
+    "collision": false,
+    "ai": "alcohol",
+    "agree": true
+  },
+  {
+    "name": "Сидр яблучний напівсолодкий 1л",
+    "set": "synthetic",
+    "deterministic": "alcohol",
+    "keywordCats": ["alcohol"],
+    "collision": false,
+    "ai": "alcohol",
+    "agree": true
+  },
+  {
+    "name": "Сидр грушевий 0.33",
+    "set": "synthetic",
+    "deterministic": "alcohol",
+    "keywordCats": ["fruits", "alcohol"],
+    "collision": true,
+    "ai": "alcohol",
+    "agree": true
+  },
+  {
+    "name": "Наливка вишнева 0.5",
+    "set": "synthetic",
+    "deterministic": "fruits",
+    "keywordCats": ["fruits"],
+    "collision": false,
+    "ai": "alcohol",
+    "agree": false
+  },
+  {
+    "name": "Наливка сливова 0.5",
+    "set": "synthetic",
+    "deterministic": "fruits",
+    "keywordCats": ["fruits"],
+    "collision": false,
+    "ai": "alcohol",
+    "agree": false
+  },
+  {
+    "name": "Пиво \"Чернігівське\" міцне 0.45",
+    "set": "synthetic",
+    "deterministic": "alcohol",
+    "keywordCats": ["alcohol"],
+    "collision": false,
+    "ai": "alcohol",
+    "agree": true
+  },
+  {
+    "name": "Вино ігристе рожеве брют",
+    "set": "synthetic",
+    "deterministic": "alcohol",
+    "keywordCats": ["alcohol"],
+    "collision": false,
+    "ai": "alcohol",
+    "agree": true
+  },
+  {
+    "name": "Горілка \"Finlandia\"",
+    "set": "synthetic",
+    "deterministic": "alcohol",
+    "keywordCats": ["alcohol"],
+    "collision": false,
+    "ai": "alcohol",
+    "agree": true
+  },
+  {
+    "name": "Сидр Полуничний 1л",
+    "set": "synthetic",
+    "deterministic": "alcohol",
+    "keywordCats": ["alcohol"],
+    "collision": false,
+    "ai": "alcohol",
+    "agree": true
+  },
+  {
+    "name": "Наливка Журавлина 0.5",
+    "set": "synthetic",
+    "deterministic": "fruits",
+    "keywordCats": ["fruits"],
+    "collision": false,
+    "ai": "alcohol",
+    "agree": false
+  },
+  {
+    "name": "Пиво \"Квас Тарас\"",
+    "set": "synthetic",
+    "deterministic": "drinks",
+    "keywordCats": ["alcohol"],
+    "collision": false,
+    "ai": "alcohol",
+    "agree": false
+  },
+  {
+    "name": "Вино червоне сухе",
+    "set": "synthetic",
+    "deterministic": "alcohol",
+    "keywordCats": ["alcohol"],
+    "collision": false,
+    "ai": "alcohol",
+    "agree": true
+  },
+  {
+    "name": "Горілка \"Grey Goose\"",
+    "set": "synthetic",
+    "deterministic": "alcohol",
+    "keywordCats": ["alcohol"],
+    "collision": false,
+    "ai": "alcohol",
+    "agree": true
+  },
+  {
+    "name": "Сидр Медовий 0.75",
+    "set": "synthetic",
+    "deterministic": "alcohol",
+    "keywordCats": ["alcohol", "pantry"],
+    "collision": true,
+    "ai": "alcohol",
+    "agree": true
+  },
+  {
+    "name": "Наливка Абрикосова",
+    "set": "synthetic",
+    "deterministic": "fruits",
+    "keywordCats": ["fruits"],
+    "collision": false,
+    "ai": "alcohol",
+    "agree": false
+  },
+  {
+    "name": "Олія соняшникова рафінована",
+    "set": "synthetic",
+    "deterministic": "pantry",
+    "keywordCats": ["pantry"],
+    "collision": false,
+    "ai": "pantry",
+    "agree": true
+  },
+  {
+    "name": "Майонез \"Щедро\" 72%",
+    "set": "synthetic",
+    "deterministic": "sauces",
+    "keywordCats": ["sauces"],
+    "collision": false,
+    "ai": "sauces",
+    "agree": true
+  },
+  {
+    "name": "Кетчуп томатний 300г",
+    "set": "synthetic",
+    "deterministic": "sauces",
+    "keywordCats": ["sauces", "vegetables"],
+    "collision": true,
+    "ai": "sauces",
+    "agree": true
+  },
+  {
+    "name": "Соус \"Чилі\" гострий",
+    "set": "synthetic",
+    "deterministic": "sauces",
+    "keywordCats": ["sauces"],
+    "collision": false,
+    "ai": "sauces",
+    "agree": true
+  },
+  {
+    "name": "Гірчиця діжонська",
+    "set": "synthetic",
+    "deterministic": "sauces",
+    "keywordCats": ["sauces"],
+    "collision": false,
+    "ai": "sauces",
+    "agree": true
+  },
+  {
+    "name": "Оцет яблучний 500мл",
+    "set": "synthetic",
+    "deterministic": "pantry",
+    "keywordCats": ["pantry"],
+    "collision": false,
+    "ai": "pantry",
+    "agree": true
+  },
+  {
+    "name": "Олія оливкова Extra Virgin",
+    "set": "synthetic",
+    "deterministic": "pantry",
+    "keywordCats": ["pantry"],
+    "collision": false,
+    "ai": "pantry",
+    "agree": true
+  },
+  {
+    "name": "Паста томатна 150г",
+    "set": "synthetic",
+    "deterministic": "sauces",
+    "keywordCats": ["sauces", "vegetables"],
+    "collision": true,
+    "ai": "sauces",
+    "agree": true
+  },
+  {
+    "name": "Олія кукурудзяна",
+    "set": "synthetic",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables", "grains", "pantry"],
+    "collision": true,
+    "ai": "pantry",
+    "agree": false
+  },
+  {
+    "name": "Майонез \"Провансаль\"",
+    "set": "synthetic",
+    "deterministic": "sauces",
+    "keywordCats": ["sauces"],
+    "collision": false,
+    "ai": "sauces",
+    "agree": true
+  },
+  {
+    "name": "Спеції для курки",
+    "set": "synthetic",
+    "deterministic": "meat",
+    "keywordCats": ["meat", "pantry"],
+    "collision": true,
+    "ai": "pantry",
+    "agree": false
+  },
+  {
+    "name": "Соус \"Цезар\"",
+    "set": "synthetic",
+    "deterministic": "sauces",
+    "keywordCats": ["sauces"],
+    "collision": false,
+    "ai": "sauces",
+    "agree": true
+  },
+  {
+    "name": "Оцет винний червоний",
+    "set": "synthetic",
+    "deterministic": "pantry",
+    "keywordCats": ["pantry"],
+    "collision": false,
+    "ai": "pantry",
+    "agree": true
+  },
+  {
+    "name": "Олія соняшникова нерафінована",
+    "set": "synthetic",
+    "deterministic": "pantry",
+    "keywordCats": ["pantry"],
+    "collision": false,
+    "ai": "pantry",
+    "agree": true
+  },
+  {
+    "name": "Паприка мелена",
+    "set": "synthetic",
+    "deterministic": "vegetables",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "pantry",
+    "agree": false
+  },
+  {
+    "name": "Соус часниковий",
+    "set": "synthetic",
+    "deterministic": "sauces",
+    "keywordCats": ["sauces", "vegetables"],
+    "collision": true,
+    "ai": "sauces",
+    "agree": true
+  },
+  {
+    "name": "Олія лляна",
+    "set": "synthetic",
+    "deterministic": "pantry",
+    "keywordCats": ["pantry"],
+    "collision": false,
+    "ai": "pantry",
+    "agree": true
+  },
+  {
+    "name": "Майонез економ",
+    "set": "synthetic",
+    "deterministic": "sauces",
+    "keywordCats": ["sauces"],
+    "collision": false,
+    "ai": "sauces",
+    "agree": true
+  },
+  {
+    "name": "Кетчуп \"Махеевъ\"",
+    "set": "synthetic",
+    "deterministic": "sauces",
+    "keywordCats": ["sauces"],
+    "collision": false,
+    "ai": "sauces",
+    "agree": true
+  },
+  {
+    "name": "Тушонка свин. \"Гармонія\" 325г",
+    "set": "synthetic",
+    "deterministic": "canned",
+    "keywordCats": ["canned"],
+    "collision": false,
+    "ai": "canned",
+    "agree": true
+  },
+  {
+    "name": "Паштет курячий \"Апетитка\" 100г",
+    "set": "synthetic",
+    "deterministic": "canned",
+    "keywordCats": ["canned", "meat"],
+    "collision": true,
+    "ai": "canned",
+    "agree": true
+  },
+  {
+    "name": "Огірки конс. \"Ніжин\" 450г",
+    "set": "synthetic",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables"],
+    "collision": false,
+    "ai": "canned",
+    "agree": false
+  },
+  {
+    "name": "Згущене молоко \"Молокія\" 8% 380г",
+    "set": "synthetic",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": false
+  },
+  {
+    "name": "Тушонка ялов. вищ. гатунку",
+    "set": "synthetic",
+    "deterministic": "canned",
+    "keywordCats": ["canned"],
+    "collision": false,
+    "ai": "canned",
+    "agree": true
+  },
+  {
+    "name": "Паштет печінковий \"М'ясний\"",
+    "set": "synthetic",
+    "deterministic": "canned",
+    "keywordCats": ["canned", "meat"],
+    "collision": true,
+    "ai": "canned",
+    "agree": true
+  },
+  {
+    "name": "Горошок конс. \"Злато\" 400г",
+    "set": "synthetic",
+    "deterministic": "legumes",
+    "keywordCats": ["legumes"],
+    "collision": false,
+    "ai": "canned",
+    "agree": false
+  },
+  {
+    "name": "Згущ. молоко \"Простоквашино\"",
+    "set": "synthetic",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Тушонка свиняча СМП 325г",
+    "set": "synthetic",
+    "deterministic": "canned",
+    "keywordCats": ["canned"],
+    "collision": false,
+    "ai": "canned",
+    "agree": true
+  },
+  {
+    "name": "Паштет \"Ласощі\" вершковий",
+    "set": "synthetic",
+    "deterministic": "canned",
+    "keywordCats": ["canned", "dairy_eggs"],
+    "collision": true,
+    "ai": "canned",
+    "agree": true
+  },
+  {
+    "name": "Кукурудза конс. \"Солодка\"",
+    "set": "synthetic",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables", "grains", "pantry"],
+    "collision": true,
+    "ai": "canned",
+    "agree": false
+  },
+  {
+    "name": "Молоко згущене 8.5%",
+    "set": "synthetic",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": false
+  },
+  {
+    "name": "Тушонка ял. \"Верес\" 300г",
+    "set": "synthetic",
+    "deterministic": "canned",
+    "keywordCats": ["canned"],
+    "collision": false,
+    "ai": "canned",
+    "agree": true
+  },
+  {
+    "name": "Паштет \"Сніданок\" 150г",
+    "set": "synthetic",
+    "deterministic": "canned",
+    "keywordCats": ["canned"],
+    "collision": false,
+    "ai": "canned",
+    "agree": true
+  },
+  {
+    "name": "Квасоля конс. томат.",
+    "set": "synthetic",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables", "legumes"],
+    "collision": true,
+    "ai": "canned",
+    "agree": false
+  },
+  {
+    "name": "Згущ. молоко 12%",
+    "set": "synthetic",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Тушонка свиняча 500г",
+    "set": "synthetic",
+    "deterministic": "canned",
+    "keywordCats": ["canned"],
+    "collision": false,
+    "ai": "canned",
+    "agree": true
+  },
+  {
+    "name": "Паштет \"Домашній\"",
+    "set": "synthetic",
+    "deterministic": "canned",
+    "keywordCats": ["canned"],
+    "collision": false,
+    "ai": "canned",
+    "agree": true
+  },
+  {
+    "name": "Капуста кваш. \"Рідна\" 1кг",
+    "set": "synthetic",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables"],
+    "collision": false,
+    "ai": "vegetables",
+    "agree": true
+  },
+  {
+    "name": "Згущ. молоко 11%",
+    "set": "synthetic",
+    "deterministic": "dairy_eggs",
+    "keywordCats": ["dairy_eggs"],
+    "collision": false,
+    "ai": "dairy_eggs",
+    "agree": true
+  },
+  {
+    "name": "Пельмені \"Свинячі\"",
+    "set": "synthetic",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals"],
+    "collision": false,
+    "ai": "frozen",
+    "agree": false
+  },
+  {
+    "name": "Котлети курячі заморожені",
+    "set": "synthetic",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals", "frozen", "meat"],
+    "collision": true,
+    "ai": "frozen",
+    "agree": false
+  },
+  {
+    "name": "Нагетси курячі 1кг",
+    "set": "synthetic",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "frozen",
+    "agree": false
+  },
+  {
+    "name": "Брокколі мікс заморожений",
+    "set": "synthetic",
+    "deterministic": "frozen",
+    "keywordCats": ["frozen"],
+    "collision": false,
+    "ai": "frozen",
+    "agree": true
+  },
+  {
+    "name": "Шпинат заморожений 500г",
+    "set": "synthetic",
+    "deterministic": "vegetables",
+    "keywordCats": ["frozen", "vegetables"],
+    "collision": true,
+    "ai": "frozen",
+    "agree": false
+  },
+  {
+    "name": "Морозиво пломбір 1л",
+    "set": "synthetic",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["sweets_snacks"],
+    "collision": false,
+    "ai": "frozen",
+    "agree": false
+  },
+  {
+    "name": "Ескімо шоколадне",
+    "set": "synthetic",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["sweets_snacks"],
+    "collision": false,
+    "ai": "frozen",
+    "agree": false
+  },
+  {
+    "name": "Тісто листкове заморожене",
+    "set": "synthetic",
+    "deterministic": "frozen",
+    "keywordCats": ["frozen"],
+    "collision": false,
+    "ai": "frozen",
+    "agree": true
+  },
+  {
+    "name": "Риба палтус заморожений",
+    "set": "synthetic",
+    "deterministic": "frozen",
+    "keywordCats": ["frozen", "fish"],
+    "collision": true,
+    "ai": "frozen",
+    "agree": true
+  },
+  {
+    "name": "Сирники заморожені 400г",
+    "set": "synthetic",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals", "frozen", "dairy_eggs"],
+    "collision": true,
+    "ai": "frozen",
+    "agree": false
+  },
+  {
+    "name": "Кракет картопляний",
+    "set": "synthetic",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables"],
+    "collision": false,
+    "ai": "frozen",
+    "agree": false
+  },
+  {
+    "name": "Овочева суміш \"Весняна\"",
+    "set": "synthetic",
+    "deterministic": "frozen",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "frozen",
+    "agree": true
+  },
+  {
+    "name": "Фрикадельки яловичі",
+    "set": "synthetic",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "frozen",
+    "agree": false
+  },
+  {
+    "name": "Морозиво ванільне рожок",
+    "set": "synthetic",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["sweets_snacks"],
+    "collision": false,
+    "ai": "frozen",
+    "agree": false
+  },
+  {
+    "name": "Заморожений горошок",
+    "set": "synthetic",
+    "deterministic": "frozen",
+    "keywordCats": ["frozen", "legumes"],
+    "collision": true,
+    "ai": "frozen",
+    "agree": true
+  },
+  {
+    "name": "Смажена картопля шокова",
+    "set": "synthetic",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables"],
+    "collision": false,
+    "ai": "frozen",
+    "agree": false
+  },
+  {
+    "name": "Морозиво фісташкове",
+    "set": "synthetic",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["sweets_snacks", "nuts_seeds"],
+    "collision": true,
+    "ai": "frozen",
+    "agree": false
+  },
+  {
+    "name": "Лазанья заморожена",
+    "set": "synthetic",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals", "frozen"],
+    "collision": true,
+    "ai": "frozen",
+    "agree": false
+  },
+  {
+    "name": "Куряче філе шок.",
+    "set": "synthetic",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Квасоля Червона 0.5кг",
+    "set": "synthetic",
+    "deterministic": "legumes",
+    "keywordCats": ["legumes"],
+    "collision": false,
+    "ai": "legumes",
+    "agree": true
+  },
+  {
+    "name": "Нут Власна Фасовка 300г",
+    "set": "synthetic",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "legumes",
+    "agree": false
+  },
+  {
+    "name": "Сочевиця Зелена 1кг",
+    "set": "synthetic",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables", "legumes"],
+    "collision": true,
+    "ai": "legumes",
+    "agree": false
+  },
+  {
+    "name": "Горох Поляна 0.8кг",
+    "set": "synthetic",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "legumes",
+    "agree": false
+  },
+  {
+    "name": "Насіння Соняшнику Чищене 150г",
+    "set": "synthetic",
+    "deterministic": "nuts_seeds",
+    "keywordCats": ["nuts_seeds"],
+    "collision": false,
+    "ai": "nuts_seeds",
+    "agree": true
+  },
+  {
+    "name": "Арахіс Смажений Солоний 200г",
+    "set": "synthetic",
+    "deterministic": "nuts_seeds",
+    "keywordCats": ["nuts_seeds", "pantry"],
+    "collision": true,
+    "ai": "nuts_seeds",
+    "agree": true
+  },
+  {
+    "name": "Волоський Горіх Половинки 250г",
+    "set": "synthetic",
+    "deterministic": "nuts_seeds",
+    "keywordCats": ["nuts_seeds"],
+    "collision": false,
+    "ai": "nuts_seeds",
+    "agree": true
+  },
+  {
+    "name": "Мигдаль Сирий 100г",
+    "set": "synthetic",
+    "deterministic": "nuts_seeds",
+    "keywordCats": ["nuts_seeds", "dairy_eggs"],
+    "collision": true,
+    "ai": "nuts_seeds",
+    "agree": true
+  },
+  {
+    "name": "Фісташки Несолоні 180г",
+    "set": "synthetic",
+    "deterministic": "nuts_seeds",
+    "keywordCats": ["nuts_seeds"],
+    "collision": false,
+    "ai": "nuts_seeds",
+    "agree": true
+  },
+  {
+    "name": "Насіння Гарбуза Сире 120г",
+    "set": "synthetic",
+    "deterministic": "nuts_seeds",
+    "keywordCats": ["nuts_seeds", "vegetables", "dairy_eggs"],
+    "collision": true,
+    "ai": "nuts_seeds",
+    "agree": true
+  },
+  {
+    "name": "Квасоля Біла Різдвяна 0.7кг",
+    "set": "synthetic",
+    "deterministic": "legumes",
+    "keywordCats": ["legumes"],
+    "collision": false,
+    "ai": "legumes",
+    "agree": true
+  },
+  {
+    "name": "Сочевиця Червона Колота 0.5кг",
+    "set": "synthetic",
+    "deterministic": "legumes",
+    "keywordCats": ["legumes"],
+    "collision": false,
+    "ai": "legumes",
+    "agree": true
+  },
+  {
+    "name": "Горох Жовтий Цілий 1.2кг",
+    "set": "synthetic",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "legumes",
+    "agree": false
+  },
+  {
+    "name": "Насіння Льон 200г",
+    "set": "synthetic",
+    "deterministic": "nuts_seeds",
+    "keywordCats": ["nuts_seeds"],
+    "collision": false,
+    "ai": "nuts_seeds",
+    "agree": true
+  },
+  {
+    "name": "Арахіс Варений 300г",
+    "set": "synthetic",
+    "deterministic": "nuts_seeds",
+    "keywordCats": ["nuts_seeds"],
+    "collision": false,
+    "ai": "nuts_seeds",
+    "agree": true
+  },
+  {
+    "name": "Горіх Фундук Чищений 150г",
+    "set": "synthetic",
+    "deterministic": "nuts_seeds",
+    "keywordCats": ["nuts_seeds"],
+    "collision": false,
+    "ai": "nuts_seeds",
+    "agree": true
+  },
+  {
+    "name": "Кеш'ю Цілий 220г",
+    "set": "synthetic",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "nuts_seeds",
+    "agree": false
+  },
+  {
+    "name": "Насіння Чіа 150г",
+    "set": "synthetic",
+    "deterministic": "nuts_seeds",
+    "keywordCats": ["nuts_seeds"],
+    "collision": false,
+    "ai": "nuts_seeds",
+    "agree": true
+  },
+  {
+    "name": "Горох Відбірний 0.9кг",
+    "set": "synthetic",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "legumes",
+    "agree": false
+  },
+  {
+    "name": "Квасоля Червона Консервована 400г",
+    "set": "synthetic",
+    "deterministic": "canned",
+    "keywordCats": ["canned", "legumes"],
+    "collision": true,
+    "ai": "canned",
+    "agree": true
+  },
+  {
+    "name": "Протеїн сироватковий \"OPTIMUM\"",
+    "set": "synthetic",
+    "deterministic": "sports",
+    "keywordCats": ["dairy_eggs", "sports"],
+    "collision": true,
+    "ai": "sports",
+    "agree": true
+  },
+  {
+    "name": "BCAA 2:1:1",
+    "set": "synthetic",
+    "deterministic": "sports",
+    "keywordCats": ["sports"],
+    "collision": false,
+    "ai": "sports",
+    "agree": true
+  },
+  {
+    "name": "Ізотонік SPORT",
+    "set": "synthetic",
+    "deterministic": "sports",
+    "keywordCats": ["sports"],
+    "collision": false,
+    "ai": "sports",
+    "agree": true
+  },
+  {
+    "name": "Гейнер Mass Gainer",
+    "set": "synthetic",
+    "deterministic": "sports",
+    "keywordCats": ["sports"],
+    "collision": false,
+    "ai": "sports",
+    "agree": true
+  },
+  {
+    "name": "Комплекс вітамінів SportVita",
+    "set": "synthetic",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "sports",
+    "agree": false
+  },
+  {
+    "name": "Креатин моногідрат",
+    "set": "synthetic",
+    "deterministic": "sports",
+    "keywordCats": ["sports"],
+    "collision": false,
+    "ai": "sports",
+    "agree": true
+  },
+  {
+    "name": "Амінокислоти BCAA",
+    "set": "synthetic",
+    "deterministic": "sports",
+    "keywordCats": ["sports"],
+    "collision": false,
+    "ai": "sports",
+    "agree": true
+  },
+  {
+    "name": "Протеїновий батончик NutriBar",
+    "set": "synthetic",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["sweets_snacks", "grains", "sports"],
+    "collision": true,
+    "ai": "sweets_snacks",
+    "agree": true
+  },
+  {
+    "name": "L-карнітин",
+    "set": "synthetic",
+    "deterministic": "sports",
+    "keywordCats": ["sports"],
+    "collision": false,
+    "ai": "sports",
+    "agree": true
+  },
+  {
+    "name": "Енергетичний гель",
+    "set": "synthetic",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "sports",
+    "agree": false
+  },
+  {
+    "name": "CLA (кон'югована лінолева кислота)",
+    "set": "synthetic",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "sports",
+    "agree": false
+  },
+  {
+    "name": "Протеїн казеїновий",
+    "set": "synthetic",
+    "deterministic": "sports",
+    "keywordCats": ["sports"],
+    "collision": false,
+    "ai": "sports",
+    "agree": true
+  },
+  {
+    "name": "Омега-3 риб'ячий жир",
+    "set": "synthetic",
+    "deterministic": "fish",
+    "keywordCats": ["fish"],
+    "collision": false,
+    "ai": "sports",
+    "agree": false
+  },
+  {
+    "name": "Комплекс мінералів",
+    "set": "synthetic",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "sports",
+    "agree": false
+  },
+  {
+    "name": "Замінник цукру",
+    "set": "synthetic",
+    "deterministic": "pantry",
+    "keywordCats": ["pantry"],
+    "collision": false,
+    "ai": "pantry",
+    "agree": true
+  },
+  {
+    "name": "Протеїновий коктейль",
+    "set": "synthetic",
+    "deterministic": "sports",
+    "keywordCats": ["sports"],
+    "collision": false,
+    "ai": "sports",
+    "agree": true
+  },
+  {
+    "name": "Батончик без цукру",
+    "set": "synthetic",
+    "deterministic": "sweets_snacks",
+    "keywordCats": ["sweets_snacks", "grains", "pantry"],
+    "collision": true,
+    "ai": "sweets_snacks",
+    "agree": true
+  },
+  {
+    "name": "Гідролізований протеїн",
+    "set": "synthetic",
+    "deterministic": "sports",
+    "keywordCats": ["sports"],
+    "collision": false,
+    "ai": "sports",
+    "agree": true
+  },
+  {
+    "name": "Спортивний напій",
+    "set": "synthetic",
+    "deterministic": "drinks",
+    "keywordCats": ["drinks"],
+    "collision": false,
+    "ai": "sports",
+    "agree": false
+  },
+  {
+    "name": "Протеїн ізолят",
+    "set": "synthetic",
+    "deterministic": "sports",
+    "keywordCats": ["sports"],
+    "collision": false,
+    "ai": "sports",
+    "agree": true
+  },
+  {
+    "name": "Голубці з м'ясом",
+    "set": "synthetic",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals", "meat"],
+    "collision": true,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Деруни зі сметаною",
+    "set": "synthetic",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals", "dairy_eggs"],
+    "collision": true,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Сирники класичні",
+    "set": "synthetic",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals", "dairy_eggs"],
+    "collision": true,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Пампушки з часником",
+    "set": "synthetic",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": false
+  },
+  {
+    "name": "Холодець домашній",
+    "set": "synthetic",
+    "deterministic": "ready_meals",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Крученики по-київськи",
+    "set": "synthetic",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": false
+  },
+  {
+    "name": "Запіканка картопляна",
+    "set": "synthetic",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": false
+  },
+  {
+    "name": "Гарбузова каша",
+    "set": "synthetic",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": false
+  },
+  {
+    "name": "Гречаники",
+    "set": "synthetic",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": false
+  },
+  {
+    "name": "Капусняк",
+    "set": "synthetic",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": false
+  },
+  {
+    "name": "Ліниві вареники",
+    "set": "synthetic",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Пиріжки з капустою",
+    "set": "synthetic",
+    "deterministic": "vegetables",
+    "keywordCats": ["vegetables"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": false
+  },
+  {
+    "name": "Відбивні з свинини",
+    "set": "synthetic",
+    "deterministic": "meat",
+    "keywordCats": ["meat"],
+    "collision": false,
+    "ai": "meat",
+    "agree": true
+  },
+  {
+    "name": "Риба смажена",
+    "set": "synthetic",
+    "deterministic": "fish",
+    "keywordCats": ["fish"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": false
+  },
+  {
+    "name": "Котлети домашні",
+    "set": "synthetic",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Куліш",
+    "set": "synthetic",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": false
+  },
+  {
+    "name": "Вергуни",
+    "set": "synthetic",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "sweets_snacks",
+    "agree": false
+  },
+  {
+    "name": "Суші Філадельфія",
+    "set": "synthetic",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Паста Карбонара 400г",
+    "set": "synthetic",
+    "deterministic": "ready_meals",
+    "keywordCats": ["sauces"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Боул з куркою теріякі",
+    "set": "synthetic",
+    "deterministic": "sauces",
+    "keywordCats": ["sauces", "meat"],
+    "collision": true,
+    "ai": "ready_meals",
+    "agree": false
+  },
+  {
+    "name": "Бурріто Санта Фе",
+    "set": "synthetic",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": false
+  },
+  {
+    "name": "Рол Каліфорнія",
+    "set": "synthetic",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Спагетті Болоньєзе 350г",
+    "set": "synthetic",
+    "deterministic": "grains",
+    "keywordCats": ["grains"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": false
+  },
+  {
+    "name": "Веганський боул",
+    "set": "synthetic",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": false
+  },
+  {
+    "name": "Бурріто Чилі кон Карне",
+    "set": "synthetic",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": false
+  },
+  {
+    "name": "Філадельфія лайт",
+    "set": "synthetic",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": false
+  },
+  {
+    "name": "Лазанья Болоньєзе",
+    "set": "synthetic",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Рис з овочами та креветками",
+    "set": "synthetic",
+    "deterministic": "fish",
+    "keywordCats": ["fish", "grains"],
+    "collision": true,
+    "ai": "ready_meals",
+    "agree": false
+  },
+  {
+    "name": "Піца Маргарита 30см",
+    "set": "synthetic",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Суші мікс",
+    "set": "synthetic",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Паста Альфредо",
+    "set": "synthetic",
+    "deterministic": "sauces",
+    "keywordCats": ["sauces"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": false
+  },
+  {
+    "name": "Боул з лососем",
+    "set": "synthetic",
+    "deterministic": "fish",
+    "keywordCats": ["fish"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": false
+  },
+  {
+    "name": "Бурріто Вегетаріанський",
+    "set": "synthetic",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": false
+  },
+  {
+    "name": "Дракон рол",
+    "set": "synthetic",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Гречана паста з грибами",
+    "set": "synthetic",
+    "deterministic": "sauces",
+    "keywordCats": ["sauces"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": false
+  },
+  {
+    "name": "Боул BBQ",
+    "set": "synthetic",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": false
+  },
+  {
+    "name": "Суші сет №5",
+    "set": "synthetic",
+    "deterministic": "ready_meals",
+    "keywordCats": ["ready_meals"],
+    "collision": false,
+    "ai": "ready_meals",
+    "agree": true
+  },
+  {
+    "name": "Засіб для миття посуду Fairy",
+    "set": "synthetic",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": null,
+    "agree": null
+  },
+  {
+    "name": "Пральний порошок Gala",
+    "set": "synthetic",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": null,
+    "agree": null
+  },
+  {
+    "name": "Шампунь Pantene",
+    "set": "synthetic",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": null,
+    "agree": null
+  },
+  {
+    "name": "Туалетний папір Обухів 4 рул.",
+    "set": "synthetic",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": null,
+    "agree": null
+  },
+  {
+    "name": "Мило dove",
+    "set": "synthetic",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": null,
+    "agree": null
+  },
+  {
+    "name": "Зубна паста Colgate",
+    "set": "synthetic",
+    "deterministic": "sauces",
+    "keywordCats": ["sauces"],
+    "collision": false,
+    "ai": null,
+    "agree": null
+  },
+  {
+    "name": "Батарейки АА Energizer 4 шт.",
+    "set": "synthetic",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": null,
+    "agree": null
+  },
+  {
+    "name": "Пластикові пакети Zip 20х30",
+    "set": "synthetic",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": null,
+    "agree": null
+  },
+  {
+    "name": "Серветки вологі Huggies",
+    "set": "synthetic",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": null,
+    "agree": null
+  },
+  {
+    "name": "Засіб для підлоги Cif",
+    "set": "synthetic",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": null,
+    "agree": null
+  },
+  {
+    "name": "Дезодорант Axe",
+    "set": "synthetic",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": null,
+    "agree": null
+  },
+  {
+    "name": "Крем для рук Nivea",
+    "set": "synthetic",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": null,
+    "agree": null
+  },
+  {
+    "name": "Губка для миття посуду 5 шт.",
+    "set": "synthetic",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": null,
+    "agree": null
+  },
+  {
+    "name": "Засіб для чищення унітазу Domestos",
+    "set": "synthetic",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": null,
+    "agree": null
+  },
+  {
+    "name": "Дитячі підгузки Pampers",
+    "set": "synthetic",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": null,
+    "agree": null
+  },
+  {
+    "name": "Рідке мило Palmolive",
+    "set": "synthetic",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": null,
+    "agree": null
+  },
+  {
+    "name": "Пакет-майка 10 шт.",
+    "set": "synthetic",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": null,
+    "agree": null
+  },
+  {
+    "name": "Склоочисник Mr. Proper",
+    "set": "synthetic",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": null,
+    "agree": null
+  },
+  {
+    "name": "Паста зубна Lacalut",
+    "set": "synthetic",
+    "deterministic": "sauces",
+    "keywordCats": ["sauces"],
+    "collision": false,
+    "ai": null,
+    "agree": null
+  },
+  {
+    "name": "Побутова хімія",
+    "set": "synthetic",
+    "deterministic": "other",
+    "keywordCats": [],
+    "collision": false,
+    "ai": null,
+    "agree": null
+  }
+]
