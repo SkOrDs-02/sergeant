@@ -1,6 +1,6 @@
 # SPEC: Plata by mono — перехід на нативні підписки monobank
 
-> **Last touched:** 2026-09-01 by @Skords-01. **Next review:** 2026-12-01.
+> **Last touched:** 2026-09-01 by @claude. **Next review:** 2026-12-01.
 > **Status:** Scaffolded
 
 ## Проблема
@@ -9,12 +9,12 @@
 
 Та сама самописна рекурентка несе чотири дефекти в грошовому шляху, кожен із яких зникає разом із кодом, що його породив:
 
-1. `DELETE /api/merchant/wallet/card` приймає `cardToken` **query-параметром**, а ми шлемо його в тілі ([plata.ts:373](../../../../apps/server/src/modules/billing/plata.ts:373)) і не перевіряємо `response.ok`. Токен на боці monobank лишається живим після скасування підписки, і ми про це не дізнаємось.
-2. `wallet/payment` легально повертає `status: "processing"` (і може віддати `tdsUrl`), а ми трактуємо все, крім `success`, як провал ([plataScheduler.ts:73](../../../../apps/server/src/modules/billing/plataScheduler.ts:73)).
-3. У тілі списання не передані ні `webHookUrl`, ні `merchantPaymInfo.reference`, хоча обидва поля підтримуються. Фінальний статус до нас не доїде ніколи, а якби доїхав, `processWebhook` викинув би його як `plata_webhook_unresolved` через порожній `reference` ([plata.ts:284](../../../../apps/server/src/modules/billing/plata.ts:284)). Разом із пунктом 2 це означає: кошти списані, юзер у `past_due`.
-4. `past_due` це глухий кут. Планувальник відбирає лише `status='active'` ([plataScheduler.ts:106](../../../../apps/server/src/modules/billing/plataScheduler.ts:106)), а [getUserPlan](../../../../apps/server/src/modules/billing/getUserPlan.ts) вимагає `current_period_end > NOW()`. Одна транзієнтна 500-ка від monopay гасить Pro назавжди, без жодної повторної спроби.
+1. `DELETE /api/merchant/wallet/card` приймає `cardToken` **query-параметром**, а ми шлемо його в тілі ([plata.ts:373](../../../../apps/server/src/modules/billing/plata.ts)) і не перевіряємо `response.ok`. Токен на боці monobank лишається живим після скасування підписки, і ми про це не дізнаємось.
+2. `wallet/payment` легально повертає `status: "processing"` (і може віддати `tdsUrl`), а ми трактуємо все, крім `success`, як провал (`plataScheduler.ts:73`).
+3. У тілі списання не передані ні `webHookUrl`, ні `merchantPaymInfo.reference`, хоча обидва поля підтримуються. Фінальний статус до нас не доїде ніколи, а якби доїхав, `processWebhook` викинув би його як `plata_webhook_unresolved` через порожній `reference` ([plata.ts:284](../../../../apps/server/src/modules/billing/plata.ts)). Разом із пунктом 2 це означає: кошти списані, юзер у `past_due`.
+4. `past_due` це глухий кут. Планувальник відбирає лише `status='active'` (`plataScheduler.ts:106`), а [getUserPlan](../../../../apps/server/src/modules/billing/getUserPlan.ts) вимагає `current_period_end > NOW()`. Одна транзієнтна 500-ка від monopay гасить Pro назавжди, без жодної повторної спроби.
 
-Прапорець `PLATA_ENABLED` за замовчуванням `false` ([env.ts:394](../../../../apps/server/src/env/env.ts:394)), провайдер у продакшн не пущено, живих підписок і збережених card-token немає. Це вікно, коли міграція коштує видалення коду, а не міграції даних.
+Прапорець `PLATA_ENABLED` за замовчуванням `false` ([env.ts:394](../../../../apps/server/src/env/env.ts)), провайдер у продакшн не пущено, живих підписок і збережених card-token немає. Це вікно, коли міграція коштує видалення коду, а не міграції даних.
 
 ## Мета
 
@@ -109,16 +109,16 @@ Owner-скіл за routing-таблицею AGENTS.md: **`sergeant-module-billi
 
 **Видалити повністю:**
 
-- [apps/server/src/modules/billing/plataScheduler.ts](../../../../apps/server/src/modules/billing/plataScheduler.ts) і `plataScheduler.test.ts`
+- `apps/server/src/modules/billing/plataScheduler.ts` і `plataScheduler.test.ts`
 - Реєстрацію `PlataRecurringPoller` в [apps/server/src/index.ts](../../../../apps/server/src/index.ts): імпорт (рядок 80), створення і `start()` (247-248), `stop()` у graceful-shutdown (421). Новий поллер звірки реєструється на тих самих трьох місцях.
 - З [plata.ts](../../../../apps/server/src/modules/billing/plata.ts): `storePlataCardToken`, `getEncKey`, весь invoice-флоу в `createCheckoutSession`, `parsePlataWebhook`, поточний `processWebhook`, виклики `wallet/card` у `cancelSubscription`
 
 **Переписати:**
 
 - [apps/server/src/modules/billing/plata.ts](../../../../apps/server/src/modules/billing/plata.ts) — `createCheckoutSession` через `subscription/create`; `cancelSubscription` через `subscription/edit` з фолбеком на `remove`; новий модуль звірки, який читає `subscription/status` і застосовує стан. `verifyWebhookSignature`, `ensurePlataPubkey`, `parsePubkey` і кеш pubkey лишаються без змін, вони вже коректні. Слідкуй за Hard Rule #18 (`max-lines: 600`): звірку і поллер логічно винести в окремий `plataSync.ts`.
-- [apps/server/src/routes/billing.ts:331](../../../../apps/server/src/routes/billing.ts:331) — замість одного роута два, кожен verify-then-enqueue
-- [apps/server/src/http/bodySizePolicy.ts:165](../../../../apps/server/src/http/bodySizePolicy.ts:165) — правило `plata-webhook` замінити двома
-- [packages/shared/src/openapi/routes.ts:1430](../../../../packages/shared/src/openapi/routes.ts:1430) — опис `/api/billing/plata-webhook` замінити двома новими; там же підправити текст на рядку 1382 («Plata stop-scheduler» більше не відповідає дійсності). Похідний `openapi.json` перегенерується pre-commit-хуком, руками не чіпай.
+- [apps/server/src/routes/billing.ts:331](../../../../apps/server/src/routes/billing.ts) — замість одного роута два, кожен verify-then-enqueue
+- [apps/server/src/http/bodySizePolicy.ts:165](../../../../apps/server/src/http/bodySizePolicy.ts) — правило `plata-webhook` замінити двома
+- [packages/shared/src/openapi/routes.ts:1430](../../../../packages/shared/src/openapi/routes.ts) — опис `/api/billing/plata-webhook` замінити двома новими; там же підправити текст на рядку 1382 («Plata stop-scheduler» більше не відповідає дійсності). Похідний `openapi.json` перегенерується pre-commit-хуком, руками не чіпай.
 
 **Додати:**
 
@@ -130,7 +130,7 @@ Owner-скіл за routing-таблицею AGENTS.md: **`sergeant-module-billi
 - [getUserPlan.ts](../../../../apps/server/src/modules/billing/getUserPlan.ts) — правило «Pro поки `current_period_end > NOW()`» саме реалізує грейс, змінювати не треба
 - [provider.ts](../../../../apps/server/src/modules/billing/provider.ts), [registry.ts](../../../../apps/server/src/modules/billing/registry.ts) — інтерфейс `BillingProvider` витримує нову реалізацію без правок
 - [apps/web/src/core/PricingPage.tsx](../../../../apps/web/src/core/PricingPage.tsx), [PlanSection.tsx](../../../../apps/web/src/core/settings/PlanSection.tsx) — UI не змінюється
-- `metric billing_recurring_charge_total` лишається; оновити тільки коментар у [metrics/billing.ts:34](../../../../apps/server/src/obs/metrics/billing.ts:34) («Plata — наш scheduler» стає неправдою). Інкрементувати з нового місця звірки з тими самими мітками `charged` / `past_due`.
+- `metric billing_recurring_charge_total` лишається; оновити тільки коментар у [metrics/billing.ts:34](../../../../apps/server/src/obs/metrics/billing.ts) («Plata — наш scheduler» стає неправдою). Інкрементувати з нового місця звірки з тими самими мітками `charged` / `past_due`.
 
 **Документація (Hard Rule #15, у тому ж PR):**
 

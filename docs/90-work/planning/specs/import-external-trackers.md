@@ -1,6 +1,6 @@
 # SPEC: Імпорт з зовнішніх трекерів - спільний шар і адаптер Strong
 
-> **Last touched:** 2026-09-01 by @Skords-01. **Next review:** 2026-12-01.
+> **Last touched:** 2026-09-01 by @claude. **Next review:** 2026-12-01.
 > **Status:** In progress - PR-1 і PR-2 зроблені (пакет `packages/tabular-import`,
 > розкол фінансового шару). Крок 0 закрито: формат Strong звірено на живому
 > експорті 2026-09-01. Лишився PR-3 (адаптер).
@@ -118,7 +118,7 @@ XLSX/ZIP це великий шмат коду, який потягнувся б
   `type`, `duration_sec` і `distance_m`. Тобто вартість близька до нуля, а
   інакше людина мовчки втрачає частину історії.
 - **Вагу тіла імпортуємо теж** (рішення founder-а 2026-09-01), зі
-  `strong_weight.csv`. [ADR-0080](../../04-governance/adr/0080-body-weight-source-of-truth.md)
+  `strong_weight.csv`. [ADR-0080](../../../04-governance/adr/0080-body-weight-source-of-truth.md)
   робить fizruk єдиним джерелом істини для ваги, і таблиця вимірювань уже є.
   Відсоток жиру - поза скоупом v1: окреме поле, окреме рішення.
 
