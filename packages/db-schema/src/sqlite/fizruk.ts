@@ -38,6 +38,8 @@ export const fizrukWorkouts = sqliteTable(
     warmupJson: text("warmup_json"),
     cooldownJson: text("cooldown_json"),
     wellbeingJson: text("wellbeing_json"),
+    /** Оцінка витрачених калорій (міграція 132). Nullable: без ваги оцінювати нічим. */
+    kcalBurned: integer("kcal_burned"),
     createdAt: text("created_at")
       .notNull()
       .default(sql`(datetime('now'))`),
@@ -148,6 +150,33 @@ export const fizrukCustomExercises = sqliteTable(
   },
   (table) => [
     index("fizruk_custom_exercises_user_idx_lite")
+      .on(table.userId)
+      .where(sql`${table.deletedAt} IS NULL`),
+  ],
+);
+
+/**
+ * SQLite schema for the `fizruk_custom_activities` table.
+ *
+ * Дзеркало `fizruk_custom_exercises`: свої заняття для короткого запису,
+ * увесь вміст у `data_json`.
+ */
+export const fizrukCustomActivities = sqliteTable(
+  "fizruk_custom_activities",
+  {
+    id: text().primaryKey(),
+    userId: text("user_id").notNull(),
+    dataJson: text("data_json").notNull().default("{}"),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text("updated_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    deletedAt: text("deleted_at"),
+  },
+  (table) => [
+    index("fizruk_custom_activities_user_idx_lite")
       .on(table.userId)
       .where(sql`${table.deletedAt} IS NULL`),
   ],

@@ -120,6 +120,20 @@ export const BiometricsSchema = z.object({
    * regardless of which surface initiated it.
    */
   weightUpdatedAt: IsoTimestampSchema.nullable(),
+  /**
+   * Чи враховувати спалене на тренуваннях у денній нормі КБЖВ.
+   *
+   * AI-DANGER: дефолт `false` навмисний і принциповий. Множник рівня
+   * активності в TDEE ВЖЕ враховує тренування оптом наперед, тож додавання
+   * спаленого зверху рахує їх удруге і дозволяє зʼїсти зайве - класична
+   * пастка MyFitnessPal. Увімкнений тумблер перемикає розрахунок на
+   * `sedentary` плюс фактичні витрати дня, а не додає до чинної норми.
+   *
+   * `.catch(false)` - зворотна сумісність: записи, зроблені до появи поля,
+   * не мають провалювати парс і зносити ВЕСЬ профіль у дефолт
+   * (`safeReadLSValidated` при помилці схеми відкидає рядок цілком).
+   */
+  countWorkoutsInGoal: z.boolean().catch(false),
   /** ISO timestamp of the last write to ANY field in this record. */
   updatedAt: IsoTimestampSchema,
 });
@@ -188,6 +202,7 @@ export const BIOMETRICS_DEFAULT: Biometrics = {
   activityLevel: null,
   weightKg: null,
   weightUpdatedAt: null,
+  countWorkoutsInGoal: false,
   updatedAt: EPOCH,
 };
 

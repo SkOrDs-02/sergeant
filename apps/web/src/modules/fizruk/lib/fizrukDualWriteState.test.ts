@@ -38,6 +38,7 @@ describe("EMPTY_FIZRUK_DUAL_WRITE_STATE", () => {
       workoutTemplates: [],
       injuries: [],
       pushups: {},
+      customActivities: [],
     });
   });
 });
