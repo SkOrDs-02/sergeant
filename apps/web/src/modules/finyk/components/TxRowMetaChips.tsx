@@ -93,9 +93,13 @@ export function TxRowMetaChips({
             size="xs"
             className="shrink-0 inline-flex items-center rounded-full"
             title="Категорію визначив Сержант за описом і MCC"
-            aria-label="Категорію визначив Сержант за описом і MCC"
           >
             <Icon name="sergeant" size={10} aria-hidden />
+            {/* Badge — generic <span>, тож aria-label імені йому не дає;
+                ім'я для скрінрідера — прихований текст. */}
+            <span className="sr-only">
+              Категорію визначив Сержант за описом і MCC
+            </span>
           </Badge>
         )}
       {catId === INTERNAL_TRANSFER_ID && (

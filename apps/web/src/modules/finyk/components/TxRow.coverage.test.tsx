@@ -144,14 +144,14 @@ describe("TxRow", () => {
     // food MCC, no override, not manual, not transfer, not "other"
     render(<TxRow tx={mkTx({ mcc: 5411, description: "Сільпо" })} />);
     expect(
-      screen.getByLabelText("Категорію визначив Сержант за описом і MCC"),
+      screen.getByText("Категорію визначив Сержант за описом і MCC"),
     ).toBeInTheDocument();
   });
 
   it("hides the AI badge for a manual expense", () => {
     render(<TxRow tx={mkTx({ _manual: true })} />);
     expect(
-      screen.queryByLabelText("Категорію визначив Сержант за описом і MCC"),
+      screen.queryByText("Категорію визначив Сержант за описом і MCC"),
     ).not.toBeInTheDocument();
   });
 
@@ -161,7 +161,7 @@ describe("TxRow", () => {
     );
     expect(screen.getByText("Надходження ФОП")).toBeInTheDocument();
     expect(
-      screen.queryByLabelText("Категорію визначив Сержант за описом і MCC"),
+      screen.queryByText("Категорію визначив Сержант за описом і MCC"),
     ).not.toBeInTheDocument();
   });
 
@@ -280,7 +280,7 @@ describe("TxRow", () => {
     render(<TxRow tx={mkTx()} overrideCatId="internal_transfer" />);
     expect(screen.getByText("не в статистиці")).toBeInTheDocument();
     expect(
-      screen.queryByLabelText("Категорію визначив Сержант за описом і MCC"),
+      screen.queryByText("Категорію визначив Сержант за описом і MCC"),
     ).not.toBeInTheDocument();
   });
 
