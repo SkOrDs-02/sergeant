@@ -122,7 +122,7 @@ Owner-скіл за routing-таблицею AGENTS.md: **`sergeant-module-billi
 
 **Додати:**
 
-- `apps/server/src/migrations/132_plata_subscription.sql` + `.down.sql`. Створює `plata_subscription` (`user_id TEXT PRIMARY KEY REFERENCES "user"(id) ON DELETE CASCADE`, `subscription_id TEXT NOT NULL UNIQUE`, `confirmed_at TIMESTAMPTZ`, `created_at`, `updated_at`) і дропає `plata_card_token`. Наступний вільний номер — 132 (останній зайнятий 131). Хард-правило #4 щодо послідовності номерів без пропусків діє.
+- `apps/server/src/migrations/133_plata_subscription.sql` + `.down.sql`. Створює `plata_subscription` (`user_id TEXT PRIMARY KEY REFERENCES "user"(id) ON DELETE CASCADE`, `subscription_id TEXT NOT NULL UNIQUE`, `confirmed_at TIMESTAMPTZ`, `created_at`, `updated_at`) і дропає `plata_card_token`. Хард-правило #4 щодо послідовності номерів без пропусків діє. Спека планувала номер 132, але поки робота йшла, 132 зайняв `132_fizruk_kcal_and_custom_activities`; перенумеровано на 133 при rebase. Звіряй вільний номер із `origin/main` безпосередньо перед комітом, а не з датою написання спеки.
 - Модуль звірки з двома таймерами. Патерн бери з видаленого `plataScheduler.ts`: in-process `setInterval`, `unref()`, idempotent `start`/`stop`, той самий стиль, що `GdprCleanupPoller` і `SilpoSyncPoller`. Транзакція з `FOR UPDATE SKIP LOCKED` тут більше не потрібна: звірка не рухає гроші, вона лише читає стан у monobank, тож повторний прогін нешкідливий.
 
 **Не чіпати:**

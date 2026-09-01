@@ -255,7 +255,8 @@ const EXEMPT_ROUTES: ReadonlySet<string> = new Set([
   // verifies its provider signature before processing and cannot carry a
   // browser session cookie by design.
   "/api/billing/liqpay-callback",
-  "/api/billing/plata-webhook",
+  "/api/billing/plata-charge",
+  "/api/billing/plata-status",
   // Public VAPID key — frontend reads this to subscribe a push
   // subscription. By design no session, no rate-limit (it's static).
   "/api/push/vapid-public",
