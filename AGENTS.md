@@ -1,6 +1,6 @@
 # Agents in Sergeant
 
-> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-01.
+> **Last touched:** 2026-09-01 by @Skords-01. **Next review:** 2026-12-26.
 > **Status:** Active
 
 > **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load one owner skill for the primary touched surface. Load extra workflow/squad/helper skills only when `docs/00-start/agents/agent-workflows.md` or the routing catalog explicitly says to. The routing catalog lives in `docs/00-start/agents/agent-skills-catalog.md`.
@@ -57,12 +57,12 @@ If two surfaces overlap (e.g. web + e2e), load the **owner** first; add the othe
 
 ### Harness config lives outside the repo
 
-Harnesses keep their config outside the checkout, with three deliberate exceptions: the harness-neutral version registry `.agents/harness-versions.json` (§ Harness version), the repo-owned Codex layer `.codex/` (`config.toml`, `hooks.json`, `agents/*.toml` — 21 tracked files; стан через `pnpm codex:status`, опис у [`docs/00-start/agents/codex-capabilities.md`](./docs/00-start/agents/codex-capabilities.md)), and the shared MCP wiring in `.mcp.json`. Nothing else. Every harness is an **equal peer**: it reads `AGENTS.md` + `.agents/skills/` from the repo for shared policy, then keeps its own models, permissions, MCP wiring, custom agents and commands in its own global config home. **None of them is "the" driver of this repo.**
+Harnesses keep their config outside the checkout, with three deliberate exceptions: the harness-neutral version registry `.agents/harness-versions.json` (§ Harness version), the repo-owned Codex layer `.codex/` (`config.toml`, `hooks.json`, `agents/*.toml` — 29 tracked files; `agents/*.toml` генеруються з `.claude/agents/*.md` через `pnpm codex:sync-agents`, дрейф ловить `pnpm lint:codex-agents`; стан через `pnpm codex:status`, опис у [`docs/00-start/agents/codex-capabilities.md`](./docs/00-start/agents/codex-capabilities.md)), and the shared MCP wiring in `.mcp.json`. Nothing else. Every harness is an **equal peer**: it reads `AGENTS.md` + `.agents/skills/` from the repo for shared policy, then keeps its own models, permissions, MCP wiring, custom agents and commands in its own global config home. **None of them is "the" driver of this repo.**
 
-| Harness     | Config home (global, outside the repo)                                                                         | Tool-specific wrapper                                                                        |
-| ----------- | -------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Claude Code | `~/.claude/` (+ repo `.claude/` for tool-managed worktrees)                                                    | [`CLAUDE.md`](./CLAUDE.md)                                                                   |
-| Codex       | репо-owned `.codex/` (`config.toml`, `hooks.json`, `agents/*.toml`) — єдиний харнес, чий конфіг живе в чекауті | [`docs/00-start/agents/codex-capabilities.md`](./docs/00-start/agents/codex-capabilities.md) |
+| Harness     | Config home (global, outside the repo)                                                                                   | Tool-specific wrapper                                                                        |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| Claude Code | `~/.claude/` (+ репо-owned `.claude/agents/*.md` — канонічні визначення ролей для ОБОХ харнесів, і `.claude/worktrees/`) | [`CLAUDE.md`](./CLAUDE.md)                                                                   |
+| Codex       | репо-owned `.codex/` (`config.toml`, `hooks.json`, `agents/*.toml`) — єдиний харнес, чий конфіг живе в чекауті           | [`docs/00-start/agents/codex-capabilities.md`](./docs/00-start/agents/codex-capabilities.md) |
 
 Harness-specific primitives — session recall, worktree/branch managers, MCP tool names, dev-server runners — live in that harness's **own wrapper**, never in this file. **If you are reading `AGENTS.md` and see a tool you don't have, it is not yours — use your own harness's equivalent.**
 

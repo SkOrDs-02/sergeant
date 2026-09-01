@@ -12,7 +12,7 @@ lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); t
 ## Flow
 
 1. Перечитай `AGENTS.md`, відповідний specialist skill і будь-який relevant playbook у `docs/00-start/playbooks/`.
-2. Запиши або онови design/spec у `docs/05-design/design/specs/`, коли зміна нетривіальна або product-facing.
+2. Запиши або онови спеку в `docs/90-work/planning/specs/` (шаблон — `TEMPLATE.md`), коли зміна нетривіальна або product-facing. Готову спеку виконує агент `spec-executor`.
 3. Визнач, де живе код, через `sergeant-monorepo-boundaries` ще до додавання файлів.
 4. Спершу додай тести там, де змінюється поведінка: unit, контракт, UI або migration verification — за релевантністю.
 5. Імплементуй мінімальний end-to-end slice.

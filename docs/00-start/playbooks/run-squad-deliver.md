@@ -2,14 +2,14 @@
 
 # Playbook: Squad deliver — sequential cross-surface feature delivery
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-30.
+> **Last touched:** 2026-09-01 by @Skords-01. **Next review:** 2026-12-05.
 > **Status:** Active
 
 **Trigger:** Фіча потребує змін у ≥2 surfaces з contract dependencies: DB schema → server serializer → api-client types → web/mobile UI.
 
 ## Prerequisites
 
-1. Feature spec або issue з acceptance criteria існує в `docs/05-design/design/specs/` або у PR description.
+1. Feature spec або issue з acceptance criteria існує в `docs/90-work/planning/specs/` або у PR description.
 2. Визначено які surfaces зачеплено (DB? Server? Web? Mobile? HubChat?).
 
 ## Кроки

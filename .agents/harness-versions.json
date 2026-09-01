@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "current": "5.0.4",
+  "current": "5.0.5",
   "versions": {
     "0.1.0": {
       "releasedAt": "2026-06-29",
@@ -396,6 +396,16 @@
       "releasedAt": "2026-08-30",
       "changes": [
         "bump from 5.0.3 -> 5.0.4: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "5.0.5": {
+      "releasedAt": "2026-09-01",
+      "changes": [
+        "Codex agents згенеровано з .claude/agents/*.md (scripts/codex/sync-agents.mjs); роль правиться в одному місці",
+        "Codex-роcтер 19 -> 27: module owners, spec-executor, product-historian, canon-drift-auditor",
+        "новий гейт pnpm lint:codex-agents у ланцюгу pnpm lint — ловить дрейф між харнесами"
       ],
       "agentsTestedWith": [],
       "passRateBaseline": null
