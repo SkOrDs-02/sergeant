@@ -9,6 +9,7 @@ import {
   signIn,
   signUp,
   visibleText,
+  waitForSyncQuiet,
 } from "../utils/liveJourneyHelpers";
 
 /**
@@ -88,6 +89,32 @@ const PANTRY_WORDS = [
   "квасоля",
 ] as const;
 
+/**
+ * Гейт перенесення анонімних даних показує блокуючий alert «Не вдалося
+ * завершити перенесення…», коли синк упирається в 429 (`api:v2:sync`
+ * 60/хв) — прогін №2 2026-09-01 зупинився на ньому на дні ~47. Для сідера
+ * це не умова наповнення: пробуємо «Повторити», далі відкладаємо і
+ * рахуємо дні, щоб знахідка мала частоту, а не лише факт.
+ */
+async function dismissMigrationAlert(
+  page: Page,
+  daysBack: number,
+  hits: number[],
+): Promise<void> {
+  const alert = page.getByRole("button", {
+    name: "Продовжити, перенесу пізніше",
+  });
+  if (!(await alert.isVisible().catch(() => false))) return;
+  hits.push(daysBack);
+  const retry = page.getByRole("button", { name: "Повторити" });
+  if (await retry.isVisible().catch(() => false)) {
+    await retry.click();
+    if (!(await alert.isVisible().catch(() => false))) return;
+  }
+  await alert.click();
+  await expect(alert).toBeHidden({ timeout: 10_000 });
+}
+
 function trackSyncPushes(page: Page): { count: () => number } {
   let n = 0;
   page.on("response", (res) => {
@@ -125,6 +152,7 @@ test.describe.serial("@seed Q3 — автосідер насиченого ак�
     test.setTimeout(SEED_DAYS * 45_000 + 300_000);
 
     const missedPushDays: number[] = [];
+    const migrationAlertDays: number[] = [];
     // «Пристрій»: кукі + localStorage переносяться між днями. Логін один —
     // signup першого дня: серія sign-in-ів з одного IP впирається в
     // auth-рейт-ліміт («Забагато спроб», прогін сідера 2026-08-07).
@@ -150,6 +178,10 @@ test.describe.serial("@seed Q3 — автосідер насиченого ак�
       // заморожений Date.now() робить клієнтські ID однаковими між прогонами,
       // і сервер тихо відкидає «дублікати» (знахідка 2026-08-07).
       await page.clock.install({ time: dayAt(daysBack) });
+      // Кожен «день» стартує з хабу: якщо гейт перенесення впав на 429,
+      // alert зустрічає нас саме тут, до будь-яких дій.
+      await goto(page, "/");
+      await dismissMigrationAlert(page, daysBack, migrationAlertDays);
       if (daysBack === SEED_DAYS - 1) {
         await addHabit(page, "QA Q3 звичка щодня");
       }
@@ -195,6 +227,9 @@ test.describe.serial("@seed Q3 — автосідер насиченого ак�
       if (!(await waitForPushAfter(pushes, before))) {
         missedPushDays.push(daysBack);
       }
+      // Дати черзі дренуватись перед закриттям «дня»: без цього наступні дні
+      // бʼють у `api:v2:sync` 60/хв пачками push+pull і ловлять 429.
+      await waitForSyncQuiet(page, 15_000).catch(() => {});
 
       deviceState = await context.storageState();
       await context.close();
@@ -205,6 +240,15 @@ test.describe.serial("@seed Q3 — автосідер насиченого ак�
         type: "warning",
         description: `Синк-пуш не спостерігався у днях: ${missedPushDays.join(", ")} — звʼязок може недорахувати ці дні`,
       });
+    }
+    if (migrationAlertDays.length > 0) {
+      test.info().annotations.push({
+        type: "finding",
+        description: `Alert «Не вдалося завершити перенесення» у днях: ${migrationAlertDays.join(", ")} (кандидат SYNC-1: гейт перенесення подає 429 синку як провал переносу)`,
+      });
+      console.log(
+        `[seed-rich] migration-alert days: ${migrationAlertDays.join(", ")}`,
+      );
     }
 
     // ─── Верифікація на реальному годиннику: чистий пристрій, sign-in ───
