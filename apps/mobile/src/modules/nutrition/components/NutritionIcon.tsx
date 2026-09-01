@@ -20,29 +20,49 @@
  */
 import {
   Apple,
+  Archive,
+  Bean,
   Carrot,
   Coffee,
   Droplet,
+  Drumstick,
+  Dumbbell,
   Egg,
   Fish,
+  Leaf,
+  Milk,
   Moon,
   Package,
+  Snowflake,
+  Sparkle,
   UtensilsCrossed,
   Wheat,
+  Wine,
   type LucideIcon,
 } from "lucide-react-native";
 
 export const NUTRITION_GLYPH_ICONS: Record<string, LucideIcon> = {
   apple: Apple,
+  archive: Archive,
+  bean: Bean,
+  // Пляшка соусів: у lucide-react-native немає `Bottle`, а `Milk` — це
+  // силует пляшки, тож він і читається як «щось налите».
+  bottle: Milk,
   carrot: Carrot,
   coffee: Coffee,
   droplet: Droplet,
+  drumstick: Drumstick,
+  dumbbell: Dumbbell,
   egg: Egg,
   fish: Fish,
+  leaf: Leaf,
   moon: Moon,
   package: Package,
+  snowflake: Snowflake,
+  sparkle: Sparkle,
   utensils: UtensilsCrossed,
   wheat: Wheat,
+  wine: Wine,
 };
 
 export interface NutritionIconProps {

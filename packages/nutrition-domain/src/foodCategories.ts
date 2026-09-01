@@ -1,3 +1,5 @@
+import { GENERIC_FOODS } from "@sergeant/shared/data/genericFoods";
+
 export interface FoodCategory {
   id: string;
   label: string;
@@ -24,16 +26,22 @@ export interface GroupedCategoryBucket<T = unknown> {
 
 /**
  * AI-DANGER: ПОРЯДОК масиву — значуща частина поведінки, не косметика.
- * `categorizeFood` віддає ПЕРШИЙ збіг за ключовим словом, тож перестановка
- * записів мовчки перекидає продукти між категоріями. Порядок покритий
- * тестом (`foodCategories.test.ts` § «порядок каталогу»); ламаючи його,
- * ти ламаєш і тест.
+ * Це арбітр ФОЛБЕКУ за ключовими словами (перший збіг виграє), тож
+ * перестановка записів мовчки перекидає між категоріями ті назви, яких
+ * немає в кураторському корпусі. Порядок покритий тестом
+ * (`foodCategories.test.ts` § «порядок каталогу»).
  *
- * Чому саме такий порядок — три залежності, кожна з реального чека:
+ * Чому саме такий порядок — залежності з реальних чеків:
  *  - `sweets_snacks` перед `drinks`: «шоколад» містить підрядок «кола»;
+ *  - `ready_meals` перед `sauces`: страва в голові назви виграє соус у
+ *    хвості — «Удон з куркою в соусі терияки» це удон;
  *  - `sauces` перед `nuts_seeds`: «Паста арахісова» — соус, не горіхи;
  *  - `nuts_seeds` перед `vegetables`: «Насіння Roni гарбуза» — не овоч;
- *  - `ready_meals` перед `meat_fish`: «Котлети курячі» — готова страва.
+ *  - `ready_meals` перед `meat`: «Котлети курячі» — готова страва;
+ *  - `fruits` перед `alcohol`: корінь «вино» стоїть на початку «виноград»,
+ *    і межа слова тут не рятує — рятує лише порядок;
+ *  - `fish` перед `meat`: «філе» належить мʼясу, тож «Філе лосося» без
+ *    цього порядку поїхало б у мʼясо.
  */
 export const FOOD_CATEGORIES: readonly FoodCategory[] = [
   {
@@ -61,6 +69,10 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
       "батончик",
       "тістечк",
       "жуйк",
+      // Чек пише жуйку описово: «Гумка жувальна Dirol кавунно-динний».
+      // Без цих двох вона їхала у фрукти на слові «кавунно».
+      "жувальн",
+      "гумка",
       "попкорн",
     ],
   },
@@ -75,7 +87,6 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
       "сік",
       "кола",
       "лимонад",
-      "пиво",
       "кава",
       "кави",
       "чай",
@@ -83,6 +94,46 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
       "мінеральн",
       "смузі",
       "компот",
+      "узвар",
+      "какао",
+      "лате",
+      "капучіно",
+      "американо",
+    ],
+  },
+  {
+    id: "ready_meals",
+    label: "Готова кулінарія",
+    iconName: "utensils",
+    collapseBrand: true,
+    keywords: [
+      "котлет",
+      "готов",
+      "кулінар",
+      "суші",
+      "рол",
+      "онігірі",
+      "удон",
+      "піц",
+      "сендвіч",
+      "шаурм",
+      "бургер",
+      "вареник",
+      "пельмен",
+      "голубц",
+      "млинц",
+      "деруни",
+      "борщ",
+      "солянк",
+      "розсольник",
+      "окрошк",
+      "холодник",
+      "сирник",
+      "галушк",
+      "налисник",
+      "лазань",
+      "вінегрет",
+      "олівʼє",
     ],
   },
   {
@@ -102,6 +153,9 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
       "тахін",
       "сальс",
       "теріякі",
+      "терияки",
+      "ткемалі",
+      "маргарин",
     ],
   },
   {
@@ -124,27 +178,6 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
     ],
   },
   {
-    id: "ready_meals",
-    label: "Готова кулінарія",
-    iconName: "utensils",
-    collapseBrand: true,
-    keywords: [
-      "котлет",
-      "готов",
-      "кулінар",
-      "суші",
-      "піц",
-      "сендвіч",
-      "шаурм",
-      "бургер",
-      "вареник",
-      "пельмен",
-      "голубц",
-      "млинц",
-      "деруни",
-    ],
-  },
-  {
     id: "canned",
     label: "Консерви",
     iconName: "archive",
@@ -158,6 +191,8 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
       "оливки",
       "маслини",
       "паштет",
+      "корнішон",
+      "каперс",
     ],
   },
   {
@@ -174,6 +209,7 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
     collapseBrand: true,
     keywords: [
       "огірок",
+      "огірк",
       "помідор",
       "томат",
       "морква",
@@ -194,9 +230,29 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
       "гарбуз",
       "зелен",
       "кукурудз",
-      "квасол",
-      "горошок",
       "чері",
+      "печериц",
+      "спаржа",
+      "селера",
+      "петрушк",
+      "кріп",
+      "руккол",
+      "батат",
+    ],
+  },
+  {
+    id: "legumes",
+    label: "Бобові",
+    iconName: "bean",
+    collapseBrand: true,
+    keywords: [
+      "квасол",
+      "сочевиц",
+      "горошок",
+      "тофу",
+      "едамаме",
+      "бобов",
+      "маш",
     ],
   },
   {
@@ -211,15 +267,18 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
       "апельсин",
       "мандарин",
       "лимон",
+      "грейпфрут",
       "ківі",
       "виноград",
       "персик",
-      "сливa",
+      "абрикос",
       "слив",
       "полуниц",
       "чорниц",
+      "лохин",
       "малин",
       "смородин",
+      "журавлин",
       "ананас",
       "диня",
       "кавун",
@@ -227,12 +286,75 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
       "манго",
       "черешн",
       "вишн",
+      "хурма",
+      "гранат",
+      "інжир",
+      "кокос",
+      "курага",
+      "чорнослив",
+      "родзинк",
+      "фінік",
     ],
   },
   {
-    id: "meat_fish",
-    label: "Мʼясо та риба",
+    id: "alcohol",
+    label: "Алкоголь",
+    iconName: "wine",
+    // Конкретне вино — це конкретний товар, а не «вино взагалі»: згорнувши
+    // бренд, ми злили б у купу речі, які людина розрізняє.
+    collapseBrand: false,
+    keywords: [
+      "пиво",
+      "вино",
+      "горілк",
+      "віскі",
+      "коньяк",
+      "шампанськ",
+      "лікер",
+      "сидр",
+      "вермут",
+      "текіл",
+      "бренді",
+      "портвейн",
+    ],
+  },
+  {
+    id: "fish",
+    label: "Риба та морепродукти",
     iconName: "fish",
+    collapseBrand: true,
+    keywords: [
+      "риб",
+      "лосос",
+      "сьомг",
+      "тунец",
+      "тунць",
+      "тунця",
+      "форел",
+      "оселедц",
+      "оселедец",
+      "скумбрі",
+      "тріск",
+      "минтай",
+      "горбуш",
+      "тілапі",
+      "судак",
+      "креветк",
+      "кальмар",
+      "мідії",
+      "устриц",
+      "восьміног",
+      "морепродукт",
+      "сардин",
+      "ікра",
+      "хек",
+      "сом",
+    ],
+  },
+  {
+    id: "meat",
+    label: "Мʼясо та птиця",
+    iconName: "drumstick",
     collapseBrand: true,
     keywords: [
       "курк",
@@ -245,23 +367,25 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
       "яловичин",
       "телятин",
       "баранин",
+      "кролик",
+      "качка",
+      "гусятин",
       "фарш",
       "ковбас",
       "сосиск",
       "шинк",
       "бекон",
+      "саламі",
+      "пепероні",
+      "хамон",
+      "бастурма",
       "сал",
-      "лосос",
-      "тунец",
-      "тунць",
-      "тунця",
-      "форел",
-      "риб",
-      "креветк",
-      "кальмар",
       "філе",
       "стейк",
       "грудк",
+      "печінк",
+      "шашлик",
+      "нагетс",
     ],
   },
   {
@@ -281,9 +405,12 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
       "ряжанк",
       "яйц",
       "яєць",
+      "яєчн",
+      "омлет",
       "фета",
       "моцарел",
       "пармезан",
+      "маскарпоне",
     ],
   },
   {
@@ -302,6 +429,13 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
       "макарон",
       "спагет",
       "хліб",
+      "батон",
+      "багет",
+      "чіабат",
+      "круасан",
+      "маффін",
+      "пончик",
+      "еклер",
       "булочк",
       "лаваш",
       "борошн",
@@ -311,7 +445,30 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
       "булгур",
       "перловк",
       "пластівц",
+      "мюслі",
+      "гранол",
       "тортил",
+      "кус-кус",
+      "амарант",
+      "полента",
+    ],
+  },
+  {
+    id: "sports",
+    label: "Спортивне харчування",
+    iconName: "dumbbell",
+    // Конкретний протеїн — конкретний товар: смак і бренд тут і є вибором.
+    collapseBrand: false,
+    keywords: [
+      "протеїн",
+      "казеїн",
+      "гейнер",
+      "bcaa",
+      "креатин",
+      "ізотонік",
+      "амінокислот",
+      "карнітин",
+      "сироватков",
     ],
   },
   {
@@ -350,14 +507,209 @@ const OTHER: FoodCategory = {
   collapseBrand: false,
 };
 
+/**
+ * Категорія кураторського корпусу → id категорії комори.
+ *
+ * AI-CONTEXT: корпус (`GENERIC_FOODS`) групується за товарним видом і має
+ * власну, СТАРШУ таксономію — вона живе в `generic_foods` і у видачі
+ * пошуку. Комора показує свій каталог. Тому це два різні списки, звʼязані
+ * ось цією мапою, а не одне поле в двох місцях: злиття зафіксувало б
+ * серверну видачу за UI комори і навпаки.
+ *
+ * Алкоголь відділяється НЕ мапою, а полем `alcohol_g` — воно вже є в
+ * корпусі заради воріт Атвотера, тож окремий список назв був би другим
+ * джерелом правди для того самого факту.
+ */
+export const CORPUS_CATEGORY_TO_ID: Readonly<Record<string, string>> = {
+  Бобові: "legumes",
+  "Горіхи і насіння": "nuts_seeds",
+  "Готові страви": "ready_meals",
+  Заморожене: "frozen",
+  Консерви: "canned",
+  "Крупи і злаки": "grains",
+  "Молочні продукти": "dairy_eggs",
+  Напої: "drinks",
+  "Мʼясо і птиця": "meat",
+  "Овочі і гриби": "vegetables",
+  "Олії і жири": "pantry",
+  "Риба і морепродукти": "fish",
+  Салати: "ready_meals",
+  Солодощі: "sweets_snacks",
+  "Соуси і спеції": "sauces",
+  "Спортивне харчування": "sports",
+  "Українська кухня": "ready_meals",
+  "Фрукти і ягоди": "fruits",
+  "Хліб і випічка": "grains",
+  Яйця: "dairy_eggs",
+};
+
+const BY_ID = new Map(FOOD_CATEGORIES.map((c) => [c.id, c]));
+
+/**
+ * Хвіст «зі смаком …» / «з ароматом …» несе слова чужих категорій:
+ * «Чипси креветкові зі смаком **соусу** чилі». Голова назви — це продукт,
+ * хвіст — маркетинг, тож хвіст відрізається до будь-якого зіставлення.
+ */
+const FLAVOUR_TAIL = /\s(?:зі|зi|із|iз|з)\s+(?:смаком|ароматом)[\s\S]*$/u;
+
+// Службові слова, які нічого не кажуть про продукт, але мають ≥3 літери й
+// інакше давали б збіг («Молоко **без** лактози» ↔ «Кава (**без** цукру)»).
+const STOPWORDS = new Set([
+  "без",
+  "для",
+  "під",
+  "при",
+  "або",
+  "над",
+  "від",
+  "про",
+  "між",
+]);
+
+function splitTokens(name: string): string[] {
+  return (
+    name
+      .toLowerCase()
+      // Варіанти апострофа зникають, а не стають межею слова: інакше
+      // «мʼясом» розпалось би на «м» + «ясом».
+      .replace(/[ʼ’'`]/gu, "")
+      .replace(/[^\p{L}\p{N}]+/gu, " ")
+      .trim()
+      .split(" ")
+      .filter(Boolean)
+  );
+}
+
+function indexTokens(name: string): string[] {
+  return [
+    ...new Set(
+      splitTokens(name).filter((t) => t.length >= 3 && !STOPWORDS.has(t)),
+    ),
+  ];
+}
+
+interface CorpusEntry {
+  tokens: readonly string[];
+  catId: string;
+}
+
+let corpusIndex: CorpusEntry[] | null = null;
+
+function getCorpusIndex(): CorpusEntry[] {
+  if (corpusIndex) return corpusIndex;
+  const built: CorpusEntry[] = [];
+  for (const food of GENERIC_FOODS) {
+    const catId =
+      food.alcohol_g != null ? "alcohol" : CORPUS_CATEGORY_TO_ID[food.category];
+    if (!catId) continue;
+    const tokens = indexTokens(food.name);
+    if (tokens.length > 0) built.push({ tokens, catId });
+    for (const alias of food.aliases ?? []) {
+      const aliasTokens = indexTokens(alias);
+      if (aliasTokens.length > 0) built.push({ tokens: aliasTokens, catId });
+    }
+  }
+  corpusIndex = built;
+  return built;
+}
+
+/**
+ * Кандидат приймається лише коли збіглося ≥2 слів АБО коли він збігся
+ * ЦІЛКОМ. Одне слово з довшої назви — це не впізнавання, а випадковість:
+ * «Котлети курячі з кускусом» інакше чіплялись за «Шлунки курячі» і
+ * їхали в мʼясо замість готової кулінарії, а «Філе лосося» — за «Філе
+ * індички». Однослівна позиція, збігшись уся («Мед», «Хек»), проходить —
+ * там нема чому бути хибним.
+ *
+ * Ранжування: спершу той, чий збіг починається РАНІШЕ в назві, і лише
+ * потім найдовший (§3 спеки). Голова назви — це продукт, хвіст — смак і
+ * бренд; «Йогурт Галичина Карпатський чорниця» інакше виграє «Чорниця»
+ * (7 літер) над синонімом «йогурт» (6) і їде у фрукти. Найдовший збіг
+ * лишається арбітром у межах однієї позиції: «Салат з тунцем» так само
+ * виграє в однослівного «Салат листовий».
+ */
+function matchCorpus(orderedTokens: readonly string[]): string | null {
+  const positions = new Map<string, number>();
+  orderedTokens.forEach((t, i) => {
+    if (!positions.has(t)) positions.set(t, i);
+  });
+
+  let bestPos = Number.POSITIVE_INFINITY;
+  let bestScore = 0;
+  let bestUnmatched = Number.POSITIVE_INFINITY;
+  let bestId: string | null = null;
+
+  for (const entry of getCorpusIndex()) {
+    let score = 0;
+    let matched = 0;
+    let pos = Number.POSITIVE_INFINITY;
+    for (const token of entry.tokens) {
+      const at = positions.get(token);
+      if (at === undefined) continue;
+      score += token.length;
+      matched += 1;
+      if (at < pos) pos = at;
+    }
+    if (matched === 0) continue;
+    const unmatched = entry.tokens.length - matched;
+    if (matched < 2 && unmatched > 0) continue;
+    const better =
+      pos < bestPos ||
+      (pos === bestPos &&
+        (score > bestScore ||
+          (score === bestScore && unmatched < bestUnmatched)));
+    if (better) {
+      bestPos = pos;
+      bestScore = score;
+      bestUnmatched = unmatched;
+      bestId = entry.catId;
+    }
+  }
+  return bestId;
+}
+
+/**
+ * Корінь коротший за 5 літер матчиться лише з ПОЧАТКУ токена: інакше
+ * «г**риб**и» їхали в рибу, а «рук**кола**» — у напої. Довгі корені
+ * лишаються підрядком будь-де — саме на цьому тримається впізнавання
+ * словоформ («яблук» у «яблука»).
+ *
+ * Виняток — корені з не-літерами («с/м»): токенізатор їх розриває, тож
+ * межа слова для них не визначена.
+ */
+function keywordHit(
+  lowered: string,
+  tokens: readonly string[],
+  keyword: string,
+): boolean {
+  if (keyword.length >= 5 || !/^\p{L}+$/u.test(keyword)) {
+    return lowered.includes(keyword);
+  }
+  return tokens.some((t) => t.startsWith(keyword));
+}
+
+/**
+ * Каскад: кураторський корпус → ключові слова.
+ *
+ * Корпус перший, бо в ньому категорія проставлена людиною, а ключові
+ * слова лише вгадують. Ключові слова лишаються для брендових назв із
+ * чека, яких у корпусі немає й ніколи не буде.
+ */
 export function categorizeFood(name: unknown): FoodCategory {
-  const n = String(name || "")
+  const raw = String(name || "")
     .toLowerCase()
     .trim();
-  if (!n) return OTHER;
+  if (!raw) return OTHER;
+
+  const head = raw.replace(FLAVOUR_TAIL, "").trim() || raw;
+
+  const fromCorpus = matchCorpus(indexTokens(head));
+  if (fromCorpus) return BY_ID.get(fromCorpus) ?? OTHER;
+
+  const tokens = splitTokens(head);
   for (const cat of FOOD_CATEGORIES) {
     for (const kw of cat.keywords) {
-      if (n.includes(kw)) return cat;
+      if (keywordHit(head, tokens, kw)) return cat;
     }
   }
   return OTHER;
