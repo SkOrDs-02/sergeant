@@ -14,6 +14,7 @@ import { messages } from "@shared/i18n/uk";
 import { PROFILE_PATH } from "../../../core/app/appPaths";
 import { useBiometrics } from "../../../core/profile/useBiometrics";
 import { useLatestBodyWeightKg } from "../../../core/profile/useLatestBodyWeight";
+import { useTodayWorkoutKcal } from "../../../core/profile/useTodayWorkoutKcal";
 import {
   NUTRITION_GOALS,
   computeNutritionTargetsFromBiometrics,
@@ -116,6 +117,9 @@ export function DailyPlanGoalSelectors({
   // (union daily_log + measurements). `biometrics.weightKg` лишається
   // фолбеком, щоб юзер без модуля fizruk нічого не втратив.
   const fizrukWeightKg = useLatestBodyWeightKg();
+  // Має значення лише при `countWorkoutsInGoal: true`; при вимкненому
+  // тумблері `computeTdee` цього доданка не бачить узагалі.
+  const workoutKcal = useTodayWorkoutKcal();
 
   const tdeeTargets = useMemo<Record<
     NutritionGoalId,
@@ -128,12 +132,13 @@ export function DailyPlanGoalSelectors({
         goal,
         undefined,
         fizrukWeightKg,
+        workoutKcal,
       );
       if (!t) return null;
       result[goal] = t;
     }
     return result as Record<NutritionGoalId, NutritionTargets>;
-  }, [biometrics, fizrukWeightKg]);
+  }, [biometrics, fizrukWeightKg, workoutKcal]);
 
   const activeGoal = tdeeTargets
     ? NUTRITION_GOALS.find((goal) => {

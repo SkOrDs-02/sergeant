@@ -37,6 +37,9 @@ const FIZRUK_PULL_TABLES = new Set([
   "fizruk_workout_items",
   "fizruk_workout_sets",
   "fizruk_custom_exercises",
+  // Свої заняття (міграція 132): pull нового заняття має інвалідувати
+  // fizruk-кеш, інакше список у формі запису лишиться старим.
+  "fizruk_custom_activities",
   "fizruk_measurements",
   "fizruk_daily_log",
   "fizruk_monthly_plan",

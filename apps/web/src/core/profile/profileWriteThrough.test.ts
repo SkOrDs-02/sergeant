@@ -63,6 +63,7 @@ const FRESH: Biometrics = {
   activityLevel: "moderate",
   weightKg: 80,
   weightUpdatedAt: "2026-01-01T00:00:00.000Z",
+  countWorkoutsInGoal: false,
   updatedAt: "2026-01-01T00:00:00.000Z",
 };
 
@@ -71,6 +72,7 @@ const OLDER: Biometrics = {
   heightCm: 170,
   updatedAt: "2025-01-01T00:00:00.000Z",
   weightUpdatedAt: "2025-01-01T00:00:00.000Z",
+  countWorkoutsInGoal: false,
 };
 
 const NEWER: Biometrics = {
@@ -78,6 +80,7 @@ const NEWER: Biometrics = {
   heightCm: 190,
   updatedAt: "2027-01-01T00:00:00.000Z",
   weightUpdatedAt: "2027-01-01T00:00:00.000Z",
+  countWorkoutsInGoal: false,
 };
 
 /** Wire shape of an empty, never-locally-touched memory bank. */

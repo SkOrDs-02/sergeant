@@ -11,12 +11,49 @@ import {
 } from "../syncV2-core.js";
 import type { AppliedStatus } from "../syncV2-types.js";
 
-export async function applyFizrukCustomExercises(
+/**
+ * Готові запити для таблиць-JSON-блобів. Тексти зібрані наперед, а не
+ * інтерполяцією імені таблиці в `client.query`: динамічний SQL у цьому
+ * репо заборонений лінтом (M11), і правило слушне навіть тут, де значення
+ * приходить із двох літералів - варіант з інтерполяцією виглядав би точно
+ * так само в той день, коли ім'я почне приходити ззовні.
+ */
+const JSON_BLOB_SQL = {
+  fizruk_custom_exercises: {
+    select:
+      "SELECT user_id, updated_at, deleted_at FROM fizruk_custom_exercises WHERE id = $1",
+    softDelete:
+      "UPDATE fizruk_custom_exercises SET deleted_at = $1, updated_at = $1 WHERE id = $2 AND user_id = $3",
+    insert:
+      "INSERT INTO fizruk_custom_exercises (id, user_id, data_json, created_at, updated_at, deleted_at) VALUES ($1, $2, $3::jsonb, $4, $5, $6)",
+    update:
+      "UPDATE fizruk_custom_exercises SET data_json = $1::jsonb, updated_at = $2, deleted_at = $3 WHERE id = $4 AND user_id = $5",
+  },
+  fizruk_custom_activities: {
+    select:
+      "SELECT user_id, updated_at, deleted_at FROM fizruk_custom_activities WHERE id = $1",
+    softDelete:
+      "UPDATE fizruk_custom_activities SET deleted_at = $1, updated_at = $1 WHERE id = $2 AND user_id = $3",
+    insert:
+      "INSERT INTO fizruk_custom_activities (id, user_id, data_json, created_at, updated_at, deleted_at) VALUES ($1, $2, $3::jsonb, $4, $5, $6)",
+    update:
+      "UPDATE fizruk_custom_activities SET data_json = $1::jsonb, updated_at = $2, deleted_at = $3 WHERE id = $4 AND user_id = $5",
+  },
+} as const;
+
+/**
+ * Апплай рядка-JSON-блоба: `fizruk_custom_exercises` і
+ * `fizruk_custom_activities` мають однакову форму (id + user_id +
+ * data_json + мітки), тож логіка LWW у них буквально та сама.
+ */
+async function applyFizrukJsonBlobRow(
   client: PoolClient,
   op: SyncV2Op,
   userId: string,
   clientTs: Date,
+  table: keyof typeof JSON_BLOB_SQL,
 ): Promise<AppliedStatus> {
+  const sql = JSON_BLOB_SQL[table];
   const row = op.row;
   const id = typeof row["id"] === "string" ? row["id"] : null;
   if (!id) return { status: "rejected", reason: "missing_id" };
@@ -32,10 +69,7 @@ export async function applyFizrukCustomExercises(
     user_id: string;
     updated_at: Date;
     deleted_at: Date | null;
-  }>(
-    `SELECT user_id, updated_at, deleted_at FROM fizruk_custom_exercises WHERE id = $1`,
-    [id],
-  );
+  }>(sql.select, [id]);
   if (existing.rows.length > 0) {
     if (existing!.rows[0]!.user_id !== userId) {
       return { status: "rejected", reason: "fk_violation" };
@@ -49,12 +83,7 @@ export async function applyFizrukCustomExercises(
     if (existing.rows.length === 0) {
       return { status: "rejected", reason: "not_found" };
     }
-    await client.query(
-      `UPDATE fizruk_custom_exercises
-         SET deleted_at = $1, updated_at = $1
-       WHERE id = $2 AND user_id = $3`,
-      [clientTs, id, userId],
-    );
+    await client.query(sql.softDelete, [clientTs, id, userId]);
     return { status: "applied" };
   }
 
@@ -72,30 +101,55 @@ export async function applyFizrukCustomExercises(
   }
 
   if (existing.rows.length === 0) {
-    await client.query(
-      `INSERT INTO fizruk_custom_exercises
-         (id, user_id, data_json, created_at, updated_at, deleted_at)
-       VALUES ($1, $2, $3::jsonb, $4, $5, $6)`,
-      [
-        id,
-        userId,
-        dataJson,
-        createdAt ?? clientTs,
-        clientTs,
-        deletedAt ?? null,
-      ],
-    );
+    await client.query(sql.insert, [
+      id,
+      userId,
+      dataJson,
+      createdAt ?? clientTs,
+      clientTs,
+      deletedAt ?? null,
+    ]);
   } else {
-    await client.query(
-      `UPDATE fizruk_custom_exercises
-         SET data_json  = $1::jsonb,
-             updated_at = $2,
-             deleted_at = $3
-       WHERE id = $4 AND user_id = $5`,
-      [dataJson, clientTs, deletedAt ?? null, id, userId],
-    );
+    await client.query(sql.update, [
+      dataJson,
+      clientTs,
+      deletedAt ?? null,
+      id,
+      userId,
+    ]);
   }
   return { status: "applied" };
+}
+
+export async function applyFizrukCustomExercises(
+  client: PoolClient,
+  op: SyncV2Op,
+  userId: string,
+  clientTs: Date,
+): Promise<AppliedStatus> {
+  return applyFizrukJsonBlobRow(
+    client,
+    op,
+    userId,
+    clientTs,
+    "fizruk_custom_exercises",
+  );
+}
+
+/** Свої заняття для короткого запису - та сама форма, що й свої вправи. */
+export async function applyFizrukCustomActivities(
+  client: PoolClient,
+  op: SyncV2Op,
+  userId: string,
+  clientTs: Date,
+): Promise<AppliedStatus> {
+  return applyFizrukJsonBlobRow(
+    client,
+    op,
+    userId,
+    clientTs,
+    "fizruk_custom_activities",
+  );
 }
 
 export async function applyFizrukMeasurements(

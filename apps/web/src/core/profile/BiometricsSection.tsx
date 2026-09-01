@@ -24,6 +24,7 @@ import { DateField } from "@shared/components/ui/DateField";
 import { normalizeAmountInput } from "@shared/lib/format/amount";
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { Select } from "@shared/components/ui/Select";
+import { Switch } from "@shared/components/ui/Switch";
 import { useToast } from "@shared/hooks/useToast";
 import { messages } from "@shared/i18n/uk";
 import { useDailyLog } from "../../modules/fizruk/hooks/useDailyLog";
@@ -81,6 +82,7 @@ interface FormState {
   sex: Sex | "";
   activityLevel: ActivityLevel | "";
   weightKg: string;
+  countWorkoutsInGoal: boolean;
 }
 
 function biometricsToForm(b: Biometrics): FormState {
@@ -90,6 +92,7 @@ function biometricsToForm(b: Biometrics): FormState {
     sex: b.sex ?? "",
     activityLevel: b.activityLevel ?? "",
     weightKg: b.weightKg == null ? "" : String(b.weightKg),
+    countWorkoutsInGoal: b.countWorkoutsInGoal,
   };
 }
 
@@ -197,6 +200,11 @@ function diffFormAgainst(
       patch.weightKg = formWeight;
       changed = true;
     }
+  }
+
+  if (form.countWorkoutsInGoal !== source.countWorkoutsInGoal) {
+    patch.countWorkoutsInGoal = form.countWorkoutsInGoal;
+    changed = true;
   }
 
   if (!changed) return null;
@@ -488,6 +496,22 @@ export function BiometricsSection({ online = true }: BiometricsSectionProps) {
               {ACTIVITY_META[form.activityLevel].hint}
             </p>
           )}
+        </div>
+
+        {/* Тумблер стоїть саме тут, поруч із рівнем активності, бо він про
+            ту саму модель розрахунку: увімкнений, він забирає тренування з
+            множника і повертає їх явним доданком. У Фізруку йому не місце -
+            це налаштування норми, а не тренувань. */}
+        <div className="px-4 py-4 space-y-2">
+          <Switch
+            checked={form.countWorkoutsInGoal}
+            onChange={(checked) =>
+              setForm((prev) => ({ ...prev, countWorkoutsInGoal: checked }))
+            }
+            disabled={editingDisabled}
+            label={COPY.countWorkoutsLabel}
+            description={COPY.countWorkoutsHint}
+          />
         </div>
 
         <div className="px-4 py-4 space-y-2">

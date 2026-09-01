@@ -7,6 +7,8 @@
 
 export const WORKOUTS_STORAGE_KEY = "fizruk_workouts_v1";
 export const CUSTOM_EXERCISES_KEY = "fizruk_custom_exercises_v1";
+/** Свої заняття для короткого запису — той самий патерн, що й свої вправи. */
+export const CUSTOM_ACTIVITIES_KEY = "fizruk_custom_activities_v1";
 export const MEASUREMENTS_STORAGE_KEY = "fizruk_measurements_v1";
 export const TEMPLATES_STORAGE_KEY = "fizruk_workout_templates_v1";
 export const SELECTED_TEMPLATE_STORAGE_KEY = "fizruk_selected_template_id_v1";

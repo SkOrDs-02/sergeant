@@ -26,6 +26,7 @@ import type { FizrukData } from "@sergeant/fizruk-domain";
 import type { MeasurementEntry } from "../hooks/useMeasurements";
 
 type RawExerciseDef = FizrukData.RawExerciseDef;
+type ActivityDef = FizrukData.ActivityDef;
 
 /**
  * Stage 12 / PR #070f-dualwrite — minimal cache shapes for the new
@@ -75,6 +76,8 @@ export interface SqliteFizrukCache {
   workouts: Workout[];
   /** Custom exercises (additions on top of the static catalogue). */
   customExercises: RawExerciseDef[];
+  /** Свої заняття для короткого запису (доповнення до вбудованого каталогу). */
+  customActivities: ActivityDef[];
   /** Body / wellbeing measurements ordered newest-first by `at`. */
   measurements: MeasurementEntry[];
   /**
@@ -113,6 +116,7 @@ export interface SqliteFizrukCache {
 const EMPTY_CACHE: SqliteFizrukCache = {
   workouts: [],
   customExercises: [],
+  customActivities: [],
   measurements: [],
   dailyLog: [],
   monthlyPlan: null,
@@ -146,6 +150,7 @@ interface WorkoutRow {
   warmup_json: string | null;
   cooldown_json: string | null;
   wellbeing_json: string | null;
+  kcal_burned: number | null;
   [key: string]: unknown;
 }
 
@@ -175,6 +180,12 @@ interface WorkoutSetRow {
 }
 
 interface CustomExerciseRow {
+  id: string;
+  data_json: string | null;
+  [key: string]: unknown;
+}
+
+interface CustomActivityRow {
   id: string;
   data_json: string | null;
   [key: string]: unknown;
@@ -230,6 +241,7 @@ function rowToWorkout(
       ? safeParseJson<WorkoutWellbeing | null>(row.wellbeing_json, null)
       : null,
     items: itemsByWorkout.get(row.id) ?? [],
+    ...(row.kcal_burned != null ? { kcalBurned: row.kcal_burned } : {}),
   };
 }
 
@@ -260,6 +272,13 @@ function rowToWorkoutItem(
 function rowToCustomExercise(row: CustomExerciseRow): RawExerciseDef | null {
   if (!row.data_json) return null;
   const parsed = safeParseJson<RawExerciseDef | null>(row.data_json, null);
+  if (!parsed || typeof parsed !== "object") return null;
+  return { ...parsed, id: row.id };
+}
+
+function rowToCustomActivity(row: CustomActivityRow): ActivityDef | null {
+  if (!row.data_json) return null;
+  const parsed = safeParseJson<ActivityDef | null>(row.data_json, null);
   if (!parsed || typeof parsed !== "object") return null;
   return { ...parsed, id: row.id };
 }
@@ -393,6 +412,7 @@ export async function refreshFizrukSqliteState(
     itemRows,
     setRows,
     customRows,
+    customActivityRows,
     measurementRows,
     dailyLogRows,
     monthlyPlanRows,
@@ -402,7 +422,7 @@ export async function refreshFizrukSqliteState(
   ] = await Promise.all([
     client.all<WorkoutRow>(
       `SELECT id, started_at, ended_at, note, groups_json,
-              warmup_json, cooldown_json, wellbeing_json
+              warmup_json, cooldown_json, wellbeing_json, kcal_burned
          FROM fizruk_workouts
         WHERE user_id = ? AND deleted_at IS NULL
         ORDER BY started_at DESC`,
@@ -427,6 +447,12 @@ export async function refreshFizrukSqliteState(
     client.all<CustomExerciseRow>(
       `SELECT id, data_json
          FROM fizruk_custom_exercises
+        WHERE user_id = ? AND deleted_at IS NULL`,
+      [userId],
+    ),
+    client.all<CustomActivityRow>(
+      `SELECT id, data_json
+         FROM fizruk_custom_activities
         WHERE user_id = ? AND deleted_at IS NULL`,
       [userId],
     ),
@@ -496,6 +522,9 @@ export async function refreshFizrukSqliteState(
   const customExercises = customRows
     .map(rowToCustomExercise)
     .filter((x): x is RawExerciseDef => x !== null);
+  const customActivities = customActivityRows
+    .map(rowToCustomActivity)
+    .filter((x): x is ActivityDef => x !== null);
   const measurements = measurementRows.map(rowToMeasurement);
   const dailyLog = dailyLogRows.map(rowToDailyLog);
   const monthlyPlan = rowToMonthlyPlan(monthlyPlanRows[0]);
@@ -511,6 +540,7 @@ export async function refreshFizrukSqliteState(
   cache = {
     workouts,
     customExercises,
+    customActivities,
     measurements,
     dailyLog,
     monthlyPlan,

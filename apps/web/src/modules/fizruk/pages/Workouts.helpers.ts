@@ -243,3 +243,38 @@ export function buildPastWorkoutTimes(
     inFuture: endMs > now.getTime(),
   };
 }
+
+/**
+ * Той самий результат, але з тривалості замість поля «Завершення» —
+ * короткий запис заняття питає «скільки хвилин», а не «о котрій закінчив».
+ *
+ * `crossesMidnight` тут інформаційний: кінець рахується додаванням
+ * мілісекунд до введеної миті, тож переносу через північ як окремої
+ * гілки не існує — доба перекочується сама.
+ */
+export function buildActivityWorkoutTimes(
+  dateKey: string,
+  startTime: string,
+  durationMin: number,
+  // eslint-disable-next-line no-restricted-syntax -- порівнюємо мить із миттю (кінець проти «зараз»), а не межі доби.
+  now: Date = new Date(),
+): PastWorkoutTimes | null {
+  if (!dateKey || !startTime) return null;
+  if (!Number.isFinite(durationMin) || durationMin <= 0) return null;
+  const startMs = Date.parse(`${dateKey}T${startTime}`);
+  if (Number.isNaN(startMs)) return null;
+  const endMs = startMs + durationMin * 60_000;
+  const start = new Date(startMs);
+  const end = new Date(endMs);
+  return {
+    startedAt: start.toISOString(),
+    endedAt: end.toISOString(),
+    /* eslint-disable-next-line sergeant-design/prefer-kyiv-time -- ADR-0078:
+       доба тренування належить ПРИСТРОЮ. Підпис «завершення наступного дня»
+       має збігатись із тим, що людина бачить на своєму годиннику; київська
+       межа дала б їй «наступний день» там, де її власний ще не скінчився. */
+    crossesMidnight: start.getDate() !== end.getDate(),
+    implausiblyLong: endMs - startMs > MAX_ROLLOVER_SESSION_MS,
+    inFuture: endMs > now.getTime(),
+  };
+}

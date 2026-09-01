@@ -110,6 +110,7 @@
         "en": "Barbell Bench Press"
       },
       "primaryGroup": "chest",
+      "met": 6,
       "muscles": {
         "primary": ["pectoralis_major"],
         "secondary": ["front_deltoid", "triceps", "serratus_anterior"]
@@ -125,6 +126,7 @@
         "en": "Dumbbell Bench Press"
       },
       "primaryGroup": "chest",
+      "met": 5.5,
       "muscles": {
         "primary": ["pectoralis_major"],
         "secondary": ["front_deltoid", "triceps"]
@@ -140,6 +142,7 @@
         "en": "Incline Barbell Press"
       },
       "primaryGroup": "chest",
+      "met": 6,
       "muscles": {
         "primary": ["pectoralis_major", "front_deltoid"],
         "secondary": ["triceps", "serratus_anterior"]
@@ -155,6 +158,7 @@
         "en": "Incline Dumbbell Press"
       },
       "primaryGroup": "chest",
+      "met": 5.5,
       "muscles": {
         "primary": ["pectoralis_major", "front_deltoid"],
         "secondary": ["triceps"]
@@ -170,6 +174,7 @@
         "en": "Decline Bench Press"
       },
       "primaryGroup": "chest",
+      "met": 6,
       "muscles": {
         "primary": ["pectoralis_major", "pectoralis_minor"],
         "secondary": ["triceps", "front_deltoid"]
@@ -185,6 +190,7 @@
         "en": "Dumbbell Flyes"
       },
       "primaryGroup": "chest",
+      "met": 5.5,
       "muscles": {
         "primary": ["pectoralis_major", "pectoralis_minor"],
         "secondary": ["front_deltoid", "serratus_anterior"]
@@ -200,6 +206,7 @@
         "en": "Incline Dumbbell Flyes"
       },
       "primaryGroup": "chest",
+      "met": 5.5,
       "muscles": {
         "primary": ["pectoralis_major"],
         "secondary": ["front_deltoid", "serratus_anterior"]
@@ -215,6 +222,7 @@
         "en": "Push-up"
       },
       "primaryGroup": "chest",
+      "met": 5,
       "muscles": {
         "primary": ["pectoralis_major", "triceps"],
         "secondary": ["serratus_anterior", "front_deltoid"]
@@ -230,6 +238,7 @@
         "en": "Wide Push-up"
       },
       "primaryGroup": "chest",
+      "met": 5,
       "muscles": {
         "primary": ["pectoralis_major"],
         "secondary": ["triceps", "front_deltoid", "serratus_anterior"]
@@ -245,6 +254,7 @@
         "en": "Diamond Push-up"
       },
       "primaryGroup": "chest",
+      "met": 5,
       "muscles": {
         "primary": ["pectoralis_major", "triceps"],
         "secondary": ["front_deltoid"]
@@ -260,6 +270,7 @@
         "en": "Chest Dips"
       },
       "primaryGroup": "chest",
+      "met": 5,
       "muscles": {
         "primary": ["pectoralis_major", "pectoralis_minor"],
         "secondary": ["triceps", "front_deltoid"]
@@ -275,6 +286,7 @@
         "en": "Cable Crossover"
       },
       "primaryGroup": "chest",
+      "met": 5.3,
       "muscles": {
         "primary": ["pectoralis_major", "pectoralis_minor"],
         "secondary": ["front_deltoid", "serratus_anterior"]
@@ -290,6 +302,7 @@
         "en": "Machine Chest Press"
       },
       "primaryGroup": "chest",
+      "met": 5.5,
       "muscles": {
         "primary": ["pectoralis_major"],
         "secondary": ["triceps", "front_deltoid"]
@@ -305,6 +318,7 @@
         "en": "Pec Deck"
       },
       "primaryGroup": "chest",
+      "met": 5.5,
       "muscles": {
         "primary": ["pectoralis_major", "pectoralis_minor"],
         "secondary": ["front_deltoid"]
@@ -320,6 +334,7 @@
         "en": "Wide-grip Pull-up"
       },
       "primaryGroup": "back",
+      "met": 5,
       "muscles": {
         "primary": ["latissimus_dorsi"],
         "secondary": ["biceps", "rear_deltoid", "rhomboids", "upper_back"]
@@ -335,6 +350,7 @@
         "en": "Chin-up"
       },
       "primaryGroup": "back",
+      "met": 5,
       "muscles": {
         "primary": ["latissimus_dorsi", "biceps"],
         "secondary": ["rear_deltoid", "rhomboids"]
@@ -350,6 +366,7 @@
         "en": "Neutral-grip Pull-up"
       },
       "primaryGroup": "back",
+      "met": 5,
       "muscles": {
         "primary": ["latissimus_dorsi", "biceps"],
         "secondary": ["rear_deltoid", "upper_back", "forearms"]
@@ -365,6 +382,7 @@
         "en": "Barbell Bent-over Row"
       },
       "primaryGroup": "back",
+      "met": 6,
       "muscles": {
         "primary": ["latissimus_dorsi", "rhomboids", "upper_back"],
         "secondary": ["biceps", "rear_deltoid", "erector_spinae", "forearms"]
@@ -380,6 +398,7 @@
         "en": "Dumbbell Row"
       },
       "primaryGroup": "back",
+      "met": 5.5,
       "muscles": {
         "primary": ["latissimus_dorsi", "rhomboids"],
         "secondary": ["biceps", "rear_deltoid", "forearms"]
@@ -395,6 +414,7 @@
         "en": "Lat Pulldown"
       },
       "primaryGroup": "back",
+      "met": 5.5,
       "muscles": {
         "primary": ["latissimus_dorsi"],
         "secondary": ["biceps", "rear_deltoid", "rhomboids"]
@@ -410,6 +430,7 @@
         "en": "Close-grip Lat Pulldown"
       },
       "primaryGroup": "back",
+      "met": 5.5,
       "muscles": {
         "primary": ["latissimus_dorsi", "biceps"],
         "secondary": ["rhomboids", "rear_deltoid"]
@@ -425,6 +446,7 @@
         "en": "Seated Cable Row"
       },
       "primaryGroup": "back",
+      "met": 5.5,
       "muscles": {
         "primary": ["latissimus_dorsi", "rhomboids", "upper_back"],
         "secondary": ["biceps", "rear_deltoid", "forearms"]
@@ -440,6 +462,7 @@
         "en": "T-bar Row"
       },
       "primaryGroup": "back",
+      "met": 6,
       "muscles": {
         "primary": ["latissimus_dorsi", "rhomboids"],
         "secondary": ["biceps", "rear_deltoid", "trapezius"]
@@ -455,6 +478,7 @@
         "en": "Hyperextension"
       },
       "primaryGroup": "back",
+      "met": 5.5,
       "muscles": {
         "primary": ["erector_spinae"],
         "secondary": ["gluteus_maximus", "hamstrings"]
@@ -470,6 +494,7 @@
         "en": "Inverted Row"
       },
       "primaryGroup": "back",
+      "met": 5,
       "muscles": {
         "primary": ["latissimus_dorsi", "rhomboids", "upper_back"],
         "secondary": ["biceps", "rear_deltoid"]
@@ -485,6 +510,7 @@
         "en": "Straight-arm Pulldown"
       },
       "primaryGroup": "back",
+      "met": 5.3,
       "muscles": {
         "primary": ["latissimus_dorsi"],
         "secondary": ["rear_deltoid", "triceps"]
@@ -500,6 +526,7 @@
         "en": "Machine Row"
       },
       "primaryGroup": "back",
+      "met": 5.5,
       "muscles": {
         "primary": ["latissimus_dorsi", "rhomboids"],
         "secondary": ["biceps", "rear_deltoid"]
@@ -515,6 +542,7 @@
         "en": "Barbell Overhead Press"
       },
       "primaryGroup": "shoulders",
+      "met": 5.5,
       "muscles": {
         "primary": ["front_deltoid", "lateral_deltoid"],
         "secondary": ["triceps", "trapezius", "serratus_anterior"]
@@ -530,6 +558,7 @@
         "en": "Dumbbell Shoulder Press"
       },
       "primaryGroup": "shoulders",
+      "met": 5,
       "muscles": {
         "primary": ["front_deltoid", "lateral_deltoid"],
         "secondary": ["triceps", "trapezius"]
@@ -545,6 +574,7 @@
         "en": "Seated Dumbbell Press"
       },
       "primaryGroup": "shoulders",
+      "met": 5,
       "muscles": {
         "primary": ["front_deltoid", "lateral_deltoid"],
         "secondary": ["triceps", "trapezius"]
@@ -560,6 +590,7 @@
         "en": "Arnold Press"
       },
       "primaryGroup": "shoulders",
+      "met": 5,
       "muscles": {
         "primary": ["front_deltoid", "lateral_deltoid", "rear_deltoid"],
         "secondary": ["triceps", "trapezius"]
@@ -575,6 +606,7 @@
         "en": "Lateral Raise"
       },
       "primaryGroup": "shoulders",
+      "met": 5,
       "muscles": {
         "primary": ["lateral_deltoid"],
         "secondary": ["front_deltoid", "trapezius"]
@@ -590,6 +622,7 @@
         "en": "Cable Lateral Raise"
       },
       "primaryGroup": "shoulders",
+      "met": 4.8,
       "muscles": {
         "primary": ["lateral_deltoid"],
         "secondary": ["front_deltoid", "trapezius"]
@@ -605,6 +638,7 @@
         "en": "Front Raise"
       },
       "primaryGroup": "shoulders",
+      "met": 5,
       "muscles": {
         "primary": ["front_deltoid"],
         "secondary": ["lateral_deltoid", "pectoralis_major"]
@@ -620,6 +654,7 @@
         "en": "Reverse Flyes"
       },
       "primaryGroup": "shoulders",
+      "met": 5,
       "muscles": {
         "primary": ["rear_deltoid"],
         "secondary": ["rhomboids", "trapezius", "upper_back"]
@@ -635,6 +670,7 @@
         "en": "Upright Row"
       },
       "primaryGroup": "shoulders",
+      "met": 5.5,
       "muscles": {
         "primary": ["lateral_deltoid", "trapezius"],
         "secondary": ["front_deltoid", "biceps", "forearms"]
@@ -650,6 +686,7 @@
         "en": "Face Pull"
       },
       "primaryGroup": "shoulders",
+      "met": 5,
       "muscles": {
         "primary": ["rear_deltoid"],
         "secondary": ["rhomboids", "trapezius", "upper_back"]
@@ -665,6 +702,7 @@
         "en": "Barbell Shrugs"
       },
       "primaryGroup": "shoulders",
+      "met": 5.5,
       "muscles": {
         "primary": ["trapezius"],
         "secondary": ["neck", "forearms"]
@@ -680,6 +718,7 @@
         "en": "Machine Shoulder Press"
       },
       "primaryGroup": "shoulders",
+      "met": 5,
       "muscles": {
         "primary": ["front_deltoid", "lateral_deltoid"],
         "secondary": ["triceps"]
@@ -695,6 +734,7 @@
         "en": "Band Pull-apart"
       },
       "primaryGroup": "shoulders",
+      "met": 4,
       "muscles": {
         "primary": ["rear_deltoid"],
         "secondary": ["rhomboids", "upper_back"]
@@ -710,6 +750,7 @@
         "en": "Barbell Bicep Curl"
       },
       "primaryGroup": "biceps",
+      "met": 4.5,
       "muscles": {
         "primary": ["biceps"],
         "secondary": ["forearms", "brachialis"]
@@ -725,6 +766,7 @@
         "en": "Dumbbell Bicep Curl"
       },
       "primaryGroup": "biceps",
+      "met": 4,
       "muscles": {
         "primary": ["biceps"],
         "secondary": ["forearms"]
@@ -740,6 +782,7 @@
         "en": "Hammer Curl"
       },
       "primaryGroup": "biceps",
+      "met": 4,
       "muscles": {
         "primary": ["biceps", "brachialis"],
         "secondary": ["forearms"]
@@ -755,6 +798,7 @@
         "en": "Concentration Curl"
       },
       "primaryGroup": "biceps",
+      "met": 4,
       "muscles": {
         "primary": ["biceps"],
         "secondary": ["forearms"]
@@ -770,6 +814,7 @@
         "en": "Preacher Curl"
       },
       "primaryGroup": "biceps",
+      "met": 4.5,
       "muscles": {
         "primary": ["biceps", "brachialis"],
         "secondary": ["forearms"]
@@ -785,6 +830,7 @@
         "en": "Cable Curl"
       },
       "primaryGroup": "biceps",
+      "met": 3.8,
       "muscles": {
         "primary": ["biceps"],
         "secondary": ["forearms"]
@@ -800,6 +846,7 @@
         "en": "Incline Dumbbell Curl"
       },
       "primaryGroup": "biceps",
+      "met": 4,
       "muscles": {
         "primary": ["biceps"],
         "secondary": ["forearms"]
@@ -815,6 +862,7 @@
         "en": "Spider Curl"
       },
       "primaryGroup": "biceps",
+      "met": 4.5,
       "muscles": {
         "primary": ["biceps"],
         "secondary": ["brachialis"]
@@ -830,6 +878,7 @@
         "en": "EZ-bar Curl"
       },
       "primaryGroup": "biceps",
+      "met": 4.5,
       "muscles": {
         "primary": ["biceps", "brachialis"],
         "secondary": ["forearms"]
@@ -845,6 +894,7 @@
         "en": "Band Bicep Curl"
       },
       "primaryGroup": "biceps",
+      "met": 3,
       "muscles": {
         "primary": ["biceps"],
         "secondary": ["forearms"]
@@ -860,6 +910,7 @@
         "en": "Tricep Pushdown"
       },
       "primaryGroup": "triceps",
+      "met": 4,
       "muscles": {
         "primary": ["triceps"],
         "secondary": []
@@ -875,6 +926,7 @@
         "en": "Skull Crusher"
       },
       "primaryGroup": "triceps",
+      "met": 4.5,
       "muscles": {
         "primary": ["triceps"],
         "secondary": []
@@ -890,6 +942,7 @@
         "en": "Tricep Dips"
       },
       "primaryGroup": "triceps",
+      "met": 3.5,
       "muscles": {
         "primary": ["triceps"],
         "secondary": ["pectoralis_major", "front_deltoid"]
@@ -905,6 +958,7 @@
         "en": "Overhead Tricep Extension"
       },
       "primaryGroup": "triceps",
+      "met": 4,
       "muscles": {
         "primary": ["triceps"],
         "secondary": []
@@ -920,6 +974,7 @@
         "en": "Close-grip Bench Press"
       },
       "primaryGroup": "triceps",
+      "met": 4.5,
       "muscles": {
         "primary": ["triceps"],
         "secondary": ["pectoralis_major", "front_deltoid"]
@@ -935,6 +990,7 @@
         "en": "Tricep Kickback"
       },
       "primaryGroup": "triceps",
+      "met": 4,
       "muscles": {
         "primary": ["triceps"],
         "secondary": []
@@ -950,6 +1006,7 @@
         "en": "Rope Pushdown"
       },
       "primaryGroup": "triceps",
+      "met": 3.8,
       "muscles": {
         "primary": ["triceps"],
         "secondary": []
@@ -965,6 +1022,7 @@
         "en": "Bench Dips"
       },
       "primaryGroup": "triceps",
+      "met": 3.5,
       "muscles": {
         "primary": ["triceps"],
         "secondary": ["front_deltoid", "pectoralis_major"]
@@ -980,6 +1038,7 @@
         "en": "Band Tricep Pushdown"
       },
       "primaryGroup": "triceps",
+      "met": 3,
       "muscles": {
         "primary": ["triceps"],
         "secondary": []
@@ -995,6 +1054,7 @@
         "en": "Wrist Curl"
       },
       "primaryGroup": "forearms",
+      "met": 4,
       "muscles": {
         "primary": ["forearms"],
         "secondary": []
@@ -1010,6 +1070,7 @@
         "en": "Reverse Wrist Curl"
       },
       "primaryGroup": "forearms",
+      "met": 4,
       "muscles": {
         "primary": ["forearms"],
         "secondary": []
@@ -1025,6 +1086,7 @@
         "en": "Reverse Curl"
       },
       "primaryGroup": "forearms",
+      "met": 4,
       "muscles": {
         "primary": ["forearms", "brachialis"],
         "secondary": ["biceps"]
@@ -1040,6 +1102,7 @@
         "en": "Crunch"
       },
       "primaryGroup": "core",
+      "met": 3.8,
       "muscles": {
         "primary": ["rectus_abdominis"],
         "secondary": ["obliques"]
@@ -1055,6 +1118,7 @@
         "en": "Plank"
       },
       "primaryGroup": "core",
+      "met": 3.8,
       "muscles": {
         "primary": ["rectus_abdominis"],
         "secondary": ["obliques", "erector_spinae", "front_deltoid"]
@@ -1070,6 +1134,7 @@
         "en": "Lying Leg Raise"
       },
       "primaryGroup": "core",
+      "met": 3.8,
       "muscles": {
         "primary": ["rectus_abdominis"],
         "secondary": ["obliques", "quadriceps"]
@@ -1085,6 +1150,7 @@
         "en": "Bicycle Crunch"
       },
       "primaryGroup": "core",
+      "met": 3.8,
       "muscles": {
         "primary": ["rectus_abdominis", "obliques"],
         "secondary": []
@@ -1100,6 +1166,7 @@
         "en": "Russian Twist"
       },
       "primaryGroup": "core",
+      "met": 4.3,
       "muscles": {
         "primary": ["obliques"],
         "secondary": ["rectus_abdominis"]
@@ -1115,6 +1182,7 @@
         "en": "Hanging Leg Raise"
       },
       "primaryGroup": "core",
+      "met": 3.8,
       "muscles": {
         "primary": ["rectus_abdominis"],
         "secondary": ["obliques", "forearms"]
@@ -1130,6 +1198,7 @@
         "en": "Side Plank"
       },
       "primaryGroup": "core",
+      "met": 3.8,
       "muscles": {
         "primary": ["obliques"],
         "secondary": ["rectus_abdominis", "gluteus_medius"]
@@ -1145,6 +1214,7 @@
         "en": "Ab Wheel Rollout"
       },
       "primaryGroup": "core",
+      "met": 3.8,
       "muscles": {
         "primary": ["rectus_abdominis"],
         "secondary": ["obliques", "erector_spinae", "latissimus_dorsi"]
@@ -1160,6 +1230,7 @@
         "en": "Cable Woodchop"
       },
       "primaryGroup": "core",
+      "met": 4.1,
       "muscles": {
         "primary": ["obliques"],
         "secondary": ["rectus_abdominis"]
@@ -1175,6 +1246,7 @@
         "en": "Barbell Back Squat"
       },
       "primaryGroup": "quadriceps",
+      "met": 6,
       "muscles": {
         "primary": ["quadriceps", "gluteus_maximus"],
         "secondary": ["hamstrings", "erector_spinae", "adductors", "calves"]
@@ -1190,6 +1262,7 @@
         "en": "Front Squat"
       },
       "primaryGroup": "quadriceps",
+      "met": 6,
       "muscles": {
         "primary": ["quadriceps"],
         "secondary": ["gluteus_maximus", "erector_spinae"]
@@ -1205,6 +1278,7 @@
         "en": "Goblet Squat"
       },
       "primaryGroup": "quadriceps",
+      "met": 6,
       "muscles": {
         "primary": ["quadriceps", "gluteus_maximus"],
         "secondary": ["hamstrings", "adductors", "erector_spinae"]
@@ -1220,6 +1294,7 @@
         "en": "Bodyweight Squat"
       },
       "primaryGroup": "quadriceps",
+      "met": 5,
       "muscles": {
         "primary": ["quadriceps", "gluteus_maximus"],
         "secondary": ["hamstrings", "calves"]
@@ -1235,6 +1310,7 @@
         "en": "Leg Press"
       },
       "primaryGroup": "quadriceps",
+      "met": 5.5,
       "muscles": {
         "primary": ["quadriceps", "gluteus_maximus"],
         "secondary": ["hamstrings", "calves"]
@@ -1250,6 +1326,7 @@
         "en": "Leg Extension"
       },
       "primaryGroup": "quadriceps",
+      "met": 5.5,
       "muscles": {
         "primary": ["quadriceps"],
         "secondary": []
@@ -1265,6 +1342,7 @@
         "en": "Dumbbell Lunge"
       },
       "primaryGroup": "quadriceps",
+      "met": 5.5,
       "muscles": {
         "primary": ["quadriceps", "gluteus_maximus"],
         "secondary": ["hamstrings", "calves", "adductors"]
@@ -1280,6 +1358,7 @@
         "en": "Reverse Lunge"
       },
       "primaryGroup": "quadriceps",
+      "met": 5.5,
       "muscles": {
         "primary": ["gluteus_maximus", "quadriceps"],
         "secondary": ["hamstrings", "calves"]
@@ -1295,6 +1374,7 @@
         "en": "Walking Lunge"
       },
       "primaryGroup": "quadriceps",
+      "met": 5.5,
       "muscles": {
         "primary": ["quadriceps", "gluteus_maximus"],
         "secondary": ["hamstrings", "calves"]
@@ -1310,6 +1390,7 @@
         "en": "Bulgarian Split Squat"
       },
       "primaryGroup": "quadriceps",
+      "met": 5.5,
       "muscles": {
         "primary": ["quadriceps", "gluteus_maximus"],
         "secondary": ["hamstrings", "adductors"]
@@ -1325,6 +1406,7 @@
         "en": "Hack Squat"
       },
       "primaryGroup": "quadriceps",
+      "met": 5.5,
       "muscles": {
         "primary": ["quadriceps"],
         "secondary": ["gluteus_maximus", "calves"]
@@ -1340,6 +1422,7 @@
         "en": "Sissy Squat"
       },
       "primaryGroup": "quadriceps",
+      "met": 5,
       "muscles": {
         "primary": ["quadriceps"],
         "secondary": []
@@ -1355,6 +1438,7 @@
         "en": "Step-up"
       },
       "primaryGroup": "quadriceps",
+      "met": 5.5,
       "muscles": {
         "primary": ["quadriceps", "gluteus_maximus"],
         "secondary": ["hamstrings", "calves"]
@@ -1370,6 +1454,7 @@
         "en": "Leg Curl"
       },
       "primaryGroup": "hamstrings",
+      "met": 5.5,
       "muscles": {
         "primary": ["hamstrings"],
         "secondary": ["calves"]
@@ -1385,6 +1470,7 @@
         "en": "Romanian Deadlift"
       },
       "primaryGroup": "hamstrings",
+      "met": 6,
       "muscles": {
         "primary": ["hamstrings", "gluteus_maximus"],
         "secondary": ["erector_spinae", "calves"]
@@ -1400,6 +1486,7 @@
         "en": "Stiff-leg Deadlift"
       },
       "primaryGroup": "hamstrings",
+      "met": 6,
       "muscles": {
         "primary": ["hamstrings", "erector_spinae"],
         "secondary": ["gluteus_maximus"]
@@ -1415,6 +1502,7 @@
         "en": "Good Morning"
       },
       "primaryGroup": "hamstrings",
+      "met": 6,
       "muscles": {
         "primary": ["hamstrings", "erector_spinae"],
         "secondary": ["gluteus_maximus"]
@@ -1430,6 +1518,7 @@
         "en": "Nordic Hamstring Curl"
       },
       "primaryGroup": "hamstrings",
+      "met": 5,
       "muscles": {
         "primary": ["hamstrings"],
         "secondary": ["calves"]
@@ -1445,6 +1534,7 @@
         "en": "Single-leg Deadlift"
       },
       "primaryGroup": "hamstrings",
+      "met": 6,
       "muscles": {
         "primary": ["hamstrings", "gluteus_maximus"],
         "secondary": ["erector_spinae"]
@@ -1460,6 +1550,7 @@
         "en": "Kettlebell Swing"
       },
       "primaryGroup": "hamstrings",
+      "met": 6,
       "muscles": {
         "primary": ["hamstrings", "gluteus_maximus"],
         "secondary": ["erector_spinae", "quadriceps"]
@@ -1475,6 +1566,7 @@
         "en": "Band Leg Curl"
       },
       "primaryGroup": "hamstrings",
+      "met": 4.5,
       "muscles": {
         "primary": ["hamstrings"],
         "secondary": ["calves"]
@@ -1490,6 +1582,7 @@
         "en": "Standing Calf Raise"
       },
       "primaryGroup": "calves",
+      "met": 3.8,
       "muscles": {
         "primary": ["calves"],
         "secondary": []
@@ -1505,6 +1598,7 @@
         "en": "Seated Calf Raise"
       },
       "primaryGroup": "calves",
+      "met": 3.8,
       "muscles": {
         "primary": ["calves"],
         "secondary": []
@@ -1520,6 +1614,7 @@
         "en": "Donkey Calf Raise"
       },
       "primaryGroup": "calves",
+      "met": 3.8,
       "muscles": {
         "primary": ["calves"],
         "secondary": []
@@ -1535,6 +1630,7 @@
         "en": "Single-leg Calf Raise"
       },
       "primaryGroup": "calves",
+      "met": 3.8,
       "muscles": {
         "primary": ["calves"],
         "secondary": []
@@ -1550,6 +1646,7 @@
         "en": "Barbell Hip Thrust"
       },
       "primaryGroup": "glutes",
+      "met": 6,
       "muscles": {
         "primary": ["gluteus_maximus"],
         "secondary": ["hamstrings", "erector_spinae"]
@@ -1565,6 +1662,7 @@
         "en": "Glute Bridge"
       },
       "primaryGroup": "glutes",
+      "met": 5,
       "muscles": {
         "primary": ["gluteus_maximus"],
         "secondary": ["hamstrings"]
@@ -1580,6 +1678,7 @@
         "en": "Cable Kickback"
       },
       "primaryGroup": "glutes",
+      "met": 5.5,
       "muscles": {
         "primary": ["gluteus_maximus"],
         "secondary": ["hamstrings"]
@@ -1595,6 +1694,7 @@
         "en": "Sumo Deadlift"
       },
       "primaryGroup": "glutes",
+      "met": 6,
       "muscles": {
         "primary": ["gluteus_maximus", "adductors"],
         "secondary": ["hamstrings", "quadriceps", "erector_spinae"]
@@ -1610,6 +1710,7 @@
         "en": "Hip Abduction Machine"
       },
       "primaryGroup": "glutes",
+      "met": 5.5,
       "muscles": {
         "primary": ["gluteus_medius", "abductors"],
         "secondary": []
@@ -1625,6 +1726,7 @@
         "en": "Hip Adduction Machine"
       },
       "primaryGroup": "glutes",
+      "met": 5.5,
       "muscles": {
         "primary": ["adductors"],
         "secondary": ["gluteus_medius"]
@@ -1640,6 +1742,7 @@
         "en": "Banded Clamshell"
       },
       "primaryGroup": "glutes",
+      "met": 4.5,
       "muscles": {
         "primary": ["gluteus_medius"],
         "secondary": ["gluteus_maximus"]
@@ -1655,6 +1758,7 @@
         "en": "Single-leg Hip Thrust"
       },
       "primaryGroup": "glutes",
+      "met": 5,
       "muscles": {
         "primary": ["gluteus_maximus"],
         "secondary": ["hamstrings"]
@@ -1670,6 +1774,7 @@
         "en": "Running"
       },
       "primaryGroup": "cardio",
+      "met": 8,
       "muscles": {
         "primary": ["quadriceps", "hamstrings", "calves"],
         "secondary": ["gluteus_maximus"]
@@ -1685,6 +1790,7 @@
         "en": "Cycling"
       },
       "primaryGroup": "cardio",
+      "met": 8.5,
       "muscles": {
         "primary": ["quadriceps", "hamstrings"],
         "secondary": ["calves", "gluteus_maximus"]
@@ -1700,6 +1806,7 @@
         "en": "Jump Rope"
       },
       "primaryGroup": "cardio",
+      "met": 8,
       "muscles": {
         "primary": ["calves"],
         "secondary": ["quadriceps", "hamstrings"]
@@ -1715,6 +1822,7 @@
         "en": "Burpee"
       },
       "primaryGroup": "cardio",
+      "met": 8,
       "muscles": {
         "primary": ["quadriceps", "pectoralis_major"],
         "secondary": [
@@ -1735,6 +1843,7 @@
         "en": "Box Jump"
       },
       "primaryGroup": "cardio",
+      "met": 8,
       "muscles": {
         "primary": ["quadriceps", "gluteus_maximus"],
         "secondary": ["hamstrings", "calves"]
@@ -1750,6 +1859,7 @@
         "en": "Rowing Machine"
       },
       "primaryGroup": "cardio",
+      "met": 8.5,
       "muscles": {
         "primary": ["latissimus_dorsi", "quadriceps"],
         "secondary": ["biceps", "hamstrings", "erector_spinae"]
@@ -1765,6 +1875,7 @@
         "en": "Stair Climber"
       },
       "primaryGroup": "cardio",
+      "met": 8.5,
       "muscles": {
         "primary": ["quadriceps", "gluteus_maximus"],
         "secondary": ["calves", "hamstrings"]
@@ -1780,6 +1891,7 @@
         "en": "Battle Ropes"
       },
       "primaryGroup": "cardio",
+      "met": 8,
       "muscles": {
         "primary": ["front_deltoid", "forearms"],
         "secondary": ["rectus_abdominis", "quadriceps"]
@@ -1795,6 +1907,7 @@
         "en": "Deadlift"
       },
       "primaryGroup": "full_body",
+      "met": 7,
       "muscles": {
         "primary": ["hamstrings", "gluteus_maximus", "erector_spinae"],
         "secondary": ["quadriceps", "latissimus_dorsi", "trapezius", "forearms"]
@@ -1810,6 +1923,7 @@
         "en": "Clean and Press"
       },
       "primaryGroup": "full_body",
+      "met": 7,
       "muscles": {
         "primary": ["quadriceps", "gluteus_maximus", "front_deltoid"],
         "secondary": ["hamstrings", "trapezius", "triceps", "erector_spinae"]
@@ -1825,6 +1939,7 @@
         "en": "Turkish Get-up"
       },
       "primaryGroup": "full_body",
+      "met": 7,
       "muscles": {
         "primary": ["gluteus_maximus", "quadriceps", "rectus_abdominis"],
         "secondary": ["front_deltoid", "obliques", "triceps"]
@@ -1840,6 +1955,7 @@
         "en": "Farmer's Walk"
       },
       "primaryGroup": "full_body",
+      "met": 7,
       "muscles": {
         "primary": ["forearms", "trapezius"],
         "secondary": [
@@ -1860,6 +1976,7 @@
         "en": "Thruster"
       },
       "primaryGroup": "full_body",
+      "met": 7,
       "muscles": {
         "primary": ["quadriceps", "gluteus_maximus", "front_deltoid"],
         "secondary": ["triceps", "erector_spinae", "rectus_abdominis"]
@@ -1875,6 +1992,7 @@
         "en": "Snatch"
       },
       "primaryGroup": "full_body",
+      "met": 7,
       "muscles": {
         "primary": [
           "quadriceps",
@@ -1895,6 +2013,7 @@
         "en": "Man Maker"
       },
       "primaryGroup": "full_body",
+      "met": 6.5,
       "muscles": {
         "primary": [
           "pectoralis_major",
@@ -1920,6 +2039,7 @@
         "en": "Smith Machine Bench Press"
       },
       "primaryGroup": "chest",
+      "met": 5.5,
       "muscles": {
         "primary": ["pectoralis_major"],
         "secondary": ["front_deltoid", "triceps"]
@@ -1935,6 +2055,7 @@
         "en": "Incline Push-up"
       },
       "primaryGroup": "chest",
+      "met": 5,
       "muscles": {
         "primary": ["pectoralis_major"],
         "secondary": ["front_deltoid", "triceps"]
@@ -1950,6 +2071,7 @@
         "en": "Decline Push-up"
       },
       "primaryGroup": "chest",
+      "met": 5,
       "muscles": {
         "primary": ["pectoralis_major"],
         "secondary": ["front_deltoid", "triceps", "serratus_anterior"]
@@ -1965,6 +2087,7 @@
         "en": "Dumbbell Pullover"
       },
       "primaryGroup": "chest",
+      "met": 5.5,
       "muscles": {
         "primary": ["pectoralis_major", "latissimus_dorsi"],
         "secondary": ["triceps", "serratus_anterior"]
@@ -1980,6 +2103,7 @@
         "en": "Band Chest Press"
       },
       "primaryGroup": "chest",
+      "met": 4.5,
       "muscles": {
         "primary": ["pectoralis_major"],
         "secondary": ["front_deltoid", "triceps"]
@@ -1995,6 +2119,7 @@
         "en": "Plyometric Push-up"
       },
       "primaryGroup": "chest",
+      "met": 5,
       "muscles": {
         "primary": ["pectoralis_major"],
         "secondary": ["front_deltoid", "triceps"]
@@ -2010,6 +2135,7 @@
         "en": "Pendlay Row"
       },
       "primaryGroup": "back",
+      "met": 6,
       "muscles": {
         "primary": ["latissimus_dorsi", "rhomboids"],
         "secondary": ["trapezius", "biceps", "erector_spinae"]
@@ -2025,6 +2151,7 @@
         "en": "Rack Pull"
       },
       "primaryGroup": "back",
+      "met": 6,
       "muscles": {
         "primary": ["erector_spinae", "trapezius"],
         "secondary": ["latissimus_dorsi", "gluteus_maximus", "forearms"]
@@ -2040,6 +2167,7 @@
         "en": "Underhand Barbell Row"
       },
       "primaryGroup": "back",
+      "met": 6,
       "muscles": {
         "primary": ["latissimus_dorsi"],
         "secondary": ["biceps", "rhomboids", "erector_spinae"]
@@ -2055,6 +2183,7 @@
         "en": "Chest-Supported Row"
       },
       "primaryGroup": "back",
+      "met": 5.5,
       "muscles": {
         "primary": ["rhomboids", "latissimus_dorsi"],
         "secondary": ["rear_deltoid", "biceps", "trapezius"]
@@ -2070,6 +2199,7 @@
         "en": "Single-Arm Lat Pulldown"
       },
       "primaryGroup": "back",
+      "met": 5.5,
       "muscles": {
         "primary": ["latissimus_dorsi"],
         "secondary": ["biceps", "rear_deltoid"]
@@ -2085,6 +2215,7 @@
         "en": "Seated Band Row"
       },
       "primaryGroup": "back",
+      "met": 4.5,
       "muscles": {
         "primary": ["rhomboids", "latissimus_dorsi"],
         "secondary": ["biceps", "rear_deltoid"]
@@ -2100,6 +2231,7 @@
         "en": "Band Lat Pulldown"
       },
       "primaryGroup": "back",
+      "met": 4.5,
       "muscles": {
         "primary": ["latissimus_dorsi"],
         "secondary": ["biceps", "rear_deltoid", "trapezius"]
@@ -2115,6 +2247,7 @@
         "en": "Negative Pull-up"
       },
       "primaryGroup": "back",
+      "met": 5,
       "muscles": {
         "primary": ["latissimus_dorsi"],
         "secondary": ["biceps", "forearms", "rhomboids"]
@@ -2130,6 +2263,7 @@
         "en": "Superman"
       },
       "primaryGroup": "back",
+      "met": 5,
       "muscles": {
         "primary": ["erector_spinae"],
         "secondary": ["gluteus_maximus", "trapezius"]
@@ -2145,6 +2279,7 @@
         "en": "Landmine Press"
       },
       "primaryGroup": "shoulders",
+      "met": 5.5,
       "muscles": {
         "primary": ["front_deltoid"],
         "secondary": ["triceps", "pectoralis_major", "rectus_abdominis"]
@@ -2160,6 +2295,7 @@
         "en": "Pike Push-up"
       },
       "primaryGroup": "shoulders",
+      "met": 4.5,
       "muscles": {
         "primary": ["front_deltoid"],
         "secondary": ["triceps", "trapezius"]
@@ -2175,6 +2311,7 @@
         "en": "Band Lateral Raise"
       },
       "primaryGroup": "shoulders",
+      "met": 4,
       "muscles": {
         "primary": ["lateral_deltoid"],
         "secondary": ["trapezius"]
@@ -2190,6 +2327,7 @@
         "en": "Plate Front Raise"
       },
       "primaryGroup": "shoulders",
+      "met": 4.5,
       "muscles": {
         "primary": ["front_deltoid"],
         "secondary": ["trapezius", "rectus_abdominis"]
@@ -2205,6 +2343,7 @@
         "en": "Handstand Push-up"
       },
       "primaryGroup": "shoulders",
+      "met": 4.5,
       "muscles": {
         "primary": ["front_deltoid"],
         "secondary": ["triceps", "trapezius"]
@@ -2220,6 +2359,7 @@
         "en": "Reverse Pec Deck"
       },
       "primaryGroup": "shoulders",
+      "met": 5,
       "muscles": {
         "primary": ["rear_deltoid"],
         "secondary": ["rhomboids", "trapezius"]
@@ -2235,6 +2375,7 @@
         "en": "Zottman Curl"
       },
       "primaryGroup": "biceps",
+      "met": 4,
       "muscles": {
         "primary": ["biceps", "brachialis"],
         "secondary": ["forearms"]
@@ -2250,6 +2391,7 @@
         "en": "Rope Hammer Curl"
       },
       "primaryGroup": "biceps",
+      "met": 3.8,
       "muscles": {
         "primary": ["brachialis", "biceps"],
         "secondary": ["forearms"]
@@ -2265,6 +2407,7 @@
         "en": "Seated Dumbbell Curl"
       },
       "primaryGroup": "biceps",
+      "met": 4,
       "muscles": {
         "primary": ["biceps"],
         "secondary": ["brachialis", "forearms"]
@@ -2280,6 +2423,7 @@
         "en": "21s Curl"
       },
       "primaryGroup": "biceps",
+      "met": 4.5,
       "muscles": {
         "primary": ["biceps"],
         "secondary": ["brachialis", "forearms"]
@@ -2295,6 +2439,7 @@
         "en": "Single-Arm Pushdown"
       },
       "primaryGroup": "triceps",
+      "met": 3.8,
       "muscles": {
         "primary": ["triceps"],
         "secondary": ["forearms"]
@@ -2310,6 +2455,7 @@
         "en": "Seated French Press"
       },
       "primaryGroup": "triceps",
+      "met": 4.5,
       "muscles": {
         "primary": ["triceps"],
         "secondary": ["front_deltoid"]
@@ -2325,6 +2471,7 @@
         "en": "Machine Triceps Extension"
       },
       "primaryGroup": "triceps",
+      "met": 4,
       "muscles": {
         "primary": ["triceps"],
         "secondary": []
@@ -2340,6 +2487,7 @@
         "en": "Band Overhead Extension"
       },
       "primaryGroup": "triceps",
+      "met": 3,
       "muscles": {
         "primary": ["triceps"],
         "secondary": ["front_deltoid"]
@@ -2355,6 +2503,7 @@
         "en": "Farmer's Hold"
       },
       "primaryGroup": "forearms",
+      "met": 4,
       "muscles": {
         "primary": ["forearms"],
         "secondary": ["trapezius"]
@@ -2370,6 +2519,7 @@
         "en": "Plate Pinch"
       },
       "primaryGroup": "forearms",
+      "met": 3,
       "muscles": {
         "primary": ["forearms"],
         "secondary": []
@@ -2385,6 +2535,7 @@
         "en": "Dead Hang"
       },
       "primaryGroup": "forearms",
+      "met": 3,
       "muscles": {
         "primary": ["forearms"],
         "secondary": ["latissimus_dorsi", "trapezius"]
@@ -2400,6 +2551,7 @@
         "en": "Wrist Roller"
       },
       "primaryGroup": "forearms",
+      "met": 3,
       "muscles": {
         "primary": ["forearms"],
         "secondary": ["front_deltoid"]
@@ -2415,6 +2567,7 @@
         "en": "Behind-the-Back Wrist Curl"
       },
       "primaryGroup": "forearms",
+      "met": 4,
       "muscles": {
         "primary": ["forearms"],
         "secondary": []
@@ -2430,6 +2583,7 @@
         "en": "Band Wrist Extension"
       },
       "primaryGroup": "forearms",
+      "met": 2.5,
       "muscles": {
         "primary": ["forearms"],
         "secondary": []
@@ -2445,6 +2599,7 @@
         "en": "Towel Hang"
       },
       "primaryGroup": "forearms",
+      "met": 3,
       "muscles": {
         "primary": ["forearms"],
         "secondary": ["latissimus_dorsi", "biceps"]
@@ -2460,6 +2615,7 @@
         "en": "Hollow Hold"
       },
       "primaryGroup": "core",
+      "met": 3.8,
       "muscles": {
         "primary": ["rectus_abdominis"],
         "secondary": ["obliques"]
@@ -2475,6 +2631,7 @@
         "en": "Mountain Climber"
       },
       "primaryGroup": "core",
+      "met": 3.8,
       "muscles": {
         "primary": ["rectus_abdominis"],
         "secondary": ["obliques", "front_deltoid", "quadriceps"]
@@ -2490,6 +2647,7 @@
         "en": "Dead Bug"
       },
       "primaryGroup": "core",
+      "met": 3.8,
       "muscles": {
         "primary": ["rectus_abdominis"],
         "secondary": ["obliques"]
@@ -2505,6 +2663,7 @@
         "en": "Bird Dog"
       },
       "primaryGroup": "core",
+      "met": 3.8,
       "muscles": {
         "primary": ["erector_spinae", "rectus_abdominis"],
         "secondary": ["gluteus_maximus", "rear_deltoid"]
@@ -2520,6 +2679,7 @@
         "en": "Reverse Crunch"
       },
       "primaryGroup": "core",
+      "met": 3.8,
       "muscles": {
         "primary": ["rectus_abdominis"],
         "secondary": ["obliques"]
@@ -2535,6 +2695,7 @@
         "en": "Cable Crunch"
       },
       "primaryGroup": "core",
+      "met": 4.1,
       "muscles": {
         "primary": ["rectus_abdominis"],
         "secondary": ["obliques"]
@@ -2550,6 +2711,7 @@
         "en": "Pallof Press"
       },
       "primaryGroup": "core",
+      "met": 4.1,
       "muscles": {
         "primary": ["obliques"],
         "secondary": ["rectus_abdominis"]
@@ -2565,6 +2727,7 @@
         "en": "V-Up"
       },
       "primaryGroup": "core",
+      "met": 3.8,
       "muscles": {
         "primary": ["rectus_abdominis"],
         "secondary": ["obliques", "quadriceps"]
@@ -2580,6 +2743,7 @@
         "en": "Box Squat"
       },
       "primaryGroup": "quadriceps",
+      "met": 6,
       "muscles": {
         "primary": ["quadriceps", "gluteus_maximus"],
         "secondary": ["hamstrings", "erector_spinae"]
@@ -2595,6 +2759,7 @@
         "en": "Wall Sit"
       },
       "primaryGroup": "quadriceps",
+      "met": 5,
       "muscles": {
         "primary": ["quadriceps"],
         "secondary": ["gluteus_maximus", "calves"]
@@ -2610,6 +2775,7 @@
         "en": "Jump Squat"
       },
       "primaryGroup": "quadriceps",
+      "met": 5,
       "muscles": {
         "primary": ["quadriceps", "gluteus_maximus"],
         "secondary": ["calves", "hamstrings"]
@@ -2625,6 +2791,7 @@
         "en": "Split Squat"
       },
       "primaryGroup": "quadriceps",
+      "met": 5.5,
       "muscles": {
         "primary": ["quadriceps", "gluteus_maximus"],
         "secondary": ["hamstrings", "calves"]
@@ -2640,6 +2807,7 @@
         "en": "Pistol Squat"
       },
       "primaryGroup": "quadriceps",
+      "met": 5,
       "muscles": {
         "primary": ["quadriceps", "gluteus_maximus"],
         "secondary": ["hamstrings", "calves"]
@@ -2655,6 +2823,7 @@
         "en": "Smith Machine Squat"
       },
       "primaryGroup": "quadriceps",
+      "met": 5.5,
       "muscles": {
         "primary": ["quadriceps", "gluteus_maximus"],
         "secondary": ["hamstrings"]
@@ -2670,6 +2839,7 @@
         "en": "Glute Ham Raise"
       },
       "primaryGroup": "hamstrings",
+      "met": 5.5,
       "muscles": {
         "primary": ["hamstrings"],
         "secondary": ["gluteus_maximus", "erector_spinae"]
@@ -2685,6 +2855,7 @@
         "en": "Seated Leg Curl"
       },
       "primaryGroup": "hamstrings",
+      "met": 5.5,
       "muscles": {
         "primary": ["hamstrings"],
         "secondary": ["calves"]
@@ -2700,6 +2871,7 @@
         "en": "Cable Pull-Through"
       },
       "primaryGroup": "hamstrings",
+      "met": 5.3,
       "muscles": {
         "primary": ["hamstrings", "gluteus_maximus"],
         "secondary": ["erector_spinae"]
@@ -2715,6 +2887,7 @@
         "en": "Kettlebell Deadlift"
       },
       "primaryGroup": "hamstrings",
+      "met": 6,
       "muscles": {
         "primary": ["hamstrings", "gluteus_maximus"],
         "secondary": ["erector_spinae", "forearms"]
@@ -2730,6 +2903,7 @@
         "en": "Sliding Leg Curl"
       },
       "primaryGroup": "hamstrings",
+      "met": 5,
       "muscles": {
         "primary": ["hamstrings"],
         "secondary": ["gluteus_maximus", "rectus_abdominis"]
@@ -2745,6 +2919,7 @@
         "en": "Band Good Morning"
       },
       "primaryGroup": "hamstrings",
+      "met": 4.5,
       "muscles": {
         "primary": ["hamstrings", "erector_spinae"],
         "secondary": ["gluteus_maximus"]
@@ -2760,6 +2935,7 @@
         "en": "Reverse Hyperextension"
       },
       "primaryGroup": "hamstrings",
+      "met": 5.5,
       "muscles": {
         "primary": ["hamstrings", "gluteus_maximus"],
         "secondary": ["erector_spinae"]
@@ -2775,6 +2951,7 @@
         "en": "Leg Press Calf Raise"
       },
       "primaryGroup": "calves",
+      "met": 3.8,
       "muscles": {
         "primary": ["calves"],
         "secondary": []
@@ -2790,6 +2967,7 @@
         "en": "Dumbbell Calf Raise"
       },
       "primaryGroup": "calves",
+      "met": 3.8,
       "muscles": {
         "primary": ["calves"],
         "secondary": ["forearms"]
@@ -2805,6 +2983,7 @@
         "en": "Stair Calf Raise"
       },
       "primaryGroup": "calves",
+      "met": 3.3,
       "muscles": {
         "primary": ["calves"],
         "secondary": []
@@ -2820,6 +2999,7 @@
         "en": "Tibialis Raise"
       },
       "primaryGroup": "calves",
+      "met": 3.3,
       "muscles": {
         "primary": ["calves"],
         "secondary": []
@@ -2835,6 +3015,7 @@
         "en": "Band Calf Raise"
       },
       "primaryGroup": "calves",
+      "met": 2.8,
       "muscles": {
         "primary": ["calves"],
         "secondary": []
@@ -2850,6 +3031,7 @@
         "en": "Pogo Hops"
       },
       "primaryGroup": "calves",
+      "met": 3.3,
       "muscles": {
         "primary": ["calves"],
         "secondary": ["quadriceps"]
@@ -2865,6 +3047,7 @@
         "en": "Band Kickback"
       },
       "primaryGroup": "glutes",
+      "met": 4.5,
       "muscles": {
         "primary": ["gluteus_maximus"],
         "secondary": ["hamstrings"]
@@ -2880,6 +3063,7 @@
         "en": "Fire Hydrant"
       },
       "primaryGroup": "glutes",
+      "met": 5,
       "muscles": {
         "primary": ["gluteus_medius"],
         "secondary": ["gluteus_maximus"]
@@ -2895,6 +3079,7 @@
         "en": "Curtsy Lunge"
       },
       "primaryGroup": "glutes",
+      "met": 5.5,
       "muscles": {
         "primary": ["gluteus_maximus", "gluteus_medius"],
         "secondary": ["quadriceps", "hamstrings"]
@@ -2910,6 +3095,7 @@
         "en": "Sumo Squat"
       },
       "primaryGroup": "glutes",
+      "met": 6,
       "muscles": {
         "primary": ["gluteus_maximus", "adductors"],
         "secondary": ["quadriceps", "hamstrings"]
@@ -2925,6 +3111,7 @@
         "en": "Frog Pump"
       },
       "primaryGroup": "glutes",
+      "met": 5,
       "muscles": {
         "primary": ["gluteus_maximus"],
         "secondary": ["hamstrings"]
@@ -2940,6 +3127,7 @@
         "en": "Machine Hip Thrust"
       },
       "primaryGroup": "glutes",
+      "met": 5.5,
       "muscles": {
         "primary": ["gluteus_maximus"],
         "secondary": ["hamstrings", "quadriceps"]
@@ -2955,6 +3143,7 @@
         "en": "Lateral Band Walk"
       },
       "primaryGroup": "glutes",
+      "met": 4.5,
       "muscles": {
         "primary": ["gluteus_medius"],
         "secondary": ["gluteus_maximus", "quadriceps"]
@@ -2970,6 +3159,7 @@
         "en": "Walking"
       },
       "primaryGroup": "cardio",
+      "met": 8,
       "muscles": {
         "primary": ["quadriceps", "calves"],
         "secondary": ["gluteus_maximus", "hamstrings"]
@@ -2985,6 +3175,7 @@
         "en": "Incline Treadmill Walk"
       },
       "primaryGroup": "cardio",
+      "met": 8.5,
       "muscles": {
         "primary": ["gluteus_maximus", "calves"],
         "secondary": ["quadriceps", "hamstrings"]
@@ -3000,6 +3191,7 @@
         "en": "Swimming"
       },
       "primaryGroup": "cardio",
+      "met": 8,
       "muscles": {
         "primary": ["latissimus_dorsi", "front_deltoid"],
         "secondary": ["quadriceps", "rectus_abdominis"]
@@ -3015,6 +3207,7 @@
         "en": "Elliptical"
       },
       "primaryGroup": "cardio",
+      "met": 8.5,
       "muscles": {
         "primary": ["quadriceps", "gluteus_maximus"],
         "secondary": ["hamstrings", "calves"]
@@ -3030,6 +3223,7 @@
         "en": "Sprint Intervals"
       },
       "primaryGroup": "cardio",
+      "met": 8,
       "muscles": {
         "primary": ["hamstrings", "quadriceps"],
         "secondary": ["gluteus_maximus", "calves"]
@@ -3045,6 +3239,7 @@
         "en": "Trap Bar Deadlift"
       },
       "primaryGroup": "full_body",
+      "met": 6,
       "muscles": {
         "primary": ["quadriceps", "gluteus_maximus"],
         "secondary": ["hamstrings", "erector_spinae", "trapezius", "forearms"]
@@ -3060,6 +3255,7 @@
         "en": "Kettlebell Clean"
       },
       "primaryGroup": "full_body",
+      "met": 7,
       "muscles": {
         "primary": ["gluteus_maximus", "hamstrings"],
         "secondary": ["trapezius", "front_deltoid", "forearms"]
@@ -3075,6 +3271,7 @@
         "en": "Wall Ball"
       },
       "primaryGroup": "full_body",
+      "met": 6,
       "muscles": {
         "primary": ["quadriceps", "front_deltoid"],
         "secondary": ["gluteus_maximus", "triceps", "rectus_abdominis"]
@@ -3090,6 +3287,7 @@
         "en": "Sled Push"
       },
       "primaryGroup": "full_body",
+      "met": 6,
       "muscles": {
         "primary": ["quadriceps", "gluteus_maximus"],
         "secondary": ["calves", "front_deltoid", "erector_spinae"]
@@ -3105,6 +3303,7 @@
         "en": "Bear Crawl"
       },
       "primaryGroup": "full_body",
+      "met": 6,
       "muscles": {
         "primary": ["rectus_abdominis", "front_deltoid"],
         "secondary": ["quadriceps", "triceps", "obliques"]

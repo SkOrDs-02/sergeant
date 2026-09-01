@@ -42,6 +42,7 @@ import {
   applyFizrukWorkouts,
   applyFizrukItems,
   applyFizrukSets,
+  applyFizrukCustomActivities,
   applyFizrukCustomExercises,
   applyFizrukMeasurements,
 } from "./fizruk/applySync.js";
@@ -171,6 +172,7 @@ const OP_LOG_TABLE_REGISTRY: Record<string, ApplyFn> = {
   fizruk_workout_items: applyFizrukItems,
   fizruk_workout_sets: applyFizrukSets,
   fizruk_custom_exercises: applyFizrukCustomExercises,
+  fizruk_custom_activities: applyFizrukCustomActivities,
   fizruk_measurements: applyFizrukMeasurements,
   fizruk_daily_log: applyFizrukDailyLog,
   fizruk_monthly_plan: applyFizrukMonthlyPlan,

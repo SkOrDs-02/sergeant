@@ -48,6 +48,7 @@ describe("useBiometrics", () => {
       activityLevel: "light",
       weightKg: 62,
       weightUpdatedAt: "2026-03-01T08:00:00.000Z",
+      countWorkoutsInGoal: false,
       updatedAt: "2026-03-01T08:00:00.000Z",
     };
     localStorage.setItem(STORAGE_KEYS.HUB_BIOMETRICS, JSON.stringify(stored));
