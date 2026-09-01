@@ -23,6 +23,7 @@ import {
   type Period,
 } from "./hubReports.aggregation";
 import { useHubStorageBump } from "./useHubStorageBump";
+import { useNutritionSqliteReadTick } from "../../modules/nutrition/lib/sqliteReadGate";
 import { formatNumberUk } from "@sergeant/shared";
 
 // ── Local sub-components ──────────────────────────────────────────────
@@ -200,9 +201,15 @@ export default function NutritionCard({ period, offset }: NutritionCardProps) {
   // Re-aggregate when any module emits storageUpdated (same-tab) or when
   // the native storage event fires (cross-tab). See useHubStorageBump.ts.
   const bump = useHubStorageBump();
+  // CALC-4 (аудит 2026-09): на холодному deep-link кеш SQLite модуля
+  // наповнюється ПІСЛЯ першого рендера; hub-bump цього не бачить, тік
+  // модуля — бачить. Без нього картка лишалась із нулями до наступного
+  // запису у сховище (та сама діра, що в ExpensesCard).
+  const sqliteTick = useNutritionSqliteReadTick();
 
   const { cur, prev, dates } = useMemo(() => {
-    void bump; // storage-write tick — forces re-read without calling load* inside deps
+    void bump; // storage-write tick
+    void sqliteTick; // module SQLite cache tick (CALC-4) — forces re-read without calling load* inside deps
     // Canonical meal log from the SQLite warm cache — `nutrition_log_v1`
     // is tombstoned (drained + deleted on boot), so a raw LS read is empty.
     // `aggregateKcal` expects the loose legacy shape; the domain `kcal` is
@@ -228,7 +235,7 @@ export default function NutritionCard({ period, offset }: NutritionCardProps) {
       prev: aggregateKcal(nutritionLog, prevDates),
       dates: curDates,
     };
-  }, [period, offset, bump]);
+  }, [period, offset, bump, sqliteTick]);
 
   const formattedCurrent = formatNumberUk(cur.avg);
   const formattedPrev = formatNumberUk(prev.avg);
