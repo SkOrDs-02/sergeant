@@ -17,10 +17,23 @@
  *   - `BACKEND_URL` (Vercel env, без префіксу VITE_) — base URL бекенду,
  *     напр. `https://sergeant-production.up.railway.app`. Без неї
  *     middleware — no-op, запит йде далі (зручно для dev/preview без API).
+ *   - `APP_ACCESS_TOKEN` (Vercel env, без префіксу VITE_) — приватний гейт
+ *     доступу, див. `src/shared/lib/auth/accessGate.ts`. Без неї гейт вимкнено.
+ *
+ * Порядок важливий: гейт іде ПЕРЕД проксі, інакше `/api/*` лишався б
+ * відкритим обхідним шляхом до бекенду через домен фронта.
  */
 
+import {
+  buildAccessCookie,
+  decideAccess,
+} from "./src/shared/lib/auth/accessGate";
+
+// Гейт мусить накривати і сторінки, і ассети: віддавши чужому `index.html`
+// 404, але лишивши `/assets/*.js` відкритими, ми ховаємо двері й лишаємо
+// вікно. Тому matcher — увесь трафік, а розгалуження нижче в коді.
 export const config = {
-  matcher: "/api/:path*",
+  matcher: "/:path*",
 };
 
 /**
@@ -49,13 +62,39 @@ function isAllowedBackend(raw: string): URL | undefined {
 export default async function middleware(
   request: Request,
 ): Promise<Response | undefined> {
+  const accessToken = process.env["APP_ACCESS_TOKEN"];
+  const access = decideAccess({
+    url: request.url,
+    cookieHeader: request.headers.get("cookie"),
+    token: accessToken,
+  });
+  if (access.kind === "block") {
+    // 404, а не 401: випадковому гостю не варто підказувати, що тут узагалі
+    // щось є і що воно під захистом.
+    return new Response("Not found", {
+      status: 404,
+      headers: { "content-type": "text/plain; charset=utf-8" },
+    });
+  }
+  if (access.kind === "grant") {
+    return new Response(null, {
+      status: 302,
+      headers: {
+        location: access.redirectTo,
+        "set-cookie": buildAccessCookie(accessToken as string),
+      },
+    });
+  }
+
+  const url = new URL(request.url);
+  if (!url.pathname.startsWith("/api/")) return undefined;
+
   const backend = process.env["BACKEND_URL"];
   if (!backend) return undefined;
 
   const backendUrl = isAllowedBackend(backend);
   if (!backendUrl) return undefined;
 
-  const url = new URL(request.url);
   const target = new URL(`${url.pathname}${url.search}`, backendUrl.origin);
 
   const headers = new Headers(request.headers);
