@@ -31,7 +31,9 @@ export const billingWebhookTotal = new client.Counter({
 
 /**
  * Рекурентні списання. LiqPay — провайдер-керовані (callback `action:regular`);
- * Plata — наш scheduler. `result` = charged | past_due | error.
+ * Plata — провайдер-керовані (`subscription/*`), інкрементується зі звірки
+ * `plataSync.ts` (`subscription/status` — арбітр стану). `result` =
+ * charged | past_due | error.
  */
 export const billingRecurringChargeTotal = new client.Counter({
   name: "billing_recurring_charge_total",

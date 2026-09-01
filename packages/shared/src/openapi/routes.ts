@@ -1379,7 +1379,7 @@ export const paths: ZodOpenApiPathsObject = {
         "Скасувати Pro (власна кнопка; LiqPay/Plata без Customer Portal)",
       description:
         "Скасовує активну підписку через provider.cancelSubscription " +
-        "(LiqPay unsubscribe / Plata stop-scheduler). Доступ лишається до " +
+        "(LiqPay unsubscribe / Plata subscription/edit action=cancel). Доступ лишається до " +
         "кінця оплаченого періоду (cancel_at_period_end).",
       tags: ["monetization"],
       security: cookieOrBearer,
@@ -1427,9 +1427,32 @@ export const paths: ZodOpenApiPathsObject = {
       },
     },
   },
-  "/api/billing/plata-webhook": {
+  "/api/billing/plata-charge": {
     post: {
-      summary: "Plata/monopay webhook (JSON, X-Sign ECDSA)",
+      summary: "Plata/monopay charge webhook (JSON, X-Sign ECDSA)",
+      description:
+        "chargeUrl-делівері на кожне списання. Не пише у subscriptions " +
+        "напряму — лише тригерить звірку проти GET subscription/status.",
+      tags: ["monetization"],
+      requestParams: {
+        header: z.object({
+          "x-sign": z
+            .string()
+            .describe("monopay ECDSA signature over the raw request body."),
+        }),
+      },
+      responses: {
+        "200": okEmpty,
+        "400": validationError,
+      },
+    },
+  },
+  "/api/billing/plata-status": {
+    post: {
+      summary: "Plata/monopay status webhook (JSON, X-Sign ECDSA)",
+      description:
+        "statusUrl-делівері на зміну стану підписки. Не пише у subscriptions " +
+        "напряму — лише тригерить звірку проти GET subscription/status.",
       tags: ["monetization"],
       requestParams: {
         header: z.object({
