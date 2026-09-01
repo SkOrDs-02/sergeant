@@ -96,7 +96,7 @@ export function DemoModeBadge() {
         "motion-safe:animate-fade-in",
       )}
     >
-      <Icon name="sparkles" size="sm" strokeWidth={2} aria-hidden />
+      <Icon name="sergeant" size="sm" strokeWidth={2} aria-hidden />
       <span>{messages.onboarding.demoBadgeText}</span>
       <span aria-hidden className="opacity-70">
         ·

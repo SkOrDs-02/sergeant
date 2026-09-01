@@ -1,6 +1,6 @@
 # Database connection pooling — runbook (PR #046)
 
-> **Last touched:** 2026-05-13 by Devin. **Next review:** 2026-08-31.
+> **Last touched:** 2026-09-01 by @claude. **Next review:** 2026-12-20.
 > **Status:** Active
 
 > **⚠️ Рецепт деплою неактуальний:** production переїхав на Hetzner/Coolify ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md)). Runtime-контракт `DATABASE_URL_POOL` і pool-safety правила лишаються чинними, але Railway-кроки provisioning/DNS нижче історичні — їх не можна виконувати. У репо зараз немає підтвердженого Coolify pgBouncer resource; топологію треба окремо обрати й задокументувати до rollout.
@@ -68,8 +68,10 @@ HTTP request ────┤
   як старт виключеної транзакції — та сама backend-сесія тримається до `COMMIT` /
   `ROLLBACK`. Жодних cross-transaction `SET session_var = …` ми не робимо.
 - Migrations і advisory locks залишаються на direct `DATABASE_URL` через
-  `MIGRATE_DATABASE_URL` fallback в `apps/server/migrate.mjs` (Pre-Deploy-job
-  на Railway, окремо від runtime pool).
+  `MIGRATE_DATABASE_URL` fallback в `apps/server/migrate.mjs` (Coolify
+  `pre_deployment_command`, окремо від runtime pool). На Coolify це те саме
+  значення, що й `DATABASE_URL` — внутрішнє імʼя контейнера бази, публічного
+  порту в неї немає ([`apps/server/AGENTS.md § Health & deploy`](../../../apps/server/AGENTS.md#health--deploy)).
 
 ## Історичний Railway deploy shape (не виконувати)
 

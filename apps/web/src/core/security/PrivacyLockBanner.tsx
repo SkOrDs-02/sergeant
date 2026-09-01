@@ -7,6 +7,7 @@ import { useLocalStorageState } from "@shared/hooks";
 import { Icon } from "@shared/components/ui/Icon";
 import { Button } from "@shared/components/ui/Button";
 import { openHubSettingsSection } from "@shared/lib/modules/hubNav";
+import { useHubBannerSlot } from "../hub/bannerBudget";
 
 const BANNER_LS_KEY = "sergeant.privacy.lockBanner.dismissed";
 
@@ -16,11 +17,19 @@ export function PrivacyLockBanner() {
     false,
   );
 
-  if (dismissed) return null;
+  // Бюджет банерів хабу (F3, 2026-09-01): не більше двох підказок
+  // одночасно; цей — після конверсії в акаунт.
+  const hasSlot = useHubBannerSlot("privacyLock", !dismissed);
+
+  if (dismissed || !hasSlot) return null;
 
   return (
     <div className="mx-auto max-w-lg px-4 pb-3">
-      <div className="relative rounded-2xl border border-dashed border-line bg-panel px-4 py-3.5 flex items-start gap-3">
+      {/* `flex-wrap` + `basis-full` на групі кнопок до `sm`: на 393px
+          `shrink-0`-кнопки лишали заголовку 56px і ламали копію на сім
+          рядків, а кнопка накривала текст (анти-слоп аудит 2026-09-01,
+          F5). Тепер кнопки переносяться під текст і вирівнюються праворуч. */}
+      <div className="relative rounded-2xl border border-dashed border-line bg-panel px-4 py-3.5 flex flex-wrap items-start gap-3">
         <div className="shrink-0 mt-0.5 w-9 h-9 rounded-xl bg-brand-soft flex items-center justify-center">
           <Icon name="lock" size="sm" className="text-brand" aria-hidden />
         </div>
@@ -32,7 +41,7 @@ export function PrivacyLockBanner() {
             {messages.privacy.bannerHint}
           </p>
         </div>
-        <div className="flex items-center gap-2 shrink-0 ml-1">
+        <div className="flex items-center justify-end gap-2 shrink-0 basis-full sm:basis-auto sm:ml-1">
           <Button
             variant="secondary"
             size="sm"

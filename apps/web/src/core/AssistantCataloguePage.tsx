@@ -172,7 +172,7 @@ export function AssistantCataloguePage({
               aria-hidden
               className="shrink-0 w-11 h-11 rounded-2xl bg-brand/10 text-brand-strong flex items-center justify-center dark:bg-brand/15"
             >
-              <Icon name="sparkles" size={20} />
+              <Icon name="sergeant" size={20} />
             </span>
             <div className="flex-1 min-w-0">
               <h1 className="text-style-title text-text leading-tight">
@@ -391,7 +391,7 @@ function CapabilityRow({ capability, onActivate }: CapabilityRowProps) {
           {capability.isNew && (
             <BadgeChip
               tone="brand"
-              icon="sparkles"
+              icon="sergeant"
               label="Новинка"
               title="Нещодавно додана можливість"
             />

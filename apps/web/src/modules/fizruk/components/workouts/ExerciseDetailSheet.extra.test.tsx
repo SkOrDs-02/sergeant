@@ -122,21 +122,13 @@ describe("ExerciseDetailSheet – catalog mode", () => {
     expect(screen.getByText("Тримай спину рівно")).toBeTruthy();
   });
 
-  it("renders bundled illustrations for exercises that have them", () => {
-    // Кадри беруться з реєстру `FizrukData.exerciseImagePaths(id)`, а не з
-    // поля `images` каталогу (#993): для id з ілюстраціями — два кадри.
+  it("renders images for an exercise present in the built-in illustration registry", () => {
+    // Кадри вправи більше не читаються з `images` у RawExerciseDef - їх
+    // дає статичний каталог `exerciseImagePaths(id)` (packages/fizruk-domain).
     const ex = makeExercise({ id: "squat_barbell" });
     render(<ExerciseDetailSheet {...baseProps} selected={ex} />);
-    const imgs = document.querySelectorAll("img");
-    expect(imgs).toHaveLength(2);
-    expect(imgs[0]?.getAttribute("src")).toBe(
-      "/exercises/squat_barbell/0.webp",
-    );
-  });
-
-  it("renders no illustration strip for exercises without bundled frames", () => {
-    render(<ExerciseDetailSheet {...baseProps} selected={makeExercise()} />);
-    expect(document.querySelector("img")).toBeNull();
+    const img = document.querySelector("img");
+    expect(img?.getAttribute("src")).toBe("/exercises/squat_barbell/0.webp");
   });
 
   it("renders the level when present", () => {

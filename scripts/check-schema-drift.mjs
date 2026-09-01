@@ -725,9 +725,16 @@ const SQL_ONLY_TABLES = [
   // та webhook-хендлерами (Stripe / Apple IAP / LiqPay), клієнт читає через API.
   "apple_iap_receipts",
   "billing_webhook_events",
-  // Plata recurring-payment credential: encrypted secret consumed only by
-  // the server scheduler/raw-pg billing layer; never exposed through Drizzle.
-  "plata_card_token",
+  // Plata: мапінг «юзер ↔ subscriptionId». `subscription/create` не має
+  // `reference`, тож звʼязок фіксуємо самі (міграція 133). Читає і пише лише
+  // серверний billing-шар сирим pg — `plata.ts` при checkout і `plataSync.ts`
+  // при звірці; клієнт стан підписки бачить через `/api/billing/status`, не
+  // через Drizzle. Той самий контур, що й `subscriptions` вище.
+  //
+  // Попередниця `plata_card_token` тут більше не потрібна: та сама міграція
+  // 133 її дропнула разом із самописною рекуренткою — рекурентні списання
+  // веде monobank, і card-token нам не належить зберігати взагалі.
+  "plata_subscription",
   "revenue_daily",
   "stripe_webhook_events",
   "subscriptions",
@@ -739,8 +746,8 @@ const SQL_ONLY_TABLES = [
   "mono_jar",
   "mono_transaction",
   // ПриватБанк merchant-креденшели під AES-256-GCM (міграція 091). Той самий
-  // контур, що й `mono_connection` / `plata_card_token`: секрет читає лише
-  // серверний банк-проксі, у Drizzle його свідомо немає.
+  // контур, що й `mono_connection`: секрет читає лише серверний банк-проксі,
+  // у Drizzle його свідомо немає.
   "privat_connection",
   // Чек-скан v1 + Фаза 2 масового ведення (docs/90-work/planning/specs/
   // receipt-scan.md, міграції 121/122). Читає й пише лише серверний

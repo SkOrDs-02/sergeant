@@ -27,6 +27,7 @@ import type {
 
 import { isFizrukDualWriteRegistered } from "./sqliteWriter/index.js";
 import {
+  type FizrukCustomActivitySnapshot,
   type FizrukCustomExerciseSnapshot,
   type FizrukDailyLogSnapshot,
   type FizrukDualWriteState,
@@ -41,6 +42,7 @@ import {
 import { getCachedFizrukSqliteState } from "./sqliteReader.js";
 
 type RawExerciseDef = FizrukData.RawExerciseDef;
+type ActivityDef = FizrukData.ActivityDef;
 
 /**
  * Stage 12 — minimal hook-side shapes the extractors accept. They are
@@ -95,6 +97,7 @@ export const EMPTY_FIZRUK_DUAL_WRITE_STATE: FizrukDualWriteState = {
   workoutTemplates: [],
   injuries: [],
   pushups: {},
+  customActivities: [],
 };
 
 /**
@@ -117,6 +120,9 @@ export function peekFizrukDualWriteState(): FizrukDualWriteState | null {
       ),
       injuries: extractInjurySnapshots(cache.injuries ?? []),
       pushups: cache.pushupsByDate ?? {},
+      customActivities: extractCustomActivitySnapshots(
+        cache.customActivities ?? [],
+      ),
     };
   } catch {
     return null;
@@ -147,6 +153,17 @@ export function extractCustomExerciseSnapshots(
   for (const e of customExercises) {
     if (!e || typeof e !== "object" || !e.id) continue;
     out.push({ ...e, id: String(e.id) });
+  }
+  return out;
+}
+
+export function extractCustomActivitySnapshots(
+  customActivities: readonly ActivityDef[],
+): FizrukCustomActivitySnapshot[] {
+  const out: FizrukCustomActivitySnapshot[] = [];
+  for (const a of customActivities) {
+    if (!a || typeof a !== "object" || !a.id) continue;
+    out.push({ ...a, id: String(a.id) });
   }
   return out;
 }
@@ -298,6 +315,11 @@ function toWorkoutSnapshot(workout: Workout): FizrukWorkoutSnapshot {
     wellbeing: workout.wellbeing
       ? toWellbeingSnapshot(workout.wellbeing)
       : null,
+    kcalBurned:
+      typeof workout.kcalBurned === "number" &&
+      Number.isFinite(workout.kcalBurned)
+        ? workout.kcalBurned
+        : null,
   };
 }
 

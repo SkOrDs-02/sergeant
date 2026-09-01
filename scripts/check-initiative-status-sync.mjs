@@ -50,7 +50,6 @@ const HEADER_LINE_LIMIT = 30;
 // Listed longest-first so `In progress` matches before `In`.
 const ALLOWED_STATUSES = [
   "In progress",
-  "Superseded",
   "Withdrawn",
   "Proposed",
   "Archived",

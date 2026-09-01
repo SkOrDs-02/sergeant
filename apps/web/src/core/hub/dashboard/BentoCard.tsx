@@ -291,7 +291,7 @@ export const BentoCard = memo(function BentoCard({
             title={adaptiveReason}
           >
             <Icon
-              name="sparkle"
+              name="sergeant"
               size={12}
               className="shrink-0 mt-px"
               aria-hidden

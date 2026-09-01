@@ -26,10 +26,32 @@ export const fizrukPageMessages = {
    */
   logPast: {
     cta: "Внести проведене заняття",
-    title: "Записати тренування заднім числом",
+    title: "Записати заняття",
     date: "Дата",
     start: "Початок",
     end: "Завершення",
+    /** Короткий шлях: заняття з каталогу плюс тривалість. */
+    activity: "Заняття",
+    activityNone: "Без заняття, додам вправи вручну",
+    activityNew: "+ Своє заняття",
+    newActivityName: "Назва заняття",
+    newActivityNamePlaceholder: "Наприклад, TRX у моєму залі",
+    newActivityCategory: "Категорія",
+    newActivityEffort: "Наскільки важке",
+    newActivityEffortHint:
+      "Від цього залежить оцінка витрат. Спокійне - як швидка ходьба, помірне - як звичайне силове, інтенсивне - як біг.",
+    newActivitySave: "Зберегти заняття",
+    activityNoneHint:
+      "Відкриється детальний журнал, там додаси вправи, підходи й вагу.",
+    duration: "Тривалість",
+    durationUnit: "хв",
+    zone: "Що навантажив",
+    intensity: "Інтенсивність",
+    weight: "Твоя вага, кг",
+    weightHint:
+      "Вага потрібна, щоб порахувати витрати. Запис збережеться і без неї.",
+    kcalPreview: "Приблизно",
+    kcalUnit: "ккал",
     /** Підпис зʼявляється лише коли кінець переповз за північ. */
     crossesMidnight: "Завершення: наступного дня.",
     /**
@@ -45,7 +67,7 @@ export const fizrukPageMessages = {
      */
     implausiblyLong:
       "Завершення раніше за початок. Якщо сесія не тривала через північ, виправ час.",
-    submit: "Внести й додати вправи",
+    submit: "Записати",
   },
   activeWorkoutConflict: {
     title: "Уже є активне тренування",

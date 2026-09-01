@@ -400,6 +400,9 @@ export const messages = {
     reportNoData: "Немає даних",
     reportChartAria: "Графік",
     reportPrevious: "Минулий:",
+    // Нульова дельта до попереднього періоду — без стрілки (DeltaChip,
+    // анти-слоп аудит 2026-09-01 F4).
+    reportDeltaFlat: "без змін",
 
     // PR-42 — Free-tier chat-usage counter pill (`ChatUsageCounter.tsx`,
     // rendered in `HubChatHeader`). Hidden for Pro (unlimited). Numbers are
@@ -654,7 +657,8 @@ export const messages = {
       qtyExampleTrailing: "курка 500 г",
       unitsLabel: "Одиниці:",
       unitsList: "г, кг, мл, л, шт, уп",
-      unitsFallback: "Без одиниці кількість читається як «шт».",
+      unitsFallback:
+        "Без одиниці невелика кількість читається як «шт». Від 100 без одиниці спитаю, шт це чи г.",
       aiNote:
         "Можна писати як завгодно: список розбирає AI, він переживе помилки, скорочення й відмінки («помідорів 3», «0.5л молока»).",
       confirmNote:
@@ -780,6 +784,9 @@ export const messages = {
     activityVeryActiveHint: "Фізична праця або 2× тренування на день",
     weightLabel: "Поточна вага (кг)",
     weightSyncHint: "Синхронізується з журналом «Тіло» у Фізрукові",
+    countWorkoutsLabel: "Враховувати тренування в нормі",
+    countWorkoutsHint:
+      "Вимкнено: норма рахується з рівня активності, який уже включає тренування наперед. Увімкнено: норма йде від спокою плюс те, що ти справді спалив за день, а рівень активності тренувань більше не враховує.",
     save: "Зберегти",
     saveSuccess: "Біометрію збережено",
     saveError: "Не вдалося зберегти біометрію",

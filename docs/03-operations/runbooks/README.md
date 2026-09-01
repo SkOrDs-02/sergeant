@@ -1,6 +1,6 @@
 # Runbooks
 
-> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-07.
+> **Last touched:** 2026-09-01 by @claude. **Next review:** 2026-12-29.
 > **Status:** Active
 
 Operational runbooks для on-call та incident-flow-ів — точне «як» для нашого
@@ -19,6 +19,7 @@ playbook каже **що** і **коли**, runbook — **як саме** вик
 | [`sync-client-e2e.md`](./sync-client-e2e.md)                         | Phase 1 sync wiring gate — web↔web / web→mobile manual E2E, failure triage, CI smoke commands.                    |
 | [`security-events.md`](./security-events.md)                         | Тріаж security-подій з `apps/server/src/obs/securityEvents.ts` (hardening I7).                                    |
 | [`db-index-audit-template.md`](./db-index-audit-template.md)         | Шаблон періодичного index-аудиту Postgres; викликається з `operations-runbook.md`.                                |
+| [`billing-payments-launch.md`](./billing-payments-launch.md)         | Передумови вмикання `PLATA_ENABLED` / `LIQPAY_ENABLED`: фіскалізація, бойовий токен еквайрингу, post-launch чеки. |
 
 ## Runbook vs playbook vs incident workflow
 

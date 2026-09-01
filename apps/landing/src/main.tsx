@@ -14,8 +14,6 @@ import "@fontsource-variable/manrope";
 import "@fontsource/unbounded/500.css";
 import "@fontsource/unbounded/700.css";
 import "@fontsource/unbounded/800.css";
-// Piazzolla italic – «паперові» цитати-інсайти і підпис автора.
-import "@fontsource/piazzolla/500-italic.css";
 import App from "./App";
 import "./index.css";
 import { initAnalytics } from "./lib/analytics";

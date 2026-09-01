@@ -393,7 +393,7 @@ describe("InsightCard — advice_shown / advice_dismissed telemetry", () => {
         onAskAi={onAskAi}
       />,
     );
-    fireEvent.click(getByLabelText("Спитати AI про це"));
+    fireEvent.click(getByLabelText("Спитати Сержанта про це"));
 
     expect(onAskAi).toHaveBeenCalledTimes(1);
     const askAi = callsOf(ANALYTICS_EVENTS.VALUE_SIGNAL_ASK_AI);
@@ -426,7 +426,7 @@ describe("InsightCard — advice_shown / advice_dismissed telemetry", () => {
         askAiDisabled
       />,
     );
-    fireEvent.click(getByLabelText("Ліміт AI на сьогодні"));
+    fireEvent.click(getByLabelText("Ліміт запитів до Сержанта на сьогодні"));
 
     expect(onAskAi).not.toHaveBeenCalled();
     expect(callsOf(ANALYTICS_EVENTS.VALUE_SIGNAL_ASK_AI)).toHaveLength(0);
@@ -436,7 +436,7 @@ describe("InsightCard — advice_shown / advice_dismissed telemetry", () => {
     const { queryByLabelText } = render(
       <InsightCard id="x" title="t" subtitle="s" onActivate={() => {}} />,
     );
-    expect(queryByLabelText("Спитати AI про це")).toBeNull();
+    expect(queryByLabelText("Спитати Сержанта про це")).toBeNull();
   });
 
   it("НЕ емітить advice_shown / advice_dismissed без analytics-згоди, але value_signal_* лишається неушкодженим", () => {

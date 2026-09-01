@@ -64,6 +64,7 @@ export type BodySizeRule =
  *   chat                                   : 1mb  (ChatRequestSchema active session)
  *   mono webhook                           : 32kb (Monobank payload)
  *   billing stripe-webhook                 : 128kb raw (Stripe-signature)
+ *   billing plata-charge / plata-status    : 128kb raw (monopay ECDSA X-Sign)
  *   csp-report                             : 16kb (Sentry CSP-ingest cap)
  *   metrics/web-vitals                     : 10kb (≤10 metrics × ~120B JSON)
  *   transcribe                             : 10mb raw audio
@@ -162,10 +163,17 @@ export const BODY_SIZE_POLICY: ReadonlyArray<BodySizeRule> = [
     type: "application/x-www-form-urlencoded",
   },
   {
-    pathPrefix: "/api/billing/plata-webhook",
+    pathPrefix: "/api/billing/plata-charge",
     kind: "raw",
     limit: "128kb",
-    reason: "Plata/monopay webhook (ECDSA X-Sign over raw body)",
+    reason: "Plata/monopay charge webhook (ECDSA X-Sign over raw body)",
+    type: "application/json",
+  },
+  {
+    pathPrefix: "/api/billing/plata-status",
+    kind: "raw",
+    limit: "128kb",
+    reason: "Plata/monopay status webhook (ECDSA X-Sign over raw body)",
     type: "application/json",
   },
   {

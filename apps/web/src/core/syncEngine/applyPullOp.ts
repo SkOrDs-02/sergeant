@@ -22,6 +22,9 @@ export const CLIENT_PULL_SUPPORTED_TABLES = new Set<string>([
   "fizruk_workout_items",
   "fizruk_workout_sets",
   "fizruk_custom_exercises",
+  // Свої заняття для короткого запису (міграція 132). Без цього рядка
+  // заняття, заведене на телефоні, мовчки не доїхало б у веб.
+  "fizruk_custom_activities",
   "fizruk_measurements",
   "fizruk_daily_log",
   "fizruk_monthly_plan",

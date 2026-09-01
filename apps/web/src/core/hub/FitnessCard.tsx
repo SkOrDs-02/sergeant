@@ -8,6 +8,7 @@ import { useMemo, useState } from "react";
 import { Icon } from "@shared/components/ui/Icon";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { cn } from "@shared/lib/ui/cn";
+import { DeltaChip } from "@shared/components/ui/DeltaChip";
 import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
 import { getCachedFizrukSqliteState } from "@fizruk/lib/sqliteReader";
 import {
@@ -134,50 +135,6 @@ function BarChart({
   );
 }
 
-interface DeltaProps {
-  cur: number;
-  prev: number;
-  higherIsBetter?: boolean;
-}
-
-function Delta({ cur, prev, higherIsBetter = true }: DeltaProps) {
-  if (prev === 0 && cur === 0) return null;
-  if (prev === 0)
-    return <span className="text-style-caption text-muted">—</span>;
-  const diff = cur - prev;
-  const pct = Math.round((diff / prev) * 100);
-  const positive = higherIsBetter ? diff >= 0 : diff <= 0;
-  const sign = diff >= 0 ? "+" : "";
-  const trendingUp = diff >= 0;
-  return (
-    <span
-      className={cn(
-        "text-style-caption inline-flex items-center gap-0.5",
-        positive
-          ? "text-success-strong dark:text-success"
-          : "text-danger-strong dark:text-danger",
-      )}
-    >
-      <svg
-        width="10"
-        height="10"
-        viewBox="0 0 24 24"
-        fill="currentColor"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden
-        className="shrink-0"
-      >
-        {trendingUp ? <path d="M12 5l7 9H5z" /> : <path d="M12 19l-7-9h14z" />}
-      </svg>
-      {sign}
-      {pct}%
-    </span>
-  );
-}
-
 // ── Main card ─────────────────────────────────────────────────────────
 
 interface FitnessCardProps {
@@ -261,7 +218,11 @@ export default function FitnessCard({ period, offset }: FitnessCardProps) {
             <span className="text-style-body font-bold text-text">
               {formattedCurrent} трен.
             </span>
-            <Delta cur={cur.count} prev={prev.count} higherIsBetter={true} />
+            <DeltaChip
+              cur={cur.count}
+              prev={prev.count}
+              higherIsBetter={true}
+            />
           </span>
         )}
         <svg
@@ -288,7 +249,11 @@ export default function FitnessCard({ period, offset }: FitnessCardProps) {
             <span className="text-style-headline text-text">
               {formattedCurrent} трен.
             </span>
-            <Delta cur={cur.count} prev={prev.count} higherIsBetter={true} />
+            <DeltaChip
+              cur={cur.count}
+              prev={prev.count}
+              higherIsBetter={true}
+            />
           </div>
           <p className="text-style-caption text-muted">
             Минулий: {formattedPrev} трен.

@@ -59,7 +59,7 @@ vi.mock("./sentry.js", () => ({
 }));
 vi.mock("./env/env.js", () => ({
   assertStartupEnv: indexMocks.assertStartupEnv,
-  // PlataRecurringPoller читає env.PLATA_ENABLED у конструкторі (index.ts wiring)
+  // PlataSyncPoller читає env.PLATA_ENABLED у конструкторі (index.ts wiring)
   env: { PLATA_ENABLED: false },
 }));
 vi.mock("./env/betterAuthEnv.js", () => ({

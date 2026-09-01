@@ -8,6 +8,7 @@ import { messages } from "@shared/i18n/uk";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
+import { DeltaChip } from "@shared/components/ui/DeltaChip";
 import { Money } from "@shared/components/ui/Money";
 import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
 import { readFinykStatsContext } from "@finyk/utils";
@@ -142,50 +143,6 @@ function BarChart({
   );
 }
 
-interface DeltaProps {
-  cur: number;
-  prev: number;
-  higherIsBetter?: boolean;
-}
-
-function Delta({ cur, prev, higherIsBetter = true }: DeltaProps) {
-  if (prev === 0 && cur === 0) return null;
-  if (prev === 0)
-    return <span className="text-style-caption text-muted">—</span>;
-  const diff = cur - prev;
-  const pct = Math.round((diff / prev) * 100);
-  const positive = higherIsBetter ? diff >= 0 : diff <= 0;
-  const sign = diff >= 0 ? "+" : "";
-  const trendingUp = diff >= 0;
-  return (
-    <span
-      className={cn(
-        "text-style-caption inline-flex items-center gap-0.5",
-        positive
-          ? "text-success-strong dark:text-success"
-          : "text-danger-strong dark:text-danger",
-      )}
-    >
-      <svg
-        width="10"
-        height="10"
-        viewBox="0 0 24 24"
-        fill="currentColor"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden
-        className="shrink-0"
-      >
-        {trendingUp ? <path d="M12 5l7 9H5z" /> : <path d="M12 19l-7-9h14z" />}
-      </svg>
-      {sign}
-      {pct}%
-    </span>
-  );
-}
-
 // ── Main card ─────────────────────────────────────────────────────────
 
 interface ExpensesCardProps {
@@ -275,7 +232,11 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
               amount={cur.total}
               className="text-style-body font-bold text-text"
             />
-            <Delta cur={cur.total} prev={prev.total} higherIsBetter={false} />
+            <DeltaChip
+              cur={cur.total}
+              prev={prev.total}
+              higherIsBetter={false}
+            />
           </span>
         )}
         <svg
@@ -303,7 +264,11 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
               amount={cur.total}
               className="text-style-headline text-text"
             />
-            <Delta cur={cur.total} prev={prev.total} higherIsBetter={false} />
+            <DeltaChip
+              cur={cur.total}
+              prev={prev.total}
+              higherIsBetter={false}
+            />
           </div>
           <p className="text-style-caption text-muted">
             {messages.hub.reportPrevious} <Money amount={prev.total} />

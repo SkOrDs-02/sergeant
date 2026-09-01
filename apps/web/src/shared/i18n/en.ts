@@ -295,6 +295,7 @@ export const messagesEn: Partial<{
     reportNoData: "No data",
     reportChartAria: "Chart",
     reportPrevious: "Previous:",
+    reportDeltaFlat: "no change",
 
     overlayTitle: "AI assistant",
     closeChat: "Close chat",
@@ -503,6 +504,9 @@ export const messagesEn: Partial<{
     activityVeryActiveHint: "Physical job or 2× daily training",
     weightLabel: "Current weight (kg)",
     weightSyncHint: "Synced with the Body journal in Fizruk",
+    countWorkoutsLabel: "Count workouts in the target",
+    countWorkoutsHint:
+      "Off: the target comes from your activity level, which already accounts for training up front. On: the target starts at rest and adds what you actually burned today, and the activity level stops accounting for training.",
     save: "Save",
     saveSuccess: "Biometrics saved",
     saveError: "Could not save biometrics",

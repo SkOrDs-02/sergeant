@@ -36,9 +36,9 @@ const WORKOUT_UPSERT_SPEC: TableSpec = {
   table: "fizruk_workouts",
   insertClause: `INSERT INTO fizruk_workouts
        (id, user_id, started_at, ended_at, note, groups_json,
-        warmup_json, cooldown_json, wellbeing_json,
+        warmup_json, cooldown_json, wellbeing_json, kcal_burned,
         created_at, updated_at, deleted_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
   conflictTarget: ["id"],
   updateColumns: [
     { column: "started_at" },
@@ -48,6 +48,7 @@ const WORKOUT_UPSERT_SPEC: TableSpec = {
     { column: "warmup_json" },
     { column: "cooldown_json" },
     { column: "wellbeing_json" },
+    { column: "kcal_burned" },
     { column: "updated_at" },
     { column: "deleted_at", value: "NULL" },
   ],
@@ -107,6 +108,22 @@ const WORKOUT_SET_UPSERT_SPEC: TableSpec = {
 const CUSTOM_EXERCISE_UPSERT_SPEC: TableSpec = {
   table: "fizruk_custom_exercises",
   insertClause: `INSERT INTO fizruk_custom_exercises
+       (id, user_id, data_json, created_at, updated_at, deleted_at)
+     VALUES (?, ?, ?, ?, ?, NULL)`,
+  conflictTarget: ["id"],
+  updateColumns: [
+    { column: "data_json" },
+    { column: "updated_at" },
+    { column: "deleted_at", value: "NULL" },
+  ],
+  upsertGuard: "strictly-newer",
+  conflictIndent: 5,
+  setIndent: 7,
+};
+
+const CUSTOM_ACTIVITY_UPSERT_SPEC: TableSpec = {
+  table: "fizruk_custom_activities",
+  insertClause: `INSERT INTO fizruk_custom_activities
        (id, user_id, data_json, created_at, updated_at, deleted_at)
      VALUES (?, ?, ?, ?, ?, NULL)`,
   conflictTarget: ["id"],
@@ -262,6 +279,14 @@ export const WORKOUT_DELETE_SQL = buildDelete({
 });
 export const CUSTOM_EXERCISE_DELETE_SQL = buildDelete({
   table: "fizruk_custom_exercises",
+  deletePolicy: "soft",
+  matchColumns: ["id", "user_id"],
+});
+export const CUSTOM_ACTIVITY_UPSERT_SQL = buildLwwUpsert(
+  CUSTOM_ACTIVITY_UPSERT_SPEC,
+);
+export const CUSTOM_ACTIVITY_DELETE_SQL = buildDelete({
+  table: "fizruk_custom_activities",
   deletePolicy: "soft",
   matchColumns: ["id", "user_id"],
 });
