@@ -79,6 +79,22 @@ describe("useStorage composition root", () => {
     expect(result.current.excludedTxIds.has("transfer-1")).toBe(true);
   });
 
+  it("excludes a manual entry whose own category is the internal transfer", () => {
+    // Мапа `finyk_tx_cats` ключується банківськими id, тож ручний запис
+    // ніс мітку переказу тільки в собі — і рахувався витратою скрізь,
+    // крім дайджесту й коуча.
+    const { result } = renderHook(() => useStorage(), { wrapper });
+    act(() => {
+      result.current.addManualExpense({
+        id: "mx-1",
+        amount: 1000,
+        category: INTERNAL_TRANSFER_ID,
+        kind: "income",
+      });
+    });
+    expect(result.current.excludedTxIds.has("manual_mx-1")).toBe(true);
+  });
+
   it("keeps debt-linked tx ids OUT of excludedTxIds (they stay visible in stats)", () => {
     // debtLinkedTxIds tracks mono-debt-linked transactions so they can be
     // surfaced under the "Борги та кредити" category — unlike
