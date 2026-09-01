@@ -1,6 +1,6 @@
 # Сьогодні в роботі
 
-> **Last touched:** 2026-08-31 by docs:gen-today. **Next review:** 2026-09-07.
+> **Last touched:** 2026-09-01 by docs:gen-today. **Next review:** 2026-09-08.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED FILE. Do not edit by hand. Regenerate via `pnpm docs:gen-today`. -->
@@ -11,7 +11,6 @@ Daily brief — згенеровано з [`open-work.md`](./open-work.md) + fre
 
 Sorted: `blocked` items first, далі явні `agent-ready`, потім за `mtime` desc (свіже = warm context).
 
-- [`90-work/initiatives/0022-import-from-external-trackers.md`](./90-work/initiatives/0022-import-from-external-trackers.md) — 0022 — Імпорт даних з зовнішніх трекерів (CSV-onboarding) → **agent-ready** _(Ініціативи)_
 - [`90-work/initiatives/0023-photo-analysis-multi-item.md`](./90-work/initiatives/0023-photo-analysis-multi-item.md) — 0023 — Розбивка фото-аналізу на позиції (correction UX) → **agent-ready** _(Ініціативи)_
 - [`90-work/initiatives/0024-ai-memory-source-coverage.md`](./90-work/initiatives/0024-ai-memory-source-coverage.md) — 0024 — Памʼять ШІ: звузити список джерел до тих, що справді пишуться → **agent-ready** _(Ініціативи)_
 - [`90-work/initiatives/0025-posthog-ai-observability.md`](./90-work/initiatives/0025-posthog-ai-observability.md) — 0025 — PostHog AI Observability для AI-шару (traces + evals) → **agent-ready** _(Ініціативи)_
