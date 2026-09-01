@@ -129,7 +129,16 @@ function ItemRow({
           className="flex-1 min-w-0 flex items-baseline gap-1.5 text-left min-h-[44px]"
           aria-label={`Редагувати ${item?.name || "продукт"}`}
         >
-          <span className="text-style-label text-text truncate">
+          {/*
+           * `title` тут не косметика: назви з чека довші за рядок майже
+           * завжди («Йогурт Галичина Карпатський чорниця» — 248 px при
+           * доступних 202), і без підказки повний текст видно лише в
+           * аркуші редагування (браузерний аудит 2026-09-01).
+           */}
+          <span
+            className="text-style-label text-text truncate"
+            title={item?.name || undefined}
+          >
             {item?.name || "—"}
           </span>
           {qtyLabel && (

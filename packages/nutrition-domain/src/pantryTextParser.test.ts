@@ -112,6 +112,73 @@ describe("parseLoosePantryText", () => {
       { name: "яйця", qty: 3, unit: "шт", notes: null },
     ]);
   });
+
+  // Регресії браузерного аудиту 2026-09-01. Кома в українському записі
+  // числа двозначна, і сліпий спліт по ній робив із ОДНОГО введеного
+  // рядка ДВА записи в коморі, один з яких був товаром на імʼя «%».
+  describe("десяткова кома не є роздільником списку", () => {
+    it("«Йогурт … 2,2%» лишається однією позицією без фантомного «%»", () => {
+      expect(
+        parseLoosePantryText("Йогурт Галичина Карпатський чорниця 2,2%"),
+      ).toEqual([
+        {
+          name: "Йогурт Галичина Карпатський чорниця",
+          qty: null,
+          unit: null,
+          notes: null,
+        },
+      ]);
+    });
+
+    it("кома все ще ділить список, коли з якогось боку не цифра", () => {
+      expect(parseLoosePantryText("молоко, яйця 3")).toEqual([
+        { name: "молоко", qty: null, unit: null, notes: null },
+        { name: "яйця", qty: 3, unit: "шт", notes: null },
+      ]);
+      expect(parseLoosePantryText("огірок 2, яйця")).toEqual([
+        { name: "огірок", qty: 2, unit: "шт", notes: null },
+        { name: "яйця", qty: null, unit: null, notes: null },
+      ]);
+    });
+
+    it("десяткова кома з одиницею дає дробову кількість", () => {
+      expect(parseLoosePantryText("молоко 1,5 л")).toEqual([
+        { name: "молоко", qty: 1.5, unit: "л", notes: null },
+      ]);
+    });
+  });
+
+  describe("негодяща кількість не стає частиною назви", () => {
+    it.each([
+      ["Молоко -5 г", "Молоко"],
+      ["Сіль 1e9 г", "Сіль"],
+      ["Цукор 0 г", "Цукор"],
+    ])("«%s» → назва «%s» без кількості", (raw, name) => {
+      expect(parseLoosePantryText(raw)).toEqual([
+        { name, qty: null, unit: null, notes: null },
+      ]);
+    });
+
+    it("побутова велика кількість лишається дозволеною", () => {
+      expect(parseLoosePantryText("цукор 50000 г")).toEqual([
+        { name: "цукор", qty: 50000, unit: "г", notes: null },
+      ]);
+    });
+  });
+
+  describe("відсоток це жирність, а не одиниця й не назва", () => {
+    it("«2 %» не породжує безіменний запис", () => {
+      expect(parseLoosePantryText("2 %")).toEqual([]);
+    });
+
+    it("одиниця «%» не доїжджає до позиції комори", () => {
+      expect(normalizeUnit("%")).toBeNull();
+      // Жирність числом не є: «сметана 20%» це сметана, а не 20 чогось.
+      expect(parseLoosePantryText("сметана 20 %")).toEqual([
+        { name: "сметана", qty: null, unit: null, notes: null },
+      ]);
+    });
+  });
 });
 
 describe("canonicalFoodKey", () => {

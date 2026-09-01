@@ -24,6 +24,21 @@ interface LogCardAnalyticsProps {
   selectedDate: string;
 }
 
+/**
+ * Українська форма множини для «активний день». До правки підпис завжди
+ * читався «на 1 активн. днів» — і число не узгоджене, і скорочення з
+ * крапкою посеред фрази виглядає як обрив (браузерний аудит 2026-09-01).
+ */
+function pluralDays(n: number): string {
+  const abs = Math.abs(Math.trunc(n));
+  const tens = abs % 100;
+  const ones = abs % 10;
+  if (tens >= 11 && tens <= 14) return "активних днів";
+  if (ones === 1) return "активний день";
+  if (ones >= 2 && ones <= 4) return "активні дні";
+  return "активних днів";
+}
+
 export function LogCardAnalytics({ log, selectedDate }: LogCardAnalyticsProps) {
   const [statsRange, setStatsRange] = useState(30);
 
@@ -90,7 +105,7 @@ export function LogCardAnalytics({ log, selectedDate }: LogCardAnalyticsProps) {
               {Math.round(Number(x.v) || 0)}
             </div>
             <div className="text-style-caption text-muted">
-              на {statsAvg.daysLogged} активн. днів
+              на {statsAvg.daysLogged} {pluralDays(statsAvg.daysLogged)}
             </div>
           </div>
         ))}

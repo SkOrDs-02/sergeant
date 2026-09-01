@@ -103,16 +103,21 @@ export function PantryManagerSheet({
 
   // При закритті sheet — повертаємо форму в `idle`, щоб наступне
   // відкриття було без застряглого минулого стану.
-  const [prevOpen, setPrevOpen] = useState(open);
-  if (!open && prevOpen) {
-    setPrevOpen(false);
+  //
+  // AI-DANGER: скидання живе в ОБРОБНИКУ закриття, не в тілі рендера і
+  // не в ефекті. `setPantryForm` належить батьку (`NutritionApp`): виклик
+  // із рендера дитини давав у консоль «Cannot update a component while
+  // rendering a different component» (браузерний аудит 2026-09-01), а
+  // виклик з ефекту ловить `react-hooks/set-state-in-effect`. Подія
+  // закриття це саме та точка, де стан і має мінятись. Шляхи, де sheet
+  // закриває сам батько (`onConfirmSavePantry`), форму скидають у себе.
+  const handleClose = () => {
     setMoreOpen(false);
     setPantryForm((f) =>
       f.mode === "idle" ? f : { mode: "idle", name: "", err: "" },
     );
-  } else if (open && !prevOpen) {
-    setPrevOpen(true);
-  }
+    onClose();
+  };
 
   const formTitle =
     pantryForm.mode === "rename"
@@ -126,7 +131,7 @@ export function PantryManagerSheet({
   return (
     <Sheet
       open={open}
-      onClose={onClose}
+      onClose={handleClose}
       title="Комори продуктів"
       description="Створи окремо для Дім / Робота або по дієті"
       panelClassName="nutrition-sheet"
