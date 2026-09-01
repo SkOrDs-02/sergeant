@@ -67,8 +67,8 @@ function op(
 }
 
 describe("Phase 2 registry expansion", () => {
-  it("SYNC_V2_SUPPORTED_TABLES includes 15 Phase 2 tables + 3 append-only ledgers + fizruk_injuries + routine_habit_skips + fizruk_pushups (48 total)", () => {
-    expect(SYNC_V2_SUPPORTED_TABLES).toHaveLength(48);
+  it("SYNC_V2_SUPPORTED_TABLES includes 15 Phase 2 tables + 3 append-only ledgers + fizruk_injuries + routine_habit_skips + fizruk_pushups + fizruk_custom_activities (49 total)", () => {
+    expect(SYNC_V2_SUPPORTED_TABLES).toHaveLength(49);
     expect(SYNC_V2_SUPPORTED_TABLES).toEqual(
       expect.arrayContaining([
         "routine_habits",
@@ -79,6 +79,8 @@ describe("Phase 2 registry expansion", () => {
         "fizruk_programs",
         // Перенос власності pushup-даних routine → fizruk (2026-08-30).
         "fizruk_pushups",
+        // Свої заняття для короткого запису (міграція 132).
+        "fizruk_custom_activities",
         // Append-only журнали стадії 1: routine (W1-ROUTINE-APPEND),
         // комора (W1-PANTRY-APPEND) і цілі КБЖВ (W1-KBJU-APPEND).
         "routine_completion_events",
