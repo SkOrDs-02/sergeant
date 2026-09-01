@@ -17,11 +17,11 @@ import {
   NavigationRoute,
   setCatchHandler,
 } from "workbox-routing";
-import { NetworkFirst } from "workbox-strategies";
+import { CacheFirst, NetworkFirst } from "workbox-strategies";
 import { ExpirationPlugin } from "workbox-expiration";
 import { CacheableResponsePlugin } from "workbox-cacheable-response";
 import { CACHE_NAMES } from "./version";
-import { shouldUseRuntimeCache } from "./cachePolicy";
+import { shouldCacheExerciseImage, shouldUseRuntimeCache } from "./cachePolicy";
 import { isNavigationRequest, resolveOfflineShell } from "./offlineFallback";
 
 declare const self: ServiceWorkerGlobalScope & {
@@ -118,7 +118,7 @@ const userPartitionPlugin = {
 };
 
 /**
- * Реєструє precache + 2 runtime route-и (навігація + API). Викликається
+ * Реєструє precache і runtime route-и. Викликається
  * один раз при старті SW. Розбиття на функцію (а не side-effect на
  * import) дає змогу легше mock-ати у тестах і робить порядок
  * ініціалізації явним.
@@ -174,6 +174,21 @@ export function setupCacheRoutes(): void {
     "GET",
   );
 
+  registerRoute(
+    ({ url }) => shouldCacheExerciseImage(url.pathname),
+    new CacheFirst({
+      cacheName: CACHE_NAMES.exerciseImages,
+      plugins: [
+        new ExpirationPlugin({
+          maxEntries: 400,
+          maxAgeSeconds: 60 * 60 * 24 * 180,
+          purgeOnQuotaError: true,
+        }),
+      ],
+    }),
+    "GET",
+  );
+
   // Offline navigation fallback (page-audit-10 F1). `setCatchHandler` only
   // runs when a matched route's handler *throws* — i.e. the navigation
   // NetworkFirst above already tried network (3s) and missed the cache while
@@ -203,14 +218,15 @@ export async function cacheEntryCount(
 
 /**
  * Повертає список застарілих cache-name-ів (older `navigations-v*` /
- * `api-cache-v*`), які SW зачищає на `activate`.
+ * `api-cache-v*` / `exercise-images-v*`), які SW зачищає на `activate`.
  */
 export async function listStaleCaches(): Promise<string[]> {
   const cacheNames = await caches.keys();
   return cacheNames.filter(
     (n) =>
       (n.startsWith("navigations-v") && n !== CACHE_NAMES.navigations) ||
-      (n.startsWith("api-cache-v") && n !== CACHE_NAMES.api),
+      (n.startsWith("api-cache-v") && n !== CACHE_NAMES.api) ||
+      (n.startsWith("exercise-images-v") && n !== CACHE_NAMES.exerciseImages),
   );
 }
 
@@ -229,6 +245,7 @@ export async function clearAppCaches(): Promise<{
       n === "google-fonts-woff" ||
       n.startsWith("navigations-v") ||
       n.startsWith("api-cache-v") ||
+      n.startsWith("exercise-images-v") ||
       n.startsWith("workbox-precache"),
   );
   await Promise.allSettled(toDelete.map((n) => caches.delete(n)));

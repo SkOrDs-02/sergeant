@@ -21,6 +21,7 @@ export * from "./bodyAtlas.js";
 export * from "./bodyAtlasGeometry.js";
 export * from "./injurySites.js";
 export * from "./exerciseInjuryZones.js";
+export * from "./exerciseImages.js";
 
 /** JSON-каталог «як є» (з `labels` + `exercises`). */
 export interface ExerciseCatalog {

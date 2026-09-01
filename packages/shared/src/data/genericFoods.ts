@@ -607,6 +607,9 @@ export const GENERIC_FOODS: readonly GenericFood[] = [
     name: "Яйце куряче",
     category: "Яйця",
     per100: { kcal: 143, protein_g: 13, fat_g: 10, carbs_g: 1.1 },
+    // Чек пише множиною («Яйця курячі Квочка XL відбірні»), і без цього
+    // синоніма назва їхала в мʼясо на корені «куряч».
+    aliases: ["яйця", "яйця курячі"],
   },
   {
     slug: "iaitse-varene",
@@ -829,7 +832,7 @@ export const GENERIC_FOODS: readonly GenericFood[] = [
   {
     slug: "miusli-batonchyk",
     name: "Мюслі батончик",
-    category: "Заморожене",
+    category: "Солодощі",
     per100: { kcal: 438, protein_g: 7.5, fat_g: 18, carbs_g: 64 },
   },
 
@@ -1181,6 +1184,7 @@ export const GENERIC_FOODS: readonly GenericFood[] = [
     name: "Гранола",
     category: "Крупи і злаки",
     per100: { kcal: 471, protein_g: 9, fat_g: 16, carbs_g: 75 },
+    aliases: ["granola"],
   },
   {
     slug: "kukurudziani-plastivtsi",
@@ -1398,6 +1402,7 @@ export const GENERIC_FOODS: readonly GenericFood[] = [
     slug: "shashlyk-svyniachyi",
     name: "Шашлик свинячий",
     category: "Мʼясо і птиця",
+    aliases: ["шашлик"],
     per100: { kcal: 280, protein_g: 18, fat_g: 22, carbs_g: 2 },
   },
   {
@@ -1573,7 +1578,9 @@ export const GENERIC_FOODS: readonly GenericFood[] = [
   {
     slug: "pasta-arakhisova",
     name: "Паста арахісова",
-    category: "Горіхи і насіння",
+    // Не горіхи: у коморі це намазка, і той самий висновок уже стоїть
+    // окремим правилом порядку категорій у `foodCategories.ts`.
+    category: "Соуси і спеції",
     per100: { kcal: 588, protein_g: 25, fat_g: 50, carbs_g: 20 },
   },
 
@@ -2352,7 +2359,7 @@ export const GENERIC_FOODS: readonly GenericFood[] = [
   {
     slug: "kvashena-kapusta",
     name: "Квашена капуста",
-    category: "Овочі і гриби",
+    category: "Консерви",
     per100: { kcal: 19, protein_g: 0.9, fat_g: 0.1, carbs_g: 4 },
   },
   {
@@ -2418,7 +2425,7 @@ export const GENERIC_FOODS: readonly GenericFood[] = [
   {
     slug: "hryby-pecherytsi-marynovani",
     name: "Гриби печериці мариновані",
-    category: "Овочі і гриби",
+    category: "Консерви",
     per100: { kcal: 24, protein_g: 2.8, fat_g: 0.4, carbs_g: 0.1 },
     aliases: ["печериці мариновані"],
   },
@@ -2438,43 +2445,253 @@ export const GENERIC_FOODS: readonly GenericFood[] = [
   {
     slug: "kukurudza-konservovana",
     name: "Кукурудза консервована",
-    category: "Овочі і гриби",
+    category: "Консерви",
     per100: { kcal: 58, protein_g: 2.2, fat_g: 0.6, carbs_g: 11 },
   },
   {
     slug: "horoshok-konservovanyi",
     name: "Горошок консервований",
-    category: "Овочі і гриби",
+    category: "Консерви",
     per100: { kcal: 53, protein_g: 3.1, fat_g: 0.2, carbs_g: 9.8 },
   },
   {
     slug: "maslyny-chorni",
     name: "Маслини чорні",
-    category: "Овочі і гриби",
+    category: "Консерви",
     per100: { kcal: 115, protein_g: 0.8, fat_g: 11, carbs_g: 6.3 },
   },
   {
     slug: "olyvky-zeleni",
     name: "Оливки зелені",
-    category: "Овочі і гриби",
+    category: "Консерви",
     per100: { kcal: 145, protein_g: 1, fat_g: 15, carbs_g: 3.8 },
   },
   {
     slug: "kapersy",
     name: "Каперси",
-    category: "Овочі і гриби",
+    category: "Консерви",
     per100: { kcal: 23, protein_g: 2.4, fat_g: 0.9, carbs_g: 5 },
   },
   {
     slug: "kornishony",
     name: "Корнішони",
-    category: "Овочі і гриби",
+    category: "Консерви",
     per100: { kcal: 15, protein_g: 0.7, fat_g: 0.1, carbs_g: 2.4 },
   },
   {
     slug: "ohirok-solonyi",
     name: "Огірок солоний",
-    category: "Овочі і гриби",
+    category: "Консерви",
     per100: { kcal: 11, protein_g: 0.8, fat_g: 0.1, carbs_g: 1.7 },
+  },
+  // ── Доповнення з реальної полиці (2026-08-31) ────────────────────
+  {
+    slug: "voda-mineralna",
+    name: "Вода мінеральна",
+    category: "Напої",
+    per100: { kcal: 0, protein_g: 0, fat_g: 0, carbs_g: 0 },
+    aliases: ["мінералка"],
+  },
+  {
+    slug: "sydr",
+    name: "Сидр",
+    category: "Напої",
+    per100: { kcal: 49, protein_g: 0, fat_g: 0, carbs_g: 2.6 },
+    alcohol_g: 4.3,
+  },
+  {
+    slug: "koniak",
+    name: "Коньяк",
+    category: "Напої",
+    per100: { kcal: 240, protein_g: 0, fat_g: 0, carbs_g: 1.5 },
+    alcohol_g: 33,
+  },
+  {
+    slug: "khlib-tostovyi",
+    name: "Хліб тостовий",
+    category: "Хліб і випічка",
+    per100: { kcal: 270, protein_g: 8, fat_g: 4, carbs_g: 49 },
+  },
+  {
+    slug: "palianytsia",
+    name: "Паляниця",
+    category: "Хліб і випічка",
+    per100: { kcal: 250, protein_g: 7.6, fat_g: 1, carbs_g: 51 },
+    // «Паляничка сирна» без синоніма їхала в молочні на корені «сир».
+    aliases: ["паляничка"],
+  },
+  {
+    slug: "airan",
+    name: "Айран",
+    category: "Молочні продукти",
+    per100: { kcal: 35, protein_g: 1.7, fat_g: 1.8, carbs_g: 3 },
+  },
+  {
+    slug: "moloko-toplene",
+    name: "Молоко топлене 4%",
+    category: "Молочні продукти",
+    per100: { kcal: 84, protein_g: 3, fat_g: 4, carbs_g: 4.7 },
+  },
+  {
+    slug: "syr-adyheiskyi",
+    name: "Сир адигейський",
+    category: "Молочні продукти",
+    per100: { kcal: 240, protein_g: 19, fat_g: 18, carbs_g: 1.5 },
+  },
+  {
+    slug: "dorado",
+    name: "Дорадо",
+    category: "Риба і морепродукти",
+    per100: { kcal: 96, protein_g: 18, fat_g: 2.5, carbs_g: 0 },
+  },
+  {
+    slug: "sibas",
+    name: "Сібас",
+    category: "Риба і морепродукти",
+    per100: { kcal: 99, protein_g: 18, fat_g: 3, carbs_g: 0 },
+  },
+  {
+    slug: "losos-slabosolenyi",
+    name: "Лосось слабосолений",
+    category: "Риба і морепродукти",
+    per100: { kcal: 202, protein_g: 21, fat_g: 13, carbs_g: 0 },
+  },
+  {
+    slug: "indychyi-farsh",
+    name: "Індичий фарш",
+    category: "Мʼясо і птиця",
+    per100: { kcal: 160, protein_g: 20, fat_g: 8, carbs_g: 0 },
+  },
+  {
+    slug: "sardelky",
+    name: "Сардельки",
+    category: "Мʼясо і птиця",
+    per100: { kcal: 265, protein_g: 11, fat_g: 24, carbs_g: 1.5 },
+  },
+  {
+    slug: "kovbasky-myslyvski",
+    name: "Ковбаски мисливські",
+    category: "Мʼясо і птиця",
+    per100: { kcal: 460, protein_g: 20, fat_g: 42, carbs_g: 1 },
+  },
+  {
+    slug: "tsukini",
+    name: "Цукіні",
+    category: "Овочі і гриби",
+    per100: { kcal: 17, protein_g: 1.2, fat_g: 0.3, carbs_g: 3.1 },
+  },
+  {
+    slug: "salat-aisberh",
+    name: "Салат айсберг",
+    category: "Овочі і гриби",
+    per100: { kcal: 14, protein_g: 0.9, fat_g: 0.1, carbs_g: 3 },
+  },
+  {
+    slug: "tsybulia-chervona",
+    name: "Цибуля червона",
+    category: "Овочі і гриби",
+    per100: { kcal: 42, protein_g: 1.1, fat_g: 0.1, carbs_g: 9.3 },
+  },
+  {
+    slug: "hryby-hlyvy",
+    name: "Гриби гливи",
+    category: "Овочі і гриби",
+    per100: { kcal: 33, protein_g: 3.3, fat_g: 0.4, carbs_g: 4.2 },
+  },
+  {
+    slug: "laim",
+    name: "Лайм",
+    category: "Фрукти і ягоди",
+    per100: { kcal: 30, protein_g: 0.7, fat_g: 0.2, carbs_g: 10.5 },
+  },
+  {
+    slug: "ozhyna",
+    name: "Ожина",
+    category: "Фрукти і ягоди",
+    per100: { kcal: 43, protein_g: 1.4, fat_g: 0.5, carbs_g: 9.6 },
+  },
+  {
+    slug: "pomelo",
+    name: "Помело",
+    category: "Фрукти і ягоди",
+    per100: { kcal: 38, protein_g: 0.8, fat_g: 0, carbs_g: 9.6 },
+  },
+  {
+    slug: "horokh-sukhyi",
+    name: "Горох (сухий)",
+    category: "Бобові",
+    per100: { kcal: 298, protein_g: 20.5, fat_g: 2, carbs_g: 49.5 },
+  },
+  {
+    slug: "kvasolia-sukha",
+    name: "Квасоля (суха)",
+    category: "Бобові",
+    per100: { kcal: 298, protein_g: 21, fat_g: 2, carbs_g: 47 },
+  },
+  {
+    slug: "sochevytsia-sukha",
+    name: "Сочевиця (суха)",
+    category: "Бобові",
+    per100: { kcal: 295, protein_g: 24, fat_g: 1.5, carbs_g: 46 },
+  },
+  {
+    slug: "rys-buryi-sukhyi",
+    name: "Рис бурий (сухий)",
+    category: "Крупи і злаки",
+    per100: { kcal: 360, protein_g: 7.5, fat_g: 2.9, carbs_g: 76 },
+  },
+  {
+    slug: "olia-ripakova",
+    name: "Олія ріпакова",
+    category: "Олії і жири",
+    per100: { kcal: 899, protein_g: 0, fat_g: 100, carbs_g: 0 },
+  },
+  {
+    slug: "sous-tsezar",
+    name: "Соус цезар",
+    category: "Соуси і спеції",
+    per100: { kcal: 380, protein_g: 2, fat_g: 39, carbs_g: 3 },
+  },
+  {
+    slug: "otset-balzamichnyi",
+    name: "Оцет бальзамічний",
+    category: "Соуси і спеції",
+    per100: { kcal: 88, protein_g: 0.5, fat_g: 0, carbs_g: 17 },
+  },
+  {
+    slug: "marshmelou",
+    name: "Маршмелоу",
+    category: "Солодощі",
+    per100: { kcal: 318, protein_g: 1.8, fat_g: 0.2, carbs_g: 81 },
+  },
+  {
+    slug: "pashtet-pechinkovyi",
+    name: "Паштет печінковий",
+    category: "Консерви",
+    per100: { kcal: 300, protein_g: 11, fat_g: 27, carbs_g: 3 },
+  },
+  {
+    slug: "tushonka-yalovycha",
+    name: "Тушонка яловича",
+    category: "Консерви",
+    per100: { kcal: 220, protein_g: 15, fat_g: 17, carbs_g: 0 },
+  },
+  {
+    slug: "kvasolia-konservovana",
+    name: "Квасоля консервована",
+    category: "Консерви",
+    per100: { kcal: 91, protein_g: 6, fat_g: 0.5, carbs_g: 15.7 },
+  },
+  {
+    slug: "yahody-zamorozheni",
+    name: "Ягоди заморожені",
+    category: "Заморожене",
+    per100: { kcal: 45, protein_g: 0.8, fat_g: 0.4, carbs_g: 9 },
+  },
+  {
+    slug: "ovocheva-sumish-zamorozhena",
+    name: "Овочева суміш заморожена",
+    category: "Заморожене",
+    per100: { kcal: 45, protein_g: 2, fat_g: 0.3, carbs_g: 8 },
   },
 ] as const;

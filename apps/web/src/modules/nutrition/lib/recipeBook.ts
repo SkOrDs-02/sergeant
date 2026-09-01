@@ -9,6 +9,7 @@ import {
   openSergeantDb,
 } from "../../../shared/lib/idb/sergeantDb";
 import { clampNonNegative, generatePrefixedId } from "@sergeant/shared";
+import { persistNutritionRecipes } from "./nutritionStorage.js";
 
 /**
  * Pre-PR-#010 saved recipes lived in a dedicated `hub_nutrition_recipe_book`
@@ -141,6 +142,7 @@ export async function saveRecipeToBook(
     const tx = db.transaction(STORE, "readwrite");
     tx.objectStore(STORE).put(r);
     await txDone(tx);
+    persistNutritionRecipes(await listSavedRecipes(200));
     return { ok: true, recipe: r };
   } catch {
     return { ok: false, error: "Не вдалося зберегти рецепт" };
@@ -157,6 +159,7 @@ export async function deleteSavedRecipe(id: unknown): Promise<boolean> {
     const tx = db.transaction(STORE, "readwrite");
     tx.objectStore(STORE).delete(key);
     await txDone(tx);
+    persistNutritionRecipes(await listSavedRecipes(200));
     return true;
   } catch {
     return false;

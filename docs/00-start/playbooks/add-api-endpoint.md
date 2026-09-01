@@ -1,6 +1,6 @@
 # Playbook: Add API Endpoint
 
-> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-14.
+> **Last touched:** 2026-09-01 by @Skords-01. **Next review:** 2026-12-13.
 > **Status:** Active
 
 **Trigger:** "Додати новий endpoint в `apps/server`" / нова API-функціональність / зміна REST surface, яку будуть споживати web, mobile або HubChat.
@@ -25,7 +25,7 @@
 - Який модуль володіє endpoint.
 - Які клієнти споживатимуть endpoint.
 
-Якщо endpoint змінює product behavior, занотуй короткий spec у `docs/05-design/design/specs/` або в PR description.
+Якщо endpoint змінює product behavior, занотуй короткий spec у `docs/90-work/planning/specs/` або в PR description.
 
 ### 2. Додай або онови server handler
 

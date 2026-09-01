@@ -243,6 +243,7 @@ export function Workouts({
           updateItem={o.updateItem}
           onDeleteRequest={() => o.setDeleteExerciseConfirm(true)}
           toast={o.toast}
+          onNavigate={onNavigate}
         />
 
         <AddExerciseSheet

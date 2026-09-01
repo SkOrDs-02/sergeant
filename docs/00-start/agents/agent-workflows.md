@@ -1,6 +1,6 @@
 # Sergeant Agent Workflows
 
-> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-10.
+> **Last touched:** 2026-09-01 by @Skords-01. **Next review:** 2026-12-01.
 > **Status:** Active
 
 Стислі decision trees для найважливіших агентних сценаріїв у Sergeant.
@@ -23,7 +23,7 @@
 2. Load `sergeant-feature-delivery`.
 3. Pick one specialist skill for the touched surface.
 4. If placement is unclear, use `sergeant-monorepo-boundaries` before writing files.
-5. If change is product-facing or non-trivial, write/update spec in `docs/05-design/design/specs/`.
+5. If change is product-facing or non-trivial, write/update spec in `docs/90-work/planning/specs/`.
 6. Add tests first for the changed behavior.
 7. Implement the smallest end-to-end slice.
 8. Verify and update only the canonical docs that changed.

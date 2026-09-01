@@ -6,7 +6,7 @@
  * Covers: null selected (returns null), recovery warning (red/yellow),
  * images strip, description, tips, custom-exercise delete button,
  * log-mode "add" button (no active workout, ended workout, active),
- * copy-name button.
+ * detail navigation and image-search fallback.
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
@@ -76,6 +76,11 @@ vi.mock("@shared/components/ui/SectionHeading", () => ({
 type MockExercise = FizrukData.RawExerciseDef & {
   [key: string]: unknown;
 };
+
+// Ілюстрації більше не лежать у записі вправи: шлях виводиться з id через
+// реєстр `EXERCISE_IMAGE_IDS`. Тому тест бере справжній id з каталогу, а не
+// підставляє вигадані URL, і заразом стереже сам реєстр.
+const ILLUSTRATED_ID = "bench_press_barbell";
 
 function makeExercise(over: Partial<MockExercise> = {}): MockExercise {
   return {
@@ -227,7 +232,7 @@ describe("ExerciseDetailSheet – honest empty detail (QA 2026-08-23)", () => {
   });
 
   it("stays quiet when the exercise has photos", () => {
-    const ex = makeExercise({ images: ["https://example.com/img1.jpg"] });
+    const ex = makeExercise({ id: ILLUSTRATED_ID });
     render(<ExerciseDetailSheet {...baseProps({ selected: ex })} />);
     expect(screen.queryByText(/Опису для цієї вправи немає/)).toBeNull();
   });
@@ -251,31 +256,42 @@ describe("ExerciseDetailSheet – tips", () => {
 });
 
 describe("ExerciseDetailSheet – images strip", () => {
-  it("renders images when images array is present", () => {
-    const ex = makeExercise({
-      images: ["https://example.com/img1.jpg", "https://example.com/img2.jpg"],
-    });
+  it("renders both movement frames for an illustrated exercise", () => {
+    const ex = makeExercise({ id: ILLUSTRATED_ID });
     render(<ExerciseDetailSheet {...baseProps({ selected: ex })} />);
     const imgs = screen.getAllByRole("img");
-    expect(imgs.length).toBeGreaterThanOrEqual(2);
+    expect(imgs.map((img) => img.getAttribute("src"))).toEqual([
+      `/exercises/${ILLUSTRATED_ID}/0.webp`,
+      `/exercises/${ILLUSTRATED_ID}/1.webp`,
+    ]);
   });
 
-  it("does not render image strip when images is empty", () => {
-    const ex = makeExercise({ images: [] });
+  it("does not render image strip for an exercise outside the registry", () => {
+    const ex = makeExercise();
     render(<ExerciseDetailSheet {...baseProps({ selected: ex })} />);
     expect(screen.queryByRole("img")).toBeNull();
   });
 
-  it("caps images at 8", () => {
-    const ex = makeExercise({
-      images: Array.from(
-        { length: 12 },
-        (_, i) => `https://example.com/img${i}.jpg`,
-      ),
-    });
+  it("renders the internet search fallback when images is empty", () => {
+    const ex = makeExercise();
     render(<ExerciseDetailSheet {...baseProps({ selected: ex })} />);
-    const imgs = screen.getAllByRole("img");
-    expect(imgs.length).toBe(8);
+
+    const link = screen.getByRole("link", { name: "Знайти в інтернеті" });
+    expect(link).toHaveAttribute(
+      "href",
+      "https://www.google.com/search?q=%D0%96%D0%B8%D0%BC%20%D0%BB%D0%B5%D0%B6%D0%B0%D1%87%D0%B8",
+    );
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(link).toHaveAttribute("rel", "noopener noreferrer");
+  });
+
+  it("does not render the internet search fallback when images is non-empty", () => {
+    const ex = makeExercise({ id: ILLUSTRATED_ID });
+    render(<ExerciseDetailSheet {...baseProps({ selected: ex })} />);
+
+    expect(
+      screen.queryByRole("link", { name: "Знайти в інтернеті" }),
+    ).not.toBeInTheDocument();
   });
 });
 
@@ -435,7 +451,7 @@ describe("ExerciseDetailSheet – log mode add button", () => {
   });
 });
 
-describe("ExerciseDetailSheet – close and copy buttons", () => {
+describe("ExerciseDetailSheet - close and detail buttons", () => {
   it("calls onClose when Закрити is clicked", () => {
     const onClose = vi.fn();
     render(<ExerciseDetailSheet {...baseProps({ onClose })} />);
@@ -443,8 +459,25 @@ describe("ExerciseDetailSheet – close and copy buttons", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  it("renders the copy name button", () => {
+  it("navigates to the selected exercise and closes the sheet", () => {
+    const onNavigate = vi.fn();
+    const onClose = vi.fn();
+    render(<ExerciseDetailSheet {...baseProps({ onNavigate, onClose })} />);
+
+    fireEvent.click(screen.getByText("Детальніше"));
+
+    expect(onNavigate).toHaveBeenCalledTimes(1);
+    expect(onNavigate).toHaveBeenCalledWith("exercise/ex-1");
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not render the detail button when onNavigate is omitted", () => {
     render(<ExerciseDetailSheet {...baseProps()} />);
-    expect(screen.getByText(/Копіювати назву/)).toBeInTheDocument();
+    expect(screen.queryByText("Детальніше")).not.toBeInTheDocument();
+  });
+
+  it("does not render the old copy name button", () => {
+    render(<ExerciseDetailSheet {...baseProps()} />);
+    expect(screen.queryByText(/Копіювати назву/)).not.toBeInTheDocument();
   });
 });

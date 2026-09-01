@@ -1,6 +1,10 @@
 import { describe, it, expect } from "vitest";
 
-import { shouldUseRuntimeCache, VOLATILE_API_PREFIXES } from "./cachePolicy";
+import {
+  shouldCacheExerciseImage,
+  shouldUseRuntimeCache,
+  VOLATILE_API_PREFIXES,
+} from "./cachePolicy";
 
 /**
  * Volatile-prefix regression test. The predicate lives in
@@ -11,6 +15,11 @@ import { shouldUseRuntimeCache, VOLATILE_API_PREFIXES } from "./cachePolicy";
 const shouldCache = shouldUseRuntimeCache;
 
 describe("apps/web sw runtime cache predicate", () => {
+  it("matches exercise images without matching API requests", () => {
+    expect(shouldCacheExerciseImage("/exercises/x/0.webp")).toBe(true);
+    expect(shouldCacheExerciseImage("/api/exercises/x/0.webp")).toBe(false);
+  });
+
   it("excludes /api/v2/sync/* paths (T3 audit MEDIUM finding)", () => {
     expect(shouldCache("/api/v2/sync/pull", "GET")).toBe(false);
     expect(shouldCache("/api/v2/sync/pull?since=10", "GET")).toBe(false);
