@@ -103,6 +103,31 @@ function numOrNull(v: unknown): number | null {
   return v != null && Number.isFinite(Number(v)) ? Number(v) : null;
 }
 
+/**
+ * Підсумок по прийомах, які РЕАЛЬНО лишились у плані.
+ *
+ * AI-DANGER: тотали приходять від моделі окремим полем, і довіряти їм
+ * не можна з двох причин. Перша: модель помиляється в арифметиці —
+ * прогін 2026-09-01 дав прийоми на 166 г вуглеводів при заявлених 171.
+ * Друга, гірша: `meals` обрізається до шести, тож на довшій видачі
+ * тотали лишились би від усіх прийомів, включно з викинутими, і план
+ * показував би калорії, яких у ньому немає.
+ *
+ * Рахуємо самі лише коли КОЖЕН прийом несе це число: одна дірка в
+ * макросі зробила б суму заниженою, а занижена сума гірша за чесно
+ * взяту від моделі.
+ */
+function sumMeals(meals: PlanMeal[], key: keyof PlanMeal): number | null {
+  if (meals.length === 0) return null;
+  let total = 0;
+  for (const meal of meals) {
+    const v = meal[key];
+    if (typeof v !== "number" || !Number.isFinite(v)) return null;
+    total += v;
+  }
+  return Math.round(total * 10) / 10;
+}
+
 function normalizeDayPlan(parsed: unknown): NormalizedDayPlan {
   const obj =
     parsed && typeof parsed === "object" && !Array.isArray(parsed)
@@ -116,36 +141,42 @@ function normalizeDayPlan(parsed: unknown): NormalizedDayPlan {
     dinner: "Вечеря",
     snack: "Перекус",
   };
+  const normalizedMeals = meals
+    .map((m): PlanMeal | null => {
+      if (!m || typeof m !== "object") return null;
+      const rec = m as Record<string, unknown>;
+      const type: MealType = validTypes.includes(rec["type"] as MealType)
+        ? (rec["type"] as MealType)
+        : "snack";
+      return {
+        type,
+        label: String(rec["label"] || typeLabels[type]),
+        name: String(rec["name"] || "").trim(),
+        description: String(rec["description"] || "").trim(),
+        ingredients: Array.isArray(rec["ingredients"])
+          ? (rec["ingredients"] as unknown[])
+              .map((x) => String(x).trim())
+              .filter(Boolean)
+          : [],
+        kcal: numOrNull(rec["kcal"]),
+        protein_g: numOrNull(rec["protein_g"]),
+        fat_g: numOrNull(rec["fat_g"]),
+        carbs_g: numOrNull(rec["carbs_g"]),
+      };
+    })
+    .filter((v): v is PlanMeal => Boolean(v))
+    .slice(0, 6);
+
   return {
-    meals: meals
-      .map((m): PlanMeal | null => {
-        if (!m || typeof m !== "object") return null;
-        const rec = m as Record<string, unknown>;
-        const type: MealType = validTypes.includes(rec["type"] as MealType)
-          ? (rec["type"] as MealType)
-          : "snack";
-        return {
-          type,
-          label: String(rec["label"] || typeLabels[type]),
-          name: String(rec["name"] || "").trim(),
-          description: String(rec["description"] || "").trim(),
-          ingredients: Array.isArray(rec["ingredients"])
-            ? (rec["ingredients"] as unknown[])
-                .map((x) => String(x).trim())
-                .filter(Boolean)
-            : [],
-          kcal: numOrNull(rec["kcal"]),
-          protein_g: numOrNull(rec["protein_g"]),
-          fat_g: numOrNull(rec["fat_g"]),
-          carbs_g: numOrNull(rec["carbs_g"]),
-        };
-      })
-      .filter((v): v is PlanMeal => Boolean(v))
-      .slice(0, 6),
-    totalKcal: numOrNull(obj["totalKcal"]),
-    totalProtein_g: numOrNull(obj["totalProtein_g"]),
-    totalFat_g: numOrNull(obj["totalFat_g"]),
-    totalCarbs_g: numOrNull(obj["totalCarbs_g"]),
+    meals: normalizedMeals,
+    totalKcal: sumMeals(normalizedMeals, "kcal") ?? numOrNull(obj["totalKcal"]),
+    totalProtein_g:
+      sumMeals(normalizedMeals, "protein_g") ??
+      numOrNull(obj["totalProtein_g"]),
+    totalFat_g:
+      sumMeals(normalizedMeals, "fat_g") ?? numOrNull(obj["totalFat_g"]),
+    totalCarbs_g:
+      sumMeals(normalizedMeals, "carbs_g") ?? numOrNull(obj["totalCarbs_g"]),
     note: String(obj["note"] || "").trim(),
   };
 }
