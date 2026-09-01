@@ -88,7 +88,7 @@ export const CATEGORY_META: Record<string, { label: string; icon: IconName }> =
     goal: { label: "Цілі", icon: "target" },
     training: { label: "Тренування", icon: "dumbbell" },
     health: { label: "Здоровʼя", icon: "heart" },
-    preference: { label: "Уподобання", icon: "sparkles" },
+    preference: { label: "Уподобання", icon: "sergeant" },
     other: { label: "Інше", icon: "pen" },
   };
 

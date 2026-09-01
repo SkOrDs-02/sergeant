@@ -74,6 +74,9 @@ The three tests (`DESIGN.md § Slop-тест`) are judgment calls you cannot set
 | A new file under `modules/<a>/` that structurally mirrors one under `modules/<b>/` with only the accent token differing | Підміна — accent-swap ≠ identity |
 | Shape taken from an existing `@shared/components/ui` primitive while the data has a shape of its own (two axes rendered as two rows; a distribution rendered as one number; graded confidence rendered as show/hide) | Дані — form from the library, not from the data |
 | **Any** typographic glyph or emoji standing in an icon slot — judge by ROLE, not by character. Examples only, never a checklist: `▾ ▸ ○ ⓘ ⊕ ↻ ← ‹ › × ✓` | Дані — system-font glyph has its own metric, ignores `strokeWidth`, has no size token |
+| A row of **three or more equal stat tiles** (`grid-cols-3` / flex siblings of the same `<Card>` + number + caption), or a new banner/nudge card with the icon-in-tinted-square → label → caption → button → `×` anatomy | Генератор — the "stat banner row" / "identical cards" default (audit 2026-09-01 F1, F3) |
+| `Icon name="sparkle"` / `"sparkles"` or a literal `AI` chip introduced as the marker of "the model did this" | Підміна — the sparkle is the industry-wide AI glyph (Gemini / Notion / Copilot); Sergeant's AI layer is its differentiator and needs its own mark (audit 2026-09-01 F2, owner Q1) |
+| A trend/delta chip (`trending-up` / `trending-down`, `▲` / `▼`, `+N%`) whose zero case is not an explicit branch — `diff >= 0` renders an up-arrow on no change | Дані — a chip that shows movement where there is none contradicts the "мовчить нижче порогу" canon (audit 2026-09-01 F4) |
 
 Quote the line, name the test, and ask the summary question against that surface: **"що на цьому екрані не міг би зробити ніхто інший?"** If the diff answers it, say so and move on — a surface that passes deserves the note as much as one that doesn't.
 

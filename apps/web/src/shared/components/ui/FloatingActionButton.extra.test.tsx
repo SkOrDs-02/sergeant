@@ -62,7 +62,8 @@ describe("FloatingActionButton — single action", () => {
       <FloatingActionButton aria-label="V" variant="v2-fizruk" size="lg" />,
     );
     const btn = screen.getByRole("button", { name: "V" });
-    expect(btn.className).toContain("from-cyan-400");
+    expect(btn.className).toContain("bg-fizruk-strong");
+    expect(btn.className).not.toContain("bg-gradient");
     expect(btn.className).toContain("w-16");
   });
 

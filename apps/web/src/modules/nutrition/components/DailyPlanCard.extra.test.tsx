@@ -154,9 +154,7 @@ describe("DailyPlanCard — basic render", () => {
 
   it("renders the description text", () => {
     render(<DailyPlanCard prefs={EMPTY_PREFS} {...defaultHandlers} />);
-    expect(
-      screen.getByText(/AI генерує персоналізований план/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Складу план прийомів їжі/i)).toBeInTheDocument();
   });
 
   it("renders the 'Згенерувати денний план' button and calls fetchDayPlan on click", () => {
@@ -209,7 +207,7 @@ describe("DailyPlanCard — basic render", () => {
         pantryItems={[]}
       />,
     );
-    expect(screen.getByText(/Комору зараз не враховує/i)).toBeInTheDocument();
+    expect(screen.getByText(/Комору зараз не враховую/i)).toBeInTheDocument();
     expect(screen.queryByText(/Додай продукти в комору/i)).toBeNull();
   });
 });

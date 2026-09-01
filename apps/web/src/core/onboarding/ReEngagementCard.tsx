@@ -9,6 +9,7 @@ import { Card } from "@shared/components/ui/Card";
 import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
 import { markReengagementShown, pluralDays } from "@sergeant/shared";
 import { webKVStore } from "@shared/lib/storage/storage";
+import { useHubBannerSlot } from "../hub/bannerBudget";
 
 export function ReEngagementCard({
   daysInactive,
@@ -19,15 +20,20 @@ export function ReEngagementCard({
   onContinue: () => void;
   onDismiss: () => void;
 }) {
+  // Бюджет банерів хабу (F3, 2026-09-01): пріоритет 5; позначка «показано» — лише коли є місце.
+  const hasSlot = useHubBannerSlot("reengagement");
   useEffect(() => {
+    if (!hasSlot) return;
     markReengagementShown(webKVStore);
     trackEvent(ANALYTICS_EVENTS.REENGAGEMENT_SHOWN, { daysInactive });
-  }, [daysInactive]);
+  }, [daysInactive, hasSlot]);
 
   const handleContinue = useCallback(() => {
     trackEvent(ANALYTICS_EVENTS.REENGAGEMENT_CLICKED, { daysInactive });
     onContinue();
   }, [daysInactive, onContinue]);
+
+  if (!hasSlot) return null;
 
   return (
     <Card

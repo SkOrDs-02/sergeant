@@ -29,10 +29,7 @@
         //          tools/tsconfig-guard/__tests__/check.test.mjs (no package.json → root workspace)
         "vitest",
         // semver — used in scripts/check-pnpm-overrides.mjs
-        "semver",
-        // pg — used in scripts/db-index-audit.mjs, scripts/migration-down-drill.mjs,
-        //      scripts/seed-strategic-goals.mjs
-        "pg"
+        "semver"
       ],
       // External binary installed by the operator/CI image, not from npm.
       "ignoreBinaries": ["gitleaks"]
@@ -65,9 +62,6 @@
         "src/shared/lib/insights/index.ts"
       ],
       "ignoreDependencies": [
-        "@fontsource-variable/dm-sans",
-        "@fontsource-variable/jetbrains-mono",
-        "@fontsource-variable/manrope",
         // @testing-library/user-event — used in nutrition page tests; not in web package.json
         "@testing-library/user-event",
         // @tanstack/query-persist-client-core — sub-path of @tanstack/react-query-persist-client

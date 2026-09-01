@@ -88,10 +88,20 @@ for (const key of overrideNames) {
       cwd: repoRoot,
       encoding: "utf8",
       stdio: ["ignore", "pipe", "pipe"],
-      maxBuffer: 64 * 1024 * 1024,
+      // 512 MB, не 64: для пакетів із широким деревом залежних (babel →
+      // browserslist у кожному воркспейсі) `pnpm why -r --json` віддає
+      // ~70 MB, і на 64 MB execFileSync кидав ENOBUFS, який нижче читався
+      // як «жоден пакет не залежить» — хибний червоний гейт (PR #1005).
+      maxBuffer: 512 * 1024 * 1024,
       shell: pnpmNeedsShell,
     });
   } catch (err) {
+    if (/** @type {{code?: string}} */ (err).code === "ENOBUFS") {
+      failures.push(
+        `${key}: \`pnpm why ${name} -r --json\` overflowed maxBuffer — raise the limit in this script, the override itself was not checked.`,
+      );
+      continue;
+    }
     // `pnpm why` exits non-zero when no workspace package depends on
     // `name`. That means the override is dead — flag it explicitly so
     // the contributor can drop it.

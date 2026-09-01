@@ -90,7 +90,7 @@ export const CAPABILITY_GROUPS: readonly CapabilityGroup[] = [
         title: "Чат із Сержантом",
         description:
           "Питай про свої дані звичайною мовою: Сержант сам підніме потрібні записи й може одразу щось додати чи порахувати.",
-        icon: "sparkles",
+        icon: "sergeant",
         href: "/chat",
       },
       {

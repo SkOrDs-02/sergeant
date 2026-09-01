@@ -7,6 +7,7 @@ import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
 import { isDemoMode, exitDemoToWizard } from "./seedDemoData";
+import { useHubBannerSlot } from "../hub/bannerBudget";
 
 // Key name kept from the original "dismiss for the session" feature —
 // renaming the string would drop anyone mid-session back into the
@@ -50,7 +51,11 @@ export function DemoModeBanner() {
     }
   });
 
-  if (!demo) return null;
+  // Бюджет банерів хабу (F3, 2026-09-01): пріоритет 1 — шлях «Створити
+  // свій» лишається досяжним завжди, коли demo активне.
+  const hasSlot = useHubBannerSlot("demoMode", demo);
+
+  if (!demo || !hasSlot) return null;
 
   const collapse = () => {
     trackEvent(ANALYTICS_EVENTS.DEMO_DISMISSED);
@@ -93,7 +98,7 @@ export function DemoModeBanner() {
         className="flex items-center gap-2 rounded-2xl border border-brand-500/40 bg-brand-500/5 px-3 py-2 shadow-card"
       >
         <Icon
-          name="sparkles"
+          name="sergeant"
           size={16}
           className="shrink-0 text-brand-strong dark:text-brand"
           aria-hidden
@@ -135,7 +140,7 @@ export function DemoModeBanner() {
           className="shrink-0 w-9 h-9 rounded-xl bg-brand-500/15 text-brand-strong dark:text-brand flex items-center justify-center"
           aria-hidden
         >
-          <Icon name="sparkles" size={18} />
+          <Icon name="sergeant" size={18} />
         </span>
         <div className="min-w-0 flex-1">
           {/* h2, не h3: банер іде одразу після sr-only h1 «Головна», і h3

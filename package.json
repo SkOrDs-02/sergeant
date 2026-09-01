@@ -238,7 +238,8 @@
       "axios@>=1.15.2 <1.18.0": ">=1.18.0",
       "fast-uri": "3.1.5",
       "ip-address@<10.3.1": ">=10.3.1",
-      "nanoid@<3.3.17": "^3.3.17"
+      "nanoid@<3.3.17": "^3.3.17",
+      "browserslist@<4.28.7": ">=4.28.7"
     },
     "patchedDependencies": {
       "@expo/cli@0.22.28": "patches/@expo__cli@0.22.28.patch"

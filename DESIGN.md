@@ -1,6 +1,6 @@
 # DESIGN.md — Sergeant
 
-> **Last touched:** 2026-08-25 by @Skords-01. **Next review:** 2026-12-19.
+> **Last touched:** 2026-09-01 by @Skords-01. **Next review:** 2026-12-23.
 > **Status:** Active. **Призначення:** портативний конфіг візуальної системи для AI-агентів (Hallmark, frontend-design, Superdesign, будь-який SKILL.md-сумісний тул). Агент читає цей файл ПЕРЕД стилізацією і НЕ вигадує власну систему.
 > **Джерело правди:** `packages/design-tokens/tokens.js` + `tailwind-preset.js`. Цей файл — дзеркало для агентів; при розбіжності перемагають токени. Механічний enforcement: `eslint-plugin-sergeant-design` — лише runtime-, security-, storage-, API- і domain-інваріанти. Естетичні AST-правила retired [ADR-0081](./docs/04-governance/adr/0081-repository-simplification.md); візуальні конвенції тримають design tokens, Storybook і design-review.
 
@@ -105,6 +105,10 @@ Display+body: **Manrope Variable** (fallback DM Sans → системний ст
 - Однорідний радіус на всіх поверхнях — радіус має розрізняти контейнер / контроль / медіа.
 - Модуль, що відрізняється від іншого **тільки** hue акценту: accent-swap ≠ ідентичність.
 - Форма елемента, обрана бо компонент існує в `@shared/components/ui`, а не бо цього вимагають дані.
+- Іскра ✨ (`sparkle`) або чип `AI` як гліф «це зробила модель» — індустріальний дефолт Gemini / Notion / Copilot. AI-шар Sergeant позначає **шеврон Сержанта** — `Icon name="sergeant"` (рішення власника 2026-09-01, [аудит Q1](./docs/90-work/audits/2026-09-01-anti-slop-audit.md)). `sparkle`/`sparkles` лишаються лише для святкових станів (`CelebrationModal`, `FirstEntryCelebrationModal`, бейдж «Новинка»).
+- Градієнт і кольорове свічення на контролах, включно з FAB: `-strong` companion + elevation-тінь (рішення власника 2026-09-01, Q5).
+- Тренд-чип ▲▼ зелений/червоний як дефолт біля числа; нульова дельта зі стрілкою — заборонена без винятків.
+- Ряд із трьох і більше рівних stat-тайлів; стек банерів-підказок однієї анатомії (іконка в тонованому квадраті → label → caption → кнопка → `×`). Один показник на екран — hero, решта — текст.
 
 ## Slop-тест (обов'язковий на design-review)
 
