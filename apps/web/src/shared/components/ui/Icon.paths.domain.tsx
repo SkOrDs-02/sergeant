@@ -235,7 +235,37 @@ export const DOMAIN_PATHS: Record<string, ReactNode> = {
       <path d="M13 7a3 3 0 0 1 3-4" />
     </>
   ),
-  // `fish` — nutrition: meat & fish category.
+  // Три гліфи нижче додано 2026-08-31 разом із розширенням каталогу комори
+  // з 13 до 17 категорій (спека `pantry-categorization.md`): риба виїхала
+  // з мʼясної категорії й забрала з собою `fish`, а Бобові й Алкоголь
+  // прийшли новими. `dumbbell` для Спортивного харчування вже був в
+  // атласі, тож четвертого гліфа не знадобилось.
+  // `drumstick` — nutrition: meat & poultry category.
+  drumstick: (
+    <>
+      <circle cx="15.3" cy="8.7" r="5.4" />
+      <path d="M11.5 12.5 8 16" />
+      <circle cx="6.2" cy="16.6" r="1.9" />
+      <circle cx="8.1" cy="18.5" r="1.9" />
+    </>
+  ),
+  // `bean` — nutrition: legumes category.
+  bean: (
+    <>
+      <path d="M18.5 5.5c2 2 2 5.6-.5 8.1-2.6 2.6-6.6 4.4-9.6 4.4a4.4 4.4 0 0 1-4.4-4.4c0-3 1.8-7 4.4-9.6 2.5-2.5 6.1-2.5 8.1-.5z" />
+      <path d="M9 16c-1.5-1.5-1.5-4 0-6s4-3.5 5.5-3" />
+    </>
+  ),
+  // `wine` — nutrition: alcohol category.
+  wine: (
+    <>
+      <path d="M6 3h12l-.6 6a5.4 5.4 0 0 1-10.8 0z" />
+      <path d="M6.3 8h11.4" />
+      <path d="M12 14.4V21" />
+      <path d="M8.5 21h7" />
+    </>
+  ),
+  // `fish` — nutrition: fish & seafood category.
   fish: (
     <>
       <path d="M2 12c3-4 7-6 11-6s7 2 9 6c-2 4-5 6-9 6s-8-2-11-6z" />

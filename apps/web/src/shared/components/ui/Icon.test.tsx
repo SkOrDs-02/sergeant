@@ -5,6 +5,7 @@ import {
   CAPABILITY_MODULE_META,
   CAPABILITY_MODULE_ORDER,
 } from "@sergeant/shared";
+import { FOOD_CATEGORIES, MEAL_TYPES } from "@sergeant/nutrition-domain";
 import { ICON_NAMES } from "./Icon";
 
 // AI-CONTEXT: the Assistant Catalogue references icons by string name. When
@@ -52,6 +53,20 @@ describe("Icon coverage for Assistant Catalogue", () => {
 
   it("registers an SVG path for onboarding UI hard-coded icons", () => {
     const missing = ["list-checks"].filter((n) => !known.has(n));
+    expect(missing).toEqual([]);
+  });
+
+  // AI-CONTEXT: `iconName` у домені типізований як `string`, тож нова
+  // категорія комори без гліфа компілюється й доїжджає до людини порожнім
+  // слотом. Каталог виріс 13 → 17 саме так, і єдиною перевіркою був
+  // клік-скрипт — тобто чиясь уважність. Тепер це гейт.
+  it("registers an SVG path for every nutrition domain glyph", () => {
+    const missing = [
+      ...FOOD_CATEGORIES.map((c) => [c.id, c.iconName] as const),
+      ...MEAL_TYPES.map((m) => [m.id, m.iconName] as const),
+    ]
+      .filter(([, icon]) => !known.has(icon))
+      .map(([id, icon]) => `${id} → "${icon}"`);
     expect(missing).toEqual([]);
   });
 });
