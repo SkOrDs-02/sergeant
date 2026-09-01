@@ -37,7 +37,7 @@ import type { RequestHandler } from "express";
  *     нерелевантний, як і для mono/webhook. Зовні викликається як
  *     `/api/v1/telegram/webhook`, але `apiVersionRewrite` зрізає `/v1` до
  *     цього middleware — у списку мусить бути канонічна форма.
- *   - `/api/billing/{stripe-webhook,liqpay-callback,plata-webhook}` —
+ *   - `/api/billing/{stripe-webhook,liqpay-callback,plata-charge,plata-status}` —
  *     платіжні провайдери шлють POST зі своїм підписом (Stripe HMAC,
  *     LiqPay `signature`, Plata `X-Sign` ECDSA), який кожен handler
  *     верифікує сам. Без exempt-у CSRF-гейт рубав би їх 403-ю ДО
@@ -85,7 +85,8 @@ const EXEMPT_PATH_PREFIXES: readonly string[] = [
   "/api/v1/telegram/webhook",
   "/api/billing/stripe-webhook",
   "/api/billing/liqpay-callback",
-  "/api/billing/plata-webhook",
+  "/api/billing/plata-charge",
+  "/api/billing/plata-status",
   "/api/csp-report",
   "/api/metrics/web-vitals",
   "/api/v1/metrics/web-vitals",

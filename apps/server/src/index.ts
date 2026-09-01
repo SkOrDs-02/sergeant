@@ -77,7 +77,7 @@ import {
 } from "./obs/securityEventsRoom.js";
 import { LogArchivePoller } from "./modules/logRetention/archivePoller.js";
 import { WebhookEventsRetentionPoller } from "./modules/webhooks/retentionPoller.js";
-import { PlataRecurringPoller } from "./modules/billing/plataScheduler.js";
+import { PlataSyncPoller } from "./modules/billing/plataSync.js";
 import { GdprCleanupPoller } from "./modules/gdpr/cleanupPoller.js";
 import { SilpoSyncPoller } from "./modules/silpo/syncScheduler.js";
 import { Sentry } from "./sentry.js";
@@ -241,11 +241,12 @@ const logArchivePoller = new LogArchivePoller({
 });
 logArchivePoller.start();
 
-// Plata (monobank) self-managed recurring — щодня списує due-підписки по
-// збереженому card-token-у. Off, поки `PLATA_ENABLED=false`. Той самий
-// Tier-A in-process poller-патерн, idempotent start/stop.
-const plataRecurringPoller = new PlataRecurringPoller({ pool });
-plataRecurringPoller.start();
+// Plata (monobank) native subscriptions — звірка проти subscription/status
+// (webhook лише прискорювач, полінг — арбітр стану). Off, поки
+// `PLATA_ENABLED=false`. Той самий Tier-A in-process poller-патерн,
+// idempotent start/stop, два таймери (fast/slow tick).
+const plataSyncPoller = new PlataSyncPoller({ pool });
+plataSyncPoller.start();
 
 // Фоновий синк чеків Сільпо — той самий Tier-A poller-патерн. Off, поки
 // `SILPO_ENABLED=false`. Без нього чеки підтягуються ЛИШЕ по кнопці
@@ -418,10 +419,10 @@ async function shutdown(reason: string, exitCode: number): Promise<void> {
     }
 
     try {
-      await plataRecurringPoller.stop();
+      await plataSyncPoller.stop();
     } catch (err) {
       logger.warn({
-        msg: "plata_recurring_poller_stop_error",
+        msg: "plata_sync_poller_stop_error",
         err: serializeError(err, { includeStack: false }),
       });
     }
