@@ -100,6 +100,7 @@ async function main(): Promise<void> {
   );
 
   const disagreements: string[] = [];
+  const silent: string[] = [];
   let ok = 0;
   let bad = 0;
   let unparsed = 0;
@@ -126,8 +127,13 @@ async function main(): Promise<void> {
       ? parseVerdict(result.text)
       : { ok: null, reason: `транспорт: ${result.error ?? "невідомо"}` };
 
-    if (verdict.ok === null) unparsed += 1;
-    else if (verdict.ok) ok += 1;
+    if (verdict.ok === null) {
+      unparsed += 1;
+      // Кейси без вердикту друкуються поіменно з тієї ж причини, що й
+      // розбіжності: число «4 з 81» у підсумку не дає з ним нічого зробити,
+      // і саме так перша версія розбору ховала 37 випадків за одним рядком.
+      silent.push(`${toolCase.name} — ${verdict.reason || "(порожньо)"}`);
+    } else if (verdict.ok) ok += 1;
     else bad += 1;
 
     const agrees = verdict.ok === null || verdict.ok === struct.correct;
@@ -145,6 +151,10 @@ async function main(): Promise<void> {
   console.log(
     `\nСуддя: ок ${ok}, погано ${bad}, без вердикту ${unparsed}. Розбіжностей зі структурним: ${disagreements.length}.`,
   );
+  if (silent.length) {
+    console.log(`\nБез вердикту:`);
+    for (const line of silent) console.log(`  · ${line}`);
+  }
   if (disagreements.length) {
     // Розбіжність - це не помилка судді й не помилка стенду, поки її не
     // прочитали. Кожна з них або бреха евристики, або спірний кейс.

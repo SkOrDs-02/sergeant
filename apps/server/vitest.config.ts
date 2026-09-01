@@ -43,6 +43,14 @@ export default defineConfig({
     coverage: {
       ...baseCoverageConfig,
       include: ["src/**/*.ts"],
+      // CLI-точки входу (`rag-eval:embed`, `rag-eval:live`, `eval:tools:judge`)
+      // не імпортує ніхто: це `main()` + розбір аргументів + друк звіту, який
+      // запускає людина руками й платно. Юніт-тест на них не міряє нічого,
+      // окрім самого себе, а їхня присутність у знаменнику робить із
+      // coverage-ратчета датчик кількості CLI-скриптів. Логіка, яку варто
+      // перевіряти, з них винесена: `lib/ragEval/*` і `modules/chat/toolEval/*`
+      // покриті тестами і з покриття НЕ виключені.
+      exclude: [...baseCoverageConfig.exclude, "src/scripts/**"],
       thresholds: {
         // Baseline drift log:
         //  - 2026-04-25 actual: lines 67.13 / branches 79.31 / fns 72.80 / statements 67.13
