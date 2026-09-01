@@ -100,9 +100,12 @@ describe("parseSubscriptionIdFromWebhook (tolerant — chargeUrl/statusUrl paylo
 });
 
 describe("plata processWebhook — triggers reconciliation, never writes subscriptions directly", () => {
-  it("delegates to reconcileBySubscriptionId when subscriptionId is found", async () => {
+  const makePool = () =>
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const pool = {} as any;
+    ({ query: vi.fn().mockResolvedValue({ rowCount: 1, rows: [] }) }) as any;
+
+  it("delegates to reconcileBySubscriptionId when subscriptionId is found", async () => {
+    const pool = makePool();
     await plataProvider.processWebhook(
       pool,
       JSON.stringify({ subscriptionId: "s2_1" }),
@@ -110,11 +113,97 @@ describe("plata processWebhook — triggers reconciliation, never writes subscri
     expect(reconcileBySubscriptionIdMock).toHaveBeenCalledWith(pool, "s2_1");
   });
 
-  it("is a no-op (no reconcile call) when subscriptionId cannot be resolved", async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const pool = {} as any;
+  it("is a no-op (no reconcile call, no audit row) when subscriptionId cannot be resolved", async () => {
+    const pool = makePool();
     await plataProvider.processWebhook(pool, JSON.stringify({ foo: "bar" }));
     expect(reconcileBySubscriptionIdMock).not.toHaveBeenCalled();
+    expect(pool.query).not.toHaveBeenCalled();
+  });
+
+  it("writes an audit row keyed by the body hash, not invoiceId", async () => {
+    const pool = makePool();
+    const body = JSON.stringify({
+      invoiceId: "inv_1",
+      status: "processing",
+      subscriptionId: "s2_1",
+    });
+    const expectedKey = crypto
+      .createHash("sha256")
+      .update(body, "utf8")
+      .digest("hex");
+
+    await plataProvider.processWebhook(pool, body);
+
+    const [sql, params] = pool.query.mock.calls[0];
+    expect(String(sql)).toContain("billing_webhook_events");
+    expect(String(sql)).toContain("ON CONFLICT");
+    expect(params[0]).toBe(expectedKey);
+    expect(params[1]).toBe("charge");
+  });
+
+  it("keeps two deliveries of the same invoice as distinct audit rows (live run: processing → success reused one invoiceId)", async () => {
+    const pool = makePool();
+    const processing = JSON.stringify({
+      invoiceId: "inv_1",
+      status: "processing",
+      subscriptionId: "s2_1",
+    });
+    const success = JSON.stringify({
+      invoiceId: "inv_1",
+      status: "success",
+      subscriptionId: "s2_1",
+    });
+
+    await plataProvider.processWebhook(pool, processing);
+    await plataProvider.processWebhook(pool, success);
+
+    const firstKey = pool.query.mock.calls[0][1][0];
+    const secondKey = pool.query.mock.calls[1][1][0];
+    expect(firstKey).not.toBe(secondKey);
+  });
+
+  it("classifies a statusUrl body (no invoiceId) as event_type=status", async () => {
+    const pool = makePool();
+    await plataProvider.processWebhook(
+      pool,
+      JSON.stringify({ subscriptionId: "s2_1", status: "active" }),
+    );
+    expect(pool.query.mock.calls[0][1][1]).toBe("status");
+  });
+
+  it("strips walletData.cardToken from the stored payload (Hard Rule #21 — never re-create the card-token store m133 deleted)", async () => {
+    const pool = makePool();
+    await plataProvider.processWebhook(
+      pool,
+      JSON.stringify({
+        invoiceId: "inv_1",
+        subscriptionId: "s2_1",
+        walletData: {
+          walletId: "w1",
+          cardToken: "SHOULD_NEVER_PERSIST",
+          status: "created",
+        },
+      }),
+    );
+
+    const stored = pool.query.mock.calls[0][1][2];
+    expect(stored).not.toContain("SHOULD_NEVER_PERSIST");
+    // решта walletData лишається — прибираємо рівно токен, не весь блок
+    expect(stored).toContain("walletId");
+  });
+
+  it("a failing audit insert never blocks reconciliation", async () => {
+    const pool = {
+      query: vi.fn().mockRejectedValue(new Error("db down")),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any;
+
+    await plataProvider.processWebhook(
+      pool,
+      JSON.stringify({ subscriptionId: "s2_1" }),
+    );
+
+    expect(reconcileBySubscriptionIdMock).toHaveBeenCalledWith(pool, "s2_1");
   });
 });
 

@@ -133,6 +133,73 @@ export function parseSubscriptionIdFromWebhook(rawBody: string): string | null {
   return null;
 }
 
+/**
+ * Прибирає `walletData.cardToken` перед тим, як payload ляже в
+ * `billing_webhook_events`.
+ *
+ * AI-DANGER: без цієї функції аудит-запис відтворив би рівно те сховище
+ * card-token, яке міграція 133 щойно знесла разом із `plata_card_token`.
+ * monobank шле `cardToken` і в `chargeUrl`-тілі, і у відповіді
+ * `subscription/status` (підтверджено живим прогоном 2026-09-01), тож
+ * «просто зберегти payload як є» тихо повертає борг у JSONB-колонку, де за
+ * ним ніхто не стежить. Токен нам не потрібен: рекурентку веде monobank.
+ */
+export function redactPlataPayload(parsed: unknown): unknown {
+  if (!parsed || typeof parsed !== "object") return parsed;
+  const clone = { ...(parsed as Record<string, unknown>) };
+  const wallet = clone["walletData"];
+  if (wallet && typeof wallet === "object") {
+    const { cardToken: _dropped, ...rest } = wallet as Record<string, unknown>;
+    clone["walletData"] = rest;
+  }
+  return clone;
+}
+
+/**
+ * Аудит-запис webhook-у в `billing_webhook_events` (m081 дозволив там
+ * `provider = 'plata'`).
+ *
+ * Ключ — SHA-256 сирого тіла, а НЕ `invoiceId`, як припускала m081. Живий
+ * прогін 2026-09-01 показав, чому: за одну оплату прилетіли ТРИ
+ * `chargeUrl`-доставки з тим самим `invoiceId` (`processing`, далі двічі
+ * `success` з різним станом гаманця). З `invoiceId` як ключем UNIQUE-індекс
+ * лишив би тільки перший, `processing` — тобто аудит зберігав би рівно ту
+ * подію, яка НЕ є фінальною. Хеш тіла дедуплікує справжні ретраї
+ * (байт-у-байт та сама доставка) і не губить різні події.
+ *
+ * `statusUrl`-тіла взагалі не мають `invoiceId`, тож один ключ на обидва
+ * роути можливий лише такий.
+ *
+ * Best-effort: збій аудиту не має валити webhook — стан однаково візьме
+ * звірка, а 500 у відповідь змусив би monobank ретраїти справно оброблену
+ * подію.
+ */
+async function recordWebhookEvent(pool: Pool, rawBody: string): Promise<void> {
+  try {
+    const parsed: unknown = JSON.parse(rawBody);
+    const hasInvoice =
+      typeof parsed === "object" &&
+      parsed !== null &&
+      "invoiceId" in (parsed as Record<string, unknown>);
+    await pool.query(
+      `INSERT INTO billing_webhook_events
+         (provider, provider_event_id, event_type, payload)
+       VALUES ('plata', $1, $2, $3)
+       ON CONFLICT (provider, provider_event_id) DO NOTHING`,
+      [
+        crypto.createHash("sha256").update(rawBody, "utf8").digest("hex"),
+        hasInvoice ? "charge" : "status",
+        JSON.stringify(redactPlataPayload(parsed)),
+      ],
+    );
+  } catch (err) {
+    logger.warn({
+      msg: "plata_webhook_audit_failed",
+      err: err instanceof Error ? err.message : String(err),
+    });
+  }
+}
+
 interface BillingRow {
   id: string | number;
   provider: string;
@@ -285,6 +352,7 @@ export const plataProvider: BillingProvider = {
       logger.warn({ msg: "plata_webhook_unresolved" });
       return;
     }
+    await recordWebhookEvent(pool, rawBody);
     await reconcileBySubscriptionId(pool, subscriptionId);
   },
 
