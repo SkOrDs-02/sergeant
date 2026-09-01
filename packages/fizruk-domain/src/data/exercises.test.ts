@@ -1,11 +1,16 @@
+import { existsSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, it, expect } from "vitest";
 import {
   EXERCISE_CATALOG,
   EXERCISES,
+  EXERCISE_IMAGE_IDS,
   EXERCISE_INJURY_ZONES,
   MUSCLES_BY_PRIMARY_GROUP,
   MUSCLES_UK,
   PRIMARY_GROUPS_UK,
+  exerciseImagePaths,
   findExerciseById,
   getExerciseLocations,
   getExercisesByPrimaryGroup,
@@ -56,6 +61,37 @@ describe("exercise catalog", () => {
 // без мапи зон травм (ADR-0083), без аліасів або з id, який уже зайнятий:
 // це дисципліна, яку не можна лишати на уважність автора PR.
 describe("catalog integrity gate", () => {
+  const webPublicRoot = resolve(
+    dirname(fileURLToPath(import.meta.url)),
+    "../../../../apps/web/public",
+  );
+
+  it("references existing exercise images", () => {
+    const missing: string[] = [];
+
+    for (const id of EXERCISE_IMAGE_IDS) {
+      for (const imagePath of exerciseImagePaths(id)) {
+        if (
+          !existsSync(resolve(webPublicRoot, imagePath.replace(/^\/+/, "")))
+        ) {
+          missing.push(`${id}:${imagePath}`);
+        }
+      }
+    }
+
+    expect(missing).toEqual([]);
+  });
+
+  // Реєстр пишеться генератором, але лежить у git і його можна відредагувати
+  // руками. Id, якого немає в каталозі, дав би вправі-привиду шлях у public/.
+  it("keeps the image registry aligned with the catalog", () => {
+    const catalogIds = new Set(EXERCISES.map((exercise) => exercise.id));
+    const orphans = [...EXERCISE_IMAGE_IDS].filter((id) => !catalogIds.has(id));
+
+    expect(orphans).toEqual([]);
+    expect(exerciseImagePaths("definitely-not-an-exercise")).toEqual([]);
+  });
+
   it("maps every exercise to injury zones", () => {
     const missing = EXERCISES.filter(
       (ex) => !EXERCISE_INJURY_ZONES[ex.id]?.length,
