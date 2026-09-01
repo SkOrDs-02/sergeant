@@ -30,14 +30,37 @@
 
 ## Зведення
 
-Лічильник: **4** знахідки (blocker 0 · major 3 · minor 1 · polish 0).
+Лічильник: **27** знахідок (blocker 0 · major 10 · minor 10 · polish 7).
 
-| ID   | Знахідка                                                                                                    | Маршрут / поверхня           | Акаунт | Severity | Стан                  | PR  |
-| ---- | ----------------------------------------------------------------------------------------------------------- | ---------------------------- | ------ | -------- | --------------------- | --- |
-| CI-1 | `@sergeant/web#typecheck` червоний на `main`: TS2740 у `useOverviewData.test.ts:379`                        | CI `check` (typecheck)       | —      | major    | **виправлено** цим PR |     |
-| CI-3 | `web#test` червоний на `main`: пін `SEED_FOODS_UK` = 390, корпус виріс до 424 (`2344cf2`)                   | CI `check` (web unit)        | —      | major    | **виправлено** цим PR |     |
-| CI-4 | `web#test` червоний на `main`: тест «renders images» читає видалене поле `images`, кадри тепер за id (#993) | CI `check` (web unit)        | —      | major    | **виправлено** цим PR |     |
-| CI-2 | Лінк-чекер: 299 битих внутрішніх посилань на `main` (296 в `unification-modules.md`)                        | CI `docs-automation` (links) | —      | minor    | описано               |     |
+| ID     | Знахідка                                                                                                                                                                                                                                                                                                                                                                                         | Маршрут / поверхня                   | Акаунт   | Severity | Стан                                                 | PR  |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------ | -------- | -------- | ---------------------------------------------------- | --- |
+| LOG-1  | Чат-tool `habit_stats` рахує стрік третьою, жорсткою імплементацією (обнулення на пропуску, Київ-ключ), ігноруючи `flexibleStreakBreakdown` — AI називає інше число, ніж UI                                                                                                                                                                                                                      | `/chat` → Рутина                     | Q2       | major    | підтверджено (код)                                   |     |
+| LOG-2  | Чат-tool `mark_habit_done` / `complete_habit_for_date` пишуть у `completions` напряму, минаючи `applyToggleHabitCompletion`: без перевірки розкладу і без зняття «пропуску» — три стани перестають бути взаємовиключними                                                                                                                                                                         | `/chat` → Рутина                     | Q2       | major    | підтверджено (код)                                   |     |
+| LOG-3  | Web-routine рахує «сьогодні» по Києву наскрізь (`dayAnchor.ts`, `ROUTINE_DAY_ANCHOR="kyiv"`), тоді як ADR-0078 і Журнал рішень канону ратифікували device-local; §3 канону при цьому стверджує Київ як факт                                                                                                                                                                                      | `/routine`                           | Q4 (TZ)  | major    | підтверджено (код, задокументований перехідний стан) |     |
+| LOG-4  | Канон nutrition §9 заперечує low-stock нагадування і авто-довливання списку покупок, а код їх має (`pantryLowStock.ts`, `mergeLowStockIntoList`) — код випередив канон                                                                                                                                                                                                                           | `/nutrition/pantry`                  | Q2       | minor    | підтверджено (канон)                                 |     |
+| LOG-5  | Канон fizruk §3 описує Еплі без rep-cap; код обмежує 1RM 10 повторами (`E1RM_REP_CAP`, PR #966) — канон відстав; line-refs §3/§8 канону застаріли                                                                                                                                                                                                                                                | `/fizruk/progress`                   | Q2       | minor    | підтверджено (канон)                                 |     |
+| LOG-6  | `product-overview.md` §9 конституція каже «квота free=15», код і pricing — 5 (ADR-0085)                                                                                                                                                                                                                                                                                                          | docs                                 | —        | minor    | підтверджено                                         |     |
+| SEC-1  | `rateLimitExpress` стоїть ДО `requireSession()` у `weekly-digest.ts` і `coach.ts` — бакет по IP, не по юзеру (клас B31; у `chat.ts` виправлено, тут ні); канон §9 покладається саме на цей ліміт                                                                                                                                                                                                 | `/api/weekly-digest`, `/api/coach/*` | Q2       | major    | підтверджено (код)                                   |     |
+| SYNC-1 | Гейт перенесення анонімних даних показує блокуючий alert «Не вдалося завершити перенесення…» автентифікованому юзеру без анонімних даних, коли синк ловить 429 (`api:v2:sync` 60/хв) — сідер, день ~47                                                                                                                                                                                           | `/` після логіну                     | Q3 (сід) | major    | описано (потребує репро без зсуву годинника)         |     |
+| UX-1   | Генератор дня харчування при порожньому `plan.meals` кидає голе «Не вдалося отримати план харчування» без причини й дії (спадкоємець #11 08-04; досі відкрито)                                                                                                                                                                                                                                   | `/nutrition/menu`                    | Q2       | minor    | підтверджено (код)                                   |     |
+| TXT-1  | «ваш»-форми у трьох місцях: `DangerZoneSection.tsx:86` («Усі ваші дані»), `MemoryBankSection.tsx:272` («про ваші алергії»), `uk.pricing.ts:69` («Зараз ваш план»)                                                                                                                                                                                                                                | профіль, тарифи                      | Q1 Q5    | minor    | підтверджено                                         |     |
+| TXT-2  | Серверні тексти помилок у 2-й особі множини і з `—`: `bankProxy.ts:246` («спробуйте пізніше —»), `silpo/receipts.ts:500` («спробуйте пізніше»)                                                                                                                                                                                                                                                   | Фінік (банк, Сільпо)                 | —        | minor    | підтверджено                                         |     |
+| TXT-3  | `—` у рядку для моделі `hubChatActions.ts:74` — долітає в відповідь асистента всупереч `VOICE_RULE`                                                                                                                                                                                                                                                                                              | `/chat`                              | Q2       | polish   | підтверджено                                         |     |
+| TXT-4  | Лендінг `ZvyazkyPage.tsx:159`: `непов&apos;язаними` — закодований U+0027 між кириличними літерами, невидимий для гейта `ukrainian-copy`                                                                                                                                                                                                                                                          | landing                              | Q0       | polish   | підтверджено                                         |     |
+| TXT-5  | Наративне «ми» у 5 рядках (`uk.dataExport.ts:55–63`, drip-лист день 3) — style guide §2 не має винятку для «голосу компанії»                                                                                                                                                                                                                                                                     | налаштування → експорт, email        | Q8       | polish   | рішення власника                                     |     |
+| TXT-6  | Застарілі числа поза копією: коментар `appPaths.ts:111` («60 сценаріях», факт 81), тест-фікстура `PaywallModal.test.tsx` («10 повідомлень» при ліміті 5 запитів)                                                                                                                                                                                                                                 | —                                    | —        | polish   | підтверджено                                         |     |
+| CALC-1 | Чат-tool `aggregate_spending` / `compare_periods` (`queryFinykActions.ts:152-160`) будує excluded-set **без** `transactions`, тож ручний `internal_transfer` не виключається — переказ рахується витратою в AI-відповідях (та сама діра, яку #1000 закрив в `useStorage.ts`)                                                                                                                     | `/chat` → Фінік                      | Q2       | major    | підтверджено (код)                                   |     |
+| CALC-2 | Хаб-інсайти Фініка (`useFinykInsights.ts:69-97`: budget-overrun, coffee-limit, recurring-detected) фільтрують лише `excludedStatTxIds` — без hidden і без переказів; інший «всесвіт витрат», ніж Огляд/Операції                                                                                                                                                                                  | `/` (картка Фініка)                  | Q2       | major    | підтверджено (код)                                   |     |
+| LOG-7  | Канон finyk §4a суперечить сам собі про networth («продубльована у двох місцях» ↔ «уніфікована»); код імпортує `computeAssetsSummary` (уніфіковано); покликання D4 → «§11 Kyiv-борг» веде в порожнечу                                                                                                                                                                                            | docs                                 | —        | minor    | підтверджено                                         |     |
+| SLOP-1 | Гліф у слоті іконки повернувся: `InsightCard.tsx:126` дефолт `ctaLabel="→"` (спільний примітив), `WeeklyDigestModuleBlock.tsx:190` `→` без `aria-hidden` (входить в accessible name), `ReceiptScanSheet.tsx:386` «← До списку», `WorkoutsHome.tsx:101,167`, `PlannedFlowsCard.tsx:35`, `NutritionSection.tsx:216`, `BodyAtlas.tsx:623`, `FinykApp.tsx:350`, i18n `uk.nutrition.ts:81` «Журнал →» | звіти, чек-скан, Фізрук, Їжа         | Q2       | minor    | підтверджено                                         |     |
+| SLOP-2 | Семантичний `success` як декор: `WorkoutItemRestPresets.tsx:62` (рекомендований пресет, відкрито з 08-08), `AssistantCataloguePage.tsx:452` («Новинка»), `AssetsTable.tsx:73`; вибір/активність зеленим: `WorkoutTemplatesSection.tsx:320,325`, `WorkoutItemCard.tsx:177,189`, `Programs.tsx:98`, `AssetsAssetsSection.tsx:177,260` — смарагд у cyan/lime модулях                                | Фізрук, Фінік                        | Q2       | minor    | підтверджено                                         |     |
+| SLOP-3 | Ієрархія густини погіршилась: `caption`+`label` = 84,2 % усіх `text-style-*` (було 80,9 %); `headline` 35, `display` 14 на весь продукт                                                                                                                                                                                                                                                          | усі                                  | Q2       | polish   | підтверджено (замір `279db19`)                       |     |
+| SLOP-4 | Розкатка «край і зріз» заморожена: 8 справжніх `edge=` на 134 `<Card>` (08-08: 14 сирих / 159); `HeroCard` finyk 5 ролей / fizruk 2 ролі — байт у байт як 08-08                                                                                                                                                                                                                                  | Огляди модулів                       | Q2       | polish   | підтверджено                                         |     |
+| SLOP-5 | `TransactionsBatchToolbar.tsx:54` — сирий `text-xs uppercase tracking-wider font-bold` = роль `overline` поза allowlist                                                                                                                                                                                                                                                                          | `/finyk/transactions` (batch)        | Q3       | polish   | підтверджено                                         |     |
+| CI-1   | `@sergeant/web#typecheck` червоний на `main`: TS2740 у `useOverviewData.test.ts:379`                                                                                                                                                                                                                                                                                                             | CI `check` (typecheck)               | —        | major    | **виправлено** цим PR                                |     |
+| CI-3   | `web#test` червоний на `main`: пін `SEED_FOODS_UK` = 390, корпус виріс до 424 (`2344cf2`)                                                                                                                                                                                                                                                                                                        | CI `check` (web unit)                | —        | major    | **виправлено** цим PR                                |     |
+| CI-4   | `web#test` червоний на `main`: тест «renders images» читає видалене поле `images`, кадри тепер за id (#993)                                                                                                                                                                                                                                                                                      | CI `check` (web unit)                | —        | major    | **виправлено** цим PR                                |     |
+| CI-2   | Лінк-чекер: 299 битих внутрішніх посилань на `main` (296 в `unification-modules.md`)                                                                                                                                                                                                                                                                                                             | CI `docs-automation` (links)         | —        | minor    | описано                                              |     |
 
 ## Успадковані відкриті (з попередніх аудитів, перевіряються цим прогоном)
 
@@ -45,31 +68,31 @@
 знайти заново. Стан «на 2026-09-01» — те, що записано в джерелі; колонка
 «Цей прогін» заповнюється по факту.
 
-| Джерело                                                                        | #                     | Суть                                                                                             | Severity | Цей прогін |
-| ------------------------------------------------------------------------------ | --------------------- | ------------------------------------------------------------------------------------------------ | -------- | ---------- |
-| [2026-08-04 global QA](../2026-08-04-global-qa-findings.md)                    | 1                     | Інтермітентний фриз рендерера при hard-навігації (kvvfs + auth-переходи)                         | blocker  | ⬜         |
-| [2026-08-04 global QA](../2026-08-04-global-qa-findings.md)                    | 8                     | `/finyk/cards` мовчки фолбечиться на «Огляд»                                                     | minor    | ⬜         |
-| [2026-08-04 global QA](../2026-08-04-global-qa-findings.md)                    | 9                     | Після «Завершити» тренування — «Активне тренування не знайдено»                                  | minor    | ⬜         |
-| [2026-08-04 global QA](../2026-08-04-global-qa-findings.md)                    | 10                    | Понадлімітна сума: `aria-invalid` без видимого тексту                                            | minor    | ⬜         |
-| [2026-08-04 global QA](../2026-08-04-global-qa-findings.md)                    | 11                    | «Не вдалося отримати план харчування» без причини і дії                                          | minor    | ⬜         |
-| [2026-08-04 global QA](../2026-08-04-global-qa-findings.md)                    | 12                    | Англомовні артефакти: Month/Day/Year, AM/PM, Quick Start                                         | minor    | ⬜         |
-| [2026-08-04 global QA](../2026-08-04-global-qa-findings.md)                    | 13                    | «перевірте вашу поштову скриньку» — ви-форма                                                     | polish   | ⬜         |
-| [2026-08-04 global QA](../2026-08-04-global-qa-findings.md)                    | 14                    | «80 сценаріїв» vs «~60 сценаріїв»                                                                | polish   | ⬜         |
-| [2026-08-04 global QA](../2026-08-04-global-qa-findings.md)                    | 15                    | Подвоєний accessible name у нав-кнопках                                                          | minor    | ⬜         |
-| [2026-08-04 global QA](../2026-08-04-global-qa-findings.md)                    | 16                    | `ai-memory/event-sync` спамить 503 при вимкненому AI_MEMORY                                      | minor    | ⬜         |
-| [2026-08-04 global QA](../2026-08-04-global-qa-findings.md)                    | 17                    | Verification email віддає 200 без відправки                                                      | minor    | ⬜         |
-| [2026-08-04 global QA](../2026-08-04-global-qa-findings.md)                    | 18                    | Біометрія: спінбатони з дефолтом `0`                                                             | polish   | ⬜         |
-| [2026-08-04 global QA](../2026-08-04-global-qa-findings.md)                    | W-16                  | 16 medium код-рівневих (ARIA без клавіатури, SR-спам таймерів, reorder 2 кол.)                   | medium   | ⬜         |
-| [2026-08-09 beta acceptance](../2026-08-09-beta-acceptance-run.md)             | B10                   | Білий екран на `/insights` — 1 із 6 прогонів, не відтворено                                      | major    | ⬜         |
-| [2026-08-09 beta acceptance](../2026-08-09-beta-acceptance-run.md)             | B7                    | Запис під годинником, що йде вперед, тихо не доїхав на сервер                                    | minor    | ⬜         |
-| [ai-testing 2026-08-25](../ai-testing-2026-08-25.md)                           | B46                   | 58% зривів tool-стріму реєструються як успіх (порожня відповідь)                                 | blocker  | ⬜         |
-| [ai-testing 2026-08-25](../ai-testing-2026-08-25.md)                           | B45                   | Модель першого ходу точна, але 4–30 с на відповідь                                               | major    | ⬜         |
-| [ai-testing 2026-08-25](../ai-testing-2026-08-25.md)                           | B39                   | Перезаписні tool-и без підтвердження і undo                                                      | major    | ⬜         |
-| [ai-testing 2026-08-25](../ai-testing-2026-08-25.md)                           | B31–B38, B40–B44, B47 | Статичні знахідки AI-шару (rate-limit по IP, `tool_calls_raw`, SSE під компресією, прайс)        | mixed    | ⬜         |
-| [product-knowledge-overview](../product-knowledge-overview.md)                 | B-3                   | Жорсткі стріки в коді проти «гнучкий всюди» в каноні                                             | major    | ⬜         |
-| [product-knowledge-overview](../product-knowledge-overview.md)                 | B-6                   | Paywall-текст «10 повідомлень» проти ліміту 15                                                   | minor    | ⬜         |
-| [domain-invariants](../../../02-engineering/architecture/domain-invariants.md) | —                     | Дві одиниці грошей у Фініку (копійки ↔ гривні) — ризик ×100 на злитті                            | major    | ⬜         |
-| [browser-profile-testing](../2026-08-05-browser-profile-testing.md)            | —                     | 429 на `/api/metrics/web-vitals` під NAT; 399 нульових кнопок у DOM `/routine`; порядок H1→H3→H2 | minor    | ⬜         |
+| Джерело                                                                        | #                     | Суть                                                                                             | Severity | Цей прогін                                                                                 |
+| ------------------------------------------------------------------------------ | --------------------- | ------------------------------------------------------------------------------------------------ | -------- | ------------------------------------------------------------------------------------------ |
+| [2026-08-04 global QA](../2026-08-04-global-qa-findings.md)                    | 1                     | Інтермітентний фриз рендерера при hard-навігації (kvvfs + auth-переходи)                         | blocker  | ⬜                                                                                         |
+| [2026-08-04 global QA](../2026-08-04-global-qa-findings.md)                    | 8                     | `/finyk/cards` мовчки фолбечиться на «Огляд»                                                     | minor    | ⬜                                                                                         |
+| [2026-08-04 global QA](../2026-08-04-global-qa-findings.md)                    | 9                     | Після «Завершити» тренування — «Активне тренування не знайдено»                                  | minor    | ⬜                                                                                         |
+| [2026-08-04 global QA](../2026-08-04-global-qa-findings.md)                    | 10                    | Понадлімітна сума: `aria-invalid` без видимого тексту                                            | minor    | ⬜                                                                                         |
+| [2026-08-04 global QA](../2026-08-04-global-qa-findings.md)                    | 11                    | «Не вдалося отримати план харчування» без причини і дії                                          | minor    | відкрито → UX-1                                                                            |
+| [2026-08-04 global QA](../2026-08-04-global-qa-findings.md)                    | 12                    | Англомовні артефакти: Month/Day/Year, AM/PM, Quick Start                                         | minor    | ⬜                                                                                         |
+| [2026-08-04 global QA](../2026-08-04-global-qa-findings.md)                    | 13                    | «перевірте вашу поштову скриньку» — ви-форма                                                     | polish   | ⬜                                                                                         |
+| [2026-08-04 global QA](../2026-08-04-global-qa-findings.md)                    | 14                    | «80 сценаріїв» vs «~60 сценаріїв»                                                                | polish   | частково: `/assistant` динамічно (81), `/capabilities` без числа; лишився коментар (TXT-6) |
+| [2026-08-04 global QA](../2026-08-04-global-qa-findings.md)                    | 15                    | Подвоєний accessible name у нав-кнопках                                                          | minor    | ⬜                                                                                         |
+| [2026-08-04 global QA](../2026-08-04-global-qa-findings.md)                    | 16                    | `ai-memory/event-sync` спамить 503 при вимкненому AI_MEMORY                                      | minor    | ⬜                                                                                         |
+| [2026-08-04 global QA](../2026-08-04-global-qa-findings.md)                    | 17                    | Verification email віддає 200 без відправки                                                      | minor    | ⬜                                                                                         |
+| [2026-08-04 global QA](../2026-08-04-global-qa-findings.md)                    | 18                    | Біометрія: спінбатони з дефолтом `0`                                                             | polish   | ⬜                                                                                         |
+| [2026-08-04 global QA](../2026-08-04-global-qa-findings.md)                    | W-16                  | 16 medium код-рівневих (ARIA без клавіатури, SR-спам таймерів, reorder 2 кол.)                   | medium   | ⬜                                                                                         |
+| [2026-08-09 beta acceptance](../2026-08-09-beta-acceptance-run.md)             | B10                   | Білий екран на `/insights` — 1 із 6 прогонів, не відтворено                                      | major    | ⬜                                                                                         |
+| [2026-08-09 beta acceptance](../2026-08-09-beta-acceptance-run.md)             | B7                    | Запис під годинником, що йде вперед, тихо не доїхав на сервер                                    | minor    | ⬜                                                                                         |
+| [ai-testing 2026-08-25](../ai-testing-2026-08-25.md)                           | B46                   | 58% зривів tool-стріму реєструються як успіх (порожня відповідь)                                 | blocker  | **виправлено** (`chatStream.ts:212-228`, refund є)                                         |
+| [ai-testing 2026-08-25](../ai-testing-2026-08-25.md)                           | B45                   | Модель першого ходу точна, але 4–30 с на відповідь                                               | major    | ⬜                                                                                         |
+| [ai-testing 2026-08-25](../ai-testing-2026-08-25.md)                           | B39                   | Перезаписні tool-и без підтвердження і undo                                                      | major    | **виправлено** (`toolRisk.ts:78-91`, undo + summary в confirm)                             |
+| [ai-testing 2026-08-25](../ai-testing-2026-08-25.md)                           | B31–B38, B40–B44, B47 | Статичні знахідки AI-шару (rate-limit по IP, `tool_calls_raw`, SSE під компресією, прайс)        | mixed    | B32, B36, B37 виправлено; B31 частково → SEC-1; решта — Ф4                                 |
+| [product-knowledge-overview](../product-knowledge-overview.md)                 | B-3                   | Жорсткі стріки в коді проти «гнучкий всюди» в каноні                                             | major    | частково: UI гнучкий, чат-tool жорсткий → LOG-1                                            |
+| [product-knowledge-overview](../product-knowledge-overview.md)                 | B-6                   | Paywall-текст «10 повідомлень» проти ліміту 15                                                   | minor    | **виправлено** (5 усюди, ADR-0085); лишився `product-overview` §9 → LOG-6                  |
+| [domain-invariants](../../../02-engineering/architecture/domain-invariants.md) | —                     | Дві одиниці грошей у Фініку (копійки ↔ гривні) — ризик ×100 на злитті                            | major    | інвентар неповний: +2 місця → CALC-1, CALC-2                                               |
+| [browser-profile-testing](../2026-08-05-browser-profile-testing.md)            | —                     | 429 на `/api/metrics/web-vitals` під NAT; 399 нульових кнопок у DOM `/routine`; порядок H1→H3→H2 | minor    | ⬜                                                                                         |
 
 ## Деталі
 
@@ -87,6 +110,201 @@
 **Корінь (якщо відомий):** `apps/web/src/modules/finyk/…:123`
 **Стан:** описано
 ```
+
+### LOG-1 — чат-tool `habit_stats` рахує стрік жорстко [major]
+
+**Поверхня:** `apps/web/src/core/lib/chatActions/routineActions.ts:538-560`.
+**Реальність:** цикл по `getKyivDayKey(now - i*DAY_MS)`, `currentStreak = 0`
+на кожному дні без відмітки; ні `pauseIntervals`, ні `skips`, ні
+`habitScheduledOnDate`, ні grace. `flexibleStreakBreakdown` з
+`routine-domain` не імпортується взагалі. UI (`useRoutineDerivedData.ts`)
+рахує за гнучкою моделлю канону §4 — тобто «скільки в мене стрік?» у чаті
+й на екрані дають різні числа для будь-якої звички з паузою чи «3/тиждень».
+**Чому major, не blocker:** втрати даних немає, відповідь — читання. Але це
+той самий B-3 з product-knowledge-overview, який вважався закритим після
+переходу UI на `flexStreak.ts`: коментар у `flexStreak.ts:6-8` чесно каже,
+що старий `streakForHabit` живе, «доки всі споживачі не перемкнені» — і
+споживач у чаті не перемкнений.
+**Фікс:** `habit_stats` → `flexibleStreakBreakdown` + `habitCompletionRate`
+з тим самим day-anchor, що в UI; тест «чат = UI» на звичці з паузою.
+**Стан:** підтверджено (адверсарний пас по коду), кроки в браузері — Ф4.
+
+### LOG-2 — чат-tool пише відмітки в обхід редʼюсера [major]
+
+**Поверхня:** `routineActions.ts:89-131` (`mark_habit_done`), `:253-293`
+(`complete_habit_for_date`).
+**Реальність:** `completions[habitId] = [...prev, targetDate]` +
+`persistRoutineState` — без `applyToggleHabitCompletion`
+(`reducers.ts:179-201`), без `habitScheduledOnDate`, без `clearSkip`.
+Наслідок: через чат можна відмітити незапланований день (UI — no-op) і
+залишити на той самий день одночасно «виконано» і «не зміг з причиною»
+(канон §5: стани взаємовиключні, відмітка знімає пропуск).
+**Фікс:** обидва tool-и через доменний редʼюсер; тест на «done знімає skip».
+**Стан:** підтверджено (код); live-репро одночасного done+skip — Ф4.
+
+### LOG-3 — межа доби Рутини: Київ проти ADR-0078 [major]
+
+**Поверхня:** `apps/web/src/modules/routine/lib/dayAnchor.ts:17-42`.
+**Реальність:** `ROUTINE_DAY_ANCHOR = "kyiv"`, `anchoredTodayDate()` читає
+`getKyivDateParts()`; JSDoc сам пояснює, що web-routine київський наскрізь
+(stats, heatmap, reminders, quick-stats) і що перемикання — окремий крок
+`W1-TIME-DOCTRINE`. Канон routine §3 стверджує «Межа доби — Europe/Kyiv» як
+факт, а його ж Журнал рішень 2026-07-25 і ADR-0078 — device-local.
+**Наслідок для користувача:** відмітка о 23:30 за девайсом у Лос-Анджелесі
+лягає в «завтра» за Києвом; стрік і heatmap розходяться з Їжею/Фініком, які
+вже device-local. Перевіряється у Ф5 (емуляція TZ).
+**Стан:** підтверджено; це відомий, задокументований перехідний стан —
+потрібне рішення власника: або дата перемикання, або поправка канону §3.
+
+### LOG-4 — канон nutrition §9 відстав від коду (low-stock, довливання) [minor]
+
+`pantryLowStock.ts:34-57` + `PantryCard.tsx:140-144` показують бейдж
+«закінчується»; `shoppingListPantryMath.ts:338-390` (`mergeLowStockIntoList`)
+довливає low-stock у список покупок і віднімає залишки — обидва змержені
+2026-08-31, канон (`Last validated 2026-08-22`) прямо каже, що цього немає.
+**Фікс:** оновити канон §9 (+ backlog D-5); поведінку перевірити у Ф3 на Q2.
+
+### LOG-5 — канон fizruk §3 не знає rep-cap для 1RM [minor]
+
+`workoutStats.ts:29,37`: `E1RM_REP_CAP = 10`, сети понад 10 повторів дають
+0 у 1RM/PR (PR #966 закрив E-1). Канон описує Еплі без застережень; line-refs
+§3 (`workoutStats.ts:136`) і §8 (`dashboardKpis.ts:47`) ведуть не до тих
+функцій після #957/#966. **Фікс:** правка канону.
+
+### LOG-6 — `product-overview.md` §9: «free=15» [minor]
+
+Рядок 234 конституції цитує `effectiveLimits.ts` як 15; факт —
+`aiRequestsPerDay: 5` (ADR-0085), pricing-копія «AI: 5 запитів/день».
+**Фікс:** правка канону парасольки.
+
+### SEC-1 — rate-limit коуча й дайджесту рахується по IP [major]
+
+`apps/server/src/routes/weekly-digest.ts:15-23` і `coach.ts:24-27`:
+`rateLimitExpress` до `requireSession()`, тож `rateLimitSubject` не бачить
+`req.user` і бакетить `ip:<addr>`. У `chat.ts:17,37` це виправлено (B31,
+є route-тест), у двох сусідніх роутах — ні; коментар у `coach.ts:37` навіть
+згадує B31, але порядок не змінено. Канон hub-coach §9 (2026-08-30) вивів
+дайджест з AI-квоти саме під цей ліміт «10/год на роуті + сесія».
+**Фікс:** переставити middleware в обох роутах + той самий route-тест, що для чату.
+
+### SYNC-1 — alert перенесення при 429 синку [major, потребує репро]
+
+**Що видно:** сідер (60 днів за ~10 хв, один «пристрій») на дні ~47 відкрив
+`/routine` і побачив блокуючий alert «Не вдалося завершити перенесення. Дані
+на цьому пристрої не видалено й вони ще не захищені синхронізацією» з
+кнопками «Повторити» / «Продовжити, перенесу пізніше»
+(`AnonymousDataMigrationProvider`). Акаунт створений через signup, анонімних
+даних не мав.
+**Доказ:** трейс Playwright, сегмент 8: `POST /api/v2/sync/push` ×3 і
+`GET /api/v2/sync/pull` ×2 → **429**, `POST /api/v1/metrics/web-vitals` ×2 → 429. Ліміт `api:v2:sync` — 60/хв (`routes/sync.ts:38`).
+**Гіпотеза:** гейт перенесення на кожному старті сесії робить probe
+анонімної партиції і піднімає sync-runtime; коли push/pull відбиваються
+429, `migrateAnonymousDataToProfile` падає (`assertServerAcknowledged` /
+`pullOnce`) — і користувач бачить текст про перенесення даних, яких не
+переносили. Реальний тригер — два активні пристрої за одним NAT або
+агресивний ретрай; частота у сідері — див. анотацію `migration-alert days`
+у `progress.md` § 7.
+**Стан:** описано; репро без зсуву годинника — Ф3 (Q6 два пристрої).
+
+### UX-1 — генератор дня без причини й дії [minor]
+
+`useNutritionRemoteActions.ts:376-378`: `throw new Error("Не вдалося
+отримати план харчування")` → `formatApiError` віддає голий текст. Це
+спадкоємець #11 (08-04), позначеного «описано»; сусідня гілка того ж
+генератора (`pantryModeAvailabilityError`) уже дає причину + дію.
+**Фікс:** причина («AI повернув порожній план» / «комора порожня») + дія.
+
+### TXT-1…TXT-6 — копія [minor / polish]
+
+Механічний скан (Ф2) проти style-guide § 1–5: правила 2 (busy-стан), 4
+(апостроф у показі), 5 (`…`, заголовки), 6 (EN-артефакти, сирі ключі), 8
+(aria-дублі), 9 (`<title>`) — **чисті**. Живі відхилення:
+
+- **TXT-1** «ваш»-форми: `core/profile/DangerZoneSection.tsx:86`,
+  `core/profile/MemoryBankSection.tsx:272` (ще й без коми після
+  «запитань»), `shared/i18n/uk.pricing.ts:69` «Зараз ваш план».
+- **TXT-2** серверні помилки: `lib/bankProxy.ts:246` «Сервіс банку тимчасово
+  недоступний — спробуйте пізніше» (2-а множини + `—`),
+  `modules/silpo/receipts.ts:500` «…спробуйте пізніше».
+- **TXT-3** `core/lib/hubChatActions.ts:74` — `—` у рядку, що йде моделі і
+  повертається користувачу.
+- **TXT-4** `apps/landing/src/pages/ZvyazkyPage.tsx:159` — `непов&apos;язаними`.
+- **TXT-5** «ми» у прозі: `uk.dataExport.ts:55,57,61,63`,
+  `apps/server/src/email/ftuxDripCopy.ts` (день 3). Схоже на свідомий голос
+  founder-а; style guide винятку не має — рішення власника: або виняток у
+  §2, або правка.
+- **TXT-6** `core/app/appPaths.ts:111` коментар «60 сценаріях» (факт 81);
+  `core/billing/PaywallModal.test.tsx:43,94` «10 повідомлень/день».
+  Побічно: `HubChatHeader.tsx:139` «з останніх 10 повідомлень» стоїть
+  поруч із лічильником «N з 5 запитів» — два різні числа з однаковою
+  рамкою на одній поверхні (UX-спостереження, не баг).
+- Storybook-копія тримає ~20 `—` (`Toast.stories.tsx` ×9 та ін.) — не
+  шипиться, але це шаблон, з якого копіюють.
+
+### CALC-1 — AI-статистика Фініка рахує ручний переказ витратою [major]
+
+**Поверхня:** `apps/web/src/core/lib/chatActions/queryFinykActions.ts:152-160`
+(`readStatTransactions` для `aggregate_spending` / `compare_periods`).
+**Реальність:** `buildFinykExcludedTxIds({hiddenTxIds, txCategories,
+receivables, excludedStatTxIds})` — без поля `transactions`, а саме воно
+(`metrics.ts:107-109`, `isTxLevelTransfer`) виключає **ручний** запис із
+категорією `internal_transfer`; мапа `txCategories` — банківська. PR #1000
+(`useStorage.ts:133-139`) додав `transactions: manualExpenses.map(...)` для
+Огляду/Операцій/quick-stats; коментар там каже «без цього ручний переказ
+рахувався витратою скрізь, крім дайджесту й коуча» — і чат-tool лишився
+таким «скрізь». Наслідок: «скільки я витратив цього місяця?» у чаті ≠ Огляд
+на суму переказу. Це ж означає, що перелік «7 місць» у
+`domain-invariants.md` неповний (мінімум +2: CALC-1, CALC-2).
+**Фікс:** передати `transactions` (ручні витрати як `FinykUniverseTx`) в
+обох місцях; тест «чат = Огляд» на місяці з переказом. Перевірка наживо —
+Ф5 (еталон Q2 має переказ).
+
+### CALC-2 — хаб-інсайти Фініка живуть в іншому всесвіті витрат [major]
+
+**Поверхня:** `apps/web/src/modules/finyk/hooks/useFinykInsights.ts:69-97`.
+**Реальність:** `filterStatTransactions(withManualExpenses(...),
+slots.excludedStatTxIds)` — лише явно виключені; ні `hiddenTxIds`, ні
+переказів (жоден із двох шляхів), ні receivables. Той самий вузький сет іде
+в `useRecurringDetectedInsight`. Наслідок: budget-overrun / coffee-limit на
+хабі можуть спрацювати від прихованої транзакції або переказу, а регулярний
+ручний переказ — стати хибною пропозицією «Зробити регулярним платежем?».
+Файл востаннє змінювали 2026-08-31, до #1000.
+**Фікс:** один `buildFinykExcludedTxIds` з повним вхідним набором (як в
+`useStorage.ts`) замість `filterStatTransactions`.
+
+### LOG-7 — канон finyk §4a суперечить собі [minor]
+
+§4a каже, що формула networth «продубльована у двох місцях
+(`aggregates.ts:114-148` і `useOverviewData.ts:225`)», а нижче в тому ж
+параграфі — «уніфікована, web-поверхні більше не повторюють формулу»; код
+(`useOverviewData.ts:39,199-221`) імпортує `computeAssetsSummary`. Покликання
+додатка D4 «§11 Kyiv-борг» — у §11 такого розділу немає, при тому що
+`forecastEngine.ts` уже Kyiv-anchored. **Фікс:** правка канону.
+
+### SLOP-1…SLOP-5 — анти-слоп маркери (замір `279db19`) [minor / polish]
+
+Порівняно з 2026-08-08 (§3.2–3.6 стратегії). **Тримається:** прозорість на
+токенах — 0 поза allowlist (гейт працює), emoji-іконки — 0, chip-scroller без
+стелі — 0, контент за анімацією — 0; сирі розміри 231 → 170, allowlist
+116 → 88 (burndown, не дрейф); радіуси −13,6 %.
+
+- **SLOP-1 регрес** — гліф у слоті іконки (рівно та форма, що закрита
+  2026-08-07): дефолт `ctaLabel="→"` у спільному `InsightCard` — кожна картка
+  без явної мітки шипить системний гліф як назву кнопки; `→` у
+  `WeeklyDigestModuleBlock` без `aria-hidden` читається скрінрідером; ще 6
+  call-site-ів і новий i18n-хвіст `uk.nutrition.ts:81`.
+- **SLOP-2 регрес** — `tone="success"` як «дефолт/новинка/полярність» (3) і
+  зелений як стан вибору (4) — семантика «успіх» проти модульного акценту.
+- **SLOP-3** — густина: 84,2 % тексту у двох найдрібніших ролях; `headline`
+  35 і `display` 14 на весь застосунок.
+- **SLOP-4 заморожено** — «край і зріз»: 8 справжніх `edge=` (три файли
+  носять однаковий коментар «борг 1, інвентар 2026-08-07»); асиметрія
+  `HeroCard` finyk/fizruk (5 ролей / 227 рядків проти 2 / 553) не зрушила.
+- **SLOP-5** — `TransactionsBatchToolbar.tsx:54`: єдине справжнє порушення
+  ролі поза allowlist (решта — контрольна геометрія `pointer-coarse:text-base`).
+
+Тест генератора (§6) на існуючі екрани — Ф3, по одному реченню на екран у
+`progress.md` § 4.
 
 ### CI-1 — `web#typecheck` червоний на `main` [major]
 
@@ -143,7 +361,10 @@ PR незалежно від змісту — той самий стан «че�
 Те, що видно, але не відтворюється або не має чітких кроків. Переносяться у
 знахідки, щойно отримають репро.
 
-- (порожньо)
+- **Комора: хвостове число в назві стає кількістю.** «QA Q3 продукт 59» →
+  у списку «QA Q3 продукт», 59 шт (сідер, 2026-09-01). Для «Кока-кола 2»
+  чи «Яйця 10» це, ймовірно, бажано; для назв на кшталт «Нутелла 350» (грамів)
+  — ні. Перевірити у Ф3 на Q4 (edge) як UX-кейс, не баг.
 
 ## Що працює добре (перевірено)
 
