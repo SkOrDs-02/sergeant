@@ -1,6 +1,6 @@
 # Design System — Spacing, Elevation та Theming
 
-> **Last touched:** 2026-08-22 by @Skords-01. **Next review:** 2026-12-02.
+> **Last touched:** 2026-08-22 by @Skords-01. **Next review:** 2027-03-05.
 > **Status:** Active (v2 redesign foundation merged 2026-05)
 
 Цей документ охоплює spacing scale, радіуси, тіні, мобільні брейкпоінти та темну тему / High Contrast.

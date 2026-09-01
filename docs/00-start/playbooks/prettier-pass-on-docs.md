@@ -1,6 +1,6 @@
 # Playbook: Prettier Pass on `docs/`
 
-> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-01.
+> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-07.
 > **Status:** Active
 
 **Trigger:** `pnpm format:check` фейлиться на `docs/**/*.md` / треба прогнати prettier по одному / кільком doc-файлах (як [PR #447](https://github.com/Skords-01/Sergeant/pull/447)).

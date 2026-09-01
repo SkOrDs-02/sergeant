@@ -1,6 +1,6 @@
 # Аудит AI-пайплайну — 2026-08-05
 
-> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-11-29.
+> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2027-09-16.
 > **Status:** Active — B1 і B2 закриті кодом у цій же гілці
 > (`claude/sergeant-security-review-h4s302`), з регресійними тестами.
 > Відкриті: B3–B30 (порядок робіт — у кінці). Знімок стану на момент аудиту.

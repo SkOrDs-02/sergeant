@@ -1,6 +1,6 @@
 # 01. Монетизація і ціноутворення
 
-> **Last touched:** 2026-08-24 by @claude. **Next review:** 2026-12-02.
+> **Last touched:** 2026-08-24 by @claude. **Next review:** 2027-11-02.
 > **Status:** Active
 >
 > **Update 2026-06-27:** pricing v4 зафіксовано в [ADR-0068](../../../04-governance/adr/0068-pricing-v4-uah-reverse-trial.md). **Активна модель: Free + Pro ₴199/міс / ₴1490/рік**, reverse trial 7 днів (автоматичний Pro → downgrade), Free AI **5 повідомлень/день** ([ADR-0085](../../../04-governance/adr/0085-free-ai-quota-five-per-day.md), 2026-08-06 — уточнює рядок «15» з ADR-0068) + cloud-sync 2 пристрої. **Анонім AI не отримує взагалі** ([ADR-0086](../../../04-governance/adr/0086-no-anonymous-ai-sign-in-required.md), 2026-08-24 — знімає рядок «анонім — 1/день» з ADR-0085): асистент за `requireSession()`, гість бачить 401 і запрошення увійти. USD-ціни ($7/міс / $49/рік) із ADR-0051 — **Superseded by ADR-0068**. Класичний trial «7 днів без картки» із ADR-0051 — **Superseded by ADR-0068** (замінено на reverse trial).
