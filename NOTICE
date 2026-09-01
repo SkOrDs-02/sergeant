@@ -1,0 +1,10 @@
+Походження зображень вправ
+
+Зображення в apps/web/public/exercises походять із free-exercise-db:
+https://github.com/yuhonas/free-exercise-db
+
+Ліцензія: The Unlicense, public domain.
+Текст ліцензії: https://github.com/yuhonas/free-exercise-db/blob/main/LICENSE
+
+Таблиця відповідностей і скрипт оновлення:
+scripts/fizruk/fetch-exercise-images.mjs
