@@ -42,6 +42,7 @@ describe("pg/fizrukWorkouts schema snapshot", () => {
       "warmup_json",
       "cooldown_json",
       "wellbeing_json",
+      "kcal_burned",
       "created_at",
       "updated_at",
       "deleted_at",
