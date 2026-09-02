@@ -112,6 +112,48 @@ describe("HabitDetailSheet", () => {
     expect(container.querySelector('[role="dialog"]')).toBeNull();
   });
 
+  it("гнучку звичку міряє тижнями, а не днями", () => {
+    // 2026-06-16 — вівторок. Ціль 3/тиждень: у цьому тижні дві відмітки
+    // (пн, вт), у попередньому три (пн, ср, пт) — один повний тиждень
+    // поспіль плюс поточний, ще не закритий.
+    //
+    // Без правки сюди приїжджав `flexibleStreakBreakdown` — поденна серія
+    // з бюджетом прощень, ІНША «гнучкість». Вона рахувала пропуском кожен
+    // день, у який людина нічого й не мала робити.
+    render(
+      <HabitDetailSheet
+        habitId="h1"
+        routine={makeRoutine({
+          habits: [
+            {
+              id: "h1",
+              name: "Спорт",
+              emoji: "check",
+              recurrence: "flexible",
+              startDate: "2026-01-01",
+              weeklyTargetHistory: [{ from: "2026-01-01", target: 3 }],
+            },
+          ],
+          completions: {
+            h1: [
+              "2026-06-15",
+              "2026-06-16",
+              "2026-06-08",
+              "2026-06-10",
+              "2026-06-12",
+            ],
+          },
+        })}
+        onClose={vi.fn()}
+        setRoutine={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("Тижнів поспіль")).toBeInTheDocument();
+    expect(screen.queryByText("Поточна серія")).toBeNull();
+    expect(screen.getByText("Цього тижня")).toBeInTheDocument();
+    expect(screen.getByText("2 з 3")).toBeInTheDocument();
+  });
+
   it("bridges a transient miss of the same habit id instead of unmounting (sync-race hardening)", () => {
     // Regression for the routine critical-flow flake (2026-08-04): a
     // mid-flight sync refresh can momentarily drop the just-opened habit

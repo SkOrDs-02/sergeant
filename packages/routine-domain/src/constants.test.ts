@@ -27,6 +27,7 @@ describe("routine-domain/constants", () => {
       "daily",
       "weekdays",
       "weekly",
+      "flexible",
       "monthly",
       "once",
     ]);
@@ -34,7 +35,7 @@ describe("routine-domain/constants", () => {
       RECURRENCE_OPTIONS.filter((option) => option.shortLabel).map(
         (option) => option.shortLabel,
       ),
-    ).toEqual(["Будні", "По тижню", "Щомісяця", "Одноразово"]);
+    ).toEqual(["Будні", "По тижню", "Разів/тиждень", "Щомісяця", "Одноразово"]);
   });
 
   it("exports Monday-first Ukrainian weekday labels", () => {

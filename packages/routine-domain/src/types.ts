@@ -6,7 +6,14 @@
  * `apps/mobile` via `@sergeant/routine-domain`.
  */
 
-export type Recurrence = "daily" | "weekdays" | "weekly" | "monthly" | "once";
+export type Recurrence =
+  "daily" | "weekdays" | "weekly" | "monthly" | "once" | "flexible";
+
+/** Ціль «N разів на тиждень», що діє від дати `from` включно. */
+export interface WeeklyTargetInterval {
+  from: string;
+  target: number;
+}
 
 /**
  * Датований інтервал планованої паузи («заморозка»).
@@ -85,6 +92,7 @@ export interface Habit {
   timeOfDay?: string | undefined;
   reminderTimes?: string[] | undefined;
   weekdays?: number[] | undefined;
+  weeklyTargetHistory?: WeeklyTargetInterval[] | undefined;
 }
 
 export interface Tag {
@@ -195,6 +203,7 @@ export interface HabitDraftPatch {
   reminderTimes?: string[] | undefined;
   weekdays?: number[] | undefined;
   paused?: boolean | undefined;
+  weeklyTargetHistory?: WeeklyTargetInterval[] | undefined;
 }
 
 /**
@@ -213,6 +222,8 @@ export interface HabitDraft {
   reminderTimes: string[];
   weekdays: number[];
   paused: boolean;
+  weeklyTarget: number;
+  weeklyTargetHistory: WeeklyTargetInterval[];
 }
 
 export interface ReminderPreset {

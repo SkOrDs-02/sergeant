@@ -23,6 +23,7 @@ export * from "./dateKeys.js";
 export * from "./completionNoteKey.js";
 export * from "./habitOrder.js";
 export * from "./schedule.js";
+export * from "./weeklyTarget.js";
 export * from "./streaks.js";
 // Per-habit рядки для коротких зрізів статистики — доповнення до
 // агрегованого хітмапа (`domain/heatmap`), не заміна.
@@ -31,6 +32,7 @@ export * from "./habitRangeRows.js";
 // grace-бюджет. Старий `streakForHabit` лишається поруч, доки всі
 // споживачі не перемкнені.
 export * from "./flexStreak.js";
+export * from "./weeklyGoalStreak.js";
 export * from "./quickStats.js";
 export * from "./dayProgress.js";
 export * from "./periodCompletion.js";

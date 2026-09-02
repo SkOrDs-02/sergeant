@@ -174,6 +174,7 @@ describe("pg/routineHabits schema snapshot", () => {
       "reminder_times",
       "weekdays",
       "pause_intervals",
+      "weekly_target_history",
       "created_at",
       "updated_at",
       "deleted_at",

@@ -24,7 +24,7 @@ export const ROUTINE_TIME_MODES: readonly RoutineTimeMode[] = [
 ];
 
 export interface RecurrenceOption {
-  value: "daily" | "weekdays" | "weekly" | "monthly" | "once";
+  value: "daily" | "weekdays" | "weekly" | "monthly" | "once" | "flexible";
   label: string;
   /**
    * Compact label used by the segmented chip row in `HabitForm`.
@@ -39,6 +39,11 @@ export const RECURRENCE_OPTIONS: readonly RecurrenceOption[] = [
   { value: "daily", label: "Щодня" },
   { value: "weekdays", label: "Будні (пн-пт)", shortLabel: "Будні" },
   { value: "weekly", label: "Обрані дні тижня", shortLabel: "По тижню" },
+  {
+    value: "flexible",
+    label: "N разів на тиждень",
+    shortLabel: "Разів/тиждень",
+  },
   {
     value: "monthly",
     label: "Щомісяця (число; лютий - останній день)",

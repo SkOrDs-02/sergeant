@@ -81,6 +81,12 @@ export async function applyRoutineHabits(
     "pause_intervals_json",
     "[]",
   );
+  const weeklyTargetHistory = readJsonbField(
+    row,
+    "weekly_target_history",
+    "weekly_target_history_json",
+    "[]",
+  );
 
   if (!existing) {
     await client.query(
@@ -88,9 +94,9 @@ export async function applyRoutineHabits(
          (id, user_id, name, emoji, tag_ids, category_id,
           archived, paused, recurrence, start_date, end_date,
           time_of_day, reminder_times, weekdays, pause_intervals,
-          created_at, updated_at, deleted_at)
+          weekly_target_history, created_at, updated_at, deleted_at)
        VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9, $10, $11,
-               $12, $13::jsonb, $14::jsonb, $15::jsonb, $16, $17, $18)`,
+               $12, $13::jsonb, $14::jsonb, $15::jsonb, $16::jsonb, $17, $18, $19)`,
       [
         id,
         userId,
@@ -107,6 +113,7 @@ export async function applyRoutineHabits(
         reminderTimes,
         weekdays,
         pauseIntervals,
+        weeklyTargetHistory,
         createdAt ?? clientTs,
         clientTs,
         deletedAt ?? null,
@@ -120,8 +127,9 @@ export async function applyRoutineHabits(
              start_date = $8, end_date = $9, time_of_day = $10,
              reminder_times = $11::jsonb, weekdays = $12::jsonb,
              pause_intervals = $13::jsonb,
-             updated_at = $14, deleted_at = $15
-       WHERE id = $16 AND user_id = $17`,
+             weekly_target_history = $14::jsonb,
+             updated_at = $15, deleted_at = $16
+       WHERE id = $17 AND user_id = $18`,
       [
         name,
         emoji,
@@ -136,6 +144,7 @@ export async function applyRoutineHabits(
         reminderTimes,
         weekdays,
         pauseIntervals,
+        weeklyTargetHistory,
         clientTs,
         deletedAt ?? null,
         id,

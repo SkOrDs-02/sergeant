@@ -664,6 +664,16 @@ const PG_SQLITE_CROSS_WHITELIST = [
   },
   {
     table: "routine_habits",
+    column: "weekly_target_history",
+    reason: "PG JSONB name; SQLite counterpart is weekly_target_history_json",
+  },
+  {
+    table: "routine_habits",
+    column: "weekly_target_history_json",
+    reason: "SQLite TEXT name; PG counterpart is weekly_target_history",
+  },
+  {
+    table: "routine_habits",
     column: "pause_intervals",
     reason: "PG JSONB name; SQLite counterpart is pause_intervals_json",
   },

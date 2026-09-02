@@ -91,4 +91,5 @@ export {
   RECURRENCE_OPTIONS,
   ROUTINE_TIME_MODES,
   WEEKDAY_LABELS,
+  WEEKLY_TARGET_CHOICES,
 } from "@sergeant/routine-domain";

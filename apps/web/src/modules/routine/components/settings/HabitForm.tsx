@@ -24,6 +24,7 @@ import {
 import {
   ROUTINE_THEME as C,
   RECURRENCE_OPTIONS,
+  WEEKLY_TARGET_CHOICES,
 } from "../../lib/routineConstants";
 import { HabitGlyphPicker } from "../HabitGlyphPicker";
 import { ReminderPresets } from "./ReminderPresets";
@@ -281,6 +282,46 @@ export function HabitForm({
         </div>
       )}
 
+      {/* «N разів на тиждень» — ціль без прив'язки до конкретних днів.
+          Стоїть поруч із селектором днів і за тією ж логікою: щойно людина
+          обрала режим, потрібне число видно одразу, а не за «Більше опцій».
+          Стеля 7: ціль «8 разів на тиждень» означала б двічі за день, а
+          відмітка в моделі одна на день. */}
+      {habitDraft.recurrence === "flexible" && (
+        <div className="rounded-2xl border border-line bg-panel/40 p-3">
+          <div
+            role="radiogroup"
+            aria-label="Скільки разів на тиждень"
+            className="flex flex-wrap gap-1.5"
+          >
+            {WEEKLY_TARGET_CHOICES.map((n) => {
+              const active = habitDraft.weeklyTarget === n;
+              return (
+                <button
+                  key={n}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  aria-label={`${n} разів на тиждень`}
+                  className={cn(
+                    "text-style-caption rounded-xl border transition-colors touch-target",
+                    active ? C.chipOn : C.chipOff,
+                  )}
+                  onClick={() =>
+                    setHabitDraft((d) => ({ ...d, weeklyTarget: n }))
+                  }
+                >
+                  {n}
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-style-body text-muted mt-2">
+            Дні обирати не треба: відмічай тоді, коли вийшло.
+          </p>
+        </div>
+      )}
+
       {/* Reminder presets — previously hidden under "Більше опцій". Push
           notifications are the single highest-value habit feature, so the
           chip row lives on the first screen. The time-input list and the
@@ -341,6 +382,11 @@ export function HabitForm({
             </p>
           ) : null}
 
+          {/* AI-NOTE: caption тут навмисний — це підказка під контролом,
+              названий виняток `no-sentence-in-caption`
+              (docs/05-design/design/density-hierarchy-spec.md §4). Рядок
+              пояснює поведінку вже обраного режиму й читається разом із
+              полями дат над ним, а не як окремий абзац. */}
           {(habitDraft.recurrence === "once" ||
             habitDraft.recurrence === "monthly") && (
             <p className="text-style-caption text-subtle leading-snug">
@@ -391,6 +437,9 @@ export function HabitForm({
                   );
                 })}
               </div>
+              {/* AI-NOTE: caption навмисний — підказка під контролом,
+                  названий виняток `no-sentence-in-caption`
+                  (docs/05-design/design/density-hierarchy-spec.md §4). */}
               <span className="mt-1 block text-style-caption text-subtle leading-snug">
                 Можна обрати кілька. Теги створюються в Налаштуваннях →
                 «Рутина».

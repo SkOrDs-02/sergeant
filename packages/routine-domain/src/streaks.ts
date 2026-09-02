@@ -9,6 +9,13 @@
 import { dateKeyFromDate, dateKeyMinusDays, parseDateKey } from "./dateKeys.js";
 import { habitCountsTowardMetrics, habitScheduledOnDate } from "./schedule.js";
 import type { Habit, HabitSkip } from "./types.js";
+import {
+  isFlexibleHabit,
+  weekEndKeyForDateKey,
+  weekStartKeyForDateKey,
+  weeklyTargetForDate,
+} from "./weeklyTarget.js";
+import { weeklyGoalStreakWeeks } from "./weeklyGoalStreak.js";
 
 /**
  * Поточна серія: від сьогодні назад, лише дні де звичка запланована;
@@ -23,6 +30,9 @@ export function streakForHabit(
 ): number {
   // `once` не бере участі в стріку (канон §7 п.2, рішення 2026-08-30).
   if (!habitCountsTowardMetrics(habit)) return 0;
+  if (isFlexibleHabit(habit)) {
+    return weeklyGoalStreakWeeks(habit, completionsForHabit, todayKey);
+  }
   const set = new Set(completionsForHabit || []);
   if (set.size === 0) return 0;
   // Нижня межа: найдавніша відома дата (старт звички або перша відмітка).
@@ -57,6 +67,16 @@ export function maxStreakAllTime(
   if (!habitCountsTowardMetrics(habit)) return 0;
   const sorted = [...(completionsForHabit || [])].sort();
   if (sorted.length === 0) return 0;
+  if (isFlexibleHabit(habit)) {
+    let bestWeeks = 0;
+    for (const key of sorted) {
+      bestWeeks = Math.max(
+        bestWeeks,
+        weeklyGoalStreakWeeks(habit, sorted, key),
+      );
+    }
+    return bestWeeks;
+  }
   // Всі історичні відмітки враховуються — користувач позначив виконання, незалежно
   // від поточного розкладу. Раніше при зміні розкладу (напр. daily→weekly) історичні стріки
   // безшумно втрачались. Геп все ще визначаємо за поточним розкладом (історичний розклад не
@@ -173,6 +193,18 @@ export function completionRateForRange(
     if (!opts.includeOnce && !habitCountsTowardMetrics(h)) continue;
     const set = new Set(completions[h.id] || []);
     const habitSkips = opts.skips?.[h.id];
+    if (isFlexibleHabit(h)) {
+      const flexible = flexibleCompletionForDays(
+        h,
+        set,
+        days,
+        scheduleOpts,
+        habitSkips,
+      );
+      scheduled += flexible.scheduled;
+      completed += flexible.completed;
+      continue;
+    }
     for (const dk of days) {
       if (!habitScheduledOnDate(h, dk, scheduleOpts)) continue;
       // «Не зміг з причиною» виходить зі знаменника, а не рахується провалом.
@@ -217,6 +249,14 @@ export function habitCompletionRate(
   }
 
   const set = new Set(completions || []);
+  if (isFlexibleHabit(habit)) {
+    const result = flexibleCompletionForDays(habit, set, dateList, {});
+    return {
+      completed: result.completed,
+      scheduled: result.scheduled,
+      rate: result.scheduled > 0 ? result.completed / result.scheduled : 0,
+    };
+  }
   let scheduled = 0;
   let completed = 0;
   for (const dk of dateList) {
@@ -229,4 +269,39 @@ export function habitCompletionRate(
     scheduled,
     rate: scheduled > 0 ? completed / scheduled : 0,
   };
+}
+
+function flexibleCompletionForDays(
+  habit: Habit,
+  doneSet: ReadonlySet<string>,
+  days: readonly string[],
+  scheduleOpts: { pausedFrom?: string | undefined },
+  habitSkips?: Record<string, HabitSkip> | undefined,
+): { completed: number; scheduled: number } {
+  const byWeek = new Map<string, { done: number; days: number }>();
+  for (const dk of days) {
+    if (
+      !habitScheduledOnDate(habit, dk, { ...scheduleOpts, weekDoneCount: 0 })
+    ) {
+      continue;
+    }
+    if (habitSkips?.[dk] && !doneSet.has(dk)) continue;
+    const weekStart = weekStartKeyForDateKey(dk);
+    const row = byWeek.get(weekStart) ?? { done: 0, days: 0 };
+    row.days += 1;
+    if (doneSet.has(dk)) row.done += 1;
+    byWeek.set(weekStart, row);
+  }
+
+  let completed = 0;
+  let scheduled = 0;
+  for (const [weekStart, row] of byWeek) {
+    const target = Math.min(
+      row.days,
+      weeklyTargetForDate(habit, weekEndKeyForDateKey(weekStart)),
+    );
+    scheduled += target;
+    completed += Math.min(row.done, target);
+  }
+  return { completed, scheduled };
 }

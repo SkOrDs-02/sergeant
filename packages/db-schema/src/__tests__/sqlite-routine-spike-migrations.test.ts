@@ -75,6 +75,7 @@ describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
       "007_routine_completion_events.sql",
       "008_anonymous_profile_migration.sql",
       "009_routine_habit_skips.sql",
+      "010_routine_weekly_target_history.sql",
     ]);
     expect(result.skipped).toEqual([]);
 
@@ -146,6 +147,13 @@ describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
       )
       .all() as { name: string }[];
     expect(obPk.map((r) => r.name)).toEqual(["id"]);
+
+    const habitCols = db
+      .prepare("SELECT name FROM pragma_table_info('routine_habits')")
+      .all() as { name: string }[];
+    expect(habitCols.map((c) => c.name)).toContain(
+      "weekly_target_history_json",
+    );
 
     const cuPk = db
       .prepare(
@@ -228,6 +236,7 @@ describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
       "007_routine_completion_events.sql",
       "008_anonymous_profile_migration.sql",
       "009_routine_habit_skips.sql",
+      "010_routine_weekly_target_history.sql",
     ]);
   });
 
