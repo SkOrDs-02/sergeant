@@ -199,26 +199,22 @@ describe("FinykSection branch gaps", () => {
     ).toBeInTheDocument();
   });
 
-  // ── Paywall dismiss ───────────────────────────────────────────────────────
+  // ── Пейволу тут більше немає ──────────────────────────────────────────────
 
-  it("dismisses the paywall via «Не зараз» without connecting", async () => {
+  // Раніше цей блок перевіряв закриття пейволу через «Не зараз». Пейволл
+  // знято 2026-09-02: банк-sync безкоштовний (product-overview.md, рядок 7),
+  // тож лишається перевірка, що жодного платного бар'єра не з'являється —
+  // інакше регресія повернулась би тихо.
+  it("shows no paywall for a Free user connecting Monobank", async () => {
     apiState.isPro = false;
     mockedSyncState.mockResolvedValue(DISCONNECTED);
     renderSection();
     const input = await screen.findByPlaceholderText("Токен Monobank API");
     fireEvent.change(input, { target: { value: "tok" } });
     fireEvent.click(screen.getByText("Підключити Monobank"));
-    expect(
-      await screen.findByText("Авто-Mono sync доступний у Pro"),
-    ).toBeInTheDocument();
-
-    fireEvent.click(screen.getByText("Не зараз"));
-    await waitFor(() =>
-      expect(
-        screen.queryByText("Авто-Mono sync доступний у Pro"),
-      ).not.toBeInTheDocument(),
-    );
-    expect(mockedConnect).not.toHaveBeenCalled();
+    await waitFor(() => expect(mockedConnect).toHaveBeenCalled());
+    expect(screen.queryByText(/Pro/)).not.toBeInTheDocument();
+    expect(screen.queryByText("Не зараз")).not.toBeInTheDocument();
   });
 
   // ── Webhook connect: trim + connecting UI ─────────────────────────────────
