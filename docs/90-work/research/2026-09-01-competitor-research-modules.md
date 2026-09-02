@@ -1006,32 +1006,32 @@ high-risk класифікація для wellness-коучів (наразі �
 [`product-knowledge-backlog.md`](../planning/product-knowledge-backlog.md), не
 черга PR-ів.
 
-| #   | Модуль    | Що                                                                        | У кого                        | Зусилля | Закриває                                        |
-| --- | --------- | ------------------------------------------------------------------------- | ----------------------------- | ------- | ----------------------------------------------- |
-| 1   | finyk     | Прибрати хибний рядок «Mono-авто-синк не включено» / ADR на межу Free/Pro | Midni                         | S       | відкрите питання №1 канону finyk                |
-| 2   | finyk     | Правило «завжди категоризувати X як Y»                                    | Copilot, Saldo                | S–M     | канон §11г, скарга №1 ринку                     |
-| 3   | finyk     | Експорт CSV однією кнопкою                                                | Toshl, Actual                 | S       | аудит G5, product-overview §11                  |
-| 4   | nutrition | Місячна квота фото на Free (teaser)                                       | Foodvisor                     | S       | напруга 4                                       |
-| 5   | nutrition | Приватні внески + куратор; без «галочки» на крауд-даних                   | Cronometer, MFP               | S       | Р-2 ресьорчу 2026-07-25                         |
-| 6   | fizruk    | Plate + warm-up калькулятор від зниженого орієнтира                       | Hevy, Strong                  | S       | канон §6, аудит §4                              |
-| 7   | fizruk    | «Режим відпочинку/хвороби» + «калібрується» на холодному старті           | Oura, Garmin                  | S       | E-3, урок Garmin                                |
-| 8   | routine   | 2 стартові заморозки + явний лічильник «❄ N»                              | Duolingo                      | S       | напруга 3, розрив web/mobile стріку             |
-| 9   | routine   | Мікро-святкування чекіну + milestone 7/30/100                             | Fogg, Finch                   | S       | канон §6 (`StreakCelebration` orphan)           |
-| 10  | hub       | Прогрес-бар «N/28 днів до звʼязку» на Free-плашках                        | Exist                         | S       | product-overview §8 «ще збираю дані»            |
-| 11  | hub       | «Сьогодні vs твоє звичайне» — щоденний детермінований момент              | Strava, Copilot               | S       | ризик Exist (тижневий ритм, нема «моменту дня») |
-| 12  | hub       | Розкриття «ти спілкуєшся з AI» + плашка «спостереження, не порада»        | EU AI Act ст. 50, Samsung     | S       | регуляторика; fizruk C6/G1                      |
-| ✅  | усі       | Вимір тертя запису + оцінка поради 👍/👎 — **зроблено 2026-09-01**        | Dr. Muscle, MacroFactor, Oura | S       | канони §2, product-overview §10                 |
-| 14  | nutrition | Custom food з двох фото (фронт + етикетка)                                | MacroFactor                   | M       | канон §6 «скан → не знайдено»                   |
-| 15  | fizruk    | Pre-workout readiness-чек (сон/болючість 1–5) з TTL 24 год                | Juggernaut                    | M       | E-3, RPE у формулі (рішення founder-а)          |
-| 16  | routine   | «N разів на тиждень» + habit score (EMA)                                  | Loop, HabitKit                | M       | сумнів founder-а «стрік — карго-культ?»         |
-| 17  | routine   | Автовідмітка звички з події fizruk/nutrition/finyk                        | Streaks (Health)              | M       | крос-модуль як наш аналог Apple Health          |
-| 18  | hub       | Eval-рубрика Oura + synthetic-сценарії; 👍/👎 на інсайт                   | Oura                          | M       | feedback-петля, kill-критерій                   |
-| 19  | hub       | Correlation picker «покажи звʼязок X↔Y»                                   | Exist                         | M       | обмежений курований список пар                  |
-| 20  | finyk     | Категоризатор з порогом упевненості + бейдж «AI»                          | Copilot                       | M       | канон §11г                                      |
-| 21  | fizruk    | Персональний 60-денний baseline замість фіксованих порогів                | Garmin, Athlytic              | M–L     | «критерій коректності» recovery                 |
-| 22  | nutrition | Адаптивна ціль (TDEE з тренду ваги + логу)                                | MacroFactor                   | L       | канон §12, E-1                                  |
-| 23  | fizruk    | Deload як сутність програми                                               | Alpha, Dr. Muscle             | L       | канон §9                                        |
-| 24  | finyk     | Сімейний простір (спершу read-only share)                                 | Saldo, YNAB                   | L       | «строго один user», рішення founder-а           |
+| #   | Модуль    | Що                                                                                           | У кого                        | Зусилля | Закриває                                        |
+| --- | --------- | -------------------------------------------------------------------------------------------- | ----------------------------- | ------- | ----------------------------------------------- |
+| 1   | finyk     | Прибрати хибний рядок «Mono-авто-синк не включено» / ADR на межу Free/Pro                    | Midni                         | S       | відкрите питання №1 канону finyk                |
+| 2   | finyk     | Правило «завжди категоризувати X як Y»                                                       | Copilot, Saldo                | S–M     | канон §11г, скарга №1 ринку                     |
+| ✅  | finyk     | Експорт операцій у CSV однією кнопкою — **зроблено 2026-09-01**                              | Toshl, Actual                 | S       | аудит G5, product-overview §11                  |
+| 4   | nutrition | Місячна квота фото на Free (teaser)                                                          | Foodvisor                     | S       | напруга 4                                       |
+| 5   | nutrition | Приватні внески + куратор; без «галочки» на крауд-даних                                      | Cronometer, MFP               | S       | Р-2 ресьорчу 2026-07-25                         |
+| 6   | fizruk    | Plate + warm-up калькулятор від зниженого орієнтира                                          | Hevy, Strong                  | S       | канон §6, аудит §4                              |
+| 7   | fizruk    | «Режим відпочинку/хвороби» + «калібрується» на холодному старті                              | Oura, Garmin                  | S       | E-3, урок Garmin                                |
+| 8   | routine   | 2 стартові заморозки + явний лічильник «❄ N»                                                 | Duolingo                      | S       | напруга 3, розрив web/mobile стріку             |
+| 9   | routine   | Мікро-святкування чекіну + milestone 7/30/100                                                | Fogg, Finch                   | S       | канон §6 (`StreakCelebration` orphan)           |
+| 10  | hub       | Прогрес-бар «N/28 днів до звʼязку» на Free-плашках                                           | Exist                         | S       | product-overview §8 «ще збираю дані»            |
+| 11  | hub       | «Сьогодні vs твоє звичайне» — щоденний детермінований момент                                 | Strava, Copilot               | S       | ризик Exist (тижневий ритм, нема «моменту дня») |
+| ✅  | hub       | Розкриття «ти спілкуєшся з AI» і плашка «спостереження, не порада» — **зроблено 2026-09-01** | EU AI Act ст. 50, Samsung     | S       | регуляторика; fizruk C6/G1                      |
+| ✅  | усі       | Вимір тертя запису + оцінка поради 👍/👎 — **зроблено 2026-09-01**                           | Dr. Muscle, MacroFactor, Oura | S       | канони §2, product-overview §10                 |
+| 14  | nutrition | Custom food з двох фото (фронт + етикетка)                                                   | MacroFactor                   | M       | канон §6 «скан → не знайдено»                   |
+| 15  | fizruk    | Pre-workout readiness-чек (сон/болючість 1–5) з TTL 24 год                                   | Juggernaut                    | M       | E-3, RPE у формулі (рішення founder-а)          |
+| 16  | routine   | «N разів на тиждень» + habit score (EMA)                                                     | Loop, HabitKit                | M       | сумнів founder-а «стрік — карго-культ?»         |
+| 17  | routine   | Автовідмітка звички з події fizruk/nutrition/finyk                                           | Streaks (Health)              | M       | крос-модуль як наш аналог Apple Health          |
+| 18  | hub       | Eval-рубрика Oura + synthetic-сценарії; 👍/👎 на інсайт                                      | Oura                          | M       | feedback-петля, kill-критерій                   |
+| 19  | hub       | Correlation picker «покажи звʼязок X↔Y»                                                      | Exist                         | M       | обмежений курований список пар                  |
+| 20  | finyk     | Категоризатор з порогом упевненості + бейдж «AI»                                             | Copilot                       | M       | канон §11г                                      |
+| 21  | fizruk    | Персональний 60-денний baseline замість фіксованих порогів                                   | Garmin, Athlytic              | M–L     | «критерій коректності» recovery                 |
+| 22  | nutrition | Адаптивна ціль (TDEE з тренду ваги + логу)                                                   | MacroFactor                   | L       | канон §12, E-1                                  |
+| 23  | fizruk    | Deload як сутність програми                                                                  | Alpha, Dr. Muscle             | L       | канон §9                                        |
+| 24  | finyk     | Сімейний простір (спершу read-only share)                                                    | Saldo, YNAB                   | L       | «строго один user», рішення founder-а           |
 
 ---
 

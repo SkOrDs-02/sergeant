@@ -472,6 +472,10 @@ export function useTransactionFilters({
     hiddenTxIdSet,
     catSpends,
     activeCategoryLabel,
+    // Резолвер ефективної категорії віддається назовні заради CSV-експорту
+    // (`exportTransactionsCsv`): у файл мусить їхати та сама категорія, що
+    // намальована в рядку, включно з ручним перевизначенням користувача.
+    getEffectiveCat,
     filtered,
     groupedByDate,
     daySummaries,

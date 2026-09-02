@@ -4,6 +4,7 @@ import { requestCloudPull } from "@shared/lib/modules/cloudPullRequest";
 import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { TransactionsHeader } from "./TransactionsHeader";
+import { exportTransactionsCsv } from "./exportTransactionsCsv";
 import { TransactionsBatchToolbar } from "./TransactionsBatchToolbar";
 import { TransactionFilters } from "./TransactionFilters";
 import { TransactionList } from "./TransactionList";
@@ -308,6 +309,21 @@ export function Transactions({
     ]);
   }, [monoRefresh]);
 
+  // CSV-експорт видимого місяця. `monthKey` збирається з `selMonth` (у
+  // ньому `month` — індекс 0..11, як у `Date`), щоб імʼя файла називало
+  // саме той місяць, який людина бачила на екрані.
+  const handleExportCsv = useCallback(() => {
+    const monthKey = `${filters.selMonth.year}-${String(
+      filters.selMonth.month + 1,
+    ).padStart(2, "0")}`;
+    const count = exportTransactionsCsv(
+      filters.filtered,
+      filters.getEffectiveCat,
+      monthKey,
+    );
+    toast?.success(`Вивантажено операцій: ${count}`);
+  }, [filters.selMonth, filters.filtered, filters.getEffectiveCat, toast]);
+
   const selection = useTransactionSelection({
     hiddenTxIds,
     excludedStatTxIds,
@@ -375,6 +391,8 @@ export function Transactions({
               setShowHidden={filters.setShowHidden}
               hiddenCount={hiddenTxIds.length}
               selectedCount={selection.selectedIds.size}
+              onExportCsv={handleExportCsv}
+              exportCount={filters.filtered.length}
             />
             <TransactionSyncPill
               syncState={{
