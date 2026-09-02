@@ -127,6 +127,50 @@ describe("refreshFizrukSqliteState", () => {
     expect(cache.workouts[0]?.wellbeing).toEqual({ energy: 4, mood: 3 });
   });
 
+  // Спека fizruk-readiness-check § Верифікація: обовʼязковий тест на
+  // мовчазну втрату. Готовність і вибір варіанта проходять ЧОТИРИ ланки
+  // (снапшот → колонка → адаптер → читач); пропуск будь-якої не ламає ані
+  // типи, ані решту тестів, а фіча просто перестає працювати.
+  it("готовність і вибір варіанта переживають перезавантаження", async () => {
+    const ops: FizrukDualWriteOp[] = [
+      {
+        kind: "workout-upsert",
+        workout: {
+          id: "w-readiness",
+          startedAt: "2026-09-02T10:00:00Z",
+          endedAt: "2026-09-02T11:00:00Z",
+          items: [
+            {
+              id: "i-readiness",
+              exerciseId: "squat",
+              nameUk: "Присідання",
+              primaryGroup: "legs",
+              musclesPrimary: [],
+              musclesSecondary: [],
+              type: "strength",
+              chosenVariant: "easier",
+            },
+          ],
+          groups: [],
+          warmup: null,
+          cooldown: null,
+          note: "",
+          wellbeing: { sleep: 2, soreness: 1 },
+        },
+      },
+    ];
+    await applyFizrukDualWriteOps(handle.client, ops, {
+      userId: UID,
+      clientTs: TS,
+      logger: silentLogger,
+    });
+
+    const cache = await refreshFizrukSqliteState(handle.client, UID);
+    const workout = cache.workouts.find((w) => w.id === "w-readiness");
+    expect(workout?.wellbeing).toEqual({ sleep: 2, soreness: 1 });
+    expect(workout?.items[0]?.chosenVariant).toBe("easier");
+  });
+
   it("leaves wellbeing null when the workout has none", async () => {
     const ops: FizrukDualWriteOp[] = [
       {

@@ -79,6 +79,13 @@ export const fizrukWorkoutItems = pgTable(
     type: text().notNull().default("strength"),
     durationSec: integer("duration_sec"),
     distanceM: integer("distance_m"),
+    /**
+     * Обраний варіант підказки: planned | easier | harder.
+     * NULL = вибору не було (запис до появи чека готовності), і це НЕ те
+     * саме, що "planned": лічильник полегшень читає NULL як обрив стрічки.
+     * CHECK на значення живе в міграції 134.
+     */
+    chosenVariant: text("chosen_variant"),
     sortOrder: integer("sort_order").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()

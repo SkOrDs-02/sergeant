@@ -165,6 +165,7 @@ interface WorkoutItemRow {
   type: string | null;
   duration_sec: number | null;
   distance_m: number | null;
+  chosen_variant: string | null;
   sort_order: number | null;
   [key: string]: unknown;
 }
@@ -266,6 +267,17 @@ function rowToWorkoutItem(
   if (sets && sets.length > 0) item.sets = sets;
   if (row.duration_sec != null) item.durationSec = row.duration_sec;
   if (row.distance_m != null) item.distanceM = row.distance_m;
+  // AI-DANGER: без цього рядка колонка читалась би у SELECT і не доїжджала
+  // в `Workout` — рівно той сценарій, який нижче описаний для
+  // `wellbeing_json`. Лічильник трьох полегшень тоді завжди дорівнює нулю,
+  // а типи й тести лишаються зеленими.
+  if (
+    row.chosen_variant === "planned" ||
+    row.chosen_variant === "easier" ||
+    row.chosen_variant === "harder"
+  ) {
+    item.chosenVariant = row.chosen_variant;
+  }
   return item;
 }
 
@@ -431,7 +443,7 @@ export async function refreshFizrukSqliteState(
     client.all<WorkoutItemRow>(
       `SELECT id, workout_id, exercise_id, name_uk, primary_group,
               muscles_primary, muscles_secondary, type,
-              duration_sec, distance_m, sort_order
+              duration_sec, distance_m, chosen_variant, sort_order
          FROM fizruk_workout_items
         WHERE user_id = ? AND deleted_at IS NULL
         ORDER BY workout_id ASC, sort_order ASC, id ASC`,

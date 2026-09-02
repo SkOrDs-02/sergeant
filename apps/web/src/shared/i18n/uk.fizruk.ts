@@ -129,6 +129,27 @@ export const fizrukPageMessages = {
     softLayoff: "після паузи",
     softInjury: "після позначки болю",
     softFallback: "після перерви",
+    easierPrefix: "Легше:",
+    harderPrefix: "Можна більше:",
+    easierNote: "сьогодні можна легше",
+    harderNote: "сьогодні можна більше",
+  },
+  // Аркуш готовності перед стартом тренування
+  // (спека docs/90-work/planning/specs/fizruk-readiness-check.md).
+  readiness: {
+    title: "Як ти сьогодні?",
+    subtitle: "Два питання, і підказка ваги врахує твій стан.",
+    sleepLabel: "Як спалось?",
+    sorenessLabel: "Як почуваються мʼязи?",
+    scaleLow: "погано",
+    scaleHigh: "добре",
+    submit: "Готово",
+    skip: "Пропустити",
+    rebaselineTitle: "Схоже, план завищений",
+    rebaselineBody:
+      "Ти третій раз поспіль береш легше на цій вправі. Перерахувати план від того, що ти реально робиш?",
+    rebaselineConfirm: "Так, перерахувати",
+    rebaselineDismiss: "Ні, лишити план",
   },
   // Per-row "було" ghost + done/delete controls inside a strength set
   // row (`WorkoutSetRow.tsx`), redesign 2026-08 (items 1-3).

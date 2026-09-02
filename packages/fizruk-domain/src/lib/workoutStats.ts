@@ -125,9 +125,71 @@ export interface ReturnModeHint {
   reductionPct?: number | undefined;
 }
 
+/**
+ * Відповідь про готовність перед тренуванням. Обидві шкали 1-5, де **1 =
+ * погано, 5 = добре** (`soreness` читається як «як почуваються мʼязи», а не
+ * «наскільки болить», щоб напрямок збігався зі `sleep`).
+ *
+ * Мітки часу тут навмисно немає: відповідь лежить у `Workout.wellbeing` того
+ * тренування, тож протухає формою даних, а не таймером. Через це
+ * `suggestNextSet` лишається чистою і не потребує ані `new Date()`, ані
+ * переданого ззовні `now`.
+ */
+export interface ReadinessAnswer {
+  sleep?: number | null | undefined;
+  soreness?: number | null | undefined;
+}
+
+export type ReadinessLevel = "low" | "neutral" | "high";
+
+/** Межі, затверджені founder-ом 2026-09-02. */
+export const READINESS_LOW_AT = 2;
+export const READINESS_HIGH_AT = 4;
+
+function readinessScore(value: number | null | undefined): number | null {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n < 1 || n > 5) return null;
+  return n;
+}
+
+/**
+ * Правило найслабшої ланки: БУДЬ-ЯКА шкала ≤2 робить готовність низькою,
+ * а високою вона стає лише коли ОБИДВІ ≥4.
+ *
+ * AI-CONTEXT: асиметрія навмисна і успадкована з `AI-DANGER` у
+ * `suggestNextSet` — помилка «занизька вага» коштує одного легкого підходу,
+ * «завищена» коштує травми. Тому один поганий сигнал уже дає підставу
+ * ЗАПРОПОНУВАТИ легше, а пропозиція взяти більше вимагає згоди обох.
+ * Наслідок для неповної відповіді: `{ sleep: 1 }` це `low`, а `{ sleep: 5 }`
+ * (без `soreness`) лишається `neutral` — недомовка не підвищує навантаження.
+ */
+export function classifyReadiness(
+  answer: ReadinessAnswer | null | undefined,
+): ReadinessLevel {
+  const sleep = readinessScore(answer?.sleep);
+  const soreness = readinessScore(answer?.soreness);
+  if (
+    (sleep !== null && sleep <= READINESS_LOW_AT) ||
+    (soreness !== null && soreness <= READINESS_LOW_AT)
+  ) {
+    return "low";
+  }
+  if (
+    sleep !== null &&
+    soreness !== null &&
+    sleep >= READINESS_HIGH_AT &&
+    soreness >= READINESS_HIGH_AT
+  ) {
+    return "high";
+  }
+  return "neutral";
+}
+
 export interface SuggestNextSetOptions {
   exercise?: ExerciseProgressionHint | null | undefined;
   aging?: ReturnModeHint | null | undefined;
+  /** Відсутня чи нейтральна готовність лишає результат таким, як був. */
+  readiness?: ReadinessAnswer | null | undefined;
 }
 
 /**
@@ -166,6 +228,17 @@ export interface SuggestedNextSetResult {
   softMode: boolean;
   /** `layoff` | `injury` — причина м'якого режиму, `null` коли його немає. */
   returnReason: string | null;
+  /**
+   * Полегшений варіант — рівно на крок ваги нижче за плановий, з повторами на
+   * низу діапазону. Присутній ЛИШЕ при низькій готовності.
+   */
+  easedWeightKg?: number;
+  easedReps?: number;
+  /**
+   * Що саме показує друга кнопка. Поля немає взагалі, коли готовність нічого
+   * не сказала — так картка лишається однокнопковою, як була.
+   */
+  secondOption?: "easier" | "harder";
 }
 
 /**
@@ -179,6 +252,10 @@ export interface SuggestedNextSetResult {
  *
  * Це підказка, а не автомат: значення підставляється в поле і його можна
  * перебити. Повертає `null`, коли історії ще немає.
+ *
+ * Готовність (`options.readiness`) НЕ змінює плановий варіант — вона лише
+ * додає другий. Нейтральна чи відсутня відповідь віддає рівно той самий
+ * обʼєкт, що й до появи цієї опції.
  */
 export function suggestNextSet(
   lastBestSet: StatsSet | null | undefined,
@@ -191,28 +268,60 @@ export function suggestNextSet(
   const targetReps = targetRepRange(options.exercise);
   const step = weightStepKg(options.exercise);
   const aging = options.aging;
+  const readiness = classifyReadiness(options.readiness);
+
+  /**
+   * Полегшення — рівно один крок ваги вниз, з підлогою в один крок, щоб
+   * легка вправа не пішла в нуль чи мінус. Крок, а не відсоток: він уже
+   * означає «наскільки ця вправа рухається за раз» (`weightStepKg`) і завжди
+   * лягає на легальний набір млинців. `Math.min` тримає інваріант, заради
+   * якого все й робиться: полегшений варіант НІКОЛИ не важчий за плановий.
+   */
+  const ease = (
+    plannedWeight: number,
+  ): Pick<
+    SuggestedNextSetResult,
+    "easedWeightKg" | "easedReps" | "secondOption"
+  > => ({
+    easedWeightKg: Math.min(
+      plannedWeight,
+      Math.max(step, roundToStep(plannedWeight - step, step)),
+    ),
+    easedReps: targetReps.min,
+    secondOption: "easier",
+  });
 
   if (aging?.returnMode) {
     const reduction = Math.max(0, Number(aging.reductionPct) || 0) / 100;
     const softWeight = roundToStep(w * (1 - reduction), step);
+    // Округлення вгору до кроку не має права дати вагу БІЛЬШУ за минулу:
+    // це рівно те підвищення, якого режим повернення уникає.
+    const planned = Math.min(w, softWeight);
     return {
-      // Округлення вгору до кроку не має права дати вагу БІЛЬШУ за минулу:
-      // це рівно те підвищення, якого режим повернення уникає.
-      weightKg: Math.min(w, softWeight),
+      weightKg: planned,
       reps: targetReps.min,
       targetReps,
       softMode: true,
       returnReason: aging.returnReason ?? null,
+      // AI-DANGER: у режимі повернення «можна більше» не пропонується
+      // НІКОЛИ, хай яка добра сьогодні готовність. Сенс режиму саме в тому,
+      // щоб не піднімати вагу, і добре самопочуття після паузи чи травми —
+      // не доказ, що тканина відновилась.
+      ...(readiness === "low" ? ease(planned) : {}),
     };
   }
 
   if (r >= targetReps.max) {
+    const planned = roundToStep(w + step, step);
     return {
-      weightKg: roundToStep(w + step, step),
+      weightKg: planned,
       reps: targetReps.min,
       targetReps,
       softMode: false,
       returnReason: null,
+      // «Важче» тут не пропонується: план і так піднімає вагу, а другий крок
+      // угору за одну сесію — це вже не підказка, а стрибок.
+      ...(readiness === "low" ? ease(planned) : {}),
     };
   }
 
@@ -224,7 +333,54 @@ export function suggestNextSet(
     targetReps,
     softMode: false,
     returnReason: null,
+    ...(readiness === "low" ? ease(w) : {}),
+    ...(readiness === "high" ? { secondOption: "harder" as const } : {}),
   };
+}
+
+/** Скільки полегшень поспіль означає «схоже, план завищений». */
+export const EASING_STREAK_THRESHOLD = 3;
+
+/**
+ * Скільки разів ПОСПІЛЬ людина обрала полегшений варіант на цій вправі,
+ * рахуючи від найсвіжішого заняття назад.
+ *
+ * Одиниця лічби — ПОЯВА ВПРАВИ у ЗАВЕРШЕНОМУ тренуванні, не підхід: три
+ * полегшені підходи в одному занятті це один випадок, а не три.
+ *
+ * Що НЕ скидає лічильник: тренування, де цієї вправи не було (пропуск), і
+ * незавершене тренування. Рахується послідовність появ вправи, а не
+ * календар, тож перерва в тиждень стрічку не обнуляє — «погано спав» тричі
+ * поспіль лишається сигналом і з паузами між заняттями.
+ *
+ * Що скидає: будь-який `planned` чи `harder` на цій вправі. Відсутнє
+ * `chosenVariant` читається як `planned`, тож історія до появи готовності
+ * стрічку обриває, а не продовжує.
+ *
+ * Значення ПОХІДНЕ і навмисно не зберігається: правка завершеного тренування
+ * має одразу відбитись на лічильнику, а збережене число розійшлося б із тим,
+ * що людина бачить в історії.
+ */
+export function countConsecutiveEasings(
+  workouts: readonly StatsWorkout[] | null | undefined,
+  exerciseId: string,
+): number {
+  if (!Array.isArray(workouts) || !exerciseId) return 0;
+  const ordered = [...workouts]
+    .filter((wk) => Boolean(wk?.endedAt))
+    .sort((a, b) => compareIsoDesc(a?.startedAt, b?.startedAt));
+
+  let streak = 0;
+  for (const workout of ordered) {
+    const items: StatsItem[] = Array.isArray(workout?.items)
+      ? workout.items
+      : [];
+    const item = items.find((it) => it?.exerciseId === exerciseId);
+    if (!item) continue; // вправи не було — ні плюс, ні скидання
+    if (item["chosenVariant"] !== "easier") break;
+    streak += 1;
+  }
+  return streak;
 }
 
 /**

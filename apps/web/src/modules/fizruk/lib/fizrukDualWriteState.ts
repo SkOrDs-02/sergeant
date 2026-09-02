@@ -335,6 +335,7 @@ function toItemSnapshot(item: WorkoutItem): FizrukItemSnapshot {
     sets?: FizrukSetSnapshot[];
     durationSec?: number;
     distanceM?: number;
+    chosenVariant?: string;
   } = {
     id: String(item.id),
     exerciseId: String(item.exerciseId ?? ""),
@@ -357,6 +358,10 @@ function toItemSnapshot(item: WorkoutItem): FizrukItemSnapshot {
   }
   if (typeof item.durationSec === "number") out.durationSec = item.durationSec;
   if (typeof item.distanceM === "number") out.distanceM = item.distanceM;
+  // Той самий білий список, що й у `toWellbeingSnapshot`: без цього рядка
+  // вибір варіанта не переживе перезавантаження, а лічильник трьох
+  // полегшень поспіль ніколи не спрацює.
+  if (item.chosenVariant !== undefined) out.chosenVariant = item.chosenVariant;
   return out as FizrukItemSnapshot;
 }
 
@@ -394,13 +399,29 @@ function toChecklistSnapshot(item: ChecklistItem): {
   };
 }
 
+/**
+ * AI-DANGER: це БІЛИЙ СПИСОК, а не копія обʼєкта. `WorkoutWellbeing` має
+ * індексну сигнатуру, тож нове поле типізується без правок ТУТ — і мовчки
+ * гине по дорозі в SQLite: типи зелені, тести зелені, зникає лише продукт.
+ * Рівно так уже губились `energy` / `mood` (див. `AI-DANGER` у
+ * `sqliteReader.ts`). Додав поле у `WorkoutWellbeing` — додай його і сюди.
+ */
 function toWellbeingSnapshot(w: WorkoutWellbeing): {
   energy?: number | null;
   mood?: number | null;
+  sleep?: number | null;
+  soreness?: number | null;
 } {
-  const out: { energy?: number | null; mood?: number | null } = {};
+  const out: {
+    energy?: number | null;
+    mood?: number | null;
+    sleep?: number | null;
+    soreness?: number | null;
+  } = {};
   if (w.energy !== undefined) out.energy = w.energy;
   if (w.mood !== undefined) out.mood = w.mood;
+  if (w.sleep !== undefined) out.sleep = w.sleep;
+  if (w.soreness !== undefined) out.soreness = w.soreness;
   return out;
 }
 

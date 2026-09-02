@@ -361,6 +361,10 @@ async function upsertWorkoutItem(
     item.type ?? "strength",
     item.durationSec ?? null,
     item.distanceM ?? null,
+    // Той самий рядок, якого бракувало `wellbeing` (див. AI-DANGER у
+    // sqliteReader): пропустиш його — вибір варіанта не переживе
+    // перезавантаження, а типи й тести цього не помітять.
+    (item["chosenVariant"] as string | undefined) ?? null,
     sortOrder,
     clientTs,
     clientTs,
@@ -382,6 +386,7 @@ async function upsertWorkoutItem(
       type: item.type ?? "strength",
       duration_sec: item.durationSec ?? null,
       distance_m: item.distanceM ?? null,
+      chosen_variant: (item["chosenVariant"] as string | undefined) ?? null,
       sort_order: sortOrder,
       created_at: clientTs,
       deleted_at: null,

@@ -7,7 +7,11 @@ import {
   epley1rm,
   suggestNextSet,
 } from "@sergeant/fizruk-domain";
-import type { WorkoutSet } from "@sergeant/fizruk-domain";
+import type {
+  ReadinessAnswer,
+  WorkoutSet,
+  WorkoutVariantChoice,
+} from "@sergeant/fizruk-domain";
 import { findExerciseById } from "@sergeant/fizruk-domain/data";
 import { messages } from "@shared/i18n/uk";
 import { fmt } from "../../lib/numberFmt";
@@ -19,7 +23,16 @@ export interface WorkoutItemNextSetHintProps {
   last: LastByExerciseEntry | undefined;
   exerciseId: string | null | undefined;
   isReadOnly: boolean;
-  onApply: (weightKg: number, reps: number) => void;
+  /**
+   * Відповідь про готовність із ПОТОЧНОГО тренування (`Workout.wellbeing`).
+   * Немає або нейтральна — картка виглядає рівно як до цієї фічі.
+   */
+  readiness?: ReadinessAnswer | null | undefined;
+  onApply: (
+    weightKg: number,
+    reps: number,
+    variant: WorkoutVariantChoice,
+  ) => void;
 }
 
 function bestSetOf(sets: WorkoutSet[]): WorkoutSet | null {
@@ -35,6 +48,14 @@ function bestSetOf(sets: WorkoutSet[]): WorkoutSet | null {
   return best;
 }
 
+/**
+ * Причини МʼЯКОГО РЕЖИМУ, і лише вони. Готовність сюди навмисно не додана:
+ * `returnReason` віддає `computeOneRmAging` з історії вправи (затухання 1ПМ,
+ * вікно після травми), а готовність — це самозвіт про сьогодні. Змішати їх в
+ * одному переліку означало б, що `ReturnProtocolNotice` (компонент про
+ * старіння 1ПМ) мусив би знати про сон, а `aging.returnReason` міг би
+ * набути значення, якого `computeOneRmAging` не вміє видавати.
+ */
 const RETURN_REASON_TEXT: Record<string, string> = {
   layoff: messages.fizruk.nextSetHint.softLayoff,
   injury: messages.fizruk.nextSetHint.softInjury,
@@ -56,6 +77,7 @@ export function WorkoutItemNextSetHint({
   last,
   exerciseId,
   isReadOnly,
+  readiness,
   onApply,
 }: WorkoutItemNextSetHintProps) {
   if (isReadOnly || last?.type !== "strength") return null;
@@ -70,6 +92,7 @@ export function WorkoutItemNextSetHint({
   const suggestion = suggestNextSet(best, {
     exercise: exerciseId ? findExerciseById(exerciseId) : null,
     aging,
+    ...(readiness ? { readiness } : {}),
   });
   if (!suggestion) return null;
 
@@ -77,19 +100,58 @@ export function WorkoutItemNextSetHint({
   const reason = suggestion.returnReason
     ? RETURN_REASON_TEXT[suggestion.returnReason]
     : null;
-  const note = suggestion.softMode
+  const softNote = suggestion.softMode
     ? `${t.softPrefix} ${reason ?? t.softFallback}`
     : `${t.targetPrefix} ${suggestion.targetReps.min}-${suggestion.targetReps.max} ${t.targetSuffix}`;
+  // Коли готовність відкрила другий варіант, підпис пояснює саме її: інакше
+  // поруч із двома кнопками стояла б підказка про цільовий діапазон, яка до
+  // вибору не має стосунку.
+  const note =
+    suggestion.secondOption === "easier"
+      ? t.easierNote
+      : suggestion.secondOption === "harder"
+        ? t.harderNote
+        : softNote;
+
+  const second =
+    suggestion.secondOption === "easier" &&
+    suggestion.easedWeightKg !== undefined &&
+    suggestion.easedReps !== undefined
+      ? {
+          variant: "easier" as const,
+          weightKg: suggestion.easedWeightKg,
+          reps: suggestion.easedReps,
+          label: t.easierPrefix,
+        }
+      : suggestion.secondOption === "harder" &&
+          suggestion.altWeightKg !== undefined &&
+          suggestion.altReps !== undefined
+        ? {
+            variant: "harder" as const,
+            weightKg: suggestion.altWeightKg,
+            reps: suggestion.altReps,
+            label: t.harderPrefix,
+          }
+        : null;
 
   return (
     <div className="mt-2 flex flex-wrap items-center gap-2">
       <button
         type="button"
-        onClick={() => onApply(suggestion.weightKg, suggestion.reps)}
+        onClick={() => onApply(suggestion.weightKg, suggestion.reps, "planned")}
         className="focus-ring min-h-[44px] rounded-full border border-fizruk-ring bg-fizruk-surface px-3 text-style-caption text-fizruk-soft-fg font-semibold transition-colors hover:bg-fizruk-surface/80 dark:border-fizruk-border-dark/40 dark:bg-fizruk-surface-dark/15"
       >
         {`${t.prefix} ${fmt(suggestion.weightKg, 1)} ${t.kgUnit} × ${suggestion.reps}`}
       </button>
+      {second && (
+        <button
+          type="button"
+          onClick={() => onApply(second.weightKg, second.reps, second.variant)}
+          className="focus-ring min-h-[44px] rounded-full border border-fizruk-ring/60 bg-transparent px-3 text-style-caption text-subtle font-semibold transition-colors hover:bg-fizruk-surface/60 dark:border-fizruk-border-dark/30"
+        >
+          {`${second.label} ${fmt(second.weightKg, 1)} ${t.kgUnit} × ${second.reps}`}
+        </button>
+      )}
       <span className="text-style-caption text-subtle">{note}</span>
     </div>
   );
