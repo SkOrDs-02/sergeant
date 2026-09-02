@@ -1,6 +1,7 @@
 import SiteLayout from "../components/SiteLayout";
 import GuideHomeModule from "../components/GuideHomeModule";
 import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
+import UpdatedOn from "../components/UpdatedOn";
 
 const VISION = [
   {
@@ -51,7 +52,7 @@ export default function GuideFotoKaloriiPage() {
       headline:
         "Чи можна порахувати калорії страви з фото – і наскільки це точно",
       inLanguage: "uk",
-      dateModified: "2026-08-29",
+      dateModified: ROUTE_META["/guides/foto-kalorii"].lastmod,
       author: { "@type": "Person", name: "Автор Sergeant" },
       publisher: { "@type": "Organization", name: "Sergeant" },
     },
@@ -71,7 +72,9 @@ export default function GuideFotoKaloriiPage() {
             Чи можна порахувати калорії страви з фото – і наскільки це точно
           </h1>
           <p className="mt-4 text-sm text-subtle">
-            Оновлено 29.08.2026 · автор Sergeant
+            Оновлено{" "}
+            <UpdatedOn iso={ROUTE_META["/guides/foto-kalorii"].lastmod} /> ·
+            автор Sergeant
           </p>
           <GuideHomeModule href="/yizha" label="Їжа" />
         </div>

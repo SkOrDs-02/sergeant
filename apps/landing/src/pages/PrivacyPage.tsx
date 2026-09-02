@@ -1,5 +1,7 @@
 import SiteLayout from "../components/SiteLayout";
 import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
+import { EXPORT_CLAIM } from "../content/exportClaim";
+import UpdatedOn from "../components/UpdatedOn";
 
 /**
  * Політика приватності сайту. Коротка, бо сайт справді збирає мінімум:
@@ -19,15 +21,18 @@ export default function PrivacyPage() {
       <h1 className="font-display text-3xl font-extrabold uppercase tracking-tight text-foreground-strong sm:text-4xl">
         Політика приватності
       </h1>
-      <p className="mt-3 text-sm text-subtle">Оновлено 29.08.2026</p>
+      <p className="mt-3 text-sm text-subtle">
+        Оновлено <UpdatedOn iso={ROUTE_META["/privacy"].lastmod} />
+      </p>
 
       <h2 className={h2}>Що збирає цей сайт</h2>
       <p className={p}>
         Сайт не ставить кукі і не будує персональних профілів. Аналітика
         (PostHog, ЄС-сервери) отримує кілька анонімних подій: перегляд сторінки,
-        перехід у Telegram, перемикання демо-віджета в hero і відкриття питання
-        у FAQ. Жодна подія не несе введеного тексту. Кожне відвідування – новий
-        анонім; повʼязати їх між собою чи з тобою особисто неможливо.
+        перехід у Telegram, перемикання демо-віджета на першому екрані і
+        відкриття питання у FAQ. Жодна подія не несе введеного тексту. Кожне
+        відвідування – новий анонім; повʼязати їх між собою чи з тобою особисто
+        неможливо.
       </p>
 
       <h2 className={h2}>Черга в бету</h2>
@@ -41,10 +46,10 @@ export default function PrivacyPage() {
       <h2 className={h2}>Дані в застосунку</h2>
       <p className={p}>
         Це політика сайту. Про дані всередині застосунку коротко: токен Monobank
-        – лише читання і зберігається зашифрованим, експорт доступний в один
-        клік, і я не продаю і не передаю твої дані нікому. Повна мапа доступів –
-        що бачить банківський токен, куди їдуть фото чеків, як працює
-        AI-помічник – зібрана на сторінці{" "}
+        – лише читання і зберігається зашифрованим; я не продаю і не передаю
+        твої дані нікому. {EXPORT_CLAIM} Повна мапа доступів – що бачить
+        банківський токен, куди їдуть фото чеків, як працює AI-помічник –
+        зібрана на сторінці{" "}
         <a
           href="/data"
           className="font-semibold text-foreground underline decoration-cardline-strong underline-offset-4 transition hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"

@@ -13,15 +13,15 @@
 [`product-readiness-2026-07-18.md`](./product-readiness-2026-07-18.md). Він відділяє
 ready-now роботу від зовнішніх блокерів, owner-рішень і reference-матеріалів.
 
-| Розділ                                                              | Що тут                                                                        |
-| ------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| [`initiatives/`](./initiatives/README.md)                           | Нумеровані multi-PR ініціативи з acceptance-критеріями і вікном стабілізації. |
-| [`planning/`](./planning/README.md)                                 | Активні роадмапи, infra-плани, staged improvements.                           |
-| [`audits/`](./audits/README.md)                                     | Індекс аудитів; завершена історія доступна через Git history/permalinks.      |
-| [`tech-debt/`](./tech-debt/README.md)                               | Реєстри боргу й cleanup-плани (per-platform, з freshness-гейтом).             |
-| [`superpowers/`](./superpowers/README.md)                           | High-leverage one-page гайди; завершені плани під `plans/archive/`.           |
-| [`research/`](./research/2026-06-28-audience-discovery-trackers.md) | Discovery-дослідження аудиторії та джерел даних + kit для інтервʼю.           |
-| [`beta-launch/`](./beta-launch/README.md)                           | Плейбук хвилі закритої бети: гейти, ENV, видача Pro, згортання.               |
+| Розділ                                                              | Що тут                                                                                                                                                                                                  |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`initiatives/`](./initiatives/README.md)                           | Нумеровані multi-PR ініціативи з acceptance-критеріями і вікном стабілізації.                                                                                                                           |
+| [`planning/`](./planning/README.md)                                 | Активні роадмапи, infra-плани, staged improvements.                                                                                                                                                     |
+| [`audits/`](./audits/README.md)                                     | Індекс аудитів; завершена історія доступна через Git history/permalinks.                                                                                                                                |
+| [`tech-debt/`](./tech-debt/README.md)                               | Реєстри боргу й cleanup-плани (per-platform, з freshness-гейтом).                                                                                                                                       |
+| [`superpowers/`](./superpowers/README.md)                           | High-leverage one-page гайди; завершені плани під `plans/archive/`.                                                                                                                                     |
+| [`research/`](./research/2026-06-28-audience-discovery-trackers.md) | Discovery-дослідження аудиторії та джерел даних + kit для інтервʼю; конкурентний зріз по модулях — [`2026-09-01-competitor-research-modules.md`](./research/2026-09-01-competitor-research-modules.md). |
+| [`beta-launch/`](./beta-launch/README.md)                           | Плейбук хвилі закритої бети: гейти, ENV, видача Pro, згортання.                                                                                                                                         |
 
 > **Завершення:** `Closed` / `Done` / `Reference` tracker спершу фіксує Outcome і merge evidence, після чого frozen-файл можна прибрати окремим cleanup-комітом. Історія доступна через Git; локальні archive-дерева для audits/initiatives/planning retired за ADR-0081. Withdrawn ініціативи лишаються у живому списку для аудит-сліду.
 

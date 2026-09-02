@@ -1,6 +1,7 @@
 import SiteLayout from "../components/SiteLayout";
 import GuideHomeModule from "../components/GuideHomeModule";
 import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
+import UpdatedOn from "../components/UpdatedOn";
 import TelegramCta from "../components/TelegramCta";
 
 /**
@@ -17,7 +18,7 @@ export default function GuideKilkaBankivPage() {
       "@type": "Article",
       headline: "Як звести витрати докупи, якщо карти в кількох банках",
       inLanguage: "uk",
-      dateModified: "2026-08-31",
+      dateModified: ROUTE_META["/guides/kilka-bankiv"].lastmod,
       author: { "@type": "Person", name: "Автор Sergeant" },
       publisher: { "@type": "Organization", name: "Sergeant" },
     },
@@ -37,7 +38,9 @@ export default function GuideKilkaBankivPage() {
             Як звести витрати докупи, якщо карти в кількох банках
           </h1>
           <p className="mt-4 text-sm text-subtle">
-            Оновлено 31.08.2026 · автор Sergeant
+            Оновлено{" "}
+            <UpdatedOn iso={ROUTE_META["/guides/kilka-bankiv"].lastmod} /> ·
+            автор Sergeant
           </p>
           <GuideHomeModule href="/hroshi" label="Гроші" />
         </div>
