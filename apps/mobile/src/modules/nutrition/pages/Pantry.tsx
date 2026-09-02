@@ -14,6 +14,7 @@ import { useApiClient } from "@sergeant/api-client/react";
 import {
   groupItemsByCategory,
   type PantryItem,
+  type PlacedPantryItem,
 } from "@sergeant/nutrition-domain";
 import { hapticTap } from "@sergeant/shared";
 
@@ -39,13 +40,14 @@ export function PantryPage({ testID }: { testID?: string }) {
   const api = useApiClient();
   const {
     pantries,
-    activePantryId,
-    activePantry,
-    setActivePantryId,
+    pantryItems,
+    placeFilter,
+    setPlaceFilter,
     addLine,
     applyParsedItems,
     removeItemAt,
     restoreItemAt,
+    moveItemTo,
     addPantry,
   } = useNutritionPantries();
   const toast = useToast();
@@ -55,10 +57,26 @@ export function PantryPage({ testID }: { testID?: string }) {
   const [aiBusy, setAiBusy] = useState(false);
   const [aiErr, setAiErr] = useState("");
 
+  // Групування по ПОВНОМУ списку, фільтр звужує вже його: `idx` усередині
+  // категорії і є глобальною адресою позиції для мутацій.
   const grouped = useMemo(() => {
-    const items: readonly PantryItem[] = activePantry?.items || [];
-    return groupItemsByCategory<PantryItem>(items);
-  }, [activePantry?.items]);
+    const all = groupItemsByCategory<PlacedPantryItem>(pantryItems);
+    if (!placeFilter) return all;
+    return all
+      .map((g) => ({
+        ...g,
+        items: g.items.filter(({ item }) => item.pantryId === placeFilter),
+      }))
+      .filter((g) => g.items.length > 0);
+  }, [pantryItems, placeFilter]);
+
+  const placeCounts = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const item of pantryItems) {
+      map.set(item.pantryId, (map.get(item.pantryId) ?? 0) + 1);
+    }
+    return map;
+  }, [pantryItems]);
 
   const onAdd = useCallback(() => {
     addLine(draft);
@@ -105,17 +123,24 @@ export function PantryPage({ testID }: { testID?: string }) {
         contentContainerClassName="p-4 gap-3 pb-8"
         keyboardShouldPersistTaps="handled"
       >
-        {pantries.length > 1 ? (
-          <View className="flex-row flex-wrap gap-2">
-            {pantries.map((p) => {
-              const sel = p.id === activePantryId;
+        {/* Фільтр місць, а не перемикач активного: усі місця видно разом,
+            фільтр лише звужує. */}
+        <View className="flex-row flex-wrap gap-2">
+          {[{ id: null as string | null, name: "Усі" }, ...pantries].map(
+            (p) => {
+              const sel = placeFilter === p.id;
+              const count =
+                p.id === null
+                  ? pantryItems.length
+                  : (placeCounts.get(p.id) ?? 0);
               return (
                 <Pressable
-                  key={p.id}
+                  key={p.id ?? "__all"}
                   onPress={() => {
                     hapticTap();
-                    setActivePantryId(p.id);
+                    setPlaceFilter(p.id);
                   }}
+                  accessibilityState={{ selected: sel }}
                   className={
                     sel
                       ? "px-3 py-1.5 rounded-full bg-lime-600"
@@ -126,13 +151,13 @@ export function PantryPage({ testID }: { testID?: string }) {
                     className={sel ? "text-white text-xs" : "text-fg text-xs"}
                     numberOfLines={1}
                   >
-                    {p.name}
+                    {p.name} {count}
                   </Text>
                 </Pressable>
               );
-            })}
-          </View>
-        ) : null}
+            },
+          )}
+        </View>
 
         <Text className="text-xs text-fg-muted">
           Додавай рядок як на веб: «2 л молока», «яйця 10 шт», парсер
@@ -210,10 +235,17 @@ export function PantryPage({ testID }: { testID?: string }) {
                 </Text>
               </View>
               {bucket.items.map(({ item, idx }) => {
-                const it: PantryItem = item;
+                const it: PlacedPantryItem = item;
+                // Наступне місце по колу: власного пікера на мобільній
+                // поверхні поки немає, а зміна має лишатись одним дотиком.
+                const curPlace = pantries.findIndex(
+                  (p) => p.id === it.pantryId,
+                );
+                const nextPlace =
+                  pantries[(curPlace + 1) % Math.max(pantries.length, 1)];
                 return (
                   <View
-                    key={`${it.name}-${idx}`}
+                    key={`${it.pantryId}-${it.name}-${idx}`}
                     className="flex-row items-center py-1.5 border-b border-cream-200/80"
                   >
                     <View className="flex-1">
@@ -228,15 +260,34 @@ export function PantryPage({ testID }: { testID?: string }) {
                         </Text>
                       ) : null}
                     </View>
+                    {pantries.length > 1 && nextPlace ? (
+                      <Pressable
+                        onPress={() => {
+                          hapticTap();
+                          moveItemTo(idx, nextPlace.id);
+                        }}
+                        accessibilityLabel={`Місце для ${it.name}: ${pantries[curPlace]?.name ?? ""}. Перенести в ${nextPlace.name}`}
+                        className="px-2 py-1"
+                      >
+                        <Text
+                          className="text-xs text-fg-muted"
+                          numberOfLines={1}
+                        >
+                          {pantries[curPlace]?.name ?? ""}
+                        </Text>
+                      </Pressable>
+                    ) : null}
                     <Pressable
                       onPress={() => {
                         hapticTap();
                         const snapshot: PantryItem = it;
-                        const removedAt = idx;
+                        const removedAt = it.localIdx;
+                        const fromId = it.pantryId;
                         removeItemAt(idx);
                         showUndoToast(toast, {
                           msg: `Видалено «${snapshot.name}»`,
-                          onUndo: () => restoreItemAt(removedAt, snapshot),
+                          onUndo: () =>
+                            restoreItemAt(removedAt, snapshot, fromId),
                         });
                       }}
                       accessibilityLabel={`Видалити ${it.name}`}
@@ -254,14 +305,12 @@ export function PantryPage({ testID }: { testID?: string }) {
         )}
 
         <View className="mt-4 border-t border-cream-200 pt-4 gap-2">
-          <Text className="text-xs text-fg-muted">
-            Новий склад (кілька комор)
-          </Text>
+          <Text className="text-xs text-fg-muted">Нове місце зберігання</Text>
           <View className="flex-row gap-2">
             <TextInput
               value={newPantryName}
               onChangeText={setNewPantryName}
-              placeholder="Назва (напр. Офіс)"
+              placeholder="Назва (напр. Балкон)"
               className="flex-1 border border-cream-300 rounded-xl px-3 py-2 text-fg bg-white"
               placeholderTextColor="#a8a29e"
             />

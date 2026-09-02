@@ -18,7 +18,7 @@ import { useMutation } from "@tanstack/react-query";
 
 import type { ApiClient, NutritionRecipe } from "@sergeant/api-client";
 import { apiMutationKeys } from "@sergeant/api-client/react";
-import type { PantryItem } from "@sergeant/nutrition-domain";
+import { stripPlacement, type PantryItem } from "@sergeant/nutrition-domain";
 import { hapticSuccess } from "@sergeant/shared";
 
 import { formatNutritionRecipeError } from "../lib/nutritionRecipeError";
@@ -80,7 +80,7 @@ export function useNutritionRemoteActions({
         throw new Error("Дай хоча б 2–3 продукти для рецептів.");
       }
       return api.nutrition.recommendRecipes({
-        pantry: items.slice(0, PANTRY_ITEMS_LIMIT),
+        pantry: stripPlacement(items.slice(0, PANTRY_ITEMS_LIMIT)),
         preferences: {
           goal: prefs.goal,
           servings: toNumber(prefs.servings, 1),

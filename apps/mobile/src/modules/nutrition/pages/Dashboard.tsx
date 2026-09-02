@@ -23,6 +23,7 @@ import {
   getDayMacros,
   getDaySummary,
   getMacrosForDateRange,
+  stripPlacement,
   type MealTypeId,
   type NutritionPrefs,
 } from "@sergeant/nutrition-domain";
@@ -188,7 +189,9 @@ export function Dashboard({ testID, onMealAdded }: DashboardProps) {
       setDayPlanBusy(true);
       setDayPlanErr("");
       try {
-        const pantryPayload = pantryItems.slice(0, PANTRY_ITEMS_LIMIT);
+        const pantryPayload = stripPlacement(
+          pantryItems.slice(0, PANTRY_ITEMS_LIMIT),
+        );
         const data = await api.nutrition.dayPlan({
           pantry: pantryPayload,
           targets: {
