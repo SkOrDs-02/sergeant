@@ -19,6 +19,15 @@
  *
  * Тон — за `docs/01-product/copy/style-guide.uk.md`: це межі обіцянки, а не
  * збій і не вибачення. Порада лишається порадою (§4 — «не гейт»).
+ *
+ * **Доповнення 2026-09-01 — безумовна плашка жанру.** Три ноти вище умовні:
+ * у нормальному стані (свіжа репліка, свіжий журнал) не рендериться жодна,
+ * і людина читає «готово / рано» як вердикт без будь-якої рамки. Тому зверху
+ * додано безумовне «Спостереження, не порада», а внизу — межа компетенції
+ * («болить — до лікаря»). Привід не косметичний: Whoop отримав
+ * попереджувальний лист FDA (2025-07-14) саме за функцію, подану як
+ * медичну, і канон `fizruk.md` §2 тримає цей рядок як контракт, а не як
+ * юридичну формальність.
  */
 import { Icon } from "@shared/components/ui/Icon";
 import { messages } from "@shared/i18n/uk";
@@ -39,6 +48,25 @@ export function RecoveryHonestyNotes({
 
   return (
     <>
+      {/*
+        Жанр блоку — ПЕРШИМ рядком, до будь-яких умовних застережень.
+        Решта нот тут умовні (застаріла репліка, протухлий журнал): вони
+        зʼявляються лише коли щось не так, тож у нормальному стані людина
+        не бачила б жодної рамки взагалі і читала б «готово / рано» як
+        вердикт. Ця плашка безумовна саме тому.
+      */}
+      <div className="mb-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-panel border border-line">
+        <Icon
+          name="info"
+          size={13}
+          className="shrink-0 text-subtle"
+          aria-hidden
+        />
+        <span className="text-style-caption text-muted">
+          {t.observationBadge}
+        </span>
+      </div>
+
       {!freshness.complete && (
         <div className="mb-3 px-3 py-2 rounded-xl bg-panel border border-line flex items-start gap-2">
           <Icon
@@ -78,8 +106,11 @@ export function RecoveryHonestyNotes({
         </div>
       )}
 
-      <p className="text-style-caption text-muted leading-snug mb-3">
+      <p className="text-style-caption text-muted leading-snug mb-1">
         {t.n1Note}
+      </p>
+      <p className="text-style-caption text-muted leading-snug mb-3">
+        {t.medicalNote}
       </p>
     </>
   );

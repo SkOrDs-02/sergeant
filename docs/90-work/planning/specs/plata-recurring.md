@@ -1,6 +1,6 @@
 # SPEC: Plata by mono — перехід на нативні підписки monobank
 
-> **Last touched:** 2026-09-01 by @claude. **Next review:** 2026-12-01.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-12-13.
 > **Status:** Scaffolded
 
 ## Проблема
