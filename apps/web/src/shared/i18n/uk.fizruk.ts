@@ -193,17 +193,6 @@ export const fizrukPageMessages = {
     chooseTemplate: "Обрати шаблон",
     noTemplates: "Шаблонів поки немає. Створи їх у Фізруку → Тренування.",
   },
-  // Dashboard status strip (`components/dashboard/StatusStrip.tsx`) — the
-  // readiness chip's compact face value when 2+ muscle groups are
-  // fatigued (fizruk audit V-4: the full "N груп(и) втомлені" sentence
-  // doesn't fit the chip on a 390px viewport and got silently clipped by
-  // `truncate`). The full sentence still reaches the user via the chip's
-  // aria-label/title — this prefix only composes the short on-screen form
-  // ("Втомлені: 4").
-  dashboard: {
-    fatiguedCompactPrefix: "Втомлені",
-  },
-
   // Progress page (`pages/Progress.tsx`) — analytics dashboard, PR board.
   progress: {
     title: "Прогрес",

@@ -52,10 +52,11 @@ pnpm --filter @sergeant/fizruk-domain test               # load14d, selectHeroRe
 pnpm --filter @sergeant/web test -- fizruk
 pnpm --filter @sergeant/web typecheck
 pnpm lint
-grep -rn "StatusStrip" apps packages docs --include=*.ts --include=*.tsx --include=*.md \
-  | grep -v "docs/90-work/audits/\|/archive/"   # має бути порожньо
+grep -rn "StatusStrip" apps packages --include=*.ts --include=*.tsx   # має бути порожньо
 SERGEANT_HEAVY_OK=1 pnpm --filter @sergeant/web size:eager
 ```
+
+> **Чому грепу по `docs/**` тут немає.** Перша редакція гейта шукала й у доках із виключенням аудитів і архіву — і не могла пройти за побудовою: § Поверхня змін цієї ж спеки диктує рядок журналу рішень, який дослівно містить `StatusStrip`, плюс сама спека і кілька історичних changelog-записів його називають. Гейт стежить за тим, щоб на компонент не лишилось **живих посилань у коді**; доки, які фіксують, що компонент прибрано, — це не борг, а історія, і переписувати їх заради зеленого грепу було б підміною мети гейта.
 
 Click-through у демо-режимі (393×852, світла й темна тема):
 

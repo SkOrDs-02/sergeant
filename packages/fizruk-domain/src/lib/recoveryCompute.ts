@@ -203,6 +203,7 @@ export function computeRecoveryBy(
 ): Record<string, MuscleState> {
   const WEEK = 7 * 24 * 60 * 60 * 1000;
   const DAY = 24 * 60 * 60 * 1000;
+  const FORTNIGHT = 14 * DAY;
 
   // `nowMs` передаємо далі навмисно: без нього вікно свіжості рахувалось би
   // від справжнього годинника, а решта функції — від переданого часу, і
@@ -225,6 +226,7 @@ export function computeRecoveryBy(
       lastAt: null,
       daysSince: null,
       load7d: 0,
+      load14d: 0,
       fatigue: 0,
       status: "green",
     };
@@ -234,6 +236,7 @@ export function computeRecoveryBy(
     const t = w.startedAt ? Date.parse(w.startedAt) : NaN;
     if (!Number.isFinite(t)) continue;
     const in7d = nowMs - t <= WEEK;
+    const in14d = nowMs - t <= FORTNIGHT;
     for (const it of w.items || []) {
       const ptsBase = loadPointsForItem(it);
       const ageDays = Math.max(0, (nowMs - t) / DAY);
@@ -248,13 +251,16 @@ export function computeRecoveryBy(
             lastAt: null,
             daysSince: null,
             load7d: 0,
+            load14d: 0,
             fatigue: 0,
             status: "green",
           };
         }
-        by[m].lastAt = by[m].lastAt == null ? t : Math.max(by[m].lastAt, t);
-        if (in7d) by[m].load7d += ptsBase * wgt;
-        by[m].fatigue += ptsBase * wgt * decay * wellbeingMult;
+        const row = by[m];
+        row.lastAt = row.lastAt == null ? t : Math.max(row.lastAt, t);
+        if (in7d) row.load7d += ptsBase * wgt;
+        if (in14d) row.load14d = (row.load14d ?? 0) + ptsBase * wgt;
+        row.fatigue += ptsBase * wgt * decay * wellbeingMult;
       };
 
       for (const m of it.musclesPrimary || []) apply(m, 1);

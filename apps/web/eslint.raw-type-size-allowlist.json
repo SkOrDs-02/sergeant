@@ -36,7 +36,7 @@
   "apps/web/src/modules/fizruk/components/MiniLineChart.tsx",
   "apps/web/src/modules/fizruk/components/RecoveryFocusCard.tsx",
   "apps/web/src/modules/fizruk/components/WorkoutTemplatesSection.tsx",
-  "apps/web/src/modules/fizruk/components/dashboard/HeroCard.tsx",
+  "apps/web/src/modules/fizruk/components/dashboard/HeroCardStates.tsx",
   "apps/web/src/modules/fizruk/components/planning/FizrukDayPlanSheet.tsx",
   "apps/web/src/modules/fizruk/components/workouts/ActiveWorkoutPanel.tsx",
   "apps/web/src/modules/fizruk/components/workouts/AddExerciseSheet.tsx",

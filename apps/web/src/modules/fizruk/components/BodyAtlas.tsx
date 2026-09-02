@@ -3,8 +3,10 @@
  * Status: Active
  */
 import {
+  useEffect,
   useId,
   useMemo,
+  useRef,
   useState,
   type CSSProperties,
   type ReactNode,
@@ -13,7 +15,9 @@ import {
   ATLAS_VIEWBOX,
   BODY_ATLAS_GEOMETRY,
   BODY_ATLAS_MUSCLE_LABELS_UK,
+  BODY_ATLAS_MUSCLE_SIDE,
   atlasGroupCentroid,
+  isBodyAtlasMuscleId,
   type BodyAtlasMuscleId,
   type BodyAtlasSide,
 } from "@sergeant/fizruk-domain/data";
@@ -210,6 +214,15 @@ interface BodyAtlasProps {
   onOpenFull?: (() => void) | undefined;
   /** Optional CTA: ask the coach for a session focused on a muscle. */
   onAskCoach?: (muscleLabel: string) => void;
+  /**
+   * Спека `fizruk-hero-recovery-bars.md` рішення 4 — тап по рядку hero
+   * веде сюди з цим id. Selects and scrolls to the group on mount, as if
+   * the user had tapped it themselves; switches `side` first when the
+   * group isn't drawn on the current one. Ids the atlas doesn't draw
+   * (injury zones like `knee` — see `isBodyAtlasMuscleId`) are silently
+   * ignored: the page still opens, just without a highlight.
+   */
+  focusMuscleId?: string | null | undefined;
 }
 
 export function BodyAtlas({
@@ -217,12 +230,26 @@ export function BodyAtlas({
   compact = false,
   onOpenFull,
   onAskCoach,
+  focusMuscleId,
 }: BodyAtlasProps) {
   const uid = useId();
   const { announce } = useAnnounce();
-  const [side, setSide] = useState<BodyAtlasSide>("front");
+  // Рішення 4: seed the initial side/selection from an incoming
+  // `focusMuscleId` via lazy `useState` initializers (evaluated once, on
+  // mount) rather than a `setState`-in-effect — the latter trips
+  // `react-hooks/set-state-in-effect` and would double-render besides.
+  const [side, setSide] = useState<BodyAtlasSide>(() => {
+    if (focusMuscleId && isBodyAtlasMuscleId(focusMuscleId)) {
+      const s = BODY_ATLAS_MUSCLE_SIDE[focusMuscleId];
+      if (s !== "both") return s;
+    }
+    return "front";
+  });
   const [mode, setMode] = useState<AtlasMode>("recovery");
-  const [selected, setSelected] = useState<BodyAtlasMuscleId | null>(null);
+  const [selected, setSelected] = useState<BodyAtlasMuscleId | null>(() =>
+    focusMuscleId && isBodyAtlasMuscleId(focusMuscleId) ? focusMuscleId : null,
+  );
+  const silhouetteBoxRef = useRef<HTMLDivElement>(null);
 
   const maxLoad = useMemo(() => {
     let max = 0;
@@ -251,6 +278,17 @@ export function BodyAtlas({
     setSelected(null);
   }
 
+  /** Screen-reader phrase for selecting `id` — shared by clicks and the
+   *  `focusMuscleId` mount effect below. */
+  function selectionAnnouncement(id: BodyAtlasMuscleId): string {
+    const d = data[id];
+    const label = BODY_ATLAS_MUSCLE_LABELS_UK[id];
+    const status = d ? STATUS_PILL[d.status].label : undefined;
+    return status
+      ? `${t.selectedPrefix} ${label}, ${status}`
+      : `${t.selectedPrefix} ${label}`;
+  }
+
   /**
    * Selecting a muscle on the silhouette has no native "selected" semantics
    * a screen reader announces on its own (defect #2, fizruk audit wave 2) —
@@ -260,15 +298,23 @@ export function BodyAtlas({
    */
   function selectMuscle(id: BodyAtlasMuscleId) {
     setSelected(id);
-    const d = data[id];
-    const label = BODY_ATLAS_MUSCLE_LABELS_UK[id];
-    const status = d ? STATUS_PILL[d.status].label : undefined;
-    announce(
-      status
-        ? `${t.selectedPrefix} ${label}, ${status}`
-        : `${t.selectedPrefix} ${label}`,
-    );
+    announce(selectionAnnouncement(id));
   }
+
+  // Рішення 4: incoming focus target from the hero. `side`/`selected` are
+  // already seeded above (lazy `useState` initializers); this effect only
+  // runs the two genuinely imperative side effects — announcing the
+  // selection and scrolling the silhouette into view — once per
+  // `focusMuscleId` (a fresh navigation into the page).
+  useEffect(() => {
+    if (!focusMuscleId || !isBodyAtlasMuscleId(focusMuscleId)) return;
+    announce(selectionAnnouncement(focusMuscleId));
+    silhouetteBoxRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once per incoming focus target; `announce`/`data` intentionally excluded.
+  }, [focusMuscleId]);
 
   const selectedDatum = selected ? data[selected] : undefined;
 
@@ -294,6 +340,7 @@ export function BodyAtlas({
 
       <div className="flex flex-wrap items-start gap-4">
         <div
+          ref={silhouetteBoxRef}
           className={cn(
             "min-w-0 shrink rounded-2xl bg-bg p-3",
             compact

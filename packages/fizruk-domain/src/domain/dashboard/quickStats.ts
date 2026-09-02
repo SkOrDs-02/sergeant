@@ -3,8 +3,8 @@
  * shows for the fizruk module (`weekWorkouts` / `streak`).
  *
  * Thin projection over the Dashboard KPI aggregators so the Hub card
- * renders the exact same numbers as the module's own StatusStrip — the
- * Mon-first Kyiv-anchored weekly count (`computeWeeklyTotals`) and the
+ * renders the exact same numbers as the module's own Dashboard hero kicker —
+ * the Mon-first Kyiv-anchored weekly count (`computeWeeklyTotals`) and the
  * тижневий стрік (`computeWeeklyStreakWeeks`). No new maths: a
  * second source of truth would let the card drift from the module.
  */

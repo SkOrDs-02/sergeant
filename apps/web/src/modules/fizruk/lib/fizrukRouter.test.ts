@@ -46,6 +46,23 @@ describe("parseFizrukSegments", () => {
     });
   });
 
+  // Спека `fizruk-hero-recovery-bars.md` рішення 4: hero-row тап відкриває
+  // атлас, сфокусований на конкретній групі — `atlas/<id>` incoming route.
+  it("parses atlas with a tail muscle/zone id (fizruk-hero-recovery-bars.md рішення 4)", () => {
+    expect(parseFizrukSegments(["atlas", "chest"])).toEqual({
+      page: "atlas",
+      segment: "chest",
+    });
+    expect(parseFizrukSegments(["atlas", "knee"])).toEqual({
+      page: "atlas",
+      segment: "knee",
+    });
+  });
+
+  it("returns atlas without segment when tail is missing", () => {
+    expect(parseFizrukSegments(["atlas"])).toEqual({ page: "atlas" });
+  });
+
   it("returns exercise without segment when tail is missing", () => {
     expect(parseFizrukSegments(["exercise"])).toEqual({ page: "exercise" });
   });

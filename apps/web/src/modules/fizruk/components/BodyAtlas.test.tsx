@@ -19,7 +19,7 @@
  *  - defect #3: the mode/side pickers are a plain `role="group"` of toggle
  *    buttons (`aria-pressed`), not a fake `tablist`/`tab` pair.
  */
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import {
   render,
   screen,
@@ -75,7 +75,12 @@ const renderAtlas = () =>
     </ScreenReaderAnnouncerProvider>,
   );
 
-beforeEach(cleanup);
+beforeEach(() => {
+  cleanup();
+  // jsdom doesn't implement `scrollIntoView` — stubbed same as
+  // `SearchResults.test.tsx` for the `focusMuscleId` mount effect below.
+  Element.prototype.scrollIntoView = vi.fn();
+});
 
 describe("BodyAtlas · segmented controls", () => {
   it("renders mode + side toggle groups with the front view selected by default", () => {
@@ -287,5 +292,65 @@ describe("BodyAtlas · legend", () => {
     renderAtlas();
     expect(screen.getByText("відновлено")).toBeInTheDocument();
     expect(screen.getByText("втомлено")).toBeInTheDocument();
+  });
+});
+
+// Спека `fizruk-hero-recovery-bars.md` рішення 4 — тап по hero-рядку веде
+// сюди з `focusMuscleId`.
+describe("BodyAtlas · focusMuscleId (fizruk-hero-recovery-bars.md рішення 4)", () => {
+  it("selects and announces a front-side group on mount without changing side", () => {
+    render(
+      <ScreenReaderAnnouncerProvider>
+        <BodyAtlas
+          data={DATA as Record<string, AtlasMuscleDatum>}
+          focusMuscleId="chest"
+        />
+      </ScreenReaderAnnouncerProvider>,
+    );
+    expect(screen.getByRole("button", { name: "Груди" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByRole("button", { name: "Спереду" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  });
+
+  it("switches to the back side to focus a back-only group", () => {
+    render(
+      <ScreenReaderAnnouncerProvider>
+        <BodyAtlas
+          data={DATA as Record<string, AtlasMuscleDatum>}
+          focusMuscleId="gluteal"
+        />
+      </ScreenReaderAnnouncerProvider>,
+    );
+    expect(screen.getByRole("button", { name: "Ззаду" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByRole("button", { name: "Сідниці" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  });
+
+  it("silently ignores an id the atlas cannot draw (injury zone like knee)", () => {
+    render(
+      <ScreenReaderAnnouncerProvider>
+        <BodyAtlas
+          data={DATA as Record<string, AtlasMuscleDatum>}
+          focusMuscleId="knee"
+        />
+      </ScreenReaderAnnouncerProvider>,
+    );
+    // No crash, no muscle selected — page renders its normal empty-selection copy.
+    expect(screen.getByText(/Обери м.?яз/)).toBeInTheDocument();
+  });
+
+  it("does nothing when focusMuscleId is absent", () => {
+    renderAtlas();
+    expect(screen.getByText(/Обери м.?яз/)).toBeInTheDocument();
   });
 });

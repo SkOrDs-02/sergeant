@@ -15,6 +15,16 @@ export interface MuscleState {
   lastAt: number | null;
   daysSince: number | null;
   load7d: number;
+  /**
+   * Training-load points within the last 14 days (same accrual rule as
+   * `load7d`, wider window). Optional/additive: `computeRecoveryBy` always
+   * sets it, but hand-built `MuscleState` fixtures elsewhere (tests, the
+   * synthesized injury/avoid rows in `useRecovery`) predate the field and
+   * stay valid without it. Feeds the hero "loaded in the last 14 days"
+   * gate (`selectHeroRecoveryRows`) — nothing in the recovery model itself
+   * reads it.
+   */
+  load14d?: number;
   fatigue: number;
   status: RecoveryStatus;
   /** Active user-marked pain/injury hard-blocks this muscle from advice. */

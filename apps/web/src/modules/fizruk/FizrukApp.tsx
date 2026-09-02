@@ -61,6 +61,10 @@ export default function FizrukApp({
   const exerciseId =
     page === "exercise" && segments[0] ? segments[0] : undefined;
   const workoutId = page === "workout" && segments[0] ? segments[0] : undefined;
+  // Спека `fizruk-hero-recovery-bars.md` рішення 4: `atlas/<id>` — атласна
+  // зона (або зона травми) hero-рядок просить підсвітити.
+  const atlasMuscleId =
+    page === "atlas" && segments[0] ? segments[0] : undefined;
 
   // Stage 4 PR #028 follow-up: install the dual-write context once the
   // user is known and the flag is on. Without this the `triggerFizrukDualWrite`
@@ -232,6 +236,7 @@ export default function FizrukApp({
             page={page}
             exerciseId={exerciseId}
             workoutId={workoutId}
+            atlasMuscleId={atlasMuscleId}
             activeProgramId={activeProgramId}
             activeProgram={activeProgram}
             activateProgram={activateProgram}
