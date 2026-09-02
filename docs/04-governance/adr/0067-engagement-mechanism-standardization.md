@@ -5,6 +5,9 @@
 - **Date:** 2026-06-20
 - **Accepted:** 2026-06-20 (PR #3665 злито; кроки 1 і 3 виконані за ним (`7ea3ac57e`, `899820141`), кроки 2 і 4 лишаються відкритими)
 - **Deciders:** @Skords-01
+- **Note:** Історичний запис — крок 1 рішення (видалити dead
+  `dailyFinykSummary.ts` разом із тестом) виконано, тож частина шляхів у тілі
+  описує стан ДО виконання і навмисно не резолвиться.
 - **Supersedes:** —
 - **Related:**
   - [`docs/02-engineering/architecture/domain-invariants.md`](../../02-engineering/architecture/domain-invariants.md) — Kyiv-time day-boundary інваріант, який частина reminder-хуків порушує
