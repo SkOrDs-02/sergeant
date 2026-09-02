@@ -101,7 +101,16 @@ test.describe("комора: місця зберігання", () => {
     // брехнею.
     await page.getByRole("button", { name: "Зберегти" }).click();
 
-    await page.reload({ waitUntil: "domcontentloaded" });
+    // Чекаємо, поки аркуш зникне і запис осяде: перезавантаження просто в
+    // мить збереження ловило то таймаут навігації, то `ERR_ABORTED` — це
+    // крихкість тесту, не продукту. Свіжий `goto` замість `reload` з тієї
+    // ж причини: він не конкурує з навігацією, яку сторінка могла почати.
+    await expect(page.getByLabel("Місце зберігання позиції")).toHaveCount(0);
+    await page
+      .getByRole("button", { name: "Редагувати молоко" })
+      .waitFor({ state: "visible", timeout: 15_000 });
+
+    await page.goto("/nutrition/pantry", { waitUntil: "domcontentloaded" });
     await page
       .getByRole("button", { name: "Редагувати молоко" })
       .waitFor({ state: "visible", timeout: 15_000 });
