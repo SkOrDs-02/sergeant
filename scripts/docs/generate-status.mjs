@@ -42,6 +42,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const REPO_ROOT = resolve(__dirname, "../..");
 const OUTPUT_PATH = resolve(REPO_ROOT, "docs/STATUS.md");
+const REPO_MAP_PATH = resolve(
+  REPO_ROOT,
+  "docs/04-governance/governance/repo-map.auto.json",
+);
 const PR_LEDGER_PATH = resolve(
   REPO_ROOT,
   "docs/04-governance/pr-ledger/index.json",
@@ -163,6 +167,25 @@ export function summariseInFlight(report) {
  * Форма «71 відкритих» неграматична: 71 вимагає однини, 72-74 —
  * «відкриті документи», решта — родового множини.
  */
+/**
+ * Скільки застосунків і пакетів у монорепо — рахуємо з тієї самої похідної
+ * карти, яку стереже `docs:check-repo-map`. Раніше число було вписане в
+ * рядок і розходилося з фактом при кожному новому воркспейсі
+ * (`@sergeant/tabular-import` зробив «12 пакетів» неправдою).
+ */
+function workspaceCounts() {
+  try {
+    const map = JSON.parse(readFileSync(REPO_MAP_PATH, "utf8"));
+    const list = Array.isArray(map.workspaces) ? map.workspaces : [];
+    return {
+      apps: list.filter((w) => w.category === "app").length,
+      packages: list.filter((w) => w.category !== "app").length,
+    };
+  } catch {
+    return null;
+  }
+}
+
 function pluralOpen(n) {
   const abs = Math.abs(n) % 100;
   const last = abs % 10;
@@ -280,9 +303,11 @@ function render({ focus, shipped, inflight, priority }) {
   // ── 🧱 Stack ──────────────────────────────────────────────────────────────
   lines.push("## 🧱 Стек");
   lines.push("");
-  lines.push(
-    "pnpm 9 + Turborepo monorepo, Node 22, TypeScript. 5 застосунків + 12 пакетів. Канонічні джерела:",
-  );
+  const counts = workspaceCounts();
+  const stackLine = counts
+    ? `pnpm 9 + Turborepo monorepo, Node 22, TypeScript. ${counts.apps} застосунків + ${counts.packages} пакетів. Канонічні джерела:`
+    : "pnpm 9 + Turborepo monorepo, Node 22, TypeScript. Канонічні джерела:";
+  lines.push(stackLine);
   lines.push("");
   lines.push(
     "- [`architecture/repo-map.md`](./02-engineering/architecture/repo-map.md) — per-app стек, per-package призначення, build/deploy виходи (auto-derived).",
