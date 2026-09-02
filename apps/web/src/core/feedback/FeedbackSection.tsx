@@ -39,7 +39,7 @@ export function FeedbackSection() {
       icon="message-circle"
     >
       <SettingsSubGroup title={messages.feedback.settingsSubGroupTitle}>
-        <p className="text-style-caption text-subtle leading-snug">
+        <p className="text-style-body text-subtle leading-snug">
           {messages.feedback.settingsDescription}
         </p>
         <Button

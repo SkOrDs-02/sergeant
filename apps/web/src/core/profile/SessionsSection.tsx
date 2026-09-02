@@ -265,7 +265,7 @@ export function SessionsSection({ online }: { online: boolean }) {
         ) : (
           <>
             {currentLookupFailed && (
-              <p className="text-style-caption text-muted mb-2">
+              <p className="text-style-body text-muted mb-2">
                 {COPY.currentUnknown}
               </p>
             )}

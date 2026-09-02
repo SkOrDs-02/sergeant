@@ -233,7 +233,7 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
               <h2 className="text-style-title text-text mt-0.5">
                 З чого хочеш почати?
               </h2>
-              <p className="text-style-caption text-muted mt-0.5 leading-snug">
+              <p className="text-style-body text-muted mt-0.5 leading-snug">
                 Обери модуль для першого запису. Routine не відкриється
                 автоматично.
               </p>
@@ -317,7 +317,7 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
               <h2 className="text-style-title text-text mt-0.5">
                 З чого хочеш почати?
               </h2>
-              <p className="text-style-caption text-muted mt-0.5 leading-snug">
+              <p className="text-style-body text-muted mt-0.5 leading-snug">
                 Ти обрав кілька модулів, кожен може бути першим, без прихованого
                 пріоритету.
               </p>

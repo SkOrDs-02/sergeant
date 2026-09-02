@@ -3043,9 +3043,178 @@ const ukrainianCopy = {
   },
 };
 
+// ─────────────────────────────────────────────────────────────────────────
+// ── no-sentence-in-caption ──────────────────────────────────────────────
+//
+// `.text-style-caption` — найдрібніша роль шкали (12px), і за призначенням
+// вона несе МЕТУ: час, лічильник, одиницю, «оновлено щойно». Замір
+// 2026-09-02 (`scripts/scan-caption-sentences.mjs`) знайшов 190 місць, де
+// нею набрано речення, які людина читає, щоб зрозуміти, що робити, —
+// інструкції, порожні стани, застереження приватності. Розбір і рішення
+// по кожному типу тексту: `docs/05-design/design/density-hierarchy-spec.md`.
+//
+// ЧОМУ ГЕЙТ ЛЕГІТИМНИЙ, ХОЧА CODEMOD — НІ. Той самий документ (§4) тричі
+// записав, чим закінчується механічна ЗАМІНА за патерном тексту: вона не
+// бачить екрана і псує саме ті місця, де дрібний кегль правильний —
+// підказку під полем вводу, дисклеймер, компактну пару в картці. Гейт
+// нічого не замінює. Він спрацьовує в момент написання, коли автор
+// дивиться саме на цей екран і може відповісти за секунду; хибне
+// спрацювання коштує один коментар з причиною — і цей коментар сам стає
+// тим записом, якого зараз бракує.
+//
+// Поріг 60, а не 45 як у заміру, теж свідомо: замір має перелічити всіх
+// кандидатів (краще зайві), гейт має не заважати (краще пропустити).
+// Різні ціни помилки — різні числа.
+//
+// ЧОГО ПРАВИЛО НЕ ЛОВИТЬ І НЕ МАЄ: тіла зі словника (`{m.section.body}` —
+// літерала в JSX немає), склейки з інтерполяцією, довгий текст у `label`.
+// Половину заміру дає саме словник, і закрити її статичним аналізом JSX
+// неможливо — для цього є скрипт заміру.
+const CAPTION_SENTENCE_MIN = 60;
+const RX_CAPTION_CYRILLIC = /[А-Яа-яЇїІіЄєҐґ]/;
+const CAPTION_SUPPRESSION_LINES = 6;
+
+/** Збирає рядкові частини `className`, включно з аргументами `cn(...)`. */
+function collectClassNameStrings(attrValue) {
+  const out = [];
+  const walk = (node) => {
+    if (!node || typeof node !== "object") return;
+    if (node.type === "Literal" && typeof node.value === "string") {
+      out.push(node.value);
+      return;
+    }
+    if (node.type === "TemplateLiteral") {
+      for (const q of node.quasis) out.push(q.value.cooked ?? q.value.raw);
+      for (const e of node.expressions) walk(e);
+      return;
+    }
+    if (node.type === "JSXExpressionContainer") {
+      walk(node.expression);
+      return;
+    }
+    if (node.type === "CallExpression") {
+      for (const a of node.arguments) walk(a);
+      return;
+    }
+    if (node.type === "ConditionalExpression") {
+      walk(node.consequent);
+      walk(node.alternate);
+      return;
+    }
+    if (node.type === "LogicalExpression") {
+      walk(node.left);
+      walk(node.right);
+      return;
+    }
+    if (node.type === "ArrayExpression") {
+      for (const e of node.elements) walk(e);
+      return;
+    }
+    if (node.type === "ObjectExpression") {
+      for (const p of node.properties) {
+        if (p.type === "Property" && p.key) walk(p.key);
+      }
+    }
+  };
+  walk(attrValue);
+  return out;
+}
+
+const noSentenceInCaption = {
+  meta: {
+    type: "suggestion",
+    docs: {
+      description:
+        "Речення в ролі `.text-style-caption` (12px) — підніми до `.text-style-body`, " +
+        "або поясни коментарем AI-NOTE / AI-DANGER, чому дрібний кегль тут правильний.",
+    },
+    schema: [
+      {
+        type: "object",
+        properties: { minLength: { type: "number" } },
+        additionalProperties: false,
+      },
+    ],
+    messages: {
+      sentence:
+        "Речення ({{len}} знаків) у ролі `text-style-caption` (12px). Це найдрібніша роль шкали, " +
+        "і вона для мети — часу, лічильника, одиниці. Текст, який читають, набирай `text-style-body` " +
+        "(вага 400 лишається, тон не змінюється). Якщо кегль тут правильний — підказка під контролом, " +
+        "дисклеймер, компактна пара в картці — постав поруч коментар AI-NOTE з причиною. " +
+        "Розбір: docs/05-design/design/density-hierarchy-spec.md §4.",
+    },
+  },
+  create(context) {
+    const options = context.options[0] || {};
+    const minLength = options.minLength ?? CAPTION_SENTENCE_MIN;
+    const filename = (context.filename || context.getFilename() || "").replace(
+      /\\/g,
+      "/",
+    );
+    if (
+      /\.test\.(ts|tsx|js|jsx|mjs|cjs)$/.test(filename) ||
+      /(^|\/)__tests__\//.test(filename) ||
+      /\.stories\.(ts|tsx|js|jsx|mjs|cjs)$/.test(filename) ||
+      // Внутрішня демо-сторінка дизайн-системи: там `caption` подекуди сам
+      // є предметом показу, і в прод-збірку вона не входить.
+      /(^|\/)DesignShowcase\//.test(filename)
+    ) {
+      return {};
+    }
+    const sourceCode = context.sourceCode ?? context.getSourceCode();
+
+    /** Коментар AI-NOTE / AI-DANGER не далі кількох рядків над вузлом. */
+    function hasSuppression(node) {
+      const line = node.loc.start.line;
+      return sourceCode
+        .getAllComments()
+        .some(
+          (c) =>
+            /AI-(NOTE|DANGER)/.test(c.value) &&
+            c.loc.end.line < line &&
+            line - c.loc.end.line <= CAPTION_SUPPRESSION_LINES,
+        );
+    }
+
+    return {
+      JSXOpeningElement(node) {
+        const classAttr = node.attributes.find(
+          (a) =>
+            a.type === "JSXAttribute" && a.name && a.name.name === "className",
+        );
+        if (!classAttr || !classAttr.value) return;
+        const classes = collectClassNameStrings(classAttr.value).join(" ");
+        if (!classes.includes("text-style-caption")) return;
+
+        const element = node.parent;
+        if (!element || !Array.isArray(element.children)) return;
+
+        // Тільки ПРЯМІ текстові діти: вкладений вузол має власну роль,
+        // і його кегль — питання до нього, не до цього вузла.
+        const text = element.children
+          .filter((c) => c.type === "JSXText")
+          .map((c) => c.value)
+          .join(" ")
+          .replace(/\s+/g, " ")
+          .trim();
+        if (text.length < minLength) return;
+        if (!RX_CAPTION_CYRILLIC.test(text)) return;
+        if (hasSuppression(node)) return;
+
+        context.report({
+          node,
+          messageId: "sentence",
+          data: { len: String(text.length) },
+        });
+      },
+    };
+  },
+};
+
 const plugin = {
   rules: {
     "ukrainian-copy": ukrainianCopy,
+    "no-sentence-in-caption": noSentenceInCaption,
     "no-opacity-on-text-token": noOpacityOnTextToken,
     "no-raw-type-size": noRawTypeSize,
     "no-raw-tracked-storage": noRawTrackedStorage,
