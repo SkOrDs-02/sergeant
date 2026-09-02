@@ -11,7 +11,9 @@ import { useResetPinchZoomAfterCameraCapture } from "@shared/hooks/useResetPinch
 import { cn } from "@shared/lib/ui/cn";
 import type { NutritionNotFoodKind } from "@sergeant/api-client";
 import type { NullableMacros } from "@sergeant/shared";
+import type { NutritionPhotoItem } from "@sergeant/api-client";
 import { PHOTO_NOTE_MAX_LENGTH } from "../hooks/usePhotoAnalysis";
+import { PhotoItemsList } from "./PhotoItemsList";
 
 /**
  * Inline "in progress" line — spinner + copy, anchored right where the
@@ -74,12 +76,18 @@ function PhotoPrivacyNotice({
   return (
     <div className="mb-3 rounded-2xl border border-line bg-panelHi p-3">
       <div className="text-style-label text-text">Куди їде фото</div>
+      {/* AI-NOTE: caption тут навмисний — це дисклеймер приватності під
+          заголовком нотіса, а не текст, який читають потоком. Підняти до
+          `text-style-body` означало б зрівняти його з основним контентом
+          картки і посилити те, що людина має прочитати один раз. */}
       <p className="mt-1 text-style-caption text-muted leading-relaxed">
         Щоб визначити КБЖВ, фото відправляється на розпізнавання до зовнішнього
         AI-сервісу. На відміну від тексту, фото приховати частково не вийде: їде
         весь кадр. Перевір, що в нього не потрапило зайве.
       </p>
       {blockingAnalysis && (
+        // AI-NOTE: та сама роль, що й дисклеймер вище — рядок пояснює стан
+        // кнопки в цьому ж нотісі, тож кегль тримаємо спільний.
         <p className="mt-2 text-style-caption text-text leading-relaxed">
           Аналіз почнеться, щойно підтвердиш це. Доти кадр нікуди не їде.
         </p>
@@ -121,6 +129,8 @@ interface PhotoAnalyzeResult {
   macros?: Partial<NullableMacros> | null;
   confidence?: number | null;
   ingredients?: PhotoIngredient[];
+  /** Позиції кадру; підсумок `macros` вище — їхня сума (ініціатива 0023). */
+  items?: NutritionPhotoItem[];
   questions?: string[];
 }
 
@@ -217,6 +227,16 @@ interface PhotoAnalyzeCardProps {
    * і без підказки екран виглядав мертвим).
    */
   analysisAwaitingPrivacyAck?: boolean | undefined;
+  /** Прибрати позицію зі списку. Відсутній — список лише для читання. */
+  onRemoveItem?: ((index: number) => void) | undefined;
+  /**
+   * Пікер каталогу під кнопкою «Додати позицію».
+   *
+   * Приходить рендер-функцією, а не хуком пошуку: інакше картка знала б про
+   * `useFoodSearch`, і кожен її тест мусив би мокати мережу заради розмітки,
+   * яка до пошуку відношення не має. `close` згортає пікер назад у кнопку.
+   */
+  renderAddItem?: ((close: () => void) => React.ReactNode) | undefined;
 }
 
 export function PhotoAnalyzeCard({
@@ -240,6 +260,8 @@ export function PhotoAnalyzeCard({
   refining,
   onPrivacyAck,
   analysisAwaitingPrivacyAck,
+  onRemoveItem,
+  renderAddItem,
 }: PhotoAnalyzeCardProps) {
   const armPinchZoomReset = useResetPinchZoomAfterCameraCapture();
   return (
@@ -419,6 +441,14 @@ export function PhotoAnalyzeCard({
             ))}
           </div>
 
+          <PhotoItemsList
+            items={photoResult.items ?? []}
+            fmtMacro={fmtMacro}
+            onRemoveItem={onRemoveItem}
+            renderAddItem={renderAddItem}
+            busy={busy}
+          />
+
           {onSaveToLog && (
             /* AI-CONTEXT: тестер 2026-08-13 «ледь не пропустила цей пункт» —
                збереження було outline-кнопкою, а «Перерахувати» нижче —
@@ -455,6 +485,9 @@ export function PhotoAnalyzeCard({
                 </svg>
                 Зберегти в журнал
               </button>
+              {/* AI-NOTE: підказка під кнопкою — класичний випадок, який
+                  правило дозволяє лишити в caption: вона супроводжує контрол,
+                  а не читається окремо. */}
               <p className="text-style-caption text-muted text-center">
                 Сам аналіз у журнал не потрапляє, збережи, щоб він порахувався в
                 дні.
@@ -544,6 +577,8 @@ export function PhotoAnalyzeCard({
             {/* Чесність про ціну кнопки: перерахунок — це новий прогін
                 моделі по всьому кадру, а не точкова правка. Те, що вона
                 вгадала правильно, теж може змінитись. */}
+            {/* AI-NOTE: підказка під контролом (див. коментар вище про
+                ціну кнопки) — caption тут навмисний. */}
             <p className="text-style-caption text-muted">
               Перерахунок оновлює весь результат, а не лише те, що ти згадаєш,
               уже правильні страви теж можуть змінитися.

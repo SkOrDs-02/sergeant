@@ -164,6 +164,7 @@ export {
   type NutritionPhotoIngredient,
   type NutritionPhotoPortion,
   type NutritionPhotoResponse,
+  type NutritionPhotoItem,
   type NutritionPhotoResult,
   type NutritionRecipe,
   type NutritionRecipesResponse,
